@@ -1,47 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752141Ab1GGUuJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 16:50:09 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:56181 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750798Ab1GGUuI (ORCPT
+	id S1751976Ab1GGU6u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 16:58:50 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:53999 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751079Ab1GGU6s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 16:50:08 -0400
-X-Sasl-enc: CdkVkMc+vDodPQeT+w958xVftBUvZ53yUxiwnFSoHp07 1310071807
-Date: Thu, 7 Jul 2011 13:49:37 -0700
-From: Greg KH <gregkh@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [GIT PATCH] another USB fix for 3.0
-Message-ID: <20110707204937.GA13006@kroah.com>
+	Thu, 7 Jul 2011 16:58:48 -0400
+Date: Thu, 7 Jul 2011 22:05:25 +0100
+From: Frederick van der Wyck <fvanderwyck@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, mjg59@srcf.ucam.org
+Cc: gregkh@suse.de, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] Platform: Samsung Q10 backlight driver
+Message-ID: <20110707210525.GA26263@ntl>
+References: <20110704214357.GA17428@ntl>
+ <20110707145036.GK7658@core.coreip.homeip.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110707145036.GK7658@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One more USB regression fix for 3.0.
+On Thu, Jul 07, 2011 at 07:50:36AM -0700, Dmitry Torokhov wrote:
+> 
+> Since the driver will not function without full i8042 code being present
+> I think you should add 'depends on SERIO_I8042' even though it compiles
+> without it being enabled.
 
-This one is a continuation of the last one you accepted, which fixed the
-problem for some people, but not all.  This one fixes it for everyone.
+Thanks, Dmitry. I've added the depends on.
 
-Please pull from:
-	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/usb-2.6.git/ usb-linus
+Signed-off-by: Frederick van der Wyck <fvanderwyck@gmail.com>
+---
+ drivers/platform/x86/Kconfig       |    8 ++
+ drivers/platform/x86/Makefile      |    1 +
+ drivers/platform/x86/samsung-q10.c |  196 ++++++++++++++++++++++++++++++++++++
+ 3 files changed, 205 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/platform/x86/samsung-q10.c
 
-thanks,
-
-greg k-h
-
-------------
-
- drivers/usb/core/message.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
-
----------------
-
-Alan Stern (1):
-      USB: additional regression fix for device removal
-
+diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+index 45e0191..1e88d47 100644
+--- a/drivers/platform/x86/Kconfig
++++ b/drivers/platform/x86/Kconfig
+@@ -769,4 +769,12 @@ config INTEL_OAKTRAIL
+ 	  enable/disable the Camera, WiFi, BT etc. devices. If in doubt, say Y
+ 	  here; it will only load on supported platforms.
+ 
++config SAMSUNG_Q10
++	tristate "Samsung Q10 Extras"
++	depends on SERIO_I8042
++	select BACKLIGHT_CLASS_DEVICE
++	---help---
++	  This driver provides support for backlight control on Samsung Q10
++	  and related laptops, including Dell Latitude X200.
++
+ endif # X86_PLATFORM_DEVICES
+diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
+index afc1f83..293a320 100644
+--- a/drivers/platform/x86/Makefile
++++ b/drivers/platform/x86/Makefile
+@@ -44,3 +44,4 @@ obj-$(CONFIG_SAMSUNG_LAPTOP)	+= samsung-laptop.o
+ obj-$(CONFIG_MXM_WMI)		+= mxm-wmi.o
+ obj-$(CONFIG_INTEL_MID_POWER_BUTTON)	+= intel_mid_powerbtn.o
+ obj-$(CONFIG_INTEL_OAKTRAIL)	+= intel_oaktrail.o
++obj-$(CONFIG_SAMSUNG_Q10)	+= samsung-q10.o
+diff --git a/drivers/platform/x86/samsung-q10.c b/drivers/platform/x86/samsung-q10.c
+new file mode 100644
+index 0000000..54cf3d6
+--- /dev/null
++++ b/drivers/platform/x86/samsung-q10.c
+@@ -0,0 +1,196 @@
++/*
++ *  Driver for Samsung Q10 and related laptops: controls the backlight
++ *
++ *  Copyright (c) 2011 Frederick van der Wyck <fvanderwyck@gmail.com>
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/platform_device.h>
++#include <linux/backlight.h>
++#include <linux/i8042.h>
++#include <linux/dmi.h>
++
++#define SAMSUNGQ10_BL_MAX_INTENSITY      255
++#define SAMSUNGQ10_BL_DEFAULT_INTENSITY  185
++
++#define SAMSUNGQ10_BL_8042_CMD           0xbe
++#define SAMSUNGQ10_BL_8042_DATA          { 0x89, 0x91 }
++
++static int samsungq10_bl_brightness;
++
++static bool force;
++module_param(force, bool, 0);
++MODULE_PARM_DESC(force,
++		"Disable the DMI check and force the driver to be loaded");
++
++static int samsungq10_bl_set_intensity(struct backlight_device *bd)
++{
++
++	int brightness = bd->props.brightness;
++	unsigned char c[3] = SAMSUNGQ10_BL_8042_DATA;
++
++	c[2] = (unsigned char)brightness;
++	i8042_lock_chip();
++	i8042_command(c, (0x30 << 8) | SAMSUNGQ10_BL_8042_CMD);
++	i8042_unlock_chip();
++	samsungq10_bl_brightness = brightness;
++
++	return 0;
++}
++
++static int samsungq10_bl_get_intensity(struct backlight_device *bd)
++{
++	return samsungq10_bl_brightness;
++}
++
++static const struct backlight_ops samsungq10_bl_ops = {
++	.get_brightness = samsungq10_bl_get_intensity,
++	.update_status	= samsungq10_bl_set_intensity,
++};
++
++#ifdef CONFIG_PM_SLEEP
++static int samsungq10_suspend(struct device *dev)
++{
++	return 0;
++}
++
++static int samsungq10_resume(struct device *dev)
++{
++
++	struct backlight_device *bd = dev_get_drvdata(dev);
++
++	samsungq10_bl_set_intensity(bd);
++	return 0;
++}
++#else
++#define samsungq10_suspend NULL
++#define samsungq10_resume  NULL
++#endif
++
++static SIMPLE_DEV_PM_OPS(samsungq10_pm_ops,
++			  samsungq10_suspend, samsungq10_resume);
++
++static int __devinit samsungq10_probe(struct platform_device *pdev)
++{
++
++	struct backlight_properties props;
++	struct backlight_device *bd;
++
++	memset(&props, 0, sizeof(struct backlight_properties));
++	props.type = BACKLIGHT_PLATFORM;
++	props.max_brightness = SAMSUNGQ10_BL_MAX_INTENSITY;
++	bd = backlight_device_register("samsung", &pdev->dev, NULL,
++				       &samsungq10_bl_ops, &props);
++	if (IS_ERR(bd))
++		return PTR_ERR(bd);
++
++	platform_set_drvdata(pdev, bd);
++
++	bd->props.brightness = SAMSUNGQ10_BL_DEFAULT_INTENSITY;
++	samsungq10_bl_set_intensity(bd);
++
++	return 0;
++}
++
++static int __devexit samsungq10_remove(struct platform_device *pdev)
++{
++
++	struct backlight_device *bd = platform_get_drvdata(pdev);
++
++	bd->props.brightness = SAMSUNGQ10_BL_DEFAULT_INTENSITY;
++	samsungq10_bl_set_intensity(bd);
++
++	backlight_device_unregister(bd);
++
++	return 0;
++}
++
++static struct platform_driver samsungq10_driver = {
++	.driver		= {
++		.name	= KBUILD_MODNAME,
++		.owner	= THIS_MODULE,
++		.pm	= &samsungq10_pm_ops,
++	},
++	.probe		= samsungq10_probe,
++	.remove		= __devexit_p(samsungq10_remove),
++};
++
++static struct platform_device *samsungq10_device;
++
++static int __init dmi_check_callback(const struct dmi_system_id *id)
++{
++	printk(KERN_INFO KBUILD_MODNAME ": found model '%s'\n", id->ident);
++	return 0;
++}
++
++static struct dmi_system_id __initdata samsungq10_dmi_table[] = {
++	{
++		.ident = "Samsung Q10",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Samsung"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "SQ10"),
++		},
++		.callback = dmi_check_callback,
++	},
++	{
++		.ident = "Samsung Q20",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG Electronics"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "SENS Q20"),
++		},
++		.callback = dmi_check_callback,
++	},
++	{
++		.ident = "Samsung Q25",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG Electronics"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "NQ25"),
++		},
++		.callback = dmi_check_callback,
++	},
++	{
++		.ident = "Dell Latitude X200",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Computer Corporation"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "X200"),
++		},
++		.callback = dmi_check_callback,
++	},
++	{ },
++};
++MODULE_DEVICE_TABLE(dmi, samsungq10_dmi_table);
++
++static int __init samsungq10_init(void)
++{
++	if (!force && !dmi_check_system(samsungq10_dmi_table))
++		return -ENODEV;
++
++	samsungq10_device = platform_create_bundle(&samsungq10_driver,
++						   samsungq10_probe,
++						   NULL, 0, NULL, 0);
++
++	if (IS_ERR(samsungq10_device))
++		return PTR_ERR(samsungq10_device);
++
++	return 0;
++}
++
++static void __exit samsungq10_exit(void)
++{
++	platform_device_unregister(samsungq10_device);
++	platform_driver_unregister(&samsungq10_driver);
++}
++
++module_init(samsungq10_init);
++module_exit(samsungq10_exit);
++
++MODULE_AUTHOR("Frederick van der Wyck <fvanderwyck@gmail.com>");
++MODULE_DESCRIPTION("Samsung Q10 Driver");
++MODULE_LICENSE("GPL");
+-- 
