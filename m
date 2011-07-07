@@ -1,156 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932115Ab1GGPbq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 11:31:46 -0400
-Received: from smtp-vbr10.xs4all.nl ([194.109.24.30]:2170 "EHLO
-	smtp-vbr10.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756785Ab1GGPbp (ORCPT
+	id S932141Ab1GGPc3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 11:32:29 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57637 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751710Ab1GGPc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 11:31:45 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>
-Subject: Re: [PATCH RFCv3 00/17] Error code fixes and return -ENOTTY for no-ioctl
-Date: Thu, 7 Jul 2011 17:31:31 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc7-durdane; KDE/4.4.5; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>
-References: <20110706150404.3ac4ed6e@pedra>
-In-Reply-To: <20110706150404.3ac4ed6e@pedra>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107071731.31434.hverkuil@xs4all.nl>
+	Thu, 7 Jul 2011 11:32:28 -0400
+From: Ravishankar <ravishankarkm32@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>,
+        Ravishankar <ravishankarkm32@gmail.com>
+Subject: [PATCH 2/2] [PATCH 7/7 v2] Staging: comedi: fix warning issue in unioxx5.c
+Date: Thu,  7 Jul 2011 21:14:43 +0530
+Message-Id: <1310053483-14403-1-git-send-email-ravishankarkm32@gmail.com>
+X-Mailer: git-send-email 1.6.5.2
+In-Reply-To: <[PATCH]Staging: comedi: fix warning issue in unioxx5.c>
+References: <[PATCH]Staging: comedi: fix warning issue in unioxx5.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 06, 2011 20:04:04 Mauro Carvalho Chehab wrote:
-> This patch series contain some fixes on how error codes are handled
-> at the media API's. It consists on two parts. 
-> 
-> The first part have the DocBook changes:
-> - Create a generic errno xml file, used by all media API's
->   (V4L, MC, LIRC and DVB);
-> - Move the generic errorcodes to the new file;
-> - Removes code duplication/inconsistency along the several
->   API files;
-> - Removes two bogus undefined errorcodes: EINTERNAL/ENOSIGNAL
->   from the ioctl's.
-> 
-> The second part have the code changes:
-> - Some fixes on a few drivers that use EFAULT on a wrong
->   way, and not compliant with the DVB API;
-> - The usage of ENOTTY meaning that no ioctl is implemented.
+From: Ravishankar <ravi.shankar@greenturtles.in>
 
-Except for patch 03/17 (see my comments there):
+This is a patch to the unioxx5.c file that fixes up a  warning found by the checkpatch.pl tool
 
-Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
 
-Regards,
+---
+There were 3 blank lines in a row. Now it's been removed.
+---
+ drivers/staging/comedi/drivers/unioxx5.c |   46 +++++++++++++++++++-----------
+ 1 files changed, 29 insertions(+), 17 deletions(-)
 
-	Hans
+diff --git a/drivers/staging/comedi/drivers/unioxx5.c b/drivers/staging/comedi/drivers/unioxx5.c
+index 598884e..89e62aa 100644
+--- a/drivers/staging/comedi/drivers/unioxx5.c
++++ b/drivers/staging/comedi/drivers/unioxx5.c
+@@ -75,8 +75,10 @@ Devices: [Fastwel] UNIOxx-5 (unioxx5),
+ /* 'private' structure for each subdevice */
+ struct unioxx5_subd_priv {
+ 	int usp_iobase;
+-	unsigned char usp_module_type[12];	/* 12 modules. each can be 70L or 73L */
+-	unsigned char usp_extra_data[12][4];	/* for saving previous written value for analog modules */
++	/* 12 modules. each can be 70L or 73L */
++	unsigned char usp_module_type[12];
++	/* for saving previous written value for analog modules */
++	unsigned char usp_extra_data[12][4];
+ 	unsigned char usp_prev_wr_val[3];	/* previous written value */
+ 	unsigned char usp_prev_cn_val[3];	/* previous channel value */
+ };
+@@ -169,7 +171,7 @@ static int unioxx5_attach(struct comedi_device *dev,
+ 			return -1;
+ 	}
+ 
+-	printk("attached\n");
++	printk(KERN_INFO "attached\n");
+ 	return 0;
+ }
+ 
+@@ -181,7 +183,8 @@ static int unioxx5_subdev_read(struct comedi_device *dev,
+ 	int channel, type;
+ 
+ 	channel = CR_CHAN(insn->chanspec);
+-	type = usp->usp_module_type[channel / 2];	/* defining module type(analog or digital) */
++	/* defining module type(analog or digital) */
++	type = usp->usp_module_type[channel / 2];
+ 
+ 	if (type == MODULE_DIGITAL) {
+ 		if (!__unioxx5_digital_read(usp, data, channel, dev->minor))
+@@ -202,7 +205,8 @@ static int unioxx5_subdev_write(struct comedi_device *dev,
+ 	int channel, type;
+ 
+ 	channel = CR_CHAN(insn->chanspec);
+-	type = usp->usp_module_type[channel / 2];	/* defining module type(analog or digital) */
++	/* defining module type(analog or digital) */
++	type = usp->usp_module_type[channel / 2];
+ 
+ 	if (type == MODULE_DIGITAL) {
+ 		if (!__unioxx5_digital_write(usp, data, channel, dev->minor))
+@@ -261,9 +265,12 @@ static int unioxx5_insn_config(struct comedi_device *dev,
+ 	 * change channel type on input or output)                *
+ 	 \*                                                        */
+ 	outb(1, usp->usp_iobase + 0);
+-	outb(flags, usp->usp_iobase + channel_offset);	/* changes type of _one_ channel */
+-	outb(0, usp->usp_iobase + 0);	/* sets channels bank to 0(allows directly input/output) */
+-	usp->usp_prev_cn_val[channel_offset - 1] = flags;	/* saves written value */
++	/* changes type of _one_ channel */
++	outb(flags, usp->usp_iobase + channel_offset);
++	/* sets channels bank to 0(allows directly input/output) */
++	outb(0, usp->usp_iobase + 0);
++	/* saves written value */
++	usp->usp_prev_cn_val[channel_offset - 1] = flags;
+ 
+ 	return 0;
+ }
+@@ -304,14 +311,15 @@ static int __unioxx5_subdev_init(struct comedi_subdevice *subdev,
+ 	}
+ 
+ 	usp->usp_iobase = subdev_iobase;
+-	printk("comedi%d: |", minor);
++	printk(KERN_INFO "comedi%d: |", minor);
+ 
+ 	/* defining modules types */
+ 	for (i = 0; i < 12; i++) {
+ 		to = 10000;
+ 
+ 		__unioxx5_analog_config(usp, i * 2);
+-		outb(i + 1, subdev_iobase + 5);	/* sends channel number to card */
++		/* sends channel number to card */
++		outb(i + 1, subdev_iobase + 5);
+ 		outb('H', subdev_iobase + 6);	/* requests EEPROM world */
+ 		while (!(inb(subdev_iobase + 0) & TxBE))
+ 			;	/* waits while writting will be allowed */
+@@ -346,9 +354,10 @@ static int __unioxx5_subdev_init(struct comedi_subdevice *subdev,
+ 	subdev->range_table = &range_digital;
+ 	subdev->insn_read = unioxx5_subdev_read;
+ 	subdev->insn_write = unioxx5_subdev_write;
+-	subdev->insn_config = unioxx5_insn_config;	/* for digital modules only!!! */
++	/* for digital modules only!!! */
++	subdev->insn_config = unioxx5_insn_config;
+ 
+-	printk("subdevice configured\n");
++	printk(KERN_INFO "subdevice configured\n");
+ 
+ 	return 0;
+ }
+@@ -367,7 +376,8 @@ static int __unioxx5_digital_write(struct unioxx5_subd_priv *usp,
+ 		return 0;
+ 	}
+ 
+-	val = usp->usp_prev_wr_val[channel_offset - 1];	/* getting previous written value */
++	/* getting previous written value */
++	val = usp->usp_prev_wr_val[channel_offset - 1];
+ 
+ 	if (*data)
+ 		val |= mask;
+@@ -375,7 +385,8 @@ static int __unioxx5_digital_write(struct unioxx5_subd_priv *usp,
+ 		val &= ~mask;
+ 
+ 	outb(val, usp->usp_iobase + channel_offset);
+-	usp->usp_prev_wr_val[channel_offset - 1] = val;	/* saving new written value */
++	/* saving new written value */
++	usp->usp_prev_wr_val[channel_offset - 1] = val;
+ 
+ 	return 1;
+ }
+@@ -399,7 +410,6 @@ static int __unioxx5_digital_read(struct unioxx5_subd_priv *usp,
+ 
+ 	if (channel_offset > 1)
+ 		channel -= 2 << channel_offset;	/* this operation is created for correct readed value to 0 or 1 */
+-
+ 	*data >>= channel;
+ 	return 1;
+ }
+@@ -444,7 +454,8 @@ static int __unioxx5_analog_write(struct unioxx5_subd_priv *usp,
+ 	usp->usp_extra_data[module][i] = (unsigned char)((*data & 0xFF00) >> 8);
+ 
+ 	/* while(!((inb(usp->usp_iobase + 0)) & TxBE)); */
+-	outb(module + 1, usp->usp_iobase + 5);	/* sending module number to card(1 .. 12) */
++	/* sending module number to card(1 .. 12) */
++	outb(module + 1, usp->usp_iobase + 5);
+ 	outb('W', usp->usp_iobase + 6);	/* sends (W)rite command to module */
+ 
+ 	/* sending for bytes to module(one byte per cycle iteration) */
+@@ -475,7 +486,8 @@ static int __unioxx5_analog_read(struct unioxx5_subd_priv *usp,
+ 	}
+ 
+ 	__unioxx5_analog_config(usp, channel);
+-	outb(module_no + 1, usp->usp_iobase + 5);	/* sends module number to card(1 .. 12) */
++	/* sends module number to card(1 .. 12) */
++	outb(module_no + 1, usp->usp_iobase + 5);
+ 	outb('V', usp->usp_iobase + 6);	/* sends to module (V)erify command */
+ 	control = inb(usp->usp_iobase);	/* get control register byte */
+ 
+-- 
+1.6.5.2
 
-> TODO:
-> - Some DVB open/close API description are mentioning the
->   non-existent EINTERNAL error code;
-> - firedtv driver needs to be fixed with respect to the usage
->   of -EFAULT (Stefan c/c).
-> - The DVB driver uses a couple different error codes to mean that
->   an ioctl is not implemented: ENOSYS and EOPNOTSUPP. The last
->   one is used on most places. It would be great to standardize
->   this error code as well, but further study is required.
-> - There are still several error codes not present at gen-errors.xml.
->   A match between what's currently used at the drivers and the
->   API is needed. Probably, both code and DocBook needs to be
->   changed, as, on several cases, different drivers return different
->   error codes for the same error.
-> 
-> Mauro Carvalho Chehab (17):
->   [media] DocBook: Add a chapter to describe media errors
->   [media] DocBook: Use the generic ioctl error codes for all V4L
->     ioctl's
->   [media] DocBook: Use the generic error code page also for MC API
->   [media] DocBook/media-ioc-setup-link.xml: Remove EBUSY
->   [media] DocBook: Remove V4L generic error description for ioctl()
->   [media] DocBook: Add an error code session for LIRC interface
->   [media] DocBook: Add return error codes to LIRC ioctl session
->   [media] siano: bad parameter is -EINVAL and not -EFAULT
->   [media] nxt6000: i2c bus error should return -EIO
->   [media] DVB: Point to the generic error chapter
->   [media] DocBook/audio.xml: Remove generic errors
->   [media] DocBook/demux.xml: Remove generic errors
->   [media] dvb-bt8xx: Don't return -EFAULT when a device is not found
->   [media] DocBook/dvb: Use generic descriptions for the frontend API
->   [media] DocBook/dvb: Use generic descriptions for the video API
->   [media] v4l2 core: return -ENOTTY if an ioctl doesn't exist
->   [media] return -ENOTTY for unsupported ioctl's at legacy drivers
-> 
->  Documentation/DocBook/.gitignore                   |    2 +
->  Documentation/DocBook/media/Makefile               |   42 ++-
->  Documentation/DocBook/media/dvb/audio.xml          |  372 +--------------
->  Documentation/DocBook/media/dvb/ca.xml             |    6 +-
->  Documentation/DocBook/media/dvb/demux.xml          |  121 +-----
->  Documentation/DocBook/media/dvb/dvbproperty.xml    |   23 +-
->  Documentation/DocBook/media/dvb/frontend.xml       |  487 +-------------------
->  Documentation/DocBook/media/dvb/video.xml          |  418 +----------------
->  Documentation/DocBook/media/v4l/func-ioctl.xml     |   72 +---
->  Documentation/DocBook/media/v4l/gen-errors.xml     |   77 +++
->  .../DocBook/media/v4l/lirc_device_interface.xml    |    4 +-
->  .../DocBook/media/v4l/media-func-ioctl.xml         |   47 +--
->  .../DocBook/media/v4l/media-ioc-device-info.xml    |    3 +-
->  .../DocBook/media/v4l/media-ioc-setup-link.xml     |    9 -
->  Documentation/DocBook/media/v4l/v4l2.xml           |    2 +
->  Documentation/DocBook/media/v4l/vidioc-cropcap.xml |   13 +-
->  .../DocBook/media/v4l/vidioc-dbg-g-chip-ident.xml  |   11 +-
->  .../DocBook/media/v4l/vidioc-dbg-g-register.xml    |   17 -
->  Documentation/DocBook/media/v4l/vidioc-dqevent.xml |   10 +-
->  .../DocBook/media/v4l/vidioc-encoder-cmd.xml       |   11 +-
->  .../media/v4l/vidioc-enum-frameintervals.xml       |   11 -
->  .../DocBook/media/v4l/vidioc-enum-framesizes.xml   |   11 -
->  .../DocBook/media/v4l/vidioc-enumaudio.xml         |   12 +-
->  .../DocBook/media/v4l/vidioc-enumaudioout.xml      |   12 +-
->  Documentation/DocBook/media/v4l/vidioc-g-audio.xml |   18 +-
->  .../DocBook/media/v4l/vidioc-g-audioout.xml        |   18 +-
->  Documentation/DocBook/media/v4l/vidioc-g-crop.xml  |   17 -
->  .../DocBook/media/v4l/vidioc-g-dv-preset.xml       |   12 +-
->  .../DocBook/media/v4l/vidioc-g-dv-timings.xml      |   11 +-
->  .../DocBook/media/v4l/vidioc-g-enc-index.xml       |   17 -
->  Documentation/DocBook/media/v4l/vidioc-g-fbuf.xml  |   19 +-
->  Documentation/DocBook/media/v4l/vidioc-g-fmt.xml   |   20 +-
->  Documentation/DocBook/media/v4l/vidioc-g-input.xml |   19 +-
->  .../DocBook/media/v4l/vidioc-g-jpegcomp.xml        |   17 -
->  .../DocBook/media/v4l/vidioc-g-output.xml          |   18 +-
->  Documentation/DocBook/media/v4l/vidioc-g-parm.xml  |   17 -
->  .../DocBook/media/v4l/vidioc-g-priority.xml        |    3 +-
->  .../DocBook/media/v4l/vidioc-g-sliced-vbi-cap.xml  |   11 +-
->  Documentation/DocBook/media/v4l/vidioc-g-std.xml   |    9 +-
->  .../DocBook/media/v4l/vidioc-log-status.xml        |   17 -
->  Documentation/DocBook/media/v4l/vidioc-overlay.xml |   11 +-
->  Documentation/DocBook/media/v4l/vidioc-qbuf.xml    |   17 -
->  .../DocBook/media/v4l/vidioc-query-dv-preset.xml   |   22 -
->  .../DocBook/media/v4l/vidioc-querycap.xml          |   19 -
->  .../DocBook/media/v4l/vidioc-querystd.xml          |   23 -
->  Documentation/DocBook/media/v4l/vidioc-reqbufs.xml |   16 -
->  .../DocBook/media/v4l/vidioc-streamon.xml          |   14 +-
->  .../DocBook/media/v4l/vidioc-subdev-g-fmt.xml      |    3 +
->  .../DocBook/media/v4l/vidioc-subscribe-event.xml   |   11 +-
->  Documentation/DocBook/media_api.tmpl               |    9 +-
->  drivers/media/dvb/bt8xx/dvb-bt8xx.c                |    4 +-
->  drivers/media/dvb/frontends/nxt6000.c              |    2 +-
->  drivers/media/dvb/siano/smscoreapi.c               |    2 +-
->  drivers/media/video/et61x251/et61x251_core.c       |   10 +-
->  drivers/media/video/pvrusb2/pvrusb2-v4l2.c         |    7 +-
->  drivers/media/video/sn9c102/sn9c102_core.c         |   10 +-
->  drivers/media/video/uvc/uvc_v4l2.c                 |    2 +-
->  drivers/media/video/v4l2-ioctl.c                   |    4 +-
->  58 files changed, 267 insertions(+), 1955 deletions(-)
->  create mode 100644 Documentation/DocBook/media/v4l/gen-errors.xml
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
