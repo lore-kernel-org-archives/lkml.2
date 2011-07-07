@@ -1,83 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181Ab1GGHN3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 03:13:29 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:36577 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750961Ab1GGHN1 convert rfc822-to-8bit (ORCPT
+	id S1752115Ab1GGHVm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 03:21:42 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:43865 "EHLO
+	TX2EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750900Ab1GGHVj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 03:13:27 -0400
+	Thu, 7 Jul 2011 03:21:39 -0400
+X-SpamScore: -17
+X-BigFish: VPS-17(zzbb2dK9371M1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPVD:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
+Message-ID: <4E155E1F.7030609@analog.com>
+Date: Thu, 7 Jul 2011 09:19:59 +0200
+From: Michael Hennerich <michael.hennerich@analog.com>
+Reply-To: <michael.hennerich@analog.com>
+Organization: Analog Devices Inc.
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <20110706123417.GA25400@n2100.arm.linux.org.uk>
-References: <1289147348-31969-1-git-send-email-alchark@gmail.com>
-	<20101107165745.GB1759@n2100.arm.linux.org.uk>
-	<AANLkTimFJ=Brx4pDiUqZOKDfABaDg0s_yFC7EkZGi7D8@mail.gmail.com>
-	<20101107171726.GF1759@n2100.arm.linux.org.uk>
-	<20101108171930.GA1471@alchark-u3s.lan>
-	<20101111212322.GA15533@alchark-u3s.lan>
-	<20101111234957.GA28735@n2100.arm.linux.org.uk>
-	<20101219174017.GA31832@alchark-u3s>
-	<20110706123417.GA25400@n2100.arm.linux.org.uk>
-Date: Thu, 7 Jul 2011 11:13:26 +0400
-Message-ID: <CABjd4Yxc_jRi563CHg+G7ekTHT40sTxgRUoL68bSke7oh8JVpg@mail.gmail.com>
-Subject: Re: [PATCH 1/6 v8] ARM: Add basic architecture support for
- VIA/WonderMedia 85xx SoC's
-From: Alexey Charkov <alchark@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com,
-        Eric Miao <eric.y.miao@gmail.com>,
-        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Joe Perches <joe@perches.com>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Michael Buesch <mb@bu3sch.de>,
+        "device-drivers-devel@blackfin.uclinux.org" 
+	<device-drivers-devel@blackfin.uclinux.org>
+Subject: Re: [PATCH next 1/2] MAINTAINERS: Update GPIO sections patterns
+References: <e9742e1fca57477517fdb6ea110221d6292eed9c.1309997525.git.joe@perches.com>
+In-Reply-To: <e9742e1fca57477517fdb6ea110221d6292eed9c.1309997525.git.joe@perches.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: analog.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/7/6 Russell King - ARM Linux <linux@arm.linux.org.uk>:
-> On Sun, Dec 19, 2010 at 08:40:17PM +0300, Alexey Charkov wrote:
->> +static struct map_desc vt8500_io_desc[] __initdata = {
->> +     /* SoC MMIO registers, to be filled in later */
->> +     [0] = {
->> +             .type           = MT_DEVICE
->> +     },
->> +     /* PCI I/O space, numbers tied to those in <mach/io.h> */
->> +     [1] = {
->> +             .virtual        = 0xf0000000,
->> +             .pfn            = __phys_to_pfn(0xc0000000),
->> +             .length         = SZ_64K,
->> +             .type           = MT_DEVICE
->> +     },
->> +};
-> ...
->> diff --git a/arch/arm/mach-vt8500/include/mach/io.h b/arch/arm/mach-vt8500/include/mach/io.h
->> new file mode 100644
->> index 0000000..8dd55c8
->> --- /dev/null
->> +++ b/arch/arm/mach-vt8500/include/mach/io.h
->> +#ifndef __ASM_ARM_ARCH_IO_H
->> +#define __ASM_ARM_ARCH_IO_H
->> +
->> +#define IO_SPACE_LIMIT 0xffff
->> +
->> +#define __io(a)              ((void __iomem *)((a) + 0xf0000000))
->> +#define __mem_pci(a) (a)
+On 07/07/2011 02:28 AM, Joe Perches wrote:
+> commit c103de24043 ("gpio: reorganize drivers")
+> renamed the files, update the patterns.
 >
-> Can you explain why you seem to have PCI IO space, yet don't have CONFIG_PCI
-> selected?  Do you have any drivers which use this space without CONFIG_PCI=y?
+> cc: Grant Likely<grant.likely@secretlab.ca>
+> cc: Michael Hennerich<michael.hennerich@analog.com>
+> cc: Michael Buesch<mb@bu3sch.de>
+>
+> Signed-off-by: Joe Perches<joe@perches.com>
+Acked-by: Michael Hennerich <michael.hennerich@analog.com>
+> ---
+>   MAINTAINERS |    8 ++++----
+>   1 files changed, 4 insertions(+), 4 deletions(-)
+>
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 657fabe..0ad8ff0 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -343,7 +343,7 @@ S:	Supported
+>   F:	drivers/mfd/adp5520.c
+>   F:	drivers/video/backlight/adp5520_bl.c
+>   F:	drivers/leds/leds-adp5520.c
+> -F:	drivers/gpio/adp5520-gpio.c
+> +F:	drivers/gpio/gpio-adp5520.c
+>   F:	drivers/input/keyboard/adp5520-keys.c
+>
+>   ADP5588 QWERTY KEYPAD AND IO EXPANDER DRIVER (ADP5588/ADP5587)
+> @@ -352,7 +352,7 @@ L:	device-drivers-devel@blackfin.uclinux.org
+>   W:	http://wiki.analog.com/ADP5588
+>   S:	Supported
+>   F:	drivers/input/keyboard/adp5588-keys.c
+> -F:	drivers/gpio/adp5588-gpio.c
+> +F:	drivers/gpio/gpio-adp5588.c
+>
+>   ADP8860 BACKLIGHT DRIVER (ADP8860/ADP8861/ADP8863)
+>   M:	Michael Hennerich<michael.hennerich@analog.com>
+> @@ -1587,11 +1587,11 @@ S:	Maintained
+>   F:	Documentation/sound/alsa/Bt87x.txt
+>   F:	sound/pci/bt87x.c
+>
+> -BT8XXGPIO DRIVER
+> +BT8XX GPIO DRIVER
+>   M:	Michael Buesch<mb@bu3sch.de>
+>   W:	http://bu3sch.de/btgpio.php
+>   S:	Maintained
+> -F:	drivers/gpio/bt8xxgpio.c
+> +F:	drivers/gpio/gpio-bt8xx.c
+>
+>   BTRFS FILE SYSTEM
+>   M:	Chris Mason<chris.mason@oracle.com>
 
-We have not yet created support for the PCI bridge (or even verified
-its existence on the chip). These numbers are derived bit by bit from
-vendor-published kernel sources and rather intended as a reference in
-case somebody wishes to try and implement PCI support.
 
-All the peripherals on these chips that I know of are statically
-mapped platform devices programmed via MMIO registers. There may be
-some boards which have support for external PCI devices, but I haven't
-seen them.
+-- 
+Greetings,
+Michael
 
-Best,
-Alexey
+--
+Analog Devices GmbH      Wilhelm-Wagenfeld-Str. 6      80807 Muenchen
+Sitz der Gesellschaft: Muenchen; Registergericht: Muenchen HRB 40368;
+Geschaeftsfuehrer:Dr.Carsten Suckrow, Thomas Wessel, William A. Martin,
+Margaret Seif
+
+
