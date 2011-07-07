@@ -1,43 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754364Ab1GGSyr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 14:54:47 -0400
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:29452 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752466Ab1GGSyo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 14:54:44 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: Lzna1k8VM1nS2jagTDE9fLo_NmTOAOfGpwLCxvvKFaI4Lu8
- 7XU7rzCW3nd7K.jeLFtL6sxXzakvZBo9v0FfKFj5aHV_TR2ismtVHeIF_WIj
- GrK78YD80hGxB1C49OxwhCWqr7EaUIRFtwEdzhL.mHXWrWr5ohxPYP1XyEaK
- kLp60qSpZxrmAX_FnUnfaMXu4ZudVhd2G0xKfLPlPrhc8PUONpGz5UVt554F
- 8exWfAZf2NvgwjieGZxC1J6IANJ3v9plNnJSa3Eh2lYKbPAEBCK3lVeS4KoN
- jqXt5321OXbweJ2SIeqiI1rGPcwMZO_ZUrR8CzHKqZGmkja4-
-X-Yahoo-Newman-Property: ymail-3
-Date: Thu, 7 Jul 2011 13:54:42 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Ben Greear <greearb@candelatech.com>
-cc: penberg@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/2] slub: Enable backtrace for create/delete
- points.
-In-Reply-To: <1310063797-14914-1-git-send-email-greearb@candelatech.com>
-Message-ID: <alpine.DEB.2.00.1107071352120.21719@router.home>
-References: <1310063797-14914-1-git-send-email-greearb@candelatech.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754260Ab1GGS4I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 14:56:08 -0400
+Received: from waste.org ([173.11.57.241]:51376 "EHLO waste.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752798Ab1GGS4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 14:56:03 -0400
+Subject: Re: [PATCH] slub: reduce overhead of slub_debug
+From: Matt Mackall <mpm@selenic.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>,
+        Marcin Slusarz <marcin.slusarz@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, rientjes@google.com,
+        linux-mm@kvack.org
+In-Reply-To: <1310064771.21902.55.camel@jaguar>
+References: <20110626193918.GA3339@joi.lan>
+	 <alpine.DEB.2.00.1107072106560.6693@tiger>
+	 <alpine.DEB.2.00.1107071314320.21719@router.home>
+	 <1310064771.21902.55.camel@jaguar>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 07 Jul 2011 13:55:59 -0500
+Message-ID: <1310064959.3637.12.camel@calx>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Jul 2011, greearb@candelatech.com wrote:
+On Thu, 2011-07-07 at 21:52 +0300, Pekka Enberg wrote:
+> On Thu, 7 Jul 2011, Pekka Enberg wrote:
+> > > Looks good to me. Christoph, David, ?
+> 
+> On Thu, 2011-07-07 at 13:17 -0500, Christoph Lameter wrote:
+> > The reason debug code is there is because it is useless overhead typically
+> > not needed. There is no point in optimizing the code that is not run in
+> > production environments unless there are gross performance issues that
+> > make debugging difficult. A performance patch for debugging would have to
+> > cause significant performance improvements. This patch does not do that
+> > nor was there such an issue to be addressed in the first place.
+> 
+> Is there something technically wrong with the patch? Quoting the patch
+> email:
+> 
+>   (Compiling some project with different options)
+>                                  make -j12    make clean
+>   slub_debug disabled:             1m 27s       1.2 s
+>   slub_debug enabled:              1m 46s       7.6 s
+>   slub_debug enabled + this patch: 1m 33s       3.2 s
+> 
+>   check_bytes still shows up high, but not always at the top.
+> 
+> That's significant enough speedup for me!
 
-> +#define TRACK_ADDRS_COUNT 16
+We're not going to make any progress on this; Christoph conveniently
+forgets the counterarguments from week to week.
 
-16 may be a bit high. In the past we used 4 or 6 in the implementation
-for slab.
+-- 
+Mathematics is the supreme nostalgia of our time.
 
-Acked-by: Christoph Lameter <cl@linux.com>
 
