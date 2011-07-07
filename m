@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754856Ab1GGRJG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 13:09:06 -0400
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:37336 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754797Ab1GGRJB (ORCPT
+	id S1754917Ab1GGRJY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 13:09:24 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41745 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750958Ab1GGRJW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 13:09:01 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: Todd Poynor <toddpoynor@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/3] ARM: Call idle notifiers
-Organization: Texas Instruments, Inc.
-References: <1309229190-25006-1-git-send-email-toddpoynor@google.com>
-	<1309229190-25006-3-git-send-email-toddpoynor@google.com>
-Date: Thu, 07 Jul 2011 10:08:55 -0700
-In-Reply-To: <1309229190-25006-3-git-send-email-toddpoynor@google.com> (Todd
-	Poynor's message of "Mon, 27 Jun 2011 19:46:29 -0700")
-Message-ID: <874o2ydnmg.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Thu, 7 Jul 2011 13:09:22 -0400
+Subject: Re: [patch 00/17] CFS Bandwidth Control v7.1
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>,
+        linux-kernel@vger.kernel.org,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Pavel Emelyanov <xemul@openvz.org>, Hu Tao <hutao@cn.fujitsu.com>
+In-Reply-To: <m2iprexcc8.fsf@firstfloor.org>
+References: <20110707053036.173186930@google.com>
+	 <20110707112302.GB8227@elte.hu> <1310049528.3282.583.camel@twins>
+	 <m2iprexcc8.fsf@firstfloor.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 07 Jul 2011 19:08:57 +0200
+Message-ID: <1310058537.3282.585.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Todd Poynor <toddpoynor@google.com> writes:
+On Thu, 2011-07-07 at 09:52 -0700, Andi Kleen wrote:
+> Peter Zijlstra <a.p.zijlstra@chello.nl> writes:
+> >
+> > +static void account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
+> > +               unsigned long delta_exec)
+> > +{
+> > +       if (!cfs_rq->runtime_enabled)
+> > +               return;
+> > +
+> > +       cfs_rq->runtime_remaining -= delta_exec;
+> > +       if (cfs_rq->runtime_remaining > 0)
+> > +               return;
+> > +
+> > +       assign_cfs_rq_runtime(cfs_rq);
+> > +}
+> >
+> > generate a call, only to then take the first branch out, marking that
+> 
+> You would need a *LOT* of calls to make up for 9%.
+> 
+> Maybe it's something else? Some profiling first before optimization
+> is probably a good idea.
 
-> Change-Id: Id833e61c13baa1783705ac9e9046d1f0cc90c95e
-> Signed-off-by: Todd Poynor <toddpoynor@google.com>
-
-I don't think the notifiers should be called in ARM-generic code.
-As discussed w/Colin in his proposal for the CPU PM notifiers, the
-platform-specific code should decide when to run notifier chain.
-
-To give an example, on OMAP we wouldn't want the notifier chain to be
-run until the OMAP PM core has programmed the next states of the various
-power domains.  That way the notifier functions could check the next
-state to determine if their powerdomain is going to retention or off and
-decide whether or not a context save/restore will be needed.
-
-Kevin
-
-
-> ---
->  arch/arm/kernel/process.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
-> index 5e1e541..1b9101e 100644
-> --- a/arch/arm/kernel/process.c
-> +++ b/arch/arm/kernel/process.c
-> @@ -184,6 +184,7 @@ void cpu_idle(void)
->  	while (1) {
->  		tick_nohz_stop_sched_tick(1);
->  		leds_event(led_idle_start);
-> +		idle_notifier_call_chain(IDLE_START);
->  		while (!need_resched()) {
->  #ifdef CONFIG_HOTPLUG_CPU
->  			if (cpu_is_offline(smp_processor_id()))
-> @@ -208,6 +209,7 @@ void cpu_idle(void)
->  			}
->  		}
->  		leds_event(led_idle_end);
-> +		idle_notifier_call_chain(IDLE_END);
->  		tick_nohz_restart_sched_tick();
->  		preempt_enable_no_resched();
->  		schedule();
+This is the 1.5% case where the feature is compiled in but not used.
