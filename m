@@ -1,87 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756261Ab1GGNT6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 09:19:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58486 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754992Ab1GGNTz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 09:19:55 -0400
-Date: Thu, 7 Jul 2011 15:19:54 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "Justin P. Mattock" <justinmattock@gmail.com>, Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2]drivers:staging:rtl typo fix encryptiong to
- encryption.
-In-Reply-To: <1309927897-25404-2-git-send-email-justinmattock@gmail.com>
-Message-ID: <alpine.LNX.2.00.1107071519380.11049@pobox.suse.cz>
-References: <1309927897-25404-1-git-send-email-justinmattock@gmail.com> <1309927897-25404-2-git-send-email-justinmattock@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756575Ab1GGNYf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 09:24:35 -0400
+Received: from 17.mo1.mail-out.ovh.net ([87.98.179.142]:56642 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755650Ab1GGNYe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 09:24:34 -0400
+X-Greylist: delayed 1202 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Jul 2011 09:24:34 EDT
+Message-ID: <4E15AF1C.7080103@example.com>
+Date: Thu, 07 Jul 2011 15:05:32 +0200
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110303 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Christoph Lameter <cl@linux.com>
+CC: Jonathan Cameron <jic23@cam.ac.uk>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
+Subject: Re: Build issue with linux next. duplicate member _count in mm_types.h
+References: <4E143120.2020501@cam.ac.uk> <alpine.DEB.2.00.1107060933460.17202@router.home>
+In-Reply-To: <alpine.DEB.2.00.1107060933460.17202@router.home>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 12619930582756323629
+X-Ovh-Remote: 178.36.17.0 (178-36-17-0.adsl.inetia.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -270
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06.07.2011 16:46, Christoph Lameter wrote:
+> On Wed, 6 Jul 2011, Jonathan Cameron wrote:
+>
+>> Getting:
+>>
+>>    CHK     include/linux/version.h
+>>    CHK     include/generated/utsrelease.h
+>> make[1]: `include/generated/mach-types.h' is up to date.
+>>    CC      arch/arm/kernel/asm-offsets.s
+>> In file included from include/linux/sched.h:64:0,
+>>                   from arch/arm/kernel/asm-offsets.c:13:
+>> include/linux/mm_types.h:74:15: error: duplicate member '_count'
+>> make[1]: *** [arch/arm/kernel/asm-offsets.s] Error 1
+>> make: *** [prepare0] Error 2
 
-[ staging -- CCing Greg ]
+I have the same error on x86_64. I'll try again withj your patch.
 
-On Tue, 5 Jul 2011, Justin P. Mattock wrote:
+Regards,
 
-> From: "Justin P. Mattock" <justinmattock@gmail.com>
-> 
-> The beow patch fixes a typo.
-> 
-> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-> 
-> ---
->  drivers/staging/rtl8187se/ieee80211/ieee80211_tx.c |    2 +-
->  drivers/staging/rtl8192e/ieee80211/ieee80211_tx.c  |    2 +-
->  drivers/staging/rtl8192u/ieee80211/ieee80211_tx.c  |    2 +-
->  3 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/staging/rtl8187se/ieee80211/ieee80211_tx.c b/drivers/staging/rtl8187se/ieee80211/ieee80211_tx.c
-> index 6cb31e1..552115c 100644
-> --- a/drivers/staging/rtl8187se/ieee80211/ieee80211_tx.c
-> +++ b/drivers/staging/rtl8187se/ieee80211/ieee80211_tx.c
-> @@ -445,7 +445,7 @@ int ieee80211_rtl_xmit(struct sk_buff *skb,
->  		(CFG_IEEE80211_COMPUTE_FCS | CFG_IEEE80211_RESERVE_FCS))
->  			bytes_per_frag -= IEEE80211_FCS_LEN;
->  
-> -		/* Each fragment may need to have room for encryptiong pre/postfix */
-> +		/* Each fragment may need to have room for encryption pre/postfix */
->  		if (encrypt)
->  			bytes_per_frag -= crypt->ops->extra_prefix_len +
->  				crypt->ops->extra_postfix_len;
-> diff --git a/drivers/staging/rtl8192e/ieee80211/ieee80211_tx.c b/drivers/staging/rtl8192e/ieee80211/ieee80211_tx.c
-> index 995346d..d13be4c 100644
-> --- a/drivers/staging/rtl8192e/ieee80211/ieee80211_tx.c
-> +++ b/drivers/staging/rtl8192e/ieee80211/ieee80211_tx.c
-> @@ -762,7 +762,7 @@ int ieee80211_rtl_xmit(struct sk_buff *skb, struct net_device *dev)
->  		(CFG_IEEE80211_COMPUTE_FCS | CFG_IEEE80211_RESERVE_FCS))
->  			bytes_per_frag -= IEEE80211_FCS_LEN;
->  
-> -		/* Each fragment may need to have room for encryptiong pre/postfix */
-> +		/* Each fragment may need to have room for encryption pre/postfix */
->  		if (encrypt)
->  			bytes_per_frag -= crypt->ops->extra_prefix_len +
->  				crypt->ops->extra_postfix_len;
-> diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211_tx.c b/drivers/staging/rtl8192u/ieee80211/ieee80211_tx.c
-> index ec7845e..59c45a5 100644
-> --- a/drivers/staging/rtl8192u/ieee80211/ieee80211_tx.c
-> +++ b/drivers/staging/rtl8192u/ieee80211/ieee80211_tx.c
-> @@ -723,7 +723,7 @@ int ieee80211_xmit(struct sk_buff *skb, struct net_device *dev)
->  		(CFG_IEEE80211_COMPUTE_FCS | CFG_IEEE80211_RESERVE_FCS))
->  			bytes_per_frag -= IEEE80211_FCS_LEN;
->  
-> -		/* Each fragment may need to have room for encryptiong pre/postfix */
-> +		/* Each fragment may need to have room for encryption pre/postfix */
->  		if (encrypt)
->  			bytes_per_frag -= crypt->ops->extra_prefix_len +
->  				crypt->ops->extra_postfix_len;
-> -- 
-> 1.7.6
-> 
+Piotr Hosowicz
 
 -- 
-Jiri Kosina
-SUSE Labs
+Zatrzymuje siê samochód na sejmowym parkingu. Podchodzi do niego 
+ochroniarz i mówi:
+- Pan tu parkuje?! Tu Sejm ... Ministrowie, politycy, pos³owiei ...
+- Dziêki, w³±czê alarm.
+NP: Nemo -
+NB: 3.0.0-rc6
