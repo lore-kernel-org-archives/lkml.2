@@ -1,106 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754663Ab1GGI2Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 04:28:25 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:53316 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753306Ab1GGI2W convert rfc822-to-8bit (ORCPT
+	id S1755034Ab1GGI3H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 04:29:07 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:50358 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753784Ab1GGI3F convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 04:28:22 -0400
+	Thu, 7 Jul 2011 04:29:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <1310022039-25599-1-git-send-email-ravishankarkm32@gmail.com>
-References: <1310022039-25599-1-git-send-email-ravishankarkm32@gmail.com>
-Date: Thu, 7 Jul 2011 12:28:21 +0400
-Message-ID: <CAHj3AVkz11sxubOyoJBwh6aa+SO1TGh3rYCwPSr-SJ8V1fF4EQ@mail.gmail.com>
-Subject: Re: [PATCH 5/5] Staging: comedi: fix warning issue in unioxx5.c
-From: Denis Kirjanov <kirjanov@gmail.com>
-To: Ravishankar <ravishankarkm32@gmail.com>
-Cc: gregkh@suse.de, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <e5bfdcabc4041d24277a2453ecc2690072cfdacf.1309997525.git.joe@perches.com>
+References: <e9742e1fca57477517fdb6ea110221d6292eed9c.1309997525.git.joe@perches.com>
+ <e5bfdcabc4041d24277a2453ecc2690072cfdacf.1309997525.git.joe@perches.com>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Thu, 7 Jul 2011 16:28:44 +0800
+Message-ID: <CAMPhdO_ifW8ivha+_AOo-oNhTMuwGzLrQYP2r-q6iQUp+fb20Q@mail.gmail.com>
+Subject: Re: [PATCH next 2/2] MAINTAINERS: Update PXA2xx/PXA3xx SUPPORT patterns
+To: Joe Perches <joe@perches.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Wan ZongShun <mcuos.com@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I wonder if this patch improves code readability
+On Thu, Jul 7, 2011 at 8:28 AM, Joe Perches <joe@perches.com> wrote:
+> commit ca632f556697 ("spi: reorganize drivers")
+> renamed the files, update the MAINTAINERS patterns.
+>
+> cc: Grant Likely <grant.likely@secretlab.ca>
+> cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+> cc: Wan ZongShun <mcuos.com@gmail.com>
+> cc: Eric Miao <eric.y.miao@gmail.com>
+> cc: Russell King <linux@arm.linux.org.uk>
+>
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-On Thu, Jul 7, 2011 at 11:00 AM, Ravishankar <ravishankarkm32@gmail.com> wrote:
-> From: Ravishankar <ravi.shankar@greenturtles.in>
->
-> This is a patch to the unioxx5.c file that fixes up a  warning:line over 80 charcter found by the checkpatch.pl tool
->
-> Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
+Acked-by: Eric Miao <eric.y.miao@gmail.com>
+
 > ---
->  drivers/staging/comedi/drivers/unioxx5.c |   25 ++++++++++++++++++-------
->  1 files changed, 18 insertions(+), 7 deletions(-)
+> Â MAINTAINERS | Â  Â 6 +++---
+> Â 1 files changed, 3 insertions(+), 3 deletions(-)
 >
-> diff --git a/drivers/staging/comedi/drivers/unioxx5.c b/drivers/staging/comedi/drivers/unioxx5.c
-> index 598884e..9b311c7 100644
-> --- a/drivers/staging/comedi/drivers/unioxx5.c
-> +++ b/drivers/staging/comedi/drivers/unioxx5.c
-> @@ -75,8 +75,13 @@ Devices: [Fastwel] UNIOxx-5 (unioxx5),
->  /* 'private' structure for each subdevice */
->  struct unioxx5_subd_priv {
->        int usp_iobase;
-> -       unsigned char usp_module_type[12];      /* 12 modules. each can be 70L or 73L */
-> -       unsigned char usp_extra_data[12][4];    /* for saving previous written value for analog modules */
-> +       unsigned char usp_module_type[12];      /* 12 modules. each can be 70L
-> +                                                * or 73L
-> +                                               */
-> +       unsigned char usp_extra_data[12][4];    /* for saving previous written
-> +                                                * value for analog modules
-> +                                               */
-> +
->        unsigned char usp_prev_wr_val[3];       /* previous written value */
->        unsigned char usp_prev_cn_val[3];       /* previous channel value */
->  };
-> @@ -398,7 +402,10 @@ static int __unioxx5_digital_read(struct unioxx5_subd_priv *usp,
->        *data &= mask;
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 0ad8ff0..4e5cc19 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -1123,7 +1123,7 @@ F: Â  Â  Â  Â drivers/watchdog/nuc900_wdt.c
+> Â F: Â  Â  drivers/net/arm/w90p910_ether.c
+> Â F: Â  Â  drivers/mtd/nand/nuc900_nand.c
+> Â F: Â  Â  drivers/rtc/rtc-nuc900.c
+> -F: Â  Â  drivers/spi/spi_nuc900.c
+> +F: Â  Â  drivers/spi/spi-nuc900.c
+> Â F: Â  Â  drivers/usb/host/ehci-w90x900.c
+> Â F: Â  Â  drivers/video/nuc900fb.c
 >
->        if (channel_offset > 1)
-> -               channel -= 2 << channel_offset; /* this operation is created for correct readed value to 0 or 1 */
-> +               channel -= 2 << channel_offset; /* this operation is created for
-> +                                                * correct readed value to
-> +                                                * 0 or 1
-> +                                               */
+> @@ -1321,7 +1321,7 @@ F: Â  Â  Â  Â drivers/net/macb.*
+> Â ATMEL SPI DRIVER
+> Â M: Â  Â  Nicolas Ferre <nicolas.ferre@atmel.com>
+> Â S: Â  Â  Supported
+> -F: Â  Â  drivers/spi/atmel_spi.*
+> +F: Â  Â  drivers/spi/spi-atmel.c
 >
->        *data >>= channel;
->        return 1;
-> @@ -444,7 +451,9 @@ static int __unioxx5_analog_write(struct unioxx5_subd_priv *usp,
->        usp->usp_extra_data[module][i] = (unsigned char)((*data & 0xFF00) >> 8);
->
->        /* while(!((inb(usp->usp_iobase + 0)) & TxBE)); */
-> -       outb(module + 1, usp->usp_iobase + 5);  /* sending module number to card(1 .. 12) */
-> +       outb(module + 1, usp->usp_iobase + 5);  /* sending module number
-> +                                                * to card (1..12)
-> +                                               */
->        outb('W', usp->usp_iobase + 6); /* sends (W)rite command to module */
->
->        /* sending for bytes to module(one byte per cycle iteration) */
-> @@ -475,7 +484,9 @@ static int __unioxx5_analog_read(struct unioxx5_subd_priv *usp,
->        }
->
->        __unioxx5_analog_config(usp, channel);
-> -       outb(module_no + 1, usp->usp_iobase + 5);       /* sends module number to card(1 .. 12) */
-> +       outb(module_no + 1, usp->usp_iobase + 5);       /* sends module number
-> +                                                        * to card (1. .12)
-> +                                                       */
->        outb('V', usp->usp_iobase + 6); /* sends to module (V)erify command */
->        control = inb(usp->usp_iobase); /* get control register byte */
->
+> Â ATMEL USBA UDC DRIVER
+> Â M: Â  Â  Nicolas Ferre <nicolas.ferre@atmel.com>
+> @@ -5142,7 +5142,7 @@ L: Â  Â  Â  Â linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+> Â S: Â  Â  Maintained
+> Â F: Â  Â  arch/arm/mach-pxa/
+> Â F: Â  Â  drivers/pcmcia/pxa2xx*
+> -F: Â  Â  drivers/spi/pxa2xx*
+> +F: Â  Â  drivers/spi/spi-pxa2xx*
+> Â F: Â  Â  drivers/usb/gadget/pxa2*
+> Â F: Â  Â  include/sound/pxa2xx-lib.h
+> Â F: Â  Â  sound/arm/pxa*
 > --
-> 1.6.5.2
+> 1.7.6.131.g99019
 >
-> _______________________________________________
-> devel mailing list
-> devel@linuxdriverproject.org
-> http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
 >
-
-
-
--- 
-Regards,
-Denis
