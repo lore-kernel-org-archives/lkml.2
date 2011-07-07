@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752087Ab1GGNtM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 09:49:12 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:51770 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290Ab1GGNtL convert rfc822-to-8bit (ORCPT
+	id S1752992Ab1GGNxU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 09:53:20 -0400
+Received: from mail1.slb.deg.dub.stisp.net ([84.203.253.98]:2419 "HELO
+	mail1.slb.deg.dub.stisp.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751748Ab1GGNxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 09:49:11 -0400
-Subject: Re: [patch 03/17] sched: introduce primitives to account for CFS
- bandwidth tracking
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Hu Tao <hutao@cn.fujitsu.com>, Nikhil Rao <ncrao@google.com>
-In-Reply-To: <20110707053059.981950189@google.com>
-References: <20110707053036.173186930@google.com>
-	 <20110707053059.981950189@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 07 Jul 2011 15:48:44 +0200
-Message-ID: <1310046524.3282.570.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 7 Jul 2011 09:53:16 -0400
+Message-ID: <4E15B9FD.8080003@draigBrady.com>
+Date: Thu, 07 Jul 2011 14:51:57 +0100
+From: =?UTF-8?B?UMOhZHJhaWcgQnJhZHk=?= <P@draigBrady.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Wim Van Sebroeck <wim@iguana.be>, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH 0/2] [RFC] watchdog reboot timeout
+References: <20110706160744.4002.94920.stgit@bhelgaas.mtv.corp.google.com>
+In-Reply-To: <20110706160744.4002.94920.stgit@bhelgaas.mtv.corp.google.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-07-06 at 22:30 -0700, Paul Turner wrote:
-> +config CFS_BANDWIDTH
-> +       bool "CPU bandwidth provisioning for FAIR_GROUP_SCHED"
-> +       depends on EXPERIMENTAL
-> +       depends on FAIR_GROUP_SCHED
-> +       depends on SMP 
+On 06/07/11 17:09, Bjorn Helgaas wrote:
+> I'm looking for comments on these patches.  I'm not really happy with
+> them because they add basically identical code in each driver.  I also
+> don't like the fact that the parameter is not generic, so I have to know
+> which driver will be used on my machine.
 
-I know that UP is quickly becoming extinct, but isn't that a tad
-radical? :-)
+Hmm, so this is protecting the window between watchdog_stop and machine_reset.
+It would be nice to have this as generic code that did WDIOC_SETTIMEOUT
+immediately after (or instead of) shutdown.
+
+Leaving a watchdog enabled across boot does have issues on some systems.
+It was OK for winboond based watchdogs I tested, but for some IBM
+server systems, "weird stuff" happened if the watchdog was left enabled
+across boot.
+
+Just to mention the other watchdog boot scenario I often use
+(which does _not_ protect your window above), which is to enable the
+watchdog in the BIOS.  This is more general protection for the
+boot _up_ process.  On a netboot system for example this will mean
+that the system will keep rebooting until whatever switch is
+down etc. is restored. Many systems I've used had support
+for this in the BIOS and those that didn't were quickly updated
+by vendors to do so.
+
+A related issue I noticed with iTCO_wdt is that something
+else in the kernel disables the iTCO watchdog (which my BIOS had started).
+This is undesirable for obvious reasons.
+
+cheers,
+Pádraig.
