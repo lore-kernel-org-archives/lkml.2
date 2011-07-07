@@ -1,55 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752935Ab1GGWC0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 18:02:26 -0400
-Received: from mga11.intel.com ([192.55.52.93]:48982 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752759Ab1GGWCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 18:02:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,495,1304319600"; 
-   d="scan'208";a="25145431"
-From: james_p_freyensee@linux.intel.com
-To: linux-next@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, randy.dunlap@oracle.com,
-        sfr@canb.auug.org.au, christophe.guerard@intel.com,
-        pranav.k.sanghadia@intel.com, james_p_freyensee@linux.intel.com
-Subject: [PATCH] Add PCI config dependency for PTI.
-Date: Thu,  7 Jul 2011 15:02:46 -0700
-Message-Id: <1310076166-22383-1-git-send-email-james_p_freyensee@linux.intel.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <james_p_freyensee@linux.intel.com>
-References: <james_p_freyensee@linux.intel.com>
+	id S1753201Ab1GGWG3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 18:06:29 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63755 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751601Ab1GGWG2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 18:06:28 -0400
+Date: Fri, 8 Jul 2011 00:06:21 +0200
+From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+To: alan@lxorguk.ukuu.org.uk
+Cc: linux-kernel@vger.kernel.org, greg@kroah.com
+Subject: gma500: Mask out bits not part of the page table base address
+Message-ID: <20110707220621.GA6922@patrik-macbook>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: J Freyensee <james_p_freyensee@linux.intel.com>
+Otherwise we can't ioremap the gtt and the screen gets garbled.
 
-Intel-Atom implementation of PTI will not work with PCI
-configured off, so the pti driver should not be compiled
-in the event someone does not enable PCI in the linux kernel.
-
-Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
-Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
-Acked-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
+Signed-off-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
 ---
- drivers/misc/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index 4e349cd..7fd32a6 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -146,6 +146,7 @@ config PHANTOM
+diff --git a/drivers/staging/gma500/gtt.c b/drivers/staging/gma500/gtt.c
+index 28f2261..78dd01b 100644
+--- a/drivers/staging/gma500/gtt.c
++++ b/drivers/staging/gma500/gtt.c
+@@ -397,7 +397,7 @@ int psb_gtt_init(struct drm_device *dev, int resume)
+ 	/* The root resource we allocate address space from */
+ 	dev_priv->gtt_initialized = 1;
  
- config INTEL_MID_PTI
- 	tristate "Parallel Trace Interface for MIPI P1149.7 cJTAG standard"
-+	depends on PCI
- 	default n
- 	help
- 	  The PTI (Parallel Trace Interface) driver directs
--- 
-1.7.0.4
-
+-	pg->gtt_phys_start = dev_priv->pge_ctl;
++	pg->gtt_phys_start = dev_priv->pge_ctl & PAGE_MASK;
+ 	
+ 	/*
+ 	 *	FIXME: video mmu has hw bug to access 0x0D0000000,
