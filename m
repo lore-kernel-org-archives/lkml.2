@@ -1,48 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756394Ab1GGNGN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 09:06:13 -0400
-Received: from smtp-out003.kontent.com ([81.88.40.217]:47905 "EHLO
-	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755577Ab1GGNGM (ORCPT
+	id S1756516Ab1GGNIZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 09:08:25 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:45432 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755982Ab1GGNIY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 09:06:12 -0400
-From: Oliver Neukum <oliver@neukum.org>
-To: Daniel Mack <zonque@gmail.com>
-Subject: Re: Allocating buffers for USB transfers (again)
-Date: Thu, 7 Jul 2011 15:08:43 +0200
-User-Agent: KMail/1.13.5 (Linux/3.0.0-rc5-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: linux-usb@vger.kernel.org, alsa-devel@alsa-project.org,
-        Takashi Iwai <tiwai@suse.de>, Clemens Ladisch <clemens@ladisch.de>,
-        florian@mickler.org, pedrib@gmail.com, William Light <wrl@illest.net>,
-        Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org
-References: <CACTFLANCYMXH=z+NxEF0aqpMGZp21Q16_uB=J3rndM3pW74qeA@mail.gmail.com> <201107071433.42081.oliver@neukum.org> <CACTFLAN=GOw8KLtvVBM6omvYzW3RBHggv-Kc2_2QVD--M-Jxkg@mail.gmail.com>
-In-Reply-To: <CACTFLAN=GOw8KLtvVBM6omvYzW3RBHggv-Kc2_2QVD--M-Jxkg@mail.gmail.com>
+	Thu, 7 Jul 2011 09:08:24 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107071508.43988.oliver@neukum.org>
+In-Reply-To: <1310011371.3309.2.camel@offbook>
+References: <1310011371.3309.2.camel@offbook>
+Date: Thu, 7 Jul 2011 16:08:22 +0300
+Message-ID: <CAGTPOqdm7_PP68mKLQT3gigmUMD6wpoKk3sSWfXk9jeJPX+_6A@mail.gmail.com>
+Subject: Re: [PATCH] uml: free resources
+From: Vitaliy Ivanov <vitalivanov@gmail.com>
+To: dave@gnu.org
+Cc: Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        uml <user-mode-linux-devel@lists.sourceforge.net>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Jim Meyering <meyering@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 7. Juli 2011, 14:38:51 schrieb Daniel Mack:
-> On Thu, Jul 7, 2011 at 2:33 PM, Oliver Neukum <oliver@neukum.org> wrote:
-> 
-> > PS:  Do you still see this if you enable 64bit DMA for EHCI?
-> 
-> The problem is that I personally don't see that issue at all. I even
-> installed 4GB of RAM to my development machine last year to be able to
-> reproduce this, but I can't, even when the memory allocator is under
-> heavy load. The only people who see this effect are Pedro Ribeiro and
-> William Light (both in Cc:), and both have been very helpful in trying
-> patches and reporting back in detail. Which instructions could we
-> probably give to these people to finally hunt this issue down?
+On Thu, Jul 7, 2011 at 7:02 AM, Davidlohr Bueso <dave@gnu.org> wrote:
+> From: Davidlohr Bueso <dave@gnu.org>
+>
+> When creating the temp file there's a memory and file descriptor leak upon error.
+>
+> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+> ---
+>  arch/um/os-Linux/mem.c |    6 ++++--
+>  1 files changed, 4 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/um/os-Linux/mem.c b/arch/um/os-Linux/mem.c
+> index e696144..62878cf 100644
+> --- a/arch/um/os-Linux/mem.c
+> +++ b/arch/um/os-Linux/mem.c
+> @@ -176,7 +176,7 @@ static int __init make_tempfile(const char *template, char **out_tempname,
+>
+>        find_tempdir();
+>        if ((tempdir == NULL) || (strlen(tempdir) >= MAXPATHLEN))
+> -               return -1;
+> +               goto out;
+>
+>        if (template[0] != '/')
+>                strcpy(tempname, tempdir);
+> @@ -191,13 +191,15 @@ static int __init make_tempfile(const char *template, char **out_tempname,
+>        }
+>        if (do_unlink && (unlink(tempname) < 0)) {
+>                perror("unlink");
+> -               goto out;
+> +               goto close;
+>        }
+>        if (out_tempname) {
+>                *out_tempname = tempname;
+>        } else
+>                free(tempname);
+>        return fd;
+> +close:
+> +       close(fd);
+>  out:
+>        free(tempname);
+>        return -1;
+> --
 
-Do they have an IOMMU or are they using bounce buffers?
-If the latter, you might be able to reproduce it if you disable your
-IOMMU.
-
-	Regards
-		Oliver
+Reviewed-by: Vitaliy Ivanov <vitalivanov@gmail.com>
