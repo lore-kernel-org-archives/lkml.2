@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754Ab1GGC1T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 22:27:19 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:51446 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753081Ab1GGC1S (ORCPT
+	id S1754682Ab1GGCke (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 22:40:34 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57633 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752916Ab1GGCkd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 22:27:18 -0400
-MIME-Version: 1.0
-Date: Wed, 6 Jul 2011 19:19:59 -0700
-X-Google-Sender-Auth: uB6JG_mUUzl6wcWE6XIKqegTilg
-Message-ID: <CAN_5kQDTweB2GLvwgjN+BQuqnhFUp+MOcQr=ZW=8C6XSsC8XtA@mail.gmail.com>
-Subject: [PATCH] remove unnecessary cache flush on v6 copypage
-From: heechul Yun <heechul@illinois.edu>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 6 Jul 2011 22:40:33 -0400
+Subject: Re: [PATCH] pch_dma: Fix channel locking
+From: Vinod Koul <vkoul@infradead.org>
+To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Cc: Alexander Stein <alexander.stein@systec-electronic.com>,
+        "Wang, Yong Y" <yong.y.wang@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+        "Wang, Qi" <qi.wang@intel.com>,
+        "toshiharu-linux@dsn.okisemi.com" <toshiharu-linux@dsn.okisemi.com>
+In-Reply-To: <4E0AFDCA.3050908@dsn.okisemi.com>
+References: <1308755133-8605-1-git-send-email-alexander.stein@systec-electronic.com>
+	 <201106271622.52763.alexander.stein@systec-electronic.com>
+	 <4E09AE3A.8050306@dsn.okisemi.com>
+	 <201106290828.06508.alexander.stein@systec-electronic.com>
+	 <4E0AFDCA.3050908@dsn.okisemi.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Intel Corp
+Date: Thu, 07 Jul 2011 07:08:51 +0530
+Message-ID: <1310002731.20150.5.camel@psiaudioba-mobl1>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ARM: mm: remove unnecessary cache flush on v6 copypage
+On Wed, 2011-06-29 at 19:26 +0900, Tomoya MORINAGA wrote:
+> (2011/06/29 15:28), Alexander Stein wrote:
+> > Are you sure you applied the patch? There shouldn't be a _raw_spin_lock_bh
+> > here.
+> > 
+> 
+> You are right.
+> I tested again, as a result,
+> I could confirm that after using your patch,
+> kernel error message doesn't logged at all.
+> It seems my patching yesterday was failed or operation mistake.
+> Sorry for the in inconvenience.
+> 
+Care to send tested your by, before I apply this patch?
 
-Signed-off-by: Heechul Yun <heechul@illinois.edu>
---
-arch/arm/mm/copypage-v6.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+-- 
+~Vinod Koul
+Intel Corp.
 
-diff --git a/arch/arm/mm/copypage-v6.c b/arch/arm/mm/copypage-v6.c
-index bdba6c6..63cca00 100644
---- a/arch/arm/mm/copypage-v6.c
-+++ b/arch/arm/mm/copypage-v6.c
-@@ -41,7 +41,6 @@ static void v6_copy_user_highpage_nonaliasing(struct page *to,
-       kfrom = kmap_atomic(from, KM_USER0);
-       kto = kmap_atomic(to, KM_USER1);
-       copy_page(kto, kfrom);
--       __cpuc_flush_dcache_area(kto, PAGE_SIZE);
-       kunmap_atomic(kto, KM_USER1);
-       kunmap_atomic(kfrom, KM_USER0);
- }
-
---
-
-Heechul
