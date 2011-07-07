@@ -1,53 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756574Ab1GGNMK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 09:12:10 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:40277 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755577Ab1GGNMG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 09:12:06 -0400
-Date: Thu, 07 Jul 2011 06:11:59 -0700 (PDT)
-Message-Id: <20110707.061159.1960862007945782564.davem@davemloft.net>
-To: loke.chetan@gmail.com
-Cc: netdev@vger.kernel.org, eric.dumazet@gmail.com, joe@perches.com,
-        bhutchings@solarflare.com, shemminger@vyatta.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 net-next af-packet 1/2] Enhance af-packet to provide
- (near zero)lossless packet capture functionality.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CAAsGZS4Y=-GSmP+2iYtd+V3RcE2+PpaStBzW7R7TDip7U-rdvA@mail.gmail.com>
-References: <CAAsGZS67G8H5NLBxQTY88+T1cRQ3aiwBXK5qa8SJ_TbQ7xqvhw@mail.gmail.com>
-	<20110707.001301.1054777374178479078.davem@davemloft.net>
-	<CAAsGZS4Y=-GSmP+2iYtd+V3RcE2+PpaStBzW7R7TDip7U-rdvA@mail.gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 07 Jul 2011 06:12:02 -0700 (PDT)
+	id S1756584Ab1GGNO6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 09:14:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57872 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756548Ab1GGNO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 09:14:57 -0400
+Date: Thu, 7 Jul 2011 15:14:55 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: wzt <wzt.wzt@gmail.com>
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, x86@kernel.org,
+        ak@linux.intel.com, tglx@linutronix.de, hpa@zytor.com
+Subject: Re: [PATCH] x86: Fix memory leak of init_vdso_vars()
+Message-ID: <20110707131455.GB4078@tiehlicka.suse.cz>
+References: <20110705062148.GA6056@program>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110705062148.GA6056@program>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: chetan loke <loke.chetan@gmail.com>
-Date: Thu, 7 Jul 2011 09:04:58 -0400
-
-> On Thu, Jul 7, 2011 at 3:13 AM, David Miller <davem@davemloft.net> wrote:
+On Tue 05-07-11 14:21:48, wzt wrote:
+> Fix memory leak of init_vdso_vars().
 > 
->> Get rid of __packed__, it's going to kill performance on RISC
->> platforms.  If you use __packed__, regardless of the actual alignment,
+> Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
+
+The patch looks correct but it could be cleaned up a bit IMO.
+See bellow.
+
 > 
-> The performance boost has been achieved by amortizing the cost of
-> static spin-wait/poll and not by shrinking the data-set.
+> ---
+>  arch/x86/vdso/vma.c |   14 ++++++++++----
+>  1 files changed, 10 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
+> index 4b5d26f..c6b0308 100644
+> --- a/arch/x86/vdso/vma.c
+> +++ b/arch/x86/vdso/vma.c
+> @@ -44,19 +44,19 @@ static int __init init_vdso_vars(void)
+>  	vdso_size = npages << PAGE_SHIFT;
+>  	vdso_pages = kmalloc(sizeof(struct page *) * npages, GFP_KERNEL);
+>  	if (!vdso_pages)
+> -		goto oom;
+> +		goto oom1;
 
-Chetan, if you're implementing something for performance reasons,
-getting rid of packed is non-negotiable.
+I wouldn't rename the label. It just makes the patch bigger for no good
+reason. The new naming is not anyhow useful.
 
-We pass data structures between userspace and the kernel all the
-time, and without __packed__.  We have mechanisms to ensure the
-size of the individual data types, and we have mechanisms to make
-sure 64-bit datums get aligned even on x86 (see "aligned_u64" and
-friends")
+>  	for (i = 0; i < npages; i++) {
+>  		struct page *p;
+>  		p = alloc_page(GFP_KERNEL);
+>  		if (!p)
+> -			goto oom;
+> +			goto oom2;
 
-Again, I can't seriously consider your patch if you keep the packed
-attribute crap in there.
+Waht about goto oom_free_pages instead?
+
+>  		vdso_pages[i] = p;
+>  		copy_page(page_address(p), vdso_start + i*PAGE_SIZE);
+>  	}
+>  
+>  	vbase = vmap(vdso_pages, npages, 0, PAGE_KERNEL);
+>  	if (!vbase)
+> -		goto oom;
+> +		goto oom2;
+>  
+>  	if (memcmp(vbase, "\177ELF", 4)) {
+>  		printk("VDSO: I'm broken; not ELF\n");
+> @@ -70,7 +70,13 @@ static int __init init_vdso_vars(void)
+>  	vunmap(vbase);
+>  	return 0;
+>  
+> - oom:
+> +oom2:
+> +	i--;
+> +	for (; i >= 0; i--)
+> +		__free_page(vdso_pages[i]);
+
+Why not 
+	for (; i > 0; i--)
+		__free_page(vdso_pages[i-1]);
+
+> +	__free_page(vdso_pages);
+> +
+> +oom1:
+>  	printk("Cannot allocate vdso\n");
+>  	vdso_enabled = 0;
+>  	return -ENOMEM;
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
