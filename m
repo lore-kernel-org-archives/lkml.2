@@ -1,88 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755583Ab1GGAfB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 20:35:01 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:47417 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754091Ab1GGAe7 convert rfc822-to-8bit (ORCPT
+	id S1755378Ab1GGAgA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 20:36:00 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:46853 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752484Ab1GGAf7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 20:34:59 -0400
+	Wed, 6 Jul 2011 20:35:59 -0400
+Message-ID: <4E14FF6E.6060601@candelatech.com>
+Date: Wed, 06 Jul 2011 17:35:58 -0700
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <e5bfdcabc4041d24277a2453ecc2690072cfdacf.1309997525.git.joe@perches.com>
-References: <e9742e1fca57477517fdb6ea110221d6292eed9c.1309997525.git.joe@perches.com>
- <e5bfdcabc4041d24277a2453ecc2690072cfdacf.1309997525.git.joe@perches.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 6 Jul 2011 18:34:39 -0600
-X-Google-Sender-Auth: Ups1oihyJtmZAOT4lHUYwKfi-G4
-Message-ID: <CACxGe6sMP5zzhWd9RCNxqrY2MhMDEmpZmq4-P+HF_cgY4yj22Q@mail.gmail.com>
-Subject: Re: [PATCH next 2/2] MAINTAINERS: Update PXA2xx/PXA3xx SUPPORT patterns
-To: Joe Perches <joe@perches.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Wan ZongShun <mcuos.com@gmail.com>, Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] sunrpc:  Fix race between work-queue and rpc_killall_tasks.
+References: <1309992581-25199-1-git-send-email-greearb@candelatech.com>	 <1309995932.5447.6.camel@lade.trondhjem.org>	 <4E14F8C4.2010508@candelatech.com> <1309997879.5447.12.camel@lade.trondhjem.org>
+In-Reply-To: <1309997879.5447.12.camel@lade.trondhjem.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 6, 2011 at 6:28 PM, Joe Perches <joe@perches.com> wrote:
-> commit ca632f556697 ("spi: reorganize drivers")
-> renamed the files, update the MAINTAINERS patterns.
+On 07/06/2011 05:17 PM, Trond Myklebust wrote:
+> On Wed, 2011-07-06 at 17:07 -0700, Ben Greear wrote:
+>> On 07/06/2011 04:45 PM, Trond Myklebust wrote:
+>>> On Wed, 2011-07-06 at 15:49 -0700, greearb@candelatech.com wrote:
+>>>> From: Ben Greear<greearb@candelatech.com>
+>>>>
+>>>> The rpc_killall_tasks logic is not locked against
+>>>> the work-queue thread, but it still directly modifies
+>>>> function pointers and data in the task objects.
+>>>>
+>>>> This patch changes the killall-tasks logic to set a flag
+>>>> that tells the work-queue thread to terminate the task
+>>>> instead of directly calling the terminate logic.
+>>>>
+>>>> Signed-off-by: Ben Greear<greearb@candelatech.com>
+>>>> ---
+>>>>
+>>>> NOTE:  This needs review, as I am still struggling to understand
+>>>> the rpc code, and it's quite possible this patch either doesn't
+>>>> fully fix the problem or actually causes other issues.  That said,
+>>>> my nfs stress test seems to run a bit more stable with this patch applied.
+>>>
+>>> Yes, but I don't see why you are adding a new flag, nor do I see why we
+>>> want to keep checking for that flag in the rpc_execute() loop.
+>>> rpc_killall_tasks() is not a frequent operation that we want to optimise
+>>> for.
+>>
+>> I was hoping that if the killall logic never set anything that was also
+>> set by the work-queue thread it would be lock-safe without needing
+>> explicit locking.
+>>
+>> I was a bit concerned that my flags |= KILLME logic would potentially
+>> over-write flags that were being simultaneously written elsewhere
+>> (so maybe I'd have to add a completely new variable for that KILLME flag
+>> to really be safe.)
+>>
+>>>
+>>> How about the following instead?
+>>
+>> I think it still races..more comments below.
+>>
+>>>
+>>> 8<----------------------------------------------------------------------------------
+>>>   From ecb7244b661c3f9d2008ef6048733e5cea2f98ab Mon Sep 17 00:00:00 2001
+>>> From: Trond Myklebust<Trond.Myklebust@netapp.com>
+>>> Date: Wed, 6 Jul 2011 19:44:52 -0400
+>>> Subject: [PATCH] SUNRPC: Fix a race between work-queue and rpc_killall_tasks
+>>>
+>>> Since rpc_killall_tasks may modify the rpc_task's tk_action field
+>>> without any locking, we need to be careful when dereferencing it.
+>>
+>>> +		do_action = task->tk_callback;
+>>> +		task->tk_callback = NULL;
+>>> +		if (do_action == NULL) {
+>>
+>> I think the race still exists, though it would be harder to hit.
+>> What if the killall logic sets task->tk_callback right after you assign do_action, but before
+>> you set tk_callback to NULL?  Or after you set tk_callback to NULL for
+>> that matter.
 >
-> cc: Grant Likely <grant.likely@secretlab.ca>
-> cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-> cc: Wan ZongShun <mcuos.com@gmail.com>
-> cc: Eric Miao <eric.y.miao@gmail.com>
-> cc: Russell King <linux@arm.linux.org.uk>
+> What if it does? The rpc call will continue to execute until it
+> completes.
 >
-> Signed-off-by: Joe Perches <joe@perches.com>
+> rpc_killall_tasks is really only useful for signalling to tasks that are
+> hanging on a completely unresponsive server that we want them to stop.
+> The only case where we really care is in rpc_shutdown_client(), where we
+> sleep and loop anyway.
+>
+> IOW: I really don't care about 'fixing' rpc_killall_tasks to perfection.
+> All I care about is that it doesn't Oops.
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
+That is my concern as well.  I'll try your patch and see if it fixes
+the crashes I'm seeing in this area.
 
-> ---
->  MAINTAINERS |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 0ad8ff0..4e5cc19 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -1123,7 +1123,7 @@ F:        drivers/watchdog/nuc900_wdt.c
->  F:     drivers/net/arm/w90p910_ether.c
->  F:     drivers/mtd/nand/nuc900_nand.c
->  F:     drivers/rtc/rtc-nuc900.c
-> -F:     drivers/spi/spi_nuc900.c
-> +F:     drivers/spi/spi-nuc900.c
->  F:     drivers/usb/host/ehci-w90x900.c
->  F:     drivers/video/nuc900fb.c
->
-> @@ -1321,7 +1321,7 @@ F:        drivers/net/macb.*
->  ATMEL SPI DRIVER
->  M:     Nicolas Ferre <nicolas.ferre@atmel.com>
->  S:     Supported
-> -F:     drivers/spi/atmel_spi.*
-> +F:     drivers/spi/spi-atmel.c
->
->  ATMEL USBA UDC DRIVER
->  M:     Nicolas Ferre <nicolas.ferre@atmel.com>
-> @@ -5142,7 +5142,7 @@ L:        linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
->  S:     Maintained
->  F:     arch/arm/mach-pxa/
->  F:     drivers/pcmcia/pxa2xx*
-> -F:     drivers/spi/pxa2xx*
-> +F:     drivers/spi/spi-pxa2xx*
->  F:     drivers/usb/gadget/pxa2*
->  F:     include/sound/pxa2xx-lib.h
->  F:     sound/arm/pxa*
-> --
-> 1.7.6.131.g99019
->
->
-
-
+Thanks,
+Ben
 
 -- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
+
