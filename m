@@ -1,62 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754260Ab1GGS4I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 14:56:08 -0400
-Received: from waste.org ([173.11.57.241]:51376 "EHLO waste.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752798Ab1GGS4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 14:56:03 -0400
-Subject: Re: [PATCH] slub: reduce overhead of slub_debug
-From: Matt Mackall <mpm@selenic.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>,
-        Marcin Slusarz <marcin.slusarz@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, rientjes@google.com,
-        linux-mm@kvack.org
-In-Reply-To: <1310064771.21902.55.camel@jaguar>
-References: <20110626193918.GA3339@joi.lan>
-	 <alpine.DEB.2.00.1107072106560.6693@tiger>
-	 <alpine.DEB.2.00.1107071314320.21719@router.home>
-	 <1310064771.21902.55.camel@jaguar>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 07 Jul 2011 13:55:59 -0500
-Message-ID: <1310064959.3637.12.camel@calx>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+	id S1754847Ab1GGS5B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 14:57:01 -0400
+Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.123]:36360 "EHLO
+	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753049Ab1GGS5A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 14:57:00 -0400
+Authentication-Results: cdptpa-omtalb.mail.rr.com smtp.user=psusi@cfl.rr.com; auth=pass (PLAIN)
+X-Authority-Analysis: v=1.1 cv=8mDY8c80ZOa76EOwICuS+E2YRQjxDgO9xqUnRMONc7w= c=1 sm=0 a=aAvtD6xXQTUA:10 a=c4X0-pCowHEA:10 a=8nJEP1OIZ-IA:10 a=pg4Dpxby4z7sZisWVyJ9NA==:17 a=b4MA72cPqChLun_l-BIA:9 a=wPNLvfGTeEIA:10 a=pg4Dpxby4z7sZisWVyJ9NA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.242.190.170
+Message-ID: <4E160179.5090304@cfl.rr.com>
+Date: Thu, 07 Jul 2011 14:56:57 -0400
+From: Phillip Susi <psusi@cfl.rr.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.18) Gecko/20110616 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix loopback devices to emit uevent on auto release
+References: <4E0912A9.7030403@cfl.rr.com> <20110706154558.1a87054e.akpm@linux-foundation.org>
+In-Reply-To: <20110706154558.1a87054e.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-07-07 at 21:52 +0300, Pekka Enberg wrote:
-> On Thu, 7 Jul 2011, Pekka Enberg wrote:
-> > > Looks good to me. Christoph, David, ?
-> 
-> On Thu, 2011-07-07 at 13:17 -0500, Christoph Lameter wrote:
-> > The reason debug code is there is because it is useless overhead typically
-> > not needed. There is no point in optimizing the code that is not run in
-> > production environments unless there are gross performance issues that
-> > make debugging difficult. A performance patch for debugging would have to
-> > cause significant performance improvements. This patch does not do that
-> > nor was there such an issue to be addressed in the first place.
-> 
-> Is there something technically wrong with the patch? Quoting the patch
-> email:
-> 
->   (Compiling some project with different options)
->                                  make -j12    make clean
->   slub_debug disabled:             1m 27s       1.2 s
->   slub_debug enabled:              1m 46s       7.6 s
->   slub_debug enabled + this patch: 1m 33s       3.2 s
-> 
->   check_bytes still shows up high, but not always at the top.
-> 
-> That's significant enough speedup for me!
+On 7/6/2011 6:45 PM, Andrew Morton wrote:
+> The patch is missing your Signed-off-by:.  Please review
+> Documentation/SubmittingPatches section 12 to see what this means.
+> Then, if agreeable, please send us that Signed-off-by:, thanks.
 
-We're not going to make any progress on this; Christoph conveniently
-forgets the counterarguments from week to week.
-
--- 
-Mathematics is the supreme nostalgia of our time.
-
-
+Oops, yes of course.  Please add it, or do you need me to resubmit the 
+whole patch?
