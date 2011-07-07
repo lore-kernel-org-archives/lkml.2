@@ -1,89 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab1GGNyf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 09:54:35 -0400
-Received: from 13.mo1.mail-out.ovh.net ([178.33.253.128]:60035 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752477Ab1GGNya (ORCPT
+	id S1753978Ab1GGN4I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 09:56:08 -0400
+Received: from gate.crashing.org ([63.228.1.57]:48638 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752477Ab1GGN4E convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 09:54:30 -0400
-X-Greylist: delayed 2396 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Jul 2011 09:54:30 EDT
-Message-ID: <4E15B840.3080701@example.com>
-Date: Thu, 07 Jul 2011 15:44:32 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110303 Icedove/3.0.11
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: Fwd: Re: Today's Linux Next failed to even start building, I must
- have done something wrong
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 13276893177928708376
-X-Ovh-Remote: 178.36.17.0 (178-36-17-0.adsl.inetia.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -30
+	Thu, 7 Jul 2011 09:56:04 -0400
+Subject: Re: [PATCH v3 1/3] driver core: Add ability for arch code to setup pdev_archdata
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <20110701220900.GA28971@kroah.com>
+Date: Thu, 7 Jul 2011 08:55:44 -0500
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <597354F4-D1D4-4BC0-9251-FDDC31B1E2A1@kernel.crashing.org>
+References: <1308744176-24491-1-git-send-email-galak@kernel.crashing.org> <1308828839-27349-1-git-send-email-galak@kernel.crashing.org> <20110701220900.GA28971@kroah.com>
+To: Greg KH <greg@kroah.com>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, I post once again, my mailer did something wrong.
 
--------- Original Message --------
-Subject: Re: Today's Linux Next failed to even start building, I must 
-have done something wrong
-Date: Thu, 07 Jul 2011 15:28:44 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-To: piotr@hosowicz.com
+On Jul 1, 2011, at 5:09 PM, Greg KH wrote:
 
-On 07.07.2011 14:47, Piotr Hosowicz wrote:
-> Hello,
->
-> I'm not sure - which base source tree should I take to apply the patch?
-> I fail for now with building witch Debian make-kpkg with messages:
->
-> # ...
-> make ARCH=x86_64 prepare
-> make[2]: Wejście do katalogu `/usr/src/linux-3.0-rc6-nx-20110707'
-> scripts/kconfig/conf --silentoldconfig Kconfig
-> make[2]: Opuszczenie katalogu `/usr/src/linux-3.0-rc6-nx-20110707'
-> make[2]: Wejście do katalogu `/usr/src/linux-3.0-rc6-nx-20110707'
-> CHK include/linux/version.h
-> UPD include/linux/version.h
-> CHK include/generated/utsrelease.h
-> UPD include/generated/utsrelease.h
-> CC kernel/bounds.s
-> GEN include/generated/bounds.h
-> CC arch/x86/kernel/asm-offsets.s
-> In file included from include/linux/sched.h:64:0,
-> from arch/x86/kernel/asm-offsets.c:9:
-> include/linux/mm_types.h:74:15: error: duplicate member ‘_count’
-> make[3]: *** [arch/x86/kernel/asm-offsets.s] Błąd 1
-> make[2]: *** [prepare0] Błąd 2
-> make[2]: Opuszczenie katalogu `/usr/src/linux-3.0-rc6-nx-20110707'
-> make[1]: *** [debian/stamp/conf/kernel-conf] Błąd 2
-> make[1]: Opuszczenie katalogu `/usr/src/linux-3.0-rc6-nx-20110707'
-> make: *** [debian/stamp/conf/minimal_debian] Błąd 2
-> Failed to create a ./debian directory: Nie ma takiego pliku ani katalogu
-> at /usr/bin/make-kpkg line 984.
->
-> Please help me.
+> On Thu, Jun 23, 2011 at 06:33:57AM -0500, Kumar Gala wrote:
+>> On some architectures we need to setup pdev_archdata before we add the
+>> device.  Waiting til a bus_notifier is too late since we might need the
+>> pdev_archdata in the bus notifier.  One example is setting up of dma_mask
+>> pointers such that it can be used in a bus_notifier.
+>> 
+>> We add noop version of arch_setup_pdev_archdata() in
+>> <asm-generic/platform_device.h> and allow the arch code to override with
+>> access the full definitions of struct device, struct platform_device, and
+>> struct pdev_archdata.
+> 
+> Isn't there some way to use "weak" symbols to keep us from having to
+> create this .h file in every single arch and then if the arch wants to
+> define it, it does so?
+> 
+> That should make this patch simpler, right?
+> 
+> thanks,
+> 
+> greg k-h
 
-Solved, thanks to Christoph Lameter in thread "Build issue with linux
-next. duplicate member _count in mm_types.h".
+Changing to weak should be doable if we are ok with the additional function call always happening.
 
--- 
-"Chcemy waszego dobra!" - powiedział lider
-socjaldemokratów. Zaniepokojeni obywatele
-zaczeli ukrywać swoje dobra w bezpiecznych
-miejscach.
-NP: Nemo -
-NB: 3.0.0-rc6
+- k
 
