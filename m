@@ -1,73 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056Ab1GGQql (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 12:46:41 -0400
-Received: from smtp-vbr18.xs4all.nl ([194.109.24.38]:2239 "EHLO
-	smtp-vbr18.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753530Ab1GGQqh (ORCPT
+	id S1754120Ab1GGQri (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 12:47:38 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:59696 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753968Ab1GGQrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 12:46:37 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Jonathan Corbet <corbet@lwn.net>
-Subject: Re: [RFC PATCH] poll: add poll_requested_events() function
-Date: Thu, 7 Jul 2011 18:46:33 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc7-durdane; KDE/4.4.5; x86_64; ; )
-Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "linux-media" <linux-media@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk
-References: <201107011537.30829.hverkuil@xs4all.nl> <20110707104255.6771771d@bike.lwn.net>
-In-Reply-To: <20110707104255.6771771d@bike.lwn.net>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107071846.33586.hverkuil@xs4all.nl>
+	Thu, 7 Jul 2011 12:47:37 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6400"; a="102376883"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Nicolas Pitre <nico@fluxnic.net>
+Subject: [PATCHv2] arm: mm: Poison freed init memory
+Date: Thu,  7 Jul 2011 09:47:27 -0700
+Message-Id: <1310057247-4933-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.6.131.g99019
+In-Reply-To: <20110706210106.GX8286@n2100.arm.linux.org.uk>
+References: <20110706210106.GX8286@n2100.arm.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 07, 2011 18:42:55 Jonathan Corbet wrote:
-> On Fri, 1 Jul 2011 15:37:30 +0200
-> Hans Verkuil <hverkuil@xs4all.nl> wrote:
-> 
-> > In some cases the poll() implementation in a driver has to do different
-> > things depending on the events the caller wants to poll for. An example is
-> > when a driver needs to start a DMA engine if the caller polls for POLLIN,
-> > but doesn't want to do that if POLLIN is not requested but instead only
-> > POLLOUT or POLLPRI is requested. This is something that can happen in the
-> > video4linux subsystem.
-> 
-> The change makes sense to me, FWIW.  One bit of trivia I noticed while
-> looking at it:
-> 
-> > @@ -796,7 +792,7 @@ static int do_poll(unsigned int nfds,  struct poll_list *list,
-> >  		 * All waiters have already been registered, so don't provide
-> >  		 * a poll_table to them on the next loop iteration.
-> >  		 */
-> > -		pt = NULL;
-> > +		pt->qproc = NULL;
-> >  		if (!count) {
-> >  			count = wait->error;
-> >  			if (signal_pending(current))
-> 
-> The comment at the beginning of this hunk is no longer accurate since the
-> poll_table is, indeed, still being supplied.  The previous comment in the
-> same function:
-> 
-> 				/*
-> 				 * Fish for events. If we found one, record it
-> 				 * and kill the poll_table, so we don't
-> 				 * needlessly register any other waiters after
-> 				 * this. They'll get immediately deregistered
-> 				 * when we break out and return.
-> 				 */
-> 
-> Could also use tweaking.
+Poisoning __init marked memory can be useful when tracking down
+obscure memory corruption bugs. Therefore, poison init memory
+with 0xe7fddef0 to catch bugs earlier. The poison value is an
+undefined instruction in ARM mode and branch to an undefined
+instruction in Thumb mode.
 
-Indeed! I'll make an RFCv3 tomorrow fixing this.
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
 
-Thanks for looking at this!
+On 7/6/2011 2:01 PM, Russell King - ARM Linux wrote:
+> On Wed, Jul 06, 2011 at 01:55:54PM -0700, Stephen Boyd wrote:
+>> Should it include the initrd too? At least x86 poisons that memory but I
+>> don't know who would be using that incorrectly.
+>
+> It could do - I don't see any harm in not doing so.  The only issue
+> is that people may want to disable this stuff if they're after
+> squeezing every last ms out of the boot time.
 
-Regards,
+I haven't done this. I hope a follow up patch will suffice.
 
-	Hans
+>
+>> How about a free_init_area() function which calls free_area() after
+>> poisoning the memory?
+>
+> I need to go back and look at the Integrator etc situation with regard
+> to reorganizing the vmlinux layout - it may be that the omission of
+> freeing .init memory can now be removed (it was there to stop the
+> memory being used as the first K of memory wasn't DMA-able.)
+>
+> Assuming it has to stay though, we still should arrange for the initrd
+> memory to be poisoned even if it isn't freed.
+
+Is this is patch what you're saying? I would have liked to do a
+free_init_area() wrapper, but until the Integrator situation can be
+sorted it doesn't look worthwhile.
+
+ arch/arm/mm/init.c |   17 ++++++++++++++++-
+ 1 files changed, 16 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index c19571c..d6360b1 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -422,6 +422,17 @@ static inline int free_area(unsigned long pfn, unsigned long end, char *s)
+ 	return pages;
+ }
+ 
++/*
++ * Poison init memory with an undefined instruction (ARM) or a branch to an
++ * undefined instruction (Thumb).
++ */
++static inline void poison_init_mem(void *s, size_t count)
++{
++	u32 *p = (u32 *)s;
++	while ((count = count - 4))
++		*p++ = 0xe7fddef0;
++}
++
+ static inline void
+ free_memmap(unsigned long start_pfn, unsigned long end_pfn)
+ {
+@@ -704,11 +715,13 @@ void free_initmem(void)
+ #ifdef CONFIG_HAVE_TCM
+ 	extern char __tcm_start, __tcm_end;
+ 
++	poison_init_mem(&__tcm_start, &__tcm_end - &__tcm_start);
+ 	totalram_pages += free_area(__phys_to_pfn(__pa(&__tcm_start)),
+ 				    __phys_to_pfn(__pa(&__tcm_end)),
+ 				    "TCM link");
+ #endif
+ 
++	poison_init_mem(__init_begin, __init_end - __init_begin);
+ 	if (!machine_is_integrator() && !machine_is_cintegrator())
+ 		totalram_pages += free_area(__phys_to_pfn(__pa(__init_begin)),
+ 					    __phys_to_pfn(__pa(__init_end)),
+@@ -721,10 +734,12 @@ static int keep_initrd;
+ 
+ void free_initrd_mem(unsigned long start, unsigned long end)
+ {
+-	if (!keep_initrd)
++	if (!keep_initrd) {
++		poison_init_mem((void *)start, PAGE_ALIGN(end) - start);
+ 		totalram_pages += free_area(__phys_to_pfn(__pa(start)),
+ 					    __phys_to_pfn(__pa(end)),
+ 					    "initrd");
++	}
+ }
+ 
+ static int __init keepinitrd_setup(char *__unused)
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
