@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752339Ab1GGQYS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 12:24:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10228 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751515Ab1GGQYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 12:24:16 -0400
-Date: Thu, 7 Jul 2011 12:23:44 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        linux-kernel@vger.kernel.org,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Pavel Emelyanov <xemul@openvz.org>, Hu Tao <hutao@cn.fujitsu.com>
-Subject: Re: [patch 00/17] CFS Bandwidth Control v7.1
-Message-ID: <20110707162344.GB2536@redhat.com>
-References: <20110707053036.173186930@google.com>
- <20110707112302.GB8227@elte.hu>
- <1310049528.3282.583.camel@twins>
- <20110707145159.GD19193@elte.hu>
- <1310050482.3282.584.camel@twins>
- <20110707145620.GF19193@elte.hu>
+	id S1752685Ab1GGQYi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 12:24:38 -0400
+Received: from 2.mo1.mail-out.ovh.net ([178.32.119.250]:55979 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751550Ab1GGQYh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 12:24:37 -0400
+X-Greylist: delayed 9338 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Jul 2011 12:24:37 EDT
+Message-ID: <4E15AAD8.6080005@example.com>
+Date: Thu, 07 Jul 2011 14:47:20 +0200
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110303 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110707145620.GF19193@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: linux-next@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>
+X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
+Subject: Today's Linux Next failed to even start building, I must have done
+ something wrong
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 12310871057946931542
+X-Ovh-Remote: 178.36.17.0 (178-36-17-0.adsl.inetia.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -60
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 07, 2011 at 04:56:20PM +0200, Ingo Molnar wrote:
-> * Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> 
-> > On Thu, 2011-07-07 at 16:51 +0200, Ingo Molnar wrote:
-> > > > Going beyond that
-> > > > would be using static_branch() to track if there is any bandwidth
-> > > > tracking required at all.
-> > > 
-> > > Could jump labels be utilized perhaps? 
-> > 
-> > # git grep static_branch include/linux/
-> > include/linux/jump_label.h:static __always_inline bool static_branch(struct jump_label_key *key)
-> 
-> Right - i only read up to your first, __always_inline suggestion :)
-> 
-> Thanks,
-> 
-> 	Ingo
+Hello,
 
-yes, this is the type of case jump labels is designed for. Let me know
-if there are any usage questions/concerns.
+I'm not sure - which base source tree should I take to apply the patch? 
+I fail for now with building witch Debian make-kpkg with messages:
 
-thanks,
+# ...
+make    ARCH=x86_64 prepare
+make[2]: Wejście do katalogu `/usr/src/linux-3.0-rc6-nx-20110707'
+scripts/kconfig/conf --silentoldconfig Kconfig
+make[2]: Opuszczenie katalogu `/usr/src/linux-3.0-rc6-nx-20110707'
+make[2]: Wejście do katalogu `/usr/src/linux-3.0-rc6-nx-20110707'
+   CHK     include/linux/version.h
+   UPD     include/linux/version.h
+   CHK     include/generated/utsrelease.h
+   UPD     include/generated/utsrelease.h
+   CC      kernel/bounds.s
+   GEN     include/generated/bounds.h
+   CC      arch/x86/kernel/asm-offsets.s
+In file included from include/linux/sched.h:64:0,
+                  from arch/x86/kernel/asm-offsets.c:9:
+include/linux/mm_types.h:74:15: error: duplicate member ‘_count’
+make[3]: *** [arch/x86/kernel/asm-offsets.s] Błąd 1
+make[2]: *** [prepare0] Błąd 2
+make[2]: Opuszczenie katalogu `/usr/src/linux-3.0-rc6-nx-20110707'
+make[1]: *** [debian/stamp/conf/kernel-conf] Błąd 2
+make[1]: Opuszczenie katalogu `/usr/src/linux-3.0-rc6-nx-20110707'
+make: *** [debian/stamp/conf/minimal_debian] Błąd 2
+Failed to create a ./debian directory: Nie ma takiego pliku ani katalogu 
+at /usr/bin/make-kpkg line 984.
 
--Jason
+Please help me.
+
+-- 
+Familiada:
+- Zwierze w paski?
+- Biedronka!
+NP: Nemo -
+NB: 3.0.0-rc6
