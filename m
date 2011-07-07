@@ -1,49 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756194Ab1GGMhw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 08:37:52 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:9057 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754557Ab1GGMhv (ORCPT
+	id S1756365Ab1GGMiz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 08:38:55 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:44228 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755732Ab1GGMiv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 08:37:51 -0400
-Message-ID: <A103B14DCBE64935815497A3464F512F@hacdom.okisemi.com>
-From: "Toshiharu Okada" <toshiharu-linux@dsn.okisemi.com>
-To: "Takashi Iwai" <tiwai@suse.de>
-Cc: <perex@perex.cz>, <alsa-devel@alsa-project.org>,
-        <linux-kernel@vger.kernel.org>, <qi.wang@intel.com>,
-        <yong.y.wang@intel.com>, <joel.clark@intel.com>,
-        <kok.howg.ewe@intel.com>, <tomoya-linux@dsn.okisemi.com>
-References: <1309948067-9333-1-git-send-email-toshiharu-linux@dsn.okisemi.com><s5hhb6z3byw.wl%tiwai@suse.de><34CF59A8D33E40B6822498A23CD554E8@hacdom.okisemi.com> <s5hvcve1n40.wl%tiwai@suse.de>
-Subject: Re: [PATCH] Add SoundCard driver for OKI SEMICONDUCTOR ML7213 IOH
-Date: Thu, 7 Jul 2011 21:35:17 +0900
+	Thu, 7 Jul 2011 08:38:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.5931
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6109
+In-Reply-To: <201107071433.42081.oliver@neukum.org>
+References: <CACTFLANCYMXH=z+NxEF0aqpMGZp21Q16_uB=J3rndM3pW74qeA@mail.gmail.com>
+	<201107071433.42081.oliver@neukum.org>
+Date: Thu, 7 Jul 2011 14:38:51 +0200
+Message-ID: <CACTFLAN=GOw8KLtvVBM6omvYzW3RBHggv-Kc2_2QVD--M-Jxkg@mail.gmail.com>
+Subject: Re: Allocating buffers for USB transfers (again)
+From: Daniel Mack <zonque@gmail.com>
+To: Oliver Neukum <oliver@neukum.org>
+Cc: linux-usb@vger.kernel.org, alsa-devel@alsa-project.org,
+        Takashi Iwai <tiwai@suse.de>, Clemens Ladisch <clemens@ladisch.de>,
+        florian@mickler.org, pedrib@gmail.com, William Light <wrl@illest.net>,
+        Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Date: Thu, 07 Jul 2011 11:00:47 +0200
-From: Takashi Iwai <tiwai@suse.de>
->>
->> Therefore, I am not considering about ASoC.
->> Do I need to fit this driver to an ASoC framework for an upstream?
->
->Yes, I guess this would be a better choice in your case.
+On Thu, Jul 7, 2011 at 2:33 PM, Oliver Neukum <oliver@neukum.org> wrote:
 
-Thank you for your comment.
->From now on, We study about ASoC.
-If there are a document, a website, a driver, etc. which are referred, 
-please tell us.
-Why is choosing ASoS better?
-Is it better to correspond to ASoC, when Audio Codec is unfixed?
+> PS:  Do you still see this if you enable 64bit DMA for EHCI?
 
-Best Regards
-Toshiharu Okada 
+The problem is that I personally don't see that issue at all. I even
+installed 4GB of RAM to my development machine last year to be able to
+reproduce this, but I can't, even when the memory allocator is under
+heavy load. The only people who see this effect are Pedro Ribeiro and
+William Light (both in Cc:), and both have been very helpful in trying
+patches and reporting back in detail. Which instructions could we
+probably give to these people to finally hunt this issue down?
 
+Daniel
