@@ -1,106 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756430Ab1GGTIv (ORCPT <rfc822;w@1wt.eu>);
+	id S1756702Ab1GGTKB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 15:10:01 -0400
+Received: from hera.kernel.org ([140.211.167.34]:43797 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756385Ab1GGTIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Jul 2011 15:08:51 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:57825 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755819Ab1GGTIr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 15:08:47 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Ian Campbell <Ian.Campbell@citrix.com>
-Cc: xen-devel@lists.xensource.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 03/10] xen/pci: Provide #ifdef CONFIG_ACPI to easy code squashing.
-Date: Thu,  7 Jul 2011 15:08:19 -0400
-Message-Id: <1310065706-18797-4-git-send-email-konrad.wilk@oracle.com>
+Cc: xen-devel@lists.xensource.com
+Subject: [PATCH] cleanup patches for arch/x86/pci/xen.c (Xen PCI) for 3.1 (v1)
+Date: Thu,  7 Jul 2011 15:08:16 -0400
+Message-Id: <1310065706-18797-1-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1310065706-18797-1-git-send-email-konrad.wilk@oracle.com>
-References: <1310065706-18797-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090203.4E160438.00C2:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090206.4E160438.00D2:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
+X-Greylist: IP, sender and recipient auto-whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [140.211.167.34]); Thu, 07 Jul 2011 19:08:50 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the past we would guard those code segments to be dependent
-on CONFIG_XEN_DOM0 (which depends on CONFIG_ACPI) so this patch is
-not stricly necessary. But the next patch will merge common
-HVM and initial domain code and we want to make sure the CONFIG_ACPI
-dependency is preserved - as HVM code does not depend on CONFIG_XEN_DOM0.
+Proposing these ten patches for 3.1. The goal of these patches is to clean
+up the Xen PCI glue code in xen.c and squash some common code together.
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/pci/xen.c |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
+The patches are also available at:
+git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git  stable/pci.cleanups.v1
 
-diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
-index 76b3980..7ee39cc 100644
---- a/arch/x86/pci/xen.c
-+++ b/arch/x86/pci/xen.c
-@@ -101,6 +101,7 @@ static int acpi_register_gsi_xen_hvm(struct device *dev, u32 gsi,
- #endif
- 
- #ifdef CONFIG_XEN_DOM0
-+#ifdef CONFIG_ACPI
- static int xen_register_pirq(u32 gsi, int gsi_override, int triggering)
- {
- 	int rc, pirq, irq = -1;
-@@ -180,6 +181,7 @@ static int acpi_register_gsi_xen(struct device *dev, u32 gsi,
- 	return xen_register_gsi(gsi, -1 /* no GSI override */, trigger, polarity);
- }
- #endif
-+#endif
- 
- #if defined(CONFIG_PCI_MSI)
- #include <linux/msi.h>
-@@ -409,6 +411,7 @@ int __init pci_xen_hvm_init(void)
- }
- 
- #ifdef CONFIG_XEN_DOM0
-+#ifdef CONFIG_ACPI
- static __init void xen_setup_acpi_sci(void)
- {
- 	int rc;
-@@ -455,16 +458,17 @@ static __init void xen_setup_acpi_sci(void)
- 
- 	return;
- }
--
-+#endif
- static int __init pci_xen_initial_domain(void)
- {
- #ifdef CONFIG_PCI_MSI
- 	x86_msi.setup_msi_irqs = xen_initdom_setup_msi_irqs;
- 	x86_msi.teardown_msi_irq = xen_teardown_msi_irq;
- #endif
-+#ifdef CONFIG_ACPI
- 	xen_setup_acpi_sci();
- 	__acpi_register_gsi = acpi_register_gsi_xen;
--
-+#endif
- 	return 0;
- }
- 
-@@ -484,7 +488,7 @@ void __init xen_setup_pirqs(void)
- 		}
- 		return;
- 	}
--
-+#ifdef CONFIG_ACPI
- 	/* Pre-allocate legacy irqs */
- 	for (irq = 0; irq < NR_IRQS_LEGACY; irq++) {
- 		int trigger, polarity;
-@@ -495,6 +499,7 @@ void __init xen_setup_pirqs(void)
- 		xen_register_pirq(irq, -1 /* no GSI override */,
- 			trigger ? ACPI_LEVEL_SENSITIVE : ACPI_EDGE_SENSITIVE);
- 	}
-+#endif
- }
- 
- struct xen_device_domain_owner {
--- 
-1.7.4.1
+I've tested them on PV, PV + PCI, PVonHVM, and PV initial domain without
+encountering any regressions.
+
+ arch/x86/include/asm/xen/pci.h |    5 +-
+ arch/x86/pci/xen.c             |  371 +++++++++++++++++-----------------------
+ drivers/xen/events.c           |    7 +-
+ include/xen/events.h           |    2 -
+ 4 files changed, 165 insertions(+), 220 deletions(-)
+
+Konrad Rzeszutek Wilk (10):
+      xen/pci: Shuffle code around.
+      xen/pci: Update comments and fix empty spaces.
+      xen/pci: Provide #ifdef CONFIG_ACPI to easy code squashing.
+      xen/pci: In xen_register_pirq bind the GSI to the IRQ after the hypercall.
+      xen/pci: Use the xen_register_pirq for HVM and initial domain users
+      xen/pci: Squash pci_xen_initial_domain and xen_setup_pirqs together.
+      xen/pci: Move the allocation of IRQs when there are no IOAPIC's to the end
+      xen/pci: Retire unnecessary #ifdef CONFIG_ACPI
+      xen/pci: Remove 'xen_allocate_pirq_gsi'.
+      xen/pci: Use 'acpi_gsi_to_irq' value unconditionally.
 
