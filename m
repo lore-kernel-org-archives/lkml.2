@@ -1,73 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755012Ab1GGIcl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 04:32:41 -0400
-Received: from bar.sig21.net ([80.81.252.164]:36348 "EHLO bar.sig21.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753306Ab1GGIcj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 04:32:39 -0400
-Date: Thu, 7 Jul 2011 10:32:29 +0200
-From: Johannes Stezenbach <js@sig21.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Jens Axboe <axboe@kernel.dk>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] compat_ioctl: fix make headers_check regression
-Message-ID: <20110707083229.GA23261@sig21.net>
-References: <20110704134842.7ab89126.sfr@canb.auug.org.au>
- <20110704100316.GA15894@sig21.net>
- <20110706225140.GA21510@sig21.net>
- <20110706161132.c393b685.akpm@linux-foundation.org>
+	id S1755137Ab1GGIfW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 04:35:22 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:35104 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752168Ab1GGIfV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 04:35:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110706161132.c393b685.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-21-Score: -3.7 (---)
-X-Spam-21-Report: No, score=-3.7 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.718,BAYES_00=-2.599 autolearn=no
+In-Reply-To: <20110707155217.909c429a.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20110707155217.909c429a.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Thu, 7 Jul 2011 14:05:19 +0530
+Message-ID: <CAKTCnzkFnsWmg_7zbqN4GfxTtCMZ4FW94NxOP0AG+UKp=xSepA@mail.gmail.com>
+Subject: Re: [PATCH][Cleanup] memcg: consolidates memory cgroup lru stat functions
+From: Balbir Singh <bsingharora@gmail.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 06, 2011 at 04:11:32PM -0700, Andrew Morton wrote:
-> On Thu, 7 Jul 2011 00:51:40 +0200
-> Johannes Stezenbach <js@sig21.net> wrote:
-> 
-> > On Mon, Jul 04, 2011 at 12:03:16PM +0200, Johannes Stezenbach wrote:
-> > > Fix headers_check error introduced by 390192b30057:
-> > > 
-> > > include/linux/fd.h:6: included file 'linux/compat.h' is not exported
-> > > 
-> > > Signed-off-by: Johannes Stezenbach <js@sig21.net>
-> > > ---
-> > > I used the same style as in linux/usbdevice_fs.h, hope
-> > > that's OK.
-> > 
-> > 
-> > I just got an "added to -mm tree" mail for the original patch, so I
-> > wonder what's with this fix?
-> 
-> What does the "original patch" refer to.
+On Thu, Jul 7, 2011 at 12:22 PM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>
+> In mm/memcontrol.c, there are many lru stat functions as..
+>
+> mem_cgroup_zone_nr_lru_pages
+> mem_cgroup_node_nr_file_lru_pages
+> mem_cgroup_nr_file_lru_pages
+> mem_cgroup_node_nr_anon_lru_pages
+> mem_cgroup_nr_anon_lru_pages
+> mem_cgroup_node_nr_unevictable_lru_pages
+> mem_cgroup_nr_unevictable_lru_pages
+> mem_cgroup_node_nr_lru_pages
+> mem_cgroup_nr_lru_pages
+> mem_cgroup_get_local_zonestat
+>
+> Some of them are under #ifdef MAX_NUMNODES >1 and others are not.
+> This seems bad. This patch consolidates all functions into
+>
+> mem_cgroup_zone_nr_lru_pages()
+> mem_cgroup_node_nr_lru_pages()
+> mem_cgroup_nr_lru_pages()
+>
+> For these functions, "which LRU?" information is passed by a mask.
+>
+> example)
+> mem_cgroup_nr_lru_pages(mem, BIT(LRU_ACTIVE_ANON))
+>
+> And I added some macro as ALL_LRU, ALL_LRU_FILE, ALL_LRU_ANON.
+> example)
+> mem_cgroup_nr_lru_pages(mem, ALL_LRU)
+>
+> BTW, considering layout of NUMA memory placement of counters, this patch seems
+> to be better.
+>
+> Now, when we gather all LRU information, we scan in following orer
+>    for_each_lru -> for_each_node -> for_each_zone.
+>
+> This means we'll touch cache lines in different node in turn.
+>
+> After patch, we'll scan
+>    for_each_node -> for_each_zone -> for_each_lru(mask)
+>
+> Then, we'll gather information in the same cacheline at once.
+>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-"compat_ioctl: fix warning caused by qemu"
+Looks like a good cleanup, but unfortunately I won't be able to test
+any patches till the end of next week or so
 
-> Also, there's no commit 390192b30057.  Commit ID's can change.  This is
-> why we ask people to also include the patch title when describing
-> patches by SHA ID's
-
-I see, will do in the future
-
-> Please let's just start again.  Tell us what is going on here.
-
-Well, I'm confused by the -mm workflow.  The "original" patch
-390192b30057 is in
-git://git.kernel.org/pub/scm/linux/kernel/git/axboe/linux-block.git for-3.1/core
-
-http://git.kernel.org/?p=linux/kernel/git/axboe/linux-block.git;a=commit;h=390192b300570b2bc721d77067ca133f58015ae8
-
-And this fix now, too:
-
-http://git.kernel.org/?p=linux/kernel/git/axboe/linux-block.git;a=commit;h=719c0c590609809365c6f3da2f923cd84dc99113
-
-
-Johannes
+Balbir Singh
