@@ -1,39 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755903Ab1GGSgq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 14:36:46 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:64692 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752681Ab1GGSgo (ORCPT
+	id S1756026Ab1GGSgt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 14:36:49 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:38839 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755752Ab1GGSgq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 14:36:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E1477B9.1050701@kernel.dk>
-References: <CAG4TOxP1eTY_R_t57U1Ux=RTFa=3BWWL9yzL-p9sC+YWrpZmYQ@mail.gmail.com>
- <4E1477B9.1050701@kernel.dk>
-From: Roland Dreier <roland@kernel.org>
-Date: Thu, 7 Jul 2011 11:36:24 -0700
-X-Google-Sender-Auth: IkQArzPWvrevCfDGofPDFVSnX0s
-Message-ID: <CAG4TOxN7Dqk0=WcbWV33ZsTdqFtQRwoOM87Q2v8=LT5fviVZhg@mail.gmail.com>
-Subject: Re: warning because of race between userspace and add_disk()?
-To: Jens Axboe <axboe@kernel.dk>
-Cc: open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 7 Jul 2011 14:36:46 -0400
+From: greearb@candelatech.com
+To: penberg@kernel.org, cl@linux.com, linux-kernel@vger.kernel.org
+Cc: Ben Greear <greearb@candelatech.com>
+Subject: [PATCH v3 1/2] slub: Enable backtrace for create/delete points.
+Date: Thu,  7 Jul 2011 11:36:36 -0700
+Message-Id: <1310063797-14914-1-git-send-email-greearb@candelatech.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> It certainly looks like it, we need to order disk_add_events() before
-> register_disk() or handle this more gracefully. I'll cook up a patch.
+From: Ben Greear <greearb@candelatech.com>
 
-Cool.  By the way, have you seen the threads about use-after-free
-problems with q->elevator?  The issue seems to be that when devices
-disappear, we do blk_cleanup_queue() (which frees q->elevator) but if
-someone has the device still open, we still have references to the
-queue and requests can still come in (and blow up when they try to use
-the elevator).
+This patch attempts to grab a backtrace for the creation
+and deletion points of the slub object.  When a fault is
+detected, we can then get a better idea of where the item
+was deleted.
 
-By the way, are you planning on going to that Intel Tech Days thing
-in a couple of weeks?  (I should be there)
+Signed-off-by: Ben Greear <greearb@candelatech.com>
+---
 
- - R.
+v3:  Don't rename addr to caddr.
+     Move 'int i' into #ifdef block to ensure there is no
+     warning when #ifdef'd code is not compiled.
+
+:100644 100644 35f351f... c52fa60... M	mm/slub.c
+ mm/slub.c |   32 ++++++++++++++++++++++++++++++++
+ 1 files changed, 32 insertions(+), 0 deletions(-)
+
+diff --git a/mm/slub.c b/mm/slub.c
+index 35f351f..c52fa60 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -191,8 +191,12 @@ static LIST_HEAD(slab_caches);
+ /*
+  * Tracking user of a slab.
+  */
++#define TRACK_ADDRS_COUNT 16
+ struct track {
+ 	unsigned long addr;	/* Called from address */
++#ifdef CONFIG_STACKTRACE
++	unsigned long addrs[TRACK_ADDRS_COUNT];	/* Called from address */
++#endif
+ 	int cpu;		/* Was running on cpu */
+ 	int pid;		/* Pid context */
+ 	unsigned long when;	/* When did the operation occur */
+@@ -420,6 +424,24 @@ static void set_track(struct kmem_cache *s, void *object,
+ 	struct track *p = get_track(s, object, alloc);
+ 
+ 	if (addr) {
++#ifdef CONFIG_STACKTRACE
++		struct stack_trace trace;
++		int i;
++
++		trace.nr_entries = 0;
++		trace.max_entries = TRACK_ADDRS_COUNT;
++		trace.entries = p->addrs;
++		trace.skip = 3;
++		save_stack_trace(&trace);
++
++		/* See rant in lockdep.c */
++		if (trace.nr_entries != 0 &&
++		    trace.entries[trace.nr_entries - 1] == ULONG_MAX)
++			trace.nr_entries--;
++
++		for (i = trace.nr_entries; i < TRACK_ADDRS_COUNT; i++)
++			p->addrs[i] = 0;
++#endif
+ 		p->addr = addr;
+ 		p->cpu = smp_processor_id();
+ 		p->pid = current->pid;
+@@ -444,6 +466,16 @@ static void print_track(const char *s, struct track *t)
+ 
+ 	printk(KERN_ERR "INFO: %s in %pS age=%lu cpu=%u pid=%d\n",
+ 		s, (void *)t->addr, jiffies - t->when, t->cpu, t->pid);
++#ifdef CONFIG_STACKTRACE
++	{
++		int i;
++		for (i = 0; i < TRACK_ADDRS_COUNT; i++)
++			if (t->addrs[i])
++				printk(KERN_ERR "\t%pS\n", (void *)t->addrs[i]);
++			else
++				break;
++	}
++#endif
+ }
+ 
+ static void print_tracking(struct kmem_cache *s, void *object)
+-- 
+1.7.3.4
+
