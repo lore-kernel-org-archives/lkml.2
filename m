@@ -1,72 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755653Ab1GGK6o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 06:58:44 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:57405 "EHLO mx3.mail.elte.hu"
+	id S1755723Ab1GGK7V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 06:59:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25084 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755513Ab1GGK6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 06:58:43 -0400
-Date: Thu, 7 Jul 2011 12:58:22 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        David Brown <davidb@codeaurora.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>
-Subject: Re: [git pull] IOMMU updates for 3.1
-Message-ID: <20110707105822.GA8227@elte.hu>
-References: <20110707085359.GC1956@amd.com>
- <20110707094558.GB15058@elte.hu>
- <20110707105204.GE1956@amd.com>
+	id S1755668Ab1GGK7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 06:59:19 -0400
+Date: Thu, 7 Jul 2011 07:51:14 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Glauber Costa <glommer@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCH v5 4/9] KVM-HV: KVM Steal time implementation
+Message-ID: <20110707105113.GA3986@amt.cnet>
+References: <1309793548-16714-1-git-send-email-glommer@redhat.com>
+ <1309793548-16714-5-git-send-email-glommer@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110707105204.GE1956@amd.com>
+In-Reply-To: <1309793548-16714-5-git-send-email-glommer@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Roedel, Joerg <Joerg.Roedel@amd.com> wrote:
-
-> On Thu, Jul 07, 2011 at 05:45:58AM -0400, Ingo Molnar wrote:
-> > >   git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git iommu-3.1
-> > Fails to build with INTR_REMAP=y && CONFIG_DMAR=n:
-> > 
-> >  arch/x86/built-in.o: In function `lapic_resume':
-> >  apic.c:(.text+0x16329): undefined reference to `intr_remapping_enabled'
-> >  apic.c:(.text+0x1651d): undefined reference to `intr_remapping_enabled'
-> >  apic.c:(.text+0x1652b): undefined reference to `reenable_intr_remapping'
-> >  [...]
+On Mon, Jul 04, 2011 at 11:32:23AM -0400, Glauber Costa wrote:
+> To implement steal time, we need the hypervisor to pass the guest
+> information about how much time was spent running other processes
+> outside the VM, while the vcpu had meaningful work to do - halt
+> time does not count.
 > 
-> Fixed with:
+> This information is acquired through the run_delay field of
+> delayacct/schedstats infrastructure, that counts time spent in a
+> runqueue but not running.
 > 
-> commit 6b385b46ee17d7e1a68d3411b8cdb2342e0f0445
-> Author: Joerg Roedel <joerg.roedel@amd.com>
-> Date:   Thu Jul 7 12:18:48 2011 +0200
+> Steal time is a per-cpu information, so the traditional MSR-based
+> infrastructure is used. A new msr, KVM_MSR_STEAL_TIME, holds the
+> memory area address containing information about steal time
 > 
->     iommu/core: Fix build with INTR_REMAP=y && CONFIG_DMAR=n
->     
->     IOMMU_API is not selected when no DMA remapping driver is
->     selected, but the whole drivers/iommu/ directory is only
->     built with IOMMU_API=y. Fixed with this patch by including
->     the directory with IOMMU_SUPPORT instead.
->     
->     Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+> This patch contains the hypervisor part of the steal time infrasructure,
+> and can be backported independently of the guest portion.
+> 
+> Signed-off-by: Glauber Costa <glommer@redhat.com>
+> CC: Rik van Riel <riel@redhat.com>
+> CC: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> CC: Peter Zijlstra <peterz@infradead.org>
+> CC: Avi Kivity <avi@redhat.com>
+> CC: Anthony Liguori <aliguori@us.ibm.com>
+> CC: Eric B Munson <emunson@mgebm.net>
+> ---
+>  arch/x86/include/asm/kvm_host.h |    8 +++++
+>  arch/x86/include/asm/kvm_para.h |    4 +++
+>  arch/x86/kvm/Kconfig            |    1 +
+>  arch/x86/kvm/x86.c              |   56 ++++++++++++++++++++++++++++++++++++--
+>  4 files changed, 66 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> index da6bbee..9ba354d 100644
+> --- a/arch/x86/include/asm/kvm_host.h
+> +++ b/arch/x86/include/asm/kvm_host.h
+> @@ -389,6 +389,14 @@ struct kvm_vcpu_arch {
+>  	unsigned int hw_tsc_khz;
+>  	unsigned int time_offset;
+>  	struct page *time_page;
+> +
+> +	struct {
+> +		u64 msr_val;
+> +		u64 last_steal;
+> +		struct gfn_to_hva_cache stime;
+> +		struct kvm_steal_time steal;
+> +	} st;
+> +
+>  	u64 last_guest_tsc;
+>  	u64 last_kernel_ns;
+>  	u64 last_tsc_nsec;
+> diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+> index 65f8bb9..c484ba8 100644
+> --- a/arch/x86/include/asm/kvm_para.h
+> +++ b/arch/x86/include/asm/kvm_para.h
+> @@ -45,6 +45,10 @@ struct kvm_steal_time {
+>  	__u32 pad[12];
+>  };
+>  
+> +#define KVM_STEAL_ALIGNMENT_BITS 5
+> +#define KVM_STEAL_VALID_BITS ((-1ULL << (KVM_STEAL_ALIGNMENT_BITS + 1)))
+> +#define KVM_STEAL_RESERVED_MASK (((1 << KVM_STEAL_ALIGNMENT_BITS) - 1 ) << 1)
+> +
+>  #define KVM_MAX_MMU_OP_BATCH           32
+>  
+>  #define KVM_ASYNC_PF_ENABLED			(1 << 0)
+> diff --git a/arch/x86/kvm/Kconfig b/arch/x86/kvm/Kconfig
+> index 50f6364..99c3f05 100644
+> --- a/arch/x86/kvm/Kconfig
+> +++ b/arch/x86/kvm/Kconfig
+> @@ -31,6 +31,7 @@ config KVM
+>  	select KVM_ASYNC_PF
+>  	select USER_RETURN_NOTIFIER
+>  	select KVM_MMIO
+> +	select TASK_DELAY_ACCT
+>  	---help---
+>  	  Support hosting fully virtualized guest machines using hardware
+>  	  virtualization extensions.  You will need a fairly recent
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 7167717..237bcdc 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -808,12 +808,12 @@ EXPORT_SYMBOL_GPL(kvm_get_dr);
+>   * kvm-specific. Those are put in the beginning of the list.
+>   */
+>  
+> -#define KVM_SAVE_MSRS_BEGIN	8
+> +#define KVM_SAVE_MSRS_BEGIN	9
+>  static u32 msrs_to_save[] = {
+>  	MSR_KVM_SYSTEM_TIME, MSR_KVM_WALL_CLOCK,
+>  	MSR_KVM_SYSTEM_TIME_NEW, MSR_KVM_WALL_CLOCK_NEW,
+>  	HV_X64_MSR_GUEST_OS_ID, HV_X64_MSR_HYPERCALL,
+> -	HV_X64_MSR_APIC_ASSIST_PAGE, MSR_KVM_ASYNC_PF_EN,
+> +	HV_X64_MSR_APIC_ASSIST_PAGE, MSR_KVM_ASYNC_PF_EN, MSR_KVM_STEAL_TIME,
+>  	MSR_IA32_SYSENTER_CS, MSR_IA32_SYSENTER_ESP, MSR_IA32_SYSENTER_EIP,
+>  	MSR_STAR,
+>  #ifdef CONFIG_X86_64
+> @@ -1491,6 +1491,27 @@ static void kvmclock_reset(struct kvm_vcpu *vcpu)
+>  	}
+>  }
+>  
+> +static void record_steal_time(struct kvm_vcpu *vcpu)
+> +{
+> +	u64 delta;
+> +
+> +	if (!(vcpu->arch.st.msr_val & KVM_MSR_ENABLED))
+> +		return;
+> +
+> +	if (unlikely(kvm_read_guest_cached(vcpu->kvm, &vcpu->arch.st.stime,
+> +		&vcpu->arch.st.steal, sizeof(struct kvm_steal_time))))
+> +		return;
 
-Next time around please add a Reported-by line ...
+The guest memory page is not pinned, sleeping via
+__copy_from_user/to_user is not allowed in vcpu_load context. Either pin
+it or use atomic acessors.
 
-Anyway, i pulled it and started testing it.
+> +	case MSR_KVM_STEAL_TIME:
+> +		vcpu->arch.st.msr_val = data;
+> +
+> +		if (!(data & KVM_MSR_ENABLED)) {
+> +			break;
+> +		}
 
-Thanks,
+On failure below this point, msr_val should be cleared of KVM_MSR_ENABLED?
 
-	Ingo
+> +
+> +		if (unlikely(!sched_info_on()))
+> +			break;
+> +
+> +		if (data & KVM_STEAL_RESERVED_MASK)
+> +			return 1;
+> +
+> +		if (kvm_gfn_to_hva_cache_init(vcpu->kvm, &vcpu->arch.st.stime,
+> +							data & KVM_STEAL_VALID_BITS))
+> +			return 1;
+> +
+> +		vcpu->arch.st.last_steal = current->sched_info.run_delay;
+> +
+> +		record_steal_time(vcpu);
+> +		break;
+> +
