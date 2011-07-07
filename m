@@ -1,99 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755255Ab1GGAYp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 20:24:45 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:59278 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753882Ab1GGAYo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 20:24:44 -0400
-Date: Thu, 7 Jul 2011 10:24:32 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg Ungerer <gerg@snapgear.com>
-Cc: Jonas Bonn <jonas@southpole.se>, Rusty Russell <rusty@rustcorp.com.au>,
-        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Greg Ungerer <gerg@uclinux.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: linux-next: manual merge of the rr tree with the  tree
-Message-Id: <20110707102432.5a779744e247652be005b592@canb.auug.org.au>
-In-Reply-To: <4E14F373.1020307@snapgear.com>
-References: <20110705135932.de7f0526.sfr@canb.auug.org.au>
-	<1309967847.3393.44.camel@jerome>
-	<4E14F373.1020307@snapgear.com>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__7_Jul_2011_10_24_32_+1000_oaSG6s=1nA_zH1My"
+	id S1755220Ab1GGAZW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 20:25:22 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:55323 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753882Ab1GGAZU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 20:25:20 -0400
+Date: Thu, 7 Jul 2011 02:25:15 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Michael Rubin <mrubin@google.com>, x86@kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiaying Zhang <jiayingz@google.com>
+Subject: Re: [PATCH v2] trace: Add x86 irq vector entry/exit tracepoints
+Message-ID: <20110707002512.GB21115@somewhere>
+References: <1304107962-18576-1-git-send-email-vnagarnaik@google.com>
+ <1306877298-31713-1-git-send-email-vnagarnaik@google.com>
+ <20110531235957.GB5256@somewhere.redhat.com>
+ <BANLkTi=YYCXHi5k82Q+sE6+134i97pjjAA@mail.gmail.com>
+ <BANLkTinT6ULRWwHAGYFpQSw-ptQiuzrkPtZuKVZHD8b5mh9hpA@mail.gmail.com>
+ <20110616030200.GC18579@somewhere.redhat.com>
+ <4E14F31B.4080102@zytor.com>
+ <20110706235613.GA21115@somewhere>
+ <4E14F797.8070501@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E14F797.8070501@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__7_Jul_2011_10_24_32_+1000_oaSG6s=1nA_zH1My
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jul 06, 2011 at 05:02:31PM -0700, H. Peter Anvin wrote:
+> On 07/06/2011 04:56 PM, Frederic Weisbecker wrote:
+> > And even if tracepoints are not supposed to be stable ABI (I actually believe there
+> > is no absolute answer to that, it depends on the tracepoint and on the context),
+> > tools are much happier with a common tracepoint interface amongst archs.
+> 
+> What you're suggesting here is an ad hoc ABI.  This is insanely
+> irresponsible -- ABIs need to be designed, not randomly appeared.
 
-Hi all,
+I'm suggesting two things:
 
-On Thu, 7 Jul 2011 09:44:51 +1000 Greg Ungerer <gerg@snapgear.com> wrote:
->
-> On 07/07/11 01:57, Jonas Bonn wrote:
-> >
-> > On Tue, 2011-07-05 at 13:59 +1000, Stephen Rothwell wrote:
-> >>
-> >> Today's linux-next merge of the rr tree got a conflict in
-> >> arch/m68k/kernel/module_mm.c arch/m68k/kernel/module_no.c between comm=
-it
-> >> 4528acce2607 ("m68k: merge the non-mmu and mmu versions of module.c")
-> >> from the m68knommu tree and commit 7b935befe6bc ("modules: make arch's
-> >> use default loader hooks") from the rr tree.
-> >>
-> >> The former removes these files, so I did that.
-> >>
-> >> I then added this merge fix up patch (which I can carry as necessary a=
-nd
-> >> may not be coorrect):
-> >>
-> >> From: Stephen Rothwell<sfr@canb.auug.org.au>
-> >> Date: Tue, 5 Jul 2011 13:12:26 +1000
-> >> Subject: [PATCH] modules/m68k: make arch's use default loader hooks
-> >>
-> >> Signed-off-by: Stephen Rothwell<sfr@canb.auug.org.au>
-> >> ---
-> >>   arch/m68k/kernel/module.c |   27 ---------------------------
-> >>   1 files changed, 0 insertions(+), 27 deletions(-)
-> >>
-> >
-> > That patch looks good to me.
-> >
-> > Acked-by: Jonas Bonn<jonas@southpole.se>
->=20
-> Looks fine to me too:
->=20
-> Acked-by: Greg Ungerer <gerg@uclinux.org>
+1) If every arch implement a tracepoint for a generic event, then move the tracepoint
+to the generic code. I believe that part is not very controversial.
 
-OK, so now someone just has to remember to apply it (or tell Linus, or
-fix up the trees) during the merge window.   That person probably won't
-be me (since I will not be online next week (assuming Linus follows
-through and opens the merge window next week).
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+2) If every arch implement a common event that is not implemented in core code (I believe
+it was the case for reschedule_interrupt few times ago but changed lately) then try
+to have a common tracepoint for every archs if possible. So that we don't have
+thousand names for the same event, or different parameters name when those parameters and the
+event semantic are exactly the same amongst every architecture.
 
---Signature=_Thu__7_Jul_2011_10_24_32_+1000_oaSG6s=1nA_zH1My
-Content-Type: application/pgp-signature
+Trace events are irresponsible anyway because they involve that "ABI not really stable but tools
+rely on it so...well...)". I'm not sure the above points make the situation worse though. Probably
+the cases that fit in 2) need to be carefully checked to ensure they really fit in 2).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOFPzAAAoJEDMEi1NhKgbsk2QH/Rk8iHqypkN4tZNQcVdovfqL
-44f+un/83SfwncOuAOr4cjJylt+2EGpAH/yyf0Bn9u2xFkNqbZTIymtn4PYEwOZM
-mlcAg1/c4mGFhGKVvbKupVzf/0DgvH7uCDYr/09h7c9M2ABKTNyl8+vYbQbeclTt
-cEfgS/w28NtI6GBz5hu0yQh6QCRVKsEPzxzDw9spP3SIFI4PNFggbSFT/r8m9ht8
-vZ5KDFluyMftjbB3jFRDO65E6DsBCBXBlGrIK7coTcAUIOpHHf5vdwSRpGl7qM3R
-4C45C+2Jpmq4LMn/Y4I5/eeURFDHgcqbTTFYnlezn5uVtSPvJMIrM/rx23vdHY4=
-=S1Ec
------END PGP SIGNATURE-----
-
---Signature=_Thu__7_Jul_2011_10_24_32_+1000_oaSG6s=1nA_zH1My--
+Having each archs proposing their own wild tracepoints is not going to cure the fundamental
+nature of trace events. An arch that implements its own tracepoint already applies a new ad-hoc
+ABI. Its scope is just smaller.
