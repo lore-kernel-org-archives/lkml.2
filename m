@@ -1,98 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756374Ab1GGM0W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 08:26:22 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:62456 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755906Ab1GGMZs (ORCPT
+	id S1756289Ab1GGM2x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 08:28:53 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41290 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755650Ab1GGM2w convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 08:25:48 -0400
-From: Vitaly Kuzmichev <vkuzmichev@mvista.com>
-To: linux-arm-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Wim Van Sebroeck <wim@iguana.be>, Marc Zyngier <marc.zyngier@arm.com>,
-        Colin Cross <ccross@android.com>
-Cc: linux-kernel@vger.kernel.org, Vitaly Kuzmichev <vkuzmichev@mvista.com>,
-        Valentine Barshak <vbarshak@mvista.com>
-Subject: [PATCH V3 2/4] ARM: smp_twd: mpcore_wdt: Fix watchdog counter loading
-Date: Thu,  7 Jul 2011 16:23:14 +0400
-Message-Id: <1310041396-2461-2-git-send-email-vkuzmichev@mvista.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1310041339-2348-1-git-send-email-vkuzmichev@mvista.com>
-References: <1310041339-2348-1-git-send-email-vkuzmichev@mvista.com>
+	Thu, 7 Jul 2011 08:28:52 -0400
+Subject: Re: [regression] 3.0-rc boot failure -- bisected to cd4ea6ae3982
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: mahesh@linux.vnet.ibm.com
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        anton@samba.org, mingo@elte.hu, torvalds@linux-foundation.org
+In-Reply-To: <20110707115531.GA21737@in.ibm.com>
+References: <20110707102107.GA16666@in.ibm.com>
+	 <1310036375.3282.509.camel@twins>  <20110707115531.GA21737@in.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 07 Jul 2011 14:28:27 +0200
+Message-ID: <1310041707.3282.569.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Although the commit "98af057092f8f0dabe63c5df08adc2bbfbddb1d2
- ARM: 6126/1: ARM mpcore_wdt: fix build failure and other fixes"
-resolved long standing mpcore_wdt driver build problems, it
-introduced an error in the relationship between the MPcore watchdog
-timer clock rate and mpcore_margin, "MPcore timer margin in seconds",
-such that watchdog timeouts are now arbitrary rather than the number
-of seconds specified by mpcore_margin.
+On Thu, 2011-07-07 at 17:25 +0530, Mahesh J Salgaonkar wrote:
+> > I guess I'm asking is, do smaller P7 machines boot? And if so, is there
+> > any difference except size?
+> 
+> Yes, the smaller P7 machine that I have with 20 CPUs and 2GB ram boots
+> fine with 3.0.0-rc. 
 
-This change restores mpcore_wdt_keepalive() to its equivalent
-implementation prior to commit 98af057 such that watchdog timeouts now
-occur as specified by mpcore_margin.
-
-The variable 'mpcore_timer_rate' which caused that build failure was
-replaced by 'twd_timer_rate'. Adding exported function to obtain
-'twd_timer_rate' value in mpcore_wdt driver.
-
-MPCORE_WATCHDOG needed to build 'mpcore_wdt' already depends on
-HAVE_ARM_TWD needed to build 'smp_twd', so from the point of view of
-'mpcore_wdt' driver the exported function will always exist.
-
-Signed-off-by: Valentine Barshak <vbarshak@mvista.com>
-Signed-off-by: Vitaly Kuzmichev <vkuzmichev@mvista.com>
----
- arch/arm/include/asm/smp_twd.h |    1 +
- arch/arm/kernel/smp_twd.c      |    7 +++++++
- drivers/watchdog/mpcore_wdt.c  |    4 +---
- 3 files changed, 9 insertions(+), 3 deletions(-)
-
-diff --git a/arch/arm/include/asm/smp_twd.h b/arch/arm/include/asm/smp_twd.h
-index fed9981..38130b1 100644
---- a/arch/arm/include/asm/smp_twd.h
-+++ b/arch/arm/include/asm/smp_twd.h
-@@ -24,5 +24,6 @@ extern void __iomem *twd_base;
- 
- int twd_timer_ack(void);
- void twd_timer_setup(struct clock_event_device *);
-+unsigned long twd_timer_get_rate(void);
- 
- #endif
-diff --git a/arch/arm/kernel/smp_twd.c b/arch/arm/kernel/smp_twd.c
-index 2c277d4..c341ebc 100644
---- a/arch/arm/kernel/smp_twd.c
-+++ b/arch/arm/kernel/smp_twd.c
-@@ -142,3 +142,10 @@ void __cpuinit twd_timer_setup(struct clock_event_device *clk)
- 
- 	clockevents_register_device(clk);
- }
-+
-+/* Needed by mpcore_wdt */
-+unsigned long twd_timer_get_rate(void)
-+{
-+	return twd_timer_rate;
-+}
-+EXPORT_SYMBOL(twd_timer_get_rate);
-diff --git a/drivers/watchdog/mpcore_wdt.c b/drivers/watchdog/mpcore_wdt.c
-index 2b4af22..efde50b 100644
---- a/drivers/watchdog/mpcore_wdt.c
-+++ b/drivers/watchdog/mpcore_wdt.c
-@@ -99,9 +99,7 @@ static void mpcore_wdt_keepalive(struct mpcore_wdt *wdt)
- 
- 	spin_lock(&wdt_lock);
- 	/* Assume prescale is set to 256 */
--	count =  __raw_readl(wdt->base + TWD_WDOG_COUNTER);
--	count = (0xFFFFFFFFU - count) * (HZ / 5);
--	count = (count / 256) * mpcore_margin;
-+	count = (twd_timer_get_rate() / 256) * mpcore_margin;
- 
- 	/* Reload the counter */
- 	writel(count + wdt->perturb, wdt->base + TWD_WDOG_LOAD);
--- 
-1.7.3.4
-
+That sounds like a single node machine. P7 comes as {4,6,8}*4 (16,24,32
+cpus) per socket. And that 2G doesn't sound like much either.
