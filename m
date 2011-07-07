@@ -1,117 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756551Ab1GGONO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 10:13:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8414 "EHLO mx1.redhat.com"
+	id S1756590Ab1GGOPp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 10:15:45 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:33950 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756143Ab1GGONN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 10:13:13 -0400
-Date: Thu, 7 Jul 2011 10:13:00 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Joe Perches <joe@perches.com>
-Cc: gregkh@suse.de, jim.cromie@gmail.com, bvanassche@acm.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net,
-        aloisio.almeida@openbossa.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 08/10] dynamic_debug: make netif_dbg() call
- __netdev_printk()
-Message-ID: <20110707141259.GA2536@redhat.com>
-References: <cover.1309967232.git.root@dhcp-100-18-164.bos.redhat.com>
- <889f3300a96f381aee1239ea775014fff26d93c9.1309967232.git.root@dhcp-100-18-164.bos.redhat.com>
- <1309989543.1710.19.camel@Joe-Laptop>
+	id S1756267Ab1GGOPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 10:15:42 -0400
+Date: Thu, 7 Jul 2011 16:15:25 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 0/2] [GIT PULL][v3.0] tracing: Add refcount for system
+ filter and enable
+Message-ID: <20110707141525.GA19193@elte.hu>
+References: <20110706211931.764277374@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1309989543.1710.19.camel@Joe-Laptop>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20110706211931.764277374@goodmis.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 06, 2011 at 02:59:03PM -0700, Joe Perches wrote:
-> On Wed, 2011-07-06 at 13:25 -0400, Jason Baron wrote:
-> > From: Jason Baron <jbaron@redhat.com>
-> > 
-> > Previously, netif_dbg() was using dynamic_dev_dbg() to perform
-> > the underlying printk. Fix it to use __netdev_printk(), instead.
-> > 
-> > Cc: David S. Miller <davem@davemloft.net>
-> > Signed-off-by: Jason Baron <jbaron@redhat.com>
-> > ---
-> >  include/linux/dynamic_debug.h |   12 ++++++++++++
-> >  include/linux/netdevice.h     |    6 ++----
-> >  2 files changed, 14 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
-> []
-> > +#define dynamic_netif_dbg(dev, cond, fmt, ...) do {			\
-> > +	static struct _ddebug descriptor				\
-> > +	__used								\
-> > +	__attribute__((section("__verbose"), aligned(8))) =		\
-> > +	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,		\
-> > +		_DPRINTK_FLAGS_DEFAULT };				\
-> > +	if (unlikely(descriptor.enabled)) {				\
-> > +		if (cond)						\
-> > +			__dynamic_netdev_dbg(&descriptor, dev, fmt, ##__VA_ARGS__);\
-> > +	}								\
-> > +	} while (0)
-> > +
-> 
-> Just nits:
-> 
-> I think it'd be better to use
-> #define dynamic_netif_dbg(etc)						\
-> do {									\
-> 	etc...
-> } while (0)
-> 
-> so that there aren't 2 consecutive close braces at the same indent level.
-> 
-> and maybe just use one test
-> 
-> 	if (unlikely(descriptor.enabled) && cond)
-> 		__dynamic_netdev_dbg(&descriptor, dev, fmt, ##__VA_ARGS__);
-> 
 
-If you look at the next patch, 9/10, I've combined the tests there
-just as you've described. I agree, that it would be better if that were
-folded into this patch. will fix.
+* Steven Rostedt <rostedt@goodmis.org> wrote:
 
 > 
-> > diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-> > index 9b132ef..99c358f 100644
-> > --- a/include/linux/netdevice.h
-> > +++ b/include/linux/netdevice.h
-> > @@ -2731,10 +2731,8 @@ do {								\
-> >  #elif defined(CONFIG_DYNAMIC_DEBUG)
-> >  #define netif_dbg(priv, type, netdev, format, args...)		\
-> >  do {								\
-> > -	if (netif_msg_##type(priv))				\
-> > -		dynamic_dev_dbg((netdev)->dev.parent,		\
-> > -				"%s: " format,			\
-> > -				netdev_name(netdev), ##args);	\
-> > +	dynamic_netif_dbg(netdev, (netif_msg_##type(priv)),	\
-> > +				  format, ##args);		\
+> Ingo,
 > 
-> Because you've already added dynamic_netdev_dbg,
-> maybe this should be:
+> Please pull the latest tip/perf/urgent tree, which can be found at:
 > 
-> #define netif_dbg(priv, type, netdev, format, args...)		\
-> do {								\
-> 	if (netif_msg_##type(priv))				\
-> 		dynamic_netdev_dbg(netdev, format, ##args);	\
-> } while (0)
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+> tip/perf/urgent
+> 
+> Head SHA1: 57f124ca21d216fca3ba3995235c15855f9b9980
 > 
 > 
+> Steven Rostedt (2):
+>       tracing: Add ref_count to event systems for freeing
+>       tracing: Have enable system events use the subsystem_open routine
+> 
+> ----
+>  kernel/trace/trace.h               |    1 +
+>  kernel/trace/trace_events.c        |  113 ++++++++++++++++++++++++++++++------
+>  kernel/trace/trace_events_filter.c |    6 ++
+>  3 files changed, 102 insertions(+), 18 deletions(-)
 
-The reason I didn't add it this way is b/c I plan on converting the
-outer 'ifs' to the jump label infrastructure - which makes the disabled
-case just a no-op and moves the printk and tests out of line.
-
-Until that is done, i could see coding it as you've suggested, but I'd
-prefer to leave it as is (and leave future churn to within the dynamic
-debug code as opposed to the netdevice.h header).
+Hm, i'm wondering, when was this bug introduced?
 
 Thanks,
 
--Jason
-
+	Ingo
