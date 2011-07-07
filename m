@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755358Ab1GGFez (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 01:34:55 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:3609 "EHLO
+	id S1755204Ab1GGFeu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 01:34:50 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:49154 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754049Ab1GGFdT (ORCPT
+	with ESMTP id S1754078Ab1GGFdT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Jul 2011 01:33:19 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=message-id:user-agent:date:from:to:cc:subject:references:content-disposition;
-	b=hE93jGjKcde138wkJuJrP8BDnyqt16fDC0f6YaSAVeIZuLmA9f1lhC8BKEOc43ubZ
-	AAWKtL7Q+f6Z2S58Ze+Ow==
-Message-Id: <20110707053101.021543562@google.com>
+	h=message-id:user-agent:date:from:to:cc:subject;
+	b=v+lcXwOJ6JxHei7A4QDHGdp+Ss2kSk4iQyNbxYPrelv9y73AcoVQBIYKdYyWbA+0b
+	XqWkSGi2+N/UC/jy5ydGg==
+Message-Id: <20110707053036.173186930@google.com>
 User-Agent: quilt/0.48-1
-Date: Wed, 06 Jul 2011 22:30:50 -0700
+Date: Wed, 06 Jul 2011 22:30:36 -0700
 From: Paul Turner <pjt@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -26,130 +26,85 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
         Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
         Hu Tao <hutao@cn.fujitsu.com>
-Subject: [patch 14/17] sched: throttle entities exceeding their allowed bandwidth
-References: <20110707053036.173186930@google.com>
-Content-Disposition: inline; filename=sched-bwc-enable-throttling.patch
+Subject: [patch 00/17] CFS Bandwidth Control v7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the machinery in place to throttle and unthrottle entities, as well as
-handle their participation (or lack there of) we can now enable throttling.
+Hi all,
 
-There are 2 points that we must check whether it's time to set throttled state:
- put_prev_entity() and enqueue_entity().
+Please find attached an incremental revision on v7 of bandwidth control.
 
-- put_prev_entity() is the typical throttle path, we reach it by exceeding our
-  allocated run-time within update_curr()->account_cfs_rq_runtime() and going
-  through a reschedule.
+The only real functional change is an improvement to update shares only as we
+leave a throttled state.  The remainder is largely refactoring, expansion of
+comments, and code clean-up.
 
-- enqueue_entity() covers the case of a wake-up into an already throttled
-  group.  In this case we know the group cannot be on_rq and can throttle
-  immediately.  Checks are added at time of put_prev_entity() and
-  enqueue_entity()
+Hidetoshi Seto and Hu Tao have been kind enough to run performance benchmarks
+against v7 measuring the scheduling path overheads versus pipe-test-100k.
+Results can be found at:
 
-Signed-off-by: Paul Turner <pjt@google.com>
+https://lkml.org/lkml/2011/6/24/10
+https://lkml.org/lkml/2011/7/4/347
 
----
- kernel/sched_fair.c |   50 +++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 49 insertions(+), 1 deletion(-)
+The summary results (from Hu Tao's most recent run) are:
+                                            cycles                   instructions            branches
+-------------------------------------------------------------------------------------------------------------------
+base                                        7,526,317,497           8,666,579,347            1,771,078,445
++patch, cgroup not enabled                  7,610,354,447 (1.12%)   8,569,448,982 (-1.12%)   1,751,675,193 (-0.11%)
++patch, 10000000000/1000(quota/period)      7,856,873,327 (4.39%)   8,822,227,540 (1.80%)    1,801,766,182 (1.73%)
++patch, 10000000000/10000(quota/period)     7,797,711,600 (3.61%)   8,754,747,746 (1.02%)    1,788,316,969 (0.97%)
++patch, 10000000000/100000(quota/period)    7,777,784,384 (3.34%)   8,744,979,688 (0.90%)    1,786,319,566 (0.86%)
++patch, 10000000000/1000000(quota/period)   7,802,382,802 (3.67%)   8,755,638,235 (1.03%)    1,788,601,070 (0.99%)
+------------------------------------------------------------------------------------------------------------------
 
-Index: tip/kernel/sched_fair.c
-===================================================================
---- tip.orig/kernel/sched_fair.c
-+++ tip/kernel/sched_fair.c
-@@ -989,6 +989,8 @@ place_entity(struct cfs_rq *cfs_rq, stru
- 	se->vruntime = vruntime;
- }
- 
-+static void check_enqueue_throttle(struct cfs_rq *cfs_rq);
-+
- static void
- enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
- {
-@@ -1018,8 +1020,10 @@ enqueue_entity(struct cfs_rq *cfs_rq, st
- 		__enqueue_entity(cfs_rq, se);
- 	se->on_rq = 1;
- 
--	if (cfs_rq->nr_running == 1)
-+	if (cfs_rq->nr_running == 1) {
- 		list_add_leaf_cfs_rq(cfs_rq);
-+		check_enqueue_throttle(cfs_rq);
-+	}
- }
- 
- static void __clear_buddies_last(struct sched_entity *se)
-@@ -1224,6 +1228,8 @@ static struct sched_entity *pick_next_en
- 	return se;
- }
- 
-+static void check_cfs_rq_runtime(struct cfs_rq *cfs_rq);
-+
- static void put_prev_entity(struct cfs_rq *cfs_rq, struct sched_entity *prev)
- {
- 	/*
-@@ -1233,6 +1239,9 @@ static void put_prev_entity(struct cfs_r
- 	if (prev->on_rq)
- 		update_curr(cfs_rq);
- 
-+	/* throttle cfs_rqs exceeding runtime */
-+	check_cfs_rq_runtime(cfs_rq);
-+
- 	check_spread(cfs_rq, prev);
- 	if (prev->on_rq) {
- 		update_stats_wait_start(cfs_rq, prev);
-@@ -1518,6 +1527,43 @@ static void throttle_cfs_rq(struct cfs_r
- 	raw_spin_unlock(&cfs_b->lock);
- }
- 
-+/*
-+ * When a group wakes up we want to make sure that its quota is not already
-+ * expired/exceeded, otherwise it may be allowed to steal additional ticks of
-+ * runtime as update_curr() throttling can not not trigger until it's on-rq.
-+ */
-+static void check_enqueue_throttle(struct cfs_rq *cfs_rq)
-+{
-+	/* an active group must be handled by the update_curr()->put() path */
-+	if (!cfs_rq->runtime_enabled || cfs_rq->curr)
-+		return;
-+
-+	/* ensure the group is not already throttled */
-+	if (cfs_rq_throttled(cfs_rq))
-+		return;
-+
-+	/* update runtime allocation */
-+	account_cfs_rq_runtime(cfs_rq, 0);
-+	if (cfs_rq->runtime_remaining <= 0)
-+		throttle_cfs_rq(cfs_rq);
-+}
-+
-+/* conditionally throttle active cfs_rq's from put_prev_entity() */
-+static void check_cfs_rq_runtime(struct cfs_rq *cfs_rq)
-+{
-+	if (likely(!cfs_rq->runtime_enabled || cfs_rq->runtime_remaining > 0))
-+		return;
-+
-+	/*
-+	 * it's possible for a throttled entity to be forced into a running
-+	 * state (e.g. set_curr_task), in this case we're finished.
-+	 */
-+	if (cfs_rq_throttled(cfs_rq))
-+		return;
-+
-+	throttle_cfs_rq(cfs_rq);
-+}
-+
- static void unthrottle_cfs_rq(struct cfs_rq *cfs_rq)
- {
- 	struct rq *rq = rq_of(cfs_rq);
-@@ -1656,6 +1702,8 @@ static int do_sched_cfs_period_timer(str
- #else
- static void account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
- 		unsigned long delta_exec) {}
-+static void check_cfs_rq_runtime(struct cfs_rq *cfs_rq) {}
-+static void check_enqueue_throttle(struct cfs_rq *cfs_rq) {}
- 
- static inline int cfs_rq_throttled(struct cfs_rq *cfs_rq)
- {
+Thanks again for running these benchmarks!
 
+Changes:
+
+v7.1
+-----------
+- We now only explicitly update entity shares as their hierarchy leaves a 
+  throttled state.  This simplifies shares interactions as all tg->shares
+  logic can now be omitted within a throttled hierarchy.  This should also
+  improve the quality of balance observed within Kamalesh's nested cgroup test
+  as we are able to do a bottom-up shares update on unthrottle.
+- do_sched_cfs_period_timer() refactored to be linear/readable.
+- We now force a period timer restart in tg_set_cfs_bandwidth (before a
+  dramatic decrease in the period length could have induced a period of
+  starvation while we waited for the previous timer to expire).  Also avoid a
+  spurious start/restart that existed in the quota == RUNTIME_INF case.
+- The above removes the case of bandwidth changing within the period timer
+  which helps with the do_sched_cfs_period_timer() clean-up.  
+- Fixed potential cfs_b lock nesting on __start_cfs_bandwidth() (In the case
+  that we are racing with call-back startup and not tear-down).
+- The load-balancer checks to ensure that we are not moving tasks between 
+  throttled hierarchies have been refactored and now check both the src and
+  dest cfs_rqs.
+- Buddy isolation cleaned up and moved to its own patch.
+- Enabling of throttling deferred later within the series so that
+  load-balancer and buddy protections exist (for stability in bisection).
+- Documentation given a once-over for clarity and content.
+- General code cleanup & comments improved
+
+Hidetoshi, the following patchsets have changed enough to necessitate tweaking
+of your Reviewed-by:
+[patch 09/18] sched: add support for unthrottling group entities (extensive)
+[patch 11/18] sched: prevent interactions with throttled entities (update_cfs_shares)
+[patch 12/18] sched: prevent buddy interactions with throttled entities (new)
+
+Previous postings:
+-----------------
+v7: http://lkml.org/lkml/2011/6/21/43
+v6: http://lkml.org/lkml/2011/5/7/37
+v5: http://lkml.org/lkml/2011/3 /22/477
+v4: http://lkml.org/lkml/2011/2/23/44
+v3: http://lkml.org/lkml/2010/10/12/44
+v2: http://lkml.org/lkml/2010/4/28/88
+Original posting: http://lkml.org/lkml/2010/2/12/393
+Prior approaches: http://lkml.org/lkml/2010/1/5/44 ["CFS Hard limits v5"]
+
+
+Thanks,
+
+- Paul
 
