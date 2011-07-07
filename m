@@ -1,84 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752461Ab1GGHIT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 03:08:19 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:27736 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751025Ab1GGHIR (ORCPT
+	id S1752292Ab1GGHNK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 03:13:10 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:60175 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751025Ab1GGHNJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 03:08:17 -0400
-Message-ID: <4E155B45.7080408@atmel.com>
-Date: Thu, 07 Jul 2011 09:07:49 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Wan ZongShun <mcuos.com@gmail.com>, Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH next 2/2] MAINTAINERS: Update PXA2xx/PXA3xx SUPPORT patterns
-References: <e9742e1fca57477517fdb6ea110221d6292eed9c.1309997525.git.joe@perches.com> <e5bfdcabc4041d24277a2453ecc2690072cfdacf.1309997525.git.joe@perches.com>
-In-Reply-To: <e5bfdcabc4041d24277a2453ecc2690072cfdacf.1309997525.git.joe@perches.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 7 Jul 2011 03:13:09 -0400
+Date: Thu, 07 Jul 2011 00:13:01 -0700 (PDT)
+Message-Id: <20110707.001301.1054777374178479078.davem@davemloft.net>
+To: loke.chetan@gmail.com
+Cc: netdev@vger.kernel.org, eric.dumazet@gmail.com, joe@perches.com,
+        bhutchings@solarflare.com, shemminger@vyatta.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 net-next af-packet 1/2] Enhance af-packet to provide
+ (near zero)lossless packet capture functionality.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CAAsGZS67G8H5NLBxQTY88+T1cRQ3aiwBXK5qa8SJ_TbQ7xqvhw@mail.gmail.com>
+References: <CAAsGZS5vvmb_qX+cG507=hU_+kwnowEEojXGNMt5ShEZ9+ZeAA@mail.gmail.com>
+	<20110705.080123.2174577714045488116.davem@davemloft.net>
+	<CAAsGZS67G8H5NLBxQTY88+T1cRQ3aiwBXK5qa8SJ_TbQ7xqvhw@mail.gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 07 Jul 2011 00:13:04 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 07/07/2011 02:28, Joe Perches :
-> commit ca632f556697 ("spi: reorganize drivers")
-> renamed the files, update the MAINTAINERS patterns.
+From: chetan loke <loke.chetan@gmail.com>
+Date: Wed, 6 Jul 2011 17:45:20 -0400
+
+> new format:
 > 
-> cc: Grant Likely <grant.likely@secretlab.ca>
-> cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-
-> cc: Wan ZongShun <mcuos.com@gmail.com>
-> cc: Eric Miao <eric.y.miao@gmail.com>
-> cc: Russell King <linux@arm.linux.org.uk>
+> union bd_header_u {
+>        /* renamed struct bd_v1 to hdr_v1 */
+>        struct hdr_v1 h1;
+> } __attribute__ ((__packed__));
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  MAINTAINERS |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
+> struct block_desc {
+>        __u16 version;
+>        __u16 offset_to_priv;
+>        union bd_header_u hdr;
+> } __attribute__ ((__packed__));
 > 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 0ad8ff0..4e5cc19 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -1123,7 +1123,7 @@ F:	drivers/watchdog/nuc900_wdt.c
->  F:	drivers/net/arm/w90p910_ether.c
->  F:	drivers/mtd/nand/nuc900_nand.c
->  F:	drivers/rtc/rtc-nuc900.c
-> -F:	drivers/spi/spi_nuc900.c
-> +F:	drivers/spi/spi-nuc900.c
->  F:	drivers/usb/host/ehci-w90x900.c
->  F:	drivers/video/nuc900fb.c
->  
-> @@ -1321,7 +1321,7 @@ F:	drivers/net/macb.*
->  ATMEL SPI DRIVER
->  M:	Nicolas Ferre <nicolas.ferre@atmel.com>
->  S:	Supported
-> -F:	drivers/spi/atmel_spi.*
-> +F:	drivers/spi/spi-atmel.c
->  
->  ATMEL USBA UDC DRIVER
->  M:	Nicolas Ferre <nicolas.ferre@atmel.com>
-> @@ -5142,7 +5142,7 @@ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
->  S:	Maintained
->  F:	arch/arm/mach-pxa/
->  F:	drivers/pcmcia/pxa2xx*
-> -F:	drivers/spi/pxa2xx*
-> +F:	drivers/spi/spi-pxa2xx*
->  F:	drivers/usb/gadget/pxa2*
->  F:	include/sound/pxa2xx-lib.h
->  F:	sound/arm/pxa*
+> Is this ok with you?
 
+Get rid of __packed__, it's going to kill performance on RISC
+platforms.  If you use __packed__, regardless of the actual alignment,
+the compiler must assume that each part of the struct "might" be
+unaligned.  So on architectures such as sparc where alignment matters,
+a word is going to be accessed by a sequence of byte loads/stores.
 
--- 
-Nicolas Ferre
-
+Do not use packed unless absolutely enforced by a protocol or hardware
+data structure, it's evil.
