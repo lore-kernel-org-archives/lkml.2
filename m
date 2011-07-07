@@ -1,33 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756845Ab1GGP1D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 11:27:03 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60506 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756745Ab1GGP06 (ORCPT
+	id S1756857Ab1GGP12 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 11:27:28 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:63830 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756661Ab1GGP10 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 11:26:58 -0400
-Date: Thu, 7 Jul 2011 08:26:53 -0700
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Donggeun Kim <dg77.kim@samsung.com>
-Cc: linux-kernel@vger.kernel.org, lrg@ti.com, myungjoo.ham@samsung.com,
-        kyungmin.park@samsung.com
-Subject: Re: [PATCH] regulator: max8997: Fix setting inappropriate value for
- ramp_delay variable
-Message-ID: <20110707152652.GA16325@opensource.wolfsonmicro.com>
-References: <1310025116-30787-1-git-send-email-dg77.kim@samsung.com>
+	Thu, 7 Jul 2011 11:27:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1310025116-30787-1-git-send-email-dg77.kim@samsung.com>
-X-Cookie: Your ignorance cramps my conversation.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACna6rxAKMp-2wqwz4k4S3nTkY_3Qz7=hEZk9F2Zig7T5kp_HA@mail.gmail.com>
+References: <CACna6rxAKMp-2wqwz4k4S3nTkY_3Qz7=hEZk9F2Zig7T5kp_HA@mail.gmail.com>
+Date: Thu, 7 Jul 2011 17:27:25 +0200
+Message-ID: <CACna6ryOcNcwvwR5zmKjPm0WXcViQGdu=QyDmNHUqDVmNygL8g@mail.gmail.com>
+Subject: Re: Bug in BCMA: device_unregister causing "NULL pointer dereference at"
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: linux-wireless@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=bcaec5215fa3a7b4ba04a77c5aa2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 07, 2011 at 04:51:56PM +0900, Donggeun Kim wrote:
-> The ramp_delay variable can be set lower than the desired value.
-> This patch fixes it.
+--bcaec5215fa3a7b4ba04a77c5aa2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+W dniu 7 lipca 2011 17:25 u=C5=BCytkownik Rafa=C5=82 Mi=C5=82ecki <zajec5@g=
+mail.com> napisa=C5=82:
+> I've problem with bcma and bus subsystem.
+>
+> This works fine:
+> modprobe bcma; rmmod bcma
+>
+> This:
+> modprobe bcma; modprobe b43; rmmod b43; rmmod bcma
+> causes:
+> BUG: unable to handle kernel NULL pointer dereference at =C2=A0 (null)
+>
+> My BCMA has only 3 fores, out of them only 1 is registered as device:
+> bcma: Core 0 found: ChipCommon (manuf 0x4BF, id 0x800, rev 0x22, class 0x=
+0)
+> bcma: Core 1 found: IEEE 802.11 (manuf 0x4BF, id 0x812, rev 0x17, class 0=
+x0)
+> bcma: Core 2 found: PCIe (manuf 0x4BF, id 0x820, rev 0x0F, class 0x0)
+>
+> The dereference comes out from
+> static void bcma_unregister_cores(struct bcma_bus *bus)
+>
+> There is a simple loop:
+> list_for_each_entry(core, &bus->cores, list) {
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0if (core->dev_registered)
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0device_unregister(=
+&core->dev);
+> }
+>
+>
+> So when I unload bcma after I got driver (b43) for 0x812 core, I get
+> NULL pointer dereference.
+>
+> Any tip, why does it happen?
+
+Dmesg
+
+--=20
+Rafa=C5=82
+
+--bcaec5215fa3a7b4ba04a77c5aa2
+Content-Type: application/octet-stream; name="dmesg.log"
+Content-Disposition: attachment; filename="dmesg.log"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gptvfkhi0
+
+WyAgMjIyLjM5MzIxN10gYmNtYTogVW5yZWdpc3RlcmluZyBkcml2ZXIKWyAgMjI4LjI0Mjg4N10g
+YmNtYTogQ29yZSAweDgyMCByZWdpc3RlcmVkOjAKWyAgMjI4LjI0Mjg5Ml0gYmNtYTogQ29yZSAw
+eDgxMiByZWdpc3RlcmVkOjEKWyAgMjI4LjI0Mzk1Nl0gQlVHOiB1bmFibGUgdG8gaGFuZGxlIGtl
+cm5lbCBOVUxMIHBvaW50ZXIgZGVyZWZlcmVuY2UgYXQgICAobnVsbCkKWyAgMjI4LjI0Mzk3Ml0g
+SVA6IFs8YzAzZGNhNGU+XSBrb2JqZWN0X2RlbCsweDJlLzB4NjAKWyAgMjI4LjI0Mzk4OF0gKnBk
+cHQgPSAwMDAwMDAwMDFiODBjMDAxICpwZGUgPSAwMDAwMDAwMDAwMDAwMDAwIApbICAyMjguMjQz
+OTk3XSBPb3BzOiAwMDAyIFsjMV0gUFJFRU1QVCBTTVAgClsgIDIyOC4yNDQwMDZdIE1vZHVsZXMg
+bGlua2VkIGluOiBhcmM0IHNzYiBtbWNfY29yZSBwY21jaWEgcGNtY2lhX2NvcmUgbWFjODAyMTEg
+Y2ZnODAyMTEgYmNtYSgtKSBpcDZ0X0xPRyB4dF90Y3B1ZHAgeHRfcGt0dHlwZSBpcHRfTE9HIHh0
+X2xpbWl0IHNuZF9wY21fb3NzIHNuZF9taXhlcl9vc3Mgc25kX3NlcSBzbmRfc2VxX2RldmljZSBl
+ZGQgYWZfcGFja2V0IGlwNnRfUkVKRUNUIG5mX2Nvbm50cmFja19pcHY2IG5mX2RlZnJhZ19pcHY2
+IGlwNnRhYmxlX3JhdyB4dF9OT1RSQUNLIGlwdF9SRUpFQ1QgaXB0YWJsZV9yYXcgaXB0YWJsZV9m
+aWx0ZXIgaXA2dGFibGVfbWFuZ2xlIG5mX2Nvbm50cmFja19uZXRiaW9zX25zIG5mX2Nvbm50cmFj
+a19icm9hZGNhc3QgbmZfY29ubnRyYWNrX2lwdjQgbmZfZGVmcmFnX2lwdjQgaXBfdGFibGVzIHh0
+X2Nvbm50cmFjayBuZl9jb25udHJhY2sgaXA2dGFibGVfZmlsdGVyIGlwNl90YWJsZXMgeF90YWJs
+ZXMgZXh0MyBqYmQgZG1fbW9kIHNuZF9pbnRlbDh4MCBzbmRfYWM5N19jb2RlYyBhYzk3X2J1cyBz
+bmRfcGNtIHNnIHNuZF90aW1lciBzbmQgbnM1NTggc2VyaW9fcmF3IHBwZGV2IHBhdGFfYW1kIGZs
+b3BweSBnYW1lcG9ydCBpMmNfbmZvcmNlMiBwYXJwb3J0X3BjIHBhcnBvcnQgc291bmRjb3JlIGZv
+cmNlZGV0aCBrOHRlbXAgcGNzcGtyIHNuZF9wYWdlX2FsbG9jIGJ1dHRvbiBleHQ0IG1iY2FjaGUg
+amJkMiBjcmMxNiBzZF9tb2QgZmFuIHByb2Nlc3NvciBhdGFfZ2VuZXJpYyBwYXRhX3ZpYSBwYXRh
+X2ptaWNyb24gc2F0YV9udiBzYXRhX3ZpYSB0aGVybWFsIHRoZXJtYWxfc3lzIFtsYXN0IHVubG9h
+ZGVkOiBiNDNdClsgIDIyOC4yNDQwMjRdIApbICAyMjguMjQ0MDI0XSBQaWQ6IDMzODAsIGNvbW06
+IHJtbW9kIE5vdCB0YWludGVkIDMuMC4wLXJjNS13bC1iNDMrICM4MSAgICAgICAgICBLOE5GNEct
+U0FUQTIvSzhORjRHLVNBVEEyClsgIDIyOC4yNDQwMjRdIEVJUDogMDA2MDpbPGMwM2RjYTRlPl0g
+RUZMQUdTOiAwMDAxMDI0NiBDUFU6IDAKWyAgMjI4LjI0NDAyNF0gRUlQIGlzIGF0IGtvYmplY3Rf
+ZGVsKzB4MmUvMHg2MApbICAyMjguMjQ0MDI0XSBFQVg6IGRiOGU2YTE4IEVCWDogZGI4ZTZhMTQg
+RUNYOiBkYjRmMWExNCBFRFg6IDAwMDAwMDAwClsgIDIyOC4yNDQwMjRdIEVTSTogZGI4ZTZhMTQg
+RURJOiBkYTEwNjg2MCBFQlA6IGRiNTI5ZTQ4IEVTUDogZGI1MjllNDQKWyAgMjI4LjI0NDAyNF0g
+IERTOiAwMDdiIEVTOiAwMDdiIEZTOiAwMGQ4IEdTOiAwMDMzIFNTOiAwMDY4ClsgIDIyOC4yNDQw
+MjRdIFByb2Nlc3Mgcm1tb2QgKHBpZDogMzM4MCwgdGk9ZGI1MjgwMDAgdGFzaz1kNzhlYzVmMCB0
+YXNrLnRpPWRiNTI4MDAwKQpbICAyMjguMjQ0MDI0XSBTdGFjazoKWyAgMjI4LjI0NDAyNF0gIGRi
+OGU2YTBjIGRiNTI5ZTVjIGMwNDhjNTFjIGRiOGU2YTBjIGRiOGU2YTAwIGRhMTA2ODYwIGRiNTI5
+ZTc4IGMwNDhjNTY5ClsgIDIyOC4yNDQwMjRdICBkYTEwNjg2MCBkYjUyOWU3OCBjMDYyNGYyOCBk
+ZDAwNzVjOCBkYjkwNWUxOCBkYjUyOWU5NCBkZDAwNTQ0OCBkZDAwNzVjOApbICAyMjguMjQ0MDI0
+XSAgMDAwMDA4MTIgMDAwMDAwMDEgZGExMDY4MDAgZGI5MDVlMDAgZGI1MjllYTggZGQwMDZjZTQg
+ZGExMDY4NjAgZGExMDY4MDAKWyAgMjI4LjI0NDAyNF0gQ2FsbCBUcmFjZToKWyAgMjI4LjI0NDAy
+NF0gIFs8YzA0OGM1MWM+XSBkZXZpY2VfZGVsKzB4MTFjLzB4MTUwClsgIDIyOC4yNDQwMjRdICBb
+PGMwNDhjNTY5Pl0gZGV2aWNlX3VucmVnaXN0ZXIrMHgxOS8weDYwClsgIDIyOC4yNDQwMjRdICBb
+PGMwNjI0ZjI4Pl0gPyBwcmludGsrMHgyOC8weDMwClsgIDIyOC4yNDQwMjRdICBbPGRkMDA1NDQ4
+Pl0gYmNtYV9idXNfdW5yZWdpc3RlcisweDY4LzB4NzAgW2JjbWFdClsgIDIyOC4yNDQwMjRdICBb
+PGRkMDA2Y2U0Pl0gYmNtYV9ob3N0X3BjaV9yZW1vdmUrMHgyNC8weDYwIFtiY21hXQpbICAyMjgu
+MjQ0MDI0XSAgWzxjMDNmY2ZiZj5dIHBjaV9kZXZpY2VfcmVtb3ZlKzB4M2YvMHhmMApbICAyMjgu
+MjQ0MDI0XSAgWzxjMDQ4ZjA4Nj5dIF9fZGV2aWNlX3JlbGVhc2VfZHJpdmVyKzB4NTYvMHhhMApb
+ICAyMjguMjQ0MDI0XSAgWzxjMDQ4ZjdlZj5dIGRyaXZlcl9kZXRhY2grMHg4Zi8weGEwClsgIDIy
+OC4yNDQwMjRdICBbPGMwNDhlZjJjPl0gYnVzX3JlbW92ZV9kcml2ZXIrMHg2Yy8weGUwClsgIDIy
+OC4yNDQwMjRdICBbPGMwNDhmYjUxPl0gZHJpdmVyX3VucmVnaXN0ZXIrMHg0MS8weDcwClsgIDIy
+OC4yNDQwMjRdICBbPGMwMzdhMGFmPl0gPyBzeXNmc19yZW1vdmVfZmlsZSsweGYvMHgyMApbICAy
+MjguMjQ0MDI0XSAgWzxjMDNmY2NjZD5dIHBjaV91bnJlZ2lzdGVyX2RyaXZlcisweDJkLzB4ODAK
+WyAgMjI4LjI0NDAyNF0gIFs8ZGQwMDcwODU+XSBiY21hX2hvc3RfcGNpX2V4aXQrMHhkLzB4ZiBb
+YmNtYV0KWyAgMjI4LjI0NDAyNF0gIFs8ZGQwMDcwNmM+XSBiY21hX21vZGV4aXQrMHg4LzB4MTQg
+W2JjbWFdClsgIDIyOC4yNDQwMjRdICBbPGMwMjgyN2M5Pl0gc3lzX2RlbGV0ZV9tb2R1bGUrMHgx
+MjkvMHgyMDAKWyAgMjI4LjI0NDAyNF0gIFs8YzAyZmExYTY+XSA/IHJlbW92ZV92bWErMHg0Ni8w
+eDYwClsgIDIyOC4yNDQwMjRdICBbPGMwMmZiMGQxPl0gPyBkb19tdW5tYXArMHgxZjEvMHgyNzAK
+WyAgMjI4LjI0NDAyNF0gIFs8YzA2MmUwZDg+XSBzeXNlbnRlcl9kb19jYWxsKzB4MTIvMHgyOApb
+ICAyMjguMjQ0MDI0XSBDb2RlOiA4OSBlNSA1MyA4OSBjMyA3NCA1MSBlOCBjMSBlNyBmOSBmZiA4
+YiA0MyAxMCA4MCA2MyAyMCBmZCA4NSBjMCA3NCAzMiA4MyBjMCAwOCBlOCBkZSBiMSAyNCAwMCA4
+YiA0YiAwNCA4ZCA0MyAwNCA4YiA1MyAwOCA4OSA1MSAwNCAKWyAgMjI4LjI0NDAyNF0gIDBhIDg5
+IDQzIDA0IDg5IDQzIDA4IDhiIDQzIDEwIDgzIGMwIDA4IGU4IDhmIGFmIDI0IDAwIDhiIDQzIApb
+ICAyMjguMjQ0MDI0XSBFSVA6IFs8YzAzZGNhNGU+XSBrb2JqZWN0X2RlbCsweDJlLzB4NjAgU1M6
+RVNQIDAwNjg6ZGI1MjllNDQKWyAgMjI4LjI0NDAyNF0gQ1IyOiAwMDAwMDAwMDAwMDAwMDAwClsg
+IDIyOC4yNDQ1MTFdIC0tLVsgZW5kIHRyYWNlIDQwMDFjMTUzMDI0ZTI0ZDAgXS0tLQpbICAyMjgu
+MjQ0NTIwXSBub3RlOiBybW1vZFszMzgwXSBleGl0ZWQgd2l0aCBwcmVlbXB0X2NvdW50IDE=
+--bcaec5215fa3a7b4ba04a77c5aa2--
