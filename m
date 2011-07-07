@@ -1,51 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756118Ab1GGSnD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 14:43:03 -0400
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:25416 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755777Ab1GGSnA (ORCPT
+	id S1756158Ab1GGSnZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 14:43:25 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:55520 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755519Ab1GGSnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 14:43:00 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: BvBQm2AVM1lDihm37rKLez5cnCEBkFCoXEMeWnybTwgjtb8
- WnCQduGz56njQR0jxQ_DIjGNjpf75_BPa7JWNG0lBVV_6cuuwtMXlUR_Lkpu
- YULqmssc.6KeF2gVvgqV_Ez2ScqLQkuV7uEY9651fURQXNGu85GgmD9rrMUq
- yKrSqsi2v4Fjy7wifdjSsyDeQvNvEPmUErvM6RKcIQ2_ZiZDbnJ4QvUCFtSJ
- XjxcclZ42X1I.r7BVBLAN4X74VzBx9Dr.ojmR9UM0gGk_nk_mRBSf.SyKwpl
- Dcifm.Dm.BdtENl7xFviYnXLCl.UB4V1uRxKTqZG4yaH.RUch
-X-Yahoo-Newman-Property: ymail-3
-Date: Thu, 7 Jul 2011 13:42:57 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Ben Greear <greearb@candelatech.com>
-cc: Pekka Enberg <penberg@kernel.org>,
-        Marcin Slusarz <marcin.slusarz@gmail.com>,
-        Matt Mackall <mpm@selenic.com>, LKML <linux-kernel@vger.kernel.org>,
-        rientjes@google.com, linux-mm@kvack.org
-Subject: Re: [PATCH] slub: reduce overhead of slub_debug
-In-Reply-To: <4E15FB3E.9050108@candelatech.com>
-Message-ID: <alpine.DEB.2.00.1107071341120.21719@router.home>
-References: <20110626193918.GA3339@joi.lan> <alpine.DEB.2.00.1107072106560.6693@tiger> <alpine.DEB.2.00.1107071314320.21719@router.home> <4E15FB3E.9050108@candelatech.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 7 Jul 2011 14:43:24 -0400
+Date: Thu, 7 Jul 2011 12:43:21 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] plat-mxc: add missing initialisation of basic_mmio_gpio
+ shadow variables
+Message-ID: <20110707184321.GG2824@ponder.secretlab.ca>
+References: <1310043016-1121-1-git-send-email-LW@KARO-electronics.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1310043016-1121-1-git-send-email-LW@KARO-electronics.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Jul 2011, Ben Greear wrote:
+On Thu, Jul 07, 2011 at 02:50:16PM +0200, Lothar Waﬂmann wrote:
+> The bgpio_init() function does not initialise the shadow register for
+> the GPIO direction register. Thus, when configuring the first GPIO with
+> gpio_set_direction() all other GPIOs of the same bank will be
+> configured as inputs. Since the bgpio layer cannot know whether the
+> register is readable, the initialisation should be done by the caller
+> of bgpio_init().
+> 
+> Also, the 'data' shadow variable that is used inside basic_mmio_gpio
+> to cache the current value of the GPIO_DR register is initialised from
+> the GPIO_PSR register within bgpio_init(). Thus when setting the
+> output value of a certain GPIO, the other GPIO outputs of the same
+> bank will be set or cleared depending on the pin state of the GPIO
+> inputs during bgpio_init().
+> 
+> 
+> Signed-off-by: Lothar Waﬂmann <LW@KARO-electronics.de>
 
-> The more painful you make it, the less likely folks are to use it
-> in environments that actually reproduce bugs, so I think it's quite
-> short-sighted to reject such performance improvements out of hand.
->
-> And what if some production machine has funny crashes in a specific
-> work-load....wouldn't it be nice if it could enable debugging and
-> still perform well enough to do it's job?
+Applied, thanks.
 
-Sure if there would be significant improvements that accomplish what
-you claim above then that would be certainly worthwhile. Come up with
-patches like that please.
+g.
 
-
+> ---
+>  drivers/gpio/gpio-mxc.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/gpio/gpio-mxc.c b/drivers/gpio/gpio-mxc.c
+> index b351952..f7944ca 100644
+> --- a/drivers/gpio/gpio-mxc.c
+> +++ b/drivers/gpio/gpio-mxc.c
+> @@ -337,6 +337,8 @@ static int __devinit mxc_gpio_probe(struct platform_device *pdev)
+>  		goto out_iounmap;
+>  
+>  	port->bgc.gc.base = pdev->id * 32;
+> +	port->bgc.dir = port->bgc.read_reg(port->bgc.reg_dir);
+> +	port->bgc.data = port->bgc.read_reg(port->bgc.reg_set);
+>  
+>  	err = gpiochip_add(&port->bgc.gc);
+>  	if (err)
+> -- 
+> 1.5.6.5
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
