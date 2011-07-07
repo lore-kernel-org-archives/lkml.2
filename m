@@ -1,38 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755615Ab1GGLOM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 07:14:12 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:34640 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755339Ab1GGLOK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 07:14:10 -0400
-Subject: Re: [patch 00/17] CFS Bandwidth Control v7.1
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Hu Tao <hutao@cn.fujitsu.com>
-In-Reply-To: <20110707053036.173186930@google.com>
-References: <20110707053036.173186930@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 07 Jul 2011 13:13:45 +0200
-Message-ID: <1310037225.3282.538.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1755880Ab1GGLTO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 07:19:14 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:42052 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755339Ab1GGLTN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 07:19:13 -0400
+From: Ian Abbott <abbotti@mev.co.uk>
+To: <netdev@vger.kernel.org>
+CC: Ian Abbott <abbotti@mev.co.uk>, "David S. Miller" <davem@davemloft.net>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] lib/checksum.c: optimize do_csum a bit
+Date: Thu, 7 Jul 2011 12:18:49 +0100
+Message-ID: <1310037529-30854-1-git-send-email-abbotti@mev.co.uk>
+X-Mailer: git-send-email 1.7.6
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-07-06 at 22:30 -0700, Paul Turner wrote:
-> base                                        7,526,317,497           8,666,579,347            1,771,078,445
-> +patch, cgroup not enabled                  7,610,354,447 (1.12%)   8,569,448,982 (-1.12%)   1,751,675,193 (-0.11%) 
+Reduce the number of variables modified by the loop in do_csum() by 1,
+which seems like a good idea.  On Nios II (a RISC CPU with 3-operand
+instruction set) it reduces the loop from 7 to 6 instructions, including
+the conditional branch.
 
-"cgroup not enabled" means compiled in but not used at runtime, right?
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+---
+ lib/checksum.c |   13 +++++--------
+ 1 files changed, 5 insertions(+), 8 deletions(-)
+
+diff --git a/lib/checksum.c b/lib/checksum.c
+index 0975087..8df2f91 100644
+--- a/lib/checksum.c
++++ b/lib/checksum.c
+@@ -49,7 +49,7 @@ static inline unsigned short from32to16(unsigned int x)
+ 
+ static unsigned int do_csum(const unsigned char *buff, int len)
+ {
+-	int odd, count;
++	int odd;
+ 	unsigned int result = 0;
+ 
+ 	if (len <= 0)
+@@ -64,25 +64,22 @@ static unsigned int do_csum(const unsigned char *buff, int len)
+ 		len--;
+ 		buff++;
+ 	}
+-	count = len >> 1;		/* nr of 16-bit words.. */
+-	if (count) {
++	if (len >= 2) {
+ 		if (2 & (unsigned long) buff) {
+ 			result += *(unsigned short *) buff;
+-			count--;
+ 			len -= 2;
+ 			buff += 2;
+ 		}
+-		count >>= 1;		/* nr of 32-bit words.. */
+-		if (count) {
++		if (len >= 4) {
++			const unsigned char *end = buff + ((unsigned)len & ~3);
+ 			unsigned int carry = 0;
+ 			do {
+ 				unsigned int w = *(unsigned int *) buff;
+-				count--;
+ 				buff += 4;
+ 				result += carry;
+ 				result += w;
+ 				carry = (w > result);
+-			} while (count);
++			} while (buff < end);
+ 			result += carry;
+ 			result = (result & 0xffff) + (result >> 16);
+ 		}
+-- 
+1.7.6
+
