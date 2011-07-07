@@ -1,74 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752096Ab1GGEyy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 00:54:54 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:39721 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791Ab1GGEyv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 00:54:51 -0400
-Date: Thu, 7 Jul 2011 10:24:20 +0530
-From: Ankita Garg <ankita@in.ibm.com>
-To: david@lang.hm
-Cc: Pekka Enberg <penberg@kernel.org>, linux-arm-kernel@lists.infradead.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, svaidy@linux.vnet.ibm.com,
-        thomas.abraham@linaro.org, Dave Hansen <dave@linux.vnet.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory
- Power Management
-Message-ID: <20110707045420.GA23595@in.ibm.com>
-Reply-To: Ankita Garg <ankita@in.ibm.com>
-References: <1306499498-14263-1-git-send-email-ankita@in.ibm.com>
- <20110629130038.GA7909@in.ibm.com>
- <CAOJsxLHQP=-srK_uYYBsPb7+rUBnPZG7bzwtCd-rRaQa4ikUFg@mail.gmail.com>
- <alpine.DEB.2.02.1107061318190.2535@asgard.lang.hm>
+	id S1752876Ab1GGEzh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 00:55:37 -0400
+Received: from hera.kernel.org ([140.211.167.34]:43831 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750791Ab1GGEze (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 00:55:34 -0400
+Date: Thu, 7 Jul 2011 04:55:06 GMT
+From: tip-bot for Kees Cook <kees.cook@canonical.com>
+Message-ID: <tip-7a3136666bc0f0419f7aaa7b1fabb4b0e0a7fb76@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        kees.cook@canonical.com, tglx@linutronix.de, rjw@sisk.pl
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        kees.cook@canonical.com, tglx@linutronix.de, rjw@sisk.pl
+In-Reply-To: <20110707011034.GA8523@outflux.net>
+References: <20110707011034.GA8523@outflux.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, suspend: Restore MISC_ENABLE MSR in realmode wakeup
+Git-Commit-ID: 7a3136666bc0f0419f7aaa7b1fabb4b0e0a7fb76
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1107061318190.2535@asgard.lang.hm>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 07 Jul 2011 04:55:08 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 06, 2011 at 01:20:55PM -0700, david@lang.hm wrote:
-> On Wed, 6 Jul 2011, Pekka Enberg wrote:
-> 
-> >Why does the allocator need to know about address boundaries? Why
-> >isn't it enough to make the page allocator and reclaim policies favor using
-> >memory from lower addresses as aggressively as possible? That'd mean
-> >we'd favor the first memory banks and could keep the remaining ones
-> >powered off as much as possible.
-> >
-> >IOW, why do we need to support scenarios such as this:
-> >
-> >  bank 0     bank 1   bank 2    bank3
-> >| online  | offline | online  | offline |
-> 
-> I believe that there are memory allocations that cannot be moved
-> after they are made (think about regions allocated to DMA from
-> hardware where the hardware has already been given the address space
-> to DMA into)
->
+Commit-ID:  7a3136666bc0f0419f7aaa7b1fabb4b0e0a7fb76
+Gitweb:     http://git.kernel.org/tip/7a3136666bc0f0419f7aaa7b1fabb4b0e0a7fb76
+Author:     Kees Cook <kees.cook@canonical.com>
+AuthorDate: Wed, 6 Jul 2011 18:10:34 -0700
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Wed, 6 Jul 2011 20:09:34 -0700
 
-Thats true. These are kernel allocations which are not movable. However,
-the ZONE_MOVABLE would enable us to create complete movable zones and
-the ones that have the kernel allocations could be flagged as kernelcore
-zone.
+x86, suspend: Restore MISC_ENABLE MSR in realmode wakeup
+
+Some BIOSes will reset the Intel MISC_ENABLE MSR (specifically the
+XD_DISABLE bit) when resuming from S3, which can interact poorly with
+ebba638ae723d8a8fc2f7abce5ec18b688b791d7. In 32bit PAE mode, this can
+lead to a fault when EFER is restored by the kernel wakeup routines,
+due to it setting the NX bit for a CPU that (thanks to the BIOS reset)
+now incorrectly thinks it lacks the NX feature. (64bit is not affected
+because it uses a common CPU bring-up that specifically handles the
+XD_DISABLE bit.)
+
+The need for MISC_ENABLE being restored so early is specific to the S3
+resume path. Normally, MISC_ENABLE is saved in save_processor_state(),
+but this happens after the resume header is created, so just reproduce
+the logic here. (acpi_suspend_lowlevel() creates the header, calls
+do_suspend_lowlevel, which calls save_processor_state(), so the saved
+processor context isn't available during resume header creation.)
+
+[ hpa: Consider for stable if OK in mainline ]
+
+Signed-off-by: Kees Cook <kees.cook@canonical.com>
+Link: http://lkml.kernel.org/r/20110707011034.GA8523@outflux.net
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: <stable@kernel.org> 2.6.38+
+---
+ arch/x86/kernel/acpi/realmode/wakeup.S |   14 ++++++++++++++
+ arch/x86/kernel/acpi/realmode/wakeup.h |    6 ++++++
+ arch/x86/kernel/acpi/sleep.c           |    6 ++++++
+ 3 files changed, 26 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/acpi/realmode/wakeup.S b/arch/x86/kernel/acpi/realmode/wakeup.S
+index ead21b6..b4fd836 100644
+--- a/arch/x86/kernel/acpi/realmode/wakeup.S
++++ b/arch/x86/kernel/acpi/realmode/wakeup.S
+@@ -28,6 +28,8 @@ pmode_cr3:	.long	0	/* Saved %cr3 */
+ pmode_cr4:	.long	0	/* Saved %cr4 */
+ pmode_efer:	.quad	0	/* Saved EFER */
+ pmode_gdt:	.quad	0
++pmode_misc_en:	.quad	0	/* Saved MISC_ENABLE MSR */
++pmode_behavior:	.long	0	/* Wakeup behavior flags */
+ realmode_flags:	.long	0
+ real_magic:	.long	0
+ trampoline_segment:	.word 0
+@@ -91,6 +93,18 @@ wakeup_code:
+ 	/* Call the C code */
+ 	calll	main
  
-> As a result, you may not be able to take bank 2 offline, so your
-> option is to either leave banks 0-2 all online, or support emptying
-> bank 1 and taking it offline.
-> 
-
--- 
-Regards,
-Ankita Garg (ankita@in.ibm.com)
-Linux Technology Center
-IBM India Systems & Technology Labs,
-Bangalore, India
++	/* Restore MISC_ENABLE before entering protected mode, in case
++	   BIOS decided to clear XD_DISABLE during S3. */
++	movl	pmode_behavior, %eax
++	btl	$WAKEUP_BEHAVIOR_RESTORE_MISC_ENABLE, %eax
++	jnc	1f
++
++	movl	pmode_misc_en, %eax
++	movl	pmode_misc_en + 4, %edx
++	movl	$MSR_IA32_MISC_ENABLE, %ecx
++	wrmsr
++1:
++
+ 	/* Do any other stuff... */
+ 
+ #ifndef CONFIG_64BIT
+diff --git a/arch/x86/kernel/acpi/realmode/wakeup.h b/arch/x86/kernel/acpi/realmode/wakeup.h
+index e1828c0..97a29e1 100644
+--- a/arch/x86/kernel/acpi/realmode/wakeup.h
++++ b/arch/x86/kernel/acpi/realmode/wakeup.h
+@@ -21,6 +21,9 @@ struct wakeup_header {
+ 	u32 pmode_efer_low;	/* Protected mode EFER */
+ 	u32 pmode_efer_high;
+ 	u64 pmode_gdt;
++	u32 pmode_misc_en_low;	/* Protected mode MISC_ENABLE */
++	u32 pmode_misc_en_high;
++	u32 pmode_behavior;	/* Wakeup routine behavior flags */
+ 	u32 realmode_flags;
+ 	u32 real_magic;
+ 	u16 trampoline_segment;	/* segment with trampoline code, 64-bit only */
+@@ -39,4 +42,7 @@ extern struct wakeup_header wakeup_header;
+ #define WAKEUP_HEADER_SIGNATURE 0x51ee1111
+ #define WAKEUP_END_SIGNATURE	0x65a22c82
+ 
++/* Wakeup behavior bits */
++#define WAKEUP_BEHAVIOR_RESTORE_MISC_ENABLE     0
++
+ #endif /* ARCH_X86_KERNEL_ACPI_RM_WAKEUP_H */
+diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
+index 18a857b..103b6ab 100644
+--- a/arch/x86/kernel/acpi/sleep.c
++++ b/arch/x86/kernel/acpi/sleep.c
+@@ -77,6 +77,12 @@ int acpi_suspend_lowlevel(void)
+ 
+ 	header->pmode_cr0 = read_cr0();
+ 	header->pmode_cr4 = read_cr4_safe();
++	header->pmode_behavior = 0;
++	if (!rdmsr_safe(MSR_IA32_MISC_ENABLE,
++			&header->pmode_misc_en_low,
++			&header->pmode_misc_en_high))
++		header->pmode_behavior |=
++			(1 << WAKEUP_BEHAVIOR_RESTORE_MISC_ENABLE);
+ 	header->realmode_flags = acpi_realmode_flags;
+ 	header->real_magic = 0x12345678;
+ 
