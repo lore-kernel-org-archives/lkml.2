@@ -1,139 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752509Ab1GGTtB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 15:49:01 -0400
-Received: from wnohang.net ([178.79.154.173]:57195 "EHLO mail.wnohang.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751700Ab1GGTtA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 15:49:00 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net 4EFDEF0009
-X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net A63C1F0003
-Date: Fri, 8 Jul 2011 01:18:51 +0530
-From: Raghavendra D Prabhu <rprabhu@wnohang.net>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: xen-devel@lists.xensource.com, jeremy.fitzhardinge@citrix.com,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, Ian Campbell <ijc@hellion.org.uk>
-Subject: Re: [Xen-devel] Re: [PATCH] Modpost section mismatch fix
-Message-ID: <20110707194851.GB4394@Xye>
-References: <20110703232508.GB4440@Xye>
- <1309769388.634.51.camel@zakaz.uk.xensource.com>
- <20110704221646.GB4490@Xye>
- <20110705141323.GG2972@dumpdata.com>
- <20110705142731.GA4463@Xye>
- <20110705144846.GA13548@dumpdata.com>
- <20110705213243.GA3647@dumpdata.com>
- <20110707154648.GA4394@Xye>
- <20110707162454.GA8164@dumpdata.com>
+	id S1752596Ab1GGTts (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 15:49:48 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:55697 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751700Ab1GGTtr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 15:49:47 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dTy3Mrz/UPE2dbVg"
-Content-Disposition: inline
-In-Reply-To: <20110707162454.GA8164@dumpdata.com>
-X-Operating-System: Arch linux x86_64 3.0.0-rc5-LYM
-X-Editor: VIM - Vi IMproved 7.3
-User-Agent: Mutt/1.5.21 (2010-12-30)
+In-Reply-To: <20110707.122151.314840355798805828.davem@davemloft.net>
+References: <alpine.DEB.2.00.1107071314320.21719@router.home>
+	<1310064771.21902.55.camel@jaguar>
+	<alpine.DEB.2.00.1107071402490.24248@router.home>
+	<20110707.122151.314840355798805828.davem@davemloft.net>
+Date: Thu, 7 Jul 2011 22:49:46 +0300
+X-Google-Sender-Auth: itpFKBPAyYZeyjwV8B0Toy5vbos
+Message-ID: <CAOJsxLFsX3Q84QAeyRt5dZOdRxb3TiABPrP-YrWc91+BmR8ZBg@mail.gmail.com>
+Subject: Re: [PATCH] slub: reduce overhead of slub_debug
+From: Pekka Enberg <penberg@kernel.org>
+To: David Miller <davem@davemloft.net>
+Cc: cl@linux.com, marcin.slusarz@gmail.com, mpm@selenic.com,
+        linux-kernel@vger.kernel.org, rientjes@google.com, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---dTy3Mrz/UPE2dbVg
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-
-* On Thu, Jul 07, 2011 at 12:24:54PM -0400, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
->> Tested it. Works now.
+On Thu, Jul 7, 2011 at 10:21 PM, David Miller <davem@davemloft.net> wrote:
+> From: Christoph Lameter <cl@linux.com>
+> Date: Thu, 7 Jul 2011 14:12:37 -0500 (CDT)
 >
->Ok, Stuck Tested-by on the patch. Hopefully Linus hasn't pulled it yet.
-Ok.
+>> On Thu, 7 Jul 2011, Pekka Enberg wrote:
+>>
+>>> On Thu, 7 Jul 2011, Pekka Enberg wrote:
+>>> > > Looks good to me. Christoph, David, ?
+>>>
+>>> On Thu, 2011-07-07 at 13:17 -0500, Christoph Lameter wrote:
+>>> > The reason debug code is there is because it is useless overhead typically
+>>> > not needed. There is no point in optimizing the code that is not run in
+>>> > production environments unless there are gross performance issues that
+>>> > make debugging difficult. A performance patch for debugging would have to
+>>> > cause significant performance improvements. This patch does not do that
+>>> > nor was there such an issue to be addressed in the first place.
+>>>
+>>> Is there something technically wrong with the patch? Quoting the patch
+>>> email:
+>>>
+>>>   (Compiling some project with different options)
+>>>                                  make -j12    make clean
+>>>   slub_debug disabled:             1m 27s       1.2 s
+>>>   slub_debug enabled:              1m 46s       7.6 s
+>>>   slub_debug enabled + this patch: 1m 33s       3.2 s
+>>>
+>>>   check_bytes still shows up high, but not always at the top.
+>>>
+>>> That's significant enough speedup for me!
+>>
+>> Ok. I had a different set of numbers in mind from earlier posts.
+>>
+>> The benefit here comes from accessing memory in larger (word) chunks
+>> instead of byte wise. This is a form of memscan() with inverse matching.
+>>
+>> Isnt there an asm optimized version that can do this much better (there is
+>> one for memscan())? Optimizing this in core code by codeing something as
+>> generic as that is not that good since the arch code can deliver better
+>> performance and it seems that this is functionality that could be useful
+>> elsewhere.
 >
->> Reviewed-by: Raghavendra Prabhu <rprabhu@wnohang.net>
+> You're being so unreasonable, just let the optimization in, refine it
+> with follow-on patches.
 
->> Also,
->> The condition for acpi_gsi_to_irq can be removed since it always returns zero.
->
->The function might in the future return something that is non-zero
->and we should guard for it. Also you make 'irq' be unsigned which is not
->good as the IRQ 0 is a valid value - and with making it unsigned if it is
->set to -1 (the -1 is the invalid IRQ value) the check for 'irq != gsi'
->will be true and and we will pass in -1 casted to unsigned. That is a
->large value and not the right thing we want to pass to xen_register_gsi.
-
-My rationale for the unsigned part was that acpi_gsi_to_irq always
-assigns a positive value (>= 0) to the irq passed (as unsigned
-argument). But even otherwise that shouldn't make much of difference I guess.
-
-Also,
-I had sent another change (oneline) for the file
-arch/x86/xen/platform-pci-unplug.c for check_platform_magic, looks like that has not gone into
-the pull request for Linus.
->
->
->> ============================================
->>  diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
->>  index f567965..3faa55b 100644
->>  --- a/arch/x86/pci/xen.c
->>  +++ b/arch/x86/pci/xen.c
->>  @@ -405,7 +405,7 @@ static __init void xen_setup_acpi_sci(void)
->>          int rc;
->>          int trigger, polarity;
->>          int gsi = acpi_sci_override_gsi;
->>  -       int irq = -1;
->>  +       unsigned int irq = 0u;
->>          int gsi_override = -1;
-
->>          if (!gsi)
->>  @@ -435,11 +435,10 @@ static __init void xen_setup_acpi_sci(void)
->>           * setup as we had setup IRQ 20 for it).
->>           */
->>          /* Check whether the GSI != IRQ */
->>  -       if (acpi_gsi_to_irq(gsi, &irq) == 0) {
->>  -               if (irq >= 0 && irq != gsi)
->>  -                       /* Bugger, we MUST have that IRQ. */
->>  -                       gsi_override = irq;
->>  -       }
->>  +       acpi_gsi_to_irq(gsi, &irq);
->>  +       if (irq != gsi)
->>  +               /* Bugger, we MUST have that IRQ. */
->>  +               gsi_override = irq;
-
->>          gsi = xen_register_gsi(gsi, gsi_override, trigger, polarity);
->>          printk(KERN_INFO "xen: acpi sci %d\n", gsi);
-
-
->> --------------------------
->> Raghavendra Prabhu
->> GPG Id : 0xD72BE977
->> Fingerprint: B93F EBCB 8E05 7039 CD3C A4B8 A616 DCA1 D72B E977
->> www: wnohang.net
->
->
->
->> _______________________________________________
->> Xen-devel mailing list
->> Xen-devel@lists.xensource.com
->> http://lists.xensource.com/xen-devel
->
---------------------------
-Raghavendra Prabhu
-GPG Id : 0xD72BE977
-Fingerprint: B93F EBCB 8E05 7039 CD3C A4B8 A616 DCA1 D72B E977
-www: wnohang.net
-
---dTy3Mrz/UPE2dbVg
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOFg2jAAoJEKYW3KHXK+l33tYH/268oryCWI2noF5U5UOYBbJf
-37sCIRz9X8GTF90Ki41M1tDIt/+GKpYh1nmBHhkL774mjEQWURQrNz6MFwB2uTQy
-rlSsOkqWCJe+NFDJLC3NepaMGy0jZbCaytcDYXIqRAXjd+JWBp+AjvoMYjPO57gr
-WecZwc8NWMaiB9WMqozADxF1fqiKQUYwkVv4/7SDVSwfocG2/uAD1/9aaGq1ZfDp
-1ZSY/O1ldKsbu2t/qXR/NX4V/LJ0Z+Y+CQGpYcn32scR8ming8Twy8IPZkJOaN2/
-uOZgcg5jkcM+wNmVYHpyl8VJEi9JXCRfwzX/+4Ni2TwNHgqWAAe86LlmS+MIT1o=
-=RHDq
------END PGP SIGNATURE-----
-
---dTy3Mrz/UPE2dbVg--
+I applied the patch. I think a follow up patch that moves the function
+to lib/string.c with proper generic name would be in order. Thanks!
