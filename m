@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318Ab1GGTos (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 15:44:48 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:42582 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751790Ab1GGTor convert rfc822-to-8bit (ORCPT
+	id S1752281Ab1GGTrV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 15:47:21 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:36090 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391Ab1GGTrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 15:44:47 -0400
+	Thu, 7 Jul 2011 15:47:20 -0400
+From: julie Sullivan <kernelmail.jms@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3
+Date: Thu, 7 Jul 2011 20:47:13 +0100
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc4-revert+; KDE/4.6.2; x86_64; ; )
+Cc: julie Sullivan <kernelmail.jms@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org, torvalds@linux-foundation.org
+References: <CAAVPGONLqy+gn_ggjQxyUoYifs4Hipcd-0t931w04StyrTCzxQ@mail.gmail.com> <20110706212348.GO6014@linux.vnet.ibm.com>
+In-Reply-To: <20110706212348.GO6014@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <CAO+b5-pxk_5+gvR6N8_vW5zMTn1RZW0ghBRGZiMVGqWOoXYTiA@mail.gmail.com>
-References: <cover.1309967232.git.root@dhcp-100-18-164.bos.redhat.com>
- <151c1f3fc402d2f19f95e44de07cdc04917f7278.1309967232.git.root@dhcp-100-18-164.bos.redhat.com>
- <CAO+b5-pxk_5+gvR6N8_vW5zMTn1RZW0ghBRGZiMVGqWOoXYTiA@mail.gmail.com>
-From: Jim Cromie <jim.cromie@gmail.com>
-Date: Thu, 7 Jul 2011 13:44:17 -0600
-Message-ID: <CAJfuBxzx-SYfh8jhtxABGdVJD_SsaY3kx2q+F6vcTA5P1vCeWA@mail.gmail.com>
-Subject: Re: [PATCH 02/10] dynamic_debug: Consolidate prefix output to single routine
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: Jason Baron <jbaron@redhat.com>, gregkh@suse.de, joe@perches.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107072047.14429.kernelmail.jms@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 7, 2011 at 12:14 PM, Bart Van Assche <bvanassche@acm.org> wrote:
-> On Wed, Jul 6, 2011 at 7:24 PM, Jason Baron <jbaron@redhat.com> wrote:
->>
->> From: Joe Perches <joe@perches.com>
->>
->> Adding dynamic_dev_dbg duplicated prefix output.
->> Consolidate that output to a single routine.
->>
->> Signed-off-by: Joe Perches <joe@perches.com>
->> Signed-off-by: Jason Baron <jbaron@redhat.com>
->> ---
->>  lib/dynamic_debug.c |   38 ++++++++++++++++++--------------------
->>  1 files changed, 18 insertions(+), 20 deletions(-)
->>
->> diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
->> index 5c5f8f9..758e922 100644
->> --- a/lib/dynamic_debug.c
->> +++ b/lib/dynamic_debug.c
->> @@ -428,15 +428,10 @@ static int ddebug_exec_query(char *query_string)
->>        return 0;
->>  }
->>
->> -int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
->> +static int dynamic_emit_prefix(const struct _ddebug *descriptor)
->>  {
->
-> How about renaming dynamic_emit_prefix() into ddebug_emit_prefix() ?
-> Personally I prefer the latter name over the former.
->
-> Bart.
->
+On Wednesday 06 July 2011 22:23:48 Paul E. McKenney wrote:
+> On Wed, Jul 06, 2011 at 10:10:16PM +0100, julie Sullivan wrote:
+> > None of my kernels after 3.0-rc3 will boot on my Dell XPS-M1730
+> > (x86-64 2-core) test box running
+> > Ubuntu (Kubuntu) 11.04 (i.e. the first unbootable one was -rc4).
+> > The machine freezes immediately after selecting the kernel from the
+> > bootloader menu, leaving
+> > me with a blank blue screen so I can't give you any log messages.
+> > 
+> > It bisects to the following commit:
+> > 
+> > commit a46e0899eec7a3069bcadd45dfba7bf67c6ed016
+> > Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Date:   Wed Jun 15 15:47:09 2011 -0700
+> > 
+> >     rcu: use softirq instead of kthreads except when RCU_BOOST=y
+> >     
+> >     This patch #ifdefs RCU kthreads out of the kernel unless RCU_BOOST=y,
+> >     thus eliminating context-switch overhead if RCU priority boosting has
+> >     not been configured.
+> >     
+> >     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-WRT naming, Id like dyndbg, esp as exposed on kernel cmdline, parameters..
+> 
+> Hello, Julie,
+> 
+> One approach would be to cherry-pick the following commits:
+>
+> f8b7fc6b514f34a51875dd48dff70d4d17a54f38 rcu: Move RCU_BOOST #ifdefs to header f
+> a46e0899eec7a3069bcadd45dfba7bf67c6ed016 rcu: use softirq instead of kthreads ex
+> 09223371deac67d08ca0b70bd18787920284c967 rcu: Use softirq to address performance
+> 9a432736904d386cda28b987b38ba14dae960ecc rcu: Simplify curing of load woes
 
-dyndbg.query=....
-dyndbg.verbose=1
-/sys/modules/dyndbg/parameters/verbose
+> 
+> Another approach would be to move ahead to v3.0-rc4 or later.
+> 
+> 							Thanx, Paul
 
-does this run up against ABI issues ?
+Hi Paul
+Thanks for your prompt reply, sorry for the delay in mine (real life intervened :-)
+I tried reverting those 4 commits on v3.0-rc4 and can confirm that it _does_ give me a bootable 3.0-rc4 kernel.
+I'll do some more testing. If you would like me to try anything specific just let me know :-)
+
+Cheers
+Julie
