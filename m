@@ -1,350 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753862Ab1GHP1n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 11:27:43 -0400
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:47147 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753748Ab1GHP1h (ORCPT
+	id S1753814Ab1GHP1i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 11:27:38 -0400
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:59079 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753439Ab1GHP1g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 11:27:37 -0400
+	Fri, 8 Jul 2011 11:27:36 -0400
 From: James Nuss <jamesnuss@nanometrics.ca>
 To: Rodolfo Giometti <rodolfo.giometti@enneenne.com>
 Cc: Ricardo Martins <rasm@fe.up.pt>, Ben Gardiner <bengardiner@nanometrics.ca>,
         linux-kernel@vger.kernel.org, linuxpps@ml.enneenne.com,
         Alexander Gordeev <lasaine@lvk.cs.msu.su>,
         Igor Plyatov <plyatov@gmail.com>
-Subject: [PATCH v3 2/2] pps: new client driver using GPIO
-Date: Fri,  8 Jul 2011 11:27:26 -0400
-Message-Id: <1310138846-1164-3-git-send-email-jamesnuss@nanometrics.ca>
+Subject: [PATCH v3 0/2] New PPS client driver using GPIO
+Date: Fri,  8 Jul 2011 11:27:24 -0400
+Message-Id: <1310138846-1164-1-git-send-email-jamesnuss@nanometrics.ca>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1310138846-1164-1-git-send-email-jamesnuss@nanometrics.ca>
-References: <1310138846-1164-1-git-send-email-jamesnuss@nanometrics.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This client driver allows you to use a GPIO pin as a source for PPS
-signals. Platform data [1] are used to specify the GPIO pin number, label,
-assert event edge type, and whether clear events are captured.
+Changes since v2:
+. manually specify label for pr_fmt() since KBUILD_MODNAME equates to
+pps_gpio rather than pps-gpio which is the driver name.
+. cleanup return values
+. call gpio_free() on error if gpio_request() has been called.
 
-This driver is based on the work by Ricardo Martins <rasm@fe.up.pt> who
-submitted an initial implementation [2] of a PPS IRQ client driver to
-the linuxpps mailing-list on Dec 3 2010.
+Changes since v1:
+. rename module to pps-gpio
+. add platform data options for gpio pin number, gpio pin label, assert edge type,
+and clear event capture.
+. no need to setup gpio and IRQ resource in platform device. This is performed by
+the driver.
+. cleanup as per comments
 
-[1] include/linux/pps-gpio.h
-[2] http://ml.enneenne.com/pipermail/linuxpps/2010-December/004155.html
-
-Signed-off-by: James Nuss <jamesnuss@nanometrics.ca>
-CC: Ricardo Martins <rasm@fe.up.pt>
 ---
- drivers/pps/clients/Kconfig    |    9 ++
- drivers/pps/clients/Makefile   |    1 +
- drivers/pps/clients/pps-gpio.c |  227 ++++++++++++++++++++++++++++++++++++++++
- include/linux/pps-gpio.h       |   32 ++++++
- 4 files changed, 269 insertions(+), 0 deletions(-)
+
+This patchset contains 2 patches.  It is based on the work done by
+Ricardo Martins <rasm@fe.up.pt> who submitted an initial implementation [1]
+of a PPS IRQ client driver to the linuxpps mailing-list on Dec 3 2010. Most
+of the work was in removing the platform device registration from the
+driver itself as this is not the standard way of platform driver/device
+registration.
+
+[1] http://ml.enneenne.com/pipermail/linuxpps/2010-December/004155.html
+
+[PATCH 1/2] is mostly a cleanup and contains refactoring of the echo
+function definition interface. A default echo function has been defined
+so all you need to do is set one of the ECHO flags and this function will
+be used. Alternatively, don't set the ECHO flags or override the echo
+function as required.
+
+[PATCH 2/2] adds a new PPS client driver for use with GPIO. The module is
+implemented as a platform driver therefore it is necessary to register
+platform device(s) to make use of it. Usually this is performed
+in your specific board setup.
+
+TESTING:
+Testing was performed using the Texas Instruments OMAP-L138 based DA850
+evaluation board. GPIO6.6 was selected as the GPIO pin with assert events
+on the rising edge and also capturing clear events.  The platform device was
+registered in arch/arm/mach-davinci/board-da850-evm.c.
+This GPIO was connected to a Trimble Lassen IQ generating real PPS signals.
+The dmesg output with PPS debugging enabled is as follows:
+
+...
+pps_core: LinuxPPS API ver. 1 registered
+pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti <giometti@linux.it>
+pps_core: source pps-gpio.0 got cdev (253:0)
+pps pps0: new PPS source pps-gpio.0
+pps pps0: Registered IRQ 203 as PPS source
+...
+pps pps0: PPS event at 1309287783.084940917
+pps pps0: capture assert seq #29
+pps pps0: PPS event at 1309287783.085086500
+pps pps0: capture clear seq #31
+pps pps0: PPS event at 1309287784.084908209
+pps pps0: capture assert seq #30
+pps pps0: PPS event at 1309287784.085053209
+pps pps0: capture clear seq #32
+...
+
+---
+
+James Nuss (2):
+  pps: default echo function
+  pps: new client driver using GPIO
+
+ drivers/pps/clients/Kconfig       |    9 ++
+ drivers/pps/clients/Makefile      |    1 +
+ drivers/pps/clients/pps-gpio.c    |  227 +++++++++++++++++++++++++++++++++++++
+ drivers/pps/clients/pps-ktimer.c  |   12 --
+ drivers/pps/clients/pps_parport.c |    9 --
+ drivers/pps/kapi.c                |   20 ++-
+ include/linux/pps-gpio.h          |   32 +++++
+ 7 files changed, 282 insertions(+), 28 deletions(-)
  create mode 100644 drivers/pps/clients/pps-gpio.c
  create mode 100644 include/linux/pps-gpio.h
-
-diff --git a/drivers/pps/clients/Kconfig b/drivers/pps/clients/Kconfig
-index 8520a7f..c2e0f1e 100644
---- a/drivers/pps/clients/Kconfig
-+++ b/drivers/pps/clients/Kconfig
-@@ -29,4 +29,13 @@ config PPS_CLIENT_PARPORT
- 	  If you say yes here you get support for a PPS source connected
- 	  with the interrupt pin of your parallel port.
- 
-+config PPS_CLIENT_GPIO
-+	tristate "PPS client using GPIO"
-+	depends on PPS
-+	help
-+	  If you say yes here you get support for a PPS source using
-+	  GPIO. To be useful you must also register a platform device
-+	  specifying the GPIO pin and other options, usually in your board
-+	  setup.
-+
- endif
-diff --git a/drivers/pps/clients/Makefile b/drivers/pps/clients/Makefile
-index 4feb7e9..a461d15 100644
---- a/drivers/pps/clients/Makefile
-+++ b/drivers/pps/clients/Makefile
-@@ -5,5 +5,6 @@
- obj-$(CONFIG_PPS_CLIENT_KTIMER)	+= pps-ktimer.o
- obj-$(CONFIG_PPS_CLIENT_LDISC)	+= pps-ldisc.o
- obj-$(CONFIG_PPS_CLIENT_PARPORT) += pps_parport.o
-+obj-$(CONFIG_PPS_CLIENT_GPIO)	+= pps-gpio.o
- 
- ccflags-$(CONFIG_PPS_DEBUG) := -DDEBUG
-diff --git a/drivers/pps/clients/pps-gpio.c b/drivers/pps/clients/pps-gpio.c
-new file mode 100644
-index 0000000..93f1be0
---- /dev/null
-+++ b/drivers/pps/clients/pps-gpio.c
-@@ -0,0 +1,227 @@
-+/*
-+ * pps-gpio.c -- PPS client driver using GPIO
-+ *
-+ *
-+ * Copyright (C) 2010 Ricardo Martins <rasm@fe.up.pt>
-+ * Copyright (C) 2011 James Nuss <jamesnuss@nanometrics.ca>
-+ *
-+ *   This program is free software; you can redistribute it and/or modify
-+ *   it under the terms of the GNU General Public License as published by
-+ *   the Free Software Foundation; either version 2 of the License, or
-+ *   (at your option) any later version.
-+ *
-+ *   This program is distributed in the hope that it will be useful,
-+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *   GNU General Public License for more details.
-+ *
-+ *   You should have received a copy of the GNU General Public License
-+ *   along with this program; if not, write to the Free Software
-+ *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+
-+#define PPS_GPIO_NAME "pps-gpio"
-+#define pr_fmt(fmt) PPS_GPIO_NAME ": " fmt
-+
-+#include <linux/init.h>
-+#include <linux/kernel.h>
-+#include <linux/interrupt.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include <linux/pps_kernel.h>
-+#include <linux/pps-gpio.h>
-+#include <linux/gpio.h>
-+#include <linux/list.h>
-+
-+/* Info for each registered platform device */
-+struct pps_gpio_device_data {
-+	int irq;			/* IRQ used as PPS source */
-+	struct pps_device *pps;		/* PPS source device */
-+	struct pps_source_info info;	/* PPS source information */
-+	const struct pps_gpio_platform_data *pdata;
-+};
-+
-+/*
-+ * Report the PPS event
-+ */
-+
-+static irqreturn_t pps_gpio_irq_handler(int irq, void *data)
-+{
-+	const struct pps_gpio_device_data *info;
-+	struct pps_event_time ts;
-+	int rising_edge;
-+
-+	/* Get the time stamp first */
-+	pps_get_ts(&ts);
-+
-+	info = (const struct pps_gpio_device_data *)data;
-+
-+	rising_edge = gpio_get_value(info->pdata->gpio_pin);
-+	if ((rising_edge && !info->pdata->assert_falling_edge) ||
-+			(!rising_edge && info->pdata->assert_falling_edge))
-+		pps_event(info->pps, &ts, PPS_CAPTUREASSERT, NULL);
-+	else if (info->pdata->capture_clear &&
-+			((rising_edge && info->pdata->assert_falling_edge) ||
-+			 (!rising_edge && !info->pdata->assert_falling_edge)))
-+		pps_event(info->pps, &ts, PPS_CAPTURECLEAR, NULL);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static int pps_gpio_setup(struct platform_device *pdev)
-+{
-+	int ret;
-+	const struct pps_gpio_platform_data *pdata = pdev->dev.platform_data;
-+
-+	ret = gpio_request(pdata->gpio_pin, pdata->gpio_label);
-+	if (ret) {
-+		pr_warning("failed to request GPIO %u\n", pdata->gpio_pin);
-+		return -EINVAL;
-+	}
-+
-+	ret = gpio_direction_input(pdata->gpio_pin);
-+	if (ret) {
-+		pr_warning("failed to set pin direction\n");
-+		gpio_free(pdata->gpio_pin);
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+static unsigned long
-+get_irqf_trigger_flags(const struct pps_gpio_platform_data *pdata)
-+{
-+	unsigned long flags = pdata->assert_falling_edge ?
-+		IRQF_TRIGGER_FALLING : IRQF_TRIGGER_RISING;
-+
-+	if (pdata->capture_clear) {
-+		flags |= ((flags & IRQF_TRIGGER_RISING) ?
-+				IRQF_TRIGGER_FALLING : IRQF_TRIGGER_RISING);
-+	}
-+
-+	return flags;
-+}
-+
-+static int pps_gpio_probe(struct platform_device *pdev)
-+{
-+	struct pps_gpio_device_data *data;
-+	int irq;
-+	int ret;
-+	int err;
-+	int pps_default_params;
-+	const struct pps_gpio_platform_data *pdata = pdev->dev.platform_data;
-+
-+
-+	/* GPIO setup */
-+	ret = pps_gpio_setup(pdev);
-+	if (ret)
-+		return -EINVAL;
-+
-+	/* IRQ setup */
-+	irq = gpio_to_irq(pdata->gpio_pin);
-+	if (irq < 0) {
-+		pr_err("failed to map GPIO to IRQ: %d\n", irq);
-+		err = -EINVAL;
-+		goto return_error;
-+	}
-+
-+	/* allocate space for device info */
-+	data = kzalloc(sizeof(struct pps_gpio_device_data), GFP_KERNEL);
-+	if (data == NULL) {
-+		err = -ENOMEM;
-+		goto return_error;
-+	}
-+
-+	/* initialize PPS specific parts of the bookkeeping data structure. */
-+	data->info.mode = PPS_CAPTUREASSERT | PPS_OFFSETASSERT |
-+		PPS_ECHOASSERT | PPS_CANWAIT | PPS_TSFMT_TSPEC;
-+	if (pdata->capture_clear)
-+		data->info.mode |= PPS_CAPTURECLEAR | PPS_OFFSETCLEAR |
-+			PPS_ECHOCLEAR;
-+	data->info.owner = THIS_MODULE;
-+	snprintf(data->info.name, PPS_MAX_NAME_LEN - 1, "%s.%d",
-+		 pdev->name, pdev->id);
-+
-+	/* register PPS source */
-+	pps_default_params = PPS_CAPTUREASSERT | PPS_OFFSETASSERT;
-+	if (pdata->capture_clear)
-+		pps_default_params |= PPS_CAPTURECLEAR | PPS_OFFSETCLEAR;
-+	data->pps = pps_register_source(&data->info, pps_default_params);
-+	if (data->pps == NULL) {
-+		kfree(data);
-+		pr_err("failed to register IRQ %d as PPS source\n", irq);
-+		err = -EINVAL;
-+		goto return_error;
-+	}
-+
-+	data->irq = irq;
-+	data->pdata = pdata;
-+
-+	/* register IRQ interrupt handler */
-+	ret = request_irq(irq, pps_gpio_irq_handler,
-+			get_irqf_trigger_flags(pdata), data->info.name, data);
-+	if (ret) {
-+		pps_unregister_source(data->pps);
-+		kfree(data);
-+		pr_err("failed to acquire IRQ %d\n", irq);
-+		err = -EINVAL;
-+		goto return_error;
-+	}
-+
-+	platform_set_drvdata(pdev, data);
-+	dev_info(data->pps->dev, "Registered IRQ %d as PPS source\n", irq);
-+
-+	return 0;
-+
-+return_error:
-+	gpio_free(pdata->gpio_pin);
-+	return err;
-+}
-+
-+static int pps_gpio_remove(struct platform_device *pdev)
-+{
-+	struct pps_gpio_device_data *data = platform_get_drvdata(pdev);
-+	const struct pps_gpio_platform_data *pdata = data->pdata;
-+
-+	platform_set_drvdata(pdev, NULL);
-+	free_irq(data->irq, data);
-+	gpio_free(pdata->gpio_pin);
-+	pps_unregister_source(data->pps);
-+	pr_info("removed IRQ %d as PPS source\n", data->irq);
-+	kfree(data);
-+	return 0;
-+}
-+
-+static struct platform_driver pps_gpio_driver = {
-+	.probe		= pps_gpio_probe,
-+	.remove		=  __devexit_p(pps_gpio_remove),
-+	.driver		= {
-+		.name	= PPS_GPIO_NAME,
-+		.owner	= THIS_MODULE
-+	},
-+};
-+
-+static int __init pps_gpio_init(void)
-+{
-+	int ret = platform_driver_register(&pps_gpio_driver);
-+	if (ret < 0)
-+		pr_err("failed to register platform driver\n");
-+	return ret;
-+}
-+
-+static void __exit pps_gpio_exit(void)
-+{
-+	platform_driver_unregister(&pps_gpio_driver);
-+	pr_debug("unregistered platform driver\n");
-+}
-+
-+module_init(pps_gpio_init);
-+module_exit(pps_gpio_exit);
-+
-+MODULE_AUTHOR("Ricardo Martins <rasm@fe.up.pt>");
-+MODULE_AUTHOR("James Nuss <jamesnuss@nanometrics.ca>");
-+MODULE_DESCRIPTION("Use GPIO pin as PPS source");
-+MODULE_LICENSE("GPL");
-+MODULE_VERSION("1.0.0");
-diff --git a/include/linux/pps-gpio.h b/include/linux/pps-gpio.h
-new file mode 100644
-index 0000000..0035abe
---- /dev/null
-+++ b/include/linux/pps-gpio.h
-@@ -0,0 +1,32 @@
-+/*
-+ * pps-gpio.h -- PPS client for GPIOs
-+ *
-+ *
-+ * Copyright (C) 2011 James Nuss <jamesnuss@nanometrics.ca>
-+ *
-+ *   This program is free software; you can redistribute it and/or modify
-+ *   it under the terms of the GNU General Public License as published by
-+ *   the Free Software Foundation; either version 2 of the License, or
-+ *   (at your option) any later version.
-+ *
-+ *   This program is distributed in the hope that it will be useful,
-+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *   GNU General Public License for more details.
-+ *
-+ *   You should have received a copy of the GNU General Public License
-+ *   along with this program; if not, write to the Free Software
-+ *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+
-+#ifndef _PPS_GPIO_H
-+#define _PPS_GPIO_H
-+
-+struct pps_gpio_platform_data {
-+	bool assert_falling_edge;
-+	bool capture_clear;
-+	unsigned int gpio_pin;
-+	const char *gpio_label;
-+};
-+
-+#endif
--- 
-1.7.1
 
