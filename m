@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274Ab1GIF61 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 01:58:27 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:34290 "EHLO
+	id S1753311Ab1GIF6v (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 01:58:51 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:42990 "EHLO
 	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752958Ab1GIFyb (ORCPT
+	by vger.kernel.org with ESMTP id S1751815Ab1GIFya (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 01:54:31 -0400
-X-Sasl-enc: qRwDXCpEnxZEMhd37pxoPRAZEEvObUTtg/ZdHgX7j3Cd 1310190871
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 15:51:20 2011
-Message-Id: <20110708225120.105851115@clark.kroah.org>
+	Sat, 9 Jul 2011 01:54:30 -0400
+X-Sasl-enc: fOUBtYqZVxx25tfD1r5TmDARdDc0jiVGthTuvdS07g/B 1310190869
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 15:51:21 2011
+Message-Id: <20110708225121.804649847@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 08 Jul 2011 15:50:02 -0700
+Date: Fri, 08 Jul 2011 15:50:20 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Marcin Slusarz <marcin.slusarz@gmail.com>,
-        Catalin Marinas <catalin.marinas@arm.com>, Tejun Heo <tj@kernel.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [13/35] debugobjects: Fix boot crash when kmemleak and debugobjects enabled
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [31/35] af_packet: prevent information leak
 In-Reply-To: <20110708225343.GA14402@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,63 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
 
-commit 161b6ae0e067e421b20bb35caf66bdb405c929ac upstream.
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-Order of initialization look like this:
-...
-debugobjects
-kmemleak
-...(lots of other subsystems)...
-workqueues (through early initcall)
-...
+[ Upstream commit 13fcb7bd322164c67926ffe272846d4860196dc6 ]
 
-debugobjects use schedule_work for batch freeing of its data and kmemleak
-heavily use debugobjects, so when it comes to freeing and workqueues were
-not initialized yet, kernel crashes:
+In 2.6.27, commit 393e52e33c6c2 (packet: deliver VLAN TCI to userspace)
+added a small information leak.
 
-BUG: unable to handle kernel NULL pointer dereference at           (null)
-IP: [<ffffffff810854d1>] __queue_work+0x29/0x41a
- [<ffffffff81085910>] queue_work_on+0x16/0x1d
- [<ffffffff81085abc>] queue_work+0x29/0x55
- [<ffffffff81085afb>] schedule_work+0x13/0x15
- [<ffffffff81242de1>] free_object+0x90/0x95
- [<ffffffff81242f6d>] debug_check_no_obj_freed+0x187/0x1d3
- [<ffffffff814b6504>] ? _raw_spin_unlock_irqrestore+0x30/0x4d
- [<ffffffff8110bd14>] ? free_object_rcu+0x68/0x6d
- [<ffffffff8110890c>] kmem_cache_free+0x64/0x12c
- [<ffffffff8110bd14>] free_object_rcu+0x68/0x6d
- [<ffffffff810b58bc>] __rcu_process_callbacks+0x1b6/0x2d9
-...
+Add padding field and make sure its zeroed before copy to user.
 
-because system_wq is NULL.
-
-Fix it by checking if workqueues susbystem was initialized before using.
-
-Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Dipankar Sarma <dipankar@in.ibm.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/20110528112342.GA3068@joi.lan
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Patrick McHardy <kaber@trash.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- lib/debugobjects.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/if_packet.h |    2 ++
+ net/packet/af_packet.c    |    2 ++
+ 2 files changed, 4 insertions(+)
 
---- a/lib/debugobjects.c
-+++ b/lib/debugobjects.c
-@@ -196,7 +196,7 @@ static void free_object(struct debug_obj
- 	 * initialized:
- 	 */
- 	if (obj_pool_free > ODEBUG_POOL_SIZE && obj_cache)
--		sched = !work_pending(&debug_obj_work);
-+		sched = keventd_up() && !work_pending(&debug_obj_work);
- 	hlist_add_head(&obj->node, &obj_pool);
- 	obj_pool_free++;
- 	obj_pool_used--;
+--- a/include/linux/if_packet.h
++++ b/include/linux/if_packet.h
+@@ -63,6 +63,7 @@ struct tpacket_auxdata
+ 	__u16		tp_mac;
+ 	__u16		tp_net;
+ 	__u16		tp_vlan_tci;
++	__u16		tp_padding;
+ };
+ 
+ /* Rx ring - header status */
+@@ -103,6 +104,7 @@ struct tpacket2_hdr
+ 	__u32		tp_sec;
+ 	__u32		tp_nsec;
+ 	__u16		tp_vlan_tci;
++	__u16		tp_padding;
+ };
+ 
+ #define TPACKET2_HDRLEN		(TPACKET_ALIGN(sizeof(struct tpacket2_hdr)) + sizeof(struct sockaddr_ll))
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -767,6 +767,7 @@ static int tpacket_rcv(struct sk_buff *s
+ 		h.h2->tp_sec = ts.tv_sec;
+ 		h.h2->tp_nsec = ts.tv_nsec;
+ 		h.h2->tp_vlan_tci = skb->vlan_tci;
++		h.h2->tp_padding = 0;
+ 		hdrlen = sizeof(*h.h2);
+ 		break;
+ 	default:
+@@ -1499,6 +1500,7 @@ static int packet_recvmsg(struct kiocb *
+ 		aux.tp_net = skb_network_offset(skb);
+ 		aux.tp_vlan_tci = skb->vlan_tci;
+ 
++		aux.tp_padding = 0;
+ 		put_cmsg(msg, SOL_PACKET, PACKET_AUXDATA, sizeof(aux), &aux);
+ 	}
+ 
 
 
