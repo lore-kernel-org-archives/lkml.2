@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754331Ab1GIGH4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 02:07:56 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:59635 "EHLO
+	id S1753572Ab1GIGA5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 02:00:57 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:52964 "EHLO
 	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753606Ab1GIGA6 (ORCPT
+	by vger.kernel.org with ESMTP id S1752527Ab1GIGAv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 02:00:58 -0400
-X-Sasl-enc: 5Ee8Ku2wLXgfeobXrU7mupAZ1igmm5MUoa1+O4a+CkD4 1310191257
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 16:01:11 2011
-Message-Id: <20110708230111.133605209@clark.kroah.org>
+	Sat, 9 Jul 2011 02:00:51 -0400
+X-Sasl-enc: PP1HXjSdqbCHQQxNQ6p1Ecdn1+VNOzNHSAthv7MV5and 1310191250
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 16:01:10 2011
+Message-Id: <20110708230110.615647636@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 08 Jul 2011 16:00:32 -0700
+Date: Fri, 08 Jul 2011 16:00:27 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [16/35] i2c-taos-evm: Fix log messages
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [11/35] [media] uvcvideo: Remove buffers from the queues when freeing
 In-Reply-To: <20110708230122.GA18807@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,58 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <khali@linux-fr.org>
+From: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
 
-commit 9b640f2e154268cb516efcaf9c434f2e73c6783e upstream.
+commit 8ca2c80b170c47eeb55f0c2a0f2b8edf85f35d49 upstream.
 
-* Print all error and information messages even when debugging is
-  disabled.
-* Don't use adapter device to log messages before it is ready.
+When freeing memory for the video buffers also remove them from the
+irq & main queues.
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
+This fixes an oops when doing the following:
+
+open ("/dev/video", ..)
+VIDIOC_REQBUFS
+VIDIOC_QBUF
+VIDIOC_REQBUFS
+close ()
+
+As the second VIDIOC_REQBUFS will cause the list entries of the buffers
+to be cleared while they still hang around on the main and irc queues
+
+Signed-off-by: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/i2c/busses/i2c-taos-evm.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/media/video/uvc/uvc_queue.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/i2c/busses/i2c-taos-evm.c
-+++ b/drivers/i2c/busses/i2c-taos-evm.c
-@@ -234,7 +234,7 @@ static int taos_connect(struct serio *se
- 
- 	if (taos->state != TAOS_STATE_IDLE) {
- 		err = -ENODEV;
--		dev_dbg(&serio->dev, "TAOS EVM reset failed (state=%d, "
-+		dev_err(&serio->dev, "TAOS EVM reset failed (state=%d, "
- 			"pos=%d)\n", taos->state, taos->pos);
- 		goto exit_close;
+--- a/drivers/media/video/uvc/uvc_queue.c
++++ b/drivers/media/video/uvc/uvc_queue.c
+@@ -165,6 +165,8 @@ int uvc_free_buffers(struct uvc_video_qu
  	}
-@@ -255,7 +255,7 @@ static int taos_connect(struct serio *se
- 					 msecs_to_jiffies(250));
- 	if (taos->state != TAOS_STATE_IDLE) {
- 		err = -ENODEV;
--		dev_err(&adapter->dev, "Echo off failed "
-+		dev_err(&serio->dev, "TAOS EVM echo off failed "
- 			"(state=%d)\n", taos->state);
- 		goto exit_close;
+ 
+ 	if (queue->count) {
++		uvc_queue_cancel(queue, 0);
++		INIT_LIST_HEAD(&queue->mainqueue);
+ 		vfree(queue->mem);
+ 		queue->count = 0;
  	}
-@@ -263,7 +263,7 @@ static int taos_connect(struct serio *se
- 	err = i2c_add_adapter(adapter);
- 	if (err)
- 		goto exit_close;
--	dev_dbg(&serio->dev, "Connected to TAOS EVM\n");
-+	dev_info(&serio->dev, "Connected to TAOS EVM\n");
- 
- 	taos->client = taos_instantiate_device(adapter);
- 	return 0;
-@@ -288,7 +288,7 @@ static void taos_disconnect(struct serio
- 	serio_set_drvdata(serio, NULL);
- 	kfree(taos);
- 
--	dev_dbg(&serio->dev, "Disconnected from TAOS EVM\n");
-+	dev_info(&serio->dev, "Disconnected from TAOS EVM\n");
- }
- 
- static struct serio_device_id taos_serio_ids[] = {
 
 
