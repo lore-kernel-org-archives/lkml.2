@@ -1,239 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312Ab1GHA6K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 20:58:10 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:36070 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752564Ab1GHA6I (ORCPT
+	id S1753393Ab1GHBOf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 21:14:35 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:36851 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753015Ab1GHBOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 20:58:08 -0400
-X-AuditID: cbfee61a-b7c53ae000002dc1-98-4e16561d353a
-Date: Fri, 08 Jul 2011 09:58:25 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-Subject: Re: [PATCH v2] ARM: EXYNOS4: Support for generic I/O power domains on
- EXYNOS4210
-In-reply-to: <201107072323.44155.rjw@sisk.pl>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Kukjin Kim <kgene.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        Sylwester Nawrocki <snjw23@gmail.com>,
-        linux-pm@lists.linux-foundation.org,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+	Thu, 7 Jul 2011 21:14:33 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=MEs4J5JyApfVLKPtFw4fzUK+1mdD0pec4mSy8X2Lptf2gFEPbaVtKBlAubBxeTv+t
+	Jg8x7Fqdt/SWIDXTqqJDw==
+Date: Thu, 7 Jul 2011 18:14:12 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+cc: Andrew Morton <akpm@linux-foundation.org>, greg@kroah.com,
         linux-kernel@vger.kernel.org
-Message-id: <4E165631.9060901@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7BIT
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
-References: <4E0824B1.6070501@samsung.com> <201107072323.44155.rjw@sisk.pl>
-X-OriginalArrivalTime: 08 Jul 2011 00:58:17.0038 (UTC)
- FILETIME=[1F4366E0:01CC3D0A]
-X-Brightmail-Tracker: AAAAAA==
+Subject: Re: [PATCH 34/49] gma500: the GEM and GTT code is device
+ independant
+In-Reply-To: <20110705144140.23872.86541.stgit@localhost.localdomain>
+Message-ID: <alpine.LSU.2.00.1107071742250.10362@sister.anvils>
+References: <20110705141038.23872.55303.stgit@localhost.localdomain> <20110705144140.23872.86541.stgit@localhost.localdomain>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Alan,
 
-Rafael J. Wysocki wrote:
-> Hi,
+On Tue, 5 Jul 2011, Alan Cox wrote:
+> From: Alan Cox <alan@linux.intel.com>
 > 
-> On Monday, June 27, 2011, Chanwoo Choi wrote:
->> Use the generic power domains support to implement support for
->> power domain on EXYNOS4210.
->>
->> I refer to the following patch to implement what configure
->> the clock-gating control register for block to turn off/on:
->> http://git.infradead.org/users/kmpark/linux-2.6-samsung/commit/39a81876d034dcbdc2a4c4c4b847b3b49e38870c
->>
->> This patch is based on following "pm-domains" branch.
->> http://git.kernel.org/?p=linux/kernel/git/rafael/suspend-2.6.git;a=shortlog;h=refs/heads/pm-domains
->>
->> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
->> Signed-off-by: Kyungmin.park <kyungmin.park@samsung.com>
->> ---
->>  arch/arm/mach-exynos4/Kconfig                      |    1 +
->>  arch/arm/mach-exynos4/Makefile                     |    1 +
->>  arch/arm/mach-exynos4/include/mach/pm-exynos4210.h |   69 ++++++++
->>  arch/arm/mach-exynos4/include/mach/regs-clock.h    |    8 +
->>  arch/arm/mach-exynos4/mach-nuri.c                  |   20 +++
->>  arch/arm/mach-exynos4/pm-exynos4210.c              |  170 ++++++++++++++++++++
->>  arch/arm/plat-samsung/include/plat/pd.h            |    3 +-
->>  7 files changed, 271 insertions(+), 1 deletions(-)
->>  create mode 100644 arch/arm/mach-exynos4/include/mach/pm-exynos4210.h
->>  create mode 100644 arch/arm/mach-exynos4/pm-exynos4210.c
->>
->> diff --git a/arch/arm/mach-exynos4/Kconfig b/arch/arm/mach-exynos4/Kconfig
->> index 1435fc3..266e7f6 100644
->> --- a/arch/arm/mach-exynos4/Kconfig
->> +++ b/arch/arm/mach-exynos4/Kconfig
->> @@ -183,6 +183,7 @@ config MACH_NURI
->>  	select EXYNOS4_SETUP_SDHCI
->>  	select EXYNOS4_SETUP_USB_PHY
->>  	select SAMSUNG_DEV_PWM
->> +	select PM_GENERIC_DOMAINS
+> Rename the gem and gtt files accordingly.
 > 
-> That should be "select PM_GENERIC_DOMAINS if PM".  Otherwise it will be
-> selected even for CONFIG_PM unset.
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
 
-OK, I will modify it.
+This caught my eye, and I realize that I'm in the process of
+sabotaging your work, or vice versa: sorry!
 
-> 
->>  	help
->>  	  Machine support for Samsung Mobile NURI Board.
->>  
->> diff --git a/arch/arm/mach-exynos4/Makefile b/arch/arm/mach-exynos4/Makefile
->> index 60fe5ec..0e9461f 100644
->> --- a/arch/arm/mach-exynos4/Makefile
->> +++ b/arch/arm/mach-exynos4/Makefile
->> @@ -17,6 +17,7 @@ obj-$(CONFIG_CPU_EXYNOS4210)	+= setup-i2c0.o irq-eint.o dma.o
->>  obj-$(CONFIG_PM)		+= pm.o sleep.o
->>  obj-$(CONFIG_CPU_FREQ)		+= cpufreq.o
->>  obj-$(CONFIG_CPU_IDLE)		+= cpuidle.o
->> +obj-$(CONFIG_CPU_EXYNOS4210)	+= pm-exynos4210.o
->>  
->>  obj-$(CONFIG_SMP)		+= platsmp.o headsmp.o
->>  
->> diff --git a/arch/arm/mach-exynos4/include/mach/pm-exynos4210.h b/arch/arm/mach-exynos4/include/mach/pm-exynos4210.h
->> new file mode 100644
->> index 0000000..ff924a8
->> --- /dev/null
->> +++ b/arch/arm/mach-exynos4/include/mach/pm-exynos4210.h
->> @@ -0,0 +1,69 @@
->> +/* linux/arch/arm/mach-exynos4/include/mach/pm-exynos4.h
->> + *
->> + * Exynos4 Power management support
->> + *
->> + * Copyright (c) 2010-2011 Samsung Electronics Co., Ltd.
->> + *		http://www.samsung.com
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + */
->> +
->> +#ifndef __PM_EXYNOS4210_H__
->> +#define __PM_EXYNOS4210_H__
->> +
->> +#include <linux/pm_domain.h>
->> +#include <plat/pd.h>
->> +
->> +struct platform_device;
->> +
->> +struct exynos4210_pm_domain {
->> +	struct generic_pm_domain genpd;
->> +
->> +	const char *name;
->> +	void __iomem *base;
->> +	unsigned long gate_mask;
->> +	int boot_on;
->> +};
->> +
->> +static inline struct exynos4210_pm_domain *to_exynos4210_pd(
->> +		struct generic_pm_domain *pd)
->> +{
->> +	return container_of(pd, struct exynos4210_pm_domain, genpd);
->> +}
->> +
->> +#ifdef CONFIG_PM
->> +extern struct exynos4210_pm_domain exynos4210_pd_list[PD_MAX_NUM];
->> +#define EXYNOS4210_MFC		(&exynos4210_pd_list[PD_MFC])
->> +#define EXYNOS4210_G3D		(&exynos4210_pd_list[PD_G3D])
->> +#define EXYNOS4210_LCD0		(&exynos4210_pd_list[PD_LCD0])
->> +#define EXYNOS4210_LCD1		(&exynos4210_pd_list[PD_LCD1])
->> +#define EXYNOS4210_TV		(&exynos4210_pd_list[PD_TV])
->> +#define EXYNOS4210_CAM		(&exynos4210_pd_list[PD_CAM])
->> +#define EXYNOS4210_GPS		(&exynos4210_pd_list[PD_GPS])
->> +
->> +int exynos4210_pd_init(struct exynos4210_pm_domain *domain);
->> +int exynos4210_add_device_to_domain(struct exynos4210_pm_domain *domain,
->> +				struct platform_device *pdev);
->> +#else
->> +#define EXYNOS4210_MFC		NULL
->> +#define EXYNOS4210_G3D		NULL
->> +#define EXYNOS4210_LCD0		NULL
->> +#define EXYNOS4210_LCD1		NULL
->> +#define EXYNOS4210_TV		NULL
->> +#define EXYNOS4210_CAM		NULL
->> +#define EXYNOS4210_GPS		NULL
->> +
->> +static inline int exynos4210_pd_init(struct exynos4210_pm_domain *domain)
->> +{
->> +	return 0;
->> +}
->> +static inline int exynos4_add_device_to_domain(struct exynos4210_pm_domain *domain,
->> +				struct platform_device *pdev)
->> +{
->> +	return 0;
->> +}
->> +#endif /* CONFIG_PM */
->> +
->> +#endif /* __PM_EXYNOS4210_H__ */
->> diff --git a/arch/arm/mach-exynos4/include/mach/regs-clock.h b/arch/arm/mach-exynos4/include/mach/regs-clock.h
->> index 6e311c1..bc0fda9 100644
->> --- a/arch/arm/mach-exynos4/include/mach/regs-clock.h
->> +++ b/arch/arm/mach-exynos4/include/mach/regs-clock.h
->> @@ -171,6 +171,14 @@
->>  #define S5P_CLKDIV_BUS_GPLR_SHIFT	(4)
->>  #define S5P_CLKDIV_BUS_GPLR_MASK	(0x7 << S5P_CLKDIV_BUS_GPLR_SHIFT)
->>  
->> +#define S5P_CLKGATE_BLOCK_CAM		(1<<0)
->> +#define S5P_CLKGATE_BLOCK_TV		(1<<1)
->> +#define S5P_CLKGATE_BLOCK_MFC		(1<<2)
->> +#define S5P_CLKGATE_BLOCK_G3D		(1<<3)
->> +#define S5P_CLKGATE_BLOCK_LCD0		(1<<4)
->> +#define S5P_CLKGATE_BLOCK_LCD1		(1<<5)
->> +#define S5P_CLKGATE_BLOCK_GPS		(1<<7)
->> +
->>  /* Compatibility defines and inclusion */
->>  
->>  #include <mach/regs-pmu.h>
->> diff --git a/arch/arm/mach-exynos4/mach-nuri.c b/arch/arm/mach-exynos4/mach-nuri.c
->> index 642702b..805c6d5 100644
->> --- a/arch/arm/mach-exynos4/mach-nuri.c
->> +++ b/arch/arm/mach-exynos4/mach-nuri.c
->> @@ -37,6 +37,7 @@
->>  #include <plat/iic.h>
->>  
->>  #include <mach/map.h>
->> +#include <mach/pm-exynos4210.h>
->>  
->>  /* Following are default values for UCON, ULCON and UFCON UART registers */
->>  #define NURI_UCON_DEFAULT	(S3C2410_UCON_TXILEVEL |	\
->> @@ -376,6 +377,23 @@ static struct platform_device *nuri_devices[] __initdata = {
->>  	&nuri_backlight_device,
->>  };
->>  
->> +static void __init nuri_power_domain_init(void)
->> +{
->> +	int i;
->> +
->> +	for (i = 0 ; i < PD_MAX_NUM ; i++)
->> +		exynos4210_pd_init(&exynos4210_pd_list[i]);
->> +
->> +	/* Add device to power-domain */
->> +	exynos4210_add_device_to_domain(EXYNOS4210_MFC, NULL);
->> +	exynos4210_add_device_to_domain(EXYNOS4210_G3D, NULL);
->> +	exynos4210_add_device_to_domain(EXYNOS4210_LCD0, &nuri_lcd_device);
->> +	exynos4210_add_device_to_domain(EXYNOS4210_LCD1, NULL);
->> +	exynos4210_add_device_to_domain(EXYNOS4210_TV, NULL);
->> +	exynos4210_add_device_to_domain(EXYNOS4210_CAM, NULL);
->> +	exynos4210_add_device_to_domain(EXYNOS4210_GPS, NULL);
-> 
-> It seems the calls with the second NULL argument are redundant.
-> 
-I will fix it.
+> +
+> +	for (i = 0; i < pages; i++) {
+> +		/* FIXME: review flags later */
+> +		p = read_cache_page_gfp(mapping, i,
+> +					__GFP_COLD | GFP_KERNEL);
+...
+> -
+> -	for (i = 0; i < pages; i++) {
+> -		/* FIXME: review flags later */
+> -		p = read_cache_page_gfp(mapping, i,
+> -					__GFP_COLD | GFP_KERNEL);
 
-> The rest looks OK to me.
-> 
-> Thanks,
-> Rafael
-> 
+I've been eliminating drm/i915's calls to read_cache_page_gfp(),
+while you've been adding them to staging/gma500.  It still works in
+3.0-rc, but if my further changes go through from mmotm to 3.1-rc,
+then read_cache_page_gfp() on a shmem/tmpfs file will crash on the
+lack of a readpage method (we could easily make it error instead
+of crash, but you'd probably prefer something that actually works).
 
-I will resend the modified patch according to your comment and your "pm-domains" branch.
+As example, below is the patch where I updated drm/i915 to be ready
+for the changeover.  They set __GFP_RECLAIMABLE on the mapping because
+they've got a way to discard unpinned object pages when memory is tight;
+and sometimes add in __GFP_NORETRY|__GFP_NOWARN when allocating.
 
-Thanks,
-Chanwoo Choi
+I'm guessing you'd just want to use shmem_read_mapping_page() throughout,
+after initializing mapping with the appropriate flags (GFP_HIGHUSER_MOVABLE
+is fs/inode.c's default: maybe your pages aren't easily movable and you'd
+better say GFP_HIGHUSER, or maybe you have reason to need GFP_KERNEL).
+
+Hugh
+
+commit 5949eac4d9b5bf936c12cb7ec3a09084c1326834
+Author: Hugh Dickins <hughd@google.com>
+Date:   Mon Jun 27 16:18:18 2011 -0700
+
+    drm/i915: use shmem_read_mapping_page
+    
+    Soon tmpfs will stop supporting ->readpage and read_cache_page_gfp(): once
+    "tmpfs: add shmem_read_mapping_page_gfp" has been applied, this patch can
+    be applied to ease the transition.
+    
+    Make i915_gem_object_get_pages_gtt() use shmem_read_mapping_page_gfp() in
+    the one place it's needed; elsewhere use shmem_read_mapping_page(), with
+    the mapping's gfp_mask properly initialized.
+    
+    Forget about __GFP_COLD: since tmpfs initializes its pages with memset,
+    asking for a cold page is counter-productive.
+    
+    Include linux/shmem_fs.h also in drm_gem.c: with shmem_file_setup() now
+    declared there too, we shall remove the prototype from linux/mm.h later.
+    
+    Signed-off-by: Hugh Dickins <hughd@google.com>
+    Cc: Christoph Hellwig <hch@infradead.org>
+    Cc: Chris Wilson <chris@chris-wilson.co.uk>
+    Cc: Keith Packard <keithp@keithp.com>
+    Cc: Dave Airlie <airlied@redhat.com>
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+
+diff --git a/drivers/gpu/drm/drm_gem.c b/drivers/gpu/drm/drm_gem.c
+index 74e4ff5..4012fe4 100644
+--- a/drivers/gpu/drm/drm_gem.c
++++ b/drivers/gpu/drm/drm_gem.c
+@@ -34,6 +34,7 @@
+ #include <linux/module.h>
+ #include <linux/mman.h>
+ #include <linux/pagemap.h>
++#include <linux/shmem_fs.h>
+ #include "drmP.h"
+ 
+ /** @file drm_gem.c
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index c6389de..fa560ce 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -31,6 +31,7 @@
+ #include "i915_drv.h"
+ #include "i915_trace.h"
+ #include "intel_drv.h"
++#include <linux/shmem_fs.h>
+ #include <linux/slab.h>
+ #include <linux/swap.h>
+ #include <linux/pci.h>
+@@ -359,8 +360,7 @@ i915_gem_shmem_pread_fast(struct drm_device *dev,
+ 		if ((page_offset + remain) > PAGE_SIZE)
+ 			page_length = PAGE_SIZE - page_offset;
+ 
+-		page = read_cache_page_gfp(mapping, offset >> PAGE_SHIFT,
+-					   GFP_HIGHUSER | __GFP_RECLAIMABLE);
++		page = shmem_read_mapping_page(mapping, offset >> PAGE_SHIFT);
+ 		if (IS_ERR(page))
+ 			return PTR_ERR(page);
+ 
+@@ -463,8 +463,7 @@ i915_gem_shmem_pread_slow(struct drm_device *dev,
+ 		if ((data_page_offset + page_length) > PAGE_SIZE)
+ 			page_length = PAGE_SIZE - data_page_offset;
+ 
+-		page = read_cache_page_gfp(mapping, offset >> PAGE_SHIFT,
+-					   GFP_HIGHUSER | __GFP_RECLAIMABLE);
++		page = shmem_read_mapping_page(mapping, offset >> PAGE_SHIFT);
+ 		if (IS_ERR(page)) {
+ 			ret = PTR_ERR(page);
+ 			goto out;
+@@ -797,8 +796,7 @@ i915_gem_shmem_pwrite_fast(struct drm_device *dev,
+ 		if ((page_offset + remain) > PAGE_SIZE)
+ 			page_length = PAGE_SIZE - page_offset;
+ 
+-		page = read_cache_page_gfp(mapping, offset >> PAGE_SHIFT,
+-					   GFP_HIGHUSER | __GFP_RECLAIMABLE);
++		page = shmem_read_mapping_page(mapping, offset >> PAGE_SHIFT);
+ 		if (IS_ERR(page))
+ 			return PTR_ERR(page);
+ 
+@@ -907,8 +905,7 @@ i915_gem_shmem_pwrite_slow(struct drm_device *dev,
+ 		if ((data_page_offset + page_length) > PAGE_SIZE)
+ 			page_length = PAGE_SIZE - data_page_offset;
+ 
+-		page = read_cache_page_gfp(mapping, offset >> PAGE_SHIFT,
+-					   GFP_HIGHUSER | __GFP_RECLAIMABLE);
++		page = shmem_read_mapping_page(mapping, offset >> PAGE_SHIFT);
+ 		if (IS_ERR(page)) {
+ 			ret = PTR_ERR(page);
+ 			goto out;
+@@ -1558,12 +1555,10 @@ i915_gem_object_get_pages_gtt(struct drm_i915_gem_object *obj,
+ 
+ 	inode = obj->base.filp->f_path.dentry->d_inode;
+ 	mapping = inode->i_mapping;
++	gfpmask |= mapping_gfp_mask(mapping);
++
+ 	for (i = 0; i < page_count; i++) {
+-		page = read_cache_page_gfp(mapping, i,
+-					   GFP_HIGHUSER |
+-					   __GFP_COLD |
+-					   __GFP_RECLAIMABLE |
+-					   gfpmask);
++		page = shmem_read_mapping_page_gfp(mapping, i, gfpmask);
+ 		if (IS_ERR(page))
+ 			goto err_pages;
+ 
+@@ -3565,6 +3560,7 @@ struct drm_i915_gem_object *i915_gem_alloc_object(struct drm_device *dev,
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	struct drm_i915_gem_object *obj;
++	struct address_space *mapping;
+ 
+ 	obj = kzalloc(sizeof(*obj), GFP_KERNEL);
+ 	if (obj == NULL)
+@@ -3575,6 +3571,9 @@ struct drm_i915_gem_object *i915_gem_alloc_object(struct drm_device *dev,
+ 		return NULL;
+ 	}
+ 
++	mapping = obj->base.filp->f_path.dentry->d_inode->i_mapping;
++	mapping_set_gfp_mask(mapping, GFP_HIGHUSER | __GFP_RECLAIMABLE);
++
+ 	i915_gem_info_add_obj(dev_priv, size);
+ 
+ 	obj->base.write_domain = I915_GEM_DOMAIN_CPU;
+@@ -3950,8 +3949,7 @@ void i915_gem_detach_phys_object(struct drm_device *dev,
+ 
+ 	page_count = obj->base.size / PAGE_SIZE;
+ 	for (i = 0; i < page_count; i++) {
+-		struct page *page = read_cache_page_gfp(mapping, i,
+-							GFP_HIGHUSER | __GFP_RECLAIMABLE);
++		struct page *page = shmem_read_mapping_page(mapping, i);
+ 		if (!IS_ERR(page)) {
+ 			char *dst = kmap_atomic(page);
+ 			memcpy(dst, vaddr + i*PAGE_SIZE, PAGE_SIZE);
+@@ -4012,8 +4010,7 @@ i915_gem_attach_phys_object(struct drm_device *dev,
+ 		struct page *page;
+ 		char *dst, *src;
+ 
+-		page = read_cache_page_gfp(mapping, i,
+-					   GFP_HIGHUSER | __GFP_RECLAIMABLE);
++		page = shmem_read_mapping_page(mapping, i);
+ 		if (IS_ERR(page))
+ 			return PTR_ERR(page);
+ 
 
