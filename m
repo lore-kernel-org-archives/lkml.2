@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751549Ab1GHEww (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 00:52:52 -0400
-Received: from mga11.intel.com ([192.55.52.93]:48107 "EHLO mga11.intel.com"
+	id S1751669Ab1GHE5Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 00:57:25 -0400
+Received: from mga09.intel.com ([134.134.136.24]:53197 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751055Ab1GHEwu convert rfc822-to-8bit (ORCPT
+	id S1751210Ab1GHE5Y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 00:52:50 -0400
+	Fri, 8 Jul 2011 00:57:24 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,498,1304319600"; 
-   d="scan'208";a="25263229"
+   d="scan'208,223";a="22941725"
 From: "Liu, ShuoX" <shuox.liu@intel.com>
-To: "Tang, Feng" <feng.tang@intel.com>
-CC: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
+To: "Brown, Len" <len.brown@intel.com>, "pavel@ucw.cz" <pavel@ucw.cz>,
+        "rjw@sisk.pl" <rjw@sisk.pl>, "gregkh@suse.de" <gregkh@suse.de>
+CC: "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 8 Jul 2011 12:52:28 +0800
-Subject: RE: [PATCH] dw_spi: Add spi number into spi irq desc
-Thread-Topic: [PATCH] dw_spi: Add spi number into spi irq desc
-Thread-Index: Acw9KFceEbXOFzvWRrCX/tinZ7YQrAAAFlTQ
-Message-ID: <6E3BC7F7C9A4BF4286DD4C043110F30B59E0400124@shsmsx502.ccr.corp.intel.com>
-References: <6E3BC7F7C9A4BF4286DD4C043110F30B59E04000E2@shsmsx502.ccr.corp.intel.com>
- <20110708124432.23eb6848@feng-i7>
-In-Reply-To: <20110708124432.23eb6848@feng-i7>
+Date: Fri, 8 Jul 2011 12:57:07 +0800
+Subject: [PATCH] runtime-pm: consistent utilization of deferred_resume
+Thread-Topic: [PATCH] runtime-pm: consistent utilization of deferred_resume
+Thread-Index: Acw9K3zX9Yrx6bTcQ9uiCoo/rZErmg==
+Message-ID: <6E3BC7F7C9A4BF4286DD4C043110F30B59E040012A@shsmsx502.ccr.corp.intel.com>
 Accept-Language: zh-CN, en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -36,70 +33,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you for your quick response.
-That is not a must. I just followed struct i2c_adapter. What about your idea?
+>From 10bb3c851a0a9c9ca4d552743a371e3cfda81075 Mon Sep 17 00:00:00 2001
+From: ShuoX Liu <shuox.liu@intel.com>
+Date: Thu, 7 Jul 2011 15:59:06 +0800
+Subject: [PATCH] runtime-pm: consistent utilization of deferred_resume
 
-Best Regards,
-Shuo liu
+dev->power.deferred_resume is used as a bool typically, so change
+one assignment to false from 0, like other places.
 
+Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
+---
+ drivers/base/power/runtime.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
------Original Message-----
-From: Tang, Feng 
-Sent: Friday, July 08, 2011 12:45 PM
-To: Liu, ShuoX
-Cc: grant.likely@secretlab.ca; spi-devel-general@lists.sourceforge.net; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dw_spi: Add spi number into spi irq desc
-
-Hi Shuo,
-
-Looks ok to me, and thanks for the fix. One nit is do we have to use a char[48]
-for the name?
-
-Thanks,
-Feng
-
-On Fri, 8 Jul 2011 11:51:05 +0800
-"Liu, ShuoX" <shuox.liu@intel.com> wrote:
-
-> From 2efa9dbb5c4b1d8fa798d1792498ae21fc3a9d04 Mon Sep 17 00:00:00 2001
-> From: ShuoX Liu <shuox.liu@intel.com>
-> Date: Thu, 7 Jul 2011 16:09:41 +0800
-> Subject: [PATCH] dw_spi: Add spi number into spi irq desc
-> 
-> Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
-> ---
->  drivers/spi/dw_spi.c |    4 +++-
->  drivers/spi/dw_spi.h |    1 +
->  2 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/spi/dw_spi.c b/drivers/spi/dw_spi.c
-> index 919fa9d..68a3026 100644
-> --- a/drivers/spi/dw_spi.c
-> +++ b/drivers/spi/dw_spi.c
-> @@ -818,9 +818,11 @@ int __devinit dw_spi_add_host(struct dw_spi *dws)
->  	dws->prev_chip = NULL;
->  	dws->dma_inited = 0;
->  	dws->dma_addr = (dma_addr_t)(dws->paddr + 0x60);
-> +	snprintf(dws->name, sizeof(dws->name), "dw_spi%d",
-> +			dws->bus_num);
->  
->  	ret = request_irq(dws->irq, dw_spi_irq, IRQF_SHARED,
-> -			"dw_spi", dws);
-> +			dws->name, dws);
->  	if (ret < 0) {
->  		dev_err(&master->dev, "can not get IRQ\n");
->  		goto err_free_master;
-> diff --git a/drivers/spi/dw_spi.h b/drivers/spi/dw_spi.h
-> index 7a5e78d..c7b9165 100644
-> --- a/drivers/spi/dw_spi.h
-> +++ b/drivers/spi/dw_spi.h
-> @@ -96,6 +96,7 @@ struct dw_spi {
->  	struct spi_device	*cur_dev;
->  	struct device		*parent_dev;
->  	enum dw_ssi_type	type;
-> +	char			name[48];
->  
->  	void __iomem		*regs;
->  	unsigned long		paddr;
+diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
+index 0d4587b..af3d1a5 100644
+--- a/drivers/base/power/runtime.c
++++ b/drivers/base/power/runtime.c
+@@ -388,7 +388,7 @@ static int rpm_suspend(struct device *dev, int rpmflags)
+ 	retval = rpm_callback(callback, dev);
+ 	if (retval) {
+ 		__update_runtime_status(dev, RPM_ACTIVE);
+-		dev->power.deferred_resume = 0;
++		dev->power.deferred_resume = false;
+ 		if (retval == -EAGAIN || retval == -EBUSY)
+ 			dev->power.runtime_error = 0;
+ 		else
+-- 
+1.7.1
 
 
