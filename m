@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754169Ab1GHQc4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 12:32:56 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:52829 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753814Ab1GHQcy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 12:32:54 -0400
-X-Sasl-enc: QCrO020sNjhiAoNSxnuV3qNWQA/uXT4Y2PJked1qMDeS 1310142773
-Date: Fri, 8 Jul 2011 09:32:19 -0700
-From: Greg KH <greg@kroah.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Kay Sievers <kay.sievers@vrfy.org>,
-        Nao Nishijima <nao.nishijima.xt@hitachi.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        jcm@redhat.com, dle-develop@lists.sourceforge.net,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        yrl.pp-manager.tt@hitachi.com, dgilbert@interlog.com,
-        stefanr@s5r6.in-berlin.de, hare@suse.de
-Subject: Re: [RFC PATCH 0/4] Persistent device name using alias name
-Message-ID: <20110708163219.GB2646@kroah.com>
-References: <20110708084547.2091.55262.stgit@ltc197.sdl.hitachi.co.jp>
- <20110708145408.GA2283@kroah.com>
- <CAPXgP10gThuxOsrxH8_wOddeRB5f2ABypW7EQui-F1hOE97dHQ@mail.gmail.com>
- <20110708154736.GA7320@kroah.com>
- <1310140451.3282.85.camel@mulgrave>
- <20110708160403.GB31500@kroah.com>
- <1310141857.3282.87.camel@mulgrave>
+	id S1754203Ab1GHQd3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 12:33:29 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49165 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750764Ab1GHQd0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 12:33:26 -0400
+Date: Fri, 8 Jul 2011 18:33:25 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: linux-rdma@vger.kernel.org, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-mtd@lists.infradead.org
+Subject: Re: [RFC 6/9]drivers:char:nvram.c Change the copyright info.
+In-Reply-To: <1290838879-11038-7-git-send-email-justinmattock@gmail.com>
+Message-ID: <alpine.LNX.2.00.1107081832490.11049@pobox.suse.cz>
+References: <1290838879-11038-1-git-send-email-justinmattock@gmail.com> <1290838879-11038-7-git-send-email-justinmattock@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1310141857.3282.87.camel@mulgrave>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 08, 2011 at 11:17:36AM -0500, James Bottomley wrote:
-> On Fri, 2011-07-08 at 09:04 -0700, Greg KH wrote:
-> > Do you seriously think that this sysfs attribute can be removed someday
-> > in the future if we get structured logging implemented?  It can't,
-> > sorry, people will start depending on this and their jury-rigged
-> > implementations will require it no matter what we do otherwise.
+On Fri, 26 Nov 2010, Justin P. Mattock wrote:
+
+> Change the copyright info from Sun Microsystems to Oracle since Oracle now owns them.
 > 
-> Yes, it can.  The way we do that is to make udev the interface to this
-> and the sysfs file becomes an internal udev implementation, not an
-> external ABI.
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> 
+> ---
+>  drivers/char/nvram.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/char/nvram.c b/drivers/char/nvram.c
+> index 166f1e7..33e8faa 100644
+> --- a/drivers/char/nvram.c
+> +++ b/drivers/char/nvram.c
+> @@ -3,7 +3,7 @@
+>   *
+>   * Copyright (C) 1997 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
+>   * idea by and with help from Richard Jelinek <rj@suse.de>
+> - * Portions copyright (c) 2001,2002 Sun Microsystems (thockin@sun.com)
+> + * Portions copyright (c) 2001,2002 Oracle and/or its affiliates. (thockin@sun.com)
+>   *
+>   * This driver allows you to access the contents of the non-volatile memory in
+>   * the mc146818rtc.h real-time clock. This chip is built into all PCs and into
 
-No, sorry, you just described the "external" abi in the
-Documentation/ABI directory.
+You can't just change other people/company copyright.
 
-> Any program using it rather than udev that breaks, well, tough, it
-> used the wrong interface.
+This will need Signoff from the original copyright holder at least.
 
-Again, no, we can't do that as you should well know.
-
-And see Kay's response as to how udev will not be using this interface
-by default anyway, so I don't see how you will ever be able to remove
-this sysfs file once it is added.
-
-greg k-h
+-- 
+Jiri Kosina
+SUSE Labs
