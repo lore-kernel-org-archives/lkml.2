@@ -1,97 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753145Ab1GHGnx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 02:43:53 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:43268 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752278Ab1GHGnw convert rfc822-to-8bit (ORCPT
+	id S1753429Ab1GHGrs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 02:47:48 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:47217 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752804Ab1GHGrp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 02:43:52 -0400
+	Fri, 8 Jul 2011 02:47:45 -0400
+Date: Fri, 8 Jul 2011 08:47:42 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, David Airlie <airlied@linux.ie>
+Subject: Re: [089/107] drivers/base/platform.c: dont mark
+ platform_device_register_resndata() as __init_or_module
+Message-ID: <20110708064742.GM29624@pengutronix.de>
+References: <20110708001740.GA14031@kroah.com>
+ <20110708001701.406081654@clark.kroah.org>
 MIME-Version: 1.0
-In-Reply-To: <20110707233335.GA15120@kroah.com>
-References: <1309994990-4729-1-git-send-email-sergiu@chromium.org>
-	<1309994990-4729-4-git-send-email-sergiu@chromium.org>
-	<20110707130130.8dd02f01.akpm@linux-foundation.org>
-	<CAGDaqBQMp0xyBF7Z=P5qBqNcceG3JfWNEUX=T=yMZH74UP5kxA@mail.gmail.com>
-	<20110707155426.fd95445f.akpm@linux-foundation.org>
-	<CAGDaqBT13wsz3AWbLy7_STT2_EY1O6w3h_bc2bFYhrLMQobefw@mail.gmail.com>
-	<20110707162727.f361f053.akpm@linux-foundation.org>
-	<20110707233335.GA15120@kroah.com>
-Date: Fri, 8 Jul 2011 08:43:50 +0200
-Message-ID: <CANGUGtCJpq32AYr5=3LGcxfCqAG5CbDVW6fxS824GdCi53Pr3g@mail.gmail.com>
-Subject: Re: [PATCH v3 3/3] char drivers: ramoops debugfs entry
-From: Marco Stornelli <marco.stornelli@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Sergiu Iordache <sergiu@google.com>,
-        "Ahmed S. Darwish" <darwish.07@gmail.com>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110708001701.406081654@clark.kroah.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/7/8 Greg KH <greg@kroah.com>:
-> On Thu, Jul 07, 2011 at 04:27:27PM -0700, Andrew Morton wrote:
->> On Thu, 7 Jul 2011 16:16:43 -0700
->> Sergiu Iordache <sergiu@google.com> wrote:
->>
->> > Ramoops currently dumps the log of a panic/oops in a memory area which
->> > is known not to be overwritten on restart (for example 1MB starting at
->> > 15MB). The way it works is by dividing the memory area in records of a
->> > set size (fixed at 4K before my patches, configurable after) and by
->> > dumping a record there for each oops/panic. The problem is that right
->> > now you have to access that memory area through other means, such as
->> > /dev/mem, which is not always possible.
->> >
->> > What my patch did was to add a debugfs entry which returns a valid
->> > record each time (a single dump done by ramoops). The first call
->> > returns the first dump. The first call after the last valid dump
->> > returns an empty buffer. .
->>
->> Please fully describe this "record" in the v2 patch changelog.  We'll
->> want to review it for endianness, 32/64-bit compat issues,
->> maintainability, extensibility, etc.
->>
->> > After it has returned nothing, the next
->> > calls return records from the start again.
->>
->> That sounds a bit weird.  One would expect it to keep returning zero,
->> requiring userspace to lseek or close/open.
->>
->> > The validity of a dump is
->> > checked by looking after the header. Any comments on this approach are
->> > welcome.
->> >
->> > Changing the entry from debugfs to sysfs wouldn't be a problem. If
->> > sysfs is a valid solution I'll come with a patch that updates the
->> > documentation as well along with the sysfs entry.
->>
->> sysfs sounds OK to me.  Then again, sysfs is supposed to be
->> one-value-per-file, so using it would be naughty.
->>
->> I dunno, I'd be inclined to abuse the sysfs rule and hope that nobody
->> notices rather than create a fake char device.  But there's certainly
->> plenty of precedent for the fake char driver.
->
-> No, please don't abuse sysfs that way.
->
-> Use debugfs or a char device node.
->
-> thanks,
->
-> greg k-h
->
+Hello,
 
-I agree with Greg. I asked to not break the existent way to read data
-via /dev/mem because for me it's the right way to do this thing.
-However to do an easy *debug* a debugfs entry can be useful. IMHO, a
-"production" script/application that use debugfs instead of /dev/mem
-in this case is simply broken because the debugfs can't be like a
-system call or other kernel interaction mechanism. Debugfs should be
-used only for debug.
+On Thu, Jul 07, 2011 at 05:17:01PM -0700, Greg KH wrote:
+> 2.6.39-stable review patch.  If anyone has any objections, please let us know.
+> 
+> ------------------
+> 
+> From: Andrew Morton <akpm@linux-foundation.org>
+> 
+> commit bb2b43fefab723f4a0760146e7bed59d41a50e53 upstream.
+> 
+> This reverts 737a3bb9416ce2a7c7a4 ("Driver core: move platform device
+> creation helpers to .init.text (if MODULE=n)").  That patch assumed that
+> platform_device_register_resndata() is only ever called from __init code
+> but that isn't true in the case ioctl->drm_ioctl->radeon_cp_init().
+> 
+> Addresses https://bugzilla.kernel.org/show_bug.cgi?id=35192
+> 
+> Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 
-Marco
+> Reported-by: Anthony Basile <blueness@gentoo.org>
+> Cc: Greg KH <gregkh@suse.de>
+> Cc: David Airlie <airlied@linux.ie>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+You might want to remove one of your sobs.
+
+Uwe
+
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
