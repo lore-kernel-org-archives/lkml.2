@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754778Ab1GHFED (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:04:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42279 "EHLO mx2.suse.de"
+	id S1754824Ab1GHFNB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:13:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42288 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754755Ab1GHFD5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:03:57 -0400
+	id S1754586Ab1GHFEB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:04:01 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:59 2011
-Message-Id: <20110708001659.090835627@clark.kroah.org>
+Message-Id: <20110708001659.190929860@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:16:37 -0700
+Date: Thu, 07 Jul 2011 17:16:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Randy Dunlap <randy.dunlap@oracle.com>,
+        Kevin Coffman <kwc@citi.umich.edu>,
         "J. Bruce Fields" <bfields@redhat.com>
-Subject: [065/107] nfsd: v4 support requires CRYPTO
+Subject: [066/107] nfsd: fix dependency of nfsd on auth_rpcgss
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,34 +26,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit be1f4084b4824301e640e81d63b6275cd99ee6a1 upstream.
+commit b084f598df36b62dfae83c10ed17f0b66b50f442 upstream.
 
-nfsd V4 support uses crypto interfaces, so select CRYPTO
-to fix build errors in 2.6.39:
+Commit b0b0c0a26e84 "nfsd: add proc file listing kernel's gss_krb5
+enctypes" added an nunnecessary dependency of nfsd on the auth_rpcgss
+module.
 
-ERROR: "crypto_destroy_tfm" [fs/nfsd/nfsd.ko] undefined!
-ERROR: "crypto_alloc_base" [fs/nfsd/nfsd.ko] undefined!
+It's a little ad hoc, but since the only piece of information nfsd needs
+from rpcsec_gss_krb5 is a single static string, one solution is just to
+share it with an include file.
 
-Reported-by: Wakko Warner <wakko@animx.eu.org>
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Reported-by: Michael Guntsche <mike@it-loops.com>
+Cc: Kevin Coffman <kwc@citi.umich.edu>
 Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfsd/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+ fs/nfsd/nfsctl.c                         |   19 ++++++-------------
+ include/linux/sunrpc/gss_krb5_enctypes.h |    4 ++++
+ net/sunrpc/auth_gss/gss_krb5_mech.c      |    3 ++-
+ 3 files changed, 12 insertions(+), 14 deletions(-)
 
---- a/fs/nfsd/Kconfig
-+++ b/fs/nfsd/Kconfig
-@@ -82,6 +82,7 @@ config NFSD_V4
- 	select NFSD_V3
- 	select FS_POSIX_ACL
- 	select SUNRPC_GSS
-+	select CRYPTO
- 	help
- 	  This option enables support in your system's NFS server for
- 	  version 4 of the NFS protocol (RFC 3530).
+--- a/fs/nfsd/nfsctl.c
++++ b/fs/nfsd/nfsctl.c
+@@ -13,6 +13,7 @@
+ #include <linux/lockd/lockd.h>
+ #include <linux/sunrpc/clnt.h>
+ #include <linux/sunrpc/gss_api.h>
++#include <linux/sunrpc/gss_krb5_enctypes.h>
+ 
+ #include "idmap.h"
+ #include "nfsd.h"
+@@ -189,18 +190,10 @@ static struct file_operations export_fea
+ 	.release	= single_release,
+ };
+ 
+-#ifdef CONFIG_SUNRPC_GSS
++#if defined(CONFIG_SUNRPC_GSS) || defined(CONFIG_SUNRPC_GSS_MODULE)
+ static int supported_enctypes_show(struct seq_file *m, void *v)
+ {
+-	struct gss_api_mech *k5mech;
+-
+-	k5mech = gss_mech_get_by_name("krb5");
+-	if (k5mech == NULL)
+-		goto out;
+-	if (k5mech->gm_upcall_enctypes != NULL)
+-		seq_printf(m, k5mech->gm_upcall_enctypes);
+-	gss_mech_put(k5mech);
+-out:
++	seq_printf(m, KRB5_SUPPORTED_ENCTYPES);
+ 	return 0;
+ }
+ 
+@@ -215,7 +208,7 @@ static struct file_operations supported_
+ 	.llseek		= seq_lseek,
+ 	.release	= single_release,
+ };
+-#endif /* CONFIG_SUNRPC_GSS */
++#endif /* CONFIG_SUNRPC_GSS or CONFIG_SUNRPC_GSS_MODULE */
+ 
+ extern int nfsd_pool_stats_open(struct inode *inode, struct file *file);
+ extern int nfsd_pool_stats_release(struct inode *inode, struct file *file);
+@@ -1427,9 +1420,9 @@ static int nfsd_fill_super(struct super_
+ 		[NFSD_Versions] = {"versions", &transaction_ops, S_IWUSR|S_IRUSR},
+ 		[NFSD_Ports] = {"portlist", &transaction_ops, S_IWUSR|S_IRUGO},
+ 		[NFSD_MaxBlkSize] = {"max_block_size", &transaction_ops, S_IWUSR|S_IRUGO},
+-#ifdef CONFIG_SUNRPC_GSS
++#if defined(CONFIG_SUNRPC_GSS) || defined(CONFIG_SUNRPC_GSS_MODULE)
+ 		[NFSD_SupportedEnctypes] = {"supported_krb5_enctypes", &supported_enctypes_ops, S_IRUGO},
+-#endif /* CONFIG_SUNRPC_GSS */
++#endif /* CONFIG_SUNRPC_GSS or CONFIG_SUNRPC_GSS_MODULE */
+ #ifdef CONFIG_NFSD_V4
+ 		[NFSD_Leasetime] = {"nfsv4leasetime", &transaction_ops, S_IWUSR|S_IRUSR},
+ 		[NFSD_Gracetime] = {"nfsv4gracetime", &transaction_ops, S_IWUSR|S_IRUSR},
+--- /dev/null
++++ b/include/linux/sunrpc/gss_krb5_enctypes.h
+@@ -0,0 +1,4 @@
++/*
++ * Dumb way to share this static piece of information with nfsd
++ */
++#define KRB5_SUPPORTED_ENCTYPES "18,17,16,23,3,1,2"
+--- a/net/sunrpc/auth_gss/gss_krb5_mech.c
++++ b/net/sunrpc/auth_gss/gss_krb5_mech.c
+@@ -43,6 +43,7 @@
+ #include <linux/sunrpc/gss_krb5.h>
+ #include <linux/sunrpc/xdr.h>
+ #include <linux/crypto.h>
++#include <linux/sunrpc/gss_krb5_enctypes.h>
+ 
+ #ifdef RPC_DEBUG
+ # define RPCDBG_FACILITY	RPCDBG_AUTH
+@@ -750,7 +751,7 @@ static struct gss_api_mech gss_kerberos_
+ 	.gm_ops		= &gss_kerberos_ops,
+ 	.gm_pf_num	= ARRAY_SIZE(gss_kerberos_pfs),
+ 	.gm_pfs		= gss_kerberos_pfs,
+-	.gm_upcall_enctypes = "18,17,16,23,3,1,2",
++	.gm_upcall_enctypes = KRB5_SUPPORTED_ENCTYPES,
+ };
+ 
+ static int __init init_kerberos_module(void)
 
 
