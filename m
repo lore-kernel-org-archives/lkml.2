@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754774Ab1GHTHu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 15:07:50 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:35401 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750Ab1GHTHt (ORCPT
+	id S1754815Ab1GHTJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 15:09:27 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59158 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753407Ab1GHTJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 15:07:49 -0400
-Date: Fri, 8 Jul 2011 13:07:46 -0600
+	Fri, 8 Jul 2011 15:09:26 -0400
+Date: Fri, 8 Jul 2011 13:09:24 -0600
 From: Grant Likely <grant.likely@secretlab.ca>
 To: "Liu, ShuoX" <shuox.liu@intel.com>
 Cc: "Tang, Feng" <feng.tang@intel.com>,
@@ -15,7 +15,7 @@ Cc: "Tang, Feng" <feng.tang@intel.com>,
 	<spi-devel-general@lists.sourceforge.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Subject: Re: [PATCH] dw_spi: Add spi number into spi irq desc
-Message-ID: <20110708190746.GE9070@ponder.secretlab.ca>
+Message-ID: <20110708190924.GF9070@ponder.secretlab.ca>
 References: <6E3BC7F7C9A4BF4286DD4C043110F30B59E04001D4@shsmsx502.ccr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -34,7 +34,7 @@ On Fri, Jul 08, 2011 at 02:24:31PM +0800, Liu, ShuoX wrote:
 > 
 > Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
 
-Patch does not apply against current spi/next (linux-next).
+Actually, the problem was just the files were renamed.  Applied, thanks.
 
 g.
 
