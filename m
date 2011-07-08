@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755332Ab1GHFFl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:05:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42533 "EHLO mx2.suse.de"
+	id S1755403Ab1GHFIc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:08:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42556 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755273Ab1GHFFc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:05:32 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:17:01 2011
-Message-Id: <20110708001701.672766560@clark.kroah.org>
+	id S1755341Ab1GHFFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:05:42 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:17:02 2011
+Message-Id: <20110708001701.966947273@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:17:04 -0700
+Date: Thu, 07 Jul 2011 17:17:07 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Arnd Bergmann <arnd@arndb.de>, Ralf Baechle <ralf@linux-mips.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [092/107] 6pack,mkiss: fix lock inconsistency
+        Vasiliy Kulikov <segooon@gmail.com>,
+        Balbir Singh <bsingharora@gmail.com>
+Subject: [095/107] taskstats: dont allow duplicate entries in listener mode
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,67 +26,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: Vasiliy Kulikov <segoon@openwall.com>
 
-commit 6e4e2f811bade330126d4029c88c831784a7efd9 upstream.
+commit 26c4caea9d697043cc5a458b96411b86d7f6babd upstream.
 
-Lockdep found a locking inconsistency in the mkiss_close function:
+Currently a single process may register exit handlers unlimited times.
+It may lead to a bloated listeners chain and very slow process
+terminations.
 
-> kernel: [ INFO: inconsistent lock state ]
-> kernel: 2.6.39.1 #3
-> kernel: ---------------------------------
-> kernel: inconsistent {IN-SOFTIRQ-R} -> {SOFTIRQ-ON-W} usage.
-> kernel: ax25ipd/2813 [HC0[0]:SC0[0]:HE1:SE1] takes:
-> kernel: (disc_data_lock){+++?.-}, at: [<ffffffffa018552b>] mkiss_close+0x1b/0x90 [mkiss]
-> kernel: {IN-SOFTIRQ-R} state was registered at:
+Eg after 10KK sent TASKSTATS_CMD_ATTR_REGISTER_CPUMASKs ~300 Mb of
+kernel memory is stolen for the handlers chain and "time id" shows 2-7
+seconds instead of normal 0.003.  It makes it possible to exhaust all
+kernel memory and to eat much of CPU time by triggerring numerous exits
+on a single CPU.
 
-The message hints that disc_data_lock is aquired with softirqs disabled,
-but does not itself disable softirqs, which can in rare circumstances
-lead to a deadlock.
-The same problem is present in the 6pack driver, this patch fixes both
-by using write_lock_bh instead of write_lock.
+The patch limits the number of times a single process may register
+itself on a single CPU to one.
 
-Reported-by: Bernard F6BVP <f6bvp@free.fr>
-Tested-by: Bernard F6BVP <f6bvp@free.fr>
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Ralf Baechle<ralf@linux-mips.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+One little issue is kept unfixed - as taskstats_exit() is called before
+exit_files() in do_exit(), the orphaned listener entry (if it was not
+explicitly deregistered) is kept until the next someone's exit() and
+implicit deregistration in send_cpu_listeners().  So, if a process
+registered itself as a listener exits and the next spawned process gets
+the same pid, it would inherit taskstats attributes.
+
+Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+Cc: Balbir Singh <bsingharora@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/hamradio/6pack.c |    4 ++--
- drivers/net/hamradio/mkiss.c |    4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ kernel/taskstats.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
---- a/drivers/net/hamradio/6pack.c
-+++ b/drivers/net/hamradio/6pack.c
-@@ -692,10 +692,10 @@ static void sixpack_close(struct tty_str
+--- a/kernel/taskstats.c
++++ b/kernel/taskstats.c
+@@ -285,16 +285,18 @@ ret:
+ static int add_del_listener(pid_t pid, const struct cpumask *mask, int isadd)
  {
- 	struct sixpack *sp;
+ 	struct listener_list *listeners;
+-	struct listener *s, *tmp;
++	struct listener *s, *tmp, *s2;
+ 	unsigned int cpu;
  
--	write_lock(&disc_data_lock);
-+	write_lock_bh(&disc_data_lock);
- 	sp = tty->disc_data;
- 	tty->disc_data = NULL;
--	write_unlock(&disc_data_lock);
-+	write_unlock_bh(&disc_data_lock);
- 	if (!sp)
- 		return;
+ 	if (!cpumask_subset(mask, cpu_possible_mask))
+ 		return -EINVAL;
  
---- a/drivers/net/hamradio/mkiss.c
-+++ b/drivers/net/hamradio/mkiss.c
-@@ -813,10 +813,10 @@ static void mkiss_close(struct tty_struc
- {
- 	struct mkiss *ax;
++	s = NULL;
+ 	if (isadd == REGISTER) {
+ 		for_each_cpu(cpu, mask) {
+-			s = kmalloc_node(sizeof(struct listener), GFP_KERNEL,
+-					 cpu_to_node(cpu));
++			if (!s)
++				s = kmalloc_node(sizeof(struct listener),
++						 GFP_KERNEL, cpu_to_node(cpu));
+ 			if (!s)
+ 				goto cleanup;
+ 			s->pid = pid;
+@@ -303,9 +305,16 @@ static int add_del_listener(pid_t pid, c
  
--	write_lock(&disc_data_lock);
-+	write_lock_bh(&disc_data_lock);
- 	ax = tty->disc_data;
- 	tty->disc_data = NULL;
--	write_unlock(&disc_data_lock);
-+	write_unlock_bh(&disc_data_lock);
+ 			listeners = &per_cpu(listener_array, cpu);
+ 			down_write(&listeners->sem);
++			list_for_each_entry_safe(s2, tmp, &listeners->list, list) {
++				if (s2->pid == pid)
++					goto next_cpu;
++			}
+ 			list_add(&s->list, &listeners->list);
++			s = NULL;
++next_cpu:
+ 			up_write(&listeners->sem);
+ 		}
++		kfree(s);
+ 		return 0;
+ 	}
  
- 	if (!ax)
- 		return;
 
 
