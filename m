@@ -1,66 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753948Ab1GHTgj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 15:36:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28210 "EHLO mx1.redhat.com"
+	id S1754875Ab1GHTpa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 15:45:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38354 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752168Ab1GHTgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 15:36:38 -0400
-Message-ID: <4E175C45.1060700@redhat.com>
-Date: Fri, 08 Jul 2011 15:36:37 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100505 Fedora/3.0.4-2.el6 Thunderbird/3.0.4
+	id S1752802Ab1GHTp2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 15:45:28 -0400
+Date: Fri, 8 Jul 2011 21:45:01 +0200
+From: Karel Zak <kzak@redhat.com>
+To: Nao Nishijima <nao.nishijima.xt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        James.Bottomley@HansenPartnership.com, kay.sievers@vrfy.org,
+        jcm@redhat.com, greg@kroah.com, dle-develop@lists.sourceforge.net,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        yrl.pp-manager.tt@hitachi.com, dgilbert@interlog.com,
+        stefanr@s5r6.in-berlin.de, hare@suse.de
+Subject: Re: [RFC PATCH 0/4] Persistent device name using alias name
+Message-ID: <20110708194501.GU6418@nb.net.home>
+References: <20110708084547.2091.55262.stgit@ltc197.sdl.hitachi.co.jp>
 MIME-Version: 1.0
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: 3.0.0-rc6 ~9X system time degradation on kernbench
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110708084547.2091.55262.stgit@ltc197.sdl.hitachi.co.jp>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just some numbers out of kernbench.  System Time & Context Switches
-climb dramatically between 2.6.38 and 3.0.0-rc6.  Currently bisecting to
-find out why.  .config is based on Fedora's x86_64 .config.
+On Fri, Jul 08, 2011 at 05:45:47PM +0900, Nao Nishijima wrote:
+> This patch series provides an "alias name" of the disk into kernel and procfs
+> messages. The user can assign a preferred name to an alias name of the device.
+> 
+> Based on previous discussion (*), I changed patches as follows
+> - This is "alias name"
+> - An "alias name" is stored in gendisk struct
+> - Add document to Documentation/ABI/testing/sysfs-block
+> - When the user changes an "alias name", kernel notifies udev
+> 
+> (*) http://marc.info/?l=linux-scsi&m=130812625531219&w=2
+> 
 
-Thu Jul  7 18:23:48 EDT 2011
-2.6.38.8-32.fc15.x86_64
-Average Half load -j 64 Run (std deviation):
-Elapsed Time 155.376 (3.77835)
-User Time 4536.18 (11.5886)
-System Time 1810.42 (27.0879)
-Percent CPU 4086 (100.252)
-Context Switches 794941 (3757.3)
-Sleeps 754029 (10516)
+[...]
 
-Thu Jul  7 19:50:38 EDT 2011
-3.0.0-rc6
-Average Half load -j 64 Run (std deviation):
-Elapsed Time 466.362 (2.78605)
-User Time 8616.43 (22.5528)
-System Time 14583.6 (63.2273)
-Percent CPU 4974.2 (19.6265)
-Context Switches 2.69157e+06 (7679.26)
-Sleeps 827950 (3050.16)
+> [localhost]# cat /proc/partitions
+> major minor  #blocks  name
+> 
+>    8        0   12582912 foo
+>    8        1   12582878 foo1
+>    8        0    8388608 sdb
+>    8        1     512000 sdb1
+>    8        2    7875584 sdb2
 
-Thu Jul  7 21:30:22 EDT 2011
-2.6.39
-Average Half load -j 64 Run (std deviation):
-Elapsed Time 250.044 (2.55373)
-User Time 5361.27 (14.6996)
-System Time 5173.44 (14.9366)
-Percent CPU 4212.8 (40.4314)
-Context Switches 1.28385e+06 (1610.42)
-Sleeps 741129 (3339.19)
+ If there is not /dev/foo and /sys/block/foo then the patch introduces
+ a REGRESSION. 
+ 
+ The names from /proc/partitions are used in many applications
+ (libblkid, fdisk, ...) for many many years. The applications will not
+ work as expected.
 
-Fri Jul  8 12:21:29 EDT 2011
-3.0.0-rc1
-Average Optimal load -j 64 Run (std deviation):
-Elapsed Time 435.338 (5.45314)
-User Time 6125.78 (15.2816)
-System Time 8346.45 (62.5065)
-Percent CPU 3324.2 (29.0637)
-Context Switches 6.42863e+06 (23420)
-Sleeps 996764 (3744.98)
+ It's crazy to assume that all the applications will be improved to
+ translate the "pretty name" from /proc/partitions by /sys/block/<maj>:<min>.
 
-P.
+ Note, it's pretty naive to expect that people will use the pretty
+ names for printk()/dmesg only. I'm absolutely sure that it's will be
+ expected (by end-users) in /etc/fstab, mount, df, fdisk, ...
+
+ It's will be necessary to modify all these utils. 
+
+ The patch is opening Pandora's box :-(
+
+    Karel
+    
+-- 
+ Karel Zak  <kzak@redhat.com>
+ http://karelzak.blogspot.com
