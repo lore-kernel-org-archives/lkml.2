@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754046Ab1GIGBQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 02:01:16 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:48892 "EHLO
+	id S1754091Ab1GIGBV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 02:01:21 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:58362 "EHLO
 	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753975Ab1GIGBO (ORCPT
+	by vger.kernel.org with ESMTP id S1753975Ab1GIGBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 02:01:14 -0400
-X-Sasl-enc: SsO2lOwGgBtM62sePh17UPry2kJU7Vh+XiMBRF9+asOO 1310191273
+	Sat, 9 Jul 2011 02:01:17 -0400
+X-Sasl-enc: 9r2pHOO+cHEAF+VaiSH172KcfkEKDX6ZqVKmJfn5uEuu 1310191276
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 16:01:12 2011
-Message-Id: <20110708230112.115342421@clark.kroah.org>
+Message-Id: <20110708230112.313966917@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 08 Jul 2011 16:00:42 -0700
+Date: Fri, 08 Jul 2011 16:00:44 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [26/35] inet_diag: fix inet_diag_bc_audit()
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [28/35] PM / Hibernate: Fix free_unnecessary_pages()
 In-Reply-To: <20110708230122.GA18807@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,75 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+commit 4d4cf23cdde2f8f9324f5684a7f349e182039529 upstream.
 
-[ Upstream commit eeb1497277d6b1a0a34ed36b97e18f2bd7d6de0d ]
+There is a bug in free_unnecessary_pages() that causes it to
+attempt to free too many pages in some cases, which triggers the
+BUG_ON() in memory_bm_clear_bit() for copy_bm.  Namely, if
+count_data_pages() is initially greater than alloc_normal, we get
+to_free_normal equal to 0 and "save" greater from 0.  In that case,
+if the sum of "save" and count_highmem_pages() is greater than
+alloc_highmem, we subtract a positive number from to_free_normal.
+Hence, since to_free_normal was 0 before the subtraction and is
+an unsigned int, the result is converted to a huge positive number
+that is used as the number of pages to free.
 
-A malicious user or buggy application can inject code and trigger an
-infinite loop in inet_diag_bc_audit()
+Fix this bug by checking if to_free_normal is actually greater
+than or equal to the number we're going to subtract from it.
 
-Also make sure each instruction is aligned on 4 bytes boundary, to avoid
-unaligned accesses.
-
-Reported-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Reported-and-tested-by: Matthew Garrett <mjg@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- net/ipv4/inet_diag.c |   14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
 
---- a/net/ipv4/inet_diag.c
-+++ b/net/ipv4/inet_diag.c
-@@ -436,7 +436,7 @@ static int valid_cc(const void *bc, int
- 			return 0;
- 		if (cc == len)
- 			return 1;
--		if (op->yes < 4)
-+		if (op->yes < 4 || op->yes & 3)
- 			return 0;
- 		len -= op->yes;
- 		bc  += op->yes;
-@@ -446,11 +446,11 @@ static int valid_cc(const void *bc, int
- 
- static int inet_diag_bc_audit(const void *bytecode, int bytecode_len)
- {
--	const unsigned char *bc = bytecode;
-+	const void *bc = bytecode;
- 	int  len = bytecode_len;
- 
- 	while (len > 0) {
--		struct inet_diag_bc_op *op = (struct inet_diag_bc_op *)bc;
-+		const struct inet_diag_bc_op *op = bc;
- 
- //printk("BC: %d %d %d {%d} / %d\n", op->code, op->yes, op->no, op[1].no, len);
- 		switch (op->code) {
-@@ -461,22 +461,20 @@ static int inet_diag_bc_audit(const void
- 		case INET_DIAG_BC_S_LE:
- 		case INET_DIAG_BC_D_GE:
- 		case INET_DIAG_BC_D_LE:
--			if (op->yes < 4 || op->yes > len + 4)
--				return -EINVAL;
- 		case INET_DIAG_BC_JMP:
--			if (op->no < 4 || op->no > len + 4)
-+			if (op->no < 4 || op->no > len + 4 || op->no & 3)
- 				return -EINVAL;
- 			if (op->no < len &&
- 			    !valid_cc(bytecode, bytecode_len, len - op->no))
- 				return -EINVAL;
- 			break;
- 		case INET_DIAG_BC_NOP:
--			if (op->yes < 4 || op->yes > len + 4)
--				return -EINVAL;
- 			break;
- 		default:
- 			return -EINVAL;
- 		}
-+		if (op->yes < 4 || op->yes > len + 4 || op->yes & 3)
-+			return -EINVAL;
- 		bc  += op->yes;
- 		len -= op->yes;
+---
+ kernel/power/snapshot.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+--- a/kernel/power/snapshot.c
++++ b/kernel/power/snapshot.c
+@@ -1193,7 +1193,11 @@ static void free_unnecessary_pages(void)
+ 		to_free_highmem = alloc_highmem - save;
+ 	} else {
+ 		to_free_highmem = 0;
+-		to_free_normal -= save - alloc_highmem;
++		save -= alloc_highmem;
++		if (to_free_normal > save)
++			to_free_normal -= save;
++		else
++			to_free_normal = 0;
  	}
+ 
+ 	memory_bm_position_reset(&copy_bm);
 
 
