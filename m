@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752344Ab1GHFAY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:00:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41502 "EHLO mx2.suse.de"
+	id S1753274Ab1GHFV4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:21:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41512 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751330Ab1GHFAR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:00:17 -0400
+	id S1751527Ab1GHFAW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:00:22 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:53 2011
-Message-Id: <20110708001653.148535544@clark.kroah.org>
+Message-Id: <20110708001653.241790532@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:15:36 -0700
+Date: Thu, 07 Jul 2011 17:15:37 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [004/107] netfilter: ipset: fix ip_set_flush return code
+        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>
+Subject: [005/107] bug.h: Add WARN_RATELIMIT
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,29 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+From: Joe Perches <joe@perches.com>
 
-[ Upstream commit 9184a9cba622d9e38462ce11dff7da094b4fea84 ]
+[ Upstream commit b3eec79b0776e5340a3db75b34953977c7e5086e ]
 
-ip_set_flush returned -EPROTO instead of -IPSET_ERR_PROTOCOL, fixed
+Add a generic mechanism to ratelimit WARN(foo, fmt, ...) messages
+using a hidden per call site static struct ratelimit_state.
 
-Signed-off-by: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Also add an __WARN_RATELIMIT variant to be able to use a specific
+struct ratelimit_state.
+
+Signed-off-by: Joe Perches <joe@perches.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/netfilter/ipset/ip_set_core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/asm-generic/bug.h |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
---- a/net/netfilter/ipset/ip_set_core.c
-+++ b/net/netfilter/ipset/ip_set_core.c
-@@ -815,7 +815,7 @@ ip_set_flush(struct sock *ctnl, struct s
- 	ip_set_id_t i;
+--- a/include/asm-generic/bug.h
++++ b/include/asm-generic/bug.h
+@@ -165,6 +165,22 @@ extern void warn_slowpath_null(const cha
+ #define WARN_ON_RATELIMIT(condition, state)			\
+ 		WARN_ON((condition) && __ratelimit(state))
  
- 	if (unlikely(protocol_failed(attr)))
--		return -EPROTO;
-+		return -IPSET_ERR_PROTOCOL;
- 
- 	if (!attr[IPSET_ATTR_SETNAME]) {
- 		for (i = 0; i < ip_set_max; i++)
++#define __WARN_RATELIMIT(condition, state, format...)		\
++({								\
++	int rtn = 0;						\
++	if (unlikely(__ratelimit(state)))			\
++		rtn = WARN(condition, format);			\
++	rtn;							\
++})
++
++#define WARN_RATELIMIT(condition, format...)			\
++({								\
++	static DEFINE_RATELIMIT_STATE(_rs,			\
++				      DEFAULT_RATELIMIT_INTERVAL,	\
++				      DEFAULT_RATELIMIT_BURST);	\
++	__WARN_RATELIMIT(condition, &_rs, format);		\
++})
++
+ /*
+  * WARN_ON_SMP() is for cases that the warning is either
+  * meaningless for !SMP or may even cause failures.
 
 
