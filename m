@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002Ab1GIGFi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 02:05:38 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:43806 "EHLO
+	id S1753909Ab1GIGBI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 02:01:08 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:42977 "EHLO
 	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751971Ab1GIGBL (ORCPT
+	by vger.kernel.org with ESMTP id S1753748Ab1GIGBC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 02:01:11 -0400
-X-Sasl-enc: gAW8ATBYnWum7FW9Sor250ELvrOXT4UC3AI7L4ICKi3H 1310191270
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 16:01:12 2011
-Message-Id: <20110708230111.917254960@clark.kroah.org>
+	Sat, 9 Jul 2011 02:01:02 -0400
+X-Sasl-enc: Baq9AKJEcEw/+luPoyiSUXXaD6pZwYOhNVmSxH+SVX+I 1310191261
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 16:01:11 2011
+Message-Id: <20110708230111.418939835@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 08 Jul 2011 16:00:40 -0700
+Date: Fri, 08 Jul 2011 16:00:35 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Liu Aleaxander <Aleaxander@gmail.com>,
-        Boaz Harrosh <bharrosh@panasas.com>, Jeff Dike <jdike@addtoit.com>
-Subject: [24/35] um: os-linux/mem.c needs sys/stat.h
+        Arnd Bergmann <arnd@arndb.de>, Ralf Baechle <ralf@linux-mips.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [19/35] 6pack,mkiss: fix lock inconsistency
 In-Reply-To: <20110708230122.GA18807@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,33 +28,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Liu Aleaxander <aleaxander@gmail.com>
+From: Arnd Bergmann <arnd@arndb.de>
 
-commit fb967ecc584c20c74a007de749ca597068b0fcac upstream.
+commit 6e4e2f811bade330126d4029c88c831784a7efd9 upstream.
 
-The os-linux/mem.c file calls fchmod function, which is declared in sys/stat.h
-header file, so include it.  Fixes build breakage under FC13.
+Lockdep found a locking inconsistency in the mkiss_close function:
 
-Signed-off-by: Liu Aleaxander <Aleaxander@gmail.com>
-Acked-by: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Jeff Dike <jdike@addtoit.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> kernel: [ INFO: inconsistent lock state ]
+> kernel: 2.6.39.1 #3
+> kernel: ---------------------------------
+> kernel: inconsistent {IN-SOFTIRQ-R} -> {SOFTIRQ-ON-W} usage.
+> kernel: ax25ipd/2813 [HC0[0]:SC0[0]:HE1:SE1] takes:
+> kernel: (disc_data_lock){+++?.-}, at: [<ffffffffa018552b>] mkiss_close+0x1b/0x90 [mkiss]
+> kernel: {IN-SOFTIRQ-R} state was registered at:
+
+The message hints that disc_data_lock is aquired with softirqs disabled,
+but does not itself disable softirqs, which can in rare circumstances
+lead to a deadlock.
+The same problem is present in the 6pack driver, this patch fixes both
+by using write_lock_bh instead of write_lock.
+
+Reported-by: Bernard F6BVP <f6bvp@free.fr>
+Tested-by: Bernard F6BVP <f6bvp@free.fr>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Ralf Baechle<ralf@linux-mips.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/um/os-Linux/mem.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/hamradio/6pack.c |    4 ++--
+ drivers/net/hamradio/mkiss.c |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
---- a/arch/um/os-Linux/mem.c
-+++ b/arch/um/os-Linux/mem.c
-@@ -10,6 +10,7 @@
- #include <errno.h>
- #include <fcntl.h>
- #include <string.h>
-+#include <sys/stat.h>
- #include <sys/mman.h>
- #include <sys/param.h>
- #include "init.h"
+--- a/drivers/net/hamradio/6pack.c
++++ b/drivers/net/hamradio/6pack.c
+@@ -691,10 +691,10 @@ static void sixpack_close(struct tty_str
+ {
+ 	struct sixpack *sp;
+ 
+-	write_lock(&disc_data_lock);
++	write_lock_bh(&disc_data_lock);
+ 	sp = tty->disc_data;
+ 	tty->disc_data = NULL;
+-	write_unlock(&disc_data_lock);
++	write_unlock_bh(&disc_data_lock);
+ 	if (!sp)
+ 		return;
+ 
+--- a/drivers/net/hamradio/mkiss.c
++++ b/drivers/net/hamradio/mkiss.c
+@@ -812,10 +812,10 @@ static void mkiss_close(struct tty_struc
+ {
+ 	struct mkiss *ax;
+ 
+-	write_lock(&disc_data_lock);
++	write_lock_bh(&disc_data_lock);
+ 	ax = tty->disc_data;
+ 	tty->disc_data = NULL;
+-	write_unlock(&disc_data_lock);
++	write_unlock_bh(&disc_data_lock);
+ 
+ 	if (!ax)
+ 		return;
 
 
