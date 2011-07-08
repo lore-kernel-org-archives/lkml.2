@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754819Ab1GHJB6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 05:01:58 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:48317 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754720Ab1GHJBy (ORCPT
+	id S1751859Ab1GHJKV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 05:10:21 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:48183 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851Ab1GHJKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 05:01:54 -0400
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH] gpio: langwell_gpio: ack the correct bit for langwell gpio
- interrupts
-To: grant.likely@secretlab.ca, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 08 Jul 2011 10:02:18 +0100
-Message-ID: <20110708090218.18318.32875.stgit@bob.linux.org.uk>
-User-Agent: StGIT/0.14.3
+	Fri, 8 Jul 2011 05:10:18 -0400
+Date: Fri, 8 Jul 2011 13:10:14 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Tommy Lin <tommy.lin.1101@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Tommy Lin <tommy.lin@caviumnetworks.com>
+Subject: Re: [PATCH 1/2] arch: arm: Correct the dependency of HAVE_ARM_TWD
+Message-ID: <20110708091014.GA15142@oksana.dev.rtsoft.ru>
+References: <1310104763-12948-1-git-send-email-tommy.lin@caviumnetworks.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1310104763-12948-1-git-send-email-tommy.lin@caviumnetworks.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+On Fri, Jul 08, 2011 at 01:59:23PM +0800, Tommy Lin wrote:
+> Original mpcore_wdt config dependency is as follow:
+> MPCORE_WATCHDOG -> HAVE_ARM_TWD -> SMP -> (CPU_V6K || CPU_V7)
+> This patch will remove SMP and made the dependency as follow:
+> MPCORE_WATCHDOG -> HAVE_ARM_TWD -> (CPU_V6K || CPU_V7)
+> 
+> The MPCore watchdog (and timer) can be found at ARM11 MPCore (CPU_V6K) and
+> Cortex A9 MPCore (CPU_V7). The dependency between MPCORE_WATCHDOG and
+> (CPU_V6K || CPUV7) is necessary, but the dependency of SMP is redundant.
+> The MPCore watchdog should function normally even SMP is not turned on with
+> ARM11 or Cortex A9 CPU.
+> 
+> Signed-off-by: Tommy Lin <tommy.lin@caviumnetworks.com>
+> ---
 
-The wrong bit was masked when acking langwell gpio interrupts.
+Russell,
 
-Reason for maskig the wrong bit was probably because__ffs() and ffs() functions
-return bit indexes differently (0..31 vs 1..32)
+As the patch is needed for CNS3xxx Watchdog support, I'd like to take
+it via CNS3xxx tree, if you're OK with that.
 
-This fixes langwell based devices from hanging when a gpio interrupt is
-triggered and undoes the breakage which occurred in change set
-732063b92bb727b27e61580ce278dddefe31c6ad
+Thanks!
 
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
-
- drivers/gpio/langwell_gpio.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-
-diff --git a/drivers/gpio/langwell_gpio.c b/drivers/gpio/langwell_gpio.c
-index bd6571e..644ba12 100644
---- a/drivers/gpio/langwell_gpio.c
-+++ b/drivers/gpio/langwell_gpio.c
-@@ -223,7 +223,7 @@ static void lnw_irq_handler(unsigned irq, struct irq_desc *desc)
- 		gedr = gpio_reg(&lnw->chip, base, GEDR);
- 		pending = readl(gedr);
- 		while (pending) {
--			gpio = __ffs(pending) - 1;
-+			gpio = __ffs(pending);
- 			mask = BIT(gpio);
- 			pending &= ~mask;
- 			/* Clear before handling so we can't lose an edge */
-
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
