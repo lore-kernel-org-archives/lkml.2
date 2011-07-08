@@ -1,166 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752530Ab1GHEPh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 00:15:37 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:33100 "EHLO
+	id S1752683Ab1GHEPv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 00:15:51 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:33168 "EHLO
 	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751192Ab1GHEPc (ORCPT
+	by vger.kernel.org with ESMTP id S1752196Ab1GHEPr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 00:15:32 -0400
+	Fri, 8 Jul 2011 00:15:47 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ak4EAIiCFk55LCkBgWdsb2JhbABThEKifxUBARYmJbwxkFyBK4F7ggWBDQSjIg
+X-IronPort-Anti-Spam-Result: Ak0EAIiCFk55LCkBgWdsb2JhbABTp0EVAQEWJiXNDYY4BKMi
 From: Dave Chinner <david@fromorbit.com>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: =?UTF-8?q?=5BPATCH=2012/14=5D=20superblock=3A=20add=20filesystem=20shrinker=20operations?=
-Date: Fri,  8 Jul 2011 14:14:44 +1000
-Message-Id: <1310098486-6453-13-git-send-email-david@fromorbit.com>
+Subject: [PATCH 07/14] inode: Make unused inode LRU per superblock
+Date: Fri,  8 Jul 2011 14:14:39 +1000
+Message-Id: <1310098486-6453-8-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.5.1
 In-Reply-To: <1310098486-6453-1-git-send-email-david@fromorbit.com>
 References: <1310098486-6453-1-git-send-email-david@fromorbit.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Chinner <dchinner@redhat.com>
 
-Now we have a per-superblock shrinker implementation, we can add a
-filesystem specific callout to it to allow filesystem internal
-caches to be shrunk by the superblock shrinker.
+The inode unused list is currently a global LRU. This does not match
+the other global filesystem cache - the dentry cache - which uses
+per-superblock LRU lists. Hence we have related filesystem object
+types using different LRU reclaimation schemes.
 
-Rather than perpetuate the multipurpose shrinker callback API (i.e.
-nr_to_scan == 0 meaning "tell me how many objects freeable in the
-cache), two operations will be added. The first will return the
-number of objects that are freeable, the second is the actual
-shrinker call.
+To enable a per-superblock filesystem cache shrinker, both of these
+caches need to have per-sb unused object LRU lists. Hence this patch
+converts the global inode LRU to per-sb LRUs.
+
+The patch only does rudimentary per-sb propotioning in the shrinker
+infrastructure, as this gets removed when the per-sb shrinker
+callouts are introduced later on.
 
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
 ---
- Documentation/filesystems/vfs.txt |   16 +++++++++++++
- fs/super.c                        |   43 +++++++++++++++++++++++++++---------
- include/linux/fs.h                |    2 +
- 3 files changed, 50 insertions(+), 11 deletions(-)
+ fs/inode.c         |   91 +++++++++++++++++++++++++++++++++++++++++++++------
+ fs/super.c         |    1 +
+ include/linux/fs.h |    4 ++
+ 3 files changed, 85 insertions(+), 11 deletions(-)
 
-diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
-index d56151f..fd24f34 100644
---- a/Documentation/filesystems/vfs.txt
-+++ b/Documentation/filesystems/vfs.txt
-@@ -229,6 +229,8 @@ struct super_operations {
+diff --git a/fs/inode.c b/fs/inode.c
+index 14f53fd..0c79cd3 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -34,7 +34,7 @@
+  * inode->i_lock protects:
+  *   inode->i_state, inode->i_hash, __iget()
+  * inode_lru_lock protects:
+- *   inode_lru, inode->i_lru
++ *   inode->i_sb->s_inode_lru, inode->i_lru
+  * inode_sb_list_lock protects:
+  *   sb->s_inodes, inode->i_sb_list
+  * inode_wb_list_lock protects:
+@@ -64,7 +64,6 @@ static unsigned int i_hash_shift __read_mostly;
+ static struct hlist_head *inode_hashtable __read_mostly;
+ static __cacheline_aligned_in_smp DEFINE_SPINLOCK(inode_hash_lock);
  
-         ssize_t (*quota_read)(struct super_block *, int, char *, size_t, loff_t);
-         ssize_t (*quota_write)(struct super_block *, int, const char *, size_t, loff_t);
-+	int (*nr_cached_objects)(struct super_block *);
-+	void (*free_cached_objects)(struct super_block *, int);
- };
+-static LIST_HEAD(inode_lru);
+ static DEFINE_SPINLOCK(inode_lru_lock);
  
- All methods are called without any locks being held, unless otherwise
-@@ -301,6 +303,20 @@ or bottom half).
- 
-   quota_write: called by the VFS to write to filesystem quota file.
- 
-+  nr_cached_objects: called by the sb cache shrinking function for the
-+	filesystem to return the number of freeable cached objects it contains.
-+	Optional.
-+
-+  free_cache_objects: called by the sb cache shrinking function for the
-+	filesystem to scan the number of objects indicated to try to free them.
-+	Optional, but any filesystem implementing this method needs to also
-+	implement ->nr_cached_objects for it to be called correctly.
-+
-+	We can't do anything with any errors that the filesystem might
-+	encountered, hence the void return type. This will never be called if
-+	the VM is trying to reclaim under GFP_NOFS conditions, hence this
-+	method does not need to handle that situation itself.
-+
- Whoever sets up the inode is responsible for filling in the "i_op" field. This
- is a pointer to a "struct inode_operations" which describes the methods that
- can be performed on individual inodes.
-diff --git a/fs/super.c b/fs/super.c
-index c449c14..ca8e735 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -48,7 +48,8 @@ DEFINE_SPINLOCK(sb_lock);
- static int prune_super(struct shrinker *shrink, struct shrink_control *sc)
+ __cacheline_aligned_in_smp DEFINE_SPINLOCK(inode_sb_list_lock);
+@@ -345,7 +344,8 @@ static void inode_lru_list_add(struct inode *inode)
  {
- 	struct super_block *sb;
--	int count;
-+	int	fs_objects = 0;
-+	int	total_objects;
- 
- 	sb = container_of(shrink, struct super_block, s_shrink);
- 
-@@ -62,23 +63,43 @@ static int prune_super(struct shrinker *shrink, struct shrink_control *sc)
- 	if (!grab_super_passive(sb))
- 		return -1;
- 
--	if (sc->nr_to_scan) {
--		/* proportion the scan between the two cacheѕ */
--		int total;
-+	if (sb->s_op && sb->s_op->nr_cached_objects)
-+		fs_objects = sb->s_op->nr_cached_objects(sb);
-+
-+	total_objects = sb->s_nr_dentry_unused +
-+			sb->s_nr_inodes_unused + fs_objects + 1;
- 
--		total = sb->s_nr_dentry_unused + sb->s_nr_inodes_unused + 1;
--		count = (sc->nr_to_scan * sb->s_nr_dentry_unused) / total;
-+	if (sc->nr_to_scan) {
-+		int	dentries;
-+		int	inodes;
-+
-+		/* proportion the scan between the cacheѕ */
-+		dentries = (sc->nr_to_scan * sb->s_nr_dentry_unused) /
-+							total_objects;
-+		inodes = (sc->nr_to_scan * sb->s_nr_inodes_unused) /
-+							total_objects;
-+		if (fs_objects)
-+			fs_objects = (sc->nr_to_scan * fs_objects) /
-+							total_objects;
-+		/*
-+		 * prune the dcache first as the icache is pinned by it, then
-+		 * prune the icache, followed by the filesystem specific caches
-+		 */
-+		prune_dcache_sb(sb, dentries);
-+		prune_icache_sb(sb, inodes);
- 
--		/* prune dcache first as icache is pinned by it */
--		prune_dcache_sb(sb, count);
--		prune_icache_sb(sb, sc->nr_to_scan - count);
-+		if (fs_objects && sb->s_op->free_cached_objects) {
-+			sb->s_op->free_cached_objects(sb, fs_objects);
-+			fs_objects = sb->s_op->nr_cached_objects(sb);
-+		}
-+		total_objects = sb->s_nr_dentry_unused +
-+				sb->s_nr_inodes_unused + fs_objects;
+ 	spin_lock(&inode_lru_lock);
+ 	if (list_empty(&inode->i_lru)) {
+-		list_add(&inode->i_lru, &inode_lru);
++		list_add(&inode->i_lru, &inode->i_sb->s_inode_lru);
++		inode->i_sb->s_nr_inodes_unused++;
+ 		this_cpu_inc(nr_unused);
  	}
+ 	spin_unlock(&inode_lru_lock);
+@@ -356,6 +356,7 @@ static void inode_lru_list_del(struct inode *inode)
+ 	spin_lock(&inode_lru_lock);
+ 	if (!list_empty(&inode->i_lru)) {
+ 		list_del_init(&inode->i_lru);
++		inode->i_sb->s_nr_inodes_unused--;
+ 		this_cpu_dec(nr_unused);
+ 	}
+ 	spin_unlock(&inode_lru_lock);
+@@ -621,21 +622,20 @@ static int can_unuse(struct inode *inode)
+  * LRU does not have strict ordering. Hence we don't want to reclaim inodes
+  * with this flag set because they are the inodes that are out of order.
+  */
+-static void prune_icache(int nr_to_scan)
++static void shrink_icache_sb(struct super_block *sb, int *nr_to_scan)
+ {
+ 	LIST_HEAD(freeable);
+ 	int nr_scanned;
+ 	unsigned long reap = 0;
  
--	count = ((sb->s_nr_dentry_unused + sb->s_nr_inodes_unused) / 100)
--						* sysctl_vfs_cache_pressure;
-+	total_objects = (total_objects / 100) * sysctl_vfs_cache_pressure;
- 	up_read(&sb->s_umount);
- 	put_super(sb);
--	return count;
-+	return total_objects;
+-	down_read(&iprune_sem);
+ 	spin_lock(&inode_lru_lock);
+-	for (nr_scanned = 0; nr_scanned < nr_to_scan; nr_scanned++) {
++	for (nr_scanned = *nr_to_scan; nr_scanned >= 0; nr_scanned--) {
+ 		struct inode *inode;
+ 
+-		if (list_empty(&inode_lru))
++		if (list_empty(&sb->s_inode_lru))
+ 			break;
+ 
+-		inode = list_entry(inode_lru.prev, struct inode, i_lru);
++		inode = list_entry(sb->s_inode_lru.prev, struct inode, i_lru);
+ 
+ 		/*
+ 		 * we are inverting the inode_lru_lock/inode->i_lock here,
+@@ -643,7 +643,7 @@ static void prune_icache(int nr_to_scan)
+ 		 * inode to the back of the list so we don't spin on it.
+ 		 */
+ 		if (!spin_trylock(&inode->i_lock)) {
+-			list_move(&inode->i_lru, &inode_lru);
++			list_move(&inode->i_lru, &sb->s_inode_lru);
+ 			continue;
+ 		}
+ 
+@@ -655,6 +655,7 @@ static void prune_icache(int nr_to_scan)
+ 		    (inode->i_state & ~I_REFERENCED)) {
+ 			list_del_init(&inode->i_lru);
+ 			spin_unlock(&inode->i_lock);
++			sb->s_nr_inodes_unused--;
+ 			this_cpu_dec(nr_unused);
+ 			continue;
+ 		}
+@@ -662,7 +663,7 @@ static void prune_icache(int nr_to_scan)
+ 		/* recently referenced inodes get one more pass */
+ 		if (inode->i_state & I_REFERENCED) {
+ 			inode->i_state &= ~I_REFERENCED;
+-			list_move(&inode->i_lru, &inode_lru);
++			list_move(&inode->i_lru, &sb->s_inode_lru);
+ 			spin_unlock(&inode->i_lock);
+ 			continue;
+ 		}
+@@ -676,7 +677,7 @@ static void prune_icache(int nr_to_scan)
+ 			iput(inode);
+ 			spin_lock(&inode_lru_lock);
+ 
+-			if (inode != list_entry(inode_lru.next,
++			if (inode != list_entry(sb->s_inode_lru.next,
+ 						struct inode, i_lru))
+ 				continue;	/* wrong inode or list_empty */
+ 			/* avoid lock inversions with trylock */
+@@ -692,6 +693,7 @@ static void prune_icache(int nr_to_scan)
+ 		spin_unlock(&inode->i_lock);
+ 
+ 		list_move(&inode->i_lru, &freeable);
++		sb->s_nr_inodes_unused--;
+ 		this_cpu_dec(nr_unused);
+ 	}
+ 	if (current_is_kswapd())
+@@ -699,8 +701,75 @@ static void prune_icache(int nr_to_scan)
+ 	else
+ 		__count_vm_events(PGINODESTEAL, reap);
+ 	spin_unlock(&inode_lru_lock);
++	*nr_to_scan = nr_scanned;
+ 
+ 	dispose_list(&freeable);
++}
++
++static void prune_icache(int count)
++{
++	struct super_block *sb, *p = NULL;
++	int w_count;
++	int unused = inodes_stat.nr_unused;
++	int prune_ratio;
++	int pruned;
++
++	if (unused == 0 || count == 0)
++		return;
++	down_read(&iprune_sem);
++	if (count >= unused)
++		prune_ratio = 1;
++	else
++		prune_ratio = unused / count;
++	spin_lock(&sb_lock);
++	list_for_each_entry(sb, &super_blocks, s_list) {
++		if (list_empty(&sb->s_instances))
++			continue;
++		if (sb->s_nr_inodes_unused == 0)
++			continue;
++		sb->s_count++;
++		/* Now, we reclaim unused dentrins with fairness.
++		 * We reclaim them same percentage from each superblock.
++		 * We calculate number of dentries to scan on this sb
++		 * as follows, but the implementation is arranged to avoid
++		 * overflows:
++		 * number of dentries to scan on this sb =
++		 * count * (number of dentries on this sb /
++		 * number of dentries in the machine)
++		 */
++		spin_unlock(&sb_lock);
++		if (prune_ratio != 1)
++			w_count = (sb->s_nr_inodes_unused / prune_ratio) + 1;
++		else
++			w_count = sb->s_nr_inodes_unused;
++		pruned = w_count;
++		/*
++		 * We need to be sure this filesystem isn't being unmounted,
++		 * otherwise we could race with generic_shutdown_super(), and
++		 * end up holding a reference to an inode while the filesystem
++		 * is unmounted.  So we try to get s_umount, and make sure
++		 * s_root isn't NULL.
++		 */
++		if (down_read_trylock(&sb->s_umount)) {
++			if ((sb->s_root != NULL) &&
++			    (!list_empty(&sb->s_dentry_lru))) {
++				shrink_icache_sb(sb, &w_count);
++				pruned -= w_count;
++			}
++			up_read(&sb->s_umount);
++		}
++		spin_lock(&sb_lock);
++		if (p)
++			__put_super(p);
++		count -= pruned;
++		p = sb;
++		/* more work left to do? */
++		if (count <= 0)
++			break;
++	}
++	if (p)
++		__put_super(p);
++	spin_unlock(&sb_lock);
+ 	up_read(&iprune_sem);
  }
  
- /**
+diff --git a/fs/super.c b/fs/super.c
+index 263edeb..e8e6dbf 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -77,6 +77,7 @@ static struct super_block *alloc_super(struct file_system_type *type)
+ 		INIT_HLIST_BL_HEAD(&s->s_anon);
+ 		INIT_LIST_HEAD(&s->s_inodes);
+ 		INIT_LIST_HEAD(&s->s_dentry_lru);
++		INIT_LIST_HEAD(&s->s_inode_lru);
+ 		init_rwsem(&s->s_umount);
+ 		mutex_init(&s->s_lock);
+ 		lockdep_set_class(&s->s_umount, &type->s_umount_key);
 diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 40153c2..48e4e45 100644
+index 2e206f7..552a1d3 100644
 --- a/include/linux/fs.h
 +++ b/include/linux/fs.h
-@@ -1654,6 +1654,8 @@ struct super_operations {
- 	ssize_t (*quota_write)(struct super_block *, int, const char *, size_t, loff_t);
- #endif
- 	int (*bdev_try_to_free_page)(struct super_block*, struct page*, gfp_t);
-+	int (*nr_cached_objects)(struct super_block *);
-+	void (*free_cached_objects)(struct super_block *, int);
- };
+@@ -1396,6 +1396,10 @@ struct super_block {
+ 	struct list_head	s_dentry_lru;	/* unused dentry lru */
+ 	int			s_nr_dentry_unused;	/* # of dentry on lru */
  
- /*
++	/* inode_lru_lock protects s_inode_lru and s_nr_inodes_unused */
++	struct list_head	s_inode_lru;		/* unused inode lru */
++	int			s_nr_inodes_unused;	/* # of inodes on lru */
++
+ 	struct block_device	*s_bdev;
+ 	struct backing_dev_info *s_bdi;
+ 	struct mtd_info		*s_mtd;
 -- 
 1.7.5.1
 
