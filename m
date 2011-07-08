@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755558Ab1GHFGr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:06:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42661 "EHLO mx2.suse.de"
+	id S1755518Ab1GHFHH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:07:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42637 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755494Ab1GHFGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:06:16 -0400
+	id S1755454Ab1GHFGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:06:09 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:17:02 2011
-Message-Id: <20110708001702.920199025@clark.kroah.org>
+Message-Id: <20110708001702.733789542@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:17:17 -0700
+Date: Thu, 07 Jul 2011 17:17:15 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org, greg@kroah.com
+To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk, avi@redhat.com,
-        mtosatti@redhat.com, Alex Williamson <alex.williamson@redhat.com>,
-        "Acked-by: Jan Kiszka" <jan.kiszka@siemens.com>
-Subject: [105/107] Revert "KVM: Save/restore state of assigned PCI device"
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Wei Yongjun <yjwei@cn.fujitsu.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [103/107] vlan: fix typo in vlan_dev_hard_start_xmit()
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,56 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Williamson <alex.williamson@redhat.com>
 
-This reverts ed78661f2614d3c9f69c23e280db3bafdabdf5bb as it assumes
-the saved PCI state will remain valid for the entire length of time
-that it is attached to a guest.  This fails when userspace makes use
-of the pci-sysfs reset interface, which invalidates the saved device
-state, leaving nothing to be restored after the device is reset on
-de-assignment.  This leaves the device in an unusable state.
+From: Wei Yongjun <yjwei@cn.fujitsu.com>
 
-3.0.0 will add an interface for KVM to save the PCI state in a
-buffer unaffected by other callers of pci_reset_function(), but the
-most appropriate stable fix seems to be reverting this change since
-the original assumption about the device saved state persisting is
-incorrect.
+[ Upstream commit 307f73df2b9829ee5a261d1ed432ff683c426cdf ]
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Acked-by: Jan Kiszka <jan.kiszka@siemens.com>
-Signed-off-by: Avi Kivity <avi@redhat.com>
+commit 4af429d29b341bb1735f04c2fb960178ed5d52e7 (vlan: lockless
+transmit path) have a typo in vlan_dev_hard_start_xmit(), using
+u64_stats_update_begin() to end the stat update, it should be
+u64_stats_update_end().
+
+Signed-off-by: Wei Yongjun <yjwei@cn.fujitsu.com>
+Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- virt/kvm/assigned-dev.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ net/8021q/vlan_dev.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/virt/kvm/assigned-dev.c
-+++ b/virt/kvm/assigned-dev.c
-@@ -197,8 +197,7 @@ static void kvm_free_assigned_device(str
- {
- 	kvm_free_assigned_irq(kvm, assigned_dev);
- 
--	__pci_reset_function(assigned_dev->dev);
--	pci_restore_state(assigned_dev->dev);
-+	pci_reset_function(assigned_dev->dev);
- 
- 	pci_release_regions(assigned_dev->dev);
- 	pci_disable_device(assigned_dev->dev);
-@@ -515,7 +514,6 @@ static int kvm_vm_ioctl_assign_device(st
+--- a/net/8021q/vlan_dev.c
++++ b/net/8021q/vlan_dev.c
+@@ -338,7 +338,7 @@ static netdev_tx_t vlan_dev_hard_start_x
+ 		u64_stats_update_begin(&stats->syncp);
+ 		stats->tx_packets++;
+ 		stats->tx_bytes += len;
+-		u64_stats_update_begin(&stats->syncp);
++		u64_stats_update_end(&stats->syncp);
+ 	} else {
+ 		this_cpu_inc(vlan_dev_info(dev)->vlan_pcpu_stats->tx_dropped);
  	}
- 
- 	pci_reset_function(dev);
--	pci_save_state(dev);
- 
- 	match->assigned_dev_id = assigned_dev->assigned_dev_id;
- 	match->host_segnr = assigned_dev->segnr;
-@@ -546,7 +544,6 @@ out:
- 	mutex_unlock(&kvm->lock);
- 	return r;
- out_list_del:
--	pci_restore_state(dev);
- 	list_del(&match->list);
- 	pci_release_regions(dev);
- out_disable:
 
 
