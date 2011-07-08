@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753045Ab1GIFye (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 01:54:34 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:54211 "EHLO
+	id S1753445Ab1GIF5y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 01:57:54 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:32769 "EHLO
 	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752477Ab1GIFyL (ORCPT
+	by vger.kernel.org with ESMTP id S1753052Ab1GIFyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 01:54:11 -0400
-X-Sasl-enc: g/lv2dfR0e+uwNRMfNTUrNTJdJh1CtWfP4oDes6Gc5B5 1310190850
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 15:51:19 2011
-Message-Id: <20110708225119.620120747@clark.kroah.org>
+	Sat, 9 Jul 2011 01:54:35 -0400
+X-Sasl-enc: Kh7jxDJrzYrfwqgAo9Ii/R0Oi3ZXKylWTIPp/VLlombX 1310190874
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 15:51:22 2011
+Message-Id: <20110708225121.996088069@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 08 Jul 2011 15:49:57 -0700
+Date: Fri, 08 Jul 2011 15:50:22 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Bob Copeland <me@bobcopeland.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [08/35] ath5k: fix memory leak when fewer than N_PD_CURVES are in use
+        Xufeng Zhang <xufeng.zhang@windriver.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [33/35] ipv6/udp: Use the correct variable to determine non-blocking condition
 In-Reply-To: <20110708225343.GA14402@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,43 +29,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Eugene A. Shatokhin" <dame_eugene@mail.ru>
 
-commit a0b8de350be458b33248e48b2174d9af8a4c4798 upstream.
+From: Xufeng Zhang <xufeng.zhang@windriver.com>
 
-We would free the proper number of curves, but in the wrong
-slots, due to a missing level of indirection through
-the pdgain_idx table.
+[ Upstream commit 32c90254ed4a0c698caa0794ebb4de63fcc69631 ]
 
-It's simpler just to try to free all four slots, so do that.
+udpv6_recvmsg() function is not using the correct variable to determine
+whether or not the socket is in non-blocking operation, this will lead
+to unexpected behavior when a UDP checksum error occurs.
 
-Signed-off-by: Bob Copeland <me@bobcopeland.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Consider a non-blocking udp receive scenario: when udpv6_recvmsg() is
+called by sock_common_recvmsg(), MSG_DONTWAIT bit of flags variable in
+udpv6_recvmsg() is cleared by "flags & ~MSG_DONTWAIT" in this call:
+
+    err = sk->sk_prot->recvmsg(iocb, sk, msg, size, flags & MSG_DONTWAIT,
+                   flags & ~MSG_DONTWAIT, &addr_len);
+
+i.e. with udpv6_recvmsg() getting these values:
+
+	int noblock = flags & MSG_DONTWAIT
+	int flags = flags & ~MSG_DONTWAIT
+
+So, when udp checksum error occurs, the execution will go to
+csum_copy_err, and then the problem happens:
+
+    csum_copy_err:
+            ...............
+            if (flags & MSG_DONTWAIT)
+                    return -EAGAIN;
+            goto try_again;
+            ...............
+
+But it will always go to try_again as MSG_DONTWAIT has been cleared
+from flags at call time -- only noblock contains the original value
+of MSG_DONTWAIT, so the test should be:
+
+            if (noblock)
+                    return -EAGAIN;
+
+This is also consistent with what the ipv4/udp code does.
+
+Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- drivers/net/wireless/ath/ath5k/eeprom.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ net/ipv6/udp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath5k/eeprom.c
-+++ b/drivers/net/wireless/ath/ath5k/eeprom.c
-@@ -1588,14 +1588,12 @@ ath5k_eeprom_free_pcal_info(struct ath5k
- 		if (!chinfo[pier].pd_curves)
- 			continue;
+--- a/net/ipv6/udp.c
++++ b/net/ipv6/udp.c
+@@ -304,7 +304,7 @@ csum_copy_err:
+ 	}
+ 	release_sock(sk);
  
--		for (pdg = 0; pdg < ee->ee_pd_gains[mode]; pdg++) {
-+		for (pdg = 0; pdg < AR5K_EEPROM_N_PD_CURVES; pdg++) {
- 			struct ath5k_pdgain_info *pd =
- 					&chinfo[pier].pd_curves[pdg];
- 
--			if (pd != NULL) {
--				kfree(pd->pd_step);
--				kfree(pd->pd_pwr);
--			}
-+			kfree(pd->pd_step);
-+			kfree(pd->pd_pwr);
- 		}
- 
- 		kfree(chinfo[pier].pd_curves);
+-	if (flags & MSG_DONTWAIT)
++	if (noblock)
+ 		return -EAGAIN;
+ 	goto try_again;
+ }
 
 
