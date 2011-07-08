@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754059Ab1GHVkR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 17:40:17 -0400
-Received: from mga14.intel.com ([143.182.124.37]:15662 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750879Ab1GHVkP convert rfc822-to-8bit (ORCPT
+	id S1754930Ab1GHVlX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 17:41:23 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:38638 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754290Ab1GHVlV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 17:40:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,500,1304319600"; 
-   d="scan'208";a="24641727"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Don Zickus <dzickus@redhat.com>
-CC: "mjg@redhat.com" <mjg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 8 Jul 2011 14:40:13 -0700
-Subject: RE: pstore dump inside an nmi handler
-Thread-Topic: pstore dump inside an nmi handler
-Thread-Index: Acw9rBXDiGiC30MwTJ2hO8DqN/oo0AACv7ZA
-Message-ID: <987664A83D2D224EAE907B061CE93D5301E981AB56@orsmsx505.amr.corp.intel.com>
-References: <20110708201731.GA3025@redhat.com>
-In-Reply-To: <20110708201731.GA3025@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 8 Jul 2011 17:41:21 -0400
+X-Sasl-enc: aRWL7EMoFGBuiF3WsqrFAJjIQuT+rByrvLw0VrTBXaRY 1310161280
+Date: Fri, 8 Jul 2011 14:36:04 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Greg KH <gregkh@suse.de>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH] tty/serial: tegra: Use engineering names in DT
+ compatible property
+Message-ID: <20110708213604.GB31866@kroah.com>
+References: <1309896461-21976-1-git-send-email-swarren@nvidia.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1309896461-21976-1-git-send-email-swarren@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Inside pstore_dump(), the first thing it tries to grab is a mutex_lock()
-> (inside an nmi hander).  This seems to be the root cause of my problems.
+On Tue, Jul 05, 2011 at 02:07:41PM -0600, Stephen Warren wrote:
+> Engineering names are more stable than marketing names. Hence, use them
+> for Device Tree compatible properties instead.
+> 
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> ---
+> Greg, This builds on patches Grant has (or has said he will have) in his
+> devicetree/next branch, so I assume this change would be merged through
+> the same route.
 
-Someone else pointed out that mutex_lock() is a problem here too. They
-wondered whether spin_lock_irqsave() would work - or whether pstore
-backends were allowed to sleep - to which I said I hoped they didn't,
-but wasn't really sure what the future will hold.
+Sounds reasonable.  Grant, feel free to add:
+	Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+to the patch when you apply it.
 
-So ... ideas (and patches) are most welcome.
+thanks,
 
--Tony
-
-
+greg k-h
