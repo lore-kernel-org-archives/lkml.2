@@ -1,98 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754422Ab1GHRfD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 13:35:03 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50869 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751393Ab1GHRfB (ORCPT
+	id S1754435Ab1GHRla (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 13:41:30 -0400
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:38561 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752667Ab1GHRl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 13:35:01 -0400
-Date: Fri, 8 Jul 2011 18:34:42 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: "mingo@redhat.com" <mingo@redhat.com>,
-        "dengcheng.zhu@gmail.com" <dengcheng.zhu@gmail.com>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "hpa@zytor.com" <hpa@zytor.com>, "anton@samba.org" <anton@samba.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jason.wessel@windriver.com" <jason.wessel@windriver.com>,
-        "lethal@linux-sh.org" <lethal@linux-sh.org>,
-        "emunson@mgebm.net" <emunson@mgebm.net>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "mcree@orcon.net.nz" <mcree@orcon.net.nz>,
-        "mingo@elte.hu" <mingo@elte.hu>
-Cc: "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:perf/core] perf: Remove the nmi parameter from the
- swevent and overflow interface
-Message-ID: <20110708173442.GB31972@e102144-lin.cambridge.arm.com>
-References: <tip-agjev8eu666tvknpb3iaj0fg@git.kernel.org>
+	Fri, 8 Jul 2011 13:41:29 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: wH8JgUEVM1lYo9Azfxxhez1SVNJyXppFtsLQ_Hkr32G.d28
+ KHeARH76bpalsGVRQO0pC.QsYjqCKinmulHEy87Lic2XQ4OUo4JFexjfzMAJ
+ SNJh63Fd5KsKEj984Va8.W28LZi91F023y6sUzQfpg3OjvJWfxuRJqOrhEim
+ g45kRMGQkBU0n5JhekZdfGfost7FBvTDrtZfqFPea0kolor7phfw1EaW5IPq
+ e.Drz9bRrwzj96VIWUqUsPfPA0HDAgeYiF_f3fqqH_kWioHgpwRVN3Lm9k9o
+ ZcIicTSGfamRa6mhgndVGXkGDGqEA_vq8yggmqin4pTJYkTvjTr8zgml8iD_
+ ImocR6mU0kRuOFzMY3d.prbpo
+X-Yahoo-Newman-Property: ymail-3
+Date: Fri, 8 Jul 2011 12:41:24 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Andi Kleen <andi@firstfloor.org>
+cc: Pekka Enberg <penberg@kernel.org>, David Miller <davem@davemloft.net>,
+        marcin.slusarz@gmail.com, mpm@selenic.com,
+        linux-kernel@vger.kernel.org, rientjes@google.com, linux-mm@kvack.org
+Subject: Re: [PATCH] slub: reduce overhead of slub_debug
+In-Reply-To: <m2box5cplq.fsf@firstfloor.org>
+Message-ID: <alpine.DEB.2.00.1107081240010.23187@router.home>
+References: <alpine.DEB.2.00.1107071314320.21719@router.home> <1310064771.21902.55.camel@jaguar> <alpine.DEB.2.00.1107071402490.24248@router.home> <20110707.122151.314840355798805828.davem@davemloft.net> <CAOJsxLFsX3Q84QAeyRt5dZOdRxb3TiABPrP-YrWc91+BmR8ZBg@mail.gmail.com>
+ <alpine.DEB.2.00.1107071511010.26083@router.home> <m2box5cplq.fsf@firstfloor.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <tip-agjev8eu666tvknpb3iaj0fg@git.kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On Thu, 7 Jul 2011, Andi Kleen wrote:
 
-On Fri, Jul 01, 2011 at 04:21:25PM +0100, tip-bot for Peter Zijlstra wrote:
-> Commit-ID:  a8b0ca17b80e92faab46ee7179ba9e99ccb61233
-> Gitweb:     http://git.kernel.org/tip/a8b0ca17b80e92faab46ee7179ba9e99ccb61233
-> Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-> AuthorDate: Mon, 27 Jun 2011 14:41:57 +0200
-> Committer:  Ingo Molnar <mingo@elte.hu>
-> CommitDate: Fri, 1 Jul 2011 11:06:35 +0200
-> 
-> perf: Remove the nmi parameter from the swevent and overflow interface
-> 
-> The nmi parameter indicated if we could do wakeups from the current
-> context, if not, we would set some state and self-IPI and let the
-> resulting interrupt do the wakeup.
-> 
-> For the various event classes:
-> 
->   - hardware: nmi=0; PMI is in fact an NMI or we run irq_work_run from
->     the PMI-tail (ARM etc.)
->   - tracepoint: nmi=0; since tracepoint could be from NMI context.
->   - software: nmi=[0,1]; some, like the schedule thing cannot
->     perform wakeups, and hence need 0.
-> 
-> As one can see, there is very little nmi=1 usage, and the down-side of
-> not using it is that on some platforms some software events can have a
-> jiffy delay in wakeup (when arch_irq_work_raise isn't implemented).
-> 
-> The up-side however is that we can remove the nmi parameter and save a
-> bunch of conditionals in fast paths.
-> 
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Christoph Lameter <cl@linux.com> writes:
+>
+>
+> > +#ifdef __HAVE_ARCH_INV_MEMSCAN
+> > +void *inv_memscan(void *addr, int c, size_t size)
+> > +{
+> > +	if (!size)
+> > +		return addr;
+> > +	asm volatile("repz; scasb\n\t"
+>
+> This will just do the slow byte accesses again internally.
+> scasb is not normally very optimized in microcode as far
+> as I know.
+>
+> Also rep has quite some startup overhead which makes
+> it a bad idea for small sizes (<16-20 or so)
+>
+> I would stay with the C version. I bet that one is
+> faster.
 
-Whilst you updated the arch code in this series, you forgot to update the
-oprofile perf backend. I think you want something as simple as:
+If the c code is such an improvement then memscan and other
+implementations can be accellerated in the same way. That would be useful
+in general. We can get rid of the implementation for memscan and friends
+in x86 arch code.
 
 
-diff --git a/drivers/oprofile/oprofile_perf.c b/drivers/oprofile/oprofile_perf.c
-index 59acf9e..94796f3 100644
---- a/drivers/oprofile/oprofile_perf.c
-+++ b/drivers/oprofile/oprofile_perf.c
-@@ -31,7 +31,7 @@ static int num_counters;
- /*
-  * Overflow callback for oprofile.
-  */
--static void op_overflow_handler(struct perf_event *event, int unused,
-+static void op_overflow_handler(struct perf_event *event,
-                        struct perf_sample_data *data, struct pt_regs *regs)
- {
-        int id;
 
-
-although I haven't tried it.
-
-Cheers,
-
-Will
