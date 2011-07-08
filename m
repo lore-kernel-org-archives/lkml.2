@@ -1,61 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753338Ab1GHA3m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 20:29:42 -0400
-Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:59058 "EHLO
-	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752374Ab1GHA3k (ORCPT
+	id S1753427Ab1GHAcc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 20:32:32 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:41437 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752986Ab1GHAca (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 20:29:40 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        Magnus Damm <magnus.damm@gmail.com>, Paul Walmsley <paul@pwsan.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [Update][PATCH 6/10] PM / Domains: System-wide transitions support for generic domains (v5)
-Organization: Texas Instruments, Inc.
-References: <201106112223.04972.rjw@sisk.pl> <201106252324.13454.rjw@sisk.pl>
-	<201106252328.31882.rjw@sisk.pl> <201106290144.01186.rjw@sisk.pl>
-Date: Thu, 07 Jul 2011 17:29:35 -0700
-In-Reply-To: <201106290144.01186.rjw@sisk.pl> (Rafael J. Wysocki's message of
-	"Wed, 29 Jun 2011 01:44:00 +0200")
-Message-ID: <871uy1d380.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	Thu, 7 Jul 2011 20:32:30 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=e0K6kp4pYkX76wiJij9lodFoYIREWs/tXX5Upam340OBBG14w3TVS1hkutlF+I8Pi
+	cLtqsMD5NNxJUU3TRhMvg==
+Date: Thu, 7 Jul 2011 17:32:10 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Wengang Wang <wen.gang.wang@oracle.com>
+cc: stable@kernel.org, greg.marsden@oracle.com, joe.jin@oracle.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: prevent concurrent unmap_mapping_range() on the same
+ inode --to stable
+In-Reply-To: <20110704020003.GA4262@laptop.us.oracle.com>
+Message-ID: <alpine.LSU.2.00.1107071715020.10234@sister.anvils>
+References: <20110704020003.GA4262@laptop.us.oracle.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Rafael J. Wysocki" <rjw@sisk.pl> writes:
+On Mon, 4 Jul 2011, Wengang Wang wrote:
+> 
+> Any comment on the backport?
 
-> From: Rafael J. Wysocki <rjw@sisk.pl>
->
-> Make generic PM domains support system-wide power transitions
-> (system suspend and hibernation).  Add suspend, resume, freeze, thaw,
-> poweroff and restore callbacks to be associated with struct
-> generic_pm_domain objects and make pm_genpd_init() use them as
-> appropriate.
->
-> The new callbacks do nothing for devices belonging to power domains
-> that were powered down at run time (before the transition).  
+You don't mention which release it's a backport to.
+2.6.38 and 2.6.39 base releases and 2.6.37.6 already include the fix.
 
-Thinking about this some more, how is a driver supposed to reconfigure
-wakeups during suspend if it has already been runtime suspended?
+It could be valuable to backport to the -longterm releases,
+but a simple rediff would not be enough: things moved around.
 
-For example, assume a device where device_may_wakeup() == false.  This
-means wakeups during *suspend* are disabled, but wakeups wakeups are
-assumed to enabled when it is runtime suspended.
-
-So now, assume this device is RPM_SUSPENDED, it has wakeups *enabled*,
-and then system suspend comes along.  
-
-With this current patch, the driver will never receive any callbacks, so
-it can never disable its wakeups.  
-
-Am I missing something?
-
-Kevin
+Hugh
