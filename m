@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755543Ab1GHFGe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:06:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42680 "EHLO mx2.suse.de"
+	id S1755453Ab1GHFHg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:07:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42597 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754210Ab1GHFGY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:06:24 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:17:03 2011
-Message-Id: <20110708001703.095764879@clark.kroah.org>
+	id S1755406Ab1GHFF7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:05:59 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:17:02 2011
+Message-Id: <20110708001702.444757454@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:17:19 -0700
+Date: Thu, 07 Jul 2011 17:17:12 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hans Schillstrom <hans.schillstrom@ericsson.com>,
-        Simon Horman <horms@verge.net.au>
-Subject: [107/107] IPVS netns exit causes crash in conntrack
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [100/107] USB: fix regression occurring during device removal
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,60 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans Schillstrom <hans.schillstrom@ericsson.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 8f4e0a18682d91abfad72ede3d3cb5f3ebdf54b4 upstream.
+commit e534c5b831c8b8e9f5edee5c8a37753c808b80dc upstream.
 
-Quote from Patric Mc Hardy
-"This looks like nfnetlink.c excited and destroyed the nfnl socket, but
-ip_vs was still holding a reference to a conntrack. When the conntrack
-got destroyed it created a ctnetlink event, causing an oops in
-netlink_has_listeners when trying to use the destroyed nfnetlink
-socket."
+This patch (as1476) fixes a regression introduced by
+fccf4e86200b8f5edd9a65da26f150e32ba79808 (USB: Free bandwidth when
+usb_disable_device is called).  usb_disconnect() grabs the
+bandwidth_mutex before calling usb_disable_device(), which calls down
+indirectly to usb_set_interface(), which tries to acquire the
+bandwidth_mutex.
 
-If nf_conntrack_netlink is loaded before ip_vs this is not a problem.
+The fix causes usb_set_interface() to return early when it is called
+for an interface that has already been unregistered, which is what
+happens in usb_disable_device().
 
-This patch simply avoids calling ip_vs_conn_drop_conntrack()
-when netns is dying as suggested by Julian.
-
-Signed-off-by: Hans Schillstrom <hans.schillstrom@ericsson.com>
-Signed-off-by: Simon Horman <horms@verge.net.au>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/netfilter/ipvs/ip_vs_conn.c |   10 +++++++++-
- net/netfilter/ipvs/ip_vs_core.c |    1 +
- 2 files changed, 10 insertions(+), 1 deletion(-)
+ drivers/usb/core/message.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/net/netfilter/ipvs/ip_vs_conn.c
-+++ b/net/netfilter/ipvs/ip_vs_conn.c
-@@ -776,8 +776,16 @@ static void ip_vs_conn_expire(unsigned l
- 		if (cp->control)
- 			ip_vs_control_del(cp);
+--- a/drivers/usb/core/message.c
++++ b/drivers/usb/core/message.c
+@@ -1286,6 +1286,8 @@ int usb_set_interface(struct usb_device
+ 			interface);
+ 		return -EINVAL;
+ 	}
++	if (iface->unregistering)
++		return -ENODEV;
  
--		if (cp->flags & IP_VS_CONN_F_NFCT)
-+		if (cp->flags & IP_VS_CONN_F_NFCT) {
- 			ip_vs_conn_drop_conntrack(cp);
-+			/* Do not access conntracks during subsys cleanup
-+			 * because nf_conntrack_find_get can not be used after
-+			 * conntrack cleanup for the net.
-+			 */
-+			smp_rmb();
-+			if (ipvs->enable)
-+				ip_vs_conn_drop_conntrack(cp);
-+		}
- 
- 		ip_vs_pe_put(cp->pe);
- 		kfree(cp->pe_data);
---- a/net/netfilter/ipvs/ip_vs_core.c
-+++ b/net/netfilter/ipvs/ip_vs_core.c
-@@ -1965,6 +1965,7 @@ static void __net_exit __ip_vs_dev_clean
- {
- 	EnterFunction(2);
- 	net_ipvs(net)->enable = 0;	/* Disable packet reception */
-+	smp_wmb();
- 	__ip_vs_sync_cleanup(net);
- 	LeaveFunction(2);
- }
+ 	alt = usb_altnum_to_altsetting(iface, alternate);
+ 	if (!alt) {
 
 
