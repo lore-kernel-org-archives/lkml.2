@@ -1,33 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753611Ab1GHOug (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 10:50:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45183 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753312Ab1GHOuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 10:50:06 -0400
-Date: Fri, 8 Jul 2011 07:44:03 -0700
-From: Greg KH <gregkh@suse.de>
-To: Juan =?iso-8859-1?Q?Jes=FAs_Garc=EDa?= de Soria Lucena 
-	<skandalfo@gmail.com>
-Cc: stable-review@kernel.org, Mauro Carvalho Chehab <mchehab@redhat.com>,
-        stable@kernel.org, linux-kernel@vger.kernel.org,
-        alan@lxorguk.ukuu.org.uk, torvalds@linux-foundation.org,
-        Jarod Wilson <jarod@redhat.com>, akpm@linux-foundation.org
-Subject: Re: [063/107] [media] ite-cir: 8709 needs to use pnp resource 2
-Message-ID: <20110708144403.GC22691@suse.de>
-References: <CAB+yVgDkRSQc9WOYbQGbHdmV4u3JNJCboYOei8tbAFfb3jsVQg@mail.gmail.com>
+	id S1753110Ab1GHO5p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 10:57:45 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:34141 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752129Ab1GHO5m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 10:57:42 -0400
+X-Sasl-enc: kDoDoPkirs+NmnZwJayRUZoS/B1pcvOejKDJ4e2C6P0r 1310137062
+Date: Fri, 8 Jul 2011 07:54:08 -0700
+From: Greg KH <greg@kroah.com>
+To: Nao Nishijima <nao.nishijima.xt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        James.Bottomley@HansenPartnership.com, kay.sievers@vrfy.org,
+        jcm@redhat.com, dle-develop@lists.sourceforge.net,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        yrl.pp-manager.tt@hitachi.com, dgilbert@interlog.com,
+        stefanr@s5r6.in-berlin.de, hare@suse.de
+Subject: Re: [RFC PATCH 0/4] Persistent device name using alias name
+Message-ID: <20110708145408.GA2283@kroah.com>
+References: <20110708084547.2091.55262.stgit@ltc197.sdl.hitachi.co.jp>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAB+yVgDkRSQc9WOYbQGbHdmV4u3JNJCboYOei8tbAFfb3jsVQg@mail.gmail.com>
+In-Reply-To: <20110708084547.2091.55262.stgit@ltc197.sdl.hitachi.co.jp>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 08, 2011 at 07:59:03AM +0200, Juan Jesús García de Soria Lucena wrote:
-> Acked-by: Juan Jesús García de Soria <skandalfo@gmail.com>
+On Fri, Jul 08, 2011 at 05:45:47PM +0900, Nao Nishijima wrote:
+> Hi,
+> 
+> This patch series provides an "alias name" of the disk into kernel and procfs
+> messages. The user can assign a preferred name to an alias name of the device.
+> 
+> Based on previous discussion (*), I changed patches as follows
+> - This is "alias name"
+> - An "alias name" is stored in gendisk struct
+> - Add document to Documentation/ABI/testing/sysfs-block
+> - When the user changes an "alias name", kernel notifies udev
+> 
+> (*) http://marc.info/?l=linux-scsi&m=130812625531219&w=2
 
-Now added, thanks.
+I don't like it and I don't think it will really solve the root problem
+you are trying to address, but as the patches don't touch any code I
+maintain, there's not much I can do to object to it.
+
+greg k-h
