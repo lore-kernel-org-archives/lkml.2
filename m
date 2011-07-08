@@ -1,86 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754119Ab1GHRUM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 13:20:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12052 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752005Ab1GHRUJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 13:20:09 -0400
-Date: Fri, 8 Jul 2011 13:19:26 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: linux kernel mailing list <linux-kernel@vger.kernel.org>
-Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH] x86 boot: Wait for boot cpu to show up if nr_cpus limit is
- about to hit
-Message-ID: <20110708171926.GF2930@redhat.com>
+	id S1754304Ab1GHRVA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 13:21:00 -0400
+Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:37441 "EHLO
+	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752005Ab1GHRU6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 13:20:58 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Walmsley <paul@pwsan.com>,
+        LKML <linux-kernel@vger.kernel.org>, <linux-sh@vger.kernel.org>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [Update][PATCH 6/10] PM / Domains: System-wide transitions support for generic domains (v5)
+Organization: Texas Instruments, Inc.
+References: <Pine.LNX.4.44L0.1107081033000.2208-100000@iolanthe.rowland.org>
+Date: Fri, 08 Jul 2011 10:20:52 -0700
+In-Reply-To: <Pine.LNX.4.44L0.1107081033000.2208-100000@iolanthe.rowland.org>
+	(Alan Stern's message of "Fri, 8 Jul 2011 10:37:32 -0400 (EDT)")
+Message-ID: <87y6088z9n.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-nr_cpus allows one to specify number of possible cpus in the system.
-Current assumption seems to be that first cpu to show up is boot cpu
-and this assumption will be broken in kdump scenario where we can be
-booting on a non boot cpu with nr_cpus=1.
+Alan Stern <stern@rowland.harvard.edu> writes:
 
-It might happen that first cpu we parse is not the cpu we boot on and
-later we ignore boot cpu. Though code later seems to recognize this
-anomaly and forcibly sets boot cpu in physical cpu map with following
-warning.
+> On Fri, 8 Jul 2011, Rafael J. Wysocki wrote:
+>
+>> On Friday, July 08, 2011, Kevin Hilman wrote:
+>> > "Rafael J. Wysocki" <rjw@sisk.pl> writes:
+>> > 
+>> > > From: Rafael J. Wysocki <rjw@sisk.pl>
+>> > >
+>> > > Make generic PM domains support system-wide power transitions
+>> > > (system suspend and hibernation).  Add suspend, resume, freeze, thaw,
+>> > > poweroff and restore callbacks to be associated with struct
+>> > > generic_pm_domain objects and make pm_genpd_init() use them as
+>> > > appropriate.
+>> > >
+>> > > The new callbacks do nothing for devices belonging to power domains
+>> > > that were powered down at run time (before the transition).  
+>> > 
+>> > Thinking about this some more, how is a driver supposed to reconfigure
+>> > wakeups during suspend if it has already been runtime suspended?
+>> 
+>> If the device belongs to a PM domain that has been powered off, it
+>> won't be notified.
+>> 
+>> > For example, assume a device where device_may_wakeup() == false.  This
+>> > means wakeups during *suspend* are disabled, but wakeups wakeups are
+>> > assumed to enabled when it is runtime suspended.
+>> > 
+>> > So now, assume this device is RPM_SUSPENDED, it has wakeups *enabled*,
+>> > and then system suspend comes along.  
+>> > 
+>> > With this current patch, the driver will never receive any callbacks, so
+>> > it can never disable its wakeups.  
+>> >
+>> > Am I missing something?
+>> 
+>> As I said above, this only happens with devices that belog to PM domains
+>> that were powered off before system suspend has started, so the problem
+>> is limited to devices that wakeup is signaled on behalf of even when they
+>> have no power.
 
-if (!physid_isset(hard_smp_processor_id(), phys_cpu_present_map)) {
-        printk(KERN_WARNING
-                "weird, boot CPU (#%d) not listed by the BIOS.\n",
-                hard_smp_processor_id());
+Which on OMAP, is *all* devices, so that's a pretty major limitation.  :)
 
-        physid_set(hard_smp_processor_id(), phys_cpu_present_map);
-}
+>> So this is a limitation, but not affecting all platforms.
+>> 
+>> There are a few ways to avoid this limitation I can think of:
+>> (1) Add a "make me operational during system suspend" flag to struct dev_pm_info
+>>     and run pm_runtime_resume() on such devices from the core (either dpm_prepare()
+>>     core, or pm_genpd_prepare()).
+>
+> What's to prevent the device from being runtime-suspended again before 
+> the wakeup setting can be changed?
+>
+>> (2) Add a "my .prepare() is safe to run if device is not accessible" flag to
+>>     struct dev_pm_info and make pm_genpd_prepare() execute .prepare() for such
+>>     devices regardless of whether or not their PM domains are off.
+>> (3) Call .prepare() from all drivers unconditionally during system suspend
+>>     (and probably .complete() too) in the hope they won't access inaccessible
+>>     devices.
 
-This patch waits for boot cpu to show up and starts ignoring the cpus
-once we have hit (nr_cpus - 1) number of cpus. So effectively we are
-reserving one slot out of nr_cpus for boot cpu explicitly.
+Like Alan's comment above for (1), I think the same applies for (3)
+since runtime PM transitions can still happen between .prepare() and
+.suspend()
 
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
----
- arch/x86/kernel/apic/apic.c |   22 ++++++++++++++++++++--
- 1 file changed, 20 insertions(+), 2 deletions(-)
+Kevin
 
-Index: linux-2.6/arch/x86/kernel/apic/apic.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/apic/apic.c	2011-07-08 10:44:48.003709709 -0400
-+++ linux-2.6/arch/x86/kernel/apic/apic.c	2011-07-08 12:02:01.272223921 -0400
-@@ -1943,10 +1943,28 @@ void disconnect_bsp_APIC(int virt_wire_s
- 
- void __cpuinit generic_processor_info(int apicid, int version)
- {
--	int cpu;
-+	int cpu, max = nr_cpu_ids;
-+	bool boot_cpu_detected = physid_isset(boot_cpu_physical_apicid,
-+				phys_cpu_present_map);
-+
-+	/*
-+	 * If boot cpu has not been detected yet, then only allow upto
-+	 * nr_cpu_ids - 1 processors and keep one slot free for boot cpu
-+	 */
-+	if (!boot_cpu_detected && num_processors >= nr_cpu_ids - 1 &&
-+	    apicid != boot_cpu_physical_apicid) {
-+		int thiscpu = max + disabled_cpus - 1;
-+
-+		pr_warning(
-+			"ACPI: NR_CPUS/possible_cpus limit of %i almost"
-+			" reached. Keeping one slot for boot cpu."
-+			"  Processor %d/0x%x ignored.\n", max, thiscpu, apicid);
-+
-+		disabled_cpus++;
-+		return;
-+	}
- 
- 	if (num_processors >= nr_cpu_ids) {
--		int max = nr_cpu_ids;
- 		int thiscpu = max + disabled_cpus;
- 
- 		pr_warning(
+>> Probably, there's more.
+>
+> In the PM domain's suspend code, do a runtime resume if the wakeup
+> setting needs to be changed, rather than simply skipping over the
+> device.
+>
+>> In any case I think it's material for future work.
+>
+> Alan Stern
