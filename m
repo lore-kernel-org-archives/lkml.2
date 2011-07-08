@@ -1,59 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753989Ab1GHI3i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 04:29:38 -0400
-Received: from mtagate7.uk.ibm.com ([194.196.100.167]:44606 "EHLO
-	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753653Ab1GHI3f (ORCPT
+	id S1754041Ab1GHIgx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 04:36:53 -0400
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:29029 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753943Ab1GHIgv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 04:29:35 -0400
-Date: Fri, 8 Jul 2011 10:29:11 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
-        Jiri Slaby <jslaby@suse.cz>, Len Brown <lenb@kernel.org>
-Subject: Re: [patch 1/1] [PATCH] include storage keys in hibernation image.
-Message-ID: <20110708102911.3c4d83b6@mschwide>
-In-Reply-To: <201107072336.26151.rjw@sisk.pl>
-References: <20110608074523.211912903@de.ibm.com>
-	<201106142250.15041.rjw@sisk.pl>
-	<20110615093629.07f01779@mschwide>
-	<201107072336.26151.rjw@sisk.pl>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 8 Jul 2011 04:36:51 -0400
+From: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
+To: x86@kernel.org
+Cc: Naga Chumbalkar <nagananda.chumbalkar@hp.com>, mingo@elte.hu,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org, hpa@zytor.com
+Message-Id: <20110708083555.2598.42216.sendpatchset@nchumbalkar.americas.hpqcorp.net>
+Subject: [PATCH]: x86: print APIC data a little later during boot
+Date: Fri,  8 Jul 2011 08:36:34 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Jul 2011 23:36:25 +0200
-"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+To view IOAPIC data you could boot with "apic=debug".
+For example:
 
-> On Wednesday, June 15, 2011, Martin Schwidefsky wrote:
-> > On Tue, 14 Jun 2011 22:50:14 +0200
-> > "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> ...
-> > 
-> > Well before the preallocation kicked in we don't know which are the relevant
-> > storage keys. The only other option would be to store all of them which I
-> > consider to be a inferior solution. 
-> 
-> I've been thinking about that recently a bit.
-> 
-> Don't we need to restore the keys of the page frames that aren't copied
-> into the image too?
+NR Dst Mask Trig IRR Pol Stat Dmod Deli Vect:
+ 00 000 1    0    0   0   0    0    0    00
+ 01 000 0    0    0   0   0    0    0    31
+ 02 000 0    0    0   0   0    0    0    30
+ 03 000 0    0    0   0   0    0    0    33
+ 04 000 0    0    0   0   0    0    0    34
+ 05 000 0    0    0   0   0    0    0    35
+ 06 000 0    0    0   0   0    0    0    36
+ 07 000 0    0    0   0   0    0    0    37
+ 08 000 0    0    0   0   0    0    0    38
+ 09 000 0    1    0   0   0    0    0    39
+ 0a 000 0    0    0   0   0    0    0    3A
+ 0b 000 0    0    0   0   0    0    0    3B
+ 0c 000 0    0    0   0   0    0    0    3C
+ 0d 000 0    0    0   0   0    0    0    3D
+ 0e 000 0    0    0   0   0    0    0    3E
+ 0f 000 0    0    0   0   0    0    0    3F
+ 10 000 1    0    0   0   0    0    0    00
+ 11 000 1    0    0   0   0    0    0    00
+ 12 000 1    0    0   0   0    0    0    00
+ 13 000 1    0    0   0   0    0    0    00
+ 14 000 1    0    0   0   0    0    0    00
+ 15 000 1    0    0   0   0    0    0    00
+ 16 000 1    0    0   0   0    0    0    00
+ 17 000 1    0    0   0   0    0    0    00
 
-Pages that are free (= not part of the image) will get a zero storage key
-once they are allocated again. So no, we do not need to include these
-keys into the hibernation image.
+Delaying the call to print APIC data gives better results:
 
+NR Dst Mask Trig IRR Pol Stat Dmod Deli Vect:
+ 00 000 1    0    0   0   0    0    0    00
+ 01 000 0    0    0   0   0    0    0    31
+ 02 000 0    0    0   0   0    0    0    30
+ 03 000 1    0    0   0   0    0    0    33
+ 04 000 1    0    0   0   0    0    0    34
+ 05 000 1    0    0   0   0    0    0    35
+ 06 000 1    0    0   0   0    0    0    36
+ 07 000 1    0    0   0   0    0    0    37
+ 08 000 0    0    0   0   0    0    0    38
+ 09 000 0    1    0   0   0    0    0    39
+ 0a 000 1    0    0   0   0    0    0    3A
+ 0b 000 1    0    0   0   0    0    0    3B
+ 0c 000 0    0    0   0   0    0    0    3C
+ 0d 000 1    0    0   0   0    0    0    3D
+ 0e 000 1    0    0   0   0    0    0    3E
+ 0f 000 1    0    0   0   0    0    0    3F
+ 10 000 1    1    0   1   0    0    0    29
+ 11 000 1    0    0   0   0    0    0    00
+ 12 000 1    0    0   0   0    0    0    00
+ 13 000 1    0    0   0   0    0    0    00
+ 14 000 0    1    0   1   0    0    0    51
+ 15 000 1    0    0   0   0    0    0    00
+ 16 000 0    1    0   1   0    0    0    61
+ 17 000 0    1    0   1   0    0    0    59
 
--- 
-blue skies,
-   Martin.
+Notice that the entries beyond interrupt input signal 0x0f also
+get populated.
 
-"Reality continues to ruin my life." - Calvin.
+Signed-off-by: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
 
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index e529339..98c8d7e 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1792,7 +1792,7 @@ __apicdebuginit(int) print_ICs(void)
+ 	return 0;
+ }
+ 
+-fs_initcall(print_ICs);
++late_initcall(print_ICs);
+ 
+ 
+ /* Where if anywhere is the i8259 connect in external int mode */
