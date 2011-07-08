@@ -1,59 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754852Ab1GHTV6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 15:21:58 -0400
-Received: from nm25.bullet.mail.bf1.yahoo.com ([98.139.212.184]:23680 "HELO
-	nm25.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754727Ab1GHTV4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 15:21:56 -0400
-X-Greylist: delayed 344 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Jul 2011 15:21:56 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 493833.38961.bm@omp1031.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Subject:To:Cc:MIME-Version:Content-Type;
-  b=b+IXB6e6FbPsmAH7mvHXPwglNfP5Uee79LyvMpBSrXXLBCUTrjIcpiit82X/JGbNF/wJ/MAqSLUuZBXEbNgI/mmzhackzfZkWTEf+ET4UFyMvDlE2nQWiXn3nvSWF760akDB7WOdtcNdaztKFKat+f7RupManZ4ZmKKt5ijKXK0=;
-X-YMail-OSG: e_2O.PAVM1nr.v7NQntsx.lZ1elDuy.Pzhpbiz9.Wy51l5J
- ayKxMKqPlPxlU3bDO5Q_Es3X.wgFyi78EiSPhIoDQXsAcH77xhVeb8EPz_mJ
- SoQ3TQJoawe1ZtGI1.6v_WKaPVGRUM7lSS2DvWlgC4ikBywZg2OaH4iirQjb
- NzYMVzzV1ElxxBDPwQFI_htYweYuchVneN37vd_6Lw50eCii9uiZwDWypDgv
- eubvUJmqtfkFsXYEudh4PSI4FoLJaKx_WHf86B1rDHRYxBIMYDbSEtHI1pGo
- htl5l8ruQKt0gyVEc6oU4MstJlyrHfw39jeE02i4KBZKdZ2EsviK2JsRfKHA
- 6LfdSUMhzx769RjL68nkIjkbGhlNSb.Zb4N0rUK_gOQf9nHurIM_VN3E-
-X-Mailer: YahooMailRC/572 YahooMailWebService/0.8.112.307740
-Message-ID: <1310152571.74457.YahooMailRC@web161719.mail.bf1.yahoo.com>
-Date: Fri, 8 Jul 2011 12:16:11 -0700 (PDT)
-From: Peter Rasmussen <peterleifrasmussen@yahoo.com>
-Subject: Support for exFAT fs in the kernel?
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: linux-kernel@vger.kernel.org
+	id S1754812Ab1GHTXY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 15:23:24 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:40015 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750847Ab1GHTXW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 15:23:22 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Kevin Hilman <khilman@ti.com>
+Subject: Re: [Update][PATCH 6/10] PM / Domains: System-wide transitions support for generic domains (v5)
+Date: Fri, 8 Jul 2011 21:24:24 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc6+; KDE/4.6.0; x86_64; ; )
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Walmsley <paul@pwsan.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>
+References: <Pine.LNX.4.44L0.1107081033000.2208-100000@iolanthe.rowland.org> <87y6088z9n.fsf@ti.com> <201107082006.49660.rjw@sisk.pl>
+In-Reply-To: <201107082006.49660.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107082124.24921.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Ogawa-san,
+On Friday, July 08, 2011, Rafael J. Wysocki wrote:
+> On Friday, July 08, 2011, Kevin Hilman wrote:
+> > Alan Stern <stern@rowland.harvard.edu> writes:
+> > 
+> > > On Fri, 8 Jul 2011, Rafael J. Wysocki wrote:
+> > >
+> > >> On Friday, July 08, 2011, Kevin Hilman wrote:
+> > >> > "Rafael J. Wysocki" <rjw@sisk.pl> writes:
+> > >> > 
+> > >> > > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > >> > >
+> > >> > > Make generic PM domains support system-wide power transitions
+> > >> > > (system suspend and hibernation).  Add suspend, resume, freeze, thaw,
+> > >> > > poweroff and restore callbacks to be associated with struct
+> > >> > > generic_pm_domain objects and make pm_genpd_init() use them as
+> > >> > > appropriate.
+> > >> > >
+> > >> > > The new callbacks do nothing for devices belonging to power domains
+> > >> > > that were powered down at run time (before the transition).  
+> > >> > 
+> > >> > Thinking about this some more, how is a driver supposed to reconfigure
+> > >> > wakeups during suspend if it has already been runtime suspended?
+> > >> 
+> > >> If the device belongs to a PM domain that has been powered off, it
+> > >> won't be notified.
+> > >> 
+> > >> > For example, assume a device where device_may_wakeup() == false.  This
+> > >> > means wakeups during *suspend* are disabled, but wakeups wakeups are
+> > >> > assumed to enabled when it is runtime suspended.
+> > >> > 
+> > >> > So now, assume this device is RPM_SUSPENDED, it has wakeups *enabled*,
+> > >> > and then system suspend comes along.  
+> > >> > 
+> > >> > With this current patch, the driver will never receive any callbacks, so
+> > >> > it can never disable its wakeups.  
+> > >> >
+> > >> > Am I missing something?
+> > >> 
+> > >> As I said above, this only happens with devices that belog to PM domains
+> > >> that were powered off before system suspend has started, so the problem
+> > >> is limited to devices that wakeup is signaled on behalf of even when they
+> > >> have no power.
+> > 
+> > Which on OMAP, is *all* devices, so that's a pretty major limitation.  :)
+> 
+> So we'll need to avoid it _for_ _OMAP_.  Any of the platforms that will use
+> this code in near future doesn't have this limitation, AFAICS, so I don't
+> really see a point coding for it right now.
+> 
+> Your point seems to be that the whole thing has to be ready for OMAP
+> in advance and my point is that we can make it ready for OMAP later.
+> Which I believe is more pragmatic, because if every platform had adopted
+> the other viewpoint, we wouldn't have made any progress at all.
+> 
+> > >> So this is a limitation, but not affecting all platforms.
+> > >> 
+> > >> There are a few ways to avoid this limitation I can think of:
+> > >> (1) Add a "make me operational during system suspend" flag to struct dev_pm_info
+> > >>     and run pm_runtime_resume() on such devices from the core (either dpm_prepare()
+> > >>     core, or pm_genpd_prepare()).
+> > >
+> > > What's to prevent the device from being runtime-suspended again before 
+> > > the wakeup setting can be changed?
+> > >
+> > >> (2) Add a "my .prepare() is safe to run if device is not accessible" flag to
+> > >>     struct dev_pm_info and make pm_genpd_prepare() execute .prepare() for such
+> > >>     devices regardless of whether or not their PM domains are off.
+> > >> (3) Call .prepare() from all drivers unconditionally during system suspend
+> > >>     (and probably .complete() too) in the hope they won't access inaccessible
+> > >>     devices.
+> > 
+> > Like Alan's comment above for (1), I think the same applies for (3)
+> > since runtime PM transitions can still happen between .prepare() and
+> > .suspend()
+> 
+> Not with the current PM domains code (and please see my reply to Alan).
 
-Looking for the FAT relevant person in the MAINTAINERS file I found you.
+Well, in fact, since we already have .active_wakeup(), what about the
+following patch (on top of https://lkml.org/lkml/2011/7/8/223):
 
-It seems that more and more devices support high capacity SDXC flash cards that 
-comes with the exFAT file system (aka FAT64), and I have recently acquired one 
-myself, a Panasonic video camcorder, so I am interested in how the support is 
-coming along in Linux?
+---
+ drivers/base/power/domain.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-I have a 64GB SDXC flashcard and if I format it eg. ext2 I can happily use it as 
-
-an external storage chip in Linux, but every time I have gone around the 
-Panasonic camera and acquired video that I would like to store on my Linux 
-hosts, I can't go straight to them because of missing support for exFAT.
-
-Please let me know if there is anything I can do, except actual development, as 
-I am not a hard core Linux kernel developer, just a long time user.
-
-I haven't subscribed to the kernel mailing list, so including a direct reply 
-to me would be appreciated.
-
-Best regards,
-Peter
+Index: linux-2.6/drivers/base/power/domain.c
+===================================================================
+--- linux-2.6.orig/drivers/base/power/domain.c
++++ linux-2.6/drivers/base/power/domain.c
+@@ -519,6 +519,10 @@ static int pm_genpd_prepare(struct devic
+ 		return -EBUSY;
+ 	}
+ 
++	if (device_may_wakeup(dev)
++	    && !(genpd->active_wakeup && genpd->active_wakeup(dev)))
++		pm_runtime_resume(dev);
++
+ 	genpd_acquire_lock(genpd);
+ 
+ 	if (genpd->prepared_count++ == 0)
