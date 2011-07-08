@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751919Ab1GHHUN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 03:20:13 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:56984 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751106Ab1GHHUL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 03:20:11 -0400
-Date: Fri, 8 Jul 2011 08:19:31 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1107080818240.26034@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752530Ab1GHHWd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 03:22:33 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:34418 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751049Ab1GHHWc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 03:22:32 -0400
+Date: Fri, 8 Jul 2011 10:21:15 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Lauro Ramos Venancio <lauro.venancio@openbossa.org>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Aloisio Almeida Jr <aloisio.almeida@openbossa.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] NFC: pn533: use after free in pn533_disconnect()
+Message-ID: <20110708072115.GR18655@shale.localdomain>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We freed "dev" on the line before.
 
-Hi Linus,
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-keep it conservative due to my disconnectedness, Just some typos, a radeon 
-unload fix, and a drm core change to allow empty output groups.
-
-Dave.
-
-The following changes since commit 4dd1b49c6d215dc41ce50c80b4868388b93f31a3:
-
-  Merge branch 'gpio/merge' of git://git.secretlab.ca/git/linux-2.6 (2011-07-06 18:36:53 -0700)
-
-are available in the git repository at:
-
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
-
-Alex Deucher (2):
-      drm/radeon/kms: fix typo in IH_CNTL swap bitfield
-      drm/radeon/kms: fix typo in evergreen disp int status register
-
-Ben Skeggs (1):
-      drm/kms: allow drm_mode_group with no objects
-
-Jerome Glisse (1):
-      drm/radeon/kms: free ib pool on module unloading
-
- drivers/gpu/drm/drm_crtc.c          |    3 ---
- drivers/gpu/drm/radeon/evergreen.c  |    1 +
- drivers/gpu/drm/radeon/evergreend.h |    4 ++--
- drivers/gpu/drm/radeon/ni.c         |    1 +
- drivers/gpu/drm/radeon/r600.c       |    1 +
- drivers/gpu/drm/radeon/r600d.h      |    2 +-
- drivers/gpu/drm/radeon/rv770.c      |    1 +
- 7 files changed, 7 insertions(+), 6 deletions(-)
+diff --git a/drivers/nfc/pn533.c b/drivers/nfc/pn533.c
+index 0372315..c77e054 100644
+--- a/drivers/nfc/pn533.c
++++ b/drivers/nfc/pn533.c
+@@ -1596,7 +1596,7 @@ static void pn533_disconnect(struct usb_interface *interface)
+ 	usb_free_urb(dev->out_urb);
+ 	kfree(dev);
+ 
+-	nfc_dev_info(&dev->interface->dev, "NXP PN533 NFC device disconnected");
++	nfc_dev_info(&interface->dev, "NXP PN533 NFC device disconnected");
+ }
+ 
+ static struct usb_driver pn533_driver = {
