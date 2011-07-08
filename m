@@ -1,81 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753267Ab1GHPl6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 11:41:58 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:50567 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751695Ab1GHPl5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 11:41:57 -0400
+	id S1753637Ab1GHPmR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 11:42:17 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:36901 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753453Ab1GHPmO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 11:42:14 -0400
+From: Richard Weinberger <richard@nod.at>
+To: Vitaliy Ivanov <vitalivanov@gmail.com>
+Subject: Re: [PATCH 1/3] uml: drivers/net_user.c memory leak fix
+Date: Fri, 8 Jul 2011 17:42:07 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.37.6-0.5-desktop; KDE/4.6.5; x86_64; ; )
+Cc: Jeff Dike <jdike@addtoit.com>, user-mode-linux-devel@lists.sourceforge.net,
+        LKML <linux-kernel@vger.kernel.org>
+References: <1310056562.3528.49.camel@vivanov> <201107081244.53433.richard@nod.at> <1310130044.26209.3.camel@vivanov>
+In-Reply-To: <1310130044.26209.3.camel@vivanov>
 MIME-Version: 1.0
-In-Reply-To: <20110708145408.GA2283@kroah.com>
-References: <20110708084547.2091.55262.stgit@ltc197.sdl.hitachi.co.jp> <20110708145408.GA2283@kroah.com>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Fri, 8 Jul 2011 17:41:36 +0200
-Message-ID: <CAPXgP10gThuxOsrxH8_wOddeRB5f2ABypW7EQui-F1hOE97dHQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/4] Persistent device name using alias name
-To: Greg KH <greg@kroah.com>
-Cc: Nao Nishijima <nao.nishijima.xt@hitachi.com>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, James.Bottomley@hansenpartnership.com,
-        jcm@redhat.com, dle-develop@lists.sourceforge.net,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        yrl.pp-manager.tt@hitachi.com, dgilbert@interlog.com,
-        stefanr@s5r6.in-berlin.de, hare@suse.de
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107081742.07840.richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 8, 2011 at 16:54, Greg KH <greg@kroah.com> wrote:
-> On Fri, Jul 08, 2011 at 05:45:47PM +0900, Nao Nishijima wrote:
->> This patch series provides an "alias name" of the disk into kernel and procfs
->> messages. The user can assign a preferred name to an alias name of the device.
->>
->> Based on previous discussion (*), I changed patches as follows
->> - This is "alias name"
->> - An "alias name" is stored in gendisk struct
->> - Add document to Documentation/ABI/testing/sysfs-block
->> - When the user changes an "alias name", kernel notifies udev
->>
->> (*) http://marc.info/?l=linux-scsi&m=130812625531219&w=2
->
-> I don't like it and I don't think it will really solve the root problem
-> you are trying to address, but as the patches don't touch any code I
-> maintain, there's not much I can do to object to it.
+Am Freitag 08 Juli 2011, 15:00:44 schrieb Vitaliy Ivanov:
+> > > > This control logic is a bit strange.
+> > > > When change_tramp() fails we should not printk() the output variable.
+> > > > 
+> > > > if (pid < 0){
+> > > > 
+> > > >  free(output);
+> > > >  return;
+> > > > 
+> > > > }
+> > > > 
+> > > > Would be much cleaner.
+> > > 
+> > > I just didn't want to clone this free-return stuff. So, what you
+> > > proposing is like this:
+> > > ------------
+> > > ...
+> > > 
+> > >         output = uml_kmalloc(output_len, UM_GFP_KERNEL);
+> > >         if (output == NULL)
+> > >         
+> > >                 printk(UM_KERN_ERR "change : failed to allocate output
+> > >                 "
+> > >                 
+> > >                        "buffer\n");
+> > >         
+> > >         pid = change_tramp(argv, output, output_len);
+> > >         if (pid < 0) {
+> > >         
+> > >                 free(output);               <---------- I'm not sure
+> > >                 but 'output' can be NULL here. return;
+> > >         
+> > >         }
+> > >         
+> > >         if (output != NULL) {
+> > >         
+> > >                 printk("%s", output);
+> > >                 kfree(output);
+> > >         
+> > >         }
+> > > 
+> > > }
+> > > ------------
+> > > 
+> > > I was trying to print 'output' only in case change_tramp is
+> > > successful. That's the old logic. And at the same time perform free
+> > > only in case output is not NULL.
+> > 
+> > Why?
+> > Freeing a NULL pointer is perfectly fine.
+> 
+> I should agree that something that you propose has better readability.
+> 
+> So, here is updated patch.
+> 
+> Thanks
+> ---
+> 
+> >From b0c5ca0336cc94b2fda251e0da7918394e59c5cd Mon Sep 17 00:00:00 2001
+> 
+> From: Vitaliy Ivanov <vitalivanov@gmail.com>
+> Date: Fri, 8 Jul 2011 14:54:29 +0300
+> Subject: [PATCH] uml: drivers/net_user.c memory leak fix
+> 
+> Perform memory cleanup on exit.
+> On receiving invalid 'pid' we still should clean 'output' variable.
+> 
+> Signed-off-by: Vitaliy Ivanov <vitalivanov@gmail.com>
+> Signed-off-by: Richard Weinberger <richard@nod.at>
 
-I can only repeat what I already wrote in detail earlier:
+Why are you adding my Signed-off-by?!
+That's my job...
 
-This approach seems to papers over the problem which emitting and
-parsing free-text printk() messages with much-too-dumb tools cause. It
-seems to fix the symptoms not the cause.
+> ---
+>  arch/um/drivers/net_user.c |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/um/drivers/net_user.c b/arch/um/drivers/net_user.c
+> index 9415dd9..5201188 100644
+> --- a/arch/um/drivers/net_user.c
+> +++ b/arch/um/drivers/net_user.c
+> @@ -228,7 +228,10 @@ static void change(char *dev, char *what, unsigned
+> char *addr, "buffer\n");
+> 
+>  	pid = change_tramp(argv, output, output_len);
+> -	if (pid < 0) return;
+> +	if (pid < 0) {
+> +		kfree(output);
+> +		return;
+> +	}
+> 
+>  	if (output != NULL) {
+>  		printk("%s", output);
 
-You can already write a udev rule today that logs _all_ symlinks of a
-device at discovery time, and any later kernel message can safely be
-associated with all possible names of the blockdev. No kernel changes
-needed, all possible names are covered. That also works good enough
-with our current stone-age tools for anybody who is able to scroll
-back to the last log udev message in that same log file.
+Anyway, Applied!
 
-There can be by-definition no default udev rules assigning a proper
-single name to a block device. There is never a valid single name for
-a disks, so udev can not ship anything like that in the default setup,
-so this stays as a custom hack.
-
-We absolutely need _structured_ data for logging and error reporting,
-not only to solve this problem. Along with the current free-text
-printk(), we would be able to attach classifications, device
-error/sense data, firmware register dumps and anything
-interesting-for-debug to the messages.
-
-We can't solve that problem in the kernel alone. Structured data from
-the kernel will need to feed a smarter userspace logger that can index
-and classify messages, merge current userspace data into it, and
-provides hooks for the system management to act on critical failures
-and raise notifications.
-
-Structured logging seems like the solution for this and also to many
-other problems in this area. Single custom names pushed into the
-kernel might cover some rather exotic use cases, but I think, is not
-what we are looking for.
-
-Kay
+Thanks,
+//richard
