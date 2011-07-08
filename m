@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509Ab1GIF4k (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 01:56:40 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:49420 "EHLO
+	id S1753412Ab1GIFyu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 01:54:50 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:37305 "EHLO
 	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753293Ab1GIFyp (ORCPT
+	by vger.kernel.org with ESMTP id S1752225Ab1GIFyg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 01:54:45 -0400
-X-Sasl-enc: HQOO3d/2YG9Cu1p/BCOYASir0zcKN2zsJnd6HpUjeJPK 1310190884
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 15:51:20 2011
-Message-Id: <20110708225120.574167530@clark.kroah.org>
+	Sat, 9 Jul 2011 01:54:36 -0400
+X-Sasl-enc: 6sWpOWdHCnKRQDSkgode4QnZVR1sV2I6dKtdlHHNrFiW 1310190875
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 15:51:22 2011
+Message-Id: <20110708225122.081079051@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 08 Jul 2011 15:50:07 -0700
+Date: Fri, 08 Jul 2011 15:50:23 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [18/35] SUNRPC: Ensure the RPC client only quits on fatal signals
+        Xufeng Zhang <xufeng.zhang@windriver.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [34/35] udp/recvmsg: Clear MSG_TRUNC flag when starting over for a new packet
 In-Reply-To: <20110708225343.GA14402@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,49 +29,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 5afa9133cfe67f1bfead6049a9640c9262a7101c upstream.
+From: Xufeng Zhang <xufeng.zhang@windriver.com>
 
-Fix a couple of instances where we were exiting the RPC client on
-arbitrary signals. We should only do so on fatal signals.
+[ Upstream commit 9cfaa8def1c795a512bc04f2aec333b03724ca2e ]
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Consider this scenario: When the size of the first received udp packet
+is bigger than the receive buffer, MSG_TRUNC bit is set in msg->msg_flags.
+However, if checksum error happens and this is a blocking socket, it will
+goto try_again loop to receive the next packet.  But if the size of the
+next udp packet is smaller than receive buffer, MSG_TRUNC flag should not
+be set, but because MSG_TRUNC bit is not cleared in msg->msg_flags before
+receive the next packet, MSG_TRUNC is still set, which is wrong.
+
+Fix this problem by clearing MSG_TRUNC flag when starting over for a
+new packet.
+
+Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- net/sunrpc/auth_gss/auth_gss.c |    4 ++--
- net/sunrpc/clnt.c              |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ net/ipv4/udp.c |    3 +++
+ net/ipv6/udp.c |    3 +++
+ 2 files changed, 6 insertions(+)
 
---- a/net/sunrpc/auth_gss/auth_gss.c
-+++ b/net/sunrpc/auth_gss/auth_gss.c
-@@ -548,13 +548,13 @@ retry:
- 	}
- 	inode = &gss_msg->inode->vfs_inode;
- 	for (;;) {
--		prepare_to_wait(&gss_msg->waitqueue, &wait, TASK_INTERRUPTIBLE);
-+		prepare_to_wait(&gss_msg->waitqueue, &wait, TASK_KILLABLE);
- 		spin_lock(&inode->i_lock);
- 		if (gss_msg->ctx != NULL || gss_msg->msg.errno < 0) {
- 			break;
- 		}
- 		spin_unlock(&inode->i_lock);
--		if (signalled()) {
-+		if (fatal_signal_pending(current)) {
- 			err = -ERESTARTSYS;
- 			goto out_intr;
- 		}
---- a/net/sunrpc/clnt.c
-+++ b/net/sunrpc/clnt.c
-@@ -938,7 +938,7 @@ call_allocate(struct rpc_task *task)
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -1011,6 +1011,9 @@ csum_copy_err:
  
- 	dprintk("RPC: %5u rpc_buffer allocation failed\n", task->tk_pid);
+ 	if (noblock)
+ 		return -EAGAIN;
++
++	/* starting over for a new packet */
++	msg->msg_flags &= ~MSG_TRUNC;
+ 	goto try_again;
+ }
  
--	if (RPC_IS_ASYNC(task) || !signalled()) {
-+	if (RPC_IS_ASYNC(task) || !fatal_signal_pending(current)) {
- 		task->tk_action = call_allocate;
- 		rpc_delay(task, HZ>>4);
- 		return;
+--- a/net/ipv6/udp.c
++++ b/net/ipv6/udp.c
+@@ -306,6 +306,9 @@ csum_copy_err:
+ 
+ 	if (noblock)
+ 		return -EAGAIN;
++
++	/* starting over for a new packet */
++	msg->msg_flags &= ~MSG_TRUNC;
+ 	goto try_again;
+ }
+ 
 
 
