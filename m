@@ -1,87 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752585Ab1GHWzD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 18:55:03 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:37550 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752377Ab1GHWzB (ORCPT
+	id S1752709Ab1GHXBW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 19:01:22 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:41722 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752512Ab1GHXBT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 18:55:01 -0400
-X-Sasl-enc: BLYyjHHYUadWBXBGoaiA4fmZWTmjKK4+YHW30lodkonb 1310165700
-Date: Fri, 8 Jul 2011 15:53:43 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [00/35] 2.6.32.43-longterm review
-Message-ID: <20110708225343.GA14402@kroah.com>
+	Fri, 8 Jul 2011 19:01:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Fri, 8 Jul 2011 16:01:17 -0700
+Message-ID: <CAN8TOE9CCSiS2koyx=UsZj=9KwaWZW5yDjUUqgJf2=qZU70k1w@mail.gmail.com>
+Subject: ahci_start_engine compliance with AHCI spec
+From: Brian Norris <computersforpeace@gmail.com>
+To: linux-ide@vger.kernel.org
+Cc: Tejun Heo <tj@kernel.org>, Valdis.Kletnieks@vt.edu,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Jeff Garzik <jgarzik@pobox.com>,
+        Michael Leun <lkml20100708@newton.leun.net>,
+        linux-kernel@vger.kernel.org, Jian Peng <jipeng2005@gmail.com>,
+        Kevin Cernekee <cernekee@gmail.com>,
+        Brian Norris <computersforpeace@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the longterm review cycle for the 2.6.32.43 release.
-There are 35 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let us know.  If anyone is a maintainer of the proper subsystem, and
-wants to add a Signed-off-by: line to the patch, please respond with it.
+Hello,
 
-Responses should be made by Sunday, Jul 10, 00:00:00 UTC.
-Anything received after that time might be too late.
+I am looking into a problem similar to one Jian Peng had, where my
+AHCI controller cannot handle ahci_start_engine() requests when its
+ports are in the wrong states (BSY/DRQ/PxSSTS.DET==0). As this is
+partly an issue of compliance with the AHCI specification, I would
+like to find a good fix for this problem that is valid on most
+controllers, not requiring a special flag to enable a workaround as
+was suggested earlier.
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v2.6/longterm-review/patch-2.6.32.43-rc1.gz
-and the diffstat can be found below.
+See Jian's patch:
+https://lkml.org/lkml/2011/4/23/9
 
-thanks,
+And the regression it caused:
+https://lkml.org/lkml/2011/5/11/472
 
-greg k-h
+I am able to reproduce the regressions seen by Rafael and Michael on
+my Dell Latitude E6410 laptop, in case that's helpful.
 
- Makefile                                |    2 +-
- arch/um/kernel/dyn.lds.S                |   14 ++++-
- arch/um/kernel/uml.lds.S                |   17 ++++++
- arch/um/os-Linux/mem.c                  |    1 +
- arch/x86/xen/mmu.c                      |    9 +++-
- block/cfq-iosched.c                     |    8 +++-
- drivers/char/tty_ldisc.c                |    4 +-
- drivers/i2c/busses/i2c-taos-evm.c       |    8 ++--
- drivers/md/md.c                         |    1 +
- drivers/media/video/uvc/uvc_queue.c     |    2 +
- drivers/net/hamradio/6pack.c            |    4 +-
- drivers/net/hamradio/mkiss.c            |    4 +-
- drivers/net/wireless/ath/ath5k/eeprom.c |    8 +--
- drivers/net/wireless/ath/ath9k/pci.c    |    6 ++
- drivers/usb/core/driver.c               |   11 ++++-
- drivers/usb/core/hub.c                  |   13 +++--
- drivers/usb/host/xhci-hcd.c             |   22 ++++++--
- drivers/watchdog/mtx-1_wdt.c            |    8 +++
- fs/inode.c                              |   22 +++++---
- fs/nilfs2/btnode.c                      |   13 -----
- fs/nilfs2/btnode.h                      |    1 -
- fs/nilfs2/super.c                       |    2 +-
- include/asm-generic/bug.h               |   16 ++++++
- include/linux/clocksource.h             |    1 +
- include/linux/fs.h                      |    2 +
- include/linux/if_packet.h               |    2 +
- include/net/netlink.h                   |    2 +-
- kernel/power/snapshot.c                 |   89 ++++++++++++++++++++++++-------
- kernel/power/user.c                     |    4 +-
- kernel/taskstats.c                      |   15 ++++-
- kernel/time/clocksource.c               |   24 +++++----
- lib/debugobjects.c                      |    2 +-
- mm/hugetlb.c                            |    8 +++
- mm/ksm.c                                |    6 ++
- mm/memory.c                             |    2 +
- mm/migrate.c                            |    2 +-
- net/core/filter.c                       |    4 +-
- net/ipv4/af_inet.c                      |    3 +
- net/ipv4/inet_diag.c                    |   14 ++---
- net/ipv4/udp.c                          |    3 +
- net/ipv6/udp.c                          |    5 ++-
- net/packet/af_packet.c                  |    2 +
- net/sunrpc/auth_gss/auth_gss.c          |    4 +-
- net/sunrpc/clnt.c                       |    2 +-
- 44 files changed, 290 insertions(+), 102 deletions(-)
+I haven't been able to come up with a good generic solution to bring
+the driver in line with the AHCI specification. Any comments on this
+issue would be helpful, as I'm fairly new to the ATA/AHCI driver
+subsystem. I'm looking mainly at the device initialization for AHCI,
+via ahci_init_one(), and the eventual ahci_start_engine() call.
+
+What I've found so far:
+
+It seems that at first device initialization on either my Dell E6410
+or my special controller, the ahci_start_engine will invariably be
+called with the either the BSY or DRQ bit set, depending on whether or
+not there is an actual device on the affected port (see stack trace
+below). I'm not sure what is causing the device to be requesting data
+or busy at this point, but whatever it is causes the device
+initialization process to fail (links are *not* up). Instead, we rely
+on ahci_error_handler to clean this up, where after a hard reset, the
+
+- ahci_init_one
+-- ata_host_activate
+--- ata_host_start
+---- ahci_port_start
+---- ahci_port_resume
+----- ahci_start_port
+------ ahci_power_up [1]
+------ ahci_start_engine (DRQ or BSY *will* be active) [2]
+
+and later
+
+- scsi_error_handler
+-- ata_scsi_error
+--- ata_scsi_port_error_handler
+---- ahci_error_handler
+----- sata_pmp_error_handler
+------ ata_eh_recover
+------- ata_eh_reset
+-------- ata_do_reset
+--------- ahci_hardreset
+---------- ahci_start_engine (DRQ, BSY cleared, link up)
+
+I'm not sure if the "error_handler" and "hard reset" processes are
+intended for initialization...as I said I'm a little new!
+
+I have a few other questions:
+
+What operation could be putting devices in DRQ or BSY states during
+initialization but before ahci_start_engine?
+
+How much of section 10.1 of the AHCI 1.3 spec applies to our AHCI
+driver? Just 10.1.2 or do we have to do the "firmware initialization"
+in 10.1.1 as well? Either way, it seems that section 10.10.2 implies
+that we need to do some of the "firmware initialization" (because we
+use staggered spin-up in ahci_power_up):
+"In order to spin up the devices attached to the HBA, software should
+perform the procedure outlined in section 10.1.1 for staggered
+spin-up."
+
+Then the applicable step from 10.10.1 (step 5):
+"Wait for a positive indication that a device is attached to the port
+(the maximum amount of time to wait for presence indication is
+specified in the Serial ATA Revision 2.6 specification). This is done
+by polling PxSSTS.DET. If PxSSTS.DET returns a value of 1h or 3h when
+read, then system software shall continue to the next step, otherwise
+if the polling process times out system software moves to the next
+implemented port and returns to step 1."
+
+I bring up all of this because it seems that if I put some amount of
+"wait time" between [1] and [2] above, then my system transitions from
+DRQ to BSY and its link is connected (PxSSTS.DET == 0x3). I still
+don't know why the device is BSY, but at least it solves my problem...
+Perhaps I will try implementing the wait with ata_wait_register (or
+maybe ata_wait_ready + ata_phys_link_online) on the PxSSTS.DET flags
+and send a patch.
+
+Sorry if this e-mail is too complicated or disorganized. I've been
+racking my brain on this one for a few weeks now, and I've only come
+up with a few half answers and some more questions. Feel free to ask
+for more explanation, but don't worry if I don't respond immediately,
+as I am on vacation for all of next week. If I don't get to them
+before I leave, I will get to your replies when I return.
+
+Thanks,
+Brian
