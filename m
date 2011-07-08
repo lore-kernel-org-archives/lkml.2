@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653Ab1GHFBN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:01:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41623 "EHLO mx2.suse.de"
+	id S1753763Ab1GHFB1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:01:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41667 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753496Ab1GHFBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:01:08 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:54 2011
-Message-Id: <20110708001654.528913293@clark.kroah.org>
+	id S1753729Ab1GHFBZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:01:25 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:55 2011
+Message-Id: <20110708001655.005307064@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:15:50 -0700
+Date: Thu, 07 Jul 2011 17:15:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alexander Stein <alexander.stein@systec-electronic.com>
-Subject: [018/107] drivers/tty/serial/pch_uart.c: dont oops if dmi_get_system_info returns NULL
+        Jean Delvare <khali@linux-fr.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Dave Airlie <airlied@redhat.com>, Ben Hutchings <ben@decadent.org.uk>
+Subject: [023/107] Revert "drm/i915: Enable GMBUS for post-gen2 chipsets"
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,44 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Stein <alexander.stein@systec-electronic.com>
+From: Jean Delvare <khali@linux-fr.org>
 
-commit fb139dfeef9558a12ffdbf9e26951fd1a9304f3b upstream.
+commit 826c7e4147f902737b281e8a5a7d7aa33fd63316 upstream.
 
-If dmi_get_system_info() returns NULL, pch_uart_init_port() will
-dereferencea a zero pointer.
+Revert commit 8f9a3f9b63b8cd3f03be9dc53533f90bd4120e5f. This fixes a
+hang when loading the eeprom driver (see bug #35572.) GMBUS will be
+re-enabled later, differently.
 
-This oops was observed on an Atom based board which has no BIOS, but
-a bootloder which doesn't provide DMI data.
-
-Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Reported-by: Marek Otahal <markotahal@gmail.com>
+Tested-by: Yermandu Patapitafious <yermandu.dev@gmail.com>
+Tested-by: Andrew Lutomirski <luto@mit.edu>
+Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/tty/serial/pch_uart.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/intel_i2c.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/tty/serial/pch_uart.c
-+++ b/drivers/tty/serial/pch_uart.c
-@@ -1392,6 +1392,7 @@ static struct eg20t_port *pch_uart_init_
- 	int fifosize, base_baud;
- 	int port_type;
- 	struct pch_uart_driver_data *board;
-+	const char *board_name;
+--- a/drivers/gpu/drm/i915/intel_i2c.c
++++ b/drivers/gpu/drm/i915/intel_i2c.c
+@@ -401,8 +401,7 @@ int intel_setup_gmbus(struct drm_device
+ 		bus->reg0 = i | GMBUS_RATE_100KHZ;
  
- 	board = &drv_dat[id->driver_data];
- 	port_type = board->port_type;
-@@ -1407,7 +1408,8 @@ static struct eg20t_port *pch_uart_init_
- 	base_baud = 1843200; /* 1.8432MHz */
+ 		/* XXX force bit banging until GMBUS is fully debugged */
+-		if (IS_GEN2(dev))
+-			bus->force_bit = intel_gpio_create(dev_priv, i);
++		bus->force_bit = intel_gpio_create(dev_priv, i);
+ 	}
  
- 	/* quirk for CM-iTC board */
--	if (strstr(dmi_get_system_info(DMI_BOARD_NAME), "CM-iTC"))
-+	board_name = dmi_get_system_info(DMI_BOARD_NAME);
-+	if (board_name && strstr(board_name, "CM-iTC"))
- 		base_baud = 192000000; /* 192.0MHz */
- 
- 	switch (port_type) {
+ 	intel_i2c_reset(dev_priv->dev);
 
 
