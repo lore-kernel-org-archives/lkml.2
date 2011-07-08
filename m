@@ -1,62 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754809Ab1GHTEP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 15:04:15 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:60182 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753506Ab1GHTEN (ORCPT
+	id S1754774Ab1GHTHu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 15:07:50 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:35401 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750750Ab1GHTHt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 15:04:13 -0400
-Message-ID: <4E17549D.5000006@gmail.com>
-Date: Fri, 08 Jul 2011 12:03:57 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	Fri, 8 Jul 2011 15:07:49 -0400
+Date: Fri, 8 Jul 2011 13:07:46 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: "Liu, ShuoX" <shuox.liu@intel.com>
+Cc: "Tang, Feng" <feng.tang@intel.com>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] dw_spi: Add spi number into spi irq desc
+Message-ID: <20110708190746.GE9070@ponder.secretlab.ca>
+References: <6E3BC7F7C9A4BF4286DD4C043110F30B59E04001D4@shsmsx502.ccr.corp.intel.com>
 MIME-Version: 1.0
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-CC: trivial@kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [PATCH 1/3]drivers:scsi:qla2xxx:qla_isr.c Typo fix hammmer.
-References: <1308896549-4560-1-git-send-email-justinmattock@gmail.com>
-In-Reply-To: <1308896549-4560-1-git-send-email-justinmattock@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6E3BC7F7C9A4BF4286DD4C043110F30B59E04001D4@shsmsx502.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-jiri,
-not sure if you git these, adding you to the Cc's list
+On Fri, Jul 08, 2011 at 02:24:31PM +0800, Liu, ShuoX wrote:
+> From b260c4e51487364552886b0327fe98d66e850168 Mon Sep 17 00:00:00 2001
+> From: ShuoX Liu <shuox.liu@intel.com>
+> Date: Thu, 7 Jul 2011 16:09:41 +0800
+> Subject: [PATCH] dw_spi: Add spi number into spi irq desc
+> 
+> Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
 
-> From: "Justin P. Mattock"<justinmattock@gmail.com>
->
-> The below patch fixes a typo.
->
-> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
->
+Patch does not apply against current spi/next (linux-next).
+
+g.
+
 > ---
->   drivers/scsi/qla2xxx/qla_isr.c |    4 ++--
->   1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/scsi/qla2xxx/qla_isr.c b/drivers/scsi/qla2xxx/qla_isr.c
-> index 1b60a95..ae8e298 100644
-> --- a/drivers/scsi/qla2xxx/qla_isr.c
-> +++ b/drivers/scsi/qla2xxx/qla_isr.c
-> @@ -63,7 +63,7 @@ qla2100_intr_handler(int irq, void *dev_id)
->
->   			/*
->   			 * Issue a "HARD" reset in order for the RISC interrupt
-> -			 * bit to be cleared.  Schedule a big hammmer to get
-> +			 * bit to be cleared.  Schedule a big hammer to get
->   			 * out of the RISC PAUSED state.
->   			 */
->   			WRT_REG_WORD(&reg->hccr, HCCR_RESET_RISC);
-> @@ -169,7 +169,7 @@ qla2300_intr_handler(int irq, void *dev_id)
->   			/*
->   			 * Issue a "HARD" reset in order for the RISC
->   			 * interrupt bit to be cleared.  Schedule a big
-> -			 * hammmer to get out of the RISC PAUSED state.
-> +			 * hammer to get out of the RISC PAUSED state.
->   			 */
->   			WRT_REG_WORD(&reg->hccr, HCCR_RESET_RISC);
->   			RD_REG_WORD(&reg->hccr);
-
+>  drivers/spi/dw_spi.c |    4 +++-
+>  drivers/spi/dw_spi.h |    1 +
+>  2 files changed, 4 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/spi/dw_spi.c b/drivers/spi/dw_spi.c
+> index 919fa9d..68a3026 100644
+> --- a/drivers/spi/dw_spi.c
+> +++ b/drivers/spi/dw_spi.c
+> @@ -818,9 +818,11 @@ int __devinit dw_spi_add_host(struct dw_spi *dws)
+>  	dws->prev_chip = NULL;
+>  	dws->dma_inited = 0;
+>  	dws->dma_addr = (dma_addr_t)(dws->paddr + 0x60);
+> +	snprintf(dws->name, sizeof(dws->name), "dw_spi%d",
+> +			dws->bus_num);
+>  
+>  	ret = request_irq(dws->irq, dw_spi_irq, IRQF_SHARED,
+> -			"dw_spi", dws);
+> +			dws->name, dws);
+>  	if (ret < 0) {
+>  		dev_err(&master->dev, "can not get IRQ\n");
+>  		goto err_free_master;
+> diff --git a/drivers/spi/dw_spi.h b/drivers/spi/dw_spi.h
+> index 7a5e78d..8b7b07b 100644
+> --- a/drivers/spi/dw_spi.h
+> +++ b/drivers/spi/dw_spi.h
+> @@ -96,6 +96,7 @@ struct dw_spi {
+>  	struct spi_device	*cur_dev;
+>  	struct device		*parent_dev;
+>  	enum dw_ssi_type	type;
+> +	char			name[16];
+>  
+>  	void __iomem		*regs;
+>  	unsigned long		paddr;
+> -- 
+> 1.7.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
