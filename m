@@ -1,88 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752912Ab1GHXBx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 19:01:53 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:59220 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752512Ab1GHXBw (ORCPT
+	id S1752781Ab1GHXEi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 19:04:38 -0400
+Received: from na3sys010aog112.obsmtp.com ([74.125.245.92]:53419 "HELO
+	na3sys010aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751805Ab1GHXEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 19:01:52 -0400
-X-Sasl-enc: 6sT1/wzzSW4E7+NCS3+Xv7BabNnF1wpxRAyZOdJ5l3gm 1310166111
-Date: Fri, 8 Jul 2011 16:01:22 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [00/35] 2.6.33.16-longterm review
-Message-ID: <20110708230122.GA18807@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 8 Jul 2011 19:04:36 -0400
+From: Roland Dreier <roland@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-scsi@vger.kernel.org,
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        "Manvanthara B. Puttashankar" <manvanth@linux.vnet.ibm.com>,
+        Tarak Reddy <tarak.reddy@in.ibm.com>,
+        "Seshagiri N. Ippili" <sesh17@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] block: Check that queue is alive in blk_insert_cloned_request()
+Date: Fri,  8 Jul 2011 16:04:30 -0700
+Message-Id: <1310166270-23196-1-git-send-email-roland@kernel.org>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <CAG4TOxMjuntpd3Q5jgn+xDa2tgB9tq+jLcDquM_eAdFHXLDrWA@mail.gmail.com>
+References: <CAG4TOxMjuntpd3Q5jgn+xDa2tgB9tq+jLcDquM_eAdFHXLDrWA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 2.6.33.16 release.
-There are 35 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let us know.  If anyone is a maintainer of the proper subsystem, and
-wants to add a Signed-off-by: line to the patch, please respond with it.
+From: Roland Dreier <roland@purestorage.com>
 
-Responses should be made by Sunday, Jul 10, 00:00:00 UTC.
-Anything received after that time might be too late.
+This fixes crashes such as the below that I see when the storage
+underlying a dm-multipath device is hot-removed.  The problem is that
+dm requeues a request to a device whose block queue has already been
+cleaned up, and blk_insert_cloned_request() doesn't check if the queue
+is alive, but rather goes ahead and tries to queue the request.  This
+ends up dereferencing the elevator that was already freed in
+blk_cleanup_queue().
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.33.16-rc1.gz
-and the diffstat can be found below.
+    general protection fault: 0000 [#1] SMP 
+    CPU 7 
+    Modules linked in: kvm_intel kvm serio_raw i7core_edac edac_core ioatdma dca pci_stub ses enclosure usbhid usb_storage qla2xxx mpt2sas ahci hid uas libahci e1000e scsi_transport_fc scsi_transport_sas mlx4_core raid_class scsi_tgt
+    RIP: 0010:[<ffffffff81233867>]  [<ffffffff81233867>] elv_drain_elevator+0x27/0x80
+    RSP: 0018:ffff880614e9fa48  EFLAGS: 00010096
+    RAX: 6b6b6b6b6b6b6b6b RBX: ffff880610bb0000 RCX: 0000000000000000
+    RDX: 0000000000000002 RSI: 0000000000000001 RDI: ffff880610bb0000
+    RBP: ffff880614e9fa58 R08: 0000000000000000 R09: 0000000000000001
+    R10: ffff880c0a7dca70 R11: ffff880615622440 R12: ffff880610bb0000
+    R13: 0000000000000002 R14: 0000000000000002 R15: ffff880c0db01160
+    FS:  00007fe46457a760(0000) GS:ffff880c3fc20000(0000) knlGS:0000000000000000
+    CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+    CR2: 00007fe463c86330 CR3: 0000000c0cc0c000 CR4: 00000000000006e0
+    DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+    DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+    Process blkid (pid: 12458, threadinfo ffff880614e9e000, task ffff8806190eae20)
+    Stack:
+     ffff880c0d9f03c8 ffff880c0d9f03c8 ffff880614e9fa88 ffffff
+     ffff880c0d9f03c8 ffff880610bb0000 0000000000000002 ffffc9
+     ffff880614e9fab8 ffffffff812366fd ffff880614e9fad8 ffff88
+    Call Trace:
+     [<ffffffff812339a8>] __elv_add_request+0xe8/0x280
+     [<ffffffff812366fd>] add_acct_request+0x3d/0x50
+     [<ffffffff81236775>] blk_insert_cloned_request+0x65/0x90
+     [<ffffffff813b8d4e>] dm_dispatch_request+0x3e/0x70
+     [<ffffffff813ba850>] dm_request_fn+0x160/0x250
+     [<ffffffff81236e88>] queue_unplugged+0x48/0xd0
+     [<ffffffff8123b03d>] blk_flush_plug_list+0x1ed/0x250
+     [<ffffffff810e98f0>] ? sleep_on_page+0x20/0x20
+     [<ffffffff814db895>] io_schedule+0x75/0xd0
+     [<ffffffff810e98fe>] sleep_on_page_killable+0xe/0x40
+     [<ffffffff814dbf9a>] __wait_on_bit_lock+0x5a/0xc0
+     [<ffffffff810e9857>] __lock_page_killable+0x67/0x70
+     [<ffffffff8106d650>] ? autoremove_wake_function+0x40/0x40
+     [<ffffffff810eb5c5>] generic_file_aio_read+0x405/0x720
+     [<ffffffff81146962>] do_sync_read+0xd2/0x110
+     [<ffffffff8121e393>] ? security_file_permission+0x93/0xb0
+     [<ffffffff81146c81>] ? rw_verify_area+0x61/0xf0
+     [<ffffffff81147143>] vfs_read+0xc3/0x180
+     [<ffffffff81147251>] sys_read+0x51/0x90
+     [<ffffffff814e5942>] system_call_fastpath+0x16/0x1b
+    Code: c3 0f 1f 00 55 48 89 e5 53 48 83 ec 08 66 66 66 66 90 48 89 fb 0f 1f 80 00 00 00 00 48 8b 43 18 be 01 00 00 00 48 89 df 48 8b 00 <ff> 50 28 85 c0 75 ea 8b 93 f0 03 00 00 85 d2 74 14 8b 05 fa e1 
+    RIP  [<ffffffff81233867>] elv_drain_elevator+0x27/0x80
+     RSP <ffff880614e9fa48>
+     RSP <ffff880614e9fa48>
+    ---[ end trace 5dbd03e7295023d7 ]---
 
-thanks,
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+---
+ block/blk-core.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-greg k-h
-
- Makefile                                |    2 +-
- arch/um/kernel/dyn.lds.S                |   14 ++++-
- arch/um/kernel/uml.lds.S                |   17 ++++++
- arch/um/os-Linux/mem.c                  |    1 +
- arch/x86/xen/mmu.c                      |    9 +++-
- block/cfq-iosched.c                     |    8 +++-
- drivers/char/tty_ldisc.c                |    4 +-
- drivers/i2c/busses/i2c-taos-evm.c       |    8 ++--
- drivers/md/md.c                         |    1 +
- drivers/media/video/uvc/uvc_queue.c     |    2 +
- drivers/net/hamradio/6pack.c            |    4 +-
- drivers/net/hamradio/mkiss.c            |    4 +-
- drivers/net/wireless/ath/ath5k/eeprom.c |    8 +--
- drivers/net/wireless/ath/ath9k/pci.c    |    6 ++
- drivers/usb/core/driver.c               |   11 ++++-
- drivers/usb/core/hub.c                  |   13 +++--
- drivers/usb/host/xhci-hcd.c             |   22 ++++++--
- drivers/watchdog/mtx-1_wdt.c            |    8 +++
- fs/inode.c                              |   22 +++++---
- fs/nilfs2/btnode.c                      |   13 -----
- fs/nilfs2/btnode.h                      |    1 -
- fs/nilfs2/super.c                       |    2 +-
- include/asm-generic/bug.h               |   16 ++++++
- include/linux/clocksource.h             |    1 +
- include/linux/fs.h                      |    2 +
- include/linux/if_packet.h               |    2 +
- include/net/netlink.h                   |    2 +-
- kernel/power/snapshot.c                 |   89 ++++++++++++++++++++++++-------
- kernel/power/user.c                     |    4 +-
- kernel/taskstats.c                      |   15 ++++-
- kernel/time/clocksource.c               |   24 +++++----
- lib/debugobjects.c                      |    2 +-
- mm/hugetlb.c                            |    8 +++
- mm/ksm.c                                |    6 ++
- mm/memory.c                             |    2 +
- mm/migrate.c                            |    2 +-
- net/core/filter.c                       |    4 +-
- net/ipv4/af_inet.c                      |    3 +
- net/ipv4/inet_diag.c                    |   14 ++---
- net/ipv4/udp.c                          |    3 +
- net/ipv6/udp.c                          |    5 ++-
- net/packet/af_packet.c                  |    2 +
- net/sunrpc/auth_gss/auth_gss.c          |    4 +-
- net/sunrpc/clnt.c                       |    2 +-
- 44 files changed, 290 insertions(+), 102 deletions(-)
-
+diff --git a/block/blk-core.c b/block/blk-core.c
+index d2f8f40..a13a9cc 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -1706,6 +1706,9 @@ int blk_insert_cloned_request(struct request_queue *q, struct request *rq)
+ 		return -EIO;
+ #endif
+ 
++	if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags)))
++		return -EIO;
++
+ 	spin_lock_irqsave(q->queue_lock, flags);
+ 
+ 	/*
