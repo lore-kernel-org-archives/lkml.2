@@ -1,123 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753898Ab1GHIOp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 04:14:45 -0400
-Received: from acsinet14.oracle.com ([141.146.126.236]:65476 "EHLO
-	acsinet14.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751856Ab1GHIOl (ORCPT
+	id S1753959Ab1GHIW1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 04:22:27 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:37903 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752642Ab1GHIW0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 04:14:41 -0400
-Message-ID: <4E16BBD2.6030902@oracle.com>
-Date: Fri, 08 Jul 2011 16:12:02 +0800
-From: Joe Jin <joe.jin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre OracleBeehiveExtension/1.0.0.2-OracleInternal ObetStats/CATLAF_1292475699435-498544290 Thunderbird/3.1.10
+	Fri, 8 Jul 2011 04:22:26 -0400
+From: "Raju, Sundaram" <sundaram@ti.com>
+To: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+CC: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        Dan <dan.j.williams@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 8 Jul 2011 13:52:17 +0530
+Subject: [RFC] dmaengine: Moving TI SDMA driver to dmaengine - design plan
+Thread-Topic: [RFC] dmaengine: Moving TI SDMA driver to dmaengine - design
+ plan
+Thread-Index: Acw9SCZvPFDynNkITJ+jrLRNAg15bg==
+Message-ID: <E0D41E29EB0DAC4E9F3FF173962E9E94030259CD17@dbde02.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: scameron@beardog.cce.hp.com
-CC: mike.miller@hp.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "GURUDAS,PAI" <gurudas.pai@oracle.com>,
-        Guru Anbalagane <guru.anbalagane@oracle.com>
-Subject: Re: "use new doorbell-bit-5 reset method" failed to reset the controller
-References: <4E0C3892.2010507@oracle.com> <20110705151402.GK31485@beardog.cce.hp.com>
-In-Reply-To: <20110705151402.GK31485@beardog.cce.hp.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4E16BBEB.0189:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Per Steve's suggestions, we upgrade the firmware to the latest and 
-issue went, so it's HW issue rather than kernel bug.
+Hi,
 
-Thanks,
-Joe
+I am planning to move TI SDMA driver in OMAP tree
+into the dmaengine framework.
 
-On 07/05/11 23:14, scameron@beardog.cce.hp.com wrote:
-> On Thu, Jun 30, 2011 at 04:49:22PM +0800, Joe Jin wrote:
->> Hi Stephen,
->>
->> With linux the latest kernel, when do kdump test on HP DL585G7
->> we found it failed to reset the controller, driver complained
->> "'Bit 2 doorbell reset' is supported, but not 'bit 5 doorbell 
->> reset', Firmware update is recommended", we have upgraded the
->> firmware to the latest but kdump kernel still failed with
->> the message.
-> 
-> What firmware revision do you have?
-> 
-> I think you need 5.06, which just came out on June 24.
-> 
-> http://bizsupport1.austin.hp.com/bizsupport/TechSupport/SoftwareIndex.jsp?lang=en&cc=us&prodNameId=3902575&prodTypeId=329290&prodSeriesId=3902574&swLang=8&swEnvOID=2023&printver=true
-> 
-> -- steve
-> 
-> 
-> 
-> 
->>
->> After revert commit cf0b08d0cd87ada9d284925834d08fb8026da888,
->> kdump work fine. 
->>
->> Here is the device info:
->> 03:00.0 0104: 103c:323a (rev 01)
->>         Subsystem: 103c:3245
->>         Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR- FastB2B- DisINTx+
->>         Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
->>         Latency: 0, Cache Line Size: 64 bytes
->>         Interrupt: pin A routed to IRQ 16
->>         Region 0: Memory at e0200000 (64-bit, non-prefetchable) [size=2M]
->>         Region 2: Memory at e0002000 (64-bit, non-prefetchable) [size=4K]
->>         Region 4: I/O ports at 4000 [size=256]
->>         [virtual] Expansion ROM at d0500000 [disabled] [size=512K]
->>         Capabilities: [40] Power Management version 3
->>                 Flags: PMEClk- DSI- D1+ D2- AuxCurrent=375mA PME(D0+,D1-,D2-,D3hot-,D3cold-)
->>                 Status: D0 NoSoftRst+ PME-Enable- DSel=0 DScale=0 PME-
->>         Capabilities: [50] MSI: Enable- Count=1/1 Maskable- 64bit+
->>                 Address: 0000000000000000  Data: 0000
->>         Capabilities: [70] Express (v2) Endpoint, MSI 00
->>                 DevCap: MaxPayload 256 bytes, PhantFunc 0, Latency L0s <1us, L1 <8us
->>                         ExtTag- AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
->>                 DevCtl: Report errors: Correctable- Non-Fatal+ Fatal+ Unsupported-
->>                         RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
->>                         MaxPayload 128 bytes, MaxReadReq 4096 bytes
->>                 DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr- TransPend-
->>                 LnkCap: Port #0, Speed 5GT/s, Width x8, ASPM L0s, Latency L0 <512ns, L1 <64us
->>                         ClockPM- Surprise- LLActRep- BwNot-
->>                 LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk-
->>                         ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
->>                 LnkSta: Speed 2.5GT/s, Width x4, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
->>                 DevCap2: Completion Timeout: Not Supported, TimeoutDis+
->>                 DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis-
->>                 LnkCtl2: Target Link Speed: 5GT/s, EnterCompliance- SpeedDis-, Selectable De-emphasis: -6dB
->>                          Transmit Margin: Normal Operating Range, EnterModifiedCompliance- ComplianceSOS-
->>                          Compliance De-emphasis: -6dB
->>                 LnkSta2: Current De-emphasis Level: -3.5dB
->>         Capabilities: [ac] MSI-X: Enable+ Count=16 Masked-
->>                 Vector table: BAR=0 offset=001c2000
->>                 PBA: BAR=0 offset=001c4000
->>         Capabilities: [100 v1] Advanced Error Reporting
->>                 UESta:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
->>                 UEMsk:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq+ ACSViol-
->>                 UESvrt: DLP+ SDES+ TLP+ FCP+ CmpltTO+ CmpltAbrt+ UnxCmplt+ RxOF+ MalfTLP+ ECRC- UnsupReq+ ACSViol-
->>                 CESta:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
->>                 CEMsk:  RxErr+ BadTLP+ BadDLLP+ Rollover+ Timeout+ NonFatalErr+
->>                 AERCap: First Error Pointer: 00, GenCap+ CGenEn- ChkCap+ ChkEn-
->>         Kernel driver in use: hpsa
->>         Kernel modules: hpsa
->>
->>
->> Seems doorbell-bit-5 reset method did not work properly with the device?
->> Any input will appreciate.
->>
->> Thanks,
->> Joe
+The first immediate issue of concern I noticed is the
+huge number of client drivers that use the existing SDMA driver.
+More than 15 client drivers are using the current SDMA driver.
 
+Moving the SDMA driver along with all of these client drivers at a
+single stretch seems a humungous task. 
+I noticed a model in the existing DMA drivers in dmaengine
+framework that will over come this issue. 
 
--- 
-Oracle <http://www.oracle.com>
-Joe Jin | Team Leader, Software Development | +8610.6106.5624
-ORACLE | Linux and Virtualization
-No. 24 Zhongguancun Software Park, Haidian District | 100193 Beijing 
+I would like to follow the Freescale i.MX DMA driver model,
+where imx-dma.c in drivers/dma which implements all the
+dmaengine hooks, internally uses the APIs in dma-v1.c file in 
+arch/arm/mach-imx. All APIs in dma-v1.c are also exported
+out for direct use by clients.
+
+Advantages of this model:
+1. No compilation breaks for any of the existing client drivers.
+2. Client drivers can be moved one by one to the new SDMA driver 
+after complete testing on all OMAP boards.
+
+We can mark the old SDMA driver APIs as deprecated and insist on
+all client drivers to be moved to the new SDMA driver in the
+dmaengine framework soon.
+
+I have made the preliminary changes in code for this design and
+I am in the phase of testing a few client drivers. If this is a good way
+to proceed then I will send out my patches with the client drivers I
+have changed for review once I am done with the testing.
+
+Let me know your thoughts.
+
+Regards,
+Sundaram
+
