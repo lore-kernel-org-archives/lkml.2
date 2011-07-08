@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab1GHEQL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 00:16:11 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:33100 "EHLO
+	id S1752252Ab1GHEP2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 00:15:28 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:32854 "EHLO
 	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752410Ab1GHEPe (ORCPT
+	by vger.kernel.org with ESMTP id S1751259Ab1GHEPG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 00:15:34 -0400
+	Fri, 8 Jul 2011 00:15:06 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlwHAIiCFk55LCkBgWdsb2JhbABTmE2OdBUBARYmJc0NhjgEoyI
+X-IronPort-Anti-Spam-Result: AlwHAIiCFk55LCkBgWdsb2JhbABTmE2OdBUBARYmJc0NhjgEmmyINg
 From: Dave Chinner <david@fromorbit.com>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [PATCH 13/14] vfs: increase shrinker batch size
-Date: Fri,  8 Jul 2011 14:14:45 +1000
-Message-Id: <1310098486-6453-14-git-send-email-david@fromorbit.com>
+Subject: [PATCH 06/14] inode: convert inode_stat.nr_unused to per-cpu counters
+Date: Fri,  8 Jul 2011 14:14:38 +1000
+Message-Id: <1310098486-6453-7-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.5.1
 In-Reply-To: <1310098486-6453-1-git-send-email-david@fromorbit.com>
 References: <1310098486-6453-1-git-send-email-david@fromorbit.com>
@@ -25,57 +25,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Chinner <dchinner@redhat.com>
 
-Now that the per-sb shrinker is responsible for shrinking 2 or more
-caches, increase the batch size to keep econmies of scale for
-shrinking each cache.  Increase the shrinker batch size to 1024
-objects.
-
-To allow for a large increase in batch size, add a conditional
-reschedule to prune_icache_sb() so that we don't hold the LRU spin
-lock for too long. This mirrors the behaviour of the
-__shrink_dcache_sb(), and allows us to increase the batch size
-without needing to worry about problems caused by long lock hold
-times.
-
-To ensure that filesystems using the per-sb shrinker callouts don't
-cause problems, document that the object freeing method must
-reschedule appropriately inside loops.
+Before we split up the inode_lru_lock, the unused inode counter
+needs to be made independent of the global inode_lru_lock. Convert
+it to per-cpu counters to do this.
 
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
 ---
- Documentation/filesystems/vfs.txt |    6 ++++++
- fs/super.c                        |    1 +
- 2 files changed, 7 insertions(+), 0 deletions(-)
+ fs/inode.c |   16 +++++++++++-----
+ 1 files changed, 11 insertions(+), 5 deletions(-)
 
-diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
-index fd24f34..6bf85b7 100644
---- a/Documentation/filesystems/vfs.txt
-+++ b/Documentation/filesystems/vfs.txt
-@@ -317,6 +317,12 @@ or bottom half).
- 	the VM is trying to reclaim under GFP_NOFS conditions, hence this
- 	method does not need to handle that situation itself.
+diff --git a/fs/inode.c b/fs/inode.c
+index 3ef7324..14f53fd 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -95,6 +95,7 @@ EXPORT_SYMBOL(empty_aops);
+ struct inodes_stat_t inodes_stat;
  
-+	Implementations must include conditional reschedule calls inside any
-+	scanning loop that is done. This allows the VFS to determine
-+	appropriate scan batch sizes without having to worry about whether
-+	implementations will cause holdoff problems due to large scan batch
-+	sizes.
-+
- Whoever sets up the inode is responsible for filling in the "i_op" field. This
- is a pointer to a "struct inode_operations" which describes the methods that
- can be performed on individual inodes.
-diff --git a/fs/super.c b/fs/super.c
-index ca8e735..c1e0836 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -183,6 +183,7 @@ static struct super_block *alloc_super(struct file_system_type *type)
+ static DEFINE_PER_CPU(unsigned int, nr_inodes);
++static DEFINE_PER_CPU(unsigned int, nr_unused);
  
- 		s->s_shrink.seeks = DEFAULT_SEEKS;
- 		s->s_shrink.shrink = prune_super;
-+		s->s_shrink.batch = 1024;
+ static struct kmem_cache *inode_cachep __read_mostly;
+ 
+@@ -109,7 +110,11 @@ static int get_nr_inodes(void)
+ 
+ static inline int get_nr_inodes_unused(void)
+ {
+-	return inodes_stat.nr_unused;
++	int i;
++	int sum = 0;
++	for_each_possible_cpu(i)
++		sum += per_cpu(nr_unused, i);
++	return sum < 0 ? 0 : sum;
+ }
+ 
+ int get_nr_dirty_inodes(void)
+@@ -127,6 +132,7 @@ int proc_nr_inodes(ctl_table *table, int write,
+ 		   void __user *buffer, size_t *lenp, loff_t *ppos)
+ {
+ 	inodes_stat.nr_inodes = get_nr_inodes();
++	inodes_stat.nr_unused = get_nr_inodes_unused();
+ 	return proc_dointvec(table, write, buffer, lenp, ppos);
+ }
+ #endif
+@@ -340,7 +346,7 @@ static void inode_lru_list_add(struct inode *inode)
+ 	spin_lock(&inode_lru_lock);
+ 	if (list_empty(&inode->i_lru)) {
+ 		list_add(&inode->i_lru, &inode_lru);
+-		inodes_stat.nr_unused++;
++		this_cpu_inc(nr_unused);
  	}
- out:
- 	return s;
+ 	spin_unlock(&inode_lru_lock);
+ }
+@@ -350,7 +356,7 @@ static void inode_lru_list_del(struct inode *inode)
+ 	spin_lock(&inode_lru_lock);
+ 	if (!list_empty(&inode->i_lru)) {
+ 		list_del_init(&inode->i_lru);
+-		inodes_stat.nr_unused--;
++		this_cpu_dec(nr_unused);
+ 	}
+ 	spin_unlock(&inode_lru_lock);
+ }
+@@ -649,7 +655,7 @@ static void prune_icache(int nr_to_scan)
+ 		    (inode->i_state & ~I_REFERENCED)) {
+ 			list_del_init(&inode->i_lru);
+ 			spin_unlock(&inode->i_lock);
+-			inodes_stat.nr_unused--;
++			this_cpu_dec(nr_unused);
+ 			continue;
+ 		}
+ 
+@@ -686,7 +692,7 @@ static void prune_icache(int nr_to_scan)
+ 		spin_unlock(&inode->i_lock);
+ 
+ 		list_move(&inode->i_lru, &freeable);
+-		inodes_stat.nr_unused--;
++		this_cpu_dec(nr_unused);
+ 	}
+ 	if (current_is_kswapd())
+ 		__count_vm_events(KSWAPD_INODESTEAL, reap);
 -- 
 1.7.5.1
 
