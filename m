@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072Ab1GHFCY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:02:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41824 "EHLO mx2.suse.de"
+	id S1753953Ab1GHFBz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:01:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41751 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753279Ab1GHFCV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:02:21 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:56 2011
-Message-Id: <20110708001656.414151586@clark.kroah.org>
+	id S1753910Ab1GHFBu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:01:50 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:55 2011
+Message-Id: <20110708001655.630618198@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:16:10 -0700
+Date: Thu, 07 Jul 2011 17:16:02 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [038/107] xhci: Reject double add of active endpoints.
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [030/107] xen/pci: Use the INT_SRC_OVR IRQ (instead of GSI) to preset the ACPI SCI IRQ.
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,83 +25,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit fa75ac379e63c2864e9049b5e8615e40f65c1e70 upstream.
+commit 155a16f21923bc2f04161ac92acca986371ef27b upstream.
 
-While trying to switch a UAS device from the BOT configuration to the UAS
-configuration via the bConfigurationValue file, Tanya ran into an issue in
-the USB core.  usb_disable_device() sets entries in udev->ep_out and
-udev->ep_out to NULL, but doesn't call into the xHCI bandwidth management
-functions to remove the BOT configuration endpoints from the xHCI host's
-internal structures.
+In the past we would use the GSI value to preset the ACPI SCI
+IRQ which worked great as GSI == IRQ:
 
-The USB core would then attempt to add endpoints for the UAS
-configuration, and some of the endpoints had the same address as endpoints
-in the BOT configuration.  The xHCI driver blindly added the endpoints
-again, but the xHCI host controller rejected the Configure Endpoint
-command because active endpoints were added without being dropped.
+ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 9 low level)
 
-Make the xHCI driver reject calls to xhci_add_endpoint() that attempt to
-add active endpoints without first calling xhci_drop_endpoint().
+While that is most often seen, there are some oddities:
 
-This should be backported to kernels as old as 2.6.31.
+ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 20 low level)
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: Tanya Brokhman <tlinder@codeaurora.org>
+which means that GSI 20 (or pin 20) is to be overriden for IRQ 9.
+Our code that presets the interrupt for ACPI SCI however would
+use the GSI 20 instead of IRQ 9 ending up with:
+
+xen: sci override: global_irq=20 trigger=0 polarity=1
+xen: registering gsi 20 triggering 0 polarity 1
+xen: --> pirq=20 -> irq=20
+xen: acpi sci 20
+.. snip..
+calling  acpi_init+0x0/0xbc @ 1
+ACPI: SCI (IRQ9) allocation failed
+ACPI Exception: AE_NOT_ACQUIRED, Unable to install System Control Interrupt handler (20110413/evevent-119)
+ACPI: Unable to start the ACPI Interpreter
+
+as the ACPI interpreter made a call to 'acpi_gsi_to_irq' which got nine.
+It used that value to request an IRQ (request_irq) and since that was not
+present it failed.
+
+The fix is to recognize that for interrupts that are overriden (in our
+case we only care about the ACPI SCI) we should use the IRQ number
+to present the IRQ instead of the using GSI. End result is that we get:
+
+xen: sci override: global_irq=20 trigger=0 polarity=1
+xen: registering gsi 20 triggering 0 polarity 1
+xen: --> pirq=20 -> irq=9 (gsi=9)
+xen: acpi sci 9
+
+which fixes the ACPI interpreter failing on startup.
+
+Reported-by: Liwei <xieliwei@gmail.com>
+Tested-by: Liwei <xieliwei@gmail.com>
+[http://lists.xensource.com/archives/html/xen-devel/2011-06/msg01727.html]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci.c |   22 ++++++++++++++++++----
- 1 file changed, 18 insertions(+), 4 deletions(-)
+ arch/x86/pci/xen.c |   26 ++++++++++++++++++++++++--
+ 1 file changed, 24 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -1396,6 +1396,7 @@ int xhci_add_endpoint(struct usb_hcd *hc
- 	u32 added_ctxs;
- 	unsigned int last_ctx;
- 	u32 new_add_flags, new_drop_flags, new_slot_info;
-+	struct xhci_virt_device *virt_dev;
- 	int ret = 0;
+--- a/arch/x86/pci/xen.c
++++ b/arch/x86/pci/xen.c
+@@ -322,6 +322,7 @@ static int xen_register_pirq(u32 gsi, in
+ 	struct physdev_map_pirq map_irq;
+ 	int shareable = 0;
+ 	char *name;
++	bool gsi_override = false;
  
- 	ret = xhci_check_args(hcd, udev, ep, 1, true, __func__);
-@@ -1418,11 +1419,25 @@ int xhci_add_endpoint(struct usb_hcd *hc
- 		return 0;
- 	}
+ 	if (!xen_pv_domain())
+ 		return -1;
+@@ -338,11 +339,32 @@ static int xen_register_pirq(u32 gsi, in
+ 	if (pirq < 0)
+ 		goto out;
  
--	in_ctx = xhci->devs[udev->slot_id]->in_ctx;
--	out_ctx = xhci->devs[udev->slot_id]->out_ctx;
-+	virt_dev = xhci->devs[udev->slot_id];
-+	in_ctx = virt_dev->in_ctx;
-+	out_ctx = virt_dev->out_ctx;
- 	ctrl_ctx = xhci_get_input_control_ctx(xhci, in_ctx);
- 	ep_index = xhci_get_endpoint_index(&ep->desc);
- 	ep_ctx = xhci_get_ep_ctx(xhci, out_ctx, ep_index);
-+
-+	/* If this endpoint is already in use, and the upper layers are trying
-+	 * to add it again without dropping it, reject the addition.
+-	irq = xen_bind_pirq_gsi_to_irq(gsi, pirq, shareable, name);
++	/* Before we bind the GSI to a Linux IRQ, check whether
++	 * we need to override it with bus_irq (IRQ) value. Usually for
++	 * IRQs below IRQ_LEGACY_IRQ this holds IRQ == GSI, as so:
++	 *  ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 9 low level)
++	 * but there are oddballs where the IRQ != GSI:
++	 *  ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 20 low level)
++	 * which ends up being: gsi_to_irq[9] == 20
++	 * (which is what acpi_gsi_to_irq ends up calling when starting the
++	 * the ACPI interpreter and keels over since IRQ 9 has not been
++	 * setup as we had setup IRQ 20 for it).
 +	 */
-+	if (virt_dev->eps[ep_index].ring &&
-+			!(le32_to_cpu(ctrl_ctx->drop_flags) &
-+				xhci_get_endpoint_flag(&ep->desc))) {
-+		xhci_warn(xhci, "Trying to add endpoint 0x%x "
-+				"without dropping it.\n",
-+				(unsigned int) ep->desc.bEndpointAddress);
-+		return -EINVAL;
++	if (gsi == acpi_sci_override_gsi) {
++		/* Check whether the GSI != IRQ */
++		acpi_gsi_to_irq(gsi, &irq);
++		if (irq != gsi)
++			/* Bugger, we MUST have that IRQ. */
++			gsi_override = true;
 +	}
-+
- 	/* If the HCD has already noted the endpoint is enabled,
- 	 * ignore this request.
- 	 */
-@@ -1437,8 +1452,7 @@ int xhci_add_endpoint(struct usb_hcd *hc
- 	 * process context, not interrupt context (or so documenation
- 	 * for usb_set_interface() and usb_set_configuration() claim).
- 	 */
--	if (xhci_endpoint_init(xhci, xhci->devs[udev->slot_id],
--				udev, ep, GFP_NOIO) < 0) {
-+	if (xhci_endpoint_init(xhci, virt_dev, udev, ep, GFP_NOIO) < 0) {
- 		dev_dbg(&udev->dev, "%s - could not initialize ep %#x\n",
- 				__func__, ep->desc.bEndpointAddress);
- 		return -ENOMEM;
++	if (gsi_override)
++		irq = xen_bind_pirq_gsi_to_irq(irq, pirq, shareable, name);
++	else
++		irq = xen_bind_pirq_gsi_to_irq(gsi, pirq, shareable, name);
+ 	if (irq < 0)
+ 		goto out;
+ 
+-	printk(KERN_DEBUG "xen: --> pirq=%d -> irq=%d\n", pirq, irq);
++	printk(KERN_DEBUG "xen: --> pirq=%d -> irq=%d (gsi=%d)\n", pirq, irq, gsi);
+ 
+ 	map_irq.domid = DOMID_SELF;
+ 	map_irq.type = MAP_PIRQ_TYPE_GSI;
 
 
