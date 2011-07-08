@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753182Ab1GIFyk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 01:54:40 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:47318 "EHLO
+	id S1753100Ab1GIFyi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 01:54:38 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:57707 "EHLO
 	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752619Ab1GIFyR (ORCPT
+	by vger.kernel.org with ESMTP id S1752484Ab1GIFyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 01:54:17 -0400
-X-Sasl-enc: Fnxgnjq6dokAbOkWcs/o2ctHylK80DGyUeNaptbIYU3f 1310190856
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 15:51:21 2011
-Message-Id: <20110708225120.924136559@clark.kroah.org>
+	Sat, 9 Jul 2011 01:54:13 -0400
+X-Sasl-enc: Voq35ybHcQUXUQlFT58u4f8PlYyIpFK0Kk7r+uenmC/X 1310190852
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 15:51:19 2011
+Message-Id: <20110708225119.722174548@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 08 Jul 2011 15:50:11 -0700
+Date: Fri, 08 Jul 2011 15:49:58 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [22/35] USB: dont let the hub driver prevent system sleep
+        Rajkumar Manoharan <rmanohar@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [09/35] ath9k: Fix suspend/resume when no interface is UP
 In-Reply-To: <20110708225343.GA14402@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,65 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
 
-commit cbb330045e5df8f665ac60227ff898421fc8fb92 upstream.
+commit c31eb8e926835582cd186b33a7a864880a4c0c79 upstream.
 
-This patch (as1465) continues implementation of the policy that errors
-during suspend or hibernation should not prevent the system from going
-to sleep.
+When no interface has been brought up, the chip's power
+state continued as AWAKE. So during resume, the chip never
+been powered up.
 
-In this case, failure to turn on the Suspend feature for a hub port
-shouldn't be reported as an error.  There are situations where this
-does actually occur (such as when the device plugged into that port
-was disconnected in the recent past), and it turns out to be harmless.
-There's no reason for it to prevent a system sleep.
-
-Also, don't allow the hub driver to fail a system suspend if the
-downstream ports aren't all suspended.  This is also harmless (and
-should never happen, given the change mentioned above); printing a
-warning message in the kernel log is all we really need to do.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/core/hub.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ drivers/net/wireless/ath/ath9k/pci.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -2188,6 +2188,10 @@ int usb_port_suspend(struct usb_device *
- 				USB_DEVICE_REMOTE_WAKEUP, 0,
- 				NULL, 0,
- 				USB_CTRL_SET_TIMEOUT);
+--- a/drivers/net/wireless/ath/ath9k/pci.c
++++ b/drivers/net/wireless/ath/ath9k/pci.c
+@@ -276,6 +276,12 @@ static int ath_pci_resume(struct pci_dev
+ 			    AR_GPIO_OUTPUT_MUX_AS_OUTPUT);
+ 	ath9k_hw_set_gpio(sc->sc_ah, sc->sc_ah->led_pin, 1);
+ 
++	/* The device has to be moved to FULLSLEEP forcibly.
++	 * Otherwise the chip never moved to full sleep,
++	 * when no interface is up.
++	 */
++	ath9k_hw_setpower(sc->sc_ah, ATH9K_PM_FULL_SLEEP);
 +
-+		/* System sleep transitions should never fail */
-+		if (!(msg.event & PM_EVENT_AUTO))
-+			status = 0;
- 	} else {
- 		/* device has up to 10 msec to fully suspend */
- 		dev_dbg(&udev->dev, "usb %ssuspend\n",
-@@ -2427,16 +2431,15 @@ static int hub_suspend(struct usb_interf
- 	struct usb_device	*hdev = hub->hdev;
- 	unsigned		port1;
- 
--	/* fail if children aren't already suspended */
-+	/* Warn if children aren't already suspended */
- 	for (port1 = 1; port1 <= hdev->maxchild; port1++) {
- 		struct usb_device	*udev;
- 
- 		udev = hdev->children [port1-1];
- 		if (udev && udev->can_submit) {
--			if (!(msg.event & PM_EVENT_AUTO))
--				dev_dbg(&intf->dev, "port %d nyet suspended\n",
--						port1);
--			return -EBUSY;
-+			dev_warn(&intf->dev, "port %d nyet suspended\n", port1);
-+			if (msg.event & PM_EVENT_AUTO)
-+				return -EBUSY;
- 		}
- 	}
+ 	return 0;
+ }
  
 
 
