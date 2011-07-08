@@ -1,114 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754119Ab1GHQEP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 12:04:15 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:48936 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753965Ab1GHQEJ (ORCPT
+	id S1754095Ab1GHQEe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 12:04:34 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:21697 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752207Ab1GHQEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 12:04:09 -0400
-X-Sasl-enc: dZqmou5S0YzGsnH52e/qM0RB5ZZ75Sq63QRlGoU/xF9b 1310141048
-Date: Fri, 8 Jul 2011 09:04:03 -0700
-From: Greg KH <greg@kroah.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Kay Sievers <kay.sievers@vrfy.org>,
-        Nao Nishijima <nao.nishijima.xt@hitachi.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        jcm@redhat.com, dle-develop@lists.sourceforge.net,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        yrl.pp-manager.tt@hitachi.com, dgilbert@interlog.com,
-        stefanr@s5r6.in-berlin.de, hare@suse.de
-Subject: Re: [RFC PATCH 0/4] Persistent device name using alias name
-Message-ID: <20110708160403.GB31500@kroah.com>
-References: <20110708084547.2091.55262.stgit@ltc197.sdl.hitachi.co.jp>
- <20110708145408.GA2283@kroah.com>
- <CAPXgP10gThuxOsrxH8_wOddeRB5f2ABypW7EQui-F1hOE97dHQ@mail.gmail.com>
- <20110708154736.GA7320@kroah.com>
- <1310140451.3282.85.camel@mulgrave>
+	Fri, 8 Jul 2011 12:04:32 -0400
+Date: Fri, 8 Jul 2011 12:04:14 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Joe Jin <joe.jin@oracle.com>
+Cc: Daniel Stodden <daniel.stodden@citrix.com>,
+        Jens Axboe <jaxboe@fusionio.com>, annie.li@oracle.com,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kurt C Hackel <KURT.HACKEL@oracle.com>,
+        Greg Marsden <greg.marsden@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: xen-blkfront: Don't send closing  notification to backend in
+ blkfront_closing()
+Message-ID: <20110708160414.GA30120@dumpdata.com>
+References: <4E16AE55.50500@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1310140451.3282.85.camel@mulgrave>
+In-Reply-To: <4E16AE55.50500@oracle.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4E172A8C.0076:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 08, 2011 at 10:54:11AM -0500, James Bottomley wrote:
-> On Fri, 2011-07-08 at 08:47 -0700, Greg KH wrote:
-> > On Fri, Jul 08, 2011 at 05:41:36PM +0200, Kay Sievers wrote:
-> > > On Fri, Jul 8, 2011 at 16:54, Greg KH <greg@kroah.com> wrote:
-> > > > On Fri, Jul 08, 2011 at 05:45:47PM +0900, Nao Nishijima wrote:
-> > > >> This patch series provides an "alias name" of the disk into kernel and procfs
-> > > >> messages. The user can assign a preferred name to an alias name of the device.
-> > > >>
-> > > >> Based on previous discussion (*), I changed patches as follows
-> > > >> - This is "alias name"
-> > > >> - An "alias name" is stored in gendisk struct
-> > > >> - Add document to Documentation/ABI/testing/sysfs-block
-> > > >> - When the user changes an "alias name", kernel notifies udev
-> > > >>
-> > > >> (*) http://marc.info/?l=linux-scsi&m=130812625531219&w=2
-> > > >
-> > > > I don't like it and I don't think it will really solve the root problem
-> > > > you are trying to address, but as the patches don't touch any code I
-> > > > maintain, there's not much I can do to object to it.
-> > > 
-> > > I can only repeat what I already wrote in detail earlier:
-> > > 
-> > > This approach seems to papers over the problem which emitting and
-> > > parsing free-text printk() messages with much-too-dumb tools cause. It
-> > > seems to fix the symptoms not the cause.
-> > > 
-> > > You can already write a udev rule today that logs _all_ symlinks of a
-> > > device at discovery time, and any later kernel message can safely be
-> > > associated with all possible names of the blockdev. No kernel changes
-> > > needed, all possible names are covered. That also works good enough
-> > > with our current stone-age tools for anybody who is able to scroll
-> > > back to the last log udev message in that same log file.
-> > > 
-> > > There can be by-definition no default udev rules assigning a proper
-> > > single name to a block device. There is never a valid single name for
-> > > a disks, so udev can not ship anything like that in the default setup,
-> > > so this stays as a custom hack.
-> > > 
-> > > We absolutely need _structured_ data for logging and error reporting,
-> > > not only to solve this problem. Along with the current free-text
-> > > printk(), we would be able to attach classifications, device
-> > > error/sense data, firmware register dumps and anything
-> > > interesting-for-debug to the messages.
-> > > 
-> > > We can't solve that problem in the kernel alone. Structured data from
-> > > the kernel will need to feed a smarter userspace logger that can index
-> > > and classify messages, merge current userspace data into it, and
-> > > provides hooks for the system management to act on critical failures
-> > > and raise notifications.
-> > > 
-> > > Structured logging seems like the solution for this and also to many
-> > > other problems in this area. Single custom names pushed into the
-> > > kernel might cover some rather exotic use cases, but I think, is not
-> > > what we are looking for.
-> > 
-> > I totally agree, but hey, no one listens to us :)
+On Fri, Jul 08, 2011 at 03:14:29PM +0800, Joe Jin wrote:
+> When we do block attach detach test with below steps, umount hang and the
+> guest unable to shutdown:
 > 
-> Yes, we did.  Everyone agrees structured logging would be the best long
-> term solution.  However, it's at least 10x the work presented here, plus
-> it would be a long process getting everyone to agree.  This looks like a
-> good 95% interim solution and it can be removed when structured logging
-> makes everything "just work(tm)".
+> 1. start guest with the latest kernel.
+> 2. attach new disk by xm-attach in Dom0
+> 3. mount new disk in guest
+> 4. detach the disk by xm-detach in dom0
 
-Do you seriously think that this sysfs attribute can be removed someday
-in the future if we get structured logging implemented?  It can't,
-sorry, people will start depending on this and their jury-rigged
-implementations will require it no matter what we do otherwise.
+I think you mean xm block-detach and xm-attach?
 
-But that's still not the main issue here.
+I tried with and without your patch and in both cases I get
+this in my guest:
 
-The main issue that I see is that this really doesn't solve the problem
-that is trying to be addressed, and the authors admit that.  So for that
-very reason alone I feel it should be rejected, but again, it's not my
-subsystem to maintain or control.
+sh-4.1# mount /dev/xvda /test
+[  385.949749] EXT3-fs: barriers not enabled
+[  385.960173] kjournald starting.  Commit interval 5 seconds
+[  385.960418] EXT3-fs (xvda): using internal journal
+[  385.960427] EXT3-fs (xvda): mounted filesystem with writeback data mode
+sh-4.1# [  411.176887] vbd vbd-51712: 16 Device in use; refusing to close
 
-best of luck,
+The commands on the other side (Dom0) were:
 
-greg k-h
+[root@tst009 ~]# xm block-list 6
+Vdev  BE handle state evt-ch ring-ref BE-path
+51712  0    0     4      12     770   /local/domain/0/backend/vbd/6/51712
+[root@tst009 ~]# xm block-detach 6 51712
+Error: Device 51712 (vbd) could not be disconnected. 
+Usage: xm block-detach <Domain> <DevId> [-f|--force]
+
+Destroy a domain's virtual block device.
+[root@tst009 ~]# xm block-detach 6 51712 -f
+
+
+> 5. umount the partition/disk in guest, command hung. exactly at here, any
+>    IO request to the partition/disk will hang.
+
+I get that with the patch and without it:
+
+sh-4.1#
+sh-4.1# [  519.814048] block xvda: device/vbd/51712 was hot-unplugged, 1 stale handles
+
+sh-4.1# df -h
+Filesystem            Size  Used Avail Use% Mounted on
+none                  490M  120K  490M   1% /dev
+none                  490M  131M  359M  27% /lib/modules/3.0.0-rc6-00052-g3edce4b-dirty
+shm                    10M     0   10M   0% /dev/shm
+var_tmp                10M     0   10M   0% /var/tmp
+/dev/xvda              20G  173M   19G   1% /test
+sh-4.1# umount /test
+
+Any ideas?
+> 
+> Checking the code we found when xm-detach command set backend state to 
+> Closing, will trigger blkback_changed() -> blkfront_closing() call.
+> At the moment, the disk still opened by guest, so frontend will refuse the 
+> request, but in the blkfront_closing(), it send a notification to backend 
+> said that the frontend state switched to Closing, when backend got the
+> event, it will disconnect from real device, at here any IO request will
+> be stuck, even tried to release the disk by umount.
+> 
+> Per our test, below patch fix this issue.
+> 
+> Signed-off-by: Joe Jin <joe.jin@oracle.com>
+> Signed-off-by: Annie Li <annie.li@oracle.com>
+> ---
+>  xen-blkfront.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+> index b536a9c..f6d8ac2 100644
+> --- a/drivers/block/xen-blkfront.c
+> +++ b/drivers/block/xen-blkfront.c
+> @@ -1088,7 +1088,7 @@ blkfront_closing(struct blkfront_info *info)
+>  	if (bdev->bd_openers) {
+>  		xenbus_dev_error(xbdev, -EBUSY,
+>  				 "Device in use; refusing to close");
+> -		xenbus_switch_state(xbdev, XenbusStateClosing);
+> +		xbdev->state = XenbusStateClosing;
+>  	} else {
+>  		xlvbd_release_gendisk(info);
+>  		xenbus_frontend_closed(xbdev);
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
