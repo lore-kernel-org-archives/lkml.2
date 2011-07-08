@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755223Ab1GHFFQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:05:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42464 "EHLO mx2.suse.de"
+	id S1755242Ab1GHFFV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:05:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42497 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755208Ab1GHFFI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:05:08 -0400
+	id S1754314Ab1GHFFS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:05:18 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:17:01 2011
-Message-Id: <20110708001701.017140478@clark.kroah.org>
+Message-Id: <20110708001701.316766322@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:16:57 -0700
+Date: Thu, 07 Jul 2011 17:17:00 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Christoph Hellwig <hch@lst.de>
-Subject: [085/107] hfsplus: add missing call to bio_put()
+        Daniel Mack <zonque@gmail.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [088/107] ASoC: pxa-ssp: Correct check for stream presence
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,43 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seth Forshee <seth.forshee@canonical.com>
+From: Daniel Mack <zonque@gmail.com>
 
-commit 50176ddefa4a942419cb693dd2d8345bfdcde67c upstream.
+commit 53dea36c70c1857149a8c447224e3936eb8b5339 upstream.
 
-hfsplus leaks bio objects by failing to call bio_put() on the bios
-it allocates. Add the missing call to fix the leak.
+Don't rely on the codec's channels_min information to decide wheter or
+not allocate a substream's DMA buffer. Rather check if the substream
+itself was allocated previously.
 
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Daniel Mack <zonque@gmail.com>
+Acked-by: Liam Girdwood <lrg@ti.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/hfsplus/wrapper.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ sound/soc/pxa/pxa2xx-pcm.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/hfsplus/wrapper.c
-+++ b/fs/hfsplus/wrapper.c
-@@ -36,6 +36,7 @@ int hfsplus_submit_bio(struct block_devi
- {
- 	DECLARE_COMPLETION_ONSTACK(wait);
- 	struct bio *bio;
-+	int ret = 0;
+--- a/sound/soc/pxa/pxa2xx-pcm.c
++++ b/sound/soc/pxa/pxa2xx-pcm.c
+@@ -95,14 +95,14 @@ static int pxa2xx_soc_pcm_new(struct snd
+ 	if (!card->dev->coherent_dma_mask)
+ 		card->dev->coherent_dma_mask = DMA_BIT_MASK(32);
  
- 	bio = bio_alloc(GFP_NOIO, 1);
- 	bio->bi_sector = sector;
-@@ -54,8 +55,10 @@ int hfsplus_submit_bio(struct block_devi
- 	wait_for_completion(&wait);
+-	if (dai->driver->playback.channels_min) {
++	if (pcm->streams[SNDRV_PCM_STREAM_PLAYBACK].substream) {
+ 		ret = pxa2xx_pcm_preallocate_dma_buffer(pcm,
+ 			SNDRV_PCM_STREAM_PLAYBACK);
+ 		if (ret)
+ 			goto out;
+ 	}
  
- 	if (!bio_flagged(bio, BIO_UPTODATE))
--		return -EIO;
--	return 0;
-+		ret = -EIO;
-+
-+	bio_put(bio);
-+	return ret;
- }
- 
- static int hfsplus_read_mdb(void *bufptr, struct hfsplus_wd *wd)
+-	if (dai->driver->capture.channels_min) {
++	if (pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream) {
+ 		ret = pxa2xx_pcm_preallocate_dma_buffer(pcm,
+ 			SNDRV_PCM_STREAM_CAPTURE);
+ 		if (ret)
 
 
