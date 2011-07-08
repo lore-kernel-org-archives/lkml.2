@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754119Ab1GHUrE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 16:47:04 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:46788 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753657Ab1GHUrB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 16:47:01 -0400
-Date: Fri, 8 Jul 2011 13:46:32 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Michal Hocko <mhocko@suse.cz>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Cleanup PATCH] rcu: Do not use rcu_read_lock_held when
- calling rcu_dereference_check
-Message-ID: <20110708204632.GZ6014@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110708135739.GB12834@tiehlicka.suse.cz>
- <20110708154829.GS6014@linux.vnet.ibm.com>
- <20110708155752.GE12834@tiehlicka.suse.cz>
- <20110708163033.GG12834@tiehlicka.suse.cz>
- <20110708185148.GV6014@linux.vnet.ibm.com>
- <alpine.LNX.2.00.1107082222150.11049@pobox.suse.cz>
+	id S1753939Ab1GHVAg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 17:00:36 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:46299 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752146Ab1GHVAf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 17:00:35 -0400
+X-Sasl-enc: CQwH82vhydQHVspxDzodZVtnx3RILfQ17jDNPtzwvz3i 1310158834
+Date: Fri, 8 Jul 2011 13:44:14 -0700
+From: Greg KH <greg@kroah.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/12] gma500: Re-order checks and dereferences in
+ psb_intel_lvds
+Message-ID: <20110708204414.GA28312@kroah.com>
+References: <20110708084053.19581.81711.stgit@localhost.localdomain>
+ <20110708084309.19581.86654.stgit@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1107082222150.11049@pobox.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110708084309.19581.86654.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 08, 2011 at 10:22:45PM +0200, Jiri Kosina wrote:
-> On Fri, 8 Jul 2011, Paul E. McKenney wrote:
+On Fri, Jul 08, 2011 at 09:43:15AM +0100, Alan Cox wrote:
+> From: Alan Cox <alan@linux.intel.com>
 > 
-> > > Hmm, thinking about it some more. Wouldn't it make more sense to push
-> > > this through trivial tree (CCing Jikos)? Having 5 or so patches with the
-> > > exactly same changelog sounds overkill to me.
-> > > 
-> > > What do you think? Could you give me your Acked-by if you are OK with
-> > > it, please?
-> > 
-> > Whatever works.  ;-)
-> > 
-> > However, I did queue the Documentation/RCU/lockdep.txt patch already.
+> Dan Carpenter reports:
 > 
-> That's no problem for git. But anyway, I have dropped that part.
+> Smatch complains about 6a7afe3acc4b "gma500: continue abstracting
+> platform specific code"
 > 
-> > For the others,
-> > 
-> > Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> drivers/staging/gma500/psb_intel_lvds.c +579 psb_intel_lvds_set_property(7)
+> 	warn: variable dereferenced before check 'encoder'
 > 
-> Thanks. Applied.
+> --- a/drivers/staging/gma500/psb_intel_lvds.c
+> +++ b/drivers/staging/gma500/psb_intel_lvds.c
+> @@ -575,11 +575,12 @@ int psb_intel_lvds_set_property(struct drm_connector
+> *connector,
+>                                        struct drm_property *property,
+>                                        uint64_t value)
+>  {
+> -       struct drm_encoder *pEncoder = connector->encoder;
+> +       struct drm_encoder *encoder = connector->encoder;
+> +       struct drm_psb_private *dev_priv = encoder->dev->dev_private;
+>                                            ^^^^^^^^^^^^
+> dereference encoder here.
+> 
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
 
-Thank you, Jiri!
+Oh that played hell with git, please don't do that again...
 
-							Thanx, Paul
