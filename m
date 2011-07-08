@@ -1,196 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753318Ab1GHLFR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 07:05:17 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46671 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752854Ab1GHLES (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 07:04:18 -0400
-From: Keshava Munegowda <keshava_mgowda@ti.com>
-To: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <keshava_mgowda@ti.com>, <balbi@ti.com>, <gadiyar@ti.com>,
-        <sameo@linux.intel.com>, <parthab@india.ti.com>, <tony@atomide.com>,
-        <khilman@ti.com>, <b-cousson@ti.com>, <paul@pwsan.com>,
-        <johnstul@us.ibm.com>, <vishwanath.bs@ti.com>, <kishon@ti.com>
-Subject: [PATCH 3/6 v3] arm: omap: usb: register hwmods of usbhs
-Date: Fri, 8 Jul 2011 16:32:42 +0530
-Message-ID: <1310122965-23612-4-git-send-email-keshava_mgowda@ti.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1310122965-23612-1-git-send-email-keshava_mgowda@ti.com>
-References: <1310122965-23612-1-git-send-email-keshava_mgowda@ti.com>
+	id S1752758Ab1GHLNu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 07:13:50 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59552 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752224Ab1GHLNt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 07:13:49 -0400
+Date: Fri, 8 Jul 2011 12:13:09 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Todd Poynor <toddpoynor@google.com>
+Cc: Kevin Hilman <khilman@ti.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Colin Cross <ccross@android.com>
+Subject: Re: [PATCH 0/3] Add generic idle notifiers
+Message-ID: <20110708111309.GB4812@n2100.arm.linux.org.uk>
+References: <1309229190-25006-1-git-send-email-toddpoynor@google.com> <87ei22dnsp.fsf@ti.com> <20110707201748.GB32199@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110707201748.GB32199@google.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The hwmod structure of uhh, ohci, ehci and tll are
-retrived and registered with omap device
+On Thu, Jul 07, 2011 at 01:17:48PM -0700, Todd Poynor wrote:
+> This is intended to coexist with the CPU PM notifiers.  The idle
+> notifiers proposed here are notifying of a change in kernel scheduler
+> state: the scheduler has no task to run and is entering its "idle
+> loop", or now has something to run and is exiting idle state.
+> Things that can use this include power management hints such as the
+> existing drivers/idle/i7300_idle.c usage, the ARM LEDs idle triggers,
+> and there's probably other existing potential uses in other arch'es that
+> I should go track down.
 
-Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
----
- arch/arm/mach-omap2/usb-host.c |  113 +++++++++++++++++----------------------
- 1 files changed, 49 insertions(+), 64 deletions(-)
+Isn't drivers/idle yet another cpuidle like implementation, but done
+differently?  Is there any reason why the drivers/idle stuff can't
+hook in like cpuidle or vice versa?
 
-diff --git a/arch/arm/mach-omap2/usb-host.c b/arch/arm/mach-omap2/usb-host.c
-index 89ae298..dea0eed 100644
---- a/arch/arm/mach-omap2/usb-host.c
-+++ b/arch/arm/mach-omap2/usb-host.c
-@@ -28,51 +28,30 @@
- #include <mach/hardware.h>
- #include <mach/irqs.h>
- #include <plat/usb.h>
-+#include <plat/omap_device.h>
- 
- #include "mux.h"
- 
- #ifdef CONFIG_MFD_OMAP_USB_HOST
- 
--#define OMAP_USBHS_DEVICE	"usbhs-omap"
--
--static struct resource usbhs_resources[] = {
--	{
--		.name	= "uhh",
--		.flags	= IORESOURCE_MEM,
--	},
--	{
--		.name	= "tll",
--		.flags	= IORESOURCE_MEM,
--	},
--	{
--		.name	= "ehci",
--		.flags	= IORESOURCE_MEM,
--	},
--	{
--		.name	= "ehci-irq",
--		.flags	= IORESOURCE_IRQ,
--	},
--	{
--		.name	= "ohci",
--		.flags	= IORESOURCE_MEM,
--	},
--	{
--		.name	= "ohci-irq",
--		.flags	= IORESOURCE_IRQ,
--	}
--};
--
--static struct platform_device usbhs_device = {
--	.name		= OMAP_USBHS_DEVICE,
--	.id		= 0,
--	.num_resources	= ARRAY_SIZE(usbhs_resources),
--	.resource	= usbhs_resources,
--};
-+#define OMAP_USBHS_DEVICE	"usbhs_omap"
-+#define	USBHS_UHH_HWMODNAME	"usbhs_uhh"
-+#define	USBHS_OHCI_HWMODNAME	"usbhs_ohci"
-+#define USBHS_EHCI_HWMODNAME	"usbhs_ehci"
-+#define USBHS_TLL_HWMODNAME	"usbhs_tll"
- 
- static struct usbhs_omap_platform_data		usbhs_data;
- static struct ehci_hcd_omap_platform_data	ehci_data;
- static struct ohci_hcd_omap_platform_data	ohci_data;
- 
-+static struct omap_device_pm_latency omap_uhhtll_latency[] = {
-+	  {
-+		.deactivate_func = omap_device_idle_hwmods,
-+		.activate_func	 = omap_device_enable_hwmods,
-+		.flags = OMAP_DEVICE_LATENCY_AUTO_ADJUST,
-+	  },
-+};
-+
- /* MUX settings for EHCI pins */
- /*
-  * setup_ehci_io_mux - initialize IO pad mux for USBHOST
-@@ -508,7 +487,10 @@ static void setup_4430ohci_io_mux(const enum usbhs_omap_port_mode *port_mode)
- 
- void __init usbhs_init(const struct usbhs_omap_board_data *pdata)
- {
--	int	i;
-+	struct omap_hwmod	*oh[4];
-+	struct omap_device	*od;
-+	int			bus_id = -1;
-+	int			i;
- 
- 	for (i = 0; i < OMAP3_HS_USB_PORTS; i++) {
- 		usbhs_data.port_mode[i] = pdata->port_mode[i];
-@@ -523,44 +505,47 @@ void __init usbhs_init(const struct usbhs_omap_board_data *pdata)
- 	usbhs_data.ohci_data = &ohci_data;
- 
- 	if (cpu_is_omap34xx()) {
--		usbhs_resources[0].start = OMAP34XX_UHH_CONFIG_BASE;
--		usbhs_resources[0].end = OMAP34XX_UHH_CONFIG_BASE + SZ_1K - 1;
--		usbhs_resources[1].start = OMAP34XX_USBTLL_BASE;
--		usbhs_resources[1].end = OMAP34XX_USBTLL_BASE + SZ_4K - 1;
--		usbhs_resources[2].start	= OMAP34XX_EHCI_BASE;
--		usbhs_resources[2].end	= OMAP34XX_EHCI_BASE + SZ_1K - 1;
--		usbhs_resources[3].start = INT_34XX_EHCI_IRQ;
--		usbhs_resources[4].start	= OMAP34XX_OHCI_BASE;
--		usbhs_resources[4].end	= OMAP34XX_OHCI_BASE + SZ_1K - 1;
--		usbhs_resources[5].start = INT_34XX_OHCI_IRQ;
- 		setup_ehci_io_mux(pdata->port_mode);
- 		setup_ohci_io_mux(pdata->port_mode);
- 	} else if (cpu_is_omap44xx()) {
--		usbhs_resources[0].start = OMAP44XX_UHH_CONFIG_BASE;
--		usbhs_resources[0].end = OMAP44XX_UHH_CONFIG_BASE + SZ_1K - 1;
--		usbhs_resources[1].start = OMAP44XX_USBTLL_BASE;
--		usbhs_resources[1].end = OMAP44XX_USBTLL_BASE + SZ_4K - 1;
--		usbhs_resources[2].start = OMAP44XX_HSUSB_EHCI_BASE;
--		usbhs_resources[2].end = OMAP44XX_HSUSB_EHCI_BASE + SZ_1K - 1;
--		usbhs_resources[3].start = OMAP44XX_IRQ_EHCI;
--		usbhs_resources[4].start = OMAP44XX_HSUSB_OHCI_BASE;
--		usbhs_resources[4].end = OMAP44XX_HSUSB_OHCI_BASE + SZ_1K - 1;
--		usbhs_resources[5].start = OMAP44XX_IRQ_OHCI;
- 		setup_4430ehci_io_mux(pdata->port_mode);
- 		setup_4430ohci_io_mux(pdata->port_mode);
- 	}
- 
--	if (platform_device_add_data(&usbhs_device,
--				&usbhs_data, sizeof(usbhs_data)) < 0) {
--		printk(KERN_ERR "USBHS platform_device_add_data failed\n");
--		goto init_end;
-+	oh[0] = omap_hwmod_lookup(USBHS_UHH_HWMODNAME);
-+	if (!oh[0]) {
-+		pr_err("Could not look up %s\n", USBHS_UHH_HWMODNAME);
-+		return;
-+	}
-+
-+	oh[1] = omap_hwmod_lookup(USBHS_OHCI_HWMODNAME);
-+	if (!oh[1]) {
-+		pr_err("Could not look up %s\n", USBHS_UHH_HWMODNAME);
-+		return;
- 	}
- 
--	if (platform_device_register(&usbhs_device) < 0)
--		printk(KERN_ERR "USBHS platform_device_register failed\n");
-+	oh[2] = omap_hwmod_lookup(USBHS_EHCI_HWMODNAME);
-+	if (!oh[2]) {
-+		pr_err("Could not look up %s\n", USBHS_TLL_HWMODNAME);
-+		return;
-+	}
- 
--init_end:
--	return;
-+	oh[3] = omap_hwmod_lookup(USBHS_TLL_HWMODNAME);
-+	if (!oh[3]) {
-+		pr_err("Could not look up %s\n", USBHS_TLL_HWMODNAME);
-+		return;
-+	}
-+
-+	od = omap_device_build_ss(OMAP_USBHS_DEVICE, bus_id, oh, 4,
-+				(void *)&usbhs_data, sizeof(usbhs_data),
-+				omap_uhhtll_latency,
-+				ARRAY_SIZE(omap_uhhtll_latency), false);
-+
-+	if (IS_ERR(od)) {
-+		pr_err("Could not build hwmod devices %s, %s\n",
-+			USBHS_UHH_HWMODNAME, USBHS_TLL_HWMODNAME);
-+		return;
-+	}
- }
- 
- #else
--- 
-1.7.0.4
+Isn't it possible for cpuidle to gain the same information via the idle
+callback which these notifiers are providing drivers/idle with?
 
+One of the problems I see with these notifiers is that it's not really
+possible to keep an eye on the number of things hooked into them - and
+in this path adding latency to the idle stuff could affect responsiveness.
+
+Also bear in mind that at the point where idle starts, the decision about
+what power state to idle in hasn't been decided, so nothing actually knows
+whether it will be powered down, so all in all, I'm not sure what you'd
+use these notifiers for.
