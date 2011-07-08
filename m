@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755317Ab1GHFJR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:09:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42516 "EHLO mx2.suse.de"
+	id S1752931Ab1GHFJj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:09:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42482 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754314Ab1GHFFZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:05:25 -0400
+	id S1754994Ab1GHFFP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:05:15 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:17:01 2011
-Message-Id: <20110708001701.494896424@clark.kroah.org>
+Message-Id: <20110708001701.209814034@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:17:02 -0700
+Date: Thu, 07 Jul 2011 17:16:59 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Miklos Szeredi <mszeredi@suse.cz>
-Subject: [090/107] fs: fix lock initialization
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [087/107] SUNRPC: Ensure the RPC client only quits on fatal signals
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,79 +25,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit a51cb91d81f8e6fc4e5e08b772cc3ceb13ac9d37 upstream.
+commit 5afa9133cfe67f1bfead6049a9640c9262a7101c upstream.
 
-locks_alloc_lock() assumed that the allocated struct file_lock is
-already initialized to zero members.  This is only true for the first
-allocation of the structure, after reuse some of the members will have
-random values.
+Fix a couple of instances where we were exiting the RPC client on
+arbitrary signals. We should only do so on fatal signals.
 
-This will for example result in passing random fl_start values to
-userspace in fuse for FL_FLOCK locks, which is an information leak at
-best.
-
-Fix by reinitializing those members which may be non-zero after freeing.
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/locks.c |   30 ++++++++++++++++++++----------
- 1 file changed, 20 insertions(+), 10 deletions(-)
+ net/sunrpc/auth_gss/auth_gss.c |    4 ++--
+ net/sunrpc/clnt.c              |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -160,10 +160,28 @@ EXPORT_SYMBOL_GPL(unlock_flocks);
+--- a/net/sunrpc/auth_gss/auth_gss.c
++++ b/net/sunrpc/auth_gss/auth_gss.c
+@@ -577,13 +577,13 @@ retry:
+ 	}
+ 	inode = &gss_msg->inode->vfs_inode;
+ 	for (;;) {
+-		prepare_to_wait(&gss_msg->waitqueue, &wait, TASK_INTERRUPTIBLE);
++		prepare_to_wait(&gss_msg->waitqueue, &wait, TASK_KILLABLE);
+ 		spin_lock(&inode->i_lock);
+ 		if (gss_msg->ctx != NULL || gss_msg->msg.errno < 0) {
+ 			break;
+ 		}
+ 		spin_unlock(&inode->i_lock);
+-		if (signalled()) {
++		if (fatal_signal_pending(current)) {
+ 			err = -ERESTARTSYS;
+ 			goto out_intr;
+ 		}
+--- a/net/sunrpc/clnt.c
++++ b/net/sunrpc/clnt.c
+@@ -1058,7 +1058,7 @@ call_allocate(struct rpc_task *task)
  
- static struct kmem_cache *filelock_cache __read_mostly;
+ 	dprintk("RPC: %5u rpc_buffer allocation failed\n", task->tk_pid);
  
-+static void locks_init_lock_always(struct file_lock *fl)
-+{
-+	fl->fl_next = NULL;
-+	fl->fl_fasync = NULL;
-+	fl->fl_owner = NULL;
-+	fl->fl_pid = 0;
-+	fl->fl_nspid = NULL;
-+	fl->fl_file = NULL;
-+	fl->fl_flags = 0;
-+	fl->fl_type = 0;
-+	fl->fl_start = fl->fl_end = 0;
-+}
-+
- /* Allocate an empty lock structure. */
- struct file_lock *locks_alloc_lock(void)
- {
--	return kmem_cache_alloc(filelock_cache, GFP_KERNEL);
-+	struct file_lock *fl = kmem_cache_alloc(filelock_cache, GFP_KERNEL);
-+
-+	if (fl)
-+		locks_init_lock_always(fl);
-+
-+	return fl;
- }
- EXPORT_SYMBOL_GPL(locks_alloc_lock);
- 
-@@ -200,17 +218,9 @@ void locks_init_lock(struct file_lock *f
- 	INIT_LIST_HEAD(&fl->fl_link);
- 	INIT_LIST_HEAD(&fl->fl_block);
- 	init_waitqueue_head(&fl->fl_wait);
--	fl->fl_next = NULL;
--	fl->fl_fasync = NULL;
--	fl->fl_owner = NULL;
--	fl->fl_pid = 0;
--	fl->fl_nspid = NULL;
--	fl->fl_file = NULL;
--	fl->fl_flags = 0;
--	fl->fl_type = 0;
--	fl->fl_start = fl->fl_end = 0;
- 	fl->fl_ops = NULL;
- 	fl->fl_lmops = NULL;
-+	locks_init_lock_always(fl);
- }
- 
- EXPORT_SYMBOL(locks_init_lock);
+-	if (RPC_IS_ASYNC(task) || !signalled()) {
++	if (RPC_IS_ASYNC(task) || !fatal_signal_pending(current)) {
+ 		task->tk_action = call_allocate;
+ 		rpc_delay(task, HZ>>4);
+ 		return;
 
 
