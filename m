@@ -1,75 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754669Ab1GHSp4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 14:45:56 -0400
-Received: from smtp03.bis6.us.blackberry.com ([74.82.85.3]:12518 "EHLO
-	smtp03.bis6.us.blackberry.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753548Ab1GHSpz (ORCPT
+	id S1754696Ab1GHSqj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 14:46:39 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:34699 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751818Ab1GHSqi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 14:45:55 -0400
-X-Greylist: delayed 593 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Jul 2011 14:45:55 EDT
-X-rim-org-msg-ref-id: 1652523982
-Message-ID: <1652523982-1310150159-cardhu_decombobulator_blackberry.rim.net-183695056-@b1.c19.bise6.blackberry>
-Reply-To: drosenberg@vsecurity.com
-X-Priority: Normal
-Sensitivity: Normal
-Importance: Normal
-Subject: Re: [Security] [PATCH] xtensa: prevent arbitrary read in ptrace
-To: "Andrew Morton" <akpm@linux-foundation.org>
-Cc: chris@zankel.net, security@kernel.org, linux-kernel@vger.kernel.org,
-        "Oleg Nesterov" <oleg@redhat.com>
-From: "Dan Rosenberg" <drosenberg@vsecurity.com>
-Date: Fri, 8 Jul 2011 18:35:56 +0000
-Content-Type: text/plain
-MIME-Version: 1.0
+	Fri, 8 Jul 2011 14:46:38 -0400
+From: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
+To: x86@kernel.org
+Cc: Naga Chumbalkar <nagananda.chumbalkar@hp.com>, mingo@elte.hu,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org, hpa@zytor.com
+Message-Id: <20110708184557.2734.61830.sendpatchset@nchumbalkar.americas.cpqcorp.net>
+Subject: [PATCH 1/2] x86: Format clean up for IOAPIC output
+Date: Fri,  8 Jul 2011 18:46:36 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p68Ik4rv001863
 
-Sorry for the top post and any email mangling (mobile).
+When IOAPIC data is displayed in "dmesg" with the help of the boot parameter
+"apic=debug" certain values are not formatted correctly wrt their size.
 
-I only used EIO to mirror the existing behavior in ptrace_getxregs(). EFAULT seems better.
+In the "dmesg" snippet below, note that the output for "max redirection entries",
+and "IO APIC version" which are each defined to be just 8-bits long are displayed
+as 2 bytes in length. Similarly, "Dst" under the "IRQ redirection table"
+should only be 8-bits long.
 
--Dan
+IO APIC #0......
+...
+...
+.... register #01: 00170020
+.......     : max redirection entries: 0017
+.......     : PRQ implemented: 0
+.......     : IO APIC version: 0020
+...
+...
+.... IRQ redirection table:
+ NR Dst Mask Trig IRR Pol Stat Dmod Deli Vect:
+ 00 000 1    0    0   0   0    0    0    00
+ 01 000 0    0    0   0   0    0    0    31
+ 02 000 0    0    0   0   0    0    0    30
+ 03 000 1    0    0   0   0    0    0    33
+...
+...
 
-------Original Message------
-From: Andrew Morton
-To: Dan Rosenberg
-Cc: chris@zankel.net
-Cc: security@kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: Oleg Nesterov
-Subject: Re: [Security] [PATCH] xtensa: prevent arbitrary read in ptrace
-Sent: Jul 8, 2011 2:27 PM
+Do some formatting clean up, so you will see output like below:
 
-On Thu, 07 Jul 2011 20:03:54 -0400
-Dan Rosenberg <drosenberg@vsecurity.com> wrote:
+IO APIC #0......
+...
+...
+.... register #01: 00170020
+.......     : max redirection entries: 17
+.......     : PRQ implemented: 0
+.......     : IO APIC version: 20
+...
+...
+.... IRQ redirection table:
+ NR Dst Mask Trig IRR Pol Stat Dmod Deli Vect:
+ 00 00  1    0    0   0   0    0    0    00
+ 01 00  0    0    0   0   0    0    0    31
+ 02 00  0    0    0   0   0    0    0    30
+ 03 00  1    0    0   0   0    0    0    33
+...
+...
 
-> Prevent an arbitrary kernel read. Check the user pointer with
-> access_ok() before copying data in.
-> 
-> Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-> Cc: stable@kernel.org
-> ---
->  arch/xtensa/kernel/ptrace.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/xtensa/kernel/ptrace.c b/arch/xtensa/kernel/ptrace.c
-> index c72c947..ddce75e 100644
-> --- a/arch/xtensa/kernel/ptrace.c
-> +++ b/arch/xtensa/kernel/ptrace.c
-> @@ -147,6 +147,9 @@ int ptrace_setxregs(struct task_struct *child, void __user *uregs)
->  	elf_xtregs_t *xtregs = uregs;
->  	int ret = 0;
->  
-> +	if (!access_ok(VERIFY_READ, uregs, sizeof(elf_xtregs_t)))
-> +		return -EIO;
+Signed-off-by: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
 
-This should be -EFAULT, methinks?
+---
+ arch/x86/kernel/apic/io_apic.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-> +
->  #if XTENSA_HAVE_COPROCESSORS
->  	/* Flush all coprocessors before we overwrite them. */
->  	coprocessor_flush_all(ti);ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 98c8d7e..ed4abaa 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1522,10 +1522,12 @@ __apicdebuginit(void) print_IO_APIC(void)
+ 	printk(KERN_DEBUG ".......    : LTS          : %X\n", reg_00.bits.LTS);
+ 
+ 	printk(KERN_DEBUG ".... register #01: %08X\n", *(int *)&reg_01);
+-	printk(KERN_DEBUG ".......     : max redirection entries: %04X\n", reg_01.bits.entries);
++	printk(KERN_DEBUG ".......     : max redirection entries: %02X\n",
++		reg_01.bits.entries);
+ 
+ 	printk(KERN_DEBUG ".......     : PRQ implemented: %X\n", reg_01.bits.PRQ);
+-	printk(KERN_DEBUG ".......     : IO APIC version: %04X\n", reg_01.bits.version);
++	printk(KERN_DEBUG ".......     : IO APIC version: %02X\n",
++		reg_01.bits.version);
+ 
+ 	/*
+ 	 * Some Intel chipsets with IO APIC VERSION of 0x1? don't have reg_02,
+@@ -1558,7 +1560,7 @@ __apicdebuginit(void) print_IO_APIC(void)
+ 
+ 		entry = ioapic_read_entry(apic, i);
+ 
+-		printk(KERN_DEBUG " %02x %03X ",
++		printk(KERN_DEBUG " %02x %02X  ",
+ 			i,
+ 			entry.dest
+ 		);
+-- 
+1.7.1
+
