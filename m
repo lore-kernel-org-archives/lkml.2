@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754353Ab1GIGBh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 02:01:37 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:37938 "EHLO
+	id S1754450Ab1GIGBq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 02:01:46 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:50054 "EHLO
 	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754211Ab1GIGBa (ORCPT
+	by vger.kernel.org with ESMTP id S1754352Ab1GIGBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 02:01:30 -0400
-X-Sasl-enc: 5rwY18TYviMsXhjhKzIDyZkGIYdEp+rpUbIZS81dhSPR 1310191289
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 16:01:10 2011
-Message-Id: <20110708230110.219445730@clark.kroah.org>
+	Sat, 9 Jul 2011 02:01:37 -0400
+X-Sasl-enc: wOY17TdqCu8QwcQIDFsT2N2k7GDveIfcCccg/gVy+Cah 1310191296
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 16:01:13 2011
+Message-Id: <20110708230112.957864304@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 08 Jul 2011 16:00:23 -0700
+Date: Fri, 08 Jul 2011 16:00:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Michal Kubecek <mkubecek@suse.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [07/35] PM: Free memory bitmaps if opening /dev/snapshot fails
+        Xufeng Zhang <xufeng.zhang@windriver.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [34/35] udp/recvmsg: Clear MSG_TRUNC flag when starting over for a new packet
 In-Reply-To: <20110708230122.GA18807@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,39 +29,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Kubecek <mkubecek@suse.cz>
 
-commit 8440f4b19494467883f8541b7aa28c7bbf6ac92b upstream.
+From: Xufeng Zhang <xufeng.zhang@windriver.com>
 
-When opening /dev/snapshot device, snapshot_open() creates memory
-bitmaps which are freed in snapshot_release(). But if any of the
-callbacks called by pm_notifier_call_chain() returns NOTIFY_BAD, open()
-fails, snapshot_release() is never called and bitmaps are not freed.
-Next attempt to open /dev/snapshot then triggers BUG_ON() check in
-create_basic_memory_bitmaps(). This happens e.g. when vmwatchdog module
-is active on s390x.
+[ Upstream commit 9cfaa8def1c795a512bc04f2aec333b03724ca2e ]
 
-Signed-off-by: Michal Kubecek <mkubecek@suse.cz>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Consider this scenario: When the size of the first received udp packet
+is bigger than the receive buffer, MSG_TRUNC bit is set in msg->msg_flags.
+However, if checksum error happens and this is a blocking socket, it will
+goto try_again loop to receive the next packet.  But if the size of the
+next udp packet is smaller than receive buffer, MSG_TRUNC flag should not
+be set, but because MSG_TRUNC bit is not cleared in msg->msg_flags before
+receive the next packet, MSG_TRUNC is still set, which is wrong.
+
+Fix this problem by clearing MSG_TRUNC flag when starting over for a
+new packet.
+
+Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- kernel/power/user.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ net/ipv4/udp.c |    3 +++
+ net/ipv6/udp.c |    3 +++
+ 2 files changed, 6 insertions(+)
 
---- a/kernel/power/user.c
-+++ b/kernel/power/user.c
-@@ -113,8 +113,10 @@ static int snapshot_open(struct inode *i
- 		if (error)
- 			pm_notifier_call_chain(PM_POST_RESTORE);
- 	}
--	if (error)
-+	if (error) {
-+		free_basic_memory_bitmaps();
- 		atomic_inc(&snapshot_device_available);
-+	}
- 	data->frozen = 0;
- 	data->ready = 0;
- 	data->platform_support = 0;
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -1203,6 +1203,9 @@ csum_copy_err:
+ 
+ 	if (noblock)
+ 		return -EAGAIN;
++
++	/* starting over for a new packet */
++	msg->msg_flags &= ~MSG_TRUNC;
+ 	goto try_again;
+ }
+ 
+--- a/net/ipv6/udp.c
++++ b/net/ipv6/udp.c
+@@ -443,6 +443,9 @@ csum_copy_err:
+ 
+ 	if (noblock)
+ 		return -EAGAIN;
++
++	/* starting over for a new packet */
++	msg->msg_flags &= ~MSG_TRUNC;
+ 	goto try_again;
+ }
+ 
 
 
