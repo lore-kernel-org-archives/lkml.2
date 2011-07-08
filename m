@@ -1,94 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752912Ab1GHRHO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 13:07:14 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:54535 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750808Ab1GHRHL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 13:07:11 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=Qz2A3Y/vC3yUTTHOFtLgDkMu1Rqr3kDsq7UmqfQKRvSrG/mSsjqHxhaXKfqu3CKXO
-	WWQ8vt22CWOmrTgPJJahg==
-Date: Fri, 8 Jul 2011 10:06:49 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-cc: Andrew Morton <akpm@linux-foundation.org>, greg@kroah.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 34/49] gma500: the GEM and GTT code is device
- independant
-In-Reply-To: <20110708093859.299958df@lxorguk.ukuu.org.uk>
-Message-ID: <alpine.LSU.2.00.1107080917430.1781@sister.anvils>
-References: <20110705141038.23872.55303.stgit@localhost.localdomain> <20110705144140.23872.86541.stgit@localhost.localdomain> <alpine.LSU.2.00.1107071742250.10362@sister.anvils> <20110708093859.299958df@lxorguk.ukuu.org.uk>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	id S1753707Ab1GHRH6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 13:07:58 -0400
+Received: from mga14.intel.com ([143.182.124.37]:14685 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752080Ab1GHRH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 13:07:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,500,1304319600"; 
+   d="scan'208";a="24520389"
+Message-ID: <4E17396D.1070001@linux.intel.com>
+Date: Fri, 08 Jul 2011 10:07:57 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: Vitaliy Ivanov <vitalivanov@gmail.com>
+CC: Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "trivial@kernel.org" <trivial@kernel.org>
+Subject: Re: [PATCH 4/4] futex: warning corrections
+References: <1309821688.4527.10.camel@vitaliy-Vostro-1400>	 <4E1494A8.7070109@linux.intel.com>	 <1309986669.27362.3.camel@vitaliy-Vostro-1400>	 <4E14E1C6.1010202@linux.intel.com>	 <CAGTPOqefJup5Nn0r3z+UYCh-dqPKz0cwDwL2znTRKzLuBSUtZQ@mail.gmail.com>	 <4E15F5BC.6050801@linux.intel.com> <1310137259.26209.65.camel@vivanov>
+In-Reply-To: <1310137259.26209.65.camel@vivanov>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Jul 2011, Alan Cox wrote:
-> > As example, below is the patch where I updated drm/i915 to be ready
-> > for the changeover.  They set __GFP_RECLAIMABLE on the mapping because
-> > they've got a way to discard unpinned object pages when memory is tight;
-> > and sometimes add in __GFP_NORETRY|__GFP_NOWARN when allocating.
-> > 
-> > I'm guessing you'd just want to use shmem_read_mapping_page() throughout,
-> > after initializing mapping with the appropriate flags (GFP_HIGHUSER_MOVABLE
-> > is fs/inode.c's default: maybe your pages aren't easily movable and you'd
-> > better say GFP_HIGHUSER, or maybe you have reason to need GFP_KERNEL).
+
+
+On 07/08/2011 08:00 AM, Vitaliy Ivanov wrote:
+> On Thu, 2011-07-07 at 11:06 -0700, Darren Hart wrote:
+>>
+>> On 07/07/2011 05:39 AM, Vitaliy Ivanov wrote:
+>>>>> From 8eeaa5a97697bcc606aea23d32028aea7b271a96 Mon Sep 17 00:00:00 2001
+>>>>> From: Vitaliy Ivanov <vitalivanov@gmail.com>
+>>>>> Date: Thu, 7 Jul 2011 00:05:05 +0300
+>>>>> Subject: [PATCH] futex: uninitialized warning corrections
+>>>>> MIME-Version: 1.0
+>>>>> Content-Type: text/plain; charset=UTF-8
+>>>>> Content-Transfer-Encoding: 8bit
+>>>>>
+>>>>> kernel/futex.c: In function ‘fixup_pi_state_owner.clone.17’:
+>>>>> kernel/futex.c:1582:6: warning: ‘curval’ may be used uninitialized in this function
+>>>>> kernel/futex.c: In function ‘handle_futex_death’:
+>>>>> kernel/futex.c:2486:6: warning: ‘nval’ may be used uninitialized in this function
+>>>>> kernel/futex.c: In function ‘do_futex’:
+>>>>> kernel/futex.c:863:11: warning: ‘curval’ may be used uninitialized in this function
+>>>>> kernel/futex.c:828:6: note: ‘curval’ was declared here
+>>>>> kernel/futex.c:898:5: warning: ‘oldval’ may be used uninitialized in this function
+>>>>> kernel/futex.c:890:6: note: ‘oldval’ was declared here
+>>>>>
+>>>>> Signed-off-by: Vitaliy Ivanov <vitalivanov@gmail.com>
+>>>>
+>>>> Please include a blurb in the commit message as to why you used
+>>>> uninitialized_var() rather than just assigning it. This will save people
+>>>> the time of wondering why, and me the time of nacking "it's simpler to
+>>>> just initialize to zero" patches :-)
+>>>>
+>>>> Acked-by: Darren Hart <dvhart@linux.intel.com>
+>>>
+>>> Darren,
+>>>
+>>> Thanks for your comments. I think the description is pretty obvious
+>>> here as I don't think any of these variables are affected by cmpxchg.
+>>
+>> Not so. Consider the following:
+>>
+>> 	u32 curval;
+>> 	if (cmpxchg_futex_value_locked(&curval, uaddr, uval, newval))
+>> 		ret = -EFAULT;
+>> 	else if (curval != uval)
+>> 		ret = -EINVAL;
+>>
+>> the cmpxchg here assigns curval to newval if *uaddr==uval or to *uaddr
+>> otherwise. This is where curval gets assigned so that it can then be
+>> read in the following if block. gcc didn't recognize this as an
+>> assignment and is why it complained about it being used uninitialized.
+>>
+>>
+>>> There is simple assignment at the end. Seems like compiler simply
+>>> doesn't follow all the return cases.
+>>
+>> No, the compiler complained about the test of the value, this doesn't
+>> have anything to do with the return cases.
 > 
-> I need the pages in the low 4GB ideally and have no way to release them
-> if they are pinned. For the usage pattern I have that's not a problem.
-
-Maybe you'll want to use GFP_KERNEL | GFP_DMA32.
-
+> Here is what we have:
 > 
-> At the moment the 4G isn't a problem either as you can't attach enough
-> memory to cause problems to any of these devices.
+> ------------
+> static int fixup_pi_state_owner(u32 __user *uaddr, struct futex_q *q,
+> 				struct task_struct *newowner)
+> {
+> u32 curval;
+> ...
+> retry:
+> 	if (get_futex_value_locked(&uval, uaddr))
+> 		goto handle_fault;
+> 
+> 	while (1) {
+> 		newval = (uval & FUTEX_OWNER_DIED) | newtid;
+> 
+> 		if (cmpxchg_futex_value_locked(&curval, uaddr, uval, newval))
+> 			goto handle_fault;
+> 		if (curval == uval)
+> 			break;
+> 		uval = curval;
+> 	}
+> ...
+> }
+> 
+> ------------
+> static int cmpxchg_futex_value_locked(u32 *curval, u32 __user *uaddr,
+> 				      u32 uval, u32 newval)
+> {
+> 	int ret;
+> 
+> 	pagefault_disable();
+> 	ret = futex_atomic_cmpxchg_inatomic(curval, uaddr, uval, newval);
+> 	pagefault_enable();
+> 
+> 	return ret;
+> }
+> ------------
+> 
+> And for x86:
+> 
+> static inline int futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
+> 						u32 oldval, u32 newval)
+> {
+> 	int ret = 0;
+> 
+> #if defined(CONFIG_X86_32) && !defined(CONFIG_X86_BSWAP)
+> 	/* Real i386 machines have no cmpxchg instruction */
+> 	if (boot_cpu_data.x86 == 3)
+> 		return -ENOSYS;
+> #endif
+> 
+> 	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(u32)))
+> 		return -EFAULT;
+> 
+> 	asm volatile("1:\t" LOCK_PREFIX "cmpxchgl %4, %2\n"
+> 		     "2:\t.section .fixup, \"ax\"\n"
+> 		     "3:\tmov     %3, %0\n"
+> 		     "\tjmp     2b\n"
+> 		     "\t.previous\n"
+> 		     _ASM_EXTABLE(1b, 3b)
+> 		     : "+r" (ret), "=a" (oldval), "+m" (*uaddr)
+> 		     : "i" (-EFAULT), "r" (newval), "1" (oldval)
+> 		     : "memory"
+> 	);
+> 
+> 	*uval = oldval;     <------------- uval is being changed here only. it's not modified by asm cmpxchgl.
+> 	return ret;
+> }
 > 
 > 
-> What I don't entirely understand from your change is what stops another
-> user task with the shmemfs file handle open from doing something else
-> which changes the mapping flags, or is it guaranteed that only the
-> mapping owner gets to play ?
+> Am I missing something?
 
-My changes (which were directed to eliminating shmem_readpage, which
-complicates shmem.c somewhat) haven't made any difference there: except
-that, like you, I'm wary of letting people mess with gfp flags all over,
-so preferred drm/i915 to set the right flags on the mapping initially,
-then add in the __GFP_NORETRY | __GFP_NOWARN in the one place needed,
-instead of using the _gfp()-modifying variant everywhere.
+Nope, I was incorrect - I didn't realize that
+futex_atomic_cmpxchg_inatomic didn't set uval on EFAULT. gcc is not
+detecting that curval is only read if futex_atomic_cmpxchg_inatomic
+succeeds, so I believe the uninitialized_var() fix is correct. This is
+one of the reasons why we need to include the reasoning in the commit
+log - specifically that:
 
-I don't think a user task has any interface to change the mapping flags,
-does it?  But Linus freaked out a little 18 months ago when he noticed
-drm/i915 fiddling with mapping flags via mapping_set_gfp_mask() (whose
-declaration comments "This is non-atomic.  Only to be used before the
-mapping is activated."), so gave them read_cache_page_gfp() instead.
+"futex_atomic_cmpxchg_inatomic only assigns curval on success, but on
+failure curval is not read, so instruct gcc to ignore the uninitialized
+warning."
 
-I'd prefer we didn't have to support it, but i915 does have good use
-for it: so long as they only play with transient flags such as NORETRY
-(which will affect the allocation being made by the caller, but not
-affect mapping itself or concurrent allocations to it from elsewhere).
-
-But your question does make me worry about when a page is brought back
-from swap.  The swapin readahead code is liable to read in several pages
-with the same gfp mask as the page it's actually needing; but if adjacent
-swap locations have been used for pages of objects with different gfp
-needs, that could cause a problem.  (NUMA mempolicy gets ignored by
-swapin in the same way.)
-
-Your <4GB pages won't get swapped out while they're pinned.  But can
-it happen that they'd be unpinned, swapped out, swapped back in >4GB
-pages, then cause trouble for you when needed again?
-
-I didn't care very deeply about the difference between __GFP_MOVABLE
-and __GFP_RECLAIMABLE in the i915 case, but your 4GB requirement sounds
-more important to get right (though you do say "ideally" above: if it's
-just a matter of slowdown, maybe we can ignore it for now).
-
-Hugh
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
