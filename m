@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754457Ab1GHFDV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:03:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42123 "EHLO mx2.suse.de"
+	id S1754326Ab1GHFDJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:03:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42056 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754406Ab1GHFDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:03:16 -0400
+	id S1754256Ab1GHFDF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:03:05 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:57 2011
-Message-Id: <20110708001657.865460111@clark.kroah.org>
+Message-Id: <20110708001657.566525317@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:16:25 -0700
+Date: Thu, 07 Jul 2011 17:16:22 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Rafael Aquini <aquini@linux.com>, Russ Anderson <rja@sgi.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Christoph Lameter <cl@linux.com>
-Subject: [053/107] mm: fix negative commitlimit when gigantic hugepages are allocated
+        Robert Richter <robert.richter@amd.com>
+Subject: [050/107] oprofile, x86: Fix race in nmi handler while starting counters
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,72 +25,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rafael Aquini <aquini@linux.com>
+From: Robert Richter <robert.richter@amd.com>
 
-commit b0320c7b7d1ac1bd5c2d9dff3258524ab39bad32 upstream.
+commit 8fe7e94eb71430cf63a742f3c19739d82a662758 upstream.
 
-When 1GB hugepages are allocated on a system, free(1) reports less
-available memory than what really is installed in the box.  Also, if the
-total size of hugepages allocated on a system is over half of the total
-memory size, CommitLimit becomes a negative number.
+In some rare cases, nmis are generated immediately after the nmi
+handler of the cpu was started. This causes the counter not to be
+enabled. Before enabling the nmi handlers we need to set variable
+ctr_running first and make sure its value is written to memory.
 
-The problem is that gigantic hugepages (order > MAX_ORDER) can only be
-allocated at boot with bootmem, thus its frames are not accounted to
-'totalram_pages'.  However, they are accounted to hugetlb_total_pages()
+Also, the patch makes all existing barriers a memory barrier instead
+of a compiler barrier only.
 
-What happens to turn CommitLimit into a negative number is this
-calculation, in fs/proc/meminfo.c:
-
-        allowed = ((totalram_pages - hugetlb_total_pages())
-                * sysctl_overcommit_ratio / 100) + total_swap_pages;
-
-A similar calculation occurs in __vm_enough_memory() in mm/mmap.c.
-
-Also, every vm statistic which depends on 'totalram_pages' will render
-confusing values, as if system were 'missing' some part of its memory.
-
-Impact of this bug:
-
-When gigantic hugepages are allocated and sysctl_overcommit_memory ==
-OVERCOMMIT_NEVER.  In a such situation, __vm_enough_memory() goes through
-the mentioned 'allowed' calculation and might end up mistakenly returning
--ENOMEM, thus forcing the system to start reclaiming pages earlier than it
-would be ususal, and this could cause detrimental impact to overall
-system's performance, depending on the workload.
-
-Besides the aforementioned scenario, I can only think of this causing
-annoyances with memory reports from /proc/meminfo and free(1).
-
-[akpm@linux-foundation.org: standardize comment layout]
-Reported-by: Russ Anderson <rja@sgi.com>
-Signed-off-by: Rafael Aquini <aquini@linux.com>
-Acked-by: Russ Anderson <rja@sgi.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Christoph Lameter <cl@linux.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/hugetlb.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ arch/x86/oprofile/nmi_int.c |   14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -1111,6 +1111,14 @@ static void __init gather_bootmem_preall
- 		WARN_ON(page_count(page) != 1);
- 		prep_compound_huge_page(page, h->order);
- 		prep_new_huge_page(h, page, page_to_nid(page));
-+		/*
-+		 * If we had gigantic hugepages allocated at boot time, we need
-+		 * to restore the 'stolen' pages to totalram_pages in order to
-+		 * fix confusing memory reports from free(1) and another
-+		 * side-effects, like CommitLimit going negative.
-+		 */
-+		if (h->order > (MAX_ORDER - 1))
-+			totalram_pages += 1 << h->order;
- 	}
+--- a/arch/x86/oprofile/nmi_int.c
++++ b/arch/x86/oprofile/nmi_int.c
+@@ -112,8 +112,10 @@ static void nmi_cpu_start(void *dummy)
+ static int nmi_start(void)
+ {
+ 	get_online_cpus();
+-	on_each_cpu(nmi_cpu_start, NULL, 1);
+ 	ctr_running = 1;
++	/* make ctr_running visible to the nmi handler: */
++	smp_mb();
++	on_each_cpu(nmi_cpu_start, NULL, 1);
+ 	put_online_cpus();
+ 	return 0;
  }
+@@ -504,15 +506,18 @@ static int nmi_setup(void)
  
+ 	nmi_enabled = 0;
+ 	ctr_running = 0;
+-	barrier();
++	/* make variables visible to the nmi handler: */
++	smp_mb();
+ 	err = register_die_notifier(&profile_exceptions_nb);
+ 	if (err)
+ 		goto fail;
+ 
+ 	get_online_cpus();
+ 	register_cpu_notifier(&oprofile_cpu_nb);
+-	on_each_cpu(nmi_cpu_setup, NULL, 1);
+ 	nmi_enabled = 1;
++	/* make nmi_enabled visible to the nmi handler: */
++	smp_mb();
++	on_each_cpu(nmi_cpu_setup, NULL, 1);
+ 	put_online_cpus();
+ 
+ 	return 0;
+@@ -531,7 +536,8 @@ static void nmi_shutdown(void)
+ 	nmi_enabled = 0;
+ 	ctr_running = 0;
+ 	put_online_cpus();
+-	barrier();
++	/* make variables visible to the nmi handler: */
++	smp_mb();
+ 	unregister_die_notifier(&profile_exceptions_nb);
+ 	msrs = &get_cpu_var(cpu_msrs);
+ 	model->shutdown(msrs);
 
 
