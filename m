@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752196Ab1GIFyD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 01:54:03 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:56101 "EHLO
+	id S1752949Ab1GIFzA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 01:55:00 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:35654 "EHLO
 	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751245Ab1GIFyB (ORCPT
+	by vger.kernel.org with ESMTP id S1753351Ab1GIFyr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 01:54:01 -0400
-X-Sasl-enc: JruedwahsuMMbNppECB9chYLzxqXrL+d2lUWlZB2nIHv 1310190840
+	Sat, 9 Jul 2011 01:54:47 -0400
+X-Sasl-enc: iY9KbcrvwCvHXY/N1qsc/xNOzKCVkXNVu5/d/0Hi2esc 1310190885
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 15:51:20 2011
-Message-Id: <20110708225119.917971494@clark.kroah.org>
+Message-Id: <20110708225120.665270164@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 08 Jul 2011 15:50:00 -0700
+Date: Fri, 08 Jul 2011 15:50:08 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [11/35] [media] uvcvideo: Remove buffers from the queues when freeing
+        Arnd Bergmann <arnd@arndb.de>, Ralf Baechle <ralf@linux-mips.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [19/35] 6pack,mkiss: fix lock inconsistency
 In-Reply-To: <20110708225343.GA14402@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,43 +28,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
+From: Arnd Bergmann <arnd@arndb.de>
 
-commit 8ca2c80b170c47eeb55f0c2a0f2b8edf85f35d49 upstream.
+commit 6e4e2f811bade330126d4029c88c831784a7efd9 upstream.
 
-When freeing memory for the video buffers also remove them from the
-irq & main queues.
+Lockdep found a locking inconsistency in the mkiss_close function:
 
-This fixes an oops when doing the following:
+> kernel: [ INFO: inconsistent lock state ]
+> kernel: 2.6.39.1 #3
+> kernel: ---------------------------------
+> kernel: inconsistent {IN-SOFTIRQ-R} -> {SOFTIRQ-ON-W} usage.
+> kernel: ax25ipd/2813 [HC0[0]:SC0[0]:HE1:SE1] takes:
+> kernel: (disc_data_lock){+++?.-}, at: [<ffffffffa018552b>] mkiss_close+0x1b/0x90 [mkiss]
+> kernel: {IN-SOFTIRQ-R} state was registered at:
 
-open ("/dev/video", ..)
-VIDIOC_REQBUFS
-VIDIOC_QBUF
-VIDIOC_REQBUFS
-close ()
+The message hints that disc_data_lock is aquired with softirqs disabled,
+but does not itself disable softirqs, which can in rare circumstances
+lead to a deadlock.
+The same problem is present in the 6pack driver, this patch fixes both
+by using write_lock_bh instead of write_lock.
 
-As the second VIDIOC_REQBUFS will cause the list entries of the buffers
-to be cleared while they still hang around on the main and irc queues
-
-Signed-off-by: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Reported-by: Bernard F6BVP <f6bvp@free.fr>
+Tested-by: Bernard F6BVP <f6bvp@free.fr>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Ralf Baechle<ralf@linux-mips.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/video/uvc/uvc_queue.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/hamradio/6pack.c |    4 ++--
+ drivers/net/hamradio/mkiss.c |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/media/video/uvc/uvc_queue.c
-+++ b/drivers/media/video/uvc/uvc_queue.c
-@@ -165,6 +165,8 @@ int uvc_free_buffers(struct uvc_video_qu
- 	}
+--- a/drivers/net/hamradio/6pack.c
++++ b/drivers/net/hamradio/6pack.c
+@@ -690,10 +690,10 @@ static void sixpack_close(struct tty_str
+ {
+ 	struct sixpack *sp;
  
- 	if (queue->count) {
-+		uvc_queue_cancel(queue, 0);
-+		INIT_LIST_HEAD(&queue->mainqueue);
- 		vfree(queue->mem);
- 		queue->count = 0;
- 	}
+-	write_lock(&disc_data_lock);
++	write_lock_bh(&disc_data_lock);
+ 	sp = tty->disc_data;
+ 	tty->disc_data = NULL;
+-	write_unlock(&disc_data_lock);
++	write_unlock_bh(&disc_data_lock);
+ 	if (!sp)
+ 		return;
+ 
+--- a/drivers/net/hamradio/mkiss.c
++++ b/drivers/net/hamradio/mkiss.c
+@@ -811,10 +811,10 @@ static void mkiss_close(struct tty_struc
+ {
+ 	struct mkiss *ax;
+ 
+-	write_lock(&disc_data_lock);
++	write_lock_bh(&disc_data_lock);
+ 	ax = tty->disc_data;
+ 	tty->disc_data = NULL;
+-	write_unlock(&disc_data_lock);
++	write_unlock_bh(&disc_data_lock);
+ 
+ 	if (!ax)
+ 		return;
 
 
