@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311Ab1GIF6v (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 01:58:51 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:42990 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751815Ab1GIFya (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752909Ab1GIFya (ORCPT <rfc822;w@1wt.eu>);
 	Sat, 9 Jul 2011 01:54:30 -0400
-X-Sasl-enc: fOUBtYqZVxx25tfD1r5TmDARdDc0jiVGthTuvdS07g/B 1310190869
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 15:51:21 2011
-Message-Id: <20110708225121.804649847@clark.kroah.org>
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:51425 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751815Ab1GIFyC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Jul 2011 01:54:02 -0400
+X-Sasl-enc: wJMvTyuhTA0HVPVPop7H2OUhRIl6zB2XKDGjBnv9iFHz 1310190841
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 15:51:19 2011
+Message-Id: <20110708225119.034145821@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 08 Jul 2011 15:50:20 -0700
+Date: Fri, 08 Jul 2011 15:49:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [31/35] af_packet: prevent information leak
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>
+Subject: [02/35] migrate: dont account swapcache as shmem
 In-Reply-To: <20110708225343.GA14402@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,60 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+commit 99a15e21d96f6857dafab1e5167e5e8183215c9c upstream.
 
-[ Upstream commit 13fcb7bd322164c67926ffe272846d4860196dc6 ]
+swapcache will reach the below code path in migrate_page_move_mapping,
+and swapcache is accounted as NR_FILE_PAGES but it's not accounted as
+NR_SHMEM.
 
-In 2.6.27, commit 393e52e33c6c2 (packet: deliver VLAN TCI to userspace)
-added a small information leak.
+Hugh pointed out we must use PageSwapCache instead of comparing
+mapping to &swapper_space, to avoid build failure with CONFIG_SWAP=n.
 
-Add padding field and make sure its zeroed before copy to user.
-
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Patrick McHardy <kaber@trash.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- include/linux/if_packet.h |    2 ++
- net/packet/af_packet.c    |    2 ++
- 2 files changed, 4 insertions(+)
 
---- a/include/linux/if_packet.h
-+++ b/include/linux/if_packet.h
-@@ -63,6 +63,7 @@ struct tpacket_auxdata
- 	__u16		tp_mac;
- 	__u16		tp_net;
- 	__u16		tp_vlan_tci;
-+	__u16		tp_padding;
- };
- 
- /* Rx ring - header status */
-@@ -103,6 +104,7 @@ struct tpacket2_hdr
- 	__u32		tp_sec;
- 	__u32		tp_nsec;
- 	__u16		tp_vlan_tci;
-+	__u16		tp_padding;
- };
- 
- #define TPACKET2_HDRLEN		(TPACKET_ALIGN(sizeof(struct tpacket2_hdr)) + sizeof(struct sockaddr_ll))
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -767,6 +767,7 @@ static int tpacket_rcv(struct sk_buff *s
- 		h.h2->tp_sec = ts.tv_sec;
- 		h.h2->tp_nsec = ts.tv_nsec;
- 		h.h2->tp_vlan_tci = skb->vlan_tci;
-+		h.h2->tp_padding = 0;
- 		hdrlen = sizeof(*h.h2);
- 		break;
- 	default:
-@@ -1499,6 +1500,7 @@ static int packet_recvmsg(struct kiocb *
- 		aux.tp_net = skb_network_offset(skb);
- 		aux.tp_vlan_tci = skb->vlan_tci;
- 
-+		aux.tp_padding = 0;
- 		put_cmsg(msg, SOL_PACKET, PACKET_AUXDATA, sizeof(aux), &aux);
+---
+ mm/migrate.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -314,7 +314,7 @@ static int migrate_page_move_mapping(str
+ 	 */
+ 	__dec_zone_page_state(page, NR_FILE_PAGES);
+ 	__inc_zone_page_state(newpage, NR_FILE_PAGES);
+-	if (PageSwapBacked(page)) {
++	if (!PageSwapCache(page) && PageSwapBacked(page)) {
+ 		__dec_zone_page_state(page, NR_SHMEM);
+ 		__inc_zone_page_state(newpage, NR_SHMEM);
  	}
- 
 
 
