@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173Ab1GHKOT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 06:14:19 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:44045 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752799Ab1GHKOQ convert rfc822-to-8bit (ORCPT
+	id S1753274Ab1GHKQZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 06:16:25 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:38897 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753097Ab1GHKQW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 06:14:16 -0400
-From: "Raju, Sundaram" <sundaram@ti.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Dan <dan.j.williams@intel.com>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 8 Jul 2011 15:44:02 +0530
-Subject: RE: [RFC] dmaengine: Moving TI SDMA driver to dmaengine - design
-	plan
-Thread-Topic: [RFC] dmaengine: Moving TI SDMA driver to dmaengine - design
-	plan
-Thread-Index: Acw9Vmh9DCmbATfuQJinpPhzmPgqoQAAK63A
-Message-ID: <E0D41E29EB0DAC4E9F3FF173962E9E94030259CDC4@dbde02.ent.ti.com>
-References: <E0D41E29EB0DAC4E9F3FF173962E9E94030259CD17@dbde02.ent.ti.com>
- <20110708100410.GA4957@n2100.arm.linux.org.uk>
-In-Reply-To: <20110708100410.GA4957@n2100.arm.linux.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 8 Jul 2011 06:16:22 -0400
 MIME-Version: 1.0
+In-Reply-To: <201107071848.50411.richard@nod.at>
+References: <1310056668.3528.51.camel@vivanov>
+	<201107071848.50411.richard@nod.at>
+Date: Fri, 8 Jul 2011 13:16:20 +0300
+Message-ID: <CAGTPOqfT=L4s8-db58mCRXQFvuYOVwNsNDfc4YuRaO7azpZa4A@mail.gmail.com>
+Subject: Re: [PATCH 3/3] uml: os-Linux/main.c memory leak fix
+From: Vitaliy Ivanov <vitalivanov@gmail.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: Jeff Dike <jdike@addtoit.com>, user-mode-linux-devel@lists.sourceforge.net,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Russell King - ARM Linux [mailto:linux@arm.linux.org.uk]
-> Sent: Friday, July 08, 2011 3:34 PM
-> To: Raju, Sundaram
-> Cc: linux-arm-kernel@lists.infradead.org; linux-omap@vger.kernel.org; Dan;
-> Shilimkar, Santosh; linux-kernel@vger.kernel.org
-> Subject: Re: [RFC] dmaengine: Moving TI SDMA driver to dmaengine - design
-> plan
-> 
-> On Fri, Jul 08, 2011 at 01:52:17PM +0530, Raju, Sundaram wrote:
-> > I am planning to move TI SDMA driver in OMAP tree
-> > into the dmaengine framework.
-> >
-> > The first immediate issue of concern I noticed is the
-> > huge number of client drivers that use the existing SDMA driver.
-> > More than 15 client drivers are using the current SDMA driver.
-> >
-> > Moving the SDMA driver along with all of these client drivers at a
-> > single stretch seems a humungous task.
-> > I noticed a model in the existing DMA drivers in dmaengine
-> > framework that will over come this issue.
-> 
-> It _is_ sane to build a dmaengine driver on top of the existing SoC
-> private API, then convert the drivers to DMA engine, and then cleanup
-> the resulting DMA engine driver.
-
-Yes, that is what I thought. Thanks.
-
-> 
-> What we must make sure though is that the DMA engine slave API (which
-> isn't well documented) is correctly implemented before drivers are
-> converted over to use the DMA engine support code, otherwise we may
-> end up with lots of drivers that require re-fixing several times over.
+On Thu, Jul 7, 2011 at 7:48 PM, Richard Weinberger <richard@nod.at> wrote:
+> Am Donnerstag 07 Juli 2011, 18:37:48 schrieb Vitaliy Ivanov:
+>> >From 6db3c87f57e3e61d968da79f01fb21ba17fd5bc0 Mon Sep 17 00:00:00 2001
+>>
+>> From: Vitaliy Ivanov <vitalivanov@gmail.com>
+>> Date: Thu, 7 Jul 2011 19:29:06 +0300
+>> Subject: [PATCH 3/3] uml: os-Linux/main.c memory leak fix
+>>
+>> We should cleanup memory even though 'putenv' fails.
+>>
+>> Signed-off-by: Vitaliy Ivanov <vitalivanov@gmail.com>
+>> ---
+>>  arch/um/os-Linux/main.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/arch/um/os-Linux/main.c b/arch/um/os-Linux/main.c
+>> index fb2a97a..67fe012 100644
+>> --- a/arch/um/os-Linux/main.c
+>> +++ b/arch/um/os-Linux/main.c
+>> @@ -107,8 +107,8 @@ static void setup_env_path(void)
+>>       snprintf(new_path, path_len, "PATH=%s" UML_LIB_PATH, old_path);
+>>       if (putenv(new_path)) {
+>>               perror("couldn't putenv to set a new PATH");
+>> -             free(new_path);
+>>       }
+>> +     free(new_path);
 >
+> Uhhh, this will kill the PATH variable.
+> putenv() does not copy the string...
 
-Very true! Agreed!
-I will send over the patches for review once I am done with testing.
+That's actually depends on the version of glibc that you use. But yes,
+agree, my fault. Please drop this one.
+I hope I'm not in your shit-list already.:)
 
-Regards,
-Sundaram
+BTW, you said that you will share your git tree on kernel.org, is
+there any news? I'm tracking what patches are accepted not to resend
+them again.
+
+Thanks,
+Vitaliy
