@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754290Ab1GHFDE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:03:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42015 "EHLO mx2.suse.de"
+	id S1754357Ab1GHFPY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:15:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42037 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754245Ab1GHFC6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:02:58 -0400
+	id S1754266Ab1GHFDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:03:02 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:57 2011
-Message-Id: <20110708001657.366461976@clark.kroah.org>
+Message-Id: <20110708001657.465581186@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:16:20 -0700
+Date: Thu, 07 Jul 2011 17:16:21 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Rajkumar Manoharan <rmanohar@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [048/107] ath9k: Fix suspend/resume when no interface is UP
+        Kees Cook <kees.cook@canonical.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [049/107] x86, suspend: Restore MISC_ENABLE MSR in realmode wakeup
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,36 +26,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+From: Kees Cook <kees.cook@canonical.com>
 
-commit c31eb8e926835582cd186b33a7a864880a4c0c79 upstream.
+commit 7a3136666bc0f0419f7aaa7b1fabb4b0e0a7fb76 upstream.
 
-When no interface has been brought up, the chip's power
-state continued as AWAKE. So during resume, the chip never
-been powered up.
+Some BIOSes will reset the Intel MISC_ENABLE MSR (specifically the
+XD_DISABLE bit) when resuming from S3, which can interact poorly with
+ebba638ae723d8a8fc2f7abce5ec18b688b791d7. In 32bit PAE mode, this can
+lead to a fault when EFER is restored by the kernel wakeup routines,
+due to it setting the NX bit for a CPU that (thanks to the BIOS reset)
+now incorrectly thinks it lacks the NX feature. (64bit is not affected
+because it uses a common CPU bring-up that specifically handles the
+XD_DISABLE bit.)
 
-Signed-off-by: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+The need for MISC_ENABLE being restored so early is specific to the S3
+resume path. Normally, MISC_ENABLE is saved in save_processor_state(),
+but this happens after the resume header is created, so just reproduce
+the logic here. (acpi_suspend_lowlevel() creates the header, calls
+do_suspend_lowlevel, which calls save_processor_state(), so the saved
+processor context isn't available during resume header creation.)
+
+[ hpa: Consider for stable if OK in mainline ]
+
+Signed-off-by: Kees Cook <kees.cook@canonical.com>
+Link: http://lkml.kernel.org/r/20110707011034.GA8523@outflux.net
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/pci.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/x86/kernel/acpi/realmode/wakeup.S |   14 ++++++++++++++
+ arch/x86/kernel/acpi/realmode/wakeup.h |    6 ++++++
+ arch/x86/kernel/acpi/sleep.c           |    6 ++++++
+ 3 files changed, 26 insertions(+)
 
---- a/drivers/net/wireless/ath/ath9k/pci.c
-+++ b/drivers/net/wireless/ath/ath9k/pci.c
-@@ -278,6 +278,12 @@ static int ath_pci_suspend(struct device
+--- a/arch/x86/kernel/acpi/realmode/wakeup.S
++++ b/arch/x86/kernel/acpi/realmode/wakeup.S
+@@ -28,6 +28,8 @@ pmode_cr3:	.long	0	/* Saved %cr3 */
+ pmode_cr4:	.long	0	/* Saved %cr4 */
+ pmode_efer:	.quad	0	/* Saved EFER */
+ pmode_gdt:	.quad	0
++pmode_misc_en:	.quad	0	/* Saved MISC_ENABLE MSR */
++pmode_behavior:	.long	0	/* Wakeup behavior flags */
+ realmode_flags:	.long	0
+ real_magic:	.long	0
+ trampoline_segment:	.word 0
+@@ -91,6 +93,18 @@ wakeup_code:
+ 	/* Call the C code */
+ 	calll	main
  
- 	ath9k_hw_set_gpio(sc->sc_ah, sc->sc_ah->led_pin, 1);
- 
-+	/* The device has to be moved to FULLSLEEP forcibly.
-+	 * Otherwise the chip never moved to full sleep,
-+	 * when no interface is up.
-+	 */
-+	ath9k_hw_setpower(sc->sc_ah, ATH9K_PM_FULL_SLEEP);
++	/* Restore MISC_ENABLE before entering protected mode, in case
++	   BIOS decided to clear XD_DISABLE during S3. */
++	movl	pmode_behavior, %eax
++	btl	$WAKEUP_BEHAVIOR_RESTORE_MISC_ENABLE, %eax
++	jnc	1f
 +
- 	return 0;
- }
++	movl	pmode_misc_en, %eax
++	movl	pmode_misc_en + 4, %edx
++	movl	$MSR_IA32_MISC_ENABLE, %ecx
++	wrmsr
++1:
++
+ 	/* Do any other stuff... */
+ 
+ #ifndef CONFIG_64BIT
+--- a/arch/x86/kernel/acpi/realmode/wakeup.h
++++ b/arch/x86/kernel/acpi/realmode/wakeup.h
+@@ -21,6 +21,9 @@ struct wakeup_header {
+ 	u32 pmode_efer_low;	/* Protected mode EFER */
+ 	u32 pmode_efer_high;
+ 	u64 pmode_gdt;
++	u32 pmode_misc_en_low;	/* Protected mode MISC_ENABLE */
++	u32 pmode_misc_en_high;
++	u32 pmode_behavior;	/* Wakeup routine behavior flags */
+ 	u32 realmode_flags;
+ 	u32 real_magic;
+ 	u16 trampoline_segment;	/* segment with trampoline code, 64-bit only */
+@@ -39,4 +42,7 @@ extern struct wakeup_header wakeup_heade
+ #define WAKEUP_HEADER_SIGNATURE 0x51ee1111
+ #define WAKEUP_END_SIGNATURE	0x65a22c82
+ 
++/* Wakeup behavior bits */
++#define WAKEUP_BEHAVIOR_RESTORE_MISC_ENABLE     0
++
+ #endif /* ARCH_X86_KERNEL_ACPI_RM_WAKEUP_H */
+--- a/arch/x86/kernel/acpi/sleep.c
++++ b/arch/x86/kernel/acpi/sleep.c
+@@ -77,6 +77,12 @@ int acpi_suspend_lowlevel(void)
+ 
+ 	header->pmode_cr0 = read_cr0();
+ 	header->pmode_cr4 = read_cr4_safe();
++	header->pmode_behavior = 0;
++	if (!rdmsr_safe(MSR_IA32_MISC_ENABLE,
++			&header->pmode_misc_en_low,
++			&header->pmode_misc_en_high))
++		header->pmode_behavior |=
++			(1 << WAKEUP_BEHAVIOR_RESTORE_MISC_ENABLE);
+ 	header->realmode_flags = acpi_realmode_flags;
+ 	header->real_magic = 0x12345678;
  
 
 
