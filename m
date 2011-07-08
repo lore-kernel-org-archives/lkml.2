@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293Ab1GHGAS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 02:00:18 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:33756 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751410Ab1GHGAQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 02:00:16 -0400
-From: Tommy Lin <tommy.lin.1101@gmail.com>
-To: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        Anton Vorontsov <avorontsov@mvista.com>
-Cc: linux-kernel@vger.kernel.org, Tommy Lin <tommy.lin@caviumnetworks.com>
-Subject: [PATCH 2/2] arch: arm: CNS3xxx select the correct CPU type CPU_V6K
-Date: Fri,  8 Jul 2011 14:00:06 +0800
-Message-Id: <1310104806-12984-1-git-send-email-tommy.lin@caviumnetworks.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1753519Ab1GHGNk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 02:13:40 -0400
+Received: from home.keithp.com ([63.227.221.253]:38233 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752485Ab1GHGNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 02:13:39 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Daniel J Blueman <daniel.blueman@gmail.com>,
+        Eric Anholt <eric@anholt.net>, Dave Airlie <airlied@redhat.com>
+Subject: Re: [026/107] drm/i915: Fix gen6 (SNB) missed BLT ring interrupts.
+In-Reply-To: <20110708001655.280182108@clark.kroah.org>
+References: <20110708001655.280182108@clark.kroah.org>
+User-Agent: Notmuch/0.5-202-g6ae4e7d (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Thu, 07 Jul 2011 23:13:33 -0700
+Message-ID: <yun4o2xti42.fsf@aiko.keithp.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ARM11        -> CPU_V6
-ARM11 MPCore -> CPU_V6K
-CNS3xxx has ARM11 MPCore CPUs (dual core), but initially select the same single
-core CPU type. To select MPCore watchdog support, this patch correts the CPU
-type from CPU_V6 to CPU_V6K.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Tommy Lin <tommy.lin@caviumnetworks.com>
----
- arch/arm/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On Thu, 07 Jul 2011 17:15:58 -0700, Greg KH <gregkh@suse.de> wrote:
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index c148326..89eaab7 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -321,7 +321,7 @@ config ARCH_CLPS711X
- 
- config ARCH_CNS3XXX
- 	bool "Cavium Networks CNS3XXX family"
--	select CPU_V6
-+	select CPU_V6K
- 	select GENERIC_CLOCKEVENTS
- 	select ARM_GIC
- 	select MIGHT_HAVE_PCI
--- 
-1.7.6
+> 2.6.39-stable review patch.  If anyone has any objections, please let
+> us know.
 
+Note that there's a follow-on patch to this which fixes similar hangs
+with the BSD ring:
+
+ec6a890dfed7dd245beba5e5bcdfcffbd934c284
+
+    drm/i915: Apply HWSTAM workaround for BSD ring on SandyBridge
+=20=20=20=20
+    ...we need to apply exactly the same workaround for missing interrupts
+    from BSD as for the BLT ring, apparently.
+=20=20=20=20
+    See also commit 498e720b96379d8ee9c294950a01534a73defcf3
+    (drm/i915: Fix gen6 (SNB) missed BLT ring interrupts).
+=20=20=20=20
+    Reported-and-tested-by: nkalkhof@web.de
+    Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=3D38529
+    Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+    Signed-off-by: Keith Packard <keithp@keithp.com>
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iD8DBQFOFqANQp8BWwlsTdMRAhuHAKCsIL3e29YMYvug+TruzhpebBB78QCguNAC
+YtjJamF1g31piVwYbanYDBs=
+=pvXr
+-----END PGP SIGNATURE-----
+--=-=-=--
