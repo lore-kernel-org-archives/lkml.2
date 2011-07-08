@@ -1,107 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750847Ab1GHEPS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 00:15:18 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:32854 "EHLO
+	id S1752321Ab1GHERj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 00:17:39 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:33049 "EHLO
 	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750844Ab1GHEO4 (ORCPT
+	by vger.kernel.org with ESMTP id S1751474Ab1GHEPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 00:14:56 -0400
+	Fri, 8 Jul 2011 00:15:17 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ak4EAIiCFk55LCkBgWdsb2JhbABThEKifxUBARYmJbwxkFyBK4QAgQ0EoyI
+X-IronPort-Anti-Spam-Result: Ak0EAIiCFk55LCkBgWdsb2JhbABTp0EVAQEWJiXNDYY4BKMi
 From: Dave Chinner <david@fromorbit.com>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [PATCH 04/14] vmscan: reduce wind up shrinker->nr when shrinker can't do work
-Date: Fri,  8 Jul 2011 14:14:36 +1000
-Message-Id: <1310098486-6453-5-git-send-email-david@fromorbit.com>
+Subject: [PATCH 14/14] xfs: make use of new shrinker callout for the inode cache
+Date: Fri,  8 Jul 2011 14:14:46 +1000
+Message-Id: <1310098486-6453-15-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.5.1
 In-Reply-To: <1310098486-6453-1-git-send-email-david@fromorbit.com>
 References: <1310098486-6453-1-git-send-email-david@fromorbit.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Chinner <dchinner@redhat.com>
 
-When a shrinker returns -1 to shrink_slab() to indicate it cannot do
-any work given the current memory reclaim requirements, it adds the
-entire total_scan count to shrinker->nr. The idea ehind this is that
-whenteh shrinker is next called and can do work, it will do the work
-of the previously aborted shrinker call as well.
-
-However, if a filesystem is doing lots of allocation with GFP_NOFS
-set, then we get many, many more aborts from the shrinkers than we
-do successful calls. The result is that shrinker->nr winds up to
-it's maximum permissible value (twice the current cache size) and
-then when the next shrinker call that can do work is issued, it
-has enough scan count built up to free the entire cache twice over.
-
-This manifests itself in the cache going from full to empty in a
-matter of seconds, even when only a small part of the cache is
-needed to be emptied to free sufficient memory.
-
-Under metadata intensive workloads on ext4 and XFS, I'm seeing the
-VFS caches increase memory consumption up to 75% of memory (no page
-cache pressure) over a period of 30-60s, and then the shrinker
-empties them down to zero in the space of 2-3s. This cycle repeats
-over and over again, with the shrinker completely trashing the іnode
-and dentry caches every minute or so the workload continues.
-
-This behaviour was made obvious by the shrink_slab tracepoints added
-earlier in the series, and made worse by the patch that corrected
-the concurrent accounting of shrinker->nr.
-
-To avoid this problem, stop repeated small increments of the total
-scan value from winding shrinker->nr up to a value that can cause
-the entire cache to be freed. We still need to allow it to wind up,
-so use the delta as the "large scan" threshold check - if the delta
-is more than a quarter of the entire cache size, then it is a large
-scan and allowed to cause lots of windup because we are clearly
-needing to free lots of memory.
-
-If it isn't a large scan then limit the total scan to half the size
-of the cache so that windup never increases to consume the whole
-cache. Reducing the total scan limit further does not allow enough
-wind-up to maintain the current levels of performance, whilst a
-higher threshold does not prevent the windup from freeing the entire
-cache under sustained workloads.
+Convert the inode reclaim shrinker to use the new per-sb shrinker
+operations. This allows much bigger reclaim batches to be used, and
+allows the XFS inode cache to be shrunk in proportion with the VFS
+dentry and inode caches. This avoids the problem of the VFS caches
+being shrunk significantly before the XFS inode cache is shrunk
+resulting in imbalances in the caches during reclaim.
 
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
 ---
- mm/vmscan.c |   15 +++++++++++++++
- 1 files changed, 15 insertions(+), 0 deletions(-)
+ fs/xfs/linux-2.6/xfs_super.c |   26 ++++++++++-----
+ fs/xfs/linux-2.6/xfs_sync.c  |   71 ++++++++++++++++--------------------------
+ fs/xfs/linux-2.6/xfs_sync.h  |    5 +--
+ 3 files changed, 46 insertions(+), 56 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 666d811..01036ed 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -277,6 +277,21 @@ unsigned long shrink_slab(struct shrink_control *shrink,
- 		}
+diff --git a/fs/xfs/linux-2.6/xfs_super.c b/fs/xfs/linux-2.6/xfs_super.c
+index a1a881e..a9c6ccf 100644
+--- a/fs/xfs/linux-2.6/xfs_super.c
++++ b/fs/xfs/linux-2.6/xfs_super.c
+@@ -1025,11 +1025,6 @@ xfs_fs_put_super(
+ {
+ 	struct xfs_mount	*mp = XFS_M(sb);
  
- 		/*
-+		 * We need to avoid excessive windup on filesystem shrinkers
-+		 * due to large numbers of GFP_NOFS allocations causing the
-+		 * shrinkers to return -1 all the time. This results in a large
-+		 * nr being built up so when a shrink that can do some work
-+		 * comes along it empties the entire cache due to nr >>>
-+		 * max_pass.  This is bad for sustaining a working set in
-+		 * memory.
-+		 *
-+		 * Hence only allow the shrinker to scan the entire cache when
-+		 * a large delta change is calculated directly.
-+		 */
-+		if (delta < max_pass / 4)
-+			total_scan = min(total_scan, max_pass / 2);
+-	/*
+-	 * Unregister the memory shrinker before we tear down the mount
+-	 * structure so we don't have memory reclaim racing with us here.
+-	 */
+-	xfs_inode_shrinker_unregister(mp);
+ 	xfs_syncd_stop(mp);
+ 
+ 	/*
+@@ -1416,8 +1411,6 @@ xfs_fs_fill_super(
+ 	if (error)
+ 		goto out_filestream_unmount;
+ 
+-	xfs_inode_shrinker_register(mp);
+-
+ 	error = xfs_mountfs(mp);
+ 	if (error)
+ 		goto out_syncd_stop;
+@@ -1440,7 +1433,6 @@ xfs_fs_fill_super(
+ 	return 0;
+ 
+  out_syncd_stop:
+-	xfs_inode_shrinker_unregister(mp);
+ 	xfs_syncd_stop(mp);
+  out_filestream_unmount:
+ 	xfs_filestream_unmount(mp);
+@@ -1465,7 +1457,6 @@ xfs_fs_fill_super(
+ 	}
+ 
+  fail_unmount:
+-	xfs_inode_shrinker_unregister(mp);
+ 	xfs_syncd_stop(mp);
+ 
+ 	/*
+@@ -1491,6 +1482,21 @@ xfs_fs_mount(
+ 	return mount_bdev(fs_type, flags, dev_name, data, xfs_fs_fill_super);
+ }
+ 
++static int
++xfs_fs_nr_cached_objects(
++	struct super_block	*sb)
++{
++	return xfs_reclaim_inodes_count(XFS_M(sb));
++}
 +
-+		/*
- 		 * Avoid risking looping forever due to too large nr value:
- 		 * never try to free more than twice the estimate number of
- 		 * freeable entries.
++static void
++xfs_fs_free_cached_objects(
++	struct super_block	*sb,
++	int			nr_to_scan)
++{
++	xfs_reclaim_inodes_nr(XFS_M(sb), nr_to_scan);
++}
++
+ static const struct super_operations xfs_super_operations = {
+ 	.alloc_inode		= xfs_fs_alloc_inode,
+ 	.destroy_inode		= xfs_fs_destroy_inode,
+@@ -1504,6 +1510,8 @@ static const struct super_operations xfs_super_operations = {
+ 	.statfs			= xfs_fs_statfs,
+ 	.remount_fs		= xfs_fs_remount,
+ 	.show_options		= xfs_fs_show_options,
++	.nr_cached_objects	= xfs_fs_nr_cached_objects,
++	.free_cached_objects	= xfs_fs_free_cached_objects,
+ };
+ 
+ static struct file_system_type xfs_fs_type = {
+diff --git a/fs/xfs/linux-2.6/xfs_sync.c b/fs/xfs/linux-2.6/xfs_sync.c
+index 8ecad5f..9bd7e89 100644
+--- a/fs/xfs/linux-2.6/xfs_sync.c
++++ b/fs/xfs/linux-2.6/xfs_sync.c
+@@ -179,6 +179,8 @@ restart:
+ 		if (error == EFSCORRUPTED)
+ 			break;
+ 
++		cond_resched();
++
+ 	} while (nr_found && !done);
+ 
+ 	if (skipped) {
+@@ -986,6 +988,8 @@ restart:
+ 
+ 			*nr_to_scan -= XFS_LOOKUP_BATCH;
+ 
++			cond_resched();
++
+ 		} while (nr_found && !done && *nr_to_scan > 0);
+ 
+ 		if (trylock && !done)
+@@ -1003,7 +1007,7 @@ restart:
+ 	 * ensure that when we get more reclaimers than AGs we block rather
+ 	 * than spin trying to execute reclaim.
+ 	 */
+-	if (trylock && skipped && *nr_to_scan > 0) {
++	if (skipped && (flags & SYNC_WAIT) && *nr_to_scan > 0) {
+ 		trylock = 0;
+ 		goto restart;
+ 	}
+@@ -1021,44 +1025,38 @@ xfs_reclaim_inodes(
+ }
+ 
+ /*
+- * Inode cache shrinker.
++ * Scan a certain number of inodes for reclaim.
+  *
+  * When called we make sure that there is a background (fast) inode reclaim in
+- * progress, while we will throttle the speed of reclaim via doiing synchronous
++ * progress, while we will throttle the speed of reclaim via doing synchronous
+  * reclaim of inodes. That means if we come across dirty inodes, we wait for
+  * them to be cleaned, which we hope will not be very long due to the
+  * background walker having already kicked the IO off on those dirty inodes.
+  */
+-static int
+-xfs_reclaim_inode_shrink(
+-	struct shrinker	*shrink,
+-	struct shrink_control *sc)
++void
++xfs_reclaim_inodes_nr(
++	struct xfs_mount	*mp,
++	int			nr_to_scan)
+ {
+-	struct xfs_mount *mp;
+-	struct xfs_perag *pag;
+-	xfs_agnumber_t	ag;
+-	int		reclaimable;
+-	int nr_to_scan = sc->nr_to_scan;
+-	gfp_t gfp_mask = sc->gfp_mask;
+-
+-	mp = container_of(shrink, struct xfs_mount, m_inode_shrink);
+-	if (nr_to_scan) {
+-		/* kick background reclaimer and push the AIL */
+-		xfs_syncd_queue_reclaim(mp);
+-		xfs_ail_push_all(mp->m_ail);
++	/* kick background reclaimer and push the AIL */
++	xfs_syncd_queue_reclaim(mp);
++	xfs_ail_push_all(mp->m_ail);
+ 
+-		if (!(gfp_mask & __GFP_FS))
+-			return -1;
++	xfs_reclaim_inodes_ag(mp, SYNC_TRYLOCK | SYNC_WAIT, &nr_to_scan);
++}
+ 
+-		xfs_reclaim_inodes_ag(mp, SYNC_TRYLOCK | SYNC_WAIT,
+-					&nr_to_scan);
+-		/* terminate if we don't exhaust the scan */
+-		if (nr_to_scan > 0)
+-			return -1;
+-       }
++/*
++ * Return the number of reclaimable inodes in the filesystem for
++ * the shrinker to determine how much to reclaim.
++ */
++int
++xfs_reclaim_inodes_count(
++	struct xfs_mount	*mp)
++{
++	struct xfs_perag	*pag;
++	xfs_agnumber_t		ag = 0;
++	int			reclaimable = 0;
+ 
+-	reclaimable = 0;
+-	ag = 0;
+ 	while ((pag = xfs_perag_get_tag(mp, ag, XFS_ICI_RECLAIM_TAG))) {
+ 		ag = pag->pag_agno + 1;
+ 		reclaimable += pag->pag_ici_reclaimable;
+@@ -1067,18 +1065,3 @@ xfs_reclaim_inode_shrink(
+ 	return reclaimable;
+ }
+ 
+-void
+-xfs_inode_shrinker_register(
+-	struct xfs_mount	*mp)
+-{
+-	mp->m_inode_shrink.shrink = xfs_reclaim_inode_shrink;
+-	mp->m_inode_shrink.seeks = DEFAULT_SEEKS;
+-	register_shrinker(&mp->m_inode_shrink);
+-}
+-
+-void
+-xfs_inode_shrinker_unregister(
+-	struct xfs_mount	*mp)
+-{
+-	unregister_shrinker(&mp->m_inode_shrink);
+-}
+diff --git a/fs/xfs/linux-2.6/xfs_sync.h b/fs/xfs/linux-2.6/xfs_sync.h
+index e3a6ad2..2e15685 100644
+--- a/fs/xfs/linux-2.6/xfs_sync.h
++++ b/fs/xfs/linux-2.6/xfs_sync.h
+@@ -43,6 +43,8 @@ void xfs_quiesce_attr(struct xfs_mount *mp);
+ void xfs_flush_inodes(struct xfs_inode *ip);
+ 
+ int xfs_reclaim_inodes(struct xfs_mount *mp, int mode);
++int xfs_reclaim_inodes_count(struct xfs_mount *mp);
++void xfs_reclaim_inodes_nr(struct xfs_mount *mp, int nr_to_scan);
+ 
+ void xfs_inode_set_reclaim_tag(struct xfs_inode *ip);
+ void __xfs_inode_set_reclaim_tag(struct xfs_perag *pag, struct xfs_inode *ip);
+@@ -54,7 +56,4 @@ int xfs_inode_ag_iterator(struct xfs_mount *mp,
+ 	int (*execute)(struct xfs_inode *ip, struct xfs_perag *pag, int flags),
+ 	int flags);
+ 
+-void xfs_inode_shrinker_register(struct xfs_mount *mp);
+-void xfs_inode_shrinker_unregister(struct xfs_mount *mp);
+-
+ #endif
 -- 
 1.7.5.1
 
