@@ -1,69 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753429Ab1GHGrs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 02:47:48 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:47217 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752804Ab1GHGrp (ORCPT
+	id S1753249Ab1GHGwU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 02:52:20 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:37516 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752258Ab1GHGwR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 02:47:45 -0400
-Date: Fri, 8 Jul 2011 08:47:42 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, David Airlie <airlied@linux.ie>
-Subject: Re: [089/107] drivers/base/platform.c: dont mark
- platform_device_register_resndata() as __init_or_module
-Message-ID: <20110708064742.GM29624@pengutronix.de>
-References: <20110708001740.GA14031@kroah.com>
- <20110708001701.406081654@clark.kroah.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110708001701.406081654@clark.kroah.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 8 Jul 2011 02:52:17 -0400
+X-AuditID: cbfee61a-b7c53ae000002dc1-7f-4e16a91f2356
+Date: Fri, 08 Jul 2011 15:52:11 +0900
+From: Seungwon Jeon <tgih.jun@samsung.com>
+Subject: RE: [PATCH] mmc: dw_mmc: Supply clocks for both host and card.
+In-reply-to: <008c01cc37a4$1ea4c1e0$5bee45a0$%jun@samsung.com>
+To: "'Jaehoon Chung'" <jh80.chung@samsung.com>
+Cc: linux-mmc@vger.kernel.org, cjb@laptop.org, linux-kernel@vger.kernel.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>
+Message-id: <000101cc3d3b$928b28a0$b7a179e0$%jun@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=utf-8
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: Acw28sRI/fvSwZqhRNyMFrHGRl2XHwApLJ1wAWhCbXA=
+References: <1309402497-29191-1-git-send-email-tgih.jun@samsung.com>
+ <4E0C1DD0.2040202@samsung.com>
+ <008c01cc37a4$1ea4c1e0$5bee45a0$%jun@samsung.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi, Mr Chung.
 
-On Thu, Jul 07, 2011 at 05:17:01PM -0700, Greg KH wrote:
-> 2.6.39-stable review patch.  If anyone has any objections, please let us know.
-> 
-> ------------------
-> 
-> From: Andrew Morton <akpm@linux-foundation.org>
-> 
-> commit bb2b43fefab723f4a0760146e7bed59d41a50e53 upstream.
-> 
-> This reverts 737a3bb9416ce2a7c7a4 ("Driver core: move platform device
-> creation helpers to .init.text (if MODULE=n)").  That patch assumed that
-> platform_device_register_resndata() is only ever called from __init code
-> but that isn't true in the case ioctl->drm_ioctl->radeon_cp_init().
-> 
-> Addresses https://bugzilla.kernel.org/show_bug.cgi?id=35192
-> 
-> Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Do you have any feedback?
+I want to know how to manipulate clock for host or card on your test situation.
+I think there is no code for these clock in dw_mmc.
+Who do you think is responsible for enabling clock? Driver or platform?
 
-> Reported-by: Anthony Basile <blueness@gentoo.org>
-> Cc: Greg KH <gregkh@suse.de>
-> Cc: David Airlie <airlied@linux.ie>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-You might want to remove one of your sobs.
+Any opinion/advice are welcome.
 
-Uwe
+Best regards,
+Seungwon Jeon.
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+Seungwon Jeon wrote:
+> Hi, Mr Chung.
+> 
+> > -----Original Message-----
+> > From: linux-mmc-owner@vger.kernel.org [mailto:linux-mmc-
+> > owner@vger.kernel.org] On Behalf Of Jaehoon Chung
+> > Sent: Thursday, June 30, 2011 3:55 PM
+> > To: Seungwon Jeon
+> > Cc: linux-mmc@vger.kernel.org; cjb@laptop.org; linux-
+> > kernel@vger.kernel.org; Kyungmin Park
+> > Subject: Re: [PATCH] mmc: dw_mmc: Supply clocks for both host and card.
+> >
+> > Hi Mr.Jeon
+> >
+> > What means cclk_name/ cclk enable?
+> > Controlling card clock is possible?
+> > Sorry, i didn't understand...
+> > (My understanding is that if we set host clk, cclk is used with
+> host_clk.)
+> >
+> > Plz can you explain to me?
+> 
+> Yes, cclk is source clock for card I/O.
+> It can be different from Host operating clock(hclk).
+> 
+> Best regards,
+> Seunwgon.
+> 
+> 
+> > Regards,
+> > Jaehoon Chung
+> >
+> > Seungwon Jeon wrote:
+> > > Add enabling clocks for both host controller and card.
+> > >
+> > > Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
+> > > ---
+> > >  drivers/mmc/host/dw_mmc.c  |   33 ++++++++++++++++++++++++++++++++-
+> > >  include/linux/mmc/dw_mmc.h |    7 +++++++
+> > >  2 files changed, 39 insertions(+), 1 deletions(-)
+> > >
+> > > diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+> > > index 10b6979..a524416 100644
+> > > --- a/drivers/mmc/host/dw_mmc.c
+> > > +++ b/drivers/mmc/host/dw_mmc.c
+> > > @@ -1797,6 +1797,24 @@ static int dw_mci_probe(struct platform_device
+> > *pdev)
+> > >  		goto err_freehost;
+> > >  	}
+> > >
+> > > +	host->hclk = clk_get(&pdev->dev, pdata->hclk_name);
+> > > +	if (IS_ERR(host->hclk)) {
+> > > +		dev_err(&pdev->dev,
+> > > +			"Failed to get hclk\n");
+> > > +		ret = PTR_ERR(host->hclk);
+> > > +		goto err_freehost;
+> > > +	}
+> > > +	clk_enable(host->hclk);
+> > > +
+> > > +	host->cclk = clk_get(&pdev->dev, pdata->cclk_name);
+> > > +	if (IS_ERR(host->cclk)) {
+> > > +		dev_err(&pdev->dev,
+> > > +			"Failed to get cclk\n");
+> > > +		ret = PTR_ERR(host->cclk);
+> > > +		goto err_free_hclk;
+> > > +	}
+> > > +	clk_enable(host->cclk);
+> > > +
+> > >  	host->bus_hz = pdata->bus_hz;
+> > >  	host->quirks = pdata->quirks;
+> > >
+> > > @@ -1806,7 +1824,7 @@ static int dw_mci_probe(struct platform_device
+> > *pdev)
+> > >  	ret = -ENOMEM;
+> > >  	host->regs = ioremap(regs->start, regs->end - regs->start + 1);
+> > >  	if (!host->regs)
+> > > -		goto err_freehost;
+> > > +		goto err_free_cclk;
+> > >
+> > >  	host->dma_ops = pdata->dma_ops;
+> > >  	dw_mci_init_dma(host);
+> > > @@ -1945,6 +1963,13 @@ err_dmaunmap:
+> > >  		regulator_put(host->vmmc);
+> > >  	}
+> > >
+> > > +err_free_cclk:
+> > > +	clk_disable(host->cclk);
+> > > +	clk_put(host->cclk);
+> > > +
+> > > +err_free_hclk:
+> > > +	clk_disable(host->hclk);
+> > > +	clk_put(host->hclk);
+> > >
+> > >  err_freehost:
+> > >  	kfree(host);
+> > > @@ -1983,6 +2008,12 @@ static int __exit dw_mci_remove(struct
+> > platform_device *pdev)
+> > >  		regulator_put(host->vmmc);
+> > >  	}
+> > >
+> > > +	clk_disable(host->cclk);
+> > > +	clk_put(host->cclk);
+> > > +
+> > > +	clk_disable(host->hclk);
+> > > +	clk_put(host->hclk);
+> > > +
+> > >  	iounmap(host->regs);
+> > >
+> > >  	kfree(host);
+> > > diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
+> > > index f3f68ee..56b3f27 100644
+> > > --- a/include/linux/mmc/dw_mmc.h
+> > > +++ b/include/linux/mmc/dw_mmc.h
+> > > @@ -47,6 +47,8 @@ struct mmc_data;
+> > >   * @cmd: The command currently being sent to the card, or NULL.
+> > >   * @data: The data currently being transferred, or NULL if no data
+> > >   *	transfer is in progress.
+> > > + * @hclk: Clock for host.
+> > > + * @cclk: Clock for card.
+> > >   * @use_dma: Whether DMA channel is initialized or not.
+> > >   * @sg_dma: Bus address of DMA buffer.
+> > >   * @sg_cpu: Virtual address of DMA buffer.
+> > > @@ -118,6 +120,8 @@ struct dw_mci {
+> > >  	struct mmc_request	*mrq;
+> > >  	struct mmc_command	*cmd;
+> > >  	struct mmc_data		*data;
+> > > +	struct clk		*hclk;
+> > > +	struct clk		*cclk;
+> > >
+> > >  	/* DMA interface members*/
+> > >  	int			use_dma;
+> > > @@ -218,6 +222,9 @@ struct dw_mci_board {
+> > >  	/* delay in mS before detecting cards after interrupt */
+> > >  	u32 detect_delay_ms;
+> > >
+> > > +	char *hclk_name;
+> > > +	char *cclk_name;
+> > > +
+> > >  	int (*init)(u32 slot_id, irq_handler_t , void *);
+> > >  	int (*get_ro)(u32 slot_id);
+> > >  	int (*get_cd)(u32 slot_id);
+> > > --
+> > > 1.7.0.4
+> > >
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe linux-mmc"
+> in
+> > > the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > >
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
