@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753593Ab1GHS1M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 14:27:12 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40289 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751811Ab1GHS1L (ORCPT
+	id S1754626Ab1GHS2T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 14:28:19 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:38182 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752732Ab1GHS2Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 14:27:11 -0400
-Date: Fri, 8 Jul 2011 11:27:06 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: chris@zankel.net, security@kernel.org, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [Security] [PATCH] xtensa: prevent arbitrary read in ptrace
-Message-Id: <20110708112706.9014d306.akpm@linux-foundation.org>
-In-Reply-To: <1310083434.2139.4.camel@anubis>
-References: <1310083434.2139.4.camel@anubis>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Fri, 8 Jul 2011 14:28:16 -0400
+Subject: Re: [PATCH] regulator: max8997: Fix setting inappropriate value
+ for ramp_delay variable
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Donggeun Kim <dg77.kim@samsung.com>
+Cc: linux-kernel@vger.kernel.org, lrg@ti.com,
+        broonie@opensource.wolfsonmicro.com, myungjoo.ham@samsung.com,
+        kyungmin.park@samsung.com
+In-Reply-To: <1310025116-30787-1-git-send-email-dg77.kim@samsung.com>
+References: <1310025116-30787-1-git-send-email-dg77.kim@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 08 Jul 2011 19:28:11 +0100
+Message-ID: <1310149691.3348.6.camel@odin>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 07 Jul 2011 20:03:54 -0400
-Dan Rosenberg <drosenberg@vsecurity.com> wrote:
-
-> Prevent an arbitrary kernel read. Check the user pointer with
-> access_ok() before copying data in.
+On Thu, 2011-07-07 at 16:51 +0900, Donggeun Kim wrote:
+> The ramp_delay variable can be set lower than the desired value.
+> This patch fixes it.
 > 
-> Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-> Cc: stable@kernel.org
+> Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
+> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Signed-off-by: KyungMin Park <kyungmin.park@samsung.com>
 > ---
->  arch/xtensa/kernel/ptrace.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
+>  drivers/regulator/max8997.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
 > 
-> diff --git a/arch/xtensa/kernel/ptrace.c b/arch/xtensa/kernel/ptrace.c
-> index c72c947..ddce75e 100644
-> --- a/arch/xtensa/kernel/ptrace.c
-> +++ b/arch/xtensa/kernel/ptrace.c
-> @@ -147,6 +147,9 @@ int ptrace_setxregs(struct task_struct *child, void __user *uregs)
->  	elf_xtregs_t *xtregs = uregs;
->  	int ret = 0;
+> diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c
+> index 10d5a1d..682bc79 100644
+> --- a/drivers/regulator/max8997.c
+> +++ b/drivers/regulator/max8997.c
+> @@ -543,7 +543,8 @@ static int max8997_set_voltage_ldobuck(struct regulator_dev *rdev,
+>  			rid == MAX8997_BUCK4 || rid == MAX8997_BUCK5) {
+>  		/* If the voltage is increasing */
+>  		if (org < i)
+> -			udelay(desc->step * (i - org) / max8997->ramp_delay);
+> +			udelay(DIV_ROUND_UP(desc->step * (i - org),
+> +						max8997->ramp_delay));
+>  	}
 >  
-> +	if (!access_ok(VERIFY_READ, uregs, sizeof(elf_xtregs_t)))
-> +		return -EIO;
+>  	return ret;
 
-This should be -EFAULT, methinks?
-
-> +
->  #if XTENSA_HAVE_COPROCESSORS
->  	/* Flush all coprocessors before we overwrite them. */
->  	coprocessor_flush_all(ti);
-
+Applied.
 
