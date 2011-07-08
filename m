@@ -1,63 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752218Ab1GHWuE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 18:50:04 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:34175 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752171Ab1GHWuB (ORCPT
+	id S1752585Ab1GHWzD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 18:55:03 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:37550 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752377Ab1GHWzB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 18:50:01 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=C+q4Y/HScCdyzG9EozPMj2VhMCNNwVAX1ZA1AJpvyjva7QSnjCacyapb92BWJdSz+hpdMpbzt5nBIFKWkUMEWSwATeKLyM/2G7wTjsbHdpbsGM6bR8D/7DimoF6slKt9;
-Date: Fri, 8 Jul 2011 15:49:57 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Ram Pai <linuxram@us.ibm.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the pci-current tree
-Message-ID: <20110708154957.253b26b2@jbarnes-desktop>
-In-Reply-To: <20110707181910.GD3543@ram-ThinkPad-T61>
-References: <20110707105823.43343d2f9446f994f97cfd65@canb.auug.org.au>
-	<20110707085205.7524a5a7@jbarnes-desktop>
-	<20110707181910.GD3543@ram-ThinkPad-T61>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Fri, 8 Jul 2011 18:55:01 -0400
+X-Sasl-enc: BLYyjHHYUadWBXBGoaiA4fmZWTmjKK4+YHW30lodkonb 1310165700
+Date: Fri, 8 Jul 2011 15:53:43 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [00/35] 2.6.32.43-longterm review
+Message-ID: <20110708225343.GA14402@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Jul 2011 11:19:10 -0700
-Ram Pai <linuxram@us.ibm.com> wrote:
+This is the start of the longterm review cycle for the 2.6.32.43 release.
+There are 35 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let us know.  If anyone is a maintainer of the proper subsystem, and
+wants to add a Signed-off-by: line to the patch, please respond with it.
 
-> On Thu, Jul 07, 2011 at 08:52:05AM -0700, Jesse Barnes wrote:
-> > On Thu, 7 Jul 2011 10:58:23 +1000
-> > Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > 
-> > > Hi Jesse,
-> > > 
-> > > After merging the pci-current tree, today's linux-next build (powerpc
-> > > ppc64_defconfig) failed like this:
-> > > 
-> > > drivers/built-in.o:(.toc1+0xb98): undefined reference to `pci_realloc'
-> > > 
-> > > Caused by commit 72007d2b4797 ("PCI: conditional resource-reallocation
-> > > through kernel parameter pci=realloc").
-> > > 
-> > > I have used the pci-current tree from next-20110706 for today.
-> > 
-> > Oops, x86 bits used in common code.  I've pushed a fix that just moves
-> > the variable into setup-bus.c rather than x86/pci/common.c.
-> 
-> Jesse,
-> 
-> 	I have fixed the problem and have a better patch. See if it is acceptable for you.
+Responses should be made by Sunday, Jul 10, 00:00:00 UTC.
+Anything received after that time might be too late.
 
-Yes, much better, thanks.  I'll send it to Linus tomorrow if I don't
-hear any complaints.
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v2.6/longterm-review/patch-2.6.32.43-rc1.gz
+and the diffstat can be found below.
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+thanks,
+
+greg k-h
+
+ Makefile                                |    2 +-
+ arch/um/kernel/dyn.lds.S                |   14 ++++-
+ arch/um/kernel/uml.lds.S                |   17 ++++++
+ arch/um/os-Linux/mem.c                  |    1 +
+ arch/x86/xen/mmu.c                      |    9 +++-
+ block/cfq-iosched.c                     |    8 +++-
+ drivers/char/tty_ldisc.c                |    4 +-
+ drivers/i2c/busses/i2c-taos-evm.c       |    8 ++--
+ drivers/md/md.c                         |    1 +
+ drivers/media/video/uvc/uvc_queue.c     |    2 +
+ drivers/net/hamradio/6pack.c            |    4 +-
+ drivers/net/hamradio/mkiss.c            |    4 +-
+ drivers/net/wireless/ath/ath5k/eeprom.c |    8 +--
+ drivers/net/wireless/ath/ath9k/pci.c    |    6 ++
+ drivers/usb/core/driver.c               |   11 ++++-
+ drivers/usb/core/hub.c                  |   13 +++--
+ drivers/usb/host/xhci-hcd.c             |   22 ++++++--
+ drivers/watchdog/mtx-1_wdt.c            |    8 +++
+ fs/inode.c                              |   22 +++++---
+ fs/nilfs2/btnode.c                      |   13 -----
+ fs/nilfs2/btnode.h                      |    1 -
+ fs/nilfs2/super.c                       |    2 +-
+ include/asm-generic/bug.h               |   16 ++++++
+ include/linux/clocksource.h             |    1 +
+ include/linux/fs.h                      |    2 +
+ include/linux/if_packet.h               |    2 +
+ include/net/netlink.h                   |    2 +-
+ kernel/power/snapshot.c                 |   89 ++++++++++++++++++++++++-------
+ kernel/power/user.c                     |    4 +-
+ kernel/taskstats.c                      |   15 ++++-
+ kernel/time/clocksource.c               |   24 +++++----
+ lib/debugobjects.c                      |    2 +-
+ mm/hugetlb.c                            |    8 +++
+ mm/ksm.c                                |    6 ++
+ mm/memory.c                             |    2 +
+ mm/migrate.c                            |    2 +-
+ net/core/filter.c                       |    4 +-
+ net/ipv4/af_inet.c                      |    3 +
+ net/ipv4/inet_diag.c                    |   14 ++---
+ net/ipv4/udp.c                          |    3 +
+ net/ipv6/udp.c                          |    5 ++-
+ net/packet/af_packet.c                  |    2 +
+ net/sunrpc/auth_gss/auth_gss.c          |    4 +-
+ net/sunrpc/clnt.c                       |    2 +-
+ 44 files changed, 290 insertions(+), 102 deletions(-)
