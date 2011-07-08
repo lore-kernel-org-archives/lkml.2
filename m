@@ -1,180 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752364Ab1GHEPa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 00:15:30 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:33066 "EHLO
+	id S1752530Ab1GHEPh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 00:15:37 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:33100 "EHLO
 	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751192Ab1GHEPW (ORCPT
+	by vger.kernel.org with ESMTP id S1751192Ab1GHEPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 00:15:22 -0400
+	Fri, 8 Jul 2011 00:15:32 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ak0EAIiCFk55LCkBgWdsb2JhbABTp0EVAQEWJiXNDYY4BKMi
+X-IronPort-Anti-Spam-Result: Ak4EAIiCFk55LCkBgWdsb2JhbABThEKifxUBARYmJbwxkFyBK4F7ggWBDQSjIg
 From: Dave Chinner <david@fromorbit.com>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [PATCH 08/14] inode: move to per-sb LRU locks
-Date: Fri,  8 Jul 2011 14:14:40 +1000
-Message-Id: <1310098486-6453-9-git-send-email-david@fromorbit.com>
+Subject: =?UTF-8?q?=5BPATCH=2012/14=5D=20superblock=3A=20add=20filesystem=20shrinker=20operations?=
+Date: Fri,  8 Jul 2011 14:14:44 +1000
+Message-Id: <1310098486-6453-13-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.5.1
 In-Reply-To: <1310098486-6453-1-git-send-email-david@fromorbit.com>
 References: <1310098486-6453-1-git-send-email-david@fromorbit.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Chinner <dchinner@redhat.com>
 
-With the inode LRUs moving to per-sb structures, there is no longer
-a need for a global inode_lru_lock. The locking can be made more
-fine-grained by moving to a per-sb LRU lock, isolating the LRU
-operations of different filesytsems completely from each other.
+Now we have a per-superblock shrinker implementation, we can add a
+filesystem specific callout to it to allow filesystem internal
+caches to be shrunk by the superblock shrinker.
+
+Rather than perpetuate the multipurpose shrinker callback API (i.e.
+nr_to_scan == 0 meaning "tell me how many objects freeable in the
+cache), two operations will be added. The first will return the
+number of objects that are freeable, the second is the actual
+shrinker call.
 
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
 ---
- fs/inode.c         |   27 +++++++++++++--------------
- fs/super.c         |    1 +
- include/linux/fs.h |    3 ++-
- 3 files changed, 16 insertions(+), 15 deletions(-)
+ Documentation/filesystems/vfs.txt |   16 +++++++++++++
+ fs/super.c                        |   43 +++++++++++++++++++++++++++---------
+ include/linux/fs.h                |    2 +
+ 3 files changed, 50 insertions(+), 11 deletions(-)
 
-diff --git a/fs/inode.c b/fs/inode.c
-index 0c79cd3..bda0720 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -33,7 +33,7 @@
-  *
-  * inode->i_lock protects:
-  *   inode->i_state, inode->i_hash, __iget()
-- * inode_lru_lock protects:
-+ * inode->i_sb->s_inode_lru_lock protects:
-  *   inode->i_sb->s_inode_lru, inode->i_lru
-  * inode_sb_list_lock protects:
-  *   sb->s_inodes, inode->i_sb_list
-@@ -46,7 +46,7 @@
-  *
-  * inode_sb_list_lock
-  *   inode->i_lock
-- *     inode_lru_lock
-+ *     inode->i_sb->s_inode_lru_lock
-  *
-  * inode_wb_list_lock
-  *   inode->i_lock
-@@ -64,8 +64,6 @@ static unsigned int i_hash_shift __read_mostly;
- static struct hlist_head *inode_hashtable __read_mostly;
- static __cacheline_aligned_in_smp DEFINE_SPINLOCK(inode_hash_lock);
+diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
+index d56151f..fd24f34 100644
+--- a/Documentation/filesystems/vfs.txt
++++ b/Documentation/filesystems/vfs.txt
+@@ -229,6 +229,8 @@ struct super_operations {
  
--static DEFINE_SPINLOCK(inode_lru_lock);
--
- __cacheline_aligned_in_smp DEFINE_SPINLOCK(inode_sb_list_lock);
- __cacheline_aligned_in_smp DEFINE_SPINLOCK(inode_wb_list_lock);
+         ssize_t (*quota_read)(struct super_block *, int, char *, size_t, loff_t);
+         ssize_t (*quota_write)(struct super_block *, int, const char *, size_t, loff_t);
++	int (*nr_cached_objects)(struct super_block *);
++	void (*free_cached_objects)(struct super_block *, int);
+ };
  
-@@ -342,24 +340,24 @@ EXPORT_SYMBOL(ihold);
+ All methods are called without any locks being held, unless otherwise
+@@ -301,6 +303,20 @@ or bottom half).
  
- static void inode_lru_list_add(struct inode *inode)
+   quota_write: called by the VFS to write to filesystem quota file.
+ 
++  nr_cached_objects: called by the sb cache shrinking function for the
++	filesystem to return the number of freeable cached objects it contains.
++	Optional.
++
++  free_cache_objects: called by the sb cache shrinking function for the
++	filesystem to scan the number of objects indicated to try to free them.
++	Optional, but any filesystem implementing this method needs to also
++	implement ->nr_cached_objects for it to be called correctly.
++
++	We can't do anything with any errors that the filesystem might
++	encountered, hence the void return type. This will never be called if
++	the VM is trying to reclaim under GFP_NOFS conditions, hence this
++	method does not need to handle that situation itself.
++
+ Whoever sets up the inode is responsible for filling in the "i_op" field. This
+ is a pointer to a "struct inode_operations" which describes the methods that
+ can be performed on individual inodes.
+diff --git a/fs/super.c b/fs/super.c
+index c449c14..ca8e735 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -48,7 +48,8 @@ DEFINE_SPINLOCK(sb_lock);
+ static int prune_super(struct shrinker *shrink, struct shrink_control *sc)
  {
--	spin_lock(&inode_lru_lock);
-+	spin_lock(&inode->i_sb->s_inode_lru_lock);
- 	if (list_empty(&inode->i_lru)) {
- 		list_add(&inode->i_lru, &inode->i_sb->s_inode_lru);
- 		inode->i_sb->s_nr_inodes_unused++;
- 		this_cpu_inc(nr_unused);
- 	}
--	spin_unlock(&inode_lru_lock);
-+	spin_unlock(&inode->i_sb->s_inode_lru_lock);
- }
+ 	struct super_block *sb;
+-	int count;
++	int	fs_objects = 0;
++	int	total_objects;
  
- static void inode_lru_list_del(struct inode *inode)
- {
--	spin_lock(&inode_lru_lock);
-+	spin_lock(&inode->i_sb->s_inode_lru_lock);
- 	if (!list_empty(&inode->i_lru)) {
- 		list_del_init(&inode->i_lru);
- 		inode->i_sb->s_nr_inodes_unused--;
- 		this_cpu_dec(nr_unused);
+ 	sb = container_of(shrink, struct super_block, s_shrink);
+ 
+@@ -62,23 +63,43 @@ static int prune_super(struct shrinker *shrink, struct shrink_control *sc)
+ 	if (!grab_super_passive(sb))
+ 		return -1;
+ 
+-	if (sc->nr_to_scan) {
+-		/* proportion the scan between the two cacheѕ */
+-		int total;
++	if (sb->s_op && sb->s_op->nr_cached_objects)
++		fs_objects = sb->s_op->nr_cached_objects(sb);
++
++	total_objects = sb->s_nr_dentry_unused +
++			sb->s_nr_inodes_unused + fs_objects + 1;
+ 
+-		total = sb->s_nr_dentry_unused + sb->s_nr_inodes_unused + 1;
+-		count = (sc->nr_to_scan * sb->s_nr_dentry_unused) / total;
++	if (sc->nr_to_scan) {
++		int	dentries;
++		int	inodes;
++
++		/* proportion the scan between the cacheѕ */
++		dentries = (sc->nr_to_scan * sb->s_nr_dentry_unused) /
++							total_objects;
++		inodes = (sc->nr_to_scan * sb->s_nr_inodes_unused) /
++							total_objects;
++		if (fs_objects)
++			fs_objects = (sc->nr_to_scan * fs_objects) /
++							total_objects;
++		/*
++		 * prune the dcache first as the icache is pinned by it, then
++		 * prune the icache, followed by the filesystem specific caches
++		 */
++		prune_dcache_sb(sb, dentries);
++		prune_icache_sb(sb, inodes);
+ 
+-		/* prune dcache first as icache is pinned by it */
+-		prune_dcache_sb(sb, count);
+-		prune_icache_sb(sb, sc->nr_to_scan - count);
++		if (fs_objects && sb->s_op->free_cached_objects) {
++			sb->s_op->free_cached_objects(sb, fs_objects);
++			fs_objects = sb->s_op->nr_cached_objects(sb);
++		}
++		total_objects = sb->s_nr_dentry_unused +
++				sb->s_nr_inodes_unused + fs_objects;
  	}
--	spin_unlock(&inode_lru_lock);
-+	spin_unlock(&inode->i_sb->s_inode_lru_lock);
+ 
+-	count = ((sb->s_nr_dentry_unused + sb->s_nr_inodes_unused) / 100)
+-						* sysctl_vfs_cache_pressure;
++	total_objects = (total_objects / 100) * sysctl_vfs_cache_pressure;
+ 	up_read(&sb->s_umount);
+ 	put_super(sb);
+-	return count;
++	return total_objects;
  }
  
  /**
-@@ -608,7 +606,8 @@ static int can_unuse(struct inode *inode)
- 
- /*
-  * Scan `goal' inodes on the unused list for freeable ones. They are moved to a
-- * temporary list and then are freed outside inode_lru_lock by dispose_list().
-+ * temporary list and then are freed outside sb->s_inode_lru_lock by
-+ * dispose_list().
-  *
-  * Any inodes which are pinned purely because of attached pagecache have their
-  * pagecache removed.  If the inode has metadata buffers attached to
-@@ -628,7 +627,7 @@ static void shrink_icache_sb(struct super_block *sb, int *nr_to_scan)
- 	int nr_scanned;
- 	unsigned long reap = 0;
- 
--	spin_lock(&inode_lru_lock);
-+	spin_lock(&sb->s_inode_lru_lock);
- 	for (nr_scanned = *nr_to_scan; nr_scanned >= 0; nr_scanned--) {
- 		struct inode *inode;
- 
-@@ -638,7 +637,7 @@ static void shrink_icache_sb(struct super_block *sb, int *nr_to_scan)
- 		inode = list_entry(sb->s_inode_lru.prev, struct inode, i_lru);
- 
- 		/*
--		 * we are inverting the inode_lru_lock/inode->i_lock here,
-+		 * we are inverting the sb->s_inode_lru_lock/inode->i_lock here,
- 		 * so use a trylock. If we fail to get the lock, just move the
- 		 * inode to the back of the list so we don't spin on it.
- 		 */
-@@ -670,12 +669,12 @@ static void shrink_icache_sb(struct super_block *sb, int *nr_to_scan)
- 		if (inode_has_buffers(inode) || inode->i_data.nrpages) {
- 			__iget(inode);
- 			spin_unlock(&inode->i_lock);
--			spin_unlock(&inode_lru_lock);
-+			spin_unlock(&sb->s_inode_lru_lock);
- 			if (remove_inode_buffers(inode))
- 				reap += invalidate_mapping_pages(&inode->i_data,
- 								0, -1);
- 			iput(inode);
--			spin_lock(&inode_lru_lock);
-+			spin_lock(&sb->s_inode_lru_lock);
- 
- 			if (inode != list_entry(sb->s_inode_lru.next,
- 						struct inode, i_lru))
-@@ -700,7 +699,7 @@ static void shrink_icache_sb(struct super_block *sb, int *nr_to_scan)
- 		__count_vm_events(KSWAPD_INODESTEAL, reap);
- 	else
- 		__count_vm_events(PGINODESTEAL, reap);
--	spin_unlock(&inode_lru_lock);
-+	spin_unlock(&sb->s_inode_lru_lock);
- 	*nr_to_scan = nr_scanned;
- 
- 	dispose_list(&freeable);
-diff --git a/fs/super.c b/fs/super.c
-index e8e6dbf..73ab9f9 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -78,6 +78,7 @@ static struct super_block *alloc_super(struct file_system_type *type)
- 		INIT_LIST_HEAD(&s->s_inodes);
- 		INIT_LIST_HEAD(&s->s_dentry_lru);
- 		INIT_LIST_HEAD(&s->s_inode_lru);
-+		spin_lock_init(&s->s_inode_lru_lock);
- 		init_rwsem(&s->s_umount);
- 		mutex_init(&s->s_lock);
- 		lockdep_set_class(&s->s_umount, &type->s_umount_key);
 diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 552a1d3..1c74907 100644
+index 40153c2..48e4e45 100644
 --- a/include/linux/fs.h
 +++ b/include/linux/fs.h
-@@ -1396,7 +1396,8 @@ struct super_block {
- 	struct list_head	s_dentry_lru;	/* unused dentry lru */
- 	int			s_nr_dentry_unused;	/* # of dentry on lru */
+@@ -1654,6 +1654,8 @@ struct super_operations {
+ 	ssize_t (*quota_write)(struct super_block *, int, const char *, size_t, loff_t);
+ #endif
+ 	int (*bdev_try_to_free_page)(struct super_block*, struct page*, gfp_t);
++	int (*nr_cached_objects)(struct super_block *);
++	void (*free_cached_objects)(struct super_block *, int);
+ };
  
--	/* inode_lru_lock protects s_inode_lru and s_nr_inodes_unused */
-+	/* s_inode_lru_lock protects s_inode_lru and s_nr_inodes_unused */
-+	spinlock_t		s_inode_lru_lock ____cacheline_aligned_in_smp;
- 	struct list_head	s_inode_lru;		/* unused inode lru */
- 	int			s_nr_inodes_unused;	/* # of inodes on lru */
- 
+ /*
 -- 
 1.7.5.1
 
