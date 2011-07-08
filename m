@@ -1,115 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754621Ab1GHSNt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 14:13:49 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:55938 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757Ab1GHSNs convert rfc822-to-8bit (ORCPT
+	id S1754565Ab1GHSQj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 14:16:39 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:49810 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752883Ab1GHSQi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 14:13:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E171E93.8020608@arm.com>
-References: <1310115250-3859-1-git-send-email-marc.zyngier@arm.com>
-	<CAHXqBFJiovYq5x_JDAxikvFs-t1To6yC-1uajBJFRX_jwjvejA@mail.gmail.com>
-	<4E170134.1020306@arm.com>
-	<4E171E93.8020608@arm.com>
-Date: Fri, 8 Jul 2011 20:13:46 +0200
-Message-ID: <CAHXqBFKKGj9c3fNiFRiR-BBdVffxg8bBHYh0_sCQvCZ3SDTewA@mail.gmail.com>
-Subject: Re: [RFC PATCH v2 0/4] Core device subsystem
-From: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
+	Fri, 8 Jul 2011 14:16:38 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=WAjUUD+Lj/ziWDj71qFw4c7XQGd5ms9u0n991s/L9fMEpQBgynJYjcWBUOLgaapmjRl8SZwlP1jmOudNJ/aqfAMWrFvdX4A06t2HkPN4HoF6Db8sdXPQuzzQ8rylsgsf;
+Date: Fri, 8 Jul 2011 11:16:35 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
 To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [RFC PATCH v2 4/4] Core devices: documentation
+Message-Id: <20110708111635.0ce95be2.rdunlap@xenotime.net>
+In-Reply-To: <1310115250-3859-5-git-send-email-marc.zyngier@arm.com>
+References: <1310115250-3859-1-git-send-email-marc.zyngier@arm.com>
+	<1310115250-3859-5-git-send-email-marc.zyngier@arm.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 8 lipca 2011 17:13 u¿ytkownik Marc Zyngier
-<marc.zyngier@arm.com> napisa³:
-> On 08/07/11 14:08, Marc Zyngier wrote:
->> So you're basically folding of_core_device_populate() and
->> core_driver_init_class() into one call, and generating the
->> of_device_ids on the fly. If you're going down that road,
->> it would be even simpler to directly use of_device_ids
->> instead of core_device_ids and skip the generation altogether.
->>
->> That would also remove the static declaration of devices to be
->> probed in the architecture support code...
->>
->> Let me think of it and prototype that.
->
-> See the attached patch against branch dt_gic_twd from
-> git://git.kernel.org/pub/scm/linux/kernel/git/maz/arm-platforms.git
->
-> It boots fine on my PB11MP.
->
-> What do you think?
->
->        M.
-> --
-> Jazz is not dead. It just smells funny...
-> diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
-> index 74825c2..e7d9922 100644
-> --- a/arch/arm/common/gic.c
-> +++ b/arch/arm/common/gic.c
-> @@ -712,9 +712,9 @@ static int __init gic_core_init(struct core_device *dev)
->        return 0;
->  }
->
-> -static struct core_device_id gic_ids[] __initdata = {
-> -       { .name = "arm,gic-spi" }, /* DT */
-> -       { .name = "arm_gic" },     /* Static device */
-> +static struct of_device_id gic_ids[] __initdata = {
-> +       { .compatible = "arm,gic-spi" }, /* DT */
-> +       { .name = "arm_gic" },           /* Static device */
->        { },
->  };
+On Fri,  8 Jul 2011 09:54:10 +0100 Marc Zyngier wrote:
 
-This will also match devices with name "arm_gic" in DT. Unlikely, but
-probably not what you want.
+> Add the documentation file for core devices.
+> 
+> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+> ---
+>  Documentation/core_devices.txt |  247 ++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 247 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/core_devices.txt
+> 
+> diff --git a/Documentation/core_devices.txt b/Documentation/core_devices.txt
+> new file mode 100644
+> index 0000000..5d1581f
+> --- /dev/null
+> +++ b/Documentation/core_devices.txt
+> @@ -0,0 +1,247 @@
+> +Core Device Subsystem:
+> +=====================
+> +
+> +There is a small number of devices that the core kernel needs very
 
-I thought about something more evil. ;) See below.
+   There are
 
-Assuming we modify of_find_matching_node() to also return matched ID entry:
+> +early in the boot process, namely an interrupt controller and a timer,
+> +long before the driver model is up and running.
+> +
+> +Most architectures implement this requirement by hardcoding the
+> +initialisation of a "well known" piece of hardware which is standard
+> +enough to work on any platform.
+> +
+> +This is very different on the ARM architecture, where platforms have a
+> +variety of interrupt controllers and timers. While the same hardcoding
+> +is possible (and is actually used), it makes it almost impossible to
+> +support several platforms in the same kernel.
+> +
+> +Though the device tree is helping greatly to solve this problem, some
+> +platform won't ever be converted to DT, hence the need to have a
+> +mechanism supporting a variety of information source. Early platform
 
----- of_core_device_populate()
+                                                 sources.
 
-const struct of_device_id *id;
-struct device_node *dn;
-struct core_device *dev;
+> +devices having been deemed unsuitable (complexity, abuse of various
+> +subsystems), this subsystem has been designed to provide the very
 
-for_each_matching_node_id(dn, matches, id) {
-  dev = create_core_dev(...);
-  dev->init = id->data;
-  add_to_list(class, dev);
-}
+s/,/;/
 
-if (intc class)
-  sort_list()
+> +minimal level of functionality.
+> +
+> +The "core device subsystem" offers a class based device/driver
+> +matching model, doesn't rely on any other subsystem, is very (too?)
+> +simple, and support getting information both from DT as well as from
 
-----
+               supports
 
-And then drivers would register like this:
+> +static data provided by the platform. It also gives the opportunity to
+> +define the probing order by offering a sorting hook at run-time.
+> +
+> +As for the Linux driver model, the core device subsystem deals mainly
+> +with device and driver objects. It also has the notion of "class" to
+> +designate a group of devices implementing the same functionality, and
+> +a group of drivers to be matched against the above devices
+> +(CORE_DEV_CLASS_TIMER for example).
+> +
+> +One of the features is that the whole subsystem is discarded once the
+> +kernel has booted. No structures can or should be retained after the
+> +device has been probed. Of course, no support for module or other
 
-int __init etc_init(struct core_device *);
+                                      there is no support ...
 
-DEFINE_CORE_DEVICE_TABLE_DT(class, name) = {
-  { .compatible = "etc", .data = etc_init },
-};
+> +evolved features. Another design feature is that it is *NOT* thread
+> +safe. If you need any kind of mutual exclusion, you're probably using
+> +core devices for something they are not designed for.
+> +
+> +* Core Device:
+> +  ===========
 
-DEFINE_CORE_DEVICE_TABLE_LEGACY(class, name) = {
-  { .name = "etc", .data = etc_init },
-};
+
+[snip]
 
 
-This removes the need for struct core_driver and instead uses linker
-to directly generate match tables for INTC and TIMER classes. This
-also allows to get rid of legacy IDs when kernel is built with support
-for boards not using DT.
+> +* Core driver:
+> +  ===========
 
-Best Regards,
-Micha³ Miros³aw
+
+[snip]
+
+
+> +* Device/Driver matching:
+> +  ======================
+> +
+> +The core kernel code directly controls when devices and drivers are
+> +matched (no matching-at-register-time) by calling:
+> +
+> +void core_driver_init_class(enum core_device_class class,
+> +			    void (*sort)(struct list_head *));
+> +
+> +Where:
+> +- class is one of CORE_DEV_CLASS_IRQ or CORE_DEV_CLASS_TIMER,
+> +- sort is a pointer to a function sorting the device list before they
+> +  are matched (NULL if unused).
+> +
+
+so the sort key ordering is not defined (or is user-defined), right?
+
+> +When this function is called:
+> +
+> +- All devices registered in "class" are probed with the matching
+> +  registered drivers
+> +- Once the devices in the class have been tried against the compiled
+> +  in drivers, they are removed from the list (whether they have
+> +  actually been probed or not).
+> +- If core devices have been dynamically allocated (by
+> +  of_core_device_populate()), they are freed.
+> +
+> +For example:
+
+[snip]
+
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
