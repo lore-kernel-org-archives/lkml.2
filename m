@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754867Ab1GHT3T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 15:29:19 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:51579 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752813Ab1GHT3S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 15:29:18 -0400
-Message-ID: <4E175A8B.2040007@zankel.net>
-Date: Fri, 08 Jul 2011 12:29:15 -0700
-From: Chris Zankel <qvadiz@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.18) Gecko/20110616 Thunderbird/3.1.11
+	id S1753948Ab1GHTgj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 15:36:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28210 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752168Ab1GHTgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 15:36:38 -0400
+Message-ID: <4E175C45.1060700@redhat.com>
+Date: Fri, 08 Jul 2011 15:36:37 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100505 Fedora/3.0.4-2.el6 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Dan Rosenberg <drosenberg@vsecurity.com>, security@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Security] [PATCH] xtensa: prevent arbitrary read in ptrace
-References: <1310083434.2139.4.camel@anubis> <20110708112706.9014d306.akpm@linux-foundation.org> <20110708184250.GA31307@redhat.com>
-In-Reply-To: <20110708184250.GA31307@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: 3.0.0-rc6 ~9X system time degradation on kernbench
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Just some numbers out of kernbench.  System Time & Context Switches
+climb dramatically between 2.6.38 and 3.0.0-rc6.  Currently bisecting to
+find out why.  .config is based on Fedora's x86_64 .config.
 
-I'll try to run a build this weekend and will look if that code builds 
-at all.
+Thu Jul  7 18:23:48 EDT 2011
+2.6.38.8-32.fc15.x86_64
+Average Half load -j 64 Run (std deviation):
+Elapsed Time 155.376 (3.77835)
+User Time 4536.18 (11.5886)
+System Time 1810.42 (27.0879)
+Percent CPU 4086 (100.252)
+Context Switches 794941 (3757.3)
+Sleeps 754029 (10516)
 
-Thanks,
--Chris
+Thu Jul  7 19:50:38 EDT 2011
+3.0.0-rc6
+Average Half load -j 64 Run (std deviation):
+Elapsed Time 466.362 (2.78605)
+User Time 8616.43 (22.5528)
+System Time 14583.6 (63.2273)
+Percent CPU 4974.2 (19.6265)
+Context Switches 2.69157e+06 (7679.26)
+Sleeps 827950 (3050.16)
 
+Thu Jul  7 21:30:22 EDT 2011
+2.6.39
+Average Half load -j 64 Run (std deviation):
+Elapsed Time 250.044 (2.55373)
+User Time 5361.27 (14.6996)
+System Time 5173.44 (14.9366)
+Percent CPU 4212.8 (40.4314)
+Context Switches 1.28385e+06 (1610.42)
+Sleeps 741129 (3339.19)
 
-On 7/8/11 11:42 AM, Oleg Nesterov wrote:
-> On 07/08, Andrew Morton wrote:
->>
->> On Thu, 07 Jul 2011 20:03:54 -0400
->> Dan Rosenberg<drosenberg@vsecurity.com>  wrote:
->>
->>> Prevent an arbitrary kernel read. Check the user pointer with
->>> access_ok() before copying data in.
->>>
->>> Signed-off-by: Dan Rosenberg<drosenberg@vsecurity.com>
->>> Cc: stable@kernel.org
->>> ---
->>>   arch/xtensa/kernel/ptrace.c |    3 +++
->>>   1 files changed, 3 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/arch/xtensa/kernel/ptrace.c b/arch/xtensa/kernel/ptrace.c
->>> index c72c947..ddce75e 100644
->>> --- a/arch/xtensa/kernel/ptrace.c
->>> +++ b/arch/xtensa/kernel/ptrace.c
->>> @@ -147,6 +147,9 @@ int ptrace_setxregs(struct task_struct *child, void __user *uregs)
->>>   	elf_xtregs_t *xtregs = uregs;
->>>   	int ret = 0;
->>>
->>> +	if (!access_ok(VERIFY_READ, uregs, sizeof(elf_xtregs_t)))
->>> +		return -EIO;
->>
->> This should be -EFAULT, methinks?
->
-> Also, it seems that ptrace_setxregs/ptrace_getxregs could be static?
->
-> The patch looks "obviously correct" but I don't understand this code.
->
-> Hmm. We don't read/write the XTENSA_HAVE_COPROCESSORS data, but use
-> sizeof(elf_xtregs_t) anyway. This looks a bit strange but I guess
-> this doesn't matter.
->
-> Oleg.
->
+Fri Jul  8 12:21:29 EDT 2011
+3.0.0-rc1
+Average Optimal load -j 64 Run (std deviation):
+Elapsed Time 435.338 (5.45314)
+User Time 6125.78 (15.2816)
+System Time 8346.45 (62.5065)
+Percent CPU 3324.2 (29.0637)
+Context Switches 6.42863e+06 (23420)
+Sleeps 996764 (3744.98)
 
+P.
