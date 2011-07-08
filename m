@@ -1,94 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090Ab1GHVPK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 17:15:10 -0400
-Received: from lo.gmane.org ([80.91.229.12]:52422 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752947Ab1GHVPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 17:15:08 -0400
-X-Injected-Via-Gmane: http://gmane.org/
+	id S1754552Ab1GHVRO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 17:17:14 -0400
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:37170 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752947Ab1GHVRN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 17:17:13 -0400
+Date: Fri, 8 Jul 2011 14:17:12 -0700
+From: Dmitry Torokhov <dtor@vmware.com>
 To: linux-kernel@vger.kernel.org
-From: Robert Bernecky <bernecky@snakeisland.com>
-Subject: PAPI vs. perf stat
-Date: Fri, 8 Jul 2011 21:13:49 +0000 (UTC)
-Message-ID: <loom.20110708T224248-262@post.gmane.org>
-Mime-Version: 1.0
+Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] Vmware balloon: switch to using sysem-wide freezable
+ workqueue
+Message-ID: <20110708211712.GA20258@dtor-ws.eng.vmware.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 173.33.227.187 (Mozilla/5.0 (X11; U; Linux x86_64; en-CA; rv:1.9.2.13) Gecko/20101206 Ubuntu/10.10 (maverick) Firefox/3.6.13)
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is actually three questions about perf stat:
+With the arrival of concurrency-managed workqueues there is no need
+for our driver to use dedicated workqueue; system-wide one should
+suffice just fine.
 
-1. I have been using PAPI and PAPIEX with excellent results, in the sense
-that I obtained extremely reproducible instruction counts, varying by only
-a few hundred instructions over billions of instructions executed.
-This was on an Opteron 165.
+Signed-off-by: Dmitry Torokhov <dtor@vmware.com>
+---
+ drivers/misc/vmw_balloon.c |   31 +++++++++++--------------------
+ 1 files changed, 11 insertions(+), 20 deletions(-)
 
-I have been forced to move to a new platform and a newer version of
-Ubuntu, and decided to try out "perf stat" and friends, rather than
-going through the tedious task of kernel mods for PAPI. 
-
-What I now observe (albeit on a new CPU/MB -- AMD Phenom 1075T)
-with perf stat is disturbing: Instruction counts vary by several
-percent. E.g., repeated execution of the same binary, foo, gives me:
-
-perf stat foo
-
-    71156657  instructions
-    71628306  instructions 
-    71613890  instructions    
-    71638216  instructions
-    71731479  instructions
-    71564788  instructions
-
-This is on a lightly loaded system with web browser, email, and
-other tasks running, which is the same environment that I was
-using with PAPI.
-
-I am curious as to why it is that "perf" does not have the same
-degree of precision as PAPI.
-
-[From looking at the PAPI kernel mods, it seems that HMI counters
-are saved at task dispatch, then sampled again at interrupt time,
-and the differences added to task(process?)-specific fields.
-Hence, the only variance in instruction counts (aside from
-page faults, etc.) arise from interrupts happening during
-task execution. Several kernel instructions are executed between the
-time of interrupt and counter sampling, and similarly at task
-dispatch time. ]
-
-Is there a way to improve the precision of "perf" measurements?
-
-2. The Opteron 165 under PAPI shows PAPI_VEC_INS (vector instruction
-counts) as well as PAPI_TOT_INT (total instruction count). 
-"perf list" (on the Phenom 1075T) does show 
-"instructions" but I do not see an entry for vector instruction
-counts. Any ideas what may be going on here?
-
-3. I have an on-going process running, and would like to make
-   automated measurements of HMI data at desired 
-   (not periodic) intervals,
-   from another shell. is there a way to do this with perf?
-   I see that "perf stat  -p PIDNUMBER" almost works, but
-   it requires that I manually hit CTRL-C to terminate the
-   sample. 
-
-Thanks.
-Robert
-
-
-
-
-
-
-
-
-
-
+diff --git a/drivers/misc/vmw_balloon.c b/drivers/misc/vmw_balloon.c
+index 6df5a55..ca72de3 100644
+--- a/drivers/misc/vmw_balloon.c
++++ b/drivers/misc/vmw_balloon.c
+@@ -45,7 +45,7 @@
+ 
+ MODULE_AUTHOR("VMware, Inc.");
+ MODULE_DESCRIPTION("VMware Memory Control (Balloon) Driver");
+-MODULE_VERSION("1.2.1.2-k");
++MODULE_VERSION("1.2.1.3-k");
+ MODULE_ALIAS("dmi:*:svnVMware*:*");
+ MODULE_ALIAS("vmware_vmmemctl");
+ MODULE_LICENSE("GPL");
+@@ -215,7 +215,6 @@ struct vmballoon {
+ };
+ 
+ static struct vmballoon balloon;
+-static struct workqueue_struct *vmballoon_wq;
+ 
+ /*
+  * Send "start" command to the host, communicating supported version
+@@ -674,7 +673,12 @@ static void vmballoon_work(struct work_struct *work)
+ 			vmballoon_deflate(b);
+ 	}
+ 
+-	queue_delayed_work(vmballoon_wq, dwork, round_jiffies_relative(HZ));
++	/*
++	 * We are using freezable workqueue so that balloon operations are
++	 * stopped while system transitions to/from sleep/hibernation.
++	*/
++	queue_delayed_work(system_freezable_wq,
++			   dwork, round_jiffies_relative(HZ));
+ }
+ 
+ /*
+@@ -785,12 +789,6 @@ static int __init vmballoon_init(void)
+ 	if (x86_hyper != &x86_hyper_vmware)
+ 		return -ENODEV;
+ 
+-	vmballoon_wq = create_freezable_workqueue("vmmemctl");
+-	if (!vmballoon_wq) {
+-		pr_err("failed to create workqueue\n");
+-		return -ENOMEM;
+-	}
+-
+ 	INIT_LIST_HEAD(&balloon.pages);
+ 	INIT_LIST_HEAD(&balloon.refused_pages);
+ 
+@@ -805,34 +803,27 @@ static int __init vmballoon_init(void)
+ 	 */
+ 	if (!vmballoon_send_start(&balloon)) {
+ 		pr_err("failed to send start command to the host\n");
+-		error = -EIO;
+-		goto fail;
++		return -EIO;
+ 	}
+ 
+ 	if (!vmballoon_send_guest_id(&balloon)) {
+ 		pr_err("failed to send guest ID to the host\n");
+-		error = -EIO;
+-		goto fail;
++		return -EIO;
+ 	}
+ 
+ 	error = vmballoon_debugfs_init(&balloon);
+ 	if (error)
+-		goto fail;
++		return error;
+ 
+-	queue_delayed_work(vmballoon_wq, &balloon.dwork, 0);
++	queue_delayed_work(system_freezable_wq, &balloon.dwork, 0);
+ 
+ 	return 0;
+-
+-fail:
+-	destroy_workqueue(vmballoon_wq);
+-	return error;
+ }
+ module_init(vmballoon_init);
+ 
+ static void __exit vmballoon_exit(void)
+ {
+ 	cancel_delayed_work_sync(&balloon.dwork);
+-	destroy_workqueue(vmballoon_wq);
+ 
+ 	vmballoon_debugfs_exit(&balloon);
+ 
+-- 
+1.7.4.1
 
