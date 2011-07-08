@@ -1,225 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754061Ab1GHInJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 04:43:09 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:32002 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753458Ab1GHInG (ORCPT
+	id S1754150Ab1GHIqQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 04:46:16 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:56296 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753458Ab1GHIqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 04:43:06 -0400
-X-AuditID: cbfee61a-b7c53ae000002dc1-b4-4e16c3181328
-Date: Fri, 08 Jul 2011 17:42:59 +0900
-From: Jaehoon Chung <jh80.chung@samsung.com>
-Subject: Re: [PATCH] mmc: dw_mmc: Supply clocks for both host and card.
-In-reply-to: <000101cc3d3b$928b28a0$b7a179e0$%jun@samsung.com>
-To: Seungwon Jeon <tgih.jun@samsung.com>
-Cc: "'Jaehoon Chung'" <jh80.chung@samsung.com>, linux-mmc@vger.kernel.org,
-        cjb@laptop.org, linux-kernel@vger.kernel.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>
-Message-id: <4E16C313.4000804@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7BIT
-User-Agent: Thunderbird 2.0.0.24 (X11/20100623)
-References: <1309402497-29191-1-git-send-email-tgih.jun@samsung.com>
- <4E0C1DD0.2040202@samsung.com>
- <008c01cc37a4$1ea4c1e0$5bee45a0$%jun@samsung.com>
- <000101cc3d3b$928b28a0$b7a179e0$%jun@samsung.com>
-X-OriginalArrivalTime: 08 Jul 2011 08:43:16.0102 (UTC)
- FILETIME=[1466BA60:01CC3D4B]
+	Fri, 8 Jul 2011 04:46:13 -0400
+X-AuditID: b753bd60-a3cafba0000019f4-a5-4e16c3d27b9a
+X-AuditID: b753bd60-a3cafba0000019f4-a5-4e16c3d27b9a
+From: Nao Nishijima <nao.nishijima.xt@hitachi.com>
+Subject: [RFC PATCH 0/4] Persistent device name using alias name
+To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Cc: James.Bottomley@HansenPartnership.com, kay.sievers@vrfy.org,
+        jcm@redhat.com, greg@kroah.com, dle-develop@lists.sourceforge.net,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        yrl.pp-manager.tt@hitachi.com, dgilbert@interlog.com,
+        stefanr@s5r6.in-berlin.de, hare@suse.de
+Date: Fri, 08 Jul 2011 17:45:47 +0900
+Message-ID: <20110708084547.2091.55262.stgit@ltc197.sdl.hitachi.co.jp>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Hi,
 
-Seungwon Jeon wrote:
-> Hi, Mr Chung.
-> 
-> Do you have any feedback?
-> I want to know how to manipulate clock for host or card on your test situation.
+This patch series provides an "alias name" of the disk into kernel and procfs
+messages. The user can assign a preferred name to an alias name of the device.
 
-Yes. i used clock for them.
+Based on previous discussion (*), I changed patches as follows
+- This is "alias name"
+- An "alias name" is stored in gendisk struct
+- Add document to Documentation/ABI/testing/sysfs-block
+- When the user changes an "alias name", kernel notifies udev
 
-> I think there is no code for these clock in dw_mmc.
-> Who do you think is responsible for enabling clock? Driver or platform?
-> 
-Right. there is no code for clock. So if we use that controller, need to add clock.
-But i didn't sure that we need to get clock's name from platdata.
-
-If we can define the clock source, it's good that define standard clksrc name.("dw_mmc").
-
-Regards,
-Jaehoon Chung
-
-> Any opinion/advice are welcome.
-> 
-> Best regards,
-> Seungwon Jeon.
-> 
-> 
-> Seungwon Jeon wrote:
->> Hi, Mr Chung.
->>
->>> -----Original Message-----
->>> From: linux-mmc-owner@vger.kernel.org [mailto:linux-mmc-
->>> owner@vger.kernel.org] On Behalf Of Jaehoon Chung
->>> Sent: Thursday, June 30, 2011 3:55 PM
->>> To: Seungwon Jeon
->>> Cc: linux-mmc@vger.kernel.org; cjb@laptop.org; linux-
->>> kernel@vger.kernel.org; Kyungmin Park
->>> Subject: Re: [PATCH] mmc: dw_mmc: Supply clocks for both host and card.
->>>
->>> Hi Mr.Jeon
->>>
->>> What means cclk_name/ cclk enable?
->>> Controlling card clock is possible?
->>> Sorry, i didn't understand...
->>> (My understanding is that if we set host clk, cclk is used with
->> host_clk.)
->>> Plz can you explain to me?
->> Yes, cclk is source clock for card I/O.
->> It can be different from Host operating clock(hclk).
->>
->> Best regards,
->> Seunwgon.
->>
->>
->>> Regards,
->>> Jaehoon Chung
->>>
->>> Seungwon Jeon wrote:
->>>> Add enabling clocks for both host controller and card.
->>>>
->>>> Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
->>>> ---
->>>>  drivers/mmc/host/dw_mmc.c  |   33 ++++++++++++++++++++++++++++++++-
->>>>  include/linux/mmc/dw_mmc.h |    7 +++++++
->>>>  2 files changed, 39 insertions(+), 1 deletions(-)
->>>>
->>>> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
->>>> index 10b6979..a524416 100644
->>>> --- a/drivers/mmc/host/dw_mmc.c
->>>> +++ b/drivers/mmc/host/dw_mmc.c
->>>> @@ -1797,6 +1797,24 @@ static int dw_mci_probe(struct platform_device
->>> *pdev)
->>>>  		goto err_freehost;
->>>>  	}
->>>>
->>>> +	host->hclk = clk_get(&pdev->dev, pdata->hclk_name);
->>>> +	if (IS_ERR(host->hclk)) {
->>>> +		dev_err(&pdev->dev,
->>>> +			"Failed to get hclk\n");
->>>> +		ret = PTR_ERR(host->hclk);
->>>> +		goto err_freehost;
->>>> +	}
->>>> +	clk_enable(host->hclk);
->>>> +
->>>> +	host->cclk = clk_get(&pdev->dev, pdata->cclk_name);
->>>> +	if (IS_ERR(host->cclk)) {
->>>> +		dev_err(&pdev->dev,
->>>> +			"Failed to get cclk\n");
->>>> +		ret = PTR_ERR(host->cclk);
->>>> +		goto err_free_hclk;
->>>> +	}
->>>> +	clk_enable(host->cclk);
->>>> +
->>>>  	host->bus_hz = pdata->bus_hz;
->>>>  	host->quirks = pdata->quirks;
->>>>
->>>> @@ -1806,7 +1824,7 @@ static int dw_mci_probe(struct platform_device
->>> *pdev)
->>>>  	ret = -ENOMEM;
->>>>  	host->regs = ioremap(regs->start, regs->end - regs->start + 1);
->>>>  	if (!host->regs)
->>>> -		goto err_freehost;
->>>> +		goto err_free_cclk;
->>>>
->>>>  	host->dma_ops = pdata->dma_ops;
->>>>  	dw_mci_init_dma(host);
->>>> @@ -1945,6 +1963,13 @@ err_dmaunmap:
->>>>  		regulator_put(host->vmmc);
->>>>  	}
->>>>
->>>> +err_free_cclk:
->>>> +	clk_disable(host->cclk);
->>>> +	clk_put(host->cclk);
->>>> +
->>>> +err_free_hclk:
->>>> +	clk_disable(host->hclk);
->>>> +	clk_put(host->hclk);
->>>>
->>>>  err_freehost:
->>>>  	kfree(host);
->>>> @@ -1983,6 +2008,12 @@ static int __exit dw_mci_remove(struct
->>> platform_device *pdev)
->>>>  		regulator_put(host->vmmc);
->>>>  	}
->>>>
->>>> +	clk_disable(host->cclk);
->>>> +	clk_put(host->cclk);
->>>> +
->>>> +	clk_disable(host->hclk);
->>>> +	clk_put(host->hclk);
->>>> +
->>>>  	iounmap(host->regs);
->>>>
->>>>  	kfree(host);
->>>> diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
->>>> index f3f68ee..56b3f27 100644
->>>> --- a/include/linux/mmc/dw_mmc.h
->>>> +++ b/include/linux/mmc/dw_mmc.h
->>>> @@ -47,6 +47,8 @@ struct mmc_data;
->>>>   * @cmd: The command currently being sent to the card, or NULL.
->>>>   * @data: The data currently being transferred, or NULL if no data
->>>>   *	transfer is in progress.
->>>> + * @hclk: Clock for host.
->>>> + * @cclk: Clock for card.
->>>>   * @use_dma: Whether DMA channel is initialized or not.
->>>>   * @sg_dma: Bus address of DMA buffer.
->>>>   * @sg_cpu: Virtual address of DMA buffer.
->>>> @@ -118,6 +120,8 @@ struct dw_mci {
->>>>  	struct mmc_request	*mrq;
->>>>  	struct mmc_command	*cmd;
->>>>  	struct mmc_data		*data;
->>>> +	struct clk		*hclk;
->>>> +	struct clk		*cclk;
->>>>
->>>>  	/* DMA interface members*/
->>>>  	int			use_dma;
->>>> @@ -218,6 +222,9 @@ struct dw_mci_board {
->>>>  	/* delay in mS before detecting cards after interrupt */
->>>>  	u32 detect_delay_ms;
->>>>
->>>> +	char *hclk_name;
->>>> +	char *cclk_name;
->>>> +
->>>>  	int (*init)(u32 slot_id, irq_handler_t , void *);
->>>>  	int (*get_ro)(u32 slot_id);
->>>>  	int (*get_cd)(u32 slot_id);
->>>> --
->>>> 1.7.0.4
->>>>
->>>> --
->>>> To unsubscribe from this list: send the line "unsubscribe linux-mmc"
->> in
->>>> the body of a message to majordomo@vger.kernel.org
->>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+(*) http://marc.info/?l=linux-scsi&m=130812625531219&w=2
 
 
+How to use:
+1. Build and install the kernel with this series, and reboot with the kernel.
+
+2. Check device names.
+
+[localhost]# cat /proc/partitions
+major minor  #blocks  name
+
+   8        0   12582912 sda
+   8        1   12582878 sda1
+   8        0    8388608 sdb
+   8        1     512000 sdb1
+   8        2    7875584 sdb2
+
+
+3. Make a script of get alias_name
+
+[localhost]# vi /lib/udev/get_alias_name
+#!/bin/sh -e
+DEVNAME=`echo $1 | sed -e 's/[0-9]//g'`
+echo "ALIAS=`cat /sys/block/$DEVNAME/alias_name`"
+exit 0
+
+And you should set an execute bit,
+[localhost]# chmod +x /lib/udev/get_alias_name
+
+4. Check disk's id
+Here is an example to get the serial id and the path of the device.
+Some devices have not the serial id. Therefore, to identify a device,
+users need to get the path of the device.
+
+[localhost]# udevadm info --query=property --path=/sys/block/sda \
+| grep ID_SERIAL=
+ID_SERIAL=0QEMU_QEMU_HARDDISK_drive-scsi0-0-1
+
+or you can also use the path of the device
+
+[localhost]# udevadm info --query=property --path=/sys/block/sr0 \
+| grep ID_PATH=
+ID_PATH=pci-0000:00:01.1-scsi-1:0:0:0
+
+
+5. Write udev rules as follows
+(The user assigns "foo" to sda and "bar" to sr0)
+We use ENV{ID_SERIAL} or ENV{ID_PATH} (get by 3) to identify a disk.
+And to assign automatically an "alias name", we use ATTR key.
+If ENV{ALIAS} is empty, we use to get an "alias_name" by get_alias_name script.
+
+[localhost]# vi /etc/udev/rules.d/70-alias_name.rules
+SUBSYSTEM!="block", GOTO="end"
+
+# write alias name for sdX
+KERNEL=="sd*[!0-9]", ACTION=="add", ATTR{alias_name}="foo", \
+ENV{ID_SERIAL}=="0QEMU_QEMU_HARDDISK_drive-scsi0-0-1"
+
+# write alias name for srX
+KERNEL=="sr[0-9]", ACTION=="add", ATTR{alias_name}="bar", \
+ENV{ID_PATH}=="pci-0000:00:01.1-scsi-1:0:0:0"
+
+# make symlink
+ENV{DEVTYPE}=="disk", ENV{ALIAS}=="?*", SYMLINK+="disk/by-alias/$env{ALIAS}"
+ENV{DEVTYPE}=="partition", ENV{ALIAS}=="", \
+IMPORT{program}="/lib/udev/get_alias_name %k"
+ENV{DEVTYPE}=="partition", ENV{ALIAS}=="?*", \
+SYMLINK+="disk/by-alias/$env{ALIAS}%n"
+
+LABEL="end"
+
+
+6. reboot
+After reboot, we can see alias name in kernel and procfs messages.
+
+[localhost]# ls -l /dev/disk/by-alias/
+total 0
+lrwxrwxrwx. 1 root root  9 Jul  1 21:21 bar -> ../../sr0
+lrwxrwxrwx. 1 root root  9 Jul  1 21:21 foo -> ../../sda
+lrwxrwxrwx. 1 root root 10 Jul  1 21:21 foo1 -> ../../sda1
+
+[localhost]# dmesg
+...
+sd 2:0:1:0: [sda] Attached SCSI disk
+alias_name: assigned foo to sda
+EXT4-fs (foo1): warning: maximal mount count reached, running e2fsck is recommended
+EXT4-fs (foo1): mounted filesystem with ordered data mode. Opts: (null)
+...
+
+[localhost]# cat /proc/partitions
+major minor  #blocks  name
+
+   8        0   12582912 foo
+   8        1   12582878 foo1
+   8        0    8388608 sdb
+   8        1     512000 sdb1
+   8        2    7875584 sdb2
+
+
+
+When a new device is added, the udev appends a new rule manually.
+In the future, it is appended automatically, as like NIC.
+
+TODO:
+- Modify blkid to show "alias name"
+
+Best Regards,
+
+---
+
+Nao Nishijima (4):
+      sd: cleanup for alias name
+      fs: modify disk_name() for alias name
+      sd: modify printk for alias_name
+      block: add a new attribute "alias name" in gendisk structure
+
+
+ Documentation/ABI/testing/sysfs-block |   15 ++++++
+ block/genhd.c                         |   85 +++++++++++++++++++++++++++++++++
+ drivers/scsi/sd.c                     |    7 ++-
+ drivers/scsi/sd.h                     |    2 -
+ fs/partitions/check.c                 |    6 +-
+ include/linux/genhd.h                 |    4 ++
+ include/scsi/scsi_device.h            |    3 +
+ 7 files changed, 114 insertions(+), 8 deletions(-)
+
+
+--
+Nao Nishijima (nao.nishijima.xt@hitachi.com)
