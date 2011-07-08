@@ -1,123 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753529Ab1GHM6e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 08:58:34 -0400
-Received: from hera.kernel.org ([140.211.167.34]:32925 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751526Ab1GHM6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 08:58:31 -0400
-Date: Fri, 8 Jul 2011 12:58:16 GMT
-From: tip-bot for Naga Chumbalkar <nagananda.chumbalkar@hp.com>
-Message-ID: <tip-ded1f6ab43a03be74a53649cf388b5424d447584@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        nagananda.chumbalkar@hp.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        nagananda.chumbalkar@hp.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20110708083555.2598.42216.sendpatchset@nchumbalkar.americas.hpqcorp.net>
-References: <20110708083555.2598.42216.sendpatchset@nchumbalkar.americas.hpqcorp.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86: print APIC data a little later during boot
-Git-Commit-ID: ded1f6ab43a03be74a53649cf388b5424d447584
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 08 Jul 2011 12:58:17 +0000 (UTC)
+	id S1752817Ab1GHM6z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 08:58:55 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:38721 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750937Ab1GHM6v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 08:58:51 -0400
+Subject: Re: [PATCH 1/3] uml: drivers/net_user.c memory leak fix
+From: Vitaliy Ivanov <vitalivanov@gmail.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: Jeff Dike <jdike@addtoit.com>, user-mode-linux-devel@lists.sourceforge.net,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <201107081244.53433.richard@nod.at>
+References: <1310056562.3528.49.camel@vivanov>
+	 <201107071927.16237.richard@nod.at>
+	 <CAGTPOqfe8JxMsOru=pydy6ofEi0Ax-N=W_2UZwq5y=grrTemhQ@mail.gmail.com>
+	 <201107081244.53433.richard@nod.at>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 08 Jul 2011 16:00:44 +0300
+Message-ID: <1310130044.26209.3.camel@vivanov>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ded1f6ab43a03be74a53649cf388b5424d447584
-Gitweb:     http://git.kernel.org/tip/ded1f6ab43a03be74a53649cf388b5424d447584
-Author:     Naga Chumbalkar <nagananda.chumbalkar@hp.com>
-AuthorDate: Fri, 8 Jul 2011 08:36:34 +0000
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 8 Jul 2011 13:20:14 +0200
 
-x86: print APIC data a little later during boot
+> > > This control logic is a bit strange.
+> > > When change_tramp() fails we should not printk() the output variable.
+> > > 
+> > > if (pid < 0){
+> > >  free(output);
+> > >  return;
+> > > }
+> > > 
+> > > Would be much cleaner.
+> > 
+> > I just didn't want to clone this free-return stuff. So, what you
+> > proposing is like this:
+> > ------------
+> > ...
+> >         output = uml_kmalloc(output_len, UM_GFP_KERNEL);
+> >         if (output == NULL)
+> >                 printk(UM_KERN_ERR "change : failed to allocate output "
+> >                        "buffer\n");
+> > 
+> >         pid = change_tramp(argv, output, output_len);
+> >         if (pid < 0) {
+> >                 free(output);               <---------- I'm not sure but 'output' can be NULL here.
+> >                 return;
+> >         }
+> > 
+> >         if (output != NULL) {
+> >                 printk("%s", output);
+> >                 kfree(output);
+> >         }
+> > }
+> > ------------
+> > 
+> > I was trying to print 'output' only in case change_tramp is
+> > successful. That's the old logic. And at the same time perform free
+> > only in case output is not NULL.
+> 
+> Why?
+> Freeing a NULL pointer is perfectly fine.
 
-To view IOAPIC data you could boot with "apic=debug".
+I should agree that something that you propose has better readability.
 
-When booting in such a way then the kernel will dump the
-IO-APIC's registers, for example:
+So, here is updated patch.
 
-NR Dst Mask Trig IRR Pol Stat Dmod Deli Vect:
- 00 000 1    0    0   0   0    0    0    00
- 01 000 0    0    0   0   0    0    0    31
- 02 000 0    0    0   0   0    0    0    30
- 03 000 0    0    0   0   0    0    0    33
- 04 000 0    0    0   0   0    0    0    34
- 05 000 0    0    0   0   0    0    0    35
- 06 000 0    0    0   0   0    0    0    36
- 07 000 0    0    0   0   0    0    0    37
- 08 000 0    0    0   0   0    0    0    38
- 09 000 0    1    0   0   0    0    0    39
- 0a 000 0    0    0   0   0    0    0    3A
- 0b 000 0    0    0   0   0    0    0    3B
- 0c 000 0    0    0   0   0    0    0    3C
- 0d 000 0    0    0   0   0    0    0    3D
- 0e 000 0    0    0   0   0    0    0    3E
- 0f 000 0    0    0   0   0    0    0    3F
- 10 000 1    0    0   0   0    0    0    00
- 11 000 1    0    0   0   0    0    0    00
- 12 000 1    0    0   0   0    0    0    00
- 13 000 1    0    0   0   0    0    0    00
- 14 000 1    0    0   0   0    0    0    00
- 15 000 1    0    0   0   0    0    0    00
- 16 000 1    0    0   0   0    0    0    00
- 17 000 1    0    0   0   0    0    0    00
-
-Delaying the call to print_ICs() gives better results:
-
-NR Dst Mask Trig IRR Pol Stat Dmod Deli Vect:
- 00 000 1    0    0   0   0    0    0    00
- 01 000 0    0    0   0   0    0    0    31
- 02 000 0    0    0   0   0    0    0    30
- 03 000 1    0    0   0   0    0    0    33
- 04 000 1    0    0   0   0    0    0    34
- 05 000 1    0    0   0   0    0    0    35
- 06 000 1    0    0   0   0    0    0    36
- 07 000 1    0    0   0   0    0    0    37
- 08 000 0    0    0   0   0    0    0    38
- 09 000 0    1    0   0   0    0    0    39
- 0a 000 1    0    0   0   0    0    0    3A
- 0b 000 1    0    0   0   0    0    0    3B
- 0c 000 0    0    0   0   0    0    0    3C
- 0d 000 1    0    0   0   0    0    0    3D
- 0e 000 1    0    0   0   0    0    0    3E
- 0f 000 1    0    0   0   0    0    0    3F
- 10 000 1    1    0   1   0    0    0    29
- 11 000 1    0    0   0   0    0    0    00
- 12 000 1    0    0   0   0    0    0    00
- 13 000 1    0    0   0   0    0    0    00
- 14 000 0    1    0   1   0    0    0    51
- 15 000 1    0    0   0   0    0    0    00
- 16 000 0    1    0   1   0    0    0    61
- 17 000 0    1    0   1   0    0    0    59
-
-Notice that the entries beyond interrupt input signal 0x0f also
-get populated and arent just the hw-initialization default of
-all zeroes.
-
-Signed-off-by: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
-Link: http://lkml.kernel.org/r/20110708083555.2598.42216.sendpatchset@nchumbalkar.americas.hpqcorp.net
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Thanks
 ---
- arch/x86/kernel/apic/io_apic.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+>From b0c5ca0336cc94b2fda251e0da7918394e59c5cd Mon Sep 17 00:00:00 2001
+From: Vitaliy Ivanov <vitalivanov@gmail.com>
+Date: Fri, 8 Jul 2011 14:54:29 +0300
+Subject: [PATCH] uml: drivers/net_user.c memory leak fix
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index e529339..98c8d7e 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1792,7 +1792,7 @@ __apicdebuginit(int) print_ICs(void)
- 	return 0;
- }
+Perform memory cleanup on exit.
+On receiving invalid 'pid' we still should clean 'output' variable.
+
+Signed-off-by: Vitaliy Ivanov <vitalivanov@gmail.com>
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ arch/um/drivers/net_user.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/arch/um/drivers/net_user.c b/arch/um/drivers/net_user.c
+index 9415dd9..5201188 100644
+--- a/arch/um/drivers/net_user.c
++++ b/arch/um/drivers/net_user.c
+@@ -228,7 +228,10 @@ static void change(char *dev, char *what, unsigned char *addr,
+ 		       "buffer\n");
  
--fs_initcall(print_ICs);
-+late_initcall(print_ICs);
+ 	pid = change_tramp(argv, output, output_len);
+-	if (pid < 0) return;
++	if (pid < 0) {
++		kfree(output);
++		return;
++	}
  
- 
- /* Where if anywhere is the i8259 connect in external int mode */
+ 	if (output != NULL) {
+ 		printk("%s", output);
+-- 
+1.7.0.4
+
+
+
