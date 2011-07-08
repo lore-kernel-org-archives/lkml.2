@@ -1,106 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754304Ab1GHRVA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 13:21:00 -0400
-Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:37441 "EHLO
-	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752005Ab1GHRU6 (ORCPT
+	id S1754278Ab1GHRXu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 13:23:50 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:17914 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752005Ab1GHRXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 13:20:58 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Magnus Damm <magnus.damm@gmail.com>, Paul Walmsley <paul@pwsan.com>,
-        LKML <linux-kernel@vger.kernel.org>, <linux-sh@vger.kernel.org>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [Update][PATCH 6/10] PM / Domains: System-wide transitions support for generic domains (v5)
-Organization: Texas Instruments, Inc.
-References: <Pine.LNX.4.44L0.1107081033000.2208-100000@iolanthe.rowland.org>
-Date: Fri, 08 Jul 2011 10:20:52 -0700
-In-Reply-To: <Pine.LNX.4.44L0.1107081033000.2208-100000@iolanthe.rowland.org>
-	(Alan Stern's message of "Fri, 8 Jul 2011 10:37:32 -0400 (EDT)")
-Message-ID: <87y6088z9n.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	Fri, 8 Jul 2011 13:23:48 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6401"; a="102444396"
+Message-ID: <4E173D23.4040808@codeaurora.org>
+Date: Fri, 08 Jul 2011 10:23:47 -0700
+From: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Greg KH <gregkh@suse.de>
+CC: davidb@codeaurora.org, Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        David Collins <collinsd@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        Joe Perches <joe@perches.com>, Daniel Walker <dwalker@fifo99.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [Qualcomm PM8921 MFD 3/6] gpio: pm8xxx-gpio: Add pm8xxx gpio
+ driver
+References: <1299104001-5240-1-git-send-email-adharmap@codeaurora.org> <1299104001-5240-4-git-send-email-adharmap@codeaurora.org> <20110708154413.GA10567@suse.de>
+In-Reply-To: <20110708154413.GA10567@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Stern <stern@rowland.harvard.edu> writes:
-
-> On Fri, 8 Jul 2011, Rafael J. Wysocki wrote:
+On 07/08/2011 08:44 AM, Greg KH wrote:
+> On Wed, Mar 02, 2011 at 02:13:18PM -0800, adharmap@codeaurora.org wrote:
+>> From: Abhijeet Dharmapurikar<adharmap@codeaurora.org>
+>>
+>> Add support for GPIO on Qualcomm PM8xxx PMIC chips.
+>>
+>> Change-Id: I5c00baeedc6c40ed40065d15c83577051e6ac9c6
 >
->> On Friday, July 08, 2011, Kevin Hilman wrote:
->> > "Rafael J. Wysocki" <rjw@sisk.pl> writes:
->> > 
->> > > From: Rafael J. Wysocki <rjw@sisk.pl>
->> > >
->> > > Make generic PM domains support system-wide power transitions
->> > > (system suspend and hibernation).  Add suspend, resume, freeze, thaw,
->> > > poweroff and restore callbacks to be associated with struct
->> > > generic_pm_domain objects and make pm_genpd_init() use them as
->> > > appropriate.
->> > >
->> > > The new callbacks do nothing for devices belonging to power domains
->> > > that were powered down at run time (before the transition).  
->> > 
->> > Thinking about this some more, how is a driver supposed to reconfigure
->> > wakeups during suspend if it has already been runtime suspended?
->> 
->> If the device belongs to a PM domain that has been powered off, it
->> won't be notified.
->> 
->> > For example, assume a device where device_may_wakeup() == false.  This
->> > means wakeups during *suspend* are disabled, but wakeups wakeups are
->> > assumed to enabled when it is runtime suspended.
->> > 
->> > So now, assume this device is RPM_SUSPENDED, it has wakeups *enabled*,
->> > and then system suspend comes along.  
->> > 
->> > With this current patch, the driver will never receive any callbacks, so
->> > it can never disable its wakeups.  
->> >
->> > Am I missing something?
->> 
->> As I said above, this only happens with devices that belog to PM domains
->> that were powered off before system suspend has started, so the problem
->> is limited to devices that wakeup is signaled on behalf of even when they
->> have no power.
+> What is this line for?
 
-Which on OMAP, is *all* devices, so that's a pretty major limitation.  :)
+That commit text artifact is for our internal review tool (gerrit). I 
+cleaned it up in the later revision of the patch series.
+The latest can be found here
 
->> So this is a limitation, but not affecting all platforms.
->> 
->> There are a few ways to avoid this limitation I can think of:
->> (1) Add a "make me operational during system suspend" flag to struct dev_pm_info
->>     and run pm_runtime_resume() on such devices from the core (either dpm_prepare()
->>     core, or pm_genpd_prepare()).
->
-> What's to prevent the device from being runtime-suspended again before 
-> the wakeup setting can be changed?
->
->> (2) Add a "my .prepare() is safe to run if device is not accessible" flag to
->>     struct dev_pm_info and make pm_genpd_prepare() execute .prepare() for such
->>     devices regardless of whether or not their PM domains are off.
->> (3) Call .prepare() from all drivers unconditionally during system suspend
->>     (and probably .complete() too) in the hope they won't access inaccessible
->>     devices.
+https://lkml.org/lkml/2011/4/5/427
 
-Like Alan's comment above for (1), I think the same applies for (3)
-since runtime PM transitions can still happen between .prepare() and
-.suspend()
+Thanks for looking,
+Abhijeet
 
-Kevin
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
->> Probably, there's more.
->
-> In the PM domain's suspend code, do a runtime resume if the wakeup
-> setting needs to be changed, rather than simply skipping over the
-> device.
->
->> In any case I think it's material for future work.
->
-> Alan Stern
