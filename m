@@ -1,95 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751106Ab1GHEO5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 00:14:57 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:32854 "EHLO
+	id S1752364Ab1GHEPa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 00:15:30 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:33066 "EHLO
 	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750731Ab1GHEOx (ORCPT
+	by vger.kernel.org with ESMTP id S1751192Ab1GHEPW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 00:14:53 -0400
+	Fri, 8 Jul 2011 00:15:22 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlwHAIiCFk55LCkBgWdsb2JhbABTmE2OdBUBARYmJc0NhjgEoyI
+X-IronPort-Anti-Spam-Result: Ak0EAIiCFk55LCkBgWdsb2JhbABTp0EVAQEWJiXNDYY4BKMi
 From: Dave Chinner <david@fromorbit.com>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [PATCH 0/14] Per superblock cache reclaim
-Date: Fri,  8 Jul 2011 14:14:32 +1000
-Message-Id: <1310098486-6453-1-git-send-email-david@fromorbit.com>
+Subject: [PATCH 08/14] inode: move to per-sb LRU locks
+Date: Fri,  8 Jul 2011 14:14:40 +1000
+Message-Id: <1310098486-6453-9-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.5.1
+In-Reply-To: <1310098486-6453-1-git-send-email-david@fromorbit.com>
+References: <1310098486-6453-1-git-send-email-david@fromorbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series converts the VFS cache shrinkers to a per-superblock
-shrinker, and provides a callout from the superblock shrinker to
-allow the filesystem to shrink internal caches proportionally to the
-amount of reclaim done to the VFS caches.
+From: Dave Chinner <dchinner@redhat.com>
 
-The original posting contains the motiviation, benefits, performance,
-etc, and rather than repeat it all, just look here:
+With the inode LRUs moving to per-sb structures, there is no longer
+a need for a global inode_lru_lock. The locking can be made more
+fine-grained by moving to a per-sb LRU lock, isolating the LRU
+operations of different filesytsems completely from each other.
 
-https://lkml.org/lkml/2011/6/2/42
-
-The version has been rebased onto the untested branch in Al's VFS
-git tree, fixes the review comments from the first version, and
-has had much more testing under different workloads.
-
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
 ---
+ fs/inode.c         |   27 +++++++++++++--------------
+ fs/super.c         |    1 +
+ include/linux/fs.h |    3 ++-
+ 3 files changed, 16 insertions(+), 15 deletions(-)
 
-Version 2:
-o rebase onto Al's #untested branch
-o fix build problem in Al's untested branch
-o move all slab shrinker modifications tracepoints into a single
-  patch.
-o renames some of the tracepoint variables to be more obvious as to
-  what they are recording.
-o move pin_sb_for_writeback() to fs/super.c and rename it to
-  grab_super_passive() so the shrinker and writeback use the same
-  passive reference counting and unmount detection
-o rework per-superblock shrinker to use grab_super_passive()
-o minor typo fixes in commit messages, documentation and commit
-  messages
-
----
-
-When the git mirror updates, this patchset will also be available in
-the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/dgc/xfsdev.git per-sb-shrinker
-
-If you get a version based on the current Linus tree, then it hasn't
-updated yet....
-
-Dave Chinner (14):
-      dcache: fix __d_alloc prototype to use const
-      vmscan: add shrink_slab tracepoints
-      vmscan: shrinker->nr updates race and go wrong
-      vmscan: reduce wind up shrinker->nr when shrinker can't do work
-      vmscan: add customisable shrinker batch size
-      inode: convert inode_stat.nr_unused to per-cpu counters
-      inode: Make unused inode LRU per superblock
-      inode: move to per-sb LRU locks
-      superblock: move pin_sb_for_writeback() to fs/super.c
-      superblock: introduce per-sb cache shrinker infrastructure
-      inode: remove iprune_sem
-      superblock: add filesystem shrinker operations
-      vfs: increase shrinker batch size
-      xfs: make use of new shrinker callout for the inode cache
-
- Documentation/filesystems/vfs.txt |   22 +++++++
- fs/dcache.c                       |  121 ++++--------------------------------
- fs/fs-writeback.c                 |   28 +--------
- fs/inode.c                        |  124 ++++++++++++-------------------------
- fs/internal.h                     |    3 +-
- fs/libfs.c                        |    2 +
- fs/super.c                        |  109 ++++++++++++++++++++++++++++++++-
- fs/xfs/linux-2.6/xfs_super.c      |   26 +++++---
- fs/xfs/linux-2.6/xfs_sync.c       |   71 ++++++++-------------
- fs/xfs/linux-2.6/xfs_sync.h       |    5 +-
- include/linux/fs.h                |   14 ++++
- include/linux/mm.h                |    1 +
- include/trace/events/vmscan.h     |   71 +++++++++++++++++++++
- mm/vmscan.c                       |   71 +++++++++++++++++-----
- 14 files changed, 374 insertions(+), 294 deletions(-)
+diff --git a/fs/inode.c b/fs/inode.c
+index 0c79cd3..bda0720 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -33,7 +33,7 @@
+  *
+  * inode->i_lock protects:
+  *   inode->i_state, inode->i_hash, __iget()
+- * inode_lru_lock protects:
++ * inode->i_sb->s_inode_lru_lock protects:
+  *   inode->i_sb->s_inode_lru, inode->i_lru
+  * inode_sb_list_lock protects:
+  *   sb->s_inodes, inode->i_sb_list
+@@ -46,7 +46,7 @@
+  *
+  * inode_sb_list_lock
+  *   inode->i_lock
+- *     inode_lru_lock
++ *     inode->i_sb->s_inode_lru_lock
+  *
+  * inode_wb_list_lock
+  *   inode->i_lock
+@@ -64,8 +64,6 @@ static unsigned int i_hash_shift __read_mostly;
+ static struct hlist_head *inode_hashtable __read_mostly;
+ static __cacheline_aligned_in_smp DEFINE_SPINLOCK(inode_hash_lock);
+ 
+-static DEFINE_SPINLOCK(inode_lru_lock);
+-
+ __cacheline_aligned_in_smp DEFINE_SPINLOCK(inode_sb_list_lock);
+ __cacheline_aligned_in_smp DEFINE_SPINLOCK(inode_wb_list_lock);
+ 
+@@ -342,24 +340,24 @@ EXPORT_SYMBOL(ihold);
+ 
+ static void inode_lru_list_add(struct inode *inode)
+ {
+-	spin_lock(&inode_lru_lock);
++	spin_lock(&inode->i_sb->s_inode_lru_lock);
+ 	if (list_empty(&inode->i_lru)) {
+ 		list_add(&inode->i_lru, &inode->i_sb->s_inode_lru);
+ 		inode->i_sb->s_nr_inodes_unused++;
+ 		this_cpu_inc(nr_unused);
+ 	}
+-	spin_unlock(&inode_lru_lock);
++	spin_unlock(&inode->i_sb->s_inode_lru_lock);
+ }
+ 
+ static void inode_lru_list_del(struct inode *inode)
+ {
+-	spin_lock(&inode_lru_lock);
++	spin_lock(&inode->i_sb->s_inode_lru_lock);
+ 	if (!list_empty(&inode->i_lru)) {
+ 		list_del_init(&inode->i_lru);
+ 		inode->i_sb->s_nr_inodes_unused--;
+ 		this_cpu_dec(nr_unused);
+ 	}
+-	spin_unlock(&inode_lru_lock);
++	spin_unlock(&inode->i_sb->s_inode_lru_lock);
+ }
+ 
+ /**
+@@ -608,7 +606,8 @@ static int can_unuse(struct inode *inode)
+ 
+ /*
+  * Scan `goal' inodes on the unused list for freeable ones. They are moved to a
+- * temporary list and then are freed outside inode_lru_lock by dispose_list().
++ * temporary list and then are freed outside sb->s_inode_lru_lock by
++ * dispose_list().
+  *
+  * Any inodes which are pinned purely because of attached pagecache have their
+  * pagecache removed.  If the inode has metadata buffers attached to
+@@ -628,7 +627,7 @@ static void shrink_icache_sb(struct super_block *sb, int *nr_to_scan)
+ 	int nr_scanned;
+ 	unsigned long reap = 0;
+ 
+-	spin_lock(&inode_lru_lock);
++	spin_lock(&sb->s_inode_lru_lock);
+ 	for (nr_scanned = *nr_to_scan; nr_scanned >= 0; nr_scanned--) {
+ 		struct inode *inode;
+ 
+@@ -638,7 +637,7 @@ static void shrink_icache_sb(struct super_block *sb, int *nr_to_scan)
+ 		inode = list_entry(sb->s_inode_lru.prev, struct inode, i_lru);
+ 
+ 		/*
+-		 * we are inverting the inode_lru_lock/inode->i_lock here,
++		 * we are inverting the sb->s_inode_lru_lock/inode->i_lock here,
+ 		 * so use a trylock. If we fail to get the lock, just move the
+ 		 * inode to the back of the list so we don't spin on it.
+ 		 */
+@@ -670,12 +669,12 @@ static void shrink_icache_sb(struct super_block *sb, int *nr_to_scan)
+ 		if (inode_has_buffers(inode) || inode->i_data.nrpages) {
+ 			__iget(inode);
+ 			spin_unlock(&inode->i_lock);
+-			spin_unlock(&inode_lru_lock);
++			spin_unlock(&sb->s_inode_lru_lock);
+ 			if (remove_inode_buffers(inode))
+ 				reap += invalidate_mapping_pages(&inode->i_data,
+ 								0, -1);
+ 			iput(inode);
+-			spin_lock(&inode_lru_lock);
++			spin_lock(&sb->s_inode_lru_lock);
+ 
+ 			if (inode != list_entry(sb->s_inode_lru.next,
+ 						struct inode, i_lru))
+@@ -700,7 +699,7 @@ static void shrink_icache_sb(struct super_block *sb, int *nr_to_scan)
+ 		__count_vm_events(KSWAPD_INODESTEAL, reap);
+ 	else
+ 		__count_vm_events(PGINODESTEAL, reap);
+-	spin_unlock(&inode_lru_lock);
++	spin_unlock(&sb->s_inode_lru_lock);
+ 	*nr_to_scan = nr_scanned;
+ 
+ 	dispose_list(&freeable);
+diff --git a/fs/super.c b/fs/super.c
+index e8e6dbf..73ab9f9 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -78,6 +78,7 @@ static struct super_block *alloc_super(struct file_system_type *type)
+ 		INIT_LIST_HEAD(&s->s_inodes);
+ 		INIT_LIST_HEAD(&s->s_dentry_lru);
+ 		INIT_LIST_HEAD(&s->s_inode_lru);
++		spin_lock_init(&s->s_inode_lru_lock);
+ 		init_rwsem(&s->s_umount);
+ 		mutex_init(&s->s_lock);
+ 		lockdep_set_class(&s->s_umount, &type->s_umount_key);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 552a1d3..1c74907 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1396,7 +1396,8 @@ struct super_block {
+ 	struct list_head	s_dentry_lru;	/* unused dentry lru */
+ 	int			s_nr_dentry_unused;	/* # of dentry on lru */
+ 
+-	/* inode_lru_lock protects s_inode_lru and s_nr_inodes_unused */
++	/* s_inode_lru_lock protects s_inode_lru and s_nr_inodes_unused */
++	spinlock_t		s_inode_lru_lock ____cacheline_aligned_in_smp;
+ 	struct list_head	s_inode_lru;		/* unused inode lru */
+ 	int			s_nr_inodes_unused;	/* # of inodes on lru */
+ 
+-- 
+1.7.5.1
 
