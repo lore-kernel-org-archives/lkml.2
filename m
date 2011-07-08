@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754134Ab1GHFCh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:02:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41890 "EHLO mx2.suse.de"
+	id S1754530Ab1GHFD1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:03:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42157 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753691Ab1GHFCc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:02:32 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:56 2011
-Message-Id: <20110708001656.695034229@clark.kroah.org>
+	id S1754464Ab1GHFDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:03:23 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:58 2011
+Message-Id: <20110708001658.062981271@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:16:13 -0700
+Date: Thu, 07 Jul 2011 17:16:27 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>, ablay@codeaurora.org,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [041/107] USB: Free bandwidth when usb_disable_device is called.
+        Peng Tao <peng_tao@emc.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [055/107] NFS41: do not update isize if inode needs layoutcommit
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,150 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Peng Tao <bergwolf@gmail.com>
 
-commit fccf4e86200b8f5edd9a65da26f150e32ba79808 upstream.
+commit 0f66b5984df2fe1617c05900a39a7ef493ca9de9 upstream.
 
-Tanya ran into an issue when trying to switch a UAS device from the BOT
-configuration to the UAS configuration via the bConfigurationValue sysfs
-file.  Before installing the UAS configuration, set_bConfigurationValue()
-calls usb_disable_device().  That function is supposed to remove all host
-controller resources associated with that device, but it leaves some state
-in the xHCI host controller.
+nfs_update_inode will update isize if there is no queued pages. For pNFS,
+layoutcommit is supposed to change file size on server, the same effect as queued
+pages. nfs_update_inode may be called when dirty pages are written back (nfsi->npages==0)
+but layoutcommit is not sent, and it will change client file size according to server
+file size. Then client ends up losing what it just writes back in pNFS path.
+So we should skip updating client file size if file needs layoutcommit.
 
-Commit 0791971ba8fbc44e4f476079f856335ed45e6324
-	usb: allow drivers to use allocated bandwidth until unbound
-added a call to usb_disable_device() in usb_set_configuration(), before
-the xHCI bandwidth functions were invoked.  That commit fixed a bug, but
-also introduced a bug that is triggered when a configured device is
-switched to a new configuration.
-
-usb_disable_device() goes through all the motions of unbinding the drivers
-attached to active interfaces and removing the USB core structures
-associated with those interfaces, but it doesn't actually remove the
-endpoints from the internal xHCI host controller bandwidth structures.
-
-When usb_disable_device() calls usb_disable_endpoint() with reset_hardware
-set to true, the entries in udev->ep_out and udev->ep_in will be set to
-NULL.  Usually, when the USB core installs a new configuration,
-usb_hcd_alloc_bandwidth() will drop all non-NULL endpoints in udev->ep_out
-and udev->ep_in before adding any new endpoints.  However, when the new
-UAS configuration was added, all those entries were null, so none of the
-old endpoints in the BOT configuration were dropped.
-
-The xHCI driver blindly added the UAS configuration endpoints, and some of
-the endpoint addresses overlapped with the old BOT configuration
-endpoints.  This caused the xHCI host to reject the Configure Endpoint
-command.  Now that the xHCI driver code is cleaned up to reject a
-double-add of active endpoints, we need to fix the USB core to properly
-drop old endpoints in usb_disable_device().
-
-If the host controller driver needs bandwidth checking support, make
-usb_disable_device() call usb_disable_endpoint() with
-reset_hardware set to false, drop the endpoints from the xHCI host
-controller, and then call usb_disable_endpoint() again with
-reset_hardware set to true.
-
-The first call to usb_disable_endpoint() will cancel any pending URBs and
-wait on them to be freed in usb_hcd_disable_endpoint(), but will keep the
-pointers in udev->ep_out and udev->ep in intact.  Then
-usb_hcd_alloc_bandwidth() will use those pointers to know which endpoints
-to drop.
-
-The final call to usb_disable_endpoint() will do two things:
-
-1. It will call usb_hcd_disable_endpoint() again, which should be harmless
-since the ep->urb_list should be empty after the first call to
-usb_disable_endpoint() returns.
-
-2. It will set the entries in udev->ep_out and udev->ep in to NULL, and call
-usb_hcd_disable_endpoint().  That call will have no effect, since the xHCI
-driver doesn't set the endpoint_disable function pointer.
-
-Note that usb_disable_device() will now need to be called with
-hcd->bandwidth_mutex held.
-
-This should be backported to kernels as old as 2.6.32.
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: Tanya Brokhman <tlinder@codeaurora.org>
-Cc: ablay@codeaurora.org
-Cc: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Peng Tao <peng_tao@emc.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/core/hub.c     |    3 +++
- drivers/usb/core/message.c |   15 ++++++++++++++-
- 2 files changed, 17 insertions(+), 1 deletion(-)
+ fs/nfs/inode.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1643,6 +1643,7 @@ void usb_disconnect(struct usb_device **
- {
- 	struct usb_device	*udev = *pdev;
- 	int			i;
-+	struct usb_hcd		*hcd = bus_to_hcd(udev->bus);
- 
- 	if (!udev) {
- 		pr_debug ("%s nodev\n", __func__);
-@@ -1670,7 +1671,9 @@ void usb_disconnect(struct usb_device **
- 	 * so that the hardware is now fully quiesced.
- 	 */
- 	dev_dbg (&udev->dev, "unregistering device\n");
-+	mutex_lock(hcd->bandwidth_mutex);
- 	usb_disable_device(udev, 0);
-+	mutex_unlock(hcd->bandwidth_mutex);
- 	usb_hcd_synchronize_unlinks(udev);
- 
- 	usb_remove_ep_devs(&udev->ep0);
---- a/drivers/usb/core/message.c
-+++ b/drivers/usb/core/message.c
-@@ -1135,10 +1135,13 @@ void usb_disable_interface(struct usb_de
-  * Deallocates hcd/hardware state for the endpoints (nuking all or most
-  * pending urbs) and usbcore state for the interfaces, so that usbcore
-  * must usb_set_configuration() before any interfaces could be used.
-+ *
-+ * Must be called with hcd->bandwidth_mutex held.
-  */
- void usb_disable_device(struct usb_device *dev, int skip_ep0)
- {
- 	int i;
-+	struct usb_hcd *hcd = bus_to_hcd(dev->bus);
- 
- 	/* getting rid of interfaces will disconnect
- 	 * any drivers bound to them (a key side effect)
-@@ -1172,6 +1175,16 @@ void usb_disable_device(struct usb_devic
- 
- 	dev_dbg(&dev->dev, "%s nuking %s URBs\n", __func__,
- 		skip_ep0 ? "non-ep0" : "all");
-+	if (hcd->driver->check_bandwidth) {
-+		/* First pass: Cancel URBs, leave endpoint pointers intact. */
-+		for (i = skip_ep0; i < 16; ++i) {
-+			usb_disable_endpoint(dev, i, false);
-+			usb_disable_endpoint(dev, i + USB_DIR_IN, false);
-+		}
-+		/* Remove endpoints from the host controller internal state */
-+		usb_hcd_alloc_bandwidth(dev, NULL, NULL, NULL);
-+		/* Second pass: remove endpoint pointers */
-+	}
- 	for (i = skip_ep0; i < 16; ++i) {
- 		usb_disable_endpoint(dev, i, true);
- 		usb_disable_endpoint(dev, i + USB_DIR_IN, true);
-@@ -1727,6 +1740,7 @@ free_interfaces:
- 	/* if it's already configured, clear out old state first.
- 	 * getting rid of old interfaces means unbinding their drivers.
- 	 */
-+	mutex_lock(hcd->bandwidth_mutex);
- 	if (dev->state != USB_STATE_ADDRESS)
- 		usb_disable_device(dev, 1);	/* Skip ep0 */
- 
-@@ -1739,7 +1753,6 @@ free_interfaces:
- 	 * host controller will not allow submissions to dropped endpoints.  If
- 	 * this call fails, the device state is unchanged.
- 	 */
--	mutex_lock(hcd->bandwidth_mutex);
- 	ret = usb_hcd_alloc_bandwidth(dev, cp, NULL, NULL);
- 	if (ret < 0) {
- 		mutex_unlock(hcd->bandwidth_mutex);
+--- a/fs/nfs/inode.c
++++ b/fs/nfs/inode.c
+@@ -1294,7 +1294,8 @@ static int nfs_update_inode(struct inode
+ 		if (new_isize != cur_isize) {
+ 			/* Do we perhaps have any outstanding writes, or has
+ 			 * the file grown beyond our last write? */
+-			if (nfsi->npages == 0 || new_isize > cur_isize) {
++			if ((nfsi->npages == 0 && !test_bit(NFS_INO_LAYOUTCOMMIT, &nfsi->flags)) ||
++			     new_isize > cur_isize) {
+ 				i_size_write(inode, new_isize);
+ 				invalid |= NFS_INO_INVALID_ATTR|NFS_INO_INVALID_DATA;
+ 			}
 
 
