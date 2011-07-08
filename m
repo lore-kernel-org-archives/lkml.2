@@ -1,304 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753143Ab1GHAyZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 20:54:25 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:30344 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751976Ab1GHAyY convert rfc822-to-8bit (ORCPT
+	id S1753312Ab1GHA6K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 20:58:10 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:36070 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752564Ab1GHA6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 20:54:24 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=FBJm7qomGyhtl4XdDWehtx4IaaN9oZ37jNgp6ke5FhaMkF+z8R7aNvn/N4W5Xaqmm
-	SbgKMPDBe+kixlaWlqKFw==
-MIME-Version: 1.0
-In-Reply-To: <20110707233453.GE21115@somewhere>
-References: <1306877298-31713-1-git-send-email-vnagarnaik@google.com>
- <1308681903-12840-1-git-send-email-vnagarnaik@google.com> <20110707233453.GE21115@somewhere>
-From: David Sharp <dhsharp@google.com>
-Date: Thu, 7 Jul 2011 17:54:02 -0700
-Message-ID: <CAJL_eku7ezDhSOaOxN4ACFas1rnX=uaV184ZK3-0fE60Rmwh8g@mail.gmail.com>
-Subject: Re: [PATCH v3] trace: Add x86 irq vector entry/exit tracepoints
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Michael Rubin <mrubin@google.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Jiaying Zhang <jiayingz@google.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Thu, 7 Jul 2011 20:58:08 -0400
+X-AuditID: cbfee61a-b7c53ae000002dc1-98-4e16561d353a
+Date: Fri, 08 Jul 2011 09:58:25 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+Subject: Re: [PATCH v2] ARM: EXYNOS4: Support for generic I/O power domains on
+ EXYNOS4210
+In-reply-to: <201107072323.44155.rjw@sisk.pl>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Kukjin Kim <kgene.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Sylwester Nawrocki <snjw23@gmail.com>,
+        linux-pm@lists.linux-foundation.org,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Message-id: <4E165631.9060901@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7BIT
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+References: <4E0824B1.6070501@samsung.com> <201107072323.44155.rjw@sisk.pl>
+X-OriginalArrivalTime: 08 Jul 2011 00:58:17.0038 (UTC)
+ FILETIME=[1F4366E0:01CC3D0A]
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 7, 2011 at 4:34 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> On Tue, Jun 21, 2011 at 11:45:03AM -0700, Vaibhav Nagarnaik wrote:
->> From: Jiaying Zhang <jiayingz@google.com>
+Hi,
+
+Rafael J. Wysocki wrote:
+> Hi,
+> 
+> On Monday, June 27, 2011, Chanwoo Choi wrote:
+>> Use the generic power domains support to implement support for
+>> power domain on EXYNOS4210.
 >>
->> The current interrupt trace of irq_handler_entry and irq_handler_exit
->> give traces of when an interrupt is handled. They provide good data
->> about when the system is running in kernel space and how it affects the
->> currently running applications.
+>> I refer to the following patch to implement what configure
+>> the clock-gating control register for block to turn off/on:
+>> http://git.infradead.org/users/kmpark/linux-2.6-samsung/commit/39a81876d034dcbdc2a4c4c4b847b3b49e38870c
 >>
->> Apart from this, they are IRQ vectors which trigger the system into
->> kernel space. Tracing such events gives us the trace of where the system
->> is spending its time. We want to know which cores are handling
->> interrupts and how they are affecting other processes in the system.
->> Also, the trace provides information about when the cores are idle and
->> which interrupts are changing that state.
+>> This patch is based on following "pm-domains" branch.
+>> http://git.kernel.org/?p=linux/kernel/git/rafael/suspend-2.6.git;a=shortlog;h=refs/heads/pm-domains
 >>
->> The following patch adds the event definition and trace instrumentation
->> for interrupt vectors. A lookup table is provided to print out readable
->> IRQ vector names. Apart from the IRQ vectors handled in the generic
->> kernel code, some x86 specific IRQ vectors are also traced. The lookup
->> table can be extended by adding other arch-specific IRQ vectors.
->>
->> Changelog:
->> v2-v3
->> * Move the irq_vector_{entry|exit} tracepoints back under irq/ sub
->>   folder
->> * Trace the common IRQs in generic kernel code so that all archs can
->>   benefit.
->>
->> v1-v2
->> * Move the irq_vector_{entry|exit} tracepoints under irq_vectors/ sub
->>   folder
->>
->> Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+>> Signed-off-by: Kyungmin.park <kyungmin.park@samsung.com>
 >> ---
->>  arch/x86/kernel/apic/apic.c              |    4 ++
->>  arch/x86/kernel/cpu/mcheck/therm_throt.c |    2 +
->>  arch/x86/kernel/cpu/mcheck/threshold.c   |    2 +
->>  arch/x86/kernel/irq.c                    |    4 ++
->>  arch/x86/kernel/time.c                   |   16 ++++--
->>  arch/x86/kernel/traps.c                  |    3 +
->>  arch/x86/mm/tlb.c                        |    2 +
->>  include/trace/events/irq.h               |   84 ++++++++++++++++++++++++++++++
->>  kernel/hrtimer.c                         |    6 ++
->>  kernel/irq_work.c                        |    4 ++
->>  kernel/sched.c                           |    4 ++
->>  kernel/smp.c                             |    5 ++
->>  kernel/time/tick-broadcast.c             |   16 +++++-
->>  kernel/time/tick-common.c                |    8 +++-
->>  kernel/time/tick-sched.c                 |    4 ++
->>  15 files changed, 155 insertions(+), 9 deletions(-)
+>>  arch/arm/mach-exynos4/Kconfig                      |    1 +
+>>  arch/arm/mach-exynos4/Makefile                     |    1 +
+>>  arch/arm/mach-exynos4/include/mach/pm-exynos4210.h |   69 ++++++++
+>>  arch/arm/mach-exynos4/include/mach/regs-clock.h    |    8 +
+>>  arch/arm/mach-exynos4/mach-nuri.c                  |   20 +++
+>>  arch/arm/mach-exynos4/pm-exynos4210.c              |  170 ++++++++++++++++++++
+>>  arch/arm/plat-samsung/include/plat/pd.h            |    3 +-
+>>  7 files changed, 271 insertions(+), 1 deletions(-)
+>>  create mode 100644 arch/arm/mach-exynos4/include/mach/pm-exynos4210.h
+>>  create mode 100644 arch/arm/mach-exynos4/pm-exynos4210.c
 >>
->> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
->> index b9338b8..159851c 100644
->> --- a/arch/x86/kernel/apic/apic.c
->> +++ b/arch/x86/kernel/apic/apic.c
->> @@ -1792,6 +1792,7 @@ void smp_spurious_interrupt(struct pt_regs *regs)
->>
->>       exit_idle();
->>       irq_enter();
->> +     trace_irq_vector_entry(TRACE_SPURIOUS_APIC_VECTOR);
->>       /*
->>        * Check if this really is a spurious interrupt and ACK it
->>        * if it is a vectored one.  Just in case...
->> @@ -1806,6 +1807,7 @@ void smp_spurious_interrupt(struct pt_regs *regs)
->>       /* see sw-dev-man vol 3, chapter 7.4.13.5 */
->>       pr_info("spurious APIC interrupt on CPU#%d, "
->>               "should never happen.\n", smp_processor_id());
->> +     trace_irq_vector_exit(TRACE_SPURIOUS_APIC_VECTOR);
->>       irq_exit();
->>  }
->>
->
-> Seems a lot of these tracepoints fit under that pattern:
->
->                irq_enter();
->        +       trace_irq_entry_entry(foo)
->
->                do things
->
->        +       trace_irq_exit(foo)
->                irq_exit();
->
->
-> What if we instead had trace_irq_enter() inside irq_enter() and
-> trace_irq_exit() inside irq_exit() ?
->
-> Then your specific irq tracepoints would just be one thing that inform us
-> about the nature of the interrupt:
->
->                irq_enter();
->        +       trace_irq_vector_entry(foo);
->
->                do things
->
->                irq_exit();
->
-> Those who are only interested in knowing when we have irqs can just turn
-> on trace_irq_enter() and trace_irq_exit().
->
-> Those who want more details about the nature of these interrupts can turn
-> on trace_irq_vector() and trace_irq_exit().
->
-> So you don't need the trace_irq_vector_exit anymore.
->
-> How does that sound?
+>> diff --git a/arch/arm/mach-exynos4/Kconfig b/arch/arm/mach-exynos4/Kconfig
+>> index 1435fc3..266e7f6 100644
+>> --- a/arch/arm/mach-exynos4/Kconfig
+>> +++ b/arch/arm/mach-exynos4/Kconfig
+>> @@ -183,6 +183,7 @@ config MACH_NURI
+>>  	select EXYNOS4_SETUP_SDHCI
+>>  	select EXYNOS4_SETUP_USB_PHY
+>>  	select SAMSUNG_DEV_PWM
+>> +	select PM_GENERIC_DOMAINS
+> 
+> That should be "select PM_GENERIC_DOMAINS if PM".  Otherwise it will be
+> selected even for CONFIG_PM unset.
 
-That roughly doubles the overhead of hitting these irqs, and since
-irqs can be nested, it's not guaranteed that the "irq_vector" event
-immediately follows "irq_enter", so I think the trace could be
-confusing.
+OK, I will modify it.
 
-I also think it's far more useful to know which interrupt occurred
-than "some" interrupt occurred, and I don't see a case where one would
-not want that info.
-
-Moving the tracepoints into irq_enter() and irq_exit() might be
-sensible, but I'd want to pass down that info.
-
->
->
->> diff --git a/arch/x86/kernel/time.c b/arch/x86/kernel/time.c
->> index 00cbb27..9179dca 100644
->> --- a/arch/x86/kernel/time.c
->> +++ b/arch/x86/kernel/time.c
->> @@ -13,6 +13,7 @@
->>  #include <linux/interrupt.h>
->>  #include <linux/time.h>
->>  #include <linux/mca.h>
->> +#include <trace/events/irq.h>
->>
->>  #include <asm/vsyscall.h>
->>  #include <asm/x86_init.h>
->> @@ -51,6 +52,13 @@ unsigned long profile_pc(struct pt_regs *regs)
->>  }
->>  EXPORT_SYMBOL(profile_pc);
->>
->> +static irqreturn_t timer_interrupt(int irq, void *dev_id);
->> +static struct irqaction irq0  = {
->> +     .handler = timer_interrupt,
->> +     .flags = IRQF_DISABLED | IRQF_NOBALANCING | IRQF_IRQPOLL | IRQF_TIMER,
->> +     .name = "timer"
+> 
+>>  	help
+>>  	  Machine support for Samsung Mobile NURI Board.
+>>  
+>> diff --git a/arch/arm/mach-exynos4/Makefile b/arch/arm/mach-exynos4/Makefile
+>> index 60fe5ec..0e9461f 100644
+>> --- a/arch/arm/mach-exynos4/Makefile
+>> +++ b/arch/arm/mach-exynos4/Makefile
+>> @@ -17,6 +17,7 @@ obj-$(CONFIG_CPU_EXYNOS4210)	+= setup-i2c0.o irq-eint.o dma.o
+>>  obj-$(CONFIG_PM)		+= pm.o sleep.o
+>>  obj-$(CONFIG_CPU_FREQ)		+= cpufreq.o
+>>  obj-$(CONFIG_CPU_IDLE)		+= cpuidle.o
+>> +obj-$(CONFIG_CPU_EXYNOS4210)	+= pm-exynos4210.o
+>>  
+>>  obj-$(CONFIG_SMP)		+= platsmp.o headsmp.o
+>>  
+>> diff --git a/arch/arm/mach-exynos4/include/mach/pm-exynos4210.h b/arch/arm/mach-exynos4/include/mach/pm-exynos4210.h
+>> new file mode 100644
+>> index 0000000..ff924a8
+>> --- /dev/null
+>> +++ b/arch/arm/mach-exynos4/include/mach/pm-exynos4210.h
+>> @@ -0,0 +1,69 @@
+>> +/* linux/arch/arm/mach-exynos4/include/mach/pm-exynos4.h
+>> + *
+>> + * Exynos4 Power management support
+>> + *
+>> + * Copyright (c) 2010-2011 Samsung Electronics Co., Ltd.
+>> + *		http://www.samsung.com
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License version 2 as
+>> + * published by the Free Software Foundation.
+>> + */
+>> +
+>> +#ifndef __PM_EXYNOS4210_H__
+>> +#define __PM_EXYNOS4210_H__
+>> +
+>> +#include <linux/pm_domain.h>
+>> +#include <plat/pd.h>
+>> +
+>> +struct platform_device;
+>> +
+>> +struct exynos4210_pm_domain {
+>> +	struct generic_pm_domain genpd;
+>> +
+>> +	const char *name;
+>> +	void __iomem *base;
+>> +	unsigned long gate_mask;
+>> +	int boot_on;
 >> +};
 >> +
->>  /*
->>   * Default timer interrupt handler for PIT/HPET
->>   */
->> @@ -59,7 +67,9 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
->>       /* Keep nmi watchdog up to date */
->>       inc_irq_stat(irq0_irqs);
->>
->> +     trace_irq_handler_entry(irq, &irq0);
->>       global_clock_event->event_handler(global_clock_event);
->> +     trace_irq_handler_exit(irq, &irq0, 1);
->
-> Seems it should go to generic event handlers in kernel/time ?
-
-(same response as hrtimers, below...)
-
->
->> diff --git a/include/trace/events/irq.h b/include/trace/events/irq.h
->> index 4fc1205..d2f3f1f 100644
->> --- a/include/trace/events/irq.h
->> +++ b/include/trace/events/irq.h
->> @@ -138,6 +138,90 @@ DEFINE_EVENT(softirq, softirq_raise,
->>       TP_ARGS(vec_nr)
->>  );
->>
->> +#if !defined(_TRACE_IRQ_VECTOR_ENUM)
->> +#define _TRACE_IRQ_VECTOR_ENUM
->> +enum {
->> +     TRACE_NMI_VECTOR,
->> +     TRACE_NOHZ_TIMER_VECTOR,
->> +     TRACE_HRTIMER_VECTOR,
->> +     TRACE_ONESHOT_TIMER_VECTOR,
->> +     TRACE_PERIODIC_TIMER_BROADCAST_VECTOR,
->> +     TRACE_PERIODIC_TIMER_VECTOR,
->> +     TRACE_ERROR_APIC_VECTOR,
->> +     TRACE_RESCHEDULE_VECTOR,
->> +     TRACE_CALL_FUNCTION_VECTOR,
->> +     TRACE_CALL_FUNCTION_SINGLE_VECTOR,
->> +     TRACE_THERMAL_APIC_VECTOR,
->> +     TRACE_THRESHOLD_APIC_VECTOR,
->> +     TRACE_REBOOT_VECTOR,
->> +     TRACE_SPURIOUS_APIC_VECTOR,
->> +     TRACE_IRQ_WORK_VECTOR,
->> +     TRACE_X86_PLATFORM_IPI_VECTOR,
->> +     TRACE_INVALIDATE_TLB_VECTOR,
->> +};
->> +#endif
->
-> Pure x86 things shouldn't be in a generic header.
-
-Other platforms have IPI vector interrupts, so we can just remove
-"X86_" from the name. Would that work?
-
->
-> include/trace/event/irq.h should contain generic things. And I'm not sure
-> we want some generalized vector namespace for that but rather single contained
-> tracepoint names that make sense:
->
-> trace_ipi_function(), trace_irq_reschedule()...
-
-I don't see how that can fit with putting the tracepoints in
-irq_enter() and irq_exit()...
-
-Also I'm not sure it makes sense to bloat the trace events with
-individual tracepoints for interrupts. Some of these events are
-relatively rare in archs: RESCHEDULE_VECTOR is only in x86 and ia64,
-and IPI will not be in any unicore machine, for example. They may not
-warrant having their own events instead of an enum entry.
-
->
-> But vector namespace makes sense for archs yeah.
->
->>  /* This part must be outside protection */
->> diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
->> index a9205e3..84a0c70 100644
->> --- a/kernel/hrtimer.c
->> +++ b/kernel/hrtimer.c
->> @@ -48,6 +48,7 @@
->>
->>  #include <asm/uaccess.h>
->>
->> +#include <trace/events/irq.h>
->>  #include <trace/events/timer.h>
->>
->>  /*
->> @@ -1244,6 +1245,8 @@ void hrtimer_interrupt(struct clock_event_device *dev)
->>       ktime_t expires_next, now, entry_time, delta;
->>       int i, retries = 0;
->>
->> +     trace_irq_vector_entry(TRACE_HRTIMER_VECTOR);
+>> +static inline struct exynos4210_pm_domain *to_exynos4210_pd(
+>> +		struct generic_pm_domain *pd)
+>> +{
+>> +	return container_of(pd, struct exynos4210_pm_domain, genpd);
+>> +}
 >> +
->>       BUG_ON(!cpu_base->hres_active);
->>       cpu_base->nr_events++;
->>       dev->next_event.tv64 = KTIME_MAX;
->> @@ -1316,6 +1319,7 @@ retry:
->>       if (expires_next.tv64 == KTIME_MAX ||
->>           !tick_program_event(expires_next, 0)) {
->>               cpu_base->hang_detected = 0;
->> +             trace_irq_vector_exit(TRACE_HRTIMER_VECTOR);
->>               return;
->>       }
->>
->> @@ -1355,6 +1359,8 @@ retry:
->>       tick_program_event(expires_next, 1);
->>       printk_once(KERN_WARNING "hrtimer: interrupt took %llu ns\n",
->>                   ktime_to_ns(delta));
+>> +#ifdef CONFIG_PM
+>> +extern struct exynos4210_pm_domain exynos4210_pd_list[PD_MAX_NUM];
+>> +#define EXYNOS4210_MFC		(&exynos4210_pd_list[PD_MFC])
+>> +#define EXYNOS4210_G3D		(&exynos4210_pd_list[PD_G3D])
+>> +#define EXYNOS4210_LCD0		(&exynos4210_pd_list[PD_LCD0])
+>> +#define EXYNOS4210_LCD1		(&exynos4210_pd_list[PD_LCD1])
+>> +#define EXYNOS4210_TV		(&exynos4210_pd_list[PD_TV])
+>> +#define EXYNOS4210_CAM		(&exynos4210_pd_list[PD_CAM])
+>> +#define EXYNOS4210_GPS		(&exynos4210_pd_list[PD_GPS])
 >> +
->> +     trace_irq_vector_exit(TRACE_HRTIMER_VECTOR);
->
-> We already have hrtimer tracepoints.
->
+>> +int exynos4210_pd_init(struct exynos4210_pm_domain *domain);
+>> +int exynos4210_add_device_to_domain(struct exynos4210_pm_domain *domain,
+>> +				struct platform_device *pdev);
+>> +#else
+>> +#define EXYNOS4210_MFC		NULL
+>> +#define EXYNOS4210_G3D		NULL
+>> +#define EXYNOS4210_LCD0		NULL
+>> +#define EXYNOS4210_LCD1		NULL
+>> +#define EXYNOS4210_TV		NULL
+>> +#define EXYNOS4210_CAM		NULL
+>> +#define EXYNOS4210_GPS		NULL
+>> +
+>> +static inline int exynos4210_pd_init(struct exynos4210_pm_domain *domain)
+>> +{
+>> +	return 0;
+>> +}
+>> +static inline int exynos4_add_device_to_domain(struct exynos4210_pm_domain *domain,
+>> +				struct platform_device *pdev)
+>> +{
+>> +	return 0;
+>> +}
+>> +#endif /* CONFIG_PM */
+>> +
+>> +#endif /* __PM_EXYNOS4210_H__ */
+>> diff --git a/arch/arm/mach-exynos4/include/mach/regs-clock.h b/arch/arm/mach-exynos4/include/mach/regs-clock.h
+>> index 6e311c1..bc0fda9 100644
+>> --- a/arch/arm/mach-exynos4/include/mach/regs-clock.h
+>> +++ b/arch/arm/mach-exynos4/include/mach/regs-clock.h
+>> @@ -171,6 +171,14 @@
+>>  #define S5P_CLKDIV_BUS_GPLR_SHIFT	(4)
+>>  #define S5P_CLKDIV_BUS_GPLR_MASK	(0x7 << S5P_CLKDIV_BUS_GPLR_SHIFT)
+>>  
+>> +#define S5P_CLKGATE_BLOCK_CAM		(1<<0)
+>> +#define S5P_CLKGATE_BLOCK_TV		(1<<1)
+>> +#define S5P_CLKGATE_BLOCK_MFC		(1<<2)
+>> +#define S5P_CLKGATE_BLOCK_G3D		(1<<3)
+>> +#define S5P_CLKGATE_BLOCK_LCD0		(1<<4)
+>> +#define S5P_CLKGATE_BLOCK_LCD1		(1<<5)
+>> +#define S5P_CLKGATE_BLOCK_GPS		(1<<7)
+>> +
+>>  /* Compatibility defines and inclusion */
+>>  
+>>  #include <mach/regs-pmu.h>
+>> diff --git a/arch/arm/mach-exynos4/mach-nuri.c b/arch/arm/mach-exynos4/mach-nuri.c
+>> index 642702b..805c6d5 100644
+>> --- a/arch/arm/mach-exynos4/mach-nuri.c
+>> +++ b/arch/arm/mach-exynos4/mach-nuri.c
+>> @@ -37,6 +37,7 @@
+>>  #include <plat/iic.h>
+>>  
+>>  #include <mach/map.h>
+>> +#include <mach/pm-exynos4210.h>
+>>  
+>>  /* Following are default values for UCON, ULCON and UFCON UART registers */
+>>  #define NURI_UCON_DEFAULT	(S3C2410_UCON_TXILEVEL |	\
+>> @@ -376,6 +377,23 @@ static struct platform_device *nuri_devices[] __initdata = {
+>>  	&nuri_backlight_device,
+>>  };
+>>  
+>> +static void __init nuri_power_domain_init(void)
+>> +{
+>> +	int i;
+>> +
+>> +	for (i = 0 ; i < PD_MAX_NUM ; i++)
+>> +		exynos4210_pd_init(&exynos4210_pd_list[i]);
+>> +
+>> +	/* Add device to power-domain */
+>> +	exynos4210_add_device_to_domain(EXYNOS4210_MFC, NULL);
+>> +	exynos4210_add_device_to_domain(EXYNOS4210_G3D, NULL);
+>> +	exynos4210_add_device_to_domain(EXYNOS4210_LCD0, &nuri_lcd_device);
+>> +	exynos4210_add_device_to_domain(EXYNOS4210_LCD1, NULL);
+>> +	exynos4210_add_device_to_domain(EXYNOS4210_TV, NULL);
+>> +	exynos4210_add_device_to_domain(EXYNOS4210_CAM, NULL);
+>> +	exynos4210_add_device_to_domain(EXYNOS4210_GPS, NULL);
+> 
+> It seems the calls with the second NULL argument are redundant.
+> 
+I will fix it.
 
-Yes, but those events are about hrtimer events and buried deep in
-hrtimer code. If I enable all events in the "irq" trace event
-subsystem, I want to see every interrupt. I don't want to remember "oh
-yeah, I need to enable x,y,z events too." Putting the event in the
-"irq" subsystem and in the interrupt handler makes this crystal clear.
-And if the hrtimer code is (or is ever) such that an interrupt path
-doesn't reach the hrtimer tracepoints, I still want to know that the
-interrupt occurred.
+> The rest looks OK to me.
+> 
+> Thanks,
+> Rafael
+> 
 
-Here's our motivation: We use interrupt events, along with traps,
-syscall, and sched_switch events to know when kernel code is running
-instead of user code. So, being clear that we got all interrupts (and
-which interrupt) is important.
+I will resend the modified patch according to your comment and your "pm-domains" branch.
+
+Thanks,
+Chanwoo Choi
+
