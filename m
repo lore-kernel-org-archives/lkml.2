@@ -1,64 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754911Ab1GHVrH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 17:47:07 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54412 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750879Ab1GHVrG convert rfc822-to-8bit (ORCPT
+	id S1754888Ab1GHVs6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 17:48:58 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:48599 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752125Ab1GHVs5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 17:47:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <1309563076-5050-1-git-send-email-lacombar@gmail.com>
-References: <1309563076-5050-1-git-send-email-lacombar@gmail.com>
-Date: Fri, 8 Jul 2011 17:47:05 -0400
-Message-ID: <CACqU3MUrCODMx=8Bu+YDxy2BJwjm-77PXFob5OwHn=fr5mTdkg@mail.gmail.com>
-Subject: Re: [RFC 0/4] streamline_config clean-ups
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Michal Marek <mmarek@suse.cz>, Arnaud Lacombe <lacombar@gmail.com>,
-        Steven Rostedt <srostedt@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 8 Jul 2011 17:48:57 -0400
+Date: Fri, 08 Jul 2011 14:48:46 -0700 (PDT)
+Message-Id: <20110708.144846.2266757026673899391.davem@davemloft.net>
+To: tony.luck@intel.com
+Cc: dzickus@redhat.com, mjg@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: pstore dump inside an nmi handler
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <987664A83D2D224EAE907B061CE93D5301E981AB56@orsmsx505.amr.corp.intel.com>
+References: <20110708201731.GA3025@redhat.com>
+	<987664A83D2D224EAE907B061CE93D5301E981AB56@orsmsx505.amr.corp.intel.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 08 Jul 2011 14:48:51 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: "Luck, Tony" <tony.luck@intel.com>
+Date: Fri, 8 Jul 2011 14:40:13 -0700
 
-On Fri, Jul 1, 2011 at 7:31 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
-> Hi,
->
-> The following series attempts to merge some redundants stuff in the kconfig
-> Makefile, namely how streamline_config learns about its environment, avoids
-> multi-line shell command in kconfig's Makefile. Seconds commit also removes the
-> non-portable usage of sed(1) as -i is not POSIX compliant.
->
-> Comments appreciated!
->
->  - Arnaud
->
-Ping ?
+>> Inside pstore_dump(), the first thing it tries to grab is a mutex_lock()
+>> (inside an nmi hander).  This seems to be the root cause of my problems.
+> 
+> Someone else pointed out that mutex_lock() is a problem here too. They
+> wondered whether spin_lock_irqsave() would work - or whether pstore
+> backends were allowed to sleep - to which I said I hoped they didn't,
+> but wasn't really sure what the future will hold.
+> 
+> So ... ideas (and patches) are most welcome.
 
-Thanks,
- - Arnaud
-
-> ps: I'm not really a huge fan of the direct export of MAKECMDGOALS, maybe should
-> it be KBUILD_MAKECMDGOALS.
->
-> Arnaud Lacombe (4):
->  kbuild: export MAKECMDGOALS
->  kconfig/streamline_config.pl: directly access LSMOD
->  kconfig/streamline_config.pl: merge local{mod,yes}config
->  kconfig/streamline_config.pl: move config generation to script
->
->  Makefile                             |    3 ++
->  scripts/kconfig/Makefile             |   40 +--------------------------------
->  scripts/kconfig/localconfig.sh       |   20 +++++++++++++++++
->  scripts/kconfig/streamline_config.pl |   19 +++++++++++++--
->  4 files changed, 41 insertions(+), 41 deletions(-)
->  create mode 100755 scripts/kconfig/localconfig.sh
->
-> --
-> 1.7.3.4.574.g608b.dirty
->
->
+Probably you'll need to queue things atomically using something
+based upon cmpxchg() like the generic ring buffer does.
