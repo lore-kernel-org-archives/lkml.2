@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662Ab1GHFDr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:03:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42214 "EHLO mx2.suse.de"
+	id S1754720Ab1GHFDz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:03:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42264 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754589Ab1GHFDg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:03:36 -0400
+	id S1754649Ab1GHFDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:03:50 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:58 2011
-Message-Id: <20110708001658.467881723@clark.kroah.org>
+Message-Id: <20110708001658.892033199@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:16:31 -0700
+Date: Thu, 07 Jul 2011 17:16:35 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Devin Heitmueller <dheitmueller@kernellabs.com>,
+        =?ISO-8859-15?q?Juan=20Jes=C3=BAs=20Garc=C3=ADa=20de=20Soria?= 
+	<skandalfo@gmail.com>,
         Jarod Wilson <jarod@redhat.com>,
         Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [059/107] [media] rc: fix ghost keypresses with certain hw
+Subject: [063/107] [media] ite-cir: 8709 needs to use pnp resource 2
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,52 +30,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jarod Wilson <jarod@redhat.com>
 
-commit 3f5c4c73322e4d6f3d40b697dac3073d2adffe41 upstream.
+commit 35d136c8dab034ee14aa00d6082229b4b74607da upstream.
 
-With hardware that has to use ir_raw_event_store_edge to collect IR
-sample durations, we were not doing an event reset unless
-IR_MAX_DURATION had passed. That's around 4 seconds. So if someone
-presses up, then down, with less than 4 seconds in between, they'd get
-the initial up, then up and down upon pressing down.
+Thanks to the intrepid testing and debugging of Matthijs van Drunen, it
+was uncovered that at least some variants of the ITE8709 need to use pnp
+resource 2, rather than 0, for things to function properly. Resource 0
+has a length of only 1, and if you try to bypass the pnp_port_len check
+and use it anyway (with either a length of 1 or 2), the system in
+question's trackpad ceased to function.
 
-To fix this, I've lowered the "send a reset event" logic's threshold to
-the input device's REP_DELAY (defaults to 500ms), and with an
-saa7134-based GPIO-driven IR receiver in a Hauppauge HVR-1150, I get
-*much* better behavior out of the remote now. Special thanks to Devin
-for providing the hardware to investigate this issue.
+The circa lirc 0.8.7 lirc_ite8709 driver used resource 2, but the value
+was (amusingly) changed to 0 by way of a patch from ITE themselves, so I
+don't know if there may be variants where 0 actually *is* correct, but
+at least in this case and in the original lirc_ite8709 driver author's
+case, it sure looks like 2 is the right value.
 
-CC: Devin Heitmueller <dheitmueller@kernellabs.com>
+This fix should probably be applied to all stable kernels with the
+ite-cir driver, lest we nuke more people's trackpads.
+
+Tested-by: Matthijs van Drunen
+CC: Juan Jesús García de Soria <skandalfo@gmail.com>
 Signed-off-by: Jarod Wilson <jarod@redhat.com>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/rc/ir-raw.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/media/rc/ite-cir.c |   12 +++++++++---
+ drivers/media/rc/ite-cir.h |    3 +++
+ 2 files changed, 12 insertions(+), 3 deletions(-)
 
---- a/drivers/media/rc/ir-raw.c
-+++ b/drivers/media/rc/ir-raw.c
-@@ -114,18 +114,20 @@ int ir_raw_event_store_edge(struct rc_de
- 	s64			delta; /* ns */
- 	DEFINE_IR_RAW_EVENT(ev);
- 	int			rc = 0;
-+	int			delay;
+--- a/drivers/media/rc/ite-cir.c
++++ b/drivers/media/rc/ite-cir.c
+@@ -1357,6 +1357,7 @@ static const struct ite_dev_params ite_d
+ 	{	/* 0: ITE8704 */
+ 	       .model = "ITE8704 CIR transceiver",
+ 	       .io_region_size = IT87_IOREG_LENGTH,
++	       .io_rsrc_no = 0,
+ 	       .hw_tx_capable = true,
+ 	       .sample_period = (u32) (1000000000ULL / 115200),
+ 	       .tx_carrier_freq = 38000,
+@@ -1381,6 +1382,7 @@ static const struct ite_dev_params ite_d
+ 	{	/* 1: ITE8713 */
+ 	       .model = "ITE8713 CIR transceiver",
+ 	       .io_region_size = IT87_IOREG_LENGTH,
++	       .io_rsrc_no = 0,
+ 	       .hw_tx_capable = true,
+ 	       .sample_period = (u32) (1000000000ULL / 115200),
+ 	       .tx_carrier_freq = 38000,
+@@ -1405,6 +1407,7 @@ static const struct ite_dev_params ite_d
+ 	{	/* 2: ITE8708 */
+ 	       .model = "ITE8708 CIR transceiver",
+ 	       .io_region_size = IT8708_IOREG_LENGTH,
++	       .io_rsrc_no = 0,
+ 	       .hw_tx_capable = true,
+ 	       .sample_period = (u32) (1000000000ULL / 115200),
+ 	       .tx_carrier_freq = 38000,
+@@ -1430,6 +1433,7 @@ static const struct ite_dev_params ite_d
+ 	{	/* 3: ITE8709 */
+ 	       .model = "ITE8709 CIR transceiver",
+ 	       .io_region_size = IT8709_IOREG_LENGTH,
++	       .io_rsrc_no = 2,
+ 	       .hw_tx_capable = true,
+ 	       .sample_period = (u32) (1000000000ULL / 115200),
+ 	       .tx_carrier_freq = 38000,
+@@ -1471,6 +1475,7 @@ static int ite_probe(struct pnp_dev *pde
+ 	struct rc_dev *rdev = NULL;
+ 	int ret = -ENOMEM;
+ 	int model_no;
++	int io_rsrc_no;
  
- 	if (!dev->raw)
- 		return -EINVAL;
+ 	ite_dbg("%s called", __func__);
  
- 	now = ktime_get();
- 	delta = ktime_to_ns(ktime_sub(now, dev->raw->last_event));
-+	delay = MS_TO_NS(dev->input_dev->rep[REP_DELAY]);
+@@ -1500,10 +1505,11 @@ static int ite_probe(struct pnp_dev *pde
  
- 	/* Check for a long duration since last event or if we're
- 	 * being called for the first time, note that delta can't
- 	 * possibly be negative.
- 	 */
--	if (delta > IR_MAX_DURATION || !dev->raw->last_type)
-+	if (delta > delay || !dev->raw->last_type)
- 		type |= IR_START_EVENT;
- 	else
- 		ev.duration = delta;
+ 	/* get the description for the device */
+ 	dev_desc = &ite_dev_descs[model_no];
++	io_rsrc_no = dev_desc->io_rsrc_no;
+ 
+ 	/* validate pnp resources */
+-	if (!pnp_port_valid(pdev, 0) ||
+-	    pnp_port_len(pdev, 0) != dev_desc->io_region_size) {
++	if (!pnp_port_valid(pdev, io_rsrc_no) ||
++	    pnp_port_len(pdev, io_rsrc_no) != dev_desc->io_region_size) {
+ 		dev_err(&pdev->dev, "IR PNP Port not valid!\n");
+ 		goto failure;
+ 	}
+@@ -1514,7 +1520,7 @@ static int ite_probe(struct pnp_dev *pde
+ 	}
+ 
+ 	/* store resource values */
+-	itdev->cir_addr = pnp_port_start(pdev, 0);
++	itdev->cir_addr = pnp_port_start(pdev, io_rsrc_no);
+ 	itdev->cir_irq = pnp_irq(pdev, 0);
+ 
+ 	/* initialize spinlocks */
+--- a/drivers/media/rc/ite-cir.h
++++ b/drivers/media/rc/ite-cir.h
+@@ -57,6 +57,9 @@ struct ite_dev_params {
+ 	/* size of the I/O region */
+ 	int io_region_size;
+ 
++	/* IR pnp I/O resource number */
++	int io_rsrc_no;
++
+ 	/* true if the hardware supports transmission */
+ 	bool hw_tx_capable;
+ 
 
 
