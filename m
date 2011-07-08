@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754917Ab1GHFET (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:04:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42332 "EHLO mx2.suse.de"
+	id S1754947Ab1GHFEY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:04:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42347 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754827Ab1GHFER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:04:17 -0400
+	id S1754567Ab1GHFEV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:04:21 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:59 2011
-Message-Id: <20110708001659.672639189@clark.kroah.org>
+Message-Id: <20110708001659.762014700@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:16:43 -0700
+Date: Thu, 07 Jul 2011 17:16:44 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [071/107] NFSv4: Fix a readdir regression
+        Hans Petter Selasky <hselasky@c2i.net>, Dmitry Torokhov <dtor@mail.ru>
+Subject: [072/107] Input: properly assign return value of clamp() macro.
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,69 +25,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Hans Petter Selasky <hselasky@c2i.net>
 
-commit ee7b75fc4f3ae49e1f25bf56219bb5de3c29afaf upstream.
+commit 8c127f0717b438e6abc3d92d4ae248c4224b9dcb upstream.
 
-Commit 7ebb9315 (NFS: use secinfo when crossing mountpoints) introduces
-a regression when decoding an NFSv4 readdir entry that sets the
-rdattr_error field.
-By treating the resulting value as if it is a decoding error, the current
-code may cause us to skip valid readdir entries.
-
-Reported-by: Andy Adamson <andros@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+[dtor@mail.ru: added mousedev changes]
+Signed-off-by: Hans Petter Selasky <hselasky@c2i.net>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/nfs4xdr.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ drivers/input/input.c    |    2 +-
+ drivers/input/mousedev.c |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/fs/nfs/nfs4xdr.c
-+++ b/fs/nfs/nfs4xdr.c
-@@ -3030,7 +3030,7 @@ out_overflow:
- 	return -EIO;
- }
+--- a/drivers/input/input.c
++++ b/drivers/input/input.c
+@@ -1757,7 +1757,7 @@ static unsigned int input_estimate_event
+ 	} else if (test_bit(ABS_MT_TRACKING_ID, dev->absbit)) {
+ 		mt_slots = dev->absinfo[ABS_MT_TRACKING_ID].maximum -
+ 			   dev->absinfo[ABS_MT_TRACKING_ID].minimum + 1,
+-		clamp(mt_slots, 2, 32);
++		mt_slots = clamp(mt_slots, 2, 32);
+ 	} else if (test_bit(ABS_MT_POSITION_X, dev->absbit)) {
+ 		mt_slots = 2;
+ 	} else {
+--- a/drivers/input/mousedev.c
++++ b/drivers/input/mousedev.c
+@@ -187,7 +187,7 @@ static void mousedev_abs_event(struct in
+ 		if (size == 0)
+ 			size = xres ? : 1;
  
--static int decode_attr_error(struct xdr_stream *xdr, uint32_t *bitmap)
-+static int decode_attr_error(struct xdr_stream *xdr, uint32_t *bitmap, int32_t *res)
- {
- 	__be32 *p;
+-		clamp(value, min, max);
++		value = clamp(value, min, max);
  
-@@ -3041,7 +3041,7 @@ static int decode_attr_error(struct xdr_
- 		if (unlikely(!p))
- 			goto out_overflow;
- 		bitmap[0] &= ~FATTR4_WORD0_RDATTR_ERROR;
--		return -be32_to_cpup(p);
-+		*res = -be32_to_cpup(p);
- 	}
- 	return 0;
- out_overflow:
-@@ -4002,6 +4002,7 @@ static int decode_getfattr_attrs(struct
- 	int status;
- 	umode_t fmode = 0;
- 	uint32_t type;
-+	int32_t err;
+ 		mousedev->packet.x = ((value - min) * xres) / size;
+ 		mousedev->packet.abs_event = 1;
+@@ -201,7 +201,7 @@ static void mousedev_abs_event(struct in
+ 		if (size == 0)
+ 			size = yres ? : 1;
  
- 	status = decode_attr_type(xdr, bitmap, &type);
- 	if (status < 0)
-@@ -4027,13 +4028,12 @@ static int decode_getfattr_attrs(struct
- 		goto xdr_error;
- 	fattr->valid |= status;
+-		clamp(value, min, max);
++		value = clamp(value, min, max);
  
--	status = decode_attr_error(xdr, bitmap);
--	if (status == -NFS4ERR_WRONGSEC) {
--		nfs_fixup_secinfo_attributes(fattr, fh);
--		status = 0;
--	}
-+	err = 0;
-+	status = decode_attr_error(xdr, bitmap, &err);
- 	if (status < 0)
- 		goto xdr_error;
-+	if (err == -NFS4ERR_WRONGSEC)
-+		nfs_fixup_secinfo_attributes(fattr, fh);
- 
- 	status = decode_attr_filehandle(xdr, bitmap, fh);
- 	if (status < 0)
+ 		mousedev->packet.y = yres - ((value - min) * yres) / size;
+ 		mousedev->packet.abs_event = 1;
 
 
