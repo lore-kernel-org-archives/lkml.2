@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751728Ab1GHGRV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 02:17:21 -0400
-Received: from mx1.fusionio.com ([66.114.96.30]:39339 "EHLO mx1.fusionio.com"
+	id S1752206Ab1GHGRf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 02:17:35 -0400
+Received: from mx1.fusionio.com ([66.114.96.30]:53828 "EHLO mx1.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751378Ab1GHGRS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 02:17:18 -0400
-X-ASG-Debug-ID: 1310105837-03d6a510a6130430001-xx1T2L
+	id S1751098Ab1GHGRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 02:17:33 -0400
+X-ASG-Debug-ID: 1310105853-03d6a510a9130440001-xx1T2L
 X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4E16A0EA.1030703@fusionio.com>
-Date: Fri, 8 Jul 2011 08:17:14 +0200
+Message-ID: <4E16A0FA.4000009@fusionio.com>
+Date: Fri, 8 Jul 2011 08:17:30 +0200
 From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
 To: Shaohua Li <shaohua.li@intel.com>
 CC: lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [patch]block: avoid building too big plug list
-References: <1310090367.15392.263.camel@sli10-conroe>
-X-ASG-Orig-Subj: Re: [patch]block: avoid building too big plug list
-In-Reply-To: <1310090367.15392.263.camel@sli10-conroe>
+Subject: Re: [patch]block: document blk_plug list access
+References: <1310090369.15392.264.camel@sli10-conroe>
+X-ASG-Orig-Subj: Re: [patch]block: document blk_plug list access
+In-Reply-To: <1310090369.15392.264.camel@sli10-conroe>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1310105837
+X-Barracuda-Start-Time: 1310105853
 X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
 X-Barracuda-Spam-Score: 0.00
 X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
@@ -34,26 +34,10 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 2011-07-08 03:59, Shaohua Li wrote:
-> When I test fio script with big I/O depth, I found the total throughput drops
-> compared to some relative small I/O depth. The reason is the thread accumulates
-> big requests in its plug list and causes some delays (surely this depends
-> on CPU speed).
-> I thought we'd better have a threshold for requests. When a threshold reaches,
-> this means there is no request merge and queue lock contention isn't severe
-> when pushing per-task requests to queue, so the main advantages of blk plug
-> don't exist. We can force a plug list flush in this case.
-> With this, my test throughput actually increases and almost equals to small
-> I/O depth. Another side effect is irq off time decreases in blk_flush_plug_list()
-> for big I/O depth.
-> The BLK_MAX_REQUEST_COUNT is choosen arbitarily, but 16 is efficiently to
-> reduce lock contention to me. But I'm open here, 32 is ok in my test too.
+> I'm often confused why not disable preempt when changing blk_plug list. It
+> would be better to add comments here in case others have the similar concerns.
 
-Thanks, I have wondered whether that would potentially cause an issue.
-So this patch is quite fine with me, generally a good idea to cap it.
-I'll queue it up with 16 for the max depth, that's still quite a decent
-proportion of local to queued requests.
-
-Thanks!
+Sure, I'll add this.
 
 -- 
 Jens Axboe
