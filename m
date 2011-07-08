@@ -1,280 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753260Ab1GHPN1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 11:13:27 -0400
-Received: from service87.mimecast.com ([94.185.240.25]:54236 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752887Ab1GHPNZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 11:13:25 -0400
-Message-ID: <4E171E93.8020608@arm.com>
-Date: Fri, 08 Jul 2011 16:13:23 +0100
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+	id S1753549Ab1GHPNd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 11:13:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9722 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753322Ab1GHPNa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 11:13:30 -0400
+Date: Fri, 8 Jul 2011 11:13:07 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [rfc] perf p4 events aliases
+Message-ID: <20110708151307.GA6710@redhat.com>
+References: <20110707152849.GV5485@sun>
 MIME-Version: 1.0
-To: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH v2 0/4] Core device subsystem
-References: <1310115250-3859-1-git-send-email-marc.zyngier@arm.com>	<CAHXqBFJiovYq5x_JDAxikvFs-t1To6yC-1uajBJFRX_jwjvejA@mail.gmail.com> <4E170134.1020306@arm.com>
-In-Reply-To: <4E170134.1020306@arm.com>
-X-Enigmail-Version: 1.1.2
-X-OriginalArrivalTime: 08 Jul 2011 15:13:19.0664 (UTC) FILETIME=[9202E300:01CC3D81]
-X-MC-Unique: 111070816132204201
-Content-Type: multipart/mixed;
- boundary="------------030902030506000907060603"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110707152849.GV5485@sun>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------030902030506000907060603
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jul 07, 2011 at 07:28:49PM +0400, Cyrill Gorcunov wrote:
+> Hi Don, if you have a chance could you please check if this
+> patch does a trick for nmi-watchdog and perf top? The idea
+> is to use aliases as being proposed early.
 
-On 08/07/11 14:08, Marc Zyngier wrote:
-> So you're basically folding of_core_device_populate() and
-> core_driver_init_class() into one call, and generating the
-> of_device_ids on the fly. If you're going down that road,
-> it would be even simpler to directly use of_device_ids
-> instead of core_device_ids and skip the generation altogether.
->=20
-> That would also remove the static declaration of devices to be
-> probed in the architecture support code...
->=20
-> Let me think of it and prototype that.
+Hmm, didn't work for me.  The watchdog seems to work but 'perf top' showed
+nothing (even after 30 seconds).  I tried this on Linus's latest -tip and
+Ingo's perf/core -tip.  No luck.
 
-See the attached patch against branch dt_gic_twd from
-git://git.kernel.org/pub/scm/linux/kernel/git/maz/arm-platforms.git
+Cheers,
+Don
 
-It boots fine on my PB11MP.
-
-What do you think?
-
-=09M.
---=20
-Jazz is not dead. It just smells funny...
---------------030902030506000907060603
-Content-Type: text/plain; name=code_dev.patch.txt
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: inline;
- filename="code_dev.patch.txt"
-
-diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
-index 74825c2..e7d9922 100644
---- a/arch/arm/common/gic.c
-+++ b/arch/arm/common/gic.c
-@@ -712,9 +712,9 @@ static int __init gic_core_init(struct core_device *dev=
-)
- =09return 0;
- }
-=20
--static struct core_device_id gic_ids[] __initdata =3D {
--=09{ .name =3D "arm,gic-spi" }, /* DT */
--=09{ .name =3D "arm_gic" },     /* Static device */
-+static struct of_device_id gic_ids[] __initdata =3D {
-+=09{ .compatible =3D "arm,gic-spi" }, /* DT */
-+=09{ .name =3D "arm_gic" },=09=09 /* Static device */
- =09{ },
- };
-=20
-diff --git a/arch/arm/kernel/irq.c b/arch/arm/kernel/irq.c
-index 0b0681c..1cb4bd7 100644
---- a/arch/arm/kernel/irq.c
-+++ b/arch/arm/kernel/irq.c
-@@ -114,15 +114,10 @@ void set_irq_flags(unsigned int irq, unsigned int ifl=
-ags)
- =09irq_modify_status(irq, clr, set & ~clr);
- }
-=20
--static struct of_device_id of_irq_controller_ids[] __initdata =3D {
--=09{ .compatible   =3D "arm,gic-spi", },
--=09{},
--};
--
- void __init init_IRQ(void)
- {
- =09machine_desc->init_irq();
--=09of_core_device_populate(CORE_DEV_CLASS_IRQ, of_irq_controller_ids);
-+=09of_core_device_populate(CORE_DEV_CLASS_IRQ);
- =09core_driver_init_class(CORE_DEV_CLASS_IRQ, core_device_irq_sort);
- }
-=20
-diff --git a/arch/arm/kernel/time.c b/arch/arm/kernel/time.c
-index b879698..80f7ad2 100644
---- a/arch/arm/kernel/time.c
-+++ b/arch/arm/kernel/time.c
-@@ -150,18 +150,13 @@ device_initcall(timer_init_syscore_ops);
-=20
- void (* __initdata arm_late_time_init)(void);
-=20
--static struct of_device_id of_timer_ids[] __initdata =3D {
--=09{ .compatible =3D "arm,smp-twd", },
--=09{},
--};
--
- static void __init __arm_late_time_init(void)
- {
- =09if (arm_late_time_init)
- =09=09arm_late_time_init();
-=20
- #ifdef CONFIG_LOCAL_TIMER_DEVICES
--=09of_core_device_populate(CORE_DEV_CLASS_TIMER, of_timer_ids);
-+=09of_core_device_populate(CORE_DEV_CLASS_TIMER);
- =09core_driver_init_class(CORE_DEV_CLASS_TIMER, NULL);
- #endif
- }
-diff --git a/drivers/base/core_device.c b/drivers/base/core_device.c
-index a8df59d..0f1c585 100644
---- a/drivers/base/core_device.c
-+++ b/drivers/base/core_device.c
-@@ -20,20 +20,22 @@ static struct list_head anchors[CORE_DEV_CLASS_MAX] __i=
-nitdata =3D {
- };
-=20
- static int __init core_device_match(struct core_device *dev,
--=09=09=09=09    struct core_device_id *ids)
-+=09=09=09=09    struct of_device_id *ids)
- {
--=09int i;
- #ifdef CONFIG_OF
--=09if (dev->of_node)
--=09=09for (i =3D 0; ids[i].name !=3D NULL; i++)
--=09=09=09if (of_device_is_compatible(dev->of_node,
--=09=09=09=09=09=09    ids[i].name))
--=09=09=09=09return 1;
-+=09if (dev->of_node) {
-+=09=09if (of_match_node(ids, dev->of_node))
-+=09=09=09return 1;
-+
-+=09=09return 0;
-+=09}
- #endif
--=09for (i =3D 0; ids[i].name !=3D NULL; i++)
--=09=09if (!strcmp(dev->name, ids[i].name))
-+=09while (ids->name[0] || ids->type[0] || ids->compatible[0]) {
-+=09=09if (ids->name[0] && !strcmp(dev->name, ids->name))
- =09=09=09return 1;
-=20
-+=09=09ids++;
-+=09}
- =09return 0;
- }
-=20
-@@ -82,29 +84,37 @@ void __init core_driver_init_class(enum core_device_cla=
-ss class,
- }
-=20
- #ifdef CONFIG_OF
--void __init of_core_device_populate(enum core_device_class class,
--=09=09=09     struct of_device_id *matches)
-+void __init of_core_device_populate(enum core_device_class class)
- {
-+=09const struct core_driver_setup_block *b;
- =09struct device_node *np;
- =09struct core_device *dev;
- =09int num_res;
-=20
--=09for_each_matching_node(np, matches) {
--=09=09pr_debug("core: registering OF device %s\n", np->full_name);
--=09=09dev =3D kzalloc(sizeof(*dev), GFP_KERNEL);
--=09=09if (!dev)
--=09=09=09return;
--=09=09dev->name =3D np->name;
--=09=09dev->of_node =3D np;
-+=09for (b =3D __core_driver_block_start; b < __core_driver_block_end; b++)=
- {
-+=09=09if (b->class !=3D class)
-+=09=09=09continue;
-+
-+=09=09for_each_matching_node(np, b->drv->ids) {
-+=09=09=09pr_debug("core: registering OF device %s\n",
-+=09=09=09=09 np->full_name);
-+=09=09=09dev =3D kzalloc(sizeof(*dev), GFP_KERNEL);
-+=09=09=09if (!dev) {
-+=09=09=09=09of_node_put(np);
-+=09=09=09=09return;
-+=09=09=09}
-+=09=09=09dev->resource =3D of_device_alloc_resources(np, &num_res);
-+=09=09=09if (num_res < 0) {
-+=09=09=09=09of_node_put(np);
-+=09=09=09=09kfree(dev);
-+=09=09=09=09return;
-+=09=09=09}
-=20
--=09=09dev->resource =3D of_device_alloc_resources(np, &num_res);
--=09=09if (num_res < 0) {
--=09=09=09kfree(dev);
--=09=09=09return;
-+=09=09=09dev->num_resources =3D num_res;
-+=09=09=09dev->of_node =3D of_node_get(np);
-+=09=09=09dev->name =3D np->name;
-+=09=09=09core_device_register(class, dev);
- =09=09}
--=09=09dev->num_resources =3D num_res;
--
--=09=09core_device_register(class, dev);
- =09}
- }
-=20
-diff --git a/drivers/clocksource/arm_smp_twd.c b/drivers/clocksource/arm_sm=
-p_twd.c
-index 8d45000..717b4da 100644
---- a/drivers/clocksource/arm_smp_twd.c
-+++ b/drivers/clocksource/arm_smp_twd.c
-@@ -389,9 +389,9 @@ static int __init twd_core_init(struct core_device *dev=
-)
- =09return 0;
- }
-=20
--static struct core_device_id twd_core_ids[] __initdata =3D {
-+static struct of_device_id twd_core_ids[] __initdata =3D {
- =09{ .name=09=3D "arm_smp_twd", },
--=09{ .name =3D "arm,smp-twd", },
-+=09{ .compatible =3D "arm,smp-twd", },
- =09{},
- };
-=20
-diff --git a/include/linux/core_device.h b/include/linux/core_device.h
-index e632868..f21caba 100644
---- a/include/linux/core_device.h
-+++ b/include/linux/core_device.h
-@@ -16,10 +16,6 @@
- #include <linux/ioport.h>
- #include <linux/of.h>
-=20
--struct core_device_id {
--=09const char=09=09*name;
--};
--
- enum core_device_class {
- =09CORE_DEV_CLASS_IRQ,
- =09CORE_DEV_CLASS_TIMER,
-@@ -38,7 +34,7 @@ struct core_device {
-=20
- struct core_driver {
- =09int=09=09=09(*init)(struct core_device *);
--=09struct core_device_id=09*ids;
-+=09struct of_device_id=09*ids;
- };
-=20
- void core_device_register(enum core_device_class class,
-@@ -46,12 +42,10 @@ void core_device_register(enum core_device_class class,
- void core_driver_init_class(enum core_device_class class,
- =09=09=09    void (*sort)(struct list_head *));
- #ifdef CONFIG_OF
--void of_core_device_populate(enum core_device_class class,
--=09=09=09     struct of_device_id *matches);
-+void of_core_device_populate(enum core_device_class class);
- void core_device_irq_sort(struct list_head *head);
- #else
--static inline void of_core_device_populate(enum core_device_class class,
--=09=09=09=09=09   struct of_device_id *matches)
-+static inline void of_core_device_populate(enum core_device_class class)
- {
- }
- #define core_device_irq_sort=09NULL
---------------030902030506000907060603--
-
+> 
+> Note I commented out hw_watchdog_set_attr method to be sure
+> this hook doesn't take place so you get "defined but not used"
+> warning but it's known to happen.
+> 
+> Some details -- I think alias should be allowed for general
+> events only so any raw event will never fit aliasing feature.
+> 
+> Compile tested only, so I guess most probably something will
+> goes wrong or fail, but anyway ;) Thanks!
+> 
+> Patch is on top of current -tip/perf/core
+> 
+>  | commit 931da6137e8e8c622f59251e8b645467aea293f1
+> 
+> 	Cyrill
+> ---
+>  arch/x86/include/asm/perf_event_p4.h |    6 ++
+>  arch/x86/kernel/cpu/perf_event_p4.c  |   80 +++++++++++++++++++++++++++++++++--
+>  2 files changed, 82 insertions(+), 4 deletions(-)
+> 
+> Index: linux-2.6.git/arch/x86/include/asm/perf_event_p4.h
+> ===================================================================
+> --- linux-2.6.git.orig/arch/x86/include/asm/perf_event_p4.h
+> +++ linux-2.6.git/arch/x86/include/asm/perf_event_p4.h
+> @@ -757,6 +757,12 @@ enum P4_ESCR_EMASKS {
+>  #define P4_PEBS_CONFIG_MASK		0xff
+>  
+>  /*
+> + * If event may have alias it should be marked
+> + * with special bit.
+> + */
+> +#define P4_CONFIG_ALIASABLE		(1 << 9)
+> +
+> +/*
+>   * mem: Only counters MSR_IQ_COUNTER4 (16) and
+>   * MSR_IQ_COUNTER5 (17) are allowed for PEBS sampling
+>   */
+> Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+> ===================================================================
+> --- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
+> +++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+> @@ -570,11 +570,72 @@ static __initconst const u64 p4_hw_cache
+>   },
+>  };
+>  
+> +/*
+> + * Because of Netburst being quite restricted in now
+> + * many similar events can run simultaneously we use
+> + * that named event aliases, ie different events which
+> + * have the same functionallity but use non-intersected
+> + * ESCR/CCCR/couter registers which relax restrictions a
+> + * bit and run two or more semi-same events together.
+> + * This is done transparently to a user space.
+> + *
+> + * Never set P4_CONFIG_HT bit here nor the P4_PEBS_METRIC,
+> + * they either up-to-dated automatically either not appliable
+> + * at all, so be really carefull choosing aliases.
+> + *
+> + */
+> +struct p4_event_alias {
+> +	u64 orig;
+> +	u64 alter;
+> +} p4_event_aliases[] = {
+> +  {
+> +	.orig	=
+> +		p4_config_pack_escr(P4_ESCR_EVENT(P4_EVENT_GLOBAL_POWER_EVENTS)		|
+> +				    P4_ESCR_EMASK_BIT(P4_EVENT_GLOBAL_POWER_EVENTS, RUNNING)),
+> +	.alter	=
+> +		p4_config_pack_escr(P4_ESCR_EVENT(P4_EVENT_EXECUTION_EVENT)		|
+> +				    P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS0)|
+> +				    P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS1)|
+> +				    P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS2)|
+> +				    P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS3)|
+> +				    P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS0)	|
+> +				    P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS1)	|
+> +				    P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS2)	|
+> +				    P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS3))|
+> +		p4_config_pack_cccr(P4_CCCR_THRESHOLD(15) | P4_CCCR_COMPLEMENT		|
+> +				    P4_CCCR_COMPARE),
+> +  },
+> +};
+> +
+> +static u64 p4_get_alias_event(u64 config)
+> +{
+> +	int i;
+> +
+> +	if (!(config & P4_CONFIG_ALIASABLE))
+> +		return 0;
+> +
+> +	config &= P4_CONFIG_MASK;
+> +
+> +	/*
+> +	 * If an event was previously already swapped to
+> +	 * alter config we can swap it back when needed.
+> +	 */
+> +	for (i = 0; i < ARRAY_SIZE(p4_event_aliases); i++) {
+> +		if (config == p4_event_aliases[i].orig)
+> +			return p4_event_aliases[i].alter | P4_CONFIG_ALIASABLE;
+> +		else if (config == p4_event_aliases[i].alter)
+> +			return p4_event_aliases[i].orig | P4_CONFIG_ALIASABLE;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+>  static u64 p4_general_events[PERF_COUNT_HW_MAX] = {
+>    /* non-halted CPU clocks */
+>    [PERF_COUNT_HW_CPU_CYCLES] =
+>  	p4_config_pack_escr(P4_ESCR_EVENT(P4_EVENT_GLOBAL_POWER_EVENTS)		|
+> -		P4_ESCR_EMASK_BIT(P4_EVENT_GLOBAL_POWER_EVENTS, RUNNING)),
+> +		P4_ESCR_EMASK_BIT(P4_EVENT_GLOBAL_POWER_EVENTS, RUNNING))	|
+> +		P4_CONFIG_ALIASABLE,
+>  
+>    /*
+>     * retired instructions
+> @@ -1159,6 +1220,7 @@ static int p4_pmu_schedule_events(struct
+>  	struct p4_event_bind *bind;
+>  	unsigned int i, thread, num;
+>  	int cntr_idx, escr_idx;
+> +	u64 config_alias;
+>  
+>  	bitmap_zero(used_mask, X86_PMC_IDX_MAX);
+>  	bitmap_zero(escr_mask, P4_ESCR_MSR_TABLE_SIZE);
+> @@ -1167,6 +1229,7 @@ static int p4_pmu_schedule_events(struct
+>  
+>  		hwc = &cpuc->event_list[i]->hw;
+>  		thread = p4_ht_thread(cpu);
+> +again:
+>  		bind = p4_config_get_bind(hwc->config);
+>  		escr_idx = p4_get_escr_idx(bind->escr_msr[thread]);
+>  		if (unlikely(escr_idx == -1))
+> @@ -1180,8 +1243,17 @@ static int p4_pmu_schedule_events(struct
+>  		}
+>  
+>  		cntr_idx = p4_next_cntr(thread, used_mask, bind);
+> -		if (cntr_idx == -1 || test_bit(escr_idx, escr_mask))
+> -			goto done;
+> +		if (cntr_idx == -1 || test_bit(escr_idx, escr_mask)) {
+> +			/*
+> +			 * Probably an event alias is still available.
+> +			 */
+> +			config_alias = p4_get_alias_event(hwc->config);
+> +			if (!config_alias)
+> +				goto done;
+> +			/* Don't forget to restore HT */
+> +			hwc->config = thread ? p4_set_ht_bit(config_alias) : config_alias;
+> +			goto again;
+> +		}
+>  
+>  		p4_pmu_swap_config_ts(hwc, cpu);
+>  		if (assign)
+> @@ -1218,7 +1290,7 @@ static __initconst const struct x86_pmu 
+>  	.cntval_bits		= ARCH_P4_CNTRVAL_BITS,
+>  	.cntval_mask		= ARCH_P4_CNTRVAL_MASK,
+>  	.max_period		= (1ULL << (ARCH_P4_CNTRVAL_BITS - 1)) - 1,
+> -	.hw_watchdog_set_attr	= p4_hw_watchdog_set_attr,
+> +	/* .hw_watchdog_set_attr	= p4_hw_watchdog_set_attr, */
+>  	.hw_config		= p4_hw_config,
+>  	.schedule_events	= p4_pmu_schedule_events,
+>  	/*
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
