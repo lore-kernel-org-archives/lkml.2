@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753735Ab1GIGBC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 02:01:02 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:33867 "EHLO
+	id S1754150Ab1GIGHU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 02:07:20 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:43486 "EHLO
 	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752770Ab1GIGAw (ORCPT
+	by vger.kernel.org with ESMTP id S1753694Ab1GIGBB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 02:00:52 -0400
-X-Sasl-enc: 1DQwLFmbc6qhfUvqc/AH7g+Uzgy9pVuWgJ/z6ahkVtHf 1310191251
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 16:01:10 2011
-Message-Id: <20110708230110.730896583@clark.kroah.org>
+	Sat, 9 Jul 2011 02:01:01 -0400
+X-Sasl-enc: 5U4HiROHdTP2wJ69Tjvw7oGHpukNbKKV1YrNtiM+rzEh 1310191260
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 16:01:11 2011
+Message-Id: <20110708230111.305202033@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 08 Jul 2011 16:00:28 -0700
+Date: Fri, 08 Jul 2011 16:00:34 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Florian Fainelli <florian@openwrt.org>,
-        Wim Van Sebroeck <wim@iguana.be>
-Subject: [12/35] watchdog: mtx1-wdt: request gpio before using it
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [18/35] SUNRPC: Ensure the RPC client only quits on fatal signals
 In-Reply-To: <20110708230122.GA18807@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,47 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Fainelli <florian@openwrt.org>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 9b19d40aa3ebaf1078779da10555da2ab8512422 upstream.
+commit 5afa9133cfe67f1bfead6049a9640c9262a7101c upstream.
 
-Otherwise, the gpiolib autorequest feature will produce a WARN_ON():
+Fix a couple of instances where we were exiting the RPC client on
+arbitrary signals. We should only do so on fatal signals.
 
-WARNING: at drivers/gpio/gpiolib.c:101 0x8020ec6c()
-autorequest GPIO-215
-[...]
-
-Signed-off-by: Florian Fainelli <florian@openwrt.org>
-Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/watchdog/mtx-1_wdt.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ net/sunrpc/auth_gss/auth_gss.c |    4 ++--
+ net/sunrpc/clnt.c              |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/watchdog/mtx-1_wdt.c
-+++ b/drivers/watchdog/mtx-1_wdt.c
-@@ -211,6 +211,12 @@ static int __devinit mtx1_wdt_probe(stru
- 	int ret;
- 
- 	mtx1_wdt_device.gpio = pdev->resource[0].start;
-+	ret = gpio_request_one(mtx1_wdt_device.gpio,
-+				GPIOF_OUT_INIT_HIGH, "mtx1-wdt");
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "failed to request gpio");
-+		return ret;
-+	}
- 
- 	spin_lock_init(&mtx1_wdt_device.lock);
- 	init_completion(&mtx1_wdt_device.stop);
-@@ -236,6 +242,8 @@ static int __devexit mtx1_wdt_remove(str
- 		mtx1_wdt_device.queue = 0;
- 		wait_for_completion(&mtx1_wdt_device.stop);
+--- a/net/sunrpc/auth_gss/auth_gss.c
++++ b/net/sunrpc/auth_gss/auth_gss.c
+@@ -548,13 +548,13 @@ retry:
  	}
-+
-+	gpio_free(mtx1_wdt_device.gpio);
- 	misc_deregister(&mtx1_wdt_misc);
- 	return 0;
- }
+ 	inode = &gss_msg->inode->vfs_inode;
+ 	for (;;) {
+-		prepare_to_wait(&gss_msg->waitqueue, &wait, TASK_INTERRUPTIBLE);
++		prepare_to_wait(&gss_msg->waitqueue, &wait, TASK_KILLABLE);
+ 		spin_lock(&inode->i_lock);
+ 		if (gss_msg->ctx != NULL || gss_msg->msg.errno < 0) {
+ 			break;
+ 		}
+ 		spin_unlock(&inode->i_lock);
+-		if (signalled()) {
++		if (fatal_signal_pending(current)) {
+ 			err = -ERESTARTSYS;
+ 			goto out_intr;
+ 		}
+--- a/net/sunrpc/clnt.c
++++ b/net/sunrpc/clnt.c
+@@ -938,7 +938,7 @@ call_allocate(struct rpc_task *task)
+ 
+ 	dprintk("RPC: %5u rpc_buffer allocation failed\n", task->tk_pid);
+ 
+-	if (RPC_IS_ASYNC(task) || !signalled()) {
++	if (RPC_IS_ASYNC(task) || !fatal_signal_pending(current)) {
+ 		task->tk_action = call_allocate;
+ 		rpc_delay(task, HZ>>4);
+ 		return;
 
 
