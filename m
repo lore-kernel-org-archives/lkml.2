@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752159Ab1GHOPy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 10:15:54 -0400
+	id S1752365Ab1GHOQG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 10:16:06 -0400
 Received: from mga11.intel.com ([192.55.52.93]:20834 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750959Ab1GHOPw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 10:15:52 -0400
+	id S1751826Ab1GHOPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 10:15:53 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,499,1304319600"; 
-   d="scan'208";a="27870318"
-Date: Fri, 8 Jul 2011 04:53:35 -0700
+   d="scan'208";a="27870321"
+Date: Fri, 8 Jul 2011 04:51:07 -0700
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrea Righi <righi.andrea@gmail.com>
 Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
         Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
         Christoph Hellwig <hch@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "Li, Shaohua" <shaohua.li@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/9] writeback: bdi write bandwidth estimation
-Message-ID: <20110708115335.GB6159@localhost>
-References: <20110701152005.GA13445@thinkpad>
+Subject: Re: [PATCH 6/9] writeback: introduce smoothed global dirty limit
+Message-ID: <20110708115107.GA6159@localhost>
+References: <20110701152048.GA2721@thinkpad>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110701152005.GA13445@thinkpad>
+In-Reply-To: <20110701152048.GA2721@thinkpad>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrea,
-
-> Another small time nitpick.
+> > +	if (now - update_time < MAX_PAUSE)
 > 
+> 	if (time_before(now, update_time + MAX_PAUSE))
+> 
+> > +		return;
 > > +
-> > +static void bdi_update_bandwidth(struct backing_dev_info *bdi,
-> > +				 unsigned long start_time)
-> > +{
-> > +	if (jiffies - bdi->bw_time_stamp <= MAX_PAUSE + MAX_PAUSE / 10)
+> > +	spin_lock(&dirty_lock);
+> > +	if (now - update_time >= MAX_PAUSE) {
 > 
-> 	if (time_is_after_eq_jiffies(bdi->bw_time_stamp + MAX_PAUSE +
-> 						MAX_PAUSE / 10)
+> 	if (time_after_eq(now, update_time + MAX_PAUSE))
 
-Done, and simplified to
-
-        if (time_is_after_eq_jiffies(bdi->bw_time_stamp + BANDWIDTH_INTERVAL))
-                return;
-
-Thanks,
-Fengguang
+Changed, thanks!
