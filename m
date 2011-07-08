@@ -1,105 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753117Ab1GHOo4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 10:44:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41838 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752613Ab1GHOoy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 10:44:54 -0400
-Date: Fri, 8 Jul 2011 16:44:48 +0200 (CEST)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
-To: Kyungmin Park <kmpark@infradead.org>
-cc: Lukas Czerner <lczerner@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Filesystem Mailing List <linux-fsdevel@vger.kernel.org>
-Subject: Re: ext4: why init the unused block group at batched discard?
-In-Reply-To: <CAH9JG2WrmscjnL+KLuWyzH7E4U-EkV_mJrdv-JUZzyPwStGTGQ@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1107081643510.5442@dhcp-27-109.brq.redhat.com>
-References: <CAH9JG2Xp_u-46x8bf2Uq-9FREZyYhcP3E7H+MsSoFVrWpyLrtA@mail.gmail.com> <alpine.LFD.2.00.1107071106100.3911@dhcp-27-109.brq.redhat.com> <CAH9JG2WXQc5oxOD+B4xm5NbuvhJLc=mpyoTkXNup5spLSh4sMQ@mail.gmail.com> <alpine.LFD.2.00.1107071637420.3911@dhcp-27-109.brq.redhat.com>
- <CAH9JG2WrmscjnL+KLuWyzH7E4U-EkV_mJrdv-JUZzyPwStGTGQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753193Ab1GHOtS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 10:49:18 -0400
+Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:40132 "EHLO
+	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752129Ab1GHOtP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 10:49:15 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: balbi@ti.com
+Cc: Keshava Munegowda <keshava_mgowda@ti.com>, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gadiyar@ti.com, sameo@linux.intel.com, parthab@india.ti.com,
+        tony@atomide.com, b-cousson@ti.com, paul@pwsan.com,
+        johnstul@us.ibm.com, vishwanath.bs@ti.com, kishon@ti.com
+Subject: Re: [PATCH 0/6 v3] arm: omap: usb: Runtime PM support for EHCI and OHCI drivers
+Organization: Texas Instruments, Inc.
+References: <1310122965-23612-1-git-send-email-keshava_mgowda@ti.com>
+	<20110708114425.GI4820@legolas.emea.dhcp.ti.com>
+Date: Fri, 08 Jul 2011 07:49:09 -0700
+In-Reply-To: <20110708114425.GI4820@legolas.emea.dhcp.ti.com> (Felipe Balbi's
+	message of "Fri, 8 Jul 2011 14:44:26 +0300")
+Message-ID: <87k4bsbzfe.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-85666656-1310136291=:5442"
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Felipe Balbi <balbi@ti.com> writes:
 
---8323328-85666656-1310136291=:5442
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+> Hi Kevin, Paul, Tony, Benoit,
+>
+> On Fri, Jul 08, 2011 at 04:32:39PM +0530, Keshava Munegowda wrote:
+>> The Hwmod structures and Runtime PM features are implemented
+>> For EHCI and OHCI drivers of OMAP3 and OMAP4.
+>> The global suspend/resume of EHCI and OHCI
+>> is validated on OMAP3430 sdp board with these patches.
+>> 
+>> V3:
+>> Set MSTANDBY_SMART_WKUP for idlemode of usbhost
+>> Rebased on top of git://gitorious.org/omap-pm/linux.git
+>> Branch: for_3.1/3_hwmod_fixes
+>> commit 213ca8a3a8d73225f2f5304ab3a68c6eda0f6d1b
+>> Author: Benoit Cousson <b-cousson@ti.com>
+>> Date:   Fri Jul 1 13:52:03 2011 +0200
+>> 
+>>     OMAP: hwmod: Move pr_debug to improve the readability
+>>     
+>>     Sligtly move the pr_debug at the top of the function
+>>     to trace the entry even if the first test is failing.
+>>     That help understanding that we entered the function
+>>     but failed in it.
+>>     
+>>     Move the _enable last part out of the test to reduce
+>>     indentation and improve readability.
+>>     
+>>     Signed-off-by: Benoit Cousson <b-cousson@ti.com>
+>>     Cc: Paul Walmsley <paul@pwsan.com>
+>> 
+>> Benoit Cousson (1):
+>>  arm: omap: usb: ehci and ohci hwmod structures for omap4
+>> 
+>> Keshava Munegowda (5):
+>>   arm: omap: usb: ehci and ohci hwmod structures for omap3
+>>   arm: omap: usb: register hwmods of usbhs
+>>   arm: omap: usb: device name change for the clk names of usbhs
+>>   arm: omap: usb: Runtime PM support
+>>   arm: omap: usb: global Suspend and resume support of ehci and ohci
+>
+> can we get the hwmod stuff in this merge window now ? It has been
+> rebased on Benoit's branch.
 
-On Fri, 8 Jul 2011, Kyungmin Park wrote:
+Not yet.
 
-> On Thu, Jul 7, 2011 at 11:41 PM, Lukas Czerner <lczerner@redhat.com> wrote:
-> > On Thu, 7 Jul 2011, Kyungmin Park wrote:
-> >
-> >> On Thu, Jul 7, 2011 at 6:24 PM, Lukas Czerner <lczerner@redhat.com> wrote:
-> >> > On Wed, 6 Jul 2011, Kyungmin Park wrote:
-> >> >
-> >> >> Hi Lukas,
-> >> >>
-> >> >> During code review batched discard support at ext4. I wonder why do
-> >> >> you init the uninitialized block group during batched discard.
-> >> >> As you know uninitialized block group mean that there's no operation
-> >> >> at these blocks.
-> >> >> So no need to trim it at all.
-> >> >
-> >> > What you're describing is another flag, namely EXT4_BG_BLOCK_UNINIT,
-> >> > which tells us that there was no allocation from that block bitmap since
-> >> > the mkfs (as Amir already pointed out). Flag
-> >> > EXT4_GROUP_INFO_NEED_INIT_BIT simply states that there is no buddy
-> >> > initialized for this group.
-> >> >
-> >> > That said the code is perfectly fine, and it should not affect even the
-> >> > e2fsck which uses EXT4_BG_BLOCK_UNINIT to skip not used block groups
-> >> > since we only change it on allocations.
-> >> >
-> >> > It is true that after the commit
-> >> > 78944086663e6c1b03f3d60bf7610128149be5fc ext4: only load buddy bitmap in
-> >> > ext4_trim_fs() when it is needed
-> >> > we do not longer need to initialize the buddy right away, but wait ontil
-> >> > it is really needed. Actually we do not need it at all, because is when
-> >> > we are going to load the buddy the ext4_mb_load_buddy() will check for
-> >> > the EXT4_GROUP_INFO_NEED_INIT_BIT and will initialize the buddy for us.
-> >> >
-> >> > Yongqiang pointed out that we might use EXT4_BG_BLOCK_UNINIT to skip
-> >> > group as well, but I do not think that it is a good idea, since the
-> >> > initial discard at mkfs time might not be done (we just do not know it),
-> >> > so any assumption like this are not right. Moreover there are patches
-> >> > from Tao Ma which adds the code for skipping groups which has not been
-> >> > freed from since the last fitrim call. Search the list for [PATCH 0/4
-> >> > RESEND]  ext4 trim bug fixes and improvement.
-> >>
-> >> Thank you for all kind explanations.
-> >>
-> >> Another consideration is that even though batched discard has little
-> >> overhead it's not good idea trim it all unused blocks at one time.
-> >> since disk used blocks doesn't increased in normal case.
-> >> So how about to remember the last allocated block group and trim it
-> >> until this block group?
-> >
-> > Yes, this problem is addressed by patches from Tao as mentioned above,
-> > however it is still waiting for merge.
-> >
-> >>
-> >> To reduce the trim time. I also consider the divide the block groups
-> >> as several trim area e.g., 1 GiB and trim it sequentially.
-> >
-> > I am not sure what do you mean. In ext4 allocation groups has a lot
-> > smaller sizes (128M for 4k block size) than 1G. Also you can specify
-> > that you do want to discard just a part of the filesystem, but you
-> > probably did notice that in review, right ?
-> 
-> My concept is that
-> 
-> Divide the trim area, from 0 to 1GiB, 1GiB to 2GiB, and so on.
+It's not about rebasing, it's that the data itself has changed, and new
+fields have been added to the hwmod (like clkdm.)
 
-Yes, that is what you can do now.
+Please check the result of the latest auto-generated hwmods against the
+stuff that is being submitted.
 
-Regards!
--Lukas
---8323328-85666656-1310136291=:5442--
+Kevin
