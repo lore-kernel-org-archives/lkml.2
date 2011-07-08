@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755448Ab1GHFGF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:06:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42610 "EHLO mx2.suse.de"
+	id S1755476Ab1GHFGM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:06:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42626 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755343Ab1GHFGC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:06:02 -0400
+	id S1755343Ab1GHFGG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:06:06 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:17:02 2011
-Message-Id: <20110708001702.532708732@clark.kroah.org>
+Message-Id: <20110708001702.628025841@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:17:13 -0700
+Date: Thu, 07 Jul 2011 17:17:14 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [101/107] ipv4: fix multicast losses
+        Julian Anastasov <ja@ssi.bg>, "David S. Miller" <davem@davemloft.net>
+Subject: [102/107] netfilter: Fix ip_route_me_harder triggering ip_rt_bug
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,37 +26,158 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Julian Anastasov <ja@ssi.bg>
 
-[ Upstream commit 9aa3c94ce59066f545521033007abb6441706068 ]
+[ Upstream commit ed6e4ef836d425bc35e33bf20fcec95e68203afa ]
 
-Knut Tidemann found that first packet of a multicast flow was not
-correctly received, and bisected the regression to commit b23dd4fe42b4
-(Make output route lookup return rtable directly.)
+	Avoid creating input routes with ip_route_me_harder.
+It does not work for locally generated packets. Instead,
+restrict sockets to provide valid saddr for output route (or
+unicast saddr for transparent proxy). For other traffic
+allow saddr to be unicast or local but if callers forget
+to check saddr type use 0 for the output route.
 
-Special thanks to Knut, who provided a very nice bug report, including
-sample programs to demonstrate the bug.
+	The resulting handling should be:
 
-Reported-and-bisectedby: Knut Tidemann <knut.andre.tidemann@jotron.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+- REJECT TCP:
+	- in INPUT we can provide addr_type = RTN_LOCAL but
+	better allow rejecting traffic delivered with
+	local route (no IP address => use RTN_UNSPEC to
+	allow also RTN_UNICAST).
+	- FORWARD: RTN_UNSPEC => allow RTN_LOCAL/RTN_UNICAST
+	saddr, add fix to ignore RTN_BROADCAST and RTN_MULTICAST
+	- OUTPUT: RTN_UNSPEC
+
+- NAT, mangle, ip_queue, nf_ip_reroute: RTN_UNSPEC in LOCAL_OUT
+
+- IPVS:
+	- use RTN_LOCAL in LOCAL_OUT and FORWARD after SNAT
+	to restrict saddr to be local
+
+Signed-off-by: Julian Anastasov <ja@ssi.bg>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/ipv4/route.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ net/ipv4/netfilter.c            |   60 ++++++++++++++--------------------------
+ net/ipv4/netfilter/ipt_REJECT.c |   14 ++-------
+ 2 files changed, 26 insertions(+), 48 deletions(-)
 
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -1914,9 +1914,7 @@ static int ip_route_input_mc(struct sk_b
+--- a/net/ipv4/netfilter.c
++++ b/net/ipv4/netfilter.c
+@@ -17,51 +17,35 @@ int ip_route_me_harder(struct sk_buff *s
+ 	const struct iphdr *iph = ip_hdr(skb);
+ 	struct rtable *rt;
+ 	struct flowi4 fl4 = {};
+-	unsigned long orefdst;
++	__be32 saddr = iph->saddr;
++	__u8 flags = 0;
+ 	unsigned int hh_len;
+-	unsigned int type;
  
- 	hash = rt_hash(daddr, saddr, dev->ifindex, rt_genid(dev_net(dev)));
- 	rth = rt_intern_hash(hash, rth, skb, dev->ifindex);
--	err = 0;
--	if (IS_ERR(rth))
--		err = PTR_ERR(rth);
-+	return IS_ERR(rth) ? PTR_ERR(rth) : 0;
+-	type = inet_addr_type(net, iph->saddr);
+-	if (skb->sk && inet_sk(skb->sk)->transparent)
+-		type = RTN_LOCAL;
+-	if (addr_type == RTN_UNSPEC)
+-		addr_type = type;
++	if (!skb->sk && addr_type != RTN_LOCAL) {
++		if (addr_type == RTN_UNSPEC)
++			addr_type = inet_addr_type(net, saddr);
++		if (addr_type == RTN_LOCAL || addr_type == RTN_UNICAST)
++			flags |= FLOWI_FLAG_ANYSRC;
++		else
++			saddr = 0;
++	}
  
- e_nobufs:
- 	return -ENOBUFS;
+ 	/* some non-standard hacks like ipt_REJECT.c:send_reset() can cause
+ 	 * packets with foreign saddr to appear on the NF_INET_LOCAL_OUT hook.
+ 	 */
+-	if (addr_type == RTN_LOCAL) {
+-		fl4.daddr = iph->daddr;
+-		if (type == RTN_LOCAL)
+-			fl4.saddr = iph->saddr;
+-		fl4.flowi4_tos = RT_TOS(iph->tos);
+-		fl4.flowi4_oif = skb->sk ? skb->sk->sk_bound_dev_if : 0;
+-		fl4.flowi4_mark = skb->mark;
+-		fl4.flowi4_flags = skb->sk ? inet_sk_flowi_flags(skb->sk) : 0;
+-		rt = ip_route_output_key(net, &fl4);
+-		if (IS_ERR(rt))
+-			return -1;
+-
+-		/* Drop old route. */
+-		skb_dst_drop(skb);
+-		skb_dst_set(skb, &rt->dst);
+-	} else {
+-		/* non-local src, find valid iif to satisfy
+-		 * rp-filter when calling ip_route_input. */
+-		fl4.daddr = iph->saddr;
+-		rt = ip_route_output_key(net, &fl4);
+-		if (IS_ERR(rt))
+-			return -1;
++	fl4.daddr = iph->daddr;
++	fl4.saddr = saddr;
++	fl4.flowi4_tos = RT_TOS(iph->tos);
++	fl4.flowi4_oif = skb->sk ? skb->sk->sk_bound_dev_if : 0;
++	fl4.flowi4_mark = skb->mark;
++	fl4.flowi4_flags = skb->sk ? inet_sk_flowi_flags(skb->sk) : flags;
++	rt = ip_route_output_key(net, &fl4);
++	if (IS_ERR(rt))
++		return -1;
+ 
+-		orefdst = skb->_skb_refdst;
+-		if (ip_route_input(skb, iph->daddr, iph->saddr,
+-				   RT_TOS(iph->tos), rt->dst.dev) != 0) {
+-			dst_release(&rt->dst);
+-			return -1;
+-		}
+-		dst_release(&rt->dst);
+-		refdst_drop(orefdst);
+-	}
++	/* Drop old route. */
++	skb_dst_drop(skb);
++	skb_dst_set(skb, &rt->dst);
+ 
+ 	if (skb_dst(skb)->error)
+ 		return -1;
+--- a/net/ipv4/netfilter/ipt_REJECT.c
++++ b/net/ipv4/netfilter/ipt_REJECT.c
+@@ -40,7 +40,6 @@ static void send_reset(struct sk_buff *o
+ 	struct iphdr *niph;
+ 	const struct tcphdr *oth;
+ 	struct tcphdr _otcph, *tcph;
+-	unsigned int addr_type;
+ 
+ 	/* IP header checks: fragment. */
+ 	if (ip_hdr(oldskb)->frag_off & htons(IP_OFFSET))
+@@ -55,6 +54,9 @@ static void send_reset(struct sk_buff *o
+ 	if (oth->rst)
+ 		return;
+ 
++	if (skb_rtable(oldskb)->rt_flags & (RTCF_BROADCAST | RTCF_MULTICAST))
++		return;
++
+ 	/* Check checksum */
+ 	if (nf_ip_checksum(oldskb, hook, ip_hdrlen(oldskb), IPPROTO_TCP))
+ 		return;
+@@ -101,19 +103,11 @@ static void send_reset(struct sk_buff *o
+ 	nskb->csum_start = (unsigned char *)tcph - nskb->head;
+ 	nskb->csum_offset = offsetof(struct tcphdr, check);
+ 
+-	addr_type = RTN_UNSPEC;
+-	if (hook != NF_INET_FORWARD
+-#ifdef CONFIG_BRIDGE_NETFILTER
+-	    || (nskb->nf_bridge && nskb->nf_bridge->mask & BRNF_BRIDGED)
+-#endif
+-	   )
+-		addr_type = RTN_LOCAL;
+-
+ 	/* ip_route_me_harder expects skb->dst to be set */
+ 	skb_dst_set_noref(nskb, skb_dst(oldskb));
+ 
+ 	nskb->protocol = htons(ETH_P_IP);
+-	if (ip_route_me_harder(nskb, addr_type))
++	if (ip_route_me_harder(nskb, RTN_UNSPEC))
+ 		goto free_nskb;
+ 
+ 	niph->ttl	= ip4_dst_hoplimit(skb_dst(nskb));
 
 
