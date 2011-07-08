@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755141Ab1GHFEw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:04:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42414 "EHLO mx2.suse.de"
+	id S1755101Ab1GHFE6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:04:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42429 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755043Ab1GHFEs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:04:48 -0400
+	id S1754798Ab1GHFEy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:04:54 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:17:00 2011
-Message-Id: <20110708001700.445354508@clark.kroah.org>
+Message-Id: <20110708001700.626965535@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:16:51 -0700
+Date: Thu, 07 Jul 2011 17:16:53 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>,
         "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [079/107] PM: Rename dev_pm_info.in_suspend to is_prepared
+Subject: [081/107] PM / Hibernate: Fix free_unnecessary_pages()
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,133 +25,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 
-commit f76b168b6f117a49d36307053e1acbe30580ea5b upstream.
+commit 4d4cf23cdde2f8f9324f5684a7f349e182039529 upstream.
 
-This patch (as1473) renames the "in_suspend" field in struct
-dev_pm_info to "is_prepared", in preparation for an upcoming change.
-The new name is more descriptive of what the field really means.
+There is a bug in free_unnecessary_pages() that causes it to
+attempt to free too many pages in some cases, which triggers the
+BUG_ON() in memory_bm_clear_bit() for copy_bm.  Namely, if
+count_data_pages() is initially greater than alloc_normal, we get
+to_free_normal equal to 0 and "save" greater from 0.  In that case,
+if the sum of "save" and count_highmem_pages() is greater than
+alloc_highmem, we subtract a positive number from to_free_normal.
+Hence, since to_free_normal was 0 before the subtraction and is
+an unsigned int, the result is converted to a huge positive number
+that is used as the number of pages to free.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Fix this bug by checking if to_free_normal is actually greater
+than or equal to the number we're going to subtract from it.
+
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Reported-and-tested-by: Matthew Garrett <mjg@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/base/power/main.c |   14 +++++++++-----
- drivers/usb/core/driver.c |    6 +++---
- include/linux/device.h    |    4 ++--
- include/linux/pm.h        |    2 +-
- 4 files changed, 15 insertions(+), 11 deletions(-)
+ kernel/power/snapshot.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/base/power/main.c
-+++ b/drivers/base/power/main.c
-@@ -57,7 +57,7 @@ static int async_error;
-  */
- void device_pm_init(struct device *dev)
- {
--	dev->power.in_suspend = false;
-+	dev->power.is_prepared = false;
- 	init_completion(&dev->power.completion);
- 	complete_all(&dev->power.completion);
- 	dev->power.wakeup = NULL;
-@@ -91,7 +91,7 @@ void device_pm_add(struct device *dev)
- 	pr_debug("PM: Adding info for %s:%s\n",
- 		 dev->bus ? dev->bus->name : "No Bus", dev_name(dev));
- 	mutex_lock(&dpm_list_mtx);
--	if (dev->parent && dev->parent->power.in_suspend)
-+	if (dev->parent && dev->parent->power.is_prepared)
- 		dev_warn(dev, "parent %s should not be sleeping\n",
- 			dev_name(dev->parent));
- 	list_add_tail(&dev->power.entry, &dpm_list);
-@@ -513,7 +513,11 @@ static int device_resume(struct device *
- 	dpm_wait(dev->parent, async);
- 	device_lock(dev);
- 
--	dev->power.in_suspend = false;
-+	/*
-+	 * This is a fib.  But we'll allow new children to be added below
-+	 * a resumed device, even if the device hasn't been completed yet.
-+	 */
-+	dev->power.is_prepared = false;
- 
- 	if (dev->pwr_domain) {
- 		pm_dev_dbg(dev, state, "power domain ");
-@@ -668,7 +672,7 @@ static void dpm_complete(pm_message_t st
- 		struct device *dev = to_device(dpm_prepared_list.prev);
- 
- 		get_device(dev);
--		dev->power.in_suspend = false;
-+		dev->power.is_prepared = false;
- 		list_move(&dev->power.entry, &list);
- 		mutex_unlock(&dpm_list_mtx);
- 
-@@ -1037,7 +1041,7 @@ static int dpm_prepare(pm_message_t stat
- 			put_device(dev);
- 			break;
- 		}
--		dev->power.in_suspend = true;
-+		dev->power.is_prepared = true;
- 		if (!list_empty(&dev->power.entry))
- 			list_move_tail(&dev->power.entry, &dpm_prepared_list);
- 		put_device(dev);
---- a/drivers/usb/core/driver.c
-+++ b/drivers/usb/core/driver.c
-@@ -375,7 +375,7 @@ static int usb_unbind_interface(struct d
- 		 * Just re-enable it without affecting the endpoint toggles.
- 		 */
- 		usb_enable_interface(udev, intf, false);
--	} else if (!error && !intf->dev.power.in_suspend) {
-+	} else if (!error && !intf->dev.power.is_prepared) {
- 		r = usb_set_interface(udev, intf->altsetting[0].
- 				desc.bInterfaceNumber, 0);
- 		if (r < 0)
-@@ -960,7 +960,7 @@ void usb_rebind_intf(struct usb_interfac
+--- a/kernel/power/snapshot.c
++++ b/kernel/power/snapshot.c
+@@ -1199,7 +1199,11 @@ static void free_unnecessary_pages(void)
+ 		to_free_highmem = alloc_highmem - save;
+ 	} else {
+ 		to_free_highmem = 0;
+-		to_free_normal -= save - alloc_highmem;
++		save -= alloc_highmem;
++		if (to_free_normal > save)
++			to_free_normal -= save;
++		else
++			to_free_normal = 0;
  	}
  
- 	/* Try to rebind the interface */
--	if (!intf->dev.power.in_suspend) {
-+	if (!intf->dev.power.is_prepared) {
- 		intf->needs_binding = 0;
- 		rc = device_attach(&intf->dev);
- 		if (rc < 0)
-@@ -1107,7 +1107,7 @@ static int usb_resume_interface(struct u
- 	if (intf->condition == USB_INTERFACE_UNBOUND) {
- 
- 		/* Carry out a deferred switch to altsetting 0 */
--		if (intf->needs_altsetting0 && !intf->dev.power.in_suspend) {
-+		if (intf->needs_altsetting0 && !intf->dev.power.is_prepared) {
- 			usb_set_interface(udev, intf->altsetting[0].
- 					desc.bInterfaceNumber, 0);
- 			intf->needs_altsetting0 = 0;
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -506,13 +506,13 @@ static inline int device_is_registered(s
- 
- static inline void device_enable_async_suspend(struct device *dev)
- {
--	if (!dev->power.in_suspend)
-+	if (!dev->power.is_prepared)
- 		dev->power.async_suspend = true;
- }
- 
- static inline void device_disable_async_suspend(struct device *dev)
- {
--	if (!dev->power.in_suspend)
-+	if (!dev->power.is_prepared)
- 		dev->power.async_suspend = false;
- }
- 
---- a/include/linux/pm.h
-+++ b/include/linux/pm.h
-@@ -425,7 +425,7 @@ struct dev_pm_info {
- 	pm_message_t		power_state;
- 	unsigned int		can_wakeup:1;
- 	unsigned int		async_suspend:1;
--	unsigned int		in_suspend:1;	/* Owned by the PM core */
-+	bool			is_prepared:1;	/* Owned by the PM core */
- 	spinlock_t		lock;
- #ifdef CONFIG_PM_SLEEP
- 	struct list_head	entry;
+ 	memory_bm_position_reset(&copy_bm);
 
 
