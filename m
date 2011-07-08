@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754394Ab1GHIqr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 04:46:47 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:39674 "EHLO
+	id S1754480Ab1GHIrJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 04:47:09 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:39651 "EHLO
 	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753611Ab1GHIqn (ORCPT
+	with ESMTP id S1754072Ab1GHIqe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 04:46:43 -0400
-X-AuditID: b753bd60-a14abba0000019f4-8d-4e16c3f1b778
-X-AuditID: b753bd60-a14abba0000019f4-8d-4e16c3f1b778
+	Fri, 8 Jul 2011 04:46:34 -0400
+X-AuditID: b753bd60-a14c4ba000003bac-70-4e16c3e7ff41
+X-AuditID: b753bd60-a14c4ba000003bac-70-4e16c3e7ff41
 From: Nao Nishijima <nao.nishijima.xt@hitachi.com>
-Subject: [RFC PATCH 4/4] sd: cleanup for alias name
+Subject: [RFC PATCH 3/4] fs: modify disk_name() for alias name
 To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
 Cc: James.Bottomley@HansenPartnership.com, kay.sievers@vrfy.org,
         jcm@redhat.com, greg@kroah.com, dle-develop@lists.sourceforge.net,
@@ -18,8 +18,8 @@ Cc: James.Bottomley@HansenPartnership.com, kay.sievers@vrfy.org,
         yrl.pp-manager.tt@hitachi.com, dgilbert@interlog.com,
         stefanr@s5r6.in-berlin.de, hare@suse.de,
         Nao Nishijima <nao.nishijima.xt@hitachi.com>
-Date: Fri, 08 Jul 2011 17:46:26 +0900
-Message-ID: <20110708084626.2091.29632.stgit@ltc197.sdl.hitachi.co.jp>
+Date: Fri, 08 Jul 2011 17:46:16 +0900
+Message-ID: <20110708084616.2091.69243.stgit@ltc197.sdl.hitachi.co.jp>
 In-Reply-To: <20110708084547.2091.55262.stgit@ltc197.sdl.hitachi.co.jp>
 References: <20110708084547.2091.55262.stgit@ltc197.sdl.hitachi.co.jp>
 User-Agent: StGIT/0.14.3
@@ -31,34 +31,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use sd_printk() instead of printk().
+Make disk_name() return alais_name instead of disk_name when alias_name is set.
+disk_name() is used in /proc/{partitions, diskstats}. Therefore, those files
+show alias_name.
 
 Signed-off-by: Nao Nishijima <nao.nishijima.xt@hitachi.com>
 Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 ---
 
- drivers/scsi/sd.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+ Documentation/ABI/testing/sysfs-block |    8 ++++----
+ fs/partitions/check.c                 |    6 +++---
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index 953773c..e434e5f 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -1066,12 +1066,13 @@ static int sd_ioctl(struct block_device *bdev, fmode_t mode,
- 		    unsigned int cmd, unsigned long arg)
+diff --git a/Documentation/ABI/testing/sysfs-block b/Documentation/ABI/testing/sysfs-block
+index 07c4fcd..432140c 100644
+--- a/Documentation/ABI/testing/sysfs-block
++++ b/Documentation/ABI/testing/sysfs-block
+@@ -217,7 +217,7 @@ Description:
+ 		instead of raw device name. However, kernel doesn't show those
+ 		persistent names on its message (e.g. dmesg).
+ 		This file can store an alias name of the disk and it would be
+-		appeared in kernel messages if it is set. A disk can have an
+-		alias name which length is up to 255bytes. Users can use
+-		use alphabets, numbers, "-" and "_" in alias name and can
+-		change it anytime.
++		appeared in kernel messages and procfs if it is set. A disk
++		can have an alias name which length is up to 255bytes. Users
++		can use use alphabets, numbers, "-" and "_" in alias name and
++		can change it anytime.
+diff --git a/fs/partitions/check.c b/fs/partitions/check.c
+index d545e97..d0bfe56 100644
+--- a/fs/partitions/check.c
++++ b/fs/partitions/check.c
+@@ -125,11 +125,11 @@ static int (*check_part[])(struct parsed_partitions *) = {
+ char *disk_name(struct gendisk *hd, int partno, char *buf)
  {
- 	struct gendisk *disk = bdev->bd_disk;
--	struct scsi_device *sdp = scsi_disk(disk)->device;
-+	struct scsi_disk *sdkp = scsi_disk(disk);
-+	struct scsi_device *sdp = sdkp->device;
- 	void __user *p = (void __user *)arg;
- 	int error;
-     
--	SCSI_LOG_IOCTL(1, printk("sd_ioctl: disk=%s, cmd=0x%x\n",
--						disk->disk_name, cmd));
-+	SCSI_LOG_IOCTL(1, sd_printk(KERN_INFO, sdkp, "sd_ioctl: disk=%s,"
-+		       " cmd=0x%x\n", disk->disk_name, cmd));
+ 	if (!partno)
+-		snprintf(buf, BDEVNAME_SIZE, "%s", hd->disk_name);
++		snprintf(buf, BDEVNAME_SIZE, "%s", alias_name(hd));
+ 	else if (isdigit(hd->disk_name[strlen(hd->disk_name)-1]))
+-		snprintf(buf, BDEVNAME_SIZE, "%sp%d", hd->disk_name, partno);
++		snprintf(buf, BDEVNAME_SIZE, "%sp%d", alias_name(hd), partno);
+ 	else
+-		snprintf(buf, BDEVNAME_SIZE, "%s%d", hd->disk_name, partno);
++		snprintf(buf, BDEVNAME_SIZE, "%s%d", alias_name(hd), partno);
  
- 	/*
- 	 * If we are in the middle of error recovery, don't let anyone
+ 	return buf;
+ }
 
