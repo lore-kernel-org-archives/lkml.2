@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754890Ab1GHFEQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:04:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42324 "EHLO mx2.suse.de"
+	id S1754833Ab1GHFEL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:04:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42306 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754827Ab1GHFEO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:04:14 -0400
+	id S1754782Ab1GHFEH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:04:07 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:59 2011
-Message-Id: <20110708001659.570406119@clark.kroah.org>
+Message-Id: <20110708001659.393585376@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:16:42 -0700
+Date: Thu, 07 Jul 2011 17:16:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andy Adamson <andros@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [070/107] NFSv4.1: allow zero fh array in filelayout decode layout
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [068/107] nfsd4: fix break_lease flags on nfsd open
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,43 +25,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Adamson <andros@netapp.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit cec765cf5891c7fc3d905832b481bfb6fd55825d upstream.
+commit 105f4622104848ff1ee1f644d661bef9dec3eb27 upstream.
 
-Signed-off-by: Andy Adamson <andros@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Thanks to Casey Bodley for pointing out that on a read open we pass 0,
+instead of O_RDONLY, to break_lease, with the result that a read open is
+treated like a write open for the purposes of lease breaking!
+
+Reported-by: Casey Bodley <cbodley@citi.umich.edu>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/nfs4filelayout.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ fs/nfsd/vfs.c |   15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
---- a/fs/nfs/nfs4filelayout.c
-+++ b/fs/nfs/nfs4filelayout.c
-@@ -554,13 +554,18 @@ filelayout_decode_layout(struct pnfs_lay
- 		__func__, nfl_util, fl->num_fh, fl->first_stripe_index,
- 		fl->pattern_offset);
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -699,7 +699,15 @@ nfsd_access(struct svc_rqst *rqstp, stru
+ }
+ #endif /* CONFIG_NFSD_V3 */
  
--	if (!fl->num_fh)
-+	/* Note that a zero value for num_fh is legal for STRIPE_SPARSE.
-+	 * Futher checking is done in filelayout_check_layout */
-+	if (fl->num_fh < 0 || fl->num_fh >
-+	    max(NFS4_PNFS_MAX_STRIPE_CNT, NFS4_PNFS_MAX_MULTI_CNT))
- 		goto out_err;
++static int nfsd_open_break_lease(struct inode *inode, int access)
++{
++	unsigned int mode;
  
--	fl->fh_array = kzalloc(fl->num_fh * sizeof(struct nfs_fh *),
--			       gfp_flags);
--	if (!fl->fh_array)
--		goto out_err;
-+	if (fl->num_fh > 0) {
-+		fl->fh_array = kzalloc(fl->num_fh * sizeof(struct nfs_fh *),
-+				       gfp_flags);
-+		if (!fl->fh_array)
-+			goto out_err;
-+	}
++	if (access & NFSD_MAY_NOT_BREAK_LEASE)
++		return 0;
++	mode = (access & NFSD_MAY_WRITE) ? O_WRONLY : O_RDONLY;
++	return break_lease(inode, mode | O_NONBLOCK);
++}
  
- 	for (i = 0; i < fl->num_fh; i++) {
- 		/* Do we want to use a mempool here? */
+ /*
+  * Open an existing file or directory.
+@@ -747,12 +755,7 @@ nfsd_open(struct svc_rqst *rqstp, struct
+ 	if (!inode->i_fop)
+ 		goto out;
+ 
+-	/*
+-	 * Check to see if there are any leases on this file.
+-	 * This may block while leases are broken.
+-	 */
+-	if (!(access & NFSD_MAY_NOT_BREAK_LEASE))
+-		host_err = break_lease(inode, O_NONBLOCK | ((access & NFSD_MAY_WRITE) ? O_WRONLY : 0));
++	host_err = nfsd_open_break_lease(inode, access);
+ 	if (host_err) /* NOMEM or WOULDBLOCK */
+ 		goto out_nfserr;
+ 
 
 
