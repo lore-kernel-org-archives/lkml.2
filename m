@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748Ab1GHPo0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 11:44:26 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:44959 "EHLO e6.ny.us.ibm.com"
+	id S1754019Ab1GHPpl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 11:45:41 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:53661 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750816Ab1GHPoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 11:44:23 -0400
+	id S1753453Ab1GHPoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 11:44:25 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -13,12 +13,10 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH RFC tip/core/rcu 2/6] rcu: Inform the user about dynticks-idle mode on PROVE_RCU warning
-Date: Fri,  8 Jul 2011 08:43:49 -0700
-Message-Id: <1310139833-20804-2-git-send-email-paulmck@linux.vnet.ibm.com>
+        patches@linaro.org, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC tip/core/rcu 4/6] rcu: Remove one layer of abstraction from PROVE_RCU checking
+Date: Fri,  8 Jul 2011 08:43:51 -0700
+Message-Id: <1310139833-20804-4-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20110708154331.GA20161@linux.vnet.ibm.com>
 References: <20110708154331.GA20161@linux.vnet.ibm.com>
@@ -26,55 +24,131 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+Simplify things a bit by substituting the definitions of the single-line
+rcu_read_acquire(), rcu_read_release(), rcu_read_acquire_bh(),
+rcu_read_release_bh(), rcu_read_acquire_sched(), and
+rcu_read_release_sched() functions at their call points.
 
-Inform the user if an RCU usage error is detected by lockdep while in
-an extended quiescent state (in this case, dyntick-idle mode).  This
-is accomplished by adding a line to the RCU lockdep splat indicating
-whether or not the splat occurred in dyntick-idle mode.
-
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/lockdep.c |   20 ++++++++++++++++++++
- 1 files changed, 20 insertions(+), 0 deletions(-)
+ include/linux/rcupdate.h |   53 +++++++---------------------------------------
+ 1 files changed, 8 insertions(+), 45 deletions(-)
 
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index 298c927..f2bff04 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -3998,6 +3998,26 @@ void lockdep_rcu_dereference(const char *file, const int line)
- 			file, line);
- 	printk("\nother info that might help us debug this:\n\n");
- 	printk("\nrcu_scheduler_active = %d, debug_locks = %d\n", rcu_scheduler_active, debug_locks);
-+
-+	/*
-+	 * If a CPU is in dyntick-idle mode (CONFIG_NO_HZ), then RCU
-+	 * considers that CPU to be in an "extended quiescent state",
-+	 * which means that RCU will be completely ignoring that CPU.
-+	 * Therefore, rcu_read_lock() and friends have absolutely no
-+	 * effect on a dyntick-idle CPU.  In other words, even if a
-+	 * dyntick-idle CPU has called rcu_read_lock(), RCU might well
-+	 * delete data structures out from under it.  RCU really has no
-+	 * choice here: if it were to consult the CPU, that would wake
-+	 * the CPU up, and the whole point of dyntick-idle mode is to
-+	 * allow CPUs to enter extremely deep sleep states.
-+	 *
-+	 * So complain bitterly if someone does call rcu_read_lock(),
-+	 * rcu_read_lock_bh() and so on from extended quiescent states
-+	 * such as dyntick-idle mode.
-+	 */
-+	if (rcu_check_extended_qs())
-+		printk("RCU used illegally from extended quiescent state!\n");
-+
- 	lockdep_print_held_locks(curr);
- 	printk("\nstack backtrace:\n");
- 	dump_stack();
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index bf2c316..3fc3aeb 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -202,41 +202,8 @@ static inline void rcu_lock_release(struct lockdep_map *map)
+ }
+ 
+ extern struct lockdep_map rcu_lock_map;
+-
+-static inline void rcu_read_acquire(void)
+-{
+-	rcu_lock_acquire(&rcu_lock_map);
+-}
+-
+-static inline void rcu_read_release(void)
+-{
+-	rcu_lock_release(&rcu_lock_map);
+-}
+-
+ extern struct lockdep_map rcu_bh_lock_map;
+-
+-static inline void rcu_read_acquire_bh(void)
+-{
+-	rcu_lock_acquire(&rcu_bh_lock_map);
+-}
+-
+-static inline void rcu_read_release_bh(void)
+-{
+-	rcu_lock_release(&rcu_bh_lock_map);
+-}
+-
+ extern struct lockdep_map rcu_sched_lock_map;
+-
+-static inline void rcu_read_acquire_sched(void)
+-{
+-	rcu_lock_acquire(&rcu_sched_lock_map);
+-}
+-
+-static inline void rcu_read_release_sched(void)
+-{
+-	rcu_lock_release(&rcu_sched_lock_map);
+-}
+-
+ extern int debug_lockdep_rcu_enabled(void);
+ 
+ /**
+@@ -327,12 +294,8 @@ static inline int rcu_read_lock_sched_held(void)
+ 
+ #else /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
+ 
+-# define rcu_read_acquire()		do { } while (0)
+-# define rcu_read_release()		do { } while (0)
+-# define rcu_read_acquire_bh()		do { } while (0)
+-# define rcu_read_release_bh()		do { } while (0)
+-# define rcu_read_acquire_sched()	do { } while (0)
+-# define rcu_read_release_sched()	do { } while (0)
++# define rcu_lock_acquire(a)		do { } while (0)
++# define rcu_lock_release(a)		do { } while (0)
+ 
+ static inline int rcu_read_lock_held(void)
+ {
+@@ -659,7 +622,7 @@ static inline void rcu_read_lock(void)
+ {
+ 	__rcu_read_lock();
+ 	__acquire(RCU);
+-	rcu_read_acquire();
++	rcu_lock_acquire(&rcu_lock_map);
+ }
+ 
+ /*
+@@ -679,7 +642,7 @@ static inline void rcu_read_lock(void)
+  */
+ static inline void rcu_read_unlock(void)
+ {
+-	rcu_read_release();
++	rcu_lock_release(&rcu_lock_map);
+ 	__release(RCU);
+ 	__rcu_read_unlock();
+ }
+@@ -700,7 +663,7 @@ static inline void rcu_read_lock_bh(void)
+ {
+ 	__rcu_read_lock_bh();
+ 	__acquire(RCU_BH);
+-	rcu_read_acquire_bh();
++	rcu_lock_acquire(&rcu_bh_lock_map);
+ }
+ 
+ /*
+@@ -710,7 +673,7 @@ static inline void rcu_read_lock_bh(void)
+  */
+ static inline void rcu_read_unlock_bh(void)
+ {
+-	rcu_read_release_bh();
++	rcu_lock_release(&rcu_bh_lock_map);
+ 	__release(RCU_BH);
+ 	__rcu_read_unlock_bh();
+ }
+@@ -727,7 +690,7 @@ static inline void rcu_read_lock_sched(void)
+ {
+ 	preempt_disable();
+ 	__acquire(RCU_SCHED);
+-	rcu_read_acquire_sched();
++	rcu_lock_acquire(&rcu_sched_lock_map);
+ }
+ 
+ /* Used by lockdep and tracing: cannot be traced, cannot call lockdep. */
+@@ -744,7 +707,7 @@ static inline notrace void rcu_read_lock_sched_notrace(void)
+  */
+ static inline void rcu_read_unlock_sched(void)
+ {
+-	rcu_read_release_sched();
++	rcu_lock_release(&rcu_sched_lock_map);
+ 	__release(RCU_SCHED);
+ 	preempt_enable();
+ }
 -- 
 1.7.3.2
 
