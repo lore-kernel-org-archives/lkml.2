@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753875Ab1GHFBj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:01:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41696 "EHLO mx2.suse.de"
+	id S1753900Ab1GHFBp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:01:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41722 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753701Ab1GHFBg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:01:36 -0400
+	id S1753862Ab1GHFBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:01:39 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:55 2011
-Message-Id: <20110708001655.280182108@clark.kroah.org>
+Message-Id: <20110708001655.365173876@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:15:58 -0700
+Date: Thu, 07 Jul 2011 17:15:59 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Daniel J Blueman <daniel.blueman@gmail.com>,
-        Eric Anholt <eric@anholt.net>, Dave Airlie <airlied@redhat.com>
-Subject: [026/107] drm/i915: Fix gen6 (SNB) missed BLT ring interrupts.
+        Wolfram Sang <w.sang@pengutronix.de>, Dave Airlie <airlied@redhat.com>
+Subject: [027/107] drm: populate irq_by_busid-member for pci
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,58 +25,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel J Blueman <daniel.blueman@gmail.com>
+From: Wolfram Sang <w.sang@pengutronix.de>
 
-commit 498e720b96379d8ee9c294950a01534a73defcf3 upstream.
+commit 45e97ab65026a3391cb2c938f834ca5db4d2e5b3 upstream.
 
-The failure appeared in dmesg as:
+Commit 8410ea (drm: rework PCI/platform driver interface) implemented
+drm_pci_irq_by_busid() but forgot to make it available in the
+drm_pci_bus-struct.
 
-[drm:i915_hangcheck_ring_idle] *ERROR* Hangcheck timer elapsed... blt
-ring idle [waiting on 35064155, at 35064155], missed IRQ?
+This caused a freeze on my Radeon9600-equipped laptop when executing glxgears.
+Thanks to Michel for noticing the flaw.
 
-This works around that problem on by making the blitter command
-streamer write interrupt state to the Hardware Status Page when a
-MI_USER_INTERRUPT command is decoded, which appears to force the seqno
-out to memory before the interrupt happens.
+[airlied: made function static also]
 
-v1->v2: Moved to prior interrupt handler installation and RMW flags as
-per feedback.
-v2->v3: Removed RMW of flags (by anholt)
-
-Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
-Signed-off-by: Eric Anholt <eric@anholt.net>
-Tested-by: Chris Wilson <chris@chris-wilson.co.uk> [v1]
-Tested-by: Eric Anholt <eric@anholt.net> [v1,v3]
-	   (incidence of the bug with a testcase went from avg 2/1000 to
-	   0/12651 in the latest test run (plus more for v1))
-Tested-by: Kenneth Graunke <kenneth@whitecape.org> [v1]
-Tested-by: Robert Hooker <robert.hooker@canonical.com> [v1]
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=33394
+Reported-by: Michel Dänzer <daenzer@vmware.com>
+Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/i915_irq.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/gpu/drm/drm_pci.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -1567,6 +1567,16 @@ static void ironlake_irq_preinstall(stru
- 	drm_i915_private_t *dev_priv = (drm_i915_private_t *) dev->dev_private;
+--- a/drivers/gpu/drm/drm_pci.c
++++ b/drivers/gpu/drm/drm_pci.c
+@@ -251,7 +251,7 @@ err:
+ }
  
- 	I915_WRITE(HWSTAM, 0xeffe);
-+	if (IS_GEN6(dev)) {
-+		/* Workaround stalls observed on Sandy Bridge GPUs by
-+		 * making the blitter command streamer generate a
-+		 * write to the Hardware Status Page for
-+		 * MI_USER_INTERRUPT.  This appears to serialize the
-+		 * previous seqno write out before the interrupt
-+		 * happens.
-+		 */
-+		I915_WRITE(GEN6_BLITTER_HWSTAM, ~GEN6_BLITTER_USER_INTERRUPT);
-+	}
  
- 	/* XXX hotplug from PCH */
+-int drm_pci_irq_by_busid(struct drm_device *dev, struct drm_irq_busid *p)
++static int drm_pci_irq_by_busid(struct drm_device *dev, struct drm_irq_busid *p)
+ {
+ 	if ((p->busnum >> 8) != drm_get_pci_domain(dev) ||
+ 	    (p->busnum & 0xff) != dev->pdev->bus->number ||
+@@ -292,6 +292,7 @@ static struct drm_bus drm_pci_bus = {
+ 	.get_name = drm_pci_get_name,
+ 	.set_busid = drm_pci_set_busid,
+ 	.set_unique = drm_pci_set_unique,
++	.irq_by_busid = drm_pci_irq_by_busid,
+ 	.agp_init = drm_pci_agp_init,
+ };
  
 
 
