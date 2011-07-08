@@ -1,30 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752709Ab1GHOjU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 10:39:20 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:34667 "EHLO
+	id S1752887Ab1GHOnU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 10:43:20 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52090 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750959Ab1GHOjT (ORCPT
+	with ESMTP id S1752102Ab1GHOnQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 10:39:19 -0400
+	Fri, 8 Jul 2011 10:43:16 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Cc: Erez Zadok <ezk@fsl.cs.sunysb.edu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "viro\@ZenIV.linux.org.uk Viro" <viro@ZenIV.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Andrew Morton <akpm@linux-foundation.org>, NeilBrown <neilb@suse.de>,
+        viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        apw@canonical.com, nbd@openwrt.org, neilb@suse.de, hramrach@centrum.cz,
-        jordipujolp@gmail.com
+        apw@canonical.com, nbd@openwrt.org, hramrach@centrum.cz,
+        jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu
 Subject: Re: [PATCH 0/7] overlay filesystem: request for inclusion
 References: <1306932380-10280-1-git-send-email-miklos@szeredi.hu>
-	<4540f7aa16724111bd792a1d577261c2@HUBCAS1.cs.stonybrook.edu>
-	<954F11FF-339B-48E2-8358-A158DE1E53BC@fsl.cs.sunysb.edu>
-	<12728.1308237302@jrobl> <87hb7piwrl.fsf@tucsk.pomaz.szeredi.hu>
-Date: Fri, 08 Jul 2011 16:40:10 +0200
-In-Reply-To: <87hb7piwrl.fsf@tucsk.pomaz.szeredi.hu> (Miklos Szeredi's message
-	of "Thu, 16 Jun 2011 18:09:02 +0200")
-Message-ID: <877h7s3kfp.fsf@tucsk.pomaz.szeredi.hu>
+	<20110608153208.dc705cda.akpm@linux-foundation.org>
+	<20110609115934.3c53f78f@notabene.brown>
+	<20110608205233.ebfedc4d.akpm@linux-foundation.org>
+	<87wrgvb28a.fsf@tucsk.pomaz.szeredi.hu>
+	<20110609123843.77153b27.akpm@linux-foundation.org>
+	<877h8uzmsi.fsf@tucsk.pomaz.szeredi.hu> <21324.1307677721@jrobl>
+	<871uyxa7ol.fsf@tucsk.pomaz.szeredi.hu>
+Date: Fri, 08 Jul 2011 16:44:08 +0200
+In-Reply-To: <871uyxa7ol.fsf@tucsk.pomaz.szeredi.hu> (Miklos Szeredi's message
+	of "Mon, 13 Jun 2011 20:48:58 +0200")
+Message-ID: <8739ig3k93.fsf@tucsk.pomaz.szeredi.hu>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -35,110 +37,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Miklos Szeredi <miklos@szeredi.hu> writes:
 
 > "J. R. Okajima" <hooanon05@yahoo.co.jp> writes:
->
->> Additionally the number of members may be important too. Overlayfs
->> supports only two members currently. When a user wants more layers,
->> he has to mount another overlayfs over overlayfs. Since it is
->> essentially equivalent to a recursive function call internally, and of
->> course the stack size in kernel space is limited, I don't think it is
->> good.
->
-> Good point about stack space.
+>> If I remember correctly, Miklos has mentioned about it like this.
+>> - overlayfs provides the same feature set as UnionMount.
+>> - but its implementation is much smaller and simpler than UnionMount.
+>>
+>> I agree with this argument (Oh, I have to confess that I don't test
+>> overlayfs by myself). But it means that overlayfs doesn't provide some
+>> features which UnionMount doesn't provide. I have posted about such
+>> features before, but I list them up again here.
+>> - the inode number may change silently.
+>> - hardlinks may corrupt by copy-up.
+>> - read(2) may get obsolete filedata (fstat(2) for metadata too).
+>> - fcntl(F_SETLK) may be broken by copy-up.
+>> - unnecessary copy-up may happen, for example mmap(MAP_PRIVATE) after
+>>   open(O_RDWR).
 
-Here's a patch to limit stacking overlayfs instances on top of each
-other and on ecryptfs to prevent kernel stack overflow.
+Here's a patch to document these limitations.
 
 Thanks,
 Miklos
+----
 
-
-Subject: fs: limit filesystem stacking depth
+Subject: ovl: add limitation to documentation
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-Add a simple read-only counter to super_block that indicates deep this
-is in the stack of filesystems.  Previously ecryptfs was the only
-stackable filesystem and it explicitly disallowed multiple layers of
-itself.
+J. R. Okajima noted some examples where overlayfs behaves differently
+from a standard filesystem.  Describe these cases in the documentation.
 
-Overlayfs, however, can be stacked recursively and also may be stacked
-on top of ecryptfs or vice versa.
-
-To limit the kernel stack usage we must limit the depth of the
-filesystem stack.  Initially the limit is set to 2.
-
+Reported-by: "J. R. Okajima" <hooanon05@yahoo.co.jp>
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/ecryptfs/main.c   |    7 +++++++
- fs/overlayfs/super.c |   10 ++++++++++
- include/linux/fs.h   |   11 +++++++++++
- 3 files changed, 28 insertions(+)
+ Documentation/filesystems/overlayfs.txt |   29 +++++++++++++++++++++++++++--
+ 1 file changed, 27 insertions(+), 2 deletions(-)
 
-Index: linux-2.6/fs/ecryptfs/main.c
+Index: linux-2.6/Documentation/filesystems/overlayfs.txt
 ===================================================================
---- linux-2.6.orig/fs/ecryptfs/main.c	2011-07-08 12:45:21.000000000 +0200
-+++ linux-2.6/fs/ecryptfs/main.c	2011-07-08 12:45:27.000000000 +0200
-@@ -525,6 +525,13 @@ static struct dentry *ecryptfs_mount(str
- 	s->s_maxbytes = path.dentry->d_sb->s_maxbytes;
- 	s->s_blocksize = path.dentry->d_sb->s_blocksize;
- 	s->s_magic = ECRYPTFS_SUPER_MAGIC;
-+	s->s_stack_depth = path.dentry->d_sb->s_stack_depth + 1;
-+
-+	rc = -EINVAL;
-+	if (s->s_stack_depth > FILESYSTEM_MAX_STACK_DEPTH) {
-+		printk(KERN_ERR "eCryptfs: maximum fs stacking depth exceeded\n");
-+		goto out_free;
-+	}
+--- linux-2.6.orig/Documentation/filesystems/overlayfs.txt	2011-07-07 16:01:47.000000000 +0200
++++ linux-2.6/Documentation/filesystems/overlayfs.txt	2011-07-08 14:16:44.000000000 +0200
+@@ -143,6 +143,9 @@ to the upper filesystem (copy_up).  Note
+ also requires copy_up, though of course creation of a symlink does
+ not.
  
- 	inode = ecryptfs_get_inode(path.dentry->d_inode, s);
- 	rc = PTR_ERR(inode);
-Index: linux-2.6/include/linux/fs.h
-===================================================================
---- linux-2.6.orig/include/linux/fs.h	2011-07-08 12:45:21.000000000 +0200
-+++ linux-2.6/include/linux/fs.h	2011-07-08 12:45:27.000000000 +0200
-@@ -480,6 +480,12 @@ struct iattr {
-  */
- #include <linux/quota.h>
++The copy_up may turn out to be unnecessary, for example if the file is
++opened for read-write but the data is not modified.
++
+ The copy_up process first makes sure that the containing directory
+ exists in the upper filesystem - creating it and any parents as
+ necessary.  It then creates the object with the same metadata (owner,
+@@ -156,6 +159,27 @@ filesystem - future operations on the fi
+ overlay filesystem (though an operation on the name of the file such as
+ rename or unlink will of course be noticed and handled).
  
-+/*
-+ * Maximum number of layers of fs stack.  Needs to be limited to
-+ * prevent kernel stack overflow
-+ */
-+#define FILESYSTEM_MAX_STACK_DEPTH 2
 +
- /** 
-  * enum positive_aop_returns - aop return codes with specific semantics
-  *
-@@ -1438,6 +1444,11 @@ struct super_block {
- 	 * Saved pool identifier for cleancache (-1 means none)
- 	 */
- 	int cleancache_poolid;
++Non-standard behavior at copy_up
++--------------------------------
 +
-+	/*
-+	 * Indicates how deep in a filesystem stack this SB is
-+	 */
-+	int s_stack_depth;
- };
++The copy_up operation essentially creates a new, identical file and
++moves it over to the old name.  The new file may be on a different
++filesystem, so both st_dev and st_ino of the file may change.
++
++Any open files referring to this inode will access the old data and
++metadata.  Similarly any file locks obtained before copy_up will not
++apply to the copied up file.
++
++If a file with multiple hard links is copied up, then this will
++"break" the link.  Changes will not be propagated to other names
++referring to the same inode.
++
++Symlinks in /proc/PID/ and /proc/PID/fd which point to a non-directory
++object in overlayfs will not contain vaid absolute paths, only
++relative paths leading up to the filesystem's root.  This will be
++fixed in the future.
++
+ Changes to underlying filesystems
+ ---------------------------------
  
- extern struct timespec current_fs_time(struct super_block *sb);
-Index: linux-2.6/fs/overlayfs/super.c
-===================================================================
---- linux-2.6.orig/fs/overlayfs/super.c	2011-07-07 16:01:47.000000000 +0200
-+++ linux-2.6/fs/overlayfs/super.c	2011-07-08 12:51:29.000000000 +0200
-@@ -545,6 +545,16 @@ static int ovl_fill_super(struct super_b
- 	    !S_ISDIR(lowerpath.dentry->d_inode->i_mode))
- 		goto out_put_lowerpath;
+@@ -163,5 +187,6 @@ Offline changes, when the overlay is not
+ the upper or the lower trees.
  
-+	sb->s_stack_depth = max(upperpath.mnt->mnt_sb->s_stack_depth,
-+				lowerpath.mnt->mnt_sb->s_stack_depth) + 1;
-+
-+	err = -EINVAL;
-+	if (sb->s_stack_depth > FILESYSTEM_MAX_STACK_DEPTH) {
-+		printk(KERN_ERR "overlayfs: maximum fs stacking depth exceeded\n");
-+		goto out_put_lowerpath;
-+	}
-+
-+
- 	ufs->upper_mnt = clone_private_mount(&upperpath);
- 	err = PTR_ERR(ufs->upper_mnt);
- 	if (IS_ERR(ufs->upper_mnt)) {
+ Changes to the underlying filesystems while part of a mounted overlay
+-filesystem are not allowed.  This is not yet enforced, but will be in
+-the future.
++filesystem are not allowed.  If the underlying filesystem is changed,
++the behavior of the overlay is undefined, though it will not result in
++a crash or deadlock.
