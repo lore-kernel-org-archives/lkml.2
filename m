@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755242Ab1GHFFV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:05:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42497 "EHLO mx2.suse.de"
+	id S1755012Ab1GHFEf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:04:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42368 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754314Ab1GHFFS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:05:18 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:17:01 2011
-Message-Id: <20110708001701.316766322@clark.kroah.org>
+	id S1754967Ab1GHFEa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:04:30 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:17:00 2011
+Message-Id: <20110708001659.942760793@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:17:00 -0700
+Date: Thu, 07 Jul 2011 17:16:46 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Daniel Mack <zonque@gmail.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [088/107] ASoC: pxa-ssp: Correct check for stream presence
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: [074/107] cfq-iosched: fix locking around ioc->ioc_data assignment
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,41 +25,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Mack <zonque@gmail.com>
+From: Jens Axboe <jaxboe@fusionio.com>
 
-commit 53dea36c70c1857149a8c447224e3936eb8b5339 upstream.
+commit ab4bd22d3cce6977dc039664cc2d052e3147d662 upstream.
 
-Don't rely on the codec's channels_min information to decide wheter or
-not allocate a substream's DMA buffer. Rather check if the substream
-itself was allocated previously.
+Since we are modifying this RCU pointer, we need to hold
+the lock protecting it around it.
 
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Acked-by: Liam Girdwood <lrg@ti.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+This fixes a potential reuse and double free of a cfq
+io_context structure. The bug has been in CFQ for a long
+time, it hit very few people but those it did hit seemed
+to see it a lot.
+
+Tracked in RH bugzilla here:
+
+https://bugzilla.redhat.com/show_bug.cgi?id=577968
+
+Credit goes to Paul Bolle for figuring out that the issue
+was around the one-hit ioc->ioc_data cache. Thanks to his
+hard work the issue is now fixed.
+
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/soc/pxa/pxa2xx-pcm.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ block/cfq-iosched.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/sound/soc/pxa/pxa2xx-pcm.c
-+++ b/sound/soc/pxa/pxa2xx-pcm.c
-@@ -95,14 +95,14 @@ static int pxa2xx_soc_pcm_new(struct snd
- 	if (!card->dev->coherent_dma_mask)
- 		card->dev->coherent_dma_mask = DMA_BIT_MASK(32);
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -2704,8 +2704,11 @@ static void __cfq_exit_single_io_context
+ 	smp_wmb();
+ 	cic->key = cfqd_dead_key(cfqd);
  
--	if (dai->driver->playback.channels_min) {
-+	if (pcm->streams[SNDRV_PCM_STREAM_PLAYBACK].substream) {
- 		ret = pxa2xx_pcm_preallocate_dma_buffer(pcm,
- 			SNDRV_PCM_STREAM_PLAYBACK);
- 		if (ret)
- 			goto out;
- 	}
+-	if (ioc->ioc_data == cic)
++	if (rcu_dereference(ioc->ioc_data) == cic) {
++		spin_lock(&ioc->lock);
+ 		rcu_assign_pointer(ioc->ioc_data, NULL);
++		spin_unlock(&ioc->lock);
++	}
  
--	if (dai->driver->capture.channels_min) {
-+	if (pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream) {
- 		ret = pxa2xx_pcm_preallocate_dma_buffer(pcm,
- 			SNDRV_PCM_STREAM_CAPTURE);
- 		if (ret)
+ 	if (cic->cfqq[BLK_RW_ASYNC]) {
+ 		cfq_exit_cfqq(cfqd, cic->cfqq[BLK_RW_ASYNC]);
 
 
