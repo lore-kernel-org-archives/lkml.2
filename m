@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025Ab1GHFCK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:02:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41798 "EHLO mx2.suse.de"
+	id S1754047Ab1GHFCR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:02:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41805 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753689Ab1GHFCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:02:07 -0400
+	id S1753279Ab1GHFCM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:02:12 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:56 2011
-Message-Id: <20110708001656.118406396@clark.kroah.org>
+Message-Id: <20110708001656.211634755@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:16:07 -0700
+Date: Thu, 07 Jul 2011 17:16:08 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [035/107] TTY: ldisc, do not close until there are readers
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Evgeniy Polyakov <zbr@ioremap.net>
+Subject: [036/107] Connector: Set the CN_NETLINK_USERS correctly
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,100 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit 92f6fa09bd453ffe3351fa1f1377a1b7cfa911e6 upstream.
+commit ea2c00095c022846dd8dfd211de05154d3e4e1b8 upstream.
 
-We restored tty_ldisc_wait_idle in 100eeae2c5c (TTY: restore
-tty_ldisc_wait_idle). We used it in the ldisc changing path to fix the
-case where there are tasks in n_tty_read waiting for data and somebody
-tries to change ldisc.
+The CN_NETLINK_USERS must be set to the highest valid index +1.
+Thanks to Evgeniy for pointing this out.
 
-Similar to the case above, there may be also tasks waiting in
-n_tty_read while hangup is performed. As 65b770468e98 (tty-ldisc: turn
-ldisc user count into a proper refcount) removed the wait-until-idle
-from all paths, hangup path won't wait for them to disappear either
-now. So add it back even to the hangup path.
-
-There is a difference, we need uninterruptible sleep as there is
-obviously HUP signal pending. So tty_ldisc_wait_idle now sleeps
-without possibility to be interrupted. This is what original
-tty_ldisc_wait_idle did. After the wait idle reintroduction
-(100eeae2c5c), we have had interruptible sleeps for the ldisc changing
-path. But as there is a 5s timeout anyway, we don't allow it to be
-interrupted from now on. It's not worth the added complexity of
-deciding what kind of sleep we want.
-
-Before 65b770468e98 tty_ldisc_release was called also from
-tty_ldisc_release. It is called from tty_release, so I don't think we
-need to restore that one.
-
-This is nicely reproducible after constifying the timing when
-drivers/tty/n_tty.c is patched as follows ("TTY: ntty, add one more
-sanity check" patch is needed to actually see it explode):
-%% -1548,6 +1549,7 @@ static int n_tty_open(struct tty_struct *tty)
-
-        /* These are ugly. Currently a malloc failure here can panic */
-        if (!tty->read_buf) {
-+               msleep(100);
-                tty->read_buf = kzalloc(N_TTY_BUF_SIZE, GFP_KERNEL);
-                if (!tty->read_buf)
-                        return -ENOMEM;
-%% -1785,6 +1788,7 @@ do_it_again:
-                                break;
-                        }
-                        timeout = schedule_timeout(timeout);
-+                       msleep(20);
-                        continue;
-                }
-                __set_current_state(TASK_RUNNING);
-===== With a process: =====
-    while (1) {
-        int fd = open(argv[1], O_RDWR);
-        read(fd, buf, sizeof(buf));
-        close(fd);
-    }
-===== and its child: =====
-        setsid();
-        while (1) {
-                int fd = open(tty, O_RDWR|O_NOCTTY);
-                ioctl(fd, TIOCSCTTY, 1);
-                vhangup();
-                close(fd);
-                usleep(100 * (10 + random() % 1000));
-        }
-===== EOF =====
-
-References: https://bugzilla.novell.com/show_bug.cgi?id=693374
-References: https://bugzilla.novell.com/show_bug.cgi?id=694509
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/tty/tty_ldisc.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ include/linux/connector.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/tty/tty_ldisc.c
-+++ b/drivers/tty/tty_ldisc.c
-@@ -555,7 +555,7 @@ static void tty_ldisc_flush_works(struct
- static int tty_ldisc_wait_idle(struct tty_struct *tty)
- {
- 	int ret;
--	ret = wait_event_interruptible_timeout(tty_ldisc_idle,
-+	ret = wait_event_timeout(tty_ldisc_idle,
- 			atomic_read(&tty->ldisc->users) == 1, 5 * HZ);
- 	if (ret < 0)
- 		return ret;
-@@ -763,6 +763,8 @@ static int tty_ldisc_reinit(struct tty_s
- 	if (IS_ERR(ld))
- 		return -1;
+--- a/include/linux/connector.h
++++ b/include/linux/connector.h
+@@ -44,7 +44,7 @@
+ #define CN_VAL_DRBD			0x1
+ #define CN_KVP_IDX			0x9	/* HyperV KVP */
  
-+	WARN_ON_ONCE(tty_ldisc_wait_idle(tty));
-+
- 	tty_ldisc_close(tty, tty->ldisc);
- 	tty_ldisc_put(tty->ldisc);
- 	tty->ldisc = NULL;
+-#define CN_NETLINK_USERS		9
++#define CN_NETLINK_USERS		10	/* Highest index + 1 */
+ 
+ /*
+  * Maximum connector's message size.
 
 
