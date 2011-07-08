@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752619Ab1GHOnu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 10:43:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55327 "EHLO mx1.redhat.com"
+	id S1753117Ab1GHOo4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 10:44:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41838 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752757Ab1GHOnr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 10:43:47 -0400
-Date: Fri, 8 Jul 2011 16:43:19 +0200 (CEST)
+	id S1752613Ab1GHOoy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 10:44:54 -0400
+Date: Fri, 8 Jul 2011 16:44:48 +0200 (CEST)
 From: Lukas Czerner <lczerner@redhat.com>
 X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
 To: Kyungmin Park <kmpark@infradead.org>
@@ -14,13 +14,13 @@ cc: Lukas Czerner <lczerner@redhat.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux Filesystem Mailing List <linux-fsdevel@vger.kernel.org>
 Subject: Re: ext4: why init the unused block group at batched discard?
-In-Reply-To: <CAH9JG2XgGLO1EBhLT9RVXMjLmnmFcK9ULwMcsnkSjQwg97cpcw@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1107081642150.5442@dhcp-27-109.brq.redhat.com>
+In-Reply-To: <CAH9JG2WrmscjnL+KLuWyzH7E4U-EkV_mJrdv-JUZzyPwStGTGQ@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1107081643510.5442@dhcp-27-109.brq.redhat.com>
 References: <CAH9JG2Xp_u-46x8bf2Uq-9FREZyYhcP3E7H+MsSoFVrWpyLrtA@mail.gmail.com> <alpine.LFD.2.00.1107071106100.3911@dhcp-27-109.brq.redhat.com> <CAH9JG2WXQc5oxOD+B4xm5NbuvhJLc=mpyoTkXNup5spLSh4sMQ@mail.gmail.com> <alpine.LFD.2.00.1107071637420.3911@dhcp-27-109.brq.redhat.com>
- <CAH9JG2XgGLO1EBhLT9RVXMjLmnmFcK9ULwMcsnkSjQwg97cpcw@mail.gmail.com>
+ <CAH9JG2WrmscjnL+KLuWyzH7E4U-EkV_mJrdv-JUZzyPwStGTGQ@mail.gmail.com>
 User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-829958575-1310136202=:5442"
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-85666656-1310136291=:5442"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,7 +28,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
   This message is in MIME format.  The first part should be readable text,
   while the remaining parts are likely unreadable without MIME-aware tools.
 
---8323328-829958575-1310136202=:5442
+--8323328-85666656-1310136291=:5442
 Content-Type: TEXT/PLAIN; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 
@@ -84,10 +84,22 @@ On Fri, 8 Jul 2011, Kyungmin Park wrote:
 > >
 > > Yes, this problem is addressed by patches from Tao as mentioned above,
 > > however it is still waiting for merge.
-> Can you let me know the link?
+> >
+> >>
+> >> To reduce the trim time. I also consider the divide the block groups
+> >> as several trim area e.g., 1 GiB and trim it sequentially.
+> >
+> > I am not sure what do you mean. In ext4 allocation groups has a lot
+> > smaller sizes (128M for 4k block size) than 1G. Also you can specify
+> > that you do want to discard just a part of the filesystem, but you
+> > probably did notice that in review, right ?
+> 
+> My concept is that
+> 
+> Divide the trim area, from 0 to 1GiB, 1GiB to 2GiB, and so on.
 
-I am sure google can find it for you without any problems.
+Yes, that is what you can do now.
 
 Regards!
 -Lukas
---8323328-829958575-1310136202=:5442--
+--8323328-85666656-1310136291=:5442--
