@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754205Ab1GIGB2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 02:01:28 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:36402 "EHLO
+	id S1754158Ab1GIGBY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 02:01:24 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:37025 "EHLO
 	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753814Ab1GIGBV (ORCPT
+	by vger.kernel.org with ESMTP id S1753975Ab1GIGBX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 02:01:21 -0400
-X-Sasl-enc: WYDu6VEYe3KHTqzrzRJ6/mfXjj7mtptqOjXr0T/I33/a 1310191281
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 16:01:09 2011
-Message-Id: <20110708230109.819093290@clark.kroah.org>
+	Sat, 9 Jul 2011 02:01:23 -0400
+X-Sasl-enc: 00fgtbBASs68hgRm5t3wlPKjAtYON4At2rmmQoYgT8z3 1310191282
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 16:01:12 2011
+Message-Id: <20110708230112.637751888@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 08 Jul 2011 16:00:19 -0700
+Date: Fri, 08 Jul 2011 16:00:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [03/35] xen: partially revert "xen: set max_pfn_mapped to the last pfn mapped"
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [31/35] af_packet: prevent information leak
 In-Reply-To: <20110708230122.GA18807@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,53 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-commit a91d92875ee94e4703fd017ccaadb48cfb344994 upstream.
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-We only need to set max_pfn_mapped to the last pfn mapped on x86_64 to
-make sure that cleanup_highmap doesn't remove important mappings at
-_end.
+[ Upstream commit 13fcb7bd322164c67926ffe272846d4860196dc6 ]
 
-We don't need to do this on x86_32 because cleanup_highmap is not called
-on x86_32. Besides lowering max_pfn_mapped on x86_32 has the unwanted
-side effect of limiting the amount of memory available for the 1:1
-kernel pagetable allocation.
+In 2.6.27, commit 393e52e33c6c2 (packet: deliver VLAN TCI to userspace)
+added a small information leak.
 
-This patch reverts the x86_32 part of the original patch.
+Add padding field and make sure its zeroed before copy to user.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Patrick McHardy <kaber@trash.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- arch/x86/xen/mmu.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ include/linux/if_packet.h |    2 ++
+ net/packet/af_packet.c    |    2 ++
+ 2 files changed, 4 insertions(+)
 
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -1658,6 +1658,11 @@ static __init void xen_map_identity_earl
- 		for (pteidx = 0; pteidx < PTRS_PER_PTE; pteidx++, pfn++) {
- 			pte_t pte;
+--- a/include/linux/if_packet.h
++++ b/include/linux/if_packet.h
+@@ -59,6 +59,7 @@ struct tpacket_auxdata {
+ 	__u16		tp_mac;
+ 	__u16		tp_net;
+ 	__u16		tp_vlan_tci;
++	__u16		tp_padding;
+ };
  
-+#ifdef CONFIG_X86_32
-+			if (pfn > max_pfn_mapped)
-+				max_pfn_mapped = pfn;
-+#endif
-+
- 			if (!pte_none(pte_page[pteidx]))
- 				continue;
+ /* Rx ring - header status */
+@@ -97,6 +98,7 @@ struct tpacket2_hdr {
+ 	__u32		tp_sec;
+ 	__u32		tp_nsec;
+ 	__u16		tp_vlan_tci;
++	__u16		tp_padding;
+ };
  
-@@ -1770,7 +1775,9 @@ __init pgd_t *xen_setup_kernel_pagetable
- {
- 	pmd_t *kernel_pmd;
+ #define TPACKET2_HDRLEN		(TPACKET_ALIGN(sizeof(struct tpacket2_hdr)) + sizeof(struct sockaddr_ll))
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -759,6 +759,7 @@ static int tpacket_rcv(struct sk_buff *s
+ 		h.h2->tp_sec = ts.tv_sec;
+ 		h.h2->tp_nsec = ts.tv_nsec;
+ 		h.h2->tp_vlan_tci = vlan_tx_tag_get(skb);
++		h.h2->tp_padding = 0;
+ 		hdrlen = sizeof(*h.h2);
+ 		break;
+ 	default:
+@@ -1495,6 +1496,7 @@ static int packet_recvmsg(struct kiocb *
+ 		aux.tp_net = skb_network_offset(skb);
+ 		aux.tp_vlan_tci = vlan_tx_tag_get(skb);
  
--	max_pfn_mapped = PFN_DOWN(__pa(xen_start_info->mfn_list));
-+	max_pfn_mapped = PFN_DOWN(__pa(xen_start_info->pt_base) +
-+				  xen_start_info->nr_pt_frames * PAGE_SIZE +
-+				  512*1024);
++		aux.tp_padding = 0;
+ 		put_cmsg(msg, SOL_PACKET, PACKET_AUXDATA, sizeof(aux), &aux);
+ 	}
  
- 	kernel_pmd = m2v(pgd[KERNEL_PGD_BOUNDARY].pgd);
- 	memcpy(level2_kernel_pgt, kernel_pmd, sizeof(pmd_t) * PTRS_PER_PMD);
 
 
