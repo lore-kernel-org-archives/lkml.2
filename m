@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978Ab1GHFB7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:01:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41773 "EHLO mx2.suse.de"
+	id S1754179Ab1GHFCp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:02:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41952 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753959Ab1GHFB4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:01:56 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:55 2011
-Message-Id: <20110708001655.819012922@clark.kroah.org>
+	id S1754161Ab1GHFCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:02:42 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:57 2011
+Message-Id: <20110708001656.978237250@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:16:04 -0700
+Date: Thu, 07 Jul 2011 17:16:16 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [032/107] xen/pci: Move check for acpi_sci_override_gsi to xen_setup_acpi_sci.
+        Michal Kubecek <mkubecek@suse.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [044/107] PM: Free memory bitmaps if opening /dev/snapshot fails
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,152 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Michal Kubecek <mkubecek@suse.cz>
 
-commit ee339fe63ac408e4604c1c88b1f9a428f2511b70 upstream.
+commit 8440f4b19494467883f8541b7aa28c7bbf6ac92b upstream.
 
-Previously we would check for acpi_sci_override_gsi == gsi every time
-a PCI device was enabled. That works during early bootup, but later
-on it could lead to triggering unnecessarily the acpi_gsi_to_irq(..) lookup.
-The reason is that acpi_sci_override_gsi was declared in __initdata and
-after early bootup could contain bogus values.
+When opening /dev/snapshot device, snapshot_open() creates memory
+bitmaps which are freed in snapshot_release(). But if any of the
+callbacks called by pm_notifier_call_chain() returns NOTIFY_BAD, open()
+fails, snapshot_release() is never called and bitmaps are not freed.
+Next attempt to open /dev/snapshot then triggers BUG_ON() check in
+create_basic_memory_bitmaps(). This happens e.g. when vmwatchdog module
+is active on s390x.
 
-This patch moves the check for acpi_sci_override_gsi to the
-site where the ACPI SCI is preset.
-
-Reported-by: Raghavendra D Prabhu <rprabhu@wnohang.net>
-Tested-by: Raghavendra D Prabhu <rprabhu@wnohang.net>
-[http://lists.xensource.com/archives/html/xen-devel/2011-07/msg00154.html]
-Suggested-by:  Ian Campbell <ijc@hellion.org.uk>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Michal Kubecek <mkubecek@suse.cz>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/pci/xen.c |   56 ++++++++++++++++++++++++++---------------------------
- 1 file changed, 28 insertions(+), 28 deletions(-)
+ kernel/power/user.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/arch/x86/pci/xen.c
-+++ b/arch/x86/pci/xen.c
-@@ -316,13 +316,12 @@ int __init pci_xen_hvm_init(void)
- }
- 
- #ifdef CONFIG_XEN_DOM0
--static int xen_register_pirq(u32 gsi, int triggering)
-+static int xen_register_pirq(u32 gsi, int gsi_override, int triggering)
- {
- 	int rc, pirq, irq = -1;
- 	struct physdev_map_pirq map_irq;
- 	int shareable = 0;
- 	char *name;
--	bool gsi_override = false;
- 
- 	if (!xen_pv_domain())
- 		return -1;
-@@ -334,31 +333,12 @@ static int xen_register_pirq(u32 gsi, in
- 		shareable = 1;
- 		name = "ioapic-level";
+--- a/kernel/power/user.c
++++ b/kernel/power/user.c
+@@ -113,8 +113,10 @@ static int snapshot_open(struct inode *i
+ 		if (error)
+ 			pm_notifier_call_chain(PM_POST_RESTORE);
  	}
--
- 	pirq = xen_allocate_pirq_gsi(gsi);
- 	if (pirq < 0)
- 		goto out;
- 
--	/* Before we bind the GSI to a Linux IRQ, check whether
--	 * we need to override it with bus_irq (IRQ) value. Usually for
--	 * IRQs below IRQ_LEGACY_IRQ this holds IRQ == GSI, as so:
--	 *  ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 9 low level)
--	 * but there are oddballs where the IRQ != GSI:
--	 *  ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 20 low level)
--	 * which ends up being: gsi_to_irq[9] == 20
--	 * (which is what acpi_gsi_to_irq ends up calling when starting the
--	 * the ACPI interpreter and keels over since IRQ 9 has not been
--	 * setup as we had setup IRQ 20 for it).
--	 */
--	if (gsi == acpi_sci_override_gsi) {
--		/* Check whether the GSI != IRQ */
--		acpi_gsi_to_irq(gsi, &irq);
--		if (irq != gsi)
--			/* Bugger, we MUST have that IRQ. */
--			gsi_override = true;
--	}
--	if (gsi_override)
--		irq = xen_bind_pirq_gsi_to_irq(irq, pirq, shareable, name);
-+	if (gsi_override >= 0)
-+		irq = xen_bind_pirq_gsi_to_irq(gsi_override, pirq, shareable, name);
- 	else
- 		irq = xen_bind_pirq_gsi_to_irq(gsi, pirq, shareable, name);
- 	if (irq < 0)
-@@ -381,7 +361,7 @@ out:
- 	return irq;
- }
- 
--static int xen_register_gsi(u32 gsi, int triggering, int polarity)
-+static int xen_register_gsi(u32 gsi, int gsi_override, int triggering, int polarity)
- {
- 	int rc, irq;
- 	struct physdev_setup_gsi setup_gsi;
-@@ -392,7 +372,7 @@ static int xen_register_gsi(u32 gsi, int
- 	printk(KERN_DEBUG "xen: registering gsi %u triggering %d polarity %d\n",
- 			gsi, triggering, polarity);
- 
--	irq = xen_register_pirq(gsi, triggering);
-+	irq = xen_register_pirq(gsi, gsi_override, triggering);
- 
- 	setup_gsi.gsi = gsi;
- 	setup_gsi.triggering = (triggering == ACPI_EDGE_SENSITIVE ? 0 : 1);
-@@ -414,6 +394,8 @@ static __init void xen_setup_acpi_sci(vo
- 	int rc;
- 	int trigger, polarity;
- 	int gsi = acpi_sci_override_gsi;
-+	int irq = -1;
-+	int gsi_override = -1;
- 
- 	if (!gsi)
- 		return;
-@@ -430,7 +412,25 @@ static __init void xen_setup_acpi_sci(vo
- 	printk(KERN_INFO "xen: sci override: global_irq=%d trigger=%d "
- 			"polarity=%d\n", gsi, trigger, polarity);
- 
--	gsi = xen_register_gsi(gsi, trigger, polarity);
-+	/* Before we bind the GSI to a Linux IRQ, check whether
-+	 * we need to override it with bus_irq (IRQ) value. Usually for
-+	 * IRQs below IRQ_LEGACY_IRQ this holds IRQ == GSI, as so:
-+	 *  ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 9 low level)
-+	 * but there are oddballs where the IRQ != GSI:
-+	 *  ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 20 low level)
-+	 * which ends up being: gsi_to_irq[9] == 20
-+	 * (which is what acpi_gsi_to_irq ends up calling when starting the
-+	 * the ACPI interpreter and keels over since IRQ 9 has not been
-+	 * setup as we had setup IRQ 20 for it).
-+	 */
-+	/* Check whether the GSI != IRQ */
-+	if (acpi_gsi_to_irq(gsi, &irq) == 0) {
-+		if (irq >= 0 && irq != gsi)
-+			/* Bugger, we MUST have that IRQ. */
-+			gsi_override = irq;
+-	if (error)
++	if (error) {
++		free_basic_memory_bitmaps();
+ 		atomic_inc(&snapshot_device_available);
 +	}
-+
-+	gsi = xen_register_gsi(gsi, gsi_override, trigger, polarity);
- 	printk(KERN_INFO "xen: acpi sci %d\n", gsi);
- 
- 	return;
-@@ -439,7 +439,7 @@ static __init void xen_setup_acpi_sci(vo
- static int acpi_register_gsi_xen(struct device *dev, u32 gsi,
- 				 int trigger, int polarity)
- {
--	return xen_register_gsi(gsi, trigger, polarity);
-+	return xen_register_gsi(gsi, -1 /* no GSI override */, trigger, polarity);
- }
- 
- static int __init pci_xen_initial_domain(void)
-@@ -478,7 +478,7 @@ void __init xen_setup_pirqs(void)
- 		if (acpi_get_override_irq(irq, &trigger, &polarity) == -1)
- 			continue;
- 
--		xen_register_pirq(irq,
-+		xen_register_pirq(irq, -1 /* no GSI override */,
- 			trigger ? ACPI_LEVEL_SENSITIVE : ACPI_EDGE_SENSITIVE);
- 	}
- }
+ 	data->frozen = 0;
+ 	data->ready = 0;
+ 	data->platform_support = 0;
 
 
