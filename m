@@ -1,149 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752662Ab1GHESW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 00:18:22 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:33009 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751319Ab1GHEPM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 00:15:12 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ak0EAIiCFk55LCkBgWdsb2JhbABTp0EVAQEWJiXNDYY4BJpsiDY
-From: Dave Chinner <david@fromorbit.com>
-To: viro@ZenIV.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [PATCH 09/14] superblock: move pin_sb_for_writeback() to fs/super.c
-Date: Fri,  8 Jul 2011 14:14:41 +1000
-Message-Id: <1310098486-6453-10-git-send-email-david@fromorbit.com>
-X-Mailer: git-send-email 1.7.5.1
-In-Reply-To: <1310098486-6453-1-git-send-email-david@fromorbit.com>
-References: <1310098486-6453-1-git-send-email-david@fromorbit.com>
+	id S1751178Ab1GHEPU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 00:15:20 -0400
+Received: from gate.crashing.org ([63.228.1.57]:36532 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750867Ab1GHEO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 00:14:57 -0400
+Subject: Re: [PATCH 4/5] powerpc: Create next_tlbcam_idx percpu variable for FSL_BOOKE
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <13092911313115-git-send-email-beckyb@kernel.crashing.org>
+Date: Thu, 7 Jul 2011 23:13:55 -0500
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        david@gibson.dropbear.id.au, wli@holomorphy.com,
+        benh@kernel.crashing.org
+Content-Transfer-Encoding: 7bit
+Message-Id: <57D1124F-C59B-4292-9628-257C84390E6B@kernel.crashing.org>
+References: <1309290888309-git-send-email-beckyb@kernel.crashing.org> <13092909493748-git-send-email-beckyb@kernel.crashing.org> <13092910103675-git-send-email-beckyb@kernel.crashing.org> <13092910702553-git-send-email-beckyb@kernel.crashing.org> <13092911313115-git-send-email-beckyb@kernel.crashing.org>
+To: Becky Bruce <beckyb@kernel.crashing.org>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Chinner <dchinner@redhat.com>
 
-The per-sb shrinker has the same requirement as the writeback
-threads of ensuring that the superblock is usable and pinned for the
-time it takes to run the work. Both need to take a passive reference
-to the sb, take a read lock on the s_umount lock and then only
-continue if an unmount is not in progress.
+On Jun 28, 2011, at 2:54 PM, Becky Bruce wrote:
 
-pin_sb_for_writeback() does this exactly, so move it to fs/super.c
-and rename it to grab_super_passive() and exporting it via
-fs/internal.h for all the VFS code to be able to use.
+> From: Becky Bruce <beckyb@kernel.crashing.org>
+> 
+> This is used to round-robin TLBCAM entries.
+> 
+> Signed-off-by: Becky Bruce <beckyb@kernel.crashing.org>
+> ---
+> arch/powerpc/include/asm/mmu.h |    5 +++++
+> arch/powerpc/kernel/smp.c      |    4 ++++
+> arch/powerpc/mm/mem.c          |    9 +++++++++
+> arch/powerpc/mm/tlb_nohash.c   |    6 ++++++
+> 4 files changed, 24 insertions(+), 0 deletions(-)
 
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
----
- fs/fs-writeback.c |   28 +---------------------------
- fs/internal.h     |    1 +
- fs/super.c        |   33 +++++++++++++++++++++++++++++++++
- 3 files changed, 35 insertions(+), 27 deletions(-)
+applied to next
 
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index 0f015a0..b8c507c 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -461,32 +461,6 @@ writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
- }
- 
- /*
-- * For background writeback the caller does not have the sb pinned
-- * before calling writeback. So make sure that we do pin it, so it doesn't
-- * go away while we are writing inodes from it.
-- */
--static bool pin_sb_for_writeback(struct super_block *sb)
--{
--	spin_lock(&sb_lock);
--	if (list_empty(&sb->s_instances)) {
--		spin_unlock(&sb_lock);
--		return false;
--	}
--
--	sb->s_count++;
--	spin_unlock(&sb_lock);
--
--	if (down_read_trylock(&sb->s_umount)) {
--		if (sb->s_root)
--			return true;
--		up_read(&sb->s_umount);
--	}
--
--	put_super(sb);
--	return false;
--}
--
--/*
-  * Write a portion of b_io inodes which belong to @sb.
-  *
-  * If @only_this_sb is true, then find and write all such
-@@ -585,7 +559,7 @@ void writeback_inodes_wb(struct bdi_writeback *wb,
- 		struct inode *inode = wb_inode(wb->b_io.prev);
- 		struct super_block *sb = inode->i_sb;
- 
--		if (!pin_sb_for_writeback(sb)) {
-+		if (!grab_super_passive(sb)) {
- 			requeue_io(inode);
- 			continue;
- 		}
-diff --git a/fs/internal.h b/fs/internal.h
-index ae47c48..fe327c2 100644
---- a/fs/internal.h
-+++ b/fs/internal.h
-@@ -97,6 +97,7 @@ extern struct file *get_empty_filp(void);
-  * super.c
-  */
- extern int do_remount_sb(struct super_block *, int, void *, int);
-+extern bool grab_super_passive(struct super_block *sb);
- extern void __put_super(struct super_block *sb);
- extern void put_super(struct super_block *sb);
- extern struct dentry *mount_fs(struct file_system_type *,
-diff --git a/fs/super.c b/fs/super.c
-index 73ab9f9..e63c754 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -243,6 +243,39 @@ static int grab_super(struct super_block *s) __releases(sb_lock)
- }
- 
- /*
-+ *	grab_super_passive - acquire a passive reference
-+ *	@s: reference we are trying to grab
-+ *
-+ *	Tries to acquire a passive reference. This is used in places where we
-+ *	cannot take an active reference but we need to ensure that the
-+ *	superblock does not go away while we are working on it. It returns
-+ *	false if a reference was not gained, and returns true with the s_umount
-+ *	lock held in read mode if a reference is gained. On successful return,
-+ *	the caller must drop the s_umount lock and the passive reference when
-+ *	done.
-+ */
-+bool grab_super_passive(struct super_block *sb)
-+{
-+	spin_lock(&sb_lock);
-+	if (list_empty(&sb->s_instances)) {
-+		spin_unlock(&sb_lock);
-+		return false;
-+	}
-+
-+	sb->s_count++;
-+	spin_unlock(&sb_lock);
-+
-+	if (down_read_trylock(&sb->s_umount)) {
-+		if (sb->s_root)
-+			return true;
-+		up_read(&sb->s_umount);
-+	}
-+
-+	put_super(sb);
-+	return false;
-+}
-+
-+/*
-  * Superblock locking.  We really ought to get rid of these two.
-  */
- void lock_super(struct super_block * sb)
--- 
-1.7.5.1
-
+- k
