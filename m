@@ -1,56 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754626Ab1GHS2T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 14:28:19 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:38182 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752732Ab1GHS2Q (ORCPT
+	id S1752530Ab1GHShy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 14:37:54 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:56289 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828Ab1GHShx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 14:28:16 -0400
-Subject: Re: [PATCH] regulator: max8997: Fix setting inappropriate value
- for ramp_delay variable
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Donggeun Kim <dg77.kim@samsung.com>
-Cc: linux-kernel@vger.kernel.org, lrg@ti.com,
-        broonie@opensource.wolfsonmicro.com, myungjoo.ham@samsung.com,
-        kyungmin.park@samsung.com
-In-Reply-To: <1310025116-30787-1-git-send-email-dg77.kim@samsung.com>
-References: <1310025116-30787-1-git-send-email-dg77.kim@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 08 Jul 2011 19:28:11 +0100
-Message-ID: <1310149691.3348.6.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Fri, 8 Jul 2011 14:37:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAHXqBFKKGj9c3fNiFRiR-BBdVffxg8bBHYh0_sCQvCZ3SDTewA@mail.gmail.com>
+References: <1310115250-3859-1-git-send-email-marc.zyngier@arm.com>
+	<CAHXqBFJiovYq5x_JDAxikvFs-t1To6yC-1uajBJFRX_jwjvejA@mail.gmail.com>
+	<4E170134.1020306@arm.com>
+	<4E171E93.8020608@arm.com>
+	<CAHXqBFKKGj9c3fNiFRiR-BBdVffxg8bBHYh0_sCQvCZ3SDTewA@mail.gmail.com>
+Date: Fri, 8 Jul 2011 20:37:52 +0200
+Message-ID: <CAHXqBFKUJQOH8LJRfeWjr=OabKtyBJkYWDT8PN8vUxR6dewNUA@mail.gmail.com>
+Subject: Re: [RFC PATCH v2 0/4] Core device subsystem
+From: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-07-07 at 16:51 +0900, Donggeun Kim wrote:
-> The ramp_delay variable can be set lower than the desired value.
-> This patch fixes it.
-> 
-> Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
-> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-> Signed-off-by: KyungMin Park <kyungmin.park@samsung.com>
-> ---
->  drivers/regulator/max8997.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c
-> index 10d5a1d..682bc79 100644
-> --- a/drivers/regulator/max8997.c
-> +++ b/drivers/regulator/max8997.c
-> @@ -543,7 +543,8 @@ static int max8997_set_voltage_ldobuck(struct regulator_dev *rdev,
->  			rid == MAX8997_BUCK4 || rid == MAX8997_BUCK5) {
->  		/* If the voltage is increasing */
->  		if (org < i)
-> -			udelay(desc->step * (i - org) / max8997->ramp_delay);
-> +			udelay(DIV_ROUND_UP(desc->step * (i - org),
-> +						max8997->ramp_delay));
->  	}
->  
->  	return ret;
+W dniu 8 lipca 2011 20:13 u¿ytkownik Micha³ Miros³aw <mirqus@gmail.com> napisa³:
+> W dniu 8 lipca 2011 17:13 u¿ytkownik Marc Zyngier
+> <marc.zyngier@arm.com> napisa³:
+>> On 08/07/11 14:08, Marc Zyngier wrote:
+>>> So you're basically folding of_core_device_populate() and
+>>> core_driver_init_class() into one call, and generating the
+>>> of_device_ids on the fly. If you're going down that road,
+>>> it would be even simpler to directly use of_device_ids
+>>> instead of core_device_ids and skip the generation altogether.
+>>>
+>>> That would also remove the static declaration of devices to be
+>>> probed in the architecture support code...
+>>>
+>>> Let me think of it and prototype that.
+>>
+>> See the attached patch against branch dt_gic_twd from
+>> git://git.kernel.org/pub/scm/linux/kernel/git/maz/arm-platforms.git
+>>
+>> It boots fine on my PB11MP.
+>>
+>> What do you think?
+[...]
+>> --- a/arch/arm/common/gic.c
+>> +++ b/arch/arm/common/gic.c
+>> @@ -712,9 +712,9 @@ static int __init gic_core_init(struct core_device *dev)
+>>        return 0;
+>>  }
+>>
+>> -static struct core_device_id gic_ids[] __initdata = {
+>> -       { .name = "arm,gic-spi" }, /* DT */
+>> -       { .name = "arm_gic" },     /* Static device */
+>> +static struct of_device_id gic_ids[] __initdata = {
+>> +       { .compatible = "arm,gic-spi" }, /* DT */
+>> +       { .name = "arm_gic" },           /* Static device */
+>>        { },
+>>  };
+>
+> This will also match devices with name "arm_gic" in DT. Unlikely, but
+> probably not what you want.
+>
+> I thought about something more evil. ;) See below.
+>
+> Assuming we modify of_find_matching_node() to also return matched ID entry:
+>
+> ---- of_core_device_populate()
+>
+> const struct of_device_id *id;
+> struct device_node *dn;
+> struct core_device *dev;
+>
+> for_each_matching_node_id(dn, matches, id) {
+>  dev = create_core_dev(...);
+>  dev->init = id->data;
+>  add_to_list(class, dev);
+> }
+>
+> if (intc class)
+>  sort_list()
+>
+> ----
+>
+> And then drivers would register like this:
+>
+> int __init etc_init(struct core_device *);
+>
+> DEFINE_CORE_DEVICE_TABLE_DT(class, name) = {
+>  { .compatible = "etc", .data = etc_init },
+> };
+>
+> DEFINE_CORE_DEVICE_TABLE_LEGACY(class, name) = {
+>  { .name = "etc", .data = etc_init },
+> };
+>
+>
+> This removes the need for struct core_driver and instead uses linker
+> to directly generate match tables for INTC and TIMER classes. This
+> also allows to get rid of legacy IDs when kernel is built with support
+> for boards not using DT.
 
-Applied.
+DEFINE_CORE_DEVICE_TABLE_* could be implemented like this:
 
+#define __DEFINE_CORE_DEVICE_TABLE(type,cls,name) \
+  static const struct of_device_id __coredev_##type##_##name##_##cls[] \
+    __used __section(.init.coredev_##type##_##cls)
+
+#define DEFINE_CORE_DEVICE_TABLE_DT_IRQ(name) \
+  __DEFINE_CORE_DEVICE_TABLE(dt, irq, name)
+#define DEFINE_CORE_DEVICE_TABLE_LEGACY_IRQ(name) \
+  __DEFINE_CORE_DEVICE_TABLE(legacy, irq, name)
+#define DEFINE_CORE_DEVICE_TABLE_DT_TIMER(name) \
+  __DEFINE_CORE_DEVICE_TABLE(dt, timer, name)
+#define DEFINE_CORE_DEVICE_TABLE_LEGACY_TIMER(name) \
+  __DEFINE_CORE_DEVICE_TABLE(legacy, timer, name)
+
+(I folded 'class' parameter into the define's name but that might not
+be the best idea if the class set is to be expanded - compiler error
+for invalid classes can be generated also in other ways.)
+
+Best Regards,
+Micha³ Miros³aw
