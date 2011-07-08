@@ -1,91 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753037Ab1GHNVk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 09:21:40 -0400
-Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:51689 "EHLO
-	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752553Ab1GHNVj convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 09:21:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <1309777713-17528-1-git-send-email-kishon@ti.com>
-References: <1309777713-17528-1-git-send-email-kishon@ti.com>
-Date: Fri, 8 Jul 2011 18:51:38 +0530
-Message-ID: <CAAe_U6+rRLSm6My1SWHt=Fc1MZjN_0bvsWvpZeqNG6c48nsHzA@mail.gmail.com>
-Subject: Re: [PATCH v3 0/2] OMAP: omap_device: API to modify SYSCONFIG register
-From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-To: paul@pwsan.com, b-cousson@ti.com
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        vishwanath.bs@ti.com, p-basak2@ti.com, peter.ujfalusi@ti.com,
-        jhnikula@gmail.com, kishon@ti.com, charu@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1750982Ab1GHNic (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 09:38:32 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:33265 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743Ab1GHNia (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 09:38:30 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Fri, 8 Jul 2011 15:37:42 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: SCSI development list <linux-scsi@vger.kernel.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>, axboe@kernel.dk,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andi Kleen <andi@firstfloor.org>, Dave Jones <davej@redhat.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        USB list <linux-usb@vger.kernel.org>
+Subject: Re: Linux 3.0 oopses when pulling a USB CDROM
+Message-ID: <20110708153742.17121fa8@stein>
+In-Reply-To: <20110703223757.0e2b5ee0@stein>
+References: <1309609482.2554.8.camel@mulgrave>
+	<Pine.LNX.4.44L0.1107021320180.14703-100000@netrider.rowland.org>
+	<20110703223757.0e2b5ee0@stein>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul, Benoit,
+On Jul 03 Stefan Richter wrote:
+> On Jul 02 Alan Stern wrote:
+> > Also, I have no idea why this shows up with USB drives but not other 
+> > SCSI transports.  A fluke of timing?
+> 
+> A while ago I frequently observed oopses at removal of a FireWire
+> CompactFlash card reader (an sd device which exposes itself as device with
+> removable medium).  At that time I wasn't motivated to track down whether
+> the bug resided in the block or SCSI or firewire subsystem.  The bug was
+> apparently triggered because hald was polling the device like crazy for
+> media changes, and that polling coincided with device hot unplug.
+> 
+> Furthermore, FireWire CD-ROM removal never has been an exactly glitch-free
+> experience because the SCSI stack occasionally went on to issue command
+> retries for many minutes after device removal a.k.a. DID_NO_CONNECT.  I
+> don't remember crashes during FireWire CD-ROM removal, but it has been a
+> while that I last used CD-ROM drives.
+> 
+> I might test the card reader and a CD-ROM later next week on 3.0-rc6 if I
+> find the time and the issue hadn't been resolved by then.  I don't have
+> hald anymore, but there are certainly other ways to force accesses during
+> device shutdown.
 
-Do you have any comments for this series?
+I have not tested FireWire CD-ROMs or card reader yet.
 
-Regards
-Kishon
+But today I did get the following crash on 3.0-rc6-71-g4dd1b49 x86-64 plus
+Alan's "USB: additional regression fix for device removal" when I powered
+down an USB hub with an empty USB card reader attached (or when I powered
+it up, impossible for me to say):
 
-On Mon, Jul 4, 2011 at 4:38 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
-> Certain peripherals require autoidle bits to be disabled before performing
-> some operations. This patch series provides APIs in omap_device layer and
-> omap_hwmod layer to modify the SYSCONFIG register.
->
-> Since current implementation of PM run time framework does not support
-> changing sysconfig settings during middle of the on going operation,
-> these APIs will support the same.
->
-> For e.g McBSP 2 and 3 in OMAP3 has sidetone feature which requires
-> autoidle to be disabled before starting the sidetone.
->
-> McBSP also requires the SYSCONFIG to be in NOIDLE when ELEMENTSYNCH
-> mode is selected for DMA operation.
->
-> Created on top of linux OMAP master (linux-omap-2.6 :master)
-> commit-id: d9be6df1331f8078618745298d38ed619729ec91
-> Tested on OMAP4430 and OMAP3430 SDP boards. Verified that this patch
-> series does not break the OMAP1 build.
->
-> V3:
-> created one-one mapping between omap_device APIs and omap_hwmod APIs to
-> modify the sysconfig register.
->
-> V2:
-> Mutex is replaced with spinlock.
->
-> V1:
-> * Creates 3 separate API's to change the idle mode to NOIDLE, SMARTIDLE
->  and FORCEIDLE and one more API to change the idlemode to default value
->  based on the hwmod flag. This change is done to align with the discussion
->  on [3]
->
-> * Added hwmod mutex in omap hwmod APIs that modifies SYSCONFIG register.
->
-> * omap_hwmod_set_slave_idlemode() is not modified to take true/false kind-of
-> argument since 3 states are associated with SIDLE bits (force, no and smart).
->
-> These changes were made to align with Benoit's and Paul's comments for a
-> similar patch written by Manjunath [1] for changing MSTANDBY bits.
->
-> The discussions that happened for the RFC patch can be found at [2]
->
-> [1]: http://www.mail-archive.com/linux-omap <at> vger.kernel.org/msg39647.html
-> [2]: https://patchwork.kernel.org/patch/134371/
-> [3]: http://www.mail-archive.com/linux-omap <at> vger.kernel.org/msg39615.html
->
-> Kishon Vijay Abraham I (2):
->  OMAP: omap_hwmod: API to modify AUTOIDLE and SMARTIDLE bits
->  OMAP: omap_device: API to modify AUTOIDLE and SMARTIDLE bits
->
->  arch/arm/mach-omap2/omap_hwmod.c              |   93 ++++++++++++++
->  arch/arm/plat-omap/include/plat/omap_device.h |    6 +
->  arch/arm/plat-omap/include/plat/omap_hwmod.h  |   11 ++
->  arch/arm/plat-omap/omap_device.c              |  165 +++++++++++++++++++++++++
->  4 files changed, 275 insertions(+), 0 deletions(-)
->
->
+general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+
+PID: 8299, comm: kworker/0:0 Not tainted
+RIP: [...] elv_put_request+0xb/0x1b
+[...]
+Call Trace:
+__blk_put_request
+? blk_put_request
+blk_put_request
+scsi_execute
+scsi_execute_req
+? sd_check_events
+scsi_test_unit_ready
+? kmem_cache_alloc
+? sd_check_events
+sd_check_events
+disk_events_workfn
+[...]
+
+After this trace, the following messages were logged:
+generic-usb 0003:046D:C51.0059: can't reset device, 0000:00:12.2-3.1.3/input/0, status -71
+usb 1-3.1: clear tt 1 (0530) error -19
+BUG: unable to handle kernel paging request at fffffffffffffff8
+IP: [...] kthread_data+0xb/0x11
+Pid: 8299, comm: kworker/0:0 Tainted: G D
+RIP: 0010:[<ffffffff8104aa8f>]
+
+I can upload a screenshot of this crash if desired.
+
+The 2.6.39 and 3.0 block and/or SCSI layer are in a really sad state.
+-- 
+Stefan Richter
+-=====-==-== -=== -=---
+http://arcgraph.de/sr/
