@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477Ab1GIF4V (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 01:56:21 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:36010 "EHLO
+	id S1753549Ab1GIFzz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 01:55:55 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:40015 "EHLO
 	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753359Ab1GIFyr (ORCPT
+	by vger.kernel.org with ESMTP id S1753408Ab1GIFyu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 01:54:47 -0400
-X-Sasl-enc: D1pueh8deDY3o4DDFJONVXqfKGxNDS2YMHhkDvwyI2in 1310190887
+	Sat, 9 Jul 2011 01:54:50 -0400
+X-Sasl-enc: eyYHICvdzXcN98gJcr5f8lscKMhgowVeVIJlGjtWLLzK 1310190889
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 15:51:20 2011
-Message-Id: <20110708225120.755603084@clark.kroah.org>
+Message-Id: <20110708225120.021763733@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 08 Jul 2011 15:50:09 -0700
+Date: Fri, 08 Jul 2011 15:50:01 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Vasiliy Kulikov <segooon@gmail.com>,
-        Balbir Singh <bsingharora@gmail.com>
-Subject: [20/35] taskstats: dont allow duplicate entries in listener mode
+        Florian Fainelli <florian@openwrt.org>,
+        Wim Van Sebroeck <wim@iguana.be>
+Subject: [12/35] watchdog: mtx1-wdt: request gpio before using it
 In-Reply-To: <20110708225343.GA14402@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,80 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vasiliy Kulikov <segoon@openwall.com>
+From: Florian Fainelli <florian@openwrt.org>
 
-commit 26c4caea9d697043cc5a458b96411b86d7f6babd upstream.
+commit 9b19d40aa3ebaf1078779da10555da2ab8512422 upstream.
 
-Currently a single process may register exit handlers unlimited times.
-It may lead to a bloated listeners chain and very slow process
-terminations.
+Otherwise, the gpiolib autorequest feature will produce a WARN_ON():
 
-Eg after 10KK sent TASKSTATS_CMD_ATTR_REGISTER_CPUMASKs ~300 Mb of
-kernel memory is stolen for the handlers chain and "time id" shows 2-7
-seconds instead of normal 0.003.  It makes it possible to exhaust all
-kernel memory and to eat much of CPU time by triggerring numerous exits
-on a single CPU.
+WARNING: at drivers/gpio/gpiolib.c:101 0x8020ec6c()
+autorequest GPIO-215
+[...]
 
-The patch limits the number of times a single process may register
-itself on a single CPU to one.
-
-One little issue is kept unfixed - as taskstats_exit() is called before
-exit_files() in do_exit(), the orphaned listener entry (if it was not
-explicitly deregistered) is kept until the next someone's exit() and
-implicit deregistration in send_cpu_listeners().  So, if a process
-registered itself as a listener exits and the next spawned process gets
-the same pid, it would inherit taskstats attributes.
-
-Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
-Cc: Balbir Singh <bsingharora@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Florian Fainelli <florian@openwrt.org>
+Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/taskstats.c |   15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+ drivers/watchdog/mtx-1_wdt.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/kernel/taskstats.c
-+++ b/kernel/taskstats.c
-@@ -293,16 +293,18 @@ ret:
- static int add_del_listener(pid_t pid, const struct cpumask *mask, int isadd)
- {
- 	struct listener_list *listeners;
--	struct listener *s, *tmp;
-+	struct listener *s, *tmp, *s2;
- 	unsigned int cpu;
+--- a/drivers/watchdog/mtx-1_wdt.c
++++ b/drivers/watchdog/mtx-1_wdt.c
+@@ -211,6 +211,12 @@ static int __devinit mtx1_wdt_probe(stru
+ 	int ret;
  
- 	if (!cpumask_subset(mask, cpu_possible_mask))
- 		return -EINVAL;
+ 	mtx1_wdt_device.gpio = pdev->resource[0].start;
++	ret = gpio_request_one(mtx1_wdt_device.gpio,
++				GPIOF_OUT_INIT_HIGH, "mtx1-wdt");
++	if (ret < 0) {
++		dev_err(&pdev->dev, "failed to request gpio");
++		return ret;
++	}
  
-+	s = NULL;
- 	if (isadd == REGISTER) {
- 		for_each_cpu(cpu, mask) {
--			s = kmalloc_node(sizeof(struct listener), GFP_KERNEL,
--					 cpu_to_node(cpu));
-+			if (!s)
-+				s = kmalloc_node(sizeof(struct listener),
-+						 GFP_KERNEL, cpu_to_node(cpu));
- 			if (!s)
- 				goto cleanup;
- 			s->pid = pid;
-@@ -311,9 +313,16 @@ static int add_del_listener(pid_t pid, c
- 
- 			listeners = &per_cpu(listener_array, cpu);
- 			down_write(&listeners->sem);
-+			list_for_each_entry_safe(s2, tmp, &listeners->list, list) {
-+				if (s2->pid == pid)
-+					goto next_cpu;
-+			}
- 			list_add(&s->list, &listeners->list);
-+			s = NULL;
-+next_cpu:
- 			up_write(&listeners->sem);
- 		}
-+		kfree(s);
- 		return 0;
+ 	spin_lock_init(&mtx1_wdt_device.lock);
+ 	init_completion(&mtx1_wdt_device.stop);
+@@ -236,6 +242,8 @@ static int __devexit mtx1_wdt_remove(str
+ 		mtx1_wdt_device.queue = 0;
+ 		wait_for_completion(&mtx1_wdt_device.stop);
  	}
- 
++
++	gpio_free(mtx1_wdt_device.gpio);
+ 	misc_deregister(&mtx1_wdt_misc);
+ 	return 0;
+ }
 
 
