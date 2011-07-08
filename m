@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752876Ab1GIFy2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 01:54:28 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:55998 "EHLO
+	id S1753476Ab1GIF7N (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 01:59:13 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:37335 "EHLO
 	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752362Ab1GIFyI (ORCPT
+	by vger.kernel.org with ESMTP id S1752362Ab1GIFy2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 01:54:08 -0400
-X-Sasl-enc: lW39f3ia1J0gIEuBKphCbsqyjefuoP5On41U20Z0arD2 1310190847
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 15:51:19 2011
-Message-Id: <20110708225119.412334799@clark.kroah.org>
+	Sat, 9 Jul 2011 01:54:28 -0400
+X-Sasl-enc: lbnq2LpauFm+6XiEf5/ga+M9biSFBjHdQaJB95fTDtjM 1310190868
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 15:51:21 2011
+Message-Id: <20110708225121.696445484@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 08 Jul 2011 15:49:55 -0700
+Date: Fri, 08 Jul 2011 15:50:19 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [06/35] xhci: Reject double add of active endpoints.
+        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>
+Subject: [30/35] net: filter: Use WARN_RATELIMIT
 In-Reply-To: <20110708225343.GA14402@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,83 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit fa75ac379e63c2864e9049b5e8615e40f65c1e70 upstream.
+From: Joe Perches <joe@perches.com>
 
-While trying to switch a UAS device from the BOT configuration to the UAS
-configuration via the bConfigurationValue file, Tanya ran into an issue in
-the USB core.  usb_disable_device() sets entries in udev->ep_out and
-udev->ep_out to NULL, but doesn't call into the xHCI bandwidth management
-functions to remove the BOT configuration endpoints from the xHCI host's
-internal structures.
+[ Upstream commit 6c4a5cb219520c7bc937ee186ca53f03733bd09f ]
 
-The USB core would then attempt to add endpoints for the UAS
-configuration, and some of the endpoints had the same address as endpoints
-in the BOT configuration.  The xHCI driver blindly added the endpoints
-again, but the xHCI host controller rejected the Configure Endpoint
-command because active endpoints were added without being dropped.
+A mis-configured filter can spam the logs with lots of stack traces.
 
-Make the xHCI driver reject calls to xhci_add_endpoint() that attempt to
-add active endpoints without first calling xhci_drop_endpoint().
+Rate-limit the warnings and add printout of the bogus filter information.
 
-This should be backported to kernels as old as 2.6.31.
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: Tanya Brokhman <tlinder@codeaurora.org>
+Original-patch-by: Ben Greear <greearb@candelatech.com>
+Signed-off-by: Joe Perches <joe@perches.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- drivers/usb/host/xhci-hcd.c |   22 ++++++++++++++++++----
- 1 file changed, 18 insertions(+), 4 deletions(-)
+ net/core/filter.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci-hcd.c
-+++ b/drivers/usb/host/xhci-hcd.c
-@@ -979,6 +979,7 @@ int xhci_add_endpoint(struct usb_hcd *hc
- 	u32 added_ctxs;
- 	unsigned int last_ctx;
- 	u32 new_add_flags, new_drop_flags, new_slot_info;
-+	struct xhci_virt_device *virt_dev;
- 	int ret = 0;
+--- a/net/core/filter.c
++++ b/net/core/filter.c
+@@ -291,7 +291,9 @@ load_b:
+ 			mem[f_k] = X;
+ 			continue;
+ 		default:
+-			WARN_ON(1);
++			WARN_RATELIMIT(1, "Unknown code:%u jt:%u tf:%u k:%u\n",
++				       fentry->code, fentry->jt,
++				       fentry->jf, fentry->k);
+ 			return 0;
+ 		}
  
- 	ret = xhci_check_args(hcd, udev, ep, 1, __func__);
-@@ -1007,11 +1008,25 @@ int xhci_add_endpoint(struct usb_hcd *hc
- 		return -EINVAL;
- 	}
- 
--	in_ctx = xhci->devs[udev->slot_id]->in_ctx;
--	out_ctx = xhci->devs[udev->slot_id]->out_ctx;
-+	virt_dev = xhci->devs[udev->slot_id];
-+	in_ctx = virt_dev->in_ctx;
-+	out_ctx = virt_dev->out_ctx;
- 	ctrl_ctx = xhci_get_input_control_ctx(xhci, in_ctx);
- 	ep_index = xhci_get_endpoint_index(&ep->desc);
- 	ep_ctx = xhci_get_ep_ctx(xhci, out_ctx, ep_index);
-+
-+	/* If this endpoint is already in use, and the upper layers are trying
-+	 * to add it again without dropping it, reject the addition.
-+	 */
-+	if (virt_dev->eps[ep_index].ring &&
-+			!(le32_to_cpu(ctrl_ctx->drop_flags) &
-+				xhci_get_endpoint_flag(&ep->desc))) {
-+		xhci_warn(xhci, "Trying to add endpoint 0x%x "
-+				"without dropping it.\n",
-+				(unsigned int) ep->desc.bEndpointAddress);
-+		return -EINVAL;
-+	}
-+
- 	/* If the HCD has already noted the endpoint is enabled,
- 	 * ignore this request.
- 	 */
-@@ -1026,8 +1041,7 @@ int xhci_add_endpoint(struct usb_hcd *hc
- 	 * process context, not interrupt context (or so documenation
- 	 * for usb_set_interface() and usb_set_configuration() claim).
- 	 */
--	if (xhci_endpoint_init(xhci, xhci->devs[udev->slot_id],
--				udev, ep, GFP_KERNEL) < 0) {
-+	if (xhci_endpoint_init(xhci, virt_dev, udev, ep, GFP_NOIO) < 0) {
- 		dev_dbg(&udev->dev, "%s - could not initialize ep %#x\n",
- 				__func__, ep->desc.bEndpointAddress);
- 		return -ENOMEM;
 
 
