@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754203Ab1GHQd3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 12:33:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49165 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750764Ab1GHQd0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 12:33:26 -0400
-Date: Fri, 8 Jul 2011 18:33:25 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: linux-rdma@vger.kernel.org, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-mtd@lists.infradead.org
-Subject: Re: [RFC 6/9]drivers:char:nvram.c Change the copyright info.
-In-Reply-To: <1290838879-11038-7-git-send-email-justinmattock@gmail.com>
-Message-ID: <alpine.LNX.2.00.1107081832490.11049@pobox.suse.cz>
-References: <1290838879-11038-1-git-send-email-justinmattock@gmail.com> <1290838879-11038-7-git-send-email-justinmattock@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754192Ab1GHQfF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 12:35:05 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:53881 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750764Ab1GHQfD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 12:35:03 -0400
+Date: Fri, 08 Jul 2011 09:33:57 -0700 (PDT)
+Message-Id: <20110708.093357.1592862635180925238.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless-2.6 2011-07-08
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110708162144.GA15143@tuxdriver.com>
+References: <20110708162144.GA15143@tuxdriver.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=euc-kr
+Content-Transfer-Encoding: 8bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 08 Jul 2011 09:33:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Nov 2010, Justin P. Mattock wrote:
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Fri, 8 Jul 2011 12:21:44 -0400
 
-> Change the copyright info from Sun Microsystems to Oracle since Oracle now owns them.
+> Here is a final(?) batch of wireless-related fixes intended for 3.0.
+> Included are a fix for a TKIP replay vulnerability from Johannes, a
+> locking fix related to rfkill and a memory corruption fix from Luca,
+> an SSB initialization fix from Rafa©©, an ath9k performance regression
+> fix from Rajkumar, and some fixes from Pavel for sysfs bad pointer
+> accesses in ath5k.
 > 
-> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> Also included are some Bluetooth fixes.  Gustavo described them thusly:
 > 
-> ---
->  drivers/char/nvram.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> 	There are here two regression fixes, a hidp deadlock hang up
+> 	of the system fix from Peter Hurley. As the commit messages
+> 	says it is a partial revert from a commit that adds kthread
+> 	to hidp. And L2CAP incoming connection request fix that
+> 	was breaking one test in the PTS suit, that is, breaking
+> 	interop. Patch is based on code from Ilia Kolomisnky.  Also,
+> 	a buffer overflow fix by Dan Rosenberg and finally Tomas
+> 	Targownik fixed a memory leak on failed connections attempts
+> 	that seems to be around since 2006!!
 > 
-> diff --git a/drivers/char/nvram.c b/drivers/char/nvram.c
-> index 166f1e7..33e8faa 100644
-> --- a/drivers/char/nvram.c
-> +++ b/drivers/char/nvram.c
-> @@ -3,7 +3,7 @@
->   *
->   * Copyright (C) 1997 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
->   * idea by and with help from Richard Jelinek <rj@suse.de>
-> - * Portions copyright (c) 2001,2002 Sun Microsystems (thockin@sun.com)
-> + * Portions copyright (c) 2001,2002 Oracle and/or its affiliates. (thockin@sun.com)
->   *
->   * This driver allows you to access the contents of the non-volatile memory in
->   * the mc146818rtc.h real-time clock. This chip is built into all PCs and into
+> I also included a couple of device ID additions -- I hope that's OK.
+> 
+> Please let me know if there are problems!
 
-You can't just change other people/company copyright.
-
-This will need Signoff from the original copyright holder at least.
-
--- 
-Jiri Kosina
-SUSE Labs
+Pulled, thanks!
