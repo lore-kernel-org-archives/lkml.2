@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878Ab1GIGGr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 02:06:47 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:46495 "EHLO
+	id S1753735Ab1GIGBC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 02:01:02 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:33867 "EHLO
 	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753794Ab1GIGBF (ORCPT
+	by vger.kernel.org with ESMTP id S1752770Ab1GIGAw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 02:01:05 -0400
-X-Sasl-enc: uEWILFaCMdDCBgP0qv9A7fZAE9xhvwVbkHEmO3k/UR4N 1310191265
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 16:01:09 2011
-Message-Id: <20110708230109.705264950@clark.kroah.org>
+	Sat, 9 Jul 2011 02:00:52 -0400
+X-Sasl-enc: 1DQwLFmbc6qhfUvqc/AH7g+Uzgy9pVuWgJ/z6ahkVtHf 1310191251
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 16:01:10 2011
+Message-Id: <20110708230110.730896583@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 08 Jul 2011 16:00:18 -0700
+Date: Fri, 08 Jul 2011 16:00:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>
-Subject: [02/35] migrate: dont account swapcache as shmem
+        Florian Fainelli <florian@openwrt.org>,
+        Wim Van Sebroeck <wim@iguana.be>
+Subject: [12/35] watchdog: mtx1-wdt: request gpio before using it
 In-Reply-To: <20110708230122.GA18807@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,36 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: Florian Fainelli <florian@openwrt.org>
 
-commit 99a15e21d96f6857dafab1e5167e5e8183215c9c upstream.
+commit 9b19d40aa3ebaf1078779da10555da2ab8512422 upstream.
 
-swapcache will reach the below code path in migrate_page_move_mapping,
-and swapcache is accounted as NR_FILE_PAGES but it's not accounted as
-NR_SHMEM.
+Otherwise, the gpiolib autorequest feature will produce a WARN_ON():
 
-Hugh pointed out we must use PageSwapCache instead of comparing
-mapping to &swapper_space, to avoid build failure with CONFIG_SWAP=n.
+WARNING: at drivers/gpio/gpiolib.c:101 0x8020ec6c()
+autorequest GPIO-215
+[...]
 
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Florian Fainelli <florian@openwrt.org>
+Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/migrate.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/watchdog/mtx-1_wdt.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -261,7 +261,7 @@ static int migrate_page_move_mapping(str
- 	 */
- 	__dec_zone_page_state(page, NR_FILE_PAGES);
- 	__inc_zone_page_state(newpage, NR_FILE_PAGES);
--	if (PageSwapBacked(page)) {
-+	if (!PageSwapCache(page) && PageSwapBacked(page)) {
- 		__dec_zone_page_state(page, NR_SHMEM);
- 		__inc_zone_page_state(newpage, NR_SHMEM);
+--- a/drivers/watchdog/mtx-1_wdt.c
++++ b/drivers/watchdog/mtx-1_wdt.c
+@@ -211,6 +211,12 @@ static int __devinit mtx1_wdt_probe(stru
+ 	int ret;
+ 
+ 	mtx1_wdt_device.gpio = pdev->resource[0].start;
++	ret = gpio_request_one(mtx1_wdt_device.gpio,
++				GPIOF_OUT_INIT_HIGH, "mtx1-wdt");
++	if (ret < 0) {
++		dev_err(&pdev->dev, "failed to request gpio");
++		return ret;
++	}
+ 
+ 	spin_lock_init(&mtx1_wdt_device.lock);
+ 	init_completion(&mtx1_wdt_device.stop);
+@@ -236,6 +242,8 @@ static int __devexit mtx1_wdt_remove(str
+ 		mtx1_wdt_device.queue = 0;
+ 		wait_for_completion(&mtx1_wdt_device.stop);
  	}
++
++	gpio_free(mtx1_wdt_device.gpio);
+ 	misc_deregister(&mtx1_wdt_misc);
+ 	return 0;
+ }
 
 
