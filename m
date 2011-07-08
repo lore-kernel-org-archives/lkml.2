@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754357Ab1GHFPY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:15:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42037 "EHLO mx2.suse.de"
+	id S1754511Ab1GHFPv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:15:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42005 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754266Ab1GHFDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:03:02 -0400
+	id S1754218Ab1GHFCz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:02:55 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:57 2011
-Message-Id: <20110708001657.465581186@clark.kroah.org>
+Message-Id: <20110708001657.257533921@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:16:21 -0700
+Date: Thu, 07 Jul 2011 17:16:19 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kees Cook <kees.cook@canonical.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [049/107] x86, suspend: Restore MISC_ENABLE MSR in realmode wakeup
+        Sachin Sanap <ssanap@marvell.com>, Zhangfei Gao <zgao6@marvell.com>,
+        Philip Rakity <prakity@marvell.com>,
+        Richard Cochran <richard.cochran@omicron.at>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [047/107] pxa168_eth: fix race in transmit path.
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,104 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <kees.cook@canonical.com>
+From: Richard Cochran <richardcochran@gmail.com>
 
-commit 7a3136666bc0f0419f7aaa7b1fabb4b0e0a7fb76 upstream.
+commit 384420409d9b5d4443940abace49363d26135412 upstream.
 
-Some BIOSes will reset the Intel MISC_ENABLE MSR (specifically the
-XD_DISABLE bit) when resuming from S3, which can interact poorly with
-ebba638ae723d8a8fc2f7abce5ec18b688b791d7. In 32bit PAE mode, this can
-lead to a fault when EFER is restored by the kernel wakeup routines,
-due to it setting the NX bit for a CPU that (thanks to the BIOS reset)
-now incorrectly thinks it lacks the NX feature. (64bit is not affected
-because it uses a common CPU bring-up that specifically handles the
-XD_DISABLE bit.)
+Because the socket buffer is freed in the completion interrupt, it is not
+safe to access it after submitting it to the hardware.
 
-The need for MISC_ENABLE being restored so early is specific to the S3
-resume path. Normally, MISC_ENABLE is saved in save_processor_state(),
-but this happens after the resume header is created, so just reproduce
-the logic here. (acpi_suspend_lowlevel() creates the header, calls
-do_suspend_lowlevel, which calls save_processor_state(), so the saved
-processor context isn't available during resume header creation.)
-
-[ hpa: Consider for stable if OK in mainline ]
-
-Signed-off-by: Kees Cook <kees.cook@canonical.com>
-Link: http://lkml.kernel.org/r/20110707011034.GA8523@outflux.net
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: Sachin Sanap <ssanap@marvell.com>
+Cc: Zhangfei Gao <zgao6@marvell.com>
+Cc: Philip Rakity <prakity@marvell.com>
+Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/acpi/realmode/wakeup.S |   14 ++++++++++++++
- arch/x86/kernel/acpi/realmode/wakeup.h |    6 ++++++
- arch/x86/kernel/acpi/sleep.c           |    6 ++++++
- 3 files changed, 26 insertions(+)
+ drivers/net/pxa168_eth.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/acpi/realmode/wakeup.S
-+++ b/arch/x86/kernel/acpi/realmode/wakeup.S
-@@ -28,6 +28,8 @@ pmode_cr3:	.long	0	/* Saved %cr3 */
- pmode_cr4:	.long	0	/* Saved %cr4 */
- pmode_efer:	.quad	0	/* Saved EFER */
- pmode_gdt:	.quad	0
-+pmode_misc_en:	.quad	0	/* Saved MISC_ENABLE MSR */
-+pmode_behavior:	.long	0	/* Wakeup behavior flags */
- realmode_flags:	.long	0
- real_magic:	.long	0
- trampoline_segment:	.word 0
-@@ -91,6 +93,18 @@ wakeup_code:
- 	/* Call the C code */
- 	calll	main
+--- a/drivers/net/pxa168_eth.c
++++ b/drivers/net/pxa168_eth.c
+@@ -1273,7 +1273,7 @@ static int pxa168_eth_start_xmit(struct
+ 	wmb();
+ 	wrl(pep, SDMA_CMD, SDMA_CMD_TXDH | SDMA_CMD_ERD);
  
-+	/* Restore MISC_ENABLE before entering protected mode, in case
-+	   BIOS decided to clear XD_DISABLE during S3. */
-+	movl	pmode_behavior, %eax
-+	btl	$WAKEUP_BEHAVIOR_RESTORE_MISC_ENABLE, %eax
-+	jnc	1f
-+
-+	movl	pmode_misc_en, %eax
-+	movl	pmode_misc_en + 4, %edx
-+	movl	$MSR_IA32_MISC_ENABLE, %ecx
-+	wrmsr
-+1:
-+
- 	/* Do any other stuff... */
- 
- #ifndef CONFIG_64BIT
---- a/arch/x86/kernel/acpi/realmode/wakeup.h
-+++ b/arch/x86/kernel/acpi/realmode/wakeup.h
-@@ -21,6 +21,9 @@ struct wakeup_header {
- 	u32 pmode_efer_low;	/* Protected mode EFER */
- 	u32 pmode_efer_high;
- 	u64 pmode_gdt;
-+	u32 pmode_misc_en_low;	/* Protected mode MISC_ENABLE */
-+	u32 pmode_misc_en_high;
-+	u32 pmode_behavior;	/* Wakeup routine behavior flags */
- 	u32 realmode_flags;
- 	u32 real_magic;
- 	u16 trampoline_segment;	/* segment with trampoline code, 64-bit only */
-@@ -39,4 +42,7 @@ extern struct wakeup_header wakeup_heade
- #define WAKEUP_HEADER_SIGNATURE 0x51ee1111
- #define WAKEUP_END_SIGNATURE	0x65a22c82
- 
-+/* Wakeup behavior bits */
-+#define WAKEUP_BEHAVIOR_RESTORE_MISC_ENABLE     0
-+
- #endif /* ARCH_X86_KERNEL_ACPI_RM_WAKEUP_H */
---- a/arch/x86/kernel/acpi/sleep.c
-+++ b/arch/x86/kernel/acpi/sleep.c
-@@ -77,6 +77,12 @@ int acpi_suspend_lowlevel(void)
- 
- 	header->pmode_cr0 = read_cr0();
- 	header->pmode_cr4 = read_cr4_safe();
-+	header->pmode_behavior = 0;
-+	if (!rdmsr_safe(MSR_IA32_MISC_ENABLE,
-+			&header->pmode_misc_en_low,
-+			&header->pmode_misc_en_high))
-+		header->pmode_behavior |=
-+			(1 << WAKEUP_BEHAVIOR_RESTORE_MISC_ENABLE);
- 	header->realmode_flags = acpi_realmode_flags;
- 	header->real_magic = 0x12345678;
- 
+-	stats->tx_bytes += skb->len;
++	stats->tx_bytes += length;
+ 	stats->tx_packets++;
+ 	dev->trans_start = jiffies;
+ 	if (pep->tx_ring_size - pep->tx_desc_count <= 1) {
 
 
