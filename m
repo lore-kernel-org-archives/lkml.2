@@ -1,47 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753873Ab1GHPeA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 11:34:00 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:37439 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753780Ab1GHPdz (ORCPT
+	id S1753267Ab1GHPl6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 11:41:58 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:50567 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751695Ab1GHPl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 11:33:55 -0400
+	Fri, 8 Jul 2011 11:41:57 -0400
 MIME-Version: 1.0
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 8 Jul 2011 09:33:34 -0600
-X-Google-Sender-Auth: 2LpQfi2x3SuEsZlXtNnNavvdJEU
-Message-ID: <CACxGe6t2u9U=3P7zgOszPWovm2oJdg=7O-K-EfEPaxMHtxD6fg@mail.gmail.com>
-Subject: [GIT PULL] another gpio bugfix pull
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20110708145408.GA2283@kroah.com>
+References: <20110708084547.2091.55262.stgit@ltc197.sdl.hitachi.co.jp> <20110708145408.GA2283@kroah.com>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Fri, 8 Jul 2011 17:41:36 +0200
+Message-ID: <CAPXgP10gThuxOsrxH8_wOddeRB5f2ABypW7EQui-F1hOE97dHQ@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/4] Persistent device name using alias name
+To: Greg KH <greg@kroah.com>
+Cc: Nao Nishijima <nao.nishijima.xt@hitachi.com>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, James.Bottomley@hansenpartnership.com,
+        jcm@redhat.com, dle-develop@lists.sourceforge.net,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        yrl.pp-manager.tt@hitachi.com, dgilbert@interlog.com,
+        stefanr@s5r6.in-berlin.de, hare@suse.de
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit a2fa83faf47b514ab947cea916d3691b66525073:
+On Fri, Jul 8, 2011 at 16:54, Greg KH <greg@kroah.com> wrote:
+> On Fri, Jul 08, 2011 at 05:45:47PM +0900, Nao Nishijima wrote:
+>> This patch series provides an "alias name" of the disk into kernel and procfs
+>> messages. The user can assign a preferred name to an alias name of the device.
+>>
+>> Based on previous discussion (*), I changed patches as follows
+>> - This is "alias name"
+>> - An "alias name" is stored in gendisk struct
+>> - Add document to Documentation/ABI/testing/sysfs-block
+>> - When the user changes an "alias name", kernel notifies udev
+>>
+>> (*) http://marc.info/?l=linux-scsi&m=130812625531219&w=2
+>
+> I don't like it and I don't think it will really solve the root problem
+> you are trying to address, but as the patches don't touch any code I
+> maintain, there's not much I can do to object to it.
 
-  Merge branch 'usb-linus' of
-git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb-2.6
-(2011-07-05 20:57:45 -0700)
+I can only repeat what I already wrote in detail earlier:
 
-are available in the git repository at:
+This approach seems to papers over the problem which emitting and
+parsing free-text printk() messages with much-too-dumb tools cause. It
+seems to fix the symptoms not the cause.
 
-  git://git.secretlab.ca/git/linux-2.6 gpio/merge
+You can already write a udev rule today that logs _all_ symlinks of a
+device at discovery time, and any later kernel message can safely be
+associated with all possible names of the blockdev. No kernel changes
+needed, all possible names are covered. That also works good enough
+with our current stone-age tools for anybody who is able to scroll
+back to the last log udev message in that same log file.
 
-Axel Lin (1):
-      gpio: tps65910: add missing breaks in tps65910_gpio_init
+There can be by-definition no default udev rules assigning a proper
+single name to a block device. There is never a valid single name for
+a disks, so udev can not ship anything like that in the default setup,
+so this stays as a custom hack.
 
-Mathias Nyman (1):
-      gpio/langwell_gpio: ack the correct bit for langwell gpio interrupts
+We absolutely need _structured_ data for logging and error reporting,
+not only to solve this problem. Along with the current free-text
+printk(), we would be able to attach classifications, device
+error/sense data, firmware register dumps and anything
+interesting-for-debug to the messages.
 
- drivers/gpio/langwell_gpio.c |    2 +-
- drivers/gpio/tps65910-gpio.c |    2 ++
- 2 files changed, 3 insertions(+), 1 deletions(-)
+We can't solve that problem in the kernel alone. Structured data from
+the kernel will need to feed a smarter userspace logger that can index
+and classify messages, merge current userspace data into it, and
+provides hooks for the system management to act on critical failures
+and raise notifications.
 
+Structured logging seems like the solution for this and also to many
+other problems in this area. Single custom names pushed into the
+kernel might cover some rather exotic use cases, but I think, is not
+what we are looking for.
 
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+Kay
