@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751597Ab1GHJU5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 05:20:57 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:60873 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751246Ab1GHJU4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 05:20:56 -0400
-Subject: Re: jump_label defaults (was Re: [patch 00/17] CFS Bandwidth
- Control v7.1)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Baron <jbaron@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>,
-        linux-kernel@vger.kernel.org,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Pavel Emelyanov <xemul@openvz.org>, Hu Tao <hutao@cn.fujitsu.com>,
-        Mike Galbraith <efault@gmx.de>
-In-Reply-To: <1310070974.3282.678.camel@twins>
-References: <20110707053036.173186930@google.com>
-	 <20110707112302.GB8227@elte.hu> <1310049528.3282.583.camel@twins>
-	 <20110707145159.GD19193@elte.hu> <1310050482.3282.584.camel@twins>
-	 <20110707145620.GF19193@elte.hu> <20110707162344.GB2536@redhat.com>
-	 <1310059220.3282.591.camel@twins>  <20110707181535.GD2536@redhat.com>
-	 <1310070974.3282.678.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 08 Jul 2011 11:20:32 +0200
-Message-ID: <1310116832.3282.699.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1751875Ab1GHJXM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 05:23:12 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:38414 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751028Ab1GHJXJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 05:23:09 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Kevin Hilman <khilman@ti.com>
+Subject: Re: [Update][PATCH 6/10] PM / Domains: System-wide transitions support for generic domains (v5)
+Date: Fri, 8 Jul 2011 11:24:17 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc6+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Walmsley <paul@pwsan.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>
+References: <201106112223.04972.rjw@sisk.pl> <201106290144.01186.rjw@sisk.pl> <871uy1d380.fsf@ti.com>
+In-Reply-To: <871uy1d380.fsf@ti.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107081124.17463.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-07-07 at 22:36 +0200, Peter Zijlstra wrote:
-> Hrm,. I can't seem to make that work, damn CPP for not being
-> recursive.
+On Friday, July 08, 2011, Kevin Hilman wrote:
+> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
+> 
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> >
+> > Make generic PM domains support system-wide power transitions
+> > (system suspend and hibernation).  Add suspend, resume, freeze, thaw,
+> > poweroff and restore callbacks to be associated with struct
+> > generic_pm_domain objects and make pm_genpd_init() use them as
+> > appropriate.
+> >
+> > The new callbacks do nothing for devices belonging to power domains
+> > that were powered down at run time (before the transition).  
+> 
+> Thinking about this some more, how is a driver supposed to reconfigure
+> wakeups during suspend if it has already been runtime suspended?
 
-Ha! the wonders of sleep, ok I can make this part work.
+If the device belongs to a PM domain that has been powered off, it
+won't be notified.
 
-So how do we write this static_branch_true() thing?
+> For example, assume a device where device_may_wakeup() == false.  This
+> means wakeups during *suspend* are disabled, but wakeups wakeups are
+> assumed to enabled when it is runtime suspended.
+> 
+> So now, assume this device is RPM_SUSPENDED, it has wakeups *enabled*,
+> and then system suspend comes along.  
+> 
+> With this current patch, the driver will never receive any callbacks, so
+> it can never disable its wakeups.  
+>
+> Am I missing something?
 
-But then I realized that if we do something like:
+As I said above, this only happens with devices that belog to PM domains
+that were powered off before system suspend has started, so the problem
+is limited to devices that wakeup is signaled on behalf of even when they
+have no power.
 
-static __always_inline bool arch_static_branch(struct jump_label_key *key)
-{
-        asm goto("1:"
-                JUMP_LABEL_INITIAL_NOP
-                ".pushsection __jump_table,  \"aw\" \n\t"
-                _ASM_ALIGN "\n\t"
-                _ASM_PTR "1b, %l[l_yes], %c0 \n\t"
-                ".popsection \n\t"
-                : :  "i" (key) : : l_yes);
-        return false;
-l_yes:
-        return true;
-}
+So this is a limitation, but not affecting all platforms.
 
-Simply flipping the true and false in there isn't going to work, because
-then its similar to !static_branch() and jump_label_inc() is going to
-disable it.
+There are a few ways to avoid this limitation I can think of:
+(1) Add a "make me operational during system suspend" flag to struct dev_pm_info
+    and run pm_runtime_resume() on such devices from the core (either dpm_prepare()
+    core, or pm_genpd_prepare()).
+(2) Add a "my .prepare() is safe to run if device is not accessible" flag to
+    struct dev_pm_info and make pm_genpd_prepare() execute .prepare() for such
+    devices regardless of whether or not their PM domains are off.
+(3) Call .prepare() from all drivers unconditionally during system suspend
+    (and probably .complete() too) in the hope they won't access inaccessible
+    devices.
+Probably, there's more.
+
+In any case I think it's material for future work.
+
+Thanks,
+Rafael
