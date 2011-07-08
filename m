@@ -1,43 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026Ab1GHWaS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 18:30:18 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:55872 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751064Ab1GHWaQ (ORCPT
+	id S1752218Ab1GHWuE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 18:50:04 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:34175 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752171Ab1GHWuB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 18:30:16 -0400
-X-Sasl-enc: QSTvgBu9b7ml3ZimEQLYs+rcKRWjAlWJFNwAfW+c87g7 1310164215
-Date: Fri, 8 Jul 2011 15:29:51 -0700
-From: Greg KH <greg@kroah.com>
-To: Timur Tabi <timur@freescale.com>
-Cc: kumar.gala@freescale.com, benh@kernel.crashing.org, akpm@kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-console@vger.kernel.org, alan@lxorguk.ukuu.org.uk, arnd@arndb.de
-Subject: Re: tty/powerpc: introduce the ePAPR embedded hypervisor byte
- channel driver
-Message-ID: <20110708222951.GA27363@kroah.com>
-References: <1305830092-20104-1-git-send-email-timur@freescale.com>
- <20110708220654.GA19146@kroah.com>
- <4E178193.2090905@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E178193.2090905@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 8 Jul 2011 18:50:01 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=C+q4Y/HScCdyzG9EozPMj2VhMCNNwVAX1ZA1AJpvyjva7QSnjCacyapb92BWJdSz+hpdMpbzt5nBIFKWkUMEWSwATeKLyM/2G7wTjsbHdpbsGM6bR8D/7DimoF6slKt9;
+Date: Fri, 8 Jul 2011 15:49:57 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Ram Pai <linuxram@us.ibm.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the pci-current tree
+Message-ID: <20110708154957.253b26b2@jbarnes-desktop>
+In-Reply-To: <20110707181910.GD3543@ram-ThinkPad-T61>
+References: <20110707105823.43343d2f9446f994f97cfd65@canb.auug.org.au>
+	<20110707085205.7524a5a7@jbarnes-desktop>
+	<20110707181910.GD3543@ram-ThinkPad-T61>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 08, 2011 at 05:15:47PM -0500, Timur Tabi wrote:
-> Greg KH wrote:
-> > Doesn't apply at all to the tty-next tree, so I can't apply it here :(
-> 
-> Um, where exactly is the tty-next tree?  The only thing I see that looks like it
-> is this:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty-2.6.git
-> 
-> But the description of this tree says, "junk tree, please ignore".
+On Thu, 7 Jul 2011 11:19:10 -0700
+Ram Pai <linuxram@us.ibm.com> wrote:
 
-Don't ignore it, that's the one :)
+> On Thu, Jul 07, 2011 at 08:52:05AM -0700, Jesse Barnes wrote:
+> > On Thu, 7 Jul 2011 10:58:23 +1000
+> > Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > 
+> > > Hi Jesse,
+> > > 
+> > > After merging the pci-current tree, today's linux-next build (powerpc
+> > > ppc64_defconfig) failed like this:
+> > > 
+> > > drivers/built-in.o:(.toc1+0xb98): undefined reference to `pci_realloc'
+> > > 
+> > > Caused by commit 72007d2b4797 ("PCI: conditional resource-reallocation
+> > > through kernel parameter pci=realloc").
+> > > 
+> > > I have used the pci-current tree from next-20110706 for today.
+> > 
+> > Oops, x86 bits used in common code.  I've pushed a fix that just moves
+> > the variable into setup-bus.c rather than x86/pci/common.c.
+> 
+> Jesse,
+> 
+> 	I have fixed the problem and have a better patch. See if it is acceptable for you.
+
+Yes, much better, thanks.  I'll send it to Linus tomorrow if I don't
+hear any complaints.
+
+-- 
+Jesse Barnes, Intel Open Source Technology Center
