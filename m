@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753873Ab1GHRQf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 13:16:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11432 "EHLO mx1.redhat.com"
+	id S1754169Ab1GHRQr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 13:16:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61605 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751763Ab1GHRQd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 13:16:33 -0400
-Date: Fri, 8 Jul 2011 19:13:54 +0200
+	id S1754133Ab1GHRQn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 13:16:43 -0400
+Date: Fri, 8 Jul 2011 19:13:39 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>
 Cc: vda.linux@googlemail.com, jan.kratochvil@redhat.com,
         pedro@codesourcery.com, indan@nul.nu, bdonlan@gmail.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] ptrace: mv send-SIGSTOP from do_fork() to
-	ptrace_init_task()
-Message-ID: <20110708171354.GC26943@redhat.com>
+Subject: [PATCH 1/3] ptrace_init_task: initialize child->jobctl explicitly
+Message-ID: <20110708171339.GB26943@redhat.com>
 References: <20110708171320.GA26943@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,67 +24,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the new child is traced, do_fork() adds the pending SIGSTOP.
-It assumes that either it is traced because of auto-attach or the
-tracer attached later, in both cases sigaddset/set_thread_flag is
-correct even if SIGSTOP is already pending.
+new_child->jobctl is not initialized during the fork, it is copied
+from parent->jobctl. Currently this is harmless, the forking task
+is running and copy_process() can't succeed if signal_pending() is
+true, so only JOBCTL_STOP_DEQUEUED can be copied. Still this is a
+bit fragile, it would be more clean to set ->jobctl = 0 explicitly.
 
-Now that we have PTRACE_SEIZE this is no longer right in the latter
-case. If the tracer does PTRACE_SEIZE after copy_process() makes the
-child visible the queued SIGSTOP is wrong.
-
-We could check PT_SEIZED bit and change ptrace_attach() to set both
-PT_PTRACED and PT_SEIZED bits simultaneously but see the next patch,
-we need to know whether this child was auto-attached or not anyway.
-
-So this patch simply moves this code to ptrace_init_task(), this
-way we can never race with ptrace_attach().
+Also, check ->ptrace != 0 instead of PT_PTRACED, move the
+CONFIG_HAVE_HW_BREAKPOINT code up.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
 
- include/linux/ptrace.h |    3 +++
- kernel/fork.c          |   12 ------------
- 2 files changed, 3 insertions(+), 12 deletions(-)
+ include/linux/ptrace.h |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
---- ptrace/include/linux/ptrace.h~4_send_stop_from_ptrace_init	2011-07-08 17:24:46.000000000 +0200
-+++ ptrace/include/linux/ptrace.h	2011-07-08 18:32:05.000000000 +0200
-@@ -227,6 +227,9 @@ static inline void ptrace_init_task(stru
- 	if (unlikely(ptrace) && current->ptrace) {
+--- ptrace/include/linux/ptrace.h~3_init_jobctl	2011-07-07 18:34:44.000000000 +0200
++++ ptrace/include/linux/ptrace.h	2011-07-08 17:15:20.000000000 +0200
+@@ -217,16 +217,17 @@ static inline void ptrace_init_task(stru
+ {
+ 	INIT_LIST_HEAD(&child->ptrace_entry);
+ 	INIT_LIST_HEAD(&child->ptraced);
+-	child->parent = child->real_parent;
++#ifdef CONFIG_HAVE_HW_BREAKPOINT
++	atomic_set(&child->ptrace_bp_refcnt, 1);
++#endif
++	child->jobctl = 0;
+ 	child->ptrace = 0;
+-	if (unlikely(ptrace) && (current->ptrace & PT_PTRACED)) {
++	child->parent = child->real_parent;
++
++	if (unlikely(ptrace) && current->ptrace) {
  		child->ptrace = current->ptrace;
  		__ptrace_link(child, current->parent);
-+
-+		sigaddset(&child->pending.signal, SIGSTOP);
-+		set_tsk_thread_flag(child, TIF_SIGPENDING);
  	}
+-
+-#ifdef CONFIG_HAVE_HW_BREAKPOINT
+-	atomic_set(&child->ptrace_bp_refcnt, 1);
+-#endif
  }
  
---- ptrace/kernel/fork.c~4_send_stop_from_ptrace_init	2011-07-08 17:24:46.000000000 +0200
-+++ ptrace/kernel/fork.c	2011-07-08 17:25:25.000000000 +0200
-@@ -37,7 +37,6 @@
- #include <linux/swap.h>
- #include <linux/syscalls.h>
- #include <linux/jiffies.h>
--#include <linux/tracehook.h>
- #include <linux/futex.h>
- #include <linux/compat.h>
- #include <linux/kthread.h>
-@@ -1522,17 +1521,6 @@ long do_fork(unsigned long clone_flags,
- 		audit_finish_fork(p);
- 
- 		/*
--		 * Child is ready but hasn't started running yet.  Queue
--		 * SIGSTOP if it's gonna be ptraced - it doesn't matter who
--		 * attached/attaching to this task, the pending SIGSTOP is
--		 * right in any case.
--		 */
--		if (unlikely(p->ptrace)) {
--			sigaddset(&p->pending.signal, SIGSTOP);
--			set_tsk_thread_flag(p, TIF_SIGPENDING);
--		}
--
--		/*
- 		 * We set PF_STARTING at creation in case tracing wants to
- 		 * use this to distinguish a fully live task from one that
- 		 * hasn't finished SIGSTOP raising yet.  Now we clear it
+ /**
 
