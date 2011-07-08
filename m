@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491Ab1GHMtP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 08:49:15 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:56431 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752240Ab1GHMtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 08:49:14 -0400
-Date: Fri, 8 Jul 2011 14:49:06 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Don Zickus <dzickus@redhat.com>,
-        Stephane Eranian <eranian@google.com>, Lin Ming <ming.m.lin@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -tip, final] perf, x86: Add hw_watchdog_set_attr() in a
- sake of nmi-watchdog on P4
-Message-ID: <20110708124906.GD4303@elte.hu>
-References: <20110705113620.GS17941@sun>
- <20110705114437.GC15654@elte.hu>
- <20110705114944.GT17941@sun>
- <20110705121421.GU17941@sun>
- <20110705131005.GA5843@elte.hu>
- <1309871841.3282.148.camel@twins>
- <20110705133105.GB5843@elte.hu>
- <1309876851.3282.235.camel@twins>
- <20110705145656.GA18116@elte.hu>
- <20110705152515.GE4060@sun>
+	id S1752414Ab1GHMwm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 08:52:42 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:38541 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750750Ab1GHMwl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 08:52:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110705152515.GE4060@sun>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110708093542.GA4812@n2100.arm.linux.org.uk>
+References: <20110707143019.GA16819@heechul-desktop>
+	<20110708093542.GA4812@n2100.arm.linux.org.uk>
+Date: Fri, 8 Jul 2011 05:52:41 -0700
+X-Google-Sender-Auth: JgEQk_HRgOPQ5npHpe-P6Hmwu-w
+Message-ID: <CAN_5kQDu6UTEiU2QY05mQxQ31mQp=dXz+-ubDdu9EG3UJVA+xw@mail.gmail.com>
+Subject: Re: [PATCHv2] remove unnecessary cache flush on v6 copypage
+From: heechul Yun <heechul@illinois.edu>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        saeed.bishara@gmail.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I just resubmitted the patch to the patch system (6995/2).
 
-* Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+Thank you for your patience.
 
-> > On P4 BUS_CYCLES would be able to co-exist with CPU_CYCLES so it 
-> > will solve the P4 issue naturally as well.
-> 
-> i don't think it changes much, Ingo, if I change it to bus cycles I 
-> still will have to setup nmi-watchdog event separately (but simply 
-> with bus event).
-
-You did not understand my point, my suggestion is to change this in 
-kernel/watchdog.c:
-
-static struct perf_event_attr wd_hw_attr = {
-        .type           = PERF_TYPE_HARDWARE,
-        .config         = PERF_COUNT_HW_CPU_CYCLES,
-
-to:
-
-static struct perf_event_attr wd_hw_attr = {
-        .type           = PERF_TYPE_HARDWARE,
-        .config         = PERF_COUNT_HW_BUS_CYCLES,
-
-Thanks,
-
-	Ingo
+On Fri, Jul 8, 2011 at 2:35 AM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Thu, Jul 07, 2011 at 09:30:19AM -0500, Heechul Yun wrote:
+>>
+>> ARM: mm: remove unnecessary cache flush on v6 copypage
+>>
+>> Originally introduced to maintain coherency between icache and dcache
+>> in v6 nonaliasing mode. This is now handled by __sync_icache_dcache since
+>> c0177800, therefore unneceary in this function.
+>>
+>> Signed-off-by: Heechul Yun <heechul@illinois.edu>
+>> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+>> --
+>> arch/arm/mm/copypage-v6.c |    1 -
+>>  1 files changed, 0 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/arch/arm/mm/copypage-v6.c b/arch/arm/mm/copypage-v6.c
+>> index bdba6c6..63cca00 100644
+>> --- a/arch/arm/mm/copypage-v6.c
+>> +++ b/arch/arm/mm/copypage-v6.c
+>> @@ -41,7 +41,6 @@ static void v6_copy_user_highpage_nonaliasing(struct page *to,
+>>       kfrom = kmap_atomic(from, KM_USER0);
+>>       kto = kmap_atomic(to, KM_USER1);
+>>       copy_page(kto, kfrom);
+>> -     __cpuc_flush_dcache_area(kto, PAGE_SIZE);
+>>       kunmap_atomic(kto, KM_USER1);
+>>       kunmap_atomic(kfrom, KM_USER0);
+>>  }
+>
+> The above patch is fine (it has tabs preserved) but the version in the
+> patch system has spaces instead (each space character has been replaced
+> with a '.') and so doesn't apply:
+>
+> $ pdb getpatch 6995/1 |tr ' ' '.'
+> Patch:.6995/1:.mm:.remove.unnecessary.cache.flush.on.v6.copypage
+> From:.Heechul.Yun
+> -------------------------------------------------------------------------------
+> .arch/arm/mm/copypage-v6.c.|....1.-
+> .1.file.changed,.1.deletion(-)
+> -------------------------------------------------------------------------------
+> diff.--git.a/arch/arm/mm/copypage-v6.c.b/arch/arm/mm/copypage-v6.c
+> index.bdba6c6..63cca00.100644
+> ---.a/arch/arm/mm/copypage-v6.c
+> +++.b/arch/arm/mm/copypage-v6.c
+> @@.-41,7.+41,6.@@.static.void.v6_copy_user_highpage_nonaliasing(struct.page.*to,........kfrom.=.kmap_atomic(from,.KM_USER0);
+> ........kto.=.kmap_atomic(to,.KM_USER1);
+> ........copy_page(kto,.kfrom);
+> -.......__cpuc_flush_dcache_area(kto,.PAGE_SIZE);
+> ........kunmap_atomic(kto,.KM_USER1);
+> ........kunmap_atomic(kfrom,.KM_USER0);
+> .}
+>
+>
