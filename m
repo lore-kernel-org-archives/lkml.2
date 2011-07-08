@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755012Ab1GHFEf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:04:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42368 "EHLO mx2.suse.de"
+	id S1755291Ab1GHFFc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:05:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42523 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754967Ab1GHFEa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:04:30 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:17:00 2011
-Message-Id: <20110708001659.942760793@clark.kroah.org>
+	id S1755272Ab1GHFF3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:05:29 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:17:01 2011
+Message-Id: <20110708001701.587052450@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:16:46 -0700
+Date: Thu, 07 Jul 2011 17:17:03 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jens Axboe <jaxboe@fusionio.com>
-Subject: [074/107] cfq-iosched: fix locking around ioc->ioc_data assignment
+        David Howells <dhowells@redhat.com>
+Subject: [091/107] FS-Cache: Add a helper to bulk uncache pages on an inode
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,47 +25,221 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jens Axboe <jaxboe@fusionio.com>
+From: David Howells <dhowells@redhat.com>
 
-commit ab4bd22d3cce6977dc039664cc2d052e3147d662 upstream.
+commit c902ce1bfb40d8b049bd2319b388b4b68b04bc27 upstream.
 
-Since we are modifying this RCU pointer, we need to hold
-the lock protecting it around it.
+Add an FS-Cache helper to bulk uncache pages on an inode.  This will
+only work for the circumstance where the pages in the cache correspond
+1:1 with the pages attached to an inode's page cache.
 
-This fixes a potential reuse and double free of a cfq
-io_context structure. The bug has been in CFQ for a long
-time, it hit very few people but those it did hit seemed
-to see it a lot.
+This is required for CIFS and NFS: When disabling inode cookie, we were
+returning the cookie and setting cifsi->fscache to NULL but failed to
+invalidate any previously mapped pages.  This resulted in "Bad page
+state" errors and manifested in other kind of errors when running
+fsstress.  Fix it by uncaching mapped pages when we disable the inode
+cookie.
 
-Tracked in RH bugzilla here:
+This patch should fix the following oops and "Bad page state" errors
+seen during fsstress testing.
 
-https://bugzilla.redhat.com/show_bug.cgi?id=577968
+  ------------[ cut here ]------------
+  kernel BUG at fs/cachefiles/namei.c:201!
+  invalid opcode: 0000 [#1] SMP
+  Pid: 5, comm: kworker/u:0 Not tainted 2.6.38.7-30.fc15.x86_64 #1 Bochs Bochs
+  RIP: 0010: cachefiles_walk_to_object+0x436/0x745 [cachefiles]
+  RSP: 0018:ffff88002ce6dd00  EFLAGS: 00010282
+  RAX: ffff88002ef165f0 RBX: ffff88001811f500 RCX: 0000000000000000
+  RDX: 0000000000000000 RSI: 0000000000000100 RDI: 0000000000000282
+  RBP: ffff88002ce6dda0 R08: 0000000000000100 R09: ffffffff81b3a300
+  R10: 0000ffff00066c0a R11: 0000000000000003 R12: ffff88002ae54840
+  R13: ffff88002ae54840 R14: ffff880029c29c00 R15: ffff88001811f4b0
+  FS:  00007f394dd32720(0000) GS:ffff88002ef00000(0000) knlGS:0000000000000000
+  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+  CR2: 00007fffcb62ddf8 CR3: 000000001825f000 CR4: 00000000000006e0
+  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+  Process kworker/u:0 (pid: 5, threadinfo ffff88002ce6c000, task ffff88002ce55cc0)
+  Stack:
+   0000000000000246 ffff88002ce55cc0 ffff88002ce6dd58 ffff88001815dc00
+   ffff8800185246c0 ffff88001811f618 ffff880029c29d18 ffff88001811f380
+   ffff88002ce6dd50 ffffffff814757e4 ffff88002ce6dda0 ffffffff8106ac56
+  Call Trace:
+   cachefiles_lookup_object+0x78/0xd4 [cachefiles]
+   fscache_lookup_object+0x131/0x16d [fscache]
+   fscache_object_work_func+0x1bc/0x669 [fscache]
+   process_one_work+0x186/0x298
+   worker_thread+0xda/0x15d
+   kthread+0x84/0x8c
+   kernel_thread_helper+0x4/0x10
+  RIP  cachefiles_walk_to_object+0x436/0x745 [cachefiles]
+  ---[ end trace 1d481c9af1804caa ]---
 
-Credit goes to Paul Bolle for figuring out that the issue
-was around the one-hit ioc->ioc_data cache. Thanks to his
-hard work the issue is now fixed.
+I tested the uncaching by the following means:
 
-Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+ (1) Create a big file on my NFS server (104857600 bytes).
+
+ (2) Read the file into the cache with md5sum on the NFS client.  Look in
+     /proc/fs/fscache/stats:
+
+	Pages  : mrk=25601 unc=0
+
+ (3) Open the file for read/write ("bash 5<>/warthog/bigfile").  Look in proc
+     again:
+
+	Pages  : mrk=25601 unc=25601
+
+Reported-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Reviewed-and-Tested-by: Suresh Jayaraman <sjayaraman@suse.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- block/cfq-iosched.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ Documentation/filesystems/caching/netfs-api.txt |   16 ++++++++
+ fs/cifs/fscache.c                               |    1 
+ fs/fscache/page.c                               |   44 ++++++++++++++++++++++++
+ fs/nfs/fscache.c                                |    8 +---
+ include/linux/fscache.h                         |   21 +++++++++++
+ 5 files changed, 85 insertions(+), 5 deletions(-)
 
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -2704,8 +2704,11 @@ static void __cfq_exit_single_io_context
- 	smp_wmb();
- 	cic->key = cfqd_dead_key(cfqd);
+--- a/Documentation/filesystems/caching/netfs-api.txt
++++ b/Documentation/filesystems/caching/netfs-api.txt
+@@ -673,6 +673,22 @@ storage request to complete, or it may a
+ in which case the page will not be stored in the cache this time.
  
--	if (ioc->ioc_data == cic)
-+	if (rcu_dereference(ioc->ioc_data) == cic) {
-+		spin_lock(&ioc->lock);
- 		rcu_assign_pointer(ioc->ioc_data, NULL);
-+		spin_unlock(&ioc->lock);
+ 
++BULK INODE PAGE UNCACHE
++-----------------------
++
++A convenience routine is provided to perform an uncache on all the pages
++attached to an inode.  This assumes that the pages on the inode correspond on a
++1:1 basis with the pages in the cache.
++
++	void fscache_uncache_all_inode_pages(struct fscache_cookie *cookie,
++					     struct inode *inode);
++
++This takes the netfs cookie that the pages were cached with and the inode that
++the pages are attached to.  This function will wait for pages to finish being
++written to the cache and for the cache to finish with the page generally.  No
++error is returned.
++
++
+ ==========================
+ INDEX AND DATA FILE UPDATE
+ ==========================
+--- a/fs/cifs/fscache.c
++++ b/fs/cifs/fscache.c
+@@ -94,6 +94,7 @@ static void cifs_fscache_disable_inode_c
+ 	if (cifsi->fscache) {
+ 		cFYI(1, "CIFS disabling inode cookie (0x%p)",
+ 				cifsi->fscache);
++		fscache_uncache_all_inode_pages(cifsi->fscache, inode);
+ 		fscache_relinquish_cookie(cifsi->fscache, 1);
+ 		cifsi->fscache = NULL;
+ 	}
+--- a/fs/fscache/page.c
++++ b/fs/fscache/page.c
+@@ -967,3 +967,47 @@ void fscache_mark_pages_cached(struct fs
+ 	pagevec_reinit(pagevec);
+ }
+ EXPORT_SYMBOL(fscache_mark_pages_cached);
++
++/*
++ * Uncache all the pages in an inode that are marked PG_fscache, assuming them
++ * to be associated with the given cookie.
++ */
++void __fscache_uncache_all_inode_pages(struct fscache_cookie *cookie,
++				       struct inode *inode)
++{
++	struct address_space *mapping = inode->i_mapping;
++	struct pagevec pvec;
++	pgoff_t next;
++	int i;
++
++	_enter("%p,%p", cookie, inode);
++
++	if (!mapping || mapping->nrpages == 0) {
++		_leave(" [no pages]");
++		return;
 +	}
++
++	pagevec_init(&pvec, 0);
++	next = 0;
++	while (next <= (loff_t)-1 &&
++	       pagevec_lookup(&pvec, mapping, next, PAGEVEC_SIZE)
++	       ) {
++		for (i = 0; i < pagevec_count(&pvec); i++) {
++			struct page *page = pvec.pages[i];
++			pgoff_t page_index = page->index;
++
++			ASSERTCMP(page_index, >=, next);
++			next = page_index + 1;
++
++			if (PageFsCache(page)) {
++				__fscache_wait_on_page_write(cookie, page);
++				__fscache_uncache_page(cookie, page);
++			}
++		}
++		pagevec_release(&pvec);
++		cond_resched();
++	}
++
++	_leave("");
++}
++EXPORT_SYMBOL(__fscache_uncache_all_inode_pages);
+--- a/fs/nfs/fscache.c
++++ b/fs/nfs/fscache.c
+@@ -259,12 +259,10 @@ static void nfs_fscache_disable_inode_co
+ 		dfprintk(FSCACHE,
+ 			 "NFS: nfsi 0x%p turning cache off\n", NFS_I(inode));
  
- 	if (cic->cfqq[BLK_RW_ASYNC]) {
- 		cfq_exit_cfqq(cfqd, cic->cfqq[BLK_RW_ASYNC]);
+-		/* Need to invalidate any mapped pages that were read in before
+-		 * turning off the cache.
++		/* Need to uncache any pages attached to this inode that
++		 * fscache knows about before turning off the cache.
+ 		 */
+-		if (inode->i_mapping && inode->i_mapping->nrpages)
+-			invalidate_inode_pages2(inode->i_mapping);
+-
++		fscache_uncache_all_inode_pages(NFS_I(inode)->fscache, inode);
+ 		nfs_fscache_zap_inode_cookie(inode);
+ 	}
+ }
+--- a/include/linux/fscache.h
++++ b/include/linux/fscache.h
+@@ -204,6 +204,8 @@ extern bool __fscache_check_page_write(s
+ extern void __fscache_wait_on_page_write(struct fscache_cookie *, struct page *);
+ extern bool __fscache_maybe_release_page(struct fscache_cookie *, struct page *,
+ 					 gfp_t);
++extern void __fscache_uncache_all_inode_pages(struct fscache_cookie *,
++					      struct inode *);
+ 
+ /**
+  * fscache_register_netfs - Register a filesystem as desiring caching services
+@@ -643,4 +645,23 @@ bool fscache_maybe_release_page(struct f
+ 	return false;
+ }
+ 
++/**
++ * fscache_uncache_all_inode_pages - Uncache all an inode's pages
++ * @cookie: The cookie representing the inode's cache object.
++ * @inode: The inode to uncache pages from.
++ *
++ * Uncache all the pages in an inode that are marked PG_fscache, assuming them
++ * to be associated with the given cookie.
++ *
++ * This function may sleep.  It will wait for pages that are being written out
++ * and will wait whilst the PG_fscache mark is removed by the cache.
++ */
++static inline
++void fscache_uncache_all_inode_pages(struct fscache_cookie *cookie,
++				     struct inode *inode)
++{
++	if (fscache_cookie_valid(cookie))
++		__fscache_uncache_all_inode_pages(cookie, inode);
++}
++
+ #endif /* _LINUX_FSCACHE_H */
 
 
