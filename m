@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838Ab1GHJyM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 05:54:12 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:54829 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750746Ab1GHJyK convert rfc822-to-8bit (ORCPT
+	id S1752921Ab1GHKE3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 06:04:29 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58680 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752714Ab1GHKE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 05:54:10 -0400
+	Fri, 8 Jul 2011 06:04:28 -0400
+Date: Fri, 8 Jul 2011 11:04:10 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: "Raju, Sundaram" <sundaram@ti.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Dan <dan.j.williams@intel.com>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] dmaengine: Moving TI SDMA driver to dmaengine - design
+	plan
+Message-ID: <20110708100410.GA4957@n2100.arm.linux.org.uk>
+References: <E0D41E29EB0DAC4E9F3FF173962E9E94030259CD17@dbde02.ent.ti.com>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTim8Nha-WWLQZRL2-xsNVT-vCVma4Q@mail.gmail.com>
-References: <BANLkTim8Nha-WWLQZRL2-xsNVT-vCVma4Q@mail.gmail.com>
-Date: Fri, 8 Jul 2011 02:54:09 -0700
-Message-ID: <CAOzbF4ctakHk7afYqXumMQe-b5C_40Cz9ewPdQiYvf6xXK2+qg@mail.gmail.com>
-Subject: Fwd: VT-d2 support inside Linux kernel
-From: Cyclonus J <cyclonusj@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: kvm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E0D41E29EB0DAC4E9F3FF173962E9E94030259CD17@dbde02.ent.ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Jul 08, 2011 at 01:52:17PM +0530, Raju, Sundaram wrote:
+> I am planning to move TI SDMA driver in OMAP tree
+> into the dmaengine framework.
+> 
+> The first immediate issue of concern I noticed is the
+> huge number of client drivers that use the existing SDMA driver.
+> More than 15 client drivers are using the current SDMA driver.
+> 
+> Moving the SDMA driver along with all of these client drivers at a
+> single stretch seems a humungous task. 
+> I noticed a model in the existing DMA drivers in dmaengine
+> framework that will over come this issue. 
 
-I think since this work is marked WIP in Linux kernel on current KVM
-TODO list. This might be a better list to ask questions.
+It _is_ sane to build a dmaengine driver on top of the existing SoC
+private API, then convert the drivers to DMA engine, and then cleanup
+the resulting DMA engine driver.
 
-So,  in current top of tree, I am seeing some ats support for
-intel-iommu. Does that mean the ATS part is already finished?
-Basically, I would like to know the current status of VT-d2 support,
-anything left?
-
-Thanks,
-CJ
-
----------- Forwarded message ----------
-From: Cyclonus J <cyclonusj@gmail.com>
-Date: Fri, Jul 1, 2011 at 1:54 AM
-Subject: VT-d2 support inside Linux kernel
-To: kvm@vger.kernel.org
-
-
-Hi,
-
-Is there any information I can find about VT-d2 support inside Linux
-kernel? It was marked as WIP on KVM todo list. In current top of tree,
-I am seeing some ats support for intel-iommu. Does that mean the ATS
-part is already finished?
-
-> git log -p -1 93a23a72
-commit 93a23a7271dfb811b3adb72779054c3a24433112
-Author: Yu Zhao <yu.zhao@intel.com>
-Date:   Mon May 18 13:51:37 2009 +0800
-
-   VT-d: support the device IOTLB
-
-   Enable the device IOTLB (i.e. ATS) for both the bare metal and KVM
-   environments.
-
-   Signed-off-by: Yu Zhao <yu.zhao@intel.com>
-   Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-
-Thanks,
-CJ
+What we must make sure though is that the DMA engine slave API (which
+isn't well documented) is correctly implemented before drivers are
+converted over to use the DMA engine support code, otherwise we may
+end up with lots of drivers that require re-fixing several times over.
