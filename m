@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754272Ab1GHFRH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:17:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41834 "EHLO mx2.suse.de"
+	id S1754438Ab1GHFRY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:17:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41817 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753839Ab1GHFCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:02:23 -0400
+	id S1753367Ab1GHFCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:02:16 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:56 2011
-Message-Id: <20110708001656.504329181@clark.kroah.org>
+Message-Id: <20110708001656.315833988@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:16:11 -0700
+Date: Thu, 07 Jul 2011 17:16:09 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [039/107] xhci: Add reset on resume quirk for asrock p67 host
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Evgeniy Polyakov <zbr@ioremap.net>
+Subject: [037/107] Connector: Correctly set the error code in case of success when dispatching receive callbacks
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,69 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit c877b3b2ad5cb9d4fe523c5496185cc328ff3ae9 upstream.
+commit 663dd6dcaf7e95526e469e91f41972a9c0cca30c upstream.
 
-The asrock p67 xhci controller completely dies on resume, add a
-quirk for this, to bring the host back online after a suspend.
+The recent changes to the connector code introduced this bug where even
+when a callback was invoked, we would return an error resulting in
+double freeing of the skb. This patch fixes this bug.
 
-This should be backported to stable kernels as old as 2.6.37.
-
-Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci-pci.c |    8 ++++++++
- drivers/usb/host/xhci.c     |    2 ++
- drivers/usb/host/xhci.h     |    1 +
- 3 files changed, 11 insertions(+)
+ drivers/connector/connector.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -28,6 +28,9 @@
- #define PCI_VENDOR_ID_FRESCO_LOGIC	0x1b73
- #define PCI_DEVICE_ID_FRESCO_LOGIC_PDK	0x1000
+--- a/drivers/connector/connector.c
++++ b/drivers/connector/connector.c
+@@ -139,6 +139,7 @@ static int cn_call_callback(struct sk_bu
+ 	spin_unlock_bh(&dev->cbdev->queue_lock);
  
-+#define PCI_VENDOR_ID_ETRON		0x1b6f
-+#define PCI_DEVICE_ID_ASROCK_P67	0x7023
-+
- static const char hcd_name[] = "xhci_hcd";
- 
- /* called after powerup, by probe or system-pm "wakeup" */
-@@ -120,6 +123,11 @@ static int xhci_pci_setup(struct usb_hcd
- 				"has broken MSI implementation\n",
- 				pdev->revision);
- 	}
-+	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
-+			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
-+		xhci->quirks |= XHCI_RESET_ON_RESUME;
-+		xhci_dbg(xhci, "QUIRK: Resetting on resume\n");
-+	}
- 
- 	if (pdev->vendor == PCI_VENDOR_ID_NEC)
- 		xhci->quirks |= XHCI_NEC_HOST;
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -759,6 +759,8 @@ int xhci_resume(struct xhci_hcd *xhci, b
- 		msleep(100);
- 
- 	spin_lock_irq(&xhci->lock);
-+	if (xhci->quirks & XHCI_RESET_ON_RESUME)
-+		hibernated = true;
- 
- 	if (!hibernated) {
- 		/* step 1: restore register */
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1287,6 +1287,7 @@ struct xhci_hcd {
- #define XHCI_NEC_HOST		(1 << 2)
- #define XHCI_AMD_PLL_FIX	(1 << 3)
- #define XHCI_BROKEN_MSI		(1 << 6)
-+#define XHCI_RESET_ON_RESUME	(1 << 7)
- 	/* There are two roothubs to keep track of bus suspend info for */
- 	struct xhci_bus_state   bus_state[2];
- 	/* Is each xHCI roothub port a USB 3.0, USB 2.0, or USB 1.1 port? */
+ 	if (cbq != NULL) {
++		err = 0;
+ 		cbq->callback(msg, nsp);
+ 		kfree_skb(skb);
+ 		cn_queue_release_callback(cbq);
 
 
