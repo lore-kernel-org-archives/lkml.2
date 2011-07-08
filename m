@@ -1,87 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753657Ab1GHRSd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 13:18:33 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:38431 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752070Ab1GHRSc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 13:18:32 -0400
-Message-ID: <4E173BE6.9000005@candelatech.com>
-Date: Fri, 08 Jul 2011 10:18:30 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+	id S1754119Ab1GHRUM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 13:20:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12052 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752005Ab1GHRUJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 13:20:09 -0400
+Date: Fri, 8 Jul 2011 13:19:26 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux kernel mailing list <linux-kernel@vger.kernel.org>
+Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH] x86 boot: Wait for boot cpu to show up if nr_cpus limit is
+ about to hit
+Message-ID: <20110708171926.GF2930@redhat.com>
 MIME-Version: 1.0
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-CC: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] sunrpc:  Fix race between work-queue and rpc_killall_tasks.
-References: <1309992581-25199-1-git-send-email-greearb@candelatech.com> <1309995932.5447.6.camel@lade.trondhjem.org>
-In-Reply-To: <1309995932.5447.6.camel@lade.trondhjem.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/06/2011 04:45 PM, Trond Myklebust wrote:
-> On Wed, 2011-07-06 at 15:49 -0700, greearb@candelatech.com wrote:
->> From: Ben Greear<greearb@candelatech.com>
->>
->> The rpc_killall_tasks logic is not locked against
->> the work-queue thread, but it still directly modifies
->> function pointers and data in the task objects.
->>
->> This patch changes the killall-tasks logic to set a flag
->> that tells the work-queue thread to terminate the task
->> instead of directly calling the terminate logic.
->>
->> Signed-off-by: Ben Greear<greearb@candelatech.com>
->> ---
->>
->> NOTE:  This needs review, as I am still struggling to understand
->> the rpc code, and it's quite possible this patch either doesn't
->> fully fix the problem or actually causes other issues.  That said,
->> my nfs stress test seems to run a bit more stable with this patch applied.
->
-> Yes, but I don't see why you are adding a new flag, nor do I see why we
-> want to keep checking for that flag in the rpc_execute() loop.
-> rpc_killall_tasks() is not a frequent operation that we want to optimise
-> for.
->
-> How about the following instead?
+nr_cpus allows one to specify number of possible cpus in the system.
+Current assumption seems to be that first cpu to show up is boot cpu
+and this assumption will be broken in kdump scenario where we can be
+booting on a non boot cpu with nr_cpus=1.
 
-Ok, I looked at your patch closer.  I think it can still cause
-bad race conditions.
+It might happen that first cpu we parse is not the cpu we boot on and
+later we ignore boot cpu. Though code later seems to recognize this
+anomaly and forcibly sets boot cpu in physical cpu map with following
+warning.
 
-For instance:
+if (!physid_isset(hard_smp_processor_id(), phys_cpu_present_map)) {
+        printk(KERN_WARNING
+                "weird, boot CPU (#%d) not listed by the BIOS.\n",
+                hard_smp_processor_id());
 
-Assume that tk_callback is NULL at beginning of while loop in __rpc_execute,
-and tk_action is rpc_exit_task.
+        physid_set(hard_smp_processor_id(), phys_cpu_present_map);
+}
 
-While do_action(task) is being called, tk_action is set to NULL in rpc_exit_task.
+This patch waits for boot cpu to show up and starts ignoring the cpus
+once we have hit (nr_cpus - 1) number of cpus. So effectively we are
+reserving one slot out of nr_cpus for boot cpu explicitly.
 
-But, right after tk_action is set to NULL in rpc_exit_task, the rpc_killall_tasks
-method calls rpc_exit, which sets tk_action back to rpc_exit_task.
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ arch/x86/kernel/apic/apic.c |   22 ++++++++++++++++++++--
+ 1 file changed, 20 insertions(+), 2 deletions(-)
 
-I believe this could cause the xprt_release(task) logic to be called in the
-work-queue's execution of rpc_exit_task due to tk_action != NULL when
-it should not be.
-
-I have no hard evidence this exact scenario is happening in my case, but I
-believe the code is still racy with your patch.
-
-For that matter, is it safe to modify the flags in rpc_killall_tasks:
-
-rovr->tk_flags |= RPC_TASK_KILLED;
-
-Is that guaranteed to be atomic with any other modification of flags?
-
-Thanks,
-Ben
-
-
--- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
-
+Index: linux-2.6/arch/x86/kernel/apic/apic.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/apic/apic.c	2011-07-08 10:44:48.003709709 -0400
++++ linux-2.6/arch/x86/kernel/apic/apic.c	2011-07-08 12:02:01.272223921 -0400
+@@ -1943,10 +1943,28 @@ void disconnect_bsp_APIC(int virt_wire_s
+ 
+ void __cpuinit generic_processor_info(int apicid, int version)
+ {
+-	int cpu;
++	int cpu, max = nr_cpu_ids;
++	bool boot_cpu_detected = physid_isset(boot_cpu_physical_apicid,
++				phys_cpu_present_map);
++
++	/*
++	 * If boot cpu has not been detected yet, then only allow upto
++	 * nr_cpu_ids - 1 processors and keep one slot free for boot cpu
++	 */
++	if (!boot_cpu_detected && num_processors >= nr_cpu_ids - 1 &&
++	    apicid != boot_cpu_physical_apicid) {
++		int thiscpu = max + disabled_cpus - 1;
++
++		pr_warning(
++			"ACPI: NR_CPUS/possible_cpus limit of %i almost"
++			" reached. Keeping one slot for boot cpu."
++			"  Processor %d/0x%x ignored.\n", max, thiscpu, apicid);
++
++		disabled_cpus++;
++		return;
++	}
+ 
+ 	if (num_processors >= nr_cpu_ids) {
+-		int max = nr_cpu_ids;
+ 		int thiscpu = max + disabled_cpus;
+ 
+ 		pr_warning(
