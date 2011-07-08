@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246Ab1GIFym (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 01:54:42 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:56428 "EHLO
+	id S1753384Ab1GIF5E (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 01:57:04 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:37162 "EHLO
 	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752624Ab1GIFyS (ORCPT
+	by vger.kernel.org with ESMTP id S1752339Ab1GIFym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 01:54:18 -0400
-X-Sasl-enc: nzA+msOutdiulN/hk30i8ryOaVecqKmyGfxK8ekz1/9C 1310190857
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 15:51:21 2011
-Message-Id: <20110708225121.021010732@clark.kroah.org>
+	Sat, 9 Jul 2011 01:54:42 -0400
+X-Sasl-enc: 0piSMMY2MJhXYUoXQ9DcFuEX/JrLfIPNzYfGyt1vgQqp 1310190881
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 15:51:20 2011
+Message-Id: <20110708225120.376132309@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 08 Jul 2011 15:50:12 -0700
+Date: Fri, 08 Jul 2011 15:50:05 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Roland McGrath <roland@redhat.com>, Jeff Dike <jdike@addtoit.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [23/35] uml: fix CONFIG_STATIC_LINK=y build failure with newer glibc
+        Jean Delvare <khali@linux-fr.org>
+Subject: [16/35] i2c-taos-evm: Fix log messages
 In-Reply-To: <20110708225343.GA14402@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,76 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland McGrath <roland@redhat.com>
+From: Jean Delvare <khali@linux-fr.org>
 
-commit aa5fb4dbfd121296ca97c68cf90043a7ea97579d upstream.
+commit 9b640f2e154268cb516efcaf9c434f2e73c6783e upstream.
 
-With glibc 2.11 or later that was built with --enable-multi-arch, the UML
-link fails with undefined references to __rel_iplt_start and similar
-symbols.  In recent binutils, the default linker script defines these
-symbols (see ld --verbose).  Fix the UML linker scripts to match the new
-defaults for these sections.
+* Print all error and information messages even when debugging is
+  disabled.
+* Don't use adapter device to log messages before it is ready.
 
-Signed-off-by: Roland McGrath <roland@redhat.com>
-Cc: Jeff Dike <jdike@addtoit.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/um/kernel/dyn.lds.S |   14 ++++++++++++--
- arch/um/kernel/uml.lds.S |   17 +++++++++++++++++
- 2 files changed, 29 insertions(+), 2 deletions(-)
+ drivers/i2c/busses/i2c-taos-evm.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/arch/um/kernel/dyn.lds.S
-+++ b/arch/um/kernel/dyn.lds.S
-@@ -50,8 +50,18 @@ SECTIONS
-   .rela.got       : { *(.rela.got) }
-   .rel.bss        : { *(.rel.bss .rel.bss.* .rel.gnu.linkonce.b.*) }
-   .rela.bss       : { *(.rela.bss .rela.bss.* .rela.gnu.linkonce.b.*) }
--  .rel.plt        : { *(.rel.plt) }
--  .rela.plt       : { *(.rela.plt) }
-+  .rel.plt : {
-+	*(.rel.plt)
-+	PROVIDE_HIDDEN(__rel_iplt_start = .);
-+	*(.rel.iplt)
-+	PROVIDE_HIDDEN(__rel_iplt_end = .);
-+  }
-+  .rela.plt : {
-+	*(.rela.plt)
-+	PROVIDE_HIDDEN(__rela_iplt_start = .);
-+	*(.rela.iplt)
-+	PROVIDE_HIDDEN(__rela_iplt_end = .);
-+  }
-   .init           : {
-     KEEP (*(.init))
-   } =0x90909090
---- a/arch/um/kernel/uml.lds.S
-+++ b/arch/um/kernel/uml.lds.S
-@@ -43,6 +43,23 @@ SECTIONS
- 	__syscall_stub_end = .;
-   }
+--- a/drivers/i2c/busses/i2c-taos-evm.c
++++ b/drivers/i2c/busses/i2c-taos-evm.c
+@@ -234,7 +234,7 @@ static int taos_connect(struct serio *se
  
-+  /*
-+   * These are needed even in a static link, even if they wind up being empty.
-+   * Newer glibc needs these __rel{,a}_iplt_{start,end} symbols.
-+   */
-+  .rel.plt : {
-+	*(.rel.plt)
-+	PROVIDE_HIDDEN(__rel_iplt_start = .);
-+	*(.rel.iplt)
-+	PROVIDE_HIDDEN(__rel_iplt_end = .);
-+  }
-+  .rela.plt : {
-+	*(.rela.plt)
-+	PROVIDE_HIDDEN(__rela_iplt_start = .);
-+	*(.rela.iplt)
-+	PROVIDE_HIDDEN(__rela_iplt_end = .);
-+  }
-+
-   #include "asm/common.lds.S"
+ 	if (taos->state != TAOS_STATE_IDLE) {
+ 		err = -ENODEV;
+-		dev_dbg(&serio->dev, "TAOS EVM reset failed (state=%d, "
++		dev_err(&serio->dev, "TAOS EVM reset failed (state=%d, "
+ 			"pos=%d)\n", taos->state, taos->pos);
+ 		goto exit_close;
+ 	}
+@@ -255,7 +255,7 @@ static int taos_connect(struct serio *se
+ 					 msecs_to_jiffies(250));
+ 	if (taos->state != TAOS_STATE_IDLE) {
+ 		err = -ENODEV;
+-		dev_err(&adapter->dev, "Echo off failed "
++		dev_err(&serio->dev, "TAOS EVM echo off failed "
+ 			"(state=%d)\n", taos->state);
+ 		goto exit_close;
+ 	}
+@@ -263,7 +263,7 @@ static int taos_connect(struct serio *se
+ 	err = i2c_add_adapter(adapter);
+ 	if (err)
+ 		goto exit_close;
+-	dev_dbg(&serio->dev, "Connected to TAOS EVM\n");
++	dev_info(&serio->dev, "Connected to TAOS EVM\n");
  
-   init.data : { INIT_DATA }
+ 	taos->client = taos_instantiate_device(adapter);
+ 	return 0;
+@@ -288,7 +288,7 @@ static void taos_disconnect(struct serio
+ 	serio_set_drvdata(serio, NULL);
+ 	kfree(taos);
+ 
+-	dev_dbg(&serio->dev, "Disconnected from TAOS EVM\n");
++	dev_info(&serio->dev, "Disconnected from TAOS EVM\n");
+ }
+ 
+ static struct serio_device_id taos_serio_ids[] = {
 
 
