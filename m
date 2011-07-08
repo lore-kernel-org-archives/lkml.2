@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091Ab1GIGBV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 02:01:21 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:58362 "EHLO
+	id S1754494Ab1GIGBt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 02:01:49 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:58541 "EHLO
 	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753975Ab1GIGBR (ORCPT
+	by vger.kernel.org with ESMTP id S1754320Ab1GIGBg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 02:01:17 -0400
-X-Sasl-enc: 9r2pHOO+cHEAF+VaiSH172KcfkEKDX6ZqVKmJfn5uEuu 1310191276
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 16:01:12 2011
-Message-Id: <20110708230112.313966917@clark.kroah.org>
+	Sat, 9 Jul 2011 02:01:36 -0400
+X-Sasl-enc: MlyjlvFx9aGvpaFKe/HfQHeI7pI2MqMf6s+I7gTbeaai 1310191295
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 16:01:09 2011
+Message-Id: <20110708230109.603964017@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 08 Jul 2011 16:00:44 -0700
+Date: Fri, 08 Jul 2011 16:00:17 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [28/35] PM / Hibernate: Fix free_unnecessary_pages()
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Chris Wright <chrisw@sous-sol.org>
+Subject: [01/35] ksm: fix NULL pointer dereference in scan_get_next_rmap_item()
 In-Reply-To: <20110708230122.GA18807@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,46 +28,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
+From: Hugh Dickins <hughd@google.com>
 
-commit 4d4cf23cdde2f8f9324f5684a7f349e182039529 upstream.
+commit 2b472611a32a72f4a118c069c2d62a1a3f087afd upstream.
 
-There is a bug in free_unnecessary_pages() that causes it to
-attempt to free too many pages in some cases, which triggers the
-BUG_ON() in memory_bm_clear_bit() for copy_bm.  Namely, if
-count_data_pages() is initially greater than alloc_normal, we get
-to_free_normal equal to 0 and "save" greater from 0.  In that case,
-if the sum of "save" and count_highmem_pages() is greater than
-alloc_highmem, we subtract a positive number from to_free_normal.
-Hence, since to_free_normal was 0 before the subtraction and is
-an unsigned int, the result is converted to a huge positive number
-that is used as the number of pages to free.
+Andrea Righi reported a case where an exiting task can race against
+ksmd::scan_get_next_rmap_item (http://lkml.org/lkml/2011/6/1/742) easily
+triggering a NULL pointer dereference in ksmd.
 
-Fix this bug by checking if to_free_normal is actually greater
-than or equal to the number we're going to subtract from it.
+ksm_scan.mm_slot == &ksm_mm_head with only one registered mm
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-Reported-and-tested-by: Matthew Garrett <mjg@redhat.com>
+CPU 1 (__ksm_exit)		CPU 2 (scan_get_next_rmap_item)
+ 				list_empty() is false
+lock				slot == &ksm_mm_head
+list_del(slot->mm_list)
+(list now empty)
+unlock
+				lock
+				slot = list_entry(slot->mm_list.next)
+				(list is empty, so slot is still ksm_mm_head)
+				unlock
+				slot->mm == NULL ... Oops
+
+Close this race by revalidating that the new slot is not simply the list
+head again.
+
+Andrea's test case:
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/mman.h>
+
+#define BUFSIZE getpagesize()
+
+int main(int argc, char **argv)
+{
+	void *ptr;
+
+	if (posix_memalign(&ptr, getpagesize(), BUFSIZE) < 0) {
+		perror("posix_memalign");
+		exit(1);
+	}
+	if (madvise(ptr, BUFSIZE, MADV_MERGEABLE) < 0) {
+		perror("madvise");
+		exit(1);
+	}
+	*(char *)NULL = 0;
+
+	return 0;
+}
+
+Reported-by: Andrea Righi <andrea@betterlinux.com>
+Tested-by: Andrea Righi <andrea@betterlinux.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Chris Wright <chrisw@sous-sol.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/power/snapshot.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ mm/ksm.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/kernel/power/snapshot.c
-+++ b/kernel/power/snapshot.c
-@@ -1193,7 +1193,11 @@ static void free_unnecessary_pages(void)
- 		to_free_highmem = alloc_highmem - save;
- 	} else {
- 		to_free_highmem = 0;
--		to_free_normal -= save - alloc_highmem;
-+		save -= alloc_highmem;
-+		if (to_free_normal > save)
-+			to_free_normal -= save;
-+		else
-+			to_free_normal = 0;
- 	}
- 
- 	memory_bm_position_reset(&copy_bm);
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -1270,6 +1270,12 @@ static struct rmap_item *scan_get_next_r
+ 		slot = list_entry(slot->mm_list.next, struct mm_slot, mm_list);
+ 		ksm_scan.mm_slot = slot;
+ 		spin_unlock(&ksm_mmlist_lock);
++		/*
++		 * Although we tested list_empty() above, a racing __ksm_exit
++		 * of the last mm on the list may have removed it since then.
++		 */
++		if (slot == &ksm_mm_head)
++			return NULL;
+ next_mm:
+ 		ksm_scan.address = 0;
+ 		ksm_scan.rmap_list = &slot->rmap_list;
 
 
