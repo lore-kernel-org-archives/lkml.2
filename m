@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753165Ab1GIF7x (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 01:59:53 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:44951 "EHLO
+	id S1752429Ab1GIFyW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 01:54:22 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:43411 "EHLO
 	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752747Ab1GIFyY (ORCPT
+	by vger.kernel.org with ESMTP id S1752218Ab1GIFyF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 01:54:24 -0400
-X-Sasl-enc: KsXhWCRLB/QtRx7H4NaMAcUmHkSJFQZcg2S70NDop8bw 1310190863
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 15:51:21 2011
-Message-Id: <20110708225121.386889754@clark.kroah.org>
+	Sat, 9 Jul 2011 01:54:05 -0400
+X-Sasl-enc: wqYBFt4thwiEr/0spRrmkte60/OQsNCkJTeuJIUncXKQ 1310190844
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 15:51:19 2011
+Message-Id: <20110708225119.216874514@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 08 Jul 2011 15:50:16 -0700
+Date: Fri, 08 Jul 2011 15:49:53 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [27/35] PM / Hibernate: Avoid hitting OOM during preallocation of memory
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [04/35] clocksource: Make watchdog robust vs. interruption
 In-Reply-To: <20110708225343.GA14402@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,172 +27,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 6715045ddc7472a22be5e49d4047d2d89b391f45 upstream.
+commit b5199515c25cca622495eb9c6a8a1d275e775088 upstream.
 
-There is a problem in hibernate_preallocate_memory() that it calls
-preallocate_image_memory() with an argument that may be greater than
-the total number of available non-highmem memory pages.  If that's
-the case, the OOM condition is guaranteed to trigger, which in turn
-can cause significant slowdown to occur during hibernation.
+The clocksource watchdog code is interruptible and it has been
+observed that this can trigger false positives which disable the TSC.
 
-To avoid that, make preallocate_image_memory() adjust its argument
-before calling preallocate_image_pages(), so that the total number of
-saveable non-highem pages left is not less than the minimum size of
-a hibernation image.  Change hibernate_preallocate_memory() to try to
-allocate from highmem if the number of pages allocated by
-preallocate_image_memory() is too low.
+The reason is that an interrupt storm or a long running interrupt
+handler between the read of the watchdog source and the read of the
+TSC brings the two far enough apart that the delta is larger than the
+unstable treshold. Move both reads into a short interrupt disabled
+region to avoid that.
 
-Modify free_unnecessary_pages() to take all possible memory
-allocation patterns into account.
-
-Reported-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-Tested-by: M. Vefa Bicakci <bicave@superonline.com>
+Reported-and-tested-by: Vernon Mauery <vernux@us.ibm.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/power/snapshot.c |   85 ++++++++++++++++++++++++++++++++++++------------
- 1 file changed, 65 insertions(+), 20 deletions(-)
+ include/linux/clocksource.h |    1 +
+ kernel/time/clocksource.c   |   24 +++++++++++++-----------
+ 2 files changed, 14 insertions(+), 11 deletions(-)
 
---- a/kernel/power/snapshot.c
-+++ b/kernel/power/snapshot.c
-@@ -1120,9 +1120,19 @@ static unsigned long preallocate_image_p
- 	return nr_alloc;
- }
+--- a/include/linux/clocksource.h
++++ b/include/linux/clocksource.h
+@@ -190,6 +190,7 @@ struct clocksource {
+ #ifdef CONFIG_CLOCKSOURCE_WATCHDOG
+ 	/* Watchdog related data, used by the framework */
+ 	struct list_head wd_list;
++	cycle_t cs_last;
+ 	cycle_t wd_last;
+ #endif
+ };
+--- a/kernel/time/clocksource.c
++++ b/kernel/time/clocksource.c
+@@ -131,7 +131,6 @@ static struct clocksource *watchdog;
+ static struct timer_list watchdog_timer;
+ static DECLARE_WORK(watchdog_work, clocksource_watchdog_work);
+ static DEFINE_SPINLOCK(watchdog_lock);
+-static cycle_t watchdog_last;
+ static int watchdog_running;
  
--static unsigned long preallocate_image_memory(unsigned long nr_pages)
-+static unsigned long preallocate_image_memory(unsigned long nr_pages,
-+					      unsigned long avail_normal)
- {
--	return preallocate_image_pages(nr_pages, GFP_IMAGE);
-+	unsigned long alloc;
-+
-+	if (avail_normal <= alloc_normal)
-+		return 0;
-+
-+	alloc = avail_normal - alloc_normal;
-+	if (nr_pages < alloc)
-+		alloc = nr_pages;
-+
-+	return preallocate_image_pages(alloc, GFP_IMAGE);
- }
- 
- #ifdef CONFIG_HIGHMEM
-@@ -1168,15 +1178,22 @@ static inline unsigned long preallocate_
-  */
- static void free_unnecessary_pages(void)
- {
--	unsigned long save_highmem, to_free_normal, to_free_highmem;
-+	unsigned long save, to_free_normal, to_free_highmem;
- 
--	to_free_normal = alloc_normal - count_data_pages();
--	save_highmem = count_highmem_pages();
--	if (alloc_highmem > save_highmem) {
--		to_free_highmem = alloc_highmem - save_highmem;
-+	save = count_data_pages();
-+	if (alloc_normal >= save) {
-+		to_free_normal = alloc_normal - save;
-+		save = 0;
-+	} else {
-+		to_free_normal = 0;
-+		save -= alloc_normal;
-+	}
-+	save += count_highmem_pages();
-+	if (alloc_highmem >= save) {
-+		to_free_highmem = alloc_highmem - save;
- 	} else {
- 		to_free_highmem = 0;
--		to_free_normal -= save_highmem - alloc_highmem;
-+		to_free_normal -= save - alloc_highmem;
- 	}
- 
- 	memory_bm_position_reset(&copy_bm);
-@@ -1257,7 +1274,7 @@ int hibernate_preallocate_memory(void)
- {
- 	struct zone *zone;
- 	unsigned long saveable, size, max_size, count, highmem, pages = 0;
--	unsigned long alloc, save_highmem, pages_highmem;
-+	unsigned long alloc, save_highmem, pages_highmem, avail_normal;
- 	struct timeval start, stop;
- 	int error;
- 
-@@ -1294,6 +1311,7 @@ int hibernate_preallocate_memory(void)
- 		else
- 			count += zone_page_state(zone, NR_FREE_PAGES);
- 	}
-+	avail_normal = count;
- 	count += highmem;
- 	count -= totalreserve_pages;
- 
-@@ -1308,12 +1326,21 @@ int hibernate_preallocate_memory(void)
- 	 */
- 	if (size >= saveable) {
- 		pages = preallocate_image_highmem(save_highmem);
--		pages += preallocate_image_memory(saveable - pages);
-+		pages += preallocate_image_memory(saveable - pages, avail_normal);
+ static int clocksource_watchdog_kthread(void *data);
+@@ -200,11 +199,6 @@ static void clocksource_watchdog(unsigne
+ 	if (!watchdog_running)
  		goto out;
- 	}
  
- 	/* Estimate the minimum size of the image. */
- 	pages = minimum_image_size(saveable);
-+	/*
-+	 * To avoid excessive pressure on the normal zone, leave room in it to
-+	 * accommodate an image of the minimum size (unless it's already too
-+	 * small, in which case don't preallocate pages from it at all).
-+	 */
-+	if (avail_normal > pages)
-+		avail_normal -= pages;
-+	else
-+		avail_normal = 0;
- 	if (size < pages)
- 		size = min_t(unsigned long, pages, max_size);
+-	wdnow = watchdog->read(watchdog);
+-	wd_nsec = clocksource_cyc2ns((wdnow - watchdog_last) & watchdog->mask,
+-				     watchdog->mult, watchdog->shift);
+-	watchdog_last = wdnow;
+-
+ 	list_for_each_entry(cs, &watchdog_list, wd_list) {
  
-@@ -1334,16 +1361,34 @@ int hibernate_preallocate_memory(void)
- 	 */
- 	pages_highmem = preallocate_image_highmem(highmem / 2);
- 	alloc = (count - max_size) - pages_highmem;
--	pages = preallocate_image_memory(alloc);
--	if (pages < alloc)
--		goto err_out;
--	size = max_size - size;
--	alloc = size;
--	size = preallocate_highmem_fraction(size, highmem, count);
--	pages_highmem += size;
--	alloc -= size;
--	pages += preallocate_image_memory(alloc);
--	pages += pages_highmem;
-+	pages = preallocate_image_memory(alloc, avail_normal);
-+	if (pages < alloc) {
-+		/* We have exhausted non-highmem pages, try highmem. */
-+		alloc -= pages;
-+		pages += pages_highmem;
-+		pages_highmem = preallocate_image_highmem(alloc);
-+		if (pages_highmem < alloc)
-+			goto err_out;
-+		pages += pages_highmem;
-+		/*
-+		 * size is the desired number of saveable pages to leave in
-+		 * memory, so try to preallocate (all memory - size) pages.
-+		 */
-+		alloc = (count - pages) - size;
-+		pages += preallocate_image_highmem(alloc);
-+	} else {
-+		/*
-+		 * There are approximately max_size saveable pages at this point
-+		 * and we want to reduce this number down to size.
-+		 */
-+		alloc = max_size - size;
-+		size = preallocate_highmem_fraction(alloc, highmem, count);
-+		pages_highmem += size;
-+		alloc -= size;
-+		size = preallocate_image_memory(alloc, avail_normal);
-+		pages_highmem += preallocate_image_highmem(alloc - size);
-+		pages += pages_highmem + size;
-+	}
+ 		/* Clocksource already marked unstable? */
+@@ -214,19 +208,28 @@ static void clocksource_watchdog(unsigne
+ 			continue;
+ 		}
  
- 	/*
- 	 * We only need as many page frames for the image as there are saveable
++		local_irq_disable();
+ 		csnow = cs->read(cs);
++		wdnow = watchdog->read(watchdog);
++		local_irq_enable();
+ 
+ 		/* Clocksource initialized ? */
+ 		if (!(cs->flags & CLOCK_SOURCE_WATCHDOG)) {
+ 			cs->flags |= CLOCK_SOURCE_WATCHDOG;
+-			cs->wd_last = csnow;
++			cs->wd_last = wdnow;
++			cs->cs_last = csnow;
+ 			continue;
+ 		}
+ 
+-		/* Check the deviation from the watchdog clocksource. */
+-		cs_nsec = clocksource_cyc2ns((csnow - cs->wd_last) &
++		wd_nsec = clocksource_cyc2ns((wdnow - cs->wd_last) & watchdog->mask,
++					     watchdog->mult, watchdog->shift);
++
++		cs_nsec = clocksource_cyc2ns((csnow - cs->cs_last) &
+ 					     cs->mask, cs->mult, cs->shift);
+-		cs->wd_last = csnow;
++		cs->cs_last = csnow;
++		cs->wd_last = wdnow;
++
++		/* Check the deviation from the watchdog clocksource. */
+ 		if (abs(cs_nsec - wd_nsec) > WATCHDOG_THRESHOLD) {
+ 			clocksource_unstable(cs, cs_nsec - wd_nsec);
+ 			continue;
+@@ -264,7 +267,6 @@ static inline void clocksource_start_wat
+ 		return;
+ 	init_timer(&watchdog_timer);
+ 	watchdog_timer.function = clocksource_watchdog;
+-	watchdog_last = watchdog->read(watchdog);
+ 	watchdog_timer.expires = jiffies + WATCHDOG_INTERVAL;
+ 	add_timer_on(&watchdog_timer, cpumask_first(cpu_online_mask));
+ 	watchdog_running = 1;
 
 
