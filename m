@@ -1,49 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752246Ab1GHJ3x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 05:29:53 -0400
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:33683
-	"EHLO AM1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751319Ab1GHJ3t (ORCPT
+	id S1752262Ab1GHJgP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 05:36:15 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42166 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751815Ab1GHJgN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 05:29:49 -0400
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzz8275dhz2dh2a8h668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Fri, 8 Jul 2011 17:36:06 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <patches@linaro.org>,
-        <netdev@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>
-Subject: Re: [PATCH v2 1/5] dt: add of_alias_scan and of_alias_get_id
-Message-ID: <20110708093605.GE12722@S2100-06.ap.freescale.net>
-References: <1308938676-31121-1-git-send-email-shawn.guo@linaro.org>
- <1308938676-31121-2-git-send-email-shawn.guo@linaro.org>
+	Fri, 8 Jul 2011 05:36:13 -0400
+Date: Fri, 8 Jul 2011 10:35:42 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Heechul Yun <heechul@illinois.edu>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        saeed.bishara@gmail.com
+Subject: Re: [PATCHv2] remove unnecessary cache flush on v6 copypage
+Message-ID: <20110708093542.GA4812@n2100.arm.linux.org.uk>
+References: <20110707143019.GA16819@heechul-desktop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1308938676-31121-2-git-send-email-shawn.guo@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+In-Reply-To: <20110707143019.GA16819@heechul-desktop>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
-
-I saw neither your comments nor ack on this patch.  Where does it go?
-
-Regards,
-Shawn
-
-On Sat, Jun 25, 2011 at 02:04:32AM +0800, Shawn Guo wrote:
-> The patch adds function of_alias_scan to populate a global lookup
-> table with the properties of 'aliases' node and function
-> of_alias_get_id for drivers to find alias id from the lookup table.
+On Thu, Jul 07, 2011 at 09:30:19AM -0500, Heechul Yun wrote:
 > 
-> Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> ---
+> ARM: mm: remove unnecessary cache flush on v6 copypage
+> 
+> Originally introduced to maintain coherency between icache and dcache
+> in v6 nonaliasing mode. This is now handled by __sync_icache_dcache since
+> c0177800, therefore unneceary in this function.  
+> 
+> Signed-off-by: Heechul Yun <heechul@illinois.edu>
+> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+> --
+> arch/arm/mm/copypage-v6.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/arm/mm/copypage-v6.c b/arch/arm/mm/copypage-v6.c
+> index bdba6c6..63cca00 100644
+> --- a/arch/arm/mm/copypage-v6.c
+> +++ b/arch/arm/mm/copypage-v6.c
+> @@ -41,7 +41,6 @@ static void v6_copy_user_highpage_nonaliasing(struct page *to,
+>  	kfrom = kmap_atomic(from, KM_USER0);
+>  	kto = kmap_atomic(to, KM_USER1);
+>  	copy_page(kto, kfrom);
+> -	__cpuc_flush_dcache_area(kto, PAGE_SIZE);
+>  	kunmap_atomic(kto, KM_USER1);
+>  	kunmap_atomic(kfrom, KM_USER0);
+>  }
+
+The above patch is fine (it has tabs preserved) but the version in the
+patch system has spaces instead (each space character has been replaced
+with a '.') and so doesn't apply:
+
+$ pdb getpatch 6995/1 |tr ' ' '.'
+Patch:.6995/1:.mm:.remove.unnecessary.cache.flush.on.v6.copypage
+From:.Heechul.Yun
+-------------------------------------------------------------------------------
+.arch/arm/mm/copypage-v6.c.|....1.-
+.1.file.changed,.1.deletion(-)
+-------------------------------------------------------------------------------
+diff.--git.a/arch/arm/mm/copypage-v6.c.b/arch/arm/mm/copypage-v6.c
+index.bdba6c6..63cca00.100644
+---.a/arch/arm/mm/copypage-v6.c
++++.b/arch/arm/mm/copypage-v6.c
+@@.-41,7.+41,6.@@.static.void.v6_copy_user_highpage_nonaliasing(struct.page.*to,........kfrom.=.kmap_atomic(from,.KM_USER0);
+........kto.=.kmap_atomic(to,.KM_USER1);
+........copy_page(kto,.kfrom);
+-.......__cpuc_flush_dcache_area(kto,.PAGE_SIZE);
+........kunmap_atomic(kto,.KM_USER1);
+........kunmap_atomic(kfrom,.KM_USER0);
+.}
 
