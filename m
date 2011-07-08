@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754766Ab1GHS6c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 14:58:32 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:39947 "EHLO ogre.sisk.pl"
+	id S1754800Ab1GHS6s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 14:58:48 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:39955 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751083Ab1GHS6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 14:58:30 -0400
+	id S1751083Ab1GHS6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 14:58:46 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Liu, ShuoX" <shuox.liu@intel.com>
-Subject: Re: [PATCH] runtime-pm: consistent utilization of deferred_resume
-Date: Fri, 8 Jul 2011 20:59:37 +0200
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Subject: Re: [PATCH 1/7] pm: improve error code of pm_notifier_call_chain()
+Date: Fri, 8 Jul 2011 20:59:57 +0200
 User-Agent: KMail/1.13.6 (Linux/3.0.0-rc6+; KDE/4.6.0; x86_64; ; )
-Cc: "Brown, Len" <len.brown@intel.com>, "pavel@ucw.cz" <pavel@ucw.cz>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <6E3BC7F7C9A4BF4286DD4C043110F30B59E040012A@shsmsx502.ccr.corp.intel.com>
-In-Reply-To: <6E3BC7F7C9A4BF4286DD4C043110F30B59E040012A@shsmsx502.ccr.corp.intel.com>
+Cc: Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, linux-pm@lists.linux-foundation.org,
+        Jiri Kosina <jkosina@suse.cz>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org
+References: <1309702581-16863-1-git-send-email-akinobu.mita@gmail.com> <201107072306.02708.rjw@sisk.pl> <CAC5umyhZ35AXtwA=Uy1+zp9N=NwLths=h6jKUK53f0U+tZMZZA@mail.gmail.com>
+In-Reply-To: <CAC5umyhZ35AXtwA=Uy1+zp9N=NwLths=h6jKUK53f0U+tZMZZA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201107082059.37210.rjw@sisk.pl>
+Message-Id: <201107082059.57530.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 08, 2011, Liu, ShuoX wrote:
-> From 10bb3c851a0a9c9ca4d552743a371e3cfda81075 Mon Sep 17 00:00:00 2001
-> From: ShuoX Liu <shuox.liu@intel.com>
-> Date: Thu, 7 Jul 2011 15:59:06 +0800
-> Subject: [PATCH] runtime-pm: consistent utilization of deferred_resume
+On Friday, July 08, 2011, Akinobu Mita wrote:
+> 2011/7/8 Rafael J. Wysocki <rjw@sisk.pl>:
+> > On Monday, July 04, 2011, Akinobu Mita wrote:
+> >> 2011/7/4 Pavel Machek <pavel@ucw.cz>:
+> >> > On Sun 2011-07-03 23:16:15, Akinobu Mita wrote:
+> >> >> This enables pm_notifier_call_chain() to get the actual error code
+> >> >> in the callback rather than always assume -EINVAL by converting all
+> >> >> PM notifier calls to return encapsulate error code with
+> >> >> notifier_from_errno().
+> >> >>
+> >> >> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> >> >> Cc: Pavel Machek <pavel@ucw.cz>
+> >> >
+> >> > Nothing obviously wrong here.
+> >>
+> >> Thanks. Can I add your ACK for this patch?
+> >
+> > Do you want me to take this patch?
 > 
-> dev->power.deferred_resume is used as a bool typically, so change
-> one assignment to false from 0, like other places.
-> 
-> Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
+> Yes, please merge it to your tree.
 
-Applied to suspend-2.6/linux-next, will push for 3.1.
+Applied.
 
 Thanks,
 Rafael
-
-
-> ---
->  drivers/base/power/runtime.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
-> index 0d4587b..af3d1a5 100644
-> --- a/drivers/base/power/runtime.c
-> +++ b/drivers/base/power/runtime.c
-> @@ -388,7 +388,7 @@ static int rpm_suspend(struct device *dev, int rpmflags)
->  	retval = rpm_callback(callback, dev);
->  	if (retval) {
->  		__update_runtime_status(dev, RPM_ACTIVE);
-> -		dev->power.deferred_resume = 0;
-> +		dev->power.deferred_resume = false;
->  		if (retval == -EAGAIN || retval == -EBUSY)
->  			dev->power.runtime_error = 0;
->  		else
-> 
-
