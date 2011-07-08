@@ -1,66 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384Ab1GHBiv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 21:38:51 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:32352
-	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752658Ab1GHBiu (ORCPT
+	id S1753471Ab1GHBln (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 21:41:43 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:46397 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752658Ab1GHBln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 21:38:50 -0400
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Fri, 8 Jul 2011 09:45:13 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Rob Herring <robherring2@gmail.com>, <devicetree-discuss@lists.ozlabs.org>,
-        Rob Herring <rob.herring@calxeda.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/2] dt: add helper function to read u32 arrays
-Message-ID: <20110708014512.GD12722@S2100-06.ap.freescale.net>
-References: <1309984979-8847-1-git-send-email-robherring2@gmail.com>
- <20110706205933.GA5371@ponder.secretlab.ca>
+	Thu, 7 Jul 2011 21:41:43 -0400
+X-Sasl-enc: GH8DvnnaIpgTzJzWjVYsQoKasFa+tM2FUWs86hkhmFFp 1310089302
+Date: Thu, 7 Jul 2011 18:41:34 -0700
+From: Greg KH <greg@kroah.com>
+To: Wengang Wang <wen.gang.wang@oracle.com>
+Cc: stable@kernel.org, greg.marsden@oracle.com, joe.jin@oracle.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [stable] [PATCH] mm: prevent concurrent unmap_mapping_range() on
+ the same inode --to stable
+Message-ID: <20110708014134.GA4504@kroah.com>
+References: <201106240702.p5O72bkH003998@acsmt358.oracle.com>
+ <20110707235547.GA1119@kroah.com>
+ <20110708012649.GA3013@laptop.jp.oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110706205933.GA5371@ponder.secretlab.ca>
+In-Reply-To: <20110708012649.GA3013@laptop.jp.oracle.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 06, 2011 at 02:59:33PM -0600, Grant Likely wrote:
-> On Wed, Jul 06, 2011 at 03:42:58PM -0500, Rob Herring wrote:
-> > From: Rob Herring <rob.herring@calxeda.com>
-> > 
-> > Rework of_property_read_u32 to read an array of values. Then
-> > of_property_read_u32 becomes an inline with array size of 1.
-> > 
-> > Also make struct device_node ptr const.
-> > 
-> > Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> > Cc: Thomas Abraham <thomas.abraham@linaro.org>
-> > Cc: Grant Likely <grant.likely@secretlab.ca>
-> > ---
-> > 
-> > Grant, 
-> > 
-> > Perhaps you want to roll this into the original patch?
+On Fri, Jul 08, 2011 at 09:26:49AM +0800, Wengang Wang wrote:
+> Hi, greg k-h
 > 
-> Applied, thanks.  The original is already in devicetree/next, so I've
-> just applied this on top as a separate commit.
-> 
+> On 11-07-07 16:55, Greg KH wrote:
+> > On Fri, Jun 24, 2011 at 03:02:08PM +0800, Wengang Wang wrote:
+> > >         mainline commit 2aa15890f3c191326678f1bd68af61ec6b8753ec
+> > > 
+> > >     mm: prevent concurrent unmap_mapping_range() on the same inode
+> > > 
+> > >     Michael Leun reported that running parallel opens on a fuse filesystem
+> > >     can trigger a "kernel BUG at mm/truncate.c:475"
+> > > 
+> > >     Gurudas Pai reported the same bug on NFS.
+> > > 
+> > >     The reason is, unmap_mapping_range() is not prepared for more than
+> > >     one concurrent invocation per inode.  For example:
+> > > 
+> > >       thread1: going through a big range, stops in the middle of a vma and
+> > >          stores the restart address in vm_truncate_count.
+> > > 
+> > >       thread2: comes in with a small (e.g. single page) unmap request on
+> > >          the same vma, somewhere before restart_address, finds that the
+> > >          vma was already unmapped up to the restart address and happily
+> > >          returns without doing anything.
+> > > 
+> > >     Another scenario would be two big unmap requests, both having to
+> > >     restart the unmapping and each one setting vm_truncate_count to its
+> > >     own value.  This could go on forever without any of them being able to
+> > >     finish.
+> > > 
+> > >     Truncate and hole punching already serialize with i_mutex.  Other
+> > >     callers of unmap_mapping_range() do not, and it's difficult to get
+> > >     i_mutex protection for all callers.  In particular ->d_revalidate(),
+> > >     which calls invalidate_inode_pages2_range() in fuse, may be called
+> > >     with or without i_mutex.
+> > > 
+> > >     This patch adds a new mutex to 'struct address_space' to prevent
+> > >     running multiple concurrent unmap_mapping_range() on the same mapping.
+> > > 
+> > >     [ We'll hopefully get rid of all this with the upcoming mm
+> > >       preemptibility series by Peter Zijlstra, the "mm: Remove i_mmap_mutex
+> > >       lockbreak" patch in particular.  But that is for 2.6.39 ]
+> > > 
+> > > 
+> > >     Adding this patch causes Kabi breakage.
+> > > 
+> > >     Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+> > >     Reported-by: Michael Leun <lkml20101129@newton.leun.net>
+> > >     Reported-by: Gurudas Pai <gurudas.pai@oracle.com>
+> > >     Tested-by: Gurudas Pai <gurudas.pai@oracle.com>
+> > >     Acked-by: Hugh Dickins <hughd@google.com>
+> > >     Cc: stable@kernel.org
+> > >     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> > >     Signed-off-by: Wengang Wang <wen.gang.wang@oracle.com>
 > > 
-> > It would also be nice if there were empty versions of the helpers
-> > as well.
+> > As this patch showed up in 2.6.39, I'm confused as to what you wanted me
+> > to do with it, so I've dropped it from my queue.
 > 
-> Go ahead and submit a patch to add them if you need it.
-> 
-I'm adding one into my spi-dt series, as I need it there.
+> I hope this committed in 2.6.32 stable tree please.
 
--- 
-Regards,
-Shawn
+Ah, ok, care to resend this, with that information in it somewhere, so I
+can do that?
 
+thanks,
+
+greg "I get a _lot_ of email" k-h
