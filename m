@@ -1,59 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218Ab1GHLwy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 07:52:54 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:54341 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752189Ab1GHLwx (ORCPT
+	id S1753033Ab1GHMKX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 08:10:23 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:61480 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751718Ab1GHMKW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 07:52:53 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18lhxf21tkCF4E3Ip4ntwxe
-Date: Fri, 8 Jul 2011 04:52:49 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org
-Subject: [GIT PULL] omap fix for v3.0
-Message-ID: <20110708115249.GZ5783@atomide.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 8 Jul 2011 08:10:22 -0400
+From: Ravishankar <ravishankarkm32@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>,
+        Ravishankar <ravishankarkm32@gmail.com>
+Subject: [PATCH 4/4] Staging: comedi: fix warning: line over 80 character issue in rtd520.c
+Date: Fri,  8 Jul 2011 17:52:46 +0530
+Message-Id: <1310127766-22975-1-git-send-email-ravishankarkm32@gmail.com>
+X-Mailer: git-send-email 1.6.5.2
+In-Reply-To: <[PATCH]Staging: comedi: fix line over 80 character warning issue in rtd520.c>
+References: <[PATCH]Staging: comedi: fix line over 80 character warning issue in rtd520.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+From: Ravishankar <ravi.shankar@greenturtles.in>
 
-Please pull one fix from:
+This is a patch to the rtd520.c file that fixes up a  warning: line over 80 character found by the checkpatch.pl tool
 
-git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git omap-fixes-for-linus
+Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
+---
+ drivers/staging/comedi/drivers/rtd520.c |   18 +++++++++++-------
+ 1 files changed, 11 insertions(+), 7 deletions(-)
 
-This fixes an embarassing segfault by dropping __initdata from data that
-should not be marked __initdata.
+diff --git a/drivers/staging/comedi/drivers/rtd520.c b/drivers/staging/comedi/drivers/rtd520.c
+index dd00b4a..d31abfb 100644
+--- a/drivers/staging/comedi/drivers/rtd520.c
++++ b/drivers/staging/comedi/drivers/rtd520.c
+@@ -1581,7 +1581,7 @@ static irqreturn_t rtd_interrupt(int irq,	/* interrupt number (ignored) */
+ 			}
+ 
+ 			/*DPRINTK ("rtd520: DMA transfer: %ld to go, istatus %x\n",
+-			   devpriv->aiCount, istatus); */
++			  devpriv->aiCount, istatus); */
+ 			RtdDma0Control(dev,
+ 				       (devpriv->
+ 					dma0Control & ~PLX_DMA_START_BIT)
+@@ -1592,7 +1592,8 @@ static irqreturn_t rtd_interrupt(int irq,	/* interrupt number (ignored) */
+ 			}
+ 			comedi_event(dev, s);
+ 		} else {
+-			/*DPRINTK ("rtd520: No DMA ready: istatus %x\n", istatus); */
++			/*DPRINTK ("rtd520: No DMA ready: istatus %x\n",
++			  istatus); */
+ 		}
+ 	}
+ 	/* Fall through and check for other interrupt sources */
+@@ -1604,9 +1605,10 @@ static irqreturn_t rtd_interrupt(int irq,	/* interrupt number (ignored) */
+ 		return IRQ_HANDLED;
+ 
+ 	if (status & IRQM_ADC_ABOUT_CNT) {	/* sample count -> read FIFO */
+-		/* since the priority interrupt controller may have queued a sample
+-		   counter interrupt, even though we have already finished,
+-		   we must handle the possibility that there is no data here */
++		/* since the priority interrupt controller may have queued a
++		   sample counter interrupt, even though we have already
++		   finished, we must handle the possibility that there is no
++		   data here */
+ 		if (!(fifoStatus & FS_ADC_HEMPTY)) {	/* 0 -> 1/2 full */
+ 			/*DPRINTK("rtd520: Sample int, reading 1/2FIFO.  fifo_status 0x%x\n",
+ 			   (fifoStatus ^ 0x6666) & 0x7777); */
+@@ -1701,7 +1703,8 @@ transferDone:
+ 
+ 	fifoStatus = RtdFifoStatus(dev);	/* DEBUG */
+ 	DPRINTK
+-	    ("rtd520: Acquisition complete. %ld ints, intStat=%x, overStat=%x\n",
++	    ("rtd520: Acquisition complete. %ld ints, intStat=%x, overStat=%x\n"
++,
+ 	     devpriv->intCount, status,
+ 	     0xffff & RtdInterruptOverrunStatus(dev));
+ 
+@@ -1714,7 +1717,8 @@ transferDone:
+ */
+ static int rtd_ai_poll(struct comedi_device *dev, struct comedi_subdevice *s)
+ {
+-	/* TODO: This needs to mask interrupts, read_dregs, and then re-enable */
++	/* TODO: This needs to mask interrupts, read_dregs, and
++	 * then re - enable */
+ 	/* Not sure what to do if DMA is active */
+ 	return s->async->buf_write_count - s->async->buf_read_count;
+ }
+-- 
+1.6.5.2
 
-Regards,
-
-Tony
-
-
-The following changes since commit fe0d42203cb5616eeff68b14576a0f7e2dd56625:
-  Linus Torvalds (1):
-        Linux 3.0-rc6
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git omap-fixes-for-linus
-
-Janusz Krzysztofik (1):
-      omap: drop __initdata tags from static struct platform_device declarations
-
- arch/arm/mach-omap1/board-ams-delta.c        |    8 ++++----
- arch/arm/mach-omap1/gpio15xx.c               |    4 ++--
- arch/arm/mach-omap1/gpio16xx.c               |   10 +++++-----
- arch/arm/mach-omap1/gpio7xx.c                |   14 +++++++-------
- arch/arm/mach-omap2/board-rx51-peripherals.c |    2 +-
- 5 files changed, 19 insertions(+), 19 deletions(-)
