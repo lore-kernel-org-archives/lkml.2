@@ -1,93 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754278Ab1GHFQr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:16:47 -0400
-Received: from gate.crashing.org ([63.228.1.57]:54345 "EHLO gate.crashing.org"
+	id S1754272Ab1GHFRH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:17:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41834 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754170Ab1GHFQb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:16:31 -0400
-Subject: Re: [PATCH v4 1/3] driver core: Add ability for arch code to setup pdev_archdata
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <20110708042235.GA26357@kroah.com>
-Date: Fri, 8 Jul 2011 00:16:20 -0500
-Cc: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <A300A787-C750-44BF-B2EB-E09A3534058B@kernel.crashing.org>
-References: <1310097643-8414-1-git-send-email-galak@kernel.crashing.org> <20110708042235.GA26357@kroah.com>
-To: Greg KH <greg@kroah.com>
-X-Mailer: Apple Mail (2.1084)
+	id S1753839Ab1GHFCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:02:23 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:56 2011
+Message-Id: <20110708001656.504329181@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Thu, 07 Jul 2011 17:16:11 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [039/107] xhci: Add reset on resume quirk for asrock p67 host
+In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
-On Jul 7, 2011, at 11:22 PM, Greg KH wrote:
+------------------
 
-> On Thu, Jul 07, 2011 at 11:00:41PM -0500, Kumar Gala wrote:
->> On some architectures we need to setup pdev_archdata before we add the
->> device.  Waiting til a bus_notifier is too late since we might need the
->> pdev_archdata in the bus notifier.  One example is setting up of dma_mask
->> pointers such that it can be used in a bus_notifier.
->> 
->> We add weak noop version of arch_setup_pdev_archdata() and allow the arch
->> code to override with access the full definitions of struct device,
->> struct platform_device, and struct pdev_archdata.
->> 
->> Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
->> ---
->> v4:
->> * Move to use a weak function based on comments from Greg
->> v3:
->> * Add more comments and add missing call to arch_setup_pdev_archdata in
->>  platform_device_register
->> v2:
->> * Added license, and comments about arch_setup_pdev_archdata()
->>  per Mike's comments
->> 
->> drivers/base/platform.c         |   22 ++++++++++++++++++++++
->> include/linux/platform_device.h |    1 +
->> 2 files changed, 23 insertions(+), 0 deletions(-)
->> 
->> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
->> index 1c291af..060686d 100644
->> --- a/drivers/base/platform.c
->> +++ b/drivers/base/platform.c
->> @@ -32,6 +32,26 @@ struct device platform_bus = {
->> EXPORT_SYMBOL_GPL(platform_bus);
->> 
->> /**
->> + * arch_setup_pdev_archdata - Allow manipulation of archdata before its used
->> + * @dev: platform device
->> + *
->> + * This is called before platform_device_add() such that any pdev_archdata may
->> + * be setup before the platform_notifier is called.  So if a user needs to
->> + * manipulate any relevant information in the pdev_archdata they can do:
->> + *
->> + * 	platform_devic_alloc()
->> + * 	... manipulate ...
->> + * 	platform_device_add()
->> + *
->> + * And if they don't care they can just call platform_device_register() and
->> + * everything will just work out.
->> + */
->> +void __weak arch_setup_pdev_archdata(struct platform_device *pdev)
->> +{
->> +	return ;
->> +}
-> 
-> The "return" isn't needed, nor is the extra ' ' there, right?  :)
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
 
-yep, removed the ';' as well ;)
+commit c877b3b2ad5cb9d4fe523c5496185cc328ff3ae9 upstream.
 
-> Change that and you can take this through the ppc tree and add a:
-> 	Acked-by: Greg Kroah-Hartman
-> to them.
+The asrock p67 xhci controller completely dies on resume, add a
+quirk for this, to bring the host back online after a suspend.
 
-Ack added to all.
+This should be backported to stable kernels as old as 2.6.37.
 
-thanks
+Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-- k
+---
+ drivers/usb/host/xhci-pci.c |    8 ++++++++
+ drivers/usb/host/xhci.c     |    2 ++
+ drivers/usb/host/xhci.h     |    1 +
+ 3 files changed, 11 insertions(+)
+
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -28,6 +28,9 @@
+ #define PCI_VENDOR_ID_FRESCO_LOGIC	0x1b73
+ #define PCI_DEVICE_ID_FRESCO_LOGIC_PDK	0x1000
+ 
++#define PCI_VENDOR_ID_ETRON		0x1b6f
++#define PCI_DEVICE_ID_ASROCK_P67	0x7023
++
+ static const char hcd_name[] = "xhci_hcd";
+ 
+ /* called after powerup, by probe or system-pm "wakeup" */
+@@ -120,6 +123,11 @@ static int xhci_pci_setup(struct usb_hcd
+ 				"has broken MSI implementation\n",
+ 				pdev->revision);
+ 	}
++	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
++			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
++		xhci->quirks |= XHCI_RESET_ON_RESUME;
++		xhci_dbg(xhci, "QUIRK: Resetting on resume\n");
++	}
+ 
+ 	if (pdev->vendor == PCI_VENDOR_ID_NEC)
+ 		xhci->quirks |= XHCI_NEC_HOST;
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -759,6 +759,8 @@ int xhci_resume(struct xhci_hcd *xhci, b
+ 		msleep(100);
+ 
+ 	spin_lock_irq(&xhci->lock);
++	if (xhci->quirks & XHCI_RESET_ON_RESUME)
++		hibernated = true;
+ 
+ 	if (!hibernated) {
+ 		/* step 1: restore register */
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -1287,6 +1287,7 @@ struct xhci_hcd {
+ #define XHCI_NEC_HOST		(1 << 2)
+ #define XHCI_AMD_PLL_FIX	(1 << 3)
+ #define XHCI_BROKEN_MSI		(1 << 6)
++#define XHCI_RESET_ON_RESUME	(1 << 7)
+ 	/* There are two roothubs to keep track of bus suspend info for */
+ 	struct xhci_bus_state   bus_state[2];
+ 	/* Is each xHCI roothub port a USB 3.0, USB 2.0, or USB 1.1 port? */
+
+
