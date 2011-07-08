@@ -1,73 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752484Ab1GHQP0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 12:15:26 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:55769 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751592Ab1GHQPX (ORCPT
+	id S1753506Ab1GHQPl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 12:15:41 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:43768 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752818Ab1GHQPk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 12:15:23 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PULL] arm-soc fixes for 3.0
-Date: Fri, 8 Jul 2011 18:15:14 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Simon Guinot <sguinot@lacie.com>,
-        Wolfram Sang <w.sang@pengutronix.de>, Lei Wen <leiwen@marvell.com>,
-        Eric Miao <eric.y.miao@gmail.com>
+	Fri, 8 Jul 2011 12:15:40 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107081815.14283.arnd@arndb.de>
-X-Provags-ID: V02:K0:rJkFoQ1GJ7EsffTxhUumBx0u/9VqoDhMLTaWFLbUs4X
- /HHXPvlG3EMe8KH/yDUED54qV2cv9oyJHwbfcZrYqBzpL7sF9a
- EM1yb4Act7slU2J5CrmPhgBj+eS+bZ5M6ltfrK+VhiI2Cmcada
- /z5C8pudujaMFi+f27JgFewdw0xtE+hXFF6WVJunlX3GGbFAtc
- XMXFbUlUC4bhd91VXaOTA==
+In-Reply-To: <1310140451.3282.85.camel@mulgrave>
+References: <20110708084547.2091.55262.stgit@ltc197.sdl.hitachi.co.jp>
+ <20110708145408.GA2283@kroah.com> <CAPXgP10gThuxOsrxH8_wOddeRB5f2ABypW7EQui-F1hOE97dHQ@mail.gmail.com>
+ <20110708154736.GA7320@kroah.com> <1310140451.3282.85.camel@mulgrave>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Fri, 8 Jul 2011 18:15:18 +0200
+Message-ID: <CAPXgP12dA72a3ja659GH6uW+ZCMfL6iECaY6ORXwOQ6S5eTvaQ@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/4] Persistent device name using alias name
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Greg KH <greg@kroah.com>, Nao Nishijima <nao.nishijima.xt@hitachi.com>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        jcm@redhat.com, dle-develop@lists.sourceforge.net,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        yrl.pp-manager.tt@hitachi.com, dgilbert@interlog.com,
+        stefanr@s5r6.in-berlin.de, hare@suse.de
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, Jul 8, 2011 at 17:54, James Bottomley
+<James.Bottomley@hansenpartnership.com> wrote:
 
-Another round of fixes from the arm-soc tree. The three patches for pxa are for
-long-standing bugs and will go in the stable trees. The other two are fixing
-fallout from the generic irqchip conversion.
+> Yes, we did.  Everyone agrees structured logging would be the best long
+> term solution.  However, it's at least 10x the work presented here, plus
+> it would be a long process getting everyone to agree.
 
-	Arnd
+Maybe even 100 times :)
 
----
-The following changes since commit f1bb20a8365f6753e0f7b6e94981ca2b662bae13:
+> This looks like a
+> good 95% interim solution and it can be removed when structured logging
+> makes everything "just work(tm)".
 
-  Merge branch 'for-30-rc5/all-i2c' of git://git.fluff.org/bjdooks/linux (2011-07-07 16:29:29 -0700)
+I don't really see that. I think it does not add any real value on top
+of a simple udev logging at device discovery.
 
-are available in the git repository at:
+You would see that in the log:
+  [78441.742634]: udevd: sdc: \
+  disk/by-id/ata-INTEL_SSDSA1M080G2GN_CVPO0363030V080EGN \
+  disk/by-id/scsi-SATA_INTEL_SSDSA1M08CVPO0363030V080EGN \
+  disk/by-path/pci-0000:00:1f.2-scsi-0:0:0:0 \
+  disk/by-id/wwn-0x50015179593f3038
 
-  git+ssh://master.kernel.org/pub/scm/linux/kernel/git/arm/linux-arm-soc.git fixes
+and know exactly _all_ names and all identifiers of the disk at that time.
 
-Lei Wen (2):
-      ARM: pxa910: correct nand pmu setting
-      ARM: pxa168: correct nand pmu setting
+Then you see this:
+  [78441.742634] storage: really bad things happened to: sdc
 
-Paul Parsons (1):
-      ARM: pxa: fix PGSR register address calculation
+and with the earlier message we have all we need to know without any
+pretty-name hacks.
 
-Simon Guinot (1):
-      genirq: replace irq_gc_ack() with {set,clr}_bit variants (fwd)
+All that can be done today already with a single udev rule, even on
+many years old distros.
 
-Wolfram Sang (1):
-      arm: mach-vt8500: add forgotten irq_data conversion
+> I have also seen a couple of other attempts at structured logging which
+> both failed when the people proposing the patches realised how much work
+> it actually was, so I'm a bit sceptical we'll ever get there.
 
- arch/arm/mach-davinci/irq.c      |    2 +-
- arch/arm/mach-mmp/pxa168.c       |    2 +-
- arch/arm/mach-mmp/pxa910.c       |    2 +-
- arch/arm/mach-pxa/mfp-pxa2xx.c   |    4 ++--
- arch/arm/mach-vt8500/irq.c       |   21 ++++++++++++---------
- arch/arm/plat-orion/gpio.c       |    2 +-
- arch/arm/plat-s5p/irq-gpioint.c  |    2 +-
- arch/arm/plat-samsung/irq-uart.c |    2 +-
- include/linux/irq.h              |    3 ++-
- kernel/irq/generic-chip.c        |   18 ++++++++++++++++--
- 10 files changed, 38 insertions(+), 20 deletions(-)
+The more paper-over we add the more unlikely it gets. That's what I fear. :)
+
+> But hey,
+> you have the enthusiasm, propose it as a KS topic to get agreement that
+> we should do it and what the format should be and we can go from there.
+
+Sure, I'll do that. If needed, I can even make half or a third of it
+possible I guess.
+
+Thanks,
+Kay
