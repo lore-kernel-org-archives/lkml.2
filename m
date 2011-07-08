@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519Ab1GHGNk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 02:13:40 -0400
-Received: from home.keithp.com ([63.227.221.253]:38233 "EHLO keithp.com"
+	id S1751728Ab1GHGRV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 02:17:21 -0400
+Received: from mx1.fusionio.com ([66.114.96.30]:39339 "EHLO mx1.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752485Ab1GHGNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 02:13:39 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Daniel J Blueman <daniel.blueman@gmail.com>,
-        Eric Anholt <eric@anholt.net>, Dave Airlie <airlied@redhat.com>
-Subject: Re: [026/107] drm/i915: Fix gen6 (SNB) missed BLT ring interrupts.
-In-Reply-To: <20110708001655.280182108@clark.kroah.org>
-References: <20110708001655.280182108@clark.kroah.org>
-User-Agent: Notmuch/0.5-202-g6ae4e7d (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Thu, 07 Jul 2011 23:13:33 -0700
-Message-ID: <yun4o2xti42.fsf@aiko.keithp.com>
+	id S1751378Ab1GHGRS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 02:17:18 -0400
+X-ASG-Debug-ID: 1310105837-03d6a510a6130430001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4E16A0EA.1030703@fusionio.com>
+Date: Fri, 8 Jul 2011 08:17:14 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+To: Shaohua Li <shaohua.li@intel.com>
+CC: lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [patch]block: avoid building too big plug list
+References: <1310090367.15392.263.camel@sli10-conroe>
+X-ASG-Orig-Subj: Re: [patch]block: avoid building too big plug list
+In-Reply-To: <1310090367.15392.263.camel@sli10-conroe>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1310105837
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.68297
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+On 2011-07-08 03:59, Shaohua Li wrote:
+> When I test fio script with big I/O depth, I found the total throughput drops
+> compared to some relative small I/O depth. The reason is the thread accumulates
+> big requests in its plug list and causes some delays (surely this depends
+> on CPU speed).
+> I thought we'd better have a threshold for requests. When a threshold reaches,
+> this means there is no request merge and queue lock contention isn't severe
+> when pushing per-task requests to queue, so the main advantages of blk plug
+> don't exist. We can force a plug list flush in this case.
+> With this, my test throughput actually increases and almost equals to small
+> I/O depth. Another side effect is irq off time decreases in blk_flush_plug_list()
+> for big I/O depth.
+> The BLK_MAX_REQUEST_COUNT is choosen arbitarily, but 16 is efficiently to
+> reduce lock contention to me. But I'm open here, 32 is ok in my test too.
 
-On Thu, 07 Jul 2011 17:15:58 -0700, Greg KH <gregkh@suse.de> wrote:
+Thanks, I have wondered whether that would potentially cause an issue.
+So this patch is quite fine with me, generally a good idea to cap it.
+I'll queue it up with 16 for the max depth, that's still quite a decent
+proportion of local to queued requests.
 
-> 2.6.39-stable review patch.  If anyone has any objections, please let
-> us know.
+Thanks!
 
-Note that there's a follow-on patch to this which fixes similar hangs
-with the BSD ring:
+-- 
+Jens Axboe
 
-ec6a890dfed7dd245beba5e5bcdfcffbd934c284
-
-    drm/i915: Apply HWSTAM workaround for BSD ring on SandyBridge
-=20=20=20=20
-    ...we need to apply exactly the same workaround for missing interrupts
-    from BSD as for the BLT ring, apparently.
-=20=20=20=20
-    See also commit 498e720b96379d8ee9c294950a01534a73defcf3
-    (drm/i915: Fix gen6 (SNB) missed BLT ring interrupts).
-=20=20=20=20
-    Reported-and-tested-by: nkalkhof@web.de
-    Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=3D38529
-    Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-    Signed-off-by: Keith Packard <keithp@keithp.com>
-
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iD8DBQFOFqANQp8BWwlsTdMRAhuHAKCsIL3e29YMYvug+TruzhpebBB78QCguNAC
-YtjJamF1g31piVwYbanYDBs=
-=pvXr
------END PGP SIGNATURE-----
---=-=-=--
