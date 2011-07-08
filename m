@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753471Ab1GHFBA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:01:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41594 "EHLO mx2.suse.de"
+	id S1752912Ab1GHFAj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:00:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41543 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753117Ab1GHFA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:00:56 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:54 2011
-Message-Id: <20110708001654.230531692@clark.kroah.org>
+	id S1752410Ab1GHFAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:00:35 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:53 2011
+Message-Id: <20110708001653.640579762@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:15:47 -0700
+Date: Thu, 07 Jul 2011 17:15:41 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Xufeng Zhang <xufeng.zhang@windriver.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [015/107] ipv6/udp: Use the correct variable to determine non-blocking condition
+        Hans Schillstrom <hans.schillstrom@ericsson.com>,
+        Julian Anastasov <ja@ssi.bg>, Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: [009/107] IPVS: bug in ip_vs_ftp, same list heaad used in all netns.
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,63 +27,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Xufeng Zhang <xufeng.zhang@windriver.com>
+From: Hans Schillstrom <hans.schillstrom@ericsson.com>
 
-[ Upstream commit 32c90254ed4a0c698caa0794ebb4de63fcc69631 ]
+[ Upstream commit c74c0bfe0b61cf41a897c2444c038e0d3f600556 ]
 
-udpv6_recvmsg() function is not using the correct variable to determine
-whether or not the socket is in non-blocking operation, this will lead
-to unexpected behavior when a UDP checksum error occurs.
+When ip_vs was adapted to netns the ftp application was not adapted
+in a correct way.
+However this is a fix to avoid kernel errors. In the long term another solution
+might be chosen.  I.e the ports that the ftp appl, uses should be per netns.
 
-Consider a non-blocking udp receive scenario: when udpv6_recvmsg() is
-called by sock_common_recvmsg(), MSG_DONTWAIT bit of flags variable in
-udpv6_recvmsg() is cleared by "flags & ~MSG_DONTWAIT" in this call:
-
-    err = sk->sk_prot->recvmsg(iocb, sk, msg, size, flags & MSG_DONTWAIT,
-                   flags & ~MSG_DONTWAIT, &addr_len);
-
-i.e. with udpv6_recvmsg() getting these values:
-
-	int noblock = flags & MSG_DONTWAIT
-	int flags = flags & ~MSG_DONTWAIT
-
-So, when udp checksum error occurs, the execution will go to
-csum_copy_err, and then the problem happens:
-
-    csum_copy_err:
-            ...............
-            if (flags & MSG_DONTWAIT)
-                    return -EAGAIN;
-            goto try_again;
-            ...............
-
-But it will always go to try_again as MSG_DONTWAIT has been cleared
-from flags at call time -- only noblock contains the original value
-of MSG_DONTWAIT, so the test should be:
-
-            if (noblock)
-                    return -EAGAIN;
-
-This is also consistent with what the ipv4/udp code does.
-
-Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Hans Schillstrom <hans.schillstrom@ericsson.com>
+Acked-by: Julian Anastasov <ja@ssi.bg>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/ipv6/udp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/net/ip_vs.h            |    3 ++-
+ net/netfilter/ipvs/ip_vs_ftp.c |   27 +++++++++++++++++++--------
+ 2 files changed, 21 insertions(+), 9 deletions(-)
 
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -453,7 +453,7 @@ csum_copy_err:
- 	}
- 	unlock_sock_fast(sk, slow);
+--- a/include/net/ip_vs.h
++++ b/include/net/ip_vs.h
+@@ -802,7 +802,8 @@ struct netns_ipvs {
+ 	struct list_head	rs_table[IP_VS_RTAB_SIZE];
+ 	/* ip_vs_app */
+ 	struct list_head	app_list;
+-
++	/* ip_vs_ftp */
++	struct ip_vs_app	*ftp_app;
+ 	/* ip_vs_proto */
+ 	#define IP_VS_PROTO_TAB_SIZE	32	/* must be power of 2 */
+ 	struct ip_vs_proto_data *proto_data_table[IP_VS_PROTO_TAB_SIZE];
+--- a/net/netfilter/ipvs/ip_vs_ftp.c
++++ b/net/netfilter/ipvs/ip_vs_ftp.c
+@@ -411,25 +411,35 @@ static struct ip_vs_app ip_vs_ftp = {
+ static int __net_init __ip_vs_ftp_init(struct net *net)
+ {
+ 	int i, ret;
+-	struct ip_vs_app *app = &ip_vs_ftp;
++	struct ip_vs_app *app;
++	struct netns_ipvs *ipvs = net_ipvs(net);
++
++	app = kmemdup(&ip_vs_ftp, sizeof(struct ip_vs_app), GFP_KERNEL);
++	if (!app)
++		return -ENOMEM;
++	INIT_LIST_HEAD(&app->a_list);
++	INIT_LIST_HEAD(&app->incs_list);
++	ipvs->ftp_app = app;
  
--	if (flags & MSG_DONTWAIT)
-+	if (noblock)
- 		return -EAGAIN;
- 	goto try_again;
+ 	ret = register_ip_vs_app(net, app);
+ 	if (ret)
+-		return ret;
++		goto err_exit;
+ 
+ 	for (i=0; i<IP_VS_APP_MAX_PORTS; i++) {
+ 		if (!ports[i])
+ 			continue;
+ 		ret = register_ip_vs_app_inc(net, app, app->protocol, ports[i]);
+ 		if (ret)
+-			break;
++			goto err_unreg;
+ 		pr_info("%s: loaded support on port[%d] = %d\n",
+ 			app->name, i, ports[i]);
+ 	}
++	return 0;
+ 
+-	if (ret)
+-		unregister_ip_vs_app(net, app);
+-
++err_unreg:
++	unregister_ip_vs_app(net, app);
++err_exit:
++	kfree(ipvs->ftp_app);
+ 	return ret;
  }
+ /*
+@@ -437,9 +447,10 @@ static int __net_init __ip_vs_ftp_init(s
+  */
+ static void __ip_vs_ftp_exit(struct net *net)
+ {
+-	struct ip_vs_app *app = &ip_vs_ftp;
++	struct netns_ipvs *ipvs = net_ipvs(net);
+ 
+-	unregister_ip_vs_app(net, app);
++	unregister_ip_vs_app(net, ipvs->ftp_app);
++	kfree(ipvs->ftp_app);
+ }
+ 
+ static struct pernet_operations ip_vs_ftp_ops = {
 
 
