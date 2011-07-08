@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286Ab1GIGBe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 02:01:34 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:53299 "EHLO
+	id S1754547Ab1GIGCi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 02:02:38 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:53492 "EHLO
 	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754177Ab1GIGB1 (ORCPT
+	by vger.kernel.org with ESMTP id S1754177Ab1GIGBe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 02:01:27 -0400
-X-Sasl-enc: EtQXf4y0BBXUPtXiWk4i4zc3ZLkLcM9DnZluyUv1jO3F 1310191286
+	Sat, 9 Jul 2011 02:01:34 -0400
+X-Sasl-enc: QMU8WRTgkLhv/r9sNIwiK6ZyXyJe8yV/vFlx9cTy2ShZ 1310191294
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 16:01:10 2011
-Message-Id: <20110708230110.015540101@clark.kroah.org>
+Message-Id: <20110708230110.513034674@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 08 Jul 2011 16:00:21 -0700
+Date: Fri, 08 Jul 2011 16:00:26 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [05/35] TTY: ldisc, do not close until there are readers
+        Rafael Aquini <aquini@linux.com>, Russ Anderson <rja@sgi.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Christoph Lameter <cl@linux.com>
+Subject: [10/35] mm: fix negative commitlimit when gigantic hugepages are allocated
 In-Reply-To: <20110708230122.GA18807@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,100 +29,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: Rafael Aquini <aquini@linux.com>
 
-commit 92f6fa09bd453ffe3351fa1f1377a1b7cfa911e6 upstream.
+commit b0320c7b7d1ac1bd5c2d9dff3258524ab39bad32 upstream.
 
-We restored tty_ldisc_wait_idle in 100eeae2c5c (TTY: restore
-tty_ldisc_wait_idle). We used it in the ldisc changing path to fix the
-case where there are tasks in n_tty_read waiting for data and somebody
-tries to change ldisc.
+When 1GB hugepages are allocated on a system, free(1) reports less
+available memory than what really is installed in the box.  Also, if the
+total size of hugepages allocated on a system is over half of the total
+memory size, CommitLimit becomes a negative number.
 
-Similar to the case above, there may be also tasks waiting in
-n_tty_read while hangup is performed. As 65b770468e98 (tty-ldisc: turn
-ldisc user count into a proper refcount) removed the wait-until-idle
-from all paths, hangup path won't wait for them to disappear either
-now. So add it back even to the hangup path.
+The problem is that gigantic hugepages (order > MAX_ORDER) can only be
+allocated at boot with bootmem, thus its frames are not accounted to
+'totalram_pages'.  However, they are accounted to hugetlb_total_pages()
 
-There is a difference, we need uninterruptible sleep as there is
-obviously HUP signal pending. So tty_ldisc_wait_idle now sleeps
-without possibility to be interrupted. This is what original
-tty_ldisc_wait_idle did. After the wait idle reintroduction
-(100eeae2c5c), we have had interruptible sleeps for the ldisc changing
-path. But as there is a 5s timeout anyway, we don't allow it to be
-interrupted from now on. It's not worth the added complexity of
-deciding what kind of sleep we want.
+What happens to turn CommitLimit into a negative number is this
+calculation, in fs/proc/meminfo.c:
 
-Before 65b770468e98 tty_ldisc_release was called also from
-tty_ldisc_release. It is called from tty_release, so I don't think we
-need to restore that one.
+        allowed = ((totalram_pages - hugetlb_total_pages())
+                * sysctl_overcommit_ratio / 100) + total_swap_pages;
 
-This is nicely reproducible after constifying the timing when
-drivers/tty/n_tty.c is patched as follows ("TTY: ntty, add one more
-sanity check" patch is needed to actually see it explode):
-%% -1548,6 +1549,7 @@ static int n_tty_open(struct tty_struct *tty)
+A similar calculation occurs in __vm_enough_memory() in mm/mmap.c.
 
-        /* These are ugly. Currently a malloc failure here can panic */
-        if (!tty->read_buf) {
-+               msleep(100);
-                tty->read_buf = kzalloc(N_TTY_BUF_SIZE, GFP_KERNEL);
-                if (!tty->read_buf)
-                        return -ENOMEM;
-%% -1785,6 +1788,7 @@ do_it_again:
-                                break;
-                        }
-                        timeout = schedule_timeout(timeout);
-+                       msleep(20);
-                        continue;
-                }
-                __set_current_state(TASK_RUNNING);
-===== With a process: =====
-    while (1) {
-        int fd = open(argv[1], O_RDWR);
-        read(fd, buf, sizeof(buf));
-        close(fd);
-    }
-===== and its child: =====
-        setsid();
-        while (1) {
-                int fd = open(tty, O_RDWR|O_NOCTTY);
-                ioctl(fd, TIOCSCTTY, 1);
-                vhangup();
-                close(fd);
-                usleep(100 * (10 + random() % 1000));
-        }
-===== EOF =====
+Also, every vm statistic which depends on 'totalram_pages' will render
+confusing values, as if system were 'missing' some part of its memory.
 
-References: https://bugzilla.novell.com/show_bug.cgi?id=693374
-References: https://bugzilla.novell.com/show_bug.cgi?id=694509
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Impact of this bug:
+
+When gigantic hugepages are allocated and sysctl_overcommit_memory ==
+OVERCOMMIT_NEVER.  In a such situation, __vm_enough_memory() goes through
+the mentioned 'allowed' calculation and might end up mistakenly returning
+-ENOMEM, thus forcing the system to start reclaiming pages earlier than it
+would be ususal, and this could cause detrimental impact to overall
+system's performance, depending on the workload.
+
+Besides the aforementioned scenario, I can only think of this causing
+annoyances with memory reports from /proc/meminfo and free(1).
+
+[akpm@linux-foundation.org: standardize comment layout]
+Reported-by: Russ Anderson <rja@sgi.com>
+Signed-off-by: Rafael Aquini <aquini@linux.com>
+Acked-by: Russ Anderson <rja@sgi.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Christoph Lameter <cl@linux.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/tty_ldisc.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ mm/hugetlb.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/char/tty_ldisc.c
-+++ b/drivers/char/tty_ldisc.c
-@@ -543,7 +543,7 @@ static int tty_ldisc_halt(struct tty_str
- static int tty_ldisc_wait_idle(struct tty_struct *tty)
- {
- 	int ret;
--	ret = wait_event_interruptible_timeout(tty_ldisc_idle,
-+	ret = wait_event_timeout(tty_ldisc_idle,
- 			atomic_read(&tty->ldisc->users) == 1, 5 * HZ);
- 	if (ret < 0)
- 		return ret;
-@@ -750,6 +750,8 @@ static int tty_ldisc_reinit(struct tty_s
- 	if (IS_ERR(ld))
- 		return -1;
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -1105,6 +1105,14 @@ static void __init gather_bootmem_preall
+ 		WARN_ON(page_count(page) != 1);
+ 		prep_compound_huge_page(page, h->order);
+ 		prep_new_huge_page(h, page, page_to_nid(page));
++		/*
++		 * If we had gigantic hugepages allocated at boot time, we need
++		 * to restore the 'stolen' pages to totalram_pages in order to
++		 * fix confusing memory reports from free(1) and another
++		 * side-effects, like CommitLimit going negative.
++		 */
++		if (h->order > (MAX_ORDER - 1))
++			totalram_pages += 1 << h->order;
+ 	}
+ }
  
-+	WARN_ON_ONCE(tty_ldisc_wait_idle(tty));
-+
- 	tty_ldisc_close(tty, tty->ldisc);
- 	tty_ldisc_put(tty->ldisc);
- 	tty->ldisc = NULL;
 
 
