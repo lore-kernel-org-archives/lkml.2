@@ -1,101 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754521Ab1GHRu7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 13:50:59 -0400
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:54712 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752883Ab1GHRu5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 13:50:57 -0400
-From: Partha Basak <p-basak2@ti.com>
-References: <1310122965-23612-1-git-send-email-keshava_mgowda@ti.com>
-	<20110708114425.GI4820@legolas.emea.dhcp.ti.com> <87k4bsbzfe.fsf@ti.com>
-In-Reply-To: <87k4bsbzfe.fsf@ti.com>
+	id S1754470Ab1GHRzw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 13:55:52 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:39815 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750757Ab1GHRzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 13:55:49 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [Update][PATCH 6/10] PM / Domains: System-wide transitions support for generic domains (v5)
+Date: Fri, 8 Jul 2011 19:56:29 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc6+; KDE/4.6.0; x86_64; ; )
+Cc: Kevin Hilman <khilman@ti.com>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Walmsley <paul@pwsan.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>
+References: <Pine.LNX.4.44L0.1107081033000.2208-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1107081033000.2208-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Acw9fjri09sjcJ8nT36e2a9HllpW2QAGLMyA
-Date: Fri, 8 Jul 2011 23:20:54 +0530
-Message-ID: <c1ed0c50a398ed5296dea561c9a30a6d@mail.gmail.com>
-Subject: RE: [PATCH 0/6 v3] arm: omap: usb: Runtime PM support for EHCI and
- OHCI drivers
-To: Kevin Hilman <khilman@ti.com>, Felipe Balbi <balbi@ti.com>
-Cc: Keshava Munegowda <keshava_mgowda@ti.com>, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Anand Gadiyar <gadiyar@ti.com>, sameo@linux.intel.com,
-        parthab@india.ti.com, tony@atomide.com,
-        Benoit Cousson <b-cousson@ti.com>, paul@pwsan.com, johnstul@us.ibm.com,
-        Vishwanath Sripathy <vishwanath.bs@ti.com>,
-        KISHON VIJAY ABRAHAM <kishon@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107081956.29958.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->-----Original Message-----
->From: Kevin Hilman [mailto:khilman@ti.com]
->Sent: Friday, July 08, 2011 8:19 PM
->To: balbi@ti.com
->Cc: Keshava Munegowda; linux-usb@vger.kernel.org; linux-
->omap@vger.kernel.org; linux-kernel@vger.kernel.org; gadiyar@ti.com;
->sameo@linux.intel.com; parthab@india.ti.com; tony@atomide.com; b-
->cousson@ti.com; paul@pwsan.com; johnstul@us.ibm.com;
->vishwanath.bs@ti.com; kishon@ti.com
->Subject: Re: [PATCH 0/6 v3] arm: omap: usb: Runtime PM support for EHCI
->and OHCI drivers
->
->Felipe Balbi <balbi@ti.com> writes:
->
->> Hi Kevin, Paul, Tony, Benoit,
->>
->> On Fri, Jul 08, 2011 at 04:32:39PM +0530, Keshava Munegowda wrote:
->>> The Hwmod structures and Runtime PM features are implemented
->>> For EHCI and OHCI drivers of OMAP3 and OMAP4.
->>> The global suspend/resume of EHCI and OHCI
->>> is validated on OMAP3430 sdp board with these patches.
->>>
->>> V3:
->>> Set MSTANDBY_SMART_WKUP for idlemode of usbhost
->>> Rebased on top of git://gitorious.org/omap-pm/linux.git
->>> Branch: for_3.1/3_hwmod_fixes
->>> commit 213ca8a3a8d73225f2f5304ab3a68c6eda0f6d1b
->>> Author: Benoit Cousson <b-cousson@ti.com>
->>> Date:   Fri Jul 1 13:52:03 2011 +0200
->>>
->>>     OMAP: hwmod: Move pr_debug to improve the readability
->>>
->>>     Sligtly move the pr_debug at the top of the function
->>>     to trace the entry even if the first test is failing.
->>>     That help understanding that we entered the function
->>>     but failed in it.
->>>
->>>     Move the _enable last part out of the test to reduce
->>>     indentation and improve readability.
->>>
->>>     Signed-off-by: Benoit Cousson <b-cousson@ti.com>
->>>     Cc: Paul Walmsley <paul@pwsan.com>
->>>
->>> Benoit Cousson (1):
->>>  arm: omap: usb: ehci and ohci hwmod structures for omap4
->>>
->>> Keshava Munegowda (5):
->>>   arm: omap: usb: ehci and ohci hwmod structures for omap3
->>>   arm: omap: usb: register hwmods of usbhs
->>>   arm: omap: usb: device name change for the clk names of usbhs
->>>   arm: omap: usb: Runtime PM support
->>>   arm: omap: usb: global Suspend and resume support of ehci and ohci
->>
->> can we get the hwmod stuff in this merge window now ? It has been
->> rebased on Benoit's branch.
->
->Not yet.
->
->It's not about rebasing, it's that the data itself has changed, and new
->fields have been added to the hwmod (like clkdm.)
->
->Please check the result of the latest auto-generated hwmods against the
->stuff that is being submitted.
+On Friday, July 08, 2011, Alan Stern wrote:
+> On Fri, 8 Jul 2011, Rafael J. Wysocki wrote:
+> 
+> > On Friday, July 08, 2011, Kevin Hilman wrote:
+> > > "Rafael J. Wysocki" <rjw@sisk.pl> writes:
+> > > 
+> > > > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > > >
+> > > > Make generic PM domains support system-wide power transitions
+> > > > (system suspend and hibernation).  Add suspend, resume, freeze, thaw,
+> > > > poweroff and restore callbacks to be associated with struct
+> > > > generic_pm_domain objects and make pm_genpd_init() use them as
+> > > > appropriate.
+> > > >
+> > > > The new callbacks do nothing for devices belonging to power domains
+> > > > that were powered down at run time (before the transition).  
+> > > 
+> > > Thinking about this some more, how is a driver supposed to reconfigure
+> > > wakeups during suspend if it has already been runtime suspended?
+> > 
+> > If the device belongs to a PM domain that has been powered off, it
+> > won't be notified.
+> > 
+> > > For example, assume a device where device_may_wakeup() == false.  This
+> > > means wakeups during *suspend* are disabled, but wakeups wakeups are
+> > > assumed to enabled when it is runtime suspended.
+> > > 
+> > > So now, assume this device is RPM_SUSPENDED, it has wakeups *enabled*,
+> > > and then system suspend comes along.  
+> > > 
+> > > With this current patch, the driver will never receive any callbacks, so
+> > > it can never disable its wakeups.  
+> > >
+> > > Am I missing something?
+> > 
+> > As I said above, this only happens with devices that belog to PM domains
+> > that were powered off before system suspend has started, so the problem
+> > is limited to devices that wakeup is signaled on behalf of even when they
+> > have no power.
+> > 
+> > So this is a limitation, but not affecting all platforms.
+> > 
+> > There are a few ways to avoid this limitation I can think of:
+> > (1) Add a "make me operational during system suspend" flag to struct dev_pm_info
+> >     and run pm_runtime_resume() on such devices from the core (either dpm_prepare()
+> >     core, or pm_genpd_prepare()).
+> 
+> What's to prevent the device from being runtime-suspended again before 
+> the wakeup setting can be changed?
 
-Not all the patches sent by Benoit are accepted by Paul.
-Can you point to a git-tree which we should compare against?
->
->Kevin
+If we do it from pm_genpd_prepare() after this patch:
+https://lkml.org/lkml/2011/7/8/223
+the pm_runtime_get_noresume() (and the subsequent disabling of runtime PM)
+will prevent this from happening.
+
+> > (2) Add a "my .prepare() is safe to run if device is not accessible" flag to
+> >     struct dev_pm_info and make pm_genpd_prepare() execute .prepare() for such
+> >     devices regardless of whether or not their PM domains are off.
+> > (3) Call .prepare() from all drivers unconditionally during system suspend
+> >     (and probably .complete() too) in the hope they won't access inaccessible
+> >     devices.
+> > Probably, there's more.
+> 
+> In the PM domain's suspend code, do a runtime resume if the wakeup
+> setting needs to be changed, rather than simply skipping over the
+> device.
+
+.suspend() is too late, we'd need to do that in .prepare().  If we did it
+in .suspend(), we'd need to run .prepare() for all drivers, because at
+this point we wouldn't know if the driver's .suspend() was going to be
+called.  However, the driver's .prepare() may need to access the device,
+which is going to fail if the whole domain is off at this point.
+
+Also, we need a new flag that will tell the core code whether or not
+the wakeup setting needs to be changed.
+
+Thanks,
+Rafael
