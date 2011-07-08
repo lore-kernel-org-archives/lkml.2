@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752981Ab1GHOaV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 10:30:21 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:53708 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833Ab1GHOaT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 10:30:19 -0400
-Message-ID: <4E171477.8060303@gmail.com>
-Date: Fri, 08 Jul 2011 09:30:15 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Lightning/1.0b2 Thunderbird/3.1.10
+	id S1752189Ab1GHOec (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 10:34:32 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:33513 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750959Ab1GHOeb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 10:34:31 -0400
+From: Alex Elder <aelder@sgi.com>
+Message-Id: <201107081434.p68EYQcs020701@stout.americas.sgi.com>
+Date: Fri, 08 Jul 2011 09:34:26 -0500
+To: torvalds@linux-foundation.org
+Subject: [GIT PULL] XFS update for 3.0-rc7
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
+User-Agent: Heirloom mailx 12.5 7/5/10
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH 09/11] arm/dt: Add dt machine definition
-References: <20110616042653.29371.2052.stgit@ponder> <20110616044248.29371.69457.stgit@ponder>
-In-Reply-To: <20110616044248.29371.69457.stgit@ponder>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant,
+Linus, please pull the following XFS fix in for 3.0-rc7 (or final).
 
-On 06/15/2011 11:42 PM, Grant Likely wrote:
-> This patch adds a DT_MACHINE_START macro to use instead of
-> MACHINE_START when creating a machine_desc that supports using the
-> device tree.
-> 
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> ---
->  arch/arm/include/asm/mach/arch.h |    9 +++++++++
->  1 files changed, 9 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/include/asm/mach/arch.h b/arch/arm/include/asm/mach/arch.h
-> index 946f4d7..858d269 100644
-> --- a/arch/arm/include/asm/mach/arch.h
-> +++ b/arch/arm/include/asm/mach/arch.h
-> @@ -70,4 +70,13 @@ static const struct machine_desc __mach_desc_##_type	\
->  #define MACHINE_END				\
->  };
->  
-> +#define MACH_TYPE_DT	0xffffffff
-> +
-> +#define DT_MACHINE_START(_name, _namestr)		\
-> +static const struct machine_desc __mach_desc_##_name	\
-> + __used							\
-> + __attribute__((__section__(".arch.info.init"))) = {	\
-> +	.nr		= MACH_TYPE_DT,			\
-> +	.name		= _namestr,
-> +
->  #endif
-> 
+Previously, a dubious trick was used to avoid a race involving
+inodes in the active item list.  This fix is pretty simple, and the
+result is a much cleaner and more direct (and reliable) solution to
+the problem.
 
-Do you plan to submit this for 3.1 as new platforms need this or a mach id?
+It looks like I missed the last -next build for a while.  But I have
+done a merge of my branch with your current master branch (shown
+below).  The result has no conflicts and builds and tests just fine.
 
-Rob
+Thank you.
 
+					-Alex
 
+The following changes since commit f1bb20a8365f6753e0f7b6e94981ca2b662bae13:
+
+  Merge branch 'for-30-rc5/all-i2c' of git://git.fluff.org/bjdooks/linux (2011-07-07 16:29:29 -0700)
+
+are available in the git repository at:
+
+  git://oss.sgi.com/xfs/xfs for-linus
+
+Dave Chinner (1):
+      xfs: unpin stale inodes directly in IOP_COMMITTED
+
+ fs/xfs/xfs_inode_item.c |   14 ++++++++------
+ fs/xfs/xfs_trans.c      |    4 ++--
+ 2 files changed, 10 insertions(+), 8 deletions(-)
