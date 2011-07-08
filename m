@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753100Ab1GHSmm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 14:42:42 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47779 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750757Ab1GHSml (ORCPT
+	id S1754594Ab1GHSnD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 14:43:03 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:62148 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751818Ab1GHSnB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 14:42:41 -0400
-Date: Fri, 8 Jul 2011 11:42:38 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: drosenberg@vsecurity.com
-Cc: chris@zankel.net, security@kernel.org, linux-kernel@vger.kernel.org,
-        "Oleg Nesterov" <oleg@redhat.com>
-Subject: Re: [Security] [PATCH] xtensa: prevent arbitrary read in ptrace
-Message-Id: <20110708114238.d70315b7.akpm@linux-foundation.org>
-In-Reply-To: <1652523982-1310150159-cardhu_decombobulator_blackberry.rim.net-183695056-@b1.c19.bise6.blackberry>
-References: <1652523982-1310150159-cardhu_decombobulator_blackberry.rim.net-183695056-@b1.c19.bise6.blackberry>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 8 Jul 2011 14:43:01 -0400
+From: Anupam Chanda <achanda@nicira.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        stefano.stabellini@eu.citrix.com, jeremy.fitzhardinge@citrix.com,
+        eddie.dong@intel.com, linux-kernel@vger.kernel.org
+Cc: achanda@nicira.com
+Subject: [PATCH] Change hypervisor detection order
+Date: Fri,  8 Jul 2011 11:42:50 -0700
+Message-Id: <1310150570-26810-1-git-send-email-achanda@nicira.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Jul 2011 18:35:56 +0000
-"Dan Rosenberg" <drosenberg@vsecurity.com> wrote:
+Detect Xen before HyperV because in Viridian compatibility mode Xen presents
+itself as HyperV.
 
-> Sorry for the top post and any email mangling (mobile).
-> 
-> I only used EIO to mirror the existing behavior in ptrace_getxregs(). EFAULT seems better.
+Signed-off-by: Anupam Chanda <achanda@nicira.com>
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Acked-by: Yaozu (Eddie) Dong <eddie.dong@intel.com>
+Reviewed-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/kernel/cpu/hypervisor.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-ptrace_getxregs() is busted ;)
-
-
-int ptrace_getxregs(struct task_struct *child, void __user *uregs)
-{
-...
-	if (!access_ok(VERIFY_WRITE, uregs, sizeof(elf_xtregs_t)))
-		return -EIO;
-...
-	ret |= __copy_to_user(&xtregs->user,&ti->xtregs_user,
-			      sizeof(xtregs->user));
-
-	return ret ? -EFAULT : 0;
-}
-
-that makes no sense.
+diff --git a/arch/x86/kernel/cpu/hypervisor.c b/arch/x86/kernel/cpu/hypervisor.c
+index 8095f86..755f64f 100644
+--- a/arch/x86/kernel/cpu/hypervisor.c
++++ b/arch/x86/kernel/cpu/hypervisor.c
+@@ -32,11 +32,11 @@
+  */
+ static const __initconst struct hypervisor_x86 * const hypervisors[] =
+ {
+-	&x86_hyper_vmware,
+-	&x86_hyper_ms_hyperv,
+ #ifdef CONFIG_XEN_PVHVM
+ 	&x86_hyper_xen_hvm,
+ #endif
++	&x86_hyper_vmware,
++	&x86_hyper_ms_hyperv,
+ };
+ 
+ const struct hypervisor_x86 *x86_hyper;
+-- 
+1.7.2.5
 
