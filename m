@@ -1,57 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150Ab1GHRdJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 13:33:09 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41216 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751393Ab1GHRdH (ORCPT
+	id S1754422Ab1GHRfD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 13:35:03 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50869 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751393Ab1GHRfB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 13:33:07 -0400
-Date: Fri, 8 Jul 2011 18:32:52 +0100
-From: Russell King <rmk@arm.linux.org.uk>
-To: Qin Dehua <qindehua@gmail.com>
-Cc: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
-        santosh.shilimkar@ti.com, neilb@suse.de
-Subject: Re: PROBLEM: ARM-dma-mapping-fix-for-speculative-prefetching cause
-	OOPS
-Message-ID: <20110708173251.GA9561@flint.arm.linux.org.uk>
-References: <BANLkTimfF3_R5VS4xOriGp+-3j-r7V0W0w@mail.gmail.com> <20110630074301.GC27959@flint.arm.linux.org.uk> <BANLkTimBTayh_mjOLMZbz3D+wqdtZ10=wA@mail.gmail.com> <20110630112804.GA21481@flint.arm.linux.org.uk> <BANLkTimo18w5yuE4jtATPvbgENCL04LMpA@mail.gmail.com> <BANLkTimupUqpLDdDvMRjB+Js0xW59MTOQA@mail.gmail.com> <20110707093928.GA15325@flint.arm.linux.org.uk> <CA+gQ4tczHA2NGyLaVFjDs6CQjeQZbzNCCBU0zX4HVgaF4VFEFQ@mail.gmail.com> <20110708080751.GA14947@flint.arm.linux.org.uk>
+	Fri, 8 Jul 2011 13:35:01 -0400
+Date: Fri, 8 Jul 2011 18:34:42 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: "mingo@redhat.com" <mingo@redhat.com>,
+        "dengcheng.zhu@gmail.com" <dengcheng.zhu@gmail.com>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "hpa@zytor.com" <hpa@zytor.com>, "anton@samba.org" <anton@samba.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jason.wessel@windriver.com" <jason.wessel@windriver.com>,
+        "lethal@linux-sh.org" <lethal@linux-sh.org>,
+        "emunson@mgebm.net" <emunson@mgebm.net>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "mcree@orcon.net.nz" <mcree@orcon.net.nz>,
+        "mingo@elte.hu" <mingo@elte.hu>
+Cc: "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: Re: [tip:perf/core] perf: Remove the nmi parameter from the
+ swevent and overflow interface
+Message-ID: <20110708173442.GB31972@e102144-lin.cambridge.arm.com>
+References: <tip-agjev8eu666tvknpb3iaj0fg@git.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110708080751.GA14947@flint.arm.linux.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <tip-agjev8eu666tvknpb3iaj0fg@git.kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 08, 2011 at 09:07:51AM +0100, Russell King wrote:
-> On Fri, Jul 08, 2011 at 12:38:38PM +0800, Qin Dehua wrote:
-> > After doing the above changes, the kernel just report  BUG_ON(dir ==
-> > DMA_BIDIRECTIONAL):
+Hi Peter,
+
+On Fri, Jul 01, 2011 at 04:21:25PM +0100, tip-bot for Peter Zijlstra wrote:
+> Commit-ID:  a8b0ca17b80e92faab46ee7179ba9e99ccb61233
+> Gitweb:     http://git.kernel.org/tip/a8b0ca17b80e92faab46ee7179ba9e99ccb61233
+> Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+> AuthorDate: Mon, 27 Jun 2011 14:41:57 +0200
+> Committer:  Ingo Molnar <mingo@elte.hu>
+> CommitDate: Fri, 1 Jul 2011 11:06:35 +0200
 > 
-> That's really unfortunate.
+> perf: Remove the nmi parameter from the swevent and overflow interface
 > 
-> The only other thing I can think which may help is to enable all the
-> raid5, async_tx and dmaengine debug code.  And I hope you have
-> DMA_API_DEBUG enabled in your .config ?
+> The nmi parameter indicated if we could do wakeups from the current
+> context, if not, we would set some state and self-IPI and let the
+> resulting interrupt do the wakeup.
+> 
+> For the various event classes:
+> 
+>   - hardware: nmi=0; PMI is in fact an NMI or we run irq_work_run from
+>     the PMI-tail (ARM etc.)
+>   - tracepoint: nmi=0; since tracepoint could be from NMI context.
+>   - software: nmi=[0,1]; some, like the schedule thing cannot
+>     perform wakeups, and hence need 0.
+> 
+> As one can see, there is very little nmi=1 usage, and the down-side of
+> not using it is that on some platforms some software events can have a
+> jiffy delay in wakeup (when arch_irq_work_raise isn't implemented).
+> 
+> The up-side however is that we can remove the nmi parameter and save a
+> bunch of conditionals in fast paths.
+> 
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-I'm really grasping at straws here...
+Whilst you updated the arch code in this series, you forgot to update the
+oprofile perf backend. I think you want something as simple as:
 
-I'll add to this that I'm out of ideas at the moment (I don't know the
-RAID5 nor the async offload code), and the only way I can think of
-resolving this is to revert the commit.
 
-While that sounds like a good thing to do, it means people using ARMv6
-and later CPUs will be risking data corruption, which I don't think is
-that desirable either - and will in itself cause a regression there.
+diff --git a/drivers/oprofile/oprofile_perf.c b/drivers/oprofile/oprofile_perf.c
+index 59acf9e..94796f3 100644
+--- a/drivers/oprofile/oprofile_perf.c
++++ b/drivers/oprofile/oprofile_perf.c
+@@ -31,7 +31,7 @@ static int num_counters;
+ /*
+  * Overflow callback for oprofile.
+  */
+-static void op_overflow_handler(struct perf_event *event, int unused,
++static void op_overflow_handler(struct perf_event *event,
+                        struct perf_sample_data *data, struct pt_regs *regs)
+ {
+        int id;
 
-So we really need to the bottom of what's going on (which I suspect
-may be due to DMA API abuse by the async offload stuff - mapping the
-same buffer multiple times with differing attributes.)  Why that would
-impact sh->count I've no idea.
 
--- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+although I haven't tried it.
+
+Cheers,
+
+Will
