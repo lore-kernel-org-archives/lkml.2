@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752912Ab1GHFAj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:00:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41543 "EHLO mx2.suse.de"
+	id S1753133Ab1GHFAr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:00:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41562 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752410Ab1GHFAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:00:35 -0400
+	id S1752410Ab1GHFAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:00:42 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:53 2011
-Message-Id: <20110708001653.640579762@clark.kroah.org>
+Message-Id: <20110708001653.837644431@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:15:41 -0700
+Date: Thu, 07 Jul 2011 17:15:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hans Schillstrom <hans.schillstrom@ericsson.com>,
-        Julian Anastasov <ja@ssi.bg>, Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [009/107] IPVS: bug in ip_vs_ftp, same list heaad used in all netns.
+        Alexander Holler <holler@ahsoftware.de>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [011/107] bridge: provide a cow_metrics method for fake_ops
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,92 +28,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Hans Schillstrom <hans.schillstrom@ericsson.com>
+From: Alexander Holler <holler@ahsoftware.de>
 
-[ Upstream commit c74c0bfe0b61cf41a897c2444c038e0d3f600556 ]
+[ Upstream commit 6407d74c5106bb362b4087693688afd34942b094 ]
 
-When ip_vs was adapted to netns the ftp application was not adapted
-in a correct way.
-However this is a fix to avoid kernel errors. In the long term another solution
-might be chosen.  I.e the ports that the ftp appl, uses should be per netns.
+Like in commit 0972ddb237 (provide cow_metrics() methods to blackhole
+dst_ops), we must provide a cow_metrics for bridges fake_dst_ops as
+well.
 
-Signed-off-by: Hans Schillstrom <hans.schillstrom@ericsson.com>
-Acked-by: Julian Anastasov <ja@ssi.bg>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+This fixes a regression coming from commits 62fa8a846d7d (net: Implement
+read-only protection and COW'ing of metrics.) and 33eb9873a28 (bridge:
+initialize fake_rtable metrics)
+
+ip link set mybridge mtu 1234
+-->
+[  136.546243] Pid: 8415, comm: ip Tainted: P
+2.6.39.1-00006-g40545b7 #103 ASUSTeK Computer Inc.         V1Sn
+        /V1Sn
+[  136.546256] EIP: 0060:[<00000000>] EFLAGS: 00010202 CPU: 0
+[  136.546268] EIP is at 0x0
+[  136.546273] EAX: f14a389c EBX: 000005d4 ECX: f80d32c0 EDX: f80d1da1
+[  136.546279] ESI: f14a3000 EDI: f255bf10 EBP: f15c3b54 ESP: f15c3b48
+[  136.546285]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+[  136.546293] Process ip (pid: 8415, ti=f15c2000 task=f4741f80
+task.ti=f15c2000)
+[  136.546297] Stack:
+[  136.546301]  f80c658f f14a3000 ffffffed f15c3b64 c12cb9c8 f80d1b80
+ffffffa1 f15c3bbc
+[  136.546315]  c12da347 c12d9c7d 00000000 f7670b00 00000000 f80d1b80
+ffffffa6 f15c3be4
+[  136.546329]  00000004 f14a3000 f255bf20 00000008 f15c3bbc c11d6cae
+00000000 00000000
+[  136.546343] Call Trace:
+[  136.546359]  [<f80c658f>] ? br_change_mtu+0x5f/0x80 [bridge]
+[  136.546372]  [<c12cb9c8>] dev_set_mtu+0x38/0x80
+[  136.546381]  [<c12da347>] do_setlink+0x1a7/0x860
+[  136.546390]  [<c12d9c7d>] ? rtnl_fill_ifinfo+0x9bd/0xc70
+[  136.546400]  [<c11d6cae>] ? nla_parse+0x6e/0xb0
+[  136.546409]  [<c12db931>] rtnl_newlink+0x361/0x510
+[  136.546420]  [<c1023240>] ? vmalloc_sync_all+0x100/0x100
+[  136.546429]  [<c1362762>] ? error_code+0x5a/0x60
+[  136.546438]  [<c12db5d0>] ? rtnl_configure_link+0x80/0x80
+[  136.546446]  [<c12db27a>] rtnetlink_rcv_msg+0xfa/0x210
+[  136.546454]  [<c12db180>] ? __rtnl_unlock+0x20/0x20
+[  136.546463]  [<c12ee0fe>] netlink_rcv_skb+0x8e/0xb0
+[  136.546471]  [<c12daf1c>] rtnetlink_rcv+0x1c/0x30
+[  136.546479]  [<c12edafa>] netlink_unicast+0x23a/0x280
+[  136.546487]  [<c12ede6b>] netlink_sendmsg+0x26b/0x2f0
+[  136.546497]  [<c12bb828>] sock_sendmsg+0xc8/0x100
+[  136.546508]  [<c10adf61>] ? __alloc_pages_nodemask+0xe1/0x750
+[  136.546517]  [<c11d0602>] ? _copy_from_user+0x42/0x60
+[  136.546525]  [<c12c5e4c>] ? verify_iovec+0x4c/0xc0
+[  136.546534]  [<c12bd805>] sys_sendmsg+0x1c5/0x200
+[  136.546542]  [<c10c2150>] ? __do_fault+0x310/0x410
+[  136.546549]  [<c10c2c46>] ? do_wp_page+0x1d6/0x6b0
+[  136.546557]  [<c10c47d1>] ? handle_pte_fault+0xe1/0x720
+[  136.546565]  [<c12bd1af>] ? sys_getsockname+0x7f/0x90
+[  136.546574]  [<c10c4ec1>] ? handle_mm_fault+0xb1/0x180
+[  136.546582]  [<c1023240>] ? vmalloc_sync_all+0x100/0x100
+[  136.546589]  [<c10233b3>] ? do_page_fault+0x173/0x3d0
+[  136.546596]  [<c12bd87b>] ? sys_recvmsg+0x3b/0x60
+[  136.546605]  [<c12bdd83>] sys_socketcall+0x293/0x2d0
+[  136.546614]  [<c13629d0>] sysenter_do_call+0x12/0x26
+[  136.546619] Code:  Bad EIP value.
+[  136.546627] EIP: [<00000000>] 0x0 SS:ESP 0068:f15c3b48
+[  136.546645] CR2: 0000000000000000
+[  136.546652] ---[ end trace 6909b560e78934fa ]---
+
+Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- include/net/ip_vs.h            |    3 ++-
- net/netfilter/ipvs/ip_vs_ftp.c |   27 +++++++++++++++++++--------
- 2 files changed, 21 insertions(+), 9 deletions(-)
+ net/bridge/br_netfilter.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/include/net/ip_vs.h
-+++ b/include/net/ip_vs.h
-@@ -802,7 +802,8 @@ struct netns_ipvs {
- 	struct list_head	rs_table[IP_VS_RTAB_SIZE];
- 	/* ip_vs_app */
- 	struct list_head	app_list;
--
-+	/* ip_vs_ftp */
-+	struct ip_vs_app	*ftp_app;
- 	/* ip_vs_proto */
- 	#define IP_VS_PROTO_TAB_SIZE	32	/* must be power of 2 */
- 	struct ip_vs_proto_data *proto_data_table[IP_VS_PROTO_TAB_SIZE];
---- a/net/netfilter/ipvs/ip_vs_ftp.c
-+++ b/net/netfilter/ipvs/ip_vs_ftp.c
-@@ -411,25 +411,35 @@ static struct ip_vs_app ip_vs_ftp = {
- static int __net_init __ip_vs_ftp_init(struct net *net)
+--- a/net/bridge/br_netfilter.c
++++ b/net/bridge/br_netfilter.c
+@@ -104,10 +104,16 @@ static void fake_update_pmtu(struct dst_
  {
- 	int i, ret;
--	struct ip_vs_app *app = &ip_vs_ftp;
-+	struct ip_vs_app *app;
-+	struct netns_ipvs *ipvs = net_ipvs(net);
+ }
+ 
++static u32 *fake_cow_metrics(struct dst_entry *dst, unsigned long old)
++{
++	return NULL;
++}
 +
-+	app = kmemdup(&ip_vs_ftp, sizeof(struct ip_vs_app), GFP_KERNEL);
-+	if (!app)
-+		return -ENOMEM;
-+	INIT_LIST_HEAD(&app->a_list);
-+	INIT_LIST_HEAD(&app->incs_list);
-+	ipvs->ftp_app = app;
+ static struct dst_ops fake_dst_ops = {
+ 	.family =		AF_INET,
+ 	.protocol =		cpu_to_be16(ETH_P_IP),
+ 	.update_pmtu =		fake_update_pmtu,
++	.cow_metrics =		fake_cow_metrics,
+ };
  
- 	ret = register_ip_vs_app(net, app);
- 	if (ret)
--		return ret;
-+		goto err_exit;
- 
- 	for (i=0; i<IP_VS_APP_MAX_PORTS; i++) {
- 		if (!ports[i])
- 			continue;
- 		ret = register_ip_vs_app_inc(net, app, app->protocol, ports[i]);
- 		if (ret)
--			break;
-+			goto err_unreg;
- 		pr_info("%s: loaded support on port[%d] = %d\n",
- 			app->name, i, ports[i]);
- 	}
-+	return 0;
- 
--	if (ret)
--		unregister_ip_vs_app(net, app);
--
-+err_unreg:
-+	unregister_ip_vs_app(net, app);
-+err_exit:
-+	kfree(ipvs->ftp_app);
- 	return ret;
- }
  /*
-@@ -437,9 +447,10 @@ static int __net_init __ip_vs_ftp_init(s
-  */
- static void __ip_vs_ftp_exit(struct net *net)
- {
--	struct ip_vs_app *app = &ip_vs_ftp;
-+	struct netns_ipvs *ipvs = net_ipvs(net);
- 
--	unregister_ip_vs_app(net, app);
-+	unregister_ip_vs_app(net, ipvs->ftp_app);
-+	kfree(ipvs->ftp_app);
- }
- 
- static struct pernet_operations ip_vs_ftp_ops = {
 
 
