@@ -1,156 +1,634 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751622Ab1GHKSu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 06:18:50 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:35701 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750783Ab1GHKSs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 06:18:48 -0400
+	id S1751270Ab1GHKUp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 06:20:45 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:38590 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750764Ab1GHKUo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 06:20:44 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+Subject: [Update][PATCH 3/5] PM / Domains: Rework locking
+Date: Fri, 8 Jul 2011 12:21:33 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc6+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, Kevin Hilman <khilman@ti.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, Paul Walmsley <paul@pwsan.com>,
+        Greg KH <gregkh@suse.de>, Magnus Damm <magnus.damm@gmail.com>
+References: <201107062248.35586.rjw@sisk.pl> <201107062253.48558.rjw@sisk.pl>
+In-Reply-To: <201107062253.48558.rjw@sisk.pl>
 MIME-Version: 1.0
-In-Reply-To: <1310115250-3859-3-git-send-email-marc.zyngier@arm.com>
-References: <1310115250-3859-1-git-send-email-marc.zyngier@arm.com>
-	<1310115250-3859-3-git-send-email-marc.zyngier@arm.com>
-Date: Fri, 8 Jul 2011 12:18:47 +0200
-Message-ID: <CAHXqBFJcO8-7v+SZ88jx6XjDQBFUybTjOU=LWdsc3ChD4bU_=g@mail.gmail.com>
-Subject: Re: [RFC PATCH v2 2/4] Core device subsystem implementation
-From: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107081221.33984.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/7/8 Marc Zyngier <marc.zyngier@arm.com>:
-> There is a small number of devices that the core kernel needs very
-> early in the boot process, namely an interrupt controller and a timer,
-> long before the device model is up and running.
->
-> The "core device subsystem" offers a class based device/driver
-> matching model, doesn't rely on any other subsystem, is very (too?)
-> simple, and support getting information both from DT as well as from
-> static data provided by the platform. It also gives the opportunity to
-> define the probing order by offering a sorting hook at runtime.
->
-> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
-[...]
-> --- /dev/null
-> +++ b/drivers/base/core_device.c
-> @@ -0,0 +1,108 @@
-[...]
-> +static int __init core_device_match(struct core_device *dev,
-> +                                   struct core_device_id *ids)
-> +{
-> +       int i;
-> +#ifdef CONFIG_OF
-> +       if (dev->of_node)
-> +               for (i = 0; ids[i].name != NULL; i++)
-> +                       if (of_device_is_compatible(dev->of_node,
-> +                                                   ids[i].name))
-> +                               return 1;
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Add an else here? I assume DT devices shouldn't be matched by name.
+CUrrently, the .start_device() and .stop_device() callbacks from
+struct generic_pm_domain() as well as the device drivers' runtime PM
+callbacks used by the generic PM domains code are executed under
+the generic PM domain lock.  This, unfortunately, is prone to
+deadlocks, for example if a device and its parent are boths members
+of the same PM domain.  For this reason, it would be better if the
+PM domains code didn't execute device callbacks under the lock.
 
-> +#endif
-> +       for (i = 0; ids[i].name != NULL; i++)
-> +               if (!strcmp(dev->name, ids[i].name))
-> +                       return 1;
-> +
-> +       return 0;
-> +}
-> +
-[...]
-> --- /dev/null
-> +++ b/include/linux/core_device.h
-> @@ -0,0 +1,69 @@
-> +/*
-> + * Copyright (C) 2011 ARM Ltd
-> + * Written by Marc Zyngier <marc.zyngier@arm.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * Core device init support
-> + */
-> +
-> +#ifndef _CORE_DEVICE_H
-> +#define _CORE_DEVICE_H
-> +
-> +#include <linux/list.h>
-> +#include <linux/ioport.h>
-> +#include <linux/of.h>
-> +
-> +struct core_device_id {
-> +       const char              *name;
-> +};
-> +
-> +enum core_device_class {
-> +       CORE_DEV_CLASS_IRQ,
-> +       CORE_DEV_CLASS_TIMER,
-> +       CORE_DEV_CLASS_MAX              /* Do not use as a class */
-> +};
+Rework the locking in the generic PM domains code so that the lock
+is dropped for the execution of device callbacks.  To this end,
+introduce PM domains states reflecting the current status of a PM
+domain and such that the PM domain lock cannot be acquired if the
+status is GPD_STATE_BUSY.  Make threads attempting to acquire a PM
+domain's lock wait until the status changes to either
+GPD_STATE_ACTIVE or GPD_STATE_POWER_OFF.
 
-CORE_DEV_CLASS_MAX -> CORE_DEV_CLASS_COUNT
+This change by itself doesn't fix the deadlock problem mentioned
+above, but the mechanism introduced by it will be used for for this
+purpose by a subsequent patch.
 
-_MAX suggests that this is the largest value, but in this case it is a count.
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
 
-> +
-> +struct core_device {
-> +       const char              *name;
-> +       u32                     num_resources;
-> +       struct resource         *resource;
-> +#ifdef CONFIG_OF
-> +       struct device_node      *of_node;
-> +#endif
-> +       struct list_head        entry;
-> +};
-> +
-> +struct core_driver {
-> +       int                     (*init)(struct core_device *);
-> +       struct core_device_id   *ids;
-> +};
-> +
-> +void core_device_register(enum core_device_class class,
-> +                         struct core_device *dev);
-> +void core_driver_init_class(enum core_device_class class,
-> +                           void (*sort)(struct list_head *));
-> +#ifdef CONFIG_OF
-> +void of_core_device_populate(enum core_device_class class,
-> +                            struct of_device_id *matches);
-> +#else
-> +static inline void of_core_device_populate(enum core_device_class class,
-> +                                          struct of_device_id *matches)
-> +{
-> +}
-> +#endif
-> +
-> +struct core_driver_setup_block {
-> +       enum core_device_class  class;
-> +       struct core_driver      *drv;
-> +};
-> +
-> +#define core_driver_register(cls, drv)                                 \
-> +static struct core_driver_setup_block __core_driver_block_##cls##_##drv        \
-> +       __used __section(.init.core_driver)                             \
-> +       __attribute__((aligned((sizeof(long)))))                        \
-> +       = { cls, &drv }
-> +
-> +#endif
+pm_genpd_prepare() has to check pending wakeup requests before it changes
+prepared_count, because otherwise the domain won't be powered on in
+response to the wakeup request.
 
-Since core_driver_register() is not a function it shouldn't look like
-one. Something like DEFINE_CORE_DRIVER_ENTRY() would be better. I
-would make cls to be only the last word of CORE_DEV_CLASS_* values so
-its less typing in the board files (unless you don't like CPP string
-concatenation).
+Thanks,
+Rafael
 
-+#define DEFINE_CORE_DRIVER_ENTRY(cls, drv)                               \
-+static struct core_driver_setup_block __core_driver_block_##cls##_##drv  \
-+       __used __section(.init.core_driver)                               \
-+       = { CORE_DEV_CLASS_##cls, &drv }
+---
+ drivers/base/power/domain.c |  249 +++++++++++++++++++++++++++++++-------------
+ include/linux/pm_domain.h   |   10 +
+ 2 files changed, 185 insertions(+), 74 deletions(-)
 
-Best Regards,
-Micha³ Miros³aw
+Index: linux-2.6/include/linux/pm_domain.h
+===================================================================
+--- linux-2.6.orig/include/linux/pm_domain.h
++++ linux-2.6/include/linux/pm_domain.h
+@@ -11,8 +11,11 @@
+ 
+ #include <linux/device.h>
+ 
+-#define GPD_IN_SUSPEND	1
+-#define GPD_POWER_OFF	2
++enum gpd_status {
++	GPD_STATE_ACTIVE = 0,	/* PM domain is active */
++	GPD_STATE_BUSY,		/* Something is happening to the PM domain */
++	GPD_STATE_POWER_OFF,	/* PM domain is off */
++};
+ 
+ struct dev_power_governor {
+ 	bool (*power_down_ok)(struct dev_pm_domain *domain);
+@@ -29,7 +32,8 @@ struct generic_pm_domain {
+ 	struct work_struct power_off_work;
+ 	unsigned int in_progress;	/* Number of devices being suspended now */
+ 	unsigned int sd_count;	/* Number of subdomains with power "on" */
+-	bool power_is_off;	/* Whether or not power has been removed */
++	enum gpd_status status;	/* Current state of the domain */
++	wait_queue_head_t status_wait_queue;
+ 	unsigned int device_count;	/* Number of devices */
+ 	unsigned int suspended_count;	/* System suspend device counter */
+ 	unsigned int prepared_count;	/* Suspend counter of prepared devices */
+Index: linux-2.6/drivers/base/power/domain.c
+===================================================================
+--- linux-2.6.orig/drivers/base/power/domain.c
++++ linux-2.6/drivers/base/power/domain.c
+@@ -13,6 +13,8 @@
+ #include <linux/pm_domain.h>
+ #include <linux/slab.h>
+ #include <linux/err.h>
++#include <linux/sched.h>
++#include <linux/suspend.h>
+ 
+ #ifdef CONFIG_PM
+ 
+@@ -30,6 +32,34 @@ static void genpd_sd_counter_dec(struct
+ 			genpd->sd_count--;
+ }
+ 
++static void genpd_acquire_lock(struct generic_pm_domain *genpd)
++{
++	DEFINE_WAIT(wait);
++
++	mutex_lock(&genpd->lock);
++	/*
++	 * Wait for the domain to transition into either the active,
++	 * or the power off state.
++	 */
++	for (;;) {
++		prepare_to_wait(&genpd->status_wait_queue, &wait,
++				TASK_UNINTERRUPTIBLE);
++		if (genpd->status != GPD_STATE_BUSY)
++			break;
++		mutex_unlock(&genpd->lock);
++
++		schedule();
++
++		mutex_lock(&genpd->lock);
++	}
++	finish_wait(&genpd->status_wait_queue, &wait);
++}
++
++static void genpd_release_lock(struct generic_pm_domain *genpd)
++{
++	mutex_unlock(&genpd->lock);
++}
++
+ /**
+  * pm_genpd_poweron - Restore power to a given PM domain and its parents.
+  * @genpd: PM domain to power up.
+@@ -39,22 +69,50 @@ static void genpd_sd_counter_dec(struct
+  */
+ static int pm_genpd_poweron(struct generic_pm_domain *genpd)
+ {
++	struct generic_pm_domain *parent = genpd->parent;
++	DEFINE_WAIT(wait);
+ 	int ret = 0;
+ 
+  start:
+-	if (genpd->parent)
+-		mutex_lock(&genpd->parent->lock);
+-	mutex_lock_nested(&genpd->lock, SINGLE_DEPTH_NESTING);
++	if (parent) {
++		mutex_lock(&parent->lock);
++		mutex_lock_nested(&genpd->lock, SINGLE_DEPTH_NESTING);
++	} else {
++		mutex_lock(&genpd->lock);
++	}
++	/*
++	 * Wait for the domain to transition into either the active,
++	 * or the power off state.
++	 */
++	for (;;) {
++		prepare_to_wait(&genpd->status_wait_queue, &wait,
++				TASK_UNINTERRUPTIBLE);
++		if (genpd->status != GPD_STATE_BUSY)
++			break;
++		mutex_unlock(&genpd->lock);
++		if (parent)
++			mutex_unlock(&parent->lock);
++
++		schedule();
+ 
+-	if (!genpd->power_is_off
++		if (parent) {
++			mutex_lock(&parent->lock);
++			mutex_lock_nested(&genpd->lock, SINGLE_DEPTH_NESTING);
++		} else {
++			mutex_lock(&genpd->lock);
++		}
++	}
++	finish_wait(&genpd->status_wait_queue, &wait);
++
++	if (genpd->status == GPD_STATE_ACTIVE
+ 	    || (genpd->prepared_count > 0 && genpd->suspend_power_off))
+ 		goto out;
+ 
+-	if (genpd->parent && genpd->parent->power_is_off) {
++	if (parent && parent->status != GPD_STATE_ACTIVE) {
+ 		mutex_unlock(&genpd->lock);
+-		mutex_unlock(&genpd->parent->lock);
++		mutex_unlock(&parent->lock);
+ 
+-		ret = pm_genpd_poweron(genpd->parent);
++		ret = pm_genpd_poweron(parent);
+ 		if (ret)
+ 			return ret;
+ 
+@@ -67,14 +125,14 @@ static int pm_genpd_poweron(struct gener
+ 			goto out;
+ 	}
+ 
+-	genpd->power_is_off = false;
+-	if (genpd->parent)
+-		genpd->parent->sd_count++;
++	genpd->status = GPD_STATE_ACTIVE;
++	if (parent)
++		parent->sd_count++;
+ 
+  out:
+ 	mutex_unlock(&genpd->lock);
+-	if (genpd->parent)
+-		mutex_unlock(&genpd->parent->lock);
++	if (parent)
++		mutex_unlock(&parent->lock);
+ 
+ 	return ret;
+ }
+@@ -90,6 +148,7 @@ static int pm_genpd_poweron(struct gener
+  */
+ static int __pm_genpd_save_device(struct dev_list_entry *dle,
+ 				  struct generic_pm_domain *genpd)
++	__releases(&genpd->lock) __acquires(&genpd->lock)
+ {
+ 	struct device *dev = dle->dev;
+ 	struct device_driver *drv = dev->driver;
+@@ -98,6 +157,8 @@ static int __pm_genpd_save_device(struct
+ 	if (dle->need_restore)
+ 		return 0;
+ 
++	mutex_unlock(&genpd->lock);
++
+ 	if (drv && drv->pm && drv->pm->runtime_suspend) {
+ 		if (genpd->start_device)
+ 			genpd->start_device(dev);
+@@ -108,6 +169,8 @@ static int __pm_genpd_save_device(struct
+ 			genpd->stop_device(dev);
+ 	}
+ 
++	mutex_lock(&genpd->lock);
++
+ 	if (!ret)
+ 		dle->need_restore = true;
+ 
+@@ -121,6 +184,7 @@ static int __pm_genpd_save_device(struct
+  */
+ static void __pm_genpd_restore_device(struct dev_list_entry *dle,
+ 				      struct generic_pm_domain *genpd)
++	__releases(&genpd->lock) __acquires(&genpd->lock)
+ {
+ 	struct device *dev = dle->dev;
+ 	struct device_driver *drv = dev->driver;
+@@ -128,6 +192,8 @@ static void __pm_genpd_restore_device(st
+ 	if (!dle->need_restore)
+ 		return;
+ 
++	mutex_unlock(&genpd->lock);
++
+ 	if (drv && drv->pm && drv->pm->runtime_resume) {
+ 		if (genpd->start_device)
+ 			genpd->start_device(dev);
+@@ -138,6 +204,8 @@ static void __pm_genpd_restore_device(st
+ 			genpd->stop_device(dev);
+ 	}
+ 
++	mutex_lock(&genpd->lock);
++
+ 	dle->need_restore = false;
+ }
+ 
+@@ -150,13 +218,14 @@ static void __pm_genpd_restore_device(st
+  * the @genpd's devices' drivers and remove power from @genpd.
+  */
+ static int pm_genpd_poweroff(struct generic_pm_domain *genpd)
++	__releases(&genpd->lock) __acquires(&genpd->lock)
+ {
+ 	struct generic_pm_domain *parent;
+ 	struct dev_list_entry *dle;
+ 	unsigned int not_suspended;
+ 	int ret;
+ 
+-	if (genpd->power_is_off || genpd->prepared_count > 0)
++	if (genpd->status == GPD_STATE_POWER_OFF || genpd->prepared_count > 0)
+ 		return 0;
+ 
+ 	if (genpd->sd_count > 0)
+@@ -175,22 +244,36 @@ static int pm_genpd_poweroff(struct gene
+ 			return -EAGAIN;
+ 	}
+ 
++	genpd->status = GPD_STATE_BUSY;
++
+ 	list_for_each_entry_reverse(dle, &genpd->dev_list, node) {
+ 		ret = __pm_genpd_save_device(dle, genpd);
+ 		if (ret)
+ 			goto err_dev;
+ 	}
+ 
++	mutex_unlock(&genpd->lock);
++
++	parent = genpd->parent;
++	if (parent) {
++		genpd_acquire_lock(parent);
++		mutex_lock_nested(&genpd->lock, SINGLE_DEPTH_NESTING);
++	} else {
++		mutex_lock(&genpd->lock);
++	}
++
+ 	if (genpd->power_off)
+ 		genpd->power_off(genpd);
+ 
+-	genpd->power_is_off = true;
++	genpd->status = GPD_STATE_POWER_OFF;
++	wake_up_all(&genpd->status_wait_queue);
+ 
+-	parent = genpd->parent;
+ 	if (parent) {
+ 		genpd_sd_counter_dec(parent);
+ 		if (parent->sd_count == 0)
+ 			queue_work(pm_wq, &parent->power_off_work);
++
++		genpd_release_lock(parent);
+ 	}
+ 
+ 	return 0;
+@@ -199,6 +282,9 @@ static int pm_genpd_poweroff(struct gene
+ 	list_for_each_entry_continue(dle, &genpd->dev_list, node)
+ 		__pm_genpd_restore_device(dle, genpd);
+ 
++	genpd->status = GPD_STATE_ACTIVE;
++	wake_up_all(&genpd->status_wait_queue);
++
+ 	return ret;
+ }
+ 
+@@ -212,13 +298,9 @@ static void genpd_power_off_work_fn(stru
+ 
+ 	genpd = container_of(work, struct generic_pm_domain, power_off_work);
+ 
+-	if (genpd->parent)
+-		mutex_lock(&genpd->parent->lock);
+-	mutex_lock_nested(&genpd->lock, SINGLE_DEPTH_NESTING);
++	genpd_acquire_lock(genpd);
+ 	pm_genpd_poweroff(genpd);
+-	mutex_unlock(&genpd->lock);
+-	if (genpd->parent)
+-		mutex_unlock(&genpd->parent->lock);
++	genpd_release_lock(genpd);
+ }
+ 
+ /**
+@@ -239,23 +321,17 @@ static int pm_genpd_runtime_suspend(stru
+ 	if (IS_ERR(genpd))
+ 		return -EINVAL;
+ 
+-	if (genpd->parent)
+-		mutex_lock(&genpd->parent->lock);
+-	mutex_lock_nested(&genpd->lock, SINGLE_DEPTH_NESTING);
+-
+ 	if (genpd->stop_device) {
+ 		int ret = genpd->stop_device(dev);
+ 		if (ret)
+-			goto out;
++			return ret;
+ 	}
++
++	genpd_acquire_lock(genpd);
+ 	genpd->in_progress++;
+ 	pm_genpd_poweroff(genpd);
+ 	genpd->in_progress--;
+-
+- out:
+-	mutex_unlock(&genpd->lock);
+-	if (genpd->parent)
+-		mutex_unlock(&genpd->parent->lock);
++	genpd_release_lock(genpd);
+ 
+ 	return 0;
+ }
+@@ -276,9 +352,6 @@ static void __pm_genpd_runtime_resume(st
+ 			break;
+ 		}
+ 	}
+-
+-	if (genpd->start_device)
+-		genpd->start_device(dev);
+ }
+ 
+ /**
+@@ -304,9 +377,15 @@ static int pm_genpd_runtime_resume(struc
+ 	if (ret)
+ 		return ret;
+ 
+-	mutex_lock(&genpd->lock);
++	genpd_acquire_lock(genpd);
++	genpd->status = GPD_STATE_BUSY;
+ 	__pm_genpd_runtime_resume(dev, genpd);
+-	mutex_unlock(&genpd->lock);
++	genpd->status = GPD_STATE_ACTIVE;
++	wake_up_all(&genpd->status_wait_queue);
++	genpd_release_lock(genpd);
++
++	if (genpd->start_device)
++		genpd->start_device(dev);
+ 
+ 	return 0;
+ }
+@@ -339,7 +418,7 @@ static void pm_genpd_sync_poweroff(struc
+ {
+ 	struct generic_pm_domain *parent = genpd->parent;
+ 
+-	if (genpd->power_is_off)
++	if (genpd->status == GPD_STATE_POWER_OFF)
+ 		return;
+ 
+ 	if (genpd->suspended_count != genpd->device_count || genpd->sd_count > 0)
+@@ -348,7 +427,7 @@ static void pm_genpd_sync_poweroff(struc
+ 	if (genpd->power_off)
+ 		genpd->power_off(genpd);
+ 
+-	genpd->power_is_off = true;
++	genpd->status = GPD_STATE_POWER_OFF;
+ 	if (parent) {
+ 		genpd_sd_counter_dec(parent);
+ 		pm_genpd_sync_poweroff(parent);
+@@ -375,32 +454,41 @@ static int pm_genpd_prepare(struct devic
+ 	if (IS_ERR(genpd))
+ 		return -EINVAL;
+ 
+-	mutex_lock(&genpd->lock);
++	/*
++	 * If a wakeup request is pending for the device, it should be woken up
++	 * at this point and a system wakeup event should be reported if it's
++	 * set up to wake up the system from sleep states.
++	 */
++	pm_runtime_get_noresume(dev);
++	if (pm_runtime_barrier(dev) && device_may_wakeup(dev))
++		pm_wakeup_event(dev, 0);
++
++	if (pm_wakeup_pending()) {
++		pm_runtime_put_sync(dev);
++		return -EBUSY;
++	}
++
++	genpd_acquire_lock(genpd);
+ 
+ 	if (genpd->prepared_count++ == 0)
+-		genpd->suspend_power_off = genpd->power_is_off;
++		genpd->suspend_power_off = genpd->status == GPD_STATE_POWER_OFF;
++
++	genpd_release_lock(genpd);
+ 
+ 	if (genpd->suspend_power_off) {
+-		mutex_unlock(&genpd->lock);
++		pm_runtime_put_noidle(dev);
+ 		return 0;
+ 	}
+ 
+ 	/*
+-	 * If the device is in the (runtime) "suspended" state, call
+-	 * .start_device() for it, if defined.
+-	 */
+-	if (pm_runtime_suspended(dev))
+-		__pm_genpd_runtime_resume(dev, genpd);
+-
+-	/*
+-	 * Do not check if runtime resume is pending at this point, because it
+-	 * has been taken care of already and if pm_genpd_poweron() ran at this
+-	 * point as a result of the check, it would deadlock.
++	 * The PM domain must be in the GPD_STATE_ACTIVE state at this point,
++	 * so pm_genpd_poweron() will return immediately, but if the device
++	 * is suspended (e.g. it's been stopped by .stop_device()), we need
++	 * to make it operational.
+ 	 */
++	pm_runtime_resume(dev);
+ 	__pm_runtime_disable(dev, false);
+ 
+-	mutex_unlock(&genpd->lock);
+-
+ 	ret = pm_generic_prepare(dev);
+ 	if (ret) {
+ 		mutex_lock(&genpd->lock);
+@@ -409,7 +497,10 @@ static int pm_genpd_prepare(struct devic
+ 			genpd->suspend_power_off = false;
+ 
+ 		mutex_unlock(&genpd->lock);
++		pm_runtime_enable(dev);
+ 	}
++
++	pm_runtime_put_sync(dev);
+ 	return ret;
+ }
+ 
+@@ -726,7 +817,7 @@ static int pm_genpd_restore_noirq(struct
+ 	 * guaranteed that this function will never run twice in parallel for
+ 	 * the same PM domain, so it is not necessary to use locking here.
+ 	 */
+-	genpd->power_is_off = true;
++	genpd->status = GPD_STATE_POWER_OFF;
+ 	if (genpd->suspend_power_off) {
+ 		/*
+ 		 * The boot kernel might put the domain into the power on state,
+@@ -836,9 +927,9 @@ int pm_genpd_add_device(struct generic_p
+ 	if (IS_ERR_OR_NULL(genpd) || IS_ERR_OR_NULL(dev))
+ 		return -EINVAL;
+ 
+-	mutex_lock(&genpd->lock);
++	genpd_acquire_lock(genpd);
+ 
+-	if (genpd->power_is_off) {
++	if (genpd->status == GPD_STATE_POWER_OFF) {
+ 		ret = -EINVAL;
+ 		goto out;
+ 	}
+@@ -870,7 +961,7 @@ int pm_genpd_add_device(struct generic_p
+ 	spin_unlock_irq(&dev->power.lock);
+ 
+  out:
+-	mutex_unlock(&genpd->lock);
++	genpd_release_lock(genpd);
+ 
+ 	return ret;
+ }
+@@ -891,7 +982,7 @@ int pm_genpd_remove_device(struct generi
+ 	if (IS_ERR_OR_NULL(genpd) || IS_ERR_OR_NULL(dev))
+ 		return -EINVAL;
+ 
+-	mutex_lock(&genpd->lock);
++	genpd_acquire_lock(genpd);
+ 
+ 	if (genpd->prepared_count > 0) {
+ 		ret = -EAGAIN;
+@@ -915,7 +1006,7 @@ int pm_genpd_remove_device(struct generi
+ 	}
+ 
+  out:
+-	mutex_unlock(&genpd->lock);
++	genpd_release_lock(genpd);
+ 
+ 	return ret;
+ }
+@@ -934,9 +1025,19 @@ int pm_genpd_add_subdomain(struct generi
+ 	if (IS_ERR_OR_NULL(genpd) || IS_ERR_OR_NULL(new_subdomain))
+ 		return -EINVAL;
+ 
+-	mutex_lock(&genpd->lock);
++ start:
++	genpd_acquire_lock(genpd);
++	mutex_lock_nested(&new_subdomain->lock, SINGLE_DEPTH_NESTING);
+ 
+-	if (genpd->power_is_off && !new_subdomain->power_is_off) {
++	if (new_subdomain->status != GPD_STATE_POWER_OFF
++	    && new_subdomain->status != GPD_STATE_ACTIVE) {
++		mutex_unlock(&new_subdomain->lock);
++		genpd_release_lock(genpd);
++		goto start;
++	}
++
++	if (genpd->status == GPD_STATE_POWER_OFF
++	    &&  new_subdomain->status != GPD_STATE_POWER_OFF) {
+ 		ret = -EINVAL;
+ 		goto out;
+ 	}
+@@ -948,17 +1049,14 @@ int pm_genpd_add_subdomain(struct generi
+ 		}
+ 	}
+ 
+-	mutex_lock_nested(&new_subdomain->lock, SINGLE_DEPTH_NESTING);
+-
+ 	list_add_tail(&new_subdomain->sd_node, &genpd->sd_list);
+ 	new_subdomain->parent = genpd;
+-	if (!subdomain->power_is_off)
++	if (subdomain->status != GPD_STATE_POWER_OFF)
+ 		genpd->sd_count++;
+ 
+-	mutex_unlock(&new_subdomain->lock);
+-
+  out:
+-	mutex_unlock(&genpd->lock);
++	mutex_unlock(&new_subdomain->lock);
++	genpd_release_lock(genpd);
+ 
+ 	return ret;
+ }
+@@ -977,7 +1075,8 @@ int pm_genpd_remove_subdomain(struct gen
+ 	if (IS_ERR_OR_NULL(genpd) || IS_ERR_OR_NULL(target))
+ 		return -EINVAL;
+ 
+-	mutex_lock(&genpd->lock);
++ start:
++	genpd_acquire_lock(genpd);
+ 
+ 	list_for_each_entry(subdomain, &genpd->sd_list, sd_node) {
+ 		if (subdomain != target)
+@@ -985,9 +1084,16 @@ int pm_genpd_remove_subdomain(struct gen
+ 
+ 		mutex_lock_nested(&subdomain->lock, SINGLE_DEPTH_NESTING);
+ 
++		if (subdomain->status != GPD_STATE_POWER_OFF
++		    && subdomain->status != GPD_STATE_ACTIVE) {
++			mutex_unlock(&subdomain->lock);
++			genpd_release_lock(genpd);
++			goto start;
++		}
++
+ 		list_del(&subdomain->sd_node);
+ 		subdomain->parent = NULL;
+-		if (!subdomain->power_is_off)
++		if (subdomain->status != GPD_STATE_POWER_OFF)
+ 			genpd_sd_counter_dec(genpd);
+ 
+ 		mutex_unlock(&subdomain->lock);
+@@ -996,7 +1102,7 @@ int pm_genpd_remove_subdomain(struct gen
+ 		break;
+ 	}
+ 
+-	mutex_unlock(&genpd->lock);
++	genpd_release_lock(genpd);
+ 
+ 	return ret;
+ }
+@@ -1022,7 +1128,8 @@ void pm_genpd_init(struct generic_pm_dom
+ 	INIT_WORK(&genpd->power_off_work, genpd_power_off_work_fn);
+ 	genpd->in_progress = 0;
+ 	genpd->sd_count = 0;
+-	genpd->power_is_off = is_off;
++	genpd->status = is_off ? GPD_STATE_POWER_OFF : GPD_STATE_ACTIVE;
++	init_waitqueue_head(&genpd->status_wait_queue);
+ 	genpd->device_count = 0;
+ 	genpd->suspended_count = 0;
+ 	genpd->domain.ops.runtime_suspend = pm_genpd_runtime_suspend;
+
