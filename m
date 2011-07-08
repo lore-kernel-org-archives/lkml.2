@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754162Ab1GHFCm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:02:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41938 "EHLO mx2.suse.de"
+	id S1754258Ab1GHFQb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:16:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41924 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753691Ab1GHFCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:02:39 -0400
+	id S1753829Ab1GHFCg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:02:36 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:56 2011
-Message-Id: <20110708001656.895821746@clark.kroah.org>
+Message-Id: <20110708001656.787329272@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:16:15 -0700
+Date: Thu, 07 Jul 2011 17:16:14 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Minchan Kim <minchan.kim@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: [043/107] mm/memory-failure.c: fix page isolated count mismatch
+        Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de>
+Subject: [042/107] USB: Add new FT232H chip to drivers/usb/serial/ftdi_sio.c
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,56 +25,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Minchan Kim <minchan.kim@gmail.com>
+From: Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de>
 
-commit 5db8a73a8d7cc6a66afbf25ed7fda338caa8f5f9 upstream.
+commit 309427b6351b763917caac3e4b2ab5651df99823 upstream.
 
-Pages isolated for migration are accounted with the vmstat counters
-NR_ISOLATE_[ANON|FILE].  Callers of migrate_pages() are expected to
-increment these counters when pages are isolated from the LRU.  Once the
-pages have been migrated, they are put back on the LRU or freed and the
-isolated count is decremented.
+appended patch adds support for the new FTDI FT232H chip. This chip is a
+single channel version of the dual FT2232H/quad FT4232H, coming with it's
+own default PID 0x6014 (FT2232H uses the same PID 0x6010 like FT2232C,
+FT4232H has also it's own PID).
 
-Memory failure is not properly accounting for pages it isolates causing
-the NR_ISOLATED counters to be negative.  On SMP builds, this goes
-unnoticed as negative counters are treated as 0 due to expected per-cpu
-drift.  On UP builds, the counter is treated by too_many_isolated() as a
-large value causing processes to enter D state during page reclaim or
-compaction.  This patch accounts for pages isolated by memory failure
-correctly.
+The patch was checked on an UM232H module and a terminal program with TX/RX
+shorted to that typing in the terminal reproduced the characters.
 
-[mel@csn.ul.ie: rewrote changelog]
-Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/memory-failure.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/usb/serial/ftdi_sio.c     |   19 ++++++++++++++-----
+ drivers/usb/serial/ftdi_sio.h     |    3 ++-
+ drivers/usb/serial/ftdi_sio_ids.h |    1 +
+ 3 files changed, 17 insertions(+), 6 deletions(-)
 
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -52,6 +52,7 @@
- #include <linux/swapops.h>
- #include <linux/hugetlb.h>
- #include <linux/memory_hotplug.h>
-+#include <linux/mm_inline.h>
- #include "internal.h"
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -179,6 +179,7 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_232RL_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_8U2232C_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_4232H_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_232H_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_MICRO_CHAMELEON_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_RELAIS_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_PID) },
+@@ -848,7 +849,8 @@ static const char *ftdi_chip_name[] = {
+ 	[FT2232C] = "FT2232C",
+ 	[FT232RL] = "FT232RL",
+ 	[FT2232H] = "FT2232H",
+-	[FT4232H] = "FT4232H"
++	[FT4232H] = "FT4232H",
++	[FT232H]  = "FT232H"
+ };
  
- int sysctl_memory_failure_early_kill __read_mostly = 0;
-@@ -1463,7 +1464,8 @@ int soft_offline_page(struct page *page,
- 	ret = isolate_lru_page(page);
- 	if (!ret) {
- 		LIST_HEAD(pagelist);
--
-+		inc_zone_page_state(page, NR_ISOLATED_ANON +
-+					    page_is_file_cache(page));
- 		list_add(&page->lru, &pagelist);
- 		ret = migrate_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL,
- 								0, true);
+ 
+@@ -1168,6 +1170,7 @@ static __u32 get_ftdi_divisor(struct tty
+ 		break;
+ 	case FT2232H: /* FT2232H chip */
+ 	case FT4232H: /* FT4232H chip */
++	case FT232H:  /* FT232H chip */
+ 		if ((baud <= 12000000) & (baud >= 1200)) {
+ 			div_value = ftdi_2232h_baud_to_divisor(baud);
+ 		} else if (baud < 1200) {
+@@ -1429,9 +1432,12 @@ static void ftdi_determine_type(struct u
+ 	} else if (version < 0x600) {
+ 		/* Assume it's an FT232BM (or FT245BM) */
+ 		priv->chip_type = FT232BM;
+-	} else {
+-		/* Assume it's an FT232R */
++	} else if (version < 0x900) {
++		/* Assume it's an FT232RL */
+ 		priv->chip_type = FT232RL;
++	} else {
++		/* Assume it's an FT232H */
++		priv->chip_type = FT232H;
+ 	}
+ 	dev_info(&udev->dev, "Detected %s\n", ftdi_chip_name[priv->chip_type]);
+ }
+@@ -1559,7 +1565,8 @@ static int create_sysfs_attrs(struct usb
+ 		     priv->chip_type == FT2232C ||
+ 		     priv->chip_type == FT232RL ||
+ 		     priv->chip_type == FT2232H ||
+-		     priv->chip_type == FT4232H)) {
++		     priv->chip_type == FT4232H ||
++		     priv->chip_type == FT232H)) {
+ 			retval = device_create_file(&port->dev,
+ 						    &dev_attr_latency_timer);
+ 		}
+@@ -1580,7 +1587,8 @@ static void remove_sysfs_attrs(struct us
+ 		    priv->chip_type == FT2232C ||
+ 		    priv->chip_type == FT232RL ||
+ 		    priv->chip_type == FT2232H ||
+-		    priv->chip_type == FT4232H) {
++		    priv->chip_type == FT4232H ||
++                    priv->chip_type == FT232H) {
+ 			device_remove_file(&port->dev, &dev_attr_latency_timer);
+ 		}
+ 	}
+@@ -2212,6 +2220,7 @@ static int ftdi_tiocmget(struct tty_stru
+ 	case FT232RL:
+ 	case FT2232H:
+ 	case FT4232H:
++	case FT232H:
+ 		len = 2;
+ 		break;
+ 	default:
+--- a/drivers/usb/serial/ftdi_sio.h
++++ b/drivers/usb/serial/ftdi_sio.h
+@@ -156,7 +156,8 @@ enum ftdi_chip_type {
+ 	FT2232C = 4,
+ 	FT232RL = 5,
+ 	FT2232H = 6,
+-	FT4232H = 7
++	FT4232H = 7,
++	FT232H  = 8
+ };
+ 
+ enum ftdi_sio_baudrate {
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -22,6 +22,7 @@
+ #define FTDI_8U232AM_ALT_PID 0x6006 /* FTDI's alternate PID for above */
+ #define FTDI_8U2232C_PID 0x6010 /* Dual channel device */
+ #define FTDI_4232H_PID 0x6011 /* Quad channel hi-speed device */
++#define FTDI_232H_PID  0x6014 /* Single channel hi-speed device */
+ #define FTDI_SIO_PID	0x8372	/* Product Id SIO application of 8U100AX */
+ #define FTDI_232RL_PID  0xFBFA  /* Product ID for FT232RL */
+ 
 
 
