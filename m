@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753375Ab1GHMTk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 08:19:40 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:55597 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751517Ab1GHMTi (ORCPT
+	id S1753363Ab1GHM12 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 08:27:28 -0400
+Received: from mail.coremap.or.id ([117.102.101.229]:39423 "HELO coremap.or.id"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1751232Ab1GHM11 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 08:19:38 -0400
-Date: Fri, 8 Jul 2011 15:18:18 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Ravishankar <ravishankarkm32@gmail.com>
-Cc: gregkh@suse.de, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>
-Subject: Re: [PATCH 4/4] Staging: comedi: fix warning: line over 80 character
- issue in rtd520.c
-Message-ID: <20110708121818.GY18655@shale.localdomain>
-References: <1310127766-22975-1-git-send-email-ravishankarkm32@gmail.com>
+	Fri, 8 Jul 2011 08:27:27 -0400
+X-Virus-Checked: Checked by ClamAV on coremap.or.id
+Message-ID: <20110708191036.72684z9vempdf78c@mail.coremap.or.id>
+Date: Fri,  8 Jul 2011 19:10:36 +0700
+From: Technical Support <coremap@coremap.or.id>
+Reply-to: webmasterhelphesk2011@w.cn
+To: undisclosed-recipients:;
+Subject: Soporte =?iso-8859-1?b?VOljbmljbw==?=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
 Content-Disposition: inline
-In-Reply-To: <1310127766-22975-1-git-send-email-ravishankarkm32@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 08, 2011 at 05:52:46PM +0530, Ravishankar wrote:
-> @@ -1701,7 +1703,8 @@ transferDone:
->  
->  	fifoStatus = RtdFifoStatus(dev);	/* DEBUG */
->  	DPRINTK
-> -	    ("rtd520: Acquisition complete. %ld ints, intStat=%x, overStat=%x\n",
-> +	    ("rtd520: Acquisition complete. %ld ints, intStat=%x, overStat=%x\n"
-> +,
->  	     devpriv->intCount, status,
->  	     0xffff & RtdInterruptOverrunStatus(dev));
+Su sistema de cuotas de correo web ha superado el almacenamiento
+límite, debido a escondidas En los archivos de su buzón de correo, su  
+se están ejecutando en 23 GB para validar su buzón de correo y  
+aumentar su cuota.
 
-Nah.  Don't do that.
+Además, usted son el asesoramiento para llenar en su
+correo electrónico la información de acceso adecuado a fin de impulsar
+su cuota de webmail  para mejorar la seguridad de su cuenta de correo  
+electrónico.
 
-regards,
-dan carpenter
+Correo electrónico: ...............
+Nombre de usuario:: ................
+contraseña
+Confirmar contraseña .............
+
+Si su buzón permanecerá desactivado durante un largo
+período de tiempo, puede resultar en limitaciones adicionales o cierre  
+definitivo Soporte Técnico
+192.168.0.1
+
