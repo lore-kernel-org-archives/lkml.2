@@ -1,209 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754037Ab1GHQDi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 12:03:38 -0400
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:42413 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751083Ab1GHQDh (ORCPT
+	id S1754119Ab1GHQEP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 12:04:15 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:48936 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753965Ab1GHQEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 12:03:37 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, Thomas Gleixner <tglx@linutronix.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, linux-kernel@vger.kernel.org,
-        Russell King <rmk@arm.linux.org.uk>
-Subject: Re: Please submit platform trees for inclusion in arm-soc.git v3.1
-Organization: Texas Instruments, Inc.
-References: <201107012018.14619.arnd@arndb.de>
-Date: Fri, 08 Jul 2011 09:03:32 -0700
-In-Reply-To: <201107012018.14619.arnd@arndb.de> (Arnd Bergmann's message of
-	"Fri, 1 Jul 2011 20:18:14 +0200")
-Message-ID: <87wrfsahez.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	Fri, 8 Jul 2011 12:04:09 -0400
+X-Sasl-enc: dZqmou5S0YzGsnH52e/qM0RB5ZZ75Sq63QRlGoU/xF9b 1310141048
+Date: Fri, 8 Jul 2011 09:04:03 -0700
+From: Greg KH <greg@kroah.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Kay Sievers <kay.sievers@vrfy.org>,
+        Nao Nishijima <nao.nishijima.xt@hitachi.com>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        jcm@redhat.com, dle-develop@lists.sourceforge.net,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        yrl.pp-manager.tt@hitachi.com, dgilbert@interlog.com,
+        stefanr@s5r6.in-berlin.de, hare@suse.de
+Subject: Re: [RFC PATCH 0/4] Persistent device name using alias name
+Message-ID: <20110708160403.GB31500@kroah.com>
+References: <20110708084547.2091.55262.stgit@ltc197.sdl.hitachi.co.jp>
+ <20110708145408.GA2283@kroah.com>
+ <CAPXgP10gThuxOsrxH8_wOddeRB5f2ABypW7EQui-F1hOE97dHQ@mail.gmail.com>
+ <20110708154736.GA7320@kroah.com>
+ <1310140451.3282.85.camel@mulgrave>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1310140451.3282.85.camel@mulgrave>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On Fri, Jul 08, 2011 at 10:54:11AM -0500, James Bottomley wrote:
+> On Fri, 2011-07-08 at 08:47 -0700, Greg KH wrote:
+> > On Fri, Jul 08, 2011 at 05:41:36PM +0200, Kay Sievers wrote:
+> > > On Fri, Jul 8, 2011 at 16:54, Greg KH <greg@kroah.com> wrote:
+> > > > On Fri, Jul 08, 2011 at 05:45:47PM +0900, Nao Nishijima wrote:
+> > > >> This patch series provides an "alias name" of the disk into kernel and procfs
+> > > >> messages. The user can assign a preferred name to an alias name of the device.
+> > > >>
+> > > >> Based on previous discussion (*), I changed patches as follows
+> > > >> - This is "alias name"
+> > > >> - An "alias name" is stored in gendisk struct
+> > > >> - Add document to Documentation/ABI/testing/sysfs-block
+> > > >> - When the user changes an "alias name", kernel notifies udev
+> > > >>
+> > > >> (*) http://marc.info/?l=linux-scsi&m=130812625531219&w=2
+> > > >
+> > > > I don't like it and I don't think it will really solve the root problem
+> > > > you are trying to address, but as the patches don't touch any code I
+> > > > maintain, there's not much I can do to object to it.
+> > > 
+> > > I can only repeat what I already wrote in detail earlier:
+> > > 
+> > > This approach seems to papers over the problem which emitting and
+> > > parsing free-text printk() messages with much-too-dumb tools cause. It
+> > > seems to fix the symptoms not the cause.
+> > > 
+> > > You can already write a udev rule today that logs _all_ symlinks of a
+> > > device at discovery time, and any later kernel message can safely be
+> > > associated with all possible names of the blockdev. No kernel changes
+> > > needed, all possible names are covered. That also works good enough
+> > > with our current stone-age tools for anybody who is able to scroll
+> > > back to the last log udev message in that same log file.
+> > > 
+> > > There can be by-definition no default udev rules assigning a proper
+> > > single name to a block device. There is never a valid single name for
+> > > a disks, so udev can not ship anything like that in the default setup,
+> > > so this stays as a custom hack.
+> > > 
+> > > We absolutely need _structured_ data for logging and error reporting,
+> > > not only to solve this problem. Along with the current free-text
+> > > printk(), we would be able to attach classifications, device
+> > > error/sense data, firmware register dumps and anything
+> > > interesting-for-debug to the messages.
+> > > 
+> > > We can't solve that problem in the kernel alone. Structured data from
+> > > the kernel will need to feed a smarter userspace logger that can index
+> > > and classify messages, merge current userspace data into it, and
+> > > provides hooks for the system management to act on critical failures
+> > > and raise notifications.
+> > > 
+> > > Structured logging seems like the solution for this and also to many
+> > > other problems in this area. Single custom names pushed into the
+> > > kernel might cover some rather exotic use cases, but I think, is not
+> > > what we are looking for.
+> > 
+> > I totally agree, but hey, no one listens to us :)
+> 
+> Yes, we did.  Everyone agrees structured logging would be the best long
+> term solution.  However, it's at least 10x the work presented here, plus
+> it would be a long process getting everyone to agree.  This looks like a
+> good 95% interim solution and it can be removed when structured logging
+> makes everything "just work(tm)".
 
-Arnd Bergmann <arnd@arndb.de> writes:
+Do you seriously think that this sysfs attribute can be removed someday
+in the future if we get structured logging implemented?  It can't,
+sorry, people will start depending on this and their jury-rigged
+implementations will require it no matter what we do otherwise.
 
-> Time is running out for the current cycle, so any changes that you
-> want to see merged in linux-3.1 through the arm-soc tree should be
-> submitted in form of pull-requests very soon.
+But that's still not the main issue here.
 
-[...]
+The main issue that I see is that this really doesn't solve the problem
+that is trying to be addressed, and the authors admit that.  So for that
+very reason alone I feel it should be rejected, but again, it's not my
+subsystem to maintain or control.
 
-It looks like your "remove rmk/for-next" commit may not have been
-totally complete.
+best of luck,
 
-Trying to merge your master branch and Russell's current for-next branch
-still results in conflicts in files that should only be touched in
-Russell's branch (specifically, these seem related to changes in
-Russell's 'suspend' branch that is included in his 'for-next' branch.)
-
-Kevin
-
-
-$ git checkout -b tmp/test v3.0-rc6
-Switched to a new branch 'tmp/test'
-
-$ git merge rmk/for-next
-Updating fe0d422..b4584ba
-Fast-forward
- Documentation/arm/SH-Mobile/zboot-rom-sdhi.txt    |   42 ++
- Documentation/arm/kernel_user_helpers.txt         |  267 +++++++++++
- Documentation/devicetree/bindings/arm/pmu.txt     |   21 +
- MAINTAINERS                                       |   10 +
- arch/arm/Kconfig                                  |   37 ++-
- arch/arm/boot/compressed/Makefile                 |   10 +-
- arch/arm/boot/compressed/head-shmobile.S          |   12 +-
- arch/arm/boot/compressed/mmcif-sh7372.c           |    2 +-
- arch/arm/boot/compressed/sdhi-sh7372.c            |   95 ++++
- arch/arm/boot/compressed/sdhi-shmobile.c          |  449 ++++++++++++++++++
- arch/arm/boot/compressed/sdhi-shmobile.h          |   11 +
- arch/arm/boot/compressed/vmlinux.lds.in           |   12 +-
- arch/arm/common/dmabounce.c                       |  193 ++++-----
- arch/arm/common/it8152.c                          |   16 +-
- arch/arm/common/sa1111.c                          |   60 ++--
- arch/arm/include/asm/dma-mapping.h                |   56 +--
- arch/arm/include/asm/entry-macro-multi.S          |   14 +-
- arch/arm/include/asm/mach/map.h                   |    2 +
- arch/arm/include/asm/memory.h                     |    7 +
- arch/arm/include/asm/pgalloc.h                    |    2 +-
- arch/arm/include/asm/pgtable.h                    |   23 +-
- arch/arm/include/asm/pmu.h                        |    2 +-
- arch/arm/include/asm/proc-fns.h                   |   14 +-
- arch/arm/include/asm/scatterlist.h                |    4 +
- arch/arm/include/asm/setup.h                      |    2 +-
- arch/arm/include/asm/suspend.h                    |   22 +
- arch/arm/include/asm/tcm.h                        |    2 +
- arch/arm/include/asm/tlb.h                        |    1 +
- arch/arm/kernel/entry-armv.S                      |  523 ++++++++-------------
- arch/arm/kernel/entry-header.S                    |   19 -
- arch/arm/kernel/hw_breakpoint.c                   |   12 +-
- arch/arm/kernel/perf_event.c                      |   10 +-
- arch/arm/kernel/pmu.c                             |   87 +++-
- arch/arm/kernel/setup.c                           |  101 ++--
- arch/arm/kernel/sleep.S                           |   84 ++--
- arch/arm/kernel/smp_scu.c                         |    2 +
- arch/arm/kernel/tcm.c                             |   68 +++-
- arch/arm/kernel/vmlinux.lds.S                     |  126 +++---
- arch/arm/mach-bcmring/include/mach/entry-macro.S  |    4 -
- arch/arm/mach-davinci/include/mach/entry-macro.S  |    3 -
- arch/arm/mach-ep93xx/core.c                       |    4 +-
- arch/arm/mach-exynos4/pm.c                        |    2 +-
- arch/arm/mach-exynos4/sleep.S                     |   22 -
- arch/arm/mach-h720x/include/mach/entry-macro.S    |    3 -
- arch/arm/mach-ixp4xx/common-pci.c                 |   12 +-
- arch/arm/mach-lpc32xx/include/mach/entry-macro.S  |    4 -
- arch/arm/mach-omap2/control.c                     |    7 +-
- arch/arm/mach-omap2/control.h                     |    6 +-
- arch/arm/mach-omap2/include/mach/entry-macro.S    |    3 -
- arch/arm/mach-omap2/pm.h                          |   22 +-
- arch/arm/mach-omap2/pm34xx.c                      |   86 ++--
- arch/arm/mach-omap2/sleep34xx.S                   |  518 ++++++++-------------
- arch/arm/mach-pnx4008/include/mach/entry-macro.S  |    5 -
- arch/arm/mach-pxa/include/mach/pm.h               |    4 +-
- arch/arm/mach-pxa/palmz72.c                       |    1 +
- arch/arm/mach-pxa/pm.c                            |    1 -
- arch/arm/mach-pxa/pxa25x.c                        |    3 +-
- arch/arm/mach-pxa/pxa27x.c                        |   11 +-
- arch/arm/mach-pxa/pxa3xx.c                        |   14 +-
- arch/arm/mach-pxa/sleep.S                         |   55 +--
- arch/arm/mach-pxa/zeus.c                          |    3 +-
- arch/arm/mach-realview/Kconfig                    |    1 +
- arch/arm/mach-s3c2412/pm.c                        |    6 +-
- arch/arm/mach-s3c2416/pm.c                        |    6 +-
- arch/arm/mach-s3c64xx/pm.c                        |    2 +-
- arch/arm/mach-s3c64xx/sleep.S                     |   23 -
- arch/arm/mach-s5pv210/pm.c                        |    2 +-
- arch/arm/mach-s5pv210/sleep.S                     |   21 -
- arch/arm/mach-sa1100/pm.c                         |    7 +-
- arch/arm/mach-sa1100/sleep.S                      |   19 +-
- arch/arm/mach-shark/include/mach/entry-macro.S    |   10 +-
- arch/arm/mach-shmobile/include/mach/sdhi-sh7372.h |   21 +
- arch/arm/mach-shmobile/include/mach/sdhi.h        |   16 +
- arch/arm/mach-vt8500/irq.c                        |   21 +-
- arch/arm/mm/abort-ev4.S                           |   17 +-
- arch/arm/mm/abort-ev4t.S                          |   17 +-
- arch/arm/mm/abort-ev5t.S                          |   19 +-
- arch/arm/mm/abort-ev5tj.S                         |   25 +-
- arch/arm/mm/abort-ev6.S                           |   25 +-
- arch/arm/mm/abort-ev7.S                           |   25 +-
- arch/arm/mm/abort-lv4t.S                          |  141 +++---
- arch/arm/mm/abort-macro.S                         |   34 +-
- arch/arm/mm/abort-nommu.S                         |   10 +-
- arch/arm/mm/alignment.c                           |    3 +
- arch/arm/mm/cache-l2x0.c                          |   19 +-
- arch/arm/mm/dma-mapping.c                         |  314 +++++++------
- arch/arm/mm/fault.c                               |    4 +
- arch/arm/mm/init.c                                |    8 +-
- arch/arm/mm/mm.h                                  |    2 +
- arch/arm/mm/mmu.c                                 |   29 +-
- arch/arm/mm/nommu.c                               |    4 +
- arch/arm/mm/pabort-legacy.S                       |   10 +-
- arch/arm/mm/pabort-v6.S                           |   10 +-
- arch/arm/mm/pabort-v7.S                           |   11 +-
- arch/arm/mm/proc-arm6_7.S                         |   90 ++--
- arch/arm/mm/proc-sa1100.S                         |    4 +-
- arch/arm/plat-mxc/include/mach/entry-macro.S      |    4 -
- arch/arm/plat-omap/sram.c                         |   15 +-
- arch/arm/plat-s3c24xx/sleep.S                     |   25 -
- arch/arm/plat-samsung/include/plat/pm.h           |    5 +-
- arch/arm/plat-samsung/pm.c                        |   11 +-
- drivers/mmc/host/mmci.c                           |    2 +
- drivers/mmc/host/mmci.h                           |    5 +-
- 103 files changed, 2458 insertions(+), 1798 deletions(-)
- create mode 100644 Documentation/arm/SH-Mobile/zboot-rom-sdhi.txt
- create mode 100644 Documentation/arm/kernel_user_helpers.txt
- create mode 100644 Documentation/devicetree/bindings/arm/pmu.txt
- create mode 100644 arch/arm/boot/compressed/sdhi-sh7372.c
- create mode 100644 arch/arm/boot/compressed/sdhi-shmobile.c
- create mode 100644 arch/arm/boot/compressed/sdhi-shmobile.h
- create mode 100644 arch/arm/include/asm/suspend.h
- create mode 100644 arch/arm/mach-shmobile/include/mach/sdhi-sh7372.h
- create mode 100644 arch/arm/mach-shmobile/include/mach/sdhi.h
-
-$ git merge arm-soc/master
-Auto-merging arch/arm/Kconfig
-Auto-merging arch/arm/include/asm/entry-macro-multi.S
-CONFLICT (delete/modify): arch/arm/include/asm/suspend.h deleted in arm-soc/master and modified in HEAD. Version HEAD of arch/arm/include/asm/suspend.h left in tree.
-Auto-merging arch/arm/kernel/setup.c
-Auto-merging arch/arm/kernel/sleep.S
-CONFLICT (content): Merge conflict in arch/arm/kernel/sleep.S
-Auto-merging arch/arm/mach-exynos4/pm.c
-CONFLICT (content): Merge conflict in arch/arm/mach-exynos4/pm.c
-Removing arch/arm/mach-mxs/gpio.h
-Auto-merging arch/arm/mach-omap2/pm.h
-Auto-merging arch/arm/mach-omap2/pm34xx.c
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/pm34xx.c
-Auto-merging arch/arm/mach-omap2/sleep34xx.S
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/sleep34xx.S
-Removing arch/arm/mach-omap2/timer-gp.c
-Removing arch/arm/mach-omap2/timer-gp.h
-Auto-merging arch/arm/mach-pxa/include/mach/pm.h
-CONFLICT (content): Merge conflict in arch/arm/mach-pxa/include/mach/pm.h
-Auto-merging arch/arm/mach-pxa/pxa3xx.c
-CONFLICT (content): Merge conflict in arch/arm/mach-pxa/pxa3xx.c
-Auto-merging arch/arm/mach-s3c2412/pm.c
-CONFLICT (content): Merge conflict in arch/arm/mach-s3c2412/pm.c
-Auto-merging arch/arm/mach-s3c2416/pm.c
-CONFLICT (content): Merge conflict in arch/arm/mach-s3c2416/pm.c
-Auto-merging arch/arm/mach-s3c64xx/pm.c
-CONFLICT (content): Merge conflict in arch/arm/mach-s3c64xx/pm.c
-Auto-merging arch/arm/mach-sa1100/pm.c
-CONFLICT (content): Merge conflict in arch/arm/mach-sa1100/pm.c
-Removing arch/arm/plat-mxc/include/mach/iomux.h
-Auto-merging arch/arm/plat-samsung/include/plat/pm.h
-CONFLICT (content): Merge conflict in arch/arm/plat-samsung/include/plat/pm.h
-Auto-merging arch/arm/plat-samsung/pm.c
-CONFLICT (content): Merge conflict in arch/arm/plat-samsung/pm.c
-Auto-merging drivers/gpio/gpio-mxc.c
-Auto-merging drivers/gpio/gpio-mxs.c
-warning: inexact rename detection was skipped due to too many files.
-warning: you may want to set your merge.renamelimit variable to at least 3185 and retry the command.
-Automatic merge failed; fix conflicts and then commit the result.
-
+greg k-h
