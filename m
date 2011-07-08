@@ -1,65 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751669Ab1GHE5Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 00:57:25 -0400
-Received: from mga09.intel.com ([134.134.136.24]:53197 "EHLO mga09.intel.com"
+	id S1751833Ab1GHFAI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:00:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41483 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751210Ab1GHE5Y convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 00:57:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,498,1304319600"; 
-   d="scan'208,223";a="22941725"
-From: "Liu, ShuoX" <shuox.liu@intel.com>
-To: "Brown, Len" <len.brown@intel.com>, "pavel@ucw.cz" <pavel@ucw.cz>,
-        "rjw@sisk.pl" <rjw@sisk.pl>, "gregkh@suse.de" <gregkh@suse.de>
-CC: "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 8 Jul 2011 12:57:07 +0800
-Subject: [PATCH] runtime-pm: consistent utilization of deferred_resume
-Thread-Topic: [PATCH] runtime-pm: consistent utilization of deferred_resume
-Thread-Index: Acw9K3zX9Yrx6bTcQ9uiCoo/rZErmg==
-Message-ID: <6E3BC7F7C9A4BF4286DD4C043110F30B59E040012A@shsmsx502.ccr.corp.intel.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: zh-CN, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1751330Ab1GHFAG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:00:06 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:52 2011
+Message-Id: <20110708001652.857126992@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Thu, 07 Jul 2011 17:15:33 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: [001/107] netfilter: ipset: Use proper timeout value to jiffies conversion
+In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 10bb3c851a0a9c9ca4d552743a371e3cfda81075 Mon Sep 17 00:00:00 2001
-From: ShuoX Liu <shuox.liu@intel.com>
-Date: Thu, 7 Jul 2011 15:59:06 +0800
-Subject: [PATCH] runtime-pm: consistent utilization of deferred_resume
+2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
-dev->power.deferred_resume is used as a bool typically, so change
-one assignment to false from 0, like other places.
+------------------
 
-Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
+
+From: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+
+[ Upstream commit 249ddc79a38a8918ad53ac22606ca8af694344a5 ]
+
+Signed-off-by: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/base/power/runtime.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ include/linux/netfilter/ipset/ip_set_timeout.h |   18 ++++++++++--------
+ 1 file changed, 10 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
-index 0d4587b..af3d1a5 100644
---- a/drivers/base/power/runtime.c
-+++ b/drivers/base/power/runtime.c
-@@ -388,7 +388,7 @@ static int rpm_suspend(struct device *dev, int rpmflags)
- 	retval = rpm_callback(callback, dev);
- 	if (retval) {
- 		__update_runtime_status(dev, RPM_ACTIVE);
--		dev->power.deferred_resume = 0;
-+		dev->power.deferred_resume = false;
- 		if (retval == -EAGAIN || retval == -EBUSY)
- 			dev->power.runtime_error = 0;
- 		else
--- 
-1.7.1
+--- a/include/linux/netfilter/ipset/ip_set_timeout.h
++++ b/include/linux/netfilter/ipset/ip_set_timeout.h
+@@ -45,7 +45,7 @@ ip_set_timeout_test(unsigned long timeou
+ {
+ 	return timeout != IPSET_ELEM_UNSET &&
+ 	       (timeout == IPSET_ELEM_PERMANENT ||
+-		time_after(timeout, jiffies));
++		time_is_after_jiffies(timeout));
+ }
+ 
+ static inline bool
+@@ -53,7 +53,7 @@ ip_set_timeout_expired(unsigned long tim
+ {
+ 	return timeout != IPSET_ELEM_UNSET &&
+ 	       timeout != IPSET_ELEM_PERMANENT &&
+-	       time_before(timeout, jiffies);
++	       time_is_before_jiffies(timeout);
+ }
+ 
+ static inline unsigned long
+@@ -64,7 +64,7 @@ ip_set_timeout_set(u32 timeout)
+ 	if (!timeout)
+ 		return IPSET_ELEM_PERMANENT;
+ 
+-	t = timeout * HZ + jiffies;
++	t = msecs_to_jiffies(timeout * 1000) + jiffies;
+ 	if (t == IPSET_ELEM_UNSET || t == IPSET_ELEM_PERMANENT)
+ 		/* Bingo! */
+ 		t++;
+@@ -75,7 +75,8 @@ ip_set_timeout_set(u32 timeout)
+ static inline u32
+ ip_set_timeout_get(unsigned long timeout)
+ {
+-	return timeout == IPSET_ELEM_PERMANENT ? 0 : (timeout - jiffies)/HZ;
++	return timeout == IPSET_ELEM_PERMANENT ? 0 :
++		jiffies_to_msecs(timeout - jiffies)/1000;
+ }
+ 
+ #else
+@@ -89,14 +90,14 @@ static inline bool
+ ip_set_timeout_test(unsigned long timeout)
+ {
+ 	return timeout == IPSET_ELEM_PERMANENT ||
+-	       time_after(timeout, jiffies);
++	       time_is_after_jiffies(timeout);
+ }
+ 
+ static inline bool
+ ip_set_timeout_expired(unsigned long timeout)
+ {
+ 	return timeout != IPSET_ELEM_PERMANENT &&
+-	       time_before(timeout, jiffies);
++	       time_is_before_jiffies(timeout);
+ }
+ 
+ static inline unsigned long
+@@ -107,7 +108,7 @@ ip_set_timeout_set(u32 timeout)
+ 	if (!timeout)
+ 		return IPSET_ELEM_PERMANENT;
+ 
+-	t = timeout * HZ + jiffies;
++	t = msecs_to_jiffies(timeout * 1000) + jiffies;
+ 	if (t == IPSET_ELEM_PERMANENT)
+ 		/* Bingo! :-) */
+ 		t++;
+@@ -118,7 +119,8 @@ ip_set_timeout_set(u32 timeout)
+ static inline u32
+ ip_set_timeout_get(unsigned long timeout)
+ {
+-	return timeout == IPSET_ELEM_PERMANENT ? 0 : (timeout - jiffies)/HZ;
++	return timeout == IPSET_ELEM_PERMANENT ? 0 :
++		jiffies_to_msecs(timeout - jiffies)/1000;
+ }
+ #endif /* ! IP_SET_BITMAP_TIMEOUT */
+ 
 
 
