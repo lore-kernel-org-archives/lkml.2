@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529Ab1GHFGZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:06:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42673 "EHLO mx2.suse.de"
+	id S1755558Ab1GHFGr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:06:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42661 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755477Ab1GHFGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:06:20 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:17:03 2011
-Message-Id: <20110708001703.008895869@clark.kroah.org>
+	id S1755494Ab1GHFGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:06:16 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:17:02 2011
+Message-Id: <20110708001702.920199025@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:17:18 -0700
+Date: Thu, 07 Jul 2011 17:17:17 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, greg@kroah.com
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk, avi@redhat.com,
-        mtosatti@redhat.com, Zachary Amsden <zamsden@redhat.com>
-Subject: [106/107] KVM: Fix register corruption in pvclock_scale_delta
+        mtosatti@redhat.com, Alex Williamson <alex.williamson@redhat.com>,
+        "Acked-by: Jan Kiszka" <jan.kiszka@siemens.com>
+Subject: [105/107] Revert "KVM: Save/restore state of assigned PCI device"
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,45 +26,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zachary Amsden <zamsden@redhat.com>
+From: Alex Williamson <alex.williamson@redhat.com>
 
-(cherry picked from commit de2d1a524e94a79078d9fe22c57c0c6009237547)
+This reverts ed78661f2614d3c9f69c23e280db3bafdabdf5bb as it assumes
+the saved PCI state will remain valid for the entire length of time
+that it is attached to a guest.  This fails when userspace makes use
+of the pci-sysfs reset interface, which invalidates the saved device
+state, leaving nothing to be restored after the device is reset on
+de-assignment.  This leaves the device in an unusable state.
 
-The 128-bit multiply in pvclock.h was missing an output constraint for
-EDX which caused a register corruption to appear.  Thanks to Ulrich for
-diagnosing the EDX corruption and Avi for providing this fix.
+3.0.0 will add an interface for KVM to save the PCI state in a
+buffer unaffected by other callers of pci_reset_function(), but the
+most appropriate stable fix seems to be reverting this change since
+the original assumption about the device saved state persisting is
+incorrect.
 
-Signed-off-by: Zachary Amsden <zamsden@redhat.com>
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Acked-by: Jan Kiszka <jan.kiszka@siemens.com>
 Signed-off-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/x86/include/asm/pvclock.h |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ virt/kvm/assigned-dev.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
---- a/arch/x86/include/asm/pvclock.h
-+++ b/arch/x86/include/asm/pvclock.h
-@@ -22,6 +22,8 @@ static inline u64 pvclock_scale_delta(u6
- 	u64 product;
- #ifdef __i386__
- 	u32 tmp1, tmp2;
-+#else
-+	ulong tmp;
- #endif
+--- a/virt/kvm/assigned-dev.c
++++ b/virt/kvm/assigned-dev.c
+@@ -197,8 +197,7 @@ static void kvm_free_assigned_device(str
+ {
+ 	kvm_free_assigned_irq(kvm, assigned_dev);
  
- 	if (shift < 0)
-@@ -42,8 +44,11 @@ static inline u64 pvclock_scale_delta(u6
- 		: "a" ((u32)delta), "1" ((u32)(delta >> 32)), "2" (mul_frac) );
- #elif defined(__x86_64__)
- 	__asm__ (
--		"mul %%rdx ; shrd $32,%%rdx,%%rax"
--		: "=a" (product) : "0" (delta), "d" ((u64)mul_frac) );
-+		"mul %[mul_frac] ; shrd $32, %[hi], %[lo]"
-+		: [lo]"=a"(product),
-+		  [hi]"=d"(tmp)
-+		: "0"(delta),
-+		  [mul_frac]"rm"((u64)mul_frac));
- #else
- #error implement me!
- #endif
+-	__pci_reset_function(assigned_dev->dev);
+-	pci_restore_state(assigned_dev->dev);
++	pci_reset_function(assigned_dev->dev);
+ 
+ 	pci_release_regions(assigned_dev->dev);
+ 	pci_disable_device(assigned_dev->dev);
+@@ -515,7 +514,6 @@ static int kvm_vm_ioctl_assign_device(st
+ 	}
+ 
+ 	pci_reset_function(dev);
+-	pci_save_state(dev);
+ 
+ 	match->assigned_dev_id = assigned_dev->assigned_dev_id;
+ 	match->host_segnr = assigned_dev->segnr;
+@@ -546,7 +544,6 @@ out:
+ 	mutex_unlock(&kvm->lock);
+ 	return r;
+ out_list_del:
+-	pci_restore_state(dev);
+ 	list_del(&match->list);
+ 	pci_release_regions(dev);
+ out_disable:
 
 
