@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755512Ab1GHFGR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:06:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42647 "EHLO mx2.suse.de"
+	id S1755361Ab1GHFFo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:05:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42548 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755477Ab1GHFGN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:06:13 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:17:02 2011
-Message-Id: <20110708001702.832763639@clark.kroah.org>
+	id S1755307Ab1GHFFj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:05:39 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:17:01 2011
+Message-Id: <20110708001701.871920401@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:17:16 -0700
+Date: Thu, 07 Jul 2011 17:17:06 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [104/107] xfrm: Fix off by one in the replay advance functions
+        Josh Hunt <johunt@akamai.com>, Ankita Garg <ankita@in.ibm.com>
+Subject: [094/107] drivers/misc/lkdtm.c: fix race when crashpoint is hit multiple times before checking count
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,41 +25,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Josh Hunt <johunt@akamai.com>
 
-From: Steffen Klassert <steffen.klassert@secunet.com>
+commit aa2c96d6f329e66cc59352b0f12e8f04e6a9593b upstream.
 
-[ Upstream commit e756682c8baa47da1648c0c016e9f48ed66bc32d ]
+We observed the crash point count going negative in cases where the
+crash point is hit multiple times before the check of "count == 0" is
+done.  Because of this we never call lkdtm_do_action().  This patch just
+adds a spinlock to protect count.
 
-We may write 4 byte too much when we reinitialize the anti replay
-window in the replay advance functions. This patch fixes this by
-adjusting the last index of the initialization loop.
-
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Tapan Dhimant <tdhimant@akamai.com>
+Signed-off-by: Josh Hunt <johunt@akamai.com>
+Acked-by: Ankita Garg <ankita@in.ibm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- net/xfrm/xfrm_replay.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/xfrm/xfrm_replay.c
-+++ b/net/xfrm/xfrm_replay.c
-@@ -265,7 +265,7 @@ static void xfrm_replay_advance_bmp(stru
- 			bitnr = bitnr & 0x1F;
- 			replay_esn->bmp[nr] |= (1U << bitnr);
- 		} else {
--			nr = replay_esn->replay_window >> 5;
-+			nr = (replay_esn->replay_window - 1) >> 5;
- 			for (i = 0; i <= nr; i++)
- 				replay_esn->bmp[i] = 0;
+---
+ drivers/misc/lkdtm.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+--- a/drivers/misc/lkdtm.c
++++ b/drivers/misc/lkdtm.c
+@@ -120,6 +120,7 @@ static int recur_count = REC_NUM_DEFAULT
+ static enum cname cpoint = CN_INVALID;
+ static enum ctype cptype = CT_NONE;
+ static int count = DEFAULT_COUNT;
++static DEFINE_SPINLOCK(count_lock);
  
-@@ -471,7 +471,7 @@ static void xfrm_replay_advance_esn(stru
- 			bitnr = bitnr & 0x1F;
- 			replay_esn->bmp[nr] |= (1U << bitnr);
- 		} else {
--			nr = replay_esn->replay_window >> 5;
-+			nr = (replay_esn->replay_window - 1) >> 5;
- 			for (i = 0; i <= nr; i++)
- 				replay_esn->bmp[i] = 0;
+ module_param(recur_count, int, 0644);
+ MODULE_PARM_DESC(recur_count, " Recursion level for the stack overflow test, "\
+@@ -230,11 +231,14 @@ static const char *cp_name_to_str(enum c
+ static int lkdtm_parse_commandline(void)
+ {
+ 	int i;
++	unsigned long flags;
  
+ 	if (cpoint_count < 1 || recur_count < 1)
+ 		return -EINVAL;
+ 
++	spin_lock_irqsave(&count_lock, flags);
+ 	count = cpoint_count;
++	spin_unlock_irqrestore(&count_lock, flags);
+ 
+ 	/* No special parameters */
+ 	if (!cpoint_type && !cpoint_name)
+@@ -349,6 +353,9 @@ static void lkdtm_do_action(enum ctype w
+ 
+ static void lkdtm_handler(void)
+ {
++	unsigned long flags;
++
++	spin_lock_irqsave(&count_lock, flags);
+ 	count--;
+ 	printk(KERN_INFO "lkdtm: Crash point %s of type %s hit, trigger in %d rounds\n",
+ 			cp_name_to_str(cpoint), cp_type_to_str(cptype), count);
+@@ -357,6 +364,7 @@ static void lkdtm_handler(void)
+ 		lkdtm_do_action(cptype);
+ 		count = cpoint_count;
+ 	}
++	spin_unlock_irqrestore(&count_lock, flags);
+ }
+ 
+ static int lkdtm_register_cpoint(enum cname which)
 
 
