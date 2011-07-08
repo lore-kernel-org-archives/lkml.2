@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754154Ab1GHFRr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:17:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41790 "EHLO mx2.suse.de"
+	id S1753925Ab1GHFBv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:01:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41743 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753500Ab1GHFCE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:02:04 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:56 2011
-Message-Id: <20110708001656.008955390@clark.kroah.org>
+	id S1753862Ab1GHFBq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:01:46 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:55 2011
+Message-Id: <20110708001655.538696211@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:16:06 -0700
+Date: Thu, 07 Jul 2011 17:16:01 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Boojin Kim <boojin.kim@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [034/107] ARM: SAMSUNG: serial: Fix on handling of one clock source for UART
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [029/107] xen: partially revert "xen: set max_pfn_mapped to the last pfn mapped"
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,74 +26,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Boojin Kim <boojin.kim@samsung.com>
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-commit 470f22975448a65a1084a6f0721fa5df15323f02 upstream.
+commit a91d92875ee94e4703fd017ccaadb48cfb344994 upstream.
 
-This patch fixes the way of comparison for handling of two or more
-clock sources for UART.
+We only need to set max_pfn_mapped to the last pfn mapped on x86_64 to
+make sure that cleanup_highmap doesn't remove important mappings at
+_end.
 
-For example, if just only one clock source is defined even though
-there are two clock sources for UART, the serial driver does not
-set proper clock up. Of course, it is problem.
+We don't need to do this on x86_32 because cleanup_highmap is not called
+on x86_32. Besides lowering max_pfn_mapped on x86_32 has the unwanted
+side effect of limiting the amount of memory available for the 1:1
+kernel pagetable allocation.
 
-So this patch changes the condition of comparison to avoid useless
-setup clock and adds a flag 'NO_NEED_CHECK_CLKSRC' which means
-selection of source clock is not required.
+This patch reverts the x86_32 part of the original patch.
 
-In addition, since the Exynos4210 has only one clock source for UART
-this patch adds the flag into its common_init_uarts().
-
-Signed-off-by: Boojin Kim <boojin.kim@samsung.com>
-Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/mach-exynos4/init.c                     |    1 +
- arch/arm/plat-samsung/include/plat/regs-serial.h |    2 ++
- drivers/tty/serial/s5pv210.c                     |    4 ++--
- 3 files changed, 5 insertions(+), 2 deletions(-)
+ arch/x86/xen/mmu.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/arch/arm/mach-exynos4/init.c
-+++ b/arch/arm/mach-exynos4/init.c
-@@ -35,6 +35,7 @@ void __init exynos4_common_init_uarts(st
- 			tcfg->clocks = exynos4_serial_clocks;
- 			tcfg->clocks_size = ARRAY_SIZE(exynos4_serial_clocks);
- 		}
-+		tcfg->flags |= NO_NEED_CHECK_CLKSRC;
- 	}
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1722,6 +1722,11 @@ static __init void xen_map_identity_earl
+ 		for (pteidx = 0; pteidx < PTRS_PER_PTE; pteidx++, pfn++) {
+ 			pte_t pte;
  
- 	s3c24xx_init_uartdevs("s5pv210-uart", s5p_uart_resources, cfg, no);
---- a/arch/arm/plat-samsung/include/plat/regs-serial.h
-+++ b/arch/arm/plat-samsung/include/plat/regs-serial.h
-@@ -224,6 +224,8 @@
- #define S5PV210_UFSTAT_RXMASK	(255<<0)
- #define S5PV210_UFSTAT_RXSHIFT	(0)
- 
-+#define NO_NEED_CHECK_CLKSRC	1
++#ifdef CONFIG_X86_32
++			if (pfn > max_pfn_mapped)
++				max_pfn_mapped = pfn;
++#endif
 +
- #ifndef __ASSEMBLY__
+ 			if (!pte_none(pte_page[pteidx]))
+ 				continue;
  
- /* struct s3c24xx_uart_clksrc
---- a/drivers/tty/serial/s5pv210.c
-+++ b/drivers/tty/serial/s5pv210.c
-@@ -31,7 +31,7 @@ static int s5pv210_serial_setsource(stru
- 	struct s3c2410_uartcfg *cfg = port->dev->platform_data;
- 	unsigned long ucon = rd_regl(port, S3C2410_UCON);
+@@ -1889,7 +1894,9 @@ __init pgd_t *xen_setup_kernel_pagetable
+ 	initial_kernel_pmd =
+ 		extend_brk(sizeof(pmd_t) * PTRS_PER_PMD, PAGE_SIZE);
  
--	if ((cfg->clocks_size) == 1)
-+	if (cfg->flags & NO_NEED_CHECK_CLKSRC)
- 		return 0;
+-	max_pfn_mapped = PFN_DOWN(__pa(xen_start_info->mfn_list));
++	max_pfn_mapped = PFN_DOWN(__pa(xen_start_info->pt_base) +
++				  xen_start_info->nr_pt_frames * PAGE_SIZE +
++				  512*1024);
  
- 	if (strcmp(clk->name, "pclk") == 0)
-@@ -56,7 +56,7 @@ static int s5pv210_serial_getsource(stru
- 
- 	clk->divisor = 1;
- 
--	if ((cfg->clocks_size) == 1)
-+	if (cfg->flags & NO_NEED_CHECK_CLKSRC)
- 		return 0;
- 
- 	switch (ucon & S5PV210_UCON_CLKMASK) {
+ 	kernel_pmd = m2v(pgd[KERNEL_PGD_BOUNDARY].pgd);
+ 	memcpy(initial_kernel_pmd, kernel_pmd, sizeof(pmd_t) * PTRS_PER_PMD);
 
 
