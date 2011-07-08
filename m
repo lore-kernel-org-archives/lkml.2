@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752739Ab1GHJwx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 05:52:53 -0400
-Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:55786 "EHLO
-	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750746Ab1GHJwu (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Fri, 8 Jul 2011 05:52:50 -0400
-Message-Id: <4E17600E020000230002F274@novprvlin0050.provo.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.2 
-Date: Fri, 08 Jul 2011 03:52:46 -0600
-From: "Joey Lee" <jlee@novell.com>
-To: <kengyu@canonical.com>
-Cc: <ike.pan@canonical.com>, <kent.lin@canonical.com>, <sylee@canonical.com>,
-        <vanhoof@canonical.com>, <mjg59@srcf.ucam.org>,
-        <linux-kernel@vger.kernel.org>, <platform-driver-x86@vger.kernel.org>
-Subject: Re: [PATCH 2/2] ideapad-laptop: Handle the App-controlled RF
- event
-References: <1309268154-6872-1-git-send-email-kengyu@canonical.com>
- <1309268154-6872-2-git-send-email-kengyu@canonical.com>
- <20110707151118.GB15366@srcf.ucam.org>
-In-Reply-To: <20110707151118.GB15366@srcf.ucam.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Content-Disposition: inline
+	id S1752838Ab1GHJyM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 05:54:12 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:54829 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750746Ab1GHJyK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 05:54:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <BANLkTim8Nha-WWLQZRL2-xsNVT-vCVma4Q@mail.gmail.com>
+References: <BANLkTim8Nha-WWLQZRL2-xsNVT-vCVma4Q@mail.gmail.com>
+Date: Fri, 8 Jul 2011 02:54:09 -0700
+Message-ID: <CAOzbF4ctakHk7afYqXumMQe-b5C_40Cz9ewPdQiYvf6xXK2+qg@mail.gmail.com>
+Subject: Fwd: VT-d2 support inside Linux kernel
+From: Cyclonus J <cyclonusj@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: kvm@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Keng-Yu, 
+Hi,
 
-æ–¼ å››ï¼Œ2011-07-07 æ–¼ 16:11 +0100ï¼ŒMatthew Garrett æåˆ°ï¼š
-> On Tue, Jun 28, 2011 at 02:35:54PM +0100, Keng-Yu Lin wrote:
-> 
-> > On Linux, there is no such application. This patch implements
-> > a toggle for all RF devices through accessing the EC I/O ports.
-> 
-> Sure there is. Either the kernel can handle it via rfkill-input, or 
-> rfkilld can look after it. Please don't add your own implementation.
-> 
+I think since this work is marked WIP in Linux kernel on current KVM
+TODO list. This might be a better list to ask questions.
 
-Welcome to use urfkill deaemon:
-http://www.freedesktop.org/wiki/Software/urfkill
+So,  in current top of tree, I am seeing some ats support for
+intel-iommu. Does that mean the ATS part is already finished?
+Basically, I would like to know the current status of VT-d2 support,
+anything left?
+
+Thanks,
+CJ
+
+---------- Forwarded message ----------
+From: Cyclonus J <cyclonusj@gmail.com>
+Date: Fri, Jul 1, 2011 at 1:54 AM
+Subject: VT-d2 support inside Linux kernel
+To: kvm@vger.kernel.org
 
 
-Thank's a lot!
-Joey
+Hi,
 
+Is there any information I can find about VT-d2 support inside Linux
+kernel? It was marked as WIP on KVM todo list. In current top of tree,
+I am seeing some ats support for intel-iommu. Does that mean the ATS
+part is already finished?
+
+> git log -p -1 93a23a72
+commit 93a23a7271dfb811b3adb72779054c3a24433112
+Author: Yu Zhao <yu.zhao@intel.com>
+Date:   Mon May 18 13:51:37 2009 +0800
+
+   VT-d: support the device IOTLB
+
+   Enable the device IOTLB (i.e. ATS) for both the bare metal and KVM
+   environments.
+
+   Signed-off-by: Yu Zhao <yu.zhao@intel.com>
+   Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+
+Thanks,
+CJ
