@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753541Ab1GHFBK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:01:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41611 "EHLO mx2.suse.de"
+	id S1754025Ab1GHFCK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:02:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41798 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753117Ab1GHFBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:01:05 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:54 2011
-Message-Id: <20110708001654.437690402@clark.kroah.org>
+	id S1753689Ab1GHFCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:02:07 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:56 2011
+Message-Id: <20110708001656.118406396@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:15:49 -0700
+Date: Thu, 07 Jul 2011 17:16:07 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Chris Wright <chrisw@sous-sol.org>
-Subject: [017/107] ksm: fix NULL pointer dereference in scan_get_next_rmap_item()
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [035/107] TTY: ldisc, do not close until there are readers
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,84 +25,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Jiri Slaby <jslaby@suse.cz>
 
-commit 2b472611a32a72f4a118c069c2d62a1a3f087afd upstream.
+commit 92f6fa09bd453ffe3351fa1f1377a1b7cfa911e6 upstream.
 
-Andrea Righi reported a case where an exiting task can race against
-ksmd::scan_get_next_rmap_item (http://lkml.org/lkml/2011/6/1/742) easily
-triggering a NULL pointer dereference in ksmd.
+We restored tty_ldisc_wait_idle in 100eeae2c5c (TTY: restore
+tty_ldisc_wait_idle). We used it in the ldisc changing path to fix the
+case where there are tasks in n_tty_read waiting for data and somebody
+tries to change ldisc.
 
-ksm_scan.mm_slot == &ksm_mm_head with only one registered mm
+Similar to the case above, there may be also tasks waiting in
+n_tty_read while hangup is performed. As 65b770468e98 (tty-ldisc: turn
+ldisc user count into a proper refcount) removed the wait-until-idle
+from all paths, hangup path won't wait for them to disappear either
+now. So add it back even to the hangup path.
 
-CPU 1 (__ksm_exit)		CPU 2 (scan_get_next_rmap_item)
- 				list_empty() is false
-lock				slot == &ksm_mm_head
-list_del(slot->mm_list)
-(list now empty)
-unlock
-				lock
-				slot = list_entry(slot->mm_list.next)
-				(list is empty, so slot is still ksm_mm_head)
-				unlock
-				slot->mm == NULL ... Oops
+There is a difference, we need uninterruptible sleep as there is
+obviously HUP signal pending. So tty_ldisc_wait_idle now sleeps
+without possibility to be interrupted. This is what original
+tty_ldisc_wait_idle did. After the wait idle reintroduction
+(100eeae2c5c), we have had interruptible sleeps for the ldisc changing
+path. But as there is a 5s timeout anyway, we don't allow it to be
+interrupted from now on. It's not worth the added complexity of
+deciding what kind of sleep we want.
 
-Close this race by revalidating that the new slot is not simply the list
-head again.
+Before 65b770468e98 tty_ldisc_release was called also from
+tty_ldisc_release. It is called from tty_release, so I don't think we
+need to restore that one.
 
-Andrea's test case:
+This is nicely reproducible after constifying the timing when
+drivers/tty/n_tty.c is patched as follows ("TTY: ntty, add one more
+sanity check" patch is needed to actually see it explode):
+%% -1548,6 +1549,7 @@ static int n_tty_open(struct tty_struct *tty)
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/mman.h>
+        /* These are ugly. Currently a malloc failure here can panic */
+        if (!tty->read_buf) {
++               msleep(100);
+                tty->read_buf = kzalloc(N_TTY_BUF_SIZE, GFP_KERNEL);
+                if (!tty->read_buf)
+                        return -ENOMEM;
+%% -1785,6 +1788,7 @@ do_it_again:
+                                break;
+                        }
+                        timeout = schedule_timeout(timeout);
++                       msleep(20);
+                        continue;
+                }
+                __set_current_state(TASK_RUNNING);
+===== With a process: =====
+    while (1) {
+        int fd = open(argv[1], O_RDWR);
+        read(fd, buf, sizeof(buf));
+        close(fd);
+    }
+===== and its child: =====
+        setsid();
+        while (1) {
+                int fd = open(tty, O_RDWR|O_NOCTTY);
+                ioctl(fd, TIOCSCTTY, 1);
+                vhangup();
+                close(fd);
+                usleep(100 * (10 + random() % 1000));
+        }
+===== EOF =====
 
-#define BUFSIZE getpagesize()
-
-int main(int argc, char **argv)
-{
-	void *ptr;
-
-	if (posix_memalign(&ptr, getpagesize(), BUFSIZE) < 0) {
-		perror("posix_memalign");
-		exit(1);
-	}
-	if (madvise(ptr, BUFSIZE, MADV_MERGEABLE) < 0) {
-		perror("madvise");
-		exit(1);
-	}
-	*(char *)NULL = 0;
-
-	return 0;
-}
-
-Reported-by: Andrea Righi <andrea@betterlinux.com>
-Tested-by: Andrea Righi <andrea@betterlinux.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Chris Wright <chrisw@sous-sol.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+References: https://bugzilla.novell.com/show_bug.cgi?id=693374
+References: https://bugzilla.novell.com/show_bug.cgi?id=694509
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/ksm.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/tty/tty_ldisc.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -1301,6 +1301,12 @@ static struct rmap_item *scan_get_next_r
- 		slot = list_entry(slot->mm_list.next, struct mm_slot, mm_list);
- 		ksm_scan.mm_slot = slot;
- 		spin_unlock(&ksm_mmlist_lock);
-+		/*
-+		 * Although we tested list_empty() above, a racing __ksm_exit
-+		 * of the last mm on the list may have removed it since then.
-+		 */
-+		if (slot == &ksm_mm_head)
-+			return NULL;
- next_mm:
- 		ksm_scan.address = 0;
- 		ksm_scan.rmap_list = &slot->rmap_list;
+--- a/drivers/tty/tty_ldisc.c
++++ b/drivers/tty/tty_ldisc.c
+@@ -555,7 +555,7 @@ static void tty_ldisc_flush_works(struct
+ static int tty_ldisc_wait_idle(struct tty_struct *tty)
+ {
+ 	int ret;
+-	ret = wait_event_interruptible_timeout(tty_ldisc_idle,
++	ret = wait_event_timeout(tty_ldisc_idle,
+ 			atomic_read(&tty->ldisc->users) == 1, 5 * HZ);
+ 	if (ret < 0)
+ 		return ret;
+@@ -763,6 +763,8 @@ static int tty_ldisc_reinit(struct tty_s
+ 	if (IS_ERR(ld))
+ 		return -1;
+ 
++	WARN_ON_ONCE(tty_ldisc_wait_idle(tty));
++
+ 	tty_ldisc_close(tty, tty->ldisc);
+ 	tty_ldisc_put(tty->ldisc);
+ 	tty->ldisc = NULL;
 
 
