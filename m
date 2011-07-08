@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751086Ab1GHFZS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:25:18 -0400
-Received: from mga01.intel.com ([192.55.52.88]:57268 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750743Ab1GHFZP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:25:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,498,1304319600"; 
-   d="scan'208";a="27736898"
-From: Andi Kleen <andi@firstfloor.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>, David Miller <davem@davemloft.net>,
-        marcin.slusarz@gmail.com, mpm@selenic.com,
-        linux-kernel@vger.kernel.org, rientjes@google.com, linux-mm@kvack.org
-Subject: Re: [PATCH] slub: reduce overhead of slub_debug
-In-Reply-To: <alpine.DEB.2.00.1107071511010.26083@router.home> (Christoph
-	Lameter's message of "Thu, 7 Jul 2011 15:12:52 -0500 (CDT)")
-References: <alpine.DEB.2.00.1107071314320.21719@router.home>
-	<1310064771.21902.55.camel@jaguar>
-	<alpine.DEB.2.00.1107071402490.24248@router.home>
-	<20110707.122151.314840355798805828.davem@davemloft.net>
-	<CAOJsxLFsX3Q84QAeyRt5dZOdRxb3TiABPrP-YrWc91+BmR8ZBg@mail.gmail.com>
-	<alpine.DEB.2.00.1107071511010.26083@router.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-Date: Thu, 07 Jul 2011 22:23:45 -0700
-Message-ID: <m2box5cplq.fsf@firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751761Ab1GHFZn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:25:43 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:63286 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750816Ab1GHFZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:25:38 -0400
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+To: Randy Dunlap <rdunlap@xenotime.net>, Paul Menage <menage@google.com>
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: [PATCH] Documentation:cgroups:fix a  command error in cpuacct.txt
+Date: Fri, 8 Jul 2011 13:24:36 +0800
+Message-Id: <1310102676-23154-1-git-send-email-gaowanlong@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.6
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-07-08 13:24:57,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-07-08 13:24:57,
+	Serialize complete at 2011-07-08 13:24:57
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Lameter <cl@linux.com> writes:
+Must echo a task id to the cgroups' tasks file, but not to a directory.
 
+Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+---
+ Documentation/cgroups/cpuacct.txt |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> +#ifdef __HAVE_ARCH_INV_MEMSCAN
-> +void *inv_memscan(void *addr, int c, size_t size)
-> +{
-> +	if (!size)
-> +		return addr;
-> +	asm volatile("repz; scasb\n\t"
-
-This will just do the slow byte accesses again internally.
-scasb is not normally very optimized in microcode as far
-as I know.
-
-Also rep has quite some startup overhead which makes
-it a bad idea for small sizes (<16-20 or so)
-
-I would stay with the C version. I bet that one is 
-faster.
-
--Andi
-
+diff --git a/Documentation/cgroups/cpuacct.txt b/Documentation/cgroups/cpuacct.txt
+index 9ad85df..9d73cc0 100644
+--- a/Documentation/cgroups/cpuacct.txt
++++ b/Documentation/cgroups/cpuacct.txt
+@@ -23,7 +23,7 @@ New accounting groups can be created under the parent group /sys/fs/cgroup.
+ 
+ # cd /sys/fs/cgroup
+ # mkdir g1
+-# echo $$ > g1
++# echo $$ > g1/tasks
+ 
+ The above steps create a new group g1 and move the current shell
+ process (bash) into it. CPU time consumed by this bash and its children
 -- 
-ak@linux.intel.com -- Speaking for myself only
+1.7.6
+
