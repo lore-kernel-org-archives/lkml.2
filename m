@@ -1,123 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754552Ab1GHVRO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 17:17:14 -0400
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:37170 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752947Ab1GHVRN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 17:17:13 -0400
-Date: Fri, 8 Jul 2011 14:17:12 -0700
-From: Dmitry Torokhov <dtor@vmware.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] Vmware balloon: switch to using sysem-wide freezable
- workqueue
-Message-ID: <20110708211712.GA20258@dtor-ws.eng.vmware.com>
+	id S1754435Ab1GHVX5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 17:23:57 -0400
+Received: from mga11.intel.com ([192.55.52.93]:27484 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751539Ab1GHVXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 17:23:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,500,1304319600"; 
+   d="scan'208";a="28024101"
+Message-ID: <4E17757C.5030909@linux.intel.com>
+Date: Fri, 08 Jul 2011 14:24:12 -0700
+From: J Freyensee <james_p_freyensee@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110628 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Randy Dunlap <randy.dunlap@oracle.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
+Subject: Re: linux-next: Tree for July 4 (misc/pti)
+References: <20110704170952.1024e89b.sfr@canb.auug.org.au> <20110704134541.9adfd4f1.randy.dunlap@oracle.com> <20110707081441.a4a64e59.randy.dunlap@oracle.com> <4E15DF07.4010507@linux.intel.com> <20110707093202.a831fce8.randy.dunlap@oracle.com> <CAMuHMdV_kgfM2bEmHw8u8c3js7EK7BLmd2yzoip3rjOPAWUQ2Q@mail.gmail.com>
+In-Reply-To: <CAMuHMdV_kgfM2bEmHw8u8c3js7EK7BLmd2yzoip3rjOPAWUQ2Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the arrival of concurrency-managed workqueues there is no need
-for our driver to use dedicated workqueue; system-wide one should
-suffice just fine.
+On 07/08/2011 01:07 PM, Geert Uytterhoeven wrote:
+> On Thu, Jul 7, 2011 at 18:32, Randy Dunlap<randy.dunlap@oracle.com>  wrote:
+>> On Thu, 07 Jul 2011 09:29:59 -0700 J Freyensee wrote:
+>>> On 07/07/2011 08:14 AM, Randy Dunlap wrote:
+>>>> On Mon, 4 Jul 2011 13:45:41 -0700 Randy Dunlap wrote:
+>>>>> On Mon, 4 Jul 2011 17:09:52 +1000 Stephen Rothwell wrote:
+>>>>>> Changes since 20110701:
+>>>>> when CONFIG_PCI is not enabled:
+>>>>>
+>>>>> drivers/misc/pti.c:410: error: implicit declaration of function 'pci_release_region'
+>>>>> drivers/misc/pti.c:859: error: implicit declaration of function 'pci_request_region'
+>>>>>
+>>>>> Stubs for these 2 functions could be added to include/linux/pci.h, but it would
+>>>>> make more sense to me just to make the driver depend on PCI since it seems to rely
+>>>>> on so many PCI functions.  or are the PCI pieces optional?
+>>>> ping.  still a problem in linux-next 20110706.
+>>> Thanks for the ping.
+>>>
+>>> Is there something you need me to do or look at?
+>>>
+>>> For Intel-Atom architectures, the MIPI PTI module does sit on the PCI
+>>> bus.  It's very much dependent upon the PCI bus for working
+>>> functionality and it's not optional.  So yes, it makes sense for the
+>>> driver to depend on PCI to be there and if PCI is not enabled on the
+>>> system, don't build the pti driver.
+>>>
+>>> Maybe it's a Kconfig dependency?
+>> Yes, please send/merge a patch that adds
+>>         depends on PCI
+>> to "config INTEL_MID_PCI".
+> http://kisskb.ellerman.id.au/kisskb/buildresult/4292241/:
+I can't access that http site (with or without the ':').
 
-Signed-off-by: Dmitry Torokhov <dtor@vmware.com>
----
- drivers/misc/vmw_balloon.c |   31 +++++++++++--------------------
- 1 files changed, 11 insertions(+), 20 deletions(-)
+> drivers/misc/pti.c:249: error: implicit declaration of function 'kmalloc'
+> drivers/misc/pti.c:258: error: implicit declaration of function 'kfree'
+> drivers/misc/pti.c:657: error: implicit declaration of function 'copy_from_user'
+> drivers/misc/pti.c:848: error: implicit declaration of function 'kzalloc'
+>
+> Probably missing
 
-diff --git a/drivers/misc/vmw_balloon.c b/drivers/misc/vmw_balloon.c
-index 6df5a55..ca72de3 100644
---- a/drivers/misc/vmw_balloon.c
-+++ b/drivers/misc/vmw_balloon.c
-@@ -45,7 +45,7 @@
- 
- MODULE_AUTHOR("VMware, Inc.");
- MODULE_DESCRIPTION("VMware Memory Control (Balloon) Driver");
--MODULE_VERSION("1.2.1.2-k");
-+MODULE_VERSION("1.2.1.3-k");
- MODULE_ALIAS("dmi:*:svnVMware*:*");
- MODULE_ALIAS("vmware_vmmemctl");
- MODULE_LICENSE("GPL");
-@@ -215,7 +215,6 @@ struct vmballoon {
- };
- 
- static struct vmballoon balloon;
--static struct workqueue_struct *vmballoon_wq;
- 
- /*
-  * Send "start" command to the host, communicating supported version
-@@ -674,7 +673,12 @@ static void vmballoon_work(struct work_struct *work)
- 			vmballoon_deflate(b);
- 	}
- 
--	queue_delayed_work(vmballoon_wq, dwork, round_jiffies_relative(HZ));
-+	/*
-+	 * We are using freezable workqueue so that balloon operations are
-+	 * stopped while system transitions to/from sleep/hibernation.
-+	*/
-+	queue_delayed_work(system_freezable_wq,
-+			   dwork, round_jiffies_relative(HZ));
- }
- 
- /*
-@@ -785,12 +789,6 @@ static int __init vmballoon_init(void)
- 	if (x86_hyper != &x86_hyper_vmware)
- 		return -ENODEV;
- 
--	vmballoon_wq = create_freezable_workqueue("vmmemctl");
--	if (!vmballoon_wq) {
--		pr_err("failed to create workqueue\n");
--		return -ENOMEM;
--	}
--
- 	INIT_LIST_HEAD(&balloon.pages);
- 	INIT_LIST_HEAD(&balloon.refused_pages);
- 
-@@ -805,34 +803,27 @@ static int __init vmballoon_init(void)
- 	 */
- 	if (!vmballoon_send_start(&balloon)) {
- 		pr_err("failed to send start command to the host\n");
--		error = -EIO;
--		goto fail;
-+		return -EIO;
- 	}
- 
- 	if (!vmballoon_send_guest_id(&balloon)) {
- 		pr_err("failed to send guest ID to the host\n");
--		error = -EIO;
--		goto fail;
-+		return -EIO;
- 	}
- 
- 	error = vmballoon_debugfs_init(&balloon);
- 	if (error)
--		goto fail;
-+		return error;
- 
--	queue_delayed_work(vmballoon_wq, &balloon.dwork, 0);
-+	queue_delayed_work(system_freezable_wq, &balloon.dwork, 0);
- 
- 	return 0;
--
--fail:
--	destroy_workqueue(vmballoon_wq);
--	return error;
- }
- module_init(vmballoon_init);
- 
- static void __exit vmballoon_exit(void)
- {
- 	cancel_delayed_work_sync(&balloon.dwork);
--	destroy_workqueue(vmballoon_wq);
- 
- 	vmballoon_debugfs_exit(&balloon);
- 
--- 
-1.7.4.1
+>
+> #include<linux/slab.h>
+> #include<linux/uaccess.h>
+
+I can send a patch to add these two includes.  It didn't have previous 
+troubles compiling, so maybe one of the other includes used to be 
+including these?
+
+>
+> Gr{oetje,eeting}s,
+>
+>                          Geert
+>
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                  -- Linus Torvalds
 
