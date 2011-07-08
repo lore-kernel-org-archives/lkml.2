@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754720Ab1GHFDz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:03:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42264 "EHLO mx2.suse.de"
+	id S1754754Ab1GHFD5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:03:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42271 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754649Ab1GHFDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:03:50 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:58 2011
-Message-Id: <20110708001658.892033199@clark.kroah.org>
+	id S1754236Ab1GHFDy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:03:54 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:59 2011
+Message-Id: <20110708001658.994374100@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:16:35 -0700
+Date: Thu, 07 Jul 2011 17:16:36 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        =?ISO-8859-15?q?Juan=20Jes=C3=BAs=20Garc=C3=ADa=20de=20Soria?= 
-	<skandalfo@gmail.com>,
-        Jarod Wilson <jarod@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [063/107] [media] ite-cir: 8709 needs to use pnp resource 2
+        Florian Fainelli <florian@openwrt.org>,
+        Wim Van Sebroeck <wim@iguana.be>
+Subject: [064/107] watchdog: mtx1-wdt: request gpio before using it
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,113 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jarod Wilson <jarod@redhat.com>
+From: Florian Fainelli <florian@openwrt.org>
 
-commit 35d136c8dab034ee14aa00d6082229b4b74607da upstream.
+commit 9b19d40aa3ebaf1078779da10555da2ab8512422 upstream.
 
-Thanks to the intrepid testing and debugging of Matthijs van Drunen, it
-was uncovered that at least some variants of the ITE8709 need to use pnp
-resource 2, rather than 0, for things to function properly. Resource 0
-has a length of only 1, and if you try to bypass the pnp_port_len check
-and use it anyway (with either a length of 1 or 2), the system in
-question's trackpad ceased to function.
+Otherwise, the gpiolib autorequest feature will produce a WARN_ON():
 
-The circa lirc 0.8.7 lirc_ite8709 driver used resource 2, but the value
-was (amusingly) changed to 0 by way of a patch from ITE themselves, so I
-don't know if there may be variants where 0 actually *is* correct, but
-at least in this case and in the original lirc_ite8709 driver author's
-case, it sure looks like 2 is the right value.
+WARNING: at drivers/gpio/gpiolib.c:101 0x8020ec6c()
+autorequest GPIO-215
+[...]
 
-This fix should probably be applied to all stable kernels with the
-ite-cir driver, lest we nuke more people's trackpads.
-
-Tested-by: Matthijs van Drunen
-CC: Juan Jesús García de Soria <skandalfo@gmail.com>
-Signed-off-by: Jarod Wilson <jarod@redhat.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Florian Fainelli <florian@openwrt.org>
+Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/rc/ite-cir.c |   12 +++++++++---
- drivers/media/rc/ite-cir.h |    3 +++
- 2 files changed, 12 insertions(+), 3 deletions(-)
+ drivers/watchdog/mtx-1_wdt.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/media/rc/ite-cir.c
-+++ b/drivers/media/rc/ite-cir.c
-@@ -1357,6 +1357,7 @@ static const struct ite_dev_params ite_d
- 	{	/* 0: ITE8704 */
- 	       .model = "ITE8704 CIR transceiver",
- 	       .io_region_size = IT87_IOREG_LENGTH,
-+	       .io_rsrc_no = 0,
- 	       .hw_tx_capable = true,
- 	       .sample_period = (u32) (1000000000ULL / 115200),
- 	       .tx_carrier_freq = 38000,
-@@ -1381,6 +1382,7 @@ static const struct ite_dev_params ite_d
- 	{	/* 1: ITE8713 */
- 	       .model = "ITE8713 CIR transceiver",
- 	       .io_region_size = IT87_IOREG_LENGTH,
-+	       .io_rsrc_no = 0,
- 	       .hw_tx_capable = true,
- 	       .sample_period = (u32) (1000000000ULL / 115200),
- 	       .tx_carrier_freq = 38000,
-@@ -1405,6 +1407,7 @@ static const struct ite_dev_params ite_d
- 	{	/* 2: ITE8708 */
- 	       .model = "ITE8708 CIR transceiver",
- 	       .io_region_size = IT8708_IOREG_LENGTH,
-+	       .io_rsrc_no = 0,
- 	       .hw_tx_capable = true,
- 	       .sample_period = (u32) (1000000000ULL / 115200),
- 	       .tx_carrier_freq = 38000,
-@@ -1430,6 +1433,7 @@ static const struct ite_dev_params ite_d
- 	{	/* 3: ITE8709 */
- 	       .model = "ITE8709 CIR transceiver",
- 	       .io_region_size = IT8709_IOREG_LENGTH,
-+	       .io_rsrc_no = 2,
- 	       .hw_tx_capable = true,
- 	       .sample_period = (u32) (1000000000ULL / 115200),
- 	       .tx_carrier_freq = 38000,
-@@ -1471,6 +1475,7 @@ static int ite_probe(struct pnp_dev *pde
- 	struct rc_dev *rdev = NULL;
- 	int ret = -ENOMEM;
- 	int model_no;
-+	int io_rsrc_no;
+--- a/drivers/watchdog/mtx-1_wdt.c
++++ b/drivers/watchdog/mtx-1_wdt.c
+@@ -211,6 +211,12 @@ static int __devinit mtx1_wdt_probe(stru
+ 	int ret;
  
- 	ite_dbg("%s called", __func__);
+ 	mtx1_wdt_device.gpio = pdev->resource[0].start;
++	ret = gpio_request_one(mtx1_wdt_device.gpio,
++				GPIOF_OUT_INIT_HIGH, "mtx1-wdt");
++	if (ret < 0) {
++		dev_err(&pdev->dev, "failed to request gpio");
++		return ret;
++	}
  
-@@ -1500,10 +1505,11 @@ static int ite_probe(struct pnp_dev *pde
- 
- 	/* get the description for the device */
- 	dev_desc = &ite_dev_descs[model_no];
-+	io_rsrc_no = dev_desc->io_rsrc_no;
- 
- 	/* validate pnp resources */
--	if (!pnp_port_valid(pdev, 0) ||
--	    pnp_port_len(pdev, 0) != dev_desc->io_region_size) {
-+	if (!pnp_port_valid(pdev, io_rsrc_no) ||
-+	    pnp_port_len(pdev, io_rsrc_no) != dev_desc->io_region_size) {
- 		dev_err(&pdev->dev, "IR PNP Port not valid!\n");
- 		goto failure;
+ 	spin_lock_init(&mtx1_wdt_device.lock);
+ 	init_completion(&mtx1_wdt_device.stop);
+@@ -236,6 +242,8 @@ static int __devexit mtx1_wdt_remove(str
+ 		mtx1_wdt_device.queue = 0;
+ 		wait_for_completion(&mtx1_wdt_device.stop);
  	}
-@@ -1514,7 +1520,7 @@ static int ite_probe(struct pnp_dev *pde
- 	}
- 
- 	/* store resource values */
--	itdev->cir_addr = pnp_port_start(pdev, 0);
-+	itdev->cir_addr = pnp_port_start(pdev, io_rsrc_no);
- 	itdev->cir_irq = pnp_irq(pdev, 0);
- 
- 	/* initialize spinlocks */
---- a/drivers/media/rc/ite-cir.h
-+++ b/drivers/media/rc/ite-cir.h
-@@ -57,6 +57,9 @@ struct ite_dev_params {
- 	/* size of the I/O region */
- 	int io_region_size;
- 
-+	/* IR pnp I/O resource number */
-+	int io_rsrc_no;
 +
- 	/* true if the hardware supports transmission */
- 	bool hw_tx_capable;
- 
++	gpio_free(mtx1_wdt_device.gpio);
+ 	misc_deregister(&mtx1_wdt_misc);
+ 	return 0;
+ }
 
 
