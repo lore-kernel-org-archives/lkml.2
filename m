@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752429Ab1GIFyW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 01:54:22 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:43411 "EHLO
+	id S1752883Ab1GIGAW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 02:00:22 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:53233 "EHLO
 	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752218Ab1GIFyF (ORCPT
+	by vger.kernel.org with ESMTP id S1752652Ab1GIFyV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 01:54:05 -0400
-X-Sasl-enc: wqYBFt4thwiEr/0spRrmkte60/OQsNCkJTeuJIUncXKQ 1310190844
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 15:51:19 2011
-Message-Id: <20110708225119.216874514@clark.kroah.org>
+	Sat, 9 Jul 2011 01:54:21 -0400
+X-Sasl-enc: mql16NDah1RCyfIZFnN4JxL3fSA5f6zg+IVnu02IBfOt 1310190860
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 15:51:21 2011
+Message-Id: <20110708225121.205719004@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 08 Jul 2011 15:49:53 -0700
+Date: Fri, 08 Jul 2011 15:50:14 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [04/35] clocksource: Make watchdog robust vs. interruption
+        Nelson Elhage <nelhage@ksplice.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [25/35] netlink: Make nlmsg_find_attr take a const nlmsghdr*.
 In-Reply-To: <20110708225343.GA14402@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,100 +28,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Nelson Elhage <nelhage@ksplice.com>
 
-commit b5199515c25cca622495eb9c6a8a1d275e775088 upstream.
+commit 6b8c92ba07287578718335ce409de8e8d7217e40 upstream.
 
-The clocksource watchdog code is interruptible and it has been
-observed that this can trigger false positives which disable the TSC.
+This will let us use it on a nlmsghdr stored inside a netlink_callback.
 
-The reason is that an interrupt storm or a long running interrupt
-handler between the read of the watchdog source and the read of the
-TSC brings the two far enough apart that the delta is larger than the
-unstable treshold. Move both reads into a short interrupt disabled
-region to avoid that.
-
-Reported-and-tested-by: Vernon Mauery <vernux@us.ibm.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Nelson Elhage <nelhage@ksplice.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/clocksource.h |    1 +
- kernel/time/clocksource.c   |   24 +++++++++++++-----------
- 2 files changed, 14 insertions(+), 11 deletions(-)
+ include/net/netlink.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/linux/clocksource.h
-+++ b/include/linux/clocksource.h
-@@ -190,6 +190,7 @@ struct clocksource {
- #ifdef CONFIG_CLOCKSOURCE_WATCHDOG
- 	/* Watchdog related data, used by the framework */
- 	struct list_head wd_list;
-+	cycle_t cs_last;
- 	cycle_t wd_last;
- #endif
- };
---- a/kernel/time/clocksource.c
-+++ b/kernel/time/clocksource.c
-@@ -131,7 +131,6 @@ static struct clocksource *watchdog;
- static struct timer_list watchdog_timer;
- static DECLARE_WORK(watchdog_work, clocksource_watchdog_work);
- static DEFINE_SPINLOCK(watchdog_lock);
--static cycle_t watchdog_last;
- static int watchdog_running;
- 
- static int clocksource_watchdog_kthread(void *data);
-@@ -200,11 +199,6 @@ static void clocksource_watchdog(unsigne
- 	if (!watchdog_running)
- 		goto out;
- 
--	wdnow = watchdog->read(watchdog);
--	wd_nsec = clocksource_cyc2ns((wdnow - watchdog_last) & watchdog->mask,
--				     watchdog->mult, watchdog->shift);
--	watchdog_last = wdnow;
--
- 	list_for_each_entry(cs, &watchdog_list, wd_list) {
- 
- 		/* Clocksource already marked unstable? */
-@@ -214,19 +208,28 @@ static void clocksource_watchdog(unsigne
- 			continue;
- 		}
- 
-+		local_irq_disable();
- 		csnow = cs->read(cs);
-+		wdnow = watchdog->read(watchdog);
-+		local_irq_enable();
- 
- 		/* Clocksource initialized ? */
- 		if (!(cs->flags & CLOCK_SOURCE_WATCHDOG)) {
- 			cs->flags |= CLOCK_SOURCE_WATCHDOG;
--			cs->wd_last = csnow;
-+			cs->wd_last = wdnow;
-+			cs->cs_last = csnow;
- 			continue;
- 		}
- 
--		/* Check the deviation from the watchdog clocksource. */
--		cs_nsec = clocksource_cyc2ns((csnow - cs->wd_last) &
-+		wd_nsec = clocksource_cyc2ns((wdnow - cs->wd_last) & watchdog->mask,
-+					     watchdog->mult, watchdog->shift);
-+
-+		cs_nsec = clocksource_cyc2ns((csnow - cs->cs_last) &
- 					     cs->mask, cs->mult, cs->shift);
--		cs->wd_last = csnow;
-+		cs->cs_last = csnow;
-+		cs->wd_last = wdnow;
-+
-+		/* Check the deviation from the watchdog clocksource. */
- 		if (abs(cs_nsec - wd_nsec) > WATCHDOG_THRESHOLD) {
- 			clocksource_unstable(cs, cs_nsec - wd_nsec);
- 			continue;
-@@ -264,7 +267,6 @@ static inline void clocksource_start_wat
- 		return;
- 	init_timer(&watchdog_timer);
- 	watchdog_timer.function = clocksource_watchdog;
--	watchdog_last = watchdog->read(watchdog);
- 	watchdog_timer.expires = jiffies + WATCHDOG_INTERVAL;
- 	add_timer_on(&watchdog_timer, cpumask_first(cpu_online_mask));
- 	watchdog_running = 1;
+--- a/include/net/netlink.h
++++ b/include/net/netlink.h
+@@ -384,7 +384,7 @@ static inline int nlmsg_parse(const stru
+  *
+  * Returns the first attribute which matches the specified type.
+  */
+-static inline struct nlattr *nlmsg_find_attr(struct nlmsghdr *nlh,
++static inline struct nlattr *nlmsg_find_attr(const struct nlmsghdr *nlh,
+ 					     int hdrlen, int attrtype)
+ {
+ 	return nla_find(nlmsg_attrdata(nlh, hdrlen),
 
 
