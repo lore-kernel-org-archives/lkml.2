@@ -1,84 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753193Ab1GHOtS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 10:49:18 -0400
-Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:40132 "EHLO
-	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752129Ab1GHOtP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 10:49:15 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: balbi@ti.com
-Cc: Keshava Munegowda <keshava_mgowda@ti.com>, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gadiyar@ti.com, sameo@linux.intel.com, parthab@india.ti.com,
-        tony@atomide.com, b-cousson@ti.com, paul@pwsan.com,
-        johnstul@us.ibm.com, vishwanath.bs@ti.com, kishon@ti.com
-Subject: Re: [PATCH 0/6 v3] arm: omap: usb: Runtime PM support for EHCI and OHCI drivers
-Organization: Texas Instruments, Inc.
-References: <1310122965-23612-1-git-send-email-keshava_mgowda@ti.com>
-	<20110708114425.GI4820@legolas.emea.dhcp.ti.com>
-Date: Fri, 08 Jul 2011 07:49:09 -0700
-In-Reply-To: <20110708114425.GI4820@legolas.emea.dhcp.ti.com> (Felipe Balbi's
-	message of "Fri, 8 Jul 2011 14:44:26 +0300")
-Message-ID: <87k4bsbzfe.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	id S1753267Ab1GHOuA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 10:50:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45161 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752129Ab1GHOt7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 10:49:59 -0400
+Date: Fri, 8 Jul 2011 07:43:42 -0700
+From: Greg KH <gregkh@suse.de>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, David Airlie <airlied@linux.ie>
+Subject: Re: [089/107] drivers/base/platform.c: dont mark
+ platform_device_register_resndata() as __init_or_module
+Message-ID: <20110708144342.GA22691@suse.de>
+References: <20110708001740.GA14031@kroah.com>
+ <20110708001701.406081654@clark.kroah.org>
+ <20110708064742.GM29624@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110708064742.GM29624@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Felipe Balbi <balbi@ti.com> writes:
+On Fri, Jul 08, 2011 at 08:47:42AM +0200, Uwe Kleine-König wrote:
+> Hello,
+> 
+> On Thu, Jul 07, 2011 at 05:17:01PM -0700, Greg KH wrote:
+> > 2.6.39-stable review patch.  If anyone has any objections, please let us know.
+> > 
+> > ------------------
+> > 
+> > From: Andrew Morton <akpm@linux-foundation.org>
+> > 
+> > commit bb2b43fefab723f4a0760146e7bed59d41a50e53 upstream.
+> > 
+> > This reverts 737a3bb9416ce2a7c7a4 ("Driver core: move platform device
+> > creation helpers to .init.text (if MODULE=n)").  That patch assumed that
+> > platform_device_register_resndata() is only ever called from __init code
+> > but that isn't true in the case ioctl->drm_ioctl->radeon_cp_init().
+> > 
+> > Addresses https://bugzilla.kernel.org/show_bug.cgi?id=35192
+> > 
+> > Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 
-> Hi Kevin, Paul, Tony, Benoit,
->
-> On Fri, Jul 08, 2011 at 04:32:39PM +0530, Keshava Munegowda wrote:
->> The Hwmod structures and Runtime PM features are implemented
->> For EHCI and OHCI drivers of OMAP3 and OMAP4.
->> The global suspend/resume of EHCI and OHCI
->> is validated on OMAP3430 sdp board with these patches.
->> 
->> V3:
->> Set MSTANDBY_SMART_WKUP for idlemode of usbhost
->> Rebased on top of git://gitorious.org/omap-pm/linux.git
->> Branch: for_3.1/3_hwmod_fixes
->> commit 213ca8a3a8d73225f2f5304ab3a68c6eda0f6d1b
->> Author: Benoit Cousson <b-cousson@ti.com>
->> Date:   Fri Jul 1 13:52:03 2011 +0200
->> 
->>     OMAP: hwmod: Move pr_debug to improve the readability
->>     
->>     Sligtly move the pr_debug at the top of the function
->>     to trace the entry even if the first test is failing.
->>     That help understanding that we entered the function
->>     but failed in it.
->>     
->>     Move the _enable last part out of the test to reduce
->>     indentation and improve readability.
->>     
->>     Signed-off-by: Benoit Cousson <b-cousson@ti.com>
->>     Cc: Paul Walmsley <paul@pwsan.com>
->> 
->> Benoit Cousson (1):
->>  arm: omap: usb: ehci and ohci hwmod structures for omap4
->> 
->> Keshava Munegowda (5):
->>   arm: omap: usb: ehci and ohci hwmod structures for omap3
->>   arm: omap: usb: register hwmods of usbhs
->>   arm: omap: usb: device name change for the clk names of usbhs
->>   arm: omap: usb: Runtime PM support
->>   arm: omap: usb: global Suspend and resume support of ehci and ohci
->
-> can we get the hwmod stuff in this merge window now ? It has been
-> rebased on Benoit's branch.
+Now added.
 
-Not yet.
+> > Reported-by: Anthony Basile <blueness@gentoo.org>
+> > Cc: Greg KH <gregkh@suse.de>
+> > Cc: David Airlie <airlied@linux.ie>
+> > Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> > Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> > Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> You might want to remove one of your sobs.
 
-It's not about rebasing, it's that the data itself has changed, and new
-fields have been added to the hwmod (like clkdm.)
+Heh, thanks for catching this, now done.
 
-Please check the result of the latest auto-generated hwmods against the
-stuff that is being submitted.
-
-Kevin
+greg k-h
