@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755087Ab1GHVtv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 17:49:51 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:38617 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753360Ab1GHVtu (ORCPT
+	id S1751262Ab1GHVzr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 17:55:47 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:57782 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717Ab1GHVzp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 17:49:50 -0400
-Date: Fri, 8 Jul 2011 22:49:41 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Don Zickus <dzickus@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: pstore dump inside an nmi handler
-Message-ID: <20110708214941.GA20511@srcf.ucam.org>
-References: <20110708201731.GA3025@redhat.com>
- <987664A83D2D224EAE907B061CE93D5301E981AB56@orsmsx505.amr.corp.intel.com>
+	Fri, 8 Jul 2011 17:55:45 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=EZUF6EENI6bV3R3ju2I29IS8C0mFUAtLff2/+MwLt8V+kfbdRAvyz8nYsvAhoGkJj
+	Elb9pmJC/luc9C81l0Y8Q==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <987664A83D2D224EAE907B061CE93D5301E981AB56@orsmsx505.amr.corp.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <1310102676-23154-1-git-send-email-gaowanlong@cn.fujitsu.com>
+References: <1310102676-23154-1-git-send-email-gaowanlong@cn.fujitsu.com>
+From: Paul Menage <menage@google.com>
+Date: Fri, 8 Jul 2011 14:55:22 -0700
+Message-ID: <CAJniumUzXpiau2XCj=gR3Qoq7LjeVamR6krFyDgimOo27-U67g@mail.gmail.com>
+Subject: Re: [PATCH] Documentation:cgroups:fix a command error in cpuacct.txt
+To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 08, 2011 at 02:40:13PM -0700, Luck, Tony wrote:
-> > Inside pstore_dump(), the first thing it tries to grab is a mutex_lock()
-> > (inside an nmi hander).  This seems to be the root cause of my problems.
-> 
-> Someone else pointed out that mutex_lock() is a problem here too. They
-> wondered whether spin_lock_irqsave() would work - or whether pstore
-> backends were allowed to sleep - to which I said I hoped they didn't,
-> but wasn't really sure what the future will hold.
+On Thu, Jul 7, 2011 at 10:24 PM, Wanlong Gao <gaowanlong@cn.fujitsu.com> wrote:
+> Must echo a task id to the cgroups' tasks file, but not to a directory.
+>
+> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
 
-EFI can't sleep (at least, not as far as the kernel's concerned), so 
-we're safe there. I think it's fair to assume atomicity here - crash 
-dumping is a pretty specific situation. Although we may need to think 
-about whether pstore should be saving reboot and poweroff in that case.
+Acked-by: Paul Menage <menage@google.com>
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Thanks,
+Paul
+
+> ---
+>  Documentation/cgroups/cpuacct.txt |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/Documentation/cgroups/cpuacct.txt b/Documentation/cgroups/cpuacct.txt
+> index 9ad85df..9d73cc0 100644
+> --- a/Documentation/cgroups/cpuacct.txt
+> +++ b/Documentation/cgroups/cpuacct.txt
+> @@ -23,7 +23,7 @@ New accounting groups can be created under the parent group /sys/fs/cgroup.
+>
+>  # cd /sys/fs/cgroup
+>  # mkdir g1
+> -# echo $$ > g1
+> +# echo $$ > g1/tasks
+>
+>  The above steps create a new group g1 and move the current shell
+>  process (bash) into it. CPU time consumed by this bash and its children
+> --
+> 1.7.6
+>
+>
