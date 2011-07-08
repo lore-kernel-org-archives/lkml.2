@@ -1,66 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750985Ab1GHEDy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 00:03:54 -0400
-Received: from gate.crashing.org ([63.228.1.57]:38377 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750717Ab1GHEDw convert rfc822-to-8bit (ORCPT
+	id S1751106Ab1GHEO5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 00:14:57 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:32854 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750731Ab1GHEOx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 00:03:52 -0400
-Subject: Re: [PATCH v3 1/3] driver core: Add ability for arch code to setup pdev_archdata
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <20110707141125.GE27648@kroah.com>
-Date: Thu, 7 Jul 2011 23:03:44 -0500
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <5F42C27F-25F0-4E3C-AFED-4662D57B1A88@kernel.crashing.org>
-References: <1308744176-24491-1-git-send-email-galak@kernel.crashing.org> <1308828839-27349-1-git-send-email-galak@kernel.crashing.org> <20110701220900.GA28971@kroah.com> <597354F4-D1D4-4BC0-9251-FDDC31B1E2A1@kernel.crashing.org> <20110707141125.GE27648@kroah.com>
-To: Greg KH <greg@kroah.com>
-X-Mailer: Apple Mail (2.1084)
+	Fri, 8 Jul 2011 00:14:53 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlwHAIiCFk55LCkBgWdsb2JhbABTmE2OdBUBARYmJc0NhjgEoyI
+From: Dave Chinner <david@fromorbit.com>
+To: viro@ZenIV.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [PATCH 0/14] Per superblock cache reclaim
+Date: Fri,  8 Jul 2011 14:14:32 +1000
+Message-Id: <1310098486-6453-1-git-send-email-david@fromorbit.com>
+X-Mailer: git-send-email 1.7.5.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This series converts the VFS cache shrinkers to a per-superblock
+shrinker, and provides a callout from the superblock shrinker to
+allow the filesystem to shrink internal caches proportionally to the
+amount of reclaim done to the VFS caches.
 
-On Jul 7, 2011, at 9:11 AM, Greg KH wrote:
+The original posting contains the motiviation, benefits, performance,
+etc, and rather than repeat it all, just look here:
 
-> On Thu, Jul 07, 2011 at 08:55:44AM -0500, Kumar Gala wrote:
->> 
->> On Jul 1, 2011, at 5:09 PM, Greg KH wrote:
->> 
->>> On Thu, Jun 23, 2011 at 06:33:57AM -0500, Kumar Gala wrote:
->>>> On some architectures we need to setup pdev_archdata before we add the
->>>> device.  Waiting til a bus_notifier is too late since we might need the
->>>> pdev_archdata in the bus notifier.  One example is setting up of dma_mask
->>>> pointers such that it can be used in a bus_notifier.
->>>> 
->>>> We add noop version of arch_setup_pdev_archdata() in
->>>> <asm-generic/platform_device.h> and allow the arch code to override with
->>>> access the full definitions of struct device, struct platform_device, and
->>>> struct pdev_archdata.
->>> 
->>> Isn't there some way to use "weak" symbols to keep us from having to
->>> create this .h file in every single arch and then if the arch wants to
->>> define it, it does so?
->>> 
->>> That should make this patch simpler, right?
->>> 
->>> thanks,
->>> 
->>> greg k-h
->> 
->> Changing to weak should be doable if we are ok with the additional
->> function call always happening.
-> 
-> Given that this is not a fast path, and the function call for the
-> "normal" case would do nothing, it should be fine, right?
-> 
-> greg k-h
+https://lkml.org/lkml/2011/6/2/42
 
-Sounds good, new version sent that uses weak instead.  If this looks good let me know if you just want to ACK and send via powerpc.git tree or if you'll pick these up.
+The version has been rebased onto the untested branch in Al's VFS
+git tree, fixes the review comments from the first version, and
+has had much more testing under different workloads.
 
-- k
+---
 
+Version 2:
+o rebase onto Al's #untested branch
+o fix build problem in Al's untested branch
+o move all slab shrinker modifications tracepoints into a single
+  patch.
+o renames some of the tracepoint variables to be more obvious as to
+  what they are recording.
+o move pin_sb_for_writeback() to fs/super.c and rename it to
+  grab_super_passive() so the shrinker and writeback use the same
+  passive reference counting and unmount detection
+o rework per-superblock shrinker to use grab_super_passive()
+o minor typo fixes in commit messages, documentation and commit
+  messages
+
+---
+
+When the git mirror updates, this patchset will also be available in
+the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/dgc/xfsdev.git per-sb-shrinker
+
+If you get a version based on the current Linus tree, then it hasn't
+updated yet....
+
+Dave Chinner (14):
+      dcache: fix __d_alloc prototype to use const
+      vmscan: add shrink_slab tracepoints
+      vmscan: shrinker->nr updates race and go wrong
+      vmscan: reduce wind up shrinker->nr when shrinker can't do work
+      vmscan: add customisable shrinker batch size
+      inode: convert inode_stat.nr_unused to per-cpu counters
+      inode: Make unused inode LRU per superblock
+      inode: move to per-sb LRU locks
+      superblock: move pin_sb_for_writeback() to fs/super.c
+      superblock: introduce per-sb cache shrinker infrastructure
+      inode: remove iprune_sem
+      superblock: add filesystem shrinker operations
+      vfs: increase shrinker batch size
+      xfs: make use of new shrinker callout for the inode cache
+
+ Documentation/filesystems/vfs.txt |   22 +++++++
+ fs/dcache.c                       |  121 ++++--------------------------------
+ fs/fs-writeback.c                 |   28 +--------
+ fs/inode.c                        |  124 ++++++++++++-------------------------
+ fs/internal.h                     |    3 +-
+ fs/libfs.c                        |    2 +
+ fs/super.c                        |  109 ++++++++++++++++++++++++++++++++-
+ fs/xfs/linux-2.6/xfs_super.c      |   26 +++++---
+ fs/xfs/linux-2.6/xfs_sync.c       |   71 ++++++++-------------
+ fs/xfs/linux-2.6/xfs_sync.h       |    5 +-
+ include/linux/fs.h                |   14 ++++
+ include/linux/mm.h                |    1 +
+ include/trace/events/vmscan.h     |   71 +++++++++++++++++++++
+ mm/vmscan.c                       |   71 +++++++++++++++++-----
+ 14 files changed, 374 insertions(+), 294 deletions(-)
 
