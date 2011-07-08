@@ -1,89 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753097Ab1GHPrm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 11:47:42 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:50385 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750900Ab1GHPrk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 11:47:40 -0400
-X-Sasl-enc: vMo3x/Cq40j0BzxgjtTz9+8nzf2/bK3U2WM8+JiKbpmV 1310140060
-Date: Fri, 8 Jul 2011 08:47:36 -0700
-From: Greg KH <greg@kroah.com>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Nao Nishijima <nao.nishijima.xt@hitachi.com>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, James.Bottomley@hansenpartnership.com,
-        jcm@redhat.com, dle-develop@lists.sourceforge.net,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        yrl.pp-manager.tt@hitachi.com, dgilbert@interlog.com,
-        stefanr@s5r6.in-berlin.de, hare@suse.de
-Subject: Re: [RFC PATCH 0/4] Persistent device name using alias name
-Message-ID: <20110708154736.GA7320@kroah.com>
-References: <20110708084547.2091.55262.stgit@ltc197.sdl.hitachi.co.jp>
- <20110708145408.GA2283@kroah.com>
- <CAPXgP10gThuxOsrxH8_wOddeRB5f2ABypW7EQui-F1hOE97dHQ@mail.gmail.com>
+	id S1753793Ab1GHPsU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 11:48:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59622 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752238Ab1GHPsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 11:48:19 -0400
+Date: Fri, 8 Jul 2011 11:47:57 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>,
+        linux-kernel@vger.kernel.org,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Pavel Emelyanov <xemul@openvz.org>, Hu Tao <hutao@cn.fujitsu.com>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Re: jump_label defaults (was Re: [patch 00/17] CFS Bandwidth Control
+ v7.1)
+Message-ID: <20110708154757.GB2438@redhat.com>
+References: <20110707112302.GB8227@elte.hu>
+ <1310049528.3282.583.camel@twins>
+ <20110707145159.GD19193@elte.hu>
+ <1310050482.3282.584.camel@twins>
+ <20110707145620.GF19193@elte.hu>
+ <20110707162344.GB2536@redhat.com>
+ <1310059220.3282.591.camel@twins>
+ <20110707181535.GD2536@redhat.com>
+ <1310070974.3282.678.camel@twins>
+ <1310116832.3282.699.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAPXgP10gThuxOsrxH8_wOddeRB5f2ABypW7EQui-F1hOE97dHQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1310116832.3282.699.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 08, 2011 at 05:41:36PM +0200, Kay Sievers wrote:
-> On Fri, Jul 8, 2011 at 16:54, Greg KH <greg@kroah.com> wrote:
-> > On Fri, Jul 08, 2011 at 05:45:47PM +0900, Nao Nishijima wrote:
-> >> This patch series provides an "alias name" of the disk into kernel and procfs
-> >> messages. The user can assign a preferred name to an alias name of the device.
-> >>
-> >> Based on previous discussion (*), I changed patches as follows
-> >> - This is "alias name"
-> >> - An "alias name" is stored in gendisk struct
-> >> - Add document to Documentation/ABI/testing/sysfs-block
-> >> - When the user changes an "alias name", kernel notifies udev
-> >>
-> >> (*) http://marc.info/?l=linux-scsi&m=130812625531219&w=2
-> >
-> > I don't like it and I don't think it will really solve the root problem
-> > you are trying to address, but as the patches don't touch any code I
-> > maintain, there's not much I can do to object to it.
+On Fri, Jul 08, 2011 at 11:20:32AM +0200, Peter Zijlstra wrote:
+> On Thu, 2011-07-07 at 22:36 +0200, Peter Zijlstra wrote:
+> > Hrm,. I can't seem to make that work, damn CPP for not being
+> > recursive.
 > 
-> I can only repeat what I already wrote in detail earlier:
+> Ha! the wonders of sleep, ok I can make this part work.
 > 
-> This approach seems to papers over the problem which emitting and
-> parsing free-text printk() messages with much-too-dumb tools cause. It
-> seems to fix the symptoms not the cause.
+> So how do we write this static_branch_true() thing?
 > 
-> You can already write a udev rule today that logs _all_ symlinks of a
-> device at discovery time, and any later kernel message can safely be
-> associated with all possible names of the blockdev. No kernel changes
-> needed, all possible names are covered. That also works good enough
-> with our current stone-age tools for anybody who is able to scroll
-> back to the last log udev message in that same log file.
+> But then I realized that if we do something like:
 > 
-> There can be by-definition no default udev rules assigning a proper
-> single name to a block device. There is never a valid single name for
-> a disks, so udev can not ship anything like that in the default setup,
-> so this stays as a custom hack.
+> static __always_inline bool arch_static_branch(struct jump_label_key *key)
+> {
+>         asm goto("1:"
+>                 JUMP_LABEL_INITIAL_NOP
+>                 ".pushsection __jump_table,  \"aw\" \n\t"
+>                 _ASM_ALIGN "\n\t"
+>                 _ASM_PTR "1b, %l[l_yes], %c0 \n\t"
+>                 ".popsection \n\t"
+>                 : :  "i" (key) : : l_yes);
+>         return false;
+> l_yes:
+>         return true;
+> }
 > 
-> We absolutely need _structured_ data for logging and error reporting,
-> not only to solve this problem. Along with the current free-text
-> printk(), we would be able to attach classifications, device
-> error/sense data, firmware register dumps and anything
-> interesting-for-debug to the messages.
-> 
-> We can't solve that problem in the kernel alone. Structured data from
-> the kernel will need to feed a smarter userspace logger that can index
-> and classify messages, merge current userspace data into it, and
-> provides hooks for the system management to act on critical failures
-> and raise notifications.
-> 
-> Structured logging seems like the solution for this and also to many
-> other problems in this area. Single custom names pushed into the
-> kernel might cover some rather exotic use cases, but I think, is not
-> what we are looking for.
+> Simply flipping the true and false in there isn't going to work, because
+> then its similar to !static_branch() and jump_label_inc() is going to
+> disable it.
 
-I totally agree, but hey, no one listens to us :)
+right, you'd also have to take into account the original state of branch
+in deciding whether or not to call jump_label_inc()/dec()
 
-greg k-h
+
+thanks,
+
+-Jason
