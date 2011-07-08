@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753707Ab1GHFBT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 01:01:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41632 "EHLO mx2.suse.de"
+	id S1753541Ab1GHFBK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 01:01:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41611 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753667Ab1GHFBP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 01:01:15 -0400
+	id S1753117Ab1GHFBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 01:01:05 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jul  7 17:16:54 2011
-Message-Id: <20110708001654.726001410@clark.kroah.org>
+Message-Id: <20110708001654.437690402@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 07 Jul 2011 17:15:52 -0700
+Date: Thu, 07 Jul 2011 17:15:49 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [020/107] hwmon: (ibmaem) Initialize sysfs attributes
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Chris Wright <chrisw@sous-sol.org>
+Subject: [017/107] ksm: fix NULL pointer dereference in scan_get_next_rmap_item()
 In-Reply-To: <20110708001740.GA14031@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,38 +26,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <guenter.roeck@ericsson.com>
+From: Hugh Dickins <hughd@google.com>
 
-commit 3cdb2052a6e365ad56202874e6a8a05a2bb336fc upstream.
+commit 2b472611a32a72f4a118c069c2d62a1a3f087afd upstream.
 
-Initialize dynamically allocated sysfs attributes before device_create_file()
-call to suppress lockdep_init_map() warning if lockdep debugging is enabled.
+Andrea Righi reported a case where an exiting task can race against
+ksmd::scan_get_next_rmap_item (http://lkml.org/lkml/2011/6/1/742) easily
+triggering a NULL pointer dereference in ksmd.
 
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
-Acked-by: Jean Delvare <khali@linux-fr.org>
+ksm_scan.mm_slot == &ksm_mm_head with only one registered mm
+
+CPU 1 (__ksm_exit)		CPU 2 (scan_get_next_rmap_item)
+ 				list_empty() is false
+lock				slot == &ksm_mm_head
+list_del(slot->mm_list)
+(list now empty)
+unlock
+				lock
+				slot = list_entry(slot->mm_list.next)
+				(list is empty, so slot is still ksm_mm_head)
+				unlock
+				slot->mm == NULL ... Oops
+
+Close this race by revalidating that the new slot is not simply the list
+head again.
+
+Andrea's test case:
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/mman.h>
+
+#define BUFSIZE getpagesize()
+
+int main(int argc, char **argv)
+{
+	void *ptr;
+
+	if (posix_memalign(&ptr, getpagesize(), BUFSIZE) < 0) {
+		perror("posix_memalign");
+		exit(1);
+	}
+	if (madvise(ptr, BUFSIZE, MADV_MERGEABLE) < 0) {
+		perror("madvise");
+		exit(1);
+	}
+	*(char *)NULL = 0;
+
+	return 0;
+}
+
+Reported-by: Andrea Righi <andrea@betterlinux.com>
+Tested-by: Andrea Righi <andrea@betterlinux.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Chris Wright <chrisw@sous-sol.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hwmon/ibmaem.c |    2 ++
- 1 file changed, 2 insertions(+)
+ mm/ksm.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/hwmon/ibmaem.c
-+++ b/drivers/hwmon/ibmaem.c
-@@ -947,6 +947,7 @@ static int aem_register_sensors(struct a
- 
- 	/* Set up read-only sensors */
- 	while (ro->label) {
-+		sysfs_attr_init(&sensors->dev_attr.attr);
- 		sensors->dev_attr.attr.name = ro->label;
- 		sensors->dev_attr.attr.mode = S_IRUGO;
- 		sensors->dev_attr.show = ro->show;
-@@ -963,6 +964,7 @@ static int aem_register_sensors(struct a
- 
- 	/* Set up read-write sensors */
- 	while (rw->label) {
-+		sysfs_attr_init(&sensors->dev_attr.attr);
- 		sensors->dev_attr.attr.name = rw->label;
- 		sensors->dev_attr.attr.mode = S_IRUGO | S_IWUSR;
- 		sensors->dev_attr.show = rw->show;
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -1301,6 +1301,12 @@ static struct rmap_item *scan_get_next_r
+ 		slot = list_entry(slot->mm_list.next, struct mm_slot, mm_list);
+ 		ksm_scan.mm_slot = slot;
+ 		spin_unlock(&ksm_mmlist_lock);
++		/*
++		 * Although we tested list_empty() above, a racing __ksm_exit
++		 * of the last mm on the list may have removed it since then.
++		 */
++		if (slot == &ksm_mm_head)
++			return NULL;
+ next_mm:
+ 		ksm_scan.address = 0;
+ 		ksm_scan.rmap_list = &slot->rmap_list;
 
 
