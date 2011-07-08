@@ -1,205 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549Ab1GHPNd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 11:13:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9722 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753322Ab1GHPNa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 11:13:30 -0400
-Date: Fri, 8 Jul 2011 11:13:07 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [rfc] perf p4 events aliases
-Message-ID: <20110708151307.GA6710@redhat.com>
-References: <20110707152849.GV5485@sun>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110707152849.GV5485@sun>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753028Ab1GHPSr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 11:18:47 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49717 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752709Ab1GHPSq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 11:18:46 -0400
+Subject: Re: [PATCH 1/4] perf: Add memory load/store events generic code
+From: Peter Zijlstra <peterz@infradead.org>
+To: Anton Blanchard <anton@samba.org>
+Cc: Paul Mackerras <paulus@samba.org>, Lin Ming <ming.m.lin@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110708171836.6465a12e@kryten>
+References: <1309766525-14089-1-git-send-email-ming.m.lin@intel.com>
+	 <1309766525-14089-2-git-send-email-ming.m.lin@intel.com>
+	 <1309768420.3282.8.camel@twins> <1309769066.3282.14.camel@twins>
+	 <1309867418.3282.73.camel@twins>
+	 <20110705230217.GA9584@bloggs.ozlabs.ibm.com>
+	 <1309960718.3282.289.camel@twins>  <20110708171836.6465a12e@kryten>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 08 Jul 2011 17:18:28 +0200
+Message-ID: <1310138308.3282.708.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 07, 2011 at 07:28:49PM +0400, Cyrill Gorcunov wrote:
-> Hi Don, if you have a chance could you please check if this
-> patch does a trick for nmi-watchdog and perf top? The idea
-> is to use aliases as being proposed early.
+On Fri, 2011-07-08 at 17:18 +1000, Anton Blanchard wrote:
+> Hi Peter,
+> 
+> > The thing we're talking about is Intel PEBS Load Latency/Precise Store
+> > and AMD IBS where together with a mem op retired event (mem loads
+> > retired for Load-Latency, mem stores retired for Precise Store)
+> > provides an additional field describing where the load/store was
+> > sourced from.
+> > 
+> > Such additional data would require the addition of a
+> > PERF_SAMPLE_SOURCE field or similar, for some reason or other I was
+> > under the impression some of the PPC chips had something similar. But
+> > if not, it saves us having to worry about that.
+> 
+> It does sound a lot like our event vector, where we can have up to
+> 64 bits of information that goes with a sample. A lot of the fields
+> relate to loads and stores, but there are other fields (eg pipeline
+> information at the point the sample was taken).
+> 
+> So we could definitely use a field to capture this.
 
-Hmm, didn't work for me.  The watchdog seems to work but 'perf top' showed
-nothing (even after 30 seconds).  I tried this on Linus's latest -tip and
-Ingo's perf/core -tip.  No luck.
-
-Cheers,
-Don
-
-> 
-> Note I commented out hw_watchdog_set_attr method to be sure
-> this hook doesn't take place so you get "defined but not used"
-> warning but it's known to happen.
-> 
-> Some details -- I think alias should be allowed for general
-> events only so any raw event will never fit aliasing feature.
-> 
-> Compile tested only, so I guess most probably something will
-> goes wrong or fail, but anyway ;) Thanks!
-> 
-> Patch is on top of current -tip/perf/core
-> 
->  | commit 931da6137e8e8c622f59251e8b645467aea293f1
-> 
-> 	Cyrill
-> ---
->  arch/x86/include/asm/perf_event_p4.h |    6 ++
->  arch/x86/kernel/cpu/perf_event_p4.c  |   80 +++++++++++++++++++++++++++++++++--
->  2 files changed, 82 insertions(+), 4 deletions(-)
-> 
-> Index: linux-2.6.git/arch/x86/include/asm/perf_event_p4.h
-> ===================================================================
-> --- linux-2.6.git.orig/arch/x86/include/asm/perf_event_p4.h
-> +++ linux-2.6.git/arch/x86/include/asm/perf_event_p4.h
-> @@ -757,6 +757,12 @@ enum P4_ESCR_EMASKS {
->  #define P4_PEBS_CONFIG_MASK		0xff
->  
->  /*
-> + * If event may have alias it should be marked
-> + * with special bit.
-> + */
-> +#define P4_CONFIG_ALIASABLE		(1 << 9)
-> +
-> +/*
->   * mem: Only counters MSR_IQ_COUNTER4 (16) and
->   * MSR_IQ_COUNTER5 (17) are allowed for PEBS sampling
->   */
-> Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
-> ===================================================================
-> --- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
-> +++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
-> @@ -570,11 +570,72 @@ static __initconst const u64 p4_hw_cache
->   },
->  };
->  
-> +/*
-> + * Because of Netburst being quite restricted in now
-> + * many similar events can run simultaneously we use
-> + * that named event aliases, ie different events which
-> + * have the same functionallity but use non-intersected
-> + * ESCR/CCCR/couter registers which relax restrictions a
-> + * bit and run two or more semi-same events together.
-> + * This is done transparently to a user space.
-> + *
-> + * Never set P4_CONFIG_HT bit here nor the P4_PEBS_METRIC,
-> + * they either up-to-dated automatically either not appliable
-> + * at all, so be really carefull choosing aliases.
-> + *
-> + */
-> +struct p4_event_alias {
-> +	u64 orig;
-> +	u64 alter;
-> +} p4_event_aliases[] = {
-> +  {
-> +	.orig	=
-> +		p4_config_pack_escr(P4_ESCR_EVENT(P4_EVENT_GLOBAL_POWER_EVENTS)		|
-> +				    P4_ESCR_EMASK_BIT(P4_EVENT_GLOBAL_POWER_EVENTS, RUNNING)),
-> +	.alter	=
-> +		p4_config_pack_escr(P4_ESCR_EVENT(P4_EVENT_EXECUTION_EVENT)		|
-> +				    P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS0)|
-> +				    P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS1)|
-> +				    P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS2)|
-> +				    P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS3)|
-> +				    P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS0)	|
-> +				    P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS1)	|
-> +				    P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS2)	|
-> +				    P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS3))|
-> +		p4_config_pack_cccr(P4_CCCR_THRESHOLD(15) | P4_CCCR_COMPLEMENT		|
-> +				    P4_CCCR_COMPARE),
-> +  },
-> +};
-> +
-> +static u64 p4_get_alias_event(u64 config)
-> +{
-> +	int i;
-> +
-> +	if (!(config & P4_CONFIG_ALIASABLE))
-> +		return 0;
-> +
-> +	config &= P4_CONFIG_MASK;
-> +
-> +	/*
-> +	 * If an event was previously already swapped to
-> +	 * alter config we can swap it back when needed.
-> +	 */
-> +	for (i = 0; i < ARRAY_SIZE(p4_event_aliases); i++) {
-> +		if (config == p4_event_aliases[i].orig)
-> +			return p4_event_aliases[i].alter | P4_CONFIG_ALIASABLE;
-> +		else if (config == p4_event_aliases[i].alter)
-> +			return p4_event_aliases[i].orig | P4_CONFIG_ALIASABLE;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
->  static u64 p4_general_events[PERF_COUNT_HW_MAX] = {
->    /* non-halted CPU clocks */
->    [PERF_COUNT_HW_CPU_CYCLES] =
->  	p4_config_pack_escr(P4_ESCR_EVENT(P4_EVENT_GLOBAL_POWER_EVENTS)		|
-> -		P4_ESCR_EMASK_BIT(P4_EVENT_GLOBAL_POWER_EVENTS, RUNNING)),
-> +		P4_ESCR_EMASK_BIT(P4_EVENT_GLOBAL_POWER_EVENTS, RUNNING))	|
-> +		P4_CONFIG_ALIASABLE,
->  
->    /*
->     * retired instructions
-> @@ -1159,6 +1220,7 @@ static int p4_pmu_schedule_events(struct
->  	struct p4_event_bind *bind;
->  	unsigned int i, thread, num;
->  	int cntr_idx, escr_idx;
-> +	u64 config_alias;
->  
->  	bitmap_zero(used_mask, X86_PMC_IDX_MAX);
->  	bitmap_zero(escr_mask, P4_ESCR_MSR_TABLE_SIZE);
-> @@ -1167,6 +1229,7 @@ static int p4_pmu_schedule_events(struct
->  
->  		hwc = &cpuc->event_list[i]->hw;
->  		thread = p4_ht_thread(cpu);
-> +again:
->  		bind = p4_config_get_bind(hwc->config);
->  		escr_idx = p4_get_escr_idx(bind->escr_msr[thread]);
->  		if (unlikely(escr_idx == -1))
-> @@ -1180,8 +1243,17 @@ static int p4_pmu_schedule_events(struct
->  		}
->  
->  		cntr_idx = p4_next_cntr(thread, used_mask, bind);
-> -		if (cntr_idx == -1 || test_bit(escr_idx, escr_mask))
-> -			goto done;
-> +		if (cntr_idx == -1 || test_bit(escr_idx, escr_mask)) {
-> +			/*
-> +			 * Probably an event alias is still available.
-> +			 */
-> +			config_alias = p4_get_alias_event(hwc->config);
-> +			if (!config_alias)
-> +				goto done;
-> +			/* Don't forget to restore HT */
-> +			hwc->config = thread ? p4_set_ht_bit(config_alias) : config_alias;
-> +			goto again;
-> +		}
->  
->  		p4_pmu_swap_config_ts(hwc, cpu);
->  		if (assign)
-> @@ -1218,7 +1290,7 @@ static __initconst const struct x86_pmu 
->  	.cntval_bits		= ARCH_P4_CNTRVAL_BITS,
->  	.cntval_mask		= ARCH_P4_CNTRVAL_MASK,
->  	.max_period		= (1ULL << (ARCH_P4_CNTRVAL_BITS - 1)) - 1,
-> -	.hw_watchdog_set_attr	= p4_hw_watchdog_set_attr,
-> +	/* .hw_watchdog_set_attr	= p4_hw_watchdog_set_attr, */
->  	.hw_config		= p4_hw_config,
->  	.schedule_events	= p4_pmu_schedule_events,
->  	/*
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Happen to have a ref to some docs about that? We'd want to make sure our
+definition is wide enough to also work for ppc.
