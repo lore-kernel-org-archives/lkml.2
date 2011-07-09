@@ -1,117 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752364Ab1GIBEz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 21:04:55 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:47364 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751684Ab1GIBEy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 21:04:54 -0400
-From: Daniel Baluta <dbaluta@ixiacom.com>
-To: davem@davemloft.net
-Cc: eric.dumazet@gmail.com, richard.cochran@omicron.at,
-        mirq-linux@rere.qmqm.pl, xiaosuo@gmail.com,
-        linux-kernel@vger.kernel.org, Daniel Baluta <dbaluta@ixiacom.com>
-Subject: [PATCH] skbuff: update struct sk_buff members comments
-Date: Sat,  9 Jul 2011 04:03:28 +0300
-Message-Id: <1310173408-7727-1-git-send-email-dbaluta@ixiacom.com>
-X-Mailer: git-send-email 1.7.1
+	id S1752437Ab1GIBI5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 21:08:57 -0400
+Received: from c60.cesmail.net ([216.154.195.49]:47963 "EHLO c60.cesmail.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750931Ab1GIBIy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 21:08:54 -0400
+Message-ID: <4E17AA24.1060405@gnu.org>
+Date: Fri, 08 Jul 2011 21:08:52 -0400
+From: Pavel Roskin <proski@gnu.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] checkpatch: suggest spaces around binary operators in
+ strict mode
+References: <20110708214159.7559.25740.stgit@mj.roinet.com> <1310166108.2042.6.camel@Joe-Laptop>
+In-Reply-To: <1310166108.2042.6.camel@Joe-Laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rearrange struct sk_buff members comments to follow their
-definition order. Also, add missing comments for ooo_okay
-and dropcount members.
+On 07/08/2011 07:01 PM, Joe Perches wrote:
+> On Fri, 2011-07-08 at 17:41 -0400, Pavel Roskin wrote:
+>> Signed-off-by: Pavel Roskin<proski@gnu.org>
+>> ---
+>>   scripts/checkpatch.pl |    2 ++
+>>   1 files changed, 2 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+>> index b0aa2c6..9431ada 100755
+>> --- a/scripts/checkpatch.pl
+>> +++ b/scripts/checkpatch.pl
+>> @@ -2167,6 +2167,8 @@ sub process {
+>>   					if ($ctx =~ /Wx[^WCE]|[^WCE]xW/) {
+>>   						ERROR("need consistent spacing around '$op' $at\n" .
+>>   							$hereptr);
+>> +					} elsif ($ctx =~ /[^WCE]x[^WCE]/) {
+>> +						CHK("spaces suggested around '$op' $at\n" . $hereptr);
+>
+> Hey Pavel.
+>
+> This should probably not be an elsif but
+> a standalone test.
 
-Signed-off-by: Daniel Baluta <dbaluta@ixiacom.com>
----
- include/linux/skbuff.h |   42 ++++++++++++++++++++++--------------------
- 1 files changed, 22 insertions(+), 20 deletions(-)
+Maybe.  I just tried to minimize the changes.  I think all of the 
+operators in the condition above the lines I changed need spaces around 
+them, so I decided to reuse the code block.
 
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 08d4507..00979a3 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -285,15 +285,12 @@ typedef unsigned char *sk_buff_data_t;
-  *	struct sk_buff - socket buffer
-  *	@next: Next buffer in list
-  *	@prev: Previous buffer in list
-- *	@sk: Socket we are owned by
-  *	@tstamp: Time we arrived
-+ *	@sk: Socket we are owned by
-  *	@dev: Device we arrived on/are leaving by
-- *	@transport_header: Transport layer header
-- *	@network_header: Network layer header
-- *	@mac_header: Link layer header
-+ *	@cb: Control buffer. Free for use by every layer. Put private vars here
-  *	@_skb_refdst: destination entry (with norefcount bit)
-  *	@sp: the security path, used for xfrm
-- *	@cb: Control buffer. Free for use by every layer. Put private vars here
-  *	@len: Length of actual data
-  *	@data_len: Data length
-  *	@mac_len: Length of link layer header
-@@ -301,40 +298,45 @@ typedef unsigned char *sk_buff_data_t;
-  *	@csum: Checksum (must include start/offset pair)
-  *	@csum_start: Offset from skb->head where checksumming should start
-  *	@csum_offset: Offset from csum_start where checksum should be stored
-+ *	@priority: Packet queueing priority
-  *	@local_df: allow local fragmentation
-  *	@cloned: Head may be cloned (check refcnt to be sure)
-+ *	@ip_summed: Driver fed us an IP checksum
-  *	@nohdr: Payload reference only, must not modify header
-+ *	@nfctinfo: Relationship of this skb to the connection
-  *	@pkt_type: Packet class
-  *	@fclone: skbuff clone status
-- *	@ip_summed: Driver fed us an IP checksum
-- *	@priority: Packet queueing priority
-- *	@users: User count - see {datagram,tcp}.c
-- *	@protocol: Packet protocol from driver
-- *	@truesize: Buffer size 
-- *	@head: Head of buffer
-- *	@data: Data head pointer
-- *	@tail: Tail pointer
-- *	@end: End pointer
-- *	@destructor: Destruct function
-- *	@mark: Generic packet mark
-- *	@nfct: Associated connection, if any
-  *	@ipvs_property: skbuff is owned by ipvs
-  *	@peeked: this packet has been seen already, so stats have been
-  *		done for it, don't do them again
-  *	@nf_trace: netfilter packet trace flag
-- *	@nfctinfo: Relationship of this skb to the connection
-+ *	@protocol: Packet protocol from driver
-+ *	@destructor: Destruct function
-+ *	@nfct: Associated connection, if any
-  *	@nfct_reasm: netfilter conntrack re-assembly pointer
-  *	@nf_bridge: Saved data about a bridged frame - see br_netfilter.c
-  *	@skb_iif: ifindex of device we arrived on
-- *	@rxhash: the packet hash computed on receive
-- *	@queue_mapping: Queue mapping for multiqueue devices
-  *	@tc_index: Traffic control index
-  *	@tc_verd: traffic control verdict
-+ *	@rxhash: the packet hash computed on receive
-+ *	@queue_mapping: Queue mapping for multiqueue devices
-  *	@ndisc_nodetype: router type (from link layer)
-+ *	@ooo_okay: allow the mapping of a socket to a queue to be changed
-  *	@dma_cookie: a cookie to one of several possible DMA operations
-  *		done by skb DMA functions
-  *	@secmark: security marking
-+ *	@mark: Generic packet mark
-+ *	@dropcount: total number of sk_receive_queue overflows
-  *	@vlan_tci: vlan tag control information
-+ *	@transport_header: Transport layer header
-+ *	@network_header: Network layer header
-+ *	@mac_header: Link layer header
-+ *	@tail: Tail pointer
-+ *	@end: End pointer
-+ *	@head: Head of buffer
-+ *	@data: Data head pointer
-+ *	@truesize: Buffer size
-+ *	@users: User count - see {datagram,tcp}.c
-  */
- 
- struct sk_buff {
+Spaces around binary operands are pretty standard.  scripts/Lindent 
+would add them.
+
+I understand that not everybody wants that rule enforced, so I used a 
+nicely worded warning and enabled it only in the strict mode.  That was 
+done to avoid sparking a flamewar about formatting.
+
+There are some cases when missing spaces are palatable, in particular 
+with "|", which is thin.  So this may be OK:
+
+(high_id << 8)|(low_id & 0xff)
+
+But I've seen checkpatch ignore stuff like this:
+
+ah->ah_gain.g_current-ah->ah_gain.g_f_corr
+
+And that is just horrible on the eyes.  I want checkpatch to catch that.
+
+> Also, there's an upcoming patch in mm that
+> classifies all output ERROR/WARN/CHK types.
+>
+> This one should be "SPACING".
+
+OK, please keep my suggestion in mind.
+
 -- 
-1.7.1
-
+Regards,
+Pavel Roskin
