@@ -1,98 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753964Ab1GIOdM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 10:33:12 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:48536 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753509Ab1GIOdL (ORCPT
+	id S1754017Ab1GIOmj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 10:42:39 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:39370 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753876Ab1GIOmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 10:33:11 -0400
-Message-ID: <4E1866A2.9040407@gmail.com>
-Date: Sat, 09 Jul 2011 09:33:06 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: nico@fluxnic.net
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/6] ARM: move ARCH_HAS_DMA_SET_COHERENT_MASK into memory.h
-References: <1309366019-24379-1-git-send-email-robherring2@gmail.com> <1309366019-24379-3-git-send-email-robherring2@gmail.com>
-In-Reply-To: <1309366019-24379-3-git-send-email-robherring2@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 9 Jul 2011 10:42:38 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sat, 9 Jul 2011 16:42:26 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: linux1394-devel@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] firewire: cdev: return -ENOTTY for unimplemented ioctls,
+ not -EINVAL
+Message-ID: <20110709164226.519a81fe@stein>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nicolas,
-
-On 06/29/2011 11:46 AM, Rob Herring wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
+On Jun 27 Linus Torvalds wrote:
+> The correct error code for "I don't understand this ioctl" is ENOTTY.
+> The naming may be odd, but you should think of that error value as a
+> "unrecognized ioctl number, you're feeding me random numbers that I
+> don't understand and I assume for historical reasons that you tried to
+> do some tty operation on me".
+[...]
+> The EINVAL thing goes way back, and is a disaster. It predates Linux
+> itself, as far as I can tell. You'll find lots of man-pages that have
+> this line in it:
 > 
-> On ixp4xx and pxa, ARCH_HAS_DMA_SET_COHERENT_MASK resides in hardware.h
-> which does not get directly included by dma-mapping.h. Move it into
-> mach/memory.h which is explicitly included.
+>   EINVAL Request or argp is not valid.
 > 
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> ---
->  arch/arm/mach-ixp4xx/include/mach/hardware.h |    2 --
->  arch/arm/mach-ixp4xx/include/mach/memory.h   |    1 +
->  arch/arm/mach-pxa/include/mach/hardware.h    |    1 -
->  arch/arm/mach-pxa/include/mach/memory.h      |    1 +
->  4 files changed, 2 insertions(+), 3 deletions(-)
+> and it shows up in POSIX etc. And sadly, it generally shows up
+> _before_ the line that says
 > 
-> diff --git a/arch/arm/mach-ixp4xx/include/mach/hardware.h b/arch/arm/mach-ixp4xx/include/mach/hardware.h
-> index 8138371..f91ca6d 100644
-> --- a/arch/arm/mach-ixp4xx/include/mach/hardware.h
-> +++ b/arch/arm/mach-ixp4xx/include/mach/hardware.h
-> @@ -26,8 +26,6 @@
->  #define PCIBIOS_MAX_MEM		0x4BFFFFFF
->  #endif
->  
-> -#define ARCH_HAS_DMA_SET_COHERENT_MASK
-> -
->  #define pcibios_assign_all_busses()	1
->  
->  /* Register locations and bits */
-> diff --git a/arch/arm/mach-ixp4xx/include/mach/memory.h b/arch/arm/mach-ixp4xx/include/mach/memory.h
-> index 34e7940..d671f5c 100644
-> --- a/arch/arm/mach-ixp4xx/include/mach/memory.h
-> +++ b/arch/arm/mach-ixp4xx/include/mach/memory.h
-> @@ -16,6 +16,7 @@
->  
->  #ifdef CONFIG_PCI
->  #define ARM_DMA_ZONE_SIZE	SZ_64M
-> +#define ARCH_HAS_DMA_SET_COHERENT_MASK
->  #endif
->  
->  #endif
-> diff --git a/arch/arm/mach-pxa/include/mach/hardware.h b/arch/arm/mach-pxa/include/mach/hardware.h
-> index 6957ba5..313051c 100644
-> --- a/arch/arm/mach-pxa/include/mach/hardware.h
-> +++ b/arch/arm/mach-pxa/include/mach/hardware.h
-> @@ -340,7 +340,6 @@ extern unsigned long get_clock_tick_rate(void);
->  #define PCIBIOS_MIN_IO		0
->  #define PCIBIOS_MIN_MEM		0
->  #define pcibios_assign_all_busses()	1
-> -#define ARCH_HAS_DMA_SET_COHERENT_MASK
->  #endif
->  
->  #endif  /* _ASM_ARCH_HARDWARE_H */
-> diff --git a/arch/arm/mach-pxa/include/mach/memory.h b/arch/arm/mach-pxa/include/mach/memory.h
-> index 07734f3..e697578 100644
-> --- a/arch/arm/mach-pxa/include/mach/memory.h
-> +++ b/arch/arm/mach-pxa/include/mach/memory.h
-> @@ -19,6 +19,7 @@
->  
->  #if defined(CONFIG_MACH_ARMCORE) && defined(CONFIG_PCI)
->  #define ARM_DMA_ZONE_SIZE	SZ_64M
-> +#define ARCH_HAS_DMA_SET_COHERENT_MASK
->  #endif
->  
->  #endif
+>   ENOTTY The specified request does not apply to the kind of object
+> that the descriptor d references.
+> 
+> so a lot of people get to the EINVAL, and never even notice the ENOTTY.
+[...]
+> At least glibc (and hopefully other C libraries) use a _string_ that
+> makes much more sense: strerror(ENOTTY) is "Inappropriate ioctl for
+> device"
 
-I noticed this is going to have conflicts with your ARM_DMA_ZONE_SIZE
-series. Can you add this into your series? This still presents another
-issue to solve for single kernel binary, but hopefully the dma mapping
-work will help.
+So let's correct this in the <linux/firewire-cdev.h> ABI while it is
+still young, relative to distributor adoption.
 
-Rob
+Side note:  We return -ENOTTY not only on _IOC_TYPE or _IOC_NR mismatch,
+but also on _IOC_SIZE mismatch.  An ioctl with an unsupported size of
+argument structure can be seen as an unsupported version of that ioctl.
+
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: <stable@kernel.org>
+---
+ drivers/firewire/core-cdev.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: b/drivers/firewire/core-cdev.c
+===================================================================
+--- a/drivers/firewire/core-cdev.c
++++ b/drivers/firewire/core-cdev.c
+@@ -1583,7 +1583,7 @@ static int dispatch_ioctl(struct client
+ 	if (_IOC_TYPE(cmd) != '#' ||
+ 	    _IOC_NR(cmd) >= ARRAY_SIZE(ioctl_handlers) ||
+ 	    _IOC_SIZE(cmd) > sizeof(buffer))
+-		return -EINVAL;
++		return -ENOTTY;
+ 
+ 	if (_IOC_DIR(cmd) == _IOC_READ)
+ 		memset(&buffer, 0, _IOC_SIZE(cmd));
+
+
+-- 
+Stefan Richter
+-=====-==-== -=== -=--=
+http://arcgraph.de/sr/
