@@ -1,111 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878Ab1GIOOy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 10:14:54 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:41211 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753471Ab1GIOOx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 10:14:53 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kevin Hilman <khilman@ti.com>
-Subject: Re: [Update][PATCH 6/10] PM / Domains: System-wide transitions support for generic domains (v5)
-Date: Sat, 9 Jul 2011 16:15:38 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc6+; KDE/4.6.0; x86_64; ; )
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        Magnus Damm <magnus.damm@gmail.com>, Paul Walmsley <paul@pwsan.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org,
-        Paul Mundt <lethal@linux-sh.org>
-References: <Pine.LNX.4.44L0.1107081033000.2208-100000@iolanthe.rowland.org> <201107082006.49660.rjw@sisk.pl> <201107082124.24921.rjw@sisk.pl>
-In-Reply-To: <201107082124.24921.rjw@sisk.pl>
+	id S1753876Ab1GIO1c (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 10:27:32 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:47695 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753624Ab1GIO1a convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Jul 2011 10:27:30 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107091615.38915.rjw@sisk.pl>
+In-Reply-To: <20110708084629.73c7e543.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20110707155217.909c429a.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110707142922.c9657ec4.akpm@linux-foundation.org>
+	<20110708084629.73c7e543.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Sat, 9 Jul 2011 19:57:30 +0530
+Message-ID: <CAKTCnz=tKo=769oPq+vQxykYYy36GDZL4XpuHuFGKT-LitSytQ@mail.gmail.com>
+Subject: Re: [PATCH][Cleanup] memcg: consolidates memory cgroup lru stat functions
+From: Balbir Singh <bsingharora@gmail.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 08, 2011, Rafael J. Wysocki wrote:
-...
-> 
-> Well, in fact, since we already have .active_wakeup(), what about the
-> following patch (on top of https://lkml.org/lkml/2011/7/8/223):
+>> The memcg code sometimes uses "struct mem_cgroup *mem" and sometimes
+>> uses "struct mem_cgroup *memcg".  That's irritating.  I think "memcg"
+>> is better.
+>>
+>
+> Sure. I always use "mem" but otheres not ;(
+> Ok, I'll use memcg.
 
-Well, it is wrong, because we've been discussing devices that are _not_
-enabled to wake up the system.
+This would be a good cleanup to do. CC'ing Raghavendra who might be
+interested in looking at the cleanup
 
-> ---
->  drivers/base/power/domain.c |    4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> Index: linux-2.6/drivers/base/power/domain.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/base/power/domain.c
-> +++ linux-2.6/drivers/base/power/domain.c
-> @@ -519,6 +519,10 @@ static int pm_genpd_prepare(struct devic
->  		return -EBUSY;
->  	}
->  
-> +	if (device_may_wakeup(dev)
-
-So, this should have been !device_may_wakeup(dev), _but_ ...
-
-> +	    && !(genpd->active_wakeup && genpd->active_wakeup(dev)))
-> +		pm_runtime_resume(dev);
-> +
->  	genpd_acquire_lock(genpd);
->  
->  	if (genpd->prepared_count++ == 0)
-
-There's one more case to consider, namely devices that are runtime
-suspended, set up to wake up the system from sleep states (ie. device_may_wakeup(dev)
-returns "true") and such that genpd->active_wakeup(dev) returns "true" for them,
-because they need to be resumed at this point too (arguably, it makes a little
-sense to runtime suspend such devices, but that's possible in principle).
-
-So, IMO, the patch should look like this:
-
----
- drivers/base/power/domain.c |   19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
-
-Index: linux-2.6/drivers/base/power/domain.c
-===================================================================
---- linux-2.6.orig/drivers/base/power/domain.c
-+++ linux-2.6/drivers/base/power/domain.c
-@@ -486,6 +486,22 @@ static void pm_genpd_sync_poweroff(struc
- }
- 
- /**
-+ * resume_needed - Check whether to resume a device before system suspend.
-+ * @dev: Device to handle.
-+ * @genpd: PM domain the device belongs to.
-+ */
-+static bool resume_needed(struct device *dev, struct generic_pm_domain *genpd)
-+{
-+	bool active_wakeup;
-+
-+	if (!device_can_wakeup(dev))
-+		return false;
-+
-+	active_wakeup = genpd->active_wakeup && genpd->active_wakeup(dev);
-+	return device_may_wakeup(dev) ? active_wakeup : !active_wakeup;
-+}
-+
-+/**
-  * pm_genpd_prepare - Start power transition of a device in a PM domain.
-  * @dev: Device to start the transition of.
-  *
-@@ -519,6 +535,9 @@ static int pm_genpd_prepare(struct devic
- 		return -EBUSY;
- 	}
- 
-+	if (resume_needed(dev, genpd))
-+		pm_runtime_resume(dev);
-+
- 	genpd_acquire_lock(genpd);
- 
- 	if (genpd->prepared_count++ == 0)
+Balbir
