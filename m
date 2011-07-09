@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754793Ab1GIVID (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 17:08:03 -0400
-Received: from void.printf.net ([89.145.121.20]:53610 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754591Ab1GIVIA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 17:08:00 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Kevin Hilman <khilman@ti.com>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, Madhusudhan Chikkature <madhu.cr@ti.com>
-Subject: Re: [PATCH] MMC: OMAP: change HSMMC maintainence to Orphan
-References: <1309541802-5975-1-git-send-email-khilman@ti.com>
-Date: Sat, 09 Jul 2011 17:07:54 -0400
-In-Reply-To: <1309541802-5975-1-git-send-email-khilman@ti.com> (Kevin Hilman's
-	message of "Fri, 1 Jul 2011 10:36:42 -0700")
-Message-ID: <m2aacnkvrp.fsf@bob.laptop.org>
-User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
+	id S1754766Ab1GIVSL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 17:18:11 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:13215 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754591Ab1GIVSI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Jul 2011 17:18:08 -0400
+Date: Sat, 9 Jul 2011 23:08:30 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: trivial@kernel.org
+Subject: [PATCH 0/7] static should be at beginning of declaration
+Message-ID: <alpine.LNX.2.00.1107092304160.25516@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-735625818-1310245711=:25516"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kevin,
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-On Fri, Jul 01 2011, Kevin Hilman wrote:
-> From: Madhusudhan Chikkature <madhu.cr@ti.com>
->
-> Update the OMAP HS MMC entry from the MAINTAINERS file as I will
-> no longer be able to maintain this driver.
->
-> Signed-off-by: Madhusudhan Chikkature <madhu.cr@ti.com>
-> [khilman@ti.com: change to Orphan rather than complete removal]
-> Signed-off-by: Kevin Hilman <khilman@ti.com>
+--8323328-735625818-1310245711=:25516
+Content-Type: TEXT/PLAIN; charset=ISO-8859-7
+Content-Transfer-Encoding: 8BIT
 
-Thanks, pushed to mmc-next for 3.1.
+Here's a small series of patches that ake sure that the 'static' keywork 
+is at the beginning of declarations.
 
-- Chris.
+This gets rid of warnings like
+  warning: ¡static¢ is not at beginning of declaration
+when building with -Wold-style-declaration (and/or -Wextra which also
+enables it).
+
+I've cleaned out a number of these in the past and this patch set 
+represents the last few remaining offenders in the entire tree.
+
+All patches will be sent as replies to this mail.
+
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
+--8323328-735625818-1310245711=:25516--
