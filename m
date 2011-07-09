@@ -1,42 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752970Ab1GIIL7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 04:11:59 -0400
-Received: from gw.minian.org ([83.96.227.91]:58791 "EHLO lab.minian.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752468Ab1GIIL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 04:11:58 -0400
-From: Edwin van Vliet <edwin@cheatah.nl>
-To: anton@tuxera.com
-Cc: linux-ntfs-dev@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Edwin van Vliet <edwin@cheatah.nl>
-Subject: [PATCH] fs/ntfs/logfile: Fix comment
-Date: Sat,  9 Jul 2011 10:08:57 +0200
-Message-Id: <1310198937-1223-1-git-send-email-edwin@cheatah.nl>
-X-Mailer: git-send-email 1.7.5.4
+	id S1752113Ab1GII1b (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 04:27:31 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:45109 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750863Ab1GII13 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Jul 2011 04:27:29 -0400
+Date: Sat, 9 Jul 2011 10:27:25 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Dmitry Torokhov <dtor@vmware.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] Vmware balloon: switch to using sysem-wide freezable
+ workqueue
+Message-ID: <20110709082725.GA943@htj.dyndns.org>
+References: <20110708211712.GA20258@dtor-ws.eng.vmware.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110708211712.GA20258@dtor-ws.eng.vmware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed double comment line
+On Fri, Jul 08, 2011 at 02:17:12PM -0700, Dmitry Torokhov wrote:
+> With the arrival of concurrency-managed workqueues there is no need
+> for our driver to use dedicated workqueue; system-wide one should
+> suffice just fine.
+> 
+> Signed-off-by: Dmitry Torokhov <dtor@vmware.com>
 
-Signed-off-by: Edwin van Vliet <edwin@cheatah.nl>
----
- fs/ntfs/logfile.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+Acked-by: Tejun Heo <tj@kernel.org>
 
-diff --git a/fs/ntfs/logfile.c b/fs/ntfs/logfile.c
-index c71de29..d2e053b 100644
---- a/fs/ntfs/logfile.c
-+++ b/fs/ntfs/logfile.c
-@@ -506,7 +506,6 @@ bool ntfs_check_logfile(struct inode *log_vi, RESTART_PAGE_HEADER **rp)
- 	/*
- 	 * Truncate size to a multiple of the page cache size or the default
- 	 * log page size if the page cache size is between the default log page
--	 * log page size if the page cache size is between the default log page
- 	 * size and twice that.
- 	 */
- 	if (PAGE_CACHE_SIZE >= DefaultLogPageSize && PAGE_CACHE_SIZE <=
+Thank you.
+
 -- 
-1.7.5.4
-
+tejun
