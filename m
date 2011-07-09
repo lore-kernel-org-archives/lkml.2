@@ -1,59 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751940Ab1GICwB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 22:52:01 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:44517 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751163Ab1GICwA convert rfc822-to-8bit (ORCPT
+	id S1752225Ab1GIDJH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 23:09:07 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59572 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751896Ab1GIDJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 22:52:00 -0400
+	Fri, 8 Jul 2011 23:09:04 -0400
+Date: Sat, 9 Jul 2011 12:08:55 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: Donggeun Kim <dg77.kim@samsung.com>, linux-kernel@vger.kernel.org,
+        sameo@linux.intel.com, myungjoo.ham@samsung.com,
+        kyungmin.park@samsung.com, Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: Re: [PATCH 2/2] regulator: Add a new regulator for charge control of
+ MAX8998/LP3974
+Message-ID: <20110709030853.GA23634@opensource.wolfsonmicro.com>
+References: <1308909859-3674-1-git-send-email-dg77.kim@samsung.com>
+ <1308909859-3674-3-git-send-email-dg77.kim@samsung.com>
+ <20110708131655.GB32754@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
-Date: Fri, 8 Jul 2011 19:51:59 -0700
-Message-ID: <CAFR8uee7XwO0bKcUrGY1N328CwRQAs4Qak1oXUjZdYoeUEhAtA@mail.gmail.com>
-Subject: [PATCH] block: Initialize bi_rw in mpage so bio_add can make use of it.
-From: Muthu Kumar <muthu.lkml@gmail.com>
-To: linux-kernel@vger.kernel.org, jaxboe@fusionio.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110708131655.GB32754@oksana.dev.rtsoft.ru>
+X-Cookie: You have no real enemies.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jens et al,
+On Fri, Jul 08, 2011 at 05:16:55PM +0400, Anton Vorontsov wrote:
 
-do_mpage_readpage()/__mpage_writepage(): When they allocate a new bio,
-bi_rw is not initialized. So later when they call __bio_add_page(),
-struct bvec_merge_data bvm's .bi_rw will not be initialized with right
-direction.
-It will be useful for some merge functions if they know the direction
-of transfer.
+> Can I take it via battery-2.6.git tree?
 
-Let me know if this looks good. There are few more places like this
-(e.g blkdev_issue_zeroout()). Would it make sense to send patch for
-these cases also?
-
-Signed-off-by: Muthukumar R <muthu.lkml@gmail.com>
-
---------
-fs/mpage.c |    2 ++
-1 files changed, 2 insertions(+), 0 deletions(-)
-diff --git a/fs/mpage.c b/fs/mpage.c
-index fdfae9f..c8e0f8a 100644
---- a/fs/mpage.c
-+++ b/fs/mpage.c
-@@ -293,6 +293,7 @@ alloc_new:
-                       goto confused;
-       }
-
-+    bio->bi_rw = READ;
-       length = first_hole << blkbits;
-       if (bio_add_page(bio, page, length, 0) < length) {
-               bio = mpage_bio_submit(READ, bio);
-@@ -590,6 +591,7 @@ alloc_new:
-        * the confused fail path above (OOM) will be very confused when
-        * it finds all bh marked clean (i.e. it will not write anything)
-        */
-+    bio->bi_rw = WRITE;
-       length = first_unmapped << blkbits;
-       if (bio_add_page(bio, page, length, 0) < length) {
-               bio = mpage_bio_submit(WRITE, bio);
+As I've said before I'm still not really happy that these regulators can
+meaningfully be generic regulator drivers rather than just being handled
+as part of the PMU driver.
