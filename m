@@ -1,45 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754771Ab1GIU7J (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 16:59:09 -0400
-Received: from void.printf.net ([89.145.121.20]:59830 "EHLO void.printf.net"
+	id S1754731Ab1GIVBf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 17:01:35 -0400
+Received: from home.keithp.com ([63.227.221.253]:48997 "EHLO keithp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754459Ab1GIU7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 16:59:07 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-mmc@vger.kernel.org, hans-christian.egtvedt@atmel.com,
-        kernel@avr32linux.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, u.kleine-koenig@pengutronix.de
-Subject: Re: [PATCH V3] MMC: PM: add suspend/resume in atmel-mci
-References: <1309530754.4373.3.camel@hcegtvedt.norway.atmel.com>
-	<1309779505-25509-1-git-send-email-nicolas.ferre@atmel.com>
-Date: Sat, 09 Jul 2011 16:58:48 -0400
-In-Reply-To: <1309779505-25509-1-git-send-email-nicolas.ferre@atmel.com>
-	(Nicolas Ferre's message of "Mon, 4 Jul 2011 13:38:25 +0200")
-Message-ID: <m2iprbkw6v.fsf@bob.laptop.org>
-User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
+	id S1754459Ab1GIVBe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Jul 2011 17:01:34 -0400
+From: "Keith Packard" <keithp@keithp.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: fault_in_pages_writeable/fault_in_pages_readable don't fault in everything
+User-Agent: Notmuch/0.5-202-g6ae4e7d (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Sat, 09 Jul 2011 14:01:24 -0700
+Message-ID: <yunr55zf9sr.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Jul 04 2011, Nicolas Ferre wrote:
-> Take care of slots while going to suspend state.
->
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> ---
-> V3: take care of each slot SUSPENDED state
->     (adding a status bit in the slot "flags")
-> V2: move to pm_ops
 
-Thanks, I've merged v3 of this patch for mmc-next/3.1 with Felipe's
-Reviewed-by, and your [2/2] kconfig change.
+fault_in_pages_writeable and fault_in_pages_readable are only willing to
+fault two pages at the most. I can't find any place where this is a good
+idea, and in fact ntfs has replaced fault_in_pages_readable with a
+private version which does the right thing.
 
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Here's an (untested) patch which makes fault_in_pages_writeable hit
+every page instead of just the first and last. It seems like this might
+improve performance of larger read operations which may now end up
+taking the slow path when an intermediate page is faulted in
+__copy_to_user_inatomic.
+
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index 716875e..f355f29 100644
+=2D-- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -418,7 +418,13 @@ static inline int fault_in_pages_writeable(char __user=
+ *uaddr, int size)
+ 	 * Writing zeroes into userspace here is OK, because we know that if
+ 	 * the zero gets there, we'll be overwriting it.
+ 	 */
+=2D	ret =3D __put_user(0, uaddr);
++	for (;;) {
++		ret =3D __put_user(0, uaddr);
++		if (size < PAGE_SIZE)
++			break;
++		size -=3D PAGE_SIZE;
++		uaddr +=3D PAGE_SIZE;
++	}
+ 	if (ret =3D=3D 0) {
+ 		char __user *end =3D uaddr + size - 1;
+=20
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iD8DBQFOGMGkQp8BWwlsTdMRApNJAKDS7UPxXoMUEQMIeEofcOjIBmNAoACgyWZp
+poJ0rkxjQjFzeNoi4xfPZZw=
+=g66T
+-----END PGP SIGNATURE-----
+--=-=-=--
