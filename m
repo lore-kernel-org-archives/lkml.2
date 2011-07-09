@@ -1,94 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755048Ab1GIVeX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 17:34:23 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:13457 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754991Ab1GIVeT (ORCPT
+	id S1755126Ab1GIVky (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 17:40:54 -0400
+Received: from queueout02-winn.ispmail.ntl.com ([81.103.221.56]:42829 "EHLO
+	queueout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754874Ab1GIVkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 17:34:19 -0400
-Date: Sat, 9 Jul 2011 23:24:43 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: trivial@kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Marius Bjoernstad Kotsbak <marius@kotsbak.com>
-Subject: [PATCH 7/7] drivers/net: static should be at beginning of
- declaration
-In-Reply-To: <alpine.LNX.2.00.1107092304160.25516@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1107092322320.25516@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1107092304160.25516@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-693533701-1310246683=:25516"
+	Sat, 9 Jul 2011 17:40:52 -0400
+From: Daniel Drake <dsd@laptop.org>
+To: tglx@linutronix.de
+To: mingo@redhat.com
+To: hpa@zytor.com
+To: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: dilinger@queued.net
+Cc: linux-acpi@vger.kernel.org
+Subject: [PATCH] x86, olpc-xo15-sci: enable EC wakeup capability
+Message-Id: <20110709211603.996869D401C@zog.reactivated.net>
+Date: Sat,  9 Jul 2011 22:16:03 +0100 (BST)
+X-Cloudmark-Analysis: v=1.1 cv=R50lirqlHffDPPkwUlkuVa99MrvKdVWo//yz83qex8g= c=1 sm=0 a=_-Kf4x3jdLYA:10 a=vJ1w_8FsMGIA:10 a=Op-mwl0xAAAA:8 a=aj1OkgN8WNMVO4dtLEQA:9 a=d4CUUju0HPYA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Some recent changes to the way that ACPI handles wakeup flags means
+that the XO15EC ACPI device is not wakeup-capable by default so
+device_set_wakeup_enable() does nothing.
 
---8323328-693533701-1310246683=:25516
-Content-Type: TEXT/PLAIN; charset=ISO-8859-7
-Content-Transfer-Encoding: 8BIT
+Use device_init_wakeup() to mark the device as wakeup capable, and to
+enable wakeups.
 
-Make sure that the 'static' keywork is at the beginning of declaration
-for drivers/net/usb/kalmia.c
-
-This gets rid of warnings like
-  warning: ¡static¢ is not at beginning of declaration
-when building with -Wold-style-declaration (and/or -Wextra which also
-enables it).
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Signed-off-by: Daniel Drake <dsd@laptop.org>
 ---
- drivers/net/usb/kalmia.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+ arch/x86/platform/olpc/olpc-xo15-sci.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/usb/kalmia.c b/drivers/net/usb/kalmia.c
-index a9b6c63..5a6d0f8 100644
---- a/drivers/net/usb/kalmia.c
-+++ b/drivers/net/usb/kalmia.c
-@@ -100,13 +100,13 @@ kalmia_send_init_packet(struct usbnet *dev, u8 *init_msg, u8 init_msg_len,
- static int
- kalmia_init_and_get_ethernet_addr(struct usbnet *dev, u8 *ethernet_addr)
- {
--	const static char init_msg_1[] =
-+	static const char init_msg_1[] =
- 		{ 0x57, 0x50, 0x04, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00,
- 		0x00, 0x00 };
--	const static char init_msg_2[] =
-+	static const char init_msg_2[] =
- 		{ 0x57, 0x50, 0x04, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0xf4,
- 		0x00, 0x00 };
--	const static int buflen = 28;
-+	static const int buflen = 28;
- 	char *usb_buf;
- 	int status;
+diff --git a/arch/x86/platform/olpc/olpc-xo15-sci.c b/arch/x86/platform/olpc/olpc-xo15-sci.c
+index a5990eb..2b235b7 100644
+--- a/arch/x86/platform/olpc/olpc-xo15-sci.c
++++ b/arch/x86/platform/olpc/olpc-xo15-sci.c
+@@ -120,7 +120,7 @@ static int xo15_sci_add(struct acpi_device *device)
  
-@@ -239,11 +239,11 @@ kalmia_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
- 	 * Our task here is to strip off framing, leaving skb with one
- 	 * data frame for the usbnet framework code to process.
- 	 */
--	const static u8 HEADER_END_OF_USB_PACKET[] =
-+	static const u8 HEADER_END_OF_USB_PACKET[] =
- 		{ 0x57, 0x5a, 0x00, 0x00, 0x08, 0x00 };
--	const static u8 EXPECTED_UNKNOWN_HEADER_1[] =
-+	static const u8 EXPECTED_UNKNOWN_HEADER_1[] =
- 		{ 0x57, 0x43, 0x1e, 0x00, 0x15, 0x02 };
--	const static u8 EXPECTED_UNKNOWN_HEADER_2[] =
-+	static const u8 EXPECTED_UNKNOWN_HEADER_2[] =
- 		{ 0x57, 0x50, 0x0e, 0x00, 0x00, 0x00 };
- 	int i = 0;
+ 	/* Enable wake-on-EC */
+ 	if (device->wakeup.flags.valid)
+-		device_set_wakeup_enable(&device->dev, true);
++		device_init_wakeup(&device->dev, true);
  
+ 	return 0;
+ }
 -- 
-1.7.6
+1.7.5.4
 
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
---8323328-693533701-1310246683=:25516--
