@@ -1,157 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751654Ab1GIEnT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 00:43:19 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:37087 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256Ab1GIEnS (ORCPT
+	id S1751389Ab1GIEu6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 00:50:58 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58897 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750756Ab1GIEu5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 00:43:18 -0400
+	Sat, 9 Jul 2011 00:50:57 -0400
+Date: Sat, 9 Jul 2011 13:49:28 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Greg KH <greg@kroah.com>
+Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Samuel Oritz <sameo@linux.intel.com>,
+        Graeme Gregory <gg@slimlogic.co.uk>, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4] regmap: Generic I2C and SPI register map library
+Message-ID: <20110709044923.GB13074@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-In-Reply-To: <CADZ9YHhmctoO+AZfjDYNHXJ6VO3VSDPHgYOhdoW9oROFrBgBnQ@mail.gmail.com>
-References: <1309545711.4303.2.camel@localhost.localdomain>
-	<1309600260.10073.3.camel@twins>
-	<CADZ9YHhmctoO+AZfjDYNHXJ6VO3VSDPHgYOhdoW9oROFrBgBnQ@mail.gmail.com>
-Date: Sat, 9 Jul 2011 10:43:17 +0600
-Message-ID: <CADZ9YHjrWC7Czc8JZu1W1AOi=X_+1Y_Abmra4aQfGNipFVqFZw@mail.gmail.com>
-Subject: Re: [PATCH] sched: Check nr_running before calling pick_next_task in schedule().
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Paul Turner <pjt@google.com>
-Content-Type: multipart/mixed; boundary=0015177419fabfc21f04a79b9630
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0015177419fabfc21f04a79b9630
-Content-Type: text/plain; charset=ISO-8859-1
+This is a version of a series I've been posting for most of this release
+cycle which abstracts out a bunch of widely duplicated code for doing
+register I/O on devices with control slow buses like I2C and SPI.  As
+well as saving us code for the register I/O itself this should also make
+it easier to factor out further higher level code for this class of
+devices.
 
-On Sat, Jul 2, 2011 at 8:26 PM, Rakib Mullick <rakib.mullick@gmail.com> wrote:
-> On Sat, Jul 2, 2011 at 3:51 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->> On Sat, 2011-07-02 at 00:41 +0600, Rakib Mullick wrote:
->
->> You've completely failed to provide any sort of rationale for the patch
->> nor did you provide a use-case with performance numbers. This just isn't
->> making much sense at all.
->>
-> Regarding taking branch, it needs performance numbers - I agree. But,
-> I'm not quite agree that - it's not just making any sense. Will try to
-> do some performance testing on it.
+Previously the patches had created a new directory under drivers/ but
+one of the comments on the last review was that we should move to
+drivers/base and another was that we should get this into mainline so
+I've done that move and am now sending the patches to you.
 
-I tried to do some testing with the applied patch using kernbench
-(with likely branch removed). I did it twice with load  -j {,2,4,6,8}.
-Kernel version tagged with -schedpatch indicates kernel with this
-applied and -noschedpatch is the default. In first case, with this
-patch applied Elapsed time is lesser. In the second run with -j 2 and
--j 4 -schedpatch kernel is slow, but with -j 6 and -j 8 it takes less
-elapsed time. Also tested with 'nosmp', with this patch, elapsed time
-is lesser. So, for better interpretation and full log of test results
-I'm attaching the kernbench.log. Please, see whether it looks
-convincing to you or not. Tests are done on core i3 machine.
+The code is in a subdirectory because I'm anticipating it'll grow quite
+a bit as we add facilities like fancy cache mechanisms on top of it.
+The bus code isn't moved into the buses as I'm not currently entirely
+happy with the internal interface to that and want to avoid cross tree
+issues for the time being, I am pretty happy with the interfaces offered
+to drivers though.
 
+I realise it's a bit late in the cycle but it'd be really good if we
+could get this merged in the next merge window, or accepted for about
+then so we can create a stable branch we can merge into subsystem trees
+in order to get drivers using this merged for 3.2.  As there's only one
+user included the series it should be pretty low risk.
 
-Thanks,
-Rakib
+A more verbose cover letter:
 
---0015177419fabfc21f04a79b9630
-Content-Type: application/octet-stream; name="kernbench.log"
-Content-Disposition: attachment; filename="kernbench.log"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gpw35afy0
+Many I2C and SPI based devices implement register maps on top of the raw
+wire interface.  This is generally done in a very standard fashion by
+devices, resulting in a lot of very similar code in drivers.  For some
+time now ASoC has factored this code out into the subsystem but that's
+only useful for audio devices.  The intention with this series is to
+generalise the concept so that it can be used throughout the kernel.
 
-U3VuIEp1bCAgMyAxMDo0MDo1NiBCRFQgMjAxMQozLjAuMC1yYzUtdGlwLXNjaGVkcGF0Y2gtZ2Jj
-N2RiMDAtZGlydHkKQXZlcmFnZSBPcHRpbWFsIGxvYWQgLWogNCBSdW4gKHN0ZCBkZXZpYXRpb24p
-OgpFbGFwc2VkIFRpbWUgMTMuNjEgKDAuMDYwODI3NikKVXNlciBUaW1lIDI3LjU5NjcgKDAuMTI4
-OTcpClN5c3RlbSBUaW1lIDE0LjIxMzMgKDAuMTE5MzAzKQpQZXJjZW50IENQVSAzMDYuNjY3ICgy
-LjUxNjYxKQpDb250ZXh0IFN3aXRjaGVzIDc5ODkuMzMgKDU4LjM5OCkKU2xlZXBzIDEwODY2LjMg
-KDQzLjYxNTcpCgpTdW4gSnVsICAzIDEwOjUwOjU2IEJEVCAyMDExCjMuMC4wLXJjNS10aXAtbm9z
-Y2hlZHBhdGNoLWdiYzdkYjAwCkF2ZXJhZ2UgT3B0aW1hbCBsb2FkIC1qIDQgUnVuIChzdGQgZGV2
-aWF0aW9uKToKRWxhcHNlZCBUaW1lIDEzLjY1ICgwLjEyNzY3MSkKVXNlciBUaW1lIDI3LjU0ICgw
-LjExMjY5NCkKU3lzdGVtIFRpbWUgMTQuMTQ2NyAoMC4xNTUwMjcpClBlcmNlbnQgQ1BVIDMwNSAo
-MykKQ29udGV4dCBTd2l0Y2hlcyA3OTgzLjMzICgxNjUuMTcxKQpTbGVlcHMgMTA5MDIuMyAoMTM1
-Ljc5NSkKClN1biBKdWwgIDMgMTE6MDE6MTQgQkRUIDIwMTEKMy4wLjAtcmM1LXRpcC1ub3NjaGVk
-cGF0Y2gtZ2JjN2RiMDAKQXZlcmFnZSBPcHRpbWFsIGxvYWQgLWogMiBSdW4gKHN0ZCBkZXZpYXRp
-b24pOgpFbGFwc2VkIFRpbWUgMTcuNjMgKDAuMzEyNDEpClVzZXIgVGltZSAxOS40MzMzICgwLjEx
-NTAzNikKU3lzdGVtIFRpbWUgMTAuMjEgKDAuMDI2NDU3NSkKUGVyY2VudCBDUFUgMTY3LjY2NyAo
-My4yMTQ1NSkKQ29udGV4dCBTd2l0Y2hlcyA4NDE5ICg3NS42MjQxKQpTbGVlcHMgMTA1ODAuNyAo
-NzUuNzI1NCkKClN1biBKdWwgIDMgMTE6MTI6MzYgQkRUIDIwMTEKMy4wLjAtcmM1LXRpcC1zY2hl
-ZHBhdGNoLWdiYzdkYjAwLWRpcnR5CkF2ZXJhZ2UgT3B0aW1hbCBsb2FkIC1qIDIgUnVuIChzdGQg
-ZGV2aWF0aW9uKToKRWxhcHNlZCBUaW1lIDE3LjYwNjcgKDAuMTQwNDc1KQpVc2VyIFRpbWUgMTku
-NDAzMyAoMC4xNTMwNzkpClN5c3RlbSBUaW1lIDEwLjE3ICgwLjEwNTM1NykKUGVyY2VudCBDUFUg
-MTY3LjMzMyAoMS4xNTQ3KQpDb250ZXh0IFN3aXRjaGVzIDgzNzEuMzMgKDE2LjE2NTgpClNsZWVw
-cyAxMDU0OC4zICgxNy4wMzkyKQoKV2VkIEp1bCAgNiAyMjoyNDoxOSBCRFQgMjAxMQozLjAuMC1y
-YzUtdGlwLXNjaGVkcGF0Y2gtZ2JjN2RiMDAtZGlydHkKQXZlcmFnZSBPcHRpbWFsIGxvYWQgLWog
-NiBSdW4gKHN0ZCBkZXZpYXRpb24pOgpFbGFwc2VkIFRpbWUgMTMuNTgzMyAoMC4wNDUwOTI1KQpV
-c2VyIFRpbWUgMjguMzA2NyAoMC4xNzYxNjMpClN5c3RlbSBUaW1lIDE0LjYwMzMgKDAuMTQzNjQz
-KQpQZXJjZW50IENQVSAzMTUuMzMzICgxLjE1NDcpCkNvbnRleHQgU3dpdGNoZXMgOTIzOSAoOTAu
-MzcxNSkKU2xlZXBzIDExMTE5LjMgKDM4LjAxNzUpCgpXZWQgSnVsICA2IDIyOjM0OjA1IEJEVCAy
-MDExCjMuMC4wLXJjNS10aXAtbm9zY2hlZHBhdGNoLWdiYzdkYjAwCkF2ZXJhZ2UgT3B0aW1hbCBs
-b2FkIC1qIDYgUnVuIChzdGQgZGV2aWF0aW9uKToKRWxhcHNlZCBUaW1lIDEzLjg0MzMgKDAuNDMz
-NjI4KQpVc2VyIFRpbWUgMjcuOTY2NyAoMC4zOTAwNDIpClN5c3RlbSBUaW1lIDE0LjYxMzMgKDAu
-MDc1NzE4OCkKUGVyY2VudCBDUFUgMzA3LjMzMyAoMTIuNDIzMSkKQ29udGV4dCBTd2l0Y2hlcyA5
-NDA5LjMzICg4NC4yMzk3KQpTbGVlcHMgMTE0MTUgKDMyOC42MzgpCgpXZWQgSnVsICA2IDIyOjQx
-OjQ2IEJEVCAyMDExCjMuMC4wLXJjNS10aXAtbm9zY2hlZHBhdGNoLWdiYzdkYjAwCkF2ZXJhZ2Ug
-T3B0aW1hbCBsb2FkIC1qIDggUnVuIChzdGQgZGV2aWF0aW9uKToKRWxhcHNlZCBUaW1lIDEzLjYx
-MzMgKDAuMDY1MDY0KQpVc2VyIFRpbWUgMjguNTM2NyAoMC4wMjA4MTY3KQpTeXN0ZW0gVGltZSAx
-NC42NzMzICgwLjEzMzE2NikKUGVyY2VudCBDUFUgMzE2LjY2NyAoMC41NzczNSkKQ29udGV4dCBT
-d2l0Y2hlcyA5NDg2ICgxMzUuMTA0KQpTbGVlcHMgMTE4NDIuNyAoMjYzLjc4OCkKCldlZCBKdWwg
-IDYgMjI6NTE6NDIgQkRUIDIwMTEKMy4wLjAtcmM1LXRpcC1zY2hlZHBhdGNoLWdiYzdkYjAwLWRp
-cnR5CkF2ZXJhZ2UgT3B0aW1hbCBsb2FkIC1qIDggUnVuIChzdGQgZGV2aWF0aW9uKToKRWxhcHNl
-ZCBUaW1lIDEzLjU3MzMgKDAuMDYxMTAxKQpVc2VyIFRpbWUgMjguNDgzMyAoMC4wODAyMDgpClN5
-c3RlbSBUaW1lIDE0LjU5MzMgKDAuMTAwNjY0KQpQZXJjZW50IENQVSAzMTcgKDEpCkNvbnRleHQg
-U3dpdGNoZXMgOTU0NyAoNzAuNzAzNikKU2xlZXBzIDExODU1LjcgKDM1LjA3NjEpCgoKPD09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PgoKRnJpIEp1bCAgOCAwODoy
-MjoyOSBCRFQgMjAxMQozLjAuMC1yYzUtdGlwLXNjaGVkcGF0Y2gtZ2JjN2RiMDAtZGlydHkKQXZl
-cmFnZSBPcHRpbWFsIGxvYWQgLWogMiBSdW4gKHN0ZCBkZXZpYXRpb24pOgpFbGFwc2VkIFRpbWUg
-MTcuNzQ2ICgwLjQ4NzIxNykKVXNlciBUaW1lIDE5LjQyNCAoMC4xNDUwMTcpClN5c3RlbSBUaW1l
-IDEwLjIxOCAoMC4wODE2NzAxKQpQZXJjZW50IENQVSAxNjYuNCAoMy43ODE1MykKQ29udGV4dCBT
-d2l0Y2hlcyA4Mzg1LjQgKDQ5LjY4NykKU2xlZXBzIDEwNTk0ICg3Ni43ODg3KQoKRnJpIEp1bCAg
-OCAwODozMDozNyBCRFQgMjAxMQozLjAuMC1yYzUtdGlwLXNjaGVkcGF0Y2gtZ2JjN2RiMDAtZGly
-dHkKQXZlcmFnZSBPcHRpbWFsIGxvYWQgLWogNCBSdW4gKHN0ZCBkZXZpYXRpb24pOgpFbGFwc2Vk
-IFRpbWUgMTMuNzE4ICgwLjMzOTgwOSkKVXNlciBUaW1lIDI3Ljk1ICgwLjI0NjA2OSkKU3lzdGVt
-IFRpbWUgMTQuNTQ2ICgwLjI1NTQwMikKUGVyY2VudCBDUFUgMzA5LjQgKDQuMjc3ODUpCkNvbnRl
-eHQgU3dpdGNoZXMgNzgzOC40ICg5Mi42NTY5KQpTbGVlcHMgMTEwODIuMiAoNjQ4LjU5NCkKCkZy
-aSBKdWwgIDggMDg6Mzg6MjMgQkRUIDIwMTEKMy4wLjAtcmM1LXRpcC1zY2hlZHBhdGNoLWdiYzdk
-YjAwLWRpcnR5CkF2ZXJhZ2UgT3B0aW1hbCBsb2FkIC1qIDYgUnVuIChzdGQgZGV2aWF0aW9uKToK
-RWxhcHNlZCBUaW1lIDEzLjUwNiAoMC4wODQ0MzkzKQpVc2VyIFRpbWUgMjguMzMgKDAuMDk3NzI0
-MSkKU3lzdGVtIFRpbWUgMTQuNTg0ICgwLjExODAyNSkKUGVyY2VudCBDUFUgMzE3LjIgKDEuNjQz
-MTcpCkNvbnRleHQgU3dpdGNoZXMgOTM0NS42ICg5MC43MDQ1KQpTbGVlcHMgMTEwNDYgKDEwNi41
-OSkKCkZyaSBKdWwgIDggMDg6NDY6MTEgQkRUIDIwMTEKMy4wLjAtcmM1LXRpcC1zY2hlZHBhdGNo
-LWdiYzdkYjAwLWRpcnR5CkF2ZXJhZ2UgT3B0aW1hbCBsb2FkIC1qIDggUnVuIChzdGQgZGV2aWF0
-aW9uKToKRWxhcHNlZCBUaW1lIDEzLjU2NiAoMC4wNDY2OTA1KQpVc2VyIFRpbWUgMjguNjMgKDAu
-MDUpClN5c3RlbSBUaW1lIDE0LjU2NiAoMC4wNzcwMDY1KQpQZXJjZW50IENQVSAzMTggKDEpCkNv
-bnRleHQgU3dpdGNoZXMgOTM1Mi44ICgxMDMuMzIzKQpTbGVlcHMgMTE4MDUuOCAoMTIyLjUzNCkK
-CkZyaSBKdWwgIDggMDk6MDA6MTAgQkRUIDIwMTEKMy4wLjAtcmM1LXRpcC1ub3NjaGVkcGF0Y2gt
-Z2JjN2RiMDAKQXZlcmFnZSBPcHRpbWFsIGxvYWQgLWogMiBSdW4gKHN0ZCBkZXZpYXRpb24pOgpF
-bGFwc2VkIFRpbWUgMTcuNjI4ICgwLjQ2MzM3OSkKVXNlciBUaW1lIDE5LjQyNiAoMC4xMDAzOTkp
-ClN5c3RlbSBUaW1lIDEwLjE2MiAoMC4xMDY2MykKUGVyY2VudCBDUFUgMTY3LjYgKDQuMzkzMTgp
-CkNvbnRleHQgU3dpdGNoZXMgODM3MC4yICgyNC44NjM2KQpTbGVlcHMgMTA1NjguNCAoOTkuMjE4
-NCkKCkZyaSBKdWwgIDggMDk6MDg6MjAgQkRUIDIwMTEKMy4wLjAtcmM1LXRpcC1ub3NjaGVkcGF0
-Y2gtZ2JjN2RiMDAKQXZlcmFnZSBPcHRpbWFsIGxvYWQgLWogNCBSdW4gKHN0ZCBkZXZpYXRpb24p
-OgpFbGFwc2VkIFRpbWUgMTMuNTk4ICgwLjE3Mjk3NCkKVXNlciBUaW1lIDI3Ljg0NiAoMC4xMDUy
-NjIpClN5c3RlbSBUaW1lIDE0LjQ2NCAoMC4wNzUwMzMzKQpQZXJjZW50IENQVSAzMTAuNiAoMy45
-NzQ5MikKQ29udGV4dCBTd2l0Y2hlcyA3Nzk5LjggKDgxLjU2MSkKU2xlZXBzIDEwNzg0LjYgKDY0
-LjU1MDgpCgpGcmkgSnVsICA4IDA5OjE1OjQ2IEJEVCAyMDExCjMuMC4wLXJjNS10aXAtbm9zY2hl
-ZHBhdGNoLWdiYzdkYjAwCkF2ZXJhZ2UgT3B0aW1hbCBsb2FkIC1qIDYgUnVuIChzdGQgZGV2aWF0
-aW9uKToKRWxhcHNlZCBUaW1lIDE0LjI5NiAoMC45NzI1MzgpClVzZXIgVGltZSAyNy43OTYgKDAu
-MzIwMDQ3KQpTeXN0ZW0gVGltZSAxNC40ODggKDAuMTkxNzU1KQpQZXJjZW50IENQVSAyOTYuNCAo
-MjEuMTk2NykKQ29udGV4dCBTd2l0Y2hlcyAxMDYyMy42ICg0OTkuNzczKQpTbGVlcHMgMTEyMTIu
-OCAoMjAyLjg0OSkKCkZyaSBKdWwgIDggMDk6MjM6NTEgQkRUIDIwMTEKMy4wLjAtcmM1LXRpcC1u
-b3NjaGVkcGF0Y2gtZ2JjN2RiMDAKQXZlcmFnZSBPcHRpbWFsIGxvYWQgLWogOCBSdW4gKHN0ZCBk
-ZXZpYXRpb24pOgpFbGFwc2VkIFRpbWUgMTMuNjE0ICgwLjAyMTkwODkpClVzZXIgVGltZSAyOC42
-NzQgKDAuMDI3MDE4NSkKU3lzdGVtIFRpbWUgMTQuNjU4ICgwLjEwMDM0OSkKUGVyY2VudCBDUFUg
-MzE3LjggKDAuODM2NjYpCkNvbnRleHQgU3dpdGNoZXMgOTM3NC4yICg5My4xMTY2KQpTbGVlcHMg
-MTE3OTUuNCAoMTg3LjgwNykKCjw9PT09PT09PT09PT09PT09PSBub3NtcCB0ZXN0cz09PT09PT09
-PT09PT09PgoKRnJpIEp1bCAgOCAwOTo0NDoxNCBCRFQgMjAxMQozLjAuMC1yYzUtdGlwLXNjaGVk
-cGF0Y2gtZ2JjN2RiMDAtZGlydHkKQXZlcmFnZSBPcHRpbWFsIGxvYWQgLWogMSBSdW4gKHN0ZCBk
-ZXZpYXRpb24pOgpFbGFwc2VkIFRpbWUgMzEuMzY0ICgwLjgxNzQ4NCkKVXNlciBUaW1lIDE4LjI0
-OCAoMC4wNTI2MzA4KQpTeXN0ZW0gVGltZSA4LjY5ICgwLjA5NjE3NjkpClBlcmNlbnQgQ1BVIDg1
-LjQgKDEuOTQ5MzYpCkNvbnRleHQgU3dpdGNoZXMgNTcxMy4yICgyNC45MzM5KQpTbGVlcHMgMTA2
-MjQgKDY0LjU3MTcpCgpGcmkgSnVsICA4IDEwOjAyOjU1IEJEVCAyMDExCjMuMC4wLXJjNS10aXAt
-bm9zY2hlZHBhdGNoLWdiYzdkYjAwCkF2ZXJhZ2UgT3B0aW1hbCBsb2FkIC1qIDEgUnVuIChzdGQg
-ZGV2aWF0aW9uKToKRWxhcHNlZCBUaW1lIDMyLjg2OCAoMS4wMjAyMSkKVXNlciBUaW1lIDE4LjI2
-OCAoMC4wOTIzMDM4KQpTeXN0ZW0gVGltZSA4Ljc5ICgwLjEwOTMxNikKUGVyY2VudCBDUFUgODEu
-OCAoMi4xNjc5NSkKQ29udGV4dCBTd2l0Y2hlcyA1ODI2LjIgKDc0LjUwNjQpClNsZWVwcyAxMDc4
-NyAoMTE3LjcxMikKPD09PT09PT09PT09PT09PT09IG5vc21wIGVuZCA9PT09PT09PT09PT09PT4K
---0015177419fabfc21f04a79b9630--
+It's not intended that this be suitable for all devices - some devices
+have things that are hard to generalise like registers with variable
+size and paging which are hard to support genericly.  At the minute the
+code is focused on the common cases.  It is likely that the same code
+could be used with other buses with similar properties to I2C and SPI.
+
+Currently only physical I/O is handled, the intention is that once this
+support has been reviewed and merged the generic register cache code
+that ASoC includes will also be factored out too.  For devices with read
+heavy workloads (especially those that need a lot of read/modify/write
+cycles) or which don't support read at all this can provide a useful
+performance improvement and for sparse register maps there's a lot of
+benefit in relatively complex cache code.
+
+I'm not entirely happy with the implementation currently but am fairly
+happy with the external interfaces.
+
+A bunch more drivers have been converted to use this framework,
+including the existing ASoC register I/O code, but due to various -next
+dependencies these don't apply easily so I've omitted them from this
+posting of the series.
+
+There's a git branch at:
+
+   git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git for-next
+
+I've also created a regmap-asoc branch there which merges current ASoC
+code with the regmap code.
+
+The following changes since commit fe0d42203cb5616eeff68b14576a0f7e2dd56625:
+
+  Linux 3.0-rc6 (2011-07-04 15:56:24 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git for-next
+
+Mark Brown (4):
+      regmap: Add generic non-memory mapped register access API
+      regmap: Add I2C bus support
+      regmap: Add SPI bus support
+      regulator: Convert tps65023 to use regmap API
+
+ MAINTAINERS                            |    7 +
+ drivers/base/Kconfig                   |    2 +
+ drivers/base/Makefile                  |    1 +
+ drivers/base/regmap/Kconfig            |    6 +
+ drivers/base/regmap/Makefile           |    3 +
+ drivers/base/regmap/regmap-i2c.c       |  113 ++++++++
+ drivers/base/regmap/regmap-spi.c       |   75 +++++
+ drivers/base/regmap/regmap.c           |  481 ++++++++++++++++++++++++++++++++
+ drivers/regulator/Kconfig              |    1 +
+ drivers/regulator/tps65023-regulator.c |   98 ++-----
+ include/linux/regmap.h                 |   76 +++++
+ 11 files changed, 792 insertions(+), 71 deletions(-)
+ create mode 100644 drivers/base/regmap/Kconfig
+ create mode 100644 drivers/base/regmap/Makefile
+ create mode 100644 drivers/base/regmap/regmap-i2c.c
+ create mode 100644 drivers/base/regmap/regmap-spi.c
+ create mode 100644 drivers/base/regmap/regmap.c
+ create mode 100644 include/linux/regmap.h
