@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753696Ab1GIGUb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 02:20:31 -0400
-Received: from mail.perches.com ([173.55.12.10]:3689 "EHLO mail.perches.com"
+	id S1753997Ab1GIGUi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 02:20:38 -0400
+Received: from mail.perches.com ([173.55.12.10]:3697 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752860Ab1GIGU3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 02:20:29 -0400
+	id S1753714Ab1GIGUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Jul 2011 02:20:31 -0400
 From: Joe Perches <joe@perches.com>
-To: Sathya Perla <sathya.perla@emulex.com>,
-        Subbu Seetharaman <subbu.seetharaman@emulex.com>,
-        Ajit Khaparde <ajit.khaparde@emulex.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] benet: Add missing comma between constant string array
-Date: Fri,  8 Jul 2011 23:20:23 -0700
-Message-Id: <8c2d9b2ff796489a39408fade30fc93ed6040b3c.1310187270.git.joe@perches.com>
+To: Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/3] iwlagn: Add missing comma between constant string array
+Date: Fri,  8 Jul 2011 23:20:25 -0700
+Message-Id: <2c8a6e15b0f320e4b4b761ae6434862fc3c15924.1310187270.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.6.131.g99019
 In-Reply-To: <cover.1310187270.git.joe@perches.com>
 References: <cover.1310187270.git.joe@perches.com>
@@ -23,44 +24,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Multiple quoted strings are concatenated without comma separators.
 
-Make the arrays const while there.
+Make the array const while there.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/benet/be_main.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/wireless/iwlwifi/iwl-agn.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/benet/be_main.c b/drivers/net/benet/be_main.c
-index 696f634..4ebd700 100644
---- a/drivers/net/benet/be_main.c
-+++ b/drivers/net/benet/be_main.c
-@@ -44,7 +44,7 @@ static DEFINE_PCI_DEVICE_TABLE(be_dev_ids) = {
- };
- MODULE_DEVICE_TABLE(pci, be_dev_ids);
- /* UE Status Low CSR */
--static char *ue_status_low_desc[] = {
-+static const char * const ue_status_low_desc[] = {
- 	"CEV",
- 	"CTX",
- 	"DBUF",
-@@ -79,7 +79,7 @@ static char *ue_status_low_desc[] = {
- 	"MPU_INTPEND"
- };
- /* UE Status High CSR */
--static char *ue_status_hi_desc[] = {
-+static const char * const ue_status_hi_desc[] = {
- 	"LPCMEMHOST",
- 	"MGMT_MAC",
- 	"PCS0ONLINE",
-@@ -103,7 +103,7 @@ static char *ue_status_hi_desc[] = {
- 	"HOST7",
- 	"HOST8",
- 	"HOST9",
--	"NETC"
-+	"NETC",
- 	"Unknown",
- 	"Unknown",
- 	"Unknown",
+diff --git a/drivers/net/wireless/iwlwifi/iwl-agn.c b/drivers/net/wireless/iwlwifi/iwl-agn.c
+index 7e6c463..de1a0c1 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-agn.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn.c
+@@ -1563,7 +1563,7 @@ static void iwl_ucode_callback(const struct firmware *ucode_raw, void *context)
+ 	release_firmware(ucode_raw);
+ }
+ 
+-static const char *desc_lookup_text[] = {
++static const char * const desc_lookup_text[] = {
+ 	"OK",
+ 	"FAIL",
+ 	"BAD_PARAM",
+@@ -1587,7 +1587,7 @@ static const char *desc_lookup_text[] = {
+ 	"NMI_INTERRUPT_DATA_ACTION_PT",
+ 	"NMI_TRM_HW_ER",
+ 	"NMI_INTERRUPT_TRM",
+-	"NMI_INTERRUPT_BREAK_POINT"
++	"NMI_INTERRUPT_BREAK_POINT",
+ 	"DEBUG_0",
+ 	"DEBUG_1",
+ 	"DEBUG_2",
 -- 
 1.7.6.131.g99019
 
