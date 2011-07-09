@@ -1,107 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099Ab1GIAZF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 20:25:05 -0400
-Received: from hera.kernel.org ([140.211.167.34]:46310 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751098Ab1GIAZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 20:25:01 -0400
-Date: Sat, 9 Jul 2011 00:24:54 GMT
-From: tip-bot for Vivek Goyal <vgoyal@redhat.com>
-Message-ID: <tip-14cb6dcf0a023f5977461c94d8d5a163c937979b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
-        vgoyal@redhat.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, tglx@linutronix.de, vgoyal@redhat.com,
-        hpa@linux.intel.com
-In-Reply-To: <20110708171926.GF2930@redhat.com>
-References: <20110708171926.GF2930@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/smpboot] x86, boot: Wait for boot cpu to show up if nr_cpus limit is about to hit
-Git-Commit-ID: 14cb6dcf0a023f5977461c94d8d5a163c937979b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1752175Ab1GIA07 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 20:26:59 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:44755 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751098Ab1GIA05 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jul 2011 20:26:57 -0400
+X-Greylist: delayed 61917 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Jul 2011 20:26:57 EDT
+Message-ID: <4E17A01F.8060505@oracle.com>
+Date: Sat, 09 Jul 2011 08:26:07 +0800
+From: Joe Jin <joe.jin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre OracleBeehiveExtension/1.0.0.2-OracleInternal ObetStats/CATLAF_1292475699435-498544290 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 09 Jul 2011 00:24:55 +0000 (UTC)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Daniel Stodden <daniel.stodden@citrix.com>,
+        Jens Axboe <jaxboe@fusionio.com>, annie.li@oracle.com,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kurt C Hackel <KURT.HACKEL@oracle.com>,
+        Greg Marsden <greg.marsden@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: xen-blkfront: Don't send closing  notification to backend in
+ blkfront_closing()
+References: <4E16AE55.50500@oracle.com> <20110708160414.GA30120@dumpdata.com>
+In-Reply-To: <20110708160414.GA30120@dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090208.4E17A04B.0030:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  14cb6dcf0a023f5977461c94d8d5a163c937979b
-Gitweb:     http://git.kernel.org/tip/14cb6dcf0a023f5977461c94d8d5a163c937979b
-Author:     Vivek Goyal <vgoyal@redhat.com>
-AuthorDate: Fri, 8 Jul 2011 13:19:26 -0400
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 8 Jul 2011 15:33:35 -0700
+Konrad,
 
-x86, boot: Wait for boot cpu to show up if nr_cpus limit is about to hit
+Thanks for the reply, see comments in lines.
 
-nr_cpus allows one to specify number of possible cpus in the system.
-Current assumption seems to be that first cpu to show up is boot cpu
-and this assumption will be broken in kdump scenario where we can be
-booting on a non boot cpu with nr_cpus=1.
+On 07/09/11 00:04, Konrad Rzeszutek Wilk wrote:
+> On Fri, Jul 08, 2011 at 03:14:29PM +0800, Joe Jin wrote:
+>> When we do block attach detach test with below steps, umount hang and the
+>> guest unable to shutdown:
+>>
+>> 1. start guest with the latest kernel.
+>> 2. attach new disk by xm-attach in Dom0
+>> 3. mount new disk in guest
+>> 4. detach the disk by xm-detach in dom0
+> 
+> I think you mean xm block-detach and xm-attach?
 
-It might happen that first cpu we parse is not the cpu we boot on and
-later we ignore boot cpu. Though code later seems to recognize this
-anomaly and forcibly sets boot cpu in physical cpu map with following
-warning.
+You are right and sorry for confusing.
 
-if (!physid_isset(hard_smp_processor_id(), phys_cpu_present_map)) {
-        printk(KERN_WARNING
-                "weird, boot CPU (#%d) not listed by the BIOS.\n",
-                hard_smp_processor_id());
+> 
+> I tried with and without your patch and in both cases I get
+> this in my guest:
+> 
+> sh-4.1# mount /dev/xvda /test
+> [  385.949749] EXT3-fs: barriers not enabled
+> [  385.960173] kjournald starting.  Commit interval 5 seconds
+> [  385.960418] EXT3-fs (xvda): using internal journal
+> [  385.960427] EXT3-fs (xvda): mounted filesystem with writeback data mode
+> sh-4.1# [  411.176887] vbd vbd-51712: 16 Device in use; refusing to close
+> 
+> The commands on the other side (Dom0) were:
+> 
+> [root@tst009 ~]# xm block-list 6
+> Vdev  BE handle state evt-ch ring-ref BE-path
+> 51712  0    0     4      12     770   /local/domain/0/backend/vbd/6/51712
+> [root@tst009 ~]# xm block-detach 6 51712
+> Error: Device 51712 (vbd) could not be disconnected. 
+> Usage: xm block-detach <Domain> <DevId> [-f|--force]
+> 
 
-        physid_set(hard_smp_processor_id(), phys_cpu_present_map);
-}
+The error caused by xm block-detach timeout  to waiting the dev's state switch
+to Closed.
 
-This patch waits for boot cpu to show up and starts ignoring the cpus
-once we have hit (nr_cpus - 1) number of cpus. So effectively we are
-reserving one slot out of nr_cpus for boot cpu explicitly.
+> Destroy a domain's virtual block device.
+> [root@tst009 ~]# xm block-detach 6 51712 -f
+> 
 
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-Acked-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/20110708171926.GF2930@redhat.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/apic/apic.c |   22 ++++++++++++++++++++--
- 1 files changed, 20 insertions(+), 2 deletions(-)
+With "--force", it always success but frontend did not disconnected if device 
+opened by someone.
 
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index b9338b8..68219a9 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -1943,10 +1943,28 @@ void disconnect_bsp_APIC(int virt_wire_setup)
- 
- void __cpuinit generic_processor_info(int apicid, int version)
- {
--	int cpu;
-+	int cpu, max = nr_cpu_ids;
-+	bool boot_cpu_detected = physid_isset(boot_cpu_physical_apicid,
-+				phys_cpu_present_map);
-+
-+	/*
-+	 * If boot cpu has not been detected yet, then only allow upto
-+	 * nr_cpu_ids - 1 processors and keep one slot free for boot cpu
-+	 */
-+	if (!boot_cpu_detected && num_processors >= nr_cpu_ids - 1 &&
-+	    apicid != boot_cpu_physical_apicid) {
-+		int thiscpu = max + disabled_cpus - 1;
-+
-+		pr_warning(
-+			"ACPI: NR_CPUS/possible_cpus limit of %i almost"
-+			" reached. Keeping one slot for boot cpu."
-+			"  Processor %d/0x%x ignored.\n", max, thiscpu, apicid);
-+
-+		disabled_cpus++;
-+		return;
-+	}
- 
- 	if (num_processors >= nr_cpu_ids) {
--		int max = nr_cpu_ids;
- 		int thiscpu = max + disabled_cpus;
- 
- 		pr_warning(
+> 
+>> 5. umount the partition/disk in guest, command hung. exactly at here, any
+>>    IO request to the partition/disk will hang.
+> 
+> I get that with the patch and without it:
+> 
+> sh-4.1#
+> sh-4.1# [  519.814048] block xvda: device/vbd/51712 was hot-unplugged, 1 stale handles
+> 
+> sh-4.1# df -h
+> Filesystem            Size  Used Avail Use% Mounted on
+> none                  490M  120K  490M   1% /dev
+> none                  490M  131M  359M  27% /lib/modules/3.0.0-rc6-00052-g3edce4b-dirty
+> shm                    10M     0   10M   0% /dev/shm
+> var_tmp                10M     0   10M   0% /var/tmp
+> /dev/xvda              20G  173M   19G   1% /test
+> sh-4.1# umount /test
+> 
+> Any ideas?
+
+This caused by backend kthread stopped, any IO request to the real device will hang, that
+is the patch intend to resolving.
+
+Thanks,
+Joe
+
+>>
+>> Checking the code we found when xm-detach command set backend state to 
+>> Closing, will trigger blkback_changed() -> blkfront_closing() call.
+>> At the moment, the disk still opened by guest, so frontend will refuse the 
+>> request, but in the blkfront_closing(), it send a notification to backend 
+>> said that the frontend state switched to Closing, when backend got the
+>> event, it will disconnect from real device, at here any IO request will
+>> be stuck, even tried to release the disk by umount.
+>>
+>> Per our test, below patch fix this issue.
+>>
+>> Signed-off-by: Joe Jin <joe.jin@oracle.com>
+>> Signed-off-by: Annie Li <annie.li@oracle.com>
+>> ---
+>>  xen-blkfront.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+>> index b536a9c..f6d8ac2 100644
+>> --- a/drivers/block/xen-blkfront.c
+>> +++ b/drivers/block/xen-blkfront.c
+>> @@ -1088,7 +1088,7 @@ blkfront_closing(struct blkfront_info *info)
+>>  	if (bdev->bd_openers) {
+>>  		xenbus_dev_error(xbdev, -EBUSY,
+>>  				 "Device in use; refusing to close");
+>> -		xenbus_switch_state(xbdev, XenbusStateClosing);
+>> +		xbdev->state = XenbusStateClosing;
+>>  	} else {
+>>  		xlvbd_release_gendisk(info);
+>>  		xenbus_frontend_closed(xbdev);
+
