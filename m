@@ -1,93 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754488Ab1GIGIb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 02:08:31 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:37663 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752781Ab1GIGAy (ORCPT
+	id S1752781Ab1GIGL6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 02:11:58 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:56339 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751489Ab1GIGL5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 02:00:54 -0400
-X-Sasl-enc: cP47rvEwzh2O1cpcW4HBnSvEWRm/fiUh0WMD9EnAiG+n 1310191253
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Jul  8 16:01:10 2011
-Message-Id: <20110708230110.847411874@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Fri, 08 Jul 2011 16:00:29 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Marcin Slusarz <marcin.slusarz@gmail.com>,
-        Catalin Marinas <catalin.marinas@arm.com>, Tejun Heo <tj@kernel.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [13/35] debugobjects: Fix boot crash when kmemleak and debugobjects enabled
-In-Reply-To: <20110708230122.GA18807@kroah.com>
+	Sat, 9 Jul 2011 02:11:57 -0400
+X-AuditID: b753bd60-a327cba0000050a4-03-4e17f12ae935
+X-AuditID: b753bd60-a327cba0000050a4-03-4e17f12ae935
+Message-ID: <4E17F121.3030601@hitachi.com>
+Date: Sat, 09 Jul 2011 15:11:45 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
+MIME-Version: 1.0
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Greg KH <greg@kroah.com>, Nao Nishijima <nao.nishijima.xt@hitachi.com>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        jcm@redhat.com, dle-develop@lists.sourceforge.net,
+        yrl.pp-manager.tt@hitachi.com, dgilbert@interlog.com,
+        stefanr@s5r6.in-berlin.de, hare@suse.de
+Subject: Re: [RFC PATCH 0/4] Persistent device name using alias name
+References: <20110708084547.2091.55262.stgit@ltc197.sdl.hitachi.co.jp> <20110708145408.GA2283@kroah.com> <CAPXgP10gThuxOsrxH8_wOddeRB5f2ABypW7EQui-F1hOE97dHQ@mail.gmail.com> <20110708154736.GA7320@kroah.com> <1310140451.3282.85.camel@mulgrave> <CAPXgP12dA72a3ja659GH6uW+ZCMfL6iECaY6ORXwOQ6S5eTvaQ@mail.gmail.com>
+In-Reply-To: <CAPXgP12dA72a3ja659GH6uW+ZCMfL6iECaY6ORXwOQ6S5eTvaQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-longterm review patch.  If anyone has any objections, please let us know.
+(2011/07/09 1:15), Kay Sievers wrote:
+> On Fri, Jul 8, 2011 at 17:54, James Bottomley
+> <James.Bottomley@hansenpartnership.com> wrote:
+> 
+>> Yes, we did.  Everyone agrees structured logging would be the best long
+>> term solution.  However, it's at least 10x the work presented here, plus
+>> it would be a long process getting everyone to agree.
+> 
+> Maybe even 100 times :)
+> 
+>> This looks like a
+>> good 95% interim solution and it can be removed when structured logging
+>> makes everything "just work(tm)".
+> 
+> I don't really see that. I think it does not add any real value on top
+> of a simple udev logging at device discovery.
+> 
+> You would see that in the log:
+>   [78441.742634]: udevd: sdc: \
+>   disk/by-id/ata-INTEL_SSDSA1M080G2GN_CVPO0363030V080EGN \
+>   disk/by-id/scsi-SATA_INTEL_SSDSA1M08CVPO0363030V080EGN \
+>   disk/by-path/pci-0000:00:1f.2-scsi-0:0:0:0 \
+>   disk/by-id/wwn-0x50015179593f3038
+> 
+> and know exactly _all_ names and all identifiers of the disk at that time.
+> 
+> Then you see this:
+>   [78441.742634] storage: really bad things happened to: sdc
+> 
+> and with the earlier message we have all we need to know without any
+> pretty-name hacks.
 
-------------------
+Hmm, yes, we CAN do that, if user carefully sets the udev log-level
+high, and saves udev log every boot or device change.
 
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
+I think the main point of this attempt is to reduce the cost of
+those operation, as like as users have done with old un*x way.
 
-commit 161b6ae0e067e421b20bb35caf66bdb405c929ac upstream.
-
-Order of initialization look like this:
-...
-debugobjects
-kmemleak
-...(lots of other subsystems)...
-workqueues (through early initcall)
-...
-
-debugobjects use schedule_work for batch freeing of its data and kmemleak
-heavily use debugobjects, so when it comes to freeing and workqueues were
-not initialized yet, kernel crashes:
-
-BUG: unable to handle kernel NULL pointer dereference at           (null)
-IP: [<ffffffff810854d1>] __queue_work+0x29/0x41a
- [<ffffffff81085910>] queue_work_on+0x16/0x1d
- [<ffffffff81085abc>] queue_work+0x29/0x55
- [<ffffffff81085afb>] schedule_work+0x13/0x15
- [<ffffffff81242de1>] free_object+0x90/0x95
- [<ffffffff81242f6d>] debug_check_no_obj_freed+0x187/0x1d3
- [<ffffffff814b6504>] ? _raw_spin_unlock_irqrestore+0x30/0x4d
- [<ffffffff8110bd14>] ? free_object_rcu+0x68/0x6d
- [<ffffffff8110890c>] kmem_cache_free+0x64/0x12c
- [<ffffffff8110bd14>] free_object_rcu+0x68/0x6d
- [<ffffffff810b58bc>] __rcu_process_callbacks+0x1b6/0x2d9
-...
-
-because system_wq is NULL.
-
-Fix it by checking if workqueues susbystem was initialized before using.
-
-Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Dipankar Sarma <dipankar@in.ibm.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/20110528112342.GA3068@joi.lan
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- lib/debugobjects.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/lib/debugobjects.c
-+++ b/lib/debugobjects.c
-@@ -196,7 +196,7 @@ static void free_object(struct debug_obj
- 	 * initialized:
- 	 */
- 	if (obj_pool_free > ODEBUG_POOL_SIZE && obj_cache)
--		sched = !work_pending(&debug_obj_work);
-+		sched = keventd_up() && !work_pending(&debug_obj_work);
- 	hlist_add_head(&obj->node, &obj_pool);
- 	obj_pool_free++;
- 	obj_pool_used--;
+If we can use a same device name for same device and can see the
+same name on the kernel log, we don't need to pay additional cost
+for searching and picking correct entry from udev log.
+Of course, it needs updates on some tools too.
 
 
+> All that can be done today already with a single udev rule, even on
+> many years old distros.
+> 
+>> I have also seen a couple of other attempts at structured logging which
+>> both failed when the people proposing the patches realised how much work
+>> it actually was, so I'm a bit sceptical we'll ever get there.
+> 
+> The more paper-over we add the more unlikely it gets. That's what I fear. :)
+> 
+>> But hey,
+>> you have the enthusiasm, propose it as a KS topic to get agreement that
+>> we should do it and what the format should be and we can go from there.
+> 
+> Sure, I'll do that. If needed, I can even make half or a third of it
+> possible I guess.
+
+BTW, I'm also interested in that structured error events, from the long
+term view and viewpoint of tracers :)
+I think we could expand current TRACE_EVENT macro to define those error
+events.
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
