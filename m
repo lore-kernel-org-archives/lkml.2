@@ -1,310 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755612Ab1GJI6h (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 04:58:37 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:50527 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755566Ab1GJI63 (ORCPT
+	id S1755593Ab1GJI6f (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 04:58:35 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:50052 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755543Ab1GJI63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 10 Jul 2011 04:58:29 -0400
-Date: Sun, 10 Jul 2011 06:29:24 +0900
+Date: Sat, 9 Jul 2011 15:14:19 -0600
 From: Grant Likely <grant.likely@secretlab.ca>
 To: Marc Zyngier <marc.zyngier@arm.com>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v2 4/4] Core devices: documentation
-Message-ID: <20110709212924.GD2805@ponder.secretlab.ca>
+Subject: Re: [RFC PATCH v2 3/4] Core devices: add OF interrupt controller
+ sorting method
+Message-ID: <20110709211419.GC2805@ponder.secretlab.ca>
 References: <1310115250-3859-1-git-send-email-marc.zyngier@arm.com>
- <1310115250-3859-5-git-send-email-marc.zyngier@arm.com>
+ <1310115250-3859-4-git-send-email-marc.zyngier@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1310115250-3859-5-git-send-email-marc.zyngier@arm.com>
+In-Reply-To: <1310115250-3859-4-git-send-email-marc.zyngier@arm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 08, 2011 at 09:54:10AM +0100, Marc Zyngier wrote:
-> Add the documentation file for core devices.
+On Fri, Jul 08, 2011 at 09:54:09AM +0100, Marc Zyngier wrote:
+> When several interrupt controllers are initialized, it is
+> necessary to probe them in the order described by their
+> cascading interrupts (or interrupt-parent in OF parlance).
+> 
+> This patch introduces a method that can be passed to
+> core_driver_init_class() at runtime and that will
+> reorder the device list according to the OF properties.
 > 
 > Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
 > ---
->  Documentation/core_devices.txt |  247 ++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 247 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/core_devices.txt
+>  drivers/base/core_device.c  |  109 +++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/core_device.h |    2 +
+>  2 files changed, 111 insertions(+), 0 deletions(-)
 > 
-> diff --git a/Documentation/core_devices.txt b/Documentation/core_devices.txt
-> new file mode 100644
-> index 0000000..5d1581f
-> --- /dev/null
-> +++ b/Documentation/core_devices.txt
-> @@ -0,0 +1,247 @@
-> +Core Device Subsystem:
-> +=====================
+> diff --git a/drivers/base/core_device.c b/drivers/base/core_device.c
+> index 9262145..a8df59d 100644
+> --- a/drivers/base/core_device.c
+> +++ b/drivers/base/core_device.c
+> @@ -10,7 +10,9 @@
+>   */
+>  #include <linux/core_device.h>
+>  #include <linux/of_platform.h>
+> +#include <linux/of_irq.h>
+>  #include <linux/slab.h>
+> +#include <linux/sort.h>
+>  
+>  static struct list_head anchors[CORE_DEV_CLASS_MAX] __initdata = {
+>  	[CORE_DEV_CLASS_IRQ]   = LIST_HEAD_INIT(anchors[CORE_DEV_CLASS_IRQ]),
+> @@ -105,4 +107,111 @@ void __init of_core_device_populate(enum core_device_class class,
+>  		core_device_register(class, dev);
+>  	}
+>  }
 > +
-> +There is a small number of devices that the core kernel needs very
-> +early in the boot process, namely an interrupt controller and a timer,
-> +long before the driver model is up and running.
-> +
-> +Most architectures implement this requirement by hardcoding the
-> +initialisation of a "well known" piece of hardware which is standard
-> +enough to work on any platform.
-> +
-> +This is very different on the ARM architecture, where platforms have a
-> +variety of interrupt controllers and timers. While the same hardcoding
-> +is possible (and is actually used), it makes it almost impossible to
-> +support several platforms in the same kernel.
-> +
-> +Though the device tree is helping greatly to solve this problem, some
-> +platform won't ever be converted to DT, hence the need to have a
-> +mechanism supporting a variety of information source. Early platform
-> +devices having been deemed unsuitable (complexity, abuse of various
-> +subsystems), this subsystem has been designed to provide the very
-> +minimal level of functionality.
-> +
-> +The "core device subsystem" offers a class based device/driver
-> +matching model, doesn't rely on any other subsystem, is very (too?)
-> +simple, and support getting information both from DT as well as from
-> +static data provided by the platform. It also gives the opportunity to
-> +define the probing order by offering a sorting hook at run-time.
-> +
-> +As for the Linux driver model, the core device subsystem deals mainly
-> +with device and driver objects. It also has the notion of "class" to
-> +designate a group of devices implementing the same functionality, and
-> +a group of drivers to be matched against the above devices
-> +(CORE_DEV_CLASS_TIMER for example).
-> +
-> +One of the features is that the whole subsystem is discarded once the
-> +kernel has booted. No structures can or should be retained after the
-> +device has been probed. Of course, no support for module or other
-> +evolved features. Another design feature is that it is *NOT* thread
-> +safe. If you need any kind of mutual exclusion, you're probably using
-> +core devices for something they are not designed for.
-> +
-> +* Core Device:
-> +  ===========
-> +
-> +The struct core_device is fairly similar to a platform_device.
-> +From "include/linux/core_device.h":
-> +
-> +struct core_device {
-> +	const char		*name;
-> +	u32			num_resources;
-> +	struct resource		*resource;
-> +	struct device_node	*of_node;
-> +	struct list_head	entry;
+> +struct intc_desc {
+> +	struct core_device	*dev;
+> +	struct intc_desc	*parent;
+> +	int			order;
 > +};
 > +
-> +- name: friendly name for the device, will be used to match the driver
-> +- num_resources: number of resources associated with the device
-> +- resource: address of the resource array
-> +- of_node: pointer to the DT node if the device has been populated by
-> +  parsing the device tree. This is managed internally by the subsystem.
-> +- entry: internal management list (not to be initialised).
-
-Ignoring the question of "which devices are actually core devices" for
-the moment, (which is a question that does need to be answered
-regardless), I don't think the 'struct core_device' abstraction, or at
-least the "core_device_register()" abstraction is what is needed.
-When doing early setup for an SoC family, I better already have a
-pretty darn good idea about what devices are "core devices".  We *do*
-need a way to hook in setup code for a lot of different hardware in
-abstract ways, but something like a device model I think goes to far.
-
-It should be sufficient to have either implicitly or explicitly
-registered setup functions and a helper function (lets call it an
-early setup agent) that knows how to call them (which is pretty much
-what you've got implemented), but instead of a separate
-core_device_register() step, SoC code can pass a list of core devices
-to the setup agent directly.  Or in the DT case, a match table.
-
-g.
-
-> +
-> +The device is registered with the core device subsystem with:
-> +void core_device_register(enum core_device_class class,
-> +			  struct core_device *dev);
-> +
-> +where:
-> +- class is one of CORE_DEV_CLASS_IRQ or CORE_DEV_CLASS_TIMER
-> +- dev is the core device to be registered.
-> +
-> +A typical use is the following:
-> +static struct resources twd_resources[] __initdata = {
-> +	{
-> +		.start	= 0x1f000600,
-> +		.end	= 0x1f0006ff,
-> +		.flags	= IORESOURCE_MEM,
-> +	},
-> +	{
-> +		.start	= IRQ_LOCALTIMER,
-> +		.end	= IRQ_LOCALTIMER,
-> +		.flags	= IORESOURCE_IRQ,
-> +	},
-> +};
-> +
-> +static struct core_device twd_device _initdata = {
-> +	.name		= "arm_smp_twd",
-> +	.resource	= twd_resources,
-> +	.num_resources	= ARRAY_SIZE(twd_resources),
-> +};
-> +
-> +static void __init timer_init(void)
+> +static struct intc_desc * __init irq_find_parent(struct core_device *dev,
+> +						 struct intc_desc *intcs,
+> +						 int nr)
 > +{
-> +	core_device_register(CORE_DEV_CLASS_TIMER, &twd_device);
+> +	struct device_node *np;
+> +	int i;
+> +
+> +	if (!dev->of_node)
+> +		return NULL;
+> +
+> +	np = of_irq_find_parent(dev->of_node);
+> +	if (!np || dev->of_node == np) {
+> +		pr_debug("%s has no interrupt-parent\n",
+> +			dev->of_node->full_name);
+> +		return NULL;
+> +	}
+> +
+> +	of_node_put(np);
+> +	for (i = 0; i < nr; i++)
+> +		if (intcs[i].dev->of_node == np) {
+> +			pr_debug("%s interrupt-parent %s found in probe list\n",
+> +				 dev->of_node->full_name, np->full_name);
+> +			return &intcs[i];
+> +		}
+> +
+> +	pr_warning("%s interrupt-parent %s not in probe list\n",
+> +		   dev->of_node->full_name, np->full_name);
+> +	return NULL;
 > +}
 > +
-> +Note that all structures are marked as __inidata, as none of them is
-> +expected to be used after the kernel has booted.
-> +
-> +The devices can also be automatically allocated and registered by
-> +parsing the device tree (if available) with the following function:
-> +
-> +void of_core_device_populate(enum core_device_class class,
-> +			     struct of_device_id *matches);
-> +
-> +The allocated core_device structures will have their of_node member
-> +pointing to the corresponding DT node. Resources will be allocated and
-> +populated according to attributes found in the device tree.
-> +
-> +
-> +
-> +* Core driver:
-> +  ===========
-> +
-> +The struct core_driver is the pendant to the core_device.
-> +
-> +struct core_driver {
-> +	int			(*init)(struct core_device *);
-> +	struct core_device_id	*ids;
-> +};
-> +
-> +- init: initialisation function. Returns 0 on success, error code on
-> +  failure.
-> +- ids: a null-terminated array of struct core_device_id against which
-> +  the device is matched.
-> +
-> +struct core_device_id {
-> +	const char		*name;
-> +};
-> +
-> +- name: string against which the device is matched
-> +
-> +core_driver_register(class, driver);
-> +
-> +Note that core_driver_register() is *not* a function, but expands to a
-> +static data structure stored in a discardable section.
-> +
-> +A typical use is the following:
-> +
-> +static int __init twd_core_init(struct core_device *dev)
+> +static int __init irq_cmp_intc_desc(const void *x1, const void *x2)
 > +{
-> +	[...]
-> +	return 0;
-> +}
-> +static struct core_device_id twd_core_ids[] __initdata = {
-> +	{ .name = "arm,smp-twd", },
-> +	{ .name	= "arm_smp_twd", },
-> +	{},
-> +};
-> +
-> +static struct core_driver twd_core_driver __initdata = {
-> +	.init		= twd_core_init,
-> +	.ids		= twd_core_ids,
-> +};
-> +
-> +core_driver_register(CORE_DEV_CLASS_TIMER, twd_core_driver);
-> +
-> +As for the core_device, all structures should be marked __initdata,
-> +and the init function should be marked __init. The driver code must
-> +*not* hold any reference to the core_device, as it can be freed just
-> +after the init function has returned.
-> +
-> +
-> +
-> +* Device/Driver matching:
-> +  ======================
-> +
-> +The core kernel code directly controls when devices and drivers are
-> +matched (no matching-at-register-time) by calling:
-> +
-> +void core_driver_init_class(enum core_device_class class,
-> +			    void (*sort)(struct list_head *));
-> +
-> +Where:
-> +- class is one of CORE_DEV_CLASS_IRQ or CORE_DEV_CLASS_TIMER,
-> +- sort is a pointer to a function sorting the device list before they
-> +  are matched (NULL if unused).
-> +
-> +When this function is called:
-> +
-> +- All devices registered in "class" are probed with the matching
-> +  registered drivers
-> +- Once the devices in the class have been tried against the compiled
-> +  in drivers, they are removed from the list (whether they have
-> +  actually been probed or not).
-> +- If core devices have been dynamically allocated (by
-> +  of_core_device_populate()), they are freed.
-> +
-> +For example:
-> +
-> +/* List of supported timers */
-> +static struct of_device_id timer_ids[] __initdata = {
-> +	{ .compatible = "arm,smp-twd", },
-> +	{},
-> +};
-> +
-> +static void __init __arm_late_time_init(void)
-> +{
-> +	if (arm_late_time_init)
-> +		arm_late_time_init();
-> +
-> +	/* Fetch the supported timers from the device tree */
-> +	of_core_device_populate(CORE_DEV_CLASS_TIMER, timer_ids);
-> +	/* Init the devices (both DT based and static), no preliminary sort */
-> +	core_driver_init_class(CORE_DEV_CLASS_TIMER, NULL);
+> +	const struct intc_desc *d1 = x1, *d2 = x2;
+> +	return d1->order - d2->order;
 > +}
 > +
-> +
-> +
-> +* Sorting functions
-> +  =================
-> +
-> +This may well fall into the hack category, and is probably only useful
-> +when used with the device tree.
-> +
-> +Imagine you have a bunch of interrupt controllers to initialise. There
-> +is probably one controller directly attached to the CPUs, and all the
-> +others cascading (in)directly into the first one. There is a strong
-> +requirement that these controllers are initialised in the right order
-> +(closest to the CPU first).
-> +
-> +This is easy enough to achieve when static core devices are registered
-> +(the registration order is preserved when probing), but is very
-> +unlikely to occur when devices are imported from the device tree.
-> +
-> +The "sort" function that can be passed to core_driver_init_class() is
-> +used to solve such a problem. It is called just before the devices are
-> +matched against the drivers, and is allowed to reorganise the list
-> +completely. It must not drop elements from the list though.
-> +
-> +One such sorting function is core_device_irq_sort(), which is designed
-> +to solve the above problem, and is used like this:
-> +
-> +static struct of_device_id of_irq_controller_ids[] __initdata = {
-> +	{ .compatible   = "arm,gic-spi", },
-> +	{},
-> +};
-> +
-> +void __init init_IRQ(void)
+> +void __init core_device_irq_sort(struct list_head *head)
 > +{
-> +	machine_desc->init_irq();
-> +	of_core_device_populate(CORE_DEV_CLASS_IRQ, of_irq_controller_ids);
-> +	core_driver_init_class(CORE_DEV_CLASS_IRQ, core_device_irq_sort);
-> +}
+> +	struct intc_desc *intcs;
+> +	struct core_device *dev, *tmp;
+> +	int count = 0, i = 0, inc, max_order = 0;
 > +
-> +In this snippet, all the "arm,gic-spi" devices are registered, and
-> +then sorted at initialisation time by core_device_irq_sort().
+> +	if (list_empty(head))
+> +		return;
+> +
+> +	/* Count the number of interrupt controllers */
+> +	list_for_each_entry(dev, head, entry)
+> +		count++;
+> +
+> +	if (count == 1)
+> +		return;
+
+If you change this to 'if (count <= 1)', then I think the list_empty() test above becomes redundant.
+
+> +
+> +	/* Allocate a big enough array */
+> +	intcs = kmalloc(sizeof(*intcs) * count, GFP_KERNEL);
+
+kzalloc()
+
+> +	if (!intcs) {
+> +		pr_err("irq_core_device_sort: allocation failed");
+> +		return;
+> +	}
+> +
+> +	/* Populate the array */
+> +	i = 0;
+> +	list_for_each_entry(dev, head, entry) {
+> +		intcs[i].dev = dev;
+> +		intcs[i].parent = NULL;
+> +		intcs[i].order = 0;
+
+Clearing parent and order become redundant when using kzalloc().
+
+> +		i++;
+> +	}
+> +
+> +	/* Find out the interrupt-parents */
+> +	for (i = 0; i < count; i++)
+> +		intcs[i].parent = irq_find_parent(intcs[i].dev, intcs, count);
+> +
+> +	/* Compute the orders */
+> +	do {
+> +		inc = 0;
+> +		for (i = 0; i < count; i++)
+> +			if (intcs[i].parent &&
+> +			    intcs[i].order <= intcs[i].parent->order) {
+> +				intcs[i].order =  intcs[i].parent->order + 1;
+> +				if (max_order < intcs[i].order)
+> +					max_order = intcs[i].order;
+> +				inc = 1;
+> +			}
+> +	} while (inc);
+
+Can't this look be rolled into the list_for_each_entry() loop?
+
+This is a good start (and is probably pragmatically what should be
+done immediately), but there is an added complexity that an irq
+controller can actually have multiple parents if it is attached to an
+interrupt nexus.
+
+That said, it might just be best to punt that use-case out to a 'real'
+device driver than can defer probing until its dependencies are met
+(assuming deferred probe gets merged).  Not all interrupt controllers
+need to be probed early.
+
+As for the implementation, I think we can do better with fewer loops:
+
+	for (i = 0; i < count; i++) {
+		parent = irq_find_parent(intcs[i].dev, intcs, count);
+		if (parent) {
+			list_add(&intcs[i].list, &parent->child_list);
+		} else {
+			WARN_ON(root_parent);
+			root_parent = &intcs[i];
+		}
+	}
+
+And then simply walk each intcs' child_list starting at the root_parent.
+
+> diff --git a/include/linux/core_device.h b/include/linux/core_device.h
+> index ca67e5e..e632868 100644
+> --- a/include/linux/core_device.h
+> +++ b/include/linux/core_device.h
+> @@ -48,11 +48,13 @@ void core_driver_init_class(enum core_device_class class,
+>  #ifdef CONFIG_OF
+>  void of_core_device_populate(enum core_device_class class,
+>  			     struct of_device_id *matches);
+> +void core_device_irq_sort(struct list_head *head);
+>  #else
+>  static inline void of_core_device_populate(enum core_device_class class,
+>  					   struct of_device_id *matches)
+>  {
+>  }
+> +#define core_device_irq_sort	NULL
+>  #endif
+>  
+>  struct core_driver_setup_block {
 > -- 
 > 1.7.0.4
 > 
