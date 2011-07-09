@@ -1,103 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275Ab1GIGMo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 02:12:44 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:62053 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752218Ab1GIGMn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 02:12:43 -0400
-From: Ravishankar <ravishankarkm32@gmail.com>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>,
-        Ravishankar <ravishankarkm32@gmail.com>
-Subject: [PATCH 9/9] Staging: comedi: fix printk issue in pcmmio.c
-Date: Sat,  9 Jul 2011 11:55:00 +0530
-Message-Id: <1310192700-14603-1-git-send-email-ravishankarkm32@gmail.com>
-X-Mailer: git-send-email 1.6.5.2
-In-Reply-To: <[PATCH 1/2]Staging: comedi: fix warning: printk()issue in pcmmio.c>
-References: <[PATCH 1/2]Staging: comedi: fix warning: printk()issue in pcmmio.c>
+	id S1753696Ab1GIGUb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 02:20:31 -0400
+Received: from mail.perches.com ([173.55.12.10]:3689 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752860Ab1GIGU3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Jul 2011 02:20:29 -0400
+From: Joe Perches <joe@perches.com>
+To: Sathya Perla <sathya.perla@emulex.com>,
+        Subbu Seetharaman <subbu.seetharaman@emulex.com>,
+        Ajit Khaparde <ajit.khaparde@emulex.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] benet: Add missing comma between constant string array
+Date: Fri,  8 Jul 2011 23:20:23 -0700
+Message-Id: <8c2d9b2ff796489a39408fade30fc93ed6040b3c.1310187270.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.6.131.g99019
+In-Reply-To: <cover.1310187270.git.joe@perches.com>
+References: <cover.1310187270.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ravishankar <ravi.shankar@greenturtles.in>
+Multiple quoted strings are concatenated without comma separators.
 
-This is a patch to the pcmmio.c file that fixes up a printk warning found by the checkpatch.pl tool
+Make the arrays const while there.
 
-Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/staging/comedi/drivers/pcmmio.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+ drivers/net/benet/be_main.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/pcmmio.c b/drivers/staging/comedi/drivers/pcmmio.c
-index f2e88e5..0a7f07d 100644
---- a/drivers/staging/comedi/drivers/pcmmio.c
-+++ b/drivers/staging/comedi/drivers/pcmmio.c
-@@ -394,7 +394,7 @@ static int pcmmio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
-  * convenient macro defined in comedidev.h.
-  */
- 	if (alloc_private(dev, sizeof(struct pcmmio_private)) < 0) {
--		printk("cannot allocate private data structure\n");
-+		printk(KERN_ERR "cannot allocate private data structure\n");
- 		return -ENOMEM;
- 	}
- 
-@@ -417,7 +417,7 @@ static int pcmmio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	    kcalloc(n_subdevs, sizeof(struct pcmmio_subdev_private),
- 		    GFP_KERNEL);
- 	if (!devpriv->sprivs) {
--		printk("cannot allocate subdevice private data structures\n");
-+		printk(KERN_ERR "cannot allocate subdevice private data structures\n");
- 		return -ENOMEM;
- 	}
- 	/*
-@@ -427,7 +427,7 @@ static int pcmmio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	 * Allocate 1 AI + 1 AO + 2 DIO subdevs (24 lines per DIO)
- 	 */
- 	if (alloc_subdevices(dev, n_subdevs) < 0) {
--		printk("cannot allocate subdevice data structures\n");
-+		printk(KERN_ERR "cannot allocate subdevice data structures\n");
- 		return -ENOMEM;
- 	}
- 
-@@ -557,7 +557,7 @@ static int pcmmio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 				 */
- 
- 	if (irq[0]) {
--		printk("irq: %u ", irq[0]);
-+		printk(KERN_INFO "irq: %u ", irq[0]);
- 		if (thisboard->dio_num_asics == 2 && irq[1])
- 			printk("second ASIC irq: %u ", irq[1]);
- 	} else {
-@@ -622,7 +622,7 @@ static int pcmmio_dio_insn_bits(struct comedi_device *dev,
- 
- #ifdef DAMMIT_ITS_BROKEN
- 	/* DEBUG */
--	printk("write mask: %08x  data: %08x\n", data[0], data[1]);
-+	printk(KERN_DEBUG "write mask: %08x  data: %08x\n", data[0], data[1]);
- #endif
- 
- 	s->state = 0;
-@@ -663,7 +663,7 @@ static int pcmmio_dio_insn_bits(struct comedi_device *dev,
- 		}
- #ifdef DAMMIT_ITS_BROKEN
- 		/* DEBUG */
--		printk("data_out_byte %02x\n", (unsigned)byte);
-+	printk(KERN_DEBUG "data_out_byte %02x\n", (unsigned) byte);
- #endif
- 		/* save the digital input lines for this byte.. */
- 		s->state |= ((unsigned int)byte) << offset;
-@@ -674,7 +674,7 @@ static int pcmmio_dio_insn_bits(struct comedi_device *dev,
- 
- #ifdef DAMMIT_ITS_BROKEN
- 	/* DEBUG */
--	printk("s->state %08x data_out %08x\n", s->state, data[1]);
-+	printk(KERN_DEBUG "s->state %08x data_out %08x\n", s->state, data[1]);
- #endif
- 
- 	return 2;
+diff --git a/drivers/net/benet/be_main.c b/drivers/net/benet/be_main.c
+index 696f634..4ebd700 100644
+--- a/drivers/net/benet/be_main.c
++++ b/drivers/net/benet/be_main.c
+@@ -44,7 +44,7 @@ static DEFINE_PCI_DEVICE_TABLE(be_dev_ids) = {
+ };
+ MODULE_DEVICE_TABLE(pci, be_dev_ids);
+ /* UE Status Low CSR */
+-static char *ue_status_low_desc[] = {
++static const char * const ue_status_low_desc[] = {
+ 	"CEV",
+ 	"CTX",
+ 	"DBUF",
+@@ -79,7 +79,7 @@ static char *ue_status_low_desc[] = {
+ 	"MPU_INTPEND"
+ };
+ /* UE Status High CSR */
+-static char *ue_status_hi_desc[] = {
++static const char * const ue_status_hi_desc[] = {
+ 	"LPCMEMHOST",
+ 	"MGMT_MAC",
+ 	"PCS0ONLINE",
+@@ -103,7 +103,7 @@ static char *ue_status_hi_desc[] = {
+ 	"HOST7",
+ 	"HOST8",
+ 	"HOST9",
+-	"NETC"
++	"NETC",
+ 	"Unknown",
+ 	"Unknown",
+ 	"Unknown",
 -- 
-1.6.5.2
+1.7.6.131.g99019
 
