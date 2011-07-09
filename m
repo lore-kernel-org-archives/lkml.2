@@ -1,38 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752225Ab1GIDJH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jul 2011 23:09:07 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59572 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751896Ab1GIDJE (ORCPT
+	id S1752225Ab1GIDhc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jul 2011 23:37:32 -0400
+Received: from smtp7.freeserve.com ([80.12.242.2]:28436 "EHLO
+	smtp6.freeserve.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751236Ab1GIDh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jul 2011 23:09:04 -0400
-Date: Sat, 9 Jul 2011 12:08:55 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: Donggeun Kim <dg77.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        sameo@linux.intel.com, myungjoo.ham@samsung.com,
-        kyungmin.park@samsung.com, Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: Re: [PATCH 2/2] regulator: Add a new regulator for charge control of
- MAX8998/LP3974
-Message-ID: <20110709030853.GA23634@opensource.wolfsonmicro.com>
-References: <1308909859-3674-1-git-send-email-dg77.kim@samsung.com>
- <1308909859-3674-3-git-send-email-dg77.kim@samsung.com>
- <20110708131655.GB32754@oksana.dev.rtsoft.ru>
+	Fri, 8 Jul 2011 23:37:29 -0400
+X-ME-UUID: 20110709033722987.F0F493002086@mwinf3j31.me.freeserve.com
+Reply-To: <leungcheung18@helixnet.cn>
+From: "leung  cheung" <Racksugdh67@gmail.com>
+Subject: I need your assistance
+Date: Sat, 9 Jul 2011 04:37:28 +0100
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110708131655.GB32754@oksana.dev.rtsoft.ru>
-X-Cookie: You have no real enemies.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-Id: <20110709033722.F0F493002086@mwinf3j31.me.freeserve.com>
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 08, 2011 at 05:16:55PM +0400, Anton Vorontsov wrote:
 
-> Can I take it via battery-2.6.git tree?
+Hello,
 
-As I've said before I'm still not really happy that these regulators can
-meaningfully be generic regulator drivers rather than just being handled
-as part of the PMU driver.
+Compliment of the day to you. I am sending this brief letter to solicit 
+your partnership to transfer $22,500,000.00 US Dollars from Hong Kong to 
+your country. You will be entitled to 40% after compliting the transaction 
+while I will be entitled to 60% as the sole initiator of this mutual 
+proposal. I shall send you more information and procedures when I receive 
+a positive response from you.
+
+Best Regards,
+
+Mr. Leung Cheung
+Email: leungcheung18@helixnet.cn
+
+
