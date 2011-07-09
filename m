@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753100Ab1GIKXl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 06:23:41 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:40804 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752484Ab1GIKXj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 06:23:39 -0400
-Date: Sat, 9 Jul 2011 11:23:37 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        Martin Persson <martin.persson@stericsson.com>,
-        Joe Perches <joe@perches.com>, Russell King <linux@arm.linux.org.uk>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] drivers: create a pinmux subsystem v3
-Message-ID: <20110709102337.GD9247@sirena.org.uk>
-References: <1307984291-9774-1-git-send-email-linus.walleij@stericsson.com> <BANLkTi=r=N5OwfsVLRuBsNRSpv91pTgeKA@mail.gmail.com>
+	id S1753036Ab1GIK7A (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 06:59:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53290 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750879Ab1GIK67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Jul 2011 06:58:59 -0400
+Date: Sat, 9 Jul 2011 12:58:57 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Cleanup PATCH] rcu: Do not use rcu_read_lock_held when calling
+ rcu_dereference_check
+Message-ID: <20110709105857.GA29263@tiehlicka.suse.cz>
+References: <20110708135739.GB12834@tiehlicka.suse.cz>
+ <20110708154829.GS6014@linux.vnet.ibm.com>
+ <20110708155752.GE12834@tiehlicka.suse.cz>
+ <20110708163033.GG12834@tiehlicka.suse.cz>
+ <20110708185148.GV6014@linux.vnet.ibm.com>
+ <alpine.LNX.2.00.1107082222150.11049@pobox.suse.cz>
+ <20110708204632.GZ6014@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BANLkTi=r=N5OwfsVLRuBsNRSpv91pTgeKA@mail.gmail.com>
-X-Cookie: Oh Dad!  We're ALL Devo!
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20110708204632.GZ6014@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 13, 2011 at 01:57:36PM -0600, Grant Likely wrote:
-> On Mon, Jun 13, 2011 at 10:58 AM, Linus Walleij
+On Fri 08-07-11 13:46:32, Paul E. McKenney wrote:
+> On Fri, Jul 08, 2011 at 10:22:45PM +0200, Jiri Kosina wrote:
+> > On Fri, 8 Jul 2011, Paul E. McKenney wrote:
+> > 
+> > > > Hmm, thinking about it some more. Wouldn't it make more sense to push
+> > > > this through trivial tree (CCing Jikos)? Having 5 or so patches with the
+> > > > exactly same changelog sounds overkill to me.
+> > > > 
+> > > > What do you think? Could you give me your Acked-by if you are OK with
+> > > > it, please?
+> > > 
+> > > Whatever works.  ;-)
+> > > 
+> > > However, I did queue the Documentation/RCU/lockdep.txt patch already.
+> > 
+> > That's no problem for git. But anyway, I have dropped that part.
+> > 
+> > > For the others,
+> > > 
+> > > Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > 
+> > Thanks. Applied.
+> 
+> Thank you, Jiri!
 
-> > +This get/enable/disable/put sequence can just as well be handled by bus drivers
-> > +if you don't want each and every driver to handle it and you know the
-> > +arrangement on your bus.
+Thanks to both of you guys.
 
-> I would *strongly* recommend against individual device drivers
-> accessing the pinmux api.  This is system level configuration code,
-> and should be handled at the system level.
+> 
+> 							Thanx, Paul
 
-There can also be advantages to putting the pin into the designed mode
-without the driver being loaded from the electrical point of view.  For
-example, selecting appropriate pull values for pads can cut down on
-power consumption.
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
