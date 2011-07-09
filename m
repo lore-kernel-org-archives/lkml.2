@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752504Ab1GIJHv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 05:07:51 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:37972 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751826Ab1GIJHt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 05:07:49 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sat, 9 Jul 2011 11:05:38 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Roland Dreier <roland@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-scsi@vger.kernel.org,
-        Steffen Maier <maier@linux.vnet.ibm.com>,
-        "Manvanthara B. Puttashankar" <manvanth@linux.vnet.ibm.com>,
-        Tarak Reddy <tarak.reddy@in.ibm.com>,
-        "Seshagiri N. Ippili" <sesh17@linux.vnet.ibm.com>,
+	id S1752113Ab1GIJOS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 05:14:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64980 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750937Ab1GIJOR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Jul 2011 05:14:17 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1310194141-18700-1-git-send-email-edwin@cheatah.nl>
+References: <1310194141-18700-1-git-send-email-edwin@cheatah.nl>
+To: Edwin van Vliet <edwin@cheatah.nl>
+Cc: dhowells@redhat.com, akpm@linux-foundation.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] block: Check that queue is alive in
- blk_insert_cloned_request()
-Message-ID: <20110709110538.35e1ea1e@stein>
-In-Reply-To: <1310166270-23196-1-git-send-email-roland@kernel.org>
-References: <CAG4TOxMjuntpd3Q5jgn+xDa2tgB9tq+jLcDquM_eAdFHXLDrWA@mail.gmail.com>
-	<1310166270-23196-1-git-send-email-roland@kernel.org>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] kernel/cred: Fix bug on cred reference count
+Date: Sat, 09 Jul 2011 10:13:47 +0100
+Message-ID: <10155.1310202827@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jul 08 Roland Dreier wrote:
-> This fixes crashes such as the below that I see when the storage
-> underlying a dm-multipath device is hot-removed.  The problem is that
-> dm requeues a request to a device whose block queue has already been
-> cleaned up, and blk_insert_cloned_request() doesn't check if the queue
-> is alive, but rather goes ahead and tries to queue the request.  This
-> ends up dereferencing the elevator that was already freed in
-> blk_cleanup_queue().
-[...]
-> --- a/block/blk-core.c
-> +++ b/block/blk-core.c
-> @@ -1706,6 +1706,9 @@ int blk_insert_cloned_request(struct request_queue *q, struct request *rq)
->  		return -EIO;
->  #endif
->  
-> +	if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags)))
-> +		return -EIO;
-> +
->  	spin_lock_irqsave(q->queue_lock, flags);
->  
->  	/*
+Edwin van Vliet <edwin@cheatah.nl> wrote:
 
-Not knowing the calling contexts or having tried to learn about them, I am
-wondering:  What prevents the elevator to be freed right after the flag
-was checked?
--- 
-Stefan Richter
--=====-==-== -=== -=--=
-http://arcgraph.de/sr/
+> The comment above states that the old obj ref and subj ref should BOTH be
+> released. However, the line is repeated so the old obj ref is released twice
+> yet the subj ref is not. So either the comment is wrong, or this is simpy a
+> bug. Releasing the same ref twice seems wrong in any case.
+
+The comment is correct and the double release is correct.
+
+task_struct has *two* refs to the cred being replaced and both need to be
+updated:
+
+	current->real_cred	- The objective cred
+	current->cred		- The subjective cred
+
+The subjective cred is the one used by a task to access other objects; the
+objective cred details how the task is perceived by the outside world and
+affects how other tasks act upon it.
+
+Normally a task's two cred pointers point to the same cred, but under some
+circumstances (such as in cachefiles), the subjective cred can be overridden.
+
+David
