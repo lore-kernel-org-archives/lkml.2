@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754353Ab1GISdf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 14:33:35 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:57378 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754140Ab1GISdd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 14:33:33 -0400
-MIME-Version: 1.0
-In-Reply-To: <1310227479-14472-1-git-send-email-julia@diku.dk>
-References: <1310227479-14472-1-git-send-email-julia@diku.dk>
-Date: Sat, 9 Jul 2011 21:33:31 +0300
-X-Google-Sender-Auth: KWFSNVur03aE_1-UlnLGi-FHhE8
-Message-ID: <CAOJsxLFu8CPmuDV4MD8vFmZYLpX3hYSKHOY29ChtsNrLfpzEvg@mail.gmail.com>
-Subject: Re: [PATCH] fs/ocfs2/dlm/dlmlock.c: free kmem_cache_zalloc'd data
- using kmem_cache_free
-From: Pekka Enberg <penberg@kernel.org>
-To: Julia Lawall <julia@diku.dk>
-Cc: Mark Fasheh <mfasheh@suse.com>, kernel-janitors@vger.kernel.org,
-        Joel Becker <jlbec@evilplan.org>,
-        Wengang Wang <wen.gang.wang@oracle.com>, Tao Ma <boyu.mt@taobao.com>,
-        ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754559Ab1GITXc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 15:23:32 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:53638 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754211Ab1GITXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Jul 2011 15:23:31 -0400
+From: Julia Lawall <julia@diku.dk>
+To: Hank Janssen <hjanssen@microsoft.com>
+Cc: kernel-janitors@vger.kernel.org, Haiyang Zhang <haiyangz@microsoft.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Abhishek Kane <v-abkane@microsoft.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/staging/hv/blkvsc_drv.c: eliminate NULL pointer dereference
+Date: Sat,  9 Jul 2011 21:23:26 +0200
+Message-Id: <1310239406-9592-1-git-send-email-julia@diku.dk>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 9, 2011 at 7:04 PM, Julia Lawall <julia@diku.dk> wrote:
-> From: Julia Lawall <julia@diku.dk>
->
-> Memory allocated using kmem_cache_zalloc should be freed using
-> kmem_cache_free, not kfree.
->
-> The semantic patch that fixes this problem is as follows:
-> (http://coccinelle.lip6.fr/)
->
-> // <smpl>
-> @@
-> expression x,e,e1,e2;
-> @@
->
-> x = kmem_cache_zalloc(e1,e2)
-> ... when != x = e
-> ?-kfree(x)
-> +kmem_cache_free(e1,x)
-> // </smpl>
->
-> Signed-off-by: Julia Lawall <julia@diku.dk>
+From: Julia Lawall <julia@diku.dk>
 
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
+In this code, blkvsc_req is allocated in the cache blkdev->request_pool,
+but freed in the first case to the cache blkvsc_req->dev->request_pool.
+blkvsc_req->dev is subsequently initialized to blkdev, making these the
+same at the second call to kmem_cache_free.  But at the point of the first
+call, blkvsc_req->dev is NULL.  The second call is changed too, for
+uniformity.
 
-> ---
->  fs/ocfs2/dlm/dlmlock.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff -u -p a/fs/ocfs2/dlm/dlmlock.c b/fs/ocfs2/dlm/dlmlock.c
-> --- a/fs/ocfs2/dlm/dlmlock.c
-> +++ b/fs/ocfs2/dlm/dlmlock.c
-> @@ -440,7 +440,7 @@ struct dlm_lock * dlm_new_lock(int type,
->                /* zero memory only if kernel-allocated */
->                lksb = kzalloc(sizeof(*lksb), GFP_NOFS);
->                if (!lksb) {
-> -                       kfree(lock);
-> +                       kmem_cache_free(dlm_lock_cache, lock);
->                        return NULL;
->                }
->                kernel_allocated = 1;
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+The semantic patch that fixes this problem is as follows:
+(http://coccinelle.lip6.fr/)
+
+// <smpl>
+@@
+expression x,e,e1,e2,e3;
+@@
+
+x = \(kmem_cache_alloc\|kmem_cache_zalloc\)(e1,e2)
+... when != x = e
+(
+kmem_cache_free(e1,x);
+|
+?-kmem_cache_free(e3,x);
++kmem_cache_free(e1,x);
+)
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
+---
+ drivers/staging/hv/blkvsc_drv.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff -u -p a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
+--- a/drivers/staging/hv/blkvsc_drv.c
++++ b/drivers/staging/hv/blkvsc_drv.c
+@@ -325,7 +325,7 @@ static int blkvsc_do_operation(struct bl
+ 
+ 	page_buf = alloc_page(GFP_KERNEL);
+ 	if (!page_buf) {
+-		kmem_cache_free(blkvsc_req->dev->request_pool, blkvsc_req);
++		kmem_cache_free(blkdev->request_pool, blkvsc_req);
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -422,7 +422,7 @@ cleanup:
+ 
+ 	__free_page(page_buf);
+ 
+-	kmem_cache_free(blkvsc_req->dev->request_pool, blkvsc_req);
++	kmem_cache_free(blkdev->request_pool, blkvsc_req);
+ 
+ 	return ret;
+ }
+
