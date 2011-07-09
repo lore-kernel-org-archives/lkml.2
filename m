@@ -1,40 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752159Ab1GIMWV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 08:22:21 -0400
-Received: from mail06-md.ns.itscom.net ([175.177.155.116]:48082 "EHLO
-	mail06-md.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751124Ab1GIMWU (ORCPT
+	id S1753769Ab1GINIj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 09:08:39 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:37027 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752802Ab1GINIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 08:22:20 -0400
-From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Subject: Re: [PATCH 0/7] overlay filesystem: request for inclusion
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Andrew Morton <akpm@linux-foundation.org>, NeilBrown <neilb@suse.de>,
-        viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        apw@canonical.com, nbd@openwrt.org, hramrach@centrum.cz,
-        jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu
-In-Reply-To: <8739ig3k93.fsf@tucsk.pomaz.szeredi.hu>
-References: <1306932380-10280-1-git-send-email-miklos@szeredi.hu> <20110608153208.dc705cda.akpm@linux-foundation.org> <20110609115934.3c53f78f@notabene.brown> <20110608205233.ebfedc4d.akpm@linux-foundation.org> <87wrgvb28a.fsf@tucsk.pomaz.szeredi.hu> <20110609123843.77153b27.akpm@linux-foundation.org> <877h8uzmsi.fsf@tucsk.pomaz.szeredi.hu> <21324.1307677721@jrobl> <871uyxa7ol.fsf@tucsk.pomaz.szeredi.hu> <8739ig3k93.fsf@tucsk.pomaz.szeredi.hu>
-Date: Sat, 09 Jul 2011 21:22:15 +0900
-Message-ID: <8536.1310214135@jrobl>
+	Sat, 9 Jul 2011 09:08:37 -0400
+From: Ravishankar <ravishankarkm32@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>,
+        Ravishankar <ravishankarkm32@gmail.com>
+Subject: [PATCH] Staging: comedi: fix warning: line over 80 character  issue in s626.c
+Date: Sat,  9 Jul 2011 18:50:49 +0530
+Message-Id: <1310217649-22537-1-git-send-email-ravishankarkm32@gmail.com>
+X-Mailer: git-send-email 1.6.5.2
+In-Reply-To: <[PATCH 1/1]Staging: comedi: fix warning: line over 80 character issue in s626.c>
+References: <[PATCH 1/1]Staging: comedi: fix warning: line over 80 character issue in s626.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Ravishankar <ravi.shankar@greenturtles.in>
 
-Miklos Szeredi:
-> Here's a patch to document these limitations.
+This is a patch to the s626.c file that fixes up a  warning:line over 80 character  found by the checkpatch.pl tool
 
-If you want covering limitations as possible, I'd suggest you to add
-these.
-- Some versions of GNU find(1) may produce a warning about the link
-  count of a directory. When a sub dir exists, find(1) expects it
-  increments the link count of the parent dir.
-- If I remember correctly, Valerie Aurora has pointed out that
-  open(O_RDONLY) + fchmod() will work correctly in UnionMount.
-  It is true in overlayfs too?
+Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
+---
+ drivers/staging/comedi/drivers/s626.c |   12 ++++++++----
+ 1 files changed, 8 insertions(+), 4 deletions(-)
 
+diff --git a/drivers/staging/comedi/drivers/s626.c b/drivers/staging/comedi/drivers/s626.c
+index 23fc64b..290d4d8 100644
+--- a/drivers/staging/comedi/drivers/s626.c
++++ b/drivers/staging/comedi/drivers/s626.c
+@@ -149,7 +149,8 @@ struct s626_private {
+ 	uint16_t CounterIntEnabs;
+ 	/* Counter interrupt enable  mask for MISC2 register. */
+ 	uint8_t AdcItems;	/* Number of items in ADC poll  list. */
+-	struct bufferDMA RPSBuf;	/* DMA buffer used to hold ADC (RPS1) program. */
++	/* DMA buffer used to hold ADC (RPS1) program. */
++	struct bufferDMA RPSBuf;
+ 	struct bufferDMA ANABuf;
+ 	/* DMA buffer used to receive ADC data and hold DAC data. */
+ 	uint32_t *pDacWBuf;
+@@ -158,7 +159,8 @@ struct s626_private {
+ 	uint8_t TrimSetpoint[12];	/* Images of TrimDAC setpoints */
+ 	uint16_t ChargeEnabled;	/* Image of MISC2 Battery */
+ 	/* Charge Enabled (0 or WRMISC2_CHARGE_ENABLE). */
+-	uint16_t WDInterval;	/* Image of MISC2 watchdog interval control bits. */
++	/* Image of MISC2 watchdog interval control bits. */
++	uint16_t WDInterval;
+ 	uint32_t I2CAdrs;
+ 	/* I2C device address for onboard EEPROM (board rev dependent). */
+ 	/*   short         I2Cards; */
+@@ -330,8 +332,10 @@ static void CloseDMAB(struct comedi_device *dev, struct bufferDMA *pdma,
+ /*  COUNTER OBJECT ------------------------------------------------ */
+ struct enc_private {
+ 	/*  Pointers to functions that differ for A and B counters: */
+-	uint16_t(*GetEnable) (struct comedi_device *dev, struct enc_private *);	/* Return clock enable. */
+-	uint16_t(*GetIntSrc) (struct comedi_device *dev, struct enc_private *);	/* Return interrupt source. */
++	/* Return clock enable. */
++	uint16_t(*GetEnable) (struct comedi_device *dev, struct enc_private *);
++	/* Return interrupt source. */
++	uint16_t(*GetIntSrc) (struct comedi_device *dev, struct enc_private *);
+ 	uint16_t(*GetLoadTrig) (struct comedi_device *dev, struct enc_private *);	/* Return preload trigger source. */
+ 	uint16_t(*GetMode) (struct comedi_device *dev, struct enc_private *);	/* Return standardized operating mode. */
+ 	void (*PulseIndex) (struct comedi_device *dev, struct enc_private *);	/* Generate soft index strobe. */
+-- 
+1.6.5.2
 
-J. R. Okajima
