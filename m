@@ -1,40 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752988Ab1GIJ5K (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 05:57:10 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:43849 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752749Ab1GIJ5J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 05:57:09 -0400
-Date: Sat, 09 Jul 2011 02:57:05 -0700 (PDT)
-Message-Id: <20110709.025705.727560311771106736.davem@davemloft.net>
-To: joe@perches.com
-Cc: sathya.perla@emulex.com, subbu.seetharaman@emulex.com,
-        ajit.khaparde@emulex.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] benet: Add missing comma between constant string
- array
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <8c2d9b2ff796489a39408fade30fc93ed6040b3c.1310187270.git.joe@perches.com>
-References: <cover.1310187270.git.joe@perches.com>
-	<8c2d9b2ff796489a39408fade30fc93ed6040b3c.1310187270.git.joe@perches.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 09 Jul 2011 02:57:06 -0700 (PDT)
+	id S1752981Ab1GIKJO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 06:09:14 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:43615 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752659Ab1GIKJM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Jul 2011 06:09:12 -0400
+Date: Sat, 9 Jul 2011 03:09:00 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: julie Sullivan <kernelmail.jms@gmail.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, patches@linaro.org, torvalds@linux-foundation.org
+Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3
+Message-ID: <20110709100900.GB6014@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CAAVPGONLqy+gn_ggjQxyUoYifs4Hipcd-0t931w04StyrTCzxQ@mail.gmail.com>
+ <201107072047.14429.kernelmail.jms@gmail.com>
+ <20110707195845.GD6014@linux.vnet.ibm.com>
+ <201107072147.12751.kernelmail.jms@gmail.com>
+ <20110708002903.GI6014@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110708002903.GI6014@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Fri,  8 Jul 2011 23:20:23 -0700
-
-> Multiple quoted strings are concatenated without comma separators.
+On Thu, Jul 07, 2011 at 05:29:03PM -0700, Paul E. McKenney wrote:
+> On Thu, Jul 07, 2011 at 09:47:03PM +0100, julie Sullivan wrote:
+> > > What happens if you revert only these two?
+> > > 
+> > > f8b7fc6b514f34a51875dd48dff70d4d17a54f38 rcu: Move RCU_BOOST #ifdefs to
+> > > header f a46e0899eec7a3069bcadd45dfba7bf67c6ed016 rcu: use softirq instead
+> > > of kthreads ex
+> > > 
+> > > If that works, perhaps we should try to break down a46e0899ee into
+> > > smaller pieces to see what is causing the trouble.
+> > 
+> > OK, if I revert those two only on v3.0-rc4, it boots.
 > 
-> Make the arrays const while there.
+> Very good.  I have created a new jms.2011.07.07a branch in the -rcu
+> git tree at:
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
+> 	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
+> 
+> Could you please try out the six commits on that branch and let me
+> know which of them work for you?
 
-Applied, thanks Joe.
+Hello, Julie,
+
+Any news?
+
+							Thanx, Paul
