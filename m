@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751644Ab1GIFEz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 01:04:55 -0400
-Received: from mail.ltoscas.com.ar ([200.43.197.4]:59110 "HELO ltoscas.com.ar"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1750840Ab1GIFEy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 01:04:54 -0400
-X-Greylist: delayed 19987 seconds by postgrey-1.27 at vger.kernel.org; Sat, 09 Jul 2011 01:04:53 EDT
-X-Virus-Checked: Checked by ClamAV on ltoscas.com.ar
-Message-ID: <20110708141014.205415qpuv3zodmo@webmail.ltoscas.com.ar>
-Date: Fri,  8 Jul 2011 14:10:14 -0300
-From: Webmail Upgrade Team <info@webmailupgradeteam.com>
-Reply-to: wupgradeteam@w.cn
-To: undisclosed-recipients:;
-Subject: PLEASE SUOJAA webmailtili pit?v?n sulkeutumisen
+	id S1751893Ab1GIFn2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 01:43:28 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:43716 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751245Ab1GIFn1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Jul 2011 01:43:27 -0400
+X-Sasl-enc: VH8DaYeND/zPeHB60QH6QOaBDD6m4V6F+gtL+eiz9vsC 1310190205
+Date: Fri, 8 Jul 2011 22:38:18 -0700
+From: Greg KH <greg@kroah.com>
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [RFC PATCH v2 2/4] Core device subsystem implementation
+Message-ID: <20110709053818.GA14519@kroah.com>
+References: <1310115250-3859-1-git-send-email-marc.zyngier@arm.com>
+ <1310115250-3859-3-git-send-email-marc.zyngier@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=BIG5;
- DelSp="Yes";
- format="flowed"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.5)
+In-Reply-To: <1310115250-3859-3-git-send-email-marc.zyngier@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jul 08, 2011 at 09:54:08AM +0100, Marc Zyngier wrote:
+> There is a small number of devices that the core kernel needs very
+> early in the boot process, namely an interrupt controller and a timer,
+> long before the device model is up and running.
+> 
+> The "core device subsystem" offers a class based device/driver
+> matching model, doesn't rely on any other subsystem, is very (too?)
+> simple, and support getting information both from DT as well as from
+> static data provided by the platform. It also gives the opportunity to
+> define the probing order by offering a sorting hook at runtime.
+> 
+> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+> ---
 
+Any reason why you didn't use scripts/get_maintainer.pl to at least
+figure out who to send something like this to for review?
 
-Hyv? k?ytt?j?n henkil?llisyys,
+Please do so in the future, otherwise it will get overlooked...
 
-P?ivitet??n t?ll? hetkell? meid?n tietokantaan sek? keskus-s?hk?postitili
-thatis, katso etusivu. Anna poistaa s?hk?postitilej?, ett? ik?
-Elektroniikka en?? omaisuutta luoda enemm?n tilaa uusia tilej?
-My?s users.we on tutkinut koko j?rjestelm?n turvallisuuden tarkastus parantaa
-ja kasvattaa nykyist? turvallisuutta.
-
-Jos haluat jatkaa palveluitamme tarvitaan p?ivitt?? ja vahvistaa tietojen
-mist? s?hk?postisi alle.
-
-Viimeistele uuden tilin vahvistus, Vastaa t?h?n viestiin
-v?litt?m?sti ja anna tilitietosi pyynn?n alla.
-
-K?ytt?j?tunnus:
-S?hk?posti K?ytt?j?tunnus:
-Salasana:
-Vahvista salasana:
-Syntym?aika:
-Salasana tulevaisuudessa:
-
-Muuten tilisi poistetaan k?yt?st? v?litt?m?sti sen
-tietokantaan tiedot ja palvelu ei keskeydy t?rkeit? viestej?,
-ja voi kadota v?hent?? tietojen Vahvistamme tilisi us.Your
-Vastaus l?hetet??n seuraavat s?hk?postiosoitteeseen. Yll?pit?j?n johtaja:
-wupgradeteam@w.cn Tai webmail@webmailoffice.tk
-
-Pahoittelemme h?iri?t? t?m? aiheuttaa t?ll? kaudella, mutta
-luottamusta siihen, ett? olemme t??ll? palvella sinua parempaa palvelua ja
-tarjota enemm?n tekniikkaa, joka py?rii s?hk?posti s?hk?postin ja Internet.
-
-Se on my?s asiaan, ymm?rr?tte ett? t?rkein huolenaihe on se, ett?
-asiakkaita ja turvallisuutta heid?n tiedostoja ja tietoja.
-
-Vahvistuskoodi: -/93-1A388-480 Webmail teknisen tuen tiimi.
-
-
+greg k-h
