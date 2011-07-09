@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754892Ab1GIV1g (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 17:27:36 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:13354 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754687Ab1GIV1f (ORCPT
+	id S1754923Ab1GIV1m (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 17:27:42 -0400
+Received: from mta21.charter.net ([216.33.127.81]:38986 "EHLO
+	mta21.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754870Ab1GIV1g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 17:27:35 -0400
-Date: Sat, 9 Jul 2011 23:17:59 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: trivial@kernel.org, Chris Zankel <chris@zankel.net>,
-        Emlix GmbH <info@emlix.com>, Fabian Godehardt <fg@emlix.com>,
-        Oskar Schirmer <os@emlix.com>, Daniel Gloeckner <dg@emlix.com>
-Subject: [PATCH 4/7] XTENSA: static should be at beginning of declaration
-In-Reply-To: <alpine.LNX.2.00.1107092304160.25516@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1107092316250.25516@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1107092304160.25516@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sat, 9 Jul 2011 17:27:36 -0400
+X-Authority-Analysis: v=1.1 cv=vT9vkN3vVXssH3Ov7r/wQUs/sfIFjNPEFFf4aeKIi4A=
+ c=1 sm=1 a=XYJHFtupD_QA:10 a=B7rPy8_l0dAA:10 a=0xc6OLWX_2kA:10
+ a=mi-m0cxnIk0A:10 a=lDGNyK2vIvEA:10 a=kj9zAlcOel0A:10
+ a=xzrYXqw+0zwiO4gHSXHcAg==:17 a=3irmpWwzXnPmkWqKh2gA:9 a=CjuIK1q_8ugA:10
+ a=xzrYXqw+0zwiO4gHSXHcAg==:117
+Date: Sat, 9 Jul 2011 16:28:44 -0500
+From: Greg Dietsche <greg@gregd.org>
+To: Jose Alonso <joalonsof@gmail.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dell-laptop - using buffer without mutex_lock
+Message-ID: <20110709212844.GA13698@farmergreg.com>
+Reply-To: Greg Dietsche <greg@gregd.org>
+References: <1310162490.9760.5.camel@laptop>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-2073762415-1310246279=:25516"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1310162490.9760.5.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi Jose,
 
---8323328-2073762415-1310246279=:25516
-Content-Type: TEXT/PLAIN; charset=ISO-8859-7
-Content-Transfer-Encoding: 8BIT
+On Fri, Jul 08, 2011 at 07:01:27PM -0300, Jose Alonso wrote:
+> Using buffer->output[1] without mutex_lock()
+> 
+> --- linux-3.0-rc6/drivers/platform/x86/dell-laptop.c.ORIG
+> 2011-07-04 19:56:24.000000000 -0300
+> +++ linux-3.0-rc6/drivers/platform/x86/dell-laptop.c    2011-07-08
+> 18:27:02.420791868 -0300
+> @@ -560,11 +560,11 @@
+>         else
+>                 dell_send_request(buffer, 0, 1);
+> 
+> +       ret = buffer->output[1];
+> +
+>  out:
+>         release_buffer();
+> -       if (ret)
+> -               return ret;
+> -       return buffer->output[1];
+> +       return ret;
+>  }
+> 
+>  static const struct backlight_ops dell_ops = {
+> 
+> 
+> --
 
-Make sure that the 'static' keywork is at the beginning of declaration
-for arch/xtensa/variants/s6000/include/variant/dmac.h
+You should run this patch through scripts/checkpatch.pl as it
+reports a few style issues for your patch including a missing
+signed-off-by line and some spaces that should be converted to tabs.
 
-This gets rid of warnings like
-  warning: ¡static¢ is not at beginning of declaration
-when building with -Wold-style-declaration (and/or -Wextra which also
-enables it).
+Greg
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- arch/xtensa/variants/s6000/include/variant/dmac.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/xtensa/variants/s6000/include/variant/dmac.h b/arch/xtensa/variants/s6000/include/variant/dmac.h
-index 89ab948..e81735b 100644
---- a/arch/xtensa/variants/s6000/include/variant/dmac.h
-+++ b/arch/xtensa/variants/s6000/include/variant/dmac.h
-@@ -357,7 +357,7 @@ static inline u32 s6dmac_channel_enabled(u32 dmac, int chan)
- static inline void s6dmac_dp_setup_group(u32 dmac, int port,
- 			int nrch, int frrep)
- {
--	const static u8 mask[4] = {0, 3, 1, 2};
-+	static const u8 mask[4] = {0, 3, 1, 2};
- 	BUG_ON(dmac != S6_REG_DPDMA);
- 	if ((port < 0) || (port > 3) || (nrch < 1) || (nrch > 4))
- 		return;
--- 
-1.7.6
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
---8323328-2073762415-1310246279=:25516--
