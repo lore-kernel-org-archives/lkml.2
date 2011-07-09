@@ -1,41 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527Ab1GIIm6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 04:42:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58937 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751886Ab1GIIm5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 04:42:57 -0400
-Message-ID: <4E181477.5090405@zytor.com>
-Date: Sat, 09 Jul 2011 01:42:31 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Conny Seidel <conny.seidel@amd.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Hans Rosenfeld <hans.rosenfeld@amd.com>
-Subject: Re: [PATCH x86/urgent 2/2] x86: Implement pfn -> nid mapping granularity
- check
-References: <20110621174131.054f0422.conny.seidel_amd.com@marah.osrc.amd.com> <20110626102235.GC12200@mtj.dyndns.org> <20110626223807.47cef5c6.conny.seidel_amd.com@marah.osrc.amd.com> <20110628174613.GP478@escobedo.osrc.amd.com> <20110629094451.GJ3386@htj.dyndns.org> <20110701162239.GX3386@htj.dyndns.org> <20110701162327.GY3386@htj.dyndns.org> <20110709083206.GB943@htj.dyndns.org>
-In-Reply-To: <20110709083206.GB943@htj.dyndns.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1752504Ab1GIJHv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 05:07:51 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:37972 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751826Ab1GIJHt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Jul 2011 05:07:49 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sat, 9 Jul 2011 11:05:38 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Roland Dreier <roland@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-scsi@vger.kernel.org,
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        "Manvanthara B. Puttashankar" <manvanth@linux.vnet.ibm.com>,
+        Tarak Reddy <tarak.reddy@in.ibm.com>,
+        "Seshagiri N. Ippili" <sesh17@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] block: Check that queue is alive in
+ blk_insert_cloned_request()
+Message-ID: <20110709110538.35e1ea1e@stein>
+In-Reply-To: <1310166270-23196-1-git-send-email-roland@kernel.org>
+References: <CAG4TOxMjuntpd3Q5jgn+xDa2tgB9tq+jLcDquM_eAdFHXLDrWA@mail.gmail.com>
+	<1310166270-23196-1-git-send-email-roland@kernel.org>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2011 01:32 AM, Tejun Heo wrote:
-> 
-> Ping?  If the change is too invasive at this stage, we can disable AMD
-> NUMA on x86_32 for 3.0 and queue these two for 3.1.
-> 
+On Jul 08 Roland Dreier wrote:
+> This fixes crashes such as the below that I see when the storage
+> underlying a dm-multipath device is hot-removed.  The problem is that
+> dm requeues a request to a device whose block queue has already been
+> cleaned up, and blk_insert_cloned_request() doesn't check if the queue
+> is alive, but rather goes ahead and tries to queue the request.  This
+> ends up dereferencing the elevator that was already freed in
+> blk_cleanup_queue().
+[...]
+> --- a/block/blk-core.c
+> +++ b/block/blk-core.c
+> @@ -1706,6 +1706,9 @@ int blk_insert_cloned_request(struct request_queue *q, struct request *rq)
+>  		return -EIO;
+>  #endif
+>  
+> +	if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags)))
+> +		return -EIO;
+> +
+>  	spin_lock_irqsave(q->queue_lock, flags);
+>  
+>  	/*
 
-I am kind of leaning that way... Hans, what is your opinion?
-
-	-hpa
-
+Not knowing the calling contexts or having tried to learn about them, I am
+wondering:  What prevents the elevator to be freed right after the flag
+was checked?
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Stefan Richter
+-=====-==-== -=== -=--=
+http://arcgraph.de/sr/
