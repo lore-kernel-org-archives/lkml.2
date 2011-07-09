@@ -1,49 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753757Ab1GIOIv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 10:08:51 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47778 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753471Ab1GIOIu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 10:08:50 -0400
-Date: Sat, 9 Jul 2011 23:08:36 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Greg KH <greg@kroah.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Samuel Oritz <sameo@linux.intel.com>,
-        Graeme Gregory <gg@slimlogic.co.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] regmap: Add I2C bus support
-Message-ID: <20110709140833.GA17655@opensource.wolfsonmicro.com>
-References: <1310187044-13269-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <1310187044-13269-2-git-send-email-broonie@opensource.wolfsonmicro.com>
- <20110709115307.GA19804@pengutronix.de>
+	id S1753878Ab1GIOOy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 10:14:54 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:41211 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753471Ab1GIOOx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Jul 2011 10:14:53 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Kevin Hilman <khilman@ti.com>
+Subject: Re: [Update][PATCH 6/10] PM / Domains: System-wide transitions support for generic domains (v5)
+Date: Sat, 9 Jul 2011 16:15:38 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc6+; KDE/4.6.0; x86_64; ; )
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Walmsley <paul@pwsan.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>
+References: <Pine.LNX.4.44L0.1107081033000.2208-100000@iolanthe.rowland.org> <201107082006.49660.rjw@sisk.pl> <201107082124.24921.rjw@sisk.pl>
+In-Reply-To: <201107082124.24921.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110709115307.GA19804@pengutronix.de>
-X-Cookie: You'll be sorry...
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107091615.38915.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 09, 2011 at 01:53:07PM +0200, Wolfram Sang wrote:
-> On Sat, Jul 09, 2011 at 01:50:42PM +0900, Mark Brown wrote:
+On Friday, July 08, 2011, Rafael J. Wysocki wrote:
+...
+> 
+> Well, in fact, since we already have .active_wakeup(), what about the
+> following patch (on top of https://lkml.org/lkml/2011/7/8/223):
 
-> > +#include <linux/regmap.h>
-> > +#include <linux/i2c.h>
-> > +#include <linux/module.h>
+Well, it is wrong, because we've been discussing devices that are _not_
+enabled to wake up the system.
 
-> I second Lars-Peter with init.h here (from his first review).
+> ---
+>  drivers/base/power/domain.c |    4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> Index: linux-2.6/drivers/base/power/domain.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/base/power/domain.c
+> +++ linux-2.6/drivers/base/power/domain.c
+> @@ -519,6 +519,10 @@ static int pm_genpd_prepare(struct devic
+>  		return -EBUSY;
+>  	}
+>  
+> +	if (device_may_wakeup(dev)
 
-Remind me of what you're talking about here?
+So, this should have been !device_may_wakeup(dev), _but_ ...
 
-> > +	if (!i2c_check_functionality(i2c->adapter, I2C_FUNC_PROTOCOL_MANGLING))
-> > +		return -ENOTSUPP;
+> +	    && !(genpd->active_wakeup && genpd->active_wakeup(dev)))
+> +		pm_runtime_resume(dev);
+> +
+>  	genpd_acquire_lock(genpd);
+>  
+>  	if (genpd->prepared_count++ == 0)
 
-> Even more here. MANGLING is not needed for reading (and it will fail for a
-> number of i2c-masters).
+There's one more case to consider, namely devices that are runtime
+suspended, set up to wake up the system from sleep states (ie. device_may_wakeup(dev)
+returns "true") and such that genpd->active_wakeup(dev) returns "true" for them,
+because they need to be resumed at this point too (arguably, it makes a little
+sense to runtime suspend such devices, but that's possible in principle).
 
-Huh, though I'd removed this.
+So, IMO, the patch should look like this:
+
+---
+ drivers/base/power/domain.c |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+
+Index: linux-2.6/drivers/base/power/domain.c
+===================================================================
+--- linux-2.6.orig/drivers/base/power/domain.c
++++ linux-2.6/drivers/base/power/domain.c
+@@ -486,6 +486,22 @@ static void pm_genpd_sync_poweroff(struc
+ }
+ 
+ /**
++ * resume_needed - Check whether to resume a device before system suspend.
++ * @dev: Device to handle.
++ * @genpd: PM domain the device belongs to.
++ */
++static bool resume_needed(struct device *dev, struct generic_pm_domain *genpd)
++{
++	bool active_wakeup;
++
++	if (!device_can_wakeup(dev))
++		return false;
++
++	active_wakeup = genpd->active_wakeup && genpd->active_wakeup(dev);
++	return device_may_wakeup(dev) ? active_wakeup : !active_wakeup;
++}
++
++/**
+  * pm_genpd_prepare - Start power transition of a device in a PM domain.
+  * @dev: Device to start the transition of.
+  *
+@@ -519,6 +535,9 @@ static int pm_genpd_prepare(struct devic
+ 		return -EBUSY;
+ 	}
+ 
++	if (resume_needed(dev, genpd))
++		pm_runtime_resume(dev);
++
+ 	genpd_acquire_lock(genpd);
+ 
+ 	if (genpd->prepared_count++ == 0)
