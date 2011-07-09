@@ -1,45 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754423Ab1GIPFU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 11:05:20 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:39541 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754205Ab1GIPFT (ORCPT
+	id S1754474Ab1GIPH2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 11:07:28 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:32850 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754017Ab1GIPH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 11:05:19 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sat, 9 Jul 2011 17:05:06 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: linux1394-devel@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCH] firewire: cdev: ABI documentation enhancements
-Message-ID: <20110709170506.5e036f86@stein>
-In-Reply-To: <20110709164737.53cf7801@stein>
-References: <20110709164226.519a81fe@stein>
-	<20110709164322.2deb2f36@stein>
-	<20110709164737.53cf7801@stein>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+	Sat, 9 Jul 2011 11:07:27 -0400
+Subject: [PATCH] drivers/leds/leds-netxbig: make LEDS_NETXBIG depend on
+ LEDS_CLASS
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Simon Guinot <sguinot@lacie.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 09 Jul 2011 23:07:18 +0800
+Message-ID: <1310224038.14501.1.camel@phoenix>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jul 09 Stefan Richter wrote:
-> @@ -672,7 +661,7 @@ struct fw_cdev_remove_descriptor {
->   * @handle:	Handle to context, written back by kernel
->   *
->   * Prior to sending or receiving isochronous I/O, a context must be created.
-> - * The context records information about the transmit or receive configuration
-> + * The context records information about the transmit or receive Configuration
->   * and typically maps to an underlying hardware resource.  A context is set up
->   * for either sending or receiving.  It is bound to a specific isochronous
->   * @channel.
+We call led_classdev_register/led_classdev_unregister in
+create_netxbig_led/delete_netxbig_led, thus make LEDS_NETXBIG
+depend on LEDS_CLASS.
 
-Disregard this hunk.
+This patch fixes below build error if LEDS_CLASS is not configured.
+
+  LD      .tmp_vmlinux1
+drivers/built-in.o: In function `create_netxbig_led':
+drivers/leds/leds-netxbig.c:350: undefined reference to `led_classdev_register'
+drivers/leds/leds-netxbig.c:361: undefined reference to `led_classdev_unregister'
+drivers/built-in.o: In function `delete_netxbig_led':
+drivers/leds/leds-netxbig.c:313: undefined reference to `led_classdev_unregister'
+make: *** [.tmp_vmlinux1] Error 1
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/leds/Kconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+index 6cb0708..8974d27 100644
+--- a/drivers/leds/Kconfig
++++ b/drivers/leds/Kconfig
+@@ -357,6 +357,7 @@ config LEDS_NS2
+ config LEDS_NETXBIG
+ 	tristate "LED support for Big Network series LEDs"
+ 	depends on MACH_NET2BIG_V2 || MACH_NET5BIG_V2
++	depends on LEDS_CLASS
+ 	default y
+ 	help
+ 	  This option enable support for LEDs found on the LaCie 2Big
 -- 
-Stefan Richter
--=====-==-== -=== -=--=
-http://arcgraph.de/sr/
+1.7.4.1
+
+
+
