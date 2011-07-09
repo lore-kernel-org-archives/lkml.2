@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754681Ab1GITmO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 15:42:14 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:44980 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752277Ab1GITmL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 15:42:11 -0400
-From: Raghavendra D Prabhu <raghu.prabhu13@gmail.com>
-To: fengguang.wu@intel.com
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, Raghavendra D Prabhu <rprabhu@wnohang.net>
-Subject: [PATCH 3/3] mm/readahead: Move the check for ra_pages after VM_SequentialReadHint()
-Date: Sun, 10 Jul 2011 01:11:20 +0530
-Message-Id: <323ddfc402a7f7b94f0cb02bba15acb2acca786f.1310239575.git.rprabhu@wnohang.net>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <cover.1310239575.git.rprabhu@wnohang.net>
-References: <cover.1310239575.git.rprabhu@wnohang.net>
+	id S1754602Ab1GITzJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 15:55:09 -0400
+Received: from wnohang.net ([178.79.154.173]:34765 "EHLO mail.wnohang.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754459Ab1GITzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Jul 2011 15:55:04 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net 2F7E2F0004
+X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net 40689F0003
+Date: Sun, 10 Jul 2011 01:24:57 +0530
+From: Raghavendra D Prabhu <rprabhu@wnohang.net>
+To: viro@zeniv.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Add unlikely to page condition
+Message-ID: <376838df2b62c77cc4651d74ab57dff21a082b07.1310240917.git.rprabhu@wnohang.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+X-Operating-System: Arch linux x86_64 3.0.0-rc6-LYM
+X-Editor: VIM - Vi IMproved 7.3
+User-Agent: Mutt/1.5.21 (2010-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-page_cache_sync_readahead checks for ra->ra_pages again, so moving the check after VM_SequentialReadHint.
+Hi, 
+     Added an unlikely to the page check since page will more likely be
+     in the page cache because of page_cache_sync_readahead before it. 
 
 Signed-off-by: Raghavendra D Prabhu <rprabhu@wnohang.net>
 ---
- mm/filemap.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+  fs/splice.c |    2 +-
+  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 074c23d..748f720 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -1566,8 +1566,6 @@ static void do_sync_mmap_readahead(struct vm_area_struct *vma,
- 	/* If we don't want any read-ahead, don't bother */
- 	if (VM_RandomReadHint(vma))
- 		return;
--	if (!ra->ra_pages)
--		return;
- 
- 	if (VM_SequentialReadHint(vma)) {
- 		page_cache_sync_readahead(mapping, ra, file, offset,
-@@ -1575,6 +1573,9 @@ static void do_sync_mmap_readahead(struct vm_area_struct *vma,
- 		return;
- 	}
- 
-+	if (!ra->ra_pages)
-+		return;
-+
- 	/* Avoid banging the cache line if not needed */
- 	if (ra->mmap_miss < MMAP_LOTSAMISS * 10)
- 		ra->mmap_miss++;
+diff --git a/fs/splice.c b/fs/splice.c
+index aa866d3..f0e591a 100644
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -349,7 +349,7 @@ __generic_file_splice_read(struct file *in, loff_t *ppos,
+  		 * the first hole.
+  		 */
+  		page = find_get_page(mapping, index);
+-		if (!page) {
++		if (unlikely(!page)) {
+  			/*
+  			 * page didn't exist, allocate one.
+  			 */
 -- 
 1.7.6
 
+--------------------------
+Raghavendra Prabhu
+GPG Id : 0xD72BE977
+Fingerprint: B93F EBCB 8E05 7039 CD3C A4B8 A616 DCA1 D72B E977
+www: wnohang.net
