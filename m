@@ -1,69 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756563Ab1GJUqt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 16:46:49 -0400
-Received: from home.keithp.com ([63.227.221.253]:48164 "EHLO keithp.com"
+	id S1756632Ab1GJUrZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 16:47:25 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:43411 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753752Ab1GJUqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 16:46:45 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Pekka Enberg <penberg@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>, Robse <rob-se@live.de>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [Bug #37472] Lenovo U160 (i915 black screen)
-In-Reply-To: <CAOJsxLGkWX61TLqwgL19tN5ZQuB2cUibPsNSvCB+Ydihtus__w@mail.gmail.com>
-References: <AtAvQwe5sAK.A.loH.OlYGOB@chimera> <gK_efVqs2fP.A.NJ.7lYGOB@chimera> <CAOJsxLGkWX61TLqwgL19tN5ZQuB2cUibPsNSvCB+Ydihtus__w@mail.gmail.com>
-User-Agent: Notmuch/0.5-202-g6ae4e7d (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Sun, 10 Jul 2011 13:46:40 -0700
-Message-ID: <yun7h7pg8y7.fsf@aiko.keithp.com>
+	id S1756120Ab1GJUrX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jul 2011 16:47:23 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Magnus Damm <magnus.damm@gmail.com>
+Subject: [PATCH 0/2] PM / Domains: Add code for powering off all unused PM domains
+Date: Sun, 10 Jul 2011 22:46:04 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc6+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, "Linux-SH" <linux-sh@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107102246.05107.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-On Sun, 10 Jul 2011 14:56:19 +0300, Pekka Enberg <penberg@kernel.org> wrote:
+The following two patches are on top of the branch at:
 
-> There's no mention that the i915 developers know about this problem so
-> I'm CC'ing Keith and Chris.
+git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6.git pm-domains
 
-Thanks. I've added a comment to the bug:
+and the patchset I sent earlier today:
 
-First off, of course you are encouraged to re-test with 3.0-rc6 just to
-make sure it hasn't changed in some way. I don't think anything has
-changed enough to affect this, but it's always good to be sure.
+https://lkml.org/lkml/2011/7/10/27
 
-I note a long sequence of patches that are supposed to help with the
-U160:
+and this patch: https://patchwork.kernel.org/patch/961202/
 
-448f53a1ede54eb854d036abf54573281412d650 drm/i915/bios: Reverse order of 10=
-0/120 Mhz SSC clocks
-bcfbbce822d219eb587acaba8a6e062bbeae4761 Revert "drm/i915/bios: Reverse ord=
-er of 100/120 Mhz SSC clocks"
-a76150302d6e7ebc43e1a1ddaee7fd51db8da3b3 drm/i915: Add a module option to o=
-verride the use of SSC
+They introduce a mechanism allowing platforms to power off all of the PM
+domains that don't contain devices in use in one shot.  The first patch
+adds core support for that and the second one makes shmobile use it
+instead of its own code.
 
-I'm not sure why a quirk wasn't added for this hardware; it's clearly
-'non-standard' in some mystic way.
+Thanks,
+Rafael
 
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iD8DBQFOGg+wQp8BWwlsTdMRAlJ9AJ0aysob1rpLhcgLgHLmaSPOpKbTPQCdE9sg
-wS4P4BsoGtzL9Vj1SuYP2lA=
-=UXgp
------END PGP SIGNATURE-----
---=-=-=--
