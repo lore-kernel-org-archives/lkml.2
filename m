@@ -1,67 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756746Ab1GKB7x (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 21:59:53 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:43040 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756615Ab1GKB7s convert rfc822-to-8bit (ORCPT
+	id S1756870Ab1GKCA0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 22:00:26 -0400
+Received: from mail2.bitsnet.com.br ([200.252.189.137]:35734 "EHLO
+	cacau.bitsnet.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756664Ab1GKCAY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 21:59:48 -0400
+	Sun, 10 Jul 2011 22:00:24 -0400
+Cc: recipient list not shown:;
+Message-ID: <1310279676.4e1947fc0edcf@www.bitsnet.com.br>
+Date: Sun, 10 Jul 2011 03:34:36 -0300
+From: BBC NATIONAL PROMO <info@bbc.co.uk>
+Reply-to: scott__carsondesk12@live.com
+Subject: Congratulation!!
 MIME-Version: 1.0
-In-Reply-To: <20110710015923.GB3900@gmail.com>
-References: <20110710015923.GB3900@gmail.com>
-Date: Mon, 11 Jul 2011 09:59:47 +0800
-Message-ID: <CAFeW=pbJ_So_k4ehKSsCdaC5qpHJyXbpzD=8uNfzWfODBvVhag@mail.gmail.com>
-Subject: Re: [Patch Resend]Fix the messy code file Documentation/zh_CN/SubmitChecklist
-From: Amos Kong <kongjianjun@gmail.com>
-To: greg@kroah.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
-        linux-kernel@zh-kernel.org, kongjianjun@gmail.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+User-Agent: Internet Messaging Program (IMP) 3.2.6
+X-Originating-IP: 80.239.242.30
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/7/10 Harry Wei <jiaweiwei.xiyou@gmail.com>:
-> From: Harry Wei <harryxiyou@gmail.com>
->
-> This patch can fix the messy code file Documentation/zh_CN/SubmitChecklist.
->
-> Signed-off-by: Harry Wei <harryxiyou@gmail.com>
->
-> Index: linux-3.0-rc2/Documentation/zh_CN/SubmitChecklist
-> ===================================================================
-> --- linux-3.0-rc2.orig/Documentation/zh_CN/SubmitChecklist      2011-06-12 11:21:59.016740957 +0800
-> +++ linux-3.0-rc2/Documentation/zh_CN/SubmitChecklist   2011-06-12 11:22:27.904778610 +0800
-> @@ -1,109 +1,110 @@
-> -Chinese translated version of Documentation/SubmitChecklist
-> -
-> +Chinese translated version of Documentation/SubmitChecklist
-> +
->  If you have any comment or update to the content, please contact the
->  original document maintainer directly.  However, if you have a problem
->  communicating in English you can also ask the Chinese maintainer for
->  help.  Contact the Chinese maintainer if this translation is outdated
->  or if there is a problem with the translation.
-> -
-> +
->  Chinese maintainer: Harry Wei <harryxiyou@gmail.com>
->  ---------------------------------------------------------------------
-> -Documentation/SubmitChecklist ?????ķ???
-> -
-> -?????????ۻ????±??ĵ????ݣ???ֱ??��ϵԭ?ĵ???ά???ߡ???????ʹ??Ӣ??
-> -??????�§?ѵĻ???Ҳ?????????İ?ά?????????????����­?????²???ʱ???߷?
-> -?????????⣬??��ϵ???İ?ά???ߡ?
-> -
-> -???İ?ά???ߣ? ?????? Harry Wei <harryxiyou@gmail.com>
-> -???İ淭???ߣ? ?????? Harry Wei <harryxiyou@gmail.com>
-> -???İ?У???ߣ? ?????? Harry Wei <harryxiyou@gmail.com>
-> -
-> -
-> -????Ϊ????
-> +Documentation/SubmitChecklist 的中文翻译
-> +
 
-FYI, I can realize the Chinese now.
-You can send the patch to yourself for checking before sending it to
-the public maillist.
+
+�500,000GBP has been awarded to you in the British Broadcasting corporation
+(BBC) Online Promo Held on the 1st July 2011,send Name/Tel/Country to our
+office now.
+
+----------------------------------------------------------------
+This message was sent using IMP, the Internet Messaging Program.
