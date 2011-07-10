@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756221Ab1GJRY1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 13:24:27 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:34679 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756011Ab1GJRYY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 13:24:24 -0400
+	id S1756227Ab1GJRfv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 13:35:51 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:40800 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755491Ab1GJRft (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jul 2011 13:35:49 -0400
+Date: Sun, 10 Jul 2011 10:35:30 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: julie Sullivan <kernelmail.jms@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3
+Message-ID: <20110710173530.GA16954@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CAAVPGONLqy+gn_ggjQxyUoYifs4Hipcd-0t931w04StyrTCzxQ@mail.gmail.com>
+ <201107072047.14429.kernelmail.jms@gmail.com>
+ <20110707195845.GD6014@linux.vnet.ibm.com>
+ <201107072147.12751.kernelmail.jms@gmail.com>
+ <20110708002903.GI6014@linux.vnet.ibm.com>
+ <20110709100900.GB6014@linux.vnet.ibm.com>
+ <CAAVPGOMe6NawfkNQ1pSGYe5a1=X0z_KcD5Dn_xDX55p3K_46nQ@mail.gmail.com>
+ <20110710032510.GG6014@linux.vnet.ibm.com>
+ <CAAVPGOPCGsNynWPWcwaxVU_jPCg=VPdz82_g6OvY5gnYKk5oFg@mail.gmail.com>
+ <20110710171626.GK6014@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <CACqU3MUFO9DGqnK99ApaKn00vzj5rCB5=kjuSZGZpPU8c_4G-A@mail.gmail.com>
-References: <da20dc5c4160ed9a3da52f60799a1e4369fe3f27.1310228130.git.rprabhu@wnohang.net>
-	<CAM_iQpXeqc01dyHpViyJCMSz6wz-1mWmGi=J0UynUG8tbd99kw@mail.gmail.com>
-	<CACqU3MUgVTpc6kBvBiw7rtyn_JTA-JPrbnvai3Vnq+UWk-jSbQ@mail.gmail.com>
-	<CAOJsxLF+4VOXJwRJL7npMngDTGztXk739_GcMLxsMzmsVcDCVw@mail.gmail.com>
-	<CACqU3MUFO9DGqnK99ApaKn00vzj5rCB5=kjuSZGZpPU8c_4G-A@mail.gmail.com>
-Date: Sun, 10 Jul 2011 20:24:24 +0300
-X-Google-Sender-Auth: ygkjtYp_ClXI6AX-9w9IBXGooNw
-Message-ID: <CAOJsxLHW_9+8kqJpK=fjr=MXY2R99iTj0j_F6_JHyWDQextf6A@mail.gmail.com>
-Subject: Re: [PATCH] Avoid Wunused-but-set warning
-From: Pekka Enberg <penberg@kernel.org>
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        Raghavendra D Prabhu <rprabhu@wnohang.net>,
-        linux-kbuild@vger.kernel.org, Nir Tzachar <nir.tzachar@gmail.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110710171626.GK6014@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaud!
+On Sun, Jul 10, 2011 at 10:16:26AM -0700, Paul E. McKenney wrote:
+> On Sun, Jul 10, 2011 at 05:38:25PM +0100, julie Sullivan wrote:
+> > > I added another patch onto the jms.2011.07.07a in the -rcu git tree.
+> > > If you get a chance to test it, please let me know how it goes.
+> > >
+> > >                                                        Thanx, Paul
+> > 
+> > 
+> > Right, adding this commit to the other six:
+> > 
+> > commit 8a153670878242b8a95213d986f4922111321743
+> > 
+> >  makes us freeze on boot again.
+> 
+> Thank you again for the testing!  This one will take some thought...
 
-On Sun, Jul 10, 2011 at 7:49 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
->> What kind of status do you need to ACK such a simple patch?
->>
-> As per Documentation/SubmittingPatches:
+But maybe not that much thought.  My current guess is that your
+configuration is somehow causing some RCU callbacks to be executed
+during early boot, and that these callbacks are attempting to use kernel
+features that are not yet initialized.  If my guess is correct, then
+the reason that enabling RCU_BOOST makes things work is that it prevents
+RCU callbacks from executing until after the scheduler is up and running.
 
-[snip]
+So I added another commit to the jms.2011.07.07a branch in the -rcu
+git tree.  If my guesses are correct, this will allow your system to
+boot, possibly emitting a warning on the way up.  When you get a chance
+to try this out, please let me know how it goes.
 
-> That said, it is not a strong requirement... unfortunately. So, let's
-> have some fun and go ACK thousand of trivial patch just to generate
-> traffic on the LKML and give myself self-importance :-)
-
-Hey, thank you so much for quoting Documentation/SubmittingPatches for me!
-
-I've read it a long time ago but I now see I've completely
-misunderstood how things work around here. How silly of me to assume
-patches posted on LKML were fair game for anyone to review and that it
-was appreciated given that there's chronic lack of reviewers for
-pretty much everything. Thank you for setting me straight on the
-subject!
-
-I see you've been rather busy with important Kconfg work recently but
-I can only hope you'll find the time to enforce "Acked-by" status on
-LKML in the future as well!
-
-P.S. There are other tags such as Tested-by and Reviewed-by which you
-might also want to police a bit as well - I hear people without proper
-testing or reviewing status are doing those things all the time!
-
-                               Pekka
+							Thanx, Paul
