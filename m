@@ -1,80 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755341Ab1GJDZf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 23:25:35 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:58479 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755306Ab1GJDZe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 23:25:34 -0400
-Date: Sat, 9 Jul 2011 20:25:10 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: julie Sullivan <kernelmail.jms@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, patches@linaro.org, torvalds@linux-foundation.org
-Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3
-Message-ID: <20110710032510.GG6014@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CAAVPGONLqy+gn_ggjQxyUoYifs4Hipcd-0t931w04StyrTCzxQ@mail.gmail.com>
- <201107072047.14429.kernelmail.jms@gmail.com>
- <20110707195845.GD6014@linux.vnet.ibm.com>
- <201107072147.12751.kernelmail.jms@gmail.com>
- <20110708002903.GI6014@linux.vnet.ibm.com>
- <20110709100900.GB6014@linux.vnet.ibm.com>
- <CAAVPGOMe6NawfkNQ1pSGYe5a1=X0z_KcD5Dn_xDX55p3K_46nQ@mail.gmail.com>
+	id S1755382Ab1GJDcu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 23:32:50 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:65302 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755314Ab1GJDct (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Jul 2011 23:32:49 -0400
+Date: Sat, 9 Jul 2011 20:32:43 -0700
+From: Phil Oester <kernel@linuxace.com>
+To: Narendra_K@Dell.com
+Cc: linux-kernel@vger.kernel.org, Jordan_Hargrave@Dell.com,
+        jbarnes@virtuousgeek.org
+Subject: Re: [PATCH] Fix embedded nic order on Dell PowerEdge systems
+Message-ID: <20110710033243.GA12541@linuxace.com>
+References: <1307564053-2996-1-git-send-email-kernel@linuxace.com>
+ <E31FB011129F30488D5861F3839049151DA349A086@BLRX7MCDC201.AMER.DELL.COM>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAAVPGOMe6NawfkNQ1pSGYe5a1=X0z_KcD5Dn_xDX55p3K_46nQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <E31FB011129F30488D5861F3839049151DA349A086@BLRX7MCDC201.AMER.DELL.COM>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 10, 2011 at 01:45:35AM +0100, julie Sullivan wrote:
-> >Very good.  I have created a new jms.2011.07.07a branch in the -rcu
-> >git tree at:
+On Thu, Jun 09, 2011 at 01:03:00AM -0700, Narendra_K@Dell.com wrote:
+> > -----Original Message-----
+> > From: Phil Oester [mailto:kernel@linuxace.com]
+> > Sent: Thursday, June 09, 2011 1:44 AM
+> > To: linux-kernel@vger.kernel.org
+> > Cc: K, Narendra; Hargrave, Jordan; jbarnes@virtuousgeek.org
+> > Subject: [PATCH] Fix embedded nic order on Dell PowerEdge systems
+> > 
+> >     In commit 6e8af08dfa40b747002207d3ce8e8b43a050d99f ("PCI: enable
+> > pci=bfsort
+> >     by default on future Dell systems"), the callback added was placed at the
+> >     top of the list, before the specific PowerEdge models.  This ends up
+> >     breaking the more specific models listed, since the new callback handles
+> >     all Dell systems but the older systems don't have the new 0xB1 smbios
+> >     entry.
+> > 
+> >     Fix this by placing the new check _after_ the more specific PowerEdge
+> >     sytems.
+> > 
+> >     Phil Oester
+> > 
+> >     Signed-off-by: Phil Oester <kernel@linuxace.com>
+> > 
+> > diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c index
+> > 5fe7502..92df322 100644
+> > --- a/arch/x86/pci/common.c
+> > +++ b/arch/x86/pci/common.c
+> > @@ -247,13 +247,6 @@ static const struct dmi_system_id __devinitconst
+> > pciprobe_dmi_table[] = {
+> >  	},
+> >  #endif		/* __i386__ */
+> >  	{
+> > -		.callback = find_sort_method,
+> > -		.ident = "Dell System",
+> > -		.matches = {
+> > -			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc"),
+> > -		},
+> > -	},
+> > -	{
+> >  		.callback = set_bf_sort,
+> >  		.ident = "Dell PowerEdge 1950",
+> >  		.matches = {
+> > @@ -294,6 +287,13 @@ static const struct dmi_system_id __devinitconst
+> > pciprobe_dmi_table[] = {
+> >  		},
+> >  	},
+> >  	{
+> > +		.callback = find_sort_method,
+> > +		.ident = "Dell System",
+> > +		.matches = {
+> > +			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc"),
+> > +		},
+> > +	},
+> > +	{
+> >  		.callback = set_bf_sort,
+> >  		.ident = "HP ProLiant BL20p G3",
+> >  		.matches = {
+> [>] 
 > 
-> I get my own branch! :-) (thanks for all your trouble with this.)
+> Hi, this issue is fixed and the fix is in Jesse's linux-next tree.
 > 
-> >Hello, Julie,
+> http://marc.info/?l=linux-pci&m=130108034729082 (x86/PCI: Preserve existing pci=bfsort whitelist for Dell systems)
 > 
-> >Any news?
-> 
-> Sorry for the delay (again), I have to work very late Fridays and Saturdays.
-> Anyway, I have tested the six commits on my v3.0-rc4 branch (with
-> f8b7fc6b514f34a5 and a46e0899eec7a3069bc reverted) and can confirm
-> that they _all_ produce a bootable kernel at my end.
+> With regards,
+> Narendra K
 
-I am not yet sure whether this is good news or bad news, but thank
-you very much for all the testing!
+This patch is still not included in 3.0.0-rc6, nor in any stable series.
+Some reason for this?  And did Dell do any testing at all on existing
+hardware before submitting 6e8af08dfa4?  Seems even a minor amount of
+testing should have shown this regression.
 
-> Btw, you may have noticed that my config has RCU_BOOST=n?
-> If I build a simple v3.0-rc4 kernel (ie one which includes the four
-> original commits (f8b7fc6b514, a46e0899eec, 09223371dea and
-> 9a432736904)) but with RCU_BOOST=y it _will_ boot. I didn't know if
-> this was helpful or not.
+Given 3.0.0 is expected soon, perhaps this can be included?  Jesse?
 
-OK, that certainly tells me what the next patch in the series needs
-to be.  The reverse of the usual experience, but so it goes.
-
-> If it is helpful, you probably know this, but in order to get
-> RCU_BOOST=y I have to change a couple of other configs - PREEMPT_RCU=y
-> (previously n) and to get PREEMPT_RCU=y, my preemption model has to be
-> 'Preemptible Kernel (Low-Latency Desktop)' - PREEMPT=y (instead of
-> 'Voluntary Kernel Preemption (Desktop)' - PREEMPT=n which it was
-> originally).
-
-Agreed, to get RCU_BOOST, you need either TREE_PREEMPT_RCU or
-TINY_PREEMPT_RCU, which requires PREEMPT.
-
-> It's my day off tomorrow so I'll do some more testing (on -rc5 and
-> -rc6) (past 1.30am here in the UK now).
-
-I added another patch onto the jms.2011.07.07a in the -rcu git tree.
-If you get a chance to test it, please let me know how it goes.
-
-							Thanx, Paul
+Phil
