@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756880Ab1GJXaq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 19:30:46 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:49148 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756839Ab1GJXap (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 19:30:45 -0400
-Subject: [PATCH] drivers/video/backlight/adp8860_bl.c: remove a redundant
- assignment for max_brightness
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Michael Hennerich <michael.hennerich@analog.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        device-drivers-devel@blackfin.uclinux.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 11 Jul 2011 07:30:34 +0800
-Message-ID: <1310340634.2405.1.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S932136Ab1GJXhy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 19:37:54 -0400
+Received: from gw.minian.org ([83.96.227.91]:54356 "EHLO lab.minian.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756853Ab1GJXhx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jul 2011 19:37:53 -0400
+From: Edwin van Vliet <edwin@cheatah.nl>
+To: starvik@axis.com, jesper.nilsson@axis.com
+Cc: alan@linux.intel.com, linux-cris-kernel@axis.com,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Edwin van Vliet <edwin@cheatah.nl>
+Subject: [PATCH] drivers/tty/serial/crisv10: fix double assignment
+Date: Mon, 11 Jul 2011 01:37:31 +0200
+Message-Id: <1310341051-27057-1-git-send-email-edwin@cheatah.nl>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have set props.max_brightness before registering backlight device.
+Struct member dma_in_enabled was assigned twice in a row.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Signed-off-by: Edwin van Vliet <edwin@cheatah.nl>
 ---
- drivers/video/backlight/adp8860_bl.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ drivers/tty/serial/crisv10.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/video/backlight/adp8860_bl.c b/drivers/video/backlight/adp8860_bl.c
-index 24a6dfd..66bc74d 100644
---- a/drivers/video/backlight/adp8860_bl.c
-+++ b/drivers/video/backlight/adp8860_bl.c
-@@ -721,8 +721,7 @@ static int __devinit adp8860_probe(struct i2c_client *client,
- 		goto out2;
- 	}
- 
--	bl->props.max_brightness =
--		bl->props.brightness = ADP8860_MAX_BRIGHTNESS;
-+	bl->props.brightness = ADP8860_MAX_BRIGHTNESS;
- 
- 	data->bl = bl;
- 
+diff --git a/drivers/tty/serial/crisv10.c b/drivers/tty/serial/crisv10.c
+index 225123b..0c55181 100644
+--- a/drivers/tty/serial/crisv10.c
++++ b/drivers/tty/serial/crisv10.c
+@@ -330,7 +330,6 @@ static struct e100_serial rs_table[] = {
+ 	  .dma_in_irq_description = "serial 1 dma rec",
+ #else
+ 	  .dma_in_enabled = 0,
+-	  .dma_in_enabled = 0,
+ 	  .dma_in_nbr = UINT_MAX,
+ 	  .dma_in_irq_nbr = 0,
+ 	  .dma_in_irq_flags = 0,
 -- 
-1.7.4.1
-
-
+1.7.5.4
 
