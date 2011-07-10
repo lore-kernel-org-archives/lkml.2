@@ -1,47 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755763Ab1GJQbb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 12:31:31 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:49897 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753477Ab1GJQb2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 12:31:28 -0400
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: torvalds@linux-foundation.org
-CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon fixes for 3.0
-Date: Sun, 10 Jul 2011 09:30:36 -0700
-Message-ID: <1310315436-28204-1-git-send-email-guenter.roeck@ericsson.com>
-X-Mailer: git-send-email 1.7.3.1
+	id S1755872Ab1GJQe3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 12:34:29 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:36818 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753689Ab1GJQe2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jul 2011 12:34:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1310306000-2447-1-git-send-email-brgerst@gmail.com>
+References: <1310306000-2447-1-git-send-email-brgerst@gmail.com>
+Date: Sun, 10 Jul 2011 19:34:27 +0300
+X-Google-Sender-Auth: uUzIY0fdsTiMVnvvMAX-pzkvPyg
+Message-ID: <CAOJsxLFqov_YeLOunJRuXcbsSC+w4deFSGAcA0jwjUYqU5SHLQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] x86-64: Simplify cpu_has_invlpg
+From: Pekka Enberg <penberg@kernel.org>
+To: Brian Gerst <brgerst@gmail.com>
+Cc: hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Sun, Jul 10, 2011 at 4:53 PM, Brian Gerst <brgerst@gmail.com> wrote:
+> Define CONFIG_X86_INVLPG for 64-bit too, which simplifies the code.
+>
+> Signed-off-by: Brian Gerst <brgerst@gmail.com>
 
-Please pull hwmon subsystem fixes for Linux 3.0 from:
-
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/staging.git hwmon-for-linus
-
-Thanks,
-Guenter Roeck
-
-------
-
-The following changes since commit fe0d42203cb5616eeff68b14576a0f7e2dd56625:
-
-  Linux 3.0-rc6 (2011-07-04 15:56:24 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/staging.git hwmon-for-linus
-
-Guenter Roeck (3):
-      hwmon: (lm95241) Fix chip detection code
-      hwmon: (lm95241) Fix negative temperature results
-      hwmon: (pmbus) Improve auto-detection of temperature status register
-
- drivers/hwmon/lm95241.c |   22 +++++++++++++++-------
- drivers/hwmon/pmbus.c   |   11 ++++++-----
- 2 files changed, 21 insertions(+), 12 deletions(-)
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
