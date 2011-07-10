@@ -1,50 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756623Ab1GJU4L (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 16:56:11 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:19090 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752452Ab1GJU4G (ORCPT
+	id S1756644Ab1GJVIm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 17:08:42 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:54199 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756120Ab1GJVIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 16:56:06 -0400
-Date: Sun, 10 Jul 2011 22:56:05 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: "Dr. David Alan Gilbert" <linux@treblig.org>
-cc: teigland@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: kmallocs with swapped parameters in fs/dlm/lock.c
-In-Reply-To: <20110710003032.GA19951@gallifrey>
-Message-ID: <alpine.LNX.2.00.1107102254370.2818@swampdragon.chaosbits.net>
-References: <20110710003032.GA19951@gallifrey>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sun, 10 Jul 2011 17:08:40 -0400
+Date: Sun, 10 Jul 2011 22:08:33 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: do_signal: simplify the TS_RESTORE_SIGMASK logic
+Message-ID: <20110710210833.GH11013@ZenIV.linux.org.uk>
+References: <20110710182203.GA27979@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110710182203.GA27979@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 10 Jul 2011, Dr. David Alan Gilbert wrote:
+On Sun, Jul 10, 2011 at 08:22:03PM +0200, Oleg Nesterov wrote:
 
-> Hi David,
->   Sparse spotted a couple of places in fs/dlm/lock.c where the size/flags
-> parameters to kmalloc got swapped:
+> 2. do_signal() also clears TS_RESTORE_SIGMASK if handle_signal()
+>    succeeds.
 > 
-[...]
-> Jesper:
->   I noticed in your patch:
-> https://lkml.org/lkml/2011/7/2/90
-> 
-> where you had done a kmalloc->kzalloc transform you kept the swap.
-> 
-> This looks like new code in 3.0rc so I don't think you could quite
-> call it a regression, but it should probably be fixed fairly quickly
-> I guess.
-> 
-D'oh, I completely overlooked that.
-Thank you for noticing and letting me know. I've just submitted an updated 
-patch.
+>    We can move this to setup_rt_frame() as well, this avoids the
+>    unnecessary checks and makes the logic more clear.
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
 
+> +	current_thread_info()->status &= ~TS_RESTORE_SIGMASK;
+>  	return ret;
+
+This is broken.  If setup_rt_frame() fails, you don't want to do that.
