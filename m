@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755693Ab1GJUAi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 16:00:38 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:51912 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754922Ab1GJUAg (ORCPT
+	id S932111Ab1GJUCL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 16:02:11 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:50836 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754927Ab1GJUAj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 16:00:36 -0400
+	Sun, 10 Jul 2011 16:00:39 -0400
 DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=Fxf/NEsHGnCV3bY8VeRP1g7zs9xhBmo4Z6PFZIO5FuP5/tm6yYqu1YIgbxeqSQUgur/4AhlnC+S4J22SrfL0Jt14i/hK45KsgE3IMfclMDcXACbQOZgJBoG0s88QL57z;
-Date: Sun, 10 Jul 2011 12:51:09 -0700
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=OeKicvqeIQnURdpOo9Dh30NkgAswW/obQ/jFl/0P9ikbJOqvc838rfxHpg5Wet4Qih+OHx+5kYzJFaPLFl2m6rHXhQ/KBDB0JQQaJZv/Y96se/N+uEOuChlWkwoQoocr;
+Date: Sun, 10 Jul 2011 12:54:54 -0700
 From: Randy Dunlap <rdunlap@xenotime.net>
 To: lkml <linux-kernel@vger.kernel.org>
-Cc: linux-kbuild@vger.kernel.org, linux-media@vger.kernel.org,
-        mchehab@infradead.org
-Subject: [PATCH 1/9] stringify: add HEX_STRING()
-Message-Id: <20110710125109.c72f9c2d.rdunlap@xenotime.net>
+Cc: linux-media@vger.kernel.org, mchehab@infradead.org
+Subject: [PATCH 3/9] media/radio: fix aztech CONFIG IO PORT
+Message-Id: <20110710125454.acdc6758.rdunlap@xenotime.net>
+In-Reply-To: <20110710125109.c72f9c2d.rdunlap@xenotime.net>
+References: <20110710125109.c72f9c2d.rdunlap@xenotime.net>
 Organization: YPO4
 X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
@@ -29,34 +30,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Randy Dunlap <rdunlap@xenotime.net>
 
-Add HEX_STRING(value) to stringify.h so that drivers can
-convert kconfig hex values (without leading "0x") to useful
-hex constants.
+Modify radio-aztech to use HEX_STRING(CONFIG_RADIO_AZTECH_PORT)
+so that the correct IO port value is used.
 
-Several drivers/media/radio/ drivers need this.  I haven't
-checked if any other drivers need to do this.
-
-Alternatively, kconfig could produce hex config symbols with
-leading "0x".
+Fixes the IO port value that is used since this is hex:
+CONFIG_RADIO_AZTECH_PORT=350
+but it was being interpreted as decimal instead of hex.
 
 Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
 ---
- include/linux/stringify.h |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/media/radio/radio-aztech.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-NOTE: The other 8 patches are on lkml and linux-media mailing lists.
-
---- linux-next-20110707.orig/include/linux/stringify.h
-+++ linux-next-20110707/include/linux/stringify.h
-@@ -9,4 +9,11 @@
- #define __stringify_1(x...)	#x
- #define __stringify(x...)	__stringify_1(x)
+--- linux-next-20110707.orig/drivers/media/radio/radio-aztech.c
++++ linux-next-20110707/drivers/media/radio/radio-aztech.c
+@@ -29,6 +29,7 @@
+ #include <linux/init.h>		/* Initdata			*/
+ #include <linux/ioport.h>	/* request_region		*/
+ #include <linux/delay.h>	/* udelay			*/
++#include <linux/stringify.h>
+ #include <linux/videodev2.h>	/* kernel radio structs		*/
+ #include <linux/io.h>		/* outb, outb_p			*/
+ #include <media/v4l2-device.h>
+@@ -42,10 +43,12 @@ MODULE_VERSION("0.0.3");
+ /* acceptable ports: 0x350 (JP3 shorted), 0x358 (JP3 open) */
  
-+/*
-+ * HEX_STRING(value) is useful for CONFIG_ values that are in hex,
-+ * but kconfig does not put a leading "0x" on them.
-+ */
-+#define HEXSTRINGVALUE(h, value)	h##value
-+#define HEX_STRING(value)		HEXSTRINGVALUE(0x, value)
-+
- #endif	/* !__LINUX_STRINGIFY_H */
+ #ifndef CONFIG_RADIO_AZTECH_PORT
+-#define CONFIG_RADIO_AZTECH_PORT -1
++#define __RADIO_AZTECH_PORT -1
++#else
++#define __RADIO_AZTECH_PORT HEX_STRING(CONFIG_RADIO_AZTECH_PORT)
+ #endif
+ 
+-static int io = CONFIG_RADIO_AZTECH_PORT;
++static int io = __RADIO_AZTECH_PORT;
+ static int radio_nr = -1;
+ static int radio_wait_time = 1000;
+ 
