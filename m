@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754158Ab1GJOvg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 10:51:36 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:60306 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752534Ab1GJOvf (ORCPT
+	id S1754361Ab1GJPKb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 11:10:31 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:59496 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753794Ab1GJPK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 10:51:35 -0400
-Date: Sun, 10 Jul 2011 15:51:23 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Rob Herring <robherring2@gmail.com>
-Cc: nico@fluxnic.net, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/6] ARM: move ARCH_HAS_DMA_SET_COHERENT_MASK into
-	memory.h
-Message-ID: <20110710145123.GH4812@n2100.arm.linux.org.uk>
-References: <1309366019-24379-1-git-send-email-robherring2@gmail.com> <1309366019-24379-3-git-send-email-robherring2@gmail.com> <4E1866A2.9040407@gmail.com> <20110709145856.GM4812@n2100.arm.linux.org.uk> <4E19B75D.2080109@gmail.com>
+	Sun, 10 Jul 2011 11:10:28 -0400
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Lin Ming <ming.m.lin@intel.com>
+Subject: Re: i915_gem_inactive_shrink fault
+Date: Sun, 10 Jul 2011 17:10:22 +0200
+User-Agent: KMail/1.13.7 (Linux/3.0.0-rc4; KDE/4.6.3; i686; ; )
+Cc: Keith Packard <keithp@keithp.com>, lkml <linux-kernel@vger.kernel.org>
+References: <1309856364.18875.110.camel@minggr.sh.intel.com>
+In-Reply-To: <1309856364.18875.110.camel@minggr.sh.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E19B75D.2080109@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107101710.23262.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 10, 2011 at 09:29:49AM -0500, Rob Herring wrote:
-> asm/dma-mapping.h only includes asm/memory.h. We are getting lucky that
-> linux/dma-mapping.h is picking up ARCH_HAS_DMA_SET_COHERENT_MASK because
-> the include path looks like this for ixp4xx and pxa: linux/dma-mapping.h
-> -> linux/scatterlist.h -> asm/io.h -> mach/io.h -> mach/hardware.h.
+On wtorek, 5 lipca 2011 o 10:59:24 Lin Ming wrote:
+> It seems i915 driver loads fail.
+> 
+> mlin@wsm:~$ dmesg |grep -i i915
+> i915 0000:00:02.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
+> i915 0000:00:02.0: setting latency timer to 64
+> i915 0000:00:02.0: irq 47 for MSI/MSI-X
+> WARNING: at /linux-2.6/drivers/gpu/drm/i915/intel_display.c:826
+> assert_fdi_tx+0xcc/0xd8() [<ffffffff8133d865>]
+> i915_driver_load+0xb12/0x10e9
+>  [<ffffffff816a891a>] i915_pci_probe+0x1b/0x1d
+>  [<ffffffff81d12264>] i915_init+0x8b/0x8d
+> WARNING: at /linux-2.6/drivers/gpu/drm/i915/intel_display.c:826
+> assert_fdi_tx+0xcc/0xd8() [<ffffffff8133d865>]
+> i915_driver_load+0xb12/0x10e9
+>  [<ffffffff816a891a>] i915_pci_probe+0x1b/0x1d
+>  [<ffffffff81d12264>] i915_init+0x8b/0x8d
+> [drm:i915_driver_load] *ERROR* failed to init modeset
+> i915 0000:00:02.0: PCI INT A disabled
+> i915: probe of 0000:00:02.0 failed with error -5
+>  [<ffffffff81355191>] i915_gem_inactive_shrink+0x2b/0x18d
+> 
+> 
+> The fault message as below.
+> See the attachments for full dmesg, kernel config and lspci output.
+> 
+> BUG: unable to handle kernel NULL pointer dereference at 0000000000000060
+> IP: [<ffffffff816d4422>] mutex_trylock+0x61/0x131
+> PGD 133cd5067 PUD 134301067 PMD 0
+> Oops: 0002 [#1] SMP
+> CPU 3
+> Modules linked in:
+> 
+> Pid: 2322, comm: bash Tainted: G        W   3.0.0-rc6-tip-mlin+ #571 Intel
 
-That's probably because of the way the code has changed over the last
-year:
+Older kernels work fine?
 
-6fee48c dma-mapping: arm: use generic pci_set_dma_mask and pci_set_consistent_dma_mask
-
-Removes HAVE_ARCH_PCI_SET_DMA_MASK from IXP4xx mach/hardware.h, thus
-breaking IXP4xx machines.
-
-5f3cd1e dma-mapping: pci: move pci_set_dma_mask and pci_set_consistent_dma_mask to pci-dma-compat.h
-
-Removes HAVE_ARCH_PCI_SET_DMA_MASK support from drivers/pci/pci.c,
-which includes linux/pci.h -> asm/pci.h -> mach/hardware.h and thus
-the definition.
-
-710224fa arm: fix "arm: fix pci_set_consistent_dma_mask for dmabounce devices"
-
-Creates the current ARCH_HAS_DMA_SET_COHERENT_MASK stuff, placing it
-into ixp4xx's and PXA's mach/hardware.h to fix the regression caused
-by 6fee48c and 5f3cd1e.
-
-So this really could do with being made more robust first, because
-as you point out, the current solution is extremely fragile.
+Regards
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
