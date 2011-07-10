@@ -1,35 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932077Ab1GJKmo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 06:42:44 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33830 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754628Ab1GJKml (ORCPT
+	id S1755133Ab1GJKqk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 06:46:40 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:42355 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753396Ab1GJKqf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 06:42:41 -0400
-Date: Sun, 10 Jul 2011 11:42:15 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: vkuzmichev@mvista.com, linux-arm-kernel@lists.infradead.org,
-        linux-watchdog@vger.kernel.org, Marc Zyngier <marc.zyngier@arm.com>,
-        Wim Van Sebroeck <wim@iguana.be>, arm@kernel.org,
-        linux-kernel@vger.kernel.org, John Stultz <johnstul@us.ibm.com>,
-        Nicolas Pitre <nico@fluxnic.net>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH V2 6/6] mpcore_wdt: Move declarations in a separate
-	header
-Message-ID: <20110710104215.GC4812@n2100.arm.linux.org.uk>
-References: <1286185540-19569-1-git-send-email-vkuzmichev@mvista.com> <201107061358.48496.arnd@arndb.de> <4E1456D9.8090003@mvista.com> <201107061448.49092.arnd@arndb.de>
+	Sun, 10 Jul 2011 06:46:35 -0400
+Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        "Jesse Barnes" <jbarnes@virtuousgeek.org>,
+        "Oliver Hartkopp" <socketcan@hartkopp.net>,
+        "Yinghai Lu" <yinghai@kernel.org>
+References: <Y7LyOsOBwFM.A.kJG.kBYGOB@chimera>
+In-Reply-To: <Y7LyOsOBwFM.A.kJG.kBYGOB@chimera>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201107061448.49092.arnd@arndb.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <XNkIyhV6dgF.A.EaH.9CYGOB@chimera>
+Subject: [Bug #37432] sdhci-pci fails on 3.0.0-rc1 on Dell E6510
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Sun, 10 Jul 2011 12:19:36 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 06, 2011 at 02:48:48PM +0200, Arnd Bergmann wrote:
-> An obvious choice would be arch/arm/include/asm/smp_twd.h.
+This message has been generated automatically as a part of a summary report
+of recent regressions.
 
-Not if its moving out of arch/arm, but that's a separate debate to be
-had.
+The following bug entry is on the current list of known regressions
+from 2.6.39.  Please verify if it still should be listed and let the tracking team
+know (either way).
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=37432
+Subject		: sdhci-pci fails on 3.0.0-rc1 on Dell E6510
+Submitter	: Oliver Hartkopp <socketcan@hartkopp.net>
+Date		: 2011-06-07 20:06 (34 days old)
+First-Bad-Commit: http://git.kernel.org/linus/da7822e5ad71ec9b745b412639f1e5e0ba795a20
+References	: http://article.gmane.org/gmane.linux.kernel.mmc/8442
+		  https://lkml.org/lkml/2011/6/23/660
+
+
