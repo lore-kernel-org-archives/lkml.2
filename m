@@ -1,65 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755578Ab1GJLC3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 07:02:29 -0400
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:40773 "EHLO
-	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755385Ab1GJLC2 convert rfc822-to-8bit (ORCPT
+	id S932108Ab1GJLFM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 07:05:12 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:42433 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755601Ab1GJLFI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 07:02:28 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Subject: Re: [PATCH] fs/ntfs/logfile: Fix comment
-Mime-Version: 1.0 (Apple Message framework v1244.3)
-Content-Type: text/plain; charset=us-ascii
-From: Anton Altaparmakov <anton@tuxera.com>
-In-Reply-To: <1310198937-1223-1-git-send-email-edwin@cheatah.nl>
-Date: Sun, 10 Jul 2011 12:02:28 +0100
-Cc: linux-ntfs-dev@lists.sourceforge.net, linux-kernel@vger.kernel.org
+	Sun, 10 Jul 2011 07:05:08 -0400
+Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        "Ben Greear" <greearb@candelatech.com>
+References: <Y7LyOsOBwFM.A.kJG.kBYGOB@chimera>
+In-Reply-To: <Y7LyOsOBwFM.A.kJG.kBYGOB@chimera>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Disposition: inline
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-Id: <883B1D39-B4ED-45D0-9016-AB36FD427CCD@tuxera.com>
-References: <1310198937-1223-1-git-send-email-edwin@cheatah.nl>
-To: Edwin van Vliet <edwin@cheatah.nl>
-X-Mailer: Apple Mail (2.1244.3)
+Message-ID: <XNkIyhV6dgF.A.HBH.fCYGOB@chimera>
+Subject: [Bug #38302] NFS crash in un-modified 3.0.0-rc3+, list corruption.
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Sun, 10 Jul 2011 12:38:22 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Edwin,
+This message has been generated automatically as a part of a summary report
+of recent regressions.
 
-Well spotted!  Thanks for the patch.  I have forwarded it to Linus for inclusion.
+The following bug entry is on the current list of known regressions
+from 2.6.39.  Please verify if it still should be listed and let the tracking team
+know (either way).
 
-Best regards,
 
-	Anton
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=38302
+Subject		: NFS crash in un-modified 3.0.0-rc3+, list corruption.
+Submitter	: Ben Greear <greearb@candelatech.com>
+Date		: 2011-06-20 22:42 (21 days old)
+Message-ID	: <4DFFCCDC.2070106@candelatech.com>
+References	: http://marc.info/?l=linux-kernel&m=130860979610651&w=2
+Patch		: https://bugzilla.kernel.org/attachment.cgi?id=63902
 
-On 9 Jul 2011, at 09:08, Edwin van Vliet wrote:
-
-> Removed double comment line
-> 
-> Signed-off-by: Edwin van Vliet <edwin@cheatah.nl>
-> ---
-> fs/ntfs/logfile.c |    1 -
-> 1 files changed, 0 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/ntfs/logfile.c b/fs/ntfs/logfile.c
-> index c71de29..d2e053b 100644
-> --- a/fs/ntfs/logfile.c
-> +++ b/fs/ntfs/logfile.c
-> @@ -506,7 +506,6 @@ bool ntfs_check_logfile(struct inode *log_vi, RESTART_PAGE_HEADER **rp)
-> 	/*
-> 	 * Truncate size to a multiple of the page cache size or the default
-> 	 * log page size if the page cache size is between the default log page
-> -	 * log page size if the page cache size is between the default log page
-> 	 * size and twice that.
-> 	 */
-> 	if (PAGE_CACHE_SIZE >= DefaultLogPageSize && PAGE_CACHE_SIZE <=
-> -- 
-> 1.7.5.4
-
--- 
-Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
-Unix Support, Computing Service, University of Cambridge, CB2 3QH, UK
-Linux NTFS maintainer, http://www.linux-ntfs.org/
 
