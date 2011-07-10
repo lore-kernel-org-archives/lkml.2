@@ -1,41 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755608Ab1GJLxI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 07:53:08 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36325 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754870Ab1GJLxF (ORCPT
+	id S1755950Ab1GJLxV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 07:53:21 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:55010 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755482Ab1GJLxG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 07:53:05 -0400
-Date: Sun, 10 Jul 2011 12:52:50 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org
-Subject: Re: [PATCH 0/4] Add a generic struct clk
-Message-ID: <20110710115250.GG4812@n2100.arm.linux.org.uk>
-References: <1305876469.325655.313573683829.0.gpush@pororo> <1305876469.325655.313573683829.0.gpush@pororo> <20110710090927.GA23445@opensource.wolfsonmicro.com> <20110710095013.GZ4812@n2100.arm.linux.org.uk> <20110710112745.GC24191@opensource.wolfsonmicro.com>
+	Sun, 10 Jul 2011 07:53:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110710112745.GC24191@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <gK_efVqs2fP.A.Y3H.jlYGOB@chimera>
+References: <AtAvQwe5sAK.A.loH.OlYGOB@chimera>
+	<gK_efVqs2fP.A.Y3H.jlYGOB@chimera>
+Date: Sun, 10 Jul 2011 14:53:05 +0300
+X-Google-Sender-Auth: Sm_hUdCA_1Zv7cPp6pzUH_4IspE
+Message-ID: <CAOJsxLEGqpcQP3S+TLBjpRsM=UTk=zyuHBoswXkVwbHsLaDqqg@mail.gmail.com>
+Subject: Re: [Bug #38132] [Warning] 2.6.39.x latencytop
+From: Pekka Enberg <penberg@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Andrew Watts <akwatts@ymail.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 10, 2011 at 08:27:47PM +0900, Mark Brown wrote:
-> On Sun, Jul 10, 2011 at 10:50:13AM +0100, Russell King - ARM Linux wrote:
-> 
-> > Note that because of the develtech.com fuckup, I don't have your patch
-> > series because I had to drop off the lists for about six hours to stop
-> > the deluge of emails.
-> 
-> Sorry, in case I've caused confusion here I'm replying to an old posting
-> from May - there's not been any new versions of the code posted that I'm
-> aware of.  I was asking partly because I didn't want to start taking a
-> more detailed look at things with code that was stale.
+On Sun, Jul 10, 2011 at 1:58 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> This message has been generated automatically as a part of a report
+> of regressions introduced between 2.6.38 and 2.6.39.
+>
+> The following bug entry is on the current list of known regressions
+> introduced between 2.6.38 and 2.6.39.  Please verify if it still should
+> be listed and let the tracking team know (either way).
+>
+> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=38132
+> Subject         : [Warning] 2.6.39.x latencytop
+> Submitter       : Andrew Watts <akwatts@ymail.com>
+> Date            : 2011-06-14 17:07 (27 days old)
+> Message-ID      : <80098.5633.qm@web111013.mail.gq1.yahoo.com>
+> References      : http://marc.info/?l=linux-kernel&m=130807128506490&w=2
 
-Oh, that's the develtech.com M$ Exchange problem getting us yet again
-then.
+This is a WARN_ON added in commit 6752ab4a ("tracing: Deprecate
+tracing_enabled for tracing_on") that lets the user know about
+deprecated ABI. It's somewhat unfortunate that there's no mention in
+the changelog if everyone agreed on the deprecation or not...
+
+That said, assuming the deprecation is OK (hi Steven, Frederic, Ingo!)
+I think this issue can be closed.
+
+                        Pekka
