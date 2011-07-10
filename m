@@ -1,42 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756118Ab1GJL2R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 07:28:17 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:42733 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756068Ab1GJL1O convert rfc822-to-8bit (ORCPT
+	id S1755778Ab1GJL2A (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 07:28:00 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54801 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751882Ab1GJL15 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 07:27:14 -0400
-Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        "Ryan Underwood" <nemesis@icequake.net>
-References: <AtAvQwe5sAK.A.loH.OlYGOB@chimera>
-In-Reply-To: <AtAvQwe5sAK.A.loH.OlYGOB@chimera>
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
+	Sun, 10 Jul 2011 07:27:57 -0400
+Date: Sun, 10 Jul 2011 20:27:47 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org
+Subject: Re: [PATCH 0/4] Add a generic struct clk
+Message-ID: <20110710112745.GC24191@opensource.wolfsonmicro.com>
+References: <1305876469.325655.313573683829.0.gpush@pororo>
+ <1305876469.325655.313573683829.0.gpush@pororo>
+ <20110710090927.GA23445@opensource.wolfsonmicro.com>
+ <20110710095013.GZ4812@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-ID: <gK_efVqs2fP.A.bsH.XlYGOB@chimera>
-Subject: [Bug #38742] After hard power-off, btrfs cannot be recovered except booting 2.6.38 or below kernel
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sun, 10 Jul 2011 12:58:57 +0200 (CEST)
+In-Reply-To: <20110710095013.GZ4812@n2100.arm.linux.org.uk>
+X-Cookie: Never reveal your best argument.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This message has been generated automatically as a part of a report
-of regressions introduced between 2.6.38 and 2.6.39.
+On Sun, Jul 10, 2011 at 10:50:13AM +0100, Russell King - ARM Linux wrote:
 
-The following bug entry is on the current list of known regressions
-introduced between 2.6.38 and 2.6.39.  Please verify if it still should
-be listed and let the tracking team know (either way).
+> Note that because of the develtech.com fuckup, I don't have your patch
+> series because I had to drop off the lists for about six hours to stop
+> the deluge of emails.
 
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=38742
-Subject		: After hard power-off, btrfs cannot be recovered except booting 2.6.38 or below kernel
-Submitter	: Ryan Underwood <nemesis@icequake.net>
-Date		: 2011-07-03 18:57 (8 days old)
-
-
+Sorry, in case I've caused confusion here I'm replying to an old posting
+from May - there's not been any new versions of the code posted that I'm
+aware of.  I was asking partly because I didn't want to start taking a
+more detailed look at things with code that was stale.
