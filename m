@@ -1,31 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755941Ab1GJQf2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 12:35:28 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:63583 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754494Ab1GJQf0 (ORCPT
+	id S1755917Ab1GJQi3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 12:38:29 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:49018 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753515Ab1GJQi0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 12:35:26 -0400
+	Sun, 10 Jul 2011 12:38:26 -0400
 MIME-Version: 1.0
-In-Reply-To: <1310306000-2447-2-git-send-email-brgerst@gmail.com>
-References: <1310306000-2447-1-git-send-email-brgerst@gmail.com>
-	<1310306000-2447-2-git-send-email-brgerst@gmail.com>
-Date: Sun, 10 Jul 2011 19:35:25 +0300
-X-Google-Sender-Auth: 4SVE4aOAS5moqDYT2khydxj9jCY
-Message-ID: <CAOJsxLFU6QiCGnVHheUDXODFL92eCYw3phbEjC-2cJ9+nCHr=w@mail.gmail.com>
-Subject: Re: [PATCH 2/2] x86: Simplify X86_CMPXCHG, CMPXCHG_LOCAL, and X86_XADD
-From: Pekka Enberg <penberg@kernel.org>
-To: Brian Gerst <brgerst@gmail.com>
-Cc: hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20110710032510.GG6014@linux.vnet.ibm.com>
+References: <CAAVPGONLqy+gn_ggjQxyUoYifs4Hipcd-0t931w04StyrTCzxQ@mail.gmail.com>
+	<201107072047.14429.kernelmail.jms@gmail.com>
+	<20110707195845.GD6014@linux.vnet.ibm.com>
+	<201107072147.12751.kernelmail.jms@gmail.com>
+	<20110708002903.GI6014@linux.vnet.ibm.com>
+	<20110709100900.GB6014@linux.vnet.ibm.com>
+	<CAAVPGOMe6NawfkNQ1pSGYe5a1=X0z_KcD5Dn_xDX55p3K_46nQ@mail.gmail.com>
+	<20110710032510.GG6014@linux.vnet.ibm.com>
+Date: Sun, 10 Jul 2011 17:38:25 +0100
+Message-ID: <CAAVPGOPCGsNynWPWcwaxVU_jPCg=VPdz82_g6OvY5gnYKk5oFg@mail.gmail.com>
+Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3
+From: julie Sullivan <kernelmail.jms@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 10, 2011 at 4:53 PM, Brian Gerst <brgerst@gmail.com> wrote:
-> X86_64 and M386 can never be both set, so reduce the conditional to !M386.
+> I added another patch onto the jms.2011.07.07a in the -rcu git tree.
+> If you get a chance to test it, please let me know how it goes.
 >
-> Signed-off-by: Brian Gerst <brgerst@gmail.com>
+>                                                        Thanx, Paul
 
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
+
+Right, adding this commit to the other six:
+
+commit 8a153670878242b8a95213d986f4922111321743
+
+ makes us freeze on boot again.
+
+Cheers
+Julie
