@@ -1,42 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932205Ab1GJLIY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 07:08:24 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:42428 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755436Ab1GJLFH convert rfc822-to-8bit (ORCPT
+	id S1752450Ab1GJLKS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 07:10:18 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38489 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750817Ab1GJLKQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 07:05:07 -0400
-Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        "David Hill" <hilld@binarystorm.net>
-References: <Y7LyOsOBwFM.A.kJG.kBYGOB@chimera>
-In-Reply-To: <Y7LyOsOBwFM.A.kJG.kBYGOB@chimera>
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
+	Sun, 10 Jul 2011 07:10:16 -0400
+Date: Sun, 10 Jul 2011 20:09:50 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Graeme Gregory <gg@slimlogic.co.uk>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH v2] regulator: tps65910: Add missing breaks in switch/case
+Message-ID: <20110710110943.GA24191@opensource.wolfsonmicro.com>
+References: <1310294482.4877.3.camel@phoenix>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-ID: <XNkIyhV6dgF.A.DQH.5CYGOB@chimera>
-Subject: [Bug #37482] Driver: i915 - Starting with kernel 3.0.0-rc3, dual monitor freezes a Dell Latitude E6410 when a second monitor is connected at boot time
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sun, 10 Jul 2011 12:38:22 +0200 (CEST)
+In-Reply-To: <1310294482.4877.3.camel@phoenix>
+X-Cookie: Never reveal your best argument.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This message has been generated automatically as a part of a summary report
-of recent regressions.
+On Sun, Jul 10, 2011 at 06:41:22PM +0800, Axel Lin wrote:
+> Also add a default case in tps65910_list_voltage_dcdc to silence
+> 'volt' may be used uninitialized in this function warning.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-The following bug entry is on the current list of known regressions
-from 2.6.39.  Please verify if it still should be listed and let the tracking team
-know (either way).
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=37482
-Subject		: Driver: i915 - Starting with kernel 3.0.0-rc3, dual monitor freezes a Dell Latitude E6410 when a second monitor is connected at boot time
-Submitter	: David Hill <hilld@binarystorm.net>
-Date		: 2011-06-14 18:42 (27 days old)
-
-
+though for the default case I'd suggest also adding a BUG() as if that
+happens either the driver is confused or the core is making up
+regulators for us.
