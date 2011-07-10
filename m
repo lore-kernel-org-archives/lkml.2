@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756873Ab1GJX07 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 19:26:59 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:20383 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751806Ab1GJX04 (ORCPT
+	id S1756880Ab1GJXaq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 19:30:46 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:49148 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756839Ab1GJXap (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 19:26:56 -0400
-Date: Mon, 11 Jul 2011 01:26:55 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Randy Dunlap <rdunlap@xenotime.net>
-cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Should SUBLEVEL be removed for 3.x ?
-In-Reply-To: <20110710160906.952bb38a.rdunlap@xenotime.net>
-Message-ID: <alpine.LNX.2.00.1107110124420.2818@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1107110000280.2818@swampdragon.chaosbits.net> <20110710160906.952bb38a.rdunlap@xenotime.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 10 Jul 2011 19:30:45 -0400
+Subject: [PATCH] drivers/video/backlight/adp8860_bl.c: remove a redundant
+ assignment for max_brightness
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Michael Hennerich <michael.hennerich@analog.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        device-drivers-devel@blackfin.uclinux.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 11 Jul 2011 07:30:34 +0800
+Message-ID: <1310340634.2405.1.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 10 Jul 2011, Randy Dunlap wrote:
+We have set props.max_brightness before registering backlight device.
 
-> On Mon, 11 Jul 2011 00:07:13 +0200 (CEST) Jesper Juhl wrote:
-> 
-> > Hi
-> > 
-> > If the plan is that the new kernel is going to be 3.0 (3.x) and the 
-> > -stable kernels then get to tack on a third digit with EXTRAVERSION, then 
-> > it seems to me that the main Makefile should get rid of SUBLEVEL - or?
-> > 
-> > Or is the plan to ditch EXTRAVERSION for -stable kernels and have them use 
-> > SUBLEVEL instead?
-> > 
-> > There are a few scripts that need fixing if SUBLEVEL goes the way of the 
-> > Dodo, but I didn't want to start fixing those without a clear indication 
-> > of whether or not SUBLEVEL is going to/should die.
-> > 
-> > So what's going to happen to SUBLEVEL/EXTRAVERSION?
-> 
-> I cannot answer this, but I'd certainly like to see a clear answer
-> since I also have several scripts that need such attention.
-> 
-And besides our own personal scriots there's also stuff like
-	scripts/patch-kernel and Documentation/kbuild/makefiles.txt
-that need updating.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/video/backlight/adp8860_bl.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/video/backlight/adp8860_bl.c b/drivers/video/backlight/adp8860_bl.c
+index 24a6dfd..66bc74d 100644
+--- a/drivers/video/backlight/adp8860_bl.c
++++ b/drivers/video/backlight/adp8860_bl.c
+@@ -721,8 +721,7 @@ static int __devinit adp8860_probe(struct i2c_client *client,
+ 		goto out2;
+ 	}
+ 
+-	bl->props.max_brightness =
+-		bl->props.brightness = ADP8860_MAX_BRIGHTNESS;
++	bl->props.brightness = ADP8860_MAX_BRIGHTNESS;
+ 
+ 	data->bl = bl;
+ 
 -- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+1.7.4.1
+
+
 
