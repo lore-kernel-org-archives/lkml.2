@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756619Ab1GJUye (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 16:54:34 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:19066 "EHLO
+	id S1756623Ab1GJU4L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 16:56:11 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:19090 "EHLO
 	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752452Ab1GJUyd (ORCPT
+	with ESMTP id S1752452Ab1GJU4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 16:54:33 -0400
-Date: Sun, 10 Jul 2011 22:54:31 +0200 (CEST)
+	Sun, 10 Jul 2011 16:56:06 -0400
+Date: Sun, 10 Jul 2011 22:56:05 +0200 (CEST)
 From: Jesper Juhl <jj@chaosbits.net>
-To: David Teigland <teigland@redhat.com>
-cc: linux-kernel@vger.kernel.org, cluster-devel@redhat.com,
-        Christine Caulfield <ccaulfie@redhat.com>,
-        "Dr. David Alan Gilbert" <linux@treblig.org>
-Subject: [PATCH v3] fs, dlm: don't do pointless NULL check, use kzalloc and
- fix order of arguments
-In-Reply-To: <alpine.LNX.2.00.1107021957130.16316@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1107102252510.2818@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1107021957130.16316@swampdragon.chaosbits.net>
+To: "Dr. David Alan Gilbert" <linux@treblig.org>
+cc: teigland@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: kmallocs with swapped parameters in fs/dlm/lock.c
+In-Reply-To: <20110710003032.GA19951@gallifrey>
+Message-ID: <alpine.LNX.2.00.1107102254370.2818@swampdragon.chaosbits.net>
+References: <20110710003032.GA19951@gallifrey>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -25,53 +22,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In fs/dlm/lock.c in the dlm_scan_waiters() function there are 3 small
-issues:
+On Sun, 10 Jul 2011, Dr. David Alan Gilbert wrote:
 
-1) There's no need to test the return value of the allocation and do a
-memset if is succeedes. Just use kzalloc() to obtain zeroed memory.
-
-2) Since kfree() handles NULL pointers gracefully, the test of
-'warned' against NULL before the kfree() after the loop is completely
-pointless. Remove it.
-
-3) The arguments to kmalloc() (now kzalloc()) were swapped. Thanks to
-Dr. David Alan Gilbert for pointing this out.
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- fs/dlm/lock.c |    8 ++------
- 1 files changed, 2 insertions(+), 6 deletions(-)
-
-diff --git a/fs/dlm/lock.c b/fs/dlm/lock.c
-index f71d0b5..84c52e6 100644
---- a/fs/dlm/lock.c
-+++ b/fs/dlm/lock.c
-@@ -849,9 +849,7 @@ void dlm_scan_waiters(struct dlm_ls *ls)
- 
- 		if (!num_nodes) {
- 			num_nodes = ls->ls_num_nodes;
--			warned = kmalloc(GFP_KERNEL, num_nodes * sizeof(int));
--			if (warned)
--				memset(warned, 0, num_nodes * sizeof(int));
-+			warned = kzalloc(num_nodes * sizeof(int), GFP_KERNEL);
- 		}
- 		if (!warned)
- 			continue;
-@@ -863,9 +861,7 @@ void dlm_scan_waiters(struct dlm_ls *ls)
- 			  dlm_config.ci_waitwarn_us, lkb->lkb_wait_nodeid);
- 	}
- 	mutex_unlock(&ls->ls_waiters_mutex);
--
--	if (warned)
--		kfree(warned);
-+	kfree(warned);
- 
- 	if (debug_expired)
- 		log_debug(ls, "scan_waiters %u warn %u over %d us max %lld us",
--- 
-1.7.6
-
+> Hi David,
+>   Sparse spotted a couple of places in fs/dlm/lock.c where the size/flags
+> parameters to kmalloc got swapped:
+> 
+[...]
+> Jesper:
+>   I noticed in your patch:
+> https://lkml.org/lkml/2011/7/2/90
+> 
+> where you had done a kmalloc->kzalloc transform you kept the swap.
+> 
+> This looks like new code in 3.0rc so I don't think you could quite
+> call it a regression, but it should probably be fixed fairly quickly
+> I guess.
+> 
+D'oh, I completely overlooked that.
+Thank you for noticing and letting me know. I've just submitted an updated 
+patch.
 
 -- 
 Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
