@@ -1,77 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754595Ab1GJLQi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 07:16:38 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:61949 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750975Ab1GJLQh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 07:16:37 -0400
-From: "Hans-Peter Jansen" <hpj@urpla.net>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Subject: Re: [PATCH 0/7] overlay filesystem: request for inclusion
-Date: Sun, 10 Jul 2011 13:16:17 +0200
-User-Agent: KMail/1.9.10
-Cc: Andrew Morton <akpm@linux-foundation.org>, viro@zeniv.linux.org.uk,
-        torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, apw@canonical.com, nbd@openwrt.org,
-        neilb@suse.de, hramrach@centrum.cz, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, hooanon05@yahoo.co.jp
-References: <1306932380-10280-1-git-send-email-miklos@szeredi.hu> <201107052154.32606.hpj@urpla.net> <87box52amy.fsf@tucsk.pomaz.szeredi.hu>
-In-Reply-To: <87box52amy.fsf@tucsk.pomaz.szeredi.hu>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+	id S1754755Ab1GJLVb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 07:21:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35271 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753657Ab1GJLV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jul 2011 07:21:28 -0400
+Date: Sun, 10 Jul 2011 07:22:58 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>, "" <farbing@web.de>
+Subject: Re: [Bug #38972] Kernel panic when syncing while cifs is mounted
+Message-ID: <20110710072258.1ffbd52c@corrin.poochiereds.net>
+In-Reply-To: <XNkIyhV6dgF.A.BVG.xBYGOB@chimera>
+References: <Y7LyOsOBwFM.A.kJG.kBYGOB@chimera>
+	<XNkIyhV6dgF.A.BVG.xBYGOB@chimera>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201107101316.19014.hpj@urpla.net>
-X-Provags-ID: V02:K0:X375DXp9CbmREVBaAm6CB+j/mKfj4uS4QDCvz2k2VEq
- wYvDNhgEcFJTNjoDb5k8xRagghX9og/jEYj4EmxDseaDUB9ztR
- Ubwb0P8ArQfuJN0VxTkWuOM/F+9h2RIJNEIdmAgVxFvy0mxY9y
- nNB4sEoGPi25CRubykOPabLfklRarvHJ0IRe48qFpuUoIzylVO
- GceHfDD8N5zpcsaiT59nEj+2Z+eVRrfaQn28yCZj70=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 08 July 2011, 14:57:09 Miklos Szeredi wrote:
-> "Hans-Peter Jansen" <hpj@urpla.net> writes:
-> > All kodos to you, Miklos. While I'm still missing a major feature
-> > from overlayfs that is a NFS as upper layer, it provides a fairly
-> > good start. A commitment from you, that such an extension is
-> > considered for inclusion - given, that it appears one day - is
-> > appreciated. Also, since xattr support is available for NFS,
->
-> AFAIK development of generic xattr support on NFS stopped some time
-> ago.
->
-> > it would be nice to outline, what is missing for such an
-> > implementation from overlayfs's POV.
->
-> Allow using namspace polluting xattr replacements, such as aufs is
-> doing.
->
-> But why?  Why is it better to do the overlaying on the client instead
-> of the server?
+On Sun, 10 Jul 2011 12:38:24 +0200 (CEST)
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-Exporting layered filesystems via NFS suffered from many problems 
-traditionally, because that permuted NFS export issues of the server FS 
-in use (say xfs) with FS layering issues. Since I'm doing diskless 
-computing for more then two decades now, I always persued for lowering 
-complexity, and/or localize it. Layering on the client is done with the 
-latter in mind. While the basic concept of layered FS is sound, 
-especially, things like mmapping and splicing cause hard to track down 
-and problems, that are even harder to solve properly. 
+> This message has been generated automatically as a part of a summary report
+> of recent regressions.
+> 
+> The following bug entry is on the current list of known regressions
+> from 2.6.39.  Please verify if it still should be listed and let the tracking team
+> know (either way).
+> 
+> 
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=38972
+> Subject		: Kernel panic when syncing while cifs is mounted
+> Submitter	:  <farbing@web.de>
+> Date		: 2011-07-08 15:39 (3 days old)
+> First-Bad-Commit: http://git.kernel.org/linus/dd8544661947ad6d8d87b3c9d4333bfa1583d1bc
+> Handled-By	: Jeff Layton <jlayton@redhat.com>
+> Patch		: https://bugzilla.kernel.org/attachment.cgi?id=65082
+> 
+> 
 
-Do you have experiences with NFS exported overlay FSs already? If that 
-proves stable, does scale, and a client is able to survive a server 
-reboot, layering on the server is a sexy approach of course (I hate to 
-being forced to maintain my own kernel flavors for diskless clients, 
-while I love to track the Linux kernel progress in general..).
+The patch is now in Steve French's tree. Just waiting on him to push it
+and some other fixes to Linus, hopefully before 3.0 ships.
 
-Does a openSUSE build service kernel project exist with overlayfs 
-included? If I read the patch correctly, it's not possible to just bake 
-overlayfs as a standalone KMP ATM.
-
-Let's-get-it-in-for-3.1-please'ly yours,
-Pete
+-- 
+Jeff Layton <jlayton@redhat.com>
