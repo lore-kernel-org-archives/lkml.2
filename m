@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753964Ab1GJOgk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 10:36:40 -0400
-Received: from mail.perches.com ([173.55.12.10]:3760 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752534Ab1GJOgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 10:36:39 -0400
-Subject: Re: [PATCH 5/5] dbri: Add missing breaks in switch/case
-From: Joe Perches <joe@perches.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org
-In-Reply-To: <5aa8ee111dd52768622e89c06440e1328f0d2247.1310289795.git.joe@perches.com>
-References: <cover.1310289795.git.joe@perches.com>
-	 <5aa8ee111dd52768622e89c06440e1328f0d2247.1310289795.git.joe@perches.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 10 Jul 2011 07:36:37 -0700
-Message-ID: <1310308597.3848.21.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1754111Ab1GJOsV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 10:48:21 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:56393 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752488Ab1GJOsU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jul 2011 10:48:20 -0400
+Message-ID: <4E19BB9E.3010304@gmail.com>
+Date: Sun, 10 Jul 2011 07:47:58 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Or Gerlitz <ogerlitz@mellanox.com>
+CC: "trivial@kernel.org" <trivial@kernel.org>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 0/9] Change the copyright info.
+References: <1290838879-11038-1-git-send-email-justinmattock@gmail.com> <4E194019.9030209@mellanox.com>
+In-Reply-To: <4E194019.9030209@mellanox.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-07-10 at 02:28 -0700, Joe Perches wrote:
+On 07/09/2011 11:00 PM, Or Gerlitz wrote:
+> Justin P. Mattock wrote:
+>> Below you will find a set of patches, that update the copyright info
+>> from Sun Microsystems to Oracle.
+>> should make changes.. Please let me know if I missed anything and/or
+>
+> You have sent these patches last year, and the approach was rejected
+> (e.g see http://marc.info/?l=linux-rdma&m=129093016323596) - what has
+> changes since that allows for re-posting?
+>
+>
+> Or.
+>
+>
 
-defective patch, please ignore.
+I didnt bring this up, jiri did! can somebody from oracle take this? as 
+well as any other area in the kernel that needs this fix.
+(somebody can take these patches since the work is already finished(or 
+not), whatever goes!)
 
-> diff --git a/sound/sparc/dbri.c b/sound/sparc/dbri.c
-> index 73f9cba..ca978b1 100644
-> --- a/sound/sparc/dbri.c
-> +++ b/sound/sparc/dbri.c
-> @@ -578,14 +578,19 @@ static __u32 reverse_bytes(__u32 b, int len)
->  	switch (len) {
->  	case 32:
->  		b = ((b & 0xffff0000) >> 16) | ((b & 0x0000ffff) << 16);
-> +		break;
-
-Maybe add a comment for fall through use instead.
-
-
+Justin P. Mattock
