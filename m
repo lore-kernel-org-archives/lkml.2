@@ -1,56 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754986Ab1GJLXe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 07:23:34 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:42611 "EHLO ogre.sisk.pl"
+	id S1755461Ab1GJLZo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 07:25:44 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:42644 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753567Ab1GJLXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 07:23:31 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jeff Layton <jlayton@redhat.com>
-Subject: Re: [Bug #38972] Kernel panic when syncing while cifs is mounted
-Date: Sun, 10 Jul 2011 13:24:04 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc6+; KDE/4.6.0; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
+	id S1754258Ab1GJLZm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jul 2011 07:25:42 -0400
+Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>, "" <farbing@web.de>
-References: <Y7LyOsOBwFM.A.kJG.kBYGOB@chimera> <XNkIyhV6dgF.A.BVG.xBYGOB@chimera> <20110710072258.1ffbd52c@corrin.poochiereds.net>
-In-Reply-To: <20110710072258.1ffbd52c@corrin.poochiereds.net>
+        Florian Mickler <florian@mickler.org>, "werner" <w.landgraf@ru.ru>
+References: <AtAvQwe5sAK.A.loH.OlYGOB@chimera>
+In-Reply-To: <AtAvQwe5sAK.A.loH.OlYGOB@chimera>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107101324.04871.rjw@sisk.pl>
+Content-Disposition: inline
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <gK_efVqs2fP.A.I1.WnYGOB@chimera>
+Subject: [Bug #35142] 2.6.39-rc7-git1 boot error message (no crash)
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Sun, 10 Jul 2011 12:58:50 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, July 10, 2011, Jeff Layton wrote:
-> On Sun, 10 Jul 2011 12:38:24 +0200 (CEST)
-> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> 
-> > This message has been generated automatically as a part of a summary report
-> > of recent regressions.
-> > 
-> > The following bug entry is on the current list of known regressions
-> > from 2.6.39.  Please verify if it still should be listed and let the tracking team
-> > know (either way).
-> > 
-> > 
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=38972
-> > Subject		: Kernel panic when syncing while cifs is mounted
-> > Submitter	:  <farbing@web.de>
-> > Date		: 2011-07-08 15:39 (3 days old)
-> > First-Bad-Commit: http://git.kernel.org/linus/dd8544661947ad6d8d87b3c9d4333bfa1583d1bc
-> > Handled-By	: Jeff Layton <jlayton@redhat.com>
-> > Patch		: https://bugzilla.kernel.org/attachment.cgi?id=65082
-> > 
-> > 
-> 
-> The patch is now in Steve French's tree. Just waiting on him to push it
-> and some other fixes to Linus, hopefully before 3.0 ships.
+This message has been generated automatically as a part of a report
+of regressions introduced between 2.6.38 and 2.6.39.
 
-Great, thanks!
+The following bug entry is on the current list of known regressions
+introduced between 2.6.38 and 2.6.39.  Please verify if it still should
+be listed and let the tracking team know (either way).
 
-Rafael
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=35142
+Subject		: 2.6.39-rc7-git1 boot error message (no crash)
+Submitter	: werner <w.landgraf@ru.ru>
+Date		: 2011-05-11 4:58 (61 days old)
+Message-ID	: <web-520830057@zbackend1.aha.ru>
+References	: http://marc.info/?l=linux-kernel&m=130512952706444&w=2
+
+
