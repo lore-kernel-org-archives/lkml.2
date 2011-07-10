@@ -1,96 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756849Ab1GJXPG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 19:15:06 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:35501 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751806Ab1GJXPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 19:15:01 -0400
-Date: Sun, 10 Jul 2011 16:14:49 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: julie Sullivan <kernelmail.jms@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3
-Message-ID: <20110710231449.GQ6014@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110708002903.GI6014@linux.vnet.ibm.com>
- <20110709100900.GB6014@linux.vnet.ibm.com>
- <CAAVPGOMe6NawfkNQ1pSGYe5a1=X0z_KcD5Dn_xDX55p3K_46nQ@mail.gmail.com>
- <20110710032510.GG6014@linux.vnet.ibm.com>
- <CAAVPGOPCGsNynWPWcwaxVU_jPCg=VPdz82_g6OvY5gnYKk5oFg@mail.gmail.com>
- <20110710171626.GK6014@linux.vnet.ibm.com>
- <20110710173530.GA16954@linux.vnet.ibm.com>
- <CAAVPGOPAx-oLZct9u2Kq3uQ4W2GwJFYUGgw3h=M_Y4_wv7b51w@mail.gmail.com>
- <20110710214639.GP6014@linux.vnet.ibm.com>
- <CAAVPGOMafp_+45X=7asHe=MqaHY8CiJYsf2GZ3qOPrWpjctHVQ@mail.gmail.com>
+	id S1756856Ab1GJXVl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 19:21:41 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:20354 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751806Ab1GJXVi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jul 2011 19:21:38 -0400
+Date: Mon, 11 Jul 2011 01:21:36 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Randy Dunlap <rdunlap@xenotime.net>
+cc: Arnaud Lacombe <lacombar@gmail.com>, Pekka Enberg <penberg@kernel.org>,
+        =?ISO-8859-15?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        Raghavendra D Prabhu <rprabhu@wnohang.net>,
+        linux-kbuild@vger.kernel.org, Nir Tzachar <nir.tzachar@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Avoid Wunused-but-set warning
+In-Reply-To: <20110710160722.ae763029.rdunlap@xenotime.net>
+Message-ID: <alpine.LNX.2.00.1107110117080.2818@swampdragon.chaosbits.net>
+References: <da20dc5c4160ed9a3da52f60799a1e4369fe3f27.1310228130.git.rprabhu@wnohang.net> <CAM_iQpXeqc01dyHpViyJCMSz6wz-1mWmGi=J0UynUG8tbd99kw@mail.gmail.com> <CACqU3MUgVTpc6kBvBiw7rtyn_JTA-JPrbnvai3Vnq+UWk-jSbQ@mail.gmail.com>
+ <CAOJsxLF+4VOXJwRJL7npMngDTGztXk739_GcMLxsMzmsVcDCVw@mail.gmail.com> <CACqU3MUFO9DGqnK99ApaKn00vzj5rCB5=kjuSZGZpPU8c_4G-A@mail.gmail.com> <20110710110241.7650e03f.rdunlap@xenotime.net> <alpine.LNX.2.00.1107110051420.2818@swampdragon.chaosbits.net>
+ <20110710160722.ae763029.rdunlap@xenotime.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAAVPGOMafp_+45X=7asHe=MqaHY8CiJYsf2GZ3qOPrWpjctHVQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1894683305-1310340096=:2818"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 10, 2011 at 10:50:48PM +0100, julie Sullivan wrote:
-> > Very cool!  Thank you very much for the testing --
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+--8323328-1894683305-1310340096=:2818
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+
+On Sun, 10 Jul 2011, Randy Dunlap wrote:
+
+> On Mon, 11 Jul 2011 00:56:57 +0200 (CEST) Jesper Juhl wrote:
 > 
-> My pleasure
+> > On Sun, 10 Jul 2011, Randy Dunlap wrote:
+> > 
+> > > On Sun, 10 Jul 2011 12:49:20 -0400 Arnaud Lacombe wrote:
+> > > 
+> > > > Hi,
+> > > > 
+> > > > On Sun, Jul 10, 2011 at 12:28 PM, Pekka Enberg <penberg@kernel.org> wrote:
+> > > > > On Sun, Jul 10, 2011 at 7:24 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+> > > > >> Hi,
+> > > > >>
+> > > > >> On Sun, Jul 10, 2011 at 12:16 PM, Américo Wang <xiyou.wangcong@gmail.com> wrote:
+> > > > >>> On Sun, Jul 10, 2011 at 12:24 AM, Raghavendra D Prabhu
+> > > > >>> <rprabhu@wnohang.net> wrote:
+> > > > >>>> Hi,
+> > > > >>>>    I am seeing Wunused-but-set warning while make nconfig.  Looks like
+> > > > >>>>    active_menu is not used. Removing it fixes the warning.
+> > > > >>>>
+> > > > >>>> Signed-off-by: Raghavendra D Prabhu <rprabhu@wnohang.net>
+> > > > >>>
+> > > > >>> Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
+> > > > >>>
+> > > > >> Out of curiosity, what is your status to ACK such patch ?
+> > > > >
+> > > > > What kind of status do you need to ACK such a simple patch?
+> > > > >
+> > > > As per Documentation/SubmittingPatches:
+> > > > 
+> > > > <<
+> > > > 13) When to use Acked-by: and Cc:
+> > > > The Signed-off-by: tag indicates that the signer was involved in the
+> > > > development of the patch, or that he/she was in the patch's delivery path.
+> > > > 
+> > > > If a person was not directly involved in the preparation or handling of a
+> > > > patch but wishes to signify and record their approval of it then they can
+> > > > arrange to have an Acked-by: line added to the patch's changelog.
+> > > > 
+> > > > Acked-by: is often used by the maintainer of the affected code when that
+> > > > maintainer neither contributed to nor forwarded the patch.
+> > > > >>
+> > > > 
+> > > > That said, it is not a strong requirement... unfortunately. So, let's
+> > > > have some fun and go ACK thousand of trivial patch just to generate
+> > > > traffic on the LKML and give myself self-importance :-)
+> > > 
+> > > Acked-by: is mostly used as a weak version of Reviewed-by:
+> > > and the "definition" in SubmittingPatches is not accurate IMO.
+> > > I.e., it can be used by anyone.
+> > > 
+> > 
+> > Interesting. I was under the impression that Reviewed-by: was a weaker 
+> > thing than Acked-by: - I certainly have been using it as such.
+> > 
+> > I've always interpreted Acked-by: as being something you could apply if 
+> > you were the author, maintainer or other person with similar strong 
+> > background knowledge of the code. Where Reviewed-by: could be used by 
+> > anyone, as long as they had taken the time to read the patch and try and 
+> > understand what was going on and the result/conclusion looked good.
 > 
-> > I will put together an
-> > upstreamable commit with your Tested-by.
+> I don't see it in SubmittingPatches, but there was some discussion at the
+> time (IIRC!!) that Reviewed-by: indicates that you are willing to support/fix
+> the patch if the patch author(s) disappear.  I.e., you are willing to take
+> some ownership responsibility of the patch.
+> 
+> or I could be dreaming...
+> 
+I'm not going to claim that I recall all the discussion that went on at 
+the time, there was quite a bit IIRC (and I'm too lazy to read up on all 
+of it). But to me it seems to make sense that if you have strong knowledge 
+of/involvement with the code being patched then you can offer your 
+Acked-by: after reviewing the patch. If you don't have such 
+knowledge/involvement but have nevertheless reviewed the code and found it 
+to be OK, then you can signal that with a Reviewed-by:.
 
-And here is what I am proposing sending upstream.  I have your Tested-by,
-but had to make a small but very real change in order to make it work
-under all configurations that I test under.  So could you please try
-the attached patch out?  I am particularly interested in how it works
-out when CONFIG_RCU_BOOST=n.
+In any case, you can't expect people to base their Acked-by/Reviewed-by 
+replies on some conclusion in some email thread that happened years ago 
+but was never written down in some document in the repository. 
+It is only reasonable to expect people to behave according to the rules 
+laid out in SubmittingPatches and similar documents, and those rules 
+currently seem to support my interpretation, not yours.
 
-							Thanx, Paul
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-------------------------------------------------------------------------
-
-rcu: Prevent RCU callbacks from executing during early boot
-
-Under some rare but real combinations of configuration parameters, RCU
-callbacks are posted during early boot that use kernel facilities that
-are not yet initialized.  Therefore, when these callbacks are invoked,
-hard hangs and crashes ensue.  This commit therefore prevents RCU
-callbacks from being invoked until after the scheduler is up and running.
-
-It might well turn out that a better approach is to identify the specific
-RCU callbacks that are causing this problem, but that discussion will
-wait until such time as someone really needs an RCU callback to be
-invoked during early boot.
-
-Reported-by: julie Sullivan <kernelmail.jms@gmail.com>
-Tested-by: julie Sullivan <kernelmail.jms@gmail.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 7e59ffb..4c0210f 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -1467,7 +1467,7 @@ static void rcu_process_callbacks(struct softirq_action *unused)
-  */
- static void invoke_rcu_callbacks(struct rcu_state *rsp, struct rcu_data *rdp)
- {
--	if (likely(!rsp->boost)) {
-+	if (likely(rcu_scheduler_active && !rsp->boost)) {
- 		rcu_do_batch(rsp, rdp);
- 		return;
- 	}
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 14dc7dd..ca3c6dc 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -1703,7 +1703,7 @@ static void rcu_initiate_boost(struct rcu_node *rnp, unsigned long flags)
- 
- static void invoke_rcu_callbacks_kthread(void)
- {
--	WARN_ON_ONCE(1);
-+	WARN_ON_ONCE(rcu_scheduler_active);
- }
- 
- static void rcu_preempt_boost_start_gp(struct rcu_node *rnp)
+--8323328-1894683305-1310340096=:2818--
