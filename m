@@ -1,44 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932098Ab1GJJ3u (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 05:29:50 -0400
-Received: from mail.perches.com ([173.55.12.10]:3722 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755579Ab1GJJ2d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 05:28:33 -0400
-From: Joe Perches <joe@perches.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] gpio-tps65910.c: Add missing breaks in switch/case
-Date: Sun, 10 Jul 2011 02:28:24 -0700
-Message-Id: <7e14caefe46d21a949efd9daeda3e43cb13eef45.1310289795.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.6.131.g99019
-In-Reply-To: <cover.1310289795.git.joe@perches.com>
-References: <cover.1310289795.git.joe@perches.com>
+	id S1755674Ab1GJJue (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 05:50:34 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56451 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755458Ab1GJJu3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jul 2011 05:50:29 -0400
+Date: Sun, 10 Jul 2011 10:50:13 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org
+Subject: Re: [PATCH 0/4] Add a generic struct clk
+Message-ID: <20110710095013.GZ4812@n2100.arm.linux.org.uk>
+References: <1305876469.325655.313573683829.0.gpush@pororo> <1305876469.325655.313573683829.0.gpush@pororo> <20110710090927.GA23445@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110710090927.GA23445@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/gpio/gpio-tps65910.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+On Sun, Jul 10, 2011 at 06:09:30PM +0900, Mark Brown wrote:
+> On Fri, May 20, 2011 at 03:27:49PM +0800, Jeremy Kerr wrote:
+> > [This series was originally titled 'Add a common struct clk', but
+> > the goals have changed since that first set of patches. We're now aiming
+> > for a more complete generic clock infrastructure, rather than just
+> > abstracting struct clk]
 
-diff --git a/drivers/gpio/gpio-tps65910.c b/drivers/gpio/gpio-tps65910.c
-index 4171033..b9c1c29 100644
---- a/drivers/gpio/gpio-tps65910.c
-+++ b/drivers/gpio/gpio-tps65910.c
-@@ -81,8 +81,10 @@ void tps65910_gpio_init(struct tps65910 *tps65910, int gpio_base)
- 	switch(tps65910_chip_id(tps65910)) {
- 	case TPS65910:
- 		tps65910->gpio.ngpio	= 6;
-+		break;
- 	case TPS65911:
- 		tps65910->gpio.ngpio	= 9;
-+		break;
- 	default:
- 		return;
- 	}
--- 
-1.7.6.131.g99019
+... which will mean the platforms at the simpler end of the spectrum
+will ignore it because it'll be far too heavy weight for them.
 
+If we're going to do something generic with it, then we need something
+that _can_ scale from damned simple right up to OMAP-type complex.  We
+don't want to start with something OMAP-type complex and have everyone
+use it even for just one or two (or even 30 simple enable/disable
+non-tree like) clocks.  And those platforms should not have to have
+several K of unused code in their kernel because of it.
+
+Otherwise, we'll just end up going back to people trying to directly
+access clock mask registers from drivers.
+
+Note that because of the develtech.com fuckup, I don't have your patch
+series because I had to drop off the lists for about six hours to stop
+the deluge of emails.
