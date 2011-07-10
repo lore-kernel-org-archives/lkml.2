@@ -1,38 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752450Ab1GJLKS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 07:10:18 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38489 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750817Ab1GJLKQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 07:10:16 -0400
-Date: Sun, 10 Jul 2011 20:09:50 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Graeme Gregory <gg@slimlogic.co.uk>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH v2] regulator: tps65910: Add missing breaks in switch/case
-Message-ID: <20110710110943.GA24191@opensource.wolfsonmicro.com>
-References: <1310294482.4877.3.camel@phoenix>
+	id S1753830Ab1GJLMC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 07:12:02 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:42543 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750975Ab1GJLL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jul 2011 07:11:59 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Johannes Berg <johannes@sipsolutions.net>
+Subject: Re: 3.0-rc6-git6: Reported regressions from 2.6.39
+Date: Sun, 10 Jul 2011 13:12:27 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc6+; KDE/4.6.0; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>
+References: <Y7LyOsOBwFM.A.kJG.kBYGOB@chimera> <1310295277.3942.1.camel@jlt3.sipsolutions.net>
+In-Reply-To: <1310295277.3942.1.camel@jlt3.sipsolutions.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1310294482.4877.3.camel@phoenix>
-X-Cookie: Never reveal your best argument.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107101312.27466.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 10, 2011 at 06:41:22PM +0800, Axel Lin wrote:
-> Also add a default case in tps65910_list_voltage_dcdc to silence
-> 'volt' may be used uninitialized in this function warning.
+On Sunday, July 10, 2011, Johannes Berg wrote:
+> On Sun, 2011-07-10 at 12:19 +0200, Rafael J. Wysocki wrote:
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=38702
+> > Subject		: 3.0.0-rc4-git6 - INFO: possible circular locking dependency detected - (&rdev->mtx){+.+.+.}, at: [<ffffffffa00e27e0>] cfg80211_netdev_notifier_call+0x275/0x4ff [cfg80211]
+> > Submitter	: Miles Lane <miles.lane@gmail.com>
+> > Date		: 2011-06-26 21:54 (15 days old)
+> > Message-ID	: <BANLkTikztsFnPkJZ7VxRC-zsitwCCvVmeg@mail.gmail.com>
+> > References	: http://marc.info/?l=linux-kernel&m=130912559804336&w=2
+> 
+> Should be fixed by c10841ca722a0bc960dc541c51582773f9a24f98 which was
+> part of John's latest pull request and is in net-2.6 now on its way up.
 
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Thanks, closing.
 
-though for the default case I'd suggest also adding a BUG() as if that
-happens either the driver is confused or the core is making up
-regulators for us.
+Rafael
