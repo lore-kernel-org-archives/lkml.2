@@ -1,46 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755591Ab1GJJGK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 05:06:10 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33368 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755551Ab1GJJGF (ORCPT
+	id S1755635Ab1GJJJl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 05:09:41 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52522 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755513Ab1GJJJj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 05:06:05 -0400
-From: Wanlong Gao <wanlong.gao@gmail.com>
-To: Paul Menage <menage@google.com>, Randy Dunlap <rdunlap@xenotime.net>
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wanlong Gao <wanlong.gao@gmail.com>,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: [PATCH] Doc:cgroup:fix a cpuset's file description in cpusets.txt
-Date: Sun, 10 Jul 2011 16:58:33 +0800
-Message-Id: <1310288313-4908-1-git-send-email-wanlong.gao@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+	Sun, 10 Jul 2011 05:09:39 -0400
+Date: Sun, 10 Jul 2011 18:09:30 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jeremy Kerr <jeremy.kerr@canonical.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-sh@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/4] Add a generic struct clk
+Message-ID: <20110710090927.GA23445@opensource.wolfsonmicro.com>
+References: <1305876469.325655.313573683829.0.gpush@pororo>
+ <1305876469.325655.313573683829.0.gpush@pororo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305876469.325655.313573683829.0.gpush@pororo>
+X-Cookie: A is for Apple.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Only the root cpuset has cpuset.memory_pressure_enabled flag,
-but not the only one.
+On Fri, May 20, 2011 at 03:27:49PM +0800, Jeremy Kerr wrote:
+> [This series was originally titled 'Add a common struct clk', but
+> the goals have changed since that first set of patches. We're now aiming
+> for a more complete generic clock infrastructure, rather than just
+> abstracting struct clk]
+> 
+> [This series still needs work, see the TODO section below]
 
-Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
----
- Documentation/cgroups/cpusets.txt |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/Documentation/cgroups/cpusets.txt b/Documentation/cgroups/cpusets.txt
-index 5b0d78e..5c51ed4 100644
---- a/Documentation/cgroups/cpusets.txt
-+++ b/Documentation/cgroups/cpusets.txt
-@@ -180,7 +180,7 @@ files describing that cpuset:
-  - cpuset.sched_load_balance flag: if set, load balance within CPUs on that cpuset
-  - cpuset.sched_relax_domain_level: the searching range when migrating tasks
- 
--In addition, the root cpuset only has the following file:
-+In addition, only the root cpuset has the following file:
-  - cpuset.memory_pressure_enabled flag: compute memory_pressure?
- 
- New cpusets are created using the mkdir system call or shell
--- 
-1.7.4.1
-
+Is there a git tree with the current state of this code in it somewhere?
+It's not mentioned here and my google skills are failing me.
