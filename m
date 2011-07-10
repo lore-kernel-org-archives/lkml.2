@@ -1,249 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755264Ab1GJCAf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 22:00:35 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:41616 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755214Ab1GJCAd (ORCPT
+	id S1755249Ab1GJCCc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 22:02:32 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:38524 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751779Ab1GJCCa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 22:00:33 -0400
-Date: Sun, 10 Jul 2011 10:00:14 +0800
-From: Harry Wei <jiaweiwei.xiyou@gmail.com>
-To: greg@kroah.com, gregkh@suse.de
-Cc: linux-kernel@vger.kernel.org, linux-kernel@zh-kernel.org,
-        kongjianjun@gmail.com
-Subject: [Patch Resend]Fix the messy code file
- Documentation/zh_CN/SubmitChecklist
-Message-ID: <20110710015923.GB3900@gmail.com>
-Mail-Followup-To: greg@kroah.com, gregkh@suse.de,
-	linux-kernel@vger.kernel.org, linux-kernel@zh-kernel.org,
-	kongjianjun@gmail.com
+	Sat, 9 Jul 2011 22:02:30 -0400
+From: Ambresh K <ambresh@ti.com>
+To: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] regulator: TWL: Remove entry of RES_ID for 6030 macros
+Date: Sat, 9 Jul 2011 19:02:21 -0700
+Message-ID: <1310263341-29620-1-git-send-email-ambresh@ti.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=unknown-8bit
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Harry Wei <harryxiyou@gmail.com>
+From: Ambresh K <ambresh@ti.com>
 
-This patch can fix the messy code file Documentation/zh_CN/SubmitChecklist.
+RES_ID is only used in 4030, to send PBM singular message to control
+the state of dedicated resources. In 6030, we don't have concept of PBM,
+hence removing the definition of RES_ID (num) from macros.
 
-Signed-off-by: Harry Wei <harryxiyou@gmail.com>
+Signed-off-by: Ambresh K <ambresh@ti.com>
+---
+ drivers/regulator/twl-regulator.c |   64 +++++++++++++++++-------------------
+ 1 files changed, 30 insertions(+), 34 deletions(-)
 
-Index: linux-3.0-rc2/Documentation/zh_CN/SubmitChecklist
-===================================================================
---- linux-3.0-rc2.orig/Documentation/zh_CN/SubmitChecklist	2011-06-12 11:21:59.016740957 +0800
-+++ linux-3.0-rc2/Documentation/zh_CN/SubmitChecklist	2011-06-12 11:22:27.904778610 +0800
-@@ -1,109 +1,110 @@
--Chinese translated version of Documentation/SubmitChecklist
--
-+Chinese translated version of Documentation/SubmitChecklist
-+
- If you have any comment or update to the content, please contact the
- original document maintainer directly.  However, if you have a problem
- communicating in English you can also ask the Chinese maintainer for
- help.  Contact the Chinese maintainer if this translation is outdated
- or if there is a problem with the translation.
--
-+
- Chinese maintainer: Harry Wei <harryxiyou@gmail.com>
- ---------------------------------------------------------------------
--Documentation/SubmitChecklist ?????ķ???
--
--?????????ۻ????±??ĵ????ݣ???ֱ??��ϵԭ?ĵ???ά???ߡ???????ʹ??Ӣ??
--??????��?ѵĻ???Ҳ?????????İ?ά?????????????�����?????²???ʱ???߷?
--?????????⣬??��ϵ???İ?ά???ߡ?
--
--???İ?ά???ߣ? ?????? Harry Wei <harryxiyou@gmail.com>
--???İ淭???ߣ? ?????? Harry Wei <harryxiyou@gmail.com>
--???İ?У???ߣ? ?????? Harry Wei <harryxiyou@gmail.com>
--
--
--????Ϊ????
-+Documentation/SubmitChecklist 的中文翻译
-+
-+如果想评论或更新本文的内容，请直接联系原文档的维护者。如果你使用英文
-+交流有困难的话，也可以向中文版维护者求助。如果本翻译更新不及时或者翻
-+译存在问题，请联系中文版维护者。
-+
-+中文版维护者： 贾威威 Harry Wei <harryxiyou@gmail.com>
-+中文版翻译者： 贾威威 Harry Wei <harryxiyou@gmail.com>
-+中文版校译者： 贾威威 Harry Wei <harryxiyou@gmail.com>
-+
-+
-+以下为正文
- ---------------------------------------------------------------------
--Linux?ں??ύ?嵥
-+Linux内核提交清单
- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+
-+这里有一些内核开发者应该做的基本事情，如果他们想看到自己的内核补丁提交
-+被接受的更快。
-+
-+这些都是超出Documentation/SubmittingPatches文档里所提供的以及其他
-+关于提交Linux内核补丁的说明。
-+
-+1：如果你使用了一个功能那么就#include定义/声明那个功能的那个文件。
-+  不要依靠其他间接引入定义/声明那个功能的头文件。
-+
-+2：构建简洁适用或者更改CONFIG选项 =y，=m，或者=n。
-+  不要有编译警告/错误， 不要有链接警告/错误。
-+
-+2b：通过 allnoconfig, allmodconfig
-+
-+2c：当使用 0=builddir 成功地构建
-+
-+3：通过使用本地交叉编译工具或者其他一些构建产所，在多CPU框架上构建。
-+
-+4：ppc64 是一个很好的检查交叉编译的框架，因为它往往把‘unsigned long’
-+   当64位值来使用。
-+
-+5：按照Documentation/CodingStyle文件里的详细描述，检查你补丁的整体风格。
-+  使用补丁风格检查琐碎的违规(scripts/checkpatch.pl)，审核员优先提交。
-+  你应该调整遗留在你补丁中的所有违规。
-+
-+6：任何更新或者改动CONFIG选项都不能打乱配置菜单。
-+
-+7：所有的Kconfig选项更新都要有说明文字。
-+
-+8：已经认真地总结了相关的Kconfig组合。这是很难通过测试做好的--脑力在这里下降。
-+
-+9：检查具有简洁性。
-+
-+10：使用'make checkstack'和'make namespacecheck'检查，然后修改所找到的问题。
-+    注意：堆栈检查不会明确地出现问题，但是任何的一个函数在堆栈上使用多于512字节
-+    都要准备修改。
-+
-+11：包含kernel-doc到全局内核APIs文件。（不要求静态的函数，但是包含也无所谓。）
-+   使用'make htmldocs'或者'make mandocs'来检查kernel-doc，然后修改任何
-+   发现的问题。
-+
-+12：已经通过CONFIG_PREEMPT, CONFIG_DEBUG_PREEMPT,
-+   CONFIG_DEBUG_SLAB, CONFIG_DEBUG_PAGEALLOC, CONFIG_DEBUG_MUTEXES,
-+   CONFIG_DEBUG_SPINLOCK, CONFIG_DEBUG_SPINLOCK_SLEEP测试，并且同时都
-+   使能。
-+
-+13：已经都构建并且使用或者不使用 CONFIG_SMP 和 CONFIG_PREEMPT测试执行时间。
-+
-+14：如果补丁影响IO/Disk，等等：已经通过使用或者不使用 CONFIG_LBDAF 测试。
-+
-+15：所有的codepaths已经行使所有lockdep启用功能。
-+
-+16：所有的/proc记录更新都要作成文件放在Documentation/目录下。
-+
-+17：所有的内核启动参数更新都被记录到Documentation/kernel-parameters.txt文件中。
-+
-+18：所有的模块参数更新都用MODULE_PARM_DESC()记录。
-+
-+19：所有的用户空间接口更新都被记录到Documentation/ABI/。查看Documentation/ABI/README
-+    可以获得更多的信息。改变用户空间接口的补丁应该被邮件抄送给linux-api@vger.kernel.org。
-+
-+20：检查它是不是都通过`make headers_check'。
-+
-+21：已经通过至少引入slab和page-allocation失败检查。查看Documentation/fault-injection/。
-+
-+22：新加入的源码已经通过`gcc -W'（使用"make EXTRA_CFLAGS=-W"）编译。这样将产生很多烦恼，
-+   但是对于寻找漏洞很有益处，例如:"warning: comparison between signed and unsigned"。
-+
-+23：当它被合并到-mm补丁集后再测试，用来确定它是否还和补丁队列中的其他补丁一起工作以及在VM，VFS
-+   和其他子系统中各个变化。
-+
-+24：所有的内存屏障{e.g., barrier(), rmb(), wmb()}需要在源代码中的一个注释来解释他们都是干什么的
-+   以及原因。
-+
-+25：如果有任何输入输出控制的补丁被添加，也要更新Documentation/ioctl/ioctl-number.txt。
-+
-+26：如果你的更改代码依靠或者使用任何的内核APIs或者与下面的kconfig符号有关系的功能，你就要
-+   使用相关的kconfig符号关闭， and/or =m（如果选项提供）[在同一时间不是所用的都启用，仅仅各个或者自由
-+   组合他们]：
-+
-+	CONFIG_SMP, CONFIG_SYSFS, CONFIG_PROC_FS, CONFIG_INPUT, CONFIG_PCI,
-+	CONFIG_BLOCK, CONFIG_PM, CONFIG_HOTPLUG, CONFIG_MAGIC_SYSRQ,
-+	CONFIG_NET, CONFIG_INET=n (后一个使用 CONFIG_NET=y)
+diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regulator.c
+index 87fe0f7..a4c5e46 100644
+--- a/drivers/regulator/twl-regulator.c
++++ b/drivers/regulator/twl-regulator.c
+@@ -835,8 +835,8 @@ static struct regulator_ops twlsmps_ops = {
+ 			remap_conf) \
+ 		TWL_FIXED_LDO(label, offset, mVolts, num, turnon_delay, \
+ 			remap_conf, TWL4030, twl4030fixed_ops)
+-#define TWL6030_FIXED_LDO(label, offset, mVolts, num, turnon_delay) \
+-		TWL_FIXED_LDO(label, offset, mVolts, num, turnon_delay, \
++#define TWL6030_FIXED_LDO(label, offset, mVolts, turnon_delay) \
++		TWL_FIXED_LDO(label, offset, mVolts, 0x0, turnon_delay, \
+ 			0x0, TWL6030, twl6030fixed_ops)
  
--??????һЩ?ں˿?????Ӧ?????Ļ??????飬?????????뿴???Լ????ں˲????ύ
--?????ܵĸ??졣
+ #define TWL4030_ADJUSTABLE_LDO(label, offset, num, turnon_delay, remap_conf) { \
+@@ -856,9 +856,8 @@ static struct regulator_ops twlsmps_ops = {
+ 		}, \
+ 	}
+ 
+-#define TWL6030_ADJUSTABLE_LDO(label, offset, min_mVolts, max_mVolts, num) { \
++#define TWL6030_ADJUSTABLE_LDO(label, offset, min_mVolts, max_mVolts) { \
+ 	.base = offset, \
+-	.id = num, \
+ 	.min_mV = min_mVolts, \
+ 	.max_mV = max_mVolts, \
+ 	.desc = { \
+@@ -871,9 +870,8 @@ static struct regulator_ops twlsmps_ops = {
+ 		}, \
+ 	}
+ 
+-#define TWL6025_ADJUSTABLE_LDO(label, offset, min_mVolts, max_mVolts, num) { \
++#define TWL6025_ADJUSTABLE_LDO(label, offset, min_mVolts, max_mVolts) { \
+ 	.base = offset, \
+-	.id = num, \
+ 	.min_mV = min_mVolts, \
+ 	.max_mV = max_mVolts, \
+ 	.desc = { \
+@@ -903,9 +901,8 @@ static struct regulator_ops twlsmps_ops = {
+ 		}, \
+ 	}
+ 
+-#define TWL6030_FIXED_RESOURCE(label, offset, num, turnon_delay) { \
++#define TWL6030_FIXED_RESOURCE(label, offset, turnon_delay) { \
+ 	.base = offset, \
+-	.id = num, \
+ 	.delay = turnon_delay, \
+ 	.desc = { \
+ 		.name = #label, \
+@@ -916,9 +913,8 @@ static struct regulator_ops twlsmps_ops = {
+ 		}, \
+ 	}
+ 
+-#define TWL6025_ADJUSTABLE_SMPS(label, offset, num) { \
++#define TWL6025_ADJUSTABLE_SMPS(label, offset) { \
+ 	.base = offset, \
+-	.id = num, \
+ 	.min_mV = 600, \
+ 	.max_mV = 2100, \
+ 	.desc = { \
+@@ -961,32 +957,32 @@ static struct twlreg_info twl_regs[] = {
+ 	/* 6030 REG with base as PMC Slave Misc : 0x0030 */
+ 	/* Turnon-delay and remap configuration values for 6030 are not
+ 	   verified since the specification is not public */
+-	TWL6030_ADJUSTABLE_LDO(VAUX1_6030, 0x54, 1000, 3300, 1),
+-	TWL6030_ADJUSTABLE_LDO(VAUX2_6030, 0x58, 1000, 3300, 2),
+-	TWL6030_ADJUSTABLE_LDO(VAUX3_6030, 0x5c, 1000, 3300, 3),
+-	TWL6030_ADJUSTABLE_LDO(VMMC, 0x68, 1000, 3300, 4),
+-	TWL6030_ADJUSTABLE_LDO(VPP, 0x6c, 1000, 3300, 5),
+-	TWL6030_ADJUSTABLE_LDO(VUSIM, 0x74, 1000, 3300, 7),
+-	TWL6030_FIXED_LDO(VANA, 0x50, 2100, 15, 0),
+-	TWL6030_FIXED_LDO(VCXIO, 0x60, 1800, 16, 0),
+-	TWL6030_FIXED_LDO(VDAC, 0x64, 1800, 17, 0),
+-	TWL6030_FIXED_LDO(VUSB, 0x70, 3300, 18, 0),
+-	TWL6030_FIXED_RESOURCE(CLK32KG, 0x8C, 48, 0),
++	TWL6030_ADJUSTABLE_LDO(VAUX1_6030, 0x54, 1000, 3300),
++	TWL6030_ADJUSTABLE_LDO(VAUX2_6030, 0x58, 1000, 3300),
++	TWL6030_ADJUSTABLE_LDO(VAUX3_6030, 0x5c, 1000, 3300),
++	TWL6030_ADJUSTABLE_LDO(VMMC, 0x68, 1000, 3300),
++	TWL6030_ADJUSTABLE_LDO(VPP, 0x6c, 1000, 3300),
++	TWL6030_ADJUSTABLE_LDO(VUSIM, 0x74, 1000, 3300),
++	TWL6030_FIXED_LDO(VANA, 0x50, 2100, 0),
++	TWL6030_FIXED_LDO(VCXIO, 0x60, 1800, 0),
++	TWL6030_FIXED_LDO(VDAC, 0x64, 1800, 0),
++	TWL6030_FIXED_LDO(VUSB, 0x70, 3300, 0),
++	TWL6030_FIXED_RESOURCE(CLK32KG, 0x8C, 0),
+ 
+ 	/* 6025 are renamed compared to 6030 versions */
+-	TWL6025_ADJUSTABLE_LDO(LDO2, 0x54, 1000, 3300, 1),
+-	TWL6025_ADJUSTABLE_LDO(LDO4, 0x58, 1000, 3300, 2),
+-	TWL6025_ADJUSTABLE_LDO(LDO3, 0x5c, 1000, 3300, 3),
+-	TWL6025_ADJUSTABLE_LDO(LDO5, 0x68, 1000, 3300, 4),
+-	TWL6025_ADJUSTABLE_LDO(LDO1, 0x6c, 1000, 3300, 5),
+-	TWL6025_ADJUSTABLE_LDO(LDO7, 0x74, 1000, 3300, 7),
+-	TWL6025_ADJUSTABLE_LDO(LDO6, 0x60, 1000, 3300, 16),
+-	TWL6025_ADJUSTABLE_LDO(LDOLN, 0x64, 1000, 3300, 17),
+-	TWL6025_ADJUSTABLE_LDO(LDOUSB, 0x70, 1000, 3300, 18),
 -
--??Щ???ǳ???Documentation/SubmittingPatches?ĵ??????ṩ???Լ?????
--?????ύLinux?ں˲?????˵????
--
--1????????ʹ????һ????????ô??#include????/?????Ǹ????ܵ??Ǹ??ļ???
--   ??Ҫ?��????????????붨??/?????Ǹ????ܵ?ͷ?ļ???
--
--2?????????????û??߸???CONFIGѡ?? =y??=m??????=n??
--   ??Ҫ?б??뾯??/?????? ??Ҫ??��?Ӿ???/??????
--
--2b??ͨ?? allnoconfig, allmodconfig
--
--2c????ʹ?? 0=builddir ?ɹ??ع???
--
--3??ͨ??ʹ?ñ??ؽ??????빤?߻???????һЩ???????????ڶ?CPU?????Ϲ?????
--
--4??ppc64 ??һ???ܺõļ??齻???????Ŀ??ܣ???Ϊ???????ѡ?unsigned long??
--   ??64λֵ��ʹ?á?
--
--5??????Documentation/CodingStyle?ļ???????ϸ???����????㲹??????????????
--   ʹ?ò?????????????????Υ??(scripts/checkpatch.pl)??????Ա?????ύ??
--   ??Ӧ?õ??????????㲹???е?????Υ?档
--
--6???κθ??»??߸Ķ?CONFIGѡ????ܴ??????ò˵???
--
--7?????е?Kconfigѡ?????¶?Ҫ??˵?????֡?
--
--8???Ѿ????????ܽ??????ص?Kconfig???ϡ????Ǻ???ͨ?????????õ?--??��???????½???
--
--9?????????м????ԡ?
--
--10??ʹ??'make checkstack'??'make namespacecheck'???飬Ȼ???޸????ҵ??????⡣
--    ע?⣺??ջ???鲻????ȷ?س??????⣬?????κε?һ???????ڶ?ջ??ʹ?ö???512?ֽ?
--    ??Ҫ׼???޸ġ?
--
--11??????kernel-doc??ȫ???ں?APIs?ļ???????Ҫ????̬?ĺ????????ǰ???Ҳ????ν????
--    ʹ??'make htmldocs'????'make mandocs'��????kernel-doc??Ȼ???޸??κ?
--    ???ֵ????⡣
--
--12???Ѿ?ͨ??CONFIG_PREEMPT, CONFIG_DEBUG_PREEMPT,
--    CONFIG_DEBUG_SLAB, CONFIG_DEBUG_PAGEALLOC, CONFIG_DEBUG_MUTEXES,
--    CONFIG_DEBUG_SPINLOCK, CONFIG_DEBUG_SPINLOCK_SLEEP???ԣ?????ͬʱ??
--    ʹ?ܡ?
--
--13???Ѿ???????????ʹ?û??߲?ʹ?? CONFIG_SMP ?? CONFIG_PREEMPT????ִ??ʱ?䡣
--
--14?????�����Ӱ??IO/Disk???ȵȣ??Ѿ?ͨ??ʹ?û??߲?ʹ?? CONFIG_LBDAF ???ԡ?
--
--15?????е?codepaths?Ѿ???ʹ????lockdep???ù??ܡ?
--
--16?????е?/proc??¼???¶?Ҫ?????ļ?????Documentation/Ŀ¼?¡?
--
--17?????е??ں??����??????¶?????¼??Documentation/kernel-parameters.txt?ļ??С?
--
--18?????е?ģ?????????¶???MODULE_PARM_DESC()??¼??
--
--19?????е??û??ռ??ӿڸ??¶?????¼??Documentation/ABI/???鿴Documentation/ABI/README
--    ???Ի??ø???????Ϣ???ı??û??ռ??ӿڵĲ???Ӧ?ñ??ʼ????͸?linux-api@vger.kernel.org??
--
--20?????????ǲ??Ƕ?ͨ??`make headers_check'??
--
--21???Ѿ?ͨ??????????slab??page-allocationʧ?ܼ??顣?鿴Documentation/fault-injection/??
--
--22???¼?????Դ???Ѿ?ͨ??`gcc -W'??ʹ??"make EXTRA_CFLAGS=-W"?????롣???????????ܶෳ?գ?
--    ???Ƕ???Ѱ??©???????洦??????:"warning: comparison between signed and unsigned"??
--
--23?????????ϲ???-mm?????????ٲ??ԣ???��ȷ?????Ƿ񻹺Ͳ????????е????�����һ???????Լ???VM??VFS
--    ????????ϵͳ?и????仯??
--
--24?????е??ڴ?????{e.g., barrier(), rmb(), wmb()}??Ҫ??Դ?????е?һ??ע??��???????Ƕ??Ǹ?ʲô??
--    ?Լ?ԭ????
--
--25?????????κ????????????ƵĲ????????ӣ?ҲҪ????Documentation/ioctl/ioctl-number.txt??
--
--26?????????ĸ??Ĵ????��?????ʹ???κε??ں?APIs????????????kconfig?????й?ϵ?Ĺ??ܣ?????Ҫ
--    ʹ?????ص?kconfig???Źرգ? and/or =m??????ѡ???ṩ??[??ͬһʱ?䲻?????õĶ????ã?????????????????
--    ????????]??
--
--    CONFIG_SMP, CONFIG_SYSFS, CONFIG_PROC_FS, CONFIG_INPUT, CONFIG_PCI,
--    CONFIG_BLOCK, CONFIG_PM, CONFIG_HOTPLUG, CONFIG_MAGIC_SYSRQ,
--    CONFIG_NET, CONFIG_INET=n (??һ??ʹ?? CONFIG_NET=y)
+-	TWL6025_ADJUSTABLE_SMPS(SMPS3, 0x34, 1),
+-	TWL6025_ADJUSTABLE_SMPS(SMPS4, 0x10, 2),
+-	TWL6025_ADJUSTABLE_SMPS(VIO, 0x16, 3),
++	TWL6025_ADJUSTABLE_LDO(LDO2, 0x54, 1000, 3300),
++	TWL6025_ADJUSTABLE_LDO(LDO4, 0x58, 1000, 3300),
++	TWL6025_ADJUSTABLE_LDO(LDO3, 0x5c, 1000, 3300),
++	TWL6025_ADJUSTABLE_LDO(LDO5, 0x68, 1000, 3300),
++	TWL6025_ADJUSTABLE_LDO(LDO1, 0x6c, 1000, 3300),
++	TWL6025_ADJUSTABLE_LDO(LDO7, 0x74, 1000, 3300),
++	TWL6025_ADJUSTABLE_LDO(LDO6, 0x60, 1000, 3300),
++	TWL6025_ADJUSTABLE_LDO(LDOLN, 0x64, 1000, 3300),
++	TWL6025_ADJUSTABLE_LDO(LDOUSB, 0x70, 1000, 3300),
++
++	TWL6025_ADJUSTABLE_SMPS(SMPS3, 0x34),
++	TWL6025_ADJUSTABLE_SMPS(SMPS4, 0x10),
++	TWL6025_ADJUSTABLE_SMPS(VIO, 0x16),
+ };
+ 
+ static u8 twl_get_smps_offset(void)
+-- 
+1.7.0.4
+
