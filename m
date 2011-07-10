@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753830Ab1GJLMC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 07:12:02 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:42543 "EHLO ogre.sisk.pl"
+	id S1754539Ab1GJLMP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 07:12:15 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:42549 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750975Ab1GJLL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 07:11:59 -0400
+	id S1754059Ab1GJLML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jul 2011 07:12:11 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Johannes Berg <johannes@sipsolutions.net>
+To: Pekka Enberg <penberg@kernel.org>
 Subject: Re: 3.0-rc6-git6: Reported regressions from 2.6.39
-Date: Sun, 10 Jul 2011 13:12:27 +0200
+Date: Sun, 10 Jul 2011 13:10:16 +0200
 User-Agent: KMail/1.13.6 (Linux/3.0.0-rc6+; KDE/4.6.0; x86_64; ; )
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
@@ -17,36 +17,33 @@ Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>
-References: <Y7LyOsOBwFM.A.kJG.kBYGOB@chimera> <1310295277.3942.1.camel@jlt3.sipsolutions.net>
-In-Reply-To: <1310295277.3942.1.camel@jlt3.sipsolutions.net>
+        Avi Kivity <avi@redhat.com>, Steve <stefan.bosak@gmail.com>
+References: <Y7LyOsOBwFM.A.kJG.kBYGOB@chimera> <CAOJsxLEzUC9k0Y2PNxQpCs0WCjQBmP0O2dDxTzPzhGEcvQVDeQ@mail.gmail.com>
+In-Reply-To: <CAOJsxLEzUC9k0Y2PNxQpCs0WCjQBmP0O2dDxTzPzhGEcvQVDeQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="utf-8"
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201107101312.27466.rjw@sisk.pl>
+Message-Id: <201107101310.16556.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, July 10, 2011, Johannes Berg wrote:
-> On Sun, 2011-07-10 at 12:19 +0200, Rafael J. Wysocki wrote:
+On Sunday, July 10, 2011, Pekka Enberg wrote:
+> On Sun, Jul 10, 2011 at 1:19 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=38672
+> > Subject         : KVM guest boot crashed
+> > Submitter       : Steve <stefan.bosak@gmail.com>
+> > Date            : 2011-07-02 06:56 (9 days old)
+> > First-Bad-Commit: http://git.kernel.org/linus/6506e4f995967b1a48cc34418c77b318df92ce35
 > 
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=38702
-> > Subject		: 3.0.0-rc4-git6 - INFO: possible circular locking dependency detected - (&rdev->mtx){+.+.+.}, at: [<ffffffffa00e27e0>] cfg80211_netdev_notifier_call+0x275/0x4ff [cfg80211]
-> > Submitter	: Miles Lane <miles.lane@gmail.com>
-> > Date		: 2011-06-26 21:54 (15 days old)
-> > Message-ID	: <BANLkTikztsFnPkJZ7VxRC-zsitwCCvVmeg@mail.gmail.com>
-> > References	: http://marc.info/?l=linux-kernel&m=130912559804336&w=2
-> 
-> Should be fixed by c10841ca722a0bc960dc541c51582773f9a24f98 which was
-> part of John's latest pull request and is in net-2.6 now on its way up.
+> That URL gives me "404 - Unknown commit object"
 
-Thanks, closing.
+Indeed, sorry.
 
+> and Bugzilla comments give me the impression it's actually a QEMU bug. Hmm?
+
+You're right, it appears to be a qemu bug, I have closed it.
+
+Thanks,
 Rafael
