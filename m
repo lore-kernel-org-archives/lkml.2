@@ -1,45 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917Ab1GJQi3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 12:38:29 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:49018 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753515Ab1GJQi0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 12:38:26 -0400
+	id S1755989Ab1GJQrP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 12:47:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4370 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753689Ab1GJQrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jul 2011 12:47:14 -0400
+Date: Sun, 10 Jul 2011 18:44:24 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] x86: kill handle_signal()->set_fs()
+Message-ID: <20110710164424.GA20261@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20110710032510.GG6014@linux.vnet.ibm.com>
-References: <CAAVPGONLqy+gn_ggjQxyUoYifs4Hipcd-0t931w04StyrTCzxQ@mail.gmail.com>
-	<201107072047.14429.kernelmail.jms@gmail.com>
-	<20110707195845.GD6014@linux.vnet.ibm.com>
-	<201107072147.12751.kernelmail.jms@gmail.com>
-	<20110708002903.GI6014@linux.vnet.ibm.com>
-	<20110709100900.GB6014@linux.vnet.ibm.com>
-	<CAAVPGOMe6NawfkNQ1pSGYe5a1=X0z_KcD5Dn_xDX55p3K_46nQ@mail.gmail.com>
-	<20110710032510.GG6014@linux.vnet.ibm.com>
-Date: Sun, 10 Jul 2011 17:38:25 +0100
-Message-ID: <CAAVPGOPCGsNynWPWcwaxVU_jPCg=VPdz82_g6OvY5gnYKk5oFg@mail.gmail.com>
-Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3
-From: julie Sullivan <kernelmail.jms@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I added another patch onto the jms.2011.07.07a in the -rcu git tree.
-> If you get a chance to test it, please let me know how it goes.
->
->                                                        Thanx, Paul
+handle_signal()->set_fs() has a nice comment which explains what
+set_fs() is, but it doesn't explain why it is needed and why it
+depends on CONFIG_X86_64.
 
+Afaics, the history of this confusion is:
 
-Right, adding this commit to the other six:
+	1. I guess today nobody can explain why it was needed
+	   in arch/i386/kernel/signal.c, perhaps it was always
+	   wrong. This predates 2.4.0 kernel.
 
-commit 8a153670878242b8a95213d986f4922111321743
+	2. then it was copy-and-past'ed to the new x86_64 arch.
 
- makes us freeze on boot again.
+	3. then it was removed from i386 (but not from x86_64)
+	   by b93b6ca3 "i386: remove unnecessary code".
 
-Cheers
-Julie
+	4. then it was reintroduced under CONFIG_X86_64 when x86
+	   unified i386 and x86_64, because the patch above didn't
+	   touch x86_64.
+
+Remove it. ->addr_limit should be correct. Even if it was possible
+that it is wrong, it is too late to fix it after setup_rt_frame().
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+
+ arch/x86/kernel/signal.c |    9 ---------
+ 1 file changed, 9 deletions(-)
+
+--- ptrace/arch/x86/kernel/signal.c~1_kill_set_fs	2011-05-22 16:27:28.000000000 +0200
++++ ptrace/arch/x86/kernel/signal.c	2011-07-10 18:06:30.000000000 +0200
+@@ -717,15 +717,6 @@ handle_signal(unsigned long sig, siginfo
+ 	if (ret)
+ 		return ret;
+ 
+-#ifdef CONFIG_X86_64
+-	/*
+-	 * This has nothing to do with segment registers,
+-	 * despite the name.  This magic affects uaccess.h
+-	 * macros' behavior.  Reset it to the normal setting.
+-	 */
+-	set_fs(USER_DS);
+-#endif
+-
+ 	/*
+ 	 * Clear the direction flag as per the ABI for function entry.
+ 	 */
+
