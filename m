@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755957Ab1GJL0f (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 07:26:35 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:42678 "EHLO ogre.sisk.pl"
+	id S932147Ab1GJL0o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 07:26:44 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:42690 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755872Ab1GJL01 convert rfc822-to-8bit (ORCPT
+	id S1755874Ab1GJL02 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 07:26:27 -0400
+	Sun, 10 Jul 2011 07:26:28 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>,
-        "Dennis Jansen" <dennis.jansen@web.de>
+        "rocko" <rockorequin@hotmail.com>
 References: <AtAvQwe5sAK.A.loH.OlYGOB@chimera>
 In-Reply-To: <AtAvQwe5sAK.A.loH.OlYGOB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -18,8 +18,8 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <gK_efVqs2fP.A.NZ.bmYGOB@chimera>
-Subject: [Bug #36392] 2.6.39, 3.0-rc2 Intel DRI Regression: Black Screen after trying to play video
+Message-ID: <gK_efVqs2fP.A.Cb.dmYGOB@chimera>
+Subject: [Bug #36332] Intel gpu turns external monitor off when X starts
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Date: Sun, 10 Jul 2011 12:58:51 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -34,9 +34,9 @@ introduced between 2.6.38 and 2.6.39.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=36392
-Subject		: 2.6.39, 3.0-rc2 Intel DRI Regression: Black Screen after trying to play video
-Submitter	: Dennis Jansen <dennis.jansen@web.de>
-Date		: 2011-06-01 04:41 (40 days old)
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=36332
+Subject		: Intel gpu turns external monitor off when X starts
+Submitter	: rocko <rockorequin@hotmail.com>
+Date		: 2011-05-31 02:53 (41 days old)
 
 
