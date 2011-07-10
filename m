@@ -1,38 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752662Ab1GJOFn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 10:05:43 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:47663 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317Ab1GJOFm (ORCPT
+	id S1753416Ab1GJOTz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 10:19:55 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42508 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752197Ab1GJOTx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 10:05:42 -0400
-Date: Sun, 10 Jul 2011 07:04:22 -0700 (PDT)
-Message-Id: <20110710.070422.1594762707835771547.davem@davemloft.net>
-To: dbaluta@ixiacom.com
-Cc: eric.dumazet@gmail.com, richard.cochran@omicron.at,
-        mirq-linux@rere.qmqm.pl, xiaosuo@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] skbuff: update struct sk_buff members comments
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1310173408-7727-1-git-send-email-dbaluta@ixiacom.com>
-References: <1310173408-7727-1-git-send-email-dbaluta@ixiacom.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 10 Jul 2011 07:04:30 -0700 (PDT)
+	Sun, 10 Jul 2011 10:19:53 -0400
+Date: Sun, 10 Jul 2011 15:19:35 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mattias Wallin <mattias.wallin@stericsson.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCHv2 0/3] clocksource: add db8500 PRCMU timer
+Message-ID: <20110710141935.GA21414@n2100.arm.linux.org.uk>
+References: <1307007271-1004-1-git-send-email-mattias.wallin@stericsson.com> <20110602094622.GS3660@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110602094622.GS3660@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel Baluta <dbaluta@ixiacom.com>
-Date: Sat,  9 Jul 2011 04:03:28 +0300
-
-> Rearrange struct sk_buff members comments to follow their
-> definition order. Also, add missing comments for ooo_okay
-> and dropcount members.
+On Thu, Jun 02, 2011 at 10:46:22AM +0100, Russell King - ARM Linux wrote:
+> On Thu, Jun 02, 2011 at 11:34:31AM +0200, Mattias Wallin wrote:
+> > The Multi Timer Unit (MTU) is currently used as clocksource and sched_clk
+> > for the u8500 machine. The MTU block loose power during cpuidle sleep states
+> > so an alternate clocksource is needed and these patches adds the db8500 PRCMU
+> > timer.
 > 
-> Signed-off-by: Daniel Baluta <dbaluta@ixiacom.com>
+> Why don't we just find a way of fixing sched_clock so that the value
+> doesn't reset over a suspend/resume cycle?  IOW, lets fix the problem
+> for _everyone_ rather than only fixing it for one platform at a time.
+> 
+> Could you try this patch to check whether sched_clock() behaves better
+> across a suspend/resume cycle please?
 
-Applied, thanks.
+So do I merge this patch?
