@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755346Ab1GJUBH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 16:01:07 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:39296 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755984Ab1GJUAq (ORCPT
+	id S1755981Ab1GJUAn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 16:00:43 -0400
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:60009 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755753Ab1GJUAj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 16:00:46 -0400
+	Sun, 10 Jul 2011 16:00:39 -0400
 DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
 	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=JyOnc3bM1eC3Z46Ex6JAHd1trv4wHL3OYf8xbg2ESTTFjf9GU2zw/Y4JGd0S7q5ZQ0046R7v6ZVtnszdPD+TYscdnrcJCMl/VVfG3sdo+Npe8cEBIGXEXfAh2scCKHPB;
-Date: Sun, 10 Jul 2011 12:59:57 -0700
+	b=K1RmS9wwNgdD3qDl+eC3NUQJL+TppmpuVRmhYKZiPNiBNPs/KBiG48ZB+MI7NEr5x0xnidzTWnQgSqCEjOaQIadjN8lmKBT7+NRy4tfQD+ntlkJvBEIb4yxdiMMfTJ2X;
+Date: Sun, 10 Jul 2011 12:55:45 -0700
 From: Randy Dunlap <rdunlap@xenotime.net>
 To: lkml <linux-kernel@vger.kernel.org>
 Cc: linux-media@vger.kernel.org, mchehab@infradead.org
-Subject: [PATCH 9/9] media/radio: fix zoltrix CONFIG IO PORT
-Message-Id: <20110710125957.87666000.rdunlap@xenotime.net>
+Subject: [PATCH 4/9] media/radio: fix gemtek CONFIG IO PORT
+Message-Id: <20110710125545.8f010dd7.rdunlap@xenotime.net>
 In-Reply-To: <20110710125109.c72f9c2d.rdunlap@xenotime.net>
 References: <20110710125109.c72f9c2d.rdunlap@xenotime.net>
 Organization: YPO4
@@ -30,39 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Randy Dunlap <rdunlap@xenotime.net>
 
-Modify radio-zoltrix to use HEX_STRING(CONFIG_RADIO_ZOLTRIX_PORT)
+Modify radio-gemtek to use HEX_STRING(CONFIG_RADIO_GEMTEK_PORT)
 so that the correct IO port value is used.
 
-Fixes this error message when CONFIG_RADIO_ZOLTRIX_PORT=20c:
-drivers/media/radio/radio-zoltrix.c:51:17: error: invalid suffix "c" on integer constant
+Fixes this error message when CONFIG_RADIO_GEMTEK_PORT=34c:
+drivers/media/radio/radio-gemtek.c:49:18: error: invalid suffix "c" on integer constant
 
 Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
 ---
- drivers/media/radio/radio-zoltrix.c |    7 +++++--
+ drivers/media/radio/radio-gemtek.c |    7 +++++--
  1 file changed, 5 insertions(+), 2 deletions(-)
 
---- linux-next-20110707.orig/drivers/media/radio/radio-zoltrix.c
-+++ linux-next-20110707/drivers/media/radio/radio-zoltrix.c
-@@ -33,6 +33,7 @@
- #include <linux/init.h>		/* Initdata                       */
- #include <linux/ioport.h>	/* request_region		  */
- #include <linux/delay.h>	/* udelay, msleep                 */
+--- linux-next-20110707.orig/drivers/media/radio/radio-gemtek.c
++++ linux-next-20110707/drivers/media/radio/radio-gemtek.c
+@@ -20,6 +20,7 @@
+ #include <linux/init.h>		/* Initdata			*/
+ #include <linux/ioport.h>	/* request_region		*/
+ #include <linux/delay.h>	/* udelay			*/
 +#include <linux/stringify.h>
- #include <linux/videodev2.h>	/* kernel radio structs           */
+ #include <linux/videodev2.h>	/* kernel radio structs		*/
  #include <linux/mutex.h>
- #include <linux/io.h>		/* outb, outb_p                   */
-@@ -45,10 +46,12 @@ MODULE_LICENSE("GPL");
- MODULE_VERSION("0.0.3");
+ #include <linux/io.h>		/* outb, outb_p			*/
+@@ -40,13 +41,15 @@ MODULE_VERSION("0.0.4");
+  */
  
- #ifndef CONFIG_RADIO_ZOLTRIX_PORT
--#define CONFIG_RADIO_ZOLTRIX_PORT -1
-+#define __RADIO_ZOLTRIX_PORT -1
+ #ifndef CONFIG_RADIO_GEMTEK_PORT
+-#define CONFIG_RADIO_GEMTEK_PORT -1
++#define __RADIO_GEMTEK_PORT -1
 +#else
-+#define __RADIO_ZOLTRIX_PORT HEX_STRING(CONFIG_RADIO_ZOLTRIX_PORT)
++#define __RADIO_GEMTEK_PORT HEX_STRING(CONFIG_RADIO_GEMTEK_PORT)
+ #endif
+ #ifndef CONFIG_RADIO_GEMTEK_PROBE
+ #define CONFIG_RADIO_GEMTEK_PROBE 1
  #endif
  
--static int io = CONFIG_RADIO_ZOLTRIX_PORT;
-+static int io = __RADIO_ZOLTRIX_PORT;
- static int radio_nr = -1;
- 
- module_param(io, int, 0);
+-static int io		= CONFIG_RADIO_GEMTEK_PORT;
++static int io		= __RADIO_GEMTEK_PORT;
+ static int probe	= CONFIG_RADIO_GEMTEK_PROBE;
+ static int hardmute;
+ static int shutdown	= 1;
