@@ -1,77 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755181Ab1GJAI5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 20:08:57 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:34541 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755089Ab1GJAIz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 20:08:55 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:sender:in-reply-to:references:date:
-	x-google-sender-auth:message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=b+KpkwmA8P7aWMUs10sdh4kvGQgp6GAw3T2LpcNUHUpeD4zkTjcTWHMnHDjhCcibp
-	jQ74DMg9hQUIS5Dzuesfw==
+	id S1755206Ab1GJAag (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 20:30:36 -0400
+Received: from mx.treblig.org ([80.68.94.177]:52107 "EHLO mx.treblig.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755100Ab1GJAaf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Jul 2011 20:30:35 -0400
+Date: Sun, 10 Jul 2011 01:30:32 +0100
+From: "Dr. David Alan Gilbert" <linux@treblig.org>
+To: teigland@redhat.com
+Cc: jj@chaosbits.net, linux-kernel@vger.kernel.org
+Subject: kmallocs with swapped parameters in fs/dlm/lock.c
+Message-ID: <20110710003032.GA19951@gallifrey>
 MIME-Version: 1.0
-In-Reply-To: <4E18EC41.2080102@ti.com>
-References: <1307925960-28839-1-git-send-email-ccross@android.com>
-	<4E18EC41.2080102@ti.com>
-Date: Sat, 9 Jul 2011 17:08:51 -0700
-X-Google-Sender-Auth: Zu5AVqx-7Qld3TGSMSXc17AdDmY
-Message-ID: <CAMbhsRRhBc-Ys=nBSB6kHSLUUGB3XD_unN4aG-wubYg0sFer4g@mail.gmail.com>
-Subject: Re: [PATCH] ARM: gic: Allow gic arch extensions to provide irqchip flags
-From: Colin Cross <ccross@android.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Chocolate: 70 percent or better cocoa solids preferably
+X-Operating-System: Linux/2.6.32.27-kvm-i386-20110114 (i686)
+X-Uptime: 01:15:32 up 142 days,  1:48,  1 user,  load average: 0.00, 0.00,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 9, 2011 at 5:03 PM, Santosh Shilimkar
-<santosh.shilimkar@ti.com> wrote:
-> On 6/12/2011 5:45 PM, Colin Cross wrote:
->>
->> Tegra can benefit from the IRQCHIP_MASK_ON_SUSPEND flag, allow it
->> to be passed to the gic irq chip.
->>
->> Signed-off-by: Colin Cross<ccross@android.com>
->
-> I missed this patch. Looks good to me and I think can
-> be merged in rc as well.
-> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Hi David,
+  Sparse spotted a couple of places in fs/dlm/lock.c where the size/flags
+parameters to kmalloc got swapped:
 
-There is no need for this in an rc unless another patch destined for
-rc needs to set the flags, which is unlikely at this point.
+The sparse output is:
+fs/dlm/lock.c:852:42: warning: incorrect type in argument 1 (different base types)
+fs/dlm/lock.c:852:42:    expected unsigned long [unsigned] [usertype] size
+fs/dlm/lock.c:852:42:    got restricted gfp_t
+fs/dlm/lock.c:852:64: warning: incorrect type in argument 2 (different base types)
+fs/dlm/lock.c:852:64:    expected restricted gfp_t [usertype] flags
+fs/dlm/lock.c:852:64:    got unsigned long
+fs/dlm/lock.c:4136:27: warning: incorrect type in argument 1 (different base types)
+fs/dlm/lock.c:4136:27:    expected unsigned long [unsigned] [usertype] size
+fs/dlm/lock.c:4136:27:    got restricted gfp_t
+fs/dlm/lock.c:4136:39: warning: incorrect type in argument 2 (different base types)
+fs/dlm/lock.c:4136:39:    expected restricted gfp_t [usertype] flags
+fs/dlm/lock.c:4136:39:    got unsigned long
 
->> ---
->>  arch/arm/common/gic.c |    1 +
->>  1 files changed, 1 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
->> index 8d62e07..a6c28a0 100644
->> --- a/arch/arm/common/gic.c
->> +++ b/arch/arm/common/gic.c
->> @@ -576,6 +576,7 @@ void __init gic_init(unsigned int gic_nr, unsigned int
->> irq_start,
->>        if (gic_nr == 0)
->>                gic_cpu_base_addr = cpu_base;
->>
->> +       gic_chip.flags |= gic_arch_extn.flags;
->>        gic_dist_init(gic, irq_start);
->>        gic_cpu_init(gic);
->>        gic_cpu_pm_init(gic);
->
-> Russell,
-> Any thoughts on this fix?
->
-> Regards
-> Santosh
->
+Line 852 is:
+                        warned = kmalloc(GFP_KERNEL, num_nodes * sizeof(int));
+Line 4136 is:
+        ms_stub = kmalloc(GFP_KERNEL, sizeof(struct dlm_message));
+
+and at least one of the defs of kmalloc is:
+slab_def.h:static __always_inline void *kmalloc(size_t size, gfp_t flags)
+
+Given that I haven't got a clue how to test a dlm, it's probably
+best that you patch it.
+
+Jesper:
+  I noticed in your patch:
+https://lkml.org/lkml/2011/7/2/90
+
+where you had done a kmalloc->kzalloc transform you kept the swap.
+
+This looks like new code in 3.0rc so I don't think you could quite
+call it a regression, but it should probably be fixed fairly quickly
+I guess.
+
+Dave
+-- 
+ -----Open up your eyes, open up your mind, open up your code -------   
+/ Dr. David Alan Gilbert    |       Running GNU/Linux       | Happy  \ 
+\ gro.gilbert @ treblig.org |                               | In Hex /
+ \ _________________________|_____ http://www.treblig.org   |_______/
