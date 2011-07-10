@@ -1,105 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756674Ab1GJUrg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 16:47:36 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:43412 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756120Ab1GJUr2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 16:47:28 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: [PATCH 1/2] PM / Domains: Introduce function to power off all unused PM domains
-Date: Sun, 10 Jul 2011 22:46:55 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc6+; KDE/4.6.0; x86_64; ; )
-Cc: Magnus Damm <magnus.damm@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        "Linux-SH" <linux-sh@vger.kernel.org>
-References: <201107102246.05107.rjw@sisk.pl>
-In-Reply-To: <201107102246.05107.rjw@sisk.pl>
+	id S1756619Ab1GJUye (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 16:54:34 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:19066 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752452Ab1GJUyd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jul 2011 16:54:33 -0400
+Date: Sun, 10 Jul 2011 22:54:31 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: David Teigland <teigland@redhat.com>
+cc: linux-kernel@vger.kernel.org, cluster-devel@redhat.com,
+        Christine Caulfield <ccaulfie@redhat.com>,
+        "Dr. David Alan Gilbert" <linux@treblig.org>
+Subject: [PATCH v3] fs, dlm: don't do pointless NULL check, use kzalloc and
+ fix order of arguments
+In-Reply-To: <alpine.LNX.2.00.1107021957130.16316@swampdragon.chaosbits.net>
+Message-ID: <alpine.LNX.2.00.1107102252510.2818@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1107021957130.16316@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107102246.56059.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+In fs/dlm/lock.c in the dlm_scan_waiters() function there are 3 small
+issues:
 
-Add a new function pm_genpd_poweroff_unused() queuing up the
-execution of pm_genpd_poweroff() for every initialized generic PM
-domain.  Calling it will cause every generic PM domain without
-devices in use to be powered off.
+1) There's no need to test the return value of the allocation and do a
+memset if is succeedes. Just use kzalloc() to obtain zeroed memory.
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+2) Since kfree() handles NULL pointers gracefully, the test of
+'warned' against NULL before the kfree() after the loop is completely
+pointless. Remove it.
+
+3) The arguments to kmalloc() (now kzalloc()) were swapped. Thanks to
+Dr. David Alan Gilbert for pointing this out.
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
- drivers/base/power/domain.c |   21 +++++++++++++++++++++
- include/linux/pm_domain.h   |    3 +++
- 2 files changed, 24 insertions(+)
+ fs/dlm/lock.c |    8 ++------
+ 1 files changed, 2 insertions(+), 6 deletions(-)
 
-Index: linux-2.6/include/linux/pm_domain.h
-===================================================================
---- linux-2.6.orig/include/linux/pm_domain.h
-+++ linux-2.6/include/linux/pm_domain.h
-@@ -24,6 +24,7 @@ struct dev_power_governor {
+diff --git a/fs/dlm/lock.c b/fs/dlm/lock.c
+index f71d0b5..84c52e6 100644
+--- a/fs/dlm/lock.c
++++ b/fs/dlm/lock.c
+@@ -849,9 +849,7 @@ void dlm_scan_waiters(struct dlm_ls *ls)
  
- struct generic_pm_domain {
- 	struct dev_pm_domain domain;	/* PM domain operations */
-+	struct list_head gpd_list_node;	/* Node in the global PM domains list */
- 	struct list_head sd_node;	/* Node in the parent's subdomain list */
- 	struct generic_pm_domain *parent;	/* Parent PM domain */
- 	struct list_head sd_list;	/* List of dubdomains */
-@@ -71,6 +72,7 @@ extern int pm_genpd_remove_subdomain(str
- extern void pm_genpd_init(struct generic_pm_domain *genpd,
- 			  struct dev_power_governor *gov, bool is_off);
- extern int pm_genpd_poweron(struct generic_pm_domain *genpd);
-+extern void pm_genpd_poweroff_unused(void);
- #else
- static inline int pm_genpd_add_device(struct generic_pm_domain *genpd,
- 				      struct device *dev)
-@@ -98,6 +100,7 @@ static inline int pm_genpd_poweron(struc
- {
- 	return -ENOSYS;
- }
-+static inline void pm_genpd_poweroff_unused(void) {}
- #endif
+ 		if (!num_nodes) {
+ 			num_nodes = ls->ls_num_nodes;
+-			warned = kmalloc(GFP_KERNEL, num_nodes * sizeof(int));
+-			if (warned)
+-				memset(warned, 0, num_nodes * sizeof(int));
++			warned = kzalloc(num_nodes * sizeof(int), GFP_KERNEL);
+ 		}
+ 		if (!warned)
+ 			continue;
+@@ -863,9 +861,7 @@ void dlm_scan_waiters(struct dlm_ls *ls)
+ 			  dlm_config.ci_waitwarn_us, lkb->lkb_wait_nodeid);
+ 	}
+ 	mutex_unlock(&ls->ls_waiters_mutex);
+-
+-	if (warned)
+-		kfree(warned);
++	kfree(warned);
  
- #endif /* _LINUX_PM_DOMAIN_H */
-Index: linux-2.6/drivers/base/power/domain.c
-===================================================================
---- linux-2.6.orig/drivers/base/power/domain.c
-+++ linux-2.6/drivers/base/power/domain.c
-@@ -16,6 +16,9 @@
- #include <linux/sched.h>
- #include <linux/suspend.h>
- 
-+static LIST_HEAD(gpd_list);
-+static DEFINE_MUTEX(gpd_list_lock);
-+
- #ifdef CONFIG_PM
- 
- static struct generic_pm_domain *dev_to_genpd(struct device *dev)
-@@ -1241,4 +1244,22 @@ void pm_genpd_init(struct generic_pm_dom
- 	genpd->domain.ops.restore_noirq = pm_genpd_restore_noirq;
- 	genpd->domain.ops.restore = pm_genpd_restore;
- 	genpd->domain.ops.complete = pm_genpd_complete;
-+	mutex_lock(&gpd_list_lock);
-+	list_add(&genpd->gpd_list_node, &gpd_list);
-+	mutex_unlock(&gpd_list_lock);
-+}
-+
-+/**
-+ * pm_genpd_poweroff_unused - Power off all PM domains with no devices in use.
-+ */
-+void pm_genpd_poweroff_unused(void)
-+{
-+	struct generic_pm_domain *genpd;
-+
-+	mutex_lock(&gpd_list_lock);
-+
-+	list_for_each_entry(genpd, &gpd_list, gpd_list_node)
-+		genpd_queue_power_off_work(genpd);
-+
-+	mutex_unlock(&gpd_list_lock);
- }
+ 	if (debug_expired)
+ 		log_debug(ls, "scan_waiters %u warn %u over %d us max %lld us",
+-- 
+1.7.6
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
