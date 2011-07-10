@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756891Ab1GJXjs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 19:39:48 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:41454 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756853Ab1GJXjq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 19:39:46 -0400
-Date: Sun, 10 Jul 2011 19:39:40 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Maxim Patlasov <maxim.patlasov@gmail.com>
-Cc: adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
+	id S1756910Ab1GJXj6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 19:39:58 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:20513 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756853Ab1GJXjy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jul 2011 19:39:54 -0400
+Date: Mon, 11 Jul 2011 01:39:53 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Edwin van Vliet <edwin@cheatah.nl>
+cc: starvik@axis.com, jesper.nilsson@axis.com, alan@linux.intel.com,
+        linux-cris-kernel@axis.com, linux-serial@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ext4: ext4_free_blocks() fix
-Message-ID: <20110710233940.GA28763@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Maxim Patlasov <maxim.patlasov@gmail.com>, adilger.kernel@dilger.ca,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1307700474-25743-1-git-send-email-maxim.patlasov@gmail.com>
- <BANLkTinZ5Lw0R9Nf1Un_gEA8DZqo7y15TA@mail.gmail.com>
+Subject: Re: [PATCH] drivers/tty/serial/crisv10: fix double assignment
+In-Reply-To: <1310341051-27057-1-git-send-email-edwin@cheatah.nl>
+Message-ID: <alpine.LNX.2.00.1107110139070.2818@swampdragon.chaosbits.net>
+References: <1310341051-27057-1-git-send-email-edwin@cheatah.nl>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTinZ5Lw0R9Nf1Un_gEA8DZqo7y15TA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Applied to the ext4 tree, with the following changes:
+On Mon, 11 Jul 2011, Edwin van Vliet wrote:
 
-1)  I made the one-line summary clearer:
+> Struct member dma_in_enabled was assigned twice in a row.
+> 
+> Signed-off-by: Edwin van Vliet <edwin@cheatah.nl>
+> ---
+>  drivers/tty/serial/crisv10.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/tty/serial/crisv10.c b/drivers/tty/serial/crisv10.c
+> index 225123b..0c55181 100644
+> --- a/drivers/tty/serial/crisv10.c
+> +++ b/drivers/tty/serial/crisv10.c
+> @@ -330,7 +330,6 @@ static struct e100_serial rs_table[] = {
+>  	  .dma_in_irq_description = "serial 1 dma rec",
+>  #else
+>  	  .dma_in_enabled = 0,
+> -	  .dma_in_enabled = 0,
+>  	  .dma_in_nbr = UINT_MAX,
+>  	  .dma_in_irq_nbr = 0,
+>  	  .dma_in_irq_flags = 0,
+> 
+Looks correct to me.
+Reviewed-by: Jesper Juhl <jj@chaosbits.net>
 
-    ext4: fix i_blocks/quota accounting when extent insertion fails
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-2) I used the flag name EXT4_FREE_BLOCKS_NO_QUOT_UPDATE which was
-clearer than "..._SKIP_QUPD".
-
-Apologies for the delay in getting back to you, and thanks for the
-patch.
-
-	      	  	   	   	   - Ted
-
-On Fri, Jun 10, 2011 at 02:17:30PM +0400, Maxim Patlasov wrote:
-> I apologise for flooding, patch description in former email was for
-> slightly different kernel version. Correct description is below:
-> 
-> Existent implementation of ext4_free_blocks() always calls dquot_free_block
-> This looks quite sensible in the most cases: blocks to be freed are associated
-> with inode and were accounted in quota and i_blocks some time ago.
-> 
-> However, there is a case when blocks to free were not accounted by the time
-> calling ext4_free_blocks() yet:
-> 
-> 1. delalloc is on, write_begin pre-allocated some space in quota
-> 2. write-back happens, ext4 allocates some blocks in ext4_ext_map_blocks()
-> 3. then ext4_ext_map_blocks() gets an error (e.g.  ENOSPC) from
->    ext4_ext_insert_extent() and calls ext4_free_blocks().
-> 
-> In this scenario, ext4_free_blocks() calls dquot_free_block() who, in turn,
-> decrements i_blocks for blocks which were not accounted yet (due to delalloc)
-> After clean umount, e2fsck reports something like:
-> 
-> > Inode 21, i_blocks is 5080, should be 5128.  Fix<y>?
-> because i_blocks was erroneously decremented as explained above.
-> 
-> The patch fixes the problem by passing EXT4_FREE_BLOCKS_SKIP_QUPD flag to
-> ext4_free_blocks(). This flag forces ext4_free_blocks() to skip
-> dquot_free_block() call.
-> 
-> Signed-off-by: Maxim Patlasov <maxim.patlasov@gmail.com>
