@@ -1,226 +1,384 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755377Ab1GJDWh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jul 2011 23:22:37 -0400
-Received: from DMZ-MAILSEC-SCANNER-5.MIT.EDU ([18.7.68.34]:43722 "EHLO
-	dmz-mailsec-scanner-5.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755219Ab1GJDWX (ORCPT
+	id S1755441Ab1GJDXS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jul 2011 23:23:18 -0400
+Received: from DMZ-MAILSEC-SCANNER-7.MIT.EDU ([18.7.68.36]:61387 "EHLO
+	dmz-mailsec-scanner-7.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755326Ab1GJDWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jul 2011 23:22:23 -0400
-X-AuditID: 12074422-b7b19ae000000a1c-85-4e191adea9a3
+	Sat, 9 Jul 2011 23:22:34 -0400
+X-AuditID: 12074424-b7bc6ae000005a77-c4-4e191af98ef4
 From: Andy Lutomirski <luto@MIT.EDU>
 To: x86@kernel.org
 Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
         John Stultz <johnstul@us.ibm.com>, Borislav Petkov <bp@amd64.org>,
         Andy Lutomirski <luto@MIT.EDU>
-Subject: [PATCH v2 2/8] x86: Make alternative instruction pointers relative
-Date: Sat,  9 Jul 2011 23:22:09 -0400
-Message-Id: <ebbdfbf96df72684175270c7695689a67a2c520c.1310267866.git.luto@mit.edu>
+Subject: [PATCH v2 6/8] x86-64: Move vread_tsc and vread_hpet into the vDSO
+Date: Sat,  9 Jul 2011 23:22:13 -0400
+Message-Id: <93bc5b14e813ac6b4f8fd02e1882f1059dc65a7a.1310267866.git.luto@mit.edu>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <cover.1310267866.git.luto@mit.edu>
 References: <cover.1310267866.git.luto@mit.edu>
 In-Reply-To: <cover.1310267866.git.luto@mit.edu>
 References: <cover.1310267866.git.luto@mit.edu>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFIsWRmVeSWpSXmKPExsUixG6nrntPStLP4PFpGYu+K0fZLS42bmOx
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsUixCmqrPtTStLP4Mc+U4u+K0fZLS42bmOx
 	aF07n93i8q45bBZbLjWzWvzY8JjVgc2j+9EnRo9bbX+YPXbOusvusWlVJ5vHuWt9zB6fN8kF
-	sEVx2aSk5mSWpRbp2yVwZVw7VV3wybjiwJodzA2MvzS6GDk5JARMJFr3nmGCsMUkLtxbzwZi
-	CwnsY5T4vdiwi5ELyF7PKLFhyw52COcpk8T1v6/AqtgEVCQ6lj4A6ubgEBEQklh6tw6khllg
-	E6PEr00TGUFqhAW8Jf4duMMCYrMIqErc2HgfzOYVCJJ4uf0+K8RmOYkjl5+DXcEpYCCx/O5s
-	qCv0JTo/7WfHJT6BUWABI8MqRtmU3Crd3MTMnOLUZN3i5MS8vNQiXVO93MwSvdSU0k2M4GB1
-	UdrB+POg0iFGAQ5GJR7ewDIJPyHWxLLiytxDjJIcTEqivLzAUBfiS8pPqcxILM6ILyrNSS0+
-	xCjBwawkwluzCaicNyWxsiq1KB8mJc3BoiTOW+L931dIID2xJDU7NbUgtQgmK8PBoSTBGwgy
-	VLAoNT21Ii0zpwQhzcTBCTKcB2g4J0gNb3FBYm5xZjpE/hSjLsepMwuOMAqx5OXnpUqJ84aB
-	FAmAFGWU5sHNgSWZV4ziQG8J83KBVPEAExTcpFdAS5iAlkx/DvJBcUkiQkqqgVEwOjV7r2jA
-	PvPConcBtfffhvLp3oqtqfvpcGm62lUXh5zNBZYMNeoOpxXzOw6oLhWOepDF7Fzg0S30iv3W
-	26SO0D4Js5d+ZX0ay0q+TV7p/H329X0J5meZP6lbpfBHxarrW1kmLFOsvmwv9eHM/jsTaufM
-	U7P8bsFvnn/qs6vpu5i8mss7lViKMxINtZiLihMBgfEMNQ0DAAA=
+	sEVx2aSk5mSWpRbp2yVwZdzZq1fwMLri65k9bA2Ms7y7GDk5JARMJPY0NzBB2GISF+6tZ+ti
+	5OIQEtjHKHFjwhJ2CGc9o8TOx6fBqoQEnjJJ9J5OBLHZBFQkOpY+AIpzcIgICEksvVsHUs8s
+	sIlR4temiYwgNcIC3hILjx4H62URUJXonfcbzOYVCJL4/WgXK8RmOYkjl5+DxTkFDCSW353N
+	BrFLX6Lz0352XOITGAUWMDKsYpRNya3SzU3MzClOTdYtTk7My0st0jXXy80s0UtNKd3ECApW
+	dheVHYzNh5QOMQpwMCrx8P4slvATYk0sK67MPcQoycGkJMrLCwx1Ib6k/JTKjMTijPii0pzU
+	4kOMEhzMSiK8NZuAynlTEiurUovyYVLSHCxK4ryl3v99hQTSE0tSs1NTC1KLYLIyHBxKEryB
+	IEMFi1LTUyvSMnNKENJMHJwgw3mAhnOC1PAWFyTmFmemQ+RfMYoDnSnMywWS4gEmECQZCaBr
+	RXinPwe5qLgkESEl1cBoaTJ1l8KOMuFVV/JaWXZcLDY+8Oh2YPlH/ZeOcvekM5YGfHU/JSn/
+	PPGgfyR/jKOB/+md5h0ZMt72wa+uc4uae6yZLlyoFt0Xul/7Yt6jhLNmCcvWrVjHPaU7+aba
+	/zjfk7+1ty3fw7ika0pjQuuMJYIXn/IsKeXz5+O9mK/wXEP68RNbg1olluKMREMt5qLiRACM
+	fLCu3QIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This save a few bytes on x86-64 and means that future patches can
-apply alternatives to unrelocated code.
+The vsyscall page now consists entirely of trap instructions.
 
+Cc: John Stultz <johnstul@us.ibm.com>
 Signed-off-by: Andy Lutomirski <luto@mit.edu>
 ---
- arch/x86/include/asm/alternative-asm.h |    4 ++--
- arch/x86/include/asm/alternative.h     |    8 ++++----
- arch/x86/include/asm/cpufeature.h      |    8 ++++----
- arch/x86/kernel/alternative.c          |   21 +++++++++++++--------
- arch/x86/lib/copy_page_64.S            |    9 +++------
- arch/x86/lib/memmove_64.S              |   11 +++++------
- 6 files changed, 31 insertions(+), 30 deletions(-)
+ arch/x86/include/asm/clocksource.h |    6 +++-
+ arch/x86/include/asm/tsc.h         |    4 ---
+ arch/x86/include/asm/vgtod.h       |    2 +-
+ arch/x86/include/asm/vsyscall.h    |    4 ---
+ arch/x86/kernel/Makefile           |    7 +----
+ arch/x86/kernel/alternative.c      |    8 -----
+ arch/x86/kernel/hpet.c             |    9 +-----
+ arch/x86/kernel/tsc.c              |    2 +-
+ arch/x86/kernel/vmlinux.lds.S      |    3 --
+ arch/x86/kernel/vread_tsc_64.c     |   36 -------------------------
+ arch/x86/kernel/vsyscall_64.c      |    2 +-
+ arch/x86/vdso/vclock_gettime.c     |   52 +++++++++++++++++++++++++++++++----
+ 12 files changed, 56 insertions(+), 79 deletions(-)
+ delete mode 100644 arch/x86/kernel/vread_tsc_64.c
 
-diff --git a/arch/x86/include/asm/alternative-asm.h b/arch/x86/include/asm/alternative-asm.h
-index 94d420b..4554cc6 100644
---- a/arch/x86/include/asm/alternative-asm.h
-+++ b/arch/x86/include/asm/alternative-asm.h
-@@ -17,8 +17,8 @@
+diff --git a/arch/x86/include/asm/clocksource.h b/arch/x86/include/asm/clocksource.h
+index a5df33f..3882c65 100644
+--- a/arch/x86/include/asm/clocksource.h
++++ b/arch/x86/include/asm/clocksource.h
+@@ -7,8 +7,12 @@
  
- .macro altinstruction_entry orig alt feature orig_len alt_len
- 	.align 8
--	.quad \orig
--	.quad \alt
-+	.long \orig - .
-+	.long \alt - .
- 	.word \feature
- 	.byte \orig_len
- 	.byte \alt_len
-diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
-index bf535f9..23fb6d7 100644
---- a/arch/x86/include/asm/alternative.h
-+++ b/arch/x86/include/asm/alternative.h
-@@ -43,8 +43,8 @@
- #endif
+ #define __ARCH_HAS_CLOCKSOURCE_DATA
  
- struct alt_instr {
--	u8 *instr;		/* original instruction */
--	u8 *replacement;
-+	s32 instr_offset;	/* original instruction */
-+	s32 repl_offset;	/* offset to replacement instruction */
- 	u16 cpuid;		/* cpuid bit set for replacement */
- 	u8  instrlen;		/* length of original instruction */
- 	u8  replacementlen;	/* length of new instruction, <= instrlen */
-@@ -84,8 +84,8 @@ static inline int alternatives_text_reserved(void *start, void *end)
-       "661:\n\t" oldinstr "\n662:\n"					\
-       ".section .altinstructions,\"a\"\n"				\
-       _ASM_ALIGN "\n"							\
--      _ASM_PTR "661b\n"				/* label           */	\
--      _ASM_PTR "663f\n"				/* new instruction */	\
-+      "	 .long 661b - .\n"			/* label           */	\
-+      "	 .long 663f - .\n"			/* new instruction */	\
-       "	 .word " __stringify(feature) "\n"	/* feature bit     */	\
-       "	 .byte 662b-661b\n"			/* sourcelen       */	\
-       "	 .byte 664f-663f\n"			/* replacementlen  */	\
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 71cc380..8a1920e 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -331,8 +331,8 @@ static __always_inline __pure bool __static_cpu_has(u16 bit)
- 			 "2:\n"
- 			 ".section .altinstructions,\"a\"\n"
- 			 _ASM_ALIGN "\n"
--			 _ASM_PTR "1b\n"
--			 _ASM_PTR "0\n" 	/* no replacement */
-+			 " .long 1b - .\n"
-+			 " .long 0\n"	 	/* no replacement */
- 			 " .word %P0\n"		/* feature bit */
- 			 " .byte 2b - 1b\n"	/* source len */
- 			 " .byte 0\n"		/* replacement len */
-@@ -349,8 +349,8 @@ static __always_inline __pure bool __static_cpu_has(u16 bit)
- 			     "2:\n"
- 			     ".section .altinstructions,\"a\"\n"
- 			     _ASM_ALIGN "\n"
--			     _ASM_PTR "1b\n"
--			     _ASM_PTR "3f\n"
-+			     " .long 1b - .\n"
-+			     " .long 3f - .\n"
- 			     " .word %P1\n"		/* feature bit */
- 			     " .byte 2b - 1b\n"		/* source len */
- 			     " .byte 4f - 3f\n"		/* replacement len */
++#define VCLOCK_NONE 0  /* No vDSO clock available.	*/
++#define VCLOCK_TSC  1  /* vDSO should use vread_tsc.	*/
++#define VCLOCK_HPET 2  /* vDSO should use vread_hpet.	*/
++
+ struct arch_clocksource_data {
+-	cycle_t (*vread)(void);
++	int vclock_mode;
+ };
+ 
+ #endif /* CONFIG_X86_64 */
+diff --git a/arch/x86/include/asm/tsc.h b/arch/x86/include/asm/tsc.h
+index 9db5583..83e2efd 100644
+--- a/arch/x86/include/asm/tsc.h
++++ b/arch/x86/include/asm/tsc.h
+@@ -51,10 +51,6 @@ extern int unsynchronized_tsc(void);
+ extern int check_tsc_unstable(void);
+ extern unsigned long native_calibrate_tsc(void);
+ 
+-#ifdef CONFIG_X86_64
+-extern cycles_t vread_tsc(void);
+-#endif
+-
+ /*
+  * Boot-time check whether the TSCs are synchronized across
+  * all CPUs/cores:
+diff --git a/arch/x86/include/asm/vgtod.h b/arch/x86/include/asm/vgtod.h
+index aa5add8..815285b 100644
+--- a/arch/x86/include/asm/vgtod.h
++++ b/arch/x86/include/asm/vgtod.h
+@@ -13,7 +13,7 @@ struct vsyscall_gtod_data {
+ 
+ 	struct timezone sys_tz;
+ 	struct { /* extract of a clocksource struct */
+-		cycle_t (*vread)(void);
++		int vclock_mode;
+ 		cycle_t	cycle_last;
+ 		cycle_t	mask;
+ 		u32	mult;
+diff --git a/arch/x86/include/asm/vsyscall.h b/arch/x86/include/asm/vsyscall.h
+index d555973..6010707 100644
+--- a/arch/x86/include/asm/vsyscall.h
++++ b/arch/x86/include/asm/vsyscall.h
+@@ -16,10 +16,6 @@ enum vsyscall_num {
+ #ifdef __KERNEL__
+ #include <linux/seqlock.h>
+ 
+-/* Definitions for CONFIG_GENERIC_TIME definitions */
+-#define __vsyscall_fn \
+-	__attribute__ ((unused, __section__(".vsyscall_fn"))) notrace
+-
+ #define VGETCPU_RDTSCP	1
+ #define VGETCPU_LSL	2
+ 
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index cc0469a..2deef3d 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -24,17 +24,12 @@ endif
+ nostackp := $(call cc-option, -fno-stack-protector)
+ CFLAGS_vsyscall_64.o	:= $(PROFILING) -g0 $(nostackp)
+ CFLAGS_hpet.o		:= $(nostackp)
+-CFLAGS_vread_tsc_64.o	:= $(nostackp)
+ CFLAGS_paravirt.o	:= $(nostackp)
+ GCOV_PROFILE_vsyscall_64.o	:= n
+ GCOV_PROFILE_hpet.o		:= n
+ GCOV_PROFILE_tsc.o		:= n
+-GCOV_PROFILE_vread_tsc_64.o	:= n
+ GCOV_PROFILE_paravirt.o		:= n
+ 
+-# vread_tsc_64 is hot and should be fully optimized:
+-CFLAGS_REMOVE_vread_tsc_64.o = -pg -fno-optimize-sibling-calls
+-
+ obj-y			:= process_$(BITS).o signal.o entry_$(BITS).o
+ obj-y			+= traps.o irq.o irq_$(BITS).o dumpstack_$(BITS).o
+ obj-y			+= time.o ioport.o ldt.o dumpstack.o
+@@ -43,7 +38,7 @@ obj-$(CONFIG_IRQ_WORK)  += irq_work.o
+ obj-y			+= probe_roms.o
+ obj-$(CONFIG_X86_32)	+= sys_i386_32.o i386_ksyms_32.o
+ obj-$(CONFIG_X86_64)	+= sys_x86_64.o x8664_ksyms_64.o
+-obj-$(CONFIG_X86_64)	+= syscall_64.o vsyscall_64.o vread_tsc_64.o
++obj-$(CONFIG_X86_64)	+= syscall_64.o vsyscall_64.o
+ obj-$(CONFIG_X86_64)	+= vsyscall_emu_64.o
+ obj-y			+= bootflag.o e820.o
+ obj-y			+= pci-dma.o quirks.o topology.o kdebugfs.o
 diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
-index a81f2d5..ddb207b 100644
+index ddb207b..c638228 100644
 --- a/arch/x86/kernel/alternative.c
 +++ b/arch/x86/kernel/alternative.c
-@@ -263,6 +263,7 @@ void __init_or_module apply_alternatives(struct alt_instr *start,
- 					 struct alt_instr *end)
- {
- 	struct alt_instr *a;
-+	u8 *instr, *replacement;
- 	u8 insnbuf[MAX_PATCH_LEN];
+@@ -14,7 +14,6 @@
+ #include <asm/pgtable.h>
+ #include <asm/mce.h>
+ #include <asm/nmi.h>
+-#include <asm/vsyscall.h>
+ #include <asm/cacheflush.h>
+ #include <asm/tlbflush.h>
+ #include <asm/io.h>
+@@ -250,7 +249,6 @@ static void __init_or_module add_nops(void *insns, unsigned int len)
  
- 	DPRINTK("%s: alt table %p -> %p\n", __func__, start, end);
-@@ -276,25 +277,29 @@ void __init_or_module apply_alternatives(struct alt_instr *start,
- 	 * order.
- 	 */
- 	for (a = start; a < end; a++) {
--		u8 *instr = a->instr;
-+		instr = (u8 *)&a->instr_offset + a->instr_offset;
-+		replacement = (u8 *)&a->repl_offset + a->repl_offset;
- 		BUG_ON(a->replacementlen > a->instrlen);
- 		BUG_ON(a->instrlen > sizeof(insnbuf));
- 		BUG_ON(a->cpuid >= NCAPINTS*32);
- 		if (!boot_cpu_has(a->cpuid))
- 			continue;
-+
-+		memcpy(insnbuf, replacement, a->replacementlen);
-+
-+		/* 0xe8 is a relative jump; fix the offset. */
-+		if (*insnbuf == 0xe8 && a->replacementlen == 5)
-+		    *(s32 *)(insnbuf + 1) += replacement - instr;
-+
-+		add_nops(insnbuf + a->replacementlen,
-+			 a->instrlen - a->replacementlen);
-+
- #ifdef CONFIG_X86_64
- 		/* vsyscall code is not mapped yet. resolve it manually. */
- 		if (instr >= (u8 *)VSYSCALL_START && instr < (u8*)VSYSCALL_END) {
- 			instr = __va(instr - (u8*)VSYSCALL_START + (u8*)__pa_symbol(&__vsyscall_0));
--			DPRINTK("%s: vsyscall fixup: %p => %p\n",
--				__func__, a->instr, instr);
- 		}
- #endif
--		memcpy(insnbuf, a->replacement, a->replacementlen);
--		if (*insnbuf == 0xe8 && a->replacementlen == 5)
--		    *(s32 *)(insnbuf + 1) += a->replacement - a->instr;
--		add_nops(insnbuf + a->replacementlen,
--			 a->instrlen - a->replacementlen);
+ extern struct alt_instr __alt_instructions[], __alt_instructions_end[];
+ extern s32 __smp_locks[], __smp_locks_end[];
+-extern char __vsyscall_0;
+ void *text_poke_early(void *addr, const void *opcode, size_t len);
+ 
+ /* Replace instructions with better alternatives for this CPU type.
+@@ -294,12 +292,6 @@ void __init_or_module apply_alternatives(struct alt_instr *start,
+ 		add_nops(insnbuf + a->replacementlen,
+ 			 a->instrlen - a->replacementlen);
+ 
+-#ifdef CONFIG_X86_64
+-		/* vsyscall code is not mapped yet. resolve it manually. */
+-		if (instr >= (u8 *)VSYSCALL_START && instr < (u8*)VSYSCALL_END) {
+-			instr = __va(instr - (u8*)VSYSCALL_START + (u8*)__pa_symbol(&__vsyscall_0));
+-		}
+-#endif
  		text_poke_early(instr, insnbuf, a->instrlen);
  	}
  }
-diff --git a/arch/x86/lib/copy_page_64.S b/arch/x86/lib/copy_page_64.S
-index 6fec2d1..01c805b 100644
---- a/arch/x86/lib/copy_page_64.S
-+++ b/arch/x86/lib/copy_page_64.S
-@@ -2,6 +2,7 @@
+diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
+index 0e07257..d10cc00 100644
+--- a/arch/x86/kernel/hpet.c
++++ b/arch/x86/kernel/hpet.c
+@@ -738,13 +738,6 @@ static cycle_t read_hpet(struct clocksource *cs)
+ 	return (cycle_t)hpet_readl(HPET_COUNTER);
+ }
  
- #include <linux/linkage.h>
- #include <asm/dwarf2.h>
-+#include <asm/alternative-asm.h>
+-#ifdef CONFIG_X86_64
+-static cycle_t __vsyscall_fn vread_hpet(void)
+-{
+-	return readl((const void __iomem *)fix_to_virt(VSYSCALL_HPET) + 0xf0);
+-}
+-#endif
+-
+ static struct clocksource clocksource_hpet = {
+ 	.name		= "hpet",
+ 	.rating		= 250,
+@@ -753,7 +746,7 @@ static struct clocksource clocksource_hpet = {
+ 	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
+ 	.resume		= hpet_resume_counter,
+ #ifdef CONFIG_X86_64
+-	.archdata	= { .vread = vread_hpet },
++	.archdata	= { .vclock_mode = VCLOCK_HPET },
+ #endif
+ };
  
- 	ALIGN
- copy_page_c:
-@@ -110,10 +111,6 @@ ENDPROC(copy_page)
- 2:
- 	.previous
- 	.section .altinstructions,"a"
--	.align 8
--	.quad copy_page
--	.quad 1b
--	.word X86_FEATURE_REP_GOOD
--	.byte .Lcopy_page_end - copy_page
--	.byte 2b - 1b
-+	altinstruction_entry copy_page, 1b, X86_FEATURE_REP_GOOD,	\
-+		.Lcopy_page_end-copy_page, 2b-1b
- 	.previous
-diff --git a/arch/x86/lib/memmove_64.S b/arch/x86/lib/memmove_64.S
-index d0ec9c2..ee16461 100644
---- a/arch/x86/lib/memmove_64.S
-+++ b/arch/x86/lib/memmove_64.S
-@@ -9,6 +9,7 @@
- #include <linux/linkage.h>
- #include <asm/dwarf2.h>
- #include <asm/cpufeature.h>
-+#include <asm/alternative-asm.h>
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index e7a74b8..56c633a 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -777,7 +777,7 @@ static struct clocksource clocksource_tsc = {
+ 	.flags                  = CLOCK_SOURCE_IS_CONTINUOUS |
+ 				  CLOCK_SOURCE_MUST_VERIFY,
+ #ifdef CONFIG_X86_64
+-	.archdata               = { .vread = vread_tsc },
++	.archdata               = { .vclock_mode = VCLOCK_TSC },
+ #endif
+ };
  
- #undef memmove
+diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
+index 8017471..4aa9c54 100644
+--- a/arch/x86/kernel/vmlinux.lds.S
++++ b/arch/x86/kernel/vmlinux.lds.S
+@@ -169,9 +169,6 @@ SECTIONS
+ 	.vsyscall : AT(VLOAD(.vsyscall)) {
+ 		*(.vsyscall_0)
  
-@@ -214,11 +215,9 @@ ENTRY(memmove)
- 	.previous
+-		. = ALIGN(L1_CACHE_BYTES);
+-		*(.vsyscall_fn)
+-
+ 		. = 1024;
+ 		*(.vsyscall_1)
  
- 	.section .altinstructions,"a"
--	.align 8
--	.quad .Lmemmove_begin_forward
--	.quad .Lmemmove_begin_forward_efs
--	.word X86_FEATURE_ERMS
--	.byte .Lmemmove_end_forward-.Lmemmove_begin_forward
--	.byte .Lmemmove_end_forward_efs-.Lmemmove_begin_forward_efs
-+	altinstruction_entry .Lmemmove_begin_forward,		\
-+		.Lmemmove_begin_forward_efs,X86_FEATURE_ERMS,	\
-+		.Lmemmove_end_forward-.Lmemmove_begin_forward,	\
-+		.Lmemmove_end_forward_efs-.Lmemmove_begin_forward_efs
- 	.previous
- ENDPROC(memmove)
+diff --git a/arch/x86/kernel/vread_tsc_64.c b/arch/x86/kernel/vread_tsc_64.c
+deleted file mode 100644
+index a81aa9e..0000000
+--- a/arch/x86/kernel/vread_tsc_64.c
++++ /dev/null
+@@ -1,36 +0,0 @@
+-/* This code runs in userspace. */
+-
+-#define DISABLE_BRANCH_PROFILING
+-#include <asm/vgtod.h>
+-
+-notrace cycle_t __vsyscall_fn vread_tsc(void)
+-{
+-	cycle_t ret;
+-	u64 last;
+-
+-	/*
+-	 * Empirically, a fence (of type that depends on the CPU)
+-	 * before rdtsc is enough to ensure that rdtsc is ordered
+-	 * with respect to loads.  The various CPU manuals are unclear
+-	 * as to whether rdtsc can be reordered with later loads,
+-	 * but no one has ever seen it happen.
+-	 */
+-	rdtsc_barrier();
+-	ret = (cycle_t)vget_cycles();
+-
+-	last = VVAR(vsyscall_gtod_data).clock.cycle_last;
+-
+-	if (likely(ret >= last))
+-		return ret;
+-
+-	/*
+-	 * GCC likes to generate cmov here, but this branch is extremely
+-	 * predictable (it's just a funciton of time and the likely is
+-	 * very likely) and there's a data dependence, so force GCC
+-	 * to generate a branch instead.  I don't barrier() because
+-	 * we don't actually need a barrier, and if this function
+-	 * ever gets inlined it will generate worse code.
+-	 */
+-	asm volatile ("");
+-	return last;
+-}
+diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
+index 40a379c..db08146 100644
+--- a/arch/x86/kernel/vsyscall_64.c
++++ b/arch/x86/kernel/vsyscall_64.c
+@@ -74,7 +74,7 @@ void update_vsyscall(struct timespec *wall_time, struct timespec *wtm,
+ 	write_seqlock_irqsave(&vsyscall_gtod_data.lock, flags);
+ 
+ 	/* copy vsyscall data */
+-	vsyscall_gtod_data.clock.vread		= clock->archdata.vread;
++	vsyscall_gtod_data.clock.vclock_mode	= clock->archdata.vclock_mode;
+ 	vsyscall_gtod_data.clock.cycle_last	= clock->cycle_last;
+ 	vsyscall_gtod_data.clock.mask		= clock->mask;
+ 	vsyscall_gtod_data.clock.mult		= mult;
+diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+index cf54813..9869bac 100644
+--- a/arch/x86/vdso/vclock_gettime.c
++++ b/arch/x86/vdso/vclock_gettime.c
+@@ -25,6 +25,43 @@
+ 
+ #define gtod (&VVAR(vsyscall_gtod_data))
+ 
++notrace static cycle_t vread_tsc(void)
++{
++	cycle_t ret;
++	u64 last;
++
++	/*
++	 * Empirically, a fence (of type that depends on the CPU)
++	 * before rdtsc is enough to ensure that rdtsc is ordered
++	 * with respect to loads.  The various CPU manuals are unclear
++	 * as to whether rdtsc can be reordered with later loads,
++	 * but no one has ever seen it happen.
++	 */
++	rdtsc_barrier();
++	ret = (cycle_t)vget_cycles();
++
++	last = VVAR(vsyscall_gtod_data).clock.cycle_last;
++
++	if (likely(ret >= last))
++		return ret;
++
++	/*
++	 * GCC likes to generate cmov here, but this branch is extremely
++	 * predictable (it's just a funciton of time and the likely is
++	 * very likely) and there's a data dependence, so force GCC
++	 * to generate a branch instead.  I don't barrier() because
++	 * we don't actually need a barrier, and if this function
++	 * ever gets inlined it will generate worse code.
++	 */
++	asm volatile ("");
++	return last;
++}
++
++static notrace cycle_t vread_hpet(void)
++{
++	return readl((const void __iomem *)fix_to_virt(VSYSCALL_HPET) + 0xf0);
++}
++
+ notrace static long vdso_fallback_gettime(long clock, struct timespec *ts)
+ {
+ 	long ret;
+@@ -36,9 +73,12 @@ notrace static long vdso_fallback_gettime(long clock, struct timespec *ts)
+ notrace static inline long vgetns(void)
+ {
+ 	long v;
+-	cycles_t (*vread)(void);
+-	vread = gtod->clock.vread;
+-	v = (vread() - gtod->clock.cycle_last) & gtod->clock.mask;
++	cycles_t cycles;
++	if (gtod->clock.vclock_mode == VCLOCK_TSC)
++		cycles = vread_tsc();
++	else
++		cycles = vread_hpet();
++	v = (cycles - gtod->clock.cycle_last) & gtod->clock.mask;
+ 	return (v * gtod->clock.mult) >> gtod->clock.shift;
+ }
+ 
+@@ -118,11 +158,11 @@ notrace int __vdso_clock_gettime(clockid_t clock, struct timespec *ts)
+ {
+ 	switch (clock) {
+ 	case CLOCK_REALTIME:
+-		if (likely(gtod->clock.vread))
++		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE))
+ 			return do_realtime(ts);
+ 		break;
+ 	case CLOCK_MONOTONIC:
+-		if (likely(gtod->clock.vread))
++		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE))
+ 			return do_monotonic(ts);
+ 		break;
+ 	case CLOCK_REALTIME_COARSE:
+@@ -139,7 +179,7 @@ int clock_gettime(clockid_t, struct timespec *)
+ notrace int __vdso_gettimeofday(struct timeval *tv, struct timezone *tz)
+ {
+ 	long ret;
+-	if (likely(gtod->clock.vread)) {
++	if (likely(gtod->clock.vclock_mode != VCLOCK_NONE)) {
+ 		if (likely(tv != NULL)) {
+ 			BUILD_BUG_ON(offsetof(struct timeval, tv_usec) !=
+ 				     offsetof(struct timespec, tv_nsec) ||
 -- 
 1.7.6
 
