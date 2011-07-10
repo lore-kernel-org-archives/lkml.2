@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756190Ab1GJRQl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 13:16:41 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:59672 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756001Ab1GJRQh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 13:16:37 -0400
-Date: Sun, 10 Jul 2011 10:16:26 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: julie Sullivan <kernelmail.jms@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3
-Message-ID: <20110710171626.GK6014@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CAAVPGONLqy+gn_ggjQxyUoYifs4Hipcd-0t931w04StyrTCzxQ@mail.gmail.com>
- <201107072047.14429.kernelmail.jms@gmail.com>
- <20110707195845.GD6014@linux.vnet.ibm.com>
- <201107072147.12751.kernelmail.jms@gmail.com>
- <20110708002903.GI6014@linux.vnet.ibm.com>
- <20110709100900.GB6014@linux.vnet.ibm.com>
- <CAAVPGOMe6NawfkNQ1pSGYe5a1=X0z_KcD5Dn_xDX55p3K_46nQ@mail.gmail.com>
- <20110710032510.GG6014@linux.vnet.ibm.com>
- <CAAVPGOPCGsNynWPWcwaxVU_jPCg=VPdz82_g6OvY5gnYKk5oFg@mail.gmail.com>
+	id S1756202Ab1GJRW3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 13:22:29 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:48105 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756011Ab1GJRWZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jul 2011 13:22:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAAVPGOPCGsNynWPWcwaxVU_jPCg=VPdz82_g6OvY5gnYKk5oFg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAM_iQpVp4CobPsDnb4Z2xPFtin_+qGdPSkyyK=z6aedTfvKVBQ@mail.gmail.com>
+References: <da20dc5c4160ed9a3da52f60799a1e4369fe3f27.1310228130.git.rprabhu@wnohang.net>
+	<CAM_iQpXeqc01dyHpViyJCMSz6wz-1mWmGi=J0UynUG8tbd99kw@mail.gmail.com>
+	<CACqU3MUgVTpc6kBvBiw7rtyn_JTA-JPrbnvai3Vnq+UWk-jSbQ@mail.gmail.com>
+	<CAOJsxLF+4VOXJwRJL7npMngDTGztXk739_GcMLxsMzmsVcDCVw@mail.gmail.com>
+	<CACqU3MUFO9DGqnK99ApaKn00vzj5rCB5=kjuSZGZpPU8c_4G-A@mail.gmail.com>
+	<CAM_iQpVp4CobPsDnb4Z2xPFtin_+qGdPSkyyK=z6aedTfvKVBQ@mail.gmail.com>
+Date: Sun, 10 Jul 2011 13:22:25 -0400
+Message-ID: <CACqU3MVBTuMYj2pAa+S2kwSZ0As6RoHFV-hcc1EOO+4LS1mgXA@mail.gmail.com>
+Subject: Re: [PATCH] Avoid Wunused-but-set warning
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
+Cc: Pekka Enberg <penberg@kernel.org>,
+        Raghavendra D Prabhu <rprabhu@wnohang.net>,
+        linux-kbuild@vger.kernel.org, Nir Tzachar <nir.tzachar@gmail.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 10, 2011 at 05:38:25PM +0100, julie Sullivan wrote:
-> > I added another patch onto the jms.2011.07.07a in the -rcu git tree.
-> > If you get a chance to test it, please let me know how it goes.
-> >
-> >                                                        Thanx, Paul
-> 
-> 
-> Right, adding this commit to the other six:
-> 
-> commit 8a153670878242b8a95213d986f4922111321743
-> 
->  makes us freeze on boot again.
+Hi,
 
-Thank you again for the testing!  This one will take some thought...
+On Sun, Jul 10, 2011 at 12:51 PM, Américo Wang <xiyou.wangcong@gmail.com> wrote:
+> On Mon, Jul 11, 2011 at 12:49 AM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+>>
+>> That said, it is not a strong requirement... unfortunately. So, let's
+>> have some fun and go ACK thousand of trivial patch just to generate
+>> traffic on the LKML and give myself self-importance :-)
+>
+> That is how LKML works, get used to it.
+>
+That's why I generally avoid to go there, SNR is too low (and, this
+message clearly does not make it better).
 
-							Thanx, Paul
+ - Arnaud
