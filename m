@@ -1,81 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756648Ab1GJVZw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 17:25:52 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:52609 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754145Ab1GJVZt (ORCPT
+	id S1756641Ab1GJV0l (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 17:26:41 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61485 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754145Ab1GJV0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 17:25:49 -0400
-X-Authority-Analysis: v=1.1 cv=IOX921YOuPvYFce5aSLzPVIStpiCPR9M8R83dyHW74w= c=1 sm=0 a=U4WHxWBNt-MA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=uGEvdhCgAAAA:8 a=CjxXgO3LAAAA:8 a=gu6fZOg2AAAA:8 a=2VR6CGoi2jS6xoWlVLAA:9 a=PUjeQqilurYA:10 a=C7YnqLjT7bEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [Bug #38132] [Warning] 2.6.39.x latencytop
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Andrew Watts <akwatts@ymail.com>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-In-Reply-To: <CAOJsxLEGqpcQP3S+TLBjpRsM=UTk=zyuHBoswXkVwbHsLaDqqg@mail.gmail.com>
-References: <AtAvQwe5sAK.A.loH.OlYGOB@chimera>
-	 <gK_efVqs2fP.A.Y3H.jlYGOB@chimera>
-	 <CAOJsxLEGqpcQP3S+TLBjpRsM=UTk=zyuHBoswXkVwbHsLaDqqg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Sun, 10 Jul 2011 17:25:45 -0400
-Message-ID: <1310333145.2269.6.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Sun, 10 Jul 2011 17:26:40 -0400
+From: raghu.prabhu13@gmail.com
+To: akpm@linux-foundation.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com
+Cc: keithp@keithp.com, viro@zeniv.linux.org.uk, riel@redhat.com,
+        swhiteho@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        jack@suse.cz, Raghavendra D Prabhu <rprabhu@wnohang.net>
+Subject: [PATCH] Remove incorrect usage of sysctl_vfs_cache_pressure
+Date: Mon, 11 Jul 2011 02:56:23 +0530
+Message-Id: <cover.1310331583.git.rprabhu@wnohang.net>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-07-10 at 14:53 +0300, Pekka Enberg wrote:
-> On Sun, Jul 10, 2011 at 1:58 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > This message has been generated automatically as a part of a report
-> > of regressions introduced between 2.6.38 and 2.6.39.
-> >
-> > The following bug entry is on the current list of known regressions
-> > introduced between 2.6.38 and 2.6.39.  Please verify if it still should
-> > be listed and let the tracking team know (either way).
-> >
-> > Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=38132
-> > Subject         : [Warning] 2.6.39.x latencytop
-> > Submitter       : Andrew Watts <akwatts@ymail.com>
-> > Date            : 2011-06-14 17:07 (27 days old)
-> > Message-ID      : <80098.5633.qm@web111013.mail.gq1.yahoo.com>
-> > References      : http://marc.info/?l=linux-kernel&m=130807128506490&w=2
-> 
-> This is a WARN_ON added in commit 6752ab4a ("tracing: Deprecate
-> tracing_enabled for tracing_on") that lets the user know about
-> deprecated ABI. It's somewhat unfortunate that there's no mention in
-> the changelog if everyone agreed on the deprecation or not...
-> 
-> That said, assuming the deprecation is OK (hi Steven, Frederic, Ingo!)
-> I think this issue can be closed.
+From: Raghavendra D Prabhu <rprabhu@wnohang.net>
 
-I deprecated it because I said I would for the last year ;)
+In shrinker functions, sysctl_vfs_cache_pressure variable is being used while
+trimming slab caches in general and not restricted to inode/dentry caches as
+documented for that sysctl.
 
-The tracing_enabled never did what it was suppose to do. It was suppose
-to be a "quick" way to disable tracing without fully disabling it. It
-was suppose to try to turn things off to a low overhead but not fully
-off without any overhead. The problem is that it never really worked
-well. The only tracer that does anything different with it as suppose to
-tracing_on, is the irqsoff tracers. They stop looking at max latencies
-when you echo 0 into tracing_enabled. But that's it. Everything else,
-it's just the same as echoing 0 into tracing_on. I think the irqsoff
-tracers now even look at tracing_on if it should trace a max latency or
-not, so tracing_enabled doesn't even help with that.
+Raghavendra D Prabhu (1):
+  mm/vmscan: Remove sysctl_vfs_cache_pressure from non-vfs shrinkers
 
-We can keep it around but I don't see any good reason for it besides not
-having latency top give a warning.
+ drivers/gpu/drm/i915/i915_gem.c |    2 +-
+ fs/gfs2/glock.c                 |    2 +-
+ fs/gfs2/quota.c                 |    2 +-
+ fs/mbcache.c                    |    2 +-
+ fs/nfs/dir.c                    |    2 +-
+ fs/quota/dquot.c                |    3 +--
+ net/sunrpc/auth.c               |    2 +-
+ 7 files changed, 7 insertions(+), 8 deletions(-)
 
-Question: Why is latency top even touching this file?
-
--- Steve
-
+-- 
+1.7.6
 
