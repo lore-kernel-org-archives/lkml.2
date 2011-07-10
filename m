@@ -1,86 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756516Ab1GJTWn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 15:22:43 -0400
-Received: from nm20-vm0.bullet.mail.ukl.yahoo.com ([217.146.183.115]:27160
-	"HELO nm20-vm0.bullet.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756292Ab1GJTWl convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 15:22:41 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 238177.38041.bm@omp1019.mail.ukl.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.de;
-  h=X-YMail-OSG:Received:X-Mailer:References:Message-ID:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=LyfMeGC18GLMH8UERydxS+ORvQty6pqKNo9ro18BS/FWSWLutc11KnNq5Wo1f0KPE1AjQhA1bGZIAeifqC7m6wCYFPrbPakl2NFQHJmRqfYcOnL+MPvpDd2V9RJV1Up/67+gtCaHc+kQEpfjYPG1XfFXtCL4nAcWkxODDWALB3Q=;
-X-YMail-OSG: SaraQ90VM1kf7YuJarjDN9q1N66RPhiNwOaTayCMH84M0.H
- MSpej8QidYnflwpbXMRjv2AmfRKHW15zUJzCPd1ODvK70EBFKJkVroynBUQi
- pYdDfo1.WoEBi8lSuj08lLwCyLFX56cbCnTfzZY9WmQvc6pAj_GC2KBdLLhA
- xtoYDwgSYRf9nVw.3rONDb.AQBvN0mRrd70lQas4Y5YiH7wEfNcFK9MZyfZu
- E4YQB0bZDyR0Ml.ZTqd4WvSg8BDgv5lLHpWWKfdFFTxpmydGaZDo_FHIaj8x
- dgOIyhbZoc0Y2XpUSOnYmQhBw.1V4lGHiyKbioC43uSB8k78Kj0t9133X5jX
- xhJTi_SrBIiZtuloQSa.3tUJpEPdYb0Wdhg02340q541eKc.06bNCR5xlBun
- m9rmlyzzU8ZF_Nc9BLEI6M_iXPzndBm01DvlH1mcr3VRzz_gIl7nbqTakVlu
- f
-X-Mailer: YahooMailRC/572 YahooMailWebService/0.8.112.307740
-References: <1310321566-29266-1-git-send-email-markpearson_de@yahoo.de> <20110710182634.GA19612@kroah.com>
-Message-ID: <1310325760.12531.YahooMailRC@web26207.mail.ukl.yahoo.com>
-Date: Sun, 10 Jul 2011 20:22:40 +0100 (BST)
-From: Mark Pearson <markpearson_de@yahoo.de>
-Subject: AW: [PATCH] Staging: comedi: Fixing style issues
-To: Greg KH <greg@kroah.com>
-Cc: abbotti@mev.co.uk, fmhess@users.sourceforge.net,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20110710182634.GA19612@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756598Ab1GJTWy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 15:22:54 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:41589 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756302Ab1GJTWt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jul 2011 15:22:49 -0400
+From: Per Forlin <per.forlin@linaro.org>
+To: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-doc@vger.kernel.org,
+        Venkatraman S <svenkatr@ti.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>, Sourav Poddar <sourav.poddar@ti.com>,
+        Chris Ball <cjb@laptop.org>,
+        J Freyensee <james_p_freyensee@linux.intel.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Per Forlin <per.forlin@linaro.org>
+Subject: [PATCH v6] mmc: documentation of mmc non-blocking request usage and design.
+Date: Sun, 10 Jul 2011 21:21:59 +0200
+Message-Id: <1310325719-2151-1-git-send-email-per.forlin@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Documentation about the background and the design of mmc non-blocking.
+Host driver guidelines to minimize request preparation overhead.
 
+Signed-off-by: Per Forlin <per.forlin@linaro.org>
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+---
+ChangeLog:
+ v2: - Minor updates after proofreading comments from Chris
+ v3: - Minor updates after more comments from Chris
+ v4: - Minor updates after comments from Randy
+ v5: - Fixed one more comment and Acked-by from Randy
+ v6: - Write out full function names and use () for all functions,
+       feedback from James.
 
+ Documentation/mmc/00-INDEX          |    2 +
+ Documentation/mmc/mmc-async-req.txt |   88 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 90 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/mmc/mmc-async-req.txt
 
-
------ Ursprüngliche Mail ----
-> Von: Greg KH <greg@kroah.com>
-> An: markpearson_de@yahoo.de
-> CC: abbotti@mev.co.uk; fmhess@users.sourceforge.net; 
->devel@driverdev.osuosl.org; linux-kernel@vger.kernel.org
-> Gesendet: Sonntag, den 10. Juli 2011, 20:26:34 Uhr
-> Betreff: Re: [PATCH] Staging: comedi: Fixing style issues
-> 
-> On Sun, Jul 10, 2011 at 08:12:46PM +0200, markpearson_de@yahoo.de wrote:
-> >  From: Mark Pearson <markpearson_de@yahoo.de>
-> > 
-> > comedi_fops.c : Warning that externs should be avoided in .c  files.
-> >                 A forward  function decleration was declared extern
-> >                  although it was only used internally.  Changed
-> >                  decleration to static.
-> > comedi.h      : Fixed warning that  storage class should be a the
-> >                  begining of declerations.
-> > 
-> > Lindent ran on both  files.
-> > 
-> > Ignore previous patch - forgot to add signed off  by.
-> 
-> Care to break this up into a set of "only do one thing per  patch"
-> series?  That way it's reviewable.
-> 
-> Also, running Lindent  is usually a very bad idea on files that have been
-> around for a while  now.  It causes a lot of unneeded churn, please just
-> make the minor  changes needed to be checkpatch.pl clean by hand.
-> 
-> thanks,
-> 
-> greg  k-h
->
-
-No problem Greg. I've submitted the patches for the two files again as a 
-one-thing-per-patch and left out the Lindent.
-
-Thanks for the feedback.
-
-Cheers, Mark.
+diff --git a/Documentation/mmc/00-INDEX b/Documentation/mmc/00-INDEX
+index 93dd7a7..a9ba672 100644
+--- a/Documentation/mmc/00-INDEX
++++ b/Documentation/mmc/00-INDEX
+@@ -4,3 +4,5 @@ mmc-dev-attrs.txt
+         - info on SD and MMC device attributes
+ mmc-dev-parts.txt
+         - info on SD and MMC device partitions
++mmc-async-req.txt
++        - info on mmc asynchronous requests
+diff --git a/Documentation/mmc/mmc-async-req.txt b/Documentation/mmc/mmc-async-req.txt
+new file mode 100644
+index 0000000..aac5634
+--- /dev/null
++++ b/Documentation/mmc/mmc-async-req.txt
+@@ -0,0 +1,88 @@
++Rationale
++=========
++
++How significant is the cache maintenance overhead?
++It depends. Fast eMMC and multiple cache levels with speculative cache
++pre-fetch makes the cache overhead relatively significant. If the DMA
++preparations for the next request are done in parallel with the current
++transfer, the DMA preparation overhead would not affect the MMC performance.
++The intention of non-blocking (asynchronous) MMC requests is to minimize the
++time between when an MMC request ends and another MMC request begins.
++Using mmc_wait_for_req(), the MMC controller is idle while dma_map_sg and
++dma_unmap_sg are processing. Using non-blocking MMC requests makes it
++possible to prepare the caches for next job in parallel with an active
++MMC request.
++
++MMC block driver
++================
++
++The mmc_blk_issue_rw_rq() in the MMC block driver is made non-blocking.
++The increase in throughput is proportional to the time it takes to
++prepare (major part of preparations are dma_map_sg() and dma_unmap_sg())
++a request and how fast the memory is. The faster the MMC/SD is
++the more significant the prepare request time becomes. Roughly the expected
++performance gain is 5% for large writes and 10% on large reads on a L2 cache
++platform. In power save mode, when clocks run on a lower frequency, the DMA
++preparation may cost even more. As long as these slower preparations are run
++in parallel with the transfer performance won't be affected.
++
++Details on measurements from IOZone and mmc_test
++================================================
++
++https://wiki.linaro.org/WorkingGroups/Kernel/Specs/StoragePerfMMC-async-req
++
++MMC core API extension
++======================
++
++There is one new public function mmc_start_req().
++It starts a new MMC command request for a host. The function isn't
++truly non-blocking. If there is on ongoing async request it waits
++for completion of that request and starts the new one and returns. It
++doesn't wait for the new request to complete. If there is no ongoing
++request it starts the new request and returns immediately.
++
++MMC host extensions
++===================
++
++There are two optional members in the
++mmc_host_ops -- pre_req() and post_req() -- that the host
++driver may implement in order to move work to before and after the actual
++mmc_host_ops.request() function is called. In the DMA case pre_req() may do
++dma_map_sg() and prepare the DMA descriptor, and post_req() runs
++the dma_unmap_sg().
++
++Optimize for the first request
++==============================
++
++The first request in a series of requests can't be prepared in parallel with
++the previous transfer, since there is no previous request.
++The argument is_first_req in pre_req() indicates that there is no previous
++request. The host driver may optimize for this scenario to minimize
++the performance loss. A way to optimize for this is to split the current
++request in two chunks, prepare the first chunk and start the request,
++and finally prepare the second chunk and start the transfer.
++
++Pseudocode to handle is_first_req scenario with minimal prepare overhead:
++
++if (is_first_req && req->size > threshold)
++   /* start MMC transfer for the complete transfer size */
++   mmc_start_command(MMC_CMD_TRANSFER_FULL_SIZE);
++
++   /*
++    * Begin to prepare DMA while cmd is being processed by MMC.
++    * The first chunk of the request should take the same time
++    * to prepare as the "MMC process command time".
++    * If prepare time exceeds MMC cmd time
++    * the transfer is delayed, guesstimate max 4k as first chunk size.
++    */
++    prepare_1st_chunk_for_dma(req);
++    /* flush pending desc to the DMAC (dmaengine.h) */
++    dma_issue_pending(req->dma_desc);
++
++    prepare_2nd_chunk_for_dma(req);
++    /*
++     * The second issue_pending should be called before MMC runs out
++     * of the first chunk. If the MMC runs out of the first data chunk
++     * before this call, the transfer is delayed.
++     */
++    dma_issue_pending(req->dma_desc);
+-- 
+1.7.4.1
 
