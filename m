@@ -1,43 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756698Ab1GJVt6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 17:49:58 -0400
-Received: from gw.minian.org ([83.96.227.91]:48780 "EHLO lab.minian.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752707Ab1GJVt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 17:49:58 -0400
-From: Edwin van Vliet <edwin@cheatah.nl>
-To: roland@kernel.org
-Cc: mike.marciniszyn@qlogic.com, mitko@qlogic.com, ralph.campbell@qlogic.com,
-        linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Edwin van Vliet <edwin@cheatah.nl>
-Subject: [PATCH] drivers/infiniband/hw/qib/qib_iba7322: remove double define
-Date: Sun, 10 Jul 2011 23:49:47 +0200
-Message-Id: <1310334587-26731-1-git-send-email-edwin@cheatah.nl>
-X-Mailer: git-send-email 1.7.5.4
+	id S1756705Ab1GJVuu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 17:50:50 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:33865 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752707Ab1GJVut convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jul 2011 17:50:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110710214639.GP6014@linux.vnet.ibm.com>
+References: <20110707195845.GD6014@linux.vnet.ibm.com>
+	<201107072147.12751.kernelmail.jms@gmail.com>
+	<20110708002903.GI6014@linux.vnet.ibm.com>
+	<20110709100900.GB6014@linux.vnet.ibm.com>
+	<CAAVPGOMe6NawfkNQ1pSGYe5a1=X0z_KcD5Dn_xDX55p3K_46nQ@mail.gmail.com>
+	<20110710032510.GG6014@linux.vnet.ibm.com>
+	<CAAVPGOPCGsNynWPWcwaxVU_jPCg=VPdz82_g6OvY5gnYKk5oFg@mail.gmail.com>
+	<20110710171626.GK6014@linux.vnet.ibm.com>
+	<20110710173530.GA16954@linux.vnet.ibm.com>
+	<CAAVPGOPAx-oLZct9u2Kq3uQ4W2GwJFYUGgw3h=M_Y4_wv7b51w@mail.gmail.com>
+	<20110710214639.GP6014@linux.vnet.ibm.com>
+Date: Sun, 10 Jul 2011 22:50:48 +0100
+Message-ID: <CAAVPGOMafp_+45X=7asHe=MqaHY8CiJYsf2GZ3qOPrWpjctHVQ@mail.gmail.com>
+Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3
+From: julie Sullivan <kernelmail.jms@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Double define removed.
+> Very cool!  Thank you very much for the testing --
 
-Signed-off-by: Edwin van Vliet <edwin@cheatah.nl>
----
- drivers/infiniband/hw/qib/qib_iba7322.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+My pleasure
 
-diff --git a/drivers/infiniband/hw/qib/qib_iba7322.c b/drivers/infiniband/hw/qib/qib_iba7322.c
-index 8ec5237..821226c 100644
---- a/drivers/infiniband/hw/qib/qib_iba7322.c
-+++ b/drivers/infiniband/hw/qib/qib_iba7322.c
-@@ -397,7 +397,6 @@ MODULE_PARM_DESC(txselect, \
- #define crp_txdroppedpkt CREG_IDX(TxDroppedPktCnt)
- #define crp_txhdrerr CREG_IDX(TxHeadersErrCnt)
- #define crp_txlenerr CREG_IDX(TxLenErrCnt)
--#define crp_txlenerr CREG_IDX(TxLenErrCnt)
- #define crp_txminmaxlenerr CREG_IDX(TxMaxMinLenErrCnt)
- #define crp_txsdmadesc CREG_IDX(TxSDmaDescCnt)
- #define crp_txunderrun CREG_IDX(TxUnderrunCnt)
--- 
-1.7.5.4
+> I will put together an
+> upstreamable commit with your Tested-by.
+>
+>                                                        Thanx, Paul
+>
 
+Thanks
+Julie
