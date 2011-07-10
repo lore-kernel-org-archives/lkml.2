@@ -1,47 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756202Ab1GJRW3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 13:22:29 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:48105 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756011Ab1GJRWZ convert rfc822-to-8bit (ORCPT
+	id S1756211Ab1GJRXJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 13:23:09 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:38121 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756011Ab1GJRXG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 13:22:25 -0400
+	Sun, 10 Jul 2011 13:23:06 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAM_iQpVp4CobPsDnb4Z2xPFtin_+qGdPSkyyK=z6aedTfvKVBQ@mail.gmail.com>
-References: <da20dc5c4160ed9a3da52f60799a1e4369fe3f27.1310228130.git.rprabhu@wnohang.net>
-	<CAM_iQpXeqc01dyHpViyJCMSz6wz-1mWmGi=J0UynUG8tbd99kw@mail.gmail.com>
-	<CACqU3MUgVTpc6kBvBiw7rtyn_JTA-JPrbnvai3Vnq+UWk-jSbQ@mail.gmail.com>
-	<CAOJsxLF+4VOXJwRJL7npMngDTGztXk739_GcMLxsMzmsVcDCVw@mail.gmail.com>
-	<CACqU3MUFO9DGqnK99ApaKn00vzj5rCB5=kjuSZGZpPU8c_4G-A@mail.gmail.com>
-	<CAM_iQpVp4CobPsDnb4Z2xPFtin_+qGdPSkyyK=z6aedTfvKVBQ@mail.gmail.com>
-Date: Sun, 10 Jul 2011 13:22:25 -0400
-Message-ID: <CACqU3MVBTuMYj2pAa+S2kwSZ0As6RoHFV-hcc1EOO+4LS1mgXA@mail.gmail.com>
-Subject: Re: [PATCH] Avoid Wunused-but-set warning
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        Raghavendra D Prabhu <rprabhu@wnohang.net>,
-        linux-kbuild@vger.kernel.org, Nir Tzachar <nir.tzachar@gmail.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CAOJsxLEhZ-+e=H+9O_wn0F_jTp-BJKLURz7=q1HMb_Nhg0gaWw@mail.gmail.com>
+References: <20110710100005.2550.83138.stgit@fedora15> <20110710100033.2550.78762.stgit@fedora15>
+ <CAOJsxLHxWESTZa60hopBXUnTGn7-hJasuw_t7QAnv417TzMFBw@mail.gmail.com>
+ <4E199633.9050200@hitachi.com> <CAOJsxLEhZ-+e=H+9O_wn0F_jTp-BJKLURz7=q1HMb_Nhg0gaWw@mail.gmail.com>
+From: Masami Hiramatsu <masami.hiramatsu@gmail.com>
+Date: Mon, 11 Jul 2011 02:22:44 +0900
+Message-ID: <CADyE4xEeam__EzZ1a6+ceR40ukXcuPBVGVT0wDy0Nt+5Mi+x0A@mail.gmail.com>
+Subject: Re: [PATCH -tip 4/5] [BUGFIX] perf probe: Fix the order of searching
+ scopes for variables
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        yrl.pp-manager.tt@hitachi.com, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Sun, Jul 10, 2011 at 12:51 PM, Américo Wang <xiyou.wangcong@gmail.com> wrote:
-> On Mon, Jul 11, 2011 at 12:49 AM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+2011/7/11 Pekka Enberg <penberg@kernel.org>:
+> On Sun, Jul 10, 2011 at 3:08 PM, Masami Hiramatsu
+> <masami.hiramatsu.pt@hitachi.com> wrote:
+>> Hi Pekka,
 >>
->> That said, it is not a strong requirement... unfortunately. So, let's
->> have some fun and go ACK thousand of trivial patch just to generate
->> traffic on the LKML and give myself self-importance :-)
+>> (2011/07/10 20:05), Pekka Enberg wrote:
+>>> On Sun, Jul 10, 2011 at 1:00 PM, Masami Hiramatsu
+>>> <masami.hiramatsu.pt@hitachi.com> wrote:
+>>>> Fix variable searching routine to search from inner scope
+>>>> to outer scope.
+>>>
+>>> Admittedly, I don't really know this code at all. However, the
+>>> changelog is somewhat vague. Why do we need this change? What problem
+>>> does it fix? Why does the order in which we iterate 'scopes' matter?
+>>
+>> Hmm, I see.
+>>
+>> Debuginfo expresses functions and nested inlined functions as
+>> DIE(Dwarf Information Entry) tree, and "scope" means each
+>> level of the DIE.
+>>
+>> Outer
+>> ^
+>> |
+>>  CU DIE [A](compile unit: it's an object file)
+>>   +-global variable DIEs
+>>   +-inline function declaration DIEs
+>>   +-function [B] DIE
+>>      +-local variable DIEs
+>>      +-inline function instance [C] DIE
+>>         +-inline local variable DIEs
+>>         +-(nested)inline function instance [D] DIE
+>>            +...
+>> |
+>> v
+>> Inner
+>>
+>> Imagine that if we are at [C],
+>>
+>> nscopes = dwarf_getscopes_die([C], &scopes)
+>>
+>> this returns scopes[] DIEs containing [C] DIE, and nscopes = 3
+>> On that array, scopes[0] is [C], scopes[1] is [B], and scopes[2]
+>> is [A].
+>>
+>> And, the below loop
+>>
+>>  while (nscopes-- > 1)
+>>        die_find_variable_at(&scopes[nscopes], ...
+>>
+>> starts to find variables from the outermost scope [A] and
+>> find a global variable first.ã€€This changes searching order
+>> from inner scope ([B]) to outer ([A]) to search global vars
+>> last.
 >
-> That is how LKML works, get used to it.
+> Thanks for the explanation! What kind of problems does this cause for
+> 'perf probe' users?
 >
-That's why I generally avoid to go there, SNR is too low (and, this
-message clearly does not make it better).
 
- - Arnaud
+Hmm, wait, I must say "drop this! Ingo" since I've found that
+both of original routine and this fix will not fix a problem.
+
+OK, here is the problem I have - if there are some same-name variables
+in different scopes, which one should be referred first? for example,
+imagine the below situation;
+
+int var;
+
+void inline infunc(int i)
+{
+    i++;   <----here, a user put a probe with 'var' argument.
+}
+
+void func(void)
+{
+   int var = 10;
+   infunc(var);
+}
+
+
+This patch searches in the  inline-local scope (infunc), after that, it searches
+from inner scope (func) to outer scope (global). In this case, it picks up the
+function local variable if it found, before searching global
+variables. This is same
+logic as libdw does. But this looks insane in C manner. So, I'd like
+to drop this.
+
+On the other hand, original one searches in the inline-local scope
+(infunc), after
+that, searches in the outermost (global) scope, and then inner scope (func).
+This will pick the global variable first if it failed to find in
+inline-local scopes.
+This seems sane.
+
+... But wait, if there is no global 'var', what happened? In that
+case, it will also
+return the 'var' in 'func' scope. This also might not be good. User will expect
+"there is no var" error in that case, but perf-probe will have no error and
+define an event with unexpected variable as an argument.
+
+So I think the correct fix is not to use several scopes, but search var only
+in the outermost scope. I'm not so sure about scopes, there might be
+several other scopes (not only functions, maybe namespace or something?)
+I've just tried to mimic the libdw logic in this patch.
+
+Anyway, thanks Pekka! for giving me a chance to find it. ;-)
+
+Thank you again,
+
+-- 
+Masami Hiramatsu
+mailto:masami.hiramatsu@gmail.com
