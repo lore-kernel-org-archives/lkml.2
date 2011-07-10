@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932122Ab1GJXIs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 19:08:48 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:54877 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756802Ab1GJXIr convert rfc822-to-8bit (ORCPT
+	id S1756844Ab1GJXJK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 19:09:10 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:54814 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756814Ab1GJXJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 19:08:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <1310244907-10144-1-git-send-email-dmitry.fink@palm.com>
-References: <1310244149-9885-1-git-send-email-dmitry.fink@palm.com>
-	<1310244907-10144-1-git-send-email-dmitry.fink@palm.com>
-Date: Mon, 11 Jul 2011 08:08:46 +0900
-Message-ID: <CAEwNFnDRZwSXnVP3EdXqYnNBrumcrihQ+m=N4fb9xouNE=TKRg@mail.gmail.com>
-Subject: Re: [PATCH] mmap: Fix and tidy up overcommit page arithmetic
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Dmitry Fink <dmitry.fink@palm.com>
-Cc: Hugh Dickins <hughd@google.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 10 Jul 2011 19:09:08 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=gLBHxp0BJjaE0zsHcxOeZoT5RjVJSoYaPLcffuz1J7gop3XnvlPTeU/i0RzTZtl9iryxe9RIC8GphtASLl65pZlZvaXeJFae8tyyD+le7tCNCho7dfjZCS6k276w6aMr;
+Date: Sun, 10 Jul 2011 16:09:06 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Should SUBLEVEL be removed for 3.x ?
+Message-Id: <20110710160906.952bb38a.rdunlap@xenotime.net>
+In-Reply-To: <alpine.LNX.2.00.1107110000280.2818@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1107110000280.2818@swampdragon.chaosbits.net>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 10, 2011 at 5:55 AM, Dmitry Fink <dmitry.fink@palm.com> wrote:
-> - shmem pages are not immediately available, but they are not
-> potentially available either, even if we swap them out, they will
-> just relocate from memory into swap, total amount of immediate and
-> potentially available memory is not going to be affected, so we
-> shouldn't count them as potentially free in the first place.
->
-> - nr_free_pages() is not an expensive operation anymore, there is
-> no need to split the decision making in two halves and repeat code.
->
-> Signed-off-by: Dmitry Fink <dmitry.fink@palm.com>
-> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-> Acked-by: Hugh Dickins <hughd@google.com>
-> ---
->  mm/mmap.c  |   33 ++++++++++++---------------------
->  mm/nommu.c |   33 ++++++++++++---------------------
->  2 files changed, 24 insertions(+), 42 deletions(-)
->
-> diff --git a/mm/mmap.c b/mm/mmap.c
-> index d49736f..b6ed22e 100644
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -122,9 +122,16 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
->                return 0;
->
->        if (sysctl_overcommit_memory == OVERCOMMIT_GUESS) {
-> -               unsigned long n;
-> +               free = global_page_state(NR_FREE_PAGES);
-> +               free += global_page_state(NR_FILE_PAGES);
-> +
-> +               /* shmem pages shouldn't be counted as free in this
+On Mon, 11 Jul 2011 00:07:13 +0200 (CEST) Jesper Juhl wrote:
 
-Nitpick.
-You didn't correct comment style. It's not a linux kernel coding style.
+> Hi
+> 
+> If the plan is that the new kernel is going to be 3.0 (3.x) and the 
+> -stable kernels then get to tack on a third digit with EXTRAVERSION, then 
+> it seems to me that the main Makefile should get rid of SUBLEVEL - or?
+> 
+> Or is the plan to ditch EXTRAVERSION for -stable kernels and have them use 
+> SUBLEVEL instead?
+> 
+> There are a few scripts that need fixing if SUBLEVEL goes the way of the 
+> Dodo, but I didn't want to start fixing those without a clear indication 
+> of whether or not SUBLEVEL is going to/should die.
+> 
+> So what's going to happen to SUBLEVEL/EXTRAVERSION?
 
--- 
-Kind regards,
-Minchan Kim
+I cannot answer this, but I'd certainly like to see a clear answer
+since I also have several scripts that need such attention.
+
+---
+~Randy
