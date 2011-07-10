@@ -1,56 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755998Ab1GJMYv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 08:24:51 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:42876 "EHLO ogre.sisk.pl"
+	id S1756068Ab1GJM2T (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 08:28:19 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:42886 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754550Ab1GJMYu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 08:24:50 -0400
+	id S1755874Ab1GJM2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jul 2011 08:28:18 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Pekka Enberg <penberg@kernel.org>
-Subject: Re: [Bug #34942] [Bug] Kdump does not work when panic triggered due to MCE
-Date: Sun, 10 Jul 2011 14:25:38 +0200
+To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+Subject: [PATCH 7 v2] PM / Domains: Queue up power off work only if it is not pending
+Date: Sun, 10 Jul 2011 14:29:26 +0200
 User-Agent: KMail/1.13.6 (Linux/3.0.0-rc6+; KDE/4.6.0; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        "K.Prasad" <prasad@linux.vnet.ibm.com>, borislav.petkov@amd.com,
-        Ingo Molnar <mingo@elte.hu>
-References: <AtAvQwe5sAK.A.loH.OlYGOB@chimera> <gK_efVqs2fP.A.k7.hnYGOB@chimera> <CAOJsxLE9UBoMocTaWAt7DSoFFwGP5oD901XyeK6jGHEzUuSjDg@mail.gmail.com>
-In-Reply-To: <CAOJsxLE9UBoMocTaWAt7DSoFFwGP5oD901XyeK6jGHEzUuSjDg@mail.gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Kevin Hilman <khilman@ti.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, Paul Walmsley <paul@pwsan.com>,
+        Greg KH <gregkh@suse.de>, Magnus Damm <magnus.damm@gmail.com>
+References: <201107062248.35586.rjw@sisk.pl> <201107101059.30322.rjw@sisk.pl>
+In-Reply-To: <201107101059.30322.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-1"
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201107101425.39218.rjw@sisk.pl>
+Message-Id: <201107101429.26416.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, July 10, 2011, Pekka Enberg wrote:
-> On Sun, Jul 10, 2011 at 1:58 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > This message has been generated automatically as a part of a report
-> > of regressions introduced between 2.6.38 and 2.6.39.
-> >
-> > The following bug entry is on the current list of known regressions
-> > introduced between 2.6.38 and 2.6.39.  Please verify if it still should
-> > be listed and let the tracking team know (either way).
-> >
-> >
-> > Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=34942
-> > Subject         : [Bug] Kdump does not work when panic triggered due to MCE
-> > Submitter       : K.Prasad <prasad@linux.vnet.ibm.com>
-> > Date            : 2011-05-06 16:54 (66 days old)
-> > Message-ID      : <20110506165412.GB2719@in.ibm.com>
-> > References      : http://marc.info/?l=linux-kernel&m=130470087226270&w=2
-> 
-> There's actually no mention that kdump worked with MCE in 2.6.38
-> either. So is this really a regression?
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Well, for us it's easier to assume a regression and drop it from the list
-when it turns out not to be one.  I guess that's happend this time, so
-the submitter is kindly asked to speak. :-)
+In theory it is possible that pm_genpd_poweroff() for two different
+subdomains of the same parent domain will attempt to queue up the
+execution of pm_genpd_poweroff() for the parent twice in a row.  This
+would lead to unpleasant consequences, so prevent it from happening
+by checking if genpd->power_off_work is pending before attempting to
+queue it up.
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+
+One more patch to the "PM / Domains: Generic PM domains improvements" series,
+the changelog should explain everything. :-)
 
 Thanks,
 Rafael
+
+---
+ drivers/base/power/domain.c |   15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
+
+Index: linux-2.6/drivers/base/power/domain.c
+===================================================================
+--- linux-2.6.orig/drivers/base/power/domain.c
++++ linux-2.6/drivers/base/power/domain.c
+@@ -213,6 +213,19 @@ static bool genpd_abort_poweroff(struct
+ }
+ 
+ /**
++ * genpd_queue_power_off_work - Queue up the execution of pm_genpd_poweroff().
++ * @genpd: PM domait to power off.
++ *
++ * Queue up the execution of pm_genpd_poweroff() unless it's already been done
++ * before.
++ */
++static void genpd_queue_power_off_work(struct generic_pm_domain *genpd)
++{
++	if (!work_pending(&genpd->power_off_work))
++		queue_work(pm_wq, &genpd->power_off_work);
++}
++
++/**
+  * pm_genpd_poweroff - Remove power from a given PM domain.
+  * @genpd: PM domain to power down.
+  *
+@@ -304,7 +317,7 @@ static int pm_genpd_poweroff(struct gene
+ 	if (parent) {
+ 		genpd_sd_counter_dec(parent);
+ 		if (parent->sd_count == 0)
+-			queue_work(pm_wq, &parent->power_off_work);
++			genpd_queue_power_off_work(parent);
+ 
+ 		genpd_release_lock(parent);
+ 	}
