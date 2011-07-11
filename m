@@ -1,113 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757916Ab1GKPHE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 11:07:04 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:51364 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757886Ab1GKPHC (ORCPT
+	id S1757879Ab1GKPNv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 11:13:51 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:41561 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757800Ab1GKPNu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 11:07:02 -0400
-Date: Mon, 11 Jul 2011 12:07:01 -0300
-From: Gustavo Padovan <padovan@profusion.mobi>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: bluetooth-next-2.6 2011-07-11
-Message-ID: <20110711150700.GC2816@joana>
-Mail-Followup-To: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+	Mon, 11 Jul 2011 11:13:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110711140303.GA32532@atrey.karlin.mff.cuni.cz>
+References: <20110711134150.GA15506@localhost.ucw.cz> <CALT56yM+fNs_2QorWK0=gr2um1H3vDX+HXPCi9bmKDdOdSvptA@mail.gmail.com>
+ <20110711140303.GA32532@atrey.karlin.mff.cuni.cz>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Mon, 11 Jul 2011 23:13:30 +0800
+Message-ID: <CAMPhdO-UjxqyL47VsihX-fBD9VtAKkQqEQGj2u1YG0c90EHfqA@mail.gmail.com>
+Subject: Re: zaurus patches -- arm/pxa -- is Eric alive
+To: Cyril Hrubis <metan@ucw.cz>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Pavel Machek <pavel@ucw.cz>, rpurdie@rpsys.net, lenz@cs.wisc.edu,
+        kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
+        thommycheck@gmail.com,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        omegamoon@gmail.com, utx@penguin.cz, zaurus-devel@www.linuxtogo.org,
+        Marek Vasut <marek.vasut@gmail.com>,
+        Russell King <rmk@arm.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John,
+On Mon, Jul 11, 2011 at 10:03 PM, Cyril Hrubis <metan@ucw.cz> wrote:
+> Hi!
+>> > There are some rather critical patches for zaurus C-3000 (spitz)
+>> > available... with no response. What is going on?
+>>
+>> Eric seems alive. At least he've sent pull requests few days ago.
+>> Maybe you can point to those patches, that you mention as critical?
+>
+> Perhaps the most critical one is:
+>
+> [PATCH] MAX1111: Fix race condition causing NULL pointer exception
+>
+> http://ns1.yosemitephotos.net/lists/arm-kernel/msg125356.html
+>
+> Which fixes memory corruption that caused random oops.
+>
+> And then there is a bunch of fixes for charging and power management from
+> Pavel Machek:
 
-This is probably my last pull request to 3.1. Here Andre Guedes adds support to
-enable/disable LE in a controller. Joe Perches did a clean great clean up in
-our log system. Mat Martineau reworked that Local Busy condition for the
-Enhanced Retransmission Mode in L2CAP. And Vinicius Gomes improved the
-Security Manager Protocol support, adding suppor to the phase 3 of its pairing
-process and support to communicate keys with the userspace. The rest are just
-fixes and clean up. Please pull. Thanks!
+Guys, I'm still alive, at least still breathing. Just too many mails
+and I was lost.
 
-	Gustavo
+>
+> Disable CF during suspend
+>
+> https://lkml.org/lkml/2011/5/21/46
 
+The fix is trivial, think I can take it. A better approach will be to have a
+generic CF power control function and invoke it in pcmcia driver when
+suspending.
 
-The folowing changes since commit 8ae2e12f1534e647d4a816755e5a09c2de6f9fca:
+>
+> and spitz pm
+>
+> https://lkml.org/lkml/2011/5/21/72
+> https://lkml.org/lkml/2011/5/21/73
+> https://lkml.org/lkml/2011/5/21/76
 
-  ath9k_htc: Inform stack about tx ack status (2011-07-08 11:47:57 -0400)
+Looks good to me, yet I need the last one Acked by power supply people.
 
-are available in the git repository at:
-  master.kernel.org:/pub/scm/linux/kernel/git/padovan/bluetooth-next-2.6.git master
-
-Andre Guedes (7):
-      Bluetooth: Add extfeatures to struct hci_dev
-      Bluetooth: Write LE Host Supported command
-      Bluetooth: Add enable_le module parameter
-      Bluetooth: Add lmp_host_le_capable() macro
-      Bluetooth: Remove enable_smp parameter
-      Bluetooth: Fix potential deadlock in hci_core
-      Bluetooth: Fix potential deadlock in mgmt
-
-Gustavo F. Padovan (2):
-      Bluetooth: Fix bad locking balance
-      Bluetooth: Clean up unused struct hci_conn items
-
-Ilia Kolomisnky (1):
-      Bluetooth: Fixes l2cap "command reject" reply according to spec
-
-Joe Perches (2):
-      Bluetooth: Rename function bt_err to bt_to_errno
-      Bluetooth: Add bt_printk
-
-Mat Martineau (6):
-      Bluetooth: Fix indentation whitespace
-      Bluetooth: ERTM timeouts need to be converted to jiffies
-      Bluetooth: Check earlier for L2CAP ERTM frames to drop
-      Bluetooth: Move code for ERTM local busy state to separate functions
-      Bluetooth: Use event-driven approach for handling ERTM receive buffer
-      Bluetooth: Remove L2CAP busy queue
-                                                                                        
-Randy Dunlap (1):                                                                       
-      Bluetooth: uses crypto interfaces, select CRYPTO                                  
-                                                                                        
-Steven.Li (1):                                                                          
-      Bluetooth: Add Atheros AR3012 one PID/VID supported                               
-                                                                                        
-Vinicius Costa Gomes (12):                                                              
-      Bluetooth: Add support for SMP phase 3 (key distribution)                         
-      Bluetooth: Add new structures for supporting SM key distribution                  
-      Bluetooth: Add functions to manipulate the link key list for SMP                  
-      Bluetooth: Reject an encryption request when the key isn't found                  
-      Bluetooth: Fix SM pairing parameters negotiation                                  
-      Bluetooth: Add support for storing the LTK                                        
-      Bluetooth: Use the link key list to temporarily store the STK                     
-      Bluetooth: Use the stored LTK for restabilishing security                         
-      Bluetooth: Remove unused field in hci_conn                                        
-      Bluetooth: Add support for communicating keys with userspace                      
-      Bluetooth: Add support for storing the key size                                   
-      Bluetooth: Add support for returning the encryption key size                      
-                                                                                        
- drivers/bluetooth/ath3k.c         |    5 +                                             
- drivers/bluetooth/btusb.c         |   12 ++-                                           
- include/net/bluetooth/bluetooth.h |   12 ++-                                           
- include/net/bluetooth/hci.h       |   18 +++                                           
- include/net/bluetooth/hci_core.h  |   29 +++++-                                        
- include/net/bluetooth/l2cap.h     |   25 ++++-                                         
- include/net/bluetooth/mgmt.h      |    2 +
- include/net/bluetooth/smp.h       |    1 +
- net/bluetooth/Kconfig             |    1 +
- net/bluetooth/hci_core.c          |  101 ++++++++++++++----
- net/bluetooth/hci_event.c         |   87 +++++++++++++++-
- net/bluetooth/l2cap_core.c        |  216 ++++++++++++-------------------------
- net/bluetooth/l2cap_sock.c        |   69 +++++++++++-
- net/bluetooth/lib.c               |   23 ++++-
- net/bluetooth/mgmt.c              |  148 +++++++++++++++----------
- net/bluetooth/sco.c               |    4 +-
- net/bluetooth/smp.c               |  208 ++++++++++++++++++++++++++++++++----
- 17 files changed, 691 insertions(+), 270 deletions(-)
-
+>
+> --
+> metan
+>
