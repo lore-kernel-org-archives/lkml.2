@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756017Ab1GKBXK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 21:23:10 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:49351 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753471Ab1GKBXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 21:23:05 -0400
-Date: Mon, 11 Jul 2011 09:22:42 +0800
-From: Hu Tao <hutao@cn.fujitsu.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
-Subject: Re: [patch 00/17] CFS Bandwidth Control v7.1
-Message-ID: <20110711012242.GC2135@localhost.localdomain>
-References: <20110707053036.173186930@google.com>
- <1310037225.3282.538.camel@twins>
+	id S1755799Ab1GKBYn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 21:24:43 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:51760 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753471Ab1GKBYj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jul 2011 21:24:39 -0400
+Date: Sun, 10 Jul 2011 21:24:29 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] jbd2,rcu: correctly use RCU
+Message-ID: <20110711012429.GD28763@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Lai Jiangshan <laijs@cn.fujitsu.com>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <ec67960d0864680d18a43ec5275baba3f6e1dd94.1308131436.git.laijs@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <1310037225.3282.538.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-07-11 09:22:20,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-07-11 09:22:21,
-	Serialize complete at 2011-07-11 09:22:21
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <ec67960d0864680d18a43ec5275baba3f6e1dd94.1308131436.git.laijs@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 07, 2011 at 01:13:45PM +0200, Peter Zijlstra wrote:
-> On Wed, 2011-07-06 at 22:30 -0700, Paul Turner wrote:
-> > base                                        7,526,317,497           8,666,579,347            1,771,078,445
-> > +patch, cgroup not enabled                  7,610,354,447 (1.12%)   8,569,448,982 (-1.12%)   1,751,675,193 (-0.11%) 
+On Thu, Jun 16, 2011 at 09:47:04AM +0800, Lai Jiangshan wrote:
+> In read site, we need to use local_ptr = rcu_dereference(),
+> and then use this local_ptr to read the content.
 > 
-> "cgroup not enabled" means compiled in but not used at runtime, right?
+> In update site, we should assign/publish the new object/pointer after
+> the content of the new object/pointer is fully initialized,
+> and we can't not touch the object after the pointer assignment.
+> rcu_assign_pointer() is need for the assignement.
+> 
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-Yes.
+Actually, after thinking about this some more, I think I'm going to
+just change the jbd2 events to simply print MAJOR(__entry->dev) and
+MINOR(__entry->dev).  Otherwise, the perf tool stops dies and stops
+interpreting the trace points when it tries to interpret
+"jbd2_dev_to_name(REC->dev)" in the print format.
 
--- 
-Thanks,
-Hu Tao
+So I'll just drop jbd2_dev_to_name() completely for the jbd2
+tracepoints.  It's not worth it.
+
+	      				- Ted
