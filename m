@@ -1,124 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758041Ab1GKWHd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 18:07:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2570 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753165Ab1GKWHc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 18:07:32 -0400
-Date: Mon, 11 Jul 2011 18:07:09 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Americo Wang <xiyou.wangcong@gmail.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jarod Wilson <jwilson@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: Re: [RFC][PATCH] Replace a function call chain of
- kmsg_dump(KMSG_DUMP_KEXEC) with static function calls
-Message-ID: <20110711220709.GG30674@redhat.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C17AAE59A@USINDEVS01.corp.hds.com>
+	id S1758119Ab1GKWIg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 18:08:36 -0400
+Received: from smtpo.poczta.interia.pl ([217.74.65.206]:60329 "EHLO
+	smtpo.poczta.interia.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757483Ab1GKWIf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 18:08:35 -0400
+Message-ID: <4E1B745A.5000802@interia.pl>
+Date: Mon, 11 Jul 2011 23:08:26 +0100
+From: =?UTF-8?b?UmFmYcWC?= Bilski <rafalbilski@interia.pl>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:5.0) Gecko/20110628
+	Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+To: Axel Lin <axel.lin@gmail.com>
+CC: linux-kernel@vger.kernel.org, Dave Jones <davej@redhat.com>,
+        cpufreq@vger.kernel.org
+Subject: [PATCH] e_powersaver: Add sanity checks to code provided by VIA
+References: <1310114243.2940.3.camel@phoenix>
+In-Reply-To: <1310114243.2940.3.camel@phoenix>
+X-Interia-Antivirus: OK
+X-EMID: 81d40958
+Content-Type: text/plain; charset="UTF-8"; format="flowed"
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C17AAE59A@USINDEVS01.corp.hds.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 11, 2011 at 11:47:17AM -0400, Seiji Aguchi wrote:
-> Hi,
-> 
-> [Background]
->  - Requirement in enterprise area
->  From our support service experience, we always need to detect root causes of OS panic.
->  Because customers in enterprise area never forgive us if kdump fails and  we can't detect
->  root causes of panic due to lack of materials for investigation.
-> 
->  That is why I would like to add kmsg_dump() in kdump path.
-> 
-> [Upstream status]
->    Discussion about kmsg_dump() in kdump path: 
->     - Vivek and Eric are worried about reliability of existing kmsg_dump().
->     - Especially, Vivek would like to remove a RCU  function call chain in kdump path
-> 　　　 which kernel modules can register their function calls freely. 
-> 
->    Development of a feature capturing Oops:
->     - Pstore has already incorporated in upstream kernel.
->  
->     - Matthew Garrett is developing efivars driver, a feature capturing Oops via EFI 
->       through pstore interface. 
-> 
->       https://lkml.org/lkml/2011/6/7/437
->       https://lkml.org/lkml/2011/6/7/438
->       https://lkml.org/lkml/2011/6/7/439
->       https://lkml.org/lkml/2011/6/7/440
-> 
->     - However, these features may not work in kdump path because
->       there are spin_lock/mutex_lock in pstore_dump()/efi_pstore_write().
-> 　　　 These locks may cause dead lock and kdump may fail as well.
+Patch from VIA is forcing "e_powersaver" to accept any processor >=A, 
+but code supports only A and D.
+Patch from VIA is forcing "e_powersaver" to support new brand, but code 
+was intended for 2 bits only.
+Looks like model D is using 8 bits for brand. Compensate.
 
-I think then right solution is to harden pstore() to be able to called
-from crashed kernel context where interrupts will not be working, all
-other cpus are not running and one can afford to rely on taking any
-locks.
+Thanks to Axel Lin for pointing it out!
 
-Bypassing that just to make sure case of efi work is not going to help.
+Signed-off-by: Rafał Bilski <rafalbilski@interia.pl>
 
-> 
-> [Build Status]
->   Built this patch on 3.0-rc6 in x86_64.
-> 
-> [Patch Description]
-> 
->  For meeting Eric/Vivek's requirements and solving issues of pstore/efivars driver,  I propose a following patch.
-> 
->     - Remove kmsg_dump(KMSG_DUMP_KEXEC) from crash_kexec()
->     - Add kmsg_dump_kexec() to crash_kexec()
->         kmsg_dump_kexec() moved behind machine_crash_shutdown() so that
->         we can output kernel messages without getting any locks.
+---
+  drivers/cpufreq/e_powersaver.c |   15 ++++++++++++---
+  1 files changed, 12 insertions(+), 3 deletions(-)
 
-So you are introducing two variants of kmsg dump now? One is kmsg_dump()
-and other is kmsg_dump_kexec()? Why not just get rid of kmsg_dump() for
-non panic case and simply always call in crashed kernel case?
+diff --git a/drivers/cpufreq/e_powersaver.c b/drivers/cpufreq/e_powersaver.c
+index 35a257d..7883ffa 100644
+--- a/drivers/cpufreq/e_powersaver.c
++++ b/drivers/cpufreq/e_powersaver.c
+@@ -179,9 +179,13 @@ static int eps_cpu_init(struct cpufreq_policy *policy)
+          break;
+      case 13:
+          rdmsr(0x1154, lo, hi);
+-        brand = (((lo >> 4) ^ (lo >> 2))) & 0x000000ff;
++        brand = (((lo >> 4) ^ (lo >> 2))) & 0xff;
+          printk(KERN_CONT "Model D ");
+          break;
++    default:
++        printk(KERN_CONT "unknown processor\n");
++        return -ENODEV;
++        break;
+      }
 
-> 
->     - Introduce CONFIG_KMSG_DUMP_KEXEC
->         - CONFIG_KMSG_DUMP_KEXEC depends on CONFIG_PRINTK which is required for kmsg_dumper.
-> 
->         - CONFIG_KMSG_DUMP_KEXEC=n (default)
->           Kernel message logging feature doesn't work in kdump path.
-> 
->         - CONFIG_KMSG_DUMP_KEXEC=y 
->           following static functions are called in kdump path.
->           - kmsg_dump_kexec(): This is based on kmsg_dump() and just removed spinlock and a function call chain from it.
->           - do_kmsg_dump_kexec(): This is based on pstore_dump() and just removed mutex lock from it.
->    
->         Some people who are not familiar with kexec may add function calls getting spin_lock/mutex_lock in kexec path.
->         These function calls causes failure of kexec.
->         So, I suggest replace a call chain with static function calls so that we can keep reliability of kexec.
->  
->      - Add efi_kmsg_dump_kexec() which outputs kernel messages into NVRAM with EFI.
->        This is called by do_kmsg_dump_kexec() statically.
->        By applying to Matthew Garret's patch below, its kernel messages in NVRAM are visible through /dev/pstore.
-> 
->         https://lkml.org/lkml/2011/6/7/437
->         https://lkml.org/lkml/2011/6/7/438
->         https://lkml.org/lkml/2011/6/7/439
->         https://lkml.org/lkml/2011/6/7/440
-> 
+      switch (brand) {
+@@ -194,14 +198,19 @@ static int eps_cpu_init(struct cpufreq_policy *policy)
+      case EPS_BRAND_EDEN:
+          printk(KERN_CONT "Eden\n");
+          break;
++    case EPS_BRAND_C3:
++        printk(KERN_CONT "C3\n");
++        return -ENODEV;
++        break;
+      case EPS_BRAND_C7D:
+          printk(KERN_CONT "C7-D\n");
+          break;
+-    case EPS_BRAND_C3:
+-        printk(KERN_CONT "C3\n");
++    default:
++        printk(KERN_CONT "unsupported brand\n");
+          return -ENODEV;
+          break;
+      }
++
+      /* Enable Enhanced PowerSaver */
+      rdmsrl(MSR_IA32_MISC_ENABLE, val);
+      if (!(val & MSR_IA32_MISC_ENABLE_ENHANCED_SPEEDSTEP)) {
+-- 
+1.7.6
 
-- So with this patch you have removed all other subscribers of kmsg_dump()
-  and only calling your case of efi storage (ramoops, mtdoops?)
- 
-Thanks
-Vivek
+
+
+----------------------------------------------------------------
+Znajdz samochod idealny dla siebie!
+Szukaj >> http://linkint.pl/f29e2
