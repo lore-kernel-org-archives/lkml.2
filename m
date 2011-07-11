@@ -1,93 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757845Ab1GKOQe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 10:16:34 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:51078 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757735Ab1GKOPV (ORCPT
+	id S964779Ab1GKOQs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 10:16:48 -0400
+Received: from mail.valinux.co.jp ([210.128.90.3]:57613 "EHLO
+	mail.valinux.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757734Ab1GKOPV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 11 Jul 2011 10:15:21 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>
-Subject: [PATCH 2/7] cgroups: New resource counter inheritance API
-Date: Mon, 11 Jul 2011 16:15:01 +0200
-Message-Id: <1310393706-321-3-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1310393706-321-1-git-send-email-fweisbec@gmail.com>
-References: <1310393706-321-1-git-send-email-fweisbec@gmail.com>
+Date: Mon, 11 Jul 2011 23:15:19 +0900
+From: Isaku Yamahata <yamahata@valinux.co.jp>
+To: Glauber Costa <glommer@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Eddie Dong <eddie.dong@intel.com>,
+        Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Eric B Munson <emunson@mgebm.net>, tony.luck@intel.com,
+        fenghua.yu@intel.com, xiantao.zhang@intel.com
+Subject: Re: [PATCH v5 6/9] add jump labels for ia64 paravirt
+Message-ID: <20110711141519.GE2548@valinux.co.jp>
+References: <1309793548-16714-1-git-send-email-glommer@redhat.com> <1309793548-16714-7-git-send-email-glommer@redhat.com> <4E1AF612.7040103@redhat.com> <4E1AF970.8030109@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E1AF970.8030109@redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide an API to inherit a counter value from a parent.
-This can be useful to implement cgroup.clone_children on
-a resource counter.
+On Mon, Jul 11, 2011 at 10:24:00AM -0300, Glauber Costa wrote:
+> On 07/11/2011 10:09 AM, Avi Kivity wrote:
+>> On 07/04/2011 06:32 PM, Glauber Costa wrote:
+>>> Since in a later patch I intend to call jump labels inside
+>>> CONFIG_PARAVIRT, IA64 would fail to compile if they are not
+>>> provided. This patch provides those jump labels for the IA64
+>>> architecture.
+>>>
+>>
+>> Please get an ack for this from the ia64 maintainer.
+>>
+>
+> The ones listed in paravirt.c are CC'd. I am CC'ing all the other
+> folks related to IA64 listed in MAINTAINERS now.
+>
+> Just a heads up so the new folks CC'd can get up to speed:
+> I am proposing moving the steal time calculation to inside the core  
+> scheduler. This move will make it easier for us to make decisions based  
+> on steal time accounting on virtual machines. Ia64 KVM may or may not  
+> follow this route - nothing that already works should break with this  
+> change.
+>
+> This patch is needed only to avoid breaking compilation, since it  
+> introduces two new variables that are expected be present when  
+> CONFIG_PARAVIRT, to paravirt.c.
 
-Still the resources of the children are limited by those
-of the parent, so this is only to provide a default setting
-behaviour when clone_children is set.
+Although the ia64 maintainer is Tony Luck,
+I'm fine with the change as the ia64 paravirt author.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Paul Menage <menage@google.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Aditya Kali <adityakali@google.com>
----
- include/linux/res_counter.h |    2 ++
- kernel/res_counter.c        |   25 +++++++++++++++++++++++++
- 2 files changed, 27 insertions(+), 0 deletions(-)
+Acked-by: Isaku Yamahata <yamahata@valinux.co.jp>
 
-diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
-index 1b3fe05..109d118 100644
---- a/include/linux/res_counter.h
-+++ b/include/linux/res_counter.h
-@@ -84,6 +84,8 @@ int res_counter_write(struct res_counter *counter, int member,
- 
- void res_counter_write_u64(struct res_counter *counter, int member, u64 val);
- 
-+void res_counter_inherit(struct res_counter *counter, int member);
-+
- /*
-  * the field descriptors. one for each member of res_counter
-  */
-diff --git a/kernel/res_counter.c b/kernel/res_counter.c
-index 806d041..8cb0362 100644
---- a/kernel/res_counter.c
-+++ b/kernel/res_counter.c
-@@ -198,3 +198,28 @@ int res_counter_write(struct res_counter *counter, int member,
- 
- 	return 0;
- }
-+
-+void res_counter_inherit(struct res_counter *counter, int member)
-+{
-+	struct res_counter *parent;
-+	unsigned long long *pval, val;
-+	unsigned long flags;
-+
-+	parent = counter->parent;
-+	if (!parent)
-+		return;
-+
-+	local_irq_save(flags);
-+
-+	spin_lock(&counter->lock);
-+	pval = res_counter_member(counter, member);
-+	val = *pval;
-+	spin_unlock(&counter->lock);
-+
-+	spin_lock(&parent->lock);
-+	pval = res_counter_member(parent, member);
-+	*pval = val;
-+	spin_unlock(&parent->lock);
-+
-+	local_irq_restore(flags);
-+}
 -- 
-1.7.5.4
-
+yamahata
