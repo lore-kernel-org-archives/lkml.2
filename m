@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757611Ab1GKOFF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 10:05:05 -0400
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:37514
-	"EHLO AM1EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757515Ab1GKOFD convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 10:05:03 -0400
-X-SpamScore: -16
-X-BigFish: VPS-16(zz1447R1432Nzz1202hzz8275bhz2fh2a8h668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:198.70.193.61;KIP:(null);UIP:(null);IPVD:NLI;H:avexcashub1.qlogic.com;RD:avexcashub1.qlogic.com;EFVD:NLI
-From: Mike Marciniszyn <mike.marciniszyn@qlogic.com>
-To: Edwin van Vliet <edwin@cheatah.nl>,
-        "roland@kernel.org" <roland@kernel.org>
-CC: Mitko Haralanov <mitko.haralanov@qlogic.com>,
-        Ralph Campbell <ralph.campbell@qlogic.com>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Mon, 11 Jul 2011 07:04:56 -0700
-Subject: RE: [PATCH] drivers/infiniband/hw/qib/qib_iba7322: remove double
- define
-Thread-Topic: [PATCH] drivers/infiniband/hw/qib/qib_iba7322: remove double
- define
-Thread-Index: Acw/TJjvNjRF0r0DTpqvaNGe++OPEgAhsLbQ
-Message-ID: <35AAF1E4A771E142979F27B51793A4888838FEEF94@AVEXMB1.qlogic.org>
-References: <1310334587-26731-1-git-send-email-edwin@cheatah.nl>
-In-Reply-To: <1310334587-26731-1-git-send-email-edwin@cheatah.nl>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757642Ab1GKOFh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 10:05:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16857 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757522Ab1GKOFf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 10:05:35 -0400
+Message-ID: <4E1B031C.1000604@redhat.com>
+Date: Mon, 11 Jul 2011 11:05:16 -0300
+From: Glauber Costa <glommer@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-X-OriginatorOrg: qlogic.com
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCH v5 4/9] KVM-HV: KVM Steal time implementation
+References: <1309793548-16714-1-git-send-email-glommer@redhat.com> <1309793548-16714-5-git-send-email-glommer@redhat.com> <20110707105113.GA3986@amt.cnet> <4E15E7E5.6020909@redhat.com> <4E1AF36A.2060605@redhat.com>
+In-Reply-To: <4E1AF36A.2060605@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/11/2011 09:58 AM, Avi Kivity wrote:
+> On 07/07/2011 08:07 PM, Glauber Costa wrote:
+>>>> +static void record_steal_time(struct kvm_vcpu *vcpu)
+>>>> +{
+>>>> + u64 delta;
+>>>> +
+>>>> + if (!(vcpu->arch.st.msr_val& KVM_MSR_ENABLED))
+>>>> + return;
+>>>> +
+>>>> + if (unlikely(kvm_read_guest_cached(vcpu->kvm,&vcpu->arch.st.stime,
+>>>> + &vcpu->arch.st.steal, sizeof(struct kvm_steal_time))))
+>>>> + return;
+>>>
+>>> The guest memory page is not pinned, sleeping via
+>>> __copy_from_user/to_user is not allowed in vcpu_load context. Either pin
+>>> it or use atomic acessors.
+>>
+>>
+>> I do recognize the problem.
+>> Avi, what's your take here?
+>>
 >
-> Double define removed.
+> The easiest solution is to set a KVM_REQ bit in atomic context, and move
+> the sleepy code to vcpu_enter_guest().
+
+Or I can move it all inside vcpu_run, or close enough to it. This will 
+account more hypervisor time as steal time, but it seemed to be what 
+some people wanted in the first place.
+
+Given the simplification we would win - not needing a REQ set, it might 
+be worth it.
+
+>>>> + case MSR_KVM_STEAL_TIME:
+>>>> + vcpu->arch.st.msr_val = data;
+>>>> +
+>>>> + if (!(data& KVM_MSR_ENABLED)) {
+>>>> + break;
+>>>> + }
+>>>
+>>> On failure below this point, msr_val should be cleared of
+>>> KVM_MSR_ENABLED?
+>> No, msr_val has to hold whatever the guest wrote into it.
+>> We should probably use an independent variable here to indicate that
+>> we failed to activate it.
 >
-> Signed-off-by: Edwin van Vliet <edwin@cheatah.nl>
-> ---
->  drivers/infiniband/hw/qib/qib_iba7322.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-
-Thanks for the patch!
-
-Acked-by: Mike Marciniszyn <mike.marciniszyn@qlogic.com>
-
-This message and any attached documents contain information from QLogic Corporation or its wholly-owned subsidiaries that may be confidential. If you are not the intended recipient, you may not read, copy, distribute, or use this information. If you have received this transmission in error, please notify the sender immediately by reply e-mail and then delete this message.
+> If we fail, we return a #GP to the guest (and don't write any value into
+> the msr).
+>
 
