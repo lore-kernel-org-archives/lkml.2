@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757840Ab1GKVFc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 17:05:32 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53501 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757576Ab1GKVFb (ORCPT
+	id S1757414Ab1GKVIW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 17:08:22 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37588 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753875Ab1GKVIU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 17:05:31 -0400
-Date: Mon, 11 Jul 2011 14:04:50 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: scameron@beardog.cce.hp.com
-Cc: james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stephenmcameron@gmail.com,
-        thenzl@redhat.com, mikem@beardog.cce.hp.com
-Subject: Re: [PATCH] hpsa: do not attempt to read from a write-only register
-Message-Id: <20110711140450.a6f3e8be.akpm@linux-foundation.org>
-In-Reply-To: <20110711205124.GB25366@beardog.cce.hp.com>
-References: <20110708195926.3623.30375.stgit@beardog.cce.hp.com>
-	<20110711131911.31789ee0.akpm@linux-foundation.org>
-	<20110711205124.GB25366@beardog.cce.hp.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 11 Jul 2011 17:08:20 -0400
+Date: Mon, 11 Jul 2011 22:07:53 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Avi Kivity <avi@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "acme@ghostprotocols.net" <acme@ghostprotocols.net>,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: Re: [PATCH 1/3] perf: add context field to perf_event
+Message-ID: <20110711210753.GA3582@e102144-lin.cambridge.arm.com>
+References: <1309362157-6596-1-git-send-email-avi@redhat.com>
+ <1309362157-6596-2-git-send-email-avi@redhat.com>
+ <20110629160841.GA2032@somewhere>
+ <20110629162725.GH15521@e102144-lin.cambridge.arm.com>
+ <20110704135820.GD5551@somewhere>
+ <4E11C9CC.2070909@redhat.com>
+ <20110704143655.GE5551@somewhere>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110704143655.GE5551@somewhere>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Jul 2011 15:51:24 -0500
-scameron@beardog.cce.hp.com wrote:
-
-> On Mon, Jul 11, 2011 at 01:19:11PM -0700, Andrew Morton wrote:
-> > On Fri, 08 Jul 2011 14:59:26 -0500
-> > "Stephen M. Cameron" <scameron@beardog.cce.hp.com> wrote:
+On Mon, Jul 04, 2011 at 03:36:57PM +0100, Frederic Weisbecker wrote:
+> On Mon, Jul 04, 2011 at 05:10:20PM +0300, Avi Kivity wrote:
+> > On 07/04/2011 04:58 PM, Frederic Weisbecker wrote:
+> > >Another thing I would like to do in the even longer term is to not use perf anymore
+> > >for ptrace breakpoints, because that involves a heavy dependency and few people are
+> > >happy with that. Instead we should just have a generic hook into the sched_switch()
+> > >and handle pure ptrace breakpoints there. The central breakpoint API would still be
+> > >there to reserve/schedule breakpoint resources between ptrace and perf.
+> > >
 > > 
-> > > From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-> > > 
-> > > Most smartarrays tolerate it, but a few new ones don't.
-> > > 
-> > > Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-> > > ---
-> > >  drivers/scsi/hpsa.h |    2 +-
-> > >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > > 
-> > > diff --git a/drivers/scsi/hpsa.h b/drivers/scsi/hpsa.h
-> > > index 6d8dcd4..7f53cea 100644
-> > > --- a/drivers/scsi/hpsa.h
-> > > +++ b/drivers/scsi/hpsa.h
-> > > @@ -214,7 +214,7 @@ static void SA5_submit_command(struct ctlr_info *h,
-> > >  	dev_dbg(&h->pdev->dev, "Sending %x, tag = %x\n", c->busaddr,
-> > >  		c->Header.Tag.lower);
-> > >  	writel(c->busaddr, h->vaddr + SA5_REQUEST_PORT_OFFSET);
-> > > -	(void) readl(h->vaddr + SA5_REQUEST_PORT_OFFSET);
-> > > +	(void) readl(h->vaddr + SA5_SCRATCHPAD_OFFSET);
-> > >  	h->commands_outstanding++;
-> > >  	if (h->commands_outstanding > h->max_outstanding)
-> > >  		h->max_outstanding = h->commands_outstanding;
-> > 
-> > The changelog forgot to tell us the user-visible effects of the bug. 
-> > That was really really bad of it.  Bad changelog.  No bone for you.
+> > 'struct preempt_notifier' may be the hook you're looking for.
 > 
-> Oh, sorry.  When the controller doesn't tolerate the bug, the firmware
-> on it locks up.  No interrupts are received, no commands complete. I/o
-> on that controller grinds to a halt.
+> Yeah looks like a perfect fit as it's per task.
 
-OK, that was important.
+I had a quick look at this and I think the preempt_notifier stuff needs
+slightly extending so that we can register a notifier for a task other than
+current [e.g. the child of current on which we are installing breakpoints].
 
-Presumably you'd like those newer controllers to work with older
-kernels?  In which case we should mark the patch for -stable
-backporting?
+If the task in question is running, it looks like this will introduce a race
+condition between notifier registration and rescheduling. For the purposes
+of ptrace this shouldn't be a problem as the child will be stopped, but
+others might also want to make use of the new functionality.
 
-I've done that to my copy and have updated the changelog.
+Any ideas on how this could be achieved, or am I better off just restricting
+this to children that are being traced?
 
-> I can resubmit if you like.
+Cheers,
 
-I have two other needed-in-3.0 scsi patches.  I'll send all three
-Jameswards now.
-
+Will
