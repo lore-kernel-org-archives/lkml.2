@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758107Ab1GKQew (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 12:34:52 -0400
-Received: from mga02.intel.com ([134.134.136.20]:27917 "EHLO mga02.intel.com"
+	id S1758115Ab1GKQiy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 12:38:54 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:47724 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758082Ab1GKQev convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 12:34:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,516,1304319600"; 
-   d="scan'208";a="26356536"
-From: "Perez-Gonzalez, Inaky" <inaky.perez-gonzalez@intel.com>
-To: Randy Dunlap <rdunlap@xenotime.net>, lkml <linux-kernel@vger.kernel.org>
-CC: linux-wimax <linux-wimax@intel.com>,
-        "wimax@linuxwimax.org" <wimax@linuxwimax.org>
-Date: Mon, 11 Jul 2011 09:33:58 -0700
-Subject: RE: [PATCH 1/1] wimax: delete struct wimax_dev field rfkill_input
-Thread-Topic: [PATCH 1/1] wimax: delete struct wimax_dev field rfkill_input
-Thread-Index: Acw/c3cBCEg7Qnl+TXubTT0gJTWTWAAdN4Y6
-Message-ID: <8F0C2E89B9AA20448D482EB589641EB3010264C7E2@orsmsx507.amr.corp.intel.com>
-References: <1310350888180@xenotime.net>
-In-Reply-To: <1310350888180@xenotime.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1758083Ab1GKQix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 12:38:53 -0400
+Date: Mon, 11 Jul 2011 09:38:48 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 0/6] Check for use of RCU from
+ dyntick-idle mode
+Message-ID: <20110711163848.GF2245@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110708154331.GA20161@linux.vnet.ibm.com>
+ <20110711160330.GC4109@somewhere.redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110711160330.GC4109@somewhere.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jul 11, 2011 at 06:03:32PM +0200, Frederic Weisbecker wrote:
+> On Fri, Jul 08, 2011 at 08:43:31AM -0700, Paul E. McKenney wrote:
+> > Hello!
+> > 
+> > This set of patches adds checks for use of RCU from "extended quiescent
+> > states" such as dyntick-idle mode.  Such use is grossly illegal because
+> > RCU by definition ignores CPUs that are in extended quiescent states.
+> > In the case of dyntick-idle mode, the only way for RCU to avoid ignoring
+> > such CPUs would be to wake them up periodically, which would defeat the
+> > whole purpose of dyntick-idle mode.
+> > 
+> > The good news is that Frederic got this effort started.  The bad news is
+> > that there are several cases where RCU read-side critical sections appear
+> > in dyntick-idle mode.
+> 
+> Ok, let me send to you the patch that splits up rcu/tickless logic and I'll try
+> to fix up what you reported to me in ppc.
 
-Hi Randy
+Very good, thank you!
 
->From: Randy Dunlap <rdunlap@xenotime.net>
->
-> "make htmldocs" warns that struct member "rfkill_input" does not have
-> a description.  After searching all kernel .[hc] files, this field
-> is not used, so remove it.
+> BTW, are you aware of other cases? You mentioned "several" :)
 
-Vitaly sent a patch a couple weeks ago to do this same cleanup.
+PowerPC's hypercall-exit trace event will also cause this complaint.
+Plus I thought you saw some others.
 
-Thank you anyway!
+							Thanx, Paul
