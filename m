@@ -1,66 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757414Ab1GKVIW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 17:08:22 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37588 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753875Ab1GKVIU (ORCPT
+	id S1757603Ab1GKVJp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 17:09:45 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:51997 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901Ab1GKVJo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 17:08:20 -0400
-Date: Mon, 11 Jul 2011 22:07:53 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Avi Kivity <avi@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "acme@ghostprotocols.net" <acme@ghostprotocols.net>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: Re: [PATCH 1/3] perf: add context field to perf_event
-Message-ID: <20110711210753.GA3582@e102144-lin.cambridge.arm.com>
-References: <1309362157-6596-1-git-send-email-avi@redhat.com>
- <1309362157-6596-2-git-send-email-avi@redhat.com>
- <20110629160841.GA2032@somewhere>
- <20110629162725.GH15521@e102144-lin.cambridge.arm.com>
- <20110704135820.GD5551@somewhere>
- <4E11C9CC.2070909@redhat.com>
- <20110704143655.GE5551@somewhere>
+	Mon, 11 Jul 2011 17:09:44 -0400
+Date: Mon, 11 Jul 2011 23:09:39 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Eric Miao <eric.y.miao@gmail.com>
+Cc: Cyril Hrubis <metan@ucw.cz>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>, rpurdie@rpsys.net,
+        lenz@cs.wisc.edu, kernel list <linux-kernel@vger.kernel.org>,
+        arminlitzel@web.de, thommycheck@gmail.com,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        omegamoon@gmail.com, utx@penguin.cz, zaurus-devel@www.linuxtogo.org,
+        Marek Vasut <marek.vasut@gmail.com>,
+        Russell King <rmk@arm.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: zaurus patches -- arm/pxa -- is Eric alive
+Message-ID: <20110711210939.GA5682@elf.ucw.cz>
+References: <20110711134150.GA15506@localhost.ucw.cz>
+ <CALT56yM+fNs_2QorWK0=gr2um1H3vDX+HXPCi9bmKDdOdSvptA@mail.gmail.com>
+ <20110711140303.GA32532@atrey.karlin.mff.cuni.cz>
+ <CAMPhdO-UjxqyL47VsihX-fBD9VtAKkQqEQGj2u1YG0c90EHfqA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110704143655.GE5551@somewhere>
+In-Reply-To: <CAMPhdO-UjxqyL47VsihX-fBD9VtAKkQqEQGj2u1YG0c90EHfqA@mail.gmail.com>
+X-Warning: Reading this can be dangerous to your mental health.
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 04, 2011 at 03:36:57PM +0100, Frederic Weisbecker wrote:
-> On Mon, Jul 04, 2011 at 05:10:20PM +0300, Avi Kivity wrote:
-> > On 07/04/2011 04:58 PM, Frederic Weisbecker wrote:
-> > >Another thing I would like to do in the even longer term is to not use perf anymore
-> > >for ptrace breakpoints, because that involves a heavy dependency and few people are
-> > >happy with that. Instead we should just have a generic hook into the sched_switch()
-> > >and handle pure ptrace breakpoints there. The central breakpoint API would still be
-> > >there to reserve/schedule breakpoint resources between ptrace and perf.
-> > >
-> > 
-> > 'struct preempt_notifier' may be the hook you're looking for.
+Hi!
+
+> > Perhaps the most critical one is:
+> >
+> > [PATCH] MAX1111: Fix race condition causing NULL pointer exception
+> >
+> > http://ns1.yosemitephotos.net/lists/arm-kernel/msg125356.html
+
+Yep, that one (or equivalent) is most critical.
+
+> > Which fixes memory corruption that caused random oops.
+> >
+> > And then there is a bunch of fixes for charging and power management from
+> > Pavel Machek:
 > 
-> Yeah looks like a perfect fit as it's per task.
+> Guys, I'm still alive, at least still breathing. Just too many mails
+> and I was lost.
 
-I had a quick look at this and I think the preempt_notifier stuff needs
-slightly extending so that we can register a notifier for a task other than
-current [e.g. the child of current on which we are installing breakpoints].
+Good :-).
 
-If the task in question is running, it looks like this will introduce a race
-condition between notifier registration and rescheduling. For the purposes
-of ptrace this shouldn't be a problem as the child will be stopped, but
-others might also want to make use of the new functionality.
+> > Disable CF during suspend
+> >
+> > https://lkml.org/lkml/2011/5/21/46
+> 
+> The fix is trivial, think I can take it. A better approach will be to have a
+> generic CF power control function and invoke it in pcmcia driver when
+> suspending.
 
-Any ideas on how this could be achieved, or am I better off just restricting
-this to children that are being traced?
+Please take it. It is also regression from 2.6.15-or-so.
 
-Cheers,
+> > and spitz pm
+> >
+> > https://lkml.org/lkml/2011/5/21/72
+> > https://lkml.org/lkml/2011/5/21/73
+> > https://lkml.org/lkml/2011/5/21/76
+> 
+> Looks good to me, yet I need the last one Acked by power supply people.
 
-Will
+Can you take the first two? They are trivial preparations... And I'll
+get the ACKs...
+								Pavel
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
