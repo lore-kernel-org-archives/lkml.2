@@ -1,51 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756835Ab1GKCuB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 22:50:01 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:52919 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755652Ab1GKCt6 (ORCPT
+	id S1756944Ab1GKC7C (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 22:59:02 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:38404 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755652Ab1GKC67 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 22:49:58 -0400
-Subject: Re: [PATCH 0/4] Add a generic struct clk
-From: Jeremy Kerr <jeremy.kerr@canonical.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-sh@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <20110710090927.GA23445@opensource.wolfsonmicro.com>
-References: <1305876469.325655.313573683829.0.gpush@pororo>
-	 <1305876469.325655.313573683829.0.gpush@pororo>
-	 <20110710090927.GA23445@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 11 Jul 2011 10:49:48 +0800
-Message-ID: <1310352588.3591.197.camel@pororo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Sun, 10 Jul 2011 22:58:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <1310340634.2405.1.camel@phoenix>
+References: <1310340634.2405.1.camel@phoenix>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Sun, 10 Jul 2011 22:58:39 -0400
+Message-ID: <CAMjpGUeudcbC-df5oteMh4r=8yq=YPw2d0pBX8jA9A+U2_wBCw@mail.gmail.com>
+Subject: Re: [PATCH] drivers/video/backlight/adp8860_bl.c: remove a redundant
+ assignment for max_brightness
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        device-drivers-devel@blackfin.uclinux.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Sun, Jul 10, 2011 at 19:30, Axel Lin wrote:
+> We have set props.max_brightness before registering backlight device.
 
-> Is there a git tree with the current state of this code in it somewhere?
-> It's not mentioned here and my google skills are failing me.
-
-No, these are just RFC patches at the moment, so I'm reluctant to
-encourage anyone basing other work on them for now. Regardless, they're
-the most recent versions, so would be the most suitable place to start
-hacking if you're interested.
-
-On a related note, I've not had sufficient time to dedicate to the clk
-work recently, so Linus Walleij will be taking over the clk patches, and
-he'll be able to spend the necessary time to get things into shape :)
-
-He's on vacation at the moment, but will start at the upcoming Linaro
-event in Cambridge, I believe.
-
-Cheers,
-
-
-Jeremy
-
-
+Acked-by: Mike Frysinger <vapier@gentoo.org>
+-mike
