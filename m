@@ -1,131 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758496Ab1GKXCS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 19:02:18 -0400
-Received: from wnohang.net ([178.79.154.173]:39483 "EHLO mail.wnohang.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758474Ab1GKXCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 19:02:16 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net 84DC0F0007
-X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net 186FFF0003
-Date: Tue, 12 Jul 2011 04:32:09 +0530
-From: Raghavendra D Prabhu <rprabhu@wnohang.net>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re. Revised [PATCH 3/3] mm/readahead: Remove the check for
- ra->ra_pages
-Message-ID: <20110711230209.GA39196@Xye>
-References: <cover.1310239575.git.rprabhu@wnohang.net>
- <323ddfc402a7f7b94f0cb02bba15acb2acca786f.1310239575.git.rprabhu@wnohang.net>
- <20110709205308.GC17463@localhost>
- <20110710125909.GA4460@Xye>
- <20110710155906.GB7432@localhost>
+	id S1758490Ab1GKXDp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 19:03:45 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:33555 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758327Ab1GKXDn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 19:03:43 -0400
+Message-ID: <4E1B80ED.8010009@metafoo.de>
+Date: Tue, 12 Jul 2011 01:02:05 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110702 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <20110710155906.GB7432@localhost>
-X-Operating-System: Arch linux x86_64 3.0.0-rc6-LYM
-X-Editor: VIM - Vi IMproved 7.3
-User-Agent: Mutt/1.5.21 (2010-12-30)
+To: Wolfram Sang <w.sang@pengutronix.de>
+CC: Wim Van Sebroeck <wim@iguana.be>, LKML <linux-kernel@vger.kernel.org>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 01/11] watchdog: WatchDog Timer Driver Core - Add basic
+ framework
+References: <20110711135056.GT29245@infomag.iguana.be> <1310392522-9949-1-git-send-email-wim@iguana.be> <20110711213224.GC5811@pengutronix.de>
+In-Reply-To: <20110711213224.GC5811@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* On Sun, Jul 10, 2011 at 08:59:06AM -0700, Wu Fengguang <fengguang.wu@intel.com> wrote:
->On Sun, Jul 10, 2011 at 08:59:09PM +0800, Raghavendra D Prabhu wrote:
->> * On Sat, Jul 09, 2011 at 01:53:08PM -0700, Wu Fengguang <fengguang.wu@intel.com> wrote:
->> >On Sun, Jul 10, 2011 at 03:41:20AM +0800, Raghavendra D Prabhu wrote:
->> >>page_cache_sync_readahead checks for ra->ra_pages again, so moving the check after VM_SequentialReadHint.
+On 07/11/2011 11:32 PM, Wolfram Sang wrote:
 
->> >NAK. This patch adds nothing but overheads.
+>> +int watchdog_register_device(struct watchdog_device *wdd)
+>> +{
+>> +	int ret;
+>> +
+>> +	/* Make sure we have a valid watchdog_device structure */
+>> +	if (wdd == NULL || wdd->info == NULL || wdd->ops == NULL)
+>> +		return -EINVAL;
+>> +
+>> +	/* Make sure that the mandatory operations are supported */
+>> +	if (wdd->ops->start == NULL || wdd->ops->stop == NULL)
+>> +		return -EINVAL;
+> 
+> Check also for wdd->ops->owner? Should we mark it as mandatory?
+> 
 
->> >>--- a/mm/filemap.c
->> >>+++ b/mm/filemap.c
->> >>@@ -1566,8 +1566,6 @@ static void do_sync_mmap_readahead(struct vm_area_struct *vma,
->> >> 	/* If we don't want any read-ahead, don't bother */
->> >> 	if (VM_RandomReadHint(vma))
->> >> 		return;
->> >>-	if (!ra->ra_pages)
->> >>-		return;
+If the driver is built-in owner will be NULL.
 
->> >> 	if (VM_SequentialReadHint(vma)) {
->> >> 		page_cache_sync_readahead(mapping, ra, file, offset,
->> >>@@ -1575,6 +1573,9 @@ static void do_sync_mmap_readahead(struct vm_area_struct *vma,
->> >> 		return;
->> >> 	}
-
->> >>+	if (!ra->ra_pages)
->> >>+		return;
->> >>+
-
->> >page_cache_sync_readahead() has the same
-
->> >	if (!ra->ra_pages)
->> >		return;
->> 1. Yes, I saw that and that is why I moved it after the condition, so that duplicate checks are
->> not needed -- ie., if VM_SequentialReadHint is true, then
->> (!ra->ra_pages) is checked twice otherwise.
->
->Ok, I see.
->
->> 2. Also, another thought, is the check needed at its original place (if
->> not it can be removed), reasons being -- filesystems like tmpfs which
->> have ra_pages set to 0 don't use filemap_fault in their VMA ops and also
->
->Good point. tmpfs is using shmem_fault().. Can you remove the test?
-I have removed that test. Patch attached.
->
->> do_sync_mmap_readahead is called in a major page fault context.
->
->Right. This is irrelevant however, because if pa_pages==0, the
->page faults will normally be major ones.
->
->Thanks,
->Fengguang
->
->> >So the patch adds the call into page_cache_sync_readahead() just to return..
-
->> >Thanks,
->> >Fengguang
-
->> --------------------------
->> Raghavendra Prabhu
->> GPG Id : 0xD72BE977
->> Fingerprint: B93F EBCB 8E05 7039 CD3C A4B8 A616 DCA1 D72B E977
->> www: wnohang.net
->
->
-======================================================================
-  The check for ra->ra_pages is not required since fs like tmpfs which have
-  ra_pages set to 0 don't use filemap_fault as part of their VMA ops (it uses
-  shmem_fault). Also, page_cache_sync_readahead does its own check for ra_pages.
-
-  Signed-off-by: Raghavendra D Prabhu <rprabhu@wnohang.net>
-  ---
-   mm/filemap.c |    2 --
-   1 files changed, 0 insertions(+), 2 deletions(-)
-
-  diff --git a/mm/filemap.c b/mm/filemap.c
-  index 074c23d..0bcd276 100644
-  --- a/mm/filemap.c
-  +++ b/mm/filemap.c
-  @@ -1566,8 +1566,6 @@ static void do_sync_mmap_readahead(struct vm_area_struct *vma,
-          /* If we don't want any read-ahead, don't bother */
-          if (VM_RandomReadHint(vma))
-                  return;
-  -       if (!ra->ra_pages)
-  -               return;
-
-          if (VM_SequentialReadHint(vma)) {
-                  page_cache_sync_readahead(mapping, ra, file, offset,
-  --
-  1.7.6
-
-
---------------------------
-Raghavendra Prabhu
-GPG Id : 0xD72BE977
-Fingerprint: B93F EBCB 8E05 7039 CD3C A4B8 A616 DCA1 D72B E977
-www: wnohang.net
