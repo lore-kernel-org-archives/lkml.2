@@ -1,66 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964862Ab1GKWhB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 18:37:01 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:46958 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756169Ab1GKWhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 18:37:00 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Dan Williams <dan.j.williams@intel.com>
-Subject: Re: [Bug #38522] address space collision error message on boot
-Date: Tue, 12 Jul 2011 00:38:18 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc6+; KDE/4.6.0; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Dave Jiang <dave.jiang@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Jools Wills <jools@oxfordinspire.co.uk>, bhelgaas@google.com
-References: <Y7LyOsOBwFM.A.kJG.kBYGOB@chimera> <XNkIyhV6dgF.A.D4G.TCYGOB@chimera> <CAA9_cmeY1Q-L_iMQfsf-KWufZzpkMSWzQ42ep=bQP9XZwyV-Lw@mail.gmail.com>
-In-Reply-To: <CAA9_cmeY1Q-L_iMQfsf-KWufZzpkMSWzQ42ep=bQP9XZwyV-Lw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107120038.18847.rjw@sisk.pl>
+	id S1758264Ab1GKWiq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 18:38:46 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:20478 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757986Ab1GKWip (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 18:38:45 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6404"; a="102904696"
+From: Christine Chan <cschan@codeaurora.org>
+To: tglx@linutronix.de
+Cc: Christine Chan <cschan@codeaurora.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] timer: use debugobjects to catch deletion of uninitialized timers
+Date: Mon, 11 Jul 2011 15:38:16 -0700
+Message-Id: <1310423896-4006-1-git-send-email-cschan@codeaurora.org>
+X-Mailer: git-send-email 1.7.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 11, 2011, Dan Williams wrote:
-> [ adding Bjorn ]
-> 
-> On Sun, Jul 10, 2011 at 3:38 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > This message has been generated automatically as a part of a summary report
-> > of recent regressions.
-> >
-> > The following bug entry is on the current list of known regressions
-> > from 2.6.39.  Please verify if it still should be listed and let the tracking team
-> > know (either way).
-> 
-> The patch from the bugzilla entry is not yet upstream.
-> 
-> >
-> > Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=38522
-> > Subject         : address space collision error message on boot
-> > Submitter       : Jools Wills <jools@oxfordinspire.co.uk>
-> > Date            : 2011-06-29 02:28 (12 days old)
-> > First-Bad-Commit: http://git.kernel.org/linus/5d94e81f69d4b1d1102d3ab557ce0a817c11fbbb
-> 
-> Per the commentary in the bugzilla this commit makes the warning
-> message appear on 64-bit builds, but 32-bit has the same problem on
-> affected platforms (without the commit).
-> 
-> Bjorn has a proposed patch [1] that just downgrades the warning since
-> system operation does not appear to be affected.
-> 
-> --
-> Dan
-> 
-> [1]: https://bugzilla.kernel.org/attachment.cgi?id=64102
+del_timer_sync() calls debug_object_assert_init to assert that
+a timer has been initialized before calling lock_timer_base().
+lock_timer_base would spin forever on a NULL(uninit-ed) base. The check is
+added to del_timer() to prevent silent failure, even though it would not
+get stuck in an infinite loop.
 
-Thanks for the update.
+Signed-off-by: Christine Chan <cschan@codeaurora.org>
+---
+ kernel/timer.c |   54 +++++++++++++++++++++++++++++++++++++++++++++++++-----
+ 1 files changed, 49 insertions(+), 5 deletions(-)
 
-Rafael
+diff --git a/kernel/timer.c b/kernel/timer.c
+index 8cff361..e1733d3 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -480,12 +480,41 @@ static int timer_fixup_free(void *addr, enum debug_obj_state state)
+ 	}
+ }
+ 
++/*
++ * fixup_assert_init is called when:
++ * - an untracked/uninit-ed object is found
++ */
++static int timer_fixup_assert_init(void *addr, enum debug_obj_state state)
++{
++	struct timer_list *timer = addr;
++
++	switch (state) {
++	case ODEBUG_STATE_NOTAVAILABLE:
++		if (timer->entry.prev == TIMER_ENTRY_STATIC) {
++			/*
++			 * This is not really a fixup. The timer was
++			 * statically initialized. We just make sure that it
++			 * is tracked in the object tracker.
++			 */
++			debug_object_init(timer, &timer_debug_descr);
++			return 0;
++		} else {
++			WARN_ON(1);
++			init_timer(timer);
++			return 1;
++		}
++	default:
++		return 0;
++	}
++}
++
+ static struct debug_obj_descr timer_debug_descr = {
+-	.name		= "timer_list",
+-	.debug_hint	= timer_debug_hint,
+-	.fixup_init	= timer_fixup_init,
+-	.fixup_activate	= timer_fixup_activate,
+-	.fixup_free	= timer_fixup_free,
++	.name			= "timer_list",
++	.debug_hint		= timer_debug_hint,
++	.fixup_init		= timer_fixup_init,
++	.fixup_activate		= timer_fixup_activate,
++	.fixup_free		= timer_fixup_free,
++	.fixup_assert_init	= timer_fixup_assert_init,
+ };
+ 
+ static inline void debug_timer_init(struct timer_list *timer)
+@@ -508,6 +537,11 @@ static inline void debug_timer_free(struct timer_list *timer)
+ 	debug_object_free(timer, &timer_debug_descr);
+ }
+ 
++static inline void debug_timer_assert_init(struct timer_list *timer)
++{
++	debug_object_assert_init(timer, &timer_debug_descr);
++}
++
+ static void __init_timer(struct timer_list *timer,
+ 			 const char *name,
+ 			 struct lock_class_key *key);
+@@ -531,6 +565,7 @@ EXPORT_SYMBOL_GPL(destroy_timer_on_stack);
+ static inline void debug_timer_init(struct timer_list *timer) { }
+ static inline void debug_timer_activate(struct timer_list *timer) { }
+ static inline void debug_timer_deactivate(struct timer_list *timer) { }
++static inline void debug_timer_assert_init(struct timer_list *timer) { }
+ #endif
+ 
+ static inline void debug_init(struct timer_list *timer)
+@@ -552,6 +587,11 @@ static inline void debug_deactivate(struct timer_list *timer)
+ 	trace_timer_cancel(timer);
+ }
+ 
++static inline void debug_assert_init(struct timer_list *timer)
++{
++	debug_timer_assert_init(timer);
++}
++
+ static void __init_timer(struct timer_list *timer,
+ 			 const char *name,
+ 			 struct lock_class_key *key)
+@@ -902,6 +942,8 @@ int del_timer(struct timer_list *timer)
+ 	unsigned long flags;
+ 	int ret = 0;
+ 
++	debug_assert_init(timer);
++
+ 	timer_stats_timer_clear_start_info(timer);
+ 	if (timer_pending(timer)) {
+ 		base = lock_timer_base(timer, &flags);
+@@ -932,6 +974,8 @@ int try_to_del_timer_sync(struct timer_list *timer)
+ 	unsigned long flags;
+ 	int ret = -1;
+ 
++	debug_assert_init(timer);
++
+ 	base = lock_timer_base(timer, &flags);
+ 
+ 	if (base->running_timer == timer)
+-- 
+1.7.3.3
+
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
