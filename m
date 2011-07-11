@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757165Ab1GKGVH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 02:21:07 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:38927 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756588Ab1GKGVF (ORCPT
+	id S1757177Ab1GKGaV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 02:30:21 -0400
+Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:60168 "EHLO
+	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756347Ab1GKGaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 02:21:05 -0400
-From: Ravishankar <ravishankarkm32@gmail.com>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>,
-        Ravishankar <ravishankarkm32@gmail.com>
-Subject: [PATCH 5/5] Staging: comedi: fix brace coding style issue in pcl818.c
-Date: Mon, 11 Jul 2011 12:03:42 +0530
-Message-Id: <1310366022-20797-1-git-send-email-ravishankarkm32@gmail.com>
-X-Mailer: git-send-email 1.6.5.2
-In-Reply-To: <[PATCH 5/5]Staging: comedi: fix brace coding style issue in pcl818.c>
-References: <[PATCH 5/5]Staging: comedi: fix brace coding style issue in pcl818.c>
+	Mon, 11 Jul 2011 02:30:20 -0400
+Date: Mon, 11 Jul 2011 09:30:13 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Felipe Balbi <balbi@ti.com>,
+        lud <linux-usb@vger.kernel.org>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -next] usb/gadget: fix langwell printk formats
+Message-ID: <20110711063011.GB2680@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <20110707172544.867b980a1196db005b577c14@canb.auug.org.au>
+ <20110710114127.ebb0d803.randy.dunlap@oracle.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="GID0FwUMdk1T2AWN"
+Content-Disposition: inline
+In-Reply-To: <20110710114127.ebb0d803.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ravishankar <ravi.shankar@greenturtles.in>
 
-This is a patch to the pcl818.c file that fixes up a brace warning found by the checkpatch.pl tool
+--GID0FwUMdk1T2AWN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
----
- drivers/staging/comedi/drivers/pcl818.c |   13 +++++--------
- 1 files changed, 5 insertions(+), 8 deletions(-)
+On Sun, Jul 10, 2011 at 11:41:27AM -0700, Randy Dunlap wrote:
+> From: Randy Dunlap <randy.dunlap@oracle.com>
+>=20
+> Fix printk formats to use %zu for size_t args, to fix these
+> build warnings:
+>=20
+> drivers/usb/gadget/langwell_udc.c:3274: warning: format '%d' expects type=
+ 'int', but argument 4 has type 'size_t'
+> drivers/usb/gadget/langwell_udc.c:3289: warning: format '%d' expects type=
+ 'int', but argument 4 has type 'size_t'
+> drivers/usb/gadget/langwell_udc.c:3473: warning: format '%d' expects type=
+ 'int', but argument 4 has type 'size_t'
+> drivers/usb/gadget/langwell_udc.c:3487: warning: format '%d' expects type=
+ 'int', but argument 4 has type 'size_t'
+>=20
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-diff --git a/drivers/staging/comedi/drivers/pcl818.c b/drivers/staging/comedi/drivers/pcl818.c
-index 046340e..241b16b 100644
---- a/drivers/staging/comedi/drivers/pcl818.c
-+++ b/drivers/staging/comedi/drivers/pcl818.c
-@@ -1785,12 +1785,10 @@ static int pcl818_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	}
- 
- 	dev->irq = irq;
--	if (irq) {
--		devpriv->irq_free = 1;
--	} /* 1=we have allocated irq */
--	else {
-+	if (irq)
-+		devpriv->irq_free = 1;		/* 1=we have allocated irq */
-+	else
- 		devpriv->irq_free = 0;
--	}
- 	devpriv->irq_blocked = 0;	/* number of subdevice which use IRQ */
- 	devpriv->ai_mode = 0;	/* mode of irq */
- 
-@@ -2002,11 +2000,10 @@ no_dma:
- 	}
- 
- 	/* select 1/10MHz oscilator */
--	if ((it->options[3] == 0) || (it->options[3] == 10)) {
-+	if ((it->options[3] == 0) || (it->options[3] == 10))
- 		devpriv->i8253_osc_base = 100;
--	} else {
-+	else
- 		devpriv->i8253_osc_base = 1000;
--	}
- 
- 	/* max sampling speed */
- 	devpriv->ns_min = this_board->ns_min;
--- 
-1.6.5.2
+already on Greg's queue:
 
+http://git1.kernel.org/?p=3Dlinux/kernel/git/gregkh/usb-2.6.git;a=3Dcommit;=
+h=3Db9af9ea45a8dc1c3e7a98319bac90199807cc258
+
+--=20
+balbi
+
+--GID0FwUMdk1T2AWN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOGphzAAoJEAv8Txj19kN1230IAJFW5kY3vb9erzst0SudAq7K
+aB/fHjvC3Wpq7EtdHAmpXrtKoVZPzo5IBF8sBPbOQE1lwgiDHm2S1AXfnqnbbDyi
+P/x7/UWVf1e9EXH3utRpXMiOJmfaG9lHR7GStQZtmx8KtFQMXmCzgqJLrfjfGDXa
+4hBnLtrOCN7M06O3QsvpbK1FFqGth5XyH64POhVtsryX4TWaJhQRQYud8StRiAZc
+AYCmhEeNUywsmmDco1hmnfi8bgbY5/fOo7JvJpCXK9/Q+aUh3gBEktQrBOHu6eDR
+0HVlt09X9CQc5y9Q96scxgFDqgNpafbRgsm/0IQogZjWJDAwgAJyhZab4jYcRlw=
+=mA7c
+-----END PGP SIGNATURE-----
+
+--GID0FwUMdk1T2AWN--
