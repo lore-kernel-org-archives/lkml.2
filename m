@@ -1,134 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758459Ab1GKXCO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 19:02:14 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:33518 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758227Ab1GKXCN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 19:02:13 -0400
-Message-ID: <4E1B8089.90103@metafoo.de>
-Date: Tue, 12 Jul 2011 01:00:25 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110702 Icedove/3.0.11
+	id S1758496Ab1GKXCS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 19:02:18 -0400
+Received: from wnohang.net ([178.79.154.173]:39483 "EHLO mail.wnohang.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758474Ab1GKXCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 19:02:16 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net 84DC0F0007
+X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net 186FFF0003
+Date: Tue, 12 Jul 2011 04:32:09 +0530
+From: Raghavendra D Prabhu <rprabhu@wnohang.net>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re. Revised [PATCH 3/3] mm/readahead: Remove the check for
+ ra->ra_pages
+Message-ID: <20110711230209.GA39196@Xye>
+References: <cover.1310239575.git.rprabhu@wnohang.net>
+ <323ddfc402a7f7b94f0cb02bba15acb2acca786f.1310239575.git.rprabhu@wnohang.net>
+ <20110709205308.GC17463@localhost>
+ <20110710125909.GA4460@Xye>
+ <20110710155906.GB7432@localhost>
 MIME-Version: 1.0
-To: Wim Van Sebroeck <wim@iguana.be>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 01/11] watchdog: WatchDog Timer Driver Core - Add basic
- framework
-References: <1310392522-9949-1-git-send-email-wim@iguana.be>
-In-Reply-To: <1310392522-9949-1-git-send-email-wim@iguana.be>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <20110710155906.GB7432@localhost>
+X-Operating-System: Arch linux x86_64 3.0.0-rc6-LYM
+X-Editor: VIM - Vi IMproved 7.3
+User-Agent: Mutt/1.5.21 (2010-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2011 04:19 PM, Wim Van Sebroeck wrote:
-> [...]
-> +
-> +
-> +static int watchdog_release(struct inode *inode, struct file *file)
-> +{
-> +	int err;
-> +
-> +	/* stop the watchdog */
-> +	err = wdd->ops->stop(wdd);
-Does it really make sense to allow stop() to fail? Will this ever happen, and
-if yes do we gain anything by sending a additional ping?
+* On Sun, Jul 10, 2011 at 08:59:06AM -0700, Wu Fengguang <fengguang.wu@intel.com> wrote:
+>On Sun, Jul 10, 2011 at 08:59:09PM +0800, Raghavendra D Prabhu wrote:
+>> * On Sat, Jul 09, 2011 at 01:53:08PM -0700, Wu Fengguang <fengguang.wu@intel.com> wrote:
+>> >On Sun, Jul 10, 2011 at 03:41:20AM +0800, Raghavendra D Prabhu wrote:
+>> >>page_cache_sync_readahead checks for ra->ra_pages again, so moving the check after VM_SequentialReadHint.
 
-> +	if (err != 0) {
-> +		pr_crit("%s: watchdog did not stop!\n", wdd->info->identity);
-> +		watchdog_ping(wdd);
-> +	}
-> +
-> +	/* Allow the owner module to be unloaded again */
-> +	module_put(wdd->ops->owner);
-> +
-> +	/* make sure that /dev/watchdog can be re-opened */
-> +	clear_bit(WDOG_DEV_OPEN, &wdd->status);
-> +
-> +	return 0;
-> +}
-> +
-> [...]
-> +
-> +int watchdog_dev_unregister(struct watchdog_device *watchdog)
-> +{
-> +	/* Check that a watchdog device was registered in the past */
-> +	if (!test_bit(0, &watchdog_dev_busy) || !wdd)
-> +		return -ENODEV;
-> +
-> +	/* We can only unregister the watchdog device that was registered */
-> +	if (watchdog != wdd) {
-> +		pr_err("%s: watchdog was not registered as /dev/watchdog.\n",
-> +			watchdog->info->identity);
-> +		return -ENODEV;
-> +	}
-> +
-> +	/* Unregister the miscdevice */
-> +	misc_deregister(&watchdog_miscdev);
-> +	wdd = NULL;
-> +	clear_bit(0, &watchdog_dev_busy);
-> +	return 0;
-> +}
+>> >NAK. This patch adds nothing but overheads.
 
-What happens if the watchdog gets unregistered if the device is still opened?
-Even though if you'd check wdd for not being NULL in the file callbacks there
-is still a chance for races if the devices is unregistered at the same time as
-the callback is running. You'd either need a big lock to protect from having a
-file callback and unregister running concurrently or add ref-counting to the
-watchdog_device, the later best done by embedding a struct device and using the
-device driver model.
+>> >>--- a/mm/filemap.c
+>> >>+++ b/mm/filemap.c
+>> >>@@ -1566,8 +1566,6 @@ static void do_sync_mmap_readahead(struct vm_area_struct *vma,
+>> >> 	/* If we don't want any read-ahead, don't bother */
+>> >> 	if (VM_RandomReadHint(vma))
+>> >> 		return;
+>> >>-	if (!ra->ra_pages)
+>> >>-		return;
 
-> +
-> +MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
-> diff --git a/drivers/watchdog/watchdog_dev.h b/drivers/watchdog/watchdog_dev.h
-> new file mode 100644
-> index 0000000..bc7612b
-> --- /dev/null
-> +++ b/drivers/watchdog/watchdog_dev.h
-> @@ -0,0 +1,33 @@
-> [...]
->  
-> +struct watchdog_ops;
-> +struct watchdog_device;
-> +
-> +/* The watchdog-devices operations */
-> +struct watchdog_ops {
-> +	struct module *owner;
-> +	/* mandatory operations */
-> +	int (*start)(struct watchdog_device *);
-> +	int (*stop)(struct watchdog_device *);
-> +	/* optional operations */
-> +	int (*ping)(struct watchdog_device *);
-> +};
-> +
-> +/* The structure that defines a watchdog device */
-> +struct watchdog_device {
-> +	const struct watchdog_info *info;
-> +	const struct watchdog_ops *ops;
-> +	void *priv;
+>> >> 	if (VM_SequentialReadHint(vma)) {
+>> >> 		page_cache_sync_readahead(mapping, ra, file, offset,
+>> >>@@ -1575,6 +1573,9 @@ static void do_sync_mmap_readahead(struct vm_area_struct *vma,
+>> >> 		return;
+>> >> 	}
 
-You should provide getter/setter methods for priv, so that when the watchdog
-API is changed to make use of the device driver model it becomes easier to get
-rid of the priv field and use dev_{get,set}_drvdata instead.
+>> >>+	if (!ra->ra_pages)
+>> >>+		return;
+>> >>+
 
-> +	unsigned long status;
-> +/* Bit numbers for status flags */
-> +#define WDOG_DEV_OPEN		1	/* Opened via /dev/watchdog ? */
-> +};
+>> >page_cache_sync_readahead() has the same
 
-Kernel-doc style documentation for the structs would be nice.
+>> >	if (!ra->ra_pages)
+>> >		return;
+>> 1. Yes, I saw that and that is why I moved it after the condition, so that duplicate checks are
+>> not needed -- ie., if VM_SequentialReadHint is true, then
+>> (!ra->ra_pages) is checked twice otherwise.
+>
+>Ok, I see.
+>
+>> 2. Also, another thought, is the check needed at its original place (if
+>> not it can be removed), reasons being -- filesystems like tmpfs which
+>> have ra_pages set to 0 don't use filemap_fault in their VMA ops and also
+>
+>Good point. tmpfs is using shmem_fault().. Can you remove the test?
+I have removed that test. Patch attached.
+>
+>> do_sync_mmap_readahead is called in a major page fault context.
+>
+>Right. This is irrelevant however, because if pa_pages==0, the
+>page faults will normally be major ones.
+>
+>Thanks,
+>Fengguang
+>
+>> >So the patch adds the call into page_cache_sync_readahead() just to return..
 
-> +
-> +/* drivers/watchdog/core/watchdog_core.c */
-> +extern int watchdog_register_device(struct watchdog_device *);
-> +extern void watchdog_unregister_device(struct watchdog_device *);
-> +
->  #endif	/* __KERNEL__ */
->  
->  #endif  /* ifndef _LINUX_WATCHDOG_H */
+>> >Thanks,
+>> >Fengguang
 
+>> --------------------------
+>> Raghavendra Prabhu
+>> GPG Id : 0xD72BE977
+>> Fingerprint: B93F EBCB 8E05 7039 CD3C A4B8 A616 DCA1 D72B E977
+>> www: wnohang.net
+>
+>
+======================================================================
+  The check for ra->ra_pages is not required since fs like tmpfs which have
+  ra_pages set to 0 don't use filemap_fault as part of their VMA ops (it uses
+  shmem_fault). Also, page_cache_sync_readahead does its own check for ra_pages.
+
+  Signed-off-by: Raghavendra D Prabhu <rprabhu@wnohang.net>
+  ---
+   mm/filemap.c |    2 --
+   1 files changed, 0 insertions(+), 2 deletions(-)
+
+  diff --git a/mm/filemap.c b/mm/filemap.c
+  index 074c23d..0bcd276 100644
+  --- a/mm/filemap.c
+  +++ b/mm/filemap.c
+  @@ -1566,8 +1566,6 @@ static void do_sync_mmap_readahead(struct vm_area_struct *vma,
+          /* If we don't want any read-ahead, don't bother */
+          if (VM_RandomReadHint(vma))
+                  return;
+  -       if (!ra->ra_pages)
+  -               return;
+
+          if (VM_SequentialReadHint(vma)) {
+                  page_cache_sync_readahead(mapping, ra, file, offset,
+  --
+  1.7.6
+
+
+--------------------------
+Raghavendra Prabhu
+GPG Id : 0xD72BE977
+Fingerprint: B93F EBCB 8E05 7039 CD3C A4B8 A616 DCA1 D72B E977
+www: wnohang.net
