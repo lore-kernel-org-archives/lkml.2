@@ -1,66 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964842Ab1GKTXW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 15:23:22 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:50114 "EHLO song.cn.fujitsu.com"
+	id S1757180Ab1GKTYA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 15:24:00 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:62742 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S964791Ab1GKTXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 15:23:21 -0400
-Message-ID: <4E1B4E1F.5030809@cn.fujitsu.com>
-Date: Tue, 12 Jul 2011 03:25:19 +0800
+	id S1754229Ab1GKTX7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 15:23:59 -0400
+Message-ID: <4E1B4E44.9020302@cn.fujitsu.com>
+Date: Tue, 12 Jul 2011 03:25:56 +0800
 From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
 To: Avi Kivity <avi@redhat.com>
 CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         KVM <kvm@vger.kernel.org>
-Subject: [PATCH v4 06/18] KVM: MMU: cleanup for FNAME(fetch)
+Subject: [PATCH v4 07/18] KVM: MMU: rename 'pt_write' to 'emulate'
 References: <4E1B4CF8.605@cn.fujitsu.com>
 In-Reply-To: <4E1B4CF8.605@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-07-12 03:22:38,
+ 2011-07-12 03:23:15,
 	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-07-12 03:22:38,
-	Serialize complete at 2011-07-12 03:22:38
+ 2011-07-12 03:23:15,
+	Serialize complete at 2011-07-12 03:23:15
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gw->pte_access is the final access permission, since it is unified with
-gw->pt_access when we walked guest page table:
-
-FNAME(walk_addr_generic):
-	pte_access = pt_access & FNAME(gpte_access)(vcpu, pte, true);
+If 'pt_write' is true, we need to emulate the fault. And in later patch, we
+need to emulate the fault even though it is not a pt_write event, so rename
+it to better fit the meaning
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- arch/x86/kvm/paging_tmpl.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kvm/mmu.c         |   10 +++++-----
+ arch/x86/kvm/paging_tmpl.h |   16 ++++++++--------
+ 2 files changed, 13 insertions(+), 13 deletions(-)
 
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index c9fe97b..5c2aa40 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -479,7 +479,7 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
- 	if (!is_present_gpte(gw->ptes[gw->level - 1]))
- 		return NULL;
- 
--	direct_access = gw->pt_access & gw->pte_access;
-+	direct_access = gw->pte_access;
- 
- 	top_level = vcpu->arch.mmu.root_level;
- 	if (top_level == PT32E_ROOT_LEVEL)
-@@ -537,7 +537,7 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
- 		link_shadow_page(it.sptep, sp);
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 98812c2..a62ba46 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2023,7 +2023,7 @@ done:
+ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 			 unsigned pt_access, unsigned pte_access,
+ 			 int user_fault, int write_fault,
+-			 int *ptwrite, int level, gfn_t gfn,
++			 int *emulate, int level, gfn_t gfn,
+ 			 pfn_t pfn, bool speculative,
+ 			 bool host_writable)
+ {
+@@ -2061,7 +2061,7 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 		      level, gfn, pfn, speculative, true,
+ 		      host_writable)) {
+ 		if (write_fault)
+-			*ptwrite = 1;
++			*emulate = 1;
+ 		kvm_mmu_flush_tlb(vcpu);
  	}
  
--	mmu_set_spte(vcpu, it.sptep, access, gw->pte_access & access,
-+	mmu_set_spte(vcpu, it.sptep, access, gw->pte_access,
- 		     user_fault, write_fault, ptwrite, it.level,
+@@ -2184,7 +2184,7 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
+ {
+ 	struct kvm_shadow_walk_iterator iterator;
+ 	struct kvm_mmu_page *sp;
+-	int pt_write = 0;
++	int emulate = 0;
+ 	gfn_t pseudo_gfn;
+ 
+ 	for_each_shadow_entry(vcpu, (u64)gfn << PAGE_SHIFT, iterator) {
+@@ -2192,7 +2192,7 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
+ 			unsigned pte_access = ACC_ALL;
+ 
+ 			mmu_set_spte(vcpu, iterator.sptep, ACC_ALL, pte_access,
+-				     0, write, &pt_write,
++				     0, write, &emulate,
+ 				     level, gfn, pfn, prefault, map_writable);
+ 			direct_pte_prefetch(vcpu, iterator.sptep);
+ 			++vcpu->stat.pf_fixed;
+@@ -2220,7 +2220,7 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
+ 				   | shadow_accessed_mask);
+ 		}
+ 	}
+-	return pt_write;
++	return emulate;
+ }
+ 
+ static void kvm_send_hwpoison_signal(unsigned long address, struct task_struct *tsk)
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index 5c2aa40..fa3b54b 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -467,7 +467,7 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, struct guest_walker *gw,
+ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
+ 			 struct guest_walker *gw,
+ 			 int user_fault, int write_fault, int hlevel,
+-			 int *ptwrite, pfn_t pfn, bool map_writable,
++			 int *emulate, pfn_t pfn, bool map_writable,
+ 			 bool prefault)
+ {
+ 	unsigned access = gw->pt_access;
+@@ -538,7 +538,7 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
+ 	}
+ 
+ 	mmu_set_spte(vcpu, it.sptep, access, gw->pte_access,
+-		     user_fault, write_fault, ptwrite, it.level,
++		     user_fault, write_fault, emulate, it.level,
  		     gw->gfn, pfn, prefault, map_writable);
  	FNAME(pte_prefetch)(vcpu, gw, it.sptep);
+ 
+@@ -572,7 +572,7 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
+ 	int user_fault = error_code & PFERR_USER_MASK;
+ 	struct guest_walker walker;
+ 	u64 *sptep;
+-	int write_pt = 0;
++	int emulate = 0;
+ 	int r;
+ 	pfn_t pfn;
+ 	int level = PT_PAGE_TABLE_LEVEL;
+@@ -633,19 +633,19 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
+ 	if (!force_pt_level)
+ 		transparent_hugepage_adjust(vcpu, &walker.gfn, &pfn, &level);
+ 	sptep = FNAME(fetch)(vcpu, addr, &walker, user_fault, write_fault,
+-			     level, &write_pt, pfn, map_writable, prefault);
++			     level, &emulate, pfn, map_writable, prefault);
+ 	(void)sptep;
+-	pgprintk("%s: shadow pte %p %llx ptwrite %d\n", __func__,
+-		 sptep, *sptep, write_pt);
++	pgprintk("%s: shadow pte %p %llx emulate %d\n", __func__,
++		 sptep, *sptep, emulate);
+ 
+-	if (!write_pt)
++	if (!emulate)
+ 		vcpu->arch.last_pt_write_count = 0; /* reset fork detector */
+ 
+ 	++vcpu->stat.pf_fixed;
+ 	trace_kvm_mmu_audit(vcpu, AUDIT_POST_PAGE_FAULT);
+ 	spin_unlock(&vcpu->kvm->mmu_lock);
+ 
+-	return write_pt;
++	return emulate;
+ 
+ out_unlock:
+ 	spin_unlock(&vcpu->kvm->mmu_lock);
 -- 
 1.7.5.4
 
