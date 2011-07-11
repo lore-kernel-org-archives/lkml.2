@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757407Ab1GKIUd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 04:20:33 -0400
-Received: from symlink.to.noone.org ([85.10.207.172]:39533 "EHLO sym.noone.org"
+	id S1757417Ab1GKIZj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 04:25:39 -0400
+Received: from mx.treblig.org ([80.68.94.177]:36668 "EHLO mx.treblig.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757366Ab1GKIUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 04:20:32 -0400
-Date: Mon, 11 Jul 2011 10:20:29 +0200
-From: Tobias Klauser <tklauser@distanz.ch>
-To: Ravishankar <ravishankarkm32@gmail.com>
-Cc: gregkh@suse.de, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>
-Subject: Re: [PATCH 10/10] Staging: comedi: fix brace printk() issue in
-	pcl818.c
-Message-ID: <20110711082029.GL8334@distanz.ch>
-References: <1310370712-28864-1-git-send-email-ravishankarkm32@gmail.com>
+	id S1757397Ab1GKIZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 04:25:38 -0400
+Date: Mon, 11 Jul 2011 09:25:36 +0100
+From: "Dr. David Alan Gilbert" <linux@treblig.org>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: teigland@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: kmallocs with swapped parameters in fs/dlm/lock.c
+Message-ID: <20110711082536.GA29007@gallifrey>
+References: <20110710003032.GA19951@gallifrey> <alpine.LNX.2.00.1107102254370.2818@swampdragon.chaosbits.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1310370712-28864-1-git-send-email-ravishankarkm32@gmail.com>
-X-Editor: Vi IMproved 7.1
+In-Reply-To: <alpine.LNX.2.00.1107102254370.2818@swampdragon.chaosbits.net>
+X-Chocolate: 70 percent or better cocoa solids preferably
+X-Operating-System: Linux/2.6.32.27-kvm-i386-20110114 (i686)
+X-Uptime: 09:24:31 up 143 days,  9:57,  1 user,  load average: 0.00, 0.00,
+	0.00
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-07-11 at 09:51:52 +0200, Ravishankar <ravishankarkm32@gmail.com> wrote:
-> From: Ravishankar <ravi.shankar@greenturtles.in>
+* Jesper Juhl (jj@chaosbits.net) wrote:
+> On Sun, 10 Jul 2011, Dr. David Alan Gilbert wrote:
 > 
-> This is a patch to the pcl818.c file that fixes up a printk() warning found by the checkpatch.pl tool
-> 
-> Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
-> ---
->  drivers/staging/comedi/drivers/pcl818.c |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/staging/comedi/drivers/pcl818.c b/drivers/staging/comedi/drivers/pcl818.c
-> index 2fdb8c9..4069fee 100644
-> --- a/drivers/staging/comedi/drivers/pcl818.c
-> +++ b/drivers/staging/comedi/drivers/pcl818.c
-> @@ -1777,7 +1777,7 @@ static int pcl818_attach(struct comedi_device *dev, struct comedi_devconfig *it)
->  					     irq);
->  					irq = 0;	/* Can't use IRQ */
->  				} else {
-> -					printk(", irq=%u", irq);
-> +					printk(KERN_INFO ", irq=%u", irq);
+> > Hi David,
+> >   Sparse spotted a couple of places in fs/dlm/lock.c where the size/flags
+> > parameters to kmalloc got swapped:
+> > 
+> [...]
+> > Jesper:
+> >   I noticed in your patch:
+> > https://lkml.org/lkml/2011/7/2/90
+> > 
+> > where you had done a kmalloc->kzalloc transform you kept the swap.
+> > 
+> > This looks like new code in 3.0rc so I don't think you could quite
+> > call it a regression, but it should probably be fixed fairly quickly
+> > I guess.
+> > 
+> D'oh, I completely overlooked that.
 
-This should be KERN_CONT.
+No problem.
 
->  				}
->  			}
->  		}
-> @@ -1883,7 +1883,7 @@ no_dma:
->  		if (check_single_ended(dev->iobase)) {
->  			s->n_chan = this_board->n_aichan_se;
->  			s->subdev_flags |= SDF_COMMON | SDF_GROUND;
-> -			printk(", %dchans S.E. DAC", s->n_chan);
-> +			printk(KERN_INFO ", %dchans S.E. DAC", s->n_chan);
+> Thank you for noticing and letting me know. I've just submitted an updated 
+> patch.
 
-Ditto.
+Great - it's probably worth you fixing the 2nd case in the same file
+in the same patch, rather than just the one that you were changing
+anyway?
 
->  		} else {
->  			s->n_chan = this_board->n_aichan_diff;
->  			s->subdev_flags |= SDF_DIFF;
-> -- 
-> 1.6.5.2
-> 
-> _______________________________________________
-> devel mailing list
-> devel@linuxdriverproject.org
-> http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
-> 
+Dave
+-- 
+ -----Open up your eyes, open up your mind, open up your code -------   
+/ Dr. David Alan Gilbert    |       Running GNU/Linux       | Happy  \ 
+\ gro.gilbert @ treblig.org |                               | In Hex /
+ \ _________________________|_____ http://www.treblig.org   |_______/
