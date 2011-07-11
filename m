@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757852Ab1GKPCw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 11:02:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22431 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757769Ab1GKPCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 11:02:51 -0400
-Date: Mon, 11 Jul 2011 11:02:33 -0400
-From: David Teigland <teigland@redhat.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, cluster-devel@redhat.com,
-        Christine Caulfield <ccaulfie@redhat.com>,
-        "Dr. David Alan Gilbert" <linux@treblig.org>
-Subject: Re: [PATCH v3] fs, dlm: don't do pointless NULL check, use kzalloc
- and fix order of arguments
-Message-ID: <20110711150233.GC14426@redhat.com>
-References: <alpine.LNX.2.00.1107021957130.16316@swampdragon.chaosbits.net>
- <alpine.LNX.2.00.1107102252510.2818@swampdragon.chaosbits.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1757881Ab1GKPDa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 11:03:30 -0400
+Received: from mail.dev.rtsoft.ru ([213.79.90.226]:33784 "HELO
+	mail.dev.rtsoft.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757775Ab1GKPD3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 11:03:29 -0400
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
+Subject: [PATCH] x86, quirks: use pci_dev->revision
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1107102252510.2818@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Cc: linux-kernel@vger.kernel.org
+From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+Organization: MontaVista Software Inc.
+Date: Mon, 11 Jul 2011 19:01:38 +0400
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107111901.39281.sshtylyov@ru.mvista.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 10, 2011 at 10:54:31PM +0200, Jesper Juhl wrote:
-> In fs/dlm/lock.c in the dlm_scan_waiters() function there are 3 small
-> issues:
-> 
-> 1) There's no need to test the return value of the allocation and do a
-> memset if is succeedes. Just use kzalloc() to obtain zeroed memory.
-> 
-> 2) Since kfree() handles NULL pointers gracefully, the test of
-> 'warned' against NULL before the kfree() after the loop is completely
-> pointless. Remove it.
-> 
-> 3) The arguments to kmalloc() (now kzalloc()) were swapped. Thanks to
-> Dr. David Alan Gilbert for pointing this out.
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+This code uses PCI_CLASS_REVISION instead of PCI_REVISION_ID, so it wasn't
+converted by commit 44c10138fd4bbc4b6d6bff0873c24902f2a9da65 (PCI: Change all
+drivers to use pci_device->revision) before being moved to arch/x86/...
 
-Thanks, I pushed this and a patch for the other swapped kmalloc to the
-next branch.
-Dave
+Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
 
+---
+The patch is against the recent Linus' tree.
+
+ arch/x86/kernel/quirks.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+Index: linux-2.6/arch/x86/kernel/quirks.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/quirks.c
++++ linux-2.6/arch/x86/kernel/quirks.c
+@@ -10,7 +10,7 @@
+ 
+ static void __devinit quirk_intel_irqbalance(struct pci_dev *dev)
+ {
+-	u8 config, rev;
++	u8 config;
+ 	u16 word;
+ 
+ 	/* BIOS may enable hardware IRQ balancing for
+@@ -18,8 +18,7 @@ static void __devinit quirk_intel_irqbal
+ 	 * based platforms.
+ 	 * Disable SW irqbalance/affinity on those platforms.
+ 	 */
+-	pci_read_config_byte(dev, PCI_CLASS_REVISION, &rev);
+-	if (rev > 0x9)
++	if (dev->revision > 0x9)
+ 		return;
+ 
+ 	/* enable access to config space*/
