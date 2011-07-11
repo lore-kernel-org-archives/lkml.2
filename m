@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757187Ab1GKGhh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 02:37:37 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55474 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756588Ab1GKGhg (ORCPT
+	id S1757212Ab1GKGjv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 02:39:51 -0400
+Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:58406 "EHLO
+	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757160Ab1GKGju (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 02:37:36 -0400
-Date: Mon, 11 Jul 2011 06:37:20 +0000
-From: Pavel Machek <pavel@ucw.cz>
-To: Greg KH <gregkh@suse.de>
-Cc: Vasiliy Kulikov <segoon@openwall.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Morris <jmorris@namei.org>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@gmail.com>, kernel-hardening@lists.openwall.com,
-        linux-kernel@vger.kernel.org, security@kernel.org
-Subject: Re: [PATCH] kernel: escape non-ASCII and control characters in
-	printk()
-Message-ID: <20110711063719.GA12579@localhost.ucw.cz>
-References: <20110622095341.GA3353@albatros> <20110622153742.GA18983@suse.de>
+	Mon, 11 Jul 2011 02:39:50 -0400
+Date: Mon, 11 Jul 2011 09:39:44 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Joe Perches <joe@perches.com>
+Cc: Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] fusb300_udc: Add missing breaks in switch/case
+Message-ID: <20110711063942.GE2680@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <cover.1310289795.git.joe@perches.com>
+ <08f6dd600dbf588e87734b3a6b33d897cd253fe3.1310289795.git.joe@perches.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="N1GIdlSm9i+YlY4t"
 Content-Disposition: inline
-In-Reply-To: <20110622153742.GA18983@suse.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <08f6dd600dbf588e87734b3a6b33d897cd253fe3.1310289795.git.joe@perches.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2011-06-22 08:37:42, Greg KH wrote:
-> On Wed, Jun 22, 2011 at 01:53:41PM +0400, Vasiliy Kulikov wrote:
-> > This patch escapes all characters outside of allowed '\n' plus 0x20-0x7E
-> > charset passed to printk().
-> > 
-> > There are numerous printk() instances with user supplied input as "%s"
-> > data, and unprivileged user may craft log messages with substrings
-> > containing control characters via these printk()s.  Control characters
-> > might fool root viewing the logs via tty.
-> 
-> There are "numerous" places this could happen?  Shouldn't this be
-> handled by the viewers of the log file and not the kernel itself?
 
-well, currently cat /proc/kmsg is bad idea on multiuser system... right?
+--N1GIdlSm9i+YlY4t
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> And what could these control characters cause to be "fooled"?
+On Sun, Jul 10, 2011 at 02:28:27AM -0700, Joe Perches wrote:
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-terminals are powerful (or shall we say insecure?) these days. Including replies.
+if you want to carry via Trivial that's ok to me:
 
-cat /proc/kmsg can result in something like "9q" be added to the next
-bash command. It would not surprise me if nastier stuff was possible
-with some xterm variant.
+Acked-by: Felipe Balbi <balbi@ti.com>
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+--=20
+balbi
+
+--N1GIdlSm9i+YlY4t
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOGpquAAoJEAv8Txj19kN1eQsH/2VTVgxUVnR/aoCONYMA8DdK
+i4eubx8vjPo35DE94AFHTp6/OVSI/xu8Q/HTHgcu8TaWeO0Hez2B7AkMN39IkarY
+2OKXGS22DKTB9BoGAvhAYTJzhOpSI6NmjCPXLDmdKfzu59ao73+RmbHF9el1SItP
+ex8NSTLdsBqq4L3bcZu7p9lrN8UyYgUWIpJWEqLledkxgDzIIwab0SvVVv91lTHD
+/LGl1/bcYda2jcHgcPwOeDrXYa2Kjjo/I5OUR+Vx8PaS9bKgYtqkCJKWNi4svLaI
+zI8L6lLR2w1vyH5WxMyQjOBG2PmsJeNMjont4gKs6qJ6lAJY5r8CYKFlYAExSEQ=
+=ifdF
+-----END PGP SIGNATURE-----
+
+--N1GIdlSm9i+YlY4t--
