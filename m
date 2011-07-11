@@ -1,64 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754355Ab1GKUPX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 16:15:23 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:35321 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753794Ab1GKUPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 16:15:22 -0400
-Date: Mon, 11 Jul 2011 13:15:08 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: xen-devel@lists.xensource.com, julie Sullivan <kernelmail.jms@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3
-Message-ID: <20110711201508.GN2245@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CAAVPGOPCGsNynWPWcwaxVU_jPCg=VPdz82_g6OvY5gnYKk5oFg@mail.gmail.com>
- <20110710171626.GK6014@linux.vnet.ibm.com>
- <20110710173530.GA16954@linux.vnet.ibm.com>
- <CAAVPGOPAx-oLZct9u2Kq3uQ4W2GwJFYUGgw3h=M_Y4_wv7b51w@mail.gmail.com>
- <20110710214639.GP6014@linux.vnet.ibm.com>
- <CAAVPGOMafp_+45X=7asHe=MqaHY8CiJYsf2GZ3qOPrWpjctHVQ@mail.gmail.com>
- <20110710231449.GQ6014@linux.vnet.ibm.com>
- <20110711162450.GA22913@dumpdata.com>
- <20110711171337.GK2245@linux.vnet.ibm.com>
- <20110711193021.GA2996@dumpdata.com>
+	id S1754757Ab1GKUQe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 16:16:34 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:39523 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750785Ab1GKUQd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 16:16:33 -0400
+Message-ID: <4E1B5A1E.4060604@gmail.com>
+Date: Mon, 11 Jul 2011 22:16:30 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110711193021.GA2996@dumpdata.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: loody <miloody@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: how to find a task through name faster?
+References: <CANudz+sqkachOT7r9=-rc98nCEO_QOCx7KiBi5=NWaj5exmEPA@mail.gmail.com> <CANudz+vxY_0NY2veJ9Wvr08x_z3e20m=g7ZL4bZDi=-vaOF7dQ@mail.gmail.com>
+In-Reply-To: <CANudz+vxY_0NY2veJ9Wvr08x_z3e20m=g7ZL4bZDi=-vaOF7dQ@mail.gmail.com>
+X-Enigmail-Version: 1.2pre
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 11, 2011 at 03:30:22PM -0400, Konrad Rzeszutek Wilk wrote:
-> > 
-> > Hmmm...  Does the stall repeat about every 3.5 minutes after the first stall?
+On 07/11/2011 06:52 PM, loody wrote:
+> hi all:
+> I found a way to find a task I need by name, test,  as below:
+> for_each_process(task) {
+>     if(strcmp(task->comm, "test")
+>         printk(“%s[%d]\n”, task->comm, task->pid);
+> }
 > 
-> Starting Configure read-only root support...
-> [   81.335070] INFO: rcu_sched_state detected stalls on CPUs/tasks: { 0} (detected by 3, t=60002 jiffies)
-> [   81.335091] sending NMI to all CPUs:
-> [  261.367071] INFO: rcu_sched_state detected stalls on CPUs/tasks: { 0} (detected by 3, t=240034 jiffies)
-> [  261.367092] sending NMI to all CPUs:
-> [  441.399066] INFO: rcu_sched_state detected stalls on CPUs/tasks: { 0} (detected by 3, t=420066 jiffies)
-> [  441.399089] sending NMI to all CPUs:
+> But it is time-consuming to do so if I periodically want to know
+> whether "test" exist or not.
+> is there better way to do so?
 
-OK, then the likely cause is something hanging onto the CPU.  Do the later
-stalls also show stack traces?  If so, what shows up?
+It depends on what you are trying to achieve. Maybe process accounting
+is what you want?
 
-(Documentation/RCU/stallwarn.txt for more info on this.)
-
-> > 
-> > One thing to try would be to disable CONFIG_RCU_FAST_NO_HZ.  I wouldn't
-> > expect this to have any effect, but might be worth a try.  It is really
-> 
-> Did not help.
-
-Well, I guess it met my expectations.  Thank you for trying it!
-
-							Thanx, Paul
-
-> > intended for small battery-powered systems.
-> > 
+-- 
+js
