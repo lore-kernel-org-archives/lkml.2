@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757547Ab1GKNXz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 09:23:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52796 "EHLO mx1.redhat.com"
+	id S1757477Ab1GKNXJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 09:23:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52892 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757503Ab1GKNXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 09:23:52 -0400
-Date: Mon, 11 Jul 2011 09:23:44 -0400
-From: David Teigland <teigland@redhat.com>
-To: "Dr. David Alan Gilbert" <linux@treblig.org>
-Cc: jj@chaosbits.net, linux-kernel@vger.kernel.org
-Subject: Re: kmallocs with swapped parameters in fs/dlm/lock.c
-Message-ID: <20110711132344.GA14426@redhat.com>
-References: <20110710003032.GA19951@gallifrey>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110710003032.GA19951@gallifrey>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1757288Ab1GKNXH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 09:23:07 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: rostedt@goodmis.org, fweisbec@gmail.com, a.p.zijlstra@chello.nl
+Cc: linux-kernel@vger.kernel.org
+Subject: [RFC 0/4] trace,perf: Enabling ftrace:function tracepoint for perf
+Date: Mon, 11 Jul 2011 15:22:52 +0200
+Message-Id: <1310390576-8289-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 10, 2011 at 01:30:32AM +0100, Dr. David Alan Gilbert wrote:
-> Hi David,
->   Sparse spotted a couple of places in fs/dlm/lock.c where the size/flags
-> parameters to kmalloc got swapped:
-> 
-> The sparse output is:
-> fs/dlm/lock.c:852:42: warning: incorrect type in argument 1 (different base types)
-> fs/dlm/lock.c:852:42:    expected unsigned long [unsigned] [usertype] size
-> fs/dlm/lock.c:852:42:    got restricted gfp_t
-> fs/dlm/lock.c:852:64: warning: incorrect type in argument 2 (different base types)
-> fs/dlm/lock.c:852:64:    expected restricted gfp_t [usertype] flags
-> fs/dlm/lock.c:852:64:    got unsigned long
-> fs/dlm/lock.c:4136:27: warning: incorrect type in argument 1 (different base types)
-> fs/dlm/lock.c:4136:27:    expected unsigned long [unsigned] [usertype] size
-> fs/dlm/lock.c:4136:27:    got restricted gfp_t
-> fs/dlm/lock.c:4136:39: warning: incorrect type in argument 2 (different base types)
-> fs/dlm/lock.c:4136:39:    expected restricted gfp_t [usertype] flags
-> fs/dlm/lock.c:4136:39:    got unsigned long
-> 
-> Line 852 is:
->                         warned = kmalloc(GFP_KERNEL, num_nodes * sizeof(int));
-> Line 4136 is:
->         ms_stub = kmalloc(GFP_KERNEL, sizeof(struct dlm_message));
-> 
-> and at least one of the defs of kmalloc is:
-> slab_def.h:static __always_inline void *kmalloc(size_t size, gfp_t flags)
-> 
-> Given that I haven't got a clue how to test a dlm, it's probably
-> best that you patch it.
-> 
-> Jesper:
->   I noticed in your patch:
-> https://lkml.org/lkml/2011/7/2/90
-> 
-> where you had done a kmalloc->kzalloc transform you kept the swap.
-> 
-> This looks like new code in 3.0rc so I don't think you could quite
-> call it a regression, but it should probably be fixed fairly quickly
-> I guess.
+hi,
 
-Thanks, I'll get that fixed.
-Dave
+attached patches add perf support for function trace.
 
+- Patch 1 adds support to register ftrace:function tracepoint.
+
+- Patch 2 adds a way to used filtering for ip and parent_ip fields.
+
+- Patches 3 and 4 are adding new ioctl to specify the filter on the
+  "struct ftrace" level.
+
+  I know this is probably not a good idea, but I dont see a good way
+  to combine ftrace_ops filtering with tracepoint filtering other than
+  keep them separated.
+
+  My other guess is instead of ioctl use some keyword to specify functions
+  followed by standard filter.. something like:
+
+    "FUNCTION_TRACE(sys_open sys_close sys_read) (ip == sys_open)"
+
+  Please take this more as a question about interface than forcing
+  new ioctl.. ;)
+
+
+attached patches:
+ - 1/4 perf, ftrace: Add perf support to use function tracepoint
+ - 2/4 perf, ftrace: Add filter support
+ - 3/4 perf, ftrace: Add new perf ioctl for function trace filter
+ - 4/4 perf, ftrace: Add ftrace option for perf stat command
+
+
+thanks for comments,
+jirka
+---
+ include/linux/ftrace.h             |    7 +-
+ include/linux/ftrace_event.h       |    9 +-
+ include/linux/perf_event.h         |    2 +
+ kernel/events/core.c               |   14 +++
+ kernel/trace/ftrace.c              |   34 +++++-
+ kernel/trace/trace.h               |    5 +
+ kernel/trace/trace_event_perf.c    |  225 +++++++++++++++++++++++++++++-------
+ kernel/trace/trace_events.c        |   10 +-
+ kernel/trace/trace_events_filter.c |   32 ++++-
+ kernel/trace/trace_export.c        |   21 ++++
+ kernel/trace/trace_kprobe.c        |    6 +-
+ kernel/trace/trace_syscalls.c      |   14 ++-
+ tools/perf/builtin-stat.c          |    2 +
+ tools/perf/util/evlist.c           |   26 ++++-
+ tools/perf/util/evlist.h           |    2 +
+ tools/perf/util/evsel.h            |    1 +
+ tools/perf/util/parse-events.c     |   37 ++++++-
+ tools/perf/util/parse-events.h     |    1 +
+ 18 files changed, 376 insertions(+), 72 deletions(-)
