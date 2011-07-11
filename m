@@ -1,196 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758244Ab1GKWgo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 18:36:44 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:35521 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756169Ab1GKWgn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 18:36:43 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6404"; a="103109188"
-From: Christine Chan <cschan@codeaurora.org>
-To: tglx@linutronix.de
-Cc: linux-arm-msm@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rdunlap@xenotime.net,
-        sgruszka@redhat.com, Christine Chan <cschan@codeaurora.org>
-Subject: [PATCH 1/2] debugobjects: extend debugobjects to assert that an obj is inited
-Date: Mon, 11 Jul 2011 15:36:15 -0700
-Message-Id: <1310423775-3883-1-git-send-email-cschan@codeaurora.org>
-X-Mailer: git-send-email 1.7.3.3
+	id S964862Ab1GKWhB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 18:37:01 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:46958 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756169Ab1GKWhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 18:37:00 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Dan Williams <dan.j.williams@intel.com>
+Subject: Re: [Bug #38522] address space collision error message on boot
+Date: Tue, 12 Jul 2011 00:38:18 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc6+; KDE/4.6.0; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Dave Jiang <dave.jiang@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Jools Wills <jools@oxfordinspire.co.uk>, bhelgaas@google.com
+References: <Y7LyOsOBwFM.A.kJG.kBYGOB@chimera> <XNkIyhV6dgF.A.D4G.TCYGOB@chimera> <CAA9_cmeY1Q-L_iMQfsf-KWufZzpkMSWzQ42ep=bQP9XZwyV-Lw@mail.gmail.com>
+In-Reply-To: <CAA9_cmeY1Q-L_iMQfsf-KWufZzpkMSWzQ42ep=bQP9XZwyV-Lw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107120038.18847.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add new check (assert_init) to make sure objects are initialized and
-tracked by debugobjects.
+On Monday, July 11, 2011, Dan Williams wrote:
+> [ adding Bjorn ]
+> 
+> On Sun, Jul 10, 2011 at 3:38 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > This message has been generated automatically as a part of a summary report
+> > of recent regressions.
+> >
+> > The following bug entry is on the current list of known regressions
+> > from 2.6.39.  Please verify if it still should be listed and let the tracking team
+> > know (either way).
+> 
+> The patch from the bugzilla entry is not yet upstream.
+> 
+> >
+> > Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=38522
+> > Subject         : address space collision error message on boot
+> > Submitter       : Jools Wills <jools@oxfordinspire.co.uk>
+> > Date            : 2011-06-29 02:28 (12 days old)
+> > First-Bad-Commit: http://git.kernel.org/linus/5d94e81f69d4b1d1102d3ab557ce0a817c11fbbb
+> 
+> Per the commentary in the bugzilla this commit makes the warning
+> message appear on 64-bit builds, but 32-bit has the same problem on
+> affected platforms (without the commit).
+> 
+> Bjorn has a proposed patch [1] that just downgrades the warning since
+> system operation does not appear to be affected.
+> 
+> --
+> Dan
+> 
+> [1]: https://bugzilla.kernel.org/attachment.cgi?id=64102
 
-Signed-off-by: Christine Chan <cschan@codeaurora.org>
----
- Documentation/DocBook/debugobjects.tmpl |   50 +++++++++++++++++++++++++++++++
- include/linux/debugobjects.h            |    6 ++++
- lib/debugobjects.c                      |   33 ++++++++++++++++++++
- 3 files changed, 89 insertions(+), 0 deletions(-)
+Thanks for the update.
 
-diff --git a/Documentation/DocBook/debugobjects.tmpl b/Documentation/DocBook/debugobjects.tmpl
-index 08ff908..24979f6 100644
---- a/Documentation/DocBook/debugobjects.tmpl
-+++ b/Documentation/DocBook/debugobjects.tmpl
-@@ -96,6 +96,7 @@
- 	<listitem><para>debug_object_deactivate</para></listitem>
- 	<listitem><para>debug_object_destroy</para></listitem>
- 	<listitem><para>debug_object_free</para></listitem>
-+	<listitem><para>debug_object_assert_init</para></listitem>
-       </itemizedlist>
-       Each of these functions takes the address of the real object and
-       a pointer to the object type specific debug description
-@@ -273,6 +274,26 @@
- 	debug checks.
-       </para>
-     </sect1>
-+
-+    <sect1 id="debug_object_assert_init">
-+      <title>debug_object_assert_init</title>
-+      <para>
-+	This function is called to assert that an object has been
-+	initialized.
-+      </para>
-+      <para>
-+	When the real object is not tracked by debugobjects, it calls
-+	fixup_assert_init of the object type description structure
-+	provided by the caller, with the hardcoded object state
-+	ODEBUG_NOT_AVAILABLE. The fixup function can correct the problem
-+	by calling debug_object_init and other specific initializing
-+	functions.
-+      </para>
-+      <para>
-+	When the real object is already tracked by debugobjects it is
-+	ignored.
-+      </para>
-+    </sect1>
-   </chapter>
-   <chapter id="fixupfunctions">
-     <title>Fixup functions</title>
-@@ -381,6 +402,35 @@
- 	statistics.
-       </para>
-     </sect1>
-+    <sect1 id="fixup_assert_init">
-+      <title>fixup_assert_init</title>
-+      <para>
-+	This function is called from the debug code whenever a problem
-+	in debug_object_assert_init is detected.
-+      </para>
-+      <para>
-+	Called from debug_object_assert_init() with a hardcoded state
-+	ODEBUG_STATE_NOTAVAILABLE when the object is not found in the
-+	debug bucket.
-+      </para>
-+      <para>
-+	The function returns 1 when the fixup was successful,
-+	otherwise 0. The return value is used to update the
-+	statistics.
-+      </para>
-+      <para>
-+	Note, this function should make sure debug_object_init() is
-+	called before returning.
-+      </para>
-+      <para>
-+	The handling of statically initialized objects is a special
-+	case. The fixup function should check if this is a legitimate
-+	case of a statically initialized object or not. In this case only
-+	debug_object_init() should be called to make the object known to
-+	the tracker. Then the function should return 0 because this is not
-+	a real fixup.
-+      </para>
-+    </sect1>
-   </chapter>
-   <chapter id="bugs">
-     <title>Known Bugs And Assumptions</title>
-diff --git a/include/linux/debugobjects.h b/include/linux/debugobjects.h
-index 65970b8..0e5f578 100644
---- a/include/linux/debugobjects.h
-+++ b/include/linux/debugobjects.h
-@@ -46,6 +46,8 @@ struct debug_obj {
-  *			fails
-  * @fixup_free:		fixup function, which is called when the free check
-  *			fails
-+ * @fixup_assert_init:  fixup function, which is called when the assert_init
-+ *			check fails
-  */
- struct debug_obj_descr {
- 	const char		*name;
-@@ -54,6 +56,7 @@ struct debug_obj_descr {
- 	int (*fixup_activate)	(void *addr, enum debug_obj_state state);
- 	int (*fixup_destroy)	(void *addr, enum debug_obj_state state);
- 	int (*fixup_free)	(void *addr, enum debug_obj_state state);
-+	int (*fixup_assert_init)(void *addr, enum debug_obj_state state);
- };
- 
- #ifdef CONFIG_DEBUG_OBJECTS
-@@ -64,6 +67,7 @@ extern void debug_object_activate  (void *addr, struct debug_obj_descr *descr);
- extern void debug_object_deactivate(void *addr, struct debug_obj_descr *descr);
- extern void debug_object_destroy   (void *addr, struct debug_obj_descr *descr);
- extern void debug_object_free      (void *addr, struct debug_obj_descr *descr);
-+extern void debug_object_assert_init(void *addr, struct debug_obj_descr *descr);
- 
- /*
-  * Active state:
-@@ -89,6 +93,8 @@ static inline void
- debug_object_destroy   (void *addr, struct debug_obj_descr *descr) { }
- static inline void
- debug_object_free      (void *addr, struct debug_obj_descr *descr) { }
-+static inline void
-+debug_object_assert_init(void *addr, struct debug_obj_descr *descr) { }
- 
- static inline void debug_objects_early_init(void) { }
- static inline void debug_objects_mem_init(void) { }
-diff --git a/lib/debugobjects.c b/lib/debugobjects.c
-index 9d86e45..f3943b1 100644
---- a/lib/debugobjects.c
-+++ b/lib/debugobjects.c
-@@ -563,6 +563,39 @@ out_unlock:
- }
- 
- /**
-+ * debug_object_assert_init - debug checks when object should be init-ed
-+ * @addr:	address of the object
-+ * @descr:	pointer to an object specific debug description structure
-+ */
-+void debug_object_assert_init(void *addr, struct debug_obj_descr *descr)
-+{
-+	struct debug_bucket *db;
-+	struct debug_obj *obj;
-+	unsigned long flags;
-+
-+	if (!debug_objects_enabled)
-+		return;
-+
-+	db = get_bucket((unsigned long) addr);
-+
-+	raw_spin_lock_irqsave(&db->lock, flags);
-+
-+	obj = lookup_object(addr, db);
-+	if (!obj) {
-+		raw_spin_unlock_irqrestore(&db->lock, flags);
-+		/*
-+		 * Maybe the object is static.  Let the type specific
-+		 * code decide what to do.
-+		 */
-+		debug_object_fixup(descr->fixup_assert_init, addr,
-+				   ODEBUG_STATE_NOTAVAILABLE);
-+		return;
-+	}
-+
-+	raw_spin_unlock_irqrestore(&db->lock, flags);
-+}
-+
-+/**
-  * debug_object_active_state - debug checks object usage state machine
-  * @addr:	address of the object
-  * @descr:	pointer to an object specific debug description structure
--- 
-1.7.3.3
-
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+Rafael
