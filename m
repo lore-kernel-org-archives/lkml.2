@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758353Ab1GKRpc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 13:45:32 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:39585 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758336Ab1GKRpa (ORCPT
+	id S1757586Ab1GKRts (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 13:49:48 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:33934 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751951Ab1GKRtq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 13:45:30 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=IjdV9TBXer+4/g3eqLp8by3v32mUq7cIr5QOntjgijDVWT0XL33WjkLik1WLuzW1n+uRnaRv4RcbtQBOKaTeMQ2OcFh8vr5Qa9pK72jDp+CZJSd2X8jYryfNwccYkZcl;
-Date: Mon, 11 Jul 2011 10:45:28 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Paul Menage <menage@google.com>
-Cc: Wanlong Gao <wanlong.gao@gmail.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: Re: [PATCH] Doc:cgroup:fix a cpuset's file description in
- cpusets.txt
-Message-Id: <20110711104528.33240c46.rdunlap@xenotime.net>
-In-Reply-To: <CAJniumXsZ=DDBHxp_RtdhcZ0n8efdyjSZCERn8H1H3G3AnCf2w@mail.gmail.com>
-References: <1310288313-4908-1-git-send-email-wanlong.gao@gmail.com>
-	<CAJniumXsZ=DDBHxp_RtdhcZ0n8efdyjSZCERn8H1H3G3AnCf2w@mail.gmail.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Mon, 11 Jul 2011 13:49:46 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=YGeezqDNcLBUml4GTumuzMxHFCo6uaZ0XgORfsQrCjMoHdrXFYUeeFJm3iw/AcPBe
+	5DzUoshSg2hUNj3mowsbA==
+Date: Mon, 11 Jul 2011 10:49:31 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+cc: Andrew Morton <akpm@linux-foundation.org>, greg@kroah.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 34/49] gma500: the GEM and GTT code is device
+ independant
+In-Reply-To: <20110711172517.46907e62@lxorguk.ukuu.org.uk>
+Message-ID: <alpine.LSU.2.00.1107111033440.1752@sister.anvils>
+References: <20110705141038.23872.55303.stgit@localhost.localdomain> <20110705144140.23872.86541.stgit@localhost.localdomain> <alpine.LSU.2.00.1107071742250.10362@sister.anvils> <20110708093859.299958df@lxorguk.ukuu.org.uk> <alpine.LSU.2.00.1107080917430.1781@sister.anvils>
+ <20110711172517.46907e62@lxorguk.ukuu.org.uk>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Jul 2011 10:23:53 -0700 Paul Menage wrote:
-
-> On Sun, Jul 10, 2011 at 1:58 AM, Wanlong Gao <wanlong.gao@gmail.com> wrote:
-> > Only the root cpuset has cpuset.memory_pressure_enabled flag,
-> > but not the only one.
-> >
-> > Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+On Mon, 11 Jul 2011, Alan Cox wrote:
+> > Your <4GB pages won't get swapped out while they're pinned.  But can
+> > it happen that they'd be unpinned, swapped out, swapped back in >4GB
+> > pages, then cause trouble for you when needed again?
 > 
-> Acked-by: Paul Menage <menage@google.com>
+> It does look that way, in which case that will eventually need fixing. At
+> the moment you can't put enough memory into a device using these chips
+> but that won't always be true I imagine.
 
-Thanks.
+Thanks, I won't worry about it at this moment, but we'd better not forget.
 
-> The original was actually correct English, when parsed as "(the root
-> cpuset only) (has the following file)", but I guess ambiguous. I'd be
-> inclined to just remove the word "only", since it's unnecessary in its
-> new location.
+If it's easy for you to include a WARN_ON_ONCE check (perhaps
+on page_to_pfn(page)), that may be worth doing to remind us.
 
-Yes, it's ambiguous and/or too restrictive.
-Yes, we could just drop the word "only".
+It's a bit sad to learn this requirement just after I'd completed
+removing the readpage copying code, and a bit strange to have shmem
+confined by hardware constraints; but I guess that's what we took on
+when we opened it up to GEM.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+It will probably make sense for me to add synchronous migration when
+a shmem swap page is found not to match the contraints wanted by the
+mapping it goes into: mainly for NUMA, but covering your case too.
+
+Hugh
