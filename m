@@ -1,169 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755969Ab1GKBmK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 21:42:10 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:40442 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754317Ab1GKBmH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 21:42:07 -0400
-From: Dmitry Fink <dmitry.fink@palm.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dmitry Fink <dmitry.fink@palm.com>
-Subject: [PATCH] mmap: Fix and tidy up overcommit page arithmetic
-Date: Sun, 10 Jul 2011 18:41:50 -0700
-Message-Id: <1310348510-16957-1-git-send-email-dmitry.fink@palm.com>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <CAEwNFnDRZwSXnVP3EdXqYnNBrumcrihQ+m=N4fb9xouNE=TKRg@mail.gmail.com>
-References: <CAEwNFnDRZwSXnVP3EdXqYnNBrumcrihQ+m=N4fb9xouNE=TKRg@mail.gmail.com>
+	id S1756193Ab1GKBuV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 21:50:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53388 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754624Ab1GKBuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jul 2011 21:50:20 -0400
+Date: Sun, 10 Jul 2011 21:49:43 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: one more cpufreq fix.
+Message-ID: <20110711014942.GA31124@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- shmem pages are not immediately available, but they are not
-potentially available either, even if we swap them out, they will
-just relocate from memory into swap, total amount of immediate and
-potentially available memory is not going to be affected, so we
-shouldn't count them as potentially free in the first place.
+Noticed Andrew has been carrying this for a little while. This should go into 3.0
 
-- nr_free_pages() is not an expensive operation anymore, there is
-no need to split the decision making in two halves and repeat code.
+	Dave
 
-Signed-off-by: Dmitry Fink <dmitry.fink@palm.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-Acked-by: Hugh Dickins <hughd@google.com>
----
- mm/mmap.c  |   34 +++++++++++++---------------------
- mm/nommu.c |   34 +++++++++++++---------------------
- 2 files changed, 26 insertions(+), 42 deletions(-)
 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index d49736f..a65efd4 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -122,9 +122,17 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
- 		return 0;
- 
- 	if (sysctl_overcommit_memory == OVERCOMMIT_GUESS) {
--		unsigned long n;
-+		free = global_page_state(NR_FREE_PAGES);
-+		free += global_page_state(NR_FILE_PAGES);
-+
-+		/*
-+		 * shmem pages shouldn't be counted as free in this
-+		 * case, they can't be purged, only swapped out, and
-+		 * that won't affect the overall amount of available
-+		 * memory in the system.
-+		 */
-+		free -= global_page_state(NR_SHMEM);
- 
--		free = global_page_state(NR_FILE_PAGES);
- 		free += nr_swap_pages;
- 
- 		/*
-@@ -136,34 +144,18 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
- 		free += global_page_state(NR_SLAB_RECLAIMABLE);
- 
- 		/*
--		 * Leave the last 3% for root
--		 */
--		if (!cap_sys_admin)
--			free -= free / 32;
--
--		if (free > pages)
--			return 0;
--
--		/*
--		 * nr_free_pages() is very expensive on large systems,
--		 * only call if we're about to fail.
--		 */
--		n = nr_free_pages();
--
--		/*
- 		 * Leave reserved pages. The pages are not for anonymous pages.
- 		 */
--		if (n <= totalreserve_pages)
-+		if (free <= totalreserve_pages)
- 			goto error;
- 		else
--			n -= totalreserve_pages;
-+			free -= totalreserve_pages;
- 
- 		/*
- 		 * Leave the last 3% for root
- 		 */
- 		if (!cap_sys_admin)
--			n -= n / 32;
--		free += n;
-+			free -= free / 32;
- 
- 		if (free > pages)
- 			return 0;
-diff --git a/mm/nommu.c b/mm/nommu.c
-index 9edc897..76f2b4b 100644
---- a/mm/nommu.c
-+++ b/mm/nommu.c
-@@ -1885,9 +1885,17 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
- 		return 0;
- 
- 	if (sysctl_overcommit_memory == OVERCOMMIT_GUESS) {
--		unsigned long n;
-+		free = global_page_state(NR_FREE_PAGES);
-+		free += global_page_state(NR_FILE_PAGES);
-+
-+		/*
-+		 * shmem pages shouldn't be counted as free in this
-+		 * case, they can't be purged, only swapped out, and
-+		 * that won't affect the overall amount of available
-+		 * memory in the system.
-+		 */
-+		free -= global_page_state(NR_SHMEM);
- 
--		free = global_page_state(NR_FILE_PAGES);
- 		free += nr_swap_pages;
- 
- 		/*
-@@ -1899,34 +1907,18 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
- 		free += global_page_state(NR_SLAB_RECLAIMABLE);
- 
- 		/*
--		 * Leave the last 3% for root
--		 */
--		if (!cap_sys_admin)
--			free -= free / 32;
--
--		if (free > pages)
--			return 0;
--
--		/*
--		 * nr_free_pages() is very expensive on large systems,
--		 * only call if we're about to fail.
--		 */
--		n = nr_free_pages();
--
--		/*
- 		 * Leave reserved pages. The pages are not for anonymous pages.
- 		 */
--		if (n <= totalreserve_pages)
-+		if (free <= totalreserve_pages)
- 			goto error;
- 		else
--			n -= totalreserve_pages;
-+			free -= totalreserve_pages;
- 
- 		/*
- 		 * Leave the last 3% for root
- 		 */
- 		if (!cap_sys_admin)
--			n -= n / 32;
--		free += n;
-+			free -= free / 32;
- 
- 		if (free > pages)
- 			return 0;
--- 
-1.7.6
+Please pull from ..
+master.kernel.org:/pub/scm/linux/kernel/git/davej/cpufreq.git/ fixes
 
+ drivers/cpufreq/acpi-cpufreq.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 50f4ddd4ff713d2599e2f246775fe2206090126e
+Author: Luming Yu <luming.yu@gmail.com>
+Date:   Fri Jul 8 16:37:44 2011 -0400
+
+    [CPUFREQ] fix cpumask memory leak in acpi-cpufreq on cpu hotplug.
+    
+    I came across a memory leak during a cyclic cpu-online-offline test.
+    
+    Signed-off-by: Yu Luming <luming.yu@intel.com>
+    Cc: Len Brown <lenb@kernel.org>
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+    Signed-off-by: Dave Jones <davej@redhat.com>
