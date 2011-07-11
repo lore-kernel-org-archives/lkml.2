@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757193Ab1GKGcp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 02:32:45 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:56983 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756588Ab1GKGco (ORCPT
+	id S1757187Ab1GKGhh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 02:37:37 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55474 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756588Ab1GKGhg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 02:32:44 -0400
-From: Ravishankar <ravishankarkm32@gmail.com>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>,
-        Ravishankar <ravishankarkm32@gmail.com>
-Subject: [PATCH 6/6] Staging: comedi: fix brace coding style issue in pcl818.c
-Date: Mon, 11 Jul 2011 12:15:21 +0530
-Message-Id: <1310366721-22097-1-git-send-email-ravishankarkm32@gmail.com>
-X-Mailer: git-send-email 1.6.5.2
-In-Reply-To: <[PATCH]Staging: comedi:fix brace coding style issue in pcl818.c>
-References: <[PATCH]Staging: comedi:fix brace coding style issue in pcl818.c>
+	Mon, 11 Jul 2011 02:37:36 -0400
+Date: Mon, 11 Jul 2011 06:37:20 +0000
+From: Pavel Machek <pavel@ucw.cz>
+To: Greg KH <gregkh@suse.de>
+Cc: Vasiliy Kulikov <segoon@openwall.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Morris <jmorris@namei.org>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@gmail.com>, kernel-hardening@lists.openwall.com,
+        linux-kernel@vger.kernel.org, security@kernel.org
+Subject: Re: [PATCH] kernel: escape non-ASCII and control characters in
+	printk()
+Message-ID: <20110711063719.GA12579@localhost.ucw.cz>
+References: <20110622095341.GA3353@albatros> <20110622153742.GA18983@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110622153742.GA18983@suse.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ravishankar <ravi.shankar@greenturtles.in>
+On Wed 2011-06-22 08:37:42, Greg KH wrote:
+> On Wed, Jun 22, 2011 at 01:53:41PM +0400, Vasiliy Kulikov wrote:
+> > This patch escapes all characters outside of allowed '\n' plus 0x20-0x7E
+> > charset passed to printk().
+> > 
+> > There are numerous printk() instances with user supplied input as "%s"
+> > data, and unprivileged user may craft log messages with substrings
+> > containing control characters via these printk()s.  Control characters
+> > might fool root viewing the logs via tty.
+> 
+> There are "numerous" places this could happen?  Shouldn't this be
+> handled by the viewers of the log file and not the kernel itself?
 
-This is a patch to the pcl818.c file that fixes up a brace warning found by the checkpatch.pl tool
+well, currently cat /proc/kmsg is bad idea on multiuser system... right?
 
-Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
----
- drivers/staging/comedi/drivers/pcl818.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+> And what could these control characters cause to be "fooled"?
 
-diff --git a/drivers/staging/comedi/drivers/pcl818.c b/drivers/staging/comedi/drivers/pcl818.c
-index 241b16b..86b30c3 100644
---- a/drivers/staging/comedi/drivers/pcl818.c
-+++ b/drivers/staging/comedi/drivers/pcl818.c
-@@ -1301,10 +1301,9 @@ static void setup_channel_list(struct comedi_device *dev,
- */
- static int check_single_ended(unsigned int port)
- {
--	if (inb (port + PCL818_STATUS) & 0x20)
-+	if (inb(port + PCL818_STATUS) & 0x20)
- 		return 1;
--	else
--		return 0;
-+	return 0;
- }
- 
- /*
+terminals are powerful (or shall we say insecure?) these days. Including replies.
+
+cat /proc/kmsg can result in something like "9q" be added to the next
+bash command. It would not surprise me if nastier stuff was possible
+with some xterm variant.
+
 -- 
-1.6.5.2
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
