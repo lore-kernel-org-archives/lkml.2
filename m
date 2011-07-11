@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758533Ab1GKTj5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 15:39:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36515 "EHLO mx1.redhat.com"
+	id S1757545Ab1GKTgx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 15:36:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63694 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757941Ab1GKThD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 15:37:03 -0400
+	id S1752626Ab1GKTgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 15:36:52 -0400
 From: Glauber Costa <glommer@redhat.com>
 To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        Eddie Dong <eddie.dong@intel.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Eric B Munson <emunson@mgebm.net>
-Subject: [PATCH v6 6/9] add jump labels for ia64 paravirt
-Date: Mon, 11 Jul 2011 15:28:16 -0400
-Message-Id: <1310412499-3873-7-git-send-email-glommer@redhat.com>
-In-Reply-To: <1310412499-3873-1-git-send-email-glommer@redhat.com>
-References: <1310412499-3873-1-git-send-email-glommer@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH v6 0/9] Steal time for KVM
+Date: Mon, 11 Jul 2011 15:28:10 -0400
+Message-Id: <1310412499-3873-1-git-send-email-glommer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since in a later patch I intend to call jump labels inside
-CONFIG_PARAVIRT, IA64 would fail to compile if they are not
-provided. This patch provides those jump labels for the IA64
-architecture.
+Hi guys,
 
-Signed-off-by: Glauber Costa <glommer@redhat.com>
-Acked-by: Isaku Yamahata <yamahata@valinux.co.jp>
-Acked-by: Rik van Riel <riel@redhat.com>
-CC: Tony Luck <tony.luck@intel.com>
-CC: Eddie Dong <eddie.dong@intel.com>
-CC: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-CC: Peter Zijlstra <peterz@infradead.org>
-CC: Avi Kivity <avi@redhat.com>
-CC: Anthony Liguori <aliguori@us.ibm.com>
-CC: Eric B Munson <emunson@mgebm.net>
----
- arch/ia64/include/asm/paravirt.h |    4 ++++
- arch/ia64/kernel/paravirt.c      |    2 ++
- 2 files changed, 6 insertions(+), 0 deletions(-)
+All ACKs being collected, I hope this can be merged.
+Only patch 4/9 differs from the last submission. It merges
+Marcelo's suggestions, so I didn't transposed the other ACKs to it
+All the rest, is kept the same.
 
-diff --git a/arch/ia64/include/asm/paravirt.h b/arch/ia64/include/asm/paravirt.h
-index 2eb0a98..32551d3 100644
---- a/arch/ia64/include/asm/paravirt.h
-+++ b/arch/ia64/include/asm/paravirt.h
-@@ -281,6 +281,10 @@ paravirt_init_missing_ticks_accounting(int cpu)
- 		pv_time_ops.init_missing_ticks_accounting(cpu);
- }
- 
-+struct jump_label_key;
-+extern struct jump_label_key paravirt_steal_enabled;
-+extern struct jump_label_key paravirt_steal_rq_enabled;
-+
- static inline int
- paravirt_do_steal_accounting(unsigned long *new_itm)
- {
-diff --git a/arch/ia64/kernel/paravirt.c b/arch/ia64/kernel/paravirt.c
-index a21d7bb..1008682 100644
---- a/arch/ia64/kernel/paravirt.c
-+++ b/arch/ia64/kernel/paravirt.c
-@@ -634,6 +634,8 @@ struct pv_irq_ops pv_irq_ops = {
-  * pv_time_ops
-  * time operations
-  */
-+struct jump_label_key paravirt_steal_enabled;
-+struct jump_label_key paravirt_steal_rq_enabled;
- 
- static int
- ia64_native_do_steal_accounting(unsigned long *new_itm)
+Enjoy
+
+Glauber Costa (8):
+  KVM-HDR Add constant to represent KVM MSRs enabled bit
+  KVM-HDR: KVM Steal time implementation
+  KVM-HV: KVM Steal time implementation
+  KVM-GST: Add a pv_ops stub for steal time
+  add jump labels for ia64 paravirt
+  KVM-GST: KVM Steal time accounting
+  KVM-GST: adjust scheduler cpu power
+  KVM-GST: KVM Steal time registration
+
+Gleb Natapov (1):
+  introduce kvm_read_guest_cached
+
+ Documentation/kernel-parameters.txt   |    4 ++
+ Documentation/virtual/kvm/msr.txt     |   35 +++++++++++++
+ arch/ia64/include/asm/paravirt.h      |    4 ++
+ arch/ia64/kernel/paravirt.c           |    2 +
+ arch/x86/Kconfig                      |   12 +++++
+ arch/x86/include/asm/kvm_host.h       |    9 +++
+ arch/x86/include/asm/kvm_para.h       |   15 ++++++
+ arch/x86/include/asm/paravirt.h       |    9 +++
+ arch/x86/include/asm/paravirt_types.h |    1 +
+ arch/x86/kernel/kvm.c                 |   73 +++++++++++++++++++++++++++
+ arch/x86/kernel/kvmclock.c            |    2 +
+ arch/x86/kernel/paravirt.c            |    9 +++
+ arch/x86/kvm/Kconfig                  |    1 +
+ arch/x86/kvm/x86.c                    |   74 +++++++++++++++++++++++++++-
+ include/linux/kvm_host.h              |    3 +
+ kernel/sched.c                        |   88 +++++++++++++++++++++++++++++----
+ kernel/sched_features.h               |    4 +-
+ virt/kvm/kvm_main.c                   |   20 +++++++
+ 18 files changed, 351 insertions(+), 14 deletions(-)
+
 -- 
 1.7.3.4
 
