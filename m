@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758391Ab1GKR5Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 13:57:24 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:63879 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757924Ab1GKR5V convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 13:57:21 -0400
+	id S1758412Ab1GKSAR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 14:00:17 -0400
+Received: from mx2.fusionio.com ([66.114.96.31]:42908 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754844Ab1GKSAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 14:00:15 -0400
+X-ASG-Debug-ID: 1310407196-01de280c1ebc4e0002-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4E1B3A1D.2050400@fusionio.com>
+Date: Mon, 11 Jul 2011 19:59:57 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-In-Reply-To: <4E1B3816.2030606@genband.com>
-References: <CANudz+sqkachOT7r9=-rc98nCEO_QOCx7KiBi5=NWaj5exmEPA@mail.gmail.com>
-	<CANudz+vxY_0NY2veJ9Wvr08x_z3e20m=g7ZL4bZDi=-vaOF7dQ@mail.gmail.com>
-	<4E1B3816.2030606@genband.com>
-Date: Tue, 12 Jul 2011 01:57:20 +0800
-Message-ID: <CANudz+vvXrw=4+tk6z8GW+2rW-ZsogN0XGcozLSyY-dJ_SoHdw@mail.gmail.com>
-Subject: Re: how to find a task through name faster?
-From: loody <miloody@gmail.com>
-To: Chris Friesen <chris.friesen@genband.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+To: Muthu Kumar <muthu.lkml@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH]: block: try-2 (modified): Initialize bi_rw in mpage so
+  bio_add can make use of it.
+References: <CAFR8uec5MxvHEWS=hgRXo1eunjQqWrpPCVXthdGMfWR+Yitw_A@mail.gmail.com>	<4E1B37B1.9030608@fusionio.com> <CAFR8ueetLzSwTEc7D1zW4Yhd8t8iFbKvjJ07onWVQJbhzSOXLQ@mail.gmail.com>
+X-ASG-Orig-Subj: Re: [PATCH]: block: try-2 (modified): Initialize bi_rw in mpage so
+  bio_add can make use of it.
+In-Reply-To: <CAFR8ueetLzSwTEc7D1zW4Yhd8t8iFbKvjJ07onWVQJbhzSOXLQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1310407201
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.68631
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi:
-
-2011/7/12 Chris Friesen <chris.friesen@genband.com>:
-> On 07/11/2011 10:52 AM, loody wrote:
+On 2011-07-11 19:52, Muthu Kumar wrote:
+>> For this particular case, doing it when the bio is allocated makes more
+>> sense. That will avoid a similar error in there in the future.
 >>
->> hi all:
->> I found a way to find a task I need by name, test,  as below:
->> for_each_process(task) {
->>     if(strcmp(task->comm, "test")
->>         printk(“%s[%d]\n”, task->comm, task->pid);
->> }
->>
->> But it is time-consuming to do so if I periodically want to know
->> whether "test" exist or not.
->> is there better way to do so?
+> 
+> Sounds good. Thanks. How about for other cases that alloc a new bio
+> and do bio_add_page() - like blkdev_issue_zeroout() and similar.
+> Should we add there too?
 
-Thanks for your reply
-
-> The names of tasks isn't indexed in any way so the above is about as good as
-> it gets if that's all the information you have.
-
-actually, I only have the name for searching, since the thread start
- and finish periodically, pid of it will change dynamically. If I save
-the pid, next time it will change and be no use to me
->
-> One common way around that is to store the PID in a file somewhere at
-> startup.  Then you can look in the file and see if that PID is present and
-> check "task->comm" to make sure it's what you expect.  This saves having to
-> search through all tasks.
->
-> Chris
-
+Good question, ideally the allocator should be passed in the rw argument
+since we need it before even submitting it for the merge cases. We don't
+have _that_ many callers of bio_alloc() or bio_kmalloc(), so probably
+the best option is just to bite the bullet and change the prototypes to
+take the 'rw' argument there. Oh, and the bioset variants, too.
+bio_init() should be passed the 'rw' argument from the allcators, so we
+catch any private use of that, too.
 
 -- 
-Regards,
+Jens Axboe
+
