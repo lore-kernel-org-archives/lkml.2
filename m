@@ -1,106 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755603Ab1GKLqz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 07:46:55 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:4470 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752716Ab1GKLqy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 07:46:54 -0400
-Date: Mon, 11 Jul 2011 13:46:36 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Andi Kleen <ak@linux.intel.com>, jbeulich@novell.com,
-        fenghua.yu@intel.com
-Subject: Re: [PATCH 3/3] coretemp: Get microcode revision from cpu_data v2
-Message-ID: <20110711134636.79fea631@endymion.delvare>
-In-Reply-To: <1309996623-23108-3-git-send-email-andi@firstfloor.org>
-References: <1309996623-23108-1-git-send-email-andi@firstfloor.org>
-	<1309996623-23108-3-git-send-email-andi@firstfloor.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756031Ab1GKLr2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 07:47:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60349 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755417Ab1GKLr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 07:47:26 -0400
+Message-ID: <4E1AE2CC.4010501@suse.de>
+Date: Mon, 11 Jul 2011 13:47:24 +0200
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Greg KH <greg@kroah.com>, Nao Nishijima <nao.nishijima.xt@hitachi.com>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        jcm@redhat.com, dle-develop@lists.sourceforge.net,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        yrl.pp-manager.tt@hitachi.com, dgilbert@interlog.com,
+        stefanr@s5r6.in-berlin.de
+Subject: Re: [RFC PATCH 0/4] Persistent device name using alias name
+References: <20110708084547.2091.55262.stgit@ltc197.sdl.hitachi.co.jp> <20110708145408.GA2283@kroah.com> <CAPXgP10gThuxOsrxH8_wOddeRB5f2ABypW7EQui-F1hOE97dHQ@mail.gmail.com> <20110708154736.GA7320@kroah.com> <1310140451.3282.85.camel@mulgrave> <CAPXgP12dA72a3ja659GH6uW+ZCMfL6iECaY6ORXwOQ6S5eTvaQ@mail.gmail.com> <CAPXgP11aTKVvrT++_FyZqd8YTzgbRmouUv1iGWfnZsoepQCspg@mail.gmail.com>
+In-Reply-To: <CAPXgP11aTKVvrT++_FyZqd8YTzgbRmouUv1iGWfnZsoepQCspg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  6 Jul 2011 16:57:03 -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> Now that the ucode revision is available in cpu_data remove
-> the existing code in coretemp.c to query it manually. Read the ucode
-> revision from cpu_data instead
-> 
-> v2: Fix misplaced variable init. Remove unused variables.
-> Cc: jbeulich@novell.com
-> Cc: fenghua.yu@intel.com
-> Cc: khali@linux-fr.org
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  drivers/hwmon/coretemp.c |   31 +++++--------------------------
->  1 files changed, 5 insertions(+), 26 deletions(-)
-> 
-> diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
-> index 0070d54..2d038e3 100644
-> --- a/drivers/hwmon/coretemp.c
-> +++ b/drivers/hwmon/coretemp.c
-> @@ -307,15 +307,6 @@ static int get_tjmax(struct cpuinfo_x86 *c, u32 id, struct device *dev)
->  	return adjust_tjmax(c, id, dev);
->  }
->  
-> -static void __devinit get_ucode_rev_on_cpu(void *edx)
-> -{
-> -	u32 eax;
-> -
-> -	wrmsr(MSR_IA32_UCODE_REV, 0, 0);
-> -	sync_core();
-> -	rdmsr(MSR_IA32_UCODE_REV, eax, *(u32 *)edx);
-> -}
-> -
->  static int get_pkg_tjmax(unsigned int cpu, struct device *dev)
->  {
->  	int err;
-> @@ -410,29 +401,17 @@ static void update_ttarget(__u8 cpu_model, struct temp_data *tdata,
->  static int __devinit chk_ucode_version(struct platform_device *pdev)
->  {
->  	struct cpuinfo_x86 *c = &cpu_data(pdev->id);
-> -	int err;
-> -	u32 edx;
->  
->  	/*
->  	 * Check if we have problem with errata AE18 of Core processors:
->  	 * Readings might stop update when processor visited too deep sleep,
->  	 * fixed for stepping D0 (6EC).
->  	 */
-> -	if (c->x86_model == 0xe && c->x86_mask < 0xc) {
-> -		/* check for microcode update */
-> -		err = smp_call_function_single(pdev->id, get_ucode_rev_on_cpu,
-> -					       &edx, 1);
-> -		if (err) {
-> -			dev_err(&pdev->dev,
-> -				"Cannot determine microcode revision of "
-> -				"CPU#%u (%d)!\n", pdev->id, err);
-> -			return -ENODEV;
-> -		} else if (edx < 0x39) {
-> -			dev_err(&pdev->dev,
-> -				"Errata AE18 not fixed, update BIOS or "
-> -				"microcode of the CPU!\n");
-> -			return -ENODEV;
-> -		}
-> +	if (c->x86_model == 0xe && c->x86_mask < 0xc && c->microcode < 0x39) {
-> +		dev_err(&pdev->dev,
-> +			"Errata AE18 not fixed, update BIOS or "
-> +			"microcode of the CPU!\n");
-> +		return -ENODEV;
->  	}
->  	return 0;
->  }
+On 07/08/2011 06:38 PM, Kay Sievers wrote:
+> On Fri, Jul 8, 2011 at 18:15, Kay Sievers<kay.sievers@vrfy.org>  wrote:
+>> On Fri, Jul 8, 2011 at 17:54, James Bottomley
+>
+>>> But hey,
+>>> you have the enthusiasm, propose it as a KS topic to get agreement that
+>>> we should do it and what the format should be and we can go from there.
+>>
+>> Sure, I'll do that. If needed, I can even make half or a third of it
+>> possible I guess.
+>
+> Submitted it a minute ago.
+>
+I'd be willing to working on the design here, as it ties in rather 
+neatly with my goal of updating the SCSI debugging facilities.
 
-Looks good, thanks.
+printk() is easy to write, but basically impossible to impose any 
+type of checking/format whatever.
+My all-time favorite here:
 
-Acked-by: Jean Delvare <khali@linux-fr.org>
+                 printk(KERN_INFO "error 1\n");
 
+At least it got a 'KERN_INFO' thrown in there ...
+
+So first step would be to reach an agreement _what_ printk() et al 
+is supposed to convey to userland.
+Informal only? Informal, but traceable to the origin?
+Should the origin be the internal 
+structure/subsystem/device/whatever generating the error?
+Should the origin be persistent across reboots?
+
+And, tied to that, what the supposed audience for printk() is:
+Programs? Syslog? Humans?
+
+Once we have an agreement here we can then go about and code the 
+required pieces. But currently the main problem is that there are 
+different ideas of what printk() is supposed to do.
+
+Cheers,
+
+Hannes
 -- 
-Jean Delvare
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
