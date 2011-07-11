@@ -1,213 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757526Ab1GKNXU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 09:23:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3912 "EHLO mx1.redhat.com"
+	id S1757537Ab1GKNXg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 09:23:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36264 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757507Ab1GKNXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 09:23:11 -0400
+	id S1757503Ab1GKNXK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 09:23:10 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: rostedt@goodmis.org, fweisbec@gmail.com, a.p.zijlstra@chello.nl
 Cc: linux-kernel@vger.kernel.org
-Subject: [RFC 4/4] perf, ftrace: Add ftrace option for perf stat command
-Date: Mon, 11 Jul 2011 15:22:56 +0200
-Message-Id: <1310390576-8289-5-git-send-email-jolsa@redhat.com>
+Subject: [RFC 3/4] perf, ftrace: Add new perf ioctl for function trace filter
+Date: Mon, 11 Jul 2011 15:22:55 +0200
+Message-Id: <1310390576-8289-4-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1310390576-8289-1-git-send-email-jolsa@redhat.com>
 References: <1310390576-8289-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding ftrace option to specify the ftrace filter for last/current event.
-The value format is same as for the set_ftrace_filter tracing file.
+As the amount of kernel functions obtained by the ftrace:function tracepoint
+is quite big, it's desirable to be able to set the filter on the ftrace
+level.
 
-This could be used only for ftrace:function (TRACE_FN) tracepoint event
-like:
+Added PERF_EVENT_IOC_SET_FTRACE ioctl to be able to specify function filter
+for perf event. The interface is the same as for the set_ftrace_filter file.
 
- # ./perf stat -e ftrace:function --filter "ip == sys_open" \
-   --ftrace "sys_open sys_read" sleep 1
-
-  Performance counter stats for 'sleep 1':
-
-                 3 ftrace:function                                             
-
-       1.001460132 seconds time elapsed
+Also the same string parser is used as for the set_ftrace_filter file.
 
 ---
- tools/perf/builtin-stat.c      |    2 ++
- tools/perf/util/evlist.c       |   26 ++++++++++++++++++++++----
- tools/perf/util/evlist.h       |    2 ++
- tools/perf/util/evsel.h        |    1 +
- tools/perf/util/parse-events.c |   37 +++++++++++++++++++++++++++++++++----
- tools/perf/util/parse-events.h |    1 +
- 6 files changed, 61 insertions(+), 8 deletions(-)
+ include/linux/ftrace.h          |    5 ++-
+ include/linux/ftrace_event.h    |    3 ++
+ include/linux/perf_event.h      |    1 +
+ kernel/events/core.c            |   14 +++++++++++++
+ kernel/trace/ftrace.c           |   11 +++++----
+ kernel/trace/trace_event_perf.c |   42 +++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 69 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 1d08c80..77a257d 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -1035,6 +1035,8 @@ static const struct option options[] = {
- 		     parse_events),
- 	OPT_CALLBACK(0, "filter", &evsel_list, "filter",
- 		     "event filter", parse_filter),
-+	OPT_CALLBACK(0, "ftrace", &evsel_list, "ftrace",
-+		     "ftrace filter", parse_ftrace),
- 	OPT_BOOLEAN('i', "no-inherit", &no_inherit,
- 		    "child tasks do not inherit counters"),
- 	OPT_INTEGER('p', "pid", &target_pid,
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index b021ea9..7627266 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -427,25 +427,43 @@ void perf_evlist__delete_maps(struct perf_evlist *evlist)
- 	evlist->threads = NULL;
- }
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index f858e97..b7368d0 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -182,7 +182,7 @@ struct dyn_ftrace {
+ };
  
-+static int set_filter_fd(int fd, char *filter, char *ftrace)
-+{
-+	int err;
-+
-+	if (filter) {
-+		err = ioctl(fd, PERF_EVENT_IOC_SET_FILTER, filter);
-+		if (err)
-+			return err;
-+	}
-+	if (ftrace) {
-+		err = ioctl(fd, PERF_EVENT_IOC_SET_FTRACE, ftrace);
-+		if (err)
-+			return err;
-+	}
-+	return 0;
-+}
-+
- int perf_evlist__set_filters(struct perf_evlist *evlist)
+ int ftrace_force_update(void);
+-void ftrace_set_filter(struct ftrace_ops *ops, unsigned char *buf,
++int ftrace_set_filter(struct ftrace_ops *ops, unsigned char *buf,
+ 		       int len, int reset);
+ void ftrace_set_notrace(struct ftrace_ops *ops, unsigned char *buf,
+ 			int len, int reset);
+@@ -268,8 +268,9 @@ extern void ftrace_enable_daemon(void);
+ #else
+ static inline int skip_trace(unsigned long ip) { return 0; }
+ static inline int ftrace_force_update(void) { return 0; }
+-static inline void ftrace_set_filter(unsigned char *buf, int len, int reset)
++static inline int ftrace_set_filter(unsigned char *buf, int len, int reset)
  {
- 	const struct thread_map *threads = evlist->threads;
- 	const struct cpu_map *cpus = evlist->cpus;
- 	struct perf_evsel *evsel;
- 	char *filter;
-+	char *ftrace;
- 	int thread;
- 	int cpu;
- 	int err;
--	int fd;
- 
- 	list_for_each_entry(evsel, &evlist->entries, node) {
- 		filter = evsel->filter;
--		if (!filter)
-+		ftrace = evsel->ftrace;
-+		if (!filter && !ftrace)
- 			continue;
- 		for (cpu = 0; cpu < cpus->nr; cpu++) {
- 			for (thread = 0; thread < threads->nr; thread++) {
--				fd = FD(evsel, cpu, thread);
--				err = ioctl(fd, PERF_EVENT_IOC_SET_FILTER, filter);
-+				err = set_filter_fd(FD(evsel, cpu, thread),
-+						  filter, ftrace);
- 				if (err)
- 					return err;
- 			}
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index b2b8623..25ccdf8 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -9,6 +9,8 @@ struct pollfd;
- struct thread_map;
- struct cpu_map;
- 
-+#define PERF_EVENT_IOC_SET_FTRACE       _IOW('$', 7, char *)
-+
- #define PERF_EVLIST__HLIST_BITS 8
- #define PERF_EVLIST__HLIST_SIZE (1 << PERF_EVLIST__HLIST_BITS)
- 
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index e9a3155..60d949c 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -48,6 +48,7 @@ struct perf_evsel {
- 	struct list_head	node;
- 	struct perf_event_attr	attr;
- 	char			*filter;
-+	char			*ftrace;
- 	struct xyarray		*fd;
- 	struct xyarray		*sample_id;
- 	u64			*id;
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 41982c3..dc58b0e 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -863,8 +863,7 @@ int parse_events(const struct option *opt, const char *str, int unset __used)
- 	return 0;
++	return -EINVAL;
  }
+ static inline void ftrace_disable_daemon(void) { }
+ static inline void ftrace_enable_daemon(void) { }
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 061c267..df13bc6 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -291,6 +291,9 @@ extern void ftrace_profile_free_filter(struct perf_event *event);
+ extern void *perf_trace_buf_prepare(int size, unsigned short type,
+ 				    struct pt_regs *regs, int *rctxp);
  
--int parse_filter(const struct option *opt, const char *str,
--		 int unset __used)
-+static struct perf_evsel *get_last_evsel(const struct option *opt)
++extern int perf_ftrace_set_filter(struct perf_event *event,
++				  char __user *filter);
++
+ static inline void
+ perf_trace_buf_submit(void *raw_data, int size, int rctx, u64 addr,
+ 		       u64 count, struct pt_regs *regs, void *head)
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index bb708d1..20c216d 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -248,6 +248,7 @@ struct perf_event_attr {
+ #define PERF_EVENT_IOC_PERIOD		_IOW('$', 4, __u64)
+ #define PERF_EVENT_IOC_SET_OUTPUT	_IO ('$', 5)
+ #define PERF_EVENT_IOC_SET_FILTER	_IOW('$', 6, char *)
++#define PERF_EVENT_IOC_SET_FTRACE	_IOW('$', 7, char *)
+ 
+ enum perf_event_ioc_flags {
+ 	PERF_IOC_FLAG_GROUP		= 1U << 0,
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 0567e32..8564c74 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -3255,6 +3255,7 @@ static struct perf_event *perf_fget_light(int fd, int *fput_needed)
+ static int perf_event_set_output(struct perf_event *event,
+ 				 struct perf_event *output_event);
+ static int perf_event_set_filter(struct perf_event *event, void __user *arg);
++static int perf_event_set_ftrace(struct perf_event *event, void __user *arg);
+ 
+ static long perf_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
  {
- 	struct perf_evlist *evlist = *(struct perf_evlist **)opt->value;
- 	struct perf_evsel *last = NULL;
-@@ -874,10 +873,22 @@ int parse_filter(const struct option *opt, const char *str,
+@@ -3301,6 +3302,9 @@ static long perf_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 	case PERF_EVENT_IOC_SET_FILTER:
+ 		return perf_event_set_filter(event, (void __user *)arg);
  
- 	if (last == NULL || last->attr.type != PERF_TYPE_TRACEPOINT) {
- 		fprintf(stderr,
--			"-F option should follow a -e tracepoint option\n");
--		return -1;
-+			"filter/ftrace options should follow a -e tracepoint option\n");
-+		return NULL;
++	case PERF_EVENT_IOC_SET_FTRACE:
++		return perf_event_set_ftrace(event, (void __user *)arg);
++
+ 	default:
+ 		return -ENOTTY;
  	}
- 
-+	return last;
-+}
-+
-+int parse_filter(const struct option *opt, const char *str,
-+		 int unset __used)
-+{
-+	struct perf_evsel *last = NULL;
-+
-+	last = get_last_evsel(opt);
-+	if (!last)
-+		return -1;
-+
- 	last->filter = strdup(str);
- 	if (last->filter == NULL) {
- 		fprintf(stderr, "not enough memory to hold filter string\n");
-@@ -887,6 +898,24 @@ int parse_filter(const struct option *opt, const char *str,
- 	return 0;
+@@ -5185,6 +5189,11 @@ static void perf_event_free_filter(struct perf_event *event)
+ 	ftrace_profile_free_filter(event);
  }
  
-+int parse_ftrace(const struct option *opt, const char *str,
-+		 int unset __used)
++static int perf_event_set_ftrace(struct perf_event *event, void __user *arg)
 +{
-+	struct perf_evsel *last = NULL;
-+
-+	last = get_last_evsel(opt);
-+	if (!last)
-+		return -1;
-+
-+	last->ftrace = strdup(str);
-+	if (last->ftrace == NULL) {
-+		fprintf(stderr, "not enough memory to hold ftrace string\n");
-+		return -1;
-+	}
-+
-+	return 0;
++	return perf_ftrace_set_filter(event, arg);
 +}
 +
- static const char * const event_type_descriptors[] = {
- 	"Hardware event",
- 	"Software event",
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index 746d3fc..9933649 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -26,6 +26,7 @@ extern const char *__event_name(int type, u64 config);
+ #else
  
- extern int parse_events(const struct option *opt, const char *str, int unset);
- extern int parse_filter(const struct option *opt, const char *str, int unset);
-+extern int parse_ftrace(const struct option *opt, const char *str, int unset);
+ static inline void perf_tp_register(void)
+@@ -5196,6 +5205,11 @@ static int perf_event_set_filter(struct perf_event *event, void __user *arg)
+ 	return -ENOENT;
+ }
  
- #define EVENTS_HELP_MAX (128*1024)
++static int perf_event_set_ftrace(struct perf_event *event, void __user *arg)
++{
++	return -ENOENT;
++}
++
+ static void perf_event_free_filter(struct perf_event *event)
+ {
+ }
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 7325ae4..477e050 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -2837,7 +2837,7 @@ ftrace_set_regex(struct ftrace_ops *ops, unsigned char *buf, int len,
+ {
+ 	struct ftrace_hash **orig_hash;
+ 	struct ftrace_hash *hash;
+-	int ret;
++	int ret = -EINVAL;
  
+ 	/* All global ops uses the global ops filters */
+ 	if (ops->flags & FTRACE_OPS_FL_GLOBAL)
+@@ -2858,13 +2858,14 @@ ftrace_set_regex(struct ftrace_ops *ops, unsigned char *buf, int len,
+ 	mutex_lock(&ftrace_regex_lock);
+ 	if (reset)
+ 		ftrace_filter_reset(hash);
+-	if (buf)
+-		ftrace_match_records(hash, buf, len);
++	if (buf && !ftrace_match_records(hash, buf, len))
++		goto out_unlock;
+ 
+ 	mutex_lock(&ftrace_lock);
+ 	ret = ftrace_hash_move(orig_hash, hash);
+ 	mutex_unlock(&ftrace_lock);
+ 
++ out_unlock:
+ 	mutex_unlock(&ftrace_regex_lock);
+ 
+ 	free_ftrace_hash(hash);
+@@ -2881,10 +2882,10 @@ ftrace_set_regex(struct ftrace_ops *ops, unsigned char *buf, int len,
+  * Filters denote which functions should be enabled when tracing is enabled.
+  * If @buf is NULL and reset is set, all functions will be enabled for tracing.
+  */
+-void ftrace_set_filter(struct ftrace_ops *ops, unsigned char *buf,
++int ftrace_set_filter(struct ftrace_ops *ops, unsigned char *buf,
+ 		       int len, int reset)
+ {
+-	ftrace_set_regex(ops, buf, len, reset, 1);
++	return ftrace_set_regex(ops, buf, len, reset, 1);
+ }
+ EXPORT_SYMBOL_GPL(ftrace_set_filter);
+ 
+diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
+index 2b56b81..7a1367d 100644
+--- a/kernel/trace/trace_event_perf.c
++++ b/kernel/trace/trace_event_perf.c
+@@ -315,3 +315,45 @@ int perf_ftrace_event_register(struct ftrace_event_call *call,
+ 
+ 	return -EINVAL;
+ }
++
++static int __perf_ftrace_set_filter(struct perf_event *event,
++				   char __user *filter)
++{
++	struct trace_parser parser;
++	ssize_t cnt = strnlen_user(filter, PAGE_SIZE);
++	int reset = 1, ret = -EINVAL;
++	ssize_t read = 0;
++	loff_t pos = 0;
++
++	if (trace_parser_get_init(&parser, KSYM_SYMBOL_LEN + 4))
++		return -ENOMEM;
++
++	while (cnt) {
++		read = trace_get_user(&parser, filter, cnt, &pos);
++		if (!read || !trace_parser_loaded(&parser)) {
++			ret = -EINVAL;
++			break;
++		}
++
++		ret = ftrace_set_filter(&event->ftrace_ops,
++					parser.buffer, parser.idx,
++					reset);
++		if (ret)
++			break;
++
++		cnt    -= read;
++		filter += read;
++		reset = 0;
++	}
++
++	trace_parser_put(&parser);
++	return ret;
++}
++
++int perf_ftrace_set_filter(struct perf_event *event, char __user *filter)
++{
++	if (event->attr.config != TRACE_FN)
++		return -EINVAL;
++
++	return __perf_ftrace_set_filter(event, filter);
++}
 -- 
 1.7.1
 
