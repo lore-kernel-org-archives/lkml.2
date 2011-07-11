@@ -1,78 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758230Ab1GKRAX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 13:00:23 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:35052 "EHLO e7.ny.us.ibm.com"
+	id S1758238Ab1GKRBA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 13:01:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52806 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758207Ab1GKRAW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 13:00:22 -0400
-Date: Mon, 11 Jul 2011 10:00:14 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 0/6] Check for use of RCU from
- dyntick-idle mode
-Message-ID: <20110711170014.GI2245@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110708154331.GA20161@linux.vnet.ibm.com>
- <20110711160330.GC4109@somewhere.redhat.com>
- <20110711163848.GF2245@linux.vnet.ibm.com>
- <20110711164405.GE4109@somewhere.redhat.com>
+	id S1752653Ab1GKRA7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 13:00:59 -0400
+Date: Mon, 11 Jul 2011 19:00:42 +0200
+From: Jan Kara <jack@suse.cz>
+To: Curt Wohlgemuth <curtw@google.com>
+Cc: Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, fengguang.wu@intel.com
+Subject: Re: [PATCH] writeback: Don't wait for completion in
+ writeback_inodes_sb_nr
+Message-ID: <20110711170042.GE5482@quack.suse.cz>
+References: <1309304616-8657-1-git-send-email-curtw@google.com>
+ <20110629005422.GQ32466@dastard>
+ <BANLkTimKtwVZo3D+w9AB2-C83d08YROcMw@mail.gmail.com>
+ <20110629081155.GA5558@infradead.org>
+ <20110629165714.GF17590@quack.suse.cz>
+ <20110629175534.GA32236@infradead.org>
+ <20110629191518.GA23196@quack.suse.cz>
+ <BANLkTinndb4oHi6kNQrTsL86UrKDB=2rK6-gA8FM1Nj8CKYZ+w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110711164405.GE4109@somewhere.redhat.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTinndb4oHi6kNQrTsL86UrKDB=2rK6-gA8FM1Nj8CKYZ+w@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 11, 2011 at 06:44:08PM +0200, Frederic Weisbecker wrote:
-> On Mon, Jul 11, 2011 at 09:38:48AM -0700, Paul E. McKenney wrote:
-> > On Mon, Jul 11, 2011 at 06:03:32PM +0200, Frederic Weisbecker wrote:
-> > > On Fri, Jul 08, 2011 at 08:43:31AM -0700, Paul E. McKenney wrote:
-> > > > Hello!
-> > > > 
-> > > > This set of patches adds checks for use of RCU from "extended quiescent
-> > > > states" such as dyntick-idle mode.  Such use is grossly illegal because
-> > > > RCU by definition ignores CPUs that are in extended quiescent states.
-> > > > In the case of dyntick-idle mode, the only way for RCU to avoid ignoring
-> > > > such CPUs would be to wake them up periodically, which would defeat the
-> > > > whole purpose of dyntick-idle mode.
-> > > > 
-> > > > The good news is that Frederic got this effort started.  The bad news is
-> > > > that there are several cases where RCU read-side critical sections appear
-> > > > in dyntick-idle mode.
-> > > 
-> > > Ok, let me send to you the patch that splits up rcu/tickless logic and I'll try
-> > > to fix up what you reported to me in ppc.
-> > 
-> > Very good, thank you!
-> > 
-> > > BTW, are you aware of other cases? You mentioned "several" :)
-> > 
-> > PowerPC's hypercall-exit trace event will also cause this complaint.
+  Hi Curt,
+
+On Fri 01-07-11 15:55:33, Curt Wohlgemuth wrote:
+> On Wed, Jun 29, 2011 at 12:15 PM, Jan Kara <jack@suse.cz> wrote:
+> > On Wed 29-06-11 13:55:34, Christoph Hellwig wrote:
+> >> On Wed, Jun 29, 2011 at 06:57:14PM +0200, Jan Kara wrote:
+> >> > > For sys_sync I'm pretty sure we could simply remove the
+> >> > > writeback_inodes_sb call and get just as good if not better performance,
+> >> >   Actually, it won't with current code. Because WB_SYNC_ALL writeback
+> >> > currently has the peculiarity that it looks like:
+> >> >   for all inodes {
+> >> >     write all inode data
+> >> >     wait for inode data
+> >> >   }
+> >> > while to achieve good performance we actually need something like
+> >> >   for all inodes
+> >> >     write all inode data
+> >> >   for all inodes
+> >> >     wait for inode data
+> >> > It makes a difference in an order of magnitude when there are lots of
+> >> > smallish files - SLES had a bug like this so I know from user reports ;)
+> >>
+> >> I don't think that's true.  The WB_SYNC_ALL writeback is done using
+> >> sync_inodes_sb, which operates as:
+> >>
+> >>   for all dirty inodes in bdi:
+> >>      if inode belongs to sb
+> >>         write all inode data
+> >>
+> >>   for all inodes in sb:
+> >>      wait for inode data
+> >>
+> >> we still do that in a big for each sb loop, though.
+> >  True but writeback_single_inode() has in it:
+> >        if (wbc->sync_mode == WB_SYNC_ALL) {
+> >                int err = filemap_fdatawait(mapping);
+> >                if (ret == 0)
+> >                        ret = err;
+> >        }
+> >  So we end up waiting much earlier. Probably we should remove this wait
+> > but that will need some audit I guess.
 > 
-> Ok looking at this.
-
-Oh, and I removed some of my RCU dyntick-idle trace events because
-they triggered this warning.  This would of course be a problem regardless
-of where the RCU dyntick-idle APIs were called from, so I just took the
-approach of more carefully placing the trace events.
-
-> > Plus I thought you saw some others.
+> So today for WB_SYNC_ALL from sync_inodes_sb(), we do:
+>   - queue a work item; this will
+>     - write all dirty inodes in a sb
+>       - write one inode's pages
+>       - wait on all inode's pages
+>   - wait for the work item
+>   - wait on all inodes in the sb (wait_sb_inodes)
 > 
-> Nope, mine were spurious. In my v1 rcu_dereference_check warned if rcu read lock
-> wasn't held but didn't handle the rest of the conditional (another lock held or
-> simply 1 in rcu_dereference_raw()).
+> I guess the point of wait_sb_inodes() is to wait on all inodes that
+> were written in a previous writeback pass.
+  Yes. As we discussed with Christoph, waiting for each inode could be
+avoided in principle but we have to be careful not to break data
+consistency guarantees in some other path calling
+writeback_single_inode()...
+
+> One other issue I have with sync as it's structured is that we don't
+> do a WB_SYNC_ALL pass on any inode that's only associated with a block
+> device, and not on a mounted filesystem.  Blockdev mounts are
+> pseudo-mounts, and are explicitly skipped in __sync_filesystem().  So
+> if you've written directly to a block device and do a sync, the only
+> pass over the pages for this inode are via the
+> wakeup_flusher_threads() -- which operates on a BDI, regardless of the
+> superblock, and uses WB_SYNC_NONE.
 > 
-> In the v3, the one you applied, they legitimately disappeared.
+> All the sync_filesystem() calls are per-sb, not per-BDI, and they'll
+> exclude pseudo-superblocks.
+> 
+> I've seen cases in our modified kernels here at Google in which
+> lilo/shutdown failed because of a lack of WB_SYNC_ALL writeback for
+> /dev/sda (though I haven't been able to come up with a consistent test
+> case, nor reproduce this on an upstream kernel).
+  Ho hum, I wonder what would be the cleanest way to fix this. I guess we
+could make an exception for 'bdev' superblock in the code but it's ugly.
 
-OK, good to know!
-
-							Thanx, Paul
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
