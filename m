@@ -1,47 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756828Ab1GKMyk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 08:54:40 -0400
-Received: from tex.lwn.net ([70.33.254.29]:44217 "EHLO vena.lwn.net"
+	id S1756961Ab1GKM6o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 08:58:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55489 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753194Ab1GKMyj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 08:54:39 -0400
-Date: Mon, 11 Jul 2011 06:54:37 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: Bryan Donlan <bdonlan@gmail.com>
-Cc: Shawn Starr <shawn.starr@rogers.com>, linux-kernel@vger.kernel.org,
-        RT <linux-rt-users@vger.kernel.org>
-Subject: Re: State of Linux-RT Patches and full inclusion into linus tree
-Message-ID: <20110711065437.6c913cca@bike.lwn.net>
-In-Reply-To: <CAF_S4t_Q1gMnP+mfM+XGPjJYG_jNPwXhY1557bkZPC9c=mS-xg@mail.gmail.com>
-References: <1449505.pSCLrkaxpL@segfault.sh0n.net>
-	<CAF_S4t_Q1gMnP+mfM+XGPjJYG_jNPwXhY1557bkZPC9c=mS-xg@mail.gmail.com>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.5; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S1752900Ab1GKM6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 08:58:43 -0400
+Message-ID: <4E1AF36A.2060605@redhat.com>
+Date: Mon, 11 Jul 2011 15:58:18 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Glauber Costa <glommer@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCH v5 4/9] KVM-HV: KVM Steal time implementation
+References: <1309793548-16714-1-git-send-email-glommer@redhat.com> <1309793548-16714-5-git-send-email-glommer@redhat.com> <20110707105113.GA3986@amt.cnet> <4E15E7E5.6020909@redhat.com>
+In-Reply-To: <4E15E7E5.6020909@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Jul 2011 00:46:31 -0400
-Bryan Donlan <bdonlan@gmail.com> wrote:
+On 07/07/2011 08:07 PM, Glauber Costa wrote:
+>>> +static void record_steal_time(struct kvm_vcpu *vcpu)
+>>> +{
+>>> +    u64 delta;
+>>> +
+>>> +    if (!(vcpu->arch.st.msr_val&  KVM_MSR_ENABLED))
+>>> +        return;
+>>> +
+>>> +    if (unlikely(kvm_read_guest_cached(vcpu->kvm,&vcpu->arch.st.stime,
+>>> + &vcpu->arch.st.steal, sizeof(struct kvm_steal_time))))
+>>> +        return;
+>>
+>> The guest memory page is not pinned, sleeping via
+>> __copy_from_user/to_user is not allowed in vcpu_load context. Either pin
+>> it or use atomic acessors.
+>
+>
+> I do recognize the problem.
+> Avi, what's your take here?
+>
 
-> On Sun, Jul 10, 2011 at 20:43, Shawn Starr <shawn.starr@rogers.com> wrote:
-> > Hello,
-> >
-> > I was wondering if (or ever) will the full Linux RT patches be merged into
-> > Linus's tree? If not, what is preventing this? I know bits of this has been
-> > leaking into 2.6.x over the years.
-> >
-> > Thanks,
-> > Shawn.  
-> 
-> (adding CC for linux-rt-users)
+The easiest solution is to set a KVM_REQ bit in atomic context, and move 
+the sleepy code to vcpu_enter_guest().
 
-Thomas gave a talk on this subject back in April:
+>>> +    case MSR_KVM_STEAL_TIME:
+>>> +        vcpu->arch.st.msr_val = data;
+>>> +
+>>> +        if (!(data&  KVM_MSR_ENABLED)) {
+>>> +            break;
+>>> +        }
+>>
+>> On failure below this point, msr_val should be cleared of 
+>> KVM_MSR_ENABLED?
+> No, msr_val has to hold whatever the guest wrote into it.
+> We should probably use an independent variable here to indicate that 
+> we failed to activate it.
 
-	http://lwn.net/Articles/440064/
+If we fail, we return a #GP to the guest (and don't write any value into 
+the msr).
 
-jon
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
+
