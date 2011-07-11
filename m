@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757374Ab1GKHts (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 03:49:48 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:54806 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964806Ab1GKHrf (ORCPT
+	id S1757363Ab1GKHuM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 03:50:12 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:33546 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932218Ab1GKHrd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 03:47:35 -0400
+	Mon, 11 Jul 2011 03:47:33 -0400
 From: Jim Cromie <jim.cromie@gmail.com>
 To: jbaron@redhat.com
 Cc: linux-kernel@vger.kernel.org, bvanassche@acm.org, joe@perches.com,
         gregkh@suse.de, gnb@fmeh.org, Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 12/21] dynamic_debug: document use of pending queries at boot-time
-Date: Mon, 11 Jul 2011 01:46:47 -0600
-Message-Id: <1310370416-6322-13-git-send-email-jim.cromie@gmail.com>
+Subject: [PATCH 11/21] dynamic_debug: refactor query_matches_callsite out of ddebug_change
+Date: Mon, 11 Jul 2011 01:46:46 -0600
+Message-Id: <1310370416-6322-12-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1310370416-6322-1-git-send-email-jim.cromie@gmail.com>
 References: <1309244992-2305-1-git-send-email-jim.cromie@gmail.com>
@@ -22,79 +22,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add paragraph that pending-queries are checked when modules are loaded,
-so debug statements can be used in module_init functions.
+this makes no behavioral change, its just a code-move.
+Originally done cuz it looked momentarily to be related to
+query-vs-query check needed soon.
+
+If this function is reused, note that it excludes check of the module;
+that is done once for the table, this code refactors the test inside
+the loop over the module's ddebug callsites.
 
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 ---
- Documentation/dynamic-debug-howto.txt |   34 +++++++++++++++++++++++++-------
- 1 files changed, 26 insertions(+), 8 deletions(-)
+ lib/dynamic_debug.c |   52 +++++++++++++++++++++++++++++---------------------
+ 1 files changed, 30 insertions(+), 22 deletions(-)
 
-diff --git a/Documentation/dynamic-debug-howto.txt b/Documentation/dynamic-debug-howto.txt
-index f959909..49b75b81 100644
---- a/Documentation/dynamic-debug-howto.txt
-+++ b/Documentation/dynamic-debug-howto.txt
-@@ -92,8 +92,18 @@ nullarbor:~ # echo -c 'file svcsock.c\nline 1603 +p' >
- nullarbor:~ # echo -n 'file svcsock.c line 1603 +p' >
- 				<debugfs>/dynamic_debug/control
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index cc8e157..bee1376 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -134,6 +134,35 @@ static char *show_pending_query(struct pending_query *pq)
+ 	return prbuf_query;
+ }
  
--Commands are bounded by a write() system call.  If you want to do
--multiple commands you need to do a separate "echo" for each, like:
-+Commands are bounded by a write() system call.  Subject to this limit
-+(or 1024 for boot-line parameter) you can send multiple commands,
-+separated by ';'
++static int query_matches_callsite(struct _ddebug *dp,
++				const struct ddebug_query *query)
++{
++	/* match against the source filename */
++	if (query->filename != NULL &&
++		strcmp(query->filename, dp->filename) &&
++		strcmp(query->filename, basename(dp->filename)))
++		return 0;
 +
-+foo:~ # echo "module nsc_gpio +p ; module pc8736x_gpio +p ; " \
-+ "module scx200_gpio +p " > /dbg/dynamic_debug/control
++	/* match against the function */
++	if (query->function != NULL &&
++		strcmp(query->function, dp->function))
++		return 0;
 +
-+Multiple commands are processed independently, this allows you to send
-+commands which may fail, for example if a module is not present.  The
-+last failing command returns its error.
++	/* match against the format */
++	if (query->format != NULL &&
++		strstr(dp->format, query->format) == NULL)
++		return 0;
 +
-+Or you can do an "echo" for each, like:
- 
- nullarbor:~ # echo 'file svcsock.c line 1603 +p' > /proc/dprintk ;\
- > echo 'file svcsock.c line 1563 +p' > /proc/dprintk
-@@ -110,11 +120,12 @@ specifications, followed by a flags change specification.
- 
- command ::= match-spec* flags-spec
- 
--The match-spec's are used to choose a subset of the known dprintk()
-+The match-specs are used to choose a subset of the known dprintk()
- callsites to which to apply the flags-spec.  Think of them as a query
--with implicit ANDs between each pair.  Note that an empty list of
--match-specs is possible, but is not very useful because it will not
--match any debug statement callsites.
-+with implicit ANDs between each pair.  This means that multiple specs
-+of a given type are nonsense; a module cannot match A and B
-+simultaneously.  Note that an empty list of match-specs is legal but
-+pointless, it will not match any debug statement callsites.
- 
- A match specification comprises a keyword, which controls the attribute
- of the callsite to be compared, and a value to compare against.  Possible
-@@ -232,13 +243,20 @@ QUERY follows the syntax described above, but must not exceed 1023
- characters. The enablement of debug messages is done as an arch_initcall.
- Thus you can enable debug messages in all code processed after this
- arch_initcall via this boot parameter.
--On an x86 system for example ACPI enablement is a subsys_initcall and
--ddebug_query="file ec.c +p"
++	/* match against the line number range */
++	if (query->first_lineno && dp->lineno < query->first_lineno)
++		return 0;
 +
-+On an x86 system for example ACPI enablement is a subsys_initcall, so
-+  ddebug_query="file ec.c +p"
- will show early Embedded Controller transactions during ACPI setup if
- your machine (typically a laptop) has an Embedded Controller.
- PCI (or other devices) initialization also is a hot candidate for using
- this boot parameter for debugging purposes.
++	if (query->last_lineno && dp->lineno > query->last_lineno)
++		return 0;
++
++	return 1;
++}
++
+ /*
+  * Search the tables for _ddebug's which match the given
+  * `query' and apply the `flags' and `mask' to them.  Tells
+@@ -161,28 +190,7 @@ static int ddebug_change(const struct ddebug_query *query,
+ 		for (i = 0 ; i < dt->num_ddebugs ; i++) {
+ 			struct _ddebug *dp = &dt->ddebugs[i];
  
-+You can also give queries for modules which are not yet loaded, but
-+will be, via udev or /etc/modules.  These queries are saved to a
-+pending-queries list, and are applied when the module is loaded, and
-+before the module's init function is invoked.  Note that modules which
-+have no debug messages do not trigger this, so queries for them will
-+remain on the pending-list until reboot.
+-			/* match against the source filename */
+-			if (query->filename != NULL &&
+-			    strcmp(query->filename, dp->filename) &&
+-			    strcmp(query->filename, basename(dp->filename)))
+-				continue;
+-
+-			/* match against the function */
+-			if (query->function != NULL &&
+-			    strcmp(query->function, dp->function))
+-				continue;
+-
+-			/* match against the format */
+-			if (query->format != NULL &&
+-			    strstr(dp->format, query->format) == NULL)
+-				continue;
+-
+-			/* match against the line number range */
+-			if (query->first_lineno &&
+-			    dp->lineno < query->first_lineno)
+-				continue;
+-			if (query->last_lineno &&
+-			    dp->lineno > query->last_lineno)
++			if (!query_matches_callsite(dp, query))
+ 				continue;
  
- Examples
- ========
+ 			nfound++;
 -- 
 1.7.4.1
 
