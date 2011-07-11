@@ -1,58 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757462Ab1GKIop (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 04:44:45 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:61694 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757414Ab1GKIoo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 04:44:44 -0400
-From: Ravishankar <ravishankarkm32@gmail.com>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>,
-        Ravishankar <ravishankarkm32@gmail.com>
-Subject: [PATCH 10/10] Staging: comedi: fix brace printk() issue in pcl818.c
-Date: Mon, 11 Jul 2011 14:27:23 +0530
-Message-Id: <1310374643-2815-1-git-send-email-ravishankarkm32@gmail.com>
-X-Mailer: git-send-email 1.6.5.2
-In-Reply-To: <[PATCH]Staging: comedi:fix printk()issue in pcl818.c>
-References: <[PATCH]Staging: comedi:fix printk()issue in pcl818.c>
+	id S1757472Ab1GKIpn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 04:45:43 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:44627 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757414Ab1GKIpm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 04:45:42 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Colin Cross <ccross@android.com>
+Subject: Re: [PATCH] PM: Reintroduce dropped call to check_wakeup_irqs
+Date: Mon, 11 Jul 2011 10:46:55 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc6+; KDE/4.6.0; x86_64; ; )
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>
+References: <1310342666-2493-1-git-send-email-ccross@android.com>
+In-Reply-To: <1310342666-2493-1-git-send-email-ccross@android.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107111046.56044.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ravishankar <ravi.shankar@greenturtles.in>
+On Monday, July 11, 2011, Colin Cross wrote:
+> Patch 2e711c04dbbf7a7732a3f7073b1fc285d12b369d
+> (PM: Remove sysdev suspend, resume and shutdown operations)
+> deleted sysdev_suspend, which was being relied on to call
+> check_wakeup_irqs in suspend.  If check_wakeup_irqs is not
+> called, wake interrupts that are pending when suspend is
+> entered may be lost.  It also breaks IRQCHIP_MASK_ON_SUSPEND,
+> which is handled in check_wakeup_irqs.
+> 
+> This patch adds a call to check_wakeup_irqs in syscore_suspend,
+> similar to what was deleted in sysdev_suspend.
+> 
+> CC: Rafael J. Wysocki <rjw@sisk.pl>
+> CC: Thomas Gleixner <tglx@linutronix.de>
+> CC: Greg Kroah-Hartman <gregkh@suse.de>
+> Signed-off-by: Colin Cross <ccross@android.com>
 
-This is a patch to the pcl818.c file that fixes up a printk() warning found by the checkpatch.pl tool
+Thanks a lot for the patch and sorry for the breakage.
 
-Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
----
- drivers/staging/comedi/drivers/pcl818.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+I'll push it to Linus later today (hopefully, that's not to late for 3.0).
 
-diff --git a/drivers/staging/comedi/drivers/pcl818.c b/drivers/staging/comedi/drivers/pcl818.c
-index 2fdb8c9..4069fee 100644
---- a/drivers/staging/comedi/drivers/pcl818.c
-+++ b/drivers/staging/comedi/drivers/pcl818.c
-@@ -1777,7 +1777,7 @@ static int pcl818_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 					     irq);
- 					irq = 0;	/* Can't use IRQ */
- 				} else {
--					printk(", irq=%u", irq);
-+					printk(KERN_CONT ", irq=%u", irq);
- 				}
- 			}
- 		}
-@@ -1883,7 +1883,7 @@ no_dma:
- 		if (check_single_ended(dev->iobase)) {
- 			s->n_chan = this_board->n_aichan_se;
- 			s->subdev_flags |= SDF_COMMON | SDF_GROUND;
--			printk(", %dchans S.E. DAC", s->n_chan);
-+			printk(KERN_CONT ", %dchans S.E. DAC", s->n_chan);
- 		} else {
- 			s->n_chan = this_board->n_aichan_diff;
- 			s->subdev_flags |= SDF_DIFF;
--- 
-1.6.5.2
+Thanks,
+Rafael
+
+
+> ---
+>  drivers/base/syscore.c |    8 ++++++++
+>  1 files changed, 8 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/base/syscore.c b/drivers/base/syscore.c
+> index c126db3..9b8bbe0 100644
+> --- a/drivers/base/syscore.c
+> +++ b/drivers/base/syscore.c
+> @@ -9,6 +9,7 @@
+>  #include <linux/syscore_ops.h>
+>  #include <linux/mutex.h>
+>  #include <linux/module.h>
+> +#include <linux/interrupt.h>
+>  
+>  static LIST_HEAD(syscore_ops_list);
+>  static DEFINE_MUTEX(syscore_ops_lock);
+> @@ -48,6 +49,13 @@ int syscore_suspend(void)
+>  	struct syscore_ops *ops;
+>  	int ret = 0;
+>  
+> +	pr_debug("Checking wake-up interrupts\n");
+> +
+> +	/* Return error code if there are any wake-up interrupts pending */
+> +	ret = check_wakeup_irqs();
+> +	if (ret)
+> +		return ret;
+> +
+>  	WARN_ONCE(!irqs_disabled(),
+>  		"Interrupts enabled before system core suspend.\n");
+>  
+> 
 
