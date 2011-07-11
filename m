@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757383Ab1GKIIQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 04:08:16 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:58239 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757335Ab1GKIIP (ORCPT
+	id S1757389Ab1GKIT2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 04:19:28 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:37547 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757301Ab1GKIT1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 04:08:15 -0400
-Date: Mon, 11 Jul 2011 11:06:44 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Ravishankar <ravishankarkm32@gmail.com>
-Cc: gregkh@suse.de, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>
-Subject: Re: [PATCH 8/8] Staging: comedi: fix printk() issue in pcl818.c
-Message-ID: <20110711080644.GF18655@shale.localdomain>
-References: <1310368754-25560-1-git-send-email-ravishankarkm32@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1310368754-25560-1-git-send-email-ravishankarkm32@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 11 Jul 2011 04:19:27 -0400
+Date: Mon, 11 Jul 2011 10:19:13 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/3] x86, intel: Use cpu_update for Atom errata check
+Message-ID: <20110711101913.652c07cc@endymion.delvare>
+In-Reply-To: <1309996623-23108-2-git-send-email-andi@firstfloor.org>
+References: <1309996623-23108-1-git-send-email-andi@firstfloor.org>
+	<1309996623-23108-2-git-send-email-andi@firstfloor.org>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 11, 2011 at 12:49:14PM +0530, Ravishankar wrote:
-> From: Ravishankar <ravi.shankar@greenturtles.in>
+On Wed,  6 Jul 2011 16:57:02 -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
 > 
-> This is a patch to the pcl818.c file that fixes up a printk warning found by the checkpatch.pl tool
+> Now that the cpu update level is available the Atom PSE errata
+> check can use it directly without reading the MSR again.
 > 
-> Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
 > ---
->  drivers/staging/comedi/drivers/pcl818.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
+>  arch/x86/kernel/cpu/intel.c |   15 ++++-----------
+>  1 files changed, 4 insertions(+), 11 deletions(-)
 > 
-> diff --git a/drivers/staging/comedi/drivers/pcl818.c b/drivers/staging/comedi/drivers/pcl818.c
-> index ae097b3..21f1cc9 100644
-> --- a/drivers/staging/comedi/drivers/pcl818.c
-> +++ b/drivers/staging/comedi/drivers/pcl818.c
-> @@ -1447,7 +1447,7 @@ static int ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
->  	struct comedi_cmd *cmd = &s->async->cmd;
->  	int retval;
+> diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+> index ebedd27..6f75c45 100644
+> --- a/arch/x86/kernel/cpu/intel.c
+> +++ b/arch/x86/kernel/cpu/intel.c
+> @@ -55,17 +55,10 @@ static void __cpuinit early_init_intel(struct cpuinfo_x86 *c)
+>  	 * need the microcode to have already been loaded... so if it is
+>  	 * not, recommend a BIOS update and disable large pages.
+>  	 */
+> -	if (c->x86 == 6 && c->x86_model == 0x1c && c->x86_mask <= 2) {
+> -		u32 ucode, junk;
+> -
+> -		wrmsr(MSR_IA32_UCODE_REV, 0, 0);
+> -		sync_core();
+> -		rdmsr(MSR_IA32_UCODE_REV, junk, ucode);
+> -
+> -		if (ucode < 0x20e) {
+> -			printk(KERN_WARNING "Atom PSE erratum detected, BIOS microcode update recommended\n");
+> -			clear_cpu_cap(c, X86_FEATURE_PSE);
+> -		}
+> +	if (c->x86 == 6 && c->x86_model == 0x1c && c->x86_mask <= 2 &&
+> +	    c->microcode < 0x20e) {
+> +		printk(KERN_WARNING "Atom PSE erratum detected, BIOS microcode update recommended\n");
+> +		clear_cpu_cap(c, X86_FEATURE_PSE);
+>  	}
 >  
-> -	printk("pcl818_ai_cmd()\n");
-> +	printk(KERN_INFO "pcl818_ai_cmd()\n");
+>  #ifdef CONFIG_X86_64
 
-KERN_INFO is too high a level here.  Ideally this would just be
-removed.  Possibly made into a dev_dbg().
+Looks good.
 
-The same is true for some other printks in this series.
+Acked-by: Jean Delvare <khali@linux-fr.org>
 
-regards,
-dan carpenter
-
+-- 
+Jean Delvare
