@@ -1,33 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756944Ab1GKC7C (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 22:59:02 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:38404 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755652Ab1GKC67 (ORCPT
+	id S1756977Ab1GKDXv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 23:23:51 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:64491 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756841Ab1GKDXt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 22:58:59 -0400
+	Sun, 10 Jul 2011 23:23:49 -0400
 MIME-Version: 1.0
-In-Reply-To: <1310340634.2405.1.camel@phoenix>
-References: <1310340634.2405.1.camel@phoenix>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Sun, 10 Jul 2011 22:58:39 -0400
-Message-ID: <CAMjpGUeudcbC-df5oteMh4r=8yq=YPw2d0pBX8jA9A+U2_wBCw@mail.gmail.com>
-Subject: Re: [PATCH] drivers/video/backlight/adp8860_bl.c: remove a redundant
- assignment for max_brightness
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        device-drivers-devel@blackfin.uclinux.org
+In-Reply-To: <4E15FBFE.4090203@linux.intel.com>
+References: <20110705062148.GA6056@program>
+	<20110707131455.GB4078@tiehlicka.suse.cz>
+	<4E15FBFE.4090203@linux.intel.com>
+Date: Mon, 11 Jul 2011 11:23:48 +0800
+Message-ID: <CAEQi4bfm7zp-Lq-Hn8JD7Dq7fOzyt2-X9Kk_jB07S_S55uC81w@mail.gmail.com>
+Subject: Re: [PATCH] x86: Fix memory leak of init_vdso_vars()
+From: wzt wzt <wzt.wzt@gmail.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Michal Hocko <mhocko@suse.cz>, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, x86@kernel.org, tglx@linutronix.de,
+        hpa@zytor.com
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 10, 2011 at 19:30, Axel Lin wrote:
-> We have set props.max_brightness before registering backlight device.
+maybe, we can just panic() when kmalloc failed instead of add a new GFP_PANIC.
 
-Acked-by: Mike Frysinger <vapier@gentoo.org>
--mike
+new patch will coming soon.
+
+On Fri, Jul 8, 2011 at 2:33 AM, Andi Kleen <ak@linux.intel.com> wrote:
+> When you run out of memory at early system boot (this is early
+> system boot only) the system is toast anyways. There's no way
+> to recover.
+>
+> I would just add a few GFP_PANICs and then drop the error paths.
+>
+> -Andi
+>
+>
