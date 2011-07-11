@@ -1,185 +1,501 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755192Ab1GKUdB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 16:33:01 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:27884 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751906Ab1GKUdA (ORCPT
+	id S1756454Ab1GKUeo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 16:34:44 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:57709 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753876Ab1GKUel (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 16:33:00 -0400
-Date: Mon, 11 Jul 2011 22:32:58 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Randy Dunlap <rdunlap@xenotime.net>
-cc: Arnaud Lacombe <lacombar@gmail.com>, Pekka Enberg <penberg@kernel.org>,
-        =?ISO-8859-15?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        Raghavendra D Prabhu <rprabhu@wnohang.net>,
-        linux-kbuild@vger.kernel.org, Nir Tzachar <nir.tzachar@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Avoid Wunused-but-set warning
-In-Reply-To: <20110710165333.8c7f9620.rdunlap@xenotime.net>
-Message-ID: <alpine.LNX.2.00.1107112224080.10944@swampdragon.chaosbits.net>
-References: <da20dc5c4160ed9a3da52f60799a1e4369fe3f27.1310228130.git.rprabhu@wnohang.net> <CAM_iQpXeqc01dyHpViyJCMSz6wz-1mWmGi=J0UynUG8tbd99kw@mail.gmail.com> <CACqU3MUgVTpc6kBvBiw7rtyn_JTA-JPrbnvai3Vnq+UWk-jSbQ@mail.gmail.com>
- <CAOJsxLF+4VOXJwRJL7npMngDTGztXk739_GcMLxsMzmsVcDCVw@mail.gmail.com> <CACqU3MUFO9DGqnK99ApaKn00vzj5rCB5=kjuSZGZpPU8c_4G-A@mail.gmail.com> <20110710110241.7650e03f.rdunlap@xenotime.net> <alpine.LNX.2.00.1107110051420.2818@swampdragon.chaosbits.net>
- <20110710160722.ae763029.rdunlap@xenotime.net> <alpine.LNX.2.00.1107110117080.2818@swampdragon.chaosbits.net> <20110710165333.8c7f9620.rdunlap@xenotime.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-660627870-1310416378=:10944"
+	Mon, 11 Jul 2011 16:34:41 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Paul Mackerras <paulus@samba.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: [PATCH 1/3] nohz: Split extended quiescent state handling from nohz switch
+Date: Mon, 11 Jul 2011 22:34:30 +0200
+Message-Id: <1310416472-2554-2-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1310416472-2554-1-git-send-email-fweisbec@gmail.com>
+References: <1310416472-2554-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+It is assumed that rcu won't be used once we switch to tickless
+mode and until we restart the tick. However this is not always
+true, as in x86-64 where we dereference the idle notifiers after
+the tick is stopped.
 
---8323328-660627870-1310416378=:10944
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To prepare for fixing this, split the tickless mode switching and
+RCU extended quiescent state logics.
+Make tick_nohz_stop/restart_sched_tick() RCU agnostic but provide
+a new pair of APIs tick_nohz_enter/exit_idle() that keep the
+old behaviour by handling both the nohz mode and RCU extended
+quiescent states, then convert every archs to use these.
 
-On Sun, 10 Jul 2011, Randy Dunlap wrote:
+Archs that want to switch to extended QS to some custom points
+can do it later by using tick_nohz_stop_sched_tick() and
+rcu_enter_nohz() seperately.
 
-> On Mon, 11 Jul 2011 01:21:36 +0200 (CEST) Jesper Juhl wrote:
-> 
-> > On Sun, 10 Jul 2011, Randy Dunlap wrote:
-> > 
-> > > On Mon, 11 Jul 2011 00:56:57 +0200 (CEST) Jesper Juhl wrote:
-> > > 
-> > > > On Sun, 10 Jul 2011, Randy Dunlap wrote:
-> > > > 
-> > > > > On Sun, 10 Jul 2011 12:49:20 -0400 Arnaud Lacombe wrote:
-> > > > > 
-> > > > > > Hi,
-> > > > > > 
-> > > > > > On Sun, Jul 10, 2011 at 12:28 PM, Pekka Enberg <penberg@kernel.org> wrote:
-> > > > > > > On Sun, Jul 10, 2011 at 7:24 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
-> > > > > > >> Hi,
-> > > > > > >>
-> > > > > > >> On Sun, Jul 10, 2011 at 12:16 PM, Américo Wang <xiyou.wangcong@gmail.com> wrote:
-> > > > > > >>> On Sun, Jul 10, 2011 at 12:24 AM, Raghavendra D Prabhu
-> > > > > > >>> <rprabhu@wnohang.net> wrote:
-> > > > > > >>>> Hi,
-> > > > > > >>>>    I am seeing Wunused-but-set warning while make nconfig.  Looks like
-> > > > > > >>>>    active_menu is not used. Removing it fixes the warning.
-> > > > > > >>>>
-> > > > > > >>>> Signed-off-by: Raghavendra D Prabhu <rprabhu@wnohang.net>
-> > > > > > >>>
-> > > > > > >>> Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
-> > > > > > >>>
-> > > > > > >> Out of curiosity, what is your status to ACK such patch ?
-> > > > > > >
-> > > > > > > What kind of status do you need to ACK such a simple patch?
-> > > > > > >
-> > > > > > As per Documentation/SubmittingPatches:
-> > > > > > 
-> > > > > > <<
-> > > > > > 13) When to use Acked-by: and Cc:
-> > > > > > The Signed-off-by: tag indicates that the signer was involved in the
-> > > > > > development of the patch, or that he/she was in the patch's delivery path.
-> > > > > > 
-> > > > > > If a person was not directly involved in the preparation or handling of a
-> > > > > > patch but wishes to signify and record their approval of it then they can
-> > > > > > arrange to have an Acked-by: line added to the patch's changelog.
-> > > > > > 
-> > > > > > Acked-by: is often used by the maintainer of the affected code when that
-> > > > > > maintainer neither contributed to nor forwarded the patch.
-> > > > > > >>
-> > > > > > 
-> > > > > > That said, it is not a strong requirement... unfortunately. So, let's
-> > > > > > have some fun and go ACK thousand of trivial patch just to generate
-> > > > > > traffic on the LKML and give myself self-importance :-)
-> > > > > 
-> > > > > Acked-by: is mostly used as a weak version of Reviewed-by:
-> > > > > and the "definition" in SubmittingPatches is not accurate IMO.
-> > > > > I.e., it can be used by anyone.
-> > > > > 
-> > > > 
-> > > > Interesting. I was under the impression that Reviewed-by: was a weaker 
-> > > > thing than Acked-by: - I certainly have been using it as such.
-> > > > 
-> > > > I've always interpreted Acked-by: as being something you could apply if 
-> > > > you were the author, maintainer or other person with similar strong 
-> > > > background knowledge of the code. Where Reviewed-by: could be used by 
-> > > > anyone, as long as they had taken the time to read the patch and try and 
-> > > > understand what was going on and the result/conclusion looked good.
-> > > 
-> > > I don't see it in SubmittingPatches, but there was some discussion at the
-> > > time (IIRC!!) that Reviewed-by: indicates that you are willing to support/fix
-> > > the patch if the patch author(s) disappear.  I.e., you are willing to take
-> > > some ownership responsibility of the patch.
-> > > 
-> > > or I could be dreaming...
-> > > 
-> > I'm not going to claim that I recall all the discussion that went on at 
-> > the time, there was quite a bit IIRC (and I'm too lazy to read up on all 
-> > of it). But to me it seems to make sense that if you have strong knowledge 
-> > of/involvement with the code being patched then you can offer your 
-> > Acked-by: after reviewing the patch. If you don't have such 
-> > knowledge/involvement but have nevertheless reviewed the code and found it 
-> > to be OK, then you can signal that with a Reviewed-by:.
-> > 
-> > In any case, you can't expect people to base their Acked-by/Reviewed-by 
-> > replies on some conclusion in some email thread that happened years ago 
-> 
-> ack that.
-> 
-> > but was never written down in some document in the repository. 
-> > It is only reasonable to expect people to behave according to the rules 
-> > laid out in SubmittingPatches and similar documents, and those rules 
-> > currently seem to support my interpretation, not yours.
-> 
-> In Documentation/SubmittingPatches, Reviewed-by: contains a "Reviewer's
-> statment of oversight."  That alone is more formal than Acked-by: is.
-> 
-> Plus this paragraph acknowledges that "Review" can be a serious and
-> time-consuming task, not a simple "looks OK to me":
-> 
-> "A Reviewed-by tag is a statement of opinion that the patch is an
-> appropriate modification of the kernel without any remaining serious
-> technical issues.  Any interested reviewer (who has done the work) can
-> offer a Reviewed-by tag for a patch.  This tag serves to give credit to
-> reviewers and to inform maintainers of the degree of review which has been
-> done on the patch.  Reviewed-by: tags, when supplied by reviewers known to
-> understand the subject area and to perform thorough reviews, will normally
-> increase the likelihood of your patch getting into the kernel."
-> 
-> I can see little about Acked-by: that is formal when it comes to patch review.
-> E.g.:
-> 'Acked-by: is not as formal as Signed-off-by:.  It is a record that the acker
-> has at least reviewed the patch and has indicated acceptance.  Hence patch
-> mergers will sometimes manually convert an acker's "yep, looks good to me"
-> into an Acked-by:.'
-> 
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Acked-by: David Miller <davem@davemloft.net>
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+Acked-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Acked-by: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+Acked-by: Mike Frysinger <vapier@gentoo.org>
+Acked-by: Ralf Baechle <ralf@linux-mips.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Paul Mundt <lethal@linux-sh.org>
+---
+ arch/arm/kernel/process.c              |    4 +-
+ arch/avr32/kernel/process.c            |    4 +-
+ arch/blackfin/kernel/process.c         |    4 +-
+ arch/microblaze/kernel/process.c       |    4 +-
+ arch/mips/kernel/process.c             |    4 +-
+ arch/powerpc/kernel/idle.c             |    4 +-
+ arch/powerpc/platforms/iseries/setup.c |    8 +++---
+ arch/s390/kernel/process.c             |    4 +-
+ arch/sh/kernel/idle.c                  |    2 +-
+ arch/sparc/kernel/process_64.c         |    4 +-
+ arch/tile/kernel/process.c             |    4 +-
+ arch/um/kernel/process.c               |    4 +-
+ arch/unicore32/kernel/process.c        |    4 +-
+ arch/x86/kernel/process_32.c           |    4 +-
+ arch/x86/kernel/process_64.c           |    4 +-
+ include/linux/tick.h                   |   10 ++++++--
+ kernel/time/tick-sched.c               |   36 ++++++++++++++++++++++++++++---
+ 17 files changed, 70 insertions(+), 38 deletions(-)
 
-I'll concede to those points. My original understanding/reading was 
-different but you make some good points.
+diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+index 5e1e541..27b68b0 100644
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -182,7 +182,7 @@ void cpu_idle(void)
  
-
-> But do as you like.  Which parts of SubmittingPatches do you think
-> support your interpretation?
-> 
-
-Originally, text such as this:
-
-"Acked-by: is often used by the maintainer of the affected code..."
-
-"Reviewed-by:, instead, indicates that the patch has been reviewed and 
-found acceptable ... I do not (unless explicitly stated elsewhere) make 
-any warranties or guarantees that it will achieve its stated purpose ..."
-
-But I take that back. Your interpretation now seems like the more correct 
-one to me.
-
-> and should we have this line:
-> 	Acked-by: is not as formal as Signed-off-by:.
-> changed to:
-> 	Acked-by: is not as formal as Signed-off-by: or Reviewed-by:.
-> e.g.?
-> 
-
-Might make sense.
-
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		leds_event(led_idle_start);
+ 		while (!need_resched()) {
+ #ifdef CONFIG_HOTPLUG_CPU
+@@ -208,7 +208,7 @@ void cpu_idle(void)
+ 			}
+ 		}
+ 		leds_event(led_idle_end);
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/avr32/kernel/process.c b/arch/avr32/kernel/process.c
+index ef5a2a0..e683a34 100644
+--- a/arch/avr32/kernel/process.c
++++ b/arch/avr32/kernel/process.c
+@@ -34,10 +34,10 @@ void cpu_idle(void)
+ {
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched())
+ 			cpu_idle_sleep();
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/blackfin/kernel/process.c b/arch/blackfin/kernel/process.c
+index 6a660fa..8082a8f 100644
+--- a/arch/blackfin/kernel/process.c
++++ b/arch/blackfin/kernel/process.c
+@@ -88,10 +88,10 @@ void cpu_idle(void)
+ #endif
+ 		if (!idle)
+ 			idle = default_idle;
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched())
+ 			idle();
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/microblaze/kernel/process.c b/arch/microblaze/kernel/process.c
+index 968648a..1b295b2 100644
+--- a/arch/microblaze/kernel/process.c
++++ b/arch/microblaze/kernel/process.c
+@@ -103,10 +103,10 @@ void cpu_idle(void)
+ 		if (!idle)
+ 			idle = default_idle;
+ 
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched())
+ 			idle();
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 
+ 		preempt_enable_no_resched();
+ 		schedule();
+diff --git a/arch/mips/kernel/process.c b/arch/mips/kernel/process.c
+index d2112d3..cdbfa52 100644
+--- a/arch/mips/kernel/process.c
++++ b/arch/mips/kernel/process.c
+@@ -56,7 +56,7 @@ void __noreturn cpu_idle(void)
+ 
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched() && cpu_online(cpu)) {
+ #ifdef CONFIG_MIPS_MT_SMTC
+ 			extern void smtc_idle_loop_hook(void);
+@@ -77,7 +77,7 @@ void __noreturn cpu_idle(void)
+ 		     system_state == SYSTEM_BOOTING))
+ 			play_dead();
+ #endif
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/powerpc/kernel/idle.c b/arch/powerpc/kernel/idle.c
+index 39a2baa..1108260 100644
+--- a/arch/powerpc/kernel/idle.c
++++ b/arch/powerpc/kernel/idle.c
+@@ -56,7 +56,7 @@ void cpu_idle(void)
+ 
+ 	set_thread_flag(TIF_POLLING_NRFLAG);
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched() && !cpu_should_die()) {
+ 			ppc64_runlatch_off();
+ 
+@@ -93,7 +93,7 @@ void cpu_idle(void)
+ 
+ 		HMT_medium();
+ 		ppc64_runlatch_on();
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		if (cpu_should_die())
+ 			cpu_die();
+diff --git a/arch/powerpc/platforms/iseries/setup.c b/arch/powerpc/platforms/iseries/setup.c
+index c25a081..d40dcd9 100644
+--- a/arch/powerpc/platforms/iseries/setup.c
++++ b/arch/powerpc/platforms/iseries/setup.c
+@@ -562,7 +562,7 @@ static void yield_shared_processor(void)
+ static void iseries_shared_idle(void)
+ {
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched() && !hvlpevent_is_pending()) {
+ 			local_irq_disable();
+ 			ppc64_runlatch_off();
+@@ -576,7 +576,7 @@ static void iseries_shared_idle(void)
+ 		}
+ 
+ 		ppc64_runlatch_on();
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 
+ 		if (hvlpevent_is_pending())
+ 			process_iSeries_events();
+@@ -592,7 +592,7 @@ static void iseries_dedicated_idle(void)
+ 	set_thread_flag(TIF_POLLING_NRFLAG);
+ 
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		if (!need_resched()) {
+ 			while (!need_resched()) {
+ 				ppc64_runlatch_off();
+@@ -609,7 +609,7 @@ static void iseries_dedicated_idle(void)
+ 		}
+ 
+ 		ppc64_runlatch_on();
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/s390/kernel/process.c b/arch/s390/kernel/process.c
+index 541a750..560cd94 100644
+--- a/arch/s390/kernel/process.c
++++ b/arch/s390/kernel/process.c
+@@ -90,10 +90,10 @@ static void default_idle(void)
+ void cpu_idle(void)
+ {
+ 	for (;;) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched())
+ 			default_idle();
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/sh/kernel/idle.c b/arch/sh/kernel/idle.c
+index 425d604..3957972 100644
+--- a/arch/sh/kernel/idle.c
++++ b/arch/sh/kernel/idle.c
+@@ -88,7 +88,7 @@ void cpu_idle(void)
+ 
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 
+ 		while (!need_resched()) {
+ 			check_pgt_cache();
+diff --git a/arch/sparc/kernel/process_64.c b/arch/sparc/kernel/process_64.c
+index c158a95..5c36632 100644
+--- a/arch/sparc/kernel/process_64.c
++++ b/arch/sparc/kernel/process_64.c
+@@ -95,12 +95,12 @@ void cpu_idle(void)
+ 	set_thread_flag(TIF_POLLING_NRFLAG);
+ 
+ 	while(1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 
+ 		while (!need_resched() && !cpu_is_offline(cpu))
+ 			sparc64_yield(cpu);
+ 
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 
+ 		preempt_enable_no_resched();
+ 
+diff --git a/arch/tile/kernel/process.c b/arch/tile/kernel/process.c
+index 9c45d8b..cc1bd4f 100644
+--- a/arch/tile/kernel/process.c
++++ b/arch/tile/kernel/process.c
+@@ -85,7 +85,7 @@ void cpu_idle(void)
+ 
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched()) {
+ 			if (cpu_is_offline(cpu))
+ 				BUG();  /* no HOTPLUG_CPU */
+@@ -105,7 +105,7 @@ void cpu_idle(void)
+ 				local_irq_enable();
+ 			current_thread_info()->status |= TS_POLLING;
+ 		}
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/um/kernel/process.c b/arch/um/kernel/process.c
+index fab4371..f1b3864 100644
+--- a/arch/um/kernel/process.c
++++ b/arch/um/kernel/process.c
+@@ -245,10 +245,10 @@ void default_idle(void)
+ 		if (need_resched())
+ 			schedule();
+ 
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		nsecs = disable_timer();
+ 		idle_sleep(nsecs);
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 	}
+ }
+ 
+diff --git a/arch/unicore32/kernel/process.c b/arch/unicore32/kernel/process.c
+index ba401df..e2df91a 100644
+--- a/arch/unicore32/kernel/process.c
++++ b/arch/unicore32/kernel/process.c
+@@ -55,7 +55,7 @@ void cpu_idle(void)
+ {
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched()) {
+ 			local_irq_disable();
+ 			stop_critical_timings();
+@@ -63,7 +63,7 @@ void cpu_idle(void)
+ 			local_irq_enable();
+ 			start_critical_timings();
+ 		}
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
+index a3d0dc5..1d7e26c 100644
+--- a/arch/x86/kernel/process_32.c
++++ b/arch/x86/kernel/process_32.c
+@@ -97,7 +97,7 @@ void cpu_idle(void)
+ 
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched()) {
+ 
+ 			check_pgt_cache();
+@@ -112,7 +112,7 @@ void cpu_idle(void)
+ 			pm_idle();
+ 			start_critical_timings();
+ 		}
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index ca6f7ab..4f3cb3e 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -120,7 +120,7 @@ void cpu_idle(void)
+ 
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched()) {
+ 
+ 			rmb();
+@@ -145,7 +145,7 @@ void cpu_idle(void)
+ 			__exit_idle();
+ 		}
+ 
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/include/linux/tick.h b/include/linux/tick.h
+index b232ccc..ff31a71 100644
+--- a/include/linux/tick.h
++++ b/include/linux/tick.h
+@@ -121,14 +121,18 @@ static inline int tick_oneshot_mode_active(void) { return 0; }
+ #endif /* !CONFIG_GENERIC_CLOCKEVENTS */
+ 
+ # ifdef CONFIG_NO_HZ
+-extern void tick_nohz_stop_sched_tick(int inidle);
++extern bool tick_nohz_stop_sched_tick(int inidle);
+ extern void tick_nohz_restart_sched_tick(void);
++extern void tick_nohz_enter_idle(void);
++extern void tick_nohz_exit_idle(void);
+ extern ktime_t tick_nohz_get_sleep_length(void);
+ extern u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time);
+ extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
+ # else
+-static inline void tick_nohz_stop_sched_tick(int inidle) { }
+-static inline void tick_nohz_restart_sched_tick(void) { }
++static inline bool tick_nohz_stop_sched_tick(int inidle) { return false; }
++static inline void tick_nohz_restart_sched_tick(void) { return false; }
++static inline void tick_nohz_enter_idle(void) { }
++static inline void tick_nohz_exit_idle(void) { }
+ static inline ktime_t tick_nohz_get_sleep_length(void)
+ {
+ 	ktime_t len = { .tv64 = NSEC_PER_SEC/HZ };
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index d5097c4..8e81e9f 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -254,12 +254,13 @@ EXPORT_SYMBOL_GPL(get_cpu_iowait_time_us);
+  * Called either from the idle loop or from irq_exit() when an idle period was
+  * just interrupted by an interrupt which did not cause a reschedule.
+  */
+-void tick_nohz_stop_sched_tick(int inidle)
++bool tick_nohz_stop_sched_tick(int inidle)
+ {
+ 	unsigned long seq, last_jiffies, next_jiffies, delta_jiffies, flags;
+ 	struct tick_sched *ts;
+ 	ktime_t last_update, expires, now;
+ 	struct clock_event_device *dev = __get_cpu_var(tick_cpu_device).evtdev;
++	int stopped = false;
+ 	u64 time_delta;
+ 	int cpu;
+ 
+@@ -409,7 +410,7 @@ void tick_nohz_stop_sched_tick(int inidle)
+ 			ts->idle_tick = hrtimer_get_expires(&ts->sched_timer);
+ 			ts->tick_stopped = 1;
+ 			ts->idle_jiffies = last_jiffies;
+-			rcu_enter_nohz();
++			stopped = true;
+ 		}
+ 
+ 		ts->idle_sleeps++;
+@@ -450,6 +451,22 @@ out:
+ 	ts->sleep_length = ktime_sub(dev->next_event, now);
+ end:
+ 	local_irq_restore(flags);
++
++	return stopped;
++}
++
++
++/**
++ * tick_nohz_enter_idle - stop the tick and enter extended quiescent state
++ *
++ * Most arch may want to enter RCU extended state right after they switched
++ * to nohz mode. Beware though, no read side use of RCU can be done until we
++ * call tick_nohz_exit_idle().
++ */
++void tick_nohz_enter_idle(void)
++{
++	if (tick_nohz_stop_sched_tick(1))
++		rcu_enter_nohz();
+ }
+ 
+ /**
+@@ -519,8 +536,6 @@ void tick_nohz_restart_sched_tick(void)
+ 
+ 	ts->inidle = 0;
+ 
+-	rcu_exit_nohz();
+-
+ 	/* Update jiffies first */
+ 	select_nohz_load_balancer(0);
+ 	tick_do_update_jiffies64(now);
+@@ -552,6 +567,19 @@ void tick_nohz_restart_sched_tick(void)
+ 	local_irq_enable();
+ }
+ 
++/**
++ * tick_nohz_exit_idle - restart the tick and exit extended quiescent state
++ */
++void tick_nohz_exit_idle(void)
++{
++	struct tick_sched *ts = &__raw_get_cpu_var(tick_cpu_sched);
++
++	if (ts->tick_stopped)
++		rcu_exit_nohz();
++
++	tick_nohz_restart_sched_tick();
++}
++
+ static int tick_nohz_reprogram(struct tick_sched *ts, ktime_t now)
+ {
+ 	hrtimer_forward(&ts->sched_timer, now, tick_period);
 -- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+1.7.5.4
 
---8323328-660627870-1310416378=:10944--
