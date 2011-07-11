@@ -1,77 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956Ab1GKKly (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 06:41:54 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:59740 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753194Ab1GKKlx convert rfc822-to-8bit (ORCPT
+	id S1754084Ab1GKKmz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 06:42:55 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:8749 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752138Ab1GKKmy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 06:41:53 -0400
+	Mon, 11 Jul 2011 06:42:54 -0400
+X-IronPort-AV: E=Sophos;i="4.65,515,1304294400"; 
+   d="scan'208";a="6714123"
+Date: Mon, 11 Jul 2011 11:47:52 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Raghavendra D Prabhu <rprabhu@wnohang.net>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ian Campbell <ijc@hellion.org.uk>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>
+Subject: Re: [Xen-devel] Re: [PATCH] Modpost section mismatch fix (for
+ platform-pci-unplug.c)
+In-Reply-To: <20110708202628.GA25998@dumpdata.com>
+Message-ID: <alpine.DEB.2.00.1107111147420.12963@kaball-desktop>
+References: <20110704221646.GB4490@Xye> <20110705141323.GG2972@dumpdata.com> <20110705142731.GA4463@Xye> <20110705144846.GA13548@dumpdata.com> <20110705213243.GA3647@dumpdata.com> <20110707154648.GA4394@Xye> <20110707162454.GA8164@dumpdata.com>
+ <20110707194851.GB4394@Xye> <20110707200949.GA25216@dumpdata.com> <20110707210429.GD4394@Xye> <20110708202628.GA25998@dumpdata.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <e9c49596e493c1ebb80b52d2dff7bd50191ebc0e.1310267866.git.luto@mit.edu>
-References: <cover.1310267866.git.luto@mit.edu>
-	<e9c49596e493c1ebb80b52d2dff7bd50191ebc0e.1310267866.git.luto@mit.edu>
-Date: Mon, 11 Jul 2011 16:41:51 +0600
-Message-ID: <CADZ9YHiSmjtXx1Ue4tfUzN9zpj2qjABY_fhMP+SOm2_vYrrFfw@mail.gmail.com>
-Subject: Re: [PATCH v2 3/8] x86-64: Allow alternative patching in the vDSO
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: Andy Lutomirski <luto@mit.edu>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        John Stultz <johnstul@us.ibm.com>, Borislav Petkov <bp@amd64.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 10, 2011 at 9:22 AM, Andy Lutomirski <luto@mit.edu> wrote:
-> This code is short enough and different enough from the module
-> loader that it's not worth trying to share anything.
->
-> Signed-off-by: Andy Lutomirski <luto@mit.edu>
-> ---
->  arch/x86/vdso/vma.c |   30 ++++++++++++++++++++++++++++++
->  1 files changed, 30 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
-> index 7abd2be..ba92244 100644
-> --- a/arch/x86/vdso/vma.c
-> +++ b/arch/x86/vdso/vma.c
-> @@ -23,11 +23,41 @@ extern unsigned short vdso_sync_cpuid;
->  static struct page **vdso_pages;
->  static unsigned vdso_size;
->
-> +static void patch_vdso(void *vdso, size_t len)
+On Fri, 8 Jul 2011, Konrad Rzeszutek Wilk wrote:
+> > >>Also,
+> > >>I had sent another change (oneline) for the file
+> > >>arch/x86/xen/platform-pci-unplug.c for check_platform_magic, looks like that has not gone into
+> > >>the pull request for Linus.
+> > >
+> > >Oh, I didn't see it. Did you CC me on it? Can you bounce it to me please?
+> > >
+> > =========================
+> >  diff --git a/arch/x86/xen/platform-pci-unplug.c b/arch/x86/xen/platform-pci-unplug.c
+> >  index 25c52f9..ffcf261 100644
+> >  --- a/arch/x86/xen/platform-pci-unplug.c
+> >  +++ b/arch/x86/xen/platform-pci-unplug.c
+> >  @@ -35,7 +35,7 @@ EXPORT_SYMBOL_GPL(xen_platform_pci_unplug);
+> >   #ifdef CONFIG_XEN_PVHVM
+> >   static int xen_emul_unplug;
+> > 
+> >  -static int __init check_platform_magic(void)
+> >  +static int check_platform_magic(void)
+> >   {
+> >          short magic;
+> >          char protocol;
+> >  --
+> > 
+> 
+> Yeah, that would cause an issue during suspend/resume by PVonHVM. How
+> we didn't trip over this I've no idea..
+> 
+> Anyhow, can you provide me with your Signed-off-by please and I will queue
+> it right up.
+> 
+> Stefano, you OK with this patch?
+> 
 
-I think, patch_vdso should mark with __init. Since it's been only
-called from an __init function. We might hit a section mismatch, even
-if we don't hit section mismatch, the will function get removed after
-system boot - saves some .text size.
-
-> +{
-> +       Elf64_Ehdr *hdr = vdso;
-> +       Elf64_Shdr *sechdrs, *alt_sec = 0;
-> +       char *secstrings;
-> +       void *alt_data;
-> +       int i;
-> +
-> +       BUG_ON(len < sizeof(Elf64_Ehdr));
-> +       BUG_ON(memcmp(hdr->e_ident, ELFMAG, SELFMAG) != 0);
-> +
-> +       sechdrs = (void *)hdr + hdr->e_shoff;
-> +       secstrings = (void *)hdr + sechdrs[hdr->e_shstrndx].sh_offset;
-> +
-> +       for (i = 1; i < hdr->e_shnum; i++) {
-> +               Elf64_Shdr *shdr = &sechdrs[i];
-> +               if (!strcmp(secstrings + shdr->sh_name, ".altinstructions")) {
-> +                       alt_sec = shdr;
-> +                       goto found;
-> +               }
-> +       }
-> +       return;  /* nothing to patch */
-
-If there's nothing to patch, I think (perhaps) - it would be nice to
-let user know through printk.
-
-Thanks,
-Rakib.
+It is fine by me
