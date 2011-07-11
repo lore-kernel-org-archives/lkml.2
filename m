@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758270Ab1GKRbs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 13:31:48 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:52134 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758241Ab1GKRbr (ORCPT
+	id S1758289Ab1GKRcg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 13:32:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14876 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758267Ab1GKRce convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 13:31:47 -0400
-MIME-Version: 1.0
-Date: Mon, 11 Jul 2011 10:31:46 -0700
-Message-ID: <CAFR8uec5MxvHEWS=hgRXo1eunjQqWrpPCVXthdGMfWR+Yitw_A@mail.gmail.com>
-Subject: [PATCH]: block: try-2 (modified): Initialize bi_rw in mpage so
- bio_add can make use of it.
-From: Muthu Kumar <muthu.lkml@gmail.com>
-To: jaxboe <jaxboe@fusionio.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 11 Jul 2011 13:32:34 -0400
+Date: Mon, 11 Jul 2011 12:49:10 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Steve French <smfrench@gmail.com>
+Cc: linux-cifs@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cifs: drop spinlock before calling cifs_put_tlink
+Message-ID: <20110711124910.66470fad@tlielax.poochiereds.net>
+In-Reply-To: <CAH2r5mug1iYZSGybKjg3H+kUVK6PA3XXt05-6kf+dLYH0yETBQ@mail.gmail.com>
+References: <1310393794-12407-1-git-send-email-jlayton@redhat.com>
+	<CAH2r5mug1iYZSGybKjg3H+kUVK6PA3XXt05-6kf+dLYH0yETBQ@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jens et al,
+On Mon, 11 Jul 2011 11:40:12 -0500
+Steve French <smfrench@gmail.com> wrote:
 
-do_mpage_readpage()/__mpage_writepage(): When they allocate a new bio,
-bi_rw is not initialized. So later when they call __bio_add_page(),
-struct bvec_merge_data bvm's .bi_rw will not be initialized with right
-direction.
-It will be useful for some merge functions if they know the direction
-of transfer.
+> ok - merged.
+> 
+> Am testing now.  If anyone else has test data on current cifs-2.6.git
+> I could send pull request faster.
+> 
+> On Mon, Jul 11, 2011 at 9:16 AM, Jeff Layton <jlayton@redhat.com> wrote:
+> > ...as that function can sleep.
+> >
+> > Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> > ---
+> >  fs/cifs/connect.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> >
+> > diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
+> > index ceab134..dd695c5 100644
+> > --- a/fs/cifs/connect.c
+> > +++ b/fs/cifs/connect.c
+> > @@ -2241,8 +2241,8 @@ cifs_match_super(struct super_block *sb, void *data)
+> >
+> >        rc = compare_mount_options(sb, mnt_data);
+> >  out:
+> > -       cifs_put_tlink(tlink);
+> >        spin_unlock(&cifs_tcp_ses_lock);
+> > +       cifs_put_tlink(tlink);
+> >        return rc;
+> >  }
+> >
+> > --
+> > 1.7.6
+> >
+> >
+> 
+> 
+> 
 
-Let me know if this looks good. There are few more places like this
-(e.g blkdev_issue_zeroout()). Would it make sense to send patch for
-these cases also?
+Testing with all of the patches in my cifs-3.0 and cifs-3.1 branches worked fine.
 
-Signed-off-by: Muthukumar R <muthur@gmail.com>
-
-------------------------
- fs/mpage.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-------------------------
-diff --git a/fs/mpage.c b/fs/mpage.c
-index fdfae9f..efabfc0 100644
---- a/fs/mpage.c
-+++ b/fs/mpage.c
-@@ -291,6 +291,7 @@ alloc_new:
-                                GFP_KERNEL);
-                if (bio == NULL)
-                        goto confused;
-+                bio->bi_rw = READ;
-        }
-
-        length = first_hole << blkbits;
-@@ -583,6 +584,7 @@ alloc_new:
-                                bio_get_nr_vecs(bdev), GFP_NOFS|__GFP_HIGH);
-                if (bio == NULL)
-                        goto confused;
-+                bio->bi_rw = WRITE;
-        }
-
-        /*
+-- 
+Jeff Layton <jlayton@redhat.com>
