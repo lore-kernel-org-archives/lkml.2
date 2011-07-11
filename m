@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758337Ab1GKWmy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 18:42:54 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48839 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758177Ab1GKWmw (ORCPT
+	id S1758418Ab1GKWz5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 18:55:57 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:39943 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758327Ab1GKWz4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 18:42:52 -0400
-Date: Tue, 12 Jul 2011 07:42:45 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Jesper Juhl <jj@chaosbits.net>, Arnaud Lacombe <lacombar@gmail.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Am?rico Wang <xiyou.wangcong@gmail.com>,
-        Raghavendra D Prabhu <rprabhu@wnohang.net>,
-        linux-kbuild@vger.kernel.org, Nir Tzachar <nir.tzachar@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Avoid Wunused-but-set warning
-Message-ID: <20110711224243.GB32033@opensource.wolfsonmicro.com>
-References: <CACqU3MUgVTpc6kBvBiw7rtyn_JTA-JPrbnvai3Vnq+UWk-jSbQ@mail.gmail.com>
- <CAOJsxLF+4VOXJwRJL7npMngDTGztXk739_GcMLxsMzmsVcDCVw@mail.gmail.com>
- <CACqU3MUFO9DGqnK99ApaKn00vzj5rCB5=kjuSZGZpPU8c_4G-A@mail.gmail.com>
- <20110710110241.7650e03f.rdunlap@xenotime.net>
- <alpine.LNX.2.00.1107110051420.2818@swampdragon.chaosbits.net>
- <20110710160722.ae763029.rdunlap@xenotime.net>
- <alpine.LNX.2.00.1107110117080.2818@swampdragon.chaosbits.net>
- <20110710165333.8c7f9620.rdunlap@xenotime.net>
- <20110711050951.GA22699@sirena.org.uk>
- <20110711101134.613d88ee.rdunlap@xenotime.net>
+	Mon, 11 Jul 2011 18:55:56 -0400
+Date: Mon, 11 Jul 2011 17:55:48 -0500 (CDT)
+From: Manoj Iyer <manoj.iyer@canonical.com>
+X-X-Sender: manjo@lazy
+To: Chris Ball <cjb@laptop.org>
+cc: Manoj Iyer <manoj.iyer@canonical.com>,
+        Daniel Manrique <daniel.manrique@canonical.com>,
+        linux-kernel@vger.kernel.org, jbarnes@virtuousgeek.org,
+        matsumur@nts.ricoh.co.jp, linux-pci@vger.kernel.org,
+        linux-mmc@vger.kernel.org
+Subject: Re: [PATCH] mmc: Added quirks for Ricoh 1180:e823 lower base clock
+ frequency
+In-Reply-To: <m2wrfofpro.fsf@bob.laptop.org>
+Message-ID: <alpine.DEB.2.02.1107111749370.14531@lazy>
+References: <1310419715-13254-1-git-send-email-manoj.iyer@canonical.com> <1310419715-13254-2-git-send-email-manoj.iyer@canonical.com> <m2wrfofpro.fsf@bob.laptop.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110711101134.613d88ee.rdunlap@xenotime.net>
-X-Cookie: Don't feed the bats tonight.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 11, 2011 at 10:11:34AM -0700, Randy Dunlap wrote:
-> On Mon, 11 Jul 2011 06:09:52 +0100 Mark Brown wrote:
+>> +
+>> +		dev_notice(&dev->dev, "Controller base frequency changed to 50Mhz)\n");
+>
+> There's an erroneous ")" in this string; I'll replace it with a "." if
+> this patch goes in via my tree.  Also, let's make it "MMC controller"
+> instead of just "Controller".
 
-> > Current practice seems to be that Acked-by is used instead of
-> > Reviewed-by - the latter is comparatively rare.
+Oops, I can fix that and resend, or would you rather make the change 
+while (if) applying to your tree?
 
-> ISTM that more education and encouragement are needed about Reviewed-by:.
-> (Patch Review is a possible kernel summit topic.)
+>
+>> +	}
+>> +
+>>  }
+>>  DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832, ricoh_mmc_fixup_r5c832);
+>>  DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832, ricoh_mmc_fixup_r5c832);
+>
+> Have you checked to see how SD I/O performance differs after this change?
+>
+> (If this is significant, perhaps we want to try lowering the frequency
+> only after a card starts returning errors, since some cards work fine
+> at the higher frequency.)
+>
 
-> and that SubmittingPatches should be updated since we generally refer people
-> to that file and not to Documentation/development-process/
+This is something I thought about too, I can try and get some data on the 
+cards (that already works) with the patch applied. Do you have any 
+specific benchmarks in mind that you would like me to run? Or will timing 
+read and write will work?
 
-I'm not sure I see any value in that - they're both pretty much
-interchangible as far as I can tell.  The important thing is that people
-are doing review, not the form filling part.
+Thanks a ton!
+--
+====================
+Manoj Iyer
+Ubuntu/Canonical
+Hardware Enablement
+====================
