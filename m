@@ -1,40 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758274Ab1GKR1v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 13:27:51 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:50161 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758256Ab1GKR1t (ORCPT
+	id S1758270Ab1GKRbs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 13:31:48 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:52134 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758241Ab1GKRbr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 13:27:49 -0400
-Date: Mon, 11 Jul 2011 18:27:35 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Takao Indoh <indou.takao@jp.fujitsu.com>, linux-kernel@vger.kernel.org,
-        amwang@redhat.com, ebiederm@xmission.com, vgoyal@redhat.com,
-        rdunlap@xenotime.net, lenb@kernel.org, linux-doc@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v2] acpi: introduce "acpi_rsdp=" parameter for kdump
-Message-ID: <20110711172735.GB15887@srcf.ucam.org>
-References: <E8CC3FDD41FF9Findou.takao@jp.fujitsu.com>
- <20110711172318.GA18279@dumpdata.com>
+	Mon, 11 Jul 2011 13:31:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110711172318.GA18279@dumpdata.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Date: Mon, 11 Jul 2011 10:31:46 -0700
+Message-ID: <CAFR8uec5MxvHEWS=hgRXo1eunjQqWrpPCVXthdGMfWR+Yitw_A@mail.gmail.com>
+Subject: [PATCH]: block: try-2 (modified): Initialize bi_rw in mpage so
+ bio_add can make use of it.
+From: Muthu Kumar <muthu.lkml@gmail.com>
+To: jaxboe <jaxboe@fusionio.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 11, 2011 at 01:23:18PM -0400, Konrad Rzeszutek Wilk wrote:
+Jens et al,
 
-> How will the tools get the physical address of the RSDP?
+do_mpage_readpage()/__mpage_writepage(): When they allocate a new bio,
+bi_rw is not initialized. So later when they call __bio_add_page(),
+struct bvec_merge_data bvm's .bi_rw will not be initialized with right
+direction.
+It will be useful for some merge functions if they know the direction
+of transfer.
 
-It's exposed in sysfs.
+Let me know if this looks good. There are few more places like this
+(e.g blkdev_issue_zeroout()). Would it make sense to send patch for
+these cases also?
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Signed-off-by: Muthukumar R <muthur@gmail.com>
+
+------------------------
+ fs/mpage.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+------------------------
+diff --git a/fs/mpage.c b/fs/mpage.c
+index fdfae9f..efabfc0 100644
+--- a/fs/mpage.c
++++ b/fs/mpage.c
+@@ -291,6 +291,7 @@ alloc_new:
+                                GFP_KERNEL);
+                if (bio == NULL)
+                        goto confused;
++                bio->bi_rw = READ;
+        }
+
+        length = first_hole << blkbits;
+@@ -583,6 +584,7 @@ alloc_new:
+                                bio_get_nr_vecs(bdev), GFP_NOFS|__GFP_HIGH);
+                if (bio == NULL)
+                        goto confused;
++                bio->bi_rw = WRITE;
+        }
+
+        /*
