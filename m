@@ -1,347 +1,342 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757983Ab1GKPyQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 11:54:16 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:62167 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757926Ab1GKPyO (ORCPT
+	id S1757999Ab1GKP5G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 11:57:06 -0400
+Received: from mtagate6.uk.ibm.com ([194.196.100.166]:50487 "EHLO
+	mtagate6.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757966Ab1GKP5D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 11:54:14 -0400
-Date: Mon, 11 Jul 2011 17:54:09 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: David Sharp <dhsharp@google.com>
-Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Michael Rubin <mrubin@google.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Jiaying Zhang <jiayingz@google.com>
-Subject: Re: [PATCH v3] trace: Add x86 irq vector entry/exit tracepoints
-Message-ID: <20110711155404.GB4109@somewhere.redhat.com>
-References: <1306877298-31713-1-git-send-email-vnagarnaik@google.com>
- <1308681903-12840-1-git-send-email-vnagarnaik@google.com>
- <20110707233453.GE21115@somewhere>
- <CAJL_eku7ezDhSOaOxN4ACFas1rnX=uaV184ZK3-0fE60Rmwh8g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAJL_eku7ezDhSOaOxN4ACFas1rnX=uaV184ZK3-0fE60Rmwh8g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 11 Jul 2011 11:57:03 -0400
+Date: Mon, 11 Jul 2011 17:56:26 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>, ebiederm@xmission.com,
+        hbabu@us.ibm.com, mahesh@linux.vnet.ibm.com, oomichi@mxs.nes.nec.co.jp,
+        horms@verge.net.au, heiko.carstens@de.ibm.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org
+Subject: Re: [patch 0/9] kdump: Patch series for s390 support
+Message-ID: <20110711175626.121dcc58@mschwide>
+In-Reply-To: <20110711144255.GE30674@redhat.com>
+References: <20110704170922.976299676@linux.vnet.ibm.com>
+	<20110705202615.GJ24348@redhat.com>
+	<1309944287.3937.39.camel@br98xy6r>
+	<20110707193321.GE28850@redhat.com>
+	<20110708110121.5acfc3c9@mschwide>
+	<20110711144255.GE30674@redhat.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 07, 2011 at 05:54:02PM -0700, David Sharp wrote:
-> On Thu, Jul 7, 2011 at 4:34 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> >> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-> >> index b9338b8..159851c 100644
-> >> --- a/arch/x86/kernel/apic/apic.c
-> >> +++ b/arch/x86/kernel/apic/apic.c
-> >> @@ -1792,6 +1792,7 @@ void smp_spurious_interrupt(struct pt_regs *regs)
-> >>
-> >>       exit_idle();
-> >>       irq_enter();
-> >> +     trace_irq_vector_entry(TRACE_SPURIOUS_APIC_VECTOR);
-> >>       /*
-> >>        * Check if this really is a spurious interrupt and ACK it
-> >>        * if it is a vectored one.  Just in case...
-> >> @@ -1806,6 +1807,7 @@ void smp_spurious_interrupt(struct pt_regs *regs)
-> >>       /* see sw-dev-man vol 3, chapter 7.4.13.5 */
-> >>       pr_info("spurious APIC interrupt on CPU#%d, "
-> >>               "should never happen.\n", smp_processor_id());
-> >> +     trace_irq_vector_exit(TRACE_SPURIOUS_APIC_VECTOR);
-> >>       irq_exit();
-> >>  }
-> >>
-> >
-> > Seems a lot of these tracepoints fit under that pattern:
-> >
-> >                irq_enter();
-> >        +       trace_irq_entry_entry(foo)
-> >
-> >                do things
-> >
-> >        +       trace_irq_exit(foo)
-> >                irq_exit();
-> >
-> >
-> > What if we instead had trace_irq_enter() inside irq_enter() and
-> > trace_irq_exit() inside irq_exit() ?
-> >
-> > Then your specific irq tracepoints would just be one thing that inform us
-> > about the nature of the interrupt:
-> >
-> >                irq_enter();
-> >        +       trace_irq_vector_entry(foo);
-> >
-> >                do things
-> >
-> >                irq_exit();
-> >
-> > Those who are only interested in knowing when we have irqs can just turn
-> > on trace_irq_enter() and trace_irq_exit().
-> >
-> > Those who want more details about the nature of these interrupts can turn
-> > on trace_irq_vector() and trace_irq_exit().
-> >
-> > So you don't need the trace_irq_vector_exit anymore.
-> >
-> > How does that sound?
+On Mon, 11 Jul 2011 10:42:55 -0400
+Vivek Goyal <vgoyal@redhat.com> wrote:
+
+> On Fri, Jul 08, 2011 at 11:01:21AM +0200, Martin Schwidefsky wrote:
 > 
-> That roughly doubles the overhead of hitting these irqs, and since
-> irqs can be nested, it's not guaranteed that the "irq_vector" event
-> immediately follows "irq_enter", so I think the trace could be
-> confusing.
-
-irqs can nest if irqs are unmasked which I believe doesn't happen until
-we reach the handler or we switch to softirq.
-
+> [..]
+> > > 
+> > > kexec-tools purgatory code also checks the checksum of loaded kernel
+> > > and other information and next kernel boot starts only if nothing
+> > > has been corrupted in first kernel. So this additional meminfo strucutres
+> > > and need of checksums sounds unnecessary. I think what you do need is
+> > > that somehow invoking second hook (s390 specific stand alone kernel)
+> > > in case primary kernel is corrupted.
+> > 
+> > Yes, but what do you do if the checksum tells you that the kexec kernel
+> > has been compromised? If the independent stand-alone dumper does the
+> > check it can fall back to the "dump-all" case.
 > 
-> I also think it's far more useful to know which interrupt occurred
-> than "some" interrupt occurred, and I don't see a case where one would
-> not want that info.
+> So this independent dump (which takes the decision whether to continue
+> to boot kdump kernel or stand alone dumper) is loaded where?  On x86,
+> every thing is loaded in crashkernel memory and at run time we update
+> purgatory with entry point of kernel.
+
+The dasd stand-alone dumper is loaded into the first 64KB of memory that
+is specifically left unused for a tool like that. It is our "if all breaks
+use that one" dumper. It is written in assembler and is really small,
+currently its size is 8KB.
+
+> I guess you could write s390 specific purgatory code where you do
+> the checksum on loaded kdump kernel and if it corrupted, then you
+> can continue to jump to boot stand alone kernel.
+
+Basically yes, with the current implementation is a pre-purgatory piece
+of code that is included into the dumper. After the checksums turn out
+ok it branches to the purgatory code.
+
+> BTW, you seem to have capability of doing IPL of stand alone kernel
+> from disk/tape after kernel crash. If yes, then why not IPL the
+> regular linux kernel in case its copy in memory is corrupted.
+
+We played with the idea to load the kdump kernel into its designated
+area and make the startup code recognize this situation. It then swaps
+the memory starting at zero with the kdump memory area. We need to do
+that because on s390 all kernels start at zero (and that is not easy
+to change). The trouble here is that we would have to set up a boot
+disk with the exact kdump area memory address for each system. 
+This is a) error prone and b) our customers are used to have a single
+dump device for all their servers on a single system. 
+
+> What happens if kdump kernel is not corrupted and later it fails to boot
+> due to some platform issue or device driver issue etc? I am assuming
+> that dump capture will fail. If yes, then backup mechanism is designed
+> only to protect against kdump kernel's corruption while loaded in
+> memory?
+
+The kdump kernel is limited in it functionality. Yes it is bigger than
+the stand-alone dumper but it is still very small compared to a production
+system. As in 256 MB of memory, one disk, probably a single network
+connection. The likelihood of a failure is indeed bigger compared to the
+stand-alone dumper, you basically trade a bit of reliability for advanced
+functions (like dump to network) and speed thanks to filtering. With the
+checksum the reliability should be really good though.
+
+> In Michael's doc, I noticed he talked about unmapping the crashkernel
+> memory so that kernel. That should protect against kernel but he
+> mentioned about the possibility of device being able to DMA to said
+> memory reason. I am wondering that is it possible to program IOMMU
+> in such a way that any DMA attempt to said memory reason fails. If
+> yes, then I guess corruption problem will be solved without one
+> being worried about crating a backup plan for stand alone kernel and
+> one can just focus on making kdump kernel work.
+
+We unmap the crashkernel from the kernel address space to make it harder
+to corrupt the kdump kernel with a wild pointer. The only way how the
+crashkernel can go bad is via DMA. I/O addresses are absolute, with a
+bad address you can overwrite any piece of memory. Thats why we want that
+check-summing mechanism before passing control to anything that has been
+in memory at the time of the crash.
+
+> > 
+> > > > 
+> > > > With this approach we still keep our s390 dump reliability and gain the
+> > > > great kdump features, e.g. distributor installer support, dump filtering
+> > > > with makedumpfile, etc.
 > 
-> Moving the tracepoints into irq_enter() and irq_exit() might be
-> sensible, but I'd want to pass down that info.
+> So reliability only comes from the fact that stand alone kernel is booted
+> from the disk? So as long as kdump kernel is not corrupted, it is as
+> realiable as stand alone kernel?
 
-Let me clarify what I proposed, we have that:
+Yes, reliability comes from a fresh IPL/boot. It resets everything to a sane
+state and we can then collect the memory content. As long as you don't get
+fancy with kdump (e.g. with dump to network), a checksum verified kdump
+kernel should be close to the stand-alone dumper as far as reliability is
+concerned.
 
-	irq_enter() // trace_irq_enter();
+> How many a time in practice we have run into kdump kernel corruption
+> issues? Will unmapping from kernel page tables and doing something at
+> IOMMU level not take care of that issue?
 
-	trace_irq_vector_entry(foo);
+Well as we do not use kdump at customer sites yet we do not have a lot of
+practice with it. But we did have a few real cases with broken I/O going
+on a rampage.
 
-	// handle irq...
-
-	irq_exit() // trace_irq_exit()
-
-So either you're only interested in tracing raw irqs and you don't care
-about the nature of these and you only enable trace_irq_enter() and
-trace_irq_exit(). Or you're interested in the nature of these and you
-only enable trace_irq_vector_entry() and trace_irq_exit().
-
-In fact we could even drop the trace_irq_enter() thing because I'm
-not sure it's interesting.
-
-All in one it doesn't bring more overhead.
-
-What I'm more worried about actually is that in the case of trace_irq_handler_entry()
-and trace_irq_handler_exit(), it becomes a useless tracepoint. And if you enable it
-for other irq tracepoint symetric purposes, you'll have it there too and that's a bit
-odd.
-
-So perhaps we want to keep your way of doing this.
-
-> >
-> >
-> >> diff --git a/arch/x86/kernel/time.c b/arch/x86/kernel/time.c
-> >> index 00cbb27..9179dca 100644
-> >> --- a/arch/x86/kernel/time.c
-> >> +++ b/arch/x86/kernel/time.c
-> >> @@ -13,6 +13,7 @@
-> >>  #include <linux/interrupt.h>
-> >>  #include <linux/time.h>
-> >>  #include <linux/mca.h>
-> >> +#include <trace/events/irq.h>
-> >>
-> >>  #include <asm/vsyscall.h>
-> >>  #include <asm/x86_init.h>
-> >> @@ -51,6 +52,13 @@ unsigned long profile_pc(struct pt_regs *regs)
-> >>  }
-> >>  EXPORT_SYMBOL(profile_pc);
-> >>
-> >> +static irqreturn_t timer_interrupt(int irq, void *dev_id);
-> >> +static struct irqaction irq0  = {
-> >> +     .handler = timer_interrupt,
-> >> +     .flags = IRQF_DISABLED | IRQF_NOBALANCING | IRQF_IRQPOLL | IRQF_TIMER,
-> >> +     .name = "timer"
-> >> +};
-> >> +
-> >>  /*
-> >>   * Default timer interrupt handler for PIT/HPET
-> >>   */
-> >> @@ -59,7 +67,9 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
-> >>       /* Keep nmi watchdog up to date */
-> >>       inc_irq_stat(irq0_irqs);
-> >>
-> >> +     trace_irq_handler_entry(irq, &irq0);
-> >>       global_clock_event->event_handler(global_clock_event);
-> >> +     trace_irq_handler_exit(irq, &irq0, 1);
-> >
-> > Seems it should go to generic event handlers in kernel/time ?
+> > > > 
+> > > > > why the existing
+> > > > > mechanism of preparing ELF headers to describe all the above info
+> > > > > and just passing the address of header on kernel commnad line
+> > > > > (crashkernel=) will not work for s390. Introducing an entirely new
+> > > > > infrastructure for communicating the same information does not
+> > > > > sound too exciting.
+> > > > 
+> > > > We need the meminfo interface anyway for the two stage approach. The
+> > > > stand-alone dump tools have to find and verify the kdump kernel in order
+> > > > to start it.
 > 
-> (same response as hrtimers, below...)
+> kexec-tools purgatory code already has the checksum logic. So you don't
+> have to redo that in stand alone tools. I think you probably need to
+> s390 specic purgatory and jump to IPLing stand alone kernel if kdump
+> kernel is corrupted instead of rebooting back or spinning infinitely
+> in the loop/
+
+I can not quite follow you here. The purgatory code is part of the kdump kernel,
+no? When we trigger a dump with the stand-alone tools we will start executing
+code in the assembler function of that stand-alone tools. We can not trust
+the kdump kernel yet, not without doing the checksums first.
+
+> > > 
+> > > kexec-tools does this verification already. We verify the checksum of
+> > > all the loaded information in reserved area. So why introduce this
+> > > meminfo interface.
+> > 
+> > Again, what do you do if the verification fails? Fail to dump the borked
+> > system? Imho not a good option.
 > 
-> >
-> >> diff --git a/include/trace/events/irq.h b/include/trace/events/irq.h
-> >> index 4fc1205..d2f3f1f 100644
-> >> --- a/include/trace/events/irq.h
-> >> +++ b/include/trace/events/irq.h
-> >> @@ -138,6 +138,90 @@ DEFINE_EVENT(softirq, softirq_raise,
-> >>       TP_ARGS(vec_nr)
-> >>  );
-> >>
-> >> +#if !defined(_TRACE_IRQ_VECTOR_ENUM)
-> >> +#define _TRACE_IRQ_VECTOR_ENUM
-> >> +enum {
-> >> +     TRACE_NMI_VECTOR,
-> >> +     TRACE_NOHZ_TIMER_VECTOR,
-> >> +     TRACE_HRTIMER_VECTOR,
-> >> +     TRACE_ONESHOT_TIMER_VECTOR,
-> >> +     TRACE_PERIODIC_TIMER_BROADCAST_VECTOR,
-> >> +     TRACE_PERIODIC_TIMER_VECTOR,
-> >> +     TRACE_ERROR_APIC_VECTOR,
-> >> +     TRACE_RESCHEDULE_VECTOR,
-> >> +     TRACE_CALL_FUNCTION_VECTOR,
-> >> +     TRACE_CALL_FUNCTION_SINGLE_VECTOR,
-> >> +     TRACE_THERMAL_APIC_VECTOR,
-> >> +     TRACE_THRESHOLD_APIC_VECTOR,
-> >> +     TRACE_REBOOT_VECTOR,
-> >> +     TRACE_SPURIOUS_APIC_VECTOR,
-> >> +     TRACE_IRQ_WORK_VECTOR,
-> >> +     TRACE_X86_PLATFORM_IPI_VECTOR,
-> >> +     TRACE_INVALIDATE_TLB_VECTOR,
-> >> +};
-> >> +#endif
-> >
-> > Pure x86 things shouldn't be in a generic header.
+> On regular systems we did not have any backup plan so IIRC, we spin in
+> infinite loop. 
+
+Even worse, going to an infinite loop is VERY bad. One of the things we will
+do after the checksum of the kdump kernel turned out ok is to write to some
+field in the kdump kernel to invalidate the checksum. If we crash again the
+stand-alone dumper will find the checksum to be bad the second time around.
+No infinite loop here.
+
+> If one can do something about it, fine. But this again takes me back to
+> original question, then instead of creating backup plan, why not IPL
+> the kdump kernel from disk/tape the way you do for stand alone kernels.
+
+As outlined above it is basically a setup issue.
+
+> > 
+> > > > Therefore the interface is there and can be used. Also
+> > > > creating the ELF header in the 2nd kernel is more flexible and easier
+> > > > IMHO:
+> > > > * You do not have to care about memory or CPU hotplug.
+> > > 
+> > > Reloading the kernel upon memory or cpu hotplug should be trivial. This
+> > > does not justify to move away from standard ELF interface and creation
+> > > of a new one.
+> > 
+> > We do not move away from the ELF interface, we just create the ELF headers
+> > at a different time, no?
 > 
-> Other platforms have IPI vector interrupts, so we can just remove
-> "X86_" from the name. Would that work?
+> Existing kernel already provides a way to communicate relevant information
+> to new kernel/binary about the first kernel and that is through ELF. You
+> are moving away from that and creating one more interface, meminfo to
+> get all the info about first kernel. What's wrong with continue parsing
+> ELF to get all the needed info. Is there any piece of information missing
+> which you require?
 
-If that's not a generic thing, we probably don't want that here.
-
-I'd rather propose you to include an arch file from include/trace/events/irq.h
-and define in that arch file specific things.
-
-> > include/trace/event/irq.h should contain generic things. And I'm not sure
-> > we want some generalized vector namespace for that but rather single contained
-> > tracepoint names that make sense:
-> >
-> > trace_ipi_function(), trace_irq_reschedule()...
+I'll have to discuss this with Michael once more. 
+ 
+> > 
+> > > > * You do not have to preallocate CPU crash notes etc.
+> > > 
+> > > Its a small per cpu area. Looks like otherwise you will create meminfo
+> > > areas otherwise.
+> > 
+> > Probably doesn't matter.
+> > 
+> > > > * It works independently from the tool/mechanism that loads the kdump
+> > > > kernel into memory. E.g. we have the idea to load the kdump kernel at
+> > > > boot time into the crashkernel memory (not via the kexec_load system
+> > > > call). That would solve the main kdump problems: The kdump kernel can't
+> > > > be overwritten by I/O and also early kernel problems could then be
+> > > > dumped using kdump.
 > 
-> I don't see how that can fit with putting the tracepoints in
-> irq_enter() and irq_exit()...
+> So looks like you are loading two kernels at a time. One primary kernel
+> and other kernel in crashkernel memory area. But that would solve only
+> early crash dump problem and not the corruption problem?
 
-With my above explanations I think it's clearer.
+That would solve both the early crash dump problem and the I/O corruption
+problem -- if we would know where we can load the kdump kernel.
+Remember: one stand-alone dump disk for all the servers in a server farm.
+They might have different kdump memory area addresses.
 
-> Also I'm not sure it makes sense to bloat the trace events with
-> individual tracepoints for interrupts. Some of these events are
-> relatively rare in archs: RESCHEDULE_VECTOR is only in x86 and ia64,
-> and IPI will not be in any unicore machine, for example. They may not
-> warrant having their own events instead of an enum entry.
-
-10 tracepoints is no bloating really. And the bloating can only be seen in
-slow path (tracing enablement) and in image size. And yeah on boot too
-probably but perhaps we can defer that one day.
-The point is we should split things when that makes sense. Having an
-all-in-one irq tracepoint is very uncomfortable.
-
-What if someone is interested in tracing only resched ipis (and I do
-sometimes, using a trace_printk() currently)? He would be
-forced to use those vector_entry/vector_exit with a filter. Filters
-should not be used to cope with a lack of tracepoint granularity. They
-are not really efficient for that.
-
-Also about reschedule interrupt, it's not so rare:
-
-$ git grep scheduler_ipi
-arch/alpha/kernel/smp.c:                        scheduler_ipi();
-arch/arm/kernel/smp.c:          scheduler_ipi();
-arch/blackfin/mach-common/smp.c:                        scheduler_ipi();
-arch/cris/arch-v32/kernel/smp.c:                scheduler_ipi();
-arch/ia64/kernel/irq_ia64.c:                    scheduler_ipi();
-arch/ia64/xen/irq_xen.c:        scheduler_ipi();
-arch/m32r/kernel/smp.c: scheduler_ipi();
-arch/mips/cavium-octeon/smp.c:          scheduler_ipi();
-arch/mips/kernel/smtc.c:        scheduler_ipi();
-arch/mips/mti-malta/malta-int.c:        scheduler_ipi();
-arch/mips/pmc-sierra/yosemite/smp.c:                    scheduler_ipi();
-arch/mips/pmc-sierra/yosemite/smp.c:                    scheduler_ipi();
-arch/mips/sgi-ip27/ip27-irq.c:          scheduler_ipi();
-arch/mips/sgi-ip27/ip27-irq.c:          scheduler_ipi();
-arch/mips/sibyte/bcm1480/smp.c:         scheduler_ipi();
-arch/mips/sibyte/sb1250/smp.c:          scheduler_ipi();
-arch/mn10300/kernel/smp.c:      scheduler_ipi();
-arch/parisc/kernel/smp.c:                               scheduler_ipi();
-arch/powerpc/kernel/smp.c:      scheduler_ipi();
-arch/powerpc/kernel/smp.c:                      scheduler_ipi();
-arch/s390/kernel/smp.c:         scheduler_ipi();
-arch/sh/kernel/smp.c:           scheduler_ipi();
-arch/sparc/kernel/smp_32.c:     scheduler_ipi();
-arch/sparc/kernel/smp_64.c:     scheduler_ipi();
-arch/tile/kernel/smp.c: scheduler_ipi();
-arch/um/kernel/smp.c:                   scheduler_ipi();
-arch/x86/kernel/smp.c:  scheduler_ipi();
-arch/x86/xen/smp.c:     scheduler_ipi();
-
-Just put a tracepoint in scheduler_ipi() and you are done.
-
-> >
-> > But vector namespace makes sense for archs yeah.
-> >
-> >>  /* This part must be outside protection */
-> >> diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-> >> index a9205e3..84a0c70 100644
-> >> --- a/kernel/hrtimer.c
-> >> +++ b/kernel/hrtimer.c
-> >> @@ -48,6 +48,7 @@
-> >>
-> >>  #include <asm/uaccess.h>
-> >>
-> >> +#include <trace/events/irq.h>
-> >>  #include <trace/events/timer.h>
-> >>
-> >>  /*
-> >> @@ -1244,6 +1245,8 @@ void hrtimer_interrupt(struct clock_event_device *dev)
-> >>       ktime_t expires_next, now, entry_time, delta;
-> >>       int i, retries = 0;
-> >>
-> >> +     trace_irq_vector_entry(TRACE_HRTIMER_VECTOR);
-> >> +
-> >>       BUG_ON(!cpu_base->hres_active);
-> >>       cpu_base->nr_events++;
-> >>       dev->next_event.tv64 = KTIME_MAX;
-> >> @@ -1316,6 +1319,7 @@ retry:
-> >>       if (expires_next.tv64 == KTIME_MAX ||
-> >>           !tick_program_event(expires_next, 0)) {
-> >>               cpu_base->hang_detected = 0;
-> >> +             trace_irq_vector_exit(TRACE_HRTIMER_VECTOR);
-> >>               return;
-> >>       }
-> >>
-> >> @@ -1355,6 +1359,8 @@ retry:
-> >>       tick_program_event(expires_next, 1);
-> >>       printk_once(KERN_WARNING "hrtimer: interrupt took %llu ns\n",
-> >>                   ktime_to_ns(delta));
-> >> +
-> >> +     trace_irq_vector_exit(TRACE_HRTIMER_VECTOR);
-> >
-> > We already have hrtimer tracepoints.
-> >
+> I think we are trying to solve multiple problems at one go. We want
+> the regular capability to boot a kdump kernel and also solve the problem
+> of eary boot crash.
 > 
-> Yes, but those events are about hrtimer events and buried deep in
-> hrtimer code. If I enable all events in the "irq" trace event
-> subsystem, I want to see every interrupt. I don't want to remember "oh
-> yeah, I need to enable x,y,z events too." Putting the event in the
-> "irq" subsystem and in the interrupt handler makes this crystal clear.
-> And if the hrtimer code is (or is ever) such that an interrupt path
-> doesn't reach the hrtimer tracepoints, I still want to know that the
-> interrupt occurred.
+> Why not solve the bigger problem in first step (and that is capturing
+> filtered dump of big RAM systems fast) and do the integration with
+> regular kexec-tools (create ELF headers etc) and s390 specific purgatory
+> code. 
+
+Consider that problem solved. kdump support for s390 is just around the
+corner.
+
+> Once all this is done, then you can look at how to capture early 
+> kernel crashes (if it turns out to be a real problem).
+
+The patches to solve the early kernel crash / I/O corruption are on the table.
+It is just the order of the patches in the set we are talking about, no?
+
+> > > 
+> > > Can you give more details how exactly it works. I know very little about
+> > > s390 dump mechanism.
+> > 
+> > Before we started working on kdump the only way to get a dump is to boot
+> > a stand-alone dumper. That is a small piece of assembler code that is
+> > loaded into the first 64KB of memory (which is reserved for these kind of
+> > things). This assembler code will then write everything to the dump device.
+> > This works very reliable (which is of utmost importance to us) but has the
+> > problem that it will be awfully slow for large memory sizes.
 > 
-> Here's our motivation: We use interrupt events, along with traps,
-> syscall, and sched_switch events to know when kernel code is running
-> instead of user code. So, being clear that we got all interrupts (and
-> which interrupt) is important.
+> When and who loads this assembler code into memory and how do we make
+> sure this code is not corrupted.
 
-Ok I see your point then.
+A fresh IPL / boot does that.
 
-But then have a generic single trace_irq_timer() (may be cut down in entry/exit if
-you want).
+> I got the part about being slow because you have to write specific
+> drivers for saving dump and you don't have filtering capabilty. In
+> today's big memory systems it makes sense to reuse kdump's capability
+> to use first kernel's drivers and filtering in user space.
 
-But I don't think we really want to  into HRTIMER, PERIODIC, ONESHOT, BROADCAST
-vectors. That's sounds like the wrong place to provide these details.
+That is exactly what we are trying to achieve.
+ 
+> >  
+> > > When do you load kdump kernel and who does it?
+> > 
+> > If the crashed kernel is still operational enough to call panic it can
+> > cause an IPL to the stand-alone dump tool (or do a reset of the I/O
+> > subsystem and directly call kdump with the new code if the checksums
+> > turn out ok).
+> > If the crashed kernel is totally bust then the administrator has to do
+> > a manual IPL from the disk where the stand-alone dumper has been installed.
+> >  
+> > > Who gets the control first after crash?
+> > 
+> > Depends. If the kernel can recognize the crash as such it can proceed to
+> > execute the configured "on_panic" shutdown action. If the kernel is bust
+> > the code loaded by the next IPL gets control. This can be a "normal" boot
+> > or a stand-alone dumper.
+> > 
+> > > To me it looked like that you regularly load kdump kernel and if that
+> > > is corrupted then somehow you boot standalone kernel. So corruption
+> > > of kdump kernel should not be a issue for you.
+> > 
+> > It is the other way round. We load the standalone dumper, then check if
+> > the kdump kernel looks good. Only if all the checksums turn out ok we
+> > jump to the purgatory code from the standalone dump code.
+> 
+> Ok. So again why not reuse the checksump capability of kexec-tools and
+> instead of infinite looping you can jump to stand alone tools + IPL etc.
+> I understand this will require a tighter integration with kexec-tools
+> and using ELF header mechanism and will not cover the early kernel
+> crashes.
 
-If we want higher level details, then we can enable hrtimer tracepoints, and/or we add some
-tracepoints in the timer subsystem to know with what we are dealing with.
+Imho the checksum of kexec-tools is in the wrong place.
 
-Does that make sense?
+> > 
+> > > Do you load kdump kenrel from some tape/storage after system crash. Where
+> > > does bootloader lies and how do you make sure it is not corrupted and
+> > > associated device is in good condition.
+> > 
+> > The bootloader sits on the boot disk / tape. If you are able to boot from
+> > that device then it is reasonable to assume that the device is in good
+> > condition. To get a corrupted bootloader you'd need a stray I/O to that
+> > device. The stand-alone dumper sits on its own disk / tape which is not in
+> > use for normal operation. Very unlikely that this device will get hit.
+> >  
+> > > To me we should not create a arch specific way of passing information
+> > > between kernels. Stand alone kernel should be able to parse the
+> > > ELF headers which contains all the relevant info. They have already
+> > > been checksum verified.
+> > 
+> > Ok, so this seems to be the main point of discussion. When to create the
+> > ELF headers and how to pass all the required information from the crashed
+> > system to the kdump kernel.
+> 
+> To me we seem to be diverging a lot from existing kdump+kexec-tools
+> mechanism just to solve the case of early crash dumping. If we break
+> down the problem in two parts and do thing kexec-tools way (with a
+> backup path of booting stand alone kernel if kdump kenrel is corrupted),
+> things might be better.
+
+The "backup path of booting stand alone kernel" would result in passing
+the control twice, once from the stand-alone dumper to the kexec purgatory
+(after the purgatory checksum has been verified), then doing more checks 
+in the kdump kernel, only to return to the stand-alone dumper if some check
+fails. Does not really sound enticing to me.
+
+-- 
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
+
