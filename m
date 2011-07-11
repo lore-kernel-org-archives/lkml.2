@@ -1,41 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245Ab1GKJbX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 05:31:23 -0400
-Received: from mga11.intel.com ([192.55.52.93]:41411 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751489Ab1GKJbW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 05:31:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,514,1304319600"; 
-   d="scan'208";a="26401482"
-Date: Mon, 11 Jul 2011 10:31:10 +0100
-From: Matt Fleming <matt.fleming@linux.intel.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] signals: convert the X86_32 code to use
- set_current_blocked()
-Message-ID: <20110711103110.20018ac1@mfleming-mobl1.ger.corp.intel.com>
-In-Reply-To: <20110710192727.GA31759@redhat.com>
-References: <20110710192727.GA31759@redhat.com>
-X-Mailer: Claws Mail 3.7.8cvs52 (GTK+ 2.22.0; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752462Ab1GKJbm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 05:31:42 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41379 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891Ab1GKJbl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 05:31:41 -0400
+Date: Mon, 11 Jul 2011 10:31:24 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Jeremy Kerr <jeremy.kerr@canonical.com>, Grant Likely <grant@secretlab.ca>,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org
+Subject: Re: [PATCH 0/6] clk: Initial feedback for off-SoC slow bus clocks
+Message-ID: <20110711093124.GA3239@n2100.arm.linux.org.uk>
+References: <20110711025344.GA27497@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110711025344.GA27497@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 10 Jul 2011 21:27:27 +0200
-Oleg Nesterov <oleg@redhat.com> wrote:
+On Mon, Jul 11, 2011 at 11:53:44AM +0900, Mark Brown wrote:
+> The biggest issue I ran into was that as the clocks are all registered
+> by name with the API if you've got two instances of the same off-SoC
+> device in the system you'll not be able to disambiguate between the
+> clocks it provides.
 
-> sys_sigsuspend() and sys_sigreturn() change ->blocked directly.
-> This is not correct, see the changelog in e6fa16ab
-> "signal: sigprocmask() should do retarget_shared_pending()"
-> 
-> Change them to use set_current_blocked().
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-
-Reviewed-by: Matt Fleming <matt.fleming@linux.intel.com>
+Sigh.  That sounds like yet more trash.  Obviously whoever thought
+up that doesn't actually understand clks.
