@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757354Ab1GKIDA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 04:03:00 -0400
-Received: from linux.securehostdns.com ([174.36.253.246]:51261 "EHLO
-	linux.securehostdns.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750785Ab1GKIC6 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 04:02:58 -0400
+	id S1757383Ab1GKIIQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 04:08:16 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:58239 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757335Ab1GKIIP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 04:08:15 -0400
+Date: Mon, 11 Jul 2011 11:06:44 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Ravishankar <ravishankarkm32@gmail.com>
+Cc: gregkh@suse.de, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>
+Subject: Re: [PATCH 8/8] Staging: comedi: fix printk() issue in pcl818.c
+Message-ID: <20110711080644.GF18655@shale.localdomain>
+References: <1310368754-25560-1-git-send-email-ravishankarkm32@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1310271636.7643.33.camel@marge.simson.net>
-References: <CAM3a_ypyYiwNz-7ewiHnsLGi=+ZWWHkTi7nM2EKW6u=UNOa0DQ@mail.gmail.com>
-	<CAM3a_yr+KxisXDJcZChOtyYJYENFt7Uh1KPtZJ4rtgAF5vRqeQ@mail.gmail.com>
-	<1310271636.7643.33.camel@marge.simson.net>
-Date: Mon, 11 Jul 2011 13:32:53 +0530
-Message-ID: <CAM3a_ypSgCuf_8z82MKAt=9DXhz5fih-QYMLCrOVf+bBGde4Rg@mail.gmail.com>
-Subject: Re: [BUG] Why does mwait_idle_with_hints() call MWAIT with interrupts
- disabled ?
-From: Tomar <tomar@linuxsmiths.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - linux.securehostdns.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - linuxsmiths.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1310368754-25560-1-git-send-email-ravishankarkm32@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike,
-        Thanks for pointing. This explains it. I was looking at an
-older manual which did not have mention of this ECX extension.
+On Mon, Jul 11, 2011 at 12:49:14PM +0530, Ravishankar wrote:
+> From: Ravishankar <ravi.shankar@greenturtles.in>
+> 
+> This is a patch to the pcl818.c file that fixes up a printk warning found by the checkpatch.pl tool
+> 
+> Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
+> ---
+>  drivers/staging/comedi/drivers/pcl818.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/staging/comedi/drivers/pcl818.c b/drivers/staging/comedi/drivers/pcl818.c
+> index ae097b3..21f1cc9 100644
+> --- a/drivers/staging/comedi/drivers/pcl818.c
+> +++ b/drivers/staging/comedi/drivers/pcl818.c
+> @@ -1447,7 +1447,7 @@ static int ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+>  	struct comedi_cmd *cmd = &s->async->cmd;
+>  	int retval;
+>  
+> -	printk("pcl818_ai_cmd()\n");
+> +	printk(KERN_INFO "pcl818_ai_cmd()\n");
 
-Thanks,
-Tomar
+KERN_INFO is too high a level here.  Ideally this would just be
+removed.  Possibly made into a dev_dbg().
 
+The same is true for some other printks in this series.
 
+regards,
+dan carpenter
 
-> I got curious enough to blow an inch of virtual dust off the manual..
->
-> Software_Delelopers_Manual_Volume:2A:Instruction_Set_Reference:A-M
->
-> MWAIT for Address Range Monitoring
->
-> For address-range monitoring, the MWAIT instruction operates with the MONITOR
-> instruction. The two instructions allow the definition of an address at which to wait
-> (MONITOR) and a implementation-dependent-optimized operation to commence at
-> the wait address (MWAIT). The execution of MWAIT is a hint to the processor that it
-> can enter an implementation-dependent-optimized state while waiting for an event
-> or a store operation to the address range armed by MONITOR.
-> ECX specifies optional extensions for the MWAIT instruction. EAX may contain hints
-> such as the preferred optimized state the processor should enter.
-> For Pentium 4 processors (CPUID signature family 15 and model 3), non-zero values
-> for EAX and ECX are reserved. Later processors defined ECX=1 as a valid extension
-> (see below).
->
-> A store to the address range armed by the MONITOR instruction, an interrupt, an NMI
-> or SMI, a debug exception, a machine check exception, the BINIT# signal, the INIT#
-> signal, or the RESET# signal will exit the implementation-dependent-optimized
-> state. An interrupt will cause the processor to exit only if the state was entered with
-> interrupts enabled or if ECX=1.
->                   ^^^^^^^^^^^
->
->
