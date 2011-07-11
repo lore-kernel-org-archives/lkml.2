@@ -1,47 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758133Ab1GKQoS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 12:44:18 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:40709 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758120Ab1GKQoQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 12:44:16 -0400
-Date: Mon, 11 Jul 2011 09:35:30 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: mingo@elte.hu
-Cc: torvalds@linux-foundation.org, kernelmail.jms@gmail.com,
-        kulkarni.ravi4@gmail.com, linux-kernel@vger.kernel.org
-Subject: [GIT PULL rcu/urgent] Prevent RCU callbacks from executing during
- early boot
-Message-ID: <20110711163530.GA6329@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
+	id S1758202Ab1GKQoe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 12:44:34 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:55182 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758120Ab1GKQoc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 12:44:32 -0400
+Date: Mon, 11 Jul 2011 09:44:26 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Alessandro Rubini <rubini@cvml.unipv.it>,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH] Input: synaptics - make dmi_check_system return
+ immediately when a match is found
+Message-ID: <20110711164426.GA1893@core.coreip.homeip.net>
+References: <1310395296.2415.7.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1310395296.2415.7.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Ingo,
+On Mon, Jul 11, 2011 at 10:41:36PM +0800, Axel Lin wrote:
+> We only care about if there is any successful match from the table
+> or no match at all, make the dmi_matched callback return 1 then
+> dmi_check_system will return immediately if we have a successful match.
+> 
 
-This pull request fixes a rare but real boot-time hang.  It defers RCU
-callback execution until the scheduler has initialized, permitting
-RCU callbacks that use late-initialized kernel features to be used in
-RCU callbacks that are registered during early boot.  This fixes the
-bugzilla at: https://bugzilla.kernel.org/show_bug.cgi?id=38732
+This adds too much noise for little gain... With other patches we
+already have callbacks defined, so it makes sense it apply them, this one
+I think I'll drop.
 
-This commit is available in the git repository at:
+Thanks.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/urgent
-
-							Thanx, Paul
-
-------------------->
-
-Paul E. McKenney (1):
-      rcu: Prevent RCU callbacks from executing during early boot
-
- kernel/rcutree.c        |    2 +-
- kernel/rcutree_plugin.h |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+-- 
+Dmitry
