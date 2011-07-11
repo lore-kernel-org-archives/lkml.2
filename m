@@ -1,43 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757Ab1GKUQe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 16:16:34 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:39523 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750785Ab1GKUQd (ORCPT
+	id S1754870Ab1GKUSR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 16:18:17 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:27762 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753977Ab1GKUSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 16:16:33 -0400
-Message-ID: <4E1B5A1E.4060604@gmail.com>
-Date: Mon, 11 Jul 2011 22:16:30 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	Mon, 11 Jul 2011 16:18:16 -0400
+Date: Mon, 11 Jul 2011 22:18:14 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: David Teigland <teigland@redhat.com>
+cc: linux-kernel@vger.kernel.org, cluster-devel@redhat.com,
+        Christine Caulfield <ccaulfie@redhat.com>,
+        "Dr. David Alan Gilbert" <linux@treblig.org>
+Subject: Re: [PATCH v3] fs, dlm: don't do pointless NULL check, use kzalloc
+ and fix order of arguments
+In-Reply-To: <20110711150233.GC14426@redhat.com>
+Message-ID: <alpine.LNX.2.00.1107112217440.10944@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1107021957130.16316@swampdragon.chaosbits.net> <alpine.LNX.2.00.1107102252510.2818@swampdragon.chaosbits.net> <20110711150233.GC14426@redhat.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: loody <miloody@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: how to find a task through name faster?
-References: <CANudz+sqkachOT7r9=-rc98nCEO_QOCx7KiBi5=NWaj5exmEPA@mail.gmail.com> <CANudz+vxY_0NY2veJ9Wvr08x_z3e20m=g7ZL4bZDi=-vaOF7dQ@mail.gmail.com>
-In-Reply-To: <CANudz+vxY_0NY2veJ9Wvr08x_z3e20m=g7ZL4bZDi=-vaOF7dQ@mail.gmail.com>
-X-Enigmail-Version: 1.2pre
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2011 06:52 PM, loody wrote:
-> hi all:
-> I found a way to find a task I need by name, test,  as below:
-> for_each_process(task) {
->     if(strcmp(task->comm, "test")
->         printk(“%s[%d]\n”, task->comm, task->pid);
-> }
-> 
-> But it is time-consuming to do so if I periodically want to know
-> whether "test" exist or not.
-> is there better way to do so?
+On Mon, 11 Jul 2011, David Teigland wrote:
 
-It depends on what you are trying to achieve. Maybe process accounting
-is what you want?
+> On Sun, Jul 10, 2011 at 10:54:31PM +0200, Jesper Juhl wrote:
+> > In fs/dlm/lock.c in the dlm_scan_waiters() function there are 3 small
+> > issues:
+> > 
+> > 1) There's no need to test the return value of the allocation and do a
+> > memset if is succeedes. Just use kzalloc() to obtain zeroed memory.
+> > 
+> > 2) Since kfree() handles NULL pointers gracefully, the test of
+> > 'warned' against NULL before the kfree() after the loop is completely
+> > pointless. Remove it.
+> > 
+> > 3) The arguments to kmalloc() (now kzalloc()) were swapped. Thanks to
+> > Dr. David Alan Gilbert for pointing this out.
+> > 
+> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> 
+> Thanks, I pushed this and a patch for the other swapped kmalloc to the
+> next branch.
+> Dave
+> 
+Ok, thanks, then I won't bother updating my patch with that other kmalloc.
 
 -- 
-js
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
