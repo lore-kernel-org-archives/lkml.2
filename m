@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756769Ab1GKOWO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 10:22:14 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47620 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752653Ab1GKOWM (ORCPT
+	id S1756962Ab1GKOWV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 10:22:21 -0400
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:6008 "EHLO
+	VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752978Ab1GKOWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 10:22:12 -0400
-Date: Mon, 11 Jul 2011 16:22:10 +0200
-From: Cyril Hrubis <metan@ucw.cz>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>, thommycheck@gmail.com,
-        Marek Vasut <marek.vasut@gmail.com>,
-        Russell King <rmk@arm.linux.org.uk>, arminlitzel@web.de,
-        kernel list <linux-kernel@vger.kernel.org>, utx@penguin.cz,
-        lenz@cs.wisc.edu, rpurdie@rpsys.net, omegamoon@gmail.com,
-        Pavel Machek <pavel@ucw.cz>, eric.y.miao@gmail.com,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        zaurus-devel@www.linuxtogo.org,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Pavel Herrmann <morpheus.ibis@gmail.com>
-Subject: Re: zaurus patches -- arm/pxa -- is Eric alive
-Message-ID: <20110711142210.GB32532@atrey.karlin.mff.cuni.cz>
-References: <20110711134150.GA15506@localhost.ucw.cz> <CALT56yM+fNs_2QorWK0=gr2um1H3vDX+HXPCi9bmKDdOdSvptA@mail.gmail.com> <20110711140303.GA32532@atrey.karlin.mff.cuni.cz> <20110711141712.GD11153@pengutronix.de>
+	Mon, 11 Jul 2011 10:22:18 -0400
+X-SpamScore: -16
+X-BigFish: VPS-16(zzbb2dK9371M1432N98dKzz1202hzzz32i668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LO6AHL-01-6O8-02
+X-M-MSG: 
+Date: Mon, 11 Jul 2011 16:20:04 +0200
+From: Hans Rosenfeld <hans.rosenfeld@amd.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Seidel, Conny" <Conny.Seidel@amd.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH x86/urgent 2/2] x86: Implement pfn -> nid mapping
+ granularity check
+Message-ID: <20110711142004.GA11163@escobedo.osrc.amd.com>
+References: <20110621174131.054f0422.conny.seidel_amd.com@marah.osrc.amd.com>
+ <20110626102235.GC12200@mtj.dyndns.org>
+ <20110626223807.47cef5c6.conny.seidel_amd.com@marah.osrc.amd.com>
+ <20110628174613.GP478@escobedo.osrc.amd.com>
+ <4E181477.5090405@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20110711141712.GD11153@pengutronix.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4E181477.5090405@zytor.com>
+Organization: Advanced Micro Devices GmbH, Einsteinring 24, 85609 Dornach b.
+ Muenchen; Geschaeftsfuehrer: Andrew Bowd, Alberto Bozzo; Sitz: Dornach,
+ Gemeinde Aschheim, Landkreis Muenchen; Registergericht Muenchen, HRB Nr.
+ 43632
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-> > > > There are some rather critical patches for zaurus C-3000 (spitz)
-> > > > available... with no response. What is going on?
-> > > 
-> > > Eric seems alive. At least he've sent pull requests few days ago.
-> > > Maybe you can point to those patches, that you mention as critical?
+On Sat, Jul 09, 2011 at 04:42:31AM -0400, H. Peter Anvin wrote:
+> On 07/09/2011 01:32 AM, Tejun Heo wrote:
 > > 
-> > Perhaps the most critical one is:
+> > Ping?  If the change is too invasive at this stage, we can disable AMD
+> > NUMA on x86_32 for 3.0 and queue these two for 3.1.
 > > 
-> > [PATCH] MAX1111: Fix race condition causing NULL pointer exception
-> > 
-> > http://ns1.yosemitephotos.net/lists/arm-kernel/msg125356.html
 > 
-> Ahem, this one was opposed to. The right one seems to be:
-> 
-> http://ns1.yosemitephotos.net/lists/arm-kernel/msg125592.html
-> 
-> Note that it is a hwmon-driver and neither the apropriate list nor
-> maintainers have been CCed. Eric cannot take this patch. Check
-> MAINTAINERAS (or use scripts/get_maintainer.pl) to find the right people
-> and this will increase chances to get your patch upstream a lot.
+> I am kind of leaning that way... Hans, what is your opinion?
 
-Right, CCing patch author.
+Thats ok for me. Disable it in 3.0 and fix it properly in 3.1.
+
+
+Hans
+
 
 -- 
-metan
+%SYSTEM-F-ANARCHISM, The operating system has been overthrown
+
