@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754863Ab1GKFCT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 01:02:19 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:58779 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752783Ab1GKFCR convert rfc822-to-8bit (ORCPT
+	id S1755637Ab1GKFH0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 01:07:26 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:40919 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753078Ab1GKFHZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 01:02:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAGsJ_4x_e0OR8dV=n-zodi8Sr4SZkU6o6gJK13UpZrgTzZQvbQ@mail.gmail.com>
-References: <20110711025344.GA27497@opensource.wolfsonmicro.com>
- <20110711035732.GA5040@opensource.wolfsonmicro.com> <201107110030.06399.vapier@gentoo.org>
- <CAGsJ_4x_e0OR8dV=n-zodi8Sr4SZkU6o6gJK13UpZrgTzZQvbQ@mail.gmail.com>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Mon, 11 Jul 2011 01:01:56 -0400
-X-Google-Sender-Auth: 3od6Fh1n9AUrTx6096GxWyJUkqo
-Message-ID: <CAMjpGUc51mg1vnj2PDk-=u=s7b0j0Qqm4nXLbugM5QsbshOZpg@mail.gmail.com>
-Subject: Re: [uclinux-dist-devel] [PATCH 0/6] clk: Initial feedback for
- off-SoC slow bus clocks
-To: Barry Song <21cnbao@gmail.com>
-Cc: Grant Likely <grant@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linus.walleij@stericsson.com>, linux-sh@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        uclinux-dist-devel@blackfin.uclinux.org,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 11 Jul 2011 01:07:25 -0400
+From: Ravishankar <ravishankarkm32@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>,
+        Ravishankar <ravishankarkm32@gmail.com>
+Subject: [PATCH] Staging: comedi: fix brace coding style issue in pcl818.c
+Date: Mon, 11 Jul 2011 10:49:43 +0530
+Message-Id: <1310361583-12980-1-git-send-email-ravishankarkm32@gmail.com>
+X-Mailer: git-send-email 1.6.5.2
+In-Reply-To: <[PATCH 1/1]Staging: comedi: fix brace coding style issue in pcl818.c>
+References: <[PATCH 1/1]Staging: comedi: fix brace coding style issue in pcl818.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 11, 2011 at 00:56, Barry Song wrote:
-> 2011/7/11 Mike Frysinger:
->> On Sunday, July 10, 2011 23:57:40 Mark Brown wrote:
->>> On Mon, Jul 11, 2011 at 11:53:44AM +0900, Mark Brown wrote:
->>> Linus, CCing you in as apparently you're taking over the clock API work.
->>> Do you need me to forward all the patches to you?
->>
->> along these lines, i dont think the new people on the cc noticed my earlier e-
->> mail:
->> for future series, could you cc uclinux-dist-devel@blackfin.uclinux.org ?  we
->> dont do clock management on Blackfin parts atm, but it's something we would
->> like to start doing.  our hardware can easily benefit from this.
->
-> Except that, AFAIK, arch/blackfin/mach-xxx is much similar with
-> arch/arm/mach-xxx with a lot of platform, i2c, spi board information.
-> it is probably we can also benefit from device tree as what ARM is
-> doing.
+From: Ravishankar <ravi.shankar@greenturtles.in>
 
-i dont think device trees are a requirement for the clock api
+This is a patch to the pcl818.c file that fixes up a brace warning found by the checkpatch.pl tool
 
-> but not sure whether it is really worthwhile for the current situation
-> and long term plan of blackfin. Anyway, there are not so many blackfin
-> SoC and boards as ARM.
+Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
+---
+ drivers/staging/comedi/drivers/pcl818.c |   11 ++++-------
+ 1 files changed, 4 insertions(+), 7 deletions(-)
 
-there are not plans for device tree support.  no customers have asked
-for it, and we arent in the arm situation where we have a distro (like
-Ubuntu) riding us to have a single build boot on all the different
-platforms.
--mike
+diff --git a/drivers/staging/comedi/drivers/pcl818.c b/drivers/staging/comedi/drivers/pcl818.c
+index b45a9bd..6a7fa42 100644
+--- a/drivers/staging/comedi/drivers/pcl818.c
++++ b/drivers/staging/comedi/drivers/pcl818.c
+@@ -571,9 +571,8 @@ conv_finish:
+ 		return IRQ_HANDLED;
+ 	}
+ 	devpriv->act_chanlist_pos++;
+-	if (devpriv->act_chanlist_pos >= devpriv->act_chanlist_len) {
++	if (devpriv->act_chanlist_pos >= devpriv->act_chanlist_len)
+ 		devpriv->act_chanlist_pos = 0;
+-	}
+ 	s->async->cur_chan++;
+ 	if (s->async->cur_chan >= devpriv->ai_n_chan) {
+ 		/*  printk("E"); */
+@@ -645,9 +644,8 @@ static irqreturn_t interrupt_pcl818_ai_mode13_dma(int irq, void *d)
+ 		comedi_buf_put(s->async, ptr[bufptr++] >> 4);	/*  get one sample */
+ 
+ 		devpriv->act_chanlist_pos++;
+-		if (devpriv->act_chanlist_pos >= devpriv->act_chanlist_len) {
++		if (devpriv->act_chanlist_pos >= devpriv->act_chanlist_len)
+ 			devpriv->act_chanlist_pos = 0;
+-		}
+ 		s->async->cur_chan++;
+ 		if (s->async->cur_chan >= devpriv->ai_n_chan) {
+ 			s->async->cur_chan = 0;
+@@ -805,11 +803,10 @@ static irqreturn_t interrupt_pcl818_ai_mode13_fifo(int irq, void *d)
+ 		return IRQ_HANDLED;
+ 	}
+ 
+-	if (lo & 2) {
++	if (lo & 2)
+ 		len = 512;
+-	} else {
++	else
+ 		len = 0;
+-	}
+ 
+ 	for (i = 0; i < len; i++) {
+ 		lo = inb(dev->iobase + PCL818_FI_DATALO);
+-- 
+1.6.5.2
+
