@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755272Ab1GKLhr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 07:37:47 -0400
-Received: from mx1.emlix.com ([193.175.82.238]:37201 "EHLO mx1.emlix.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754511Ab1GKLhq convert rfc822-to-8bit (ORCPT
+	id S1755498Ab1GKLlo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 07:41:44 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34427 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754801Ab1GKLln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 07:37:46 -0400
-X-Greylist: delayed 2361 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Jul 2011 07:37:46 EDT
-From: =?UTF-8?q?Daniel=20Gl=C3=B6ckner?= <dg@emlix.com>
-To: Alessandro Zummo <a.zummo@towertech.it>
-Cc: "George G. Davis" <gdavis@mvista.com>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Daniel=20Gl=C3=B6ckner?= <dg@emlix.com>
-Subject: [PATCH] rtc-omap: Fix initialization of control register
-Date: Mon, 11 Jul 2011 12:57:46 +0200
-Message-Id: <1310381866-25584-1-git-send-email-dg@emlix.com>
+	Mon, 11 Jul 2011 07:41:43 -0400
+Date: Mon, 11 Jul 2011 20:41:30 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Jeremy Kerr <jeremy.kerr@canonical.com>, Grant Likely <grant@secretlab.ca>,
+        linux-sh@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 5/6] clk: Support multiple instances of the same clock
+ provider
+Message-ID: <20110711114127.GI5092@opensource.wolfsonmicro.com>
+References: <20110711025344.GA27497@opensource.wolfsonmicro.com>
+ <1310352837-4277-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <1310352837-4277-5-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <20110711093439.GB3239@n2100.arm.linux.org.uk>
+ <20110711105342.GE5092@opensource.wolfsonmicro.com>
+ <20110711111153.GH3239@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Organization: emlix gmbh, Goettingen, Germany
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110711111153.GH3239@n2100.arm.linux.org.uk>
+X-Cookie: Advancement in position.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As the comment explains, the intention of the code is to clear the
-OMAP_RTC_CTRL_MODE_12_24 bit, but instead it only clears the
-OMAP_RTC_CTRL_SPLIT and OMAP_RTC_CTRL_AUTO_COMP bits, which should be
-kept. OMAP_RTC_CTRL_DISABLE, OMAP_RTC_CTRL_SET_32_COUNTER,
-OMAP_RTC_CTRL_TEST, and OMAP_RTC_CTRL_ROUND_30S are also better off
-being cleared.
+On Mon, Jul 11, 2011 at 12:11:53PM +0100, Russell King - ARM Linux wrote:
+> On Mon, Jul 11, 2011 at 07:53:45PM +0900, Mark Brown wrote:
+> > We do need some way to have some idea which clocks we're talking about,
+> > and for off-SoC stuff passing around struct clk pointers is rather
+> > painful.  At some point some bit of code is going to have to get hold of
+> > the actual struct clk and then map it onto the devices using it.
 
-Signed-off-by: Daniel Glöckner <dg@emlix.com>
----
- drivers/rtc/rtc-omap.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> As I haven't seen any of this "passing around struct clk pointers" crap
+> recently, I can only guess at what you're saying.  I thought all that
+> had been solved with _proper_ use of clkdev.
 
-diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
-index bcae8dd..7789002 100644
---- a/drivers/rtc/rtc-omap.c
-+++ b/drivers/rtc/rtc-omap.c
-@@ -368,7 +368,7 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
- 		pr_info("%s: already running\n", pdev->name);
- 
- 	/* force to 24 hour mode */
--	new_ctrl = reg & ~(OMAP_RTC_CTRL_SPLIT|OMAP_RTC_CTRL_AUTO_COMP);
-+	new_ctrl = reg & (OMAP_RTC_CTRL_SPLIT|OMAP_RTC_CTRL_AUTO_COMP);
- 	new_ctrl |= OMAP_RTC_CTRL_STOP;
- 
- 	/* BOARD-SPECIFIC CUSTOMIZATION CAN GO HERE:
--- 
-1.7.1
+The problem is getting the data into clkdev in the first place for the
+off-SoC devices.
 
+> clkdev can provide you with a struct clk for _any_ device in the system
+> where its name is known at build time.
+
+Right, on the consumer side it's all sorted and works really well.  The
+trick is on the provider side where you need to have the clock available
+to be able to add the mappings for it.
+
+Perhaps I'm just missing something about how this should all work -
+actually, the regulator solution probably works fine here.  Pass an
+array of mappings into either the driver or the clock subsystem and have
+them add the mappings when the provider registers.  Whichever way around
+should just be some hooks in the new subsystem.
