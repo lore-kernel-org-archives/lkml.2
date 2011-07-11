@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756854Ab1GKCWa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 22:22:30 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:34236 "EHLO
-	rtits2.realtek.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756512Ab1GKCW2 (ORCPT
+	id S1756920Ab1GKCh0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 22:37:26 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:40988 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756670Ab1GKChX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 22:22:28 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.13 with qID p6B2MGwp008030, This message is released by code: ctaloc0852
-From: <wei_wang@realsil.com.cn>
-To: <gregkh@suse.de>, <devel@linuxdriverproject.org>,
-        <linux-kernel@vger.kernel.org>
-CC: wwang <wei_wang@realsil.com.cn>
-Subject: [PATCH] staging: rts_pstor: Fix a miswriting
-Date: Mon, 11 Jul 2011 10:20:20 +0800
-X-BOX-Message-Id: p6B2MGwp008030
-Message-ID: <1310350820-6785-1-git-send-email-wei_wang@realsil.com.cn>
-X-Mailer: git-send-email 1.7.6
-MIME-Version: 1.0
-Content-Type: text/plain
+	Sun, 10 Jul 2011 22:37:23 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Subject:Message-ID:In-Reply-To:X-Mailer:X-Identified-User;
+	b=luNq5D4q8I2gJb+pQ8z8HIrt7cuRCPn4d5M5jadb/gZr90FSfjno6d8Kht/b8WLel0ad/49lDDtsypms3gH+P/bCwmwh7Di9ySBQmHIn2lA/8ev6ouebNbKU9NlCsrLK;
+Date: Sun, 10 Jul 2011 19:21:28 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: linux-wimax@intel.com
+Cc: wimax@linuxwimax.org
+Cc: rdunlap@xenotime.net
+Subject: [PATCH 1/1] wimax: delete struct wimax_dev field rfkill_input
+Message-ID: <1310350888180@xenotime.net>
+In-Reply-To: 
+X-Mailer: gregkh_patchbomb
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: wwang <wei_wang@realsil.com.cn>
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-cppcheck reported: [staging/rts_pstor/sd.c:3730] -> [staging/rts_pstor/sd.c:3726]: (style) Found duplicate if expressions.
-It's a miswriting, and the second if expression should be "(rsp_type == SD_RSP_TYPE_R0)"
+"make htmldocs" warns that struct member "rfkill_input" does not have
+a description.  After searching all kernel .[hc] files, this field
+is not used, so remove it.
 
-Signed-off-by: wwang <wei_wang@realsil.com.cn>
+Warning(include/net/wimax.h:432): No description found for parameter 'rfkill_input'
+
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
 ---
- drivers/staging/rts_pstor/sd.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ include/net/wimax.h |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/staging/rts_pstor/sd.c b/drivers/staging/rts_pstor/sd.c
-index e4b3891..8db14dd 100644
---- a/drivers/staging/rts_pstor/sd.c
-+++ b/drivers/staging/rts_pstor/sd.c
-@@ -3747,7 +3747,7 @@ RTY_SEND_CMD:
- 				if ((ptr[3] & 0x1E) != 0x04) {
- 					TRACE_RET(chip, STATUS_FAIL);
- 				}
--			} else if (rsp_type == SD_RSP_TYPE_R2) {
-+			} else if (rsp_type == SD_RSP_TYPE_R0) {
- 				if ((ptr[3] & 0x1E) != 0x03) {
- 					TRACE_RET(chip, STATUS_FAIL);
- 				}
+--- linux-3.0-rc6-git6.orig/include/net/wimax.h
++++ linux-3.0-rc6-git6/include/net/wimax.h
+@@ -423,7 +423,6 @@ struct wimax_dev {
+ 	int (*op_reset)(struct wimax_dev *wimax_dev);
+ 
+ 	struct rfkill *rfkill;
+-	struct input_dev *rfkill_input;
+ 	unsigned rf_hw;
+ 	unsigned rf_sw;
+ 	char name[32];
+
+
 -- 
-1.7.6
 
