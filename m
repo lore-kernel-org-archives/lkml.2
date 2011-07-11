@@ -1,70 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757511Ab1GKTjT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 15:39:19 -0400
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:41987
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964832Ab1GKTjM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 15:39:12 -0400
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzz8275bhz2dh2a8h668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-SS: 0,
-Date: Mon, 11 Jul 2011 14:38:59 -0500
-From: Scott Wood <scottwood@freescale.com>
-To: Fabio Baltieri <fabio.baltieri@gmail.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Poonam Aggrwal <poonam.aggrwal@freescale.com>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] powerpc/85xx: fix mpic configuration in CAMP mode
-Message-ID: <20110711143859.0e6c95d8@schlenkerla.am.freescale.net>
-In-Reply-To: <CABkP77e6vLmLxk3wCP39GJ7+yKnJZFc7BPUZ1OkdA8d7KkBCiw@mail.gmail.com>
-References: <CABkP77e6vLmLxk3wCP39GJ7+yKnJZFc7BPUZ1OkdA8d7KkBCiw@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+	id S964864Ab1GKTi7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 15:38:59 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:46625 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964832Ab1GKTi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 15:38:57 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Kevin Hilman <khilman@ti.com>
+Subject: Re: [Update][PATCH 6/10] PM / Domains: System-wide transitions support for generic domains (v5)
+Date: Mon, 11 Jul 2011 21:39:50 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc6+; KDE/4.6.0; x86_64; ; )
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Walmsley <paul@pwsan.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>
+References: <Pine.LNX.4.44L0.1107081033000.2208-100000@iolanthe.rowland.org> <201107091615.38915.rjw@sisk.pl> <87oc10zv4g.fsf@ti.com>
+In-Reply-To: <87oc10zv4g.fsf@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+Message-Id: <201107112139.50503.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 10 Jul 2011 20:55:32 +0200
-Fabio Baltieri <fabio.baltieri@gmail.com> wrote:
-
-> Change the string to check for CAMP mode boot on MPC85xx (eg. P2020) to match
-> the one in the corresponding dts files (p2020rdb_camp_core{0,1}.dts).
+On Monday, July 11, 2011, Kevin Hilman wrote:
+> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
 > 
-> Without this fix the mpic is configured as in the SMP boot mode, which causes
-> the first core to report a protected source interrupt error for devices
-> of the other core and lock up.
+> [...]
 > 
-> Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
-> ---
->  arch/powerpc/platforms/85xx/mpc85xx_rdb.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> >
+> > There's one more case to consider, namely devices that are runtime
+> > suspended, set up to wake up the system from sleep states
+> > (ie. device_may_wakeup(dev) returns "true") and such that
+> > genpd->active_wakeup(dev) returns "true" for them, because they need
+> > to be resumed at this point too (arguably, it makes a little sense to
+> > runtime suspend such devices, but that's possible in principle).
+> >
+> > So, IMO, the patch should look like this:
+> >
+> > ---
+> >  drivers/base/power/domain.c |   19 +++++++++++++++++++
+> >  1 file changed, 19 insertions(+)
+> >
+> >> Index: linux-2.6/drivers/base/power/domain.c
+> > ===================================================================
+> > --- linux-2.6.orig/drivers/base/power/domain.c
+> > +++ linux-2.6/drivers/base/power/domain.c
+> > @@ -486,6 +486,22 @@ static void pm_genpd_sync_poweroff(struc
+> >  }
+> >  
+> >  /**
+> > + * resume_needed - Check whether to resume a device before system suspend.
+> > + * @dev: Device to handle.
+> > + * @genpd: PM domain the device belongs to.
+> > + */
+> > +static bool resume_needed(struct device *dev, struct generic_pm_domain *genpd)
+> > +{
+> > +	bool active_wakeup;
+> > +
+> > +	if (!device_can_wakeup(dev))
+> > +		return false;
+> > +
+> > +	active_wakeup = genpd->active_wakeup && genpd->active_wakeup(dev);
+> > +	return device_may_wakeup(dev) ? active_wakeup : !active_wakeup;
 > 
-> diff --git a/arch/powerpc/platforms/85xx/mpc85xx_rdb.c
-> b/arch/powerpc/platforms/85xx/mpc85xx_rdb.c
-> index 088f30b..a1e5e70 100644
-> --- a/arch/powerpc/platforms/85xx/mpc85xx_rdb.c
-> +++ b/arch/powerpc/platforms/85xx/mpc85xx_rdb.c
-> @@ -58,7 +58,7 @@ void __init mpc85xx_rdb_pic_init(void)
->  		return;
->  	}
+> This also returns true and causes a resume if active_wakeup = false and
+> device_may_wakeup() = false.  That doesn't seem right.
+
+This is on purpose. :-)  If active_wakeup is false, the device may signal
+remote wakeup while suspended.  So, if active_wakeup is false and the device
+is suspended, we have to assume that the device has been set up to signal
+remote wakeup for runtime PM (if it is not suspended, attempting to resume it
+will not have any effect).  Now, if device_may_wakeup() returns false in
+addition to that, we may need to change the device's wakeup settings, so the
+driver's callbacks should be invoked during suspend, so we're resuming the
+device (we can't just leave it suspended and then invoke the driver's callbacks
+in the hope they'll do the right thing).
+
+I don't really think we can do anything else without using new device flags.
+
+> > +}
+> > +
+> > +/**
+> >   * pm_genpd_prepare - Start power transition of a device in a PM domain.
+> >   * @dev: Device to start the transition of.
+> >   *
+> > @@ -519,6 +535,9 @@ static int pm_genpd_prepare(struct devic
+> >  		return -EBUSY;
+> >  	}
+> >  
+> > +	if (resume_needed(dev, genpd))
+> > +		pm_runtime_resume(dev);
+> > +
+> >  	genpd_acquire_lock(genpd);
+> >  
+> >  	if (genpd->prepared_count++ == 0)
 > 
-> -	if (of_flat_dt_is_compatible(root, "fsl,85XXRDB-CAMP")) {
-> +	if (of_flat_dt_is_compatible(root, "fsl,MPC85XXRDB-CAMP")) {
->  		mpic = mpic_alloc(np, r.start,
->  			MPIC_PRIMARY |
->  			MPIC_BIG_ENDIAN | MPIC_BROKEN_FRR_NIRQS,
+> IIUC, if a device is runtime suspended when a system suspend happens,
+> the device will be runtime resumed, but never re-suspended.
 
-Shouldn't we be setting MPIC_SINGLE_DEST_CPU in this case (as we do for
-the other case)?
+It will be resuspended by the pm_runtime_idle() in pm_genpd_complete()
+(added by one of the new patches I've been posting for the last few days).
 
-Or just drop this and specify pic-no-reset in the mpic node.
+> Should resumes by the PM core be done with a get (and a corresponding
+> put in .complete())?
 
--Scott
+Not necessarily. :-)
 
+Thanks,
+Rafael
