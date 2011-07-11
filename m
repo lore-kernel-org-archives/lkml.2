@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758418Ab1GKWz5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 18:55:57 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:39943 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758327Ab1GKWz4 (ORCPT
+	id S1758454Ab1GKW6L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 18:58:11 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:51530 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751363Ab1GKW6J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 18:55:56 -0400
-Date: Mon, 11 Jul 2011 17:55:48 -0500 (CDT)
-From: Manoj Iyer <manoj.iyer@canonical.com>
-X-X-Sender: manjo@lazy
-To: Chris Ball <cjb@laptop.org>
-cc: Manoj Iyer <manoj.iyer@canonical.com>,
-        Daniel Manrique <daniel.manrique@canonical.com>,
-        linux-kernel@vger.kernel.org, jbarnes@virtuousgeek.org,
-        matsumur@nts.ricoh.co.jp, linux-pci@vger.kernel.org,
-        linux-mmc@vger.kernel.org
-Subject: Re: [PATCH] mmc: Added quirks for Ricoh 1180:e823 lower base clock
- frequency
-In-Reply-To: <m2wrfofpro.fsf@bob.laptop.org>
-Message-ID: <alpine.DEB.2.02.1107111749370.14531@lazy>
-References: <1310419715-13254-1-git-send-email-manoj.iyer@canonical.com> <1310419715-13254-2-git-send-email-manoj.iyer@canonical.com> <m2wrfofpro.fsf@bob.laptop.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+	Mon, 11 Jul 2011 18:58:09 -0400
+From: Sonny Rao <sonnyrao@chromium.org>
+To: acme@redhat.com
+Cc: rostedt@goodmis.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Sonny Rao <sonnyrao@chromium.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH] [RFC][PATCH] Remove /proc/kallsyms size verification check in perf
+Date: Mon, 11 Jul 2011 15:57:49 -0700
+Message-Id: <1310425070-10389-1-git-send-email-sonnyrao@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> +
->> +		dev_notice(&dev->dev, "Controller base frequency changed to 50Mhz)\n");
->
-> There's an erroneous ")" in this string; I'll replace it with a "." if
-> this patch goes in via my tree.  Also, let's make it "MMC controller"
-> instead of just "Controller".
+The check was failing when I was trying to profile system startup
+because the modules were being loaded and causing the size of
+kallsyms to change.  At first I changed the check to simply make
+sure the size of kallsyms increased, but that wouldn't cover the
+case of a module getting removed (or some removed and larger ones
+loaded).  I can't see any purpose to checking the size
+right after reading it either, so remove the check altogether.
 
-Oops, I can fix that and resend, or would you rather make the change 
-while (if) applying to your tree?
+Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
+---
+ tools/perf/util/trace-event-info.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
->
->> +	}
->> +
->>  }
->>  DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832, ricoh_mmc_fixup_r5c832);
->>  DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832, ricoh_mmc_fixup_r5c832);
->
-> Have you checked to see how SD I/O performance differs after this change?
->
-> (If this is significant, perhaps we want to try lowering the frequency
-> only after a card starts returning errors, since some cards work fine
-> at the higher frequency.)
->
+diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
+index 35729f4..3f1af9f 100644
+--- a/tools/perf/util/trace-event-info.c
++++ b/tools/perf/util/trace-event-info.c
+@@ -440,9 +440,6 @@ static void read_proc_kallsyms(void)
+ 	}
+ 	size = get_size(path);
+ 	write_or_die(&size, 4);
+-	check_size = copy_file(path);
+-	if (size != check_size)
+-		die("error in size of file '%s'", path);
+ 
+ }
+ 
+-- 
+1.7.3.1
 
-This is something I thought about too, I can try and get some data on the 
-cards (that already works) with the patch applied. Do you have any 
-specific benchmarks in mind that you would like me to run? Or will timing 
-read and write will work?
-
-Thanks a ton!
---
-====================
-Manoj Iyer
-Ubuntu/Canonical
-Hardware Enablement
-====================
