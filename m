@@ -1,63 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757545Ab1GKTgx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 15:36:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63694 "EHLO mx1.redhat.com"
+	id S1757667Ab1GKTsi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 15:48:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59775 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752626Ab1GKTgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 15:36:52 -0400
-From: Glauber Costa <glommer@redhat.com>
-To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v6 0/9] Steal time for KVM
-Date: Mon, 11 Jul 2011 15:28:10 -0400
-Message-Id: <1310412499-3873-1-git-send-email-glommer@redhat.com>
+	id S1752964Ab1GKTsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 15:48:37 -0400
+Date: Mon, 11 Jul 2011 21:48:35 +0200
+From: Jan Kara <jack@suse.cz>
+To: Curt Wohlgemuth <curtw@google.com>
+Cc: Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, fengguang.wu@intel.com
+Subject: Re: [PATCH] writeback: Don't wait for completion in
+ writeback_inodes_sb_nr
+Message-ID: <20110711194835.GI5482@quack.suse.cz>
+References: <1309304616-8657-1-git-send-email-curtw@google.com>
+ <20110629005422.GQ32466@dastard>
+ <BANLkTimKtwVZo3D+w9AB2-C83d08YROcMw@mail.gmail.com>
+ <20110629081155.GA5558@infradead.org>
+ <20110629165714.GF17590@quack.suse.cz>
+ <20110629175534.GA32236@infradead.org>
+ <20110629191518.GA23196@quack.suse.cz>
+ <BANLkTinndb4oHi6kNQrTsL86UrKDB=2rK6-gA8FM1Nj8CKYZ+w@mail.gmail.com>
+ <20110711170042.GE5482@quack.suse.cz>
+ <CAO81RMairX_L5qGOcKKpw7gWdcTd2Y+5NL=+BA9EwTCNLCNmLw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAO81RMairX_L5qGOcKKpw7gWdcTd2Y+5NL=+BA9EwTCNLCNmLw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+On Mon 11-07-11 10:11:17, Curt Wohlgemuth wrote:
+> >> One other issue I have with sync as it's structured is that we don't
+> >> do a WB_SYNC_ALL pass on any inode that's only associated with a block
+> >> device, and not on a mounted filesystem.  Blockdev mounts are
+> >> pseudo-mounts, and are explicitly skipped in __sync_filesystem().  So
+> >> if you've written directly to a block device and do a sync, the only
+> >> pass over the pages for this inode are via the
+> >> wakeup_flusher_threads() -- which operates on a BDI, regardless of the
+> >> superblock, and uses WB_SYNC_NONE.
+> >>
+> >> All the sync_filesystem() calls are per-sb, not per-BDI, and they'll
+> >> exclude pseudo-superblocks.
+> >>
+> >> I've seen cases in our modified kernels here at Google in which
+> >> lilo/shutdown failed because of a lack of WB_SYNC_ALL writeback for
+> >> /dev/sda (though I haven't been able to come up with a consistent test
+> >> case, nor reproduce this on an upstream kernel).
+> >  Ho hum, I wonder what would be the cleanest way to fix this. I guess we
+> > could make an exception for 'bdev' superblock in the code but it's ugly.
+> 
+> Yes, it's ugly.
+> 
+> You could declare that sync(2) is just doing it's job, that it's not
+> designed to write dirty pages from devices that don't have filesystems
+> mounted on them; that's what Christoph seems to be saying, and it's
+> what the man pages for sync(2) that I've seen say as well.  But
+> everybody I've talked to about this is surprised, so you could declare
+> it a bug as well :-) .
+> 
+> It seems to me that sys_sync *could* just dispense with iterating over
+> the superblocks, and just iterate over the BDIs, just as
+> wakeup_flusher_threads() does.  I.e., just do two passes over all BDIs
+> -- one with WB_SYNC_NONE, and one with WB_SYNC_ALL.  Well, not quite.
+> It would still have to go to each SB and call the quota_sync and
+> sync_fs callbacks, but those should be cheap.
+  Well, they're not exactly cheap (journaling filesystems have to force
+transaction commits and wait for them) but that does not really matter.
+The real problem is that to wait for IO completion you need some list of
+inodes you want to wait for and you can currently get such list only from
+superblock.
+ 
+> And yes, this would make sys_sync and sys_syncfs more different than
+> they are today.
 
-All ACKs being collected, I hope this can be merged.
-Only patch 4/9 differs from the last submission. It merges
-Marcelo's suggestions, so I didn't transposed the other ACKs to it
-All the rest, is kept the same.
-
-Enjoy
-
-Glauber Costa (8):
-  KVM-HDR Add constant to represent KVM MSRs enabled bit
-  KVM-HDR: KVM Steal time implementation
-  KVM-HV: KVM Steal time implementation
-  KVM-GST: Add a pv_ops stub for steal time
-  add jump labels for ia64 paravirt
-  KVM-GST: KVM Steal time accounting
-  KVM-GST: adjust scheduler cpu power
-  KVM-GST: KVM Steal time registration
-
-Gleb Natapov (1):
-  introduce kvm_read_guest_cached
-
- Documentation/kernel-parameters.txt   |    4 ++
- Documentation/virtual/kvm/msr.txt     |   35 +++++++++++++
- arch/ia64/include/asm/paravirt.h      |    4 ++
- arch/ia64/kernel/paravirt.c           |    2 +
- arch/x86/Kconfig                      |   12 +++++
- arch/x86/include/asm/kvm_host.h       |    9 +++
- arch/x86/include/asm/kvm_para.h       |   15 ++++++
- arch/x86/include/asm/paravirt.h       |    9 +++
- arch/x86/include/asm/paravirt_types.h |    1 +
- arch/x86/kernel/kvm.c                 |   73 +++++++++++++++++++++++++++
- arch/x86/kernel/kvmclock.c            |    2 +
- arch/x86/kernel/paravirt.c            |    9 +++
- arch/x86/kvm/Kconfig                  |    1 +
- arch/x86/kvm/x86.c                    |   74 +++++++++++++++++++++++++++-
- include/linux/kvm_host.h              |    3 +
- kernel/sched.c                        |   88 +++++++++++++++++++++++++++++----
- kernel/sched_features.h               |    4 +-
- virt/kvm/kvm_main.c                   |   20 +++++++
- 18 files changed, 351 insertions(+), 14 deletions(-)
-
+								Honza
 -- 
-1.7.3.4
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
