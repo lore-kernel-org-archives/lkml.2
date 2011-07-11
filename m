@@ -1,30 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757237Ab1GKHGg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 03:06:36 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:60061 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757083Ab1GKHGf (ORCPT
+	id S1757249Ab1GKHUg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 03:20:36 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:63848 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757158Ab1GKHUf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 03:06:35 -0400
+	Mon, 11 Jul 2011 03:20:35 -0400
 From: Ravishankar <ravishankarkm32@gmail.com>
 To: gregkh@suse.de, wfp5p@virginia.edu
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Ravishankar <ravi.shankar@greenturtles.in>,
         Ravishankar <ravishankarkm32@gmail.com>
-Subject: [PATCH 8/8] Staging: comedi: fix printk() issue in pcl818.c
-Date: Mon, 11 Jul 2011 12:49:14 +0530
-Message-Id: <1310368754-25560-1-git-send-email-ravishankarkm32@gmail.com>
+Subject: [PATCH 9/9] Staging: comedi: fix printk issue in pcl818.c
+Date: Mon, 11 Jul 2011 13:03:05 +0530
+Message-Id: <1310369585-26899-1-git-send-email-ravishankarkm32@gmail.com>
 X-Mailer: git-send-email 1.6.5.2
-In-Reply-To: <[PATCH 7/7]Staging: comedi: fix printk issue in pcl818.c>
-References: <[PATCH 7/7]Staging: comedi: fix printk issue in pcl818.c>
+In-Reply-To: <[PATCH 8/8]Staging: comedi: fix printk issue in pcl818.c>
+References: <[PATCH 8/8]Staging: comedi: fix printk issue in pcl818.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ravishankar <ravi.shankar@greenturtles.in>
 
-This is a patch to the pcl818.c file that fixes up a printk warning found by the checkpatch.pl tool
+This is a patch to the pcl818.c file that fixes up a printk() warning found by the checkpatch.pl tool
 
 Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
 ---
@@ -32,36 +32,36 @@ Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
  1 files changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/staging/comedi/drivers/pcl818.c b/drivers/staging/comedi/drivers/pcl818.c
-index ae097b3..21f1cc9 100644
+index 21f1cc9..2fdb8c9 100644
 --- a/drivers/staging/comedi/drivers/pcl818.c
 +++ b/drivers/staging/comedi/drivers/pcl818.c
-@@ -1447,7 +1447,7 @@ static int ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 	struct comedi_cmd *cmd = &s->async->cmd;
- 	int retval;
+@@ -1534,7 +1534,7 @@ static int pcl818_ai_cancel(struct comedi_device *dev,
+ 	}
  
--	printk("pcl818_ai_cmd()\n");
-+	printk(KERN_INFO "pcl818_ai_cmd()\n");
- 	devpriv->ai_n_chan = cmd->chanlist_len;
- 	devpriv->ai_chanlist = cmd->chanlist;
- 	devpriv->ai_flags = cmd->flags;
-@@ -1465,7 +1465,7 @@ static int ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 		if (cmd->convert_src == TRIG_TIMER) {	/*  mode 1 */
- 			devpriv->ai_timer1 = cmd->convert_arg;
- 			retval = pcl818_ai_cmd_mode(1, dev, s);
--			printk("pcl818_ai_cmd() end\n");
-+			printk(KERN_INFO "pcl818_ai_cmd() end\n");
- 			return retval;
- 		}
- 		if (cmd->convert_src == TRIG_EXT) {	/*  mode 3 */
-@@ -1484,7 +1484,7 @@ static int pcl818_ai_cancel(struct comedi_device *dev,
- 			    struct comedi_subdevice *s)
- {
- 	if (devpriv->irq_blocked > 0) {
--		printk("pcl818_ai_cancel()\n");
-+		printk(KERN_INFO "pcl818_ai_cancel()\n");
- 		devpriv->irq_was_now_closed = 1;
+ end:
+-	printk("pcl818_ai_cancel() end\n");
++	printk(KERN_INFO "pcl818_ai_cancel() end\n");
+ 	return 0;
+ }
  
- 		switch (devpriv->ai_mode) {
+@@ -1738,7 +1738,7 @@ static int pcl818_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 
+ 	/* claim our I/O space */
+ 	iobase = it->options[0];
+-	printk("comedi%d: pcl818:  board=%s, ioport=0x%03lx",
++	printk(KERN_INFO "comedi%d: pcl818:  board=%s, ioport=0x%03lx",
+ 	       dev->minor, this_board->name, iobase);
+ 	devpriv->io_range = this_board->io_range;
+ 	if ((this_board->fifo) && (it->options[2] == -1)) {	/*  we've board with FIFO and we want to use FIFO */
+@@ -1753,7 +1753,7 @@ static int pcl818_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	dev->iobase = iobase;
+ 
+ 	if (pcl818_check(iobase)) {
+-		printk(", I can't detect board. FAIL!\n");
++		printk(KERN_ERR ", I can't detect board. FAIL!\n");
+ 		return -EIO;
+ 	}
+ 
 -- 
 1.6.5.2
 
