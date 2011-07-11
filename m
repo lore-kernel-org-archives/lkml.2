@@ -1,35 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757739Ab1GKONx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 10:13:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43363 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757694Ab1GKONw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 10:13:52 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20110711134147.GA6853@infradead.org>
-References: <20110711134147.GA6853@infradead.org> <20110711132057.14641.36229.stgit@warthog.procyon.org.uk>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: dhowells@redhat.com, viro@ZenIV.linux.org.uk, autofs@linux.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ian Kent <raven@themaw.net>
-Subject: Re: [PATCH] VFS: Fix automount for negative autofs dentries
-Date: Mon, 11 Jul 2011 15:13:41 +0100
-Message-ID: <16882.1310393621@redhat.com>
+	id S1757715Ab1GKOPS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 10:15:18 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:51078 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757604Ab1GKOPQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 10:15:16 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Paul Menage <menage@google.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 0/7] cgroups: New max number of tasks subsystem (was: cgroups rlim subsystem)
+Date: Mon, 11 Jul 2011 16:14:59 +0200
+Message-Id: <1310393706-321-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Hellwig <hch@infradead.org> wrote:
+Hi all,
 
-> would do the same.
+Changes in this release are:
 
-But is much less obvious.  The LOOKUP_FOLLOW flag is the primary reason for
-this statement.  The rest are subordinate and would be wholly irrelevant if
-LOOKUP_FOLLOW was to be removed from the list.
+* switch from general rlim subsystem to self-contained max number of tasks
+subsystem
 
-David
+* Don't use subsys->fork() callback but a static call to avoid cgroups
+complications.
+
+* When moving a task accross cgroups, don't charge/uncharge the common
+ancestors, to fix race against concurrent forks.
+To fix that, Paul proposed a res_counter_move_charge() that do
+all in once. But we need to be able to cancel the attachment in case
+a following subsystem refuses the attachment itself. Thus the charge
+and uncharge still need to be seperate. More specifically, we can
+only uncharge the old cgroup once we are sure of the attachment. Because
+we can't cancel that uncharge later due to possible forks in the middle.
+
+Thanks.
+
+Frederic Weisbecker (7):
+  cgroups: Add res_counter_write_u64() API
+  cgroups: New resource counter inheritance API
+  cgroups: Add previous cgroup in can_attach_task/attach_task callbacks
+  cgroups: New cancel_attach_task subsystem callback
+  cgroups: Ability to stop res charge propagation on bounded ancestor
+  cgroups: Add res counter common ancestor searching
+  cgroups: Add a max number of tasks subsystem
+
+ block/blk-cgroup.c            |   10 ++-
+ include/linux/cgroup.h        |   15 +++-
+ include/linux/cgroup_subsys.h |    8 ++
+ include/linux/res_counter.h   |   12 +++
+ init/Kconfig                  |    7 ++
+ kernel/Makefile               |    1 +
+ kernel/cgroup.c               |   25 ++++--
+ kernel/cgroup_freezer.c       |    3 +-
+ kernel/cgroup_max_tasks.c     |  176 +++++++++++++++++++++++++++++++++++++++++
+ kernel/cpuset.c               |    6 +-
+ kernel/events/core.c          |    5 +-
+ kernel/fork.c                 |    4 +
+ kernel/res_counter.c          |   88 ++++++++++++++++++---
+ kernel/sched.c                |    6 +-
+ 14 files changed, 335 insertions(+), 31 deletions(-)
+ create mode 100644 kernel/cgroup_max_tasks.c
+
+-- 
+1.7.5.4
+
