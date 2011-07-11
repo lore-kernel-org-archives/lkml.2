@@ -1,101 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964826Ab1GKTYp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 15:24:45 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:53805 "EHLO song.cn.fujitsu.com"
+	id S1757318Ab1GKTZS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 15:25:18 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:65173 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1757263Ab1GKTYn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 15:24:43 -0400
-Message-ID: <4E1B4E70.1040408@cn.fujitsu.com>
-Date: Tue, 12 Jul 2011 03:26:40 +0800
+	id S1755013Ab1GKTZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 15:25:16 -0400
+Message-ID: <4E1B4E92.6080201@cn.fujitsu.com>
+Date: Tue, 12 Jul 2011 03:27:14 +0800
 From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
 To: Avi Kivity <avi@redhat.com>
 CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         KVM <kvm@vger.kernel.org>
-Subject: [PATCH v4 08/18] KVM: MMU: count used shadow pages on prepareing
- path
+Subject: [PATCH v4 09/18] KVM: MMU: split kvm_mmu_free_page
 References: <4E1B4CF8.605@cn.fujitsu.com>
 In-Reply-To: <4E1B4CF8.605@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-07-12 03:24:00,
+ 2011-07-12 03:24:33,
 	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-07-12 03:24:00,
-	Serialize complete at 2011-07-12 03:24:00
+ 2011-07-12 03:24:33,
+	Serialize complete at 2011-07-12 03:24:33
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move counting used shadow pages from commiting path to preparing path to
-reduce tlb flush on some paths
+Split kvm_mmu_free_page to kvm_mmu_isolate_page and
+kvm_mmu_free_page
+
+One is used to remove the page from cache under mmu lock and the other is
+used to free page table out of mmu lock
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- arch/x86/kvm/mmu.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+ arch/x86/kvm/mmu.c |   21 ++++++++++++++++++---
+ 1 files changed, 18 insertions(+), 3 deletions(-)
 
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index a62ba46..91d3069 100644
+index 91d3069..2f8543c 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -1039,7 +1039,7 @@ static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
+@@ -1039,14 +1039,28 @@ static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
  	percpu_counter_add(&kvm_total_used_mmu_pages, nr);
  }
  
--static void kvm_mmu_free_page(struct kvm *kvm, struct kvm_mmu_page *sp)
-+static void kvm_mmu_free_page(struct kvm_mmu_page *sp)
+-static void kvm_mmu_free_page(struct kvm_mmu_page *sp)
++/*
++ * Remove the sp from shadow page cache, after call it,
++ * we can not find this sp from the cache, and the shadow
++ * page table is still valid.
++ * It should be under the protection of mmu lock.
++ */
++static void kvm_mmu_isolate_page(struct kvm_mmu_page *sp)
  {
  	ASSERT(is_empty_shadow_page(sp->spt));
  	hlist_del(&sp->hash_link);
-@@ -1048,7 +1048,6 @@ static void kvm_mmu_free_page(struct kvm *kvm, struct kvm_mmu_page *sp)
+-	list_del(&sp->link);
+-	free_page((unsigned long)sp->spt);
  	if (!sp->role.direct)
  		free_page((unsigned long)sp->gfns);
++}
++
++/*
++ * Free the shadow page table and the sp, we can do it
++ * out of the protection of mmu lock.
++ */
++static void kvm_mmu_free_page(struct kvm_mmu_page *sp)
++{
++	list_del(&sp->link);
++	free_page((unsigned long)sp->spt);
  	kmem_cache_free(mmu_page_header_cache, sp);
--	kvm_mod_used_mmu_pages(kvm, -1);
  }
  
- static unsigned kvm_page_table_hashfn(gfn_t gfn)
-@@ -1655,6 +1654,7 @@ static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
- 		/* Count self */
- 		ret++;
- 		list_move(&sp->link, invalid_list);
-+		kvm_mod_used_mmu_pages(kvm, -1);
- 	} else {
- 		list_move(&sp->link, &kvm->arch.active_mmu_pages);
- 		kvm_reload_remote_mmus(kvm);
-@@ -1678,7 +1678,7 @@ static void kvm_mmu_commit_zap_page(struct kvm *kvm,
+@@ -1678,6 +1692,7 @@ static void kvm_mmu_commit_zap_page(struct kvm *kvm,
  	do {
  		sp = list_first_entry(invalid_list, struct kvm_mmu_page, link);
  		WARN_ON(!sp->role.invalid || sp->root_count);
--		kvm_mmu_free_page(kvm, sp);
-+		kvm_mmu_free_page(sp);
++		kvm_mmu_isolate_page(sp);
+ 		kvm_mmu_free_page(sp);
  	} while (!list_empty(invalid_list));
  
- }
-@@ -1704,8 +1704,8 @@ void kvm_mmu_change_mmu_pages(struct kvm *kvm, unsigned int goal_nr_mmu_pages)
- 			page = container_of(kvm->arch.active_mmu_pages.prev,
- 					    struct kvm_mmu_page, link);
- 			kvm_mmu_prepare_zap_page(kvm, page, &invalid_list);
--			kvm_mmu_commit_zap_page(kvm, &invalid_list);
- 		}
-+		kvm_mmu_commit_zap_page(kvm, &invalid_list);
- 		goal_nr_mmu_pages = kvm->arch.n_used_mmu_pages;
- 	}
- 
-@@ -3302,9 +3302,9 @@ void __kvm_mmu_free_some_pages(struct kvm_vcpu *vcpu)
- 		sp = container_of(vcpu->kvm->arch.active_mmu_pages.prev,
- 				  struct kvm_mmu_page, link);
- 		kvm_mmu_prepare_zap_page(vcpu->kvm, sp, &invalid_list);
--		kvm_mmu_commit_zap_page(vcpu->kvm, &invalid_list);
- 		++vcpu->kvm->stat.mmu_recycled;
- 	}
-+	kvm_mmu_commit_zap_page(vcpu->kvm, &invalid_list);
- }
- 
- int kvm_mmu_page_fault(struct kvm_vcpu *vcpu, gva_t cr2, u32 error_code,
 -- 
 1.7.5.4
 
