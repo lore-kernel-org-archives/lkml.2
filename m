@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756961Ab1GKM6o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 08:58:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55489 "EHLO mx1.redhat.com"
+	id S1757173Ab1GKNBU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 09:01:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36661 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752900Ab1GKM6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 08:58:43 -0400
-Message-ID: <4E1AF36A.2060605@redhat.com>
-Date: Mon, 11 Jul 2011 15:58:18 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Glauber Costa <glommer@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Eric B Munson <emunson@mgebm.net>
-Subject: Re: [PATCH v5 4/9] KVM-HV: KVM Steal time implementation
-References: <1309793548-16714-1-git-send-email-glommer@redhat.com> <1309793548-16714-5-git-send-email-glommer@redhat.com> <20110707105113.GA3986@amt.cnet> <4E15E7E5.6020909@redhat.com>
-In-Reply-To: <4E15E7E5.6020909@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756725Ab1GKNBS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 09:01:18 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 1/3] mm: vmscan: Do use use PF_SWAPWRITE from zone_reclaim
+Date: Mon, 11 Jul 2011 14:01:12 +0100
+Message-Id: <1310389274-13995-2-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1310389274-13995-1-git-send-email-mgorman@suse.de>
+References: <1310389274-13995-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/07/2011 08:07 PM, Glauber Costa wrote:
->>> +static void record_steal_time(struct kvm_vcpu *vcpu)
->>> +{
->>> +    u64 delta;
->>> +
->>> +    if (!(vcpu->arch.st.msr_val&  KVM_MSR_ENABLED))
->>> +        return;
->>> +
->>> +    if (unlikely(kvm_read_guest_cached(vcpu->kvm,&vcpu->arch.st.stime,
->>> + &vcpu->arch.st.steal, sizeof(struct kvm_steal_time))))
->>> +        return;
->>
->> The guest memory page is not pinned, sleeping via
->> __copy_from_user/to_user is not allowed in vcpu_load context. Either pin
->> it or use atomic acessors.
->
->
-> I do recognize the problem.
-> Avi, what's your take here?
->
+Zone reclaim is similar to direct reclaim in a number of respects.
+PF_SWAPWRITE is used by kswapd to avoid a write-congestion check
+but it's set also set for zone_reclaim which is inappropriate.
+Setting it potentially allows zone_reclaim users to cause large IO
+stalls which is worse than remote memory accesses.
 
-The easiest solution is to set a KVM_REQ bit in atomic context, and move 
-the sleepy code to vcpu_enter_guest().
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/vmscan.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
->>> +    case MSR_KVM_STEAL_TIME:
->>> +        vcpu->arch.st.msr_val = data;
->>> +
->>> +        if (!(data&  KVM_MSR_ENABLED)) {
->>> +            break;
->>> +        }
->>
->> On failure below this point, msr_val should be cleared of 
->> KVM_MSR_ENABLED?
-> No, msr_val has to hold whatever the guest wrote into it.
-> We should probably use an independent variable here to indicate that 
-> we failed to activate it.
-
-If we fail, we return a #GP to the guest (and don't write any value into 
-the msr).
-
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 4f49535..ebef213 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -3063,7 +3063,7 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+ 	 * and we also need to be able to write out pages for RECLAIM_WRITE
+ 	 * and RECLAIM_SWAP.
+ 	 */
+-	p->flags |= PF_MEMALLOC | PF_SWAPWRITE;
++	p->flags |= PF_MEMALLOC;
+ 	lockdep_set_current_reclaim_state(gfp_mask);
+ 	reclaim_state.reclaimed_slab = 0;
+ 	p->reclaim_state = &reclaim_state;
+@@ -3116,7 +3116,7 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+ 	}
+ 
+ 	p->reclaim_state = NULL;
+-	current->flags &= ~(PF_MEMALLOC | PF_SWAPWRITE);
++	current->flags &= ~PF_MEMALLOC;
+ 	lockdep_clear_current_reclaim_state();
+ 	return sc.nr_reclaimed >= nr_pages;
+ }
 -- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+1.7.3.4
 
