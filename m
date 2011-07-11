@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755294Ab1GKLcA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 07:32:00 -0400
-Received: from smtp.turknetserver.com ([193.192.122.40]:52577 "EHLO
-	smtp.turknetserver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752978Ab1GKLb7 (ORCPT
+	id S1755272Ab1GKLhr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 07:37:47 -0400
+Received: from mx1.emlix.com ([193.175.82.238]:37201 "EHLO mx1.emlix.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754511Ab1GKLhq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 07:31:59 -0400
-Message-ID: <4E1ADF26.10605@turknetserver.com>
-Date: Mon, 11 Jul 2011 14:31:50 +0300
-From: Tarkan Erimer <tarkan@turknetserver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	Mon, 11 Jul 2011 07:37:46 -0400
+X-Greylist: delayed 2361 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Jul 2011 07:37:46 EDT
+From: =?UTF-8?q?Daniel=20Gl=C3=B6ckner?= <dg@emlix.com>
+To: Alessandro Zummo <a.zummo@towertech.it>
+Cc: "George G. Davis" <gdavis@mvista.com>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Daniel=20Gl=C3=B6ckner?= <dg@emlix.com>
+Subject: [PATCH] rtc-omap: Fix initialization of control register
+Date: Mon, 11 Jul 2011 12:57:46 +0200
+Message-Id: <1310381866-25584-1-git-send-email-dg@emlix.com>
 MIME-Version: 1.0
-To: Chris Mason <chris.mason@oracle.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] btrfs fixes
-References: <1310151138-sup-6548@shiny>
-In-Reply-To: <1310151138-sup-6548@shiny>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Organization: emlix gmbh, Goettingen, Germany
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/08/2011 09:55 PM, Chris Mason wrote:
-> Hi everyone,
->
-> The for-linus branch of the btrfs-unstable repo:
->
-> git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable.git for-linus
->
-> Has three more fixes.  We're fixing oopsen during space balancing (btrfs
-> filesystem balance /mnt)) and during device removal.
->
-> Dave Sterba also sent in a patch to make /proc/mounts properly match a
-> few new mount options, which he (correctly I think) considers a
-> regression fix because it makes it hard for testers/users to verify the
-> options in a running config.
->
+As the comment explains, the intention of the code is to clear the
+OMAP_RTC_CTRL_MODE_12_24 bit, but instead it only clears the
+OMAP_RTC_CTRL_SPLIT and OMAP_RTC_CTRL_AUTO_COMP bits, which should be
+kept. OMAP_RTC_CTRL_DISABLE, OMAP_RTC_CTRL_SET_32_COUNTER,
+OMAP_RTC_CTRL_TEST, and OMAP_RTC_CTRL_ROUND_30S are also better off
+being cleared.
 
-Hi Chris,
+Signed-off-by: Daniel Glöckner <dg@emlix.com>
+---
+ drivers/rtc/rtc-omap.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Maybe, any development regarding to the "[BUG] Btrfs: Corrupted root 
-filesystem" subjected bug posted by me ?
+diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
+index bcae8dd..7789002 100644
+--- a/drivers/rtc/rtc-omap.c
++++ b/drivers/rtc/rtc-omap.c
+@@ -368,7 +368,7 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
+ 		pr_info("%s: already running\n", pdev->name);
+ 
+ 	/* force to 24 hour mode */
+-	new_ctrl = reg & ~(OMAP_RTC_CTRL_SPLIT|OMAP_RTC_CTRL_AUTO_COMP);
++	new_ctrl = reg & (OMAP_RTC_CTRL_SPLIT|OMAP_RTC_CTRL_AUTO_COMP);
+ 	new_ctrl |= OMAP_RTC_CTRL_STOP;
+ 
+ 	/* BOARD-SPECIFIC CUSTOMIZATION CAN GO HERE:
+-- 
+1.7.1
 
-
-Tarkan
