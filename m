@@ -1,89 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753452Ab1GKOTw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 10:19:52 -0400
-Received: from lon1-post-1.mail.demon.net ([195.173.77.148]:56739 "EHLO
-	lon1-post-1.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751948Ab1GKOTv (ORCPT
+	id S1754146Ab1GKOV2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 10:21:28 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:59653 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750785Ab1GKOV1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 10:19:51 -0400
-Subject: [PATCH] block: reorder request_queue to remove 64 bit alignment
- padding
-From: Richard Kennedy <richard@rsk.demon.co.uk>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Tejun Heo <tj@kernel.org>, lkml <linux-kernel@vger.kernel.org>
-Date: Mon, 11 Jul 2011 15:19:48 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1310393989.3058.5.camel@castor.rsk>
-Mime-Version: 1.0
+	Mon, 11 Jul 2011 10:21:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <CADZ9YHiSmjtXx1Ue4tfUzN9zpj2qjABY_fhMP+SOm2_vYrrFfw@mail.gmail.com>
+References: <cover.1310267866.git.luto@mit.edu> <e9c49596e493c1ebb80b52d2dff7bd50191ebc0e.1310267866.git.luto@mit.edu>
+ <CADZ9YHiSmjtXx1Ue4tfUzN9zpj2qjABY_fhMP+SOm2_vYrrFfw@mail.gmail.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Mon, 11 Jul 2011 08:21:07 -0600
+X-Google-Sender-Auth: XkZhQ9Cxb2Fu_RYvtApGdLogCYU
+Message-ID: <CAObL_7GZEQO1YUv2bco+2b=H98=pA-ZFUj1JZYZ_jG3KhSq8Fw@mail.gmail.com>
+Subject: Re: [PATCH v2 3/8] x86-64: Allow alternative patching in the vDSO
+To: Rakib Mullick <rakib.mullick@gmail.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        John Stultz <johnstul@us.ibm.com>, Borislav Petkov <bp@amd64.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reorder request_queue to remove 16 bytes of alignment padding in 64 bit
-builds.
+On Mon, Jul 11, 2011 at 4:41 AM, Rakib Mullick <rakib.mullick@gmail.com> wrote:
+> On Sun, Jul 10, 2011 at 9:22 AM, Andy Lutomirski <luto@mit.edu> wrote:
 
-On my config this shrinks the size of this structure from 1608 to 1592
-bytes and therefore needs one fewer cachelines.
+>> +static void patch_vdso(void *vdso, size_t len)
+>
+> I think, patch_vdso should mark with __init. Since it's been only
+> called from an __init function. We might hit a section mismatch, even
+> if we don't hit section mismatch, the will function get removed after
+> system boot - saves some .text size.
 
-Also trivially move the open bracket { to be on the same line as the
-structure name to make it easier to grep. 
+Sure.  It won't make any difference, because my compiler at least is
+smart enough to inline the whole function into init_vdso_vars, but
+it's the right thing to do anyway.
 
+>> +       return;  /* nothing to patch */
+>
+> If there's nothing to patch, I think (perhaps) - it would be nice to
+> let user know through printk.
 
-Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
-----
+Will do.  I verified it myself by dumping the vdso image from memory
+and confirming that it got patched correctly, but if the code ever
+bitrots it'll be nice to have the warning.
 
-patch against v3.0-rc6
-compiled & tested on x86_64
-
-regards
-Richard
-
-
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 1a23722..c4649e8 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -260,8 +260,7 @@ struct queue_limits {
- 	unsigned char		discard_zeroes_data;
- };
- 
--struct request_queue
--{
-+struct request_queue {
- 	/*
- 	 * Together with queue_head for cacheline sharing
- 	 */
-@@ -304,14 +303,14 @@ struct request_queue
- 	void			*queuedata;
- 
- 	/*
--	 * queue needs bounce pages for pages above this limit
-+	 * various queue flags, see QUEUE_* below
- 	 */
--	gfp_t			bounce_gfp;
-+	unsigned long		queue_flags;
- 
- 	/*
--	 * various queue flags, see QUEUE_* below
-+	 * queue needs bounce pages for pages above this limit
- 	 */
--	unsigned long		queue_flags;
-+	gfp_t			bounce_gfp;
- 
- 	/*
- 	 * protects queue structures from reentrancy. ->__queue_lock should
-@@ -334,8 +333,8 @@ struct request_queue
- 	unsigned int		nr_congestion_off;
- 	unsigned int		nr_batching;
- 
--	void			*dma_drain_buffer;
- 	unsigned int		dma_drain_size;
-+	void			*dma_drain_buffer;
- 	unsigned int		dma_pad_mask;
- 	unsigned int		dma_alignment;
- 
-
-
+--Andy
