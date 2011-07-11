@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756922Ab1GKAFJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 20:05:09 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:10418 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756903Ab1GKAFF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 20:05:05 -0400
-From: Colin Cross <ccross@android.com>
-To: linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Colin Cross <ccross@android.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH] PM: Reintroduce dropped call to check_wakeup_irqs
-Date: Sun, 10 Jul 2011 17:04:26 -0700
-Message-Id: <1310342666-2493-1-git-send-email-ccross@android.com>
-X-Mailer: git-send-email 1.7.4.1
-X-System-Of-Record: true
+	id S1756903Ab1GKAZU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 20:25:20 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:55323 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754678Ab1GKAZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jul 2011 20:25:16 -0400
+Date: Sun, 10 Jul 2011 20:25:02 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] jbd2,rcu: correctly use RCU
+Message-ID: <20110711002502.GC28763@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Lai Jiangshan <laijs@cn.fujitsu.com>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <ec67960d0864680d18a43ec5275baba3f6e1dd94.1308131436.git.laijs@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ec67960d0864680d18a43ec5275baba3f6e1dd94.1308131436.git.laijs@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch 2e711c04dbbf7a7732a3f7073b1fc285d12b369d
-(PM: Remove sysdev suspend, resume and shutdown operations)
-deleted sysdev_suspend, which was being relied on to call
-check_wakeup_irqs in suspend.  If check_wakeup_irqs is not
-called, wake interrupts that are pending when suspend is
-entered may be lost.  It also breaks IRQCHIP_MASK_ON_SUSPEND,
-which is handled in check_wakeup_irqs.
+On Thu, Jun 16, 2011 at 09:47:04AM +0800, Lai Jiangshan wrote:
+> In read site, we need to use local_ptr = rcu_dereference(),
+> and then use this local_ptr to read the content.
+> 
+> In update site, we should assign/publish the new object/pointer after
+> the content of the new object/pointer is fully initialized,
+> and we can't not touch the object after the pointer assignment.
+> rcu_assign_pointer() is need for the assignement.
+> 
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-This patch adds a call to check_wakeup_irqs in syscore_suspend,
-similar to what was deleted in sysdev_suspend.
+Thanks, applied.
 
-CC: Rafael J. Wysocki <rjw@sisk.pl>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Colin Cross <ccross@android.com>
----
- drivers/base/syscore.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+> @@ -2447,24 +2447,25 @@ const char *jbd2_dev_to_name(dev_t device)
+>  	int	i = hash_32(device, CACHE_SIZE_BITS);
+>  	char	*ret;
+>  	struct block_device *bd;
+> -	static struct devname_cache *new_dev;
+> +	static struct devname_cache *cache;
 
-diff --git a/drivers/base/syscore.c b/drivers/base/syscore.c
-index c126db3..9b8bbe0 100644
---- a/drivers/base/syscore.c
-+++ b/drivers/base/syscore.c
-@@ -9,6 +9,7 @@
- #include <linux/syscore_ops.h>
- #include <linux/mutex.h>
- #include <linux/module.h>
-+#include <linux/interrupt.h>
- 
- static LIST_HEAD(syscore_ops_list);
- static DEFINE_MUTEX(syscore_ops_lock);
-@@ -48,6 +49,13 @@ int syscore_suspend(void)
- 	struct syscore_ops *ops;
- 	int ret = 0;
- 
-+	pr_debug("Checking wake-up interrupts\n");
-+
-+	/* Return error code if there are any wake-up interrupts pending */
-+	ret = check_wakeup_irqs();
-+	if (ret)
-+		return ret;
-+
- 	WARN_ONCE(!irqs_disabled(),
- 		"Interrupts enabled before system core suspend.\n");
- 
--- 
-1.7.4.1
+I also removed the static modifier to the struct devname_cache
+pointer.  It's pointless, and in fact introduces a bug if two CPU's
+try to run jbd2_dev_to_name() at the same time.
 
+						- Ted
