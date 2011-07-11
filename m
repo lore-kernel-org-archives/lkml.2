@@ -1,39 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757381Ab1GKTVt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 15:21:49 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:36325
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756232Ab1GKTVs (ORCPT
+	id S1757404Ab1GKTWY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 15:22:24 -0400
+Received: from smtpo.poczta.interia.pl ([217.74.65.206]:48312 "EHLO
+	smtpo.poczta.interia.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754114Ab1GKTWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 15:21:48 -0400
-Date: Mon, 11 Jul 2011 15:21:44 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 08/14] inode: move to per-sb LRU locks
-Message-ID: <20110711192144.GA23723@infradead.org>
-References: <1310098486-6453-1-git-send-email-david@fromorbit.com>
- <1310098486-6453-9-git-send-email-david@fromorbit.com>
+	Mon, 11 Jul 2011 15:22:23 -0400
+Message-ID: <4E1B4D5C.7090301@interia.pl>
+Date: Mon, 11 Jul 2011 20:22:04 +0100
+From: =?UTF-8?b?UmFmYcWC?= Bilski <rafalbilski@interia.pl>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:5.0) Gecko/20110628
+	Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1310098486-6453-9-git-send-email-david@fromorbit.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Harald Welte <HaraldWelte@viatech.com>,
+        LKLM <linux-kernel@vger.kernel.org>
+Subject: CPUFREQ: Mark e_powersaver driver as EXPERIMENTAL and DANGEROUS
+X-Interia-Antivirus: OK
+X-EMID: 9c77f958
+Content-Type: text/plain; charset="UTF-8"; format="flowed"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 08, 2011 at 02:14:40PM +1000, Dave Chinner wrote:
-> From: Dave Chinner <dchinner@redhat.com>
-> 
-> With the inode LRUs moving to per-sb structures, there is no longer
-> a need for a global inode_lru_lock. The locking can be made more
-> fine-grained by moving to a per-sb LRU lock, isolating the LRU
-> operations of different filesytsems completely from each other.
+Hello!
 
-Btw, any reason this is not done for dcache_lru_lock?
+Sorry for late reply. I've been aware problem with "e_powersaver". 
+Nobody ever e-mailed me :-)
+So far I'm aware "e_powersaver" fully respects values given it by CPU. 
+Only code added by VIA
+seems to be faulty for me. As I understand ACPI P-States provide 
+unstable 400MHz for system in question too.
+If "e_powersaver" was based on outdated documentation I'm sorry. This 
+driver was neccessary for systems with
+C7 CPU's which didn't provide BIOS P-states. But it was in early and 
+dark ages of first C7 CPU's.
 
+Bye
+
+
+
+
+----------------------------------------------------------------
+Najwieksza baza samochodow nowych i uzywanych
+Sprawdz >> http://linkint.pl/f29e3
