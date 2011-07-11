@@ -1,47 +1,28 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1754567Ab1GHSIS (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
-        Fri, 8 Jul 2011 14:08:18 -0400
-Received: from mail.ltoscas.com.ar ([200.43.197.4]:59128 "HELO ltoscas.com.ar"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-        id S1750757Ab1GHSIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-        Fri, 8 Jul 2011 14:08:15 -0400
-X-Greylist: delayed 33074 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Jul 2011 14:08:15 EDT
-X-Virus-Checked: Checked by ClamAV on ltoscas.com.ar
-Message-ID: <20110707205922.66385fpnfkxzk78k@webmail.ltoscas.com.ar>
-Date: Thu,  7 Jul 2011 20:59:22 -0300
-From: Wilon Albert <wilsonabertloanfirm@comcast.net>
-Reply-to: wilsonabertloanfirm@yahoo.com
-To: undisclosed-recipients:;
-Subject: Loan Offer.
+        id S1758421Ab1GLBwn (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
+        Mon, 11 Jul 2011 21:52:43 -0400
+Received: from webmail.terengganu.gov.my ([202.188.29.6]:41679 "EHLO
+        terengganu.gov.my" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1752630Ab1GLBwm (ORCPT
+        <rfc822;linux-kernel@vger.kernel.org>);
+        Mon, 11 Jul 2011 21:52:42 -0400
+From: "Mat Hassan b Ariffin UPMN" <hassan@terengganu.gov.my>
+Reply-To: mr.milton_danel04@yahoo.com.hk
+Subject: $250,000.00
+Date: Tue, 12 Jul 2011 02:20:50 +0800
+Message-Id: <20110711182056.M54135@terengganu.gov.my>
+X-Mailer: OpenWebMail 2.53 
+X-OriginatingIP: 82.128.17.135 (hassan)
 MIME-Version: 1.0
 Content-Type: text/plain;
- charset=BIG5;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.5)
+        charset=iso-8859-1
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 
-Loan Offer
-Do you need a loan?
-Arrangements to Borrow up to $10,000,000.00
-Choose between 1 to 25 years repayment period.
-Choose between monthly and annual repayment plan
-Flexible loan terms and conditions.
-
-All these plans and more on contacting us.
-Please apply by sending your email to the
-contact below.
-
-Agent Name:  DEXTER SMITH
-Agent Email: wilsonabertloanfirm@yahoo.com
-
-Regards
-Online Sec
-Management
-
+Please be informed that you have $250,000.00 Lodged in our Western Union to 
+transfer to you as Compensation. Contact Mr.Milton Daniel Further detail Via 
+Email: mr.milton_daniel01@yahoo.com.hk
 
