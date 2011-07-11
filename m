@@ -1,58 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757586Ab1GKRts (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 13:49:48 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:33934 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751951Ab1GKRtq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757957Ab1GKRt6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 13:49:58 -0400
+Received: from mx1.fusionio.com ([66.114.96.30]:42571 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754224Ab1GKRtq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 11 Jul 2011 13:49:46 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=YGeezqDNcLBUml4GTumuzMxHFCo6uaZ0XgORfsQrCjMoHdrXFYUeeFJm3iw/AcPBe
-	5DzUoshSg2hUNj3mowsbA==
-Date: Mon, 11 Jul 2011 10:49:31 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-cc: Andrew Morton <akpm@linux-foundation.org>, greg@kroah.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 34/49] gma500: the GEM and GTT code is device
- independant
-In-Reply-To: <20110711172517.46907e62@lxorguk.ukuu.org.uk>
-Message-ID: <alpine.LSU.2.00.1107111033440.1752@sister.anvils>
-References: <20110705141038.23872.55303.stgit@localhost.localdomain> <20110705144140.23872.86541.stgit@localhost.localdomain> <alpine.LSU.2.00.1107071742250.10362@sister.anvils> <20110708093859.299958df@lxorguk.ukuu.org.uk> <alpine.LSU.2.00.1107080917430.1781@sister.anvils>
- <20110711172517.46907e62@lxorguk.ukuu.org.uk>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+X-ASG-Debug-ID: 1310406586-03d6a510a9147fb0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4E1B37B1.9030608@fusionio.com>
+Date: Mon, 11 Jul 2011 19:49:37 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: Muthu Kumar <muthu.lkml@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH]: block: try-2 (modified): Initialize bi_rw in mpage so
+  bio_add can make use of it.
+References: <CAFR8uec5MxvHEWS=hgRXo1eunjQqWrpPCVXthdGMfWR+Yitw_A@mail.gmail.com>
+X-ASG-Orig-Subj: Re: [PATCH]: block: try-2 (modified): Initialize bi_rw in mpage so
+  bio_add can make use of it.
+In-Reply-To: <CAFR8uec5MxvHEWS=hgRXo1eunjQqWrpPCVXthdGMfWR+Yitw_A@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1310406586
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.68630
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Jul 2011, Alan Cox wrote:
-> > Your <4GB pages won't get swapped out while they're pinned.  But can
-> > it happen that they'd be unpinned, swapped out, swapped back in >4GB
-> > pages, then cause trouble for you when needed again?
+On 2011-07-11 19:31, Muthu Kumar wrote:
+> Jens et al,
 > 
-> It does look that way, in which case that will eventually need fixing. At
-> the moment you can't put enough memory into a device using these chips
-> but that won't always be true I imagine.
+> do_mpage_readpage()/__mpage_writepage(): When they allocate a new bio,
+> bi_rw is not initialized. So later when they call __bio_add_page(),
+> struct bvec_merge_data bvm's .bi_rw will not be initialized with right
+> direction.
+> It will be useful for some merge functions if they know the direction
+> of transfer.
+> 
+> Let me know if this looks good. There are few more places like this
+> (e.g blkdev_issue_zeroout()). Would it make sense to send patch for
+> these cases also?
 
-Thanks, I won't worry about it at this moment, but we'd better not forget.
+For this particular case, doing it when the bio is allocated makes more
+sense. That will avoid a similar error in there in the future.
 
-If it's easy for you to include a WARN_ON_ONCE check (perhaps
-on page_to_pfn(page)), that may be worth doing to remind us.
+Something ala the below.
 
-It's a bit sad to learn this requirement just after I'd completed
-removing the readpage copying code, and a bit strange to have shmem
-confined by hardware constraints; but I guess that's what we took on
-when we opened it up to GEM.
+diff --git a/fs/mpage.c b/fs/mpage.c
+index fdfae9f..a2b8604 100644
+--- a/fs/mpage.c
++++ b/fs/mpage.c
+@@ -80,7 +80,7 @@ static struct bio *mpage_bio_submit(int rw, struct bio *bio)
+ 
+ static struct bio *
+ mpage_alloc(struct block_device *bdev,
+-		sector_t first_sector, int nr_vecs,
++		sector_t first_sector, int nr_vecs, int rw,
+ 		gfp_t gfp_flags)
+ {
+ 	struct bio *bio;
+@@ -93,8 +93,9 @@ mpage_alloc(struct block_device *bdev,
+ 	}
+ 
+ 	if (bio) {
+-		bio->bi_bdev = bdev;
+ 		bio->bi_sector = first_sector;
++		bio->bi_bdev = bdev;
++		bio->bi_rw = rw;
+ 	}
+ 	return bio;
+ }
+@@ -288,7 +289,7 @@ alloc_new:
+ 	if (bio == NULL) {
+ 		bio = mpage_alloc(bdev, blocks[0] << (blkbits - 9),
+ 			  	min_t(int, nr_pages, bio_get_nr_vecs(bdev)),
+-				GFP_KERNEL);
++				READ, GFP_KERNEL);
+ 		if (bio == NULL)
+ 			goto confused;
+ 	}
+@@ -580,7 +581,8 @@ page_is_mapped:
+ alloc_new:
+ 	if (bio == NULL) {
+ 		bio = mpage_alloc(bdev, blocks[0] << (blkbits - 9),
+-				bio_get_nr_vecs(bdev), GFP_NOFS|__GFP_HIGH);
++				bio_get_nr_vecs(bdev), WRITE,
++				GFP_NOFS|__GFP_HIGH);
+ 		if (bio == NULL)
+ 			goto confused;
+ 	}
 
-It will probably make sense for me to add synchronous migration when
-a shmem swap page is found not to match the contraints wanted by the
-mapping it goes into: mainly for NUMA, but covering your case too.
+-- 
+Jens Axboe
 
-Hugh
