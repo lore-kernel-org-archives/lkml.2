@@ -1,53 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756717Ab1GKMRk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 08:17:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33639 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756285Ab1GKMRj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 08:17:39 -0400
-Message-ID: <4E1AE9E2.2000603@suse.cz>
-Date: Mon, 11 Jul 2011 14:17:38 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+	id S1756678Ab1GKMWI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 08:22:08 -0400
+Received: from ausxipps301.us.dell.com ([143.166.148.223]:33289 "EHLO
+	ausxipps301.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756439Ab1GKMWH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 08:22:07 -0400
+X-Loopcount0: from 10.175.216.251
+From: <Narendra_K@Dell.com>
+To: <kernel@linuxace.com>
+CC: <linux-kernel@vger.kernel.org>, <Jordan_Hargrave@Dell.com>,
+        <jbarnes@virtuousgeek.org>, <Shyam_Iyer@Dell.com>,
+        <Charles_Rose@Dell.com>
+Date: Mon, 11 Jul 2011 17:52:01 +0530
+Subject: RE: [PATCH] Fix embedded nic order on Dell PowerEdge systems
+Thread-Topic: [PATCH] Fix embedded nic order on Dell PowerEdge systems
+Thread-Index: Acw+sg0u2QQ+ELYJQvqiOQDyp8Z6yQBEUWdQ
+Message-ID: <E31FB011129F30488D5861F3839049151E9056C57A@BLRX7MCDC201.AMER.DELL.COM>
+References: <1307564053-2996-1-git-send-email-kernel@linuxace.com>
+ <E31FB011129F30488D5861F3839049151DA349A086@BLRX7MCDC201.AMER.DELL.COM>
+ <20110710033243.GA12541@linuxace.com>
+In-Reply-To: <20110710033243.GA12541@linuxace.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: =?UTF-8?B?VsOtY3RvciBNYW51ZWwgSsOhcXVleiBMZWFs?= 
-	<vjaquez@igalia.com>
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        Jianbin Kang <kjbmail@gmail.com>, Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: [PATCH] kbuild: incremental tags updating with GNU GLOBAL
-References: <1310379990-4367-1-git-send-email-vjaquez@igalia.com>
-In-Reply-To: <1310379990-4367-1-git-send-email-vjaquez@igalia.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11.7.2011 12:26, Víctor Manuel Jáquez Leal wrote:
-> Instead of generating the tag database each time the target is ran, is better
-> just update incrementally the database. It will expend less time.
->
-> Signed-off-by: Víctor Manuel Jáquez Leal<vjaquez@igalia.com>
-> ---
->   scripts/tags.sh |    6 +++++-
->   1 files changed, 5 insertions(+), 1 deletions(-)
->
-> diff --git a/scripts/tags.sh b/scripts/tags.sh
-> index 75c5d24..6a2fedc 100755
-> --- a/scripts/tags.sh
-> +++ b/scripts/tags.sh
-> @@ -116,7 +116,11 @@ docscope()
->
->   dogtags()
->   {
-> -	all_sources | gtags -f -
-> +	if global -p; then
-> +		global -u
-> +	else
-> +		all_sources | gtags -f -
-> +	fi
+> -----Original Message-----
+> From: Phil Oester [mailto:kernel@linuxace.com]
+> Sent: Sunday, July 10, 2011 9:03 AM
+> To: K, Narendra
+> Cc: linux-kernel@vger.kernel.org; Hargrave, Jordan;
+> jbarnes@virtuousgeek.org
+> Subject: Re: [PATCH] Fix embedded nic order on Dell PowerEdge systems
+> 
+> On Thu, Jun 09, 2011 at 01:03:00AM -0700, Narendra_K@Dell.com wrote:
+> > > -----Original Message-----
+> > > From: Phil Oester [mailto:kernel@linuxace.com]
+> > > Sent: Thursday, June 09, 2011 1:44 AM
+> > > To: linux-kernel@vger.kernel.org
+> > > Cc: K, Narendra; Hargrave, Jordan; jbarnes@virtuousgeek.org
+> > > Subject: [PATCH] Fix embedded nic order on Dell PowerEdge systems
+> > >
+> > >     In commit 6e8af08dfa40b747002207d3ce8e8b43a050d99f ("PCI: enable
+> > > pci=bfsort
+> > >     by default on future Dell systems"), the callback added was placed at
+> the
+> > >     top of the list, before the specific PowerEdge models.  This ends up
+> > >     breaking the more specific models listed, since the new callback
+> handles
+> > >     all Dell systems but the older systems don't have the new 0xB1 smbios
+> > >     entry.
+> > >
+> > >     Fix this by placing the new check _after_ the more specific PowerEdge
+> > >     sytems.
+> > >
+> > >     Phil Oester
+> > >
+> > >     Signed-off-by: Phil Oester <kernel@linuxace.com>
+> > >
+> > > diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c index
+> > > 5fe7502..92df322 100644
+> > > --- a/arch/x86/pci/common.c
+> > > +++ b/arch/x86/pci/common.c
+> > > @@ -247,13 +247,6 @@ static const struct dmi_system_id
+> > > __devinitconst pciprobe_dmi_table[] = {
+> > >  	},
+> > >  #endif		/* __i386__ */
+> > >  	{
+> > > -		.callback = find_sort_method,
+> > > -		.ident = "Dell System",
+> > > -		.matches = {
+> > > -			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc"),
+> > > -		},
+> > > -	},
+> > > -	{
+> > >  		.callback = set_bf_sort,
+> > >  		.ident = "Dell PowerEdge 1950",
+> > >  		.matches = {
+> > > @@ -294,6 +287,13 @@ static const struct dmi_system_id
+> > > __devinitconst pciprobe_dmi_table[] = {
+> > >  		},
+> > >  	},
+> > >  	{
+> > > +		.callback = find_sort_method,
+> > > +		.ident = "Dell System",
+> > > +		.matches = {
+> > > +			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc"),
+> > > +		},
+> > > +	},
+> > > +	{
+> > >  		.callback = set_bf_sort,
+> > >  		.ident = "HP ProLiant BL20p G3",
+> > >  		.matches = {
+> > [>]
+> >
+> > Hi, this issue is fixed and the fix is in Jesse's linux-next tree.
+> >
+> > http://marc.info/?l=linux-pci&m=130108034729082 (x86/PCI: Preserve
+> > existing pci=bfsort whitelist for Dell systems)
+> >
+> > With regards,
+> > Narendra K
+> 
+> This patch is still not included in 3.0.0-rc6, nor in any stable series.
+> Some reason for this?  And did Dell do any testing at all on existing hardware
+> before submitting 6e8af08dfa4?  Seems even a minor amount of testing
+> should have shown this regression.
+> 
+> Given 3.0.0 is expected soon, perhaps this can be included?  Jesse?
+> 
 
-Will this handle new source files properly?
+Hi, I think for the patch to be included into stable, it needs to be in the mainline.
+Hi Jesse, please consider queuing this patch  for mainline.
 
-Michal
+With regards,
+Narendra K
+
+
