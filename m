@@ -1,55 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755799Ab1GKBYn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 21:24:43 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:51760 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753471Ab1GKBYj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 21:24:39 -0400
-Date: Sun, 10 Jul 2011 21:24:29 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] jbd2,rcu: correctly use RCU
-Message-ID: <20110711012429.GD28763@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Lai Jiangshan <laijs@cn.fujitsu.com>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <ec67960d0864680d18a43ec5275baba3f6e1dd94.1308131436.git.laijs@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ec67960d0864680d18a43ec5275baba3f6e1dd94.1308131436.git.laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1755969Ab1GKBmK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 21:42:10 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:40442 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754317Ab1GKBmH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jul 2011 21:42:07 -0400
+From: Dmitry Fink <dmitry.fink@palm.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dmitry Fink <dmitry.fink@palm.com>
+Subject: [PATCH] mmap: Fix and tidy up overcommit page arithmetic
+Date: Sun, 10 Jul 2011 18:41:50 -0700
+Message-Id: <1310348510-16957-1-git-send-email-dmitry.fink@palm.com>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <CAEwNFnDRZwSXnVP3EdXqYnNBrumcrihQ+m=N4fb9xouNE=TKRg@mail.gmail.com>
+References: <CAEwNFnDRZwSXnVP3EdXqYnNBrumcrihQ+m=N4fb9xouNE=TKRg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 16, 2011 at 09:47:04AM +0800, Lai Jiangshan wrote:
-> In read site, we need to use local_ptr = rcu_dereference(),
-> and then use this local_ptr to read the content.
-> 
-> In update site, we should assign/publish the new object/pointer after
-> the content of the new object/pointer is fully initialized,
-> and we can't not touch the object after the pointer assignment.
-> rcu_assign_pointer() is need for the assignement.
-> 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+- shmem pages are not immediately available, but they are not
+potentially available either, even if we swap them out, they will
+just relocate from memory into swap, total amount of immediate and
+potentially available memory is not going to be affected, so we
+shouldn't count them as potentially free in the first place.
 
-Actually, after thinking about this some more, I think I'm going to
-just change the jbd2 events to simply print MAJOR(__entry->dev) and
-MINOR(__entry->dev).  Otherwise, the perf tool stops dies and stops
-interpreting the trace points when it tries to interpret
-"jbd2_dev_to_name(REC->dev)" in the print format.
+- nr_free_pages() is not an expensive operation anymore, there is
+no need to split the decision making in two halves and repeat code.
 
-So I'll just drop jbd2_dev_to_name() completely for the jbd2
-tracepoints.  It's not worth it.
+Signed-off-by: Dmitry Fink <dmitry.fink@palm.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+---
+ mm/mmap.c  |   34 +++++++++++++---------------------
+ mm/nommu.c |   34 +++++++++++++---------------------
+ 2 files changed, 26 insertions(+), 42 deletions(-)
 
-	      				- Ted
+diff --git a/mm/mmap.c b/mm/mmap.c
+index d49736f..a65efd4 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -122,9 +122,17 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
+ 		return 0;
+ 
+ 	if (sysctl_overcommit_memory == OVERCOMMIT_GUESS) {
+-		unsigned long n;
++		free = global_page_state(NR_FREE_PAGES);
++		free += global_page_state(NR_FILE_PAGES);
++
++		/*
++		 * shmem pages shouldn't be counted as free in this
++		 * case, they can't be purged, only swapped out, and
++		 * that won't affect the overall amount of available
++		 * memory in the system.
++		 */
++		free -= global_page_state(NR_SHMEM);
+ 
+-		free = global_page_state(NR_FILE_PAGES);
+ 		free += nr_swap_pages;
+ 
+ 		/*
+@@ -136,34 +144,18 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
+ 		free += global_page_state(NR_SLAB_RECLAIMABLE);
+ 
+ 		/*
+-		 * Leave the last 3% for root
+-		 */
+-		if (!cap_sys_admin)
+-			free -= free / 32;
+-
+-		if (free > pages)
+-			return 0;
+-
+-		/*
+-		 * nr_free_pages() is very expensive on large systems,
+-		 * only call if we're about to fail.
+-		 */
+-		n = nr_free_pages();
+-
+-		/*
+ 		 * Leave reserved pages. The pages are not for anonymous pages.
+ 		 */
+-		if (n <= totalreserve_pages)
++		if (free <= totalreserve_pages)
+ 			goto error;
+ 		else
+-			n -= totalreserve_pages;
++			free -= totalreserve_pages;
+ 
+ 		/*
+ 		 * Leave the last 3% for root
+ 		 */
+ 		if (!cap_sys_admin)
+-			n -= n / 32;
+-		free += n;
++			free -= free / 32;
+ 
+ 		if (free > pages)
+ 			return 0;
+diff --git a/mm/nommu.c b/mm/nommu.c
+index 9edc897..76f2b4b 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -1885,9 +1885,17 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
+ 		return 0;
+ 
+ 	if (sysctl_overcommit_memory == OVERCOMMIT_GUESS) {
+-		unsigned long n;
++		free = global_page_state(NR_FREE_PAGES);
++		free += global_page_state(NR_FILE_PAGES);
++
++		/*
++		 * shmem pages shouldn't be counted as free in this
++		 * case, they can't be purged, only swapped out, and
++		 * that won't affect the overall amount of available
++		 * memory in the system.
++		 */
++		free -= global_page_state(NR_SHMEM);
+ 
+-		free = global_page_state(NR_FILE_PAGES);
+ 		free += nr_swap_pages;
+ 
+ 		/*
+@@ -1899,34 +1907,18 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
+ 		free += global_page_state(NR_SLAB_RECLAIMABLE);
+ 
+ 		/*
+-		 * Leave the last 3% for root
+-		 */
+-		if (!cap_sys_admin)
+-			free -= free / 32;
+-
+-		if (free > pages)
+-			return 0;
+-
+-		/*
+-		 * nr_free_pages() is very expensive on large systems,
+-		 * only call if we're about to fail.
+-		 */
+-		n = nr_free_pages();
+-
+-		/*
+ 		 * Leave reserved pages. The pages are not for anonymous pages.
+ 		 */
+-		if (n <= totalreserve_pages)
++		if (free <= totalreserve_pages)
+ 			goto error;
+ 		else
+-			n -= totalreserve_pages;
++			free -= totalreserve_pages;
+ 
+ 		/*
+ 		 * Leave the last 3% for root
+ 		 */
+ 		if (!cap_sys_admin)
+-			n -= n / 32;
+-		free += n;
++			free -= free / 32;
+ 
+ 		if (free > pages)
+ 			return 0;
+-- 
+1.7.6
+
