@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757422Ab1GKI1l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 04:27:41 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:10496 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757371Ab1GKI1k (ORCPT
+	id S1757426Ab1GKI3v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 04:29:51 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:43196 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757371Ab1GKI3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 04:27:40 -0400
-Message-ID: <4E1AB3F7.2070600@dsn.okisemi.com>
-Date: Mon, 11 Jul 2011 17:27:35 +0900
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: linux-kernel@vger.kernel.org, alexander.stein@systec-electronic.com,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com,
-        tglx@linutronix.de
-Subject: Re: [PATCH v4] pch_gpio: Support interrupt function
-References: <1309486572-2789-1-git-send-email-tomoya-linux@dsn.okisemi.com> <20110704163137.GA28042@ponder.secretlab.ca> <4E128A7D.9020508@dsn.okisemi.com> <20110705035902.GB13713@ponder.secretlab.ca> <4E12A69C.8030709@dsn.okisemi.com>
-In-Reply-To: <4E12A69C.8030709@dsn.okisemi.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 11 Jul 2011 04:29:50 -0400
+From: Ravishankar <ravishankarkm32@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>,
+        Ravishankar <ravishankarkm32@gmail.com>
+Subject: [PATCH 12/12] Staging: comedi: fix printk() issue in pcmmio.c
+Date: Mon, 11 Jul 2011 14:12:28 +0530
+Message-Id: <1310373748-1463-1-git-send-email-ravishankarkm32@gmail.com>
+X-Mailer: git-send-email 1.6.5.2
+In-Reply-To: <[PATCH]Staging: comedi: fix printk() warning issue in pcmmio.c>
+References: <[PATCH]Staging: comedi: fix printk() warning issue in pcmmio.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+From: Ravishankar <ravi.shankar@greenturtles.in>
 
-(2011/07/05 14:52), Tomoya MORINAGA wrote:
-> (2011/07/05 12:59), Grant Likely wrote:
->>> As we discussed before,
->>> without specifying PCH_IRQ_BASE,
->>> it seemed IRQ number collision issue occurred.
->>> Thus, I added PCH_IRQ_BASE.
->>
->> Then fix the irq collision. If the core code hands out an irq range
->> that is in-use by some other driver, then the other driver isn't
->> reserving it's irqs correctly and it needs to be fixed. Hacking
->> around the problem doesn't help anything in the long run.
->>
->
-> I tried to work irq_alloc_descs with dynamic allocation.(Set 2nd
-> parameter as 0).
-> However it seems the issue remains to be seen.
-> I attached dmesg output log, /proc/interrupts log and modified PCH-GPIO
-> source code.
->
-> Could you give me your opinion or information ?
->
-> NOTE: I tested on linux-3.0-rc3
->
-How is it going ?
+This is a patch to the pcmmio.c file that fixes up a printk  warning found by the checkpatch.pl tool
 
+Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
+
+---
+
+Earlier indentation was not proper now it's been fixed
+---
+ drivers/staging/comedi/drivers/pcmmio.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/staging/comedi/drivers/pcmmio.c b/drivers/staging/comedi/drivers/pcmmio.c
+index f2e88e5..172ac99 100644
+--- a/drivers/staging/comedi/drivers/pcmmio.c
++++ b/drivers/staging/comedi/drivers/pcmmio.c
+@@ -663,7 +663,7 @@ static int pcmmio_dio_insn_bits(struct comedi_device *dev,
+ 		}
+ #ifdef DAMMIT_ITS_BROKEN
+ 		/* DEBUG */
+-		printk("data_out_byte %02x\n", (unsigned)byte);
++		printk(KERN_DEBUG "data_out_byte %02x\n", (unsigned) byte);
+ #endif
+ 		/* save the digital input lines for this byte.. */
+ 		s->state |= ((unsigned int)byte) << offset;
 -- 
-tomoya
-OKI SEMICONDUCTOR CO., LTD.
+1.6.5.2
+
