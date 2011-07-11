@@ -1,91 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756918Ab1GKAav (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 20:30:51 -0400
-Received: from eterpe-smout.broadpark.no ([80.202.8.16]:44342 "EHLO
-	eterpe-smout.broadpark.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756799Ab1GKAau (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 20:30:50 -0400
-X-Greylist: delayed 3601 seconds by postgrey-1.27 at vger.kernel.org; Sun, 10 Jul 2011 20:30:50 EDT
-MIME-version: 1.0
-Content-transfer-encoding: 8BIT
-Content-type: text/plain; charset=ISO-8859-10; format=flowed
-Message-id: <4E1A3627.9020606@broadpark.no>
-Date: Mon, 11 Jul 2011 01:30:47 +0200
-From: =?ISO-8859-10?Q?Bj=F8rn_Forbord?= <bforbord@broadpark.no>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17)
- Gecko/20110516 Lightning/1.0b2 Thunderbird/3.1.10
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: Clemens Ladisch <clemens@ladisch.de>,
-        Joel bourrigaud <joel@bourrigaud.info>, linux1394-devel@lists.sf.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] firewire: ohci: do not bind to Pinnacle or Fujitsu HCI,
- prevent panic
-References: <20110604002938.78c85881@stein> <20110604010625.1a37638e@stein>
- <4DEA697A.1090104@bourrigaud.info> <20110612145303.2099aa81@stein>
- <4DF4FF4F.4020607@bourrigaud.info> <20110612210111.3e979131@stein>
- <4DF528CF.50407@bourrigaud.info> <20110709235410.08004e5d@stein>
- <4E1A161D.1050304@ladisch.de> <20110711012422.1e585783@stein>
-In-reply-to: <20110711012422.1e585783@stein>
+	id S1756926Ab1GKAcv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 20:32:51 -0400
+Received: from mga02.intel.com ([134.134.136.20]:50019 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756799Ab1GKAcv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jul 2011 20:32:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,510,1304319600"; 
+   d="scan'208";a="24198659"
+Subject: Re: i915_gem_inactive_shrink fault
+From: Lin Ming <ming.m.lin@intel.com>
+To: "maciej.rutecki@gmail.com" <maciej.rutecki@gmail.com>
+Cc: Keith Packard <keithp@keithp.com>, lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <201107101710.23262.maciej.rutecki@gmail.com>
+References: <1309856364.18875.110.camel@minggr.sh.intel.com>
+	 <201107101710.23262.maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 11 Jul 2011 08:39:22 +0800
+Message-ID: <1310344762.18875.194.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I saw these mails just now and it's late.  I will check my machine and 
-answer tomorrow
+On Sun, 2011-07-10 at 23:10 +0800, Maciej Rutecki wrote:
+> On wtorek, 5 lipca 2011 o 10:59:24 Lin Ming wrote:
+> > It seems i915 driver loads fail.
+> > 
+> > mlin@wsm:~$ dmesg |grep -i i915
+> > i915 0000:00:02.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
+> > i915 0000:00:02.0: setting latency timer to 64
+> > i915 0000:00:02.0: irq 47 for MSI/MSI-X
+> > WARNING: at /linux-2.6/drivers/gpu/drm/i915/intel_display.c:826
+> > assert_fdi_tx+0xcc/0xd8() [<ffffffff8133d865>]
+> > i915_driver_load+0xb12/0x10e9
+> >  [<ffffffff816a891a>] i915_pci_probe+0x1b/0x1d
+> >  [<ffffffff81d12264>] i915_init+0x8b/0x8d
+> > WARNING: at /linux-2.6/drivers/gpu/drm/i915/intel_display.c:826
+> > assert_fdi_tx+0xcc/0xd8() [<ffffffff8133d865>]
+> > i915_driver_load+0xb12/0x10e9
+> >  [<ffffffff816a891a>] i915_pci_probe+0x1b/0x1d
+> >  [<ffffffff81d12264>] i915_init+0x8b/0x8d
+> > [drm:i915_driver_load] *ERROR* failed to init modeset
+> > i915 0000:00:02.0: PCI INT A disabled
+> > i915: probe of 0000:00:02.0 failed with error -5
+> >  [<ffffffff81355191>] i915_gem_inactive_shrink+0x2b/0x18d
+> > 
+> > 
+> > The fault message as below.
+> > See the attachments for full dmesg, kernel config and lspci output.
+> > 
+> > BUG: unable to handle kernel NULL pointer dereference at 0000000000000060
+> > IP: [<ffffffff816d4422>] mutex_trylock+0x61/0x131
+> > PGD 133cd5067 PUD 134301067 PMD 0
+> > Oops: 0002 [#1] SMP
+> > CPU 3
+> > Modules linked in:
+> > 
+> > Pid: 2322, comm: bash Tainted: G        W   3.0.0-rc6-tip-mlin+ #571 Intel
+> 
+> Older kernels work fine?
 
-Best regards
+No, 2.6.39 faults also.
 
-Bjørn
+Forgot to mention that what I run was
+"echo 3 > /proc/sys/vm/drop_caches".
 
-Den 11. juli 2011 01:24, skrev Stefan Richter:
-> When firewire-ohci is bound to a Pinnacle MovieBoard, eventually a
-> "Register access failure" is logged and an interrupt storm or a kernel
-> panic happens.  https://bugzilla.kernel.org/show_bug.cgi?id=36622
->
-> Until this is sorted out (if that is going to succeed at all), let's
-> just prevent firewire-ohci from touching these devices.
->
-> This device with link layer PCI IDs 11bd:0015 and 1394 PHY IDs
-> 00000e:086613 is apparently a Fujitsu MB86613 --- hence the PHY IDs.
-> Therefore, blacklist the MB86613 too (PCI IDs 10cf:200c).  We only check
-> the vendor ID because there is no other Fujitsu OHCI-1394 PCI device
-> known besides this one.
->
-> Signed-off-by: Stefan Richter<stefanr@s5r6.in-berlin.de>
-> Cc:<stable@kernel.org>
-> ---
-> Supersedes patch "firewire: ohci: do not bind to Pinnacle cards, prevent panic"
->
->   drivers/firewire/ohci.c |    8 ++++++++
->   1 file changed, 8 insertions(+)
->
-> Index: b/drivers/firewire/ohci.c
-> ===================================================================
-> --- a/drivers/firewire/ohci.c
-> +++ b/drivers/firewire/ohci.c
-> @@ -260,6 +260,8 @@ static inline struct fw_ohci *fw_ohci(st
->
->   static char ohci_driver_name[] = KBUILD_MODNAME;
->
-> +#define PCI_VENDOR_ID_FUJITSU		0x10cf
-> +#define PCI_VENDOR_ID_PINNACLE_SYSTEMS	0x11bd
->   #define PCI_DEVICE_ID_AGERE_FW643	0x5901
->   #define PCI_DEVICE_ID_JMICRON_JMB38X_FW	0x2380
->   #define PCI_DEVICE_ID_TI_TSB12LV22	0x8009
-> @@ -3202,6 +3204,12 @@ static int __devinit pci_probe(struct pc
->   	int i, err;
->   	size_t size;
->
-> +	if (dev->vendor == PCI_VENDOR_ID_FUJITSU ||
-> +	    dev->vendor == PCI_VENDOR_ID_PINNACLE_SYSTEMS) {
-> +		dev_err(&dev->dev, "Controller type is not yet supported\n");
-> +		return -ENOSYS;
-> +	}
-> +
->   	ohci = kzalloc(sizeof(*ohci), GFP_KERNEL);
->   	if (ohci == NULL) {
->   		err = -ENOMEM;
->
->
+> 
+> Regards
+
+
