@@ -1,104 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758362Ab1GKThM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 15:37:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20432 "EHLO mx1.redhat.com"
+	id S1758261Ab1GKThK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 15:37:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28508 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757928Ab1GKThD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 15:37:03 -0400
+	id S1757896Ab1GKThB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 15:37:01 -0400
 From: Glauber Costa <glommer@redhat.com>
 To: kvm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
-        Anthony Liguori <aliguori@us.ibm.com>
-Subject: [PATCH v6 5/9] KVM-GST: Add a pv_ops stub for steal time
-Date: Mon, 11 Jul 2011 15:28:15 -0400
-Message-Id: <1310412499-3873-6-git-send-email-glommer@redhat.com>
+        Avi Kivity <avi@redhat.com>, Anthony Liguori <aliguori@us.ibm.com>
+Subject: [PATCH v6 7/9] KVM-GST: KVM Steal time accounting
+Date: Mon, 11 Jul 2011 15:28:17 -0400
+Message-Id: <1310412499-3873-8-git-send-email-glommer@redhat.com>
 In-Reply-To: <1310412499-3873-1-git-send-email-glommer@redhat.com>
 References: <1310412499-3873-1-git-send-email-glommer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a function pointer in one of the many paravirt_ops
-structs, to allow guests to register a steal time function. Besides
-a steal time function, we also declare two jump_labels. They will be
-used to allow the steal time code to be easily bypassed when not
-in use.
+This patch accounts steal time time in account_process_tick.
+If one or more tick is considered stolen in the current
+accounting cycle, user/system accounting is skipped. Idle is fine,
+since the hypervisor does not report steal time if the guest
+is halted.
+
+Accounting steal time from the core scheduler give us the
+advantage of direct acess to the runqueue data. In a later
+opportunity, it can be used to tweak cpu power and make
+the scheduler aware of the time it lost.
 
 Signed-off-by: Glauber Costa <glommer@redhat.com>
 Acked-by: Rik van Riel <riel@redhat.com>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
 Tested-by: Eric B Munson <emunson@mgebm.net>
 CC: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-CC: Peter Zijlstra <peterz@infradead.org>
 CC: Avi Kivity <avi@redhat.com>
 CC: Anthony Liguori <aliguori@us.ibm.com>
 ---
- arch/x86/include/asm/paravirt.h       |    9 +++++++++
- arch/x86/include/asm/paravirt_types.h |    1 +
- arch/x86/kernel/paravirt.c            |    9 +++++++++
- 3 files changed, 19 insertions(+), 0 deletions(-)
+ kernel/sched.c |   41 +++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 41 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
-index ebbc4d8..a7d2db9 100644
---- a/arch/x86/include/asm/paravirt.h
-+++ b/arch/x86/include/asm/paravirt.h
-@@ -230,6 +230,15 @@ static inline unsigned long long paravirt_sched_clock(void)
- 	return PVOP_CALL0(unsigned long long, pv_time_ops.sched_clock);
- }
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 3f2e502..aa6c030 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -75,6 +75,7 @@
+ #include <asm/tlb.h>
+ #include <asm/irq_regs.h>
+ #include <asm/mutex.h>
++#include <asm/paravirt.h>
  
-+struct jump_label_key;
-+extern struct jump_label_key paravirt_steal_enabled;
-+extern struct jump_label_key paravirt_steal_rq_enabled;
+ #include "sched_cpupri.h"
+ #include "workqueue_sched.h"
+@@ -528,6 +529,9 @@ struct rq {
+ #ifdef CONFIG_IRQ_TIME_ACCOUNTING
+ 	u64 prev_irq_time;
+ #endif
++#ifdef CONFIG_PARAVIRT
++	u64 prev_steal_time;
++#endif
+ 
+ 	/* calc_load related fields */
+ 	unsigned long calc_load_update;
+@@ -1953,6 +1957,18 @@ void account_system_vtime(struct task_struct *curr)
+ }
+ EXPORT_SYMBOL_GPL(account_system_vtime);
+ 
++#endif /* CONFIG_IRQ_TIME_ACCOUNTING */
 +
-+static inline u64 paravirt_steal_clock(int cpu)
++#ifdef CONFIG_PARAVIRT
++static inline u64 steal_ticks(u64 steal)
 +{
-+	return PVOP_CALL1(u64, pv_time_ops.steal_clock, cpu);
-+}
++	if (unlikely(steal > NSEC_PER_SEC))
++		return div_u64(steal, TICK_NSEC);
 +
- static inline unsigned long long paravirt_read_pmc(int counter)
++	return __iter_div_u64_rem(steal, TICK_NSEC, &steal);
++}
++#endif
++
+ static void update_rq_clock_task(struct rq *rq, s64 delta)
  {
- 	return PVOP_CALL1(u64, pv_cpu_ops.read_pmc, counter);
-diff --git a/arch/x86/include/asm/paravirt_types.h b/arch/x86/include/asm/paravirt_types.h
-index 8288509..2c76521 100644
---- a/arch/x86/include/asm/paravirt_types.h
-+++ b/arch/x86/include/asm/paravirt_types.h
-@@ -89,6 +89,7 @@ struct pv_lazy_ops {
- 
- struct pv_time_ops {
- 	unsigned long long (*sched_clock)(void);
-+	unsigned long long (*steal_clock)(int cpu);
- 	unsigned long (*get_tsc_khz)(void);
- };
- 
-diff --git a/arch/x86/kernel/paravirt.c b/arch/x86/kernel/paravirt.c
-index 869e1ae..613a793 100644
---- a/arch/x86/kernel/paravirt.c
-+++ b/arch/x86/kernel/paravirt.c
-@@ -202,6 +202,14 @@ static void native_flush_tlb_single(unsigned long addr)
- 	__native_flush_tlb_single(addr);
+ 	s64 irq_delta;
+@@ -3845,6 +3861,25 @@ void account_idle_time(cputime_t cputime)
+ 		cpustat->idle = cputime64_add(cpustat->idle, cputime64);
  }
  
-+struct jump_label_key paravirt_steal_enabled;
-+struct jump_label_key paravirt_steal_rq_enabled;
-+
-+static u64 native_steal_clock(int cpu)
++static __always_inline bool steal_account_process_tick(void)
 +{
-+	return 0;
++#ifdef CONFIG_PARAVIRT
++	if (static_branch(&paravirt_steal_enabled)) {
++		u64 steal, st = 0;
++
++		steal = paravirt_steal_clock(smp_processor_id());
++		steal -= this_rq()->prev_steal_time;
++
++		st = steal_ticks(steal);
++		this_rq()->prev_steal_time += st * TICK_NSEC;
++
++		account_steal_time(st);
++		return st;
++	}
++#endif
++	return false;
 +}
 +
- /* These are in entry.S */
- extern void native_iret(void);
- extern void native_irq_enable_sysexit(void);
-@@ -307,6 +315,7 @@ struct pv_init_ops pv_init_ops = {
+ #ifndef CONFIG_VIRT_CPU_ACCOUNTING
  
- struct pv_time_ops pv_time_ops = {
- 	.sched_clock = native_sched_clock,
-+	.steal_clock = native_steal_clock,
- };
+ #ifdef CONFIG_IRQ_TIME_ACCOUNTING
+@@ -3876,6 +3911,9 @@ static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
+ 	cputime64_t tmp = cputime_to_cputime64(cputime_one_jiffy);
+ 	struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
  
- struct pv_irq_ops pv_irq_ops = {
++	if (steal_account_process_tick())
++		return;
++
+ 	if (irqtime_account_hi_update()) {
+ 		cpustat->irq = cputime64_add(cpustat->irq, tmp);
+ 	} else if (irqtime_account_si_update()) {
+@@ -3929,6 +3967,9 @@ void account_process_tick(struct task_struct *p, int user_tick)
+ 		return;
+ 	}
+ 
++	if (steal_account_process_tick())
++		return;
++
+ 	if (user_tick)
+ 		account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
+ 	else if ((p != rq->idle) || (irq_count() != HARDIRQ_OFFSET))
 -- 
 1.7.3.4
 
