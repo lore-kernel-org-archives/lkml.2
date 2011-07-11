@@ -1,76 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756031Ab1GKLr2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 07:47:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60349 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755417Ab1GKLr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 07:47:26 -0400
-Message-ID: <4E1AE2CC.4010501@suse.de>
-Date: Mon, 11 Jul 2011 13:47:24 +0200
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	id S1756183Ab1GKLuc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 07:50:32 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:35946 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754388Ab1GKLua (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 07:50:30 -0400
+Message-ID: <4E1AE372.1000909@mvista.com>
+Date: Mon, 11 Jul 2011 15:50:10 +0400
+From: Vitaly Kuzmichev <vkuzmichev@mvista.com>
+Reply-To: vkuzmichev@mvista.com
+Organization: MontaVista Software, LLC
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc13 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Greg KH <greg@kroah.com>, Nao Nishijima <nao.nishijima.xt@hitachi.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        jcm@redhat.com, dle-develop@lists.sourceforge.net,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        yrl.pp-manager.tt@hitachi.com, dgilbert@interlog.com,
-        stefanr@s5r6.in-berlin.de
-Subject: Re: [RFC PATCH 0/4] Persistent device name using alias name
-References: <20110708084547.2091.55262.stgit@ltc197.sdl.hitachi.co.jp> <20110708145408.GA2283@kroah.com> <CAPXgP10gThuxOsrxH8_wOddeRB5f2ABypW7EQui-F1hOE97dHQ@mail.gmail.com> <20110708154736.GA7320@kroah.com> <1310140451.3282.85.camel@mulgrave> <CAPXgP12dA72a3ja659GH6uW+ZCMfL6iECaY6ORXwOQ6S5eTvaQ@mail.gmail.com> <CAPXgP11aTKVvrT++_FyZqd8YTzgbRmouUv1iGWfnZsoepQCspg@mail.gmail.com>
-In-Reply-To: <CAPXgP11aTKVvrT++_FyZqd8YTzgbRmouUv1iGWfnZsoepQCspg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: linux-arm-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Wim Van Sebroeck <wim@iguana.be>,
+        Marc Zyngier <marc.zyngier@arm.com>, Colin Cross <ccross@android.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3 1/4] ARM: smp_twd: Fix typo in 'twd_timer_rate' printing
+References: <1310041339-2348-1-git-send-email-vkuzmichev@mvista.com> <1310041396-2461-1-git-send-email-vkuzmichev@mvista.com> <20110707123907.GP8286@n2100.arm.linux.org.uk> <4E15DCE1.8010201@mvista.com> <20110710104740.GD4812@n2100.arm.linux.org.uk>
+In-Reply-To: <20110710104740.GD4812@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/08/2011 06:38 PM, Kay Sievers wrote:
-> On Fri, Jul 8, 2011 at 18:15, Kay Sievers<kay.sievers@vrfy.org>  wrote:
->> On Fri, Jul 8, 2011 at 17:54, James Bottomley
->
->>> But hey,
->>> you have the enthusiasm, propose it as a KS topic to get agreement that
->>> we should do it and what the format should be and we can go from there.
+Hi Russell,
+
+On 07/10/2011 02:47 PM, Russell King - ARM Linux wrote:
+> On Thu, Jul 07, 2011 at 08:20:49PM +0400, Vitaly Kuzmichev wrote:
+>> Hi Russell,
 >>
->> Sure, I'll do that. If needed, I can even make half or a third of it
->> possible I guess.
->
-> Submitted it a minute ago.
->
-I'd be willing to working on the design here, as it ties in rather 
-neatly with my goal of updating the SCSI debugging facilities.
+>> On 07/07/2011 04:39 PM, Russell King - ARM Linux wrote:
+>>> On Thu, Jul 07, 2011 at 04:23:13PM +0400, Vitaly Kuzmichev wrote:
+>>>> To get hundredths of MHz the rate needs to be divided by 10'000.
+>>>> Here is an example:
+>>>>  twd_timer_rate = 123456789
+>>>>  Before the patch:
+>>>>     twd_timer_rate / 1000000 = 123
+>>>>     (twd_timer_rate / 1000000) % 100 = 23
+>>>>     Result: 123.23MHz.
+>>>>  After being fixed:
+>>>>     twd_timer_rate / 1000000 = 123
+>>>>     (twd_timer_rate / 10000) % 100 = 45
+>>>>     Result: 123.45MHz.
+>>>>
+>>>> Signed-off-by: Vitaly Kuzmichev <vkuzmichev@mvista.com>
+>>>
+>>> -> patch system please.
+>>
+>> Should I submit other patches into this system too?
+> 
+> No, the other patches I've yet to look at, and I think there's issues
+> still to be resolved.
+> 
+> Eg, ISTR a patch to make smp_twd.c selectable on non-SMP platforms so
+> that the mpcore watchdog can be used on non-SMP platforms.  While that
+> fixes the build issues, functionally its broken.  I don't think that
+> the mpcore watchdog should be asking the smp_twd code in any case for
+> the clock rate.
 
-printk() is easy to write, but basically impossible to impose any 
-type of checking/format whatever.
-My all-time favorite here:
+I'm guessing that you mean here both cases when non-SMP kernel runs on
+multi-core and on single-core (I'm not sure whether they really exist)
+MPCore CPUs, do you? I think in both these cases TWD timer(s) should
+always be presented in MPCore. So it is wrong to call this timer as
+SMP_TWD and make it dependent on CONFIG_SMP, isn't it?
 
-                 printk(KERN_INFO "error 1\n");
+I just mean, probably the fact that mpcore_wdt depends on swp_twd is not
+a real issue, and my patch is correct, but does not fix everything. In
+this case it's better than nothing, better than watchdog that does not
+work properly either on SMP, or on non-SMP platforms.
+Note that my patch does not introduce new dependencies, it just relies
+on the one that already exists.
 
-At least it got a 'KERN_INFO' thrown in there ...
+As regarding to new clocksource/arm_smp_twd driver, if it can be
+compiled for non-SMP kernel/platform the mpcore_wdt will also be able to
+do the same (even with only my patch). But in the case of clk interface
+mpcore_wdt will be dependent on TWD's clk structure anyway. So I can
+think only of one case when it can be fully independent from TWD: having
+own calibration loop.
 
-So first step would be to reach an agreement _what_ printk() et al 
-is supposed to convey to userland.
-Informal only? Informal, but traceable to the origin?
-Should the origin be the internal 
-structure/subsystem/device/whatever generating the error?
-Should the origin be persistent across reboots?
+> If we get the issue with knowing the TWD clock rate on ARMs development
+> platforms sorted out, then we can provide a struct clk for it, which
+> means everyone can finally move to using the clk API to get the mpcore
+> watchdog/twd clock rate.
 
-And, tied to that, what the supposed audience for printk() is:
-Programs? Syslog? Humans?
+I really like this. And I will be happy if this happens before than I'm
+expecting :)
+Ok, lets assume that this happened. Can you guarantee that the one who
+will fix the mpcore_wdt to use clk interface also will not reuse the
+formula that was there before? :)
 
-Once we have an agreement here we can then go about and code the 
-required pieces. But currently the main problem is that there are 
-different ideas of what printk() is supposed to do.
 
-Cheers,
-
-Hannes
--- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+Thanks,
+Vitaly.
