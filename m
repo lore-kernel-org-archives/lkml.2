@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757389Ab1GKIT2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 04:19:28 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:37547 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757301Ab1GKIT1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 04:19:27 -0400
-Date: Mon, 11 Jul 2011 10:19:13 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 2/3] x86, intel: Use cpu_update for Atom errata check
-Message-ID: <20110711101913.652c07cc@endymion.delvare>
-In-Reply-To: <1309996623-23108-2-git-send-email-andi@firstfloor.org>
-References: <1309996623-23108-1-git-send-email-andi@firstfloor.org>
-	<1309996623-23108-2-git-send-email-andi@firstfloor.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757407Ab1GKIUd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 04:20:33 -0400
+Received: from symlink.to.noone.org ([85.10.207.172]:39533 "EHLO sym.noone.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757366Ab1GKIUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 04:20:32 -0400
+Date: Mon, 11 Jul 2011 10:20:29 +0200
+From: Tobias Klauser <tklauser@distanz.ch>
+To: Ravishankar <ravishankarkm32@gmail.com>
+Cc: gregkh@suse.de, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>
+Subject: Re: [PATCH 10/10] Staging: comedi: fix brace printk() issue in
+	pcl818.c
+Message-ID: <20110711082029.GL8334@distanz.ch>
+References: <1310370712-28864-1-git-send-email-ravishankarkm32@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1310370712-28864-1-git-send-email-ravishankarkm32@gmail.com>
+X-Editor: Vi IMproved 7.1
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  6 Jul 2011 16:57:02 -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
+On 2011-07-11 at 09:51:52 +0200, Ravishankar <ravishankarkm32@gmail.com> wrote:
+> From: Ravishankar <ravi.shankar@greenturtles.in>
 > 
-> Now that the cpu update level is available the Atom PSE errata
-> check can use it directly without reading the MSR again.
+> This is a patch to the pcl818.c file that fixes up a printk() warning found by the checkpatch.pl tool
 > 
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
 > ---
->  arch/x86/kernel/cpu/intel.c |   15 ++++-----------
->  1 files changed, 4 insertions(+), 11 deletions(-)
+>  drivers/staging/comedi/drivers/pcl818.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
 > 
-> diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-> index ebedd27..6f75c45 100644
-> --- a/arch/x86/kernel/cpu/intel.c
-> +++ b/arch/x86/kernel/cpu/intel.c
-> @@ -55,17 +55,10 @@ static void __cpuinit early_init_intel(struct cpuinfo_x86 *c)
->  	 * need the microcode to have already been loaded... so if it is
->  	 * not, recommend a BIOS update and disable large pages.
->  	 */
-> -	if (c->x86 == 6 && c->x86_model == 0x1c && c->x86_mask <= 2) {
-> -		u32 ucode, junk;
-> -
-> -		wrmsr(MSR_IA32_UCODE_REV, 0, 0);
-> -		sync_core();
-> -		rdmsr(MSR_IA32_UCODE_REV, junk, ucode);
-> -
-> -		if (ucode < 0x20e) {
-> -			printk(KERN_WARNING "Atom PSE erratum detected, BIOS microcode update recommended\n");
-> -			clear_cpu_cap(c, X86_FEATURE_PSE);
-> -		}
-> +	if (c->x86 == 6 && c->x86_model == 0x1c && c->x86_mask <= 2 &&
-> +	    c->microcode < 0x20e) {
-> +		printk(KERN_WARNING "Atom PSE erratum detected, BIOS microcode update recommended\n");
-> +		clear_cpu_cap(c, X86_FEATURE_PSE);
->  	}
->  
->  #ifdef CONFIG_X86_64
+> diff --git a/drivers/staging/comedi/drivers/pcl818.c b/drivers/staging/comedi/drivers/pcl818.c
+> index 2fdb8c9..4069fee 100644
+> --- a/drivers/staging/comedi/drivers/pcl818.c
+> +++ b/drivers/staging/comedi/drivers/pcl818.c
+> @@ -1777,7 +1777,7 @@ static int pcl818_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+>  					     irq);
+>  					irq = 0;	/* Can't use IRQ */
+>  				} else {
+> -					printk(", irq=%u", irq);
+> +					printk(KERN_INFO ", irq=%u", irq);
 
-Looks good.
+This should be KERN_CONT.
 
-Acked-by: Jean Delvare <khali@linux-fr.org>
+>  				}
+>  			}
+>  		}
+> @@ -1883,7 +1883,7 @@ no_dma:
+>  		if (check_single_ended(dev->iobase)) {
+>  			s->n_chan = this_board->n_aichan_se;
+>  			s->subdev_flags |= SDF_COMMON | SDF_GROUND;
+> -			printk(", %dchans S.E. DAC", s->n_chan);
+> +			printk(KERN_INFO ", %dchans S.E. DAC", s->n_chan);
 
--- 
-Jean Delvare
+Ditto.
+
+>  		} else {
+>  			s->n_chan = this_board->n_aichan_diff;
+>  			s->subdev_flags |= SDF_DIFF;
+> -- 
+> 1.6.5.2
+> 
+> _______________________________________________
+> devel mailing list
+> devel@linuxdriverproject.org
+> http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
+> 
