@@ -1,116 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964864Ab1GKTi7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 15:38:59 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:46625 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964832Ab1GKTi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 15:38:57 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kevin Hilman <khilman@ti.com>
-Subject: Re: [Update][PATCH 6/10] PM / Domains: System-wide transitions support for generic domains (v5)
-Date: Mon, 11 Jul 2011 21:39:50 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc6+; KDE/4.6.0; x86_64; ; )
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        Magnus Damm <magnus.damm@gmail.com>, Paul Walmsley <paul@pwsan.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org,
-        Paul Mundt <lethal@linux-sh.org>
-References: <Pine.LNX.4.44L0.1107081033000.2208-100000@iolanthe.rowland.org> <201107091615.38915.rjw@sisk.pl> <87oc10zv4g.fsf@ti.com>
-In-Reply-To: <87oc10zv4g.fsf@ti.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107112139.50503.rjw@sisk.pl>
+	id S1758157Ab1GKTje (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 15:39:34 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:35159 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757639Ab1GKTjc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 15:39:32 -0400
+Subject: Re: [PATCH next/mmotm] slub: partly fix freeze in __slab_free
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <alpine.LSU.2.00.1107111156310.13035@sister.anvils>
+References: <alpine.LSU.2.00.1107111156310.13035@sister.anvils>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 11 Jul 2011 21:39:27 +0200
+Message-ID: <1310413167.2860.3.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 11, 2011, Kevin Hilman wrote:
-> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
+Le lundi 11 juillet 2011 à 11:58 -0700, Hugh Dickins a écrit :
+> My load tests on PowerPC freeze within minutes in __slab_free().
+> I happened to try PPC first, didn't try without this fix on x86.
 > 
-> [...]
+> It looks as if the author was interrupted while devising the new
+> cmpxchg_double_slab() version of __slab_free(): its decision to
+> spin_lock_irqsave() depends on several uninitialized fields,
+> and fixing that (by copying page to new) mostly fixes it.
 > 
-> >
-> > There's one more case to consider, namely devices that are runtime
-> > suspended, set up to wake up the system from sleep states
-> > (ie. device_may_wakeup(dev) returns "true") and such that
-> > genpd->active_wakeup(dev) returns "true" for them, because they need
-> > to be resumed at this point too (arguably, it makes a little sense to
-> > runtime suspend such devices, but that's possible in principle).
-> >
-> > So, IMO, the patch should look like this:
-> >
-> > ---
-> >  drivers/base/power/domain.c |   19 +++++++++++++++++++
-> >  1 file changed, 19 insertions(+)
-> >
-> >> Index: linux-2.6/drivers/base/power/domain.c
-> > ===================================================================
-> > --- linux-2.6.orig/drivers/base/power/domain.c
-> > +++ linux-2.6/drivers/base/power/domain.c
-> > @@ -486,6 +486,22 @@ static void pm_genpd_sync_poweroff(struc
-> >  }
-> >  
-> >  /**
-> > + * resume_needed - Check whether to resume a device before system suspend.
-> > + * @dev: Device to handle.
-> > + * @genpd: PM domain the device belongs to.
-> > + */
-> > +static bool resume_needed(struct device *dev, struct generic_pm_domain *genpd)
-> > +{
-> > +	bool active_wakeup;
-> > +
-> > +	if (!device_can_wakeup(dev))
-> > +		return false;
-> > +
-> > +	active_wakeup = genpd->active_wakeup && genpd->active_wakeup(dev);
-> > +	return device_may_wakeup(dev) ? active_wakeup : !active_wakeup;
+> But I didn't think about it very much, and this may well not be what
+> the author intends; and I have seen a couple of much rarer freezes
+> in __slab_free() on PPC (not yet on x86) even after applying this.
 > 
-> This also returns true and causes a resume if active_wakeup = false and
-> device_may_wakeup() = false.  That doesn't seem right.
-
-This is on purpose. :-)  If active_wakeup is false, the device may signal
-remote wakeup while suspended.  So, if active_wakeup is false and the device
-is suspended, we have to assume that the device has been set up to signal
-remote wakeup for runtime PM (if it is not suspended, attempting to resume it
-will not have any effect).  Now, if device_may_wakeup() returns false in
-addition to that, we may need to change the device's wakeup settings, so the
-driver's callbacks should be invoked during suspend, so we're resuming the
-device (we can't just leave it suspended and then invoke the driver's callbacks
-in the hope they'll do the right thing).
-
-I don't really think we can do anything else without using new device flags.
-
-> > +}
-> > +
-> > +/**
-> >   * pm_genpd_prepare - Start power transition of a device in a PM domain.
-> >   * @dev: Device to start the transition of.
-> >   *
-> > @@ -519,6 +535,9 @@ static int pm_genpd_prepare(struct devic
-> >  		return -EBUSY;
-> >  	}
-> >  
-> > +	if (resume_needed(dev, genpd))
-> > +		pm_runtime_resume(dev);
-> > +
-> >  	genpd_acquire_lock(genpd);
-> >  
-> >  	if (genpd->prepared_count++ == 0)
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+> ---
+>  mm/slub.c |    1 +
+>  1 file changed, 1 insertion(+)
 > 
-> IIUC, if a device is runtime suspended when a system suspend happens,
-> the device will be runtime resumed, but never re-suspended.
+> --- mmotm/mm/slub.c	2011-07-08 18:59:44.135443127 -0700
+> +++ linux/mm/slub.c	2011-07-10 05:07:08.000000000 -0700
+> @@ -2217,6 +2217,7 @@ static void __slab_free(struct kmem_cach
+>  		return;
+>  
+>  	do {
+> +		new = *page;
+>  		prior = page->freelist;
+>  		counters = page->counters;
+>  		set_freepointer(s, object, prior);
+> --
 
-It will be resuspended by the pm_runtime_idle() in pm_genpd_complete()
-(added by one of the new patches I've been posting for the last few days).
+I suspect you hit the bug on 32bit arch ?
 
-> Should resumes by the PM core be done with a get (and a corresponding
-> put in .complete())?
+What about following patch instead ?
 
-Not necessarily. :-)
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index 3d76a43..1351d28 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -62,7 +62,7 @@ struct page {
+ 		struct {			/* SLUB cmpxchg_double area */
+ 			void *freelist;
+ 			union {
+-				unsigned long counters;
++				u64	counters;
+ 				struct {
+ 					unsigned inuse:16;
+ 					unsigned objects:15;
 
-Thanks,
-Rafael
+
