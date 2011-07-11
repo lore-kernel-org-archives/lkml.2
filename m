@@ -1,88 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756840Ab1GKFsD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 01:48:03 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:41528 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756495Ab1GKFsB (ORCPT
+	id S1757086Ab1GKFzV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 01:55:21 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:60270 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756510Ab1GKFzU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 01:48:01 -0400
-From: Ravishankar <ravishankarkm32@gmail.com>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>,
-        Ravishankar <ravishankarkm32@gmail.com>
-Subject: [PATCH 3/3] Staging: comedi: fix brace coding style issue in pcl818.c
-Date: Mon, 11 Jul 2011 11:30:39 +0530
-Message-Id: <1310364039-17345-1-git-send-email-ravishankarkm32@gmail.com>
-X-Mailer: git-send-email 1.6.5.2
-In-Reply-To: <[PATCH 3/3]Staging: comedi: fix brace coding style issue in pcl818.c>
-References: <[PATCH 3/3]Staging: comedi: fix brace coding style issue in pcl818.c>
+	Mon, 11 Jul 2011 01:55:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LNX.2.00.1107110117080.2818@swampdragon.chaosbits.net>
+References: <da20dc5c4160ed9a3da52f60799a1e4369fe3f27.1310228130.git.rprabhu@wnohang.net>
+	<CAM_iQpXeqc01dyHpViyJCMSz6wz-1mWmGi=J0UynUG8tbd99kw@mail.gmail.com>
+	<CACqU3MUgVTpc6kBvBiw7rtyn_JTA-JPrbnvai3Vnq+UWk-jSbQ@mail.gmail.com>
+	<CAOJsxLF+4VOXJwRJL7npMngDTGztXk739_GcMLxsMzmsVcDCVw@mail.gmail.com>
+	<CACqU3MUFO9DGqnK99ApaKn00vzj5rCB5=kjuSZGZpPU8c_4G-A@mail.gmail.com>
+	<20110710110241.7650e03f.rdunlap@xenotime.net>
+	<alpine.LNX.2.00.1107110051420.2818@swampdragon.chaosbits.net>
+	<20110710160722.ae763029.rdunlap@xenotime.net>
+	<alpine.LNX.2.00.1107110117080.2818@swampdragon.chaosbits.net>
+Date: Mon, 11 Jul 2011 08:55:19 +0300
+X-Google-Sender-Auth: gLD36oIBEgn96GnHA9skkCkNe1Q
+Message-ID: <CAOJsxLHzXV3MDHH+83iwxaUtO=931Bmq1JRzS=MQx=6wa-wi2w@mail.gmail.com>
+Subject: Re: [PATCH] Avoid Wunused-but-set warning
+From: Pekka Enberg <penberg@kernel.org>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Arnaud Lacombe <lacombar@gmail.com>,
+        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        Raghavendra D Prabhu <rprabhu@wnohang.net>,
+        linux-kbuild@vger.kernel.org, Nir Tzachar <nir.tzachar@gmail.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ravishankar <ravi.shankar@greenturtles.in>
+Hi Jesper,
 
-This is a patch to the pcl818.c file that fixes up a brace warning found by the checkpatch.pl tool
+On Mon, Jul 11, 2011 at 2:21 AM, Jesper Juhl <jj@chaosbits.net> wrote:
+> In any case, you can't expect people to base their Acked-by/Reviewed-by
+> replies on some conclusion in some email thread that happened years ago
+> but was never written down in some document in the repository.
+> It is only reasonable to expect people to behave according to the rules
+> laid out in SubmittingPatches and similar documents, and those rules
+> currently seem to support my interpretation, not yours.
 
-Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
----
- drivers/staging/comedi/drivers/pcl818.c |   16 ++++++----------
- 1 files changed, 6 insertions(+), 10 deletions(-)
+The definitions in SubmittingPatches are not hard rules and are, in
+fact, out of date. See Documentation/development-process/5.Posting for
+alternative definitions:
 
-diff --git a/drivers/staging/comedi/drivers/pcl818.c b/drivers/staging/comedi/drivers/pcl818.c
-index a42148e..aa11a08 100644
---- a/drivers/staging/comedi/drivers/pcl818.c
-+++ b/drivers/staging/comedi/drivers/pcl818.c
-@@ -1301,11 +1301,10 @@ static void setup_channel_list(struct comedi_device *dev,
- */
- static int check_single_ended(unsigned int port)
- {
--	if (inb(port + PCL818_STATUS) & 0x20) {
-+	if (inb(port + PCL818_STATUS) & 0x20)
- 		return 1;
--	} else {
-+	else
- 		return 0;
--	}
- }
- 
- /*
-@@ -1344,9 +1343,8 @@ static int ai_cmdtest(struct comedi_device *dev, struct comedi_subdevice *s,
- 	if (!cmd->stop_src || tmp != cmd->stop_src)
- 		err++;
- 
--	if (err) {
-+	if (err)
- 		return 1;
--	}
- 
- 	/* step 2: make sure trigger sources are unique and mutually compatible */
- 
-@@ -1369,9 +1367,8 @@ static int ai_cmdtest(struct comedi_device *dev, struct comedi_subdevice *s,
- 	if (cmd->stop_src != TRIG_NONE && cmd->stop_src != TRIG_COUNT)
- 		err++;
- 
--	if (err) {
-+	if (err)
- 		return 2;
--	}
- 
- 	/* step 3: make sure arguments are trivially compatible */
- 
-@@ -1413,10 +1410,9 @@ static int ai_cmdtest(struct comedi_device *dev, struct comedi_subdevice *s,
- 		}
- 	}
- 
--	if (err) {
-+	if (err)
- 		return 3;
--	}
+ - Acked-by: indicates an agreement by another developer (often a
+   maintainer of the relevant code) that the patch is appropriate for
+   inclusion into the kernel.
 
- 	/* step 4: fix up any arguments */
- 
- 	if (cmd->convert_src == TRIG_TIMER) {
--- 
-1.6.5.2
+and
 
+ - Reviewed-by: the named developer has reviewed the patch for correctness;
+   see the reviewer's statement in Documentation/SubmittingPatches for more
+   detail.
+
+and then compare the dates for these definitions:
+
+0f44cd23 (Andrew Morton      2007-06-08 13:46:45 -0700 401) Acked-by:
+is often used by the maintainer of the affected code when that
+0f44cd23 (Andrew Morton      2007-06-08 13:46:45 -0700 402) maintainer
+neither contributed to nor forwarded the patch.
+
+75b02146 (Jonathan Corbet 2008-09-30 15:15:56 -0600 205)  - Acked-by:
+indicates an agreement by another developer (often a
+75b02146 (Jonathan Corbet 2008-09-30 15:15:56 -0600 206)    maintainer
+of the relevant code) that the patch is appropriate for
+75b02146 (Jonathan Corbet 2008-09-30 15:15:56 -0600 207)    inclusion
+into the kernel.
+
+So it is NOT reasonable 'to expect people to behave according to the
+rules laid out in SubmittingPatches and similar documents' because
+such documents have never had any hard rules! The documents are
+guidelines that attempt to document how things work here, not lay down
+the law.
+
+                                 Pekka
