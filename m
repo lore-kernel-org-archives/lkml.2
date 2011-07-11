@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753908Ab1GKKge (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 06:36:34 -0400
-Received: from smtp4.mundo-r.com ([212.51.32.151]:54307 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753098Ab1GKKgc (ORCPT
+	id S1754199Ab1GKKgx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 06:36:53 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:37291 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753614Ab1GKKgv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 06:36:32 -0400
-X-Greylist: delayed 599 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Jul 2011 06:36:32 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ap0EAG7OGk5bdWOb/2dsb2JhbABThESjbIh8rSaQMoErhACBDwSSVJBJ
-X-IronPort-AV: E=Sophos;i="4.65,515,1304287200"; 
-   d="scan'208";a="858983187"
-From: =?UTF-8?q?V=C3=ADctor=20Manuel=20J=C3=A1quez=20Leal?= 
-	<vjaquez@igalia.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        "Jianbin Kang" <kjbmail@gmail.com>, "Sam Ravnborg" <sam@ravnborg.org>
-Subject: [PATCH] kbuild: incremental tags updating with GNU GLOBAL
-Date: Mon, 11 Jul 2011 12:26:30 +0200
-Message-Id: <1310379990-4367-1-git-send-email-vjaquez@igalia.com>
-X-Mailer: git-send-email 1.7.5.4
+	Mon, 11 Jul 2011 06:36:51 -0400
 MIME-Version: 1.0
+In-Reply-To: <CAH9NwWf2Mr2tY_SU30etHzD0Ogqsg7sdPgR2pV7DQpBB-aFz0A@mail.gmail.com>
+References: <1308813430-2697-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+ <201106230952.09286.alexander.stein@systec-electronic.com>
+ <4E02FD74.8020503@dsn.okisemi.com> <BANLkTi=zDMnwX5xYFazM3qb17wa6yY4LZw@mail.gmail.com>
+ <BANLkTi=y43pWQC9wxjSPCEbr47hTYbJF6w@mail.gmail.com> <4E0D66E7.7070409@dsn.okisemi.com>
+ <CAH9NwWf2Mr2tY_SU30etHzD0Ogqsg7sdPgR2pV7DQpBB-aFz0A@mail.gmail.com>
+From: Christian Gmeiner <christian.gmeiner@gmail.com>
+Date: Mon, 11 Jul 2011 12:36:31 +0200
+Message-ID: <CAH9NwWdpEVQQYqSiCOD9pnjpYJFH2fJnDudtJQgzK9ySGUyc=g@mail.gmail.com>
+Subject: Re: [PATCH] i2c-eg20t : Fix the issue of Combined R/W transfer mode
+To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Cc: Alexander Stein <alexander.stein@systec-electronic.com>,
+        Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
+        Wolfram Sang <w.sang@pengutronix.de>, Qi Wang <qi.wang@intel.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        yong.y.wang@intel.com, joel.clark@intel.com, kok.howg.ewe@intel.com,
+        toshiharu-linux@dsn.okisemi.com
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of generating the tag database each time the target is ran, is better
-just update incrementally the database. It will expend less time.
+Any updates?
 
-Signed-off-by: Víctor Manuel Jáquez Leal <vjaquez@igalia.com>
----
- scripts/tags.sh |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+--
+Christian Gmeiner, MSc
 
-diff --git a/scripts/tags.sh b/scripts/tags.sh
-index 75c5d24..6a2fedc 100755
---- a/scripts/tags.sh
-+++ b/scripts/tags.sh
-@@ -116,7 +116,11 @@ docscope()
- 
- dogtags()
- {
--	all_sources | gtags -f -
-+	if global -p; then
-+		global -u
-+	else
-+		all_sources | gtags -f -
-+	fi
- }
- 
- exuberant()
--- 
-1.7.5.4
 
+
+2011/7/5 Christian Gmeiner <christian.gmeiner@gmail.com>:
+> Is there a git repository with all i2c-eg20t patches, which are not
+> yet in mainline?
+>
+> --
+> Christian Gmeiner, MSc
+>
