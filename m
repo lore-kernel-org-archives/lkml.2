@@ -1,82 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757603Ab1GKVJp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 17:09:45 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:51997 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901Ab1GKVJo (ORCPT
+	id S1757719Ab1GKVKO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 17:10:14 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:64776 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752961Ab1GKVKM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 17:09:44 -0400
-Date: Mon, 11 Jul 2011 23:09:39 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Eric Miao <eric.y.miao@gmail.com>
-Cc: Cyril Hrubis <metan@ucw.cz>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>, rpurdie@rpsys.net,
-        lenz@cs.wisc.edu, kernel list <linux-kernel@vger.kernel.org>,
-        arminlitzel@web.de, thommycheck@gmail.com,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        omegamoon@gmail.com, utx@penguin.cz, zaurus-devel@www.linuxtogo.org,
-        Marek Vasut <marek.vasut@gmail.com>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: zaurus patches -- arm/pxa -- is Eric alive
-Message-ID: <20110711210939.GA5682@elf.ucw.cz>
-References: <20110711134150.GA15506@localhost.ucw.cz>
- <CALT56yM+fNs_2QorWK0=gr2um1H3vDX+HXPCi9bmKDdOdSvptA@mail.gmail.com>
- <20110711140303.GA32532@atrey.karlin.mff.cuni.cz>
- <CAMPhdO-UjxqyL47VsihX-fBD9VtAKkQqEQGj2u1YG0c90EHfqA@mail.gmail.com>
+	Mon, 11 Jul 2011 17:10:12 -0400
+Date: Mon, 11 Jul 2011 17:09:54 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: xen-devel@lists.xensource.com, julie Sullivan <kernelmail.jms@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3
+Message-ID: <20110711210954.GA15745@dumpdata.com>
+References: <20110710171626.GK6014@linux.vnet.ibm.com>
+ <20110710173530.GA16954@linux.vnet.ibm.com>
+ <CAAVPGOPAx-oLZct9u2Kq3uQ4W2GwJFYUGgw3h=M_Y4_wv7b51w@mail.gmail.com>
+ <20110710214639.GP6014@linux.vnet.ibm.com>
+ <CAAVPGOMafp_+45X=7asHe=MqaHY8CiJYsf2GZ3qOPrWpjctHVQ@mail.gmail.com>
+ <20110710231449.GQ6014@linux.vnet.ibm.com>
+ <20110711162450.GA22913@dumpdata.com>
+ <20110711171337.GK2245@linux.vnet.ibm.com>
+ <20110711193021.GA2996@dumpdata.com>
+ <20110711201508.GN2245@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMPhdO-UjxqyL47VsihX-fBD9VtAKkQqEQGj2u1YG0c90EHfqA@mail.gmail.com>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110711201508.GN2245@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090204.4E1B66B0.0030:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> > Perhaps the most critical one is:
-> >
-> > [PATCH] MAX1111: Fix race condition causing NULL pointer exception
-> >
-> > http://ns1.yosemitephotos.net/lists/arm-kernel/msg125356.html
-
-Yep, that one (or equivalent) is most critical.
-
-> > Which fixes memory corruption that caused random oops.
-> >
-> > And then there is a bunch of fixes for charging and power management from
-> > Pavel Machek:
+On Mon, Jul 11, 2011 at 01:15:08PM -0700, Paul E. McKenney wrote:
+> On Mon, Jul 11, 2011 at 03:30:22PM -0400, Konrad Rzeszutek Wilk wrote:
+> > > 
+> > > Hmmm...  Does the stall repeat about every 3.5 minutes after the first stall?
+> > 
+> > Starting Configure read-only root support...
+> > [   81.335070] INFO: rcu_sched_state detected stalls on CPUs/tasks: { 0} (detected by 3, t=60002 jiffies)
+> > [   81.335091] sending NMI to all CPUs:
+> > [  261.367071] INFO: rcu_sched_state detected stalls on CPUs/tasks: { 0} (detected by 3, t=240034 jiffies)
+> > [  261.367092] sending NMI to all CPUs:
+> > [  441.399066] INFO: rcu_sched_state detected stalls on CPUs/tasks: { 0} (detected by 3, t=420066 jiffies)
+> > [  441.399089] sending NMI to all CPUs:
 > 
-> Guys, I'm still alive, at least still breathing. Just too many mails
-> and I was lost.
+> OK, then the likely cause is something hanging onto the CPU.  Do the later
+> stalls also show stack traces?  If so, what shows up?
 
-Good :-).
+I don't really get any stack traces from the guest. Not sure why it does
+not print them out (probably b/c the NMI functionality is not accessible
+somehow?). I get the stack traces using a 'xenctx' tool and this is what
+I get from the guest before the stall, and after the stall:
 
-> > Disable CF during suspend
-> >
-> > https://lkml.org/lkml/2011/5/21/46
-> 
-> The fix is trivial, think I can take it. A better approach will be to have a
-> generic CF power control function and invoke it in pcmcia driver when
-> suspending.
+20:45:56 # 12 :/mnt/tmp/FC15-32/ 
+/usr/lib64/xen/bin/xenctx 29 -s System.map-3.0.0-rc6-disabled-options+ -a 2
+cs:eip: 0061:c042d0f5 task_waking_fair+0x14 
+flags: 00001286 i s nz p
+ss:esp: 0069:e94cff0c
+eax: c18dbed0   ebx: ffffffff   ecx: fff00000   edx: c14a10c0
+esi: 00000000   edi: 00000000   ebp: e94cff18
+ ds:     007b    es:     007b    fs:     00d8    gs:     00e0
 
-Please take it. It is also regression from 2.6.15-or-so.
+cr0: 8005003b
+cr2: b7743000
+cr3: 97348001
+cr4: 00000660
 
-> > and spitz pm
-> >
-> > https://lkml.org/lkml/2011/5/21/72
-> > https://lkml.org/lkml/2011/5/21/73
-> > https://lkml.org/lkml/2011/5/21/76
-> 
-> Looks good to me, yet I need the last one Acked by power supply people.
+dr0: 00000000
+dr1: 00000000
+dr2: 00000000
+dr3: 00000000
+dr6: ffff0ff0
+dr7: 00000400
+Code (instr addr c042d0f5)
+c3 55 89 e5 57 56 53 3e 8d 74 26 00 8b 90 58 01 00 00 8b 7a 1c <8b> 72 20 8b 5a 18 8b 4a 14 39 f3 
 
-Can you take the first two? They are trivial preparations... And I'll
-get the ACKs...
-								Pavel
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Stack:
+ c18dbed0 00000003 00000002 e94cff38 c0439a45 c18d00c0 c18dc2c0 00000000
+ e8bd1ec4 e8bd1ef8 00000003 e94cff40 c0439b0c e94cff64 c042d4db 00000000
+ e8bd1f04 00000001 00000001 e8bd1f00 e8bd0200 e8bd1efc e94cff80 c042ea69
+ 00000000 00000000 e8bd1ef4 ea9c4918 c0a43a80 e94cff88 c0455e14 e94cffb4
+
+Call Trace:
+  [<c042d0f5>] task_waking_fair+0x14  <--
+  [<c0439a45>] try_to_wake_up+0xb2 
+  [<c0439b0c>] default_wake_function+0x10 
+  [<c042d4db>] __wake_up_common+0x3b 
+  [<c042ea69>] complete+0x3e 
+  [<c0455e14>] wakeme_after_rcu+0x10 
+  [<c048fd26>] __rcu_process_callbacks+0x172 
+  [<c048fe14>] rcu_process_callbacks+0x1e 
+  [<c044567d>] __do_softirq+0xa2 
