@@ -1,48 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757670Ab1GKONY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 10:13:24 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:62438 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757522Ab1GKONX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 10:13:23 -0400
-MIME-Version: 1.0
-Date: Mon, 11 Jul 2011 19:43:22 +0530
-Message-ID: <CALDXQjNEOEGjutrPcD+O7m6V60tXHf9WR00DOaF-YDAYxQ7TGw@mail.gmail.com>
-Subject: request_firmware fails in static building
-From: Raja Mani <rajambsc@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1757739Ab1GKONx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 10:13:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43363 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757694Ab1GKONw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 10:13:52 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20110711134147.GA6853@infradead.org>
+References: <20110711134147.GA6853@infradead.org> <20110711132057.14641.36229.stgit@warthog.procyon.org.uk>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: dhowells@redhat.com, viro@ZenIV.linux.org.uk, autofs@linux.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ian Kent <raven@themaw.net>
+Subject: Re: [PATCH] VFS: Fix automount for negative autofs dentries
+Date: Mon, 11 Jul 2011 15:13:41 +0100
+Message-ID: <16882.1310393621@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Christoph Hellwig <hch@infradead.org> wrote:
 
- Apologies If i posted in wrong place..
+> would do the same.
 
- I am writing small driver which does request_firmware() to get
-firmware file content from user space.
- If i complete it dynamically and do insmod, then works fine. If i
-build it statically and reboot my PC, i am getting  -2 from
-request_firmware() which is ("no such a file or directory error")
+But is much less obvious.  The LOOKUP_FOLLOW flag is the primary reason for
+this statement.  The rest are subordinate and would be wholly irrelevant if
+LOOKUP_FOLLOW was to be removed from the list.
 
- I am using Ubuntu 10.04 lucid...
-
- Do i need to keep a copy of firmware file in initramfs ? If so , how
-do i do it ?
- Am i missing anything else ?
-
- Thanks.
-
---
-Regards,
-Rajam.
-
-
-
--- 
-Regards,
-Raja.
+David
