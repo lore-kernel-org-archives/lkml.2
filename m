@@ -1,77 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757252Ab1GKH3w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 03:29:52 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63214 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757204Ab1GKH3u (ORCPT
+	id S932140Ab1GKHeI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 03:34:08 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:64932 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757207Ab1GKHeH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 03:29:50 -0400
+	Mon, 11 Jul 2011 03:34:07 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110707151023.GA15366@srcf.ucam.org>
-References: <1309268154-6872-1-git-send-email-kengyu@canonical.com> <20110707151023.GA15366@srcf.ucam.org>
-From: =?UTF-8?B?S2VuZy1Zw7wgTGlu?= <kengyu@canonical.com>
-Date: Mon, 11 Jul 2011 15:29:09 +0800
-X-Google-Sender-Auth: oHeFbw5wiewPaByxow2ajw9spvo
-Message-ID: <CADXHx7bnQ49yrL2Uoq=945V1UWMPq-FamCOT81t7Jn4mtEHpkQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] ideapad-laptop: Ignore an unused VPC notification
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ike.pan@canonical.com, vanhoof@canonical.com, kent.lin@canonical.com,
-        sylee@canonical.com
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1310333145.2269.6.camel@gandalf.stny.rr.com>
+References: <AtAvQwe5sAK.A.loH.OlYGOB@chimera>
+	<gK_efVqs2fP.A.Y3H.jlYGOB@chimera>
+	<CAOJsxLEGqpcQP3S+TLBjpRsM=UTk=zyuHBoswXkVwbHsLaDqqg@mail.gmail.com>
+	<1310333145.2269.6.camel@gandalf.stny.rr.com>
+Date: Mon, 11 Jul 2011 10:34:05 +0300
+X-Google-Sender-Auth: wyFeIoXN72uWTUQkphOz3wVetn4
+Message-ID: <CAOJsxLHitazDJEjiD3j_nK_4hQoiGVo_08NP_nR3FpCTqa4HwQ@mail.gmail.com>
+Subject: Re: [Bug #38132] [Warning] 2.6.39.x latencytop
+From: Pekka Enberg <penberg@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Andrew Watts <akwatts@ymail.com>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arjan van de Ven <arjan@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 7, 2011 at 11:10 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> On Tue, Jun 28, 2011 at 02:35:53PM +0100, Keng-Yu Lin wrote:
->> BIOS fires notifications in a constant period with VPC bit 1 set when the
->> power cord is unplugged.
+On Mon, Jul 11, 2011 at 12:25 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Sun, 2011-07-10 at 14:53 +0300, Pekka Enberg wrote:
+>> On Sun, Jul 10, 2011 at 1:58 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> > This message has been generated automatically as a part of a report
+>> > of regressions introduced between 2.6.38 and 2.6.39.
+>> >
+>> > The following bug entry is on the current list of known regressions
+>> > introduced between 2.6.38 and 2.6.39.  Please verify if it still should
+>> > be listed and let the tracking team know (either way).
+>> >
+>> > Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=38132
+>> > Subject         : [Warning] 2.6.39.x latencytop
+>> > Submitter       : Andrew Watts <akwatts@ymail.com>
+>> > Date            : 2011-06-14 17:07 (27 days old)
+>> > Message-ID      : <80098.5633.qm@web111013.mail.gq1.yahoo.com>
+>> > References      : http://marc.info/?l=linux-kernel&m=130807128506490&w=2
+>>
+>> This is a WARN_ON added in commit 6752ab4a ("tracing: Deprecate
+>> tracing_enabled for tracing_on") that lets the user know about
+>> deprecated ABI. It's somewhat unfortunate that there's no mention in
+>> the changelog if everyone agreed on the deprecation or not...
+>>
+>> That said, assuming the deprecation is OK (hi Steven, Frederic, Ingo!)
+>> I think this issue can be closed.
 >
-> How frequently? That's going to do bad things to power management. It'd
-> be nice to find a way to just make it stop doing that.
+> I deprecated it because I said I would for the last year ;)
 >
+> The tracing_enabled never did what it was suppose to do. It was suppose
+> to be a "quick" way to disable tracing without fully disabling it. It
+> was suppose to try to turn things off to a low overhead but not fully
+> off without any overhead. The problem is that it never really worked
+> well. The only tracer that does anything different with it as suppose to
+> tracing_on, is the irqsoff tracers. They stop looking at max latencies
+> when you echo 0 into tracing_enabled. But that's it. Everything else,
+> it's just the same as echoing 0 into tracing_on. I think the irqsoff
+> tracers now even look at tracing_on if it should trace a max latency or
+> not, so tracing_enabled doesn't even help with that.
+>
+> We can keep it around but I don't see any good reason for it besides not
+> having latency top give a warning.
 
-About every 22 seconds.
+AFAICT, if you go ahead with the deprecation and actually remove the
+file, you'll break latencytop fsync tracing.
 
-May 18 13:46:36 ubuntu-Rev-1-0 kernel: [ 1359.734293] keyboard: can't
-emulate rawmode for keycode 240
-May 18 13:46:36 ubuntu-Rev-1-0 kernel: [ 1359.734324] keyboard: can't
-emulate rawmode for keycode 240
-May 18 13:46:58 ubuntu-Rev-1-0 kernel: [ 1382.195371] keyboard: can't
-emulate rawmode for keycode 240
-May 18 13:46:58 ubuntu-Rev-1-0 kernel: [ 1382.195388] keyboard: can't
-emulate rawmode for keycode 240
-May 18 13:47:21 ubuntu-Rev-1-0 kernel: [ 1404.650451] keyboard: can't
-emulate rawmode for keycode 240
-May 18 13:47:21 ubuntu-Rev-1-0 kernel: [ 1404.650470] keyboard: can't
-emulate rawmode for keycode 240
-May 18 13:47:43 ubuntu-Rev-1-0 kernel: [ 1427.103195] keyboard: can't
-emulate rawmode for keycode 240
-May 18 13:47:43 ubuntu-Rev-1-0 kernel: [ 1427.103214] keyboard: can't
-emulate rawmode for keycode 240
-May 18 13:48:06 ubuntu-Rev-1-0 kernel: [ 1449.568874] keyboard: can't
-emulate rawmode for keycode 240
-May 18 13:48:06 ubuntu-Rev-1-0 kernel: [ 1449.568884] keyboard: can't
-emulate rawmode for keycode 240
-May 18 13:48:28 ubuntu-Rev-1-0 kernel: [ 1472.103599] keyboard: can't
-emulate rawmode for keycode 240
-May 18 13:48:28 ubuntu-Rev-1-0 kernel: [ 1472.103612] keyboard: can't
-emulate rawmode for keycode 240
+On Mon, Jul 11, 2011 at 12:25 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> Question: Why is latency top even touching this file?
 
-(skip)
-
-
-It'd be ideal if we can find the real use of the notification and
-assign it a corresponding keycode, but now I am not able to find any.
-
-Since it occurs in a period when AC cord unplugged, I suspect it is
-just a notification to the Windows App, probably due to that the App
-is badly written and the App does not want to poll the battery
-information. In Linux the userspace can access the battery information
-in an easier way through the ACPI proc/sysfs and it is probably not
-true in Windows. It could be the reason/purpose why this notification
-is sent in a period.
-
-If so, it should be safe to filter out.
+Looking at the sources, it seems to use it to enable fsync tracing. I
+don't know the details so lets CC Arjan.
