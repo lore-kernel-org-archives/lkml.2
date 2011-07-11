@@ -1,33 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870Ab1GKCA0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jul 2011 22:00:26 -0400
-Received: from mail2.bitsnet.com.br ([200.252.189.137]:35734 "EHLO
-	cacau.bitsnet.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756664Ab1GKCAY (ORCPT
+	id S1756907Ab1GKCBA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jul 2011 22:01:00 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:12944 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756670Ab1GKCA7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jul 2011 22:00:24 -0400
-Cc: recipient list not shown:;
-Message-ID: <1310279676.4e1947fc0edcf@www.bitsnet.com.br>
-Date: Sun, 10 Jul 2011 03:34:36 -0300
-From: BBC NATIONAL PROMO <info@bbc.co.uk>
-Reply-to: scott__carsondesk12@live.com
-Subject: Congratulation!!
+	Sun, 10 Jul 2011 22:00:59 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvYFAPpVGk55LCkBgWdsb2JhbABThESUBo5yFQEBFiYliHqvD5AHDoEdgXuCBTBfBJp2gTSHAw
+Date: Mon, 11 Jul 2011 12:00:54 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: raghu.prabhu13@gmail.com
+Cc: akpm@linux-foundation.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
+        keithp@keithp.com, viro@zeniv.linux.org.uk, riel@redhat.com,
+        swhiteho@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        jack@suse.cz, Raghavendra D Prabhu <rprabhu@wnohang.net>
+Subject: Re: [PATCH] Remove incorrect usage of sysctl_vfs_cache_pressure
+Message-ID: <20110711020054.GE23038@dastard>
+References: <cover.1310331583.git.rprabhu@wnohang.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-User-Agent: Internet Messaging Program (IMP) 3.2.6
-X-Originating-IP: 80.239.242.30
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <cover.1310331583.git.rprabhu@wnohang.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jul 11, 2011 at 02:56:23AM +0530, raghu.prabhu13@gmail.com wrote:
+> From: Raghavendra D Prabhu <rprabhu@wnohang.net>
+> 
+> In shrinker functions, sysctl_vfs_cache_pressure variable is being used while
+> trimming slab caches in general and not restricted to inode/dentry caches as
+> documented for that sysctl.
+> 
+> Raghavendra D Prabhu (1):
+>   mm/vmscan: Remove sysctl_vfs_cache_pressure from non-vfs shrinkers
+> 
+>  drivers/gpu/drm/i915/i915_gem.c |    2 +-
 
+That's the only questionable use of it as it has nothing to do with
+filesystems.
 
-£500,000GBP has been awarded to you in the British Broadcasting corporation
-(BBC) Online Promo Held on the 1st July 2011,send Name/Tel/Country to our
-office now.
+>  fs/gfs2/glock.c                 |    2 +-
+>  fs/gfs2/quota.c                 |    2 +-
+>  fs/mbcache.c                    |    2 +-
+>  fs/nfs/dir.c                    |    2 +-
+>  fs/quota/dquot.c                |    3 +--
+>  net/sunrpc/auth.c               |    2 +-
 
-----------------------------------------------------------------
-This message was sent using IMP, the Internet Messaging Program.
+All the others are filesystemâ‚‹specific caches and as such the use of
+vfs_cache_pressure to adjust the balance of reclaim is valid usage.
+Especially the VFS quota cache shrinkers. ;)
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
