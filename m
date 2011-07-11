@@ -1,53 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755091Ab1GKU13 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 16:27:29 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:63600 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750785Ab1GKU11 (ORCPT
+	id S1754204Ab1GKUao (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 16:30:44 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:46559 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751931Ab1GKUan convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 16:27:27 -0400
-Message-ID: <4E1B5CAA.7070001@gmail.com>
-Date: Mon, 11 Jul 2011 22:27:22 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	Mon, 11 Jul 2011 16:30:43 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=hScaOubbou9tkVib5ffWEiqXRufOeMsDJ5igKdWSuPKZyiYhjo3nOp4c3RPrEZgt3
+	K3/XpZRDwSrEsFezt+JEA==
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: akpm@linux-foundation.org, mm-commits@vger.kernel.org, cl@linux.com
-Subject: page->_count build failure [was: mmotm 2011-07-08-12-50 uploaded]
-References: <201107082028.p68KSWWf013053@imap1.linux-foundation.org>
-In-Reply-To: <201107082028.p68KSWWf013053@imap1.linux-foundation.org>
-X-Enigmail-Version: 1.2pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1310393706-321-2-git-send-email-fweisbec@gmail.com>
+References: <1310393706-321-1-git-send-email-fweisbec@gmail.com> <1310393706-321-2-git-send-email-fweisbec@gmail.com>
+From: Paul Menage <menage@google.com>
+Date: Mon, 11 Jul 2011 13:30:17 -0700
+Message-ID: <CAJniumVRz7PC0L56=jzWOXXHWM1T1iPMO=sXtMMKyj1e8tekFQ@mail.gmail.com>
+Subject: Re: [PATCH 1/7] cgroups: Add res_counter_write_u64() API
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/08/2011 09:50 PM, akpm@linux-foundation.org wrote:
-> The mm-of-the-moment snapshot 2011-07-08-12-50 has been uploaded to
+On Mon, Jul 11, 2011 at 7:15 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> Extend the resource counter API with a mirror of
+> res_counter_read_u64() to make it handy to update a resource
+> counter value from a cgroup subsystem u64 value file.
+>
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 
-Hi, am I the only one encountering a build failure due to double
-definition of _count in page struct introduced by:
-commit fc9bb8c768abe7ae10861c3510e01a95f98d5933
-Author: Christoph Lameter <cl@linux.com>
-Date:   Wed Jun 1 12:25:48 2011 -0500
+Acked-by: Paul Menage <menage@google.com>
 
-    mm: Rearrange struct page
+Thanks,
+Paul
 
-in the -next tree?
-
-$ make
-...
-  CC      arch/x86/kernel/asm-offsets.s
-In file included from include/linux/sched.h:64:0,
-                 from arch/x86/kernel/asm-offsets.c:9:
-include/linux/mm_types.h:74:15: error: duplicate member â€˜_countâ€™
-make[1]: *** [arch/x86/kernel/asm-offsets.s] Error 1
-make: *** [prepare0] Error 2
-$ gcc --version
-gcc (SUSE Linux) 4.6.0 20110607 [gcc-4_6-branch revision 174741]
-
-regards,
--- 
-js
+> Cc: Paul Menage <menage@google.com>
+> Cc: Li Zefan <lizf@cn.fujitsu.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Aditya Kali <adityakali@google.com>
+> ---
+>  include/linux/res_counter.h |    2 ++
+>  kernel/res_counter.c        |   21 +++++++++++++++------
+>  2 files changed, 17 insertions(+), 6 deletions(-)
+>
+> diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
+> index c9d625c..1b3fe05 100644
+> --- a/include/linux/res_counter.h
+> +++ b/include/linux/res_counter.h
+> @@ -82,6 +82,8 @@ int res_counter_memparse_write_strategy(const char *buf,
+>  int res_counter_write(struct res_counter *counter, int member,
+>                      const char *buffer, write_strategy_fn write_strategy);
+>
+> +void res_counter_write_u64(struct res_counter *counter, int member, u64 val);
+> +
+>  /*
+>  * the field descriptors. one for each member of res_counter
+>  */
+> diff --git a/kernel/res_counter.c b/kernel/res_counter.c
+> index 34683ef..806d041 100644
+> --- a/kernel/res_counter.c
+> +++ b/kernel/res_counter.c
+> @@ -168,12 +168,22 @@ int res_counter_memparse_write_strategy(const char *buf,
+>        return 0;
+>  }
+>
+> +void res_counter_write_u64(struct res_counter *counter, int member, u64 val)
+> +{
+> +       unsigned long long *target;
+> +       unsigned long flags;
+> +
+> +       spin_lock_irqsave(&counter->lock, flags);
+> +       target = res_counter_member(counter, member);
+> +       *target = val;
+> +       spin_unlock_irqrestore(&counter->lock, flags);
+> +}
+> +
+>  int res_counter_write(struct res_counter *counter, int member,
+>                      const char *buf, write_strategy_fn write_strategy)
+>  {
+>        char *end;
+> -       unsigned long flags;
+> -       unsigned long long tmp, *val;
+> +       unsigned long long tmp;
+>
+>        if (write_strategy) {
+>                if (write_strategy(buf, &tmp))
+> @@ -183,9 +193,8 @@ int res_counter_write(struct res_counter *counter, int member,
+>                if (*end != '\0')
+>                        return -EINVAL;
+>        }
+> -       spin_lock_irqsave(&counter->lock, flags);
+> -       val = res_counter_member(counter, member);
+> -       *val = tmp;
+> -       spin_unlock_irqrestore(&counter->lock, flags);
+> +
+> +       res_counter_write_u64(counter, member, tmp);
+> +
+>        return 0;
+>  }
+> --
+> 1.7.5.4
+>
+>
