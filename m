@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753722Ab1GKK3P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 06:29:15 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44009 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752155Ab1GKK3O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 06:29:14 -0400
-Date: Mon, 11 Jul 2011 11:28:56 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Grant Likely <grant@secretlab.ca>, linux-sh@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/6] clk: Initial feedback for off-SoC slow bus clocks
-Message-ID: <20110711102856.GG3239@n2100.arm.linux.org.uk>
-References: <20110711025344.GA27497@opensource.wolfsonmicro.com> <20110711093124.GA3239@n2100.arm.linux.org.uk> <20110711100759.GG26347@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110711100759.GG26347@pengutronix.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1753839Ab1GKKdc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 06:33:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29308 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753194Ab1GKKdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 06:33:31 -0400
+Subject: Re: [PATCH] Remove incorrect usage of sysctl_vfs_cache_pressure
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: raghu.prabhu13@gmail.com, akpm@linux-foundation.org, mgorman@suse.de,
+        kamezawa.hiroyu@jp.fujitsu.com, keithp@keithp.com,
+        viro@zeniv.linux.org.uk, riel@redhat.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, jack@suse.cz,
+        Raghavendra D Prabhu <rprabhu@wnohang.net>
+In-Reply-To: <20110711020054.GE23038@dastard>
+References: <cover.1310331583.git.rprabhu@wnohang.net>
+	 <20110711020054.GE23038@dastard>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Mon, 11 Jul 2011 11:35:11 +0100
+Message-ID: <1310380511.2766.3.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 11, 2011 at 12:07:59PM +0200, Sascha Hauer wrote:
-> On Mon, Jul 11, 2011 at 10:31:24AM +0100, Russell King - ARM Linux wrote:
-> > On Mon, Jul 11, 2011 at 11:53:44AM +0900, Mark Brown wrote:
-> > > The biggest issue I ran into was that as the clocks are all registered
-> > > by name with the API if you've got two instances of the same off-SoC
-> > > device in the system you'll not be able to disambiguate between the
-> > > clocks it provides.
+Hi,
+
+On Mon, 2011-07-11 at 12:00 +1000, Dave Chinner wrote:
+> On Mon, Jul 11, 2011 at 02:56:23AM +0530, raghu.prabhu13@gmail.com wrote:
+> > From: Raghavendra D Prabhu <rprabhu@wnohang.net>
 > > 
-> > Sigh.  That sounds like yet more trash.  Obviously whoever thought
-> > up that doesn't actually understand clks.
+> > In shrinker functions, sysctl_vfs_cache_pressure variable is being used while
+> > trimming slab caches in general and not restricted to inode/dentry caches as
+> > documented for that sysctl.
+> > 
+> > Raghavendra D Prabhu (1):
+> >   mm/vmscan: Remove sysctl_vfs_cache_pressure from non-vfs shrinkers
+> > 
+> >  drivers/gpu/drm/i915/i915_gem.c |    2 +-
 > 
-> Nope. In the patches Jeremy posted clocks have a name, but this name
-> is not meant to be used with clk_get. clk_get is still implemented
-> in clkdev, so the matching between clocks and devices is independent
-> of the clock name.
+> That's the only questionable use of it as it has nothing to do with
+> filesystems.
 > 
-> In earlier versions of Jeremys patches the clock name was only present
-> when debugfs was compiled in and I think it can be changed back to this.
+> >  fs/gfs2/glock.c                 |    2 +-
+> >  fs/gfs2/quota.c                 |    2 +-
+> >  fs/mbcache.c                    |    2 +-
+> >  fs/nfs/dir.c                    |    2 +-
+> >  fs/quota/dquot.c                |    3 +--
+> >  net/sunrpc/auth.c               |    2 +-
 > 
-> That said the debugfs support (which is not present in Jeremys latest
-> series) would break if two clocks with the same name have the same
-> parent, because the clock core would try to create to debugfs entries
-> with the same name.
+> All the others are filesystem₋specific caches and as such the use of
+> vfs_cache_pressure to adjust the balance of reclaim is valid usage.
+> Especially the VFS quota cache shrinkers. ;)
+> 
+> Cheers,
+> 
+> Dave.
 
-If that's all its for, then can't some other solution for debugfs names
-(lets stop calling them clock names to avoid confusion) be found -
-such as
+I agree for the two GFS2 uses of this variable. There is no need to make
+this change,
 
-	sprintf(debugfsname, "%s@%p", clk->debugfsprefix, clk);
+Steve.
 
-Or how about using something like this:
 
-$debugfs/clkdev/device/connection -> ../../clk/<name-of-clk>
-$debugfs/clk/<name-of-clk>
-
-where <name-of-clk> could just be the address of the struct clk (which
-eliminates the need to pass any names in) or some prefix plus an
-incrementing identifier, or just an incrementing number.
-
-I did think about introducing such a scheme along with clkdev (and did
-have some code but that's long gone), but without the $debugfs/clk/ bit
-being standardized, it wouldn't have worked.
