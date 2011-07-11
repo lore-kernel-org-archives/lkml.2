@@ -1,137 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932185Ab1GKNm2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 09:42:28 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:55174 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757468Ab1GKNm0 convert rfc822-to-8bit (ORCPT
+	id S1757559Ab1GKNnL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 09:43:11 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:49481 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757468Ab1GKNnJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 09:42:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110711101856.GR6014@linux.vnet.ibm.com>
-References: <BANLkTikW6Xk8UMsOHLCnLn7STRzy8RaiJA@mail.gmail.com>
-	<20110709160131.GA18172@linux.vnet.ibm.com>
-	<20110711035137.GA14739@linux.vnet.ibm.com>
-	<CAM=x7SZztLDeB4_mRqnLLKeyzOuVLqGQ5pBmxpdRUKe5EyKr3A@mail.gmail.com>
-	<20110711101856.GR6014@linux.vnet.ibm.com>
-Date: Mon, 11 Jul 2011 19:12:25 +0530
-Message-ID: <CAM=x7Sa1Tb2Vn-RL=AFsJZKFYbnHxOp2Qpn9O3D7p6FVFtuf6w@mail.gmail.com>
-Subject: Re: Linux 3.0-rc5 doesnt boot and hangs at rcu_sched_state ()
-From: RKK <kulkarni.ravi4@gmail.com>
-To: paulmck@linux.vnet.ibm.com, maciej.rutecki@gmail.com
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 11 Jul 2011 09:43:09 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Mon, 11 Jul 2011 15:42:49 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net
+Subject: [git pull] FireWire update
+Message-ID: <20110711154249.7b755dff@stein>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul
+Linus, please pull from the movieboard branch at
 
-On Mon, Jul 11, 2011 at 3:48 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Mon, Jul 11, 2011 at 10:46:30AM +0530, RKK wrote:
->> Hi Paul,
->>
->> On Mon, Jul 11, 2011 at 9:21 AM, Paul E. McKenney
->> <paulmck@linux.vnet.ibm.com> wrote:
->> > On Sat, Jul 09, 2011 at 09:01:31AM -0700, Paul E. McKenney wrote:
->> >> On Wed, Jun 29, 2011 at 06:56:35PM +0530, RKK wrote:
->> >> > Hello,
->> >> > I tried booting Linux3.0.rc5 on my machine today but everytime it
->> >> > hangs after this message
->> >> >
->> >> > a)starting configure read only root support
->> >> >
->> >> > after this waiting for sometime then this message appears
->> >> >
->> >> > b)INFO rcu_sched_state: RCU stalls CPU/disks
->> >> >
->> >> > i tried to read the Documentation/RCU and enable CONFIG_RCU_TRACE but
->> >> > dint know how to proceed further  .
->> >> >
->> >> > i tried repeating this 4-5 times , one thing i observed that is
->> >> > appearance of rcu_sched_state is intermittent but everytime the boot
->> >> > stops/hangs at a) message .
->> >>
->> >> Can you set up the SysRq key as described in Documentation/sysrq.txt?
->> >> This might help you get some information about what the system is doing
->> >> during the wait time.
->> >>
->> >> My guess is that your kernel is spinning with interrupts disabled, and
->> >> that RCU eventually tries to complain about this.  The possible causes
->> >> of this are listed in Documentation/RCU/stallwarn.txt.
->> >
->> > Could you please try out this patch and see if it helps?
->> >
->> >                                                        Thanx, Paul
->
-> [ . . . ]
->
->> Please give me some time as im away. i will test the patch and  get
->> back to you by today evening .
->> Warm Regards
->> Ravi Kulkarni.
->
-> Just as well -- I fat-fingered the patch creation.  :-/
->
-> Please see below for the real patch.
->
->                                                        Thanx, Paul
->
-> ------------------------------------------------------------------------
->
-> rcu: Prevent RCU callbacks from executing during early boot
->
-> Under some rare but real combinations of configuration parameters, RCU
-> callbacks are posted during early boot that use kernel facilities that
-> are not yet initialized.  Therefore, when these callbacks are invoked,
-> hard hangs and crashes ensue.  This commit therefore prevents RCU
-> callbacks from being invoked until after the scheduler is up and running.
->
-> It might well turn out that a better approach is to identify the specific
-> RCU callbacks that are causing this problem, but that discussion will
-> wait until such time as someone really needs an RCU callback to be
-> invoked during early boot.
->
-> Reported-by: julie Sullivan <kernelmail.jms@gmail.com>
-> Tested-by: julie Sullivan <kernelmail.jms@gmail.com>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
->
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index 7e59ffb..4c0210f 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -1467,7 +1467,7 @@ static void rcu_process_callbacks(struct softirq_action *unused)
->  */
->  static void invoke_rcu_callbacks(struct rcu_state *rsp, struct rcu_data *rdp)
->  {
-> -       if (likely(!rsp->boost)) {
-> +       if (likely(rcu_scheduler_active && !rsp->boost)) {
->                rcu_do_batch(rsp, rdp);
->                return;
->        }
-> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> index 14dc7dd..ca3c6dc 100644
-> --- a/kernel/rcutree_plugin.h
-> +++ b/kernel/rcutree_plugin.h
-> @@ -1703,7 +1703,7 @@ static void rcu_initiate_boost(struct rcu_node *rnp, unsigned long flags)
->
->  static void invoke_rcu_callbacks_kthread(void)
->  {
-> -       WARN_ON_ONCE(1);
-> +       WARN_ON_ONCE(rcu_scheduler_active);
->  }
->
->  static void rcu_preempt_boost_start_gp(struct rcu_node *rnp)
->
+    git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394-2.6.git movieboard
 
-The above patch fixes the bug and now 3.0.rc5 is bootable :). thanks.
+to receive the following quirks workaround for the IEEE 1394 (FireWire)
+subsystem.  This is a hopefully temporary bandaid for a comparably rare
+piece of hardware.
 
-maciej rutecki,
+Thanks.
 
-can we close the the below bugzilla entry ?
-https://bugzilla.kernel.org/show_bug.cgi?id=38732
+Stefan Richter (1):
+      firewire: ohci: do not bind to Pinnacle cards, avert panic
 
-Warm regards,
-Ravi Kulkarni.
+ drivers/firewire/ohci.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+
+commit 7f7e37115a8b6724f26d0637a04e1d35e3c59717
+Author: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Date:   Sun Jul 10 00:23:03 2011 +0200
+
+    firewire: ohci: do not bind to Pinnacle cards, avert panic
+    
+    When firewire-ohci is bound to a Pinnacle MovieBoard, eventually a
+    "Register access failure" is logged and an interrupt storm or a kernel
+    panic happens.  https://bugzilla.kernel.org/show_bug.cgi?id=36622
+    
+    Until this is sorted out (if that is going to succeed at all), let's
+    just prevent firewire-ohci from touching these devices.
+    
+    Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+    Cc: <stable@kernel.org>
+
+diff --git a/drivers/firewire/ohci.c b/drivers/firewire/ohci.c
+index 438e6c8..ebb8973 100644
+--- a/drivers/firewire/ohci.c
++++ b/drivers/firewire/ohci.c
+@@ -264,6 +264,7 @@ static char ohci_driver_name[] = KBUILD_MODNAME;
+ #define PCI_DEVICE_ID_AGERE_FW643      0x5901
+ #define PCI_DEVICE_ID_JMICRON_JMB38X_FW        0x2380
+ #define PCI_DEVICE_ID_TI_TSB12LV22     0x8009
++#define PCI_VENDOR_ID_PINNACLE_SYSTEMS 0x11bd
+ 
+ #define QUIRK_CYCLE_TIMER              1
+ #define QUIRK_RESET_PACKET             2
+@@ -3190,6 +3191,11 @@ static int __devinit pci_probe(struct pci_dev *dev,
+        int i, err;
+        size_t size;
+ 
++       if (dev->vendor == PCI_VENDOR_ID_PINNACLE_SYSTEMS) {
++               dev_err(&dev->dev, "Pinnacle MovieBoard is not yet supported\n");
++               return -ENOSYS;
++       }
++
+        ohci = kzalloc(sizeof(*ohci), GFP_KERNEL);
+        if (ohci == NULL) {
+                err = -ENOMEM;
+
+-- 
+Stefan Richter
+-=====-==-== -=== -=-==
+http://arcgraph.de/sr/
