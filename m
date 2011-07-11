@@ -1,58 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758574Ab1GKS6z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 14:58:55 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:5049 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758563Ab1GKS6x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 14:58:53 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	message-id:user-agent:mime-version:content-type:x-system-of-record;
-	b=sosJJaIhS0CtwJcckivrtekgWuhfZ+ViZntsQ2BCA7XbWFpWd806GrM65sJbOWZ3n
-	4eq3BNw+MhGDGJizCLbrQ==
-Date: Mon, 11 Jul 2011 11:58:41 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Christoph Lameter <cl@linux.com>
-cc: Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH next/mmotm] slub: partly fix freeze in __slab_free
-Message-ID: <alpine.LSU.2.00.1107111156310.13035@sister.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	id S1758434Ab1GKS7Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 14:59:16 -0400
+Received: from hera.kernel.org ([140.211.167.34]:54922 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753078Ab1GKS7O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 14:59:14 -0400
+Date: Mon, 11 Jul 2011 18:58:58 GMT
+From: tip-bot for Naga Chumbalkar <nagananda.chumbalkar@hp.com>
+Message-ID: <tip-7fece83235a59b15d75d6c8ef2225c24abd4505b@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        nagananda.chumbalkar@hp.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        nagananda.chumbalkar@hp.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20110708184603.2734.91071.sendpatchset@nchumbalkar.americas.cpqcorp.net>
+References: <20110708184603.2734.91071.sendpatchset@nchumbalkar.americas.cpqcorp.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/apic] x86, ioapic: Also print Dest field
+Git-Commit-ID: 7fece83235a59b15d75d6c8ef2225c24abd4505b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 11 Jul 2011 18:58:58 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My load tests on PowerPC freeze within minutes in __slab_free().
-I happened to try PPC first, didn't try without this fix on x86.
+Commit-ID:  7fece83235a59b15d75d6c8ef2225c24abd4505b
+Gitweb:     http://git.kernel.org/tip/7fece83235a59b15d75d6c8ef2225c24abd4505b
+Author:     Naga Chumbalkar <nagananda.chumbalkar@hp.com>
+AuthorDate: Fri, 8 Jul 2011 18:46:42 +0000
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Mon, 11 Jul 2011 16:31:05 +0200
 
-It looks as if the author was interrupted while devising the new
-cmpxchg_double_slab() version of __slab_free(): its decision to
-spin_lock_irqsave() depends on several uninitialized fields,
-and fixing that (by copying page to new) mostly fixes it.
+x86, ioapic: Also print Dest field
 
-But I didn't think about it very much, and this may well not be what
-the author intends; and I have seen a couple of much rarer freezes
-in __slab_free() on PPC (not yet on x86) even after applying this.
+The code in setup_ioapic_irq() determines the Destination Field,
+so why not also include it in the debug printk output that gets
+displayed when the boot parameter "apic=debug" is used.
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
+Before the change, "dmesg" will show:
+
+ IOAPIC[0]: Set routing entry (8-1 -> 0x31 -> IRQ 1 Mode:0 Active:0)
+ IOAPIC[0]: Set routing entry (8-2 -> 0x30 -> IRQ 0 Mode:0 Active:0)
+ IOAPIC[0]: Set routing entry (8-3 -> 0x33 -> IRQ 3 Mode:0 Active:0) ...
+
+After the change, you will see:
+
+ IOAPIC[0]: Set routing entry (8-1 -> 0x31 -> IRQ 1 Mode:0 Active:0 Dest:0)
+ IOAPIC[0]: Set routing entry (8-2 -> 0x30 -> IRQ 0 Mode:0 Active:0 Dest:0)
+ IOAPIC[0]: Set routing entry (8-3 -> 0x33 -> IRQ 3 Mode:0 Active:0 Dest:0) ...
+
+Signed-off-by: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
+Link: http://lkml.kernel.org/r/20110708184603.2734.91071.sendpatchset@nchumbalkar.americas.cpqcorp.net
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- mm/slub.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/kernel/apic/io_apic.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
---- mmotm/mm/slub.c	2011-07-08 18:59:44.135443127 -0700
-+++ linux/mm/slub.c	2011-07-10 05:07:08.000000000 -0700
-@@ -2217,6 +2217,7 @@ static void __slab_free(struct kmem_cach
- 		return;
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index ed4abaa..5cba200 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1337,9 +1337,9 @@ static void setup_ioapic_irq(int apic_id, int pin, unsigned int irq,
  
- 	do {
-+		new = *page;
- 		prior = page->freelist;
- 		counters = page->counters;
- 		set_freepointer(s, object, prior);
+ 	apic_printk(APIC_VERBOSE,KERN_DEBUG
+ 		    "IOAPIC[%d]: Set routing entry (%d-%d -> 0x%x -> "
+-		    "IRQ %d Mode:%i Active:%i)\n",
++		    "IRQ %d Mode:%i Active:%i Dest:%d)\n",
+ 		    apic_id, mpc_ioapic_id(apic_id), pin, cfg->vector,
+-		    irq, trigger, polarity);
++		    irq, trigger, polarity, dest);
+ 
+ 
+ 	if (setup_ioapic_entry(mpc_ioapic_id(apic_id), irq, &entry,
