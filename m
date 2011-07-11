@@ -1,84 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752552Ab1GKJr4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 05:47:56 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:22427 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317Ab1GKJrz (ORCPT
+	id S1752802Ab1GKJsA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 05:48:00 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:39158 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751317Ab1GKJr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 05:47:55 -0400
-Date: Mon, 11 Jul 2011 11:47:53 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: wangyanqing <udknight@gmail.com>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] USB: Avoid NULL pointer dereference in
- usb_disconnect()
-In-Reply-To: <20110711093651.GA10217@udknight>
-Message-ID: <alpine.LNX.2.00.1107111144060.4462@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1107111119080.4462@swampdragon.chaosbits.net> <20110711093651.GA10217@udknight>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Mon, 11 Jul 2011 05:47:59 -0400
+Message-ID: <4E1AC69A.6060307@atmel.com>
+Date: Mon, 11 Jul 2011 11:47:06 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Chris Ball <cjb@laptop.org>
+CC: linux-mmc@vger.kernel.org, hans-christian.egtvedt@atmel.com,
+        kernel@avr32linux.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, u.kleine-koenig@pengutronix.de
+Subject: Re: [PATCH V3] MMC: PM: add suspend/resume in atmel-mci
+References: <1309530754.4373.3.camel@hcegtvedt.norway.atmel.com>	<1309779505-25509-1-git-send-email-nicolas.ferre@atmel.com> <m2iprbkw6v.fsf@bob.laptop.org>
+In-Reply-To: <m2iprbkw6v.fsf@bob.laptop.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Jul 2011, wangyanqing wrote:
-
-> On Mon, Jul 11, 2011 at 11:21:18AM +0200, Jesper Juhl wrote:
-> > If, in drivers/usb/core/hub.c::usb_disconnect(), 'udev' is NULL, then
-> > we'll never get to the printing of a debug message and returning from
-> > the function since we'll have already dereferenced the NULL pointer in
-> > the bus_to_hcd(udev->bus) call.
-> > This patch moves the dereference to after the test for NULL, thus
-> > avoiding that potential crash.
-> > 
-> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> > ---
-> >  drivers/usb/core/hub.c |    4 +++-
-> >  1 files changed, 3 insertions(+), 1 deletions(-)
-> > 
-> >  disclaimer: compile tested only.
-> > 
-> > diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-> > index a428aa0..0a98c76 100644
-> > --- a/drivers/usb/core/hub.c
-> > +++ b/drivers/usb/core/hub.c
-> > @@ -1634,13 +1634,15 @@ void usb_disconnect(struct usb_device **pdev)
-> >  {
-> >  	struct usb_device	*udev = *pdev;
-> >  	int			i;
-> > -	struct usb_hcd		*hcd = bus_to_hcd(udev->bus);
-> > +	struct usb_hcd		*hcd;
-> >  
-> >  	if (!udev) {
-> >  		pr_debug ("%s nodev\n", __func__);
-> >  		return;
-> >  	}
-> >  
-> > +	hcd = bus_to_hcd(udev->bus);
-> > +
-> >  	/* mark the device as inactive, so any further urb submissions for
-> >  	 * this device (and any of its children) will fail immediately.
-> >  	 * this quiesces everything except pending urbs.
-> > -- 
-> > 1.7.6
-> > 
-> > 
-> Hello,All.Just a question,should we add the NULL checker code at everywhere that 
-> dereference pointer in kernel? If so,it will scare me.
+Le 09/07/2011 22:58, Chris Ball :
+> Hi,
 > 
-Of course not.
+> On Mon, Jul 04 2011, Nicolas Ferre wrote:
+>> Take care of slots while going to suspend state.
+>>
+>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>> ---
+>> V3: take care of each slot SUSPENDED state
+>>     (adding a status bit in the slot "flags")
+>> V2: move to pm_ops
+> 
+> Thanks, I've merged v3 of this patch for mmc-next/3.1 with Felipe's
 
-But here there is already an explicit test for NULL which implies that 
-this pointer can in fact be NULL, which is why it seems unsafe to 
-dereference it before that check. Thus I moved the dereference.
+You mean v4, I have checked: everything is ok.
 
-If someone can prove that the pointer will never be NULL, then I'd be fine 
-with just removing the NULL test and debug print instead.
+> Reviewed-by, and your [2/2] kconfig change.
 
+Perfect, thanks a lot Chris!
 -- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+Nicolas Ferre
 
