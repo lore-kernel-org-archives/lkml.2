@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757950Ab1GKVhZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 17:37:25 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:57661 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751489Ab1GKVhY (ORCPT
+	id S1758023Ab1GKVic (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 17:38:32 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:58583 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756250Ab1GKVib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 17:37:24 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Kevin Hilman <khilman@ti.com>
-Subject: Re: Please submit platform trees for inclusion in arm-soc.git v3.1
-Date: Mon, 11 Jul 2011 23:37:08 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, Thomas Gleixner <tglx@linutronix.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, linux-kernel@vger.kernel.org,
-        Russell King <rmk@arm.linux.org.uk>
-References: <201107012018.14619.arnd@arndb.de> <87wrfsahez.fsf@ti.com>
-In-Reply-To: <87wrfsahez.fsf@ti.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107112337.08892.arnd@arndb.de>
-X-Provags-ID: V02:K0:Cc2OoOyaToOlh9Rn6kyNgCQsAvksQ74OWcwuaf3Ip66
- 4kbgDrJqA0RiSZbjJnGtj4wU04Zy8MXBeEoa8biECNDnQ/WOgU
- xAEVCkj8qsL8xeS7r4dV6B80dGeG12WAv0YUEG12HV8ZC6jdto
- Yeo7seFC52lh/8znwHKAQ1+XD0s8XhuO9qME6rGMJ9UqYDB/RA
- Qb9QTafZlba1FQtxJKQ/A==
+	Mon, 11 Jul 2011 17:38:31 -0400
+From: David Ahern <dsahern@gmail.com>
+To: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
+        fweisbec@gmail.com, paulus@samba.org, David Ahern <dsahern@gmail.com>
+Subject: [PATCH] perf tools, x86: fix 32-bit compile on 64-bit system
+Date: Mon, 11 Jul 2011 15:38:24 -0600
+Message-Id: <1310420304-21452-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 08 July 2011, Kevin Hilman wrote:
-> > Time is running out for the current cycle, so any changes that you
-> > want to see merged in linux-3.1 through the arm-soc tree should be
-> > submitted in form of pull-requests very soon.
-> 
-> [...]
-> 
-> It looks like your "remove rmk/for-next" commit may not have been
-> totally complete.
-> 
-> Trying to merge your master branch and Russell's current for-next branch
-> still results in conflicts in files that should only be touched in
-> Russell's branch (specifically, these seem related to changes in
-> Russell's 'suspend' branch that is included in his 'for-next' branch.)
+Builds for 32-bit binaries on a 64-bit host currently fail with the error:
 
-Yes, that's my fault for not fixing this up correctly after initially
-doing the incorrect pull.
+gcc -o /tmp/perf-ppc/bench/mem-memcpy-x86-64-asm.o -c -fno-omit-frame-pointer -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6 -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -Wformat-y2k -Wshadow -Winit-self -Wpacked -Wredundant-decls -Wstrict-aliasing=3 -Wswitch-default -Wswitch-enum -Wno-system-headers -Wundef -Wwrite-strings -Wbad-function-cast -Wmissing-declarations -Wmissing-prototypes -Wnested-externs -Wold-style-definition -Wstrict-prototypes -Wdeclaration-after-statement -m32 -fstack-protector-all -Wstack-protector -Wvolatile-register-var -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -Iutil/include -Iarch/x86/include -I/tmp/perf-ppc/ -DLIBELF_NO_MMAP -DDWARF_SUPPORT -DNO_NEWT_SUPPORT -DNO_LIBPERL -DNO_LIBPYTHON -DHAVE_CPLUS_DEMANGLE -DNO_STRLCPY -DARCH_X86_64 bench/mem-memcpy-x86-64-asm.S
+bench/../../../arch/x86/lib/memcpy_64.S: Assembler messages:
+bench/../../../arch/x86/lib/memcpy_64.S:29: Error: bad register name `%rdi'
+bench/../../../arch/x86/lib/memcpy_64.S:34: Error: invalid instruction suffix for `movs'
+bench/../../../arch/x86/lib/memcpy_64.S:50: Error: bad register name `%rdi'
+bench/../../../arch/x86/lib/memcpy_64.S:61: Error: bad register name `%rdi'
+...
 
-I guess I'll throw away the current master branch and generate a new
-one. After discussing this with Russell, I think it's best to treat
-the master branch as temporary anyway unless Nicolas or Thomas come up
-with a good reason against doing this.
+The problem is the detection of the host arch without considering passed in
+flags. This change fixes 32-bit builds via:
 
-	Arnd
+make EXTRA_CFLAGS=-m32 
+
+and 64-bit builds still reference the memcpy_64.S.
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/Makefile |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 940257b..c168366 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -52,7 +52,10 @@ ifeq ($(ARCH),i386)
+ endif
+ ifeq ($(ARCH),x86_64)
+ 	ARCH := x86
+-	IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -xc - | tail -n 1)
++	IS_X86_64 := 0
++	ifeq (, $(findstring m32,$(EXTRA_CFLAGS)))
++		IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -xc - | tail -n 1)
++	endif
+ 	ifeq (${IS_X86_64}, 1)
+ 		RAW_ARCH := x86_64
+ 		ARCH_CFLAGS := -DARCH_X86_64
+-- 
+1.7.6
+
