@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757797Ab1GKOP2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 10:15:28 -0400
+	id S932218Ab1GKOPe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 10:15:34 -0400
 Received: from mail-vx0-f174.google.com ([209.85.220.174]:51078 "EHLO
 	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757731Ab1GKOPX (ORCPT
+	with ESMTP id S1757818Ab1GKOPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 10:15:23 -0400
+	Mon, 11 Jul 2011 10:15:32 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -14,9 +14,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
         Johannes Weiner <hannes@cmpxchg.org>,
         Aditya Kali <adityakali@google.com>
-Subject: [PATCH 3/7] cgroups: Add previous cgroup in can_attach_task/attach_task callbacks
-Date: Mon, 11 Jul 2011 16:15:02 +0200
-Message-Id: <1310393706-321-4-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 7/7] cgroups: Add a max number of tasks subsystem
+Date: Mon, 11 Jul 2011 16:15:06 +0200
+Message-Id: <1310393706-321-8-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1310393706-321-1-git-send-email-fweisbec@gmail.com>
 References: <1310393706-321-1-git-send-email-fweisbec@gmail.com>
@@ -24,9 +24,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is to prepare the integration of a new max number of proc
-cgroup subsystem. We'll need to release some resources from the
-previous cgroup.
+Add a new subsystem to limit the number of running tasks,
+similar to the NR_PROC rlimit but in the scope of a cgroup.
+
+This is a step to be able to isolate a bit more a cgroup against
+the rest of the system and limit the global impact of a fork bomb
+inside a given cgroup.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Paul Menage <menage@google.com>
@@ -34,196 +37,281 @@ Cc: Li Zefan <lizf@cn.fujitsu.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Aditya Kali <adityakali@google.com>
 ---
- block/blk-cgroup.c      |   10 ++++++----
- include/linux/cgroup.h  |    5 +++--
- kernel/cgroup.c         |   10 ++++++----
- kernel/cgroup_freezer.c |    3 ++-
- kernel/cpuset.c         |    6 ++++--
- kernel/events/core.c    |    5 +++--
- kernel/sched.c          |    6 ++++--
- 7 files changed, 28 insertions(+), 17 deletions(-)
+ include/linux/cgroup.h        |    9 ++
+ include/linux/cgroup_subsys.h |    8 ++
+ init/Kconfig                  |    7 ++
+ kernel/Makefile               |    1 +
+ kernel/cgroup_max_tasks.c     |  176 +++++++++++++++++++++++++++++++++++++++++
+ kernel/fork.c                 |    4 +
+ 6 files changed, 205 insertions(+), 0 deletions(-)
+ create mode 100644 kernel/cgroup_max_tasks.c
 
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index bcaf16e..d1bfe88 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -30,8 +30,8 @@ EXPORT_SYMBOL_GPL(blkio_root_cgroup);
- 
- static struct cgroup_subsys_state *blkiocg_create(struct cgroup_subsys *,
- 						  struct cgroup *);
--static int blkiocg_can_attach_task(struct cgroup *, struct task_struct *);
--static void blkiocg_attach_task(struct cgroup *, struct task_struct *);
-+static int blkiocg_can_attach_task(struct cgroup *, struct cgroup *, struct task_struct *);
-+static void blkiocg_attach_task(struct cgroup *, struct cgroup *, struct task_struct *);
- static void blkiocg_destroy(struct cgroup_subsys *, struct cgroup *);
- static int blkiocg_populate(struct cgroup_subsys *, struct cgroup *);
- 
-@@ -1614,7 +1614,8 @@ done:
-  * of the main cic data structures.  For now we allow a task to change
-  * its cgroup only if it's the only owner of its ioc.
-  */
--static int blkiocg_can_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
-+static int blkiocg_can_attach_task(struct cgroup *cgrp, struct cgroup *old_cgrp,
-+				   struct task_struct *tsk)
- {
- 	struct io_context *ioc;
- 	int ret = 0;
-@@ -1629,7 +1630,8 @@ static int blkiocg_can_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
- 	return ret;
- }
- 
--static void blkiocg_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
-+static void blkiocg_attach_task(struct cgroup *cgrp, struct cgroup *old_cgrp,
-+				struct task_struct *tsk)
- {
- 	struct io_context *ioc;
- 
 diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index ab4ac0c..e8288a0 100644
+index 94454143..e6dec8c 100644
 --- a/include/linux/cgroup.h
 +++ b/include/linux/cgroup.h
-@@ -468,11 +468,12 @@ struct cgroup_subsys {
- 	void (*destroy)(struct cgroup_subsys *ss, struct cgroup *cgrp);
- 	int (*can_attach)(struct cgroup_subsys *ss, struct cgroup *cgrp,
- 			  struct task_struct *tsk);
--	int (*can_attach_task)(struct cgroup *cgrp, struct task_struct *tsk);
-+	int (*can_attach_task)(struct cgroup *cgrp, struct cgroup *old_cgrp,
-+			       struct task_struct *tsk);
- 	void (*cancel_attach)(struct cgroup_subsys *ss, struct cgroup *cgrp,
- 			      struct task_struct *tsk);
- 	void (*pre_attach)(struct cgroup *cgrp);
--	void (*attach_task)(struct cgroup *cgrp, struct task_struct *tsk);
-+	void (*attach_task)(struct cgroup *cgrp, struct cgroup *old_cgrp, struct task_struct *tsk);
- 	void (*attach)(struct cgroup_subsys *ss, struct cgroup *cgrp,
- 		       struct cgroup *old_cgrp, struct task_struct *tsk);
- 	void (*fork)(struct cgroup_subsys *ss, struct task_struct *task);
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 2731d11..c3ee4cf 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1841,7 +1841,7 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
- 			}
- 		}
- 		if (ss->can_attach_task) {
--			retval = ss->can_attach_task(cgrp, tsk);
-+			retval = ss->can_attach_task(cgrp, oldcgrp, tsk);
- 			if (retval) {
- 				failed_ss = ss;
- 				goto out;
-@@ -1857,7 +1857,7 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
- 		if (ss->pre_attach)
- 			ss->pre_attach(cgrp);
- 		if (ss->attach_task)
--			ss->attach_task(cgrp, tsk);
-+			ss->attach_task(cgrp, oldcgrp, tsk);
- 		if (ss->attach)
- 			ss->attach(ss, cgrp, oldcgrp, tsk);
- 	}
-@@ -2072,7 +2072,9 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- 			/* run on each task in the threadgroup. */
- 			for (i = 0; i < group_size; i++) {
- 				tsk = flex_array_get_ptr(group, i);
--				retval = ss->can_attach_task(cgrp, tsk);
-+				oldcgrp = task_cgroup_from_root(tsk, root);
+@@ -660,4 +660,13 @@ static inline int cgroup_attach_task_current_cg(struct task_struct *t)
+ 
+ #endif /* !CONFIG_CGROUPS */
+ 
++#ifdef CONFIG_CGROUP_MAX_TASKS
++int cgroup_max_tasks_fork(struct task_struct *child);
++#else
++static inline int cgroup_max_tasks_fork(struct task_struct *child)
++{
++	return 0;
++}
++#endif /* CONFIG_CGROUP_MAX_TASKS */
 +
-+				retval = ss->can_attach_task(cgrp, oldcgrp, tsk);
- 				if (retval) {
- 					failed_ss = ss;
- 					cancel_failed_ss = true;
-@@ -2135,7 +2137,7 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- 		/* attach each task to each subsystem */
- 		for_each_subsys(root, ss) {
- 			if (ss->attach_task)
--				ss->attach_task(cgrp, tsk);
-+				ss->attach_task(cgrp, oldcgrp, tsk);
- 		}
- 		/* if the thread is PF_EXITING, it can just get skipped. */
- 		retval = cgroup_task_migrate(cgrp, oldcgrp, tsk, true);
-diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-index e691818..c1421a1 100644
---- a/kernel/cgroup_freezer.c
-+++ b/kernel/cgroup_freezer.c
-@@ -175,7 +175,8 @@ static int freezer_can_attach(struct cgroup_subsys *ss,
- 	return 0;
- }
+ #endif /* _LINUX_CGROUP_H */
+diff --git a/include/linux/cgroup_subsys.h b/include/linux/cgroup_subsys.h
+index ac663c1..227540d 100644
+--- a/include/linux/cgroup_subsys.h
++++ b/include/linux/cgroup_subsys.h
+@@ -59,8 +59,16 @@ SUBSYS(net_cls)
+ SUBSYS(blkio)
+ #endif
  
--static int freezer_can_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
-+static int freezer_can_attach_task(struct cgroup *cgrp, struct cgroup *old_cgrp,
-+				   struct task_struct *tsk)
- {
- 	rcu_read_lock();
- 	if (__cgroup_freezing_or_frozen(tsk)) {
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 9c9b754..f66c9b4 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -1390,7 +1390,8 @@ static int cpuset_can_attach(struct cgroup_subsys *ss, struct cgroup *cont,
- 	return 0;
- }
++/* */
++
+ #ifdef CONFIG_CGROUP_PERF
+ SUBSYS(perf)
+ #endif
  
--static int cpuset_can_attach_task(struct cgroup *cgrp, struct task_struct *task)
-+static int cpuset_can_attach_task(struct cgroup *cgrp, struct cgroup *old_cgrp,
-+				  struct task_struct *task)
- {
- 	return security_task_setscheduler(task);
- }
-@@ -1418,7 +1419,8 @@ static void cpuset_pre_attach(struct cgroup *cont)
- }
+ /* */
++
++#ifdef CONFIG_CGROUP_MAX_TASKS
++SUBSYS(max_tasks)
++#endif
++
++/* */
+diff --git a/init/Kconfig b/init/Kconfig
+index 412c21b..46e4c03 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -690,6 +690,13 @@ config CGROUP_MEM_RES_CTLR_SWAP_ENABLED
+ 	  select this option (if, for some reason, they need to disable it
+ 	  then noswapaccount does the trick).
  
- /* Per-thread attachment work. */
--static void cpuset_attach_task(struct cgroup *cont, struct task_struct *tsk)
-+static void cpuset_attach_task(struct cgroup *cont, struct cgroup *old,
-+			       struct task_struct *tsk)
- {
- 	int err;
- 	struct cpuset *cs = cgroup_cs(cont);
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 9efe710..3daf0eb 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -7403,7 +7403,8 @@ static int __perf_cgroup_move(void *info)
- }
++config CGROUP_MAX_TASKS
++        bool "Control max number of tasks in a cgroup"
++	depends on RESOURCE_COUNTERS
++	help
++	  This option let the user to set up an upper bound allowed number
++	  of tasks.
++
+ config CGROUP_PERF
+ 	bool "Enable perf_event per-cpu per-container group (cgroup) monitoring"
+ 	depends on PERF_EVENTS && CGROUPS
+diff --git a/kernel/Makefile b/kernel/Makefile
+index 2d64cfc..1b5722e 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -60,6 +60,7 @@ obj-$(CONFIG_BACKTRACE_SELF_TEST) += backtracetest.o
+ obj-$(CONFIG_COMPAT) += compat.o
+ obj-$(CONFIG_CGROUPS) += cgroup.o
+ obj-$(CONFIG_CGROUP_FREEZER) += cgroup_freezer.o
++obj-$(CONFIG_CGROUP_MAX_TASKS) += cgroup_max_tasks.o
+ obj-$(CONFIG_CPUSETS) += cpuset.o
+ obj-$(CONFIG_UTS_NS) += utsname.o
+ obj-$(CONFIG_USER_NS) += user_namespace.o
+diff --git a/kernel/cgroup_max_tasks.c b/kernel/cgroup_max_tasks.c
+new file mode 100644
+index 0000000..2c38105
+--- /dev/null
++++ b/kernel/cgroup_max_tasks.c
+@@ -0,0 +1,176 @@
++/*
++ * Limits on number of tasks subsystem for cgroups
++ *
++ * Copyright (C) 2011 Red Hat, Inc., Frederic Weisbecker <fweisbec@redhat.com>
++ *
++ * Thanks to Johannes Weiner, Li Zefan, Paul Menage for their suggestions.
++ *
++ */
++
++#include <linux/cgroup.h>
++#include <linux/slab.h>
++#include <linux/res_counter.h>
++
++
++struct task_counter {
++	struct res_counter		res;
++	struct cgroup_subsys_state	css;
++};
++
++/*
++ * The root task counter is ignored and is not part of the
++ * whole task counting in order to optimize the trivial case
++ * of only one root cgroup living.
++ */
++static struct task_counter root_counter;
++
++
++static inline struct task_counter *cgroup_task_counter(struct cgroup *cont)
++{
++	return container_of(cgroup_subsys_state(cont, max_tasks_subsys_id),
++			    struct task_counter, css);
++}
++
++static struct cgroup_subsys_state *
++task_counter_create(struct cgroup_subsys *ss, struct cgroup *cgrp)
++{
++	struct task_counter *cnt, *parent_cnt;
++
++	if (!cgrp->parent) {
++		res_counter_init(&root_counter.res, NULL);
++		return &root_counter.css;
++	}
++
++	cnt = kzalloc(sizeof(*cnt), GFP_KERNEL);
++	if (!cnt)
++		return ERR_PTR(-ENOMEM);
++
++	parent_cnt = cgroup_task_counter(cgrp->parent);
++	res_counter_init(&cnt->res, &parent_cnt->res);
++
++	return &cnt->css;
++}
++
++static void task_counter_post_clone(struct cgroup_subsys *ss, struct cgroup *cgrp)
++{
++	struct task_counter *cnt = cgroup_task_counter(cgrp);
++
++	res_counter_inherit(&cnt->res, RES_LIMIT);
++}
++
++static void task_counter_destroy(struct cgroup_subsys *ss, struct cgroup *cont)
++{
++	struct task_counter *cnt = cgroup_task_counter(cont);
++
++	kfree(cnt);
++}
++
++static void task_counter_exit(struct cgroup_subsys *ss, struct cgroup *cgrp,
++			      struct cgroup *old_cgrp, struct task_struct *task)
++{
++	struct task_counter *cnt = cgroup_task_counter(old_cgrp);
++
++	if (cnt != &root_counter)
++		res_counter_uncharge_until(&cnt->res, &root_counter.res, 1);
++}
++
++/* Protected amongst can_attach_task/attach_task/cancel_attach_task by cgroup mutex */
++static struct res_counter *common_ancestor;
++
++static int task_counter_can_attach_task(struct cgroup *cgrp, struct cgroup *old_cgrp,
++					struct task_struct *tsk)
++{
++	struct task_counter *cnt = cgroup_task_counter(cgrp);
++	struct task_counter *old_cnt = cgroup_task_counter(old_cgrp);
++	struct res_counter *limit_fail_at;
++
++	common_ancestor = res_counter_common_ancestor(&cnt->res, &old_cnt->res);
++
++	WARN_ON_ONCE(common_ancestor == NULL);
++
++	return res_counter_charge_until(&cnt->res, common_ancestor, 1, &limit_fail_at);
++}
++
++static void task_counter_cancel_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
++{
++	struct task_counter *cnt = cgroup_task_counter(cgrp);
++
++	res_counter_uncharge_until(&cnt->res, common_ancestor, 1);
++}
++
++static void task_counter_attach_task(struct cgroup *cgrp, struct cgroup *old_cgrp,
++				     struct task_struct *tsk)
++{
++	struct task_counter *cnt = cgroup_task_counter(old_cgrp);
++
++	res_counter_uncharge_until(&cnt->res, common_ancestor, 1);
++}
++
++static u64 max_proc_read_u64(struct cgroup *cont, struct cftype *cft)
++{
++	struct task_counter *cnt = cgroup_task_counter(cont);
++	int type = cft->private;
++
++	return res_counter_read_u64(&cnt->res, type);
++}
++
++static int max_proc_write_u64(struct cgroup *cgrp, struct cftype *cft, u64 val)
++{
++	struct task_counter *cnt = cgroup_task_counter(cgrp);
++	int type = cft->private;
++
++	res_counter_write_u64(&cnt->res, type, val);
++
++	return 0;
++}
++
++static struct cftype files[] = {
++	{
++		.name		= "max_proc",
++		.read_u64	= max_proc_read_u64,
++		.write_u64	= max_proc_write_u64,
++		.private	= RES_LIMIT,
++	},
++
++	{
++		.name		= "nr_proc",
++		.read_u64	= max_proc_read_u64,
++		.private	= RES_USAGE,
++	},
++};
++
++static int task_counter_populate(struct cgroup_subsys *ss, struct cgroup *cgrp)
++{
++	if (!cgrp->parent)
++		return 0;
++
++	return cgroup_add_files(cgrp, ss, files, ARRAY_SIZE(files));
++}
++
++int cgroup_max_tasks_fork(struct task_struct *child)
++{
++	struct cgroup_subsys_state *css = child->cgroups->subsys[max_tasks_subsys_id];
++	struct cgroup *cgrp = css->cgroup;
++	struct task_counter *cnt = cgroup_task_counter(cgrp);
++	struct res_counter *limit_fail_at;
++
++	/* Ignore root cgroup directory to optimize trivial common case */
++	if (cnt == &root_counter)
++		return 0;
++
++	return res_counter_charge_until(&cnt->res, &root_counter.res, 1, &limit_fail_at);
++}
++
++struct cgroup_subsys max_tasks_subsys = {
++	.name			= "max_tasks",
++	.subsys_id		= max_tasks_subsys_id,
++	.create			= task_counter_create,
++	.post_clone		= task_counter_post_clone,
++	.destroy		= task_counter_destroy,
++	.exit			= task_counter_exit,
++	.can_attach_task	= task_counter_can_attach_task,
++	.cancel_attach_task	= task_counter_cancel_attach_task,
++	.attach_task		= task_counter_attach_task,
++	.populate		= task_counter_populate,
++	.early_init		= 1,
++};
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 0276c30..feca609 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1295,6 +1295,10 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 	p->group_leader = p;
+ 	INIT_LIST_HEAD(&p->thread_group);
  
- static void
--perf_cgroup_attach_task(struct cgroup *cgrp, struct task_struct *task)
-+perf_cgroup_attach_task(struct cgroup *cgrp, struct cgroup *old_cgrp,
-+			struct task_struct *task)
- {
- 	task_function_call(task, __perf_cgroup_move, task);
- }
-@@ -7419,7 +7420,7 @@ static void perf_cgroup_exit(struct cgroup_subsys *ss, struct cgroup *cgrp,
- 	if (!(task->flags & PF_EXITING))
- 		return;
- 
--	perf_cgroup_attach_task(cgrp, task);
-+	perf_cgroup_attach_task(cgrp, old_cgrp, task);
- }
- 
- struct cgroup_subsys perf_subsys = {
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 3f2e502..adec58d 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -8790,7 +8790,8 @@ cpu_cgroup_destroy(struct cgroup_subsys *ss, struct cgroup *cgrp)
- }
- 
- static int
--cpu_cgroup_can_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
-+cpu_cgroup_can_attach_task(struct cgroup *cgrp, struct cgroup *old_cgrp,
-+			   struct task_struct *tsk)
- {
- #ifdef CONFIG_RT_GROUP_SCHED
- 	if (!sched_rt_can_attach(cgroup_tg(cgrp), tsk))
-@@ -8804,7 +8805,8 @@ cpu_cgroup_can_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
- }
- 
- static void
--cpu_cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
-+cpu_cgroup_attach_task(struct cgroup *cgrp, struct cgroup *old_cgrp,
-+		       struct task_struct *tsk)
- {
- 	sched_move_task(tsk);
- }
++	retval = cgroup_max_tasks_fork(p);
++	if (retval)
++		goto bad_fork_free_pid;
++
+ 	/* Now that the task is set up, run cgroup callbacks if
+ 	 * necessary. We need to run them before the task is visible
+ 	 * on the tasklist. */
 -- 
 1.7.5.4
 
