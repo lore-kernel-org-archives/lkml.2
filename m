@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552Ab1GKVPZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 17:15:25 -0400
-Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:20155 "EHLO
-	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870Ab1GKVPX (ORCPT
+	id S1757218Ab1GKVSv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 17:18:51 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:54071 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752960Ab1GKVSt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 17:15:23 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Jul 2011 17:15:23 EDT
-Date: Mon, 11 Jul 2011 16:08:41 -0500
-From: scameron@beardog.cce.hp.com
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stephenmcameron@gmail.com,
-        thenzl@redhat.com, mikem@beardog.cce.hp.com
-Subject: Re: [PATCH] hpsa: do not attempt to read from a write-only register
-Message-ID: <20110711210841.GC25366@beardog.cce.hp.com>
-References: <20110708195926.3623.30375.stgit@beardog.cce.hp.com> <20110711131911.31789ee0.akpm@linux-foundation.org> <20110711205124.GB25366@beardog.cce.hp.com> <20110711140450.a6f3e8be.akpm@linux-foundation.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110711140450.a6f3e8be.akpm@linux-foundation.org>
-User-Agent: Mutt/1.4.2.2i
+	Mon, 11 Jul 2011 17:18:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <XNkIyhV6dgF.A.D4G.TCYGOB@chimera>
+References: <Y7LyOsOBwFM.A.kJG.kBYGOB@chimera>
+	<XNkIyhV6dgF.A.D4G.TCYGOB@chimera>
+Date: Mon, 11 Jul 2011 14:18:48 -0700
+X-Google-Sender-Auth: VPg3EEMvHhJgdjeILH_X5zU-yoY
+Message-ID: <CAA9_cmeY1Q-L_iMQfsf-KWufZzpkMSWzQ42ep=bQP9XZwyV-Lw@mail.gmail.com>
+Subject: Re: [Bug #38522] address space collision error message on boot
+From: Dan Williams <dan.j.williams@intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Dave Jiang <dave.jiang@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Jools Wills <jools@oxfordinspire.co.uk>, bhelgaas@google.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 11, 2011 at 02:04:50PM -0700, Andrew Morton wrote:
-> On Mon, 11 Jul 2011 15:51:24 -0500
-> scameron@beardog.cce.hp.com wrote:
-> 
-> > On Mon, Jul 11, 2011 at 01:19:11PM -0700, Andrew Morton wrote:
-> > > On Fri, 08 Jul 2011 14:59:26 -0500
-> > > "Stephen M. Cameron" <scameron@beardog.cce.hp.com> wrote:
-> > > 
-> > > > From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-> > > > 
-> > > > Most smartarrays tolerate it, but a few new ones don't.
-> > > > 
-> > > > Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-> > > > ---
-> > > >  drivers/scsi/hpsa.h |    2 +-
-> > > >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > > > 
-> > > > diff --git a/drivers/scsi/hpsa.h b/drivers/scsi/hpsa.h
-> > > > index 6d8dcd4..7f53cea 100644
-> > > > --- a/drivers/scsi/hpsa.h
-> > > > +++ b/drivers/scsi/hpsa.h
-> > > > @@ -214,7 +214,7 @@ static void SA5_submit_command(struct ctlr_info *h,
-> > > >  	dev_dbg(&h->pdev->dev, "Sending %x, tag = %x\n", c->busaddr,
-> > > >  		c->Header.Tag.lower);
-> > > >  	writel(c->busaddr, h->vaddr + SA5_REQUEST_PORT_OFFSET);
-> > > > -	(void) readl(h->vaddr + SA5_REQUEST_PORT_OFFSET);
-> > > > +	(void) readl(h->vaddr + SA5_SCRATCHPAD_OFFSET);
-> > > >  	h->commands_outstanding++;
-> > > >  	if (h->commands_outstanding > h->max_outstanding)
-> > > >  		h->max_outstanding = h->commands_outstanding;
-> > > 
-> > > The changelog forgot to tell us the user-visible effects of the bug. 
-> > > That was really really bad of it.  Bad changelog.  No bone for you.
-> > 
-> > Oh, sorry.  When the controller doesn't tolerate the bug, the firmware
-> > on it locks up.  No interrupts are received, no commands complete. I/o
-> > on that controller grinds to a halt.
-> 
-> OK, that was important.
-> 
-> Presumably you'd like those newer controllers to work with older
-> kernels?  In which case we should mark the patch for -stable
-> backporting?
+[ adding Bjorn ]
 
-Yes.
+On Sun, Jul 10, 2011 at 3:38 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> This message has been generated automatically as a part of a summary report
+> of recent regressions.
+>
+> The following bug entry is on the current list of known regressions
+> from 2.6.39.  Please verify if it still should be listed and let the tracking team
+> know (either way).
 
-> 
-> I've done that to my copy and have updated the changelog.
-> 
-> > I can resubmit if you like.
-> 
-> I have two other needed-in-3.0 scsi patches.  I'll send all three
-> Jameswards now.
+The patch from the bugzilla entry is not yet upstream.
+
+>
+> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=38522
+> Subject         : address space collision error message on boot
+> Submitter       : Jools Wills <jools@oxfordinspire.co.uk>
+> Date            : 2011-06-29 02:28 (12 days old)
+> First-Bad-Commit: http://git.kernel.org/linus/5d94e81f69d4b1d1102d3ab557ce0a817c11fbbb
+
+Per the commentary in the bugzilla this commit makes the warning
+message appear on 64-bit builds, but 32-bit has the same problem on
+affected platforms (without the commit).
+
+Bjorn has a proposed patch [1] that just downgrades the warning since
+system operation does not appear to be affected.
+
+--
+Dan
+
+[1]: https://bugzilla.kernel.org/attachment.cgi?id=64102
