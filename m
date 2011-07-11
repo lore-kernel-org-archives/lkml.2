@@ -1,39 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757254Ab1GKUvT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 16:51:19 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:63193 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901Ab1GKUvS (ORCPT
+	id S1757396Ab1GKUzt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 16:55:49 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:18381 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901Ab1GKUzs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 16:51:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E1B615B.3040509@gmail.com>
-References: <201107082028.p68KSWWf013053@imap1.linux-foundation.org>
-	<4E1B5CAA.7070001@gmail.com>
-	<20110711134121.54557e28.akpm@linux-foundation.org>
-	<CAOJsxLG3jjjebBPbZjWTzue7nZJFMWVGZ3iGK41cjGpdKi477Q@mail.gmail.com>
-	<4E1B615B.3040509@gmail.com>
-Date: Mon, 11 Jul 2011 23:51:17 +0300
-X-Google-Sender-Auth: o-Yqz5w_lfan2rtIoNp9R9VnjwU
-Message-ID: <CAOJsxLH-3oYgSXO+sNs23+MBeKMsFitkMpHn8LXz=vBZHb2i4g@mail.gmail.com>
-Subject: Re: page->_count build failure [was: mmotm 2011-07-08-12-50 uploaded]
-From: Pekka Enberg <penberg@kernel.org>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        cl@linux.com, Pekka Enberg <penberg@cs.helsinki.fi>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 11 Jul 2011 16:55:48 -0400
+Date: Mon, 11 Jul 2011 15:51:24 -0500
+From: scameron@beardog.cce.hp.com
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stephenmcameron@gmail.com,
+        thenzl@redhat.com, mikem@beardog.cce.hp.com
+Subject: Re: [PATCH] hpsa: do not attempt to read from a write-only register
+Message-ID: <20110711205124.GB25366@beardog.cce.hp.com>
+References: <20110708195926.3623.30375.stgit@beardog.cce.hp.com> <20110711131911.31789ee0.akpm@linux-foundation.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110711131911.31789ee0.akpm@linux-foundation.org>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 11, 2011 at 11:47 PM, Jiri Slaby <jirislaby@gmail.com> wrote:
->> Didn't commit ea6bd8ee1a2ccdffc38b2b1fcfe941addfafaade fix the issue?
->
-> Which repo is that from? Git doesn't know it here.
+On Mon, Jul 11, 2011 at 01:19:11PM -0700, Andrew Morton wrote:
+> On Fri, 08 Jul 2011 14:59:26 -0500
+> "Stephen M. Cameron" <scameron@beardog.cce.hp.com> wrote:
+> 
+> > From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+> > 
+> > Most smartarrays tolerate it, but a few new ones don't.
+> > 
+> > Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+> > ---
+> >  drivers/scsi/hpsa.h |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/scsi/hpsa.h b/drivers/scsi/hpsa.h
+> > index 6d8dcd4..7f53cea 100644
+> > --- a/drivers/scsi/hpsa.h
+> > +++ b/drivers/scsi/hpsa.h
+> > @@ -214,7 +214,7 @@ static void SA5_submit_command(struct ctlr_info *h,
+> >  	dev_dbg(&h->pdev->dev, "Sending %x, tag = %x\n", c->busaddr,
+> >  		c->Header.Tag.lower);
+> >  	writel(c->busaddr, h->vaddr + SA5_REQUEST_PORT_OFFSET);
+> > -	(void) readl(h->vaddr + SA5_REQUEST_PORT_OFFSET);
+> > +	(void) readl(h->vaddr + SA5_SCRATCHPAD_OFFSET);
+> >  	h->commands_outstanding++;
+> >  	if (h->commands_outstanding > h->max_outstanding)
+> >  		h->max_outstanding = h->commands_outstanding;
+> 
+> The changelog forgot to tell us the user-visible effects of the bug. 
+> That was really really bad of it.  Bad changelog.  No bone for you.
 
-It's in slab.git:
+Oh, sorry.  When the controller doesn't tolerate the bug, the firmware
+on it locks up.  No interrupts are received, no commands complete. I/o
+on that controller grinds to a halt.
 
-http://git.kernel.org/?p=linux/kernel/git/penberg/slab-2.6.git;a=commitdiff;h=ea6bd8ee1a2ccdffc38b2b1fcfe941addfafaade
+I can resubmit if you like.
 
-Maybe linux-next hasn't picked it up yet?
+-- steve
+
