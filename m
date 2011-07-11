@@ -1,58 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757501Ab1GKNlx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 09:41:53 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:45054
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751951Ab1GKNlw (ORCPT
+	id S1757543Ab1GKNmF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 09:42:05 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34170 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757515Ab1GKNmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 09:41:52 -0400
-Date: Mon, 11 Jul 2011 09:41:47 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: David Howells <dhowells@redhat.com>
-Cc: viro@ZenIV.linux.org.uk, autofs@linux.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ian Kent <raven@themaw.net>
-Subject: Re: [PATCH] VFS: Fix automount for negative autofs dentries
-Message-ID: <20110711134147.GA6853@infradead.org>
-References: <20110711132057.14641.36229.stgit@warthog.procyon.org.uk>
+	Mon, 11 Jul 2011 09:42:03 -0400
+Date: Mon, 11 Jul 2011 13:41:51 +0000
+From: Pavel Machek <pavel@ucw.cz>
+To: rpurdie@rpsys.net, lenz@cs.wisc.edu,
+        kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
+        Cyril Hrubis <metan@ucw.cz>, thommycheck@gmail.com,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
+        utx@penguin.cz, zaurus-devel@www.linuxtogo.org,
+        Marek Vasut <marek.vasut@gmail.com>,
+        Russell King <rmk@arm.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: zaurus patches -- arm/pxa -- is Eric alive
+Message-ID: <20110711134150.GA15506@localhost.ucw.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110711132057.14641.36229.stgit@warthog.procyon.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +	if (!(flags & LOOKUP_FOLLOW)) {
-> +		/* We do, however, want to mount if someone wants to open or
-> +		 * create a file of any type under the mountpoint, wants to
-> +		 * traverse through the mountpoint or wants to open the mounted
-> +		 * directory.
-> +		 */
-> +		if (flags & (LOOKUP_CONTINUE | LOOKUP_DIRECTORY |
-> +			     LOOKUP_OPEN | LOOKUP_CREATE))
-> +			goto need_automount;
-> +
-> +		/* Also, autofs may mark negative dentries as being automount
-> +		 * points.  These will need the attentions of the daemon to
-> +		 * instantiate them before they can be used.
-> +		 */
-> +		if (!path->dentry->d_inode)
-> +			goto need_automount;
->  		return -EISDIR;
-> +	}
-> +need_automount:
+Hi!
 
-That's some really odd code structure.
-
-	if (!(flags & (LOOKUP_FOLLOW | LOOKUP_CONTINUE | LOOKUP_DIRECTORY |
-		        LOOKUP_OPEN | LOOKUP_CREATE)) &&
-	    path->dentry->d_inode)
-		return -EISDIR;
-
-would do the same.
-
+There are some rather critical patches for zaurus C-3000 (spitz)
+available... with no response. What is going on?
+								Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
