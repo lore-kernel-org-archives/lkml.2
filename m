@@ -1,114 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701Ab1GKJuN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 05:50:13 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:34516 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317Ab1GKJuK convert rfc822-to-8bit (ORCPT
+	id S1752992Ab1GKJzA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 05:55:00 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54598 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751956Ab1GKJy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 05:50:10 -0400
+	Mon, 11 Jul 2011 05:54:58 -0400
+Date: Mon, 11 Jul 2011 10:54:24 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Marc Zyngier <Marc.Zyngier@arm.com>,
+        Vitaly Kuzmichev <vkuzmichev@mvista.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        Wim Van Sebroeck <wim@iguana.be>, "arm@kernel.org" <arm@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, John Stultz <johnstul@us.ibm.com>,
+        Nicolas Pitre <nico@fluxnic.net>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH V2 0/6] arm_smp_twd: mpcore_wdt: Fix MPCORE watchdog
+	setup
+Message-ID: <20110711095424.GD3239@n2100.arm.linux.org.uk>
+References: <1286185540-19569-1-git-send-email-vkuzmichev@mvista.com> <1309892440-3260-1-git-send-email-vkuzmichev@mvista.com> <4E14337F.1050101@arm.com> <20110706101456.GN8286@n2100.arm.linux.org.uk> <20110706110548.GA31936@1n450.cable.virginmedia.net> <20110706111603.GS8286@n2100.arm.linux.org.uk> <20110711094343.GB11247@e102109-lin.cambridge.arm.com>
 MIME-Version: 1.0
-In-Reply-To: <4E1AB992.3040309@udo.edu>
-References: <CACqU3MXvHR0v4Hgn5UMwDtzaX5nWqmKEneN_s7r4PuEGzifauw@mail.gmail.com>
-	<1310282825-14509-1-git-send-email-lacombar@gmail.com>
-	<1310282825-14509-2-git-send-email-lacombar@gmail.com>
-	<CAMT+=WY84jaattF+9zYK7oiJLmn8_oGLB-mnGbOpK_4Rt0vRZg@mail.gmail.com>
-	<4E1AB992.3040309@udo.edu>
-Date: Mon, 11 Jul 2011 12:50:09 +0300
-Message-ID: <CAMT+=WZV4TGfXY0=BjYtNVRDuWw6r-facK=q2S6HVOUTB3KWEg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] kconfig/nconf: prevent segfault on empty menu
-From: Nir Tzachar <nir.tzachar@gmail.com>
-To: Andrej Gelenberg <andrej.gelenberg@udo.edu>
-Cc: linux-kbuild@vger.kernel.org, mmarek@suse.cz, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110711094343.GB11247@e102109-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 11, 2011 at 11:51 AM, Andrej Gelenberg
-<andrej.gelenberg@udo.edu> wrote:
-> Hello,
->
-> it show already "There is no help available for this option." message on
-> F2. Only caption could be better as just "(null)". Besides ignore the
-> key is much better as segfault.
+On Mon, Jul 11, 2011 at 10:43:43AM +0100, Catalin Marinas wrote:
+> On Wed, Jul 06, 2011 at 12:16:03PM +0100, Russell King - ARM Linux wrote:
+> > On Wed, Jul 06, 2011 at 12:05:48PM +0100, Catalin Marinas wrote:
+> > > On Wed, Jul 06, 2011 at 11:14:56AM +0100, Russell King - ARM Linux wrote:
+> > > > Do we know why the calibration was initially introduced?  FWIR, it came
+> > > > from the SMP group in ARM, so I guess they had a reason for it rather
+> > > > than copying x86.
+> > > 
+> > > I think it was introduced because the TWD frequency is half of the CPU
+> > > frequency but the latter may not be known - boot monitor configuration
+> > > could change it.
+> > 
+> > Okay, that implies we can't have a fixed frequency built into the kernel
+> > then.  For such platforms like the ARM dev boards (realview + vexpress),
+> > I expect we can read the CPU frequency from somewhere like one of the
+> > ICST PLLs.
+>  
+> That's highly platform dependent and it's not just ARM dev boards. Any
+> board with ARM11MPCore, Cortex-A9 or Cortex-A5 would need to find a way
+> to retrieve such information. If anyone is prepared to go through each
+> board and figure out how to get the information, it's fine by me.
 
-I agree. Then just add a proper caption and thats it.
-
-Cheers.
-
-> Regards
-> Andrej Gelenberg
->
-> On 07/10/2011 12:32 PM, Nir Tzachar wrote:
->> Hello.
->>
->> On Sun, Jul 10, 2011 at 10:27 AM, Arnaud Lacombe <lacombar@gmail.com> wrote:
->>> nconf does not check the validity of the current menu when help is requested
->>> (with either <F2>, '?' or 'h'). This leads to a NULL pointer dereference when an
->>> empty menu is encountered.
->>>
->>> The following reduced testcase exposes the problem:
->>>
->>> config DEP
->>>        bool
->>>
->>> menu "FOO"
->>>
->>> config BAR
->>>        bool "BAR"
->>>        depends on DEP
->>>
->>> endmenu
->>>
->>> Issue will happen when entering menu "FOO" and requesting help.
->>>
->>> nconf is the only front-end which do not filter the validity of the current
->>> menu. Such filter can not really happen beforehand as other key which does not
->>> deals with the current menu might be entered by the user, so just bails out
->>> earlier if we encounter an invalid menu.
->>
->> I do not believe the correct solution is silently ignoring the user's
->> key presses. I think the correct behavior would be to display a
->> nohelp_text window.
->>
->> something like this (untested):
->> show_scroll_win(main_window, nohelp_text);
->>
->> The other patches in the series seem gr8.
->>
->> Cheers.
->>
->>> Cc: Nir Tzachar <nir.tzachar@gmail.com>
->>> Cc: Andrej Gelenberg <andrej.gelenberg@udo.edu>
->>> Reported-by: Andrej Gelenberg <andrej.gelenberg@udo.edu>
->>> Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
->>> ---
->>>  scripts/kconfig/nconf.c |    7 ++++++-
->>>  1 files changed, 6 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/scripts/kconfig/nconf.c b/scripts/kconfig/nconf.c
->>> index 24fc79a..eb9e49d 100644
->>> --- a/scripts/kconfig/nconf.c
->>> +++ b/scripts/kconfig/nconf.c
->>> @@ -1222,7 +1222,12 @@ static void conf_message_callback(const char *fmt, va_list ap)
->>>
->>>  static void show_help(struct menu *menu)
->>>  {
->>> -       struct gstr help = str_new();
->>> +       struct gstr help;
->>> +
->>> +       if (!menu)
->>> +               return;
->>> +
->>> +       help = str_new();
->>>        menu_get_ext_help(menu, &help);
->>>        show_scroll_win(main_window, _(menu_get_prompt(menu)), str_get(&help));
->>>        str_free(&help);
->>> --
->>> 1.7.3.4.574.g608b.dirty
->>>
->>>
->
->
+So, these patches are blocked until we find some way to resolve the
+clocking issues on all platforms with TWD and the MPcore watchdog.
