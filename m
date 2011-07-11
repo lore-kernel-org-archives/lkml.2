@@ -1,107 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758125Ab1GKSVj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 14:21:39 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:49653 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753997Ab1GKSVh convert rfc822-to-8bit (ORCPT
+	id S1758122Ab1GKSWc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 14:22:32 -0400
+Received: from mail-gx0-f194.google.com ([209.85.161.194]:46967 "EHLO
+	mail-gx0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753997Ab1GKSWa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 14:21:37 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=ri1Eqs6ANNd2k4MUvV8hhZ2XNIglV+qacGsoJcVkkvq+HicPYYOt5+2IXEPhRmtEf
-	YlNGx9CrgyNuQ5iol60Nw==
+	Mon, 11 Jul 2011 14:22:30 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110711155404.GB4109@somewhere.redhat.com>
-References: <1306877298-31713-1-git-send-email-vnagarnaik@google.com>
- <1308681903-12840-1-git-send-email-vnagarnaik@google.com> <20110707233453.GE21115@somewhere>
- <CAJL_eku7ezDhSOaOxN4ACFas1rnX=uaV184ZK3-0fE60Rmwh8g@mail.gmail.com> <20110711155404.GB4109@somewhere.redhat.com>
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Date: Mon, 11 Jul 2011 11:21:04 -0700
-Message-ID: <CAL26m8+ca64BDrQUohxcZfUpZQgn7bNkup=Q92LaTmpvorm9fQ@mail.gmail.com>
-Subject: Re: [PATCH v3] trace: Add x86 irq vector entry/exit tracepoints
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: David Sharp <dhsharp@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Michael Rubin <mrubin@google.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Jiaying Zhang <jiayingz@google.com>
+Date: Mon, 11 Jul 2011 11:04:58 -0700
+Message-ID: <CAFR8ueftOQQW7+5eEYNEpfL0AxhihjXeM=AuzJ+L4RrXO_N8Ew@mail.gmail.com>
+Subject: [PATCH]:Documentation/spinlocks.txt: Remove reference to sti()/cli()
+From: Muthu Kumar <muthu.lkml@gmail.com>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 11, 2011 at 8:54 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> Let me clarify what I proposed, we have that:
->
->        irq_enter() // trace_irq_enter();
->
->        trace_irq_vector_entry(foo);
->
->        // handle irq...
->
->        irq_exit() // trace_irq_exit()
->
-> So either you're only interested in tracing raw irqs and you don't care
-> about the nature of these and you only enable trace_irq_enter() and
-> trace_irq_exit(). Or you're interested in the nature of these and you
-> only enable trace_irq_vector_entry() and trace_irq_exit().
->
-> In fact we could even drop the trace_irq_enter() thing because I'm
-> not sure it's interesting.
->
-> All in one it doesn't bring more overhead.
->
-> What I'm more worried about actually is that in the case of trace_irq_handler_entry()
-> and trace_irq_handler_exit(), it becomes a useless tracepoint. And if you enable it
-> for other irq tracepoint symetric purposes, you'll have it there too and that's a bit
-> odd.
->
-> So perhaps we want to keep your way of doing this.
->
+Linus,
+Since we removed sti()/cli() and related, how about removing it from
+Documentation/spinlocks.txt?
 
-We proposed this patch as a way of tracing raw interrupts from the
-platform, which is why it traces all the raw interrupts and does not use
-any specific interrupt data in the events. So when someone wants to know
-just the interrupts that are being triggered in the system, this
-tracepoint can be used.
+Signed-off-by: Muthukumar R <muthur@gmail.com>
 
-There can be more involved and detailed tracepoints for individual IRQs,
-as you proposed to have trace_ipi_function(), etc.
+-------------------------
+ Documentation/spinlocks.txt |   45 ++++++------------------------------------
+ fs/mpage.c                  |    2 +
+ 2 files changed, 9 insertions(+), 38 deletions(-)
+-------------------------
+diff --git a/Documentation/spinlocks.txt b/Documentation/spinlocks.txt
+index 2e3c64b..43cd060 100644
+--- a/Documentation/spinlocks.txt
++++ b/Documentation/spinlocks.txt
+@@ -13,18 +13,8 @@ static DEFINE_SPINLOCK(xxx_lock);
+ The above is always safe. It will disable interrupts _locally_, but the
+ spinlock itself will guarantee the global lock, so it will guarantee that
+ there is only one thread-of-control within the region(s) protected by that
+-lock. This works well even under UP. The above sequence under UP
+-essentially is just the same as doing
+-
+-	unsigned long flags;
+-
+-	save_flags(flags); cli();
+-	 ... critical section ...
+-	restore_flags(flags);
+-
+-so the code does _not_ need to worry about UP vs SMP issues: the spinlocks
+-work correctly under both (and spinlocks are actually more efficient on
+-architectures that allow doing the "save_flags + cli" in one operation).
++lock. This works well even under UP also, so the code does _not_ need to
++worry about UP vs SMP issues: the spinlocks work correctly under both.
 
-> On Thu, Jul 07, 2011 at 05:54:02PM -0700, David Sharp wrote:
->> Here's our motivation: We use interrupt events, along with traps,
->> syscall, and sched_switch events to know when kernel code is running
->> instead of user code. So, being clear that we got all interrupts (and
->> which interrupt) is important.
->
-> Ok I see your point then.
->
-> But then have a generic single trace_irq_timer() (may be cut down in entry/exit if
-> you want).
->
-> But I don't think we really want to  into HRTIMER, PERIODIC, ONESHOT, BROADCAST
-> vectors. That's sounds like the wrong place to provide these details.
->
-> If we want higher level details, then we can enable hrtimer tracepoints, and/or we add some
-> tracepoints in the timer subsystem to know with what we are dealing with.
->
-> Does that make sense?
->
+    NOTE! Implications of spin_locks for memory are further described in:
 
-I added the details about the timer handler because it would be
-difficult to understand exactly which generic event handlers the
-platform LOCAL_TIMER_IRQ_VECTOR led to.
+@@ -36,27 +26,7 @@ The above is usually pretty simple (you usually
+need and want only one
+ spinlock for most things - using more than one spinlock can make things a
+ lot more complex and even slower and is usually worth it only for
+ sequences that you _know_ need to be split up: avoid it at all cost if you
+-aren't sure). HOWEVER, it _does_ mean that if you have some code that does
+-
+-	cli();
+-	.. critical section ..
+-	sti();
+-
+-and another sequence that does
+-
+-	spin_lock_irqsave(flags);
+-	.. critical section ..
+-	spin_unlock_irqrestore(flags);
+-
+-then they are NOT mutually exclusive, and the critical regions can happen
+-at the same time on two different CPU's. That's fine per se, but the
+-critical regions had better be critical for different things (ie they
+-can't stomp on each other).
+-
+-The above is a problem mainly if you end up mixing code - for example the
+-routines in ll_rw_block() tend to use cli/sti to protect the atomicity of
+-their actions, and if a driver uses spinlocks instead then you should
+-think about issues like the above.
++aren't sure).
 
-Once again, this is meant as a raw interrupt tracepoint which provides 2
-things: an interrupt occurred and the nature of interrupt. As you
-mentioned there are high level hrtimer tracepoints and there can be
-similar highly detailed tracepoints for each IRQ as required with more
-data about the interrupt, but I believe this is the wrong patch to put
-them in.
+ This is really the only really hard part about spinlocks: once you start
+ using spinlocks they tend to expand to areas you might not have noticed
+@@ -120,11 +90,10 @@ Lesson 3: spinlocks revisited.
 
+ The single spin-lock primitives above are by no means the only ones. They
+ are the most safe ones, and the ones that work under all circumstances,
+-but partly _because_ they are safe they are also fairly slow. They are
+-much faster than a generic global cli/sti pair, but slower than they'd
+-need to be, because they do have to disable interrupts (which is just a
+-single instruction on a x86, but it's an expensive one - and on other
+-architectures it can be worse).
++but partly _because_ they are safe they are also fairly slow. They are slower
++than they'd need to be, because they do have to disable interrupts
++(which is just a single instruction on a x86, but it's an expensive one -
++and on other architectures it can be worse).
 
-Vaibhav Nagarnaik
+ If you have a case where you have to protect a data structure across
+ several CPU's and you want to use spinlocks you can potentially use
