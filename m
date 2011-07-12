@@ -1,188 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756019Ab1GLWJW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 18:09:22 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:27280 "EHLO
+	id S1756126Ab1GLWJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 18:09:28 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:40464 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755119Ab1GLWJV convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1756027Ab1GLWJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 18:09:21 -0400
+	Tue, 12 Jul 2011 18:09:24 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=njnrufo/8KFkUyyFUZFB4qjCrUdqcEETvqQ5gHv6ycwkZNhIZLG4zo9kN0DoehbLA
-	s/nard7n3v6eIqxPb8Ctw==
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=hwZn1ubzGzw4phHf73tryKw40TS+dBKt2qI0VrC7GoKrxwuyNsY2XdIGS16gWIYfj
+	QWmOM5UrXb4Hgu37VJxyA==
+Date: Tue, 12 Jul 2011 15:08:58 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 2/12] mm: let swap use exceptional entries
+In-Reply-To: <20110618145254.1b333344.akpm@linux-foundation.org>
+Message-ID: <alpine.LSU.2.00.1107121501100.2112@sister.anvils>
+References: <alpine.LSU.2.00.1106140327550.29206@sister.anvils> <alpine.LSU.2.00.1106140342330.29206@sister.anvils> <20110618145254.1b333344.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110712180859.GC9201@somewhere>
-References: <1306877298-31713-1-git-send-email-vnagarnaik@google.com>
- <1308681903-12840-1-git-send-email-vnagarnaik@google.com> <20110707233453.GE21115@somewhere>
- <CAJL_eku7ezDhSOaOxN4ACFas1rnX=uaV184ZK3-0fE60Rmwh8g@mail.gmail.com>
- <20110711155404.GB4109@somewhere.redhat.com> <CAL26m8+ca64BDrQUohxcZfUpZQgn7bNkup=Q92LaTmpvorm9fQ@mail.gmail.com>
- <20110712180859.GC9201@somewhere>
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Date: Tue, 12 Jul 2011 15:08:48 -0700
-Message-ID: <CAL26m8LsEwEEE1e4D9dWn2Gm5_cvtNXMRod4d2hsD=qHGG1Nig@mail.gmail.com>
-Subject: Re: [PATCH v3] trace: Add x86 irq vector entry/exit tracepoints
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: David Sharp <dhsharp@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Michael Rubin <mrubin@google.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Jiaying Zhang <jiayingz@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 12, 2011 at 11:09 AM, Frederic Weisbecker
-<fweisbec@gmail.com> wrote:
-> On Mon, Jul 11, 2011 at 11:21:04AM -0700, Vaibhav Nagarnaik wrote:
->> On Mon, Jul 11, 2011 at 8:54 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> > Let me clarify what I proposed, we have that:
->> >
->> >        irq_enter() // trace_irq_enter();
->> >
->> >        trace_irq_vector_entry(foo);
->> >
->> >        // handle irq...
->> >
->> >        irq_exit() // trace_irq_exit()
->> >
->> > So either you're only interested in tracing raw irqs and you don't care
->> > about the nature of these and you only enable trace_irq_enter() and
->> > trace_irq_exit(). Or you're interested in the nature of these and you
->> > only enable trace_irq_vector_entry() and trace_irq_exit().
->> >
->> > In fact we could even drop the trace_irq_enter() thing because I'm
->> > not sure it's interesting.
->> >
->> > All in one it doesn't bring more overhead.
->> >
->> > What I'm more worried about actually is that in the case of trace_irq_handler_entry()
->> > and trace_irq_handler_exit(), it becomes a useless tracepoint. And if you enable it
->> > for other irq tracepoint symetric purposes, you'll have it there too and that's a bit
->> > odd.
->> >
->> > So perhaps we want to keep your way of doing this.
->> >
->>
->> We proposed this patch as a way of tracing raw interrupts from the
->> platform, which is why it traces all the raw interrupts and does not use
->> any specific interrupt data in the events. So when someone wants to know
->> just the interrupts that are being triggered in the system, this
->> tracepoint can be used.
->
-> Which one? Not sure I understand what you mean.
->
->> There can be more involved and detailed tracepoints for individual IRQs,
->> as you proposed to have trace_ipi_function(), etc.
->
-> I was arguing about having a tracepoint in irq_exit(), so I guess we are not talking about the same
-> things.
->
->> > On Thu, Jul 07, 2011 at 05:54:02PM -0700, David Sharp wrote:
->> >> Here's our motivation: We use interrupt events, along with traps,
->> >> syscall, and sched_switch events to know when kernel code is running
->> >> instead of user code. So, being clear that we got all interrupts (and
->> >> which interrupt) is important.
->> >
->> > Ok I see your point then.
->> >
->> > But then have a generic single trace_irq_timer() (may be cut down in entry/exit if
->> > you want).
->> >
->> > But I don't think we really want to  into HRTIMER, PERIODIC, ONESHOT, BROADCAST
->> > vectors. That's sounds like the wrong place to provide these details.
->> >
->> > If we want higher level details, then we can enable hrtimer tracepoints, and/or we add some
->> > tracepoints in the timer subsystem to know with what we are dealing with.
->> >
->> > Does that make sense?
->> >
->>
->> I added the details about the timer handler because it would be
->> difficult to understand exactly which generic event handlers the
->> platform LOCAL_TIMER_IRQ_VECTOR led to.
->
-> Generic event handler is already a high level detail. At the point we call
-> that generic event handler, we have climbed several steps, we have left the
-> world of pure irq vectors.
->
-> What is normally suitable here to get more semantic details is to use higher level
-> tracepoints like high resolution timer ones.
->
-> If these are not enough for you, you can add a trace_hrtimer_interrupt()
-> in the irq tracepoint subsystem. If it's in the irq subsystem you include
-> it with the rest of irq traces.
->
->> Once again, this is meant as a raw interrupt tracepoint which provides 2
->> things: an interrupt occurred and the nature of interrupt. As you
->> mentioned there are high level hrtimer tracepoints and there can be
->> similar highly detailed tracepoints for each IRQ as required with more
->> data about the interrupt, but I believe this is the wrong patch to put
->> them in.
->
-> But the problem is you are actually messing up irq raw events and higher
-> level details.
->
-> That vector space should lay in the arch low ground and never go further.
-> Finding one of these trace vector things elsewhere than arch/ shouldn't
-> ever happen.
->
-> As far as possible, tracepoints must be self-contained events and be
-> self-explanatory. We want granularity there.
->
-> There should never be a reschedule vector to trace. That event is self
-> contained and wants its own tracepoints. irq/reschedule_interrupt is
-> something any kernel developer can understand and give some sense out
-> by browsing the events. But irq/interrupt_vector is opaque as hell.
->
-> What happens if I want to trace only reschedule interrupts? I'd be
-> forced to enable that vector, browse its format, find the value
-> for the reschedule vector, apply a filter.
-> That requires a lot of time and skills compared to just enable a tracepoint.
->
-> Your patch mixes up too much things:
->
-> - pure arch tracepoints. Only those want that vector naming I think.
->
-> - IPIs that should go to kernel/smp.c
->
-> - reschedule interrupt
->
-> - irq work
->
-> - ...
->
-> If you cut the things into more self-contained topics, this is going to be
-> much easier to review and thus much faster to apply and push.
->
-> Also your goal is to not miss any interrupts. So if everything goes to the irq
-> tracepoint subsystem, you just need to enable everything there and you are
-> done. You don't need a big vector tracepoint to ensure you won't miss something.
->
+On Sat, 18 Jun 2011, Andrew Morton wrote:
+> On Tue, 14 Jun 2011 03:43:47 -0700 (PDT) Hugh Dickins <hughd@google.com> wrote:
+> 
+> > --- linux.orig/mm/filemap.c	2011-06-13 13:26:44.430284135 -0700
+> > +++ linux/mm/filemap.c	2011-06-13 13:27:34.526532556 -0700
+> > @@ -717,9 +717,12 @@ repeat:
+> >  		page = radix_tree_deref_slot(pagep);
+> >  		if (unlikely(!page))
+> >  			goto out;
+> > -		if (radix_tree_deref_retry(page))
+> > +		if (radix_tree_exception(page)) {
+> > +			if (radix_tree_exceptional_entry(page))
+> > +				goto out;
+> > +			/* radix_tree_deref_retry(page) */
+> >  			goto repeat;
+> > -
+> > +		}
+> >  		if (!page_cache_get_speculative(page))
+> >  			goto repeat;
+> 
+> All the crap^Wnice changes made to filemap.c really need some comments,
+> please.  Particularly when they're keyed off the bland-sounding
+> "radix_tree_exception()".  Apparently they have something to do with
+> swap, but how is the poor reader to know this?
 
-Breaking this patch up in different small ones makes sense. Can you
-comment on this proposal for the following trace events?
+The naming was intentionally bland, because other filesystems might
+in future have other uses for such exceptional entries.
 
-For tracepoints in generic IRQ handlers:
-1. trace_timer_vector - takes an enum for BROADCAST, HRTIMER, ONESHOT,
-   PERIODIC and NOHZ.
-2. trace_irq_work_vector - for IRQ_WORK_VECTOR
-3. trace_reschedule_vector - for RESCHEDULE_IPI vector
-4. trace_call_function_vector - takes an enum for CALL_FUNCTION and
-   CALL_FUNCTION_SINGLE
+(I think the field size would generally defeat it, but you can,
+for example, imagine a small filesystem wanting to save sector number
+there when a page is evicted.)
 
-Another trace event for arch-specific IRQ vectors which don't have
-generic event handlers:
-5. trace_platform_irq_vector - takes an enum, which is defined in
-   asm/irq.h for each platform. This is traced in arch-specific files
-   only.
+But let's go bland when it's more familiar, and such uses materialize -
+particularly since I only placed those checks in places where they're
+needed now for shmem/tmpfs/swap.
 
-How does this sound?
+I'll keep the bland naming, if that's okay, but send a patch adding
+a line of comment in such places.  Mentioning shmem, tmpfs, swap.
 
+> 
+> Also, commenting out a function call might be meaningful information for
+> Hugh-right-now, but for other people later on, they're just a big WTF.
 
+Ah yes, I hadn't realized at all that those look like commented-out
+function calls.  No, they're comments on what the else case is that
+we have arrived at there.  I'll make those clearer too.
 
-Vaibhav Nagarnaik
+Hugh
