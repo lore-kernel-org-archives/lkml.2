@@ -1,307 +1,398 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758610Ab1GLAhz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 20:37:55 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:57097 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755174Ab1GLAhx (ORCPT
+	id S1755611Ab1GLArh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 20:47:37 -0400
+Received: from ppp118-208-123-30.lns20.bne4.internode.on.net ([118.208.123.30]:56472
+	"EHLO mail.psychogeeks.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754640Ab1GLArg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 20:37:53 -0400
-Subject: Re: [PATCH RFC] vhost: address fixme in vhost TX zero-copy support
-From: Shirley Ma <mashirle@us.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20110711220449.GA8346@redhat.com>
-References: <1309991321.10209.26.camel@localhost.localdomain>
-	 <20110711220449.GA8346@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 11 Jul 2011 17:37:47 -0700
-Message-ID: <1310431067.28930.7.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+	Mon, 11 Jul 2011 20:47:36 -0400
+X-Greylist: delayed 534 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Jul 2011 20:47:35 EDT
+Message-ID: <4E1B978C.2030407@psychogeeks.com>
+Date: Tue, 12 Jul 2011 10:38:36 +1000
+From: Chris W <lkml@psychogeeks.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110620 Lightning/1.0b3pre Thunderbird/3.1.10
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: Imon module Oops and kernel hang
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-12 at 01:04 +0300, Michael S. Tsirkin wrote:
-> So the following should do it, on top of Shirleys's patch, I think.
-> I'm
-> a bit not sure about using vq->upend_idx - vq->done_idx to check the
-> number of outstanding DMA, Shirley, what do you think?
+Hello All,
 
-Yes, you can use this to track # outstanding DMAs.
+The following report applies to 2.6.39.3 (vanilla code).  I also see it
+consistently on 2.6.39.2 and 2.6.38-gentoo-r6.
 
-> Untested.
-> 
-> I'm also thinking about making the use of this conditinal
-> on a module parameter, off by default to reduce
-> stability risk while still enabling more people to
-> test the feature.
-> Thoughts?
+I am trying to switch to using the in-kernel modules for my remote
+control and vfd display needs.   I have built the kernel with the mceusb
+module for the MCE remote that I use to control the machine and the imon
+module to provide an LCD interface for lcdproc (I don't use that actual
+remote). There's also another, unused, remote interface on one of my DVB
+cards (rc_winfast module).   Kernel modules for the MCE and other remote
+load fine.
 
-Agreed.
+Attempting to load the imon module crashes Linux hard (no recovery other
+than hard reset).  Details are below.  It seems to be related to
+keytables.   The iMon device is an older VFD device in a Silverstone
+case, with mouse control on the remote, no volume knob.  Details of the
+iMon USB device are below the crash details.
 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> 
-> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-> index 7de0c6e..cf8deb3 100644
-> --- a/drivers/vhost/net.c
-> +++ b/drivers/vhost/net.c
-> @@ -156,8 +156,7 @@ static void handle_tx(struct vhost_net *net)
-> 
->         for (;;) {
->                 /* Release DMAs done buffers first */
-> -               if (atomic_read(&vq->refcnt) > VHOST_MAX_PEND)
-> -                       vhost_zerocopy_signal_used(vq);
-> +               vhost_zerocopy_signal_used(vq);
-> 
->                 head = vhost_get_vq_desc(&net->dev, vq, vq->iov,
->                                          ARRAY_SIZE(vq->iov),
-> @@ -175,7 +174,7 @@ static void handle_tx(struct vhost_net *net)
->                                 break;
->                         }
->                         /* If more outstanding DMAs, queue the work */
-> -                       if (atomic_read(&vq->refcnt) > VHOST_MAX_PEND)
-> {
-> +                       if (vq->upend_idx - vq->done_idx >
-> VHOST_MAX_PEND) {
->                                 tx_poll_start(net, sock);
->                                 set_bit(SOCK_ASYNC_NOSPACE,
-> &sock->flags);
->                                 break;
-> @@ -214,12 +213,12 @@ static void handle_tx(struct vhost_net *net)
-> 
->                                 vq->heads[vq->upend_idx].len = len;
->                                 ubuf->callback =
-> vhost_zerocopy_callback;
-> -                               ubuf->arg = vq;
-> +                               ubuf->arg = vq->ubufs;
->                                 ubuf->desc = vq->upend_idx;
->                                 msg.msg_control = ubuf;
->                                 msg.msg_controllen = sizeof(ubuf);
-> +                               kref_get(&vq->ubufs->kref);
->                         }
-> -                       atomic_inc(&vq->refcnt);
->                         vq->upend_idx = (vq->upend_idx + 1) %
-> UIO_MAXIOV;
->                 }
->                 /* TODO: Check specific error and bomb out unless
-> ENOBUFS? */
-> @@ -646,6 +645,7 @@ static long vhost_net_set_backend(struct vhost_net
-> *n, unsigned index, int fd)
->  {
->         struct socket *sock, *oldsock;
->         struct vhost_virtqueue *vq;
-> +       struct vhost_ubuf_ref *ubufs, *oldubufs = NULL;
->         int r;
-> 
->         mutex_lock(&n->dev.mutex);
-> @@ -675,6 +675,13 @@ static long vhost_net_set_backend(struct
-> vhost_net *n, unsigned index, int fd)
->         oldsock = rcu_dereference_protected(vq->private_data,
-> 
-> lockdep_is_held(&vq->mutex));
->         if (sock != oldsock) {
-> +               ubufs = vhost_ubuf_alloc(vq, sock);
-> +               if (IS_ERR(ubufs)) {
-> +                       r = PTR_ERR(ubufs);
-> +                       goto err_ubufs;
-> +               }
-> +               oldubufs = vq->ubufs;
-> +               vq->ubufs = ubufs;
->                 vhost_net_disable_vq(n, vq);
->                 rcu_assign_pointer(vq->private_data, sock);
->                 vhost_net_enable_vq(n, vq);
-> @@ -682,6 +689,9 @@ static long vhost_net_set_backend(struct vhost_net
-> *n, unsigned index, int fd)
-> 
->         mutex_unlock(&vq->mutex);
-> 
-> +       if (oldbufs)
-> +               vhost_ubuf_put_and_wait(oldbufs);
-> +
->         if (oldsock) {
->                 vhost_net_flush_vq(n, index);
->                 fput(oldsock->file);
-> @@ -690,6 +700,8 @@ static long vhost_net_set_backend(struct vhost_net
-> *n, unsigned index, int fd)
->         mutex_unlock(&n->dev.mutex);
->         return 0;
-> 
-> +err_ubufs:
-> +       fput(sock);
->  err_vq:
->         mutex_unlock(&vq->mutex);
->  err:
-> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-> index db242b1..81b1dd7 100644
-> --- a/drivers/vhost/vhost.c
-> +++ b/drivers/vhost/vhost.c
-> @@ -181,7 +181,7 @@ static void vhost_vq_reset(struct vhost_dev *dev,
->         vq->log_ctx = NULL;
->         vq->upend_idx = 0;
->         vq->done_idx = 0;
-> -       atomic_set(&vq->refcnt, 0);
-> +       vq->ubufs = NULL;
->  }
-> 
->  static int vhost_worker(void *data)
-> @@ -401,7 +401,7 @@ long vhost_dev_reset_owner(struct vhost_dev *dev)
->   * of used idx. Once lower device DMA done contiguously, we will
-> signal KVM
->   * guest used idx.
->   */
-> -void vhost_zerocopy_signal_used(struct vhost_virtqueue *vq)
-> +int vhost_zerocopy_signal_used(struct vhost_virtqueue *vq)
->  {
->         int i, j = 0;
-> 
-> @@ -414,10 +414,9 @@ void vhost_zerocopy_signal_used(struct
-> vhost_virtqueue *vq)
->                 } else
->                         break;
->         }
-> -       if (j) {
-> +       if (j)
->                 vq->done_idx = i;
-> -               atomic_sub(j, &vq->refcnt);
-> -       }
-> +       return j;
->  }
-> 
->  /* Caller should have device mutex */
-> @@ -430,9 +429,13 @@ void vhost_dev_cleanup(struct vhost_dev *dev)
->                         vhost_poll_stop(&dev->vqs[i].poll);
->                         vhost_poll_flush(&dev->vqs[i].poll);
->                 }
-> -               /* Wait for all lower device DMAs done (busywait
-> FIXME) */
-> -               while (atomic_read(&dev->vqs[i].refcnt))
-> -                       vhost_zerocopy_signal_used(&dev->vqs[i]);
-> +               /* Wait for all lower device DMAs done. */
-> +               if (dev->vqs[i].ubufs)
-> +                       vhost_ubuf_put_and_wait(dev->vqs[i].ubufs);
-> +
-> +               /* Signal guest as appropriate. */
-> +               vhost_zerocopy_signal_used(&dev->vqs[i]);
-> +
->                 if (dev->vqs[i].error_ctx)
->                         eventfd_ctx_put(dev->vqs[i].error_ctx);
->                 if (dev->vqs[i].error)
-> @@ -645,11 +648,6 @@ static long vhost_set_vring(struct vhost_dev *d,
-> int ioctl, void __user *argp)
-> 
->         mutex_lock(&vq->mutex);
-> 
-> -       /* clean up lower device outstanding DMAs, before setting ring
-> -          busywait FIXME */
-> -       while (atomic_read(&vq->refcnt))
-> -               vhost_zerocopy_signal_used(vq);
-> -
+I hope this is a dumb mistake on my part.  I would appreciate any
+assistance.
+Regards,
+Chris
 
-We need to clear up outstanding DMAs here too when we set vring.
-Otherwise, KVM guest remove/reload virtio_net module vring would be out
-of sync with vhost.
 
->         switch (ioctl) {
->         case VHOST_SET_VRING_NUM:
->                 /* Resizing ring with an active backend?
-> @@ -1525,12 +1523,46 @@ void vhost_disable_notify(struct vhost_dev
-> *dev, struct vhost_virtqueue *vq)
->         }
->  }
-> 
-> +static void vhost_zerocopy_done_signal(struct kref *kref)
-> +{
-> +       struct vhost_ubuf_ref *ubufs = container_of(kref, struct
-> vhost_ubuf_ref,
-> +                                                   kref);
-> +       wake_up(&ubufs->wait);
-> +}
-> +
-> +struct vhost_ubuf_ref *vhost_ubuf_alloc(struct vhost_virtqueue *vq,
-> +                                       void * private_data)
-> +{
-> +       struct vhost_ubuf_ref *ubufs;
-> +       /* No backend? Nothing to count. */
-> +       if (!private_data)
-> +               return NULL;
-> +       ubufs = kmalloc(sizeof *ubufs, GFP_KERNEL);
-> +       if (!ubufs)
-> +               return ERR_PTR(-ENOMEM);
-> +       kref_init(&ubufs->kref);
-> +       kref_get(&ubufs->kref);
-> +       init_waitqueue_head(&ubufs->wait);
-> +       ubufs->vq = vq;
-> +       return ubufs;
-> +}
-> +
-> +void vhost_ubuf_put_and_wait(struct vhost_ubuf_ref *ubufs)
-> +{
-> +       kref_put(&ubufs->kref, vhost_zerocopy_done_signal); 
-> +       wait_event(ubufs->wait, !atomic_read(&ubufs->kref.refcount));
-> +       kfree(ubufs);
-> +}
-> +
->  void vhost_zerocopy_callback(void *arg)
->  {
->         struct ubuf_info *ubuf = (struct ubuf_info *)arg;
-> +       struct vhost_ubuf_ref *ubufs;
->         struct vhost_virtqueue *vq;
-> 
-> -       vq = (struct vhost_virtqueue *)ubuf->arg;
-> +       ubufs = ubuf->arg;
-> +       vq = ubufs->vq;
->         /* set len = 1 to mark this desc buffers done DMA */
->         vq->heads[ubuf->desc].len = VHOST_DMA_DONE_LEN;
-> +       kref_put(&ubufs->kref, vhost_zerocopy_done_signal); 
->  }
-> diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-> index 883688c..b42b126 100644
-> --- a/drivers/vhost/vhost.h
-> +++ b/drivers/vhost/vhost.h
-> @@ -55,6 +55,17 @@ struct vhost_log {
->         u64 len;
->  };
-> 
-> +struct vhost_virtqueue;
-> +
-> +struct vhost_ubuf_ref {
-> +       struct kref kref;
-> +       wait_queue_t wait;
-> +       struct vhost_virtqueue *vq;
-> +};
-> +
-> +struct vhost_ubuf_ref *vhost_ubuf_alloc(struct vhost_virtqueue *,
-> void *);
-> +void vhost_ubuf_put_and_wait(struct vhost_ubuf_ref *);
-> +
->  /* The virtqueue structure describes a queue attached to a device. */
->  struct vhost_virtqueue {
->         struct vhost_dev *dev;
-> @@ -127,6 +138,9 @@ struct vhost_virtqueue {
->         int done_idx;
->         /* an array of userspace buffers info */
->         struct ubuf_info *ubuf_info;
-> +       /* Reference counting for outstanding ubufs.
-> +        * Protected by vq mutex. Writers must also take device mutex.
-> */
-> +       struct vhost_ubuf_ref *ubufs;
->  };
-> 
->  struct vhost_dev {
-> @@ -174,7 +188,7 @@ bool vhost_enable_notify(struct vhost_dev *,
-> struct vhost_virtqueue *);
->  int vhost_log_write(struct vhost_virtqueue *vq, struct vhost_log
-> *log,
->                     unsigned int log_num, u64 len);
->  void vhost_zerocopy_callback(void *arg);
-> -void vhost_zerocopy_signal_used(struct vhost_virtqueue *vq);
-> +int vhost_zerocopy_signal_used(struct vhost_virtqueue *vq);
-> 
->  #define vq_err(vq, fmt, ...) do {                                  \
->                 pr_debug(pr_fmt(fmt), ##__VA_ARGS__);       \
-> -- 
+root@kepler # modprobe -v imon debug=1
+(I have also tried specifying display_type=1)
+
+root@newton # cat /var/log/kepler-netconsole.log
+Jul 12 09:44:20 kepler BUG: unable to handle kernel
+Jul 12 09:44:20 kepler NULL pointer dereference
+Jul 12 09:44:20 kepler at 000000dc
+Jul 12 09:44:20 kepler IP:
+Jul 12 09:44:20 kepler [<f8fbe46e>] rc_g_keycode_from_table+0x1e/0xe0
+[rc_core]
+Jul 12 09:44:20 kepler *pde = 00000000
+Jul 12 09:44:20 kepler
+Jul 12 09:44:20 kepler Oops: 0000 [#1]
+Jul 12 09:44:20 kepler PREEMPT
+Jul 12 09:44:20 kepler
+Jul 12 09:44:20 kepler last sysfs file:
+/sys/devices/pci0000:00/0000:00:10.2/usb4/4-2/4-2:1.0/input/input6/capabilities/key
+Jul 12 09:44:20 kepler Modules linked in:
+Jul 12 09:44:20 kepler imon(+)
+Jul 12 09:44:20 kepler netconsole
+Jul 12 09:44:20 kepler asb100
+Jul 12 09:44:20 kepler hwmon_vid
+Jul 12 09:44:20 kepler cx22702
+Jul 12 09:44:20 kepler dvb_pll
+Jul 12 09:44:20 kepler mt352
+Jul 12 09:44:20 kepler cx88_dvb
+Jul 12 09:44:20 kepler cx88_vp3054_i2c
+Jul 12 09:44:20 kepler rc_winfast
+Jul 12 09:44:20 kepler ir_lirc_codec
+Jul 12 09:44:20 kepler lirc_dev
+Jul 12 09:44:20 kepler ir_sony_decoder
+Jul 12 09:44:20 kepler videobuf_dvb
+Jul 12 09:44:20 kepler ir_jvc_decoder
+Jul 12 09:44:20 kepler ir_rc6_decoder
+Jul 12 09:44:20 kepler snd_via82xx
+Jul 12 09:44:20 kepler cx8802
+Jul 12 09:44:20 kepler cx8800
+Jul 12 09:44:20 kepler ir_rc5_decoder
+Jul 12 09:44:20 kepler ir_nec_decoder
+Jul 12 09:44:20 kepler snd_ac97_codec
+Jul 12 09:44:20 kepler ac97_bus
+Jul 12 09:44:20 kepler cx88xx
+Jul 12 09:44:20 kepler rc_core
+Jul 12 09:44:20 kepler b44
+Jul 12 09:44:20 kepler i2c_algo_bit
+Jul 12 09:44:20 kepler snd_mpu401_uart
+Jul 12 09:44:20 kepler tveeprom
+Jul 12 09:44:20 kepler snd_rawmidi
+Jul 12 09:44:20 kepler btcx_risc
+Jul 12 09:44:20 kepler i2c_viapro
+Jul 12 09:44:20 kepler videobuf_dma_sg
+Jul 12 09:44:20 kepler ssb
+Jul 12 09:44:20 kepler mii
+Jul 12 09:44:20 kepler videobuf_core
+Jul 12 09:44:20 kepler
+Jul 12 09:44:20 kepler
+Jul 12 09:44:20 kepler Pid: 2981, comm: input_id Not tainted 2.6.39.3 #2
+Jul 12 09:44:20 kepler System Manufacturer System Name
+Jul 12 09:44:20 kepler /A7V8X
+Jul 12 09:44:20 kepler
+Jul 12 09:44:20 kepler EIP: 0060:[<f8fbe46e>] EFLAGS: 00010002 CPU: 0
+Jul 12 09:44:20 kepler EIP is at rc_g_keycode_from_table+0x1e/0xe0 [rc_core]
+Jul 12 09:44:20 kepler EAX: 00000000 EBX: f57f2000 ECX: 00000008 EDX:
+00000000
+Jul 12 09:44:20 kepler ESI: 00000000 EDI: 00000000 EBP: f7007e48 ESP:
+f7007e18
+Jul 12 09:44:20 kepler DS: 007b ES: 007b FS: 0000 GS: 0033 SS: 0068
+Jul 12 09:44:20 kepler Process input_id (pid: 2981, ti=f7006000
+task=f5101a40 task.ti=f5102000)
+Jul 12 09:44:20 kepler Stack:
+Jul 12 09:44:20 kepler 00000001
+Jul 12 09:44:20 kepler f7007e30
+Jul 12 09:44:20 kepler c101e9ae
+Jul 12 09:44:20 kepler f7088a60
+Jul 12 09:44:20 kepler 00000001
+Jul 12 09:44:20 kepler f7088a60
+Jul 12 09:44:20 kepler 00000000
+Jul 12 09:44:20 kepler 00000086
+Jul 12 09:44:20 kepler
+Jul 12 09:44:20 kepler f7007e50
+Jul 12 09:44:20 kepler f57f2000
+Jul 12 09:44:20 kepler 00000000
+Jul 12 09:44:20 kepler 00000000
+Jul 12 09:44:20 kepler f7007e58
+Jul 12 09:44:20 kepler f87c259c
+Jul 12 09:44:20 kepler f57f2000
+Jul 12 09:44:20 kepler f57f2041
+Jul 12 09:44:20 kepler
+Jul 12 09:44:20 kepler f7007edc
+Jul 12 09:44:20 kepler f87c26dc
+Jul 12 09:44:20 kepler f68880a4
+Jul 12 09:44:20 kepler f7007e6c
+Jul 12 09:44:20 kepler c11a0865
+Jul 12 09:44:20 kepler f7007e74
+Jul 12 09:44:20 kepler f68880a4
+Jul 12 09:44:20 kepler f7007e98
+Jul 12 09:44:20 kepler
+Jul 12 09:44:20 kepler Call Trace:
+Jul 12 09:44:20 kepler [<c101e9ae>] ? T.889+0x2e/0x50
+Jul 12 09:44:20 kepler [<f87c259c>] imon_remote_key_lookup+0x1c/0x70 [imon]
+Jul 12 09:44:20 kepler [<f87c26dc>] imon_incoming_packet+0x5c/0xe10 [imon]
+Jul 12 09:44:20 kepler [<c11a0865>] ? blk_complete_request+0x15/0x20
+Jul 12 09:44:20 kepler [<c12572c8>] ? atapi_qc_complete+0x58/0x2b0
+Jul 12 09:44:20 kepler [<c124f353>] ? __ata_qc_complete+0x73/0x110
+Jul 12 09:44:20 kepler [<f87c3563>] usb_rx_callback_intf0+0x63/0x70 [imon]
+Jul 12 09:44:20 kepler [<c1272cc8>] usb_hcd_giveback_urb+0x48/0xb0
+Jul 12 09:44:20 kepler [<c128a5ee>] uhci_giveback_urb+0x8e/0x220
+Jul 12 09:44:20 kepler [<c128ac16>] uhci_scan_schedule+0x396/0x9a0
+Jul 12 09:44:20 kepler [<c128cfd1>] uhci_irq+0x91/0x170
+Jul 12 09:44:20 kepler [<c1271de1>] usb_hcd_irq+0x21/0x50
+Jul 12 09:44:20 kepler [<c1051246>] handle_irq_event_percpu+0x36/0x140
+Jul 12 09:44:20 kepler [<c1015f06>] ? __io_apic_modify_irq+0x76/0x90
+Jul 12 09:44:20 kepler [<c1053000>] ? handle_edge_irq+0x100/0x100
+Jul 12 09:44:20 kepler [<c1051382>] handle_irq_event+0x32/0x60
+Jul 12 09:44:20 kepler [<c1053045>] handle_fasteoi_irq+0x45/0xc0
+Jul 12 09:44:20 kepler <IRQ>
+Jul 12 09:44:20 kepler
+Jul 12 09:44:20 kepler [<c1003cea>] ? do_IRQ+0x3a/0xb0
+Jul 12 09:44:20 kepler [<c1089fcd>] ? sys_read+0x3d/0x70
+Jul 12 09:44:20 kepler [<c13d8d69>] ? common_interrupt+0x29/0x30
+Jul 12 09:44:20 kepler Code:
+Jul 12 09:44:20 kepler ff
+Jul 12 09:44:20 kepler ff
+Jul 12 09:44:20 kepler 8d
+Jul 12 09:44:20 kepler 74
+Jul 12 09:44:20 kepler 26
+Jul 12 09:44:20 kepler 00
+Jul 12 09:44:20 kepler 8d
+Jul 12 09:44:20 kepler bc
+Jul 12 09:44:20 kepler 27
+Jul 12 09:44:20 kepler 00
+Jul 12 09:44:20 kepler 00
+Jul 12 09:44:20 kepler 00
+Jul 12 09:44:20 kepler 00
+Jul 12 09:44:20 kepler 55
+Jul 12 09:44:20 kepler 89
+Jul 12 09:44:20 kepler e5
+Jul 12 09:44:20 kepler 57
+Jul 12 09:44:20 kepler 56
+Jul 12 09:44:20 kepler 53
+Jul 12 09:44:20 kepler 83
+Jul 12 09:44:20 kepler ec
+Jul 12 09:44:20 kepler 24
+Jul 12 09:44:20 kepler 89
+Jul 12 09:44:20 kepler 45
+Jul 12 09:44:20 kepler e8
+Jul 12 09:44:20 kepler 9c
+Jul 12 09:44:20 kepler 8f
+Jul 12 09:44:20 kepler 45
+Jul 12 09:44:20 kepler ec
+Jul 12 09:44:20 kepler fa
+Jul 12 09:44:20 kepler 89
+Jul 12 09:44:20 kepler e0
+Jul 12 09:44:20 kepler 25
+Jul 12 09:44:20 kepler 00
+Jul 12 09:44:20 kepler e0
+Jul 12 09:44:20 kepler ff
+Jul 12 09:44:20 kepler ff
+Jul 12 09:44:20 kepler ff
+Jul 12 09:44:20 kepler 40
+Jul 12 09:44:20 kepler 14
+Jul 12 09:44:20 kepler 8b
+Jul 12 09:44:20 kepler 45
+Jul 12 09:44:20 kepler e8
+Jul 12 09:44:20 kepler syslog-ng[2061]: Error processing log message: <8b>
+Jul 12 09:44:20 kepler 80
+Jul 12 09:44:20 kepler dc
+Jul 12 09:44:20 kepler 00
+Jul 12 09:44:20 kepler 00
+Jul 12 09:44:20 kepler 00
+Jul 12 09:44:20 kepler 89
+Jul 12 09:44:20 kepler c3
+Jul 12 09:44:20 kepler 89
+Jul 12 09:44:20 kepler 45
+Jul 12 09:44:20 kepler f0
+Jul 12 09:44:20 kepler 4b
+Jul 12 09:44:20 kepler 78
+Jul 12 09:44:20 kepler 38
+Jul 12 09:44:20 kepler 8b
+Jul 12 09:44:20 kepler 45
+Jul 12 09:44:20 kepler e8
+Jul 12 09:44:20 kepler 31
+Jul 12 09:44:20 kepler c9
+Jul 12 09:44:20 kepler 8b
+Jul 12 09:44:20 kepler b0
+Jul 12 09:44:20 kepler
+Jul 12 09:44:20 kepler EIP: [<f8fbe46e>]
+Jul 12 09:44:20 kepler rc_g_keycode_from_table+0x1e/0xe0 [rc_core]
+Jul 12 09:44:20 kepler SS:ESP 0068:f7007e18
+Jul 12 09:44:20 kepler CR2: 00000000000000dc
+Jul 12 09:44:20 kepler ---[ end trace 3be02180d283b5a7 ]---
+Jul 12 09:44:20 kepler Kernel panic - not syncing: Fatal exception in
+interrupt
+Jul 12 09:44:20 kepler Pid: 2981, comm: input_id Tainted: G      D    
+2.6.39.3 #2
+Jul 12 09:44:20 kepler Call Trace:
+Jul 12 09:44:20 kepler [<c13d6279>] panic+0x61/0x145
+Jul 12 09:44:20 kepler [<c1004ff0>] oops_end+0x80/0x80
+Jul 12 09:44:20 kepler [<c101906e>] no_context+0xbe/0x150
+Jul 12 09:44:20 kepler [<c101918f>] __bad_area_nosemaphore+0x8f/0x130
+Jul 12 09:44:20 kepler [<c1019242>] bad_area_nosemaphore+0x12/0x20
+Jul 12 09:44:20 kepler [<c10195fb>] do_page_fault+0x24b/0x410
+Jul 12 09:44:20 kepler [<c128bdf6>] ? uhci_alloc_td+0x16/0x40
+Jul 12 09:44:20 kepler [<c10400e5>] ? T.312+0x15/0x1b0
+Jul 12 09:44:20 kepler [<c10193b0>] ? mm_fault_error+0xe0/0xe0
+Jul 12 09:44:20 kepler [<c13d85f4>] error_code+0x58/0x60
+Jul 12 09:44:20 kepler [<c10193b0>] ? mm_fault_error+0xe0/0xe0
+Jul 12 09:44:20 kepler [<f8fbe46e>] ? rc_g_keycode_from_table+0x1e/0xe0
+[rc_core]
+Jul 12 09:44:20 kepler [<c101e9ae>] ? T.889+0x2e/0x50
+Jul 12 09:44:20 kepler [<f87c259c>] imon_remote_key_lookup+0x1c/0x70 [imon]
+Jul 12 09:44:20 kepler [<f87c26dc>] imon_incoming_packet+0x5c/0xe10 [imon]
+Jul 12 09:44:20 kepler [<c11a0865>] ? blk_complete_request+0x15/0x20
+Jul 12 09:44:20 kepler [<c12572c8>] ? atapi_qc_complete+0x58/0x2b0
+Jul 12 09:44:20 kepler [<c124f353>] ? __ata_qc_complete+0x73/0x110
+Jul 12 09:44:20 kepler [<f87c3563>] usb_rx_callback_intf0+0x63/0x70 [imon]
+Jul 12 09:44:20 kepler [<c1272cc8>] usb_hcd_giveback_urb+0x48/0xb0
+Jul 12 09:44:20 kepler [<c128a5ee>] uhci_giveback_urb+0x8e/0x220
+Jul 12 09:44:20 kepler [<c128ac16>] uhci_scan_schedule+0x396/0x9a0
+Jul 12 09:44:20 kepler [<c128cfd1>] uhci_irq+0x91/0x170
+Jul 12 09:44:20 kepler [<c1271de1>] usb_hcd_irq+0x21/0x50
+Jul 12 09:44:20 kepler [<c1051246>] handle_irq_event_percpu+0x36/0x140
+Jul 12 09:44:20 kepler [<c1015f06>] ? __io_apic_modify_irq+0x76/0x90
+Jul 12 09:44:20 kepler [<c1053000>] ? handle_edge_irq+0x100/0x100
+Jul 12 09:44:20 kepler [<c1051382>] handle_irq_event+0x32/0x60
+Jul 12 09:44:20 kepler [<c1053045>] handle_fasteoi_irq+0x45/0xc0
+Jul 12 09:44:20 kepler <IRQ>
+Jul 12 09:44:20 kepler [<c1003cea>] ? do_IRQ+0x3a/0xb0
+Jul 12 09:44:20 kepler [<c1089fcd>] ? sys_read+0x3d/0x70
+Jul 12 09:44:20 kepler [<c13d8d69>] ? common_interrupt+0x29/0x30
+
+
+
+
+root@kepler # lsusb -v -d 15c2:ffdc
+Bus 004 Device 003: ID 15c2:ffdc SoundGraph Inc. iMON PAD Remote Controller
+Device Descriptor:
+  bLength                18
+  bDescriptorType         1
+  bcdUSB               1.10
+  bDeviceClass            0 (Defined at Interface level)
+  bDeviceSubClass         0
+  bDeviceProtocol         0
+  bMaxPacketSize0         8
+  idVendor           0x15c2 SoundGraph Inc.
+  idProduct          0xffdc iMON PAD Remote Controller
+  bcdDevice            0.00
+  iManufacturer           0
+  iProduct                0
+  iSerial                 0
+  bNumConfigurations      1
+  Configuration Descriptor:
+    bLength                 9
+    bDescriptorType         2
+    wTotalLength           41
+    bNumInterfaces          1
+    bConfigurationValue     1
+    iConfiguration          0
+    bmAttributes         0x80
+      (Bus Powered)
+    MaxPower              100mA
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        0
+      bAlternateSetting       0
+      bNumEndpoints           2
+      bInterfaceClass         0 (Defined at Interface level)
+      bInterfaceSubClass      0
+      bInterfaceProtocol      0
+      iInterface              0
+      ** UNRECOGNIZED:  09 21 00 01 00 01 22 25 00
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x81  EP 1 IN
+        bmAttributes            3
+          Transfer Type            Interrupt
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0008  1x 8 bytes
+        bInterval              10
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x02  EP 2 OUT
+        bmAttributes            3
+          Transfer Type            Interrupt
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0008  1x 8 bytes
+        bInterval              10
+Device Status:     0x0000
+  (Bus Powered)
+
+
+
+# Kernel options from Media/RC
+#
+# Multimedia drivers
+#
+CONFIG_RC_CORE=m
+CONFIG_LIRC=m
+CONFIG_RC_MAP=m
+CONFIG_IR_NEC_DECODER=m
+CONFIG_IR_RC5_DECODER=m
+CONFIG_IR_RC6_DECODER=m
+CONFIG_IR_JVC_DECODER=m
+CONFIG_IR_SONY_DECODER=m
+CONFIG_IR_RC5_SZ_DECODER=m
+CONFIG_IR_LIRC_CODEC=m
+# CONFIG_IR_ENE is not set
+CONFIG_IR_IMON=m
+CONFIG_IR_MCEUSB=m
+# CONFIG_IR_ITE_CIR is not set
+# CONFIG_IR_NUVOTON is not set
+# CONFIG_IR_STREAMZAP is not set
+# CONFIG_IR_WINBOND_CIR is not set
+# CONFIG_RC_LOOPBACK is not set
+
+
+# cat /proc/cpuinfo
+processor    : 0
+vendor_id    : AuthenticAMD
+cpu family    : 6
+model        : 8
+model name    : AMD Athlon(TM) XP 2400+
+stepping    : 1
+cpu MHz        : 2000.091
+cache size    : 256 KB
+fdiv_bug    : no
+hlt_bug        : no
+f00f_bug    : no
+coma_bug    : no
+fpu        : yes
+fpu_exception    : yes
+cpuid level    : 1
+wp        : yes
+flags        : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca
+cmov pat pse36 mmx fxsr sse syscall mmxext 3dnowext 3dnow
+bogomips    : 4000.18
+clflush size    : 32
+cache_alignment    : 32
+address sizes    : 34 bits physical, 32 bits virtual
+power management: ts
+
+-- 
+Chris Williams
+Brisbane, Australia
 
