@@ -1,136 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753861Ab1GLRAk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 13:00:40 -0400
-Received: from smtpo.poczta.interia.pl ([217.74.65.206]:34916 "EHLO
-	smtpo.poczta.interia.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751846Ab1GLRAi (ORCPT
+	id S1754173Ab1GLRD1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 13:03:27 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:62796 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753711Ab1GLRD0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 13:00:38 -0400
-Message-ID: <4E1C7D96.1030500@interia.pl>
-Date: Tue, 12 Jul 2011 18:00:06 +0100
-From: =?UTF-8?b?UmFmYcWC?= Bilski <rafalbilski@interia.pl>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:5.0) Gecko/20110628
-	Thunderbird/5.0
+	Tue, 12 Jul 2011 13:03:26 -0400
+Date: Tue, 12 Jul 2011 19:03:20 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        paulus@samba.org, tglx@linutronix.de
+Subject: Re: [PATCH 3/6] perf: add reference time event
+Message-ID: <20110712170311.GB9201@somewhere>
+References: <1307490806-24548-1-git-send-email-dsahern@gmail.com>
+ <1307490946-24673-1-git-send-email-dsahern@gmail.com>
+ <20110617133230.GC25197@somewhere.redhat.com>
+ <4DFB5F0B.4020903@gmail.com>
+ <20110617141707.GE25197@somewhere.redhat.com>
+ <4E1A7A0D.8000806@gmail.com>
+ <20110712143024.GA9201@somewhere>
+ <4E1C77C9.1060005@gmail.com>
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, Axel Lin <axel.lin@gmail.com>,
-        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org
-Subject: Re: [PATCH] e_powersaver: Underclock checks
-References: <1310114243.2940.3.camel@phoenix> <4E1B745A.5000802@interia.pl>
-	<4E1B8404.1050909@interia.pl> <20110711232517.GC20367@redhat.com>
-In-Reply-To: <20110711232517.GC20367@redhat.com>
-X-Interia-Antivirus: OK
-X-EMID: 9a346958
-Content-Type: text/plain; charset="UTF-8"; format="flowed"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E1C77C9.1060005@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some systems are using 1.2GHz@844mV processors running at 600MHz@796mV.
-Try to detect such systems and don't touch anything on it. If CPU doesn't have
-P-States in BIOS it will run on maximum frequency anyway.
-Allow user to bypass checks by means of two new options.
-Don't set frequency to maximum on module unloading to avoid bada boom.
+On Tue, Jul 12, 2011 at 10:35:21AM -0600, David Ahern wrote:
+> On 07/12/2011 08:30 AM, Frederic Weisbecker wrote:
+> > Actually you first have to face a deeper problem. events are not stored
+> > in order in the flow, but they are sorted from perf_session__process_events().
+> > 
+> > The bunch of sorted events is flushed periodically and sent to the consumer.
+> > 
+> > See flush_sample_queue().
+> > 
+> > And this sorting is made on top of the sample->time timestamps. So events
+> > are first sorted on sample->time and only afterward you have access to your
+> > gtod tracepoint samples. But if that gtod sample has been taken after a reboot
+> > then its sample->time is not consistant with the rest. It is not well sorted
+> > and thus the reftime won't be updated at the right moment.
+> 
+> I was aware of this function and the buffering /sorting it does; I have
+> similar code in my local analysis tool (for older perf userspace). I had
+> not stopped to consider the impacts on the append mode since I never use
+> that option.
+> 
+> > So the problem is that reftime update already depends on a consistant cpu
+> > timestamp.
+> > 
+> > I can't think about a sane way to work around that. Sorting on gtod + cpu timestamp
+> > is not a solution because gtod can change.
+> > 
+> > I'd rather propose to refuse append mode as long as we have any timestamp. That includes
+> > gtod but also sample timestamps. They are buggy if we reboot.
+> 
+> I'm fine with restricting append mode if samples have timestamps. In
+> that case the time of day reference can be added to the header per the
+> original patch set. The change in behavior does impact a lot of record
+> use cases (system wide, raw).
 
-It is also possible that these, or other,  processors have incorrect values in
-mix/max registers caused by error in manufacturing process. Probably it would be
-BIOS job to set them to right frequency.
-For the first time CPU is reporting higher supported frequency then system is
-able to support. In old times of C3 CPUs on EPIA M10000 1,4GHz processors
-were reporting 1GHz as highest supported frequency because cooler was too
-small. With bigger cooler and patched "Longhaul" board was (and still is somewhere)
-running perfectly at 1,4GHz. I still wonder why they didn't change voltage to lower one.
-
-Code totally untested as I have abadoned Centaur for Intel Atom two years ago.
-
-Signed-off-by: Rafał Bilski <rafalbilski@interia.pl>
----
-  drivers/cpufreq/e_powersaver.c |   42 +++++++++++++++++++++++++++++----------
-  1 files changed, 31 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/cpufreq/e_powersaver.c b/drivers/cpufreq/e_powersaver.c
-index 7883ffa..46176b2 100644
---- a/drivers/cpufreq/e_powersaver.c
-+++ b/drivers/cpufreq/e_powersaver.c
-@@ -32,6 +32,10 @@ struct eps_cpu_data {
-
-  static struct eps_cpu_data *eps_cpu[NR_CPUS];
-
-+/* Module parameters */
-+static int freq_failsafe_off;
-+static int voltage_failsafe_off;
-+
-
-  static unsigned int eps_get(unsigned int cpu)
-  {
-@@ -253,9 +257,28 @@ static int eps_cpu_init(struct cpufreq_policy *policy)
-          return -EINVAL;
-      if (current_voltage > 0x1f || max_voltage > 0x1f)
-          return -EINVAL;
--    if (max_voltage < min_voltage)
-+    if (max_voltage < min_voltage || current_voltage < min_voltage)
-          return -EINVAL;
-
-+    /* Check for systems using underclocked CPU */
-+    if (!freq_failsafe_off && max_multiplier != current_multiplier) {
-+        printk(KERN_INFO "eps: Your processor is running at different frequency "
-+            "then its maximum.\n");
-+        printk(KERN_INFO "eps: Some systems use underclocked CPU's\n");
-+        printk(KERN_INFO "eps: Use of \"e_powersaver\" on them may cause "
-+            "irreparable damage.\n");
-+        printk(KERN_INFO "eps: You can use freq_failsafe_off option to disable "
-+            "this check.\n");
-+        return -EINVAL;
-+    }
-+    if (!voltage_failsafe_off && max_voltage != current_voltage) {
-+        printk(KERN_INFO "eps: Your processor is running at different voltage "
-+            "then its maximum.\n");
-+        printk(KERN_INFO "eps: You can use voltage_failsafe_off option to disable "
-+            "this check.\n");
-+        return -EINVAL;
-+    }
-+
-      /* Calc FSB speed */
-      fsb = cpu_khz / current_multiplier;
-      /* Calc number of p-states supported */
-@@ -312,17 +335,7 @@ static int eps_cpu_init(struct cpufreq_policy *policy)
-  static int eps_cpu_exit(struct cpufreq_policy *policy)
-  {
-      unsigned int cpu = policy->cpu;
--    struct eps_cpu_data *centaur;
--    u32 lo, hi;
--
--    if (eps_cpu[cpu] == NULL)
--        return -ENODEV;
--    centaur = eps_cpu[cpu];
-
--    /* Get max frequency */
--    rdmsr(MSR_IA32_PERF_STATUS, lo, hi);
--    /* Set max frequency */
--    eps_set_state(centaur, cpu, hi & 0xffff);
-      /* Bye */
-      cpufreq_frequency_table_put_attr(policy->cpu);
-      kfree(eps_cpu[cpu]);
-@@ -368,6 +381,13 @@ static void __exit eps_exit(void)
-      cpufreq_unregister_driver(&eps_driver);
-  }
-
-+/* Allow user to overclock his machine or to change frequency to higher after
-+ * unloading module */
-+module_param(freq_failsafe_off, int, 0644);
-+MODULE_PARM_DESC(freq_failsafe_off, "Disable current vs max frequency check");
-+module_param(voltage_failsafe_off, int, 0644);
-+MODULE_PARM_DESC(voltage_failsafe_off, "Disable current vs max voltage check");
-+
-  MODULE_AUTHOR("Rafal Bilski <rafalbilski@interia.pl>");
-  MODULE_DESCRIPTION("Enhanced PowerSaver driver for VIA C7 CPU's.");
-  MODULE_LICENSE("GPL");
--- 
-1.7.6
-
-
-
-----------------------------------------------------------------
-Znajdz samochod idealny dla siebie!
-Szukaj >> http://linkint.pl/f29e2
+Yep, sounds good.
