@@ -1,54 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752119Ab1GLJVI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 05:21:08 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:45024 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751536Ab1GLJVG convert rfc822-to-8bit (ORCPT
+	id S1752326Ab1GLJV1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 05:21:27 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:41201 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752188Ab1GLJV0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 05:21:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <1310370416-6322-14-git-send-email-jim.cromie@gmail.com>
-References: <1309244992-2305-1-git-send-email-jim.cromie@gmail.com>
- <1310370416-6322-1-git-send-email-jim.cromie@gmail.com> <1310370416-6322-14-git-send-email-jim.cromie@gmail.com>
-From: Bart Van Assche <bvanassche@acm.org>
-Date: Tue, 12 Jul 2011 11:20:45 +0200
-X-Google-Sender-Auth: OyAWcw7yGqxMyWRp2IoyojwWoZc
-Message-ID: <CAO+b5-pLVD7qKeY0pyt_oA8Ba1URdE-e06hiH+6AFanNChPU0g@mail.gmail.com>
-Subject: Re: [PATCH 13/21] dynamic_debug: require 'a' flag to explicitly mark
- pending queries
-To: Jim Cromie <jim.cromie@gmail.com>
-Cc: jbaron@redhat.com, linux-kernel@vger.kernel.org, joe@perches.com,
-        gregkh@suse.de, gnb@fmeh.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 12 Jul 2011 05:21:26 -0400
+Date: Tue, 12 Jul 2011 10:24:10 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Wim Van Sebroeck <wim@iguana.be>, LKML <linux-kernel@vger.kernel.org>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>
+Subject: Re: [PATCH 01/11] watchdog: WatchDog Timer Driver Core - Add basic
+ framework
+Message-ID: <20110712102410.2ba3834f@lxorguk.ukuu.org.uk>
+In-Reply-To: <4E1B8089.90103@metafoo.de>
+References: <1310392522-9949-1-git-send-email-wim@iguana.be>
+	<4E1B8089.90103@metafoo.de>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 11, 2011 at 9:46 AM, Jim Cromie <jim.cromie@gmail.com> wrote:
-> +static int queries_match(struct ddebug_query *q1, struct ddebug_query *q2)
-> +{
-> +       if (!q1->module ^ !q2->module ||
-> +               !q1->filename ^ !q2->filename ||
-> +               !q1->function ^ !q2->function ||
-> +               !q1->format ^ !q2->format)
-> +               return 0;  /* a match-spec set/unset state differs */
-> +
-> +       if (q1->last_lineno != q2->last_lineno ||
-> +               q1->first_lineno != q2->first_lineno)
-> +               return 0;
-> +
-> +       if ((q1->module && strcmp(q1->module, q2->module)) ||
-> +               (q1->filename && strcmp(q1->filename, q2->filename)) ||
-> +               (q1->function && strcmp(q1->function, q2->function)) ||
-> +               (q1->format && strcmp(q1->format, q2->format)))
-> +               return 0;
-> +       return 1;
-> +}
+> > +	/* stop the watchdog */
+> > +	err = wdd->ops->stop(wdd);
+> Does it really make sense to allow stop() to fail? Will this ever happen, and
+> if yes do we gain anything by sending a additional ping?
 
-Is there a reason why the return type of this function is "int" and
-not "bool" ? Also, in the Linux kernel you can use the symbolic
-constants "true" and "false" instead of "1" and "0".
+It gives user space more time to react - or would do if the err was
+propogated.
 
-Bart.
