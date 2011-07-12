@@ -1,93 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754676Ab1GLTA2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 15:00:28 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:52493 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751220Ab1GLTA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 15:00:27 -0400
-Date: Tue, 12 Jul 2011 11:59:07 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
-        julie Sullivan <kernelmail.jms@gmail.com>,
-        linux-kernel@vger.kernel.org, chengxu@linux.vnet.ibm.com,
-        peterz@infradead.org
-Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3
-Message-ID: <20110712185907.GJ2326@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110711171337.GK2245@linux.vnet.ibm.com>
- <20110711193021.GA2996@dumpdata.com>
- <20110711201508.GN2245@linux.vnet.ibm.com>
- <20110711210954.GA15745@dumpdata.com>
- <20110712105506.GB2253@linux.vnet.ibm.com>
- <20110712141228.GA7831@dumpdata.com>
- <20110712144936.GD2326@linux.vnet.ibm.com>
- <20110712160324.GA1186@dumpdata.com>
- <20110712163947.GF2326@linux.vnet.ibm.com>
- <20110712180151.GA18257@dumpdata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110712180151.GA18257@dumpdata.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754913Ab1GLTDI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 15:03:08 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:55634 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754112Ab1GLTDF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 15:03:05 -0400
+X-Authority-Analysis: v=1.1 cv=PfPQ8rIoTcZsncbPZjVSZ7K0hy8Zc4hmL68r4VPNpKE= c=1 sm=0 a=vhdKIqpQuCYA:10 a=MCqKf7WbFRsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=gegcIg_2A_rqngjKG-4A:9 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Message-Id: <20110712185131.698851699@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Tue, 12 Jul 2011 14:51:31 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [RFC][PATCH 0/3] ftrace: entend notrace to notrace called functions
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 12, 2011 at 02:01:51PM -0400, Konrad Rzeszutek Wilk wrote:
-> > > http://darnok.org/xen/loop_cnt.log
-> > > 
-> > > which seems to imply that we are indeed stuck in that loop
-> > > forever.
-> > 
-> > It does indeed, thank you!  Also it looks like interrupts are
-> > disabled, and that timekeeping is similarly out of action.
-> 
-> .. With the latest patch the time looks to be advancing.
+On IRC, Thomas complained about the noise/signal ratio of useful
+traced functions. Although several functions have been disabled via
+notrace, these notrace functions tend to call other functions and
+they get traced. Often times they confuse the trace because its hard
+to know where these functions were called from.
 
-Sounds like an improvement.  ;-)
+Other times it is just that we really want to ignore functions
+that have been marked with notrace, and we also don't care about
+what functions they call.
 
-> > Disabling CONFIG_NO_HZ would be an interesting test case.
-> 
-> Hadn't done that yet. Compiling a kernel with "# CONFIG_NO_HZ is not set"
-> right now.
-> > 
-> > > > o	Problems due to portions of the code attempting to use
-> > > > 	RCU read-side critical sections while in dyntick-idle mode.
-> > > > 	Frederic Weisbecker has located some of these, (though not yet
-> > > > 	in Xen) and he has some diagnositics which may be found at:
-> > > > 
-> > > > 	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
-> > > > 
-> > > > 	on branch eqscheck.2011.07.08a.
-> > > > 
-> > > > 	You need to enable CONFIG_PROVE_RCU for these diagnostics to
-> > > > 	be executed.
-> > > 
-> > > Ok, let me try those too.
-> > 
-> > Thank you!
-> 
-> Will shortly do this.
-> > 
-> > > > o	As always, there might be bugs in RCU.  ;-)
-> > > > 
-> > > > But the loop in task_waking_fair() looks like the most prominent smoking
-> > > > gun at the moment.
-> > 
-> > And could you also please try out the patch that I posted earlier?
-> 
-> With the previous patch and the .. this is getting confusing. With this patch:
-> http://darnok.org/xen/loop_cnt-extra.patch
+The problem is that, unlike the function graph tracer, the function
+tracer does not have the ability to know when a function has returned.
+Knowing when a function has been called by a function marked as
+notrace is not trivial, as a lot of notrace functions are completely
+hidden to ftrace. Searching all functions to see if it is not marked
+notrace would slow things down even more than the function graph tracer.
 
-That is indeed the patch I intended.
+The trick I used was to use the function graph tracer's ret_stack,
+to keep track of the call chain. By checking the parent against the
+call chain, we can mostly get what functions belong at what depth,
+and if a parent is not in the call chain, it may be a clue that the
+parent was a notrace function. There's other times that a parent
+may not be in the call chain (irqs, and top level calls), but
+most of the time, we can figure it out.
 
-> I get this output: http://darnok.org/xen/log.loop_cnt-extra-patch (one guest
-> with 4 VCPUS) and http://darnok.org/xen/loop_cnt-extra-patch.log (the guest with 16 VCPUs)
+Note, things called from assembly are just like being called by a
+notrace function as assembly functions are not traced. For example
+do_page_fault() and preempt_schedule() are both called from assembly
+and can be skipped.
 
-OK, so the infinite loop in task_waking_fair() happens even if RCU callbacks
-are deferred until after the scheduler is fully initialized.  Sounds like
-one for the scheduler guys.  ;-)
+To enable this feature, just echo 1 into debug/tracing/options/extend-notrace
 
-							Thanx, Paul
+I also added a debug/tracing/options/extend-notrace-debug that inverses
+what gets traced (things that would be ignored by extend-notrace would
+be traced, and things that would be traced are not). This debug option
+is a way to see what functions may be ignored by extend-notrace.
+
+This is just a RFC, and was something that I tried to quickly write up
+(although it took much longer than I wanted it too). As this was
+a feature request from Thomas who happened to be using ftrace currently
+as a real debug tool. And this would help him now.
+
+But I'm leaving this as RFC for the time being and going back to working
+on RT stuff and other things. Maybe I may get some time on libperf!
+
+-- Steve
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+rfc/trace
+
+Head SHA1: 0011c1566f498e410787fa1173148513153ec443
+
+
+Steven Rostedt (3):
+      ftrace: Make ret_stack usable by other than function graph
+      ftrace: Add extend-notrace to not trace sub funcs of notrace funcs
+      ftrace: Add extend-notrace-debug to see what is not traced
+
+----
+ include/linux/ftrace.h         |   38 ++++--
+ include/linux/sched.h          |   16 ++-
+ kernel/fork.c                  |    5 +-
+ kernel/sched.c                 |    2 +-
+ kernel/trace/ftrace.c          |  281 +++++++++++++++++++++++-----------------
+ kernel/trace/trace.c           |    5 +
+ kernel/trace/trace.h           |   11 ++
+ kernel/trace/trace_functions.c |  163 +++++++++++++++++++++++-
+ 8 files changed, 380 insertions(+), 141 deletions(-)
