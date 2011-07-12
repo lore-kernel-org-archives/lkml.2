@@ -1,99 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752407Ab1GLIsP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 04:48:15 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53344 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752045Ab1GLIqs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 04:46:48 -0400
-From: Tejun Heo <tj@kernel.org>
-To: mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de,
-        benh@kernel.crashing.org, yinghai@kernel.org, davem@davemloft.net
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, x86@kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 5/8] memblock: Don't allow archs to override memblock_nid_range()
-Date: Tue, 12 Jul 2011 10:46:32 +0200
-Message-Id: <1310460395-30913-6-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1310460395-30913-1-git-send-email-tj@kernel.org>
-References: <1310460395-30913-1-git-send-email-tj@kernel.org>
+	id S1752014Ab1GLI7w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 04:59:52 -0400
+Received: from mail.mnsspb.ru ([84.204.75.2]:50761 "EHLO mail.mnsspb.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751111Ab1GLI7u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 04:59:50 -0400
+Date: Tue, 12 Jul 2011 12:58:52 +0400
+From: Kirill Smelkov <kirr@mns.spb.ru>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: linux-uvc-devel@lists.berlios.de, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] uvcvideo: Add FIX_BANDWIDTH quirk to HP Webcam found
+	on HP Mini 5103 netbook
+Message-ID: <20110712085852.GA12576@tugrik.mns.mnsspb.ru>
+References: <1308679663-11431-1-git-send-email-kirr@mns.spb.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308679663-11431-1-git-send-email-kirr@mns.spb.ru>
+Organization: Marine Bridge & Navigation Systems
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-memblock_nid_range() is used to implement memblock_[try_]alloc_nid().
-The generic version determines the range by walking early_node_map
-with for_each_mem_pfn_range().  The generic version is defined __weak
-to allow arch override.
+On Tue, Jun 21, 2011 at 10:07:43PM +0400, Kirill Smelkov wrote:
+> The camera there identifeis itself as being manufactured by Cheng Uei
+> Precision Industry Co., Ltd (Foxlink), and product is titled as "HP
+> Webcam [2 MP Fixed]".
+> 
+> I was trying to get 2 USB video capture devices to work simultaneously,
+> and noticed that the above mentioned webcam always requires packet size
+> = 3072 bytes per micro frame (~= 23.4 MB/s isoc bandwidth), which is far
+> more than enough to get standard NTSC 640x480x2x30 = ~17.6 MB/s isoc
+> bandwidth.
+> 
+> As there are alt interfaces with smaller MxPS
+> 
+>     T:  Bus=01 Lev=01 Prnt=01 Port=03 Cnt=01 Dev#=  2 Spd=480  MxCh= 0
+>     D:  Ver= 2.00 Cls=ef(misc ) Sub=02 Prot=01 MxPS=64 #Cfgs=  1
+>     P:  Vendor=05c8 ProdID=0403 Rev= 1.06
+>     S:  Manufacturer=Foxlink
+>     S:  Product=HP Webcam [2 MP Fixed]
+>     S:  SerialNumber=200909240102
+>     C:* #Ifs= 2 Cfg#= 1 Atr=80 MxPwr=500mA
+>     A:  FirstIf#= 0 IfCount= 2 Cls=0e(video) Sub=03 Prot=00
+>     I:* If#= 0 Alt= 0 #EPs= 1 Cls=0e(video) Sub=01 Prot=00 Driver=uvcvideo
+>     E:  Ad=83(I) Atr=03(Int.) MxPS=  16 Ivl=4ms
+>     I:* If#= 1 Alt= 0 #EPs= 0 Cls=0e(video) Sub=02 Prot=00 Driver=uvcvideo
+>     I:  If#= 1 Alt= 1 #EPs= 1 Cls=0e(video) Sub=02 Prot=00 Driver=uvcvideo
+>     E:  Ad=81(I) Atr=05(Isoc) MxPS= 128 Ivl=125us
+>     I:  If#= 1 Alt= 2 #EPs= 1 Cls=0e(video) Sub=02 Prot=00 Driver=uvcvideo
+>     E:  Ad=81(I) Atr=05(Isoc) MxPS= 512 Ivl=125us
+>     I:  If#= 1 Alt= 3 #EPs= 1 Cls=0e(video) Sub=02 Prot=00 Driver=uvcvideo
+>     E:  Ad=81(I) Atr=05(Isoc) MxPS=1024 Ivl=125us
+>     I:  If#= 1 Alt= 4 #EPs= 1 Cls=0e(video) Sub=02 Prot=00 Driver=uvcvideo
+>     E:  Ad=81(I) Atr=05(Isoc) MxPS=1536 Ivl=125us
+>     I:  If#= 1 Alt= 5 #EPs= 1 Cls=0e(video) Sub=02 Prot=00 Driver=uvcvideo
+>     E:  Ad=81(I) Atr=05(Isoc) MxPS=2048 Ivl=125us
+>     I:  If#= 1 Alt= 6 #EPs= 1 Cls=0e(video) Sub=02 Prot=00 Driver=uvcvideo
+>     E:  Ad=81(I) Atr=05(Isoc) MxPS=2688 Ivl=125us
+>     I:  If#= 1 Alt= 7 #EPs= 1 Cls=0e(video) Sub=02 Prot=00 Driver=uvcvideo
+>     E:  Ad=81(I) Atr=05(Isoc) MxPS=3072 Ivl=125us
+> 
+> UVC_QUIRK_FIX_BANDWIDTH helps here and NTSC video can be served with
+> MxPS=2688 i.e. 20.5 MB/s isoc bandwidth.
+> 
+> In terms of microframe time allocation, before the quirk NTSC video
+> required 60 usecs / microframe and 53 usecs / microframe after.
+> 
+> 
+> P.S. Now with tweaked ehci-hcd to allow up to 90% isoc bandwith (instead of
+> allowed for high speed 80%) I can capture two video sources -- PAL 720x576
+> YUV422 @25fps + NTSC 640x480 YUV422 @30fps simultaneously. Hooray!
+> 
+> Signed-off-by: Kirill Smelkov <kirr@mns.spb.ru>
 
-Currently, only sparc overrides it; however, with the previous update
-to the generic implementation, there isn't much to be gained with arch
-override.  Sparc would behave exactly the same with the generic
-implementation.
 
-This patch disallows arch override for memblock_nid_range() and make
-both generic and sparc versions static.
+Silence...  though even the above-mentioned EHCI tweak was merged already:
 
-sparc is only compile tested.
+http://git.kernel.org/?p=linux/kernel/git/gregkh/usb-2.6.git;a=commitdiff;h=cc62a7eb6396e8be95b9a30053ed09191818b99b
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
----
- arch/sparc/mm/init_64.c  |    4 ++--
- include/linux/memblock.h |    1 -
- mm/memblock.c            |    2 +-
- 3 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
-index 3fd8e18..8415f61 100644
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -785,7 +785,7 @@ static int find_node(unsigned long addr)
- 	return -1;
- }
- 
--u64 memblock_nid_range(u64 start, u64 end, int *nid)
-+static u64 memblock_nid_range(u64 start, u64 end, int *nid)
- {
- 	*nid = find_node(start);
- 	start += PAGE_SIZE;
-@@ -803,7 +803,7 @@ u64 memblock_nid_range(u64 start, u64 end, int *nid)
- 	return start;
- }
- #else
--u64 memblock_nid_range(u64 start, u64 end, int *nid)
-+static u64 memblock_nid_range(u64 start, u64 end, int *nid)
- {
- 	*nid = 0;
- 	return end;
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index 3496888..329ffb2 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -89,7 +89,6 @@ extern int memblock_is_region_reserved(phys_addr_t base, phys_addr_t size);
- extern void memblock_dump_all(void);
- 
- /* Provided by the architecture */
--extern phys_addr_t memblock_nid_range(phys_addr_t start, phys_addr_t end, int *nid);
- extern int memblock_memory_can_coalesce(phys_addr_t addr1, phys_addr_t size1,
- 				   phys_addr_t addr2, phys_addr_t size2);
- 
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 97f3486..22cd999 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -508,7 +508,7 @@ phys_addr_t __init memblock_alloc(phys_addr_t size, phys_addr_t align)
-  * have been done to populate it.
-  */
- 
--phys_addr_t __weak __init memblock_nid_range(phys_addr_t start, phys_addr_t end, int *nid)
-+static phys_addr_t __init memblock_nid_range(phys_addr_t start, phys_addr_t end, int *nid)
- {
- #ifdef CONFIG_ARCH_POPULATES_NODE_MAP
- 	unsigned long start_pfn, end_pfn;
--- 
-1.7.6
-
+Hope this patch is not lost and thanks,
+Kirill
