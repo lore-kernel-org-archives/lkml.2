@@ -1,95 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755269Ab1GLURl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 16:17:41 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:51245 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753828Ab1GLURj convert rfc822-to-8bit (ORCPT
+	id S1755301Ab1GLUUW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 16:20:22 -0400
+Received: from mx1.HRZ.Uni-Dortmund.DE ([129.217.128.51]:46206 "EHLO
+	unimail.uni-dortmund.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754042Ab1GLUUV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 16:17:39 -0400
+	Tue, 12 Jul 2011 16:20:21 -0400
+Message-ID: <4E1CABBD.60901@udo.edu>
+Date: Tue, 12 Jul 2011 22:17:01 +0200
+From: Andrej Gelenberg <andrej.gelenberg@udo.edu>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110709 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <20110712181536.GA30364@redhat.com>
-References: <20110712181536.GA30364@redhat.com>
-Date: Tue, 12 Jul 2011 21:17:37 +0100
-Message-ID: <CAPM=9tywf2_Y8maO4Tc8Z4nMfk8oJPoFic7+wMLxekjgcs=grw@mail.gmail.com>
-Subject: Re: drm_lock()->block_all_signals() is broken
-From: Dave Airlie <airlied@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Nir Tzachar <nir.tzachar@gmail.com>
+CC: linux-kbuild@vger.kernel.org, mmarek@suse.cz, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] kconfig/nconf: prevent segfault on empty menu
+References: <CACqU3MXvHR0v4Hgn5UMwDtzaX5nWqmKEneN_s7r4PuEGzifauw@mail.gmail.com>	<1310282825-14509-1-git-send-email-lacombar@gmail.com>	<1310282825-14509-2-git-send-email-lacombar@gmail.com>	<CAMT+=WY84jaattF+9zYK7oiJLmn8_oGLB-mnGbOpK_4Rt0vRZg@mail.gmail.com>	<4E1AB992.3040309@udo.edu> <CAMT+=WZV4TGfXY0=BjYtNVRDuWw6r-facK=q2S6HVOUTB3KWEg@mail.gmail.com>
+In-Reply-To: <CAMT+=WZV4TGfXY0=BjYtNVRDuWw6r-facK=q2S6HVOUTB3KWEg@mail.gmail.com>
+Content-Type: multipart/mixed;
+ boundary="------------090504070605030506030300"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 12, 2011 at 7:15 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> Hello.
->
-> I tried many times to ask about the supposed behaviour of
-> block_all_signals() in drm, but it seems nobody can answer.
+This is a multi-part message in MIME format.
+--------------090504070605030506030300
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-Its not hard to explain, basically there exists hardware that you
-program acceleration engines using MMIO, having multiple processes
-writing to the MMIO area at once is a bad idea, so we use the DRM lock
-which is like a pre-futex futex. Now the problem is if you stop or
-kill a process in a critical section where it is writing to the
-hardware directly with MMIO you could crash the hardware, so the idea
-is that you block to the max until the critical section exits via the
-drm unlock.
+Hi,
 
-some links
-http://lkml.indiana.edu/hypermail/linux/kernel/0202.2/0045.html
+here is one more patch, which make empty title instead of "(null)".
 
-The only driver that might even use this and care in the tree is tdfx
-as I think it might be MMIO programmed, though I'm not 100% sure. I
-pretty much reckon we can deprecate block_all_signals as I forsee
-fixing all the problem you pointed out with it would be worse than
-just removing it.
+Regards,
+Andrej Gelenberg
 
->
-> So I am going to send the patch which simply removes
-> block_all_signals() and friends. There are numeruous problems
-> with this interace, I can't even enumerate them. But I think
-> that it is enough to mention that block_all_signals() simply
-> can not work. AT ALL. I am wondering, was it ever tested and
-> how.
+On 07/11/2011 11:50 AM, Nir Tzachar wrote:
+> On Mon, Jul 11, 2011 at 11:51 AM, Andrej Gelenberg
+> <andrej.gelenberg@udo.edu> wrote:
+>> Hello,
+>>
+>> it show already "There is no help available for this option." message on
+>> F2. Only caption could be better as just "(null)". Besides ignore the
+>> key is much better as segfault.
+> 
+> I agree. Then just add a proper caption and thats it.
+> 
+> Cheers.
+> 
+>> Regards
+>> Andrej Gelenberg
 
-I wasn't around, but it did work back in linux-2.4.0-test7 when it was
-introduced,
+--------------090504070605030506030300
+Content-Type: text/plain;
+ name="0001-nconfig-menu_get_prompt-return-if-no-promt.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-nconfig-menu_get_prompt-return-if-no-promt.patch"
 
-http://www.kernel.org/pub/linux/kernel/v2.4/old-test-kernels/patch-2.4.0-test7.gz
+>From e5fa0e9a705c2e2092ba9c2879e85f8bef12f7f8 Mon Sep 17 00:00:00 2001
+From: Andrej Gelenberg <andrej.gelenberg@udo.edu>
+Date: Tue, 12 Jul 2011 18:36:50 +0200
+Subject: [PATCH] nconfig: menu_get_prompt() return "", if no promt
 
-is the initial patch. You should probably check that out and see if
-you can work out how it originally worked, and the work out
-if its really is broken now or if you haven't analysed it correctly.
+Help message box has "" as titled instead of "(null)" on empty menu in
+nconf.
 
-> I strongly believe block_all_signals() should die. Given that
-> it doesn't work, could somebody please explain me what will
-> be broken?
+Signed-off-by: Andrej Gelenberg <andrej.gelenberg@udo.edu>
+---
+ scripts/kconfig/menu.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> Just in case... Please look at the debugging patch below. With
-> this patch,
->
->        $ perl -le 'syscall 157,666 and die $!; sleep 1, print while ++$_'
->        1
->        2
->        3
->        ^Z
->
-> Hang. So it does react to ^Z anyway, just it is looping in the
-> endless loop in the kernel. It can only look as if ^Z is ignored,
-> because obviously bash doesn't see it stopped.
+diff --git a/scripts/kconfig/menu.c b/scripts/kconfig/menu.c
+index 6a09cc4..0783d8e 100644
+--- a/scripts/kconfig/menu.c
++++ b/scripts/kconfig/menu.c
+@@ -476,7 +476,7 @@ const char *menu_get_prompt(struct menu *menu)
+ 		else if (menu->sym)
+ 			return menu->sym->name;
+ 	}
+-	return NULL;
++	return "";
+ }
+ 
+ struct menu *menu_get_root_menu(struct menu *menu)
+-- 
+1.7.6
 
-taking the drm lock usually means you will drop it without doing
-anything stupid like sleeping for a long time, if the process dies,
-the lock gets dropped automatically also.
 
-I've only second hand knowledge of how this works though, and I'm on
-holidays for another week or so, maybe once I get back I'll find some
-time to figure out how it works vs what happens, but really I suspect
-we can kill this with fire.
-
-Dave.
+--------------090504070605030506030300--
