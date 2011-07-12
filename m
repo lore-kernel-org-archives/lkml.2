@@ -1,73 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161Ab1GLRPg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 13:15:36 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:60136 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751520Ab1GLRPe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 13:15:34 -0400
-Message-ID: <4E1C8108.3020006@candelatech.com>
-Date: Tue, 12 Jul 2011 10:14:48 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+	id S1754292Ab1GLRSP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 13:18:15 -0400
+Received: from mail.mnsspb.ru ([84.204.75.2]:45150 "EHLO mail.mnsspb.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750848Ab1GLRSO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 13:18:14 -0400
+Date: Tue, 12 Jul 2011 21:17:06 +0400
+From: Kirill Smelkov <kirr@mns.spb.ru>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Luke-Jr <luke@dashjr.org>, intel-gfx@lists.freedesktop.org,
+        LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Ray Lee <ray-lk@madrabbit.org>
+Subject: Re: [Intel-gfx] Major 2.6.38 / 2.6.39 regression ignored?
+Message-ID: <20110712171706.GA18414@tugrik.mns.mnsspb.ru>
+References: <201105201306.31204.luke@dashjr.org> <BANLkTimOqhNEsBEg6f=nMiMJqYGNyFJmeQ@mail.gmail.com> <013811$4lfs6@fmsmga002.fm.intel.com> <201105211123.56053.luke@dashjr.org> <aefc95$1usaq@orsmga001.jf.intel.com> <20110528131920.GA10467@tugrik.mns.mnsspb.ru>
 MIME-Version: 1.0
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-CC: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] sunrpc:  Fix race between work-queue and rpc_killall_tasks.
-References: <1309992581-25199-1-git-send-email-greearb@candelatech.com> <1309995932.5447.6.camel@lade.trondhjem.org> <4E173BE6.9000005@candelatech.com> <2E1EB2CF9ED1CB4AA966F0EB76EAB4430A198C7C@SACMVEXC2-PRD.hq.netapp.com> <4E177EA8.60109@candelatech.com> <2E1EB2CF9ED1CB4AA966F0EB76EAB4430A198E69@SACMVEXC2-PRD.hq.netapp.com>
-In-Reply-To: <2E1EB2CF9ED1CB4AA966F0EB76EAB4430A198E69@SACMVEXC2-PRD.hq.netapp.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110528131920.GA10467@tugrik.mns.mnsspb.ru>
+Organization: Marine Bridge & Navigation Systems
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/08/2011 03:14 PM, Myklebust, Trond wrote:
+On Sat, May 28, 2011 at 05:19:20PM +0400, Kirill Smelkov wrote:
+> Hello Chris, everyone,
+> 
+> On Sat, May 21, 2011 at 04:40:17PM +0100, Chris Wilson wrote:
+> > On Sat, 21 May 2011 11:23:53 -0400, "Luke-Jr" <luke@dashjr.org> wrote:
+> > > On Saturday, May 21, 2011 4:41:45 AM Chris Wilson wrote:
+> > > > On Fri, 20 May 2011 11:08:56 -0700, Ray Lee <ray-lk@madrabbit.org> wrote:
+> > > > > [ Adding Chris Wilson (author of the problematic patch) and Rafael
+> > > > > Wysocki to the message ]
+> > > > > 
+> > > > > On Fri, May 20, 2011 at 10:06 AM, Luke-Jr <luke@dashjr.org> wrote:
+> > > > > > I submitted https://bugzilla.kernel.org/show_bug.cgi?id=33662 a month
+> > > > > > ago against 2.6.38. Now 2.6.39 was just released without the
+> > > > > > regression being addressed. This bug makes the system unusable... Some
+> > > > > > guys on IRC suggested I
+> > > > > > email, so here it is.
+> > > > > 
+> > > > > See the bugzilla entry for the bisection history.
+> > > > 
+> > > > Which has nothing to do with Luke's bug. Considering the thousand things
+> > > > that can go wrong during X starting, without a hint as to which it is nigh
+> > > > on impossible to debug except by trial and error. If you set up
+> > > > netconsole, does the kernel emit an OOPS with it's last dying breath?
+> > > 
+> > > Why assume it's a different bug? I would almost wonder if it might affect 
+> > > all Sandy Bridge GPUs. In any case, I no longer have the original 
+> > > motherboard (it was recalled, as I said in the first post), nor even the 
+> > > revision of it (it had other issues that weren't being fixed). I *assume* I 
+> > > will have the same problem with my new motherboard (Intel DQ67SW), but I 
+> > > haven't verified that yet. I'll be sure to try a netconsole when I have to 
+> > > reboot next and get a chance to try the most recent 2.6.38 and .39 kernels, 
+> > > but at the moment it seems reasonable to address the problem bisected in the 
+> > > bug, even if it turns out to be different.
+> > 
+> > The bisection is into an old DRI1 bug on 945GM. That DRI has inadequate
+> > locking between release and IRQ and so is prone to such races as befell
+> > Kirill should not surprise anyone. As neither UMS nor DRI supported SNB,
+> > I can quite confidently state they are separate bugs.
+> > -Chris
+> 
+> I see DRI1 is maybe buggy and old, but still, pre-kms X used to work ok
+> on kernels < 2.6.38, and starting from 2.6.38 the system is just
+> unusable because X either crashes the kernel (2.6.38), or does not start
+> at all (2.6.39):
+> 
+> https://bugzilla.kernel.org/show_bug.cgi?id=36052
+> 
+> 
+> It's a regression. It's blocking me to upgrade to newer kernels. I've
+> done my homework -- digged it and came with detailed OOPS on netconsole
+> and bisected to single commit. Could this please be fixed?
 
->>    [<ffffffff81105907>] print_trailer+0x131/0x13a
->>    [<ffffffff81105945>] object_err+0x35/0x3e
->>    [<ffffffff811077b3>] verify_mem_not_deleted+0x7a/0xb7
->>    [<ffffffffa02891e5>] rpcb_getport_done+0x23/0x126 [sunrpc]
->>    [<ffffffffa02810df>] rpc_exit_task+0x3f/0x6d [sunrpc]
->>    [<ffffffffa02814d8>] __rpc_execute+0x80/0x253 [sunrpc]
->>    [<ffffffffa02816ed>] ? rpc_execute+0x42/0x42 [sunrpc]
->>    [<ffffffffa02816fd>] rpc_async_schedule+0x10/0x12 [sunrpc]
->>    [<ffffffff81061343>] process_one_work+0x230/0x41d
->>    [<ffffffff8106128e>] ? process_one_work+0x17b/0x41d
->>    [<ffffffff8106379f>] worker_thread+0x133/0x217
->>    [<ffffffff8106366c>] ? manage_workers+0x191/0x191
->>    [<ffffffff81066f9c>] kthread+0x7d/0x85
->>    [<ffffffff81485ee4>] kernel_thread_helper+0x4/0x10
->>    [<ffffffff8147f0d8>] ? retint_restore_args+0x13/0x13
->>    [<ffffffff81066f1f>] ? __init_kthread_worker+0x56/0x56
->>    [<ffffffff81485ee0>] ? gs_change+0x13/0x13
->
-> The calldata gets freed in the rpc_final_put_task() which shouldn't ever be run while the task is still referenced in __rpc_execute
->
-> IOW: it should be impossible to call rpc_exit_task() after rpc_final_put_task
+Silence...
 
-I added lots of locking around the calldata, work-queue logic, and such, and
-still the problem persists w/out hitting any of the debug warnings or poisoned
-values I put in.  It almost seems like tk_calldata is just assigned to two
-different tasks.
+Still, reverting the bisected patch helps even for 3.0:
 
-While poking through the code, I noticed that 'map' is static in rpcb_getport_async.
-
-That would seem to cause problems if two threads called this method at
-the same time, possibly causing tk_calldata to be assigned to two different
-tasks???
-
-Any idea why it is static?
-
-I'm going to start another test run with this non-static
-to see if that resolves things...
-
-Thanks,
-Ben
-
--- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
-
+https://bugzilla.kernel.org/show_bug.cgi?id=36052#c4
