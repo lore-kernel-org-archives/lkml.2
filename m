@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752611Ab1GLJmU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 05:42:20 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48747 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751750Ab1GLJmT (ORCPT
+	id S1752180Ab1GLJor (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 05:44:47 -0400
+Received: from mail.free-electrons.com ([88.190.12.23]:34669 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750808Ab1GLJoq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 05:42:19 -0400
-Date: Tue, 12 Jul 2011 10:42:06 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        "acme@ghostprotocols.net" <acme@ghostprotocols.net>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: Re: [PATCH 1/3] perf: add context field to perf_event
-Message-ID: <20110712094205.GB26125@e102144-lin.cambridge.arm.com>
-References: <20110711210753.GA3582@e102144-lin.cambridge.arm.com>
- <4E1BF5A1.5070301@redhat.com>
- <1310459898.18678.108.camel@twins>
- <4E1C0F02.9040906@redhat.com>
- <1310462046.14978.11.camel@twins>
- <4E1C10F8.6010300@redhat.com>
- <1310462335.14978.12.camel@twins>
- <4E1C1373.5080500@redhat.com>
- <1310463060.14978.17.camel@twins>
- <4E1C1585.4000207@redhat.com>
+	Tue, 12 Jul 2011 05:44:46 -0400
+Message-ID: <4E1C1786.8040607@free-electrons.com>
+Date: Tue, 12 Jul 2011 11:44:38 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E1C1585.4000207@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Matthew Garrett <mjg@redhat.com>
+CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Make Dell Latitude E6320 use reboot=pci
+References: <1309269451-4966-1-git-send-email-maxime.ripard@free-electrons.com> <20110628174137.GA18115@srcf.ucam.org> <4E0A2D0C.6030701@free-electrons.com> <20110628200319.GA22487@srcf.ucam.org> <4E0AD550.5010700@free-electrons.com>
+In-Reply-To: <4E0AD550.5010700@free-electrons.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 12, 2011 at 10:36:05AM +0100, Avi Kivity wrote:
-> On 07/12/2011 12:31 PM, Peter Zijlstra wrote:
-> > >
-> > >  But it means that 'current' is not set to the right value.  If the
-> > >  function depends on it, then it will misbehave.  And in fact
-> > >  preempt_notifier_register(), which is the function we want to call here,
-> > >  does depend on current.
-> > >
-> > >  Of course we need to find more users for this, but I have a feeling this
-> > >  will be generally useful.  The alternative is to keep adding bits to
-> > >  thread_info::flags.
-> >
-> > Using TIF_bits sounds like a much better solution for this, wakeups are
-> > really rather expensive and its best to avoid extra if at all possible.
-> >
-> 
-> We do need a way to make the task look at them.
+Hi Matthew,
 
-... especially without pushing this down into the arch code where I don't
-think it belongs.
+I've seen that you have worked on the reboot part, however the problem
+is still present on this laptop with 3.0-rc7.
+
+Do you need anything else ?
+
+On 29/06/2011 09:33, Maxime Ripard wrote:
+> On 28/06/2011 22:03, Matthew Garrett wrote:
+>> On Tue, Jun 28, 2011 at 09:35:40PM +0200, Maxime Ripard wrote:
+>>> On 28/06/2011 19:41, Matthew Garrett wrote:
+>>>> On Tue, Jun 28, 2011 at 03:57:31PM +0200, Maxime Ripard wrote:
+>>>>> The Dell Latitude E6320 doesn't reboot unless reboot=pci is set.
+>>>>
+>>>> On which kernel versions?
+>>>
+>>> All the versions from 2.6.38 to 3.0-rc5.
+>>
+>> Could you provide the acpidump output for the system?
+>>
+> 
+> Sure, here it is :
+> http://free-electrons.com/~maxime/pub/acpidumb-e6320.log
+-- 
+Maxime Ripard, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
