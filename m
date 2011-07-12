@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751413Ab1GLEV6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 00:21:58 -0400
-Received: from 1wt.eu ([62.212.114.60]:37524 "EHLO 1wt.eu"
+	id S1751528Ab1GLEX2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 00:23:28 -0400
+Received: from mail.perches.com ([173.55.12.10]:3898 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751065Ab1GLEV6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 00:21:58 -0400
-Date: Tue, 12 Jul 2011 06:19:38 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: "MINOURA Makoto / ?$BL'1: ?$B??" <minoura@valinux.co.jp>
-Cc: john stultz <johnstul@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Faidon Liambotis <paravoid@debian.org>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
-        seto.hidetoshi@jp.fujitsu.com,
-        =?iso-8859-1?Q?Herv=E9?= Commowick <hcommowick@exosec.fr>,
-        Rand@jasper.es
-Subject: Re: 2.6.32.21 - uptime related crashes?
-Message-ID: <20110712041938.GO27254@1wt.eu>
-References: <20110428082625.GA23293@pcnci.linuxbox.cz> <20110428183434.GG30645@1wt.eu> <20110429100200.GB23293@pcnci.linuxbox.cz> <20110430093605.GA10529@1wt.eu> <20110430173905.GA25641@tty.gr> <BANLkTi=22QFrJ4vO7-3VuHU=9Cg39bxJ4Q@mail.gmail.com> <20110705231515.95bc758f.akpm@linux-foundation.org> <kk5d3hgi9eh.fsf@brer.local.valinux.co.jp> <1310434819.30337.21.camel@work-vm> <kk5aack8b6y.fsf@brer.local.valinux.co.jp>
+	id S1751065Ab1GLEX1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 00:23:27 -0400
+Subject: Re: Checkpatch.pl generates false alarm
+From: Joe Perches <joe@perches.com>
+To: Roland Vossen <rvossen@broadcom.com>
+Cc: apw@canonical.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <4E1B0D51.4000905@broadcom.com>
+References: <4E1B0D51.4000905@broadcom.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 11 Jul 2011 21:23:26 -0700
+Message-ID: <1310444606.6925.4.camel@Joe-Laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <kk5aack8b6y.fsf@brer.local.valinux.co.jp>
-User-Agent: Mutt/1.4.2.3i
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 12, 2011 at 11:49:57AM +0900, MINOURA Makoto / ?$BL'1: ?$B?? wrote:
+On Mon, 2011-07-11 at 16:48 +0200, Roland Vossen wrote:
+> Hello Andy,
 > 
-> |> In <1310434819.30337.21.camel@work-vm>
-> |>  john stultz <johnstul@us.ibm.com> wrote:
+> when I feed attached file to checkpatch, several warnings are given, but 
+> this one:
 > 
-> > I'm working on a debug patch that will hopefully trip sched_clock
-> > overflows very early to see if we can't shake these issues out.
+> WARNING: externs should be avoided in .c files
+> #3555: FILE: staging/brcm80211/brcmsmac/main.c:3555:
+> +       END_FOREACH_BSS
 > 
-> Thanks. I hope that'll help.
+> does not seem to make sense. When I place a comment behind the 
+> END_FOREACH_BSS line, the checkpatch warning disappears.
+> 
+> Let me know if you need additional info to work on this.
 
-That certainly will. What currently makes this bug hard to fix is that
-it takes around 7 months to test a possible fix. We don't even know if
-more recent kernels are affected, it's possible that 2.6.32-stable is
-the only one that people don't reboot for an update in 7 months :-/
+I think this code is bad form and confuses checkpatch:
 
-We need to make this bug more visible, so John's patch will be very
-welcome !
+	/* update the capability based on current shortslot mode */
+	FOREACH_BSS(wlc, idx, cfg)
+		if (!cfg->associated)
+			continue;
+		cfg->current_bss->capability &=
+					~WLAN_CAPABILITY_SHORT_SLOT_TIME;
+		if (wlc->shortslot)
+			cfg->current_bss->capability |=
+					WLAN_CAPABILITY_SHORT_SLOT_TIME;
+	END_FOREACH_BSS
 
-Regards,
-Willy
+I think this code is still slightly bad form, but it isn't a problem
+for checkpatch:
+
+	/* update the capability based on current shortslot mode */
+	FOREACH_BSS(wlc, idx, cfg) {
+		if (!cfg->associated)
+			continue;
+		cfg->current_bss->capability &=
+					~WLAN_CAPABILITY_SHORT_SLOT_TIME;
+		if (wlc->shortslot)
+			cfg->current_bss->capability |=
+					WLAN_CAPABILITY_SHORT_SLOT_TIME;
+	} END_FOREACH_BSS
+
 
