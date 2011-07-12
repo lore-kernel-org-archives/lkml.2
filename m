@@ -1,67 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755743Ab1GLV0W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 17:26:22 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:54922 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754037Ab1GLV0U (ORCPT
+	id S1755723Ab1GLV1f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 17:27:35 -0400
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:17315 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751488Ab1GLV1e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 17:26:20 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH 1/3] TTY: serial, remove BTM from wait_until_sent
-Date: Tue, 12 Jul 2011 23:25:34 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
-Cc: gregkh@suse.de, linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jirislaby@gmail.com, Alan Cox <alan@linux.intel.com>,
-        Andreas Bombe <aeb@debian.org>
-References: <1310503400-28447-1-git-send-email-jslaby@suse.cz>
-In-Reply-To: <1310503400-28447-1-git-send-email-jslaby@suse.cz>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107122325.35013.arnd@arndb.de>
-X-Provags-ID: V02:K0:Y/kA9SsKSeSxWOlgpHcNikMBGvcV0rx1CES68QWln61
- HT5y4HEcykPrFFCBR0GvCele7gZlpo+Zdo0vA8qpVOtiglqsTS
- seMIaaApl14p1JVibTdrxswGWQGWfSA+vjo+j4D29LXQKRDq4u
- Ihs1SuTwyv5wI02mOKW+nm+Kj6uRubJa6plHOrWz0ctJKFslnW
- BwXvNlA9xM9fKHPEZWLYQ==
+	Tue, 12 Jul 2011 17:27:34 -0400
+X-Greylist: delayed 598 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Jul 2011 17:27:34 EDT
+From: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
+To: x86@kernel.org
+Cc: Naga Chumbalkar <nagananda.chumbalkar@hp.com>, hpa@zytor.com,
+        tglx@linutronix.de, mingo@elte.hu, linux-kernel@vger.kernel.org
+Message-Id: <20110712211658.2939.93123.sendpatchset@nchumbalkar.americas.cpqcorp.net>
+In-Reply-To: <20110712211653.2939.11833.sendpatchset@nchumbalkar.americas.cpqcorp.net>
+References: <20110712211653.2939.11833.sendpatchset@nchumbalkar.americas.cpqcorp.net>
+Subject: [PATCH v2 1/2] x86, ioapic: Print IR_IO_APIC_route_entry when IR is enabled
+Date: Tue, 12 Jul 2011 21:17:35 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 12 July 2011 22:43:18 Jiri Slaby wrote:
-> During the BKL removal process, the BKL was switched to tty_lock
-> (BTM). Now we should start pruning the BTM further. Let's start with
-> wait_until_sent of the serial layer. This will allow us to switch to
-> the tty port helpers and thus clean it up much.
-> 
-> In wait_until_sent there are some uport members accessed, but neither
-> of them is protected by BTM at the location they are set ('=>' means
-> function call):
-> * uport->fifosize (set in tty_ioctl => uart_ioctl => uart_set_info)
-> * uport->type (set in add_one_port prior to tty_register_device)
-> * uport->timeout (set usually in tty_ioctl => tty_mode_ioctl =>
->   tty_set_termios => uart_set_termios => uart_change_speed =>
->   uport->ops->set_termios => uart_update_timeout)
-> * call to uport->ops->tx_empty()
-> 
-> If the tx_empty hook needs some lock to protect accesses to registers,
-> it should take &uport->lock spinlock like 8250 does. Otherwise there
-> still might be races e.g. with ISRs.
-> 
-> This should also fix the issue Andreas is seeing (BTM in comparison to
-> BKL doesn't have any hidden functionality like unlocking during
-> sleeping).
+When IR (interrupt remapping) is enabled print_IO_APIC() displays output according
+to legacy RTE (redirection table entry) definitons:
 
-Looks good to me. I would suggest also cleaning up the amiserial.c
-driver, which uses a different approach to do the same, by effectively
-implementing its own recursive lock.
+ NR Dst Mask Trig IRR Pol Stat Dmod Deli Vect:
+ 00 00  1    0    0   0   0    0    0    00
+ 01 00  0    0    0   0   0    0    0    01
+ 02 00  0    0    0   0   0    0    0    02
+ 03 00  1    0    0   0   0    0    0    03
+ 04 00  1    0    0   0   0    0    0    04
+ 05 00  1    0    0   0   0    0    0    05
+ 06 00  1    0    0   0   0    0    0    06
+...
 
-If uart_wait_until_sent doesn't need the BTM, then amiserial also
-shouldn't need it. It does an MMIO access, but it doesn't look like
-that needs to be protected. After that is done, we should be able
-to kill tty_locked() and __big_tty_mutex_owner as well.
+The above output is as per Sec 3.2.4 of the IOAPIC datasheet:
+82093AA I/O Advanced Programmable Interrupt Controller (IOAPIC):
+http://download.intel.com/design/chipsets/datashts/29056601.pdf
 
-	Arnd
+Instead the output should display the fields as discussed in Sec 5.5.1
+of the VT-d specification:
+
+(Intel Virtualization Technology for Directed I/O:
+http://download.intel.com/technology/computing/vptech/Intel(r)_VT_for_Direct_IO.pdf)
+
+After the fix:
+ NR Indx Fmt Mask Trig IRR Pol Stat Indx2 Zero Vect:
+ 00 0000 0   1    0    0   0   0    0     0    00
+ 01 000F 1   0    0    0   0   0    0     0    01
+ 02 0001 1   0    0    0   0   0    0     0    02
+ 03 0002 1   1    0    0   0   0    0     0    03
+ 04 0011 1   1    0    0   0   0    0     0    04
+ 05 0004 1   1    0    0   0   0    0     0    05
+ 06 0005 1   1    0    0   0   0    0     0    06
+...
+
+Signed-off-by: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
+
+---
+ arch/x86/kernel/apic/io_apic.c |   71 ++++++++++++++++++++++++++++------------
+ 1 files changed, 50 insertions(+), 21 deletions(-)
+
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 5cba200..24318f0 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1552,31 +1552,60 @@ __apicdebuginit(void) print_IO_APIC(void)
+ 
+ 	printk(KERN_DEBUG ".... IRQ redirection table:\n");
+ 
+-	printk(KERN_DEBUG " NR Dst Mask Trig IRR Pol"
+-			  " Stat Dmod Deli Vect:\n");
++	if (intr_remapping_enabled) {
++		printk(KERN_DEBUG " NR Indx Fmt Mask Trig IRR"
++			" Pol Stat Indx2 Zero Vect:\n");
++	} else {
++		printk(KERN_DEBUG " NR Dst Mask Trig IRR Pol"
++			" Stat Dmod Deli Vect:\n");
++	}
+ 
+ 	for (i = 0; i <= reg_01.bits.entries; i++) {
+-		struct IO_APIC_route_entry entry;
+-
+-		entry = ioapic_read_entry(apic, i);
+-
+-		printk(KERN_DEBUG " %02x %02X  ",
+-			i,
+-			entry.dest
+-		);
++		if (intr_remapping_enabled) {
++			struct IO_APIC_route_entry entry;
++			struct IR_IO_APIC_route_entry *ir_entry;
++
++			entry = ioapic_read_entry(apic, i);
++			ir_entry = (struct IR_IO_APIC_route_entry *) &entry;
++			printk(KERN_DEBUG " %02x %04X ",
++				i,
++				ir_entry->index
++			);
++			printk("%1d   %1d    %1d    %1d   %1d   "
++				"%1d    %1d     %X    %02X\n",
++				ir_entry->format,
++				ir_entry->mask,
++				ir_entry->trigger,
++				ir_entry->irr,
++				ir_entry->polarity,
++				ir_entry->delivery_status,
++				ir_entry->index2,
++				ir_entry->zero,
++				ir_entry->vector
++			);
++		} else {
++			struct IO_APIC_route_entry entry;
+ 
+-		printk("%1d    %1d    %1d   %1d   %1d    %1d    %1d    %02X\n",
+-			entry.mask,
+-			entry.trigger,
+-			entry.irr,
+-			entry.polarity,
+-			entry.delivery_status,
+-			entry.dest_mode,
+-			entry.delivery_mode,
+-			entry.vector
+-		);
++			entry = ioapic_read_entry(apic, i);
++			printk(KERN_DEBUG " %02x %02X  ",
++				i,
++				entry.dest
++			);
++			printk("%1d    %1d    %1d   %1d   %1d    "
++				"%1d    %1d    %02X\n",
++				entry.mask,
++				entry.trigger,
++				entry.irr,
++				entry.polarity,
++				entry.delivery_status,
++				entry.dest_mode,
++				entry.delivery_mode,
++				entry.vector
++			);
++		}
+ 	}
+ 	}
++
+ 	printk(KERN_DEBUG "IRQ to pin mappings:\n");
+ 	for_each_active_irq(irq) {
+ 		struct irq_pin_list *entry;
+-- 
+1.7.1
+
