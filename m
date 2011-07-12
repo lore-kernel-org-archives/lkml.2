@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568Ab1GLSpr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 14:45:47 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:10326 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753855Ab1GLSpq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 14:45:46 -0400
-From: "Chumbalkar, Nagananda" <Nagananda.Chumbalkar@hp.com>
-To: Suresh Siddha <suresh.b.siddha@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-CC: "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-Date: Tue, 12 Jul 2011 19:43:25 +0100
-Subject: RE: [PATCH] x86, x2apic: Preserve high 32-bits of IA32_APIC_BASE MSR
-Thread-Topic: [PATCH] x86, x2apic: Preserve high 32-bits of IA32_APIC_BASE
- MSR
-Thread-Index: AcxAwpqW4SiWzkhCSOGAwe/gigxyqgAAGpbA
-Message-ID: <66D9D2F0CDB5C9428E6166B01EC85EE162F4A7384A@GVW0676EXC.americas.hpqcorp.net>
-References: <20110712055831.2498.78521.sendpatchset@nchumbalkar.americas.cpqcorp.net>
-	 <1310491776.12417.31.camel@sbsiddha-MOBL3.sc.intel.com>
-	 <4E1C90B4.4030604@zytor.com>
- <1310495765.12417.32.camel@sbsiddha-MOBL3.sc.intel.com>
-In-Reply-To: <1310495765.12417.32.camel@sbsiddha-MOBL3.sc.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754606Ab1GLSrV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 14:47:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34010 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753855Ab1GLSrV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 14:47:21 -0400
+Message-ID: <4E1C952D.6010902@zytor.com>
+Date: Tue, 12 Jul 2011 11:40:45 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
+To: Christoph Lameter <cl@linux.com>
+CC: Eric Dumazet <eric.dumazet@gmail.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [slubllv7 06/17] slub: Add cmpxchg_double_slab()
+References: <20110601172543.437240675@linux.com>  <20110601172615.286693377@linux.com>  <1310414100.2860.6.camel@edumazet-laptop>  <alpine.DEB.2.00.1107121057550.2931@router.home> <1310486781.2871.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <alpine.DEB.2.00.1107121146080.3937@router.home>
+In-Reply-To: <alpine.DEB.2.00.1107121146080.3937@router.home>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
->-----Original Message-----
->From: Suresh Siddha [mailto:suresh.b.siddha@intel.com]
->Sent: Tuesday, July 12, 2011 1:36 PM
->To: H. Peter Anvin
->Cc: Chumbalkar, Nagananda; x86@kernel.org; linux-kernel@vger.kernel.org;
->mingo@elte.hu; tglx@linutronix.de
->Subject: Re: [PATCH] x86, x2apic: Preserve high 32-bits of
->IA32_APIC_BASE MSR
->
->On Tue, 2011-07-12 at 11:21 -0700, H. Peter Anvin wrote:
->> On 07/12/2011 10:29 AM, Suresh Siddha wrote:
->> >
->> > yeah, I don't think it was intentional.
->> >
->> > Reviewed-by: Suresh Siddha <suresh.b.siddha@intel.com>
->> >
+On 07/12/2011 09:47 AM, Christoph Lameter wrote:
+> On Tue, 12 Jul 2011, Eric Dumazet wrote:
+> 
+>> Le mardi 12 juillet 2011 à 10:59 -0500, Christoph Lameter a écrit :
 >>
->> This isn't 3.0 material, though (no manifest error), correct?
->
->Yep. Right Naga?
+>>> We do not need to have _count included. This is just there because the
+>>> field is in the way on 64 bit and we can only do 2x 64 bit cmpxchges.  On
+>>> 32 bi we can drop _count from "counters".
+>>
+>> OK, thanks for clarification.
+> 
+> Still I'd like to get some ideas on how to make the whole thing much
+> cleaner. Isnt there some way to convert a struct to an unsigned long
+> without going through a union? And a way to convert a struct + 32 bit
+> atomic_t into a 64 bit unsigned long? Would simplify things significantly.
 
-That's correct. No manifest errors. This patch can wait.
+If you know it is in memory you can cast ("pun") the pointer.
 
-- naga -
+If it's not in memory that can be inefficient, though.
 
-
-
-
+	-hpa
