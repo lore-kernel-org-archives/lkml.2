@@ -1,123 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756525Ab1GLXbK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 19:31:10 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:24247 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753840Ab1GLXbI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 19:31:08 -0400
-X-IronPort-AV: E=Sophos;i="4.65,522,1304319600"; 
-   d="scan'208";a="562281103"
-Subject: [GIT PULL] Please pull NFS client bugfixes
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 12 Jul 2011 19:30:52 -0400
-Organization: NetApp Inc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Message-ID: <1310513452.20931.1.camel@lade.trondhjem.org>
-Mime-Version: 1.0
-X-OriginalArrivalTime: 12 Jul 2011 23:30:53.0078 (UTC) FILETIME=[BDAF5B60:01CC40EB]
+	id S1754654Ab1GLXhq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 19:37:46 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:58726 "EHLO
+	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753153Ab1GLXho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 19:37:44 -0400
+From: Serge Hallyn <serge@hallyn.com>
+To: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org
+Cc: dhowells@redhat.com, ebiederm@xmission.com,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>
+Subject: [RFC PATCH 11/14] userns: make some net-sysfs capable calls targeted
+Date: Tue, 12 Jul 2011 23:30:49 +0000
+Message-Id: <1310513452-13397-12-git-send-email-serge@hallyn.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1310513452-13397-1-git-send-email-serge@hallyn.com>
+References: <1310513452-13397-1-git-send-email-serge@hallyn.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+From: Serge E. Hallyn <serge.hallyn@canonical.com>
 
-Please pull from the "bugfixes" branch of the repository at
+Changelog: jul 1: fix compilation errors (net_device != net)
 
-   git pull git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git bugfixes
+Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+---
+ net/core/net-sysfs.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-This will update the following files through the appended changesets.
-
-Kudos to Ben Greear for finding a 4 year old bug in the rpcbind client code!
-
-  Cheers,
-    Trond
-
-----
- fs/nfs/nfs4filelayout.c |    1 -
- fs/nfs/nfs4xdr.c        |    2 +-
- fs/nfs/write.c          |    2 ++
- net/sunrpc/rpcb_clnt.c  |    2 +-
- net/sunrpc/sched.c      |   27 +++++++++++----------------
- 5 files changed, 15 insertions(+), 19 deletions(-)
-
-commit ec0dd267bf7d08cb30e321e45a75fd40edd7e528
-Author: Ben Greear <greearb@candelatech.com>
-Date:   Tue Jul 12 10:27:55 2011 -0700
-
-    SUNRPC: Fix use of static variable in rpcb_getport_async
-    
-    Because struct rpcbind_args *map was declared static, if two
-    threads entered this method at the same time, the values
-    assigned to map could be sent two two differen tasks.
-    This could cause all sorts of problems, include use-after-free
-    and double-free of memory.
-    
-    Fix this by removing the static declaration so that the map
-    pointer is on the stack.
-    
-    Signed-off-by: Ben Greear <greearb@candelatech.com>
-    Cc: stable@kernel.org
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit e5012d1f3861d18c7f3814e757c1c3ab3741dbcd
-Author: Andy Adamson <andros@netapp.com>
-Date:   Mon Jul 11 17:17:42 2011 -0400
-
-    NFSv4.1: update nfs4_fattr_bitmap_maxsz
-    
-    Attribute IDs assigned in RFC 5661 now require three bitmaps.
-    Fixes hitting a BUG_ON in xdr_shrink_bufhead when getting ACLs.
-    
-    Signed-off-by: Andy Adamson <andros@netapp.com>
-    Cc:stable@kernel.org [2.6.39]
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit b55c59892e1f3b6c7d4b9ccffb4263e1486fb990
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Wed Jul 6 19:58:23 2011 -0400
-
-    SUNRPC: Fix a race between work-queue and rpc_killall_tasks
-    
-    Since rpc_killall_tasks may modify the rpc_task's tk_action field
-    without any locking, we need to be careful when dereferencing it.
-    
-    Reported-by: Ben Greear <greearb@candelatech.com>
-    Tested-by: Ben Greear <greearb@candelatech.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-    Cc: stable@kernel.org
-
-commit 2bea038c52e88badbbd5b420c1de918f7f2579e9
-Author: Boaz Harrosh <bharrosh@panasas.com>
-Date:   Thu Jun 16 11:35:46 2011 -0400
-
-    pnfs: write: Set mds_offset in the generic layer - it is needed by all LDs
-    
-    In current pnfs tree, all the layouts set mds_offset in their
-    .write_pagelist member.
-    mds_offset is only used by generic layer and should be handled by it.
-    
-    This patch is for upstream. It is needed in this -rc series to fix a
-    bug in objects layout_commit.
-    
-    I'll send patches for objects and blocks to be
-    squashed into current pnfs tree.
-    
-    TODO: It looks like the read path needs the same patch.
-    
-    Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-
+diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
+index 33d2a1f..b651baf 100644
+--- a/net/core/net-sysfs.c
++++ b/net/core/net-sysfs.c
+@@ -76,7 +76,7 @@ static ssize_t netdev_store(struct device *dev, struct device_attribute *attr,
+ 	unsigned long new;
+ 	int ret = -EINVAL;
+ 
+-	if (!capable(CAP_NET_ADMIN))
++	if (!ns_capable(dev_net(net)->user_ns, CAP_NET_ADMIN))
+ 		return -EPERM;
+ 
+ 	new = simple_strtoul(buf, &endp, 0);
+@@ -262,7 +262,7 @@ static ssize_t store_ifalias(struct device *dev, struct device_attribute *attr,
+ 	size_t count = len;
+ 	ssize_t ret;
+ 
+-	if (!capable(CAP_NET_ADMIN))
++	if (!ns_capable(dev_net(netdev)->user_ns, CAP_NET_ADMIN))
+ 		return -EPERM;
+ 
+ 	/* ignore trailing newline */
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+1.7.4.1
 
