@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754275Ab1GLQx5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 12:53:57 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:64586 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754112Ab1GLQxy (ORCPT
+	id S1754325Ab1GLQyD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 12:54:03 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:60741 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754247Ab1GLQx5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 12:53:54 -0400
+	Tue, 12 Jul 2011 12:53:57 -0400
 From: Rob Herring <robherring2@gmail.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         arnd@arndb.de
 Cc: Michal Simek <monstr@monstr.eu>, nico@fluxnic.net,
         Jesse Barnes <jbarnes@virtuousgeek.org>,
         Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH 4/6] ARM: pci: make pcibios_assign_all_busses use pci_has_flag
-Date: Tue, 12 Jul 2011 11:53:30 -0500
-Message-Id: <1310489612-8625-5-git-send-email-robherring2@gmail.com>
+Subject: [PATCH 6/6] ARM: set vga memory base at run-time
+Date: Tue, 12 Jul 2011 11:53:32 -0500
+Message-Id: <1310489612-8625-7-git-send-email-robherring2@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1310489612-8625-1-git-send-email-robherring2@gmail.com>
 References: <1310489612-8625-1-git-send-email-robherring2@gmail.com>
@@ -25,375 +25,264 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rob Herring <rob.herring@calxeda.com>
 
-Convert pcibios_assign_all_busses from a define to inline so platforms can
-control this setting.
+Convert the incorrectly named PCIMEM_BASE to a variable called vga_base.
+This removes the dependency on mach/hardware.h.
 
 Signed-off-by: Rob Herring <rob.herring@calxeda.com>
 Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
 Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/arm/include/asm/pci.h                       |    6 ++++++
- arch/arm/mach-bcmring/include/mach/hardware.h    |    2 --
- arch/arm/mach-cns3xxx/include/mach/hardware.h    |    1 -
- arch/arm/mach-dove/include/mach/hardware.h       |    2 --
- arch/arm/mach-ep93xx/include/mach/hardware.h     |    2 --
- arch/arm/mach-footbridge/include/mach/hardware.h |    2 --
+ arch/arm/include/asm/vga.h                       |    5 +++--
+ arch/arm/mach-dove/include/mach/hardware.h       |    3 ---
+ arch/arm/mach-dove/pcie.c                        |    3 +++
+ arch/arm/mach-footbridge/dc21285.c               |    1 +
  arch/arm/mach-integrator/include/mach/hardware.h |    2 --
- arch/arm/mach-iop13xx/include/mach/hardware.h    |    2 --
- arch/arm/mach-iop32x/include/mach/hardware.h     |    1 -
- arch/arm/mach-iop33x/include/mach/hardware.h     |    1 -
- arch/arm/mach-ixp2000/include/mach/hardware.h    |    2 --
- arch/arm/mach-ixp2000/pci.c                      |    2 ++
- arch/arm/mach-ixp23xx/include/mach/hardware.h    |    2 --
- arch/arm/mach-ixp23xx/pci.c                      |    2 ++
- arch/arm/mach-ixp4xx/include/mach/hardware.h     |    2 --
+ arch/arm/mach-integrator/pci_v3.c                |    2 ++
  arch/arm/mach-kirkwood/include/mach/hardware.h   |    3 ---
- arch/arm/mach-ks8695/include/mach/hardware.h     |    2 --
- arch/arm/mach-mv78xx0/include/mach/hardware.h    |    2 --
- arch/arm/mach-orion5x/include/mach/hardware.h    |    2 --
- arch/arm/mach-pxa/include/mach/hardware.h        |    1 -
- arch/arm/mach-sa1100/include/mach/hardware.h     |    1 -
+ arch/arm/mach-kirkwood/pcie.c                    |    3 +++
+ arch/arm/mach-mv78xx0/include/mach/hardware.h    |    3 ---
+ arch/arm/mach-mv78xx0/pcie.c                     |    3 +++
+ arch/arm/mach-orion5x/include/mach/hardware.h    |    3 ---
+ arch/arm/mach-orion5x/pci.c                      |    2 ++
  arch/arm/mach-shark/include/mach/hardware.h      |    2 --
- arch/arm/mach-tegra/include/mach/hardware.h      |    1 -
- arch/arm/mach-versatile/include/mach/hardware.h  |    2 --
- arch/arm/mm/iomap.c                              |    4 ++++
- 25 files changed, 14 insertions(+), 37 deletions(-)
+ arch/arm/mach-shark/pci.c                        |    2 ++
+ arch/arm/mm/iomap.c                              |    3 +++
+ 15 files changed, 22 insertions(+), 18 deletions(-)
 
-diff --git a/arch/arm/include/asm/pci.h b/arch/arm/include/asm/pci.h
-index 92e2a83..cb77e66 100644
---- a/arch/arm/include/asm/pci.h
-+++ b/arch/arm/include/asm/pci.h
-@@ -3,10 +3,16 @@
+diff --git a/arch/arm/include/asm/vga.h b/arch/arm/include/asm/vga.h
+index 250a4dd..91f4021 100644
+--- a/arch/arm/include/asm/vga.h
++++ b/arch/arm/include/asm/vga.h
+@@ -2,9 +2,10 @@
+ #define ASMARM_VGA_H
  
- #ifdef __KERNEL__
- #include <asm-generic/pci-dma-compat.h>
-+#include <asm-generic/pci-bridge.h>
+ #include <linux/io.h>
+-#include <mach/hardware.h>
  
- #include <asm/mach/pci.h> /* for pci_sys_data */
- #include <mach/hardware.h> /* for PCIBIOS_MIN_* */
- 
-+static inline int pcibios_assign_all_busses(void)
-+{
-+	return pci_has_flag(PCI_REASSIGN_ALL_RSRC);
-+}
+-#define VGA_MAP_MEM(x,s)	(PCIMEM_BASE + (x))
++extern unsigned long vga_base;
 +
- #ifdef CONFIG_PCI_DOMAINS
- static inline int pci_domain_nr(struct pci_bus *bus)
- {
-diff --git a/arch/arm/mach-bcmring/include/mach/hardware.h b/arch/arm/mach-bcmring/include/mach/hardware.h
-index 8bf3564..ed78aab 100644
---- a/arch/arm/mach-bcmring/include/mach/hardware.h
-+++ b/arch/arm/mach-bcmring/include/mach/hardware.h
-@@ -36,8 +36,6 @@
- #define RAM_SIZE                (CFG_GLOBAL_RAM_SIZE-CFG_GLOBAL_RAM_SIZE_RESERVED)
- #define RAM_BASE                PAGE_OFFSET
++#define VGA_MAP_MEM(x,s)	(vga_base + (x))
  
--#define pcibios_assign_all_busses()	1
--
- /* Macros to make managing spinlocks a bit more controlled in terms of naming. */
- /* See reg_gpio.h, reg_irq.h, arch.c, gpio.c for example usage. */
- #if defined(__KERNEL__)
-diff --git a/arch/arm/mach-cns3xxx/include/mach/hardware.h b/arch/arm/mach-cns3xxx/include/mach/hardware.h
-index 57e0983..82a0d4e 100644
---- a/arch/arm/mach-cns3xxx/include/mach/hardware.h
-+++ b/arch/arm/mach-cns3xxx/include/mach/hardware.h
-@@ -17,6 +17,5 @@
- /* macro to get at IO space when running virtually */
- #define PCIBIOS_MIN_IO		0x00000000
- #define PCIBIOS_MIN_MEM		0x00000000
--#define pcibios_assign_all_busses()	1
- 
- #endif
+ #define vga_readb(x)	(*((volatile unsigned char *)x))
+ #define vga_writeb(x,y)	(*((volatile unsigned char *)y) = (x))
 diff --git a/arch/arm/mach-dove/include/mach/hardware.h b/arch/arm/mach-dove/include/mach/hardware.h
-index 32b0826..f619fb9 100644
+index 94c5a2c..f1368b9 100644
 --- a/arch/arm/mach-dove/include/mach/hardware.h
 +++ b/arch/arm/mach-dove/include/mach/hardware.h
-@@ -11,8 +11,6 @@
+@@ -11,9 +11,6 @@
  
  #include "dove.h"
  
--#define pcibios_assign_all_busses()	1
+-#define PCIMEM_BASE			DOVE_PCIE0_MEM_PHYS_BASE
 -
- #define PCIBIOS_MIN_IO			0x1000
- #define PCIBIOS_MIN_MEM			0x01000000
- #define PCIMEM_BASE			DOVE_PCIE0_MEM_PHYS_BASE
-diff --git a/arch/arm/mach-ep93xx/include/mach/hardware.h b/arch/arm/mach-ep93xx/include/mach/hardware.h
-index 5a3ce02..4df8428 100644
---- a/arch/arm/mach-ep93xx/include/mach/hardware.h
-+++ b/arch/arm/mach-ep93xx/include/mach/hardware.h
-@@ -8,8 +8,6 @@
- #include <mach/ep93xx-regs.h>
- #include <mach/platform.h>
- 
--#define pcibios_assign_all_busses()	0
 -
- /*
-  * The EP93xx has two external crystal oscillators.  To generate the
-  * required high-frequency clocks, the processor uses two phase-locked-
-diff --git a/arch/arm/mach-footbridge/include/mach/hardware.h b/arch/arm/mach-footbridge/include/mach/hardware.h
-index b6fdf23..082e6ce 100644
---- a/arch/arm/mach-footbridge/include/mach/hardware.h
-+++ b/arch/arm/mach-footbridge/include/mach/hardware.h
-@@ -100,8 +100,6 @@ extern unsigned int nw_gpio_read(void);
- extern void nw_cpld_modify(unsigned int mask, unsigned int set);
- #endif
+ /* Macros below are required for compatibility with PXA AC'97 driver.	*/
+ #define __REG(x)	(*((volatile u32 *)((x) - DOVE_SB_REGS_PHYS_BASE + \
+ 				DOVE_SB_REGS_VIRT_BASE)))
+diff --git a/arch/arm/mach-dove/pcie.c b/arch/arm/mach-dove/pcie.c
+index 502d1ca..c2f1c47 100644
+--- a/arch/arm/mach-dove/pcie.c
++++ b/arch/arm/mach-dove/pcie.c
+@@ -11,6 +11,7 @@
+ #include <linux/kernel.h>
+ #include <linux/pci.h>
+ #include <linux/mbus.h>
++#include <video/vga.h>
+ #include <asm/mach/pci.h>
+ #include <asm/mach/arch.h>
+ #include <asm/setup.h>
+@@ -228,6 +229,8 @@ static void __init add_pcie_port(int index, unsigned long base)
  
--#define pcibios_assign_all_busses()	1
--
- #define PCIBIOS_MIN_IO		0x1000
- #define PCIBIOS_MIN_MEM 	0x81000000
+ void __init dove_pcie_init(int init_port0, int init_port1)
+ {
++	vga_base = DOVE_PCIE0_MEM_PHYS_BASE;
++
+ 	if (init_port0)
+ 		add_pcie_port(0, DOVE_PCIE0_VIRT_BASE);
  
+diff --git a/arch/arm/mach-footbridge/dc21285.c b/arch/arm/mach-footbridge/dc21285.c
+index a8dfa00..1331fff 100644
+--- a/arch/arm/mach-footbridge/dc21285.c
++++ b/arch/arm/mach-footbridge/dc21285.c
+@@ -296,6 +296,7 @@ void __init dc21285_preinit(void)
+ 	int cfn_mode;
+ 
+ 	pcibios_min_mem = 0x81000000;
++	vga_base = PCIMEM_BASE;
+ 
+ 	mem_size = (unsigned int)high_memory - PAGE_OFFSET;
+ 	for (mem_mask = 0x00100000; mem_mask < 0x10000000; mem_mask <<= 1)
 diff --git a/arch/arm/mach-integrator/include/mach/hardware.h b/arch/arm/mach-integrator/include/mach/hardware.h
-index 57f51ba..37323ea 100644
+index 0ce5212..65fed7c 100644
 --- a/arch/arm/mach-integrator/include/mach/hardware.h
 +++ b/arch/arm/mach-integrator/include/mach/hardware.h
-@@ -34,8 +34,6 @@
+@@ -32,8 +32,6 @@
+ #define IO_SIZE			0x0B000000                 // How much?
+ #define IO_START		INTEGRATOR_HDR_BASE        // PA of IO
  
- #define PCIMEM_BASE		PCI_MEMORY_VADDR
- 
--#define pcibios_assign_all_busses()	1
+-#define PCIMEM_BASE		PCI_MEMORY_VADDR
 -
- #define PCIBIOS_MIN_IO		0x6000
- #define PCIBIOS_MIN_MEM 	0x00100000
+ /* macro to get at IO space when running virtually */
+ #ifdef CONFIG_MMU
+ #define IO_ADDRESS(x)	(((x) & 0x000fffff) | (((x) >> 4) & 0x0ff00000) | IO_BASE)
+diff --git a/arch/arm/mach-integrator/pci_v3.c b/arch/arm/mach-integrator/pci_v3.c
+index 11b86e5..dd56bfb 100644
+--- a/arch/arm/mach-integrator/pci_v3.c
++++ b/arch/arm/mach-integrator/pci_v3.c
+@@ -27,6 +27,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/init.h>
+ #include <linux/io.h>
++#include <video/vga.h>
  
-diff --git a/arch/arm/mach-iop13xx/include/mach/hardware.h b/arch/arm/mach-iop13xx/include/mach/hardware.h
-index 8e1d562..ba81e50 100644
---- a/arch/arm/mach-iop13xx/include/mach/hardware.h
-+++ b/arch/arm/mach-iop13xx/include/mach/hardware.h
-@@ -2,8 +2,6 @@
- #define __ASM_ARCH_HARDWARE_H
- #include <asm/types.h>
+ #include <mach/hardware.h>
+ #include <mach/platform.h>
+@@ -504,6 +505,7 @@ void __init pci_v3_preinit(void)
  
--#define pcibios_assign_all_busses() 1
--
- #ifndef __ASSEMBLY__
- extern unsigned long iop13xx_pcibios_min_io;
- extern unsigned long iop13xx_pcibios_min_mem;
-diff --git a/arch/arm/mach-iop32x/include/mach/hardware.h b/arch/arm/mach-iop32x/include/mach/hardware.h
-index d559c4e..e68bf97 100644
---- a/arch/arm/mach-iop32x/include/mach/hardware.h
-+++ b/arch/arm/mach-iop32x/include/mach/hardware.h
-@@ -18,7 +18,6 @@
-  * but when we read them, we convert them to virtual addresses. See
-  * arch/arm/plat-iop/pci.c.
-  */
--#define pcibios_assign_all_busses() 1
- #define PCIBIOS_MIN_IO		0x00000000
- #define PCIBIOS_MIN_MEM		0x00000000
+ 	pcibios_min_io = 0x6000;
+ 	pcibios_min_mem = 0x00100000;
++	vga_base = PCI_MEMORY_VADDR;
  
-diff --git a/arch/arm/mach-iop33x/include/mach/hardware.h b/arch/arm/mach-iop33x/include/mach/hardware.h
-index 8c10e43..215065b 100644
---- a/arch/arm/mach-iop33x/include/mach/hardware.h
-+++ b/arch/arm/mach-iop33x/include/mach/hardware.h
-@@ -18,7 +18,6 @@
-  * but when we read them, we convert them to virtual addresses.  See
-  * arch/arm/mach-iop3xx/iop3xx-pci.c
-  */
--#define pcibios_assign_all_busses()	1
- #define PCIBIOS_MIN_IO		0x00000000
- #define PCIBIOS_MIN_MEM		0x00000000
- 
-diff --git a/arch/arm/mach-ixp2000/include/mach/hardware.h b/arch/arm/mach-ixp2000/include/mach/hardware.h
-index f033de4..6c92008 100644
---- a/arch/arm/mach-ixp2000/include/mach/hardware.h
-+++ b/arch/arm/mach-ixp2000/include/mach/hardware.h
-@@ -27,8 +27,6 @@
- 
- #include "ixp2000-regs.h"	/* Chipset Registers */
- 
--#define pcibios_assign_all_busses() 0
--
- /*
-  * Platform helper functions
-  */
-diff --git a/arch/arm/mach-ixp2000/pci.c b/arch/arm/mach-ixp2000/pci.c
-index f797c5f..8888ed9 100644
---- a/arch/arm/mach-ixp2000/pci.c
-+++ b/arch/arm/mach-ixp2000/pci.c
-@@ -196,6 +196,8 @@ clear_master_aborts(void)
- void __init
- ixp2000_pci_preinit(void)
- {
-+	pci_set_flags(0);
-+
- #ifndef CONFIG_IXP2000_SUPPORT_BROKEN_PCI_IO
  	/*
- 	 * Configure the PCI unit to properly byteswap I/O transactions,
-diff --git a/arch/arm/mach-ixp23xx/include/mach/hardware.h b/arch/arm/mach-ixp23xx/include/mach/hardware.h
-index 57b508b..b8bb781 100644
---- a/arch/arm/mach-ixp23xx/include/mach/hardware.h
-+++ b/arch/arm/mach-ixp23xx/include/mach/hardware.h
-@@ -20,8 +20,6 @@
- 
- #include "ixp23xx.h"
- 
--#define pcibios_assign_all_busses()	0
--
- /*
-  * Platform helper functions
-  */
-diff --git a/arch/arm/mach-ixp23xx/pci.c b/arch/arm/mach-ixp23xx/pci.c
-index 563819a..72d145a 100644
---- a/arch/arm/mach-ixp23xx/pci.c
-+++ b/arch/arm/mach-ixp23xx/pci.c
-@@ -227,6 +227,8 @@ static void __init ixp23xx_pci_common_init(void)
- 
- void __init ixp23xx_pci_preinit(void)
- {
-+	pci_set_flags(0);
-+
- 	ixp23xx_pci_common_init();
- 
- 	hook_fault_code(16+6, ixp23xx_pci_abort_handler, SIGBUS, 0,
-diff --git a/arch/arm/mach-ixp4xx/include/mach/hardware.h b/arch/arm/mach-ixp4xx/include/mach/hardware.h
-index 8138371..163e506 100644
---- a/arch/arm/mach-ixp4xx/include/mach/hardware.h
-+++ b/arch/arm/mach-ixp4xx/include/mach/hardware.h
-@@ -28,8 +28,6 @@
- 
- #define ARCH_HAS_DMA_SET_COHERENT_MASK
- 
--#define pcibios_assign_all_busses()	1
--
- /* Register locations and bits */
- #include "ixp4xx-regs.h"
- 
+ 	 * Hook in our fault handler for PCI errors
 diff --git a/arch/arm/mach-kirkwood/include/mach/hardware.h b/arch/arm/mach-kirkwood/include/mach/hardware.h
-index cde8528..31b81fe 100644
+index 470899b..742b74f 100644
 --- a/arch/arm/mach-kirkwood/include/mach/hardware.h
 +++ b/arch/arm/mach-kirkwood/include/mach/hardware.h
-@@ -11,9 +11,6 @@
+@@ -11,7 +11,4 @@
  
  #include "kirkwood.h"
  
--#define pcibios_assign_all_busses()	1
+-#define PCIMEM_BASE			KIRKWOOD_PCIE_MEM_PHYS_BASE /* mem base for VGA */
 -
--#define PCIBIOS_MIN_IO			0x00001000
- #define PCIBIOS_MIN_MEM			0x01000000
- #define PCIMEM_BASE			KIRKWOOD_PCIE_MEM_PHYS_BASE /* mem base for VGA */
+-
+ #endif
+diff --git a/arch/arm/mach-kirkwood/pcie.c b/arch/arm/mach-kirkwood/pcie.c
+index ca294ff..bfeb9c9 100644
+--- a/arch/arm/mach-kirkwood/pcie.c
++++ b/arch/arm/mach-kirkwood/pcie.c
+@@ -12,6 +12,7 @@
+ #include <linux/pci.h>
+ #include <linux/slab.h>
+ #include <linux/mbus.h>
++#include <video/vga.h>
+ #include <asm/irq.h>
+ #include <asm/mach/pci.h>
+ #include <plat/pcie.h>
+@@ -271,6 +272,8 @@ static void __init add_pcie_port(int index, unsigned long base)
  
-diff --git a/arch/arm/mach-ks8695/include/mach/hardware.h b/arch/arm/mach-ks8695/include/mach/hardware.h
-index e0f911d..a46be88 100644
---- a/arch/arm/mach-ks8695/include/mach/hardware.h
-+++ b/arch/arm/mach-ks8695/include/mach/hardware.h
-@@ -46,8 +46,6 @@
- /*
-  * PCI support
-  */
--#define pcibios_assign_all_busses()	1
--
- #define PCIBIOS_MIN_IO		0
- #define PCIBIOS_MIN_MEM		0
+ void __init kirkwood_pcie_init(unsigned int portmask)
+ {
++	vga_base = KIRKWOOD_PCIE_MEM_PHYS_BASE;
++
+ 	if (portmask & KW_PCIE0)
+ 		add_pcie_port(0, PCIE_VIRT_BASE);
  
 diff --git a/arch/arm/mach-mv78xx0/include/mach/hardware.h b/arch/arm/mach-mv78xx0/include/mach/hardware.h
-index 5d88755..c76b93f 100644
+index 29e37ed..67cab0a 100644
 --- a/arch/arm/mach-mv78xx0/include/mach/hardware.h
 +++ b/arch/arm/mach-mv78xx0/include/mach/hardware.h
-@@ -11,8 +11,6 @@
+@@ -11,7 +11,4 @@
  
  #include "mv78xx0.h"
  
--#define pcibios_assign_all_busses()	1
+-#define PCIMEM_BASE			MV78XX0_PCIE_MEM_PHYS_BASE /* mem base for VGA */
 -
- #define PCIBIOS_MIN_IO			0x00001000
- #define PCIBIOS_MIN_MEM			0x01000000
- #define PCIMEM_BASE			MV78XX0_PCIE_MEM_PHYS_BASE /* mem base for VGA */
+-
+ #endif
+diff --git a/arch/arm/mach-mv78xx0/pcie.c b/arch/arm/mach-mv78xx0/pcie.c
+index a560439..445a332 100644
+--- a/arch/arm/mach-mv78xx0/pcie.c
++++ b/arch/arm/mach-mv78xx0/pcie.c
+@@ -11,6 +11,7 @@
+ #include <linux/kernel.h>
+ #include <linux/pci.h>
+ #include <linux/mbus.h>
++#include <video/vga.h>
+ #include <asm/irq.h>
+ #include <asm/mach/pci.h>
+ #include <plat/pcie.h>
+@@ -297,6 +298,8 @@ static void __init add_pcie_port(int maj, int min, unsigned long base)
+ 
+ void __init mv78xx0_pcie_init(int init_port0, int init_port1)
+ {
++	vga_base = MV78XX0_PCIE_MEM_PHYS_BASE;
++
+ 	if (init_port0) {
+ 		add_pcie_port(0, 0, PCIE00_VIRT_BASE);
+ 		if (!orion_pcie_x4_mode((void __iomem *)PCIE00_VIRT_BASE)) {
 diff --git a/arch/arm/mach-orion5x/include/mach/hardware.h b/arch/arm/mach-orion5x/include/mach/hardware.h
-index e51aaf4..a42b743 100644
+index b6d55bc..3957354 100644
 --- a/arch/arm/mach-orion5x/include/mach/hardware.h
 +++ b/arch/arm/mach-orion5x/include/mach/hardware.h
-@@ -11,8 +11,6 @@
+@@ -11,7 +11,4 @@
  
  #include "orion5x.h"
  
--#define pcibios_assign_all_busses()	1
+-#define PCIMEM_BASE		ORION5X_PCIE_MEM_PHYS_BASE
 -
- #define PCIBIOS_MIN_IO		0x00001000
- #define PCIBIOS_MIN_MEM		0x01000000
- #define PCIMEM_BASE		ORION5X_PCIE_MEM_PHYS_BASE
-diff --git a/arch/arm/mach-pxa/include/mach/hardware.h b/arch/arm/mach-pxa/include/mach/hardware.h
-index 6957ba5..b4ea392 100644
---- a/arch/arm/mach-pxa/include/mach/hardware.h
-+++ b/arch/arm/mach-pxa/include/mach/hardware.h
-@@ -339,7 +339,6 @@ extern unsigned long get_clock_tick_rate(void);
- #if defined(CONFIG_MACH_ARMCORE) && defined(CONFIG_PCI)
- #define PCIBIOS_MIN_IO		0
- #define PCIBIOS_MIN_MEM		0
--#define pcibios_assign_all_busses()	1
- #define ARCH_HAS_DMA_SET_COHERENT_MASK
+-
  #endif
+diff --git a/arch/arm/mach-orion5x/pci.c b/arch/arm/mach-orion5x/pci.c
+index e8706f1..f64965d 100644
+--- a/arch/arm/mach-orion5x/pci.c
++++ b/arch/arm/mach-orion5x/pci.c
+@@ -560,6 +560,8 @@ int __init orion5x_pci_sys_setup(int nr, struct pci_sys_data *sys)
+ {
+ 	int ret = 0;
  
-diff --git a/arch/arm/mach-sa1100/include/mach/hardware.h b/arch/arm/mach-sa1100/include/mach/hardware.h
-index 967ae76..5946af2 100644
---- a/arch/arm/mach-sa1100/include/mach/hardware.h
-+++ b/arch/arm/mach-sa1100/include/mach/hardware.h
-@@ -79,7 +79,6 @@ static inline unsigned long get_clock_tick_rate(void)
- #if defined(CONFIG_ARCH_SA1100) && defined(CONFIG_PCI)
- #define PCIBIOS_MIN_IO		0
- #define PCIBIOS_MIN_MEM		0
--#define pcibios_assign_all_busses()	1
- #define HAVE_ARCH_PCI_SET_DMA_MASK	1
- #endif
- 
++	vga_base = ORION5X_PCIE_MEM_PHYS_BASE;
++
+ 	if (nr == 0) {
+ 		orion_pcie_set_local_bus_nr(PCIE_BASE, sys->busnr);
+ 		ret = pcie_setup(sys);
 diff --git a/arch/arm/mach-shark/include/mach/hardware.h b/arch/arm/mach-shark/include/mach/hardware.h
-index 94d84b2..24639ce 100644
+index 4342931..663f952 100644
 --- a/arch/arm/mach-shark/include/mach/hardware.h
 +++ b/arch/arm/mach-shark/include/mach/hardware.h
-@@ -12,8 +12,6 @@
+@@ -12,7 +12,5 @@
  
  #define UNCACHEABLE_ADDR        0xdf010000
  
--#define pcibios_assign_all_busses()     1
+-#define PCIMEM_BASE		0xe8000000
 -
- #define PCIBIOS_MIN_IO          0x6000
- #define PCIBIOS_MIN_MEM         0x50000000
- #define PCIMEM_BASE		0xe8000000
-diff --git a/arch/arm/mach-tegra/include/mach/hardware.h b/arch/arm/mach-tegra/include/mach/hardware.h
-index 56e43b3..84c2658 100644
---- a/arch/arm/mach-tegra/include/mach/hardware.h
-+++ b/arch/arm/mach-tegra/include/mach/hardware.h
-@@ -23,6 +23,5 @@
- 
- #define PCIBIOS_MIN_IO			0x1000
- #define PCIBIOS_MIN_MEM			0
--#define pcibios_assign_all_busses()	1
- 
  #endif
-diff --git a/arch/arm/mach-versatile/include/mach/hardware.h b/arch/arm/mach-versatile/include/mach/hardware.h
-index 6911e1f..8f60e94 100644
---- a/arch/arm/mach-versatile/include/mach/hardware.h
-+++ b/arch/arm/mach-versatile/include/mach/hardware.h
-@@ -34,8 +34,6 @@
- #define PCIBIOS_MIN_IO			0x44000000
- #define PCIBIOS_MIN_MEM			0x50000000
  
--#define pcibios_assign_all_busses()     1
--
- /* macro to get at IO space when running virtually */
- #define IO_ADDRESS(x)		(((x) & 0x0fffffff) + (((x) >> 4) & 0x0f000000) + 0xf0000000)
+diff --git a/arch/arm/mach-shark/pci.c b/arch/arm/mach-shark/pci.c
+index 4aea637..92d7227 100644
+--- a/arch/arm/mach-shark/pci.c
++++ b/arch/arm/mach-shark/pci.c
+@@ -8,6 +8,7 @@
+ #include <linux/kernel.h>
+ #include <linux/pci.h>
+ #include <linux/init.h>
++#include <video/vga.h>
+ 
+ #include <asm/irq.h>
+ #include <asm/mach/pci.h>
+@@ -42,6 +43,7 @@ static int __init shark_pci_init(void)
+ 
+ 	pcibios_min_io = 0x6000;
+ 	pcibios_min_mem = 0x50000000;
++	vga_base = 0xe8000000;
+ 
+ 	pci_common_init(&shark_pci);
  
 diff --git a/arch/arm/mm/iomap.c b/arch/arm/mm/iomap.c
-index ffad039..ad41414 100644
+index 3d46cf4..430df1a 100644
 --- a/arch/arm/mm/iomap.c
 +++ b/arch/arm/mm/iomap.c
-@@ -8,6 +8,7 @@
- #include <linux/pci.h>
+@@ -9,6 +9,9 @@
  #include <linux/ioport.h>
  #include <linux/io.h>
-+#include <asm/pci.h>
  
++unsigned long vga_base;
++EXPORT_SYMBOL(vga_base);
++
  #ifdef __io
  void __iomem *ioport_map(unsigned long port, unsigned int nr)
-@@ -23,6 +24,9 @@ EXPORT_SYMBOL(ioport_unmap);
- #endif
- 
- #ifdef CONFIG_PCI
-+unsigned int pci_flags = PCI_REASSIGN_ALL_RSRC;
-+EXPORT_SYMBOL(pci_flags);
-+
- void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long maxlen)
  {
- 	resource_size_t start = pci_resource_start(dev, bar);
 -- 
 1.7.4.1
 
