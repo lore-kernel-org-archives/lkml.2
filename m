@@ -1,93 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754119Ab1GLQjM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 12:39:12 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:39680 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753972Ab1GLQjL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 12:39:11 -0400
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH] spectra: enable device before poking it
-To: linux-kernel@vger.kernel.org, greg@kroah.com
-Date: Tue, 12 Jul 2011 17:40:03 +0100
-Message-ID: <20110712163924.7541.49192.stgit@bob.linux.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1754121Ab1GLQq0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 12:46:26 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:48185 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753738Ab1GLQqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 12:46:24 -0400
+Date: Tue, 12 Jul 2011 09:46:20 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
+        julie Sullivan <kernelmail.jms@gmail.com>,
+        linux-kernel@vger.kernel.org, chengxu@linux.vnet.ibm.com,
+        kulkarni.ravi4@gmail.com
+Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3 - under Xen,
+ 32-bit guest only.
+Message-ID: <20110712164620.GG2326@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110711171337.GK2245@linux.vnet.ibm.com>
+ <20110711193021.GA2996@dumpdata.com>
+ <20110711201508.GN2245@linux.vnet.ibm.com>
+ <20110711210954.GA15745@dumpdata.com>
+ <20110712105506.GB2253@linux.vnet.ibm.com>
+ <20110712141228.GA7831@dumpdata.com>
+ <20110712144936.GD2326@linux.vnet.ibm.com>
+ <20110712151550.GA3397@linux.vnet.ibm.com>
+ <20110712152259.GA3556@linux.vnet.ibm.com>
+ <20110712163210.GB1186@dumpdata.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110712163210.GB1186@dumpdata.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+On Tue, Jul 12, 2011 at 12:32:10PM -0400, Konrad Rzeszutek Wilk wrote:
+> > > > > http://darnok.org/xen/cpu1.log
+> > > > 
+> > > > OK, a fair amount of variety, then lots and lots of task_waking_fair(),
+> > > > so I still feel good about asking you for the following.
+> > > 
+> > > But...  But...  But...
+> > > 
+> > > Just how accurate are these stack traces?  For example, do you have
+> > > frame pointers enabled?  If not, could you please enable them?
+> 
+> Frame pointers are enabled.
+> > > 
+> > > The reason that I ask is that the wakeme_after_rcu() looks like it is
+> > > being invoked from softirq, which would be grossly illegal and could
+> > > cause any manner of misbehavior.  Did someone put a synchronize_rcu()
+> > > into an RCU callback or something?  Or did I do something really really
+> 
+> This is a 3.0-rc6 based kernels with the debug patch, the initial
+> RCU inhibit patch (where you disable the RCU checking during bootup) and
+> that is it.
+> 
+> What is bizzare is that the soft_irq shows but there is no corresponding
+> Xen eventchannel stack trace - there should have been also xen_evtchn_upcall
+> (which is the general code that calls the main IRQ handler.. which would make
+> the softirq call). This is assuming that the IRQ (timer one) is reguarly dispatching
+> (which it looks to be doing). Somehow getting just the softirq by itself is bizzre.
+> 
+> Perhaps an IPI has been sent that does this. Let me see what a stack
+> trace for an IPI looks like.
 
-Otherwise if it is off at boot time things don't go to plan.
+Thank you for the info!
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
+> > > braindead inside the RCU implementation?
+> > > 
+> > > (I am looking into this last question, but would appreciate any and all
+> > > help with the other questions!)
+> > 
+> > OK, I was confusing Julie's, Ravi's, and Konrad's situations.
+> 
+> Do you want me to create a new email thread to keep this one seperate?
 
- drivers/staging/spectra/lld_nand.c |   18 ++++++++++--------
- 1 files changed, 10 insertions(+), 8 deletions(-)
+Let's please keep everyone on copy.  I bet that these problems are
+related.  Plus once we get something that works, it would be good if
+everyone could test it.
 
+> > The wakeme_after_rcu() is in fact OK to call from sofirq -- if and
+> > only if the scheduler is actually running.  This is what happens if
+> > you do a synchronize_rcu() given your CONFIG_TREE_RCU setup -- an RCU
+> > callback is posted that, when invoked, awakens the task that invoked
+> > synchronize_rcu().
+> > 
+> > And, based on http://darnok.org/xen/log-rcu-stall, Konrad's system
+> > appears to be well past the point where the scheduler is initialized.
+> > 
+> > So I am coming back around to the loop in task_waking_fair().
+> > 
+> > Though the patch I sent out earlier might help, for example, if early
+> > invocation of RCU callbacks is somehow messing up the scheduler's
+> > initialization.
+> 
+> Ok, let me try it out.
 
-diff --git a/drivers/staging/spectra/lld_nand.c b/drivers/staging/spectra/lld_nand.c
-index 0be7adc..60a14ff 100644
---- a/drivers/staging/spectra/lld_nand.c
-+++ b/drivers/staging/spectra/lld_nand.c
-@@ -2397,6 +2397,12 @@ static int nand_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 	struct mrst_nand_info *pndev = &info;
- 	u32 int_mask;
- 
-+	ret = pci_enable_device(dev);
-+	if (ret) {
-+		printk(KERN_ERR "Spectra: pci_enable_device failed.\n");
-+		return ret;
-+	}
-+
- 	nand_dbg_print(NAND_DBG_WARN, "%s, Line %d, Function: %s\n",
- 		       __FILE__, __LINE__, __func__);
- 
-@@ -2404,7 +2410,7 @@ static int nand_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 			GLOB_HWCTL_REG_SIZE);
- 	if (!FlashReg) {
- 		printk(KERN_ERR "Spectra: ioremap_nocache failed!");
--		return -ENOMEM;
-+		goto failed_disable;
- 	}
- 	nand_dbg_print(NAND_DBG_WARN,
- 		"Spectra: Remapped reg base address: "
-@@ -2416,7 +2422,7 @@ static int nand_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 	if (!FlashMem) {
- 		printk(KERN_ERR "Spectra: ioremap_nocache failed!");
- 		iounmap(FlashReg);
--		return -ENOMEM;
-+		goto failed_disable;
- 	}
- 	nand_dbg_print(NAND_DBG_WARN,
- 		"Spectra: Remapped flash base address: "
-@@ -2479,11 +2485,6 @@ static int nand_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 	iowrite32(0, FlashReg + TWO_ROW_ADDR_CYCLES);
- 	iowrite32(1, FlashReg + ECC_ENABLE);
- 	enable_ecc = 1;
--	ret = pci_enable_device(dev);
--	if (ret) {
--		printk(KERN_ERR "Spectra: pci_enable_device failed.\n");
--		goto failed_req_csr;
--	}
- 
- 	pci_set_master(dev);
- 	pndev->dev = dev;
-@@ -2558,9 +2559,10 @@ static int nand_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
- failed_remap_csr:
- 	pci_release_regions(dev);
- failed_req_csr:
--	pci_disable_device(dev);
- 	iounmap(FlashMem);
- 	iounmap(FlashReg);
-+failed_disable:
-+	pci_disable_device(dev);
- 
- 	return ret;
- }
+Thank you again!
 
+							Thanx, Paul
