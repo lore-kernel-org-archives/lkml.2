@@ -1,92 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755564Ab1GLVC3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 17:02:29 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:45320 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754998Ab1GLVC1 (ORCPT
+	id S1755575Ab1GLVEu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 17:04:50 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:55814 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754998Ab1GLVEt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 17:02:27 -0400
-Date: Tue, 12 Jul 2011 17:02:25 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-cc: Vivek Goyal <vgoyal@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
-        Roland Dreier <roland@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        <linux-scsi@vger.kernel.org>, Steffen Maier <maier@linux.vnet.ibm.com>,
-        "Manvanthara B. Puttashankar" <manvanth@linux.vnet.ibm.com>,
-        Tarak Reddy <tarak.reddy@in.ibm.com>,
-        "Seshagiri N. Ippili" <sesh17@linux.vnet.ibm.com>,
-        <linux-kernel@vger.kernel.org>,
-        device-mapper development <dm-devel@redhat.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] block: Check that queue is alive in blk_insert_cloned_request()
-In-Reply-To: <1310495298.16900.24.camel@mulgrave>
-Message-ID: <Pine.LNX.4.44L0.1107121643210.8898-100000@netrider.rowland.org>
+	Tue, 12 Jul 2011 17:04:49 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20110712204620.GL2326@linux.vnet.ibm.com>
+References: <20110711210954.GA15745@dumpdata.com>
+	<20110712105506.GB2253@linux.vnet.ibm.com>
+	<20110712141228.GA7831@dumpdata.com>
+	<20110712144936.GD2326@linux.vnet.ibm.com>
+	<20110712160324.GA1186@dumpdata.com>
+	<20110712163947.GF2326@linux.vnet.ibm.com>
+	<20110712180151.GA18257@dumpdata.com>
+	<20110712185907.GJ2326@linux.vnet.ibm.com>
+	<1310497836.14978.34.camel@twins>
+	<20110712195731.GB20811@dumpdata.com>
+	<20110712204620.GL2326@linux.vnet.ibm.com>
+Date: Tue, 12 Jul 2011 22:04:48 +0100
+Message-ID: <CAAVPGOP_n1nR_Bauo67dDAAtUPPxU4WmrVrH-+8u_FdcN6EjjQ@mail.gmail.com>
+Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3
+From: Julie Sullivan <kernelmail.jms@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org, chengxu@linux.vnet.ibm.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Jul 2011, James Bottomley wrote:
+On Tue, Jul 12, 2011 at 9:46 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Tue, Jul 12, 2011 at 03:57:32PM -0400, Konrad Rzeszutek Wilk wrote:
+>> On Tue, Jul 12, 2011 at 09:10:36PM +0200, Peter Zijlstra wrote:
+>> > On Tue, 2011-07-12 at 11:59 -0700, Paul E. McKenney wrote:
+>> > > OK, so the infinite loop in task_waking_fair() happens even if RCU callbacks
+>> > > are deferred until after the scheduler is fully initialized.  Sounds like
+>> > > one for the scheduler guys.  ;-)
+>> >
+>> > https://lkml.org/lkml/2011/7/12/150
+>>
+>> Such a simple patch. And yes, it fixes the issue. You can add
+>> Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> if it hasn't yet
+>> showed up in Ingo's tree.
+>>
+>> Paul, thanks for help on this and providing ideas to test!
+>
+> Konrad, thank you for all the testing!
+>
+> Julie, if you apply Peter's patch,
 
-> > I think one problem point is q->queue_lock. If driver drops its reference
-> > on queue and cleans up its data structures, then it will free up memory
-> > associated with q->queue_lock too. (If driver provided its own queue
-> > lock). In that case anything which is dependent on queue lock, needs
-> > to be freed up on blk_cleanup_queue().
-> 
-> I don't quite follow.  blk_cleanup_queue() doesn't free anything (well,
-> except the elevator).  Final put will free the queue structure which
-> contains the lock, but if it's really a final put, you have no other
-> possible references, so no-one is using the lock ... well, assuming
-> there isn't a programming error, of course ...
-> 
-> > If we can make sure that request queue reference will keep the spin lock
-> > alive, then i guess all cleanup part might be able to go in release
-> > queue function.
-> 
-> As I said: cleanup doesn't free the structure containing the lock,
-> release does, so that piece wouldn't be altered by putting
-> blk_cleanup_queue() elsewhere.
 
-It's worth taking a closer look at what happened here.  Originally
-request_queue->queuedata was set to NULL and blk_cleanup_queue() was
-called from scsi_device_dev_release_usercontext() (by way of
-scsi_free_queue()).  This caused a problem because there was a window
-in which the last reference to the scsi_device had been dropped but the
-release routine hadn't yet run, so the queue was still marked as active
-(i.e., queuedata was still non-NULL).
 
-Commit 86cbfb5607d4b81b1a993ff689bbd2addd5d3a9b ([SCSI] put stricter 
-guards on queue dead checks) was written to fix this problem.  However 
-it moved _both_ lines from the release routine into 
-__scsi_remove_device().  There was no need for this; all that was 
-needed was to make sure queuedata was NULL before the device reference 
-was dropped.
+But this is for 32-bit , right?
 
-And in fact, moving the call to scsi_free_queue() has opened up another
-window for bugs.  Now it's possible for requests to get on the queue
-(submitted by drivers from another layer that still hold a reference to
-the scsi_device) even after the queue's elevator has been freed.  Yes,
-the block layer is supposed to prevent this from happening, but there
-are multiple paths and they don't all have the requisite checks.
+> +#ifndef CONFIG_64BIT
+> +	cfs_rq->min_vruntime_copy = cfs_rq->min_vruntime;
+> +#endif
+ }
 
-And as Vivek points out, it's questionable whether they _can_ make the 
-proper checks.  Checking requires the queue's lock, but the client may 
-have deallocated the lock at the time the queue was cleaned up.  Maybe 
-SCSI doesn't do this, but other clients of the block layer might.  The 
-block layer can't make any assumptions.  The unavoidable conclusion is 
-that the clients must be responsible for insuring that no requests are 
-added to a queue after its lock has been released.
+I'm using 64-bit...
 
-To help accomplish this in SCSI, I'm suggesting that the call to
-scsi_free_queue() be moved back to where it used to be, in
-scsi_device_dev_release_usercontext().  Then it won't be possible for
-any wayward requests to be added to the queue after it is cleaned up,
-because there won't be any outstanding references to the scsi_device.
+Would you still like me to try the below patch?
 
-Alan Stern
+Cheers
+Julie
 
+
+> do you also need the patch shown
+> below?
+>
+> Ravi, could you please retest with the patch below as well?
+>
+>                                                        Thanx, Paul
+>
+> ------------------------------------------------------------------------
+>
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index 7e59ffb..ba06207 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -84,9 +84,32 @@ DEFINE_PER_CPU(struct rcu_data, rcu_bh_data);
+>
+>  static struct rcu_state *rcu_state;
+>
+> +/*
+> + * The rcu_scheduler_active variable transitions from zero to one just
+> + * before the first task is spawned.  So when this variable is zero, RCU
+> + * can assume that there is but one task, allowing RCU to (for example)
+> + * optimized synchronize_sched() to a simple barrier().  When this variable
+> + * is one, RCU must actually do all the hard work required to detect real
+> + * grace periods.  This variable is also used to suppress boot-time false
+> + * positives from lockdep-RCU error checking.
+> + */
+>  int rcu_scheduler_active __read_mostly;
+>  EXPORT_SYMBOL_GPL(rcu_scheduler_active);
+>
+> +/*
+> + * The rcu_scheduler_fully_active variable transitions from zero to one
+> + * during the early_initcall() processing, which is after the scheduler
+> + * is capable of creating new tasks.  So RCU processing (for example,
+> + * creating tasks for RCU priority boosting) must be delayed until after
+> + * rcu_scheduler_fully_active transitions from zero to one.  We also
+> + * currently delay invocation of any RCU callbacks until after this point.
+> + *
+> + * It might later prove better for people registering RCU callbacks during
+> + * early boot to take responsibility for these callbacks, but one step at
+> + * a time.
+> + */
+> +static int rcu_scheduler_fully_active __read_mostly;
+> +
+>  #ifdef CONFIG_RCU_BOOST
+>
+>  /*
+> @@ -98,7 +121,6 @@ DEFINE_PER_CPU(unsigned int, rcu_cpu_kthread_status);
+>  DEFINE_PER_CPU(int, rcu_cpu_kthread_cpu);
+>  DEFINE_PER_CPU(unsigned int, rcu_cpu_kthread_loops);
+>  DEFINE_PER_CPU(char, rcu_cpu_has_work);
+> -static char rcu_kthreads_spawnable;
+>
+>  #endif /* #ifdef CONFIG_RCU_BOOST */
+>
+> @@ -1467,6 +1489,8 @@ static void rcu_process_callbacks(struct softirq_action *unused)
+>  */
+>  static void invoke_rcu_callbacks(struct rcu_state *rsp, struct rcu_data *rdp)
+>  {
+> +       if (unlikely(!ACCESS_ONCE(rcu_scheduler_fully_active)))
+> +               return;
+>        if (likely(!rsp->boost)) {
+>                rcu_do_batch(rsp, rdp);
+>                return;
+> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+> index 14dc7dd..75113cb 100644
+> --- a/kernel/rcutree_plugin.h
+> +++ b/kernel/rcutree_plugin.h
+> @@ -1532,7 +1532,7 @@ static int __cpuinit rcu_spawn_one_cpu_kthread(int cpu)
+>        struct sched_param sp;
+>        struct task_struct *t;
+>
+> -       if (!rcu_kthreads_spawnable ||
+> +       if (!rcu_scheduler_fully_active ||
+>            per_cpu(rcu_cpu_kthread_task, cpu) != NULL)
+>                return 0;
+>        t = kthread_create(rcu_cpu_kthread, (void *)(long)cpu, "rcuc%d", cpu);
+> @@ -1639,7 +1639,7 @@ static int __cpuinit rcu_spawn_one_node_kthread(struct rcu_state *rsp,
+>        struct sched_param sp;
+>        struct task_struct *t;
+>
+> -       if (!rcu_kthreads_spawnable ||
+> +       if (!rcu_scheduler_fully_active ||
+>            rnp->qsmaskinit == 0)
+>                return 0;
+>        if (rnp->node_kthread_task == NULL) {
+> @@ -1665,7 +1665,7 @@ static int __init rcu_spawn_kthreads(void)
+>        int cpu;
+>        struct rcu_node *rnp;
+>
+> -       rcu_kthreads_spawnable = 1;
+> +       rcu_scheduler_fully_active = 1;
+>        for_each_possible_cpu(cpu) {
+>                per_cpu(rcu_cpu_has_work, cpu) = 0;
+>                if (cpu_online(cpu))
+> @@ -1687,7 +1687,7 @@ static void __cpuinit rcu_prepare_kthreads(int cpu)
+>        struct rcu_node *rnp = rdp->mynode;
+>
+>        /* Fire up the incoming CPU's kthread and leaf rcu_node kthread. */
+> -       if (rcu_kthreads_spawnable) {
+> +       if (rcu_scheduler_fully_active) {
+>                (void)rcu_spawn_one_cpu_kthread(cpu);
+>                if (rnp->node_kthread_task == NULL)
+>                        (void)rcu_spawn_one_node_kthread(rcu_state, rnp);
+> @@ -1726,6 +1726,13 @@ static void rcu_cpu_kthread_setrt(int cpu, int to_rt)
+>  {
+>  }
+>
+> +static int __init rcu_scheduler_really_started(void)
+> +{
+> +       rcu_scheduler_fully_active = 1;
+> +       return 0;
+> +}
+> +early_initcall(rcu_scheduler_really_started);
+> +
+>  static void __cpuinit rcu_prepare_kthreads(int cpu)
+>  {
+>  }
+>
