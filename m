@@ -1,81 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751476Ab1GLIRS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 04:17:18 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:56694 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750813Ab1GLIRQ convert rfc822-to-8bit (ORCPT
+	id S1751703Ab1GLI1Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 04:27:25 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49990 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750813Ab1GLI1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 04:17:16 -0400
+	Tue, 12 Jul 2011 04:27:23 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4E1C055C.1030103@jp.fujitsu.com>
+Date: Tue, 12 Jul 2011 17:27:08 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-In-Reply-To: <CAJfuBxwET2zVWBJCBsUsEu661h+rzfHhtgvRY7SuBG7nPQLZnw@mail.gmail.com>
-References: <CAJfuBxyhh=3rO9MLkfDic16mij4A6NLXEQnhsvHEmBKokMoF7A@mail.gmail.com>
- <CAO+b5-rP8JAqe5pV7x_4RR5aumpHi4JG5diHehe5BiS_QwzSvw@mail.gmail.com>
- <CAJfuBxxvDhRgwfosZHZEAsgeLsAzDigHh-j3mC+8aJByR-=GkQ@mail.gmail.com>
- <CAO+b5-pZPsbnpjnFzCQFxWrAtoeG71pn1wVqjcOrR9yBQ3L1nA@mail.gmail.com> <CAJfuBxwET2zVWBJCBsUsEu661h+rzfHhtgvRY7SuBG7nPQLZnw@mail.gmail.com>
-From: Bart Van Assche <bvanassche@acm.org>
-Date: Tue, 12 Jul 2011 10:16:55 +0200
-X-Google-Sender-Auth: 5IyYJFQMotVuN7P_lyMGXXH577Q
-Message-ID: <CAO+b5-oEgoCNsKoZOLQTBnb9UiS=iAawjVbJkd06+qjEr23vYg@mail.gmail.com>
-Subject: Re: [ patch 00/21 ] support multiple, pending ddebugs at kernel-boot
-To: Jim Cromie <jim.cromie@gmail.com>
-Cc: jbaron@redhat.com, linux-kernel@vger.kernel.org, joe@perches.com,
-        gregkh@suse.de, gnb@fmeh.org
+To: tony.luck@intel.com
+CC: fenghua.yu@intel.com, linux-ia64@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: ia64: replace old cpumask functions with new one
+References: <4E031B97.2010609@jp.fujitsu.com> <CA+8MBbLg4jBmaYkVW13WReNm8nyP1p0k3CPN=pQmvwPfRKyeQA@mail.gmail.com>
+In-Reply-To: <CA+8MBbLg4jBmaYkVW13WReNm8nyP1p0k3CPN=pQmvwPfRKyeQA@mail.gmail.com>
 Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 12, 2011 at 9:39 AM, Jim Cromie <jim.cromie@gmail.com> wrote:
-> On Mon, Jul 11, 2011 at 11:53 PM, Bart Van Assche <bvanassche@acm.org> wrote:
->> The above example contradicts the following code added in patch 09/21:
->>
->>        /* actually go and implement the change */
->>        nfound = ddebug_change(&query, flags, mask);
->> +
->> +       pr_info("nfound %d on %s\n", nfound, show_ddebug_query(&query));
->> +       if (!nfound)
->> +               return ddebug_save_pending(&query, flags, mask);
->> +
->>        return 0;
->
-> In patch 13, that becomes
->
-> +       if (!nfound) {
-> +               if (flags & _DPRINTK_FLAGS_APPEND)
-> +                       return ddebug_save_pending(&query, flags, mask);
-> +               else
-> +                       pr_warn("no match on: %s\n",
-> +                               show_ddebug_query(&query));
-> +       }
->        return 0;
->  }
->
->
-> its altered once more, when I add filter-flags,
-> but that doesn’t really change my assertion.
->
->        nfound = ddebug_change(&query, flags, mask, filter);
->        if (!nfound) {
-> -               if (flags & _DPRINTK_FLAGS_APPEND)
-> +               if (flags & _DPRINTK_FLAGS_APPEND ||
-> +                       filter & _DPRINTK_FLAGS_APPEND)
->                        rc = ddebug_save_pending(&query, flags, mask);
->
+(2011/07/07 6:14), Tony Luck wrote:
+> 2011/6/23 KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>:
+>> We plan to remove old obsolete cpumask functions and plan to
+>> change task->cpus_allowed implementation in future.
+> ...
+>>  arch/ia64/kernel/smpboot.c              |   56 +++++++++++++++---------------
+> 
+> I get some new warnings in this file with your patch:
+> 
+> 
+> arch/ia64/kernel/smpboot.c:454: warning: passing argument 2 of
+> ‘cpumask_set_cpu’ discards qualifiers from pointer target type
+> arch/ia64/kernel/smpboot.c:581: warning: passing argument 1 of
+> ‘cpumask_clear’ discards qualifiers from pointer target type
+> arch/ia64/kernel/smpboot.c:613: warning: passing argument 2 of
+> ‘cpumask_set_cpu’ discards qualifiers from pointer target type
+> arch/ia64/kernel/smpboot.c:637: warning: passing argument 2 of
+> ‘cpumask_set_cpu’ discards qualifiers from pointer target type
+> arch/ia64/kernel/smpboot.c:745: warning: passing argument 2 of
+> ‘cpumask_clear_cpu’ discards qualifiers from pointer target type
+> 
+> Four of the five involve "cpu_callin_mask" which is "volatile", the other is for
+> "cpu_present_mask" - not sure what the problem is for this one.
 
-Sorry, but I'm not sure that addressing review comments by adding
-follow-up patches that modify previous patches is the proper way to
-present a patch series. IMHO this patch series would be a lot easier
-to review if patches that modify previous patches in the same patch
-series were avoided. If you are not yet familiar with patch squashing
-via git rebase --interactive, I think it's a good idea to learn more
-about it first.
+Sorry for the delay. I'm sorry for the annoying you.
+But ummm.. I can't understand the author expect which effect by this volatile.
+If I am correct, its volatile has no effect. we can simply remove it.
 
-Also, what are the implications for bisectability if review comments
-about bugs are addressed by follow-up patches instead of modifying the
-patches on which the comments apply ?
+So, I'll respin this.
 
-Thanks,
+Thanks.
 
-Bart.
+
