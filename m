@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752388Ab1GLJQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 05:16:27 -0400
+	id S1752316Ab1GLJQX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 05:16:23 -0400
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:47219 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752326Ab1GLJQY (ORCPT
+	with ESMTP id S1752110Ab1GLJQV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 05:16:24 -0400
+	Tue, 12 Jul 2011 05:16:21 -0400
 From: Tejun Heo <tj@kernel.org>
 To: mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de,
         benh@kernel.crashing.org, yinghai@kernel.org, davem@davemloft.net
 Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, x86@kernel.org,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 09/13] memblock, x86: Replace __get_free_all_memory_range() with for_each_free_mem_range()
-Date: Tue, 12 Jul 2011 11:16:02 +0200
-Message-Id: <1310462166-31469-10-git-send-email-tj@kernel.org>
+Subject: [PATCH 07/13] x86: Replace memblock_x86_find_in_range_size() with for_each_free_mem_range()
+Date: Tue, 12 Jul 2011 11:16:00 +0200
+Message-Id: <1310462166-31469-8-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1310462166-31469-1-git-send-email-tj@kernel.org>
 References: <1310462166-31469-1-git-send-email-tj@kernel.org>
@@ -22,14 +22,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__get_free_all_memory_range() walks memblock, calculates free memory
-areas and fills in the specified range.  It can be easily replaced
-with for_each_free_mem_range().
+setup_bios_corruption_check() and memtest do_one_pass() open code
+memblock free area iteration using memblock_x86_find_in_range_size().
+Convert them to use for_each_free_mem_range() instead.
 
-Convert free_low_memory_core_early() and
-add_highpages_with_active_regions() to for_each_free_mem_range().
-This leaves __get_free_all_memory_range() without any user.  Kill it
-and related functions.
+This leaves memblock_x86_find_in_range_size() and
+memblock_x86_check_reserved_size() unused.  Kill them.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
@@ -39,174 +37,200 @@ Cc: Ingo Molnar <mingo@redhat.com>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 ---
  arch/x86/include/asm/memblock.h |    3 --
- arch/x86/mm/init_32.c           |   28 +++++++-----------
- arch/x86/mm/memblock.c          |   59 ---------------------------------------
- mm/nobootmem.c                  |   28 ++++++++++--------
- 4 files changed, 27 insertions(+), 91 deletions(-)
+ arch/x86/kernel/check.c         |   34 +++++++++------------
+ arch/x86/mm/memblock.c          |   62 ---------------------------------------
+ arch/x86/mm/memtest.c           |   31 ++++++++-----------
+ 4 files changed, 28 insertions(+), 102 deletions(-)
 
 diff --git a/arch/x86/include/asm/memblock.h b/arch/x86/include/asm/memblock.h
-index 6c72eca..bc9e44b 100644
+index 1460db2..d2a5a59 100644
 --- a/arch/x86/include/asm/memblock.h
 +++ b/arch/x86/include/asm/memblock.h
-@@ -5,9 +5,6 @@
+@@ -3,8 +3,6 @@
  
+ #define ARCH_DISCARD_MEMBLOCK
+ 
+-u64 memblock_x86_find_in_range_size(u64 start, u64 *sizep, u64 align);
+-
  void memblock_x86_reserve_range(u64 start, u64 end, char *name);
  void memblock_x86_free_range(u64 start, u64 end);
--struct range;
--int __get_free_all_memory_range(struct range **range, int nodeid,
--			 unsigned long start_pfn, unsigned long end_pfn);
- 
+ struct range;
+@@ -15,6 +13,5 @@ int get_free_all_memory_range(struct range **rangep, int nodeid);
  u64 memblock_x86_hole_size(u64 start, u64 end);
  u64 memblock_x86_free_memory_in_range(u64 addr, u64 limit);
-diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-index 29f7c6d..a631a57 100644
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@ -427,23 +427,17 @@ static void __init add_one_highpage_init(struct page *page)
- void __init add_highpages_with_active_regions(int nid,
- 			 unsigned long start_pfn, unsigned long end_pfn)
+ u64 memblock_x86_memory_in_range(u64 addr, u64 limit);
+-bool memblock_x86_check_reserved_size(u64 *addrp, u64 *sizep, u64 align);
+ 
+ #endif
+diff --git a/arch/x86/kernel/check.c b/arch/x86/kernel/check.c
+index 95680fc..621cd23 100644
+--- a/arch/x86/kernel/check.c
++++ b/arch/x86/kernel/check.c
+@@ -62,7 +62,8 @@ early_param("memory_corruption_check_size", set_corruption_check_size);
+ 
+ void __init setup_bios_corruption_check(void)
  {
--	struct range *range;
--	int nr_range;
--	int i;
--
--	nr_range = __get_free_all_memory_range(&range, nid, start_pfn, end_pfn);
--
--	for (i = 0; i < nr_range; i++) {
--		struct page *page;
--		int node_pfn;
--
--		for (node_pfn = range[i].start; node_pfn < range[i].end;
--		     node_pfn++) {
--			if (!pfn_valid(node_pfn))
--				continue;
--			page = pfn_to_page(node_pfn);
--			add_one_highpage_init(page);
--		}
+-	u64 addr = PAGE_SIZE;	/* assume first page is reserved anyway */
 +	phys_addr_t start, end;
 +	u64 i;
-+
-+	for_each_free_mem_range(i, nid, &start, &end, NULL) {
-+		unsigned long pfn = clamp_t(unsigned long, PFN_UP(start),
-+					    start_pfn, end_pfn);
-+		unsigned long e_pfn = clamp_t(unsigned long, PFN_DOWN(end),
-+					      start_pfn, end_pfn);
-+		for ( ; pfn < e_pfn; pfn++)
-+			if (pfn_valid(pfn))
-+				add_one_highpage_init(pfn_to_page(pfn));
+ 
+ 	if (memory_corruption_check == -1) {
+ 		memory_corruption_check =
+@@ -82,28 +83,23 @@ void __init setup_bios_corruption_check(void)
+ 
+ 	corruption_check_size = round_up(corruption_check_size, PAGE_SIZE);
+ 
+-	while (addr < corruption_check_size && num_scan_areas < MAX_SCAN_AREAS) {
+-		u64 size;
+-		addr = memblock_x86_find_in_range_size(addr, &size, PAGE_SIZE);
++	for_each_free_mem_range(i, MAX_NUMNODES, &start, &end, NULL) {
++		start = clamp_t(phys_addr_t, round_up(start, PAGE_SIZE),
++				PAGE_SIZE, corruption_check_size);
++		end = clamp_t(phys_addr_t, round_down(end, PAGE_SIZE),
++			      PAGE_SIZE, corruption_check_size);
++		if (start >= end)
++			continue;
+ 
+-		if (!addr)
+-			break;
+-
+-		if (addr >= corruption_check_size)
+-			break;
+-
+-		if ((addr + size) > corruption_check_size)
+-			size = corruption_check_size - addr;
+-
+-		memblock_x86_reserve_range(addr, addr + size, "SCAN RAM");
+-		scan_areas[num_scan_areas].addr = addr;
+-		scan_areas[num_scan_areas].size = size;
+-		num_scan_areas++;
++		memblock_x86_reserve_range(start, end, "SCAN RAM");
++		scan_areas[num_scan_areas].addr = start;
++		scan_areas[num_scan_areas].size = end - start;
+ 
+ 		/* Assume we've already mapped this early memory */
+-		memset(__va(addr), 0, size);
++		memset(__va(start), 0, end - start);
+ 
+-		addr += size;
++		if (++num_scan_areas >= MAX_SCAN_AREAS)
++			break;
  	}
- }
- #else
+ 
+ 	if (num_scan_areas)
 diff --git a/arch/x86/mm/memblock.c b/arch/x86/mm/memblock.c
-index 0e8442a..4107c1a 100644
+index 97fbc39..648d47d 100644
 --- a/arch/x86/mm/memblock.c
 +++ b/arch/x86/mm/memblock.c
-@@ -30,65 +30,6 @@ static __init struct range *find_range_array(int count)
- 	return range;
- }
+@@ -7,68 +7,6 @@
+ #include <linux/mm.h>
+ #include <linux/range.h>
  
--static void __init memblock_x86_subtract_reserved(struct range *range, int az)
+-/* Check for already reserved areas */
+-bool __init memblock_x86_check_reserved_size(u64 *addrp, u64 *sizep, u64 align)
 -{
--	u64 final_start, final_end;
+-	struct memblock_region *r;
+-	u64 addr = *addrp, last;
+-	u64 size = *sizep;
+-	bool changed = false;
+-
+-again:
+-	last = addr + size;
+-	for_each_memblock(reserved, r) {
+-		if (last > r->base && addr < r->base) {
+-			size = r->base - addr;
+-			changed = true;
+-			goto again;
+-		}
+-		if (last > (r->base + r->size) && addr < (r->base + r->size)) {
+-			addr = round_up(r->base + r->size, align);
+-			size = last - addr;
+-			changed = true;
+-			goto again;
+-		}
+-		if (last <= (r->base + r->size) && addr >= r->base) {
+-			*sizep = 0;
+-			return false;
+-		}
+-	}
+-	if (changed) {
+-		*addrp = addr;
+-		*sizep = size;
+-	}
+-	return changed;
+-}
+-
+-/*
+- * Find next free range after start, and size is returned in *sizep
+- */
+-u64 __init memblock_x86_find_in_range_size(u64 start, u64 *sizep, u64 align)
+-{
 -	struct memblock_region *r;
 -
--	/* Take out region array itself at first*/
--	memblock_free_reserved_regions();
+-	for_each_memblock(memory, r) {
+-		u64 ei_start = r->base;
+-		u64 ei_last = ei_start + r->size;
+-		u64 addr;
 -
--	memblock_dbg("Subtract (%ld early reservations)\n", memblock.reserved.cnt);
--
--	for_each_memblock(reserved, r) {
--		memblock_dbg("  [%010llx-%010llx]\n", (u64)r->base, (u64)r->base + r->size - 1);
--		final_start = PFN_DOWN(r->base);
--		final_end = PFN_UP(r->base + r->size);
--		if (final_start >= final_end)
+-		addr = round_up(ei_start, align);
+-		if (addr < start)
+-			addr = round_up(start, align);
+-		if (addr >= ei_last)
 -			continue;
--		subtract_range(range, az, final_start, final_end);
+-		*sizep = ei_last - addr;
+-		while (memblock_x86_check_reserved_size(&addr, sizep, align))
+-			;
+-
+-		if (*sizep)
+-			return addr;
 -	}
 -
--	/* Put region array back ? */
--	memblock_reserve_reserved_regions();
+-	return 0;
 -}
 -
--static int __init count_early_node_map(int nodeid)
--{
--	int i, cnt = 0;
--
--	for_each_mem_pfn_range(i, nodeid, NULL, NULL, NULL)
--		cnt++;
--	return cnt;
--}
--
--int __init __get_free_all_memory_range(struct range **rangep, int nodeid,
--			 unsigned long start_pfn, unsigned long end_pfn)
--{
--	int count;
--	struct range *range;
--	int nr_range;
--
--	count = (memblock.reserved.cnt + count_early_node_map(nodeid)) * 2;
--
--	range = find_range_array(count);
--	nr_range = 0;
--
--	/*
--	 * Use early_node_map[] and memblock.reserved.region to get range array
--	 * at first
--	 */
--	nr_range = add_from_early_node_map(range, count, nr_range, nodeid);
--	subtract_range(range, count, 0, start_pfn);
--	subtract_range(range, count, end_pfn, -1ULL);
--
--	memblock_x86_subtract_reserved(range, count);
--	nr_range = clean_sort_range(range, count);
--
--	*rangep = range;
--	return nr_range;
--}
--
- static u64 __init __memblock_x86_memory_in_range(u64 addr, u64 limit, bool get_free)
+ static __init struct range *find_range_array(int count)
  {
- 	int i, count;
-diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-index 2037a8a..7075bc0 100644
---- a/mm/nobootmem.c
-+++ b/mm/nobootmem.c
-@@ -108,21 +108,25 @@ static void __init __free_pages_memory(unsigned long start, unsigned long end)
+ 	u64 end, size, mem;
+diff --git a/arch/x86/mm/memtest.c b/arch/x86/mm/memtest.c
+index 92faf3a..46a5ff2 100644
+--- a/arch/x86/mm/memtest.c
++++ b/arch/x86/mm/memtest.c
+@@ -70,24 +70,19 @@ static void __init memtest(u64 pattern, u64 start_phys, u64 size)
  
- unsigned long __init free_low_memory_core_early(int nodeid)
+ static void __init do_one_pass(u64 pattern, u64 start, u64 end)
  {
--	int i;
--	u64 start, end;
- 	unsigned long count = 0;
--	struct range *range = NULL;
--	int nr_range;
+-	u64 size = 0;
 -
--	nr_range = __get_free_all_memory_range(&range, nodeid, 0, max_low_pfn);
+-	while (start < end) {
+-		start = memblock_x86_find_in_range_size(start, &size, 1);
 -
--	for (i = 0; i < nr_range; i++) {
--		start = range[i].start;
--		end = range[i].end;
--		count += end - start;
--		__free_pages_memory(start, end);
-+	phys_addr_t start, end;
+-		/* done ? */
+-		if (start >= end)
+-			break;
+-		if (start + size > end)
+-			size = end - start;
+-
+-		printk(KERN_INFO "  %010llx - %010llx pattern %016llx\n",
+-		       (unsigned long long) start,
+-		       (unsigned long long) start + size,
+-		       (unsigned long long) cpu_to_be64(pattern));
+-		memtest(pattern, start, size);
+-
+-		start += size;
 +	u64 i;
++	phys_addr_t this_start, this_end;
 +
-+	/* free reserved array temporarily so that it's treated as free area */
-+	memblock_free_reserved_regions();
-+
-+	for_each_free_mem_range(i, MAX_NUMNODES, &start, &end, NULL) {
-+		unsigned long start_pfn = PFN_UP(start);
-+		unsigned long end_pfn = min_t(unsigned long,
-+					      PFN_DOWN(end), max_low_pfn);
-+		if (start_pfn < end_pfn) {
-+			__free_pages_memory(start_pfn, end_pfn);
-+			count += end_pfn - start_pfn;
++	for_each_free_mem_range(i, MAX_NUMNODES, &this_start, &this_end, NULL) {
++		this_start = clamp_t(phys_addr_t, this_start, start, end);
++		this_end = clamp_t(phys_addr_t, this_end, start, end);
++		if (this_start < this_end) {
++			printk(KERN_INFO "  %010llx - %010llx pattern %016llx\n",
++			       (unsigned long long)this_start,
++			       (unsigned long long)this_end,
++			       (unsigned long long)cpu_to_be64(pattern));
++			memtest(pattern, this_start, this_end - this_start);
 +		}
  	}
- 
-+	/* put region array back? */
-+	memblock_reserve_reserved_regions();
- 	return count;
  }
  
 -- 
