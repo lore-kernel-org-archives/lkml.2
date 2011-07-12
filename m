@@ -1,87 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752014Ab1GLI7w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 04:59:52 -0400
-Received: from mail.mnsspb.ru ([84.204.75.2]:50761 "EHLO mail.mnsspb.ru"
+	id S1751927Ab1GLJIj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 05:08:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60949 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751111Ab1GLI7u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 04:59:50 -0400
-Date: Tue, 12 Jul 2011 12:58:52 +0400
-From: Kirill Smelkov <kirr@mns.spb.ru>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: linux-uvc-devel@lists.berlios.de, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] uvcvideo: Add FIX_BANDWIDTH quirk to HP Webcam found
-	on HP Mini 5103 netbook
-Message-ID: <20110712085852.GA12576@tugrik.mns.mnsspb.ru>
-References: <1308679663-11431-1-git-send-email-kirr@mns.spb.ru>
+	id S1750939Ab1GLJIi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 05:08:38 -0400
+Message-ID: <4E1C0F02.9040906@redhat.com>
+Date: Tue, 12 Jul 2011 12:08:18 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1308679663-11431-1-git-send-email-kirr@mns.spb.ru>
-Organization: Marine Bridge & Navigation Systems
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Will Deacon <will.deacon@arm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "acme@ghostprotocols.net" <acme@ghostprotocols.net>,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: Re: [PATCH 1/3] perf: add context field to perf_event
+References: <1309362157-6596-1-git-send-email-avi@redhat.com>	 <1309362157-6596-2-git-send-email-avi@redhat.com>	 <20110629160841.GA2032@somewhere>	 <20110629162725.GH15521@e102144-lin.cambridge.arm.com>	 <20110704135820.GD5551@somewhere> <4E11C9CC.2070909@redhat.com>	 <20110704143655.GE5551@somewhere>	 <20110711210753.GA3582@e102144-lin.cambridge.arm.com>	 <4E1BF5A1.5070301@redhat.com> <1310459898.18678.108.camel@twins>
+In-Reply-To: <1310459898.18678.108.camel@twins>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 21, 2011 at 10:07:43PM +0400, Kirill Smelkov wrote:
-> The camera there identifeis itself as being manufactured by Cheng Uei
-> Precision Industry Co., Ltd (Foxlink), and product is titled as "HP
-> Webcam [2 MP Fixed]".
-> 
-> I was trying to get 2 USB video capture devices to work simultaneously,
-> and noticed that the above mentioned webcam always requires packet size
-> = 3072 bytes per micro frame (~= 23.4 MB/s isoc bandwidth), which is far
-> more than enough to get standard NTSC 640x480x2x30 = ~17.6 MB/s isoc
-> bandwidth.
-> 
-> As there are alt interfaces with smaller MxPS
-> 
->     T:  Bus=01 Lev=01 Prnt=01 Port=03 Cnt=01 Dev#=  2 Spd=480  MxCh= 0
->     D:  Ver= 2.00 Cls=ef(misc ) Sub=02 Prot=01 MxPS=64 #Cfgs=  1
->     P:  Vendor=05c8 ProdID=0403 Rev= 1.06
->     S:  Manufacturer=Foxlink
->     S:  Product=HP Webcam [2 MP Fixed]
->     S:  SerialNumber=200909240102
->     C:* #Ifs= 2 Cfg#= 1 Atr=80 MxPwr=500mA
->     A:  FirstIf#= 0 IfCount= 2 Cls=0e(video) Sub=03 Prot=00
->     I:* If#= 0 Alt= 0 #EPs= 1 Cls=0e(video) Sub=01 Prot=00 Driver=uvcvideo
->     E:  Ad=83(I) Atr=03(Int.) MxPS=  16 Ivl=4ms
->     I:* If#= 1 Alt= 0 #EPs= 0 Cls=0e(video) Sub=02 Prot=00 Driver=uvcvideo
->     I:  If#= 1 Alt= 1 #EPs= 1 Cls=0e(video) Sub=02 Prot=00 Driver=uvcvideo
->     E:  Ad=81(I) Atr=05(Isoc) MxPS= 128 Ivl=125us
->     I:  If#= 1 Alt= 2 #EPs= 1 Cls=0e(video) Sub=02 Prot=00 Driver=uvcvideo
->     E:  Ad=81(I) Atr=05(Isoc) MxPS= 512 Ivl=125us
->     I:  If#= 1 Alt= 3 #EPs= 1 Cls=0e(video) Sub=02 Prot=00 Driver=uvcvideo
->     E:  Ad=81(I) Atr=05(Isoc) MxPS=1024 Ivl=125us
->     I:  If#= 1 Alt= 4 #EPs= 1 Cls=0e(video) Sub=02 Prot=00 Driver=uvcvideo
->     E:  Ad=81(I) Atr=05(Isoc) MxPS=1536 Ivl=125us
->     I:  If#= 1 Alt= 5 #EPs= 1 Cls=0e(video) Sub=02 Prot=00 Driver=uvcvideo
->     E:  Ad=81(I) Atr=05(Isoc) MxPS=2048 Ivl=125us
->     I:  If#= 1 Alt= 6 #EPs= 1 Cls=0e(video) Sub=02 Prot=00 Driver=uvcvideo
->     E:  Ad=81(I) Atr=05(Isoc) MxPS=2688 Ivl=125us
->     I:  If#= 1 Alt= 7 #EPs= 1 Cls=0e(video) Sub=02 Prot=00 Driver=uvcvideo
->     E:  Ad=81(I) Atr=05(Isoc) MxPS=3072 Ivl=125us
-> 
-> UVC_QUIRK_FIX_BANDWIDTH helps here and NTSC video can be served with
-> MxPS=2688 i.e. 20.5 MB/s isoc bandwidth.
-> 
-> In terms of microframe time allocation, before the quirk NTSC video
-> required 60 usecs / microframe and 53 usecs / microframe after.
-> 
-> 
-> P.S. Now with tweaked ehci-hcd to allow up to 90% isoc bandwith (instead of
-> allowed for high speed 80%) I can capture two video sources -- PAL 720x576
-> YUV422 @25fps + NTSC 640x480 YUV422 @30fps simultaneously. Hooray!
-> 
-> Signed-off-by: Kirill Smelkov <kirr@mns.spb.ru>
+On 07/12/2011 11:38 AM, Peter Zijlstra wrote:
+> On Tue, 2011-07-12 at 10:20 +0300, Avi Kivity wrote:
+>
+> >  Maybe we need a generic "run this function in this task's context"
+> >  mechanism instead.  Like an IPI, but targeting tasks instead of cpus.
+> >
+>
+> kernel/event/core.c:task_function_call() like?
 
+Similar, but with stronger guarantees: when the function is called, 
+current == p, and the task was either sleeping or in userspace.
 
-Silence...  though even the above-mentioned EHCI tweak was merged already:
+This can be used to reduce synchronization requirements between tasks.  
+For example, you can set a task-local bit flag with this, without 
+atomics.  If this is rare enough, it's a net win compared to adding atomics.
 
-http://git.kernel.org/?p=linux/kernel/git/gregkh/usb-2.6.git;a=commitdiff;h=cc62a7eb6396e8be95b9a30053ed09191818b99b
+aio completions might also make use of this.
 
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
 
-Hope this patch is not lost and thanks,
-Kirill
