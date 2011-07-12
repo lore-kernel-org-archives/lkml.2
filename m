@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754109Ab1GLQeM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 12:34:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33000 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754074Ab1GLQeL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 12:34:11 -0400
-Message-ID: <4E1C7781.5080406@suse.cz>
-Date: Tue, 12 Jul 2011 18:34:09 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+	id S1754134Ab1GLQf2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 12:35:28 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47181 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753738Ab1GLQf1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 12:35:27 -0400
+Message-ID: <4E1C77C9.1060005@gmail.com>
+Date: Tue, 12 Jul 2011 10:35:21 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: `make headers_check' bustage
-References: <20110707171627.4f15035e.akpm@linux-foundation.org>	<4E1C5487.9030405@suse.cz> <20110712090156.c051d864.akpm@linux-foundation.org>
-In-Reply-To: <20110712090156.c051d864.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        paulus@samba.org, tglx@linutronix.de
+Subject: Re: [PATCH 3/6] perf: add reference time event
+References: <1307490806-24548-1-git-send-email-dsahern@gmail.com> <1307490946-24673-1-git-send-email-dsahern@gmail.com> <20110617133230.GC25197@somewhere.redhat.com> <4DFB5F0B.4020903@gmail.com> <20110617141707.GE25197@somewhere.redhat.com> <4E1A7A0D.8000806@gmail.com> <20110712143024.GA9201@somewhere>
+In-Reply-To: <20110712143024.GA9201@somewhere>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12.7.2011 18:01, Andrew Morton wrote:
-> On Tue, 12 Jul 2011 16:04:55 +0200 Michal Marek<mmarek@suse.cz>  wrote:
->> Nevertheless, these errors are pretty harmless, the prototypes do not
->> break parsing the header when compiling userspace programs.
->
-> Well, it's a bit harmful - someone did an exit(non-zero) and `make'
-> terminates the build with a build error.
+On 07/12/2011 08:30 AM, Frederic Weisbecker wrote:
+> Actually you first have to face a deeper problem. events are not stored
+> in order in the flow, but they are sorted from perf_session__process_events().
+> 
+> The bunch of sorted events is flushed periodically and sent to the consumer.
+> 
+> See flush_sample_queue().
+> 
+> And this sorting is made on top of the sample->time timestamps. So events
+> are first sorted on sample->time and only afterward you have access to your
+> gtod tracepoint samples. But if that gtod sample has been taken after a reboot
+> then its sample->time is not consistant with the rest. It is not well sorted
+> and thus the reftime won't be updated at the right moment.
 
-That's strange, scripts/headers_check.pl only exits with non-zero if it 
-finds that a included header file is not exported:
+I was aware of this function and the buffering /sorting it does; I have
+similar code in my local analysis tool (for older perf userspace). I had
+not stopped to consider the impacts on the append mode since I never use
+that option.
 
-			printf STDERR "$filename:$lineno: included file '$inc' is not 
-exported\n";
-			$ret = 1;
+> So the problem is that reftime update already depends on a consistant cpu
+> timestamp.
+> 
+> I can't think about a sane way to work around that. Sorting on gtod + cpu timestamp
+> is not a solution because gtod can change.
+> 
+> I'd rather propose to refuse append mode as long as we have any timestamp. That includes
+> gtod but also sample timestamps. They are buggy if we reboot.
 
-in all other cases the $ret assignment is commented out:
+I'm fine with restricting append mode if samples have timestamps. In
+that case the time of day reference can be added to the header per the
+original patch set. The change in behavior does impact a lot of record
+use cases (system wide, raw).
 
-		# Warn until headers are all fixed
-		#$ret = 1;
-
-and it works for me on both v3.0-rc7 and next-20110707.
-
-Michal
+David
