@@ -1,75 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755789Ab1GLVRo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 17:17:44 -0400
-Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:17287 "EHLO
-	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755739Ab1GLVRm (ORCPT
+	id S1755823Ab1GLVR7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 17:17:59 -0400
+Received: from mga03.intel.com ([143.182.124.21]:43951 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932073Ab1GLVR5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 17:17:42 -0400
-From: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
-To: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Naga Chumbalkar <nagananda.chumbalkar@hp.com>, mingo@elte.hu,
-        tglx@linutronix.de, hpa@zytor.com
-Message-Id: <20110712211704.2939.71291.sendpatchset@nchumbalkar.americas.cpqcorp.net>
-In-Reply-To: <20110712211653.2939.11833.sendpatchset@nchumbalkar.americas.cpqcorp.net>
-References: <20110712211653.2939.11833.sendpatchset@nchumbalkar.americas.cpqcorp.net>
-Subject: [PATCH v2 2/2] x86, ioapic: Print IRTE when IR is enabled
-Date: Tue, 12 Jul 2011 21:17:41 +0000 (UTC)
+	Tue, 12 Jul 2011 17:17:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,522,1304319600"; 
+   d="scan'208";a="26378852"
+From: "Jiang, Dave" <dave.jiang@intel.com>
+To: Jens Axboe <axboe@kernel.dk>
+CC: "Williams, Dan J" <dan.j.williams@intel.com>,
+        "Foong, Annie" <annie.foong@intel.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Nadolski, Edmund" <edmund.nadolski@intel.com>,
+        "Skirvin, Jeffrey D" <jeffrey.d.skirvin@intel.com>
+Date: Tue, 12 Jul 2011 14:17:54 -0700
+Subject: RE: rq_affinity doesn't seem to work?
+Thread-Topic: rq_affinity doesn't seem to work?
+Thread-Index: AcxA0pB3p3Cs5baISeCkKdMcHjS4PgABlZhA
+Message-ID: <D010E79907AF0D4E90B603DE907837D504CA6366F6@azsmsx504.amr.corp.intel.com>
+References: <D010E79907AF0D4E90B603DE907837D504CA6365D6@azsmsx504.amr.corp.intel.com>
+ <4E1CAEEB.8050506@kernel.dk>
+In-Reply-To: <4E1CAEEB.8050506@kernel.dk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When "apic=debug" is used as a boot parameter, Linux prints the IOAPIC routing
-entries in "dmesg". Below is output from IOAPIC whose apic_id is 8:
+> -----Original Message-----
+> From: Jens Axboe [mailto:axboe@kernel.dk]
+> Sent: Tuesday, July 12, 2011 1:31 PM
+> To: Jiang, Dave
+> Cc: Williams, Dan J; Foong, Annie; linux-scsi@vger.kernel.org; linux-
+> kernel@vger.kernel.org; Nadolski, Edmund; Skirvin, Jeffrey D
+> Subject: Re: rq_affinity doesn't seem to work?
+> 
+> On 2011-07-12 21:03, Jiang, Dave wrote:
+> > Jens,
+> > I'm doing some performance tuning for the Intel isci SAS controller
+> > driver, and I noticed some interesting numbers with mpstat. Looking at
+> > the numbers it seems that rq_affinity is not moving the request
+> > completion to the request submission CPU. Using fio to saturate the
+> > system with 512B I/Os, I noticed that all I/Os are bound to the CPUs
+> > (CPUs 6 and 7) that service the hard irqs. I have put in a quick hack
+> > in the driver so that it records the CPU during request construction
+> > and then I try to steer the scsi->done() calls to the request CPUs.
+> > With this simple hack, mpstat shows that the soft irq contexts are now
+> > distributed. I observed significant performance increase. The iowait%
+> > gone from 30s and 40s to low single digit approaching 0. Any ideas
+> > what could be happening with the rq_affinity logic? I'm assuming
+> > rq_affinity should behave the way my hacked solution is behaving. This
+> > is running on an 8 core single CPU SandyBridge based system with
+> > hyper-threading turned off. The two MSIX interrupts on the controller
+> > are tied to CPU 6 and 7 respectively via /proc/irq/X/smp_affinity. I'm
+> > running fio with 8 SAS disks and 8 threads.
+> 
+> It's probably the grouping, we need to do something about that. Does the
+> below patch make it behave as you expect?
 
-# dmesg | grep "routing entry"
-IOAPIC[8]: Set routing entry (8-1 -> 0x31 -> IRQ 1 Mode:0 Active:0 Dest:0)
-IOAPIC[8]: Set routing entry (8-2 -> 0x30 -> IRQ 0 Mode:0 Active:0 Dest:0)
-IOAPIC[8]: Set routing entry (8-3 -> 0x33 -> IRQ 3 Mode:0 Active:0 Dest:0)
-...
+Yep that is it.
 
-Similarly, when IR (interrupt remapping) is enabled, and the IRTE
-(interrupt remapping table entry) is set up we should display it.
-
-After the fix:
-
-# dmesg | grep IRTE
-IOAPIC[8]: Set IRTE entry (P:1 FPD:0 Dst_Mode:0 Redir_hint:1 Trig_Mode:0 Dlvry_Mode:0 Avail:0 Vector:31 Dest:00000000 SID:00F1 SQ:0 SVT:1)
-IOAPIC[8]: Set IRTE entry (P:1 FPD:0 Dst_Mode:0 Redir_hint:1 Trig_Mode:0 Dlvry_Mode:0 Avail:0 Vector:30 Dest:00000000 SID:00F1 SQ:0 SVT:1)
-IOAPIC[8]: Set IRTE entry (P:1 FPD:0 Dst_Mode:0 Redir_hint:1 Trig_Mode:0 Dlvry_Mode:0 Avail:0 Vector:33 Dest:00000000 SID:00F1 SQ:0 SVT:1)
-...
-
-The IRTE is defined in Sec 9.5 of the Intel VT-d Specification.
-
-Signed-off-by: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
-
----
- arch/x86/kernel/apic/io_apic.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 24318f0..8eb863e 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1295,6 +1295,16 @@ static int setup_ioapic_entry(int apic_id, int irq,
- 		 * irq handler will do the explicit EOI to the io-apic.
- 		 */
- 		ir_entry->vector = pin;
-+
-+		apic_printk(APIC_VERBOSE, KERN_DEBUG "IOAPIC[%d]: "
-+			"Set IRTE entry (P:%d FPD:%d Dst_Mode:%d "
-+			"Redir_hint:%d Trig_Mode:%d Dlvry_Mode:%X "
-+			"Avail:%X Vector:%02X Dest:%08X "
-+			"SID:%04X SQ:%X SVT:%X)\n",
-+			apic_id, irte.present, irte.fpd, irte.dst_mode,
-+			irte.redir_hint, irte.trigger_mode, irte.dlvry_mode,
-+			irte.avail, irte.vector, irte.dest_id,
-+			irte.sid, irte.sq, irte.svt);
- 	} else {
- 		entry->delivery_mode = apic->irq_delivery_mode;
- 		entry->dest_mode = apic->irq_dest_mode;
--- 
-1.7.1
-
+02:14:12 PM  CPU    %usr   %nice    %sys %iowait    %irq   %soft  %steal  %guest   %idle
+02:14:17 PM  all   11.98    0.00   46.62    1.18    0.00   37.79    0.00    0.00    2.43
+02:14:17 PM    0   15.43    0.00   55.31    0.00    0.00   29.26    0.00    0.00    0.00
+02:14:17 PM    1   14.83    0.00   56.71    0.00    0.00   28.46    0.00    0.00    0.00
+02:14:17 PM    2   14.80    0.00   56.00    0.00    0.00   29.20    0.00    0.00    0.00
+02:14:17 PM    3   14.63    0.00   57.11    0.00    0.00   28.26    0.00    0.00    0.00
+02:14:17 PM    4   14.80    0.00   57.60    0.00    0.00   27.60    0.00    0.00    0.00
+02:14:17 PM    5   15.03    0.00   56.11    0.00    0.00   28.86    0.00    0.00    0.00
+02:14:17 PM    6    3.79    0.00   20.16    5.99    0.00   59.68    0.00    0.00   10.38
+02:14:17 PM    7    2.80    0.00   14.20    3.20    0.00   70.80    0.00    0.00    9.00
