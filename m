@@ -1,96 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754437Ab1GLRW5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 13:22:57 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:29850 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754207Ab1GLRW4 convert rfc822-to-8bit (ORCPT
+	id S1754526Ab1GLRXj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 13:23:39 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:35485 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754493Ab1GLRXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 13:22:56 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=Sgs2b0t8nTveGuFUyIDW8TZgaMnvaLGSYvjwqTTs5LkJ/FqrMJiAZtxwyu/SDAbD7
-	CUU7ws0cBbrxeuM1Srg6A==
+	Tue, 12 Jul 2011 13:23:37 -0400
+Date: Tue, 12 Jul 2011 21:23:31 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+Cc: Len Brown <lenb@kernel.org>, David Woodhouse <dwmw2@infradead.org>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] power_supply: scrub device pointer if registration
+ fails
+Message-ID: <20110712172331.GA9557@oksana.dev.rtsoft.ru>
+References: <1310457809-2731-1-git-send-email-stefanha@linux.vnet.ibm.com>
+ <1310457809-2731-2-git-send-email-stefanha@linux.vnet.ibm.com>
+ <20110712150942.GA1291@oksana.dev.rtsoft.ru>
+ <20110712153017.GA4503@stefanha-thinkpad.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <4E15D67B.2080405@draigBrady.com>
-References: <20110706160744.4002.94920.stgit@bhelgaas.mtv.corp.google.com>
- <20110706160936.4002.1846.stgit@bhelgaas.mtv.corp.google.com>
- <12164.1310053141@turing-police.cc.vt.edu> <4E15D67B.2080405@draigBrady.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 12 Jul 2011 11:22:33 -0600
-Message-ID: <CAErSpo51_q9nB+eU8VFmz-LJf16KFeKxKR_TWRWDQ4P9gOnP6g@mail.gmail.com>
-Subject: Re: [PATCH 1/2] watchdog: iTCO_wdt: optionally leave watchdog enabled
- during restart
-To: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigbrady.com>
-Cc: Valdis.Kletnieks@vt.edu, Wim Van Sebroeck <wim@iguana.be>,
-        linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20110712153017.GA4503@stefanha-thinkpad.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 7, 2011 at 9:53 AM, Pádraig Brady <P@draigbrady.com> wrote:
-> On 07/07/11 16:39, Valdis.Kletnieks@vt.edu wrote:
->> On Wed, 06 Jul 2011 10:09:36 MDT, Bjorn Helgaas said:
->>
->>> If we reboot via BIOS, BIOS should disable the watchdog itself, so this
->>> shouldn't cause unintended resets, even if the user interrupts the boot.
->>
->> Yes, but didn't Linus say something about BIOS code authors being
->> crack-addicted monkeys? :)
+On Tue, Jul 12, 2011 at 04:30:17PM +0100, Stefan Hajnoczi wrote:
+[...]
+> > I believe the whole ACPI battery logic is overcomplicated, and
+> > needs a bit of rework. In the meantime, we could move 'psy->dev =
+> > dev;' assignment into the end of the function, where _register
+> > could not fail, i.e. something like this:
+> 
+> Aha!  I didn't do this is because I don't know the code and was afraid
+> some other function somewhere would use psy->dev.  If you think it is
+> safer this way I'll resend the patch.
 
-I shouldn't have written anything about what BIOS "should" do.  That's
-not very useful because, as you suggest, there is room for variation
-there.
+Neither is a proper fix, unfortunately. :-( Without some external lock
+you can't use psy->dev as a flag to check if the registration was
+successful. There is really no point trying to force core functions
+to keep psy->dev in a sane state after registration has failed.
 
-The risk I was alluding to was this:
-  - User boots with "reboot_timeout=X"
-  - User reboots normally (non-kexec)
-  - BIOS does some reinitialization
-  - Machine doesn't autoboot, e.g., because user interrupted boot
-  - Watchdog resets machine -- this may be unexpected by the user
+So, instead of patching power_supply core, I'd suggest the
+following patch (on top of 2/3 and 3/3, so far only compile-
+tested). How does it look?
 
-On the machines I tested, the unexpected reset doesn't happen because
-the BIOS reinit includes disabling the watchdog.  But obviously, that
-depends on BIOS details, so there's no guarantee.
-
-I should have just written something along the lines of:
-
-  The reboot_timeout option is intended for kexec reboots, which do
-not involve BIOS.
-  In this case, the reboot_timeout covers the interval between shutdown of the
-  watchdog driver in the old kernel and startup of the driver in the new kernel.
-
-  For normal reboots (via the BIOS), the behavior depends on the BIOS
-implementation.
-  Some BIOSes disable the watchdog timer, so the reboot_timeout only covers the
-  interval until the BIOS disable.  Others leave the timer running, so
-the reboot_timeout
-  may cause a reset if the machine doesn't autoboot, e.g., if the user
-interrupts the boot.
-
-I think the *option* of using a reboot_timeout is still useful,
-especially in clusters of unattended machines where it's expensive to
-deal with boot failures.
-
-> Yes as I said in a round about way in another mail,
-> one can't depend on that at all.
-> Some reset, some don't, some behave weirdly,
-> iTCO is unusual as kernel resets early at boot, ...
-
-You mentioned an unexplained iTCO reset in your other mail.  That
-sounds like a kernel or iTCO_wdt bug, but I think it's unrelated to
-this patch.
-
-> If using this, one would have to set the timeout large enough,
-> to encompass a full reboot
-
-Right.  In the case of iTCO, I think the range is up to about 10
-minutes, which is enough in my case (things like fsck may take longer,
-but that's OK as long as the watchdog driver is built in statically).
-
-Bjorn
+diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
+index 2ae2fca..475e17c 100644
+--- a/drivers/acpi/battery.c
++++ b/drivers/acpi/battery.c
+@@ -101,6 +101,7 @@ enum {
+ 
+ struct acpi_battery {
+ 	struct mutex lock;
++	struct mutex bat_lock;
+ 	struct power_supply bat;
+ 	struct acpi_device *device;
+ 	struct notifier_block pm_nb;
+@@ -559,8 +560,10 @@ static int sysfs_add_battery(struct acpi_battery *battery)
+ 	battery->bat.get_property = acpi_battery_get_property;
+ 
+ 	result = power_supply_register(&battery->device->dev, &battery->bat);
+-	if (result)
++	if (result) {
++		battery->bat.dev = NULL;
+ 		return result;
++	}
+ 	return device_create_file(battery->bat.dev, &alarm_attr);
+ }
+ 
+@@ -613,31 +616,40 @@ static int acpi_battery_update(struct acpi_battery *battery)
+ 	result = acpi_battery_get_status(battery);
+ 	if (result)
+ 		return result;
++
++	mutex_lock(&battery->bat_lock);
++
+ 	if (!acpi_battery_present(battery)) {
+ 		sysfs_remove_battery(battery);
+ 		battery->update_time = 0;
+-		return 0;
++		result = 0;
++		goto out_unlock;
+ 	}
+ 	if (!battery->update_time ||
+ 	    old_present != acpi_battery_present(battery)) {
+ 		result = acpi_battery_get_info(battery);
+ 		if (result)
+-			return result;
++			goto out_unlock;
+ 		acpi_battery_quirks(battery);
+ 		acpi_battery_init_alarm(battery);
+ 	}
+ 	if (!battery->bat.dev) {
+ 		result = sysfs_add_battery(battery);
+ 		if (result)
+-			return result;
++			goto out_unlock;
+ 	}
+ 	result = acpi_battery_get_state(battery);
+ 	acpi_battery_quirks2(battery);
++
++out_unlock:
++	mutex_unlock(&battery->bat_lock);
+ 	return result;
+ }
+ 
+-static void acpi_battery_refresh(struct acpi_battery *battery)
++static void sysfs_readd_battery(struct acpi_battery *battery)
+ {
++	mutex_lock(&battery->bat_lock);
++
+ 	if (!battery->bat.dev)
+ 		return;
+ 
+@@ -645,6 +657,13 @@ static void acpi_battery_refresh(struct acpi_battery *battery)
+ 	/* The battery may have changed its reporting units. */
+ 	sysfs_remove_battery(battery);
+ 	sysfs_add_battery(battery);
++
++	mutex_unlock(&battery->bat_lock);
++}
++
++static void acpi_battery_refresh(struct acpi_battery *battery)
++{
++	sysfs_readd_battery(battery);
+ }
+ 
+ /* --------------------------------------------------------------------------
+@@ -941,8 +960,10 @@ static void acpi_battery_notify(struct acpi_device *device, u32 event)
+ 					dev_name(&device->dev), event,
+ 					acpi_battery_present(battery));
+ 	/* acpi_battery_update could remove power_supply object */
++	mutex_lock(&battery->bat_lock);
+ 	if (old && battery->bat.dev)
+ 		power_supply_changed(&battery->bat);
++	mutex_unlock(&battery->bat_lock);
+ }
+ 
+ static int battery_notify(struct notifier_block *nb,
+@@ -952,8 +973,7 @@ static int battery_notify(struct notifier_block *nb,
+ 						    pm_nb);
+ 	switch (mode) {
+ 	case PM_POST_SUSPEND:
+-		sysfs_remove_battery(battery);
+-		sysfs_add_battery(battery);
++		sysfs_readd_battery(battery);
+ 		break;
+ 	}
+ 
+@@ -975,6 +995,7 @@ static int acpi_battery_add(struct acpi_device *device)
+ 	strcpy(acpi_device_class(device), ACPI_BATTERY_CLASS);
+ 	device->driver_data = battery;
+ 	mutex_init(&battery->lock);
++	mutex_init(&battery->bat_lock);
+ 	if (ACPI_SUCCESS(acpi_get_handle(battery->device->handle,
+ 			"_BIX", &handle)))
+ 		set_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags);
+@@ -1019,6 +1040,7 @@ static int acpi_battery_remove(struct acpi_device *device, int type)
+ 	acpi_battery_remove_fs(device);
+ #endif
+ 	sysfs_remove_battery(battery);
++	mutex_destroy(&battery->bat_lock);
+ 	mutex_destroy(&battery->lock);
+ 	kfree(battery);
+ 	return 0;
