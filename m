@@ -1,47 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752596Ab1GLJsY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 05:48:24 -0400
-Received: from 8bytes.org ([88.198.83.132]:38675 "EHLO 8bytes.org"
+	id S1752765Ab1GLJsp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 05:48:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33244 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750808Ab1GLJsX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 05:48:23 -0400
-Date: Tue, 12 Jul 2011 11:48:22 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Will Deacon <will.deacon@arm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        "acme@ghostprotocols.net" <acme@ghostprotocols.net>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: Re: [PATCH 1/3] perf: add context field to perf_event
-Message-ID: <20110712094822.GB29812@8bytes.org>
-References: <4E1BF5A1.5070301@redhat.com> <1310459898.18678.108.camel@twins> <4E1C0F02.9040906@redhat.com> <1310462046.14978.11.camel@twins> <4E1C10F8.6010300@redhat.com> <1310462335.14978.12.camel@twins> <4E1C1373.5080500@redhat.com> <1310463060.14978.17.camel@twins> <20110712094131.GA29812@8bytes.org> <4E1C1771.9010300@redhat.com>
+	id S1752424Ab1GLJso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 05:48:44 -0400
+Date: Tue, 12 Jul 2011 11:48:41 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
+        Lutz Vieweg <lvml@5t9.de>
+Subject: Re: [PATCH] mm: preallocate page before lock_page at filemap COW.
+ (WasRe: [PATCH V2] mm: Do not keep page locked during page fault while
+ charging it for memcg
+Message-ID: <20110712094841.GC10552@tiehlicka.suse.cz>
+References: <20110622120635.GB14343@tiehlicka.suse.cz>
+ <20110622121516.GA28359@infradead.org>
+ <20110622123204.GC14343@tiehlicka.suse.cz>
+ <20110623150842.d13492cd.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110623074133.GA31593@tiehlicka.suse.cz>
+ <20110623170811.16f4435f.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110623090204.GE31593@tiehlicka.suse.cz>
+ <20110623190157.1bc8cbb9.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110624075742.GA10455@tiehlicka.suse.cz>
+ <BANLkTin7TbK1dNjPG6jz_FaJy-QgOjDJaA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E1C1771.9010300@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <BANLkTin7TbK1dNjPG6jz_FaJy-QgOjDJaA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 12, 2011 at 12:44:17PM +0300, Avi Kivity wrote:
-> On 07/12/2011 12:41 PM, Joerg Roedel wrote:
->> >  Using TIF_bits sounds like a much better solution for this, wakeups are
->> >  really rather expensive and its best to avoid extra if at all possible.
->>
->> I would rather vote for Avi's solution too. Such a functionality is very
->> helpful for LWP-perf integration as well (because we need a way to call
->> do_mmap for a task != current).
->>
->
-> It's not needed for that.  See use_mm() (caller must be a kernel thread).
+On Fri 24-06-11 20:46:29, Hiroyuki Kamezawa wrote:
+> 2011/6/24 Michal Hocko <mhocko@suse.cz>:
+> > Sorry, forgot to send my
+> > Reviewed-by: Michal Hocko <mhocko@suse>
+> >
+> 
+> Thanks.
+> 
+> > I still have concerns about this way to handle the issue. See the follow
+> > up discussion in other thread (https://lkml.org/lkml/2011/6/23/135).
+> >
+> > Anyway I think that we do not have many other options to handle this.
+> > Either we unlock, charge, lock&restes or we preallocate, fault in
+> >
+> I agree.
+> 
+> > Or am I missing some other ways how to do it? What do others think about
+> > these approaches?
+> >
+> 
+> Yes, I'd like to hear other mm specialists' suggestion. and I'll think
+> other way, again.
+> Anyway, memory reclaim with holding a lock_page() can cause big latency
+> or starvation especially when memcg is used. It's better to avoid it.
 
-But in our case the caller would be the process that wants to count, not
-a kernel thread.
+Is there any intereset in discussing this or the email just got lost?
+Just for reference preallocation patch from Kamezawa is already in the
+Andrew's tree.
 
-	Joerg
-
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
