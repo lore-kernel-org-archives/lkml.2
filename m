@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361Ab1GLMHl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 08:07:41 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46591 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753028Ab1GLMHk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 08:07:40 -0400
-Subject: [PATCH] sched: Fix 32bit race
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Mike Galbraith <efault@gmx.de>, bruno <bruno@wolff.to>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 12 Jul 2011 14:07:14 +0200
-Message-ID: <1310472434.14978.27.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1753410Ab1GLMPQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 08:15:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16404 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753028Ab1GLMPP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 08:15:15 -0400
+Date: Tue, 12 Jul 2011 08:15:13 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Jens Axboe <jaxboe@fusionio.com>
+Subject: Re: [PATCH v2 0/3]CFQ: add think time check for service tree and
+ group
+Message-ID: <20110712121513.GB1293@redhat.com>
+References: <1310434672.15392.283.camel@sli10-conroe>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1310434672.15392.283.camel@sli10-conroe>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo, can we get the below patch into sched/urgent and towards Linus
-before he cuts a release?
+On Tue, Jul 12, 2011 at 09:37:52AM +0800, Shaohua Li wrote:
+> Hi,
+>   Currently when the last queue of a service tree/group is empty, CFQ
+> doesn't expire the queue. This is to allow requests from the tree/group
+> come soon, so tree/group doesn't miss its share. But if the think time
+> is big, the assumption isn't correct. idling the queue is just wasting
+> bandwidth.
+> 
+> Originally I was hoping this can resolve Vivek's fsync issue, but it
+> doesn't. The fsync issue is caused by queue idling. But since think time
+> check only helps for think time above default queue idle time (8ms),
+> think time check doesn't help for the fsync issue.
+> 
+> On the other hand, think time check is still helpful for queues with
+> think time. I had test case in follow patches show throughput
+> improvement without sacrifice tree/group shares.
+> 
+> v1->v2:
+> 1. addressed some good comments from Vivek
+> 2. add more test to make sure the patches don't change behavior of
+> queues without think time.
 
-I'm surprised there weren't more 32bit-smp doesn't boot for me
-complaints, either Bruno is a very 'lucky' man, or nobody is using 32bit
-kernels any more since he was hitting this quite reliably.
+This patch series looks good to me. Thanks Shaohua. We still shall have
+to do something about fsync issue though in groups.
 
----
-Subject: sched: Fix 32bit race
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Mon Jul 11 16:28:50 CEST 2011
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
-Commit 3fe1698b7fe0 ("sched: Deal with non-atomic min_vruntime reads
-on 32bit") forgot to initialize min_vruntime_copy which could lead to
-an infinite while loop in task_waking_fair() under some circumstances
-(early boot, lucky timing).
-
-Reported-and-tested-by: Bruno Wolff III <bruno@wolff.to>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
-Index: linux-2.6/kernel/sched.c
-===================================================================
---- linux-2.6.orig/kernel/sched.c
-+++ linux-2.6/kernel/sched.c
-@@ -7750,6 +7750,9 @@ static void init_cfs_rq(struct cfs_rq *c
- #endif
- #endif
- 	cfs_rq->min_vruntime = (u64)(-(1LL << 20));
-+#ifndef CONFIG_64BIT
-+	cfs_rq->min_vruntime_copy = cfs_rq->min_vruntime;
-+#endif
- }
- 
- static void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq)
-
+Thanks
+Vivek
