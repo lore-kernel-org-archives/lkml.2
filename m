@@ -1,116 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753662Ab1GLNxF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 09:53:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26797 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753551Ab1GLNxC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 09:53:02 -0400
-Date: Tue, 12 Jul 2011 09:52:41 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>, ebiederm@xmission.com,
-        hbabu@us.ibm.com, mahesh@linux.vnet.ibm.com, oomichi@mxs.nes.nec.co.jp,
-        horms@verge.net.au, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org
-Subject: Re: [patch 0/9] kdump: Patch series for s390 support
-Message-ID: <20110712135241.GD1293@redhat.com>
-References: <20110704170922.976299676@linux.vnet.ibm.com>
- <20110705202615.GJ24348@redhat.com>
- <1309944287.3937.39.camel@br98xy6r>
- <20110707193321.GE28850@redhat.com>
- <49979.1310234299@turing-police.cc.vt.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <49979.1310234299@turing-police.cc.vt.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753728Ab1GLNxX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 09:53:23 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61438 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753696Ab1GLNxV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 09:53:21 -0400
+From: Ravishankar <ravishankarkm32@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>,
+        Ravishankar <ravishankarkm32@gmail.com>
+Subject: [PATCH 23/23] Staging: comedi: fix warning: line over 80 character issue in das800.c
+Date: Tue, 12 Jul 2011 19:35:47 +0530
+Message-Id: <1310479547-26893-1-git-send-email-ravishankarkm32@gmail.com>
+X-Mailer: git-send-email 1.6.5.2
+In-Reply-To: <[PATCH 1/1]Staging: comedi: fix warning: line over 80 character issue in das800.c>
+References: <[PATCH 1/1]Staging: comedi: fix warning: line over 80 character issue in das800.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 09, 2011 at 01:58:19PM -0400, Valdis.Kletnieks@vt.edu wrote:
-> On Thu, 07 Jul 2011 15:33:21 EDT, Vivek Goyal said:
-> > On Wed, Jul 06, 2011 at 11:24:47AM +0200, Michael Holzheu wrote:
-> 
-> > > S390 stand-alone dump tools are independent mini operating systems that
-> > > are installed on disks or tapes. When a dump should be created, these
-> > > stand-alone dump tools are booted. All that they do is to write the dump
-> > > (current memory plus the CPU registers) to the disk/tape device.
-> > > 
-> > > The advantage compared to kdump is that since they are freshly loaded
-> > > into memory they can't be overwritten in memory.
-> > 
-> > > Another advantage is
-> > > that since it is different code, it is much less likely that the dump
-> > > tool will run into the same problem than the previously crashed kernel.
-> > 
-> > I think in practice this is not really a problem. If your kernel
-> > is not stable enough to even boot and copy a file, then most likely
-> > it has not even been deployed. The very fact that a kernel has been
-> > up and running verifies that it is a stable kernel for that machine
-> > and is capable of capturing the dump.
-> 
-> Vivek: I used to do VM/XA on S/390 boxes for a living, and that's *not* where
-> Michael is coming from.
-> 
-> What the standalone dump code does is take a system that may have the moral
-> equivalent of 256 separate PCI buses, several hundred disks all visible in
-> multipath configurations, dozens of other devices, and as long as you can find
-> *one* console and *one* tape/disk drive that works, you can capture a dump.
+From: Ravishankar <ravi.shankar@greenturtles.in>
 
-IIUC, capturing dump in virtualized environment is much more easy as
-software is not completely dead and hypervisor is still running. For
-example, qemu can easily capture the memory snapshot of the VM once it
-is hung reliably in all situations. Issue becomes mageability with filtering
-with various kernel versions and across operating systems inside VM. Hence
-kdump for linux is being deployed even in virtualized environment.
+This is a patch to the das800.c file that fixes up a  warning: line over 80 character found by the checkpatch.pl tool
 
-I guess using stand alone dump tools is very similar to qemu dump in terms
-of reliability but lacks filtering capabilities and is limited to specific
-devices. That way qemu is much more powerful.
+Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
+---
+ drivers/staging/comedi/drivers/das800.c |   62 +++++++++++++++++++++----------
+ 1 files changed, 42 insertions(+), 20 deletions(-)
 
-> 
-> More than once in my career, I got into a situation where the production system
-> would hang - and booting off another disk that contained an older copy with
-> maybe a few less patches would *also* hang.  VM/XA would simply *not run*.
-> Booting the standalone dump utility (which shared zero code with VM/XA, and did
-> *much* less initialization of I/O devices not needed for the actual dump) would
-> work just fine.  This would get me a dump that would show that we had a
-> (usually) hardware issue - either we were tripping over an errata that *no*
-> released version of VM/XA had a workaround for, or outright defective hardware.
+diff --git a/drivers/staging/comedi/drivers/das800.c b/drivers/staging/comedi/drivers/das800.c
+index 96d41ad..4973ec0 100644
+--- a/drivers/staging/comedi/drivers/das800.c
++++ b/drivers/staging/comedi/drivers/das800.c
+@@ -96,7 +96,9 @@ cmd triggers supported:
+ #define   BUSY                  0x80
+ #define DAS800_GAIN           3
+ #define   CIO_FFOV              0x8	/*  fifo overflow for cio-das802/16 */
+-#define   CIO_ENHF              0x90	/*  interrupt fifo half full for cio-das802/16 */
++#define   CIO_ENHF              0x90	/* interrupt fifo half full for
++					 * cio - das802 / 16
++					 */
+ #define   CONTROL1              0x80
+ #define   CONV_CONTROL          0xa0
+ #define   SCAN_LIMITS           0xc0
+@@ -285,9 +287,12 @@ static int das800_probe(struct comedi_device *dev)
+ 	unsigned long irq_flags;
+ 	int board;
+ 
+-	/*  'comedi spin lock irqsave' disables even rt interrupts, we use them to protect indirect addressing */
++	/* 'comedi spin lock irqsave' disables even rt interrupts,
++	 * we use them to protect indirect addressing
++	 */
+ 	spin_lock_irqsave(&dev->spinlock, irq_flags);
+-	outb(ID, dev->iobase + DAS800_GAIN);	/* select base address + 7 to be ID register */
++	/* select base address + 7 to be ID register */
++	outb(ID, dev->iobase + DAS800_GAIN);
+ 	id_bits = inb(dev->iobase + DAS800_ID) & 0x3;	/* get id bits */
+ 	spin_unlock_irqrestore(&dev->spinlock, irq_flags);
+ 
+@@ -366,11 +371,13 @@ static irqreturn_t das800_interrupt(int irq, void *d)
+ 	short i;		/* loop index */
+ 	short dataPoint = 0;
+ 	struct comedi_device *dev = d;
+-	struct comedi_subdevice *s = dev->read_subdev;	/* analog input subdevice */
++	/* analog input subdevice */
++	struct comedi_subdevice *s = dev->read_subdev;
+ 	struct comedi_async *async;
+ 	int status;
+ 	unsigned long irq_flags;
+-	static const int max_loops = 128;	/*  half-fifo size for cio-das802/16 */
++	/* half-fifo size for cio-das802/16 */
++	static const int max_loops = 128;
+ 	/*  flags */
+ 	int fifo_empty = 0;
+ 	int fifo_overflow = 0;
+@@ -389,7 +396,8 @@ static irqreturn_t das800_interrupt(int irq, void *d)
+ 
+ 	/*  if hardware conversions are not enabled, then quit */
+ 	spin_lock_irqsave(&dev->spinlock, irq_flags);
+-	outb(CONTROL1, dev->iobase + DAS800_GAIN);	/* select base address + 7 to be STATUS2 register */
++	 /* select base address + 7 to be STATUS2 register */
++	outb(CONTROL1, dev->iobase + DAS800_GAIN);
+ 	status = inb(dev->iobase + DAS800_STATUS2) & STATUS2_HCEN;
+ 	/* don't release spinlock yet since we want to make sure no one else disables hardware conversions */
+ 	if (status == 0) {
+@@ -443,14 +451,16 @@ static irqreturn_t das800_interrupt(int irq, void *d)
+ 	if (devpriv->count > 0 || devpriv->forever == 1) {
+ 		/* Re-enable card's interrupt.
+ 		 * We already have spinlock, so indirect addressing is safe */
+-		outb(CONTROL1, dev->iobase + DAS800_GAIN);	/* select dev->iobase + 2 to be control register 1 */
++		/* select dev->iobase + 2 to be control register 1 */
++		outb(CONTROL1, dev->iobase + DAS800_GAIN);
+ 		outb(CONTROL1_INTE | devpriv->do_bits,
+ 		     dev->iobase + DAS800_CONTROL1);
+ 		spin_unlock_irqrestore(&dev->spinlock, irq_flags);
+ 		/* otherwise, stop taking data */
+ 	} else {
+ 		spin_unlock_irqrestore(&dev->spinlock, irq_flags);
+-		disable_das800(dev);	/* diable hardware triggered conversions */
++		/* diable hardware triggered conversions */
++		disable_das800(dev);
+ 		async->events |= COMEDI_CB_EOA;
+ 	}
+ 	comedi_event(dev, s);
+@@ -548,7 +558,8 @@ static int das800_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 
+ 	/* initialize digital out channels */
+ 	spin_lock_irqsave(&dev->spinlock, irq_flags);
+-	outb(CONTROL1, dev->iobase + DAS800_GAIN);	/* select dev->iobase + 2 to be control register 1 */
++	/* select dev->iobase + 2 to be control register 1 */
++	outb(CONTROL1, dev->iobase + DAS800_GAIN);
+ 	outb(CONTROL1_INTE | devpriv->do_bits, dev->iobase + DAS800_CONTROL1);
+ 	spin_unlock_irqrestore(&dev->spinlock, irq_flags);
+ 
+@@ -583,10 +594,14 @@ static void enable_das800(struct comedi_device *dev)
+ 	/*  enable fifo-half full interrupts for cio-das802/16 */
+ 	if (thisboard->resolution == 16)
+ 		outb(CIO_ENHF, dev->iobase + DAS800_GAIN);
+-	outb(CONV_CONTROL, dev->iobase + DAS800_GAIN);	/* select dev->iobase + 2 to be conversion control register */
+-	outb(CONV_HCEN, dev->iobase + DAS800_CONV_CONTROL);	/* enable hardware triggering */
+-	outb(CONTROL1, dev->iobase + DAS800_GAIN);	/* select dev->iobase + 2 to be control register 1 */
+-	outb(CONTROL1_INTE | devpriv->do_bits, dev->iobase + DAS800_CONTROL1);	/* enable card's interrupt */
++	/* select dev->iobase + 2 to be conversion control register */
++	outb(CONV_CONTROL, dev->iobase + DAS800_GAIN);
++	/* enable hardware triggering */
++	outb(CONV_HCEN, dev->iobase + DAS800_CONV_CONTROL);
++	/* select dev->iobase + 2 to be control register 1 */
++	outb(CONTROL1, dev->iobase + DAS800_GAIN);
++	/* enable card's interrupt */
++	outb(CONTROL1_INTE | devpriv->do_bits, dev->iobase + DAS800_CONTROL1);
+ 	spin_unlock_irqrestore(&dev->spinlock, irq_flags);
+ }
+ 
+@@ -595,8 +610,10 @@ static void disable_das800(struct comedi_device *dev)
+ {
+ 	unsigned long irq_flags;
+ 	spin_lock_irqsave(&dev->spinlock, irq_flags);
+-	outb(CONV_CONTROL, dev->iobase + DAS800_GAIN);	/* select dev->iobase + 2 to be conversion control register */
+-	outb(0x0, dev->iobase + DAS800_CONV_CONTROL);	/* disable hardware triggering of conversions */
++	/* select dev->iobase + 2 to be conversion control register */
++	outb(CONV_CONTROL, dev->iobase + DAS800_GAIN);
++	/* disable hardware triggering of conversions */
++	outb(0x0, dev->iobase + DAS800_CONV_CONTROL);
+ 	spin_unlock_irqrestore(&dev->spinlock, irq_flags);
+ }
+ 
+@@ -749,7 +766,8 @@ static int das800_ai_do_cmd(struct comedi_device *dev,
+ 	scan = (endChan << 3) | startChan;
+ 
+ 	spin_lock_irqsave(&dev->spinlock, irq_flags);
+-	outb(SCAN_LIMITS, dev->iobase + DAS800_GAIN);	/* select base address + 2 to be scan limits register */
++	/* select base address + 2 to be scan limits register */
++	outb(SCAN_LIMITS, dev->iobase + DAS800_GAIN);
+ 	outb(scan, dev->iobase + DAS800_SCAN_LIMITS);	/* set scan limits */
+ 	spin_unlock_irqrestore(&dev->spinlock, irq_flags);
+ 
+@@ -801,7 +819,8 @@ static int das800_ai_do_cmd(struct comedi_device *dev,
+ 	}
+ 
+ 	spin_lock_irqsave(&dev->spinlock, irq_flags);
+-	outb(CONV_CONTROL, dev->iobase + DAS800_GAIN);	/* select dev->iobase + 2 to be conversion control register */
++	/* select dev->iobase + 2 to be conversion control register */
++	outb(CONV_CONTROL, dev->iobase + DAS800_GAIN);
+ 	outb(conv_bits, dev->iobase + DAS800_CONV_CONTROL);
+ 	spin_unlock_irqrestore(&dev->spinlock, irq_flags);
+ 	async->events = 0;
+@@ -820,13 +839,15 @@ static int das800_ai_rinsn(struct comedi_device *dev,
+ 	int timeout = 1000;
+ 	unsigned long irq_flags;
+ 
+-	disable_das800(dev);	/* disable hardware conversions (enables software conversions) */
++	/* disable hardware conversions (enables software conversions) */
++	disable_das800(dev);
+ 
+ 	/* set multiplexer */
+ 	chan = CR_CHAN(insn->chanspec);
+ 
+ 	spin_lock_irqsave(&dev->spinlock, irq_flags);
+-	outb(CONTROL1, dev->iobase + DAS800_GAIN);	/* select dev->iobase + 2 to be control register 1 */
++	/* select dev->iobase + 2 to be control register 1 */
++	outb(CONTROL1, dev->iobase + DAS800_GAIN);
+ 	outb(chan | devpriv->do_bits, dev->iobase + DAS800_CONTROL1);
+ 	spin_unlock_irqrestore(&dev->spinlock, irq_flags);
+ 
+@@ -893,7 +914,8 @@ static int das800_do_wbits(struct comedi_device *dev,
+ 	devpriv->do_bits = wbits << 4;
+ 
+ 	spin_lock_irqsave(&dev->spinlock, irq_flags);
+-	outb(CONTROL1, dev->iobase + DAS800_GAIN);	/* select dev->iobase + 2 to be control register 1 */
++	/* select dev->iobase + 2 to be control register 1 */
++	outb(CONTROL1, dev->iobase + DAS800_GAIN);
+ 	outb(devpriv->do_bits | CONTROL1_INTE, dev->iobase + DAS800_CONTROL1);
+ 	spin_unlock_irqrestore(&dev->spinlock, irq_flags);
+ 
+-- 
+1.6.5.2
 
-Can we not achieve almost equivalent of it by only loading very selective
-modules in second kernel?
-
-If not, one can always use qemu-kvm dump capability with kvm hypervisor if
-kdump does not work. It will be a manual operation though like s390 stand
-alone dump utility.
-
-So the point is that I am fine with stand alone dump utitliy capturing
-the dump. Just keep it as backup plan if kdump does not work. Also for
-early crashes kdump will not work and stand alone dump utility will be
-the primary plan to capture the dump.
-
-In above example, are you saying that your production kernel does not even
-boot now which used to boot in the past on same system (because of some
-bad hardware state?).
-
-> 
-> For the same efficiency reasons that Linux doesn't do a lot of checking for
-> "can never happen" cases, VM/XA doesn't check some things. So when busted
-> hardware would present logically impossible combinations of status bits (for
-> instance, "device still connected" but "I/O bus disconnected"), Bad Things
-> would happen.  Booting a tiny dump program that never even *tried* to look at
-> the bad bits posted by the miscreant hardware would allow you to get the info
-> you needed to debug it.
-
-Ok, may be. I am not saying that don't use stand alone dump utility for
-severe hardware issues. I am just saying that a closer integration with
-kexec infrastructure like other architecture will be better. We probably
-do not require any common code changes except a custom purgatory for
-s390 to IPL stand alone utilities.
-
-Thanks
-Vivek
