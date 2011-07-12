@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932332Ab1GLXiN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 19:38:13 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:58729 "EHLO
+	id S932320Ab1GLXiM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 19:38:12 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:58730 "EHLO
 	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753267Ab1GLXho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753734Ab1GLXho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Jul 2011 19:37:44 -0400
 From: Serge Hallyn <serge@hallyn.com>
 To: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org
 Cc: dhowells@redhat.com, ebiederm@xmission.com,
         "Serge E. Hallyn" <serge.hallyn@canonical.com>
-Subject: [RFC PATCH 01/14] add Documentation/namespaces/user_namespace.txt
-Date: Tue, 12 Jul 2011 23:30:39 +0000
-Message-Id: <1310513452-13397-2-git-send-email-serge@hallyn.com>
+Subject: [RFC PATCH 02/14] allow root in container to copy namespaces
+Date: Tue, 12 Jul 2011 23:30:40 +0000
+Message-Id: <1310513452-13397-3-git-send-email-serge@hallyn.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1310513452-13397-1-git-send-email-serge@hallyn.com>
 References: <1310513452-13397-1-git-send-email-serge@hallyn.com>
@@ -22,115 +22,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Serge E. Hallyn <serge.hallyn@canonical.com>
 
-This will hold some info about the design.  Currently it contains
-future todos, issues and questions.
+Othewise nested containers with user namespaces won't be possible.
+
+It's true that user namespaces are not yet fully isolated, but for
+that same reason there are far worse things that root in a child
+user ns can do.  Spawning a child user ns is not in itself bad.
+
+This patch also allows setns for root in a container:
+@Eric Biederman: are there gotchas in allowing setns from child
+userns?
 
 Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
 Cc: Eric W. Biederman <ebiederm@xmission.com>
 ---
- Documentation/namespaces/user_namespace.txt |   93 +++++++++++++++++++++++++++
- 1 files changed, 93 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/namespaces/user_namespace.txt
+ kernel/fork.c    |    4 ++--
+ kernel/nsproxy.c |    6 +++---
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/Documentation/namespaces/user_namespace.txt b/Documentation/namespaces/user_namespace.txt
-new file mode 100644
-index 0000000..24c894f
---- /dev/null
-+++ b/Documentation/namespaces/user_namespace.txt
-@@ -0,0 +1,93 @@
-+Description
-+===========
-+
-+Traditionally, each task is owned by a userid (uid) and belongs to one
-+or more groups (gid).  Both are simple numeric ids, though userspace
-+usually translates them to names.  The user namespace allows tasks to
-+have different views of the uids and gids associated with tasks and
-+other resources.
-+
-+The user namespace is a simple heirarchical one.  The system begins
-+with all tasks belonging to the initial user namespace.  A task creates
-+a new user namespace by passing the CLONE_NEWUSER flag to clone(2).
-+To do so, the creating task needs the CAP_SETUID, CAP_SETGID, and
-+CAP_CHOWN capabilities, but does not need to be root.  The clone(2)
-+call will result in a new task which to the creator appears to have
-+the same credentials as itself, but which sees itself as being uid
-+and gid 0.  Any task in or resource belonging to the initial user
-+namespace will, to this new task, appear to belong to uid and gid
-+-1, which is usually known as 'nobody'.  Opening such files will
-+result in obtaining the 'user other' permissions.  UID comparisons
-+will return false, and privilege will be denied.
-+
-+When a task belonging to userid 500 in the initial user namespace
-+creates a new user namespace, even though the new task will see itself
-+as belonging to uid 0, any task in the initial user namespace
-+will see it as belonging to uid 500.  Therefore, uid 500 in the
-+initial user namespace will be able to kill the new task.  Files
-+created by the new user will (eventually) be seen by tasks in its
-+own user namespace as belonging to uid 0, but to tasks in the initial
-+user namespace as belonging to uid 500.  Note that this userid
-+mapping for the VFS is not yet implemented, though the lkml and
-+containers mailing list archives will show several previous prototypes.
-+In the end, those got hung up waiting on the concept of targeted
-+capabilities to be developed, which, thanks to the insight of Eric
-+Biederman, they finally did.
-+
-+Other namespaces, such as UTS and network, are owned by a user
-+namespace.  When such a namespace is created, it is assigned to the user
-+namespace by which it was created.  Therefore, attempts to exercise
-+privilege to resources in a network namespace can be properly validated
-+by checking whether the caller has the needed privilege targeted to the
-+user namespace owning the network namespace.  This is called checking
-+targeted capabilities, and is done using the 'ns_capable' function.
-+
-+As an example, if a new task is cloned with a private user namespace but
-+no private network namespace, then the task's network namespace is owned
-+by the parent user namespace.  The new task has no privilege to the
-+parent user namespace, so it will not be able to create or configure
-+network devices.  If, instead, the task were cloned with both private
-+user and network namespaces, then the private network namespace is owned
-+by the private user namespace, and so root in the new user namespace
-+will have privilege targeted to the network namespace.  It will be able
-+to create and configure network devices.
-+
-+Working notes
-+=============
-+capable checks for actions related to syslog must be against the
-+init_user_ns until syslog is containerized.
-+
-+Same is true for reboot and power, control groups, devices, and time.
-+
-+Perf actions (kernel/event/core.c for instance) will always be
-+constrained to init_user_ns.
-+
-+Q:
-+Is accounting considered properly containerized wrt pidns?  (it
-+appears to be).  If so, then we can change the capable check in
-+kernel/acct.c to 'ns_capable(current_pid_ns()->user_ns, CAP_PACCT)'
-+
-+Q:
-+For things like nice and schedaffinity, we could allow root in a
-+container to control those, and leave only cgroups to constrain
-+the container.  I'm not sure whether that is right, or whether it
-+violates admin expectations.
-+
-+I punted on some of commoncap.c.  I'm punting on xattr stuff as
-+they take dentries, not inodes.
-+
-+For drivers/tty/tty_io.c and drivers/tty/vt/vt.c, we'll want to (for
-+some of them) target at the user_ns owning the tty.  That will have
-+to wait until we get userns owning files straightened out.
-+
-+We need to figure out how to label devices.  Should we just toss a user_ns
-+right into struct device?
-+
-+capable(CAP_MAC_ADMIN) checks are always to be against init_user_ns,
-+unless some day LSMs were to be containerized, near zero chance.
-+
-+inode_owner_or_capable() should probably take an optional ns and
-+cap paramter.  If cap is 0, then CAP_FOWNER is checked.  If ns is
-+NULL, we derive the ns from inode.  But if ns is provided, then
-+callers who need to derive inode_userns(inode) anyway can save a
-+few cycles.
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 0276c30..01d7564 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1475,8 +1475,8 @@ long do_fork(unsigned long clone_flags,
+ 		/* hopefully this check will go away when userns support is
+ 		 * complete
+ 		 */
+-		if (!capable(CAP_SYS_ADMIN) || !capable(CAP_SETUID) ||
+-				!capable(CAP_SETGID))
++		if (!nsown_capable(CAP_SYS_ADMIN) || !nsown_capable(CAP_SETUID) ||
++				!nsown_capable(CAP_SETGID))
+ 			return -EPERM;
+ 	}
+ 
+diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+index d6a00f3..a687405 100644
+--- a/kernel/nsproxy.c
++++ b/kernel/nsproxy.c
+@@ -134,7 +134,7 @@ int copy_namespaces(unsigned long flags, struct task_struct *tsk)
+ 				CLONE_NEWPID | CLONE_NEWNET)))
+ 		return 0;
+ 
+-	if (!capable(CAP_SYS_ADMIN)) {
++	if (!nsown_capable(CAP_SYS_ADMIN)) {
+ 		err = -EPERM;
+ 		goto out;
+ 	}
+@@ -191,7 +191,7 @@ int unshare_nsproxy_namespaces(unsigned long unshare_flags,
+ 			       CLONE_NEWNET)))
+ 		return 0;
+ 
+-	if (!capable(CAP_SYS_ADMIN))
++	if (!nsown_capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
+ 
+ 	*new_nsp = create_new_namespaces(unshare_flags, current,
+@@ -241,7 +241,7 @@ SYSCALL_DEFINE2(setns, int, fd, int, nstype)
+ 	struct file *file;
+ 	int err;
+ 
+-	if (!capable(CAP_SYS_ADMIN))
++	if (!nsown_capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
+ 
+ 	file = proc_ns_fget(fd);
 -- 
 1.7.4.1
 
