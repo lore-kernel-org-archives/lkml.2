@@ -1,96 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753793Ab1GLPaZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 11:30:25 -0400
-Received: from mtagate5.uk.ibm.com ([194.196.100.165]:40616 "EHLO
-	mtagate5.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752645Ab1GLPaY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 11:30:24 -0400
-Date: Tue, 12 Jul 2011 16:30:17 +0100
-From: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: Len Brown <lenb@kernel.org>, David Woodhouse <dwmw2@infradead.org>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] power_supply: scrub device pointer if registration
- fails
-Message-ID: <20110712153017.GA4503@stefanha-thinkpad.localdomain>
-References: <1310457809-2731-1-git-send-email-stefanha@linux.vnet.ibm.com>
- <1310457809-2731-2-git-send-email-stefanha@linux.vnet.ibm.com>
- <20110712150942.GA1291@oksana.dev.rtsoft.ru>
+	id S1753743Ab1GLPej (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 11:34:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49367 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752645Ab1GLPei (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 11:34:38 -0400
+Date: Tue, 12 Jul 2011 11:34:36 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: "mjg@redhat.com" <mjg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ying.huang@intel.com
+Subject: Re: pstore dump inside an nmi handler
+Message-ID: <20110712153436.GL3765@redhat.com>
+References: <20110708201731.GA3025@redhat.com>
+ <987664A83D2D224EAE907B061CE93D5301E981AB56@orsmsx505.amr.corp.intel.com>
+ <20110711215541.GF2938@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110712150942.GA1291@oksana.dev.rtsoft.ru>
+In-Reply-To: <20110711215541.GF2938@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 12, 2011 at 07:09:42PM +0400, Anton Vorontsov wrote:
-> On Tue, Jul 12, 2011 at 09:03:27AM +0100, Stefan Hajnoczi wrote:
-> > This patch makes power_supply_register() safer for callers that are not
-> > being careful.  When the function fails it leaves the caller's psy.dev
-> > pointer set to the stale power supply device.  A correct caller would
-> > handle the error return and never use psy.dev but the example of
-> > drivers/acpi/battery.c shows otherwise.
+On Mon, Jul 11, 2011 at 05:55:41PM -0400, Don Zickus wrote:
+> On Fri, Jul 08, 2011 at 02:40:13PM -0700, Luck, Tony wrote:
+> > > Inside pstore_dump(), the first thing it tries to grab is a mutex_lock()
+> > > (inside an nmi hander).  This seems to be the root cause of my problems.
 > > 
-> > Clear the psy.dev pointer when power_supply_register() fails so the
-> > caller either sees a valid pointer on success or NULL on failure.
+> > Someone else pointed out that mutex_lock() is a problem here too. They
+> > wondered whether spin_lock_irqsave() would work - or whether pstore
+> > backends were allowed to sleep - to which I said I hoped they didn't,
+> > but wasn't really sure what the future will hold.
 > > 
-> > Signed-off-by: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-> > ---
-> >  drivers/power/power_supply_core.c |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
-> > index 329b46b..33d4068 100644
-> > --- a/drivers/power/power_supply_core.c
-> > +++ b/drivers/power/power_supply_core.c
-> > @@ -194,6 +194,7 @@ create_triggers_failed:
-> >  kobject_set_name_failed:
-> >  device_add_failed:
-> >  	put_device(dev);
-> > +	psy->dev = NULL; /* make it crystal-clear that we failed */
-> >  success:
-> >  	return rc;
-> >  }
+> > So ... ideas (and patches) are most welcome.
 > 
-> I think this may easily cause races. I.e.
+> I tested the spin_lock_irqsave thing on my one box where it was failing
+> and got past my initial problem into kdump.  So that is a positive and I
+> can post the patch for that.  Though it probably isn't a complete
+> solution, it is better than a mutex.
 > 
-> - ACPI calls power_supply_register, it allocates dev, sets
->   psy->dev;
-> - Someone calls acpi_battery_notify() or acpi_battery_update(),
->   which tests for psy->dev;
-> - power_supply_register fails, it frees dev, and then clears psy->dev;
->   but it's too late, as acpi_battery_notify/acpi_battery_update thinks
->   that we're fine.
-> 
-> I believe the whole ACPI battery logic is overcomplicated, and
-> needs a bit of rework. In the meantime, we could move 'psy->dev =
-> dev;' assignment into the end of the function, where _register
-> could not fail, i.e. something like this:
+> However, I have been scratching my head at a follow up problem, which is
+> when I inject an error which produces an NMI->GHES->panic, the error
+> record doesn't get stored under pstore (or maybe ERST too).  I do see the
+> ERST code follow all the correct steps in storing the kmsg_dump logs into
+> the ERST table.  Just on the reboot, when I mount pstore it isn't there.
 
-Aha!  I didn't do this is because I don't know the code and was afraid
-some other function somewhere would use psy->dev.  If you think it is
-safer this way I'll resend the patch.
+Actually, is it expected that the ERST can handle only 8 records?  Also if
+you remove those records with pstore mount under /mnt; 'rm -rf
+/mnt/dmesg-*', are those records removed immediately or are they cached to
+be removed later?  IOW, if a did a 'rm -rf ..' and then an 'echo c >
+/proc/sysrq-trigger' immediately after it, would I expect those records to
+be removed or not?  Testing shows they are removed on reboot but the later
+'echo c > ..' didn't save any new error records. :-/
 
-> But still, I don't see how this will save us from the same issue
-> when ACPI calls power_supply_unregister, which doesn't clear psy->dev:
-> 
-> static void acpi_battery_refresh(struct acpi_battery *battery)
-> {
->         if (!battery->bat.dev)
->                 return;
-> 
->         acpi_battery_get_info(battery);
->         /* The battery may have changed its reporting units. */
->         sysfs_remove_battery(battery);
->         sysfs_add_battery(battery);
-> }
-> 
-> Really, ACPI battery needs some proper fixing and locking. :-/
-
-Yeah.
-
-Stefan
+Cheers,
+Don
