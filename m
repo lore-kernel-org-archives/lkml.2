@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752739Ab1GLJRx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 05:17:53 -0400
+	id S1752755Ab1GLJSJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 05:18:09 -0400
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:61601 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752268Ab1GLJQW (ORCPT
+	with ESMTP id S1751835Ab1GLJQT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 05:16:22 -0400
+	Tue, 12 Jul 2011 05:16:19 -0400
 From: Tejun Heo <tj@kernel.org>
 To: mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de,
         benh@kernel.crashing.org, yinghai@kernel.org, davem@davemloft.net
 Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, x86@kernel.org,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 08/13] memblock, x86: Make free_all_memory_core_early() explicitly free lowmem only
-Date: Tue, 12 Jul 2011 11:16:01 +0200
-Message-Id: <1310462166-31469-9-git-send-email-tj@kernel.org>
+Subject: [PATCH 06/13] memblock: Implement for_each_free_mem_range()
+Date: Tue, 12 Jul 2011 11:15:59 +0200
+Message-Id: <1310462166-31469-7-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1310462166-31469-1-git-send-email-tj@kernel.org>
 References: <1310462166-31469-1-git-send-email-tj@kernel.org>
@@ -22,131 +22,136 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-nomemblock is currently used only by x86 and on x86_32
-free_all_memory_core_early() silently freed only the low mem because
-get_free_all_memory_range() in arch/x86/mm/memblock.c implicitly
-limited range to max_low_pfn.
-
-Rename free_all_memory_core_early() to free_low_memory_core_early()
-and make it call __get_free_all_memory_range() and limit the range to
-max_low_pfn explicitly.  This makes things clearer and also is
-consistent with the bootmem behavior.
-
-This leaves get_free_all_memory_range() without any user.  Kill it.
+Implement for_each_free_mem_range() which iterates over free memory
+areas according to memblock (memory && !reserved).  This will be used
+to simplify memblock users.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
 ---
- arch/x86/include/asm/memblock.h |    1 -
- arch/x86/mm/memblock.c          |   10 ----------
- arch/x86/mm/numa_64.c           |    2 +-
- include/linux/bootmem.h         |    2 +-
- mm/nobootmem.c                  |    8 ++++----
- 5 files changed, 6 insertions(+), 17 deletions(-)
+ include/linux/memblock.h |   20 ++++++++++++
+ mm/memblock.c            |   76 ++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 96 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/memblock.h b/arch/x86/include/asm/memblock.h
-index d2a5a59..6c72eca 100644
---- a/arch/x86/include/asm/memblock.h
-+++ b/arch/x86/include/asm/memblock.h
-@@ -8,7 +8,6 @@ void memblock_x86_free_range(u64 start, u64 end);
- struct range;
- int __get_free_all_memory_range(struct range **range, int nodeid,
- 			 unsigned long start_pfn, unsigned long end_pfn);
--int get_free_all_memory_range(struct range **rangep, int nodeid);
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index e78a9ad..013dfe0 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -61,6 +61,26 @@ extern long memblock_remove(phys_addr_t base, phys_addr_t size);
+ extern long memblock_free(phys_addr_t base, phys_addr_t size);
+ extern long memblock_reserve(phys_addr_t base, phys_addr_t size);
  
- u64 memblock_x86_hole_size(u64 start, u64 end);
- u64 memblock_x86_free_memory_in_range(u64 addr, u64 limit);
-diff --git a/arch/x86/mm/memblock.c b/arch/x86/mm/memblock.c
-index 648d47d..0e8442a 100644
---- a/arch/x86/mm/memblock.c
-+++ b/arch/x86/mm/memblock.c
-@@ -89,16 +89,6 @@ int __init __get_free_all_memory_range(struct range **rangep, int nodeid,
- 	return nr_range;
++extern void __next_free_mem_range(u64 *idx, int nid, phys_addr_t *out_start,
++				  phys_addr_t *out_end, int *out_nid);
++
++/**
++ * for_each_free_mem_range - iterate through free memblock areas
++ * @i: u64 used as loop variable
++ * @nid: node selector, %MAX_NUMNODES for all nodes
++ * @p_start: ptr to phys_addr_t for start address of the range, can be %NULL
++ * @p_end: ptr to phys_addr_t for end address of the range, can be %NULL
++ * @p_nid: ptr to int for nid of the range, can be %NULL
++ *
++ * Walks over free (memory && !reserved) areas of memblock.  Available as
++ * soon as memblock is initialized.
++ */
++#define for_each_free_mem_range(i, nid, p_start, p_end, p_nid)		\
++	for (i = 0,							\
++	     __next_free_mem_range(&i, nid, p_start, p_end, p_nid);	\
++	     i != (u64)ULLONG_MAX;					\
++	     __next_free_mem_range(&i, nid, p_start, p_end, p_nid))
++
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+ extern int memblock_set_node(phys_addr_t base, phys_addr_t size, int nid);
+ 
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 766adec..4d318bf 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -461,6 +461,82 @@ long __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
+ 	return memblock_add_region(_rgn, base, size);
  }
  
--int __init get_free_all_memory_range(struct range **rangep, int nodeid)
--{
--	unsigned long end_pfn = -1UL;
--
--#ifdef CONFIG_X86_32
--	end_pfn = max_low_pfn;
--#endif
--	return __get_free_all_memory_range(rangep, nodeid, 0, end_pfn);
--}
--
- static u64 __init __memblock_x86_memory_in_range(u64 addr, u64 limit, bool get_free)
- {
- 	int i, count;
-diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index dd27f40..92e2711 100644
---- a/arch/x86/mm/numa_64.c
-+++ b/arch/x86/mm/numa_64.c
-@@ -19,7 +19,7 @@ unsigned long __init numa_free_all_bootmem(void)
- 	for_each_online_node(i)
- 		pages += free_all_bootmem_node(NODE_DATA(i));
- 
--	pages += free_all_memory_core_early(MAX_NUMNODES);
-+	pages += free_low_memory_core_early(MAX_NUMNODES);
- 
- 	return pages;
- }
-diff --git a/include/linux/bootmem.h b/include/linux/bootmem.h
-index ab344a5..66d3e95 100644
---- a/include/linux/bootmem.h
-+++ b/include/linux/bootmem.h
-@@ -44,7 +44,7 @@ extern unsigned long init_bootmem_node(pg_data_t *pgdat,
- 				       unsigned long endpfn);
- extern unsigned long init_bootmem(unsigned long addr, unsigned long memend);
- 
--unsigned long free_all_memory_core_early(int nodeid);
-+extern unsigned long free_low_memory_core_early(int nodeid);
- extern unsigned long free_all_bootmem_node(pg_data_t *pgdat);
- extern unsigned long free_all_bootmem(void);
- 
-diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-index c781626..2037a8a 100644
---- a/mm/nobootmem.c
-+++ b/mm/nobootmem.c
-@@ -106,7 +106,7 @@ static void __init __free_pages_memory(unsigned long start, unsigned long end)
- 		__free_pages_bootmem(pfn_to_page(i), 0);
- }
- 
--unsigned long __init free_all_memory_core_early(int nodeid)
-+unsigned long __init free_low_memory_core_early(int nodeid)
- {
- 	int i;
- 	u64 start, end;
-@@ -114,7 +114,7 @@ unsigned long __init free_all_memory_core_early(int nodeid)
- 	struct range *range = NULL;
- 	int nr_range;
- 
--	nr_range = get_free_all_memory_range(&range, nodeid);
-+	nr_range = __get_free_all_memory_range(&range, nodeid, 0, max_low_pfn);
- 
- 	for (i = 0; i < nr_range; i++) {
- 		start = range[i].start;
-@@ -136,7 +136,7 @@ unsigned long __init free_all_bootmem_node(pg_data_t *pgdat)
- {
- 	register_page_bootmem_info_node(pgdat);
- 
--	/* free_all_memory_core_early(MAX_NUMNODES) will be called later */
-+	/* free_low_memory_core_early(MAX_NUMNODES) will be called later */
- 	return 0;
- }
- 
-@@ -154,7 +154,7 @@ unsigned long __init free_all_bootmem(void)
- 	 * Use MAX_NUMNODES will make sure all ranges in early_node_map[]
- 	 *  will be used instead of only Node0 related
- 	 */
--	return free_all_memory_core_early(MAX_NUMNODES);
-+	return free_low_memory_core_early(MAX_NUMNODES);
- }
- 
- /**
++/**
++ * __next_free_mem_range - next function for for_each_free_mem_range()
++ * @idx: pointer to u64 loop variable
++ * @nid: nid: node selector, %MAX_NUMNODES for all nodes
++ * @p_start: ptr to phys_addr_t for start address of the range, can be %NULL
++ * @p_end: ptr to phys_addr_t for end address of the range, can be %NULL
++ * @p_nid: ptr to int for nid of the range, can be %NULL
++ *
++ * Find the first free area from *@idx which matches @nid, fill the out
++ * parameters, and update *@idx for the next iteration.  The lower 32bit of
++ * *@idx contains index into memory region and the upper 32bit indexes the
++ * areas before each reserved region.  For example, if reserved regions
++ * look like the following,
++ *
++ *	0:[0-16), 1:[32-48), 2:[128-130)
++ *
++ * The upper 32bit indexes the following regions.
++ *
++ *	0:[0-0), 1:[16-32), 2:[48-128), 3:[130-MAX)
++ *
++ * As both region arrays are sorted, the function advances the two indices
++ * in lockstep and returns each intersection.
++ */
++void __init_memblock __next_free_mem_range(u64 *idx, int nid,
++					   phys_addr_t *out_start,
++					   phys_addr_t *out_end, int *out_nid)
++{
++	struct memblock_type *mem = &memblock.memory;
++	struct memblock_type *rsv = &memblock.reserved;
++	int mi = *idx & 0xffffffff;
++	int ri = *idx >> 32;
++
++	for ( ; mi < mem->cnt; mi++) {
++		struct memblock_region *m = &mem->regions[mi];
++		phys_addr_t m_start = m->base;
++		phys_addr_t m_end = m->base + m->size;
++
++		/* only memory regions are associated with nodes, check it */
++		if (nid != MAX_NUMNODES && nid != memblock_get_region_node(m))
++			continue;
++
++		/* scan areas before each reservation for intersection */
++		for ( ; ri < rsv->cnt + 1; ri++) {
++			struct memblock_region *r = &rsv->regions[ri];
++			phys_addr_t r_start = ri ? r[-1].base + r[-1].size : 0;
++			phys_addr_t r_end = ri < rsv->cnt ? r->base : ULLONG_MAX;
++
++			/* if ri advanced past mi, break out to advance mi */
++			if (r_start >= m_end)
++				break;
++			/* if the two regions intersect, we're done */
++			if (m_start < r_end) {
++				if (out_start)
++					*out_start = max(m_start, r_start);
++				if (out_end)
++					*out_end = min(m_end, r_end);
++				if (out_nid)
++					*out_nid = memblock_get_region_node(m);
++				/*
++				 * The region which ends first is advanced
++				 * for the next iteration.
++				 */
++				if (m_end <= r_end)
++					mi++;
++				else
++					ri++;
++				*idx = (u32)mi | (u64)ri << 32;
++				return;
++			}
++		}
++	}
++
++	/* signal end of iteration */
++	*idx = ULLONG_MAX;
++}
++
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+ /*
+  * Common iterator interface used to define for_each_mem_range().
 -- 
 1.7.6
 
