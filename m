@@ -1,147 +1,293 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755859Ab1GLV32 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 17:29:28 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:41760 "EHLO e2.ny.us.ibm.com"
+	id S1755808Ab1GLVbq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 17:31:46 -0400
+Received: from proxima.lp0.eu ([81.2.80.65]:54519 "EHLO proxima.lp0.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753808Ab1GLV31 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 17:29:27 -0400
-Date: Tue, 12 Jul 2011 14:29:20 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Julie Sullivan <kernelmail.jms@gmail.com>
-Cc: linux-kernel-mail <linux-kernel@vger.kernel.org>
-Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3
-Message-ID: <20110712212920.GQ2326@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CAAVPGOPCGsNynWPWcwaxVU_jPCg=VPdz82_g6OvY5gnYKk5oFg@mail.gmail.com>
- <20110710171626.GK6014@linux.vnet.ibm.com>
- <20110710173530.GA16954@linux.vnet.ibm.com>
- <CAAVPGOPAx-oLZct9u2Kq3uQ4W2GwJFYUGgw3h=M_Y4_wv7b51w@mail.gmail.com>
- <20110710214639.GP6014@linux.vnet.ibm.com>
- <CAAVPGOMafp_+45X=7asHe=MqaHY8CiJYsf2GZ3qOPrWpjctHVQ@mail.gmail.com>
- <20110710231449.GQ6014@linux.vnet.ibm.com>
- <CAAVPGOMSprJSkzziH6hJv9PweOONzsMaRZEK2ZSrV3xFBReTPw@mail.gmail.com>
- <20110711214301.GP2245@linux.vnet.ibm.com>
- <CAAVPGOOJ0NEWqF2w9zCLC1bpXeA_TwzenNo-a4kvR3tcbewnNw@mail.gmail.com>
+	id S1754942Ab1GLVbp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 17:31:45 -0400
+X-Greylist: delayed 630 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Jul 2011 17:31:44 EDT
+Message-ID: <4E1CBAC8.2030404@simon.arlott.org.uk>
+Date: Tue, 12 Jul 2011 22:21:12 +0100
+From: Simon Arlott <simon@fire.lp0.eu>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110511 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAAVPGOOJ0NEWqF2w9zCLC1bpXeA_TwzenNo-a4kvR3tcbewnNw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-media@vger.kernel.org, mchehab@redhat.com
+Subject: 2.6.39 "tuner-core: remove usage of DIGITAL_TV" breaks saa7134 with
+ mt2050
+Content-Type: multipart/mixed;
+ boundary="------------070305000803060604010700"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 12, 2011 at 10:15:40PM +0100, Julie Sullivan wrote:
-> On Mon, Jul 11, 2011 at 10:43 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > On Mon, Jul 11, 2011 at 09:37:53PM +0100, julie Sullivan wrote:
-> >> > And here is what I am proposing sending upstream.  I have your Tested-by,
-> >> > but had to make a small but very real change in order to make it work
-> >> > under all configurations that I test under.  So could you please try
-> >> > the attached patch out?  I am particularly interested in how it works
-> >> > out when CONFIG_RCU_BOOST=n.
-> >> >
-> >> >                                                        Thanx, Paul
-> >> >
-> >> > ------------------------------------------------------------------------
-> >> >
-> >> > rcu: Prevent RCU callbacks from executing during early boot
-> >> >
-> >> > Under some rare but real combinations of configuration parameters, RCU
-> >> > callbacks are posted during early boot that use kernel facilities that
-> >> > are not yet initialized.  Therefore, when these callbacks are invoked,
-> >> > hard hangs and crashes ensue.  This commit therefore prevents RCU
-> >> > callbacks from being invoked until after the scheduler is up and running.
-> >> >
-> >> > It might well turn out that a better approach is to identify the specific
-> >> > RCU callbacks that are causing this problem, but that discussion will
-> >> > wait until such time as someone really needs an RCU callback to be
-> >> > invoked during early boot.
-> >> >
-> >> > Reported-by: julie Sullivan <kernelmail.jms@gmail.com>
-> >> > Tested-by: julie Sullivan <kernelmail.jms@gmail.com>
-> >> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> >> >
-> >> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> >> > index 7e59ffb..4c0210f 100644
-> >> > --- a/kernel/rcutree.c
-> >> > +++ b/kernel/rcutree.c
-> >> > @@ -1467,7 +1467,7 @@ static void rcu_process_callbacks(struct softirq_action *unused)
-> >> >  */
-> >> >  static void invoke_rcu_callbacks(struct rcu_state *rsp, struct rcu_data *rdp)
-> >> >  {
-> >> > -       if (likely(!rsp->boost)) {
-> >> > +       if (likely(rcu_scheduler_active && !rsp->boost)) {
-> >> >                rcu_do_batch(rsp, rdp);
-> >> >                return;
-> >> >        }
-> >> > diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> >> > index 14dc7dd..ca3c6dc 100644
-> >> > --- a/kernel/rcutree_plugin.h
-> >> > +++ b/kernel/rcutree_plugin.h
-> >> > @@ -1703,7 +1703,7 @@ static void rcu_initiate_boost(struct rcu_node *rnp, unsigned long flags)
-> >> >
-> >> >  static void invoke_rcu_callbacks_kthread(void)
-> >> >  {
-> >> > -       WARN_ON_ONCE(1);
-> >> > +       WARN_ON_ONCE(rcu_scheduler_active);
-> >> >  }
-> >> >
-> >> >  static void rcu_preempt_boost_start_gp(struct rcu_node *rnp)
-> >> >
-> >>
-> >> Hi Paul,
-> >> Is this to be applied on a clean v3.0-rc4? I tried this but I'm afraid
-> >> the boot crash is back again (on -rc5 and -rc6 too).
-> >
-> > I must confess that it did seem to be giving up a bit too easily.  :-(
-> >
-> > So, I have created a new branch jms.2011.07.11a on the -rcu git tree at:
-> >
-> > git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
-> >
-> > If the new branch jms.2011.07.11a fails and the old branch jms.2011.07.07a
-> > succeeds (both with CONFIG_RCU_BOOST=n), then that indicates that my
-> > mainlinable patch didn't delay the callbacks quite far enough.  On the
-> > other hand, if both succeed, then that means that there is another bug
-> > lurking later on in the sequence of commits.
-> >
-> > Could you please test these out?
-> >
-> >                                                        Thanx, Paul
-> >
-> 
-> OK tested- jms.2011.07.11a fails. The other one's fine (I'm actually
-> running an -rc6 with its patches right now :-)
+This is a multi-part message in MIME format.
+--------------070305000803060604010700
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
-Just to make sure I understand what patch you are using...  Is it the
-one that I have listed below?  It would be bad form for me to send the
-wrong patch upstream.  ;-)
+commit ad020dc2fe9039628cf6cef42cd1b76531ee8411
+Author: Mauro Carvalho Chehab <mchehab@redhat.com>
+Date:   Tue Feb 15 09:30:50 2011 -0200
 
-If this is the correct one, then the upstreamable patch I sent recently
-(https://lkml.org/lkml/2011/7/12/313) should also work.  Famous last
-words...
+    [media] tuner-core: remove usage of DIGITAL_TV
+    
+    tuner-core has no business to do with digital TV. So, don't use
+    T_DIGITAL_TV on it, as it has no code to distinguish between
+    them, and nobody fills T_DIGITAL_TV right.
+    
+    Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-							Thanx, Paul
 
-------------------------------------------------------------------------
+This breaks my Pinnacle PCTV 300i DVB-T cards as they can no longer tune
+DVB-T.
 
-rcu: prevent RCU callbacks from being invoked during early boot.
+[  540.010030] tuner 3-0043: Tuner doesn't support mode 3. Putting tuner to sleep
+[  540.011017] tuner 2-0043: Tuner doesn't support mode 3. Putting tuner to sleep
+[  540.012012] tuner 3-0060: Tuner doesn't support mode 3. Putting tuner to sleep
+[  540.013029] tuner 2-0060: Tuner doesn't support mode 3. Putting tuner to sleep
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+saa7134 needs to indicate digital TV tuning to mt20xx but it looks like
+tuner-core no longer has any way to allow a tuner to indicate support
+for this?
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index dbe4120..4456395 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -1476,7 +1476,7 @@ static void rcu_process_callbacks(struct softirq_action *unused)
-  */
- static void invoke_rcu_callbacks(struct rcu_state *rsp, struct rcu_data *rdp)
- {
--	if (likely(!rsp->boost)) {
-+	if (likely(rcu_kthreads_spawnable && !rsp->boost)) {
- 		rcu_do_batch(rsp, rdp);
- 		return;
- 	}
+(mt2050_set_tv_freq in mt20xx.c uses V4L2_TUNER_DIGITAL_TV)
+
+-- 
+Simon Arlott
+
+--------------070305000803060604010700
+Content-Type: text/plain;
+ name="saa7134-dmesg-2.6"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="saa7134-dmesg-2.6"
+
+Y2FsbGluZyAgc2FhNzEzNF9pbml0KzB4MC8weDRhIEAgMQpzYWE3MTMwLzM0OiB2NGwyIGRy
+aXZlciB2ZXJzaW9uIDAuMi4xNiBsb2FkZWQKQUNQSTogUENJIEludGVycnVwdCBMaW5rIFtM
+TkVEXSBlbmFibGVkIGF0IElSUSAxNgpzYWE3MTM0IDAwMDA6MDU6MDAuMDogUENJIElOVCBB
+IC0+IExpbmtbTE5FRF0gLT4gR1NJIDE2IChsZXZlbCwgbG93KSAtPiBJUlEgMTYKc2FhNzEz
+NFswXTogZm91bmQgYXQgMDAwMDowNTowMC4wLCByZXY6IDEsIGlycTogMTYsIGxhdGVuY3k6
+IDY0LCBtbWlvOiAweGZkZmZmYzAwCnNhYTcxMzRbMF06IHN1YnN5c3RlbTogMTFiZDowMDJk
+LCBib2FyZDogUGlubmFjbGUgUENUViAzMDBpIERWQi1UICsgUEFMIFtjYXJkPTUwLGF1dG9k
+ZXRlY3RlZF0Kc2FhNzEzNFswXTogYm9hcmQgaW5pdDogZ3BpbyBpcyBjYzA2MDAwCnNhYTcx
+MzRbMF06IGkyYyBlZXByb20gMDA6IGJkIDExIDJkIDAwIGY4IGY4IDFjIDAwIDQzIDQzIGE5
+IDFjIDU1IGQyIGIyIDkyCnNhYTcxMzRbMF06IGkyYyBlZXByb20gMTA6IDAwIGYwIDA0IDA0
+IGZmIDIwIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmCnNhYTcxMzRbMF06IGkyYyBl
+ZXByb20gMjA6IDAxIDQwIDAxIDAyIDAzIGZmIDAzIDAxIDA4IGZmIDAwIDI1IGZmIGZmIGZm
+IGZmCnNhYTcxMzRbMF06IGkyYyBlZXByb20gMzA6IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZm
+IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmCnNhYTcxMzRbMF06IGkyYyBlZXByb20gNDA6IGZm
+IDE2IDAwIGMwIDg2IDNjIDAxIDAxIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmCnNhYTcxMzRb
+MF06IGkyYyBlZXByb20gNTA6IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZm
+IGZmIGZmIGZmIGZmCnNhYTcxMzRbMF06IGkyYyBlZXByb20gNjA6IDBjIDIyIDE3IDQ0IDAz
+IDExIGUxIGExIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmCnNhYTcxMzRbMF06IGkyYyBlZXBy
+b20gNzA6IDAwIDMwIDhkIDE4IDNiIDAyIGZmIGZmIDc0IDUwIGZmIGZmIGZmIGZmIGZmIGZm
+CnNhYTcxMzRbMF06IGkyYyBlZXByb20gODA6IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZm
+IGZmIGZmIGZmIGZmIGZmIGZmIGZmCnNhYTcxMzRbMF06IGkyYyBlZXByb20gOTA6IGZmIGZm
+IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmCnNhYTcxMzRbMF06
+IGkyYyBlZXByb20gYTA6IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZm
+IGZmIGZmIGZmCnNhYTcxMzRbMF06IGkyYyBlZXByb20gYjA6IGZmIGZmIGZmIGZmIGZmIGZm
+IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmCnNhYTcxMzRbMF06IGkyYyBlZXByb20g
+YzA6IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmCnNh
+YTcxMzRbMF06IGkyYyBlZXByb20gZDA6IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZm
+IGZmIGZmIGZmIGZmIGZmIGZmCnNhYTcxMzRbMF06IGkyYyBlZXByb20gZTA6IGZmIGZmIGZm
+IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmCnNhYTcxMzRbMF06IGky
+YyBlZXByb20gZjA6IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZm
+IGZmIGZmCnR1bmVyIDItMDA0MzogY2hpcCBmb3VuZCBAIDB4ODYgKHNhYTcxMzRbMF0pCnRk
+YTk4ODcgMi0wMDQzOiBjcmVhdGluZyBuZXcgaW5zdGFuY2UKdGRhOTg4NyAyLTAwNDM6IHRk
+YTk4OFs1LzYvN10gZm91bmQKdHVuZXIgMi0wMDQzOiB0eXBlIHNldCB0byB0ZGE5ODg3CnR1
+bmVyIDItMDA0MzogdHYgZnJlcSBzZXQgdG8gMC4wMAp0dW5lciAyLTAwNDM6IFRWIGZyZXEg
+KDAuMDApIG91dCBvZiByYW5nZSAoNDQtOTU4KQp0dW5lciAyLTAwNDM6IHNhYTcxMzRbMF0g
+dHVuZXIgSTJDIGFkZHIgMHg4NiB3aXRoIHR5cGUgNzQgdXNlZCBmb3IgMHgwZQpDaGlwIElE
+IGlzIG5vdCB6ZXJvLiBJdCBpcyBub3QgYSBURUE1NzY3CnR1bmVyIDItMDA2MDogU2V0dGlu
+ZyBtb2RlX21hc2sgdG8gMHgwZQp0dW5lciAyLTAwNjA6IGNoaXAgZm91bmQgQCAweGMwIChz
+YWE3MTM0WzBdKQp0dW5lciAyLTAwNjA6IHR1bmVyIDB4NjA6IFR1bmVyIHR5cGUgYWJzZW50
+CnR1bmVyIDItMDA0MzogQ2FsbGluZyBzZXRfdHlwZV9hZGRyIGZvciB0eXBlPTMzLCBhZGRy
+PTB4ZmYsIG1vZGU9MHgwZSwgY29uZmlnPTB4MDAKdHVuZXIgMi0wMDQzOiBzZXQgYWRkciBk
+aXNjYXJkZWQgZm9yIHR5cGUgNzQsIG1hc2sgZS4gQXNrZWQgdG8gY2hhbmdlIHR1bmVyIGF0
+IGFkZHIgMHhmZiwgd2l0aCBtYXNrIGUKdHVuZXIgMi0wMDYwOiBDYWxsaW5nIHNldF90eXBl
+X2FkZHIgZm9yIHR5cGU9MzMsIGFkZHI9MHhmZiwgbW9kZT0weDBlLCBjb25maWc9MHgwMAp0
+dW5lciAyLTAwNjA6IGRlZmluaW5nIEdQSU8gY2FsbGJhY2sKbXQyMHh4IDItMDA2MDogbWlj
+cm90dW5lOiBjb21wYW55Y29kZT0zY2JmIHBhcnQ9NDIgcmV2PTFjCm10MjB4eCAyLTAwNjA6
+IG1pY3JvdHVuZSBNVDIwNTAgZm91bmQsIE9LCnR1bmVyIDItMDA2MDogdHlwZSBzZXQgdG8g
+TVQyMDUwCnR1bmVyIDItMDA2MDogdHYgZnJlcSBzZXQgdG8gNDAwLjAwCnR1bmVyIDItMDA2
+MDogc2FhNzEzNFswXSB0dW5lciBJMkMgYWRkciAweGMwIHdpdGggdHlwZSAzMyB1c2VkIGZv
+ciAweDBlCnR1bmVyIDItMDA0Mzogc3dpdGNoaW5nIHRvIHY0bDIKdHVuZXIgMi0wMDYwOiBz
+d2l0Y2hpbmcgdG8gdjRsMgp0dW5lciAyLTAwNjA6IHR2IGZyZXEgc2V0IHRvIDQwMC4wMAp0
+dW5lciAyLTAwNjA6IHR2IGZyZXEgc2V0IHRvIDQwMC4wMAp0dW5lciAyLTAwNDM6IFB1dHRp
+bmcgdHVuZXIgdG8gc2xlZXAKdHVuZXIgMi0wMDQzOiBDbWQgc19wb3dlciBhY2NlcHRlZCBm
+b3IgYW5hbG9nIFRWCnR1bmVyIDItMDA2MDogUHV0dGluZyB0dW5lciB0byBzbGVlcAp0dW5l
+ciAyLTAwNjA6IENtZCBzX3Bvd2VyIGFjY2VwdGVkIGZvciBhbmFsb2cgVFYKc2FhNzEzNFsw
+XTogcmVnaXN0ZXJlZCBkZXZpY2UgdmlkZW8wIFt2NGwyXQpzYWE3MTM0WzBdOiByZWdpc3Rl
+cmVkIGRldmljZSB2YmkwCnNhYTcxMzQgMDAwMDowNTowMi4wOiBQQ0kgSU5UIEEgLT4gTGlu
+a1tMTkVCXSAtPiBHU0kgMTggKGxldmVsLCBsb3cpIC0+IElSUSAxOApzYWE3MTM0WzFdOiBm
+b3VuZCBhdCAwMDAwOjA1OjAyLjAsIHJldjogMSwgaXJxOiAxOCwgbGF0ZW5jeTogNjQsIG1t
+aW86IDB4ZmRmZmY4MDAKc2FhNzEzNFsxXTogc3Vic3lzdGVtOiAxMWJkOjAwMmQsIGJvYXJk
+OiBQaW5uYWNsZSBQQ1RWIDMwMGkgRFZCLVQgKyBQQUwgW2NhcmQ9NTAsYXV0b2RldGVjdGVk
+XQpzYWE3MTM0WzFdOiBib2FyZCBpbml0OiBncGlvIGlzIGM4MDYwMDAKc2FhNzEzNFsxXTog
+aTJjIGVlcHJvbSAwMDogYmQgMTEgMmQgMDAgZjggZjggMWMgMDAgNDMgNDMgYTkgMWMgNTUg
+ZDIgYjIgOTIKc2FhNzEzNFsxXTogaTJjIGVlcHJvbSAxMDogMDAgZjAgMDQgMDQgZmYgMjAg
+ZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYKc2FhNzEzNFsxXTogaTJjIGVlcHJvbSAy
+MDogMDEgNDAgMDEgMDIgMDMgZmYgMDMgMDEgMDggZmYgMDAgMjUgZmYgZmYgZmYgZmYKc2Fh
+NzEzNFsxXTogaTJjIGVlcHJvbSAzMDogZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYg
+ZmYgZmYgZmYgZmYgZmYgZmYKc2FhNzEzNFsxXTogaTJjIGVlcHJvbSA0MDogZmYgMTYgMDAg
+YzAgODYgM2MgMDEgMDEgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYKc2FhNzEzNFsxXTogaTJj
+IGVlcHJvbSA1MDogZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYg
+ZmYgZmYKc2FhNzEzNFsxXTogaTJjIGVlcHJvbSA2MDogMGMgMjIgMTcgNDQgMDMgMjcgMzIg
+MDggZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYKc2FhNzEzNFsxXTogaTJjIGVlcHJvbSA3MDog
+MDAgMzAgOGQgMTggYzggNGIgZmYgZmYgMzQgNjAgZmYgZmYgZmYgZmYgZmYgZmYKc2FhNzEz
+NFsxXTogaTJjIGVlcHJvbSA4MDogZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYg
+ZmYgZmYgZmYgZmYgZmYKc2FhNzEzNFsxXTogaTJjIGVlcHJvbSA5MDogZmYgZmYgZmYgZmYg
+ZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYKc2FhNzEzNFsxXTogaTJjIGVl
+cHJvbSBhMDogZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYg
+ZmYKc2FhNzEzNFsxXTogaTJjIGVlcHJvbSBiMDogZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYg
+ZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYKc2FhNzEzNFsxXTogaTJjIGVlcHJvbSBjMDogZmYg
+ZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYKc2FhNzEzNFsx
+XTogaTJjIGVlcHJvbSBkMDogZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYg
+ZmYgZmYgZmYgZmYKc2FhNzEzNFsxXTogaTJjIGVlcHJvbSBlMDogZmYgZmYgZmYgZmYgZmYg
+ZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYKc2FhNzEzNFsxXTogaTJjIGVlcHJv
+bSBmMDogZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYgZmYK
+dHVuZXIgMy0wMDQzOiBjaGlwIGZvdW5kIEAgMHg4NiAoc2FhNzEzNFsxXSkKdGRhOTg4NyAz
+LTAwNDM6IGNyZWF0aW5nIG5ldyBpbnN0YW5jZQp0ZGE5ODg3IDMtMDA0MzogdGRhOTg4WzUv
+Ni83XSBmb3VuZAp0dW5lciAzLTAwNDM6IHR5cGUgc2V0IHRvIHRkYTk4ODcKdHVuZXIgMy0w
+MDQzOiB0diBmcmVxIHNldCB0byAwLjAwCnR1bmVyIDMtMDA0MzogVFYgZnJlcSAoMC4wMCkg
+b3V0IG9mIHJhbmdlICg0NC05NTgpCnR1bmVyIDMtMDA0Mzogc2FhNzEzNFsxXSB0dW5lciBJ
+MkMgYWRkciAweDg2IHdpdGggdHlwZSA3NCB1c2VkIGZvciAweDBlCkNoaXAgSUQgaXMgbm90
+IHplcm8uIEl0IGlzIG5vdCBhIFRFQTU3NjcKdHVuZXIgMy0wMDYwOiBTZXR0aW5nIG1vZGVf
+bWFzayB0byAweDBlCnR1bmVyIDMtMDA2MDogY2hpcCBmb3VuZCBAIDB4YzAgKHNhYTcxMzRb
+MV0pCnR1bmVyIDMtMDA2MDogdHVuZXIgMHg2MDogVHVuZXIgdHlwZSBhYnNlbnQKdHVuZXIg
+My0wMDQzOiBDYWxsaW5nIHNldF90eXBlX2FkZHIgZm9yIHR5cGU9MzMsIGFkZHI9MHhmZiwg
+bW9kZT0weDBlLCBjb25maWc9MHgwMAp0dW5lciAzLTAwNDM6IHNldCBhZGRyIGRpc2NhcmRl
+ZCBmb3IgdHlwZSA3NCwgbWFzayBlLiBBc2tlZCB0byBjaGFuZ2UgdHVuZXIgYXQgYWRkciAw
+eGZmLCB3aXRoIG1hc2sgZQp0dW5lciAzLTAwNjA6IENhbGxpbmcgc2V0X3R5cGVfYWRkciBm
+b3IgdHlwZT0zMywgYWRkcj0weGZmLCBtb2RlPTB4MGUsIGNvbmZpZz0weDAwCnR1bmVyIDMt
+MDA2MDogZGVmaW5pbmcgR1BJTyBjYWxsYmFjawptdDIweHggMy0wMDYwOiBtaWNyb3R1bmU6
+IGNvbXBhbnljb2RlPTNjYmYgcGFydD00MiByZXY9MjIKbXQyMHh4IDMtMDA2MDogbWljcm90
+dW5lIE1UMjA1MCBmb3VuZCwgT0sKdHVuZXIgMy0wMDYwOiB0eXBlIHNldCB0byBNVDIwNTAK
+dHVuZXIgMy0wMDYwOiB0diBmcmVxIHNldCB0byA0MDAuMDAKdHVuZXIgMy0wMDYwOiBzYWE3
+MTM0WzFdIHR1bmVyIEkyQyBhZGRyIDB4YzAgd2l0aCB0eXBlIDMzIHVzZWQgZm9yIDB4MGUK
+dHVuZXIgMy0wMDQzOiBzd2l0Y2hpbmcgdG8gdjRsMgp0dW5lciAzLTAwNjA6IHN3aXRjaGlu
+ZyB0byB2NGwyCnR1bmVyIDMtMDA2MDogdHYgZnJlcSBzZXQgdG8gNDAwLjAwCnR1bmVyIDMt
+MDA2MDogdHYgZnJlcSBzZXQgdG8gNDAwLjAwCnR1bmVyIDMtMDA0MzogUHV0dGluZyB0dW5l
+ciB0byBzbGVlcAp0dW5lciAzLTAwNDM6IENtZCBzX3Bvd2VyIGFjY2VwdGVkIGZvciBhbmFs
+b2cgVFYKdHVuZXIgMy0wMDYwOiBQdXR0aW5nIHR1bmVyIHRvIHNsZWVwCnR1bmVyIDMtMDA2
+MDogQ21kIHNfcG93ZXIgYWNjZXB0ZWQgZm9yIGFuYWxvZyBUVgpzYWE3MTM0WzFdOiByZWdp
+c3RlcmVkIGRldmljZSB2aWRlbzEgW3Y0bDJdCnNhYTcxMzRbMV06IHJlZ2lzdGVyZWQgZGV2
+aWNlIHZiaTEKaW5pdGNhbGwgc2FhNzEzNF9pbml0KzB4MC8weDRhIHJldHVybmVkIDAgYWZ0
+ZXIgMzcyNTQxIHVzZWNzCg==
+--------------070305000803060604010700
+Content-Type: text/plain;
+ name="saa7134-dmesg-3.0"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="saa7134-dmesg-3.0"
+
+Y2FsbGluZyAgc2FhNzEzNF9pbml0KzB4MC8weDRhIEAgMQpzYWE3MTMwLzM0OiB2NGwyIGRy
+aXZlciB2ZXJzaW9uIDAuMi4xNiBsb2FkZWQKQUNQSTogUENJIEludGVycnVwdCBMaW5rIFtM
+TkVEXSBlbmFibGVkIGF0IElSUSAxNgpzYWE3MTM0IDAwMDA6MDU6MDAuMDogUENJIElOVCBB
+IC0+IExpbmtbTE5FRF0gLT4gR1NJIDE2IChsZXZlbCwgbG93KSAtPiBJUlEgMTYKc2FhNzEz
+NFswXTogZm91bmQgYXQgMDAwMDowNTowMC4wLCByZXY6IDEsIGlycTogMTYsIGxhdGVuY3k6
+IDY0LCBtbWlvOiAweGZkZmZmYzAwCnNhYTcxMzRbMF06IHN1YnN5c3RlbTogMTFiZDowMDJk
+LCBib2FyZDogUGlubmFjbGUgUENUViAzMDBpIERWQi1UICsgUEFMIFtjYXJkPTUwLGF1dG9k
+ZXRlY3RlZF0Kc2FhNzEzNFswXTogYm9hcmQgaW5pdDogZ3BpbyBpcyBjODA2MDAwCnNhYTcx
+MzRbMF06IGkyYyBlZXByb20gMDA6IGJkIDExIDJkIDAwIGY4IGY4IDFjIDAwIDQzIDQzIGE5
+IDFjIDU1IGQyIGIyIDkyCnNhYTcxMzRbMF06IGkyYyBlZXByb20gMTA6IDAwIGYwIDA0IDA0
+IGZmIDIwIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmCnNhYTcxMzRbMF06IGkyYyBl
+ZXByb20gMjA6IDAxIDQwIDAxIDAyIDAzIGZmIDAzIDAxIDA4IGZmIDAwIDI1IGZmIGZmIGZm
+IGZmCnNhYTcxMzRbMF06IGkyYyBlZXByb20gMzA6IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZm
+IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmCnNhYTcxMzRbMF06IGkyYyBlZXByb20gNDA6IGZm
+IDE2IDAwIGMwIDg2IDNjIDAxIDAxIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmCnNhYTcxMzRb
+MF06IGkyYyBlZXByb20gNTA6IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZm
+IGZmIGZmIGZmIGZmCnNhYTcxMzRbMF06IGkyYyBlZXByb20gNjA6IDBjIDIyIDE3IDQ0IDAz
+IDExIGUxIGExIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmCnNhYTcxMzRbMF06IGkyYyBlZXBy
+b20gNzA6IDAwIDMwIDhkIDE4IDNiIDAyIGZmIGZmIDc0IDUwIGZmIGZmIGZmIGZmIGZmIGZm
+CnNhYTcxMzRbMF06IGkyYyBlZXByb20gODA6IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZm
+IGZmIGZmIGZmIGZmIGZmIGZmIGZmCnNhYTcxMzRbMF06IGkyYyBlZXByb20gOTA6IGZmIGZm
+IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmCnNhYTcxMzRbMF06
+IGkyYyBlZXByb20gYTA6IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZm
+IGZmIGZmIGZmCnNhYTcxMzRbMF06IGkyYyBlZXByb20gYjA6IGZmIGZmIGZmIGZmIGZmIGZm
+IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmCnNhYTcxMzRbMF06IGkyYyBlZXByb20g
+YzA6IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmCnNh
+YTcxMzRbMF06IGkyYyBlZXByb20gZDA6IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZm
+IGZmIGZmIGZmIGZmIGZmIGZmCnNhYTcxMzRbMF06IGkyYyBlZXByb20gZTA6IGZmIGZmIGZm
+IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmCnNhYTcxMzRbMF06IGky
+YyBlZXByb20gZjA6IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZm
+IGZmIGZmCnRkYTk4ODcgMi0wMDQzOiBjcmVhdGluZyBuZXcgaW5zdGFuY2UKdGRhOTg4NyAy
+LTAwNDM6IHRkYTk4OFs1LzYvN10gZm91bmQKdHVuZXIgMi0wMDQzOiB0eXBlIHNldCB0byB0
+ZGE5ODg3CnR1bmVyIDItMDA0MzogdHYgZnJlcSBzZXQgdG8gNDAwLjAwCnR1bmVyIDItMDA0
+Mzogc2FhNzEzNFswXSB0dW5lciBJMkMgYWRkciAweDg2IHdpdGggdHlwZSA3NCB1c2VkIGZv
+ciAweDA2CnR1bmVyIDItMDA0MzogVHVuZXIgNzQgZm91bmQgd2l0aCB0eXBlKHMpIFJhZGlv
+IFRWLgpDaGlwIElEIGlzIG5vdCB6ZXJvLiBJdCBpcyBub3QgYSBURUE1NzY3CnR1bmVyIDIt
+MDA2MDogU2V0dGluZyBtb2RlX21hc2sgdG8gMHgwNgp0dW5lciAyLTAwNjA6IHR1bmVyIDB4
+NjA6IFR1bmVyIHR5cGUgYWJzZW50CnR1bmVyIDItMDA2MDogVHVuZXIgLTEgZm91bmQgd2l0
+aCB0eXBlKHMpIFJhZGlvIFRWLgp0dW5lciAyLTAwNDM6IENhbGxpbmcgc2V0X3R5cGVfYWRk
+ciBmb3IgdHlwZT0zMywgYWRkcj0weGZmLCBtb2RlPTB4MDYsIGNvbmZpZz0weDAwCnR1bmVy
+IDItMDA0Mzogc2V0IGFkZHIgZGlzY2FyZGVkIGZvciB0eXBlIDc0LCBtYXNrIDYuIEFza2Vk
+IHRvIGNoYW5nZSB0dW5lciBhdCBhZGRyIDB4ZmYsIHdpdGggbWFzayA2CnR1bmVyIDItMDA2
+MDogQ2FsbGluZyBzZXRfdHlwZV9hZGRyIGZvciB0eXBlPTMzLCBhZGRyPTB4ZmYsIG1vZGU9
+MHgwNiwgY29uZmlnPTB4MDAKdHVuZXIgMi0wMDYwOiBkZWZpbmluZyBHUElPIGNhbGxiYWNr
+Cm10MjB4eCAyLTAwNjA6IG1pY3JvdHVuZTogY29tcGFueWNvZGU9M2NiZiBwYXJ0PTQyIHJl
+dj0yMgptdDIweHggMi0wMDYwOiBtaWNyb3R1bmUgTVQyMDUwIGZvdW5kLCBPSwp0dW5lciAy
+LTAwNjA6IHR5cGUgc2V0IHRvIE1UMjA1MAp0dW5lciAyLTAwNjA6IHR2IGZyZXEgc2V0IHRv
+IDQwMC4wMAp0dW5lciAyLTAwNjA6IHNhYTcxMzRbMF0gdHVuZXIgSTJDIGFkZHIgMHhjMCB3
+aXRoIHR5cGUgMzMgdXNlZCBmb3IgMHgwNgp0dW5lciAyLTAwNDM6IHR2IGZyZXEgc2V0IHRv
+IDQwMC4wMAp0dW5lciAyLTAwNjA6IHR2IGZyZXEgc2V0IHRvIDQwMC4wMAp0dW5lciAyLTAw
+NDM6IHR2IGZyZXEgc2V0IHRvIDQwMC4wMAp0dW5lciAyLTAwNjA6IHR2IGZyZXEgc2V0IHRv
+IDQwMC4wMAp0dW5lciAyLTAwNDM6IFB1dHRpbmcgdHVuZXIgdG8gc2xlZXAKdHVuZXIgMi0w
+MDYwOiBQdXR0aW5nIHR1bmVyIHRvIHNsZWVwCnNhYTcxMzRbMF06IHJlZ2lzdGVyZWQgZGV2
+aWNlIHZpZGVvMCBbdjRsMl0Kc2FhNzEzNFswXTogcmVnaXN0ZXJlZCBkZXZpY2UgdmJpMApz
+YWE3MTM0IDAwMDA6MDU6MDIuMDogUENJIElOVCBBIC0+IExpbmtbTE5FQl0gLT4gR1NJIDE4
+IChsZXZlbCwgbG93KSAtPiBJUlEgMTgKc2FhNzEzNFsxXTogZm91bmQgYXQgMDAwMDowNTow
+Mi4wLCByZXY6IDEsIGlycTogMTgsIGxhdGVuY3k6IDY0LCBtbWlvOiAweGZkZmZmODAwCnNh
+YTcxMzRbMV06IHN1YnN5c3RlbTogMTFiZDowMDJkLCBib2FyZDogUGlubmFjbGUgUENUViAz
+MDBpIERWQi1UICsgUEFMIFtjYXJkPTUwLGF1dG9kZXRlY3RlZF0Kc2FhNzEzNFsxXTogYm9h
+cmQgaW5pdDogZ3BpbyBpcyBjODA2MDAwCnNhYTcxMzRbMV06IGkyYyBlZXByb20gMDA6IGJk
+IDExIDJkIDAwIGY4IGY4IDFjIDAwIDQzIDQzIGE5IDFjIDU1IGQyIGIyIDkyCnNhYTcxMzRb
+MV06IGkyYyBlZXByb20gMTA6IDAwIGYwIDA0IDA0IGZmIDIwIGZmIGZmIGZmIGZmIGZmIGZm
+IGZmIGZmIGZmIGZmCnNhYTcxMzRbMV06IGkyYyBlZXByb20gMjA6IDAxIDQwIDAxIDAyIDAz
+IGZmIDAzIDAxIDA4IGZmIDAwIDI1IGZmIGZmIGZmIGZmCnNhYTcxMzRbMV06IGkyYyBlZXBy
+b20gMzA6IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZm
+CnNhYTcxMzRbMV06IGkyYyBlZXByb20gNDA6IGZmIDE2IDAwIGMwIDg2IDNjIDAxIDAxIGZm
+IGZmIGZmIGZmIGZmIGZmIGZmIGZmCnNhYTcxMzRbMV06IGkyYyBlZXByb20gNTA6IGZmIGZm
+IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmCnNhYTcxMzRbMV06
+IGkyYyBlZXByb20gNjA6IDBjIDIyIDE3IDQ0IDAzIDI3IDMyIDA4IGZmIGZmIGZmIGZmIGZm
+IGZmIGZmIGZmCnNhYTcxMzRbMV06IGkyYyBlZXByb20gNzA6IDAwIDMwIDhkIDE4IGM4IDRi
+IGZmIGZmIDM0IDYwIGZmIGZmIGZmIGZmIGZmIGZmCnNhYTcxMzRbMV06IGkyYyBlZXByb20g
+ODA6IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmCnNh
+YTcxMzRbMV06IGkyYyBlZXByb20gOTA6IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZm
+IGZmIGZmIGZmIGZmIGZmIGZmCnNhYTcxMzRbMV06IGkyYyBlZXByb20gYTA6IGZmIGZmIGZm
+IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmCnNhYTcxMzRbMV06IGky
+YyBlZXByb20gYjA6IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZm
+IGZmIGZmCnNhYTcxMzRbMV06IGkyYyBlZXByb20gYzA6IGZmIGZmIGZmIGZmIGZmIGZmIGZm
+IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmCnNhYTcxMzRbMV06IGkyYyBlZXByb20gZDA6
+IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmCnNhYTcx
+MzRbMV06IGkyYyBlZXByb20gZTA6IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZm
+IGZmIGZmIGZmIGZmIGZmCnNhYTcxMzRbMV06IGkyYyBlZXByb20gZjA6IGZmIGZmIGZmIGZm
+IGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmIGZmCnRkYTk4ODcgMy0wMDQzOiBj
+cmVhdGluZyBuZXcgaW5zdGFuY2UKdGRhOTg4NyAzLTAwNDM6IHRkYTk4OFs1LzYvN10gZm91
+bmQKdHVuZXIgMy0wMDQzOiB0eXBlIHNldCB0byB0ZGE5ODg3CnR1bmVyIDMtMDA0MzogdHYg
+ZnJlcSBzZXQgdG8gNDAwLjAwCnR1bmVyIDMtMDA0Mzogc2FhNzEzNFsxXSB0dW5lciBJMkMg
+YWRkciAweDg2IHdpdGggdHlwZSA3NCB1c2VkIGZvciAweDA2CnR1bmVyIDMtMDA0MzogVHVu
+ZXIgNzQgZm91bmQgd2l0aCB0eXBlKHMpIFJhZGlvIFRWLgpDaGlwIElEIGlzIG5vdCB6ZXJv
+LiBJdCBpcyBub3QgYSBURUE1NzY3CnR1bmVyIDMtMDA2MDogU2V0dGluZyBtb2RlX21hc2sg
+dG8gMHgwNgp0dW5lciAzLTAwNjA6IHR1bmVyIDB4NjA6IFR1bmVyIHR5cGUgYWJzZW50CnR1
+bmVyIDMtMDA2MDogVHVuZXIgLTEgZm91bmQgd2l0aCB0eXBlKHMpIFJhZGlvIFRWLgp0dW5l
+ciAzLTAwNDM6IENhbGxpbmcgc2V0X3R5cGVfYWRkciBmb3IgdHlwZT0zMywgYWRkcj0weGZm
+LCBtb2RlPTB4MDYsIGNvbmZpZz0weDAwCnR1bmVyIDMtMDA0Mzogc2V0IGFkZHIgZGlzY2Fy
+ZGVkIGZvciB0eXBlIDc0LCBtYXNrIDYuIEFza2VkIHRvIGNoYW5nZSB0dW5lciBhdCBhZGRy
+IDB4ZmYsIHdpdGggbWFzayA2CnR1bmVyIDMtMDA2MDogQ2FsbGluZyBzZXRfdHlwZV9hZGRy
+IGZvciB0eXBlPTMzLCBhZGRyPTB4ZmYsIG1vZGU9MHgwNiwgY29uZmlnPTB4MDAKdHVuZXIg
+My0wMDYwOiBkZWZpbmluZyBHUElPIGNhbGxiYWNrCm10MjB4eCAzLTAwNjA6IG1pY3JvdHVu
+ZTogY29tcGFueWNvZGU9M2NiZiBwYXJ0PTQyIHJldj0yMgptdDIweHggMy0wMDYwOiBtaWNy
+b3R1bmUgTVQyMDUwIGZvdW5kLCBPSwp0dW5lciAzLTAwNjA6IHR5cGUgc2V0IHRvIE1UMjA1
+MAp0dW5lciAzLTAwNjA6IHR2IGZyZXEgc2V0IHRvIDQwMC4wMAp0dW5lciAzLTAwNjA6IHNh
+YTcxMzRbMV0gdHVuZXIgSTJDIGFkZHIgMHhjMCB3aXRoIHR5cGUgMzMgdXNlZCBmb3IgMHgw
+Ngp0dW5lciAzLTAwNDM6IHR2IGZyZXEgc2V0IHRvIDQwMC4wMAp0dW5lciAzLTAwNjA6IHR2
+IGZyZXEgc2V0IHRvIDQwMC4wMAp0dW5lciAzLTAwNDM6IHR2IGZyZXEgc2V0IHRvIDQwMC4w
+MAp0dW5lciAzLTAwNjA6IHR2IGZyZXEgc2V0IHRvIDQwMC4wMAp0dW5lciAzLTAwNDM6IFB1
+dHRpbmcgdHVuZXIgdG8gc2xlZXAKdHVuZXIgMy0wMDYwOiBQdXR0aW5nIHR1bmVyIHRvIHNs
+ZWVwCnNhYTcxMzRbMV06IHJlZ2lzdGVyZWQgZGV2aWNlIHZpZGVvMSBbdjRsMl0Kc2FhNzEz
+NFsxXTogcmVnaXN0ZXJlZCBkZXZpY2UgdmJpMQppbml0Y2FsbCBzYWE3MTM0X2luaXQrMHgw
+LzB4NGEgcmV0dXJuZWQgMCBhZnRlciAzODAzNDcgdXNlY3MKCg==
+--------------070305000803060604010700--
