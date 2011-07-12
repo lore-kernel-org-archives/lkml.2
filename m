@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753203Ab1GLHdJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 03:33:09 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:39423 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752028Ab1GLHdH (ORCPT
+	id S1758630Ab1GLHeQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 03:34:16 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57040 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753046Ab1GLHeP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 03:33:07 -0400
+	Tue, 12 Jul 2011 03:34:15 -0400
+Date: Tue, 12 Jul 2011 08:34:01 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: =?utf-8?B?5p6X5a6P5paH?= <tommy.lin.1101@gmail.com>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] arch: arm: Correct the dependency of HAVE_ARM_TWD
+Message-ID: <20110712073401.GB23270@n2100.arm.linux.org.uk>
+References: <1310104763-12948-1-git-send-email-tommy.lin@caviumnetworks.com> <20110708091014.GA15142@oksana.dev.rtsoft.ru> <20110708091713.GF2414@n2100.arm.linux.org.uk> <CAB8eogcYUSYPBS9UAv29MqnTLdUrbYt+y=yLmzG0r92kz-PUXA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110705230101.GD2852@fujiko>
-References: <20110621142133.GA3652@fujiko>
-	<yunhb7jxkz2.fsf@aiko.keithp.com>
-	<20110621155205.GA2488@fujiko>
-	<yunboxrxiz2.fsf@aiko.keithp.com>
-	<20110621164209.GA2155@fujiko>
-	<yun8vsvxdr4.fsf@aiko.keithp.com>
-	<20110621184757.GA2185@fujiko>
-	<yunzklb9fg1.fsf@aiko.keithp.com>
-	<20110705230101.GD2852@fujiko>
-Date: Tue, 12 Jul 2011 10:33:06 +0300
-X-Google-Sender-Auth: Ut7IppOyYzmmU0L0lEBsXVPBSa8
-Message-ID: <CAOJsxLFVSEDEaYH8Dw4jWGo9=wkC8QQWOs4xRR6qcgVM2xCRoA@mail.gmail.com>
-Subject: Re: Reverting rc6 by default
-From: Pekka Enberg <penberg@kernel.org>
-To: Francesco Allertsen <fallertsen@gmail.com>
-Cc: Keith Packard <keithp@keithp.com>, dri-devel@lists.freedesktop.org,
-        LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAB8eogcYUSYPBS9UAv29MqnTLdUrbYt+y=yLmzG0r92kz-PUXA@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 6, 2011 at 2:01 AM, Francesco Allertsen
-<fallertsen@gmail.com> wrote:
-> On Tue, Jun 21, 2011 at 12:01:34PM -0700, Keith Packard wrote:
->> Thanks. I'll see if I can't get an X201s upgraded to this version and
->> see if we can reproduce the problem you're having...
+On Tue, Jul 12, 2011 at 02:57:38PM +0800, 林宏文 wrote:
+> 2011/7/8 Russell King - ARM Linux <linux@arm.linux.org.uk>
+> >
+> > On Fri, Jul 08, 2011 at 01:10:14PM +0400, Anton Vorontsov wrote:
+> > > On Fri, Jul 08, 2011 at 01:59:23PM +0800, Tommy Lin wrote:
+> > > Russell,
+> > >
+> > > As the patch is needed for CNS3xxx Watchdog support, I'd like to take
+> > > it via CNS3xxx tree, if you're OK with that.
+> >
+> > No.
+> >
+> > TWD is only useful if SMP is enabled, otherwise the contained code
+> > won't be called.  Without SMP you'll find that the timer rate will
+> > be zero.
+> >
+> > So actually your problems are bigger than just this dependency.
 >
-> Any news?
->
-> I have found the time today for more debugging.
->
-> Attached there are 3 files.
->
-> dmesg-startup is the startup of the last 3.0.0-rc6 kernel, with the
-> debug enabled.
-> dmesg-enabled is the X startup (and freeze) with debug mode and rc6
-> enabled.
-> dmesg-disabled is the X startup with debug mode enabled and rc6 disabled
-> (so no freeze; full kde startup and logout).
->
-> I hope this helps you to solve the problem, otherwise the X201s users
-> will not use the 3.0.0 kernel :-(.
->
-> If you need more informations just let me know.
+> I think LOCAL_TIMERS is the one that useful if SMP is enabled. The zero
+> timer rate issue still able to limited by LOCAL_TIMERS.
 
-AFAICT, this problem is still there in 3.0-rc7. Keith, isn't it time
-to revert commit a51f7a6 ("drm/i915: enable rc6 by default") before
-3.0 is out?
+No.  I could repeat everything I've said about the initialization but
+there's no point.  I'm not dropping the SMP dependency of SMP_TWD.
