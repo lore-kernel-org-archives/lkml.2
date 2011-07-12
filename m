@@ -1,116 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754917Ab1GLT0o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 15:26:44 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:65099 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754107Ab1GLT0n convert rfc822-to-8bit (ORCPT
+	id S1754926Ab1GLTfm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 15:35:42 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55002 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754107Ab1GLTfl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 15:26:43 -0400
+	Tue, 12 Jul 2011 15:35:41 -0400
 MIME-Version: 1.0
-In-Reply-To: <201107072059.p67KxQ0O021814@hera.kernel.org>
-References: <201107072059.p67KxQ0O021814@hera.kernel.org>
-Date: Tue, 12 Jul 2011 21:26:42 +0200
-X-Google-Sender-Auth: 14vJH-vE0i0r2SglzjpHUF8FaDc
-Message-ID: <CAMuHMdUA7+j-hQuvu7g5kCZX1nqwPtR+mwhPP1nmxfkmCxfKmg@mail.gmail.com>
-Subject: Re: FS-Cache: Add a helper to bulk uncache pages on an inode
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: David Howells <dhowells@redhat.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable <stable@kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20110712181536.GA30364@redhat.com>
+References: <20110712181536.GA30364@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 12 Jul 2011 12:34:49 -0700
+Message-ID: <CA+55aFx+dyu54VYU7_Bc=3D3hsEdH2SLb6DV2w+5eiQH9Zo41w@mail.gmail.com>
+Subject: Re: drm_lock()->block_all_signals() is broken
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
+        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 7, 2011 at 22:59, Linux Kernel Mailing List
-<linux-kernel@vger.kernel.org> wrote:
->    FS-Cache: Add a helper to bulk uncache pages on an inode
+On Tue, Jul 12, 2011 at 11:15 AM, Oleg Nesterov <oleg@redhat.com> wrote:
 >
->    Add an FS-Cache helper to bulk uncache pages on an inode.  This will
->    only work for the circumstance where the pages in the cache correspond
->    1:1 with the pages attached to an inode's page cache.
->
->    This is required for CIFS and NFS: When disabling inode cookie, we were
->    returning the cookie and setting cifsi->fscache to NULL but failed to
->    invalidate any previously mapped pages.  This resulted in "Bad page
->    state" errors and manifested in other kind of errors when running
->    fsstress.  Fix it by uncaching mapped pages when we disable the inode
->    cookie.
->
->    This patch should fix the following oops and "Bad page state" errors
->    seen during fsstress testing.
+> I tried many times to ask about the supposed behaviour of
+> block_all_signals() in drm, but it seems nobody can answer.
 
-> --- a/fs/fscache/page.c
-> +++ b/fs/fscache/page.c
-> @@ -954,3 +954,47 @@ void fscache_mark_pages_cached(struct fscache_retrieval *op,
->        pagevec_reinit(pagevec);
->  }
->  EXPORT_SYMBOL(fscache_mark_pages_cached);
-> +
-> +/*
-> + * Uncache all the pages in an inode that are marked PG_fscache, assuming them
-> + * to be associated with the given cookie.
-> + */
-> +void __fscache_uncache_all_inode_pages(struct fscache_cookie *cookie,
-> +                                      struct inode *inode)
-> +{
-> +       struct address_space *mapping = inode->i_mapping;
-> +       struct pagevec pvec;
-> +       pgoff_t next;
-> +       int i;
-> +
-> +       _enter("%p,%p", cookie, inode);
-> +
-> +       if (!mapping || mapping->nrpages == 0) {
-> +               _leave(" [no pages]");
-> +               return;
-> +       }
-> +
-> +       pagevec_init(&pvec, 0);
-> +       next = 0;
-> +       while (next <= (loff_t)-1 &&
+It's always been broken, I think. We've had threads about it before
+(years and years ago). I'd certainly be willing to just remove it
+entirely, and see if anything pops up that ends up actually working
+and being saner.
 
-On m68k, I get:
-
-fs/fscache/page.c: In function ‘__fscache_uncache_all_inode_pages’:
-fs/fscache/page.c:979: warning: comparison is always false due to
-limited range of data type
-
-next is pgoff_t, which is defined to unsigned long by default, unless
-overridden by the arch
-(hmm, no single arch seems to do that?).
-loff_t is (signed) long long.
-
-> +              pagevec_lookup(&pvec, mapping, next, PAGEVEC_SIZE)
-> +              ) {
-> +               for (i = 0; i < pagevec_count(&pvec); i++) {
-> +                       struct page *page = pvec.pages[i];
-> +                       pgoff_t page_index = page->index;
-> +
-> +                       ASSERTCMP(page_index, >=, next);
-> +                       next = page_index + 1;
-> +
-> +                       if (PageFsCache(page)) {
-> +                               __fscache_wait_on_page_write(cookie, page);
-> +                               __fscache_uncache_page(cookie, page);
-> +                       }
-> +               }
-> +               pagevec_release(&pvec);
-> +               cond_resched();
-> +       }
-> +
-> +       _leave("");
-> +}
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+                   Linus
