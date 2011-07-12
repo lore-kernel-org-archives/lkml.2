@@ -1,50 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755408Ab1GLUaU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 16:30:20 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:41220 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753653Ab1GLUaT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 16:30:19 -0400
-X-Authority-Analysis: v=1.1 cv=IOX921YOuPvYFce5aSLzPVIStpiCPR9M8R83dyHW74w= c=1 sm=0 a=L0M2l6TC3hIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=CE-arMJ0I0PG-5MRDq0A:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC][PATCH 2/3] ftrace: Add extend-notrace to not trace sub
- funcs of notrace funcs
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-In-Reply-To: <1310499943.2309.3.camel@laptop>
-References: <20110712185131.698851699@goodmis.org>
-	 <20110712190302.475833802@goodmis.org>  <1310499943.2309.3.camel@laptop>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 12 Jul 2011 16:30:16 -0400
-Message-ID: <1310502616.3931.8.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+	id S1755440Ab1GLUaj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 16:30:39 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:43460 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753653Ab1GLUah (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 16:30:37 -0400
+Message-ID: <4E1CAEEB.8050506@kernel.dk>
+Date: Tue, 12 Jul 2011 22:30:35 +0200
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: "Jiang, Dave" <dave.jiang@intel.com>
+CC: "Williams, Dan J" <dan.j.williams@intel.com>,
+        "Foong, Annie" <annie.foong@intel.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Nadolski, Edmund" <edmund.nadolski@intel.com>,
+        "Skirvin, Jeffrey D" <jeffrey.d.skirvin@intel.com>
+Subject: Re: rq_affinity doesn't seem to work?
+References: <D010E79907AF0D4E90B603DE907837D504CA6365D6@azsmsx504.amr.corp.intel.com>
+In-Reply-To: <D010E79907AF0D4E90B603DE907837D504CA6365D6@azsmsx504.amr.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-12 at 21:45 +0200, Peter Zijlstra wrote:
-> On Tue, 2011-07-12 at 14:51 -0400, Steven Rostedt wrote:
-> > Known issues: Things that are called from assembly are also not traced.
-> 
-> We could of course create a gasm CALL macro that adds the mcount hookery
-> and use that for those functions.
+On 2011-07-12 21:03, Jiang, Dave wrote:
+> Jens,
+> I'm doing some performance tuning for the Intel isci SAS controller
+> driver, and I noticed some interesting numbers with mpstat. Looking at
+> the numbers it seems that rq_affinity is not moving the request
+> completion to the request submission CPU. Using fio to saturate the
+> system with 512B I/Os, I noticed that all I/Os are bound to the CPUs
+> (CPUs 6 and 7) that service the hard irqs. I have put in a quick hack
+> in the driver so that it records the CPU during request construction
+> and then I try to steer the scsi->done() calls to the request CPUs.
+> With this simple hack, mpstat shows that the soft irq contexts are now
+> distributed. I observed significant performance increase. The iowait%
+> gone from 30s and 40s to low single digit approaching 0. Any ideas
+> what could be happening with the rq_affinity logic? I'm assuming
+> rq_affinity should behave the way my hacked solution is behaving. This
+> is running on an 8 core single CPU SandyBridge based system with
+> hyper-threading turned off. The two MSIX interrupts on the controller
+> are tied to CPU 6 and 7 respectively via /proc/irq/X/smp_affinity. I'm
+> running fio with 8 SAS disks and 8 threads. 
 
-Hmm, that wouldn't be too hard to do. I'll go write up some patches.
+It's probably the grouping, we need to do something about that. Does the
+below patch make it behave as you expect?
 
+diff --git a/block/blk.h b/block/blk.h
+index d658628..17d53d8 100644
+--- a/block/blk.h
++++ b/block/blk.h
+@@ -157,6 +157,7 @@ static inline int queue_congestion_off_threshold(struct request_queue *q)
+ 
+ static inline int blk_cpu_to_group(int cpu)
+ {
++#if 0
+ 	int group = NR_CPUS;
+ #ifdef CONFIG_SCHED_MC
+ 	const struct cpumask *mask = cpu_coregroup_mask(cpu);
+@@ -168,6 +169,7 @@ static inline int blk_cpu_to_group(int cpu)
+ #endif
+ 	if (likely(group < NR_CPUS))
+ 		return group;
++#endif
+ 	return cpu;
+ }
+ 
 
-> 
-> /me runs
-
-/me chases
-
-
+-- 
+Jens Axboe
 
