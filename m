@@ -1,89 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755664Ab1GLVYK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 17:24:10 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:59716 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754998Ab1GLVYI convert rfc822-to-8bit (ORCPT
+	id S1755743Ab1GLV0W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 17:26:22 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:54922 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754037Ab1GLV0U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 17:24:08 -0400
+	Tue, 12 Jul 2011 17:26:20 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH 1/3] TTY: serial, remove BTM from wait_until_sent
+Date: Tue, 12 Jul 2011 23:25:34 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
+Cc: gregkh@suse.de, linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jirislaby@gmail.com, Alan Cox <alan@linux.intel.com>,
+        Andreas Bombe <aeb@debian.org>
+References: <1310503400-28447-1-git-send-email-jslaby@suse.cz>
+In-Reply-To: <1310503400-28447-1-git-send-email-jslaby@suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <CAPJ9Yc-Rce8sSjuLUrA+fsUvFOGdpb4AsPMdjydWq52dbL19aQ@mail.gmail.com>
-References: <CAPJ9Yc-Rce8sSjuLUrA+fsUvFOGdpb4AsPMdjydWq52dbL19aQ@mail.gmail.com>
-Date: Tue, 12 Jul 2011 23:24:06 +0200
-Message-ID: <CAPJ9Yc-s6AwCVfkrAJsq-mdyQJ3MtZ4ANzN6ieEXJRZmdpLxkw@mail.gmail.com>
-Subject: Re: Cause of RAMDISK: incomplete write error ?
-From: =?UTF-8?Q?David_Bala=C5=BEic?= <xerces9@gmail.com>
-To: linux-kernel@vger.kernel.org, kent.robotti@gmail.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107122325.35013.arnd@arndb.de>
+X-Provags-ID: V02:K0:Y/kA9SsKSeSxWOlgpHcNikMBGvcV0rx1CES68QWln61
+ HT5y4HEcykPrFFCBR0GvCele7gZlpo+Zdo0vA8qpVOtiglqsTS
+ seMIaaApl14p1JVibTdrxswGWQGWfSA+vjo+j4D29LXQKRDq4u
+ Ihs1SuTwyv5wI02mOKW+nm+Kj6uRubJa6plHOrWz0ctJKFslnW
+ BwXvNlA9xM9fKHPEZWLYQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 July 2011 22:51, David Balažic <xerces9@gmail.com> wrote:
-> Hi!
->
-> Recently I encountered this error when booting from an USB flash drive:
-> RAMDISK: incomplete write (404 != 29094)
-> write error
-> UDF-fs: No partition found (1)
-> (followed by panic)
->
-> According to kernel source, this is a problem in the write() call:
->
-> (v2.6.39/init/do_mounts_rd.c , line 318)
-> static int __init compr_flush(void *window, unsigned int outcnt)
-> {
->        int written = sys_write(crd_outfd, window, outcnt);
->        if (written != outcnt) {
->                if (decompress_error == 0)
->                        printk(KERN_ERR
->                               "RAMDISK: incomplete write (%d != %d)\n",
->                               written, outcnt);
->
-> I use grub4DOS on a NTFS formatted USB drive for booting.
-> The menu.lst entry is:
->
-> title xxx test RL13.5  xxxx Boot Linux system! (32-bit kernel)
-> pause --wait=0 Loading kernel32...
-> kernel /kernel32 root=/dev/ram0 rw vga=normal video=640x400
-> pause --wait=0 Loading rootfs.cgz... This could take a couple of minutes.
-> initrd /rootfs.cgz
->
-> The same problem happens on two PCs, one HP N36L microserver and the
-> other an Asus EEE PC 1005HA netbook (booting the same USB drive).
->
-> Could it be, that the initrd image is somehow to big, hitting some limit?
->
-> This is the RIPLinux mini distro. I encountered this problem a few
-> versions back. I suspect the image size, as it
-> gets bigger from release to release.
-> Currently it is 147.790.634 bytes big.
->
-> Booting the same files from a CD works, but that uses a different
-> bootloader (distro official ISO image, uses isolinux, I think).
->
-> The problem I am describing is with RIPLinux release 13.5, I used the
-> files from this download:
-> http://rip.7bf.de/current/RIPLinuX-13.5.iso
-> (I guess they will move it after a while to
-> http://rip.7bf.de/all_mirrored_versions/ )
->
-> So, can please someone point me in a direction, where the problem could lie?
->
-> Checking the initrd image file with gzip gives an OK.
+On Tuesday 12 July 2011 22:43:18 Jiri Slaby wrote:
+> During the BKL removal process, the BKL was switched to tty_lock
+> (BTM). Now we should start pruning the BTM further. Let's start with
+> wait_until_sent of the serial layer. This will allow us to switch to
+> the tty port helpers and thus clean it up much.
+> 
+> In wait_until_sent there are some uport members accessed, but neither
+> of them is protected by BTM at the location they are set ('=>' means
+> function call):
+> * uport->fifosize (set in tty_ioctl => uart_ioctl => uart_set_info)
+> * uport->type (set in add_one_port prior to tty_register_device)
+> * uport->timeout (set usually in tty_ioctl => tty_mode_ioctl =>
+>   tty_set_termios => uart_set_termios => uart_change_speed =>
+>   uport->ops->set_termios => uart_update_timeout)
+> * call to uport->ops->tx_empty()
+> 
+> If the tx_empty hook needs some lock to protect accesses to registers,
+> it should take &uport->lock spinlock like 8250 does. Otherwise there
+> still might be races e.g. with ISRs.
+> 
+> This should also fix the issue Andreas is seeing (BTM in comparison to
+> BKL doesn't have any hidden functionality like unlocking during
+> sleeping).
 
-I decompressed the initrd file (using 7-zip) and booted the
-decompressed version and that works.
-The decompressed file size is 243.040.768 bytes.
+Looks good to me. I would suggest also cleaning up the amiserial.c
+driver, which uses a different approach to do the same, by effectively
+implementing its own recursive lock.
 
-I also tried the original, compressed initrd on a third PC, booting
-from grub4dos too.
-There the kernel hangs on EDD check (know BIOS issue on this PC), but
-after adding edd=off it boots fine.
+If uart_wait_until_sent doesn't need the BTM, then amiserial also
+shouldn't need it. It does an MMIO access, but it doesn't look like
+that needs to be protected. After that is done, we should be able
+to kill tty_locked() and __big_tty_mutex_owner as well.
 
-Regards,
-David
-
-PS: Please CC me any replies, thanks.
+	Arnd
