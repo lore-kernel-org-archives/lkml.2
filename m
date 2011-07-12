@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752341Ab1GLOMb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 10:12:31 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:46722 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751090Ab1GLOMa (ORCPT
+	id S1753031Ab1GLOMp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 10:12:45 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:19905 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752773Ab1GLOMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 10:12:30 -0400
-From: Ravishankar <ravishankarkm32@gmail.com>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>,
-        Ravishankar <ravishankarkm32@gmail.com>
-Subject: [PATCH 24/24] Staging: comedi: fix warning: line over 80 character issue in das800.c
-Date: Tue, 12 Jul 2011 19:55:03 +0530
-Message-Id: <1310480703-29400-1-git-send-email-ravishankarkm32@gmail.com>
-X-Mailer: git-send-email 1.6.5.2
-In-Reply-To: <[PATCH v2]Staging: comedi: fix line over 80 character issue in das800.c>
-References: <[PATCH v2]Staging: comedi: fix line over 80 character issue in das800.c>
+	Tue, 12 Jul 2011 10:12:43 -0400
+Date: Tue, 12 Jul 2011 10:12:28 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: xen-devel@lists.xensource.com, julie Sullivan <kernelmail.jms@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3
+Message-ID: <20110712141228.GA7831@dumpdata.com>
+References: <CAAVPGOPAx-oLZct9u2Kq3uQ4W2GwJFYUGgw3h=M_Y4_wv7b51w@mail.gmail.com>
+ <20110710214639.GP6014@linux.vnet.ibm.com>
+ <CAAVPGOMafp_+45X=7asHe=MqaHY8CiJYsf2GZ3qOPrWpjctHVQ@mail.gmail.com>
+ <20110710231449.GQ6014@linux.vnet.ibm.com>
+ <20110711162450.GA22913@dumpdata.com>
+ <20110711171337.GK2245@linux.vnet.ibm.com>
+ <20110711193021.GA2996@dumpdata.com>
+ <20110711201508.GN2245@linux.vnet.ibm.com>
+ <20110711210954.GA15745@dumpdata.com>
+ <20110712105506.GB2253@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110712105506.GB2253@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4E1C5656.00A7:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ravishankar <ravi.shankar@greenturtles.in>
+> >   [<c042d0f5>] task_waking_fair+0x14  <--
+> 
+> Hmmm...  This is a 32-bit system, isn't it?
 
-This is a patch to the das800.c file that fixes up a  warning: line over 80 character found by the checkpatch.pl tool
+Yes. I ran this little loop:
 
-Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
+#!/bin/bash
 
----
-There was a indentation not proper now it's fixed
----
- drivers/staging/comedi/drivers/das800.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ID=`xl list | grep Fedora | awk '  { print $2}'`
 
-diff --git a/drivers/staging/comedi/drivers/das800.c b/drivers/staging/comedi/drivers/das800.c
-index 4973ec0..9a739fc 100644
---- a/drivers/staging/comedi/drivers/das800.c
-+++ b/drivers/staging/comedi/drivers/das800.c
-@@ -396,7 +396,7 @@ static irqreturn_t das800_interrupt(int irq, void *d)
- 
- 	/*  if hardware conversions are not enabled, then quit */
- 	spin_lock_irqsave(&dev->spinlock, irq_flags);
--	 /* select base address + 7 to be STATUS2 register */
-+	/* select base address + 7 to be STATUS2 register */
- 	outb(CONTROL1, dev->iobase + DAS800_GAIN);
- 	status = inb(dev->iobase + DAS800_STATUS2) & STATUS2_HCEN;
- 	/* don't release spinlock yet since we want to make sure no one else disables hardware conversions */
--- 
-1.6.5.2
+rm -f cpu*.log
+while (true) do
+	xl pause $ID
+	 /usr/lib64/xen/bin/xenctx -s /mnt/tmp/FC15-32/System.map-3.0.0-rc6-julie-tested-dirty -a $ID 0 >> cpu0.log
+	 /usr/lib64/xen/bin/xenctx -s /mnt/tmp/FC15-32/System.map-3.0.0-rc6-julie-tested-dirty -a $ID 1 >> cpu1.log
+	 /usr/lib64/xen/bin/xenctx -s /mnt/tmp/FC15-32/System.map-3.0.0-rc6-julie-tested-dirty -a $ID 2 >> cpu2.log
+	 /usr/lib64/xen/bin/xenctx -s /mnt/tmp/FC15-32/System.map-3.0.0-rc6-julie-tested-dirty -a $ID 3 >> cpu3.log
+	xl unpause $ID
+done
 
+To get an idea what the CPU is doing before it hits the task_waking_fair
+and there isn't anything daming. Here are the logs:
+
+http://darnok.org/xen/cpu1.log
+
+> 
+> Could you please add a check to the loop in task_waking_fair() and
+> do a printk() if the loop does (say) more than 1000 passes without
+> exiting?
+
+Of course. Let me queue that up.
