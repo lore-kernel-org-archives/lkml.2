@@ -1,86 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932189Ab1GLXOZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 19:14:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50442 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755119Ab1GLXOY convert rfc822-to-8bit (ORCPT
+	id S1756410Ab1GLXZJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 19:25:09 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37274 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751203Ab1GLXZH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 19:14:24 -0400
-Date: Wed, 13 Jul 2011 09:14:08 +1000
-From: NeilBrown <neilb@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Vasiliy Kulikov <segoon@openwall.com>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        kernel-hardening@lists.openwall.com, Jiri Slaby <jslaby@suse.cz>,
-        James Morris <jmorris@namei.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] move RLIMIT_NPROC check from set_user() to
- do_execve_common()
-Message-ID: <20110713091408.0d456352@notabene.brown>
-In-Reply-To: <CA+55aFysXOeBqEvmVbuqL3i0jRFDcE=vDuVhmYL38XQ0+x=deQ@mail.gmail.com>
-References: <20110612130953.GA3709@albatros>
-	<20110706173631.GA5431@albatros>
-	<CA+55aFyfjG1h2zkkGai_VPM8p5bhWhvNXs1HvuWMgxv4RSywYw@mail.gmail.com>
-	<20110706185932.GB3299@albatros>
-	<20110707075610.GA3411@albatros>
-	<20110707081930.GA4393@albatros>
-	<20110712132723.GA3193@albatros>
-	<CA+55aFysXOeBqEvmVbuqL3i0jRFDcE=vDuVhmYL38XQ0+x=deQ@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+	Tue, 12 Jul 2011 19:25:07 -0400
+Date: Tue, 12 Jul 2011 16:24:31 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 1/12] radix_tree: exceptional entries and indices
+Message-Id: <20110712162431.75bfe77b.akpm@linux-foundation.org>
+In-Reply-To: <alpine.LSU.2.00.1107121536100.2112@sister.anvils>
+References: <alpine.LSU.2.00.1106140327550.29206@sister.anvils>
+	<alpine.LSU.2.00.1106140341070.29206@sister.anvils>
+	<20110617163854.49225203.akpm@linux-foundation.org>
+	<alpine.LSU.2.00.1106171702150.1345@sister.anvils>
+	<20110618144832.cfc665b0.akpm@linux-foundation.org>
+	<alpine.LSU.2.00.1107121536100.2112@sister.anvils>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Jul 2011 14:16:10 -0700 Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+<tries to remember what this is all about>
 
-> On Tue, Jul 12, 2011 at 6:27 AM, Vasiliy Kulikov <segoon@openwall.com> wrote:
-> >
-> > The NPROC can still be enforced in the common code flow of daemons
-> > spawning user processes.  Most of daemons do fork()+setuid()+execve().
-> > The check introduced in execve() enforces the same limit as in setuid()
-> > and doesn't create similar security issues.
+l 2011 15:56:14 -0700 (PDT)
+Hugh Dickins <hughd@google.com> wrote:
+
+> On Sat, 18 Jun 2011, Andrew Morton wrote:
+> > On Fri, 17 Jun 2011 17:13:38 -0700 (PDT) Hugh Dickins <hughd@google.com> wrote:
+> > > On Fri, 17 Jun 2011, Andrew Morton wrote:
+> > > > On Tue, 14 Jun 2011 03:42:27 -0700 (PDT)
+> > > > Hugh Dickins <hughd@google.com> wrote:
+> > > > 
+> > > > > The low bit of a radix_tree entry is already used to denote an indirect
+> > > > > pointer, for internal use, and the unlikely radix_tree_deref_retry() case.
+> > > > > Define the next bit as denoting an exceptional entry, and supply inline
+> > > > > functions radix_tree_exception() to return non-0 in either unlikely case,
+> > > > > and radix_tree_exceptional_entry() to return non-0 in the second case.
+> > > > 
+> > > > Yes, the RADIX_TREE_INDIRECT_PTR hack is internal-use-only, and doesn't
+> > > > operate on (and hence doesn't corrupt) client-provided items.
+> > > > 
+> > > > This patch uses bit 1 and uses it against client items, so for
+> > > > practical purpoese it can only be used when the client is storing
+> > > > addresses.  And it needs new APIs to access that flag.
+> > > > 
+> > > > All a bit ugly.  Why not just add another tag for this?  Or reuse an
+> > > > existing tag if the current tags aren't all used for these types of
+> > > > pages?
+> > > 
+> > > I couldn't see how to use tags without losing the "lockless" lookups:
+> > 
+> > So lockless pagecache broke the radix-tree tag-versus-item coherency as
+> > well as the address_space nrpages-vs-radix-tree coherency.
 > 
-> Ok, this looks fine by me. I'd like to get some kind of comment from
-> the selinux etc people (James?) but I'd certainly be willing to take
-> this.
+> I don't think that remark is fair to lockless pagecache at all.  If we
+> want the scalability advantage of lockless lookup, yes, we don't have
+> strict coherency with tagging at that time.  But those places that need
+> to worry about that coherency, can lock to do so.
+
+Nobody thought about these issues, afaik.  Things have broken and the
+code has become significantly more complex/fragile.
+
+Does the locking in mapping_tagged() make any sense?
+
+> > Isn't it fun learning these things.
+> > 
+> > > because the tag is a separate bit from the entry itself, unless you're
+> > > under tree_lock, there would be races when changing from page pointer
+> > > to swap entry or back, when slot was updated but tag not or vice versa.
+> > 
+> > So...  take tree_lock?
 > 
-> Failing when executing a suid application rather than when a suid
-> application releases its heightened credentials seems to be the
-> fundamentally saner approach. IOW, failing to raise privileges rather
-> than failing to lower them.
+> I wouldn't call that an improvement...
+
+I wouldn't call the proposed changes to radix-tree.c an improvement,
+either.  It's an expedient, once-off, single-caller hack.
+
+If the cost of adding locking is negligible then that is a superior fix.
+
+> > What effect does that have?
 > 
->                    Linus
+> ... but admit I have not measured: I rather assume that if we now change
+> tmpfs from lockless to locked lookup, someone else will soon come up with
+> the regression numbers.
+> 
+> > It'd better be
+> > "really bad", because this patchset does nothing at all to improve core
+> > MM maintainability :(
+> 
+> I was aiming to improve shmem.c maintainability; and you have good grounds
+> to accuse me of hurting shmem.c maintainability when I highmem-ized the
+> swap vector nine years ago.
+> 
+> I was not aiming to improve core MM maintainability, nor to harm it.
+> I am extending the use to which the radix-tree can be put, but is that
+> so bad?
 
-I am happy with the patch in general - it adequately addresses the problem
-which I fixed by adding the test to set_user which is now being removed.
+I find it hard to believe that this wart added to the side of the
+radix-tree code will find any other users.  And the wart spreads
+contagion into core filemap pagecache lookup.
 
-However I don't think your characterisation is quite correct Linus.
-There is no setuid application, and there is no raising of privileges.
-
-The contrast is really "failing when trying to use reduced privileges is
-safer than failing to reduce privileges - if the reduced privileges are not
-available".
-
-Note that there is room for a race that could have unintended consequences.
-
-Between the 'setuid(ordinary-user)' and a subsequent 'exit()' after execve()
-has failed, any other process owned by the same user (and we know where are
-quite a few) would fail an execve() where it really should not.
-
-I think it would be safer to add a test for PF_SUPERPRIV and PF_FORKNOEXEC
-in current->flags and only fail the execve if both are set.
-i.e.
-    (current->flags & (PF_SUPERPRIV|PF_FORKNOEXEC)) == (PF_SUPERPRIV|PF_FORKNOEXEC)
-
-That should narrow it down to only failing in the particular case that we are
-interested in.
-
-NeilBrown
+It's pretty nasty stuff.  Please, what is a better way of doing all this?
