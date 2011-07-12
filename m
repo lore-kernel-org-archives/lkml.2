@@ -1,59 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753580Ab1GLPEi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 11:04:38 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:22470 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751118Ab1GLPEg (ORCPT
+	id S1752775Ab1GLPJt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 11:09:49 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:61010 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072Ab1GLPJr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 11:04:36 -0400
-Date: Tue, 12 Jul 2011 11:04:09 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Joe Jin <joe.jin@oracle.com>, Jens Axboe <jaxboe@fusionio.com>
-Cc: Daniel Stodden <daniel.stodden@citrix.com>,
-        Jens Axboe <jaxboe@fusionio.com>, annie.li@oracle.com,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kurt C Hackel <KURT.HACKEL@oracle.com>,
-        Greg Marsden <greg.marsden@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: xen-blkfront: Don't send closing  notification to backend in
- blkfront_closing()
-Message-ID: <20110712150409.GB7831@dumpdata.com>
-References: <4E16AE55.50500@oracle.com>
- <20110708160414.GA30120@dumpdata.com>
- <4E17A01F.8060505@oracle.com>
- <20110709131153.GA25916@dumpdata.com>
- <4E1BBFFD.7030900@oracle.com>
+	Tue, 12 Jul 2011 11:09:47 -0400
+Date: Tue, 12 Jul 2011 19:09:42 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+Cc: Len Brown <lenb@kernel.org>, David Woodhouse <dwmw2@infradead.org>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] power_supply: scrub device pointer if registration
+ fails
+Message-ID: <20110712150942.GA1291@oksana.dev.rtsoft.ru>
+References: <1310457809-2731-1-git-send-email-stefanha@linux.vnet.ibm.com>
+ <1310457809-2731-2-git-send-email-stefanha@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <4E1BBFFD.7030900@oracle.com>
+In-Reply-To: <1310457809-2731-2-git-send-email-stefanha@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4E1C627E.00DF:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> without the patch, after detach the device by xm block-detach timeout also umount hang in guest.
-> with my patch, xm block-detach timeout in Dom0, umount in guest worked!
+On Tue, Jul 12, 2011 at 09:03:27AM +0100, Stefan Hajnoczi wrote:
+> This patch makes power_supply_register() safer for callers that are not
+> being careful.  When the function fails it leaves the caller's psy.dev
+> pointer set to the stale power supply device.  A correct caller would
+> handle the error return and never use psy.dev but the example of
+> drivers/acpi/battery.c shows otherwise.
+> 
+> Clear the psy.dev pointer when power_supply_register() fails so the
+> caller either sees a valid pointer on success or NULL on failure.
+> 
+> Signed-off-by: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+> ---
+>  drivers/power/power_supply_core.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
+> index 329b46b..33d4068 100644
+> --- a/drivers/power/power_supply_core.c
+> +++ b/drivers/power/power_supply_core.c
+> @@ -194,6 +194,7 @@ create_triggers_failed:
+>  kobject_set_name_failed:
+>  device_add_failed:
+>  	put_device(dev);
+> +	psy->dev = NULL; /* make it crystal-clear that we failed */
+>  success:
+>  	return rc;
+>  }
 
-Ah, I failed to spot you did the unmount after the timeout. I tried to do the umount after
-forcing the block-detach. [and testing confirms your patch working properly]
+I think this may easily cause races. I.e.
 
-Looks good to me - with the only exception that the description needs to have 'xm block-attach'
-and 'xm block-detach' - please change that and resubmit and attach
+- ACPI calls power_supply_register, it allocates dev, sets
+  psy->dev;
+- Someone calls acpi_battery_notify() or acpi_battery_update(),
+  which tests for psy->dev;
+- power_supply_register fails, it frees dev, and then clears psy->dev;
+  but it's too late, as acpi_battery_notify/acpi_battery_update thinks
+  that we're fine.
 
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: stable@kernel.org
+I believe the whole ACPI battery logic is overcomplicated, and
+needs a bit of rework. In the meantime, we could move 'psy->dev =
+dev;' assignment into the end of the function, where _register
+could not fail, i.e. something like this:
 
-and make sure to have Jens in the 'To:' header.
-Thanks!
+diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
+index 329b46b..9f85b70 100644
+--- a/drivers/power/power_supply_core.c
++++ b/drivers/power/power_supply_core.c
+@@ -169,7 +169,6 @@ int power_supply_register(struct device *parent, struct power_supply *psy)
+ 	dev->parent = parent;
+ 	dev->release = power_supply_dev_release;
+ 	dev_set_drvdata(dev, psy);
+-	psy->dev = dev;
+ 
+ 	INIT_WORK(&psy->changed_work, power_supply_changed_work);
+ 
+@@ -185,6 +184,8 @@ int power_supply_register(struct device *parent, struct power_supply *psy)
+ 	if (rc)
+ 		goto create_triggers_failed;
+ 
++	psy->dev = dev;
++
+ 	power_supply_changed(psy);
+ 
+ 	goto success;
 
 
-Jens,
+But still, I don't see how this will save us from the same issue
+when ACPI calls power_supply_unregister, which doesn't clear psy->dev:
 
-Are you OK picking the amended patch (shortly to be posted) for 3.0-rc7?
+static void acpi_battery_refresh(struct acpi_battery *battery)
+{
+        if (!battery->bat.dev)
+                return;
+
+        acpi_battery_get_info(battery);
+        /* The battery may have changed its reporting units. */
+        sysfs_remove_battery(battery);
+        sysfs_add_battery(battery);
+}
+
+Really, ACPI battery needs some proper fixing and locking. :-/
+
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
