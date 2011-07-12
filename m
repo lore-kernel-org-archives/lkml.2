@@ -1,75 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755559Ab1GLUwB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 16:52:01 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:39065 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755208Ab1GLUwA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 16:52:00 -0400
+	id S1755384Ab1GLUxF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 16:53:05 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:47721 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752624Ab1GLUxD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 16:53:03 -0400
+Date: Tue, 12 Jul 2011 13:52:58 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
+        julie Sullivan <kernelmail.jms@gmail.com>,
+        linux-kernel@vger.kernel.org, chengxu@linux.vnet.ibm.com,
+        peterz@infradead.org
+Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3
+Message-ID: <20110712205258.GN2326@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110711201508.GN2245@linux.vnet.ibm.com>
+ <20110711210954.GA15745@dumpdata.com>
+ <20110712105506.GB2253@linux.vnet.ibm.com>
+ <20110712141228.GA7831@dumpdata.com>
+ <20110712144936.GD2326@linux.vnet.ibm.com>
+ <20110712160324.GA1186@dumpdata.com>
+ <20110712163947.GF2326@linux.vnet.ibm.com>
+ <20110712180151.GA18257@dumpdata.com>
+ <20110712185907.GJ2326@linux.vnet.ibm.com>
+ <20110712190756.GB4766@dumpdata.com>
 MIME-Version: 1.0
-Date: Tue, 12 Jul 2011 22:51:58 +0200
-Message-ID: <CAPJ9Yc-Rce8sSjuLUrA+fsUvFOGdpb4AsPMdjydWq52dbL19aQ@mail.gmail.com>
-Subject: Cause of RAMDISK: incomplete write error ?
-From: =?UTF-8?Q?David_Bala=C5=BEic?= <xerces9@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110712190756.GB4766@dumpdata.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Tue, Jul 12, 2011 at 03:07:56PM -0400, Konrad Rzeszutek Wilk wrote:
+> > > > Disabling CONFIG_NO_HZ would be an interesting test case.
+> > > 
+> > > Hadn't done that yet. Compiling a kernel with "# CONFIG_NO_HZ is not set"
+> > > right now.
+> 
+> Log: http://darnok.org/xen/loop_cnt-extra-patch-no-hz-disabled.log
+> config:http://darnok.org/xen/loop_cnt-extra-patch-no-hz-disabled+.config
+> Patch: http://darnok.org/xen/loop_cnt-extra-patch-no-hz-disabled.patch
 
-Recently I encountered this error when booting from an USB flash drive:
-RAMDISK: incomplete write (404 != 29094)
-write error
-UDF-fs: No partition found (1)
-(followed by panic)
+OK, thank you for trying this out.  No joy, but to be expected given
+Peter's later email.
 
-According to kernel source, this is a problem in the write() call:
+							Thanx, Paul
 
-(v2.6.39/init/do_mounts_rd.c , line 318)
-static int __init compr_flush(void *window, unsigned int outcnt)
-{
-        int written = sys_write(crd_outfd, window, outcnt);
-        if (written != outcnt) {
-                if (decompress_error == 0)
-                        printk(KERN_ERR
-                               "RAMDISK: incomplete write (%d != %d)\n",
-                               written, outcnt);
-
-I use grub4DOS on a NTFS formatted USB drive for booting.
-The menu.lst entry is:
-
-title xxx test RL13.5  xxxx Boot Linux system! (32-bit kernel)
-pause --wait=0 Loading kernel32...
-kernel /kernel32 root=/dev/ram0 rw vga=normal video=640x400
-pause --wait=0 Loading rootfs.cgz... This could take a couple of minutes.
-initrd /rootfs.cgz
-
-The same problem happens on two PCs, one HP N36L microserver and the
-other an Asus EEE PC 1005HA netbook (booting the same USB drive).
-
-Could it be, that the initrd image is somehow to big, hitting some limit?
-
-This is the RIPLinux mini distro. I encountered this problem a few
-versions back. I suspect the image size, as it
-gets bigger from release to release.
-Currently it is 147.790.634 bytes big.
-
-Booting the same files from a CD works, but that uses a different
-bootloader (distro official ISO image, uses isolinux, I think).
-
-The problem I am describing is with RIPLinux release 13.5, I used the
-files from this download:
-http://rip.7bf.de/current/RIPLinuX-13.5.iso
-(I guess they will move it after a while to
-http://rip.7bf.de/all_mirrored_versions/ )
-
-So, can please someone point me in a direction, where the problem could lie?
-
-Checking the initrd image file with gzip gives an OK.
-
-Regards,
-David
+> > > > > > But the loop in task_waking_fair() looks like the most prominent smoking
+> > > > > > gun at the moment.
+> > > > 
+> > > > And could you also please try out the patch that I posted earlier?
+> > > 
+> > > With the previous patch and the .. this is getting confusing. With this patch:
+> > > http://darnok.org/xen/loop_cnt-extra.patch
+> > 
+> > That is indeed the patch I intended.
+> 
+> <nods>
+> > 
+> > > I get this output: http://darnok.org/xen/log.loop_cnt-extra-patch (one guest
+> > > with 4 VCPUS) and http://darnok.org/xen/loop_cnt-extra-patch.log (the guest with 16 VCPUs)
+> > 
+> > OK, so the infinite loop in task_waking_fair() happens even if RCU callbacks
+> > are deferred until after the scheduler is fully initialized.  Sounds like
+> > one for the scheduler guys.  ;-)
+> 
+> Yikes. Well, in the meantime let me check the IPI part and see if there is something
+> busted that could trigger softirq to be invoked directly.
+> 
+> And also compile the kernel with the CONFIG_RCU_PROVE_LOCKING with some extra
+> git tree you pointed me to.
+> > 
+> > 							Thanx, Paul
