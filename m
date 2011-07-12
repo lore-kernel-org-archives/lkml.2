@@ -1,72 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753770Ab1GLPY4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 11:24:56 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:52072 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751725Ab1GLPYz (ORCPT
+	id S1753780Ab1GLP1p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 11:27:45 -0400
+Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:52572 "EHLO
+	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752624Ab1GLP1n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 11:24:55 -0400
-Date: Tue, 12 Jul 2011 11:24:54 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Vivek Goyal <vgoyal@redhat.com>
-cc: Mike Snitzer <snitzer@redhat.com>, Roland Dreier <roland@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        <linux-scsi@vger.kernel.org>, Steffen Maier <maier@linux.vnet.ibm.com>,
-        "Manvanthara B. Puttashankar" <manvanth@linux.vnet.ibm.com>,
-        Tarak Reddy <tarak.reddy@in.ibm.com>,
-        "Seshagiri N. Ippili" <sesh17@linux.vnet.ibm.com>,
-        <linux-kernel@vger.kernel.org>,
-        device-mapper development <dm-devel@redhat.com>,
-        Tejun Heo <tj@kernel.org>, <jaxboe@fusionio.com>
-Subject: Re: block: Check that queue is alive in blk_insert_cloned_request()
-In-Reply-To: <20110712014633.GA30965@redhat.com>
-Message-ID: <Pine.LNX.4.44L0.1107121120130.31381-100000@netrider.rowland.org>
+	Tue, 12 Jul 2011 11:27:43 -0400
+Date: Tue, 12 Jul 2011 10:27:32 -0500
+From: Shawn Bohrer <sbohrer@rgmadvisors.com>
+To: tglx@linutronix.de
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, peterz@infradead.org,
+        eric.dumazet@gmail.com, david@rgmadvisors.com,
+        linux-kernel@vger.kernel.org, zvonler@rgmadvisors.com,
+        hughd@google.com, mingo@elte.hu
+Subject: Re: [PATCH v5] futex: Fix regression with read only mappings
+Message-ID: <20110712152732.GA2126@BohrerMBP.rgmadvisors.com>
+References: <4E0C9911.7030907@linux.intel.com>
+ <1309450892-30676-1-git-send-email-sbohrer@rgmadvisors.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1309450892-30676-1-git-send-email-sbohrer@rgmadvisors.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Jul 2011, Vivek Goyal wrote:
-
-> > > There's still the issue that Stefan Richter pointed out: The test for a 
-> > > dead queue must be made _after_ acquiring the queue lock, not _before_.
-> > 
-> > Yes, quite important.
-> > 
-> > Jens, can you tweak the patch or should Roland send a v2?
+On Thu, Jun 30, 2011 at 11:21:32AM -0500, Shawn Bohrer wrote:
+> commit 7485d0d3758e8e6491a5c9468114e74dc050785d (futexes: Remove rw
+> parameter from get_futex_key()) in 2.6.33 fixed two problems:  First, It
+> prevented a loop when encountering a ZERO_PAGE. Second, it fixed RW
+> MAP_PRIVATE futex operations by forcing the COW to occur by
+> unconditionally performing a write access get_user_pages_fast() to get
+> the page.  The commit also introduced a user-mode regression in that it
+> broke futex operations on read-only memory maps.  For example, this
+> breaks workloads that have one or more reader processes doing a
+> FUTEX_WAIT on a futex within a read only shared file mapping, and a
+> writer processes that has a writable mapping issuing the FUTEX_WAKE.
 > 
-> I do not think that we should do queue dead check after taking a spinlock.
-> The reason being that there are life time issues of two objects.
+> This fixes the regression for valid futex operations on RO mappings by
+> trying a RO get_user_pages_fast() when the RW get_user_pages_fast()
+> fails. This change makes it necessary to also check for invalid use
+> cases, such as anonymous RO mappings (which can never change) and the
+> ZERO_PAGE which the commit referenced above was written to address.
 > 
-> - Validity of request queue pointer
-> - Validity of q->spin_lock pointer
+> This patch does restore the original behavior with RO MAP_PRIVATE
+> mappings, which have inherent user-mode usage problems and don't really
+> make sense.  With this patch performing a FUTEX_WAIT within a RO
+> MAP_PRIVATE mapping will be successfully woken provided another process
+> updates the region of the underlying mapped file.  However, the mmap()
+> man page states that for a MAP_PRIVATE mapping:
 > 
-> If the dm has taken the reference to the request queue in the beginning
-> then it can be sure request queue pointer is valid. But spin_lock might
-> be coming from driver and might be in one of driver allocated structures.
-> So it might happen that driver has called blk_cleanup_queue() and freed
-> up structures which contained the spin lock.
+>   It is unspecified whether changes made to the file after
+>   the mmap() call are visible in the mapped region.
+> 
+> So user-mode users attempting to use futex operations on RO MAP_PRIVATE
+> mappings are depending on unspecified behavior.  Additionally a
+> RO MAP_PRIVATE mapping could fail to wake up in the following case.
+> 
+>   Thread-A: call futex(FUTEX_WAIT, memory-region-A).
+>             get_futex_key() return inode based key.
+>             sleep on the key
+>   Thread-B: call mprotect(PROT_READ|PROT_WRITE, memory-region-A)
+>   Thread-B: write memory-region-A.
+>             COW happen. This process's memory-region-A become related
+>             to new COWed private (ie PageAnon=1) page.
+>   Thread-B: call futex(FUETX_WAKE, memory-region-A).
+>             get_futex_key() return mm based key.
+>             IOW, we fail to wake up Thread-A.
+> 
+> Once again doing something like this is just silly and users who do
+> something like this get what they deserve.
+> 
+> While RO MAP_PRIVATE mappings are nonsensical, checking for a private
+> mapping requires walking the vmas and was deemed too costly to avoid a
+> userspace hang.
+> 
+> This Patch is based on Peter Zijlstra's initial patch with modifications to
+> only allow RO mappings for futex operations that need VERIFY_READ access.
+> 
+> Reported-by: David Oliver <david@rgmadvisors.com>
+> Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
+> Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+> ---
+> 
+> Clairified commit description.  Changed get_futex_key() back to having a
+> fshared and rw parameter, per Darren's request.
+> 
+>  kernel/futex.c |   54 ++++++++++++++++++++++++++++++++++++++++++------------
+>  1 files changed, 42 insertions(+), 12 deletions(-)
+> 
+> diff --git a/kernel/futex.c b/kernel/futex.c
+> index fe28dc2..70bb54b 100644
+> --- a/kernel/futex.c
+> +++ b/kernel/futex.c
+> @@ -218,6 +218,8 @@ static void drop_futex_key_refs(union futex_key *key)
+>   * @uaddr:	virtual address of the futex
+>   * @fshared:	0 for a PROCESS_PRIVATE futex, 1 for PROCESS_SHARED
+>   * @key:	address where result is stored.
+> + * @rw:		mapping needs to be read/write (values: VERIFY_READ,
+> + *              VERIFY_WRITE)
+>   *
+>   * Returns a negative error code or 0
+>   * The key words are stored in *key on success.
+> @@ -229,12 +231,12 @@ static void drop_futex_key_refs(union futex_key *key)
+>   * lock_page() might sleep, the caller should not hold a spinlock.
+>   */
+>  static int
+> -get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
+> +get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key, int rw)
+>  {
+>  	unsigned long address = (unsigned long)uaddr;
+>  	struct mm_struct *mm = current->mm;
+>  	struct page *page, *page_head;
+> -	int err;
+> +	int err, ro = 0;
+>  
+>  	/*
+>  	 * The futex address must be "naturally" aligned.
+> @@ -262,8 +264,18 @@ get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
+>  
+>  again:
+>  	err = get_user_pages_fast(address, 1, 1, &page);
+> +	/*
+> +	 * If write access is not required (eg. FUTEX_WAIT), try
+> +	 * and get read-only access.
+> +	 */
+> +	if (err == -EFAULT && rw == VERIFY_READ) {
+> +		err = get_user_pages_fast(address, 1, 0, &page);
+> +		ro = 1;
+> +	}
+>  	if (err < 0)
+>  		return err;
+> +	else
+> +		err = 0;
+>  
+>  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+>  	page_head = page;
+> @@ -305,6 +317,13 @@ again:
+>  	if (!page_head->mapping) {
+>  		unlock_page(page_head);
+>  		put_page(page_head);
+> +		/*
+> +		* ZERO_PAGE pages don't have a mapping. Avoid a busy loop
+> +		* trying to find one. RW mapping would have COW'd (and thus
+> +		* have a mapping) so this page is RO and won't ever change.
+> +		*/
+> +		if ((page_head == ZERO_PAGE(address)))
+> +			return -EFAULT;
+>  		goto again;
+>  	}
+>  
+> @@ -316,6 +335,15 @@ again:
+>  	 * the object not the particular process.
+>  	 */
+>  	if (PageAnon(page_head)) {
+> +		/*
+> +		 * A RO anonymous page will never change and thus doesn't make
+> +		 * sense for futex operations.
+> +		 */
+> +		if (ro) {
+> +			err = -EFAULT;
+> +			goto out;
+> +		}
+> +
+>  		key->both.offset |= FUT_OFF_MMSHARED; /* ref taken on mm */
+>  		key->private.mm = mm;
+>  		key->private.address = address;
+> @@ -327,9 +355,10 @@ again:
+>  
+>  	get_futex_key_refs(key);
+>  
+> +out:
+>  	unlock_page(page_head);
+>  	put_page(page_head);
+> -	return 0;
+> +	return err;
+>  }
+>  
+>  static inline void put_futex_key(union futex_key *key)
+> @@ -940,7 +969,7 @@ futex_wake(u32 __user *uaddr, unsigned int flags, int nr_wake, u32 bitset)
+>  	if (!bitset)
+>  		return -EINVAL;
+>  
+> -	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &key);
+> +	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &key, VERIFY_READ);
+>  	if (unlikely(ret != 0))
+>  		goto out;
+>  
+> @@ -986,10 +1015,10 @@ futex_wake_op(u32 __user *uaddr1, unsigned int flags, u32 __user *uaddr2,
+>  	int ret, op_ret;
+>  
+>  retry:
+> -	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1);
+> +	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1, VERIFY_READ);
+>  	if (unlikely(ret != 0))
+>  		goto out;
+> -	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2);
+> +	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2, VERIFY_WRITE);
+>  	if (unlikely(ret != 0))
+>  		goto out_put_key1;
+>  
+> @@ -1243,10 +1272,11 @@ retry:
+>  		pi_state = NULL;
+>  	}
+>  
+> -	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1);
+> +	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1, VERIFY_READ);
+>  	if (unlikely(ret != 0))
+>  		goto out;
+> -	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2);
+> +	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2,
+> +			    requeue_pi ? VERIFY_WRITE : VERIFY_READ);
+>  	if (unlikely(ret != 0))
+>  		goto out_put_key1;
+>  
+> @@ -1790,7 +1820,7 @@ static int futex_wait_setup(u32 __user *uaddr, u32 val, unsigned int flags,
+>  	 * while the syscall executes.
+>  	 */
+>  retry:
+> -	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q->key);
+> +	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q->key, VERIFY_READ);
+>  	if (unlikely(ret != 0))
+>  		return ret;
+>  
+> @@ -1941,7 +1971,7 @@ static int futex_lock_pi(u32 __user *uaddr, unsigned int flags, int detect,
+>  	}
+>  
+>  retry:
+> -	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q.key);
+> +	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q.key, VERIFY_WRITE);
+>  	if (unlikely(ret != 0))
+>  		goto out;
+>  
+> @@ -2060,7 +2090,7 @@ retry:
+>  	if ((uval & FUTEX_TID_MASK) != vpid)
+>  		return -EPERM;
+>  
+> -	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &key);
+> +	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &key, VERIFY_WRITE);
+>  	if (unlikely(ret != 0))
+>  		goto out;
+>  
+> @@ -2249,7 +2279,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
+>  	debug_rt_mutex_init_waiter(&rt_waiter);
+>  	rt_waiter.task = NULL;
+>  
+> -	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2);
+> +	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2, VERIFY_WRITE);
+>  	if (unlikely(ret != 0))
+>  		goto out;
+>  
 
-Surely this is a bug in the design of the block layer?
+Any update on this getting applied?  This fixes the regression in our
+real world user-mode application so I'd really like to see it get
+accepted upstream.
 
-> So if queue is not dead, we know that q->spin_lock is valid. I think
-> only race present here is that whole operation is not atomic. First
-> we check for queue not dead flag and then go on to acquire request
-> queue lock. So this leaves a small window for race. I think I have
-> seen other code written in such manner (__generic_make_request()). So
-> it proably reasonably safe to do here too.
+Thanks,
+Shawn
 
-"Probably reasonably safe" = "unsafe".  The fact that it will usually
-work out okay means that when it does fail, it will be very difficult
-to track down.
 
-It needs to be fixed _now_, when people are aware of the issue.  Not 
-five years from now, when everybody has forgotten about it.
-
-Alan Stern
+---------------------------------------------------------------
+This email, along with any attachments, is confidential. If you 
+believe you received this message in error, please contact the 
+sender immediately and delete all copies of the message.  
+Thank you.
 
