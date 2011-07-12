@@ -1,113 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775Ab1GLPJt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 11:09:49 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:61010 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751072Ab1GLPJr (ORCPT
+	id S1753274Ab1GLPL4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 11:11:56 -0400
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:20426 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751054Ab1GLPLz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 11:09:47 -0400
-Date: Tue, 12 Jul 2011 19:09:42 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-Cc: Len Brown <lenb@kernel.org>, David Woodhouse <dwmw2@infradead.org>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] power_supply: scrub device pointer if registration
- fails
-Message-ID: <20110712150942.GA1291@oksana.dev.rtsoft.ru>
-References: <1310457809-2731-1-git-send-email-stefanha@linux.vnet.ibm.com>
- <1310457809-2731-2-git-send-email-stefanha@linux.vnet.ibm.com>
+	Tue, 12 Jul 2011 11:11:55 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: ijWdrfoVM1n6eO3529jiz7LaI_QNH7anBmqbVWM7Qc0.00x
+ C3yoaryDpISncAR8.EUGe6kovagHRmQjNZKXNzspDZapcqC_K1OUC8ieS.ns
+ myQHupG9s14T4tiWLsNatQEQXr1iDtwK6jHAFLix_350bPRmlrhrrulutFmv
+ 7VEsaKQq3yYRAiYfUdeFeWa502ReIcqr_k7f0BM8LeGMGXtPRbmNsMcQKA1K
+ gFY6Xrf9Rk7.aWQv.290TtfCaXki5oaLLB_pYw_4_EC6dSoPHyxGqFNz2lHF
+ 7E8nW5_TZrvTuTbrHoDLR15PDFkEm4uQ7eWhdVmugi7yhMErjn0IcUrWvKYh
+ tQEEYux02wHjzD5iOGCw5Yy1I
+X-Yahoo-Newman-Property: ymail-3
+Date: Tue, 12 Jul 2011 10:11:52 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Pekka Enberg <penberg@kernel.org>
+cc: Eric Dumazet <eric.dumazet@gmail.com>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH next/mmotm] slub: partly fix freeze in __slab_free
+In-Reply-To: <4E1BE5F9.10401@kernel.org>
+Message-ID: <alpine.DEB.2.00.1107121010060.1672@router.home>
+References: <alpine.LSU.2.00.1107111156310.13035@sister.anvils> <1310413167.2860.3.camel@edumazet-laptop> <4E1BE5F9.10401@kernel.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1310457809-2731-2-git-send-email-stefanha@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 12, 2011 at 09:03:27AM +0100, Stefan Hajnoczi wrote:
-> This patch makes power_supply_register() safer for callers that are not
-> being careful.  When the function fails it leaves the caller's psy.dev
-> pointer set to the stale power supply device.  A correct caller would
-> handle the error return and never use psy.dev but the example of
-> drivers/acpi/battery.c shows otherwise.
-> 
-> Clear the psy.dev pointer when power_supply_register() fails so the
-> caller either sees a valid pointer on success or NULL on failure.
-> 
-> Signed-off-by: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-> ---
->  drivers/power/power_supply_core.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
-> index 329b46b..33d4068 100644
-> --- a/drivers/power/power_supply_core.c
-> +++ b/drivers/power/power_supply_core.c
-> @@ -194,6 +194,7 @@ create_triggers_failed:
->  kobject_set_name_failed:
->  device_add_failed:
->  	put_device(dev);
-> +	psy->dev = NULL; /* make it crystal-clear that we failed */
->  success:
->  	return rc;
->  }
+On Tue, 12 Jul 2011, Pekka Enberg wrote:
 
-I think this may easily cause races. I.e.
-
-- ACPI calls power_supply_register, it allocates dev, sets
-  psy->dev;
-- Someone calls acpi_battery_notify() or acpi_battery_update(),
-  which tests for psy->dev;
-- power_supply_register fails, it frees dev, and then clears psy->dev;
-  but it's too late, as acpi_battery_notify/acpi_battery_update thinks
-  that we're fine.
-
-I believe the whole ACPI battery logic is overcomplicated, and
-needs a bit of rework. In the meantime, we could move 'psy->dev =
-dev;' assignment into the end of the function, where _register
-could not fail, i.e. something like this:
-
-diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
-index 329b46b..9f85b70 100644
---- a/drivers/power/power_supply_core.c
-+++ b/drivers/power/power_supply_core.c
-@@ -169,7 +169,6 @@ int power_supply_register(struct device *parent, struct power_supply *psy)
- 	dev->parent = parent;
- 	dev->release = power_supply_dev_release;
- 	dev_set_drvdata(dev, psy);
--	psy->dev = dev;
- 
- 	INIT_WORK(&psy->changed_work, power_supply_changed_work);
- 
-@@ -185,6 +184,8 @@ int power_supply_register(struct device *parent, struct power_supply *psy)
- 	if (rc)
- 		goto create_triggers_failed;
- 
-+	psy->dev = dev;
-+
- 	power_supply_changed(psy);
- 
- 	goto success;
+> > diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+> > index 3d76a43..1351d28 100644
+> > --- a/include/linux/mm_types.h
+> > +++ b/include/linux/mm_types.h
+> > @@ -62,7 +62,7 @@ struct page {
+> >   		struct {			/* SLUB cmpxchg_double area */
+> >   			void *freelist;
+> >   			union {
+> > -				unsigned long counters;
+> > +				u64	counters;
+> >   				struct {
+> >   					unsigned inuse:16;
+> >   					unsigned objects:15;
+> >
+>
+> Christoph?
 
 
-But still, I don't see how this will save us from the same issue
-when ACPI calls power_supply_unregister, which doesn't clear psy->dev:
+counters needs to overlay the bitfields as well as _count. That is problem
+with the earlier fix.
 
-static void acpi_battery_refresh(struct acpi_battery *battery)
-{
-        if (!battery->bat.dev)
-                return;
+Sorry I have had a power outage for the last two days (strange Chicago
+weather) and my server is only up for a few minutes and will go down
+periodically due to a UPS malfunction. On a generator. Sigh.
 
-        acpi_battery_get_info(battery);
-        /* The battery may have changed its reporting units. */
-        sysfs_remove_battery(battery);
-        sysfs_add_battery(battery);
-}
 
-Really, ACPI battery needs some proper fixing and locking. :-/
-
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
