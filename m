@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932346Ab1GLXiP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 19:38:15 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:58733 "EHLO
+	id S932313Ab1GLXiJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 19:38:09 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:58742 "EHLO
 	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753854Ab1GLXho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 19:37:44 -0400
+	id S1754569Ab1GLXhq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 19:37:46 -0400
 From: Serge Hallyn <serge@hallyn.com>
 To: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org
 Cc: dhowells@redhat.com, ebiederm@xmission.com,
         "Serge E. Hallyn" <serge.hallyn@canonical.com>
-Subject: [RFC PATCH 12/14] user_ns: target af_key capability check
-Date: Tue, 12 Jul 2011 23:30:50 +0000
-Message-Id: <1310513452-13397-13-git-send-email-serge@hallyn.com>
+Subject: [RFC PATCH 03/14] keyctl: check capabilities against key's user_ns
+Date: Tue, 12 Jul 2011 23:30:41 +0000
+Message-Id: <1310513452-13397-4-git-send-email-serge@hallyn.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1310513452-13397-1-git-send-email-serge@hallyn.com>
 References: <1310513452-13397-1-git-send-email-serge@hallyn.com>
@@ -22,28 +22,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Serge E. Hallyn <serge.hallyn@canonical.com>
 
-This presumes that it really is complete wrt network namespaces.  Looking
-at the code it appears to be.
+ATM, task should only be able to get his own user_ns's keys
+anyway, so nsown_capable should also work, but there is no
+advantage to doing that, while using key's user_ns is clearer.
+
+changelog: jun 6:
+	compile fix: keyctl.c (key_user, not key has user_ns)
 
 Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+Cc: David Howells <dhowells@redhat.com>
 Cc: Eric W. Biederman <ebiederm@xmission.com>
 ---
- net/key/af_key.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ security/keys/keyctl.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/net/key/af_key.c b/net/key/af_key.c
-index 8f92cf8..414f409 100644
---- a/net/key/af_key.c
-+++ b/net/key/af_key.c
-@@ -141,7 +141,7 @@ static int pfkey_create(struct net *net, struct socket *sock, int protocol,
- 	struct sock *sk;
- 	int err;
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index eca5191..fa7d420 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -745,7 +745,7 @@ long keyctl_chown_key(key_serial_t id, uid_t uid, gid_t gid)
+ 	ret = -EACCES;
+ 	down_write(&key->sem);
  
--	if (!capable(CAP_NET_ADMIN))
-+	if (!ns_capable(net->user_ns, CAP_NET_ADMIN))
- 		return -EPERM;
- 	if (sock->type != SOCK_RAW)
- 		return -ESOCKTNOSUPPORT;
+-	if (!capable(CAP_SYS_ADMIN)) {
++	if (!ns_capable(key->user->user_ns, CAP_SYS_ADMIN)) {
+ 		/* only the sysadmin can chown a key to some other UID */
+ 		if (uid != (uid_t) -1 && key->uid != uid)
+ 			goto error_put;
+@@ -852,7 +852,8 @@ long keyctl_setperm_key(key_serial_t id, key_perm_t perm)
+ 	down_write(&key->sem);
+ 
+ 	/* if we're not the sysadmin, we can only change a key that we own */
+-	if (capable(CAP_SYS_ADMIN) || key->uid == current_fsuid()) {
++	if (ns_capable(key->user->user_ns, CAP_SYS_ADMIN) ||
++	    key->uid == current_fsuid()) {
+ 		key->perm = perm;
+ 		ret = 0;
+ 	}
 -- 
 1.7.4.1
 
