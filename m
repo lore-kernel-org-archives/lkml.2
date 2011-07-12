@@ -1,116 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224Ab1GLO0r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 10:26:47 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:38701 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752201Ab1GLO0q (ORCPT
+	id S1753319Ab1GLOae (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 10:30:34 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:49648 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752970Ab1GLOac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 10:26:46 -0400
+	Tue, 12 Jul 2011 10:30:32 -0400
+Date: Tue, 12 Jul 2011 16:30:27 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        paulus@samba.org, tglx@linutronix.de
+Subject: Re: [PATCH 3/6] perf: add reference time event
+Message-ID: <20110712143024.GA9201@somewhere>
+References: <1307490806-24548-1-git-send-email-dsahern@gmail.com>
+ <1307490946-24673-1-git-send-email-dsahern@gmail.com>
+ <20110617133230.GC25197@somewhere.redhat.com>
+ <4DFB5F0B.4020903@gmail.com>
+ <20110617141707.GE25197@somewhere.redhat.com>
+ <4E1A7A0D.8000806@gmail.com>
 MIME-Version: 1.0
-Date: Tue, 12 Jul 2011 16:26:45 +0200
-Message-ID: <CABBBjTJYQMU=sYDuGqqNdVK3mcAYDO2G10-8YOCd3BQMJpvYtg@mail.gmail.com>
-Subject: How to pin the user pages of a running process in memory
-From: newton mailinglist <newtonmailinglist@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: v.venkatasubramanian@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E1A7A0D.8000806@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, Jul 10, 2011 at 10:20:29PM -0600, David Ahern wrote:
+> On 06/17/2011 08:17 AM, Frederic Weisbecker wrote:
+> > On Fri, Jun 17, 2011 at 08:04:59AM -0600, David Ahern wrote:
+> >>
+> >>
+> >> On 06/17/2011 07:32 AM, Frederic Weisbecker wrote:
+> >>> On Tue, Jun 07, 2011 at 05:55:46PM -0600, David Ahern wrote:
+> >>>> For initial perf_clock to time-of-day correlation.
+> >>>>
+> >>>> Signed-off-by: David Ahern <dsahern@gmail.com>
+> >>>> ---
+> >>>>  tools/perf/util/event.c   |    1 +
+> >>>>  tools/perf/util/event.h   |    8 ++++++++
+> >>>>  tools/perf/util/session.c |    4 ++++
+> >>>>  tools/perf/util/session.h |    3 ++-
+> >>>>  4 files changed, 15 insertions(+), 1 deletions(-)
+> >>>>
+> >>>> diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+> >>>> index 3c1b8a6..1a89a04 100644
+> >>>> --- a/tools/perf/util/event.c
+> >>>> +++ b/tools/perf/util/event.c
+> >>>> @@ -24,6 +24,7 @@ static const char *perf_event__names[] = {
+> >>>>  	[PERF_RECORD_HEADER_TRACING_DATA]	= "TRACING_DATA",
+> >>>>  	[PERF_RECORD_HEADER_BUILD_ID]		= "BUILD_ID",
+> >>>>  	[PERF_RECORD_FINISHED_ROUND]		= "FINISHED_ROUND",
+> >>>> +	[PERF_RECORD_REFTIME]			= "REF_TIME",
+> >>>>  };
+> >>>>  
+> >>>>  const char *perf_event__name(unsigned int id)
+> >>>> diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+> >>>> index 1d7f664..f481f90 100644
+> >>>> --- a/tools/perf/util/event.h
+> >>>> +++ b/tools/perf/util/event.h
+> >>>> @@ -98,6 +98,7 @@ enum perf_user_event_type { /* above any possible kernel type */
+> >>>>  	PERF_RECORD_HEADER_TRACING_DATA		= 66,
+> >>>>  	PERF_RECORD_HEADER_BUILD_ID		= 67,
+> >>>>  	PERF_RECORD_FINISHED_ROUND		= 68,
+> >>>> +	PERF_RECORD_REFTIME			= 69,
+> >>>
+> >>> We would like to avoid adding more custom events like these. They were very convenient
+> >>> but they steal the kernel event type space. They are deemed for removal in the long term.
+> >>>
+> >>> Another idea to achieve what you want would be to create a new perf event header feature,
+> >>> like HEADER_TRACE_INFO or HEADER_BUILD_ID are. Then use that to create a space in the perf
+> >>> file to save that couple of clocks initial values.
+> >>
+> >> you mean like this:
+> >> https://lkml.org/lkml/2010/12/7/813
+> >>
+> >> David
+> > 
+> > Exactly, why did you change?
+> 
+> Finally getting back to this.
+> 
+> The answer to the 'why' is that putting a reference timestamp in the
+> header field does not work for file appends across reboots. ie., the case:
+> perf record --tod ...
+> reboot
+> perf record -A --tod ...
 
-I have an FPGA device that is capable of DMA and I have written a PCI
-driver to manage it.
+Damn append mode. I doubt that thing is really used. And it just complexifies
+everything. It might be wise to get rid of it?
 
-The device needs to access large arrays in memory which have been
-declared through a C program.
-The program declares the array using :
-long *A;
-posix_memalign(&A, 64, sizeof(long)*count);
+Ingo, Peter, Arnaldo?
+ 
+> perf_clock timestamps change across reboots so the reference time
+> created by the first invocation is not valid for the append case. The
+> discussion then drifted towards having a kernel side event which per
+> past patch sets has its own issues.
+> 
+> So to summarize the options proposed to date and issues with the proposals:
+> 1. reference timestamp in header
+>    - does not work for appends across reboots
+> 
+> 2. synthesized events
+>    - preference against them
+> 
+> 3. kernel side event
+>    - cannot generate an initial sample (with counter value and
+> perf_clock timestamp) on demand - e.g., start of session; a proposal to
+> use an ioctl to add one to the event stream was shot down
+> 
+> At this point the only idea that comes to mind is to use a combination
+> of 2 and 3: add the kernel side clock event
+> (https://lkml.org/lkml/2011/2/18/11), read the realtime clock counter,
+> read the monotonic clock timestamp (ie., perf_clock value), and
+> synthesize a perf sample that is written to the file. The append case
+> (with mismatch in --tod options between record invocations) would be
+> handled by having the kernel side clock event in the event list
+> (perf_evlist__equal would fail if --tod was not used for all invocations).
 
-which gives me contiguous and page aligned arrays in virtual space only.
-Then I signal the FPGA to start accessing the data using an IOCTL
-call. However the program continues to run as I dont wait in the IOCTL
-call.
+Actually you first have to face a deeper problem. events are not stored
+in order in the flow, but they are sorted from perf_session__process_events().
 
-The FPGA sends interrupts to the PCI device driver with the user space
-virtual address whenever it needs a user page. So I do know the user
-space virtual address in the interrupt handler(the user space array
-addresses are written to the FPGA beforehand to enable this)
+The bunch of sorted events is flushed periodically and sent to the consumer.
 
-To simplify the situation, the array data is no longer changed or
-modified by the program anymore once the FPGA begins accessing it.
+See flush_sample_queue().
 
-So what I want to do is pin these pages to memory, get their
-consequent physical address and give it to the FPGA for accessing the
-pages in physical memory.
-However get_user_pages() fails to pin the pages, perhaps because the
-process to which the pages belong is running.
+And this sorting is made on top of the sample->time timestamps. So events
+are first sorted on sample->time and only afterward you have access to your
+gtod tracepoint samples. But if that gtod sample has been taken after a reboot
+then its sample->time is not consistant with the rest. It is not well sorted
+and thus the reftime won't be updated at the right moment.
 
-The following is the function which does the pinning of user pages and
-translation to physical addresses :
+So the problem is that reftime update already depends on a consistant cpu
+timestamp.
 
-int translate_address(unsigned long int virt_addr, struct htex_dev_t *htex_dev)
-{
-	int result;
-	unsigned long int translated;
-	unsigned long int index = 0;
-	unsigned long int tag = 0;
-	struct page *page;
-	
-	index = virt_to_index(virt_addr);
-	tag = virt_to_tag(virt_addr);
-	
-	//check if index already has a valid entry and if so
-	//release this entry before replacing it
-	if(htex_dev->entries[index].page)
-		release_page(htex_dev, index);
-	
-	result = get_user_pages(htex_dev->tsk, htex_dev->tsk->mm, virt_addr,
-1, 1, 0, &page, NULL);
-	if (result <= 0)
-	{
-		ERROR_MSG("unable to get page\n"); iob , lb 01.620
-		return 0;
-	}
-	//get bus address of page
-	translated = pci_map_page(htex_dev->dev, page, 0, PAGE_SIZE,
-DMA_BIDIRECTIONAL);
-	
-	update_htx_tlb(index, tag, translated, htex_dev);
-	DEBUG_MSG("translate_address: index:%lx , tag:%lx, virtual: %lx ->
-translated : %lx\n", index, tag, virt_addr, translated);
-	
-        //update entry in array
-	htex_dev->entries[index].page = page;
-	htex_dev->entries[index].hw_addr = translated;	
+I can't think about a sane way to work around that. Sorting on gtod + cpu timestamp
+is not a solution because gtod can change.
 
-	return 1;
-}
-
-I know that this can be solved by allocating a DMA buffer using the
-DMA API and copying the user data to this buffer using
-copy_from_user(), then sending the address of the buffer to the fpga.
-
-But the issue is I do not know the size of the array when the FPGA
-requests data. So I cannot use the above method as the I do not know
-how much buffer space to allocate.
-I also thought I could copy_from_user() the requested page data into a
-DMA buffer of PAGESIZE length and then tell the FPGA to read from the
-DMA buffer always.
-
-This allows me to allocate the DMA buffer beforehand, and only the
-buffer contents change based on the requested page. But
-copy_from_user() or memcpy() being called every time a page is
-requested is an overhead and causes loss of speed gained by using the
-FPGA as the FPGA has to wait each time for the address translation to
-complete in software.
-
-So I was wondering if user pages can be pinned while the owning
-process is running in some way, and why get_user_pages() would fails
-to so .
-
-Thanks,
-Abhi
+I'd rather propose to refuse append mode as long as we have any timestamp. That includes
+gtod but also sample timestamps. They are buggy if we reboot.
