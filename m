@@ -1,104 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121Ab1GLQq0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 12:46:26 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:48185 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753738Ab1GLQqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 12:46:24 -0400
-Date: Tue, 12 Jul 2011 09:46:20 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
-        julie Sullivan <kernelmail.jms@gmail.com>,
-        linux-kernel@vger.kernel.org, chengxu@linux.vnet.ibm.com,
-        kulkarni.ravi4@gmail.com
-Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3 - under Xen,
- 32-bit guest only.
-Message-ID: <20110712164620.GG2326@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110711171337.GK2245@linux.vnet.ibm.com>
- <20110711193021.GA2996@dumpdata.com>
- <20110711201508.GN2245@linux.vnet.ibm.com>
- <20110711210954.GA15745@dumpdata.com>
- <20110712105506.GB2253@linux.vnet.ibm.com>
- <20110712141228.GA7831@dumpdata.com>
- <20110712144936.GD2326@linux.vnet.ibm.com>
- <20110712151550.GA3397@linux.vnet.ibm.com>
- <20110712152259.GA3556@linux.vnet.ibm.com>
- <20110712163210.GB1186@dumpdata.com>
+	id S1754148Ab1GLQr5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 12:47:57 -0400
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:24171 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753972Ab1GLQr4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 12:47:56 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: AJpcxcYVM1kTcWmECv5g9zgGrTf81dQij0GlvwBzV0C8iSm
+ ukQVPA5qBvBbojSjJrIMbMvnQ96d1qoEfviB103dtD2RYJGR0QcXDKfxCrsN
+ WscTFg.E3blqCLSMLg3qVBzRrja2vHVywRAoKHDOuBOYyXpfgWR021U60Xz7
+ w2Q4gIfmTUPpqa7MJFtRms.OIcbkQRa3MliVJ6BTew.Cdb2EzLiX_up8ZDRm
+ J4Hhg_zVBrPPDaJndRwX1S.MZM3ZMK51_v3q00t7FC285WgxFZMlegQE._3r
+ mYMz2s5WT0wMoCh8cq_sbtkAZDgiQBfadgoKFWRcze_p7HEMJ022s6n32psf
+ kWqNg1IpgZ48eSh0CUkHD.j04
+X-Yahoo-Newman-Property: ymail-3
+Date: Tue, 12 Jul 2011 11:47:53 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: Pekka Enberg <penberg@cs.helsinki.fi>,
+        David Rientjes <rientjes@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [slubllv7 06/17] slub: Add cmpxchg_double_slab()
+In-Reply-To: <1310486781.2871.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Message-ID: <alpine.DEB.2.00.1107121146080.3937@router.home>
+References: <20110601172543.437240675@linux.com>  <20110601172615.286693377@linux.com>  <1310414100.2860.6.camel@edumazet-laptop>  <alpine.DEB.2.00.1107121057550.2931@router.home> <1310486781.2871.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110712163210.GB1186@dumpdata.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: MULTIPART/MIXED; BOUNDARY="-1463811839-785980978-1310489274=:3937"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 12, 2011 at 12:32:10PM -0400, Konrad Rzeszutek Wilk wrote:
-> > > > > http://darnok.org/xen/cpu1.log
-> > > > 
-> > > > OK, a fair amount of variety, then lots and lots of task_waking_fair(),
-> > > > so I still feel good about asking you for the following.
-> > > 
-> > > But...  But...  But...
-> > > 
-> > > Just how accurate are these stack traces?  For example, do you have
-> > > frame pointers enabled?  If not, could you please enable them?
-> 
-> Frame pointers are enabled.
-> > > 
-> > > The reason that I ask is that the wakeme_after_rcu() looks like it is
-> > > being invoked from softirq, which would be grossly illegal and could
-> > > cause any manner of misbehavior.  Did someone put a synchronize_rcu()
-> > > into an RCU callback or something?  Or did I do something really really
-> 
-> This is a 3.0-rc6 based kernels with the debug patch, the initial
-> RCU inhibit patch (where you disable the RCU checking during bootup) and
-> that is it.
-> 
-> What is bizzare is that the soft_irq shows but there is no corresponding
-> Xen eventchannel stack trace - there should have been also xen_evtchn_upcall
-> (which is the general code that calls the main IRQ handler.. which would make
-> the softirq call). This is assuming that the IRQ (timer one) is reguarly dispatching
-> (which it looks to be doing). Somehow getting just the softirq by itself is bizzre.
-> 
-> Perhaps an IPI has been sent that does this. Let me see what a stack
-> trace for an IPI looks like.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Thank you for the info!
+---1463811839-785980978-1310489274=:3937
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-> > > braindead inside the RCU implementation?
-> > > 
-> > > (I am looking into this last question, but would appreciate any and all
-> > > help with the other questions!)
-> > 
-> > OK, I was confusing Julie's, Ravi's, and Konrad's situations.
-> 
-> Do you want me to create a new email thread to keep this one seperate?
+On Tue, 12 Jul 2011, Eric Dumazet wrote:
 
-Let's please keep everyone on copy.  I bet that these problems are
-related.  Plus once we get something that works, it would be good if
-everyone could test it.
+> Le mardi 12 juillet 2011 =C3=A0 10:59 -0500, Christoph Lameter a =C3=A9cr=
+it :
+>
+> > We do not need to have _count included. This is just there because the
+> > field is in the way on 64 bit and we can only do 2x 64 bit cmpxchges.  =
+On
+> > 32 bi we can drop _count from "counters".
+> >
+>
+> OK, thanks for clarification.
 
-> > The wakeme_after_rcu() is in fact OK to call from sofirq -- if and
-> > only if the scheduler is actually running.  This is what happens if
-> > you do a synchronize_rcu() given your CONFIG_TREE_RCU setup -- an RCU
-> > callback is posted that, when invoked, awakens the task that invoked
-> > synchronize_rcu().
-> > 
-> > And, based on http://darnok.org/xen/log-rcu-stall, Konrad's system
-> > appears to be well past the point where the scheduler is initialized.
-> > 
-> > So I am coming back around to the loop in task_waking_fair().
-> > 
-> > Though the patch I sent out earlier might help, for example, if early
-> > invocation of RCU callbacks is somehow messing up the scheduler's
-> > initialization.
-> 
-> Ok, let me try it out.
+Still I'd like to get some ideas on how to make the whole thing much
+cleaner. Isnt there some way to convert a struct to an unsigned long
+without going through a union? And a way to convert a struct + 32 bit
+atomic_t into a 64 bit unsigned long? Would simplify things significantly.
 
-Thank you again!
-
-							Thanx, Paul
+---1463811839-785980978-1310489274=:3937--
