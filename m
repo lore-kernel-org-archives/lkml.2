@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753545Ab1GLNCu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 09:02:50 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:61672 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752897Ab1GLNCt (ORCPT
+	id S1753539Ab1GLNJd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 09:09:33 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:59418 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752948Ab1GLNJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 09:02:49 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 0/6] ARM: make mach/hardware.h optional
-Date: Tue, 12 Jul 2011 15:02:41 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Rob Herring <robherring2@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Michal Simek <monstr@monstr.eu>, linux-kernel@vger.kernel.org,
-        nico@fluxnic.net
-References: <1309366019-24379-1-git-send-email-robherring2@gmail.com> <201107021124.46953.arnd@arndb.de> <4E1B176E.3030503@gmail.com>
-In-Reply-To: <4E1B176E.3030503@gmail.com>
+	Tue, 12 Jul 2011 09:09:32 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107121502.41570.arnd@arndb.de>
-X-Provags-ID: V02:K0:Opm5gNHeRaSZx9ymbTISPFfkv9/8uyeQU8/lxB2sBcx
- rxp9PyK3oGc0mFXErP556cQ+MkbYTcpgWGciIiN3C21iR0Duck
- 2LOs4jOBJtQQ6BRuTh9Ds08d9m8QgAKiwgi44seEpRbSXusQsy
- 2TbVO4f+DMyimf87AqsCQ4irKvKTEsS+qdjJnI8r3IS8SdGram
- fql4QS8ewMT9T+C0MuO4Q==
+Reply-To: eranian@gmail.com
+In-Reply-To: <1310460101.18678.111.camel@twins>
+References: <1310460101.18678.111.camel@twins>
+Date: Tue, 12 Jul 2011 13:09:31 +0000
+Message-ID: <CAMsRxfKPQ8gBp3TdDUS9MmB5KB1yhtJw5CqJw+coFRXGcwMDWQ@mail.gmail.com>
+Subject: Re: perf error codes
+From: stephane eranian <eranian@googlemail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Vince Weaver <vweaver1@eecs.utk.edu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, paulus <paulus@samba.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 11 July 2011, Rob Herring wrote:
-> > 
-> > This is very good work, I really like it. I've mentioned one idea for
-> > an improvement in patch 5, which you can still integrate, but otherwise
-> > 
-> > Reviewed-by: Arnd Bergmann <arnd@arndb.de>
-> > 
-> > for the whole series.
-> > 
-> 
-> I have an updated version ready to send out. Will you take this in your
-> tree including the 1st patch for pci flags functions? Also, what about
-> the powerpc conversion to generic pci flags?
+Hi,
 
-I can take it all in the arm-soc tree, yes. However for anything outside
-of arch/arm/{mach,plat}-*, please get an Ack from the respective maintainer
-(Russell, Michal, BenH, ...).
+On Tue, Jul 12, 2011 at 8:41 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> Hi Stephane, Vince,
+>
+> Linus recently expressed dislike of our -ENOSPC usage for indicating the
+> pmu is 'full'. Do either of your projects (libpfm, libpapi resp.) rely
+> on this particular error code for this condition?
+>
+libpfm does not make perf syscalls. It would not be impacted
+by a change in the error code.
 
-	Arnd
+I wonder what other meaningful code you might be able to use, though.
+
+Thanks for asking.
+
+
+>
+>
