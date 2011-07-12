@@ -1,148 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758644Ab1GLBil (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 21:38:41 -0400
-Received: from mga09.intel.com ([134.134.136.24]:53692 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754200Ab1GLBiB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 21:38:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,517,1304319600"; 
-   d="scan'208";a="26533004"
-Subject: [PATCH 2/3]CFQ: add think time check for service tree
-From: Shaohua Li <shaohua.li@intel.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Jens Axboe <jaxboe@fusionio.com>, Vivek Goyal <vgoyal@redhat.com>
+	id S1758313Ab1GLBk1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 21:40:27 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:52807 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752305Ab1GLBk0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 21:40:26 -0400
+Subject: Re: 2.6.32.21 - uptime related crashes?
+From: john stultz <johnstul@us.ibm.com>
+To: MINOURA Makoto / =?UTF-8?Q?=E7=AE=95=E6=B5=A6_=E7=9C=9F?= 
+	<minoura@valinux.co.jp>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Faidon Liambotis <paravoid@debian.org>, linux-kernel@vger.kernel.org,
+        stable@kernel.org, Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
+        seto.hidetoshi@jp.fujitsu.com,
+        =?ISO-8859-1?Q?Herv=E9?= Commowick <hcommowick@exosec.fr>,
+        Willy Tarreau <w@1wt.eu>, Rand@jasper.es
+In-Reply-To: <kk5d3hgi9eh.fsf@brer.local.valinux.co.jp>
+References: <20110428082625.GA23293@pcnci.linuxbox.cz>
+	 <20110428183434.GG30645@1wt.eu>	<20110429100200.GB23293@pcnci.linuxbox.cz>
+	 <20110430093605.GA10529@1wt.eu> <20110430173905.GA25641@tty.gr>
+	 <BANLkTi=22QFrJ4vO7-3VuHU=9Cg39bxJ4Q@mail.gmail.com>
+	 <20110705231515.95bc758f.akpm@linux-foundation.org>
+	 <kk5d3hgi9eh.fsf@brer.local.valinux.co.jp>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 12 Jul 2011 09:37:59 +0800
-Message-ID: <1310434679.15392.285.camel@sli10-conroe>
+Date: Mon, 11 Jul 2011 18:40:19 -0700
+Message-ID: <1310434819.30337.21.camel@work-vm>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: CFQ: add think time check for service tree
+On Tue, 2011-07-12 at 10:18 +0900, MINOURA Makoto / 箕浦 真 wrote:
+> We're experiencing similar but slightly different
+> problems.  Some KVM hosts crash after 210-220 uptime.
+> Some of them hits divide-by-zero, but one of them shows:
+> 
+> [671528.8780080] BUG: soft lockup - CPU#4 stuck for 61s! [kvm:11131]
+> 
+> (sorry we have no full crash message including the backtrace)
+> 
+> The host kernel is 2.6.32.11-based (ubuntu 2.6.32-22-server,
+> 2.6.32-22.36).
+> 
+> I'm not sure but probably the task scheduler is confusing by
+> the sched_clock overflow?
 
-Currently when the last queue of a service tree has no request, we don't
-expire the queue to hope request from the service tree comes soon, so the
-service tree doesn't miss its share. But if the think time is big, the
-assumption isn't correct and we just waste bandwidth. In such case, we
-don't do idle.
+I'm working on a debug patch that will hopefully trip sched_clock
+overflows very early to see if we can't shake these issues out.
 
-[global]
-runtime=10
-direct=1
-
-[test1]
-rw=randread
-ioengine=libaio
-size=500m
-directory=/mnt
-filename=file1
-thinktime=9000
-
-[test2]
-rw=read
-ioengine=libaio
-size=1G
-directory=/mnt
-filename=file2
-
-	patched		base
-test1	41k/s		33k/s
-test2	15868k/s	15789k/s
-total	15902k/s	15817k/s
-
-A slightly better
-
-To check if the patch changes behavior of queue without think time. I also
-tried to give test1 2ms think time or no think time. The test has variation
-even without the patch, but the average throughput doesn't change with/without
-the patch.
-
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-
----
- block/cfq-iosched.c |   34 ++++++++++++++++++++++++++++++----
- 1 file changed, 30 insertions(+), 4 deletions(-)
-
-Index: linux/block/cfq-iosched.c
-===================================================================
---- linux.orig/block/cfq-iosched.c	2011-07-12 09:19:06.000000000 +0800
-+++ linux/block/cfq-iosched.c	2011-07-12 09:19:13.000000000 +0800
-@@ -87,9 +87,10 @@ struct cfq_rb_root {
- 	unsigned count;
- 	unsigned total_weight;
- 	u64 min_vdisktime;
-+	struct cfq_ttime ttime;
- };
--#define CFQ_RB_ROOT	(struct cfq_rb_root) { .rb = RB_ROOT, .left = NULL, \
--			.count = 0, .min_vdisktime = 0, }
-+#define CFQ_RB_ROOT	(struct cfq_rb_root) { .rb = RB_ROOT, \
-+			.ttime = {.last_end_request = jiffies,},}
- 
- /*
-  * Per process-grouping structure
-@@ -393,6 +394,18 @@ CFQ_CFQQ_FNS(wait_busy);
- 			j++, st = i < IDLE_WORKLOAD ? \
- 			&cfqg->service_trees[i][j]: NULL) \
- 
-+static inline bool cfq_io_thinktime_big(struct cfq_data *cfqd,
-+	struct cfq_ttime *ttime, bool group_idle)
-+{
-+	unsigned long slice;
-+	if (!sample_valid(ttime->ttime_samples))
-+		return false;
-+	if (group_idle)
-+		slice = cfqd->cfq_group_idle;
-+	else
-+		slice = cfqd->cfq_slice_idle;
-+	return ttime->ttime_mean > slice;
-+}
- 
- static inline bool iops_mode(struct cfq_data *cfqd)
- {
-@@ -1969,7 +1982,8 @@ static bool cfq_should_idle(struct cfq_d
- 	 * Otherwise, we do only if they are the last ones
- 	 * in their service tree.
- 	 */
--	if (service_tree->count == 1 && cfq_cfqq_sync(cfqq))
-+	if (service_tree->count == 1 && cfq_cfqq_sync(cfqq) &&
-+	   !cfq_io_thinktime_big(cfqd, &service_tree->ttime, false))
- 		return true;
- 	cfq_log_cfqq(cfqd, cfqq, "Not idling. st->count:%d",
- 			service_tree->count);
-@@ -3235,8 +3249,11 @@ static void
- cfq_update_io_thinktime(struct cfq_data *cfqd, struct cfq_queue *cfqq,
- 	struct cfq_io_context *cic)
- {
--	if (cfq_cfqq_sync(cfqq))
-+	if (cfq_cfqq_sync(cfqq)) {
- 		__cfq_update_io_thinktime(&cic->ttime, cfqd->cfq_slice_idle);
-+		__cfq_update_io_thinktime(&cfqq->service_tree->ttime,
-+			cfqd->cfq_slice_idle);
-+	}
- }
- 
- static void
-@@ -3574,7 +3591,16 @@ static void cfq_completed_request(struct
- 	cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]--;
- 
- 	if (sync) {
-+		struct cfq_rb_root *service_tree;
-+
- 		RQ_CIC(rq)->ttime.last_end_request = now;
-+
-+		if (cfq_cfqq_on_rr(cfqq))
-+			service_tree = cfqq->service_tree;
-+		else
-+			service_tree = service_tree_for(cfqq->cfqg,
-+				cfqq_prio(cfqq), cfqq_type(cfqq));
-+		service_tree->ttime.last_end_request = now;
- 		if (!time_after(rq->start_time + cfqd->cfq_fifo_expire[1], now))
- 			cfqd->last_delayed_sync = now;
- 	}
+thanks
+-john
 
 
