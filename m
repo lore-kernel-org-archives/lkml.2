@@ -1,66 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880Ab1GLSdk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 14:33:40 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:49264 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754759Ab1GLSdj (ORCPT
+	id S1754825Ab1GLSfO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 14:35:14 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:52842 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754072Ab1GLSfM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 14:33:39 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
-Subject: Re: [PATCH 01/11] MFD: DA9052 MFD core module v2
-Date: Tue, 12 Jul 2011 20:32:51 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "sameo@openedhand.com" <sameo@openedhand.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dajun <dajun.chen@diasemi.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>
-References: <1309876620.960.169.camel@L-0532.kpit.com> <201107051655.27990.arnd@arndb.de> <E2CAE7F7B064EA49B5CE7EE9A4BB167D18F7008231@KCINPUNHJCMS01.kpit.com>
-In-Reply-To: <E2CAE7F7B064EA49B5CE7EE9A4BB167D18F7008231@KCINPUNHJCMS01.kpit.com>
+	Tue, 12 Jul 2011 14:35:12 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107122032.51847.arnd@arndb.de>
-X-Provags-ID: V02:K0:ews9crKTUuXAAzf2oKACgnH95s4U8NzuyNbdcqj2svP
- p1vC9OYD00siH6M96VTg03NTtgJlxmSUCs/c+s8CBI0VeUt4EF
- CJMNRfgOQ02Yl4ps7WmVx2BP9DOnX4D4NgUr641oTNsrC9vUCk
- gZwcNZs86dBh97Y8Bxm0NxUNVEvGEGZ0xq5i2sJaXcWpweiEm7
- ruVJmeqI7IZPw5ibEqZFQ==
+In-Reply-To: <CACqU3MVZ6UPZKSsSSjZosTYfbzuwj_dCumK-wcb_SWhs+8OgNQ@mail.gmail.com>
+References: <CACqU3MW=VUn64nsSA2V_eXEfEjv6xmB9yBWL8rYynH1wkHcOgw@mail.gmail.com>
+	<1310454020-15426-1-git-send-email-abogani@kernel.org>
+	<CAFziu1HvspbMj8LRLHd2w9vcVq_mGCL3pCOwLaduKQ4nt8+Utg@mail.gmail.com>
+	<CACqU3MVZ6UPZKSsSSjZosTYfbzuwj_dCumK-wcb_SWhs+8OgNQ@mail.gmail.com>
+Date: Tue, 12 Jul 2011 14:35:11 -0400
+Message-ID: <CAFziu1EYYN6imDijo7E_raOfdXfWAMzfJL5OursSBAYk8Wdywg@mail.gmail.com>
+Subject: Re: [PATCH] modpost: Fix modpost's license checking V2
+From: Anders Kaseorg <andersk@ksplice.com>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Alessio Igor Bogani <abogani@kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Jan Beulich <jbeulich@novell.com>,
+        Kbuild <linux-kbuild@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Tim Bird <tim.bird@am.sony.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 11 July 2011 08:57:46 Ashish Jangam wrote:
-> > -----Original Message-----
-> > From: Arnd Bergmann [mailto:arnd@arndb.de]
-> > Sent: Tuesday, July 05, 2011 8:25 PM
-> > To: Ashish Jangam
-> > Cc: Mark Brown; sameo@openedhand.com; linux-kernel@vger.kernel.org; Dajun;
-> > linaro-dev@lists.linaro.org
-> > Subject: Re: [PATCH 01/11] MFD: DA9052 MFD core module v2
-> > 
-> > On Tuesday 05 July 2011, ashishj3 wrote:
-> > > The DA9052 is a highly integrated PMIC subsystem with supply domain
-> > flexibility
-> > > to support wide range of high performance application.
-> > >
-> > > It provides voltage regulators, GPIO controller, Touch Screen, RTC, Battery
-> > > control and other functionality.
-> > >
-> > > Signed-off-by: David Dajun Chen <dchen@diasemi.com>
-> > > Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
-> > 
-> > Reviewed-by: Arnd Bergmann <arnd@arndb.de>
-> Can anyone ack this patch?
+On Tue, Jul 12, 2011 at 14:15, Arnaud Lacombe <lacombar@gmail.com> wrote:
+> modpost is an host tool, it should not include kernel header. Content
+> of this file is not exported to userland anyway.
 
-What do you think my message was? Reviewed-by is usually stronger than
-Acked-by, it means that I actually had a closer look and am now happy
-with the current state.
+My point was more that you might as well reuse the same name and
+probably the same code so that people don’t have to look carefully at
+a new macro to decide whether it’s off-by-one from what they expect.
 
-Of course, my Ack might not mean too much because I'm not a maintainer,
-but I still would expect to be included in 'anyone'.
-
-	Arnd
+Anders
