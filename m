@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758548Ab1GLHU1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 03:20:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3572 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754651Ab1GLHU0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 03:20:26 -0400
-Message-ID: <4E1BF5A1.5070301@redhat.com>
-Date: Tue, 12 Jul 2011 10:20:01 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1753203Ab1GLHdJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 03:33:09 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:39423 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752028Ab1GLHdH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 03:33:07 -0400
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "acme@ghostprotocols.net" <acme@ghostprotocols.net>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: Re: [PATCH 1/3] perf: add context field to perf_event
-References: <1309362157-6596-1-git-send-email-avi@redhat.com> <1309362157-6596-2-git-send-email-avi@redhat.com> <20110629160841.GA2032@somewhere> <20110629162725.GH15521@e102144-lin.cambridge.arm.com> <20110704135820.GD5551@somewhere> <4E11C9CC.2070909@redhat.com> <20110704143655.GE5551@somewhere> <20110711210753.GA3582@e102144-lin.cambridge.arm.com>
-In-Reply-To: <20110711210753.GA3582@e102144-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110705230101.GD2852@fujiko>
+References: <20110621142133.GA3652@fujiko>
+	<yunhb7jxkz2.fsf@aiko.keithp.com>
+	<20110621155205.GA2488@fujiko>
+	<yunboxrxiz2.fsf@aiko.keithp.com>
+	<20110621164209.GA2155@fujiko>
+	<yun8vsvxdr4.fsf@aiko.keithp.com>
+	<20110621184757.GA2185@fujiko>
+	<yunzklb9fg1.fsf@aiko.keithp.com>
+	<20110705230101.GD2852@fujiko>
+Date: Tue, 12 Jul 2011 10:33:06 +0300
+X-Google-Sender-Auth: Ut7IppOyYzmmU0L0lEBsXVPBSa8
+Message-ID: <CAOJsxLFVSEDEaYH8Dw4jWGo9=wkC8QQWOs4xRR6qcgVM2xCRoA@mail.gmail.com>
+Subject: Re: Reverting rc6 by default
+From: Pekka Enberg <penberg@kernel.org>
+To: Francesco Allertsen <fallertsen@gmail.com>
+Cc: Keith Packard <keithp@keithp.com>, dri-devel@lists.freedesktop.org,
+        LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2011 12:07 AM, Will Deacon wrote:
-> On Mon, Jul 04, 2011 at 03:36:57PM +0100, Frederic Weisbecker wrote:
-> >  On Mon, Jul 04, 2011 at 05:10:20PM +0300, Avi Kivity wrote:
-> >  >  On 07/04/2011 04:58 PM, Frederic Weisbecker wrote:
-> >  >  >Another thing I would like to do in the even longer term is to not use perf anymore
-> >  >  >for ptrace breakpoints, because that involves a heavy dependency and few people are
-> >  >  >happy with that. Instead we should just have a generic hook into the sched_switch()
-> >  >  >and handle pure ptrace breakpoints there. The central breakpoint API would still be
-> >  >  >there to reserve/schedule breakpoint resources between ptrace and perf.
-> >  >  >
-> >  >
-> >  >  'struct preempt_notifier' may be the hook you're looking for.
-> >
-> >  Yeah looks like a perfect fit as it's per task.
+On Wed, Jul 6, 2011 at 2:01 AM, Francesco Allertsen
+<fallertsen@gmail.com> wrote:
+> On Tue, Jun 21, 2011 at 12:01:34PM -0700, Keith Packard wrote:
+>> Thanks. I'll see if I can't get an X201s upgraded to this version and
+>> see if we can reproduce the problem you're having...
 >
-> I had a quick look at this and I think the preempt_notifier stuff needs
-> slightly extending so that we can register a notifier for a task other than
-> current [e.g. the child of current on which we are installing breakpoints].
+> Any news?
 >
-> If the task in question is running, it looks like this will introduce a race
-> condition between notifier registration and rescheduling. For the purposes
-> of ptrace this shouldn't be a problem as the child will be stopped, but
-> others might also want to make use of the new functionality.
+> I have found the time today for more debugging.
 >
-> Any ideas on how this could be achieved, or am I better off just restricting
-> this to children that are being traced?
+> Attached there are 3 files.
+>
+> dmesg-startup is the startup of the last 3.0.0-rc6 kernel, with the
+> debug enabled.
+> dmesg-enabled is the X startup (and freeze) with debug mode and rc6
+> enabled.
+> dmesg-disabled is the X startup with debug mode enabled and rc6 disabled
+> (so no freeze; full kde startup and logout).
+>
+> I hope this helps you to solve the problem, otherwise the X201s users
+> will not use the 3.0.0 kernel :-(.
+>
+> If you need more informations just let me know.
 
-Maybe we need a generic "run this function in this task's context" 
-mechanism instead.  Like an IPI, but targeting tasks instead of cpus.
-
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
-
+AFAICT, this problem is still there in 3.0-rc7. Keith, isn't it time
+to revert commit a51f7a6 ("drm/i915: enable rc6 by default") before
+3.0 is out?
