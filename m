@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753539Ab1GLNJd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 09:09:33 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:59418 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752948Ab1GLNJc (ORCPT
+	id S1753606Ab1GLNNv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 09:13:51 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:41496 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753004Ab1GLNNu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 09:09:32 -0400
+	Tue, 12 Jul 2011 09:13:50 -0400
+Message-ID: <4E1C488A.1020308@gmail.com>
+Date: Tue, 12 Jul 2011 15:13:46 +0200
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Reply-To: eranian@gmail.com
-In-Reply-To: <1310460101.18678.111.camel@twins>
-References: <1310460101.18678.111.camel@twins>
-Date: Tue, 12 Jul 2011 13:09:31 +0000
-Message-ID: <CAMsRxfKPQ8gBp3TdDUS9MmB5KB1yhtJw5CqJw+coFRXGcwMDWQ@mail.gmail.com>
-Subject: Re: perf error codes
-From: stephane eranian <eranian@googlemail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Vince Weaver <vweaver1@eecs.utk.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, paulus <paulus@samba.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: "Winkler, Tomas" <tomas.winkler@intel.com>
+CC: "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Weil, Oren jer" <oren.jer.weil@intel.com>
+Subject: Re: [staging] mei: Enable msi when supported
+References: <4E159945.8050900@gmail.com> <6F5C1D715B2DA5498A628E6B9C124F0401C711335D@hasmsx504.ger.corp.intel.com>
+In-Reply-To: <6F5C1D715B2DA5498A628E6B9C124F0401C711335D@hasmsx504.ger.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Tomas,
 
-On Tue, Jul 12, 2011 at 8:41 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> Hi Stephane, Vince,
->
-> Linus recently expressed dislike of our -ENOSPC usage for indicating the
-> pmu is 'full'. Do either of your projects (libpfm, libpapi resp.) rely
-> on this particular error code for this condition?
->
-libpfm does not make perf syscalls. It would not be impacted
-by a change in the error code.
+On 07/07/2011 02:23 PM, Winkler, Tomas wrote:
+>> -----Original Message-----
+>> From: Maarten Lankhorst [mailto:m.b.lankhorst@gmail.com]
+>> Sent: Thursday, July 07, 2011 2:32 PM
+>> To: Winkler, Tomas
+>> Cc: devel@linuxdriverproject.org; Linux Kernel Mailing List
+>> Subject: [staging] mei: Enable msi when supported
+>>
+>> Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+>> ---
+>> Tested suspend/resume, driver (re/un)loading. Comments welcome. :)
+> Sounds good, but I believe in case where MSI is enabled we also can kill the quick handler.
+> Let me check before I ack this.
 
-I wonder what other meaningful code you might be able to use, though.
+Figured I'd bump because I haven't heard anything back.
 
-Thanks for asking.
-
-
->
->
+Cheers,
+Maarten
