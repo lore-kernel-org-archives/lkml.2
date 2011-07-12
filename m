@@ -1,59 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753322Ab1GLLj4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 07:39:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40465 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752964Ab1GLLjz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 07:39:55 -0400
-From: Michal Marek <mmarek@suse.cz>
-To: Christian Kujau <lists@nerdbynature.de>
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Subject: [PATCH] kbuild: Do not write to builddir in modules_install
-Date: Tue, 12 Jul 2011 13:39:40 +0200
-Message-Id: <1310470780-12330-1-git-send-email-mmarek@suse.cz>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <alpine.DEB.2.01.1107040242180.9183@trent.utfs.org>
-References: <alpine.DEB.2.01.1107040242180.9183@trent.utfs.org>
+	id S1753338Ab1GLLoR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 07:44:17 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:38525 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752964Ab1GLLoP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 07:44:15 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Michal Suchanek <hramrach@centrum.cz>
+Cc: Ian Kent <ikent@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        David Howells <dhowells@redhat.com>, Ric Wheeler <rwheeler@redhat.com>,
+        Alexander Viro <aviro@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jeff Moyer <jmoyer@redhat.com>
+Subject: Re: Union mount and lockdep design issues
+References: <1310305703.13309.7.camel@twins>
+	<1302756608.2854.10.camel@perseus.themaw.net>
+	<BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com>
+	<4DA4B6A8.7030804@gmail.com>
+	<BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com>
+	<4DA5DCB8.3040101@gmail.com>
+	<BANLkTineg2XYYOZAU9trrw=+-vH8McN_9w@mail.gmail.com>
+	<4DA5F569.9020309@gmail.com>
+	<BANLkTi=Z1CQm=u2Q1VCHfr=53n5qTC=7bA@mail.gmail.com>
+	<24792.1302808448@redhat.com> <2477.1309342656@redhat.com>
+	<4E1962BE.8010204@redhat.com> <1408.1310382069@redhat.com>
+	<1310385651.18678.59.camel@twins>
+	<CAOMqctQoO7zKojoEuYri8ZWDDMM3Ef6VRtPYzsf-02xhJ8e6jA@mail.gmail.com>
+	<1310392232.4276.14.camel@perseus.themaw.net>
+	<CAOMqctSDxauVLw5OisAeCaFa7DvZDgg_1YCmHaWdJZm60JDVtg@mail.gmail.com>
+	<1310405033.4276.28.camel@perseus.themaw.net>
+	<CAOMqctSZcAuA8r=Bdtg1hhM9xzDmDuOPn376HXuQ0Tb8xrRwzw@mail.gmail.com>
+	<87tyar6gv8.fsf@tucsk.pomaz.szeredi.hu>
+	<CAOMqctQauGk0XszoUo61k4GQ5gWWWgyRXY9x9J=D+K4kMJ_CUw@mail.gmail.com>
+Date: Tue, 12 Jul 2011 13:45:08 +0200
+In-Reply-To: <CAOMqctQauGk0XszoUo61k4GQ5gWWWgyRXY9x9J=D+K4kMJ_CUw@mail.gmail.com>
+	(Michal Suchanek's message of "Tue, 12 Jul 2011 11:58:35 +0200")
+Message-ID: <87liw367uj.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let depmod.sh create a temporary directory in /tmp instead of writing to
-the build directory as root. The mktemp utility should be available on
-any recent system (and there is already scripts/gen_initramfs_list.sh
-relying on it).
+Michal Suchanek <hramrach@centrum.cz> writes:
 
-Reported-by: Christian Kujau <lists@nerdbynature.de>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
----
- scripts/depmod.sh |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
+> On 12 July 2011 10:30, Miklos Szeredi <miklos@szeredi.hu> wrote:
+>> Michal Suchanek <hramrach@centrum.cz> writes:
+>>
+>>> The locking order is likely determined by the structure of the union
+>>> and not some system-wide order of filesystems so assuming the readonly
+>>> layers are locked as well you will probably get a deadlock with
+>>> technically correct mount:
+>>>
+>>> mount -t overlayfs overlayfs -olowerdir=/lower2,upperdir=/upper /tmpoverlay
+>>> mount -t overlayfs overlayfs -olowerdir=/lower1,upperdir=/tmpoverlay /overlay
+>>>
+>>> mount -t overlayfs overlayfs -olowerdir=/lower1,upperdir=/upper2 /tmpoverlay2
+>>> mount -t overlayfs overlayfs -olowerdir=/lower2,upperdir=/tmpoverlay2 /overlay2
+>>>
+>>> because now lower1 and lower2 are differently ordered in the two
+>>> overlays.
+>>
+>> Overlayfs never locks both upper and lower at the same time, which means
+>> there's no AB-BA locking dependency.  The lock orderings are:
+>>
+>> -> /overlay
+>>  -> /lower1
+>>  -> /tmpoverlay
+>>    -> /lower2
+>>    -> /upper
+>> -> /overlay2
+>>  -> /lower2
+>>  -> /tmpoverlay2
+>>    -> /lower1
+>>    -> /upper2
+>>
+>> As you can see there's no nesting of lower2 and lower1 into each other.
+>>
+>> When you combine two filesystems, a completely new ordering is created
+>> each time, there's no possibility to make an AB-BA nesting.  At least I
+>> cannot see one.
+>
+> Except you can get in situation where overlay locks lower1 and
+> tmpoverlay waits for lower2
 
-diff --git a/scripts/depmod.sh b/scripts/depmod.sh
-index 3b029cb..a272356 100755
---- a/scripts/depmod.sh
-+++ b/scripts/depmod.sh
-@@ -21,13 +21,15 @@ fi
- # older versions of depmod require the version string to start with three
- # numbers, so we cheat with a symlink here
- depmod_hack_needed=true
--mkdir -p .tmp_depmod/lib/modules/$KERNELRELEASE
--if "$DEPMOD" -b .tmp_depmod $KERNELRELEASE 2>/dev/null; then
--	if test -e .tmp_depmod/lib/modules/$KERNELRELEASE/modules.dep -o \
--		-e .tmp_depmod/lib/modules/$KERNELRELEASE/modules.dep.bin; then
-+tmp_dir=$(mktemp -d ${TMPDIR:-/tmp}/depmod.XXXXXX)
-+mkdir -p "$tmp_dir/lib/modules/$KERNELRELEASE"
-+if "$DEPMOD" -b "$tmp_dir" $KERNELRELEASE 2>/dev/null; then
-+	if test -e "$tmp_dir/lib/modules/$KERNELRELEASE/modules.dep" -o \
-+		-e "$tmp_dir/lib/modules/$KERNELRELEASE/modules.dep.bin"; then
- 		depmod_hack_needed=false
- 	fi
- fi
-+rm -rf "$tmp_dir"
- if $depmod_hack_needed; then
- 	symlink="$INSTALL_MOD_PATH/lib/modules/99.98.$KERNELRELEASE"
- 	ln -s "$KERNELRELEASE" "$symlink"
--- 
-1.7.5.4
+Note: tmpoverlay lock does *not* nest into lower1 lock, they are both on
+the same nesting level.  There's no dependency between the two.
 
+>  which is held by overlay2 waiting for
+> lower1 in tmpoverlay2.
+
+No deadlock there.
+
+Thanks,
+Miklos
