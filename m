@@ -1,91 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285Ab1GLLbm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 07:31:42 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:34877 "EHLO comal.ext.ti.com"
+	id S1753322Ab1GLLj4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 07:39:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40465 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752964Ab1GLLbl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 07:31:41 -0400
-From: "Raju, Sundaram" <sundaram@ti.com>
-To: Jassi Brar <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Date: Tue, 12 Jul 2011 17:01:23 +0530
-Subject: RE: [PATCH] dmaengine: add dma_ctrl_cmd to pass buffer stride
- configuration
-Thread-Topic: [PATCH] dmaengine: add dma_ctrl_cmd to pass buffer stride
- configuration
-Thread-Index: AcxAhbvaDBrgy6t5Q3KibUXwMPaqyQAAJmlw
-Message-ID: <E0D41E29EB0DAC4E9F3FF173962E9E94030259DBBE@dbde02.ent.ti.com>
-References: <1310310203-12288-1-git-send-email-sundaram@ti.com>
-	<CABb+yY1HJOR+QzmM4-ju4cs+8keoyUbMv+SpVoM6BW=DCMzmQQ@mail.gmail.com>
-	<CACRpkdbLg0+_2kpi4NizFj0fDWb6QPtkcKirKgoH+83vGD0O0A@mail.gmail.com>
- <CABb+yY1RqHJ6jsMB2RqPNnBLff-bzhwaXG1U-hCD8CpME+a3aA@mail.gmail.com>
-In-Reply-To: <CABb+yY1RqHJ6jsMB2RqPNnBLff-bzhwaXG1U-hCD8CpME+a3aA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1752964Ab1GLLjz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 07:39:55 -0400
+From: Michal Marek <mmarek@suse.cz>
+To: Christian Kujau <lists@nerdbynature.de>
+Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Subject: [PATCH] kbuild: Do not write to builddir in modules_install
+Date: Tue, 12 Jul 2011 13:39:40 +0200
+Message-Id: <1310470780-12330-1-git-send-email-mmarek@suse.cz>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <alpine.DEB.2.01.1107040242180.9183@trent.utfs.org>
+References: <alpine.DEB.2.01.1107040242180.9183@trent.utfs.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p6CBVqxE015099
 
-> -----Original Message-----
-> From: Jassi Brar [mailto:jassisinghbrar@gmail.com]
-> Sent: Tuesday, July 12, 2011 4:51 PM
-> To: Linus Walleij
-> Cc: Raju, Sundaram; linux-arm-kernel@lists.infradead.org; linux-
-> kernel@vger.kernel.org; davinci-linux-open-source@linux.davincidsp.com;
-> linux@arm.linux.org.uk; dan.j.williams@intel.com; linux-omap@vger.kernel.org
-> Subject: Re: [PATCH] dmaengine: add dma_ctrl_cmd to pass buffer stride
-> configuration
-> 
-> On Tue, Jul 12, 2011 at 3:33 PM, Linus Walleij <linus.walleij@linaro.org>
-> wrote:
-> > On Tue, Jul 12, 2011 at 6:17 AM, Jassi Brar <jassisinghbrar@gmail.com>
-> wrote:
-> >
-> >> 1) Striding, in one form or other, is supported by other DMACs as well.
-> >> Â  The number will only increase in future.
-> >> Â  Are we to add Â <VENDOR>_DMA_STRIDE_CONFIG for each case ?
-> >
-> > If we are sure about this and striding will work in a similar way on all
-> > then let's have the enum named DMA_STRIDE_CONFIG and move the
-> > passed-in struct to <linux/dmaengine.h) then?
-> >
-> > Would that be:
-> >
-> > struct dma_stride_config {
-> > Â  Â u32 read_bytes;
-> > Â  Â u32 skip_bytes;
-> > };
-> >
-> > Or something more complex?
-> Well, I am not sure if striding needs any special treatment at all.
-> Why not have client drivers prepare and submit sg-list.
-> Let the DMAC drivers interpret/parse the sg-list and program it
-> as strides if the h/w supports it.
-> If anything, we should make preparation and submission of sg-list
-> as efficient as possible.
-Jassi,
+Let depmod.sh create a temporary directory in /tmp instead of writing to
+the build directory as root. The mktemp utility should be available on
+any recent system (and there is already scripts/gen_initramfs_list.sh
+relying on it).
 
-sg_lists describe only a bunch of disjoint buffers. But what if the
-DMAC can skip and read the bytes within each of the buffers in
-the sg_list? (like TI EDMAC and TI SDMAC)
-How can that information be passed to the offload
-engine driver from the client?
+Reported-by: Christian Kujau <lists@nerdbynature.de>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+---
+ scripts/depmod.sh |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
 
-~Sundaram
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+diff --git a/scripts/depmod.sh b/scripts/depmod.sh
+index 3b029cb..a272356 100755
+--- a/scripts/depmod.sh
++++ b/scripts/depmod.sh
+@@ -21,13 +21,15 @@ fi
+ # older versions of depmod require the version string to start with three
+ # numbers, so we cheat with a symlink here
+ depmod_hack_needed=true
+-mkdir -p .tmp_depmod/lib/modules/$KERNELRELEASE
+-if "$DEPMOD" -b .tmp_depmod $KERNELRELEASE 2>/dev/null; then
+-	if test -e .tmp_depmod/lib/modules/$KERNELRELEASE/modules.dep -o \
+-		-e .tmp_depmod/lib/modules/$KERNELRELEASE/modules.dep.bin; then
++tmp_dir=$(mktemp -d ${TMPDIR:-/tmp}/depmod.XXXXXX)
++mkdir -p "$tmp_dir/lib/modules/$KERNELRELEASE"
++if "$DEPMOD" -b "$tmp_dir" $KERNELRELEASE 2>/dev/null; then
++	if test -e "$tmp_dir/lib/modules/$KERNELRELEASE/modules.dep" -o \
++		-e "$tmp_dir/lib/modules/$KERNELRELEASE/modules.dep.bin"; then
+ 		depmod_hack_needed=false
+ 	fi
+ fi
++rm -rf "$tmp_dir"
+ if $depmod_hack_needed; then
+ 	symlink="$INSTALL_MOD_PATH/lib/modules/99.98.$KERNELRELEASE"
+ 	ln -s "$KERNELRELEASE" "$symlink"
+-- 
+1.7.5.4
+
