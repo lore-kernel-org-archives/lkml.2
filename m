@@ -1,58 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758313Ab1GLBk1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 21:40:27 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:52807 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752305Ab1GLBk0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 21:40:26 -0400
-Subject: Re: 2.6.32.21 - uptime related crashes?
-From: john stultz <johnstul@us.ibm.com>
-To: MINOURA Makoto / =?UTF-8?Q?=E7=AE=95=E6=B5=A6_=E7=9C=9F?= 
-	<minoura@valinux.co.jp>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Faidon Liambotis <paravoid@debian.org>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
-        seto.hidetoshi@jp.fujitsu.com,
-        =?ISO-8859-1?Q?Herv=E9?= Commowick <hcommowick@exosec.fr>,
-        Willy Tarreau <w@1wt.eu>, Rand@jasper.es
-In-Reply-To: <kk5d3hgi9eh.fsf@brer.local.valinux.co.jp>
-References: <20110428082625.GA23293@pcnci.linuxbox.cz>
-	 <20110428183434.GG30645@1wt.eu>	<20110429100200.GB23293@pcnci.linuxbox.cz>
-	 <20110430093605.GA10529@1wt.eu> <20110430173905.GA25641@tty.gr>
-	 <BANLkTi=22QFrJ4vO7-3VuHU=9Cg39bxJ4Q@mail.gmail.com>
-	 <20110705231515.95bc758f.akpm@linux-foundation.org>
-	 <kk5d3hgi9eh.fsf@brer.local.valinux.co.jp>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 11 Jul 2011 18:40:19 -0700
-Message-ID: <1310434819.30337.21.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	id S1758301Ab1GLBrg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 21:47:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58060 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752630Ab1GLBrf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 21:47:35 -0400
+Date: Mon, 11 Jul 2011 21:46:33 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Roland Dreier <roland@kernel.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-scsi@vger.kernel.org,
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        "Manvanthara B. Puttashankar" <manvanth@linux.vnet.ibm.com>,
+        Tarak Reddy <tarak.reddy@in.ibm.com>,
+        "Seshagiri N. Ippili" <sesh17@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org,
+        device-mapper development <dm-devel@redhat.com>,
+        Tejun Heo <tj@kernel.org>, jaxboe@fusionio.com
+Subject: Re: block: Check that queue is alive in blk_insert_cloned_request()
+Message-ID: <20110712014633.GA30965@redhat.com>
+References: <CAMM=eLfzKuw-2vbERV6D7dAHb1BWopOKZ=dB7vWxcxSCoj6Tkw@mail.gmail.com>
+ <Pine.LNX.4.44L0.1107112050480.17690-100000@netrider.rowland.org>
+ <20110712012206.GA30690@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110712012206.GA30690@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-12 at 10:18 +0900, MINOURA Makoto / 箕浦 真 wrote:
-> We're experiencing similar but slightly different
-> problems.  Some KVM hosts crash after 210-220 uptime.
-> Some of them hits divide-by-zero, but one of them shows:
+On Mon, Jul 11, 2011 at 09:22:06PM -0400, Mike Snitzer wrote:
+> On Mon, Jul 11 2011 at  8:52pm -0400,
+> Alan Stern <stern@rowland.harvard.edu> wrote:
 > 
-> [671528.8780080] BUG: soft lockup - CPU#4 stuck for 61s! [kvm:11131]
+> > On Mon, 11 Jul 2011, Mike Snitzer wrote:
+> > 
+> > > [cc'ing dm-devel, vivek and tejun]
+> > > 
+> > > On Fri, Jul 8, 2011 at 7:04 PM, Roland Dreier <roland@kernel.org> wrote:
+> > > > From: Roland Dreier <roland@purestorage.com>
+> > > >
+> > > > This fixes crashes such as the below that I see when the storage
+> > > > underlying a dm-multipath device is hot-removed. ?The problem is that
+> > > > dm requeues a request to a device whose block queue has already been
+> > > > cleaned up, and blk_insert_cloned_request() doesn't check if the queue
+> > > > is alive, but rather goes ahead and tries to queue the request. ?This
+> > > > ends up dereferencing the elevator that was already freed in
+> > > > blk_cleanup_queue().
+> > > 
+> > > Your patch looks fine to me:
+> > > Acked-by: Mike Snitzer <snitzer@redhat.com>
+> > 
+> > There's still the issue that Stefan Richter pointed out: The test for a 
+> > dead queue must be made _after_ acquiring the queue lock, not _before_.
 > 
-> (sorry we have no full crash message including the backtrace)
+> Yes, quite important.
 > 
-> The host kernel is 2.6.32.11-based (ubuntu 2.6.32-22-server,
-> 2.6.32-22.36).
-> 
-> I'm not sure but probably the task scheduler is confusing by
-> the sched_clock overflow?
+> Jens, can you tweak the patch or should Roland send a v2?
 
-I'm working on a debug patch that will hopefully trip sched_clock
-overflows very early to see if we can't shake these issues out.
+I do not think that we should do queue dead check after taking a spinlock.
+The reason being that there are life time issues of two objects.
 
-thanks
--john
+- Validity of request queue pointer
+- Validity of q->spin_lock pointer
 
+If the dm has taken the reference to the request queue in the beginning
+then it can be sure request queue pointer is valid. But spin_lock might
+be coming from driver and might be in one of driver allocated structures.
+So it might happen that driver has called blk_cleanup_queue() and freed
+up structures which contained the spin lock.
 
+So if queue is not dead, we know that q->spin_lock is valid. I think
+only race present here is that whole operation is not atomic. First
+we check for queue not dead flag and then go on to acquire request
+queue lock. So this leaves a small window for race. I think I have
+seen other code written in such manner (__generic_make_request()). So
+it proably reasonably safe to do here too.
+
+Thanks
+Vivek
