@@ -1,99 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392Ab1GLOu5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 10:50:57 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:58472 "EHLO e8.ny.us.ibm.com"
+	id S1753461Ab1GLO7V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 10:59:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52973 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753153Ab1GLOu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 10:50:56 -0400
-Date: Tue, 12 Jul 2011 07:49:36 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: xen-devel@lists.xensource.com, julie Sullivan <kernelmail.jms@gmail.com>,
-        linux-kernel@vger.kernel.org, chengxu@linux.vnet.ibm.com
-Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3
-Message-ID: <20110712144936.GD2326@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110710214639.GP6014@linux.vnet.ibm.com>
- <CAAVPGOMafp_+45X=7asHe=MqaHY8CiJYsf2GZ3qOPrWpjctHVQ@mail.gmail.com>
- <20110710231449.GQ6014@linux.vnet.ibm.com>
- <20110711162450.GA22913@dumpdata.com>
- <20110711171337.GK2245@linux.vnet.ibm.com>
- <20110711193021.GA2996@dumpdata.com>
- <20110711201508.GN2245@linux.vnet.ibm.com>
- <20110711210954.GA15745@dumpdata.com>
- <20110712105506.GB2253@linux.vnet.ibm.com>
- <20110712141228.GA7831@dumpdata.com>
+	id S1751009Ab1GLO7U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 10:59:20 -0400
+Date: Tue, 12 Jul 2011 10:58:51 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: "Alasdair G. Kergon" <agk@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-scsi@vger.kernel.org,
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        "Manvanthara B. Puttashankar" <manvanth@linux.vnet.ibm.com>,
+        Tarak Reddy <tarak.reddy@in.ibm.com>,
+        "Seshagiri N. Ippili" <sesh17@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org,
+        device-mapper development <dm-devel@redhat.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Roland Dreier <roland@kernel.org>
+Subject: [PATCH] dm mpath: manage reference on request queue of underlying
+ devices
+Message-ID: <20110712145851.GA17979@redhat.com>
+References: <CAG4TOxMjuntpd3Q5jgn+xDa2tgB9tq+jLcDquM_eAdFHXLDrWA@mail.gmail.com>
+ <1310166270-23196-1-git-send-email-roland@kernel.org>
+ <CAMM=eLfzKuw-2vbERV6D7dAHb1BWopOKZ=dB7vWxcxSCoj6Tkw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110712141228.GA7831@dumpdata.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAMM=eLfzKuw-2vbERV6D7dAHb1BWopOKZ=dB7vWxcxSCoj6Tkw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 12, 2011 at 10:12:28AM -0400, Konrad Rzeszutek Wilk wrote:
-> > >   [<c042d0f5>] task_waking_fair+0x14  <--
-> > 
-> > Hmmm...  This is a 32-bit system, isn't it?
-> 
-> Yes. I ran this little loop:
-> 
-> #!/bin/bash
-> 
-> ID=`xl list | grep Fedora | awk '  { print $2}'`
-> 
-> rm -f cpu*.log
-> while (true) do
-> 	xl pause $ID
-> 	 /usr/lib64/xen/bin/xenctx -s /mnt/tmp/FC15-32/System.map-3.0.0-rc6-julie-tested-dirty -a $ID 0 >> cpu0.log
-> 	 /usr/lib64/xen/bin/xenctx -s /mnt/tmp/FC15-32/System.map-3.0.0-rc6-julie-tested-dirty -a $ID 1 >> cpu1.log
-> 	 /usr/lib64/xen/bin/xenctx -s /mnt/tmp/FC15-32/System.map-3.0.0-rc6-julie-tested-dirty -a $ID 2 >> cpu2.log
-> 	 /usr/lib64/xen/bin/xenctx -s /mnt/tmp/FC15-32/System.map-3.0.0-rc6-julie-tested-dirty -a $ID 3 >> cpu3.log
-> 	xl unpause $ID
-> done
-> 
-> To get an idea what the CPU is doing before it hits the task_waking_fair
-> and there isn't anything daming. Here are the logs:
-> 
-> http://darnok.org/xen/cpu1.log
+When processing a request, DM-mpath's map_io() set the cloned request's
+request_queue to the appropriate underlying device's request_queue
+without getting a reference on that request_queue.
 
-OK, a fair amount of variety, then lots and lots of task_waking_fair(),
-so I still feel good about asking you for the following.
+DM-mpath now maintains a reference count on the underlying devices'
+request_queue.  This change wasn't motivated by a specific report but
+code, like blk_insert_cloned_request(), will access the request_queue
+with the understanding that the request_queue is valid.
 
-> > Could you please add a check to the loop in task_waking_fair() and
-> > do a printk() if the loop does (say) more than 1000 passes without
-> > exiting?
-> 
-> Of course. Let me queue that up.
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+---
+ drivers/md/dm-mpath.c |   33 +++++++++++++++++++++------------
+ 1 files changed, 21 insertions(+), 12 deletions(-)
 
-Hmmm...  Given that this is persisting for many many seconds, it might
-be better to check for at least 10,000,000 passes.  In contrast, 1000
-passes might elapse just waiting for a cache miss to complete.
-
-Other possible causes include:
-
-o	A mismatch between Xen's and RCU's ideas of how CONFIG_NO_HZ
-	works.  If Xen thinks that the CPU is in CONFIG_NO_HZ's
-	dyntick-idle mode, but RCU thinks otherwise, the grace period
-	might stall.
-
-o	Problems due to portions of the code attempting to use
-	RCU read-side critical sections while in dyntick-idle mode.
-	Frederic Weisbecker has located some of these, (though not yet
-	in Xen) and he has some diagnositics which may be found at:
-
-	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
-
-	on branch eqscheck.2011.07.08a.
-
-	You need to enable CONFIG_PROVE_RCU for these diagnostics to
-	be executed.
-
-o	As always, there might be bugs in RCU.  ;-)
-
-But the loop in task_waking_fair() looks like the most prominent smoking
-gun at the moment.
-
-							Thanx, Paul
+diff --git a/drivers/md/dm-mpath.c b/drivers/md/dm-mpath.c
+index eadea8e..629efa3 100644
+--- a/drivers/md/dm-mpath.c
++++ b/drivers/md/dm-mpath.c
+@@ -161,11 +161,14 @@ static void free_pgpaths(struct list_head *pgpaths, struct dm_target *ti)
+ {
+ 	struct pgpath *pgpath, *tmp;
+ 	struct multipath *m = ti->private;
++	struct request_queue *q;
+ 
+ 	list_for_each_entry_safe(pgpath, tmp, pgpaths, list) {
+ 		list_del(&pgpath->list);
++		q = bdev_get_queue(pgpath->path.dev->bdev);
+ 		if (m->hw_handler_name)
+-			scsi_dh_detach(bdev_get_queue(pgpath->path.dev->bdev));
++			scsi_dh_detach(q);
++		blk_put_queue(q);
+ 		dm_put_device(ti, pgpath->path.dev);
+ 		free_pgpath(pgpath);
+ 	}
+@@ -552,6 +555,7 @@ static struct pgpath *parse_path(struct dm_arg_set *as, struct path_selector *ps
+ {
+ 	int r;
+ 	struct pgpath *p;
++	struct request_queue *q;
+ 	struct multipath *m = ti->private;
+ 
+ 	/* we need at least a path arg */
+@@ -571,9 +575,14 @@ static struct pgpath *parse_path(struct dm_arg_set *as, struct path_selector *ps
+ 		goto bad;
+ 	}
+ 
+-	if (m->hw_handler_name) {
+-		struct request_queue *q = bdev_get_queue(p->path.dev->bdev);
++	q = bdev_get_queue(p->path.dev->bdev);
++	r = blk_get_queue(q);
++	if (r) {
++		ti->error = "error getting request queue";
++		goto bad_queue;
++	}
+ 
++	if (m->hw_handler_name) {
+ 		r = scsi_dh_attach(q, m->hw_handler_name);
+ 		if (r == -EBUSY) {
+ 			/*
+@@ -586,8 +595,7 @@ static struct pgpath *parse_path(struct dm_arg_set *as, struct path_selector *ps
+ 
+ 		if (r < 0) {
+ 			ti->error = "error attaching hardware handler";
+-			dm_put_device(ti, p->path.dev);
+-			goto bad;
++			goto bad_finish;
+ 		}
+ 
+ 		if (m->hw_handler_params) {
+@@ -596,21 +604,22 @@ static struct pgpath *parse_path(struct dm_arg_set *as, struct path_selector *ps
+ 				ti->error = "unable to set hardware "
+ 							"handler parameters";
+ 				scsi_dh_detach(q);
+-				dm_put_device(ti, p->path.dev);
+-				goto bad;
++				goto bad_finish;
+ 			}
+ 		}
+ 	}
+ 
+ 	r = ps->type->add_path(ps, &p->path, as->argc, as->argv, &ti->error);
+-	if (r) {
+-		dm_put_device(ti, p->path.dev);
+-		goto bad;
+-	}
++	if (r)
++		goto bad_finish;
+ 
+ 	return p;
+ 
+- bad:
++bad_finish:
++	blk_put_queue(q);
++bad_queue:
++	dm_put_device(ti, p->path.dev);
++bad:
+ 	free_pgpath(p);
+ 	return ERR_PTR(r);
+ }
