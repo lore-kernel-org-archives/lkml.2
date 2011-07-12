@@ -1,202 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755405Ab1GLVJY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 17:09:24 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:37729 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753653Ab1GLVJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 17:09:23 -0400
-Date: Tue, 12 Jul 2011 14:07:59 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Julie Sullivan <kernelmail.jms@gmail.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, chengxu@linux.vnet.ibm.com
-Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3
-Message-ID: <20110712210759.GP2326@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110712141228.GA7831@dumpdata.com>
- <20110712144936.GD2326@linux.vnet.ibm.com>
- <20110712160324.GA1186@dumpdata.com>
- <20110712163947.GF2326@linux.vnet.ibm.com>
- <20110712180151.GA18257@dumpdata.com>
- <20110712185907.GJ2326@linux.vnet.ibm.com>
- <1310497836.14978.34.camel@twins>
- <20110712195731.GB20811@dumpdata.com>
- <20110712204620.GL2326@linux.vnet.ibm.com>
- <CAAVPGOP_n1nR_Bauo67dDAAtUPPxU4WmrVrH-+8u_FdcN6EjjQ@mail.gmail.com>
+	id S1755618Ab1GLVJr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 17:09:47 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:60519 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752624Ab1GLVJq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 17:09:46 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH 3/3] TTY: serial, remove tasklet for tty_wakeup
+Date: Tue, 12 Jul 2011 23:08:25 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
+Cc: gregkh@suse.de, linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jirislaby@gmail.com, Alan Cox <alan@linux.intel.com>
+References: <1310503400-28447-1-git-send-email-jslaby@suse.cz> <1310503400-28447-3-git-send-email-jslaby@suse.cz>
+In-Reply-To: <1310503400-28447-3-git-send-email-jslaby@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAAVPGOP_n1nR_Bauo67dDAAtUPPxU4WmrVrH-+8u_FdcN6EjjQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107122308.26080.arnd@arndb.de>
+X-Provags-ID: V02:K0:ap+Y1esKRVmlpP8H8d/NkVsI6DDl0fG18eSmjhwJzXE
+ z8xI85MqdYQ6X45PUCizyhS4+/fHy8d1W1gTesvZA5RuOLotEq
+ V7EBiP+i+I0XT3Z2pGfRzmwezQw2EH12eOWiUGt0LtasIXfLHa
+ SzohvPULcI3WaRYGQuJ3MVJEC3OqsQ8VPuxR1WbNm+RjrBSL9q
+ PR99kk6yYLFfZYCL1AHNQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 12, 2011 at 10:04:48PM +0100, Julie Sullivan wrote:
-> On Tue, Jul 12, 2011 at 9:46 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > On Tue, Jul 12, 2011 at 03:57:32PM -0400, Konrad Rzeszutek Wilk wrote:
-> >> On Tue, Jul 12, 2011 at 09:10:36PM +0200, Peter Zijlstra wrote:
-> >> > On Tue, 2011-07-12 at 11:59 -0700, Paul E. McKenney wrote:
-> >> > > OK, so the infinite loop in task_waking_fair() happens even if RCU callbacks
-> >> > > are deferred until after the scheduler is fully initialized.  Sounds like
-> >> > > one for the scheduler guys.  ;-)
-> >> >
-> >> > https://lkml.org/lkml/2011/7/12/150
-> >>
-> >> Such a simple patch. And yes, it fixes the issue. You can add
-> >> Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> if it hasn't yet
-> >> showed up in Ingo's tree.
-> >>
-> >> Paul, thanks for help on this and providing ideas to test!
-> >
-> > Konrad, thank you for all the testing!
-> >
-> > Julie, if you apply Peter's patch,
+On Tuesday 12 July 2011 22:43:20 Jiri Slaby wrote:
+> tty_wakeup can be called from any context. So there is no need to have
+> an extra tasklet for calling that. Hence save some space and remove
+> the tasklet completely.
 > 
-> But this is for 32-bit , right?
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> Cc: Alan Cox <alan@linux.intel.com>
 
-Indeed it is, please accept my apologies for my confusion.
+This is probably ok, but strictly speaking, we we cannot call 
+tty_wakeup from any context: not while holding the ldisc_mutex,
+i.e. from  ld->ops->{open,close}.
 
-> > +#ifndef CONFIG_64BIT
-> > +	cfs_rq->min_vruntime_copy = cfs_rq->min_vruntime;
-> > +#endif
->  }
-> 
-> I'm using 64-bit...
-> 
-> Would you still like me to try the below patch?
+I don't see a reason why we would ever do that, but it's the
+only explanation I have why the tasklet was introduced intially.
 
-Could you please?  It restores the exact behavior of the patch that
-worked for you, but in a form that can go upstream.
-
-So I am very much hoping that it works for you.
-
-							Thanx, Paul
-
-> Cheers
-> Julie
-> 
-> 
-> > do you also need the patch shown
-> > below?
-> >
-> > Ravi, could you please retest with the patch below as well?
-> >
-> >                                                        Thanx, Paul
-> >
-> > ------------------------------------------------------------------------
-> >
-> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > index 7e59ffb..ba06207 100644
-> > --- a/kernel/rcutree.c
-> > +++ b/kernel/rcutree.c
-> > @@ -84,9 +84,32 @@ DEFINE_PER_CPU(struct rcu_data, rcu_bh_data);
-> >
-> >  static struct rcu_state *rcu_state;
-> >
-> > +/*
-> > + * The rcu_scheduler_active variable transitions from zero to one just
-> > + * before the first task is spawned.  So when this variable is zero, RCU
-> > + * can assume that there is but one task, allowing RCU to (for example)
-> > + * optimized synchronize_sched() to a simple barrier().  When this variable
-> > + * is one, RCU must actually do all the hard work required to detect real
-> > + * grace periods.  This variable is also used to suppress boot-time false
-> > + * positives from lockdep-RCU error checking.
-> > + */
-> >  int rcu_scheduler_active __read_mostly;
-> >  EXPORT_SYMBOL_GPL(rcu_scheduler_active);
-> >
-> > +/*
-> > + * The rcu_scheduler_fully_active variable transitions from zero to one
-> > + * during the early_initcall() processing, which is after the scheduler
-> > + * is capable of creating new tasks.  So RCU processing (for example,
-> > + * creating tasks for RCU priority boosting) must be delayed until after
-> > + * rcu_scheduler_fully_active transitions from zero to one.  We also
-> > + * currently delay invocation of any RCU callbacks until after this point.
-> > + *
-> > + * It might later prove better for people registering RCU callbacks during
-> > + * early boot to take responsibility for these callbacks, but one step at
-> > + * a time.
-> > + */
-> > +static int rcu_scheduler_fully_active __read_mostly;
-> > +
-> >  #ifdef CONFIG_RCU_BOOST
-> >
-> >  /*
-> > @@ -98,7 +121,6 @@ DEFINE_PER_CPU(unsigned int, rcu_cpu_kthread_status);
-> >  DEFINE_PER_CPU(int, rcu_cpu_kthread_cpu);
-> >  DEFINE_PER_CPU(unsigned int, rcu_cpu_kthread_loops);
-> >  DEFINE_PER_CPU(char, rcu_cpu_has_work);
-> > -static char rcu_kthreads_spawnable;
-> >
-> >  #endif /* #ifdef CONFIG_RCU_BOOST */
-> >
-> > @@ -1467,6 +1489,8 @@ static void rcu_process_callbacks(struct softirq_action *unused)
-> >  */
-> >  static void invoke_rcu_callbacks(struct rcu_state *rsp, struct rcu_data *rdp)
-> >  {
-> > +       if (unlikely(!ACCESS_ONCE(rcu_scheduler_fully_active)))
-> > +               return;
-> >        if (likely(!rsp->boost)) {
-> >                rcu_do_batch(rsp, rdp);
-> >                return;
-> > diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> > index 14dc7dd..75113cb 100644
-> > --- a/kernel/rcutree_plugin.h
-> > +++ b/kernel/rcutree_plugin.h
-> > @@ -1532,7 +1532,7 @@ static int __cpuinit rcu_spawn_one_cpu_kthread(int cpu)
-> >        struct sched_param sp;
-> >        struct task_struct *t;
-> >
-> > -       if (!rcu_kthreads_spawnable ||
-> > +       if (!rcu_scheduler_fully_active ||
-> >            per_cpu(rcu_cpu_kthread_task, cpu) != NULL)
-> >                return 0;
-> >        t = kthread_create(rcu_cpu_kthread, (void *)(long)cpu, "rcuc%d", cpu);
-> > @@ -1639,7 +1639,7 @@ static int __cpuinit rcu_spawn_one_node_kthread(struct rcu_state *rsp,
-> >        struct sched_param sp;
-> >        struct task_struct *t;
-> >
-> > -       if (!rcu_kthreads_spawnable ||
-> > +       if (!rcu_scheduler_fully_active ||
-> >            rnp->qsmaskinit == 0)
-> >                return 0;
-> >        if (rnp->node_kthread_task == NULL) {
-> > @@ -1665,7 +1665,7 @@ static int __init rcu_spawn_kthreads(void)
-> >        int cpu;
-> >        struct rcu_node *rnp;
-> >
-> > -       rcu_kthreads_spawnable = 1;
-> > +       rcu_scheduler_fully_active = 1;
-> >        for_each_possible_cpu(cpu) {
-> >                per_cpu(rcu_cpu_has_work, cpu) = 0;
-> >                if (cpu_online(cpu))
-> > @@ -1687,7 +1687,7 @@ static void __cpuinit rcu_prepare_kthreads(int cpu)
-> >        struct rcu_node *rnp = rdp->mynode;
-> >
-> >        /* Fire up the incoming CPU's kthread and leaf rcu_node kthread. */
-> > -       if (rcu_kthreads_spawnable) {
-> > +       if (rcu_scheduler_fully_active) {
-> >                (void)rcu_spawn_one_cpu_kthread(cpu);
-> >                if (rnp->node_kthread_task == NULL)
-> >                        (void)rcu_spawn_one_node_kthread(rcu_state, rnp);
-> > @@ -1726,6 +1726,13 @@ static void rcu_cpu_kthread_setrt(int cpu, int to_rt)
-> >  {
-> >  }
-> >
-> > +static int __init rcu_scheduler_really_started(void)
-> > +{
-> > +       rcu_scheduler_fully_active = 1;
-> > +       return 0;
-> > +}
-> > +early_initcall(rcu_scheduler_really_started);
-> > +
-> >  static void __cpuinit rcu_prepare_kthreads(int cpu)
-> >  {
-> >  }
-> >
+	Arnd
