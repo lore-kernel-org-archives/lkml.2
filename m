@@ -1,80 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610Ab1GLSBi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 14:01:38 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:63501 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754467Ab1GLSBg (ORCPT
+	id S1754649Ab1GLSCN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 14:02:13 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:47845 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754405Ab1GLSCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 14:01:36 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chris Ball <cjb@laptop.org>
-Subject: Re: [PATCH] mmc: Added quirks for Ricoh 1180:e823 lower base clock frequency
-Date: Tue, 12 Jul 2011 20:00:50 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
-Cc: Manoj Iyer <manoj.iyer@canonical.com>, linux-kernel@vger.kernel.org,
-        jbarnes@virtuousgeek.org, matsumur@nts.ricoh.co.jp,
-        linux-pci@vger.kernel.org, linux-mmc@vger.kernel.org
-References: <1310419715-13254-1-git-send-email-manoj.iyer@canonical.com> <alpine.DEB.2.02.1107121123140.1767@lazy> <m2ei1v76f1.fsf@bob.laptop.org>
-In-Reply-To: <m2ei1v76f1.fsf@bob.laptop.org>
+	Tue, 12 Jul 2011 14:02:12 -0400
+Date: Tue, 12 Jul 2011 14:01:51 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: xen-devel@lists.xensource.com, julie Sullivan <kernelmail.jms@gmail.com>,
+        linux-kernel@vger.kernel.org, chengxu@linux.vnet.ibm.com
+Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3
+Message-ID: <20110712180151.GA18257@dumpdata.com>
+References: <20110711162450.GA22913@dumpdata.com>
+ <20110711171337.GK2245@linux.vnet.ibm.com>
+ <20110711193021.GA2996@dumpdata.com>
+ <20110711201508.GN2245@linux.vnet.ibm.com>
+ <20110711210954.GA15745@dumpdata.com>
+ <20110712105506.GB2253@linux.vnet.ibm.com>
+ <20110712141228.GA7831@dumpdata.com>
+ <20110712144936.GD2326@linux.vnet.ibm.com>
+ <20110712160324.GA1186@dumpdata.com>
+ <20110712163947.GF2326@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107122000.50309.arnd@arndb.de>
-X-Provags-ID: V02:K0:RvFEoz1/h/88mrNbcgvb90gqJFkFXj9+l97tJuHqGbh
- ni1U4/AmoFJj4d5IxAaerCctw/oMIK5eegd/upHa20+IkE1oax
- U8CAoLoju/DElGAoedhpBn133mqnm/JIzlrsG3tDiYUK902moN
- 9uOYWpHUbPxLWQrin0rjaCZkmDcXSz9zetpKiRitlnJ6+Od2Xl
- pVVrnQL7zXgvnXeLTu1Zw==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110712163947.GF2326@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4E1C8C1E.005F:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 12 July 2011 19:30:42 Chris Ball wrote:
-> On Tue, Jul 12 2011, Manoj Iyer wrote:
-> > btw only the 1st write was slower, subsequent writes looks ok.
-> > [..]
-> > I have attached the output of flashbench and the time test to
-> >
-> > http://launchpad.net/bugs/773524
-> > [..]
-> > == Finding the number of open erase blocks ==
-> > u@u:~/flash/flashbench$ sudo ./flashbench -O --erasesize=$[4 * 1024 *
-> > 1024] --blocksize=$[256 * 1024] /dev/mmcblk0  --open-au-nr=2
-> > 4MiB    6.36M/s
-> > 2MiB    6.24M/s
-> > 1MiB    6.17M/s
-> > 512KiB  6.19M/s
-> > 256KiB  6.22M/s
-> > u@u:~/flash/flashbench$
-> > [..]
-> > ====== AFTER PATCH ========
-> > [..]
-> > == Finding the number of open erase blocks ==
-> > u@u:~/flash/flashbench$ sudo ./flashbench -O --erasesize=$[4 * 1024 *
-> > 1024]         --blocksize=$[256 * 1024] /dev/mmcblk0  --open-au-nr=2
-> > [sudo] password for u:
-> > 4MiB    5.49M/s
-> > 2MiB    6.22M/s
-> > 1MiB    6.22M/s
-> > 512KiB  6.21M/s
-> > 256KiB  6.21M/s
-> > u@u:~/flash/flashbench$
+> > http://darnok.org/xen/loop_cnt.log
+> > 
+> > which seems to imply that we are indeed stuck in that loop
+> > forever.
 > 
-> That's interesting.  Arnd, any idea why only the first test of the
-> flashbench run would be slower after the patch?
+> It does indeed, thank you!  Also it looks like interrupts are
+> disabled, and that timekeeping is similarly out of action.
 
-I would very much expect that to be nonreproducible. The first row
-in each test is the result of a single write() system call and does
-not get averaged out. More importantly the time for each write
-depends a lot of the state of the card before the write.
+.. With the latest patch the time looks to be advancing.
 
-For instance when you do a lot of random writes to a card, optionally
-take it out and put it into a different machine, and then do a large
-linear write, that linear write will be very slow because the
-card has to garbage collect all the random writes that were done
-earlier. After a few writes (usually one is enough), it gets back
-to the full performance.
+> Disabling CONFIG_NO_HZ would be an interesting test case.
 
-	Arnd
+Hadn't done that yet. Compiling a kernel with "# CONFIG_NO_HZ is not set"
+right now.
+> 
+> > > o	Problems due to portions of the code attempting to use
+> > > 	RCU read-side critical sections while in dyntick-idle mode.
+> > > 	Frederic Weisbecker has located some of these, (though not yet
+> > > 	in Xen) and he has some diagnositics which may be found at:
+> > > 
+> > > 	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
+> > > 
+> > > 	on branch eqscheck.2011.07.08a.
+> > > 
+> > > 	You need to enable CONFIG_PROVE_RCU for these diagnostics to
+> > > 	be executed.
+> > 
+> > Ok, let me try those too.
+> 
+> Thank you!
+
+Will shortly do this.
+> 
+> > > o	As always, there might be bugs in RCU.  ;-)
+> > > 
+> > > But the loop in task_waking_fair() looks like the most prominent smoking
+> > > gun at the moment.
+> 
+> And could you also please try out the patch that I posted earlier?
+
+With the previous patch and the .. this is getting confusing. With this patch:
+http://darnok.org/xen/loop_cnt-extra.patch
+
+I get this output: http://darnok.org/xen/log.loop_cnt-extra-patch (one guest
+with 4 VCPUS) and http://darnok.org/xen/loop_cnt-extra-patch.log (the guest with 16 VCPUs)
