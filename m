@@ -1,66 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422Ab1GLM0M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 08:26:12 -0400
-Received: from mx2.fusionio.com ([66.114.96.31]:47683 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753247Ab1GLM0L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 08:26:11 -0400
-X-ASG-Debug-ID: 1310473570-01de280c1ebfaa0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4E1C3D5E.1050601@fusionio.com>
-Date: Tue, 12 Jul 2011 14:26:06 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: Shaohua Li <shaohua.li@intel.com>
-CC: lkml <linux-kernel@vger.kernel.org>, Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH v2 0/3]CFQ: add think time check for service tree and
- group
-References: <1310434672.15392.283.camel@sli10-conroe>
-X-ASG-Orig-Subj: Re: [PATCH v2 0/3]CFQ: add think time check for service tree and
- group
-In-Reply-To: <1310434672.15392.283.camel@sli10-conroe>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1310473570
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.68703
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+	id S1753512Ab1GLMeT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 08:34:19 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57858 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753328Ab1GLMeR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 08:34:17 -0400
+Message-Id: <20110712122911.740720633@chello.nl>
+User-Agent: quilt/0.48-1
+Date: Tue, 12 Jul 2011 14:26:11 +0200
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 3/4] sparc64: Add support for _PAGE_SPECIAL
+References: <20110712122608.938583937@chello.nl>
+Content-Disposition: inline; filename=davem-sparc64-Add_support_for__PAGE_SPECIA.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-07-12 03:37, Shaohua Li wrote:
-> Hi,
->   Currently when the last queue of a service tree/group is empty, CFQ
-> doesn't expire the queue. This is to allow requests from the tree/group
-> come soon, so tree/group doesn't miss its share. But if the think time
-> is big, the assumption isn't correct. idling the queue is just wasting
-> bandwidth.
-> 
-> Originally I was hoping this can resolve Vivek's fsync issue, but it
-> doesn't. The fsync issue is caused by queue idling. But since think time
-> check only helps for think time above default queue idle time (8ms),
-> think time check doesn't help for the fsync issue.
-> 
-> On the other hand, think time check is still helpful for queues with
-> think time. I had test case in follow patches show throughput
-> improvement without sacrifice tree/group shares.
-> 
-> v1->v2:
-> 1. addressed some good comments from Vivek
-> 2. add more test to make sure the patches don't change behavior of
-> queues without think time.
+Luckily there are still a few software PTE bits remaining
+and they even match up in both the sun4u and sun4v pte
+layouts.
 
-I applied 1-3, thanks. 1 was hand applied, since it didn't apply
-directly to for-3.1/core after I merged Justins patch to get rid of the
-meta data request special treatment.
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20100408.180010.76058269.davem@davemloft.net
+---
+ arch/sparc/include/asm/pgtable_64.h |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
--- 
-Jens Axboe
+Index: linux-2.6/arch/sparc/include/asm/pgtable_64.h
+===================================================================
+--- linux-2.6.orig/arch/sparc/include/asm/pgtable_64.h
++++ linux-2.6/arch/sparc/include/asm/pgtable_64.h
+@@ -95,6 +95,10 @@
+ /* PTE bits which are the same in SUN4U and SUN4V format.  */
+ #define _PAGE_VALID	  _AC(0x8000000000000000,UL) /* Valid TTE            */
+ #define _PAGE_R	  	  _AC(0x8000000000000000,UL) /* Keep ref bit uptodate*/
++#define _PAGE_SPECIAL     _AC(0x0200000000000000,UL) /* Special page         */
++
++/* Advertise support for _PAGE_SPECIAL */
++#define __HAVE_ARCH_PTE_SPECIAL
+ 
+ /* SUN4U pte bits... */
+ #define _PAGE_SZ4MB_4U	  _AC(0x6000000000000000,UL) /* 4MB Page             */
+@@ -104,6 +108,7 @@
+ #define _PAGE_NFO_4U	  _AC(0x1000000000000000,UL) /* No Fault Only        */
+ #define _PAGE_IE_4U	  _AC(0x0800000000000000,UL) /* Invert Endianness    */
+ #define _PAGE_SOFT2_4U	  _AC(0x07FC000000000000,UL) /* Software bits, set 2 */
++#define _PAGE_SPECIAL_4U  _AC(0x0200000000000000,UL) /* Special page         */
+ #define _PAGE_RES1_4U	  _AC(0x0002000000000000,UL) /* Reserved             */
+ #define _PAGE_SZ32MB_4U	  _AC(0x0001000000000000,UL) /* (Panther) 32MB page  */
+ #define _PAGE_SZ256MB_4U  _AC(0x2001000000000000,UL) /* (Panther) 256MB page */
+@@ -133,6 +138,7 @@
+ #define _PAGE_ACCESSED_4V _AC(0x1000000000000000,UL) /* Accessed (ref'd)     */
+ #define _PAGE_READ_4V	  _AC(0x0800000000000000,UL) /* Readable SW Bit      */
+ #define _PAGE_WRITE_4V	  _AC(0x0400000000000000,UL) /* Writable SW Bit      */
++#define _PAGE_SPECIAL_4V  _AC(0x0200000000000000,UL) /* Special page         */
+ #define _PAGE_PADDR_4V	  _AC(0x00FFFFFFFFFFE000,UL) /* paddr[55:13]         */
+ #define _PAGE_IE_4V	  _AC(0x0000000000001000,UL) /* Invert Endianness    */
+ #define _PAGE_E_4V	  _AC(0x0000000000000800,UL) /* side-Effect          */
+@@ -302,10 +308,10 @@ static inline pte_t pte_modify(pte_t pte
+ 	: "=r" (mask), "=r" (tmp)
+ 	: "i" (_PAGE_PADDR_4U | _PAGE_MODIFIED_4U | _PAGE_ACCESSED_4U |
+ 	       _PAGE_CP_4U | _PAGE_CV_4U | _PAGE_E_4U | _PAGE_PRESENT_4U |
+-	       _PAGE_SZBITS_4U),
++	       _PAGE_SZBITS_4U | _PAGE_SPECIAL),
+ 	  "i" (_PAGE_PADDR_4V | _PAGE_MODIFIED_4V | _PAGE_ACCESSED_4V |
+ 	       _PAGE_CP_4V | _PAGE_CV_4V | _PAGE_E_4V | _PAGE_PRESENT_4V |
+-	       _PAGE_SZBITS_4V));
++	       _PAGE_SZBITS_4V | _PAGE_SPECIAL));
+ 
+ 	return __pte((pte_val(pte) & mask) | (pgprot_val(prot) & ~mask));
+ }
+@@ -502,6 +508,7 @@ static inline pte_t pte_mkyoung(pte_t pt
+ 
+ static inline pte_t pte_mkspecial(pte_t pte)
+ {
++	pte_val(pte) |= _PAGE_SPECIAL;
+ 	return pte;
+ }
+ 
+@@ -607,9 +614,9 @@ static inline unsigned long pte_present(
+ 	return val;
+ }
+ 
+-static inline int pte_special(pte_t pte)
++static inline unsigned long pte_special(pte_t pte)
+ {
+-	return 0;
++	return pte_val(pte) & _PAGE_SPECIAL;
+ }
+ 
+ #define pmd_set(pmdp, ptep)	\
+
 
