@@ -1,45 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751578Ab1GLIiq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 04:38:46 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45332 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750813Ab1GLIip convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 04:38:45 -0400
-Subject: Re: [PATCH 1/3] perf: add context field to perf_event
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Avi Kivity <avi@redhat.com>
-Cc: Will Deacon <will.deacon@arm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        "acme@ghostprotocols.net" <acme@ghostprotocols.net>,
-        Jason Wessel <jason.wessel@windriver.com>
-In-Reply-To: <4E1BF5A1.5070301@redhat.com>
-References: <1309362157-6596-1-git-send-email-avi@redhat.com>
-	 <1309362157-6596-2-git-send-email-avi@redhat.com>
-	 <20110629160841.GA2032@somewhere>
-	 <20110629162725.GH15521@e102144-lin.cambridge.arm.com>
-	 <20110704135820.GD5551@somewhere> <4E11C9CC.2070909@redhat.com>
-	 <20110704143655.GE5551@somewhere>
-	 <20110711210753.GA3582@e102144-lin.cambridge.arm.com>
-	 <4E1BF5A1.5070301@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 12 Jul 2011 10:38:18 +0200
-Message-ID: <1310459898.18678.108.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1751795Ab1GLIjw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 04:39:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26079 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751157Ab1GLIjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 04:39:51 -0400
+Message-ID: <4E1C084F.5030107@redhat.com>
+Date: Tue, 12 Jul 2011 11:39:43 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v4 00/18] KVM: optimize for MMIO handled
+References: <4E1B4CF8.605@cn.fujitsu.com>
+In-Reply-To: <4E1B4CF8.605@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-12 at 10:20 +0300, Avi Kivity wrote:
+On 07/11/2011 10:20 PM, Xiao Guangrong wrote:
+> Changes in this new version:
+> - fix the logic of dirty bit in [PATCH 04/19] KVM: MMU: cache
+>    mmio info on page fault path
+> - rename is_mmio_pfn() to is_noslot_pfn() to avoid the conflicts
+>    with kvm_is_mmio_pfn
+> - remove [PATCH 14/19] KVM: MMU: clean up spte updating and clearing
+> - completely check the last spte for mmio page fault suggested
+>    by Marcelo Tosatti
 
-> Maybe we need a generic "run this function in this task's context" 
-> mechanism instead.  Like an IPI, but targeting tasks instead of cpus.
-> 
+Applied, thanks.
 
-kernel/event/core.c:task_function_call() like?
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
+
