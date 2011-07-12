@@ -1,98 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752914Ab1GLKQI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 06:16:08 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:34961 "EHLO bear.ext.ti.com"
+	id S1752873Ab1GLKYU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 06:24:20 -0400
+Received: from 8bytes.org ([88.198.83.132]:55489 "EHLO 8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751525Ab1GLKQG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 06:16:06 -0400
-From: "Raju, Sundaram" <sundaram@ti.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Dan Williams <dan.j.williams@intel.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	id S1752055Ab1GLKYT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 06:24:19 -0400
+Date: Tue, 12 Jul 2011 12:24:17 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Will Deacon <will.deacon@arm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Date: Tue, 12 Jul 2011 15:45:47 +0530
-Subject: RE: [PATCH] dmaengine: add dma_ctrl_cmd to pass buffer stride
- configuration
-Thread-Topic: [PATCH] dmaengine: add dma_ctrl_cmd to pass buffer stride
- configuration
-Thread-Index: AcxAejOuAcnAAO+QSky2G2ZcMR7bHgAAER0A
-Message-ID: <E0D41E29EB0DAC4E9F3FF173962E9E94030259DAFE@dbde02.ent.ti.com>
-References: <1310310203-12288-1-git-send-email-sundaram@ti.com>
-	<CAKnu2MqzSm8BVK4z9E-ud8e_jUohDfSfYO9aW-oN3RFw4p7GrA@mail.gmail.com>
-	<CAA9_cmeWUjiTghKbjAvith5c6z9PDVdFSeK55RYWfyQKFSjA+Q@mail.gmail.com>
- <CACRpkdbj-xucUN+jxMsBnfXfcmy3ohuhd=66x_AqcCykMsNwPQ@mail.gmail.com>
-In-Reply-To: <CACRpkdbj-xucUN+jxMsBnfXfcmy3ohuhd=66x_AqcCykMsNwPQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "acme@ghostprotocols.net" <acme@ghostprotocols.net>,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: Re: [PATCH 1/3] perf: add context field to perf_event
+Message-ID: <20110712102417.GD29812@8bytes.org>
+References: <4E1C10F8.6010300@redhat.com> <1310462335.14978.12.camel@twins> <4E1C1373.5080500@redhat.com> <1310463060.14978.17.camel@twins> <20110712094131.GA29812@8bytes.org> <4E1C1771.9010300@redhat.com> <20110712094822.GB29812@8bytes.org> <4E1C1A0D.8000707@redhat.com> <20110712100354.GC29812@8bytes.org> <4E1C1CDD.9040005@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E1C1CDD.9040005@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Linus Walleij [mailto:linus.walleij@linaro.org]
-> Sent: Tuesday, July 12, 2011 3:28 PM
-> To: Dan Williams
-> Cc: Raju, Sundaram; linux-arm-kernel@lists.infradead.org; linux-
-> kernel@vger.kernel.org; davinci-linux-open-source@linux.davincidsp.com;
-> linux@arm.linux.org.uk; linux-omap@vger.kernel.org
-> Subject: Re: [PATCH] dmaengine: add dma_ctrl_cmd to pass buffer stride
-> configuration
-> 
-> On Mon, Jul 11, 2011 at 11:39 PM, Dan Williams <dan.j.williams@intel.com>
-> wrote:
-> > On Mon, Jul 11, 2011 at 2:28 AM, Linus Walleij <linus.walleij@linaro.org>
-> wrote:
-> 
-> > ...and I suspect the slave device drivers that use TI DMA are not
-> > expected to ever work with other dmaengines?  Likely the case, but
-> > just wondering out loud.
-> 
-> Typically the OMAP/TI drivers are one-to-one with this specific DMA
-> controller, but they *can* support controllers without stride options, and
-> notice that striding will only be used for the display driver IIRC,
-> pseudo-code:
-> 
-> ret = dmaengine_device_control(chan, TI_DMA_STRIDE_CONFIG,
->                         (unsigned long) &my_stride_config);
-> if (ret) {
->    /*
->     * OK no striding on this DMA engine, fall back to something else,
->     * such as creating an SGlist which emulates the striding with one
->     * sglist element per stride.
->     */
-> }
-> 
-> By injecting an error in the stride config path this can even be
-> properly tested. So it will become an optional acceleration.
+On Tue, Jul 12, 2011 at 01:07:25PM +0300, Avi Kivity wrote:
+> On 07/12/2011 01:03 PM, Joerg Roedel wrote:
 
-Yes, this is exactly what I also wanted to say. :)
+>> Ingo made perf-integration a merge-requirement for LWP. It is not really
+>> well-suited for being integrated into perf because the design goal was
+>> easy and efficient self-profiling of tasks (like you stated). So
+>> integrating it into perf causes some pain. But lets see how it works
+>> out.
+>
+> I don't think it's workable.  Having do_mmap() called in the task's  
+> context can change how it works.
 
-But if the client driver does not implement a fallback like this then that
-driver will work only with TI DMA and not any other dmaengines.
-(Mentioning this because, there are client drivers which are tightly 
-coupled to this special configuration)
+According to Ingo that is already done at other places in the kernel and
+should not be an issue.
 
-Keeping this in mind, I had started the original discussion with
-the suggestion of modifying the existing prepare API and adding
-an extra argument to it, which can be used to pass special configuration.
-And I also wanted to generalize that configuration passed.
+> And the task being able to kill/modify  the profile, and not able to
+> use LWP for itself, is a show stopper IMO.
 
-Anyways that design also will come down to this same path, and instead
-of modifying the existing API signatures, I think this is the best way
-we can go.
+I agree, that is a problem we have no solution for so far.
 
-Regards,
-Sundaram
+	Joerg
+
