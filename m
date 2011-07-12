@@ -1,83 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754263Ab1GLRKx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 13:10:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8648 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751009Ab1GLRKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 13:10:52 -0400
-Date: Tue, 12 Jul 2011 13:10:33 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Mike Snitzer <snitzer@redhat.com>, Roland Dreier <roland@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-scsi@vger.kernel.org,
-        Steffen Maier <maier@linux.vnet.ibm.com>,
-        "Manvanthara B. Puttashankar" <manvanth@linux.vnet.ibm.com>,
-        Tarak Reddy <tarak.reddy@in.ibm.com>,
-        "Seshagiri N. Ippili" <sesh17@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org,
-        device-mapper development <dm-devel@redhat.com>,
-        Tejun Heo <tj@kernel.org>, jaxboe@fusionio.com
-Subject: Re: block: Check that queue is alive in blk_insert_cloned_request()
-Message-ID: <20110712171033.GG1293@redhat.com>
-References: <20110712014633.GA30965@redhat.com>
- <Pine.LNX.4.44L0.1107121120130.31381-100000@netrider.rowland.org>
+	id S1754316Ab1GLRNp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 13:13:45 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:43803 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754216Ab1GLRNo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 13:13:44 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-6.tower-160.messagelabs.com!1310490820!28403153!14
+X-StarScan-Version: 6.2.17; banners=-,-,-
+X-Originating-IP: [216.166.12.99]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Arnd Bergmann <arnd@arndb.de>,
+        =?iso-8859-15?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: Sascha Hauer <s.hauer@pengutronix.de>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "thierry.nolf.barco@gmail.com" <thierry.nolf.barco@gmail.com>,
+        Huang Shijie <b32955@freescale.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        =?iso-8859-15?Q?Lothar_Wa=DFmann?= <LW@karo-electronics.de>
+Date: Tue, 12 Jul 2011 12:13:08 -0500
+Subject: RE: [PATCH] new helper to define common struct resource constructs
+Thread-Topic: [PATCH] new helper to define common struct resource constructs
+Thread-Index: AcxAl9ZO148rhTNRQ/WfjqzOqPzxLgAGzyXg
+Message-ID: <ADE657CA350FB648AAC2C43247A983F001F383D6DAD4@AUSP01VMBX24.collaborationhost.net>
+References: <14C4E31473AF7E4B98176CB73615181C19FBD3@039-SN1MPN1-006.039d.mgd.msft.net>
+	<201107072304.05626.arnd@arndb.de>
+	<E1QgHeh-0004k8-2m@octopus.hi.pengutronix.de>
+ <201107121529.17611.arnd@arndb.de>
+In-Reply-To: <201107121529.17611.arnd@arndb.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-15"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1107121120130.31381-100000@netrider.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 12, 2011 at 11:24:54AM -0400, Alan Stern wrote:
-> On Mon, 11 Jul 2011, Vivek Goyal wrote:
-> 
-> > > > There's still the issue that Stefan Richter pointed out: The test for a 
-> > > > dead queue must be made _after_ acquiring the queue lock, not _before_.
-> > > 
-> > > Yes, quite important.
-> > > 
-> > > Jens, can you tweak the patch or should Roland send a v2?
-> > 
-> > I do not think that we should do queue dead check after taking a spinlock.
-> > The reason being that there are life time issues of two objects.
-> > 
-> > - Validity of request queue pointer
-> > - Validity of q->spin_lock pointer
-> > 
-> > If the dm has taken the reference to the request queue in the beginning
-> > then it can be sure request queue pointer is valid. But spin_lock might
-> > be coming from driver and might be in one of driver allocated structures.
-> > So it might happen that driver has called blk_cleanup_queue() and freed
-> > up structures which contained the spin lock.
-> 
-> Surely this is a bug in the design of the block layer?
-> 
-> > So if queue is not dead, we know that q->spin_lock is valid. I think
-> > only race present here is that whole operation is not atomic. First
-> > we check for queue not dead flag and then go on to acquire request
-> > queue lock. So this leaves a small window for race. I think I have
-> > seen other code written in such manner (__generic_make_request()). So
-> > it proably reasonably safe to do here too.
-> 
-> "Probably reasonably safe" = "unsafe".  The fact that it will usually
-> work out okay means that when it does fail, it will be very difficult
-> to track down.
-> 
-> It needs to be fixed _now_, when people are aware of the issue.  Not 
-> five years from now, when everybody has forgotten about it.
+On Tuesday, July 12, 2011 6:29 AM, Arnd Bergmann wrote:
+> On Monday 11 July 2011, Uwe Kleine-König wrote:
+>> resource definitions that just define start, end and flags = IORESOURCE_MEM
+>> or IORESOURCE_IRQ (with start=end) are quite common. So introduce a shortcut
+>> for them. Also make available a macro to specify named resources of both
+>> types which are less common.
+>> 
+>> Signed-off-by: Uwe Kleine-KÃ¶nig <u.kleine-koenig@pengutronix.de>
+>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+>
+> What do others think, is this worthwhile?
 
-I agree that fixing would be good. Frankly speaking I don't even have
-full understanding of the problem. I know little bit from request queue
-side but have no idea about referencing mechanism at device level and
-how that is supposed to work with request queue referencing.
+Assuming I found the correct patch in the archives, +1 from me.  Not sure what
+the correct sign-off should be, possibly:
 
-So once we understand the problem well, probably we will have an answer
-how to go about fixing it.
+Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-Thanks
-Vivek
+> Should we also define macros for IORESOURCE_IO and IORESOURCE_DMA?
+
+As a gross check, on linux-next I see:
+
+$ git grep IORESOURCE_MEM | wc -l
+3989
+$ git grep IORESOURCE_IRQ | wc -l
+2309
+$ git grep IORESOURCE_IO | wc -l
+687
+$ git grep IORESOURCE_DMA | wc -l
+521
+
+The *_MEM and *_IRQ macros are going to have the largest impact on reducing
+the lines of code.  But, for completeness it might be nice to have the *_IO
+and *_DMA ones also.
+
+If this patch is accepted there are a couple private macros in various places
+that should probably be replaced or updated.
+
+For instance in mach-nomadik/board-nhk8815.c and mach-nomadik/cpu-8815.c there
+are these:
+
+#define __MEM_4K_RESOURCE(x) \
+	.res = {.start = (x), .end = (x) + SZ_4K - 1, .flags = IORESOURCE_MEM}
+
+And plat-omap/i2c.c has this:
+
+#define I2C_RESOURCE_BUILDER(base, irq)			\
+	{						\
+		.start	= (base),			\
+		.end	= (base) + OMAP_I2C_SIZE,	\
+		.flags	= IORESOURCE_MEM,		\
+	},						\
+	{						\
+		.start	= (irq),			\
+		.flags	= IORESOURCE_IRQ,		\
+	},
+
+I seem to recall seeing others but can't remember exactly where.
+
+Regards,
+Hartley
