@@ -1,120 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835Ab1GLS2Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 14:28:24 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:39671 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754759Ab1GLS2X (ORCPT
+	id S1754861Ab1GLSbb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 14:31:31 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50783 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754759Ab1GLSba (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 14:28:23 -0400
-Subject: Re: [PATCH] block: Check that queue is alive in
- blk_insert_cloned_request()
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Mike Snitzer <snitzer@redhat.com>, Roland Dreier <roland@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Alan Stern <stern@rowland.harvard.edu>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-scsi@vger.kernel.org,
-        Steffen Maier <maier@linux.vnet.ibm.com>,
-        "Manvanthara B. Puttashankar" <manvanth@linux.vnet.ibm.com>,
-        Tarak Reddy <tarak.reddy@in.ibm.com>,
-        "Seshagiri N. Ippili" <sesh17@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org,
-        device-mapper development <dm-devel@redhat.com>,
-        Tejun Heo <tj@kernel.org>
-In-Reply-To: <20110712180238.GJ1293@redhat.com>
-References: <CAG4TOxMjuntpd3Q5jgn+xDa2tgB9tq+jLcDquM_eAdFHXLDrWA@mail.gmail.com>
-	 <1310166270-23196-1-git-send-email-roland@kernel.org>
-	 <CAMM=eLfzKuw-2vbERV6D7dAHb1BWopOKZ=dB7vWxcxSCoj6Tkw@mail.gmail.com>
-	 <20110712170658.GF1293@redhat.com> <1310492490.16900.20.camel@mulgrave>
-	 <20110712180238.GJ1293@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 12 Jul 2011 13:28:18 -0500
-Message-ID: <1310495298.16900.24.camel@mulgrave>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Tue, 12 Jul 2011 14:31:30 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Wolfram Sang <w.sang@pengutronix.de>, linux-kernel@vger.kernel.org,
+        thierry.nolf.barco@gmail.com, Huang Shijie <b32955@freescale.com>,
+        linux-mtd@lists.infradead.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@karo-electronics.de>
+Subject: [PATCH v2] new helper to define common struct resource constructs
+Date: Tue, 12 Jul 2011 20:31:15 +0200
+Message-Id: <1310495475-22469-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F001F383D6DAD4@AUSP01VMBX24.collaborationhost.net>
+References: <ADE657CA350FB648AAC2C43247A983F001F383D6DAD4@AUSP01VMBX24.collaborationhost.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-12 at 14:02 -0400, Vivek Goyal wrote:
-> On Tue, Jul 12, 2011 at 12:41:30PM -0500, James Bottomley wrote:
-> > On Tue, 2011-07-12 at 13:06 -0400, Vivek Goyal wrote:
-> > > On Mon, Jul 11, 2011 at 06:40:11PM -0400, Mike Snitzer wrote:
-> > > > [cc'ing dm-devel, vivek and tejun]
-> > > > 
-> > > > On Fri, Jul 8, 2011 at 7:04 PM, Roland Dreier <roland@kernel.org> wrote:
-> > > > > From: Roland Dreier <roland@purestorage.com>
-> > > > >
-> > > > > This fixes crashes such as the below that I see when the storage
-> > > > > underlying a dm-multipath device is hot-removed.  The problem is that
-> > > > > dm requeues a request to a device whose block queue has already been
-> > > > > cleaned up, and blk_insert_cloned_request() doesn't check if the queue
-> > > > > is alive, but rather goes ahead and tries to queue the request.  This
-> > > > > ends up dereferencing the elevator that was already freed in
-> > > > > blk_cleanup_queue().
-> > > > 
-> > > > Your patch looks fine to me:
-> > > > Acked-by: Mike Snitzer <snitzer@redhat.com>
-> > > > 
-> > > > And I looked at various code paths to arrive at the references DM takes.
-> > > > 
-> > > > A reference is taken on the underlying devices' block_device via
-> > > > drivers/md/dm-table.c:open_dev() with blkdev_get_by_dev().  open_dev()
-> > > > also does bd_link_disk_holder(), resulting in the mpath device
-> > > > becoming a holder of the underlying devices. e.g.:
-> > > > /sys/block/sda/holders/dm-4
-> > > > 
-> > > > But at no point does DM-mpath get a reference to the underlying
-> > > > devices' request_queue that gets assigned to clone->q (in
-> > > > drivers/md/dm-mpath.c:map_io).
-> > > > 
-> > > > Seems we should, though AFAIK it won't help with the issue you've
-> > > > pointed out (because the hotplugged device's driver already called
-> > > > blk_cleanup_queue and nuked the elevator).
-> > > 
-> > > [Thinking loud]
-> > > 
-> > > Could it be a driver specific issue that it cleaned up the request
-> > > queue too early?
-> > 
-> > One could glibly answer yes to this.  However, the fact is that it's
-> > currently SCSI which manages the queue, so SCSI cleans it up.  Now, the
-> > only real thing dm is interested in is the queue itself, hence the need
-> > to take a reference to the queue.  However, queue references don't pin
-> > SCSI devices, so you can hold a queue reference all you like and SCSI
-> > will still clean up the queue.
-> > 
-> > I think a better question is what should cleaning up the queue do?  SCSI
-> > uses it to indicate that we're no longer processing requests, which
-> > happens when the device goes into a DEL state, but queue cleanup tears
-> > down the elevators and really makes the request queue non functional.
-> > In this case, holding a reference isn't particularly helpful.
-> > 
-> > I'm starting to wonder if there's actually any value to
-> > blk_cleanup_queue() and whether its functionality wouldn't be better
-> > assumed by the queue release function on last put.
-> 
-> I think one problem point is q->queue_lock. If driver drops its reference
-> on queue and cleans up its data structures, then it will free up memory
-> associated with q->queue_lock too. (If driver provided its own queue
-> lock). In that case anything which is dependent on queue lock, needs
-> to be freed up on blk_cleanup_queue().
+resource definitions that just define start, end and flags =
+IORESOURCE_MEM or IORESOURCE_IRQ (with start=end) are quite common. So
+introduce a shortcut for them. For completeness add macros for
+IORESOURCE_DMA and IORESOURCE_IO, too and also make available a set of
+macros to specify named resources of all types.
 
-I don't quite follow.  blk_cleanup_queue() doesn't free anything (well,
-except the elevator).  Final put will free the queue structure which
-contains the lock, but if it's really a final put, you have no other
-possible references, so no-one is using the lock ... well, assuming
-there isn't a programming error, of course ...
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
+changes since v1:
+- also add _IO and _DMA variants
 
-> If we can make sure that request queue reference will keep the spin lock
-> alive, then i guess all cleanup part might be able to go in release
-> queue function.
+ include/linux/ioport.h |   30 ++++++++++++++++++++++++++++++
+ 1 files changed, 30 insertions(+), 0 deletions(-)
 
-As I said: cleanup doesn't free the structure containing the lock,
-release does, so that piece wouldn't be altered by putting
-blk_cleanup_queue() elsewhere.
-
-James
-
+diff --git a/include/linux/ioport.h b/include/linux/ioport.h
+index 63eb429..f98124f 100644
+--- a/include/linux/ioport.h
++++ b/include/linux/ioport.h
+@@ -109,6 +109,36 @@ struct resource_list {
+ /* PCI control bits.  Shares IORESOURCE_BITS with above PCI ROM.  */
+ #define IORESOURCE_PCI_FIXED		(1<<4)	/* Do not move resource */
+ 
++
++/* helpers to define resources */
++#define DEFINE_RES_NAMED(_start, _size, _name, _flags)			\
++	{								\
++		.start = _start,					\
++		.end = _start + _size - 1,				\
++		.name = _name,						\
++		.flags = _flags,					\
++	}
++
++#define DEFINE_RES_IO_NAMED(_start, _size, _name)			\
++	DEFINE_RES_NAMED(_start, _size, _name, IORESOURCE_IO)
++#define DEFINE_RES_IO(_start, _size)					\
++	DEFINE_RES_IO_NAMED(_start, _size, NULL)
++
++#define DEFINE_RES_MEM_NAMED(_start, _size, _name)			\
++	DEFINE_RES_NAMED(_start, _size, _name, IORESOURCE_MEM)
++#define DEFINE_RES_MEM(_start, _size)					\
++	DEFINE_RES_MEM_NAMED(_start, _size, NULL)
++
++#define DEFINE_RES_IRQ_NAMED(_irq, _name)				\
++	DEFINE_RES_NAMED(_irq, 1, _name, IORESOURCE_IRQ)
++#define DEFINE_RES_IRQ(_irq)						\
++	DEFINE_RES_IRQ_NAMED(_irq, NULL)
++
++#define DEFINE_RES_DMA_NAMED(_dma, _name)				\
++	DEFINE_RES_NAMED(_dma, 1, _name, IORESOURCE_DMA)
++#define DEFINE_RES_DMA(_dma)						\
++	DEFINE_RES_DMA_NAMED(_dma, NULL)
++
+ /* PC/ISA/whatever - the normal PC address spaces: IO and memory */
+ extern struct resource ioport_resource;
+ extern struct resource iomem_resource;
+-- 
+1.7.5.4
 
