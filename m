@@ -1,60 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753756Ab1GLFxd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 01:53:33 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:46253 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753148Ab1GLFxc (ORCPT
+	id S1754027Ab1GLFyk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 01:54:40 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:49830 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752953Ab1GLFyj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 01:53:32 -0400
+	Tue, 12 Jul 2011 01:54:39 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAJfuBxxvDhRgwfosZHZEAsgeLsAzDigHh-j3mC+8aJByR-=GkQ@mail.gmail.com>
-References: <CAJfuBxyhh=3rO9MLkfDic16mij4A6NLXEQnhsvHEmBKokMoF7A@mail.gmail.com>
- <CAO+b5-rP8JAqe5pV7x_4RR5aumpHi4JG5diHehe5BiS_QwzSvw@mail.gmail.com> <CAJfuBxxvDhRgwfosZHZEAsgeLsAzDigHh-j3mC+8aJByR-=GkQ@mail.gmail.com>
+In-Reply-To: <1310370416-6322-4-git-send-email-jim.cromie@gmail.com>
+References: <1309244992-2305-1-git-send-email-jim.cromie@gmail.com>
+ <1310370416-6322-1-git-send-email-jim.cromie@gmail.com> <1310370416-6322-4-git-send-email-jim.cromie@gmail.com>
 From: Bart Van Assche <bvanassche@acm.org>
-Date: Tue, 12 Jul 2011 07:53:11 +0200
-X-Google-Sender-Auth: EO-1TlY7SssdZf26yklGL1OCvng
-Message-ID: <CAO+b5-pZPsbnpjnFzCQFxWrAtoeG71pn1wVqjcOrR9yBQ3L1nA@mail.gmail.com>
-Subject: Re: [ patch 00/21 ] support multiple, pending ddebugs at kernel-boot
+Date: Tue, 12 Jul 2011 07:54:19 +0200
+X-Google-Sender-Auth: AEFUMtqOXAPcTUXsQml_S3F2U7c
+Message-ID: <CAO+b5-pXKeQ8zk367M4FNG5r6vUm6dOVBcNRaoJr+4i=kOy35A@mail.gmail.com>
+Subject: Re: [PATCH 03/21] dynamic_debug: process multiple commands on a line
 To: Jim Cromie <jim.cromie@gmail.com>
 Cc: jbaron@redhat.com, linux-kernel@vger.kernel.org, joe@perches.com,
         gregkh@suse.de, gnb@fmeh.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 11, 2011 at 9:06 PM, Jim Cromie <jim.cromie@gmail.com> wrote:
-> On Mon, Jul 11, 2011 at 12:30 PM, Bart Van Assche <bvanassche@acm.org> wrote:
->> As far as I can see with v2 of this patch set a query gets on the
->> pending list if either +a has been specified or no matches were found
->> the first time a query is run. Are both mechanisms necessary ? If not,
->> I propose to leave out the second. That will not only allow to
->> simplify the code somewhat but will also reduce confusion for
->> dynamic_printk users.
->>
+On Mon, Jul 11, 2011 at 9:46 AM, Jim Cromie <jim.cromie@gmail.com> wrote:
+> Process multiple commands per line, separated by ';'.  All commands are
+> processed, independent of errors, allowing individual commands to fail,
+> for example when a module is not installed.  Last error code is returned.
+> With this, extensive command sets can be given on the boot-line.
 >
-> Both conditions are necessary:
-> - 'a' flag required,
-> - query not directly applicable.
+> Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+> ---
+>  lib/dynamic_debug.c |   30 ++++++++++++++++++++++++++++--
+>  1 files changed, 28 insertions(+), 2 deletions(-)
 >
-> root@voyage:~# echo "module nosuch +p" > /dbg/dynamic_debug/control
-> root@voyage:~# cat /sys/module/dynamic_debug/parameters/pending_ct
-> 0
+> diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+> index 1597d5a..ae72402 100644
+> --- a/lib/dynamic_debug.c
+> +++ b/lib/dynamic_debug.c
+> @@ -423,6 +423,32 @@ static int ddebug_exec_query(char *query_string)
+>        return 0;
+>  }
 >
-> root@voyage:~# echo "module nosuch +ap" > /dbg/dynamic_debug/control
-> root@voyage:~# cat /sys/module/dynamic_debug/parameters/pending_ct
-> 1
+> +/* handle multiple queries, continue on error, return last error */
+> +static int ddebug_exec_queries(char *query)
+> +{
+> +       char *split;
+> +       int i, errs = 0, exitcode = 0, rc;
+> +
+> +       for (i = 0; query; query = split, i++) {
+> +               split = strchr(query, ';');
+> +               if (split)
+> +                       *split++ = '\0';
+> +
+> +               if (verbose)
+> +                       pr_info("query %d: \"%s\"\n", i, query);
+> +
+> +               rc = ddebug_exec_query(query);
+> +               if (rc) {
+> +                       errs++;
+> +                       exitcode = rc;
+> +               }
+> +       }
+> +       if (verbose)
+> +               pr_info("processed %d queries, with %d errs\n", i, errs);
+> +
+> +       return exitcode;
+> +}
+> +
 
-The above example contradicts the following code added in patch 09/21:
-
- 	/* actually go and implement the change */
- 	nfound = ddebug_change(&query, flags, mask);
-+
-+	pr_info("nfound %d on %s\n", nfound, show_ddebug_query(&query));
-+	if (!nfound)
-+		return ddebug_save_pending(&query, flags, mask);
-+
- 	return 0;
+Does the above mean that semicolon is considered a valid separator but
+newline not ?
 
 Bart.
