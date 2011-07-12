@@ -1,50 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755590Ab1GLVQh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 17:16:37 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52517 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752624Ab1GLVQg convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 17:16:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110712132723.GA3193@albatros>
-References: <20110612130953.GA3709@albatros> <20110706173631.GA5431@albatros>
- <CA+55aFyfjG1h2zkkGai_VPM8p5bhWhvNXs1HvuWMgxv4RSywYw@mail.gmail.com>
- <20110706185932.GB3299@albatros> <20110707075610.GA3411@albatros>
- <20110707081930.GA4393@albatros> <20110712132723.GA3193@albatros>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 12 Jul 2011 14:16:10 -0700
-Message-ID: <CA+55aFysXOeBqEvmVbuqL3i0jRFDcE=vDuVhmYL38XQ0+x=deQ@mail.gmail.com>
-Subject: Re: [PATCH] move RLIMIT_NPROC check from set_user() to do_execve_common()
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        kernel-hardening@lists.openwall.com, Jiri Slaby <jslaby@suse.cz>,
-        James Morris <jmorris@namei.org>, Neil Brown <neilb@suse.de>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755698Ab1GLVQo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 17:16:44 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:16800 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755648Ab1GLVQm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 17:16:42 -0400
+From: Sonny Rao <sonnyrao@chromium.org>
+To: acme@redhat.com
+Cc: anton@samba.org, rostedt@goodmis.org, Sonny Rao <sonnyrao@chromium.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] [RFC] perf: robustify proc and debugfs file recording
+Date: Tue, 12 Jul 2011 14:15:48 -0700
+Message-Id: <1310505348-20163-1-git-send-email-sonnyrao@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 12, 2011 at 6:27 AM, Vasiliy Kulikov <segoon@openwall.com> wrote:
->
-> The NPROC can still be enforced in the common code flow of daemons
-> spawning user processes.  Most of daemons do fork()+setuid()+execve().
-> The check introduced in execve() enforces the same limit as in setuid()
-> and doesn't create similar security issues.
+While attempting to create a timechart of boot up I found
+perf didn't tolerate modules being loaded/unloaded.  This patch
+fixes this by reading the file once and then writing the size
+read at the correct point in the file.  It also simplifies the
+code somewhat.
 
-Ok, this looks fine by me. I'd like to get some kind of comment from
-the selinux etc people (James?) but I'd certainly be willing to take
-this.
+Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
+---
+ tools/perf/util/trace-event-info.c |  114 +++++++++---------------------------
+ 1 files changed, 27 insertions(+), 87 deletions(-)
 
-Failing when executing a suid application rather than when a suid
-application releases its heightened credentials seems to be the
-fundamentally saner approach. IOW, failing to raise privileges rather
-than failing to lower them.
+diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
+index 35729f4..5a7e562 100644
+--- a/tools/perf/util/trace-event-info.c
++++ b/tools/perf/util/trace-event-info.c
+@@ -183,106 +183,60 @@ int bigendian(void)
+ 	return *ptr == 0x01020304;
+ }
+ 
+-static unsigned long long copy_file_fd(int fd)
++/* unfortunately, you can not stat debugfs or proc files for size */
++static void record_file(const char *file, size_t hdr_sz)
+ {
+ 	unsigned long long size = 0;
+-	char buf[BUFSIZ];
+-	int r;
+-
+-	do {
+-		r = read(fd, buf, BUFSIZ);
+-		if (r > 0) {
+-			size += r;
+-			write_or_die(buf, r);
+-		}
+-	} while (r > 0);
+-
+-	return size;
+-}
+-
+-static unsigned long long copy_file(const char *file)
+-{
+-	unsigned long long size = 0;
+-	int fd;
++	char buf[BUFSIZ], *sizep;
++	off_t hdr_pos = lseek(output_fd, 0, SEEK_CUR);
++	int r, fd;
+ 
+ 	fd = open(file, O_RDONLY);
+ 	if (fd < 0)
+ 		die("Can't read '%s'", file);
+-	size = copy_file_fd(fd);
+-	close(fd);
+ 
+-	return size;
+-}
+-
+-static unsigned long get_size_fd(int fd)
+-{
+-	unsigned long long size = 0;
+-	char buf[BUFSIZ];
+-	int r;
++	/* put in zeros for file size, then fill true size later */
++	write_or_die(&size, hdr_sz);
+ 
+ 	do {
+ 		r = read(fd, buf, BUFSIZ);
+-		if (r > 0)
++		if (r > 0) {
+ 			size += r;
++			write_or_die(buf, r);
++		}
+ 	} while (r > 0);
+-
+-	lseek(fd, 0, SEEK_SET);
+-
+-	return size;
+-}
+-
+-static unsigned long get_size(const char *file)
+-{
+-	unsigned long long size = 0;
+-	int fd;
+-
+-	fd = open(file, O_RDONLY);
+-	if (fd < 0)
+-		die("Can't read '%s'", file);
+-	size = get_size_fd(fd);
+ 	close(fd);
+ 
+-	return size;
++	/* ugh, handle big-endian hdr_size == 4 */
++	sizep = (char*)&size;
++	if (bigendian())
++		sizep += sizeof(u64) - hdr_sz;
++
++	if (pwrite(output_fd, &size, hdr_sz, hdr_pos) < 0)
++		die("writing to %s", output_file);
+ }
+ 
+ static void read_header_files(void)
+ {
+ 	unsigned long long size, check_size;
+ 	char *path;
+-	int fd;
++	struct stat st;
+ 
+ 	path = get_tracing_file("events/header_page");
+-	fd = open(path, O_RDONLY);
+-	if (fd < 0)
++	if (stat(path, &st) < 0)
+ 		die("can't read '%s'", path);
+ 
+-	/* unfortunately, you can not stat debugfs files for size */
+-	size = get_size_fd(fd);
+-
+ 	write_or_die("header_page", 12);
+-	write_or_die(&size, 8);
+-	check_size = copy_file_fd(fd);
+-	close(fd);
+-
+-	if (size != check_size)
+-		die("wrong size for '%s' size=%lld read=%lld",
+-		    path, size, check_size);
++	record_file(path, 8);
+ 	put_tracing_file(path);
+ 
+ 	path = get_tracing_file("events/header_event");
+-	fd = open(path, O_RDONLY);
+-	if (fd < 0)
++	if (stat(path, &st) < 0)
+ 		die("can't read '%s'", path);
+ 
+-	size = get_size_fd(fd);
+-
+ 	write_or_die("header_event", 13);
+-	write_or_die(&size, 8);
+-	check_size = copy_file_fd(fd);
+-	if (size != check_size)
+-		die("wrong size for '%s'", path);
++	record_file(path, 8);
+ 	put_tracing_file(path);
+-	close(fd);
+ }
+ 
+ static bool name_in_tp_list(char *sys, struct tracepoint_path *tps)
+@@ -338,14 +292,8 @@ static void copy_event_system(const char *sys, struct tracepoint_path *tps)
+ 		sprintf(format, "%s/%s/format", sys, dent->d_name);
+ 		ret = stat(format, &st);
+ 
+-		if (ret >= 0) {
+-			/* unfortunately, you can not stat debugfs files for size */
+-			size = get_size(format);
+-			write_or_die(&size, 8);
+-			check_size = copy_file(format);
+-			if (size != check_size)
+-				die("error in size of file '%s'", format);
+-		}
++		if (ret >= 0)
++			record_file(format, 8);
+ 
+ 		free(format);
+ 	}
+@@ -438,12 +386,7 @@ static void read_proc_kallsyms(void)
+ 		write_or_die(&size, 4);
+ 		return;
+ 	}
+-	size = get_size(path);
+-	write_or_die(&size, 4);
+-	check_size = copy_file(path);
+-	if (size != check_size)
+-		die("error in size of file '%s'", path);
+-
++	record_file(path, 4);
+ }
+ 
+ static void read_ftrace_printk(void)
+@@ -461,11 +404,8 @@ static void read_ftrace_printk(void)
+ 		write_or_die(&size, 4);
+ 		goto out;
+ 	}
+-	size = get_size(path);
+-	write_or_die(&size, 4);
+-	check_size = copy_file(path);
+-	if (size != check_size)
+-		die("error in size of file '%s'", path);
++	record_file(path, 4);
++
+ out:
+ 	put_tracing_file(path);
+ }
+-- 
+1.7.3.1
 
-                   Linus
