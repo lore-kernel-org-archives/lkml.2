@@ -1,45 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752306Ab1GLFQt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 01:16:49 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:54000 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751367Ab1GLFQs (ORCPT
+	id S1753651Ab1GLFb5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 01:31:57 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:56029 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753057Ab1GLFb4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 01:16:48 -0400
-Date: Mon, 11 Jul 2011 22:15:20 -0700 (PDT)
-Message-Id: <20110711.221520.315256855290511409.davem@davemloft.net>
-To: jj@chaosbits.net
-Cc: linux-kernel@vger.kernel.org, trivial@kernel.org, gregkh@suse.de,
-        linux-usb@vger.kernel.org, netdev@vger.kernel.org, marius@kotsbak.com
-Subject: Re: [PATCH 7/7] drivers/net: static should be at beginning of
- declaration
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.LNX.2.00.1107092322320.25516@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1107092304160.25516@swampdragon.chaosbits.net>
-	<alpine.LNX.2.00.1107092322320.25516@swampdragon.chaosbits.net>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-7
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 11 Jul 2011 22:16:37 -0700 (PDT)
+	Tue, 12 Jul 2011 01:31:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110528005640.9076c0b1.akpm@linux-foundation.org>
+References: <1306499498-14263-1-git-send-email-ankita@in.ibm.com>
+	<20110528005640.9076c0b1.akpm@linux-foundation.org>
+Date: Tue, 12 Jul 2011 11:01:53 +0530
+X-Google-Sender-Auth: YlyWslZH8qRAnswWIM9sxheW3Zk
+Message-ID: <CADGdYn7VCKemAgdbNw76vj7E9swxtK=z8+9uv=omG89QNE0uxg@mail.gmail.com>
+Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory Power Management
+From: amit kachhap <amit.kachhap@linaro.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ankita Garg <ankita@in.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, thomas.abraham@linaro.org,
+        linux-pm@lists.linux-foundation.org, svaidy@linux.vnet.ibm.com,
+        linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p6C5H9cl013749
 
-From: Jesper Juhl <jj@chaosbits.net>
-Date: Sat, 9 Jul 2011 23:24:43 +0200 (CEST)
+Hi All,
 
-> Make sure that the 'static' keywork is at the beginning of declaration
-> for drivers/net/usb/kalmia.c
-> 
-> This gets rid of warnings like
->   warning: ¡static¢ is not at beginning of declaration
-> when building with -Wold-style-declaration (and/or -Wextra which also
-> enables it).
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+In response to the discussion about power savings with memory regions
+features following measurements are done.
 
-Applied to net-next-2.6, thanks!
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Title:
+On a system with 2GB memory , 1GB is static and the other 1GB in
+various power states.
+
+Brief environment description:
+Samsung smdk-exynos board is used for this work and full board level
+power consumption is measured that comprises of cpu and other
+components. It has 2 DMC's(Dynamic memory controller) with each
+supporting 1 GB DDR3 memory. Power characteristics of DMC0 controlled
+memory remain same but memory controlled by DMC1 is changed to 4
+different power states. The following numbers describe the maximum
+power savings measured after executing the software from DMC0
+controlled memory which changes the power states of DMC1 controlled
+memory. Here the actual numbers are not mentioned but the percentage
+power savings is shown in reference to the change in overall power
+consumption. The memory region patches are expected to facilitate
+transition of memory into into one of the following low power states.
+
+1) Percentage power savings when DMC1(1GB) moved to self refresh mode
+from idle/unaccess mode= 2.69%
+2) Percentage power savings when DMC1(1GB) moved to precharge mode
+from idle/unaccess mode= 3.23%
+3) Percentage power savings when DMC1(1GB) clock is gated  = 6.32%
+
+The above power savings is indicative of the benefits that memory
+regions could provide in this platform.
+
+Thanks & Regards,
+Amit Daniel Kachhap
+Samsung India s/w operations, Bangalore
+
+On Sat, May 28, 2011 at 1:26 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Fri, 27 May 2011 18:01:28 +0530 Ankita Garg <ankita@in.ibm.com> wrote:
+>
+>> This patchset proposes a generic memory regions infrastructure that can be
+>> used to tag boundaries of memory blocks which belongs to a specific memory
+>> power management domain and further enable exploitation of platform memory
+>> power management capabilities.
+>
+> A couple of quick thoughts...
+>
+> I'm seeing no estimate of how much energy we might save when this work
+> is completed.  But saving energy is the entire point of the entire
+> patchset!  So please spend some time thinking about that and update and
+> maintain the [patch 0/n] description so others can get some idea of the
+> benefit we might get from all of this.  That estimate should include an
+> estimate of what proportion of machines are likely to have hardware
+> which can use this feature and in what timeframe.
+>
+> IOW, if it saves one microwatt on 0.001% of machines, not interested ;)
+>
+>
+> Also, all this code appears to be enabled on all machines?  So machines
+> which don't have the requisite hardware still carry any additional
+> overhead which is added here.  I can see that ifdeffing a feature like
+> this would be ghastly but please also have a think about the
+> implications of this and add that discussion also.
+>
+> If possible, it would be good to think up some microbenchmarks which
+> probe the worst-case performance impact and describe those and present
+> the results.  So others can gain an understanding of the runtime costs.
+>
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>
