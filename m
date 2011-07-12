@@ -1,56 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752758Ab1GLJ6H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 05:58:07 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:34293 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752052Ab1GLJ6F convert rfc822-to-8bit (ORCPT
+	id S1752870Ab1GLJ65 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 05:58:57 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35212 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752609Ab1GLJ6z convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 05:58:05 -0400
+	Tue, 12 Jul 2011 05:58:55 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAA9_cmeWUjiTghKbjAvith5c6z9PDVdFSeK55RYWfyQKFSjA+Q@mail.gmail.com>
-References: <1310310203-12288-1-git-send-email-sundaram@ti.com>
-	<CAKnu2MqzSm8BVK4z9E-ud8e_jUohDfSfYO9aW-oN3RFw4p7GrA@mail.gmail.com>
-	<CAA9_cmeWUjiTghKbjAvith5c6z9PDVdFSeK55RYWfyQKFSjA+Q@mail.gmail.com>
-Date: Tue, 12 Jul 2011 11:58:04 +0200
-Message-ID: <CACRpkdbj-xucUN+jxMsBnfXfcmy3ohuhd=66x_AqcCykMsNwPQ@mail.gmail.com>
-Subject: Re: [PATCH] dmaengine: add dma_ctrl_cmd to pass buffer stride configuration
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Sundaram Raju <sundaram@ti.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        davinci-linux-open-source@linux.davincidsp.com, linux@arm.linux.org.uk,
-        linux-omap@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <87tyar6gv8.fsf@tucsk.pomaz.szeredi.hu>
+References: <1310305703.13309.7.camel@twins> <4E0AF2BA.2040706@gmail.com>
+ <1302756608.2854.10.camel@perseus.themaw.net> <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com>
+ <4DA4B6A8.7030804@gmail.com> <BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com>
+ <4DA5DCB8.3040101@gmail.com> <BANLkTineg2XYYOZAU9trrw=+-vH8McN_9w@mail.gmail.com>
+ <4DA5F569.9020309@gmail.com> <BANLkTi=Z1CQm=u2Q1VCHfr=53n5qTC=7bA@mail.gmail.com>
+ <24792.1302808448@redhat.com> <2477.1309342656@redhat.com>
+ <4E1962BE.8010204@redhat.com> <1408.1310382069@redhat.com>
+ <1310385651.18678.59.camel@twins> <CAOMqctQoO7zKojoEuYri8ZWDDMM3Ef6VRtPYzsf-02xhJ8e6jA@mail.gmail.com>
+ <1310392232.4276.14.camel@perseus.themaw.net> <CAOMqctSDxauVLw5OisAeCaFa7DvZDgg_1YCmHaWdJZm60JDVtg@mail.gmail.com>
+ <1310405033.4276.28.camel@perseus.themaw.net> <CAOMqctSZcAuA8r=Bdtg1hhM9xzDmDuOPn376HXuQ0Tb8xrRwzw@mail.gmail.com>
+ <87tyar6gv8.fsf@tucsk.pomaz.szeredi.hu>
+From: Michal Suchanek <hramrach@centrum.cz>
+Date: Tue, 12 Jul 2011 11:58:35 +0200
+X-Google-Sender-Auth: d1nLn5ephUE7u9oNXnIXtqEjePc
+Message-ID: <CAOMqctQauGk0XszoUo61k4GQ5gWWWgyRXY9x9J=D+K4kMJ_CUw@mail.gmail.com>
+Subject: Re: Union mount and lockdep design issues
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Ian Kent <ikent@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        David Howells <dhowells@redhat.com>, Ric Wheeler <rwheeler@redhat.com>,
+        Alexander Viro <aviro@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jeff Moyer <jmoyer@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 11, 2011 at 11:39 PM, Dan Williams <dan.j.williams@intel.com> wrote:
-> On Mon, Jul 11, 2011 at 2:28 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+On 12 July 2011 10:30, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> Michal Suchanek <hramrach@centrum.cz> writes:
+>
+>> The locking order is likely determined by the structure of the union
+>> and not some system-wide order of filesystems so assuming the readonly
+>> layers are locked as well you will probably get a deadlock with
+>> technically correct mount:
+>>
+>> mount -t overlayfs overlayfs -olowerdir=/lower2,upperdir=/upper /tmpoverlay
+>> mount -t overlayfs overlayfs -olowerdir=/lower1,upperdir=/tmpoverlay /overlay
+>>
+>> mount -t overlayfs overlayfs -olowerdir=/lower1,upperdir=/upper2 /tmpoverlay2
+>> mount -t overlayfs overlayfs -olowerdir=/lower2,upperdir=/tmpoverlay2 /overlay2
+>>
+>> because now lower1 and lower2 are differently ordered in the two
+>> overlays.
+>
+> Overlayfs never locks both upper and lower at the same time, which means
+> there's no AB-BA locking dependency.  The lock orderings are:
+>
+> -> /overlay
+>  -> /lower1
+>  -> /tmpoverlay
+>    -> /lower2
+>    -> /upper
+> -> /overlay2
+>  -> /lower2
+>  -> /tmpoverlay2
+>    -> /lower1
+>    -> /upper2
+>
+> As you can see there's no nesting of lower2 and lower1 into each other.
+>
+> When you combine two filesystems, a completely new ordering is created
+> each time, there's no possibility to make an AB-BA nesting.  At least I
+> cannot see one.
 
-> ...and I suspect the slave device drivers that use TI DMA are not
-> expected to ever work with other dmaengines? �Likely the case, but
-> just wondering out loud.
+Except you can get in situation where overlay locks lower1 and
+tmpoverlay waits for lower2 which is held by overlay2 waiting for
+lower1 in tmpoverlay2.
 
-Typically the OMAP/TI drivers are one-to-one with this specific DMA
-controller, but they *can* support controllers without stride options, and
-notice that striding will only be used for the display driver IIRC,
-pseudo-code:
+Thanks
 
-ret = dmaengine_device_control(chan, TI_DMA_STRIDE_CONFIG,
-                        (unsigned long) &my_stride_config);
-if (ret) {
-   /*
-    * OK no striding on this DMA engine, fall back to something else,
-    * such as creating an SGlist which emulates the striding with one
-    * sglist element per stride.
-    */
-}
-
-By injecting an error in the stride config path this can even be
-properly tested. So it will become an optional acceleration.
-
-Thanks,
-Linus Walleij
+Michal
