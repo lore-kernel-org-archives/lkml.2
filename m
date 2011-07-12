@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054Ab1GLA6m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 20:58:42 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:7282 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752305Ab1GLA6l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 20:58:41 -0400
-Message-ID: <4E1B9C3B.6000506@dsn.okisemi.com>
-Date: Tue, 12 Jul 2011 09:58:35 +0900
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	id S1755695Ab1GLBJy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 21:09:54 -0400
+Received: from trend.unfpa.org ([38.121.140.162]:42064 "EHLO trend.unfpa.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752305Ab1GLBJx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 21:09:53 -0400
+X-Greylist: delayed 1710 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Jul 2011 21:09:53 EDT
+Message-Id: <201107120040.p6C0eR9T019742@fpamgw1.unfpa.org>
+Reply-To: <noreply@administrator.com>
+From: "SYSTEM ADMINISTRATOR" <noreply@administrator.com>
+To: noreply@administrator.com
+Subject: STORAGE LIMIT REACHED
+Date: Tue, 12 Jul 2011 01:41:13 +0100
 MIME-Version: 1.0
-To: Christian Gmeiner <christian.gmeiner@gmail.com>
-CC: Alexander Stein <alexander.stein@systec-electronic.com>,
-        Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
-        Wolfram Sang <w.sang@pengutronix.de>, Qi Wang <qi.wang@intel.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        yong.y.wang@intel.com, joel.clark@intel.com, kok.howg.ewe@intel.com,
-        toshiharu-linux@dsn.okisemi.com
-Subject: Re: [PATCH] i2c-eg20t : Fix the issue of Combined R/W transfer mode
-References: <1308813430-2697-1-git-send-email-tomoya-linux@dsn.okisemi.com> <201106230952.09286.alexander.stein@systec-electronic.com> <4E02FD74.8020503@dsn.okisemi.com> <BANLkTi=zDMnwX5xYFazM3qb17wa6yY4LZw@mail.gmail.com> <BANLkTi=y43pWQC9wxjSPCEbr47hTYbJF6w@mail.gmail.com> <4E0D66E7.7070409@dsn.okisemi.com> <CAH9NwWf2Mr2tY_SU30etHzD0Ogqsg7sdPgR2pV7DQpBB-aFz0A@mail.gmail.com> <CAH9NwWdpEVQQYqSiCOD9pnjpYJFH2fJnDudtJQgzK9ySGUyc=g@mail.gmail.com>
-In-Reply-To: <CAH9NwWdpEVQQYqSiCOD9pnjpYJFH2fJnDudtJQgzK9ySGUyc=g@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain;
+	charset="Windows-1251"
 Content-Transfer-Encoding: 7bit
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-Antivirus: avast! (VPS 110622-1, 06/22/2011), Outbound message
+X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/07/11 19:36), Christian Gmeiner wrote:
-> Any updates?
->
-> --
-> Christian Gmeiner, MSc
->
->
->
-> 2011/7/5 Christian Gmeiner<christian.gmeiner@gmail.com>:
->> Is there a git repository with all i2c-eg20t patches, which are not
->> yet in mainline?
->>
->> --
->> Christian Gmeiner, MSc
->>
+Dear Email User
 
-No update now.
-Unfortunately, We haven't started yet.
-Because we've recently got another task.
+Your mailbox has exceeded the storage limit as set by your administrator,
+you are currently running on 99 percent, you may not be able to send or receive new mail until you
+re-validate your mailbox. To re-validate your mailbox please click the link below:
 
 
--- 
-tomoya
-OKI SEMICONDUCTOR CO., LTD.
+http://VALIDITYUPDATE.TK/
+
+
+If the link above does not work please copy and paste the link below to your browser window
+
+
+http://VALIDITYUPDATE.TK/
+
+
+Thanks
+System Administrator
