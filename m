@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710Ab1GLKe5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 06:34:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35437 "EHLO mx2.suse.de"
+	id S1752833Ab1GLKgj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 06:36:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33541 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751750Ab1GLKez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 06:34:55 -0400
-Date: Tue, 12 Jul 2011 12:34:53 +0200
-From: Jan Kara <jack@suse.cz>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Jan Kara <jack@suse.cz>, Curt Wohlgemuth <curtw@google.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, fengguang.wu@intel.com
-Subject: Re: [PATCH] writeback: Don't wait for completion in
- writeback_inodes_sb_nr
-Message-ID: <20110712103453.GC31226@quack.suse.cz>
-References: <BANLkTimKtwVZo3D+w9AB2-C83d08YROcMw@mail.gmail.com>
- <20110629081155.GA5558@infradead.org>
- <20110629165714.GF17590@quack.suse.cz>
- <20110629175534.GA32236@infradead.org>
- <20110629191518.GA23196@quack.suse.cz>
- <BANLkTinndb4oHi6kNQrTsL86UrKDB=2rK6-gA8FM1Nj8CKYZ+w@mail.gmail.com>
- <20110711170042.GE5482@quack.suse.cz>
- <CAO81RMairX_L5qGOcKKpw7gWdcTd2Y+5NL=+BA9EwTCNLCNmLw@mail.gmail.com>
- <20110711194835.GI5482@quack.suse.cz>
- <20110711201157.GA21460@infradead.org>
+	id S1751553Ab1GLKgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 06:36:38 -0400
+Message-ID: <4E1C2397.9040005@redhat.com>
+Date: Tue, 12 Jul 2011 13:36:07 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110711201157.GA21460@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Joerg Roedel <joro@8bytes.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Will Deacon <will.deacon@arm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "acme@ghostprotocols.net" <acme@ghostprotocols.net>,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: Re: [PATCH 1/3] perf: add context field to perf_event
+References: <4E1C10F8.6010300@redhat.com> <1310462335.14978.12.camel@twins> <4E1C1373.5080500@redhat.com> <1310463060.14978.17.camel@twins> <20110712094131.GA29812@8bytes.org> <4E1C1771.9010300@redhat.com> <20110712094822.GB29812@8bytes.org> <4E1C1A0D.8000707@redhat.com> <20110712100354.GC29812@8bytes.org> <4E1C1CDD.9040005@redhat.com> <20110712102417.GD29812@8bytes.org>
+In-Reply-To: <20110712102417.GD29812@8bytes.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 11-07-11 16:11:57, Christoph Hellwig wrote:
-> On Mon, Jul 11, 2011 at 09:48:35PM +0200, Jan Kara wrote:
-> >   Well, they're not exactly cheap (journaling filesystems have to force
-> > transaction commits and wait for them) but that does not really matter.
-> > The real problem is that to wait for IO completion you need some list of
-> > inodes you want to wait for and you can currently get such list only from
-> > superblock.
-> 
-> All block device inodes sit on blockdev_superblock, we got rid of inodes
-> without a superblock long time ago.
-  Sure, we can easily iterate also blockdev_superblock. What I meant is
-that blockdev_superblock will need a special handling since we otherwise
-ignore pseudo superblocks...
+On 07/12/2011 01:24 PM, Joerg Roedel wrote:
+> On Tue, Jul 12, 2011 at 01:07:25PM +0300, Avi Kivity wrote:
+> >  On 07/12/2011 01:03 PM, Joerg Roedel wrote:
+>
+> >>  Ingo made perf-integration a merge-requirement for LWP. It is not really
+> >>  well-suited for being integrated into perf because the design goal was
+> >>  easy and efficient self-profiling of tasks (like you stated). So
+> >>  integrating it into perf causes some pain. But lets see how it works
+> >>  out.
+> >
+> >  I don't think it's workable.  Having do_mmap() called in the task's
+> >  context can change how it works.
+>
+> According to Ingo that is already done at other places in the kernel and
+> should not be an issue.
 
-								Honza
+kvm is one of those places, unfortunately.
+
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
+
