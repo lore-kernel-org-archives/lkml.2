@@ -1,84 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752870Ab1GLJ65 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 05:58:57 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35212 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752609Ab1GLJ6z convert rfc822-to-8bit (ORCPT
+	id S1752830Ab1GLKBx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 06:01:53 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:40052 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751241Ab1GLKBw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 05:58:55 -0400
+	Tue, 12 Jul 2011 06:01:52 -0400
 MIME-Version: 1.0
-In-Reply-To: <87tyar6gv8.fsf@tucsk.pomaz.szeredi.hu>
-References: <1310305703.13309.7.camel@twins> <4E0AF2BA.2040706@gmail.com>
- <1302756608.2854.10.camel@perseus.themaw.net> <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com>
- <4DA4B6A8.7030804@gmail.com> <BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com>
- <4DA5DCB8.3040101@gmail.com> <BANLkTineg2XYYOZAU9trrw=+-vH8McN_9w@mail.gmail.com>
- <4DA5F569.9020309@gmail.com> <BANLkTi=Z1CQm=u2Q1VCHfr=53n5qTC=7bA@mail.gmail.com>
- <24792.1302808448@redhat.com> <2477.1309342656@redhat.com>
- <4E1962BE.8010204@redhat.com> <1408.1310382069@redhat.com>
- <1310385651.18678.59.camel@twins> <CAOMqctQoO7zKojoEuYri8ZWDDMM3Ef6VRtPYzsf-02xhJ8e6jA@mail.gmail.com>
- <1310392232.4276.14.camel@perseus.themaw.net> <CAOMqctSDxauVLw5OisAeCaFa7DvZDgg_1YCmHaWdJZm60JDVtg@mail.gmail.com>
- <1310405033.4276.28.camel@perseus.themaw.net> <CAOMqctSZcAuA8r=Bdtg1hhM9xzDmDuOPn376HXuQ0Tb8xrRwzw@mail.gmail.com>
- <87tyar6gv8.fsf@tucsk.pomaz.szeredi.hu>
-From: Michal Suchanek <hramrach@centrum.cz>
-Date: Tue, 12 Jul 2011 11:58:35 +0200
-X-Google-Sender-Auth: d1nLn5ephUE7u9oNXnIXtqEjePc
-Message-ID: <CAOMqctQauGk0XszoUo61k4GQ5gWWWgyRXY9x9J=D+K4kMJ_CUw@mail.gmail.com>
-Subject: Re: Union mount and lockdep design issues
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Ian Kent <ikent@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        David Howells <dhowells@redhat.com>, Ric Wheeler <rwheeler@redhat.com>,
-        Alexander Viro <aviro@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jeff Moyer <jmoyer@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CAJfuBxyhh=3rO9MLkfDic16mij4A6NLXEQnhsvHEmBKokMoF7A@mail.gmail.com>
+References: <CAJfuBxyhh=3rO9MLkfDic16mij4A6NLXEQnhsvHEmBKokMoF7A@mail.gmail.com>
+From: Bart Van Assche <bvanassche@acm.org>
+Date: Tue, 12 Jul 2011 12:01:31 +0200
+X-Google-Sender-Auth: 9TTUogL5EWY81MCiq7NIYyuoNEM
+Message-ID: <CAO+b5-oFH4WHe6_tUibrqUjgBYZNDNoKCA0f67gMFJurLkGaKQ@mail.gmail.com>
+Subject: Re: [ patch 00/21 ] support multiple, pending ddebugs at kernel-boot
+To: Jim Cromie <jim.cromie@gmail.com>
+Cc: jbaron@redhat.com, linux-kernel@vger.kernel.org, joe@perches.com,
+        gregkh@suse.de, gnb@fmeh.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 July 2011 10:30, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> Michal Suchanek <hramrach@centrum.cz> writes:
->
->> The locking order is likely determined by the structure of the union
->> and not some system-wide order of filesystems so assuming the readonly
->> layers are locked as well you will probably get a deadlock with
->> technically correct mount:
->>
->> mount -t overlayfs overlayfs -olowerdir=/lower2,upperdir=/upper /tmpoverlay
->> mount -t overlayfs overlayfs -olowerdir=/lower1,upperdir=/tmpoverlay /overlay
->>
->> mount -t overlayfs overlayfs -olowerdir=/lower1,upperdir=/upper2 /tmpoverlay2
->> mount -t overlayfs overlayfs -olowerdir=/lower2,upperdir=/tmpoverlay2 /overlay2
->>
->> because now lower1 and lower2 are differently ordered in the two
->> overlays.
->
-> Overlayfs never locks both upper and lower at the same time, which means
-> there's no AB-BA locking dependency.  The lock orderings are:
->
-> -> /overlay
->  -> /lower1
->  -> /tmpoverlay
->    -> /lower2
->    -> /upper
-> -> /overlay2
->  -> /lower2
->  -> /tmpoverlay2
->    -> /lower1
->    -> /upper2
->
-> As you can see there's no nesting of lower2 and lower1 into each other.
->
-> When you combine two filesystems, a completely new ordering is created
-> each time, there's no possibility to make an AB-BA nesting.  At least I
-> cannot see one.
+On Mon, Jul 11, 2011 at 5:21 PM, Jim Cromie <jim.cromie@gmail.com> wrote:
+>> TODO:
+>> [ ... ]
+>> 3. Decide whether to keep pending on list after they apply.
+>> Given that user added 'a' flag, and can now delete them, its
+>> reasonable to leave them on pending list. �Bart's point, TBD.
 
-Except you can get in situation where overlay locks lower1 and
-tmpoverlay waits for lower2 which is held by overlay2 waiting for
-lower1 in tmpoverlay2.
+It's good that users can not only add items to the pending list but
+that they can remove items from the pending list too. Does v2 of this
+patch set provide a way to query the pending list ? If not, should
+such a facility be provided ?
 
-Thanks
-
-Michal
+Bart.
