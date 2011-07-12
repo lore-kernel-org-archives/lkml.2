@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755918Ab1GLVtY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 17:49:24 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:47431 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753653Ab1GLVtX convert rfc822-to-8bit (ORCPT
+	id S1755979Ab1GLVxB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 17:53:01 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:60861 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755119Ab1GLVxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 17:49:23 -0400
+	Tue, 12 Jul 2011 17:53:00 -0400
+From: "Patrick J. LoPresti" <lopresti@gmail.com>
+To: Andrea Righi <andrea@betterlinux.com>
+Subject: Re: [PATCH v3 0/2] fadvise: support POSIX_FADV_NOREUSE
+In-Reply-To: <20110627123946.GB1658@thinkpad>
+References: <1308923350-7932-1-git-send-email-andrea@betterlinux.com> <4E07F349.2040900@jp.fujitsu.com> <20110627071139.GC1247@thinkpad> <4E0858CF.6070808@draigBrady.com> <20110627102933.GA1282@thinkpad> <4E086F51.50403@draigBrady.com>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Date: Tue, 12 Jul 2011 14:52:49 -0700
+Message-ID: <8762n7kvym.fsf@cmungerjr.com>
 MIME-Version: 1.0
-In-Reply-To: <20110712212920.GQ2326@linux.vnet.ibm.com>
-References: <CAAVPGOPCGsNynWPWcwaxVU_jPCg=VPdz82_g6OvY5gnYKk5oFg@mail.gmail.com>
-	<20110710171626.GK6014@linux.vnet.ibm.com>
-	<20110710173530.GA16954@linux.vnet.ibm.com>
-	<CAAVPGOPAx-oLZct9u2Kq3uQ4W2GwJFYUGgw3h=M_Y4_wv7b51w@mail.gmail.com>
-	<20110710214639.GP6014@linux.vnet.ibm.com>
-	<CAAVPGOMafp_+45X=7asHe=MqaHY8CiJYsf2GZ3qOPrWpjctHVQ@mail.gmail.com>
-	<20110710231449.GQ6014@linux.vnet.ibm.com>
-	<CAAVPGOMSprJSkzziH6hJv9PweOONzsMaRZEK2ZSrV3xFBReTPw@mail.gmail.com>
-	<20110711214301.GP2245@linux.vnet.ibm.com>
-	<CAAVPGOOJ0NEWqF2w9zCLC1bpXeA_TwzenNo-a4kvR3tcbewnNw@mail.gmail.com>
-	<20110712212920.GQ2326@linux.vnet.ibm.com>
-Date: Tue, 12 Jul 2011 22:49:22 +0100
-Message-ID: <CAAVPGOPnHb0E=vutOEQwqsUTo-wrj6_-dEv7tW096yyppMgWcw@mail.gmail.com>
-Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3
-From: Julie Sullivan <kernelmail.jms@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel-mail <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-> If this is the correct one, then the upstreamable patch I sent recently
-> (https://lkml.org/lkml/2011/7/12/313) should also work.  Famous last
-> words...
->
->                                                        Thanx, Paul
 
+> IIUC, NOREUSE means "the application will use this range of the file
+> once". It's something that we do _before_ accessing the file.  And the
+> kernel needs to remember the ranges of NOREUSE data for each file, so
+> that page cache can be immediately dropped after the data has been
+> accessed (if possible).
 
-Indeed this works, applied to a clean v3.0-rc4  (!CONFIG_RCU_BOOST 64-bit build)
+I am no expert on the Linux page cache, but my applications have a great
+interest in exercising some control over it...
 
-Great job, Paul, thanks for all your efforts.
-I'll test it tomorrow too on -rc5, 6 and 7 (out of time for tonight)
+Could NOREUSE be as simple as setting a bit on the page that means
+"never mark this page active"?
 
-Cheers
-Julie
+Or more conservatively, "clear this bit before marking the page active"?
+
+So POSIX_FADV_NOREUSE would set the bit on the page.  Then any operation
+that would normally mark the page active would instead merely clear the
+bit.  This would keep the page on the inactive list _after_ the first
+read and allow it to be reclaimed, which is at least in the "spirit" of
+NOREUSE.
+
+ - Pat
