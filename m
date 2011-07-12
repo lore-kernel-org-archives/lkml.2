@@ -1,98 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661Ab1GLSHt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 14:07:49 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:54603 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754621Ab1GLSHs (ORCPT
+	id S1754715Ab1GLSJJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 14:09:09 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:54821 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754621Ab1GLSJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 14:07:48 -0400
+	Tue, 12 Jul 2011 14:09:07 -0400
+Date: Tue, 12 Jul 2011 20:09:02 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Cc: David Sharp <dhsharp@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Michael Rubin <mrubin@google.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Jiaying Zhang <jiayingz@google.com>
+Subject: Re: [PATCH v3] trace: Add x86 irq vector entry/exit tracepoints
+Message-ID: <20110712180859.GC9201@somewhere>
+References: <1306877298-31713-1-git-send-email-vnagarnaik@google.com>
+ <1308681903-12840-1-git-send-email-vnagarnaik@google.com>
+ <20110707233453.GE21115@somewhere>
+ <CAJL_eku7ezDhSOaOxN4ACFas1rnX=uaV184ZK3-0fE60Rmwh8g@mail.gmail.com>
+ <20110711155404.GB4109@somewhere.redhat.com>
+ <CAL26m8+ca64BDrQUohxcZfUpZQgn7bNkup=Q92LaTmpvorm9fQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110712171706.GA18414@tugrik.mns.mnsspb.ru>
-References: <201105201306.31204.luke@dashjr.org>
-	<BANLkTimOqhNEsBEg6f=nMiMJqYGNyFJmeQ@mail.gmail.com>
-	<013811$4lfs6@fmsmga002.fm.intel.com>
-	<201105211123.56053.luke@dashjr.org>
-	<aefc95$1usaq@orsmga001.jf.intel.com>
-	<20110528131920.GA10467@tugrik.mns.mnsspb.ru>
-	<20110712171706.GA18414@tugrik.mns.mnsspb.ru>
-Date: Tue, 12 Jul 2011 21:07:47 +0300
-X-Google-Sender-Auth: 39qZKA1ssWCnAkVlFaqd1Gqh9tg
-Message-ID: <CAOJsxLEz-fPnb9oYnLMk9UbGqgsfm-g1d2yH=TrEiEk7HvyQzA@mail.gmail.com>
-Subject: Re: [Intel-gfx] Major 2.6.38 / 2.6.39 regression ignored?
-From: Pekka Enberg <penberg@kernel.org>
-To: Kirill Smelkov <kirr@mns.spb.ru>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, Luke-Jr <luke@dashjr.org>,
-        intel-gfx@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Ray Lee <ray-lk@madrabbit.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAL26m8+ca64BDrQUohxcZfUpZQgn7bNkup=Q92LaTmpvorm9fQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 12, 2011 at 8:17 PM, Kirill Smelkov <kirr@mns.spb.ru> wrote:
-> On Sat, May 28, 2011 at 05:19:20PM +0400, Kirill Smelkov wrote:
->> Hello Chris, everyone,
->>
->> On Sat, May 21, 2011 at 04:40:17PM +0100, Chris Wilson wrote:
->> > On Sat, 21 May 2011 11:23:53 -0400, "Luke-Jr" <luke@dashjr.org> wrote:
->> > > On Saturday, May 21, 2011 4:41:45 AM Chris Wilson wrote:
->> > > > On Fri, 20 May 2011 11:08:56 -0700, Ray Lee <ray-lk@madrabbit.org> wrote:
->> > > > > [ Adding Chris Wilson (author of the problematic patch) and Rafael
->> > > > > Wysocki to the message ]
->> > > > >
->> > > > > On Fri, May 20, 2011 at 10:06 AM, Luke-Jr <luke@dashjr.org> wrote:
->> > > > > > I submitted https://bugzilla.kernel.org/show_bug.cgi?id=33662 a month
->> > > > > > ago against 2.6.38. Now 2.6.39 was just released without the
->> > > > > > regression being addressed. This bug makes the system unusable... Some
->> > > > > > guys on IRC suggested I
->> > > > > > email, so here it is.
->> > > > >
->> > > > > See the bugzilla entry for the bisection history.
->> > > >
->> > > > Which has nothing to do with Luke's bug. Considering the thousand things
->> > > > that can go wrong during X starting, without a hint as to which it is nigh
->> > > > on impossible to debug except by trial and error. If you set up
->> > > > netconsole, does the kernel emit an OOPS with it's last dying breath?
->> > >
->> > > Why assume it's a different bug? I would almost wonder if it might affect
->> > > all Sandy Bridge GPUs. In any case, I no longer have the original
->> > > motherboard (it was recalled, as I said in the first post), nor even the
->> > > revision of it (it had other issues that weren't being fixed). I *assume* I
->> > > will have the same problem with my new motherboard (Intel DQ67SW), but I
->> > > haven't verified that yet. I'll be sure to try a netconsole when I have to
->> > > reboot next and get a chance to try the most recent 2.6.38 and .39 kernels,
->> > > but at the moment it seems reasonable to address the problem bisected in the
->> > > bug, even if it turns out to be different.
->> >
->> > The bisection is into an old DRI1 bug on 945GM. That DRI has inadequate
->> > locking between release and IRQ and so is prone to such races as befell
->> > Kirill should not surprise anyone. As neither UMS nor DRI supported SNB,
->> > I can quite confidently state they are separate bugs.
->> > -Chris
->>
->> I see DRI1 is maybe buggy and old, but still, pre-kms X used to work ok
->> on kernels < 2.6.38, and starting from 2.6.38 the system is just
->> unusable because X either crashes the kernel (2.6.38), or does not start
->> at all (2.6.39):
->>
->> https://bugzilla.kernel.org/show_bug.cgi?id=36052
->>
->>
->> It's a regression. It's blocking me to upgrade to newer kernels. I've
->> done my homework -- digged it and came with detailed OOPS on netconsole
->> and bisected to single commit. Could this please be fixed?
->
-> Silence...
->
-> Still, reverting the bisected patch helps even for 3.0:
->
-> https://bugzilla.kernel.org/show_bug.cgi?id=36052#c4
+On Mon, Jul 11, 2011 at 11:21:04AM -0700, Vaibhav Nagarnaik wrote:
+> On Mon, Jul 11, 2011 at 8:54 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > Let me clarify what I proposed, we have that:
+> >
+> >        irq_enter() // trace_irq_enter();
+> >
+> >        trace_irq_vector_entry(foo);
+> >
+> >        // handle irq...
+> >
+> >        irq_exit() // trace_irq_exit()
+> >
+> > So either you're only interested in tracing raw irqs and you don't care
+> > about the nature of these and you only enable trace_irq_enter() and
+> > trace_irq_exit(). Or you're interested in the nature of these and you
+> > only enable trace_irq_vector_entry() and trace_irq_exit().
+> >
+> > In fact we could even drop the trace_irq_enter() thing because I'm
+> > not sure it's interesting.
+> >
+> > All in one it doesn't bring more overhead.
+> >
+> > What I'm more worried about actually is that in the case of trace_irq_handler_entry()
+> > and trace_irq_handler_exit(), it becomes a useless tracepoint. And if you enable it
+> > for other irq tracepoint symetric purposes, you'll have it there too and that's a bit
+> > odd.
+> >
+> > So perhaps we want to keep your way of doing this.
+> >
+> 
+> We proposed this patch as a way of tracing raw interrupts from the
+> platform, which is why it traces all the raw interrupts and does not use
+> any specific interrupt data in the events. So when someone wants to know
+> just the interrupts that are being triggered in the system, this
+> tracepoint can be used.
 
-Keith, Chris, what's up with this regression from 2.6.38? It seems
-commit e8616b6 ("drm/i915: Initialise ring vfuncs for old DRI paths")
-caused problems on other machines.
+Which one? Not sure I understand what you mean.
+
+> There can be more involved and detailed tracepoints for individual IRQs,
+> as you proposed to have trace_ipi_function(), etc.
+
+I was arguing about having a tracepoint in irq_exit(), so I guess we are not talking about the same
+things.
+ 
+> > On Thu, Jul 07, 2011 at 05:54:02PM -0700, David Sharp wrote:
+> >> Here's our motivation: We use interrupt events, along with traps,
+> >> syscall, and sched_switch events to know when kernel code is running
+> >> instead of user code. So, being clear that we got all interrupts (and
+> >> which interrupt) is important.
+> >
+> > Ok I see your point then.
+> >
+> > But then have a generic single trace_irq_timer() (may be cut down in entry/exit if
+> > you want).
+> >
+> > But I don't think we really want to  into HRTIMER, PERIODIC, ONESHOT, BROADCAST
+> > vectors. That's sounds like the wrong place to provide these details.
+> >
+> > If we want higher level details, then we can enable hrtimer tracepoints, and/or we add some
+> > tracepoints in the timer subsystem to know with what we are dealing with.
+> >
+> > Does that make sense?
+> >
+> 
+> I added the details about the timer handler because it would be
+> difficult to understand exactly which generic event handlers the
+> platform LOCAL_TIMER_IRQ_VECTOR led to.
+
+Generic event handler is already a high level detail. At the point we call
+that generic event handler, we have climbed several steps, we have left the
+world of pure irq vectors.
+
+What is normally suitable here to get more semantic details is to use higher level
+tracepoints like high resolution timer ones.
+
+If these are not enough for you, you can add a trace_hrtimer_interrupt()
+in the irq tracepoint subsystem. If it's in the irq subsystem you include
+it with the rest of irq traces.
+
+> Once again, this is meant as a raw interrupt tracepoint which provides 2
+> things: an interrupt occurred and the nature of interrupt. As you
+> mentioned there are high level hrtimer tracepoints and there can be
+> similar highly detailed tracepoints for each IRQ as required with more
+> data about the interrupt, but I believe this is the wrong patch to put
+> them in.
+
+But the problem is you are actually messing up irq raw events and higher
+level details.
+
+That vector space should lay in the arch low ground and never go further.
+Finding one of these trace vector things elsewhere than arch/ shouldn't
+ever happen.
+
+As far as possible, tracepoints must be self-contained events and be
+self-explanatory. We want granularity there.
+
+There should never be a reschedule vector to trace. That event is self
+contained and wants its own tracepoints. irq/reschedule_interrupt is
+something any kernel developer can understand and give some sense out
+by browsing the events. But irq/interrupt_vector is opaque as hell.
+
+What happens if I want to trace only reschedule interrupts? I'd be
+forced to enable that vector, browse its format, find the value
+for the reschedule vector, apply a filter.
+That requires a lot of time and skills compared to just enable a tracepoint.
+
+Your patch mixes up too much things:
+
+- pure arch tracepoints. Only those want that vector naming I think.
+
+- IPIs that should go to kernel/smp.c
+
+- reschedule interrupt
+
+- irq work
+
+- ...
+
+If you cut the things into more self-contained topics, this is going to be
+much easier to review and thus much faster to apply and push.
+
+Also your goal is to not miss any interrupts. So if everything goes to the irq
+tracepoint subsystem, you just need to enable everything there and you are
+done. You don't need a big vector tracepoint to ensure you won't miss something.
