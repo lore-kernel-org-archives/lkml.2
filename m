@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274Ab1GLPL4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 11:11:56 -0400
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:20426 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751054Ab1GLPLz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 11:11:55 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: ijWdrfoVM1n6eO3529jiz7LaI_QNH7anBmqbVWM7Qc0.00x
- C3yoaryDpISncAR8.EUGe6kovagHRmQjNZKXNzspDZapcqC_K1OUC8ieS.ns
- myQHupG9s14T4tiWLsNatQEQXr1iDtwK6jHAFLix_350bPRmlrhrrulutFmv
- 7VEsaKQq3yYRAiYfUdeFeWa502ReIcqr_k7f0BM8LeGMGXtPRbmNsMcQKA1K
- gFY6Xrf9Rk7.aWQv.290TtfCaXki5oaLLB_pYw_4_EC6dSoPHyxGqFNz2lHF
- 7E8nW5_TZrvTuTbrHoDLR15PDFkEm4uQ7eWhdVmugi7yhMErjn0IcUrWvKYh
- tQEEYux02wHjzD5iOGCw5Yy1I
-X-Yahoo-Newman-Property: ymail-3
-Date: Tue, 12 Jul 2011 10:11:52 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Pekka Enberg <penberg@kernel.org>
-cc: Eric Dumazet <eric.dumazet@gmail.com>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH next/mmotm] slub: partly fix freeze in __slab_free
-In-Reply-To: <4E1BE5F9.10401@kernel.org>
-Message-ID: <alpine.DEB.2.00.1107121010060.1672@router.home>
-References: <alpine.LSU.2.00.1107111156310.13035@sister.anvils> <1310413167.2860.3.camel@edumazet-laptop> <4E1BE5F9.10401@kernel.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752949Ab1GLPQJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 11:16:09 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:58837 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751054Ab1GLPQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 11:16:08 -0400
+Date: Tue, 12 Jul 2011 08:15:50 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: xen-devel@lists.xensource.com, julie Sullivan <kernelmail.jms@gmail.com>,
+        linux-kernel@vger.kernel.org, chengxu@linux.vnet.ibm.com,
+        kulkarni.ravi4@gmail.com
+Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3
+Message-ID: <20110712151550.GA3397@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CAAVPGOMafp_+45X=7asHe=MqaHY8CiJYsf2GZ3qOPrWpjctHVQ@mail.gmail.com>
+ <20110710231449.GQ6014@linux.vnet.ibm.com>
+ <20110711162450.GA22913@dumpdata.com>
+ <20110711171337.GK2245@linux.vnet.ibm.com>
+ <20110711193021.GA2996@dumpdata.com>
+ <20110711201508.GN2245@linux.vnet.ibm.com>
+ <20110711210954.GA15745@dumpdata.com>
+ <20110712105506.GB2253@linux.vnet.ibm.com>
+ <20110712141228.GA7831@dumpdata.com>
+ <20110712144936.GD2326@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110712144936.GD2326@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Jul 2011, Pekka Enberg wrote:
+On Tue, Jul 12, 2011 at 07:49:36AM -0700, Paul E. McKenney wrote:
+> On Tue, Jul 12, 2011 at 10:12:28AM -0400, Konrad Rzeszutek Wilk wrote:
+> > > >   [<c042d0f5>] task_waking_fair+0x14  <--
+> > > 
+> > > Hmmm...  This is a 32-bit system, isn't it?
+> > 
+> > Yes. I ran this little loop:
+> > 
+> > #!/bin/bash
+> > 
+> > ID=`xl list | grep Fedora | awk '  { print $2}'`
+> > 
+> > rm -f cpu*.log
+> > while (true) do
+> > 	xl pause $ID
+> > 	 /usr/lib64/xen/bin/xenctx -s /mnt/tmp/FC15-32/System.map-3.0.0-rc6-julie-tested-dirty -a $ID 0 >> cpu0.log
+> > 	 /usr/lib64/xen/bin/xenctx -s /mnt/tmp/FC15-32/System.map-3.0.0-rc6-julie-tested-dirty -a $ID 1 >> cpu1.log
+> > 	 /usr/lib64/xen/bin/xenctx -s /mnt/tmp/FC15-32/System.map-3.0.0-rc6-julie-tested-dirty -a $ID 2 >> cpu2.log
+> > 	 /usr/lib64/xen/bin/xenctx -s /mnt/tmp/FC15-32/System.map-3.0.0-rc6-julie-tested-dirty -a $ID 3 >> cpu3.log
+> > 	xl unpause $ID
+> > done
+> > 
+> > To get an idea what the CPU is doing before it hits the task_waking_fair
+> > and there isn't anything daming. Here are the logs:
+> > 
+> > http://darnok.org/xen/cpu1.log
+> 
+> OK, a fair amount of variety, then lots and lots of task_waking_fair(),
+> so I still feel good about asking you for the following.
 
-> > diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-> > index 3d76a43..1351d28 100644
-> > --- a/include/linux/mm_types.h
-> > +++ b/include/linux/mm_types.h
-> > @@ -62,7 +62,7 @@ struct page {
-> >   		struct {			/* SLUB cmpxchg_double area */
-> >   			void *freelist;
-> >   			union {
-> > -				unsigned long counters;
-> > +				u64	counters;
-> >   				struct {
-> >   					unsigned inuse:16;
-> >   					unsigned objects:15;
-> >
->
-> Christoph?
+But...  But...  But...
 
+Just how accurate are these stack traces?  For example, do you have
+frame pointers enabled?  If not, could you please enable them?
 
-counters needs to overlay the bitfields as well as _count. That is problem
-with the earlier fix.
+The reason that I ask is that the wakeme_after_rcu() looks like it is
+being invoked from softirq, which would be grossly illegal and could
+cause any manner of misbehavior.  Did someone put a synchronize_rcu()
+into an RCU callback or something?  Or did I do something really really
+braindead inside the RCU implementation?
 
-Sorry I have had a power outage for the last two days (strange Chicago
-weather) and my server is only up for a few minutes and will go down
-periodically due to a UPS malfunction. On a generator. Sigh.
+(I am looking into this last question, but would appreciate any and all
+help with the other questions!)
 
-
+							Thanx, Paul
