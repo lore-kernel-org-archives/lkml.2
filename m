@@ -1,67 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751788Ab1GLI26 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 04:28:58 -0400
-Received: from alice.et.bocholt.fh-gelsenkirchen.de ([193.175.197.63]:45425
-	"EHLO alice.et.bocholt.fh-gelsenkirchen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750813Ab1GLI24 (ORCPT
+	id S1752036Ab1GLI3a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 04:29:30 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:49951 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751928Ab1GLI32 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 04:28:56 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 alice.et.bocholt.fh-gelsenkirchen.de p6C8R1OR021942
-From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-To: Keith Packard <keithp@keithp.com>
-Cc: Pekka Enberg <penberg@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>, Robse <rob-se@live.de>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [Bug #37472] Lenovo U160 (i915 black screen)
-In-Reply-To: <yun7h7pg8y7.fsf@aiko.keithp.com> (Keith Packard's message of
-	"Sun, 10 Jul 2011 13:46:40 -0700")
-References: <AtAvQwe5sAK.A.loH.OlYGOB@chimera>
-	<gK_efVqs2fP.A.NJ.7lYGOB@chimera>
-	<CAOJsxLGkWX61TLqwgL19tN5ZQuB2cUibPsNSvCB+Ydihtus__w@mail.gmail.com>
-	<yun7h7pg8y7.fsf@aiko.keithp.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-Date: Tue, 12 Jul 2011 10:27:01 +0200
-Message-ID: <gisjqb6h0q.fsf@karga.hank.lab>
+	Tue, 12 Jul 2011 04:29:28 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Michal Suchanek <hramrach@centrum.cz>
+Cc: Ian Kent <ikent@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        David Howells <dhowells@redhat.com>, Ric Wheeler <rwheeler@redhat.com>,
+        Alexander Viro <aviro@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jeff Moyer <jmoyer@redhat.com>
+Subject: Re: Union mount and lockdep design issues
+References: <1310305703.13309.7.camel@twins> <4E0AF2BA.2040706@gmail.com>
+	<1302756608.2854.10.camel@perseus.themaw.net>
+	<BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com>
+	<4DA4B6A8.7030804@gmail.com>
+	<BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com>
+	<4DA5DCB8.3040101@gmail.com>
+	<BANLkTineg2XYYOZAU9trrw=+-vH8McN_9w@mail.gmail.com>
+	<4DA5F569.9020309@gmail.com>
+	<BANLkTi=Z1CQm=u2Q1VCHfr=53n5qTC=7bA@mail.gmail.com>
+	<24792.1302808448@redhat.com> <2477.1309342656@redhat.com>
+	<4E1962BE.8010204@redhat.com> <1408.1310382069@redhat.com>
+	<1310385651.18678.59.camel@twins>
+	<CAOMqctQoO7zKojoEuYri8ZWDDMM3Ef6VRtPYzsf-02xhJ8e6jA@mail.gmail.com>
+	<1310392232.4276.14.camel@perseus.themaw.net>
+	<CAOMqctSDxauVLw5OisAeCaFa7DvZDgg_1YCmHaWdJZm60JDVtg@mail.gmail.com>
+	<1310405033.4276.28.camel@perseus.themaw.net>
+	<CAOMqctSZcAuA8r=Bdtg1hhM9xzDmDuOPn376HXuQ0Tb8xrRwzw@mail.gmail.com>
+Date: Tue, 12 Jul 2011 10:30:19 +0200
+In-Reply-To: <CAOMqctSZcAuA8r=Bdtg1hhM9xzDmDuOPn376HXuQ0Tb8xrRwzw@mail.gmail.com>
+	(Michal Suchanek's message of "Mon, 11 Jul 2011 20:08:16 +0200")
+Message-ID: <87tyar6gv8.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.3 (alice.et.bocholt.fh-gelsenkirchen.de [192.168.0.63]); Tue, 12 Jul 2011 10:27:02 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Keith Packard <keithp@keithp.com> writes:
+Michal Suchanek <hramrach@centrum.cz> writes:
 
-> On Sun, 10 Jul 2011 14:56:19 +0300, Pekka Enberg <penberg@kernel.org> wrote:
+> The locking order is likely determined by the structure of the union
+> and not some system-wide order of filesystems so assuming the readonly
+> layers are locked as well you will probably get a deadlock with
+> technically correct mount:
 >
->> There's no mention that the i915 developers know about this problem so
->> I'm CC'ing Keith and Chris.
+> mount -t overlayfs overlayfs -olowerdir=/lower2,upperdir=/upper /tmpoverlay
+> mount -t overlayfs overlayfs -olowerdir=/lower1,upperdir=/tmpoverlay /overlay
 >
-> Thanks. I've added a comment to the bug:
+> mount -t overlayfs overlayfs -olowerdir=/lower1,upperdir=/upper2 /tmpoverlay2
+> mount -t overlayfs overlayfs -olowerdir=/lower2,upperdir=/tmpoverlay2 /overlay2
 >
-> First off, of course you are encouraged to re-test with 3.0-rc6 just to
-> make sure it hasn't changed in some way. I don't think anything has
-> changed enough to affect this, but it's always good to be sure.
->
-> I note a long sequence of patches that are supposed to help with the
-> U160:
->
-> 448f53a1ede54eb854d036abf54573281412d650 drm/i915/bios: Reverse order of 100/120 Mhz SSC clocks
-> bcfbbce822d219eb587acaba8a6e062bbeae4761 Revert "drm/i915/bios: Reverse order of 100/120 Mhz SSC clocks"
-> a76150302d6e7ebc43e1a1ddaee7fd51db8da3b3 drm/i915: Add a module option to override the use of SSC
->
-> I'm not sure why a quirk wasn't added for this hardware; it's clearly
-> 'non-standard' in some mystic way.
+> because now lower1 and lower2 are differently ordered in the two
+> overlays.
 
-On June 27th, I proposed that Robse perhaps could try the workaround
-that was introduced with the latter commit: i915.lvds_use_ssc=0.
+Overlayfs never locks both upper and lower at the same time, which means
+there's no AB-BA locking dependency.  The lock orderings are:
 
-It works well on my hardware and probably solves his problem as well,
-but he did not respond...
+-> /overlay
+  -> /lower1
+  -> /tmpoverlay
+    -> /lower2
+    -> /upper
+-> /overlay2
+  -> /lower2
+  -> /tmpoverlay2
+    -> /lower1
+    -> /upper2
 
-Dirk
+As you can see there's no nesting of lower2 and lower1 into each other.
 
-[1] https://lkml.org/lkml/2011/6/27/45
+When you combine two filesystems, a completely new ordering is created
+each time, there's no possibility to make an AB-BA nesting.  At least I
+cannot see one.
+
+Thanks,
+Miklos
