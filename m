@@ -1,124 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752006Ab1GLJQP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 05:16:15 -0400
+	id S1752353Ab1GLJSk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 05:18:40 -0400
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:61601 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751140Ab1GLJQM (ORCPT
+	with ESMTP id S1751140Ab1GLJQR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 05:16:12 -0400
+	Tue, 12 Jul 2011 05:16:17 -0400
 From: Tejun Heo <tj@kernel.org>
 To: mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de,
         benh@kernel.crashing.org, yinghai@kernel.org, davem@davemloft.net
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, x86@kernel.org
-Subject: [PATCHSET x86/mm] memblock, x86: Allow node info in memblock and remove x86 specific memblock code
-Date: Tue, 12 Jul 2011 11:15:53 +0200
-Message-Id: <1310462166-31469-1-git-send-email-tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, x86@kernel.org,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 04/13] x86: Use HAVE_MEMBLOCK_NODE_MAP
+Date: Tue, 12 Jul 2011 11:15:57 +0200
+Message-Id: <1310462166-31469-5-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.6
+In-Reply-To: <1310462166-31469-1-git-send-email-tj@kernel.org>
+References: <1310462166-31469-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Convert x86 to HAVE_MEMBLOCK_NODE_MAP.  The only difference in memory
+handling is that allocations can't no longer cross node boundaries
+whether they're node affine or not, which shouldn't matter at all.
 
-There are multiple ways to represent memory configuration during boot.
-Even with the latest incarnation - nobootmem, the configuration isn't
-centralized or easy to use.  NUMA information lives in
-early_node_map[] while memory config and alloc/reservation live in
-memblock.  This leads to ugly code pieces which try to combine the two
-separate information sources both in generic and arch specfic parts.
+This conversion will enable further simplification of boot memory
+handling.
 
-This patchset extends memblock such that it can also host node
-information and allows an arch to do away with early_node_map[] and
-use memblock as the sole early memory config / allocation mechanism.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+---
+ arch/x86/Kconfig                |    1 +
+ arch/x86/include/asm/memblock.h |    2 --
+ arch/x86/mm/memblock.c          |   14 --------------
+ arch/x86/mm/numa.c              |   15 +++++++--------
+ 4 files changed, 8 insertions(+), 24 deletions(-)
 
-For short term, this adds yet another config option -
-HAVE_MEMBLOCK_NODE_MAP in this area.  Longer term goal is removing
-early_node_map[] completely and convert everyone over to memblock.  As
-early_node_map[] usage is limited only to NUMA archs, this should be
-easiser than bootmem allocator conversion.  In the end, memblock will
-be the only early mem mechanism.
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 37357a5..91aa1b4e 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -25,6 +25,7 @@ config X86
+ 	select HAVE_IOREMAP_PROT
+ 	select HAVE_KPROBES
+ 	select HAVE_MEMBLOCK
++	select HAVE_MEMBLOCK_NODE_MAP
+ 	select ARCH_WANT_OPTIONAL_GPIOLIB
+ 	select ARCH_WANT_FRAME_POINTERS
+ 	select HAVE_DMA_ATTRS
+diff --git a/arch/x86/include/asm/memblock.h b/arch/x86/include/asm/memblock.h
+index 161792e..1460db2 100644
+--- a/arch/x86/include/asm/memblock.h
++++ b/arch/x86/include/asm/memblock.h
+@@ -12,8 +12,6 @@ int __get_free_all_memory_range(struct range **range, int nodeid,
+ 			 unsigned long start_pfn, unsigned long end_pfn);
+ int get_free_all_memory_range(struct range **rangep, int nodeid);
+ 
+-void memblock_x86_register_active_regions(int nid, unsigned long start_pfn,
+-					 unsigned long last_pfn);
+ u64 memblock_x86_hole_size(u64 start, u64 end);
+ u64 memblock_x86_free_memory_in_range(u64 addr, u64 limit);
+ u64 memblock_x86_memory_in_range(u64 addr, u64 limit);
+diff --git a/arch/x86/mm/memblock.c b/arch/x86/mm/memblock.c
+index e4569f8..97fbc39 100644
+--- a/arch/x86/mm/memblock.c
++++ b/arch/x86/mm/memblock.c
+@@ -283,20 +283,6 @@ static int __init memblock_x86_find_active_region(const struct memblock_region *
+ 	return 1;
+ }
+ 
+-/* Walk the memblock.memory map and register active regions within a node */
+-void __init memblock_x86_register_active_regions(int nid, unsigned long start_pfn,
+-					 unsigned long last_pfn)
+-{
+-	unsigned long ei_startpfn;
+-	unsigned long ei_endpfn;
+-	struct memblock_region *r;
+-
+-	for_each_memblock(memory, r)
+-		if (memblock_x86_find_active_region(r, start_pfn, last_pfn,
+-					   &ei_startpfn, &ei_endpfn))
+-			add_active_range(nid, ei_startpfn, ei_endpfn);
+-}
+-
+ /*
+  * Find the hole size (in bytes) in the memory range.
+  * @start: starting address of the memory range to scan
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index 824efad..f4a40bd 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -498,13 +498,10 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
+ 	if (WARN_ON(nodes_empty(node_possible_map)))
+ 		return -EINVAL;
+ 
+-	for (i = 0; i < mi->nr_blks; i++)
+-		memblock_x86_register_active_regions(mi->blk[i].nid,
+-					mi->blk[i].start >> PAGE_SHIFT,
+-					mi->blk[i].end >> PAGE_SHIFT);
+-
+-	/* for out of order entries */
+-	sort_node_map();
++	for (i = 0; i < mi->nr_blks; i++) {
++		struct numa_memblk *mb = &mi->blk[i];
++		memblock_set_node(mb->start, mb->end - mb->start, mb->nid);
++	}
+ 
+ 	/*
+ 	 * If sections array is gonna be used for pfn -> nid mapping, check
+@@ -538,6 +535,8 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
+ 			setup_node_data(nid, start, end);
+ 	}
+ 
++	/* Dump memblock with node info and return. */
++	memblock_dump_all();
+ 	return 0;
+ }
+ 
+@@ -575,7 +574,7 @@ static int __init numa_init(int (*init_func)(void))
+ 	nodes_clear(node_possible_map);
+ 	nodes_clear(node_online_map);
+ 	memset(&numa_meminfo, 0, sizeof(numa_meminfo));
+-	remove_all_active_ranges();
++	WARN_ON(memblock_set_node(0, ULLONG_MAX, MAX_NUMNODES));
+ 	numa_reset_distance();
+ 
+ 	ret = init_func();
+-- 
+1.7.6
 
-Note that this patchset still leaves good amount of code which can be
-removed / cleaned up in not too distant future.  For example, memblock
-non-NUMA alloc code can simply be degenerate case of NUMA aware alloc,
-which can also be implemented in simpler and more efficient way with
-reverse free area iterator.
-
-This patchset first extends memblock so that it can contain node
-information and then replaces x86 specific memblock code with the
-generic one.
-
- 0001-memblock-Remove-memblock_memory_can_coalesce.patch
- 0002-memblock-Reimplement-memblock_add_region.patch
- 0003-memblock-Add-optional-region-nid.patch
- 0004-x86-Use-HAVE_MEMBLOCK_NODE_MAP.patch
- 0005-x86-Use-__memblock_alloc_base-in-early_reserve_e820.patch
- 0006-memblock-Implement-for_each_free_mem_range.patch
- 0007-x86-Replace-memblock_x86_find_in_range_size-with-for.patch
- 0008-memblock-x86-Make-free_all_memory_core_early-explici.patch
- 0009-memblock-x86-Replace-__get_free_all_memory_range-wit.patch
- 0010-memblock-x86-Reimplement-memblock_find_dma_reserve-u.patch
- 0011-x86-Use-absent_pages_in_range-instead-of-memblock_x8.patch
- 0012-memblock-x86-Make-ARCH_DISCARD_MEMBLOCK-a-config-opt.patch
- 0013-memblock-x86-Replace-memblock_x86_reserve-free_range.patch
-
-0001-0004 implement HAVE_MEMBLOCK_NODE_MAP and use it in x86.
-
-0005-0013 adds generic memblock free area iterator and gradually
-replaces x86 specific memblock mechanism with generic one.
-
-This patchset is on top of
-
-  x86/urgent (5da0ef9a85 "x86: Disable AMD_NUMA for 32bit for now")
-+ pfn->nid granularity check patches [1]
-+ "memblock, x86: Misc cleanups" patchset [2]
-+ "memblock, x86: Implement for_each_mem_pfn_range() and use it to improve memblock allocator" patchset [3]
-
-and available in the following git branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-x86-mm-memblock
-
-Diffstat follows.
-
- arch/x86/Kconfig                |    2
- arch/x86/include/asm/e820.h     |    2
- arch/x86/include/asm/memblock.h |   22 --
- arch/x86/kernel/aperture_64.c   |    2
- arch/x86/kernel/check.c         |   34 +--
- arch/x86/kernel/e820.c          |   55 ++---
- arch/x86/kernel/head.c          |    2
- arch/x86/kernel/head32.c        |    5
- arch/x86/kernel/head64.c        |    5
- arch/x86/kernel/mpparse.c       |   12 -
- arch/x86/kernel/setup.c         |   17 -
- arch/x86/kernel/trampoline.c    |    2
- arch/x86/mm/Makefile            |    2
- arch/x86/mm/init.c              |    6
- arch/x86/mm/init_32.c           |   28 +-
- arch/x86/mm/memblock.c          |  318 ----------------------------
- arch/x86/mm/memtest.c           |   33 +--
- arch/x86/mm/numa.c              |   24 +-
- arch/x86/mm/numa_32.c           |    6
- arch/x86/mm/numa_64.c           |    2
- arch/x86/mm/numa_emulation.c    |   34 +--
- arch/x86/platform/efi/efi.c     |    6
- arch/x86/xen/mmu.c              |   12 -
- arch/x86/xen/setup.c            |    7
- include/linux/bootmem.h         |    2
- include/linux/memblock.h        |   54 ++++
- include/linux/mm.h              |    2
- mm/Kconfig                      |    6
- mm/memblock.c                   |  440 ++++++++++++++++++++++++++++------------
- mm/nobootmem.c                  |   40 ++-
- mm/page_alloc.c                 |   47 ++--
- 31 files changed, 554 insertions(+), 675 deletions(-)
-
-Thanks.
-
---
-tejun
-
-[1] http://thread.gmane.org/gmane.linux.kernel/1166521
-[2] http://thread.gmane.org/gmane.linux.kernel.cross-arch/10338
-[3] http://thread.gmane.org/gmane.linux.kernel.cross-arch/10345
