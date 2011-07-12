@@ -1,29 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753410Ab1GLMPQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 08:15:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16404 "EHLO mx1.redhat.com"
+	id S1753422Ab1GLM0M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 08:26:12 -0400
+Received: from mx2.fusionio.com ([66.114.96.31]:47683 "EHLO mx2.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753028Ab1GLMPP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 08:15:15 -0400
-Date: Tue, 12 Jul 2011 08:15:13 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
+	id S1753247Ab1GLM0L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 08:26:11 -0400
+X-ASG-Debug-ID: 1310473570-01de280c1ebfaa0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4E1C3D5E.1050601@fusionio.com>
+Date: Tue, 12 Jul 2011 14:26:06 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
+MIME-Version: 1.0
 To: Shaohua Li <shaohua.li@intel.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Jens Axboe <jaxboe@fusionio.com>
+CC: lkml <linux-kernel@vger.kernel.org>, Vivek Goyal <vgoyal@redhat.com>
 Subject: Re: [PATCH v2 0/3]CFQ: add think time check for service tree and
  group
-Message-ID: <20110712121513.GB1293@redhat.com>
 References: <1310434672.15392.283.camel@sli10-conroe>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+X-ASG-Orig-Subj: Re: [PATCH v2 0/3]CFQ: add think time check for service tree and
+ group
 In-Reply-To: <1310434672.15392.283.camel@sli10-conroe>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1310473570
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.68703
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 12, 2011 at 09:37:52AM +0800, Shaohua Li wrote:
+On 2011-07-12 03:37, Shaohua Li wrote:
 > Hi,
 >   Currently when the last queue of a service tree/group is empty, CFQ
 > doesn't expire the queue. This is to allow requests from the tree/group
@@ -45,10 +57,10 @@ On Tue, Jul 12, 2011 at 09:37:52AM +0800, Shaohua Li wrote:
 > 2. add more test to make sure the patches don't change behavior of
 > queues without think time.
 
-This patch series looks good to me. Thanks Shaohua. We still shall have
-to do something about fsync issue though in groups.
+I applied 1-3, thanks. 1 was hand applied, since it didn't apply
+directly to for-3.1/core after I merged Justins patch to get rid of the
+meta data request special treatment.
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+-- 
+Jens Axboe
 
-Thanks
-Vivek
