@@ -1,123 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754359Ab1GLRWM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 13:22:12 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:60626 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754072Ab1GLRWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 13:22:10 -0400
-Date: Tue, 12 Jul 2011 09:39:47 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: xen-devel@lists.xensource.com, julie Sullivan <kernelmail.jms@gmail.com>,
-        linux-kernel@vger.kernel.org, chengxu@linux.vnet.ibm.com
-Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3
-Message-ID: <20110712163947.GF2326@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110710231449.GQ6014@linux.vnet.ibm.com>
- <20110711162450.GA22913@dumpdata.com>
- <20110711171337.GK2245@linux.vnet.ibm.com>
- <20110711193021.GA2996@dumpdata.com>
- <20110711201508.GN2245@linux.vnet.ibm.com>
- <20110711210954.GA15745@dumpdata.com>
- <20110712105506.GB2253@linux.vnet.ibm.com>
- <20110712141228.GA7831@dumpdata.com>
- <20110712144936.GD2326@linux.vnet.ibm.com>
- <20110712160324.GA1186@dumpdata.com>
+	id S1754437Ab1GLRW5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 13:22:57 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:29850 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754207Ab1GLRW4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 13:22:56 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=Sgs2b0t8nTveGuFUyIDW8TZgaMnvaLGSYvjwqTTs5LkJ/FqrMJiAZtxwyu/SDAbD7
+	CUU7ws0cBbrxeuM1Srg6A==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110712160324.GA1186@dumpdata.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4E15D67B.2080405@draigBrady.com>
+References: <20110706160744.4002.94920.stgit@bhelgaas.mtv.corp.google.com>
+ <20110706160936.4002.1846.stgit@bhelgaas.mtv.corp.google.com>
+ <12164.1310053141@turing-police.cc.vt.edu> <4E15D67B.2080405@draigBrady.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 12 Jul 2011 11:22:33 -0600
+Message-ID: <CAErSpo51_q9nB+eU8VFmz-LJf16KFeKxKR_TWRWDQ4P9gOnP6g@mail.gmail.com>
+Subject: Re: [PATCH 1/2] watchdog: iTCO_wdt: optionally leave watchdog enabled
+ during restart
+To: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigbrady.com>
+Cc: Valdis.Kletnieks@vt.edu, Wim Van Sebroeck <wim@iguana.be>,
+        linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 12, 2011 at 12:03:24PM -0400, Konrad Rzeszutek Wilk wrote:
-> > > http://darnok.org/xen/cpu1.log
-> > 
-> > OK, a fair amount of variety, then lots and lots of task_waking_fair(),
-> > so I still feel good about asking you for the following.
-> .. snup..
-> > Hmmm...  Given that this is persisting for many many seconds, it might
-> > be better to check for at least 10,000,000 passes.  In contrast, 1000
-> > passes might elapse just waiting for a cache miss to complete.
-> 
-> Changed it to that large number. This is the diff I used:
-> 
-> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-> index 433491c..e185c04 100644
-> --- a/kernel/sched_fair.c
-> +++ b/kernel/sched_fair.c
-> @@ -1392,14 +1392,19 @@ static void task_waking_fair(struct task_struct *p)
->  	struct sched_entity *se = &p->se;
->  	struct cfs_rq *cfs_rq = cfs_rq_of(se);
->  	u64 min_vruntime;
-> +	u64 loop_cnt = 0UL;
-> 
->  #ifndef CONFIG_64BIT
->  	u64 min_vruntime_copy;
-> -
-> +	loop_cnt = 0UL;
->  	do {
->  		min_vruntime_copy = cfs_rq->min_vruntime_copy;
->  		smp_rmb();
->  		min_vruntime = cfs_rq->min_vruntime;
-> +		if (loop_cnt++ > 10000000) {
-> +			printk(KERN_INFO "POKE!\n");
-> +			loop_cnt = 0UL;
-> +		}
->  	} while (min_vruntime != min_vruntime_copy);
->  #else
->  	min_vruntime = cfs_rq->min_vruntime;
-> 
-> And the log is:
-> http://darnok.org/xen/loop_cnt.log
-> 
-> which seems to imply that we are indeed stuck in that loop
-> forever.
+On Thu, Jul 7, 2011 at 9:53 AM, Pádraig Brady <P@draigbrady.com> wrote:
+> On 07/07/11 16:39, Valdis.Kletnieks@vt.edu wrote:
+>> On Wed, 06 Jul 2011 10:09:36 MDT, Bjorn Helgaas said:
+>>
+>>> If we reboot via BIOS, BIOS should disable the watchdog itself, so this
+>>> shouldn't cause unintended resets, even if the user interrupts the boot.
+>>
+>> Yes, but didn't Linus say something about BIOS code authors being
+>> crack-addicted monkeys? :)
 
-It does indeed, thank you!  Also it looks like interrupts are
-disabled, and that timekeeping is similarly out of action.
+I shouldn't have written anything about what BIOS "should" do.  That's
+not very useful because, as you suggest, there is room for variation
+there.
 
-> > Other possible causes include:
-> 
-> What is really strange is that I can only reproduce this on 32-bit builds.
+The risk I was alluding to was this:
+  - User boots with "reboot_timeout=X"
+  - User reboots normally (non-kexec)
+  - BIOS does some reinitialization
+  - Machine doesn't autoboot, e.g., because user interrupted boot
+  - Watchdog resets machine -- this may be unexpected by the user
 
-Not strange at all.  If you have a 64-bit build, the function doesn't
-have a loop.  ;-)
+On the machines I tested, the unexpected reset doesn't happen because
+the BIOS reinit includes disabling the watchdog.  But obviously, that
+depends on BIOS details, so there's no guarantee.
 
-> > o	A mismatch between Xen's and RCU's ideas of how CONFIG_NO_HZ
-> > 	works.  If Xen thinks that the CPU is in CONFIG_NO_HZ's
-> > 	dyntick-idle mode, but RCU thinks otherwise, the grace period
-> > 	might stall.
-> 
-> One sure way to figure this out is to disable CONFIG_NO_HZ right?
-> Or will that take away task_waking_fair case as well?
+I should have just written something along the lines of:
 
-Disabling CONFIG_NO_HZ would be an interesting test case.
+  The reboot_timeout option is intended for kexec reboots, which do
+not involve BIOS.
+  In this case, the reboot_timeout covers the interval between shutdown of the
+  watchdog driver in the old kernel and startup of the driver in the new kernel.
 
-> > o	Problems due to portions of the code attempting to use
-> > 	RCU read-side critical sections while in dyntick-idle mode.
-> > 	Frederic Weisbecker has located some of these, (though not yet
-> > 	in Xen) and he has some diagnositics which may be found at:
-> > 
-> > 	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
-> > 
-> > 	on branch eqscheck.2011.07.08a.
-> > 
-> > 	You need to enable CONFIG_PROVE_RCU for these diagnostics to
-> > 	be executed.
-> 
-> Ok, let me try those too.
+  For normal reboots (via the BIOS), the behavior depends on the BIOS
+implementation.
+  Some BIOSes disable the watchdog timer, so the reboot_timeout only covers the
+  interval until the BIOS disable.  Others leave the timer running, so
+the reboot_timeout
+  may cause a reset if the machine doesn't autoboot, e.g., if the user
+interrupts the boot.
 
-Thank you!
+I think the *option* of using a reboot_timeout is still useful,
+especially in clusters of unattended machines where it's expensive to
+deal with boot failures.
 
-> > o	As always, there might be bugs in RCU.  ;-)
-> > 
-> > But the loop in task_waking_fair() looks like the most prominent smoking
-> > gun at the moment.
+> Yes as I said in a round about way in another mail,
+> one can't depend on that at all.
+> Some reset, some don't, some behave weirdly,
+> iTCO is unusual as kernel resets early at boot, ...
 
-And could you also please try out the patch that I posted earlier?
+You mentioned an unexplained iTCO reset in your other mail.  That
+sounds like a kernel or iTCO_wdt bug, but I think it's unrelated to
+this patch.
 
-							Thaxn, Paul
+> If using this, one would have to set the timeout large enough,
+> to encompass a full reboot
+
+Right.  In the case of iTCO, I think the range is up to about 10
+minutes, which is enough in my case (things like fsck may take longer,
+but that's OK as long as the watchdog driver is built in statically).
+
+Bjorn
