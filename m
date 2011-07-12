@@ -1,72 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758068Ab1GLHiS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 03:38:18 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:54213 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751525Ab1GLHiR convert rfc822-to-8bit (ORCPT
+	id S1758654Ab1GLHju (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 03:39:50 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:56958 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753607Ab1GLHjt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 03:38:17 -0400
+	Tue, 12 Jul 2011 03:39:49 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110711143859.0e6c95d8@schlenkerla.am.freescale.net>
-References: <CABkP77e6vLmLxk3wCP39GJ7+yKnJZFc7BPUZ1OkdA8d7KkBCiw@mail.gmail.com>
-	<20110711143859.0e6c95d8@schlenkerla.am.freescale.net>
-Date: Tue, 12 Jul 2011 09:38:16 +0200
-X-Google-Sender-Auth: a9d-ko52wIrrygDSBe4U_CeOqYE
-Message-ID: <CABkP77d8K1Of7jw8hpyi_XG+xorZ8OKkgoGfSy9_zh7iSq5kFA@mail.gmail.com>
-Subject: Re: [PATCH] powerpc/85xx: fix mpic configuration in CAMP mode
-From: Fabio Baltieri <fabio.baltieri@gmail.com>
-To: Scott Wood <scottwood@freescale.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Poonam Aggrwal <poonam.aggrwal@freescale.com>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+In-Reply-To: <CAO+b5-pZPsbnpjnFzCQFxWrAtoeG71pn1wVqjcOrR9yBQ3L1nA@mail.gmail.com>
+References: <CAJfuBxyhh=3rO9MLkfDic16mij4A6NLXEQnhsvHEmBKokMoF7A@mail.gmail.com>
+ <CAO+b5-rP8JAqe5pV7x_4RR5aumpHi4JG5diHehe5BiS_QwzSvw@mail.gmail.com>
+ <CAJfuBxxvDhRgwfosZHZEAsgeLsAzDigHh-j3mC+8aJByR-=GkQ@mail.gmail.com> <CAO+b5-pZPsbnpjnFzCQFxWrAtoeG71pn1wVqjcOrR9yBQ3L1nA@mail.gmail.com>
+From: Jim Cromie <jim.cromie@gmail.com>
+Date: Tue, 12 Jul 2011 01:39:19 -0600
+Message-ID: <CAJfuBxwET2zVWBJCBsUsEu661h+rzfHhtgvRY7SuBG7nPQLZnw@mail.gmail.com>
+Subject: Re: [ patch 00/21 ] support multiple, pending ddebugs at kernel-boot
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: jbaron@redhat.com, linux-kernel@vger.kernel.org, joe@perches.com,
+        gregkh@suse.de, gnb@fmeh.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 11, 2011 at 9:38 PM, Scott Wood <scottwood@freescale.com> wrote:
-> On Sun, 10 Jul 2011 20:55:32 +0200
-> Fabio Baltieri <fabio.baltieri@gmail.com> wrote:
+On Mon, Jul 11, 2011 at 11:53 PM, Bart Van Assche <bvanassche@acm.org> wrote:
+> On Mon, Jul 11, 2011 at 9:06 PM, Jim Cromie <jim.cromie@gmail.com> wrote:
+>> On Mon, Jul 11, 2011 at 12:30 PM, Bart Van Assche <bvanassche@acm.org> wrote:
+>>> As far as I can see with v2 of this patch set a query gets on the
+>>> pending list if either +a has been specified or no matches were found
+>>> the first time a query is run. Are both mechanisms necessary ? If not,
+>>> I propose to leave out the second. That will not only allow to
+>>> simplify the code somewhat but will also reduce confusion for
+>>> dynamic_printk users.
+>>>
+>>
+>> Both conditions are necessary:
+>> - 'a' flag required,
+>> - query not directly applicable.
+>>
+>> root@voyage:~# echo "module nosuch +p" > /dbg/dynamic_debug/control
+>> root@voyage:~# cat /sys/module/dynamic_debug/parameters/pending_ct
+>> 0
+>>
+>> root@voyage:~# echo "module nosuch +ap" > /dbg/dynamic_debug/control
+>> root@voyage:~# cat /sys/module/dynamic_debug/parameters/pending_ct
+>> 1
 >
->> Change the string to check for CAMP mode boot on MPC85xx (eg. P2020) to match
->> the one in the corresponding dts files (p2020rdb_camp_core{0,1}.dts).
->>
->> Without this fix the mpic is configured as in the SMP boot mode, which causes
->> the first core to report a protected source interrupt error for devices
->> of the other core and lock up.
->>
->> Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
->> ---
->>  arch/powerpc/platforms/85xx/mpc85xx_rdb.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/powerpc/platforms/85xx/mpc85xx_rdb.c
->> b/arch/powerpc/platforms/85xx/mpc85xx_rdb.c
->> index 088f30b..a1e5e70 100644
->> --- a/arch/powerpc/platforms/85xx/mpc85xx_rdb.c
->> +++ b/arch/powerpc/platforms/85xx/mpc85xx_rdb.c
->> @@ -58,7 +58,7 @@ void __init mpc85xx_rdb_pic_init(void)
->>               return;
->>       }
->>
->> -     if (of_flat_dt_is_compatible(root, "fsl,85XXRDB-CAMP")) {
->> +     if (of_flat_dt_is_compatible(root, "fsl,MPC85XXRDB-CAMP")) {
->>               mpic = mpic_alloc(np, r.start,
->>                       MPIC_PRIMARY |
->>                       MPIC_BIG_ENDIAN | MPIC_BROKEN_FRR_NIRQS,
+> The above example contradicts the following code added in patch 09/21:
 >
-> Shouldn't we be setting MPIC_SINGLE_DEST_CPU in this case (as we do for
-> the other case)?
+>        /* actually go and implement the change */
+>        nfound = ddebug_change(&query, flags, mask);
+> +
+> +       pr_info("nfound %d on %s\n", nfound, show_ddebug_query(&query));
+> +       if (!nfound)
+> +               return ddebug_save_pending(&query, flags, mask);
+> +
+>        return 0;
 >
-> Or just drop this and specify pic-no-reset in the mpic node.
+> Bart.
+>
 
-Yeah, seems like a good idea. I still prefer to leave the
-MPIC_WANTS_RESET for the default case (SMP mode), which I think is
-what most people are using.
+In patch 13, that becomes
 
-I'm sending a v2 of the patch, thanks!
++	if (!nfound) {
++		if (flags & _DPRINTK_FLAGS_APPEND)
++			return ddebug_save_pending(&query, flags, mask);
++		else
++			pr_warn("no match on: %s\n",
++				show_ddebug_query(&query));
++	}
+ 	return 0;
+ }
 
--- 
-Fabio Baltieri
+
+its altered once more, when I add filter-flags,
+but that doesnt really change my assertion.
+
+ 	nfound = ddebug_change(&query, flags, mask, filter);
+ 	if (!nfound) {
+-		if (flags & _DPRINTK_FLAGS_APPEND)
++		if (flags & _DPRINTK_FLAGS_APPEND ||
++			filter & _DPRINTK_FLAGS_APPEND)
+ 			rc = ddebug_save_pending(&query, flags, mask);
