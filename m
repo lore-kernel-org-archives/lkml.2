@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751650Ab1GLIEB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 04:04:01 -0400
-Received: from mtagate6.uk.ibm.com ([194.196.100.166]:48011 "EHLO
-	mtagate6.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751462Ab1GLIDy (ORCPT
+	id S1751476Ab1GLIRS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 04:17:18 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:56694 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750813Ab1GLIRQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 04:03:54 -0400
-From: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-To: Len Brown <lenb@kernel.org>, Anton Vorontsov <cbou@mail.ru>,
-        David Woodhouse <dwmw2@infradead.org>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-Subject: [PATCH 3/3] ACPI / Battery: propagate sysfs error in acpi_battery_add()
-Date: Tue, 12 Jul 2011 09:03:29 +0100
-Message-Id: <1310457809-2731-4-git-send-email-stefanha@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1310457809-2731-1-git-send-email-stefanha@linux.vnet.ibm.com>
-References: <1310457809-2731-1-git-send-email-stefanha@linux.vnet.ibm.com>
+	Tue, 12 Jul 2011 04:17:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAJfuBxwET2zVWBJCBsUsEu661h+rzfHhtgvRY7SuBG7nPQLZnw@mail.gmail.com>
+References: <CAJfuBxyhh=3rO9MLkfDic16mij4A6NLXEQnhsvHEmBKokMoF7A@mail.gmail.com>
+ <CAO+b5-rP8JAqe5pV7x_4RR5aumpHi4JG5diHehe5BiS_QwzSvw@mail.gmail.com>
+ <CAJfuBxxvDhRgwfosZHZEAsgeLsAzDigHh-j3mC+8aJByR-=GkQ@mail.gmail.com>
+ <CAO+b5-pZPsbnpjnFzCQFxWrAtoeG71pn1wVqjcOrR9yBQ3L1nA@mail.gmail.com> <CAJfuBxwET2zVWBJCBsUsEu661h+rzfHhtgvRY7SuBG7nPQLZnw@mail.gmail.com>
+From: Bart Van Assche <bvanassche@acm.org>
+Date: Tue, 12 Jul 2011 10:16:55 +0200
+X-Google-Sender-Auth: 5IyYJFQMotVuN7P_lyMGXXH577Q
+Message-ID: <CAO+b5-oEgoCNsKoZOLQTBnb9UiS=iAawjVbJkd06+qjEr23vYg@mail.gmail.com>
+Subject: Re: [ patch 00/21 ] support multiple, pending ddebugs at kernel-boot
+To: Jim Cromie <jim.cromie@gmail.com>
+Cc: jbaron@redhat.com, linux-kernel@vger.kernel.org, joe@perches.com,
+        gregkh@suse.de, gnb@fmeh.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make sure the error return from sysfs_add_battery() is checked and
-propagated out from acpi_battery_add().
+On Tue, Jul 12, 2011 at 9:39 AM, Jim Cromie <jim.cromie@gmail.com> wrote:
+> On Mon, Jul 11, 2011 at 11:53 PM, Bart Van Assche <bvanassche@acm.org> wrote:
+>> The above example contradicts the following code added in patch 09/21:
+>>
+>>        /* actually go and implement the change */
+>>        nfound = ddebug_change(&query, flags, mask);
+>> +
+>> +       pr_info("nfound %d on %s\n", nfound, show_ddebug_query(&query));
+>> +       if (!nfound)
+>> +               return ddebug_save_pending(&query, flags, mask);
+>> +
+>>        return 0;
+>
+> In patch 13, that becomes
+>
+> +       if (!nfound) {
+> +               if (flags & _DPRINTK_FLAGS_APPEND)
+> +                       return ddebug_save_pending(&query, flags, mask);
+> +               else
+> +                       pr_warn("no match on: %s\n",
+> +                               show_ddebug_query(&query));
+> +       }
+>        return 0;
+>  }
+>
+>
+> its altered once more, when I add filter-flags,
+> but that doesn’t really change my assertion.
+>
+>        nfound = ddebug_change(&query, flags, mask, filter);
+>        if (!nfound) {
+> -               if (flags & _DPRINTK_FLAGS_APPEND)
+> +               if (flags & _DPRINTK_FLAGS_APPEND ||
+> +                       filter & _DPRINTK_FLAGS_APPEND)
+>                        rc = ddebug_save_pending(&query, flags, mask);
+>
 
-Signed-off-by: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
----
- drivers/acpi/battery.c |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
+Sorry, but I'm not sure that addressing review comments by adding
+follow-up patches that modify previous patches is the proper way to
+present a patch series. IMHO this patch series would be a lot easier
+to review if patches that modify previous patches in the same patch
+series were avoided. If you are not yet familiar with patch squashing
+via git rebase --interactive, I think it's a good idea to learn more
+about it first.
 
-diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
-index 6b3aeba..2ae2fca 100644
---- a/drivers/acpi/battery.c
-+++ b/drivers/acpi/battery.c
-@@ -626,8 +626,11 @@ static int acpi_battery_update(struct acpi_battery *battery)
- 		acpi_battery_quirks(battery);
- 		acpi_battery_init_alarm(battery);
- 	}
--	if (!battery->bat.dev)
--		sysfs_add_battery(battery);
-+	if (!battery->bat.dev) {
-+		result = sysfs_add_battery(battery);
-+		if (result)
-+			return result;
-+	}
- 	result = acpi_battery_get_state(battery);
- 	acpi_battery_quirks2(battery);
- 	return result;
-@@ -975,7 +978,9 @@ static int acpi_battery_add(struct acpi_device *device)
- 	if (ACPI_SUCCESS(acpi_get_handle(battery->device->handle,
- 			"_BIX", &handle)))
- 		set_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags);
--	acpi_battery_update(battery);
-+	result = acpi_battery_update(battery);
-+	if (result)
-+		goto fail;
- #ifdef CONFIG_ACPI_PROCFS_POWER
- 	result = acpi_battery_add_fs(device);
- #endif
--- 
-1.7.5.4
+Also, what are the implications for bisectability if review comments
+about bugs are addressed by follow-up patches instead of modifying the
+patches on which the comments apply ?
 
+Thanks,
+
+Bart.
