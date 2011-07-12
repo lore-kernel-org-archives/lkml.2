@@ -1,84 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754649Ab1GLSCN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 14:02:13 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:47845 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754405Ab1GLSCM (ORCPT
+	id S1754671Ab1GLSCk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 14:02:40 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:58117 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754405Ab1GLSCj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 14:02:12 -0400
-Date: Tue, 12 Jul 2011 14:01:51 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: xen-devel@lists.xensource.com, julie Sullivan <kernelmail.jms@gmail.com>,
-        linux-kernel@vger.kernel.org, chengxu@linux.vnet.ibm.com
-Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3
-Message-ID: <20110712180151.GA18257@dumpdata.com>
-References: <20110711162450.GA22913@dumpdata.com>
- <20110711171337.GK2245@linux.vnet.ibm.com>
- <20110711193021.GA2996@dumpdata.com>
- <20110711201508.GN2245@linux.vnet.ibm.com>
- <20110711210954.GA15745@dumpdata.com>
- <20110712105506.GB2253@linux.vnet.ibm.com>
- <20110712141228.GA7831@dumpdata.com>
- <20110712144936.GD2326@linux.vnet.ibm.com>
- <20110712160324.GA1186@dumpdata.com>
- <20110712163947.GF2326@linux.vnet.ibm.com>
+	Tue, 12 Jul 2011 14:02:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110712163947.GF2326@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4E1C8C1E.005F:SCFMA922111,ss=1,re=-4.000,fgs=0
+In-Reply-To: <1310454020-15426-1-git-send-email-abogani@kernel.org>
+References: <CACqU3MW=VUn64nsSA2V_eXEfEjv6xmB9yBWL8rYynH1wkHcOgw@mail.gmail.com>
+	<1310454020-15426-1-git-send-email-abogani@kernel.org>
+Date: Tue, 12 Jul 2011 14:02:37 -0400
+Message-ID: <CAFziu1HvspbMj8LRLHd2w9vcVq_mGCL3pCOwLaduKQ4nt8+Utg@mail.gmail.com>
+Subject: Re: [PATCH] modpost: Fix modpost's license checking V2
+From: Anders Kaseorg <andersk@ksplice.com>
+To: Alessio Igor Bogani <abogani@kernel.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Jan Beulich <jbeulich@novell.com>,
+        Kbuild <linux-kbuild@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Tim Bird <tim.bird@am.sony.com>,
+        Arnaud Lacombe <lacombar@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > http://darnok.org/xen/loop_cnt.log
-> > 
-> > which seems to imply that we are indeed stuck in that loop
-> > forever.
-> 
-> It does indeed, thank you!  Also it looks like interrupts are
-> disabled, and that timekeeping is similarly out of action.
+On Tue, Jul 12, 2011 at 03:00, Alessio Igor Bogani <abogani@kernel.org> wrote:
+> +#define SEC_NAME_MATCH(name, str) (strncmp(name, str, strlen(str) - 1) == 0)
 
-.. With the latest patch the time looks to be advancing.
+Surely you meant strlen() or sizeof() - 1, not strlen() - 1?
 
-> Disabling CONFIG_NO_HZ would be an interesting test case.
+> +       if (!is_vmlinux(mod->name) && strncmp(symname, "__ksymtab", 9) == 0)
 
-Hadn't done that yet. Compiling a kernel with "# CONFIG_NO_HZ is not set"
-right now.
-> 
-> > > o	Problems due to portions of the code attempting to use
-> > > 	RCU read-side critical sections while in dyntick-idle mode.
-> > > 	Frederic Weisbecker has located some of these, (though not yet
-> > > 	in Xen) and he has some diagnositics which may be found at:
-> > > 
-> > > 	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
-> > > 
-> > > 	on branch eqscheck.2011.07.08a.
-> > > 
-> > > 	You need to enable CONFIG_PROVE_RCU for these diagnostics to
-> > > 	be executed.
-> > 
-> > Ok, let me try those too.
-> 
-> Thank you!
+Same strncmp pattern here.  BTW, your macro is the strstarts()
+function in include/linux/string.h.
 
-Will shortly do this.
-> 
-> > > o	As always, there might be bugs in RCU.  ;-)
-> > > 
-> > > But the loop in task_waking_fair() looks like the most prominent smoking
-> > > gun at the moment.
-> 
-> And could you also please try out the patch that I posted earlier?
-
-With the previous patch and the .. this is getting confusing. With this patch:
-http://darnok.org/xen/loop_cnt-extra.patch
-
-I get this output: http://darnok.org/xen/log.loop_cnt-extra-patch (one guest
-with 4 VCPUS) and http://darnok.org/xen/loop_cnt-extra-patch.log (the guest with 16 VCPUs)
+Anders
