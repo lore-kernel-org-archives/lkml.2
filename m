@@ -1,98 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753754Ab1GLPXE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 11:23:04 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:39693 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753654Ab1GLPXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 11:23:02 -0400
-Date: Tue, 12 Jul 2011 08:22:59 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: xen-devel@lists.xensource.com, julie Sullivan <kernelmail.jms@gmail.com>,
-        linux-kernel@vger.kernel.org, chengxu@linux.vnet.ibm.com,
-        kulkarni.ravi4@gmail.com
-Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3
-Message-ID: <20110712152259.GA3556@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110710231449.GQ6014@linux.vnet.ibm.com>
- <20110711162450.GA22913@dumpdata.com>
- <20110711171337.GK2245@linux.vnet.ibm.com>
- <20110711193021.GA2996@dumpdata.com>
- <20110711201508.GN2245@linux.vnet.ibm.com>
- <20110711210954.GA15745@dumpdata.com>
- <20110712105506.GB2253@linux.vnet.ibm.com>
- <20110712141228.GA7831@dumpdata.com>
- <20110712144936.GD2326@linux.vnet.ibm.com>
- <20110712151550.GA3397@linux.vnet.ibm.com>
+	id S1753770Ab1GLPY4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 11:24:56 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:52072 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751725Ab1GLPYz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 11:24:55 -0400
+Date: Tue, 12 Jul 2011 11:24:54 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Vivek Goyal <vgoyal@redhat.com>
+cc: Mike Snitzer <snitzer@redhat.com>, Roland Dreier <roland@kernel.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        <linux-scsi@vger.kernel.org>, Steffen Maier <maier@linux.vnet.ibm.com>,
+        "Manvanthara B. Puttashankar" <manvanth@linux.vnet.ibm.com>,
+        Tarak Reddy <tarak.reddy@in.ibm.com>,
+        "Seshagiri N. Ippili" <sesh17@linux.vnet.ibm.com>,
+        <linux-kernel@vger.kernel.org>,
+        device-mapper development <dm-devel@redhat.com>,
+        Tejun Heo <tj@kernel.org>, <jaxboe@fusionio.com>
+Subject: Re: block: Check that queue is alive in blk_insert_cloned_request()
+In-Reply-To: <20110712014633.GA30965@redhat.com>
+Message-ID: <Pine.LNX.4.44L0.1107121120130.31381-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110712151550.GA3397@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 12, 2011 at 08:15:50AM -0700, Paul E. McKenney wrote:
-> On Tue, Jul 12, 2011 at 07:49:36AM -0700, Paul E. McKenney wrote:
-> > On Tue, Jul 12, 2011 at 10:12:28AM -0400, Konrad Rzeszutek Wilk wrote:
-> > > > >   [<c042d0f5>] task_waking_fair+0x14  <--
-> > > > 
-> > > > Hmmm...  This is a 32-bit system, isn't it?
-> > > 
-> > > Yes. I ran this little loop:
-> > > 
-> > > #!/bin/bash
-> > > 
-> > > ID=`xl list | grep Fedora | awk '  { print $2}'`
-> > > 
-> > > rm -f cpu*.log
-> > > while (true) do
-> > > 	xl pause $ID
-> > > 	 /usr/lib64/xen/bin/xenctx -s /mnt/tmp/FC15-32/System.map-3.0.0-rc6-julie-tested-dirty -a $ID 0 >> cpu0.log
-> > > 	 /usr/lib64/xen/bin/xenctx -s /mnt/tmp/FC15-32/System.map-3.0.0-rc6-julie-tested-dirty -a $ID 1 >> cpu1.log
-> > > 	 /usr/lib64/xen/bin/xenctx -s /mnt/tmp/FC15-32/System.map-3.0.0-rc6-julie-tested-dirty -a $ID 2 >> cpu2.log
-> > > 	 /usr/lib64/xen/bin/xenctx -s /mnt/tmp/FC15-32/System.map-3.0.0-rc6-julie-tested-dirty -a $ID 3 >> cpu3.log
-> > > 	xl unpause $ID
-> > > done
-> > > 
-> > > To get an idea what the CPU is doing before it hits the task_waking_fair
-> > > and there isn't anything daming. Here are the logs:
-> > > 
-> > > http://darnok.org/xen/cpu1.log
+On Mon, 11 Jul 2011, Vivek Goyal wrote:
+
+> > > There's still the issue that Stefan Richter pointed out: The test for a 
+> > > dead queue must be made _after_ acquiring the queue lock, not _before_.
 > > 
-> > OK, a fair amount of variety, then lots and lots of task_waking_fair(),
-> > so I still feel good about asking you for the following.
+> > Yes, quite important.
+> > 
+> > Jens, can you tweak the patch or should Roland send a v2?
 > 
-> But...  But...  But...
+> I do not think that we should do queue dead check after taking a spinlock.
+> The reason being that there are life time issues of two objects.
 > 
-> Just how accurate are these stack traces?  For example, do you have
-> frame pointers enabled?  If not, could you please enable them?
+> - Validity of request queue pointer
+> - Validity of q->spin_lock pointer
 > 
-> The reason that I ask is that the wakeme_after_rcu() looks like it is
-> being invoked from softirq, which would be grossly illegal and could
-> cause any manner of misbehavior.  Did someone put a synchronize_rcu()
-> into an RCU callback or something?  Or did I do something really really
-> braindead inside the RCU implementation?
-> 
-> (I am looking into this last question, but would appreciate any and all
-> help with the other questions!)
+> If the dm has taken the reference to the request queue in the beginning
+> then it can be sure request queue pointer is valid. But spin_lock might
+> be coming from driver and might be in one of driver allocated structures.
+> So it might happen that driver has called blk_cleanup_queue() and freed
+> up structures which contained the spin lock.
 
-OK, I was confusing Julie's, Ravi's, and Konrad's situations.
-The wakeme_after_rcu() is in fact OK to call from sofirq -- if and
-only if the scheduler is actually running.  This is what happens if
-you do a synchronize_rcu() given your CONFIG_TREE_RCU setup -- an RCU
-callback is posted that, when invoked, awakens the task that invoked
-synchronize_rcu().
+Surely this is a bug in the design of the block layer?
 
-And, based on http://darnok.org/xen/log-rcu-stall, Konrad's system
-appears to be well past the point where the scheduler is initialized.
+> So if queue is not dead, we know that q->spin_lock is valid. I think
+> only race present here is that whole operation is not atomic. First
+> we check for queue not dead flag and then go on to acquire request
+> queue lock. So this leaves a small window for race. I think I have
+> seen other code written in such manner (__generic_make_request()). So
+> it proably reasonably safe to do here too.
 
-So I am coming back around to the loop in task_waking_fair().
+"Probably reasonably safe" = "unsafe".  The fact that it will usually
+work out okay means that when it does fail, it will be very difficult
+to track down.
 
-Though the patch I sent out earlier might help, for example, if early
-invocation of RCU callbacks is somehow messing up the scheduler's
-initialization.
+It needs to be fixed _now_, when people are aware of the issue.  Not 
+five years from now, when everybody has forgotten about it.
 
-							Thanx, Paul
+Alan Stern
+
