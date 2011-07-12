@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752765Ab1GLJsp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 05:48:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33244 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752424Ab1GLJso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 05:48:44 -0400
-Date: Tue, 12 Jul 2011 11:48:41 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
-        Lutz Vieweg <lvml@5t9.de>
-Subject: Re: [PATCH] mm: preallocate page before lock_page at filemap COW.
- (WasRe: [PATCH V2] mm: Do not keep page locked during page fault while
- charging it for memcg
-Message-ID: <20110712094841.GC10552@tiehlicka.suse.cz>
-References: <20110622120635.GB14343@tiehlicka.suse.cz>
- <20110622121516.GA28359@infradead.org>
- <20110622123204.GC14343@tiehlicka.suse.cz>
- <20110623150842.d13492cd.kamezawa.hiroyu@jp.fujitsu.com>
- <20110623074133.GA31593@tiehlicka.suse.cz>
- <20110623170811.16f4435f.kamezawa.hiroyu@jp.fujitsu.com>
- <20110623090204.GE31593@tiehlicka.suse.cz>
- <20110623190157.1bc8cbb9.kamezawa.hiroyu@jp.fujitsu.com>
- <20110624075742.GA10455@tiehlicka.suse.cz>
- <BANLkTin7TbK1dNjPG6jz_FaJy-QgOjDJaA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTin7TbK1dNjPG6jz_FaJy-QgOjDJaA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752391Ab1GLJzT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 05:55:19 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49142 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751140Ab1GLJzR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 05:55:17 -0400
+Subject: Re: [PATCH 1/3] perf: add context field to perf_event
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Avi Kivity <avi@redhat.com>
+Cc: Will Deacon <will.deacon@arm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "acme@ghostprotocols.net" <acme@ghostprotocols.net>,
+        Jason Wessel <jason.wessel@windriver.com>
+In-Reply-To: <4E1C10F8.6010300@redhat.com>
+References: <1309362157-6596-1-git-send-email-avi@redhat.com>
+	 <1309362157-6596-2-git-send-email-avi@redhat.com>
+	 <20110629160841.GA2032@somewhere>
+	 <20110629162725.GH15521@e102144-lin.cambridge.arm.com>
+	 <20110704135820.GD5551@somewhere> <4E11C9CC.2070909@redhat.com>
+	 <20110704143655.GE5551@somewhere>
+	 <20110711210753.GA3582@e102144-lin.cambridge.arm.com>
+	 <4E1BF5A1.5070301@redhat.com> <1310459898.18678.108.camel@twins>
+	 <4E1C0F02.9040906@redhat.com> <1310462046.14978.11.camel@twins>
+	 <4E1C10F8.6010300@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 12 Jul 2011 11:18:55 +0200
+Message-ID: <1310462335.14978.12.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 24-06-11 20:46:29, Hiroyuki Kamezawa wrote:
-> 2011/6/24 Michal Hocko <mhocko@suse.cz>:
-> > Sorry, forgot to send my
-> > Reviewed-by: Michal Hocko <mhocko@suse>
+On Tue, 2011-07-12 at 12:16 +0300, Avi Kivity wrote:
+> On 07/12/2011 12:14 PM, Peter Zijlstra wrote:
+> > On Tue, 2011-07-12 at 12:08 +0300, Avi Kivity wrote:
+> > >  Similar, but with stronger guarantees: when the function is called,
+> > >  current == p, and the task was either sleeping or in userspace.
 > >
+> > If the task is sleeping, current can never be p.
 > 
-> Thanks.
+> The guarantee is that the task was sleeping just before the function is 
+> called.  Of course it's woken up to run the function.
 > 
-> > I still have concerns about this way to handle the issue. See the follow
-> > up discussion in other thread (https://lkml.org/lkml/2011/6/23/135).
-> >
-> > Anyway I think that we do not have many other options to handle this.
-> > Either we unlock, charge, lock&restes or we preallocate, fault in
-> >
-> I agree.
+> The idea is that you run the function in a known safe point to avoid 
+> extra synchronization.
 > 
-> > Or am I missing some other ways how to do it? What do others think about
-> > these approaches?
-> >
-> 
-> Yes, I'd like to hear other mm specialists' suggestion. and I'll think
-> other way, again.
-> Anyway, memory reclaim with holding a lock_page() can cause big latency
-> or starvation especially when memcg is used. It's better to avoid it.
 
-Is there any intereset in discussing this or the email just got lost?
-Just for reference preallocation patch from Kamezawa is already in the
-Andrew's tree.
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+I'd much rather we didn't wake the task and let it sleep, that's usually
+a very safe place for tasks to be. All you'd need is a guarantee it
+won't be woken up while you're doing your thing.
