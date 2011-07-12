@@ -1,36 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752723Ab1GLKbI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 06:31:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29270 "EHLO mx1.redhat.com"
+	id S1752710Ab1GLKe5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 06:34:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35437 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752052Ab1GLKbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 06:31:06 -0400
-Message-ID: <4E1C223A.9000705@redhat.com>
-Date: Tue, 12 Jul 2011 18:30:18 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	id S1751750Ab1GLKez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 06:34:55 -0400
+Date: Tue, 12 Jul 2011 12:34:53 +0200
+From: Jan Kara <jack@suse.cz>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jan Kara <jack@suse.cz>, Curt Wohlgemuth <curtw@google.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, fengguang.wu@intel.com
+Subject: Re: [PATCH] writeback: Don't wait for completion in
+ writeback_inodes_sb_nr
+Message-ID: <20110712103453.GC31226@quack.suse.cz>
+References: <BANLkTimKtwVZo3D+w9AB2-C83d08YROcMw@mail.gmail.com>
+ <20110629081155.GA5558@infradead.org>
+ <20110629165714.GF17590@quack.suse.cz>
+ <20110629175534.GA32236@infradead.org>
+ <20110629191518.GA23196@quack.suse.cz>
+ <BANLkTinndb4oHi6kNQrTsL86UrKDB=2rK6-gA8FM1Nj8CKYZ+w@mail.gmail.com>
+ <20110711170042.GE5482@quack.suse.cz>
+ <CAO81RMairX_L5qGOcKKpw7gWdcTd2Y+5NL=+BA9EwTCNLCNmLw@mail.gmail.com>
+ <20110711194835.GI5482@quack.suse.cz>
+ <20110711201157.GA21460@infradead.org>
 MIME-Version: 1.0
-To: Takao Indoh <indou.takao@jp.fujitsu.com>
-CC: linux-kernel@vger.kernel.org, ebiederm@xmission.com, vgoyal@redhat.com,
-        rdunlap@xenotime.net, lenb@kernel.org, linux-doc@vger.kernel.org,
-        linux-acpi@vger.kernel.org, mjg@redhat.com
-Subject: Re: [PATCH v2] acpi: introduce "acpi_rsdp=" parameter for kdump
-References: <E8CC3FDD41FF9Findou.takao@jp.fujitsu.com>
-In-Reply-To: <E8CC3FDD41FF9Findou.takao@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110711201157.GA21460@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011年07月11日 23:14, Takao Indoh 写道:
-> Revised version of the patch which was posted by Cong WANG
->
-> Changes in v2:
-> * Change parameter name from "acpi_addr" to "acpi_rsdp"
-> * Add CONFIG_KEXEC
+On Mon 11-07-11 16:11:57, Christoph Hellwig wrote:
+> On Mon, Jul 11, 2011 at 09:48:35PM +0200, Jan Kara wrote:
+> >   Well, they're not exactly cheap (journaling filesystems have to force
+> > transaction commits and wait for them) but that does not really matter.
+> > The real problem is that to wait for IO completion you need some list of
+> > inodes you want to wait for and you can currently get such list only from
+> > superblock.
+> 
+> All block device inodes sit on blockdev_superblock, we got rid of inodes
+> without a superblock long time ago.
+  Sure, we can easily iterate also blockdev_superblock. What I meant is
+that blockdev_superblock will need a special handling since we otherwise
+ignore pseudo superblocks...
 
-Thanks for updating it! Definitely looks good to me,
-
-Reviewed-by: WANG Cong <amwang@redhat.com>
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
