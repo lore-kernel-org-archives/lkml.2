@@ -1,62 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754134Ab1GLQf2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 12:35:28 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:47181 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753738Ab1GLQf1 (ORCPT
+	id S1754119Ab1GLQjM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 12:39:12 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:39680 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753972Ab1GLQjL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 12:35:27 -0400
-Message-ID: <4E1C77C9.1060005@gmail.com>
-Date: Tue, 12 Jul 2011 10:35:21 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	Tue, 12 Jul 2011 12:39:11 -0400
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH] spectra: enable device before poking it
+To: linux-kernel@vger.kernel.org, greg@kroah.com
+Date: Tue, 12 Jul 2011 17:40:03 +0100
+Message-ID: <20110712163924.7541.49192.stgit@bob.linux.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        paulus@samba.org, tglx@linutronix.de
-Subject: Re: [PATCH 3/6] perf: add reference time event
-References: <1307490806-24548-1-git-send-email-dsahern@gmail.com> <1307490946-24673-1-git-send-email-dsahern@gmail.com> <20110617133230.GC25197@somewhere.redhat.com> <4DFB5F0B.4020903@gmail.com> <20110617141707.GE25197@somewhere.redhat.com> <4E1A7A0D.8000806@gmail.com> <20110712143024.GA9201@somewhere>
-In-Reply-To: <20110712143024.GA9201@somewhere>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2011 08:30 AM, Frederic Weisbecker wrote:
-> Actually you first have to face a deeper problem. events are not stored
-> in order in the flow, but they are sorted from perf_session__process_events().
-> 
-> The bunch of sorted events is flushed periodically and sent to the consumer.
-> 
-> See flush_sample_queue().
-> 
-> And this sorting is made on top of the sample->time timestamps. So events
-> are first sorted on sample->time and only afterward you have access to your
-> gtod tracepoint samples. But if that gtod sample has been taken after a reboot
-> then its sample->time is not consistant with the rest. It is not well sorted
-> and thus the reftime won't be updated at the right moment.
+From: Alan Cox <alan@linux.intel.com>
 
-I was aware of this function and the buffering /sorting it does; I have
-similar code in my local analysis tool (for older perf userspace). I had
-not stopped to consider the impacts on the append mode since I never use
-that option.
+Otherwise if it is off at boot time things don't go to plan.
 
-> So the problem is that reftime update already depends on a consistant cpu
-> timestamp.
-> 
-> I can't think about a sane way to work around that. Sorting on gtod + cpu timestamp
-> is not a solution because gtod can change.
-> 
-> I'd rather propose to refuse append mode as long as we have any timestamp. That includes
-> gtod but also sample timestamps. They are buggy if we reboot.
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
 
-I'm fine with restricting append mode if samples have timestamps. In
-that case the time of day reference can be added to the header per the
-original patch set. The change in behavior does impact a lot of record
-use cases (system wide, raw).
+ drivers/staging/spectra/lld_nand.c |   18 ++++++++++--------
+ 1 files changed, 10 insertions(+), 8 deletions(-)
 
-David
+
+diff --git a/drivers/staging/spectra/lld_nand.c b/drivers/staging/spectra/lld_nand.c
+index 0be7adc..60a14ff 100644
+--- a/drivers/staging/spectra/lld_nand.c
++++ b/drivers/staging/spectra/lld_nand.c
+@@ -2397,6 +2397,12 @@ static int nand_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
+ 	struct mrst_nand_info *pndev = &info;
+ 	u32 int_mask;
+ 
++	ret = pci_enable_device(dev);
++	if (ret) {
++		printk(KERN_ERR "Spectra: pci_enable_device failed.\n");
++		return ret;
++	}
++
+ 	nand_dbg_print(NAND_DBG_WARN, "%s, Line %d, Function: %s\n",
+ 		       __FILE__, __LINE__, __func__);
+ 
+@@ -2404,7 +2410,7 @@ static int nand_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
+ 			GLOB_HWCTL_REG_SIZE);
+ 	if (!FlashReg) {
+ 		printk(KERN_ERR "Spectra: ioremap_nocache failed!");
+-		return -ENOMEM;
++		goto failed_disable;
+ 	}
+ 	nand_dbg_print(NAND_DBG_WARN,
+ 		"Spectra: Remapped reg base address: "
+@@ -2416,7 +2422,7 @@ static int nand_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
+ 	if (!FlashMem) {
+ 		printk(KERN_ERR "Spectra: ioremap_nocache failed!");
+ 		iounmap(FlashReg);
+-		return -ENOMEM;
++		goto failed_disable;
+ 	}
+ 	nand_dbg_print(NAND_DBG_WARN,
+ 		"Spectra: Remapped flash base address: "
+@@ -2479,11 +2485,6 @@ static int nand_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
+ 	iowrite32(0, FlashReg + TWO_ROW_ADDR_CYCLES);
+ 	iowrite32(1, FlashReg + ECC_ENABLE);
+ 	enable_ecc = 1;
+-	ret = pci_enable_device(dev);
+-	if (ret) {
+-		printk(KERN_ERR "Spectra: pci_enable_device failed.\n");
+-		goto failed_req_csr;
+-	}
+ 
+ 	pci_set_master(dev);
+ 	pndev->dev = dev;
+@@ -2558,9 +2559,10 @@ static int nand_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
+ failed_remap_csr:
+ 	pci_release_regions(dev);
+ failed_req_csr:
+-	pci_disable_device(dev);
+ 	iounmap(FlashMem);
+ 	iounmap(FlashReg);
++failed_disable:
++	pci_disable_device(dev);
+ 
+ 	return ret;
+ }
+
