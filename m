@@ -1,39 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830Ab1GLKBx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 06:01:53 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:40052 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241Ab1GLKBw convert rfc822-to-8bit (ORCPT
+	id S1752887Ab1GLKDZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 06:03:25 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:51870 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752335Ab1GLKDY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 06:01:52 -0400
+	Tue, 12 Jul 2011 06:03:24 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAJfuBxyhh=3rO9MLkfDic16mij4A6NLXEQnhsvHEmBKokMoF7A@mail.gmail.com>
-References: <CAJfuBxyhh=3rO9MLkfDic16mij4A6NLXEQnhsvHEmBKokMoF7A@mail.gmail.com>
-From: Bart Van Assche <bvanassche@acm.org>
-Date: Tue, 12 Jul 2011 12:01:31 +0200
-X-Google-Sender-Auth: 9TTUogL5EWY81MCiq7NIYyuoNEM
-Message-ID: <CAO+b5-oFH4WHe6_tUibrqUjgBYZNDNoKCA0f67gMFJurLkGaKQ@mail.gmail.com>
-Subject: Re: [ patch 00/21 ] support multiple, pending ddebugs at kernel-boot
-To: Jim Cromie <jim.cromie@gmail.com>
-Cc: jbaron@redhat.com, linux-kernel@vger.kernel.org, joe@perches.com,
-        gregkh@suse.de, gnb@fmeh.org
+In-Reply-To: <CABb+yY1HJOR+QzmM4-ju4cs+8keoyUbMv+SpVoM6BW=DCMzmQQ@mail.gmail.com>
+References: <1310310203-12288-1-git-send-email-sundaram@ti.com>
+	<CABb+yY1HJOR+QzmM4-ju4cs+8keoyUbMv+SpVoM6BW=DCMzmQQ@mail.gmail.com>
+Date: Tue, 12 Jul 2011 12:03:22 +0200
+Message-ID: <CACRpkdbLg0+_2kpi4NizFj0fDWb6QPtkcKirKgoH+83vGD0O0A@mail.gmail.com>
+Subject: Re: [PATCH] dmaengine: add dma_ctrl_cmd to pass buffer stride configuration
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Jassi Brar <jassisinghbrar@gmail.com>
+Cc: Sundaram Raju <sundaram@ti.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        davinci-linux-open-source@linux.davincidsp.com, linux@arm.linux.org.uk,
+        dan.j.williams@intel.com, linux-omap@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 11, 2011 at 5:21 PM, Jim Cromie <jim.cromie@gmail.com> wrote:
->> TODO:
->> [ ... ]
->> 3. Decide whether to keep pending on list after they apply.
->> Given that user added 'a' flag, and can now delete them, its
->> reasonable to leave them on pending list.  Bart's point, TBD.
+On Tue, Jul 12, 2011 at 6:17 AM, Jassi Brar <jassisinghbrar@gmail.com> wrote:
 
-It's good that users can not only add items to the pending list but
-that they can remove items from the pending list too. Does v2 of this
-patch set provide a way to query the pending list ? If not, should
-such a facility be provided ?
+> 1) Striding, in one form or other, is supported by other DMACs as well.
+>   The number will only increase in future.
+>   Are we to add  <VENDOR>_DMA_STRIDE_CONFIG for each case ?
 
-Bart.
+If we are sure about this and striding will work in a similar way on all
+then let's have the enum named DMA_STRIDE_CONFIG and move the
+passed-in struct to <linux/dmaengine.h) then?
+
+Would that be:
+
+struct dma_stride_config {
+    u32 read_bytes;
+    u32 skip_bytes;
+};
+
+Or something more complex?
+
+> 2) As Dan noted, client drivers are going to have ifdef hackery in
+> order to be common
+>  to other SoCs.
+
+Don't think so, why? This is a runtime config entirely, and I just illustrated
+in mail to Dan how that can be handled by falling back to a sglist I believe?
+
+We can *maybe* even put the fallback code into dmaengine, so that an
+emulated sglist in place for the DMAengine is done automatically of the
+DMA controller does not support striding.
+
+> 3) TI may not have just one DMAC IP used in all the SoCs. So if you want
+>  vendor specific defines anyway, please atleast also add DMAC version to it.
+>  Something like
+>>        DMA_SLAVE_CONFIG,
+>>        FSLDMA_EXTERNAL_START,
+>> +       TI_DMA_v1_STRIDE_CONFIG,
+
+Yep unless we make it generic DMA_STRIDE_CONFIG simply, this makes
+a lot of sense.
+
+Linus Walleij
