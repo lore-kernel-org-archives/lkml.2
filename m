@@ -1,113 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753289Ab1GLNZG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 09:25:06 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:35844 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753096Ab1GLNZE (ORCPT
+	id S1753418Ab1GLN1b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 09:27:31 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59400 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753096Ab1GLN13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 09:25:04 -0400
-Date: Tue, 12 Jul 2011 15:24:49 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Borislav Petkov <bp@alien8.de>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, John Stultz <johnstul@us.ibm.com>,
-        Borislav Petkov <bp@amd64.org>
-Subject: Re: [PATCH v2 1/8] x86-64: Improve vsyscall emulation CS and RIP
- handling
-Message-ID: <20110712132449.GB11336@aftab>
-References: <cover.1310267866.git.luto@mit.edu>
- <2215c119e580b40f243c37d284e7bced309d975f.1310267866.git.luto@mit.edu>
- <20110711221432.GA10164@liondog.tnic>
- <CAObL_7ERJ4D_R5k1C7OHLz1etZzxcaTA7rzFmtRu0-gpq_YpMQ@mail.gmail.com>
- <20110712071832.GA17616@liondog.tnic>
- <CAObL_7F5KQA+GaSsU5nD+7gAY2JFv+XE0BRu+sRg0Mv24dBzaA@mail.gmail.com>
+	Tue, 12 Jul 2011 09:27:29 -0400
+Date: Tue, 12 Jul 2011 17:27:23 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        kernel-hardening@lists.openwall.com, Jiri Slaby <jslaby@suse.cz>,
+        James Morris <jmorris@namei.org>, Neil Brown <neilb@suse.de>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH] move RLIMIT_NPROC check from set_user() to
+ do_execve_common()
+Message-ID: <20110712132723.GA3193@albatros>
+References: <20110612130953.GA3709@albatros>
+ <20110706173631.GA5431@albatros>
+ <CA+55aFyfjG1h2zkkGai_VPM8p5bhWhvNXs1HvuWMgxv4RSywYw@mail.gmail.com>
+ <20110706185932.GB3299@albatros>
+ <20110707075610.GA3411@albatros>
+ <20110707081930.GA4393@albatros>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAObL_7F5KQA+GaSsU5nD+7gAY2JFv+XE0BRu+sRg0Mv24dBzaA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110707081930.GA4393@albatros>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 12, 2011 at 08:58:58AM -0400, Andrew Lutomirski wrote:
-> On Tue, Jul 12, 2011 at 3:18 AM, Borislav Petkov <bp@alien8.de> wrote:
-> > On Mon, Jul 11, 2011 at 06:20:50PM -0400, Andrew Lutomirski wrote:
-> >> > I'm wondering: why don't you make this function return negative value on
-> >> > error, i.e. -EINVAL and the vsyscall number on success so that you can
-> >> > get rid of returning it through the arg pointer?
-> >> >
-> >> > Then at the callsite you can do:
-> >> >
-> >> >        vsyscall_nr = addr_to_vsyscall_nr(addr);
-> >> >        if (vsyscall_nr < 0)
-> >> >                warn_bad_vsyscall(...)
-> >>
-> >> Because I don't want a warning about ret being used without being initialized.
-> >
-> > not if you preinit it...
-> 
-> I kind of like that warning as a sanity check, and preiniting it
-> grates against my irrational desire to over-optimize :)
+The patch http://lkml.org/lkml/2003/7/13/226 introduced a RLIMIT_NPROC
+check in set_user() to check for NPROC exceeding via setuid() and
+similar functions.  Before the check there was a possibility to greatly
+exceed the allowed number of processes by an unprivileged user if the
+program relied on rlimit only.  But the check created new security
+threat: many poorly written programs simply don't check setuid() return
+code and believe it cannot fail if executed with root privileges.  So,
+the check is removed in this patch because of too often privilege
+escalations related to buggy programs.
 
-:-)
+The NPROC can still be enforced in the common code flow of daemons
+spawning user processes.  Most of daemons do fork()+setuid()+execve().
+The check introduced in execve() enforces the same limit as in setuid()
+and doesn't create similar security issues.
 
-> >
-> >> With the code in this patch, the compiler is smart enough to figure
-> >> out that either vsyscall_nr is 0, 1, or 2 or that the EINVAL branch is
-> >> taken.  I'll see if it works the other way.
-> >
-> > here's what i mean, I changed your patch a bit:
-> 
-> How about this:
-> 
-> static int addr_to_vsyscall_nr(unsigned long addr)
-> {
-> 	int nr;
-> 
-> 	if ((addr & ~0xC00UL) != VSYSCALL_START)
-> 		return -EINVAL;
-> 
-> 	nr = (addr & 0xC00UL) >> 10;
-> 	if (nr >= 3)
-> 		return -EINVAL;
-> 
-> 	return nr;
-> }
-> 
-> ...
-> 
-> 	int vsyscall_nr;
-> 
-> ...
-> 
-> 	vsyscall_nr = addr_to_vsyscall_nr(regs->ip - 2);
-> 	if (vsyscall_nr < 0) {
-> 		warn_bad_vsyscall(KERN_WARNING, regs,
-> 				  "illegal int 0xcc (exploit attempt?)");
-> 		goto sigsegv;
-> 	}
-> 
-> gcc 4.6 at least does not warn.
+Similar check was introduced in -ow patches.
 
-Yep, looks good.
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+---
+ fs/exec.c    |   13 +++++++++++++
+ kernel/sys.c |    6 ------
+ 2 files changed, 13 insertions(+), 6 deletions(-)
 
-> Also, IRQ disabling was still mismatched in the sigsegv path.  I'll
-> fix that as well.
-
-oh yeah.
-
-Thanks.
-
+diff --git a/fs/exec.c b/fs/exec.c
+index ea5f748..0baf5c9 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1436,6 +1436,19 @@ static int do_execve_common(const char *filename,
+ 	struct files_struct *displaced;
+ 	bool clear_in_exec;
+ 	int retval;
++	const struct cred *cred = current_cred();
++
++	/*
++	 * We check for RLIMIT_NPROC in execve() instead of set_user() because
++	 * too many poorly written programs don't check setuid() return code.
++	 * The check in execve() does the same thing for programs doing
++	 * setuid()+execve(), but without similar security issues.
++	 */
++	if (atomic_read(&cred->user->processes) > rlimit(RLIMIT_NPROC) &&
++	    cred->user != INIT_USER) {
++		retval = -EAGAIN;
++		goto out_ret;
++	}
+ 
+ 	retval = unshare_files(&displaced);
+ 	if (retval)
+diff --git a/kernel/sys.c b/kernel/sys.c
+index e4128b2..0e7509a 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -591,12 +591,6 @@ static int set_user(struct cred *new)
+ 	if (!new_user)
+ 		return -EAGAIN;
+ 
+-	if (atomic_read(&new_user->processes) >= rlimit(RLIMIT_NPROC) &&
+-			new_user != INIT_USER) {
+-		free_uid(new_user);
+-		return -EAGAIN;
+-	}
+-
+ 	free_uid(new->user);
+ 	new->user = new_user;
+ 	return 0;
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
