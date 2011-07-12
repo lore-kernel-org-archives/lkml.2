@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751688Ab1GLH6d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 03:58:33 -0400
+	id S1751621Ab1GLH63 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 03:58:29 -0400
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:53085 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751564Ab1GLH63 (ORCPT
+	with ESMTP id S1751388Ab1GLH60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 03:58:29 -0400
+	Tue, 12 Jul 2011 03:58:26 -0400
 From: Tejun Heo <tj@kernel.org>
 To: mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de,
         benh@kernel.crashing.org, yinghai@kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, x86@kernel.org,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 6/6] memblock: Replace memblock_find_base() with memblock_find_in_range()
-Date: Tue, 12 Jul 2011 09:58:10 +0200
-Message-Id: <1310457490-3356-7-git-send-email-tj@kernel.org>
+Subject: [PATCH 4/6] memblock: Use round_up/down() instead of memblock_align_up/down()
+Date: Tue, 12 Jul 2011 09:58:08 +0200
+Message-Id: <1310457490-3356-5-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1310457490-3356-1-git-send-email-tj@kernel.org>
 References: <1310457490-3356-1-git-send-email-tj@kernel.org>
@@ -22,86 +22,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-memblock_find_base() is a static function with two callers in
-memblock.c and memblock_find_in_range() is a wrapper around it which
-just changes the types and order of parameters.
-
-Make memblock_find_in_range() take phys_addr_t instead of u64 for
-consistency and replace memblock_find_base() with it.
-
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- include/linux/memblock.h |    3 ++-
- mm/memblock.c            |   19 +++++++------------
- 2 files changed, 9 insertions(+), 13 deletions(-)
+ mm/memblock.c |   21 +++++----------------
+ 1 files changed, 5 insertions(+), 16 deletions(-)
 
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index d235ec5..3496888 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -46,7 +46,8 @@ extern int memblock_can_resize;
- #define memblock_dbg(fmt, ...) \
- 	if (memblock_debug) printk(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
- 
--u64 memblock_find_in_range(u64 start, u64 end, u64 size, u64 align);
-+phys_addr_t memblock_find_in_range(phys_addr_t start, phys_addr_t end,
-+				   phys_addr_t size, phys_addr_t align);
- int memblock_free_reserved_regions(void);
- int memblock_reserve_reserved_regions(void);
- 
 diff --git a/mm/memblock.c b/mm/memblock.c
-index 1969936..0f9626f 100644
+index 87e512d..9882a88 100644
 --- a/mm/memblock.c
 +++ b/mm/memblock.c
-@@ -97,8 +97,11 @@ static phys_addr_t __init_memblock memblock_find_region(phys_addr_t start, phys_
- 	return 0;
- }
- 
--static phys_addr_t __init_memblock memblock_find_base(phys_addr_t size,
--			phys_addr_t align, phys_addr_t start, phys_addr_t end)
-+/*
-+ * Find a free area with specified alignment in a specific range.
-+ */
-+phys_addr_t __init_memblock memblock_find_in_range(phys_addr_t start, phys_addr_t end,
-+					phys_addr_t size, phys_addr_t align)
- {
- 	long i;
- 
-@@ -133,14 +136,6 @@ static phys_addr_t __init_memblock memblock_find_base(phys_addr_t size,
- }
- 
+@@ -41,17 +41,6 @@ static inline const char *memblock_type_name(struct memblock_type *type)
  /*
-- * Find a free area with specified alignment in a specific range.
-- */
--u64 __init_memblock memblock_find_in_range(u64 start, u64 end, u64 size, u64 align)
+  * Address comparison utilities
+  */
+-
+-static phys_addr_t __init_memblock memblock_align_down(phys_addr_t addr, phys_addr_t size)
 -{
--	return memblock_find_base(size, align, start, end);
+-	return addr & ~(size - 1);
 -}
 -
--/*
-  * Free memblock.reserved.regions
-  */
- int __init_memblock memblock_free_reserved_regions(void)
-@@ -216,7 +211,7 @@ static int __init_memblock memblock_double_array(struct memblock_type *type)
- 		new_array = kmalloc(new_size, GFP_KERNEL);
- 		addr = new_array ? __pa(new_array) : 0;
- 	} else
--		addr = memblock_find_base(new_size, sizeof(phys_addr_t), 0, MEMBLOCK_ALLOC_ACCESSIBLE);
-+		addr = memblock_find_in_range(0, MEMBLOCK_ALLOC_ACCESSIBLE, new_size, sizeof(phys_addr_t));
- 	if (!addr) {
- 		pr_err("memblock: Failed to double %s array from %ld to %ld entries !\n",
- 		       memblock_type_name(type), type->max, type->max * 2);
-@@ -477,7 +472,7 @@ phys_addr_t __init __memblock_alloc_base(phys_addr_t size, phys_addr_t align, ph
+-static phys_addr_t __init_memblock memblock_align_up(phys_addr_t addr, phys_addr_t size)
+-{
+-	return (addr + (size - 1)) & ~(size - 1);
+-}
+-
+ static unsigned long __init_memblock memblock_addrs_overlap(phys_addr_t base1, phys_addr_t size1,
+ 				       phys_addr_t base2, phys_addr_t size2)
+ {
+@@ -87,7 +76,7 @@ static phys_addr_t __init_memblock memblock_find_region(phys_addr_t start, phys_
+ 	if (end < size)
+ 		return MEMBLOCK_ERROR;
+ 
+-	base = memblock_align_down((end - size), align);
++	base = round_down(end - size, align);
+ 
+ 	/* Prevent allocations returning 0 as it's also used to
+ 	 * indicate an allocation failure
+@@ -102,7 +91,7 @@ static phys_addr_t __init_memblock memblock_find_region(phys_addr_t start, phys_
+ 		res_base = memblock.reserved.regions[j].base;
+ 		if (res_base < size)
+ 			break;
+-		base = memblock_align_down(res_base - size, align);
++		base = round_down(res_base - size, align);
+ 	}
+ 
+ 	return MEMBLOCK_ERROR;
+@@ -486,7 +475,7 @@ phys_addr_t __init __memblock_alloc_base(phys_addr_t size, phys_addr_t align, ph
+ 	/* We align the size to limit fragmentation. Without this, a lot of
+ 	 * small allocs quickly eat up the whole reserve array on sparc
  	 */
- 	size = round_up(size, align);
+-	size = memblock_align_up(size, align);
++	size = round_up(size, align);
  
--	found = memblock_find_base(size, align, 0, max_addr);
-+	found = memblock_find_in_range(0, max_addr, size, align);
- 	if (found && !memblock_add_region(&memblock.reserved, found, size))
- 		return found;
+ 	found = memblock_find_base(size, align, 0, max_addr);
+ 	if (found != MEMBLOCK_ERROR &&
+@@ -562,7 +551,7 @@ static phys_addr_t __init memblock_alloc_nid_region(struct memblock_region *mp,
+ 	start = mp->base;
+ 	end = start + mp->size;
  
+-	start = memblock_align_up(start, align);
++	start = round_up(start, align);
+ 	while (start < end) {
+ 		phys_addr_t this_end;
+ 		int this_nid;
+@@ -590,7 +579,7 @@ phys_addr_t __init memblock_alloc_nid(phys_addr_t size, phys_addr_t align, int n
+ 	/* We align the size to limit fragmentation. Without this, a lot of
+ 	 * small allocs quickly eat up the whole reserve array on sparc
+ 	 */
+-	size = memblock_align_up(size, align);
++	size = round_up(size, align);
+ 
+ 	/* We do a bottom-up search for a region with the right
+ 	 * nid since that's easier considering how memblock_nid_range()
 -- 
 1.7.6
 
