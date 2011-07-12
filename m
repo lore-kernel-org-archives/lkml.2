@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754315Ab1GLBSd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 21:18:33 -0400
-Received: from mail.valinux.co.jp ([210.128.90.3]:38083 "EHLO
-	mail.valinux.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753171Ab1GLBSc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 21:18:32 -0400
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: john stultz <johnstul@us.ibm.com>, Faidon Liambotis <paravoid@debian.org>,
-        linux-kernel@vger.kernel.org, stable@kernel.org,
-        Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
-        seto.hidetoshi@jp.fujitsu.com,
-        =?iso-8859-1?Q?Herv=E9?= Commowick <hcommowick@exosec.fr>,
-        Willy Tarreau <w@1wt.eu>, Rand@jasper.es
-Subject: Re: 2.6.32.21 - uptime related crashes?
-References: <20110428082625.GA23293@pcnci.linuxbox.cz>
-	<20110428183434.GG30645@1wt.eu>
-	<20110429100200.GB23293@pcnci.linuxbox.cz>
-	<20110430093605.GA10529@1wt.eu> <20110430173905.GA25641@tty.gr>
-	<BANLkTi=22QFrJ4vO7-3VuHU=9Cg39bxJ4Q@mail.gmail.com>
-	<20110705231515.95bc758f.akpm@linux-foundation.org>
-From: =?iso-2022-jp?B?TUlOT1VSQSBNYWtvdG8gLyAbJEJMJzE6GyhCIBskQj8/GyhC?= 
-	<minoura@valinux.co.jp>
-Date: Tue, 12 Jul 2011 10:18:30 +0900
-In-Reply-To: <20110705231515.95bc758f.akpm@linux-foundation.org> (Andrew Morton's message of "Tue\, 5 Jul 2011 23\:15\:15 -0700")
-Message-ID: <kk5d3hgi9eh.fsf@brer.local.valinux.co.jp>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	id S1755054Ab1GLBXJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 21:23:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25010 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751363Ab1GLBXH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 21:23:07 -0400
+Date: Mon, 11 Jul 2011 21:22:06 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Roland Dreier <roland@kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-scsi@vger.kernel.org,
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        "Manvanthara B. Puttashankar" <manvanth@linux.vnet.ibm.com>,
+        Tarak Reddy <tarak.reddy@in.ibm.com>,
+        "Seshagiri N. Ippili" <sesh17@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org,
+        device-mapper development <dm-devel@redhat.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Tejun Heo <tj@kernel.org>,
+        jaxboe@fusionio.com
+Subject: Re: block: Check that queue is alive in blk_insert_cloned_request()
+Message-ID: <20110712012206.GA30690@redhat.com>
+References: <CAMM=eLfzKuw-2vbERV6D7dAHb1BWopOKZ=dB7vWxcxSCoj6Tkw@mail.gmail.com>
+ <Pine.LNX.4.44L0.1107112050480.17690-100000@netrider.rowland.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1107112050480.17690-100000@netrider.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jul 11 2011 at  8:52pm -0400,
+Alan Stern <stern@rowland.harvard.edu> wrote:
 
-We're experiencing similar but slightly different
-problems.  Some KVM hosts crash after 210-220 uptime.
-Some of them hits divide-by-zero, but one of them shows:
+> On Mon, 11 Jul 2011, Mike Snitzer wrote:
+> 
+> > [cc'ing dm-devel, vivek and tejun]
+> > 
+> > On Fri, Jul 8, 2011 at 7:04 PM, Roland Dreier <roland@kernel.org> wrote:
+> > > From: Roland Dreier <roland@purestorage.com>
+> > >
+> > > This fixes crashes such as the below that I see when the storage
+> > > underlying a dm-multipath device is hot-removed. ?The problem is that
+> > > dm requeues a request to a device whose block queue has already been
+> > > cleaned up, and blk_insert_cloned_request() doesn't check if the queue
+> > > is alive, but rather goes ahead and tries to queue the request. ?This
+> > > ends up dereferencing the elevator that was already freed in
+> > > blk_cleanup_queue().
+> > 
+> > Your patch looks fine to me:
+> > Acked-by: Mike Snitzer <snitzer@redhat.com>
+> 
+> There's still the issue that Stefan Richter pointed out: The test for a 
+> dead queue must be made _after_ acquiring the queue lock, not _before_.
 
-[671528.8780080] BUG: soft lockup - CPU#4 stuck for 61s! [kvm:11131]
+Yes, quite important.
 
-(sorry we have no full crash message including the backtrace)
-
-The host kernel is 2.6.32.11-based (ubuntu 2.6.32-22-server,
-2.6.32-22.36).
-
-I'm not sure but probably the task scheduler is confusing by
-the sched_clock overflow?
-
-Thanks,
-
--- 
-Minoura Makoto <minoura@valinux.co.jp>
+Jens, can you tweak the patch or should Roland send a v2?
