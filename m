@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758493Ab1GLBiE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jul 2011 21:38:04 -0400
-Received: from mga09.intel.com ([134.134.136.24]:53654 "EHLO mga09.intel.com"
+	id S1758621Ab1GLBiH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jul 2011 21:38:07 -0400
+Received: from mga03.intel.com ([143.182.124.21]:42021 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753436Ab1GLBiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jul 2011 21:38:00 -0400
+	id S1758541Ab1GLBiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jul 2011 21:38:04 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,517,1304319600"; 
-   d="scan'208";a="26532994"
-Subject: [PATCH 1/3]CFQ: move think time check variables to a separate
- struct
+   d="scan'208";a="25979616"
+Subject: [PATCH 3/3]CFQ: add think time check for group
 From: Shaohua Li <shaohua.li@intel.com>
 To: lkml <linux-kernel@vger.kernel.org>
 Cc: Jens Axboe <jaxboe@fusionio.com>, Vivek Goyal <vgoyal@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 12 Jul 2011 09:37:56 +0800
-Message-ID: <1310434676.15392.284.camel@sli10-conroe>
+Date: Tue, 12 Jul 2011 09:38:01 +0800
+Message-ID: <1310434681.15392.286.camel@sli10-conroe>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -24,144 +23,118 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: CFQ: move think time check variables to a separate struct
+Subject: CFQ: add think time check for group
 
-Move the variables to do think time check to a sepatate struct. This is to prepare
-adding think time check for service tree and group. No functional change.
+Currently when the last queue of a group has no request, we don't expire
+the queue to hope request from the group comes soon, so the group doesn't
+miss its share. But if the think time is big, the assumption isn't correct
+and we just waste bandwidth. In such case, we don't do idle.
+
+[global]
+runtime=30
+direct=1
+
+[test1]
+cgroup=test1
+cgroup_weight=1000
+rw=randread
+ioengine=libaio
+size=500m
+runtime=30
+directory=/mnt
+filename=file1
+thinktime=9000
+
+[test2]
+cgroup=test2
+cgroup_weight=1000
+rw=randread
+ioengine=libaio
+size=500m
+runtime=30
+directory=/mnt
+filename=file2
+
+	patched		base
+test1	64k		39k
+test2	548k		540k
+total	604k		578k
+
+group1 gets much better throughput because it waits less time.
+
+To check if the patch changes behavior of queue without think time. I also
+tried to give test1 2ms think time or no think time. The test result is stable.
+The thoughput doesn't change with/without the patch.
 
 Signed-off-by: Shaohua Li <shaohua.li@intel.com>
 ---
- block/cfq-iosched.c       |   40 ++++++++++++++++++++++++----------------
- include/linux/iocontext.h |   14 +++++++++-----
- 2 files changed, 33 insertions(+), 21 deletions(-)
+ block/cfq-iosched.c |   19 +++++++++++++++++--
+ 1 file changed, 17 insertions(+), 2 deletions(-)
 
 Index: linux/block/cfq-iosched.c
 ===================================================================
---- linux.orig/block/cfq-iosched.c	2011-07-12 09:18:55.000000000 +0800
-+++ linux/block/cfq-iosched.c	2011-07-12 09:19:06.000000000 +0800
-@@ -2022,10 +2022,10 @@ static void cfq_arm_slice_timer(struct c
- 	 * slice, then don't idle. This avoids overrunning the allotted
- 	 * time slice.
- 	 */
--	if (sample_valid(cic->ttime_samples) &&
--	    (cfqq->slice_end - jiffies < cic->ttime_mean)) {
-+	if (sample_valid(cic->ttime.ttime_samples) &&
-+	    (cfqq->slice_end - jiffies < cic->ttime.ttime_mean)) {
- 		cfq_log_cfqq(cfqd, cfqq, "Not idling. think_time:%lu",
--			     cic->ttime_mean);
-+			     cic->ttime.ttime_mean);
- 		return;
- 	}
+--- linux.orig/block/cfq-iosched.c	2011-07-12 09:19:13.000000000 +0800
++++ linux/block/cfq-iosched.c	2011-07-12 09:26:32.000000000 +0800
+@@ -213,6 +213,7 @@ struct cfq_group {
+ #endif
+ 	/* number of requests that are on the dispatch list or inside driver */
+ 	int dispatched;
++	struct cfq_ttime ttime;
+ };
  
-@@ -2833,7 +2833,7 @@ cfq_alloc_io_context(struct cfq_data *cf
- 	cic = kmem_cache_alloc_node(cfq_ioc_pool, gfp_mask | __GFP_ZERO,
- 							cfqd->queue->node);
- 	if (cic) {
--		cic->last_end_request = jiffies;
-+		cic->ttime.last_end_request = jiffies;
- 		INIT_LIST_HEAD(&cic->queue_list);
- 		INIT_HLIST_NODE(&cic->cic_list);
- 		cic->dtor = cfq_free_io_context;
-@@ -3221,14 +3221,22 @@ err:
- }
+ /*
+@@ -1072,6 +1073,8 @@ static struct cfq_group * cfq_alloc_cfqg
+ 		*st = CFQ_RB_ROOT;
+ 	RB_CLEAR_NODE(&cfqg->rb_node);
  
- static void
--cfq_update_io_thinktime(struct cfq_data *cfqd, struct cfq_io_context *cic)
-+__cfq_update_io_thinktime(struct cfq_ttime *ttime, unsigned long slice_idle)
- {
--	unsigned long elapsed = jiffies - cic->last_end_request;
--	unsigned long ttime = min(elapsed, 2UL * cfqd->cfq_slice_idle);
-+	unsigned long elapsed = jiffies - ttime->last_end_request;
-+	elapsed = min(elapsed, 2UL * slice_idle);
- 
--	cic->ttime_samples = (7*cic->ttime_samples + 256) / 8;
--	cic->ttime_total = (7*cic->ttime_total + 256*ttime) / 8;
--	cic->ttime_mean = (cic->ttime_total + 128) / cic->ttime_samples;
-+	ttime->ttime_samples = (7*ttime->ttime_samples + 256) / 8;
-+	ttime->ttime_total = (7*ttime->ttime_total + 256*elapsed) / 8;
-+	ttime->ttime_mean = (ttime->ttime_total + 128) / ttime->ttime_samples;
-+}
++	cfqg->ttime.last_end_request = jiffies;
 +
-+static void
-+cfq_update_io_thinktime(struct cfq_data *cfqd, struct cfq_queue *cfqq,
-+	struct cfq_io_context *cic)
-+{
-+	if (cfq_cfqq_sync(cfqq))
-+		__cfq_update_io_thinktime(&cic->ttime, cfqd->cfq_slice_idle);
+ 	/*
+ 	 * Take the initial reference that will be released on destroy
+ 	 * This can be thought of a joint reference by cgroup and
+@@ -2395,8 +2398,9 @@ static struct cfq_queue *cfq_select_queu
+ 	 * this group, wait for requests to complete.
+ 	 */
+ check_group_idle:
+-	if (cfqd->cfq_group_idle && cfqq->cfqg->nr_cfqq == 1
+-	    && cfqq->cfqg->dispatched) {
++	if (cfqd->cfq_group_idle && cfqq->cfqg->nr_cfqq == 1 &&
++	    cfqq->cfqg->dispatched &&
++	    !cfq_io_thinktime_big(cfqd, &cfqq->cfqg->ttime, true)) {
+ 		cfqq = NULL;
+ 		goto keep_queue;
+ 	}
+@@ -3254,6 +3258,9 @@ cfq_update_io_thinktime(struct cfq_data
+ 		__cfq_update_io_thinktime(&cfqq->service_tree->ttime,
+ 			cfqd->cfq_slice_idle);
+ 	}
++#ifdef CONFIG_CFQ_GROUP_IOSCHED
++	__cfq_update_io_thinktime(&cfqq->cfqg->ttime, cfqd->cfq_group_idle);
++#endif
  }
  
  static void
-@@ -3277,8 +3285,8 @@ cfq_update_idle_window(struct cfq_data *
- 	else if (!atomic_read(&cic->ioc->nr_tasks) || !cfqd->cfq_slice_idle ||
- 	    (!cfq_cfqq_deep(cfqq) && CFQQ_SEEKY(cfqq)))
- 		enable_idle = 0;
--	else if (sample_valid(cic->ttime_samples)) {
--		if (cic->ttime_mean > cfqd->cfq_slice_idle)
-+	else if (sample_valid(cic->ttime.ttime_samples)) {
-+		if (cic->ttime.ttime_mean > cfqd->cfq_slice_idle)
- 			enable_idle = 0;
- 		else
- 			enable_idle = 1;
-@@ -3413,7 +3421,7 @@ cfq_rq_enqueued(struct cfq_data *cfqd, s
- 	if (rq->cmd_flags & REQ_META)
- 		cfqq->meta_pending++;
+@@ -3545,6 +3552,10 @@ static bool cfq_should_wait_busy(struct
+ 	if (cfqq->cfqg->nr_cfqq > 1)
+ 		return false;
  
--	cfq_update_io_thinktime(cfqd, cic);
-+	cfq_update_io_thinktime(cfqd, cfqq, cic);
- 	cfq_update_io_seektime(cfqd, cfqq, rq);
- 	cfq_update_idle_window(cfqd, cfqq, cic);
- 
-@@ -3524,8 +3532,8 @@ static bool cfq_should_wait_busy(struct
++	/* the only queue in the group, but think time is big */
++	if (cfq_io_thinktime_big(cfqd, &cfqq->cfqg->ttime, true))
++		return false;
++
+ 	if (cfq_slice_used(cfqq))
  		return true;
  
- 	/* if slice left is less than think time, wait busy */
--	if (cic && sample_valid(cic->ttime_samples)
--	    && (cfqq->slice_end - jiffies < cic->ttime_mean))
-+	if (cic && sample_valid(cic->ttime.ttime_samples)
-+	    && (cfqq->slice_end - jiffies < cic->ttime.ttime_mean))
- 		return true;
- 
- 	/*
-@@ -3566,7 +3574,7 @@ static void cfq_completed_request(struct
- 	cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]--;
- 
- 	if (sync) {
--		RQ_CIC(rq)->last_end_request = now;
-+		RQ_CIC(rq)->ttime.last_end_request = now;
- 		if (!time_after(rq->start_time + cfqd->cfq_fifo_expire[1], now))
+@@ -3605,6 +3616,10 @@ static void cfq_completed_request(struct
  			cfqd->last_delayed_sync = now;
  	}
-Index: linux/include/linux/iocontext.h
-===================================================================
---- linux.orig/include/linux/iocontext.h	2011-07-12 09:18:55.000000000 +0800
-+++ linux/include/linux/iocontext.h	2011-07-12 09:19:06.000000000 +0800
-@@ -5,6 +5,14 @@
- #include <linux/rcupdate.h>
  
- struct cfq_queue;
-+struct cfq_ttime {
-+	unsigned long last_end_request;
++#ifdef CONFIG_CFQ_GROUP_IOSCHED
++	cfqq->cfqg->ttime.last_end_request = now;
++#endif
 +
-+	unsigned long ttime_total;
-+	unsigned long ttime_samples;
-+	unsigned long ttime_mean;
-+};
-+
- struct cfq_io_context {
- 	void *key;
- 
-@@ -12,11 +20,7 @@ struct cfq_io_context {
- 
- 	struct io_context *ioc;
- 
--	unsigned long last_end_request;
--
--	unsigned long ttime_total;
--	unsigned long ttime_samples;
--	unsigned long ttime_mean;
-+	struct cfq_ttime ttime;
- 
- 	struct list_head queue_list;
- 	struct hlist_node cic_list;
+ 	/*
+ 	 * If this is the active queue, check if it needs to be expired,
+ 	 * or if we want to idle in case it has no pending requests.
 
 
