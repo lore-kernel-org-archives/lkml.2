@@ -1,73 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751404Ab1GLIgd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 04:36:33 -0400
-Received: from alice.et.bocholt.fh-gelsenkirchen.de ([193.175.197.63]:45772
-	"EHLO alice.et.bocholt.fh-gelsenkirchen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750808Ab1GLIgb (ORCPT
+	id S1751578Ab1GLIiq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 04:38:46 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45332 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750813Ab1GLIip convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 04:36:31 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 alice.et.bocholt.fh-gelsenkirchen.de p6C8ZEXt021989
-From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-To: Keith Packard <keithp@keithp.com>
-Cc: Pekka Enberg <penberg@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>, Robse <rob-se@live.de>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [Bug #37472] Lenovo U160 (i915 black screen)
-In-Reply-To: <gisjqb6h0q.fsf@karga.hank.lab> (Dirk Gouders's message of "Tue,
-	12 Jul 2011 10:27:01 +0200")
-References: <AtAvQwe5sAK.A.loH.OlYGOB@chimera>
-	<gK_efVqs2fP.A.NJ.7lYGOB@chimera>
-	<CAOJsxLGkWX61TLqwgL19tN5ZQuB2cUibPsNSvCB+Ydihtus__w@mail.gmail.com>
-	<yun7h7pg8y7.fsf@aiko.keithp.com> <gisjqb6h0q.fsf@karga.hank.lab>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-Date: Tue, 12 Jul 2011 10:35:13 +0200
-Message-ID: <gioc0z6gn2.fsf@karga.hank.lab>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.3 (alice.et.bocholt.fh-gelsenkirchen.de [192.168.0.63]); Tue, 12 Jul 2011 10:35:14 +0200 (CEST)
+	Tue, 12 Jul 2011 04:38:45 -0400
+Subject: Re: [PATCH 1/3] perf: add context field to perf_event
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Avi Kivity <avi@redhat.com>
+Cc: Will Deacon <will.deacon@arm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "acme@ghostprotocols.net" <acme@ghostprotocols.net>,
+        Jason Wessel <jason.wessel@windriver.com>
+In-Reply-To: <4E1BF5A1.5070301@redhat.com>
+References: <1309362157-6596-1-git-send-email-avi@redhat.com>
+	 <1309362157-6596-2-git-send-email-avi@redhat.com>
+	 <20110629160841.GA2032@somewhere>
+	 <20110629162725.GH15521@e102144-lin.cambridge.arm.com>
+	 <20110704135820.GD5551@somewhere> <4E11C9CC.2070909@redhat.com>
+	 <20110704143655.GE5551@somewhere>
+	 <20110711210753.GA3582@e102144-lin.cambridge.arm.com>
+	 <4E1BF5A1.5070301@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 12 Jul 2011 10:38:18 +0200
+Message-ID: <1310459898.18678.108.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de> writes:
+On Tue, 2011-07-12 at 10:20 +0300, Avi Kivity wrote:
 
-> Keith Packard <keithp@keithp.com> writes:
->
->> On Sun, 10 Jul 2011 14:56:19 +0300, Pekka Enberg <penberg@kernel.org> wrote:
->>
->>> There's no mention that the i915 developers know about this problem so
->>> I'm CC'ing Keith and Chris.
->>
->> Thanks. I've added a comment to the bug:
->>
->> First off, of course you are encouraged to re-test with 3.0-rc6 just to
->> make sure it hasn't changed in some way. I don't think anything has
->> changed enough to affect this, but it's always good to be sure.
->>
->> I note a long sequence of patches that are supposed to help with the
->> U160:
->>
->> 448f53a1ede54eb854d036abf54573281412d650 drm/i915/bios: Reverse order of 100/120 Mhz SSC clocks
->> bcfbbce822d219eb587acaba8a6e062bbeae4761 Revert "drm/i915/bios: Reverse order of 100/120 Mhz SSC clocks"
->> a76150302d6e7ebc43e1a1ddaee7fd51db8da3b3 drm/i915: Add a module option to override the use of SSC
->>
->> I'm not sure why a quirk wasn't added for this hardware; it's clearly
->> 'non-standard' in some mystic way.
->
-> On June 27th, I proposed that Robse perhaps could try the workaround
-> that was introduced with the latter commit: i915.lvds_use_ssc=0.
->
-> It works well on my hardware and probably solves his problem as well,
-> but he did not respond...
+> Maybe we need a generic "run this function in this task's context" 
+> mechanism instead.  Like an IPI, but targeting tasks instead of cpus.
+> 
 
-I'm sorry for the noise, I did not check new comments in the bug report
-where Robse noted that the workaround works for him.  I'm not sure if
-that means the bug can be closed.
-
-Sorry again,
-
-Dirk
+kernel/event/core.c:task_function_call() like?
