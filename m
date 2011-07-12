@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753180Ab1GLLFh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 07:05:37 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:33787 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752958Ab1GLLFg (ORCPT
+	id S1753193Ab1GLLJe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 07:09:34 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:53885 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752274Ab1GLLJd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 07:05:36 -0400
-Subject: [PATCH] USB: s3c2410_udc: fix unterminated platform_device_id table
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Herbert =?ISO-8859-1?Q?P=F6tzl?= <herbert@13thfloor.at>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 12 Jul 2011 19:05:29 +0800
-Message-ID: <1310468729.6590.3.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 12 Jul 2011 07:09:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <E0D41E29EB0DAC4E9F3FF173962E9E94030259DB5B@dbde02.ent.ti.com>
+References: <1310310203-12288-1-git-send-email-sundaram@ti.com>
+	<CABb+yY1HJOR+QzmM4-ju4cs+8keoyUbMv+SpVoM6BW=DCMzmQQ@mail.gmail.com>
+	<CACRpkdbLg0+_2kpi4NizFj0fDWb6QPtkcKirKgoH+83vGD0O0A@mail.gmail.com>
+	<E0D41E29EB0DAC4E9F3FF173962E9E94030259DB5B@dbde02.ent.ti.com>
+Date: Tue, 12 Jul 2011 13:09:31 +0200
+Message-ID: <CACRpkdYk65dmgvy325EA0rFEL3sZXMzNBvPBLGxctjQsfZhCBg@mail.gmail.com>
+Subject: Re: [PATCH] dmaengine: add dma_ctrl_cmd to pass buffer stride configuration
+From: Linus Walleij <linus.walleij@linaro.org>
+To: "Raju, Sundaram" <sundaram@ti.com>
+Cc: Jassi Brar <jassisinghbrar@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/usb/gadget/s3c2410_udc.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+On Tue, Jul 12, 2011 at 12:56 PM, Raju, Sundaram <sundaram@ti.com> wrote:
+> [Me]
+>> [Jassi]
+>> > 3) TI may not have just one DMAC IP used in all the SoCs. So if you want
+>> >  vendor specific defines anyway, please atleast also add DMAC version to it.
+>> >  Something like
+>> >>        DMA_SLAVE_CONFIG,
+>> >>        FSLDMA_EXTERNAL_START,
+>> >> +       TI_DMA_v1_STRIDE_CONFIG,
+>>
+>> Yep unless we make it generic DMA_STRIDE_CONFIG simply, this makes
+>> a lot of sense.
+>
+> Okay, I can add one cmd for the EDMAC in DaVinci series of SoCs and
+> one for SDMAC in OMAP series of SoCs.
 
-diff --git a/drivers/usb/gadget/s3c2410_udc.c b/drivers/usb/gadget/s3c2410_udc.c
-index 85c1b0d..8d31848 100644
---- a/drivers/usb/gadget/s3c2410_udc.c
-+++ b/drivers/usb/gadget/s3c2410_udc.c
-@@ -2060,6 +2060,7 @@ static int s3c2410_udc_resume(struct platform_device *pdev)
- static const struct platform_device_id s3c_udc_ids[] = {
- 	{ "s3c2410-usbgadget", },
- 	{ "s3c2440-usbgadget", },
-+	{ }
- };
- MODULE_DEVICE_TABLE(platform, s3c_udc_ids);
- 
--- 
-1.7.4.1
+Wait, that's two different silicon blocks right? Then you already have proof
+that this spans more than one DMAC and then you can just go for a generic
+DMA_STRIDE_CONFIG from day one.
 
+That both are TI does not matter, if they are totally unrelated implementations.
 
-
+Yours,
+Linus Walleij
