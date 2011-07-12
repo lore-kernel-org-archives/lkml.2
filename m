@@ -1,94 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756356Ab1GLW4g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 18:56:36 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:58279 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755623Ab1GLW4e (ORCPT
+	id S932120Ab1GLW47 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 18:56:59 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:55306 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932073Ab1GLW46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 18:56:34 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=PFp5cCL3Bx5vix5O1Z06gpS/o/b5IFMBZLSw7zhjwKXfCNSdp3IJ6TBtMb11q7oPb
-	E78L2mWJsP25jmdjbUv+w==
-Date: Tue, 12 Jul 2011 15:56:14 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 1/12] radix_tree: exceptional entries and indices
-In-Reply-To: <20110618144832.cfc665b0.akpm@linux-foundation.org>
-Message-ID: <alpine.LSU.2.00.1107121536100.2112@sister.anvils>
-References: <alpine.LSU.2.00.1106140327550.29206@sister.anvils> <alpine.LSU.2.00.1106140341070.29206@sister.anvils> <20110617163854.49225203.akpm@linux-foundation.org> <alpine.LSU.2.00.1106171702150.1345@sister.anvils>
- <20110618144832.cfc665b0.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Tue, 12 Jul 2011 18:56:58 -0400
+X-Authority-Analysis: v=1.1 cv=yMxAJ7W7nAoPh8ZdbvCArpG6pAdHwgpzIvOq8QbMesM= c=1 sm=0 a=NyiLX209gCUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=cm27Pg_UAAAA:8 a=wpG1aJ3ptb5VdpW5lg4A:9 a=PUjeQqilurYA:10 a=zv9_9hqRWm8A:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] [RFC] perf: robustify proc and debugfs file recording
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Sonny Rao <sonnyrao@chromium.org>
+Cc: acme@redhat.com, anton@samba.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1310505348-20163-1-git-send-email-sonnyrao@chromium.org>
+References: <1310505348-20163-1-git-send-email-sonnyrao@chromium.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 12 Jul 2011 18:56:55 -0400
+Message-ID: <1310511415.3931.11.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 18 Jun 2011, Andrew Morton wrote:
-> On Fri, 17 Jun 2011 17:13:38 -0700 (PDT) Hugh Dickins <hughd@google.com> wrote:
-> > On Fri, 17 Jun 2011, Andrew Morton wrote:
-> > > On Tue, 14 Jun 2011 03:42:27 -0700 (PDT)
-> > > Hugh Dickins <hughd@google.com> wrote:
-> > > 
-> > > > The low bit of a radix_tree entry is already used to denote an indirect
-> > > > pointer, for internal use, and the unlikely radix_tree_deref_retry() case.
-> > > > Define the next bit as denoting an exceptional entry, and supply inline
-> > > > functions radix_tree_exception() to return non-0 in either unlikely case,
-> > > > and radix_tree_exceptional_entry() to return non-0 in the second case.
-> > > 
-> > > Yes, the RADIX_TREE_INDIRECT_PTR hack is internal-use-only, and doesn't
-> > > operate on (and hence doesn't corrupt) client-provided items.
-> > > 
-> > > This patch uses bit 1 and uses it against client items, so for
-> > > practical purpoese it can only be used when the client is storing
-> > > addresses.  And it needs new APIs to access that flag.
-> > > 
-> > > All a bit ugly.  Why not just add another tag for this?  Or reuse an
-> > > existing tag if the current tags aren't all used for these types of
-> > > pages?
-> > 
-> > I couldn't see how to use tags without losing the "lockless" lookups:
+On Tue, 2011-07-12 at 14:15 -0700, Sonny Rao wrote:
+> While attempting to create a timechart of boot up I found
+> perf didn't tolerate modules being loaded/unloaded.  This patch
+> fixes this by reading the file once and then writing the size
+> read at the correct point in the file.  It also simplifies the
+> code somewhat.
 > 
-> So lockless pagecache broke the radix-tree tag-versus-item coherency as
-> well as the address_space nrpages-vs-radix-tree coherency.
+> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
 
-I don't think that remark is fair to lockless pagecache at all.  If we
-want the scalability advantage of lockless lookup, yes, we don't have
-strict coherency with tagging at that time.  But those places that need
-to worry about that coherency, can lock to do so.
+>  static bool name_in_tp_list(char *sys, struct tracepoint_path *tps)
+> @@ -338,14 +292,8 @@ static void copy_event_system(const char *sys, struct tracepoint_path *tps)
+>  		sprintf(format, "%s/%s/format", sys, dent->d_name);
+>  		ret = stat(format, &st);
+>  
+> -		if (ret >= 0) {
+> -			/* unfortunately, you can not stat debugfs files for size */
+> -			size = get_size(format);
+> -			write_or_die(&size, 8);
+> -			check_size = copy_file(format);
+> -			if (size != check_size)
+> -				die("error in size of file '%s'", format);
 
-> Isn't it fun learning these things.
-> 
-> > because the tag is a separate bit from the entry itself, unless you're
-> > under tree_lock, there would be races when changing from page pointer
-> > to swap entry or back, when slot was updated but tag not or vice versa.
-> 
-> So...  take tree_lock?
+You mean to tell me that you are hitting a race between the get_size()
+and check_size()?  This is a very quick action, and this only happens at
+start up. Are you starting up perf and loading modules at the same time?
 
-I wouldn't call that an improvement...
+-- Steve
 
-> What effect does that have?
+> -		}
+> +		if (ret >= 0)
+> +			record_file(format, 8);
+>  
+>  		free(format);
 
-... but admit I have not measured: I rather assume that if we now change
-tmpfs from lockless to locked lookup, someone else will soon come up with
-the regression numbers.
 
-> It'd better be
-> "really bad", because this patchset does nothing at all to improve core
-> MM maintainability :(
-
-I was aiming to improve shmem.c maintainability; and you have good grounds
-to accuse me of hurting shmem.c maintainability when I highmem-ized the
-swap vector nine years ago.
-
-I was not aiming to improve core MM maintainability, nor to harm it.
-I am extending the use to which the radix-tree can be put, but is that
-so bad?
-
-Hugh
