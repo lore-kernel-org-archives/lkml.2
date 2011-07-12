@@ -1,44 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756473Ab1GLX3W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 19:29:22 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:36910 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753840Ab1GLX3W (ORCPT
+	id S1756525Ab1GLXbK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 19:31:10 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:24247 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753840Ab1GLXbI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 19:29:22 -0400
-X-Authority-Analysis: v=1.1 cv=IOX921YOuPvYFce5aSLzPVIStpiCPR9M8R83dyHW74w= c=1 sm=0 a=NyiLX209gCUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=iJKeavrR0B98nSgvgmsA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] [RFC] perf: robustify proc and debugfs file recording
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Sonny Rao <sonnyrao@chromium.org>
-Cc: acme@redhat.com, anton@samba.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <CAPz6YkWhf-6U_s=ZaLZx6i2DUa7-TgBcs4f08T6XACrwqDHaww@mail.gmail.com>
-References: <1310505348-20163-1-git-send-email-sonnyrao@chromium.org>
-	 <1310511415.3931.11.camel@gandalf.stny.rr.com>
-	 <CAPz6YkWhf-6U_s=ZaLZx6i2DUa7-TgBcs4f08T6XACrwqDHaww@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 12 Jul 2011 19:29:19 -0400
-Message-ID: <1310513359.3931.12.camel@gandalf.stny.rr.com>
+	Tue, 12 Jul 2011 19:31:08 -0400
+X-IronPort-AV: E=Sophos;i="4.65,522,1304319600"; 
+   d="scan'208";a="562281103"
+Subject: [GIT PULL] Please pull NFS client bugfixes
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 12 Jul 2011 19:30:52 -0400
+Organization: NetApp Inc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Message-ID: <1310513452.20931.1.camel@lade.trondhjem.org>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 12 Jul 2011 23:30:53.0078 (UTC) FILETIME=[BDAF5B60:01CC40EB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-12 at 16:01 -0700, Sonny Rao wrote:
+Hi Linus,
 
-> I sure am... the thing we're trying to do here is analyze our boot time
-> and udev is asynchronously loading modules in the background while
-> perf is starting up.
+Please pull from the "bugfixes" branch of the repository at
 
-OK, I'll take a deeper look at these patches tomorrow.
+   git pull git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git bugfixes
 
--- Steve
+This will update the following files through the appended changesets.
 
+Kudos to Ben Greear for finding a 4 year old bug in the rpcbind client code!
+
+  Cheers,
+    Trond
+
+----
+ fs/nfs/nfs4filelayout.c |    1 -
+ fs/nfs/nfs4xdr.c        |    2 +-
+ fs/nfs/write.c          |    2 ++
+ net/sunrpc/rpcb_clnt.c  |    2 +-
+ net/sunrpc/sched.c      |   27 +++++++++++----------------
+ 5 files changed, 15 insertions(+), 19 deletions(-)
+
+commit ec0dd267bf7d08cb30e321e45a75fd40edd7e528
+Author: Ben Greear <greearb@candelatech.com>
+Date:   Tue Jul 12 10:27:55 2011 -0700
+
+    SUNRPC: Fix use of static variable in rpcb_getport_async
+    
+    Because struct rpcbind_args *map was declared static, if two
+    threads entered this method at the same time, the values
+    assigned to map could be sent two two differen tasks.
+    This could cause all sorts of problems, include use-after-free
+    and double-free of memory.
+    
+    Fix this by removing the static declaration so that the map
+    pointer is on the stack.
+    
+    Signed-off-by: Ben Greear <greearb@candelatech.com>
+    Cc: stable@kernel.org
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit e5012d1f3861d18c7f3814e757c1c3ab3741dbcd
+Author: Andy Adamson <andros@netapp.com>
+Date:   Mon Jul 11 17:17:42 2011 -0400
+
+    NFSv4.1: update nfs4_fattr_bitmap_maxsz
+    
+    Attribute IDs assigned in RFC 5661 now require three bitmaps.
+    Fixes hitting a BUG_ON in xdr_shrink_bufhead when getting ACLs.
+    
+    Signed-off-by: Andy Adamson <andros@netapp.com>
+    Cc:stable@kernel.org [2.6.39]
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit b55c59892e1f3b6c7d4b9ccffb4263e1486fb990
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Wed Jul 6 19:58:23 2011 -0400
+
+    SUNRPC: Fix a race between work-queue and rpc_killall_tasks
+    
+    Since rpc_killall_tasks may modify the rpc_task's tk_action field
+    without any locking, we need to be careful when dereferencing it.
+    
+    Reported-by: Ben Greear <greearb@candelatech.com>
+    Tested-by: Ben Greear <greearb@candelatech.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+    Cc: stable@kernel.org
+
+commit 2bea038c52e88badbbd5b420c1de918f7f2579e9
+Author: Boaz Harrosh <bharrosh@panasas.com>
+Date:   Thu Jun 16 11:35:46 2011 -0400
+
+    pnfs: write: Set mds_offset in the generic layer - it is needed by all LDs
+    
+    In current pnfs tree, all the layouts set mds_offset in their
+    .write_pagelist member.
+    mds_offset is only used by generic layer and should be handled by it.
+    
+    This patch is for upstream. It is needed in this -rc series to fix a
+    bug in objects layout_commit.
+    
+    I'll send patches for objects and blocks to be
+    squashed into current pnfs tree.
+    
+    TODO: It looks like the read path needs the same patch.
+    
+    Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
