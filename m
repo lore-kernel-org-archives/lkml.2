@@ -1,84 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754292Ab1GLRSP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 13:18:15 -0400
-Received: from mail.mnsspb.ru ([84.204.75.2]:45150 "EHLO mail.mnsspb.ru"
+	id S1754359Ab1GLRWM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 13:22:12 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:60626 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750848Ab1GLRSO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 13:18:14 -0400
-Date: Tue, 12 Jul 2011 21:17:06 +0400
-From: Kirill Smelkov <kirr@mns.spb.ru>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Luke-Jr <luke@dashjr.org>, intel-gfx@lists.freedesktop.org,
-        LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Ray Lee <ray-lk@madrabbit.org>
-Subject: Re: [Intel-gfx] Major 2.6.38 / 2.6.39 regression ignored?
-Message-ID: <20110712171706.GA18414@tugrik.mns.mnsspb.ru>
-References: <201105201306.31204.luke@dashjr.org> <BANLkTimOqhNEsBEg6f=nMiMJqYGNyFJmeQ@mail.gmail.com> <013811$4lfs6@fmsmga002.fm.intel.com> <201105211123.56053.luke@dashjr.org> <aefc95$1usaq@orsmga001.jf.intel.com> <20110528131920.GA10467@tugrik.mns.mnsspb.ru>
+	id S1754072Ab1GLRWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 13:22:10 -0400
+Date: Tue, 12 Jul 2011 09:39:47 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: xen-devel@lists.xensource.com, julie Sullivan <kernelmail.jms@gmail.com>,
+        linux-kernel@vger.kernel.org, chengxu@linux.vnet.ibm.com
+Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3
+Message-ID: <20110712163947.GF2326@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110710231449.GQ6014@linux.vnet.ibm.com>
+ <20110711162450.GA22913@dumpdata.com>
+ <20110711171337.GK2245@linux.vnet.ibm.com>
+ <20110711193021.GA2996@dumpdata.com>
+ <20110711201508.GN2245@linux.vnet.ibm.com>
+ <20110711210954.GA15745@dumpdata.com>
+ <20110712105506.GB2253@linux.vnet.ibm.com>
+ <20110712141228.GA7831@dumpdata.com>
+ <20110712144936.GD2326@linux.vnet.ibm.com>
+ <20110712160324.GA1186@dumpdata.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110528131920.GA10467@tugrik.mns.mnsspb.ru>
-Organization: Marine Bridge & Navigation Systems
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110712160324.GA1186@dumpdata.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 28, 2011 at 05:19:20PM +0400, Kirill Smelkov wrote:
-> Hello Chris, everyone,
-> 
-> On Sat, May 21, 2011 at 04:40:17PM +0100, Chris Wilson wrote:
-> > On Sat, 21 May 2011 11:23:53 -0400, "Luke-Jr" <luke@dashjr.org> wrote:
-> > > On Saturday, May 21, 2011 4:41:45 AM Chris Wilson wrote:
-> > > > On Fri, 20 May 2011 11:08:56 -0700, Ray Lee <ray-lk@madrabbit.org> wrote:
-> > > > > [ Adding Chris Wilson (author of the problematic patch) and Rafael
-> > > > > Wysocki to the message ]
-> > > > > 
-> > > > > On Fri, May 20, 2011 at 10:06 AM, Luke-Jr <luke@dashjr.org> wrote:
-> > > > > > I submitted https://bugzilla.kernel.org/show_bug.cgi?id=33662 a month
-> > > > > > ago against 2.6.38. Now 2.6.39 was just released without the
-> > > > > > regression being addressed. This bug makes the system unusable... Some
-> > > > > > guys on IRC suggested I
-> > > > > > email, so here it is.
-> > > > > 
-> > > > > See the bugzilla entry for the bisection history.
-> > > > 
-> > > > Which has nothing to do with Luke's bug. Considering the thousand things
-> > > > that can go wrong during X starting, without a hint as to which it is nigh
-> > > > on impossible to debug except by trial and error. If you set up
-> > > > netconsole, does the kernel emit an OOPS with it's last dying breath?
-> > > 
-> > > Why assume it's a different bug? I would almost wonder if it might affect 
-> > > all Sandy Bridge GPUs. In any case, I no longer have the original 
-> > > motherboard (it was recalled, as I said in the first post), nor even the 
-> > > revision of it (it had other issues that weren't being fixed). I *assume* I 
-> > > will have the same problem with my new motherboard (Intel DQ67SW), but I 
-> > > haven't verified that yet. I'll be sure to try a netconsole when I have to 
-> > > reboot next and get a chance to try the most recent 2.6.38 and .39 kernels, 
-> > > but at the moment it seems reasonable to address the problem bisected in the 
-> > > bug, even if it turns out to be different.
+On Tue, Jul 12, 2011 at 12:03:24PM -0400, Konrad Rzeszutek Wilk wrote:
+> > > http://darnok.org/xen/cpu1.log
 > > 
-> > The bisection is into an old DRI1 bug on 945GM. That DRI has inadequate
-> > locking between release and IRQ and so is prone to such races as befell
-> > Kirill should not surprise anyone. As neither UMS nor DRI supported SNB,
-> > I can quite confidently state they are separate bugs.
-> > -Chris
+> > OK, a fair amount of variety, then lots and lots of task_waking_fair(),
+> > so I still feel good about asking you for the following.
+> .. snup..
+> > Hmmm...  Given that this is persisting for many many seconds, it might
+> > be better to check for at least 10,000,000 passes.  In contrast, 1000
+> > passes might elapse just waiting for a cache miss to complete.
 > 
-> I see DRI1 is maybe buggy and old, but still, pre-kms X used to work ok
-> on kernels < 2.6.38, and starting from 2.6.38 the system is just
-> unusable because X either crashes the kernel (2.6.38), or does not start
-> at all (2.6.39):
+> Changed it to that large number. This is the diff I used:
 > 
-> https://bugzilla.kernel.org/show_bug.cgi?id=36052
+> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+> index 433491c..e185c04 100644
+> --- a/kernel/sched_fair.c
+> +++ b/kernel/sched_fair.c
+> @@ -1392,14 +1392,19 @@ static void task_waking_fair(struct task_struct *p)
+>  	struct sched_entity *se = &p->se;
+>  	struct cfs_rq *cfs_rq = cfs_rq_of(se);
+>  	u64 min_vruntime;
+> +	u64 loop_cnt = 0UL;
 > 
+>  #ifndef CONFIG_64BIT
+>  	u64 min_vruntime_copy;
+> -
+> +	loop_cnt = 0UL;
+>  	do {
+>  		min_vruntime_copy = cfs_rq->min_vruntime_copy;
+>  		smp_rmb();
+>  		min_vruntime = cfs_rq->min_vruntime;
+> +		if (loop_cnt++ > 10000000) {
+> +			printk(KERN_INFO "POKE!\n");
+> +			loop_cnt = 0UL;
+> +		}
+>  	} while (min_vruntime != min_vruntime_copy);
+>  #else
+>  	min_vruntime = cfs_rq->min_vruntime;
 > 
-> It's a regression. It's blocking me to upgrade to newer kernels. I've
-> done my homework -- digged it and came with detailed OOPS on netconsole
-> and bisected to single commit. Could this please be fixed?
+> And the log is:
+> http://darnok.org/xen/loop_cnt.log
+> 
+> which seems to imply that we are indeed stuck in that loop
+> forever.
 
-Silence...
+It does indeed, thank you!  Also it looks like interrupts are
+disabled, and that timekeeping is similarly out of action.
 
-Still, reverting the bisected patch helps even for 3.0:
+> > Other possible causes include:
+> 
+> What is really strange is that I can only reproduce this on 32-bit builds.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=36052#c4
+Not strange at all.  If you have a 64-bit build, the function doesn't
+have a loop.  ;-)
+
+> > o	A mismatch between Xen's and RCU's ideas of how CONFIG_NO_HZ
+> > 	works.  If Xen thinks that the CPU is in CONFIG_NO_HZ's
+> > 	dyntick-idle mode, but RCU thinks otherwise, the grace period
+> > 	might stall.
+> 
+> One sure way to figure this out is to disable CONFIG_NO_HZ right?
+> Or will that take away task_waking_fair case as well?
+
+Disabling CONFIG_NO_HZ would be an interesting test case.
+
+> > o	Problems due to portions of the code attempting to use
+> > 	RCU read-side critical sections while in dyntick-idle mode.
+> > 	Frederic Weisbecker has located some of these, (though not yet
+> > 	in Xen) and he has some diagnositics which may be found at:
+> > 
+> > 	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
+> > 
+> > 	on branch eqscheck.2011.07.08a.
+> > 
+> > 	You need to enable CONFIG_PROVE_RCU for these diagnostics to
+> > 	be executed.
+> 
+> Ok, let me try those too.
+
+Thank you!
+
+> > o	As always, there might be bugs in RCU.  ;-)
+> > 
+> > But the loop in task_waking_fair() looks like the most prominent smoking
+> > gun at the moment.
+
+And could you also please try out the patch that I posted earlier?
+
+							Thaxn, Paul
