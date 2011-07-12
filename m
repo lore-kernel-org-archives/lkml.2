@@ -1,193 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755575Ab1GLVEu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 17:04:50 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:55814 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754998Ab1GLVEt convert rfc822-to-8bit (ORCPT
+	id S1755595Ab1GLVHQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 17:07:16 -0400
+Received: from exprod7og107.obsmtp.com ([64.18.2.167]:43884 "EHLO
+	exprod7og107.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755503Ab1GLVHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 17:04:49 -0400
+	Tue, 12 Jul 2011 17:07:14 -0400
+Message-ID: <4E1CB768.6060304@genband.com>
+Date: Tue, 12 Jul 2011 15:06:48 -0600
+From: Chris Friesen <chris.friesen@genband.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <20110712204620.GL2326@linux.vnet.ibm.com>
-References: <20110711210954.GA15745@dumpdata.com>
-	<20110712105506.GB2253@linux.vnet.ibm.com>
-	<20110712141228.GA7831@dumpdata.com>
-	<20110712144936.GD2326@linux.vnet.ibm.com>
-	<20110712160324.GA1186@dumpdata.com>
-	<20110712163947.GF2326@linux.vnet.ibm.com>
-	<20110712180151.GA18257@dumpdata.com>
-	<20110712185907.GJ2326@linux.vnet.ibm.com>
-	<1310497836.14978.34.camel@twins>
-	<20110712195731.GB20811@dumpdata.com>
-	<20110712204620.GL2326@linux.vnet.ibm.com>
-Date: Tue, 12 Jul 2011 22:04:48 +0100
-Message-ID: <CAAVPGOP_n1nR_Bauo67dDAAtUPPxU4WmrVrH-+8u_FdcN6EjjQ@mail.gmail.com>
-Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3
-From: Julie Sullivan <kernelmail.jms@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, chengxu@linux.vnet.ibm.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: MK <mk@cognitivedissonance.ca>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: AVX "Sandy Bridge" hardware issue?
+References: <20110712161616.b5196a3b.mk@cognitivedissonance.ca>
+In-Reply-To: <20110712161616.b5196a3b.mk@cognitivedissonance.ca>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 12 Jul 2011 21:06:49.0685 (UTC) FILETIME=[9DD24050:01CC40D7]
+X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-18256.002
+X-TM-AS-Result: No--15.898200-5.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 12, 2011 at 9:46 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Tue, Jul 12, 2011 at 03:57:32PM -0400, Konrad Rzeszutek Wilk wrote:
->> On Tue, Jul 12, 2011 at 09:10:36PM +0200, Peter Zijlstra wrote:
->> > On Tue, 2011-07-12 at 11:59 -0700, Paul E. McKenney wrote:
->> > > OK, so the infinite loop in task_waking_fair() happens even if RCU callbacks
->> > > are deferred until after the scheduler is fully initialized.  Sounds like
->> > > one for the scheduler guys.  ;-)
->> >
->> > https://lkml.org/lkml/2011/7/12/150
->>
->> Such a simple patch. And yes, it fixes the issue. You can add
->> Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> if it hasn't yet
->> showed up in Ingo's tree.
->>
->> Paul, thanks for help on this and providing ideas to test!
+On 07/12/2011 02:16 PM, MK wrote:
+
+> So I filed a glibc bug with fedora to that effect:
 >
-> Konrad, thank you for all the testing!
+> https://bugzilla.redhat.com/show_bug.cgi?id=720176
 >
-> Julie, if you apply Peter's patch,
+> In which Andreas Schwab points out (rightly or wrongly) that according
+> to the /proc/cpuinfo from the slice, the processor actually does not
+> support AVX.  However,  the "model name", "Intel(R) Xeon(R) CPU
+> E31230", is according to this a Sandy Bridge processor with AVX:
+>
+> http://en.wikipedia.org/wiki/Sandy_Bridge#Server_processors
+>
+> And while I do not have access to the hardware, the provider is very
+> unequivocal about the fact that these are Sandy Bridges, which
+> apparently include AVX.
+>
+> So I am looking for a next step to take in debugging this.  The kernel
+> used on the slice (nb, openVZ does not allow for rolling your own) is
+> 2.6.32 built with gcc 4.1.2.  I think this may be prior to AVX support
+> in the kernel and gcc, but the glibc is 2.13, which apparently includes
+> it.
+>
+> Does anyone have any idea why I would get this identical backtrace, and
+> a failed reproducer test, on hardware which supposedly supports AVX
+> (but not according to the kernel in /proc/cpuinfo)?
+
+For what it's worth, Intel says the E31230 supports AVX as well:
+
+http://ark.intel.com/Product.aspx?id=52271
+
+so it's interesting that /proc/cpuinfo doesn't mention it.  Certainly 
+I'd consider that worth following up.
 
 
+As far as I can tell, support for saving/restoring AVX registers was 
+added in 2.6.30, but gcc 4.6 is needed for proper support to actually 
+use the new instructions.  However, given that you're using openVZ then 
+if there is a bug in the kernel all it would take is one VPS slice using 
+code built with a new compiler.
 
-But this is for 32-bit , right?
+Chris
 
-> +#ifndef CONFIG_64BIT
-> +	cfs_rq->min_vruntime_copy = cfs_rq->min_vruntime;
-> +#endif
- }
-
-I'm using 64-bit...
-
-Would you still like me to try the below patch?
-
-Cheers
-Julie
-
-
-> do you also need the patch shown
-> below?
->
-> Ravi, could you please retest with the patch below as well?
->
->                                                        Thanx, Paul
->
-> ------------------------------------------------------------------------
->
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index 7e59ffb..ba06207 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -84,9 +84,32 @@ DEFINE_PER_CPU(struct rcu_data, rcu_bh_data);
->
->  static struct rcu_state *rcu_state;
->
-> +/*
-> + * The rcu_scheduler_active variable transitions from zero to one just
-> + * before the first task is spawned.  So when this variable is zero, RCU
-> + * can assume that there is but one task, allowing RCU to (for example)
-> + * optimized synchronize_sched() to a simple barrier().  When this variable
-> + * is one, RCU must actually do all the hard work required to detect real
-> + * grace periods.  This variable is also used to suppress boot-time false
-> + * positives from lockdep-RCU error checking.
-> + */
->  int rcu_scheduler_active __read_mostly;
->  EXPORT_SYMBOL_GPL(rcu_scheduler_active);
->
-> +/*
-> + * The rcu_scheduler_fully_active variable transitions from zero to one
-> + * during the early_initcall() processing, which is after the scheduler
-> + * is capable of creating new tasks.  So RCU processing (for example,
-> + * creating tasks for RCU priority boosting) must be delayed until after
-> + * rcu_scheduler_fully_active transitions from zero to one.  We also
-> + * currently delay invocation of any RCU callbacks until after this point.
-> + *
-> + * It might later prove better for people registering RCU callbacks during
-> + * early boot to take responsibility for these callbacks, but one step at
-> + * a time.
-> + */
-> +static int rcu_scheduler_fully_active __read_mostly;
-> +
->  #ifdef CONFIG_RCU_BOOST
->
->  /*
-> @@ -98,7 +121,6 @@ DEFINE_PER_CPU(unsigned int, rcu_cpu_kthread_status);
->  DEFINE_PER_CPU(int, rcu_cpu_kthread_cpu);
->  DEFINE_PER_CPU(unsigned int, rcu_cpu_kthread_loops);
->  DEFINE_PER_CPU(char, rcu_cpu_has_work);
-> -static char rcu_kthreads_spawnable;
->
->  #endif /* #ifdef CONFIG_RCU_BOOST */
->
-> @@ -1467,6 +1489,8 @@ static void rcu_process_callbacks(struct softirq_action *unused)
->  */
->  static void invoke_rcu_callbacks(struct rcu_state *rsp, struct rcu_data *rdp)
->  {
-> +       if (unlikely(!ACCESS_ONCE(rcu_scheduler_fully_active)))
-> +               return;
->        if (likely(!rsp->boost)) {
->                rcu_do_batch(rsp, rdp);
->                return;
-> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> index 14dc7dd..75113cb 100644
-> --- a/kernel/rcutree_plugin.h
-> +++ b/kernel/rcutree_plugin.h
-> @@ -1532,7 +1532,7 @@ static int __cpuinit rcu_spawn_one_cpu_kthread(int cpu)
->        struct sched_param sp;
->        struct task_struct *t;
->
-> -       if (!rcu_kthreads_spawnable ||
-> +       if (!rcu_scheduler_fully_active ||
->            per_cpu(rcu_cpu_kthread_task, cpu) != NULL)
->                return 0;
->        t = kthread_create(rcu_cpu_kthread, (void *)(long)cpu, "rcuc%d", cpu);
-> @@ -1639,7 +1639,7 @@ static int __cpuinit rcu_spawn_one_node_kthread(struct rcu_state *rsp,
->        struct sched_param sp;
->        struct task_struct *t;
->
-> -       if (!rcu_kthreads_spawnable ||
-> +       if (!rcu_scheduler_fully_active ||
->            rnp->qsmaskinit == 0)
->                return 0;
->        if (rnp->node_kthread_task == NULL) {
-> @@ -1665,7 +1665,7 @@ static int __init rcu_spawn_kthreads(void)
->        int cpu;
->        struct rcu_node *rnp;
->
-> -       rcu_kthreads_spawnable = 1;
-> +       rcu_scheduler_fully_active = 1;
->        for_each_possible_cpu(cpu) {
->                per_cpu(rcu_cpu_has_work, cpu) = 0;
->                if (cpu_online(cpu))
-> @@ -1687,7 +1687,7 @@ static void __cpuinit rcu_prepare_kthreads(int cpu)
->        struct rcu_node *rnp = rdp->mynode;
->
->        /* Fire up the incoming CPU's kthread and leaf rcu_node kthread. */
-> -       if (rcu_kthreads_spawnable) {
-> +       if (rcu_scheduler_fully_active) {
->                (void)rcu_spawn_one_cpu_kthread(cpu);
->                if (rnp->node_kthread_task == NULL)
->                        (void)rcu_spawn_one_node_kthread(rcu_state, rnp);
-> @@ -1726,6 +1726,13 @@ static void rcu_cpu_kthread_setrt(int cpu, int to_rt)
->  {
->  }
->
-> +static int __init rcu_scheduler_really_started(void)
-> +{
-> +       rcu_scheduler_fully_active = 1;
-> +       return 0;
-> +}
-> +early_initcall(rcu_scheduler_really_started);
-> +
->  static void __cpuinit rcu_prepare_kthreads(int cpu)
->  {
->  }
->
+-- 
+Chris Friesen
+Software Developer
+GENBAND
+chris.friesen@genband.com
+www.genband.com
