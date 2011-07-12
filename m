@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358Ab1GLNaU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 09:30:20 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:65123 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753096Ab1GLNaS (ORCPT
+	id S1753465Ab1GLNbm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 09:31:42 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:40386 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752948Ab1GLNbk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 09:30:18 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Uwe =?iso-8859-15?q?Kleine-K=F6nig?=" 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: [PATCH] new helper to define common struct resource constructs
-Date: Tue, 12 Jul 2011 15:29:17 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Sascha Hauer <s.hauer@pengutronix.de>,
-        Wolfram Sang <w.sang@pengutronix.de>, thierry.nolf.barco@gmail.com,
-        Huang Shijie <b32955@freescale.com>, linux-mtd@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org,
-        Lothar =?iso-8859-15?q?Wa=DFmann?= <LW@karo-electronics.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-References: <14C4E31473AF7E4B98176CB73615181C19FBD3@039-SN1MPN1-006.039d.mgd.msft.net> <201107072304.05626.arnd@arndb.de> <E1QgHeh-0004k8-2m@octopus.hi.pengutronix.de>
-In-Reply-To: <E1QgHeh-0004k8-2m@octopus.hi.pengutronix.de>
+	Tue, 12 Jul 2011 09:31:40 -0400
+Date: Tue, 12 Jul 2011 09:31:19 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Cong Wang <amwang@redhat.com>
+Cc: Takao Indoh <indou.takao@jp.fujitsu.com>, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, vgoyal@redhat.com, rdunlap@xenotime.net,
+        lenb@kernel.org, linux-doc@vger.kernel.org, linux-acpi@vger.kernel.org,
+        mjg@redhat.com
+Subject: Re: [PATCH v2] acpi: introduce "acpi_rsdp=" parameter for kdump
+Message-ID: <20110712133119.GA7377@dumpdata.com>
+References: <E8CC3FDD41FF9Findou.takao@jp.fujitsu.com>
+ <4E1C223A.9000705@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201107121529.17611.arnd@arndb.de>
-X-Provags-ID: V02:K0:6ythQqasGZhpJY7Yt2xFOcnTXPpP06xJ2CzZSs6cGZi
- idTsG2e1oTjgmwyJl6jF4GBLH4dV8mplgQn3XmINYZwY4Kh9qi
- 9OOrdYxbkmXMJ4pMJusf7P8aqHsLuFYZLrSb12HrO0WzvdRJVL
- y8Cl24JeorC1o8ewnGlMaAMNmgjx6qg4SX8xgU5ktjNqgF/9Ew
- SwL4w8CCJiE6u7xvVLkew==
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4E1C223A.9000705@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090206.4E1C4CB4.0034:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 11 July 2011, Uwe Kleine-K�nig wrote:
-> resource definitions that just define start, end and flags = IORESOURCE_MEM
-> or IORESOURCE_IRQ (with start=end) are quite common. So introduce a shortcut
-> for them. Also make available a macro to specify named resources of both
-> types which are less common.
+On Tue, Jul 12, 2011 at 06:30:18PM +0800, Cong Wang wrote:
+> 于 2011年07月11日 23:14, Takao Indoh 写道:
+> >Revised version of the patch which was posted by Cong WANG
+> >
+> >Changes in v2:
+> >* Change parameter name from "acpi_addr" to "acpi_rsdp"
+> >* Add CONFIG_KEXEC
 > 
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> Thanks for updating it! Definitely looks good to me,
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+The only comment I've is that it would be good to include in the
+patch description which sysfs attribute is used by the kexec tools
+to read in the physical address to be passed in.
 
-What do others think, is this worthwhile?
-Should we also define macros for IORESOURCE_IO and IORESOURCE_DMA?
-
-	Arnd
+Otherwise it looks good to me too.
+> 
+> Reviewed-by: WANG Cong <amwang@redhat.com>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
