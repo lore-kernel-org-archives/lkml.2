@@ -1,50 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752954Ab1GLKNA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 06:13:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57572 "EHLO mx1.redhat.com"
+	id S1752969Ab1GLKOH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 06:14:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34549 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751525Ab1GLKM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 06:12:59 -0400
-Message-ID: <4E1C1CDD.9040005@redhat.com>
-Date: Tue, 12 Jul 2011 13:07:25 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1752723Ab1GLKOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 06:14:05 -0400
+Date: Tue, 12 Jul 2011 11:14:00 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: minchan.kim@gmail.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        cl@linux.com
+Subject: Re: [PATCH 1/3] mm: vmscan: Do use use PF_SWAPWRITE from zone_reclaim
+Message-ID: <20110712101400.GC7529@suse.de>
+References: <1310389274-13995-1-git-send-email-mgorman@suse.de>
+ <1310389274-13995-2-git-send-email-mgorman@suse.de>
+ <CAEwNFnATXiQsmbfuvZNEtcpcVZkyZKRFB1SKbkEREaCW4S-aUg@mail.gmail.com>
+ <4E1C1684.4090706@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Will Deacon <will.deacon@arm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        "acme@ghostprotocols.net" <acme@ghostprotocols.net>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: Re: [PATCH 1/3] perf: add context field to perf_event
-References: <4E1C0F02.9040906@redhat.com> <1310462046.14978.11.camel@twins> <4E1C10F8.6010300@redhat.com> <1310462335.14978.12.camel@twins> <4E1C1373.5080500@redhat.com> <1310463060.14978.17.camel@twins> <20110712094131.GA29812@8bytes.org> <4E1C1771.9010300@redhat.com> <20110712094822.GB29812@8bytes.org> <4E1C1A0D.8000707@redhat.com> <20110712100354.GC29812@8bytes.org>
-In-Reply-To: <20110712100354.GC29812@8bytes.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <4E1C1684.4090706@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2011 01:03 PM, Joerg Roedel wrote:
-> >  Regarding LWP - I thought the intent was self-profiling by the process
-> >  for jits and the like?  If you also use it for perf, won't it be
-> >  unusable for that?  Also, can't the process interfere, from userspace,
-> >  by executing the unprivileged LWP instructions?
->
-> Ingo made perf-integration a merge-requirement for LWP. It is not really
-> well-suited for being integrated into perf because the design goal was
-> easy and efficient self-profiling of tasks (like you stated). So
-> integrating it into perf causes some pain. But lets see how it works
-> out.
+On Tue, Jul 12, 2011 at 06:40:20PM +0900, KOSAKI Motohiro wrote:
+> (2011/07/12 18:27), Minchan Kim wrote:
+> > Hi Mel,
+> > 
+> > On Mon, Jul 11, 2011 at 10:01 PM, Mel Gorman <mgorman@suse.de> wrote:
+> >> Zone reclaim is similar to direct reclaim in a number of respects.
+> >> PF_SWAPWRITE is used by kswapd to avoid a write-congestion check
+> >> but it's set also set for zone_reclaim which is inappropriate.
+> >> Setting it potentially allows zone_reclaim users to cause large IO
+> >> stalls which is worse than remote memory accesses.
+> > 
+> > As I read zone_reclaim_mode in vm.txt, I think it's intentional.
+> > It has meaning of throttle the process which are writing large amounts
+> > of data. The point is to prevent use of remote node's free memory.
+> > 
+> > And we has still the comment. If you're right, you should remove comment.
+> > "         * and we also need to be able to write out pages for RECLAIM_WRITE
+> >          * and RECLAIM_SWAP."
+> > 
+> > 
+> > And at least, we should Cc Christoph and KOSAKI.
+> 
+> Of course, I'll take full ack this. Do you remember I posted the same patch
+> about one year ago.
 
-I don't think it's workable.  Having do_mmap() called in the task's 
-context can change how it works.  And the task being able to kill/modify 
-the profile, and not able to use LWP for itself, is a show stopper IMO.
+Nope, I didn't remember it at all :) . I'll revive your signed-off
+and sorry about that.
+
+> At that time, Mel disagreed me and I'm glad to see he changed
+> the mind. :)
+> 
+
+Did I disagree because of this?
+
+	Simply that I believe the intention of PF_SWAPWRITE here was
+	to allow zone_reclaim() to aggressively reclaim memory if the
+	reclaim_mode allowed it as it was a statement that off-node
+	accesses are really not desired.
+
+Or was some other problem brought up that I'm not thinking of now?
+
+I'm no longer think the level of aggression is appropriate after seeing
+how seeing how zone_reclaim can stall when just copying large amounts
+of data on recent x86-64 NUMA machines. In the same mail, I said
+
+	Ok. I am not fully convinced but I'll not block it either if
+	believe it's necessary. My current understanding is that this
+	patch only makes a difference if the server is IO congested in
+	which case the system is struggling anyway and an off-node
+	access is going to be relatively small penalty overall.
+	Conceivably, having PF_SWAPWRITE set makes things worse in
+	that situation and the patch makes some sense.
+
+While I still think this situation is hard to trigger, zone_reclaim
+can cause significant stalls *without* IO and there is little point
+making the situation even worse.
 
 -- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
-
+Mel Gorman
+SUSE Labs
