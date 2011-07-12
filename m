@@ -1,75 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751357Ab1GLIDh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 04:03:37 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:52862 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839Ab1GLIDc (ORCPT
+	id S1751783Ab1GLIEF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 04:04:05 -0400
+Received: from mtagate6.uk.ibm.com ([194.196.100.166]:48012 "EHLO
+	mtagate6.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751476Ab1GLIDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 04:03:32 -0400
-Date: Tue, 12 Jul 2011 09:03:26 +0100
-From: Andy Whitcroft <apw@canonical.com>
-To: Joe Perches <joe@perches.com>
-Cc: Roland Vossen <rvossen@broadcom.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Checkpatch.pl generates false alarm
-Message-ID: <20110712080326.GA1065@shadowen.org>
-References: <4E1B0D51.4000905@broadcom.com>
- <1310444606.6925.4.camel@Joe-Laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1310444606.6925.4.camel@Joe-Laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 12 Jul 2011 04:03:54 -0400
+From: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+To: Len Brown <lenb@kernel.org>, Anton Vorontsov <cbou@mail.ru>,
+        David Woodhouse <dwmw2@infradead.org>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+Subject: [PATCH 1/3] power_supply: scrub device pointer if registration fails
+Date: Tue, 12 Jul 2011 09:03:27 +0100
+Message-Id: <1310457809-2731-2-git-send-email-stefanha@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1310457809-2731-1-git-send-email-stefanha@linux.vnet.ibm.com>
+References: <1310457809-2731-1-git-send-email-stefanha@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 11, 2011 at 09:23:26PM -0700, Joe Perches wrote:
-> On Mon, 2011-07-11 at 16:48 +0200, Roland Vossen wrote:
-> > Hello Andy,
-> > 
-> > when I feed attached file to checkpatch, several warnings are given, but 
-> > this one:
-> > 
-> > WARNING: externs should be avoided in .c files
-> > #3555: FILE: staging/brcm80211/brcmsmac/main.c:3555:
-> > +       END_FOREACH_BSS
-> > 
-> > does not seem to make sense. When I place a comment behind the 
-> > END_FOREACH_BSS line, the checkpatch warning disappears.
-> > 
-> > Let me know if you need additional info to work on this.
-> 
-> I think this code is bad form and confuses checkpatch:
-> 
-> 	/* update the capability based on current shortslot mode */
-> 	FOREACH_BSS(wlc, idx, cfg)
-> 		if (!cfg->associated)
-> 			continue;
-> 		cfg->current_bss->capability &=
-> 					~WLAN_CAPABILITY_SHORT_SLOT_TIME;
-> 		if (wlc->shortslot)
-> 			cfg->current_bss->capability |=
-> 					WLAN_CAPABILITY_SHORT_SLOT_TIME;
-> 	END_FOREACH_BSS
-> 
-> I think this code is still slightly bad form, but it isn't a problem
-> for checkpatch:
-> 
-> 	/* update the capability based on current shortslot mode */
-> 	FOREACH_BSS(wlc, idx, cfg) {
-> 		if (!cfg->associated)
-> 			continue;
-> 		cfg->current_bss->capability &=
-> 					~WLAN_CAPABILITY_SHORT_SLOT_TIME;
-> 		if (wlc->shortslot)
-> 			cfg->current_bss->capability |=
-> 					WLAN_CAPABILITY_SHORT_SLOT_TIME;
-> 	} END_FOREACH_BSS
+This patch makes power_supply_register() safer for callers that are not
+being careful.  When the function fails it leaves the caller's psy.dev
+pointer set to the stale power supply device.  A correct caller would
+handle the error return and never use psy.dev but the example of
+drivers/acpi/battery.c shows otherwise.
 
-Yeah I can only concur that this is the more normal form for such fake
-loop structures which needs begins and ends.  I don't think we are going
-to be able to trivially figure out this is a loop otherwise.
+Clear the psy.dev pointer when power_supply_register() fails so the
+caller either sees a valid pointer on success or NULL on failure.
 
--apw
+Signed-off-by: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+---
+ drivers/power/power_supply_core.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
+index 329b46b..33d4068 100644
+--- a/drivers/power/power_supply_core.c
++++ b/drivers/power/power_supply_core.c
+@@ -194,6 +194,7 @@ create_triggers_failed:
+ kobject_set_name_failed:
+ device_add_failed:
+ 	put_device(dev);
++	psy->dev = NULL; /* make it crystal-clear that we failed */
+ success:
+ 	return rc;
+ }
+-- 
+1.7.5.4
+
