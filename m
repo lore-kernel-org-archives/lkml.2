@@ -1,191 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755202Ab1GLUP4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 16:15:56 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45286 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753948Ab1GLUPy (ORCPT
+	id S1755269Ab1GLURl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 16:17:41 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:51245 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753828Ab1GLURj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 16:15:54 -0400
-Subject: Re: lockdep circular locking error (rcu_node_level_0 vs rq->lock)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dave Jones <davej@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110711231932.GB20367@redhat.com>
-References: <20110711231932.GB20367@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 12 Jul 2011 22:20:14 +0200
-Message-ID: <1310502014.2309.7.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 12 Jul 2011 16:17:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110712181536.GA30364@redhat.com>
+References: <20110712181536.GA30364@redhat.com>
+Date: Tue, 12 Jul 2011 21:17:37 +0100
+Message-ID: <CAPM=9tywf2_Y8maO4Tc8Z4nMfk8oJPoFic7+wMLxekjgcs=grw@mail.gmail.com>
+Subject: Re: drm_lock()->block_all_signals() is broken
+From: Dave Airlie <airlied@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-07-11 at 19:19 -0400, Dave Jones wrote:
-> I was doing an install in a kvm guest, which wedged itself at the end.
-> This was in the host dmesg.
-> 
-> 
-> [ INFO: possible circular locking dependency detected ]
-> 3.0.0-rc6+ #91
-> -------------------------------------------------------
-> libvirtd/5720 is trying to acquire lock:
->  (rcu_node_level_0){..-.-.}, at: [<ffffffff814c6c12>] rcu_report_unblock_qs_rnp.part.5+0x3f/0x60
-> 
-> but task is already holding lock:
->  (&rq->lock){-.-.-.}, at: [<ffffffff8105408e>] sched_ttwu_pending+0x39/0x5b
-> 
-> which lock already depends on the new lock.
-> 
-> 
-> the existing dependency chain (in reverse order) is:
-> 
-> -> #3 (&rq->lock){-.-.-.}:
->        [<ffffffff8108dfc5>] lock_acquire+0xf3/0x13e
->        [<ffffffff814cf0ab>] _raw_spin_lock+0x40/0x73
->        [<ffffffff8104663a>] __task_rq_lock+0x5e/0x8b
->        [<ffffffff8105506d>] wake_up_new_task+0x46/0x10d
->        [<ffffffff8105a1c9>] do_fork+0x231/0x331
->        [<ffffffff81010c80>] kernel_thread+0x75/0x77
->        [<ffffffff814abe82>] rest_init+0x26/0xdc
->        [<ffffffff81d3dbc2>] start_kernel+0x401/0x40c
->        [<ffffffff81d3d2c4>] x86_64_start_reservations+0xaf/0xb3
->        [<ffffffff81d3d3ca>] x86_64_start_kernel+0x102/0x111
-> 
-> -> #2 (&p->pi_lock){-.-.-.}:
->        [<ffffffff8108dfc5>] lock_acquire+0xf3/0x13e
->        [<ffffffff814cf238>] _raw_spin_lock_irqsave+0x4f/0x89
->        [<ffffffff81054e3d>] try_to_wake_up+0x2e/0x1db
->        [<ffffffff81054ffc>] default_wake_function+0x12/0x14
->        [<ffffffff81079008>] autoremove_wake_function+0x18/0x3d
->        [<ffffffff81045010>] __wake_up_common+0x4d/0x83
->        [<ffffffff8104634e>] __wake_up+0x39/0x4d
->        [<ffffffff810c3cd6>] rcu_report_exp_rnp+0x52/0x8b
->        [<ffffffff810c4f18>] __rcu_read_unlock+0x1d0/0x231
->        [<ffffffff8115202a>] rcu_read_unlock+0x26/0x28
->        [<ffffffff8115465d>] __d_lookup+0x103/0x115
->        [<ffffffff8114b9eb>] walk_component+0x1b1/0x3af
->        [<ffffffff8114bd8a>] link_path_walk+0x1a1/0x43b
->        [<ffffffff8114c148>] path_lookupat+0x5a/0x2af
->        [<ffffffff8114d222>] do_path_lookup+0x28/0x97
->        [<ffffffff8114d658>] user_path_at+0x59/0x96
->        [<ffffffff81145214>] sys_readlinkat+0x33/0x95
->        [<ffffffff81145291>] sys_readlink+0x1b/0x1d
->        [<ffffffff814d5c02>] system_call_fastpath+0x16/0x1b
-> 
-> -> #1 (sync_rcu_preempt_exp_wq.lock){......}:
->        [<ffffffff8108dfc5>] lock_acquire+0xf3/0x13e
->        [<ffffffff814cf238>] _raw_spin_lock_irqsave+0x4f/0x89
->        [<ffffffff81046337>] __wake_up+0x22/0x4d
->        [<ffffffff810c3cd6>] rcu_report_exp_rnp+0x52/0x8b
->        [<ffffffff810c4f18>] __rcu_read_unlock+0x1d0/0x231
->        [<ffffffff8115202a>] rcu_read_unlock+0x26/0x28
->        [<ffffffff8115465d>] __d_lookup+0x103/0x115
->        [<ffffffff8114b9eb>] walk_component+0x1b1/0x3af
->        [<ffffffff8114bd8a>] link_path_walk+0x1a1/0x43b
->        [<ffffffff8114c148>] path_lookupat+0x5a/0x2af
->        [<ffffffff8114d222>] do_path_lookup+0x28/0x97
->        [<ffffffff8114d658>] user_path_at+0x59/0x96
->        [<ffffffff81145214>] sys_readlinkat+0x33/0x95
->        [<ffffffff81145291>] sys_readlink+0x1b/0x1d
->        [<ffffffff814d5c02>] system_call_fastpath+0x16/0x1b
-> 
-> -> #0 (rcu_node_level_0){..-.-.}:
->        [<ffffffff8108d7e5>] __lock_acquire+0xa2f/0xd0c
->        [<ffffffff8108dfc5>] lock_acquire+0xf3/0x13e
->        [<ffffffff814cf0ab>] _raw_spin_lock+0x40/0x73
->        [<ffffffff814c6c12>] rcu_report_unblock_qs_rnp.part.5+0x3f/0x60
->        [<ffffffff810c4ed6>] __rcu_read_unlock+0x18e/0x231
->        [<ffffffff810463f4>] rcu_read_unlock+0x26/0x28
->        [<ffffffff8104b6db>] cpuacct_charge+0x58/0x61
->        [<ffffffff81052f18>] update_curr+0x107/0x134
->        [<ffffffff8105349b>] check_preempt_wakeup+0xc9/0x1d0
->        [<ffffffff81049775>] check_preempt_curr+0x2f/0x6e
->        [<ffffffff81053f5e>] ttwu_do_wakeup+0x7b/0x111
->        [<ffffffff81054050>] ttwu_do_activate.constprop.76+0x5c/0x61
->        [<ffffffff8105409e>] sched_ttwu_pending+0x49/0x5b
->        [<ffffffff810540be>] scheduler_ipi+0xe/0x10
->        [<ffffffff810224f6>] smp_reschedule_interrupt+0x1b/0x1d
->        [<ffffffff814d6b33>] reschedule_interrupt+0x13/0x20
->        [<ffffffff813fcc18>] rcu_read_unlock+0x26/0x28
->        [<ffffffff813fe308>] sock_def_readable+0x88/0x8d
->        [<ffffffff81497760>] unix_stream_sendmsg+0x264/0x2ff
->        [<ffffffff813f83c4>] sock_aio_write+0x112/0x126
->        [<ffffffff8114093b>] do_sync_write+0xbf/0xff
->        [<ffffffff81141012>] vfs_write+0xb6/0xf6
->        [<ffffffff81141206>] sys_write+0x4d/0x74
->        [<ffffffff814d5c02>] system_call_fastpath+0x16/0x1b
-> 
-> other info that might help us debug this:
-> 
-> Chain exists of:
->   rcu_node_level_0 --> &p->pi_lock --> &rq->lock
-> 
->  Possible unsafe locking scenario:
-> 
->        CPU0                    CPU1
->        ----                    ----
->   lock(&rq->lock);
->                                lock(&p->pi_lock);
->                                lock(&rq->lock);
->   lock(rcu_node_level_0);
-> 
->  *** DEADLOCK ***
-> 
-> 1 lock held by libvirtd/5720:
->  #0:  (&rq->lock){-.-.-.}, at: [<ffffffff8105408e>] sched_ttwu_pending+0x39/0x5b
-> 
-> stack backtrace:
-> Pid: 5720, comm: libvirtd Not tainted 3.0.0-rc6+ #91
-> Call Trace:
->  <IRQ>  [<ffffffff814c51cf>] print_circular_bug+0x1f8/0x209
->  [<ffffffff8108d7e5>] __lock_acquire+0xa2f/0xd0c
->  [<ffffffff8107e905>] ? sched_clock_local+0x12/0x75
->  [<ffffffff814c6c12>] ? rcu_report_unblock_qs_rnp.part.5+0x3f/0x60
->  [<ffffffff8108dfc5>] lock_acquire+0xf3/0x13e
->  [<ffffffff814c6c12>] ? rcu_report_unblock_qs_rnp.part.5+0x3f/0x60
->  [<ffffffff8108adab>] ? lock_release_holdtime.part.10+0x59/0x62
->  [<ffffffff814cf0ab>] _raw_spin_lock+0x40/0x73
->  [<ffffffff814c6c12>] ? rcu_report_unblock_qs_rnp.part.5+0x3f/0x60
->  [<ffffffff814cf855>] ? _raw_spin_unlock+0x47/0x54
->  [<ffffffff814c6c12>] rcu_report_unblock_qs_rnp.part.5+0x3f/0x60
->  [<ffffffff810c4e00>] ? __rcu_read_unlock+0xb8/0x231
->  [<ffffffff810c4ed6>] __rcu_read_unlock+0x18e/0x231
->  [<ffffffff810463f4>] rcu_read_unlock+0x26/0x28
->  [<ffffffff8104b6db>] cpuacct_charge+0x58/0x61
->  [<ffffffff81052f18>] update_curr+0x107/0x134
->  [<ffffffff8105349b>] check_preempt_wakeup+0xc9/0x1d0
->  [<ffffffff81049775>] check_preempt_curr+0x2f/0x6e
->  [<ffffffff81053f5e>] ttwu_do_wakeup+0x7b/0x111
->  [<ffffffff81054050>] ttwu_do_activate.constprop.76+0x5c/0x61
->  [<ffffffff8105409e>] sched_ttwu_pending+0x49/0x5b
->  [<ffffffff810540be>] scheduler_ipi+0xe/0x10
->  [<ffffffff810224f6>] smp_reschedule_interrupt+0x1b/0x1d
->  [<ffffffff814d6b33>] reschedule_interrupt+0x13/0x20
->  <EOI>  [<ffffffff8107e905>] ? sched_clock_local+0x12/0x75
->  [<ffffffff810c4d91>] ? __rcu_read_unlock+0x49/0x231
->  [<ffffffff8108dea5>] ? lock_release+0x1b1/0x1de
->  [<ffffffff813fcc18>] rcu_read_unlock+0x26/0x28
->  [<ffffffff813fe308>] sock_def_readable+0x88/0x8d
->  [<ffffffff81497760>] unix_stream_sendmsg+0x264/0x2ff
->  [<ffffffff813f83c4>] sock_aio_write+0x112/0x126
->  [<ffffffff8121cd95>] ? inode_has_perm+0x6a/0x77
->  [<ffffffff8114093b>] do_sync_write+0xbf/0xff
->  [<ffffffff81219562>] ? security_file_permission+0x2e/0x33
->  [<ffffffff81140d71>] ? rw_verify_area+0xb6/0xd3
->  [<ffffffff81141012>] vfs_write+0xb6/0xf6
->  [<ffffffff811426a0>] ? fget_light+0x97/0xa2
->  [<ffffffff81141206>] sys_write+0x4d/0x74
->  [<ffffffff81078f85>] ? remove_wait_queue+0x1a/0x3a
->  [<ffffffff814d5c02>] system_call_fastpath+0x16/0x1b
+On Tue, Jul 12, 2011 at 7:15 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> Hello.
+>
+> I tried many times to ask about the supposed behaviour of
+> block_all_signals() in drm, but it seems nobody can answer.
 
-Hi Paul, RCU is doing really bad things here, rcu_read_unlock() ->
-rcu_read_unlock_special() can do all kinds of nasty, including as per
-the above call back into the scheduler, which is kinda a death-warrant
-seeing as the scheduler itself can use RCU.
+Its not hard to explain, basically there exists hardware that you
+program acceleration engines using MMIO, having multiple processes
+writing to the MMIO area at once is a bad idea, so we use the DRM lock
+which is like a pre-futex futex. Now the problem is if you stop or
+kill a process in a critical section where it is writing to the
+hardware directly with MMIO you could crash the hardware, so the idea
+is that you block to the max until the critical section exits via the
+drm unlock.
 
+some links
+http://lkml.indiana.edu/hypermail/linux/kernel/0202.2/0045.html
 
+The only driver that might even use this and care in the tree is tdfx
+as I think it might be MMIO programmed, though I'm not 100% sure. I
+pretty much reckon we can deprecate block_all_signals as I forsee
+fixing all the problem you pointed out with it would be worse than
+just removing it.
 
+>
+> So I am going to send the patch which simply removes
+> block_all_signals() and friends. There are numeruous problems
+> with this interace, I can't even enumerate them. But I think
+> that it is enough to mention that block_all_signals() simply
+> can not work. AT ALL. I am wondering, was it ever tested and
+> how.
+
+I wasn't around, but it did work back in linux-2.4.0-test7 when it was
+introduced,
+
+http://www.kernel.org/pub/linux/kernel/v2.4/old-test-kernels/patch-2.4.0-test7.gz
+
+is the initial patch. You should probably check that out and see if
+you can work out how it originally worked, and the work out
+if its really is broken now or if you haven't analysed it correctly.
+
+> I strongly believe block_all_signals() should die. Given that
+> it doesn't work, could somebody please explain me what will
+> be broken?
+
+> Just in case... Please look at the debugging patch below. With
+> this patch,
+>
+>        $ perl -le 'syscall 157,666 and die $!; sleep 1, print while ++$_'
+>        1
+>        2
+>        3
+>        ^Z
+>
+> Hang. So it does react to ^Z anyway, just it is looping in the
+> endless loop in the kernel. It can only look as if ^Z is ignored,
+> because obviously bash doesn't see it stopped.
+
+taking the drm lock usually means you will drop it without doing
+anything stupid like sleeping for a long time, if the process dies,
+the lock gets dropped automatically also.
+
+I've only second hand knowledge of how this works though, and I'm on
+holidays for another week or so, maybe once I get back I'll find some
+time to figure out how it works vs what happens, but really I suspect
+we can kill this with fire.
+
+Dave.
