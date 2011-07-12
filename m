@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753613Ab1GLNjz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 09:39:55 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:55692 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753096Ab1GLNjy (ORCPT
+	id S1753633Ab1GLNve (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 09:51:34 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54534 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753209Ab1GLNvd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 09:39:54 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 6/8] drivers: add Contiguous Memory Allocator
-Date: Tue, 12 Jul 2011 15:39:31 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Jonathan Corbet <corbet@lwn.net>, Mel Gorman <mel@csn.ul.ie>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Michal Nazarewicz <mina86@mina86.com>,
-        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linux-media@vger.kernel.org
-References: <1309851710-3828-1-git-send-email-m.szyprowski@samsung.com> <201107051558.39344.arnd@arndb.de> <20110708172541.GM4812@n2100.arm.linux.org.uk>
-In-Reply-To: <20110708172541.GM4812@n2100.arm.linux.org.uk>
+	Tue, 12 Jul 2011 09:51:33 -0400
+Date: Tue, 12 Jul 2011 15:51:28 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>
+Subject: Re: [PATCH] dmaengine: imx-sdma: return proper error if kzalloc fails
+Message-ID: <20110712135128.GV6069@pengutronix.de>
+References: <1310475613.2618.0.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107121539.31548.arnd@arndb.de>
-X-Provags-ID: V02:K0:JEZI8q1DrUDJTK7TBYaBCdRlfN+IJdhTVwSNDEwjIJM
- noyidpFewXq8qIasCi6wqsXE3j8QFZYujfrP1pD14ic4/65+KB
- 7esvswUkBc33c50j/0GP488/RT+u9mq8GVyVMv91FacefWzVSF
- 2utKSxUqyyrVq/BLqjywpYotpd3sRMmUGl2XmvLLvNhsqlz5Ou
- kLOoZd4ny2KDUTMxk66Qg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1310475613.2618.0.camel@phoenix>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 15:51:10 up 20 days, 19:38, 60 users,  load average: 1.49, 1.40,
+ 2.20
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 08 July 2011, Russell King - ARM Linux wrote:
-> On Tue, Jul 05, 2011 at 03:58:39PM +0200, Arnd Bergmann wrote:
+On Tue, Jul 12, 2011 at 09:00:13PM +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/dma/imx-sdma.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+
+Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+
 > 
-> > If I'm reading your "ARM: DMA: steal memory for DMA coherent mappings"
-> > correctly, the idea is to have a per-platform compile-time amount
-> > of memory that is reserved purely for coherent allocations and
-> > taking out of the buddy allocator, right?
+> diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+> index 1ea47db..f96d038 100644
+> --- a/drivers/dma/imx-sdma.c
+> +++ b/drivers/dma/imx-sdma.c
+> @@ -1281,8 +1281,10 @@ static int __init sdma_probe(struct platform_device *pdev)
+>  		goto err_request_irq;
+>  
+>  	sdma->script_addrs = kzalloc(sizeof(*sdma->script_addrs), GFP_KERNEL);
+> -	if (!sdma->script_addrs)
+> +	if (!sdma->script_addrs) {
+> +		ret = -ENOMEM;
+>  		goto err_alloc;
+> +	}
+>  
+>  	sdma->version = pdata->sdma_version;
+>  
+> -- 
+> 1.7.4.1
 > 
-> Yes, because every time I've looked at taking out memory mappings in
-> the first level page tables, it's always been a major issue.
 > 
-> We have a method where we can remove first level mappings on
-> uniprocessor systems in the ioremap code just fine - we use that so
-> that systems can setup section and supersection mappings.  They can
-> tear them down as well - and we update other tasks L1 page tables
-> when they get switched in.
 > 
-> This, however, doesn't work on SMP, because if you have a DMA allocation
-> (which is permitted from IRQ context) you must have some way of removing
-> the L1 page table entries from all CPUs TLBs and the page tables currently
-> in use and any future page tables which those CPUs may switch to.
+> 
 
-Ah, interesting. So there is no tlb flush broadcast operation and it
-always goes through IPI?
-
-> So, in a SMP system, there is no safe way to remove L1 page table entries
-> from IRQ context.  That means if memory is mapped for the buddy allocators
-> using L1 page table entries, then it is fixed for that application on a
-> SMP system.
-
-Ok. Can we limit GFP_ATOMIC to memory that doesn't need to be remapped then?
-I guess we can assume that there is no regression if we just skip
-the dma_alloc_contiguous step in dma_alloc_coherent for any atomic
-callers and immediately fall back to the regular allocator.
-
-Unfortunately, this still means we have to keep both methods. I was
-hoping that with CMA doing dynamic remapping there would be no need for
-keeping a significant number of pages reserved for this.
-
-	Arnd
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
