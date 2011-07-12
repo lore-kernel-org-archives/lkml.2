@@ -1,53 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752833Ab1GLKgj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 06:36:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33541 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751553Ab1GLKgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 06:36:38 -0400
-Message-ID: <4E1C2397.9040005@redhat.com>
-Date: Tue, 12 Jul 2011 13:36:07 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1752678Ab1GLKjR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 06:39:17 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:47118 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751525Ab1GLKjQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 06:39:16 -0400
+Date: Tue, 12 Jul 2011 16:25:16 +0530
+From: "Prashant P. Shah" <pshah.mumbai@gmail.com>
+To: gregkh@suse.de
+Cc: mikem@ring3k.org, pshah.mumbai@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] Staging: rtl8192e: fixed style issues found by
+	checkpatch.pl
+Message-ID: <20110712105516.GA16196@mail.fossee.in>
 MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Will Deacon <will.deacon@arm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        "acme@ghostprotocols.net" <acme@ghostprotocols.net>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: Re: [PATCH 1/3] perf: add context field to perf_event
-References: <4E1C10F8.6010300@redhat.com> <1310462335.14978.12.camel@twins> <4E1C1373.5080500@redhat.com> <1310463060.14978.17.camel@twins> <20110712094131.GA29812@8bytes.org> <4E1C1771.9010300@redhat.com> <20110712094822.GB29812@8bytes.org> <4E1C1A0D.8000707@redhat.com> <20110712100354.GC29812@8bytes.org> <4E1C1CDD.9040005@redhat.com> <20110712102417.GD29812@8bytes.org>
-In-Reply-To: <20110712102417.GD29812@8bytes.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2011 01:24 PM, Joerg Roedel wrote:
-> On Tue, Jul 12, 2011 at 01:07:25PM +0300, Avi Kivity wrote:
-> >  On 07/12/2011 01:03 PM, Joerg Roedel wrote:
->
-> >>  Ingo made perf-integration a merge-requirement for LWP. It is not really
-> >>  well-suited for being integrated into perf because the design goal was
-> >>  easy and efficient self-profiling of tasks (like you stated). So
-> >>  integrating it into perf causes some pain. But lets see how it works
-> >>  out.
-> >
-> >  I don't think it's workable.  Having do_mmap() called in the task's
-> >  context can change how it works.
->
-> According to Ingo that is already done at other places in the kernel and
-> should not be an issue.
+This is a patch to the r8180_93cx6.c file that fixes style issues
+found by the checkpatch.pl tool
+- extra spaces
+- invalid comment style
 
-kvm is one of those places, unfortunately.
+Signed-off-by: Prashant P. Shah <pshah.mumbai@gmail.com>
+---
+ drivers/staging/rtl8192e/r8180_93cx6.c |   22 ++++++++++++++--------
+ 1 files changed, 14 insertions(+), 8 deletions(-)
 
-
+diff --git a/drivers/staging/rtl8192e/r8180_93cx6.c b/drivers/staging/rtl8192e/r8180_93cx6.c
+index 55d4f56..ee07a15 100644
+--- a/drivers/staging/rtl8192e/r8180_93cx6.c
++++ b/drivers/staging/rtl8192e/r8180_93cx6.c
+@@ -23,12 +23,14 @@
+ static void eprom_cs(struct r8192_priv *priv, short bit)
+ {
+ 	if (bit)
++		/* enable EPROM */
+ 		write_nic_byte(priv, EPROM_CMD,
+ 			       (1<<EPROM_CS_SHIFT) |
+-			       read_nic_byte(priv, EPROM_CMD)); //enable EPROM
++			       read_nic_byte(priv, EPROM_CMD));
+ 	else
++		/* disable EPROM */
+ 		write_nic_byte(priv, EPROM_CMD, read_nic_byte(priv, EPROM_CMD)
+-			       &~(1<<EPROM_CS_SHIFT)); //disable EPROM
++			       &~(1<<EPROM_CS_SHIFT));
+ 
+ 	udelay(EPROM_DELAY);
+ }
+@@ -91,7 +93,7 @@ u32 eprom_read(struct r8192_priv *priv, u32 addr)
+ 	u32 ret;
+ 
+ 	ret = 0;
+-        //enable EPROM programming
++	/* enable EPROM programming */
+ 	write_nic_byte(priv, EPROM_CMD,
+ 		       (EPROM_CMD_PROGRAM<<EPROM_CMD_OPERATING_MODE_SHIFT));
+ 	udelay(EPROM_DELAY);
+@@ -120,13 +122,17 @@ u32 eprom_read(struct r8192_priv *priv, u32 addr)
+ 	eprom_send_bits_string(priv, read_cmd, 3);
+ 	eprom_send_bits_string(priv, addr_str, addr_len);
+ 
+-	//keep chip pin D to low state while reading.
+-	//I'm unsure if it is necessary, but anyway shouldn't hurt
++	/*
++	 * keep chip pin D to low state while reading.
++	 * I'm unsure if it is necessary, but anyway shouldn't hurt
++	 */
+ 	eprom_w(priv, 0);
+ 
+ 	for (i = 0; i < 16; i++) {
+-		//eeprom needs a clk cycle between writing opcode&adr
+-		//and reading data. (eeprom outs a dummy 0)
++		/*
++		 * eeprom needs a clk cycle between writing opcode&adr
++		 * and reading data. (eeprom outs a dummy 0)
++		 */
+ 		eprom_ck_cycle(priv);
+ 		ret |= (eprom_r(priv)<<(15-i));
+ 	}
+@@ -134,7 +140,7 @@ u32 eprom_read(struct r8192_priv *priv, u32 addr)
+ 	eprom_cs(priv, 0);
+ 	eprom_ck_cycle(priv);
+ 
+-	//disable EPROM programming
++	/* disable EPROM programming */
+ 	write_nic_byte(priv, EPROM_CMD,
+ 		       (EPROM_CMD_NORMAL<<EPROM_CMD_OPERATING_MODE_SHIFT));
+ 	return ret;
 -- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+1.7.1
 
