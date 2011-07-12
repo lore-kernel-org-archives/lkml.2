@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755384Ab1GLUxF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 16:53:05 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:47721 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752624Ab1GLUxD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 16:53:03 -0400
-Date: Tue, 12 Jul 2011 13:52:58 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
-        julie Sullivan <kernelmail.jms@gmail.com>,
-        linux-kernel@vger.kernel.org, chengxu@linux.vnet.ibm.com,
-        peterz@infradead.org
-Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3
-Message-ID: <20110712205258.GN2326@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110711201508.GN2245@linux.vnet.ibm.com>
- <20110711210954.GA15745@dumpdata.com>
- <20110712105506.GB2253@linux.vnet.ibm.com>
- <20110712141228.GA7831@dumpdata.com>
- <20110712144936.GD2326@linux.vnet.ibm.com>
- <20110712160324.GA1186@dumpdata.com>
- <20110712163947.GF2326@linux.vnet.ibm.com>
- <20110712180151.GA18257@dumpdata.com>
- <20110712185907.GJ2326@linux.vnet.ibm.com>
- <20110712190756.GB4766@dumpdata.com>
+	id S1755429Ab1GLUz3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 16:55:29 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:40314 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754932Ab1GLUz1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 16:55:27 -0400
+Message-ID: <4E1CB4BF.2020302@candelatech.com>
+Date: Tue, 12 Jul 2011 13:55:27 -0700
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110712190756.GB4766@dumpdata.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: rcub1 task hung for > 180 seconds.
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 12, 2011 at 03:07:56PM -0400, Konrad Rzeszutek Wilk wrote:
-> > > > Disabling CONFIG_NO_HZ would be an interesting test case.
-> > > 
-> > > Hadn't done that yet. Compiling a kernel with "# CONFIG_NO_HZ is not set"
-> > > right now.
-> 
-> Log: http://darnok.org/xen/loop_cnt-extra-patch-no-hz-disabled.log
-> config:http://darnok.org/xen/loop_cnt-extra-patch-no-hz-disabled+.config
-> Patch: http://darnok.org/xen/loop_cnt-extra-patch-no-hz-disabled.patch
+This is same 3.0-rc7 system that had the lockdep splat I just
+posted...
 
-OK, thank you for trying this out.  No joy, but to be expected given
-Peter's later email.
+Is this task blockage serious?
 
-							Thanx, Paul
 
-> > > > > > But the loop in task_waking_fair() looks like the most prominent smoking
-> > > > > > gun at the moment.
-> > > > 
-> > > > And could you also please try out the patch that I posted earlier?
-> > > 
-> > > With the previous patch and the .. this is getting confusing. With this patch:
-> > > http://darnok.org/xen/loop_cnt-extra.patch
-> > 
-> > That is indeed the patch I intended.
-> 
-> <nods>
-> > 
-> > > I get this output: http://darnok.org/xen/log.loop_cnt-extra-patch (one guest
-> > > with 4 VCPUS) and http://darnok.org/xen/loop_cnt-extra-patch.log (the guest with 16 VCPUs)
-> > 
-> > OK, so the infinite loop in task_waking_fair() happens even if RCU callbacks
-> > are deferred until after the scheduler is fully initialized.  Sounds like
-> > one for the scheduler guys.  ;-)
-> 
-> Yikes. Well, in the meantime let me check the IPI part and see if there is something
-> busted that could trigger softirq to be invoked directly.
-> 
-> And also compile the kernel with the CONFIG_RCU_PROVE_LOCKING with some extra
-> git tree you pointed me to.
-> > 
-> > 							Thanx, Paul
+INFO: task rcub1:11 blocked for more than 180 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+rcub1           D ffff880128f6b6c8     0    11      2 0x00000000
+  ffff880128f73cd0 0000000000000046 ffff880100000000 0000000000012940
+  ffff880128f6b3f0 ffff880128f73fd8 ffff880128f72000 0000000000012940
+  ffff880128f73fd8 0000000000012940 ffff8801079e9150 ffff880128f6b3f0
+Call Trace:
+  [<ffffffff81481f0d>] ? sub_preempt_count+0x92/0xa6
+  [<ffffffff8147e1d1>] __rt_mutex_slowlock+0x84/0xb6
+  [<ffffffff8147e3c9>] rt_mutex_slowlock+0xc5/0x132
+  [<ffffffff8147e4d4>] rt_mutex_lock+0x46/0x4a
+  [<ffffffff810a6bed>] rcu_boost_kthread+0x125/0x169
+  [<ffffffff810a6ac8>] ? rcu_initiate_boost+0x8a/0x8a
+  [<ffffffff81066f80>] kthread+0x7d/0x85
+  [<ffffffff81486164>] kernel_thread_helper+0x4/0x10
+  [<ffffffff8147f358>] ? retint_restore_args+0x13/0x13
+  [<ffffffff81066f03>] ? __init_kthread_worker+0x56/0x56
+  [<ffffffff81486160>] ? gs_change+0x13/0x13
+INFO: lockdep is turned off.
+INFO: task rcub1:11 blocked for more than 180 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+rcub1           D ffff880128f6b6c8     0    11      2 0x00000000
+  ffff880128f73cd0 0000000000000046 ffff880100000000 0000000000012940
+  ffff880128f6b3f0 ffff880128f73fd8 ffff880128f72000 0000000000012940
+  ffff880128f73fd8 0000000000012940 ffff8801079e9150 ffff880128f6b3f0
+Call Trace:
+  [<ffffffff81481f0d>] ? sub_preempt_count+0x92/0xa6
+  [<ffffffff8147e1d1>] __rt_mutex_slowlock+0x84/0xb6
+  [<ffffffff8147e3c9>] rt_mutex_slowlock+0xc5/0x132
+  [<ffffffff8147e4d4>] rt_mutex_lock+0x46/0x4a
+  [<ffffffff810a6bed>] rcu_boost_kthread+0x125/0x169
+  [<ffffffff810a6ac8>] ? rcu_initiate_boost+0x8a/0x8a
+  [<ffffffff81066f80>] kthread+0x7d/0x85
+  [<ffffffff81486164>] kernel_thread_helper+0x4/0x10
+  [<ffffffff8147f358>] ? retint_restore_args+0x13/0x13
+  [<ffffffff81066f03>] ? __init_kthread_worker+0x56/0x56
+  [<ffffffff81486160>] ? gs_change+0x13/0x13
+INFO: lockdep is turned off.
+
+Thanks,
+Ben
+
+-- 
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
+
