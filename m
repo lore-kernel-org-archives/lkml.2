@@ -1,51 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752921Ab1GLKD4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 06:03:56 -0400
-Received: from 8bytes.org ([88.198.83.132]:45286 "EHLO 8bytes.org"
+	id S1752902Ab1GLKG3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 06:06:29 -0400
+Received: from mga14.intel.com ([143.182.124.37]:13252 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752723Ab1GLKDz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 06:03:55 -0400
-Date: Tue, 12 Jul 2011 12:03:54 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Will Deacon <will.deacon@arm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        "acme@ghostprotocols.net" <acme@ghostprotocols.net>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: Re: [PATCH 1/3] perf: add context field to perf_event
-Message-ID: <20110712100354.GC29812@8bytes.org>
-References: <4E1C0F02.9040906@redhat.com> <1310462046.14978.11.camel@twins> <4E1C10F8.6010300@redhat.com> <1310462335.14978.12.camel@twins> <4E1C1373.5080500@redhat.com> <1310463060.14978.17.camel@twins> <20110712094131.GA29812@8bytes.org> <4E1C1771.9010300@redhat.com> <20110712094822.GB29812@8bytes.org> <4E1C1A0D.8000707@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E1C1A0D.8000707@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751241Ab1GLKG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 06:06:28 -0400
+Message-Id: <d08817$ot4e1@azsmga001.ch.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,520,1304319600"; 
+   d="scan'208";a="26120641"
+From: Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [PATCH] i915: slab shrinker have to return -1 if it cant shrink any objects
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: keithp@keithp.com, linux-kernel@vger.kernel.org, airlied@linux.ie,
+        dri-devel@lists.freedesktop.org
+In-Reply-To: <4E1C15B2.9020800@jp.fujitsu.com>
+References: <4E0444CA.3080407@jp.fujitsu.com> <yuny60kt1nx.fsf@aiko.keithp.com> <1309424153_44559@CP5-2952> <4E1C15B2.9020800@jp.fujitsu.com>
+Date: Tue, 12 Jul 2011 11:06:12 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 12, 2011 at 12:55:25PM +0300, Avi Kivity wrote:
+On Tue, 12 Jul 2011 18:36:50 +0900, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+> Hi,
+> 
+> sorry for the delay.
+> 
+> > On Wed, 29 Jun 2011 20:53:54 -0700, Keith Packard <keithp@keithp.com> wrote:
+> >> On Fri, 24 Jun 2011 17:03:22 +0900, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+> >>
+> >>> Now, i915_gem_inactive_shrink() should return -1 instead of 0 if it
+> >>> can't take a lock. Otherwise, vmscan is getting a lot of confusing
+> >>> because vmscan can't distinguish "can't take a lock temporary" and
+> >>> "we've shrank all of i915 objects".
+> >>
+> >> This doesn't look like the cleanest change possible. I think it would be
+> >> better if the shrink function could uniformly return an error
+> >> indication so that we wouldn't need the weird looking conditional return.
+> 
+> shrink_icache_memory() is good sample code.
+> It doesn't take a lock if sc->nr_to_scan==0. i915_gem_inactive_shrink() should do
+> it too, ideally.
+> 
+> My patch only take a first-aid.
+> 
+> Plus, if I understand correctly, i915_gem_inactive_shrink() have more fundamental
+> issue. actually, shrinker code shouldn't use mutex. Instead, use spinlock.
+Why? The shrinker code is run in a non-atomic context that is explicitly
+allowed to wait, or so I thought. Where's the caveat that prevents mutex?
+Why doesn't the kernel complain?
 
-> Have a helper kernel thread do it for you.  Or extend use_mm() to return
-> the old mm (without dropping its refcount) and add a way to restore it.
+> IOW, Don't call kmalloc(GFP_KERNEL) while taking dev->struct_mutex. Otherwise,
+> vmscan in its call path completely fail to shrink i915 cache and it makes big
+> memory reclaim confusing if i915 have a lot of shrinkable pages.
 
-Making use_mm usable for regular tasks too sounds like a good idea.
-Thanks.
+i915 can have several GiB of shrinkable pages. Of which 2 GiB may be tied
+up in the GTT upon which we have to wait for the GPU to release. In the
+future, we will be able to tie up all of physical memory.
 
-> Regarding LWP - I thought the intent was self-profiling by the process  
-> for jits and the like?  If you also use it for perf, won't it be  
-> unusable for that?  Also, can't the process interfere, from userspace,  
-> by executing the unprivileged LWP instructions?
+There is only a single potential kmalloc in the shrinker path, for which
+we could preallocate a request so that we always have one available here.
+ 
+> > Unless I am mistaken, and there are more patches in flight, the return
+> > code from i915_gem_inactive_shrink() is promoted to unsigned long and then
+> > used in the calculation of how may objects to evict...
+> 
+> shrinker->shrink has int type value. you can't change i915_gem_inactive_shrink()
+> unless generic shrinker code.
+> Do you really want to change it?
 
-Ingo made perf-integration a merge-requirement for LWP. It is not really
-well-suited for being integrated into perf because the design goal was
-easy and efficient self-profiling of tasks (like you stated). So
-integrating it into perf causes some pain. But lets see how it works
-out.
+No, just pointing out that the patch causes warnings from the shrinker
+code as it tries to process (unsigned long)-1 objects. shrink_slab() does
+not use <0 as an error code!
+-Chris
 
-	Joerg
-
+-- 
+Chris Wilson, Intel Open Source Technology Centre
