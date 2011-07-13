@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964949Ab1GMFO5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 01:14:57 -0400
+	id S1752040Ab1GMFPq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 01:15:46 -0400
 Received: from mga09.intel.com ([134.134.136.24]:9791 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964930Ab1GMFOy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 01:14:54 -0400
+	id S964942Ab1GMFO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 01:14:57 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,523,1304319600"; 
-   d="scan'208";a="27048243"
+   d="scan'208";a="27048255"
 From: Huang Ying <ying.huang@intel.com>
 To: Len Brown <lenb@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
         Tony Luck <tony.luck@intel.com>, ying.huang@intel.com,
-        linux-acpi@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 13/17] lib, Make gen_pool memory allocator lockless
-Date: Wed, 13 Jul 2011 13:14:24 +0800
-Message-Id: <1310534068-30547-14-git-send-email-ying.huang@intel.com>
+        linux-acpi@vger.kernel.org
+Subject: [PATCH 15/17] ACPI, APEI, GHES, Error records content based throttle
+Date: Wed, 13 Jul 2011 13:14:26 +0800
+Message-Id: <1310534068-30547-16-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1310534068-30547-1-git-send-email-ying.huang@intel.com>
 References: <1310534068-30547-1-git-send-email-ying.huang@intel.com>
@@ -24,508 +24,299 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This version of the gen_pool memory allocator supports lockless
-operation.
+printk is used by GHES to report hardware errors.  Ratelimit is
+enforced on the printk to avoid too many hardware error reports in
+kernel log.  Because there may be thousands or even millions of
+corrected hardware errors during system running.
 
-This makes it safe to use in NMI handlers and other special
-unblockable contexts that could otherwise deadlock on locks.  This is
-implemented by using atomic operations and retries on any conflicts.
-The disadvantage is that there may be livelocks in extreme cases.  For
-better scalability, one gen_pool allocator can be used for each CPU.
+Currently, a simple scheme is used.  That is, the total number of
+hardware error reporting is ratelimited.  This may cause some issues
+in practice.
 
-The lockless operation only works if there is enough memory available.
-If new memory is added to the pool a lock has to be still taken.  So
-any user relying on locklessness has to ensure that sufficient memory
-is preallocated.
+For example, there are two kinds of hardware errors occurred in
+system.  One is corrected memory error, because the fault memory
+address is accessed frequently, there may be hundreds error report
+per-second.  The other is corrected PCIe AER error, it will be
+reported once per-second.  Because they share one ratelimit control
+structure, it is highly possible that only memory error is reported.
 
-The basic atomic operation of this allocator is cmpxchg on long.  On
-architectures that don't have NMI-safe cmpxchg implementation, the
-allocator can NOT be used in NMI handler.  So code uses the allocator
-in NMI handler should depend on CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
+To avoid the above issue, an error record content based throttle
+algorithm is implemented in the patch.  Where after the first
+successful reporting, all error records that are same are throttled for
+some time, to let other kinds of error records have the opportunity to
+be reported.
+
+In above example, the memory errors will be throttled for some time,
+after being printked.  Then the PCIe AER error will be printked
+successfully.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
-Reviewed-by: Andi Kleen <ak@linux.intel.com>
-Reviewed-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- include/linux/bitmap.h   |    1 
- include/linux/genalloc.h |   34 ++++-
- lib/bitmap.c             |    2 
- lib/genalloc.c           |  300 ++++++++++++++++++++++++++++++++++++++---------
- 4 files changed, 272 insertions(+), 65 deletions(-)
+ drivers/acpi/apei/ghes.c |  184 +++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 177 insertions(+), 7 deletions(-)
 
---- a/include/linux/bitmap.h
-+++ b/include/linux/bitmap.h
-@@ -145,6 +145,7 @@ extern void bitmap_release_region(unsign
- extern int bitmap_allocate_region(unsigned long *bitmap, int pos, int order);
- extern void bitmap_copy_le(void *dst, const unsigned long *src, int nbits);
+--- a/drivers/acpi/apei/ghes.c
++++ b/drivers/acpi/apei/ghes.c
+@@ -60,6 +60,21 @@
  
-+#define BITMAP_FIRST_WORD_MASK(start) (~0UL << ((start) % BITS_PER_LONG))
- #define BITMAP_LAST_WORD_MASK(nbits)					\
- (									\
- 	((nbits) % BITS_PER_LONG) ?					\
---- a/include/linux/genalloc.h
-+++ b/include/linux/genalloc.h
-@@ -1,8 +1,26 @@
- /*
-- * Basic general purpose allocator for managing special purpose memory
-- * not managed by the regular kmalloc/kfree interface.
-- * Uses for this includes on-device special memory, uncached memory
-- * etc.
-+ * Basic general purpose allocator for managing special purpose
-+ * memory, for example, memory that is not managed by the regular
-+ * kmalloc/kfree interface.  Uses for this includes on-device special
-+ * memory, uncached memory etc.
-+ *
-+ * It is safe to use the allocator in NMI handlers and other special
-+ * unblockable contexts that could otherwise deadlock on locks.  This
-+ * is implemented by using atomic operations and retries on any
-+ * conflicts.  The disadvantage is that there may be livelocks in
-+ * extreme cases.  For better scalability, one allocator can be used
-+ * for each CPU.
-+ *
-+ * The lockless operation only works if there is enough memory
-+ * available.  If new memory is added to the pool a lock has to be
-+ * still taken.  So any user relying on locklessness has to ensure
-+ * that sufficient memory is preallocated.
-+ *
-+ * The basic atomic operation of this allocator is cmpxchg on long.
-+ * On architectures that don't have NMI-safe cmpxchg implementation,
-+ * the allocator can NOT be used in NMI handler.  So code uses the
-+ * allocator in NMI handler should depend on
-+ * CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
-  *
-  * This source code is licensed under the GNU General Public License,
-  * Version 2.  See the file COPYING for more details.
-@@ -15,7 +33,7 @@
-  *  General purpose special memory pool descriptor.
-  */
- struct gen_pool {
--	rwlock_t lock;
-+	spinlock_t lock;
- 	struct list_head chunks;	/* list of chunks in this pool */
- 	int min_alloc_order;		/* minimum allocation order */
+ #define GHES_ESTATUS_POOL_MIN_ALLOC_ORDER 3
+ 
++/* This is just an estimation for memory pool allocation */
++#define GHES_ESTATUS_CACHE_AVG_SIZE	512
++
++#define GHES_ESTATUS_CACHES_SIZE	4
++
++#define GHES_ESTATUS_IN_CACHE_MAX_NSEC	(10 * NSEC_PER_SEC)
++/* Prevent too many caches are allocated because of RCU */
++#define GHES_ESTATUS_CACHE_ALLOCED_MAX	(GHES_ESTATUS_CACHES_SIZE * 3 / 2)
++
++#define GHES_ESTATUS_CACHE_LEN(estatus_len)			\
++	(sizeof(struct ghes_estatus_cache) + (estatus_len))
++#define GHES_ESTATUS_FROM_CACHE(estatus_cache)			\
++	((struct acpi_hest_generic_status *)			\
++	 ((struct ghes_estatus_cache *)(estatus_cache) + 1))
++
+ #define GHES_ESTATUS_NODE_LEN(estatus_len)			\
+ 	(sizeof(struct ghes_estatus_node) + (estatus_len))
+ #define GHES_ESTATUS_FROM_NODE(estatus_node)				\
+@@ -94,6 +109,14 @@ struct ghes_estatus_node {
+ 	struct acpi_hest_generic *generic;
  };
-@@ -24,8 +42,8 @@ struct gen_pool {
-  *  General purpose special memory pool chunk descriptor.
-  */
- struct gen_pool_chunk {
--	spinlock_t lock;
- 	struct list_head next_chunk;	/* next chunk in pool */
-+	atomic_t avail;
- 	phys_addr_t phys_addr;		/* physical starting address of memory chunk */
- 	unsigned long start_addr;	/* starting address of memory chunk */
- 	unsigned long end_addr;		/* ending address of memory chunk */
-@@ -56,4 +74,8 @@ static inline int gen_pool_add(struct ge
- extern void gen_pool_destroy(struct gen_pool *);
- extern unsigned long gen_pool_alloc(struct gen_pool *, size_t);
- extern void gen_pool_free(struct gen_pool *, unsigned long, size_t);
-+extern void gen_pool_for_each_chunk(struct gen_pool *,
-+	void (*)(struct gen_pool *, struct gen_pool_chunk *, void *), void *);
-+extern size_t gen_pool_avail(struct gen_pool *);
-+extern size_t gen_pool_size(struct gen_pool *);
- #endif /* __GENALLOC_H__ */
---- a/lib/bitmap.c
-+++ b/lib/bitmap.c
-@@ -271,8 +271,6 @@ int __bitmap_weight(const unsigned long
- }
- EXPORT_SYMBOL(__bitmap_weight);
  
--#define BITMAP_FIRST_WORD_MASK(start) (~0UL << ((start) % BITS_PER_LONG))
--
- void bitmap_set(unsigned long *map, int start, int nr)
++struct ghes_estatus_cache {
++	u32 estatus_len;
++	atomic_t count;
++	struct acpi_hest_generic *generic;
++	unsigned long long time_in;
++	struct rcu_head rcu;
++};
++
+ int ghes_disable;
+ module_param_named(disable, ghes_disable, bool, 0);
+ 
+@@ -154,6 +177,9 @@ static unsigned long ghes_estatus_pool_s
+ static struct llist_head ghes_estatus_llist;
+ static struct irq_work ghes_proc_irq_work;
+ 
++struct ghes_estatus_cache *ghes_estatus_caches[GHES_ESTATUS_CACHES_SIZE];
++static atomic_t ghes_estatus_cache_alloced;
++
+ static int ghes_ioremap_init(void)
  {
- 	unsigned long *p = map + BIT_WORD(start);
---- a/lib/genalloc.c
-+++ b/lib/genalloc.c
-@@ -1,8 +1,26 @@
- /*
-- * Basic general purpose allocator for managing special purpose memory
-- * not managed by the regular kmalloc/kfree interface.
-- * Uses for this includes on-device special memory, uncached memory
-- * etc.
-+ * Basic general purpose allocator for managing special purpose
-+ * memory, for example, memory that is not managed by the regular
-+ * kmalloc/kfree interface.  Uses for this includes on-device special
-+ * memory, uncached memory etc.
-+ *
-+ * It is safe to use the allocator in NMI handlers and other special
-+ * unblockable contexts that could otherwise deadlock on locks.  This
-+ * is implemented by using atomic operations and retries on any
-+ * conflicts.  The disadvantage is that there may be livelocks in
-+ * extreme cases.  For better scalability, one allocator can be used
-+ * for each CPU.
-+ *
-+ * The lockless operation only works if there is enough memory
-+ * available.  If new memory is added to the pool a lock has to be
-+ * still taken.  So any user relying on locklessness has to ensure
-+ * that sufficient memory is preallocated.
-+ *
-+ * The basic atomic operation of this allocator is cmpxchg on long.
-+ * On architectures that don't have NMI-safe cmpxchg implementation,
-+ * the allocator can NOT be used in NMI handler.  So code uses the
-+ * allocator in NMI handler should depend on
-+ * CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
-  *
-  * Copyright 2005 (C) Jes Sorensen <jes@trained-monkey.org>
-  *
-@@ -13,8 +31,109 @@
- #include <linux/slab.h>
- #include <linux/module.h>
- #include <linux/bitmap.h>
-+#include <linux/rculist.h>
-+#include <linux/interrupt.h>
- #include <linux/genalloc.h>
+ 	ghes_ioremap_area = __get_vm_area(PAGE_SIZE * GHES_IOREMAP_PAGES,
+@@ -458,9 +484,9 @@ static void __ghes_print_estatus(const c
+ 	apei_estatus_print(pfx, estatus);
+ }
  
-+static int set_bits_ll(unsigned long *addr, unsigned long mask_to_set)
-+{
-+	unsigned long val, nval;
-+
-+	nval = *addr;
-+	do {
-+		val = nval;
-+		if (val & mask_to_set)
-+			return -EBUSY;
-+		cpu_relax();
-+	} while ((nval = cmpxchg(addr, val, val | mask_to_set)) != val);
-+
-+	return 0;
-+}
-+
-+static int clear_bits_ll(unsigned long *addr, unsigned long mask_to_clear)
-+{
-+	unsigned long val, nval;
-+
-+	nval = *addr;
-+	do {
-+		val = nval;
-+		if ((val & mask_to_clear) != mask_to_clear)
-+			return -EBUSY;
-+		cpu_relax();
-+	} while ((nval = cmpxchg(addr, val, val & ~mask_to_clear)) != val);
-+
+-static void ghes_print_estatus(const char *pfx,
+-			       const struct acpi_hest_generic *generic,
+-			       const struct acpi_hest_generic_status *estatus)
++static int ghes_print_estatus(const char *pfx,
++			      const struct acpi_hest_generic *generic,
++			      const struct acpi_hest_generic_status *estatus)
+ {
+ 	/* Not more than 2 messages every 5 seconds */
+ 	static DEFINE_RATELIMIT_STATE(ratelimit_corrected, 5*HZ, 2);
+@@ -471,8 +497,137 @@ static void ghes_print_estatus(const cha
+ 		ratelimit = &ratelimit_corrected;
+ 	else
+ 		ratelimit = &ratelimit_uncorrected;
+-	if (__ratelimit(ratelimit))
++	if (__ratelimit(ratelimit)) {
+ 		__ghes_print_estatus(pfx, generic, estatus);
++		return 1;
++	}
 +	return 0;
 +}
 +
 +/*
-+ * bitmap_set_ll - set the specified number of bits at the specified position
-+ * @map: pointer to a bitmap
-+ * @start: a bit position in @map
-+ * @nr: number of bits to set
-+ *
-+ * Set @nr bits start from @start in @map lock-lessly. Several users
-+ * can set/clear the same bitmap simultaneously without lock. If two
-+ * users set the same bit, one user will return remain bits, otherwise
-+ * return 0.
++ * GHES error status reporting throttle, to report more kinds of
++ * errors, instead of just most frequently occurred errors.
 + */
-+static int bitmap_set_ll(unsigned long *map, int start, int nr)
++static int ghes_estatus_cached(struct acpi_hest_generic_status *estatus)
 +{
-+	unsigned long *p = map + BIT_WORD(start);
-+	const int size = start + nr;
-+	int bits_to_set = BITS_PER_LONG - (start % BITS_PER_LONG);
-+	unsigned long mask_to_set = BITMAP_FIRST_WORD_MASK(start);
++	u32 len;
++	int i, cached = 0;
++	unsigned long long now;
++	struct ghes_estatus_cache *cache;
++	struct acpi_hest_generic_status *cache_estatus;
 +
-+	while (nr - bits_to_set >= 0) {
-+		if (set_bits_ll(p, mask_to_set))
-+			return nr;
-+		nr -= bits_to_set;
-+		bits_to_set = BITS_PER_LONG;
-+		mask_to_set = ~0UL;
-+		p++;
-+	}
-+	if (nr) {
-+		mask_to_set &= BITMAP_LAST_WORD_MASK(size);
-+		if (set_bits_ll(p, mask_to_set))
-+			return nr;
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-+ * bitmap_clear_ll - clear the specified number of bits at the specified position
-+ * @map: pointer to a bitmap
-+ * @start: a bit position in @map
-+ * @nr: number of bits to set
-+ *
-+ * Clear @nr bits start from @start in @map lock-lessly. Several users
-+ * can set/clear the same bitmap simultaneously without lock. If two
-+ * users clear the same bit, one user will return remain bits,
-+ * otherwise return 0.
-+ */
-+static int bitmap_clear_ll(unsigned long *map, int start, int nr)
-+{
-+	unsigned long *p = map + BIT_WORD(start);
-+	const int size = start + nr;
-+	int bits_to_clear = BITS_PER_LONG - (start % BITS_PER_LONG);
-+	unsigned long mask_to_clear = BITMAP_FIRST_WORD_MASK(start);
-+
-+	while (nr - bits_to_clear >= 0) {
-+		if (clear_bits_ll(p, mask_to_clear))
-+			return nr;
-+		nr -= bits_to_clear;
-+		bits_to_clear = BITS_PER_LONG;
-+		mask_to_clear = ~0UL;
-+		p++;
-+	}
-+	if (nr) {
-+		mask_to_clear &= BITMAP_LAST_WORD_MASK(size);
-+		if (clear_bits_ll(p, mask_to_clear))
-+			return nr;
-+	}
-+
-+	return 0;
-+}
- 
- /**
-  * gen_pool_create - create a new special memory pool
-@@ -30,7 +149,7 @@ struct gen_pool *gen_pool_create(int min
- 
- 	pool = kmalloc_node(sizeof(struct gen_pool), GFP_KERNEL, nid);
- 	if (pool != NULL) {
--		rwlock_init(&pool->lock);
-+		spin_lock_init(&pool->lock);
- 		INIT_LIST_HEAD(&pool->chunks);
- 		pool->min_alloc_order = min_alloc_order;
- 	}
-@@ -63,14 +182,14 @@ int gen_pool_add_virt(struct gen_pool *p
- 	if (unlikely(chunk == NULL))
- 		return -ENOMEM;
- 
--	spin_lock_init(&chunk->lock);
- 	chunk->phys_addr = phys;
- 	chunk->start_addr = virt;
- 	chunk->end_addr = virt + size;
-+	atomic_set(&chunk->avail, size);
- 
--	write_lock(&pool->lock);
--	list_add(&chunk->next_chunk, &pool->chunks);
--	write_unlock(&pool->lock);
-+	spin_lock(&pool->lock);
-+	list_add_rcu(&chunk->next_chunk, &pool->chunks);
-+	spin_unlock(&pool->lock);
- 
- 	return 0;
- }
-@@ -85,19 +204,19 @@ EXPORT_SYMBOL(gen_pool_add_virt);
-  */
- phys_addr_t gen_pool_virt_to_phys(struct gen_pool *pool, unsigned long addr)
- {
--	struct list_head *_chunk;
- 	struct gen_pool_chunk *chunk;
-+	phys_addr_t paddr = -1;
- 
--	read_lock(&pool->lock);
--	list_for_each(_chunk, &pool->chunks) {
--		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
--
--		if (addr >= chunk->start_addr && addr < chunk->end_addr)
--			return chunk->phys_addr + addr - chunk->start_addr;
++	len = apei_estatus_len(estatus);
 +	rcu_read_lock();
-+	list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk) {
-+		if (addr >= chunk->start_addr && addr < chunk->end_addr) {
-+			paddr = chunk->phys_addr + (addr - chunk->start_addr);
++	for (i = 0; i < GHES_ESTATUS_CACHES_SIZE; i++) {
++		cache = rcu_dereference(ghes_estatus_caches[i]);
++		if (cache == NULL)
++			continue;
++		if (len != cache->estatus_len)
++			continue;
++		cache_estatus = GHES_ESTATUS_FROM_CACHE(cache);
++		if (memcmp(estatus, cache_estatus, len))
++			continue;
++		atomic_inc(&cache->count);
++		now = sched_clock();
++		if (now - cache->time_in < GHES_ESTATUS_IN_CACHE_MAX_NSEC)
++			cached = 1;
++		break;
++	}
++	rcu_read_unlock();
++	return cached;
++}
++
++static struct ghes_estatus_cache *ghes_estatus_cache_alloc(
++	struct acpi_hest_generic *generic,
++	struct acpi_hest_generic_status *estatus)
++{
++	int alloced;
++	u32 len, cache_len;
++	struct ghes_estatus_cache *cache;
++	struct acpi_hest_generic_status *cache_estatus;
++
++	alloced = atomic_add_return(1, &ghes_estatus_cache_alloced);
++	if (alloced > GHES_ESTATUS_CACHE_ALLOCED_MAX) {
++		atomic_dec(&ghes_estatus_cache_alloced);
++		return NULL;
++	}
++	len = apei_estatus_len(estatus);
++	cache_len = GHES_ESTATUS_CACHE_LEN(len);
++	cache = (void *)gen_pool_alloc(ghes_estatus_pool, cache_len);
++	if (!cache) {
++		atomic_dec(&ghes_estatus_cache_alloced);
++		return NULL;
++	}
++	cache_estatus = GHES_ESTATUS_FROM_CACHE(cache);
++	memcpy(cache_estatus, estatus, len);
++	cache->estatus_len = len;
++	atomic_set(&cache->count, 0);
++	cache->generic = generic;
++	cache->time_in = sched_clock();
++	return cache;
++}
++
++static void ghes_estatus_cache_free(struct ghes_estatus_cache *cache)
++{
++	u32 len;
++
++	len = apei_estatus_len(GHES_ESTATUS_FROM_CACHE(cache));
++	len = GHES_ESTATUS_CACHE_LEN(len);
++	gen_pool_free(ghes_estatus_pool, (unsigned long)cache, len);
++	atomic_dec(&ghes_estatus_cache_alloced);
++}
++
++static void ghes_estatus_cache_rcu_free(struct rcu_head *head)
++{
++	struct ghes_estatus_cache *cache;
++
++	cache = container_of(head, struct ghes_estatus_cache, rcu);
++	ghes_estatus_cache_free(cache);
++}
++
++static void ghes_estatus_cache_add(
++	struct acpi_hest_generic *generic,
++	struct acpi_hest_generic_status *estatus)
++{
++	int i, slot = -1, count;
++	unsigned long long now, duration, period, max_period = 0;
++	struct ghes_estatus_cache *cache, *slot_cache = NULL, *new_cache;
++
++	new_cache = ghes_estatus_cache_alloc(generic, estatus);
++	if (new_cache == NULL)
++		return;
++	rcu_read_lock();
++	now = sched_clock();
++	for (i = 0; i < GHES_ESTATUS_CACHES_SIZE; i++) {
++		cache = rcu_dereference(ghes_estatus_caches[i]);
++		if (cache == NULL) {
++			slot = i;
++			slot_cache = NULL;
 +			break;
 +		}
- 	}
--	read_unlock(&pool->lock);
++		duration = now - cache->time_in;
++		if (duration >= GHES_ESTATUS_IN_CACHE_MAX_NSEC) {
++			slot = i;
++			slot_cache = cache;
++			break;
++		}
++		count = atomic_read(&cache->count);
++		period = duration / (count + 1);
++		if (period > max_period) {
++			max_period = period;
++			slot = i;
++			slot_cache = cache;
++		}
++	}
++	/* new_cache must be put into array after its contents are written */
++	smp_wmb();
++	if (slot != -1 && cmpxchg(ghes_estatus_caches + slot,
++				  slot_cache, new_cache) == slot_cache) {
++		if (slot_cache)
++			call_rcu(&slot_cache->rcu, ghes_estatus_cache_rcu_free);
++	} else
++		ghes_estatus_cache_free(new_cache);
 +	rcu_read_unlock();
- 
--	return -1;
-+	return paddr;
  }
- EXPORT_SYMBOL(gen_pool_virt_to_phys);
  
-@@ -115,7 +234,6 @@ void gen_pool_destroy(struct gen_pool *p
- 	int order = pool->min_alloc_order;
- 	int bit, end_bit;
- 
+ static int ghes_proc(struct ghes *ghes)
+@@ -482,9 +637,11 @@ static int ghes_proc(struct ghes *ghes)
+ 	rc = ghes_read_estatus(ghes, 0);
+ 	if (rc)
+ 		goto out;
+-	ghes_print_estatus(NULL, ghes->generic, ghes->estatus);
++	if (!ghes_estatus_cached(ghes->estatus)) {
++		if (ghes_print_estatus(NULL, ghes->generic, ghes->estatus))
++			ghes_estatus_cache_add(ghes->generic, ghes->estatus);
++	}
+ 	ghes_do_proc(ghes->estatus);
 -
- 	list_for_each_safe(_chunk, _next_chunk, &pool->chunks) {
- 		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
- 		list_del(&chunk->next_chunk);
-@@ -137,44 +255,50 @@ EXPORT_SYMBOL(gen_pool_destroy);
-  * @size: number of bytes to allocate from the pool
-  *
-  * Allocate the requested number of bytes from the specified pool.
-- * Uses a first-fit algorithm.
-+ * Uses a first-fit algorithm. Can not be used in NMI handler on
-+ * architectures without NMI-safe cmpxchg implementation.
-  */
- unsigned long gen_pool_alloc(struct gen_pool *pool, size_t size)
+ out:
+ 	ghes_clear_estatus(ghes);
+ 	return 0;
+@@ -546,6 +703,7 @@ static void ghes_proc_in_irq(struct irq_
  {
--	struct list_head *_chunk;
- 	struct gen_pool_chunk *chunk;
--	unsigned long addr, flags;
-+	unsigned long addr = 0;
- 	int order = pool->min_alloc_order;
--	int nbits, start_bit, end_bit;
-+	int nbits, start_bit = 0, end_bit, remain;
-+
-+#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
-+	BUG_ON(in_nmi());
-+#endif
+ 	struct llist_node *llnode, *next, *tail = NULL;
+ 	struct ghes_estatus_node *estatus_node;
++	struct acpi_hest_generic *generic;
+ 	struct acpi_hest_generic_status *estatus;
+ 	u32 len, node_len;
  
- 	if (size == 0)
- 		return 0;
- 
- 	nbits = (size + (1UL << order) - 1) >> order;
--
--	read_lock(&pool->lock);
--	list_for_each(_chunk, &pool->chunks) {
--		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk) {
-+		if (size > atomic_read(&chunk->avail))
-+			continue;
- 
- 		end_bit = (chunk->end_addr - chunk->start_addr) >> order;
--
--		spin_lock_irqsave(&chunk->lock, flags);
--		start_bit = bitmap_find_next_zero_area(chunk->bits, end_bit, 0,
--						nbits, 0);
--		if (start_bit >= end_bit) {
--			spin_unlock_irqrestore(&chunk->lock, flags);
-+retry:
-+		start_bit = bitmap_find_next_zero_area(chunk->bits, end_bit,
-+						       start_bit, nbits, 0);
-+		if (start_bit >= end_bit)
+@@ -569,7 +727,11 @@ static void ghes_proc_in_irq(struct irq_
+ 		len = apei_estatus_len(estatus);
+ 		node_len = GHES_ESTATUS_NODE_LEN(len);
+ 		ghes_do_proc(estatus);
+-		ghes_print_estatus(NULL, estatus_node->generic, estatus);
++		if (!ghes_estatus_cached(estatus)) {
++			generic = estatus_node->generic;
++			if (ghes_print_estatus(NULL, generic, estatus))
++				ghes_estatus_cache_add(generic, estatus);
++		}
+ 		gen_pool_free(ghes_estatus_pool, (unsigned long)estatus_node,
+ 			      node_len);
+ 		llnode = next;
+@@ -622,6 +784,8 @@ static int ghes_notify_nmi(struct notifi
+ 		if (!(ghes->flags & GHES_TO_CLEAR))
  			continue;
-+		remain = bitmap_set_ll(chunk->bits, start_bit, nbits);
-+		if (remain) {
-+			remain = bitmap_clear_ll(chunk->bits, start_bit,
-+						 nbits - remain);
-+			BUG_ON(remain);
-+			goto retry;
+ #ifdef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
++		if (ghes_estatus_cached(ghes->estatus))
++			goto next;
+ 		/* Save estatus for further processing in IRQ context */
+ 		len = apei_estatus_len(ghes->estatus);
+ 		node_len = GHES_ESTATUS_NODE_LEN(len);
+@@ -633,6 +797,7 @@ static int ghes_notify_nmi(struct notifi
+ 			memcpy(estatus, ghes->estatus, len);
+ 			llist_add(&estatus_node->llnode, &ghes_estatus_llist);
  		}
- 
- 		addr = chunk->start_addr + ((unsigned long)start_bit << order);
--
--		bitmap_set(chunk->bits, start_bit, nbits);
--		spin_unlock_irqrestore(&chunk->lock, flags);
--		read_unlock(&pool->lock);
--		return addr;
-+		size = nbits << order;
-+		atomic_sub(size, &chunk->avail);
-+		break;
++next:
+ #endif
+ 		ghes_clear_estatus(ghes);
  	}
--	read_unlock(&pool->lock);
--	return 0;
-+	rcu_read_unlock();
-+	return addr;
- }
- EXPORT_SYMBOL(gen_pool_alloc);
+@@ -847,6 +1012,11 @@ static int __init ghes_init(void)
+ 	if (rc)
+ 		goto err_ioremap_exit;
  
-@@ -184,33 +308,95 @@ EXPORT_SYMBOL(gen_pool_alloc);
-  * @addr: starting address of memory to free back to pool
-  * @size: size in bytes of memory to free
-  *
-- * Free previously allocated special memory back to the specified pool.
-+ * Free previously allocated special memory back to the specified
-+ * pool.  Can not be used in NMI handler on architectures without
-+ * NMI-safe cmpxchg implementation.
-  */
- void gen_pool_free(struct gen_pool *pool, unsigned long addr, size_t size)
- {
--	struct list_head *_chunk;
- 	struct gen_pool_chunk *chunk;
--	unsigned long flags;
- 	int order = pool->min_alloc_order;
--	int bit, nbits;
-+	int start_bit, nbits, remain;
- 
--	nbits = (size + (1UL << order) - 1) >> order;
--
--	read_lock(&pool->lock);
--	list_for_each(_chunk, &pool->chunks) {
--		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
-+#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
-+	BUG_ON(in_nmi());
-+#endif
- 
-+	nbits = (size + (1UL << order) - 1) >> order;
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk) {
- 		if (addr >= chunk->start_addr && addr < chunk->end_addr) {
- 			BUG_ON(addr + size > chunk->end_addr);
--			spin_lock_irqsave(&chunk->lock, flags);
--			bit = (addr - chunk->start_addr) >> order;
--			while (nbits--)
--				__clear_bit(bit++, chunk->bits);
--			spin_unlock_irqrestore(&chunk->lock, flags);
--			break;
-+			start_bit = (addr - chunk->start_addr) >> order;
-+			remain = bitmap_clear_ll(chunk->bits, start_bit, nbits);
-+			BUG_ON(remain);
-+			size = nbits << order;
-+			atomic_add(size, &chunk->avail);
-+			rcu_read_unlock();
-+			return;
- 		}
- 	}
--	BUG_ON(nbits > 0);
--	read_unlock(&pool->lock);
-+	rcu_read_unlock();
-+	BUG();
- }
- EXPORT_SYMBOL(gen_pool_free);
++	rc = ghes_estatus_pool_expand(GHES_ESTATUS_CACHE_AVG_SIZE *
++				      GHES_ESTATUS_CACHE_ALLOCED_MAX);
++	if (rc)
++		goto err_pool_exit;
 +
-+/**
-+ * gen_pool_for_each_chunk - call func for every chunk of generic memory pool
-+ * @pool:	the generic memory pool
-+ * @func:	func to call
-+ * @data:	additional data used by @func
-+ *
-+ * Call @func for every chunk of generic memory pool.  The @func is
-+ * called with rcu_read_lock held.
-+ */
-+void gen_pool_for_each_chunk(struct gen_pool *pool,
-+	void (*func)(struct gen_pool *pool, struct gen_pool_chunk *chunk, void *data),
-+	void *data)
-+{
-+	struct gen_pool_chunk *chunk;
-+
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(chunk, &(pool)->chunks, next_chunk)
-+		func(pool, chunk, data);
-+	rcu_read_unlock();
-+}
-+EXPORT_SYMBOL(gen_pool_for_each_chunk);
-+
-+/**
-+ * gen_pool_avail - get available free space of the pool
-+ * @pool: pool to get available free space
-+ *
-+ * Return available free space of the specified pool.
-+ */
-+size_t gen_pool_avail(struct gen_pool *pool)
-+{
-+	struct gen_pool_chunk *chunk;
-+	size_t avail = 0;
-+
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk)
-+		avail += atomic_read(&chunk->avail);
-+	rcu_read_unlock();
-+	return avail;
-+}
-+EXPORT_SYMBOL_GPL(gen_pool_avail);
-+
-+/**
-+ * gen_pool_size - get size in bytes of memory managed by the pool
-+ * @pool: pool to get size
-+ *
-+ * Return size in bytes of memory managed by the pool.
-+ */
-+size_t gen_pool_size(struct gen_pool *pool)
-+{
-+	struct gen_pool_chunk *chunk;
-+	size_t size = 0;
-+
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk)
-+		size += chunk->end_addr - chunk->start_addr;
-+	rcu_read_unlock();
-+	return size;
-+}
-+EXPORT_SYMBOL_GPL(gen_pool_size);
+ 	rc = platform_driver_register(&ghes_platform_driver);
+ 	if (rc)
+ 		goto err_pool_exit;
