@@ -1,50 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195Ab1GMVof (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 17:44:35 -0400
-Received: from vms173005pub.verizon.net ([206.46.173.5]:61491 "EHLO
-	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751383Ab1GMVoe (ORCPT
+	id S1752005Ab1GMVqx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 17:46:53 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:53385 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011Ab1GMVqw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 17:44:34 -0400
-Date: Wed, 13 Jul 2011 16:44:26 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: Ingo Molnar <mingo@elte.hu>
-Cc: x86@kernel.org, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCH] x86 intel power: Initialize MSR_IA32_ENERGY_PERF_BIAS
-In-reply-to: <20110415101712.GB28007@elte.hu>
-Message-id: <alpine.LFD.2.02.1107131640280.9546@x980>
-References: <alpine.LFD.2.02.1103301819250.31342@x980>
- <20110414090854.GB9248@elte.hu> <alpine.LFD.2.02.1104150202310.29365@x980>
- <20110415101712.GB28007@elte.hu>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 13 Jul 2011 17:46:52 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] new helper to define common struct resource constructs
+Date: Wed, 13 Jul 2011 23:42:18 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Wolfram Sang <w.sang@pengutronix.de>, linux-kernel@vger.kernel.org,
+        thierry.nolf.barco@gmail.com, Huang Shijie <b32955@freescale.com>,
+        linux-mtd@lists.infradead.org,
+        " Uwe =?iso-8859-1?q?Kleine-K=F6nig?= " 
+	<u.kleine-koenig@pengutronix.de>,
+        Lothar =?iso-8859-1?q?Wa=DFmann?= <LW@karo-electronics.de>
+References: <14C4E31473AF7E4B98176CB73615181C19FBD3@039-SN1MPN1-006.039d.mgd.msft.net> <201107121529.17611.arnd@arndb.de> <20110713141849.b8cbf675.akpm@linux-foundation.org>
+In-Reply-To: <20110713141849.b8cbf675.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107132342.18648.arnd@arndb.de>
+X-Provags-ID: V02:K0:tB+TAeUbOmWj40fn9CklPEdFiOr6AuiMD0Ejf2JnYkh
+ 3kkMA/OyY8iCZb+SBc1/22Im3fQ/omCMRzdtWwVusZnLYls/du
+ 3+z1gn4Qgf6lvil/vwUXCjL7Qf1wIsFc5J8CQfAhLn8IxpByPN
+ ZVDrY4X50bTSqwL1IOMnqsqzodz2KPRLHWUCmS0ndBPk2+winy
+ WJvIAiFqFoRljxfXffG7w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday 13 July 2011 23:18:49 Andrew Morton wrote:
+> > On Monday 11 July 2011, Uwe Kleine-K__nig wrote:
+> > > resource definitions that just define start, end and flags = IORESOURCE_MEM
+> > > or IORESOURCE_IRQ (with start=end) are quite common. So introduce a shortcut
+> > > for them. Also make available a macro to specify named resources of both
+> > > types which are less common.
+> > > 
+> > > Signed-off-by: Uwe Kleine-K____nig <u.kleine-koenig@pengutronix.de>
+> > 
+> > Acked-by: Arnd Bergmann <arnd@arndb.de>
+> > 
+> > What do others think, is this worthwhile?
+> > Should we also define macros for IORESOURCE_IO and IORESOURCE_DMA?
+> > 
+> 
+> It would help if we could see some usage examples (ie: sample
+> conversions), to get a better idea of the value of this.
 
-> So how about informing users, how about making it non-silent? An informative 
-> printk that also mentions the power configuration tool, etc. This solves the 
-> concerns i mentioned.
+Uwe posted a patch '[PATCH] ARM: mxc: use new helpers to define
+common struct resource entries' that converts one ARM platform to use
+it, with reasonable outcome:
 
-Something like this?
+26 files changed, 72 insertions(+), 308 deletions(-)
 
-                rdmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
-                if ((epb & 0xF) == 0) {
-                        printk_once(KERN_WARN, "x86: updated energy_perf_bias"
-                                " to 'normal' from 'performance'\n"
-                                "You can view and update epb via utility,"
-                                " such as x86_energy_perf_policy(8)\n");
-                        epb = (epb & ~0xF) | ENERGY_PERF_BIAS_NORMAL;
-                        wrmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
-                }
+This platform has 72 definitions of static resources, in total there
+are well over 2000 such defintions in ARM alone, and the number is
+growing. Some platforms have started creating their own macros for
+this purpose, which is why I suggested doing it globally (or alternatively
+removing the macros from these platforms if we conclude that they
+are harmful).
 
+> Also, DEFINE_RES_NAMED() is going to need a bunch of argument
+> parentheses to make it bulletproof.
+
+Right.
+
+	Arnd
