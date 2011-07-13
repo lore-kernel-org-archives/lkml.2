@@ -1,53 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751420Ab1GMTmX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 15:42:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65017 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751231Ab1GMTmW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 15:42:22 -0400
-Date: Wed, 13 Jul 2011 21:39:35 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Matt Fleming <matt.fleming@linux.intel.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+	id S1751227Ab1GMTu4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 15:50:56 -0400
+Received: from vms173001pub.verizon.net ([206.46.173.1]:53365 "EHLO
+	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750806Ab1GMTuy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 15:50:54 -0400
+X-Greylist: delayed 3600 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Jul 2011 15:50:54 EDT
+Date: Wed, 13 Jul 2011 14:50:29 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Florian Mickler <florian@mickler.org>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>, linux-acpi@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] acct_arg_size: ptl is no longer needed for add_mm_counter()
-Message-ID: <20110713193935.GA18026@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Subject: Re: [Resend/Update][PATCH] ACPI: Fix lockdep false positives in
+ acpi_power_off()
+In-reply-to: <201107062044.25387.rjw@sisk.pl>
+Message-id: <alpine.LFD.2.02.1107131450240.9546@x980>
+References: <1309684450-24549-1-git-send-email-andrea@betterlinux.com>
+ <201107050132.11996.rjw@sisk.pl> <20110705100358.6857b235@schatten.dmk.lab>
+ <201107062044.25387.rjw@sisk.pl>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-acct_arg_size() takes ->page_table_lock around add_mm_counter()
-if !SPLIT_RSS_COUNTING. This is no needed after 172703b0
-"mm: delete non-atomic mm counter implementation".
+applied
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
-
- fs/exec.c |    7 -------
- 1 file changed, 7 deletions(-)
-
---- ptrace/fs/exec.c~acct_arg_size-no-ptl	2011-07-10 16:20:01.000000000 +0200
-+++ ptrace/fs/exec.c	2011-07-13 21:36:29.000000000 +0200
-@@ -181,14 +181,7 @@ static void acct_arg_size(struct linux_b
- 		return;
- 
- 	bprm->vma_pages = pages;
--
--#ifdef SPLIT_RSS_COUNTING
- 	add_mm_counter(mm, MM_ANONPAGES, diff);
--#else
--	spin_lock(&mm->page_table_lock);
--	add_mm_counter(mm, MM_ANONPAGES, diff);
--	spin_unlock(&mm->page_table_lock);
--#endif
- }
- 
- static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
+thanks,
+Len Brown, Intel Open Source Technology Center
 
