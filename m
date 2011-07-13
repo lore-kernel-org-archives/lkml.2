@@ -1,104 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751644Ab1GMMQT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 08:16:19 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:38124 "EHLO
-	rtits2.realtek.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750945Ab1GMMQR (ORCPT
+	id S1751989Ab1GMMQt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 08:16:49 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:58129 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751625Ab1GMMQr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 08:16:17 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.13 with qID p6DCG9gG005370, This message is released by code: ctaloc0852
-From: hayeswang <hayeswang@realtek.com>
-To: "'Francois Romieu'" <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-References: <1309939088-31994-1-git-send-email-hayeswang@realtek.com> <1309939088-31994-3-git-send-email-hayeswang@realtek.com> <20110712161258.GA6157@electric-eye.fr.zoreil.com>
-Subject: RE: [PATCH net-next v2 3/7] r8169: adjust the settings about RxConfig
-Date: Wed, 13 Jul 2011 20:16:08 +0800
-X-BOX-Message-Id: p6DCG9gG005370
-Message-ID: <EA7F6570521F42DBA6E34CE7E23249C3@realtek.com.tw>
+	Wed, 13 Jul 2011 08:16:47 -0400
 MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_0016_01CC4199.B3E5B800"
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: AcxAsJtndu/X7NEkSdKIv/+zUdZp0QAorMSw
-In-Reply-To: <20110712161258.GA6157@electric-eye.fr.zoreil.com>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
+In-Reply-To: <CACqU3MXujqdjur3keSF78+5qKs-j7NN4iz_YMHgH7_8D=3EdLQ@mail.gmail.com>
+References: <da20dc5c4160ed9a3da52f60799a1e4369fe3f27.1310228130.git.rprabhu@wnohang.net>
+	<CAM_iQpXeqc01dyHpViyJCMSz6wz-1mWmGi=J0UynUG8tbd99kw@mail.gmail.com>
+	<CACqU3MUgVTpc6kBvBiw7rtyn_JTA-JPrbnvai3Vnq+UWk-jSbQ@mail.gmail.com>
+	<CAOJsxLF+4VOXJwRJL7npMngDTGztXk739_GcMLxsMzmsVcDCVw@mail.gmail.com>
+	<CACqU3MUFO9DGqnK99ApaKn00vzj5rCB5=kjuSZGZpPU8c_4G-A@mail.gmail.com>
+	<20110710110241.7650e03f.rdunlap@xenotime.net>
+	<alpine.LNX.2.00.1107110051420.2818@swampdragon.chaosbits.net>
+	<20110710160722.ae763029.rdunlap@xenotime.net>
+	<alpine.LNX.2.00.1107110117080.2818@swampdragon.chaosbits.net>
+	<20110710165333.8c7f9620.rdunlap@xenotime.net>
+	<20110711050951.GA22699@sirena.org.uk>
+	<20110711101134.613d88ee.rdunlap@xenotime.net>
+	<CAM_iQpUSj5rQgMds6LppD1fM=w3z=CZ9An1OVv__cTM5u+PB3Q@mail.gmail.com>
+	<CACqU3MXujqdjur3keSF78+5qKs-j7NN4iz_YMHgH7_8D=3EdLQ@mail.gmail.com>
+Date: Wed, 13 Jul 2011 15:16:46 +0300
+X-Google-Sender-Auth: GqRFosLxP9-GFXEMMtOzWIXZk6s
+Message-ID: <CAOJsxLGfsdirEudJ=N9M0aTTqwN65UKcpQygin15ztHWR0qZdw@mail.gmail.com>
+Subject: Re: [PATCH] Avoid Wunused-but-set warning
+From: Pekka Enberg <penberg@kernel.org>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jesper Juhl <jj@chaosbits.net>,
+        Raghavendra D Prabhu <rprabhu@wnohang.net>,
+        linux-kbuild@vger.kernel.org, Nir Tzachar <nir.tzachar@gmail.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------=_NextPart_000_0016_01CC4199.B3E5B800
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+On Wed, Jul 13, 2011 at 5:21 AM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+> I have the feeling from this thread that "Acked-by:" does not need any
+> particular qualification, whereas Reviewed-by: "kinda" does. But I may
+> have understood that all wrong. Btw, I say "kinda" as I see nothing in
+> the Reviewed-by: or Acked-by: definition that require any
+> qualification on the involved subsystem to give an Acked-by: or a
+> Reviewed-by:. Maybe we [not?] need such some formal requirement.
 
- 
- Francois Romieu [mailto:romieu@fr.zoreil.com] 
-> Sent: Wednesday, July 13, 2011 12:13 AM
-> To: Hayeswang
-> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH net-next v2 3/7] r8169: adjust the 
-> settings about RxConfig
-> 
-> Hayes Wang <hayeswang@realtek.com> :
-> > Set the init value before reset in probe function. And then just 
-> > modify the relative bits and keep the init settings.
-> 
-> It breaks my old PCI Netgear 8110s (RTL_GIGA_MAC_VER_03/XID 
-> 04000000). Once the device is up, RxConfig is changed from 
-> 0x0000e70e to 0x0000000e (missed write ?).
-> 
+The formal requirement for 'Reviewed-by' is that you're OK with Linus
+and the gang handing your ass to you on a plate when a patch you've
+blessed with your tag breaks the world. 'Acked-by' is similar in
+nature but the repercussions are less severe.
 
-I find that the RxConfig has to be set after the tx/rx is enabled for 8110S(x)
-series.
-
-> Is there any side effect / objection if this patch is removed 
-> from the series and scheduled for a later time ?
-> 
-
-The original values are different from the suggested values, so I hope to apply
-this patch.
-Please try the attached file. It should fix this issue.
- 
-Best Regards,
-Hayes
-
-------=_NextPart_000_0016_01CC4199.B3E5B800
-Content-Type: application/octet-stream;
-	name="0001-r8169-fix-the-RxConfig-couldn-t-be-written.patch"
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: attachment;
-	filename="0001-r8169-fix-the-RxConfig-couldn-t-be-written.patch"
-
->From d291f25398cd6de2d9ef8545e70f003dd091f192 Mon Sep 17 00:00:00 2001=0A=
-From: Hayes <hayeswang@realtek.com>=0A=
-Date: Wed, 13 Jul 2011 11:44:06 +0800=0A=
-Subject: [PATCH] r8169:fix the RxConfig couldn't be written=0A=
-=0A=
-For 8110S, 8110SB, and 8110SC series, the initial value of RxConfig=0A=
-needs to be set after the tx/rx is enabled.=0A=
-=0A=
-Signed-off-by Hayes Wang <hayeswang@realtek.com>=0A=
----=0A=
- drivers/net/r8169.c |    3 +++=0A=
- 1 files changed, 3 insertions(+), 0 deletions(-)=0A=
-=0A=
-diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c=0A=
-index 19d739a..f04cd8a 100644=0A=
---- a/drivers/net/r8169.c=0A=
-+++ b/drivers/net/r8169.c=0A=
-@@ -4065,6 +4065,9 @@ static void rtl_hw_start_8169(struct net_device =
-*dev)=0A=
- 	    tp->mac_version =3D=3D RTL_GIGA_MAC_VER_04)=0A=
- 		RTL_W8(ChipCmd, CmdTxEnb | CmdRxEnb);=0A=
- =0A=
-+	/* RxConfig needs to be initialized after tx/rx enable */=0A=
-+	rtl_init_rxcfg(tp);=0A=
-+=0A=
- 	RTL_W8(EarlyTxThres, NoEarlyTx);=0A=
- =0A=
- 	rtl_set_rx_max_size(ioaddr, rx_buf_sz);=0A=
--- =0A=
-1.7.3.4=0A=
-=0A=
-
-------=_NextPart_000_0016_01CC4199.B3E5B800--
+                       Pekka
