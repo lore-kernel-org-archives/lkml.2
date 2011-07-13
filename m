@@ -1,144 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752119Ab1GMVfs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 17:35:48 -0400
-Received: from mail.perches.com ([173.55.12.10]:3983 "EHLO mail.perches.com"
+	id S1751692Ab1GMVjy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 17:39:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43236 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750945Ab1GMVfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 17:35:47 -0400
-Subject: Re: Linux 2.6.32.43 (WARN_RATELIMIT)
-From: Joe Perches <joe@perches.com>
-To: Jiri Slaby <jslaby@suse.cz>, David Miller <davem@davemloft.net>,
-        saidone <saidone@saidone.org>
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net
-In-Reply-To: <4E1E0E04.8030200@suse.cz>
-References: <20110713034559.GA16150@kroah.com> <4E1E0B40.1030905@suse.cz>
-	 <4E1E0C59.1030100@suse.cz>  <4E1E0E04.8030200@suse.cz>
-Content-Type: multipart/mixed; boundary="=-3WhKIK5KEfAsOf7g4r3T"
-Date: Wed, 13 Jul 2011 14:35:45 -0700
-Message-ID: <1310592945.1662.27.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1750945Ab1GMVjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 17:39:53 -0400
+Date: Wed, 13 Jul 2011 23:39:47 +0200
+From: Jan Kara <jack@suse.cz>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 5/5] mm: writeback: Prioritise dirty inodes encountered
+ by direct reclaim for background flushing
+Message-ID: <20110713213947.GC21787@quack.suse.cz>
+References: <1310567487-15367-1-git-send-email-mgorman@suse.de>
+ <1310567487-15367-6-git-send-email-mgorman@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1310567487-15367-6-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-3WhKIK5KEfAsOf7g4r3T
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
-On Wed, 2011-07-13 at 23:28 +0200, Jiri Slaby wrote:
-> Cced Joe.
-
-Thanks Jiri.
-
-I didn't submit this patch for stable.
-I don't even try to track stable.
-
-Saidone also notified me, I just replied to him
-and cc'd stable.  Perhaps I should have cc'd lkml
-as well.  Saidone's proposed patch is attached.
-
-cheers, Joe
-
-> On 07/13/2011 11:21 PM, Jiri Slaby wrote:
-> > On 07/13/2011 11:16 PM, Jiri Slaby wrote:
-> >> On 07/13/2011 05:45 AM, Greg KH wrote:
-> >>> Joe Perches (2):
-> >>>       bug.h: Add WARN_RATELIMIT
-> >>>       net: filter: Use WARN_RATELIMIT
-> >>
-> >> Hi, this causes a build failure on PPC with minimalistic config (PS3) [1]:
-> >> net/core/filter.c: In function 'sk_run_filter':
-> >> net/core/filter.c:297: error: implicit declaration of function
-> >> 'WARN_RATELIMIT'
-> >>
-> >> net/core/filter.c should include linux/bug.h (or linux/kernel.h).
-> > 
-> > Ah, no, PS3 doesn't have CONFIG_BUG set.
+On Wed 13-07-11 15:31:27, Mel Gorman wrote:
+> It is preferable that no dirty pages are dispatched from the page
+> reclaim path. If reclaim is encountering dirty pages, it implies that
+> either reclaim is getting ahead of writeback or use-once logic has
+> prioritise pages for reclaiming that are young relative to when the
+> inode was dirtied.
 > 
-> A fix attached. Upstream doesn't need it. There it is all in
-> linux/ratelimit.h
-> 
-> >> [1]
-> >> http://gitorious.org/opensuse/kernel-source/blobs/SLE11-SP1/config/ppc/ps3
-> >>
-> >> regards,
+> When dirty pages are encounted on the LRU, this patch marks the inodes
+> I_DIRTY_RECLAIM and wakes the background flusher. When the background
+> flusher runs, it moves such inodes immediately to the dispatch queue
+> regardless of inode age. There is no guarantee that pages reclaim
+> cares about will be cleaned first but the expectation is that the
+> flusher threads will clean the page quicker than if reclaim tried to
+> clean a single page.
+  Hmm, I was looking through your numbers but I didn't see any significant
+difference this patch would make. Do you?
 
+I was thinking about the problem and actually doing IO from kswapd would be
+a small problem if we submitted more than just a single page. Just to give
+you idea - time to write a single page on plain SATA drive might be like 4
+ms. Time to write sequential 4 MB of data is like 80 ms (I just made up
+these numbers but the orders should be right). So to write 1000 times more
+data you just need like 20 times longer. That's a factor of 50 in IO
+efficiency. So when reclaim/kswapd submits a single page IO once every
+couple of miliseconds, your IO throughput just went close to zero...
+BTW: I just checked your numbers in fsmark test with vanilla kernel.  You
+wrote like 14500 pages from reclaim in 567 seconds. That is about one page
+per 39 ms. That is going to have noticeable impact on IO throughput (not
+with XFS because it plays tricks with writing more than asked but with ext2
+or ext3 you would see it I guess).
 
+So when kswapd sees high percentage of dirty pages at the end of LRU, it
+could call something like fdatawrite_range() for the range of 4 MB
+(provided the file is large enough) containing that page and IO thoughput
+would not be hit that much and you will get reasonably bounded time when
+the page gets cleaned... If you wanted to be clever, you could possibly be
+more sophisticated in picking the file and range to write so that you get
+rid of the most pages at the end of LRU but I'm not sure it's worth the CPU
+cycles. Does this sound reasonable to you?
 
---=-3WhKIK5KEfAsOf7g4r3T
-Content-Disposition: inline
-Content-Description: Attached message - Re: WARN_RATELIMIT
-Content-Type: message/rfc822
-
-Return-Path: <saidone@saidone.org>
-X-Original-To: joe@perches.com
-Delivered-To: joe@perches.com
-Received: from smtp207.alice.it (smtp207.alice.it [82.57.200.103]) by
- mail.perches.com (Postfix) with ESMTP id ACDB224368 for <joe@perches.com>;
- Wed, 13 Jul 2011 10:44:42 -0700 (PDT)
-Received: from kugelmass.saidonet (80.183.18.56) by smtp207.alice.it
- (8.5.124.08) id 4DFA189A02D4036E; Wed, 13 Jul 2011 19:44:49 +0200
-Received: from [192.168.1.1] (nicoletta-desktop.saidonet [192.168.1.1]) by
- kugelmass.saidonet (Postfix) with ESMTP id 4A282B2; Wed, 13 Jul 2011
- 19:44:47 +0200 (CEST)
-Message-ID: <4E1DD98E.5030903@saidone.org>
-Date: Wed, 13 Jul 2011 19:44:46 +0200
-From: saidone <saidone@saidone.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17)
- Gecko/20110424 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: stable <stable@kernel.org>
-Subject: Re: WARN_RATELIMIT
-References: <4E1D7560.7060502@saidone.org>
-	 <1310568751.1662.13.camel@Joe-Laptop>
-In-Reply-To: <1310568751.1662.13.camel@Joe-Laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Status: 
-X-Evolution-Source: pop://joe@192.168.1.1/
-Content-Transfer-Encoding: 7bit
-
-Hi Joe, I found that the problem was that I have debugfs disabled (# 
-CONFIG_BUG is not set).
-I cannot make better than this patch to net/core/filter.c:
-
-  #ifdef CONFIG_BUG
-                         WARN_RATELIMIT(1, "Unknown code:%u jt:%u tf:%u 
-k:%u\n",
-                                        fentry->code, fentry->jt,
-                                        fentry->jf, fentry->k);
-                         #endif
-                         #ifndef CONFIG_BUG
-                         WARN_ON(1);
-                         #endif
-                         return 0;
-
-However, at least, it works ;-)
-Thank you very much for the hints,
-
-Marco Marini
-
-On 13/07/2011 16:52, Joe Perches wrote:
-> On Wed, 2011-07-13 at 12:37 +0200, saidone wrote:
->> Hello Joe,
->> I tried to build the latest stable kernel 2.6.32.43 with gcc 3.4.6, but
->> it stopped while compiling filter.c:
->> net/core/filter.c: In function `sk_run_filter':
->> net/core/filter.c:294: error: implicit declaration of function
->> `WARN_RATELIMIT'
->> How can I patch it in a "safe" manner?
->> Thanks in advance,
->> Marco Marini
->
-> I believe net/core/filter.c will need to
->
-> #include<linux/ratelimit.h>
-
-
---=-3WhKIK5KEfAsOf7g4r3T--
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
