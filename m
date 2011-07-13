@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755580Ab1GMP1e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 11:27:34 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:34604 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755269Ab1GMP1d convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 11:27:33 -0400
+	id S1755504Ab1GMPbg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 11:31:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57417 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754809Ab1GMPbf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 11:31:35 -0400
+Date: Wed, 13 Jul 2011 16:31:30 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Linux-MM <linux-mm@kvack.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, XFS <xfs@oss.sgi.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [RFC PATCH 0/5] Reduce filesystem writeback from page reclaim
+ (again)
+Message-ID: <20110713153130.GH7529@suse.de>
+References: <1310567487-15367-1-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <1310564781-5979-1-git-send-email-monstr@monstr.eu>
-References: <1310564781-5979-1-git-send-email-monstr@monstr.eu>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 14 Jul 2011 00:27:12 +0900
-X-Google-Sender-Auth: YdrvG9KRVJAX8Dm9OC0Odv6gGzs
-Message-ID: <CACxGe6vRZ4tCALpzFng2y9W_9zB3qQEntma+z292FXzDuYBRKQ@mail.gmail.com>
-Subject: Re: [PATCH] input: xilinx_ps2: Add missing of_address.h header
-To: Michal Simek <monstr@monstr.eu>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1310567487-15367-1-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 13, 2011 at 10:46 PM, Michal Simek <monstr@monstr.eu> wrote:
-> Add missing header.
->
-> Error log:
-> CC      drivers/input/serio/xilinx_ps2.o
-> drivers/input/serio/xilinx_ps2.c: In function 'xps2_of_probe':
-> drivers/input/serio/xilinx_ps2.c:249: error: implicit declaration of function 'of_address_to_resource'
->
-> Signed-off-by: Michal Simek <monstr@monstr.eu>
+On Wed, Jul 13, 2011 at 03:31:22PM +0100, Mel Gorman wrote:
+> <SNIP>
+> The objective of the series - reducing writes from reclaim - is
+> met with filesystem writes from reclaim reduced to 0 with reclaim
+> in general doing less work. ext3, ext4 and xfs all showed marked
+> improvements for fs_mark in this configuration. btrfs looked worse
+> but it's within the noise and I'd expect the patches to have little
+> or no impact there due it ignoring ->writepage from reclaim.
+> 
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
-
-> ---
->  drivers/input/serio/xilinx_ps2.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/input/serio/xilinx_ps2.c b/drivers/input/serio/xilinx_ps2.c
-> index 80baa53..d64c5a4 100644
-> --- a/drivers/input/serio/xilinx_ps2.c
-> +++ b/drivers/input/serio/xilinx_ps2.c
-> @@ -23,7 +23,7 @@
->  #include <linux/init.h>
->  #include <linux/list.h>
->  #include <linux/io.h>
-> -
-> +#include <linux/of_address.h>
->  #include <linux/of_device.h>
->  #include <linux/of_platform.h>
->
-> --
-> 1.5.5.6
->
->
-
-
+My bad, I accidentally looked at an old report for btrfs based on
+older patches. In the report posted with all patches applied, the
+performance of btrfs does look better but as the patches should make
+no difference, it's still in the noise.
 
 -- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+Mel Gorman
+SUSE Labs
