@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932201Ab1GMRAs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 13:00:48 -0400
-Received: from mtagate4.uk.ibm.com ([194.196.100.164]:46804 "EHLO
-	mtagate4.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932084Ab1GMRAr (ORCPT
+	id S932220Ab1GMRCl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 13:02:41 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:40771 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932084Ab1GMRCk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 13:00:47 -0400
-Subject: Re: [patch 0/9] kdump: Patch series for s390 support
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Reply-To: holzheu@linux.vnet.ibm.com
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, ebiederm@xmission.com, hbabu@us.ibm.com,
-        mahesh@linux.vnet.ibm.com, oomichi@mxs.nes.nec.co.jp,
-        horms@verge.net.au, heiko.carstens@de.ibm.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org
-In-Reply-To: <20110713184611.6dcb09b4@mschwide>
-References: <20110704170922.976299676@linux.vnet.ibm.com>
-	 <20110705202615.GJ24348@redhat.com>	<1309944287.3937.39.camel@br98xy6r>
-	 <20110707193321.GE28850@redhat.com>	<20110708110121.5acfc3c9@mschwide>
-	 <20110711144255.GE30674@redhat.com>	<20110711175626.121dcc58@mschwide>
-	 <20110713160239.GE4426@redhat.com>  <20110713184611.6dcb09b4@mschwide>
-Content-Type: text/plain; charset="UTF-8"
-Organization: IBM
-Date: Wed, 13 Jul 2011 18:59:50 +0200
-Message-ID: <1310576390.2864.9.camel@br98xy6r>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 13 Jul 2011 13:02:40 -0400
+Date: Wed, 13 Jul 2011 12:02:30 -0500 (CDT)
+From: Manoj Iyer <manoj.iyer@canonical.com>
+X-X-Sender: manjo@lazy
+To: Chris Ball <cjb@laptop.org>
+cc: Manoj Iyer <manoj.iyer@canonical.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, jbarnes@virtuousgeek.org,
+        matsumur@nts.ricoh.co.jp, linux-pci@vger.kernel.org,
+        linux-mmc@vger.kernel.org
+Subject: Re: [PATCH] mmc: Added quirks for Ricoh 1180:e823 lower base clock
+ frequency
+In-Reply-To: <m21uxu2k96.fsf@bob.laptop.org>
+Message-ID: <alpine.DEB.2.02.1107131157440.3174@lazy>
+References: <1310419715-13254-1-git-send-email-manoj.iyer@canonical.com> <m2sjqa2q93.fsf@bob.laptop.org> <alpine.DEB.2.02.1107131031360.3174@lazy> <201107131835.25217.arnd@arndb.de> <alpine.DEB.2.02.1107131144250.3174@lazy> <m21uxu2k96.fsf@bob.laptop.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-07-13 at 18:46 +0200, Martin Schwidefsky wrote:
-> On Wed, 13 Jul 2011 12:02:39 -0400
-> Vivek Goyal <vgoyal@redhat.com> wrote:
-> > So in case of stand alone dump, you save the calculated checksum of
-> > kdump kernel at disk and not in memory? And then calculate the checksum
-> > of memory image of kdump kernel and decide whether kdump kenrel is 
-> > corrupted or not?
-> > 
-> > If yes, this sounds more reliable as checksum of kernel is stored on
-> > some disk/tape.
-> 
-> No, the checksum for the purgatory code is stored in memory. If the purgatory
-> code is corrupted you would have to corrupt the checksum in a very specific
-> way as well to make it fail. 
 
-Currently we store the checksums for the loaded *kexec segments* in
-memory at the end of kexec_load(). The stand-alone dump tools also
-calculate the checksums for all segments and compare them with the
-stored checksums. The dump tools can do that because we have meminfos
-for all segments. A meminfo element contains:
-* address of memory chunk
-* size of memory chunk
-* checksum of memory chunk (calculated at the end of kexec_load()
+> It could be better.  Do you think you could get hold of a UHS-1 card for
+> testing with?  (I don't think it's worth doing if there's no appreciable
+> performance difference either way.)
 
-Michael
+Yes, I can go out and buy one today, do the performance tests like I have 
+done before and report back to you.
 
+>
+> Thanks,
+>
+> - Chris.
+> -- 
+> Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+> One Laptop Per Child
+>
+>
+
+--
+====================
+Manoj Iyer
+Ubuntu/Canonical
+Hardware Enablement
+====================
