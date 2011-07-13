@@ -1,59 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130Ab1GMVX2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 17:23:28 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:34275 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751818Ab1GMVX1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 17:23:27 -0400
-Date: Wed, 13 Jul 2011 14:23:15 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Julie Sullivan <kernelmail.jms@gmail.com>
-Cc: linux-kernel-mail <linux-kernel@vger.kernel.org>, kulkarni.ravi4@gmail.com
-Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3
-Message-ID: <20110713212315.GE2355@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110710214639.GP6014@linux.vnet.ibm.com>
- <CAAVPGOMafp_+45X=7asHe=MqaHY8CiJYsf2GZ3qOPrWpjctHVQ@mail.gmail.com>
- <20110710231449.GQ6014@linux.vnet.ibm.com>
- <CAAVPGOMSprJSkzziH6hJv9PweOONzsMaRZEK2ZSrV3xFBReTPw@mail.gmail.com>
- <20110711214301.GP2245@linux.vnet.ibm.com>
- <CAAVPGOOJ0NEWqF2w9zCLC1bpXeA_TwzenNo-a4kvR3tcbewnNw@mail.gmail.com>
- <20110712212920.GQ2326@linux.vnet.ibm.com>
- <CAAVPGOPnHb0E=vutOEQwqsUTo-wrj6_-dEv7tW096yyppMgWcw@mail.gmail.com>
- <20110712220036.GR2326@linux.vnet.ibm.com>
- <CAAVPGONXoGcyeqdniWxRpsKCXf+PRQJeSfOUXgaB6d9ZyzdnCA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAAVPGONXoGcyeqdniWxRpsKCXf+PRQJeSfOUXgaB6d9ZyzdnCA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752149Ab1GMVZf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 17:25:35 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:32860 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752067Ab1GMVZd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 17:25:33 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=hPQXmps4XfQMhHai1+FgYYfrTp+6K2PeghYyMdRj0GFlpYXe2LajuBHONhYSprAEXKbwPBgTJ6rZYAx7OUz2k9hXzdJ8OIfN2zK5DXUrAaDh0UIOVHzR8Wg6anDk1M5R;
+Date: Wed, 13 Jul 2011 14:11:05 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH 1/9] stringify: add HEX_STRING()
+Message-Id: <20110713141105.e5a3b00e.rdunlap@xenotime.net>
+In-Reply-To: <4E1E08A9.4030807@infradead.org>
+References: <20110710125109.c72f9c2d.rdunlap@xenotime.net>
+	<4E1E08A9.4030807@infradead.org>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 13, 2011 at 09:57:43PM +0100, Julie Sullivan wrote:
-> >> Indeed this works, applied to a clean v3.0-rc4  (!CONFIG_RCU_BOOST 64-bit build)
-> >
-> > Woo-hoo!!!  ;-)
-> >
-> > I have added your Tested-by and will push it out for -next testing.
-> >
-> >> Great job, Paul, thanks for all your efforts.
-> >> I'll test it tomorrow too on -rc5, 6 and 7 (out of time for tonight)
-> >
-> > Thinking good thoughts for the other -rc releases, and again thank you
-> > very much for your testing!
-> >
-> > Ravi, could you please test to make sure that it works for you?
-> >
-> >                                                        Thanx, Paul
-> >
+On Wed, 13 Jul 2011 18:05:45 -0300 Mauro Carvalho Chehab wrote:
+
+> Em 10-07-2011 16:51, Randy Dunlap escreveu:
+> > From: Randy Dunlap <rdunlap@xenotime.net>
+> > 
+> > Add HEX_STRING(value) to stringify.h so that drivers can
+> > convert kconfig hex values (without leading "0x") to useful
+> > hex constants.
+> > 
+> > Several drivers/media/radio/ drivers need this.  I haven't
+> > checked if any other drivers need to do this.
+> > 
+> > Alternatively, kconfig could produce hex config symbols with
+> > leading "0x".
 > 
-> Just quickly confirming - this patch also works just as well with
-> -rc5, -rc6 and -rc7 my end.
+> Hi Randy,
+> 
+> After applying patch 1/9 and 2/9 over 3.0-rc7+media patches, I'm
+> now getting this error:
+> 
+> drivers/media/radio/radio-aimslab.c:52:1: error: invalid suffix "x20f" on integer constant
 
-Very good, thank you again!!!
+Hi Mauro,
 
-							Thanx, Paul
+I built all of these drivers with my patches applied,
+but I'll see if I can find where this error is coming from.
+
+Thanks for checking & letting me know.
+
+
+> $ grep 20f .config
+> CONFIG_RADIO_RTRACK_PORT=20f
+> 
+> $ gcc --version
+> gcc (GCC) 4.4.5 20110214 (Red Hat 4.4.5-6)
+> 
+> Before this patch, this were working (or, at least, weren't producing
+> any error).
+> 
+> Perhaps the breakage on your compilation happened due to another
+> patch at the tree? If so, the better would be to apply this patch
+> series together with the ones that caused the breakage, to avoid
+> bisect troubles.
+> 
+> > 
+> > Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+> > ---
+> >  include/linux/stringify.h |    7 +++++++
+> >  1 file changed, 7 insertions(+)
+> > 
+> > NOTE: The other 8 patches are on lkml and linux-media mailing lists.
+> > 
+> > --- linux-next-20110707.orig/include/linux/stringify.h
+> > +++ linux-next-20110707/include/linux/stringify.h
+> > @@ -9,4 +9,11 @@
+> >  #define __stringify_1(x...)	#x
+> >  #define __stringify(x...)	__stringify_1(x)
+> >  
+> > +/*
+> > + * HEX_STRING(value) is useful for CONFIG_ values that are in hex,
+> > + * but kconfig does not put a leading "0x" on them.
+> > + */
+> > +#define HEXSTRINGVALUE(h, value)	h##value
+> > +#define HEX_STRING(value)		HEXSTRINGVALUE(0x, value)
+> > +
+> >  #endif	/* !__LINUX_STRINGIFY_H */
+> 
+> --
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
