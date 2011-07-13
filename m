@@ -1,46 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752034Ab1GMVQz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 17:16:55 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:63680 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751586Ab1GMVQy (ORCPT
+	id S1752045Ab1GMVSY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 17:18:24 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50534 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751818Ab1GMVSW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 17:16:54 -0400
-Message-ID: <4E1E0B40.1030905@suse.cz>
-Date: Wed, 13 Jul 2011 23:16:48 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
-MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net
-Subject: Re: Linux 2.6.32.43
-References: <20110713034559.GA16150@kroah.com>
-In-Reply-To: <20110713034559.GA16150@kroah.com>
-X-Enigmail-Version: 1.2pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 13 Jul 2011 17:18:22 -0400
+Subject: Re: [RFT][PATCH] sched, cgroup: Optimize load_balance_fair()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Paul Turner <pjt@google.com>
+Cc: Nikhil Rao <ncrao@google.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Galbraith <efault@gmx.de>
+In-Reply-To: <CAPM31R+SCCA-MwPauZn5Va2vJYNs=FdqX+MZqQ0EpwDeyom_RA@mail.gmail.com>
+References: <1310557009.2586.28.camel@twins>
+	 <CAPM31R+cS+eRaFHa2ygxF3ADYyo5Tf9R+snky3U8b5_am6Wtjg@mail.gmail.com>
+	 <1310590968.2586.38.camel@twins>
+	 <CAPM31R+SCCA-MwPauZn5Va2vJYNs=FdqX+MZqQ0EpwDeyom_RA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 13 Jul 2011 23:18:17 +0200
+Message-ID: <1310591897.2586.40.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13/2011 05:45 AM, Greg KH wrote:
-> Joe Perches (2):
->       bug.h: Add WARN_RATELIMIT
->       net: filter: Use WARN_RATELIMIT
+On Wed, 2011-07-13 at 14:14 -0700, Paul Turner wrote:
+> 
+> The task_list order was completely arbitrary anyway and had some
+> unfair bias against the groups most recently created.
 
-Hi, this causes a build failure on PPC with minimalistic config (PS3) [1]:
-net/core/filter.c: In function 'sk_run_filter':
-net/core/filter.c:297: error: implicit declaration of function
-'WARN_RATELIMIT'
-
-net/core/filter.c should include linux/bug.h (or linux/kernel.h).
-
-[1]
-http://gitorious.org/opensuse/kernel-source/blobs/SLE11-SP1/config/ppc/ps3
-
-regards,
--- 
-js
-suse labs
+fair enough I guess.
