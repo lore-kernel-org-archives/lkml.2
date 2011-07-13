@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964873Ab1GMDr3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 23:47:29 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:32948 "EHLO
+	id S964890Ab1GMDri (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 23:47:38 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:36551 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932360Ab1GMDr1 (ORCPT
+	by vger.kernel.org with ESMTP id S964880Ab1GMDrg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 23:47:27 -0400
-X-Sasl-enc: R1lErY9xdZYpfwbAgfvgkhA5vX/0T3tLdVG6ELvhTNZz 1310528845
-Date: Wed, 13 Jul 2011 05:45:59 +0200
+	Tue, 12 Jul 2011 23:47:36 -0400
+X-Sasl-enc: Y0auXL8BmStCdgpZgkX9LUQBUusoTI7Efim/z3lJE2OK 1310528854
+Date: Wed, 13 Jul 2011 05:46:39 +0200
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@kernel.org
 Cc: lwn@lwn.net
-Subject: Linux 2.6.32.43
-Message-ID: <20110713034559.GA16150@kroah.com>
+Subject: Linux 2.6.33.16
+Message-ID: <20110713034639.GC16150@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,20 +23,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm announcing the release of the 2.6.32.43 kernel.
+I'm announcing the release of the 2.6.33.16 kernel.
 
-All users of the 2.6.32 series must upgrade.
+This is primarily for the use of those people who are stuck using the
+.33-rt kernel.  Anyone else who really wants to use the .33 kernel tree
+is welcome to use this one as well.
 
-The updated 2.6.32.y git tree can be found at:
-        git://git.kernel.org/pub/scm/linux/kernel/git/longterm/linux-2.6.32.y.git
+I'll be maintaining it for a while longer as it looks like the -rt tree
+isn't moving forward to any newer kernel any time soon.
+
+The updated 2.6.33.y git tree can be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/longterm/linux-2.6.33.y.git
 and can be browsed at the normal kernel.org git web browser:
-        http://git.kernel.org/?p=linux/kernel/git/longterm/linux-2.6.32.y.git;a=summary
+        http://git.kernel.org/?p=linux/kernel/git/longterm/linux-2.6.33.y.git;a=summary
 
 thanks,
 
 greg k-h
 
 ------------
+
 
  Makefile                                |    2 
  arch/um/kernel/dyn.lds.S                |   14 ++++-
@@ -104,7 +110,7 @@ Florian Fainelli (1):
       watchdog: mtx1-wdt: request gpio before using it
 
 Greg Kroah-Hartman (1):
-      Linux 2.6.32.43
+      Linux 2.6.33.16
 
 Hugh Dickins (1):
       ksm: fix NULL pointer dereference in scan_get_next_rmap_item()
