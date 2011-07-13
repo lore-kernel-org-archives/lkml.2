@@ -1,49 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752489Ab1GMWNJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 18:13:09 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44105 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752377Ab1GMWNI convert rfc822-to-8bit (ORCPT
+	id S1752535Ab1GMWNd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 18:13:33 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:50135 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752377Ab1GMWNc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 18:13:08 -0400
-Subject: Re: [PATCH 1/6] sched: Fix (harmless) typo 'CONFG_FAIR_GROUP_SCHED'
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: "Jan H." =?ISO-8859-1?Q?Sch=F6nherr?= <schnhrr@cs.tu-berlin.de>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-In-Reply-To: <alpine.LNX.2.00.1107140006170.5754@pobox.suse.cz>
-References: <1310580816-10861-1-git-send-email-schnhrr@cs.tu-berlin.de>
-	 <1310580816-10861-2-git-send-email-schnhrr@cs.tu-berlin.de>
-	 <1310590281.2586.34.camel@twins>
-	 <alpine.LNX.2.00.1107140006170.5754@pobox.suse.cz>
-Content-Type: text/plain; charset="UTF-8"
+	Wed, 13 Jul 2011 18:13:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110713150840.2fa8e2b3.rdunlap@xenotime.net>
+References: <20110710125109.c72f9c2d.rdunlap@xenotime.net>
+	<CACqU3MWBb4J8rmaRv23=-_=GXppGSUdqmOqeXoqWi4ZJ7ZYewg@mail.gmail.com>
+	<20110713150023.0dde9ef4.rdunlap@xenotime.net>
+	<CACqU3MVh+4JMX5ywPgWrrXXuAcAYtHJyumXGDcteageJAG12wA@mail.gmail.com>
+	<20110713150840.2fa8e2b3.rdunlap@xenotime.net>
+Date: Wed, 13 Jul 2011 18:13:31 -0400
+Message-ID: <CACqU3MXSwJG14PwD0c6R7VZg9fO=XLj=-QDN5ntbQp+0xDn82A@mail.gmail.com>
+Subject: Re: [PATCH 1/9] stringify: add HEX_STRING()
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org,
+        linux-media@vger.kernel.org, mchehab@infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Date: Thu, 14 Jul 2011 00:12:52 +0200
-Message-ID: <1310595172.2586.48.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-07-14 at 00:07 +0200, Jiri Kosina wrote:
-> On Wed, 13 Jul 2011, Peter Zijlstra wrote:
-> 
-> > > From: =?UTF-8?q?Jan=20H=2E=20Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
-> > 
-> > WTF am I to do with crap like that?! 
-> 
-> Peter,
-> 
-> well, umm, get a decent e-mai client? :)
+Hi,
 
-its my apply scripts that create rubbish, also I'll take recommendations
-for a decent MUA, afaict they're all crap, mutt, claws, thunderbird,
-evolution all suck rocks and its basically picking the one that sucks
-least for your particular workflow.
+On Wed, Jul 13, 2011 at 6:08 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> On Wed, 13 Jul 2011 18:06:15 -0400 Arnaud Lacombe wrote:
+>
+>> Hi,
+>>
+>> On Wed, Jul 13, 2011 at 6:00 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+>> > On Wed, 13 Jul 2011 17:49:48 -0400 Arnaud Lacombe wrote:
+>> >
+>> >> Hi,
+>> >>
+>> >> On Sun, Jul 10, 2011 at 3:51 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+>> >> > From: Randy Dunlap <rdunlap@xenotime.net>
+>> >> >
+>> >> > Add HEX_STRING(value) to stringify.h so that drivers can
+>> >> > convert kconfig hex values (without leading "0x") to useful
+>> >> > hex constants.
+>> >> >
+>> >> > Several drivers/media/radio/ drivers need this.  I haven't
+>> >> > checked if any other drivers need to do this.
+>> >> >
+>> >> > Alternatively, kconfig could produce hex config symbols with
+>> >> > leading "0x".
+>> >> >
+>> >> Actually, I used to have a patch to make hex value have a mandatory
+>> >> "0x" prefix, in the Kconfig. I even fixed all the issue in the tree,
+>> >> it never make it to the tree (not sure why). Here's the relevant
+>> >> thread:
+>> >>
+>> >> https://patchwork.kernel.org/patch/380591/
+>> >> https://patchwork.kernel.org/patch/380621/
+>> >> https://patchwork.kernel.org/patch/380601/
+>> >>
+>> >
+>> > I prefer that this be fixed in kconfig, so long as it won't cause
+>> > any other issues.  That's why I mentioned it.
+>> >
+>> >>
+>> >> > Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+>> >> > ---
+>> >> >  include/linux/stringify.h |    7 +++++++
+>> >> >  1 file changed, 7 insertions(+)
+>> >> >
+>> >> > NOTE: The other 8 patches are on lkml and linux-media mailing lists.
+>> >> >
+>> >> > --- linux-next-20110707.orig/include/linux/stringify.h
+>> >> > +++ linux-next-20110707/include/linux/stringify.h
+>> >> > @@ -9,4 +9,11 @@
+>> >> >  #define __stringify_1(x...)    #x
+>> >> >  #define __stringify(x...)      __stringify_1(x)
+>> >> >
+>> >> > +/*
+>> >> > + * HEX_STRING(value) is useful for CONFIG_ values that are in hex,
+>> >> > + * but kconfig does not put a leading "0x" on them.
+>> >> > + */
+>> >> > +#define HEXSTRINGVALUE(h, value)       h##value
+>> >> > +#define HEX_STRING(value)              HEXSTRINGVALUE(0x, value)
+>> >> > +
+>> >> that seems hackish...
+>> >
+>> > It's a common idiom for concatenating strings in the kernel.
+>> >
+>> I meant hackish not because *how* it is done, but because *why* it has
+>> to be done, that is, because the Kconfig miss the prefix, which is
+>> really no big deal.
+>>
+>> > How would you do it without (instead of) a kconfig fix/patch?
+>> >
+>> have the Kconfig use the "0x" prefix since the beginning.
+>
+> Sure, go for it.  I'll ack it.  ;)  [or Review it :]
+> and test it.
+>
+it is already among the hunks in https://patchwork.kernel.org/patch/380601/
 
-> git-am can also apply such thing without any problems with proper accents.
-
-that's assuming I actually use git at that stage, I find git to be an
-utter pain to gather patches with.
+ - Arnaud
