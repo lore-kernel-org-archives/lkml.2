@@ -1,166 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932397Ab1GMDnW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 23:43:22 -0400
-Received: from hera.kernel.org ([140.211.167.34]:45163 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932360Ab1GMDnV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 23:43:21 -0400
-Date: Wed, 13 Jul 2011 03:42:58 GMT
-From: tip-bot for Naga Chumbalkar <nagananda.chumbalkar@hp.com>
-Message-ID: <tip-42f0efc5aae2bd7e3bc420c0902c7024ef77391f@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        nagananda.chumbalkar@hp.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        nagananda.chumbalkar@hp.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <20110712211658.2939.93123.sendpatchset@nchumbalkar.americas.cpqcorp.net>
-References: <20110712211658.2939.93123.sendpatchset@nchumbalkar.americas.cpqcorp.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, ioapic: Print IR_IO_APIC_route_entry when IR is enabled
-Git-Commit-ID: 42f0efc5aae2bd7e3bc420c0902c7024ef77391f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S964873Ab1GMDr3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 23:47:29 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:32948 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932360Ab1GMDr1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 23:47:27 -0400
+X-Sasl-enc: R1lErY9xdZYpfwbAgfvgkhA5vX/0T3tLdVG6ELvhTNZz 1310528845
+Date: Wed, 13 Jul 2011 05:45:59 +0200
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@kernel.org
+Cc: lwn@lwn.net
+Subject: Linux 2.6.32.43
+Message-ID: <20110713034559.GA16150@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 13 Jul 2011 03:43:03 +0000 (UTC)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  42f0efc5aae2bd7e3bc420c0902c7024ef77391f
-Gitweb:     http://git.kernel.org/tip/42f0efc5aae2bd7e3bc420c0902c7024ef77391f
-Author:     Naga Chumbalkar <nagananda.chumbalkar@hp.com>
-AuthorDate: Tue, 12 Jul 2011 21:17:35 +0000
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 12 Jul 2011 20:17:58 -0700
+I'm announcing the release of the 2.6.32.43 kernel.
 
-x86, ioapic: Print IR_IO_APIC_route_entry when IR is enabled
+All users of the 2.6.32 series must upgrade.
 
-When IR (interrupt remapping) is enabled print_IO_APIC() displays output according
-to legacy RTE (redirection table entry) definitons:
+The updated 2.6.32.y git tree can be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/longterm/linux-2.6.32.y.git
+and can be browsed at the normal kernel.org git web browser:
+        http://git.kernel.org/?p=linux/kernel/git/longterm/linux-2.6.32.y.git;a=summary
 
- NR Dst Mask Trig IRR Pol Stat Dmod Deli Vect:
- 00 00  1    0    0   0   0    0    0    00
- 01 00  0    0    0   0   0    0    0    01
- 02 00  0    0    0   0   0    0    0    02
- 03 00  1    0    0   0   0    0    0    03
- 04 00  1    0    0   0   0    0    0    04
- 05 00  1    0    0   0   0    0    0    05
- 06 00  1    0    0   0   0    0    0    06
-...
+thanks,
 
-The above output is as per Sec 3.2.4 of the IOAPIC datasheet:
-82093AA I/O Advanced Programmable Interrupt Controller (IOAPIC):
-http://download.intel.com/design/chipsets/datashts/29056601.pdf
+greg k-h
 
-Instead the output should display the fields as discussed in Sec 5.5.1
-of the VT-d specification:
+------------
 
-(Intel Virtualization Technology for Directed I/O:
-http://download.intel.com/technology/computing/vptech/Intel(r)_VT_for_Direct_IO.pdf)
+ Makefile                                |    2 
+ arch/um/kernel/dyn.lds.S                |   14 ++++-
+ arch/um/kernel/uml.lds.S                |   17 ++++++
+ arch/um/os-Linux/mem.c                  |    1 
+ arch/x86/xen/mmu.c                      |    9 ++-
+ block/cfq-iosched.c                     |    8 ++
+ drivers/char/tty_ldisc.c                |    4 +
+ drivers/i2c/busses/i2c-taos-evm.c       |    8 +-
+ drivers/md/md.c                         |    1 
+ drivers/media/video/uvc/uvc_queue.c     |    2 
+ drivers/net/hamradio/6pack.c            |    4 -
+ drivers/net/hamradio/mkiss.c            |    4 -
+ drivers/net/wireless/ath/ath5k/eeprom.c |    8 +-
+ drivers/usb/core/driver.c               |   11 +++
+ drivers/usb/core/hub.c                  |   13 ++--
+ drivers/usb/host/xhci-hcd.c             |   22 ++++++-
+ drivers/watchdog/mtx-1_wdt.c            |    8 ++
+ fs/inode.c                              |   22 +++++--
+ fs/nilfs2/btnode.c                      |   13 ----
+ fs/nilfs2/btnode.h                      |    1 
+ fs/nilfs2/super.c                       |    2 
+ include/asm-generic/bug.h               |   16 +++++
+ include/linux/clocksource.h             |    1 
+ include/linux/fs.h                      |    2 
+ include/linux/if_packet.h               |    2 
+ include/net/netlink.h                   |    2 
+ kernel/power/snapshot.c                 |   89 ++++++++++++++++++++++++--------
+ kernel/power/user.c                     |    4 +
+ kernel/taskstats.c                      |   15 ++++-
+ kernel/time/clocksource.c               |   24 ++++----
+ lib/debugobjects.c                      |    2 
+ mm/hugetlb.c                            |    8 ++
+ mm/ksm.c                                |    6 ++
+ mm/memory.c                             |    2 
+ mm/migrate.c                            |    2 
+ net/core/filter.c                       |    4 +
+ net/ipv4/af_inet.c                      |    3 +
+ net/ipv4/inet_diag.c                    |   14 ++---
+ net/ipv4/udp.c                          |    3 +
+ net/ipv6/udp.c                          |    5 +
+ net/packet/af_packet.c                  |    2 
+ net/sunrpc/auth_gss/auth_gss.c          |    4 -
+ net/sunrpc/clnt.c                       |    2 
+ 43 files changed, 284 insertions(+), 102 deletions(-)
 
-After the fix:
- NR Indx Fmt Mask Trig IRR Pol Stat Indx2 Zero Vect:
- 00 0000 0   1    0    0   0   0    0     0    00
- 01 000F 1   0    0    0   0   0    0     0    01
- 02 0001 1   0    0    0   0   0    0     0    02
- 03 0002 1   1    0    0   0   0    0     0    03
- 04 0011 1   1    0    0   0   0    0     0    04
- 05 0004 1   1    0    0   0   0    0     0    05
- 06 0005 1   1    0    0   0   0    0     0    06
-...
+Alan Stern (2):
+      USB: don't let errors prevent system sleep
+      USB: don't let the hub driver prevent system sleep
 
-Signed-off-by: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
-Link: http://lkml.kernel.org/r/20110712211658.2939.93123.sendpatchset@nchumbalkar.americas.cpqcorp.net
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/apic/io_apic.c |   71 ++++++++++++++++++++++++++++------------
- 1 files changed, 50 insertions(+), 21 deletions(-)
+Andrea Arcangeli (1):
+      migrate: don't account swapcache as shmem
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 1ed5cbb..8eb863e 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1562,31 +1562,60 @@ __apicdebuginit(void) print_IO_APIC(void)
- 
- 	printk(KERN_DEBUG ".... IRQ redirection table:\n");
- 
--	printk(KERN_DEBUG " NR Dst Mask Trig IRR Pol"
--			  " Stat Dmod Deli Vect:\n");
-+	if (intr_remapping_enabled) {
-+		printk(KERN_DEBUG " NR Indx Fmt Mask Trig IRR"
-+			" Pol Stat Indx2 Zero Vect:\n");
-+	} else {
-+		printk(KERN_DEBUG " NR Dst Mask Trig IRR Pol"
-+			" Stat Dmod Deli Vect:\n");
-+	}
- 
- 	for (i = 0; i <= reg_01.bits.entries; i++) {
--		struct IO_APIC_route_entry entry;
--
--		entry = ioapic_read_entry(apic, i);
--
--		printk(KERN_DEBUG " %02x %02X  ",
--			i,
--			entry.dest
--		);
-+		if (intr_remapping_enabled) {
-+			struct IO_APIC_route_entry entry;
-+			struct IR_IO_APIC_route_entry *ir_entry;
-+
-+			entry = ioapic_read_entry(apic, i);
-+			ir_entry = (struct IR_IO_APIC_route_entry *) &entry;
-+			printk(KERN_DEBUG " %02x %04X ",
-+				i,
-+				ir_entry->index
-+			);
-+			printk("%1d   %1d    %1d    %1d   %1d   "
-+				"%1d    %1d     %X    %02X\n",
-+				ir_entry->format,
-+				ir_entry->mask,
-+				ir_entry->trigger,
-+				ir_entry->irr,
-+				ir_entry->polarity,
-+				ir_entry->delivery_status,
-+				ir_entry->index2,
-+				ir_entry->zero,
-+				ir_entry->vector
-+			);
-+		} else {
-+			struct IO_APIC_route_entry entry;
- 
--		printk("%1d    %1d    %1d   %1d   %1d    %1d    %1d    %02X\n",
--			entry.mask,
--			entry.trigger,
--			entry.irr,
--			entry.polarity,
--			entry.delivery_status,
--			entry.dest_mode,
--			entry.delivery_mode,
--			entry.vector
--		);
-+			entry = ioapic_read_entry(apic, i);
-+			printk(KERN_DEBUG " %02x %02X  ",
-+				i,
-+				entry.dest
-+			);
-+			printk("%1d    %1d    %1d   %1d   %1d    "
-+				"%1d    %1d    %02X\n",
-+				entry.mask,
-+				entry.trigger,
-+				entry.irr,
-+				entry.polarity,
-+				entry.delivery_status,
-+				entry.dest_mode,
-+				entry.delivery_mode,
-+				entry.vector
-+			);
-+		}
- 	}
- 	}
-+
- 	printk(KERN_DEBUG "IRQ to pin mappings:\n");
- 	for_each_active_irq(irq) {
- 		struct irq_pin_list *entry;
+Arnd Bergmann (1):
+      6pack,mkiss: fix lock inconsistency
+
+Eric Dumazet (2):
+      inet_diag: fix inet_diag_bc_audit()
+      af_packet: prevent information leak
+
+Eugene A. Shatokhin (1):
+      ath5k: fix memory leak when fewer than N_PD_CURVES are in use
+
+Florian Fainelli (1):
+      watchdog: mtx1-wdt: request gpio before using it
+
+Greg Kroah-Hartman (1):
+      Linux 2.6.32.43
+
+Hugh Dickins (1):
+      ksm: fix NULL pointer dereference in scan_get_next_rmap_item()
+
+Jean Delvare (1):
+      i2c-taos-evm: Fix log messages
+
+Jens Axboe (1):
+      cfq-iosched: fix locking around ioc->ioc_data assignment
+
+Jiri Slaby (1):
+      TTY: ldisc, do not close until there are readers
+
+Joe Perches (2):
+      bug.h: Add WARN_RATELIMIT
+      net: filter: Use WARN_RATELIMIT
+
+Liu Aleaxander (1):
+      um: os-linux/mem.c needs sys/stat.h
+
+Marcin Slusarz (1):
+      debugobjects: Fix boot crash when kmemleak and debugobjects enabled
+
+Marcus Meissner (1):
+      net/ipv4: Check for mistakenly passed in non-IPv4 address
+
+Michal Kubecek (1):
+      PM: Free memory bitmaps if opening /dev/snapshot fails
+
+Miklos Szeredi (1):
+      mm: prevent concurrent unmap_mapping_range() on the same inode
+
+NeilBrown (1):
+      md: avoid endless recovery loop when waiting for fail device to complete.
+
+Nelson Elhage (1):
+      netlink: Make nlmsg_find_attr take a const nlmsghdr*.
+
+Rafael Aquini (1):
+      mm: fix negative commitlimit when gigantic hugepages are allocated
+
+Rafael J. Wysocki (2):
+      PM / Hibernate: Avoid hitting OOM during preallocation of memory
+      PM / Hibernate: Fix free_unnecessary_pages()
+
+Roland McGrath (1):
+      uml: fix CONFIG_STATIC_LINK=y build failure with newer glibc
+
+Sarah Sharp (1):
+      xhci: Reject double add of active endpoints.
+
+Shaohua Li (1):
+      cfq-iosched: fix a rcu warning
+
+Sjoerd Simons (1):
+      uvcvideo: Remove buffers from the queues when freeing
+
+Stefano Stabellini (1):
+      xen: partially revert "xen: set max_pfn_mapped to the last pfn mapped"
+
+Thomas Gleixner (1):
+      clocksource: Make watchdog robust vs. interruption
+
+Trond Myklebust (1):
+      SUNRPC: Ensure the RPC client only quits on fatal signals
+
+Vasiliy Kulikov (1):
+      taskstats: don't allow duplicate entries in listener mode
+
+Xufeng Zhang (2):
+      ipv6/udp: Use the correct variable to determine non-blocking condition
+      udp/recvmsg: Clear MSG_TRUNC flag when starting over for a new packet
+
