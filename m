@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751808Ab1GMFOk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 01:14:40 -0400
+	id S964869Ab1GMFRr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 01:17:47 -0400
 Received: from mga09.intel.com ([134.134.136.24]:9791 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751678Ab1GMFOi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 01:14:38 -0400
+	id S1751713Ab1GMFOj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 01:14:39 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,523,1304319600"; 
-   d="scan'208";a="27048176"
+   d="scan'208";a="27048181"
 From: Huang Ying <ying.huang@intel.com>
 To: Len Brown <lenb@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
         Tony Luck <tony.luck@intel.com>, ying.huang@intel.com,
-        linux-acpi@vger.kernel.org
-Subject: [PATCH 04/17] ACPI, APEI, GHES, Do not ratelimit fatal error printk before panic
-Date: Wed, 13 Jul 2011 13:14:15 +0800
-Message-Id: <1310534068-30547-5-git-send-email-ying.huang@intel.com>
+        linux-acpi@vger.kernel.org, Thomas Renninger <trenn@novell.com>
+Subject: [PATCH 05/17] ACPI, APEI, Add apei_exec_run_optional
+Date: Wed, 13 Jul 2011 13:14:16 +0800
+Message-Id: <1310534068-30547-6-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1310534068-30547-1-git-send-email-ying.huang@intel.com>
 References: <1310534068-30547-1-git-send-email-ying.huang@intel.com>
@@ -24,67 +24,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-printk is used by GHES to report hardware errors.  Normally, the
-printk will be ratelimited to avoid too many hardware error reports in
-kernel log.  Because there may be thousands or even millions of
-corrected hardware errors during system running.
+Some actions in APEI ERST and EINJ tables are optional, for example,
+ACPI_EINJ_BEGIN_OPERATION action is used to do some preparation for
+error injection, and firmware may choose to do nothing here.  While
+some other actions are mandatory, for example, firmware must provide
+ACPI_EINJ_GET_ERROR_TYPE implementation.
 
-That is different for fatal hardware error, because system will go
-panic as soon as possible, there will be no more than several error
-records.  And these error records are valuable for system fault
-diagnosis, so they should not be ratelimited.
+Original implementation treats all actions as optional (that is, can
+have no instructions), that may cause issue if firmware does not
+provide some mandatory actions.  To fix this, this patch adds
+apei_exec_run_optional, which should be used for optional actions.
+The original apei_exec_run should be used for mandatory actions.
 
+Cc: Thomas Renninger <trenn@novell.com>
 Signed-off-by: Huang Ying <ying.huang@intel.com>
 ---
- drivers/acpi/apei/ghes.c |   25 ++++++++++++++-----------
- 1 file changed, 14 insertions(+), 11 deletions(-)
+ drivers/acpi/apei/apei-base.c     |    9 +++++----
+ drivers/acpi/apei/apei-internal.h |   13 ++++++++++++-
+ 2 files changed, 17 insertions(+), 5 deletions(-)
 
---- a/drivers/acpi/apei/ghes.c
-+++ b/drivers/acpi/apei/ghes.c
-@@ -360,11 +360,8 @@ static void ghes_do_proc(struct ghes *gh
+--- a/drivers/acpi/apei/apei-base.c
++++ b/drivers/acpi/apei/apei-base.c
+@@ -157,9 +157,10 @@ EXPORT_SYMBOL_GPL(apei_exec_noop);
+  * Interpret the specified action. Go through whole action table,
+  * execute all instructions belong to the action.
+  */
+-int apei_exec_run(struct apei_exec_context *ctx, u8 action)
++int __apei_exec_run(struct apei_exec_context *ctx, u8 action,
++		    bool optional)
+ {
+-	int rc;
++	int rc = -ENOENT;
+ 	u32 i, ip;
+ 	struct acpi_whea_header *entry;
+ 	apei_exec_ins_func_t run;
+@@ -198,9 +199,9 @@ rewind:
+ 			goto rewind;
  	}
+ 
+-	return 0;
++	return !optional && rc < 0 ? rc : 0;
+ }
+-EXPORT_SYMBOL_GPL(apei_exec_run);
++EXPORT_SYMBOL_GPL(__apei_exec_run);
+ 
+ typedef int (*apei_exec_entry_func_t)(struct apei_exec_context *ctx,
+ 				      struct acpi_whea_header *entry,
+--- a/drivers/acpi/apei/apei-internal.h
++++ b/drivers/acpi/apei/apei-internal.h
+@@ -50,7 +50,18 @@ static inline u64 apei_exec_ctx_get_outp
+ 	return ctx->value;
  }
  
--static void ghes_print_estatus(const char *pfx, struct ghes *ghes)
-+static void __ghes_print_estatus(const char *pfx, struct ghes *ghes)
- {
--	/* Not more than 2 messages every 5 seconds */
--	static DEFINE_RATELIMIT_STATE(ratelimit, 5*HZ, 2);
--
- 	if (pfx == NULL) {
- 		if (ghes_severity(ghes->estatus->error_severity) <=
- 		    GHES_SEV_CORRECTED)
-@@ -372,12 +369,18 @@ static void ghes_print_estatus(const cha
- 		else
- 			pfx = KERN_ERR HW_ERR;
- 	}
--	if (__ratelimit(&ratelimit)) {
--		printk(
--	"%s""Hardware error from APEI Generic Hardware Error Source: %d\n",
--	pfx, ghes->generic->header.source_id);
--		apei_estatus_print(pfx, ghes->estatus);
--	}
-+	printk("%s""Hardware error from APEI Generic Hardware Error Source: %d\n",
-+	       pfx, ghes->generic->header.source_id);
-+	apei_estatus_print(pfx, ghes->estatus);
+-int apei_exec_run(struct apei_exec_context *ctx, u8 action);
++int __apei_exec_run(struct apei_exec_context *ctx, u8 action, bool optional);
++
++static inline int apei_exec_run(struct apei_exec_context *ctx, u8 action)
++{
++	return __apei_exec_run(ctx, action, 0);
 +}
 +
-+static void ghes_print_estatus(const char *pfx, struct ghes *ghes)
++/* It is optional whether the firmware provides the action */
++static inline int apei_exec_run_optional(struct apei_exec_context *ctx, u8 action)
 +{
-+	/* Not more than 2 messages every 5 seconds */
-+	static DEFINE_RATELIMIT_STATE(ratelimit, 5*HZ, 2);
-+
-+	if (__ratelimit(&ratelimit))
-+		__ghes_print_estatus(pfx, ghes);
- }
++	return __apei_exec_run(ctx, action, 1);
++}
  
- static int ghes_proc(struct ghes *ghes)
-@@ -476,7 +479,7 @@ static int ghes_notify_nmi(struct notifi
+ /* Common instruction implementation */
  
- 	if (sev_global >= GHES_SEV_PANIC) {
- 		oops_begin();
--		ghes_print_estatus(KERN_EMERG HW_ERR, ghes_global);
-+		__ghes_print_estatus(KERN_EMERG HW_ERR, ghes_global);
- 		/* reboot to log the error! */
- 		if (panic_timeout == 0)
- 			panic_timeout = ghes_panic_timeout;
