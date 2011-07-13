@@ -1,98 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756142Ab1GMQJl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 12:09:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20715 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754596Ab1GMQJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 12:09:39 -0400
-Date: Wed, 13 Jul 2011 12:02:39 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>, ebiederm@xmission.com,
-        hbabu@us.ibm.com, mahesh@linux.vnet.ibm.com, oomichi@mxs.nes.nec.co.jp,
-        horms@verge.net.au, heiko.carstens@de.ibm.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org
-Subject: Re: [patch 0/9] kdump: Patch series for s390 support
-Message-ID: <20110713160239.GE4426@redhat.com>
-References: <20110704170922.976299676@linux.vnet.ibm.com>
- <20110705202615.GJ24348@redhat.com>
- <1309944287.3937.39.camel@br98xy6r>
- <20110707193321.GE28850@redhat.com>
- <20110708110121.5acfc3c9@mschwide>
- <20110711144255.GE30674@redhat.com>
- <20110711175626.121dcc58@mschwide>
+	id S1756129Ab1GMQTg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 12:19:36 -0400
+Received: from exprod7og112.obsmtp.com ([64.18.2.177]:42871 "EHLO
+	exprod7og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755972Ab1GMQTf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 12:19:35 -0400
+Message-ID: <4E1DC535.1030000@genband.com>
+Date: Wed, 13 Jul 2011 10:17:57 -0600
+From: Chris Friesen <chris.friesen@genband.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110711175626.121dcc58@mschwide>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andi Kleen <andi@firstfloor.org>
+CC: MK <mk@cognitivedissonance.ca>, linux-kernel@vger.kernel.org
+Subject: Re: AVX "Sandy Bridge" hardware issue?
+References: <20110712161616.b5196a3b.mk@cognitivedissonance.ca> <m2k4bn57j4.fsf@firstfloor.org>
+In-Reply-To: <m2k4bn57j4.fsf@firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 13 Jul 2011 16:17:57.0916 (UTC) FILETIME=[6DB1EDC0:01CC4178]
+X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-18258.000
+X-TM-AS-Result: No--16.637300-5.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 11, 2011 at 05:56:26PM +0200, Martin Schwidefsky wrote:
+On 07/12/2011 06:49 PM, Andi Kleen wrote:
+> MK<mk@cognitivedissonance.ca>  writes:
+>>
+>> In which Andreas Schwab points out (rightly or wrongly) that according
+>> to the /proc/cpuinfo from the slice, the processor actually does not
+>> support AVX.  However,  the "model name", "Intel(R) Xeon(R) CPU
+>> E31230", is according to this a Sandy Bridge processor with AVX:
+>
+> If it's in a VM then the VM may not expose AVX to the guest
+> (the VMs have to do that explicitely because AVX has additional state).
+> If it's not in /proc/cpuinfo on the guest that's likely the case.
 
-[..]
-> > kexec-tools purgatory code already has the checksum logic. So you don't
-> > have to redo that in stand alone tools. I think you probably need to
-> > s390 specic purgatory and jump to IPLing stand alone kernel if kdump
-> > kernel is corrupted instead of rebooting back or spinning infinitely
-> > in the loop/
-> 
-> I can not quite follow you here. The purgatory code is part of the kdump kernel,
-> no? When we trigger a dump with the stand-alone tools we will start executing
-> code in the assembler function of that stand-alone tools. We can not trust
-> the kdump kernel yet, not without doing the checksums first.
+The OP mentioned that he's using OpenVZ, so it's running in a container 
+(chroot on steroids), not a "true" VM.
 
-Purgatory is another piece of binary code which is loaded along with kdump
-kernel in reserved memory area. So yes, there is a chance that this code
-itself get corrupted.
+Each instance runs the same kernel, they're isolated from the other 
+instances using filesystem/process/network namespaces.
 
-So in case of stand alone dump, you save the calculated checksum of
-kdump kernel at disk and not in memory? And then calculate the checksum
-of memory image of kdump kernel and decide whether kdump kenrel is 
-corrupted or not?
+That said, /proc/cpuinfo is virtualized somehow by the containerization 
+since it shows only the cpus assigned to the container--it seems 
+plausible that they screwed up the cpu flags while doing it.
 
-If yes, this sounds more reliable as checksum of kernel is stored on
-some disk/tape.
+I think your suggestion of talking to the vendor is the correct next step.
 
-[..]
-> > Ok. So again why not reuse the checksump capability of kexec-tools and
-> > instead of infinite looping you can jump to stand alone tools + IPL etc.
-> > I understand this will require a tighter integration with kexec-tools
-> > and using ELF header mechanism and will not cover the early kernel
-> > crashes.
-> 
-> Imho the checksum of kexec-tools is in the wrong place.
+Chris
 
-Because you think that stored checksum can get corrupted?
 
-[..]
-> > To me we seem to be diverging a lot from existing kdump+kexec-tools
-> > mechanism just to solve the case of early crash dumping. If we break
-> > down the problem in two parts and do thing kexec-tools way (with a
-> > backup path of booting stand alone kernel if kdump kenrel is corrupted),
-> > things might be better.
-> 
-> The "backup path of booting stand alone kernel" would result in passing
-> the control twice, once from the stand-alone dumper to the kexec purgatory
-> (after the purgatory checksum has been verified), then doing more checks 
-> in the kdump kernel, only to return to the stand-alone dumper if some check
-> fails. Does not really sound enticing to me.
-
-What I am suggesting is that stand alone dumper gets control only if
-kdump kernel is corrupted.
-
-So following sequence.
-
-Kernel Crash ---> purgatory --> either kdump kenrel/IPL stand alone tools
-
-Here only drawback seems to be that we assume that purgatory code and
-pre-calculated checksum has not been corrupted. The big advantage is
-that s390 kdump support looks very similar to other arches and
-understaning and supporting kdump across architectures becomes easy.
-
-Thanks
-Vivek
+-- 
+Chris Friesen
+Software Developer
+GENBAND
+chris.friesen@genband.com
+www.genband.com
