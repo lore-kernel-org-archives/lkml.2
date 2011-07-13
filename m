@@ -1,92 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752923Ab1GMXeE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 19:34:04 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:48821 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752876Ab1GMXeC convert rfc822-to-8bit (ORCPT
+	id S1752974Ab1GMXfA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 19:35:00 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:16497 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752946Ab1GMXe7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 19:34:02 -0400
+	Wed, 13 Jul 2011 19:34:59 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqYCAJsqHk55LCkBgWdsb2JhbABTp0EVAQEWJiXLQg6GLASjQw
+Date: Thu, 14 Jul 2011 09:34:49 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        XFS <xfs@oss.sgi.com>, Christoph Hellwig <hch@infradead.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 1/5] mm: vmscan: Do not writeback filesystem pages in
+ direct reclaim
+Message-ID: <20110713233449.GU23038@dastard>
+References: <1310567487-15367-1-git-send-email-mgorman@suse.de>
+ <1310567487-15367-2-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF049E834757@HQMAIL01.nvidia.com>
-References: <1309897306-22953-1-git-send-email-swarren@nvidia.com>
- <20110706053941.GE9978@ponder.secretlab.ca> <74CDBE0F657A3D45AFBB94109FB122FF049E834757@HQMAIL01.nvidia.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 14 Jul 2011 08:33:38 +0900
-X-Google-Sender-Auth: O1wdoEs3AG4RrHi-iUxPIQhpEkE
-Message-ID: <CACxGe6tojgLSmHTxzGn3hZZVqiR_z6xbWrazYekm0TwQoWK5eA@mail.gmail.com>
-Subject: Re: [PATCH] i2c: tegra: Use engineering names in DT compatible property
-To: Stephen Warren <swarren@nvidia.com>
-Cc: "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1310567487-15367-2-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 14, 2011 at 2:59 AM, Stephen Warren <swarren@nvidia.com> wrote:
-> Grant Likely wrote at Tuesday, July 05, 2011 11:40 PM:
->> On Tue, Jul 05, 2011 at 02:21:46PM -0600, Stephen Warren wrote:
->> > Engineering names are more stable than marketing names. Hence, use them
->> > for Device Tree compatible properties instead.
->> >
->> > Signed-off-by: Stephen Warren <swarren@nvidia.com>
->> > ---
->> > Grant, this is against devicetree/arm and also makes sense for
->> > devicetree/test.
->>
->> Acked-by: Grant Likely <grant.likely@secretlab.ca>
->>
->> Ben is the one to pick up this patch.
->
-> I don't believe anyone ever sent a patch to Ben to add tegra_i2c_of_match
-> to the driver; the OF support patch didn't include that part of the code.
-> As such, Ben can't yet apply this to his tree. (Although I note this patch
-> is in Grant's /arm and /test trees, which is probably good enough for now).
+On Wed, Jul 13, 2011 at 03:31:23PM +0100, Mel Gorman wrote:
+> From: Mel Gorman <mel@csn.ul.ie>
+> 
+> When kswapd is failing to keep zones above the min watermark, a process
+> will enter direct reclaim in the same manner kswapd does. If a dirty
+> page is encountered during the scan, this page is written to backing
+> storage using mapping->writepage.
+> 
+> This causes two problems. First, it can result in very deep call
+> stacks, particularly if the target storage or filesystem are complex.
+> Some filesystems ignore write requests from direct reclaim as a result.
+> The second is that a single-page flush is inefficient in terms of IO.
+> While there is an expectation that the elevator will merge requests,
+> this does not always happen. Quoting Christoph Hellwig;
+> 
+> 	The elevator has a relatively small window it can operate on,
+> 	and can never fix up a bad large scale writeback pattern.
+> 
+> This patch prevents direct reclaim writing back filesystem pages by
+> checking if current is kswapd. Anonymous pages are still written to
+> swap as there is not the equivalent of a flusher thread for anonymos
+> pages. If the dirty pages cannot be written back, they are placed
+> back on the LRU lists.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-Hmmm, I thought it had been done.  It certainly is ready to go in.  Do
-you want to put together a roll-up patch that includes all the
-required changes and post it again? (although double check linux-next
-first).
+Ok, so that makes the .writepage checks in ext4, xfs and btrfs for this
+condition redundant. In effect the patch should be a no-op for those
+filesystems. Can you also remove the checks in the filesystems?
 
-g.
+Cheers,
 
->
->> >  drivers/i2c/busses/i2c-tegra.c |    2 +-
->> >  1 files changed, 1 insertions(+), 1 deletions(-)
->> >
->> > diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
->> > index 8914bd1..99b1b6d 100644
->> > --- a/drivers/i2c/busses/i2c-tegra.c
->> > +++ b/drivers/i2c/busses/i2c-tegra.c
->> > @@ -716,7 +716,7 @@ static int tegra_i2c_resume(struct platform_device *pdev)
->> >  #if defined(CONFIG_OF)
->> >  /* Match table for of_platform binding */
->> >  static const struct of_device_id tegra_i2c_of_match[] __devinitconst = {
->> > -   { .compatible = "nvidia,tegra250-i2c", },
->> > +   { .compatible = "nvidia,tegra20-i2c", },
->> >     {},
->> >  };
->> >  MODULE_DEVICE_TABLE(of, tegra_i2c_of_match);
->> > --
->> > 1.7.0.4
->> >
->
-> --
-> nvpublic
->
->
-
-
-
+Dave.
 -- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+Dave Chinner
+david@fromorbit.com
