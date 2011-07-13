@@ -1,110 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752325Ab1GMWIo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 18:08:44 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:47593 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751794Ab1GMWIm convert rfc822-to-8bit (ORCPT
+	id S1752429Ab1GMWLn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 18:11:43 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:40449 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752259Ab1GMWLl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 18:08:42 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=KpcqjkpgvfickCcxWi/YR9iTm+nGmBJCgHlotUtcAEcKh/asejkjQ1j+dfPqa9ZUuK1izCRdxkIVQuZWnygXS/t1gldpOQr9g4NpfQaRQHN+0knP3WTW9RxLTh1bw7ii;
-Date: Wed, 13 Jul 2011 15:08:40 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org,
-        linux-media@vger.kernel.org, mchehab@infradead.org
-Subject: Re: [PATCH 1/9] stringify: add HEX_STRING()
-Message-Id: <20110713150840.2fa8e2b3.rdunlap@xenotime.net>
-In-Reply-To: <CACqU3MVh+4JMX5ywPgWrrXXuAcAYtHJyumXGDcteageJAG12wA@mail.gmail.com>
-References: <20110710125109.c72f9c2d.rdunlap@xenotime.net>
-	<CACqU3MWBb4J8rmaRv23=-_=GXppGSUdqmOqeXoqWi4ZJ7ZYewg@mail.gmail.com>
-	<20110713150023.0dde9ef4.rdunlap@xenotime.net>
-	<CACqU3MVh+4JMX5ywPgWrrXXuAcAYtHJyumXGDcteageJAG12wA@mail.gmail.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 13 Jul 2011 18:11:41 -0400
+References: <4E1B978C.2030407@psychogeeks.com> <20110712080309.d538fec9.rdunlap@xenotime.net> <7B814F02-408C-434F-B813-8630B60914DA@wilsonet.com> <4E1CCC26.4060506@psychogeeks.com> <1B380AD0-FE0D-47DF-B2C3-605253C9C783@wilsonet.com> <4E1D3045.7050507@psychogeeks.com>
+In-Reply-To: <4E1D3045.7050507@psychogeeks.com>
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+Message-Id: <2E869B1F-D476-4645-BE26-B1DD77DF1735@wilsonet.com>
 Content-Transfer-Encoding: 8BIT
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Cc: Linux Media Mailing List <linux-media@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>
+From: Jarod Wilson <jarod@wilsonet.com>
+Subject: Re: Imon module Oops and kernel hang
+Date: Wed, 13 Jul 2011 18:11:22 -0400
+To: Chris W <lkml@psychogeeks.com>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Jul 2011 18:06:15 -0400 Arnaud Lacombe wrote:
+On Jul 13, 2011, at 1:42 AM, Chris W wrote:
 
-> Hi,
 > 
-> On Wed, Jul 13, 2011 at 6:00 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> > On Wed, 13 Jul 2011 17:49:48 -0400 Arnaud Lacombe wrote:
-> >
-> >> Hi,
-> >>
-> >> On Sun, Jul 10, 2011 at 3:51 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> >> > From: Randy Dunlap <rdunlap@xenotime.net>
-> >> >
-> >> > Add HEX_STRING(value) to stringify.h so that drivers can
-> >> > convert kconfig hex values (without leading "0x") to useful
-> >> > hex constants.
-> >> >
-> >> > Several drivers/media/radio/ drivers need this.  I haven't
-> >> > checked if any other drivers need to do this.
-> >> >
-> >> > Alternatively, kconfig could produce hex config symbols with
-> >> > leading "0x".
-> >> >
-> >> Actually, I used to have a patch to make hex value have a mandatory
-> >> "0x" prefix, in the Kconfig. I even fixed all the issue in the tree,
-> >> it never make it to the tree (not sure why). Here's the relevant
-> >> thread:
-> >>
-> >> https://patchwork.kernel.org/patch/380591/
-> >> https://patchwork.kernel.org/patch/380621/
-> >> https://patchwork.kernel.org/patch/380601/
-> >>
-> >
-> > I prefer that this be fixed in kconfig, so long as it won't cause
-> > any other issues.  That's why I mentioned it.
-> >
-> >>
-> >> > Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-> >> > ---
-> >> >  include/linux/stringify.h |    7 +++++++
-> >> >  1 file changed, 7 insertions(+)
-> >> >
-> >> > NOTE: The other 8 patches are on lkml and linux-media mailing lists.
-> >> >
-> >> > --- linux-next-20110707.orig/include/linux/stringify.h
-> >> > +++ linux-next-20110707/include/linux/stringify.h
-> >> > @@ -9,4 +9,11 @@
-> >> >  #define __stringify_1(x...)    #x
-> >> >  #define __stringify(x...)      __stringify_1(x)
-> >> >
-> >> > +/*
-> >> > + * HEX_STRING(value) is useful for CONFIG_ values that are in hex,
-> >> > + * but kconfig does not put a leading "0x" on them.
-> >> > + */
-> >> > +#define HEXSTRINGVALUE(h, value)       h##value
-> >> > +#define HEX_STRING(value)              HEXSTRINGVALUE(0x, value)
-> >> > +
-> >> that seems hackish...
-> >
-> > It's a common idiom for concatenating strings in the kernel.
-> >
-> I meant hackish not because *how* it is done, but because *why* it has
-> to be done, that is, because the Kconfig miss the prefix, which is
-> really no big deal.
+> On 13/07/11 14:20, Jarod Wilson wrote:
 > 
-> > How would you do it without (instead of) a kconfig fix/patch?
-> >
-> have the Kconfig use the "0x" prefix since the beginning.
+>>> Chris W wrote:
+>>> The rc keymap modules have been built (en masse as a result of
+>>> CONFIG_RC_MAP=m) but I am not explicitly loading them and they do not
+>>> get automatically loaded.
+>> 
+>> Huh. That's unexpected. They get auto-loaded here, last I knew. I'll
+>> have to give one of my devices a spin tomorrow, not sure exactly what
+>> the last kernel I tried one of them on was. Pretty sure they're
+>> working fine with the Fedora 15 2.6.38.x kernels and vanilla (but
+>> Fedora-configured) 3.0-rc kernels though.
+> 
+> 
+> I just ran depmod to make sure things were straight in this dept.
+> 
+> kepler ~ # depmod -F System.map -e -av 2.6.39.3
+> 
+> There are no reported errors.   The modules rc-imon-mce.ko,
+> rc-imon-pad.ko and imon.ko depend only on rc-core.ko according to the
+> output.  There don't seem to be any explicit dependencies to the keymaps
+> (not a kernel dev so I don't know if there should be)
+
+Yeah, imon depends on rc-core, and requests its keymap via rc-core, so
+rc-core should then load up rc-imon-pad. Just tried on 3.0-rc7+ here,
+and everything is happy:
+
+[10791.866789] imon 3-2:1.0: usb_probe_interface
+[10791.868944] imon 3-2:1.0: usb_probe_interface - got id
+[10791.871332] input: iMON Panel, Knob and Mouse(15c2:0042) as /devices/pci0000:00/0000:00:03.1/usb3/3-2/3-2:1.0/input/input18
+[10791.916037] Registered IR keymap rc-imon-pad
+[10791.918709] input: iMON Remote (15c2:0042) as /devices/pci0000:00/0000:00:03.1/usb3/3-2/3-2:1.0/rc/rc6/input19
+[10791.921331] rc6: iMON Remote (15c2:0042) as /devices/pci0000:00/0000:00:03.1/usb3/3-2/3-2:1.0/rc/rc6
+[10791.930038] imon 3-2:1.0: iMON device (15c2:0042, intf0) on usb<3:3> initialized
+[10791.932507] imon 3-2:1.1: usb_probe_interface
+[10791.934949] imon 3-2:1.1: usb_probe_interface - got id
+[10791.937416] imon 3-2:1.1: iMON device (15c2:0042, intf1) on usb<3:3> initialized
+[10791.939996] usbcore: registered new interface driver imon
+
+Just noticed your report is for 2.6.39.x and 2.6.38.x only, but I'm not
+aware of any relevant imon changes between 2.6.39 and 3.0.
+
+>>> Perhaps there something else in the kernel config that must be on in
+>>> order to support the keymaps?
+>>> 
+>>> Any other thoughts?
+>> 
+>> Not at the moment. That T.889 line is... odd. No clue what the heck
+>> that thing is. Lemme see what I can see tomorrow (just past midnight
+>> here at the moment), if I don't hit anything, I might need a copy of
+>> your kernel config to repro.
+> 
+> I can only see the "T.889" string in the System.map, kernel binary and
+> kernel/sched.o (but not the source?).  I have sent the config file
+> off-list to Jarod.
+
+Looks like I'll probably have to give that a spin, since I'm not seeing
+the problem here (I can also switch to an 0xffdc device, which is actually
+handled a bit differently by the driver).
+
+-- 
+Jarod Wilson
+jarod@wilsonet.com
 
 
-Sure, go for it.  I'll ack it.  ;)  [or Review it :]
-and test it.
 
-thanks,
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
