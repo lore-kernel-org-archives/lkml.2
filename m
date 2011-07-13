@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752079Ab1GMVUy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 17:20:54 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50559 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818Ab1GMVUx convert rfc822-to-8bit (ORCPT
+	id S1752108Ab1GMVVA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 17:21:00 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47379 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751818Ab1GMVU6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 17:20:53 -0400
-Subject: Re: [PATCH] perf:  Add drop monitor script
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-In-Reply-To: <20110713192316.GA12498@hmsreliant.think-freely.org>
-References: <1309801217-22450-1-git-send-email-nhorman@tuxdriver.com>
-	 <20110713192316.GA12498@hmsreliant.think-freely.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 13 Jul 2011 23:20:42 +0200
-Message-ID: <1310592042.2586.43.camel@twins>
+	Wed, 13 Jul 2011 17:20:58 -0400
+Date: Wed, 13 Jul 2011 14:18:49 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: =?ISO-8859-1?Q? "Uwe_Kleine-K=F6nig" ?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Wolfram Sang <w.sang@pengutronix.de>, thierry.nolf.barco@gmail.com,
+        Huang Shijie <b32955@freescale.com>, linux-mtd@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org,
+        Lothar =?ISO-8859-1?Q?Wa=DFmann?= <LW@karo-electronics.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] new helper to define common struct resource constructs
+Message-Id: <20110713141849.b8cbf675.akpm@linux-foundation.org>
+In-Reply-To: <201107121529.17611.arnd@arndb.de>
+References: <14C4E31473AF7E4B98176CB73615181C19FBD3@039-SN1MPN1-006.039d.mgd.msft.net>
+	<201107072304.05626.arnd@arndb.de>
+	<E1QgHeh-0004k8-2m@octopus.hi.pengutronix.de>
+	<201107121529.17611.arnd@arndb.de>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-07-13 at 15:23 -0400, Neil Horman wrote:
-> On Mon, Jul 04, 2011 at 01:40:17PM -0400, Neil Horman wrote:
-> > A while back I created the dropmonitor protocol, which allowed users to get
-> > reports of dropped frames communicated to them via a netlink socket.  While
-> > useful, several people have now asked that I integrate the ability to do drop
-> > monitoring with perf, so they don't have to run additional tools.  This patch
-> > adds a drop monitor script to the perf suite, and provides the same output that
-> > the netlink socket does.
-> > 
-> > Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-> > CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > CC: Paul Mackerras <paulus@samba.org>
-> > CC: Ingo Molnar <mingo@elte.hu>
-> > CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Ping guys, any feedback on this?
+On Tue, 12 Jul 2011 15:29:17 +0200
+Arnd Bergmann <arnd@arndb.de> wrote:
 
-I don't speak snake, nor really condone snake speak. You'll have to wait
-until acme is back from holidays.
+> On Monday 11 July 2011, Uwe Kleine-K__nig wrote:
+> > resource definitions that just define start, end and flags = IORESOURCE_MEM
+> > or IORESOURCE_IRQ (with start=end) are quite common. So introduce a shortcut
+> > for them. Also make available a macro to specify named resources of both
+> > types which are less common.
+> > 
+> > Signed-off-by: Uwe Kleine-K____nig <u.kleine-koenig@pengutronix.de>
+> 
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> 
+> What do others think, is this worthwhile?
+> Should we also define macros for IORESOURCE_IO and IORESOURCE_DMA?
+> 
+
+It would help if we could see some usage examples (ie: sample
+conversions), to get a better idea of the value of this.
+
+Also, DEFINE_RES_NAMED() is going to need a bunch of argument
+parentheses to make it bulletproof.
+
