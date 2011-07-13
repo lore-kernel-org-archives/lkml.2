@@ -1,51 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758400Ab1GMC24 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 22:28:56 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:53120 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756693Ab1GMC2y (ORCPT
+	id S932325Ab1GMCjr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 22:39:47 -0400
+Received: from mail.uady.mx ([148.209.1.59]:27340 "EHLO mail.uady.mx"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758175Ab1GMCjq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 22:28:54 -0400
-X-Sasl-enc: NRcBfypr/vVzKsJ+YXgE6SSp8eNRfUoWMd1VvRyhiS9L 1310524133
-Date: Wed, 13 Jul 2011 04:26:19 +0200
-From: Greg KH <greg@kroah.com>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: stable@kernel.org, linux-cifs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, helge.hafting@hist.no
-Subject: Re: [stable] [PATCH] cifs: fix wsize negotiation for 2.6.39 stable
-Message-ID: <20110713022619.GA11043@kroah.com>
-References: <1310520281-17467-1-git-send-email-jlayton@redhat.com>
+	Tue, 12 Jul 2011 22:39:46 -0400
+X-Greylist: delayed 342 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Jul 2011 22:39:45 EDT
+X-WSS-ID: 0LO930X-01-PPQ-02
+X-M-MSG: 
+X-TMWD-Spam-Summary: TS=20110713023145; ID=1; SEV=2.4.2; DFV=B2011071302; IFV=NA; AIF=B2011071302; RPD=NA; ENG=NA; RPDID=NA; CAT=NONE; CON=NONE; SIG=AAABAMQFAAAAAAAAAAAAAJTRAQEAAH0=
+Message-ID: <20110712213138.28365zujjm1nr340@webmail.uady.mx>
+Date: Tue, 12 Jul 2011 21:31:38 -0500
+From: gsolano@uady.mx
+Reply-to: luigi.id@hotmail.com
+To: undisclosed-recipients:;
+Subject: 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
 Content-Disposition: inline
-In-Reply-To: <1310520281-17467-1-git-send-email-jlayton@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.4)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 12, 2011 at 09:24:41PM -0400, Jeff Layton wrote:
-> I sent this a week or so ago, but it apparently missed the recent
-> 2.6.39.y release. Resending to make sure it gets into the next one.
-> 
-> Prior to 2.6.39, when signing was enabled on a socket the client only
-> sent single-page writes. This changed with commit ca83ce3d5b, which
-> made signed and unsigned connections use the same codepaths for write
-> calls.
-> 
-> This caused a regression when working with windows servers. Windows
-> machines will reject writes larger than the MaxBufferSize when signing
-> is active, but does not clear the CAP_LARGE_WRITE_X flag in the
-> negotiation.
-> 
-> This patch backports 2 patches that fix this problem in 3.0 kernels,
-> and changes a couple of the constants to values appropriate for the
-> writeback code in 2.6.39.
 
-Why not just tell me the 2 patches in upstream that need to be
-backported as Documentation/stable_kernel_rules.txt say to do instead?
 
-thanks,
 
-greg k-h
+This is to re-notify you of the $300,000.00USD that was deposited here in
+the western union office in your name
+
+----------------------------------------------------------------
+Universidad Autónoma de Yucatán
+http://www.uady.mx/
+
