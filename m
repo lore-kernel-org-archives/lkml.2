@@ -1,123 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756116Ab1GMQG7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 12:06:59 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:53508 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755972Ab1GMQG6 (ORCPT
+	id S1756180Ab1GMQHW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 12:07:22 -0400
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:22952 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755972Ab1GMQHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 12:06:58 -0400
-From: Ravishankar <ravishankarkm32@gmail.com>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>,
-        Ravishankar <ravishankarkm32@gmail.com>
-Subject: [PATCH 1/3] Staging: comedi: fix warning: line over 80 character issue in das16m1.c
-Date: Wed, 13 Jul 2011 21:49:36 +0530
-Message-Id: <1310573976-5100-1-git-send-email-ravishankarkm32@gmail.com>
-X-Mailer: git-send-email 1.6.5.2
-In-Reply-To: <[PATCH 1/3]Staging: comedi:fix warning: line over 80 character issue in das16m1.c>
-References: <[PATCH 1/3]Staging: comedi:fix warning: line over 80 character issue in das16m1.c>
+	Wed, 13 Jul 2011 12:07:20 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: xALJifQVM1kqiKJ9.1cfhDZnZL_2DXpB.PGLhDXbi3Gw7rW
+ F88ArfN2WsYLW4SvLyCVMdCvWXgtnVxa2DRUEAQcQMGvUVQvUN5mDk1eQBO4
+ Pr2oDSKtlaFYKNelLQ8WJnX3A6MpUUMJQFvdkKtLCiKTIGWBVl2Kp3S9uqZN
+ FtcofZMJztjWceO1mk7XYKqYgX5XbXeCQ4Bv6ew.wigc49XQ1DpTBR2.iZAL
+ nXJngs0eJLz_citu8en2ejG.llSuOylS4oJX4P.t2qU9SWaGtsPpgDVcxRR_
+ S7ZGaudiH4Qf3gSK4HSLb053rZDJpVgnptZSeXIHkcJfc.6eg
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 13 Jul 2011 11:07:17 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Hugh Dickins <hughd@google.com>
+cc: Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH next/mmotm] slab: fix DEBUG_SLAB build
+In-Reply-To: <alpine.LSU.2.00.1107130852590.6020@sister.anvils>
+Message-ID: <alpine.DEB.2.00.1107131102290.29034@router.home>
+References: <alpine.LSU.2.00.1107111152290.13035@sister.anvils> <alpine.DEB.2.00.1107121045050.2530@router.home> <alpine.LSU.2.00.1107121349590.1951@sister.anvils> <alpine.DEB.2.00.1107131037480.29034@router.home>
+ <alpine.LSU.2.00.1107130852590.6020@sister.anvils>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ravishankar <ravi.shankar@greenturtles.in>
+On Wed, 13 Jul 2011, Hugh Dickins wrote:
 
-This is a patch to the das16m1.c file that fixes up a  warning:line over 80 character found by the checkpatch.pl tool
+> Really?  Here if I try that on x86_64 with #define ARCH_SLAB_MINALIGN 8, I get
+> mm/slab.c: In function `cache_alloc_debugcheck_after':
+> mm/slab.c:3160:10: warning: format `%lu' expects type `long unsigned int', but argument 3 has type `int'
 
-Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
----
- drivers/staging/comedi/drivers/das16m1.c |   38 ++++++++++++++++++-----------
- 1 files changed, 23 insertions(+), 15 deletions(-)
+Gosh. I thought integers (especially constants) are automatically
+converted to the right format. Guess that is not possible here since the
+format strings is not always available for checking.
 
-diff --git a/drivers/staging/comedi/drivers/das16m1.c b/drivers/staging/comedi/drivers/das16m1.c
-index a5ce3b2..642f20d 100644
---- a/drivers/staging/comedi/drivers/das16m1.c
-+++ b/drivers/staging/comedi/drivers/das16m1.c
-@@ -52,8 +52,8 @@ list has 2 or more channels in it, then two conditions must be satisfied:
- (2) - the list must have an even number of entries.
- 
- Options:
--        [0] - base io address
--        [1] - irq (optional, but you probably want it)
-+	[0] - base io address
-+	[1] - irq (optional, but you probably want it)
- 
- irq can be omitted, although the cmd interface will not work without it.
- */
-@@ -185,15 +185,18 @@ static struct comedi_driver driver_das16m1 = {
- 
- struct das16m1_private_struct {
- 	unsigned int control_state;
- 	/* initial value in lower half of hardware conversion counter,
- 	 * needed to keep track of whether new count has been loaded into
- 	 * counter yet (loaded by first sample conversion) */
- 	u16 initial_hw_count;
- 	short ai_buffer[FIFO_SIZE];
- 	unsigned int do_bits;	/*  saves status of digital output bits */
--	unsigned int divisor1;	/*  divides master clock to obtain conversion speed */
--	unsigned int divisor2;	/*  divides master clock to obtain conversion speed */
-+	/* divides master clock to obtain conversion speed */
-+	unsigned int divisor1;
-+	/* divides master clock to obtain conversion speed */
-+	unsigned int divisor2;
- };
- #define devpriv ((struct das16m1_private_struct *)(dev->private))
- #define thisboard ((const struct das16m1_board *)(dev->board_ptr))
-@@ -250,7 +253,8 @@ static int das16m1_cmd_test(struct comedi_device *dev,
- 	if (err)
- 		return 1;
- 
--	/* step 2: make sure trigger sources are unique and mutually compatible */
-+	/* step 2: make sure trigger sources are unique and
-+	 * mutually compatible */
- 	if (cmd->stop_src != TRIG_COUNT && cmd->stop_src != TRIG_NONE)
- 		err++;
- 	if (cmd->start_src != TRIG_NOW && cmd->start_src != TRIG_EXT)
-@@ -320,7 +324,8 @@ static int das16m1_cmd_test(struct comedi_device *dev,
- 	/*  check chanlist against board's peculiarities */
- 	if (cmd->chanlist && cmd->chanlist_len > 1) {
- 		for (i = 0; i < cmd->chanlist_len; i++) {
--			/*  even/odd channels must go into even/odd queue addresses */
-+			/* even/odd channels must go into
-+			 * even/odd queue addresses */
- 			if ((i % 2) != (CR_CHAN(cmd->chanlist[i]) % 2)) {
- 				comedi_error(dev, "bad chanlist:\n"
- 					     " even/odd channels must go have even/odd chanlist indices");
-@@ -556,13 +561,15 @@ static void das16m1_handler(struct comedi_device *dev, unsigned int status)
- 	if (devpriv->adc_count == 0 && hw_counter == devpriv->initial_hw_count) {
- 		num_samples = 0;
- 	} else {
--		/* The calculation of num_samples looks odd, but it uses the following facts.
--		 * 16 bit hardware counter is initialized with value of zero (which really
--		 * means 0x1000).  The counter decrements by one on each conversion
--		 * (when the counter decrements from zero it goes to 0xffff).  num_samples
--		 * is a 16 bit variable, so it will roll over in a similar fashion to the
--		 * hardware counter.  Work it out, and this is what you get. */
--		num_samples = -hw_counter - devpriv->adc_count;
-+		/* The calculation of num_samples looks odd, but it uses the
-+		 * following facts .16 bit hardware counter is initialized with
-+		 * value of zero (which really means 0x1000).The counter
-+		 * decrements by one on each conversion (when the counter
-+		 * decrements from zero it goes to 0xffff). num_samples is a
-+		 * 16 bit variable, so it will roll over in a similar fashion
-+		 * to the hardware counter.Work it out, and this is what
-+		 * you get.num_samples = -hw_counter - devpriv->adc_count;
-+                */
- 	}
- 	/*  check if we only need some of the points */
- 	if (cmd->stop_src == TRIG_COUNT) {
-@@ -753,7 +760,8 @@ static int das16m1_attach(struct comedi_device *dev,
- 	/* 8255 */
- 	subdev_8255_init(dev, s, NULL, dev->iobase + DAS16M1_82C55);
- 
--	/*  disable upper half of hardware conversion counter so it doesn't mess with us */
-+	/* disable upper half of hardware conversion counter
-+	 * so it doesn't mess with us */
- 	outb(TOTAL_CLEAR, dev->iobase + DAS16M1_8254_FIRST_CNTRL);
- 
- 	/*  initialize digital output lines */
--- 
-1.6.5.2
+
 
