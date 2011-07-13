@@ -1,73 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965227Ab1GMJsa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 05:48:30 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:34450 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965091Ab1GMJs2 (ORCPT
+	id S965222Ab1GMJy4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 05:54:56 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:52137 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S965091Ab1GMJyz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 05:48:28 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Michal Suchanek <hramrach@centrum.cz>
-Cc: Ian Kent <ikent@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        David Howells <dhowells@redhat.com>, Ric Wheeler <rwheeler@redhat.com>,
-        Alexander Viro <aviro@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jeff Moyer <jmoyer@redhat.com>
-Subject: Re: Union mount and lockdep design issues
-References: <1310305703.13309.7.camel@twins> <4DA4B6A8.7030804@gmail.com>
-	<BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com>
-	<4DA5DCB8.3040101@gmail.com>
-	<BANLkTineg2XYYOZAU9trrw=+-vH8McN_9w@mail.gmail.com>
-	<4DA5F569.9020309@gmail.com>
-	<BANLkTi=Z1CQm=u2Q1VCHfr=53n5qTC=7bA@mail.gmail.com>
-	<24792.1302808448@redhat.com> <2477.1309342656@redhat.com>
-	<4E1962BE.8010204@redhat.com> <1408.1310382069@redhat.com>
-	<1310385651.18678.59.camel@twins>
-	<CAOMqctQoO7zKojoEuYri8ZWDDMM3Ef6VRtPYzsf-02xhJ8e6jA@mail.gmail.com>
-	<1310392232.4276.14.camel@perseus.themaw.net>
-	<CAOMqctSDxauVLw5OisAeCaFa7DvZDgg_1YCmHaWdJZm60JDVtg@mail.gmail.com>
-	<1310405033.4276.28.camel@perseus.themaw.net>
-	<CAOMqctSZcAuA8r=Bdtg1hhM9xzDmDuOPn376HXuQ0Tb8xrRwzw@mail.gmail.com>
-	<87tyar6gv8.fsf@tucsk.pomaz.szeredi.hu>
-	<CAOMqctQauGk0XszoUo61k4GQ5gWWWgyRXY9x9J=D+K4kMJ_CUw@mail.gmail.com>
-	<87liw367uj.fsf@tucsk.pomaz.szeredi.hu>
-	<CAOMqctSYVuzpCUN+QjB7n7rZrrH4c-hHz=iC7kX70JED_dbLyA@mail.gmail.com>
-Date: Wed, 13 Jul 2011 11:49:15 +0200
-In-Reply-To: <CAOMqctSYVuzpCUN+QjB7n7rZrrH4c-hHz=iC7kX70JED_dbLyA@mail.gmail.com>
-	(Michal Suchanek's message of "Tue, 12 Jul 2011 20:49:13 +0200")
-Message-ID: <87liw24ijo.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Wed, 13 Jul 2011 05:54:55 -0400
+Date: Wed, 13 Jul 2011 10:51:05 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mrst_pmu: driver for Intel Moorestown Power Management
+ Unit
+Message-ID: <20110713105105.63e2fbcb@lxorguk.ukuu.org.uk>
+In-Reply-To: <alpine.LFD.2.02.1107122328180.4502@x980>
+References: <alpine.LFD.2.02.1107122328180.4502@x980>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal Suchanek <hramrach@centrum.cz> writes:
+> +static struct mrst_device *pci_id_2_mrst_dev(u16 pci_dev_num)
+> +{
+> +	int index;
+> +
+> +	if ((pci_dev_num >= 0x0800) && (pci_dev_num <= 0x815))
+> +		index = pci_dev_num - 0x800;
+> +	else if (pci_dev_num == 0x084F)
+> +		index = 22;
+> +	else if (pci_dev_num == 0x4102)
+> +		index = 23;
+> +	else if (pci_dev_num == 0x4110)
+> +		index = 24;
+> +	else
+> +		BUG();
+> +
+> +	BUG_ON(pci_dev_num != mrst_devs[index].pci_dev_num);
 
-> You can still do
->
-> mount --bind /lower1 /lower2/lower1
-> mount --bind /lower2 /lower1/lower2
->
-> Which is technically not against usage guidelines, unlike mount --bind
-> /upper /lower1/upper
+That strikes me as needlessly unfriendly, you could warn/return NULL and
+propogate a WARN_ONCE back to the user.
 
-Overlayfs will take the directory you specify as upperdir and lowerdir
-and will clone those mounts internally.
+> +static int __init scu_fw_check(void)
+> +{
+> +	int ret;
+> +	u32 fw_version;
+> +
+> +	sfi_table_parse("OEMB", NULL, NULL, pmu_sfi_parse_oem);
+> +
+> +	if (ia_major < 0x6005 || ia_minor < 0x1525) {
+> +		WARN(1, "mrst_pmu: IA FW version too old\n");
+> +		return -1;
+> +	}
+> +
+> +	ret = intel_scu_ipc_command(IPCMSG_FW_REVISION, 0, NULL, 0,
+> +					&fw_version, 1);
+> +
+> +	if (ret) {
+> +		WARN(1, "mrst_pmu: IPC FW version? %d\n", ret);
+> +	} else {
+> +		int scu_major = (fw_version >> 8) & 0xFF;
+> +		int scu_minor = (fw_version >> 0) & 0xFF;
+> +
+> +		printk(KERN_INFO "mrst_pmu: firmware v%x\n", fw_version);
+> +
+> +		if ((scu_major >= 0xC0) && (scu_minor >= 0x49)) {
+> +			printk(KERN_INFO "mrst_pmu: enabling S0i3\n");
+> +			mrst_pmu_s0i3_enable = true;
+> +		} else {
+> +			WARN(1, "mrst_pmu: S0i3 disabled, old firmware %X.%X",
+> +					scu_major, scu_minor);
+> +		}
+> +	}
+> +	return 0;
+> +}
+> +late_initcall(scu_fw_check);
 
-This means that any present or future submounts are ignored and the
-mount containting those directories may be moved or umounted and
-overlayfs will still function.
+NAK. I pointed this problem with the driver to you way back - this code
+gets run always - even on machines that are not in fact Moorestown which
+are then going to crash.
 
-None of the bind mounts above will have any effect on an overlayfs that
-uses /lower[12] and /upper.
+You need to check that the platform is Moorestown (not just the CPU
+either because of Oaktrail)
 
-> If crossing mount boundaries is forbidden try with symlinks or hardlinks.
-
-I'm not sure what you mean here.
-
-Thanks,
-Miklos
