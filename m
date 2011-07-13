@@ -1,53 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932254Ab1GMAgE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 20:36:04 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:39856 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754818Ab1GMAgD (ORCPT
+	id S932252Ab1GMAml (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 20:42:41 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41159 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753938Ab1GMAmk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 20:36:03 -0400
+	Tue, 12 Jul 2011 20:42:40 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4E1CE9FF.3050707@jp.fujitsu.com>
+Date: Wed, 13 Jul 2011 09:42:39 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-In-Reply-To: <20110712222227.GA1316@thinkpad>
-References: <1308923350-7932-1-git-send-email-andrea@betterlinux.com>
-	<4E07F349.2040900@jp.fujitsu.com>
-	<20110627071139.GC1247@thinkpad>
-	<4E0858CF.6070808@draigBrady.com>
-	<20110627102933.GA1282@thinkpad>
-	<4E086F51.50403@draigBrady.com>
-	<8762n7kvym.fsf@cmungerjr.com>
-	<20110712222227.GA1316@thinkpad>
-Date: Tue, 12 Jul 2011 17:36:01 -0700
-Message-ID: <CAKGkouvYTaij0LTPOWfPaTb4ZivZZvXTWWWV+i_CPMNRecovcw@mail.gmail.com>
-Subject: Re: [PATCH v3 0/2] fadvise: support POSIX_FADV_NOREUSE
-From: "Patrick J. LoPresti" <lopresti@gmail.com>
-To: Andrea Righi <andrea@betterlinux.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: mgorman@suse.de
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] mm: page allocator: Reconsider zones for allocation
+ after direct reclaim
+References: <1310389274-13995-1-git-send-email-mgorman@suse.de> <1310389274-13995-4-git-send-email-mgorman@suse.de>
+In-Reply-To: <1310389274-13995-4-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 12, 2011 at 3:22 PM, Andrea Righi <andrea@betterlinux.com> wrote:
->
-> If the file data is not in memory you can't set a bit in any struct
-> page. You could even open a file and execute POSIX_FADV_NOREUSE without
-> reading any page from the file.
+(2011/07/11 22:01), Mel Gorman wrote:
+> With zone_reclaim_mode enabled, it's possible for zones to be considered
+> full in the zonelist_cache so they are skipped in the future. If the
+> process enters direct reclaim, the ZLC may still consider zones to be
+> full even after reclaiming pages. Reconsider all zones for allocation
+> if direct reclaim returns successfully.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-Mmm, too bad.
+Hmmm...
 
-> I think it would be better to maintain a list of file offset/length
-> structures per file descriptor or (as a starting solution) even mark the
-> entire file as non-cacheable without considering the ranges.
+I like the concept, but I'm worry about a corner case a bit.
 
-I recommend against the "whole file" approach.  In my application (for
-instance), I deal with files in the hundreds of gigabytes.  Marking
-the whole file non-cacheable, when I was just trying to give a hint
-about a few hundred megs, would be a total disaster.
+If users are using cpusets/mempolicy, direct reclaim don't scan all zones.
+Then, zlc_clear_zones_full() seems too aggressive operation.
+Instead, couldn't we turn zlc->fullzones off from kswapd?
 
-I would suggest implementing it right or leaving it as a no-op.  Just my $0.02.
 
-Thanks for working on this.  Better support for these page cache hints
-will be great to see.
+> ---
+>  mm/page_alloc.c |   19 +++++++++++++++++++
+>  1 files changed, 19 insertions(+), 0 deletions(-)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 6913854..149409c 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -1616,6 +1616,21 @@ static void zlc_mark_zone_full(struct zonelist *zonelist, struct zoneref *z)
+>  	set_bit(i, zlc->fullzones);
+>  }
+>  
+> +/*
+> + * clear all zones full, called after direct reclaim makes progress so that
+> + * a zone that was recently full is not skipped over for up to a second
+> + */
+> +static void zlc_clear_zones_full(struct zonelist *zonelist)
+> +{
+> +	struct zonelist_cache *zlc;	/* cached zonelist speedup info */
+> +
+> +	zlc = zonelist->zlcache_ptr;
+> +	if (!zlc)
+> +		return;
+> +
+> +	bitmap_zero(zlc->fullzones, MAX_ZONES_PER_ZONELIST);
+> +}
+> +
+>  #else	/* CONFIG_NUMA */
+>  
+>  static nodemask_t *zlc_setup(struct zonelist *zonelist, int alloc_flags)
+> @@ -1963,6 +1978,10 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
+>  	if (unlikely(!(*did_some_progress)))
+>  		return NULL;
+>  
+> +	/* After successful reclaim, reconsider all zones for allocation */
+> +	if (NUMA_BUILD)
+> +		zlc_clear_zones_full(zonelist);
+> +
+>  retry:
+>  	page = get_page_from_freelist(gfp_mask, nodemask, order,
+>  					zonelist, high_zoneidx,
 
- - Pat
+
