@@ -1,86 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965291Ab1GMKkr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 06:40:47 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:53767 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965209Ab1GMKkp (ORCPT
+	id S965281Ab1GMKmk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 06:42:40 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:18236 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965209Ab1GMKmj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 06:40:45 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: stable@kernel.org
-Cc: linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        helge.hafting@hist.no
-Subject: [PATCH] cifs: lower default and max wsize to what 2.6.39 can handle
-Date: Wed, 13 Jul 2011 06:40:37 -0400
-Message-Id: <1310553637-26792-1-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.7.6
+	Wed, 13 Jul 2011 06:42:39 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AowDAHp1HU55LCkBgWdsb2JhbABUpzoVAQEWJiWIesMsDoYsBKM/
+Date: Wed, 13 Jul 2011 20:42:36 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: chris@chris-wilson.co.uk, keithp@keithp.com, linux-kernel@vger.kernel.org,
+        airlied@linux.ie, dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] i915: slab shrinker have to return -1 if it cant
+ shrink any objects
+Message-ID: <20110713104236.GS23038@dastard>
+References: <4E0444CA.3080407@jp.fujitsu.com>
+ <yuny60kt1nx.fsf@aiko.keithp.com>
+ <1309424153_44559@CP5-2952>
+ <4E1C15B2.9020800@jp.fujitsu.com>
+ <d08817$ot4e1@azsmga001.ch.intel.com>
+ <4E1CE48C.2070402@jp.fujitsu.com>
+ <d08817$pb86v@azsmga001.ch.intel.com>
+ <4E1D550A.80301@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E1D550A.80301@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is intended for 2.6.39-stable kernels only and is needed to
-fix a regression introduced in 2.6.39. Prior to 2.6.39, when signing was
-enabled on a socket the client only sent single-page writes. This
-changed with commit ca83ce3, which made signed and unsigned connections
-use the same codepaths for write calls.
+On Wed, Jul 13, 2011 at 05:19:22PM +0900, KOSAKI Motohiro wrote:
+> (2011/07/13 16:41), Chris Wilson wrote:
+> >> (snip)
+> >>                 while (total_scan >= SHRINK_BATCH) {
+> >>                         long this_scan = SHRINK_BATCH;
+> >>                         int shrink_ret;
+> >>                         int nr_before;
+> >>
+> >>                         nr_before = do_shrinker_shrink(shrinker, shrink, 0);
+> >>                         shrink_ret = do_shrinker_shrink(shrinker, shrink,
+> >>                                                         this_scan);
+> >>                         if (shrink_ret == -1)
+> >>                                 break;
+> >>
+> > 
+> > And fifteen lines above that you have:
+> >   unsigned long max_pass = do_shrinker_shrink(shrinker, shrinker, 0);
+> >   ...
+> >   shrinker->nr += f(max_pass);
+> >   if (shrinker->nr < 0) printk(KERN_ERR "...");
+> > 
+> > That's the *error* I hit when I originally returned -1.
+> 
+> You misunderstand the code. The third argument is critically important.
+> Only if it's 0 (ie sc->nr_to_scan==0), shrinker must not return negative.
 
-This caused a regression when working with windows servers. Windows
-machines will reject writes larger than the MaxBufferSize when signing
-is active, but do not clear the CAP_LARGE_WRITE_X flag in the protocol
-negotiation. The upshot is that when signing is active, windows servers
-often reject large writes from the client in 2.6.39.
+And once again the shitty shrinker API bites a user.
 
-Because 3.0 adds support for larger wsize values, simply cherry picking
-the upstream patches that fix the wsize negotiation isn't sufficient to
-fix this issue. We also need to alter the maximum and default values to
-something suitable for 2.6.39.
+> Thus, my patch checked nr_to_scan argument. and I've suggested look at
+> shrink_icache_memory().
 
-Cc: <stable@kernel.org> # .39.x: f7910cb: cifs: clean up wsize negotiation and allow for larger wsize
-Cc: <stable@kernel.org> # .39.x: 1190f6a: cifs: fix wsize negotiation to respect max buffer size and active signing (try #4)
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- fs/cifs/connect.c |   20 ++++----------------
- 1 files changed, 4 insertions(+), 16 deletions(-)
+Which is going away real soon - it's not the model of perfection
+that you make it out to be. ;)
 
-diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
-index 599f485..8e78710 100644
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -2648,16 +2648,8 @@ static void setup_cifs_sb(struct smb_vol *pvolume_info,
- 			   "mount option supported");
- }
- 
--/*
-- * When the server supports very large writes via POSIX extensions, we can
-- * allow up to 2^24-1, minus the size of a WRITE_AND_X header, not including
-- * the RFC1001 length.
-- *
-- * Note that this might make for "interesting" allocation problems during
-- * writeback however as we have to allocate an array of pointers for the
-- * pages. A 16M write means ~32kb page array with PAGE_CACHE_SIZE == 4096.
-- */
--#define CIFS_MAX_WSIZE ((1<<24) - 1 - sizeof(WRITE_REQ) + 4)
-+/* Prior to 3.0, cifs couldn't handle writes larger than this */
-+#define CIFS_MAX_WSIZE (PAGEVEC_SIZE * PAGE_CACHE_SIZE)
- 
- /*
-  * When the server doesn't allow large posix writes, only allow a wsize of
-@@ -2666,12 +2658,8 @@ static void setup_cifs_sb(struct smb_vol *pvolume_info,
-  */
- #define CIFS_MAX_RFC1002_WSIZE (128 * 1024 - sizeof(WRITE_REQ) + 4)
- 
--/*
-- * The default wsize is 1M. find_get_pages seems to return a maximum of 256
-- * pages in a single call. With PAGE_CACHE_SIZE == 4k, this means we can fill
-- * a single wsize request with a single call.
-- */
--#define CIFS_DEFAULT_WSIZE (1024 * 1024)
-+/* Make the default the same as the max */
-+#define CIFS_DEFAULT_WSIZE CIFS_MAX_WSIZE
- 
- static unsigned int
- cifs_negotiate_wsize(struct cifsTconInfo *tcon, struct smb_vol *pvolume_info)
+> If you are thinking the shrinker protocol is too complicated, doc update
+> patch is really welcome.
+
+Slab shrinkers have a nasty, crappy interface and the shrink_slab()
+code is full of bugs.  Rather that telling people to "update the
+documentation" because it's too complex, how about we fix the
+interface and the bugs?
+
+Indeed, how hard is it to require a subsystem to supply two shrinker
+methods, one to return the count of reclaimable objects, the other
+to scan the reclaimable objects to reclaim them? After all, that's
+exactly the interface I'm exposing to filesystems underneath the
+shrinker API in the per-sb shrinker patchset that gets rid of
+shrink_icache_memory() rather than propagating the insanity....
+
+Cheers,
+
+Dave.
 -- 
-1.7.6
-
+Dave Chinner
+david@fromorbit.com
