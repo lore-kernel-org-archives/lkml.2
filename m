@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965369Ab1GMLry (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 07:47:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36114 "EHLO mx1.redhat.com"
+	id S965376Ab1GMLtq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 07:49:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46983 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965051Ab1GMLrx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 07:47:53 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] FS-Cache: Fix bounds check
-To: geert@linux-m68k.org
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
-        David Howells <dhowells@redhat.com>
-Date: Wed, 13 Jul 2011 12:47:38 +0100
-Message-ID: <20110713114737.29760.95481.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20110712124622.9331.83332.sendpatchset@squad5-lp1.lab.bos.redhat.com>
-References: <20110712124622.9331.83332.sendpatchset@squad5-lp1.lab.bos.redhat.com>
-User-Agent: StGIT/0.14.3
+	id S965051Ab1GMLtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 07:49:45 -0400
+Date: Wed, 13 Jul 2011 13:49:43 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nir Tzachar <nir.tzachar@gmail.com>,
+        Andrej Gelenberg <andrej.gelenberg@udo.edu>
+Subject: Re: [PATCH 2/2] kconfig/nconf: prevent segfault on empty menu
+Message-ID: <20110713114943.GD25895@sepie.suse.cz>
+References: <CACqU3MXvHR0v4Hgn5UMwDtzaX5nWqmKEneN_s7r4PuEGzifauw@mail.gmail.com>
+ <1310282825-14509-1-git-send-email-lacombar@gmail.com>
+ <1310282825-14509-2-git-send-email-lacombar@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1310282825-14509-2-git-send-email-lacombar@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__fscache_uncache_all_inode_pages() has a loop that goes through page index
-numbers go up to (loff_t)-1.  This is incorrect.  The limit should be
-(pgoff_t)-1 as on a 32-bit machine the pgoff_t is smaller than loff_t.
+On Sun, Jul 10, 2011 at 03:27:05AM -0400, Arnaud Lacombe wrote:
+> nconf does not check the validity of the current menu when help is requested
+> (with either <F2>, '?' or 'h'). This leads to a NULL pointer dereference when an
+> empty menu is encountered.
+> 
+> The following reduced testcase exposes the problem:
+> 
+> config DEP
+>         bool
+> 
+> menu "FOO"
+> 
+> config BAR
+>         bool "BAR"
+>         depends on DEP
+> 
+> endmenu
+> 
+> Issue will happen when entering menu "FOO" and requesting help.
+> 
+> nconf is the only front-end which do not filter the validity of the current
+> menu. Such filter can not really happen beforehand as other key which does not
+> deals with the current menu might be entered by the user, so just bails out
+> earlier if we encounter an invalid menu.
+> 
+> Cc: Nir Tzachar <nir.tzachar@gmail.com>
+> Cc: Andrej Gelenberg <andrej.gelenberg@udo.edu>
+> Reported-by: Andrej Gelenberg <andrej.gelenberg@udo.edu>
+> Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
 
-On m68k the following error is observed:
+Thanks, applied both patches to kbuild-2.6.git#kconfig.
 
-fs/fscache/page.c: In function '__fscache_uncache_all_inode_pages':
-fs/fscache/page.c:979: warning: comparison is always false due to
-limited range of data type
-
-[Should there be a PGOFF_T_MAX constant defined?]
-
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: David Howells <dhowells@redhat.com>
----
-
- fs/fscache/page.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/fs/fscache/page.c b/fs/fscache/page.c
-index 60315b3..112359d 100644
---- a/fs/fscache/page.c
-+++ b/fs/fscache/page.c
-@@ -993,7 +993,7 @@ void __fscache_uncache_all_inode_pages(struct fscache_cookie *cookie,
- 
- 	pagevec_init(&pvec, 0);
- 	next = 0;
--	while (next <= (loff_t)-1 &&
-+	while (next <= (pgoff_t)-1 &&
- 	       pagevec_lookup(&pvec, mapping, next, PAGEVEC_SIZE)
- 	       ) {
- 		for (i = 0; i < pagevec_count(&pvec); i++) {
-
+Michal
