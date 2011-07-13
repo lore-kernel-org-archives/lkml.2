@@ -1,59 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965183Ab1GMJZr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 05:25:47 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:40338 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965133Ab1GMJZp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 05:25:45 -0400
-Date: Wed, 13 Jul 2011 10:25:20 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: do_signal: simplify the TS_RESTORE_SIGMASK logic
-Message-ID: <20110713102520.0065c7de@mfleming-mobl1.ger.corp.intel.com>
-In-Reply-To: <20110710182203.GA27979@redhat.com>
-References: <20110710182203.GA27979@redhat.com>
-X-Mailer: Claws Mail 3.7.8cvs52 (GTK+ 2.22.0; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S965203Ab1GMJaq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 05:30:46 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:1915 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965169Ab1GMJao (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 05:30:44 -0400
+X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
+From: "Arend van Spriel" <arend@broadcom.com>
+To: davem@davemloft.net
+cc: "Arend van Spriel" <arend@broadcom.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Alexey Dobriyan" <adobriyan@gmail.com>
+Subject: [PATCH] net: change return values in mac_pton() function
+Date: Wed, 13 Jul 2011 11:30:24 +0200
+Message-ID: <1310549424-5484-1-git-send-email-arend@broadcom.com>
+X-Mailer: git-send-email 1.7.4.1
+MIME-Version: 1.0
+X-WSS-ID: 6203B95C62O24319609-01-01
+Content-Type: text/plain
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 10 Jul 2011 20:22:03 +0200
-Oleg Nesterov <oleg@redhat.com> wrote:
+The original commit adding this function noted a diverge from usual
+0=success/-E=fail, but no motivation for it. To stay consistent this
+commit adheres to the usual approach. The callers check for result
+is changed from 'if(!mac_pton(x, y))' to 'if(mac_pton(x,y) < 0)'.
 
-> 1. do_signal() looks at TS_RESTORE_SIGMASK and calculates the
->    mask which should be stored in the signal frame, then it
->    passes "oldset" to the callees, down to setup_rt_frame().
-> 
->    This is ugly, setup_rt_frame() can do this itself and nobody
->    else needs this sigset_t. Move this code into setup_rt_frame.
-> 
-> 2. do_signal() also clears TS_RESTORE_SIGMASK if handle_signal()
->    succeeds.
-> 
->    We can move this to setup_rt_frame() as well, this avoids the
->    unnecessary checks and makes the logic more clear.
-> 
-> 3. use set_current_blocked() instead of sigprocmask(SIG_SETMASK),
->    sigprocmask() should be avoided.
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
+Signed-off-by: Arend van Spriel <arend@broadcom.com>
+---
+ drivers/net/netconsole.c |    2 +-
+ net/core/netpoll.c       |    2 +-
+ net/core/pktgen.c        |    4 ++--
+ net/core/utils.c         |   10 +++++-----
+ 4 files changed, 9 insertions(+), 9 deletions(-)
 
-Could you please mention commit e6fa16ab "signal: sigprocmask() should
-do retarget_shared_pending()", since it's not immediately obvious in
-this changelog why sigprocmask() should be avoided.
-
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-
-FWIW,
-
-Reviewed-by: Matt Fleming <matt.fleming@linux.intel.com>
-
+diff --git a/drivers/net/netconsole.c b/drivers/net/netconsole.c
+index dfc8272..2e8adba 100644
+--- a/drivers/net/netconsole.c
++++ b/drivers/net/netconsole.c
+@@ -437,7 +437,7 @@ static ssize_t store_remote_mac(struct netconsole_target *nt,
+ 		return -EINVAL;
+ 	}
+ 
+-	if (!mac_pton(buf, remote_mac))
++	if (mac_pton(buf, remote_mac) < 0)
+ 		return -EINVAL;
+ 	if (buf[3 * ETH_ALEN - 1] && buf[3 * ETH_ALEN - 1] != '\n')
+ 		return -EINVAL;
+diff --git a/net/core/netpoll.c b/net/core/netpoll.c
+index adf84dd..6b70699 100644
+--- a/net/core/netpoll.c
++++ b/net/core/netpoll.c
+@@ -691,7 +691,7 @@ int netpoll_parse_options(struct netpoll *np, char *opt)
+ 
+ 	if (*cur != 0) {
+ 		/* MAC address */
+-		if (!mac_pton(cur, np->remote_mac))
++		if (mac_pton(cur, np->remote_mac) < 0)
+ 			goto parse_failed;
+ 	}
+ 
+diff --git a/net/core/pktgen.c b/net/core/pktgen.c
+index f76079c..f17ab6a 100644
+--- a/net/core/pktgen.c
++++ b/net/core/pktgen.c
+@@ -1429,7 +1429,7 @@ static ssize_t pktgen_if_write(struct file *file,
+ 		if (copy_from_user(valstr, &user_buffer[i], len))
+ 			return -EFAULT;
+ 
+-		if (!mac_pton(valstr, pkt_dev->dst_mac))
++		if (mac_pton(valstr, pkt_dev->dst_mac) < 0)
+ 			return -EINVAL;
+ 		/* Set up Dest MAC */
+ 		memcpy(&pkt_dev->hh[0], pkt_dev->dst_mac, ETH_ALEN);
+@@ -1446,7 +1446,7 @@ static ssize_t pktgen_if_write(struct file *file,
+ 		if (copy_from_user(valstr, &user_buffer[i], len))
+ 			return -EFAULT;
+ 
+-		if (!mac_pton(valstr, pkt_dev->src_mac))
++		if (mac_pton(valstr, pkt_dev->src_mac) < 0)
+ 			return -EINVAL;
+ 		/* Set up Src MAC */
+ 		memcpy(&pkt_dev->hh[6], pkt_dev->src_mac, ETH_ALEN);
+diff --git a/net/core/utils.c b/net/core/utils.c
+index 386e263f..73299f1 100644
+--- a/net/core/utils.c
++++ b/net/core/utils.c
+@@ -304,20 +304,20 @@ int mac_pton(const char *s, u8 *mac)
+ 
+ 	/* XX:XX:XX:XX:XX:XX */
+ 	if (strlen(s) < 3 * ETH_ALEN - 1)
+-		return 0;
++		return -EINVAL;
+ 
+ 	/* Don't dirty result unless string is valid MAC. */
+ 	for (i = 0; i < ETH_ALEN; i++) {
+ 		if (!strchr("0123456789abcdefABCDEF", s[i * 3]))
+-			return 0;
++			return -EINVAL;
+ 		if (!strchr("0123456789abcdefABCDEF", s[i * 3 + 1]))
+-			return 0;
++			return -EINVAL;
+ 		if (i != ETH_ALEN - 1 && s[i * 3 + 2] != ':')
+-			return 0;
++			return -EINVAL;
+ 	}
+ 	for (i = 0; i < ETH_ALEN; i++) {
+ 		mac[i] = (hex_to_bin(s[i * 3]) << 4) | hex_to_bin(s[i * 3 + 1]);
+ 	}
+-	return 1;
++	return 0;
+ }
+ EXPORT_SYMBOL(mac_pton);
 -- 
-Matt Fleming, Intel Open Source Technology Center
+1.7.4.1
+
+
