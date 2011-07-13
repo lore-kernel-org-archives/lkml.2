@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965213Ab1GMKEL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 06:04:11 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60540 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758676Ab1GMKEJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 06:04:09 -0400
-Date: Wed, 13 Jul 2011 12:04:04 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, vda.linux@googlemail.com,
-        jan.kratochvil@redhat.com, pedro@codesourcery.com, indan@nul.nu,
-        bdonlan@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] ptrace: fix ptrace_signal() && STOP_DEQUEUED
- interaction
-Message-ID: <20110713100404.GG2872@htj.dyndns.org>
-References: <20110707190301.GA25332@redhat.com>
- <20110707190324.GB25332@redhat.com>
+	id S965219Ab1GMKGN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 06:06:13 -0400
+Received: from mail.wdtv.com ([66.118.69.84]:56905 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758673Ab1GMKGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 06:06:12 -0400
+From: Gene Heskett <gene.heskett@gmail.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] RESEND ibmmca: trivial typo fixes
+Date: Wed, 13 Jul 2011 06:06:09 -0400
+User-Agent: KMail/1.13.7 (Linux/2.6.38.8-pclos2.pae.bfs; KDE/4.6.5; i686; ; )
+References: <1310530933.4444.8.camel@offbook> <1310532384.1662.2.camel@Joe-Laptop>
+In-Reply-To: <1310532384.1662.2.camel@Joe-Laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110707190324.GB25332@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107130606.09875.gene.heskett@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Oleg.  Sorry about the long delay.  Was lost somewhere else. :)
+On Wednesday, July 13, 2011, Joe Perches wrote:
+>On Wed, 2011-07-13 at 00:22 -0400, Davidlohr Bueso wrote:
+>> From: Davidlohr Bueso <dave@gnu.org>
+>> diff --git a/Documentation/scsi/ibmmca.txt
+>> b/Documentation/scsi/ibmmca.txt
+>
+>[]
+>
+>> @@ -487,7 +487,7 @@
+>> 
+>>     1) Submitting the extra-array ldn_is_tape[] -> to the local ld[]
+>>     
+>>        device-array.
+>>     
+>>     2) CD-ROM Audio-Play seems to work now.
+>> 
+>> -   3) When using DDS-2 (120M) DAT-Tapes, mtst shows still density-code
+>> +   3) When using DDS-2 (120M) DAT-Tapes, must show still density-code
+>
+>I think the original is correct.
+>mtst is a utility.
+>
+The original is  correct, I was a former user of several hundred DDS-2 
+tapes.
 
-On Thu, Jul 07, 2011 at 09:03:24PM +0200, Oleg Nesterov wrote:
-> Without the patch it hangs. After the patch SIGSTOP "injected" by the
-> tracer is not ignored and stops the tracee.
-
-I always felt the ability to 'inject' different signal there is rather
-useless and prone to induce weird issues.  It would be better if
-ptrace_signal() is part of signal delivery action after all the checks
-so that the ptracer says whether to proceed with the action or not but
-no more.  Well...
-
-> So lets add STOP_DEQUEUED _before_ we report the signal. It has no effect
-> unless sig_kernel_stop() == T after the tracer resumes us, and in the
-> latter case the pending STOP_DEQUEUED means no SIGCONT in between, we
-> should stop.
-
-Anyways, yes, this seems to be a nice improvement but it looks very
-weird (and difficult to comprehend) to be setting STOP_DEQUEUED
-unconditionally in ptrace_signal().  Wouldn't it be better to flip the
-flag so that we have CONT_RECEIVED before doing this?
-
-Thanks.
-
+Cheers, gene
 -- 
-tejun
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+No, his mind is not for rent
+To any god or government.
+Always hopeful, yet discontent,
+He knows changes aren't permanent -
+But change is.
