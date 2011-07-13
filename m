@@ -1,39 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964902Ab1GMDrj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 23:47:39 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:47816 "EHLO
+	id S932407Ab1GMDry (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 23:47:54 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:54491 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964879Ab1GMDre (ORCPT
+	by vger.kernel.org with ESMTP id S932383Ab1GMDru (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 23:47:34 -0400
-X-Sasl-enc: dWorpL0jP+HIhSJpungK0hiAfhjwuTMXE23OxyNnsDOg 1310528849
-Date: Wed, 13 Jul 2011 05:46:11 +0200
+	Tue, 12 Jul 2011 23:47:50 -0400
+X-Sasl-enc: LiWuRFTS16hSTOGQfTutaG4K6TIHc7Zscf7qUPGlkXC5 1310528857
+Date: Wed, 13 Jul 2011 05:46:51 +0200
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net
-Subject: Re: Linux 2.6.32.43
-Message-ID: <20110713034611.GB16150@kroah.com>
-References: <20110713034559.GA16150@kroah.com>
+Subject: Re: Linux 2.6.33.16
+Message-ID: <20110713034651.GD16150@kroah.com>
+References: <20110713034639.GC16150@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110713034559.GA16150@kroah.com>
+In-Reply-To: <20110713034639.GC16150@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 diff --git a/Makefile b/Makefile
-index fbd73d1..26f57ee 100644
+index e5e9b65..db07635 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -1,7 +1,7 @@
  VERSION = 2
  PATCHLEVEL = 6
- SUBLEVEL = 32
--EXTRAVERSION = .42
-+EXTRAVERSION = .43
+ SUBLEVEL = 33
+-EXTRAVERSION = .15
++EXTRAVERSION = .16
  NAME = Man-Eating Seals of Antiquity
  
  # *DOCUMENTATION*
@@ -130,10 +130,10 @@ index 356a799..3f90a2c 100644
  	kernel_pmd = m2v(pgd[KERNEL_PGD_BOUNDARY].pgd);
  	memcpy(level2_kernel_pgt, kernel_pmd, sizeof(pmd_t) * PTRS_PER_PMD);
 diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index aa1e953..847c947 100644
+index abc5d80..d6da39b 100644
 --- a/block/cfq-iosched.c
 +++ b/block/cfq-iosched.c
-@@ -1540,8 +1540,14 @@ static void __cfq_exit_single_io_context(struct cfq_data *cfqd,
+@@ -2537,8 +2537,14 @@ static void __cfq_exit_single_io_context(struct cfq_data *cfqd,
  	cic->dead_key = (unsigned long) cic->key;
  	cic->key = NULL;
  
@@ -150,10 +150,10 @@ index aa1e953..847c947 100644
  	if (cic->cfqq[BLK_RW_ASYNC]) {
  		cfq_exit_cfqq(cfqd, cic->cfqq[BLK_RW_ASYNC]);
 diff --git a/drivers/char/tty_ldisc.c b/drivers/char/tty_ldisc.c
-index cf0bfc6..d814a3d 100644
+index 236628f..48de74a 100644
 --- a/drivers/char/tty_ldisc.c
 +++ b/drivers/char/tty_ldisc.c
-@@ -539,7 +539,7 @@ static int tty_ldisc_halt(struct tty_struct *tty)
+@@ -543,7 +543,7 @@ static int tty_ldisc_halt(struct tty_struct *tty)
  static int tty_ldisc_wait_idle(struct tty_struct *tty)
  {
  	int ret;
@@ -162,7 +162,7 @@ index cf0bfc6..d814a3d 100644
  			atomic_read(&tty->ldisc->users) == 1, 5 * HZ);
  	if (ret < 0)
  		return ret;
-@@ -735,6 +735,8 @@ static int tty_ldisc_reinit(struct tty_struct *tty, int ldisc)
+@@ -750,6 +750,8 @@ static int tty_ldisc_reinit(struct tty_struct *tty, int ldisc)
  	if (IS_ERR(ld))
  		return -1;
  
@@ -212,10 +212,10 @@ index dd39c1e..26c352a 100644
  
  static struct serio_device_id taos_serio_ids[] = {
 diff --git a/drivers/md/md.c b/drivers/md/md.c
-index 7c5129f..c199c70 100644
+index 0da8025..4610aa3 100644
 --- a/drivers/md/md.c
 +++ b/drivers/md/md.c
-@@ -6623,6 +6623,7 @@ static int remove_and_add_spares(mddev_t *mddev)
+@@ -6862,6 +6862,7 @@ static int remove_and_add_spares(mddev_t *mddev)
  		list_for_each_entry(rdev, &mddev->disks, same_set) {
  			if (rdev->raid_disk >= 0 &&
  			    !test_bit(In_sync, &rdev->flags) &&
@@ -224,7 +224,7 @@ index 7c5129f..c199c70 100644
  				spares++;
  			if (rdev->raid_disk < 0
 diff --git a/drivers/media/video/uvc/uvc_queue.c b/drivers/media/video/uvc/uvc_queue.c
-index f854698..348cb71 100644
+index ea11839..03f7a01 100644
 --- a/drivers/media/video/uvc/uvc_queue.c
 +++ b/drivers/media/video/uvc/uvc_queue.c
 @@ -165,6 +165,8 @@ int uvc_free_buffers(struct uvc_video_queue *queue)
@@ -237,10 +237,10 @@ index f854698..348cb71 100644
  		queue->count = 0;
  	}
 diff --git a/drivers/net/hamradio/6pack.c b/drivers/net/hamradio/6pack.c
-index fb58830..0e5b54b 100644
+index 689b9bd..e9a92e0 100644
 --- a/drivers/net/hamradio/6pack.c
 +++ b/drivers/net/hamradio/6pack.c
-@@ -690,10 +690,10 @@ static void sixpack_close(struct tty_struct *tty)
+@@ -691,10 +691,10 @@ static void sixpack_close(struct tty_struct *tty)
  {
  	struct sixpack *sp;
  
@@ -254,10 +254,10 @@ index fb58830..0e5b54b 100644
  		return;
  
 diff --git a/drivers/net/hamradio/mkiss.c b/drivers/net/hamradio/mkiss.c
-index db4b7f1..6cfc2b4 100644
+index 7db0a1c..569ff3c 100644
 --- a/drivers/net/hamradio/mkiss.c
 +++ b/drivers/net/hamradio/mkiss.c
-@@ -811,10 +811,10 @@ static void mkiss_close(struct tty_struct *tty)
+@@ -812,10 +812,10 @@ static void mkiss_close(struct tty_struct *tty)
  {
  	struct mkiss *ax;
  
@@ -271,7 +271,7 @@ index db4b7f1..6cfc2b4 100644
  	if (!ax)
  		return;
 diff --git a/drivers/net/wireless/ath/ath5k/eeprom.c b/drivers/net/wireless/ath/ath5k/eeprom.c
-index 9a96550..caed62b 100644
+index 6a3f4da..e67de35 100644
 --- a/drivers/net/wireless/ath/ath5k/eeprom.c
 +++ b/drivers/net/wireless/ath/ath5k/eeprom.c
 @@ -1588,14 +1588,12 @@ ath5k_eeprom_free_pcal_info(struct ath5k_hw *ah, int mode)
@@ -293,10 +293,10 @@ index 9a96550..caed62b 100644
  
  		kfree(chinfo[pier].pd_curves);
 diff --git a/drivers/usb/core/driver.c b/drivers/usb/core/driver.c
-index d784a8b..3ac64a5 100644
+index ce99d8b..7e216ed 100644
 --- a/drivers/usb/core/driver.c
 +++ b/drivers/usb/core/driver.c
-@@ -1187,13 +1187,22 @@ static int usb_suspend_both(struct usb_device *udev, pm_message_t msg)
+@@ -1267,13 +1267,22 @@ static int usb_suspend_both(struct usb_device *udev, pm_message_t msg)
  		for (; i < udev->actconfig->desc.bNumInterfaces; i++) {
  			intf = udev->actconfig->interface[i];
  			status = usb_suspend_interface(udev, intf, msg);
@@ -321,10 +321,10 @@ index d784a8b..3ac64a5 100644
  	if (status != 0) {
  		pm_message_t msg2;
 diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 03eed28..2b428fc 100644
+index 6a8a3c2..8aa251e 100644
 --- a/drivers/usb/core/hub.c
 +++ b/drivers/usb/core/hub.c
-@@ -2188,6 +2188,10 @@ int usb_port_suspend(struct usb_device *udev, pm_message_t msg)
+@@ -2232,6 +2232,10 @@ int usb_port_suspend(struct usb_device *udev, pm_message_t msg)
  				USB_DEVICE_REMOTE_WAKEUP, 0,
  				NULL, 0,
  				USB_CTRL_SET_TIMEOUT);
@@ -335,7 +335,7 @@ index 03eed28..2b428fc 100644
  	} else {
  		/* device has up to 10 msec to fully suspend */
  		dev_dbg(&udev->dev, "usb %ssuspend\n",
-@@ -2427,16 +2431,15 @@ static int hub_suspend(struct usb_interface *intf, pm_message_t msg)
+@@ -2471,16 +2475,15 @@ static int hub_suspend(struct usb_interface *intf, pm_message_t msg)
  	struct usb_device	*hdev = hub->hdev;
  	unsigned		port1;
  
@@ -357,10 +357,10 @@ index 03eed28..2b428fc 100644
  	}
  
 diff --git a/drivers/usb/host/xhci-hcd.c b/drivers/usb/host/xhci-hcd.c
-index a24a92f..56661a2 100644
+index 53d90ca..37a72c9 100644
 --- a/drivers/usb/host/xhci-hcd.c
 +++ b/drivers/usb/host/xhci-hcd.c
-@@ -979,6 +979,7 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
+@@ -995,6 +995,7 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
  	u32 added_ctxs;
  	unsigned int last_ctx;
  	u32 new_add_flags, new_drop_flags, new_slot_info;
@@ -368,7 +368,7 @@ index a24a92f..56661a2 100644
  	int ret = 0;
  
  	ret = xhci_check_args(hcd, udev, ep, 1, __func__);
-@@ -1007,11 +1008,25 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
+@@ -1023,11 +1024,25 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
  		return -EINVAL;
  	}
  
@@ -396,7 +396,7 @@ index a24a92f..56661a2 100644
  	/* If the HCD has already noted the endpoint is enabled,
  	 * ignore this request.
  	 */
-@@ -1026,8 +1041,7 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
+@@ -1042,8 +1057,7 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
  	 * process context, not interrupt context (or so documenation
  	 * for usb_set_interface() and usb_set_configuration() claim).
  	 */
@@ -433,10 +433,10 @@ index 08e8a6a..e797a2c 100644
  	return 0;
  }
 diff --git a/fs/inode.c b/fs/inode.c
-index 4d8e3be..8bbe005 100644
+index 03dfeb2..4405e88 100644
 --- a/fs/inode.c
 +++ b/fs/inode.c
-@@ -256,6 +256,20 @@ void destroy_inode(struct inode *inode)
+@@ -246,6 +246,20 @@ void destroy_inode(struct inode *inode)
  		kmem_cache_free(inode_cachep, (inode));
  }
  
@@ -457,7 +457,7 @@ index 4d8e3be..8bbe005 100644
  /*
   * These are initializations that only need to be done
   * once, because the fields are idempotent across use
-@@ -267,13 +281,7 @@ void inode_init_once(struct inode *inode)
+@@ -257,13 +271,7 @@ void inode_init_once(struct inode *inode)
  	INIT_HLIST_NODE(&inode->i_hash);
  	INIT_LIST_HEAD(&inode->i_dentry);
  	INIT_LIST_HEAD(&inode->i_devices);
@@ -473,7 +473,7 @@ index 4d8e3be..8bbe005 100644
  #ifdef CONFIG_INOTIFY
  	INIT_LIST_HEAD(&inode->inotify_watches);
 diff --git a/fs/nilfs2/btnode.c b/fs/nilfs2/btnode.c
-index 84c2538..8dff317 100644
+index 471e269..3c18687 100644
 --- a/fs/nilfs2/btnode.c
 +++ b/fs/nilfs2/btnode.c
 @@ -34,19 +34,6 @@
@@ -497,7 +497,7 @@ index 84c2538..8dff317 100644
  	.sync_page		= block_sync_page,
  };
 diff --git a/fs/nilfs2/btnode.h b/fs/nilfs2/btnode.h
-index 3e22751..067913e 100644
+index 07da83f..fa2f1e6 100644
 --- a/fs/nilfs2/btnode.h
 +++ b/fs/nilfs2/btnode.h
 @@ -37,7 +37,6 @@ struct nilfs_btnode_chkey_ctxt {
@@ -507,9 +507,9 @@ index 3e22751..067913e 100644
 -void nilfs_btnode_cache_init_once(struct address_space *);
  void nilfs_btnode_cache_init(struct address_space *, struct backing_dev_info *);
  void nilfs_btnode_cache_clear(struct address_space *);
- int nilfs_btnode_submit_block(struct address_space *, __u64, sector_t,
+ struct buffer_head *nilfs_btnode_create_block(struct address_space *btnc,
 diff --git a/fs/nilfs2/super.c b/fs/nilfs2/super.c
-index 63e7b10..93c11af3 100644
+index 4d3ddcc..84dffd8 100644
 --- a/fs/nilfs2/super.c
 +++ b/fs/nilfs2/super.c
 @@ -166,7 +166,7 @@ static void init_once(void *obj)
@@ -522,7 +522,7 @@ index 63e7b10..93c11af3 100644
  	inode_init_once(&ii->vfs_inode);
  }
 diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
-index 4b67559..d48ddf0 100644
+index 18c435d..244adb7 100644
 --- a/include/asm-generic/bug.h
 +++ b/include/asm-generic/bug.h
 @@ -50,6 +50,22 @@ struct bug_entry {
@@ -549,7 +549,7 @@ index 4b67559..d48ddf0 100644
   * WARN(), WARN_ON(), WARN_ON_ONCE, and so on can be used to report
   * significant issues that need prompt attention if they should ever
 diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
-index f73bc1b..ca5c0c4 100644
+index 8a4a130..c5ada92 100644
 --- a/include/linux/clocksource.h
 +++ b/include/linux/clocksource.h
 @@ -190,6 +190,7 @@ struct clocksource {
@@ -561,10 +561,10 @@ index f73bc1b..ca5c0c4 100644
  #endif
  };
 diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 1ff0962..1b9a47a 100644
+index 899a4d6..d6b2ab5 100644
 --- a/include/linux/fs.h
 +++ b/include/linux/fs.h
-@@ -635,6 +635,7 @@ struct address_space {
+@@ -637,6 +637,7 @@ struct address_space {
  	spinlock_t		private_lock;	/* for use by the address_space */
  	struct list_head	private_list;	/* ditto */
  	struct address_space	*assoc_mapping;	/* ditto */
@@ -572,7 +572,7 @@ index 1ff0962..1b9a47a 100644
  } __attribute__((aligned(sizeof(long))));
  	/*
  	 * On most architectures that alignment is already the case; but
-@@ -2158,6 +2159,7 @@ extern loff_t vfs_llseek(struct file *file, loff_t offset, int origin);
+@@ -2148,6 +2149,7 @@ extern loff_t vfs_llseek(struct file *file, loff_t offset, int origin);
  
  extern int inode_init_always(struct super_block *, struct inode *);
  extern void inode_init_once(struct inode *);
@@ -581,10 +581,10 @@ index 1ff0962..1b9a47a 100644
  extern void iput(struct inode *);
  extern struct inode * igrab(struct inode *);
 diff --git a/include/linux/if_packet.h b/include/linux/if_packet.h
-index dea7d6b..8851a01 100644
+index 4021d47..4abde2d 100644
 --- a/include/linux/if_packet.h
 +++ b/include/linux/if_packet.h
-@@ -63,6 +63,7 @@ struct tpacket_auxdata
+@@ -59,6 +59,7 @@ struct tpacket_auxdata {
  	__u16		tp_mac;
  	__u16		tp_net;
  	__u16		tp_vlan_tci;
@@ -592,7 +592,7 @@ index dea7d6b..8851a01 100644
  };
  
  /* Rx ring - header status */
-@@ -103,6 +104,7 @@ struct tpacket2_hdr
+@@ -97,6 +98,7 @@ struct tpacket2_hdr {
  	__u32		tp_sec;
  	__u32		tp_nsec;
  	__u16		tp_vlan_tci;
@@ -601,7 +601,7 @@ index dea7d6b..8851a01 100644
  
  #define TPACKET2_HDRLEN		(TPACKET_ALIGN(sizeof(struct tpacket2_hdr)) + sizeof(struct sockaddr_ll))
 diff --git a/include/net/netlink.h b/include/net/netlink.h
-index a63b219..c344646 100644
+index 668ad04..5074fd6 100644
 --- a/include/net/netlink.h
 +++ b/include/net/netlink.h
 @@ -384,7 +384,7 @@ static inline int nlmsg_parse(const struct nlmsghdr *nlh, int hdrlen,
@@ -817,10 +817,10 @@ index ea8384d..b080920 100644
  	}
  
 diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-index bf4fe98..a02e070 100644
+index 7b26a3a..3022c27 100644
 --- a/kernel/time/clocksource.c
 +++ b/kernel/time/clocksource.c
-@@ -131,7 +131,6 @@ static struct clocksource *watchdog;
+@@ -184,7 +184,6 @@ static struct clocksource *watchdog;
  static struct timer_list watchdog_timer;
  static DECLARE_WORK(watchdog_work, clocksource_watchdog_work);
  static DEFINE_SPINLOCK(watchdog_lock);
@@ -828,7 +828,7 @@ index bf4fe98..a02e070 100644
  static int watchdog_running;
  
  static int clocksource_watchdog_kthread(void *data);
-@@ -200,11 +199,6 @@ static void clocksource_watchdog(unsigned long data)
+@@ -253,11 +252,6 @@ static void clocksource_watchdog(unsigned long data)
  	if (!watchdog_running)
  		goto out;
  
@@ -840,7 +840,7 @@ index bf4fe98..a02e070 100644
  	list_for_each_entry(cs, &watchdog_list, wd_list) {
  
  		/* Clocksource already marked unstable? */
-@@ -214,19 +208,28 @@ static void clocksource_watchdog(unsigned long data)
+@@ -267,19 +261,28 @@ static void clocksource_watchdog(unsigned long data)
  			continue;
  		}
  
@@ -873,7 +873,7 @@ index bf4fe98..a02e070 100644
  		if (abs(cs_nsec - wd_nsec) > WATCHDOG_THRESHOLD) {
  			clocksource_unstable(cs, cs_nsec - wd_nsec);
  			continue;
-@@ -264,7 +267,6 @@ static inline void clocksource_start_watchdog(void)
+@@ -317,7 +320,6 @@ static inline void clocksource_start_watchdog(void)
  		return;
  	init_timer(&watchdog_timer);
  	watchdog_timer.function = clocksource_watchdog;
@@ -882,7 +882,7 @@ index bf4fe98..a02e070 100644
  	add_timer_on(&watchdog_timer, cpumask_first(cpu_online_mask));
  	watchdog_running = 1;
 diff --git a/lib/debugobjects.c b/lib/debugobjects.c
-index eae56fd..2b413db 100644
+index a9a8996..e64b04c 100644
 --- a/lib/debugobjects.c
 +++ b/lib/debugobjects.c
 @@ -196,7 +196,7 @@ static void free_object(struct debug_obj *obj)
@@ -895,10 +895,10 @@ index eae56fd..2b413db 100644
  	obj_pool_free++;
  	obj_pool_used--;
 diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 0cf9863..5e1e508 100644
+index 3cdabc4..15c79a0 100644
 --- a/mm/hugetlb.c
 +++ b/mm/hugetlb.c
-@@ -1074,6 +1074,14 @@ static void __init gather_bootmem_prealloc(void)
+@@ -1105,6 +1105,14 @@ static void __init gather_bootmem_prealloc(void)
  		WARN_ON(page_count(page) != 1);
  		prep_compound_huge_page(page, h->order);
  		prep_new_huge_page(h, page, page_to_nid(page));
@@ -914,10 +914,10 @@ index 0cf9863..5e1e508 100644
  }
  
 diff --git a/mm/ksm.c b/mm/ksm.c
-index e9501f8..318ab79 100644
+index 56a0da1..d991063 100644
 --- a/mm/ksm.c
 +++ b/mm/ksm.c
-@@ -1215,6 +1215,12 @@ static struct rmap_item *scan_get_next_rmap_item(struct page **page)
+@@ -1270,6 +1270,12 @@ static struct rmap_item *scan_get_next_rmap_item(struct page **page)
  		slot = list_entry(slot->mm_list.next, struct mm_slot, mm_list);
  		ksm_scan.mm_slot = slot;
  		spin_unlock(&ksm_mmlist_lock);
@@ -929,12 +929,12 @@ index e9501f8..318ab79 100644
 +			return NULL;
  next_mm:
  		ksm_scan.address = 0;
- 		ksm_scan.rmap_item = list_entry(&slot->rmap_list,
+ 		ksm_scan.rmap_list = &slot->rmap_list;
 diff --git a/mm/memory.c b/mm/memory.c
-index 53c1da0..6c836d3 100644
+index e298c6f..5df9a03 100644
 --- a/mm/memory.c
 +++ b/mm/memory.c
-@@ -2454,6 +2454,7 @@ void unmap_mapping_range(struct address_space *mapping,
+@@ -2459,6 +2459,7 @@ void unmap_mapping_range(struct address_space *mapping,
  		details.last_index = ULONG_MAX;
  	details.i_mmap_lock = &mapping->i_mmap_lock;
  
@@ -942,7 +942,7 @@ index 53c1da0..6c836d3 100644
  	spin_lock(&mapping->i_mmap_lock);
  
  	/* Protect against endless unmapping loops */
-@@ -2470,6 +2471,7 @@ void unmap_mapping_range(struct address_space *mapping,
+@@ -2475,6 +2476,7 @@ void unmap_mapping_range(struct address_space *mapping,
  	if (unlikely(!list_empty(&mapping->i_mmap_nonlinear)))
  		unmap_mapping_range_list(&mapping->i_mmap_nonlinear, &details);
  	spin_unlock(&mapping->i_mmap_lock);
@@ -951,10 +951,10 @@ index 53c1da0..6c836d3 100644
  EXPORT_SYMBOL(unmap_mapping_range);
  
 diff --git a/mm/migrate.c b/mm/migrate.c
-index 0e39f94..aaca868 100644
+index 880bd59..2cbae19 100644
 --- a/mm/migrate.c
 +++ b/mm/migrate.c
-@@ -314,7 +314,7 @@ static int migrate_page_move_mapping(struct address_space *mapping,
+@@ -261,7 +261,7 @@ static int migrate_page_move_mapping(struct address_space *mapping,
  	 */
  	__dec_zone_page_state(page, NR_FILE_PAGES);
  	__inc_zone_page_state(newpage, NR_FILE_PAGES);
@@ -964,11 +964,11 @@ index 0e39f94..aaca868 100644
  		__inc_zone_page_state(newpage, NR_SHMEM);
  	}
 diff --git a/net/core/filter.c b/net/core/filter.c
-index 0127397..d162169 100644
+index 08db7b9..fb00d6c 100644
 --- a/net/core/filter.c
 +++ b/net/core/filter.c
-@@ -291,7 +291,9 @@ load_b:
- 			mem[f_k] = X;
+@@ -285,7 +285,9 @@ load_b:
+ 			mem[fentry->k] = X;
  			continue;
  		default:
 -			WARN_ON(1);
@@ -979,10 +979,10 @@ index 0127397..d162169 100644
  		}
  
 diff --git a/net/ipv4/af_inet.c b/net/ipv4/af_inet.c
-index 57737b8..a289878 100644
+index 7d12c6a..8227dfa 100644
 --- a/net/ipv4/af_inet.c
 +++ b/net/ipv4/af_inet.c
-@@ -460,6 +460,9 @@ int inet_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
+@@ -461,6 +461,9 @@ int inet_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
  	if (addr_len < sizeof(struct sockaddr_in))
  		goto out;
  
@@ -993,7 +993,7 @@ index 57737b8..a289878 100644
  
  	/* Not specified by any standard per-se, however it breaks too
 diff --git a/net/ipv4/inet_diag.c b/net/ipv4/inet_diag.c
-index 6fe360f..dba56d2 100644
+index 571cc2a..94ca0cd 100644
 --- a/net/ipv4/inet_diag.c
 +++ b/net/ipv4/inet_diag.c
 @@ -436,7 +436,7 @@ static int valid_cc(const void *bc, int len, int cc)
@@ -1046,10 +1046,10 @@ index 6fe360f..dba56d2 100644
  		len -= op->yes;
  	}
 diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
-index 31db78c..0ac8833 100644
+index 659f3b2..743a121 100644
 --- a/net/ipv4/udp.c
 +++ b/net/ipv4/udp.c
-@@ -1011,6 +1011,9 @@ csum_copy_err:
+@@ -1203,6 +1203,9 @@ csum_copy_err:
  
  	if (noblock)
  		return -EAGAIN;
@@ -1060,10 +1060,10 @@ index 31db78c..0ac8833 100644
  }
  
 diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
-index cf538ed..ca520d4 100644
+index e55aa9c..3e9969b 100644
 --- a/net/ipv6/udp.c
 +++ b/net/ipv6/udp.c
-@@ -304,8 +304,11 @@ csum_copy_err:
+@@ -441,8 +441,11 @@ csum_copy_err:
  	}
  	release_sock(sk);
  
@@ -1077,27 +1077,27 @@ index cf538ed..ca520d4 100644
  }
  
 diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
-index 9d9b78e..35cfa79 100644
+index 24084ff..39d85a9 100644
 --- a/net/packet/af_packet.c
 +++ b/net/packet/af_packet.c
-@@ -767,6 +767,7 @@ static int tpacket_rcv(struct sk_buff *skb, struct net_device *dev,
+@@ -759,6 +759,7 @@ static int tpacket_rcv(struct sk_buff *skb, struct net_device *dev,
  		h.h2->tp_sec = ts.tv_sec;
  		h.h2->tp_nsec = ts.tv_nsec;
- 		h.h2->tp_vlan_tci = skb->vlan_tci;
+ 		h.h2->tp_vlan_tci = vlan_tx_tag_get(skb);
 +		h.h2->tp_padding = 0;
  		hdrlen = sizeof(*h.h2);
  		break;
  	default:
-@@ -1499,6 +1500,7 @@ static int packet_recvmsg(struct kiocb *iocb, struct socket *sock,
+@@ -1495,6 +1496,7 @@ static int packet_recvmsg(struct kiocb *iocb, struct socket *sock,
  		aux.tp_net = skb_network_offset(skb);
- 		aux.tp_vlan_tci = skb->vlan_tci;
+ 		aux.tp_vlan_tci = vlan_tx_tag_get(skb);
  
 +		aux.tp_padding = 0;
  		put_cmsg(msg, SOL_PACKET, PACKET_AUXDATA, sizeof(aux), &aux);
  	}
  
 diff --git a/net/sunrpc/auth_gss/auth_gss.c b/net/sunrpc/auth_gss/auth_gss.c
-index 4c32700..8f4fe73 100644
+index 50346a6..0078912 100644
 --- a/net/sunrpc/auth_gss/auth_gss.c
 +++ b/net/sunrpc/auth_gss/auth_gss.c
 @@ -548,13 +548,13 @@ retry:
@@ -1117,7 +1117,7 @@ index 4c32700..8f4fe73 100644
  			goto out_intr;
  		}
 diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
-index 38829e2..d838bea 100644
+index 154034b..20b989e 100644
 --- a/net/sunrpc/clnt.c
 +++ b/net/sunrpc/clnt.c
 @@ -938,7 +938,7 @@ call_allocate(struct rpc_task *task)
