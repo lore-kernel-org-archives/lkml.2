@@ -1,86 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751520Ab1GMUAY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 16:00:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15380 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751058Ab1GMUAW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 16:00:22 -0400
-Date: Wed, 13 Jul 2011 16:00:04 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>, ebiederm@xmission.com,
-        hbabu@us.ibm.com, mahesh@linux.vnet.ibm.com, oomichi@mxs.nes.nec.co.jp,
-        horms@verge.net.au, heiko.carstens@de.ibm.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org
-Subject: Re: [patch 0/9] kdump: Patch series for s390 support
-Message-ID: <20110713200004.GG4426@redhat.com>
-References: <20110704170922.976299676@linux.vnet.ibm.com>
- <20110705202615.GJ24348@redhat.com>
- <1309944287.3937.39.camel@br98xy6r>
- <20110707193321.GE28850@redhat.com>
- <20110708110121.5acfc3c9@mschwide>
- <20110711144255.GE30674@redhat.com>
- <20110711175626.121dcc58@mschwide>
- <20110713160239.GE4426@redhat.com>
- <20110713184611.6dcb09b4@mschwide>
+	id S1751490Ab1GMUIl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 16:08:41 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:54259 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751177Ab1GMUIk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 16:08:40 -0400
+Date: Wed, 13 Jul 2011 22:08:13 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Arnaud Lacombe <lacombar@gmail.com>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Valdis.Kletnieks@vt.edu
+Subject: Re: [PATCH] kconfig: Only generate config_is_xxx for bool and
+	tristate options
+Message-ID: <20110713200813.GA11538@merkur.ravnborg.org>
+References: <1305646532-29114-1-git-send-email-mmarek@suse.cz> <20110517195310.GA17003@merkur.ravnborg.org> <BANLkTikmO7D3kUgU62d4_VC2ZPZCnSEqKA@mail.gmail.com> <4E1D9C25.8080300@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110713184611.6dcb09b4@mschwide>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4E1D9C25.8080300@suse.cz>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 13, 2011 at 06:46:11PM +0200, Martin Schwidefsky wrote:
+On Wed, Jul 13, 2011 at 03:22:45PM +0200, Michal Marek wrote:
+> On 18.5.2011 08:23, Arnaud Lacombe wrote:
+>> Hi,
+>>
+>> [added Valdis.Kletnieks@vt.edu to CC:]
+>>
+>> On Tue, May 17, 2011 at 3:53 PM, Sam Ravnborg<sam@ravnborg.org>  wrote:
+>>> On Tue, May 17, 2011 at 05:35:32PM +0200, Michal Marek wrote:
+>>>> For strings and integers, the config_is_xxx macros are useless and
+>>>> sometimes misleading:
+>>>>
+>>>>    #define CONFIG_INITRAMFS_SOURCE ""
+>>>>    #define config_is_initramfs_source() 1
+>>>
+>>> I'm late with this comment....
+>>> Could we introduce "config_is_foo" using a syntax that
+>>> does not break grepability?
+>>>
+>>> Maybe a syntax like this?
+>>>
+>>>     #ifdef CONFIG_FOO
+>>>
+>>> and
+>>>
+>>>     if (KCONFIG_FOO())
+>>>
+>>> Grepping for the use of a symbol is a very typical thing,
+>>> so we should try to keep this.
+>>> And with the suggested syntax above I expect fixdep to
+>>> catch up both usage types.
+>>>
+>> Actually, there is already an issue, on a much smaller scale, in the
+>> current tree with NUMA_BUILD and COMPACTION_BUILD. The real way to fix
+>> this would be to always defines CONFIG_FOO, its value being 1 or 0
+>> depending on whether or not the symbol is selected. This is a
+>> +35k/-35k change.
+>>
+>> Also, I find KCONFIG_FOO() is too specific to be in the kernel source,
+>> and redundant with CONFIG_FOO.
+>>
+>> I've been playing a bit with the preprocessor, and reached that point:
+>>
+>> #define EXPAND(x)       __ ## x
+>> #define CONFIGURED(x)   \
+>>          ({  int __1 __maybe_unused = 1;         \
+>>              int __ ## x __maybe_unused = 0;     \
+>>              EXPAND(x); })
+>>
+>> I am not specifically proud of that, use case would be:
+>>
+>> extern func(void);
+>> int fn()
+>> {
+>>          if(CONFIGURED(CONFIG_FOO))
+>>                  func();
+>> }
+>
+> I finally got round to revisit this. Your approach inspired me to a much  
+> simpler scheme: Instead of generating the config_is_xxx macros for  
+> direct use in the code, name them __enabled_CONFIG_XXX or similar and  
+> have a macro that expands given CONFIG_XXX symbol to the other form:
 
-[..]
-> > What I am suggesting is that stand alone dumper gets control only if
-> > kdump kernel is corrupted.
-> > 
-> > So following sequence.
-> > 
-> > Kernel Crash ---> purgatory --> either kdump kenrel/IPL stand alone tools
-> > 
-> > Here only drawback seems to be that we assume that purgatory code and
-> > pre-calculated checksum has not been corrupted. The big advantage is
-> > that s390 kdump support looks very similar to other arches and
-> > understaning and supporting kdump across architectures becomes easy.
-> 
-> My problem with that is the following: how do we get from the "Kernel Crash"
-> step to the purgatory code? It does work for "normal" panics, but it fails
-> miserably for a hard crash that does not even get as far as panic. That is
-> why we insist on a possible second order of things:
+But then we clutter the namesapce with another set of variables that will
+be misued. If not in the kernel then by other kconfig users.
 
-What is hard crash? How does that happen and what does x86 and s390
-do in that case?
+Arnaud approach is nice as it does not require any additional
+symbols to be generated.
+We can always discuss tha naming - but the approach looks good.
 
-Though I don't have details but your argument seems to be that in s390
-we are always guranteed that we will jump to IPLing the stand alone
-tools code irresepective of the system state hence it is relatively
-safer to do checks in stand alone tools instead of purgatory where
-code is in memory.
+To look at actual usage first:
 
-If due to hard hang, code can not even make to purgatory, where would
-it go? Can't we do IPLing of stand alone tool then. 
+int foo()
+{
+	if (KCONFIG(CONFIG_FOO)) {
+		// this should be true for both module and non-module case
+	}
 
-So we first try to take purgatory path which does the checksum and is
-consistent with other architectures. If that does not work in case
-of hard hang, you always have the option of IPLing the stand alone tool
-later manually.
+	if (KCONFIG_NOT_MODULE(CONFIG_FOO)) {
+		// this should be true only if this is not a module
+	}
 
-This will also get rid of requirement passing all the segment and cheksum
-info to stand alone tool with the help of meminfo (That's another sore
-point). 
 
-Bottom line, even if you can't make to purgatory reliably, you always
-have the option of capturing dump manually using stand alone tools. We
-don't have to mix up kdump and stand alone mechanism. If kdump fails, we
-just need to have capability to still capture the dump using stand alone
-tools manually. I think that will make things simpler even for stand alone
-tools.
 
-Thanks
-Vivek
+	if (KCONFIG_MODULE(CONFIG_FOO)) {
+		// this should only be true for the module case
+	}
+
+}
+
+Using the above even the naive reader is aware this is a kconfig generate
+symbol.
+Using "KCONFIG" in the name gives a stong hint that this is a kconfig thing.
+
+We could stuff it all into a kconfig.h header like the attached (not tested)
+but based on Arnauds sketch above - so creadits goes to him.
+
+	Sam
+
+diff --git a/include/linux/kconfig.h b/include/linux/kconfig.h
+new file mode 100644
+index 0000000..3ccdd73
+--- /dev/null
++++ b/include/linux/kconfig.h
+@@ -0,0 +1,30 @@
++#ifndef _LINUX_KCONFIG_H
++#define _LINUX_KCONFIG_H
++
++/*
++ * Helper macros for dealing with kconfig symbols
++ */
++
++#include <linux/compiler.h>
++
++#define __symbol_value(sym)       __ ## x
++#define __symbol_module(sym)      __symbol_value(__ ## sym ## _MODULE)
++
++/* return 1 if x is defined and not a module */
++#define KCONFIG_NON_MODULE(sym)					\
++	({ int __1 __maybe_unused = 1;				\
++	   int __ ## sym __maybe_unused = 0;			\
++	   __symbol_value(sym); })
++
++/* return 1 if sym is a module symbol */
++#define KCONFIG_MODULE(sym)					\
++	({ int __1 __maybe_unused = 1;				\
++	   int __ ## sym ## _MODULE __maybe_unused = 0;	\
++	   __symbol_value(sym); })
++
++/* return 1 if sym is defined - module or not */
++#define KCONFIG(sym) (KCONFIG_NON_MODULE(sym) || KCONFIG_MODULE(sym))
++
++#undef __symbol_value
++#undef __symbol_module
++#endif
