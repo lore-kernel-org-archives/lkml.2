@@ -1,82 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964986Ab1GMGcI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 02:32:08 -0400
-Received: from mother.openwall.net ([195.42.179.200]:54579 "HELO
-	mother.openwall.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S964930Ab1GMGcH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 02:32:07 -0400
-Date: Wed, 13 Jul 2011 10:31:42 +0400
-From: Solar Designer <solar@openwall.com>
-To: NeilBrown <neilb@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Vasiliy Kulikov <segoon@openwall.com>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        kernel-hardening@lists.openwall.com, Jiri Slaby <jslaby@suse.cz>,
-        James Morris <jmorris@namei.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH] move RLIMIT_NPROC check from set_user() to do_execve_common()
-Message-ID: <20110713063142.GA19976@openwall.com>
-References: <20110612130953.GA3709@albatros> <20110706173631.GA5431@albatros> <CA+55aFyfjG1h2zkkGai_VPM8p5bhWhvNXs1HvuWMgxv4RSywYw@mail.gmail.com> <20110706185932.GB3299@albatros> <20110707075610.GA3411@albatros> <20110707081930.GA4393@albatros> <20110712132723.GA3193@albatros> <CA+55aFysXOeBqEvmVbuqL3i0jRFDcE=vDuVhmYL38XQ0+x=deQ@mail.gmail.com> <20110713091408.0d456352@notabene.brown>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110713091408.0d456352@notabene.brown>
-User-Agent: Mutt/1.4.2.3i
+	id S1758685Ab1GMGwc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 02:52:32 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:60250 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758044Ab1GMGwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 02:52:31 -0400
+Date: Wed, 13 Jul 2011 07:51:49 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1107130751040.4922@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, Neil, Motohiro - thank you for your comments!
 
-On Wed, Jul 13, 2011 at 09:14:08AM +1000, NeilBrown wrote:
-> The contrast is really "failing when trying to use reduced privileges is
-> safer than failing to reduce privileges - if the reduced privileges are not
-> available".
+Hi Linus,
 
-Right.
+Minor set of fixes from Alex including one hotplug regression and one 
+intel AGP fix.
 
-> Note that there is room for a race that could have unintended consequences.
-> 
-> Between the 'setuid(ordinary-user)' and a subsequent 'exit()' after execve()
-> has failed, any other process owned by the same user (and we know where are
-> quite a few) would fail an execve() where it really should not.
+Dave.
 
-It is not obvious to me that this is unintended, and that dealing with
-it in some way makes much of a difference.  (Also, it's not exactly "any
-other process owned by the same user" - this only affects processes that
-also run with similar or lower RLIMIT_NPROC.  So, for example, if a web
-server is set to use RLIMIT_NPROC of 30, but interactive logins use 40,
-then the latter may succeed and allow for shell commands to succeed.
-This is actually a common combination of settings that we've been using
-on some systems for years.)
+The following changes since commit 620917de59eeb934b9f8cf35cc2d95c1ac8ed0fc:
 
-> I think it would be safer to add a test for PF_SUPERPRIV and PF_FORKNOEXEC
-> in current->flags and only fail the execve if both are set.
-> i.e.
->     (current->flags & (PF_SUPERPRIV|PF_FORKNOEXEC)) == (PF_SUPERPRIV|PF_FORKNOEXEC)
-> 
-> That should narrow it down to only failing in the particular case that we are
-> interested in.
+  Linux 3.0-rc7 (2011-07-11 16:51:52 -0700)
 
-That's a curious idea, and apparently this is what NetBSD does, but
-unfortunately it does not match a common use case that we are interested
-in - specifically, Apache with suEXEC (which is part of the Apache
-distribution).  Here's what happens:
+are available in the git repository at:
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
 
-httpd runs as non-root.  It forks, execs suexec (SUID root).  suexec
-calls setuid() to the target non-root user and execve() on the CGI
-program (script, interpreter, whatever).
+Alex Deucher (5):
+      drm/radeon/kms: fix regression in hotplug
+      drm/radeon/kms: fix backend map typo on juniper
+      drm/radeon/kms: use correct BUS_CNTL reg on rs600
+      drm/radeon/kms: fix typo in read_disabled vbios code
+      drm/radeon/kms/evergreen: emit SQ_LDS_RESOURCE_MGMT for blits
 
-Notice how the fork() and the setuid() are separated by execve() of
-suexec itself.  Thus, we need to apply the RLIMIT_NPROC check on
-execve() unconditionally (well, we may allow processes with
-CAP_SYS_RESOURCE to proceed despite of the failed check, like it's
-done in -ow patches), or at least not on the condition proposed above.
+Chris Wilson (1):
+      agp/intel: Fix typo in G4x_GMCH_SIZE_VT_2M
 
-Alexander
+ drivers/char/agp/intel-agp.h                |    7 ++++---
+ drivers/gpu/drm/radeon/evergreen.c          |    2 +-
+ drivers/gpu/drm/radeon/evergreen_blit_kms.c |    9 +++++++--
+ drivers/gpu/drm/radeon/radeon_bios.c        |   21 +++++++++++++++------
+ drivers/gpu/drm/radeon/radeon_connectors.c  |    6 ++++++
+ drivers/gpu/drm/radeon/radeon_reg.h         |    2 ++
+ drivers/gpu/drm/radeon/rs600.c              |    6 +++---
+ 7 files changed, 38 insertions(+), 15 deletions(-)
