@@ -1,86 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757025Ab1GMSAZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 14:00:25 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:3542 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754661Ab1GMSAX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 14:00:23 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 13 Jul 2011 10:59:53 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Date: Wed, 13 Jul 2011 10:59:53 -0700
-Subject: RE: [PATCH] i2c: tegra: Use engineering names in DT compatible
- property
-Thread-Topic: [PATCH] i2c: tegra: Use engineering names in DT compatible
- property
-Thread-Index: Acw7nxyAFrdiWOpeSiqTh7ypjsSl6QF5z4Yg
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF049E834757@HQMAIL01.nvidia.com>
-References: <1309897306-22953-1-git-send-email-swarren@nvidia.com>
- <20110706053941.GE9978@ponder.secretlab.ca>
-In-Reply-To: <20110706053941.GE9978@ponder.secretlab.ca>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757112Ab1GMSAw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 14:00:52 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:49561 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756997Ab1GMSAu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 14:00:50 -0400
+Message-ID: <4E1DDD4E.6040100@kernel.dk>
+Date: Wed, 13 Jul 2011 20:00:46 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
+To: Matthew Wilcox <matthew@wil.cx>
+CC: "Jiang, Dave" <dave.jiang@intel.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        "Foong, Annie" <annie.foong@intel.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Nadolski, Edmund" <edmund.nadolski@intel.com>,
+        "Skirvin, Jeffrey D" <jeffrey.d.skirvin@intel.com>
+Subject: Re: rq_affinity doesn't seem to work?
+References: <D010E79907AF0D4E90B603DE907837D504CA6365D6@azsmsx504.amr.corp.intel.com> <4E1CAEEB.8050506@kernel.dk> <20110713171011.GA11864@parisc-linux.org>
+In-Reply-To: <20110713171011.GA11864@parisc-linux.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant Likely wrote at Tuesday, July 05, 2011 11:40 PM:
-> On Tue, Jul 05, 2011 at 02:21:46PM -0600, Stephen Warren wrote:
-> > Engineering names are more stable than marketing names. Hence, use them
-> > for Device Tree compatible properties instead.
-> >
-> > Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> > ---
-> > Grant, this is against devicetree/arm and also makes sense for
-> > devicetree/test.
+On 2011-07-13 19:10, Matthew Wilcox wrote:
+> On Tue, Jul 12, 2011 at 10:30:35PM +0200, Jens Axboe wrote:
+>> It's probably the grouping, we need to do something about that. Does the
+>> below patch make it behave as you expect?
 > 
-> Acked-by: Grant Likely <grant.likely@secretlab.ca>
-> 
-> Ben is the one to pick up this patch.
+> "something", absolutely.  But there is benefit from doing some aggregation
+> (we tried disabling it entirely with the "well-known OLTP benchmark" and
+> performance went down).
 
-I don't believe anyone ever sent a patch to Ben to add tegra_i2c_of_match
-to the driver; the OF support patch didn't include that part of the code.
-As such, Ben can't yet apply this to his tree. (Although I note this patch
-is in Grant's /arm and /test trees, which is probably good enough for now).
+Yep, that's why the current solution is somewhat middle of the road...
 
-> >  drivers/i2c/busses/i2c-tegra.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
-> > index 8914bd1..99b1b6d 100644
-> > --- a/drivers/i2c/busses/i2c-tegra.c
-> > +++ b/drivers/i2c/busses/i2c-tegra.c
-> > @@ -716,7 +716,7 @@ static int tegra_i2c_resume(struct platform_device *pdev)
-> >  #if defined(CONFIG_OF)
-> >  /* Match table for of_platform binding */
-> >  static const struct of_device_id tegra_i2c_of_match[] __devinitconst = {
-> > -	{ .compatible = "nvidia,tegra250-i2c", },
-> > +	{ .compatible = "nvidia,tegra20-i2c", },
-> >  	{},
-> >  };
-> >  MODULE_DEVICE_TABLE(of, tegra_i2c_of_match);
-> > --
-> > 1.7.0.4
-> >
+> Ideally we'd do something like "if the softirq is taking up more than 10%
+> of a core, split the grouping".  Do we have enough stats to do that kind
+> of monitoring?
+
+I don't think we have those stats, though it could/should be pulled from
+the ksoftirqX threads. We could have some metric, ala
+
+        dest_cpu = get_group_completion_cpu(rq->cpu);
+        if (ksoftirqd_of(dest_cpu) >= 90% busy)
+                dest_cpu = rq->cpu;
+
+to send things completely local to the submitter of the IO, IFF the
+current CPU is close to running at full tilt.
 
 -- 
-nvpublic
+Jens Axboe
 
