@@ -1,141 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756661Ab1GMBYt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 21:24:49 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:54457 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754163Ab1GMBYs (ORCPT
+	id S932285Ab1GMBZb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 21:25:31 -0400
+Received: from mta31.charter.net ([216.33.127.82]:44564 "EHLO
+	mta31.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753650Ab1GMBZa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 21:24:48 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: stable@kernel.org
-Cc: linux-cifs@vger.kernel.org, helge.hafting@hist.no,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] cifs: fix wsize negotiation for 2.6.39 stable
-Date: Tue, 12 Jul 2011 21:24:41 -0400
-Message-Id: <1310520281-17467-1-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.7.6
+	Tue, 12 Jul 2011 21:25:30 -0400
+X-Authority-Analysis: v=1.1 cv=vT9vkN3vVXssH3Ov7r/wQUs/sfIFjNPEFFf4aeKIi4A=
+ c=1 sm=1 a=ZxubRnMw9rsA:10 a=lDGNyK2vIvEA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:17
+ a=ov-54fNVy-oBpQBA2Z8A:9 a=xzrYXqw+0zwiO4gHSXHcAg==:117
+From: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+To: julia@diku.dk, Gilles.Muller@lip6.fr, npalix.work@gmail.com
+Cc: rdunlap@xenotime.net, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, cocci@diku.dk,
+        Greg Dietsche <Gregory.Dietsche@cuw.edu>
+Subject: [PATCH 0/3] coccinelle: add parallel execution
+Date: Tue, 12 Jul 2011 20:26:42 -0500
+Message-Id: <1310520405-1558-1-git-send-email-Gregory.Dietsche@cuw.edu>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I sent this a week or so ago, but it apparently missed the recent
-2.6.39.y release. Resending to make sure it gets into the next one.
+This patch series adds a new flag PARALLEL= to the coccicheck build target and documents the new feature.
+It works a lot like make's -j flag. I looked for a way to have make pass on the value of -j, but
+didn't find one - if anyone knows how to do that, I'd love to hear about it! 
 
-Prior to 2.6.39, when signing was enabled on a socket the client only
-sent single-page writes. This changed with commit ca83ce3d5b, which
-made signed and unsigned connections use the same codepaths for write
-calls.
+I suppose an alternate approach would be to accomplish this via make itself, but the approach in this patch series seemed simpler to implement... 
 
-This caused a regression when working with windows servers. Windows
-machines will reject writes larger than the MaxBufferSize when signing
-is active, but does not clear the CAP_LARGE_WRITE_X flag in the
-negotiation.
+Performance is quite a bit better than single threaded. On my 6 core box, the checks generally run around 3x faster.
 
-This patch backports 2 patches that fix this problem in 3.0 kernels,
-and changes a couple of the constants to values appropriate for the
-writeback code in 2.6.39.
+Feedback welcome!! :)
 
-Cc: stable@kernel.org
-Reported-by: Helge Hafting <helge.hafting@hist.no>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- fs/cifs/connect.c |   64 ++++++++++++++++++++++++++++++++++++----------------
- 1 files changed, 44 insertions(+), 20 deletions(-)
+Greg
 
-diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
-index 5236582..8e78710 100644
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -2571,23 +2571,6 @@ static void setup_cifs_sb(struct smb_vol *pvolume_info,
- 	else /* default */
- 		cifs_sb->rsize = CIFSMaxBufSize;
- 
--	if (pvolume_info->wsize > PAGEVEC_SIZE * PAGE_CACHE_SIZE) {
--		cERROR(1, "wsize %d too large, using 4096 instead",
--			  pvolume_info->wsize);
--		cifs_sb->wsize = 4096;
--	} else if (pvolume_info->wsize)
--		cifs_sb->wsize = pvolume_info->wsize;
--	else
--		cifs_sb->wsize = min_t(const int,
--					PAGEVEC_SIZE * PAGE_CACHE_SIZE,
--					127*1024);
--		/* old default of CIFSMaxBufSize was too small now
--		   that SMB Write2 can send multiple pages in kvec.
--		   RFC1001 does not describe what happens when frame
--		   bigger than 128K is sent so use that as max in
--		   conjunction with 52K kvec constraint on arch with 4K
--		   page size  */
--
- 	if (cifs_sb->rsize < 2048) {
- 		cifs_sb->rsize = 2048;
- 		/* Windows ME may prefer this */
-@@ -2665,6 +2648,48 @@ static void setup_cifs_sb(struct smb_vol *pvolume_info,
- 			   "mount option supported");
- }
- 
-+/* Prior to 3.0, cifs couldn't handle writes larger than this */
-+#define CIFS_MAX_WSIZE (PAGEVEC_SIZE * PAGE_CACHE_SIZE)
-+
-+/*
-+ * When the server doesn't allow large posix writes, only allow a wsize of
-+ * 128k minus the size of the WRITE_AND_X header. That allows for a write up
-+ * to the maximum size described by RFC1002.
-+ */
-+#define CIFS_MAX_RFC1002_WSIZE (128 * 1024 - sizeof(WRITE_REQ) + 4)
-+
-+/* Make the default the same as the max */
-+#define CIFS_DEFAULT_WSIZE CIFS_MAX_WSIZE
-+
-+static unsigned int
-+cifs_negotiate_wsize(struct cifsTconInfo *tcon, struct smb_vol *pvolume_info)
-+{
-+	__u64 unix_cap = le64_to_cpu(tcon->fsUnixInfo.Capability);
-+	struct TCP_Server_Info *server = tcon->ses->server;
-+	unsigned int wsize = pvolume_info->wsize ? pvolume_info->wsize :
-+				CIFS_DEFAULT_WSIZE;
-+
-+	/* can server support 24-bit write sizes? (via UNIX extensions) */
-+	if (!tcon->unix_ext || !(unix_cap & CIFS_UNIX_LARGE_WRITE_CAP))
-+		wsize = min_t(unsigned int, wsize, CIFS_MAX_RFC1002_WSIZE);
-+
-+	/*
-+	 * no CAP_LARGE_WRITE_X or is signing enabled without CAP_UNIX set?
-+	 * Limit it to max buffer offered by the server, minus the size of the
-+	 * WRITEX header, not including the 4 byte RFC1001 length.
-+	 */
-+	if (!(server->capabilities & CAP_LARGE_WRITE_X) ||
-+	    (!(server->capabilities & CAP_UNIX) &&
-+	     (server->sec_mode & (SECMODE_SIGN_ENABLED|SECMODE_SIGN_REQUIRED))))
-+		wsize = min_t(unsigned int, wsize,
-+				server->maxBuf - sizeof(WRITE_REQ) + 4);
-+
-+	/* hard limit of CIFS_MAX_WSIZE */
-+	wsize = min_t(unsigned int, wsize, CIFS_MAX_WSIZE);
-+
-+	return wsize;
-+}
-+
- static int
- is_path_accessible(int xid, struct cifsTconInfo *tcon,
- 		   struct cifs_sb_info *cifs_sb, const char *full_path)
-@@ -2866,13 +2891,12 @@ try_mount_again:
- 		cifs_sb->rsize = 1024 * 127;
- 		cFYI(DBG2, "no very large read support, rsize now 127K");
- 	}
--	if (!(tcon->ses->capabilities & CAP_LARGE_WRITE_X))
--		cifs_sb->wsize = min(cifs_sb->wsize,
--			       (tcon->ses->server->maxBuf - MAX_CIFS_HDR_SIZE));
- 	if (!(tcon->ses->capabilities & CAP_LARGE_READ_X))
- 		cifs_sb->rsize = min(cifs_sb->rsize,
- 			       (tcon->ses->server->maxBuf - MAX_CIFS_HDR_SIZE));
- 
-+	cifs_sb->wsize = cifs_negotiate_wsize(tcon, volume_info);
-+
- remote_path_check:
- 	/* check if a whole path (including prepath) is not remote */
- 	if (!rc && tcon) {
+Greg Dietsche (3):
+  coccinelle.txt: add overview section
+  coccinelle.txt: add documentation of PARALLEL= flag
+  coccicheck: add parallel execution
+
+ Documentation/coccinelle.txt |   35 +++++++++++++++++++++++++++++++++++
+ scripts/coccicheck           |   27 ++++++++++++++++++++++++++-
+ 2 files changed, 61 insertions(+), 1 deletions(-)
+
 -- 
-1.7.6
+1.7.2.5
 
