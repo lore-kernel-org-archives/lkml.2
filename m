@@ -1,55 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751605Ab1GMUne (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 16:43:34 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:50113 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751231Ab1GMUnd (ORCPT
+	id S1751658Ab1GMUoj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 16:44:39 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40019 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751350Ab1GMUoi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 16:43:33 -0400
-X-Sasl-enc: yEQWJr21YW0LyA7PcddQz7zKvOZrZknT8oVaR6+p2NR/ 1310589811
-Date: Wed, 13 Jul 2011 22:41:43 +0200
-From: Greg KH <greg@kroah.com>
-To: David Howells <dhowells@redhat.com>
-Cc: geert@linux-m68k.org, linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [stable] [PATCH] FS-Cache: Fix bounds check
-Message-ID: <20110713204143.GC23159@kroah.com>
-References: <CAMuHMdUA7+j-hQuvu7g5kCZX1nqwPtR+mwhPP1nmxfkmCxfKmg@mail.gmail.com>
- <20110713115518.29995.29712.stgit@warthog.procyon.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110713115518.29995.29712.stgit@warthog.procyon.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 13 Jul 2011 16:44:38 -0400
+Subject: Re: [PATCH 5/6] sched: Use leaf_cfs_rqs in load_balance_fair()
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Jan H." =?ISO-8859-1?Q?Sch=F6nherr?= <schnhrr@cs.tu-berlin.de>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+In-Reply-To: <1310580816-10861-6-git-send-email-schnhrr@cs.tu-berlin.de>
+References: <1310580816-10861-1-git-send-email-schnhrr@cs.tu-berlin.de>
+	 <1310580816-10861-6-git-send-email-schnhrr@cs.tu-berlin.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 13 Jul 2011 22:44:26 +0200
+Message-ID: <1310589866.2586.31.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 13, 2011 at 12:55:18PM +0100, David Howells wrote:
-> __fscache_uncache_all_inode_pages() has a loop that goes through page index
-> numbers go up to (loff_t)-1.  This is incorrect.  The limit should be
-> (pgoff_t)-1 as on a 32-bit machine the pgoff_t is smaller than loff_t.
+On Wed, 2011-07-13 at 20:13 +0200, Jan H. Schönherr wrote:
+> Since commit 3d4b47b4 ("sched: Implement on-demand (active) cfs_rq list")
+> the leaf_cfs_rqs provide an advantage over the task_group list.
 > 
-> On m68k the following error is observed:
-> 
-> fs/fscache/page.c: In function '__fscache_uncache_all_inode_pages':
-> fs/fscache/page.c:979: warning: comparison is always false due to
-> limited range of data type
-> 
-> [Should there be a PGOFF_T_MAX constant defined?]
-> 
-> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> ---
-> 
->  fs/fscache/page.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> Make use of it in load_balance_fair(), so that we do not unnecessarily
+> iterate over empty cfs_rqs where we cannot pull anything from.
 
+I just send a similar patch today:
 
-<formletter>
+https://lkml.org/lkml/2011/7/13/94
 
-This is not the correct way to submit patches for inclusion in the
-stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
-for how to do this properly.
-
-</formletter>
