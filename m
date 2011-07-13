@@ -1,121 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753461Ab1GMNU5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 09:20:57 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:64558 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753114Ab1GMNU4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 09:20:56 -0400
-Date: Wed, 13 Jul 2011 09:20:38 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: Keir Fraser <keir@xen.org>, Jan Beulich <jbeulich@novell.com>,
-        Olaf Hering <olaf@aepfle.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [Xen-devel] [PATCH] xen: update machine_to_phys_order on resume
-Message-ID: <20110713132037.GC7618@dumpdata.com>
-References: <20110701104148.GA32729@aepfle.de>
- <20110712164342.GA12867@aepfle.de>
- <20110712181118.GA18662@dumpdata.com>
- <1310548364.634.355.camel@zakaz.uk.xensource.com>
+	id S1753566Ab1GMNWw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 09:22:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51430 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752244Ab1GMNWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 09:22:51 -0400
+Message-ID: <4E1D9C25.8080300@suse.cz>
+Date: Wed, 13 Jul 2011 15:22:45 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1310548364.634.355.camel@zakaz.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090208.4E1D9BB1.00C5:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Sam Ravnborg <sam@ravnborg.org>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Valdis.Kletnieks@vt.edu
+Subject: Re: [PATCH] kconfig: Only generate config_is_xxx for bool and tristate
+ options
+References: <1305646532-29114-1-git-send-email-mmarek@suse.cz>	<20110517195310.GA17003@merkur.ravnborg.org> <BANLkTikmO7D3kUgU62d4_VC2ZPZCnSEqKA@mail.gmail.com>
+In-Reply-To: <BANLkTikmO7D3kUgU62d4_VC2ZPZCnSEqKA@mail.gmail.com>
+Content-Type: multipart/mixed;
+ boundary="------------070700060301060108060305"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 13, 2011 at 10:12:44AM +0100, Ian Campbell wrote:
-> On Tue, 2011-07-12 at 19:11 +0100, Konrad Rzeszutek Wilk wrote:
-> > On Tue, Jul 12, 2011 at 06:43:42PM +0200, Olaf Hering wrote:
-> > > 
-> > > Migration of pv guests fails, the guest crashes on the target host once the
-> > > guest is unpaused after transit. It happens when the guest is started on a
-> > > small systen, then migrated from that small system to a large system.
-> > > If the guest is started on a large system, then migrated to a small system and
-> > > back to the large system, the migration will be successful.
-> > > 
-> > > The issue is that mfn_to_pfn() makes use of machine_to_phys_order, which
-> > > is only configured once early in the boot process. After migration to a
-> > > large host the mfns will exceed the order from the small system and a
-> > > wrong code path is taken.
-> > > 
-> > > Calling xen_setup_machphys_mapping() again in the resume path will avoid
-> > > the crash.
-> > 
-> > Oh, duh!
-> > 
-> > Let me queue that up for 3.0-rc7 unless there are objections?
-> 
-> It's not so much an objection to this patch but this issue seems to have
-> been caused by Xen cset 20892:d311d1efc25e which looks to me like a
-> subtle ABI breakage for guests. Perhaps we should introduce a feature
-> flag to indicate that a guest can cope with the m2p changing size over
-> migration like this?
+This is a multi-part message in MIME format.
+--------------070700060301060108060305
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Sounds reasonable to me.. I will wait (I can always submit it during 3.1 cycle
-and CC stable@kernel.org to backport it to 3.0.1).
+On 18.5.2011 08:23, Arnaud Lacombe wrote:
+> Hi,
+>
+> [added Valdis.Kletnieks@vt.edu to CC:]
+>
+> On Tue, May 17, 2011 at 3:53 PM, Sam Ravnborg<sam@ravnborg.org>  wrote:
+>> On Tue, May 17, 2011 at 05:35:32PM +0200, Michal Marek wrote:
+>>> For strings and integers, the config_is_xxx macros are useless and
+>>> sometimes misleading:
+>>>
+>>>    #define CONFIG_INITRAMFS_SOURCE ""
+>>>    #define config_is_initramfs_source() 1
+>>
+>> I'm late with this comment....
+>> Could we introduce "config_is_foo" using a syntax that
+>> does not break grepability?
+>>
+>> Maybe a syntax like this?
+>>
+>>     #ifdef CONFIG_FOO
+>>
+>> and
+>>
+>>     if (KCONFIG_FOO())
+>>
+>> Grepping for the use of a symbol is a very typical thing,
+>> so we should try to keep this.
+>> And with the suggested syntax above I expect fixdep to
+>> catch up both usage types.
+>>
+> Actually, there is already an issue, on a much smaller scale, in the
+> current tree with NUMA_BUILD and COMPACTION_BUILD. The real way to fix
+> this would be to always defines CONFIG_FOO, its value being 1 or 0
+> depending on whether or not the symbol is selected. This is a
+> +35k/-35k change.
+>
+> Also, I find KCONFIG_FOO() is too specific to be in the kernel source,
+> and redundant with CONFIG_FOO.
+>
+> I've been playing a bit with the preprocessor, and reached that point:
+>
+> #define EXPAND(x)       __ ## x
+> #define CONFIGURED(x)   \
+>          ({  int __1 __maybe_unused = 1;         \
+>              int __ ## x __maybe_unused = 0;     \
+>              EXPAND(x); })
+>
+> I am not specifically proud of that, use case would be:
+>
+> extern func(void);
+> int fn()
+> {
+>          if(CONFIGURED(CONFIG_FOO))
+>                  func();
+> }
 
-Jan, you are the one who came up with the c/s - what's your thought?
-How does your kernel handle the changing size of the M2P - like the patch below?
-> 
-> Ian.
-> 
-> > 
-> > > 
-> > > Signed-off-by: Olaf Hering <olaf@aepfle.de>
-> > > 
-> > > ---
-> > >  arch/x86/xen/mmu.c     |    2 +-
-> > >  arch/x86/xen/suspend.c |    2 ++
-> > >  2 files changed, 3 insertions(+), 1 deletion(-)
-> > > 
-> > > Index: linux-3.0-rc7/arch/x86/xen/mmu.c
-> > > ===================================================================
-> > > --- linux-3.0-rc7.orig/arch/x86/xen/mmu.c
-> > > +++ linux-3.0-rc7/arch/x86/xen/mmu.c
-> > > @@ -1623,7 +1623,7 @@ static void __init xen_map_identity_earl
-> > >  	set_page_prot(pmd, PAGE_KERNEL_RO);
-> > >  }
-> > >  
-> > > -void __init xen_setup_machphys_mapping(void)
-> > > +void xen_setup_machphys_mapping(void)
-> > >  {
-> > >  	struct xen_machphys_mapping mapping;
-> > >  	unsigned long machine_to_phys_nr_ents;
-> > > Index: linux-3.0-rc7/arch/x86/xen/suspend.c
-> > > ===================================================================
-> > > --- linux-3.0-rc7.orig/arch/x86/xen/suspend.c
-> > > +++ linux-3.0-rc7/arch/x86/xen/suspend.c
-> > > @@ -43,6 +43,8 @@ void xen_arch_hvm_post_suspend(int suspe
-> > >  
-> > >  void xen_arch_post_suspend(int suspend_cancelled)
-> > >  {
-> > > +	xen_setup_machphys_mapping();
-> > > +
-> > >  	xen_build_mfn_list_list();
-> > >  
-> > >  	xen_setup_shared_info();
-> > > 
-> > > _______________________________________________
-> > > Xen-devel mailing list
-> > > Xen-devel@lists.xensource.com
-> > > http://lists.xensource.com/xen-devel
-> > 
-> > _______________________________________________
-> > Xen-devel mailing list
-> > Xen-devel@lists.xensource.com
-> > http://lists.xensource.com/xen-devel
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+I finally got round to revisit this. Your approach inspired me to a much 
+simpler scheme: Instead of generating the config_is_xxx macros for 
+direct use in the code, name them __enabled_CONFIG_XXX or similar and 
+have a macro that expands given CONFIG_XXX symbol to the other form:
+
+/*
+  * Usage: ENABLED(CONFIG_FOO)
+  * Please do not use the __enabled_CONFIG_FOO defines directly to not break
+  * grepability of the code.
+  */
+#define ENABLED(x) __enabled_ ## x
+
+plus a checkpatch.pl check so that people do not use the 
+__enabled_CONFIG_FOO macros in their code. git grep -w CONFIG_FOO 
+continues to work, fixdep continues to work, it works with -O0 because 
+it expands to a if(1) or if(0). Am I missing some obvious problem?
+
+Attached is my test program:
+$ gcc -Wall -O0 test.c
+$ ./a.out
+Foo1.0
+Foo1.1
+$ strings ./a.out | grep Foo
+Foo1.0
+Foo1.1
+
+Michal
+
+--------------070700060301060108060305
+Content-Type: text/plain;
+ name="test.c"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="test.c"
+
+#include <stdio.h>
+
+#define CONFIG_FOO1 1
+#undef CONFIG_FOO2
+#define __enabled_CONFIG_FOO1 1
+#define __enabled_CONFIG_FOO2 0
+
+/*
+ * Usage: ENABLED(CONFIG_FOO)
+ * Please do not use the __enabled_CONFIG_FOO defines directly to not break
+ * grepability of the code.
+ */
+#define ENABLED(x) __enabled_ ## x
+
+int main(void)
+{
+#ifdef CONFIG_FOO1
+	puts("Foo1.0");
+#endif
+#ifdef CONFIG_FOO2
+	puts("Foo2.0");
+#endif
+	if (ENABLED(CONFIG_FOO1)) {
+		puts("Foo1.1");
+	}
+	if (ENABLED(CONFIG_FOO2)) {
+		puts("Foo2.1");
+	}
+	return 0;
+}
+
+
+--------------070700060301060108060305--
