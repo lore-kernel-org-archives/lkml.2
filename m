@@ -1,55 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965278Ab1GMKkd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 06:40:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43924 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965209Ab1GMKkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 06:40:32 -0400
-Date: Wed, 13 Jul 2011 11:40:25 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Christoph Lameter <cl@linux.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] mm: vmscan: Do use use PF_SWAPWRITE from zone_reclaim
-Message-ID: <20110713104025.GE7529@suse.de>
-References: <1310389274-13995-1-git-send-email-mgorman@suse.de>
- <1310389274-13995-2-git-send-email-mgorman@suse.de>
- <CAEwNFnATXiQsmbfuvZNEtcpcVZkyZKRFB1SKbkEREaCW4S-aUg@mail.gmail.com>
- <4E1C1684.4090706@jp.fujitsu.com>
- <CAEwNFnAprEuZJucDSMgnUHGePyxgyRqNCWOsG0-K2nTjmKcUug@mail.gmail.com>
- <alpine.DEB.2.00.1107121042240.2530@router.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1107121042240.2530@router.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S965291Ab1GMKkr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 06:40:47 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:53767 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965209Ab1GMKkp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 06:40:45 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: stable@kernel.org
+Cc: linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        helge.hafting@hist.no
+Subject: [PATCH] cifs: lower default and max wsize to what 2.6.39 can handle
+Date: Wed, 13 Jul 2011 06:40:37 -0400
+Message-Id: <1310553637-26792-1-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 12, 2011 at 10:43:47AM -0500, Christoph Lameter wrote:
-> On Tue, 12 Jul 2011, Minchan Kim wrote:
-> 
-> > If I am not against this patch, at least, we need agreement of
-> > Christoph and others and if we agree this change, we changes vm.txt,
-> > too.
-> 
-> I think PF_SWAPWRITE should only be set if may_write was set earlier in
-> __zone_reclaim. If zone reclaim is not configured to do writeback then it
-> makes no sense to set the bit.
-> 
+This patch is intended for 2.6.39-stable kernels only and is needed to
+fix a regression introduced in 2.6.39. Prior to 2.6.39, when signing was
+enabled on a socket the client only sent single-page writes. This
+changed with commit ca83ce3, which made signed and unsigned connections
+use the same codepaths for write calls.
 
-That would effectively make the patch a no-op as the check for
-PF_SWAPWRITE only happens if may_write is set. The point of the patch is
-that zone reclaim differs from direct reclaim in that zone reclaim
-obeys congestion where as zone reclaim does not. If you're saying that
-this is the way it's meant to be, then fine, I'll drop the patch. While
-I think it's a bad idea, I also didn't specifically test for problems
-related to it and I think the other two patches in the series are more
-important.
+This caused a regression when working with windows servers. Windows
+machines will reject writes larger than the MaxBufferSize when signing
+is active, but do not clear the CAP_LARGE_WRITE_X flag in the protocol
+negotiation. The upshot is that when signing is active, windows servers
+often reject large writes from the client in 2.6.39.
 
+Because 3.0 adds support for larger wsize values, simply cherry picking
+the upstream patches that fix the wsize negotiation isn't sufficient to
+fix this issue. We also need to alter the maximum and default values to
+something suitable for 2.6.39.
+
+Cc: <stable@kernel.org> # .39.x: f7910cb: cifs: clean up wsize negotiation and allow for larger wsize
+Cc: <stable@kernel.org> # .39.x: 1190f6a: cifs: fix wsize negotiation to respect max buffer size and active signing (try #4)
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ fs/cifs/connect.c |   20 ++++----------------
+ 1 files changed, 4 insertions(+), 16 deletions(-)
+
+diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
+index 599f485..8e78710 100644
+--- a/fs/cifs/connect.c
++++ b/fs/cifs/connect.c
+@@ -2648,16 +2648,8 @@ static void setup_cifs_sb(struct smb_vol *pvolume_info,
+ 			   "mount option supported");
+ }
+ 
+-/*
+- * When the server supports very large writes via POSIX extensions, we can
+- * allow up to 2^24-1, minus the size of a WRITE_AND_X header, not including
+- * the RFC1001 length.
+- *
+- * Note that this might make for "interesting" allocation problems during
+- * writeback however as we have to allocate an array of pointers for the
+- * pages. A 16M write means ~32kb page array with PAGE_CACHE_SIZE == 4096.
+- */
+-#define CIFS_MAX_WSIZE ((1<<24) - 1 - sizeof(WRITE_REQ) + 4)
++/* Prior to 3.0, cifs couldn't handle writes larger than this */
++#define CIFS_MAX_WSIZE (PAGEVEC_SIZE * PAGE_CACHE_SIZE)
+ 
+ /*
+  * When the server doesn't allow large posix writes, only allow a wsize of
+@@ -2666,12 +2658,8 @@ static void setup_cifs_sb(struct smb_vol *pvolume_info,
+  */
+ #define CIFS_MAX_RFC1002_WSIZE (128 * 1024 - sizeof(WRITE_REQ) + 4)
+ 
+-/*
+- * The default wsize is 1M. find_get_pages seems to return a maximum of 256
+- * pages in a single call. With PAGE_CACHE_SIZE == 4k, this means we can fill
+- * a single wsize request with a single call.
+- */
+-#define CIFS_DEFAULT_WSIZE (1024 * 1024)
++/* Make the default the same as the max */
++#define CIFS_DEFAULT_WSIZE CIFS_MAX_WSIZE
+ 
+ static unsigned int
+ cifs_negotiate_wsize(struct cifsTconInfo *tcon, struct smb_vol *pvolume_info)
 -- 
-Mel Gorman
-SUSE Labs
+1.7.6
+
