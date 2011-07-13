@@ -1,92 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964906Ab1GMFmf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 01:42:35 -0400
-Received: from ppp118-208-123-30.lns20.bne4.internode.on.net ([118.208.123.30]:57885
-	"EHLO mail.psychogeeks.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750705Ab1GMFme (ORCPT
+	id S964911Ab1GMFuT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 01:50:19 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:12768 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750705Ab1GMFuR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 01:42:34 -0400
-Message-ID: <4E1D3045.7050507@psychogeeks.com>
-Date: Wed, 13 Jul 2011 15:42:29 +1000
-From: Chris W <lkml@psychogeeks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110620 Lightning/1.0b3pre Thunderbird/3.1.10
+	Wed, 13 Jul 2011 01:50:17 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=yFFHd6sZ5HWJj+yyiqHYcxB8qwJZteB5V8Hq6ofkTKy0/e6zo1e70pmXX3TslwpLr
+	srRKq92sWW2MZB8ELDGSQ==
+Date: Tue, 12 Jul 2011 22:49:56 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Hugh Dickins <hughd@google.com>
+cc: Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mel@csn.ul.ie>, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 12/15] writeback: remove writeback_control.more_io
+In-Reply-To: <alpine.LSU.2.00.1107121207540.1752@sister.anvils>
+Message-ID: <alpine.LSU.2.00.1107122234460.3608@sister.anvils>
+References: <20110607213236.634026193@intel.com> <20110607213854.888623315@intel.com> <alpine.LSU.2.00.1107111408060.13830@sister.anvils> <20110712062013.GA4654@localhost> <alpine.LSU.2.00.1107121207540.1752@sister.anvils>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-To: Jarod Wilson <jarod@wilsonet.com>
-CC: Linux Media Mailing List <linux-media@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: Imon module Oops and kernel hang
-References: <4E1B978C.2030407@psychogeeks.com> <20110712080309.d538fec9.rdunlap@xenotime.net> <7B814F02-408C-434F-B813-8630B60914DA@wilsonet.com> <4E1CCC26.4060506@psychogeeks.com> <1B380AD0-FE0D-47DF-B2C3-605253C9C783@wilsonet.com>
-In-Reply-To: <1B380AD0-FE0D-47DF-B2C3-605253C9C783@wilsonet.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 12 Jul 2011, Hugh Dickins wrote:
+> On Mon, 11 Jul 2011, Wu Fengguang wrote:
+> > 
+> > It's relatively easy to confirm, by reusing the below trace event to
+> > show the inode (together with its state) being requeued.
+> > 
+> > If this is the root cause, it may equally be fixed by
+> > 
+> > -			requeue_io(inode, wb);
+> > +			redirty_tail(inode, wb);
+> > 
+> > which would be useful in case the bug is so deadly that it's no longer
+> > possible to do tracing.
+> 
+> I checked again this morning that I could reproduce it on two machines,
+> one went in a few minutes, the other within the hour.  Then I made that
+> patch changing the requeue_io to redirty_tail, and left home with them
+> running the test with the new kernel: we'll see at the end of the day
+> how they fared.
 
-On 13/07/11 14:20, Jarod Wilson wrote:
+I think that fixes it.  The x86_64 is still running with that, but the
+ppc64 gave up fairly early, hitting freeze in __slab_free() instead.
 
->> Chris W wrote:
->> The rc keymap modules have been built (en masse as a result of
->> CONFIG_RC_MAP=m) but I am not explicitly loading them and they do not
->> get automatically loaded.
->
-> Huh. That's unexpected. They get auto-loaded here, last I knew. I'll
-> have to give one of my devices a spin tomorrow, not sure exactly what
-> the last kernel I tried one of them on was. Pretty sure they're
-> working fine with the Fedora 15 2.6.38.x kernels and vanilla (but
-> Fedora-configured) 3.0-rc kernels though.
+I've now, I believe, reconstituted what ChristophL intended from the
+mm_types.h struct page patch he posted (which applied neither to mmotm,
+nor to Pekka's for-next, so far as I could tell: maybe cl did some
+intermediate tidying of some of the random indentation).  So now
+testing that with redirty_tail on ppc64: will report in 9 hours.
 
-
-I just ran depmod to make sure things were straight in this dept.
-
-kepler ~ # depmod -F System.map -e -av 2.6.39.3
-
-There are no reported errors.   The modules rc-imon-mce.ko,
-rc-imon-pad.ko and imon.ko depend only on rc-core.ko according to the
-output.  There don't seem to be any explicit dependencies to the keymaps
-(not a kernel dev so I don't know if there should be)
-
-
->> I just tried this:
->>
->> kepler ~ # rmmod rc_winfast ir_lirc_codec lirc_dev ir_sony_decoder
->> ir_jvc_decoder ir_rc6_decoder ir_rc5_decoder ir_nec_decoder
->>
->> kepler ~ # modprobe -v rc-imon-pad
->> insmod
-/lib/modules/2.6.39.3/kernel/drivers/media/rc/keymaps/rc-imon-pad.ko
->>
->> kepler ~ # modprobe -v rc-imon-mce
->> insmod
-/lib/modules/2.6.39.3/kernel/drivers/media/rc/keymaps/rc-imon-mce.ko
-> ...
->> kepler ~ # modprobe -v imon debug=1
->> insmod /lib/modules/2.6.39.3/kernel/drivers/media/rc/imon.ko debug=1
->>
->> with the same crash (below).  (I have the tainting nvidia driver
->> loaded today but it was absent yesterday)
->>
->> Perhaps there something else in the kernel config that must be on in
->> order to support the keymaps?
->>
->> Any other thoughts?
->
-> Not at the moment. That T.889 line is... odd. No clue what the heck
-> that thing is. Lemme see what I can see tomorrow (just past midnight
-> here at the moment), if I don't hit anything, I might need a copy of
-> your kernel config to repro.
-
-I can only see the "T.889" string in the System.map, kernel binary and
-kernel/sched.o (but not the source?).  I have sent the config file
-off-list to Jarod.
-
-I will try a Gentoo out-of-the-box kernel config when I finish work also.
-
-Thanks once again for your time
-Regards,
-
--- 
-Chris Williams
-Brisbane, Australia
+Hugh
