@@ -1,49 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965407Ab1GMRtv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 13:49:51 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:26159 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964805Ab1GMRtt (ORCPT
+	id S1757025Ab1GMSAZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 14:00:25 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:3542 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754661Ab1GMSAX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 13:49:49 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6406"; a="103538006"
-From: David Brown <davidb@codeaurora.org>
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: Julia Lawall <julia@diku.dk>, kernel-janitors@vger.kernel.org,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] drivers/video/msm/mdp.c: adjust error handling code
-References: <1309788705-22278-5-git-send-email-julia@diku.dk>
-	<20110713081318.GB13701@linux-sh.org>
-Date: Wed, 13 Jul 2011 10:49:46 -0700
-In-Reply-To: <20110713081318.GB13701@linux-sh.org> (Paul Mundt's message of
-	"Wed, 13 Jul 2011 17:13:19 +0900")
-Message-ID: <8ya4o2q2hqd.fsf@huya.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Wed, 13 Jul 2011 14:00:23 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 13 Jul 2011 10:59:53 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: "ben-linux@fluff.org" <ben-linux@fluff.org>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Date: Wed, 13 Jul 2011 10:59:53 -0700
+Subject: RE: [PATCH] i2c: tegra: Use engineering names in DT compatible
+ property
+Thread-Topic: [PATCH] i2c: tegra: Use engineering names in DT compatible
+ property
+Thread-Index: Acw7nxyAFrdiWOpeSiqTh7ypjsSl6QF5z4Yg
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF049E834757@HQMAIL01.nvidia.com>
+References: <1309897306-22953-1-git-send-email-swarren@nvidia.com>
+ <20110706053941.GE9978@ponder.secretlab.ca>
+In-Reply-To: <20110706053941.GE9978@ponder.secretlab.ca>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 13 2011, Paul Mundt wrote:
+Grant Likely wrote at Tuesday, July 05, 2011 11:40 PM:
+> On Tue, Jul 05, 2011 at 02:21:46PM -0600, Stephen Warren wrote:
+> > Engineering names are more stable than marketing names. Hence, use them
+> > for Device Tree compatible properties instead.
+> >
+> > Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> > ---
+> > Grant, this is against devicetree/arm and also makes sense for
+> > devicetree/test.
+> 
+> Acked-by: Grant Likely <grant.likely@secretlab.ca>
+> 
+> Ben is the one to pick up this patch.
 
->> I wonder if the error handling code at the end of the function should be
->> calling clk_put as well?  In that case, having a separate label for this
->> case would be useful.  Otherwise, one of error_request_irq and error_get_clk
->> can be deleted
->> 
-> The MSM implementation for it is simply a nop, so it's not going to
-> really matter one way or the other. In terms of general consistency it
-> might be worth implementing.
+I don't believe anyone ever sent a patch to Ben to add tegra_i2c_of_match
+to the driver; the OF support patch didn't include that part of the code.
+As such, Ben can't yet apply this to his tree. (Although I note this patch
+is in Grant's /arm and /test trees, which is probably good enough for now).
 
-Today, at least.  Hopefully this will get better, since we can turn off
-our clocks.
-
-David
+> >  drivers/i2c/busses/i2c-tegra.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> >
+> > diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
+> > index 8914bd1..99b1b6d 100644
+> > --- a/drivers/i2c/busses/i2c-tegra.c
+> > +++ b/drivers/i2c/busses/i2c-tegra.c
+> > @@ -716,7 +716,7 @@ static int tegra_i2c_resume(struct platform_device *pdev)
+> >  #if defined(CONFIG_OF)
+> >  /* Match table for of_platform binding */
+> >  static const struct of_device_id tegra_i2c_of_match[] __devinitconst = {
+> > -	{ .compatible = "nvidia,tegra250-i2c", },
+> > +	{ .compatible = "nvidia,tegra20-i2c", },
+> >  	{},
+> >  };
+> >  MODULE_DEVICE_TABLE(of, tegra_i2c_of_match);
+> > --
+> > 1.7.0.4
+> >
 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+nvpublic
+
