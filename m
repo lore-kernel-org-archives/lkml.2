@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490Ab1GMNSS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 09:18:18 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:53369 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753322Ab1GMNSQ (ORCPT
+	id S1753473Ab1GMNTO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 09:19:14 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44643 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753114Ab1GMNTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 09:18:16 -0400
-Date: Wed, 13 Jul 2011 14:20:55 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Samuli Konttila <samuli.konttila@aavamobile.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Alan Cox <alan@linux.intel.com>, linux-input@vger.kernel.org
-Subject: Re: [PATCH] Input: cy8ctmg110_ts - set reset_pin and irq_pin from
- platform data
-Message-ID: <20110713142055.3036c62d@lxorguk.ukuu.org.uk>
-In-Reply-To: <1310562419.5753.2.camel@phoenix>
-References: <1310562419.5753.2.camel@phoenix>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 13 Jul 2011 09:19:12 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: David Howells <dhowells@redhat.com>
+Cc: Michal Suchanek <hramrach@centrum.cz>, Ian Kent <ikent@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ric Wheeler <rwheeler@redhat.com>, Alexander Viro <aviro@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jeff Moyer <jmoyer@redhat.com>
+Subject: Re: Union mount and lockdep design issues
+References: <87tyar6gv8.fsf@tucsk.pomaz.szeredi.hu>
+	<4E0AF2BA.2040706@gmail.com>
+	<1302756608.2854.10.camel@perseus.themaw.net>
+	<BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com>
+	<4DA4B6A8.7030804@gmail.com>
+	<BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com>
+	<4DA5DCB8.3040101@gmail.com>
+	<BANLkTineg2XYYOZAU9trrw=+-vH8McN_9w@mail.gmail.com>
+	<4DA5F569.9020309@gmail.com>
+	<BANLkTi=Z1CQm=u2Q1VCHfr=53n5qTC=7bA@mail.gmail.com>
+	<24792.1302808448@redhat.com> <2477.1309342656@redhat.com>
+	<4E1962BE.8010204@redhat.com> <1408.1310382069@redhat.com>
+	<1310385651.18678.59.camel@twins>
+	<CAOMqctQoO7zKojoEuYri8ZWDDMM3Ef6VRtPYzsf-02xhJ8e6jA@mail.gmail.com>
+	<1310392232.4276.14.camel@perseus.themaw.net>
+	<CAOMqctSDxauVLw5OisAeCaFa7DvZDgg_1YCmHaWdJZm60JDVtg@mail.gmail.com>
+	<1310405033.4276.28.camel@perseus.themaw.net>
+	<CAOMqctSZcAuA8r=Bdtg1hhM9xzDmDuOPn376HXuQ0Tb8xrRwzw@mail.gmail.com>
+	<30216.1310558525@redhat.com>
+Date: Wed, 13 Jul 2011 15:20:04 +0200
+In-Reply-To: <30216.1310558525@redhat.com> (David Howells's message of "Wed,
+	13 Jul 2011 13:02:05 +0100")
+Message-ID: <87hb6qwc57.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Jul 2011 21:06:59 +0800
-Axel Lin <axel.lin@gmail.com> wrote:
+David Howells <dhowells@redhat.com> writes:
 
-> The implementation in cy8ctmg110_probe() does not properly set reset_pin
-> and irq_pin from platform data. Let's fix it.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
-> Current implementation returns -ENODEV if no pdata available.
-> But it does not use the information from pdata.
-> I think currently the driver does not work because both ts->reset_pin and ts->irq_pin are 0, then gpio_request with ts->irq_pin will fail.
-> 
-> Just found this bug while reading the code.
-> I don't have this hardware. I appreciate if someone can test it.
+> Miklos Szeredi <miklos@szeredi.hu> wrote:
+>
+>> Overlayfs never locks both upper and lower at the same time, which means
+>> there's no AB-BA locking dependency.  The lock orderings are:
+>
+> What you're talking about is not analogous to the situation I'm seeing with
+> unionmount.
+>
+> You actually have three filesystems in overlayfs.  The interaction between
+> overlayfs-and-upperfs and overlayfs-and-lowerfs is the equivalent in
+> unionmount terms to upperfs-and-lowerfs.  This is where the lockdep issue
+> lies.
 
-Looks right, but I'm likewise unable to test it as I no longer have
-access to a device using it.
+Normally overlayfs would be immune to this, since lower/upper are
+different filesystem types.  But overlayfs-over-overlayfs would see the
+same lockdep warnings, right?
 
-Alan
+Thanks,
+Miklos
