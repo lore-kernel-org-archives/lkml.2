@@ -1,76 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965320Ab1GMK5y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 06:57:54 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:1388 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965021Ab1GMK5w (ORCPT
+	id S965327Ab1GMK7S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 06:59:18 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:38044 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965021Ab1GMK7Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 06:57:52 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=CKiJLzzLilbmRRb1aoRZ2itzXz62nw5S8QrNjOH3M9ksOLvymA+0eROCD6SW/0aKo
-	ptX66rLIGyq0Ll2Aqub9Q==
-Date: Wed, 13 Jul 2011 03:57:40 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Wu Fengguang <fengguang.wu@intel.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mel@csn.ul.ie>, Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 12/15] writeback: remove writeback_control.more_io
-In-Reply-To: <alpine.LSU.2.00.1107122234460.3608@sister.anvils>
-Message-ID: <alpine.LSU.2.00.1107130350570.4184@sister.anvils>
-References: <20110607213236.634026193@intel.com> <20110607213854.888623315@intel.com> <alpine.LSU.2.00.1107111408060.13830@sister.anvils> <20110712062013.GA4654@localhost> <alpine.LSU.2.00.1107121207540.1752@sister.anvils>
- <alpine.LSU.2.00.1107122234460.3608@sister.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Wed, 13 Jul 2011 06:59:16 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: stable@kernel.org
+Cc: linux-cifs@vger.kernel.org, helge.hafting@hist.no,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] cifs: lower default and max wsize to what 2.6.39 can handle (try #2)
+Date: Wed, 13 Jul 2011 06:59:12 -0400
+Message-Id: <1310554752-29240-1-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <1310553637-26792-1-git-send-email-jlayton@redhat.com>
+References: <1310553637-26792-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Jul 2011, Hugh Dickins wrote:
-> On Tue, 12 Jul 2011, Hugh Dickins wrote:
-> > On Mon, 11 Jul 2011, Wu Fengguang wrote:
-> > > 
-> > > It's relatively easy to confirm, by reusing the below trace event to
-> > > show the inode (together with its state) being requeued.
-> > > 
-> > > If this is the root cause, it may equally be fixed by
-> > > 
-> > > -			requeue_io(inode, wb);
-> > > +			redirty_tail(inode, wb);
-> > > 
-> > > which would be useful in case the bug is so deadly that it's no longer
-> > > possible to do tracing.
-> > 
-> > I checked again this morning that I could reproduce it on two machines,
-> > one went in a few minutes, the other within the hour.  Then I made that
-> > patch changing the requeue_io to redirty_tail, and left home with them
-> > running the test with the new kernel: we'll see at the end of the day
-> > how they fared.
-> 
-> I think that fixes it.  The x86_64 is still running with that, but the
-> ppc64 gave up fairly early, hitting freeze in __slab_free() instead.
-> 
-> I've now, I believe, reconstituted what ChristophL intended from the
-> mm_types.h struct page patch he posted (which applied neither to mmotm,
-> nor to Pekka's for-next, so far as I could tell: maybe cl did some
-> intermediate tidying of some of the random indentation).  So now
-> testing that with redirty_tail on ppc64: will report in 9 hours.
+This patch is intended for 2.6.39-stable kernels only and is needed to
+fix a regression introduced in 2.6.39. Prior to 2.6.39, when signing was
+enabled on a socket the client only sent single-page writes. This
+changed with commit ca83ce3, which made signed and unsigned connections
+use the same codepaths for write calls.
 
-Same result as before.  The x86_64 is still going fine, but the ppc64
-again seized up in __slab_free() after two and a half hours of load.
+This caused a regression when working with windows servers. Windows
+machines will reject writes larger than the MaxBufferSize when signing
+is active, but do not clear the CAP_LARGE_WRITE_X flag in the protocol
+negotiation. The upshot is that when signing is active, windows servers
+often reject large writes from the client in 2.6.39.
 
-I think we should assume that your -requeue_io +redirty_tail is a good
-fix for the writeback freeze (if you can reassure us, that it does not
-risk postponing some writes indefinitely), and I move over to the other
-thread to pursue the struct page __slab_free() freeze.
+Because 3.0 adds support for larger wsize values, simply cherry picking
+the upstream patches that fix the wsize negotiation isn't sufficient to
+fix this issue. We also need to alter the maximum and default values to
+something suitable for 2.6.39.
 
-Thanks!
-Hugh
+This patch also accounts for the change in field name from sec_mode to
+secMode that went into 3.0.
+
+Cc: <stable@kernel.org> # .39.x: f7910cb: cifs: clean up wsize negotiation and allow for larger wsize
+Cc: <stable@kernel.org> # .39.x: 1190f6a: cifs: fix wsize negotiation to respect max buffer size and active signing (try #4)
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ fs/cifs/connect.c |   22 +++++-----------------
+ 1 files changed, 5 insertions(+), 17 deletions(-)
+
+diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
+index 599f485..01db14c 100644
+--- a/fs/cifs/connect.c
++++ b/fs/cifs/connect.c
+@@ -2648,16 +2648,8 @@ static void setup_cifs_sb(struct smb_vol *pvolume_info,
+ 			   "mount option supported");
+ }
+ 
+-/*
+- * When the server supports very large writes via POSIX extensions, we can
+- * allow up to 2^24-1, minus the size of a WRITE_AND_X header, not including
+- * the RFC1001 length.
+- *
+- * Note that this might make for "interesting" allocation problems during
+- * writeback however as we have to allocate an array of pointers for the
+- * pages. A 16M write means ~32kb page array with PAGE_CACHE_SIZE == 4096.
+- */
+-#define CIFS_MAX_WSIZE ((1<<24) - 1 - sizeof(WRITE_REQ) + 4)
++/* Prior to 3.0, cifs couldn't handle writes larger than this */
++#define CIFS_MAX_WSIZE (PAGEVEC_SIZE * PAGE_CACHE_SIZE)
+ 
+ /*
+  * When the server doesn't allow large posix writes, only allow a wsize of
+@@ -2666,12 +2658,8 @@ static void setup_cifs_sb(struct smb_vol *pvolume_info,
+  */
+ #define CIFS_MAX_RFC1002_WSIZE (128 * 1024 - sizeof(WRITE_REQ) + 4)
+ 
+-/*
+- * The default wsize is 1M. find_get_pages seems to return a maximum of 256
+- * pages in a single call. With PAGE_CACHE_SIZE == 4k, this means we can fill
+- * a single wsize request with a single call.
+- */
+-#define CIFS_DEFAULT_WSIZE (1024 * 1024)
++/* Make the default the same as the max */
++#define CIFS_DEFAULT_WSIZE CIFS_MAX_WSIZE
+ 
+ static unsigned int
+ cifs_negotiate_wsize(struct cifsTconInfo *tcon, struct smb_vol *pvolume_info)
+@@ -2692,7 +2680,7 @@ cifs_negotiate_wsize(struct cifsTconInfo *tcon, struct smb_vol *pvolume_info)
+ 	 */
+ 	if (!(server->capabilities & CAP_LARGE_WRITE_X) ||
+ 	    (!(server->capabilities & CAP_UNIX) &&
+-	     (server->sec_mode & (SECMODE_SIGN_ENABLED|SECMODE_SIGN_REQUIRED))))
++	     (server->secMode & (SECMODE_SIGN_ENABLED|SECMODE_SIGN_REQUIRED))))
+ 		wsize = min_t(unsigned int, wsize,
+ 				server->maxBuf - sizeof(WRITE_REQ) + 4);
+ 
+-- 
+1.7.6
+
