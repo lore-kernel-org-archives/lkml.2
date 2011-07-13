@@ -1,44 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756626Ab1GMQlH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 12:41:07 -0400
-Received: from smtpo.poczta.interia.pl ([217.74.65.205]:43316 "EHLO
-	smtpo.poczta.interia.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756215Ab1GMQlG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 12:41:06 -0400
-Message-ID: <4E1DCA76.7090809@interia.pl>
-Date: Wed, 13 Jul 2011 17:40:22 +0100
-From: =?UTF-8?b?UmFmYcWC?= Bilski <rafalbilski@interia.pl>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:5.0) Gecko/20110628
-	Thunderbird/5.0
+	id S1756687Ab1GMQlR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 12:41:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10920 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756215Ab1GMQlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 12:41:15 -0400
+Date: Wed, 13 Jul 2011 18:40:40 +0200
+From: Johannes Weiner <jweiner@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 4/5] mm: vmscan: Immediately reclaim end-of-LRU dirty
+ pages when writeback completes
+Message-ID: <20110713164040.GA13972@redhat.com>
+References: <1310567487-15367-1-git-send-email-mgorman@suse.de>
+ <1310567487-15367-5-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, Axel Lin <axel.lin@gmail.com>,
-        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org
-Subject: Re: [PATCH] e_powersaver: Underclock checks
-References: <1310114243.2940.3.camel@phoenix> <4E1B745A.5000802@interia.pl>
-	<4E1B8404.1050909@interia.pl> <20110711232517.GC20367@redhat.com>
-	<4E1C7D96.1030500@interia.pl>
-In-Reply-To: <4E1C7D96.1030500@interia.pl>
-X-Interia-Antivirus: OK
-X-EMID: a7a5b958
-Content-Type: text/plain; charset="UTF-8"; format="flowed"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1310567487-15367-5-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 13, 2011 at 03:31:26PM +0100, Mel Gorman wrote:
+> When direct reclaim encounters a dirty page, it gets recycled around
+> the LRU for another cycle. This patch marks the page PageReclaim using
+> deactivate_page() so that the page gets reclaimed almost immediately
+> after the page gets cleaned. This is to avoid reclaiming clean pages
+> that are younger than a dirty page encountered at the end of the LRU
+> that might have been something like a use-once page.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>  include/linux/mmzone.h |    2 +-
+>  mm/vmscan.c            |   10 ++++++++--
+>  mm/vmstat.c            |    2 +-
+>  3 files changed, 10 insertions(+), 4 deletions(-)
+> 
+> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> index c4508a2..bea7858 100644
+> --- a/include/linux/mmzone.h
+> +++ b/include/linux/mmzone.h
+> @@ -100,7 +100,7 @@ enum zone_stat_item {
+>  	NR_UNSTABLE_NFS,	/* NFS unstable pages */
+>  	NR_BOUNCE,
+>  	NR_VMSCAN_WRITE,
+> -	NR_VMSCAN_WRITE_SKIP,
+> +	NR_VMSCAN_INVALIDATE,
+>  	NR_VMSCAN_THROTTLED,
+>  	NR_WRITEBACK_TEMP,	/* Writeback using temporary buffers */
+>  	NR_ISOLATED_ANON,	/* Temporary isolated pages from anon lru */
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 9826086..8e00aee 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -834,8 +834,13 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+>  			 */
+>  			if (page_is_file_cache(page) &&
+>  					(!current_is_kswapd() || priority >= DEF_PRIORITY - 2)) {
+> -				inc_zone_page_state(page, NR_VMSCAN_WRITE_SKIP);
+> -				goto keep_locked;
+> +				inc_zone_page_state(page, NR_VMSCAN_INVALIDATE);
+> +
+> +				/* Immediately reclaim when written back */
+> +				unlock_page(page);
+> +				deactivate_page(page);
+> +
+> +				goto keep_dirty;
+>  			}
+>  
+>  			if (references == PAGEREF_RECLAIM_CLEAN)
+> @@ -956,6 +961,7 @@ keep:
+>  		reset_reclaim_mode(sc);
+>  keep_lumpy:
+>  		list_add(&page->lru, &ret_pages);
+> +keep_dirty:
+>  		VM_BUG_ON(PageLRU(page) || PageUnevictable(page));
+>  	}
 
-> Some systems are using 1.2GHz@844mV processors running at 600MHz@796mV.
-OK. That's strange. It is 1,2GHz system. Can both ACPI p-states and "e_powersaver"
-drivers be running at the same time? Can BIOS change processor frequencies without
-Linux knowing and without p-states driver loaded?
-I can't test system in question. I will try to buy something similar to test it.
+I really like the idea behind this patch, but I think all those pages
+are lost as PageLRU is cleared on isolation and lru_deactivate_fn
+bails on them in turn.
 
-Thank you
-Rafał Bilski
-
-
-----------------------------------------------------------------
-Dom marzen - kup lub wynajmij taniej niz myslisz!
-Szukaj >> http://linkint.pl/f29e5
+If I'm not mistaken, the reference from the isolation is also leaked.
