@@ -1,43 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752155Ab1GMMCg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 08:02:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9374 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750785Ab1GMMCf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 08:02:35 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <87tyar6gv8.fsf@tucsk.pomaz.szeredi.hu>
-References: <87tyar6gv8.fsf@tucsk.pomaz.szeredi.hu> <1310305703.13309.7.camel@twins> <4E0AF2BA.2040706@gmail.com> <1302756608.2854.10.camel@perseus.themaw.net> <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com> <4DA4B6A8.7030804@gmail.com> <BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com> <4DA5DCB8.3040101@gmail.com> <BANLkTineg2XYYOZAU9trrw=+-vH8McN_9w@mail.gmail.com> <4DA5F569.9020309@gmail.com> <BANLkTi=Z1CQm=u2Q1VCHfr=53n5qTC=7bA@mail.gmail.com> <24792.1302808448@redhat.com> <2477.1309342656@redhat.com> <4E1962BE.8010204@redhat.com> <1408.1310382069@redhat.com> <1310385651.18678.59.camel@twins> <CAOMqctQoO7zKojoEuYri8ZWDDMM3Ef6VRtPYzsf-02xhJ8e6jA@mail.gmail.com> <1310392232.4276.14.camel@perseus.themaw.net> <CAOMqctSDxauVLw5OisAeCaFa7DvZDgg_1YCmHaWdJZm60JDVtg@mail.gmail.com> <1310405033.4276.28.camel@perseus.themaw.net> <CAOMqctSZcAuA8r=Bdtg1hhM9xzDmDuOPn376HXuQ0Tb8xrRwzw@mail.gmail.com> 
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: dhowells@redhat.com, Michal Suchanek <hramrach@centrum.cz>,
-        Ian Kent <ikent@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ric Wheeler <rwheeler@redhat.com>, Alexander Viro <aviro@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jeff Moyer <jmoyer@redhat.com>
-Subject: Re: Union mount and lockdep design issues
-Date: Wed, 13 Jul 2011 13:02:05 +0100
-Message-ID: <30216.1310558525@redhat.com>
+	id S1751475Ab1GMMKo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 08:10:44 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36705 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839Ab1GMMKn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 08:10:43 -0400
+Date: Wed, 13 Jul 2011 14:10:38 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, vda.linux@googlemail.com,
+        jan.kratochvil@redhat.com, pedro@codesourcery.com, indan@nul.nu,
+        bdonlan@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 3/3] ptrace: dont send SIGSTOP on auto-attach if
+ PT_SEIZED
+Message-ID: <20110713121038.GJ2872@htj.dyndns.org>
+References: <20110708171320.GA26943@redhat.com>
+ <20110708171417.GD26943@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110708171417.GD26943@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Miklos Szeredi <miklos@szeredi.hu> wrote:
+Hello,
 
-> Overlayfs never locks both upper and lower at the same time, which means
-> there's no AB-BA locking dependency.  The lock orderings are:
+On Fri, Jul 08, 2011 at 07:14:17PM +0200, Oleg Nesterov wrote:
+> The fake SIGSTOP during attach has numerous problems. PTRACE_SEIZE
+> is already fine, but we have basically the same problems is SIGSTOP
+> is sent on auto-attach, the tracer can't know if this signal signal
+> should be cancelled or not.
+> 
+> Change ptrace_event() to set JOBCTL_TRAP_STOP if the new child is
+> PT_SEIZED, this triggers the PTRACE_EVENT_STOP report.
+> 
+> Thereafter a PT_SEIZED task can never report the bogus SIGSTOP.
+> 
+> Test-case:
+...
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-What you're talking about is not analogous to the situation I'm seeing with
-unionmount.
+Looks good to me.  For 2 and 3,
 
-You actually have three filesystems in overlayfs.  The interaction between
-overlayfs-and-upperfs and overlayfs-and-lowerfs is the equivalent in
-unionmount terms to upperfs-and-lowerfs.  This is where the lockdep issue
-lies.
+ Acked-by: Tejun Heo <tj@kernel.org>
 
-David
+So, yeah, with this change, we're almost there.
+
+Thanks.
+
+-- 
+tejun
