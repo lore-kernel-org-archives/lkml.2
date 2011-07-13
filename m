@@ -1,40 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965179Ab1GMJVa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 05:21:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40792 "EHLO mx2.suse.de"
+	id S965195Ab1GMJZs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 05:25:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22765 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965108Ab1GMJV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 05:21:29 -0400
-Message-ID: <4E1D6396.1070200@suse.cz>
-Date: Wed, 13 Jul 2011 11:21:26 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+	id S965134Ab1GMJZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 05:25:45 -0400
+Date: Wed, 13 Jul 2011 11:25:38 +0200
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: Joe Perches <joe@perches.com>, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] iwlegacy: Add missing comma between constant string
+ array
+Message-ID: <20110713092538.GA2429@redhat.com>
+References: <cover.1310187270.git.joe@perches.com>
+ <36f8b5d1a32b8702941ebeda7a406188af132e9e.1310187270.git.joe@perches.com>
+ <20110711183542.GB2650@tuxdriver.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?QW3DqXJpY28gV2FuZw==?= <xiyou.wangcong@gmail.com>
-Cc: Christian Kujau <lists@nerdbynature.de>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] kbuild: Do not write to builddir in modules_install
-References: <alpine.DEB.2.01.1107040242180.9183@trent.utfs.org>	<1310470780-12330-1-git-send-email-mmarek@suse.cz> <CAM_iQpWfSFPcvDJCDwS9ADCEvw-6A3wyUh+kkhgqHOi2Zx_eSg@mail.gmail.com>
-In-Reply-To: <CAM_iQpWfSFPcvDJCDwS9ADCEvw-6A3wyUh+kkhgqHOi2Zx_eSg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110711183542.GB2650@tuxdriver.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13.7.2011 03:05, Américo Wang wrote:
-> On Tue, Jul 12, 2011 at 7:39 PM, Michal Marek<mmarek@suse.cz>  wrote:
->> Let depmod.sh create a temporary directory in /tmp instead of writing to
->> the build directory as root. The mktemp utility should be available on
->> any recent system (and there is already scripts/gen_initramfs_list.sh
->> relying on it).
->>
->
-> Hmm, why not use $objtree/.tmp_depmod?
+On Mon, Jul 11, 2011 at 02:35:42PM -0400, John W. Linville wrote:
+> How is this array indexed?  Aren't you changing the index of the
+> later strings?
 
-That's how it was done before and it's broken. make modules_install is 
-usually ran as root and there is no guarantee that root has write access 
-to the build directory (it can be on nfs).
+We read index directly from device memory (and check agains
+ARRAY_SIZE). Patch make indexing correct with code author
+intention, ACK. iwlagn should be simmilarly fine.
 
-Michal
+Stanislaw
+
+> On Fri, Jul 08, 2011 at 11:20:24PM -0700, Joe Perches wrote:
+> > Multiple quoted strings are concatenated without comma separators.
+> > 
+> > Signed-off-by: Joe Perches <joe@perches.com>
+> > ---
+> >  drivers/net/wireless/iwlegacy/iwl4965-base.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/net/wireless/iwlegacy/iwl4965-base.c b/drivers/net/wireless/iwlegacy/iwl4965-base.c
+> > index 46242d2..1433466 100644
+> > --- a/drivers/net/wireless/iwlegacy/iwl4965-base.c
+> > +++ b/drivers/net/wireless/iwlegacy/iwl4965-base.c
+> > @@ -1484,7 +1484,7 @@ static const char * const desc_lookup_text[] = {
+> >  	"NMI_INTERRUPT_DATA_ACTION_PT",
+> >  	"NMI_TRM_HW_ER",
+> >  	"NMI_INTERRUPT_TRM",
+> > -	"NMI_INTERRUPT_BREAK_POINT"
+> > +	"NMI_INTERRUPT_BREAK_POINT",
+> >  	"DEBUG_0",
+> >  	"DEBUG_1",
+> >  	"DEBUG_2",
+> > -- 
+> > 1.7.6.131.g99019
+> > 
+> > 
+> 
+> -- 
+> John W. Linville		Someday the world will need a hero, and you
+> linville@tuxdriver.com			might be all we have.  Be ready.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
