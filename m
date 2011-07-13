@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752956Ab1GMXhr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 19:37:47 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:24346 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752401Ab1GMXhq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 19:37:46 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqYCAJsqHk55LCkBgWdsb2JhbABTp0EVAQEWJiXLQg6GLASjQw
-Date: Thu, 14 Jul 2011 09:37:43 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        XFS <xfs@oss.sgi.com>, Christoph Hellwig <hch@infradead.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 2/5] mm: vmscan: Do not writeback filesystem pages in
- kswapd except in high priority
-Message-ID: <20110713233743.GV23038@dastard>
-References: <1310567487-15367-1-git-send-email-mgorman@suse.de>
- <1310567487-15367-3-git-send-email-mgorman@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1310567487-15367-3-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752990Ab1GMXl7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 19:41:59 -0400
+Received: from mail.perches.com ([173.55.12.10]:3992 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752512Ab1GMXl6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 19:41:58 -0400
+Subject: Re: [PATCH] checkpatch.pl: Update $logFunctions
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Whitcroft <apw@canonical.com>, Kalle Valo <kvalo@qca.qualcomm.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110713161640.83199c0b.akpm@linux-foundation.org>
+References: <02ca5948a9627c6f4c2ab2b502f114623839c6fe.1310572985.git.joe@perches.com>
+	 <20110713161640.83199c0b.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 13 Jul 2011 16:41:56 -0700
+Message-ID: <1310600516.1662.43.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 13, 2011 at 03:31:24PM +0100, Mel Gorman wrote:
-> It is preferable that no dirty pages are dispatched for cleaning from
-> the page reclaim path. At normal priorities, this patch prevents kswapd
-> writing pages.
-> 
-> However, page reclaim does have a requirement that pages be freed
-> in a particular zone. If it is failing to make sufficient progress
-> (reclaiming < SWAP_CLUSTER_MAX at any priority priority), the priority
-> is raised to scan more pages. A priority of DEF_PRIORITY - 3 is
-> considered to tbe the point where kswapd is getting into trouble
-> reclaiming pages. If this priority is reached, kswapd will dispatch
-> pages for writing.
-> 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+On Wed, 2011-07-13 at 16:16 -0700, Andrew Morton wrote:
+> On Wed, 13 Jul 2011 09:05:47 -0700
+> Joe Perches <joe@perches.com> wrote:
+> > Allow numbers in leading prefix.
+> > Add logging functions with _once and _ratelimit.
+> > Add <prefix>_printk.
+> I look at this description wondering "hm, what does this do to
+> checkpatch behaviour" and realize I have not a clue.
+> Oh well, I'll trust you ;)
 
-Seems reasonable, but btrfs still will ignore this writeback from
-kswapd, and it doesn't fall over. Given that data point, I'd like to
-see the results when you stop kswapd from doing writeback altogether
-as well.
+Not necessarily a good plan...
 
-Can you try removing it altogether and seeing what that does to your
-test results? i.e
+Perhaps this description instead:
 
-			if (page_is_file_cache(page)) {
-				inc_zone_page_state(page, NR_VMSCAN_WRITE_SKIP);
-				goto keep_locked;
-			}
+[PATCH] checkpatch.pl: Allow more printk types (<prefix>_<level>) to be > 80 cols
 
-Cheers,
+Previous behavior allowed only alphabetic prefixes
+like pr_info to exceed the 80 column line length limit.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+ath6kl wants to add a digit into the prefix, so allow
+numbers as well as digits in the <prefix>_<level> printks.
+
+<prefix>_<level>_ratelimited and <prefix>_<level>_once
+and WARN_RATELIMIT and WARN_ONCE may now exceed 80 cols.
+
+Add missing <prefix>_printk type for completeness.
+
