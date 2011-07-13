@@ -1,79 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756622Ab1GMBPo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 21:15:44 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59087 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753650Ab1GMBPn convert rfc822-to-8bit (ORCPT
+	id S1756661Ab1GMBYt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 21:24:49 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:54457 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754163Ab1GMBYs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 21:15:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110711101134.613d88ee.rdunlap@xenotime.net>
-References: <da20dc5c4160ed9a3da52f60799a1e4369fe3f27.1310228130.git.rprabhu@wnohang.net>
-	<CAM_iQpXeqc01dyHpViyJCMSz6wz-1mWmGi=J0UynUG8tbd99kw@mail.gmail.com>
-	<CACqU3MUgVTpc6kBvBiw7rtyn_JTA-JPrbnvai3Vnq+UWk-jSbQ@mail.gmail.com>
-	<CAOJsxLF+4VOXJwRJL7npMngDTGztXk739_GcMLxsMzmsVcDCVw@mail.gmail.com>
-	<CACqU3MUFO9DGqnK99ApaKn00vzj5rCB5=kjuSZGZpPU8c_4G-A@mail.gmail.com>
-	<20110710110241.7650e03f.rdunlap@xenotime.net>
-	<alpine.LNX.2.00.1107110051420.2818@swampdragon.chaosbits.net>
-	<20110710160722.ae763029.rdunlap@xenotime.net>
-	<alpine.LNX.2.00.1107110117080.2818@swampdragon.chaosbits.net>
-	<20110710165333.8c7f9620.rdunlap@xenotime.net>
-	<20110711050951.GA22699@sirena.org.uk>
-	<20110711101134.613d88ee.rdunlap@xenotime.net>
-Date: Wed, 13 Jul 2011 09:15:42 +0800
-Message-ID: <CAM_iQpUSj5rQgMds6LppD1fM=w3z=CZ9An1OVv__cTM5u+PB3Q@mail.gmail.com>
-Subject: Re: [PATCH] Avoid Wunused-but-set warning
-From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jesper Juhl <jj@chaosbits.net>, Arnaud Lacombe <lacombar@gmail.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Raghavendra D Prabhu <rprabhu@wnohang.net>,
-        linux-kbuild@vger.kernel.org, Nir Tzachar <nir.tzachar@gmail.com>,
+	Tue, 12 Jul 2011 21:24:48 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: stable@kernel.org
+Cc: linux-cifs@vger.kernel.org, helge.hafting@hist.no,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Subject: [PATCH] cifs: fix wsize negotiation for 2.6.39 stable
+Date: Tue, 12 Jul 2011 21:24:41 -0400
+Message-Id: <1310520281-17467-1-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 12, 2011 at 1:11 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> On Mon, 11 Jul 2011 06:09:52 +0100 Mark Brown wrote:
->
->> On Sun, Jul 10, 2011 at 04:53:33PM -0700, Randy Dunlap wrote:
->>
->> > But do as you like.  Which parts of SubmittingPatches do you think
->> > support your interpretation?
->>
->> > and should we have this line:
->> >     Acked-by: is not as formal as Signed-off-by:.
->> > changed to:
->> >     Acked-by: is not as formal as Signed-off-by: or Reviewed-by:.
->> > e.g.?
->>
->> Current practice seems to be that Acked-by is used instead of
->> Reviewed-by - the latter is comparatively rare.
->
->
-> ISTM that more education and encouragement are needed about Reviewed-by:.
-> (Patch Review is a possible kernel summit topic.)
->
-> and that SubmittingPatches should be updated since we generally refer people
-> to that file and not to Documentation/development-process/
+I sent this a week or so ago, but it apparently missed the recent
+2.6.39.y release. Resending to make sure it gets into the next one.
 
-Agreed, mind to send a patch? ;-)
+Prior to 2.6.39, when signing was enabled on a socket the client only
+sent single-page writes. This changed with commit ca83ce3d5b, which
+made signed and unsigned connections use the same codepaths for write
+calls.
 
->
-> Samples from my partial mailing list archives:
->
-> linux-pci mailing list:         Acked-by: 93    Reviewed-by: 81
-> linux-mm mailing list:          Acked-by: 2104  Reviewed-by: 1344
-> netdev mailing list:            Acked-by: 1366  Reviewed-by: 659
->
+This caused a regression when working with windows servers. Windows
+machines will reject writes larger than the MaxBufferSize when signing
+is active, but does not clear the CAP_LARGE_WRITE_X flag in the
+negotiation.
 
-Yup, take netdev as an example, Davem is the only maintainer (not to
-say things like wireless)
-but definitely people like Eirc or Herbert is qualified to give Acked-by too.
+This patch backports 2 patches that fix this problem in 3.0 kernels,
+and changes a couple of the constants to values appropriate for the
+writeback code in 2.6.39.
 
-Thanks.
+Cc: stable@kernel.org
+Reported-by: Helge Hafting <helge.hafting@hist.no>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ fs/cifs/connect.c |   64 ++++++++++++++++++++++++++++++++++++----------------
+ 1 files changed, 44 insertions(+), 20 deletions(-)
+
+diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
+index 5236582..8e78710 100644
+--- a/fs/cifs/connect.c
++++ b/fs/cifs/connect.c
+@@ -2571,23 +2571,6 @@ static void setup_cifs_sb(struct smb_vol *pvolume_info,
+ 	else /* default */
+ 		cifs_sb->rsize = CIFSMaxBufSize;
+ 
+-	if (pvolume_info->wsize > PAGEVEC_SIZE * PAGE_CACHE_SIZE) {
+-		cERROR(1, "wsize %d too large, using 4096 instead",
+-			  pvolume_info->wsize);
+-		cifs_sb->wsize = 4096;
+-	} else if (pvolume_info->wsize)
+-		cifs_sb->wsize = pvolume_info->wsize;
+-	else
+-		cifs_sb->wsize = min_t(const int,
+-					PAGEVEC_SIZE * PAGE_CACHE_SIZE,
+-					127*1024);
+-		/* old default of CIFSMaxBufSize was too small now
+-		   that SMB Write2 can send multiple pages in kvec.
+-		   RFC1001 does not describe what happens when frame
+-		   bigger than 128K is sent so use that as max in
+-		   conjunction with 52K kvec constraint on arch with 4K
+-		   page size  */
+-
+ 	if (cifs_sb->rsize < 2048) {
+ 		cifs_sb->rsize = 2048;
+ 		/* Windows ME may prefer this */
+@@ -2665,6 +2648,48 @@ static void setup_cifs_sb(struct smb_vol *pvolume_info,
+ 			   "mount option supported");
+ }
+ 
++/* Prior to 3.0, cifs couldn't handle writes larger than this */
++#define CIFS_MAX_WSIZE (PAGEVEC_SIZE * PAGE_CACHE_SIZE)
++
++/*
++ * When the server doesn't allow large posix writes, only allow a wsize of
++ * 128k minus the size of the WRITE_AND_X header. That allows for a write up
++ * to the maximum size described by RFC1002.
++ */
++#define CIFS_MAX_RFC1002_WSIZE (128 * 1024 - sizeof(WRITE_REQ) + 4)
++
++/* Make the default the same as the max */
++#define CIFS_DEFAULT_WSIZE CIFS_MAX_WSIZE
++
++static unsigned int
++cifs_negotiate_wsize(struct cifsTconInfo *tcon, struct smb_vol *pvolume_info)
++{
++	__u64 unix_cap = le64_to_cpu(tcon->fsUnixInfo.Capability);
++	struct TCP_Server_Info *server = tcon->ses->server;
++	unsigned int wsize = pvolume_info->wsize ? pvolume_info->wsize :
++				CIFS_DEFAULT_WSIZE;
++
++	/* can server support 24-bit write sizes? (via UNIX extensions) */
++	if (!tcon->unix_ext || !(unix_cap & CIFS_UNIX_LARGE_WRITE_CAP))
++		wsize = min_t(unsigned int, wsize, CIFS_MAX_RFC1002_WSIZE);
++
++	/*
++	 * no CAP_LARGE_WRITE_X or is signing enabled without CAP_UNIX set?
++	 * Limit it to max buffer offered by the server, minus the size of the
++	 * WRITEX header, not including the 4 byte RFC1001 length.
++	 */
++	if (!(server->capabilities & CAP_LARGE_WRITE_X) ||
++	    (!(server->capabilities & CAP_UNIX) &&
++	     (server->sec_mode & (SECMODE_SIGN_ENABLED|SECMODE_SIGN_REQUIRED))))
++		wsize = min_t(unsigned int, wsize,
++				server->maxBuf - sizeof(WRITE_REQ) + 4);
++
++	/* hard limit of CIFS_MAX_WSIZE */
++	wsize = min_t(unsigned int, wsize, CIFS_MAX_WSIZE);
++
++	return wsize;
++}
++
+ static int
+ is_path_accessible(int xid, struct cifsTconInfo *tcon,
+ 		   struct cifs_sb_info *cifs_sb, const char *full_path)
+@@ -2866,13 +2891,12 @@ try_mount_again:
+ 		cifs_sb->rsize = 1024 * 127;
+ 		cFYI(DBG2, "no very large read support, rsize now 127K");
+ 	}
+-	if (!(tcon->ses->capabilities & CAP_LARGE_WRITE_X))
+-		cifs_sb->wsize = min(cifs_sb->wsize,
+-			       (tcon->ses->server->maxBuf - MAX_CIFS_HDR_SIZE));
+ 	if (!(tcon->ses->capabilities & CAP_LARGE_READ_X))
+ 		cifs_sb->rsize = min(cifs_sb->rsize,
+ 			       (tcon->ses->server->maxBuf - MAX_CIFS_HDR_SIZE));
+ 
++	cifs_sb->wsize = cifs_negotiate_wsize(tcon, volume_info);
++
+ remote_path_check:
+ 	/* check if a whole path (including prepath) is not remote */
+ 	if (!rc && tcon) {
+-- 
+1.7.6
+
