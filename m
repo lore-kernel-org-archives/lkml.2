@@ -1,59 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965219Ab1GMKGN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 06:06:13 -0400
-Received: from mail.wdtv.com ([66.118.69.84]:56905 "EHLO mail.wdtv.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758673Ab1GMKGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 06:06:12 -0400
-From: Gene Heskett <gene.heskett@gmail.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] RESEND ibmmca: trivial typo fixes
-Date: Wed, 13 Jul 2011 06:06:09 -0400
-User-Agent: KMail/1.13.7 (Linux/2.6.38.8-pclos2.pae.bfs; KDE/4.6.5; i686; ; )
-References: <1310530933.4444.8.camel@offbook> <1310532384.1662.2.camel@Joe-Laptop>
-In-Reply-To: <1310532384.1662.2.camel@Joe-Laptop>
+	id S965239Ab1GMKJG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 06:09:06 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:34646 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964996Ab1GMKJE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 06:09:04 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107130606.09875.gene.heskett@gmail.com>
+In-Reply-To: <1310549424-5484-1-git-send-email-arend@broadcom.com>
+References: <1310549424-5484-1-git-send-email-arend@broadcom.com>
+Date: Wed, 13 Jul 2011 13:09:03 +0300
+Message-ID: <CACVxJT-TXBd5S+HNfzNR2hnGUk2hMfTSQrkodUunUXOQ6+X8eg@mail.gmail.com>
+Subject: Re: [PATCH] net: change return values in mac_pton() function
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Arend van Spriel <arend@broadcom.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 13, 2011, Joe Perches wrote:
->On Wed, 2011-07-13 at 00:22 -0400, Davidlohr Bueso wrote:
->> From: Davidlohr Bueso <dave@gnu.org>
->> diff --git a/Documentation/scsi/ibmmca.txt
->> b/Documentation/scsi/ibmmca.txt
->
->[]
->
->> @@ -487,7 +487,7 @@
->> 
->>     1) Submitting the extra-array ldn_is_tape[] -> to the local ld[]
->>     
->>        device-array.
->>     
->>     2) CD-ROM Audio-Play seems to work now.
->> 
->> -   3) When using DDS-2 (120M) DAT-Tapes, mtst shows still density-code
->> +   3) When using DDS-2 (120M) DAT-Tapes, must show still density-code
->
->I think the original is correct.
->mtst is a utility.
->
-The original is  correct, I was a former user of several hundred DDS-2 
-tapes.
+On Wed, Jul 13, 2011 at 12:30 PM, Arend van Spriel <arend@broadcom.com> wrote:
+> The original commit adding this function noted a diverge from usual
+> 0=success/-E=fail, but no motivation for it.
 
-Cheers, gene
--- 
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-No, his mind is not for rent
-To any god or government.
-Always hopeful, yet discontent,
-He knows changes aren't permanent -
-But change is.
+I thought it was obvious, but indeed wasn't explicitely
+mentioned in changelog. But see inet_pton(3).
+
+> To stay consistent this
+> commit adheres to the usual approach. The callers check for result
+> is changed from 'if(!mac_pton(x, y))' to 'if(mac_pton(x,y) < 0)'.
+
+> @@ -304,20 +304,20 @@ int mac_pton(const char *s, u8 *mac)
+>
+>        /* XX:XX:XX:XX:XX:XX */
+>        if (strlen(s) < 3 * ETH_ALEN - 1)
+> -               return 0;
+> +               return -EINVAL;
