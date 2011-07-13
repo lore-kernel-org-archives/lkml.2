@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753033Ab1GMXmJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 19:42:09 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:3984 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751395Ab1GMXl7 (ORCPT
+	id S1753007Ab1GMXnm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 19:43:42 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:12028 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752575Ab1GMXnl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 19:41:59 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqYCAJsqHk55LCkBgWdsb2JhbABTp0EVAQEWJiXLQg6DJ4MFBKND
-Date: Thu, 14 Jul 2011 09:41:50 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        XFS <xfs@oss.sgi.com>, Christoph Hellwig <hch@infradead.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 3/5] mm: vmscan: Throttle reclaim if encountering too
- many dirty pages under writeback
-Message-ID: <20110713234150.GW23038@dastard>
-References: <1310567487-15367-1-git-send-email-mgorman@suse.de>
- <1310567487-15367-4-git-send-email-mgorman@suse.de>
+	Wed, 13 Jul 2011 19:43:41 -0400
+Date: Thu, 14 Jul 2011 01:43:40 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Jiri Kosina <jkosina@suse.cz>,
+        =?ISO-8859-15?Q?Jan_H=2E_Sch=F6nherr?= <schnhrr@cs.tu-berlin.de>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6] sched: Fix (harmless) typo
+ 'CONFG_FAIR_GROUP_SCHED'
+In-Reply-To: <1310599104.2586.68.camel@twins>
+Message-ID: <alpine.LNX.2.00.1107140139070.22281@swampdragon.chaosbits.net>
+References: <1310580816-10861-1-git-send-email-schnhrr@cs.tu-berlin.de>  <1310580816-10861-2-git-send-email-schnhrr@cs.tu-berlin.de>  <1310590281.2586.34.camel@twins>  <alpine.LNX.2.00.1107140006170.5754@pobox.suse.cz>  <1310595172.2586.48.camel@twins> 
+ <alpine.LNX.2.00.1107140029010.22281@swampdragon.chaosbits.net>  <1310597043.2586.60.camel@twins>  <alpine.LNX.2.00.1107140057240.22281@swampdragon.chaosbits.net> <1310599104.2586.68.camel@twins>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1310567487-15367-4-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 13, 2011 at 03:31:25PM +0100, Mel Gorman wrote:
-> Workloads that are allocating frequently and writing files place a
-> large number of dirty pages on the LRU. With use-once logic, it is
-> possible for them to reach the end of the LRU quickly requiring the
-> reclaimer to scan more to find clean pages. Ordinarily, processes that
-> are dirtying memory will get throttled by dirty balancing but this
-> is a global heuristic and does not take into account that LRUs are
-> maintained on a per-zone basis. This can lead to a situation whereby
-> reclaim is scanning heavily, skipping over a large number of pages
-> under writeback and recycling them around the LRU consuming CPU.
+On Thu, 14 Jul 2011, Peter Zijlstra wrote:
+
+> On Thu, 2011-07-14 at 01:03 +0200, Jesper Juhl wrote:
+> > Do yourself a favour, if you try it, and spend a bit of time in the Setup 
+> > menu configuring it to the threading style you want, the headers you want 
+> > displayed by default, etc etc... The defaults are less than perfect if you 
+> > ask me, but it's quite configurable :) 
 > 
-> This patch checks how many of the number of pages isolated from the
-> LRU were dirty. If a percentage of them are dirty, the process will be
-> throttled if a blocking device is congested or the zone being scanned
-> is marked congested. The percentage that must be dirty depends on
-> the priority. At default priority, all of them must be dirty. At
-> DEF_PRIORITY-1, 50% of them must be dirty, DEF_PRIORITY-2, 25%
-> etc. i.e.  as pressure increases the greater the likelihood the process
-> will get throttled to allow the flusher threads to make some progress.
+> It seems to suffer the same problem mutt does, trying to sort a folder
+> with a shade under 600000 emails in it doesn't work (500+ seconds in
+> waiting and still nothing).
+> 
+> Evolution seems to pull it off in a few seconds, I very frequently flip
+> between threaded and received time sort, evo's problem is in it
+> consuming a silly amount of memory to do it (current res footprint of
+> evo is 1.3g).
+> 
+> I thought this was a solved problem by the VLDB people way back in the
+> 60s or 70s when 0.6M was still large.
+> 
 
-It still doesn't take into account how many pages under writeback
-were skipped. If there are lots of pages that are under writeback, I
-think we still want to throttle to give IO a chance to complete and
-clean those pages before scanning again....
+Sure, some of the sort modes are slow - but only really slow on initial 
+load. On refreshes it's much faster. So for someone like me, who just runs 
+alpine in a screen on his server, that pain is minimal (only when I need 
+to reboot the server do I have to pay the loooooong sort delay).
 
-Cheers,
+But, some sort modes are quick, and you can select them when starting 
+alpine, like :   $ pine -sort arrival/reverse
+That's about as quick as you can get if you just want to start it with a 
+uge inbox anbd just have a quick look. But, if you just sort your inbox 
+into smaller folders that takes a lot of the pain away. Personally I try 
+to keep my inbox (and all other folders) below 20000 emails and then even 
+the initial, first run, sorting delay is acceptable (to me).
 
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
