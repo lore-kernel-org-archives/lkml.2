@@ -1,79 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752243Ab1GMVtv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 17:49:51 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:59453 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751623Ab1GMVtu convert rfc822-to-8bit (ORCPT
+	id S1751879Ab1GMVxR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 17:53:17 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:10296 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751216Ab1GMVxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 17:49:50 -0400
+	Wed, 13 Jul 2011 17:53:16 -0400
+Date: Wed, 13 Jul 2011 23:53:15 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: Should SUBLEVEL be removed for 3.x ?
+In-Reply-To: <alpine.LNX.2.00.1107110000280.2818@swampdragon.chaosbits.net>
+Message-ID: <alpine.LNX.2.00.1107132351390.22281@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1107110000280.2818@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110710125109.c72f9c2d.rdunlap@xenotime.net>
-References: <20110710125109.c72f9c2d.rdunlap@xenotime.net>
-Date: Wed, 13 Jul 2011 17:49:48 -0400
-Message-ID: <CACqU3MWBb4J8rmaRv23=-_=GXppGSUdqmOqeXoqWi4ZJ7ZYewg@mail.gmail.com>
-Subject: Re: [PATCH 1/9] stringify: add HEX_STRING()
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org,
-        linux-media@vger.kernel.org, mchehab@infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Sun, Jul 10, 2011 at 3:51 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> From: Randy Dunlap <rdunlap@xenotime.net>
->
-> Add HEX_STRING(value) to stringify.h so that drivers can
-> convert kconfig hex values (without leading "0x") to useful
-> hex constants.
->
-> Several drivers/media/radio/ drivers need this.  I haven't
-> checked if any other drivers need to do this.
->
-> Alternatively, kconfig could produce hex config symbols with
-> leading "0x".
->
-Actually, I used to have a patch to make hex value have a mandatory
-"0x" prefix, in the Kconfig. I even fixed all the issue in the tree,
-it never make it to the tree (not sure why). Here's the relevant
-thread:
+Linus: ping?
 
-https://patchwork.kernel.org/patch/380591/
-https://patchwork.kernel.org/patch/380621/
-https://patchwork.kernel.org/patch/380601/
+Would be nice to get this clarified before 3.0 happens :-)
 
- - Arnaud
 
-> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-> ---
->  include/linux/stringify.h |    7 +++++++
->  1 file changed, 7 insertions(+)
->
-> NOTE: The other 8 patches are on lkml and linux-media mailing lists.
->
-> --- linux-next-20110707.orig/include/linux/stringify.h
-> +++ linux-next-20110707/include/linux/stringify.h
-> @@ -9,4 +9,11 @@
->  #define __stringify_1(x...)    #x
->  #define __stringify(x...)      __stringify_1(x)
->
-> +/*
-> + * HEX_STRING(value) is useful for CONFIG_ values that are in hex,
-> + * but kconfig does not put a leading "0x" on them.
-> + */
-> +#define HEXSTRINGVALUE(h, value)       h##value
-> +#define HEX_STRING(value)              HEXSTRINGVALUE(0x, value)
-> +
-that seems hackish...
+On Mon, 11 Jul 2011, Jesper Juhl wrote:
 
->  #endif /* !__LINUX_STRINGIFY_H */
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+> Hi
+> 
+> If the plan is that the new kernel is going to be 3.0 (3.x) and the 
+> -stable kernels then get to tack on a third digit with EXTRAVERSION, then 
+> it seems to me that the main Makefile should get rid of SUBLEVEL - or?
+> 
+> Or is the plan to ditch EXTRAVERSION for -stable kernels and have them use 
+> SUBLEVEL instead?
+> 
+> There are a few scripts that need fixing if SUBLEVEL goes the way of the 
+> Dodo, but I didn't want to start fixing those without a clear indication 
+> of whether or not SUBLEVEL is going to/should die.
+> 
+> So what's going to happen to SUBLEVEL/EXTRAVERSION?
+> 
+> 
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
