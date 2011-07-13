@@ -1,57 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751921Ab1GMVC6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 17:02:58 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:52925 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751812Ab1GMVC5 convert rfc822-to-8bit (ORCPT
+	id S1751955Ab1GMVFw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 17:05:52 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59530 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751812Ab1GMVFu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 17:02:57 -0400
-Subject: Re: [RFT][PATCH] sched, cgroup: Optimize load_balance_fair()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Paul Turner <pjt@google.com>
-Cc: Nikhil Rao <ncrao@google.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Galbraith <efault@gmx.de>
-In-Reply-To: <CAPM31R+cS+eRaFHa2ygxF3ADYyo5Tf9R+snky3U8b5_am6Wtjg@mail.gmail.com>
-References: <1310557009.2586.28.camel@twins>
-	 <CAPM31R+cS+eRaFHa2ygxF3ADYyo5Tf9R+snky3U8b5_am6Wtjg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 13 Jul 2011 23:02:48 +0200
-Message-ID: <1310590968.2586.38.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 13 Jul 2011 17:05:50 -0400
+Message-ID: <4E1E08A9.4030807@infradead.org>
+Date: Wed, 13 Jul 2011 18:05:45 -0300
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
+MIME-Version: 1.0
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: lkml <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH 1/9] stringify: add HEX_STRING()
+References: <20110710125109.c72f9c2d.rdunlap@xenotime.net>
+In-Reply-To: <20110710125109.c72f9c2d.rdunlap@xenotime.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-07-13 at 10:13 -0700, Paul Turner wrote:
-> Nice! The continued usage of task_groups had been irking me for a
-> while but I haven't had the time to scratch the itch :).
+Em 10-07-2011 16:51, Randy Dunlap escreveu:
+> From: Randy Dunlap <rdunlap@xenotime.net>
 > 
-> On Wed, Jul 13, 2011 at 4:36 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > Subject: sched, cgroup: Optimize load_balance_fair()
-> > From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Date: Wed Jul 13 13:09:25 CEST 2011
-> >
-> > Use for_each_leaf_cfs_rq() instead of list_for_each_entry_rcu(), this
-> > achieves that load_balance_fair() only iterates those task_groups that
-> > actually have tasks on busiest, and that we iterate bottom-up, trying to
-> > move light groups before the heavier ones.
-> >
-> > No idea if it will actually work out to be beneficial in practice, does
-> > anybody have a cgroup workload that might show a difference one way or
-> > the other?
-> >
-> > [ Also move update_h_load to sched_fair.c, loosing #ifdef-ery ]
-> >
-> > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Add HEX_STRING(value) to stringify.h so that drivers can
+> convert kconfig hex values (without leading "0x") to useful
+> hex constants.
+> 
+> Several drivers/media/radio/ drivers need this.  I haven't
+> checked if any other drivers need to do this.
+> 
+> Alternatively, kconfig could produce hex config symbols with
+> leading "0x".
 
-> Reviewed-by: Paul Turner <pjt@google.com>
+Hi Randy,
 
-So you think I should just merge it and see if any cgroup workload
-dislikes it?
+After applying patch 1/9 and 2/9 over 3.0-rc7+media patches, I'm
+now getting this error:
 
-OK, I guess I can do that..
+drivers/media/radio/radio-aimslab.c:52:1: error: invalid suffix "x20f" on integer constant
+
+$ grep 20f .config
+CONFIG_RADIO_RTRACK_PORT=20f
+
+$ gcc --version
+gcc (GCC) 4.4.5 20110214 (Red Hat 4.4.5-6)
+
+Before this patch, this were working (or, at least, weren't producing
+any error).
+
+Perhaps the breakage on your compilation happened due to another
+patch at the tree? If so, the better would be to apply this patch
+series together with the ones that caused the breakage, to avoid
+bisect troubles.
+
+> 
+> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+> ---
+>  include/linux/stringify.h |    7 +++++++
+>  1 file changed, 7 insertions(+)
+> 
+> NOTE: The other 8 patches are on lkml and linux-media mailing lists.
+> 
+> --- linux-next-20110707.orig/include/linux/stringify.h
+> +++ linux-next-20110707/include/linux/stringify.h
+> @@ -9,4 +9,11 @@
+>  #define __stringify_1(x...)	#x
+>  #define __stringify(x...)	__stringify_1(x)
+>  
+> +/*
+> + * HEX_STRING(value) is useful for CONFIG_ values that are in hex,
+> + * but kconfig does not put a leading "0x" on them.
+> + */
+> +#define HEXSTRINGVALUE(h, value)	h##value
+> +#define HEX_STRING(value)		HEXSTRINGVALUE(0x, value)
+> +
+>  #endif	/* !__LINUX_STRINGIFY_H */
+
