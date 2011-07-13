@@ -1,65 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932418Ab1GMROk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 13:14:40 -0400
-Received: from sous-sol.org ([216.99.217.87]:40249 "EHLO sequoia.sous-sol.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932216Ab1GMROi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 13:14:38 -0400
-Date: Wed, 13 Jul 2011 10:14:33 -0700
-From: Chris Wright <chrisw@sous-sol.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Don Dutile <ddutile@redhat.com>
-Subject: [PATCH resend] pci: ARI is a PCIe v2 feature
-Message-ID: <20110713171433.GU15844@sequoia.sous-sol.org>
+	id S932422Ab1GMRQB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 13:16:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33659 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932216Ab1GMRQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 13:16:00 -0400
+Date: Wed, 13 Jul 2011 18:15:53 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 4/5] mm: vmscan: Immediately reclaim end-of-LRU dirty
+ pages when writeback completes
+Message-ID: <20110713171553.GJ7529@suse.de>
+References: <1310567487-15367-1-git-send-email-mgorman@suse.de>
+ <1310567487-15367-5-git-send-email-mgorman@suse.de>
+ <20110713164040.GA13972@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <20110713164040.GA13972@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function pci_enable_ari() may mistakenly set the downstream port
-of a v1 PCIe switch in ARI Forwarding mode.  This is a PCIe v2 feature,
-and with an SR-IOV device on that switch port believing the switch above
-is ARI capable it may attempt to use functions 8-255, translating into
-invalid (non-zero) device numbers for that bus.  This has been seen
-to cause Completion Timeouts and general misbehaviour including hangs
-and panics.
+On Wed, Jul 13, 2011 at 06:40:40PM +0200, Johannes Weiner wrote:
+> On Wed, Jul 13, 2011 at 03:31:26PM +0100, Mel Gorman wrote:
+> > When direct reclaim encounters a dirty page, it gets recycled around
+> > the LRU for another cycle. This patch marks the page PageReclaim using
+> > deactivate_page() so that the page gets reclaimed almost immediately
+> > after the page gets cleaned. This is to avoid reclaiming clean pages
+> > that are younger than a dirty page encountered at the end of the LRU
+> > that might have been something like a use-once page.
+> > 
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > ---
+> >  include/linux/mmzone.h |    2 +-
+> >  mm/vmscan.c            |   10 ++++++++--
+> >  mm/vmstat.c            |    2 +-
+> >  3 files changed, 10 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> > index c4508a2..bea7858 100644
+> > --- a/include/linux/mmzone.h
+> > +++ b/include/linux/mmzone.h
+> > @@ -100,7 +100,7 @@ enum zone_stat_item {
+> >  	NR_UNSTABLE_NFS,	/* NFS unstable pages */
+> >  	NR_BOUNCE,
+> >  	NR_VMSCAN_WRITE,
+> > -	NR_VMSCAN_WRITE_SKIP,
+> > +	NR_VMSCAN_INVALIDATE,
+> >  	NR_VMSCAN_THROTTLED,
+> >  	NR_WRITEBACK_TEMP,	/* Writeback using temporary buffers */
+> >  	NR_ISOLATED_ANON,	/* Temporary isolated pages from anon lru */
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index 9826086..8e00aee 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -834,8 +834,13 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+> >  			 */
+> >  			if (page_is_file_cache(page) &&
+> >  					(!current_is_kswapd() || priority >= DEF_PRIORITY - 2)) {
+> > -				inc_zone_page_state(page, NR_VMSCAN_WRITE_SKIP);
+> > -				goto keep_locked;
+> > +				inc_zone_page_state(page, NR_VMSCAN_INVALIDATE);
+> > +
+> > +				/* Immediately reclaim when written back */
+> > +				unlock_page(page);
+> > +				deactivate_page(page);
+> > +
+> > +				goto keep_dirty;
+> >  			}
+> >  
+> >  			if (references == PAGEREF_RECLAIM_CLEAN)
+> > @@ -956,6 +961,7 @@ keep:
+> >  		reset_reclaim_mode(sc);
+> >  keep_lumpy:
+> >  		list_add(&page->lru, &ret_pages);
+> > +keep_dirty:
+> >  		VM_BUG_ON(PageLRU(page) || PageUnevictable(page));
+> >  	}
+> 
+> I really like the idea behind this patch, but I think all those pages
+> are lost as PageLRU is cleared on isolation and lru_deactivate_fn
+> bails on them in turn.
+> 
+> If I'm not mistaken, the reference from the isolation is also leaked.
 
-Cc: stable@kernel.org
-Acked-by: Don Dutile <ddutile@redhat.com>
-Tested-by: Don Dutile <ddutile@redhat.com>
-Signed-off-by: Chris Wright <chrisw@sous-sol.org>
----
+I think you're right. This patch was rushed and not thought through
+properly.  The surprise it appeared to work at all. Will rework
+it. Thanks.
 
- drivers/pci/pci.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 2c5b9b9..7f83236 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -1905,7 +1905,7 @@ void pci_enable_ari(struct pci_dev *dev)
- {
- 	int pos;
- 	u32 cap;
--	u16 ctrl;
-+	u16 flags, ctrl;
- 	struct pci_dev *bridge;
- 
- 	if (!pci_is_pcie(dev) || dev->devfn)
-@@ -1923,6 +1923,11 @@ void pci_enable_ari(struct pci_dev *dev)
- 	if (!pos)
- 		return;
- 
-+	/* ARI is a PCIe v2 feature */
-+	pci_read_config_word(bridge, pos + PCI_EXP_FLAGS, &flags);
-+	if ((flags & PCI_EXP_FLAGS_VERS) < 2)
-+		return;
-+
- 	pci_read_config_dword(bridge, pos + PCI_EXP_DEVCAP2, &cap);
- 	if (!(cap & PCI_EXP_DEVCAP2_ARI))
- 		return;
+-- 
+Mel Gorman
+SUSE Labs
