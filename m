@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965362Ab1GMLjd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 07:39:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46495 "EHLO mx2.suse.de"
+	id S965369Ab1GMLry (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 07:47:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36114 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964915Ab1GMLjc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 07:39:32 -0400
-Date: Wed, 13 Jul 2011 13:39:30 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
-Cc: Raghavendra D Prabhu <rprabhu@wnohang.net>, linux-kbuild@vger.kernel.org,
-        Nir Tzachar <nir.tzachar@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Avoid Wunused-but-set warning
-Message-ID: <20110713113930.GC25895@sepie.suse.cz>
-References: <da20dc5c4160ed9a3da52f60799a1e4369fe3f27.1310228130.git.rprabhu@wnohang.net>
- <CAM_iQpXeqc01dyHpViyJCMSz6wz-1mWmGi=J0UynUG8tbd99kw@mail.gmail.com>
+	id S965051Ab1GMLrx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 07:47:53 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] FS-Cache: Fix bounds check
+To: geert@linux-m68k.org
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
+        David Howells <dhowells@redhat.com>
+Date: Wed, 13 Jul 2011 12:47:38 +0100
+Message-ID: <20110713114737.29760.95481.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20110712124622.9331.83332.sendpatchset@squad5-lp1.lab.bos.redhat.com>
+References: <20110712124622.9331.83332.sendpatchset@squad5-lp1.lab.bos.redhat.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAM_iQpXeqc01dyHpViyJCMSz6wz-1mWmGi=J0UynUG8tbd99kw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 11, 2011 at 12:16:11AM +0800, Américo Wang wrote:
-> On Sun, Jul 10, 2011 at 12:24 AM, Raghavendra D Prabhu
-> <rprabhu@wnohang.net> wrote:
-> > Hi,
-> >    I am seeing Wunused-but-set warning while make nconfig.  Looks like
-> >    active_menu is not used. Removing it fixes the warning.
-> >
-> > Signed-off-by: Raghavendra D Prabhu <rprabhu@wnohang.net>
-> 
-> Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
+__fscache_uncache_all_inode_pages() has a loop that goes through page index
+numbers go up to (loff_t)-1.  This is incorrect.  The limit should be
+(pgoff_t)-1 as on a 32-bit machine the pgoff_t is smaller than loff_t.
 
-Applied as "nconfig: Avoid Wunused-but-set warning" to
-kbuild-2.6.git#kconfig. Raghavendra, please use the "subsystem: Fix this
-and that" format of the subject line next time, thanks.
+On m68k the following error is observed:
 
-Now continue your fruitful discussion.
+fs/fscache/page.c: In function '__fscache_uncache_all_inode_pages':
+fs/fscache/page.c:979: warning: comparison is always false due to
+limited range of data type
 
-Michal
+[Should there be a PGOFF_T_MAX constant defined?]
+
+Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ fs/fscache/page.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/fs/fscache/page.c b/fs/fscache/page.c
+index 60315b3..112359d 100644
+--- a/fs/fscache/page.c
++++ b/fs/fscache/page.c
+@@ -993,7 +993,7 @@ void __fscache_uncache_all_inode_pages(struct fscache_cookie *cookie,
+ 
+ 	pagevec_init(&pvec, 0);
+ 	next = 0;
+-	while (next <= (loff_t)-1 &&
++	while (next <= (pgoff_t)-1 &&
+ 	       pagevec_lookup(&pvec, mapping, next, PAGEVEC_SIZE)
+ 	       ) {
+ 		for (i = 0; i < pagevec_count(&pvec); i++) {
+
