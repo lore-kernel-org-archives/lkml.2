@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965195Ab1GMJZs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 05:25:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22765 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965134Ab1GMJZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S965183Ab1GMJZr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 05:25:47 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:40338 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965133Ab1GMJZp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 13 Jul 2011 05:25:45 -0400
-Date: Wed, 13 Jul 2011 11:25:38 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: Joe Perches <joe@perches.com>, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] iwlegacy: Add missing comma between constant string
- array
-Message-ID: <20110713092538.GA2429@redhat.com>
-References: <cover.1310187270.git.joe@perches.com>
- <36f8b5d1a32b8702941ebeda7a406188af132e9e.1310187270.git.joe@perches.com>
- <20110711183542.GB2650@tuxdriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110711183542.GB2650@tuxdriver.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Date: Wed, 13 Jul 2011 10:25:20 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: do_signal: simplify the TS_RESTORE_SIGMASK logic
+Message-ID: <20110713102520.0065c7de@mfleming-mobl1.ger.corp.intel.com>
+In-Reply-To: <20110710182203.GA27979@redhat.com>
+References: <20110710182203.GA27979@redhat.com>
+X-Mailer: Claws Mail 3.7.8cvs52 (GTK+ 2.22.0; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 11, 2011 at 02:35:42PM -0400, John W. Linville wrote:
-> How is this array indexed?  Aren't you changing the index of the
-> later strings?
+On Sun, 10 Jul 2011 20:22:03 +0200
+Oleg Nesterov <oleg@redhat.com> wrote:
 
-We read index directly from device memory (and check agains
-ARRAY_SIZE). Patch make indexing correct with code author
-intention, ACK. iwlagn should be simmilarly fine.
-
-Stanislaw
-
-> On Fri, Jul 08, 2011 at 11:20:24PM -0700, Joe Perches wrote:
-> > Multiple quoted strings are concatenated without comma separators.
-> > 
-> > Signed-off-by: Joe Perches <joe@perches.com>
-> > ---
-> >  drivers/net/wireless/iwlegacy/iwl4965-base.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/net/wireless/iwlegacy/iwl4965-base.c b/drivers/net/wireless/iwlegacy/iwl4965-base.c
-> > index 46242d2..1433466 100644
-> > --- a/drivers/net/wireless/iwlegacy/iwl4965-base.c
-> > +++ b/drivers/net/wireless/iwlegacy/iwl4965-base.c
-> > @@ -1484,7 +1484,7 @@ static const char * const desc_lookup_text[] = {
-> >  	"NMI_INTERRUPT_DATA_ACTION_PT",
-> >  	"NMI_TRM_HW_ER",
-> >  	"NMI_INTERRUPT_TRM",
-> > -	"NMI_INTERRUPT_BREAK_POINT"
-> > +	"NMI_INTERRUPT_BREAK_POINT",
-> >  	"DEBUG_0",
-> >  	"DEBUG_1",
-> >  	"DEBUG_2",
-> > -- 
-> > 1.7.6.131.g99019
-> > 
-> > 
+> 1. do_signal() looks at TS_RESTORE_SIGMASK and calculates the
+>    mask which should be stored in the signal frame, then it
+>    passes "oldset" to the callees, down to setup_rt_frame().
 > 
-> -- 
-> John W. Linville		Someday the world will need a hero, and you
-> linville@tuxdriver.com			might be all we have.  Be ready.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>    This is ugly, setup_rt_frame() can do this itself and nobody
+>    else needs this sigset_t. Move this code into setup_rt_frame.
+> 
+> 2. do_signal() also clears TS_RESTORE_SIGMASK if handle_signal()
+>    succeeds.
+> 
+>    We can move this to setup_rt_frame() as well, this avoids the
+>    unnecessary checks and makes the logic more clear.
+> 
+> 3. use set_current_blocked() instead of sigprocmask(SIG_SETMASK),
+>    sigprocmask() should be avoided.
+
+Could you please mention commit e6fa16ab "signal: sigprocmask() should
+do retarget_shared_pending()", since it's not immediately obvious in
+this changelog why sigprocmask() should be avoided.
+
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+
+FWIW,
+
+Reviewed-by: Matt Fleming <matt.fleming@linux.intel.com>
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
