@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751692Ab1GMVjy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 17:39:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43236 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750945Ab1GMVjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 17:39:53 -0400
-Date: Wed, 13 Jul 2011 23:39:47 +0200
-From: Jan Kara <jack@suse.cz>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 5/5] mm: writeback: Prioritise dirty inodes encountered
- by direct reclaim for background flushing
-Message-ID: <20110713213947.GC21787@quack.suse.cz>
-References: <1310567487-15367-1-git-send-email-mgorman@suse.de>
- <1310567487-15367-6-git-send-email-mgorman@suse.de>
+	id S1751865Ab1GMVnK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 17:43:10 -0400
+Received: from sous-sol.org ([216.99.217.87]:58023 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750977Ab1GMVnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 17:43:08 -0400
+Date: Wed, 13 Jul 2011 14:42:50 -0700
+From: Chris Wright <chrisw@sous-sol.org>
+To: Stratos Psomadakis <psomas@gentoo.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, Chris Wright <chrisw@sous-sol.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        David Woodhouse <David.Woodhouse@intel.com>, kernel@gentoo.org
+Subject: Re: -stable commit 87cc4d1e (bisected) causes system freeze
+Message-ID: <20110713214250.GW15844@sequoia.sous-sol.org>
+References: <CAAdZ7YhU=ETCYPhUq-3tB6tgRZ5ZA1fRKuyXT5aZMxU0-0gdFQ@mail.gmail.com>
+ <4E1DEA24.3010109@gentoo.org>
+ <4E1DF736.9020908@gentoo.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1310567487-15367-6-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4E1DF736.9020908@gentoo.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 13-07-11 15:31:27, Mel Gorman wrote:
-> It is preferable that no dirty pages are dispatched from the page
-> reclaim path. If reclaim is encountering dirty pages, it implies that
-> either reclaim is getting ahead of writeback or use-once logic has
-> prioritise pages for reclaiming that are young relative to when the
-> inode was dirtied.
+* Stratos Psomadakis (psomas@gentoo.org) wrote:
+> On 13/07/2011 09:55 μμ, Stratos Psomadakis wrote:
+> > On 13/07/2011 05:28 μμ, Marcus Becker wrote:
+> >> Hi,
+> >>
+> >> With the upgrade to 2.6.39.2, I cannot copy more than ~1GB of data
+> >> over the network before my input devices lock up.
+> >> Example:
+> >> use scp on tty1 to copy a folder or file larger than 3GB over my
+> >> gigabit network and after ~1min the keyboard stops responding.
+> >> use cp on tty1 with an nfs-3 share mounted over the same network and
+> >> try to copy the same file, same happens
+> >>
+> >> I can hit ctrl+c for about 20-30 sec and eventually get an interrupt
+> >> that stops the copying, then the input devices slowly gain control
+> >> again. If I do the same on X, there is no chance to get in between and
+> >> I have to use SysRq to reboot.
+> >>
+> >> In our bug report at https://bugs.gentoo.org/show_bug.cgi?id=373109
+> >> We did a bisect between 2.6.39.1 and 2.6.39.2 and found the following
+> >> patch is causing this problem:
+> >>
+> >> commit 87cc4d1e3e05af38c7c51323a3d86fe2572ab033
+> >> Author: Chris Wright <chrisw@sous-sol.org>
+> >> Date:   Sat May 28 13:15:04 2011 -0500
+> >>
+> >>     intel-iommu: Dont cache iova above 32bit
+> >>
+> >> I will also attach dmesg, current kernel config, and my bisect log (I
+> >> put a uname -a into the log after each bisect) plus git bisect log
+> >>
+> >> Please let me know if you need more information.
+> >>
+> >> Thanks,
+> >>
+> >> Marcus
+> > CC'ed the people who signed-off the patch.
+> >
+> Bug #39312 [1] at b.k.o
 > 
-> When dirty pages are encounted on the LRU, this patch marks the inodes
-> I_DIRTY_RECLAIM and wakes the background flusher. When the background
-> flusher runs, it moves such inodes immediately to the dispatch queue
-> regardless of inode age. There is no guarantee that pages reclaim
-> cares about will be cleaned first but the expectation is that the
-> flusher threads will clean the page quicker than if reclaim tried to
-> clean a single page.
-  Hmm, I was looking through your numbers but I didn't see any significant
-difference this patch would make. Do you?
+> [1] https://bugzilla.kernel.org/show_bug.cgi?id=39312
 
-I was thinking about the problem and actually doing IO from kswapd would be
-a small problem if we submitted more than just a single page. Just to give
-you idea - time to write a single page on plain SATA drive might be like 4
-ms. Time to write sequential 4 MB of data is like 80 ms (I just made up
-these numbers but the orders should be right). So to write 1000 times more
-data you just need like 20 times longer. That's a factor of 50 in IO
-efficiency. So when reclaim/kswapd submits a single page IO once every
-couple of miliseconds, your IO throughput just went close to zero...
-BTW: I just checked your numbers in fsmark test with vanilla kernel.  You
-wrote like 14500 pages from reclaim in 567 seconds. That is about one page
-per 39 ms. That is going to have noticeable impact on IO throughput (not
-with XFS because it plays tricks with writing more than asked but with ext2
-or ext3 you would see it I guess).
-
-So when kswapd sees high percentage of dirty pages at the end of LRU, it
-could call something like fdatawrite_range() for the range of 4 MB
-(provided the file is large enough) containing that page and IO thoughput
-would not be hit that much and you will get reasonably bounded time when
-the page gets cleaned... If you wanted to be clever, you could possibly be
-more sophisticated in picking the file and range to write so that you get
-rid of the most pages at the end of LRU but I'm not sure it's worth the CPU
-cycles. Does this sound reasonable to you?
-
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Thanks for the cc, looking into it.  Would be useful to get details of
+the boxes that are showing the issue (full dmesg from boot and lspci).
