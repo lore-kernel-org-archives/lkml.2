@@ -1,102 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752186Ab1GMV2l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 17:28:41 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:52557 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818Ab1GMV2k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 17:28:40 -0400
-Message-ID: <4E1E0E04.8030200@suse.cz>
-Date: Wed, 13 Jul 2011 23:28:36 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
-MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net,
-        Joe Perches <joe@perches.com>
-Subject: Re: Linux 2.6.32.43
-References: <20110713034559.GA16150@kroah.com> <4E1E0B40.1030905@suse.cz> <4E1E0C59.1030100@suse.cz>
-In-Reply-To: <4E1E0C59.1030100@suse.cz>
-X-Enigmail-Version: 1.2pre
-Content-Type: multipart/mixed;
- boundary="------------090702000402000103020000"
+	id S1752214Ab1GMV3t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 17:29:49 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:59840 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752051Ab1GMV3r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 17:29:47 -0400
+From: Sergei Trofimovich <slyfox@gentoo.org>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sergei Trofimovich <slyfox@gentoo.org>
+Subject: [PATCH] tusb6010_omap: fix build failure: error: 'musb' undeclared
+Date: Thu, 14 Jul 2011 00:29:38 +0300
+Message-Id: <1310592578-31194-1-git-send-email-slyfox@gentoo.org>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------090702000402000103020000
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+  CC      drivers/usb/musb/tusb6010_omap.o
+drivers/usb/musb/tusb6010_omap.c: In function 'tusb_omap_use_shared_dmareq':
+drivers/usb/musb/tusb6010_omap.c:92: error: 'musb' undeclared (first use in this function)
+drivers/usb/musb/tusb6010_omap.c:92: error: (Each undeclared identifier is reported only once
+drivers/usb/musb/tusb6010_omap.c:92: error: for each function it appears in.)
 
-Cced Joe.
-
-On 07/13/2011 11:21 PM, Jiri Slaby wrote:
-> On 07/13/2011 11:16 PM, Jiri Slaby wrote:
->> On 07/13/2011 05:45 AM, Greg KH wrote:
->>> Joe Perches (2):
->>>       bug.h: Add WARN_RATELIMIT
->>>       net: filter: Use WARN_RATELIMIT
->>
->> Hi, this causes a build failure on PPC with minimalistic config (PS3) [1]:
->> net/core/filter.c: In function 'sk_run_filter':
->> net/core/filter.c:297: error: implicit declaration of function
->> 'WARN_RATELIMIT'
->>
->> net/core/filter.c should include linux/bug.h (or linux/kernel.h).
-> 
-> Ah, no, PS3 doesn't have CONFIG_BUG set.
-
-A fix attached. Upstream doesn't need it. There it is all in
-linux/ratelimit.h
-
->> [1]
->> http://gitorious.org/opensuse/kernel-source/blobs/SLE11-SP1/config/ppc/ps3
->>
->> regards,
--- 
-js
-suse labs
-
---------------090702000402000103020000
-Content-Type: text/x-patch;
- name="ppc-fix-net-core-build.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="ppc-fix-net-core-build.patch"
-
-From: Jiri Slaby <jslaby@suse.cz>
-Subject: PPC: fix net core build
-Patch-mainline: not yet
-
-After "net: filter: Use WARN_RATELIMIT" was applied as a part of
-patches.kernel.org/patch-2.6.32.42-43 we are choking at:
-net/core/filter.c: In function 'sk_run_filter':
-net/core/filter.c:297: error: implicit declaration of function 'WARN_RATELIMIT'
-on configs without CONFIG_BUG.
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
 ---
- include/asm-generic/bug.h |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/usb/musb/tusb6010_omap.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
---- a/include/asm-generic/bug.h
-+++ b/include/asm-generic/bug.h
-@@ -126,6 +126,13 @@ extern void warn_slowpath_null(const cha
- })
- #endif
+diff --git a/drivers/usb/musb/tusb6010_omap.c b/drivers/usb/musb/tusb6010_omap.c
+index c784e6c..07c8a73 100644
+--- a/drivers/usb/musb/tusb6010_omap.c
++++ b/drivers/usb/musb/tusb6010_omap.c
+@@ -89,7 +89,7 @@ static inline int tusb_omap_use_shared_dmareq(struct tusb_omap_dma_ch *chdat)
+ 	u32		reg = musb_readl(chdat->tbase, TUSB_DMA_EP_MAP);
  
-+#ifndef WARN_RATELIMIT
-+#define WARN_RATELIMIT(condition, format...) ({				\
-+	int __ret_warn_on = !!(condition);				\
-+	unlikely(__ret_warn_on);					\
-+})
-+#endif
-+
- #endif
- 
- #define WARN_ON_ONCE(condition)	({				\
+ 	if (reg != 0) {
+-		dev_dbg(musb->controller, "ep%i dmareq0 is busy for ep%i\n",
++		dev_dbg(chdat->musb->controller, "ep%i dmareq0 is busy for ep%i\n",
+ 			chdat->epnum, reg & 0xf);
+ 		return -EAGAIN;
+ 	}
+-- 
+1.7.3.4
 
---------------090702000402000103020000--
