@@ -1,84 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965174Ab1GMLTd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 07:19:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45734 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964915Ab1GMLTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 07:19:32 -0400
-Date: Wed, 13 Jul 2011 13:19:28 +0200
-From: Jan Kara <jack@suse.cz>
-To: Hugh Dickins <hughd@google.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mel@csn.ul.ie>, Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 12/15] writeback: remove writeback_control.more_io
-Message-ID: <20110713111928.GA21787@quack.suse.cz>
-References: <20110607213236.634026193@intel.com>
- <20110607213854.888623315@intel.com>
- <alpine.LSU.2.00.1107111408060.13830@sister.anvils>
- <20110712062013.GA4654@localhost>
- <alpine.LSU.2.00.1107121207540.1752@sister.anvils>
- <alpine.LSU.2.00.1107122234460.3608@sister.anvils>
- <alpine.LSU.2.00.1107130350570.4184@sister.anvils>
+	id S965288Ab1GMLWU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 07:22:20 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:33944 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964915Ab1GMLWT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 07:22:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1107130350570.4184@sister.anvils>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4E1D6396.1070200@suse.cz>
+References: <alpine.DEB.2.01.1107040242180.9183@trent.utfs.org>
+	<1310470780-12330-1-git-send-email-mmarek@suse.cz>
+	<CAM_iQpWfSFPcvDJCDwS9ADCEvw-6A3wyUh+kkhgqHOi2Zx_eSg@mail.gmail.com>
+	<4E1D6396.1070200@suse.cz>
+Date: Wed, 13 Jul 2011 19:22:18 +0800
+Message-ID: <CAM_iQpUoLwar3wYUe-3i5tgSB4e9HF__QKSht2yxVYP_MmUqyQ@mail.gmail.com>
+Subject: Re: [PATCH] kbuild: Do not write to builddir in modules_install
+From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Christian Kujau <lists@nerdbynature.de>, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 13-07-11 03:57:40, Hugh Dickins wrote:
-> On Tue, 12 Jul 2011, Hugh Dickins wrote:
-> > On Tue, 12 Jul 2011, Hugh Dickins wrote:
-> > > On Mon, 11 Jul 2011, Wu Fengguang wrote:
-> > > > 
-> > > > It's relatively easy to confirm, by reusing the below trace event to
-> > > > show the inode (together with its state) being requeued.
-> > > > 
-> > > > If this is the root cause, it may equally be fixed by
-> > > > 
-> > > > -			requeue_io(inode, wb);
-> > > > +			redirty_tail(inode, wb);
-> > > > 
-> > > > which would be useful in case the bug is so deadly that it's no longer
-> > > > possible to do tracing.
-> > > 
-> > > I checked again this morning that I could reproduce it on two machines,
-> > > one went in a few minutes, the other within the hour.  Then I made that
-> > > patch changing the requeue_io to redirty_tail, and left home with them
-> > > running the test with the new kernel: we'll see at the end of the day
-> > > how they fared.
-> > 
-> > I think that fixes it.  The x86_64 is still running with that, but the
-> > ppc64 gave up fairly early, hitting freeze in __slab_free() instead.
-> > 
-> > I've now, I believe, reconstituted what ChristophL intended from the
-> > mm_types.h struct page patch he posted (which applied neither to mmotm,
-> > nor to Pekka's for-next, so far as I could tell: maybe cl did some
-> > intermediate tidying of some of the random indentation).  So now
-> > testing that with redirty_tail on ppc64: will report in 9 hours.
-> 
-> Same result as before.  The x86_64 is still going fine, but the ppc64
-> again seized up in __slab_free() after two and a half hours of load.
-> 
-> I think we should assume that your -requeue_io +redirty_tail is a good
-> fix for the writeback freeze (if you can reassure us, that it does not
-> risk postponing some writes indefinitely), and I move over to the other
-> thread to pursue the struct page __slab_free() freeze.
-  Well, I_FREEING or I_WILL_FREE inodes are written back by iput_final()
-and it is reclaim code that is responsible for eventually removing them. So
-writeback code can safely ignore them. I_NEW inodes should move out of this
-state when they are fully set up and in the writeback round following that,
-we will consider them for writeback. So I think the change really makes
-sense.
+On Wed, Jul 13, 2011 at 5:21 PM, Michal Marek <mmarek@suse.cz> wrote:
+> On 13.7.2011 03:05, Américo Wang wrote:
+>>
+>> On Tue, Jul 12, 2011 at 7:39 PM, Michal Marek<mmarek@suse.cz>  wrote:
+>>>
+>>> Let depmod.sh create a temporary directory in /tmp instead of writing to
+>>> the build directory as root. The mktemp utility should be available on
+>>> any recent system (and there is already scripts/gen_initramfs_list.sh
+>>> relying on it).
+>>>
+>>
+>> Hmm, why not use $objtree/.tmp_depmod?
+>
+> That's how it was done before and it's broken. make modules_install is
+> usually ran as root and there is no guarantee that root has write access to
+> the build directory (it can be on nfs).
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Hmm, this is reasonable. Then I am fine with this patch.
+
+Thanks for explanation!
