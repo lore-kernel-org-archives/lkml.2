@@ -1,157 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753566Ab1GMNWw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 09:22:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51430 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752244Ab1GMNWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 09:22:51 -0400
-Message-ID: <4E1D9C25.8080300@suse.cz>
-Date: Wed, 13 Jul 2011 15:22:45 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: Sam Ravnborg <sam@ravnborg.org>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Valdis.Kletnieks@vt.edu
-Subject: Re: [PATCH] kconfig: Only generate config_is_xxx for bool and tristate
- options
-References: <1305646532-29114-1-git-send-email-mmarek@suse.cz>	<20110517195310.GA17003@merkur.ravnborg.org> <BANLkTikmO7D3kUgU62d4_VC2ZPZCnSEqKA@mail.gmail.com>
-In-Reply-To: <BANLkTikmO7D3kUgU62d4_VC2ZPZCnSEqKA@mail.gmail.com>
-Content-Type: multipart/mixed;
- boundary="------------070700060301060108060305"
+	id S1753619Ab1GMNYZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 09:24:25 -0400
+Received: from DMZ-MAILSEC-SCANNER-6.MIT.EDU ([18.7.68.35]:51434 "EHLO
+	dmz-mailsec-scanner-6.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752723Ab1GMNYX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 09:24:23 -0400
+X-AuditID: 12074423-b7cb3ae000000a19-d5-4e1d9c80405c
+From: Andy Lutomirski <luto@MIT.EDU>
+To: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        John Stultz <johnstul@us.ibm.com>, Borislav Petkov <bp@amd64.org>,
+        Rakib Mullick <rakib.mullick@gmail.com>,
+        Andy Lutomirski <luto@MIT.EDU>
+Subject: [PATCH v3 0/8] x86-64 vDSO changes for 3.1
+Date: Wed, 13 Jul 2011 09:24:08 -0400
+Message-Id: <cover.1310563276.git.luto@mit.edu>
+X-Mailer: git-send-email 1.7.6
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHIsWRmVeSWpSXmKPExsUixCmqrdswR9bPoPk9m0XflaPsFhcbt7FY
+	tK6dz25xedccNostl5pZLTad+M1o8WPDY1YHdo/uR58YPW61/WH22DnrLrvHplWdbB7nrvUx
+	e3zeJBfAFsVlk5Kak1mWWqRvl8CVsWdtM1PBZtWKY63dTA2My2W6GDk4JARMJFbuN+li5AQy
+	xSQu3FvP1sXIxSEksI9R4nzPekYIZwOjxIVT26CcZ0wSa87dYANpYRNQkehY+oAJZJKIgJDE
+	0rt1IGFmgSeMEhP26oPYwgLGErue3mMBsVkEVCVWfXnCAlLOK6Av8aTRD2KxnMSRy8+ZJjDy
+	LGBkWMUom5JbpZubmJlTnJqsW5ycmJeXWqRrppebWaKXmlK6iREUVOwuyjsY/xxUOsQowMGo
+	xMNblCjjJ8SaWFZcmXuIUZKDSUmUV3W2rJ8QX1J+SmVGYnFGfFFpTmrxIUYJDmYlEd76BqAc
+	b0piZVVqUT5MSpqDRUmcN9f7v6+QQHpiSWp2ampBahFMVoaDQ0mCVxwYPUKCRanpqRVpmTkl
+	CGkmDk6Q4TxAw4VBaniLCxJzizPTIfKnGHU5Tp1ZcIRRiCUvPy9VSpz3M8h1AiBFGaV5cHNg
+	yeAVozjQW8K8/0CqeICJBG7SK6AlTEBL1lmBLSlJREhJNTDyJJo9NDRzmepcdXROvGjTTWeO
+	93tDM6TVNdp2tEmuCP+35RiDd8eBCWwN789vu8uQkyEoE+CcbsI99dF7KT6vlXeqm8/MmyY7
+	aXXbpxtz88X53onbW4h9M4xM0b+44kIs4+ywzle+3uZyM4RZEhNOu73bzWP12nztGt+9T3hN
+	/q7g5n0f+E6JpTgj0VCLuag4EQB2ObIJ4QIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------070700060301060108060305
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+This series applies to the x86/vdso branch of the -tip tree.
 
-On 18.5.2011 08:23, Arnaud Lacombe wrote:
-> Hi,
->
-> [added Valdis.Kletnieks@vt.edu to CC:]
->
-> On Tue, May 17, 2011 at 3:53 PM, Sam Ravnborg<sam@ravnborg.org>  wrote:
->> On Tue, May 17, 2011 at 05:35:32PM +0200, Michal Marek wrote:
->>> For strings and integers, the config_is_xxx macros are useless and
->>> sometimes misleading:
->>>
->>>    #define CONFIG_INITRAMFS_SOURCE ""
->>>    #define config_is_initramfs_source() 1
->>
->> I'm late with this comment....
->> Could we introduce "config_is_foo" using a syntax that
->> does not break grepability?
->>
->> Maybe a syntax like this?
->>
->>     #ifdef CONFIG_FOO
->>
->> and
->>
->>     if (KCONFIG_FOO())
->>
->> Grepping for the use of a symbol is a very typical thing,
->> so we should try to keep this.
->> And with the suggested syntax above I expect fixdep to
->> catch up both usage types.
->>
-> Actually, there is already an issue, on a much smaller scale, in the
-> current tree with NUMA_BUILD and COMPACTION_BUILD. The real way to fix
-> this would be to always defines CONFIG_FOO, its value being 1 or 0
-> depending on whether or not the symbol is selected. This is a
-> +35k/-35k change.
->
-> Also, I find KCONFIG_FOO() is too specific to be in the kernel source,
-> and redundant with CONFIG_FOO.
->
-> I've been playing a bit with the preprocessor, and reached that point:
->
-> #define EXPAND(x)       __ ## x
-> #define CONFIGURED(x)   \
->          ({  int __1 __maybe_unused = 1;         \
->              int __ ## x __maybe_unused = 0;     \
->              EXPAND(x); })
->
-> I am not specifically proud of that, use case would be:
->
-> extern func(void);
-> int fn()
-> {
->          if(CONFIGURED(CONFIG_FOO))
->                  func();
-> }
+The first patch cleans up the vsyscall emulation code.
 
-I finally got round to revisit this. Your approach inspired me to a much 
-simpler scheme: Instead of generating the config_is_xxx macros for 
-direct use in the code, name them __enabled_CONFIG_XXX or similar and 
-have a macro that expands given CONFIG_XXX symbol to the other form:
+After the vsyscall emulation patches, the only real executable code left
+in the vsyscall page is vread_tsc and vread_hpet.  That code is only
+called from the vDSO, so patches 2-6 move it into the vDSO.
 
-/*
-  * Usage: ENABLED(CONFIG_FOO)
-  * Please do not use the __enabled_CONFIG_FOO defines directly to not break
-  * grepability of the code.
-  */
-#define ENABLED(x) __enabled_ ## x
+vread_tsc() uses rdtsc_barrier(), which contains two alternatives.
+Patches 2 and 3 make alternative patching work in the vDSO.  (This has a
+slightly odd side effect that the vDSO image dumped from memory doesn't
+quite match the debug version anymore, but it's hard to imagine that
+causing problems.)
 
-plus a checkpatch.pl check so that people do not use the 
-__enabled_CONFIG_FOO macros in their code. git grep -w CONFIG_FOO 
-continues to work, fixdep continues to work, it works with -O0 because 
-it expands to a if(1) or if(0). Am I missing some obvious problem?
+Patch 4 fixes an annoyance I found while writing this code.  If you
+introduce an undefined symbol into the vDSO, you get an unhelpful error
+message.  ld is smart enough to give a nice error if you ask it to.
 
-Attached is my test program:
-$ gcc -Wall -O0 test.c
-$ ./a.out
-Foo1.0
-Foo1.1
-$ strings ./a.out | grep Foo
-Foo1.0
-Foo1.1
+Patch 5 cleans up the architecture-specific part of struct clocksource.
+IA64 had its own ifdefed code in there, and the supposedly generic vread
+pointer was only used by x86-64.  With the patch, each arch gets to set
+up its own private part of struct clocksource.
 
-Michal
+Patch 6 is the meat.  It moves vread_tsc and vread_hpet into the vDSO
+where they belong, and it's a net deletion of code because it removes a
+bunch of magic needed to make regular functions accessible through the
+vsyscall page.
 
---------------070700060301060108060305
-Content-Type: text/plain;
- name="test.c"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="test.c"
+With patches 1-6 applied, every single byte in the vsyscall
+page is some sort of trap instruction.
 
-#include <stdio.h>
+Patches 7 and 8 are optional.  Patch 7 changes IA64 to use the new arch
+gtod data.  It presumably should not go in through the x86 tree.  Patch
+8 adds some vDSO documentation and a reference vDSO parser for user code
+to use.  It's meant for projects that don't dynamically link to glibc
+(e.g. Go) but still want to call the vDSO.  Someone who knows more about
+ELF than I should take a look.
 
-#define CONFIG_FOO1 1
-#undef CONFIG_FOO2
-#define __enabled_CONFIG_FOO1 1
-#define __enabled_CONFIG_FOO2 0
+*** Note to IA64 people: I have not even compile-tested this on IA64. ***
 
-/*
- * Usage: ENABLED(CONFIG_FOO)
- * Please do not use the __enabled_CONFIG_FOO defines directly to not break
- * grepability of the code.
- */
-#define ENABLED(x) __enabled_ ## x
+Changes from v2:
+ - Make vsyscall_nr decoding prettier and add a missing local_irq_disable
+   in patch 1.
+ - Mark patch_vdso __init.
+ - Print a warning if patch_vdso does not find .altinstructions.
 
-int main(void)
-{
-#ifdef CONFIG_FOO1
-	puts("Foo1.0");
-#endif
-#ifdef CONFIG_FOO2
-	puts("Foo2.0");
-#endif
-	if (ENABLED(CONFIG_FOO1)) {
-		puts("Foo1.1");
-	}
-	if (ENABLED(CONFIG_FOO2)) {
-		puts("Foo2.1");
-	}
-	return 0;
-}
+Changes from v1:
+ - Tidy up vDSO alternative patching (thanks, Borislav).
+ - Fix really dumb bugs in the IA64 stuff.
+ - Add the cleanup patch and the reference vDSO parser.
+ - Split the main IA-64 patch out.
 
+Andy Lutomirski (8):
+  x86-64: Improve vsyscall emulation CS and RIP handling
+  x86: Make alternative instruction pointers relative
+  x86-64: Allow alternative patching in the vDSO
+  x86-64: Add --no-undefined to vDSO build
+  clocksource: Replace vread with generic arch data
+  x86-64: Move vread_tsc and vread_hpet into the vDSO
+  ia64: Replace clocksource.fsys_mmio with generic arch data
+  Document the vDSO and add a reference parser
 
---------------070700060301060108060305--
+ Documentation/ABI/stable/vdso          |   27 ++++
+ Documentation/vDSO/parse_vdso.c        |  256 ++++++++++++++++++++++++++++++++
+ Documentation/vDSO/vdso_test.c         |  112 ++++++++++++++
+ arch/ia64/include/asm/clocksource.h    |   12 ++
+ arch/ia64/kernel/cyclone.c             |    2 +-
+ arch/ia64/kernel/time.c                |    2 +-
+ arch/ia64/sn/kernel/sn2/timer.c        |    2 +-
+ arch/x86/include/asm/alternative-asm.h |    4 +-
+ arch/x86/include/asm/alternative.h     |    8 +-
+ arch/x86/include/asm/clocksource.h     |   20 +++
+ arch/x86/include/asm/cpufeature.h      |    8 +-
+ arch/x86/include/asm/tsc.h             |    4 -
+ arch/x86/include/asm/vgtod.h           |    2 +-
+ arch/x86/include/asm/vsyscall.h        |   16 --
+ arch/x86/kernel/Makefile               |    7 +-
+ arch/x86/kernel/alternative.c          |   23 ++--
+ arch/x86/kernel/hpet.c                 |    9 +-
+ arch/x86/kernel/tsc.c                  |    2 +-
+ arch/x86/kernel/vmlinux.lds.S          |    3 -
+ arch/x86/kernel/vread_tsc_64.c         |   36 -----
+ arch/x86/kernel/vsyscall_64.c          |   63 +++++---
+ arch/x86/lib/copy_page_64.S            |    9 +-
+ arch/x86/lib/memmove_64.S              |   11 +-
+ arch/x86/vdso/Makefile                 |    1 +
+ arch/x86/vdso/vclock_gettime.c         |   52 ++++++-
+ arch/x86/vdso/vma.c                    |   33 ++++
+ drivers/char/hpet.c                    |    2 +-
+ include/asm-generic/clocksource.h      |    4 +
+ include/linux/clocksource.h            |   13 +-
+ 29 files changed, 595 insertions(+), 148 deletions(-)
+ create mode 100644 Documentation/ABI/stable/vdso
+ create mode 100644 Documentation/vDSO/parse_vdso.c
+ create mode 100644 Documentation/vDSO/vdso_test.c
+ create mode 100644 arch/ia64/include/asm/clocksource.h
+ create mode 100644 arch/x86/include/asm/clocksource.h
+ delete mode 100644 arch/x86/kernel/vread_tsc_64.c
+ create mode 100644 include/asm-generic/clocksource.h
+
+-- 
+1.7.6
+
