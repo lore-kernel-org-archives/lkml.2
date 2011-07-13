@@ -1,93 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751621Ab1GMSSo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 14:18:44 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:32382 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750706Ab1GMSSn convert rfc822-to-8bit (ORCPT
+	id S1751999Ab1GMSXQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 14:23:16 -0400
+Received: from mail.cs.tu-berlin.de ([130.149.17.13]:51411 "EHLO
+	mail.cs.tu-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374Ab1GMSXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 14:18:43 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=XEuiqWpfEudrgaZd/Bdegb6nQ+y0wdBgeZmQa5XXROcXQ5aXdysz+D4Rcgadyz43q
-	vTh7Bx1HttVU8z97pZztQ==
+	Wed, 13 Jul 2011 14:23:15 -0400
+From: =?UTF-8?q?Jan=20H=2E=20Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Bianca Lutz <sowilo@cs.tu-berlin.de>,
+        =?UTF-8?q?Jan=20H=2E=20Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
+Subject: [PATCH 6/6] sched: Do not attempt to destroy uninitialized rt_bandwidth
+Date: Wed, 13 Jul 2011 20:13:36 +0200
+Message-Id: <1310580816-10861-7-git-send-email-schnhrr@cs.tu-berlin.de>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1310580816-10861-1-git-send-email-schnhrr@cs.tu-berlin.de>
+References: <1310580816-10861-1-git-send-email-schnhrr@cs.tu-berlin.de>
 MIME-Version: 1.0
-In-Reply-To: <20110713141129.GG9201@somewhere>
-References: <1306877298-31713-1-git-send-email-vnagarnaik@google.com>
- <1308681903-12840-1-git-send-email-vnagarnaik@google.com> <20110707233453.GE21115@somewhere>
- <CAJL_eku7ezDhSOaOxN4ACFas1rnX=uaV184ZK3-0fE60Rmwh8g@mail.gmail.com>
- <20110711155404.GB4109@somewhere.redhat.com> <CAL26m8+ca64BDrQUohxcZfUpZQgn7bNkup=Q92LaTmpvorm9fQ@mail.gmail.com>
- <20110712180859.GC9201@somewhere> <CAL26m8LsEwEEE1e4D9dWn2Gm5_cvtNXMRod4d2hsD=qHGG1Nig@mail.gmail.com>
- <20110713141129.GG9201@somewhere>
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Date: Wed, 13 Jul 2011 11:18:10 -0700
-Message-ID: <CAL26m8L8Zn3dpH2DfBMTnhZxLJ=-WFf-WYKYPUuyVaNFbocc9g@mail.gmail.com>
-Subject: Re: [PATCH v3] trace: Add x86 irq vector entry/exit tracepoints
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: David Sharp <dhsharp@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Michael Rubin <mrubin@google.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Jiaying Zhang <jiayingz@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 13, 2011 at 7:11 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> On Tue, Jul 12, 2011 at 03:08:48PM -0700, Vaibhav Nagarnaik wrote:
->> Breaking this patch up in different small ones makes sense. Can you
->> comment on this proposal for the following trace events?
->>
->> For tracepoints in generic IRQ handlers:
->> 1. trace_timer_vector - takes an enum for BROADCAST, HRTIMER, ONESHOT,
->> † †PERIODIC and NOHZ.
->
-> Have you read my previous email entirely?
->
-> Where I explained we shouldn't use that vector naming outside of low
-> level archs, and that those enums break tracing granularity?
->
+From: Bianca Lutz <sowilo@cs.tu-berlin.de>
 
-I was arguing for an enum for this since it is a single contained trace
-event for all timers. But you are right, since I'm breaking up the
-interrupts in different trace events already, timer interrupts should
-also have separate trace events for granularity.
+If a task group is to be created and alloc_fair_sched_group() fails,
+then the rt_bandwidth of the corresponding task group is not yet
+initialized. The caller, sched_create_group(), starts a clean up
+procedure which calls free_rt_sched_group() which unconditionally
+destroys the not yet initialized rt_bandwidth.
 
->> 2. trace_irq_work_vector - for IRQ_WORK_VECTOR
->
-> trace_irq_work_run() should be enough. And people can add
-> trace_irq_work_queue() if they need to one day.
->
->
->> 3. trace_reschedule_vector - for RESCHEDULE_IPI vector
->
-> trace_reschedule_interrupt()
->
->
->> 4. trace_call_function_vector - takes an enum for CALL_FUNCTION and
->> † †CALL_FUNCTION_SINGLE
->
-> Two seperate tracepoints should be better.
->
->
->> Another trace event for arch-specific IRQ vectors which don't have
->> generic event handlers:
->> 5. trace_platform_irq_vector - takes an enum, which is defined in
->> † †asm/irq.h for each platform. This is traced in arch-specific files
->> † †only.
->
-> Yep. For this perhaps an enum can make sense.
->
-> Thanks.
->
+This crashes or hangs the system in lock_hrtimer_base(): UP systems
+dereference a NULL pointer, while SMP systems loop endlessly on a
+condition that cannot become true.
 
-I will create and post the patch series soon.
+This patch simply avoids the destruction of rt_bandwidth when the
+initialization code path was not reached.
 
+(This was discovered by accident with a custom kernel modification.)
 
-Thanks
+Signed-off-by: Bianca Lutz <sowilo@cs.tu-berlin.de>
+Signed-off-by: Jan H. Sch√∂nherr <schnhrr@cs.tu-berlin.de>
+---
+ kernel/sched.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Vaibhav Nagarnaik
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 9a5f4c7..f29077c 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -8268,7 +8268,8 @@ static void free_rt_sched_group(struct task_group *tg)
+ {
+ 	int i;
+ 
+-	destroy_rt_bandwidth(&tg->rt_bandwidth);
++	if (tg->rt_se)
++		destroy_rt_bandwidth(&tg->rt_bandwidth);
+ 
+ 	for_each_possible_cpu(i) {
+ 		if (tg->rt_rq)
+-- 
+1.7.3.4
+
