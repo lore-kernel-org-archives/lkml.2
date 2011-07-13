@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965366Ab1GMRox (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 13:44:53 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:51994 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964805Ab1GMRow convert rfc822-to-8bit (ORCPT
+	id S965383Ab1GMRqX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 13:46:23 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:14122 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964816Ab1GMRqV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 13:44:52 -0400
+	Wed, 13 Jul 2011 13:46:21 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:sender:in-reply-to:references:from:
+	date:x-google-sender-auth:message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=tNMQe+7fnPiXmdOS5Gna/X5EAQGk3yKe76qzCxN1BZOjDf1m1whBDRA5aKpCBUAOZ
+	qQ7kToSLGyHs0Ofu7xqOQ==
 MIME-Version: 1.0
-In-Reply-To: <CAJfuBxwuVMGSaGmbT02LrwfufHXO_gA-POvr1e7TQ4LYCtkcrA@mail.gmail.com>
-References: <1309244992-2305-1-git-send-email-jim.cromie@gmail.com>
- <1310370416-6322-1-git-send-email-jim.cromie@gmail.com> <1310370416-6322-4-git-send-email-jim.cromie@gmail.com>
- <CAO+b5-pXKeQ8zk367M4FNG5r6vUm6dOVBcNRaoJr+4i=kOy35A@mail.gmail.com> <CAJfuBxwuVMGSaGmbT02LrwfufHXO_gA-POvr1e7TQ4LYCtkcrA@mail.gmail.com>
-From: Bart Van Assche <bvanassche@acm.org>
-Date: Wed, 13 Jul 2011 19:44:31 +0200
-X-Google-Sender-Auth: El-tvKGNzxKeUJhBnUKAPG5_51s
-Message-ID: <CAO+b5-rKYoHnvi49pxoG1YoAumfSB2gQYwBvFn3dT0FPy2OmPg@mail.gmail.com>
-Subject: Re: [PATCH 03/21] dynamic_debug: process multiple commands on a line
-To: Jim Cromie <jim.cromie@gmail.com>
-Cc: jbaron@redhat.com, linux-kernel@vger.kernel.org, joe@perches.com,
-        gregkh@suse.de, gnb@fmeh.org
+In-Reply-To: <30671.1310554369@neuling.org>
+References: <1310505348-20163-1-git-send-email-sonnyrao@chromium.org>
+ <29926.1310553581@neuling.org> <30671.1310554369@neuling.org>
+From: Sonny Rao <sonnyrao@chromium.org>
+Date: Wed, 13 Jul 2011 10:45:59 -0700
+X-Google-Sender-Auth: RJe9khHUCoLWYfLXLYOP5QejlZU
+Message-ID: <CAPz6YkVz=S2YcULXTPSvE+PEnDBif1wRRRGiGPeGBEuy=YUUuQ@mail.gmail.com>
+Subject: Re: [PATCH] [RFC] perf: robustify proc and debugfs file recording
+To: Michael Neuling <mikey@neuling.org>
+Cc: acme@redhat.com, anton@samba.org, rostedt@goodmis.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 13, 2011 at 9:25 AM, Jim Cromie <jim.cromie@gmail.com> wrote:
-> On Mon, Jul 11, 2011 at 11:54 PM, Bart Van Assche <bvanassche@acm.org> wrote:
-> > On Mon, Jul 11, 2011 at 9:46 AM, Jim Cromie <jim.cromie@gmail.com> wrote:
-> >> Process multiple commands per line, separated by ';'.  All commands are
-> >> processed, independent of errors, allowing individual commands to fail,
-> >> for example when a module is not installed.  Last error code is returned.
-> >> With this, extensive command sets can be given on the boot-line.
-> >
-> > Does the above mean that semicolon is considered a valid separator but
-> > newline not ?
+On Wed, Jul 13, 2011 at 3:52 AM, Michael Neuling <mikey@neuling.org> wrote:
+> In message <29926.1310553581@neuling.org> you wrote:
+>> Sonny,
+>>
+>>
+>> > While attempting to create a timechart of boot up I found
+>> > perf didn't tolerate modules being loaded/unloaded.  This patch
+>> > fixes this by reading the file once and then writing the size
+>> > read at the correct point in the file.  It also simplifies the
+>> > code somewhat.
+>>
+>> I'm getting a bunch of unused variables warnings when I compile this.
+>> Care to clean them up?
+>>
+>>     CC util/trace-event-info.o
+>> util/trace-event-info.c: In function =E2=80=98read_header_files=E2=80=99:
+>> util/trace-event-info.c:221:27: error: unused variable =E2=80=98check_size=
+>> =E2=80=99 [-Werror=3Dunused-variable]
+>> util/trace-event-info.c:221:21: error: unused variable =E2=80=98size=E2=80=
+>> =99 [-Werror=3Dunused-variable]
+>> util/trace-event-info.c: In function =E2=80=98copy_event_system=E2=80=99:
+>> util/trace-event-info.c:255:27: error: unused variable =E2=80=98check_size=
+>> =E2=80=99 [-Werror=3Dunused-variable]
+>> util/trace-event-info.c:255:21: error: unused variable =E2=80=98size=E2=80=
+>> =99 [-Werror=3Dunused-variable]
+>> util/trace-event-info.c: In function =E2=80=98read_proc_kallsyms=E2=80=99:
+>> util/trace-event-info.c:377:21: error: unused variable =E2=80=98check_size=
+>> =E2=80=99 [-Werror=3Dunused-variable]
+>> util/trace-event-info.c: In function =E2=80=98read_ftrace_printk=E2=80=99:
+>> util/trace-event-info.c:394:21: error: unused variable =E2=80=98check_size=
+>> =E2=80=99 [-Werror=3Dunused-variable]
+>> cc1: all warnings being treated as errors
 >
-> no, your printf example still works.
-> Note that it actually issues 2 writes to the control-file.
+> Actually, here's an updated patch to fix these..
 >
-> root@voyage:~# echo 1 > /sys/module/dynamic_debug/parameters/verbose
-> trol voyage:~# printf "module foo +ap\n module bar +ap" >
-> /dbg/dynamic_debug/cont
+> FYI perf record/annotate/report works fine on my powerpc box here with
+> this.  I don't have modules handy so I've not tested that aspect.
 >
-> FWIW, the \n approach doesnt help on the boot-line;
-> on mainline, the following will break the facility -
-> /dbg/dynamic_debug will not get created.
->
-> Kernel command line: ...  ddebug_query="module pc8736x_gpio +p \n
-> module nsc_gpio +p "
+> Mikey
 
-Just as a note, I do not expect that anyone will pass a string
-containing an embedded newline via the kernel command line but I do
-expect that people will use cat or printf to send multiple queries at
-once to /sys/kernel/debug/dynamic_debug/control.
+Thanks for the testing and the cleanup!  You don't really need to test
+the modules thing
+I just wanted to make sure it worked period on big-endian.
 
-Bart.
+Sonny
