@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755255Ab1GMOcX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 10:32:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54808 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754642Ab1GMObc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754747Ab1GMObc (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 13 Jul 2011 10:31:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54797 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754320Ab1GMObb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 10:31:31 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Linux-MM <linux-mm@kvack.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, XFS <xfs@oss.sgi.com>,
@@ -15,9 +15,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>, XFS <xfs@oss.sgi.com>,
         Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
         Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 2/5] mm: vmscan: Do not writeback filesystem pages in kswapd except in high priority
-Date: Wed, 13 Jul 2011 15:31:24 +0100
-Message-Id: <1310567487-15367-3-git-send-email-mgorman@suse.de>
+Subject: [PATCH 1/5] mm: vmscan: Do not writeback filesystem pages in direct reclaim
+Date: Wed, 13 Jul 2011 15:31:23 +0100
+Message-Id: <1310567487-15367-2-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1310567487-15367-1-git-send-email-mgorman@suse.de>
 References: <1310567487-15367-1-git-send-email-mgorman@suse.de>
@@ -25,66 +25,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is preferable that no dirty pages are dispatched for cleaning from
-the page reclaim path. At normal priorities, this patch prevents kswapd
-writing pages.
+From: Mel Gorman <mel@csn.ul.ie>
 
-However, page reclaim does have a requirement that pages be freed
-in a particular zone. If it is failing to make sufficient progress
-(reclaiming < SWAP_CLUSTER_MAX at any priority priority), the priority
-is raised to scan more pages. A priority of DEF_PRIORITY - 3 is
-considered to tbe the point where kswapd is getting into trouble
-reclaiming pages. If this priority is reached, kswapd will dispatch
-pages for writing.
+When kswapd is failing to keep zones above the min watermark, a process
+will enter direct reclaim in the same manner kswapd does. If a dirty
+page is encountered during the scan, this page is written to backing
+storage using mapping->writepage.
+
+This causes two problems. First, it can result in very deep call
+stacks, particularly if the target storage or filesystem are complex.
+Some filesystems ignore write requests from direct reclaim as a result.
+The second is that a single-page flush is inefficient in terms of IO.
+While there is an expectation that the elevator will merge requests,
+this does not always happen. Quoting Christoph Hellwig;
+
+	The elevator has a relatively small window it can operate on,
+	and can never fix up a bad large scale writeback pattern.
+
+This patch prevents direct reclaim writing back filesystem pages by
+checking if current is kswapd. Anonymous pages are still written to
+swap as there is not the equivalent of a flusher thread for anonymos
+pages. If the dirty pages cannot be written back, they are placed
+back on the LRU lists.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/vmscan.c |   13 ++++++++-----
- 1 files changed, 8 insertions(+), 5 deletions(-)
+ include/linux/mmzone.h |    1 +
+ mm/vmscan.c            |    9 +++++++++
+ mm/vmstat.c            |    1 +
+ 3 files changed, 11 insertions(+), 0 deletions(-)
 
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 9f7c3eb..b70a0c0 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -100,6 +100,7 @@ enum zone_stat_item {
+ 	NR_UNSTABLE_NFS,	/* NFS unstable pages */
+ 	NR_BOUNCE,
+ 	NR_VMSCAN_WRITE,
++	NR_VMSCAN_WRITE_SKIP,
+ 	NR_WRITEBACK_TEMP,	/* Writeback using temporary buffers */
+ 	NR_ISOLATED_ANON,	/* Temporary isolated pages from anon lru */
+ 	NR_ISOLATED_FILE,	/* Temporary isolated pages from file lru */
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 2d3e5b6..e272951 100644
+index 4f49535..2d3e5b6 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -719,7 +719,8 @@ static noinline_for_stack void free_page_list(struct list_head *free_pages)
-  */
- static unsigned long shrink_page_list(struct list_head *page_list,
- 				      struct zone *zone,
--				      struct scan_control *sc)
-+				      struct scan_control *sc,
-+				      int priority)
- {
- 	LIST_HEAD(ret_pages);
- 	LIST_HEAD(free_pages);
-@@ -827,9 +828,11 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+@@ -825,6 +825,15 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 		if (PageDirty(page)) {
+ 			nr_dirty++;
  
- 			/*
- 			 * Only kswapd can writeback filesystem pages to
--			 * avoid risk of stack overflow
-+			 * avoid risk of stack overflow but do not writeback
-+			 * unless under significant pressure.
- 			 */
--			if (page_is_file_cache(page) && !current_is_kswapd()) {
-+			if (page_is_file_cache(page) &&
-+					(!current_is_kswapd() || priority >= DEF_PRIORITY - 2)) {
- 				inc_zone_page_state(page, NR_VMSCAN_WRITE_SKIP);
++			/*
++			 * Only kswapd can writeback filesystem pages to
++			 * avoid risk of stack overflow
++			 */
++			if (page_is_file_cache(page) && !current_is_kswapd()) {
++				inc_zone_page_state(page, NR_VMSCAN_WRITE_SKIP);
++				goto keep_locked;
++			}
++
+ 			if (references == PAGEREF_RECLAIM_CLEAN)
  				goto keep_locked;
- 			}
-@@ -1465,12 +1468,12 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
- 
- 	spin_unlock_irq(&zone->lru_lock);
- 
--	nr_reclaimed = shrink_page_list(&page_list, zone, sc);
-+	nr_reclaimed = shrink_page_list(&page_list, zone, sc, priority);
- 
- 	/* Check if we should syncronously wait for writeback */
- 	if (should_reclaim_stall(nr_taken, nr_reclaimed, priority, sc)) {
- 		set_reclaim_mode(priority, sc, true);
--		nr_reclaimed += shrink_page_list(&page_list, zone, sc);
-+		nr_reclaimed += shrink_page_list(&page_list, zone, sc, priority);
- 	}
- 
- 	local_irq_disable();
+ 			if (!may_enter_fs)
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 20c18b7..fd109f3 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -702,6 +702,7 @@ const char * const vmstat_text[] = {
+ 	"nr_unstable",
+ 	"nr_bounce",
+ 	"nr_vmscan_write",
++	"nr_vmscan_write_skip",
+ 	"nr_writeback_temp",
+ 	"nr_isolated_anon",
+ 	"nr_isolated_file",
 -- 
 1.7.3.4
 
