@@ -1,95 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751360Ab1GMTvh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 15:51:37 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:44963 "EHLO smtp.gentoo.org"
+	id S1751103Ab1GMTzU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 15:55:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1595 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750810Ab1GMTvg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 15:51:36 -0400
-Message-ID: <4E1DF736.9020908@gentoo.org>
-Date: Wed, 13 Jul 2011 22:51:18 +0300
-From: Stratos Psomadakis <psomas@gentoo.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110626 Icedove/3.1.11
+	id S1750964Ab1GMTzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 15:55:19 -0400
+Message-ID: <4E1DF827.9050103@redhat.com>
+Date: Wed, 13 Jul 2011 15:55:19 -0400
+From: William Cohen <wcohen@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Red Hat/3.1.11-2.el6_1 Thunderbird/3.1.11
 MIME-Version: 1.0
-To: lkml <linux-kernel@vger.kernel.org>
-CC: Chris Wright <chrisw@sous-sol.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-        David Woodhouse <David.Woodhouse@intel.com>, kernel@gentoo.org
-Subject: Re: -stable commit 87cc4d1e (bisected) causes system freeze
-References: <CAAdZ7YhU=ETCYPhUq-3tB6tgRZ5ZA1fRKuyXT5aZMxU0-0gdFQ@mail.gmail.com> <4E1DEA24.3010109@gentoo.org>
-In-Reply-To: <4E1DEA24.3010109@gentoo.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigF02DCA4EFDA0BF4D1EEE1622"
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: Is  perf sample/hw_breakpoint/data_breakpoint.ko suppose to work
+ on guest vm?
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigF02DCA4EFDA0BF4D1EEE1622
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+I was experimenting with data_breakpoint.ko in the kernel
+samples/hw_breakpoint directory. The example works on the raw
+hardware, but does not appear to work on the guest vm. The hardware
+breakpoint on guest vm registers without an error, but there are never
+any breakpoints encountered on the guest vm.
 
-On 13/07/2011 09:55 =CE=BC=CE=BC, Stratos Psomadakis wrote:
-> On 13/07/2011 05:28 =CE=BC=CE=BC, Marcus Becker wrote:
->> Hi,
->>
->> With the upgrade to 2.6.39.2, I cannot copy more than ~1GB of data
->> over the network before my input devices lock up.
->> Example:
->> use scp on tty1 to copy a folder or file larger than 3GB over my
->> gigabit network and after ~1min the keyboard stops responding.
->> use cp on tty1 with an nfs-3 share mounted over the same network and
->> try to copy the same file, same happens
->>
->> I can hit ctrl+c for about 20-30 sec and eventually get an interrupt
->> that stops the copying, then the input devices slowly gain control
->> again. If I do the same on X, there is no chance to get in between and=
+Hardware is a Quad-Core AMD Opteron(tm) Processor 2350 running an
+updated version of Fedora 15 x86-64 and linux-3.0.0-rc7+ kernel, and
+qemu-0.14.0-7.1.fc15.x86_64.  The guest vm on the machine is also
+Fedora 15 x86-64 and linux-3.0.0-rc7+ kernel.
 
->> I have to use SysRq to reboot.
->>
->> In our bug report at https://bugs.gentoo.org/show_bug.cgi?id=3D373109
->> We did a bisect between 2.6.39.1 and 2.6.39.2 and found the following
->> patch is causing this problem:
->>
->> commit 87cc4d1e3e05af38c7c51323a3d86fe2572ab033
->> Author: Chris Wright <chrisw@sous-sol.org>
->> Date:   Sat May 28 13:15:04 2011 -0500
->>
->>     intel-iommu: Dont cache iova above 32bit
->>
->> I will also attach dmesg, current kernel config, and my bisect log (I
->> put a uname -a into the log after each bisect) plus git bisect log
->>
->> Please let me know if you need more information.
->>
->> Thanks,
->>
->> Marcus
-> CC'ed the people who signed-off the patch.
->
-Bug #39312 [1] at b.k.o
+On the host I run load the hw_breakpoint.ko module with "insmod
+hw_breakpoint.ko" I get back traces as expected like the following:
 
-[1] https://bugzilla.kernel.org/show_bug.cgi?id=3D39312
+Jul 13 14:20:24 dhcp231-201 kernel: [ 1839.715091] Dump stack from sample_hbp_handler
+Jul 13 14:20:25 dhcp231-201 kernel: [ 1840.786672] pid_max value is changed
+Jul 13 14:20:25 dhcp231-201 kernel: [ 1840.786686] Pid: 17372, comm: su Not tainted 3.0.0-rc7+ #1
+Jul 13 14:20:25 dhcp231-201 kernel: [ 1840.786694] Call Trace:
+Jul 13 14:20:25 dhcp231-201 kernel: [ 1840.786700]  <#DB>  [<ffffffffa0475023>] sample_hbp_handler+0x23/0x34 [data_breakpoint]
+Jul 13 14:20:25 dhcp231-201 kernel: [ 1840.786734]  [<ffffffff810e4e24>] __perf_event_overflow+0x118/0x1b9
+Jul 13 14:20:25 dhcp231-201 kernel: [ 1840.786748]  [<ffffffff810885b6>] ? __l
+...
 
---=20
-Stratos Psomadakis
-<psomas@gentoo.org>
+When I do the same on the guest vm I never see any backtraces due to
+the data location being read or written.  The guest vm doesn't report
+that hardware breakpoints are unavailable. There just doesn't appear to
+be any hits of the hardware breakpoint when used within the guest
+vm. All the output from the hw_breakpoint.ko module for the guest vm is:
+
+Jul 13 15:49:19 f15-x86-64 kernel: [ 1701.968294] HW Breakpoint for pid_max write installed
+Jul 13 15:49:51 f15-x86-64 kernel: [ 1733.100810] HW Breakpoint for pid_max write uninstalled
 
 
+If you don't have the sample modules available, there is a similar test
+using the perf command. On raw machine:
 
---------------enigF02DCA4EFDA0BF4D1EEE1622
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+# more /proc/kallsyms |grep pid_max$
+ffffffff81a264e8 D pid_max
+# sudo perf stat -a --event=mem:0xffffffff81a264e8 bash
+...
+# exit
+exit
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+ Performance counter stats for 'bash':
 
-iEYEARECAAYFAk4d9z8ACgkQid1lVeNDMmDE+ACgp0ZVwHVLetF7KLqBD4L1VdHv
-vpgAoLlTSeSuUXwog3vmy78k3pvLzPp0
-=E0DT
------END PGP SIGNATURE-----
+                18 unknown                 
 
---------------enigF02DCA4EFDA0BF4D1EEE1622--
+        7.141821652  seconds time elapsed
+
+
+On guest vm never get any breakpoint hits:
+#  more /proc/kallsyms |grep pid_max$
+ffffffff81a264e8 D pid_max
+# perf stat -a --event=mem:0xffffffff81a264e8 bash
+...
+# exit
+exit
+
+ Performance counter stats for 'bash':
+
+                 0 unknown                 
+
+       34.924628839  seconds time elapsed
+
+Any thoughts why hardware breakpoints don't work on guest vm?
+
+-Will
