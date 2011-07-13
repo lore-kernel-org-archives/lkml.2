@@ -1,40 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965041Ab1GMHvh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 03:51:37 -0400
-Received: from tundra.namei.org ([65.99.196.166]:53292 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965002Ab1GMHvg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 03:51:36 -0400
-Date: Wed, 13 Jul 2011 17:51:35 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-cc: Stefan Berger <stefanb@linux.vnet.ibm.com>,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Please pull TPM fixes
-In-Reply-To: <4E1D0D6F.5040703@linux.vnet.ibm.com>
-Message-ID: <alpine.LRH.2.00.1107131750400.10753@tundra.namei.org>
-References: <4E1D0D6F.5040703@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S965034Ab1GMHzM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 03:55:12 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:65065 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758677Ab1GMHzK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 03:55:10 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <4E1B5A1E.4060604@gmail.com>
+References: <CANudz+sqkachOT7r9=-rc98nCEO_QOCx7KiBi5=NWaj5exmEPA@mail.gmail.com>
+	<CANudz+vxY_0NY2veJ9Wvr08x_z3e20m=g7ZL4bZDi=-vaOF7dQ@mail.gmail.com>
+	<4E1B5A1E.4060604@gmail.com>
+Date: Wed, 13 Jul 2011 15:55:09 +0800
+Message-ID: <CANudz+skU6AyPAgAJWLsoiY6DKKeYtWr2Ts3NJd_+AiGRXd+SA@mail.gmail.com>
+Subject: Re: how to find a task through name faster?
+From: loody <miloody@gmail.com>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Jul 2011, Rajiv Andrade wrote:
+hi:
 
-> Hi James,
-> 
-> Please pull this set of TPM fixes since commit 97fb35e413f256ded07b88c73b3d932ec31ea84e
-> 
->   TOMOYO: Enable conditional ACL. (2011-07-11 11:05:34 +1000)
-> 
-> that are available in the git repository at:
->   git://git.kernel.org/pub/scm/linux/kernel/git/srajiv/tpm-2.6.git for-james
+2011/7/12 Jiri Slaby <jirislaby@gmail.com>:
+> On 07/11/2011 06:52 PM, loody wrote:
+>> hi all:
+>> I found a way to find a task I need by name, test,  as below:
+>> for_each_process(task) {
+>>     if(strcmp(task->comm, "test")
+>>         printk(“%s[%d]\n”, task->comm, task->pid);
+>> }
+>>
+>> But it is time-consuming to do so if I periodically want to know
+>> whether "test" exist or not.
+>> is there better way to do so?
+>
+> It depends on what you are trying to achieve. Maybe process accounting
+> is what you want?
+Would you mind to explain what is "process accounting"?
+I ask this question cause I need to do something in my kernel driver
+when a thread starting running.
 
-Applied, thanks.
+is there any rule to assign a pid before starting a thread?
+if there is a rule or range, such 100 ~200 for A type, 200~300 for B
+type, I can focus on specific type of thread in that range instead of
+searching everyone.
 
 -- 
-James Morris
-<jmorris@namei.org>
+Regards,
