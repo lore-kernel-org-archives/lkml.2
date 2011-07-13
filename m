@@ -1,105 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149Ab1GMVZf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 17:25:35 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:32860 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752067Ab1GMVZd (ORCPT
+	id S1752186Ab1GMV2l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 17:28:41 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:52557 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751818Ab1GMV2k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 17:25:33 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=hPQXmps4XfQMhHai1+FgYYfrTp+6K2PeghYyMdRj0GFlpYXe2LajuBHONhYSprAEXKbwPBgTJ6rZYAx7OUz2k9hXzdJ8OIfN2zK5DXUrAaDh0UIOVHzR8Wg6anDk1M5R;
-Date: Wed, 13 Jul 2011 14:11:05 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH 1/9] stringify: add HEX_STRING()
-Message-Id: <20110713141105.e5a3b00e.rdunlap@xenotime.net>
-In-Reply-To: <4E1E08A9.4030807@infradead.org>
-References: <20110710125109.c72f9c2d.rdunlap@xenotime.net>
-	<4E1E08A9.4030807@infradead.org>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Wed, 13 Jul 2011 17:28:40 -0400
+Message-ID: <4E1E0E04.8030200@suse.cz>
+Date: Wed, 13 Jul 2011 23:28:36 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
+MIME-Version: 1.0
+To: Greg KH <gregkh@suse.de>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net,
+        Joe Perches <joe@perches.com>
+Subject: Re: Linux 2.6.32.43
+References: <20110713034559.GA16150@kroah.com> <4E1E0B40.1030905@suse.cz> <4E1E0C59.1030100@suse.cz>
+In-Reply-To: <4E1E0C59.1030100@suse.cz>
+X-Enigmail-Version: 1.2pre
+Content-Type: multipart/mixed;
+ boundary="------------090702000402000103020000"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Jul 2011 18:05:45 -0300 Mauro Carvalho Chehab wrote:
+This is a multi-part message in MIME format.
+--------------090702000402000103020000
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-> Em 10-07-2011 16:51, Randy Dunlap escreveu:
-> > From: Randy Dunlap <rdunlap@xenotime.net>
-> > 
-> > Add HEX_STRING(value) to stringify.h so that drivers can
-> > convert kconfig hex values (without leading "0x") to useful
-> > hex constants.
-> > 
-> > Several drivers/media/radio/ drivers need this.  I haven't
-> > checked if any other drivers need to do this.
-> > 
-> > Alternatively, kconfig could produce hex config symbols with
-> > leading "0x".
-> 
-> Hi Randy,
-> 
-> After applying patch 1/9 and 2/9 over 3.0-rc7+media patches, I'm
-> now getting this error:
-> 
-> drivers/media/radio/radio-aimslab.c:52:1: error: invalid suffix "x20f" on integer constant
+Cced Joe.
 
-Hi Mauro,
-
-I built all of these drivers with my patches applied,
-but I'll see if I can find where this error is coming from.
-
-Thanks for checking & letting me know.
-
-
-> $ grep 20f .config
-> CONFIG_RADIO_RTRACK_PORT=20f
+On 07/13/2011 11:21 PM, Jiri Slaby wrote:
+> On 07/13/2011 11:16 PM, Jiri Slaby wrote:
+>> On 07/13/2011 05:45 AM, Greg KH wrote:
+>>> Joe Perches (2):
+>>>       bug.h: Add WARN_RATELIMIT
+>>>       net: filter: Use WARN_RATELIMIT
+>>
+>> Hi, this causes a build failure on PPC with minimalistic config (PS3) [1]:
+>> net/core/filter.c: In function 'sk_run_filter':
+>> net/core/filter.c:297: error: implicit declaration of function
+>> 'WARN_RATELIMIT'
+>>
+>> net/core/filter.c should include linux/bug.h (or linux/kernel.h).
 > 
-> $ gcc --version
-> gcc (GCC) 4.4.5 20110214 (Red Hat 4.4.5-6)
-> 
-> Before this patch, this were working (or, at least, weren't producing
-> any error).
-> 
-> Perhaps the breakage on your compilation happened due to another
-> patch at the tree? If so, the better would be to apply this patch
-> series together with the ones that caused the breakage, to avoid
-> bisect troubles.
-> 
-> > 
-> > Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-> > ---
-> >  include/linux/stringify.h |    7 +++++++
-> >  1 file changed, 7 insertions(+)
-> > 
-> > NOTE: The other 8 patches are on lkml and linux-media mailing lists.
-> > 
-> > --- linux-next-20110707.orig/include/linux/stringify.h
-> > +++ linux-next-20110707/include/linux/stringify.h
-> > @@ -9,4 +9,11 @@
-> >  #define __stringify_1(x...)	#x
-> >  #define __stringify(x...)	__stringify_1(x)
-> >  
-> > +/*
-> > + * HEX_STRING(value) is useful for CONFIG_ values that are in hex,
-> > + * but kconfig does not put a leading "0x" on them.
-> > + */
-> > +#define HEXSTRINGVALUE(h, value)	h##value
-> > +#define HEX_STRING(value)		HEXSTRINGVALUE(0x, value)
-> > +
-> >  #endif	/* !__LINUX_STRINGIFY_H */
-> 
-> --
+> Ah, no, PS3 doesn't have CONFIG_BUG set.
 
+A fix attached. Upstream doesn't need it. There it is all in
+linux/ratelimit.h
 
+>> [1]
+>> http://gitorious.org/opensuse/kernel-source/blobs/SLE11-SP1/config/ppc/ps3
+>>
+>> regards,
+-- 
+js
+suse labs
+
+--------------090702000402000103020000
+Content-Type: text/x-patch;
+ name="ppc-fix-net-core-build.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="ppc-fix-net-core-build.patch"
+
+From: Jiri Slaby <jslaby@suse.cz>
+Subject: PPC: fix net core build
+Patch-mainline: not yet
+
+After "net: filter: Use WARN_RATELIMIT" was applied as a part of
+patches.kernel.org/patch-2.6.32.42-43 we are choking at:
+net/core/filter.c: In function 'sk_run_filter':
+net/core/filter.c:297: error: implicit declaration of function 'WARN_RATELIMIT'
+on configs without CONFIG_BUG.
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ include/asm-generic/bug.h |    7 +++++++
+ 1 file changed, 7 insertions(+)
+
+--- a/include/asm-generic/bug.h
++++ b/include/asm-generic/bug.h
+@@ -126,6 +126,13 @@ extern void warn_slowpath_null(const cha
+ })
+ #endif
+ 
++#ifndef WARN_RATELIMIT
++#define WARN_RATELIMIT(condition, format...) ({				\
++	int __ret_warn_on = !!(condition);				\
++	unlikely(__ret_warn_on);					\
++})
++#endif
++
+ #endif
+ 
+ #define WARN_ON_ONCE(condition)	({				\
+
+--------------090702000402000103020000--
