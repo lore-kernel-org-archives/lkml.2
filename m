@@ -1,69 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752247Ab1GMVrz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 17:47:55 -0400
-Received: from mga02.intel.com ([134.134.136.20]:35781 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751623Ab1GMVrx convert rfc822-to-8bit (ORCPT
+	id S1752243Ab1GMVtv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 17:49:51 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59453 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751623Ab1GMVtu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 17:47:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,527,1304319600"; 
-   d="scan'208";a="27371340"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: "Yu, Fenghua" <fenghua.yu@intel.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 13 Jul 2011 14:47:51 -0700
-Subject: RE: ia64: replace old cpumask functions with new one
-Thread-Topic: ia64: replace old cpumask functions with new one
-Thread-Index: AcxAbYcj5p8lhZMbRmScEBOqbJ/xOQBNyi0g
-Message-ID: <987664A83D2D224EAE907B061CE93D5301E9C9F80E@orsmsx505.amr.corp.intel.com>
-References: <4E031B97.2010609@jp.fujitsu.com>
- <CA+8MBbLg4jBmaYkVW13WReNm8nyP1p0k3CPN=pQmvwPfRKyeQA@mail.gmail.com>
- <4E1C055C.1030103@jp.fujitsu.com>
-In-Reply-To: <4E1C055C.1030103@jp.fujitsu.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 13 Jul 2011 17:49:50 -0400
 MIME-Version: 1.0
+In-Reply-To: <20110710125109.c72f9c2d.rdunlap@xenotime.net>
+References: <20110710125109.c72f9c2d.rdunlap@xenotime.net>
+Date: Wed, 13 Jul 2011 17:49:48 -0400
+Message-ID: <CACqU3MWBb4J8rmaRv23=-_=GXppGSUdqmOqeXoqWi4ZJ7ZYewg@mail.gmail.com>
+Subject: Re: [PATCH 1/9] stringify: add HEX_STRING()
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org,
+        linux-media@vger.kernel.org, mchehab@infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> But ummm.. I can't understand the author expect which effect by this volatile.
-> If I am correct, its volatile has no effect. we can simply remove it.
+Hi,
 
-It may be a legacy from when cpumask was a simple integer type. The
-boot cpu wakes up each "AP" cpu in turn - and spins looking at
-cpu_callin_mask waiting to see if the cpu has really woken up,
-since the AP cpu will set its own bit in this mask when it begins
-execution.
+On Sun, Jul 10, 2011 at 3:51 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> From: Randy Dunlap <rdunlap@xenotime.net>
+>
+> Add HEX_STRING(value) to stringify.h so that drivers can
+> convert kconfig hex values (without leading "0x") to useful
+> hex constants.
+>
+> Several drivers/media/radio/ drivers need this.  I haven't
+> checked if any other drivers need to do this.
+>
+> Alternatively, kconfig could produce hex config symbols with
+> leading "0x".
+>
+Actually, I used to have a patch to make hex value have a mandatory
+"0x" prefix, in the Kconfig. I even fixed all the issue in the tree,
+it never make it to the tree (not sure why). Here's the relevant
+thread:
 
-Making the original integer mask a volatile was a way to make
-sure that the compiler did not optimize away the re-read of
-this variable in the loop.
+https://patchwork.kernel.org/patch/380591/
+https://patchwork.kernel.org/patch/380621/
+https://patchwork.kernel.org/patch/380601/
 
-When NR_CPUS is small enough - we still use a simple
-integer for cpumask type - don't we? So if you remove
-the volatile, look very carefully at this loop:
+ - Arnaud
 
-        for (timeout = 0; timeout < 100000; timeout++) {
-                if (cpu_isset(cpu, cpu_callin_map))
-                        break;  /* It has booted */
-                udelay(100);
-        }
+> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+> ---
+>  include/linux/stringify.h |    7 +++++++
+>  1 file changed, 7 insertions(+)
+>
+> NOTE: The other 8 patches are on lkml and linux-media mailing lists.
+>
+> --- linux-next-20110707.orig/include/linux/stringify.h
+> +++ linux-next-20110707/include/linux/stringify.h
+> @@ -9,4 +9,11 @@
+>  #define __stringify_1(x...)    #x
+>  #define __stringify(x...)      __stringify_1(x)
+>
+> +/*
+> + * HEX_STRING(value) is useful for CONFIG_ values that are in hex,
+> + * but kconfig does not put a leading "0x" on them.
+> + */
+> +#define HEXSTRINGVALUE(h, value)       h##value
+> +#define HEX_STRING(value)              HEXSTRINGVALUE(0x, value)
+> +
+that seems hackish...
 
-to make sure that the cpu_isset() check really does look
-at cpu_callin_map every time (and not at some cached in a
-register copy of it). Booting would become painfully slow
-if we get stuck for 10 seconds per cpu just here.
-
--Tony
-
-
+>  #endif /* !__LINUX_STRINGIFY_H */
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
