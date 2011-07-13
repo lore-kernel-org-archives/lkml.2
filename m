@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964918Ab1GMFOu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 01:14:50 -0400
+	id S964973Ab1GMFPW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 01:15:22 -0400
 Received: from mga09.intel.com ([134.134.136.24]:9791 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964896Ab1GMFOr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 01:14:47 -0400
+	id S964954Ab1GMFPA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 01:15:00 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,523,1304319600"; 
-   d="scan'208";a="27048218"
+   d="scan'208";a="27048277"
 From: Huang Ying <ying.huang@intel.com>
 To: Len Brown <lenb@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
         Tony Luck <tony.luck@intel.com>, ying.huang@intel.com,
         linux-acpi@vger.kernel.org
-Subject: [PATCH 10/17] ACPI, APEI, Add WHEA _OSC support
-Date: Wed, 13 Jul 2011 13:14:21 +0800
-Message-Id: <1310534068-30547-11-git-send-email-ying.huang@intel.com>
+Subject: [PATCH 17/17] ACPI, APEI, GHES: Add hardware memory error recovery support
+Date: Wed, 13 Jul 2011 13:14:28 +0800
+Message-Id: <1310534068-30547-18-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1310534068-30547-1-git-send-email-ying.huang@intel.com>
 References: <1310534068-30547-1-git-send-email-ying.huang@intel.com>
@@ -24,78 +24,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-APEI firmware first mode must be turned on explicitly on some
-machines, otherwise there may be no GHES hardware error record for
-hardware error notification.  APEI bit in generic _OSC call can be
-used to do that, but on some machine, a special WHEA _OSC call must be
-used.  This patch adds the support to that WHEA _OSC call.
+memory_failure_queue() is called when recoverable memory errors are
+notified by firmware to do the recovery work.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
-Reviewed-by: Andi Kleen <ak@linux.intel.com>
-Reviewed-by: Matthew Garrett <mjg@redhat.com>
 ---
- drivers/acpi/apei/apei-base.c     |   26 ++++++++++++++++++++++++++
- drivers/acpi/apei/apei-internal.h |    2 ++
- drivers/acpi/apei/ghes.c          |   10 ++++++++++
- 3 files changed, 38 insertions(+)
+ drivers/acpi/apei/Kconfig |    7 +++++++
+ drivers/acpi/apei/ghes.c  |   24 +++++++++++++++++-------
+ 2 files changed, 24 insertions(+), 7 deletions(-)
 
---- a/drivers/acpi/apei/apei-base.c
-+++ b/drivers/acpi/apei/apei-base.c
-@@ -604,3 +604,29 @@ struct dentry *apei_get_debugfs_dir(void
- 	return dapei;
- }
- EXPORT_SYMBOL_GPL(apei_get_debugfs_dir);
+--- a/drivers/acpi/apei/Kconfig
++++ b/drivers/acpi/apei/Kconfig
+@@ -32,6 +32,13 @@ config ACPI_APEI_PCIEAER
+ 	  PCIe AER errors may be reported via APEI firmware first mode.
+ 	  Turn on this option to enable the corresponding support.
+ 
++config ACPI_APEI_MEMORY_FAILURE
++	bool "APEI memory error recovering support"
++	depends on ACPI_APEI && MEMORY_FAILURE
++	help
++	  Memory errors may be reported via APEI firmware first mode.
++	  Turn on this option to enable the memory recovering support.
 +
-+int apei_osc_setup(void)
-+{
-+	static u8 whea_uuid_str[] = "ed855e0c-6c90-47bf-a62a-26de0fc5ad5c";
-+	acpi_handle handle;
-+	u32 capbuf[3];
-+	struct acpi_osc_context context = {
-+		.uuid_str	= whea_uuid_str,
-+		.rev		= 1,
-+		.cap.length	= sizeof(capbuf),
-+		.cap.pointer	= capbuf,
-+	};
-+
-+	capbuf[OSC_QUERY_TYPE] = OSC_QUERY_ENABLE;
-+	capbuf[OSC_SUPPORT_TYPE] = 0;
-+	capbuf[OSC_CONTROL_TYPE] = 0;
-+
-+	if (ACPI_FAILURE(acpi_get_handle(NULL, "\\_SB", &handle))
-+	    || ACPI_FAILURE(acpi_run_osc(handle, &context)))
-+		return -EIO;
-+	else {
-+		kfree(context.ret.pointer);
-+		return 0;
-+	}
-+}
-+EXPORT_SYMBOL_GPL(apei_osc_setup);
---- a/drivers/acpi/apei/apei-internal.h
-+++ b/drivers/acpi/apei/apei-internal.h
-@@ -124,4 +124,6 @@ void apei_estatus_print(const char *pfx,
- 			const struct acpi_hest_generic_status *estatus);
- int apei_estatus_check_header(const struct acpi_hest_generic_status *estatus);
- int apei_estatus_check(const struct acpi_hest_generic_status *estatus);
-+
-+int apei_osc_setup(void);
- #endif
+ config ACPI_APEI_EINJ
+ 	tristate "APEI Error INJection (EINJ)"
+ 	depends on ACPI_APEI && DEBUG_FS
 --- a/drivers/acpi/apei/ghes.c
 +++ b/drivers/acpi/apei/ghes.c
-@@ -681,6 +681,16 @@ static int __init ghes_init(void)
- 	if (rc)
- 		goto err_ioremap_exit;
+@@ -466,20 +466,30 @@ static void ghes_clear_estatus(struct gh
  
-+	rc = apei_osc_setup();
-+	if (rc == 0 && osc_sb_apei_support_acked)
-+		pr_info(GHES_PFX "APEI firmware first mode is enabled by APEI bit and WHEA _OSC.\n");
-+	else if (rc == 0 && !osc_sb_apei_support_acked)
-+		pr_info(GHES_PFX "APEI firmware first mode is enabled by WHEA _OSC.\n");
-+	else if (rc && osc_sb_apei_support_acked)
-+		pr_info(GHES_PFX "APEI firmware first mode is enabled by APEI bit.\n");
-+	else
-+		pr_info(GHES_PFX "Failed to enable APEI firmware first mode.\n");
-+
- 	return 0;
- err_ioremap_exit:
- 	ghes_ioremap_exit();
+ static void ghes_do_proc(const struct acpi_hest_generic_status *estatus)
+ {
+-	int sev, processed = 0;
++	int sev, sec_sev;
+ 	struct acpi_hest_generic_data *gdata;
+ 
+ 	sev = ghes_severity(estatus->error_severity);
+ 	apei_estatus_for_each_section(estatus, gdata) {
+-#ifdef CONFIG_X86_MCE
++		sec_sev = ghes_severity(gdata->error_severity);
+ 		if (!uuid_le_cmp(*(uuid_le *)gdata->section_type,
+ 				 CPER_SEC_PLATFORM_MEM)) {
+-			apei_mce_report_mem_error(
+-				sev == GHES_SEV_CORRECTED,
+-				(struct cper_sec_mem_err *)(gdata+1));
+-			processed = 1;
+-		}
++			struct cper_sec_mem_err *mem_err;
++			mem_err = (struct cper_sec_mem_err *)(gdata+1);
++#ifdef CONFIG_X86_MCE
++			apei_mce_report_mem_error(sev == GHES_SEV_CORRECTED,
++						  mem_err);
+ #endif
++#ifdef CONFIG_ACPI_APEI_MEMORY_FAILURE
++			if (sev == GHES_SEV_RECOVERABLE &&
++			    sec_sev == GHES_SEV_RECOVERABLE &&
++			    mem_err->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS) {
++				unsigned long pfn;
++				pfn = mem_err->physical_addr >> PAGE_SHIFT;
++				memory_failure_queue(pfn, 0, 0);
++			}
++#endif
++		}
+ 	}
+ }
+ 
