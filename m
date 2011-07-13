@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932305Ab1GMBdp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 21:33:45 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:38638 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756685Ab1GMBdo (ORCPT
+	id S1757520Ab1GMBhE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 21:37:04 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:53986 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755008Ab1GMBhB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 21:33:44 -0400
-Subject: Re: [RFC PATCH 08/14] af_netlink.c: make netlink_capable
- userns-aware
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Serge Hallyn <serge@hallyn.com>
-Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        dhowells@redhat.com, ebiederm@xmission.com,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>
-In-Reply-To: <1310513452-13397-9-git-send-email-serge@hallyn.com>
-References: <1310513452-13397-1-git-send-email-serge@hallyn.com>
-	 <1310513452-13397-9-git-send-email-serge@hallyn.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 13 Jul 2011 03:33:39 +0200
-Message-ID: <1310520819.2634.6.camel@edumazet-laptop>
+	Tue, 12 Jul 2011 21:37:01 -0400
+X-Authority-Analysis: v=1.1 cv=PfPQ8rIoTcZsncbPZjVSZ7K0hy8Zc4hmL68r4VPNpKE= c=1 sm=0 a=WrRwyXlJCEoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=9IeuSSz_9l2xTLTEHZAA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [patch 10/11] sh/unicore32/irqs: Do not trace
+ arch_local_{*,irq_*} functions
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: gxt@mprc.pku.edu.cn, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <20110711033418.GF24169@linux-sh.org>
+References: <20110702030435.308336775@goodmis.org>
+	 <20110702033854.432833160@goodmis.org>
+	 <1309744599.2291.1.camel@epip-laptop>
+	 <1309870230.26417.171.camel@gandalf.stny.rr.com>
+	 <20110711033418.GF24169@linux-sh.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 12 Jul 2011 21:36:57 -0400
+Message-ID: <1310521017.3931.19.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 12 juillet 2011 à 23:30 +0000, Serge Hallyn a écrit :
-> From: Serge E. Hallyn <serge.hallyn@canonical.com>
-> 
-> netlink_capable should check for permissions against the user
-> namespace owning the socket in question.
-> 
-> Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
-> Cc: Eric W. Biederman <ebiederm@xmission.com>
-> ---
->  net/netlink/af_netlink.c |   11 +++++++++--
->  1 files changed, 9 insertions(+), 2 deletions(-)
-> 
-> diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
-> index 6ef64ad..81c1099 100644
-> --- a/net/netlink/af_netlink.c
-> +++ b/net/netlink/af_netlink.c
-> @@ -580,8 +580,15 @@ retry:
->  
->  static inline int netlink_capable(struct socket *sock, unsigned int flag)
->  {
-> -	return (nl_table[sock->sk->sk_protocol].nl_nonroot & flag) ||
-> -	       capable(CAP_NET_ADMIN);
-> +	struct net *net;
-> +	if (nl_table[sock->sk->sk_protocol].nl_nonroot & flag)
-> +		return 1;
-> +#ifdef CONFIG_NET_NS
-> +	net = sock->sk->sk_net;
-> +#else
-> +	net = &init_net;
-> +#endif
+On Mon, 2011-07-11 at 12:34 +0900, Paul Mundt wrote:
+> On Tue, Jul 05, 2011 at 08:50:30AM -0400, Steven Rostedt wrote:
+> > 
+> > Are you or Paul going to pull it into the sh tree?
+> > 
+> I don't mind pulling it in, but it's probably easier to simply have it
+> lumped with the rest of the changes.
 
-This is really ugly, please use :
+Hi Paul,
 
-	net = sock_net(sk);
+This "patch series" was just a email to all arch maintainers to the code
+I modified. I'm not pulling this into any branch nor have I asked for
+this series to go anywhere. This change is not dependent on any other
+change nor is any other change dependent on this one. So I figured that
+each maintainer could pull it in at their own free will.
 
-And no more #ifdef
+Thanks!
 
+-- Steve
 
 
