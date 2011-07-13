@@ -1,70 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756412Ab1GMQfd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 12:35:33 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:51299 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756323Ab1GMQfb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 12:35:31 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Manoj Iyer <manoj.iyer@canonical.com>
-Subject: Re: [PATCH] mmc: Added quirks for Ricoh 1180:e823 lower base clock frequency
-Date: Wed, 13 Jul 2011 18:35:25 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Chris Ball <cjb@laptop.org>, linux-kernel@vger.kernel.org,
-        jbarnes@virtuousgeek.org, matsumur@nts.ricoh.co.jp,
-        linux-pci@vger.kernel.org, linux-mmc@vger.kernel.org
-References: <1310419715-13254-1-git-send-email-manoj.iyer@canonical.com> <m2sjqa2q93.fsf@bob.laptop.org> <alpine.DEB.2.02.1107131031360.3174@lazy>
-In-Reply-To: <alpine.DEB.2.02.1107131031360.3174@lazy>
+	id S1756356Ab1GMQjr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 12:39:47 -0400
+Received: from home.keithp.com ([63.227.221.253]:38466 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756183Ab1GMQjq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 12:39:46 -0400
+From: "Keith Packard" <keithp@keithp.com>
+To: Dave Airlie <airlied@linux.ie>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org,
+        Intel drivers <Intel-gfx@lists.freedesktop.org>
+Subject: [PULL] drm-intel-next
+User-Agent: Notmuch/0.5-202-g6ae4e7d (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Wed, 13 Jul 2011 09:39:41 -0700
+Message-ID: <yunoc0y9lte.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107131835.25217.arnd@arndb.de>
-X-Provags-ID: V02:K0:S/9Mx7pSZ5f97Fe7dlHIJdo2c316N0TymH5Q0/d6AxU
- SvzZXE2e7MHJjAArY/oAhazBeIzkc8degc4wXS9RzUVr1gzuEf
- 5cLNuXd00nRnNaqYTL80H6kamGde9IAZ00glVUbCbCrEVXcE55
- R5RGZzRL5OSmNQ+eXCSC/6iQcoUQIYHBHCeDyHUGsScLxuAZ29
- mbv4ROU5dWlxwtitXsL7g==
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 13 July 2011, Manoj Iyer wrote:
-> 
-> Chris/Arnd,
-> 
-> Here is a series of test I did with the patched kernel.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-> == cold boot insert SD card ==
-> u@u:~/flash/flashbench$ sudo ./flashbench -O --erasesize=$[4 * 1024 * 
-> 1024] --blocksize=$[256 * 1024] /dev/mmcblk0  --open-au-nr=2
-> 4MiB    4.96M/s
-> 2MiB    6.3M/s
-> 1MiB    6.23M/s
-> 512KiB  6.23M/s
-> 256KiB  6.26M/s
 
-The very first one obviously triggers a garbage collection.
-Everything after that is well within measuring accuracy around 6.25MB/s
+Here's most of the patches I'm hoping to land after 3.0:
 
-> On Wed, 13 Jul 2011, Chris Ball wrote:
+ * FBC cleanups from Chris Wilson. Fixes 'missing' CPU writes to the
+   front buffer. We've enabled FBC by default, if we find regressions
+   again, we'll turn it off before the release.
 
-> >
-> > That makes sense.  Do you think this explains Manoj getting a slower
-> > first file copy speed (757ms vs. 480ms) after applying his patch?
-> > (Manoj, perhaps you could retry your test without GC being needed?)
+ * DP and HDMI support for formats other than 8bpc from Jesse
+   Barnes. Supports depth 30 frame buffers at 10bpc.
 
-Yes. For a single sample, it can easily explain differences up to 500ms.
-You have to average out file system benchmarks across a lot of files
-to be sure.
+ * Shared LLC support (SNB, IVB) from Eric Anholt and Chris
+   Wilson. Shares the LLC between CPU and GPU, avoiding main memory
+   traffic latencies.
 
-> > What would we expect lowering the SD base clock frequency from 200MHz
-> > to 50MHz to do to performance theoretically?
+ * Ring frequency scaling (SNB, IVB) from Jesse Barnes. This makes
+   memory bus speed track the GPU clock in addition to the CPU clock,
+   keeping memory running at full speed when the GPU is busy and the CPU
+   is idle.
 
-Not much. This card only has a 6MB/s write speed, which is well below
-what a 50 MHz bus can do. It mgiht be different on a fast eMMC device
-or a Sandisk Extreme Pro UHS-1 card.
+ * Disable hangcheck module parameter from Ben Widawsky. This exports a
+   module parameter to keep the kernel from resetting the GPU. It's
+   useful for GPU debugging where the GPU may be stuck waiting for the
+   debugger.
 
-	Arnd
+The following changes since commit a94919eaddaa3fede1df8563ce4d761a75374645:
+
+  drm/i915/ringbuffer: Idling requires waiting for the ring to be empty (20=
+11-07-12 10:35:45 -0700)
+
+are available in the git repository at:
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/keithp/linux-2.6.git drm=
+-intel-next
+
+Ben Widawsky (1):
+      drm/i915: hangcheck disable parameter
+
+Chris Wilson (14):
+      drm/i915: Introduce i915_gem_object_finish_gpu()
+      drm/i915: Introduce i915_gem_object_finish_gtt()
+      drm/i915/gtt: Split out i915_gem_gtt_rebind_object()
+      drm/i915: Add an interface to dynamically change the cache level
+      drm/i915: Mark the cursor and the overlay as being part of the displa=
+y planes
+      drm/i915: Combine pinning with setting to the display plane
+      drm/i915: Only export the generic intel_disable_fbc() interface
+      drm/i915: Replace direct calls to vfunc.disable_fbc with intel_disabl=
+e_fbc()
+      drm/i915: Remove vestigial pitch from post-gen2 FBC control routines
+      drm/i915: Use of a CPU fence is mandatory to update FBC regions upon =
+CPU writes
+      drm/i915: Set persistent-mode for ILK/SNB framebuffer compression
+      drm/i915: Disable FBC across page-flipping
+      drm/i915: Perform intel_enable_fbc() from a delayed task
+      drm/i915: Share the common work of disabling active FBC before updati=
+ng
+
+Eric Anholt (2):
+      drm/i915: Use the uncached domain for the display planes
+      drm/i915: Use the LLC mode on gen6 for everything but display.
+
+Hugh Dickins (1):
+      drm/i915: more struct_mutex locking
+
+Jesse Barnes (13):
+      cpufreq: expose a cpufreq_quick_get_max routine
+      drm/i915: load a ring frequency scaling table v3
+      drm/i915: enable ring freq scaling, RC6 and graphics turbo on Ivy Bri=
+dge v3
+      drm/i915: don't set SDVO color range on ILK+
+      drm/i915: don't set transcoder bpc on CougarPoint
+      drm/i915: set bpc for DP transcoder
+      drm/i915: split out Ironlake pipe bpp picking code
+      drm/i915: split out plane update code
+      drm/i915: use pipe bpp in DP link bandwidth calculations
+      drm/i915: use pipe bpp when setting HDMI bpc
+      drm: bpp and depth changes require full mode sets
+      drm/i915: check for supported depth at fb init time
+      drm/i915: use pipe bpp in DP link bandwidth calculation
+
+Keith Packard (14):
+      drm/i915: i915_gem_object_finish_gtt must always release gtt mmap
+      drm/i915: Enable i915 frame buffer compression by default
+
+ drivers/cpufreq/cpufreq.c               |   20 +
+ drivers/gpu/drm/drm_crtc_helper.c       |    5 +
+ drivers/gpu/drm/i915/i915_debugfs.c     |   41 ++-
+ drivers/gpu/drm/i915/i915_dma.c         |    4 +-
+ drivers/gpu/drm/i915/i915_drv.c         |    5 +-
+ drivers/gpu/drm/i915/i915_drv.h         |   27 +-
+ drivers/gpu/drm/i915/i915_gem.c         |  191 ++++++++--
+ drivers/gpu/drm/i915/i915_gem_gtt.c     |   39 +-
+ drivers/gpu/drm/i915/i915_irq.c         |   13 +-
+ drivers/gpu/drm/i915/i915_reg.h         |    5 +-
+ drivers/gpu/drm/i915/i915_suspend.c     |    8 +-
+ drivers/gpu/drm/i915/intel_display.c    |  699 +++++++++++++++++++++++----=
+----
+ drivers/gpu/drm/i915/intel_dp.c         |   17 +-
+ drivers/gpu/drm/i915/intel_drv.h        |    9 +
+ drivers/gpu/drm/i915/intel_hdmi.c       |    8 +-
+ drivers/gpu/drm/i915/intel_overlay.c    |    6 +-
+ drivers/gpu/drm/i915/intel_ringbuffer.c |    6 +-
+ include/linux/cpufreq.h                 |    5 +
+ 18 files changed, 842 insertions(+), 266 deletions(-)
+
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iD8DBQFOHcpNQp8BWwlsTdMRAkJIAJ4naE64fwfovGDQYm1dqlT39eT24gCgrnd+
+g4mW+cWpzZsINi8nLGUflxM=
+=A1MQ
+-----END PGP SIGNATURE-----
+--=-=-=--
