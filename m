@@ -1,49 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752100Ab1GMVVe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 17:21:34 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:57439 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818Ab1GMVVd (ORCPT
+	id S1752112Ab1GMVW2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 17:22:28 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:29990 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751818Ab1GMVW1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 17:21:33 -0400
-Message-ID: <4E1E0C59.1030100@suse.cz>
-Date: Wed, 13 Jul 2011 23:21:29 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	Wed, 13 Jul 2011 17:22:27 -0400
+Date: Wed, 13 Jul 2011 23:22:26 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Samuel Ortiz <sameo@linux.intel.com>
+cc: linux-kernel@vger.kernel.org, Graeme Gregory <gg@slimlogic.co.uk>,
+        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
+Subject: [PATCH] mfd: avoid two assignments if failures happen in
+ tps65910_i2c_probe
+Message-ID: <alpine.LNX.2.00.1107132319020.22281@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net
-Subject: Re: Linux 2.6.32.43
-References: <20110713034559.GA16150@kroah.com> <4E1E0B40.1030905@suse.cz>
-In-Reply-To: <4E1E0B40.1030905@suse.cz>
-X-Enigmail-Version: 1.2pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13/2011 11:16 PM, Jiri Slaby wrote:
-> On 07/13/2011 05:45 AM, Greg KH wrote:
->> Joe Perches (2):
->>       bug.h: Add WARN_RATELIMIT
->>       net: filter: Use WARN_RATELIMIT
-> 
-> Hi, this causes a build failure on PPC with minimalistic config (PS3) [1]:
-> net/core/filter.c: In function 'sk_run_filter':
-> net/core/filter.c:297: error: implicit declaration of function
-> 'WARN_RATELIMIT'
-> 
-> net/core/filter.c should include linux/bug.h (or linux/kernel.h).
+In drivers/mfd/tps65910.c:tps65910_i2c_probe() there's potential for a
+tiny optimization.
 
-Ah, no, PS3 doesn't have CONFIG_BUG set.
+We assign to init_data->irq and init_data->irq_base long before we
+need them, and there are two potential exits from the function before
+they are needed.
 
-> [1]
-> http://gitorious.org/opensuse/kernel-source/blobs/SLE11-SP1/config/ppc/ps3
-> 
-> regards,
+Moving the assignments below these two potential exits means we
+completely avoid doing them in these two (failure) cases.
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/mfd/tps65910.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+  - compile tested only.
+  - patch is on top of the patch in https://lkml.org/lkml/2011/7/5/503 
+    which is now in linux-next.
+
+diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
+index 7a3eb2d..65e9479 100644
+--- a/drivers/mfd/tps65910.c
++++ b/drivers/mfd/tps65910.c
+@@ -147,9 +147,6 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
+ 	if (init_data == NULL)
+ 		return -ENOMEM;
+ 
+-	init_data->irq = pmic_plat_data->irq;
+-	init_data->irq_base = pmic_plat_data->irq;
+-
+ 	tps65910 = kzalloc(sizeof(struct tps65910), GFP_KERNEL);
+ 	if (tps65910 == NULL) {
+ 		kfree(init_data);
+@@ -170,6 +167,9 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
+ 	if (ret < 0)
+ 		goto err;
+ 
++	init_data->irq = pmic_plat_data->irq;
++	init_data->irq_base = pmic_plat_data->irq;
++
+ 	tps65910_gpio_init(tps65910, pmic_plat_data->gpio_base);
+ 
+ 	ret = tps65910_irq_init(tps65910, init_data->irq, init_data);
 -- 
-js
-suse labs
+1.7.6
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
