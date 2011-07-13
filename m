@@ -1,100 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965327Ab1GMK7S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 06:59:18 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:38044 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965021Ab1GMK7Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 06:59:16 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: stable@kernel.org
-Cc: linux-cifs@vger.kernel.org, helge.hafting@hist.no,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] cifs: lower default and max wsize to what 2.6.39 can handle (try #2)
-Date: Wed, 13 Jul 2011 06:59:12 -0400
-Message-Id: <1310554752-29240-1-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1310553637-26792-1-git-send-email-jlayton@redhat.com>
-References: <1310553637-26792-1-git-send-email-jlayton@redhat.com>
+	id S965323Ab1GMLCu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 07:02:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45192 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965021Ab1GMLCt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 07:02:49 -0400
+Date: Wed, 13 Jul 2011 12:02:46 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] mm: page allocator: Initialise ZLC for first zone
+ eligible for zone_reclaim
+Message-ID: <20110713110246.GF7529@suse.de>
+References: <1310389274-13995-1-git-send-email-mgorman@suse.de>
+ <1310389274-13995-3-git-send-email-mgorman@suse.de>
+ <4E1CF1A3.3050401@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <4E1CF1A3.3050401@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is intended for 2.6.39-stable kernels only and is needed to
-fix a regression introduced in 2.6.39. Prior to 2.6.39, when signing was
-enabled on a socket the client only sent single-page writes. This
-changed with commit ca83ce3, which made signed and unsigned connections
-use the same codepaths for write calls.
+On Wed, Jul 13, 2011 at 10:15:15AM +0900, KOSAKI Motohiro wrote:
+> (2011/07/11 22:01), Mel Gorman wrote:
+> > The zonelist cache (ZLC) is used among other things to record if
+> > zone_reclaim() failed for a particular zone recently. The intention
+> > is to avoid a high cost scanning extremely long zonelists or scanning
+> > within the zone uselessly.
+> > 
+> > Currently the zonelist cache is setup only after the first zone has
+> > been considered and zone_reclaim() has been called. The objective was
+> > to avoid a costly setup but zone_reclaim is itself quite expensive. If
+> > it is failing regularly such as the first eligible zone having mostly
+> > mapped pages, the cost in scanning and allocation stalls is far higher
+> > than the ZLC initialisation step.
+> > 
+> > This patch initialises ZLC before the first eligible zone calls
+> > zone_reclaim(). Once initialised, it is checked whether the zone
+> > failed zone_reclaim recently. If it has, the zone is skipped. As the
+> > first zone is now being checked, additional care has to be taken about
+> > zones marked full. A zone can be marked "full" because it should not
+> > have enough unmapped pages for zone_reclaim but this is excessive as
+> > direct reclaim or kswapd may succeed where zone_reclaim fails. Only
+> > mark zones "full" after zone_reclaim fails if it failed to reclaim
+> > enough pages after scanning.
+> > 
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> 
+> If I understand correctly this patch's procs/cons is,
+> 
+> pros.
+>  1) faster when zone reclaim doesn't work effectively
+> 
 
-This caused a regression when working with windows servers. Windows
-machines will reject writes larger than the MaxBufferSize when signing
-is active, but do not clear the CAP_LARGE_WRITE_X flag in the protocol
-negotiation. The upshot is that when signing is active, windows servers
-often reject large writes from the client in 2.6.39.
+Yes.
 
-Because 3.0 adds support for larger wsize values, simply cherry picking
-the upstream patches that fix the wsize negotiation isn't sufficient to
-fix this issue. We also need to alter the maximum and default values to
-something suitable for 2.6.39.
+> cons.
+>  2) slower when zone reclaim is off
 
-This patch also accounts for the change in field name from sec_mode to
-secMode that went into 3.0.
+How is it slower with zone_reclaim off?
 
-Cc: <stable@kernel.org> # .39.x: f7910cb: cifs: clean up wsize negotiation and allow for larger wsize
-Cc: <stable@kernel.org> # .39.x: 1190f6a: cifs: fix wsize negotiation to respect max buffer size and active signing (try #4)
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- fs/cifs/connect.c |   22 +++++-----------------
- 1 files changed, 5 insertions(+), 17 deletions(-)
+Before
 
-diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
-index 599f485..01db14c 100644
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -2648,16 +2648,8 @@ static void setup_cifs_sb(struct smb_vol *pvolume_info,
- 			   "mount option supported");
- }
- 
--/*
-- * When the server supports very large writes via POSIX extensions, we can
-- * allow up to 2^24-1, minus the size of a WRITE_AND_X header, not including
-- * the RFC1001 length.
-- *
-- * Note that this might make for "interesting" allocation problems during
-- * writeback however as we have to allocate an array of pointers for the
-- * pages. A 16M write means ~32kb page array with PAGE_CACHE_SIZE == 4096.
-- */
--#define CIFS_MAX_WSIZE ((1<<24) - 1 - sizeof(WRITE_REQ) + 4)
-+/* Prior to 3.0, cifs couldn't handle writes larger than this */
-+#define CIFS_MAX_WSIZE (PAGEVEC_SIZE * PAGE_CACHE_SIZE)
- 
- /*
-  * When the server doesn't allow large posix writes, only allow a wsize of
-@@ -2666,12 +2658,8 @@ static void setup_cifs_sb(struct smb_vol *pvolume_info,
-  */
- #define CIFS_MAX_RFC1002_WSIZE (128 * 1024 - sizeof(WRITE_REQ) + 4)
- 
--/*
-- * The default wsize is 1M. find_get_pages seems to return a maximum of 256
-- * pages in a single call. With PAGE_CACHE_SIZE == 4k, this means we can fill
-- * a single wsize request with a single call.
-- */
--#define CIFS_DEFAULT_WSIZE (1024 * 1024)
-+/* Make the default the same as the max */
-+#define CIFS_DEFAULT_WSIZE CIFS_MAX_WSIZE
- 
- static unsigned int
- cifs_negotiate_wsize(struct cifsTconInfo *tcon, struct smb_vol *pvolume_info)
-@@ -2692,7 +2680,7 @@ cifs_negotiate_wsize(struct cifsTconInfo *tcon, struct smb_vol *pvolume_info)
- 	 */
- 	if (!(server->capabilities & CAP_LARGE_WRITE_X) ||
- 	    (!(server->capabilities & CAP_UNIX) &&
--	     (server->sec_mode & (SECMODE_SIGN_ENABLED|SECMODE_SIGN_REQUIRED))))
-+	     (server->secMode & (SECMODE_SIGN_ENABLED|SECMODE_SIGN_REQUIRED))))
- 		wsize = min_t(unsigned int, wsize,
- 				server->maxBuf - sizeof(WRITE_REQ) + 4);
- 
+	if (zone_reclaim_mode == 0)
+		goto this_zone_full;
+	...
+	this_zone_full:
+	if (NUMA_BUILD)
+		zlc_mark_zone_full(zonelist, z);
+	if (NUMA_BUILD && !did_zlc_setup && nr_online_nodes > 1) {
+		...
+	}
+
+After
+	if (NUMA_BUILD && !did_zlc_setup && nr_online_nodes > 1) {
+		...
+	}
+	if (zone_reclaim_mode == 0)
+		goto this_zone_full;
+	this_zone_full:
+	if (NUMA_BUILD)
+		zlc_mark_zone_full(zonelist, z);
+
+Bear in mind that if the watermarks are met on the first zone, the zlc
+setup does not occur.
+
+>  3) slower when zone recliam works effectively
+> 
+
+Marginally slower. It's now calling zlc setup so once a second it's
+zeroing a bitmap and calling zlc_zone_worth_trying() on the first
+zone testing a bit on a cache-hot structure.
+
+As the ineffective case can be triggered by a simple cp, I think the
+cost is justified. Can you think of a better way of doing this?
+
+> (2) and (3) are frequently happen than (1), correct?
+
+Yes. I'd still expect zone_reclaim to be off on the majority of
+machines and even when enabled, I think it's relatively rare we hit the
+case where the workload is regularly falling over to the other node
+except in the case where it's a file server. Still, a cp is not to
+uncommon that the kernel should slow to a crawl as a result.
+
+> At least, I think we need to keep zero impact when zone reclaim mode is off.
+> 
+
+I agree with this but I'm missing where we are taking the big hit with
+zone_reclaim==0.
+
 -- 
-1.7.6
-
+Mel Gorman
+SUSE Labs
