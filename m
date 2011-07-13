@@ -1,106 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755836Ab1GMPlF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 11:41:05 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:7126 "EHLO
-	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755537Ab1GMPlD (ORCPT
+	id S1755794Ab1GMPmn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 11:42:43 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:33294 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755452Ab1GMPml (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 11:41:03 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzz8275dhz32i668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LOA37B-02-9JJ-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
-CC: <kvm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Joerg Roedel <joro@8bytes.org>
-Subject: [PATCH 6/7] KVM: SVM: Rework hflags handling
-Date: Wed, 13 Jul 2011 17:32:24 +0200
-Message-ID: <1310571145-28930-7-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1310571145-28930-1-git-send-email-joerg.roedel@amd.com>
-References: <1310571145-28930-1-git-send-email-joerg.roedel@amd.com>
+	Wed, 13 Jul 2011 11:42:41 -0400
+Date: Wed, 13 Jul 2011 10:42:32 -0500 (CDT)
+From: Manoj Iyer <manoj.iyer@canonical.com>
+X-X-Sender: manjo@lazy
+To: Chris Ball <cjb@laptop.org>
+cc: Arnd Bergmann <arnd@arndb.de>, Manoj Iyer <manoj.iyer@canonical.com>,
+        linux-kernel@vger.kernel.org, jbarnes@virtuousgeek.org,
+        matsumur@nts.ricoh.co.jp, linux-pci@vger.kernel.org,
+        linux-mmc@vger.kernel.org
+Subject: Re: [PATCH] mmc: Added quirks for Ricoh 1180:e823 lower base clock
+ frequency
+In-Reply-To: <m2sjqa2q93.fsf@bob.laptop.org>
+Message-ID: <alpine.DEB.2.02.1107131031360.3174@lazy>
+References: <1310419715-13254-1-git-send-email-manoj.iyer@canonical.com> <alpine.DEB.2.02.1107121123140.1767@lazy> <m2ei1v76f1.fsf@bob.laptop.org> <201107122000.50309.arnd@arndb.de> <m2sjqa2q93.fsf@bob.laptop.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joerg Roedel <joro@8bytes.org>
 
-This patch moves the unsetting of the hflags used for
-nesting into the #vmexit path instead of doing everything in
-the vmrun path.
+Chris/Arnd,
 
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
----
- arch/x86/kvm/svm.c |   17 ++++++++---------
- 1 files changed, 8 insertions(+), 9 deletions(-)
-
-diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-index f2cca2c..c83315a 100644
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -2256,6 +2256,8 @@ static int nested_svm_vmexit(struct vcpu_svm *svm)
- 
- 	mark_all_dirty(svm->vmcb);
- 
-+	svm->vcpu.arch.hflags &=  ~(HF_VINTR_MASK | HF_HIF_MASK);
-+
- 	nested_svm_unmap(page);
- 
- 	nested_svm_uninit_mmu_context(&svm->vcpu);
-@@ -2317,6 +2319,7 @@ static bool nested_svm_vmrun(struct vcpu_svm *svm)
- 	struct vmcb *nested_vmcb;
- 	struct page *page;
- 	u64 vmcb_gpa;
-+	u64 rflags;
- 
- 	vmcb_gpa = svm->vmcb->save.rax;
- 
-@@ -2350,6 +2353,8 @@ static bool nested_svm_vmrun(struct vcpu_svm *svm)
- 	kvm_clear_exception_queue(&svm->vcpu);
- 	kvm_clear_interrupt_queue(&svm->vcpu);
- 
-+	rflags = kvm_get_rflags(&svm->vcpu);
-+
- 	/*
- 	 * Save the old vmcb, so we don't need to pick what we save, but can
- 	 * restore everything when a VMEXIT occurs
-@@ -2357,7 +2362,7 @@ static bool nested_svm_vmrun(struct vcpu_svm *svm)
- 	svm->host_vmcb->save.efer   = svm->vcpu.arch.efer;
- 	svm->host_vmcb->save.cr0    = kvm_read_cr0(&svm->vcpu);
- 	svm->host_vmcb->save.cr4    = svm->vcpu.arch.cr4;
--	svm->host_vmcb->save.rflags = kvm_get_rflags(&svm->vcpu);
-+	svm->host_vmcb->save.rflags = rflags;
- 	svm->host_vmcb->save.rax    = svm->vcpu.arch.regs[VCPU_REGS_RAX];
- 	svm->host_vmcb->save.rsp    = svm->vcpu.arch.regs[VCPU_REGS_RSP];
- 	svm->host_vmcb->save.rip    = svm->vcpu.arch.regs[VCPU_REGS_RIP];
-@@ -2365,17 +2370,11 @@ static bool nested_svm_vmrun(struct vcpu_svm *svm)
- 	if (!npt_enabled)
- 		svm->host_vmcb->save.cr3 = kvm_read_cr3(&svm->vcpu);
- 
--	if (kvm_get_rflags(&svm->vcpu) & X86_EFLAGS_IF)
--		svm->vcpu.arch.hflags |= HF_HIF_MASK;
--	else
--		svm->vcpu.arch.hflags &= ~HF_HIF_MASK;
-+	svm->vcpu.arch.hflags |= rflags & X86_EFLAGS_IF ? HF_HIF_MASK   : 0;
- 
--	if (nested_vmcb->control.int_ctl & V_INTR_MASKING_MASK)
-+	if (nested_vmcb->control.int_ctl & V_INTR_MASKING_MASK) {
- 		svm->vcpu.arch.hflags |= HF_VINTR_MASK;
--	else
--		svm->vcpu.arch.hflags &= ~HF_VINTR_MASK;
- 
--	if (svm->vcpu.arch.hflags & HF_VINTR_MASK) {
- 		/* We only want the cr8 intercept bits of the guest */
- 		clr_cr_intercept(svm, INTERCEPT_CR8_READ);
- 		clr_cr_intercept(svm, INTERCEPT_CR8_WRITE);
--- 
-1.7.4.1
+Here is a series of test I did with the patched kernel.
 
 
+== cold boot insert SD card ==
+u@u:~/flash/flashbench$ sudo ./flashbench -O --erasesize=$[4 * 1024 * 
+1024] --blocksize=$[256 * 1024] /dev/mmcblk0  --open-au-nr=2
+4MiB    4.96M/s
+2MiB    6.3M/s
+1MiB    6.23M/s
+512KiB  6.23M/s
+256KiB  6.26M/s
+
+== rerun the same test 2nd time ===
+u@u:~/flash/flashbench$ sudo ./flashbench -O --erasesize=$[4 * 1024 * 
+1024] --blocksize=$[256 * 1024] /dev/mmcblk0  --open-au-nr=2
+4MiB    6.28M/s
+2MiB    6.29M/s
+1MiB    6.29M/s
+512KiB  6.29M/s
+256KiB  6.26M/s
+
+== remove and reinsert the SD card ==
+u@u:~/flash/flashbench$ sudo ./flashbench -O --erasesize=$[4 * 1024 * 
+1024] --blocksize=$[256 * 1024] /dev/mmcblk0  --open-au-nr=2
+4MiB    6.42M/s
+2MiB    6.28M/s
+1MiB    6.22M/s
+512KiB  6.23M/s
+256KiB  6.26M/s
+
+== remove and reinsert the SD card ==
+u@u:~/flash/flashbench$ sudo ./flashbench -O --erasesize=$[4 * 1024 * 
+1024] --blocksize=$[256 * 1024] /dev/mmcblk0  --open-au-nr=2
+4MiB    6.42M/s
+2MiB    6.3M/s
+1MiB    6.22M/s
+512KiB  6.25M/s
+256KiB  6.24M/s
+
+== reboot, reinsert the SD card ==
+u@u:~/flash/flashbench$ sudo ./flashbench -O --erasesize=$[4 * 1024 * 
+1024] --blocksize=$[256 * 1024] /dev/mmcblk0  --open-au-nr=2
+[sudo] password for u:
+4MiB    6.45M/s
+2MiB    6.33M/s
+1MiB    6.25M/s
+512KiB  6.29M/s
+256KiB  6.3M/s
+u@u:~/flash/flashbench$
+
+== rerun the test again ==
+u@u:~/flash/flashbench$ sudo ./flashbench -O --erasesize=$[4 * 1024 * 
+1024] --blocksize=$[256 * 1024] /dev/mmcblk0  --open-au-nr=2
+4MiB    6.27M/s
+2MiB    6.27M/s
+1MiB    6.28M/s
+512KiB  6.27M/s
+256KiB  6.24M/s
+u@u:~/flash/flashbench$
+
+== poweroff, Poweron, insert SD card ==
+u@u:~/flash/flashbench$ sudo ./flashbench -O --erasesize=$[4 * 1024 * 
+1024] --blocksize=$[256 * 1024] /dev/mmcblk0  --open-au-nr=2
+[sudo] password for u:
+4MiB    6.45M/s
+2MiB    6.33M/s
+1MiB    6.24M/s
+512KiB  6.29M/s
+256KiB  6.32M/s
+u@u:~/flash/flashbench$
+
+== rerun the test again ==
+u@u:~/flash/flashbench$ sudo ./flashbench -O --erasesize=$[4 * 1024 * 
+1024] --blocksize=$[256 * 1024] /dev/mmcblk0  --open-au-nr=2
+4MiB    6.29M/s
+2MiB    6.28M/s
+1MiB    6.29M/s
+512KiB  6.28M/s
+256KiB  6.25M/s
+u@u:~/flash/flashbench$
+
+On Wed, 13 Jul 2011, Chris Ball wrote:
+
+> Hi Arnd,
+>
+> On Tue, Jul 12 2011, Arnd Bergmann wrote:
+>> I would very much expect that to be nonreproducible. The first row
+>> in each test is the result of a single write() system call and does
+>> not get averaged out. More importantly the time for each write
+>> depends a lot of the state of the card before the write.
+>>
+>> For instance when you do a lot of random writes to a card, optionally
+>> take it out and put it into a different machine, and then do a large
+>> linear write, that linear write will be very slow because the
+>> card has to garbage collect all the random writes that were done
+>> earlier. After a few writes (usually one is enough), it gets back
+>> to the full performance.
+>
+> That makes sense.  Do you think this explains Manoj getting a slower
+> first file copy speed (757ms vs. 480ms) after applying his patch?
+> (Manoj, perhaps you could retry your test without GC being needed?)
+>
+> What would we expect lowering the SD base clock frequency from 200MHz
+> to 50MHz to do to performance theoretically?
+>
+> Thanks,
+>
+> - Chris.
+> -- 
+> Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+> One Laptop Per Child
+>
+>
+
+--
+====================
+Manoj Iyer
+Ubuntu/Canonical
+Hardware Enablement
+====================
