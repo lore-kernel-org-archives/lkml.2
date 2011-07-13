@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964964Ab1GMFPD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 01:15:03 -0400
+	id S964918Ab1GMFOu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 01:14:50 -0400
 Received: from mga09.intel.com ([134.134.136.24]:9791 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964930Ab1GMFO6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 01:14:58 -0400
+	id S964896Ab1GMFOr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 01:14:47 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,523,1304319600"; 
-   d="scan'208";a="27048267"
+   d="scan'208";a="27048218"
 From: Huang Ying <ying.huang@intel.com>
 To: Len Brown <lenb@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
         Tony Luck <tony.luck@intel.com>, ying.huang@intel.com,
-        linux-acpi@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 16/17] HWPoison: add memory_failure_queue()
-Date: Wed, 13 Jul 2011 13:14:27 +0800
-Message-Id: <1310534068-30547-17-git-send-email-ying.huang@intel.com>
+        linux-acpi@vger.kernel.org
+Subject: [PATCH 10/17] ACPI, APEI, Add WHEA _OSC support
+Date: Wed, 13 Jul 2011 13:14:21 +0800
+Message-Id: <1310534068-30547-11-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1310534068-30547-1-git-send-email-ying.huang@intel.com>
 References: <1310534068-30547-1-git-send-email-ying.huang@intel.com>
@@ -26,143 +24,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-memory_failure() is the entry point for HWPoison memory error
-recovery.  It must be called in process context.  But commonly
-hardware memory errors are notified via MCE or NMI, so some delayed
-execution mechanism must be used.  In MCE handler, a work queue + ring
-buffer mechanism is used.
-
-In addition to MCE, now APEI (ACPI Platform Error Interface) GHES
-(Generic Hardware Error Source) can be used to report memory errors
-too.  To add support to APEI GHES memory recovery, a mechanism similar
-to that of MCE is implemented.  memory_failure_queue() is the new
-entry point that can be called in IRQ context.  The next step is to
-make MCE handler uses this interface too.
+APEI firmware first mode must be turned on explicitly on some
+machines, otherwise there may be no GHES hardware error record for
+hardware error notification.  APEI bit in generic _OSC call can be
+used to do that, but on some machine, a special WHEA _OSC call must be
+used.  This patch adds the support to that WHEA _OSC call.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+Reviewed-by: Andi Kleen <ak@linux.intel.com>
+Reviewed-by: Matthew Garrett <mjg@redhat.com>
 ---
- include/linux/mm.h  |    1 
- mm/memory-failure.c |   92 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 93 insertions(+)
+ drivers/acpi/apei/apei-base.c     |   26 ++++++++++++++++++++++++++
+ drivers/acpi/apei/apei-internal.h |    2 ++
+ drivers/acpi/apei/ghes.c          |   10 ++++++++++
+ 3 files changed, 38 insertions(+)
 
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1633,6 +1633,7 @@ enum mf_flags {
- };
- extern void memory_failure(unsigned long pfn, int trapno);
- extern int __memory_failure(unsigned long pfn, int trapno, int flags);
-+extern void memory_failure_queue(unsigned long pfn, int trapno, int flags);
- extern int unpoison_memory(unsigned long pfn);
- extern int sysctl_memory_failure_early_kill;
- extern int sysctl_memory_failure_recovery;
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -53,6 +53,7 @@
- #include <linux/hugetlb.h>
- #include <linux/memory_hotplug.h>
- #include <linux/mm_inline.h>
-+#include <linux/kfifo.h>
- #include "internal.h"
- 
- int sysctl_memory_failure_early_kill __read_mostly = 0;
-@@ -1178,6 +1179,97 @@ void memory_failure(unsigned long pfn, i
- 	__memory_failure(pfn, trapno, 0);
+--- a/drivers/acpi/apei/apei-base.c
++++ b/drivers/acpi/apei/apei-base.c
+@@ -604,3 +604,29 @@ struct dentry *apei_get_debugfs_dir(void
+ 	return dapei;
  }
- 
-+#define MEMORY_FAILURE_FIFO_ORDER	4
-+#define MEMORY_FAILURE_FIFO_SIZE	(1 << MEMORY_FAILURE_FIFO_ORDER)
+ EXPORT_SYMBOL_GPL(apei_get_debugfs_dir);
 +
-+struct memory_failure_entry {
-+	unsigned long pfn;
-+	int trapno;
-+	int flags;
-+};
-+
-+struct memory_failure_cpu {
-+	DECLARE_KFIFO(fifo, struct memory_failure_entry,
-+		      MEMORY_FAILURE_FIFO_SIZE);
-+	spinlock_t lock;
-+	struct work_struct work;
-+};
-+
-+static DEFINE_PER_CPU(struct memory_failure_cpu, memory_failure_cpu);
-+
-+/**
-+ * memory_failure_queue - Schedule handling memory failure of a page.
-+ * @pfn: Page Number of the corrupted page
-+ * @trapno: Trap number reported in the signal to user space.
-+ * @flags: Flags for memory failure handling
-+ *
-+ * This function is called by the low level hardware error handler
-+ * when it detects hardware memory corruption of a page. It schedules
-+ * the recovering of error page, including dropping pages, killing
-+ * processes etc.
-+ *
-+ * The function is primarily of use for corruptions that
-+ * happen outside the current execution context (e.g. when
-+ * detected by a background scrubber)
-+ *
-+ * Can run in IRQ context.
-+ */
-+void memory_failure_queue(unsigned long pfn, int trapno, int flags)
++int apei_osc_setup(void)
 +{
-+	struct memory_failure_cpu *mf_cpu;
-+	unsigned long proc_flags;
-+	struct memory_failure_entry entry = {
-+		.pfn =		pfn,
-+		.trapno =	trapno,
-+		.flags =	flags,
++	static u8 whea_uuid_str[] = "ed855e0c-6c90-47bf-a62a-26de0fc5ad5c";
++	acpi_handle handle;
++	u32 capbuf[3];
++	struct acpi_osc_context context = {
++		.uuid_str	= whea_uuid_str,
++		.rev		= 1,
++		.cap.length	= sizeof(capbuf),
++		.cap.pointer	= capbuf,
 +	};
 +
-+	mf_cpu = &get_cpu_var(memory_failure_cpu);
-+	spin_lock_irqsave(&mf_cpu->lock, proc_flags);
-+	if (kfifo_put(&mf_cpu->fifo, &entry))
-+		schedule_work_on(smp_processor_id(), &mf_cpu->work);
++	capbuf[OSC_QUERY_TYPE] = OSC_QUERY_ENABLE;
++	capbuf[OSC_SUPPORT_TYPE] = 0;
++	capbuf[OSC_CONTROL_TYPE] = 0;
++
++	if (ACPI_FAILURE(acpi_get_handle(NULL, "\\_SB", &handle))
++	    || ACPI_FAILURE(acpi_run_osc(handle, &context)))
++		return -EIO;
++	else {
++		kfree(context.ret.pointer);
++		return 0;
++	}
++}
++EXPORT_SYMBOL_GPL(apei_osc_setup);
+--- a/drivers/acpi/apei/apei-internal.h
++++ b/drivers/acpi/apei/apei-internal.h
+@@ -124,4 +124,6 @@ void apei_estatus_print(const char *pfx,
+ 			const struct acpi_hest_generic_status *estatus);
+ int apei_estatus_check_header(const struct acpi_hest_generic_status *estatus);
+ int apei_estatus_check(const struct acpi_hest_generic_status *estatus);
++
++int apei_osc_setup(void);
+ #endif
+--- a/drivers/acpi/apei/ghes.c
++++ b/drivers/acpi/apei/ghes.c
+@@ -681,6 +681,16 @@ static int __init ghes_init(void)
+ 	if (rc)
+ 		goto err_ioremap_exit;
+ 
++	rc = apei_osc_setup();
++	if (rc == 0 && osc_sb_apei_support_acked)
++		pr_info(GHES_PFX "APEI firmware first mode is enabled by APEI bit and WHEA _OSC.\n");
++	else if (rc == 0 && !osc_sb_apei_support_acked)
++		pr_info(GHES_PFX "APEI firmware first mode is enabled by WHEA _OSC.\n");
++	else if (rc && osc_sb_apei_support_acked)
++		pr_info(GHES_PFX "APEI firmware first mode is enabled by APEI bit.\n");
 +	else
-+		pr_err("Memory failure: buffer overflow when queuing memory failure at 0x%#lx\n",
-+		       pfn);
-+	spin_unlock_irqrestore(&mf_cpu->lock, proc_flags);
-+	put_cpu_var(memory_failure_cpu);
-+}
-+EXPORT_SYMBOL_GPL(memory_failure_queue);
++		pr_info(GHES_PFX "Failed to enable APEI firmware first mode.\n");
 +
-+static void memory_failure_work_func(struct work_struct *work)
-+{
-+	struct memory_failure_cpu *mf_cpu;
-+	struct memory_failure_entry entry = { 0, };
-+	unsigned long proc_flags;
-+	int gotten;
-+
-+	mf_cpu = &__get_cpu_var(memory_failure_cpu);
-+	for (;;) {
-+		spin_lock_irqsave(&mf_cpu->lock, proc_flags);
-+		gotten = kfifo_get(&mf_cpu->fifo, &entry);
-+		spin_unlock_irqrestore(&mf_cpu->lock, proc_flags);
-+		if (!gotten)
-+			break;
-+		__memory_failure(entry.pfn, entry.trapno, entry.flags);
-+	}
-+}
-+
-+static int __init memory_failure_init(void)
-+{
-+	struct memory_failure_cpu *mf_cpu;
-+	int cpu;
-+
-+	for_each_possible_cpu(cpu) {
-+		mf_cpu = &per_cpu(memory_failure_cpu, cpu);
-+		spin_lock_init(&mf_cpu->lock);
-+		INIT_KFIFO(mf_cpu->fifo);
-+		INIT_WORK(&mf_cpu->work, memory_failure_work_func);
-+	}
-+
-+	return 0;
-+}
-+core_initcall(memory_failure_init);
-+
- /**
-  * unpoison_memory - Unpoison a previously poisoned page
-  * @pfn: Page number of the to be unpoisoned page
+ 	return 0;
+ err_ioremap_exit:
+ 	ghes_ioremap_exit();
