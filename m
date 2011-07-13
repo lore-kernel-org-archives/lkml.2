@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755370Ab1GMP0F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 11:26:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16733 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755214Ab1GMP0D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 11:26:03 -0400
-Date: Wed, 13 Jul 2011 17:23:31 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: do_signal: simplify the TS_RESTORE_SIGMASK logic
-Message-ID: <20110713152331.GB4850@redhat.com>
-References: <20110710182203.GA27979@redhat.com> <20110713102520.0065c7de@mfleming-mobl1.ger.corp.intel.com>
+	id S1755580Ab1GMP1e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 11:27:34 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:34604 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755269Ab1GMP1d convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 11:27:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110713102520.0065c7de@mfleming-mobl1.ger.corp.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1310564781-5979-1-git-send-email-monstr@monstr.eu>
+References: <1310564781-5979-1-git-send-email-monstr@monstr.eu>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 14 Jul 2011 00:27:12 +0900
+X-Google-Sender-Auth: YdrvG9KRVJAX8Dm9OC0Odv6gGzs
+Message-ID: <CACxGe6vRZ4tCALpzFng2y9W_9zB3qQEntma+z292FXzDuYBRKQ@mail.gmail.com>
+Subject: Re: [PATCH] input: xilinx_ps2: Add missing of_address.h header
+To: Michal Simek <monstr@monstr.eu>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13, Matt Fleming wrote:
+On Wed, Jul 13, 2011 at 10:46 PM, Michal Simek <monstr@monstr.eu> wrote:
+> Add missing header.
 >
-> On Sun, 10 Jul 2011 20:22:03 +0200
-> Oleg Nesterov <oleg@redhat.com> wrote:
+> Error log:
+> CC      drivers/input/serio/xilinx_ps2.o
+> drivers/input/serio/xilinx_ps2.c: In function 'xps2_of_probe':
+> drivers/input/serio/xilinx_ps2.c:249: error: implicit declaration of function 'of_address_to_resource'
 >
-> > 1. do_signal() looks at TS_RESTORE_SIGMASK and calculates the
-> >    mask which should be stored in the signal frame, then it
-> >    passes "oldset" to the callees, down to setup_rt_frame().
-> >
-> >    This is ugly, setup_rt_frame() can do this itself and nobody
-> >    else needs this sigset_t. Move this code into setup_rt_frame.
-> >
-> > 2. do_signal() also clears TS_RESTORE_SIGMASK if handle_signal()
-> >    succeeds.
-> >
-> >    We can move this to setup_rt_frame() as well, this avoids the
-> >    unnecessary checks and makes the logic more clear.
-> >
-> > 3. use set_current_blocked() instead of sigprocmask(SIG_SETMASK),
-> >    sigprocmask() should be avoided.
+> Signed-off-by: Michal Simek <monstr@monstr.eu>
+
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
+
+> ---
+>  drivers/input/serio/xilinx_ps2.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 >
-> Could you please mention commit e6fa16ab "signal: sigprocmask() should
-> do retarget_shared_pending()", since it's not immediately obvious in
-> this changelog why sigprocmask() should be avoided.
+> diff --git a/drivers/input/serio/xilinx_ps2.c b/drivers/input/serio/xilinx_ps2.c
+> index 80baa53..d64c5a4 100644
+> --- a/drivers/input/serio/xilinx_ps2.c
+> +++ b/drivers/input/serio/xilinx_ps2.c
+> @@ -23,7 +23,7 @@
+>  #include <linux/init.h>
+>  #include <linux/list.h>
+>  #include <linux/io.h>
+> -
+> +#include <linux/of_address.h>
+>  #include <linux/of_device.h>
+>  #include <linux/of_platform.h>
+>
+> --
+> 1.5.5.6
+>
+>
 
-Well, sigprocmask(SIG_SETMASK) is fine from the correctness pov,
-it calls set_current_blocked().
 
-sigprocmask() should be avoided because it is strange interface.
-It has numeruos callers, but in fact almost all of them could use
-set_current_blocked() (ignoring sys_rt_sigprocmask).
 
-Linus suggested to simply kill sigprocmask(). I am not sure, but
-at least it shouldn't be abused and its last argument is confusing.
-
-> Reviewed-by: Matt Fleming <matt.fleming@linux.intel.com>
-
-Thanks for looking!
-
-Oleg.
-
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
