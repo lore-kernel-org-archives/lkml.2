@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005Ab1GMVqx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 17:46:53 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:53385 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011Ab1GMVqw (ORCPT
+	id S1752247Ab1GMVrz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 17:47:55 -0400
+Received: from mga02.intel.com ([134.134.136.20]:35781 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751623Ab1GMVrx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 17:46:52 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] new helper to define common struct resource constructs
-Date: Wed, 13 Jul 2011 23:42:18 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Wolfram Sang <w.sang@pengutronix.de>, linux-kernel@vger.kernel.org,
-        thierry.nolf.barco@gmail.com, Huang Shijie <b32955@freescale.com>,
-        linux-mtd@lists.infradead.org,
-        " Uwe =?iso-8859-1?q?Kleine-K=F6nig?= " 
-	<u.kleine-koenig@pengutronix.de>,
-        Lothar =?iso-8859-1?q?Wa=DFmann?= <LW@karo-electronics.de>
-References: <14C4E31473AF7E4B98176CB73615181C19FBD3@039-SN1MPN1-006.039d.mgd.msft.net> <201107121529.17611.arnd@arndb.de> <20110713141849.b8cbf675.akpm@linux-foundation.org>
-In-Reply-To: <20110713141849.b8cbf675.akpm@linux-foundation.org>
+	Wed, 13 Jul 2011 17:47:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,527,1304319600"; 
+   d="scan'208";a="27371340"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: "Yu, Fenghua" <fenghua.yu@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 13 Jul 2011 14:47:51 -0700
+Subject: RE: ia64: replace old cpumask functions with new one
+Thread-Topic: ia64: replace old cpumask functions with new one
+Thread-Index: AcxAbYcj5p8lhZMbRmScEBOqbJ/xOQBNyi0g
+Message-ID: <987664A83D2D224EAE907B061CE93D5301E9C9F80E@orsmsx505.amr.corp.intel.com>
+References: <4E031B97.2010609@jp.fujitsu.com>
+ <CA+8MBbLg4jBmaYkVW13WReNm8nyP1p0k3CPN=pQmvwPfRKyeQA@mail.gmail.com>
+ <4E1C055C.1030103@jp.fujitsu.com>
+In-Reply-To: <4E1C055C.1030103@jp.fujitsu.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107132342.18648.arnd@arndb.de>
-X-Provags-ID: V02:K0:tB+TAeUbOmWj40fn9CklPEdFiOr6AuiMD0Ejf2JnYkh
- 3kkMA/OyY8iCZb+SBc1/22Im3fQ/omCMRzdtWwVusZnLYls/du
- 3+z1gn4Qgf6lvil/vwUXCjL7Qf1wIsFc5J8CQfAhLn8IxpByPN
- ZVDrY4X50bTSqwL1IOMnqsqzodz2KPRLHWUCmS0ndBPk2+winy
- WJvIAiFqFoRljxfXffG7w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 13 July 2011 23:18:49 Andrew Morton wrote:
-> > On Monday 11 July 2011, Uwe Kleine-K__nig wrote:
-> > > resource definitions that just define start, end and flags = IORESOURCE_MEM
-> > > or IORESOURCE_IRQ (with start=end) are quite common. So introduce a shortcut
-> > > for them. Also make available a macro to specify named resources of both
-> > > types which are less common.
-> > > 
-> > > Signed-off-by: Uwe Kleine-K____nig <u.kleine-koenig@pengutronix.de>
-> > 
-> > Acked-by: Arnd Bergmann <arnd@arndb.de>
-> > 
-> > What do others think, is this worthwhile?
-> > Should we also define macros for IORESOURCE_IO and IORESOURCE_DMA?
-> > 
-> 
-> It would help if we could see some usage examples (ie: sample
-> conversions), to get a better idea of the value of this.
+> But ummm.. I can't understand the author expect which effect by this volatile.
+> If I am correct, its volatile has no effect. we can simply remove it.
 
-Uwe posted a patch '[PATCH] ARM: mxc: use new helpers to define
-common struct resource entries' that converts one ARM platform to use
-it, with reasonable outcome:
+It may be a legacy from when cpumask was a simple integer type. The
+boot cpu wakes up each "AP" cpu in turn - and spins looking at
+cpu_callin_mask waiting to see if the cpu has really woken up,
+since the AP cpu will set its own bit in this mask when it begins
+execution.
 
-26 files changed, 72 insertions(+), 308 deletions(-)
+Making the original integer mask a volatile was a way to make
+sure that the compiler did not optimize away the re-read of
+this variable in the loop.
 
-This platform has 72 definitions of static resources, in total there
-are well over 2000 such defintions in ARM alone, and the number is
-growing. Some platforms have started creating their own macros for
-this purpose, which is why I suggested doing it globally (or alternatively
-removing the macros from these platforms if we conclude that they
-are harmful).
+When NR_CPUS is small enough - we still use a simple
+integer for cpumask type - don't we? So if you remove
+the volatile, look very carefully at this loop:
 
-> Also, DEFINE_RES_NAMED() is going to need a bunch of argument
-> parentheses to make it bulletproof.
+        for (timeout = 0; timeout < 100000; timeout++) {
+                if (cpu_isset(cpu, cpu_callin_map))
+                        break;  /* It has booted */
+                udelay(100);
+        }
 
-Right.
+to make sure that the cpu_isset() check really does look
+at cpu_callin_map every time (and not at some cached in a
+register copy of it). Booting would become painfully slow
+if we get stuck for 10 seconds per cpu just here.
 
-	Arnd
+-Tony
+
+
