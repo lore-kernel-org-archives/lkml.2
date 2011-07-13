@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965288Ab1GMLWU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 07:22:20 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:33944 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964915Ab1GMLWT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 07:22:19 -0400
+	id S965348Ab1GMLWa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 07:22:30 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:2703 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964915Ab1GMLW1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 07:22:27 -0400
+X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
+Message-ID: <4E1D7FCA.1050203@broadcom.com>
+Date: Wed, 13 Jul 2011 13:21:46 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17)
+ Gecko/20110516 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <4E1D6396.1070200@suse.cz>
-References: <alpine.DEB.2.01.1107040242180.9183@trent.utfs.org>
-	<1310470780-12330-1-git-send-email-mmarek@suse.cz>
-	<CAM_iQpWfSFPcvDJCDwS9ADCEvw-6A3wyUh+kkhgqHOi2Zx_eSg@mail.gmail.com>
-	<4E1D6396.1070200@suse.cz>
-Date: Wed, 13 Jul 2011 19:22:18 +0800
-Message-ID: <CAM_iQpUoLwar3wYUe-3i5tgSB4e9HF__QKSht2yxVYP_MmUqyQ@mail.gmail.com>
-Subject: Re: [PATCH] kbuild: Do not write to builddir in modules_install
-From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Christian Kujau <lists@nerdbynature.de>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: "David Miller" <davem@davemloft.net>
+cc: "adobriyan@gmail.com" <adobriyan@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] net: change return values in mac_pton() function
+References: <1310549424-5484-1-git-send-email-arend@broadcom.com>
+ <CACVxJT-TXBd5S+HNfzNR2hnGUk2hMfTSQrkodUunUXOQ6+X8eg@mail.gmail.com>
+ <20110713.041253.1879038886370324446.davem@davemloft.net>
+In-Reply-To: <20110713.041253.1879038886370324446.davem@davemloft.net>
+X-WSS-ID: 62035E8E3B419675149-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 13, 2011 at 5:21 PM, Michal Marek <mmarek@suse.cz> wrote:
-> On 13.7.2011 03:05, Américo Wang wrote:
->>
->> On Tue, Jul 12, 2011 at 7:39 PM, Michal Marek<mmarek@suse.cz>  wrote:
->>>
->>> Let depmod.sh create a temporary directory in /tmp instead of writing to
->>> the build directory as root. The mktemp utility should be available on
->>> any recent system (and there is already scripts/gen_initramfs_list.sh
->>> relying on it).
->>>
->>
->> Hmm, why not use $objtree/.tmp_depmod?
+On 07/13/2011 01:12 PM, David Miller wrote:
+> From: Alexey Dobriyan<adobriyan@gmail.com>
+> Date: Wed, 13 Jul 2011 13:09:03 +0300
 >
-> That's how it was done before and it's broken. make modules_install is
-> usually ran as root and there is no guarantee that root has write access to
-> the build directory (it can be on nfs).
+>> On Wed, Jul 13, 2011 at 12:30 PM, Arend van Spriel<arend@broadcom.com>  wrote:
+>>> The original commit adding this function noted a diverge from usual
+>>> 0=success/-E=fail, but no motivation for it.
+>> I thought it was obvious, but indeed wasn't explicitely
+>> mentioned in changelog. But see inet_pton(3).
+> Agreed it's better for mac_pton() to be consistent with existing,
+> similar, interfaces like inet_pton.
 
-Hmm, this is reasonable. Then I am fine with this patch.
+I just liked the general approach of zero indicating success. But even 
+in the realm called Linux not everything can be black and white, I guess :-D
 
-Thanks for explanation!
+Please drop the patch.
+
+Gr. AvS
+
+-- 
+Almost nobody dances sober, unless they happen to be insane.
+-- H.P. Lovecraft --
+
+
