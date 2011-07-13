@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986Ab1GMFS1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 01:18:27 -0400
-Received: from mga09.intel.com ([134.134.136.24]:9791 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751114Ab1GMFOd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 01:14:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,523,1304319600"; 
-   d="scan'208";a="27048158"
-From: Huang Ying <ying.huang@intel.com>
-To: Len Brown <lenb@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Tony Luck <tony.luck@intel.com>, ying.huang@intel.com,
-        linux-acpi@vger.kernel.org
-Subject: [PATCH 01/17] ACPI, APEI, HEST, Detect duplicated hardware error source ID
-Date: Wed, 13 Jul 2011 13:14:12 +0800
-Message-Id: <1310534068-30547-2-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1310534068-30547-1-git-send-email-ying.huang@intel.com>
-References: <1310534068-30547-1-git-send-email-ying.huang@intel.com>
+	id S1751605Ab1GMFUu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 01:20:50 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:65082 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758Ab1GMFUt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 01:20:49 -0400
+Subject: [PATCH] i2c-pxa2xx: return proper error code in ce4100_i2c_probe
+ error paths
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
+        linux-i2c@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 13 Jul 2011 13:20:39 +0800
+Message-ID: <1310534439.6086.1.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The firmware on some machine will report duplicated hardware error
-source ID in HEST.  This is considered a firmware bug.  To provide
-better warning message, this patch adds duplicated hardware error
-source ID detecting and corresponding printk.
-
-This patch fixes #37412 on kernel bugzilla:
-https://bugzilla.kernel.org/show_bug.cgi?id=37412
-
-Reported-by: marconifabio@ubuntu-it.org
-Signed-off-by: Huang Ying <ying.huang@intel.com>
-Tested-by: Mathias <janedo.spam@gmail.com>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/acpi/apei/hest.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ drivers/i2c/busses/i2c-pxa-pci.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
---- a/drivers/acpi/apei/hest.c
-+++ b/drivers/acpi/apei/hest.c
-@@ -139,13 +139,23 @@ static int __init hest_parse_ghes(struct
- {
- 	struct platform_device *ghes_dev;
- 	struct ghes_arr *ghes_arr = data;
--	int rc;
-+	int rc, i;
- 
- 	if (hest_hdr->type != ACPI_HEST_TYPE_GENERIC_ERROR)
- 		return 0;
- 
- 	if (!((struct acpi_hest_generic *)hest_hdr)->enabled)
- 		return 0;
-+	for (i = 0; i < ghes_arr->count; i++) {
-+		struct acpi_hest_header *hdr;
-+		ghes_dev = ghes_arr->ghes_devs[i];
-+		hdr = *(struct acpi_hest_header **)ghes_dev->dev.platform_data;
-+		if (hdr->source_id == hest_hdr->source_id) {
-+			pr_warning(FW_WARN HEST_PFX "Duplicated hardware error source ID: %d.\n",
-+				   hdr->source_id);
-+			return -EIO;
-+		}
+diff --git a/drivers/i2c/busses/i2c-pxa-pci.c b/drivers/i2c/busses/i2c-pxa-pci.c
+index 6659d26..b73da6c 100644
+--- a/drivers/i2c/busses/i2c-pxa-pci.c
++++ b/drivers/i2c/busses/i2c-pxa-pci.c
+@@ -109,12 +109,15 @@ static int __devinit ce4100_i2c_probe(struct pci_dev *dev,
+ 		return -EINVAL;
+ 	}
+ 	sds = kzalloc(sizeof(*sds), GFP_KERNEL);
+-	if (!sds)
++	if (!sds) {
++		ret = -ENOMEM;
+ 		goto err_mem;
 +	}
- 	ghes_dev = platform_device_alloc("GHES", hest_hdr->source_id);
- 	if (!ghes_dev)
- 		return -ENOMEM;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(sds->pdev); i++) {
+ 		sds->pdev[i] = add_i2c_device(dev, i);
+ 		if (IS_ERR(sds->pdev[i])) {
++			ret = PTR_ERR(sds->pdev[i]);
+ 			while (--i >= 0)
+ 				platform_device_unregister(sds->pdev[i]);
+ 			goto err_dev_add;
+-- 
+1.7.4.1
+
+
+
