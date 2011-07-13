@@ -1,56 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932371Ab1GMDOJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 23:14:09 -0400
-Received: from e24smtp05.br.ibm.com ([32.104.18.26]:48593 "EHLO
-	e24smtp05.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932349Ab1GMDOH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 23:14:07 -0400
-Message-ID: <4E1D0D6F.5040703@linux.vnet.ibm.com>
-Date: Wed, 13 Jul 2011 00:13:51 -0300
-From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Lightning/1.0b2 Thunderbird/3.1.10
+	id S932380Ab1GMDVo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 23:21:44 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55077 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932349Ab1GMDVn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jul 2011 23:21:43 -0400
+Message-ID: <4E1D0F33.7020708@zytor.com>
+Date: Tue, 12 Jul 2011 20:21:23 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: James Morris <jmorris@namei.org>
-CC: Stefan Berger <stefanb@linux.vnet.ibm.com>,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Please pull TPM fixes
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Tejun Heo <tj@kernel.org>, mingo@redhat.com, tglx@linutronix.de,
+        benh@kernel.crashing.org, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCHSET x86/mm] memblock, x86: Allow node info in memblock
+ and remove x86 specific memblock code
+References: <1310462166-31469-1-git-send-email-tj@kernel.org> <CAE9FiQUfHB=EtzDBhPr2ntn__0AC0NcCdi0e7NiwmKb0bZmBbg@mail.gmail.com>
+In-Reply-To: <CAE9FiQUfHB=EtzDBhPr2ntn__0AC0NcCdi0e7NiwmKb0bZmBbg@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-x-cbid: 11071303-2362-0000-0000-000004315CEB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
+On 07/12/2011 04:26 PM, Yinghai Lu wrote:
+> 
+> that is great, merge early_node_map into memblock array.
+> 
+> looks it comes with some mismatch section warning...
+> 
 
-Please pull this set of TPM fixes since commit 97fb35e413f256ded07b88c73b3d932ec31ea84e
+I'm also confused about the baseline of the patchset...
 
-  TOMOYO: Enable conditional ACL. (2011-07-11 11:05:34 +1000)
-
-that are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/srajiv/tpm-2.6.git for-james
-
-Stefan Berger (12):
-      tpm: Use durations returned from TPM
-      tpm: Adjust the durations if they are too small
-      tpm_tis: Introduce durations sysfs entry
-      tpm: Use interface timeouts returned from the TPM
-      tpm: Adjust interface timeouts if they are too small
-      tpm_tis: Add timeouts sysfs entry
-      tpm: Fix display of data in pubek sysfs entry
-      tpm_tis: Re-enable interrupts upon (S3) resume
-      tpm_tis: Delay ACPI S3 suspend while the TPM is busy
-      tpm_tis: Fix the probing for interrupts
-      tpm_tis: Probing function for Intel iTPM bug
-      tpm: Fix a typo
-
- drivers/char/tpm/tpm.c     |  102 +++++++++++++++++++-------
- drivers/char/tpm/tpm.h     |    7 ++
- drivers/char/tpm/tpm_tis.c |  174 ++++++++++++++++++++++++++++++++++++++++----
- 3 files changed, 241 insertions(+), 42 deletions(-)
-
-Thanks,
-Rajiv
-
+	-hpa
