@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964900Ab1GMFOr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 01:14:47 -0400
+	id S964964Ab1GMFPD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 01:15:03 -0400
 Received: from mga09.intel.com ([134.134.136.24]:9791 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751701Ab1GMFOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 01:14:45 -0400
+	id S964930Ab1GMFO6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 01:14:58 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,523,1304319600"; 
-   d="scan'208";a="27048211"
+   d="scan'208";a="27048267"
 From: Huang Ying <ying.huang@intel.com>
 To: Len Brown <lenb@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
         Tony Luck <tony.luck@intel.com>, ying.huang@intel.com,
-        linux-acpi@vger.kernel.org
-Subject: [PATCH 09/17] ACPI, APEI, Add APEI bit support in generic _OSC call
-Date: Wed, 13 Jul 2011 13:14:20 +0800
-Message-Id: <1310534068-30547-10-git-send-email-ying.huang@intel.com>
+        linux-acpi@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 16/17] HWPoison: add memory_failure_queue()
+Date: Wed, 13 Jul 2011 13:14:27 +0800
+Message-Id: <1310534068-30547-17-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1310534068-30547-1-git-send-email-ying.huang@intel.com>
 References: <1310534068-30547-1-git-send-email-ying.huang@intel.com>
@@ -24,78 +26,143 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In APEI firmware first mode, hardware error is reported by hardware to
-firmware firstly, then firmware reports the error to Linux in a GHES
-error record via POLL/SCI/IRQ/NMI etc.
+memory_failure() is the entry point for HWPoison memory error
+recovery.  It must be called in process context.  But commonly
+hardware memory errors are notified via MCE or NMI, so some delayed
+execution mechanism must be used.  In MCE handler, a work queue + ring
+buffer mechanism is used.
 
-This may result in some issues if OS has no full APEI support.  So
-some firmware implementation will work in a back-compatible mode by
-default.  Where firmware will only notify OS in old-fashion, without
-GHES record.  For example, for a fatal hardware error, only NMI is
-signaled, no GHES record.
-
-To gain full APEI power on these machines, APEI bit in generic _OSC
-call can be specified to tell firmware that Linux has full APEI
-support.  This patch adds the APEI bit support in generic _OSC call.
+In addition to MCE, now APEI (ACPI Platform Error Interface) GHES
+(Generic Hardware Error Source) can be used to report memory errors
+too.  To add support to APEI GHES memory recovery, a mechanism similar
+to that of MCE is implemented.  memory_failure_queue() is the new
+entry point that can be called in IRQ context.  The next step is to
+make MCE handler uses this interface too.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
-Reviewed-by: Andi Kleen <ak@linux.intel.com>
-Reviewed-by: Matthew Garrett <mjg@redhat.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- drivers/acpi/bus.c   |   16 ++++++++++++++--
- include/linux/acpi.h |    2 ++
- 2 files changed, 16 insertions(+), 2 deletions(-)
+ include/linux/mm.h  |    1 
+ mm/memory-failure.c |   92 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 93 insertions(+)
 
---- a/drivers/acpi/bus.c
-+++ b/drivers/acpi/bus.c
-@@ -39,6 +39,7 @@
- #include <linux/pci.h>
- #include <acpi/acpi_bus.h>
- #include <acpi/acpi_drivers.h>
-+#include <acpi/apei.h>
- #include <linux/dmi.h>
- #include <linux/suspend.h>
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1633,6 +1633,7 @@ enum mf_flags {
+ };
+ extern void memory_failure(unsigned long pfn, int trapno);
+ extern int __memory_failure(unsigned long pfn, int trapno, int flags);
++extern void memory_failure_queue(unsigned long pfn, int trapno, int flags);
+ extern int unpoison_memory(unsigned long pfn);
+ extern int sysctl_memory_failure_early_kill;
+ extern int sysctl_memory_failure_recovery;
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -53,6 +53,7 @@
+ #include <linux/hugetlb.h>
+ #include <linux/memory_hotplug.h>
+ #include <linux/mm_inline.h>
++#include <linux/kfifo.h>
+ #include "internal.h"
  
-@@ -519,6 +520,7 @@ out_kfree:
+ int sysctl_memory_failure_early_kill __read_mostly = 0;
+@@ -1178,6 +1179,97 @@ void memory_failure(unsigned long pfn, i
+ 	__memory_failure(pfn, trapno, 0);
  }
- EXPORT_SYMBOL(acpi_run_osc);
  
-+bool osc_sb_apei_support_acked;
- static u8 sb_uuid_str[] = "0811B06E-4A27-44F9-8D60-3CBBC22E7B48";
- static void acpi_bus_osc_support(void)
- {
-@@ -541,11 +543,21 @@ static void acpi_bus_osc_support(void)
- #if defined(CONFIG_ACPI_PROCESSOR) || defined(CONFIG_ACPI_PROCESSOR_MODULE)
- 	capbuf[OSC_SUPPORT_TYPE] |= OSC_SB_PPC_OST_SUPPORT;
- #endif
++#define MEMORY_FAILURE_FIFO_ORDER	4
++#define MEMORY_FAILURE_FIFO_SIZE	(1 << MEMORY_FAILURE_FIFO_ORDER)
 +
-+#ifdef CONFIG_ACPI_APEI_GHES
-+	if (!ghes_disable)
-+		capbuf[OSC_SUPPORT_TYPE] |= OSC_SB_APEI_SUPPORT;
-+#endif
- 	if (ACPI_FAILURE(acpi_get_handle(NULL, "\\_SB", &handle)))
- 		return;
--	if (ACPI_SUCCESS(acpi_run_osc(handle, &context)))
-+	if (ACPI_SUCCESS(acpi_run_osc(handle, &context))) {
-+		u32 *capbuf_ret = context.ret.pointer;
-+		if (context.ret.length > OSC_SUPPORT_TYPE)
-+			osc_sb_apei_support_acked =
-+				capbuf_ret[OSC_SUPPORT_TYPE] & OSC_SB_APEI_SUPPORT;
- 		kfree(context.ret.pointer);
--	/* do we need to check the returned cap? Sounds no */
++struct memory_failure_entry {
++	unsigned long pfn;
++	int trapno;
++	int flags;
++};
++
++struct memory_failure_cpu {
++	DECLARE_KFIFO(fifo, struct memory_failure_entry,
++		      MEMORY_FAILURE_FIFO_SIZE);
++	spinlock_t lock;
++	struct work_struct work;
++};
++
++static DEFINE_PER_CPU(struct memory_failure_cpu, memory_failure_cpu);
++
++/**
++ * memory_failure_queue - Schedule handling memory failure of a page.
++ * @pfn: Page Number of the corrupted page
++ * @trapno: Trap number reported in the signal to user space.
++ * @flags: Flags for memory failure handling
++ *
++ * This function is called by the low level hardware error handler
++ * when it detects hardware memory corruption of a page. It schedules
++ * the recovering of error page, including dropping pages, killing
++ * processes etc.
++ *
++ * The function is primarily of use for corruptions that
++ * happen outside the current execution context (e.g. when
++ * detected by a background scrubber)
++ *
++ * Can run in IRQ context.
++ */
++void memory_failure_queue(unsigned long pfn, int trapno, int flags)
++{
++	struct memory_failure_cpu *mf_cpu;
++	unsigned long proc_flags;
++	struct memory_failure_entry entry = {
++		.pfn =		pfn,
++		.trapno =	trapno,
++		.flags =	flags,
++	};
++
++	mf_cpu = &get_cpu_var(memory_failure_cpu);
++	spin_lock_irqsave(&mf_cpu->lock, proc_flags);
++	if (kfifo_put(&mf_cpu->fifo, &entry))
++		schedule_work_on(smp_processor_id(), &mf_cpu->work);
++	else
++		pr_err("Memory failure: buffer overflow when queuing memory failure at 0x%#lx\n",
++		       pfn);
++	spin_unlock_irqrestore(&mf_cpu->lock, proc_flags);
++	put_cpu_var(memory_failure_cpu);
++}
++EXPORT_SYMBOL_GPL(memory_failure_queue);
++
++static void memory_failure_work_func(struct work_struct *work)
++{
++	struct memory_failure_cpu *mf_cpu;
++	struct memory_failure_entry entry = { 0, };
++	unsigned long proc_flags;
++	int gotten;
++
++	mf_cpu = &__get_cpu_var(memory_failure_cpu);
++	for (;;) {
++		spin_lock_irqsave(&mf_cpu->lock, proc_flags);
++		gotten = kfifo_get(&mf_cpu->fifo, &entry);
++		spin_unlock_irqrestore(&mf_cpu->lock, proc_flags);
++		if (!gotten)
++			break;
++		__memory_failure(entry.pfn, entry.trapno, entry.flags);
 +	}
-+	/* do we need to check other returned cap? Sounds no */
- }
- 
- /* --------------------------------------------------------------------------
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -280,6 +280,8 @@ acpi_status acpi_run_osc(acpi_handle han
- #define OSC_SB_CPUHP_OST_SUPPORT	8
- #define OSC_SB_APEI_SUPPORT		16
- 
-+extern bool osc_sb_apei_support_acked;
++}
 +
- /* PCI defined _OSC bits */
- /* _OSC DW1 Definition (OS Support Fields) */
- #define OSC_EXT_PCI_CONFIG_SUPPORT		1
++static int __init memory_failure_init(void)
++{
++	struct memory_failure_cpu *mf_cpu;
++	int cpu;
++
++	for_each_possible_cpu(cpu) {
++		mf_cpu = &per_cpu(memory_failure_cpu, cpu);
++		spin_lock_init(&mf_cpu->lock);
++		INIT_KFIFO(mf_cpu->fifo);
++		INIT_WORK(&mf_cpu->work, memory_failure_work_func);
++	}
++
++	return 0;
++}
++core_initcall(memory_failure_init);
++
+ /**
+  * unpoison_memory - Unpoison a previously poisoned page
+  * @pfn: Page number of the to be unpoisoned page
