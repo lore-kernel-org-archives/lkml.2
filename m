@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751731Ab1GMUtd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 16:49:33 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:59304 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751350Ab1GMUtc convert rfc822-to-8bit (ORCPT
+	id S1751800Ab1GMUvI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 16:51:08 -0400
+Received: from vms173005pub.verizon.net ([206.46.173.5]:51043 "EHLO
+	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751574Ab1GMUvH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 16:49:32 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:sender:in-reply-to:references:from:
-	date:x-google-sender-auth:message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=YwLDalbGG6DxdQZgqCT0jWycxF+Gzur1yDg8pTxvJJLNaHOsh8YKSFh58TNztvaNB
-	gUvpKj61QSBNJTxbJEK4Q==
-MIME-Version: 1.0
-In-Reply-To: <1310589536.3931.25.camel@gandalf.stny.rr.com>
-References: <1310505348-20163-1-git-send-email-sonnyrao@chromium.org>
- <29926.1310553581@neuling.org> <30671.1310554369@neuling.org> <1310589536.3931.25.camel@gandalf.stny.rr.com>
-From: Sonny Rao <sonnyrao@chromium.org>
-Date: Wed, 13 Jul 2011 13:49:08 -0700
-X-Google-Sender-Auth: 57xsYmwttkYsRE7tZH2o6JwULPk
-Message-ID: <CAPz6YkVsnZk0WA+Y-cOTtX4=VQd2=peOyKCD4aHdUXCy3=GDaw@mail.gmail.com>
-Subject: Re: [PATCH] [RFC] perf: robustify proc and debugfs file recording
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Michael Neuling <mikey@neuling.org>, acme@redhat.com, anton@samba.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Wed, 13 Jul 2011 16:51:07 -0400
+X-Greylist: delayed 393 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Jul 2011 16:51:07 EDT
+Date: Wed, 13 Jul 2011 16:51:01 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: Pavel Machek <pavel@ucw.cz>
+Cc: stable@kernel.org, Ingo Molnar <mingo@elte.hu>, x86@kernel.org,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [PATCH] x86 intel power: Initialize MSR_IA32_ENERGY_PERF_BIAS
+In-reply-to: <20110420131442.GA29418@atrey.karlin.mff.cuni.cz>
+Message-id: <alpine.LFD.2.02.1107131647140.9546@x980>
+References: <alpine.LFD.2.02.1103301819250.31342@x980>
+ <20110414090854.GB9248@elte.hu> <alpine.LFD.2.02.1104150202310.29365@x980>
+ <20110420131442.GA29418@atrey.karlin.mff.cuni.cz>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 13, 2011 at 1:38 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Wed, 2011-07-13 at 20:52 +1000, Michael Neuling wrote:
->
->> Actually, here's an updated patch to fix these..
->>
->> FYI perf record/annotate/report works fine on my powerpc box here with
->> this.  I don't have modules handy so I've not tested that aspect.
->
-> Sure it worked for you...
->
->
->> -static unsigned long get_size(const char *file)
->> -{
->> -     unsigned long long size = 0;
->> -     int fd;
->> -
->> -     fd = open(file, O_RDONLY);
->> -     if (fd < 0)
->> -             die("Can't read '%s'", file);
->> -     size = get_size_fd(fd);
->>       close(fd);
->>
->> -     return size;
->> +     /* ugh, handle big-endian hdr_size == 4 */
->> +     sizep = (char*)&size;
->> +     if (bigendian())
->> +             sizep += sizeof(u64) - hdr_sz;
->> +
->> +     if (pwrite(output_fd, &size, hdr_sz, hdr_pos) < 0)
->
-> s/&size/sizep/
+> Ok. So... what "serious bug" does this fix? You really need to use cc:
+> stable less. Tweaking performance/power ratio is _not_ serious bug.
 
-Argh, I'm really messing this up... so yeah this shouldn't have worked
-on big-endian without that fix..
-Mikey, are you sure it worked?
+While the performance difference may not be significant,
+the energy difference may be.
 
-Sonny
+Some people think it is serious when Linux has worse out-of-box
+energy efficiency than Windows on the same hardware.
+
+Some people think that it is serious when their Linux distribution
+has worse energy efficiency than competing Linux distributions.
+
+Greg has given me a hard time for not cc'ing stable _enough_.
+I guess the folks that answer the stable mail get to decide...
+
+cheers,
+-Len
+
