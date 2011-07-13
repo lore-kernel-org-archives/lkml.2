@@ -1,49 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932404Ab1GMSP0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 14:15:26 -0400
-Received: from mga09.intel.com ([134.134.136.24]:24139 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932140Ab1GMSPZ convert rfc822-to-8bit (ORCPT
+	id S1751621Ab1GMSSo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 14:18:44 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:32382 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750706Ab1GMSSn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 14:15:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,526,1304319600"; 
-   d="scan'208";a="27300825"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Don Zickus <dzickus@redhat.com>, Matthew Garrett <mjg@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 13 Jul 2011 11:15:24 -0700
-Subject: RE: pstore dump inside an nmi handler
-Thread-Topic: pstore dump inside an nmi handler
-Thread-Index: Acw/4MSAJfizKsMfSH+XD/SEypVeBgBpopWA
-Message-ID: <987664A83D2D224EAE907B061CE93D5301E9C9F4A8@orsmsx505.amr.corp.intel.com>
-References: <20110708201731.GA3025@redhat.com>
- <987664A83D2D224EAE907B061CE93D5301E981AB56@orsmsx505.amr.corp.intel.com>
- <20110708214941.GA20511@srcf.ucam.org> <20110711153931.GA10083@redhat.com>
-In-Reply-To: <20110711153931.GA10083@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 13 Jul 2011 14:18:43 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=XEuiqWpfEudrgaZd/Bdegb6nQ+y0wdBgeZmQa5XXROcXQ5aXdysz+D4Rcgadyz43q
+	vTh7Bx1HttVU8z97pZztQ==
 MIME-Version: 1.0
+In-Reply-To: <20110713141129.GG9201@somewhere>
+References: <1306877298-31713-1-git-send-email-vnagarnaik@google.com>
+ <1308681903-12840-1-git-send-email-vnagarnaik@google.com> <20110707233453.GE21115@somewhere>
+ <CAJL_eku7ezDhSOaOxN4ACFas1rnX=uaV184ZK3-0fE60Rmwh8g@mail.gmail.com>
+ <20110711155404.GB4109@somewhere.redhat.com> <CAL26m8+ca64BDrQUohxcZfUpZQgn7bNkup=Q92LaTmpvorm9fQ@mail.gmail.com>
+ <20110712180859.GC9201@somewhere> <CAL26m8LsEwEEE1e4D9dWn2Gm5_cvtNXMRod4d2hsD=qHGG1Nig@mail.gmail.com>
+ <20110713141129.GG9201@somewhere>
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Date: Wed, 13 Jul 2011 11:18:10 -0700
+Message-ID: <CAL26m8L8Zn3dpH2DfBMTnhZxLJ=-WFf-WYKYPUuyVaNFbocc9g@mail.gmail.com>
+Subject: Re: [PATCH v3] trace: Add x86 irq vector entry/exit tracepoints
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: David Sharp <dhsharp@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Michael Rubin <mrubin@google.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Jiaying Zhang <jiayingz@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> But perhaps, if we detect a spinlock is in use, we can bust it and reset
-> the state machine to solve that problem?
+On Wed, Jul 13, 2011 at 7:11 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> On Tue, Jul 12, 2011 at 03:08:48PM -0700, Vaibhav Nagarnaik wrote:
+>> Breaking this patch up in different small ones makes sense. Can you
+>> comment on this proposal for the following trace events?
+>>
+>> For tracepoints in generic IRQ handlers:
+>> 1. trace_timer_vector - takes an enum for BROADCAST, HRTIMER, ONESHOT,
+>>    PERIODIC and NOHZ.
+>
+> Have you read my previous email entirely?
+>
+> Where I explained we shouldn't use that vector naming outside of low
+> level archs, and that those enums break tracing granularity?
+>
 
-The ERST table specifies a series of actions to perform to make
-the records get saved to (or read from) the platform persistent
-store. These actions will be dependent on the h/w, and also on
-the creativity of the BIOS writer who composed the ERST action
-table.
+I was arguing for an enum for this since it is a single contained trace
+event for all timers. But you are right, since I'm breaking up the
+interrupts in different trace events already, timer interrupts should
+also have separate trace events for granularity.
 
-Resetting the state machine looks like it might be tricky from
-any arbitrary point in the sequence.
+>> 2. trace_irq_work_vector - for IRQ_WORK_VECTOR
+>
+> trace_irq_work_run() should be enough. And people can add
+> trace_irq_work_queue() if they need to one day.
+>
+>
+>> 3. trace_reschedule_vector - for RESCHEDULE_IPI vector
+>
+> trace_reschedule_interrupt()
+>
+>
+>> 4. trace_call_function_vector - takes an enum for CALL_FUNCTION and
+>>    CALL_FUNCTION_SINGLE
+>
+> Two seperate tracepoints should be better.
+>
+>
+>> Another trace event for arch-specific IRQ vectors which don't have
+>> generic event handlers:
+>> 5. trace_platform_irq_vector - takes an enum, which is defined in
+>>    asm/irq.h for each platform. This is traced in arch-specific files
+>>    only.
+>
+> Yep. For this perhaps an enum can make sense.
+>
+> Thanks.
+>
 
--Tony
+I will create and post the patch series soon.
+
+
+Thanks
+
+Vaibhav Nagarnaik
