@@ -1,82 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752552Ab1GMSgl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 14:36:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27766 "EHLO mx1.redhat.com"
+	id S1753545Ab1GMSzt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 14:55:49 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:50495 "EHLO smtp.gentoo.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751740Ab1GMSgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 14:36:40 -0400
-Date: Wed, 13 Jul 2011 20:33:22 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, vda.linux@googlemail.com,
-        jan.kratochvil@redhat.com, pedro@codesourcery.com, indan@nul.nu,
-        bdonlan@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] ptrace: fix ptrace_signal() && STOP_DEQUEUED
-	interaction
-Message-ID: <20110713183322.GA12535@redhat.com>
-References: <20110707190301.GA25332@redhat.com> <20110707190324.GB25332@redhat.com> <20110713100404.GG2872@htj.dyndns.org>
+	id S1752765Ab1GMSzs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 14:55:48 -0400
+Message-ID: <4E1DEA24.3010109@gentoo.org>
+Date: Wed, 13 Jul 2011 21:55:32 +0300
+From: Stratos Psomadakis <psomas@gentoo.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110626 Icedove/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110713100404.GG2872@htj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: lkml <linux-kernel@vger.kernel.org>
+CC: Chris Wright <chrisw@sous-sol.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+        David Woodhouse <David.Woodhouse@intel.com>, kernel@gentoo.org
+Subject: Re: -stable commit 87cc4d1e (bisected) causes system freeze
+References: <CAAdZ7YhU=ETCYPhUq-3tB6tgRZ5ZA1fRKuyXT5aZMxU0-0gdFQ@mail.gmail.com>
+In-Reply-To: <CAAdZ7YhU=ETCYPhUq-3tB6tgRZ5ZA1fRKuyXT5aZMxU0-0gdFQ@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig75EA93003BD9C1BFFA86ECF9"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig75EA93003BD9C1BFFA86ECF9
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-On 07/13, Tejun Heo wrote:
+On 13/07/2011 05:28 =CE=BC=CE=BC, Marcus Becker wrote:
+> Hi,
 >
-> Sorry about the long delay.
-
-No, no, you shouldn't use this mantra.  I hold the copyright!
-
-> On Thu, Jul 07, 2011 at 09:03:24PM +0200, Oleg Nesterov wrote:
-> > Without the patch it hangs. After the patch SIGSTOP "injected" by the
-> > tracer is not ignored and stops the tracee.
+> With the upgrade to 2.6.39.2, I cannot copy more than ~1GB of data
+> over the network before my input devices lock up.
+> Example:
+> use scp on tty1 to copy a folder or file larger than 3GB over my
+> gigabit network and after ~1min the keyboard stops responding.
+> use cp on tty1 with an nfs-3 share mounted over the same network and
+> try to copy the same file, same happens
 >
-> I always felt the ability to 'inject' different signal there is rather
-> useless and prone to induce weird issues.  It would be better if
-> ptrace_signal() is part of signal delivery action after all the checks
-> so that the ptracer says whether to proceed with the action or not but
-> no more.  Well...
-
-Oh, probably. If the tracer wants a different signr, it can simply do
-tkill() + PTRACE_CONT(0). I agree. Although perhaps this is needed for
-gdb, I dunno. But we can't change this.
-
-And, I'd like to clarify... It is not that I think it is that important
-to ensure PTRACE_CONT(SIGSTOP) will actually stop the tracee if the tracer
-changes the original signal. I simply do not know if it is used this way.
-
-The only important thing, imho, the behaviour shouldn't depend on
-/dev/random, with this patch it is at least clearly defined.
-
-> > So lets add STOP_DEQUEUED _before_ we report the signal. It has no effect
-> > unless sig_kernel_stop() == T after the tracer resumes us, and in the
-> > latter case the pending STOP_DEQUEUED means no SIGCONT in between, we
-> > should stop.
+> I can hit ctrl+c for about 20-30 sec and eventually get an interrupt
+> that stops the copying, then the input devices slowly gain control
+> again. If I do the same on X, there is no chance to get in between and
+> I have to use SysRq to reboot.
 >
-> Anyways, yes, this seems to be a nice improvement but it looks very
-> weird (and difficult to comprehend) to be setting STOP_DEQUEUED
-> unconditionally in ptrace_signal().
+> In our bug report at https://bugs.gentoo.org/show_bug.cgi?id=3D373109
+> We did a bisect between 2.6.39.1 and 2.6.39.2 and found the following
+> patch is causing this problem:
+>
+> commit 87cc4d1e3e05af38c7c51323a3d86fe2572ab033
+> Author: Chris Wright <chrisw@sous-sol.org>
+> Date:   Sat May 28 13:15:04 2011 -0500
+>
+>     intel-iommu: Dont cache iova above 32bit
+>
+> I will also attach dmesg, current kernel config, and my bisect log (I
+> put a uname -a into the log after each bisect) plus git bisect log
+>
+> Please let me know if you need more information.
+>
+> Thanks,
+>
+> Marcus
+CC'ed the people who signed-off the patch.
 
-Yeeees, agreed. I even added the comment to explain this weirdness.
-
-> Wouldn't it be better to flip the
-> flag so that we have CONT_RECEIVED before doing this?
-
-May be. You know, I thought about this when I did ee77f075
-"signal: Turn SIGNAL_STOP_DEQUEUED into GROUP_STOP_DEQUEUED".
-
-Or may be we can simply rename it into STOP_ALLOWED. In this case
-we can even set it unconditionally before dequeue_signal().
+--=20
+Stratos Psomadakis
+<psomas@gentoo.org>
 
 
-Anyway, whatever we do, this patch doesn't complicate the
-CONT_RECEIVED/STOP_ALLOWED change. Can't we do this later?
 
-Oleg.
+--------------enig75EA93003BD9C1BFFA86ECF9
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAk4d6ioACgkQid1lVeNDMmCiIgCgrGL6UjcdjdqZbaqDmCiSkbkM
+t8UAoJqlbVsNWyDhOeRlwOR8vqzrKJ/0
+=U0qP
+-----END PGP SIGNATURE-----
+
+--------------enig75EA93003BD9C1BFFA86ECF9--
