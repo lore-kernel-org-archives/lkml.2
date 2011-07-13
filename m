@@ -1,115 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965008Ab1GMHHR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 03:07:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34989 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750856Ab1GMHHP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 03:07:15 -0400
-Date: Wed, 13 Jul 2011 17:06:57 +1000
-From: NeilBrown <neilb@suse.de>
-To: Solar Designer <solar@openwall.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Vasiliy Kulikov <segoon@openwall.com>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        kernel-hardening@lists.openwall.com, Jiri Slaby <jslaby@suse.cz>,
-        James Morris <jmorris@namei.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH] move RLIMIT_NPROC check from set_user() to
- do_execve_common()
-Message-ID: <20110713170657.59dae548@notabene.brown>
-In-Reply-To: <20110713063142.GA19976@openwall.com>
-References: <20110612130953.GA3709@albatros>
-	<20110706173631.GA5431@albatros>
-	<CA+55aFyfjG1h2zkkGai_VPM8p5bhWhvNXs1HvuWMgxv4RSywYw@mail.gmail.com>
-	<20110706185932.GB3299@albatros>
-	<20110707075610.GA3411@albatros>
-	<20110707081930.GA4393@albatros>
-	<20110712132723.GA3193@albatros>
-	<CA+55aFysXOeBqEvmVbuqL3i0jRFDcE=vDuVhmYL38XQ0+x=deQ@mail.gmail.com>
-	<20110713091408.0d456352@notabene.brown>
-	<20110713063142.GA19976@openwall.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S965011Ab1GMHSI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 03:18:08 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64738 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750856Ab1GMHSH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 03:18:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110712220036.GR2326@linux.vnet.ibm.com>
+References: <20110710173530.GA16954@linux.vnet.ibm.com>
+	<CAAVPGOPAx-oLZct9u2Kq3uQ4W2GwJFYUGgw3h=M_Y4_wv7b51w@mail.gmail.com>
+	<20110710214639.GP6014@linux.vnet.ibm.com>
+	<CAAVPGOMafp_+45X=7asHe=MqaHY8CiJYsf2GZ3qOPrWpjctHVQ@mail.gmail.com>
+	<20110710231449.GQ6014@linux.vnet.ibm.com>
+	<CAAVPGOMSprJSkzziH6hJv9PweOONzsMaRZEK2ZSrV3xFBReTPw@mail.gmail.com>
+	<20110711214301.GP2245@linux.vnet.ibm.com>
+	<CAAVPGOOJ0NEWqF2w9zCLC1bpXeA_TwzenNo-a4kvR3tcbewnNw@mail.gmail.com>
+	<20110712212920.GQ2326@linux.vnet.ibm.com>
+	<CAAVPGOPnHb0E=vutOEQwqsUTo-wrj6_-dEv7tW096yyppMgWcw@mail.gmail.com>
+	<20110712220036.GR2326@linux.vnet.ibm.com>
+Date: Wed, 13 Jul 2011 12:48:06 +0530
+Message-ID: <CAM=x7SafKhoS7577T0fdg_5WwYiAYaHoRhnMx0CRiHNOVws4QA@mail.gmail.com>
+Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3
+From: RKK <kulkarni.ravi4@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Julie Sullivan <kernelmail.jms@gmail.com>,
+        linux-kernel-mail <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Jul 2011 10:31:42 +0400 Solar Designer <solar@openwall.com> wrote:
+Hi Paul,
 
-> Linus, Neil, Motohiro - thank you for your comments!
-> 
-> On Wed, Jul 13, 2011 at 09:14:08AM +1000, NeilBrown wrote:
-> > The contrast is really "failing when trying to use reduced privileges is
-> > safer than failing to reduce privileges - if the reduced privileges are not
-> > available".
-> 
-> Right.
-> 
-> > Note that there is room for a race that could have unintended consequences.
-> > 
-> > Between the 'setuid(ordinary-user)' and a subsequent 'exit()' after execve()
-> > has failed, any other process owned by the same user (and we know where are
-> > quite a few) would fail an execve() where it really should not.
-> 
-> It is not obvious to me that this is unintended, and that dealing with
-> it in some way makes much of a difference.  (Also, it's not exactly "any
-> other process owned by the same user" - this only affects processes that
-> also run with similar or lower RLIMIT_NPROC.  So, for example, if a web
-> server is set to use RLIMIT_NPROC of 30, but interactive logins use 40,
-> then the latter may succeed and allow for shell commands to succeed.
-> This is actually a common combination of settings that we've been using
-> on some systems for years.)
-
-I don't think it can be intended to cause 'execve' to fail when a user is at
-the NPROC limit - except in the specific case that the process has previously
-called setuid.  So I feel justified in calling it an unintended consequence.
-It my not be a very common consequence but but we all know that uncommon
-things do happen.
-
-I agree that having different limits for different cases could make this much
-less of a problem, but it doesn't necessarily remove it.
-
-
-
-> 
-> > I think it would be safer to add a test for PF_SUPERPRIV and PF_FORKNOEXEC
-> > in current->flags and only fail the execve if both are set.
-> > i.e.
-> >     (current->flags & (PF_SUPERPRIV|PF_FORKNOEXEC)) == (PF_SUPERPRIV|PF_FORKNOEXEC)
-> > 
-> > That should narrow it down to only failing in the particular case that we are
-> > interested in.
-> 
-> That's a curious idea, and apparently this is what NetBSD does, but
-> unfortunately it does not match a common use case that we are interested
-> in - specifically, Apache with suEXEC (which is part of the Apache
-> distribution).  Here's what happens:
-> 
-> httpd runs as non-root.  It forks, execs suexec (SUID root).  suexec
-> calls setuid() to the target non-root user and execve() on the CGI
-> program (script, interpreter, whatever).
-> 
-> Notice how the fork() and the setuid() are separated by execve() of
-> suexec itself.  Thus, we need to apply the RLIMIT_NPROC check on
-> execve() unconditionally (well, we may allow processes with
-> CAP_SYS_RESOURCE to proceed despite of the failed check, like it's
-> done in -ow patches), or at least not on the condition proposed above.
-> 
-> Alexander
-
-Yes, the PF_FORKNOEXEC test causes problems in that case.
-
-Using just the PF_SUPERPRIV test would still be a good idea I think, but would
-not be quite as thorough a check.
-Adding a new PF flag would be possible (there seem to be 3 unused) but is
-probably not justified.
-
-
-NeilBrown
+On Wed, Jul 13, 2011 at 3:30 AM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Tue, Jul 12, 2011 at 10:49:22PM +0100, Julie Sullivan wrote:
+>> >
+>> > If this is the correct one, then the upstreamable patch I sent recently
+>> > (https://lkml.org/lkml/2011/7/12/313) should also work.  Famous last
+>> > words...
+>> >
+>> >                                                        Thanx, Paul
+>>
+>>
+>> Indeed this works, applied to a clean v3.0-rc4  (!CONFIG_RCU_BOOST 64-bit build)
+>
+> Woo-hoo!!!  ;-)
+>
+> I have added your Tested-by and will push it out for -next testing.
+>
+>> Great job, Paul, thanks for all your efforts.
+>> I'll test it tomorrow too on -rc5, 6 and 7 (out of time for tonight)
+>
+> Thinking good thoughts for the other -rc releases, and again thank you
+> very much for your testing!
+>
+> Ravi, could you please test to make sure that it works for you?
+>
+sorry for being a bit late here.
+just to make sure after seeing the whole thread i have applied peters
+patch and yours as well .
+ they  work for me too! :). thanks.
+Warm Regards,
+Ravi Kulkarni.
