@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754392Ab1GMNq2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 09:46:28 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:45542 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753928Ab1GMNq0 (ORCPT
+	id S1754344Ab1GMNsh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 09:48:37 -0400
+Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:59259 "EHLO
+	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753794Ab1GMNsg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 09:46:26 -0400
-From: Michal Simek <monstr@monstr.eu>
-To: linux-input@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        devicetree-discuss@lists.ozlabs.org, Michal Simek <monstr@monstr.eu>
-Subject: [PATCH] input: xilinx_ps2: Add missing of_address.h header
-Date: Wed, 13 Jul 2011 15:46:21 +0200
-Message-Id: <1310564781-5979-1-git-send-email-monstr@monstr.eu>
-X-Mailer: git-send-email 1.5.5.1
+	Wed, 13 Jul 2011 09:48:36 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4E1DA232.30408@cam.ac.uk>
+Date: Wed, 13 Jul 2011 14:48:34 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: RFC: Boiler plate functions for ida / idr allocation?
+References: <4E1D6900.6040500@cam.ac.uk> <20110713133139.GO2872@htj.dyndns.org>
+In-Reply-To: <20110713133139.GO2872@htj.dyndns.org>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add missing header.
+On 07/13/11 14:31, Tejun Heo wrote:
+> (cc'ing Rusty Russell)
+> Hello,
+> 
+> On Wed, Jul 13, 2011 at 10:44:32AM +0100, Jonathan Cameron wrote:
+>> The other thing this highlights is that I suspect quite a few are protected by
+>> spin locks when a mutex would be fine. Hence that might be worth tidying up first.
+>>
+>> Anyhow, a cleanup worth making? (obviously the exact form needs some work, but
+>> I think the following is enough to start a discussion!)
+>>
+>> Subject: [PATCH] ida utility function
+> 
+> Rusty suggested similar addition some weeks ago, so people are really
+> getting annoyed by this.
+> 
+>   http://thread.gmane.org/gmane.linux.kernel/1148513/focus=74236
+> 
+> Here's an interface that I think should work,
+> 
+> 	int ida_get(struct ida *ida, int begin, int end, gfp_t gfp);
+> 
+> It uses an internal spinlock, returns the allocated ID and @end <= 0
+> indicates no limit.
+Cool.
 
-Error log:
-CC      drivers/input/serio/xilinx_ps2.o
-drivers/input/serio/xilinx_ps2.c: In function 'xps2_of_probe':
-drivers/input/serio/xilinx_ps2.c:249: error: implicit declaration of function 'of_address_to_resource'
-
-Signed-off-by: Michal Simek <monstr@monstr.eu>
----
- drivers/input/serio/xilinx_ps2.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/input/serio/xilinx_ps2.c b/drivers/input/serio/xilinx_ps2.c
-index 80baa53..d64c5a4 100644
---- a/drivers/input/serio/xilinx_ps2.c
-+++ b/drivers/input/serio/xilinx_ps2.c
-@@ -23,7 +23,7 @@
- #include <linux/init.h>
- #include <linux/list.h>
- #include <linux/io.h>
--
-+#include <linux/of_address.h>
- #include <linux/of_device.h>
- #include <linux/of_platform.h>
- 
--- 
-1.5.5.6
-
+Rusty, are you pursuing this?  Approach looks sensible to me.
