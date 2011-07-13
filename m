@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965269Ab1GMKjp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 06:39:45 -0400
-Received: from ozlabs.org ([203.10.76.45]:45256 "EHLO ozlabs.org"
+	id S965278Ab1GMKkd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 06:40:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43924 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965209Ab1GMKjo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 06:39:44 -0400
-From: Michael Neuling <mikey@neuling.org>
-To: Sonny Rao <sonnyrao@chromium.org>
-cc: acme@redhat.com, anton@samba.org, rostedt@goodmis.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+	id S965209Ab1GMKkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 06:40:32 -0400
+Date: Wed, 13 Jul 2011 11:40:25 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Christoph Lameter <cl@linux.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [RFC] perf: robustify proc and debugfs file recording
-In-reply-to: <1310505348-20163-1-git-send-email-sonnyrao@chromium.org>
-References: <1310505348-20163-1-git-send-email-sonnyrao@chromium.org>
-Comments: In-reply-to Sonny Rao <sonnyrao@chromium.org>
-   message dated "Tue, 12 Jul 2011 14:15:48 -0700."
-X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.2.1
+Subject: Re: [PATCH 1/3] mm: vmscan: Do use use PF_SWAPWRITE from zone_reclaim
+Message-ID: <20110713104025.GE7529@suse.de>
+References: <1310389274-13995-1-git-send-email-mgorman@suse.de>
+ <1310389274-13995-2-git-send-email-mgorman@suse.de>
+ <CAEwNFnATXiQsmbfuvZNEtcpcVZkyZKRFB1SKbkEREaCW4S-aUg@mail.gmail.com>
+ <4E1C1684.4090706@jp.fujitsu.com>
+ <CAEwNFnAprEuZJucDSMgnUHGePyxgyRqNCWOsG0-K2nTjmKcUug@mail.gmail.com>
+ <alpine.DEB.2.00.1107121042240.2530@router.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 13 Jul 2011 20:39:41 +1000
-Message-ID: <29926.1310553581@neuling.org>
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1107121042240.2530@router.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sonny,
+On Tue, Jul 12, 2011 at 10:43:47AM -0500, Christoph Lameter wrote:
+> On Tue, 12 Jul 2011, Minchan Kim wrote:
+> 
+> > If I am not against this patch, at least, we need agreement of
+> > Christoph and others and if we agree this change, we changes vm.txt,
+> > too.
+> 
+> I think PF_SWAPWRITE should only be set if may_write was set earlier in
+> __zone_reclaim. If zone reclaim is not configured to do writeback then it
+> makes no sense to set the bit.
+> 
 
+That would effectively make the patch a no-op as the check for
+PF_SWAPWRITE only happens if may_write is set. The point of the patch is
+that zone reclaim differs from direct reclaim in that zone reclaim
+obeys congestion where as zone reclaim does not. If you're saying that
+this is the way it's meant to be, then fine, I'll drop the patch. While
+I think it's a bad idea, I also didn't specifically test for problems
+related to it and I think the other two patches in the series are more
+important.
 
-> While attempting to create a timechart of boot up I found
-> perf didn't tolerate modules being loaded/unloaded.  This patch
-> fixes this by reading the file once and then writing the size
-> read at the correct point in the file.  It also simplifies the
-> code somewhat.
-
-I'm getting a bunch of unused variables warnings when I compile this.
-Care to clean them up?
-
-    CC util/trace-event-info.o
-util/trace-event-info.c: In function ‘read_header_files’:
-util/trace-event-info.c:221:27: error: unused variable ‘check_size’ [-Werror=unused-variable]
-util/trace-event-info.c:221:21: error: unused variable ‘size’ [-Werror=unused-variable]
-util/trace-event-info.c: In function ‘copy_event_system’:
-util/trace-event-info.c:255:27: error: unused variable ‘check_size’ [-Werror=unused-variable]
-util/trace-event-info.c:255:21: error: unused variable ‘size’ [-Werror=unused-variable]
-util/trace-event-info.c: In function ‘read_proc_kallsyms’:
-util/trace-event-info.c:377:21: error: unused variable ‘check_size’ [-Werror=unused-variable]
-util/trace-event-info.c: In function ‘read_ftrace_printk’:
-util/trace-event-info.c:394:21: error: unused variable ‘check_size’ [-Werror=unused-variable]
-cc1: all warnings being treated as errors
-
-Mikey
+-- 
+Mel Gorman
+SUSE Labs
