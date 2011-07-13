@@ -1,88 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932252Ab1GMAml (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 20:42:41 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41159 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753938Ab1GMAmk (ORCPT
+	id S1756537Ab1GMAuE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 20:50:04 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:58686 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753938Ab1GMAuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 20:42:40 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4E1CE9FF.3050707@jp.fujitsu.com>
-Date: Wed, 13 Jul 2011 09:42:39 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
+	Tue, 12 Jul 2011 20:50:03 -0400
+X-Greylist: delayed 147370 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Jul 2011 20:50:03 EDT
+Message-ID: <4E1CEB34.5090907@oracle.com>
+Date: Wed, 13 Jul 2011 08:47:48 +0800
+From: Joe Jin <joe.jin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre OracleBeehiveExtension/1.0.0.2-OracleInternal ObetStats/CATLAF_1292475699435-498544290 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: mgorman@suse.de
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] mm: page allocator: Reconsider zones for allocation
- after direct reclaim
-References: <1310389274-13995-1-git-send-email-mgorman@suse.de> <1310389274-13995-4-git-send-email-mgorman@suse.de>
-In-Reply-To: <1310389274-13995-4-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: Daniel Stodden <daniel.stodden@citrix.com>,
+        Jens Axboe <jaxboe@fusionio.com>, annie.li@oracle.com,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Kurt C Hackel <KURT.HACKEL@oracle.com>,
+        Greg Marsden <greg.marsden@oracle.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable@kernel.org
+Subject: [PATCH resubmit] xen-blkfront: Don't send closing  notification to
+ backend in blkfront_closing()
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090202.4E1CEB4D.004C:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/07/11 22:01), Mel Gorman wrote:
-> With zone_reclaim_mode enabled, it's possible for zones to be considered
-> full in the zonelist_cache so they are skipped in the future. If the
-> process enters direct reclaim, the ZLC may still consider zones to be
-> full even after reclaiming pages. Reconsider all zones for allocation
-> if direct reclaim returns successfully.
-> 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+When we do block device attach/detach test with below steps, umount hang and the
+guest unable to shutdown:
 
-Hmmm...
+1. start guest with the latest kernel.
+2. attach new block device by xm block-attach in Dom0
+3. mount new disk in guest
+4. execute xm block-detach to detach the block device in dom0 until timeout
+5. try to unmount the disk in guest, umount hung. at here, any IOs to the 
+   device will hang.
 
-I like the concept, but I'm worry about a corner case a bit.
+Checking the code found when 'xm block-detach' set backend device's state to
+'XenbusStateClosing', frontend received the notification and blkfront_closing()
+be called, at the moment, the disk still using by guest, so frontend refused
+to close. In the blkfront_closing(), frontend send a notification to backend
+said that the its state switched to 'Closing', when backend got the
+event, it will disconnect from real device, at here any IO request will
+be stuck, even tried to release the disk by umount.
 
-If users are using cpusets/mempolicy, direct reclaim don't scan all zones.
-Then, zlc_clear_zones_full() seems too aggressive operation.
-Instead, couldn't we turn zlc->fullzones off from kswapd?
+Per our test, below patch fix this issue.
 
+Signed-off-by: Joe Jin <joe.jin@oracle.com>
+Signed-off-by: Annie Li <annie.li@oracle.com>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>
+Cc: stable@kernel.org
 
-> ---
->  mm/page_alloc.c |   19 +++++++++++++++++++
->  1 files changed, 19 insertions(+), 0 deletions(-)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 6913854..149409c 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1616,6 +1616,21 @@ static void zlc_mark_zone_full(struct zonelist *zonelist, struct zoneref *z)
->  	set_bit(i, zlc->fullzones);
->  }
->  
-> +/*
-> + * clear all zones full, called after direct reclaim makes progress so that
-> + * a zone that was recently full is not skipped over for up to a second
-> + */
-> +static void zlc_clear_zones_full(struct zonelist *zonelist)
-> +{
-> +	struct zonelist_cache *zlc;	/* cached zonelist speedup info */
-> +
-> +	zlc = zonelist->zlcache_ptr;
-> +	if (!zlc)
-> +		return;
-> +
-> +	bitmap_zero(zlc->fullzones, MAX_ZONES_PER_ZONELIST);
-> +}
-> +
->  #else	/* CONFIG_NUMA */
->  
->  static nodemask_t *zlc_setup(struct zonelist *zonelist, int alloc_flags)
-> @@ -1963,6 +1978,10 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
->  	if (unlikely(!(*did_some_progress)))
->  		return NULL;
->  
-> +	/* After successful reclaim, reconsider all zones for allocation */
-> +	if (NUMA_BUILD)
-> +		zlc_clear_zones_full(zonelist);
-> +
->  retry:
->  	page = get_page_from_freelist(gfp_mask, nodemask, order,
->  					zonelist, high_zoneidx,
+---
+ xen-blkfront.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-
+diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+index b536a9c..f6d8ac2 100644
+--- a/drivers/block/xen-blkfront.c
++++ b/drivers/block/xen-blkfront.c
+@@ -1088,7 +1088,7 @@ blkfront_closing(struct blkfront_info *info)
+ 	if (bdev->bd_openers) {
+ 		xenbus_dev_error(xbdev, -EBUSY,
+ 				 "Device in use; refusing to close");
+-		xenbus_switch_state(xbdev, XenbusStateClosing);
++		xbdev->state = XenbusStateClosing;
+ 	} else {
+ 		xlvbd_release_gendisk(info);
+ 		xenbus_frontend_closed(xbdev);
