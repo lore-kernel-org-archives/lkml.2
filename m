@@ -1,102 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755451Ab1GMAeh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 20:34:37 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46196 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753740Ab1GMAef (ORCPT
+	id S932078Ab1GMAfX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 20:35:23 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:58289 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753840Ab1GMAfV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 20:34:35 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4E1CE820.1040908@jp.fujitsu.com>
-Date: Wed, 13 Jul 2011 09:34:40 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: mgorman@suse.de
-CC: minchan.kim@gmail.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        cl@linux.com
-Subject: Re: [PATCH 1/3] mm: vmscan: Do use use PF_SWAPWRITE from zone_reclaim
-References: <1310389274-13995-1-git-send-email-mgorman@suse.de> <1310389274-13995-2-git-send-email-mgorman@suse.de> <CAEwNFnATXiQsmbfuvZNEtcpcVZkyZKRFB1SKbkEREaCW4S-aUg@mail.gmail.com> <4E1C1684.4090706@jp.fujitsu.com> <20110712101400.GC7529@suse.de>
-In-Reply-To: <20110712101400.GC7529@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15
+	Tue, 12 Jul 2011 20:35:21 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Arnaud Lacombe <lacombar@gmail.com>,
+        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        Raghavendra D Prabhu <rprabhu@wnohang.net>,
+        linux-kbuild@vger.kernel.org, Nir Tzachar <nir.tzachar@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Avoid Wunused-but-set warning
+In-Reply-To: Your message of "Mon, 11 Jul 2011 08:55:19 +0300."
+             <CAOJsxLHzXV3MDHH+83iwxaUtO=931Bmq1JRzS=MQx=6wa-wi2w@mail.gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <da20dc5c4160ed9a3da52f60799a1e4369fe3f27.1310228130.git.rprabhu@wnohang.net> <CAM_iQpXeqc01dyHpViyJCMSz6wz-1mWmGi=J0UynUG8tbd99kw@mail.gmail.com> <CACqU3MUgVTpc6kBvBiw7rtyn_JTA-JPrbnvai3Vnq+UWk-jSbQ@mail.gmail.com> <CAOJsxLF+4VOXJwRJL7npMngDTGztXk739_GcMLxsMzmsVcDCVw@mail.gmail.com> <CACqU3MUFO9DGqnK99ApaKn00vzj5rCB5=kjuSZGZpPU8c_4G-A@mail.gmail.com> <20110710110241.7650e03f.rdunlap@xenotime.net> <alpine.LNX.2.00.1107110051420.2818@swampdragon.chaosbits.net> <20110710160722.ae763029.rdunlap@xenotime.net> <alpine.LNX.2.00.1107110117080.2818@swampdragon.chaosbits.net>
+            <CAOJsxLHzXV3MDHH+83iwxaUtO=931Bmq1JRzS=MQx=6wa-wi2w@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1310517312_3427P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Tue, 12 Jul 2011 20:35:12 -0400
+Message-ID: <32171.1310517312@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020201.4E1CE842.0083,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/07/12 19:14), Mel Gorman wrote:
-> On Tue, Jul 12, 2011 at 06:40:20PM +0900, KOSAKI Motohiro wrote:
->> (2011/07/12 18:27), Minchan Kim wrote:
->>> Hi Mel,
->>>
->>> On Mon, Jul 11, 2011 at 10:01 PM, Mel Gorman <mgorman@suse.de> wrote:
->>>> Zone reclaim is similar to direct reclaim in a number of respects.
->>>> PF_SWAPWRITE is used by kswapd to avoid a write-congestion check
->>>> but it's set also set for zone_reclaim which is inappropriate.
->>>> Setting it potentially allows zone_reclaim users to cause large IO
->>>> stalls which is worse than remote memory accesses.
->>>
->>> As I read zone_reclaim_mode in vm.txt, I think it's intentional.
->>> It has meaning of throttle the process which are writing large amounts
->>> of data. The point is to prevent use of remote node's free memory.
->>>
->>> And we has still the comment. If you're right, you should remove comment.
->>> "         * and we also need to be able to write out pages for RECLAIM_WRITE
->>>          * and RECLAIM_SWAP."
->>>
->>>
->>> And at least, we should Cc Christoph and KOSAKI.
->>
->> Of course, I'll take full ack this. Do you remember I posted the same patch
->> about one year ago.
+--==_Exmh_1310517312_3427P
+Content-Type: text/plain; charset=us-ascii
+
+On Mon, 11 Jul 2011 08:55:19 +0300, Pekka Enberg said:
+
+> The definitions in SubmittingPatches are not hard rules and are, in
+> fact, out of date. See Documentation/development-process/5.Posting for
+> alternative definitions:
 > 
-> Nope, I didn't remember it at all :) . I'll revive your signed-off
-> and sorry about that.
-
-No. Not sorry.I think my explanation was not enough. And I couldn't show
-the performance result. At that time, I didn't access large NUMA machine.
-
-Thank you for paying attention the latency issue. I'm really glad.
-
-
+>  - Acked-by: indicates an agreement by another developer (often a
+>    maintainer of the relevant code) that the patch is appropriate for
+>    inclusion into the kernel.
 > 
->> At that time, Mel disagreed me and I'm glad to see he changed
->> the mind. :)
->>
+> and
 > 
-> Did I disagree because of this?
-> 
-> 	Simply that I believe the intention of PF_SWAPWRITE here was
-> 	to allow zone_reclaim() to aggressively reclaim memory if the
-> 	reclaim_mode allowed it as it was a statement that off-node
-> 	accesses are really not desired.
-> 
-> Or was some other problem brought up that I'm not thinking of now?
+>  - Reviewed-by: the named developer has reviewed the patch for correctness;
+>    see the reviewer's statement in Documentation/SubmittingPatches for more
+>    detail.
 
-To be honest, My brain is volatile memory and my remember is unclear.
-As far as remember is, yes, it is only problem.
+Unfortunately, SubmittingPatches says:
+
+        By offering my Reviewed-by: tag, I state that:
+
+         (a) I have carried out a technical review of this patch to
+             evaluate its appropriateness and readiness for inclusion into
+             the mainline kernel.
+
+         (b) Any problems, concerns, or questions relating to the patch
+             have been communicated back to the submitter.  I am satisfied
+             with the submitter's response to my comments.
+
+         (c) While there may be things that could be improved with this
+             submission, I believe that it is, at this time, (1) a
+             worthwhile modification to the kernel, and (2) free of known
+             issues which would argue against its inclusion.
+
+         (d) While I have reviewed the patch and believe it to be sound, I
+             do not (unless explicitly stated elsewhere) make any
+             warranties or guarantees that it will achieve its stated
+             purpose or function properly in any given situation.
+
+and often, I'm only comfortable stating (b) - often, I'd like to *disavow* both
+(a) and (c)(1) - I usually *don't* do a tech review, and may have no opinion as
+to whether it's "cooked" enough to be included.  Also, usually, the only "known
+issue" from (c)(2) is the one thing I commented on for part (b)...
+
+Comments-Addressed-Acked: anybody? :)
 
 
-> I'm no longer think the level of aggression is appropriate after seeing
-> how seeing how zone_reclaim can stall when just copying large amounts
-> of data on recent x86-64 NUMA machines. In the same mail, I said
-> 
-> 	Ok. I am not fully convinced but I'll not block it either if
-> 	believe it's necessary. My current understanding is that this
-> 	patch only makes a difference if the server is IO congested in
-> 	which case the system is struggling anyway and an off-node
-> 	access is going to be relatively small penalty overall.
-> 	Conceivably, having PF_SWAPWRITE set makes things worse in
-> 	that situation and the patch makes some sense.
-> 
-> While I still think this situation is hard to trigger, zone_reclaim
-> can cause significant stalls *without* IO and there is little point
-> making the situation even worse.
 
-And, again, I'm fully agree your [0/3] description.
+--==_Exmh_1310517312_3427P
+Content-Type: application/pgp-signature
 
-Thanks.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
+iD8DBQFOHOhAcC3lWbTT17ARAq1yAJ0bg/xKCh64BFW+q/WMuT9EKeCMqACg3T6f
+IC0t1yknxoP5hiVGpY15QQE=
+=EYwG
+-----END PGP SIGNATURE-----
 
+--==_Exmh_1310517312_3427P--
 
