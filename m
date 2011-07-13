@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932310Ab1GMBZq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 21:25:46 -0400
-Received: from mta11.charter.net ([216.33.127.80]:39259 "EHLO
-	mta11.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756576Ab1GMBZo (ORCPT
+	id S932305Ab1GMBdp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 21:33:45 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:38638 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756685Ab1GMBdo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 21:25:44 -0400
-X-Authority-Analysis: v=1.1 cv=1b2X7W/SifksZeClH/haT1SUt4udqxFGF00pZw2/jJk=
- c=1 sm=1 a=fYxzoYjCm8EA:10 a=lDGNyK2vIvEA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:17
- a=l2E7mNOSAAAA:8 a=gLV9QiDOUN7PfshxCEQA:9 a=n90IYmf1nUhKVLhq:21
- a=EtbA5xyKN7sf-Pm2:21 a=xzrYXqw+0zwiO4gHSXHcAg==:117
-From: Greg Dietsche <Gregory.Dietsche@cuw.edu>
-To: julia@diku.dk, Gilles.Muller@lip6.fr, npalix.work@gmail.com
-Cc: rdunlap@xenotime.net, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, cocci@diku.dk,
-        Greg Dietsche <Gregory.Dietsche@cuw.edu>
-Subject: [PATCH 2/3] coccinelle.txt: add documentation of PARALLEL= flag
-Date: Tue, 12 Jul 2011 20:26:44 -0500
-Message-Id: <1310520405-1558-3-git-send-email-Gregory.Dietsche@cuw.edu>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1310520405-1558-1-git-send-email-Gregory.Dietsche@cuw.edu>
-References: <1310520405-1558-1-git-send-email-Gregory.Dietsche@cuw.edu>
+	Tue, 12 Jul 2011 21:33:44 -0400
+Subject: Re: [RFC PATCH 08/14] af_netlink.c: make netlink_capable
+ userns-aware
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Serge Hallyn <serge@hallyn.com>
+Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        dhowells@redhat.com, ebiederm@xmission.com,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>
+In-Reply-To: <1310513452-13397-9-git-send-email-serge@hallyn.com>
+References: <1310513452-13397-1-git-send-email-serge@hallyn.com>
+	 <1310513452-13397-9-git-send-email-serge@hallyn.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 13 Jul 2011 03:33:39 +0200
+Message-ID: <1310520819.2634.6.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the new PARALLEL= option of Coccinelle which
-allows running SmPL scripts in parallel.
+Le mardi 12 juillet 2011 à 23:30 +0000, Serge Hallyn a écrit :
+> From: Serge E. Hallyn <serge.hallyn@canonical.com>
+> 
+> netlink_capable should check for permissions against the user
+> namespace owning the socket in question.
+> 
+> Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+> Cc: Eric W. Biederman <ebiederm@xmission.com>
+> ---
+>  net/netlink/af_netlink.c |   11 +++++++++--
+>  1 files changed, 9 insertions(+), 2 deletions(-)
+> 
+> diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
+> index 6ef64ad..81c1099 100644
+> --- a/net/netlink/af_netlink.c
+> +++ b/net/netlink/af_netlink.c
+> @@ -580,8 +580,15 @@ retry:
+>  
+>  static inline int netlink_capable(struct socket *sock, unsigned int flag)
+>  {
+> -	return (nl_table[sock->sk->sk_protocol].nl_nonroot & flag) ||
+> -	       capable(CAP_NET_ADMIN);
+> +	struct net *net;
+> +	if (nl_table[sock->sk->sk_protocol].nl_nonroot & flag)
+> +		return 1;
+> +#ifdef CONFIG_NET_NS
+> +	net = sock->sk->sk_net;
+> +#else
+> +	net = &init_net;
+> +#endif
 
-Signed-off-by: Greg Dietsche <Gregory.Dietsche@cuw.edu>
----
- Documentation/coccinelle.txt |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+This is really ugly, please use :
 
-diff --git a/Documentation/coccinelle.txt b/Documentation/coccinelle.txt
-index 9495a4b..3bccb50 100644
---- a/Documentation/coccinelle.txt
-+++ b/Documentation/coccinelle.txt
-@@ -56,7 +56,7 @@ There are two ways to use Coccinelle with the Linux kernel.
- 
- There are a number of optional parameters that can be used with the build target.
- 
--	make coccicheck MODE={patch,report,context,org} COCCI=? M=?
-+	make coccicheck MODE={patch,report,context,org} COCCI=? M=? PARALLEL=?
- 
- MODE:
- 	Determines what mode cocci operates in. If no mode is specified
-@@ -71,6 +71,10 @@ M:
- 	Limit cocci to a subset of directories. This is very similar to the
- 	way the build system works when building modules.
- 
-+PARALLEL:
-+	Number of *.cocci SmPL scripts found under scripts/coccinelle/ to run
-+	at the same time.
-+
- 
-  Using Coccinelle on the Linux kernel
- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
--- 
-1.7.2.5
+	net = sock_net(sk);
+
+And no more #ifdef
+
+
 
