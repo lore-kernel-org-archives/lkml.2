@@ -1,72 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965077Ab1GMIY6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 04:24:58 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46905 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964995Ab1GMIY5 convert rfc822-to-8bit (ORCPT
+	id S965097Ab1GMIhP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 04:37:15 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:48355 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965029Ab1GMIhN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 04:24:57 -0400
-Subject: Re: lockdep circular locking error (rcu_node_level_0 vs rq->lock)
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <20110712225443.GS2326@linux.vnet.ibm.com>
-References: <20110711231932.GB20367@redhat.com>
-	 <1310502014.2309.7.camel@laptop> <20110712205126.GM2326@linux.vnet.ibm.com>
-	 <1310507047.2309.10.camel@laptop>
-	 <20110712225443.GS2326@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
+	Wed, 13 Jul 2011 04:37:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C17AAE59A@USINDEVS01.corp.hds.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C17AAE59A@USINDEVS01.corp.hds.com>
+Date: Wed, 13 Jul 2011 16:37:12 +0800
+Message-ID: <CAM_iQpX3WhSus-8=igB_Bev5BkqnRfxEuAU2yzAQHfqcJPkNvw@mail.gmail.com>
+Subject: Re: [RFC][PATCH] Replace a function call chain of kmsg_dump(KMSG_DUMP_KEXEC)
+ with static function calls
+From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jarod Wilson <jwilson@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Date: Wed, 13 Jul 2011 10:24:08 +0200
-Message-ID: <1310545448.14978.40.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-12 at 15:54 -0700, Paul E. McKenney wrote:
-> > @@ -892,6 +892,7 @@ static inline void finish_lock_switch(struct rq *rq, struct task_struct *prev)
-> >        * prev into current:
-> >        */
-> >       spin_acquire(&rq->lock.dep_map, 0, 0, _THIS_IP_);
-> > +     rcu_read_acquire();
-> 
-> Oooh...  This is a tricky one.  Hmmm...
+2011/7/11 Seiji Aguchi <seiji.aguchi@hds.com>:
+> Hi,
+>
 
-<snip>
+Hi,
 
-> Does any of this make sense?
+>
+> [Patch Description]
+>
+>  For meeting Eric/Vivek's requirements and solving issues of pstore/efivars driver,  I propose a following patch.
+>
+>    - Remove kmsg_dump(KMSG_DUMP_KEXEC) from crash_kexec()
 
-No?
+It is already removed in -mm, can you rebase your patch against -mm?
 
-> > @@ -3141,6 +3170,7 @@ context_switch(struct rq *rq, struct task_struct *prev,
-> >        */
-> >  #ifndef __ARCH_WANT_UNLOCKED_CTXSW
-> >       spin_release(&rq->lock.dep_map, 1, _THIS_IP_);
-> > +     rcu_read_release();
-> 
-> My guess is that we don't need the rcu_read_release() -- the arch shouldn't
-> care that we have a non-atomic field in task_struct incremented, right?
-> 
-> Or am I confused about what this is doing?
+>    - Add kmsg_dump_kexec() to crash_kexec()
+>        kmsg_dump_kexec() moved behind machine_crash_shutdown() so that
+>        we can output kernel messages without getting any locks.
+>
+>    - Introduce CONFIG_KMSG_DUMP_KEXEC
+>        - CONFIG_KMSG_DUMP_KEXEC depends on CONFIG_PRINTK which is required for kmsg_dumper.
+>
+>        - CONFIG_KMSG_DUMP_KEXEC=n (default)
+>          Kernel message logging feature doesn't work in kdump path.
+>
+>        - CONFIG_KMSG_DUMP_KEXEC=y
+>          following static functions are called in kdump path.
+>          - kmsg_dump_kexec(): This is based on kmsg_dump() and just removed spinlock and a function call chain from it.
+>          - do_kmsg_dump_kexec(): This is based on pstore_dump() and just removed mutex lock from it.
+>
+>        Some people who are not familiar with kexec may add function calls getting spin_lock/mutex_lock in kexec path.
+>        These function calls causes failure of kexec.
+>        So, I suggest replace a call chain with static function calls so that we can keep reliability of kexec.
+>
+>     - Add efi_kmsg_dump_kexec() which outputs kernel messages into NVRAM with EFI.
+>       This is called by do_kmsg_dump_kexec() statically.
+>       By applying to Matthew Garret's patch below, its kernel messages in NVRAM are visible through /dev/pstore.
 
-Either that or I used the wrong primitives for what I was meaning to do.
+This looks weird, kmsg_dump_kexec() calls do_kmsg_dump_kexec()
+which then calls efi_kmsg_dump_kexec(), so, why not just call
+efi_kmsg_dump_kexec()?
+since there is no other user of kmsg_dump_kexec().
 
-So from looking at rcupdate.h rcu_read_{acquire,release} are the lockdep
-annotations of the rcu_read_lock. The thing we're doing above is context
-switching and not making lockdep upset.
+>From the name CONFIG_KMSG_DUMP_KEXEC, you seem to provide a generic method,
+but actually only efi_kmsg_dump_kexec() is and can be called.
 
-The problem is that held lock state is tracked per task, and we're well
-switching tasks, so we need to transfer the held lock state from the old
-to the new task, since the new task will be unlocking the thing, if at
-that time lockdep finds we're not actually holding it it screams bloody
-murder.
-
-So what we do is we release the lock (annotation only, the actual lock
-says locked) on prev before switching and acquire the lock on next right
-after switching.
-
-
+Thanks.
