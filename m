@@ -1,53 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755297Ab1GMPGs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 11:06:48 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:56713 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755103Ab1GMPGq (ORCPT
+	id S1755323Ab1GMPSr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 11:18:47 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:33354 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755093Ab1GMPSq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 11:06:46 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=D1g64L95KYrAGkWHooAX54OXpegB0+HL2P73MWab4fHxNhCD1oCXIYFc47aMJLOnx
-	fxBKyA1c5HBmxOQE7KYpQ==
-Date: Wed, 13 Jul 2011 08:06:26 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Jan Kara <jack@suse.cz>
-cc: Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 12/15] writeback: remove writeback_control.more_io
-In-Reply-To: <20110713111928.GA21787@quack.suse.cz>
-Message-ID: <alpine.LSU.2.00.1107130804430.4820@sister.anvils>
-References: <20110607213236.634026193@intel.com> <20110607213854.888623315@intel.com> <alpine.LSU.2.00.1107111408060.13830@sister.anvils> <20110712062013.GA4654@localhost> <alpine.LSU.2.00.1107121207540.1752@sister.anvils> <alpine.LSU.2.00.1107122234460.3608@sister.anvils>
- <alpine.LSU.2.00.1107130350570.4184@sister.anvils> <20110713111928.GA21787@quack.suse.cz>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Wed, 13 Jul 2011 11:18:46 -0400
+Date: Wed, 13 Jul 2011 11:18:45 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Thilo-Alexander Ginkel <thilo@ginkel.com>
+cc: linux-kernel@vger.kernel.org, <linux-usb@vger.kernel.org>
+Subject: Re: task khubd:25 blocked for more than 120 seconds (potential
+ 3.0-rc4 regression)
+In-Reply-To: <CANvSZQ8RQ30cX42kufjA65pTjKXyCw6iZieCb_8m2EQKjMGSpg@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1107131118160.2156-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Jul 2011, Jan Kara wrote:
-> On Wed 13-07-11 03:57:40, Hugh Dickins wrote:
-> > 
-> > I think we should assume that your -requeue_io +redirty_tail is a good
-> > fix for the writeback freeze (if you can reassure us, that it does not
-> > risk postponing some writes indefinitely)
->   Well, I_FREEING or I_WILL_FREE inodes are written back by iput_final()
-> and it is reclaim code that is responsible for eventually removing them. So
-> writeback code can safely ignore them. I_NEW inodes should move out of this
-> state when they are fully set up and in the writeback round following that,
-> we will consider them for writeback. So I think the change really makes
-> sense.
+On Wed, 13 Jul 2011, Thilo-Alexander Ginkel wrote:
 
-That fits.  Good, thanks for the reassurance.
+> Hi there,
+> 
+> the following dmesg output just caught my attention:
+> 
+> [ 7306.160699] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+> disables this message.
+> [ 7306.160705] khubd           D ffff88021103c890     0    25      2 0x00000000
+> [ 7306.160716]  ffff88021110dae0 0000000000000046 ffffffff815e2844
+> ffff88021110dfd8
+> [ 7306.160725]  ffff88021110dae0 0000000000012a40 0000000000012a40
+> ffff88021110dfd8
+> [ 7306.160734]  ffff88021110dfd8 0000000000012a40 ffff88021103c4d0
+> ffff8801a81cdbc0
+> [ 7306.160743] Call Trace:
+> [ 7306.160758]  [<ffffffff815e2844>] ? _raw_spin_lock_irqsave+0x34/0x50
+> [ 7306.160802]  [<ffffffff81034f69>] ? default_spin_lock_flags+0x9/0x10
+> [ 7306.160810]  [<ffffffff815e2844>] ? _raw_spin_lock_irqsave+0x34/0x50
+> [ 7306.160820]  [<ffffffff815eb80e>] ? apic_timer_interrupt+0xe/0x20
+> [ 7306.160829]  [<ffffffff81448337>] ? hub_release+0x27/0x30
+> [ 7306.160838]  [<ffffffff815e1609>] __mutex_lock_slowpath+0xd9/0x150
+> [ 7306.160845]  [<ffffffff81448337>] ? hub_release+0x27/0x30
+> [ 7306.160852]  [<ffffffff815e128b>] mutex_lock+0x2b/0x50
+> [ 7306.160861]  [<ffffffff8145180b>] usb_set_interface+0x8b/0x280
+> [ 7306.160872]  [<ffffffff8107e625>] ? __cancel_work_timer+0x45/0x80
+> [ 7306.160881]  [<ffffffff814532a2>] usb_unbind_interface+0x122/0x170
+> [ 7306.160890]  [<ffffffff813cdf6c>] __device_release_driver+0x7c/0xe0
+> [ 7306.160896]  [<ffffffff813ce64d>] device_release_driver+0x2d/0x40
+> [ 7306.160903]  [<ffffffff813cd984>] bus_remove_device+0x74/0xa0
+> [ 7306.160912]  [<ffffffff813cb07f>] device_del+0x12f/0x1b0
+> [ 7306.160920]  [<ffffffff81450146>] usb_disable_device+0x76/0x180
+> [ 7306.160927]  [<ffffffff81448aac>] usb_disconnect+0x9c/0x120
+> [ 7306.160935]  [<ffffffff8144a13d>] hub_port_connect_change+0x37d/0x680
+> [ 7306.160943]  [<ffffffff81447255>] ? get_port_status+0x55/0xc0
+> [ 7306.160950]  [<ffffffff81447754>] ? hub_port_status+0x74/0xc0
+> [ 7306.160957]  [<ffffffff8144ad07>] hub_events+0x3e7/0x5b0
+> [ 7306.160967]  [<ffffffff8108ce2d>] ? refrigerator+0xed/0x130
+> [ 7306.160974]  [<ffffffff8144bb4d>] hub_thread+0x3d/0x160
+> [ 7306.160982]  [<ffffffff81084630>] ? wake_up_bit+0x40/0x40
+> [ 7306.160990]  [<ffffffff8144bb10>] ? usb_authorize_device+0x180/0x180
+> [ 7306.160997]  [<ffffffff81083f67>] kthread+0x97/0xa0
+> [ 7306.161006]  [<ffffffff815ebf64>] kernel_thread_helper+0x4/0x10
+> [ 7306.161015]  [<ffffffff81083ed0>] ? kthread_bind+0x80/0x80
+> [ 7306.161023]  [<ffffffff815ebf60>] ? gs_change+0x13/0x13
+> 
+> I do not remeber having seen it on 2.6.38, so it might be a regression
+> in 3.0-rc4, which I am currently running.
+> 
+> Some further details: Lenovo T420s (Sandy Bridge Core i5), x86_64
+> 
+> Attempting to run a lsusb hangs at the moment, I'll supply its output
+> later when I have had a chance to reboot.
+> 
+> Is there a way to figure out whether a specific device is causing the hang?
 
-Hugh
+This has been fixed in 3.0-rc7.
+
+Alan Stern
+
