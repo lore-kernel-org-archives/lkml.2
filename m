@@ -1,104 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754747Ab1GMObc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 10:31:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54797 "EHLO mx2.suse.de"
+	id S1754894Ab1GMOds (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 10:33:48 -0400
+Received: from void.printf.net ([89.145.121.20]:48488 "EHLO void.printf.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754320Ab1GMObb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 10:31:31 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Linux-MM <linux-mm@kvack.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, XFS <xfs@oss.sgi.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 1/5] mm: vmscan: Do not writeback filesystem pages in direct reclaim
-Date: Wed, 13 Jul 2011 15:31:23 +0100
-Message-Id: <1310567487-15367-2-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1310567487-15367-1-git-send-email-mgorman@suse.de>
-References: <1310567487-15367-1-git-send-email-mgorman@suse.de>
+	id S1754502Ab1GMOdr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 10:33:47 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Per Forlin <per.forlin@linaro.org>
+Cc: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-doc@vger.ke,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: [PATCH v6] mmc: documentation of mmc non-blocking request usage and design.
+References: <1310325719-2151-1-git-send-email-per.forlin@linaro.org>
+Date: Wed, 13 Jul 2011 10:33:31 -0400
+In-Reply-To: <1310325719-2151-1-git-send-email-per.forlin@linaro.org> (Per
+	Forlin's message of "Sun, 10 Jul 2011 21:21:59 +0200")
+Message-ID: <m2wrfm2qtg.fsf@bob.laptop.org>
+User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mel Gorman <mel@csn.ul.ie>
+Hi Per,
 
-When kswapd is failing to keep zones above the min watermark, a process
-will enter direct reclaim in the same manner kswapd does. If a dirty
-page is encountered during the scan, this page is written to backing
-storage using mapping->writepage.
+On Sun, Jul 10 2011, Per Forlin wrote:
+> Documentation about the background and the design of mmc non-blocking.
+> Host driver guidelines to minimize request preparation overhead.
+>
+> Signed-off-by: Per Forlin <per.forlin@linaro.org>
+> Acked-by: Randy Dunlap <rdunlap@xenotime.net>
 
-This causes two problems. First, it can result in very deep call
-stacks, particularly if the target storage or filesystem are complex.
-Some filesystems ignore write requests from direct reclaim as a result.
-The second is that a single-page flush is inefficient in terms of IO.
-While there is an expectation that the elevator will merge requests,
-this does not always happen. Quoting Christoph Hellwig;
+Pushed v6 to mmc-next for 3.1, thanks.
 
-	The elevator has a relatively small window it can operate on,
-	and can never fix up a bad large scale writeback pattern.
-
-This patch prevents direct reclaim writing back filesystem pages by
-checking if current is kswapd. Anonymous pages are still written to
-swap as there is not the equivalent of a flusher thread for anonymos
-pages. If the dirty pages cannot be written back, they are placed
-back on the LRU lists.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/linux/mmzone.h |    1 +
- mm/vmscan.c            |    9 +++++++++
- mm/vmstat.c            |    1 +
- 3 files changed, 11 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 9f7c3eb..b70a0c0 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -100,6 +100,7 @@ enum zone_stat_item {
- 	NR_UNSTABLE_NFS,	/* NFS unstable pages */
- 	NR_BOUNCE,
- 	NR_VMSCAN_WRITE,
-+	NR_VMSCAN_WRITE_SKIP,
- 	NR_WRITEBACK_TEMP,	/* Writeback using temporary buffers */
- 	NR_ISOLATED_ANON,	/* Temporary isolated pages from anon lru */
- 	NR_ISOLATED_FILE,	/* Temporary isolated pages from file lru */
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 4f49535..2d3e5b6 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -825,6 +825,15 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 		if (PageDirty(page)) {
- 			nr_dirty++;
- 
-+			/*
-+			 * Only kswapd can writeback filesystem pages to
-+			 * avoid risk of stack overflow
-+			 */
-+			if (page_is_file_cache(page) && !current_is_kswapd()) {
-+				inc_zone_page_state(page, NR_VMSCAN_WRITE_SKIP);
-+				goto keep_locked;
-+			}
-+
- 			if (references == PAGEREF_RECLAIM_CLEAN)
- 				goto keep_locked;
- 			if (!may_enter_fs)
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 20c18b7..fd109f3 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -702,6 +702,7 @@ const char * const vmstat_text[] = {
- 	"nr_unstable",
- 	"nr_bounce",
- 	"nr_vmscan_write",
-+	"nr_vmscan_write_skip",
- 	"nr_writeback_temp",
- 	"nr_isolated_anon",
- 	"nr_isolated_file",
+- Chris.
 -- 
-1.7.3.4
-
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
