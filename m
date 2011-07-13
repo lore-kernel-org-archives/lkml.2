@@ -1,47 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755150Ab1GMA1g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jul 2011 20:27:36 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:16555 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753734Ab1GMA1f (ORCPT
+	id S1755451Ab1GMAeh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jul 2011 20:34:37 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46196 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753740Ab1GMAef (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jul 2011 20:27:35 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:date:message-id:subject:from:to:cc:
-	content-type:x-system-of-record;
-	b=aH8K5U5gRtWeLIY4CW0a68rweJH+cabzS9cC9pmI7OOJkD1XKtJGaM0Kl3Pa90XmV
-	ZbEkR4HrmrrOmgkgX3Niw==
+	Tue, 12 Jul 2011 20:34:35 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4E1CE820.1040908@jp.fujitsu.com>
+Date: Wed, 13 Jul 2011 09:34:40 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-Date: Tue, 12 Jul 2011 17:27:33 -0700
-Message-ID: <CAA9TWobmZyyhPkumX5zN_Lp3J+XQA39R10bn9r0+Vt-mznD7og@mail.gmail.com>
-Subject: ftrace: trace_pipe_raw, blocking, and splice()
-From: Slava Pestov <slavapestov@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+To: mgorman@suse.de
+CC: minchan.kim@gmail.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        cl@linux.com
+Subject: Re: [PATCH 1/3] mm: vmscan: Do use use PF_SWAPWRITE from zone_reclaim
+References: <1310389274-13995-1-git-send-email-mgorman@suse.de> <1310389274-13995-2-git-send-email-mgorman@suse.de> <CAEwNFnATXiQsmbfuvZNEtcpcVZkyZKRFB1SKbkEREaCW4S-aUg@mail.gmail.com> <4E1C1684.4090706@jp.fujitsu.com> <20110712101400.GC7529@suse.de>
+In-Reply-To: <20110712101400.GC7529@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi ftrace users,
+(2011/07/12 19:14), Mel Gorman wrote:
+> On Tue, Jul 12, 2011 at 06:40:20PM +0900, KOSAKI Motohiro wrote:
+>> (2011/07/12 18:27), Minchan Kim wrote:
+>>> Hi Mel,
+>>>
+>>> On Mon, Jul 11, 2011 at 10:01 PM, Mel Gorman <mgorman@suse.de> wrote:
+>>>> Zone reclaim is similar to direct reclaim in a number of respects.
+>>>> PF_SWAPWRITE is used by kswapd to avoid a write-congestion check
+>>>> but it's set also set for zone_reclaim which is inappropriate.
+>>>> Setting it potentially allows zone_reclaim users to cause large IO
+>>>> stalls which is worse than remote memory accesses.
+>>>
+>>> As I read zone_reclaim_mode in vm.txt, I think it's intentional.
+>>> It has meaning of throttle the process which are writing large amounts
+>>> of data. The point is to prevent use of remote node's free memory.
+>>>
+>>> And we has still the comment. If you're right, you should remove comment.
+>>> "         * and we also need to be able to write out pages for RECLAIM_WRITE
+>>>          * and RECLAIM_SWAP."
+>>>
+>>>
+>>> And at least, we should Cc Christoph and KOSAKI.
+>>
+>> Of course, I'll take full ack this. Do you remember I posted the same patch
+>> about one year ago.
+> 
+> Nope, I didn't remember it at all :) . I'll revive your signed-off
+> and sorry about that.
 
-I notice that tracing_buffers_splice_read() has this comment in it
-around line 3900:
+No. Not sorry.I think my explanation was not enough. And I couldn't show
+the performance result. At that time, I didn't access large NUMA machine.
 
-/* TODO: block */
+Thank you for paying attention the latency issue. I'm really glad.
 
-Was the original intention that reading from trace_pipe_raw with
-tracing enabled should block if there is no data available, rather
-than returning with end of file?
 
-If so, I suggest adding a new trace_raw special file which behaves
-like the current trace_pipe_raw (return 0 on EOF). Then we'd change
-trace_pipe_raw to block on EOF.
+> 
+>> At that time, Mel disagreed me and I'm glad to see he changed
+>> the mind. :)
+>>
+> 
+> Did I disagree because of this?
+> 
+> 	Simply that I believe the intention of PF_SWAPWRITE here was
+> 	to allow zone_reclaim() to aggressively reclaim memory if the
+> 	reclaim_mode allowed it as it was a statement that off-node
+> 	accesses are really not desired.
+> 
+> Or was some other problem brought up that I'm not thinking of now?
 
-Does this sound reasonable or is breaking APIs like this unacceptable?
+To be honest, My brain is volatile memory and my remember is unclear.
+As far as remember is, yes, it is only problem.
 
-Slava
+
+> I'm no longer think the level of aggression is appropriate after seeing
+> how seeing how zone_reclaim can stall when just copying large amounts
+> of data on recent x86-64 NUMA machines. In the same mail, I said
+> 
+> 	Ok. I am not fully convinced but I'll not block it either if
+> 	believe it's necessary. My current understanding is that this
+> 	patch only makes a difference if the server is IO congested in
+> 	which case the system is struggling anyway and an off-node
+> 	access is going to be relatively small penalty overall.
+> 	Conceivably, having PF_SWAPWRITE set makes things worse in
+> 	that situation and the patch makes some sense.
+> 
+> While I still think this situation is hard to trigger, zone_reclaim
+> can cause significant stalls *without* IO and there is little point
+> making the situation even worse.
+
+And, again, I'm fully agree your [0/3] description.
+
+Thanks.
+
+
+
