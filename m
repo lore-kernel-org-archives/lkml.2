@@ -1,84 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755323Ab1GMPSr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 11:18:47 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:33354 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755093Ab1GMPSq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 11:18:46 -0400
-Date: Wed, 13 Jul 2011 11:18:45 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Thilo-Alexander Ginkel <thilo@ginkel.com>
-cc: linux-kernel@vger.kernel.org, <linux-usb@vger.kernel.org>
-Subject: Re: task khubd:25 blocked for more than 120 seconds (potential
- 3.0-rc4 regression)
-In-Reply-To: <CANvSZQ8RQ30cX42kufjA65pTjKXyCw6iZieCb_8m2EQKjMGSpg@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1107131118160.2156-100000@iolanthe.rowland.org>
+	id S1755405Ab1GMPUN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 11:20:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20727 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755127Ab1GMPUL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 11:20:11 -0400
+Message-ID: <4E1DB7A5.7040708@redhat.com>
+Date: Wed, 13 Jul 2011 17:20:05 +0200
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.4pre) Gecko/20091014 Fedora/3.0-2.8.b4.fc11 Thunderbird/3.0b4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Greg Kroah-Hartman <gregkh@suse.de>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: [PATCH] Staging: zram: Fix kunmapping order
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Jul 2011, Thilo-Alexander Ginkel wrote:
 
-> Hi there,
-> 
-> the following dmesg output just caught my attention:
-> 
-> [ 7306.160699] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
-> disables this message.
-> [ 7306.160705] khubd           D ffff88021103c890     0    25      2 0x00000000
-> [ 7306.160716]  ffff88021110dae0 0000000000000046 ffffffff815e2844
-> ffff88021110dfd8
-> [ 7306.160725]  ffff88021110dae0 0000000000012a40 0000000000012a40
-> ffff88021110dfd8
-> [ 7306.160734]  ffff88021110dfd8 0000000000012a40 ffff88021103c4d0
-> ffff8801a81cdbc0
-> [ 7306.160743] Call Trace:
-> [ 7306.160758]  [<ffffffff815e2844>] ? _raw_spin_lock_irqsave+0x34/0x50
-> [ 7306.160802]  [<ffffffff81034f69>] ? default_spin_lock_flags+0x9/0x10
-> [ 7306.160810]  [<ffffffff815e2844>] ? _raw_spin_lock_irqsave+0x34/0x50
-> [ 7306.160820]  [<ffffffff815eb80e>] ? apic_timer_interrupt+0xe/0x20
-> [ 7306.160829]  [<ffffffff81448337>] ? hub_release+0x27/0x30
-> [ 7306.160838]  [<ffffffff815e1609>] __mutex_lock_slowpath+0xd9/0x150
-> [ 7306.160845]  [<ffffffff81448337>] ? hub_release+0x27/0x30
-> [ 7306.160852]  [<ffffffff815e128b>] mutex_lock+0x2b/0x50
-> [ 7306.160861]  [<ffffffff8145180b>] usb_set_interface+0x8b/0x280
-> [ 7306.160872]  [<ffffffff8107e625>] ? __cancel_work_timer+0x45/0x80
-> [ 7306.160881]  [<ffffffff814532a2>] usb_unbind_interface+0x122/0x170
-> [ 7306.160890]  [<ffffffff813cdf6c>] __device_release_driver+0x7c/0xe0
-> [ 7306.160896]  [<ffffffff813ce64d>] device_release_driver+0x2d/0x40
-> [ 7306.160903]  [<ffffffff813cd984>] bus_remove_device+0x74/0xa0
-> [ 7306.160912]  [<ffffffff813cb07f>] device_del+0x12f/0x1b0
-> [ 7306.160920]  [<ffffffff81450146>] usb_disable_device+0x76/0x180
-> [ 7306.160927]  [<ffffffff81448aac>] usb_disconnect+0x9c/0x120
-> [ 7306.160935]  [<ffffffff8144a13d>] hub_port_connect_change+0x37d/0x680
-> [ 7306.160943]  [<ffffffff81447255>] ? get_port_status+0x55/0xc0
-> [ 7306.160950]  [<ffffffff81447754>] ? hub_port_status+0x74/0xc0
-> [ 7306.160957]  [<ffffffff8144ad07>] hub_events+0x3e7/0x5b0
-> [ 7306.160967]  [<ffffffff8108ce2d>] ? refrigerator+0xed/0x130
-> [ 7306.160974]  [<ffffffff8144bb4d>] hub_thread+0x3d/0x160
-> [ 7306.160982]  [<ffffffff81084630>] ? wake_up_bit+0x40/0x40
-> [ 7306.160990]  [<ffffffff8144bb10>] ? usb_authorize_device+0x180/0x180
-> [ 7306.160997]  [<ffffffff81083f67>] kthread+0x97/0xa0
-> [ 7306.161006]  [<ffffffff815ebf64>] kernel_thread_helper+0x4/0x10
-> [ 7306.161015]  [<ffffffff81083ed0>] ? kthread_bind+0x80/0x80
-> [ 7306.161023]  [<ffffffff815ebf60>] ? gs_change+0x13/0x13
-> 
-> I do not remeber having seen it on 2.6.38, so it might be a regression
-> in 3.0-rc4, which I am currently running.
-> 
-> Some further details: Lenovo T420s (Sandy Bridge Core i5), x86_64
-> 
-> Attempting to run a lsusb hangs at the moment, I'll supply its output
-> later when I have had a chance to reboot.
-> 
-> Is there a way to figure out whether a specific device is causing the hang?
+This patch fixes the unmapping order of KM_USER0/1 in
+handle_uncompressed_page() and zram_read() so that kmap()/kunmap() calls
+are correctly nested.
 
-This has been fixed in 3.0-rc7.
+Reported-by: Nitin Gupta <ngupta@vflare.org>
+Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
+---
+ zram_drv.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Alan Stern
-
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index c5fdc55..d70ec1a 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -199,8 +199,8 @@ static void handle_uncompressed_page(struct zram *zram, struct bio_vec *bvec,
+ 	cmem = kmap_atomic(zram->table[index].page, KM_USER1);
+ 
+ 	memcpy(user_mem + bvec->bv_offset, cmem + offset, bvec->bv_len);
+-	kunmap_atomic(user_mem, KM_USER0);
+ 	kunmap_atomic(cmem, KM_USER1);
++	kunmap_atomic(user_mem, KM_USER0);
+ 
+ 	flush_dcache_page(page);
+ }
+@@ -267,8 +267,8 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+ 		kfree(uncmem);
+ 	}
+ 
+-	kunmap_atomic(user_mem, KM_USER0);
+ 	kunmap_atomic(cmem, KM_USER1);
++	kunmap_atomic(user_mem, KM_USER0);
+ 
+ 	/* Should NEVER happen. Return bio error if it does. */
+ 	if (unlikely(ret != LZO_E_OK)) {
