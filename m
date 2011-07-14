@@ -1,42 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189Ab1GNJoa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 05:44:30 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:38446 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753245Ab1GNJo2 (ORCPT
+	id S1754190Ab1GNJqK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 05:46:10 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:60698 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754079Ab1GNJqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 05:44:28 -0400
-Date: Thu, 14 Jul 2011 11:44:23 +0200
+	Thu, 14 Jul 2011 05:46:08 -0400
+Date: Thu, 14 Jul 2011 11:46:03 +0200
 From: Tejun Heo <tj@kernel.org>
 To: mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de,
         benh@kernel.crashing.org, yinghai@kernel.org, davem@davemloft.net
 Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, x86@kernel.org
-Subject: [PATCH UPDATED 04/13] x86: Use HAVE_MEMBLOCK_NODE_MAP
-Message-ID: <20110714094423.GG3455@htj.dyndns.org>
+Subject: [PATCH UPDATED 12/13] memblock, x86: Make ARCH_DISCARD_MEMBLOCK a
+ config option
+Message-ID: <20110714094603.GH3455@htj.dyndns.org>
 References: <1310462166-31469-1-git-send-email-tj@kernel.org>
- <1310462166-31469-5-git-send-email-tj@kernel.org>
+ <1310462166-31469-13-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1310462166-31469-5-git-send-email-tj@kernel.org>
+In-Reply-To: <1310462166-31469-13-git-send-email-tj@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 5732e1247898d67cbf837585150fe9f68974671d Mon Sep 17 00:00:00 2001
+>From 6839454ae63f1eb21e515c10229ca95c22955fec Mon Sep 17 00:00:00 2001
 From: Tejun Heo <tj@kernel.org>
-Date: Thu, 14 Jul 2011 11:22:16 +0200
+Date: Thu, 14 Jul 2011 11:22:17 +0200
 
-Convert x86 to HAVE_MEMBLOCK_NODE_MAP.  The only difference in memory
-handling is that allocations can't no longer cross node boundaries
-whether they're node affine or not, which shouldn't matter at all.
-
-This conversion will enable further simplification of boot memory
-handling.
-
--v2: Fix build failure on !NUMA configurations discovered by hpa.
+Make ARCH_DISCARD_MEMBLOCK a config option so that it can be handled
+together with other MEMBLOCK options.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
@@ -45,144 +40,83 @@ Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@redhat.com>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 ---
+Nothing really changed.  Just patch context update to resolve conflict
+from updates earlier in the series.
+
+Thanks.
+
  arch/x86/Kconfig                |    1 +
  arch/x86/include/asm/memblock.h |    2 --
- arch/x86/mm/init_32.c           |    8 ++++----
- arch/x86/mm/init_64.c           |    2 +-
- arch/x86/mm/memblock.c          |   14 --------------
- arch/x86/mm/numa.c              |   15 +++++++--------
- 6 files changed, 13 insertions(+), 29 deletions(-)
+ include/linux/memblock.h        |    2 +-
+ mm/Kconfig                      |    3 +++
+ mm/memblock.c                   |    2 +-
+ 5 files changed, 6 insertions(+), 4 deletions(-)
 
 diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index da34972..97f0894 100644
+index 97f0894..28116d4 100644
 --- a/arch/x86/Kconfig
 +++ b/arch/x86/Kconfig
-@@ -25,6 +25,7 @@ config X86
- 	select HAVE_IOREMAP_PROT
+@@ -26,6 +26,7 @@ config X86
  	select HAVE_KPROBES
  	select HAVE_MEMBLOCK
-+	select HAVE_MEMBLOCK_NODE_MAP
+ 	select HAVE_MEMBLOCK_NODE_MAP
++	select ARCH_DISCARD_MEMBLOCK
  	select ARCH_WANT_OPTIONAL_GPIOLIB
  	select ARCH_WANT_FRAME_POINTERS
  	select HAVE_DMA_ATTRS
 diff --git a/arch/x86/include/asm/memblock.h b/arch/x86/include/asm/memblock.h
-index 161792e..1460db2 100644
+index 17a882e..bc56670 100644
 --- a/arch/x86/include/asm/memblock.h
 +++ b/arch/x86/include/asm/memblock.h
-@@ -12,8 +12,6 @@ int __get_free_all_memory_range(struct range **range, int nodeid,
- 			 unsigned long start_pfn, unsigned long end_pfn);
- int get_free_all_memory_range(struct range **rangep, int nodeid);
+@@ -1,8 +1,6 @@
+ #ifndef _X86_MEMBLOCK_H
+ #define _X86_MEMBLOCK_H
  
--void memblock_x86_register_active_regions(int nid, unsigned long start_pfn,
--					 unsigned long last_pfn);
- u64 memblock_x86_hole_size(u64 start, u64 end);
- u64 memblock_x86_free_memory_in_range(u64 addr, u64 limit);
- u64 memblock_x86_memory_in_range(u64 addr, u64 limit);
-diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-index 29f7c6d..5d173db 100644
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@ -650,18 +650,18 @@ void __init initmem_init(void)
- 	highstart_pfn = highend_pfn = max_pfn;
- 	if (max_pfn > max_low_pfn)
- 		highstart_pfn = max_low_pfn;
--	memblock_x86_register_active_regions(0, 0, highend_pfn);
--	sparse_memory_present_with_active_regions(0);
- 	printk(KERN_NOTICE "%ldMB HIGHMEM available.\n",
- 		pages_to_mb(highend_pfn - highstart_pfn));
- 	num_physpages = highend_pfn;
- 	high_memory = (void *) __va(highstart_pfn * PAGE_SIZE - 1) + 1;
+-#define ARCH_DISCARD_MEMBLOCK
+-
+ void memblock_x86_reserve_range(u64 start, u64 end, char *name);
+ void memblock_x86_free_range(u64 start, u64 end);
+ 
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index 31def58..2491355 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -197,7 +197,7 @@ static inline unsigned long memblock_region_reserved_end_pfn(const struct memblo
+ 	     region++)
+ 
+ 
+-#ifdef ARCH_DISCARD_MEMBLOCK
++#ifdef CONFIG_ARCH_DISCARD_MEMBLOCK
+ #define __init_memblock __meminit
+ #define __initdata_memblock __meminitdata
  #else
--	memblock_x86_register_active_regions(0, 0, max_low_pfn);
--	sparse_memory_present_with_active_regions(0);
- 	num_physpages = max_low_pfn;
- 	high_memory = (void *) __va(max_low_pfn * PAGE_SIZE - 1) + 1;
- #endif
+diff --git a/mm/Kconfig b/mm/Kconfig
+index 30a5d47..7c56971 100644
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -134,6 +134,9 @@ config HAVE_MEMBLOCK
+ config HAVE_MEMBLOCK_NODE_MAP
+ 	boolean
+ 
++config ARCH_DISCARD_MEMBLOCK
++	boolean
 +
-+	memblock_set_node(0, (phys_addr_t)ULLONG_MAX, 0);
-+	sparse_memory_present_with_active_regions(0);
-+
- #ifdef CONFIG_FLATMEM
- 	max_mapnr = num_physpages;
- #endif
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index d865c4a..7fb064c 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -607,7 +607,7 @@ kernel_physical_mapping_init(unsigned long start,
- #ifndef CONFIG_NUMA
- void __init initmem_init(void)
+ # eventually, we can have this option just 'select SPARSEMEM'
+ config MEMORY_HOTPLUG
+ 	bool "Allow for memory hot-add"
+diff --git a/mm/memblock.c b/mm/memblock.c
+index c4a8750..ebc6119 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -959,7 +959,7 @@ static int __init early_memblock(char *p)
+ }
+ early_param("memblock", early_memblock);
+ 
+-#if defined(CONFIG_DEBUG_FS) && !defined(ARCH_DISCARD_MEMBLOCK)
++#if defined(CONFIG_DEBUG_FS) && !defined(CONFIG_ARCH_DISCARD_MEMBLOCK)
+ 
+ static int memblock_debug_show(struct seq_file *m, void *private)
  {
--	memblock_x86_register_active_regions(0, 0, max_pfn);
-+	memblock_set_node(0, (phys_addr_t)ULLONG_MAX, 0);
- }
- #endif
- 
-diff --git a/arch/x86/mm/memblock.c b/arch/x86/mm/memblock.c
-index e4569f8..97fbc39 100644
---- a/arch/x86/mm/memblock.c
-+++ b/arch/x86/mm/memblock.c
-@@ -283,20 +283,6 @@ static int __init memblock_x86_find_active_region(const struct memblock_region *
- 	return 1;
- }
- 
--/* Walk the memblock.memory map and register active regions within a node */
--void __init memblock_x86_register_active_regions(int nid, unsigned long start_pfn,
--					 unsigned long last_pfn)
--{
--	unsigned long ei_startpfn;
--	unsigned long ei_endpfn;
--	struct memblock_region *r;
--
--	for_each_memblock(memory, r)
--		if (memblock_x86_find_active_region(r, start_pfn, last_pfn,
--					   &ei_startpfn, &ei_endpfn))
--			add_active_range(nid, ei_startpfn, ei_endpfn);
--}
--
- /*
-  * Find the hole size (in bytes) in the memory range.
-  * @start: starting address of the memory range to scan
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 824efad..f4a40bd 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -498,13 +498,10 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
- 	if (WARN_ON(nodes_empty(node_possible_map)))
- 		return -EINVAL;
- 
--	for (i = 0; i < mi->nr_blks; i++)
--		memblock_x86_register_active_regions(mi->blk[i].nid,
--					mi->blk[i].start >> PAGE_SHIFT,
--					mi->blk[i].end >> PAGE_SHIFT);
--
--	/* for out of order entries */
--	sort_node_map();
-+	for (i = 0; i < mi->nr_blks; i++) {
-+		struct numa_memblk *mb = &mi->blk[i];
-+		memblock_set_node(mb->start, mb->end - mb->start, mb->nid);
-+	}
- 
- 	/*
- 	 * If sections array is gonna be used for pfn -> nid mapping, check
-@@ -538,6 +535,8 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
- 			setup_node_data(nid, start, end);
- 	}
- 
-+	/* Dump memblock with node info and return. */
-+	memblock_dump_all();
- 	return 0;
- }
- 
-@@ -575,7 +574,7 @@ static int __init numa_init(int (*init_func)(void))
- 	nodes_clear(node_possible_map);
- 	nodes_clear(node_online_map);
- 	memset(&numa_meminfo, 0, sizeof(numa_meminfo));
--	remove_all_active_ranges();
-+	WARN_ON(memblock_set_node(0, ULLONG_MAX, MAX_NUMNODES));
- 	numa_reset_distance();
- 
- 	ret = init_func();
 -- 
 1.7.6
 
