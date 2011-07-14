@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753926Ab1GNUO7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 16:14:59 -0400
-Received: from Mycroft.westnet.com ([216.187.52.7]:39515 "EHLO
-	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753347Ab1GNUO6 (ORCPT
+	id S932089Ab1GNUUp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 16:20:45 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:62245 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753722Ab1GNUUn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 16:14:58 -0400
-X-Greylist: delayed 1424 seconds by postgrey-1.27 at vger.kernel.org; Thu, 14 Jul 2011 16:14:57 EDT
+	Thu, 14 Jul 2011 16:20:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <19999.18584.813855.541972@quad.stoffel.home>
-Date: Thu, 14 Jul 2011 15:50:48 -0400
-From: "John Stoffel" <john@stoffel.org>
-To: Alasdair G Kergon <agk@redhat.com>
-Cc: NeilBrown <neilb@suse.de>, Ric Wheeler <rwheeler@redhat.com>,
-        Nico Schottelius <nico-lkml-20110623@schottelius.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@oracle.com>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>
-Subject: Re: Mis-Design of Btrfs?
-In-Reply-To: <20110714165516.GA15253@agk-dp.fab.redhat.com>
-References: <20110623105337.GD3753@ethz.ch>
-	<20110627164637.377314e2@notabene.brown>
-	<4E0AF091.9030301@redhat.com>
-	<20110714155620.6e9ac2cc@notabene.brown>
-	<4E1E866E.2050405@redhat.com>
-	<20110714163836.35a729c1@notabene.brown>
-	<20110714165516.GA15253@agk-dp.fab.redhat.com>
-X-Mailer: VM 8.1.1 under 23.2.1 (x86_64-pc-linux-gnu)
+In-Reply-To: <4E1F4D2C.3000507@zytor.com>
+References: <1310462166-31469-1-git-send-email-tj@kernel.org>
+	<1310462166-31469-14-git-send-email-tj@kernel.org>
+	<4E1F4D2C.3000507@zytor.com>
+Date: Thu, 14 Jul 2011 22:20:42 +0200
+X-Google-Sender-Auth: je2dKE5myBb3f-qZqxSZStcuXyQ
+Message-ID: <CAOS58YPhFWEYgB7moPoTj+BKBn6WMHCi5FqZ5eYp+m4bbEN_7A@mail.gmail.com>
+Subject: Re: [PATCH 13/13] memblock, x86: Replace memblock_x86_reserve/free_range()
+ with generic ones
+From: Tejun Heo <tj@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: mingo@redhat.com, tglx@linutronix.de, benh@kernel.crashing.org,
+        yinghai@kernel.org, davem@davemloft.net, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, x86@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Alasdair" == Alasdair G Kergon <agk@redhat.com> writes:
+Hello,
 
-Alasdair> On Thu, Jul 14, 2011 at 04:38:36PM +1000, Neil Brown wrote:
->> It might make sense for a device to be able to report what the maximum
->> 'N' supported is... that might make stacked raid easier to manage...
- 
-Alasdair> I'll just say that any solution ought to be stackable.
+On Thu, Jul 14, 2011 at 10:10 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 07/12/2011 02:16 AM, Tejun Heo wrote:
+>> +     memblock_dbg("memblock_reserve: [%#016llx-%#016llx] %pF\n",
+>> +                  base, base + size, (void *)_RET_IP_);
+>>       BUG_ON(0 == size);
+>>
+>>       return memblock_add_region(_rgn, base, size);
+>
+> This assumes phys_addr_t == unsigned long long, which is just plain
+> wrong.  I will fix it up, but please take more care with that in the
+> future.  This triggers a warning when building for i386 non-PAE, which
+> is a good thing because it is a real error.
 
-I've been mulling this over too and wondering how you'd handle this,
-because upper layers really can't peak down into lower layers easily.
-As far as I understand things.
+Oh, right, I got confused w/ u64.
 
-So if you have btrfs -> luks -> raid1 -> raid6 -> nbd -> remote disks
+> Also, don't we usually display resources as an *inclusive* range,
+> meaning that the last one should be base + size - 1?
 
-How does btrfs handle errors (or does it even see them!) from the
-raid6 level when a single nbd device goes away?  Or taking the
-original example, when btrfs notices a checksum isn't correct, how
-would it push down multiple levels to try and find the correct data? 
+Hmm... looking at the boot log, not really. [ ) ranges are more
+common. memblock code is one of notable exceptions and I actually was
+thinking about converting it. [ ) ranges are easier to recognize and
+most of code we have can't deal with the full range (and it shouldn't
+need to - chopping off one top and bottom is much saner approach
+anyway).
 
-Alasdair> This means understanding both that the number of data access
-Alasdair> routes may vary as you move through the stack, and that this
-Alasdair> number may depend on the offset within the device.
+Thanks.
 
-It almost seems to me that the retry needs to be done at each level on
-it's own, without pushing down or up the stack.  But this doesn't
-handle the wrong file checksum issue.  
-
-Hmm... maybe instead of just one number, we need another to count the
-levels down you go (or just split 16bit integer in half, bottom half
-being count of tries, the upper half being levels down to try that
-read?)
-
-It seems to defeat the purpose of layers if you can go down and find
-out how many layers there are underneath you....
-
-John
-
+-- 
+tejun
