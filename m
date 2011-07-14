@@ -1,32 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753109Ab1GNEqx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 00:46:53 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:54531
+	id S1753501Ab1GNEv1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 00:51:27 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:35440
 	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750880Ab1GNEqw (ORCPT
+	by vger.kernel.org with ESMTP id S1751035Ab1GNEv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 00:46:52 -0400
-Date: Thu, 14 Jul 2011 00:46:43 -0400
+	Thu, 14 Jul 2011 00:51:26 -0400
+Date: Thu, 14 Jul 2011 00:51:23 -0400
 From: Christoph Hellwig <hch@infradead.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Dave Chinner <david@fromorbit.com>
 Cc: Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, XFS <xfs@oss.sgi.com>,
-        Dave Chinner <david@fromorbit.com>,
         Christoph Hellwig <hch@infradead.org>,
         Johannes Weiner <jweiner@redhat.com>,
         Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
         Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 1/5] mm: vmscan: Do not writeback filesystem pages in
- direct reclaim
-Message-ID: <20110714044643.GA3203@infradead.org>
+Subject: Re: [RFC PATCH 0/5] Reduce filesystem writeback from page reclaim
+ (again)
+Message-ID: <20110714045123.GB3203@infradead.org>
 References: <1310567487-15367-1-git-send-email-mgorman@suse.de>
- <1310567487-15367-2-git-send-email-mgorman@suse.de>
- <20110714103801.83e10fdb.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110714003340.GZ23038@dastard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110714103801.83e10fdb.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110714003340.GZ23038@dastard>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
@@ -34,23 +32,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 14, 2011 at 10:38:01AM +0900, KAMEZAWA Hiroyuki wrote:
-> > +			/*
-> > +			 * Only kswapd can writeback filesystem pages to
-> > +			 * avoid risk of stack overflow
-> > +			 */
-> > +			if (page_is_file_cache(page) && !current_is_kswapd()) {
-> > +				inc_zone_page_state(page, NR_VMSCAN_WRITE_SKIP);
-> > +				goto keep_locked;
-> > +			}
-> > +
-> 
-> 
-> This will cause tons of memcg OOM kill because we have no help of kswapd (now).
+On Thu, Jul 14, 2011 at 10:33:40AM +1000, Dave Chinner wrote:
+> patchset. After all, that's what I keep asking for (so we can get
+> rid of .writepage altogether), and if the numbers don't add up, then
+> I'll shut up about it. ;)
 
-XFS and btrfs already disable writeback from memcg context, as does ext4
-for the typical non-overwrite workloads, and none has fallen apart.
+Unfortunately there's a few more users of ->writepage in addition to
+memory reclaim.  The most visible on is page migration, but there's also
+a write_one_page helper used by a few filesystems that would either
+need to get a writepage-like callback or a bigger rewrite.
 
-In fact there's no way we can enable them as the memcg calling contexts
-tend to have massive stack usage.
+I agree that killing of ->writepage would be a worthwhile goal, though.
 
