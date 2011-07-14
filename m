@@ -1,157 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752814Ab1GNGFz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 02:05:55 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35113 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752445Ab1GNGFy (ORCPT
+	id S1752662Ab1GNGIM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 02:08:12 -0400
+Received: from mtagate4.uk.ibm.com ([194.196.100.164]:53769 "EHLO
+	mtagate4.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750707Ab1GNGII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 02:05:54 -0400
-From: Ravishankar <ravishankarkm32@gmail.com>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>,
-        Ravishankar <ravishankarkm32@gmail.com>
-Subject: [PATCH 2/3] Staging: comedi: fix brace coding style issue in daqboard2000.c
-Date: Thu, 14 Jul 2011 11:48:31 +0530
-Message-Id: <1310624311-17875-1-git-send-email-ravishankarkm32@gmail.com>
-X-Mailer: git-send-email 1.6.5.2
-In-Reply-To: <[PATCH 2/3]Staging: comedi: fix brace coding style issue in daqboard2000.c>
-References: <[PATCH 2/3]Staging: comedi: fix brace coding style issue in daqboard2000.c>
+	Thu, 14 Jul 2011 02:08:08 -0400
+Date: Thu, 14 Jul 2011 07:07:51 +0100
+From: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: Len Brown <lenb@kernel.org>, David Woodhouse <dwmw2@infradead.org>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] power_supply: scrub device pointer if registration
+ fails
+Message-ID: <20110714060751.GA5386@stefanha-thinkpad.localdomain>
+References: <1310457809-2731-1-git-send-email-stefanha@linux.vnet.ibm.com>
+ <1310457809-2731-2-git-send-email-stefanha@linux.vnet.ibm.com>
+ <20110712150942.GA1291@oksana.dev.rtsoft.ru>
+ <20110712153017.GA4503@stefanha-thinkpad.localdomain>
+ <20110712172331.GA9557@oksana.dev.rtsoft.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110712172331.GA9557@oksana.dev.rtsoft.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ravishankar <ravi.shankar@greenturtles.in>
+On Tue, Jul 12, 2011 at 09:23:31PM +0400, Anton Vorontsov wrote:
+> On Tue, Jul 12, 2011 at 04:30:17PM +0100, Stefan Hajnoczi wrote:
+> [...]
+> > > I believe the whole ACPI battery logic is overcomplicated, and
+> > > needs a bit of rework. In the meantime, we could move 'psy->dev =
+> > > dev;' assignment into the end of the function, where _register
+> > > could not fail, i.e. something like this:
+> > 
+> > Aha!  I didn't do this is because I don't know the code and was afraid
+> > some other function somewhere would use psy->dev.  If you think it is
+> > safer this way I'll resend the patch.
+> 
+> Neither is a proper fix, unfortunately. :-( Without some external lock
+> you can't use psy->dev as a flag to check if the registration was
+> successful. There is really no point trying to force core functions
+> to keep psy->dev in a sane state after registration has failed.
+> 
+> So, instead of patching power_supply core, I'd suggest the
+> following patch (on top of 2/3 and 3/3, so far only compile-
+> tested). How does it look?
 
-This is a patch to the daqboard2000.c file that fixes up a brace warning found by the checkpatch.pl tool
+Comments below.  Thanks for adding this lock.
 
-Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
----
- drivers/staging/comedi/drivers/daqboard2000.c |   33 ++++++++----------------
- 1 files changed, 11 insertions(+), 22 deletions(-)
+> diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
+> index 2ae2fca..475e17c 100644
+> --- a/drivers/acpi/battery.c
+> +++ b/drivers/acpi/battery.c
+> @@ -101,6 +101,7 @@ enum {
+> 
+>  struct acpi_battery {
+>  	struct mutex lock;
+> +	struct mutex bat_lock;
+>  	struct power_supply bat;
+>  	struct acpi_device *device;
+>  	struct notifier_block pm_nb;
+> @@ -559,8 +560,10 @@ static int sysfs_add_battery(struct acpi_battery *battery)
+>  	battery->bat.get_property = acpi_battery_get_property;
+> 
+>  	result = power_supply_register(&battery->device->dev, &battery->bat);
+> -	if (result)
+> +	if (result) {
+> +		battery->bat.dev = NULL;
+>  		return result;
+> +	}
+>  	return device_create_file(battery->bat.dev, &alarm_attr);
+>  }
+> 
+> @@ -613,31 +616,40 @@ static int acpi_battery_update(struct acpi_battery *battery)
+>  	result = acpi_battery_get_status(battery);
+>  	if (result)
+>  		return result;
+> +
+> +	mutex_lock(&battery->bat_lock);
+> +
+>  	if (!acpi_battery_present(battery)) {
+>  		sysfs_remove_battery(battery);
+>  		battery->update_time = 0;
+> -		return 0;
+> +		result = 0;
+> +		goto out_unlock;
+>  	}
+>  	if (!battery->update_time ||
+>  	    old_present != acpi_battery_present(battery)) {
+>  		result = acpi_battery_get_info(battery);
+>  		if (result)
+> -			return result;
+> +			goto out_unlock;
+>  		acpi_battery_quirks(battery);
+>  		acpi_battery_init_alarm(battery);
+>  	}
+>  	if (!battery->bat.dev) {
+>  		result = sysfs_add_battery(battery);
+>  		if (result)
+> -			return result;
+> +			goto out_unlock;
+>  	}
+>  	result = acpi_battery_get_state(battery);
+>  	acpi_battery_quirks2(battery);
+> +
+> +out_unlock:
+> +	mutex_unlock(&battery->bat_lock);
+>  	return result;
+>  }
+> 
+> -static void acpi_battery_refresh(struct acpi_battery *battery)
+> +static void sysfs_readd_battery(struct acpi_battery *battery)
 
-diff --git a/drivers/staging/comedi/drivers/daqboard2000.c b/drivers/staging/comedi/drivers/daqboard2000.c
-index 6441771..12ccdae 100644
---- a/drivers/staging/comedi/drivers/daqboard2000.c
-+++ b/drivers/staging/comedi/drivers/daqboard2000.c
-@@ -430,16 +430,14 @@ static int daqboard2000_ai_insn_read(struct comedi_device *dev,
- 		/* Enable reading from the scanlist FIFO */
- 		fpga->acqControl = DAQBOARD2000_SeqStartScanList;
- 		for (timeout = 0; timeout < 20; timeout++) {
--			if (fpga->acqControl & DAQBOARD2000_AcqConfigPipeFull) {
-+			if (fpga->acqControl & DAQBOARD2000_AcqConfigPipeFull)
- 				break;
--			}
- 			/* udelay(2); */
- 		}
- 		fpga->acqControl = DAQBOARD2000_AdcPacerEnable;
- 		for (timeout = 0; timeout < 20; timeout++) {
--			if (fpga->acqControl & DAQBOARD2000_AcqLogicScanning) {
-+			if (fpga->acqControl & DAQBOARD2000_AcqLogicScanning)
- 				break;
--			}
- 			/* udelay(2); */
- 		}
- 		for (timeout = 0; timeout < 20; timeout++) {
-@@ -465,9 +463,8 @@ static int daqboard2000_ao_insn_read(struct comedi_device *dev,
- 	int i;
- 	int chan = CR_CHAN(insn->chanspec);
- 
--	for (i = 0; i < insn->n; i++) {
-+	for (i = 0; i < insn->n; i++)
- 		data[i] = devpriv->ao_readback[chan];
--	}
- 
- 	return i;
- }
-@@ -490,9 +487,8 @@ static int daqboard2000_ao_insn_write(struct comedi_device *dev,
- 		/* fpga->dacControl = (chan + 2) * 0x0010 | 0x0001; udelay(1000); */
- 		fpga->dacSetting[chan] = data[i];
- 		for (timeout = 0; timeout < 20; timeout++) {
--			if ((fpga->dacControl & ((chan + 1) * 0x0010)) == 0) {
-+			if ((fpga->dacControl & ((chan + 1) * 0x0010)) == 0)
- 				break;
--			}
- 			/* udelay(2); */
- 		}
- 		devpriv->ao_readback[chan] = data[i];
-@@ -605,9 +601,8 @@ static int initialize_daqboard2000(struct comedi_device *dev,
- 			for (; i < len; i += 2) {
- 				int data =
- 				    (cpld_array[i] << 8) + cpld_array[i + 1];
--				if (!daqboard2000_writeCPLD(dev, data)) {
-+				if (!daqboard2000_writeCPLD(dev, data))
- 					break;
--				}
- 			}
- 			if (i >= len) {
- #ifdef DEBUG_EEPROM
-@@ -658,9 +653,8 @@ static void daqboard2000_activateReferenceDacs(struct comedi_device *dev)
- 	/*  Set the + reference dac value in the FPGA */
- 	fpga->refDacs = 0x80 | DAQBOARD2000_PosRefDacSelect;
- 	for (timeout = 0; timeout < 20; timeout++) {
--		if ((fpga->dacControl & DAQBOARD2000_RefBusy) == 0) {
-+		if ((fpga->dacControl & DAQBOARD2000_RefBusy) == 0)
- 			break;
--		}
- 		udelay(2);
- 	}
- /*  printk("DAQBOARD2000_PosRefDacSelect %d\n", timeout);*/
-@@ -668,9 +662,8 @@ static void daqboard2000_activateReferenceDacs(struct comedi_device *dev)
- 	/*  Set the - reference dac value in the FPGA */
- 	fpga->refDacs = 0x80 | DAQBOARD2000_NegRefDacSelect;
- 	for (timeout = 0; timeout < 20; timeout++) {
--		if ((fpga->dacControl & DAQBOARD2000_RefBusy) == 0) {
-+		if ((fpga->dacControl & DAQBOARD2000_RefBusy) == 0)
- 			break;
--		}
- 		udelay(2);
- 	}
- /*  printk("DAQBOARD2000_NegRefDacSelect %d\n", timeout);*/
-@@ -743,9 +736,8 @@ static int daqboard2000_attach(struct comedi_device *dev,
- 	slot = it->options[1];
- 
- 	result = alloc_private(dev, sizeof(struct daqboard2000_private));
--	if (result < 0) {
-+	if (result < 0)
- 		return -ENOMEM;
--	}
- 	for (card = pci_get_device(0x1616, 0x0409, NULL);
- 	     card != NULL; card = pci_get_device(0x1616, 0x0409, card)) {
- 		if (bus || slot) {
-@@ -794,9 +786,8 @@ static int daqboard2000_attach(struct comedi_device *dev,
- 	    ioremap(pci_resource_start(card, 0), DAQBOARD2000_PLX_SIZE);
- 	devpriv->daq =
- 	    ioremap(pci_resource_start(card, 2), DAQBOARD2000_DAQ_SIZE);
--	if (!devpriv->plx || !devpriv->daq) {
-+	if (!devpriv->plx || !devpriv->daq)
- 		return -ENOMEM;
--	}
- 
- 	result = alloc_subdevices(dev, 3);
- 	if (result < 0)
-@@ -869,18 +860,16 @@ static int daqboard2000_detach(struct comedi_device *dev)
- 	if (dev->subdevices)
- 		subdev_8255_cleanup(dev, dev->subdevices + 2);
- 
--	if (dev->irq) {
-+	if (dev->irq)
- 		free_irq(dev->irq, dev);
--	}
- 	if (devpriv) {
- 		if (devpriv->daq)
- 			iounmap(devpriv->daq);
- 		if (devpriv->plx)
- 			iounmap(devpriv->plx);
- 		if (devpriv->pci_dev) {
--			if (devpriv->got_regions) {
-+			if (devpriv->got_regions)
- 				comedi_pci_disable(devpriv->pci_dev);
--			}
- 			pci_dev_put(devpriv->pci_dev);
- 		}
- 	}
--- 
-1.6.5.2
+s/readd/read/?
 
+>  {
+> +	mutex_lock(&battery->bat_lock);
+> +
+>  	if (!battery->bat.dev)
+>  		return;
+
+Remember to unlock before return:
+
+if (!battery->bat.dev)
+    goto out;
+
+> 
+> @@ -645,6 +657,13 @@ static void acpi_battery_refresh(struct acpi_battery *battery)
+>  	/* The battery may have changed its reporting units. */
+>  	sysfs_remove_battery(battery);
+>  	sysfs_add_battery(battery);
+> +
+out:
+> +	mutex_unlock(&battery->bat_lock);
+> +}
+
+Stefan
