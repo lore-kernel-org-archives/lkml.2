@@ -1,85 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755200Ab1GNOBi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 10:01:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38396 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755033Ab1GNOBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 10:01:37 -0400
-Message-ID: <4E1EF6BA.4050006@redhat.com>
-Date: Thu, 14 Jul 2011 17:01:30 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-CC: Joerg Roedel <joerg.roedel@amd.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/7] KVM: SVM: Use host_vmcb_pa for vmload and vmsave
-References: <1310571145-28930-1-git-send-email-joerg.roedel@amd.com> <1310571145-28930-3-git-send-email-joerg.roedel@amd.com> <4E1ED320.4080600@redhat.com> <20110714131036.GC24072@8bytes.org> <4E1EED03.3050202@redhat.com> <20110714135239.GF24072@8bytes.org>
-In-Reply-To: <20110714135239.GF24072@8bytes.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1755233Ab1GNOGj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 10:06:39 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:53551 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755149Ab1GNOGi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 10:06:38 -0400
+Subject: [PATCH v2] regulator: Fix memory leak in set_machine_constraints()
+ error paths
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 14 Jul 2011 22:06:30 +0800
+Message-ID: <1310652390.3876.1.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2011 04:52 PM, Joerg Roedel wrote:
-> >  What about an L2 guest executing VMLOAD or VMSAVE which isn't
-> >  intercepted?  Don't we have to redirect it's reads and writes to
-> >  host_vmcb?
->
-> Yes, that needs to target the host_vmcb then. This is buggy in the
-> patch-set. Thanks for pointing this out :)
+Properly kfree rdev->constraints in all set_machine_constraints() error paths.
+Also properly kfree rdev->constraints in regulator_register() error paths.
 
-For the low price of an additional test to svm.flat.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/core.c |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
 
-> >>  Hmm, how about naming them l1_vmcb and l2_vmcb? The comment explaining
-> >>  why vmload/vmsave always happens on l1_vmcb is needed anyway then.
-> >
-> >  In a later patch you introduce n_vmcb.  I think it makes sense to name
-> >  that vmcb02?
->
-> Just for my understanding, what stands the first '0' for? The '1' and
-> '2' make sense, but the '0' seems to be redundant?
-
-The first number is the level running in host mode, the second is the 
-level running guest mode.
-
-vmcb01: host running guest
-vmcb02: host running nested guest
-vmcb12: guest running nested guest (i.e. the virtual vmcb in guest 
-physical address space)
-
-> >  Even the exising code would be good to document.  So when a reader sees
-> >  some bit, they can compare it to the document and see why it's that way.
->
-> I tried to put comments into the code to document the most complicated
-> parts. But there is certainly room for improvement. Overall, I think the
-> best place is to keep those comments in the code and not open another
-> document for it.
-
-Those are good for the details, but not so good for the master plan.  
-Like mmu.txt.
-
-> >>  The long-term plan is certainly to merge code with nested-vmx where
-> >>  possible and move logic into generic KVM code. The first item that comes
-> >>  to mind here is to create a single place where a vmexit is emulated and
-> >>  let all other place which do that today just signal that it is required.
-> >
-> >  I'm not very concerned about reuse with nvmx except for architectural
-> >  code like interrupts.  Of course, if it turns out simple I'm all for it,
-> >  but if it's hard or uglifies the code, let it be.
->
-> Yes, the interrupt code is another part that probably can be made
-> generic.
-
-Yes.
-
-> The nested-mmu code is already generic. Nested-VMX should be able to
-> make use of it with only minor modifications.
-
-Yup, just need support for parsing the EPT PTE format.
-
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index f59821f..c0c4034 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -787,7 +787,6 @@ static int machine_constraints_voltage(struct regulator_dev *rdev,
+ 		if (ret < 0) {
+ 			rdev_err(rdev, "failed to apply %duV constraint\n",
+ 				 rdev->constraints->min_uV);
+-			rdev->constraints = NULL;
+ 			return ret;
+ 		}
+ 	}
+@@ -873,7 +872,7 @@ static int machine_constraints_voltage(struct regulator_dev *rdev,
+ static int set_machine_constraints(struct regulator_dev *rdev,
+ 	const struct regulation_constraints *constraints)
+ {
+-	int ret = 0;
++	int ret;
+ 	struct regulator_ops *ops = rdev->desc->ops;
+ 
+ 	rdev->constraints = kmemdup(constraints, sizeof(*constraints),
+@@ -890,7 +889,6 @@ static int set_machine_constraints(struct regulator_dev *rdev,
+ 		ret = suspend_prepare(rdev, rdev->constraints->initial_state);
+ 		if (ret < 0) {
+ 			rdev_err(rdev, "failed to set suspend state\n");
+-			rdev->constraints = NULL;
+ 			goto out;
+ 		}
+ 	}
+@@ -917,13 +915,15 @@ static int set_machine_constraints(struct regulator_dev *rdev,
+ 		ret = ops->enable(rdev);
+ 		if (ret < 0) {
+ 			rdev_err(rdev, "failed to enable\n");
+-			rdev->constraints = NULL;
+ 			goto out;
+ 		}
+ 	}
+ 
+ 	print_constraints(rdev);
++	return 0;
+ out:
++	kfree(rdev->constraints);
++	rdev->constraints = NULL;
+ 	return ret;
+ }
+ 
+@@ -2694,6 +2694,7 @@ unset_supplies:
+ 	unset_regulator_supplies(rdev);
+ 
+ scrub:
++	kfree(rdev->constraints);
+ 	device_unregister(&rdev->dev);
+ 	/* device core frees rdev */
+ 	rdev = ERR_PTR(ret);
 -- 
-error compiling committee.c: too many arguments to function
+1.7.4.1
+
+
 
