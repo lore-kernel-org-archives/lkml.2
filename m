@@ -1,97 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209Ab1GNJuo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 05:50:44 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:50867 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753265Ab1GNJum (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 05:50:42 -0400
-Date: Thu, 14 Jul 2011 12:48:59 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Jing Huang <huangj@Brocade.COM>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "open list:BROCADE BFA FC SC..." <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        Krishna Gudipati <kgudipat@Brocade.COM>
-Subject: [patch 2/2 v2] [SCSI] bfa: fix some endian bugs
-Message-ID: <20110714094859.GV18655@shale.localdomain>
-References: <20110706074024.GE18655@shale.localdomain>
- <E5313AF6F2BFD14293E5FD0F94750F86A82D670214@HQ1-EXCH01.corp.brocade.com>
+	id S1754219Ab1GNJv4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 05:51:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40707 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753265Ab1GNJvy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 05:51:54 -0400
+Date: Thu, 14 Jul 2011 11:51:52 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] memcg: make oom_lock 0 and 1 based rather than
+ coutner
+Message-ID: <20110714095152.GG19408@tiehlicka.suse.cz>
+References: <cover.1310561078.git.mhocko@suse.cz>
+ <50d526ee242916bbfb44b9df4474df728c4892c6.1310561078.git.mhocko@suse.cz>
+ <20110714100259.cedbf6af.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110714115913.cf8d1b9d.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110714090017.GD19408@tiehlicka.suse.cz>
+ <20110714183014.8b15e9b9.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <E5313AF6F2BFD14293E5FD0F94750F86A82D670214@HQ1-EXCH01.corp.brocade.com>
+In-Reply-To: <20110714183014.8b15e9b9.kamezawa.hiroyu@jp.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The initial problem that I noticed was that
-"if (e10g.r.e10g_unall & 0x80)" is always false because e10g_unall
-is only one bit wide.
+On Thu 14-07-11 18:30:14, KAMEZAWA Hiroyuki wrote:
+> On Thu, 14 Jul 2011 11:00:17 +0200
+> Michal Hocko <mhocko@suse.cz> wrote:
+> 
+> > On Thu 14-07-11 11:59:13, KAMEZAWA Hiroyuki wrote:
+> > > On Thu, 14 Jul 2011 10:02:59 +0900
+> > > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > > 
+> > > > On Wed, 13 Jul 2011 13:05:49 +0200
+> > > > Michal Hocko <mhocko@suse.cz> wrote:
+> > [...]
+> > > > > This patch replaces the counter by a simple {un}lock semantic. We are
+> > > > > using only 0 and 1 to distinguish those two states.
+> > > > > As mem_cgroup_oom_{un}lock works on the hierarchy we have to make sure
+> > > > > that we cannot race with somebody else which is already guaranteed
+> > > > > because we call both functions with the mutex held. All other consumers
+> > > > > just read the value atomically for a single group which is sufficient
+> > > > > because we set the value atomically.
+> > > > > The other thing is that only that process which locked the oom will
+> > > > > unlock it once the OOM is handled.
+> > > > > 
+> > > > > Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> > > > > ---
+> > > > >  mm/memcontrol.c |   24 +++++++++++++++++-------
+> > > > >  1 files changed, 17 insertions(+), 7 deletions(-)
+> > > > > 
+> > > > > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > > > > index e013b8e..f6c9ead 100644
+> > > > > --- a/mm/memcontrol.c
+> > > > > +++ b/mm/memcontrol.c
+> > > > > @@ -1803,22 +1803,31 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_mem,
+> > > > >  /*
+> > > > >   * Check OOM-Killer is already running under our hierarchy.
+> > > > >   * If someone is running, return false.
+> > > > > + * Has to be called with memcg_oom_mutex
+> > > > >   */
+> > > > >  static bool mem_cgroup_oom_lock(struct mem_cgroup *mem)
+> > > > >  {
+> > > > > -	int x, lock_count = 0;
+> > > > > +	int x, lock_count = -1;
+> > > > >  	struct mem_cgroup *iter;
+> > > > >  
+> > > > >  	for_each_mem_cgroup_tree(iter, mem) {
+> > > > > -		x = atomic_inc_return(&iter->oom_lock);
+> > > > > -		lock_count = max(x, lock_count);
+> > > > > +		x = !!atomic_add_unless(&iter->oom_lock, 1, 1);
+> > > > > +		if (lock_count == -1)
+> > > > > +			lock_count = x;
+> > > > > +
+> > > > 
+> > > > 
+> > > > Hmm...Assume following hierarchy.
+> > > > 
+> > > > 	  A
+> > > >        B     C
+> > > >       D E 
+> > 
+> > IIUC, A, B, D, E are one hierarchy, right?
+> > 
+> yes.
+> 
+> 
+> > > > 
+> > > > The orignal code hanldes the situation
+> > > > 
+> > > >  1. B-D-E is under OOM
+> > > >  2. A enters OOM after 1.
+> > > > 
+> > > > In original code, A will not invoke OOM (because B-D-E oom will kill a process.)
+> > > > The new code invokes A will invoke new OOM....right ?
+> > 
+> > Sorry, I do not understand what you mean by that. 
+> 
+> This is your code.
+> ==
+>  	for_each_mem_cgroup_tree(iter, mem) {
+> -		x = atomic_inc_return(&iter->oom_lock);
+> -		lock_count = max(x, lock_count);
+> +		x = !!atomic_add_unless(&iter->oom_lock, 1, 1);
+> +		if (lock_count == -1)
+> +			lock_count = x;
+> +
+> +		/* New child can be created but we shouldn't race with
+> +		 * somebody else trying to oom because we are under
+> +		 * memcg_oom_mutex
+> +		 */
+> +		BUG_ON(lock_count != x);
+>  	}
+> ==
+> 
+> When, B,D,E is under OOM,  
+> 
+>    A oom_lock = 0
+>    B oom_lock = 1
+>    C oom_lock = 0
+>    D oom_lock = 1
+>    E oom_lock = 1
+> 
+> Here, assume A enters OOM.
+> 
+>    A oom_lock = 1 -- (*)
+>    B oom_lock = 1
+>    C oom_lock = 1
+>    D oom_lock = 1
+>    E oom_lock = 1
+> 
+> because of (*), mem_cgroup_oom_lock() will return lock_count=1, true.
+> 
+> Then, a new oom-killer will another oom-kiiler running in B-D-E.
 
-It should be testing just "if (e10g.r.e10g_unall)" instead, but that
-also has a problem on big endian systems because there was a typo
-where it said __BIGENDIAN and it should have said __BIG_ENDIAN.
+OK, does this mean that for_each_mem_cgroup_tree doesn't lock the whole
+hierarchy at once? 
+I have to confess that the behavior of mem_cgroup_start_loop is little
+bit obscure to me. The comment says it searches for the cgroup with the
+minimum ID - I assume this is the root of the hierarchy. Is this
+correct?
 
-Also I updated the other two tests in the if else block to match as
-well.
+If yes then if we have oom in what-ever cgroup in the hierarchy then
+the above code should lock the whole hierarchy and the above never
+happens. Right?
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-
-diff --git a/drivers/net/bna/bfi.h b/drivers/net/bna/bfi.h
-index 6050379..b2611ef 100644
---- a/drivers/net/bna/bfi.h
-+++ b/drivers/net/bna/bfi.h
-@@ -104,7 +104,7 @@ union bfi_addr_u {
-  * Scatter Gather Element
-  */
- struct bfi_sge {
--#ifdef __BIGENDIAN
-+#ifdef __BIG_ENDIAN
- 	u32	flags:2,
- 			rsvd:2,
- 			sg_len:28;
-diff --git a/drivers/scsi/bfa/bfa_defs.h b/drivers/scsi/bfa/bfa_defs.h
-index ed8d31b..1cefb11 100644
---- a/drivers/scsi/bfa/bfa_defs.h
-+++ b/drivers/scsi/bfa/bfa_defs.h
-@@ -731,7 +731,7 @@ struct sfp_mem_s {
- union sfp_xcvr_e10g_code_u {
- 	u8		b;
- 	struct {
--#ifdef __BIGENDIAN
-+#ifdef __BIG_ENDIAN
- 		u8	e10g_unall:1;   /* 10G Ethernet compliance */
- 		u8	e10g_lrm:1;
- 		u8	e10g_lr:1;
-@@ -811,7 +811,7 @@ union sfp_xcvr_fc2_code_u {
- union sfp_xcvr_fc3_code_u {
- 	u8		b;
- 	struct {
--#ifdef __BIGENDIAN
-+#ifdef __BIG_ENDIAN
- 		u8	rsv4:1;
- 		u8	mb800:1;    /* 800 Mbytes/sec */
- 		u8	mb1600:1;   /* 1600 Mbytes/sec */
-diff --git a/drivers/scsi/bfa/bfa_ioc.c b/drivers/scsi/bfa/bfa_ioc.c
-index d6c2bf3..bc678c7 100644
---- a/drivers/scsi/bfa/bfa_ioc.c
-+++ b/drivers/scsi/bfa/bfa_ioc.c
-@@ -3589,11 +3589,11 @@ bfa_sfp_media_get(struct bfa_sfp_s *sfp)
- 			 (xmtr_tech & SFP_XMTR_TECH_SA))
- 			*media = BFA_SFP_MEDIA_SW;
- 		/* Check 10G Ethernet Compilance code */
--		else if (e10g.b & 0x10)
-+		else if (e10g.r.e10g_sr)
- 			*media = BFA_SFP_MEDIA_SW;
--		else if (e10g.b & 0x60)
-+		else if (e10g.r.e10g_lr && e10g.r.e10g_lrm)
- 			*media = BFA_SFP_MEDIA_LW;
--		else if (e10g.r.e10g_unall & 0x80)
-+		else if (e10g.r.e10g_unall)
- 			*media = BFA_SFP_MEDIA_UNKNOWN;
- 		else
- 			bfa_trc(sfp, 0);
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
