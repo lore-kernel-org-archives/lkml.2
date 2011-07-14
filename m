@@ -1,35 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752575Ab1GNFzT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 01:55:19 -0400
-Received: from fep22.mx.upcmail.net ([62.179.121.42]:54897 "EHLO
-	fep22.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752445Ab1GNFzR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 01:55:17 -0400
-X-SourceIP: 115.241.21.150
-Reply-To: <cheung.mrleung119@gmail.com>
-From: "Mr Leung Cheung" <mrleungcheung@hangsengonlinebank.tk>
-Subject: I NEEED YOUR ASSISTANCE
-Date: Thu, 14 Jul 2011 11:23:40 +0530
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
+	id S1752694Ab1GNF4f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 01:56:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55575 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752193Ab1GNF4d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 01:56:33 -0400
+Date: Thu, 14 Jul 2011 15:56:20 +1000
+From: NeilBrown <neilb@suse.de>
+To: Ric Wheeler <rwheeler@redhat.com>
+Cc: Nico Schottelius <nico-lkml-20110623@schottelius.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@oracle.com>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: Re: Mis-Design of Btrfs?
+Message-ID: <20110714155620.6e9ac2cc@notabene.brown>
+In-Reply-To: <4E0AF091.9030301@redhat.com>
+References: <20110623105337.GD3753@ethz.ch>
+	<20110627164637.377314e2@notabene.brown>
+	<4E0AF091.9030301@redhat.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-Id: <20110714055342.GXC8134.viefep17-int.chello.at@edge05.upcmail.net>
-X-Cloudmark-Analysis: v=1.1 cv=HQ3F56nxkum+cgCiDL7AXQpbvw7DWrWCBJRnYYnM0Zc= c=1 sm=0 a=Dyoqhi_TatcA:10 a=dJhARtWYOyAA:10 a=d3ZwFMNkyaEA:10 a=8EU9Q7FnrCoA:10 a=sY3m-JHpizMA:10 a=Cfj4BQAnxiAA:10 a=Nm-He7kPo0BFclvyaVEA:9 a=Ft8UYL4EG9YA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 29 Jun 2011 10:29:53 +0100 Ric Wheeler <rwheeler@redhat.com> wrote:
 
+> On 06/27/2011 07:46 AM, NeilBrown wrote:
+> > On Thu, 23 Jun 2011 12:53:37 +0200 Nico Schottelius
+> > <nico-lkml-20110623@schottelius.org>  wrote:
+> >
+> >> Good morning devs,
+> >>
+> >> I'm wondering whether the raid- and volume-management-builtin of btrfs is
+> >> actually a sane idea or not.
+> >> Currently we do have md/device-mapper support for raid
+> >> already, btrfs lacks raid5 support and re-implements stuff that
+> >> has already been done.
+> >>
+> >> I'm aware of the fact that it is very useful to know on which devices
+> >> we are in a filesystem. But I'm wondering, whether it wouldn't be
+> >> smarter to generalise the information exposure through the VFS layer
+> >> instead of replicating functionality:
+> >>
+> >> Physical:   USB-HD   SSD   USB-Flash          | Exposes information to
+> >> Raid:       Raid1, Raid5, Raid10, etc.        | higher levels
+> >> Crypto:     Luks                              |
+> >> LVM:        Groups/Volumes                    |
+> >> FS:         xfs/jfs/reiser/ext3               v
+> >>
+> >> Thus a filesystem like ext3 could be aware that it is running
+> >> on a USB HD, enable -o sync be default or have the filesystem
+> >> to rewrite blocks when running on crypto or optimise for an SSD, ...
+> > I would certainly agree that exposing information to higher levels is a good
+> > idea.  To some extent we do.  But it isn't always as easy as it might sound.
+> > Choosing exactly what information to expose is the challenge.  If you lack
+> > sufficient foresight you might expose something which turns out to be
+> > very specific to just one device, so all those upper levels which make use of
+> > the information find they are really special-casing one specific device,
+> > which isn't a good idea.
+> >
+> >
+> > However it doesn't follow that RAID5 should not be implemented in BTRFS.
+> > The levels that you have drawn are just one perspective.  While that has
+> > value, it may not be universal.
+> > I could easily argue that the LVM layer is a mistake and that filesystems
+> > should provide that functionality directly.
+> > I could almost argue the same for crypto.
+> > RAID1 can make a lot of sense to be tightly integrated with the FS.
+> > RAID5 ... I'm less convinced, but then I have a vested interest there so that
+> > isn't an objective assessment.
+> >
+> > Part of "the way Linux works" is that s/he who writes the code gets to make
+> > the design decisions.   The BTRFS developers might create something truly
+> > awesome, or might end up having to support a RAID feature that they
+> > subsequently think is a bad idea.  But it really is their decision to make.
+> >
+> > NeilBrown
+> >
+> 
+> One more thing to add here is that I think that we still have a chance to 
+> increase the sharing between btrfs and the MD stack if we can get those changes 
+> made. No one likes to duplicate code, but we will need a richer interface 
+> between the block and file system layer to help close that gap.
+> 
+> Ric
+> 
 
-I saw your ID in EMAIL MEMBER DIRECTORY.I contacted you is because  I need your assistance to transfer $22,500,000.00 Dollars from Hong Kong to your country.Please reply if you are interested.
+I'm certainly open to suggestions and collaboration.  Do you have in mind any
+particular way to make the interface richer??
 
-Regards,
-Mr LEUNG Cheung
+NeilBrown
