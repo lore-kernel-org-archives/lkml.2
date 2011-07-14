@@ -1,104 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753475Ab1GNHDP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 03:03:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59112 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751623Ab1GNHDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 03:03:14 -0400
-Date: Thu, 14 Jul 2011 08:03:10 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Jan Kara <jack@suse.cz>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 5/5] mm: writeback: Prioritise dirty inodes encountered
- by direct reclaim for background flushing
-Message-ID: <20110714070310.GQ7529@suse.de>
-References: <1310567487-15367-1-git-send-email-mgorman@suse.de>
- <1310567487-15367-6-git-send-email-mgorman@suse.de>
- <20110713213947.GC21787@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110713213947.GC21787@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753597Ab1GNHSg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 03:18:36 -0400
+Received: from mtagate5.uk.ibm.com ([194.196.100.165]:43635 "EHLO
+	mtagate5.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752994Ab1GNHSe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 03:18:34 -0400
+Date: Thu, 14 Jul 2011 09:18:00 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>, ebiederm@xmission.com,
+        hbabu@us.ibm.com, mahesh@linux.vnet.ibm.com, oomichi@mxs.nes.nec.co.jp,
+        horms@verge.net.au, heiko.carstens@de.ibm.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org
+Subject: Re: [patch 0/9] kdump: Patch series for s390 support
+Message-ID: <20110714091800.720da848@mschwide>
+In-Reply-To: <20110713200004.GG4426@redhat.com>
+References: <20110704170922.976299676@linux.vnet.ibm.com>
+	<20110705202615.GJ24348@redhat.com>
+	<1309944287.3937.39.camel@br98xy6r>
+	<20110707193321.GE28850@redhat.com>
+	<20110708110121.5acfc3c9@mschwide>
+	<20110711144255.GE30674@redhat.com>
+	<20110711175626.121dcc58@mschwide>
+	<20110713160239.GE4426@redhat.com>
+	<20110713184611.6dcb09b4@mschwide>
+	<20110713200004.GG4426@redhat.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 13, 2011 at 11:39:47PM +0200, Jan Kara wrote:
-> On Wed 13-07-11 15:31:27, Mel Gorman wrote:
-> > It is preferable that no dirty pages are dispatched from the page
-> > reclaim path. If reclaim is encountering dirty pages, it implies that
-> > either reclaim is getting ahead of writeback or use-once logic has
-> > prioritise pages for reclaiming that are young relative to when the
-> > inode was dirtied.
+On Wed, 13 Jul 2011 16:00:04 -0400
+Vivek Goyal <vgoyal@redhat.com> wrote:
+
+> On Wed, Jul 13, 2011 at 06:46:11PM +0200, Martin Schwidefsky wrote:
+> 
+> [..]
+> > > What I am suggesting is that stand alone dumper gets control only if
+> > > kdump kernel is corrupted.
+> > > 
+> > > So following sequence.
+> > > 
+> > > Kernel Crash ---> purgatory --> either kdump kenrel/IPL stand alone tools
+> > > 
+> > > Here only drawback seems to be that we assume that purgatory code and
+> > > pre-calculated checksum has not been corrupted. The big advantage is
+> > > that s390 kdump support looks very similar to other arches and
+> > > understaning and supporting kdump across architectures becomes easy.
 > > 
-> > When dirty pages are encounted on the LRU, this patch marks the inodes
-> > I_DIRTY_RECLAIM and wakes the background flusher. When the background
-> > flusher runs, it moves such inodes immediately to the dispatch queue
-> > regardless of inode age. There is no guarantee that pages reclaim
-> > cares about will be cleaned first but the expectation is that the
-> > flusher threads will clean the page quicker than if reclaim tried to
-> > clean a single page.
->   Hmm, I was looking through your numbers but I didn't see any significant
-> difference this patch would make. Do you?
+> > My problem with that is the following: how do we get from the "Kernel Crash"
+> > step to the purgatory code? It does work for "normal" panics, but it fails
+> > miserably for a hard crash that does not even get as far as panic. That is
+> > why we insist on a possible second order of things:
 > 
+> What is hard crash? How does that happen and what does x86 and s390
+> do in that case?
 
-Marginal and well within noise. I'm very skeptical about the patch
-but the VM needs some way of prioritising what pages are getting
-written back to that pages in a particular zone can be cleaned.
+E.g. an endless loop with interrupts disabled. To get out of this situation
+we will IPL/boot a new system. That is either the production system itself
+or the stand-alone dump tool. 
+ 
+> Though I don't have details but your argument seems to be that in s390
+> we are always guranteed that we will jump to IPLing the stand alone
+> tools code irresepective of the system state hence it is relatively
+> safer to do checks in stand alone tools instead of purgatory where
+> code is in memory.
 
-> I was thinking about the problem and actually doing IO from kswapd would be
-> a small problem if we submitted more than just a single page. Just to give
-> you idea - time to write a single page on plain SATA drive might be like 4
-> ms. Time to write sequential 4 MB of data is like 80 ms (I just made up
-> these numbers but the orders should be right).
+Now you got it. That is the crux of the argument.
 
-It's as good as number as any for arguements sake. It's not the
-first time such a patch has done the rounds. The last one I did along
-similar lines was http://lkml.org/lkml/2010/6/8/85 although I mucked
-it up with respect to racing with iput.
+> If due to hard hang, code can not even make to purgatory, where would
+> it go? Can't we do IPLing of stand alone tool then. 
 
-Wu posted a patch that deferred the writing of ranges to a
-flusher thread http://www.spinics.net/lists/xfs/msg05659.html
-which Dave has already commented on at
-http://www.spinics.net/lists/xfs/msg05665.html. The clustering size
-could be easily fixed but the scalability problem he pointed out is
-a far greater problem.
+It doesn't go anywhere. Basically the system is manually stopped and
+restarted. But on s390 we can still get to all the required information
+to generated a dump. That is one of the major differences to x86, if
+you have to do a restart the registers on x86 will be gone, no?
+ 
+> So we first try to take purgatory path which does the checksum and is
+> consistent with other architectures. If that does not work in case
+> of hard hang, you always have the option of IPLing the stand alone tool
+> later manually.
 
-> So to write 1000 times more
-> data you just need like 20 times longer. That's a factor of 50 in IO
-> efficiency. So when reclaim/kswapd submits a single page IO once every
-> couple of miliseconds, your IO throughput just went close to zero...
-> BTW: I just checked your numbers in fsmark test with vanilla kernel.  You
-> wrote like 14500 pages from reclaim in 567 seconds. That is about one page
-> per 39 ms. That is going to have noticeable impact on IO throughput (not
-> with XFS because it plays tricks with writing more than asked but with ext2
-> or ext3 you would see it I guess).
-> 
-> So when kswapd sees high percentage of dirty pages at the end of LRU, it
-> could call something like fdatawrite_range() for the range of 4 MB
-> (provided the file is large enough) containing that page and IO thoughput
-> would not be hit that much and you will get reasonably bounded time when
-> the page gets cleaned... If you wanted to be clever, you could possibly be
-> more sophisticated in picking the file and range to write so that you get
-> rid of the most pages at the end of LRU but I'm not sure it's worth the CPU
-> cycles. Does this sound reasonable to you?
-> 
+How are we suddenly on the purgatory path again? The code that gets
+control in case of a hard crash + IPL is the stand-alone dump tool,
+not the purgatory code. The first thing we want to do is to check if
+the purgatory is still fine, that is do a checksum. If we have the
+infrastructure in place to do one checksum then we can easily do the
+other checksums as well.
+ 
+> This will also get rid of requirement passing all the segment and cheksum
+> info to stand alone tool with the help of meminfo (That's another sore
+> point). 
 
-Semi-reasonable and it's along the same lines as what
-http://lkml.org/lkml/2010/6/8/85 tried to achieve but maybe the effort
-of fixing it up with respect to racing with iput() just isn't worth it.
+No, it doesn't. We will still need to do the checksum for the purgatory
+code and we already have the re-ipl information which won't go away.
+ 
+> Bottom line, even if you can't make to purgatory reliably, you always
+> have the option of capturing dump manually using stand alone tools. We
+> don't have to mix up kdump and stand alone mechanism. If kdump fails, we
+> just need to have capability to still capture the dump using stand alone
+> tools manually. I think that will make things simpler even for stand alone
+> tools.
 
-I think I'll leave it as kswapd will call writepage if the priority is
-high enough until a good solution for how the VM can tell the flusher to
-prioritise a particular page is devised.
+If we decide not to mix kdump and stand-alone dump then we loose something.
+Consider a hard crash where the kdump segments are still intact. What our
+customers do in that case is to start the stand-alone dump utility. Without
+a way to find and verify the kdump setup we would have to do a full dump.
+Which will take its time if the memory size is big. See?
 
 -- 
-Mel Gorman
-SUSE Labs
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
+
