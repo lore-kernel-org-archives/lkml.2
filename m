@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753580Ab1GNIO3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 04:14:29 -0400
-Received: from cpc7-stkp7-2-0-cust918.10-2.cable.virginmedia.com ([86.22.251.151]:47843
-	"EHLO freya" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752804Ab1GNIO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 04:14:27 -0400
-Date: Wed, 13 Jul 2011 22:32:04 +0100
-From: Ben Dooks <ben-i2c@fluff.org>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH] i2c-pxa2xx: return proper error code in
- ce4100_i2c_probe error paths
-Message-ID: <20110713213204.GE3369@freya.fluff.org>
-References: <1310534439.6086.1.camel@phoenix>
+	id S1753968Ab1GNIQj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 04:16:39 -0400
+Received: from sous-sol.org ([216.99.217.87]:59508 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752882Ab1GNIQg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 04:16:36 -0400
+Date: Thu, 14 Jul 2011 01:16:19 -0700
+From: Chris Wright <chrisw@sous-sol.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Chris Wright <chrisw@sous-sol.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Don Dutile <ddutile@redhat.com>
+Subject: Re: [PATCH resend] pci: ARI is a PCIe v2 feature
+Message-ID: <20110714081619.GB15844@sequoia.sous-sol.org>
+References: <20110713171433.GU15844@sequoia.sous-sol.org>
+ <20110714153533.7f310cdf@jbarnes-e6510>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1310534439.6086.1.camel@phoenix>
-X-Disclaimer: These are my views alone.
-X-URL: http://www.fluff.org/
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110714153533.7f310cdf@jbarnes-e6510>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 13, 2011 at 01:20:39PM +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+* Jesse Barnes (jbarnes@virtuousgeek.org) wrote:
+> On Wed, 13 Jul 2011 10:14:33 -0700
+> Chris Wright <chrisw@sous-sol.org> wrote:
+> 
+> > The function pci_enable_ari() may mistakenly set the downstream port
+> > of a v1 PCIe switch in ARI Forwarding mode.  This is a PCIe v2
+> > feature, and with an SR-IOV device on that switch port believing the
+> > switch above is ARI capable it may attempt to use functions 8-255,
+> > translating into invalid (non-zero) device numbers for that bus.
+> > This has been seen to cause Completion Timeouts and general
+> > misbehaviour including hangs and panics.
+> 
+> Thanks Chris, your earlier one is still sitting in my queue, but I
+> wasn't going to send it for 3.0 as it didn't seem that critical.  Do
+> you think it is?  If so you can send it directly to Linus with my ack
+> as I don't have anything else queued, or just wait until the merge
+> window when it will be put into the stable tree as well.
 
-thanks, will apply
+Cool, just wanted to make sure it wasn't lost.  I think it's fine to
+merge in next window and let it filter back to -stable.  While I've seen
+it cause panics, it's not a regression and the conditions required are
+very specific (possibly including buggy BIOS).
 
-> ---
->  drivers/i2c/busses/i2c-pxa-pci.c |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-pxa-pci.c b/drivers/i2c/busses/i2c-pxa-pci.c
-> index 6659d26..b73da6c 100644
-> --- a/drivers/i2c/busses/i2c-pxa-pci.c
-> +++ b/drivers/i2c/busses/i2c-pxa-pci.c
-> @@ -109,12 +109,15 @@ static int __devinit ce4100_i2c_probe(struct pci_dev *dev,
->  		return -EINVAL;
->  	}
->  	sds = kzalloc(sizeof(*sds), GFP_KERNEL);
-> -	if (!sds)
-> +	if (!sds) {
-> +		ret = -ENOMEM;
->  		goto err_mem;
-> +	}
->  
->  	for (i = 0; i < ARRAY_SIZE(sds->pdev); i++) {
->  		sds->pdev[i] = add_i2c_device(dev, i);
->  		if (IS_ERR(sds->pdev[i])) {
-> +			ret = PTR_ERR(sds->pdev[i]);
->  			while (--i >= 0)
->  				platform_device_unregister(sds->pdev[i]);
->  			goto err_dev_add;
-> -- 
-> 1.7.4.1
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+thanks,
+-chris
