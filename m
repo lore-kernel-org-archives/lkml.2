@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753418Ab1GNCKm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 22:10:42 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:41401 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752909Ab1GNCKl convert rfc822-to-8bit (ORCPT
+	id S1752951Ab1GNCOg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 22:14:36 -0400
+Received: from mta31.charter.net ([216.33.127.82]:49161 "EHLO
+	mta31.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752173Ab1GNCOf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 22:10:41 -0400
+	Wed, 13 Jul 2011 22:14:35 -0400
+X-Authority-Analysis: v=1.1 cv=G6Q69DB3AUoJKS2BpLRaz8MQ2NORN7h5HRzrJMPOhRw=
+ c=1 sm=1 a=_PlU6wiDepAA:10 a=0qEacxHv6EQA:10 a=IkcTkHD0fZMA:10
+ a=xzrYXqw+0zwiO4gHSXHcAg==:17 a=mDV3o1hIAAAA:8 a=Wa7BnzGuu0YlRcGE0VcA:9
+ a=QEXdDO2ut3YA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:117
+Message-ID: <4E1E510A.6010005@cuw.edu>
+Date: Wed, 13 Jul 2011 21:14:34 -0500
+From: Greg Dietsche <gregory.dietsche@cuw.edu>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110702 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <201107132352.59801.rjw@sisk.pl>
-References: <201107132352.59801.rjw@sisk.pl>
-Date: Thu, 14 Jul 2011 11:10:40 +0900
-Message-ID: <CANqRtoTLO=DqehwanGdE+rgxL_ofa5YCJjsx47doHzwZDP4Ocw@mail.gmail.com>
-Subject: Re: [PATCH 0/3] PM / Domains / shmobile fixes
-From: Magnus Damm <magnus.damm@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Mundt <lethal@linux-sh.org>,
-        linux-sh@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Joe Perches <joe@perches.com>
+CC: julia@diku.dk, Gilles.Muller@lip6.fr, npalix.work@gmail.com,
+        rdunlap@xenotime.net, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, cocci@diku.dk
+Subject: Re: [PATCH 3/3] coccicheck: add parallel execution
+References: <1310520405-1558-1-git-send-email-Gregory.Dietsche@cuw.edu>	 <1310520405-1558-4-git-send-email-Gregory.Dietsche@cuw.edu> <1310524935.32558.8.camel@Joe-Laptop>
+In-Reply-To: <1310524935.32558.8.camel@Joe-Laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 14, 2011 at 6:52 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> Hi,
+On 07/12/2011 09:42 PM, Joe Perches wrote:
+> On Tue, 2011-07-12 at 20:26 -0500, Greg Dietsche wrote:
+>    
+>> For example to process 6 SmPL patches at the same time:
+>> 	make coccicheck PARALLEL=6
+>> Results are held in /tmp until the scripts finish. By doing this the
+>> script is able to collate the results from each SmPL patch instead of
+>> interleaving them in the output.
+>>      
+> You might try adding support for gnu parallel instead.
+> http://www.gnu.org/software/parallel/
 >
-> The following three patches fix a couple of issues in the code currently
-> in my pm-domains branch at:
->
-> git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6.git pm-domains
->
-> [1/3] - Use genpd_queue_power_off_work() for queuing up the powering off
->        of A4LC (this avoids attempting to queue up a work item while it is
->        pending).
->
-> [2/3] - Make the generic PM domains code react to -EBUSY returned from a
->        PM domain's .power_down() callback (needed for [3/3]).
->
-> [3/3] - Return -EBUSY from the A4LC's .power_down() callback to indicate that
->        the domain hasn't been powered down on purpose and remove the confusing
->        (and now redundant) pm_genpd_poweron(A4LC) from pd_power_down_a3rv().
+>    
+That is a very interesting and useful tool :) I'd never heard of it 
+before. The man page scares me a little bit - lots of options are marked 
+as "alpha testing," but the ones i tried seemed to work fine. Anyway, 
+without any modifications to Coccinelle, it is possible to do this:
 
-All patches above look great, thanks a lot for your help!
+ls scripts/coccinelle/*/*.cocci | parallel -j+0 make coccicheck COCCI={} 
+MODE=patch
 
-Acked-by: Magnus Damm <damm@opensource.se>
+it seems to behave mostly like my patch, but doesn't cleanup quite as 
+well if you decide to kill it with ctrl-c (it leaves instances of spatch 
+running). On the upside, it is up to 3 seconds faster than my patch 
+(because my patch waits 3 seconds before checking on the number of jobs 
+that are running).
+
+Greg
