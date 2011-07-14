@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752866Ab1GNGY3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 02:24:29 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:58223 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752102Ab1GNGY2 (ORCPT
+	id S1753138Ab1GNGZE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 02:25:04 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:42980 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752339Ab1GNGZD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 02:24:28 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 14 Jul 2011 15:17:08 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 1/5] mm: vmscan: Do not writeback filesystem pages in
- direct reclaim
-Message-Id: <20110714151708.163a0c54.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110714061915.GN7529@suse.de>
-References: <1310567487-15367-1-git-send-email-mgorman@suse.de>
-	<1310567487-15367-2-git-send-email-mgorman@suse.de>
-	<20110714103801.83e10fdb.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110714061915.GN7529@suse.de>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 14 Jul 2011 02:25:03 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6406"; a="103448778"
+Message-ID: <4E1E8BB8.2060809@codeaurora.org>
+Date: Thu, 14 Jul 2011 11:54:56 +0530
+From: Anirudh Ghayal <aghayal@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.18) Gecko/20110616 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Axel Lin <axel.lin@gmail.com>
+CC: linux-kernel@vger.kernel.org, Trilok Soni <tsoni@codeaurora.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-input@vger.kernel.org
+Subject: Re: [PATCH] Input: pmic8xxx-keypad - fix a leak of the IRQ during
+ init failure
+References: <1310609391.14393.1.camel@phoenix>
+In-Reply-To: <1310609391.14393.1.camel@phoenix>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Jul 2011 07:19:15 +0100
-Mel Gorman <mgorman@suse.de> wrote:
 
-> On Thu, Jul 14, 2011 at 10:38:01AM +0900, KAMEZAWA Hiroyuki wrote:
-> > > @@ -825,6 +825,15 @@ static unsigned long shrink_page_list(struct list_head *page_list,
-> > >  		if (PageDirty(page)) {
-> > >  			nr_dirty++;
-> > >  
-> > > +			/*
-> > > +			 * Only kswapd can writeback filesystem pages to
-> > > +			 * avoid risk of stack overflow
-> > > +			 */
-> > > +			if (page_is_file_cache(page) && !current_is_kswapd()) {
-> > > +				inc_zone_page_state(page, NR_VMSCAN_WRITE_SKIP);
-> > > +				goto keep_locked;
-> > > +			}
-> > > +
-> > 
-> > 
-> > This will cause tons of memcg OOM kill because we have no help of kswapd (now).
-> > 
-> > Could you make this
-> > 
-> > 	if (scanning_global_lru(sc) && page_is_file_cache(page) && !current_is_kswapd())
-> > ...
-> > 
-> 
-> I can, but as Christoph points out, the request is already being
-> ignored so how will it help?
-> 
+On 7/14/2011 7:39 AM, Axel Lin wrote:
+> Make sure we are passing the same cookie in all calls to
+> request_any_context_irq() and free_irq().
+>
+> Signed-off-by: Axel Lin<axel.lin@gmail.com>
 
-Hmm, ok, please go as you do now. I'll do hurry up to implement dirty_ratio by myself
-without waiting for original patch writer. I think his latest version was really
-near to be merged... I'll start rebase his one to mmotm in this end of month.
+Acked-by: Anirudh Ghayal <aghayal@codeaurora.org>
 
-Thanks,
--Kame
+> ---
+>   drivers/input/keyboard/pmic8xxx-keypad.c |    8 ++++----
+>   1 files changed, 4 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/input/keyboard/pmic8xxx-keypad.c b/drivers/input/keyboard/pmic8xxx-keypad.c
+> index 6229c3e..e7cc51d 100644
+> --- a/drivers/input/keyboard/pmic8xxx-keypad.c
+> +++ b/drivers/input/keyboard/pmic8xxx-keypad.c
+> @@ -700,9 +700,9 @@ static int __devinit pmic8xxx_kp_probe(struct platform_device *pdev)
+>   	return 0;
+>
+>   err_pmic_reg_read:
+> -	free_irq(kp->key_stuck_irq, NULL);
+> +	free_irq(kp->key_stuck_irq, kp);
+>   err_req_stuck_irq:
+> -	free_irq(kp->key_sense_irq, NULL);
+> +	free_irq(kp->key_sense_irq, kp);
+>   err_gpio_config:
+>   err_get_irq:
+>   	input_free_device(kp->input);
+> @@ -717,8 +717,8 @@ static int __devexit pmic8xxx_kp_remove(struct platform_device *pdev)
+>   	struct pmic8xxx_kp *kp = platform_get_drvdata(pdev);
+>
+>   	device_init_wakeup(&pdev->dev, 0);
+> -	free_irq(kp->key_stuck_irq, NULL);
+> -	free_irq(kp->key_sense_irq, NULL);
+> +	free_irq(kp->key_stuck_irq, kp);
+> +	free_irq(kp->key_sense_irq, kp);
+>   	input_unregister_device(kp->input);
+>   	kfree(kp);
+>
 
