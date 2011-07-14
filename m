@@ -1,32 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753611Ab1GNT7j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 15:59:39 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:58819 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752737Ab1GNT7i (ORCPT
+	id S1754677Ab1GNT7p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 15:59:45 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:54249 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754318Ab1GNT7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 15:59:38 -0400
+	Thu, 14 Jul 2011 15:59:41 -0400
 From: Peter Korsgaard <jacmet@sunsite.dk>
 To: grant.likely@secretlab.ca, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/3] gpio/mcp23s08: add support for i2c variants
-Date: Thu, 14 Jul 2011 21:59:25 +0200
-Message-Id: <1310673568-30577-1-git-send-email-jacmet@sunsite.dk>
+Cc: Peter Korsgaard <jacmet@sunsite.dk>
+Subject: [PATCH 2/3] mcp23s08: isolate spi specific parts
+Date: Thu, 14 Jul 2011 21:59:27 +0200
+Message-Id: <1310673568-30577-3-git-send-email-jacmet@sunsite.dk>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1310673568-30577-1-git-send-email-jacmet@sunsite.dk>
+References: <1310673568-30577-1-git-send-email-jacmet@sunsite.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Microchip mcp23xxx I/O expanders exists both in variants with SPI
-(23S) and I2C (230) interfaces, with either 8 or 16 I/O pins.
+Change spi member of struct mcp23s08 to be a ops-specific opaque data
+pointer, and move spi specific knowledge out of mcp23s08_probe_one().
 
-Until now the mcp23s08 driver only worked with the SPI variant. Adjust
-the driver to work with the I2C ones as well.
+No functional change, but is needed to add i2c support.
 
- drivers/gpio/Kconfig         |    7 +-
- drivers/gpio/mcp23s08.c      |  260 +++++++++++++++++++++++++++++++++++++-----
- include/linux/spi/mcp23s08.h |    4 +-
- 3 files changed, 237 insertions(+), 34 deletions(-)
+Signed-off-by: Peter Korsgaard <jacmet@sunsite.dk>
+---
+ drivers/gpio/mcp23s08.c |   75 ++++++++++++++++++++++++++++++++--------------
+ 1 files changed, 52 insertions(+), 23 deletions(-)
 
---
-Bye, Peter Korsgaard
+diff --git a/drivers/gpio/mcp23s08.c b/drivers/gpio/mcp23s08.c
+index 242a8a2..1494347 100644
+--- a/drivers/gpio/mcp23s08.c
++++ b/drivers/gpio/mcp23s08.c
+@@ -50,7 +50,6 @@ struct mcp23s08_ops {
+ };
+ 
+ struct mcp23s08 {
+-	struct spi_device	*spi;
+ 	u8			addr;
+ 
+ 	u16			cache[11];
+@@ -60,6 +59,7 @@ struct mcp23s08 {
+ 	struct gpio_chip	chip;
+ 
+ 	const struct mcp23s08_ops	*ops;
++	void			*data; /* ops specific data */
+ };
+ 
+ /* A given spi_device can represent up to eight mcp23sxx chips
+@@ -73,6 +73,8 @@ struct mcp23s08_driver_data {
+ 	struct mcp23s08		chip[];
+ };
+ 
++#ifdef CONFIG_SPI_MASTER
++
+ static int mcp23s08_read(struct mcp23s08 *mcp, unsigned reg)
+ {
+ 	u8	tx[2], rx[1];
+@@ -80,7 +82,7 @@ static int mcp23s08_read(struct mcp23s08 *mcp, unsigned reg)
+ 
+ 	tx[0] = mcp->addr | 0x01;
+ 	tx[1] = reg;
+-	status = spi_write_then_read(mcp->spi, tx, sizeof tx, rx, sizeof rx);
++	status = spi_write_then_read(mcp->data, tx, sizeof tx, rx, sizeof rx);
+ 	return (status < 0) ? status : rx[0];
+ }
+ 
+@@ -91,7 +93,7 @@ static int mcp23s08_write(struct mcp23s08 *mcp, unsigned reg, unsigned val)
+ 	tx[0] = mcp->addr;
+ 	tx[1] = reg;
+ 	tx[2] = val;
+-	return spi_write_then_read(mcp->spi, tx, sizeof tx, NULL, 0);
++	return spi_write_then_read(mcp->data, tx, sizeof tx, NULL, 0);
+ }
+ 
+ static int
+@@ -106,7 +108,7 @@ mcp23s08_read_regs(struct mcp23s08 *mcp, unsigned reg, u16 *vals, unsigned n)
+ 	tx[1] = reg;
+ 
+ 	tmp = (u8 *)vals;
+-	status = spi_write_then_read(mcp->spi, tx, sizeof tx, tmp, n);
++	status = spi_write_then_read(mcp->data, tx, sizeof tx, tmp, n);
+ 	if (status >= 0) {
+ 		while (n--)
+ 			vals[n] = tmp[n]; /* expand to 16bit */
+@@ -121,7 +123,7 @@ static int mcp23s17_read(struct mcp23s08 *mcp, unsigned reg)
+ 
+ 	tx[0] = mcp->addr | 0x01;
+ 	tx[1] = reg << 1;
+-	status = spi_write_then_read(mcp->spi, tx, sizeof tx, rx, sizeof rx);
++	status = spi_write_then_read(mcp->data, tx, sizeof tx, rx, sizeof rx);
+ 	return (status < 0) ? status : (rx[0] | (rx[1] << 8));
+ }
+ 
+@@ -133,7 +135,7 @@ static int mcp23s17_write(struct mcp23s08 *mcp, unsigned reg, unsigned val)
+ 	tx[1] = reg << 1;
+ 	tx[2] = val;
+ 	tx[3] = val >> 8;
+-	return spi_write_then_read(mcp->spi, tx, sizeof tx, NULL, 0);
++	return spi_write_then_read(mcp->data, tx, sizeof tx, NULL, 0);
+ }
+ 
+ static int
+@@ -147,7 +149,7 @@ mcp23s17_read_regs(struct mcp23s08 *mcp, unsigned reg, u16 *vals, unsigned n)
+ 	tx[0] = mcp->addr | 0x01;
+ 	tx[1] = reg << 1;
+ 
+-	status = spi_write_then_read(mcp->spi, tx, sizeof tx,
++	status = spi_write_then_read(mcp->data, tx, sizeof tx,
+ 				     (u8 *)vals, n * 2);
+ 	if (status >= 0) {
+ 		while (n--)
+@@ -169,6 +171,7 @@ static const struct mcp23s08_ops mcp23s17_ops = {
+ 	.read_regs	= mcp23s17_read_regs,
+ };
+ 
++#endif /* CONFIG_SPI_MASTER */
+ 
+ /*----------------------------------------------------------------------*/
+ 
+@@ -296,17 +299,16 @@ done:
+ 
+ /*----------------------------------------------------------------------*/
+ 
+-static int mcp23s08_probe_one(struct spi_device *spi, unsigned addr,
++static int mcp23s08_probe_one(struct mcp23s08 *mcp, struct device *dev,
++			      void *data, unsigned addr,
+ 			      unsigned type, unsigned base, unsigned pullups)
+ {
+-	struct mcp23s08_driver_data	*data = spi_get_drvdata(spi);
+-	struct mcp23s08			*mcp = data->mcp[addr];
+-	int				status;
++	int status;
+ 
+ 	mutex_init(&mcp->lock);
+ 
+-	mcp->spi = spi;
+-	mcp->addr = 0x40 | (addr << 1);
++	mcp->data = data;
++	mcp->addr = addr;
+ 
+ 	mcp->chip.direction_input = mcp23s08_direction_input;
+ 	mcp->chip.get = mcp23s08_get;
+@@ -314,18 +316,29 @@ static int mcp23s08_probe_one(struct spi_device *spi, unsigned addr,
+ 	mcp->chip.set = mcp23s08_set;
+ 	mcp->chip.dbg_show = mcp23s08_dbg_show;
+ 
+-	if (type == MCP_TYPE_S17) {
+-		mcp->ops = &mcp23s17_ops;
+-		mcp->chip.ngpio = 16;
+-		mcp->chip.label = "mcp23s17";
+-	} else {
++	switch (type) {
++#ifdef CONFIG_SPI_MASTER
++	case MCP_TYPE_S08:
+ 		mcp->ops = &mcp23s08_ops;
+ 		mcp->chip.ngpio = 8;
+ 		mcp->chip.label = "mcp23s08";
++		break;
++
++	case MCP_TYPE_S17:
++		mcp->ops = &mcp23s17_ops;
++		mcp->chip.ngpio = 16;
++		mcp->chip.label = "mcp23s17";
++		break;
++#endif /* CONFIG_SPI_MASTER */
++
++	default:
++		dev_err(dev, "invalid device type (%d)\n", type);
++		return -EINVAL;
+ 	}
++
+ 	mcp->chip.base = base;
+ 	mcp->chip.can_sleep = 1;
+-	mcp->chip.dev = &spi->dev;
++	mcp->chip.dev = dev;
+ 	mcp->chip.owner = THIS_MODULE;
+ 
+ 	/* verify MCP_IOCON.SEQOP = 0, so sequential reads work,
+@@ -371,11 +384,13 @@ static int mcp23s08_probe_one(struct spi_device *spi, unsigned addr,
+ 	status = gpiochip_add(&mcp->chip);
+ fail:
+ 	if (status < 0)
+-		dev_dbg(&spi->dev, "can't setup chip %d, --> %d\n",
+-				addr, status);
++		dev_dbg(dev, "can't setup chip %d, --> %d\n",
++			addr, status);
+ 	return status;
+ }
+ 
++#ifdef CONFIG_SPI_MASTER
++
+ static int mcp23s08_probe(struct spi_device *spi)
+ {
+ 	struct mcp23s08_platform_data	*pdata;
+@@ -418,7 +433,8 @@ static int mcp23s08_probe(struct spi_device *spi)
+ 			continue;
+ 		chips--;
+ 		data->mcp[addr] = &data->chip[chips];
+-		status = mcp23s08_probe_one(spi, addr, type, base,
++		status = mcp23s08_probe_one(data->mcp[addr], &spi->dev, spi,
++					    0x40 | (addr << 1), type, base,
+ 					    pdata->chip[addr].pullups);
+ 		if (status < 0)
+ 			goto fail;
+@@ -507,11 +523,21 @@ static struct spi_driver mcp23s08_driver = {
+ 	},
+ };
+ 
++#endif /* CONFIG_SPI_MASTER */
++
+ /*----------------------------------------------------------------------*/
+ 
+ static int __init mcp23s08_init(void)
+ {
+-	return spi_register_driver(&mcp23s08_driver);
++	int ret = 0;
++
++#ifdef CONFIG_SPI_MASTER
++	ret = spi_register_driver(&mcp23s08_driver);
++	if (ret)
++		return ret;
++#endif /* CONFIG_SPI_MASTER */
++
++	return ret;
+ }
+ /* register after spi postcore initcall and before
+  * subsys initcalls that may rely on these GPIOs
+@@ -520,7 +546,10 @@ subsys_initcall(mcp23s08_init);
+ 
+ static void __exit mcp23s08_exit(void)
+ {
++#ifdef CONFIG_SPI_MASTER
+ 	spi_unregister_driver(&mcp23s08_driver);
++#endif /* CONFIG_SPI_MASTER */
++
+ }
+ module_exit(mcp23s08_exit);
+ 
+-- 
+1.7.5.4
+
