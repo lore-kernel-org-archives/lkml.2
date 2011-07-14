@@ -1,63 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932305Ab1GNVBL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 17:01:11 -0400
-Received: from lucidpixels.com ([72.73.18.11]:55314 "EHLO lucidpixels.com"
+	id S932278Ab1GNVNo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 17:13:44 -0400
+Received: from hera.kernel.org ([140.211.167.34]:41464 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932188Ab1GNVBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 17:01:10 -0400
-Date: Thu, 14 Jul 2011 17:01:08 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: linux-kernel@vger.kernel.org
-Subject: 2.6.39.2: alsa question: usb sound/card shows up as mixer1/audio1?
-Message-ID: <alpine.DEB.2.02.1107141656480.10111@p34.internal.lan>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754301Ab1GNVNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 17:13:43 -0400
+Date: Thu, 14 Jul 2011 21:12:56 GMT
+From: tip-bot for Len Brown <len.brown@intel.com>
+Message-ID: <tip-abe48b108247e9b90b4c6739662a2e5c765ed114@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        stable@kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
+        rjw@sisk.pl, len.brown@intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        stable@kernel.org, tglx@linutronix.de, rjw@sisk.pl,
+        hpa@linux.intel.com, len.brown@intel.com
+In-Reply-To: <alpine.LFD.2.02.1107140051020.18606@x980>
+References: <alpine.LFD.2.02.1107140051020.18606@x980>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/cpu] x86, intel, power: Initialize MSR_IA32_ENERGY_PERF_BIAS
+Git-Commit-ID: abe48b108247e9b90b4c6739662a2e5c765ed114
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 14 Jul 2011 21:13:03 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Commit-ID:  abe48b108247e9b90b4c6739662a2e5c765ed114
+Gitweb:     http://git.kernel.org/tip/abe48b108247e9b90b4c6739662a2e5c765ed114
+Author:     Len Brown <len.brown@intel.com>
+AuthorDate: Thu, 14 Jul 2011 00:53:24 -0400
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 14 Jul 2011 12:13:42 -0700
 
-Is this a simple udev issue or something else?
-I bought two of these but they are actually different devices, on one host 
-it works ok, on the other, I get this:
+x86, intel, power: Initialize MSR_IA32_ENERGY_PERF_BIAS
 
-p34:~# dmesg|grep -i audio
-[   15.499078] usb 2-2.4: Product: C-Media USB Audio Device
-[   15.500235] input: C-Media USB Audio Device    as 
-/devices/pci0000:00/0000:00:1d.7/usb2/2-2/2-2.4/2-2.4:1.3/input/input5
-[   15.500416] generic-usb 0003:0D8C:0008.0003: input,hidraw2: USB HID 
-v1.00 Device [C-Media USB Audio Device   ] on usb-0000:00:1d.7-2.4/input3
-[   15.534185] usbcore: registered new interface driver snd-usb-audio
-p34:~# ls /dev/mixer*
-/dev/mixer1
-p34:~# ls /dev/audio*
-/dev/audio1
-p34:~#
+Since 2.6.36 (23016bf0d25), Linux prints the existence of "epb" in /proc/cpuinfo,
+Since 2.6.38 (d5532ee7b40), the x86_energy_perf_policy(8) utility has
+been available in-tree to update MSR_IA32_ENERGY_PERF_BIAS.
 
-$ cat /proc/asound/cards
-  1 [Device         ]: USB-Audio - C-Media USB Audio Device
-                       C-Media USB Audio Device at usb-0000:00:1d.7-2.4, 
-full speed
+However, the typical BIOS fails to initialize the MSR, presumably
+because this is handled by high-volume shrink-wrap operating systems...
 
-On the working host:
-$ cat /proc/asound/cards
-  0 [Device         ]: USB-Audio - USB PnP Sound Device
-                       C-Media Electronics Inc. USB PnP Sound Device at 
-usb-0000:00:1d.7-2.4, full spe
+Linux distros, on the other hand, do not yet invoke x86_energy_perf_policy(8).
+As a result, WSM-EP, SNB, and later hardware from Intel will run in its
+default hardware power-on state (performance), which assumes that users
+care for performance at all costs and not for energy efficiency.
+While that is fine for performance benchmarks, the hardware's intended default
+operating point is "normal" mode...
 
---
+Initialize the MSR to the "normal" by default during kernel boot.
 
-$ aumix
+x86_energy_perf_policy(8) is available to change the default after boot,
+should the user have a different preference.
 
-aumix:  error opening mixer: No such file or directory
+Signed-off-by: Len Brown <len.brown@intel.com>
+Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1107140051020.18606@x980
+Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: <stable@kernel.org>
+---
+ arch/x86/include/asm/msr-index.h |    3 +++
+ arch/x86/kernel/cpu/intel.c      |   18 ++++++++++++++++++
+ 2 files changed, 21 insertions(+), 0 deletions(-)
 
---
-
-Any clue why one is mapped to [1] and the other [0], where the one that is 
-[0] works properly and the [1] does not?
-
-Justin.
-
+diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
+index 485b4f1..23a9d89 100644
+--- a/arch/x86/include/asm/msr-index.h
++++ b/arch/x86/include/asm/msr-index.h
+@@ -259,6 +259,9 @@
+ #define MSR_IA32_TEMPERATURE_TARGET	0x000001a2
+ 
+ #define MSR_IA32_ENERGY_PERF_BIAS	0x000001b0
++#define ENERGY_PERF_BIAS_PERFORMANCE	0
++#define ENERGY_PERF_BIAS_NORMAL		6
++#define ENERGY_PERF_BIAS_POWERSWAVE	15
+ 
+ #define MSR_IA32_PACKAGE_THERM_STATUS		0x000001b1
+ 
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 1edf5ba..da0d779 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -456,6 +456,24 @@ static void __cpuinit init_intel(struct cpuinfo_x86 *c)
+ 
+ 	if (cpu_has(c, X86_FEATURE_VMX))
+ 		detect_vmx_virtcap(c);
++
++	/*
++	 * Initialize MSR_IA32_ENERGY_PERF_BIAS if BIOS did not.
++	 * x86_energy_perf_policy(8) is available to change it at run-time
++	 */
++	if (cpu_has(c, X86_FEATURE_EPB)) {
++		u64 epb;
++
++		rdmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
++		if ((epb & 0xF) == 0) {
++			printk_once(KERN_WARNING, "x86: updated energy_perf_bias"
++				" to 'normal' from 'performance'\n"
++				"You can view and update epb via utility,"
++				" such as x86_energy_perf_policy(8)\n");
++			epb = (epb & ~0xF) | ENERGY_PERF_BIAS_NORMAL;
++			wrmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
++		}
++	}
+ }
+ 
+ #ifdef CONFIG_X86_32
