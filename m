@@ -1,91 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932246Ab1GNTRT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 15:17:19 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50754 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753524Ab1GNTRS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 15:17:18 -0400
-Date: Thu, 14 Jul 2011 22:16:30 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
+	id S932289Ab1GNTSP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 15:18:15 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:34328 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753904Ab1GNTSO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 15:18:14 -0400
+Date: Thu, 14 Jul 2011 12:18:09 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
         Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org
 Subject: Re: INFO: possible circular locking dependency detected
-Message-ID: <20110714191630.GB3060@swordfish>
+Message-ID: <20110714191809.GF2349@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 References: <20110714144946.GA3354@swordfish.minsk.epam.com>
- <1310661699.2309.13.camel@laptop>
- <20110714165751.GA7400@linux.vnet.ibm.com>
+ <1310662707.27864.38.camel@gandalf.stny.rr.com>
+ <1310662929.27864.40.camel@gandalf.stny.rr.com>
+ <20110714170540.GE2349@linux.vnet.ibm.com>
+ <1310664742.27864.45.camel@gandalf.stny.rr.com>
+ <1310665613.27864.50.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ncSAzJYg3Aa9+CRW"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110714165751.GA7400@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1310665613.27864.50.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jul 14, 2011 at 01:46:53PM -0400, Steven Rostedt wrote:
+> egad! Looking at this code more, there's nothing keeping
+> t->rcu_read_unlock_special safe! If it can be modified by the kthread,
+> and current, then we must use atomic operations or modify under lock.
+> Otherwise the old read/modify/write can corrupt it.
+> 
+> 		t->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_BLOCKED;
+> 
+> is done before the lock is taken in rcu_read_unlock_special. If the
+> kthread is running rcu_boost() then its code:
+> 
+> 	t->rcu_read_unlock_special |= RCU_READ_UNLOCK_BOOSTED;
+> 
+> Can even negate the removing of the RCU_READ_UNLOCK_BLOCKED!
 
---ncSAzJYg3Aa9+CRW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+<red face>
 
-On (07/14/11 09:57), Paul E. McKenney wrote:
->=20
-> On Thu, Jul 14, 2011 at 06:41:39PM +0200, Peter Zijlstra wrote:
-> > On Thu, 2011-07-14 at 17:49 +0300, Sergey Senozhatsky wrote:
-> > > Hello,
-> > >=20
-> > > [ 4172.371094] =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> > > [ 4172.371097] [ INFO: possible circular locking dependency detected ]
-> > > [ 4172.371103] 3.0.0-rc7-dbg-00565-g6b31efc #644
-> > > [ 4172.371105] -------------------------------------------------------
-> > > [ 4172.371108] make/11702 is trying to acquire lock:
-> > > [ 4172.371111]  (rcu_node_level_0){..-...}, at: [<ffffffff810a55e2>] =
-__rcu_read_unlock+0xb9/0x217
-> > > [ 4172.371123]=20
-> > > [ 4172.371123] but task is already holding lock:
-> > > [ 4172.371125]  (&p->pi_lock){-.-.-.}, at: [<ffffffff8103775e>] try_t=
-o_wake_up+0x29/0x28b
-> > > [ 4172.371135]=20
-> > > [ 4172.371135] which lock already depends on the new lock.
-> >=20
-> > Happen to have a .config and means of reproduction? We're a little
-> > stumped at trying to explain how this can actually happen.
->=20
-> What Peter said!  Sergey, could also you please tell us what tree you
-> are using?  I am not seeing commit 6b31efc in mainline or -tip.
->=20
+Excellent catch, Steve, both this and your previous email.  Really stupid
+mistake on my part.  :-(
 
-I'm using vanilla kernel
-git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
+I believe that this affects only TREE_PREEMPT_RCU kernels with RCU_BOOST
+set: interrupt disabling takes care of TINY_PREEMPT_RCU.  I think, anyway.
 
-$git pull
-Already up-to-date.
+Please see below for a patch that I believe fixes this problem.
+It relies on the fact that RCU_READ_UNLOCK_BOOSTED cannot be set unless
+RCU_READ_UNLOCK_BLOCKED is also set, which allows the two to be in
+separate variables.  The original ->rcu_read_unlock_special is handled
+only by the corresponding thread, while the new ->rcu_boosted is accessed
+and updated only with the rcu_node structure's ->lock held.
 
+Thoughts?
 
-	Sergey
+							Thanx, Paul
 
---ncSAzJYg3Aa9+CRW
-Content-Type: application/pgp-signature
+------------------------------------------------------------------------
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iJwEAQECAAYFAk4fQI4ACgkQfKHnntdSXjR3AgP/QZGAbEXl4bcZzRB7AsvLrWaK
-UJ97hFVOzSLPVAWDIeoaXkqvF3r8mhCunm1jcdSkleNuIwZnd4KzHlX7YqTwlWg0
-n0UDt1Y9oRJ0xu/0+smYD2TCrq3FD6heWX/J7vGJvhaO4EW7P0yKbsRxvKJce/Ry
-V0erusC2COKH2cl5wJA=
-=HPq2
------END PGP SIGNATURE-----
-
---ncSAzJYg3Aa9+CRW--
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 496770a..2a88747 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1254,6 +1254,9 @@ struct task_struct {
+ #ifdef CONFIG_PREEMPT_RCU
+ 	int rcu_read_lock_nesting;
+ 	char rcu_read_unlock_special;
++#ifdef CONFIG_RCU_BOOST
++	int rcu_boosted;
++#endif /* #ifdef CONFIG_RCU_BOOST */
+ 	struct list_head rcu_node_entry;
+ #endif /* #ifdef CONFIG_PREEMPT_RCU */
+ #ifdef CONFIG_TREE_PREEMPT_RCU
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 75113cb..8d38a98 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -342,6 +342,11 @@ static void rcu_read_unlock_special(struct task_struct *t)
+ #ifdef CONFIG_RCU_BOOST
+ 		if (&t->rcu_node_entry == rnp->boost_tasks)
+ 			rnp->boost_tasks = np;
++		/* Snapshot and clear ->rcu_boosted with rcu_node lock held. */
++		if (t->rcu_boosted) {
++			special |= RCU_READ_UNLOCK_BOOSTED;
++			t->rcu_boosted = 0;
++		}
+ #endif /* #ifdef CONFIG_RCU_BOOST */
+ 		t->rcu_blocked_node = NULL;
+ 
+@@ -358,7 +363,6 @@ static void rcu_read_unlock_special(struct task_struct *t)
+ #ifdef CONFIG_RCU_BOOST
+ 		/* Unboost if we were boosted. */
+ 		if (special & RCU_READ_UNLOCK_BOOSTED) {
+-			t->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_BOOSTED;
+ 			rt_mutex_unlock(t->rcu_boost_mutex);
+ 			t->rcu_boost_mutex = NULL;
+ 		}
+@@ -1174,7 +1178,7 @@ static int rcu_boost(struct rcu_node *rnp)
+ 	t = container_of(tb, struct task_struct, rcu_node_entry);
+ 	rt_mutex_init_proxy_locked(&mtx, t);
+ 	t->rcu_boost_mutex = &mtx;
+-	t->rcu_read_unlock_special |= RCU_READ_UNLOCK_BOOSTED;
++	t->rcu_boosted = 1;
+ 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ 	rt_mutex_lock(&mtx);  /* Side effect: boosts task t's priority. */
+ 	rt_mutex_unlock(&mtx);  /* Keep lockdep happy. */
