@@ -1,401 +1,388 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753665Ab1GNDjo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 23:39:44 -0400
-Received: from hera.kernel.org ([140.211.167.34]:58761 "EHLO hera.kernel.org"
+	id S1753823Ab1GNDkH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 23:40:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38183 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753273Ab1GNDjm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 23:39:42 -0400
-Date: Thu, 14 Jul 2011 03:39:34 GMT
-From: tip-bot for Tejun Heo <tj@kernel.org>
-Message-ID: <tip-1f5026a7e21e409c2b9dd54f6dfb9446511fb7c5@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        benh@kernel.crashing.org, yinghai@kernel.org, tj@kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, benh@kernel.crashing.org, tj@kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1310457490-3356-6-git-send-email-tj@kernel.org>
-References: <1310457490-3356-6-git-send-email-tj@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/memblock] memblock: Kill MEMBLOCK_ERROR
-Git-Commit-ID: 1f5026a7e21e409c2b9dd54f6dfb9446511fb7c5
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1753767Ab1GNDkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 23:40:05 -0400
+Message-ID: <4E1E64F1.60501@zytor.com>
+Date: Wed, 13 Jul 2011 20:39:29 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 14 Jul 2011 03:39:35 +0000 (UTC)
+To: Andy Lutomirski <luto@MIT.EDU>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        John Stultz <johnstul@us.ibm.com>, Borislav Petkov <bp@amd64.org>,
+        Rakib Mullick <rakib.mullick@gmail.com>
+Subject: Re: [PATCH v3 6/8] x86-64: Move vread_tsc and vread_hpet into the
+ vDSO
+References: <cover.1310563276.git.luto@mit.edu> <1a694b571100af6dafcfcbb804b2d85bf6ae1804.1310563276.git.luto@mit.edu>
+In-Reply-To: <1a694b571100af6dafcfcbb804b2d85bf6ae1804.1310563276.git.luto@mit.edu>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1f5026a7e21e409c2b9dd54f6dfb9446511fb7c5
-Gitweb:     http://git.kernel.org/tip/1f5026a7e21e409c2b9dd54f6dfb9446511fb7c5
-Author:     Tejun Heo <tj@kernel.org>
-AuthorDate: Tue, 12 Jul 2011 09:58:09 +0200
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 13 Jul 2011 16:36:01 -0700
+On 07/13/2011 06:24 AM, Andy Lutomirski wrote:
+> The vsyscall page now consists entirely of trap instructions.
+> 
+> Cc: John Stultz <johnstul@us.ibm.com>
+> Signed-off-by: Andy Lutomirski <luto@mit.edu>
 
-memblock: Kill MEMBLOCK_ERROR
+This patch causes a build failure on x86-64 allnoconfig:
 
-25818f0f28 (memblock: Make MEMBLOCK_ERROR be 0) thankfully made
-MEMBLOCK_ERROR 0 and there already are codes which expect error return
-to be 0.  There's no point in keeping MEMBLOCK_ERROR around.  End its
-misery.
+/home/hpa/kernel/linux-2.6-tip.vdso/arch/x86/vdso/vclock_gettime.c: In
+function ‘vread_hpet’:
+/home/hpa/kernel/linux-2.6-tip.vdso/arch/x86/vdso/vclock_gettime.c:62:
+error: implicit declaration of function ‘fix_to_virt’
+/home/hpa/kernel/linux-2.6-tip.vdso/arch/x86/vdso/vclock_gettime.c:62:
+error: ‘VSYSCALL_HPET’ undeclared (first use in this function)
+/home/hpa/kernel/linux-2.6-tip.vdso/arch/x86/vdso/vclock_gettime.c:62:
+error: (Each undeclared identifier is reported only once
+/home/hpa/kernel/linux-2.6-tip.vdso/arch/x86/vdso/vclock_gettime.c:62:
+error: for each function it appears in.)
+make[2]: *** [arch/x86/vdso/vclock_gettime.o] Error 1
+make[1]: *** [arch/x86/vdso/vclock_gettime.o] Error 2
+make: *** [sub-make] Error 2
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Link: http://lkml.kernel.org/r/1310457490-3356-6-git-send-email-tj@kernel.org
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/aperture_64.c |    2 +-
- arch/x86/kernel/check.c       |    2 +-
- arch/x86/kernel/e820.c        |    2 +-
- arch/x86/kernel/setup.c       |    4 ++--
- arch/x86/kernel/trampoline.c  |    2 +-
- arch/x86/mm/init.c            |    2 +-
- arch/x86/mm/memblock.c        |    6 +++---
- arch/x86/mm/numa.c            |    6 +++---
- arch/x86/mm/numa_32.c         |    4 ++--
- arch/x86/mm/numa_emulation.c  |    2 +-
- include/linux/memblock.h      |    4 +---
- kernel/printk.c               |    2 +-
- mm/memblock.c                 |   21 ++++++++++-----------
- mm/nobootmem.c                |    2 +-
- mm/page_alloc.c               |    4 ++--
- 15 files changed, 31 insertions(+), 34 deletions(-)
 
-diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
-index 3d2661c..5636308 100644
---- a/arch/x86/kernel/aperture_64.c
-+++ b/arch/x86/kernel/aperture_64.c
-@@ -88,7 +88,7 @@ static u32 __init allocate_aperture(void)
- 	 */
- 	addr = memblock_find_in_range(GART_MIN_ADDR, GART_MAX_ADDR,
- 				      aper_size, aper_size);
--	if (addr == MEMBLOCK_ERROR || addr + aper_size > GART_MAX_ADDR) {
-+	if (!addr || addr + aper_size > GART_MAX_ADDR) {
- 		printk(KERN_ERR
- 			"Cannot allocate aperture memory hole (%lx,%uK)\n",
- 				addr, aper_size>>10);
-diff --git a/arch/x86/kernel/check.c b/arch/x86/kernel/check.c
-index 452932d..95680fc 100644
---- a/arch/x86/kernel/check.c
-+++ b/arch/x86/kernel/check.c
-@@ -86,7 +86,7 @@ void __init setup_bios_corruption_check(void)
- 		u64 size;
- 		addr = memblock_x86_find_in_range_size(addr, &size, PAGE_SIZE);
- 
--		if (addr == MEMBLOCK_ERROR)
-+		if (!addr)
- 			break;
- 
- 		if (addr >= corruption_check_size)
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index 3e2ef84..0f9ff58 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -745,7 +745,7 @@ u64 __init early_reserve_e820(u64 startt, u64 sizet, u64 align)
- 
- 	for (start = startt; ; start += size) {
- 		start = memblock_x86_find_in_range_size(start, &size, align);
--		if (start == MEMBLOCK_ERROR)
-+		if (!start)
- 			return 0;
- 		if (size >= sizet)
- 			break;
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index afaf384..31ffe20 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -331,7 +331,7 @@ static void __init relocate_initrd(void)
- 	ramdisk_here = memblock_find_in_range(0, end_of_lowmem, area_size,
- 					 PAGE_SIZE);
- 
--	if (ramdisk_here == MEMBLOCK_ERROR)
-+	if (!ramdisk_here)
- 		panic("Cannot find place for new RAMDISK of size %lld\n",
- 			 ramdisk_size);
- 
-@@ -554,7 +554,7 @@ static void __init reserve_crashkernel(void)
- 		crash_base = memblock_find_in_range(alignment,
- 			       CRASH_KERNEL_ADDR_MAX, crash_size, alignment);
- 
--		if (crash_base == MEMBLOCK_ERROR) {
-+		if (!crash_base) {
- 			pr_info("crashkernel reservation failed - No suitable area found.\n");
- 			return;
- 		}
-diff --git a/arch/x86/kernel/trampoline.c b/arch/x86/kernel/trampoline.c
-index a91ae77..a1f13dd 100644
---- a/arch/x86/kernel/trampoline.c
-+++ b/arch/x86/kernel/trampoline.c
-@@ -14,7 +14,7 @@ void __init setup_trampolines(void)
- 
- 	/* Has to be in very low memory so we can execute real-mode AP code. */
- 	mem = memblock_find_in_range(0, 1<<20, size, PAGE_SIZE);
--	if (mem == MEMBLOCK_ERROR)
-+	if (!mem)
- 		panic("Cannot allocate trampoline\n");
- 
- 	x86_trampoline_base = __va(mem);
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 3032644..13cf05a 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -68,7 +68,7 @@ static void __init find_early_table_space(unsigned long end, int use_pse,
- #endif
- 
- 	base = memblock_find_in_range(start, good_end, tables, PAGE_SIZE);
--	if (base == MEMBLOCK_ERROR)
-+	if (!base)
- 		panic("Cannot find space for the kernel page tables");
- 
- 	pgt_buf_start = base >> PAGE_SHIFT;
-diff --git a/arch/x86/mm/memblock.c b/arch/x86/mm/memblock.c
-index 992da5e..e126117 100644
---- a/arch/x86/mm/memblock.c
-+++ b/arch/x86/mm/memblock.c
-@@ -66,7 +66,7 @@ u64 __init memblock_x86_find_in_range_size(u64 start, u64 *sizep, u64 align)
- 			return addr;
- 	}
- 
--	return MEMBLOCK_ERROR;
-+	return 0;
- }
- 
- static __init struct range *find_range_array(int count)
-@@ -78,7 +78,7 @@ static __init struct range *find_range_array(int count)
- 	end = memblock.current_limit;
- 
- 	mem = memblock_find_in_range(0, end, size, sizeof(struct range));
--	if (mem == MEMBLOCK_ERROR)
-+	if (!mem)
- 		panic("can not find more space for range array");
- 
- 	/*
-@@ -274,7 +274,7 @@ u64 __init memblock_x86_find_in_range_node(int nid, u64 start, u64 end, u64 size
- {
- 	u64 addr;
- 	addr = find_memory_core_early(nid, size, align, start, end);
--	if (addr != MEMBLOCK_ERROR)
-+	if (addr)
- 		return addr;
- 
- 	/* Fallback, should already have start end within node range */
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index fbeaaf4..fa1015d 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -226,10 +226,10 @@ static void __init setup_node_data(int nid, u64 start, u64 end)
- 	} else {
- 		nd_pa = memblock_x86_find_in_range_node(nid, nd_low, nd_high,
- 						nd_size, SMP_CACHE_BYTES);
--		if (nd_pa == MEMBLOCK_ERROR)
-+		if (!nd_pa)
- 			nd_pa = memblock_find_in_range(nd_low, nd_high,
- 						nd_size, SMP_CACHE_BYTES);
--		if (nd_pa == MEMBLOCK_ERROR) {
-+		if (!nd_pa) {
- 			pr_err("Cannot find %zu bytes in node %d\n",
- 			       nd_size, nid);
- 			return;
-@@ -395,7 +395,7 @@ static int __init numa_alloc_distance(void)
- 
- 	phys = memblock_find_in_range(0, PFN_PHYS(max_pfn_mapped),
- 				      size, PAGE_SIZE);
--	if (phys == MEMBLOCK_ERROR) {
-+	if (!phys) {
- 		pr_warning("NUMA: Warning: can't allocate distance table!\n");
- 		/* don't retry until explicitly reset */
- 		numa_distance = (void *)1LU;
-diff --git a/arch/x86/mm/numa_32.c b/arch/x86/mm/numa_32.c
-index 3adebe7..58878b5 100644
---- a/arch/x86/mm/numa_32.c
-+++ b/arch/x86/mm/numa_32.c
-@@ -199,7 +199,7 @@ void __init init_alloc_remap(int nid, u64 start, u64 end)
- 
- 	/* allocate node memory and the lowmem remap area */
- 	node_pa = memblock_find_in_range(start, end, size, LARGE_PAGE_BYTES);
--	if (node_pa == MEMBLOCK_ERROR) {
-+	if (!node_pa) {
- 		pr_warning("remap_alloc: failed to allocate %lu bytes for node %d\n",
- 			   size, nid);
- 		return;
-@@ -209,7 +209,7 @@ void __init init_alloc_remap(int nid, u64 start, u64 end)
- 	remap_pa = memblock_find_in_range(min_low_pfn << PAGE_SHIFT,
- 					  max_low_pfn << PAGE_SHIFT,
- 					  size, LARGE_PAGE_BYTES);
--	if (remap_pa == MEMBLOCK_ERROR) {
-+	if (!remap_pa) {
- 		pr_warning("remap_alloc: failed to allocate %lu bytes remap area for node %d\n",
- 			   size, nid);
- 		memblock_x86_free_range(node_pa, node_pa + size);
-diff --git a/arch/x86/mm/numa_emulation.c b/arch/x86/mm/numa_emulation.c
-index d0ed086..e3d471c 100644
---- a/arch/x86/mm/numa_emulation.c
-+++ b/arch/x86/mm/numa_emulation.c
-@@ -351,7 +351,7 @@ void __init numa_emulation(struct numa_meminfo *numa_meminfo, int numa_dist_cnt)
- 
- 		phys = memblock_find_in_range(0, PFN_PHYS(max_pfn_mapped),
- 					      phys_size, PAGE_SIZE);
--		if (phys == MEMBLOCK_ERROR) {
-+		if (!phys) {
- 			pr_warning("NUMA: Warning: can't allocate copy of distance table, disabling emulation\n");
- 			goto no_emu;
- 		}
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index 7525e38..d235ec5 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -2,8 +2,6 @@
- #define _LINUX_MEMBLOCK_H
- #ifdef __KERNEL__
- 
--#define MEMBLOCK_ERROR	0
--
- #ifdef CONFIG_HAVE_MEMBLOCK
- /*
-  * Logical memory blocks.
-@@ -164,7 +162,7 @@ static inline unsigned long memblock_region_reserved_end_pfn(const struct memblo
- #else
- static inline phys_addr_t memblock_alloc(phys_addr_t size, phys_addr_t align)
- {
--	return MEMBLOCK_ERROR;
-+	return 0;
- }
- 
- #endif /* CONFIG_HAVE_MEMBLOCK */
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 3518539..b1d5a61 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -199,7 +199,7 @@ void __init setup_log_buf(int early)
- 		unsigned long mem;
- 
- 		mem = memblock_alloc(new_log_buf_len, PAGE_SIZE);
--		if (mem == MEMBLOCK_ERROR)
-+		if (!mem)
- 			return;
- 		new_log_buf = __va(mem);
- 	} else {
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 9882a88..1969936 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -74,7 +74,7 @@ static phys_addr_t __init_memblock memblock_find_region(phys_addr_t start, phys_
- 
- 	/* In case, huge size is requested */
- 	if (end < size)
--		return MEMBLOCK_ERROR;
-+		return 0;
- 
- 	base = round_down(end - size, align);
- 
-@@ -94,7 +94,7 @@ static phys_addr_t __init_memblock memblock_find_region(phys_addr_t start, phys_
- 		base = round_down(res_base - size, align);
- 	}
- 
--	return MEMBLOCK_ERROR;
-+	return 0;
- }
- 
- static phys_addr_t __init_memblock memblock_find_base(phys_addr_t size,
-@@ -126,10 +126,10 @@ static phys_addr_t __init_memblock memblock_find_base(phys_addr_t size,
- 		if (bottom >= top)
- 			continue;
- 		found = memblock_find_region(bottom, top, size, align);
--		if (found != MEMBLOCK_ERROR)
-+		if (found)
- 			return found;
- 	}
--	return MEMBLOCK_ERROR;
-+	return 0;
- }
- 
- /*
-@@ -214,10 +214,10 @@ static int __init_memblock memblock_double_array(struct memblock_type *type)
- 	 */
- 	if (use_slab) {
- 		new_array = kmalloc(new_size, GFP_KERNEL);
--		addr = new_array == NULL ? MEMBLOCK_ERROR : __pa(new_array);
-+		addr = new_array ? __pa(new_array) : 0;
- 	} else
- 		addr = memblock_find_base(new_size, sizeof(phys_addr_t), 0, MEMBLOCK_ALLOC_ACCESSIBLE);
--	if (addr == MEMBLOCK_ERROR) {
-+	if (!addr) {
- 		pr_err("memblock: Failed to double %s array from %ld to %ld entries !\n",
- 		       memblock_type_name(type), type->max, type->max * 2);
- 		return -1;
-@@ -478,8 +478,7 @@ phys_addr_t __init __memblock_alloc_base(phys_addr_t size, phys_addr_t align, ph
- 	size = round_up(size, align);
- 
- 	found = memblock_find_base(size, align, 0, max_addr);
--	if (found != MEMBLOCK_ERROR &&
--	    !memblock_add_region(&memblock.reserved, found, size))
-+	if (found && !memblock_add_region(&memblock.reserved, found, size))
- 		return found;
- 
- 	return 0;
-@@ -559,14 +558,14 @@ static phys_addr_t __init memblock_alloc_nid_region(struct memblock_region *mp,
- 		this_end = memblock_nid_range(start, end, &this_nid);
- 		if (this_nid == nid) {
- 			phys_addr_t ret = memblock_find_region(start, this_end, size, align);
--			if (ret != MEMBLOCK_ERROR &&
-+			if (ret &&
- 			    !memblock_add_region(&memblock.reserved, ret, size))
- 				return ret;
- 		}
- 		start = this_end;
- 	}
- 
--	return MEMBLOCK_ERROR;
-+	return 0;
- }
- 
- phys_addr_t __init memblock_alloc_nid(phys_addr_t size, phys_addr_t align, int nid)
-@@ -588,7 +587,7 @@ phys_addr_t __init memblock_alloc_nid(phys_addr_t size, phys_addr_t align, int n
- 	for (i = 0; i < mem->cnt; i++) {
- 		phys_addr_t ret = memblock_alloc_nid_region(&mem->regions[i],
- 					       size, align, nid);
--		if (ret != MEMBLOCK_ERROR)
-+		if (ret)
- 			return ret;
- 	}
- 
-diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-index 6e93dc7..5b0eb06 100644
---- a/mm/nobootmem.c
-+++ b/mm/nobootmem.c
-@@ -43,7 +43,7 @@ static void * __init __alloc_memory_core_early(int nid, u64 size, u64 align,
- 
- 	addr = find_memory_core_early(nid, size, align, goal, limit);
- 
--	if (addr == MEMBLOCK_ERROR)
-+	if (!addr)
- 		return NULL;
- 
- 	ptr = phys_to_virt(addr);
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index b6da6ed..c7f0e5b 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -3878,13 +3878,13 @@ u64 __init find_memory_core_early(int nid, u64 size, u64 align,
- 
- 		addr = memblock_find_in_range(final_start, final_end, size, align);
- 
--		if (addr == MEMBLOCK_ERROR)
-+		if (!addr)
- 			continue;
- 
- 		return addr;
- 	}
- 
--	return MEMBLOCK_ERROR;
-+	return 0;
- }
- #endif
- 
+> ---
+>  arch/x86/include/asm/clocksource.h |    6 +++-
+>  arch/x86/include/asm/tsc.h         |    4 ---
+>  arch/x86/include/asm/vgtod.h       |    2 +-
+>  arch/x86/include/asm/vsyscall.h    |    4 ---
+>  arch/x86/kernel/Makefile           |    7 +----
+>  arch/x86/kernel/alternative.c      |    8 -----
+>  arch/x86/kernel/hpet.c             |    9 +-----
+>  arch/x86/kernel/tsc.c              |    2 +-
+>  arch/x86/kernel/vmlinux.lds.S      |    3 --
+>  arch/x86/kernel/vread_tsc_64.c     |   36 -------------------------
+>  arch/x86/kernel/vsyscall_64.c      |    2 +-
+>  arch/x86/vdso/vclock_gettime.c     |   52 +++++++++++++++++++++++++++++++----
+>  12 files changed, 56 insertions(+), 79 deletions(-)
+>  delete mode 100644 arch/x86/kernel/vread_tsc_64.c
+> 
+> diff --git a/arch/x86/include/asm/clocksource.h b/arch/x86/include/asm/clocksource.h
+> index a5df33f..3882c65 100644
+> --- a/arch/x86/include/asm/clocksource.h
+> +++ b/arch/x86/include/asm/clocksource.h
+> @@ -7,8 +7,12 @@
+>  
+>  #define __ARCH_HAS_CLOCKSOURCE_DATA
+>  
+> +#define VCLOCK_NONE 0  /* No vDSO clock available.	*/
+> +#define VCLOCK_TSC  1  /* vDSO should use vread_tsc.	*/
+> +#define VCLOCK_HPET 2  /* vDSO should use vread_hpet.	*/
+> +
+>  struct arch_clocksource_data {
+> -	cycle_t (*vread)(void);
+> +	int vclock_mode;
+>  };
+>  
+>  #endif /* CONFIG_X86_64 */
+> diff --git a/arch/x86/include/asm/tsc.h b/arch/x86/include/asm/tsc.h
+> index 9db5583..83e2efd 100644
+> --- a/arch/x86/include/asm/tsc.h
+> +++ b/arch/x86/include/asm/tsc.h
+> @@ -51,10 +51,6 @@ extern int unsynchronized_tsc(void);
+>  extern int check_tsc_unstable(void);
+>  extern unsigned long native_calibrate_tsc(void);
+>  
+> -#ifdef CONFIG_X86_64
+> -extern cycles_t vread_tsc(void);
+> -#endif
+> -
+>  /*
+>   * Boot-time check whether the TSCs are synchronized across
+>   * all CPUs/cores:
+> diff --git a/arch/x86/include/asm/vgtod.h b/arch/x86/include/asm/vgtod.h
+> index aa5add8..815285b 100644
+> --- a/arch/x86/include/asm/vgtod.h
+> +++ b/arch/x86/include/asm/vgtod.h
+> @@ -13,7 +13,7 @@ struct vsyscall_gtod_data {
+>  
+>  	struct timezone sys_tz;
+>  	struct { /* extract of a clocksource struct */
+> -		cycle_t (*vread)(void);
+> +		int vclock_mode;
+>  		cycle_t	cycle_last;
+>  		cycle_t	mask;
+>  		u32	mult;
+> diff --git a/arch/x86/include/asm/vsyscall.h b/arch/x86/include/asm/vsyscall.h
+> index d555973..6010707 100644
+> --- a/arch/x86/include/asm/vsyscall.h
+> +++ b/arch/x86/include/asm/vsyscall.h
+> @@ -16,10 +16,6 @@ enum vsyscall_num {
+>  #ifdef __KERNEL__
+>  #include <linux/seqlock.h>
+>  
+> -/* Definitions for CONFIG_GENERIC_TIME definitions */
+> -#define __vsyscall_fn \
+> -	__attribute__ ((unused, __section__(".vsyscall_fn"))) notrace
+> -
+>  #define VGETCPU_RDTSCP	1
+>  #define VGETCPU_LSL	2
+>  
+> diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+> index cc0469a..2deef3d 100644
+> --- a/arch/x86/kernel/Makefile
+> +++ b/arch/x86/kernel/Makefile
+> @@ -24,17 +24,12 @@ endif
+>  nostackp := $(call cc-option, -fno-stack-protector)
+>  CFLAGS_vsyscall_64.o	:= $(PROFILING) -g0 $(nostackp)
+>  CFLAGS_hpet.o		:= $(nostackp)
+> -CFLAGS_vread_tsc_64.o	:= $(nostackp)
+>  CFLAGS_paravirt.o	:= $(nostackp)
+>  GCOV_PROFILE_vsyscall_64.o	:= n
+>  GCOV_PROFILE_hpet.o		:= n
+>  GCOV_PROFILE_tsc.o		:= n
+> -GCOV_PROFILE_vread_tsc_64.o	:= n
+>  GCOV_PROFILE_paravirt.o		:= n
+>  
+> -# vread_tsc_64 is hot and should be fully optimized:
+> -CFLAGS_REMOVE_vread_tsc_64.o = -pg -fno-optimize-sibling-calls
+> -
+>  obj-y			:= process_$(BITS).o signal.o entry_$(BITS).o
+>  obj-y			+= traps.o irq.o irq_$(BITS).o dumpstack_$(BITS).o
+>  obj-y			+= time.o ioport.o ldt.o dumpstack.o
+> @@ -43,7 +38,7 @@ obj-$(CONFIG_IRQ_WORK)  += irq_work.o
+>  obj-y			+= probe_roms.o
+>  obj-$(CONFIG_X86_32)	+= sys_i386_32.o i386_ksyms_32.o
+>  obj-$(CONFIG_X86_64)	+= sys_x86_64.o x8664_ksyms_64.o
+> -obj-$(CONFIG_X86_64)	+= syscall_64.o vsyscall_64.o vread_tsc_64.o
+> +obj-$(CONFIG_X86_64)	+= syscall_64.o vsyscall_64.o
+>  obj-$(CONFIG_X86_64)	+= vsyscall_emu_64.o
+>  obj-y			+= bootflag.o e820.o
+>  obj-y			+= pci-dma.o quirks.o topology.o kdebugfs.o
+> diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+> index ddb207b..c638228 100644
+> --- a/arch/x86/kernel/alternative.c
+> +++ b/arch/x86/kernel/alternative.c
+> @@ -14,7 +14,6 @@
+>  #include <asm/pgtable.h>
+>  #include <asm/mce.h>
+>  #include <asm/nmi.h>
+> -#include <asm/vsyscall.h>
+>  #include <asm/cacheflush.h>
+>  #include <asm/tlbflush.h>
+>  #include <asm/io.h>
+> @@ -250,7 +249,6 @@ static void __init_or_module add_nops(void *insns, unsigned int len)
+>  
+>  extern struct alt_instr __alt_instructions[], __alt_instructions_end[];
+>  extern s32 __smp_locks[], __smp_locks_end[];
+> -extern char __vsyscall_0;
+>  void *text_poke_early(void *addr, const void *opcode, size_t len);
+>  
+>  /* Replace instructions with better alternatives for this CPU type.
+> @@ -294,12 +292,6 @@ void __init_or_module apply_alternatives(struct alt_instr *start,
+>  		add_nops(insnbuf + a->replacementlen,
+>  			 a->instrlen - a->replacementlen);
+>  
+> -#ifdef CONFIG_X86_64
+> -		/* vsyscall code is not mapped yet. resolve it manually. */
+> -		if (instr >= (u8 *)VSYSCALL_START && instr < (u8*)VSYSCALL_END) {
+> -			instr = __va(instr - (u8*)VSYSCALL_START + (u8*)__pa_symbol(&__vsyscall_0));
+> -		}
+> -#endif
+>  		text_poke_early(instr, insnbuf, a->instrlen);
+>  	}
+>  }
+> diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
+> index 0e07257..d10cc00 100644
+> --- a/arch/x86/kernel/hpet.c
+> +++ b/arch/x86/kernel/hpet.c
+> @@ -738,13 +738,6 @@ static cycle_t read_hpet(struct clocksource *cs)
+>  	return (cycle_t)hpet_readl(HPET_COUNTER);
+>  }
+>  
+> -#ifdef CONFIG_X86_64
+> -static cycle_t __vsyscall_fn vread_hpet(void)
+> -{
+> -	return readl((const void __iomem *)fix_to_virt(VSYSCALL_HPET) + 0xf0);
+> -}
+> -#endif
+> -
+>  static struct clocksource clocksource_hpet = {
+>  	.name		= "hpet",
+>  	.rating		= 250,
+> @@ -753,7 +746,7 @@ static struct clocksource clocksource_hpet = {
+>  	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
+>  	.resume		= hpet_resume_counter,
+>  #ifdef CONFIG_X86_64
+> -	.archdata	= { .vread = vread_hpet },
+> +	.archdata	= { .vclock_mode = VCLOCK_HPET },
+>  #endif
+>  };
+>  
+> diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+> index e7a74b8..56c633a 100644
+> --- a/arch/x86/kernel/tsc.c
+> +++ b/arch/x86/kernel/tsc.c
+> @@ -777,7 +777,7 @@ static struct clocksource clocksource_tsc = {
+>  	.flags                  = CLOCK_SOURCE_IS_CONTINUOUS |
+>  				  CLOCK_SOURCE_MUST_VERIFY,
+>  #ifdef CONFIG_X86_64
+> -	.archdata               = { .vread = vread_tsc },
+> +	.archdata               = { .vclock_mode = VCLOCK_TSC },
+>  #endif
+>  };
+>  
+> diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
+> index 8017471..4aa9c54 100644
+> --- a/arch/x86/kernel/vmlinux.lds.S
+> +++ b/arch/x86/kernel/vmlinux.lds.S
+> @@ -169,9 +169,6 @@ SECTIONS
+>  	.vsyscall : AT(VLOAD(.vsyscall)) {
+>  		*(.vsyscall_0)
+>  
+> -		. = ALIGN(L1_CACHE_BYTES);
+> -		*(.vsyscall_fn)
+> -
+>  		. = 1024;
+>  		*(.vsyscall_1)
+>  
+> diff --git a/arch/x86/kernel/vread_tsc_64.c b/arch/x86/kernel/vread_tsc_64.c
+> deleted file mode 100644
+> index a81aa9e..0000000
+> --- a/arch/x86/kernel/vread_tsc_64.c
+> +++ /dev/null
+> @@ -1,36 +0,0 @@
+> -/* This code runs in userspace. */
+> -
+> -#define DISABLE_BRANCH_PROFILING
+> -#include <asm/vgtod.h>
+> -
+> -notrace cycle_t __vsyscall_fn vread_tsc(void)
+> -{
+> -	cycle_t ret;
+> -	u64 last;
+> -
+> -	/*
+> -	 * Empirically, a fence (of type that depends on the CPU)
+> -	 * before rdtsc is enough to ensure that rdtsc is ordered
+> -	 * with respect to loads.  The various CPU manuals are unclear
+> -	 * as to whether rdtsc can be reordered with later loads,
+> -	 * but no one has ever seen it happen.
+> -	 */
+> -	rdtsc_barrier();
+> -	ret = (cycle_t)vget_cycles();
+> -
+> -	last = VVAR(vsyscall_gtod_data).clock.cycle_last;
+> -
+> -	if (likely(ret >= last))
+> -		return ret;
+> -
+> -	/*
+> -	 * GCC likes to generate cmov here, but this branch is extremely
+> -	 * predictable (it's just a funciton of time and the likely is
+> -	 * very likely) and there's a data dependence, so force GCC
+> -	 * to generate a branch instead.  I don't barrier() because
+> -	 * we don't actually need a barrier, and if this function
+> -	 * ever gets inlined it will generate worse code.
+> -	 */
+> -	asm volatile ("");
+> -	return last;
+> -}
+> diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
+> index 12d488f..dda7dff 100644
+> --- a/arch/x86/kernel/vsyscall_64.c
+> +++ b/arch/x86/kernel/vsyscall_64.c
+> @@ -74,7 +74,7 @@ void update_vsyscall(struct timespec *wall_time, struct timespec *wtm,
+>  	write_seqlock_irqsave(&vsyscall_gtod_data.lock, flags);
+>  
+>  	/* copy vsyscall data */
+> -	vsyscall_gtod_data.clock.vread		= clock->archdata.vread;
+> +	vsyscall_gtod_data.clock.vclock_mode	= clock->archdata.vclock_mode;
+>  	vsyscall_gtod_data.clock.cycle_last	= clock->cycle_last;
+>  	vsyscall_gtod_data.clock.mask		= clock->mask;
+>  	vsyscall_gtod_data.clock.mult		= mult;
+> diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+> index cf54813..9869bac 100644
+> --- a/arch/x86/vdso/vclock_gettime.c
+> +++ b/arch/x86/vdso/vclock_gettime.c
+> @@ -25,6 +25,43 @@
+>  
+>  #define gtod (&VVAR(vsyscall_gtod_data))
+>  
+> +notrace static cycle_t vread_tsc(void)
+> +{
+> +	cycle_t ret;
+> +	u64 last;
+> +
+> +	/*
+> +	 * Empirically, a fence (of type that depends on the CPU)
+> +	 * before rdtsc is enough to ensure that rdtsc is ordered
+> +	 * with respect to loads.  The various CPU manuals are unclear
+> +	 * as to whether rdtsc can be reordered with later loads,
+> +	 * but no one has ever seen it happen.
+> +	 */
+> +	rdtsc_barrier();
+> +	ret = (cycle_t)vget_cycles();
+> +
+> +	last = VVAR(vsyscall_gtod_data).clock.cycle_last;
+> +
+> +	if (likely(ret >= last))
+> +		return ret;
+> +
+> +	/*
+> +	 * GCC likes to generate cmov here, but this branch is extremely
+> +	 * predictable (it's just a funciton of time and the likely is
+> +	 * very likely) and there's a data dependence, so force GCC
+> +	 * to generate a branch instead.  I don't barrier() because
+> +	 * we don't actually need a barrier, and if this function
+> +	 * ever gets inlined it will generate worse code.
+> +	 */
+> +	asm volatile ("");
+> +	return last;
+> +}
+> +
+> +static notrace cycle_t vread_hpet(void)
+> +{
+> +	return readl((const void __iomem *)fix_to_virt(VSYSCALL_HPET) + 0xf0);
+> +}
+> +
+>  notrace static long vdso_fallback_gettime(long clock, struct timespec *ts)
+>  {
+>  	long ret;
+> @@ -36,9 +73,12 @@ notrace static long vdso_fallback_gettime(long clock, struct timespec *ts)
+>  notrace static inline long vgetns(void)
+>  {
+>  	long v;
+> -	cycles_t (*vread)(void);
+> -	vread = gtod->clock.vread;
+> -	v = (vread() - gtod->clock.cycle_last) & gtod->clock.mask;
+> +	cycles_t cycles;
+> +	if (gtod->clock.vclock_mode == VCLOCK_TSC)
+> +		cycles = vread_tsc();
+> +	else
+> +		cycles = vread_hpet();
+> +	v = (cycles - gtod->clock.cycle_last) & gtod->clock.mask;
+>  	return (v * gtod->clock.mult) >> gtod->clock.shift;
+>  }
+>  
+> @@ -118,11 +158,11 @@ notrace int __vdso_clock_gettime(clockid_t clock, struct timespec *ts)
+>  {
+>  	switch (clock) {
+>  	case CLOCK_REALTIME:
+> -		if (likely(gtod->clock.vread))
+> +		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE))
+>  			return do_realtime(ts);
+>  		break;
+>  	case CLOCK_MONOTONIC:
+> -		if (likely(gtod->clock.vread))
+> +		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE))
+>  			return do_monotonic(ts);
+>  		break;
+>  	case CLOCK_REALTIME_COARSE:
+> @@ -139,7 +179,7 @@ int clock_gettime(clockid_t, struct timespec *)
+>  notrace int __vdso_gettimeofday(struct timeval *tv, struct timezone *tz)
+>  {
+>  	long ret;
+> -	if (likely(gtod->clock.vread)) {
+> +	if (likely(gtod->clock.vclock_mode != VCLOCK_NONE)) {
+>  		if (likely(tv != NULL)) {
+>  			BUILD_BUG_ON(offsetof(struct timeval, tv_usec) !=
+>  				     offsetof(struct timespec, tv_nsec) ||
+
