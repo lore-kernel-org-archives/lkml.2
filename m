@@ -1,47 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754783Ab1GNUnz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 16:43:55 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39358 "EHLO mail.zytor.com"
+	id S1754749Ab1GNUsu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 16:48:50 -0400
+Received: from mail.lang.hm ([64.81.33.126]:46822 "EHLO bifrost.lang.hm"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754211Ab1GNUnx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 16:43:53 -0400
-Message-ID: <4E1F54FA.1060506@zytor.com>
-Date: Thu, 14 Jul 2011 13:43:38 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1753328Ab1GNUst (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 16:48:49 -0400
+Date: Thu, 14 Jul 2011 13:48:25 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: John Stoffel <john@stoffel.org>
+cc: Alasdair G Kergon <agk@redhat.com>, NeilBrown <neilb@suse.de>,
+        Ric Wheeler <rwheeler@redhat.com>,
+        Nico Schottelius <nico-lkml-20110623@schottelius.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@oracle.com>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>
+Subject: Re: Mis-Design of Btrfs?
+In-Reply-To: <19999.18584.813855.541972@quad.stoffel.home>
+Message-ID: <alpine.DEB.2.02.1107141344250.919@asgard.lang.hm>
+References: <20110623105337.GD3753@ethz.ch> <20110627164637.377314e2@notabene.brown> <4E0AF091.9030301@redhat.com> <20110714155620.6e9ac2cc@notabene.brown> <4E1E866E.2050405@redhat.com> <20110714163836.35a729c1@notabene.brown> <20110714165516.GA15253@agk-dp.fab.redhat.com>
+ <19999.18584.813855.541972@quad.stoffel.home>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: mingo@redhat.com, tglx@linutronix.de, benh@kernel.crashing.org,
-        yinghai@kernel.org, davem@davemloft.net, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH 13/13] memblock, x86: Replace memblock_x86_reserve/free_range()
- with generic ones
-References: <1310462166-31469-1-git-send-email-tj@kernel.org>	<1310462166-31469-14-git-send-email-tj@kernel.org>	<4E1F4D2C.3000507@zytor.com>	<CAOS58YPhFWEYgB7moPoTj+BKBn6WMHCi5FqZ5eYp+m4bbEN_7A@mail.gmail.com>	<4E1F5040.50004@zytor.com>	<CAOS58YM38mwmLcErARLc2+7wBrBa5Je3VOM5L28z63L6+ysqpQ@mail.gmail.com>	<4E1F53D9.2000606@zytor.com> <CAOS58YPkDG2v3ULRMK15mwvpAKyPpjYL34N+BMZwWZB3DNOEnw@mail.gmail.com>
-In-Reply-To: <CAOS58YPkDG2v3ULRMK15mwvpAKyPpjYL34N+BMZwWZB3DNOEnw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2011 01:41 PM, Tejun Heo wrote:
-> Hello,
-> 
-> On Thu, Jul 14, 2011 at 10:38 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>> Hmm... I was only looking at the early boot messages which didn't
->>> include the io ranges.  It ultimately is a cosmetic issue so my
->>> opinions aren't very strong but I think we can leave [mm]io ranges
->>> alone and converge the rest into [ ) ranges sans the brackets?
->>
->> Agreed it's a cosmetic issue... this discussion has already been had,
->> though, and the consensus is to move the kernel to the standardized
->> resource format.
-> 
-> OIC, in that case, please go ahead and change it.  It seems that we
-> haven't been too successful at applying the decision tho. :(
-> 
+On Thu, 14 Jul 2011, John Stoffel wrote:
 
-It's a work in progress.
+> Alasdair> I'll just say that any solution ought to be stackable.
+>
+> I've been mulling this over too and wondering how you'd handle this,
+> because upper layers really can't peak down into lower layers easily.
+> As far as I understand things.
+>
+> So if you have btrfs -> luks -> raid1 -> raid6 -> nbd -> remote disks
+>
+> How does btrfs handle errors (or does it even see them!) from the
+> raid6 level when a single nbd device goes away?  Or taking the
+> original example, when btrfs notices a checksum isn't correct, how
+> would it push down multiple levels to try and find the correct data?
+>
+> Alasdair> This means understanding both that the number of data access
+> Alasdair> routes may vary as you move through the stack, and that this
+> Alasdair> number may depend on the offset within the device.
+>
+> It almost seems to me that the retry needs to be done at each level on
+> it's own, without pushing down or up the stack.  But this doesn't
+> handle the wrong file checksum issue.
+>
+> Hmm... maybe instead of just one number, we need another to count the
+> levels down you go (or just split 16bit integer in half, bottom half
+> being count of tries, the upper half being levels down to try that
+> read?)
+>
+> It seems to defeat the purpose of layers if you can go down and find
+> out how many layers there are underneath you....
 
-	-hpa
+this is why just an arbatrary 'method number' rather than a bitmap or 
+something like that should be used.
+
+using your example:
+
+> So if you have btrfs -> luks -> raid1 -> raid6 -> nbd -> remote disks
+
+raid1 has at least 2 values, raid 6 has at least 2 values, the combination 
+of the two stacked should have at least 4 values.
+
+if each layer can query the layer below it to find out how many methods it 
+supports, it can then combine each of the methods it supports with each of 
+the methods supported by the layer below it.
+
+this will stack to an arbatrary number of layers, only limited by how 
+large the value is allowed to be limiting the combinational permutations 
+of all the layers options.
+
+David Lang
