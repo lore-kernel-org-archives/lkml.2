@@ -1,50 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754920Ab1GNNYi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 09:24:38 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:35646 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754785Ab1GNNYh (ORCPT
+	id S1754940Ab1GNNZS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 09:25:18 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:54590 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754879Ab1GNNZQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 09:24:37 -0400
-X-Authority-Analysis: v=1.1 cv=IOX921YOuPvYFce5aSLzPVIStpiCPR9M8R83dyHW74w= c=1 sm=0 a=exgflK5sixEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=fMjEK6toXuGc-rMtJSEA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] [RFCv3] perf: robustify proc and debugfs file recording
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Michael Neuling <mikey@neuling.org>, Sonny Rao <sonnyrao@chromium.org>,
-        acme@redhat.com, anton@samba.org, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1310648130.2586.251.camel@twins>
-References: <28585.1310602685@neuling.org>
-	 <1310604019-10935-1-git-send-email-sonnyrao@chromium.org>
-	 <1310612277.27864.5.camel@gandalf.stny.rr.com>
-	 <10011.1310614483@neuling.org>
-	 <1310647558.27864.19.camel@gandalf.stny.rr.com>
-	 <1310648130.2586.251.camel@twins>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 14 Jul 2011 09:24:35 -0400
-Message-ID: <1310649875.27864.23.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+	Thu, 14 Jul 2011 09:25:16 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH v2 1/6] TTY: serial, remove BTM from wait_until_sent
+Date: Thu, 14 Jul 2011 15:24:31 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: gregkh@suse.de, jirislaby@gmail.com, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
+        Andreas Bombe <aeb@debian.org>
+References: <1310646915-3032-1-git-send-email-jslaby@suse.cz>
+In-Reply-To: <1310646915-3032-1-git-send-email-jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201107141524.31599.arnd@arndb.de>
+X-Provags-ID: V02:K0:TnoMLpoycebboqEvgUg88x4MuNdUN2Xh9VMO24eFtYc
+ GSV9j63wnGPPeQ6+BpVoYLiwTnVRYcp5ChiKKdvGsQZadxbdhj
+ hjusqzzn9+ysSzTthsIgoZGGXxKzzIXI+d/9EL09WVB/w/hCKv
+ HMYE6k/nBIc+Nc2i+9fklegOCatdcXvJUr6IYatXHot7RLqeFI
+ 3nVb2OmvMhoznYMXY5tyg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-07-14 at 14:55 +0200, Peter Zijlstra wrote:
+On Thursday 14 July 2011, Jiri Slaby wrote:
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> References: https://lkml.org/lkml/2011/5/25/562
+> Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> Cc: Alan Cox <alan@linux.intel.com>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Andreas Bombe <aeb@debian.org>
 
-> Yeah, its all the rage, we're supposed to write full RFC compliant email
-> parsers these days :(
-> 
-
-> Should decode that crap I think..
-
-Thanks Peter! This seems to work.
-
--- Steve
-
-
+Acked-by: Arnd Bergmann <arnd@arndb.de>
