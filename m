@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755322Ab1GNP6Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 11:58:25 -0400
-Received: from imx9.toshiba.co.jp ([202.33.96.51]:53980 "EHLO
-	imx9.toshiba.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755036Ab1GNP6Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 11:58:24 -0400
-X-Greylist: delayed 2331 seconds by postgrey-1.27 at vger.kernel.org; Thu, 14 Jul 2011 11:58:24 EDT
-Message-ID: <4E1F0685.1000803@toshiba.co.jp>
-Date: Thu, 14 Jul 2011 22:08:53 +0700
-From: KOBAYASHI Yoshitake <yoshitake.kobayashi@toshiba.co.jp>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
+	id S1755335Ab1GNQCN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 12:02:13 -0400
+Received: from home.keithp.com ([63.227.221.253]:37121 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755271Ab1GNQCM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 12:02:12 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Francesco Allertsen <fallertsen@gmail.com>,
+        dri-devel@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Reverting rc6 by default
+In-Reply-To: <CAOJsxLGKtjCpY=X1UrHVY79qLjVCgCT3XC795yh_uEn-0_4D0w@mail.gmail.com>
+References: <20110621142133.GA3652@fujiko> <yunhb7jxkz2.fsf@aiko.keithp.com> <20110621155205.GA2488@fujiko> <yunboxrxiz2.fsf@aiko.keithp.com> <20110621164209.GA2155@fujiko> <yun8vsvxdr4.fsf@aiko.keithp.com> <20110621184757.GA2185@fujiko> <yunzklb9fg1.fsf@aiko.keithp.com> <20110705230101.GD2852@fujiko> <CAOJsxLFVSEDEaYH8Dw4jWGo9=wkC8QQWOs4xRR6qcgVM2xCRoA@mail.gmail.com> <yunhb6rec97.fsf@aiko.keithp.com> <CAOJsxLGKtjCpY=X1UrHVY79qLjVCgCT3XC795yh_uEn-0_4D0w@mail.gmail.com>
+User-Agent: Notmuch/0.5-202-g6ae4e7d (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Thu, 14 Jul 2011 09:02:07 -0700
+Message-ID: <yunwrfkhmv4.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, mingo@redhat.com
-Subject: [PATCH RT] ipc: add a critical section in pipelined_receive
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is for v2.6.33.9-rt31 to avoid a deadlock.
-In POSIX message queue, if a sender process uses SCHED_FIFO and 
-has a higher priority than a receiver process, the sender will
-be stuck at ipc/mqueue.c:446
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-  445                 while (ewp->state == STATE_PENDING)
-  446                         cpu_relax();
+On Thu, 14 Jul 2011 10:37:15 +0300, Pekka Enberg <penberg@kernel.org> wrote:
 
-Description of the problem
- (receiver process)
-   1. receiver changes sender's state to STATE_PENDING (mqueue.c:832)
-   2. wake up sender process and "switch to sender" (mqueue.c:833)
-      Note: This context switch only happens in PREEMPT_RT kernel.
- (sender process)
-   3. sender check the own state in above loop (mqueue.c:445-446)
-   *. receiver will never wake up and cannot change sender's state to
-      STATE_READY because sender has higher priority
+> This if fixed in mainline as of commit
+> a94919eaddaa3fede1df8563ce4d761a75374645 ("Revert "drm/i915: enable
+> rc6 by default"). Keith, it would have been nice to include a
+> 'Reported-by' and/or a link to this discussion in the changelog for
+> future reference.
 
+Yes, I'm sorry I didn't remember to include a link.
 
-Signed-off-by: Yoshitake Kobayashi <yoshitake.kobayashi@toshiba.co.jp>
----
- ipc/mqueue.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+=2D-=20
+keith.packard@intel.com
 
-diff --git a/ipc/mqueue.c b/ipc/mqueue.c
-index 01582e5..712d813 100644
---- a/ipc/mqueue.c
-+++ b/ipc/mqueue.c
-@@ -827,12 +827,17 @@ static inline void pipelined_receive(struct mqueue_inode_info *info)
- 		wake_up_interruptible(&info->wait_q);
- 		return;
- 	}
-+	/*
-+	 * Keep them in one critical section for PREEMPT_RT:
-+	 */
-+	preempt_disable_rt();
- 	msg_insert(sender->msg, info);
- 	list_del(&sender->list);
- 	sender->state = STATE_PENDING;
- 	wake_up_process(sender->task);
- 	smp_wmb();
- 	sender->state = STATE_READY;
-+	preempt_enable_rt();
- }
- 
- SYSCALL_DEFINE5(mq_timedsend, mqd_t, mqdes, const char __user *, u_msg_ptr,
--- 
-1.7.2.5
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iD8DBQFOHxL/Qp8BWwlsTdMRAjwdAJ0aqMeGSIPJRIoNETqmVZwSoH5zIACgsJ+d
+uuNJFty3W27UDKiFeRXNd/k=
+=X54v
+-----END PGP SIGNATURE-----
+--=-=-=--
