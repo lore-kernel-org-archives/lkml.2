@@ -1,38 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754942Ab1GNXsO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 19:48:14 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47897 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754567Ab1GNXsN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 19:48:13 -0400
-Date: Fri, 15 Jul 2011 08:48:07 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH] regulator: Fix memory leak in set_machine_constraints()
- error paths
-Message-ID: <20110714234805.GA32716@opensource.wolfsonmicro.com>
-References: <1310650159.6854.1.camel@phoenix>
+	id S932455Ab1GNXuA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 19:50:00 -0400
+Received: from mga09.intel.com ([134.134.136.24]:38235 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932152Ab1GNXt7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 19:49:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,531,1304319600"; 
+   d="scan'208";a="27841964"
+From: Seth Heasley <seth.heasley@intel.com>
+To: jgarzik@pobox.com
+Subject: [PATCH 3.0-rc7] ahci: RAID-mode SATA patch for Intel Panther Point DeviceIDs
+Date: Thu, 14 Jul 2011 16:50:49 -0700
+User-Agent: KMail/1.13.6 (Linux/2.6.35.12-88.fc14.x86_64; KDE/4.6.1; x86_64; ; )
+Cc: seth.heasley@gmail.com, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1310650159.6854.1.camel@phoenix>
-X-Cookie: You will be married within a year.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <201107141650.49929.seth.heasley@intel.com>
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 14, 2011 at 09:29:19PM +0800, Axel Lin wrote:
->  static int set_machine_constraints(struct regulator_dev *rdev,
->  	const struct regulation_constraints *constraints)
->  {
-> -	int ret = 0;
-> +	int ret;
->  	struct regulator_ops *ops = rdev->desc->ops;
->  
+This patch adds an additional SATA RAID controller DeviceID for the Intel Panther Point PCH.
 
-This doesn't look like a leak fix?  There's nothing that checks for
-other errors here (like null pointers)?
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+---
+
+--- linux-3.0-rc7/drivers/ata/ahci.c.orig	2011-07-14 16:07:21.000000000 -0700
++++ linux-3.0-rc7/drivers/ata/ahci.c	2011-07-14 16:35:06.000000000 -0700
+@@ -267,6 +267,7 @@
+ 	{ PCI_VDEVICE(INTEL, 0x1e05), board_ahci }, /* Panther Point RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x1e06), board_ahci }, /* Panther Point RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x1e07), board_ahci }, /* Panther Point RAID */
++	{ PCI_VDEVICE(INTEL, 0x1e0e), board_ahci }, /* Panther Point RAID */
+ 
+ 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
+ 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
