@@ -1,89 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754535Ab1GNLfV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 07:35:21 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:63925 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754340Ab1GNLfU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 07:35:20 -0400
-Message-ID: <19998.54360.684936.674009@ipc1.ka-ro>
-Date: Thu, 14 Jul 2011 13:34:48 +0200
-From: =?utf-8?Q?Lothar_Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Wolfram Sang <w.sang@pengutronix.de>, linux-kernel@vger.kernel.org,
-        thierry.nolf.barco@gmail.com, Huang Shijie <b32955@freescale.com>,
-        linux-mtd@lists.infradead.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH v3] new helper to define common struct resource constructs
-In-Reply-To: <1310631065-4271-1-git-send-email-u.kleine-koenig@pengutronix.de>
-References: <20110713141849.b8cbf675.akpm@linux-foundation.org>
-	<1310631065-4271-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: VM 8.0.9 under Emacs 22.2.1 (i486-pc-linux-gnu)
+	id S1754560Ab1GNLit (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 07:38:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20127 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754509Ab1GNLir (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 07:38:47 -0400
+Message-ID: <4E1ED53F.7030903@redhat.com>
+Date: Thu, 14 Jul 2011 14:38:39 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Joerg Roedel <joerg.roedel@amd.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
+Subject: Re: [PATCH 4/7] KVM: SVM: Use seperate VMCB for L2 guests
+References: <1310571145-28930-1-git-send-email-joerg.roedel@amd.com> <1310571145-28930-5-git-send-email-joerg.roedel@amd.com>
+In-Reply-To: <1310571145-28930-5-git-send-email-joerg.roedel@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Uwe Kleine-König writes:
-> resource definitions that just define start, end and flags =
-> IORESOURCE_MEM or IORESOURCE_IRQ (with start=end) are quite common. So
-> introduce a shortcut for them. For completeness add macros for
-> IORESOURCE_DMA and IORESOURCE_IO, too and also make available a set of
-> macros to specify named resources of all types which are less common.
-> 
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> ---
-> changes since v2:
-> - add parentheses around macro parameter usages
-> 
-> changes since v1:                                                               
-> - also add _IO and _DMA variants                                                
-> 
->  include/linux/ioport.h |   30 ++++++++++++++++++++++++++++++
->  1 files changed, 30 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/ioport.h b/include/linux/ioport.h
-> index 63eb429..9d57a71 100644
-> --- a/include/linux/ioport.h
-> +++ b/include/linux/ioport.h
-> @@ -109,6 +109,36 @@ struct resource_list {
->  /* PCI control bits.  Shares IORESOURCE_BITS with above PCI ROM.  */
->  #define IORESOURCE_PCI_FIXED		(1<<4)	/* Do not move resource */
->  
-> +
-> +/* helpers to define resources */
-> +#define DEFINE_RES_NAMED(_start, _size, _name, _flags)			\
-> +	{								\
-> +		.start = (_start),					\
-> +		.end = (_start) + (_size) - 1,				\
-> +		.name = (_name),					\
-> +		.flags = (_flags),					\
-> +	}
-> +
-> +#define DEFINE_RES_IO_NAMED(_start, _size, _name)			\
-> +	DEFINE_RES_NAMED((_start), (_size), (_name), IORESOURCE_IO)
+On 07/13/2011 06:32 PM, Joerg Roedel wrote:
+> From: Joerg Roedel<joro@8bytes.org>
 >
-There is no need for parens around a macro argument when it is not
-part of an expression...
-This just looks silly.
+> Move torwards emulation of VMCB-clean-bits by using a
+> seperate VMCB when running L2 guests.
+>
+>
+> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+> index f81e35e..6dacf59 100644
+> --- a/arch/x86/kvm/svm.c
+> +++ b/arch/x86/kvm/svm.c
+> @@ -105,6 +105,8 @@ struct nested_state {
+>
+>   	/* Nested Paging related state */
+>   	u64 nested_cr3;
+> +
+> +	struct vmcb *n_vmcb;
+>   };
+>
+>   #define MSRPM_OFFSETS	16
+> @@ -974,6 +976,26 @@ static u64 svm_compute_tsc_offset(struct kvm_vcpu *vcpu, u64 target_tsc)
+>   	return target_tsc - tsc;
+>   }
+>
+> +static bool init_nested_vmcb(struct vcpu_svm *svm)
+> +{
+> +	struct vmcb_control_area *hc, *nc;
+> +
+> +	svm->nested.n_vmcb = (void *)get_zeroed_page(GFP_KERNEL);
+> +	if (svm->nested.n_vmcb == NULL)
+> +		return false;
+> +
+> +	nc =&svm->nested.n_vmcb->control;
+> +	hc =&svm->host_vmcb->control;
+> +
+> +	nc->iopm_base_pa		= hc->iopm_base_pa;
+> +	nc->msrpm_base_pa		= hc->msrpm_base_pa;
+> +	nc->nested_ctl			= hc->nested_ctl;
+> +	nc->pause_filter_count		= hc->pause_filter_count;
+> +	svm->nested.n_vmcb->save.g_pat	= svm->host_vmcb->save.g_pat;
+> +
+> +	return true;
+> +}
+> +
 
+Instead of initializing the non-nested vmcb and then copying it, 
+separate out the bits you're copying here into a separate function (i.e. 
+init_vmcb_host_state()) and call it for both vmcbs.
 
-Lothar Waßmann
+I had practically the same comment for nvmx (see 
+vmx_set_constant_host_state()).
+
 -- 
-___________________________________________________________
+error compiling committee.c: too many arguments to function
 
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
