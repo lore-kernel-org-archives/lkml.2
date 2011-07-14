@@ -1,92 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323Ab1GNGit (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 02:38:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57997 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752308Ab1GNGis (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 02:38:48 -0400
-Date: Thu, 14 Jul 2011 16:38:36 +1000
-From: NeilBrown <neilb@suse.de>
-To: Ric Wheeler <rwheeler@redhat.com>
-Cc: Nico Schottelius <nico-lkml-20110623@schottelius.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@oracle.com>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: Re: Mis-Design of Btrfs?
-Message-ID: <20110714163836.35a729c1@notabene.brown>
-In-Reply-To: <4E1E866E.2050405@redhat.com>
-References: <20110623105337.GD3753@ethz.ch>
-	<20110627164637.377314e2@notabene.brown>
-	<4E0AF091.9030301@redhat.com>
-	<20110714155620.6e9ac2cc@notabene.brown>
-	<4E1E866E.2050405@redhat.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753341Ab1GNGpN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 02:45:13 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:36604 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752767Ab1GNGpL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 02:45:11 -0400
+Date: Thu, 14 Jul 2011 08:45:06 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, vda.linux@googlemail.com,
+        jan.kratochvil@redhat.com, pedro@codesourcery.com, indan@nul.nu,
+        bdonlan@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] ptrace: fix ptrace_signal() && STOP_DEQUEUED
+ interaction
+Message-ID: <20110714064457.GA3455@htj.dyndns.org>
+References: <20110707190301.GA25332@redhat.com>
+ <20110707190324.GB25332@redhat.com>
+ <20110713100404.GG2872@htj.dyndns.org>
+ <20110713183322.GA12535@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110713183322.GA12535@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Jul 2011 07:02:22 +0100 Ric Wheeler <rwheeler@redhat.com> wrote:
+Hello, Oleg.
 
-> > I'm certainly open to suggestions and collaboration.  Do you have in mind any
-> > particular way to make the interface richer??
+On Wed, Jul 13, 2011 at 08:33:22PM +0200, Oleg Nesterov wrote:
+> > On Thu, Jul 07, 2011 at 09:03:24PM +0200, Oleg Nesterov wrote:
+> > > Without the patch it hangs. After the patch SIGSTOP "injected" by the
+> > > tracer is not ignored and stops the tracee.
 > >
-> > NeilBrown
+> > I always felt the ability to 'inject' different signal there is rather
+> > useless and prone to induce weird issues.  It would be better if
+> > ptrace_signal() is part of signal delivery action after all the checks
+> > so that the ptracer says whether to proceed with the action or not but
+> > no more.  Well...
 > 
-> Hi Neil,
+> Oh, probably. If the tracer wants a different signr, it can simply do
+> tkill() + PTRACE_CONT(0). I agree. Although perhaps this is needed for
+> gdb, I dunno. But we can't change this.
+
+Yeah, we can't change it.  I was just thinking out loud.  Sending
+signals from ptrace code path seems generally wrong.  In this case, if
+the signal becomes blocked inbetween, the signal gets sent again.
+Seeing the same signal being delivered twice can be confusing.
+Moreover, SIGCONT can be blocked and the action of 'sending' it has
+side effects, so re-sending it is simply wrong.  This should have been
+ack/nack for the action to take.
+
+Anyways, not much point in ranting about it at this point, I guess.
+
+> > Wouldn't it be better to flip the
+> > flag so that we have CONT_RECEIVED before doing this?
 > 
-> I know that Chris has a very specific set of use cases for btrfs and think that 
-> Alasdair and others have started to look at what is doable.
+> May be. You know, I thought about this when I did ee77f075
+> "signal: Turn SIGNAL_STOP_DEQUEUED into GROUP_STOP_DEQUEUED".
 > 
-> The obvious use case is the following:
+> Or may be we can simply rename it into STOP_ALLOWED. In this case
+> we can even set it unconditionally before dequeue_signal().
 > 
-> If a file system uses checksumming or other data corruption detection bits, it 
-> can detect that it got bad data on a write. If that data was protected by RAID, 
-> it would like to ask the block layer to try to read from another mirror (for 
-> raid1) or try to validate/rebuild from parity.
-> 
-> Today, I think that a retry will basically just give us back a random chance of 
-> getting data from a different mirror or the same one that we got data from on 
-> the first go.
-> 
-> Chris, Alasdair, was that a good summary of one concern?
-> 
-> Thanks!
-> 
-> Ric
+> Anyway, whatever we do, this patch doesn't complicate the
+> CONT_RECEIVED/STOP_ALLOWED change. Can't we do this later?
 
-I imagine a new field in 'struct bio' which was normally zero but could be
-some small integer.  It is only meaningful for read.
-When 0 it means "get this data way you like".
-When non-zero it means "get this data using method N", where the different
-methods are up to the device.
+Never mind.  I for some reason thought flipping the flag would make
+the extra step in ptrace_signal() unnecessary.  We need to clear it
+all the same so it doesn't really improve anything.  I think the
+current version should be fine (maybe the comment can be beefed up a
+bit?).
 
-For a mirrored RAID, method N means read from device N-1.
-For stripe/parity RAID, method 1 means "use other data blocks and parity
-blocks to reconstruct data.
+Thanks.
 
-The default for non RAID devices is to return EINVAL for any N > 0.
-A remapping device (dm-linear, dm-stripe etc) would just pass the number
-down.  I'm not sure how RAID1 over RAID5 would handle it... that might need
-some thought.
-
-So if btrfs reads a block and the checksum looks wrong, it reads again with
-a larger N.  It continues incrementing N and retrying until it gets a block
-that it likes or it gets EINVAL.  There should probably be an error code
-(EAGAIN?) which means "I cannot work with that number, but try the next one".
-
-It would be trivial for me to implement this for RAID1 and RAID10, and
-relatively easy for RAID5.
-I'd need to give a bit of thought to RAID6 as there are possibly multiple
-ways to reconstruct from different combinations of parity and data.  I'm not
-sure if there would be much point in doing that though.
-
-It might make sense for a device to be able to report what the maximum
-'N' supported is... that might make stacked raid easier to manage...
-
-NeilBrown
-
+-- 
+tejun
