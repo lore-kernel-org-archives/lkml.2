@@ -1,34 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752295Ab1GNCDp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 22:03:45 -0400
-Received: from queueout02-winn.ispmail.ntl.com ([81.103.221.56]:31155 "EHLO
-	queueout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752102Ab1GNCDo (ORCPT
+	id S1752486Ab1GNCKD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 22:10:03 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:53413 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752092Ab1GNCKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 22:03:44 -0400
-Message-ID: <20110714022418.47AGR.1027984.root@web11-winn.ispmail.private.ntl.com>
-Date: Thu, 14 Jul 2011 2:24:18 +0100
-From: HARRIS ROBIN ESQ <roy.goldup@tesco.net>
-Reply-To: barrharrisrobinchambers@live.co.uk
-Subject: URGENT
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	Wed, 13 Jul 2011 22:10:00 -0400
+Subject: [PATCH] Input: pmic8xxx-keypad - fix a leak of the IRQ during init
+ failure
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Trilok Soni <tsoni@codeaurora.org>,
+        Anirudh Ghayal <aghayal@codeaurora.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-input@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 14 Jul 2011 10:09:51 +0800
+Message-ID: <1310609391.14393.1.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-X-Priority: 3 (Normal)
-Sensitivity: Normal
-X-Originating-IP: from 77.92.92.156 by webmail.tesco.net; Thu, 14 Jul 2011 2:24:17 +0100
-X-Mailer: 4.2.7
-X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=VGi4Nqwp24wA:10 a=Ypq7LaExe90A:10 a=IkcTkHD0fZMA:10 a=zWSFQDO9AAAA:8 a=zqBP6JeU2hae8sbci1kA:9 a=QEXdDO2ut3YA:10 a=cdZMyq0RsaoA:10 a=84tsCWNHjc4A:10 a=vcKZP2A7ro9G3EyL:21 a=lLhqut3hUKbWKzDz:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I want to use this medium to notify you once again as my previous letter were returned undelivered that late Theo Albrecht made you a beneficiary to his WILL. He left the sum of Five Million one Hundred thousand  Dollars Only  $5,100.000.00  to you in the Codicil and last testament to his WILL.
-Please if I reach you as I am hopeful, endeavor to get back to me as soon as possible to enable me conclude my job.
-You are advice to contact me with my below Email: barrharrisrobinchambers@live.co.uk
-I await your prompt response.
+Make sure we are passing the same cookie in all calls to
+request_any_context_irq() and free_irq().
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/input/keyboard/pmic8xxx-keypad.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/input/keyboard/pmic8xxx-keypad.c b/drivers/input/keyboard/pmic8xxx-keypad.c
+index 6229c3e..e7cc51d 100644
+--- a/drivers/input/keyboard/pmic8xxx-keypad.c
++++ b/drivers/input/keyboard/pmic8xxx-keypad.c
+@@ -700,9 +700,9 @@ static int __devinit pmic8xxx_kp_probe(struct platform_device *pdev)
+ 	return 0;
  
-Yours in Service,
-BARRISTER HARRIS ROBIN ESQ 
+ err_pmic_reg_read:
+-	free_irq(kp->key_stuck_irq, NULL);
++	free_irq(kp->key_stuck_irq, kp);
+ err_req_stuck_irq:
+-	free_irq(kp->key_sense_irq, NULL);
++	free_irq(kp->key_sense_irq, kp);
+ err_gpio_config:
+ err_get_irq:
+ 	input_free_device(kp->input);
+@@ -717,8 +717,8 @@ static int __devexit pmic8xxx_kp_remove(struct platform_device *pdev)
+ 	struct pmic8xxx_kp *kp = platform_get_drvdata(pdev);
+ 
+ 	device_init_wakeup(&pdev->dev, 0);
+-	free_irq(kp->key_stuck_irq, NULL);
+-	free_irq(kp->key_sense_irq, NULL);
++	free_irq(kp->key_stuck_irq, kp);
++	free_irq(kp->key_sense_irq, kp);
+ 	input_unregister_device(kp->input);
+ 	kfree(kp);
+ 
+-- 
+1.7.4.1
+
+
+
