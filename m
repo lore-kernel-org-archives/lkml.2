@@ -1,47 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750915Ab1GNEDX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 00:03:23 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:32920 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750699Ab1GNEDV convert rfc822-to-8bit (ORCPT
+	id S1751068Ab1GNE2M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 00:28:12 -0400
+Received: from vms173009pub.verizon.net ([206.46.173.9]:43318 "EHLO
+	vms173009pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807Ab1GNE2L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 00:03:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110713151724.3b16ce77.rdunlap@xenotime.net>
-References: <20110710125109.c72f9c2d.rdunlap@xenotime.net>
-	<CACqU3MWBb4J8rmaRv23=-_=GXppGSUdqmOqeXoqWi4ZJ7ZYewg@mail.gmail.com>
-	<20110713150023.0dde9ef4.rdunlap@xenotime.net>
-	<CACqU3MVh+4JMX5ywPgWrrXXuAcAYtHJyumXGDcteageJAG12wA@mail.gmail.com>
-	<20110713150840.2fa8e2b3.rdunlap@xenotime.net>
-	<CACqU3MXSwJG14PwD0c6R7VZg9fO=XLj=-QDN5ntbQp+0xDn82A@mail.gmail.com>
-	<20110713151724.3b16ce77.rdunlap@xenotime.net>
-Date: Thu, 14 Jul 2011 00:03:21 -0400
-Message-ID: <CACqU3MXabT0+yx8UdFXQ14-CzQTJyMYjEdxWtAgC94rSCJWbFQ@mail.gmail.com>
-Subject: Re: [PATCH 1/9] stringify: add HEX_STRING()
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org,
-        linux-media@vger.kernel.org, mchehab@infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 14 Jul 2011 00:28:11 -0400
+X-Greylist: delayed 3600 seconds by postgrey-1.27 at vger.kernel.org; Thu, 14 Jul 2011 00:28:11 EDT
+Date: Wed, 13 Jul 2011 23:28:06 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: Huang Ying <ying.huang@intel.com>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Tony Luck <tony.luck@intel.com>, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 01/17] ACPI, APEI, HEST,
+ Detect duplicated hardware error source ID
+In-reply-to: <1310534068-30547-2-git-send-email-ying.huang@intel.com>
+Message-id: <alpine.LFD.2.02.1107132328030.11981@x980>
+References: <1310534068-30547-1-git-send-email-ying.huang@intel.com>
+ <1310534068-30547-2-git-send-email-ying.huang@intel.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+applied
 
-On Wed, Jul 13, 2011 at 6:17 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> [...]
->> > Sure, go for it.  I'll ack it.  ;)  [or Review it :]
->> > and test it.
->> >
->> it is already among the hunks in https://patchwork.kernel.org/patch/380601/
->
-> I realize that, but it looks like you may need to resubmit it.
->
-I have an updated set of patches against -next, I still need to break
-them down by tree. As a lots of things I did today went completely
-south, I guess it would be better if I do this task early tomorrow :-)
+thanks,
+Len Brown, Intel Open Source Technology Center
 
- - Arnaud
