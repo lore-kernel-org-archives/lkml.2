@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554Ab1GNLve (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 07:51:34 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:35133 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754117Ab1GNLvd (ORCPT
+	id S1754574Ab1GNLwE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 07:52:04 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:33334 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754117Ab1GNLwC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 07:51:33 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E1ECE3B.10308@broadcom.com>
-References: <4E1ECE3B.10308@broadcom.com>
-From: Jonas Gorski <jonas.gorski@gmail.com>
-Date: Thu, 14 Jul 2011 13:51:11 +0200
-Message-ID: <CAOiHx=kznEFL1BELeg2psg9yw+=-A5reunG0VYTu89DGKwrSzA@mail.gmail.com>
-Subject: Re: Status of MIPS on 3.0.0-rc6 kernel
-To: Roland Vossen <rvossen@broadcom.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mips@linux-mips.org, "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 14 Jul 2011 07:52:02 -0400
+From: Viliam Mateicka <viliam.mateicka@gmail.com>
+To: "David S . Miller " <davem@davemloft.net>, mirq-linux@rere.qmqm.pl,
+        Steve Glendinning <steve.glendinning@smsc.com>,
+        Rabin Vincent <rabin@rab.in>, David Decotigny <decot@google.com>,
+        linux-kernel@vger.kernel.org
+Cc: Viliam Mateicka <viliam.mateicka@gmail.com>
+Subject: [PATCH] smsc95xx: add missing .reset_resume hook and reset card
+Date: Thu, 14 Jul 2011 13:51:46 +0200
+Message-Id: <1310644306-16180-1-git-send-email-viliam.mateicka@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 July 2011 13:08, Roland Vossen <rvossen@broadcom.com> wrote:
-> Hi Jonas,
->
-> The (defconfig) mips kernel fails to build, with the error message:
->
-> arch/mips/kernel/i8259.c:240: error: unknown field 'resume' specified in
-> initializer
->
-> I read on https://lkml.org/lkml/2011/6/1/37 that Geert Uytterhoeven
-> encountered the same issue on June 1st.
->
-> Do you know if there are still known problems building a 3.0.0-rc6 MIPS
-> kernel ?
+This patch fixes the undefined behaviour (random MAC, interface goes down) of smsc95xx driver after resume from suspend.
+Calling smsc95xx_reset() is needed to properly set hw registers of card and bring interface up to defined state.
 
-You probably could have found that out yourself quite easily [1] ;-)
+Signed-off-by: Viliam Mateicka <viliam.mateicka@gmail.com>
+---
+ drivers/net/usb/smsc95xx.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
-This is actually still a problem in rc7. Commit
-2e711c04dbbf7a7732a3f7073b1fc285d12b369d ("PM: Remove sysdev suspend,
-resume and shutdown operations") broke it.
-It's probably easily fixable by just removing the offending
-.resume/.shutdown lines (and their referenced functions), but I don't
-know the code (or PM) enough to know if some replacement is missing
-there.
+diff --git a/drivers/net/usb/smsc95xx.c b/drivers/net/usb/smsc95xx.c
+index f74f3ce..5c33be8 100644
+--- a/drivers/net/usb/smsc95xx.c
++++ b/drivers/net/usb/smsc95xx.c
+@@ -1181,6 +1181,17 @@ static struct sk_buff *smsc95xx_tx_fixup(struct usbnet *dev,
+ 	return skb;
+ }
+ 
++static int smsc95xx_reset_resume(struct usb_interface *intf)
++{
++	struct usbnet	*dev = usb_get_intfdata(intf);
++
++	smsc95xx_reset(dev);
++
++	usbnet_resume(intf);
++
++	return 0;
++}
++
+ static const struct driver_info smsc95xx_info = {
+ 	.description	= "smsc95xx USB 2.0 Ethernet",
+ 	.bind		= smsc95xx_bind,
+@@ -1295,6 +1306,7 @@ static struct usb_driver smsc95xx_driver = {
+ 	.suspend	= usbnet_suspend,
+ 	.resume		= usbnet_resume,
+ 	.disconnect	= usbnet_disconnect,
++	.reset_resume	= smsc95xx_reset_resume,
+ };
+ 
+ static int __init smsc95xx_init(void)
+-- 
+1.7.4.1
 
-
-Regards,
-Jonas
-
-[1] <https://lkml.org/lkml/2011/7/7/267>
