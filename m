@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932423Ab1GNVvn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 17:51:43 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:60500 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932320Ab1GNVvm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 17:51:42 -0400
-Date: Thu, 14 Jul 2011 23:51:37 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 3/6] x86: Allow the user not to build hw_breakpoints
-Message-ID: <20110714215134.GB26786@somewhere.redhat.com>
-References: <1310655837-328-1-git-send-email-fweisbec@gmail.com>
- <1310655837-328-4-git-send-email-fweisbec@gmail.com>
- <4E1F5EF3.6050601@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E1F5EF3.6050601@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755050Ab1GNVwq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 17:52:46 -0400
+Received: from csmtp2.one.com ([91.198.169.22]:21405 "EHLO csmtp2.one.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754613Ab1GNVwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 17:52:45 -0400
+From: Eric Andersson <eric.andersson@unixphere.com>
+To: dmitry.torokhov@gmail.com
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        zhengguang.guo@bosch-sensortec.com, stefan.nilsson@unixphere.com,
+        alan@lxorguk.ukuu.org.uk,
+        Eric Andersson <eric.andersson@unixphere.com>
+Subject: [PATCH v3 0/1] input: add driver for Bosch Sensortec's BMA150 accelerometer
+Date: Thu, 14 Jul 2011 23:56:11 +0200
+Message-Id: <1310680572-27410-1-git-send-email-eric.andersson@unixphere.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 14, 2011 at 02:26:11PM -0700, H. Peter Anvin wrote:
-> On 07/14/2011 08:03 AM, Frederic Weisbecker wrote:
-> > So that hw_breakpoints and perf can be not built on
-> > specific embedded systems.
-> 
-> I want to emphasize I am very, very unhappy about this.  It should be
-> possible to not build perf while still have breakpoints available...
-> breakpoints are way more important than perf.
+This is version 3 of the driver for Bosch Sensortec's accelerometers BMA150
+and SMB380.
 
-I know and that's a long term goal. I believe Will Deacon is currently working
-on breakpoints to avoid archs to translate ptrace user arch input into perf generic
-information (which afterward is eventually translated back to arch information).
-This is a necessary first step to have a ptrace breakpoint implementation independant of
-perf. Once we'll have that and all archs are converted to that new mode, we can work
-toward having breakpoints not requiring perf to work.
+Since last time around, the following has happened:
+* community review: Register the driver as a input_polled_device.
+* community review: added runtime_pm support.
+* community review: removed sysfs enable node
+* community review: removed the value sysfs node
+* community review: rephrased delay sysfs description
+* Removed mode sysfs node
+* Removed delay sysfs node
+* Listed both bma150 & smb380 as supported i2c device id's.
+* Added hw initialization function which will be called upon probing.
+* Added soft reset function to be called from the probe.
+* Minor consistency changes.
 
-Until we reach that point, it's still nice to have optable breakpoints. I think
-it is a desired feature given the feedbacks I get from Prasad for example.
-If that makes it possible to try a kernel without perf in x86, good too.
+-- 
+Best regards,
+ Eric
 
-But this is not intended to be a solution of the breakpoint - perf dependency. That
-dependency was a design mistake that needs more to be fixed.
-We want to be able to have breakpoints without perf in the end. This just requires
-deeper and longer term work that is currently in progress.
+ http://www.unixphere.com
+
+
+Eric Andersson (1):
+  input: add driver for Bosch Sensortec's BMA150 accelerometer
+
+ Documentation/ABI/testing/sysfs-i2c-bma150 |   22 +
+ drivers/input/misc/Kconfig                 |   11 +
+ drivers/input/misc/Makefile                |    1 +
+ drivers/input/misc/bma150.c                |  577 ++++++++++++++++++++++++++++
+ 4 files changed, 611 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-i2c-bma150
+ create mode 100644 drivers/input/misc/bma150.c
+
+-- 
+1.7.3.4
+
