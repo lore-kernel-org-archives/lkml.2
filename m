@@ -1,160 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754219Ab1GNJv4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 05:51:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40707 "EHLO mx2.suse.de"
+	id S1754166Ab1GNJz1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 05:55:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40989 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753265Ab1GNJvy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 05:51:54 -0400
-Date: Thu, 14 Jul 2011 11:51:52 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] memcg: make oom_lock 0 and 1 based rather than
- coutner
-Message-ID: <20110714095152.GG19408@tiehlicka.suse.cz>
-References: <cover.1310561078.git.mhocko@suse.cz>
- <50d526ee242916bbfb44b9df4474df728c4892c6.1310561078.git.mhocko@suse.cz>
- <20110714100259.cedbf6af.kamezawa.hiroyu@jp.fujitsu.com>
- <20110714115913.cf8d1b9d.kamezawa.hiroyu@jp.fujitsu.com>
- <20110714090017.GD19408@tiehlicka.suse.cz>
- <20110714183014.8b15e9b9.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110714183014.8b15e9b9.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753483Ab1GNJz0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 05:55:26 -0400
+Date: Thu, 14 Jul 2011 19:55:11 +1000
+From: NeilBrown <neilb@suse.de>
+To: Jan Schmidt <list.btrfs@jan-o-sch.net>
+Cc: Ric Wheeler <rwheeler@redhat.com>,
+        Nico Schottelius <nico-lkml-20110623@schottelius.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@oracle.com>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: Re: Mis-Design of Btrfs?
+Message-ID: <20110714195511.55d8defe@notabene.brown>
+In-Reply-To: <4E1EB8E5.3030404@jan-o-sch.net>
+References: <20110623105337.GD3753@ethz.ch>
+	<20110627164637.377314e2@notabene.brown>
+	<4E0AF091.9030301@redhat.com>
+	<20110714155620.6e9ac2cc@notabene.brown>
+	<4E1E866E.2050405@redhat.com>
+	<20110714163836.35a729c1@notabene.brown>
+	<4E1EB8E5.3030404@jan-o-sch.net>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 14-07-11 18:30:14, KAMEZAWA Hiroyuki wrote:
-> On Thu, 14 Jul 2011 11:00:17 +0200
-> Michal Hocko <mhocko@suse.cz> wrote:
-> 
-> > On Thu 14-07-11 11:59:13, KAMEZAWA Hiroyuki wrote:
-> > > On Thu, 14 Jul 2011 10:02:59 +0900
-> > > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > > 
-> > > > On Wed, 13 Jul 2011 13:05:49 +0200
-> > > > Michal Hocko <mhocko@suse.cz> wrote:
-> > [...]
-> > > > > This patch replaces the counter by a simple {un}lock semantic. We are
-> > > > > using only 0 and 1 to distinguish those two states.
-> > > > > As mem_cgroup_oom_{un}lock works on the hierarchy we have to make sure
-> > > > > that we cannot race with somebody else which is already guaranteed
-> > > > > because we call both functions with the mutex held. All other consumers
-> > > > > just read the value atomically for a single group which is sufficient
-> > > > > because we set the value atomically.
-> > > > > The other thing is that only that process which locked the oom will
-> > > > > unlock it once the OOM is handled.
-> > > > > 
-> > > > > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> > > > > ---
-> > > > >  mm/memcontrol.c |   24 +++++++++++++++++-------
-> > > > >  1 files changed, 17 insertions(+), 7 deletions(-)
-> > > > > 
-> > > > > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > > > > index e013b8e..f6c9ead 100644
-> > > > > --- a/mm/memcontrol.c
-> > > > > +++ b/mm/memcontrol.c
-> > > > > @@ -1803,22 +1803,31 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_mem,
-> > > > >  /*
-> > > > >   * Check OOM-Killer is already running under our hierarchy.
-> > > > >   * If someone is running, return false.
-> > > > > + * Has to be called with memcg_oom_mutex
-> > > > >   */
-> > > > >  static bool mem_cgroup_oom_lock(struct mem_cgroup *mem)
-> > > > >  {
-> > > > > -	int x, lock_count = 0;
-> > > > > +	int x, lock_count = -1;
-> > > > >  	struct mem_cgroup *iter;
-> > > > >  
-> > > > >  	for_each_mem_cgroup_tree(iter, mem) {
-> > > > > -		x = atomic_inc_return(&iter->oom_lock);
-> > > > > -		lock_count = max(x, lock_count);
-> > > > > +		x = !!atomic_add_unless(&iter->oom_lock, 1, 1);
-> > > > > +		if (lock_count == -1)
-> > > > > +			lock_count = x;
-> > > > > +
-> > > > 
-> > > > 
-> > > > Hmm...Assume following hierarchy.
-> > > > 
-> > > > 	  A
-> > > >        B     C
-> > > >       D E 
-> > 
-> > IIUC, A, B, D, E are one hierarchy, right?
-> > 
-> yes.
-> 
-> 
-> > > > 
-> > > > The orignal code hanldes the situation
-> > > > 
-> > > >  1. B-D-E is under OOM
-> > > >  2. A enters OOM after 1.
-> > > > 
-> > > > In original code, A will not invoke OOM (because B-D-E oom will kill a process.)
-> > > > The new code invokes A will invoke new OOM....right ?
-> > 
-> > Sorry, I do not understand what you mean by that. 
-> 
-> This is your code.
-> ==
->  	for_each_mem_cgroup_tree(iter, mem) {
-> -		x = atomic_inc_return(&iter->oom_lock);
-> -		lock_count = max(x, lock_count);
-> +		x = !!atomic_add_unless(&iter->oom_lock, 1, 1);
-> +		if (lock_count == -1)
-> +			lock_count = x;
-> +
-> +		/* New child can be created but we shouldn't race with
-> +		 * somebody else trying to oom because we are under
-> +		 * memcg_oom_mutex
-> +		 */
-> +		BUG_ON(lock_count != x);
->  	}
-> ==
-> 
-> When, B,D,E is under OOM,  
-> 
->    A oom_lock = 0
->    B oom_lock = 1
->    C oom_lock = 0
->    D oom_lock = 1
->    E oom_lock = 1
-> 
-> Here, assume A enters OOM.
-> 
->    A oom_lock = 1 -- (*)
->    B oom_lock = 1
->    C oom_lock = 1
->    D oom_lock = 1
->    E oom_lock = 1
-> 
-> because of (*), mem_cgroup_oom_lock() will return lock_count=1, true.
-> 
-> Then, a new oom-killer will another oom-kiiler running in B-D-E.
+On Thu, 14 Jul 2011 11:37:41 +0200 Jan Schmidt <list.btrfs@jan-o-sch.net>
+wrote:
 
-OK, does this mean that for_each_mem_cgroup_tree doesn't lock the whole
-hierarchy at once? 
-I have to confess that the behavior of mem_cgroup_start_loop is little
-bit obscure to me. The comment says it searches for the cgroup with the
-minimum ID - I assume this is the root of the hierarchy. Is this
-correct?
+> Hi Neil,
+> 
+> On 14.07.2011 08:38, NeilBrown wrote:
+> > I imagine a new field in 'struct bio' which was normally zero but could be
+> > some small integer.  It is only meaningful for read.
+> > When 0 it means "get this data way you like".
+> > When non-zero it means "get this data using method N", where the different
+> > methods are up to the device.
+> > 
+> > For a mirrored RAID, method N means read from device N-1.
+> > For stripe/parity RAID, method 1 means "use other data blocks and parity
+> > blocks to reconstruct data.
+> > 
+> > The default for non RAID devices is to return EINVAL for any N > 0.
+> > A remapping device (dm-linear, dm-stripe etc) would just pass the number
+> > down.  I'm not sure how RAID1 over RAID5 would handle it... that might need
+> > some thought.
+> > 
+> > So if btrfs reads a block and the checksum looks wrong, it reads again with
+> > a larger N.  It continues incrementing N and retrying until it gets a block
+> > that it likes or it gets EINVAL.  There should probably be an error code
+> > (EAGAIN?) which means "I cannot work with that number, but try the next one".
+> 
+> I like this idea. It comes pretty close to what btrfs is currently doing
+> (what was the reason for this thread being started, wasn't it?), only
+> not within struct bio.
+> 
+> The way you describe the extra parameter is input only. I think it would
+> be a nice add on if we knew which "N" was used when "0" passed for the
+> request. At least for the RAID1 case, I'd like to see that when I submit
+> a bio with method (or whatever we call it) "0", it comes back with the
+> method field set to the value that reflects the method the device
+> actually used. Obviously, when passing non-zero values, the bio would
+> have to come back with that value unmodified.
+> 
+> That way, we'll get more control on the retry algorithms and are free to
+> decide not to use the failed method again, if we like.
+> 
+> Setting "method" on the return path might be valuable not only for
+> RAID1, but I haven't thought that trough.
+> 
+> -Jan
 
-If yes then if we have oom in what-ever cgroup in the hierarchy then
-the above code should lock the whole hierarchy and the above never
-happens. Right?
+That sounds like it would be reasonable...
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+It would be important not to read too much into the number though.  i.e.
+don't think of it as "RAID1" but keep a much more abstract idea, else you
+could run into trouble.
+
+A (near) future addition to md is keeping track of 'bad blocks' so we can
+fail more gracefully as devices start to fail.
+So a read request to a RAID1 might not be served by just one device, but
+might be served by one device for some parts, and another device for other
+parts, so as to avoid one or more 'bad blocks'.
+
+I think I could still provide a reasonably consistent mapping from 'arbitrary
+number' to 'set of devices', but it may not be what you expect.  And the
+number '1' may well correspond to different devices for different bi_sector
+offsets.
+
+i.e. the abstraction must allow the low level implementation substantial
+freedom to choosing how to implement each request.
+
+But yes - I don't see why we couldn't report which strategy was used with the
+implication that using that same strategy at the same offset with the same
+size would be expected to produce the same result.
+
+NeilBrown
