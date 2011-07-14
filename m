@@ -1,44 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754181Ab1GNJtg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 05:49:36 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:55506 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754020Ab1GNJte (ORCPT
+	id S1754209Ab1GNJuo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 05:50:44 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:50867 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753265Ab1GNJum (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 05:49:34 -0400
-Date: Thu, 14 Jul 2011 11:49:29 +0200
-From: Tejun Heo <tj@kernel.org>
-To: mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de,
-        benh@kernel.crashing.org, yinghai@kernel.org, davem@davemloft.net
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCHSET x86/mm] memblock, x86: Allow node info in memblock and
- remove x86 specific memblock code
-Message-ID: <20110714094929.GI3455@htj.dyndns.org>
-References: <1310462166-31469-1-git-send-email-tj@kernel.org>
+	Thu, 14 Jul 2011 05:50:42 -0400
+Date: Thu, 14 Jul 2011 12:48:59 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Jing Huang <huangj@Brocade.COM>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "open list:BROCADE BFA FC SC..." <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        Krishna Gudipati <kgudipat@Brocade.COM>
+Subject: [patch 2/2 v2] [SCSI] bfa: fix some endian bugs
+Message-ID: <20110714094859.GV18655@shale.localdomain>
+References: <20110706074024.GE18655@shale.localdomain>
+ <E5313AF6F2BFD14293E5FD0F94750F86A82D670214@HQ1-EXCH01.corp.brocade.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1310462166-31469-1-git-send-email-tj@kernel.org>
+In-Reply-To: <E5313AF6F2BFD14293E5FD0F94750F86A82D670214@HQ1-EXCH01.corp.brocade.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+The initial problem that I noticed was that
+"if (e10g.r.e10g_unall & 0x80)" is always false because e10g_unall
+is only one bit wide.
 
-I just posted one extra patch and several updated patches.  All the
-updates were minor so I didn't want to resend the whole thing (yet).
-It would probably be easiest to check the updated git branches.
+It should be testing just "if (e10g.r.e10g_unall)" instead, but that
+also has a problem on big endian systems because there was a typo
+where it said __BIGENDIAN and it should have said __BIG_ENDIAN.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-x86-mm-iter
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-x86-mm-memblock
+Also I updated the other two tests in the if else block to match as
+well.
 
-git.korg is still synching.  The first one should be
-8168136c0d47b53b7964385990710516c1199124 and the second
-fb514c91dd44d9d88f29b20dddeeb8882bd89066.
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-Thank you.
-
--- 
-tejun
+diff --git a/drivers/net/bna/bfi.h b/drivers/net/bna/bfi.h
+index 6050379..b2611ef 100644
+--- a/drivers/net/bna/bfi.h
++++ b/drivers/net/bna/bfi.h
+@@ -104,7 +104,7 @@ union bfi_addr_u {
+  * Scatter Gather Element
+  */
+ struct bfi_sge {
+-#ifdef __BIGENDIAN
++#ifdef __BIG_ENDIAN
+ 	u32	flags:2,
+ 			rsvd:2,
+ 			sg_len:28;
+diff --git a/drivers/scsi/bfa/bfa_defs.h b/drivers/scsi/bfa/bfa_defs.h
+index ed8d31b..1cefb11 100644
+--- a/drivers/scsi/bfa/bfa_defs.h
++++ b/drivers/scsi/bfa/bfa_defs.h
+@@ -731,7 +731,7 @@ struct sfp_mem_s {
+ union sfp_xcvr_e10g_code_u {
+ 	u8		b;
+ 	struct {
+-#ifdef __BIGENDIAN
++#ifdef __BIG_ENDIAN
+ 		u8	e10g_unall:1;   /* 10G Ethernet compliance */
+ 		u8	e10g_lrm:1;
+ 		u8	e10g_lr:1;
+@@ -811,7 +811,7 @@ union sfp_xcvr_fc2_code_u {
+ union sfp_xcvr_fc3_code_u {
+ 	u8		b;
+ 	struct {
+-#ifdef __BIGENDIAN
++#ifdef __BIG_ENDIAN
+ 		u8	rsv4:1;
+ 		u8	mb800:1;    /* 800 Mbytes/sec */
+ 		u8	mb1600:1;   /* 1600 Mbytes/sec */
+diff --git a/drivers/scsi/bfa/bfa_ioc.c b/drivers/scsi/bfa/bfa_ioc.c
+index d6c2bf3..bc678c7 100644
+--- a/drivers/scsi/bfa/bfa_ioc.c
++++ b/drivers/scsi/bfa/bfa_ioc.c
+@@ -3589,11 +3589,11 @@ bfa_sfp_media_get(struct bfa_sfp_s *sfp)
+ 			 (xmtr_tech & SFP_XMTR_TECH_SA))
+ 			*media = BFA_SFP_MEDIA_SW;
+ 		/* Check 10G Ethernet Compilance code */
+-		else if (e10g.b & 0x10)
++		else if (e10g.r.e10g_sr)
+ 			*media = BFA_SFP_MEDIA_SW;
+-		else if (e10g.b & 0x60)
++		else if (e10g.r.e10g_lr && e10g.r.e10g_lrm)
+ 			*media = BFA_SFP_MEDIA_LW;
+-		else if (e10g.r.e10g_unall & 0x80)
++		else if (e10g.r.e10g_unall)
+ 			*media = BFA_SFP_MEDIA_UNKNOWN;
+ 		else
+ 			bfa_trc(sfp, 0);
