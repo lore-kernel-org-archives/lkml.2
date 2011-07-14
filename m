@@ -1,42 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932301Ab1GNVO0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 17:14:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45049 "EHLO mail.zytor.com"
+	id S932308Ab1GNVYz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 17:24:55 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57008 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754301Ab1GNVOZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 17:14:25 -0400
-Message-ID: <4E1F5C20.8000008@zytor.com>
-Date: Thu, 14 Jul 2011 14:14:08 -0700
+	id S932232Ab1GNVYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 17:24:54 -0400
+Message-ID: <4E1F5E96.2060709@zytor.com>
+Date: Thu, 14 Jul 2011 14:24:38 -0700
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: "John Z. Bohach" <jzb2@aexorsyst.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: large initramfs causes h/w reset after decompressing
-References: <201107140906.46404.jzb2@aexorsyst.com>
-In-Reply-To: <201107140906.46404.jzb2@aexorsyst.com>
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Tejun Heo <tj@kernel.org>, mingo@redhat.com, tglx@linutronix.de,
+        benh@kernel.crashing.org, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH 2.5/13] memblock: Use __meminit[data] instead of __init[data]
+References: <1310462166-31469-1-git-send-email-tj@kernel.org>	<20110714094203.GE3455@htj.dyndns.org> <CAE9FiQU92k-GAy3DVB4HYpn6D6_u=4T7t9_8FOGh8BLDEAKD=Q@mail.gmail.com>
+In-Reply-To: <CAE9FiQU92k-GAy3DVB4HYpn6D6_u=4T7t9_8FOGh8BLDEAKD=Q@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2011 09:06 AM, John Z. Bohach wrote:
-> I have a large initramfs cpio file, about 890 MB, which expands to 2.7 
-> GB, and am running on linux-2.6.36.1, in 64-bit mode with 8 GB of 
-> physical RAM.
+On 07/14/2011 02:00 PM, Yinghai Lu wrote:
+>>
+>> diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+>> index aa5df9e..434b958 100644
+>> --- a/include/linux/memblock.h
+>> +++ b/include/linux/memblock.h
+>> @@ -152,8 +152,8 @@ static inline unsigned long memblock_region_reserved_end_pfn(const struct memblo
+>>
+>>
+>>  #ifdef ARCH_DISCARD_MEMBLOCK
+>> -#define __init_memblock __init
+>> -#define __initdata_memblock __initdata
+>> +#define __init_memblock __meminit
+>> +#define __initdata_memblock __meminitdata
+>>  #else
+>>  #define __init_memblock
+>>  #define __initdata_memblock
 > 
-> Upon loading the initramfs, I see the message "Decompressing..." for a 
-> few seconds, and then comes a reset.
+> that is not good. It will keep memblock.reserved related data and
+> functions after boot.
+> and those data/func are not used after slab is ready.
 > 
-> This question has come up before...is there some sort of max size. that 
-> I am exceeding?  With 8 GB of physical memory and 64-bit arch. 
-> (AMD-II), certainly seems that there should be enough memory, no?
-> 
-> Thanks...
 
-What bootloader are you using?  There are some bootloaders which don't
-allocate the initramfs in a very good spot.
+>From the look of it this ranges from about 7-19K, so I'm going to take
+this and we can optimize this later.
 
 	-hpa
