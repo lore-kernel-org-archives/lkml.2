@@ -1,59 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339Ab1GNAzE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 20:55:04 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:60096 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751204Ab1GNAzB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 20:55:01 -0400
-X-Authority-Analysis: v=1.1 cv=IOX921YOuPvYFce5aSLzPVIStpiCPR9M8R83dyHW74w= c=1 sm=0 a=l8LWmUGdTDcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=EXXXJYmgZYSbIOfU3csA:9 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC 0/4] streamline_config clean-ups
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Steven Rostedt <srostedt@redhat.com>
-Cc: Arnaud Lacombe <lacombar@gmail.com>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>
-In-Reply-To: <1310170759.2780.37.camel@fedora>
-References: <1309563076-5050-1-git-send-email-lacombar@gmail.com>
-	 <CACqU3MUrCODMx=8Bu+YDxy2BJwjm-77PXFob5OwHn=fr5mTdkg@mail.gmail.com>
-	 <1310170759.2780.37.camel@fedora>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 13 Jul 2011 20:54:59 -0400
-Message-ID: <1310604899.27864.4.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	id S1753362Ab1GNA6B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 20:58:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8366 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751204Ab1GNA6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 20:58:00 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <87hb6qwc57.fsf@tucsk.pomaz.szeredi.hu>
+References: <87hb6qwc57.fsf@tucsk.pomaz.szeredi.hu> <87tyar6gv8.fsf@tucsk.pomaz.szeredi.hu> <4E0AF2BA.2040706@gmail.com> <1302756608.2854.10.camel@perseus.themaw.net> <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com> <4DA4B6A8.7030804@gmail.com> <BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com> <4DA5DCB8.3040101@gmail.com> <BANLkTineg2XYYOZAU9trrw=+-vH8McN_9w@mail.gmail.com> <4DA5F569.9020309@gmail.com> <BANLkTi=Z1CQm=u2Q1VCHfr=53n5qTC=7bA@mail.gmail.com> <24792.1302808448@redhat.com> <2477.1309342656@redhat.com> <4E1962BE.8010204@redhat.com> <1408.1310382069@redhat.com> <1310385651.18678.59.camel@twins> <CAOMqctQoO7zKojoEuYri8ZWDDMM3Ef6VRtPYzsf-02xhJ8e6jA@mail.gmail.com> <1310392232.4276.14.camel@perseus.themaw.net> <CAOMqctSDxauVLw5OisAeCaFa7DvZDgg_1YCmHaWdJZm60JDVtg@mail.gmail.com> <1310405033.4276.28.camel@perseus.themaw.net> <CAOMqctSZcAuA8r=Bdtg1hhM9xzDmDuOPn376HXuQ0Tb8xrRwzw@mail.gmail.com> <30216.1310558525@redhat.com> 
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: dhowells@redhat.com, Michal Suchanek <hramrach@centrum.cz>,
+        Ian Kent <ikent@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ric Wheeler <rwheeler@redhat.com>, Alexander Viro <aviro@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jeff Moyer <jmoyer@redhat.com>
+Subject: Re: Union mount and lockdep design issues
+Date: Thu, 14 Jul 2011 01:57:38 +0100
+Message-ID: <18169.1310605058@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-08 at 20:19 -0400, Steven Rostedt wrote:
-> On Fri, 2011-07-08 at 17:47 -0400, Arnaud Lacombe wrote:
-> > Hi,
-> > 
-> > On Fri, Jul 1, 2011 at 7:31 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
-> > > Hi,
-> > >
-> > > The following series attempts to merge some redundants stuff in the kconfig
-> > > Makefile, namely how streamline_config learns about its environment, avoids
-> > > multi-line shell command in kconfig's Makefile. Seconds commit also removes the
-> > > non-portable usage of sed(1) as -i is not POSIX compliant.
-> > >
-> > > Comments appreciated!
-> > >
-> > >  - Arnaud
-> > >
-> > Ping ?
+Miklos Szeredi <miklos@szeredi.hu> wrote:
 
-I just tried your patches out. It breaks when we compile for another
-directory. I just tried:
+> Normally overlayfs would be immune to this, since lower/upper are
+> different filesystem types.  But overlayfs-over-overlayfs would see the
+> same lockdep warnings, right?
 
-$ make LSMOD=/tmp/lsmod O=../machine/build/ localmodconfig
+Yes.
 
-and it it did not work.
-
--- Steve
-
-
+David
