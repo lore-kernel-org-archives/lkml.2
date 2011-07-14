@@ -1,92 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233Ab1GNOGj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 10:06:39 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:53551 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755149Ab1GNOGi (ORCPT
+	id S1755247Ab1GNOJS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 10:09:18 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:44274 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755033Ab1GNOJR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 10:06:38 -0400
-Subject: [PATCH v2] regulator: Fix memory leak in set_machine_constraints()
- error paths
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 14 Jul 2011 22:06:30 +0800
-Message-ID: <1310652390.3876.1.camel@phoenix>
+	Thu, 14 Jul 2011 10:09:17 -0400
+X-Authority-Analysis: v=1.1 cv=yMxAJ7W7nAoPh8ZdbvCArpG6pAdHwgpzIvOq8QbMesM= c=1 sm=0 a=PY02sq4htjkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=40jEhcFK0yD2XDzs668A:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [Question] sched: migrate RT task on throttled leaf RT
+ runqueue?
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAJd=RBCB-GZh9jtWMkuJHQ5wJRJkMyCONh5JGH=DMpfco5juYg@mail.gmail.com>
+References: <CAJd=RBCB-GZh9jtWMkuJHQ5wJRJkMyCONh5JGH=DMpfco5juYg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 14 Jul 2011 10:09:12 -0400
+Message-ID: <1310652552.27864.25.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Properly kfree rdev->constraints in all set_machine_constraints() error paths.
-Also properly kfree rdev->constraints in regulator_register() error paths.
+On Thu, 2011-07-14 at 21:43 +0800, Hillf Danton wrote:
+> Hi Steven
+> 
+> When a non-boosted RT task is enqueued, if it is attached to task group, as
+> shown in the following diff format for clarity, and even if the RT runqueue
+> owned by the task group is throttled, the rt_rq is loaded up as leaf and the
+> task is added to pushable list if it is pushable.
+> 
+> Since RT tasks on throttled rt_runqueue will not be picked to be the next task
+> when scheduling, could they be migrated by pushing and pulling?
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/core.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
+Note, run queues are not throttled, groups are. And tasks on a throttled
+group should not be touched by the push/pull algorithm.
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index f59821f..c0c4034 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -787,7 +787,6 @@ static int machine_constraints_voltage(struct regulator_dev *rdev,
- 		if (ret < 0) {
- 			rdev_err(rdev, "failed to apply %duV constraint\n",
- 				 rdev->constraints->min_uV);
--			rdev->constraints = NULL;
- 			return ret;
- 		}
- 	}
-@@ -873,7 +872,7 @@ static int machine_constraints_voltage(struct regulator_dev *rdev,
- static int set_machine_constraints(struct regulator_dev *rdev,
- 	const struct regulation_constraints *constraints)
- {
--	int ret = 0;
-+	int ret;
- 	struct regulator_ops *ops = rdev->desc->ops;
- 
- 	rdev->constraints = kmemdup(constraints, sizeof(*constraints),
-@@ -890,7 +889,6 @@ static int set_machine_constraints(struct regulator_dev *rdev,
- 		ret = suspend_prepare(rdev, rdev->constraints->initial_state);
- 		if (ret < 0) {
- 			rdev_err(rdev, "failed to set suspend state\n");
--			rdev->constraints = NULL;
- 			goto out;
- 		}
- 	}
-@@ -917,13 +915,15 @@ static int set_machine_constraints(struct regulator_dev *rdev,
- 		ret = ops->enable(rdev);
- 		if (ret < 0) {
- 			rdev_err(rdev, "failed to enable\n");
--			rdev->constraints = NULL;
- 			goto out;
- 		}
- 	}
- 
- 	print_constraints(rdev);
-+	return 0;
- out:
-+	kfree(rdev->constraints);
-+	rdev->constraints = NULL;
- 	return ret;
- }
- 
-@@ -2694,6 +2694,7 @@ unset_supplies:
- 	unset_regulator_supplies(rdev);
- 
- scrub:
-+	kfree(rdev->constraints);
- 	device_unregister(&rdev->dev);
- 	/* device core frees rdev */
- 	rdev = ERR_PTR(ret);
--- 
-1.7.4.1
-
+-- Steve
 
 
