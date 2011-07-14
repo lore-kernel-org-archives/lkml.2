@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290Ab1GNPWg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 11:22:36 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:59168 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755261Ab1GNPWe (ORCPT
+	id S1755270Ab1GNPYS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 11:24:18 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:41671 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754824Ab1GNPYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 11:22:34 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Rob Herring <robherring2@gmail.com>
-Subject: Re: [PATCH v3 0/6] ARM: make mach/hardware.h optional
-Date: Thu, 14 Jul 2011 17:22:19 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Michal Simek <monstr@monstr.eu>, nico@fluxnic.net,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-References: <1310489612-8625-1-git-send-email-robherring2@gmail.com>
-In-Reply-To: <1310489612-8625-1-git-send-email-robherring2@gmail.com>
+	Thu, 14 Jul 2011 11:24:17 -0400
+Date: Thu, 14 Jul 2011 10:24:09 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Daniel Barkalow <barkalow@iabervon.org>,
+        Christoph Hellwig <hch@tuxera.com>, linux-kernel@vger.kernel.org
+Subject: Re: Problems with hfsplus on ipods in 2.6.38+
+Message-ID: <20110714152409.GB28501@thinkpad-t410>
+Mail-Followup-To: Christoph Hellwig <hch@infradead.org>,
+	Daniel Barkalow <barkalow@iabervon.org>,
+	Christoph Hellwig <hch@tuxera.com>, linux-kernel@vger.kernel.org
+References: <alpine.LNX.2.00.1107131942190.2056@iabervon.org>
+ <20110714135302.GA28501@thinkpad-t410>
+ <20110714144514.GA6145@infradead.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107141722.19407.arnd@arndb.de>
-X-Provags-ID: V02:K0:c2M3m5mMlK/GzdEgCJNLQYhWFtH2/BXL+Lg2pZ4TxkZ
- Xo50be/GLsmSWEMCYXlgWFTTKjzl3E3D1QAIRuNNpJTJEKniJ8
- y9WUtY1Ugk8rloQauMf6PFLNppjyXNe9GZrPP0IOY3lZTRB25y
- ccxSa5qIS0f+mk/jpttq5u7f9iuOAqFj/WKT97ww3FaUwBDOm+
- q0DtKeid+P+pbI5uTtgpw==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110714144514.GA6145@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 12 July 2011, Rob Herring wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
+On Thu, Jul 14, 2011 at 10:45:14AM -0400, Christoph Hellwig wrote:
+> On Thu, Jul 14, 2011 at 08:53:02AM -0500, Seth Forshee wrote:
+> > This has had some discussion on lkml previously [1]. I've been trying to
+> > work on a fix, but the current iteration has problems, and I haven't
+> > been able to get testers to provide the logs I've requested to help me
+> > see what's going wrong. If you'd like to help by providing logs from the
+> > most recent test build on the bug you linked to (or using the patches
+> > from that build) that would be great. I unfortunately don't have any
+> > large-sector devices to test with and cannot reproduce the problems on
+> > 512-byte sector devices.
 > 
-> Currently, all ARM platforms must have a mach/hardware.h include. This is
-> because it is ultimately included by linux/pci.h which is included in many
-> places even for !CONFIG_PCI.
-> 
-> This could be fixed simply with an ifdef around the include of mach/hardware.h
-> in asm/pci.h. However, in the interest of fixing this for single kernel
-> binary builds, this series removes the include of mach/hardware.h outside of
-> mach-* and plat-*. What's used from hardware.h is a couple of PCI defines. 
-> Converting them to variables allows each platform to set the values as needed.
-> 
-> This does not address the inclusion of mach/hardware.h under drivers/*. This
-> appears to be mostly older platforms. There could also be some indirect
-> inclusions from other mach/* headers.
-> 
-> I've compile tested on most affected ARM platforms. 
-> 
-> Changes from v2:
-> - Incorporated compile fixes for microblaze from Michal Simek.
-> - Added conversion of powerpc to generic pci flag functions.
-> - Combined powerpc and microblaze conversion to use 
->   asm-generic/pci-bridge.h into one commit. Renaming of powerpc pci
->   flags functions is separate commit.
-> - Changed defaults for PCIBIOS_MIN_IO and PCIBIOS_MIN_MEM to 0x1000 and
->   0x1000000, respectively.
-> - Dropped commit moving ARCH_HAS_DMA_SET_COHERENT_MASK defines into 
->   memory.h. This conflicts with other clean-up work by Nicolas Pitre.
+> I've been trying to get a large block size test device using qemu
+> or scsi_debug but haven't managed to get back to it.  If you can get
+> Daniel to test you're patches I'd really appreciate your help.
 
-Looks good to me, I'll apply it as soon as I hear back from Russell.
-
-Russell, do you have an opinion on the changes to arch/arm/{include,lib} ?
-
-	Arnd
+I wasn't aware of scsi_debug. I'll also try to test using that and see
+if I can recreate the problems.
