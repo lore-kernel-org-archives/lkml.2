@@ -1,147 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357Ab1GNAwJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 20:52:09 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:20629 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751204Ab1GNAwH (ORCPT
+	id S1753339Ab1GNAzE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 20:55:04 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:60096 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751204Ab1GNAzB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 20:52:07 -0400
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-To: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>,
-        linux-kernel@vger.kernel.org
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com,
-        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: [PATCH] pch_dma: Fix CTL register access issue
-Date: Thu, 14 Jul 2011 09:52:38 +0900
-Message-Id: <1310604758-2455-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-X-Mailer: git-send-email 1.7.4.4
+	Wed, 13 Jul 2011 20:55:01 -0400
+X-Authority-Analysis: v=1.1 cv=IOX921YOuPvYFce5aSLzPVIStpiCPR9M8R83dyHW74w= c=1 sm=0 a=l8LWmUGdTDcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=EXXXJYmgZYSbIOfU3csA:9 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC 0/4] streamline_config clean-ups
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Steven Rostedt <srostedt@redhat.com>
+Cc: Arnaud Lacombe <lacombar@gmail.com>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>
+In-Reply-To: <1310170759.2780.37.camel@fedora>
+References: <1309563076-5050-1-git-send-email-lacombar@gmail.com>
+	 <CACqU3MUrCODMx=8Bu+YDxy2BJwjm-77PXFob5OwHn=fr5mTdkg@mail.gmail.com>
+	 <1310170759.2780.37.camel@fedora>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 13 Jul 2011 20:54:59 -0400
+Message-ID: <1310604899.27864.4.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, Mode-Control register is accessed by read-modify-write.
+On Fri, 2011-07-08 at 20:19 -0400, Steven Rostedt wrote:
+> On Fri, 2011-07-08 at 17:47 -0400, Arnaud Lacombe wrote:
+> > Hi,
+> > 
+> > On Fri, Jul 1, 2011 at 7:31 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+> > > Hi,
+> > >
+> > > The following series attempts to merge some redundants stuff in the kconfig
+> > > Makefile, namely how streamline_config learns about its environment, avoids
+> > > multi-line shell command in kconfig's Makefile. Seconds commit also removes the
+> > > non-portable usage of sed(1) as -i is not POSIX compliant.
+> > >
+> > > Comments appreciated!
+> > >
+> > >  - Arnaud
+> > >
+> > Ping ?
 
-According to DMA hardware specifications datasheet, prohibits this method.
-Because this register resets to 0 by DMA HW after DMA transfer completes.
-Thus, current read-modify-write processing can cause unexpected behavior.
+I just tried your patches out. It breaks when we compile for another
+directory. I just tried:
 
-The datasheet says in case of writing Mode-Control register, set the value for only target channel, the others must set '11b'.
-e.g. Set DMA0=01b  DMA11=10b
-CTL0=33333331h
-CTL2=00002333h
+$ make LSMOD=/tmp/lsmod O=../machine/build/ localmodconfig
 
-NOTE:
-CTL0 includes DMA0~7 Mode-Control register.
-CTL2 includes DMA8~11 Mode-Control register.
+and it it did not work.
 
-This patch modifies the issue.
+-- Steve
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
----
- drivers/dma/pch_dma.c |   42 +++++++++++++++++++++++++++++++-----------
- 1 files changed, 31 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
-index 9dc92de..7460490 100644
---- a/drivers/dma/pch_dma.c
-+++ b/drivers/dma/pch_dma.c
-@@ -62,6 +62,9 @@
- 
- #define MAX_CHAN_NR			8
- 
-+#define DMA_MASK_CTL0_MODE	0x33333333
-+#define DMA_MASK_CTL2_MODE	0x00003333
-+
- static unsigned int init_nr_desc_per_channel = 64;
- module_param(init_nr_desc_per_channel, uint, 0644);
- MODULE_PARM_DESC(init_nr_desc_per_channel,
-@@ -210,10 +213,17 @@ static void pdc_set_dir(struct dma_chan *chan)
- 	struct pch_dma_chan *pd_chan = to_pd_chan(chan);
- 	struct pch_dma *pd = to_pd(chan->device);
- 	u32 val;
-+	u32 mask_mode;
-+	u32 mask_ctl;
- 
- 	if (chan->chan_id < 8) {
- 		val = dma_readl(pd, CTL0);
- 
-+		mask_mode = DMA_CTL0_MODE_MASK_BITS <<
-+					(DMA_CTL0_BITS_PER_CH * chan->chan_id);
-+		mask_ctl = DMA_MASK_CTL0_MODE & ~(DMA_CTL0_MODE_MASK_BITS <<
-+				       (DMA_CTL0_BITS_PER_CH * chan->chan_id));
-+		val &= mask_mode;
- 		if (pd_chan->dir == DMA_TO_DEVICE)
- 			val |= 0x1 << (DMA_CTL0_BITS_PER_CH * chan->chan_id +
- 				       DMA_CTL0_DIR_SHIFT_BITS);
-@@ -221,18 +231,24 @@ static void pdc_set_dir(struct dma_chan *chan)
- 			val &= ~(0x1 << (DMA_CTL0_BITS_PER_CH * chan->chan_id +
- 					 DMA_CTL0_DIR_SHIFT_BITS));
- 
-+		val |= mask_ctl;
- 		dma_writel(pd, CTL0, val);
- 	} else {
- 		int ch = chan->chan_id - 8; /* ch8-->0 ch9-->1 ... ch11->3 */
- 		val = dma_readl(pd, CTL3);
- 
-+		mask_mode = DMA_CTL0_MODE_MASK_BITS <<
-+						(DMA_CTL0_BITS_PER_CH * ch);
-+		mask_ctl = DMA_MASK_CTL2_MODE & ~(DMA_CTL0_MODE_MASK_BITS <<
-+						 (DMA_CTL0_BITS_PER_CH * ch));
-+		val &= mask_mode;
- 		if (pd_chan->dir == DMA_TO_DEVICE)
- 			val |= 0x1 << (DMA_CTL0_BITS_PER_CH * ch +
- 				       DMA_CTL0_DIR_SHIFT_BITS);
- 		else
- 			val &= ~(0x1 << (DMA_CTL0_BITS_PER_CH * ch +
- 					 DMA_CTL0_DIR_SHIFT_BITS));
--
-+		val |= mask_ctl;
- 		dma_writel(pd, CTL3, val);
- 	}
- 
-@@ -244,26 +260,30 @@ static void pdc_set_mode(struct dma_chan *chan, u32 mode)
- {
- 	struct pch_dma *pd = to_pd(chan->device);
- 	u32 val;
-+	u32 mask_ctl;
-+	u32 mask_dir;
- 
- 	if (chan->chan_id < 8) {
-+		mask_ctl = DMA_MASK_CTL0_MODE & ~(DMA_CTL0_MODE_MASK_BITS <<
-+			   (DMA_CTL0_BITS_PER_CH * chan->chan_id));
-+		mask_dir = 1 << (DMA_CTL0_BITS_PER_CH * chan->chan_id +\
-+				 DMA_CTL0_DIR_SHIFT_BITS);
- 		val = dma_readl(pd, CTL0);
--
--		val &= ~(DMA_CTL0_MODE_MASK_BITS <<
--			(DMA_CTL0_BITS_PER_CH * chan->chan_id));
-+		val &= mask_dir;
- 		val |= mode << (DMA_CTL0_BITS_PER_CH * chan->chan_id);
--
-+		val |= mask_ctl;
- 		dma_writel(pd, CTL0, val);
- 	} else {
- 		int ch = chan->chan_id - 8; /* ch8-->0 ch9-->1 ... ch11->3 */
--
-+		mask_ctl = DMA_MASK_CTL2_MODE & ~(DMA_CTL0_MODE_MASK_BITS <<
-+						 (DMA_CTL0_BITS_PER_CH * ch));
-+		mask_dir = 1 << (DMA_CTL0_BITS_PER_CH * ch +\
-+				 DMA_CTL0_DIR_SHIFT_BITS);
- 		val = dma_readl(pd, CTL3);
--
--		val &= ~(DMA_CTL0_MODE_MASK_BITS <<
--			(DMA_CTL0_BITS_PER_CH * ch));
-+		val &= mask_dir;
- 		val |= mode << (DMA_CTL0_BITS_PER_CH * ch);
--
-+		val |= mask_ctl;
- 		dma_writel(pd, CTL3, val);
--
- 	}
- 
- 	dev_dbg(chan2dev(chan), "pdc_set_mode: chan %d -> %x\n",
--- 
-1.7.4.4
 
