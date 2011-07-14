@@ -1,81 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754651Ab1GNMfW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 08:35:22 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:51359 "EHLO
+	id S1754663Ab1GNMfw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 08:35:52 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:51363 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754428Ab1GNMfU (ORCPT
+	with ESMTP id S1754620Ab1GNMfV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 08:35:20 -0400
+	Thu, 14 Jul 2011 08:35:21 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@suse.de
 Cc: jirislaby@gmail.com, linux-serial@vger.kernel.org,
         linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
-        Alan Cox <alan@linux.intel.com>, Andreas Bombe <aeb@debian.org>
-Subject: [PATCH v2 4/6] TTY: ami_serial, remove BTM from wait_until_sent
-Date: Thu, 14 Jul 2011 14:35:13 +0200
-Message-Id: <1310646915-3032-4-git-send-email-jslaby@suse.cz>
+        Alan Cox <alan@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Andreas Bombe <aeb@debian.org>
+Subject: [PATCH v2 1/6] TTY: serial, remove BTM from wait_until_sent
+Date: Thu, 14 Jul 2011 14:35:10 +0200
+Message-Id: <1310646915-3032-1-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1310646915-3032-1-git-send-email-jslaby@suse.cz>
-References: <1310646915-3032-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The same as in "TTY: serial, remove BTM from wait_until_sent" we don't
-need to take BTM in wait_until_sent of ami_serial. Exactly the same
-as serial, ami_serial accesses some "info" members (xmit_fifo_size,
-timeout), but their assignment on other places in the code is not
-protected by BTM anyway.
+During the BKL removal process, the BKL was switched to tty_lock
+(BTM). Now we should start pruning the BTM further. Let's start with
+wait_until_sent of the serial layer. This will allow us to switch to
+the tty port helpers and thus clean it up much.
 
-So the BTM protects nothing here. This removal helps us to get rid of
-tty_locked() and __big_tty_mutex_owner in the following patch. This
-was suggested by Arnd.
+In wait_until_sent there are some uport members accessed, but neither
+of them is protected by BTM at the location they are set ('=>' means
+function call):
+* uport->fifosize (set in tty_ioctl => uart_ioctl => uart_set_info)
+* uport->type (set in add_one_port prior to tty_register_device)
+* uport->timeout (set usually in tty_ioctl => tty_mode_ioctl =>
+  tty_set_termios => uart_set_termios => uart_change_speed =>
+  uport->ops->set_termios => uart_update_timeout)
+* call to uport->ops->tx_empty()
+
+If the tx_empty hook needs some lock to protect accesses to registers,
+it should take &uport->lock spinlock like 8250 does. Otherwise there
+still might be races e.g. with ISRs.
+
+This should also fix the issue Andreas is seeing (BTM in comparison to
+BKL doesn't have any hidden functionality like unlocking during
+sleeping).
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+References: https://lkml.org/lkml/2011/5/25/562
 Cc: Greg Kroah-Hartman <gregkh@suse.de>
 Cc: Alan Cox <alan@linux.intel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
 Cc: Andreas Bombe <aeb@debian.org>
 ---
- drivers/tty/amiserial.c |   10 +---------
- 1 files changed, 1 insertions(+), 9 deletions(-)
+ drivers/tty/serial/serial_core.c |   30 +++++++-----------------------
+ 1 files changed, 7 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/tty/amiserial.c b/drivers/tty/amiserial.c
-index 2205795..6d43f55 100644
---- a/drivers/tty/amiserial.c
-+++ b/drivers/tty/amiserial.c
-@@ -1529,7 +1529,6 @@ static void rs_wait_until_sent(struct tty_struct *tty, int timeout)
- {
- 	struct async_struct * info = tty->driver_data;
- 	unsigned long orig_jiffies, char_time;
--	int tty_was_locked = tty_locked();
- 	int lsr;
+diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+index db7912c..2cbf1bd 100644
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -57,7 +57,7 @@ static struct lock_class_key port_lock_key;
  
- 	if (serial_paranoia_check(info, tty->name, "rs_wait_until_sent"))
-@@ -1541,12 +1540,6 @@ static void rs_wait_until_sent(struct tty_struct *tty, int timeout)
- 	orig_jiffies = jiffies;
+ static void uart_change_speed(struct tty_struct *tty, struct uart_state *state,
+ 					struct ktermios *old_termios);
+-static void __uart_wait_until_sent(struct uart_port *port, int timeout);
++static void uart_wait_until_sent(struct tty_struct *tty, int timeout);
+ static void uart_change_pm(struct uart_state *state, int pm_state);
+ 
+ /*
+@@ -1304,16 +1304,8 @@ static void uart_close(struct tty_struct *tty, struct file *filp)
+ 	tty->closing = 1;
+ 	spin_unlock_irqrestore(&port->lock, flags);
+ 
+-	if (port->closing_wait != ASYNC_CLOSING_WAIT_NONE) {
+-		/*
+-		 * hack: open-coded tty_wait_until_sent to avoid
+-		 * recursive tty_lock
+-		 */
+-		long timeout = msecs_to_jiffies(port->closing_wait);
+-		if (wait_event_interruptible_timeout(tty->write_wait,
+-				!tty_chars_in_buffer(tty), timeout) >= 0)
+-			__uart_wait_until_sent(uport, timeout);
+-	}
++	if (port->closing_wait != ASYNC_CLOSING_WAIT_NONE)
++		tty_wait_until_sent(tty, msecs_to_jiffies(port->closing_wait));
  
  	/*
--	 * tty_wait_until_sent is called from lots of places,
--	 * with or without the BTM.
--	 */
--	if (!tty_was_locked)
--		tty_lock();
--	/*
- 	 * Set the check interval to be 1/5 of the estimated time to
- 	 * send a single character, and make it at least 1.  The check
- 	 * interval should also be less than the timeout.
-@@ -1586,8 +1579,7 @@ static void rs_wait_until_sent(struct tty_struct *tty, int timeout)
- 			break;
+ 	 * At this point, we stop accepting input.  To do this, we
+@@ -1329,7 +1321,7 @@ static void uart_close(struct tty_struct *tty, struct file *filp)
+ 		 * has completely drained; this is especially
+ 		 * important if there is a transmit FIFO!
+ 		 */
+-		__uart_wait_until_sent(uport, uport->timeout);
++		uart_wait_until_sent(tty, uport->timeout);
  	}
- 	__set_current_state(TASK_RUNNING);
--	if (!tty_was_locked)
--		tty_unlock();
-+
- #ifdef SERIAL_DEBUG_RS_WAIT_UNTIL_SENT
- 	printk("lsr = %d (jiff=%lu)...done\n", lsr, jiffies);
- #endif
+ 
+ 	uart_shutdown(tty, state);
+@@ -1363,8 +1355,10 @@ done:
+ 	mutex_unlock(&port->mutex);
+ }
+ 
+-static void __uart_wait_until_sent(struct uart_port *port, int timeout)
++static void uart_wait_until_sent(struct tty_struct *tty, int timeout)
+ {
++	struct uart_state *state = tty->driver_data;
++	struct uart_port *port = state->uart_port;
+ 	unsigned long char_time, expire;
+ 
+ 	if (port->type == PORT_UNKNOWN || port->fifosize == 0)
+@@ -1416,16 +1410,6 @@ static void __uart_wait_until_sent(struct uart_port *port, int timeout)
+ 	}
+ }
+ 
+-static void uart_wait_until_sent(struct tty_struct *tty, int timeout)
+-{
+-	struct uart_state *state = tty->driver_data;
+-	struct uart_port *port = state->uart_port;
+-
+-	tty_lock();
+-	__uart_wait_until_sent(port, timeout);
+-	tty_unlock();
+-}
+-
+ /*
+  * This is called with the BKL held in
+  *  linux/drivers/char/tty_io.c:do_tty_hangup()
 -- 
 1.7.6
 
