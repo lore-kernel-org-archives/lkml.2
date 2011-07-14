@@ -1,47 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754956Ab1GNPKE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 11:10:04 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:44790
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754543Ab1GNPKB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 11:10:01 -0400
-Date: Thu, 14 Jul 2011 11:09:59 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 5/5] mm: writeback: Prioritise dirty inodes encountered
- by direct reclaim for background flushing
-Message-ID: <20110714150959.GA30936@infradead.org>
-References: <1310567487-15367-1-git-send-email-mgorman@suse.de>
- <1310567487-15367-6-git-send-email-mgorman@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1310567487-15367-6-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1754934Ab1GNPPI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 11:15:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12657 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754318Ab1GNPPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 11:15:06 -0400
+Subject: GFS2: Pull request (fixes)
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Thu, 14 Jul 2011 16:16:56 +0100
+Message-ID: <1310656616.2761.33.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 13, 2011 at 03:31:27PM +0100, Mel Gorman wrote:
-> It is preferable that no dirty pages are dispatched from the page
-> reclaim path. If reclaim is encountering dirty pages, it implies that
-> either reclaim is getting ahead of writeback or use-once logic has
-> prioritise pages for reclaiming that are young relative to when the
-> inode was dirtied.
+Hi,
 
-what does this buy us?  If at all we should prioritize by a zone,
-e.g. tell write_cache_pages only to bother with writing things out
-if the dirty page is in a given zone.   We'd probably still cluster
-around it to make sure we get good I/O patterns, but would only start
-I/O if it has a page we actually care about.
+Please consider pulling the following three fixes,
+
+Steve.
+
+--------------------------------------------------------------------------------
+The following changes since commit 620917de59eeb934b9f8cf35cc2d95c1ac8ed0fc:
+
+  Linux 3.0-rc7 (2011-07-11 16:51:52 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-2.6-fixes.git master
+
+Benjamin Marzinski (1):
+      GFS2: force a log flush when invalidating the rindex glock
+
+Steven Whitehouse (2):
+      GFS2: Fix race during filesystem mount
+      GFS2: Resolve inode eviction and ail list interaction bug
+
+ fs/gfs2/aops.c       |    3 +++
+ fs/gfs2/glops.c      |    8 +++++---
+ fs/gfs2/incore.h     |    2 ++
+ fs/gfs2/log.c        |    1 +
+ fs/gfs2/ops_fstype.c |    3 +++
+ fs/gfs2/super.c      |   36 ++++++++++++++++++++++++++++++------
+ fs/gfs2/sys.c        |    7 ++++++-
+ 7 files changed, 50 insertions(+), 10 deletions(-)
+
 
