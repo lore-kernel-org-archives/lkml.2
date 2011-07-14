@@ -1,95 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753049Ab1GNGvQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 02:51:16 -0400
-Received: from mail1.elettra.trieste.it ([140.105.4.201]:30547 "EHLO
-	elettra.trieste.it" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751084Ab1GNGvO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 02:51:14 -0400
-From: Alessio Igor Bogani <abogani@kernel.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Jan Beulich <jbeulich@novell.com>, Kbuild <linux-kbuild@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Tim Bird <tim.bird@am.sony.com>,
-        Anders Kaseorg <andersk@ksplice.com>,
-        Arnaud Lacombe <lacombar@gmail.com>,
-        Alessio Igor Bogani <abogani@kernel.org>
-Subject: [PATCH] modpost: Fix modpost's license checking V3
-Date: Thu, 14 Jul 2011 08:51:16 +0200
-Message-Id: <1310626276-4541-1-git-send-email-abogani@kernel.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <CACqU3MUXAOMGQ1nzUrtYPEQAC3U-nuq3YurtNJJLS1hft4ROGA@mail.gmail.com>
-References: <CACqU3MUXAOMGQ1nzUrtYPEQAC3U-nuq3YurtNJJLS1hft4ROGA@mail.gmail.com>
+	id S1753430Ab1GNGwo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 02:52:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58661 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751623Ab1GNGwn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 02:52:43 -0400
+Date: Thu, 14 Jul 2011 16:52:31 +1000
+From: NeilBrown <neilb@suse.de>
+To: Qin Dehua <qindehua@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>
+Subject: Re: PROBLEM: md/raid5 bug by commit 415e72d03
+Message-ID: <20110714165231.0cda7762@notabene.brown>
+In-Reply-To: <CA+gQ4teG7wKXk+zkZvHYWRCqtoLE=qQOcns9zeth+Dt-xPixTg@mail.gmail.com>
+References: <CA+gQ4teG7wKXk+zkZvHYWRCqtoLE=qQOcns9zeth+Dt-xPixTg@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commit f02e8a6 sorts symbols placing each of them in its own elf section.
-The sorting and merging into the canonical sections are done by the linker.
-Unfortunately modpost to generate Module.symvers file parses vmlinux
-(already linked) and all modules object files (which aren't linked yet).
-These aren't sanitized by the linker yet. That breaks modpost that can't
-detect license properly for modules. This patch makes modpost aware of
-the new exported symbols structure.
+On Fri, 8 Jul 2011 13:58:39 +0800 Qin Dehua <qindehua@gmail.com> wrote:
 
-Thanks to Arnaud Lacombe <lacombar@gmail.com> and Anders Kaseorg
-<andersk@ksplice.com> for providing useful suggestions about code.
+> By bisecting, commit 415e72d03(md/raid5: Allow recovered part of
+> partially recovered devices to be in-sync) was found as the cause of
+> follow problem:
+> 	* md1_raid5 or md1_raid6 process will hang(99% CPU usage) after
+> repeatedly remove disk from then re-add disk to raid5 or raid6£¨there
+> is also a dd process write to the raid continuously).
+> 	
+> Hardware platform is IOP 341 XScale processor(did not test on other
+> platforms£©. The problem can be reproduced with this script:
+> 
+> { while true; do dd if=/dev/zero of=/dev/md1 bs=1M count=90000 >
+> /dev/null 2>/dev/null;done; } &
+> 
+> while true;do
+> 	mdadm /dev/md1 -f /dev/sda /dev/sdb
+> 	sleep 1
+> 	mdadm /dev/md1 -r /dev/sda /dev/sdb
+> 	sleep 1
+> 	mdadm /dev/md1 -a /dev/sda /dev/sdb
+> 	sleep 6
+> done
 
-This work was supported by a hardware donation from the CE Linux Forum.
+I cannot reproduce this on x86_64.
 
-Reported-by: Jan Beulich <jbeulich@novell.com>
-Signed-off-by: Alessio Igor Bogani <abogani@kernel.org>
----
- scripts/mod/modpost.c |   29 ++++++++++++++++++++++++++++-
- 1 files changed, 28 insertions(+), 1 deletions(-)
+Can you find out more about the hanging process?  Maybe
+  cat /proc/PROCESS-ID/stack
 
-diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
-index 413c536..a509ff8 100644
---- a/scripts/mod/modpost.c
-+++ b/scripts/mod/modpost.c
-@@ -254,6 +254,28 @@ static enum export export_no(const char *s)
- 	return export_unknown;
- }
- 
-+static const char *sec_name(struct elf_info *elf, int secindex);
-+
-+#define strstarts(str, prefix) (strncmp(str, prefix, strlen(prefix)) == 0)
-+
-+static enum export export_from_secname(struct elf_info *elf, unsigned int sec)
-+{
-+	const char *secname = sec_name(elf, sec);
-+
-+	if (strstarts(secname, "___ksymtab+"))
-+		return export_plain;
-+	else if (strstarts(secname, "___ksymtab_unused+"))
-+		return export_unused;
-+	else if (strstarts(secname, "___ksymtab_gpl+"))
-+		return export_gpl;
-+	else if (strstarts(secname, "___ksymtab_unused_gpl+"))
-+		return export_unused_gpl;
-+	else if (strstarts(secname, "___ksymtab_gpl_future+"))
-+		return export_gpl_future;
-+	else
-+		return export_unknown;
-+}
-+
- static enum export export_from_sec(struct elf_info *elf, unsigned int sec)
- {
- 	if (sec == elf->export_sec)
-@@ -563,7 +585,12 @@ static void handle_modversions(struct module *mod, struct elf_info *info,
- 			       Elf_Sym *sym, const char *symname)
- {
- 	unsigned int crc;
--	enum export export = export_from_sec(info, get_secindex(info, sym));
-+	enum export export;
-+
-+	if (!is_vmlinux(mod->name) && strncmp(symname, "__ksymtab", 9) == 0)
-+		export = export_from_secname(info, get_secindex(info, sym));
-+	else
-+		export = export_from_sec(info, get_secindex(info, sym));
- 
- 	switch (sym->st_shndx) {
- 	case SHN_COMMON:
--- 
-1.7.4.1
+a few times and see where it is spending its time??
 
+NeilBrown
