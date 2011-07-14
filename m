@@ -1,122 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932176Ab1GNUeJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 16:34:09 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:39887 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932075Ab1GNUeG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 16:34:06 -0400
-Date: Thu, 14 Jul 2011 13:33:53 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
+	id S932213Ab1GNUfT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 16:35:19 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:53946 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754191Ab1GNUfR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 16:35:17 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=riinYISUb4YHLthk1yL+C53VGv5mZct05MqfsjTQrss6VDukoKNWwGRqtaJvy1k6Z
+	e/SyDIuzWOmLTKfk5dwrw==
+From: Mike Waychison <mikew@google.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: INFO: possible circular locking dependency detected
-Message-ID: <20110714203352.GC2317@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110714144946.GA3354@swordfish.minsk.epam.com>
- <1310662707.27864.38.camel@gandalf.stny.rr.com>
- <1310662929.27864.40.camel@gandalf.stny.rr.com>
- <20110714170540.GE2349@linux.vnet.ibm.com>
- <1310664742.27864.45.camel@gandalf.stny.rr.com>
- <1310665613.27864.50.camel@gandalf.stny.rr.com>
- <20110714191809.GF2349@linux.vnet.ibm.com>
- <1310672502.27864.54.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1310672502.27864.54.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Mike Waychison <mikew@google.com>
+Subject: [PATCH 2/2] x86: Allow disabling of sys_iopl, sys_ioperm
+Date: Thu, 14 Jul 2011 13:34:53 -0700
+Message-Id: <1310675693-9204-2-git-send-email-mikew@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1310675693-9204-1-git-send-email-mikew@google.com>
+References: <1310675693-9204-1-git-send-email-mikew@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 14, 2011 at 03:41:42PM -0400, Steven Rostedt wrote:
-> On Thu, 2011-07-14 at 12:18 -0700, Paul E. McKenney wrote:
-> 
-> > I believe that this affects only TREE_PREEMPT_RCU kernels with RCU_BOOST
-> > set: interrupt disabling takes care of TINY_PREEMPT_RCU.  I think, anyway.
-> 
-> I agree that this doesn't affect TINY, but that doesn't mean you
-> shouldn't change it to be like TREE. You still have the rcu_boost
-> variable in the task struct wasting space, and having the them closer to
-> the same algorithm the better (less learning curve).
-> 
-> 
-> > 
-> > Please see below for a patch that I believe fixes this problem.
-> > It relies on the fact that RCU_READ_UNLOCK_BOOSTED cannot be set unless
-> > RCU_READ_UNLOCK_BLOCKED is also set, which allows the two to be in
-> > separate variables.  The original ->rcu_read_unlock_special is handled
-> > only by the corresponding thread, while the new ->rcu_boosted is accessed
-> > and updated only with the rcu_node structure's ->lock held.
-> > 
-> > Thoughts?
-> > 
-> 
-> Looks good!
-> 
-> Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+In some build environments, it is useful to allow disabling of IO
+accesses to hardware, without having to rely on CAP_SYS_RAWIO (which is
+already overloaded to mean many other things).  One way that userland
+has access to IO accesses is via the iopl(2) and ioperm(2) system calls.
 
-Thank you!
+Allow disabling of these system calls from ever being available via a
+configuration option, X86_SYS_IOPL.   This is implemented by simply
+stubbing out the system calls and having them return ENOSYS when their
+functionality is disabled.
 
-							Thanx, Paul
+Note that we default this option to 'y', so that existing kernel configs
+will continue to support sys_iopl and sys_ioperm as before.
 
-> -- Steve
-> 
-> > 							Thanx, Paul
-> > 
-> > ------------------------------------------------------------------------
-> > 
-> > diff --git a/include/linux/sched.h b/include/linux/sched.h
-> > index 496770a..2a88747 100644
-> > --- a/include/linux/sched.h
-> > +++ b/include/linux/sched.h
-> > @@ -1254,6 +1254,9 @@ struct task_struct {
-> >  #ifdef CONFIG_PREEMPT_RCU
-> >  	int rcu_read_lock_nesting;
-> >  	char rcu_read_unlock_special;
-> > +#ifdef CONFIG_RCU_BOOST
-> > +	int rcu_boosted;
-> > +#endif /* #ifdef CONFIG_RCU_BOOST */
-> >  	struct list_head rcu_node_entry;
-> >  #endif /* #ifdef CONFIG_PREEMPT_RCU */
-> >  #ifdef CONFIG_TREE_PREEMPT_RCU
-> > diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> > index 75113cb..8d38a98 100644
-> > --- a/kernel/rcutree_plugin.h
-> > +++ b/kernel/rcutree_plugin.h
-> > @@ -342,6 +342,11 @@ static void rcu_read_unlock_special(struct task_struct *t)
-> >  #ifdef CONFIG_RCU_BOOST
-> >  		if (&t->rcu_node_entry == rnp->boost_tasks)
-> >  			rnp->boost_tasks = np;
-> > +		/* Snapshot and clear ->rcu_boosted with rcu_node lock held. */
-> > +		if (t->rcu_boosted) {
-> > +			special |= RCU_READ_UNLOCK_BOOSTED;
-> > +			t->rcu_boosted = 0;
-> > +		}
-> >  #endif /* #ifdef CONFIG_RCU_BOOST */
-> >  		t->rcu_blocked_node = NULL;
-> >  
-> > @@ -358,7 +363,6 @@ static void rcu_read_unlock_special(struct task_struct *t)
-> >  #ifdef CONFIG_RCU_BOOST
-> >  		/* Unboost if we were boosted. */
-> >  		if (special & RCU_READ_UNLOCK_BOOSTED) {
-> > -			t->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_BOOSTED;
-> >  			rt_mutex_unlock(t->rcu_boost_mutex);
-> >  			t->rcu_boost_mutex = NULL;
-> >  		}
-> > @@ -1174,7 +1178,7 @@ static int rcu_boost(struct rcu_node *rnp)
-> >  	t = container_of(tb, struct task_struct, rcu_node_entry);
-> >  	rt_mutex_init_proxy_locked(&mtx, t);
-> >  	t->rcu_boost_mutex = &mtx;
-> > -	t->rcu_read_unlock_special |= RCU_READ_UNLOCK_BOOSTED;
-> > +	t->rcu_boosted = 1;
-> >  	raw_spin_unlock_irqrestore(&rnp->lock, flags);
-> >  	rt_mutex_lock(&mtx);  /* Side effect: boosts task t's priority. */
-> >  	rt_mutex_unlock(&mtx);  /* Keep lockdep happy. */
-> 
-> 
+Google-Bug-Id: 3177114
+Signed-off-by: Mike Waychison <mikew@google.com>
+---
+ arch/x86/Kconfig         |   12 ++++++++++++
+ arch/x86/kernel/ioport.c |   12 ++++++++++++
+ 2 files changed, 24 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index da34972..295ae4d 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1497,6 +1497,18 @@ config CC_STACKPROTECTOR
+ 	  detected and for those versions, this configuration option is
+ 	  ignored. (and a warning is printed during bootup)
+ 
++config X86_SYS_IOPL
++	bool "Enable use of sys_iopl and sys_ioperm system calls"
++	default y
++	---help---
++	  The sys_iopl and sys_ioperm allow applications that have the
++	  CAP_SYS_RAWIO to elevate their priviledge level so that they
++	  can perform IO accesses directly from userland.  This
++	  functionality is often used by userland drivers to drive
++	  hardware directly, bypassing the kernel.  Disabling this
++	  option may break certain hardware functions, so if in doubt,
++	  say yes.
++
+ source kernel/Kconfig.hz
+ 
+ config KEXEC
+diff --git a/arch/x86/kernel/ioport.c b/arch/x86/kernel/ioport.c
+index 8c96897..709db2f 100644
+--- a/arch/x86/kernel/ioport.c
++++ b/arch/x86/kernel/ioport.c
+@@ -17,6 +17,7 @@
+ #include <linux/bitmap.h>
+ #include <asm/syscalls.h>
+ 
++#ifdef CONFIG_X86_SYS_IOPL
+ /*
+  * this changes the io permissions bitmap in the current task.
+  */
+@@ -111,3 +112,14 @@ long sys_iopl(unsigned int level, struct pt_regs *regs)
+ 
+ 	return 0;
+ }
++
++#else /* CONFIG_X86_SYS_IOPL */
++
++asmlinkage long sys_ioperm(unsigned long from, unsigned long num, int turn_on) {
++	return -ENOSYS;
++}
++
++long sys_iopl(unsigned int level, struct pt_regs *regs) {
++	return -ENOSYS;
++}
++#endif /* CONFIG_X86_SYS_IOPL */
+-- 
+1.7.3.1
+
