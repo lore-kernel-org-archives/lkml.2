@@ -1,70 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754921Ab1GNPHL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 11:07:11 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:46014
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754403Ab1GNPHJ (ORCPT
+	id S1754998Ab1GNPHv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 11:07:51 -0400
+Received: from igw2.watson.ibm.com ([129.34.20.6]:34792 "EHLO
+	igw2.watson.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754591Ab1GNPHs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 11:07:09 -0400
-Date: Thu, 14 Jul 2011 11:07:00 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 1/5] mm: vmscan: Do not writeback filesystem pages in
- direct reclaim
-Message-ID: <20110714150700.GC23587@infradead.org>
-References: <1310567487-15367-1-git-send-email-mgorman@suse.de>
- <1310567487-15367-2-git-send-email-mgorman@suse.de>
- <20110714103801.83e10fdb.kamezawa.hiroyu@jp.fujitsu.com>
- <20110714044643.GA3203@infradead.org>
- <20110714134634.4a7a15c8.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110714134634.4a7a15c8.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 14 Jul 2011 11:07:48 -0400
+Subject: Re: [PATCH v7 00/16] EVM
+From: David Safford <safford@watson.ibm.com>
+To: Kyle Moffett <kyle@moffetthome.net>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>
+Date: Thu, 14 Jul 2011 11:07:46 -0400
+In-Reply-To: <BANLkTims9aa3Ct+C1x6kNDeOi2juUNbzkA@mail.gmail.com>
+References: <1309377038-4550-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <BANLkTinSsqBqX7=jzwbw_=RfXeQz29h_+A@mail.gmail.com>
+	 <1309390941.3205.22.camel@localhost.localdomain>
+	 <BANLkTineYVKw9MMQUqRGJ6Q_yEfgmsgJxg@mail.gmail.com>
+	 <1309405895.3205.57.camel@localhost.localdomain>
+	 <BANLkTims9aa3Ct+C1x6kNDeOi2juUNbzkA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Message-ID: <1310656066.3845.244.camel@localhost>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 14, 2011 at 01:46:34PM +0900, KAMEZAWA Hiroyuki wrote:
-> > XFS and btrfs already disable writeback from memcg context, as does ext4
-> > for the typical non-overwrite workloads, and none has fallen apart.
-> > 
-> > In fact there's no way we can enable them as the memcg calling contexts
-> > tend to have massive stack usage.
-> > 
+On Thu, 2011-06-30 at 18:32 -0400, Kyle Moffett wrote:
+> Whoops, resent in plain text, sorry about the HTML
 > 
-> Hmm, XFS/btrfs adds pages to radix-tree in deep stack ?
+> On Wed, Jun 29, 2011 at 23:51, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> > On Wed, 2011-06-29 at 21:57 -0400, Kyle Moffett wrote:
+> >> On Wed, Jun 29, 2011 at 19:42, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> >> > On Wed, 2011-06-29 at 16:53 -0400, Kyle Moffett wrote:
+> >> >> Hmm, I'm not sure that this design actually provides the protection that
+> >> >> you claim it does.
+> >> >>
+> >> >> Specifically, you don't actually protect the on-disk data-structures that
+> >> >> are far more vulnerable to malicious modification than the actual *values*
+> >> >> of the extended attributes themselves.
+> >> >
+> >> > True, EVM only protects the file metadata. The patch description says,
+> >> >
+> >> >        While this patchset does authenticate the security xattrs, and
+> >> >        cryptographically binds them to the inode, coming extensions
+> >> >        will bind other directory and inode metadata for more complete
+> >> >        protection.
+> >> >
+> >> > It should have said, "bind other directory, inode data and inode
+> >> > metadata."
+> >> >
+> >> > In particular, IMA-appraisal stores the file data's hash as the
+> >> > security.ima xattr, which is EVM protected. Other methods, such as
+> >> > digital signatures, could be used instead of the file's hash, to
+> >> > additionally provide authenticity.
+> >>
+> >> The problem is that your *design* assumes that the filesystem itself is
+> >> valid, but your stated threat model assumes that the attacker has offline
+> >> access to the filesystem, an explicit contradiction.
+> >>
+> >> There have been numerous cases in the past where a corrupt or invalid
+> >> filesystem causes kernel panics or even exploitable overflows or memory
+> >> corruption; see the history of the "fsfuzzer" tool for more information.
+> >>
+> >> Furthermore, if the attacker can intentionally cause data extent or inode
+> >> extended attribute aliasing (shared space-on-disk) between different
+> >> files then your entire security model falls flat.
+> >>
+> >> So if you assume the attacker has raw access to the underlying filesystem
+> >> then you MUST authenticate *all* of the low-level filesystem data,
+> >> including the "implicit" metadata of allocation tables, extents, etc.
+> >>
+> >> Cheers,
+> >> Kyle Moffett
+> >
+> > Assuming someone does modify the underlying filesystem, how does that
+> > break the security model?  The purpose of EVM/IMA-appraisal is not to
+> > prevent files offline from being modified, but to detect if/when it
+> > occurs and to enforce file integrity.
+> 
+> The problem is that you are assuming that a large chunk of filesystem
+> code is capable of properly and securely handling untrusted and malicious
+> content.  Historically filesystem drivers are NOT capable of handling
+> such things, as evidenced by the large number of bugs that tools such as
+> fsfuzzer tend to trigger.  If you want to use IMA as-designed then you
+> need to perform a relatively extensive audit of filesystem and fsck code.
 
-We're using a fairly deep stack in normal buffered read/write,
-wich is almost 100% common code.  It's not just the long callchain
-(see below), but also that we put the unneeded kiocb and a vector
-of I/O vects on the stack:
+Seems to me exploitable bugs in fs code should be fixed regardless of EVM...
 
-vfs_writev
-do_readv_writev
-do_sync_write
-generic_file_aio_write
-__generic_file_aio_write
-generic_file_buffered_write
-generic_perform_write
-block_write_begin
-grab_cache_page_write_begin
-add_to_page_cache_lru
-add_to_page_cache
-add_to_page_cache_locked
-mem_cgroup_cache_charge
+> Furthermore, even when the filesystem does not have any security issues
+> itself, you are assuming that intentionally malicious data-aliasing
+> between "trusted" and "untrusted" files can have no potential security
+> implications.  You should look at the prevalence of simple stupid "/tmp"
+> symlink attacks for more counter-examples there.
+> 
+> In addition, IMA relies on the underlying attribute and data caching
+> properties of the VFS, which won't hold true for intentionally malicious
+> corrupted filesystems.  It effectively assumes that writing data or
+> metadata for one file will not invalidate the cached data or metadata for
+> another which is blatantly false when filesystem extents overlap each
+> other.
 
-this might additionally come from in-kernel callers like nfsd,
-which has even more stack space used.  And at this point we only
-enter the memcg/reclaim code, which last time I had a stack trace
-ate up another about 3k of stack space.
+As discussed, this is a tradeoff in IMA-Appraisal-HASH, which allows
+data in protected files to be updated. The attacks do not work on EVM,
+IMA-Appraisal-DigitalSignature, or IMA attestation, where the attacker
+cannot forge valid verifiers, even with arbitrary access to the raw device.
+
+> Overall, the IMA architecture assumes that if it loads and validates the
+> file data or metadata that it cannot be changed except through a kernel
+> access to that particular inode.  For a corrupted filesystem that is
+> absolutely untrue.
+ 
+IMA-Appraisal-HASH does as a deliberate tradeoff. The other integrity 
+modules do not.
+
+thanks
+dave
+
