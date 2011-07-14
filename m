@@ -1,101 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862Ab1GNUuy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 16:50:54 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:34885 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753400Ab1GNUuw (ORCPT
+	id S932285Ab1GNVAy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 17:00:54 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:65276 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932140Ab1GNVAw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 16:50:52 -0400
+	Thu, 14 Jul 2011 17:00:52 -0400
 MIME-Version: 1.0
-In-Reply-To: <19999.18584.813855.541972@quad.stoffel.home>
-References: <20110623105337.GD3753@ethz.ch> <20110627164637.377314e2@notabene.brown>
- <4E0AF091.9030301@redhat.com> <20110714155620.6e9ac2cc@notabene.brown>
- <4E1E866E.2050405@redhat.com> <20110714163836.35a729c1@notabene.brown>
- <20110714165516.GA15253@agk-dp.fab.redhat.com> <19999.18584.813855.541972@quad.stoffel.home>
-From: Erik Jensen <eriksjunk@rkjnsn.net>
-Date: Thu, 14 Jul 2011 13:50:31 -0700
-X-Google-Sender-Auth: _kIWXyw8Ubh5SmX-J1eox3KFen4
-Message-ID: <CAGh96GGJusudLzNePVVKqOwm8U9=HAFyz43Zm9Mypy2F5-PdSw@mail.gmail.com>
-Subject: Re: Mis-Design of Btrfs?
-To: John Stoffel <john@stoffel.org>
-Cc: Alasdair G Kergon <agk@redhat.com>, NeilBrown <neilb@suse.de>,
-        Ric Wheeler <rwheeler@redhat.com>,
-        Nico Schottelius <nico-lkml-20110623@schottelius.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@oracle.com>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>
+In-Reply-To: <20110714094203.GE3455@htj.dyndns.org>
+References: <1310462166-31469-1-git-send-email-tj@kernel.org>
+	<20110714094203.GE3455@htj.dyndns.org>
+Date: Thu, 14 Jul 2011 14:00:51 -0700
+X-Google-Sender-Auth: ENLjH1t1trjPixU_FIregehIlYI
+Message-ID: <CAE9FiQU92k-GAy3DVB4HYpn6D6_u=4T7t9_8FOGh8BLDEAKD=Q@mail.gmail.com>
+Subject: Re: [PATCH 2.5/13] memblock: Use __meminit[data] instead of __init[data]
+From: Yinghai Lu <yinghai@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de,
+        benh@kernel.crashing.org, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        x86@kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On Thu, Jul 14, 2011 at 12:50 PM, John Stoffel <john@stoffel.org> wrote:
->>>>>> "Alasdair" == Alasdair G Kergon <agk@redhat.com> writes:
+On Thu, Jul 14, 2011 at 2:42 AM, Tejun Heo <tj@kernel.org> wrote:
+> From 19ab281ed67b87a6623d725237a7333ca79f1e75 Mon Sep 17 00:00:00 2001
+> From: Tejun Heo <tj@kernel.org>
+> Date: Thu, 14 Jul 2011 11:22:16 +0200
 >
-> Alasdair> On Thu, Jul 14, 2011 at 04:38:36PM +1000, Neil Brown wrote:
->>> It might make sense for a device to be able to report what the maximum
->>> 'N' supported is... that might make stacked raid easier to manage...
+> memblock will be extended to include early_node_map[], which is also
+> used during memory hotplug.  Make memblock use __meminit[data] instead
+> of __init[data] so that memory hotplug code can safely reference it.
 >
-> Alasdair> I'll just say that any solution ought to be stackable.
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> ---
+>  include/linux/memblock.h |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 >
-> I've been mulling this over too and wondering how you'd handle this,
-> because upper layers really can't peak down into lower layers easily.
-> As far as I understand things.
+> diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+> index aa5df9e..434b958 100644
+> --- a/include/linux/memblock.h
+> +++ b/include/linux/memblock.h
+> @@ -152,8 +152,8 @@ static inline unsigned long memblock_region_reserved_end_pfn(const struct memblo
 >
-> So if you have btrfs -> luks -> raid1 -> raid6 -> nbd -> remote disks
 >
-> How does btrfs handle errors (or does it even see them!) from the
-> raid6 level when a single nbd device goes away?  Or taking the
-> original example, when btrfs notices a checksum isn't correct, how
-> would it push down multiple levels to try and find the correct data?
->
-> Alasdair> This means understanding both that the number of data access
-> Alasdair> routes may vary as you move through the stack, and that this
-> Alasdair> number may depend on the offset within the device.
->
-> It almost seems to me that the retry needs to be done at each level on
-> it's own, without pushing down or up the stack.  But this doesn't
-> handle the wrong file checksum issue.
->
-> Hmm... maybe instead of just one number, we need another to count the
-> levels down you go (or just split 16bit integer in half, bottom half
-> being count of tries, the upper half being levels down to try that
-> read?)
->
-> It seems to defeat the purpose of layers if you can go down and find
-> out how many layers there are underneath you....
->
-> John
+>  #ifdef ARCH_DISCARD_MEMBLOCK
+> -#define __init_memblock __init
+> -#define __initdata_memblock __initdata
+> +#define __init_memblock __meminit
+> +#define __initdata_memblock __meminitdata
+>  #else
+>  #define __init_memblock
+>  #define __initdata_memblock
 
-A random thought: What if we allow the number to wrap at each level,
-and, each time it wraps, increment the number passed to the next lower
-level.
+that is not good. It will keep memblock.reserved related data and
+functions after boot.
+and those data/func are not used after slab is ready.
 
-A zero would propagate down, letting each level do what it wants:
-luks: 0
-raid1: 0
-raid6: 0
-nbd: 0
+Thanks
 
-And higher numbers would indicate the method at each level:
-
-For a 1:
-luks: 1
-raid1: 1
-raid6: 1
-nbd: 1
-
-For a 3:
-luks: 1 (only one possibility, passes three down)
-raid1: 1 (two possibilities, so we wrap back to one and pass two down,
-since we wrapped once)
-raid6: 2 (not wrapped)
-nbd: 1
-
-When the bottom-most level gets an N that it can't handle, it would
-return EINVAL, which would be propagated up the stack.
-
-This would allow the same algorithm of incrementing N until we receive
-good data or EINVAL, and would exhaust all ways of reading the data at
-all levels.
+Yinghai
