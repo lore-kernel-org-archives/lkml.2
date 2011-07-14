@@ -1,66 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259Ab1GNGdh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 02:33:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57787 "EHLO mx2.suse.de"
+	id S1753323Ab1GNGit (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 02:38:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57997 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751048Ab1GNGdg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 02:33:36 -0400
-Date: Thu, 14 Jul 2011 07:33:32 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        XFS <xfs@oss.sgi.com>, Christoph Hellwig <hch@infradead.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 3/5] mm: vmscan: Throttle reclaim if encountering too
- many dirty pages under writeback
-Message-ID: <20110714063332.GP7529@suse.de>
-References: <1310567487-15367-1-git-send-email-mgorman@suse.de>
- <1310567487-15367-4-git-send-email-mgorman@suse.de>
- <20110713234150.GW23038@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110713234150.GW23038@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752308Ab1GNGis (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 02:38:48 -0400
+Date: Thu, 14 Jul 2011 16:38:36 +1000
+From: NeilBrown <neilb@suse.de>
+To: Ric Wheeler <rwheeler@redhat.com>
+Cc: Nico Schottelius <nico-lkml-20110623@schottelius.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@oracle.com>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: Re: Mis-Design of Btrfs?
+Message-ID: <20110714163836.35a729c1@notabene.brown>
+In-Reply-To: <4E1E866E.2050405@redhat.com>
+References: <20110623105337.GD3753@ethz.ch>
+	<20110627164637.377314e2@notabene.brown>
+	<4E0AF091.9030301@redhat.com>
+	<20110714155620.6e9ac2cc@notabene.brown>
+	<4E1E866E.2050405@redhat.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 14, 2011 at 09:41:50AM +1000, Dave Chinner wrote:
-> On Wed, Jul 13, 2011 at 03:31:25PM +0100, Mel Gorman wrote:
-> > Workloads that are allocating frequently and writing files place a
-> > large number of dirty pages on the LRU. With use-once logic, it is
-> > possible for them to reach the end of the LRU quickly requiring the
-> > reclaimer to scan more to find clean pages. Ordinarily, processes that
-> > are dirtying memory will get throttled by dirty balancing but this
-> > is a global heuristic and does not take into account that LRUs are
-> > maintained on a per-zone basis. This can lead to a situation whereby
-> > reclaim is scanning heavily, skipping over a large number of pages
-> > under writeback and recycling them around the LRU consuming CPU.
-> > 
-> > This patch checks how many of the number of pages isolated from the
-> > LRU were dirty. If a percentage of them are dirty, the process will be
-> > throttled if a blocking device is congested or the zone being scanned
-> > is marked congested. The percentage that must be dirty depends on
-> > the priority. At default priority, all of them must be dirty. At
-> > DEF_PRIORITY-1, 50% of them must be dirty, DEF_PRIORITY-2, 25%
-> > etc. i.e.  as pressure increases the greater the likelihood the process
-> > will get throttled to allow the flusher threads to make some progress.
-> 
-> It still doesn't take into account how many pages under writeback
-> were skipped. If there are lots of pages that are under writeback, I
-> think we still want to throttle to give IO a chance to complete and
-> clean those pages before scanning again....
-> 
+On Thu, 14 Jul 2011 07:02:22 +0100 Ric Wheeler <rwheeler@redhat.com> wrote:
 
-An earlier revision did take them into account but in these tests at
-least, 0 pages at the end of the LRU were PageWriteback. I expect this
-to change when multiple processes and CPUs were in use but am ignoring
-it for the moment.
+> > I'm certainly open to suggestions and collaboration.  Do you have in mind any
+> > particular way to make the interface richer??
+> >
+> > NeilBrown
+> 
+> Hi Neil,
+> 
+> I know that Chris has a very specific set of use cases for btrfs and think that 
+> Alasdair and others have started to look at what is doable.
+> 
+> The obvious use case is the following:
+> 
+> If a file system uses checksumming or other data corruption detection bits, it 
+> can detect that it got bad data on a write. If that data was protected by RAID, 
+> it would like to ask the block layer to try to read from another mirror (for 
+> raid1) or try to validate/rebuild from parity.
+> 
+> Today, I think that a retry will basically just give us back a random chance of 
+> getting data from a different mirror or the same one that we got data from on 
+> the first go.
+> 
+> Chris, Alasdair, was that a good summary of one concern?
+> 
+> Thanks!
+> 
+> Ric
 
--- 
-Mel Gorman
-SUSE Labs
+I imagine a new field in 'struct bio' which was normally zero but could be
+some small integer.  It is only meaningful for read.
+When 0 it means "get this data way you like".
+When non-zero it means "get this data using method N", where the different
+methods are up to the device.
+
+For a mirrored RAID, method N means read from device N-1.
+For stripe/parity RAID, method 1 means "use other data blocks and parity
+blocks to reconstruct data.
+
+The default for non RAID devices is to return EINVAL for any N > 0.
+A remapping device (dm-linear, dm-stripe etc) would just pass the number
+down.  I'm not sure how RAID1 over RAID5 would handle it... that might need
+some thought.
+
+So if btrfs reads a block and the checksum looks wrong, it reads again with
+a larger N.  It continues incrementing N and retrying until it gets a block
+that it likes or it gets EINVAL.  There should probably be an error code
+(EAGAIN?) which means "I cannot work with that number, but try the next one".
+
+It would be trivial for me to implement this for RAID1 and RAID10, and
+relatively easy for RAID5.
+I'd need to give a bit of thought to RAID6 as there are possibly multiple
+ways to reconstruct from different combinations of parity and data.  I'm not
+sure if there would be much point in doing that though.
+
+It might make sense for a device to be able to report what the maximum
+'N' supported is... that might make stacked raid easier to manage...
+
+NeilBrown
+
