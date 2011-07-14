@@ -1,84 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755380Ab1GNQVG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 12:21:06 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:55823 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754856Ab1GNQVE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 12:21:04 -0400
-Message-ID: <4E1F1763.6090508@candelatech.com>
-Date: Thu, 14 Jul 2011 09:20:51 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+	id S932104Ab1GNQ1T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 12:27:19 -0400
+Received: from smtp208.alice.it ([82.57.200.104]:39182 "EHLO smtp208.alice.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932076Ab1GNQ1S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 12:27:18 -0400
+Message-ID: <4E1F18E2.9030100@libero.it>
+Date: Thu, 14 Jul 2011 18:27:14 +0200
+From: Goffredo Baroncelli <kreijack@libero.it>
+Reply-To: kreijack@inwind.it
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110626 Iceowl/1.0b2 Icedove/3.1.11
 MIME-Version: 1.0
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-CC: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] sunrpc:  Fix race between work-queue and rpc_killall_tasks.
-References: <1309992581-25199-1-git-send-email-greearb@candelatech.com> <1309995932.5447.6.camel@lade.trondhjem.org> <4E173BE6.9000005@candelatech.com> <2E1EB2CF9ED1CB4AA966F0EB76EAB4430A198C7C@SACMVEXC2-PRD.hq.netapp.com> <4E177EA8.60109@candelatech.com> <2E1EB2CF9ED1CB4AA966F0EB76EAB4430A198E69@SACMVEXC2-PRD.hq.netapp.com> <4E1C8108.3020006@candelatech.com> <2E1EB2CF9ED1CB4AA966F0EB76EAB4430A295494@SACMVEXC2-PRD.hq.netapp.com> <4E1C84B2.2020807@candelatech.com>
-In-Reply-To: <4E1C84B2.2020807@candelatech.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: NeilBrown <neilb@suse.de>
+CC: Ric Wheeler <rwheeler@redhat.com>,
+        Nico Schottelius <nico-lkml-20110623@schottelius.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@oracle.com>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: Re: Mis-Design of Btrfs?
+References: <20110623105337.GD3753@ethz.ch>	<20110627164637.377314e2@notabene.brown>	<4E0AF091.9030301@redhat.com>	<20110714155620.6e9ac2cc@notabene.brown>	<4E1E866E.2050405@redhat.com> <20110714163836.35a729c1@notabene.brown>
+In-Reply-To: <20110714163836.35a729c1@notabene.brown>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2011 10:30 AM, Ben Greear wrote:
-> On 07/12/2011 10:25 AM, Myklebust, Trond wrote:
->>> -----Original Message-----
->>> From: Ben Greear [mailto:greearb@candelatech.com]
->>> Sent: Tuesday, July 12, 2011 1:15 PM
->>> To: Myklebust, Trond
->>> Cc: linux-nfs@vger.kernel.org; linux-kernel@vger.kernel.org
->>> Subject: Re: [RFC] sunrpc: Fix race between work-queue and
->>> rpc_killall_tasks.
+On 07/14/2011 08:38 AM, NeilBrown wrote:
+> On Thu, 14 Jul 2011 07:02:22 +0100 Ric Wheeler <rwheeler@redhat.com> wrote:
+> 
+>>> I'm certainly open to suggestions and collaboration.  Do you have in mind any
+>>> particular way to make the interface richer??
 >>>
-
->>> I added lots of locking around the calldata, work-queue logic, and
->>> such, and
->>> still the problem persists w/out hitting any of the debug warnings or
->>> poisoned
->>> values I put in. It almost seems like tk_calldata is just assigned to
->>> two
->>> different tasks.
->>>
->>> While poking through the code, I noticed that 'map' is static in
->>> rpcb_getport_async.
->>>
->>> That would seem to cause problems if two threads called this method at
->>> the same time, possibly causing tk_calldata to be assigned to two
->>> different
->>> tasks???
->>>
->>> Any idea why it is static?
+>>> NeilBrown
 >>
->> Doh! That is clearly a typo dating all the way back to when Chuck
->> wrote that function.
+>> Hi Neil,
 >>
->> Yes, that would definitely explain your problem.
->
-> Ok, patch sent. I assume someone will propagate this to stable
-> as desired?
->
-> And assuming this fixes it, can I get some brownie points towards
-> review of the ip-addr binding patches? :)
+>> I know that Chris has a very specific set of use cases for btrfs and think that 
+>> Alasdair and others have started to look at what is doable.
+>>
+>> The obvious use case is the following:
+>>
+>> If a file system uses checksumming or other data corruption detection bits, it 
+>> can detect that it got bad data on a write. If that data was protected by RAID, 
+>> it would like to ask the block layer to try to read from another mirror (for 
+>> raid1) or try to validate/rebuild from parity.
+>>
+>> Today, I think that a retry will basically just give us back a random chance of 
+>> getting data from a different mirror or the same one that we got data from on 
+>> the first go.
+>>
+>> Chris, Alasdair, was that a good summary of one concern?
+>>
+>> Thanks!
+>>
+>> Ric
+> 
+> I imagine a new field in 'struct bio' which was normally zero but could be
+> some small integer.  It is only meaningful for read.
+> When 0 it means "get this data way you like".
+> When non-zero it means "get this data using method N", where the different
+> methods are up to the device.
 
-Just to close this issue:  We ran a clean 24+ hour test mounting and
-unmounting 200 mounts every 30 seconds, and it ran with zero problems.
+In more general terms, the filesystem should be able to require: try
+another read different regarding the previous ones. The term are
+important because we should differentiate the case of "wrong data from
+disk1, read from disk0" and "wrong data from disk0 read disk1". I prefer
+thinking the field as bitmap. Every bit represent a different way of
+read. So it is possible to reuse to track which "kind of read" was
+already used.
 
-This was with 2.6.38.8+ with this fix applied.
+After a 2nd read, the block layer should:
+	a) redo the read if possible, otherwise FAIL
+	b) pass the data to the filesystem
+	c) if the filesystem accepts the new data, replace the wrong
+	   data with the correct one or mark the block as broken.
+	d) inform the userspace/filesystem of the result
 
-3.0-rc7+ is still flaky in various other ways, but I see no more
-NFS problems at least.
-
-So, that was the problem I was hitting, and it appears to be the
-last problem in this area.
-
-Thanks,
-Ben
-
--- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
+> 
+> For a mirrored RAID, method N means read from device N-1.
+> For stripe/parity RAID, method 1 means "use other data blocks and parity
+> blocks to reconstruct data.
+> 
+> The default for non RAID devices is to return EINVAL for any N > 0.
+> A remapping device (dm-linear, dm-stripe etc) would just pass the number
+> down.  I'm not sure how RAID1 over RAID5 would handle it... that might need
+> some thought.
+> 
+> So if btrfs reads a block and the checksum looks wrong, it reads again with
+> a larger N.  It continues incrementing N and retrying until it gets a block
+> that it likes or it gets EINVAL.  There should probably be an error code
+> (EAGAIN?) which means "I cannot work with that number, but try the next one".
+> 
+> It would be trivial for me to implement this for RAID1 and RAID10, and
+> relatively easy for RAID5.
+> I'd need to give a bit of thought to RAID6 as there are possibly multiple
+> ways to reconstruct from different combinations of parity and data.  I'm not
+> sure if there would be much point in doing that though.
+> 
+> It might make sense for a device to be able to report what the maximum
+> 'N' supported is... that might make stacked raid easier to manage...
+> 
+> NeilBrown
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> .
+> 
 
