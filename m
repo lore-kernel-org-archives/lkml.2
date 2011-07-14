@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932074Ab1GNPtV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 11:49:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35618 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754639Ab1GNPtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 11:49:20 -0400
-Date: Thu, 14 Jul 2011 16:49:15 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 5/5] mm: writeback: Prioritise dirty inodes encountered
- by direct reclaim for background flushing
-Message-ID: <20110714154915.GV7529@suse.de>
-References: <1310567487-15367-1-git-send-email-mgorman@suse.de>
- <1310567487-15367-6-git-send-email-mgorman@suse.de>
- <20110714150959.GA30936@infradead.org>
+	id S1755322Ab1GNP6Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 11:58:25 -0400
+Received: from imx9.toshiba.co.jp ([202.33.96.51]:53980 "EHLO
+	imx9.toshiba.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755036Ab1GNP6Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 11:58:24 -0400
+X-Greylist: delayed 2331 seconds by postgrey-1.27 at vger.kernel.org; Thu, 14 Jul 2011 11:58:24 EDT
+Message-ID: <4E1F0685.1000803@toshiba.co.jp>
+Date: Thu, 14 Jul 2011 22:08:53 +0700
+From: KOBAYASHI Yoshitake <yoshitake.kobayashi@toshiba.co.jp>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110714150959.GA30936@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de, mingo@redhat.com
+Subject: [PATCH RT] ipc: add a critical section in pipelined_receive
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 14, 2011 at 11:09:59AM -0400, Christoph Hellwig wrote:
-> On Wed, Jul 13, 2011 at 03:31:27PM +0100, Mel Gorman wrote:
-> > It is preferable that no dirty pages are dispatched from the page
-> > reclaim path. If reclaim is encountering dirty pages, it implies that
-> > either reclaim is getting ahead of writeback or use-once logic has
-> > prioritise pages for reclaiming that are young relative to when the
-> > inode was dirtied.
-> 
-> what does this buy us? 
+This patch is for v2.6.33.9-rt31 to avoid a deadlock.
+In POSIX message queue, if a sender process uses SCHED_FIFO and 
+has a higher priority than a receiver process, the sender will
+be stuck at ipc/mqueue.c:446
 
-Very little. The vague intention was to avoid a situation where kswapds
-priority was raised such that it had to write pages to clean a
-particular zone.
+  445                 while (ewp->state == STATE_PENDING)
+  446                         cpu_relax();
 
-> If at all we should prioritize by a zone,
-> e.g. tell write_cache_pages only to bother with writing things out
-> if the dirty page is in a given zone.   We'd probably still cluster
-> around it to make sure we get good I/O patterns, but would only start
-> I/O if it has a page we actually care about.
-> 
+Description of the problem
+ (receiver process)
+   1. receiver changes sender's state to STATE_PENDING (mqueue.c:832)
+   2. wake up sender process and "switch to sender" (mqueue.c:833)
+      Note: This context switch only happens in PREEMPT_RT kernel.
+ (sender process)
+   3. sender check the own state in above loop (mqueue.c:445-446)
+   *. receiver will never wake up and cannot change sender's state to
+      STATE_READY because sender has higher priority
 
-That would make more sense. I've dropped this patch entirely.
 
+Signed-off-by: Yoshitake Kobayashi <yoshitake.kobayashi@toshiba.co.jp>
+---
+ ipc/mqueue.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/ipc/mqueue.c b/ipc/mqueue.c
+index 01582e5..712d813 100644
+--- a/ipc/mqueue.c
++++ b/ipc/mqueue.c
+@@ -827,12 +827,17 @@ static inline void pipelined_receive(struct mqueue_inode_info *info)
+ 		wake_up_interruptible(&info->wait_q);
+ 		return;
+ 	}
++	/*
++	 * Keep them in one critical section for PREEMPT_RT:
++	 */
++	preempt_disable_rt();
+ 	msg_insert(sender->msg, info);
+ 	list_del(&sender->list);
+ 	sender->state = STATE_PENDING;
+ 	wake_up_process(sender->task);
+ 	smp_wmb();
+ 	sender->state = STATE_READY;
++	preempt_enable_rt();
+ }
+ 
+ SYSCALL_DEFINE5(mq_timedsend, mqd_t, mqdes, const char __user *, u_msg_ptr,
 -- 
-Mel Gorman
-SUSE Labs
+1.7.2.5
