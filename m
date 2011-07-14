@@ -1,134 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754653Ab1GNWJw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 18:09:52 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:44781 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753802Ab1GNWJv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 18:09:51 -0400
-Date: Fri, 15 Jul 2011 00:09:47 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH 3/6] trace: Add tracepoints to IRQ work run handler
-Message-ID: <20110714220944.GE26786@somewhere.redhat.com>
-References: <1310679495-29104-1-git-send-email-vnagarnaik@google.com>
- <1310679495-29104-4-git-send-email-vnagarnaik@google.com>
+	id S1754785Ab1GNWOs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 18:14:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51154 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754072Ab1GNWOr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 18:14:47 -0400
+Message-ID: <4E1F6A51.3020807@redhat.com>
+Date: Thu, 14 Jul 2011 18:14:41 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100505 Fedora/3.0.4-2.el6 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1310679495-29104-4-git-send-email-vnagarnaik@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kyle McMartin <kyle@mcmartin.ca>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+CC: Rik van Riel <riel@redhat.com>
+Subject: Re: 3.0.0-rc6 ~9X system time degradation on kernbench
+References: <4E175C45.1060700@redhat.com> <4E17A4BF.5050500@redhat.com> <20110709224803.GC9545@bombadil.infradead.org>
+In-Reply-To: <20110709224803.GC9545@bombadil.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 14, 2011 at 02:38:12PM -0700, Vaibhav Nagarnaik wrote:
-> This is a part of overall effort to trace all the interrupts happening
-> in a system to figure out what time is spent in kernel space versus user
-> space.
-> 
-> Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
-> ---
->  include/trace/events/irq.h |   44 ++++++++++++++++++++++++++++++++++++++++++++
->  kernel/irq_work.c          |    4 ++++
->  2 files changed, 48 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/trace/events/irq.h b/include/trace/events/irq.h
-> index e6e72e0..d8fab89 100644
-> --- a/include/trace/events/irq.h
-> +++ b/include/trace/events/irq.h
-> @@ -295,6 +295,50 @@ DEFINE_EVENT(timer_interrupt, timer_nohz_exit,
->  	TP_ARGS(ignore)
->  );
->  
-> +DECLARE_EVENT_CLASS(irq_work,
-> +
-> +	TP_PROTO(unsigned int ignore),
-> +
-> +	TP_ARGS(ignore),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(	unsigned int,	ignore	)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->ignore = ignore;
-> +	),
-> +
-> +	TP_printk("%u", __entry->ignore)
-> +);
-> +
-> +/**
-> + * irq_work_run_entry - called immediately after entering the irq work
-> + * handler
-> + *
-> + * When used in combination with the irq_work_run_exit tracepoint
-> + * we can determine the irq work handler runtime.
-> + */
-> +DEFINE_EVENT(irq_work, irq_work_run_entry,
-> +
-> +	TP_PROTO(unsigned int ignore),
-> +
-> +	TP_ARGS(ignore)
-> +);
-> +
-> +/**
-> + * irq_work_run_exit - called just before the irq work handler returns
-> + *
-> + * When used in combination with the irq_work_run_entry tracepoint
-> + * we can determine the irq work handler runtime.
-> + */
-> +DEFINE_EVENT(irq_work, irq_work_run_exit,
-> +
-> +	TP_PROTO(unsigned int ignore),
-> +
-> +	TP_ARGS(ignore)
-> +);
-> +
->  #endif /*  _TRACE_IRQ_H */
->  
->  /* This part must be outside protection */
-> diff --git a/kernel/irq_work.c b/kernel/irq_work.c
-> index c58fa7d..7e78122 100644
-> --- a/kernel/irq_work.c
-> +++ b/kernel/irq_work.c
-> @@ -9,6 +9,7 @@
->  #include <linux/module.h>
->  #include <linux/irq_work.h>
->  #include <linux/hardirq.h>
-> +#include <trace/events/irq.h>
->  
->  /*
->   * An entry can be in one of four states:
-> @@ -125,6 +126,8 @@ void irq_work_run(void)
->  	if (this_cpu_read(irq_work_list) == NULL)
->  		return;
 
-If you don't want to miss any of these interrupts, I suggest you
-call trace_irq_work_run_entry(0) before the above check.
 
-Also I'm adding Peter who maintains this.
+On 07/09/2011 06:48 PM, Kyle McMartin wrote:
+> On Fri, Jul 08, 2011 at 08:45:51PM -0400, Rik van Riel wrote:
+>   
+>> On 07/08/2011 03:36 PM, Prarit Bhargava wrote:
+>>     
+>>> Just some numbers out of kernbench.  System Time&  Context Switches
+>>> climb dramatically between 2.6.38 and 3.0.0-rc6.  Currently bisecting to
+>>> find out why.  .config is based on Fedora's x86_64 .config.
+>>>       
+>>     
+> Er, if you're using Fedora's config, did you 'make release' first?
+> grep DEBUG in the config and see why... ;-)
+>   
 
->  
-> +	trace_irq_work_run_entry(0);
-> +
->  	BUG_ON(!in_irq());
->  	BUG_ON(!irqs_disabled());
->  
-> @@ -149,6 +152,7 @@ void irq_work_run(void)
->  			      next_flags(NULL, IRQ_WORK_BUSY),
->  			      NULL);
->  	}
-> +	trace_irq_work_run_exit(0);
->  }
->  EXPORT_SYMBOL_GPL(irq_work_run);
->  
-> -- 
-> 1.7.3.1
-> 
+That did it :)
+
+ 
+Thu Jul 14 15:33:27 EDT 2011
+3.0.0-rc7+
+Average Optimal load -j 48 Run (std deviation):
+Elapsed Time 178.384 (0.618692)
+User Time 3970.09 (1.93208)
+System Time 587.498 (0.511488)
+Percent CPU 2554.2 (8.58487)
+Context Switches 1.08771e+06 (9697.64)
+Sleeps 871265 (13137.6)
+
+Thu Jul 14 16:06:39 EDT 2011
+2.6.38.8-35.fc15.x86_64
+Average Optimal load -j 48 Run (std deviation):
+Elapsed Time 184.6 (8.64522)
+User Time 3961.07 (5.05)
+System Time 637.382 (11.7187)
+Percent CPU 2494.4 (102.827)
+Context Switches 1.09046e+06 (3986.03)
+Sleeps 873607 (4756.41)
+
+Still a bit higher ... but not 9x ... thanks Kyle.
+
+P.
+
+
