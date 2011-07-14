@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932613Ab1GNXVZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 19:21:25 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:4438 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932576Ab1GNXVY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 19:21:24 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=XCsRTbL4h2aR6JOWiZitTCqxrHOTXU7M1jiw3+BbaWuSHyHBH4w6GkikJa0zQDmEZ
-	94ps++OX+Wc83fPIw1jjA==
+	id S932627Ab1GNX1N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 19:27:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58436 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932558Ab1GNX1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 19:27:12 -0400
+Message-ID: <4E1F7B40.6030705@zytor.com>
+Date: Thu, 14 Jul 2011 16:26:56 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <20110715000037.3fc1670a@lxorguk.ukuu.org.uk>
-References: <1310675693-9204-1-git-send-email-mikew@google.com>
- <1310675693-9204-2-git-send-email-mikew@google.com> <20110714234248.7ed43534@lxorguk.ukuu.org.uk>
- <CAGTjWtDHH_VXXAsh5WPspTwPEhzcKi4_Jno7w=jReiS7HSALQw@mail.gmail.com> <20110715000037.3fc1670a@lxorguk.ukuu.org.uk>
-From: Mike Waychison <mikew@google.com>
-Date: Thu, 14 Jul 2011 16:20:59 -0700
-Message-ID: <CAGTjWtA5qobWAZb=SbM1y5SFtDKPuJVuAsbDKmkaxxL7mA6OKg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] x86: Allow disabling of sys_iopl, sys_ioperm
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
+To: "John Z. Bohach" <jzb2@aexorsyst.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: large initramfs causes h/w reset after decompressing
+References: <201107140906.46404.jzb2@aexorsyst.com> <4E1F5C20.8000008@zytor.com> <201107141532.59383.jzb2@aexorsyst.com>
+In-Reply-To: <201107141532.59383.jzb2@aexorsyst.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 14, 2011 at 4:00 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->> > a) you can do this with a security module
+On 07/14/2011 03:32 PM, John Z. Bohach wrote:
+> On Thursday 14 July 2011 02:14:08 pm H. Peter Anvin wrote:
+>> On 07/14/2011 09:06 AM, John Z. Bohach wrote:
+>>> I have a large initramfs cpio file, about 890 MB, which expands to
+>>> 2.7 GB, and am running on linux-2.6.36.1, in 64-bit mode with 8 GB
+>>> of physical RAM.
+>>>
+>>> Upon loading the initramfs, I see the message "Decompressing..."
+>>> for a few seconds, and then comes a reset.
+>>>
+>>> This question has come up before...is there some sort of max size.
+>>> that I am exceeding?  With 8 GB of physical memory and 64-bit arch.
+>>> (AMD-II), certainly seems that there should be enough memory, no?
+>>>
+>>> Thanks...
 >>
->> I can?   How?   The whole LSM approach seems intractable to me.
->
-> It would certainly need some trivial tweaking (to be specific we'd need
-> to move from capable(x) to capable_syscall(x, syscall_code) for those
-> interfaces that mattered, but that would probably be a good thing anyway
-> from the point of view of beating the capability model into something more
-> flexible and would help stuff like SELinux as well I think.
+>> What bootloader are you using?  There are some bootloaders which
+>> don't allocate the initramfs in a very good spot.
+>>
+>> 	-hpa
+> 
+> I've actually gotten the improbable to work, and am PXE booting via 
+> syslinux and dhcp.
+> 
+> It all works fine with an initramfs of ~20 MB, but that's quite a diff. 
+> from 2.7 GB of expanded /root (890 MB cpio.tar.gz file).
+> 
+> But excuse my ignorance, I don't see the relevance of your 
+> question...the initramfs is part of the kernel itself...I simply load 
+> the kernel bzImage (all 890 MB) and that's where its all at...this is 
+> _not_ an initrd.
+> 
 
-The idea of building more obtuse logic on top of posix capabilities
-made me puke in my mouth :(
+Ah, interesting.  You didn't say that.  That does change some things...
+I would not at all be surprised if the kernel decompressor doesn't
+handle that very well...
 
->
-> We have an underlying separation of security from the other details - we
-> really should keep it clean that way.
+	-hpa
 
-An aspect oriented approach to security is probably fine for
-environments where you want to allow somebody access to features.
-
-In my case, I simply don't want these "features", which is why I took
-the compile time approach to turning this stuff off.  I realize that
-these syscalls (and the /dev/port interface) are not comprehensive (I
-didn't say they were either).  I'm happy though to take suggestions
-for stuff I probably should be disabling considering my goal of making
-it difficult for root to compromise a system.  And yes, modules are
-disabled :)
