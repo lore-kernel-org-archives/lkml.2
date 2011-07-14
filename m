@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753884Ab1GNHn1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 03:43:27 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58372 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753715Ab1GNHnZ (ORCPT
+	id S1753913Ab1GNHpD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 03:45:03 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:53025 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753761Ab1GNHpA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 03:43:25 -0400
-Date: Thu, 14 Jul 2011 10:41:44 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Ravishankar <ravishankarkm32@gmail.com>
-Cc: gregkh@suse.de, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>
-Subject: Re: [PATCH 30/30] Staging: comedi: fix printk() issue in das16m1.c
-Message-ID: <20110714074144.GR18655@shale.localdomain>
-References: <1310618547-8801-1-git-send-email-ravishankarkm32@gmail.com>
+	Thu, 14 Jul 2011 03:45:00 -0400
+Date: Thu, 14 Jul 2011 09:44:55 +0200
+From: Tejun Heo <tj@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: mingo@redhat.com, tglx@linutronix.de, benh@kernel.crashing.org,
+        yinghai@kernel.org, davem@davemloft.net, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH 1/8] bootmem: Replace work_with_active_regions() with
+ for_each_mem_pfn_range()
+Message-ID: <20110714074455.GC3455@htj.dyndns.org>
+References: <1310460395-30913-1-git-send-email-tj@kernel.org>
+ <1310460395-30913-2-git-send-email-tj@kernel.org>
+ <4E1E5058.5020702@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1310618547-8801-1-git-send-email-ravishankarkm32@gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4E1E5058.5020702@zytor.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 14, 2011 at 10:12:27AM +0530, Ravishankar wrote:
-> @@ -690,7 +690,7 @@ static int das16m1_attach(struct comedi_device *dev,
->  	if (!request_region(iobase + DAS16M1_82C55, DAS16M1_SIZE2,
->  			    driver_das16m1.driver_name)) {
->  		release_region(iobase, DAS16M1_SIZE);
-> -		printk(" I/O port conflict\n");
-> +		printk(KERN_ERR " I/O port conflict\n");
+On Wed, Jul 13, 2011 at 07:11:36PM -0700, H. Peter Anvin wrote:
+> On 07/12/2011 01:46 AM, Tejun Heo wrote:
+> > Callback based iteration is cumbersome and much less useful than
+> > for_each_*() iterator.  This patch implements for_each_mem_pfn_range()
+> > which replaces work_with_active_regions().  All the current users of
+> > work_with_active_regions() are converted.
+> > 
+> > This simplifies walking over early_node_map and will allow converting
+> > internal logics in page_alloc to use iterator instead of walking
+> > early_node_map directly, which in turn will enable moving node
+> > information to memblock.
+> > 
+> > powerpc change is only compile tested.
+> > 
+> > Signed-off-by: Tejun Heo <tj@kernel.org>
+> > Cc: Yinghai Lu <yinghai@kernel.org>
+> > Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> 
+> This patch causes a build failure on x86-64 with the attached .config:
+> 
+> /home/hpa/kernel/linux-2.6-tip.memblock/drivers/pci/intel-iommu.c: In
+> function ‘si_domain_init’:
+> /home/hpa/kernel/linux-2.6-tip.memblock/drivers/pci/intel-iommu.c:2216:4: error:
+> implicit declaration of function ‘iommuc_domain_identity_map’
+> [-Werror=implicit-function-declaration]
+> cc1: some warnings being treated as errors
 
-This is a continuation of the last printk line.
+It was a typo that I fixed before sending the patches but obviously I
+sent the old one.  The git tree had the updated one.  I'll re-post the
+updated one.
 
->  		return -EIO;
->  	}
->  	dev->iobase = iobase;
-> @@ -710,7 +710,7 @@ static int das16m1_attach(struct comedi_device *dev,
->  	} else if (irq == 0) {
->  		printk(", no irq\n");
->  	} else {
-> -		printk(", invalid irq\n"
-> +		printk(KERN_ERR ", invalid irq\n"
+Thank you.
 
-Same.
-
-If you want you can just rewrite the printks completely.  You're not
-just limited to adding the KERN_ prefixes, you could make larger
-changes than that.
-
-regards,
-dan carpenter
+-- 
+tejun
