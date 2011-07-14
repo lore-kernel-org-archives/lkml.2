@@ -1,102 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754778Ab1GNM4N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 08:56:13 -0400
-Received: from casper.infradead.org ([85.118.1.10]:33307 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754564Ab1GNM4K convert rfc822-to-8bit (ORCPT
+	id S1754775Ab1GNNJk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 09:09:40 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:63208 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754564Ab1GNNJj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 08:56:10 -0400
-Subject: Re: [PATCH] [RFCv3] perf: robustify proc and debugfs file recording
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Michael Neuling <mikey@neuling.org>, Sonny Rao <sonnyrao@chromium.org>,
-        acme@redhat.com, anton@samba.org, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1310647558.27864.19.camel@gandalf.stny.rr.com>
-References: <28585.1310602685@neuling.org>
-	 <1310604019-10935-1-git-send-email-sonnyrao@chromium.org>
-	 <1310612277.27864.5.camel@gandalf.stny.rr.com>
-	 <10011.1310614483@neuling.org>
-	 <1310647558.27864.19.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 14 Jul 2011 14:55:30 +0200
-Message-ID: <1310648130.2586.251.camel@twins>
+	Thu, 14 Jul 2011 09:09:39 -0400
+X-Authority-Analysis: v=1.1 cv=yMxAJ7W7nAoPh8ZdbvCArpG6pAdHwgpzIvOq8QbMesM= c=1 sm=0 a=l8LWmUGdTDcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=OAouQKHyo7iVPam7dNoA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC 0/4] streamline_config clean-ups
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Steven Rostedt <srostedt@redhat.com>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>
+In-Reply-To: <CACqU3MX4=AQyH4TXi+LaHV6WWRsLZpGf7c=iwQHm6Mqsr6SgYA@mail.gmail.com>
+References: <1309563076-5050-1-git-send-email-lacombar@gmail.com>
+	 <CACqU3MUrCODMx=8Bu+YDxy2BJwjm-77PXFob5OwHn=fr5mTdkg@mail.gmail.com>
+	 <1310170759.2780.37.camel@fedora>
+	 <1310604899.27864.4.camel@gandalf.stny.rr.com>
+	 <CACqU3MX4=AQyH4TXi+LaHV6WWRsLZpGf7c=iwQHm6Mqsr6SgYA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 14 Jul 2011 09:09:37 -0400
+Message-ID: <1310648977.27864.22.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-07-14 at 08:45 -0400, Steven Rostedt wrote:
-> ---
->  tools/perf/util/trace-event-info.c |  120 ++++++++------------------------=
-> -----
->  1 file changed, 29 insertions(+), 91 deletions(-)
+On Wed, 2011-07-13 at 22:41 -0400, Arnaud Lacombe wrote:
+
+> yes... it could not have. I missed a $(srctree), an export, and an
+> error check. Attached patch should fix it, behavior (see below) with
+> this patch is consistent between v3.0-rc6 and the tip of the patched
+> branch.
+
+That seems to work. Could you resend a fixed patchset?
+
 > 
-> Index: linux-ozlabs/tools/perf/util/trace-event-info.c
-> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> --- linux-ozlabs.orig/tools/perf/util/trace-event-info.c        2011-07-13 20:42:2=
-> 4.442945973 +1000
-> +++ linux-ozlabs/tools/perf/util/trace-event-info.c     2011-07-14 10:14:19.072=
-> 946058 +1000
-> @@ -183,106 +183,59 @@
->         return *ptr =3D=3D 0x01020304;
->  }
-> =20
-> -static unsigned long long copy_file_fd(int fd)
-> +/* unfortunately, you can not stat debugfs or proc files for size */
-> +static void record_file(const char *file, size_t hdr_sz)
->  {
->         unsigned long long size =3D 0;
+> Btw, as of v3.0-rc6, localmodconfig does not produce a valid .config.
+> Local kernel is a Fedora 14 kernel, based on
+> config-2.6.35.13-91.fc14.x86_64. The perl script complete fine, but
+> the config is then restarted, I'm not sure if it is the intended
+> behavior.
 
-Yeah, its all the rage, we're supposed to write full RFC compliant email
-parsers these days :(
+Hmm, not sure exactly what you mean. The script should run
+(silent)oldconfig after it does the localmodconfig to fill in the stuff
+that it caused to change. Did you notice something that broke?
 
-/Content-Transfer-Encoding:.*quoted-printable.*/ {
-        decode = 1;
-}
-
-// {
-	tmp = $0
-
-	if (!decode) {
-		print tmp
-		next
-	}
-
-	if (concat) {
-                tmp = last tmp
-                concat = 0;
-        }
-
-        if (tmp ~ /=$/) {
-                concat = 1;
-                gsub("=$", "", tmp);
-        }
-
-        offset = 0;
-        while (match(tmp, /=[[:xdigit:]][[:xdigit:]]/, a)) {
-                if (a[0] < offset)
-                        break;
-                hex = substr(a[0], 2)
-                char = sprintf("%c", strtonum("0x"hex))
-                gsub(a[0], char, tmp)
-                offset = a[0];
-        }
-
-        if (concat) {
-                last = tmp
-                next
-        }
-
-        print tmp
-}
+-- Steve
 
 
-Should decode that crap I think..
