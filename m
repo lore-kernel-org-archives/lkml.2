@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753105Ab1GNBev (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 21:34:51 -0400
-Received: from mga02.intel.com ([134.134.136.20]:4301 "EHLO mga02.intel.com"
+	id S1753396Ab1GNBgU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 21:36:20 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44222 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750850Ab1GNBeu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 21:34:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,527,1304319600"; 
-   d="scan'208";a="25622792"
-From: Huang Ying <ying.huang@intel.com>
-To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Huang Ying <ying.huang@intel.com>
-Subject: [BUGFIX] kexec, x86, Fix incorrect jump back address if not preserve context
-Date: Thu, 14 Jul 2011 09:34:37 +0800
-Message-Id: <1310607277-25029-1-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1750810Ab1GNBgT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 21:36:19 -0400
+Message-ID: <4E1E47FE.7020400@zytor.com>
+Date: Wed, 13 Jul 2011 18:35:58 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: mingo@redhat.com, tglx@linutronix.de, benh@kernel.crashing.org,
+        yinghai@kernel.org, davem@davemloft.net, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH 04/13] x86: Use HAVE_MEMBLOCK_NODE_MAP
+References: <1310462166-31469-1-git-send-email-tj@kernel.org> <1310462166-31469-5-git-send-email-tj@kernel.org>
+In-Reply-To: <1310462166-31469-5-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In kexec jump support, jump back address passed to the kexeced kernel
-via function calling ABI, that is, the function call return address is
-the jump back entry.  And jump back entry == 0 should be used to
-signal that jump back or preserve context is not enabled in original
-kernel.  But in original implementation, the stack position used for
-function call return address is not cleared if preserve context is
-disabled.  The patch fixes this issue.
+On 07/12/2011 02:15 AM, Tejun Heo wrote:
+> Convert x86 to HAVE_MEMBLOCK_NODE_MAP.  The only difference in memory
+> handling is that allocations can't no longer cross node boundaries
+> whether they're node affine or not, which shouldn't matter at all.
+> 
+> This conversion will enable further simplification of boot memory
+> handling.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
 
-Signed-off-by: Huang Ying <ying.huang@intel.com>
-Reported-and-tested-by: Yin Kangkai <kangkai.yin@intel.com>
----
- arch/x86/kernel/relocate_kernel_32.S |    2 ++
- arch/x86/kernel/relocate_kernel_64.S |    2 ++
- 2 files changed, 4 insertions(+)
+Hi Tejun,
 
---- a/arch/x86/kernel/relocate_kernel_32.S
-+++ b/arch/x86/kernel/relocate_kernel_32.S
-@@ -97,6 +97,8 @@ relocate_kernel:
- 	ret
- 
- identity_mapped:
-+	/* set return address as 0 if not preserve context */
-+	pushl	$0
- 	/* store the start address on the stack */
- 	pushl   %edx
- 
---- a/arch/x86/kernel/relocate_kernel_64.S
-+++ b/arch/x86/kernel/relocate_kernel_64.S
-@@ -100,6 +100,8 @@ relocate_kernel:
- 	ret
- 
- identity_mapped:
-+	/* set return address as 0 if not preserve context */
-+	pushq	$0
- 	/* store the start address on the stack */
- 	pushq   %rdx
- 
+This patch causes a build error on i386 allnoconfig:
+
+/home/hpa/kernel/linux-2.6-tip.memblock/arch/x86/mm/init_32.c: In
+function ‘initmem_init’:
+/home/hpa/kernel/linux-2.6-tip.memblock/arch/x86/mm/init_32.c:653:2:
+error: implicit declaration of function
+‘memblock_x86_register_active_regions’
+[-Werror=implicit-function-declaration]
+cc1: some warnings being treated as errors
+
+	-hpa
