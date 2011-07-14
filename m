@@ -1,53 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752366Ab1GNF02 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 01:26:28 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:56560 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752069Ab1GNF01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 01:26:27 -0400
-Date: Wed, 13 Jul 2011 22:26:22 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: lockdep circular locking error (rcu_node_level_0 vs rq->lock)
-Message-ID: <20110714052622.GA5366@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110711231932.GB20367@redhat.com>
- <1310502014.2309.7.camel@laptop>
- <20110712205126.GM2326@linux.vnet.ibm.com>
- <1310507047.2309.10.camel@laptop>
- <20110712225443.GS2326@linux.vnet.ibm.com>
- <1310545448.14978.40.camel@twins>
- <20110713163309.GC2355@linux.vnet.ibm.com>
- <20110714042932.GA2932@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110714042932.GA2932@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752518Ab1GNFtl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 01:49:41 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:62100 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752193Ab1GNFtk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 01:49:40 -0400
+From: Ravishankar <ravishankarkm32@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>,
+        Ravishankar <ravishankarkm32@gmail.com>
+Subject: [PATCH 1/3] Staging: comedi: fix warning issue in daqboard2000.c
+Date: Thu, 14 Jul 2011 11:32:13 +0530
+Message-Id: <1310623333-16176-1-git-send-email-ravishankarkm32@gmail.com>
+X-Mailer: git-send-email 1.6.5.2
+In-Reply-To: <[PATCH 1/3]Staging : comedi: fix indentation warning issue in daqboard2000.c>
+References: <[PATCH 1/3]Staging : comedi: fix indentation warning issue in daqboard2000.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 13, 2011 at 09:29:32PM -0700, Paul E. McKenney wrote:
-> On Wed, Jul 13, 2011 at 09:33:09AM -0700, Paul E. McKenney wrote:
+From: Ravishankar <ravi.shankar@greenturtles.in>
 
-[ . . . ]
+This is a patch to the daqboard2000.c file that fixes up a indentation warning found by the checkpatch.pl tool
 
-> Hmmm...  Something is confused.  I get boot time hangs with the
-> occasional stack overflow, whether or not I add my patch on top.
-> Left to myself, I would try applying your patch incrementally, and
-> also disabling irqs before rcu_read_lock() and enabling them after
-> rcu_read_unlock(), as this prevents rcu_read_unlock() from ever getting
-> to the rcu_read_unlock_special() slowpath.
+Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
+---
+ drivers/staging/comedi/drivers/daqboard2000.c |   58 ++++++++++++------------
+ 1 files changed, 29 insertions(+), 29 deletions(-)
 
-And the real question...  Why did the rcu_read_unlock() called from
-cpuacct_charge() enter rcu_read_unlock_special() in the first place?
-If the runqueue lock is held, irqs should be disabled, so how did the
-task get blocked or interrupted?
+diff --git a/drivers/staging/comedi/drivers/daqboard2000.c b/drivers/staging/comedi/drivers/daqboard2000.c
+index 82be77d..6441771 100644
+--- a/drivers/staging/comedi/drivers/daqboard2000.c
++++ b/drivers/staging/comedi/drivers/daqboard2000.c
+@@ -54,7 +54,7 @@ Configuration options:
+       available from http://www.plxtech.com/products/io/pci9080 
+ 
+    2. The initialization done so far is:
+-        a. program the FPGA (windows code sans a lot of error messages)
++	a.program the FPGA(windows code sans a lot of error messages)
+ 	b.
+ 
+    3. Analog out seems to work OK with DAC's disabled, if DAC's are enabled,
+@@ -63,52 +63,52 @@ Configuration options:
+       gives me no clues. I'll keep it simple so far.
+ 
+    4. Analog in.
+-        Each channel in the scanlist seems to be controlled by four
++	Each channel in the scanlist seems to be controlled by four
+ 	control words:
+ 
+-        Word0:
+-          +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+-          ! | | | ! | | | ! | | | ! | | | !
+-          +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++	Word0:
++	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++	  !|||!|||!|||!|||!
++	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ 
+-        Word1:
+-          +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+-          ! | | | ! | | | ! | | | ! | | | !
+-          +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++	Word1:
++	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++	  !|||!|||!|||!|||!
++	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ 	   |             |       | | | | |
+-           +------+------+       | | | | +-- Digital input (??)
++	   +------+------+       | | | | +-- Digital input (? ?)
+ 		  |		 | | | +---- 10 us settling time
+ 		  |		 | | +------ Suspend acquisition (last to scan)
+ 		  |		 | +-------- Simultaneous sample and hold
+ 		  |		 +---------- Signed data format
+ 		  +------------------------- Correction offset low
+ 
+-        Word2:
+-          +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+-          ! | | | ! | | | ! | | | ! | | | !
+-          +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+-           |     | |     | | | | | |     |
+-           +-----+ +--+--+ +++ +++ +--+--+
+-              |       |     |   |     +----- Expansion channel
++	Word2:
++	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++	  ! | | | ! | | | ! | | | ! | | | !
++	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++	   |     | |     | | | | | |     |
++	   +-----+ +--+--+ +++ +++ +--+--+
++	      |       |     |   |     +----- Expansion channel
+ 	      |       |     |   +----------- Expansion gain
+-              |       |     +--------------- Channel (low)
++	      |       |     +--------------- Channel (low)
+ 	      |       +--------------------- Correction offset high
+ 	      +----------------------------- Correction gain low
+-        Word3:
+-          +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+-          ! | | | ! | | | ! | | | ! | | | !
+-          +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+-           |             | | | |   | | | |
+-           +------+------+ | | +-+-+ | | +-- Low bank enable
+-                  |        | |   |   | +---- High bank enable
+-                  |        | |   |   +------ Hi/low select
++	Word3:
++	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++	  ! | | | ! | | | ! | | | ! | | | !
++	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++	   |             | | | |   | | | |
++	   +------+------+ | | +-+-+ | | +-- Low bank enable
++		  |        | |   |   | +---- High bank enable
++		  |	   | |   |   +------ Hi/low select
+ 		  |    	   | |   +---------- Gain (1,?,2,4,8,16,32,64)
+ 		  |    	   | +-------------- differential/single ended
+ 		  |    	   +---------------- Unipolar
+ 		  +------------------------- Correction gain high
+ 
+    999. The card seems to have an incredible amount of capabilities, but
+-        trying to reverse engineer them from the Windows source is beyond my
++	trying to reverse engineer them from the Windows source is beyond my
+ 	patience.
+ 
+  */
+@@ -722,7 +722,7 @@ static int daqboard2000_8255_cb(int dir, int port, int data,
+ 	}
+ /*
+   printk("daqboard2000_8255_cb %x %d %d %2.2x -> %2.2x\n",
+-        arg, dir, port, data, result);
++	 arg, dir, port, data, result);
+ */
+ 	return result;
+ }
+-- 
+1.6.5.2
 
-I need to get some sleep then figure out what is going on here.
-
-							Thanx, Paul
