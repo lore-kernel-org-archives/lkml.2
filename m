@@ -1,57 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755365Ab1GNQG2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 12:06:28 -0400
-Received: from home.keithp.com ([63.227.221.253]:38081 "EHLO keithp.com"
+	id S1755399Ab1GNQJW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 12:09:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21860 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755271Ab1GNQG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 12:06:27 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Francesco Allertsen <fallertsen@gmail.com>,
-        Pekka Enberg <penberg@kernel.org>
-Cc: dri-devel@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Reverting rc6 by default
-In-Reply-To: <20110714075007.GB2949@fujiko>
-References: <20110621155205.GA2488@fujiko> <yunboxrxiz2.fsf@aiko.keithp.com> <20110621164209.GA2155@fujiko> <yun8vsvxdr4.fsf@aiko.keithp.com> <20110621184757.GA2185@fujiko> <yunzklb9fg1.fsf@aiko.keithp.com> <20110705230101.GD2852@fujiko> <CAOJsxLFVSEDEaYH8Dw4jWGo9=wkC8QQWOs4xRR6qcgVM2xCRoA@mail.gmail.com> <yunhb6rec97.fsf@aiko.keithp.com> <CAOJsxLGKtjCpY=X1UrHVY79qLjVCgCT3XC795yh_uEn-0_4D0w@mail.gmail.com> <20110714075007.GB2949@fujiko>
-User-Agent: Notmuch/0.5-202-g6ae4e7d (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Thu, 14 Jul 2011 09:06:20 -0700
-Message-ID: <yuntyaohmo3.fsf@aiko.keithp.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S1755382Ab1GNQJT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 12:09:19 -0400
+Date: Thu, 14 Jul 2011 12:09:10 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: gregkh@suse.de
+Cc: joe@perches.com, jim.cromie@gmail.com, bvanassche@acm.org,
+        linux-kernel@vger.kernel.org, davem@davemloft.net,
+        aloisio.almeida@openbossa.org, netdev@vger.kernel.org
+Message-Id: <8e35925bedd53ebdd214994aa7b5ba0c55767a70.1310657068.git.jbaron@redhat.com>
+In-Reply-To: <cover.1310657068.git.jbaron@redhat.com>
+References: <cover.1310657068.git.jbaron@redhat.com>
+Subject: [PATCH 01/11] dynamic_debug: Add __dynamic_dev_dbg
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+From: Joe Perches <joe@perches.com>
 
-On Thu, 14 Jul 2011 09:50:07 +0200, Francesco Allertsen <fallertsen@gmail.c=
-om> wrote:
+Unlike dynamic_pr_debug, dynamic uses of dev_dbg can not
+currently add task_pid/KBUILD_MODNAME/__func__/__LINE__
+to selected debug output.
 
-> The correct commit is 05bd42688dbc066d4e2689b6f73c0470601f788b, the one
-> you mentioned is "Idling requires waiting for the ring to be empty".
+Add a new function similar to dynamic_pr_debug to
+optionally emit these prefixes.
 
-We mentioned the 'Idling' fix as it may make RC6 work. Have you tried
-that with RC6 enabled on the command line (or with
-05bd42688dbc066d4e2689b6f73c0470601f788b not applied)? Obviously, not
-enabling RC6 by default will 'fix' things, but only with a huge hit to
-power consumption.
+Cc: Aloisio Almeida <aloisio.almeida@openbossa.org>
+Noticed-by: Aloisio Almeida <aloisio.almeida@openbossa.org>
+Signed-off-by: Joe Perches <joe@perches.com>
+Signed-off-by: Jason Baron <jbaron@redhat.com>
+---
+ drivers/base/core.c           |    5 +++--
+ include/linux/device.h        |    5 +++++
+ include/linux/dynamic_debug.h |   10 ++++++++--
+ lib/dynamic_debug.c           |   38 ++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 54 insertions(+), 4 deletions(-)
 
-=2D-=20
-keith.packard@intel.com
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index bc8729d..82c8654 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -1764,8 +1764,8 @@ void device_shutdown(void)
+ 
+ #ifdef CONFIG_PRINTK
+ 
+-static int __dev_printk(const char *level, const struct device *dev,
+-			struct va_format *vaf)
++int __dev_printk(const char *level, const struct device *dev,
++		 struct va_format *vaf)
+ {
+ 	if (!dev)
+ 		return printk("%s(NULL device *): %pV", level, vaf);
+@@ -1773,6 +1773,7 @@ static int __dev_printk(const char *level, const struct device *dev,
+ 	return printk("%s%s %s: %pV",
+ 		      level, dev_driver_string(dev), dev_name(dev), vaf);
+ }
++EXPORT_SYMBOL(__dev_printk);
+ 
+ int dev_printk(const char *level, const struct device *dev,
+ 	       const char *fmt, ...)
+diff --git a/include/linux/device.h b/include/linux/device.h
+index e4f62d8..53711f2 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -785,6 +785,8 @@ extern const char *dev_driver_string(const struct device *dev);
+ 
+ #ifdef CONFIG_PRINTK
+ 
++extern int __dev_printk(const char *level, const struct device *dev,
++			struct va_format *vaf);
+ extern int dev_printk(const char *level, const struct device *dev,
+ 		      const char *fmt, ...)
+ 	__attribute__ ((format (printf, 3, 4)));
+@@ -805,6 +807,9 @@ extern int _dev_info(const struct device *dev, const char *fmt, ...)
+ 
+ #else
+ 
++static inline int __dev_printk(const char *level, const struct device *dev,
++			       struct va_format *vaf)
++	 { return 0; }
+ static inline int dev_printk(const char *level, const struct device *dev,
+ 		      const char *fmt, ...)
+ 	__attribute__ ((format (printf, 3, 4)));
+diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
+index e747ecd..bdf1531 100644
+--- a/include/linux/dynamic_debug.h
++++ b/include/linux/dynamic_debug.h
+@@ -47,6 +47,13 @@ extern int ddebug_remove_module(const char *mod_name);
+ extern int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
+ 	__attribute__ ((format (printf, 2, 3)));
+ 
++struct device;
++
++extern int __dynamic_dev_dbg(struct _ddebug *descriptor,
++			     const struct device *dev,
++			     const char *fmt, ...)
++	__attribute__ ((format (printf, 3, 4)));
++
+ #define dynamic_pr_debug(fmt, ...) do {					\
+ 	static struct _ddebug descriptor				\
+ 	__used								\
+@@ -57,7 +64,6 @@ extern int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
+ 		__dynamic_pr_debug(&descriptor, pr_fmt(fmt), ##__VA_ARGS__); \
+ 	} while (0)
+ 
+-
+ #define dynamic_dev_dbg(dev, fmt, ...) do {				\
+ 	static struct _ddebug descriptor				\
+ 	__used								\
+@@ -65,7 +71,7 @@ extern int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
+ 	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,		\
+ 		_DPRINTK_FLAGS_DEFAULT };				\
+ 	if (unlikely(descriptor.enabled))				\
+-		dev_printk(KERN_DEBUG, dev, fmt, ##__VA_ARGS__);	\
++		__dynamic_dev_dbg(&descriptor, dev, fmt, ##__VA_ARGS__);	\
+ 	} while (0)
+ 
+ #else
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index 75ca78f..63b6f95 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -30,6 +30,7 @@
+ #include <linux/jump_label.h>
+ #include <linux/hardirq.h>
+ #include <linux/sched.h>
++#include <linux/device.h>
+ 
+ extern struct _ddebug __start___verbose[];
+ extern struct _ddebug __stop___verbose[];
+@@ -456,6 +457,43 @@ int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
+ }
+ EXPORT_SYMBOL(__dynamic_pr_debug);
+ 
++int __dynamic_dev_dbg(struct _ddebug *descriptor,
++		      const struct device *dev, const char *fmt, ...)
++{
++	struct va_format vaf;
++	va_list args;
++	int res;
++
++	BUG_ON(!descriptor);
++	BUG_ON(!fmt);
++
++	va_start(args, fmt);
++
++	vaf.fmt = fmt;
++	vaf.va = &args;
++
++	res = printk(KERN_DEBUG);
++	if (descriptor->flags & _DPRINTK_FLAGS_INCL_TID) {
++		if (in_interrupt())
++			res += printk(KERN_CONT "<intr> ");
++		else
++			res += printk(KERN_CONT "[%d] ", task_pid_vnr(current));
++	}
++	if (descriptor->flags & _DPRINTK_FLAGS_INCL_MODNAME)
++		res += printk(KERN_CONT "%s:", descriptor->modname);
++	if (descriptor->flags & _DPRINTK_FLAGS_INCL_FUNCNAME)
++		res += printk(KERN_CONT "%s:", descriptor->function);
++	if (descriptor->flags & _DPRINTK_FLAGS_INCL_LINENO)
++		res += printk(KERN_CONT "%d ", descriptor->lineno);
++
++	res += __dev_printk(KERN_CONT, dev, &vaf);
++
++	va_end(args);
++
++	return res;
++}
++EXPORT_SYMBOL(__dynamic_dev_dbg);
++
+ static __initdata char ddebug_setup_string[1024];
+ static __init int ddebug_setup_query(char *str)
+ {
+-- 
+1.7.5.4
 
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iD8DBQFOHxP8Qp8BWwlsTdMRAposAJ9Vc3y22ZPAWnAlX5CVktJKjpXWPwCcCp6c
-yTMAtee8glaf20t++iHWWOk=
-=HxIK
------END PGP SIGNATURE-----
---=-=-=--
