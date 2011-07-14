@@ -1,137 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932492Ab1GNVeA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 17:34:00 -0400
-Received: from hera.kernel.org ([140.211.167.34]:34052 "EHLO hera.kernel.org"
+	id S932475Ab1GNVeX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 17:34:23 -0400
+Received: from hera.kernel.org ([140.211.167.34]:34074 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932280Ab1GNVd7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 17:33:59 -0400
-Date: Thu, 14 Jul 2011 21:33:51 GMT
+	id S932232Ab1GNVeW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 17:34:22 -0400
+Date: Thu, 14 Jul 2011 21:34:15 GMT
 From: tip-bot for Tejun Heo <tj@kernel.org>
-Message-ID: <tip-ab5d140b9eafae402aa3e673a63c5ef6164a9dd2@git.kernel.org>
+Message-ID: <tip-35fd0808d7d8d001cd72f112e3bca84664b596a3@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         benh@kernel.crashing.org, yinghai@kernel.org, tj@kernel.org,
         tglx@linutronix.de, hpa@linux.intel.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         yinghai@kernel.org, benh@kernel.crashing.org, tj@kernel.org,
         tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1310462166-31469-6-git-send-email-tj@kernel.org>
-References: <1310462166-31469-6-git-send-email-tj@kernel.org>
+In-Reply-To: <1310462166-31469-7-git-send-email-tj@kernel.org>
+References: <1310462166-31469-7-git-send-email-tj@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/memblock] x86: Use __memblock_alloc_base() in early_reserve_e820()
-Git-Commit-ID: ab5d140b9eafae402aa3e673a63c5ef6164a9dd2
+Subject: [tip:x86/memblock] memblock: Implement for_each_free_mem_range()
+Git-Commit-ID: 35fd0808d7d8d001cd72f112e3bca84664b596a3
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 14 Jul 2011 21:33:51 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 14 Jul 2011 21:34:16 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ab5d140b9eafae402aa3e673a63c5ef6164a9dd2
-Gitweb:     http://git.kernel.org/tip/ab5d140b9eafae402aa3e673a63c5ef6164a9dd2
+Commit-ID:  35fd0808d7d8d001cd72f112e3bca84664b596a3
+Gitweb:     http://git.kernel.org/tip/35fd0808d7d8d001cd72f112e3bca84664b596a3
 Author:     Tejun Heo <tj@kernel.org>
-AuthorDate: Tue, 12 Jul 2011 11:15:58 +0200
+AuthorDate: Tue, 12 Jul 2011 11:15:59 +0200
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
 CommitDate: Thu, 14 Jul 2011 11:47:47 -0700
 
-x86: Use __memblock_alloc_base() in early_reserve_e820()
+memblock: Implement for_each_free_mem_range()
 
-early_reserve_e820() implements its own ad-hoc early allocator using
-memblock_x86_find_in_range_size().  Use __memblock_alloc_base()
-instead and remove the unnecessary @startt parameter (it's top-down
-allocation anyway).
+Implement for_each_free_mem_range() which iterates over free memory
+areas according to memblock (memory && !reserved).  This will be used
+to simplify memblock users.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Link: http://lkml.kernel.org/r/1310462166-31469-6-git-send-email-tj@kernel.org
+Link: http://lkml.kernel.org/r/1310462166-31469-7-git-send-email-tj@kernel.org
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/include/asm/e820.h |    2 +-
- arch/x86/kernel/e820.c      |   30 ++++++------------------------
- arch/x86/kernel/mpparse.c   |    6 ++----
- 3 files changed, 9 insertions(+), 29 deletions(-)
+ include/linux/memblock.h |   20 ++++++++++++
+ mm/memblock.c            |   76 ++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 96 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
-index 908b969..3778256 100644
---- a/arch/x86/include/asm/e820.h
-+++ b/arch/x86/include/asm/e820.h
-@@ -117,7 +117,7 @@ static inline void early_memtest(unsigned long start, unsigned long end)
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index c36a55d..31def58 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -61,6 +61,26 @@ extern long memblock_remove(phys_addr_t base, phys_addr_t size);
+ extern long memblock_free(phys_addr_t base, phys_addr_t size);
+ extern long memblock_reserve(phys_addr_t base, phys_addr_t size);
  
- extern unsigned long e820_end_of_ram_pfn(void);
- extern unsigned long e820_end_of_low_ram_pfn(void);
--extern u64 early_reserve_e820(u64 startt, u64 sizet, u64 align);
-+extern u64 early_reserve_e820(u64 sizet, u64 align);
++extern void __next_free_mem_range(u64 *idx, int nid, phys_addr_t *out_start,
++				  phys_addr_t *out_end, int *out_nid);
++
++/**
++ * for_each_free_mem_range - iterate through free memblock areas
++ * @i: u64 used as loop variable
++ * @nid: node selector, %MAX_NUMNODES for all nodes
++ * @p_start: ptr to phys_addr_t for start address of the range, can be %NULL
++ * @p_end: ptr to phys_addr_t for end address of the range, can be %NULL
++ * @p_nid: ptr to int for nid of the range, can be %NULL
++ *
++ * Walks over free (memory && !reserved) areas of memblock.  Available as
++ * soon as memblock is initialized.
++ */
++#define for_each_free_mem_range(i, nid, p_start, p_end, p_nid)		\
++	for (i = 0,							\
++	     __next_free_mem_range(&i, nid, p_start, p_end, p_nid);	\
++	     i != (u64)ULLONG_MAX;					\
++	     __next_free_mem_range(&i, nid, p_start, p_end, p_nid))
++
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+ extern int memblock_set_node(phys_addr_t base, phys_addr_t size, int nid);
  
- void memblock_x86_fill(void);
- void memblock_find_dma_reserve(void);
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index 0f9ff58..b99d940 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -737,35 +737,17 @@ core_initcall(e820_mark_nvs_memory);
+diff --git a/mm/memblock.c b/mm/memblock.c
+index e815f4b..c4a8750 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -461,6 +461,82 @@ long __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
+ 	return memblock_add_region(_rgn, base, size);
+ }
+ 
++/**
++ * __next_free_mem_range - next function for for_each_free_mem_range()
++ * @idx: pointer to u64 loop variable
++ * @nid: nid: node selector, %MAX_NUMNODES for all nodes
++ * @p_start: ptr to phys_addr_t for start address of the range, can be %NULL
++ * @p_end: ptr to phys_addr_t for end address of the range, can be %NULL
++ * @p_nid: ptr to int for nid of the range, can be %NULL
++ *
++ * Find the first free area from *@idx which matches @nid, fill the out
++ * parameters, and update *@idx for the next iteration.  The lower 32bit of
++ * *@idx contains index into memory region and the upper 32bit indexes the
++ * areas before each reserved region.  For example, if reserved regions
++ * look like the following,
++ *
++ *	0:[0-16), 1:[32-48), 2:[128-130)
++ *
++ * The upper 32bit indexes the following regions.
++ *
++ *	0:[0-0), 1:[16-32), 2:[48-128), 3:[130-MAX)
++ *
++ * As both region arrays are sorted, the function advances the two indices
++ * in lockstep and returns each intersection.
++ */
++void __init_memblock __next_free_mem_range(u64 *idx, int nid,
++					   phys_addr_t *out_start,
++					   phys_addr_t *out_end, int *out_nid)
++{
++	struct memblock_type *mem = &memblock.memory;
++	struct memblock_type *rsv = &memblock.reserved;
++	int mi = *idx & 0xffffffff;
++	int ri = *idx >> 32;
++
++	for ( ; mi < mem->cnt; mi++) {
++		struct memblock_region *m = &mem->regions[mi];
++		phys_addr_t m_start = m->base;
++		phys_addr_t m_end = m->base + m->size;
++
++		/* only memory regions are associated with nodes, check it */
++		if (nid != MAX_NUMNODES && nid != memblock_get_region_node(m))
++			continue;
++
++		/* scan areas before each reservation for intersection */
++		for ( ; ri < rsv->cnt + 1; ri++) {
++			struct memblock_region *r = &rsv->regions[ri];
++			phys_addr_t r_start = ri ? r[-1].base + r[-1].size : 0;
++			phys_addr_t r_end = ri < rsv->cnt ? r->base : ULLONG_MAX;
++
++			/* if ri advanced past mi, break out to advance mi */
++			if (r_start >= m_end)
++				break;
++			/* if the two regions intersect, we're done */
++			if (m_start < r_end) {
++				if (out_start)
++					*out_start = max(m_start, r_start);
++				if (out_end)
++					*out_end = min(m_end, r_end);
++				if (out_nid)
++					*out_nid = memblock_get_region_node(m);
++				/*
++				 * The region which ends first is advanced
++				 * for the next iteration.
++				 */
++				if (m_end <= r_end)
++					mi++;
++				else
++					ri++;
++				*idx = (u32)mi | (u64)ri << 32;
++				return;
++			}
++		}
++	}
++
++	/* signal end of iteration */
++	*idx = ULLONG_MAX;
++}
++
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
  /*
-  * pre allocated 4k and reserved it in memblock and e820_saved
-  */
--u64 __init early_reserve_e820(u64 startt, u64 sizet, u64 align)
-+u64 __init early_reserve_e820(u64 size, u64 align)
- {
--	u64 size = 0;
- 	u64 addr;
--	u64 start;
- 
--	for (start = startt; ; start += size) {
--		start = memblock_x86_find_in_range_size(start, &size, align);
--		if (!start)
--			return 0;
--		if (size >= sizet)
--			break;
-+	addr = __memblock_alloc_base(size, align, MEMBLOCK_ALLOC_ACCESSIBLE);
-+	if (addr) {
-+		e820_update_range_saved(addr, size, E820_RAM, E820_RESERVED);
-+		printk(KERN_INFO "update e820_saved for early_reserve_e820\n");
-+		update_e820_saved();
- 	}
- 
--#ifdef CONFIG_X86_32
--	if (start >= MAXMEM)
--		return 0;
--	if (start + size > MAXMEM)
--		size = MAXMEM - start;
--#endif
--
--	addr = round_down(start + size - sizet, align);
--	if (addr < start)
--		return 0;
--	memblock_x86_reserve_range(addr, addr + sizet, "new next");
--	e820_update_range_saved(addr, sizet, E820_RAM, E820_RESERVED);
--	printk(KERN_INFO "update e820_saved for early_reserve_e820\n");
--	update_e820_saved();
--
- 	return addr;
- }
- 
-diff --git a/arch/x86/kernel/mpparse.c b/arch/x86/kernel/mpparse.c
-index 9103b89..8faeaa0 100644
---- a/arch/x86/kernel/mpparse.c
-+++ b/arch/x86/kernel/mpparse.c
-@@ -836,10 +836,8 @@ early_param("alloc_mptable", parse_alloc_mptable_opt);
- 
- void __init early_reserve_e820_mpc_new(void)
- {
--	if (enable_update_mptable && alloc_mptable) {
--		u64 startt = 0;
--		mpc_new_phys = early_reserve_e820(startt, mpc_new_length, 4);
--	}
-+	if (enable_update_mptable && alloc_mptable)
-+		mpc_new_phys = early_reserve_e820(mpc_new_length, 4);
- }
- 
- static int __init update_mp_table(void)
+  * Common iterator interface used to define for_each_mem_range().
