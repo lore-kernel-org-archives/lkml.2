@@ -1,56 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775Ab1GNNJk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 09:09:40 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:63208 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754564Ab1GNNJj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 09:09:39 -0400
-X-Authority-Analysis: v=1.1 cv=yMxAJ7W7nAoPh8ZdbvCArpG6pAdHwgpzIvOq8QbMesM= c=1 sm=0 a=l8LWmUGdTDcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=OAouQKHyo7iVPam7dNoA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC 0/4] streamline_config clean-ups
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: Steven Rostedt <srostedt@redhat.com>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>
-In-Reply-To: <CACqU3MX4=AQyH4TXi+LaHV6WWRsLZpGf7c=iwQHm6Mqsr6SgYA@mail.gmail.com>
-References: <1309563076-5050-1-git-send-email-lacombar@gmail.com>
-	 <CACqU3MUrCODMx=8Bu+YDxy2BJwjm-77PXFob5OwHn=fr5mTdkg@mail.gmail.com>
-	 <1310170759.2780.37.camel@fedora>
-	 <1310604899.27864.4.camel@gandalf.stny.rr.com>
-	 <CACqU3MX4=AQyH4TXi+LaHV6WWRsLZpGf7c=iwQHm6Mqsr6SgYA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 14 Jul 2011 09:09:37 -0400
-Message-ID: <1310648977.27864.22.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	id S1754798Ab1GNNKj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 09:10:39 -0400
+Received: from 8bytes.org ([88.198.83.132]:51079 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754564Ab1GNNKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 09:10:38 -0400
+Date: Thu, 14 Jul 2011 15:10:37 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: Joerg Roedel <joerg.roedel@amd.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/7] KVM: SVM: Use host_vmcb_pa for vmload and vmsave
+Message-ID: <20110714131036.GC24072@8bytes.org>
+References: <1310571145-28930-1-git-send-email-joerg.roedel@amd.com> <1310571145-28930-3-git-send-email-joerg.roedel@amd.com> <4E1ED320.4080600@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E1ED320.4080600@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-07-13 at 22:41 -0400, Arnaud Lacombe wrote:
+On Thu, Jul 14, 2011 at 02:29:36PM +0300, Avi Kivity wrote:
+> On 07/13/2011 06:32 PM, Joerg Roedel wrote:
+>> This saves copying over the vmload/vmsave switched part from
+>> the host to the guest vmcb later.
+>>
+>> Signed-off-by: Joerg Roedel<joerg.roedel@amd.com>
+>> ---
+>>   arch/x86/kvm/svm.c |    7 ++++++-
+>>   1 files changed, 6 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+>> index 3d5990f..dc703ac 100644
+>> --- a/arch/x86/kvm/svm.c
+>> +++ b/arch/x86/kvm/svm.c
+>> @@ -3704,9 +3704,13 @@ static void svm_vcpu_run(struct kvm_vcpu *vcpu)
+>>
+>>   		/* Enter guest mode */
+>>   		"push %%"R"ax \n\t"
+>> -		"mov %c[vmcb](%[svm]), %%"R"ax \n\t"
+>> +		"mov %c[host_vmcb](%[svm]), %%"R"ax \n\t"
+>>   		__ex(SVM_VMLOAD) "\n\t"
+>> +		"mov (%%"R"sp), %%"R"ax\n\t"
+>> +		"mov %c[vmcb](%[svm]), %%"R"ax \n\t"
+>>   		__ex(SVM_VMRUN) "\n\t"
+>> +		"mov (%%"R"sp), %%"R"ax\n\t"
+>> +		"mov %c[host_vmcb](%[svm]), %%"R"ax \n\t"
+>>   		__ex(SVM_VMSAVE) "\n\t"
+>>   		"pop %%"R"ax \n\t"
+>>
+>
+> Okay, so the plan is to split L2 state between ->vmcb and ->host_vmcb?
 
-> yes... it could not have. I missed a $(srctree), an export, and an
-> error check. Attached patch should fix it, behavior (see below) with
-> this patch is consistent between v3.0-rc6 and the tip of the patched
-> branch.
+Yes, otherwise we need to copy the vmload/vmsave switched state back and
+forth between both VMCBs which is a waste of cycles.
 
-That seems to work. Could you resend a fixed patchset?
+> In that case my suggestion for patch 1 doesn't apply.  But the name  
+> still is confusing.  If we don't find a better one, I want a fat comment  
+> explaining how state is split.
 
-> 
-> Btw, as of v3.0-rc6, localmodconfig does not produce a valid .config.
-> Local kernel is a Fedora 14 kernel, based on
-> config-2.6.35.13-91.fc14.x86_64. The perl script complete fine, but
-> the config is then restarted, I'm not sure if it is the intended
-> behavior.
+Hmm, how about naming them l1_vmcb and l2_vmcb? The comment explaining
+why vmload/vmsave always happens on l1_vmcb is needed anyway then.
 
-Hmm, not sure exactly what you mean. The script should run
-(silent)oldconfig after it does the localmodconfig to fill in the stuff
-that it caused to change. Did you notice something that broke?
+> (would be good to have documentation for the overall strategy of nsvm,  
+> like we have for nvmx and nmmu).
 
--- Steve
+There is not much to document about future plans for nested-svm. At the
+moment I try to add emulation code for new SVM features when there is
+some time left. Live migration support is also on the list.
 
+The long-term plan is certainly to merge code with nested-vmx where
+possible and move logic into generic KVM code. The first item that comes
+to mind here is to create a single place where a vmexit is emulated and
+let all other place which do that today just signal that it is required.
+
+	Joerg
 
