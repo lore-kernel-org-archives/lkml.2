@@ -1,75 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786Ab1GNEkT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 00:40:19 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:61800 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750873Ab1GNEkS convert rfc822-to-8bit (ORCPT
+	id S1753109Ab1GNEqx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 00:46:53 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:54531
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750880Ab1GNEqw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 00:40:18 -0400
+	Thu, 14 Jul 2011 00:46:52 -0400
+Date: Thu, 14 Jul 2011 00:46:43 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, XFS <xfs@oss.sgi.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 1/5] mm: vmscan: Do not writeback filesystem pages in
+ direct reclaim
+Message-ID: <20110714044643.GA3203@infradead.org>
+References: <1310567487-15367-1-git-send-email-mgorman@suse.de>
+ <1310567487-15367-2-git-send-email-mgorman@suse.de>
+ <20110714103801.83e10fdb.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <20110714134228.65fb79c5@notabene.brown>
-References: <CAFR8uecaG68Oifuz1ucpM49vaw5m420Cn0et-JQZjBjhsOes-Q@mail.gmail.com>
-	<20110714134228.65fb79c5@notabene.brown>
-Date: Wed, 13 Jul 2011 21:40:17 -0700
-Message-ID: <CAFR8uefeBTK8PaGO0h=-fbnjaxhUro7WS2WNVczdAfsqHFbBBw@mail.gmail.com>
-Subject: Re: [PATCH]:drivers/md/raid10.c: r10buf_pool_alloc(): Set bi_vcnt for
- the new bio.
-From: Muthu Kumar <muthu.lkml@gmail.com>
-To: NeilBrown <neilb@suse.de>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110714103801.83e10fdb.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Neil,
+On Thu, Jul 14, 2011 at 10:38:01AM +0900, KAMEZAWA Hiroyuki wrote:
+> > +			/*
+> > +			 * Only kswapd can writeback filesystem pages to
+> > +			 * avoid risk of stack overflow
+> > +			 */
+> > +			if (page_is_file_cache(page) && !current_is_kswapd()) {
+> > +				inc_zone_page_state(page, NR_VMSCAN_WRITE_SKIP);
+> > +				goto keep_locked;
+> > +			}
+> > +
+> 
+> 
+> This will cause tons of memcg OOM kill because we have no help of kswapd (now).
 
->>
->> BTW, why are we not using bio_add_page() here to add the page to bio?
->
-> How would that be useful?  We don't know what the underlying device is at
-> this point, and the point of bio_add_page is to make sure the device can
-> handle the extra page.
->
-> We do call bio_add_page at the appropriate time in sync_request().
+XFS and btrfs already disable writeback from memcg context, as does ext4
+for the typical non-overwrite workloads, and none has fallen apart.
 
-Yes. Thanks for the explanation.
+In fact there's no way we can enable them as the memcg calling contexts
+tend to have massive stack usage.
 
-Regards,
-Muthu
-
->
-> So - not applied.
->
-> Thanks,
-> NeilBrown
->
->
->>
->> Signed-off-by: Muthukumar R <muthur@gmail.com>
->>
->> ------
->>  drivers/md/raid10.c |    1 +
->>  1 files changed, 1 insertions(+), 0 deletions(-)
->> ------
->> diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
->> index 6e84668..8504c5b 100644
->> --- a/drivers/md/raid10.c
->> +++ b/drivers/md/raid10.c
->> @@ -129,6 +129,7 @@ static void * r10buf_pool_alloc(gfp_t gfp_flags, void *data)
->>
->>                         bio->bi_io_vec[i].bv_page = page;
->>                 }
->> +               bio->bi_vcnt = RESYNC_PAGES;
->>         }
->>
->>         return r10_bio;
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
->
