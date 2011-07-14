@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab1GNTdq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 15:33:46 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:54488 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753888Ab1GNTdp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 15:33:45 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Magnus Damm <magnus.damm@gmail.com>
-Subject: Re: [PATCH 0/3] PM / Domains / shmobile fixes
-Date: Thu, 14 Jul 2011 21:34:40 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc7+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Mundt <lethal@linux-sh.org>,
-        linux-sh@vger.kernel.org
-References: <201107132352.59801.rjw@sisk.pl> <CANqRtoTLO=DqehwanGdE+rgxL_ofa5YCJjsx47doHzwZDP4Ocw@mail.gmail.com>
-In-Reply-To: <CANqRtoTLO=DqehwanGdE+rgxL_ofa5YCJjsx47doHzwZDP4Ocw@mail.gmail.com>
+	id S1754202Ab1GNTeJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 15:34:09 -0400
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:37664 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753888Ab1GNTeH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 15:34:07 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: soaNyAkVM1kDT5GWaiWt9xsOjDtCbdiTnjzM9cWFCNedMIi
+ SWwxntyj7_6U7azw1KpGJ3hAMn2w5szcvPQzTjMO9vdvjkkqMyknSNjoxGi6
+ Bl3VBiZ.ktVdHJ6ZASaHGHX1ViCQwtIkiv_vPz_HM_7pZoS.xLv6VjfLFDdx
+ S68iQMW5SEBZUgRg90sfiYOf_H8qTyhsmSHbrtpO7e7Uw1UyEfYWbU7VE2uk
+ 7m4m3YQubXBblQmYrbhk6W0xQKIIOdsPsYvIEBDV4M3fIkxINZJWtmZX.fl9
+ SlkZUB1.x69k_PJzNTvygKd9sPu_b_4Tg2bzUPRmtyqXC9WI9uhp8J34bEax
+ 9gShYwINfZUS1smY1KAeORDrm
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Thu, 14 Jul 2011 14:34:04 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Pintu Agarwal <pintu_agarwal@yahoo.com>
+cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Memory allocation from ZONE_HIGHMEM ???
+In-Reply-To: <1310625925.65469.YahooMailNeo@web162002.mail.bf1.yahoo.com>
+Message-ID: <alpine.DEB.2.00.1107141432520.2923@router.home>
+References: <1310625925.65469.YahooMailNeo@web162002.mail.bf1.yahoo.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107142134.40432.rjw@sisk.pl>
+Content-Type: MULTIPART/MIXED; BOUNDARY="-1463811839-2109514762-1310672045=:2923"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 14, 2011, Magnus Damm wrote:
-> On Thu, Jul 14, 2011 at 6:52 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > Hi,
-> >
-> > The following three patches fix a couple of issues in the code currently
-> > in my pm-domains branch at:
-> >
-> > git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6.git pm-domains
-> >
-> > [1/3] - Use genpd_queue_power_off_work() for queuing up the powering off
-> >        of A4LC (this avoids attempting to queue up a work item while it is
-> >        pending).
-> >
-> > [2/3] - Make the generic PM domains code react to -EBUSY returned from a
-> >        PM domain's .power_down() callback (needed for [3/3]).
-> >
-> > [3/3] - Return -EBUSY from the A4LC's .power_down() callback to indicate that
-> >        the domain hasn't been powered down on purpose and remove the confusing
-> >        (and now redundant) pm_genpd_poweron(A4LC) from pd_power_down_a3rv().
-> 
-> All patches above look great, thanks a lot for your help!
-> 
-> Acked-by: Magnus Damm <damm@opensource.se>
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Thanks!
+---1463811839-2109514762-1310672045=:2923
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-Rafael
+On Wed, 13 Jul 2011, Pintu Agarwal wrote:
+
+> I have a question regarding kernel memory allocation(using kmalloc)=A0fro=
+m ZONE_HIGHMEM zone.
+
+kmalloc does not allocate from ZONE_HIGHMEM.
+
+> But I want to specifically allocate=A0pages from ZONE_HIGHMEM instead of =
+Normal zone.
+> How to explicitly do that in kernel?
+
+You must use the page allocator. The slab allocators cannot use
+ZONE_HIGHMEM. ZONE_HIGHMEM contains pages that are not directly accessible
+from the processor.
+
+---1463811839-2109514762-1310672045=:2923--
