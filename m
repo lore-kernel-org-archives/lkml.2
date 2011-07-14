@@ -1,110 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754041Ab1GNJND (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 05:13:03 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:65514 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753804Ab1GNJNB (ORCPT
+	id S1754071Ab1GNJQq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 05:16:46 -0400
+Received: from mail.bbaw.de ([194.95.188.6]:59707 "EHLO mail.bbaw.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753924Ab1GNJQo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 05:13:01 -0400
-X-IronPort-AV: E=Sophos;i="4.65,528,1304294400"; 
-   d="scan'208";a="6776513"
-Subject: Re: [PATCH resubmit] xen-blkfront: Don't send closing 
- notification to backend in blkfront_closing()
-From: Ian Campbell <Ian.Campbell@eu.citrix.com>
-To: Joe Jin <joe.jin@oracle.com>
-CC: Daniel Stodden <Daniel.Stodden@citrix.com>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        "annie.li@oracle.com" <annie.li@oracle.com>,
-        "Jeremy Fitzhardinge" <Jeremy.Fitzhardinge@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Kurt C Hackel <KURT.HACKEL@oracle.com>,
-        "Greg Marsden" <greg.marsden@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>
-In-Reply-To: <4E1EAEE9.80605@oracle.com>
-References: <4E1CEB34.5090907@oracle.com>
-	 <1310631209.634.444.camel@zakaz.uk.xensource.com>
-	 <4E1EAEE9.80605@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Citrix Systems, Inc.
-Date: Thu, 14 Jul 2011 10:12:59 +0100
-Message-ID: <1310634779.634.480.camel@zakaz.uk.xensource.com>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Jul 2011 05:16:44 -0400
+Date: Thu, 14 Jul 2011 11:16:42 +0200
+From: Lars =?UTF-8?B?VMOkdWJlcg==?= <taeuber@bbaw.de>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [PROBLEM] reproduceable storage errors on high IO load
+Message-Id: <20110714111642.83335f2a.taeuber@bbaw.de>
+In-Reply-To: <20110706091117.9caa1d69.taeuber@bbaw.de>
+References: <20110606095127.21d23a70.taeuber@bbaw.de>
+	<201106060559.03131.gene.heskett@gmail.com>
+	<20110606130628.e86f0c67.taeuber@bbaw.de>
+	<201106060920.32257.gene.heskett@gmail.com>
+	<20110606155610.69a0d17a.taeuber@bbaw.de>
+	<20110607124354.06ed074e.taeuber@bbaw.de>
+	<20110701102323.3db579ad.taeuber@bbaw.de>
+	<20110701151313.2afd48e0.taeuber@bbaw.de>
+	<20110701163719.27afc580.taeuber@bbaw.de>
+	<20110704153923.b929ce5d.taeuber@bbaw.de>
+	<62378.1309905287@turing-police.cc.vt.edu>
+	<20110706091117.9caa1d69.taeuber@bbaw.de>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-AntiVirus: checked by Avira MailGate (version: 2.1.4-7; AVE: 7.9.6.6; VDF: 7.11.11.129; host: mailhub); id=16841-2DjHQl
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-07-14 at 09:55 +0100, Joe Jin wrote:
-> On 07/14/11 16:13, Ian Campbell wrote:
-> > On Wed, 2011-07-13 at 01:47 +0100, Joe Jin wrote:
+Hello everybody.
 
+In the meantime I received a driver from areca. It's split into GPLed source
+and precompiled object files.
+
+I still get the same problems (and additional ones) with this driver as with
+the mvsas driver. The log output differs but in the end it stalls the disks.
+
+I fear that exchanging the hba with another one from LSI or the like I will
+get the same problem. But I can't effort such a card just for testing.
+
+I have a complete dmesg output if someone is interested.
+
+What can I do?????
+
+Thanks
+Lars
+
+Am Wed, 6 Jul 2011 09:11:17 +0200
+Lars Täuber <taeuber@bbaw.de> schrieb:
+> Hi Valdis,
+> 
+> Am Tue, 05 Jul 2011 18:34:47 -0400
+> Valdis.Kletnieks@vt.edu schrieb:
+> > On Mon, 04 Jul 2011 15:39:23 +0200, Lars =?UTF-8?B?VMOkdWJlcg==?= said:
 > > 
-> > I'm wondering if we might not be better off deferring the disconnect on
-> > the backend side until the frontend enters XenbusStateClosed instead of
-> > doing it in closing.
-> 
-> Yes this fix from backend side works too, also this looks reasonable than 
-> fix in frontend.
-
-I guess there is either a missing "more" or "less" in that sentence ;-)
-
-The nice thing about a backend fix is that you don't need to go round
-propagating the fix into distros etc and updating existing deployed
-guests (not to mention non-Linux frontends).
-
-I actually thought blkback had something like this already in older
-"classic" Xen kernels but it seems like the patch never made it out of
-the XCP patch queue :-(. See
-http://xenbits.xen.org/hg/XCP/linux-2.6.32.pq.hg/file/tip/CA-7672-blkback-shutdown.patch
-(which appears to also incorporate a toolstack directed graceful
-shutdown of some sort as well as deferring the device close).
-
-Daniel, do you know of any plans to extricate that stuff from the XCP
-patch queue for upstream? Are there any other patches (e.g. incremental
-fixes) in that pq which should go along with it?
-
-Ian.
-
-> 
-> Konrad, any advice?
-> 
-> Thanks,
-> Joe
-> 
+> > > 1.
+> > > * Ultrastar 7K3000 attached to onboard AMD_AHCI
+> > > * dd if=/dev/zero of=/dev/sde
+> > > * dd told write speed of: 15.7MB/s
+> > > * no error after half an hour
+> > > 
+> > > 2.
+> > > * Ultrastar 7K3000 attached to PCIe to sata_mv controller
+> > > * dd if=/dev/zero of=/dev/sda
+> > > * dd told write speed of: 6.5MB/s
+> > > * no error but strange log: dmesg-PCIe-sata_mv.log.gz
+> > > 
+> > > 3.
+> > > * Ultrastar 7K3000 attached to PCIe areca SAS HBA (mvsas)
+> > > * dd if=/dev/zero of=/dev/sdg
+> > > * dd told write speed of: 1.3MB/s
+> > > * errors: dmesg-PCIe-mvsas.log.gz
 > > 
-> > Ian
-> > 
-> >>
-> >> Signed-off-by: Joe Jin <joe.jin@oracle.com>
-> >> Signed-off-by: Annie Li <annie.li@oracle.com>
-> >> Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> >> Cc: Jens Axboe <jaxboe@fusionio.com>
-> >> Cc: stable@kernel.org
-> >>
-> >> ---
-> >>  xen-blkfront.c |    2 +-
-> >>  1 file changed, 1 insertion(+), 1 deletion(-)
-> >>
-> >> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-> >> index b536a9c..f6d8ac2 100644
-> >> --- a/drivers/block/xen-blkfront.c
-> >> +++ b/drivers/block/xen-blkfront.c
-> >> @@ -1088,7 +1088,7 @@ blkfront_closing(struct blkfront_info *info)
-> >>  	if (bdev->bd_openers) {
-> >>  		xenbus_dev_error(xbdev, -EBUSY,
-> >>  				 "Device in use; refusing to close");
-> >> -		xenbus_switch_state(xbdev, XenbusStateClosing);
-> >> +		xbdev->state = XenbusStateClosing;
-> >>  	} else {
-> >>  		xlvbd_release_gendisk(info);
-> >>  		xenbus_frontend_closed(xbdev);
-> > 
-> > 
+> > Umm.. was this the *same* Ulstrastar disk connected 3 different ways?  And
+> > how exactly was it connected in each case? (Trying to rule out flaky disks
+> > if it was 3 different disks, or a hardware/cabling issue specific to the
+> > areca controller)
 > 
+> No it wasn't the same disk but drives of identical type and version and with
+> same firmware.
+> All the problems I came across during my odyssey could be different ones.
+> The most recent could be related to the mvsas driver.
 > 
+> See https://bugzilla.kernel.org/show_bug.cgi?id=14534#c11 and following.
+> 
+> Thanks
+> Lars
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 
+-- 
+                            Informationstechnologie
+Berlin-Brandenburgische Akademie der Wissenschaften
+Jägerstrasse 22-23                     10117 Berlin
+Tel.: +49 30 20370-352           http://www.bbaw.de
