@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753179Ab1GNBaz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 21:30:55 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53934 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751856Ab1GNBay (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 21:30:54 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4E1E46CA.9030007@jp.fujitsu.com>
-Date: Thu, 14 Jul 2011 10:30:50 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: jmorris@namei.org
-CC: torvalds@linux-foundation.org, neilb@suse.de, solar@openwall.com,
-        segoon@openwall.com, linux-kernel@vger.kernel.org, gregkh@suse.de,
-        akpm@linux-foundation.org, davem@davemloft.net,
-        kernel-hardening@lists.openwall.com, jslaby@suse.cz,
-        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        eparis@redhat.com, sds@tycho.nsa.gov
-Subject: Re: [PATCH] move RLIMIT_NPROC check from set_user() to do_execve_common()
-References: <20110612130953.GA3709@albatros> <20110706173631.GA5431@albatros> <CA+55aFyfjG1h2zkkGai_VPM8p5bhWhvNXs1HvuWMgxv4RSywYw@mail.gmail.com> <20110706185932.GB3299@albatros> <20110707075610.GA3411@albatros> <20110707081930.GA4393@albatros> <20110712132723.GA3193@albatros> <CA+55aFysXOeBqEvmVbuqL3i0jRFDcE=vDuVhmYL38XQ0+x=deQ@mail.gmail.com> <20110713091408.0d456352@notabene.brown> <20110713063142.GA19976@openwall.com> <20110713170657.59dae548@notabene.brown> <CA+55aFwQKqvNvzTMYXVW_yKkFtNsyv8uuBiWiwYLof-nPqPu9w@mail.gmail.com> <alpine.LRH.2.00.1107141009510.17067@tundra.namei.org>
-In-Reply-To: <alpine.LRH.2.00.1107141009510.17067@tundra.namei.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753105Ab1GNBev (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jul 2011 21:34:51 -0400
+Received: from mga02.intel.com ([134.134.136.20]:4301 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750850Ab1GNBeu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jul 2011 21:34:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,527,1304319600"; 
+   d="scan'208";a="25622792"
+From: Huang Ying <ying.huang@intel.com>
+To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Huang Ying <ying.huang@intel.com>
+Subject: [BUGFIX] kexec, x86, Fix incorrect jump back address if not preserve context
+Date: Thu, 14 Jul 2011 09:34:37 +0800
+Message-Id: <1310607277-25029-1-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/07/14 9:11), James Morris wrote:
-> On Wed, 13 Jul 2011, Linus Torvalds wrote:
-> 
->> It sounds like people are effectively Ack'ing the patch, but with this
->> kind of patch I don't want to add the "implicit Ack" that I often do
->> for regular stuff.
->>
->> So could people who think that the patch is ok in its current form
->> just send me their acked-by or reviewed-by? I haven't heard any actual
->> objection to it, and I think it's valid for the current -rc.
->>
->> Alternatively, feel free to send a comment like "I think it's the
->> right thing, but maybe it should wait for the next merge window"..
-> 
-> Count me in the latter.
-> 
-> It does look ok to me, but I'd be happier if it had more testing first (in 
-> -mm perhaps).  I think some security folk may be on summer vacation, too.
+In kexec jump support, jump back address passed to the kexeced kernel
+via function calling ABI, that is, the function call return address is
+the jump back entry.  And jump back entry == 0 should be used to
+signal that jump back or preserve context is not enabled in original
+kernel.  But in original implementation, the stack position used for
+function call return address is not cleared if preserve context is
+disabled.  The patch fixes this issue.
 
-I don't think I am best person to take ack. but I also don't want to hesitate
-to help Solar's good improvemnt.
-	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+Reported-and-tested-by: Yin Kangkai <kangkai.yin@intel.com>
+---
+ arch/x86/kernel/relocate_kernel_32.S |    2 ++
+ arch/x86/kernel/relocate_kernel_64.S |    2 ++
+ 2 files changed, 4 insertions(+)
 
-And I'll second James. next mere window is probably safer.
-
-Thanks.
-
+--- a/arch/x86/kernel/relocate_kernel_32.S
++++ b/arch/x86/kernel/relocate_kernel_32.S
+@@ -97,6 +97,8 @@ relocate_kernel:
+ 	ret
+ 
+ identity_mapped:
++	/* set return address as 0 if not preserve context */
++	pushl	$0
+ 	/* store the start address on the stack */
+ 	pushl   %edx
+ 
+--- a/arch/x86/kernel/relocate_kernel_64.S
++++ b/arch/x86/kernel/relocate_kernel_64.S
+@@ -100,6 +100,8 @@ relocate_kernel:
+ 	ret
+ 
+ identity_mapped:
++	/* set return address as 0 if not preserve context */
++	pushq	$0
+ 	/* store the start address on the stack */
+ 	pushq   %rdx
+ 
