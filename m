@@ -1,75 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392Ab1GNGrE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 02:47:04 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:54131 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753213Ab1GNGrC (ORCPT
+	id S1753049Ab1GNGvQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 02:51:16 -0400
+Received: from mail1.elettra.trieste.it ([140.105.4.201]:30547 "EHLO
+	elettra.trieste.it" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751084Ab1GNGvO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 02:47:02 -0400
-From: Ravishankar <ravishankarkm32@gmail.com>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>,
-        Ravishankar <ravishankarkm32@gmail.com>
-Subject: [PATCH 3/3] Staging: comedi: fix warning issue in daqboard2000.c
-Date: Thu, 14 Jul 2011 12:29:42 +0530
-Message-Id: <1310626782-21613-1-git-send-email-ravishankarkm32@gmail.com>
-X-Mailer: git-send-email 1.6.5.2
-In-Reply-To: <[PATCH 3/3]Staging: comedi:fix line over 80 character issue in daqboard2000.c>
-References: <[PATCH 3/3]Staging: comedi:fix line over 80 character issue in daqboard2000.c>
+	Thu, 14 Jul 2011 02:51:14 -0400
+From: Alessio Igor Bogani <abogani@kernel.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Jan Beulich <jbeulich@novell.com>, Kbuild <linux-kbuild@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Tim Bird <tim.bird@am.sony.com>,
+        Anders Kaseorg <andersk@ksplice.com>,
+        Arnaud Lacombe <lacombar@gmail.com>,
+        Alessio Igor Bogani <abogani@kernel.org>
+Subject: [PATCH] modpost: Fix modpost's license checking V3
+Date: Thu, 14 Jul 2011 08:51:16 +0200
+Message-Id: <1310626276-4541-1-git-send-email-abogani@kernel.org>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <CACqU3MUXAOMGQ1nzUrtYPEQAC3U-nuq3YurtNJJLS1hft4ROGA@mail.gmail.com>
+References: <CACqU3MUXAOMGQ1nzUrtYPEQAC3U-nuq3YurtNJJLS1hft4ROGA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ravishankar <ravi.shankar@greenturtles.in>
+The commit f02e8a6 sorts symbols placing each of them in its own elf section.
+The sorting and merging into the canonical sections are done by the linker.
+Unfortunately modpost to generate Module.symvers file parses vmlinux
+(already linked) and all modules object files (which aren't linked yet).
+These aren't sanitized by the linker yet. That breaks modpost that can't
+detect license properly for modules. This patch makes modpost aware of
+the new exported symbols structure.
 
-This is a patch to the daqboard2000.c file that fixes up a  warning:line over 80 character found by the checkpatch.pl tool
+Thanks to Arnaud Lacombe <lacombar@gmail.com> and Anders Kaseorg
+<andersk@ksplice.com> for providing useful suggestions about code.
 
-Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
+This work was supported by a hardware donation from the CE Linux Forum.
+
+Reported-by: Jan Beulich <jbeulich@novell.com>
+Signed-off-by: Alessio Igor Bogani <abogani@kernel.org>
 ---
- drivers/staging/comedi/drivers/daqboard2000.c |   20 ++++++++++++--------
- 1 files changed, 8 insertions(+), 5 deletions(-)
+ scripts/mod/modpost.c |   29 ++++++++++++++++++++++++++++-
+ 1 files changed, 28 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/daqboard2000.c b/drivers/staging/comedi/drivers/daqboard2000.c
-index 12ccdae..b007a4b 100644
---- a/drivers/staging/comedi/drivers/daqboard2000.c
-+++ b/drivers/staging/comedi/drivers/daqboard2000.c
-@@ -415,7 +416,8 @@ static int daqboard2000_ai_insn_read(struct comedi_device *dev,
+diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
+index 413c536..a509ff8 100644
+--- a/scripts/mod/modpost.c
++++ b/scripts/mod/modpost.c
+@@ -254,6 +254,28 @@ static enum export export_no(const char *s)
+ 	return export_unknown;
+ }
  
- 	/* If pacer clock is not set to some high value (> 10 us), we
- 	   risk multiple samples to be put into the result FIFO. */
--	fpga->acqPacerClockDivLow = 1000000;	/* 1 second, should be long enough */
-+	/* 1 second, should be long enough */
-+	fpga->acqPacerClockDivLow = 1000000;
- 	fpga->acqPacerClockDivHigh = 0;
++static const char *sec_name(struct elf_info *elf, int secindex);
++
++#define strstarts(str, prefix) (strncmp(str, prefix, strlen(prefix)) == 0)
++
++static enum export export_from_secname(struct elf_info *elf, unsigned int sec)
++{
++	const char *secname = sec_name(elf, sec);
++
++	if (strstarts(secname, "___ksymtab+"))
++		return export_plain;
++	else if (strstarts(secname, "___ksymtab_unused+"))
++		return export_unused;
++	else if (strstarts(secname, "___ksymtab_gpl+"))
++		return export_gpl;
++	else if (strstarts(secname, "___ksymtab_unused_gpl+"))
++		return export_unused_gpl;
++	else if (strstarts(secname, "___ksymtab_gpl_future+"))
++		return export_gpl_future;
++	else
++		return export_unknown;
++}
++
+ static enum export export_from_sec(struct elf_info *elf, unsigned int sec)
+ {
+ 	if (sec == elf->export_sec)
+@@ -563,7 +585,12 @@ static void handle_modversions(struct module *mod, struct elf_info *info,
+ 			       Elf_Sym *sym, const char *symname)
+ {
+ 	unsigned int crc;
+-	enum export export = export_from_sec(info, get_secindex(info, sym));
++	enum export export;
++
++	if (!is_vmlinux(mod->name) && strncmp(symname, "__ksymtab", 9) == 0)
++		export = export_from_secname(info, get_secindex(info, sym));
++	else
++		export = export_from_sec(info, get_secindex(info, sym));
  
- 	gain = CR_RANGE(insn->chanspec);
-@@ -481,10 +483,11 @@ static int daqboard2000_ao_insn_write(struct comedi_device *dev,
- 
- 	for (i = 0; i < insn->n; i++) {
- 		/*
--		 * OK, since it works OK without enabling the DAC's, let's keep
--		 * it as simple as possible...
-+		 * OK, since it works OK without enabling the DAC's, let's
-+		 * keep it as simple as possible...
- 		 */
--		/* fpga->dacControl = (chan + 2) * 0x0010 | 0x0001; udelay(1000); */
-+		/* fpga->dacControl = (chan + 2) * 0x0010 | 0x0001;
-+		 * udelay(1000); */
- 		fpga->dacSetting[chan] = data[i];
- 		for (timeout = 0; timeout < 20; timeout++) {
- 			if ((fpga->dacControl & ((chan + 1) * 0x0010)) == 0)
-@@ -700,7 +703,8 @@ static void daqboard2000_initializeDac(struct comedi_device *dev)
- /*
- The test command, REMOVE!!:
- 
--rmmod daqboard2000 ; rmmod comedi; make install ; modprobe daqboard2000; /usr/sbin/comedi_config /dev/comedi0 daqboard/2000 ; tail -40 /var/log/messages
-+rmmod daqboard2000 ; rmmod comedi; make install ; modprobe daqboard2000;
-+/usr/sbin/comedi_config /dev/comedi0 daqboard/2000 ; tail -40 /var/log/messages
- */
- 
- static int daqboard2000_8255_cb(int dir, int port, int data,
+ 	switch (sym->st_shndx) {
+ 	case SHN_COMMON:
 -- 
-1.6.5.2
+1.7.4.1
 
