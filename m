@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755163Ab1GNNwl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 09:52:41 -0400
-Received: from 8bytes.org ([88.198.83.132]:58831 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754662Ab1GNNwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 09:52:40 -0400
-Date: Thu, 14 Jul 2011 15:52:39 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: Joerg Roedel <joerg.roedel@amd.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/7] KVM: SVM: Use host_vmcb_pa for vmload and vmsave
-Message-ID: <20110714135239.GF24072@8bytes.org>
-References: <1310571145-28930-1-git-send-email-joerg.roedel@amd.com> <1310571145-28930-3-git-send-email-joerg.roedel@amd.com> <4E1ED320.4080600@redhat.com> <20110714131036.GC24072@8bytes.org> <4E1EED03.3050202@redhat.com>
+	id S1755225Ab1GNNxK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 09:53:10 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:56711 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755184Ab1GNNxI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 09:53:08 -0400
+Date: Thu, 14 Jul 2011 08:53:02 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Daniel Barkalow <barkalow@iabervon.org>
+Cc: Christoph Hellwig <hch@tuxera.com>, linux-kernel@vger.kernel.org
+Subject: Re: Problems with hfsplus on ipods in 2.6.38+
+Message-ID: <20110714135302.GA28501@thinkpad-t410>
+Mail-Followup-To: Daniel Barkalow <barkalow@iabervon.org>,
+	Christoph Hellwig <hch@tuxera.com>, linux-kernel@vger.kernel.org
+References: <alpine.LNX.2.00.1107131942190.2056@iabervon.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E1EED03.3050202@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <alpine.LNX.2.00.1107131942190.2056@iabervon.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 14, 2011 at 04:20:03PM +0300, Avi Kivity wrote:
-> On 07/14/2011 04:10 PM, Joerg Roedel wrote:
+On Wed, Jul 13, 2011 at 10:10:13PM -0400, Daniel Barkalow wrote:
+> I've got an ipod which doesn't work with 2.6.38 or later, unless I revert:
+> 
+> 358f26d52680cb150907302d4334359de7dd2d59
+> 52399b171dfaea02b6944cd6feba49b624147126
+> 
+> In the failing case, I get:
+> 
+>  sd 2:0:0:0: [sdb] Bad block number requested
+>  hfs: unable to find HFS+ superblock
+> 
+> in dmesg when I try to mount it.
+> 
+> Before 2.6.38, or with those commits reverted, it mounts fine and works so 
+> far as I can tell. (There's an Ubuntu bug report: 
+> https://bugs.launchpad.net/ubuntu/+source/util-linux/+bug/734883, which 
+> reports other people having similar results). I can test patches and 
+> collect information that might be helpful, if you have any ideas.
 
->> Yes, otherwise we need to copy the vmload/vmsave switched state back and
->> forth between both VMCBs which is a waste of cycles.
->
-> Just to be sure I understand this: the root cause is because VMRUN  
-> doesn't actually switch this state.  So we have to copy the state.  Okay.
+This has had some discussion on lkml previously [1]. I've been trying to
+work on a fix, but the current iteration has problems, and I haven't
+been able to get testers to provide the logs I've requested to help me
+see what's going wrong. If you'd like to help by providing logs from the
+most recent test build on the bug you linked to (or using the patches
+from that build) that would be great. I unfortunately don't have any
+large-sector devices to test with and cannot reproduce the problems on
+512-byte sector devices.
 
-Right.
+Seth
 
-> What about an L2 guest executing VMLOAD or VMSAVE which isn't  
-> intercepted?  Don't we have to redirect it's reads and writes to 
-> host_vmcb?
-
-Yes, that needs to target the host_vmcb then. This is buggy in the
-patch-set. Thanks for pointing this out :)
-
->> Hmm, how about naming them l1_vmcb and l2_vmcb? The comment explaining
->> why vmload/vmsave always happens on l1_vmcb is needed anyway then.
->
-> In a later patch you introduce n_vmcb.  I think it makes sense to name  
-> that vmcb02?
-
-Just for my understanding, what stands the first '0' for? The '1' and
-'2' make sense, but the '0' seems to be redundant?
-
-> Even the exising code would be good to document.  So when a reader sees  
-> some bit, they can compare it to the document and see why it's that way.
-
-I tried to put comments into the code to document the most complicated
-parts. But there is certainly room for improvement. Overall, I think the
-best place is to keep those comments in the code and not open another
-document for it.
-
->> The long-term plan is certainly to merge code with nested-vmx where
->> possible and move logic into generic KVM code. The first item that comes
->> to mind here is to create a single place where a vmexit is emulated and
->> let all other place which do that today just signal that it is required.
->
-> I'm not very concerned about reuse with nvmx except for architectural  
-> code like interrupts.  Of course, if it turns out simple I'm all for it,  
-> but if it's hard or uglifies the code, let it be.
-
-Yes, the interrupt code is another part that probably can be made
-generic.
-The nested-mmu code is already generic. Nested-VMX should be able to
-make use of it with only minor modifications.
-
-	Joerg
-
+[1] https://lkml.org/lkml/2011/5/25/248
