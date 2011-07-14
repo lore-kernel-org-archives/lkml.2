@@ -1,37 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755372Ab1GNQF1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 12:05:27 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:38134 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755271Ab1GNQF0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 12:05:26 -0400
-Date: Thu, 14 Jul 2011 09:03:25 -0700 (PDT)
-Message-Id: <20110714.090325.1514544531042623590.davem@davemloft.net>
-To: viliam.mateicka@gmail.com
-Cc: mirq-linux@rere.qmqm.pl, steve.glendinning@smsc.com, rabin@rab.in,
-        decot@google.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] smsc95xx: add missing .reset_resume hook and reset card
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1310644306-16180-1-git-send-email-viliam.mateicka@gmail.com>
-References: <1310644306-16180-1-git-send-email-viliam.mateicka@gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 14 Jul 2011 09:03:27 -0700 (PDT)
+	id S1755365Ab1GNQG2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 12:06:28 -0400
+Received: from home.keithp.com ([63.227.221.253]:38081 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755271Ab1GNQG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 12:06:27 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Francesco Allertsen <fallertsen@gmail.com>,
+        Pekka Enberg <penberg@kernel.org>
+Cc: dri-devel@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Reverting rc6 by default
+In-Reply-To: <20110714075007.GB2949@fujiko>
+References: <20110621155205.GA2488@fujiko> <yunboxrxiz2.fsf@aiko.keithp.com> <20110621164209.GA2155@fujiko> <yun8vsvxdr4.fsf@aiko.keithp.com> <20110621184757.GA2185@fujiko> <yunzklb9fg1.fsf@aiko.keithp.com> <20110705230101.GD2852@fujiko> <CAOJsxLFVSEDEaYH8Dw4jWGo9=wkC8QQWOs4xRR6qcgVM2xCRoA@mail.gmail.com> <yunhb6rec97.fsf@aiko.keithp.com> <CAOJsxLGKtjCpY=X1UrHVY79qLjVCgCT3XC795yh_uEn-0_4D0w@mail.gmail.com> <20110714075007.GB2949@fujiko>
+User-Agent: Notmuch/0.5-202-g6ae4e7d (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Thu, 14 Jul 2011 09:06:20 -0700
+Message-ID: <yuntyaohmo3.fsf@aiko.keithp.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Viliam Mateicka <viliam.mateicka@gmail.com>
-Date: Thu, 14 Jul 2011 13:51:46 +0200
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-> This patch fixes the undefined behaviour (random MAC, interface goes down) of smsc95xx driver after resume from suspend.
-> Calling smsc95xx_reset() is needed to properly set hw registers of card and bring interface up to defined state.
-> 
-> Signed-off-by: Viliam Mateicka <viliam.mateicka@gmail.com>
+On Thu, 14 Jul 2011 09:50:07 +0200, Francesco Allertsen <fallertsen@gmail.c=
+om> wrote:
 
-Please submit networking patches to netdev@vger.kernel.org so that
-it can be tracked properly.
+> The correct commit is 05bd42688dbc066d4e2689b6f73c0470601f788b, the one
+> you mentioned is "Idling requires waiting for the ring to be empty".
+
+We mentioned the 'Idling' fix as it may make RC6 work. Have you tried
+that with RC6 enabled on the command line (or with
+05bd42688dbc066d4e2689b6f73c0470601f788b not applied)? Obviously, not
+enabling RC6 by default will 'fix' things, but only with a huge hit to
+power consumption.
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iD8DBQFOHxP8Qp8BWwlsTdMRAposAJ9Vc3y22ZPAWnAlX5CVktJKjpXWPwCcCp6c
+yTMAtee8glaf20t++iHWWOk=
+=HxIK
+-----END PGP SIGNATURE-----
+--=-=-=--
