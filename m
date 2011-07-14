@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932110Ab1GNUK5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 16:10:57 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:26097 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753808Ab1GNUK4 convert rfc822-to-8bit (ORCPT
+	id S1753926Ab1GNUO7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 16:14:59 -0400
+Received: from Mycroft.westnet.com ([216.187.52.7]:39515 "EHLO
+	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753347Ab1GNUO6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 16:10:56 -0400
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-5.tower-132.messagelabs.com!1310674227!31942354!10
-X-StarScan-Version: 6.2.17; banners=-,-,-
-X-Originating-IP: [216.166.12.178]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-CC: "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "wim@iguana.be" <wim@iguana.be>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "tim.bird@am.sony.com" <tim.bird@am.sony.com>
-Date: Thu, 14 Jul 2011 15:10:37 -0500
-Subject: RE: [RFC 0/6] watchdog drivers converted to the new framework
-Thread-Topic: [RFC 0/6] watchdog drivers converted to the new framework
-Thread-Index: AcxCYMaMO/hOesJQTDy7loI6OMCIpAAACILg
-Message-ID: <ADE657CA350FB648AAC2C43247A983F001F383E05C4A@AUSP01VMBX24.collaborationhost.net>
-References: <1310588766-16638-1-git-send-email-w.sang@pengutronix.de>
- <ADE657CA350FB648AAC2C43247A983F001F383E05B65@AUSP01VMBX24.collaborationhost.net>
- <20110714182734.GA31082@pengutronix.de>
- <ADE657CA350FB648AAC2C43247A983F001F383E05BCD@AUSP01VMBX24.collaborationhost.net>
- <20110714200053.GC31082@pengutronix.de>
-In-Reply-To: <20110714200053.GC31082@pengutronix.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 14 Jul 2011 16:14:58 -0400
+X-Greylist: delayed 1424 seconds by postgrey-1.27 at vger.kernel.org; Thu, 14 Jul 2011 16:14:57 EDT
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <19999.18584.813855.541972@quad.stoffel.home>
+Date: Thu, 14 Jul 2011 15:50:48 -0400
+From: "John Stoffel" <john@stoffel.org>
+To: Alasdair G Kergon <agk@redhat.com>
+Cc: NeilBrown <neilb@suse.de>, Ric Wheeler <rwheeler@redhat.com>,
+        Nico Schottelius <nico-lkml-20110623@schottelius.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@oracle.com>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>
+Subject: Re: Mis-Design of Btrfs?
+In-Reply-To: <20110714165516.GA15253@agk-dp.fab.redhat.com>
+References: <20110623105337.GD3753@ethz.ch>
+	<20110627164637.377314e2@notabene.brown>
+	<4E0AF091.9030301@redhat.com>
+	<20110714155620.6e9ac2cc@notabene.brown>
+	<4E1E866E.2050405@redhat.com>
+	<20110714163836.35a729c1@notabene.brown>
+	<20110714165516.GA15253@agk-dp.fab.redhat.com>
+X-Mailer: VM 8.1.1 under 23.2.1 (x86_64-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 14, 2011 1:01 PM, Wolfram Sang wrote:
-> On Thu, Jul 14, 2011 at 01:42:02PM -0500, H Hartley Sweeten wrote:
->> On Thursday, July 14, 2011 11:28 AM, Wolfram Sang wrote:
->>>> I would also like to convert this driver into a proper platform_driver using
->>>> ioremap'ed addresses instead of the static mappings.  Converting the driver
->>>> to the new watchdog framework would make this a bit cleaner.
->>>
->>> Try managed devices (devm_* and friends) for an extra cleanup bonus.
->> 
->> Already done, just waiting for the framework... ;-)
->
-> Nice :) Did you use my conversion-guide as a reference? Any comments if so?
+>>>>> "Alasdair" == Alasdair G Kergon <agk@redhat.com> writes:
 
-Sorry, I didn't.  I just worked it out from the framework core and looking
-at your examples.
+Alasdair> On Thu, Jul 14, 2011 at 04:38:36PM +1000, Neil Brown wrote:
+>> It might make sense for a device to be able to report what the maximum
+>> 'N' supported is... that might make stacked raid easier to manage...
+ 
+Alasdair> I'll just say that any solution ought to be stackable.
 
-When I found the framework patches on lkml I couldn't get them into a state
-to apply to my tree.  I ended up manually applying all the pieces so I skipped
-the Documentation stuff to save some time.
+I've been mulling this over too and wondering how you'd handle this,
+because upper layers really can't peak down into lower layers easily.
+As far as I understand things.
 
-The conversion is pretty straight forward after examining the watchdog
-framework files.
+So if you have btrfs -> luks -> raid1 -> raid6 -> nbd -> remote disks
 
-Regards,
-Hartley
+How does btrfs handle errors (or does it even see them!) from the
+raid6 level when a single nbd device goes away?  Or taking the
+original example, when btrfs notices a checksum isn't correct, how
+would it push down multiple levels to try and find the correct data? 
+
+Alasdair> This means understanding both that the number of data access
+Alasdair> routes may vary as you move through the stack, and that this
+Alasdair> number may depend on the offset within the device.
+
+It almost seems to me that the retry needs to be done at each level on
+it's own, without pushing down or up the stack.  But this doesn't
+handle the wrong file checksum issue.  
+
+Hmm... maybe instead of just one number, we need another to count the
+levels down you go (or just split 16bit integer in half, bottom half
+being count of tries, the upper half being levels down to try that
+read?)
+
+It seems to defeat the purpose of layers if you can go down and find
+out how many layers there are underneath you....
+
+John
+
