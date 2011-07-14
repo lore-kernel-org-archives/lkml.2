@@ -1,80 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341Ab1GNGpN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 02:45:13 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:36604 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752767Ab1GNGpL (ORCPT
+	id S1753392Ab1GNGrE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 02:47:04 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:54131 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753213Ab1GNGrC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 02:45:11 -0400
-Date: Thu, 14 Jul 2011 08:45:06 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, vda.linux@googlemail.com,
-        jan.kratochvil@redhat.com, pedro@codesourcery.com, indan@nul.nu,
-        bdonlan@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] ptrace: fix ptrace_signal() && STOP_DEQUEUED
- interaction
-Message-ID: <20110714064457.GA3455@htj.dyndns.org>
-References: <20110707190301.GA25332@redhat.com>
- <20110707190324.GB25332@redhat.com>
- <20110713100404.GG2872@htj.dyndns.org>
- <20110713183322.GA12535@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110713183322.GA12535@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 14 Jul 2011 02:47:02 -0400
+From: Ravishankar <ravishankarkm32@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>,
+        Ravishankar <ravishankarkm32@gmail.com>
+Subject: [PATCH 3/3] Staging: comedi: fix warning issue in daqboard2000.c
+Date: Thu, 14 Jul 2011 12:29:42 +0530
+Message-Id: <1310626782-21613-1-git-send-email-ravishankarkm32@gmail.com>
+X-Mailer: git-send-email 1.6.5.2
+In-Reply-To: <[PATCH 3/3]Staging: comedi:fix line over 80 character issue in daqboard2000.c>
+References: <[PATCH 3/3]Staging: comedi:fix line over 80 character issue in daqboard2000.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Oleg.
+From: Ravishankar <ravi.shankar@greenturtles.in>
 
-On Wed, Jul 13, 2011 at 08:33:22PM +0200, Oleg Nesterov wrote:
-> > On Thu, Jul 07, 2011 at 09:03:24PM +0200, Oleg Nesterov wrote:
-> > > Without the patch it hangs. After the patch SIGSTOP "injected" by the
-> > > tracer is not ignored and stops the tracee.
-> >
-> > I always felt the ability to 'inject' different signal there is rather
-> > useless and prone to induce weird issues.  It would be better if
-> > ptrace_signal() is part of signal delivery action after all the checks
-> > so that the ptracer says whether to proceed with the action or not but
-> > no more.  Well...
-> 
-> Oh, probably. If the tracer wants a different signr, it can simply do
-> tkill() + PTRACE_CONT(0). I agree. Although perhaps this is needed for
-> gdb, I dunno. But we can't change this.
+This is a patch to the daqboard2000.c file that fixes up a  warning:line over 80 character found by the checkpatch.pl tool
 
-Yeah, we can't change it.  I was just thinking out loud.  Sending
-signals from ptrace code path seems generally wrong.  In this case, if
-the signal becomes blocked inbetween, the signal gets sent again.
-Seeing the same signal being delivered twice can be confusing.
-Moreover, SIGCONT can be blocked and the action of 'sending' it has
-side effects, so re-sending it is simply wrong.  This should have been
-ack/nack for the action to take.
+Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
+---
+ drivers/staging/comedi/drivers/daqboard2000.c |   20 ++++++++++++--------
+ 1 files changed, 8 insertions(+), 5 deletions(-)
 
-Anyways, not much point in ranting about it at this point, I guess.
-
-> > Wouldn't it be better to flip the
-> > flag so that we have CONT_RECEIVED before doing this?
-> 
-> May be. You know, I thought about this when I did ee77f075
-> "signal: Turn SIGNAL_STOP_DEQUEUED into GROUP_STOP_DEQUEUED".
-> 
-> Or may be we can simply rename it into STOP_ALLOWED. In this case
-> we can even set it unconditionally before dequeue_signal().
-> 
-> Anyway, whatever we do, this patch doesn't complicate the
-> CONT_RECEIVED/STOP_ALLOWED change. Can't we do this later?
-
-Never mind.  I for some reason thought flipping the flag would make
-the extra step in ptrace_signal() unnecessary.  We need to clear it
-all the same so it doesn't really improve anything.  I think the
-current version should be fine (maybe the comment can be beefed up a
-bit?).
-
-Thanks.
-
+diff --git a/drivers/staging/comedi/drivers/daqboard2000.c b/drivers/staging/comedi/drivers/daqboard2000.c
+index 12ccdae..b007a4b 100644
+--- a/drivers/staging/comedi/drivers/daqboard2000.c
++++ b/drivers/staging/comedi/drivers/daqboard2000.c
+@@ -415,7 +416,8 @@ static int daqboard2000_ai_insn_read(struct comedi_device *dev,
+ 
+ 	/* If pacer clock is not set to some high value (> 10 us), we
+ 	   risk multiple samples to be put into the result FIFO. */
+-	fpga->acqPacerClockDivLow = 1000000;	/* 1 second, should be long enough */
++	/* 1 second, should be long enough */
++	fpga->acqPacerClockDivLow = 1000000;
+ 	fpga->acqPacerClockDivHigh = 0;
+ 
+ 	gain = CR_RANGE(insn->chanspec);
+@@ -481,10 +483,11 @@ static int daqboard2000_ao_insn_write(struct comedi_device *dev,
+ 
+ 	for (i = 0; i < insn->n; i++) {
+ 		/*
+-		 * OK, since it works OK without enabling the DAC's, let's keep
+-		 * it as simple as possible...
++		 * OK, since it works OK without enabling the DAC's, let's
++		 * keep it as simple as possible...
+ 		 */
+-		/* fpga->dacControl = (chan + 2) * 0x0010 | 0x0001; udelay(1000); */
++		/* fpga->dacControl = (chan + 2) * 0x0010 | 0x0001;
++		 * udelay(1000); */
+ 		fpga->dacSetting[chan] = data[i];
+ 		for (timeout = 0; timeout < 20; timeout++) {
+ 			if ((fpga->dacControl & ((chan + 1) * 0x0010)) == 0)
+@@ -700,7 +703,8 @@ static void daqboard2000_initializeDac(struct comedi_device *dev)
+ /*
+ The test command, REMOVE!!:
+ 
+-rmmod daqboard2000 ; rmmod comedi; make install ; modprobe daqboard2000; /usr/sbin/comedi_config /dev/comedi0 daqboard/2000 ; tail -40 /var/log/messages
++rmmod daqboard2000 ; rmmod comedi; make install ; modprobe daqboard2000;
++/usr/sbin/comedi_config /dev/comedi0 daqboard/2000 ; tail -40 /var/log/messages
+ */
+ 
+ static int daqboard2000_8255_cb(int dir, int port, int data,
 -- 
-tejun
+1.6.5.2
+
