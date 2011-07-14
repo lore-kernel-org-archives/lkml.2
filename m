@@ -1,136 +1,374 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932331Ab1GNV2k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 17:28:40 -0400
-Received: from hera.kernel.org ([140.211.167.34]:39037 "EHLO hera.kernel.org"
+	id S932347Ab1GNV3J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 17:29:09 -0400
+Received: from hera.kernel.org ([140.211.167.34]:39065 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932231Ab1GNV2j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 17:28:39 -0400
-Date: Thu, 14 Jul 2011 21:28:22 GMT
+	id S932231Ab1GNV3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 17:29:07 -0400
+Date: Thu, 14 Jul 2011 21:28:48 GMT
 From: tip-bot for Tejun Heo <tj@kernel.org>
-Message-ID: <tip-96e907d1360240d1958fe8ce3a3ac640733330d4@git.kernel.org>
+Message-ID: <tip-c13291a536b835b2ab278ab201f2cb1ce22f2785@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         benh@kernel.crashing.org, yinghai@kernel.org, tj@kernel.org,
         tglx@linutronix.de, hpa@linux.intel.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         yinghai@kernel.org, benh@kernel.crashing.org, tj@kernel.org,
         tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1310460395-30913-3-git-send-email-tj@kernel.org>
-References: <1310460395-30913-3-git-send-email-tj@kernel.org>
+In-Reply-To: <1310460395-30913-4-git-send-email-tj@kernel.org>
+References: <1310460395-30913-4-git-send-email-tj@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/memblock] bootmem: Reimplement __absent_pages_in_range() using for_each_mem_pfn_range()
-Git-Commit-ID: 96e907d1360240d1958fe8ce3a3ac640733330d4
+Subject: [tip:x86/memblock] bootmem: Use for_each_mem_pfn_range() in page_alloc.c
+Git-Commit-ID: c13291a536b835b2ab278ab201f2cb1ce22f2785
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 14 Jul 2011 21:28:26 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 14 Jul 2011 21:28:54 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  96e907d1360240d1958fe8ce3a3ac640733330d4
-Gitweb:     http://git.kernel.org/tip/96e907d1360240d1958fe8ce3a3ac640733330d4
+Commit-ID:  c13291a536b835b2ab278ab201f2cb1ce22f2785
+Gitweb:     http://git.kernel.org/tip/c13291a536b835b2ab278ab201f2cb1ce22f2785
 Author:     Tejun Heo <tj@kernel.org>
-AuthorDate: Tue, 12 Jul 2011 10:46:29 +0200
+AuthorDate: Tue, 12 Jul 2011 10:46:30 +0200
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 14 Jul 2011 11:45:30 -0700
+CommitDate: Thu, 14 Jul 2011 11:45:31 -0700
 
-bootmem: Reimplement __absent_pages_in_range() using for_each_mem_pfn_range()
+bootmem: Use for_each_mem_pfn_range() in page_alloc.c
 
-__absent_pages_in_range() was needlessly complex.  Reimplement it
-using for_each_mem_pfn_range().
+The previous patch added for_each_mem_pfn_range() which is more
+versatile than for_each_active_range_index_in_nid().  This patch
+replaces for_each_active_range_index_in_nid() and open coded
+early_node_map[] walks with for_each_mem_pfn_range().
 
-Also, update zone_absent_pages_in_node() such that it doesn't call
-__absent_pages_in_range() with @zone_start_pfn which is larger than
-@zone_end_pfn.
+All conversions in this patch are straight-forward and shouldn't cause
+any functional difference.  After the conversions,
+for_each_active_range_index_in_nid() doesn't have any user left and is
+removed.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Link: http://lkml.kernel.org/r/1310460395-30913-3-git-send-email-tj@kernel.org
+Link: http://lkml.kernel.org/r/1310460395-30913-4-git-send-email-tj@kernel.org
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- mm/page_alloc.c |   54 ++++++++++++------------------------------------------
- 1 files changed, 12 insertions(+), 42 deletions(-)
+ mm/page_alloc.c |  165 +++++++++++++++++++------------------------------------
+ 1 files changed, 56 insertions(+), 109 deletions(-)
 
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 69fffab..3092a97 100644
+index 3092a97..902f03a 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -4044,46 +4044,16 @@ unsigned long __meminit __absent_pages_in_range(int nid,
- 				unsigned long range_start_pfn,
- 				unsigned long range_end_pfn)
- {
--	int i = 0;
--	unsigned long prev_end_pfn = 0, hole_pages = 0;
--	unsigned long start_pfn;
--
--	/* Find the end_pfn of the first active range of pfns in the node */
--	i = first_active_region_index_in_nid(nid);
--	if (i == -1)
--		return 0;
--
--	prev_end_pfn = min(early_node_map[i].start_pfn, range_end_pfn);
--
--	/* Account for ranges before physical memory on this node */
--	if (early_node_map[i].start_pfn > range_start_pfn)
--		hole_pages = prev_end_pfn - range_start_pfn;
--
--	/* Find all holes for the zone within the node */
--	for (; i != -1; i = next_active_region_index_in_nid(i, nid)) {
--
--		/* No need to continue if prev_end_pfn is outside the zone */
--		if (prev_end_pfn >= range_end_pfn)
--			break;
--
--		/* Make sure the end of the zone is not within the hole */
--		start_pfn = min(early_node_map[i].start_pfn, range_end_pfn);
--		prev_end_pfn = max(prev_end_pfn, range_start_pfn);
-+	unsigned long nr_absent = range_end_pfn - range_start_pfn;
-+	unsigned long start_pfn, end_pfn;
-+	int i;
+@@ -3711,34 +3711,6 @@ __meminit int init_currently_empty_zone(struct zone *zone,
+ }
  
--		/* Update the hole size cound and move on */
--		if (start_pfn > range_start_pfn) {
--			BUG_ON(prev_end_pfn > start_pfn);
--			hole_pages += start_pfn - prev_end_pfn;
--		}
--		prev_end_pfn = early_node_map[i].end_pfn;
-+	for_each_mem_pfn_range(i, nid, &start_pfn, &end_pfn, NULL) {
-+		start_pfn = clamp(start_pfn, range_start_pfn, range_end_pfn);
-+		end_pfn = clamp(end_pfn, range_start_pfn, range_end_pfn);
-+		nr_absent -= end_pfn - start_pfn;
+ #ifdef CONFIG_ARCH_POPULATES_NODE_MAP
+-/*
+- * Basic iterator support. Return the first range of PFNs for a node
+- * Note: nid == MAX_NUMNODES returns first region regardless of node
+- */
+-static int __meminit first_active_region_index_in_nid(int nid)
+-{
+-	int i;
+-
+-	for (i = 0; i < nr_nodemap_entries; i++)
+-		if (nid == MAX_NUMNODES || early_node_map[i].nid == nid)
+-			return i;
+-
+-	return -1;
+-}
+-
+-/*
+- * Basic iterator support. Return the next active range of PFNs for a node
+- * Note: nid == MAX_NUMNODES returns next region regardless of node
+- */
+-static int __meminit next_active_region_index_in_nid(int index, int nid)
+-{
+-	for (index = index + 1; index < nr_nodemap_entries; index++)
+-		if (nid == MAX_NUMNODES || early_node_map[index].nid == nid)
+-			return index;
+-
+-	return -1;
+-}
+-
+ #ifndef CONFIG_HAVE_ARCH_EARLY_PFN_TO_NID
+ /*
+  * Required by SPARSEMEM. Given a PFN, return what node the PFN is on.
+@@ -3748,15 +3720,12 @@ static int __meminit next_active_region_index_in_nid(int index, int nid)
+  */
+ int __meminit __early_pfn_to_nid(unsigned long pfn)
+ {
+-	int i;
+-
+-	for (i = 0; i < nr_nodemap_entries; i++) {
+-		unsigned long start_pfn = early_node_map[i].start_pfn;
+-		unsigned long end_pfn = early_node_map[i].end_pfn;
++	unsigned long start_pfn, end_pfn;
++	int i, nid;
+ 
++	for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, &nid)
+ 		if (start_pfn <= pfn && pfn < end_pfn)
+-			return early_node_map[i].nid;
+-	}
++			return nid;
+ 	/* This is a memory hole */
+ 	return -1;
+ }
+@@ -3785,11 +3754,6 @@ bool __meminit early_pfn_in_nid(unsigned long pfn, int node)
+ }
+ #endif
+ 
+-/* Basic iterator support to walk early_node_map[] */
+-#define for_each_active_range_index_in_nid(i, nid) \
+-	for (i = first_active_region_index_in_nid(nid); i != -1; \
+-				i = next_active_region_index_in_nid(i, nid))
+-
+ /**
+  * free_bootmem_with_active_regions - Call free_bootmem_node for each active range
+  * @nid: The node to free memory on. If MAX_NUMNODES, all nodes are freed.
+@@ -3799,25 +3763,19 @@ bool __meminit early_pfn_in_nid(unsigned long pfn, int node)
+  * add_active_ranges() contain no holes and may be freed, this
+  * this function may be used instead of calling free_bootmem() manually.
+  */
+-void __init free_bootmem_with_active_regions(int nid,
+-						unsigned long max_low_pfn)
++void __init free_bootmem_with_active_regions(int nid, unsigned long max_low_pfn)
+ {
+-	int i;
+-
+-	for_each_active_range_index_in_nid(i, nid) {
+-		unsigned long size_pages = 0;
+-		unsigned long end_pfn = early_node_map[i].end_pfn;
+-
+-		if (early_node_map[i].start_pfn >= max_low_pfn)
+-			continue;
++	unsigned long start_pfn, end_pfn;
++	int i, this_nid;
+ 
+-		if (end_pfn > max_low_pfn)
+-			end_pfn = max_low_pfn;
++	for_each_mem_pfn_range(i, nid, &start_pfn, &end_pfn, &this_nid) {
++		start_pfn = min(start_pfn, max_low_pfn);
++		end_pfn = min(end_pfn, max_low_pfn);
+ 
+-		size_pages = end_pfn - early_node_map[i].start_pfn;
+-		free_bootmem_node(NODE_DATA(early_node_map[i].nid),
+-				PFN_PHYS(early_node_map[i].start_pfn),
+-				size_pages << PAGE_SHIFT);
++		if (start_pfn < end_pfn)
++			free_bootmem_node(NODE_DATA(this_nid),
++					  PFN_PHYS(start_pfn),
++					  (end_pfn - start_pfn) << PAGE_SHIFT);
  	}
--
--	/* Account for ranges past physical memory on this node */
--	if (range_end_pfn > prev_end_pfn)
--		hole_pages += range_end_pfn -
--				max(range_start_pfn, prev_end_pfn);
--
--	return hole_pages;
-+	return nr_absent;
+ }
+ 
+@@ -3891,15 +3849,12 @@ u64 __init find_memory_core_early(int nid, u64 size, u64 align,
+ int __init add_from_early_node_map(struct range *range, int az,
+ 				   int nr_range, int nid)
+ {
++	unsigned long start_pfn, end_pfn;
+ 	int i;
+-	u64 start, end;
+ 
+ 	/* need to go over early_node_map to find out good range for node */
+-	for_each_active_range_index_in_nid(i, nid) {
+-		start = early_node_map[i].start_pfn;
+-		end = early_node_map[i].end_pfn;
+-		nr_range = add_range(range, az, nr_range, start, end);
+-	}
++	for_each_mem_pfn_range(i, nid, &start_pfn, &end_pfn, NULL)
++		nr_range = add_range(range, az, nr_range, start_pfn, end_pfn);
+ 	return nr_range;
+ }
+ 
+@@ -3913,12 +3868,11 @@ int __init add_from_early_node_map(struct range *range, int az,
+  */
+ void __init sparse_memory_present_with_active_regions(int nid)
+ {
+-	int i;
++	unsigned long start_pfn, end_pfn;
++	int i, this_nid;
+ 
+-	for_each_active_range_index_in_nid(i, nid)
+-		memory_present(early_node_map[i].nid,
+-				early_node_map[i].start_pfn,
+-				early_node_map[i].end_pfn);
++	for_each_mem_pfn_range(i, nid, &start_pfn, &end_pfn, &this_nid)
++		memory_present(this_nid, start_pfn, end_pfn);
  }
  
  /**
-@@ -4104,14 +4074,14 @@ static unsigned long __meminit zone_absent_pages_in_node(int nid,
- 					unsigned long zone_type,
- 					unsigned long *ignored)
+@@ -3935,13 +3889,15 @@ void __init sparse_memory_present_with_active_regions(int nid)
+ void __meminit get_pfn_range_for_nid(unsigned int nid,
+ 			unsigned long *start_pfn, unsigned long *end_pfn)
  {
-+	unsigned long zone_low = arch_zone_lowest_possible_pfn[zone_type];
-+	unsigned long zone_high = arch_zone_highest_possible_pfn[zone_type];
- 	unsigned long node_start_pfn, node_end_pfn;
- 	unsigned long zone_start_pfn, zone_end_pfn;
++	unsigned long this_start_pfn, this_end_pfn;
+ 	int i;
++
+ 	*start_pfn = -1UL;
+ 	*end_pfn = 0;
  
- 	get_pfn_range_for_nid(nid, &node_start_pfn, &node_end_pfn);
--	zone_start_pfn = max(arch_zone_lowest_possible_pfn[zone_type],
--							node_start_pfn);
--	zone_end_pfn = min(arch_zone_highest_possible_pfn[zone_type],
--							node_end_pfn);
-+	zone_start_pfn = clamp(node_start_pfn, zone_low, zone_high);
-+	zone_end_pfn = clamp(node_end_pfn, zone_low, zone_high);
+-	for_each_active_range_index_in_nid(i, nid) {
+-		*start_pfn = min(*start_pfn, early_node_map[i].start_pfn);
+-		*end_pfn = max(*end_pfn, early_node_map[i].end_pfn);
++	for_each_mem_pfn_range(i, nid, &this_start_pfn, &this_end_pfn, NULL) {
++		*start_pfn = min(*start_pfn, this_start_pfn);
++		*end_pfn = max(*end_pfn, this_end_pfn);
+ 	}
  
- 	adjust_zone_range_for_zone_movable(nid, zone_type,
- 			node_start_pfn, node_end_pfn,
+ 	if (*start_pfn == -1UL)
+@@ -4484,6 +4440,7 @@ void __init add_active_range(unsigned int nid, unsigned long start_pfn,
+ void __init remove_active_range(unsigned int nid, unsigned long start_pfn,
+ 				unsigned long end_pfn)
+ {
++	unsigned long this_start_pfn, this_end_pfn;
+ 	int i, j;
+ 	int removed = 0;
+ 
+@@ -4491,26 +4448,22 @@ void __init remove_active_range(unsigned int nid, unsigned long start_pfn,
+ 			  nid, start_pfn, end_pfn);
+ 
+ 	/* Find the old active region end and shrink */
+-	for_each_active_range_index_in_nid(i, nid) {
+-		if (early_node_map[i].start_pfn >= start_pfn &&
+-		    early_node_map[i].end_pfn <= end_pfn) {
++	for_each_mem_pfn_range(i, nid, &this_start_pfn, &this_end_pfn, NULL) {
++		if (this_start_pfn >= start_pfn && this_end_pfn <= end_pfn) {
+ 			/* clear it */
+ 			early_node_map[i].start_pfn = 0;
+ 			early_node_map[i].end_pfn = 0;
+ 			removed = 1;
+ 			continue;
+ 		}
+-		if (early_node_map[i].start_pfn < start_pfn &&
+-		    early_node_map[i].end_pfn > start_pfn) {
+-			unsigned long temp_end_pfn = early_node_map[i].end_pfn;
++		if (this_start_pfn < start_pfn && this_end_pfn > start_pfn) {
+ 			early_node_map[i].end_pfn = start_pfn;
+-			if (temp_end_pfn > end_pfn)
+-				add_active_range(nid, end_pfn, temp_end_pfn);
++			if (this_end_pfn > end_pfn)
++				add_active_range(nid, end_pfn, this_end_pfn);
+ 			continue;
+ 		}
+-		if (early_node_map[i].start_pfn >= start_pfn &&
+-		    early_node_map[i].end_pfn > end_pfn &&
+-		    early_node_map[i].start_pfn < end_pfn) {
++		if (this_start_pfn >= start_pfn && this_end_pfn > end_pfn &&
++		    this_start_pfn < end_pfn) {
+ 			early_node_map[i].start_pfn = end_pfn;
+ 			continue;
+ 		}
+@@ -4593,15 +4546,11 @@ void __init sort_node_map(void)
+ unsigned long __init node_map_pfn_alignment(void)
+ {
+ 	unsigned long accl_mask = 0, last_end = 0;
++	unsigned long start, end, mask;
+ 	int last_nid = -1;
+-	int i;
+-
+-	for_each_active_range_index_in_nid(i, MAX_NUMNODES) {
+-		int nid = early_node_map[i].nid;
+-		unsigned long start = early_node_map[i].start_pfn;
+-		unsigned long end = early_node_map[i].end_pfn;
+-		unsigned long mask;
++	int i, nid;
+ 
++	for_each_mem_pfn_range(i, MAX_NUMNODES, &start, &end, &nid) {
+ 		if (!start || last_nid < 0 || last_nid == nid) {
+ 			last_nid = nid;
+ 			last_end = end;
+@@ -4628,12 +4577,12 @@ unsigned long __init node_map_pfn_alignment(void)
+ /* Find the lowest pfn for a node */
+ static unsigned long __init find_min_pfn_for_node(int nid)
+ {
+-	int i;
+ 	unsigned long min_pfn = ULONG_MAX;
++	unsigned long start_pfn;
++	int i;
+ 
+-	/* Assuming a sorted map, the first range found has the starting pfn */
+-	for_each_active_range_index_in_nid(i, nid)
+-		min_pfn = min(min_pfn, early_node_map[i].start_pfn);
++	for_each_mem_pfn_range(i, nid, &start_pfn, NULL, NULL)
++		min_pfn = min(min_pfn, start_pfn);
+ 
+ 	if (min_pfn == ULONG_MAX) {
+ 		printk(KERN_WARNING
+@@ -4662,15 +4611,16 @@ unsigned long __init find_min_pfn_with_active_regions(void)
+  */
+ static unsigned long __init early_calculate_totalpages(void)
+ {
+-	int i;
+ 	unsigned long totalpages = 0;
++	unsigned long start_pfn, end_pfn;
++	int i, nid;
++
++	for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, &nid) {
++		unsigned long pages = end_pfn - start_pfn;
+ 
+-	for (i = 0; i < nr_nodemap_entries; i++) {
+-		unsigned long pages = early_node_map[i].end_pfn -
+-						early_node_map[i].start_pfn;
+ 		totalpages += pages;
+ 		if (pages)
+-			node_set_state(early_node_map[i].nid, N_HIGH_MEMORY);
++			node_set_state(nid, N_HIGH_MEMORY);
+ 	}
+   	return totalpages;
+ }
+@@ -4725,6 +4675,8 @@ restart:
+ 	/* Spread kernelcore memory as evenly as possible throughout nodes */
+ 	kernelcore_node = required_kernelcore / usable_nodes;
+ 	for_each_node_state(nid, N_HIGH_MEMORY) {
++		unsigned long start_pfn, end_pfn;
++
+ 		/*
+ 		 * Recalculate kernelcore_node if the division per node
+ 		 * now exceeds what is necessary to satisfy the requested
+@@ -4741,13 +4693,10 @@ restart:
+ 		kernelcore_remaining = kernelcore_node;
+ 
+ 		/* Go through each range of PFNs within this node */
+-		for_each_active_range_index_in_nid(i, nid) {
+-			unsigned long start_pfn, end_pfn;
++		for_each_mem_pfn_range(i, nid, &start_pfn, &end_pfn, NULL) {
+ 			unsigned long size_pages;
+ 
+-			start_pfn = max(early_node_map[i].start_pfn,
+-						zone_movable_pfn[nid]);
+-			end_pfn = early_node_map[i].end_pfn;
++			start_pfn = max(start_pfn, zone_movable_pfn[nid]);
+ 			if (start_pfn >= end_pfn)
+ 				continue;
+ 
+@@ -4849,8 +4798,8 @@ static void check_for_regular_memory(pg_data_t *pgdat)
+  */
+ void __init free_area_init_nodes(unsigned long *max_zone_pfn)
+ {
+-	unsigned long nid;
+-	int i;
++	unsigned long start_pfn, end_pfn;
++	int i, nid;
+ 
+ 	/* Sort early_node_map as initialisation assumes it is sorted */
+ 	sort_node_map();
+@@ -4900,11 +4849,9 @@ void __init free_area_init_nodes(unsigned long *max_zone_pfn)
+ 	}
+ 
+ 	/* Print out the early_node_map[] */
+-	printk("early_node_map[%d] active PFN ranges\n", nr_nodemap_entries);
+-	for (i = 0; i < nr_nodemap_entries; i++)
+-		printk("  %3d: %0#10lx -> %0#10lx\n", early_node_map[i].nid,
+-						early_node_map[i].start_pfn,
+-						early_node_map[i].end_pfn);
++	printk("Early memory PFN ranges\n");
++	for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, &nid)
++		printk("  %3d: %0#10lx -> %0#10lx\n", nid, start_pfn, end_pfn);
+ 
+ 	/* Initialise every node */
+ 	mminit_verify_pageflags_layout();
