@@ -1,167 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932231Ab1GNVay (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 17:30:54 -0400
-Received: from hera.kernel.org ([140.211.167.34]:33836 "EHLO hera.kernel.org"
+	id S932465Ab1GNVb3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 17:31:29 -0400
+Received: from hera.kernel.org ([140.211.167.34]:39094 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932440Ab1GNVav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 17:30:51 -0400
-Date: Thu, 14 Jul 2011 21:30:43 GMT
+	id S932391Ab1GNV34 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 17:29:56 -0400
+Date: Thu, 14 Jul 2011 21:29:46 GMT
 From: tip-bot for Tejun Heo <tj@kernel.org>
-Message-ID: <tip-e64980405cc6aa74ef178d8d9aa4018c867ceed1@git.kernel.org>
+Message-ID: <tip-f9b18db3b1cedc75e5d002a4d7097891c3399736@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        benh@kernel.crashing.org, yinghai@kernel.org, tj@kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com
+        yinghai@kernel.org, davem@davemloft.net, benh@kernel.crashing.org,
+        tj@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, benh@kernel.crashing.org, tj@kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1310460395-30913-8-git-send-email-tj@kernel.org>
-References: <1310460395-30913-8-git-send-email-tj@kernel.org>
+        benh@kernel.crashing.org, yinghai@kernel.org, tj@kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com, davem@davemloft.net
+In-Reply-To: <1310460395-30913-6-git-send-email-tj@kernel.org>
+References: <1310460395-30913-6-git-send-email-tj@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/memblock] memblock: Separate out memblock_find_in_range_node()
-Git-Commit-ID: e64980405cc6aa74ef178d8d9aa4018c867ceed1
+Subject: [tip:x86/memblock] memblock: Don't allow archs to override memblock_nid_range()
+Git-Commit-ID: f9b18db3b1cedc75e5d002a4d7097891c3399736
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 14 Jul 2011 21:30:44 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 14 Jul 2011 21:29:50 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e64980405cc6aa74ef178d8d9aa4018c867ceed1
-Gitweb:     http://git.kernel.org/tip/e64980405cc6aa74ef178d8d9aa4018c867ceed1
+Commit-ID:  f9b18db3b1cedc75e5d002a4d7097891c3399736
+Gitweb:     http://git.kernel.org/tip/f9b18db3b1cedc75e5d002a4d7097891c3399736
 Author:     Tejun Heo <tj@kernel.org>
-AuthorDate: Tue, 12 Jul 2011 10:46:34 +0200
+AuthorDate: Tue, 12 Jul 2011 10:46:32 +0200
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 14 Jul 2011 11:45:35 -0700
+CommitDate: Thu, 14 Jul 2011 11:45:33 -0700
 
-memblock: Separate out memblock_find_in_range_node()
+memblock: Don't allow archs to override memblock_nid_range()
 
-Node affine memblock allocation logic is currently implemented across
-memblock_alloc_nid() and memblock_alloc_nid_region().  This
-reorganizes it such that it resembles that of non-NUMA allocation API.
+memblock_nid_range() is used to implement memblock_[try_]alloc_nid().
+The generic version determines the range by walking early_node_map
+with for_each_mem_pfn_range().  The generic version is defined __weak
+to allow arch override.
 
-Area finding is collected and moved into new exported function
-memblock_find_in_range_node() which is symmetrical to non-NUMA
-counterpart - it handles @start/@end and understands ANYWHERE and
-ACCESSIBLE.  memblock_alloc_nid() now simply calls
-memblock_find_in_range_node() and reserves the returned area.
+Currently, only sparc overrides it; however, with the previous update
+to the generic implementation, there isn't much to be gained with arch
+override.  Sparc would behave exactly the same with the generic
+implementation.
 
-This makes memblock_alloc[_try]_nid() observe ACCESSIBLE limit on node
-affine allocations too (again, this doesn't make any difference for
-the current sole user - sparc64).
+This patch disallows arch override for memblock_nid_range() and make
+both generic and sparc versions static.
+
+sparc is only compile tested.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Link: http://lkml.kernel.org/r/1310460395-30913-8-git-send-email-tj@kernel.org
+Link: http://lkml.kernel.org/r/1310460395-30913-6-git-send-email-tj@kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- include/linux/memblock.h |    4 +++
- mm/memblock.c            |   57 +++++++++++++++++++++++++--------------------
- 2 files changed, 36 insertions(+), 25 deletions(-)
+ arch/sparc/mm/init_64.c  |    4 ++--
+ include/linux/memblock.h |    1 -
+ mm/memblock.c            |    2 +-
+ 3 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index 329ffb2..7400d02 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -61,6 +61,10 @@ extern long memblock_reserve(phys_addr_t base, phys_addr_t size);
- /* The numa aware allocator is only available if
-  * CONFIG_ARCH_POPULATES_NODE_MAP is set
-  */
-+extern phys_addr_t memblock_find_in_range_node(phys_addr_t start,
-+					       phys_addr_t end,
-+					       phys_addr_t size,
-+					       phys_addr_t align, int nid);
- extern phys_addr_t memblock_alloc_nid(phys_addr_t size, phys_addr_t align,
- 					int nid);
- extern phys_addr_t memblock_alloc_try_nid(phys_addr_t size, phys_addr_t align,
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 447cf64..a8edb42 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -521,49 +521,56 @@ static phys_addr_t __init memblock_nid_range_rev(phys_addr_t start,
+diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
+index 3fd8e18..8415f61 100644
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -785,7 +785,7 @@ static int find_node(unsigned long addr)
+ 	return -1;
+ }
+ 
+-u64 memblock_nid_range(u64 start, u64 end, int *nid)
++static u64 memblock_nid_range(u64 start, u64 end, int *nid)
+ {
+ 	*nid = find_node(start);
+ 	start += PAGE_SIZE;
+@@ -803,7 +803,7 @@ u64 memblock_nid_range(u64 start, u64 end, int *nid)
  	return start;
  }
- 
--static phys_addr_t __init memblock_alloc_nid_region(struct memblock_region *mp,
-+phys_addr_t __init memblock_find_in_range_node(phys_addr_t start,
-+					       phys_addr_t end,
- 					       phys_addr_t size,
- 					       phys_addr_t align, int nid)
+ #else
+-u64 memblock_nid_range(u64 start, u64 end, int *nid)
++static u64 memblock_nid_range(u64 start, u64 end, int *nid)
  {
--	phys_addr_t start, end;
-+	struct memblock_type *mem = &memblock.memory;
-+	int i;
+ 	*nid = 0;
+ 	return end;
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index 3496888..329ffb2 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -89,7 +89,6 @@ extern int memblock_is_region_reserved(phys_addr_t base, phys_addr_t size);
+ extern void memblock_dump_all(void);
  
--	start = mp->base;
--	end = start + mp->size;
-+	BUG_ON(0 == size);
+ /* Provided by the architecture */
+-extern phys_addr_t memblock_nid_range(phys_addr_t start, phys_addr_t end, int *nid);
+ extern int memblock_memory_can_coalesce(phys_addr_t addr1, phys_addr_t size1,
+ 				   phys_addr_t addr2, phys_addr_t size2);
  
--	while (start < end) {
--		phys_addr_t this_start;
--		int this_nid;
-+	/* Pump up max_addr */
-+	if (end == MEMBLOCK_ALLOC_ACCESSIBLE)
-+		end = memblock.current_limit;
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 97f3486..22cd999 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -508,7 +508,7 @@ phys_addr_t __init memblock_alloc(phys_addr_t size, phys_addr_t align)
+  * have been done to populate it.
+  */
  
--		this_start = memblock_nid_range_rev(start, end, &this_nid);
--		if (this_nid == nid) {
--			phys_addr_t ret = memblock_find_region(this_start, end, size, align);
--			if (ret &&
--			    !memblock_add_region(&memblock.reserved, ret, size))
--				return ret;
-+	for (i = mem->cnt - 1; i >= 0; i--) {
-+		struct memblock_region *r = &mem->regions[i];
-+		phys_addr_t base = max(start, r->base);
-+		phys_addr_t top = min(end, r->base + r->size);
-+
-+		while (base < top) {
-+			phys_addr_t tbase, ret;
-+			int tnid;
-+
-+			tbase = memblock_nid_range_rev(base, top, &tnid);
-+			if (nid == MAX_NUMNODES || tnid == nid) {
-+				ret = memblock_find_region(tbase, top, size, align);
-+				if (ret)
-+					return ret;
-+			}
-+			top = tbase;
- 		}
--		end = this_start;
- 	}
-+
- 	return 0;
- }
- 
- phys_addr_t __init memblock_alloc_nid(phys_addr_t size, phys_addr_t align, int nid)
+-phys_addr_t __weak __init memblock_nid_range(phys_addr_t start, phys_addr_t end, int *nid)
++static phys_addr_t __init memblock_nid_range(phys_addr_t start, phys_addr_t end, int *nid)
  {
--	struct memblock_type *mem = &memblock.memory;
--	int i;
--
--	BUG_ON(0 == size);
-+	phys_addr_t found;
- 
--	/* We align the size to limit fragmentation. Without this, a lot of
-+	/*
-+	 * We align the size to limit fragmentation. Without this, a lot of
- 	 * small allocs quickly eat up the whole reserve array on sparc
- 	 */
- 	size = round_up(size, align);
- 
--	for (i = mem->cnt - 1; i >= 0; i--) {
--		phys_addr_t ret = memblock_alloc_nid_region(&mem->regions[i],
--					       size, align, nid);
--		if (ret)
--			return ret;
--	}
-+	found = memblock_find_in_range_node(0, MEMBLOCK_ALLOC_ACCESSIBLE,
-+					    size, align, nid);
-+	if (found && !memblock_add_region(&memblock.reserved, found, size))
-+		return found;
- 
- 	return 0;
- }
+ #ifdef CONFIG_ARCH_POPULATES_NODE_MAP
+ 	unsigned long start_pfn, end_pfn;
