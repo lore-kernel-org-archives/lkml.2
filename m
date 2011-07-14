@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495Ab1GNSFj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 14:05:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7777 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755400Ab1GNSFh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 14:05:37 -0400
-Date: Thu, 14 Jul 2011 14:05:28 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>, ebiederm@xmission.com,
-        hbabu@us.ibm.com, mahesh@linux.vnet.ibm.com, oomichi@mxs.nes.nec.co.jp,
-        horms@verge.net.au, heiko.carstens@de.ibm.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org
-Subject: Re: [patch 0/9] kdump: Patch series for s390 support
-Message-ID: <20110714180528.GF6672@redhat.com>
-References: <1309944287.3937.39.camel@br98xy6r>
- <20110707193321.GE28850@redhat.com>
- <20110708110121.5acfc3c9@mschwide>
- <20110711144255.GE30674@redhat.com>
- <20110711175626.121dcc58@mschwide>
- <20110713160239.GE4426@redhat.com>
- <20110713184611.6dcb09b4@mschwide>
- <20110713200004.GG4426@redhat.com>
- <20110714091800.720da848@mschwide>
- <20110714175532.GE6672@redhat.com>
+	id S1755503Ab1GNSKV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 14:10:21 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:18753 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755400Ab1GNSKU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 14:10:20 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Thu, 14 Jul 2011 11:09:48 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        "ben-linux@fluff.org" <ben-linux@fluff.org>,
+        "bones@secretlab.ca" <bones@secretlab.ca>
+CC: "khali@linux-fr.org" <khali@linux-fr.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Date: Thu, 14 Jul 2011 11:09:47 -0700
+Subject: RE: [PATCH] i2c: tegra: Use engineering names in DT compatible
+ property
+Thread-Topic: [PATCH] i2c: tegra: Use engineering names in DT compatible
+ property
+Thread-Index: AcxBtVrn7OnWkQNlQ2eukX7gGSlEigAm0GSA
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF049E834A2E@HQMAIL01.nvidia.com>
+References: <1309897306-22953-1-git-send-email-swarren@nvidia.com>
+ <20110706053941.GE9978@ponder.secretlab.ca>
+ <74CDBE0F657A3D45AFBB94109FB122FF049E834757@HQMAIL01.nvidia.com>
+ <CACxGe6tojgLSmHTxzGn3hZZVqiR_z6xbWrazYekm0TwQoWK5eA@mail.gmail.com>
+In-Reply-To: <CACxGe6tojgLSmHTxzGn3hZZVqiR_z6xbWrazYekm0TwQoWK5eA@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110714175532.GE6672@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 14, 2011 at 01:55:32PM -0400, Vivek Goyal wrote:
-
-[..]
-> > > So we first try to take purgatory path which does the checksum and is
-> > > consistent with other architectures. If that does not work in case
-> > > of hard hang, you always have the option of IPLing the stand alone tool
-> > > later manually.
-> > 
-> > How are we suddenly on the purgatory path again? The code that gets
-> > control in case of a hard crash + IPL is the stand-alone dump tool,
-> > not the purgatory code.
+Grant Likely wrote at Wednesday, July 13, 2011 5:34 PM:
+> On Thu, Jul 14, 2011 at 2:59 AM, Stephen Warren <swarren@nvidia.com> wrote:
+...
+> > I don't believe anyone ever sent a patch to Ben to add tegra_i2c_of_match
+> > to the driver; the OF support patch didn't include that part of the code.
+> > As such, Ben can't yet apply this to his tree. (Although I note this patch
+> > is in Grant's /arm and /test trees, which is probably good enough for now).
 > 
-> I think that's the biggest contetion point. From the start of discussion
-> you have this hardcoded requirement that the moment panic() happens
-> you are jumping to some IPL code and that's what I am questioning. Why
-> can't you execute some more code after panic() (purgatory), before
-> you jump to IPL code (only if you have to). 
-> 
+> Hmmm, I thought it had been done.  It certainly is ready to go in.  Do
+> you want to put together a roll-up patch that includes all the
+> required changes and post it again? (although double check linux-next
+> first).
 
-In your parlance of shutdown actions, I think it is equivalnet to saying
-that "kdump" is a shutdown action and that that means is that for specific
-trigger points we will execute "crash_kexec()" function which will try
-to capture the dump.
+When John Bonesio posted the patch to add DT support to i2c-tegra.c, the first
+version of the patch was missing the match table chunk. A few days later, an
+updated version was posted that added the missing chunk; see:
 
-In user space I think one can modify the kexec-tools infrastrucuture a
-bit so that one is able to define an entry point in case checksum of
-loaded segment failes. Once you are loding kdump kernel, you can define
-that entry point. (And this would be jump to IPL etc.).
+http://groups.google.com/group/linux.kernel/browse_thread/thread/d2596e8dee819b0f/c8aa04183ea2331e?show_docid=c8aa04183ea2331e
 
-Thanks
-Vivek
+It looks like the first version of the patch has actually been applied to Ben's
+next-i2c branch rather than the updated version.
+
+I guess it's simplest if I just post a patch that adds the missing chunk based
+on the latest next-i2c tree. I'll go do that.
+
+-- 
+nvpublic
+
