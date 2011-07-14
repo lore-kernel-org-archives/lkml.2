@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754910Ab1GNNU5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 09:20:57 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:58299 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754785Ab1GNNU4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 09:20:56 -0400
-Date: Thu, 14 Jul 2011 14:23:13 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Jan H." =?ISO-8859-14?B?U2No9m5oZXJy?= <schnhrr@cs.tu-berlin.de>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        trivial@kernel.org
-Subject: Re: [PATCH 1/6] sched: Fix (harmless) typo 'CONFG_FAIR_GROUP_SCHED'
-Message-ID: <20110714142313.371c0799@lxorguk.ukuu.org.uk>
-In-Reply-To: <1310647853.2586.243.camel@twins>
-References: <1310580816-10861-1-git-send-email-schnhrr@cs.tu-berlin.de>
-	<1310580816-10861-2-git-send-email-schnhrr@cs.tu-berlin.de>
-	<1310590281.2586.34.camel@twins>
-	<20110714095324.787f3ff1@lxorguk.ukuu.org.uk>
-	<1310647853.2586.243.camel@twins>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-14
-Content-Transfer-Encoding: 8BIT
+	id S1754904Ab1GNNXX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 09:23:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8068 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754765Ab1GNNXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 09:23:21 -0400
+Date: Thu, 14 Jul 2011 15:23:17 +0200
+From: Frantisek Hrbata <fhrbata@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, matt.fleming@linux.intel.com,
+        hughd@google.com
+Subject: Re: [PATCH] exec: remove page_table_lock for mm counters in
+ acct_arg_size()
+Message-ID: <20110714132317.GC2832@dhcp-26-164.brq.redhat.com>
+Reply-To: Frantisek Hrbata <fhrbata@redhat.com>
+References: <1310649380-13492-1-git-send-email-fhrbata@redhat.com>
+ <20110714131821.GA3177@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110714131821.GA3177@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Jul 2011 14:50:53 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Thu, 2011-07-14 at 09:53 +0100, Alan Cox wrote:
-> > On Wed, 13 Jul 2011 22:51:21 +0200
-> > Peter Zijlstra <peterz@infradead.org> wrote:
-> > 
-> > > On Wed, 2011-07-13 at 20:13 +0200, Jan H. Schönherr wrote:
-> > > > From: =?UTF-8?q?Jan=20H=2E=20Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
-> > > 
-> > > WTF am I to do with crap like that?! 
-> > 
-> > Fix your mail client ? It should be recognizing the UTF8 indicators, and
-> > git itself is utf-8 clean.
+On Thu, Jul 14, 2011 at 03:18:22PM +0200, Oleg Nesterov wrote:
+> On 07/14, Frantisek Hrbata wrote:
+> >
+> > Commit 172703b mm: delete non-atomic mm counter implementation
+> > removed non-atomic mm counters implementation. I think there is no need to hold
+> > page_table_lock for add_mm_counter() when the splitted page table locks are not
+> > used. This patch removes the locking.
+> >
+> > Signed-off-by: Frantisek Hrbata <fhrbata@redhat.com>
+> > ---
+> >  fs/exec.c |    6 ------
+> >  1 files changed, 0 insertions(+), 6 deletions(-)
+> >
+> > diff --git a/fs/exec.c b/fs/exec.c
+> > index 6075a1e..e6fc5e1 100644
+> > --- a/fs/exec.c
+> > +++ b/fs/exec.c
+> > @@ -182,13 +182,7 @@ static void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
+> >
+> >  	bprm->vma_pages = pages;
+> >
+> > -#ifdef SPLIT_RSS_COUNTING
+> >  	add_mm_counter(mm, MM_ANONPAGES, diff);
+> > -#else
+> > -	spin_lock(&mm->page_table_lock);
+> > -	add_mm_counter(mm, MM_ANONPAGES, diff);
+> > -	spin_unlock(&mm->page_table_lock);
+> > -#endif
 > 
-> So now we should all write complete email parsers? I thought the idea
-> was to use simple plain ASCII emails to that we could use scripts.
+> Heh. Thanks Frantisek, you are right. But this patch is already in mm-tree,
+> fs-execc-acct_arg_size-ptl-is-no-longer-needed-for-add_mm_counter.patch
+> 
+> Oleg.
+> 
 
-Unfortunately ASCII was invented by Americans and isn't even complete for
-English let alone properly writing names in other languages. There are
-another 5.75billion people out there !
+:) thanks. Sorry I should check that first.
 
-Alan
+-- 
+Frantisek Hrbata
