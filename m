@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754234Ab1GNUKf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 16:10:35 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52031 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753065Ab1GNUKe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 16:10:34 -0400
-Message-ID: <4E1F4D2C.3000507@zytor.com>
-Date: Thu, 14 Jul 2011 13:10:20 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S932110Ab1GNUK5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 16:10:57 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:26097 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753808Ab1GNUK4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 16:10:56 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-5.tower-132.messagelabs.com!1310674227!31942354!10
+X-StarScan-Version: 6.2.17; banners=-,-,-
+X-Originating-IP: [216.166.12.178]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+CC: "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        "wim@iguana.be" <wim@iguana.be>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "tim.bird@am.sony.com" <tim.bird@am.sony.com>
+Date: Thu, 14 Jul 2011 15:10:37 -0500
+Subject: RE: [RFC 0/6] watchdog drivers converted to the new framework
+Thread-Topic: [RFC 0/6] watchdog drivers converted to the new framework
+Thread-Index: AcxCYMaMO/hOesJQTDy7loI6OMCIpAAACILg
+Message-ID: <ADE657CA350FB648AAC2C43247A983F001F383E05C4A@AUSP01VMBX24.collaborationhost.net>
+References: <1310588766-16638-1-git-send-email-w.sang@pengutronix.de>
+ <ADE657CA350FB648AAC2C43247A983F001F383E05B65@AUSP01VMBX24.collaborationhost.net>
+ <20110714182734.GA31082@pengutronix.de>
+ <ADE657CA350FB648AAC2C43247A983F001F383E05BCD@AUSP01VMBX24.collaborationhost.net>
+ <20110714200053.GC31082@pengutronix.de>
+In-Reply-To: <20110714200053.GC31082@pengutronix.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: mingo@redhat.com, tglx@linutronix.de, benh@kernel.crashing.org,
-        yinghai@kernel.org, davem@davemloft.net, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH 13/13] memblock, x86: Replace memblock_x86_reserve/free_range()
- with generic ones
-References: <1310462166-31469-1-git-send-email-tj@kernel.org> <1310462166-31469-14-git-send-email-tj@kernel.org>
-In-Reply-To: <1310462166-31469-14-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2011 02:16 AM, Tejun Heo wrote:
-> --- a/mm/memblock.c
-> +++ b/mm/memblock.c
-> @@ -449,6 +449,9 @@ long __init_memblock memblock_remove(phys_addr_t base, phys_addr_t size)
->  
->  long __init_memblock memblock_free(phys_addr_t base, phys_addr_t size)
->  {
-> +	memblock_dbg("   memblock_free: [%#016llx-%#016llx] %pF\n",
-> +		     base, base + size, (void *)_RET_IP_);
-> +
->  	return __memblock_remove(&memblock.reserved, base, size);
->  }
->  
-> @@ -456,6 +459,8 @@ long __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
->  {
->  	struct memblock_type *_rgn = &memblock.reserved;
->  
-> +	memblock_dbg("memblock_reserve: [%#016llx-%#016llx] %pF\n",
-> +		     base, base + size, (void *)_RET_IP_);
->  	BUG_ON(0 == size);
->  
->  	return memblock_add_region(_rgn, base, size);
+On Thursday, July 14, 2011 1:01 PM, Wolfram Sang wrote:
+> On Thu, Jul 14, 2011 at 01:42:02PM -0500, H Hartley Sweeten wrote:
+>> On Thursday, July 14, 2011 11:28 AM, Wolfram Sang wrote:
+>>>> I would also like to convert this driver into a proper platform_driver using
+>>>> ioremap'ed addresses instead of the static mappings.  Converting the driver
+>>>> to the new watchdog framework would make this a bit cleaner.
+>>>
+>>> Try managed devices (devm_* and friends) for an extra cleanup bonus.
+>> 
+>> Already done, just waiting for the framework... ;-)
+>
+> Nice :) Did you use my conversion-guide as a reference? Any comments if so?
 
-This assumes phys_addr_t == unsigned long long, which is just plain
-wrong.  I will fix it up, but please take more care with that in the
-future.  This triggers a warning when building for i386 non-PAE, which
-is a good thing because it is a real error.
+Sorry, I didn't.  I just worked it out from the framework core and looking
+at your examples.
 
-Also, don't we usually display resources as an *inclusive* range,
-meaning that the last one should be base + size - 1?
+When I found the framework patches on lkml I couldn't get them into a state
+to apply to my tree.  I ended up manually applying all the pieces so I skipped
+the Documentation stuff to save some time.
 
-	-hpa
+The conversion is pretty straight forward after examining the watchdog
+framework files.
+
+Regards,
+Hartley
