@@ -1,66 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480Ab1GNG7a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 02:59:30 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:43460 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751084Ab1GNG73 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 02:59:29 -0400
-X-Authenticated: #7756412
-X-Provags-ID: V01U2FsdGVkX19BP4lSOq1BAx13OTwguo+PYqVqp74Wmc80qxOufI
-	fs6jYj5HKzVfZT
-Message-ID: <4E1E93C9.4020109@gmx.net>
-Date: Thu, 14 Jul 2011 08:59:21 +0200
-From: Arne Jansen <sensille@gmx.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	id S1753475Ab1GNHDP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 03:03:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59112 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751623Ab1GNHDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 03:03:14 -0400
+Date: Thu, 14 Jul 2011 08:03:10 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Jan Kara <jack@suse.cz>
+Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 5/5] mm: writeback: Prioritise dirty inodes encountered
+ by direct reclaim for background flushing
+Message-ID: <20110714070310.GQ7529@suse.de>
+References: <1310567487-15367-1-git-send-email-mgorman@suse.de>
+ <1310567487-15367-6-git-send-email-mgorman@suse.de>
+ <20110713213947.GC21787@quack.suse.cz>
 MIME-Version: 1.0
-To: Ric Wheeler <rwheeler@redhat.com>
-CC: NeilBrown <neilb@suse.de>,
-        Nico Schottelius <nico-lkml-20110623@schottelius.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@oracle.com>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: Re: Mis-Design of Btrfs?
-References: <20110623105337.GD3753@ethz.ch>	<20110627164637.377314e2@notabene.brown>	<4E0AF091.9030301@redhat.com> <20110714155620.6e9ac2cc@notabene.brown> <4E1E866E.2050405@redhat.com>
-In-Reply-To: <4E1E866E.2050405@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110713213947.GC21787@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14.07.2011 08:02, Ric Wheeler wrote:
-> On 07/14/2011 06:56 AM, NeilBrown wrote:
->> I'm certainly open to suggestions and collaboration. Do you have in
->> mind any
->> particular way to make the interface richer??
->
-> If a file system uses checksumming or other data corruption detection
-> bits, it can detect that it got bad data on a write. If that data was
-> protected by RAID, it would like to ask the block layer to try to read
-> from another mirror (for raid1) or try to validate/rebuild from parity.
->
-> Today, I think that a retry will basically just give us back a random
-> chance of getting data from a different mirror or the same one that we
-> got data from on the first go.
+On Wed, Jul 13, 2011 at 11:39:47PM +0200, Jan Kara wrote:
+> On Wed 13-07-11 15:31:27, Mel Gorman wrote:
+> > It is preferable that no dirty pages are dispatched from the page
+> > reclaim path. If reclaim is encountering dirty pages, it implies that
+> > either reclaim is getting ahead of writeback or use-once logic has
+> > prioritise pages for reclaiming that are young relative to when the
+> > inode was dirtied.
+> > 
+> > When dirty pages are encounted on the LRU, this patch marks the inodes
+> > I_DIRTY_RECLAIM and wakes the background flusher. When the background
+> > flusher runs, it moves such inodes immediately to the dispatch queue
+> > regardless of inode age. There is no guarantee that pages reclaim
+> > cares about will be cleaned first but the expectation is that the
+> > flusher threads will clean the page quicker than if reclaim tried to
+> > clean a single page.
+>   Hmm, I was looking through your numbers but I didn't see any significant
+> difference this patch would make. Do you?
+> 
 
-Another case that comes to mind is the 'remove device' operation.
-To accomplish this, btrfs just rewrites all the data that reside
-on that device to other drives.
-Also, scrub and my recently posted readahead patches make heavy
-use of the knowledge of how the raid is laid out. Readahead always
-uses as many drives as possible in parallel, while trying to
-avoid unnecessary seeks on each device.
+Marginal and well within noise. I'm very skeptical about the patch
+but the VM needs some way of prioritising what pages are getting
+written back to that pages in a particular zone can be cleaned.
 
--Arne
+> I was thinking about the problem and actually doing IO from kswapd would be
+> a small problem if we submitted more than just a single page. Just to give
+> you idea - time to write a single page on plain SATA drive might be like 4
+> ms. Time to write sequential 4 MB of data is like 80 ms (I just made up
+> these numbers but the orders should be right).
 
->
-> Chris, Alasdair, was that a good summary of one concern?
->
-> Thanks!
->
-> Ric
->
+It's as good as number as any for arguements sake. It's not the
+first time such a patch has done the rounds. The last one I did along
+similar lines was http://lkml.org/lkml/2010/6/8/85 although I mucked
+it up with respect to racing with iput.
+
+Wu posted a patch that deferred the writing of ranges to a
+flusher thread http://www.spinics.net/lists/xfs/msg05659.html
+which Dave has already commented on at
+http://www.spinics.net/lists/xfs/msg05665.html. The clustering size
+could be easily fixed but the scalability problem he pointed out is
+a far greater problem.
+
+> So to write 1000 times more
+> data you just need like 20 times longer. That's a factor of 50 in IO
+> efficiency. So when reclaim/kswapd submits a single page IO once every
+> couple of miliseconds, your IO throughput just went close to zero...
+> BTW: I just checked your numbers in fsmark test with vanilla kernel.  You
+> wrote like 14500 pages from reclaim in 567 seconds. That is about one page
+> per 39 ms. That is going to have noticeable impact on IO throughput (not
+> with XFS because it plays tricks with writing more than asked but with ext2
+> or ext3 you would see it I guess).
+> 
+> So when kswapd sees high percentage of dirty pages at the end of LRU, it
+> could call something like fdatawrite_range() for the range of 4 MB
+> (provided the file is large enough) containing that page and IO thoughput
+> would not be hit that much and you will get reasonably bounded time when
+> the page gets cleaned... If you wanted to be clever, you could possibly be
+> more sophisticated in picking the file and range to write so that you get
+> rid of the most pages at the end of LRU but I'm not sure it's worth the CPU
+> cycles. Does this sound reasonable to you?
+> 
+
+Semi-reasonable and it's along the same lines as what
+http://lkml.org/lkml/2010/6/8/85 tried to achieve but maybe the effort
+of fixing it up with respect to racing with iput() just isn't worth it.
+
+I think I'll leave it as kswapd will call writepage if the priority is
+high enough until a good solution for how the VM can tell the flusher to
+prioritise a particular page is devised.
+
+-- 
+Mel Gorman
+SUSE Labs
