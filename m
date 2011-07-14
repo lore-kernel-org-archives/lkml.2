@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753980Ab1GNIIi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 04:08:38 -0400
-Received: from www.linutronix.de ([62.245.132.108]:58810 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753715Ab1GNIIg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 04:08:36 -0400
-Date: Thu, 14 Jul 2011 10:08:30 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Yuan-Hsin Chen <yhchen@faraday-tech.com>
-Cc: Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>
-Subject: Re: [PATCH 4/5] fusb300_udc: Add missing breaks in switch/case
-Message-ID: <20110714080830.GA7149@linutronix.de>
-References: <cover.1310289795.git.joe@perches.com>
- <08f6dd600dbf588e87734b3a6b33d897cd253fe3.1310289795.git.joe@perches.com>
+	id S1753991Ab1GNIKl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 04:10:41 -0400
+Received: from emaiti.net ([46.4.199.113]:52621 "EHLO mail.emaiti.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753910Ab1GNIKj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 04:10:39 -0400
+X-Greylist: delayed 1246 seconds by postgrey-1.27 at vger.kernel.org; Thu, 14 Jul 2011 04:10:39 EDT
+Date: Thu, 14 Jul 2011 09:50:07 +0200
+From: Francesco Allertsen <fallertsen@gmail.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Keith Packard <keithp@keithp.com>, dri-devel@lists.freedesktop.org,
+        LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Reverting rc6 by default
+Message-ID: <20110714075007.GB2949@fujiko>
+References: <20110621155205.GA2488@fujiko>
+ <yunboxrxiz2.fsf@aiko.keithp.com>
+ <20110621164209.GA2155@fujiko>
+ <yun8vsvxdr4.fsf@aiko.keithp.com>
+ <20110621184757.GA2185@fujiko>
+ <yunzklb9fg1.fsf@aiko.keithp.com>
+ <20110705230101.GD2852@fujiko>
+ <CAOJsxLFVSEDEaYH8Dw4jWGo9=wkC8QQWOs4xRR6qcgVM2xCRoA@mail.gmail.com>
+ <yunhb6rec97.fsf@aiko.keithp.com>
+ <CAOJsxLGKtjCpY=X1UrHVY79qLjVCgCT3XC795yh_uEn-0_4D0w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <08f6dd600dbf588e87734b3a6b33d897cd253fe3.1310289795.git.joe@perches.com>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+In-Reply-To: <CAOJsxLGKtjCpY=X1UrHVY79qLjVCgCT3XC795yh_uEn-0_4D0w@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Joe Perches | 2011-07-10 02:28:27 [-0700]:
+On Thu, Jul 14, 2011 at 10:37:15AM +0300, Pekka Enberg wrote:
+> This if fixed in mainline as of commit
+> a94919eaddaa3fede1df8563ce4d761a75374645 ("Revert "drm/i915: enable
+> rc6 by default"). Keith, it would have been nice to include a
+> 'Reported-by' and/or a link to this discussion in the changelog for
+> future reference.
 
->Signed-off-by: Joe Perches <joe@perches.com>
->---
-> drivers/usb/gadget/fusb300_udc.c |    3 +++
-> 1 files changed, 3 insertions(+), 0 deletions(-)
->
->diff --git a/drivers/usb/gadget/fusb300_udc.c b/drivers/usb/gadget/fusb300_udc.c
->index 06353e7..453bc0f 100644
->--- a/drivers/usb/gadget/fusb300_udc.c
->+++ b/drivers/usb/gadget/fusb300_udc.c
->@@ -688,10 +688,13 @@ static void fusb300_cmp_dbg_fifo(struct fusb300_ep *ep,
-> 	switch (length % 4) {
-> 	case 1:
-> 		golden_value = *tmp;
->+		break;
-> 	case 2:
-> 		golden_value = *tmp | *(tmp + 1) << 8;
->+		break;
-> 	case 3:
-> 		golden_value = *tmp | *(tmp + 1) << 8 | *(tmp + 2) << 16;
->+		break;
-> 	default:
-> 		break;
-> 
+The correct commit is 05bd42688dbc066d4e2689b6f73c0470601f788b, the one
+you mentioned is "Idling requires waiting for the ring to be empty".
 
-That is in an #if 0 block. Maybe we should remove the #if 0? Yuan-Hsin?
-
-Sebastian
+Bye
+Francesco
