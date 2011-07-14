@@ -1,246 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754242Ab1GNKYl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 06:24:41 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:58085 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754115Ab1GNKYk (ORCPT
+	id S1754261Ab1GNK0j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 06:26:39 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.162]:49787 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754200Ab1GNK0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 06:24:40 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 14 Jul 2011 19:17:28 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] memcg: make oom_lock 0 and 1 based rather than
- coutner
-Message-Id: <20110714191728.058859cd.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110714095152.GG19408@tiehlicka.suse.cz>
-References: <cover.1310561078.git.mhocko@suse.cz>
-	<50d526ee242916bbfb44b9df4474df728c4892c6.1310561078.git.mhocko@suse.cz>
-	<20110714100259.cedbf6af.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110714115913.cf8d1b9d.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110714090017.GD19408@tiehlicka.suse.cz>
-	<20110714183014.8b15e9b9.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110714095152.GG19408@tiehlicka.suse.cz>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Jul 2011 06:26:38 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmxtMZ80VwmRNV67U=
+X-RZG-CLASS-ID: mo00
+Date: Thu, 14 Jul 2011 12:26:28 +0200
+From: Olaf Hering <olaf@aepfle.de>
+To: Jan Beulich <jbeulich@novell.com>
+Cc: Ian.Campbell@citrix.com, konrad.wilk@oracle.com, keir@xen.org,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH] xen: update machine_to_phys_order on resume
+Message-ID: <20110714102628.GA9157@aepfle.de>
+References: <4E1DB9C70200007800072DCC@nat28.tlf.novell.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4E1DB9C70200007800072DCC@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21.rev5535 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Jul 2011 11:51:52 +0200
-Michal Hocko <mhocko@suse.cz> wrote:
+On Wed, Jul 13, Jan Beulich wrote:
 
-> On Thu 14-07-11 18:30:14, KAMEZAWA Hiroyuki wrote:
-> > On Thu, 14 Jul 2011 11:00:17 +0200
-> > Michal Hocko <mhocko@suse.cz> wrote:
-> > 
-> > > On Thu 14-07-11 11:59:13, KAMEZAWA Hiroyuki wrote:
-> > > > On Thu, 14 Jul 2011 10:02:59 +0900
-> > > > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > > > 
-> > > > > On Wed, 13 Jul 2011 13:05:49 +0200
-> > > > > Michal Hocko <mhocko@suse.cz> wrote:
-> > > [...]
-> > > > > > This patch replaces the counter by a simple {un}lock semantic. We are
-> > > > > > using only 0 and 1 to distinguish those two states.
-> > > > > > As mem_cgroup_oom_{un}lock works on the hierarchy we have to make sure
-> > > > > > that we cannot race with somebody else which is already guaranteed
-> > > > > > because we call both functions with the mutex held. All other consumers
-> > > > > > just read the value atomically for a single group which is sufficient
-> > > > > > because we set the value atomically.
-> > > > > > The other thing is that only that process which locked the oom will
-> > > > > > unlock it once the OOM is handled.
-> > > > > > 
-> > > > > > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> > > > > > ---
-> > > > > >  mm/memcontrol.c |   24 +++++++++++++++++-------
-> > > > > >  1 files changed, 17 insertions(+), 7 deletions(-)
-> > > > > > 
-> > > > > > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > > > > > index e013b8e..f6c9ead 100644
-> > > > > > --- a/mm/memcontrol.c
-> > > > > > +++ b/mm/memcontrol.c
-> > > > > > @@ -1803,22 +1803,31 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_mem,
-> > > > > >  /*
-> > > > > >   * Check OOM-Killer is already running under our hierarchy.
-> > > > > >   * If someone is running, return false.
-> > > > > > + * Has to be called with memcg_oom_mutex
-> > > > > >   */
-> > > > > >  static bool mem_cgroup_oom_lock(struct mem_cgroup *mem)
-> > > > > >  {
-> > > > > > -	int x, lock_count = 0;
-> > > > > > +	int x, lock_count = -1;
-> > > > > >  	struct mem_cgroup *iter;
-> > > > > >  
-> > > > > >  	for_each_mem_cgroup_tree(iter, mem) {
-> > > > > > -		x = atomic_inc_return(&iter->oom_lock);
-> > > > > > -		lock_count = max(x, lock_count);
-> > > > > > +		x = !!atomic_add_unless(&iter->oom_lock, 1, 1);
-> > > > > > +		if (lock_count == -1)
-> > > > > > +			lock_count = x;
-> > > > > > +
-> > > > > 
-> > > > > 
-> > > > > Hmm...Assume following hierarchy.
-> > > > > 
-> > > > > 	  A
-> > > > >        B     C
-> > > > >       D E 
-> > > 
-> > > IIUC, A, B, D, E are one hierarchy, right?
-> > > 
-> > yes.
-> > 
-> > 
-> > > > > 
-> > > > > The orignal code hanldes the situation
-> > > > > 
-> > > > >  1. B-D-E is under OOM
-> > > > >  2. A enters OOM after 1.
-> > > > > 
-> > > > > In original code, A will not invoke OOM (because B-D-E oom will kill a process.)
-> > > > > The new code invokes A will invoke new OOM....right ?
-> > > 
-> > > Sorry, I do not understand what you mean by that. 
-> > 
-> > This is your code.
-> > ==
-> >  	for_each_mem_cgroup_tree(iter, mem) {
-> > -		x = atomic_inc_return(&iter->oom_lock);
-> > -		lock_count = max(x, lock_count);
-> > +		x = !!atomic_add_unless(&iter->oom_lock, 1, 1);
-> > +		if (lock_count == -1)
-> > +			lock_count = x;
-> > +
-> > +		/* New child can be created but we shouldn't race with
-> > +		 * somebody else trying to oom because we are under
-> > +		 * memcg_oom_mutex
-> > +		 */
-> > +		BUG_ON(lock_count != x);
-> >  	}
-> > ==
-> > 
-> > When, B,D,E is under OOM,  
-> > 
-> >    A oom_lock = 0
-> >    B oom_lock = 1
-> >    C oom_lock = 0
-> >    D oom_lock = 1
-> >    E oom_lock = 1
-> > 
-> > Here, assume A enters OOM.
-> > 
-> >    A oom_lock = 1 -- (*)
-> >    B oom_lock = 1
-> >    C oom_lock = 1
-> >    D oom_lock = 1
-> >    E oom_lock = 1
-> > 
-> > because of (*), mem_cgroup_oom_lock() will return lock_count=1, true.
-> > 
-> > Then, a new oom-killer will another oom-kiiler running in B-D-E.
+> >>> Ian Campbell <Ian.Campbell@citrix.com> 07/13/11 11:12 AM >>>
+> >It's not so much an objection to this patch but this issue seems to have
+> >been caused by Xen cset 20892:d311d1efc25e which looks to me like a
+> >subtle ABI breakage for guests. Perhaps we should introduce a feature
+> >flag to indicate that a guest can cope with the m2p changing size over
+> >migration like this?
 > 
-> OK, does this mean that for_each_mem_cgroup_tree doesn't lock the whole
-> hierarchy at once? 
+> Indeed - migration was completely beyond my consideration when
+> submitting this. A feature flag seems the right way to go to me.
 
-yes. this for_each_mem_cgroup_tree() just locks a subtree.
+I will prepare a patch for a new feature flag.
 
-> I have to confess that the behavior of mem_cgroup_start_loop is little
-> bit obscure to me. The comment says it searches for the cgroup with the
-> minimum ID - I assume this is the root of the hierarchy. Is this
-> correct?
-> 
-
-No. Assume following sequence.
-
-  1.  cgcreate -g memory:X  css_id=5 assigned.
-  ........far later.....
-  2.  cgcreate -g memory:A  css_id=30 assigned.
-  3.  cgdelete -g memory:X  css_id=5 freed.
-  4.  cgcreate -g memory:A/B
-  5.  cgcreate -g memory:A/C
-  6.  cgcreate -g memory:A/B/D
-  7.  cgcreate -g memory:A/B/E
-
-Then, css_id will be
-==
- A css_id=30
- B css_id=5  # reuse X's id.
- C css_id=31
- D css_id=32
- E css_id=33
-==
-Then, the search under "B" will find B->D->E
-
-The search under "A" will find B->A->C->D->E.
-
-> If yes then if we have oom in what-ever cgroup in the hierarchy then
-> the above code should lock the whole hierarchy and the above never
-> happens. Right?
-
-Yes and no. old code allows following happens at the same time.
-
-      A
-    B   C
-   D E   F
- 
-   B-D-E goes into OOM because of B's limit.
-   C-F   goes into OOM because of C's limit
-
-
-When you stop OOM under A because of B's limit, C can't invoke OOM.
-
-After a little more consideration, my suggestion is,
-
-=== lock ===
-	bool success = true;
-	...
-	for_each_mem_cgroup_tree(iter, mem) {
-		success &= !!atomic_add_unless(&iter->oom_lock, 1, 1);
-		/* "break" loop is not allowed because of css refcount....*/
-	}
-	return success.
-
-By this, when a sub-hierarchy is under OOM, don't invoke new OOM.
-
-
-=== unlock ===
-	struct mem_cgroup *oom_root;
-
-	oom_root = memcg; 
-	do {
-		struct mem_cgroup *parent;
-
-		parent = mem_cgroup_parent(oom_root);
-		if (!parent || !parent->use_hierarchy)
-			break;
-
-		if (atomic_read(&parent->oom_lock))
-			break;
-	} while (1);
-
-	for_each_mem_cgroup_tree(iter, oom_root)
-		atomic_add_unless(&iter->oom_lock, -1, 0);
-
-By this, at unlock, unlock oom-lock of a hierarchy which was under oom_lock
-because of a sub-hierarchy was under OOM.
-
-==
-
-
-Maybe not complicated as my 1st patch.
-
-Thanks,
--Kame
-
-
-
-
-
+Olaf
