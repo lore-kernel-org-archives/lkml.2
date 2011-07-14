@@ -1,83 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932546Ab1GNWzG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 18:55:06 -0400
-Received: from exprod7og102.obsmtp.com ([64.18.2.157]:51158 "EHLO
-	exprod7og102.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932392Ab1GNWzF (ORCPT
+	id S932568Ab1GNXBm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 19:01:42 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:59206 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932503Ab1GNXBk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 18:55:05 -0400
-Message-ID: <4E1F72E1.3040102@genband.com>
-Date: Thu, 14 Jul 2011 16:51:13 -0600
-From: Chris Friesen <chris.friesen@genband.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.11
+	Thu, 14 Jul 2011 19:01:40 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=Q/TTi95jOwNKmK74wyOCDRH7c9yCgrCDb9khOxRfaZsJZ7wlAGeVuQiX6QzMxYW8Y
+	c1GYcfl/DnCJO6Xde8JBA==
 MIME-Version: 1.0
-To: Jesper Juhl <jj@chaosbits.net>
-CC: linux-kernel@vger.kernel.org, Eric Dumazet <dada1@cosmosbay.com>,
-        Darren Hart <dvhltc@us.ibm.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: App blocked in futex() burns 14% CPU.
-References: <alpine.LNX.2.00.1107150019580.26455@swampdragon.chaosbits.net>
-In-Reply-To: <alpine.LNX.2.00.1107150019580.26455@swampdragon.chaosbits.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 14 Jul 2011 22:51:14.0890 (UTC) FILETIME=[89002AA0:01CC4278]
-X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-18262.002
-X-TM-AS-Result: No--32.176500-5.000000-31
-X-TM-AS-User-Approved-Sender: No
-X-TM-AS-User-Blocked-Sender: No
+In-Reply-To: <20110714220944.GE26786@somewhere.redhat.com>
+References: <1310679495-29104-1-git-send-email-vnagarnaik@google.com>
+ <1310679495-29104-4-git-send-email-vnagarnaik@google.com> <20110714220944.GE26786@somewhere.redhat.com>
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Date: Thu, 14 Jul 2011 16:01:08 -0700
+Message-ID: <CAL26m8+0kwrENFkvpr3ihaLyOdKrbUoCX6C1Ywsoy8YGr=EQsQ@mail.gmail.com>
+Subject: Re: [PATCH 3/6] trace: Add tracepoints to IRQ work run handler
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2011 04:34 PM, Jesper Juhl wrote:
-> So, I've recently started enabling the KDE desktop search on my box and it
-> runs some indexing services (naturally) to keep track of changes to files.
-> One of the apps it starts is a process named "virtuoso-t". This process
-> burns a *lot* of CPU when it's just started, but once it has caught up
-> with recent changes it quiets down. It doesn't quite quiet down to the
-> level I'd expect though. I see it constantly using 12-14% CPU time in
-> 'top' even when there is *nothing* going on on the machine :
+On Thu, Jul 14, 2011 at 3:09 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> On Thu, Jul 14, 2011 at 02:38:12PM -0700, Vaibhav Nagarnaik wrote:
+>> This is a part of overall effort to trace all the interrupts happening
+>> in a system to figure out what time is spent in kernel space versus user
+>> space.
+>>
+>> Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+>> ---
+>>  include/trace/events/irq.h |   44 ++++++++++++++++++++++++++++++++++++++++++++
+>>  kernel/irq_work.c          |    4 ++++
+>>  2 files changed, 48 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/include/trace/events/irq.h b/include/trace/events/irq.h
+>> index e6e72e0..d8fab89 100644
+>> --- a/include/trace/events/irq.h
+>> +++ b/include/trace/events/irq.h
+>> @@ -295,6 +295,50 @@ DEFINE_EVENT(timer_interrupt, timer_nohz_exit,
+>>       TP_ARGS(ignore)
+>>  );
+>>
+>> +DECLARE_EVENT_CLASS(irq_work,
+>> +
+>> +     TP_PROTO(unsigned int ignore),
+>> +
+>> +     TP_ARGS(ignore),
+>> +
+>> +     TP_STRUCT__entry(
+>> +             __field(        unsigned int,   ignore  )
+>> +     ),
+>> +
+>> +     TP_fast_assign(
+>> +             __entry->ignore = ignore;
+>> +     ),
+>> +
+>> +     TP_printk("%u", __entry->ignore)
+>> +);
+>> +
+>> +/**
+>> + * irq_work_run_entry - called immediately after entering the irq work
+>> + * handler
+>> + *
+>> + * When used in combination with the irq_work_run_exit tracepoint
+>> + * we can determine the irq work handler runtime.
+>> + */
+>> +DEFINE_EVENT(irq_work, irq_work_run_entry,
+>> +
+>> +     TP_PROTO(unsigned int ignore),
+>> +
+>> +     TP_ARGS(ignore)
+>> +);
+>> +
+>> +/**
+>> + * irq_work_run_exit - called just before the irq work handler returns
+>> + *
+>> + * When used in combination with the irq_work_run_entry tracepoint
+>> + * we can determine the irq work handler runtime.
+>> + */
+>> +DEFINE_EVENT(irq_work, irq_work_run_exit,
+>> +
+>> +     TP_PROTO(unsigned int ignore),
+>> +
+>> +     TP_ARGS(ignore)
+>> +);
+>> +
+>>  #endif /*  _TRACE_IRQ_H */
+>>
+>>  /* This part must be outside protection */
+>> diff --git a/kernel/irq_work.c b/kernel/irq_work.c
+>> index c58fa7d..7e78122 100644
+>> --- a/kernel/irq_work.c
+>> +++ b/kernel/irq_work.c
+>> @@ -9,6 +9,7 @@
+>>  #include <linux/module.h>
+>>  #include <linux/irq_work.h>
+>>  #include <linux/hardirq.h>
+>> +#include <trace/events/irq.h>
+>>
+>>  /*
+>>   * An entry can be in one of four states:
+>> @@ -125,6 +126,8 @@ void irq_work_run(void)
+>>       if (this_cpu_read(irq_work_list) == NULL)
+>>               return;
 >
-> top - 00:25:09 up  2:38,  2 users,  load average: 0.01, 0.04, 0.05
-> Tasks: 155 total,   1 running, 153 sleeping,   0 stopped,   1 zombie
-> Cpu(s):  0.7%us,  0.8%sy,  3.7%ni, 94.6%id,  0.1%wa,  0.0%hi,  0.0%si,  0.0%st
-> Mem:   3853028k total,  2154696k used,  1698332k free,   184280k buffers
-> Swap:  4200992k total,        0k used,  4200992k free,   996824k cached
+> If you don't want to miss any of these interrupts, I suggest you
+> call trace_irq_work_run_entry(0) before the above check.
 >
->    PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
->   1952 jj        39  19  362m 263m 6544 S   14  7.0  25:09.54 virtuoso-t
->   1811 jj        20   0  635m  27m  17m S    2  0.7   2:49.78 knotify4
->   1928 jj        39  19  595m  26m  18m S    1  0.7   2:58.40 nepomukservices
->
-> This box has a dual core Intel core i5-560M CPU with hyperthreading, so it
-> is 12-14% of a fairly capable CPU - that's rather a lot more than I'd
-> expect when the box is idle and there's nothing for the process to do.
->
-> So, I tried strace'ing the process and it seems to just be blocked in
-> futex() most of the time (like 99%) :
->
-> [jj@dragon ~]$ strace -p 1952
-> Process 1952 attached - interrupt to quit
-> futex(0x3086424, FUTEX_WAIT_PRIVATE, 503, NULL
->
-> So it's just sitting there doing nothing, which lead me to think that this
-> is probably not a bug in the application - if it was doing some silly
-> polling loop or similar I would not just see it blocked in a futex() call.
-> So I'm guessing something must be happening in kernel space that's burning
-> a lot of CPU.. I could be completely wrong of course, and if I am, please
-> feel free to enlighten me.
+> Also I'm adding Peter who maintains this.
 
-You don't have enough kernel activity to account for 14% of a cpu.  Have 
-you checked whether there's another thread within the process that's 
-doing something in userspace?
+Thanks for the catch. I will update it.
 
-Chris
+>
+>>
+>> +     trace_irq_work_run_entry(0);
+>> +
+>>       BUG_ON(!in_irq());
+>>       BUG_ON(!irqs_disabled());
+>>
+>> @@ -149,6 +152,7 @@ void irq_work_run(void)
+>>                             next_flags(NULL, IRQ_WORK_BUSY),
+>>                             NULL);
+>>       }
+>> +     trace_irq_work_run_exit(0);
+>>  }
+>>  EXPORT_SYMBOL_GPL(irq_work_run);
+>>
+>> --
+>> 1.7.3.1
+>>
+>
 
--- 
-Chris Friesen
-Software Developer
-GENBAND
-chris.friesen@genband.com
-www.genband.com
+
+
+Vaibhav Nagarnaik
