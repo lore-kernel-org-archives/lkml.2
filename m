@@ -1,202 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754004Ab1GNIoq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 04:44:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20231 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753535Ab1GNIol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 04:44:41 -0400
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Cc: Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 3/3] GFS2: Resolve inode eviction and ail list interaction bug
-Date: Thu, 14 Jul 2011 09:21:56 +0100
-Message-Id: <1310631716-18700-4-git-send-email-swhiteho@redhat.com>
-In-Reply-To: <1310631716-18700-1-git-send-email-swhiteho@redhat.com>
-References: <1310631716-18700-1-git-send-email-swhiteho@redhat.com>
+	id S1753370Ab1GNIvN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 04:51:13 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:36409 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753107Ab1GNIvM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 04:51:12 -0400
+Date: Thu, 14 Jul 2011 09:53:24 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Jan H." =?ISO-8859-14?B?U2No9m5oZXJy?= <schnhrr@cs.tu-berlin.de>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        trivial@kernel.org
+Subject: Re: [PATCH 1/6] sched: Fix (harmless) typo 'CONFG_FAIR_GROUP_SCHED'
+Message-ID: <20110714095324.787f3ff1@lxorguk.ukuu.org.uk>
+In-Reply-To: <1310590281.2586.34.camel@twins>
+References: <1310580816-10861-1-git-send-email-schnhrr@cs.tu-berlin.de>
+	<1310580816-10861-2-git-send-email-schnhrr@cs.tu-berlin.de>
+	<1310590281.2586.34.camel@twins>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-14
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch contains a few misc fixes which resolve a recently
-reported issue. This patch has been a real team effort and has
-received a lot of testing.
+On Wed, 13 Jul 2011 22:51:21 +0200
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-The first issue is that the ail lock needs to be held over a few
-more operations. The lock thats added into gfs2_releasepage() may
-possibly be a candidate for replacing with RCU at some future
-point, but at this stage we've gone for the obvious fix.
+> On Wed, 2011-07-13 at 20:13 +0200, Jan H. Schönherr wrote:
+> > From: =?UTF-8?q?Jan=20H=2E=20Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
+> 
+> WTF am I to do with crap like that?! 
 
-The second issue is that gfs2_write_inode() can end up calling
-a glock recursively when called from gfs2_evict_inode() via the
-syncing code, so it needs a guard added.
+Fix your mail client ? It should be recognizing the UTF8 indicators, and
+git itself is utf-8 clean.
 
-The third issue is that we either need to not truncate the metadata
-pages of inodes which have zero link count, but which we cannot
-deallocate due to them still being in use by other nodes, or we need
-to ensure that those pages have all made it through the journal and
-ail lists first. This patch takes the former approach, but the
-latter has also been tested and there is nothing to choose between
-them performance-wise. So again, we could revise that decision
-in the future.
-
-Also, the inode eviction process is now better documented.
-
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
-Tested-by: Bob Peterson <rpeterso@redhat.com>
-Tested-by: Abhijith Das <adas@redhat.com>
-Reported-by: Barry J. Marson <bmarson@redhat.com>
-Reported-by: David Teigland <teigland@redhat.com>
-
-diff --git a/fs/gfs2/aops.c b/fs/gfs2/aops.c
-index 802ac5e..f9fbbe9 100644
---- a/fs/gfs2/aops.c
-+++ b/fs/gfs2/aops.c
-@@ -1069,6 +1069,7 @@ int gfs2_releasepage(struct page *page, gfp_t gfp_mask)
- 		return 0;
- 
- 	gfs2_log_lock(sdp);
-+	spin_lock(&sdp->sd_ail_lock);
- 	head = bh = page_buffers(page);
- 	do {
- 		if (atomic_read(&bh->b_count))
-@@ -1080,6 +1081,7 @@ int gfs2_releasepage(struct page *page, gfp_t gfp_mask)
- 			goto not_possible;
- 		bh = bh->b_this_page;
- 	} while(bh != head);
-+	spin_unlock(&sdp->sd_ail_lock);
- 	gfs2_log_unlock(sdp);
- 
- 	head = bh = page_buffers(page);
-@@ -1112,6 +1114,7 @@ not_possible: /* Should never happen */
- 	WARN_ON(buffer_dirty(bh));
- 	WARN_ON(buffer_pinned(bh));
- cannot_release:
-+	spin_unlock(&sdp->sd_ail_lock);
- 	gfs2_log_unlock(sdp);
- 	return 0;
- }
-diff --git a/fs/gfs2/glops.c b/fs/gfs2/glops.c
-index 712b722..2cca293 100644
---- a/fs/gfs2/glops.c
-+++ b/fs/gfs2/glops.c
-@@ -47,10 +47,10 @@ static void __gfs2_ail_flush(struct gfs2_glock *gl)
- 				bd_ail_gl_list);
- 		bh = bd->bd_bh;
- 		gfs2_remove_from_ail(bd);
--		spin_unlock(&sdp->sd_ail_lock);
--
- 		bd->bd_bh = NULL;
- 		bh->b_private = NULL;
-+		spin_unlock(&sdp->sd_ail_lock);
-+
- 		bd->bd_blkno = bh->b_blocknr;
- 		gfs2_log_lock(sdp);
- 		gfs2_assert_withdraw(sdp, !buffer_busy(bh));
-diff --git a/fs/gfs2/log.c b/fs/gfs2/log.c
-index 903115f..85c6292 100644
---- a/fs/gfs2/log.c
-+++ b/fs/gfs2/log.c
-@@ -903,6 +903,7 @@ void gfs2_meta_syncfs(struct gfs2_sbd *sdp)
- 		if (gfs2_ail1_empty(sdp))
- 			break;
- 	}
-+	gfs2_log_flush(sdp, NULL);
- }
- 
- static inline int gfs2_jrnl_flush_reqd(struct gfs2_sbd *sdp)
-diff --git a/fs/gfs2/super.c b/fs/gfs2/super.c
-index ed540e7..fb0edf7 100644
---- a/fs/gfs2/super.c
-+++ b/fs/gfs2/super.c
-@@ -757,13 +757,17 @@ static int gfs2_write_inode(struct inode *inode, struct writeback_control *wbc)
- 	struct timespec atime;
- 	struct gfs2_dinode *di;
- 	int ret = -EAGAIN;
-+	int unlock_required = 0;
- 
- 	/* Skip timestamp update, if this is from a memalloc */
- 	if (current->flags & PF_MEMALLOC)
- 		goto do_flush;
--	ret = gfs2_glock_nq_init(ip->i_gl, LM_ST_EXCLUSIVE, 0, &gh);
--	if (ret)
--		goto do_flush;
-+	if (!gfs2_glock_is_locked_by_me(ip->i_gl)) {
-+		ret = gfs2_glock_nq_init(ip->i_gl, LM_ST_EXCLUSIVE, 0, &gh);
-+		if (ret)
-+			goto do_flush;
-+		unlock_required = 1;
-+	}
- 	ret = gfs2_trans_begin(sdp, RES_DINODE, 0);
- 	if (ret)
- 		goto do_unlock;
-@@ -780,7 +784,8 @@ static int gfs2_write_inode(struct inode *inode, struct writeback_control *wbc)
- 	}
- 	gfs2_trans_end(sdp);
- do_unlock:
--	gfs2_glock_dq_uninit(&gh);
-+	if (unlock_required)
-+		gfs2_glock_dq_uninit(&gh);
- do_flush:
- 	if (wbc->sync_mode == WB_SYNC_ALL)
- 		gfs2_log_flush(GFS2_SB(inode), ip->i_gl);
-@@ -1427,7 +1432,20 @@ out:
- 	return error;
- }
- 
--/*
-+/**
-+ * gfs2_evict_inode - Remove an inode from cache
-+ * @inode: The inode to evict
-+ *
-+ * There are three cases to consider:
-+ * 1. i_nlink == 0, we are final opener (and must deallocate)
-+ * 2. i_nlink == 0, we are not the final opener (and cannot deallocate)
-+ * 3. i_nlink > 0
-+ *
-+ * If the fs is read only, then we have to treat all cases as per #3
-+ * since we are unable to do any deallocation. The inode will be
-+ * deallocated by the next read/write node to attempt an allocation
-+ * in the same resource group
-+ *
-  * We have to (at the moment) hold the inodes main lock to cover
-  * the gap between unlocking the shared lock on the iopen lock and
-  * taking the exclusive lock. I'd rather do a shared -> exclusive
-@@ -1470,6 +1488,8 @@ static void gfs2_evict_inode(struct inode *inode)
- 	if (error)
- 		goto out_truncate;
- 
-+	/* Case 1 starts here */
-+
- 	if (S_ISDIR(inode->i_mode) &&
- 	    (ip->i_diskflags & GFS2_DIF_EXHASH)) {
- 		error = gfs2_dir_exhash_dealloc(ip);
-@@ -1493,13 +1513,16 @@ static void gfs2_evict_inode(struct inode *inode)
- 	goto out_unlock;
- 
- out_truncate:
-+	/* Case 2 starts here */
- 	error = gfs2_trans_begin(sdp, 0, sdp->sd_jdesc->jd_blocks);
- 	if (error)
- 		goto out_unlock;
--	gfs2_final_release_pages(ip);
-+	/* Needs to be done before glock release & also in a transaction */
-+	truncate_inode_pages(&inode->i_data, 0);
- 	gfs2_trans_end(sdp);
- 
- out_unlock:
-+	/* Error path for case 1 */
- 	if (test_bit(HIF_HOLDER, &ip->i_iopen_gh.gh_iflags))
- 		gfs2_glock_dq(&ip->i_iopen_gh);
- 	gfs2_holder_uninit(&ip->i_iopen_gh);
-@@ -1507,6 +1530,7 @@ out_unlock:
- 	if (error && error != GLR_TRYFAILED && error != -EROFS)
- 		fs_warn(sdp, "gfs2_evict_inode: %d\n", error);
- out:
-+	/* Case 3 starts here */
- 	truncate_inode_pages(&inode->i_data, 0);
- 	end_writeback(inode);
- 
--- 
-1.7.4
-
+Alan
