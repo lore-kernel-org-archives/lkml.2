@@ -1,65 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753800Ab1GNExz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 00:53:55 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35606 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753683Ab1GNExy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 00:53:54 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 14 Jul 2011 13:46:34 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, XFS <xfs@oss.sgi.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 1/5] mm: vmscan: Do not writeback filesystem pages in
- direct reclaim
-Message-Id: <20110714134634.4a7a15c8.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110714044643.GA3203@infradead.org>
-References: <1310567487-15367-1-git-send-email-mgorman@suse.de>
-	<1310567487-15367-2-git-send-email-mgorman@suse.de>
-	<20110714103801.83e10fdb.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110714044643.GA3203@infradead.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753787Ab1GNFG6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 01:06:58 -0400
+Received: from nm15-vm0.bullet.mail.ird.yahoo.com ([77.238.189.216]:32680 "HELO
+	nm15-vm0.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753282Ab1GNFG4 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 01:06:56 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 984965.44226.bm@omp1013.mail.ird.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.co.uk;
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=t/2Dgh7eC8BQBrtvr+spcg5GaKQhyyNQkoMY+AvfoV1IjE1YtZUnnVMAQPQHP+fBt3WwyAzAub9xkXctlusUKgnoIBg6g/BHgC5KPo/psEGP7fWHhqWdSCWLmXnyxe+gP3IgedlphnoOvqPsFoTNAGtU4k/ZoIP+/GRXSxT3eXY=;
+X-YMail-OSG: Nnj2.LMVM1k_dpORaX4_4iYK061yLE_DFQg7JL8qiK4bQCm
+ iLcFIYdHucB3BlnQfTB5iumMIAhAjbWOjHZPbhRqoVabthuPEK1gkrjs3GA1
+ r3MzJlePOho53p2uFU5J.h7y32lx80Kn_1tWqyLCulIiwzX8t3l8_krkOtKO
+ cJeAm4jhI4iz9zWyd8nVie4Wj9McDJpZZ5tMZ6kEEYrBcXyx.SP8VDtvmP47
+ VbT1IUHmScoH4nze8t608yan4ziFelDM5XVJoJo4JGerC2wNnPxcWz.PmRB7
+ a1iUDVnPsBhiDEBv9rZxNKA9vSA4zSJ.NGHPkDUEJ2zyun5zP_oH8lygCBy3
+ 5EPVEccYi5UGOgXXYrg--
+X-Mailer: YahooMailClassic/14.0.3 YahooMailWebService/0.8.112.307740
+Message-ID: <1310620014.9822.YahooMailClassic@web29502.mail.ird.yahoo.com>
+Date: Thu, 14 Jul 2011 06:06:54 +0100 (BST)
+From: Hin-Tak Leung <hintak_leung@yahoo.co.uk>
+Subject: Re: [PATCH] hfsplus: Add record offset check
+To: Pekka Enberg <penberg@kernel.org>
+Cc: linux-fsdevel@vger.kernel.org, Naohiro Aota <naota@elisp.net>,
+        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@tuxera.com>
+In-Reply-To: <CAOJsxLHi_5yuqvOEoGuGQbz86TTuMpinbHzuNEtmvZaZMhcJYA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Jul 2011 00:46:43 -0400
-Christoph Hellwig <hch@infradead.org> wrote:
 
-> On Thu, Jul 14, 2011 at 10:38:01AM +0900, KAMEZAWA Hiroyuki wrote:
-> > > +			/*
-> > > +			 * Only kswapd can writeback filesystem pages to
-> > > +			 * avoid risk of stack overflow
-> > > +			 */
-> > > +			if (page_is_file_cache(page) && !current_is_kswapd()) {
-> > > +				inc_zone_page_state(page, NR_VMSCAN_WRITE_SKIP);
-> > > +				goto keep_locked;
-> > > +			}
-> > > +
-> > 
-> > 
-> > This will cause tons of memcg OOM kill because we have no help of kswapd (now).
-> 
-> XFS and btrfs already disable writeback from memcg context, as does ext4
-> for the typical non-overwrite workloads, and none has fallen apart.
-> 
-> In fact there's no way we can enable them as the memcg calling contexts
-> tend to have massive stack usage.
-> 
 
-Hmm, XFS/btrfs adds pages to radix-tree in deep stack ?
+--- On Wed, 13/7/11, Pekka Enberg <penberg@kernel.org> wrote:
 
-Thanks,
--Kame
+> From: Pekka Enberg <penberg@kernel.org>
+> Subject: Re: [PATCH] hfsplus: Add record offset check
+> To: "Hin-Tak Leung" <hintak_leung@yahoo.co.uk>
+> Cc: linux-fsdevel@vger.kernel.org, "Naohiro Aota" <naota@elisp.net>, linux-kernel@vger.kernel.org, "Christoph Hellwig" <hch@tuxera.com>
+> Date: Wednesday, 13 July, 2011, 7:06
+> On Wed, Jul 13, 2011 at 6:58 AM,
+> Hin-Tak Leung <hintak_leung@yahoo.co.uk>
+> wrote:
+> >> Corrupted disk may return record offset which is
+> larger
+> >> than node size
+> >> and cause general protection fault like below:
+> >
+> > <snipped>
+> >
+> >> This patch add guard for this situation.
+> >>
+> >> Signed-off-by: Naohiro Aota <naota@elisp.net>
+> >
+> > Nacked. This isn't acceptable. Explained above.
+> 
+> 'recoff' is read from disk which can be easily fuzzed to
+> have an
+> offset that's larger than node_size, no? The kernel
+> shouldn't oops in
+> that cases so what's the problem with the patch? (The
+> changelog is
+> terribly vague, though, and needs to be fixed).
+
+You have put your finger one problem of the patch - 'The changelog is terribly vague, though, and needs to be fixed'.
+
+The other issue is that, while the kernel should not oops no matter what, the patch (or the changelog itself) made no attempts at explaining why this specific approach. e.g. What happens after 'return 0'? For example.
+
+
+
+
 
