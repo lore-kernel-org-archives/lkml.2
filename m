@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964780Ab1GNWRt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 18:17:49 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:37677 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754072Ab1GNWRs convert rfc822-to-8bit (ORCPT
+	id S1755004Ab1GNWcH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 18:32:07 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59966 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754455Ab1GNWcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 18:17:48 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=w8stK9/nGNSIOLe7j7AJOFr8NDD1YGJcYfrYEEgaTDgCo92wocmeYVkMxHW9MBeaq
-	XPyyaVXibFZz9u9o+hlbA==
-MIME-Version: 1.0
-In-Reply-To: <20110714212113.GA28639@suse.de>
-References: <1310675693-9204-1-git-send-email-mikew@google.com> <20110714212113.GA28639@suse.de>
-From: Mike Waychison <mikew@google.com>
-Date: Thu, 14 Jul 2011 15:17:24 -0700
-Message-ID: <CAGTjWtB53vW5B2EJ5=+C3buDAY0RtsfANxx5NhC5aWnmEx08EQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] Kconfig: Allow disabling of CONFIG_DEVPORT
-To: Greg KH <gregkh@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Thu, 14 Jul 2011 18:32:05 -0400
+Date: Thu, 14 Jul 2011 15:31:13 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mike Waychison <mikew@google.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] x86: Allow disabling of sys_iopl, sys_ioperm
+Message-Id: <20110714153113.31ffdeea.akpm@linux-foundation.org>
+In-Reply-To: <1310675693-9204-2-git-send-email-mikew@google.com>
+References: <1310675693-9204-1-git-send-email-mikew@google.com>
+	<1310675693-9204-2-git-send-email-mikew@google.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 14, 2011 at 2:21 PM, Greg KH <gregkh@suse.de> wrote:
-> On Thu, Jul 14, 2011 at 01:34:52PM -0700, Mike Waychison wrote:
->> It would be useful to build kernels with disabled support of /dev/port
->> for systems where we do not want to allow an administrator to access IO
->> ports directly.
->>
->> To do so however, CONFIG_DEVPORT needs to be user-selectable.  Give this
->> configuration option a name and help description.
->>
->> Google-Bug-Id: 3177114
->
-> What is that field?  It's not something that I've ever seen before...
+On Thu, 14 Jul 2011 13:34:53 -0700
+Mike Waychison <mikew@google.com> wrote:
 
-This is for our internal reference.
+> --- a/arch/x86/kernel/ioport.c
+> +++ b/arch/x86/kernel/ioport.c
+> @@ -17,6 +17,7 @@
+>  #include <linux/bitmap.h>
+>  #include <asm/syscalls.h>
+>  
+> +#ifdef CONFIG_X86_SYS_IOPL
+>  /*
+>   * this changes the io permissions bitmap in the current task.
+>   */
+> @@ -111,3 +112,14 @@ long sys_iopl(unsigned int level, struct pt_regs *regs)
+>  
+>  	return 0;
+>  }
+> +
+> +#else /* CONFIG_X86_SYS_IOPL */
+> +
+> +asmlinkage long sys_ioperm(unsigned long from, unsigned long num, int turn_on) {
+> +	return -ENOSYS;
+> +}
+> +
+> +long sys_iopl(unsigned int level, struct pt_regs *regs) {
+> +	return -ENOSYS;
+> +}
+> +#endif /* CONFIG_X86_SYS_IOPL */
 
->
-> Please don't push internal fields like this to public patches, it only
-> causes confusion...
+sys_iopl() is missing asmlinkage.
 
-It hasn't caused any problems so far.  It helps us track things as we
-pull code back downstream.
+It would be far more conventional to use cond_syscall().  Perhaps by
+adding a CONFIG_X86 area into kernel/sys_ni.c
+
+fyi, I'm offering special deals on checkpatch.pl site licenses this month.
