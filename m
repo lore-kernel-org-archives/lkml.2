@@ -1,135 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932471Ab1GNWhV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 18:37:21 -0400
-Received: from gate.crashing.org ([63.228.1.57]:48667 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932371Ab1GNWhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 18:37:19 -0400
-Subject: Re: [PATCH 1/1] powerpc/4xx: enable and fix pcie gen1/gen2 on the
- 460sx
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Ayman El-Khashab <ayman@elkhashab.com>
-Cc: Tony Breeds <tony@bakeyournoodle.com>, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20110714160456.GA6859@crust.elkhashab.com>
-References: <y> <1310603611-8960-1-git-send-email-ayman@elkhashab.com>
-	 <1310603611-8960-2-git-send-email-ayman@elkhashab.com>
-	 <20110714011627.GJ20597@ozlabs.org>
-	 <20110714160456.GA6859@crust.elkhashab.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 15 Jul 2011 08:36:59 +1000
-Message-ID: <1310683019.4968.289.camel@pasglop>
+	id S932527Ab1GNWhq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 18:37:46 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:41693 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932371Ab1GNWho (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 18:37:44 -0400
+Date: Thu, 14 Jul 2011 23:40:30 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Eric Andersson <eric.andersson@unixphere.com>
+Cc: dmitry.torokhov@gmail.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, zhengguang.guo@bosch-sensortec.com,
+        stefan.nilsson@unixphere.com,
+        Albert Zhang <xu.zhang@bosch-sensortec.com>
+Subject: Re: [PATCH v3 1/1] input: add driver for Bosch Sensortec's BMA150
+ accelerometer
+Message-ID: <20110714234030.30d6b455@lxorguk.ukuu.org.uk>
+In-Reply-To: <1310680572-27410-2-git-send-email-eric.andersson@unixphere.com>
+References: <1310680572-27410-1-git-send-email-eric.andersson@unixphere.com>
+	<1310680572-27410-2-git-send-email-eric.andersson@unixphere.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-07-14 at 11:04 -0500, Ayman El-Khashab wrote:
-> Thanks Tony, some comments below.
-> 
-> On Thu, Jul 14, 2011 at 11:16:27AM +1000, Tony Breeds wrote:
-> > 
-> > > +static void __init ppc460sx_pciex_check_link(struct ppc4xx_pciex_port *port)
-> > > +{
-> > > +	void __iomem *mbase;
-> > > +	int attempt = 50;
-> > > +
-> > > +	port->link = 0;
-> > > +
-> > > +	mbase = ioremap(port->cfg_space.start + 0x00000000, 0x1000);
-> > 
-> > Why + 0x00000000 ? ppc4xx_pciex_port_setup_hose() does:
-> > mbase = ioremap(port->cfg_space.start + 0x10000000, 0x1000);
-> > so isn't one of these statements is wrong?
-> 
-> yes, that doesn't look right.   I'll verify that and make
-> sure that it works correctly and resubmit the patch.
+> +		values represent the range given as +/- G.
+> +		Possible values are: 2, 4, 8.
+> +
+> +		Reading: returns the current acceleration range.
+> +
+> +		Writing: sets a new acceleration range.
 
-The state of that top bit is obscure. I couldn't figure out from docs
-whether it's actually useful or not (it doesn't seem to make a
-difference on the HW we've played with here).
+Same comment as last time - these values are not discoverable so it
+should set the nearest bigger range.
 
-It's possible that some parts need it to access the RC config space vs
-emitting type 1 cycles, and some don't, in which case the address
-decoding just wraps and the bit is ignored ?
+> +
+> +
+> +What:		/sys/bus/i2c/devices/<busnum>-<devaddr>/bandwidth
+> +Date:		May 2011
+> +Contact:	Eric Andersson <eric.andersson@unixphere.com>
+> +Description:	This is used to setup the digital filtering on ADC output data.
+> +		The values represent the bandwidth given in Hz.
+> +		Possible values are: 25, 50, 100, 190, 375, 750, 1500
+> +
+> +		Reading: returns the current bandwidth.
+> +
+> +		Writing: sets a new bandwidth.
 
-> > > +	if (mbase == NULL) {
-> > > +		printk(KERN_ERR "%s: Can't map internal config space !",
-> > > +			port->node->full_name);
-> > > +		goto done;
-> > > +	}
-> > > +
-> > > +	while (attempt && (0 == (in_le32(mbase + PECFG_460SX_DLLSTA)
-> > > +			& 0x00000010))) {
-> > 
-> > Nitpicking, I think it'd be nice if there was #define for 0x00000010
-> > perhaps: #define PECFG_460SX_DLLSTA_LINKUP 0x00000010
-> 
-> ok.
-> 
-> > >  
-> > > -	if (ppc4xx_pciex_hwops->check_link)
-> > > -		ppc4xx_pciex_hwops->check_link(port);
-> > > -
-> > >  	/*
-> > >  	 * Initialize mapping: disable all regions and configure
-> > >  	 * CFG and REG regions based on resources in the device tree
-> > >  	 */
-> > >  	ppc4xx_pciex_port_init_mapping(port);
-> > >  
-> > > +	if (ppc4xx_pciex_hwops->check_link)
-> > > +		ppc4xx_pciex_hwops->check_link(port);
-> > > +
-> > 
-> > Why move this?  You already iorempat the cfg space.
-> 
-> This was what I was asking about before.  The reason that I
-> swapped the order of the init_mapping and check_link is
-> because the init_mapping currently sets up the cfgbax
-> registers.  Those setup the base address of the
-> configuration space on the PLB side of the bus.  As far as I
-> could determine, I cannot access the config space until
-> those registers are configured.  I need to touch the config
-> space in order to do the check_link b/c the 460sx uses the
-> extended config space to keep track of the link status.  I
-> looked at init mapping and based on what it did I did not
-> see any potential adverse effects.
-
-I think it makes sense to setup mappings before checking the link. There
-may be a couple of mechanical issues in the code with this, I haven't
-looked, but I agree in principle.
-
-> > >  		out_le32(mbase + PECFG_POM2LAH, pciah);
-> > > @@ -1591,8 +1632,7 @@ static int __init ppc4xx_setup_one_pciex_POM(struct ppc4xx_pciex_port	*port,
-> > >  		dcr_write(port->dcrs, DCRO_PEGPL_OMR3BAH, lah);
-> > >  		dcr_write(port->dcrs, DCRO_PEGPL_OMR3BAL, lal);
-> > >  		dcr_write(port->dcrs, DCRO_PEGPL_OMR3MSKH, 0x7fffffff);
-> > > -		/* Note that 3 here means enabled | IO space !!! */
-> > > -		dcr_write(port->dcrs, DCRO_PEGPL_OMR3MSKL, sa | 3);
-> > > +		dcr_write(port->dcrs, DCRO_PEGPL_OMR3MSKL, sa);
-> > >  		break;
-> > >  	}
-> > 
-> > I think you really want to check the definitions for OMRs 2 and 3 to verify that this is right.
-> 
-> Thanks, good catch.  I'll change the first case block to
-> include a switch on the 460sx.  The first case statement
-> needs to be | 0x5, while the others need to stay 0x3.
-
-Please make it constants using #define or something... those bits tend
-to subtly change between ASICs too I noticed.
-
-Cheers,
-Ben.
-
-> Ayman
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Ditto
 
 
+> +	for (i = 0, ret = 0; i < ARRAY_SIZE(bw_val); i++)
+> +		ret += sprintf(buf + ret,
+> +			(bw_val[i].reg == bw) ? "[%d] " : "%d ",
+> +			bw_val[i].value);
+
+sysfs nodes should really be single values
+
+> +static const struct i2c_device_id bma150_id[] = {
+> +	{ "bma150", 0 },
+> +	{ "smb380", 0 },
+
+bma023 ?
+
+It also doesn't expose the thresholds or support interrupts which the
+one I posted did.
+
+So while its better it still seems incomplete - its certainly nowhere
+near where it can replace the one I posted months ago and doesn't seem to
+be making any headway.
+
+Dmitry shall I repost the intel one - at this point I think it would be a
+better starting point as it supports more features, interrupts and the
+like although it's not perfect either.
+
+Alan
