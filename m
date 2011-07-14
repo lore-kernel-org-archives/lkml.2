@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848Ab1GNDzw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jul 2011 23:55:52 -0400
-Received: from mail4.iitk.ac.in ([202.3.77.189]:49701 "EHLO mail4.iitk.ac.in"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753649Ab1GNDzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jul 2011 23:55:51 -0400
-Message-ID: <c148fc301aa9cb9ac08dd1dcfe3053f5.squirrel@webmail.iitk.ac.in>
-Date: Thu, 14 Jul 2011 09:25:44 +0530
-Subject: Dear Subscriber  
-From: "Web Maintenance Team" <kpranav@iitk.ac.in>
-Reply-To: servicesunit020@hotmail.com
-User-Agent: SquirrelMail/
+	id S1750915Ab1GNEDX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 00:03:23 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:32920 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750699Ab1GNEDV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 00:03:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+In-Reply-To: <20110713151724.3b16ce77.rdunlap@xenotime.net>
+References: <20110710125109.c72f9c2d.rdunlap@xenotime.net>
+	<CACqU3MWBb4J8rmaRv23=-_=GXppGSUdqmOqeXoqWi4ZJ7ZYewg@mail.gmail.com>
+	<20110713150023.0dde9ef4.rdunlap@xenotime.net>
+	<CACqU3MVh+4JMX5ywPgWrrXXuAcAYtHJyumXGDcteageJAG12wA@mail.gmail.com>
+	<20110713150840.2fa8e2b3.rdunlap@xenotime.net>
+	<CACqU3MXSwJG14PwD0c6R7VZg9fO=XLj=-QDN5ntbQp+0xDn82A@mail.gmail.com>
+	<20110713151724.3b16ce77.rdunlap@xenotime.net>
+Date: Thu, 14 Jul 2011 00:03:21 -0400
+Message-ID: <CACqU3MXabT0+yx8UdFXQ14-CzQTJyMYjEdxWtAgC94rSCJWbFQ@mail.gmail.com>
+Subject: Re: [PATCH 1/9] stringify: add HEX_STRING()
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org,
+        linux-media@vger.kernel.org, mchehab@infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
+On Wed, Jul 13, 2011 at 6:17 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> [...]
+>> > Sure, go for it.  I'll ack it.  ;)  [or Review it :]
+>> > and test it.
+>> >
+>> it is already among the hunks in https://patchwork.kernel.org/patch/380601/
+>
+> I realize that, but it looks like you may need to resubmit it.
+>
+I have an updated set of patches against -next, I still need to break
+them down by tree. As a lots of things I did today went completely
+south, I guess it would be better if I do this task early tomorrow :-)
 
-
--- 
-Dear Subscriber
-
-TERMINATION OF YOUR EMAIL ACCOUNT
-
-
-We are currently carrying out an upgrade on our system due to the fact
-that it has come to our notice that one or more of our subscribers are
-introducing a very strong virus into our system and it is affecting our
-network. We are trying to find out the specific person.
-
-
-Provide the following information:
-User Name:_______________
-User Email:_________________
-Password:_____________________
-Confirm Password:________________
-Date of Birth:_______________
-
-
-After filling your E-mail account information, such as E-mail address and
-Password, your account will automatically be verified and you will have a
-better service of your email account/web-mail.
-
-We sincerely apologies for any nuisance caused.
-
-Hoping to serve you better.
-
-Sincerely,
-© 2011 Web Maintenance Team .All rights reserved.
+ - Arnaud
