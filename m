@@ -1,43 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754261Ab1GNK0j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 06:26:39 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.162]:49787 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754200Ab1GNK0i (ORCPT
+	id S1754277Ab1GNK3c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 06:29:32 -0400
+Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:21577 "EHLO
+	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754200Ab1GNK3b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 06:26:38 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmxtMZ80VwmRNV67U=
-X-RZG-CLASS-ID: mo00
-Date: Thu, 14 Jul 2011 12:26:28 +0200
-From: Olaf Hering <olaf@aepfle.de>
-To: Jan Beulich <jbeulich@novell.com>
-Cc: Ian.Campbell@citrix.com, konrad.wilk@oracle.com, keir@xen.org,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH] xen: update machine_to_phys_order on resume
-Message-ID: <20110714102628.GA9157@aepfle.de>
-References: <4E1DB9C70200007800072DCC@nat28.tlf.novell.com>
+	Thu, 14 Jul 2011 06:29:31 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EACnEHk5tg7bC/2dsb2JhbABTp1F4iHoCwVQOhiwEozc
+Date: Thu, 14 Jul 2011 12:29:28 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: ashishj3 <ashish.jangam@kpitcummins.com>
+Cc: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        Dajun <dajun.chen@diasemi.com>, linaro-dev@lists.linaro.org
+Subject: Re: [PATCH 07/11] Watchdog: DA9052 watchdog support v1
+Message-ID: <20110714102928.GL3834@infomag.iguana.be>
+References: <1309872103.960.79.camel@L-0532.kpit.com> <1310630232.284.16.camel@L-0532.kpit.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E1DB9C70200007800072DCC@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21.rev5535 (2011-07-01)
+In-Reply-To: <1310630232.284.16.camel@L-0532.kpit.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 13, Jan Beulich wrote:
+Hi Ashish, Dajun,
 
-> >>> Ian Campbell <Ian.Campbell@citrix.com> 07/13/11 11:12 AM >>>
-> >It's not so much an objection to this patch but this issue seems to have
-> >been caused by Xen cset 20892:d311d1efc25e which looks to me like a
-> >subtle ABI breakage for guests. Perhaps we should introduce a feature
-> >flag to indicate that a guest can cope with the m2p changing size over
-> >migration like this?
+> > This driver adds support for the watchdog functionality provided by the Dialog
+> > Semiconductor DA9052 PMIC chip.
+> > 
+> > Signed-off-by: David Dajun Chen <dchen@diasemi.com>
+> > Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
+> > ---
+> If there are no comments then can you ACK this patch?
+
+I remain with my comment of Wed 26 Jan 2011:
+> The ioctl WDIOC_SETOPTIONS call is not in line with the watchdog API.
+> the supported options are:
+> #define WDIOS_DISABLECARD       0x0001  /* Turn off the watchdog timer */
+> #define WDIOS_ENABLECARD        0x0002  /* Turn on the watchdog timer */
+> #define WDIOS_TEMPPANIC         0x0004  /* Kernel panic on temperature trip */
+> Your options are:
+> #define DA9052_STROBING_FILTER_ENABLE   0x0001
+> #define DA9052_STROBING_FILTER_DISABLE  0x0002
+> #define DA9052_SET_STROBING_MODE_MANUAL 0x0004
+> #define DA9052_SET_STROBING_MODE_AUTO   0x0008
 > 
-> Indeed - migration was completely beyond my consideration when
-> submitting this. A feature flag seems the right way to go to me.
+> Please explain what you want to do.
 
-I will prepare a patch for a new feature flag.
+FYI: this is how the code looks now:
++       case WDIOC_SETOPTIONS:
++               if (get_user(new_value, p))
++                       return -EFAULT;
++               if (new_value == DA9052_ENABLE || new_value == DA9052_DISABLE)
++                       da9052_sm_set_strobing_filter(wdt, new_value);
++               else
++                       wdt->pwdt->sm_strobe_mode_flag = new_value;
++               return 0;
 
-Olaf
+Since the code is still not in line with the watchdog API and since I did not get
+an answer yet on what you (or Dajun) want to do, there is definitely NO ACK yet.
+If there is a good reasoning behind your needs, we might conclude that this is indeed
+worthwhile and extend the API in a proper way. But as it is now, it's not correct.
+
+Kind regards,
+Wim.
+
