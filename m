@@ -1,129 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753901Ab1GNHhs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 03:37:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60530 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753712Ab1GNHhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 03:37:47 -0400
-Date: Thu, 14 Jul 2011 08:37:42 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        XFS <xfs@oss.sgi.com>, Christoph Hellwig <hch@infradead.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [RFC PATCH 0/5] Reduce filesystem writeback from page reclaim
- (again)
-Message-ID: <20110714073742.GS7529@suse.de>
-References: <1310567487-15367-1-git-send-email-mgorman@suse.de>
- <20110714003340.GZ23038@dastard>
+	id S1753884Ab1GNHn1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 03:43:27 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:58372 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753715Ab1GNHnZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 03:43:25 -0400
+Date: Thu, 14 Jul 2011 10:41:44 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Ravishankar <ravishankarkm32@gmail.com>
+Cc: gregkh@suse.de, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>
+Subject: Re: [PATCH 30/30] Staging: comedi: fix printk() issue in das16m1.c
+Message-ID: <20110714074144.GR18655@shale.localdomain>
+References: <1310618547-8801-1-git-send-email-ravishankarkm32@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110714003340.GZ23038@dastard>
+In-Reply-To: <1310618547-8801-1-git-send-email-ravishankarkm32@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 14, 2011 at 10:33:40AM +1000, Dave Chinner wrote:
-> On Wed, Jul 13, 2011 at 03:31:22PM +0100, Mel Gorman wrote:
-> > (Revisting this from a year ago and following on from the thread
-> > "Re: [PATCH 03/27] xfs: use write_cache_pages for writeback
-> > clustering". Posting an prototype to see if anything obvious is
-> > being missed)
-> 
-> Hi Mel,
-> 
-> Thanks for picking this up again. The results are definitely
-> promising, but I'd like to see a comparison against simply not doing
-> IO from memory reclaim at all combined with the enhancements in this
-> patchset.
+On Thu, Jul 14, 2011 at 10:12:27AM +0530, Ravishankar wrote:
+> @@ -690,7 +690,7 @@ static int das16m1_attach(struct comedi_device *dev,
+>  	if (!request_region(iobase + DAS16M1_82C55, DAS16M1_SIZE2,
+>  			    driver_das16m1.driver_name)) {
+>  		release_region(iobase, DAS16M1_SIZE);
+> -		printk(" I/O port conflict\n");
+> +		printk(KERN_ERR " I/O port conflict\n");
 
-Convered elsewhere. In these tests we are already writing 0 pages so it
-won't make a difference and I'm wary of eliminating writes entirely
-unless kswapd has a way of priotising pages the flusher writes back
-because of the risk of premature OOM kill.
+This is a continuation of the last printk line.
 
-> After all, that's what I keep asking for (so we can get
-> rid of .writepage altogether), and if the numbers don't add up, then
-> I'll shut up about it. ;)
-> 
+>  		return -EIO;
+>  	}
+>  	dev->iobase = iobase;
+> @@ -710,7 +710,7 @@ static int das16m1_attach(struct comedi_device *dev,
+>  	} else if (irq == 0) {
+>  		printk(", no irq\n");
+>  	} else {
+> -		printk(", invalid irq\n"
+> +		printk(KERN_ERR ", invalid irq\n"
 
-Christoph covered this.
+Same.
 
-> .....
-> 
-> > use-once LRU logic). The command line for fs_mark looked something like
-> > 
-> > ./fs_mark  -d  /tmp/fsmark-2676  -D  100  -N  150  -n  150  -L  25  -t  1  -S0  -s  10485760
-> > 
-> > The machine was booted with "nr_cpus=1 mem=512M" as according to Dave
-> > this triggers the worst behaviour.
-> ....
-> > During testing, a number of monitors were running to gather information
-> > from ftrace in particular. This disrupts the results of course because
-> > recording the information generates IO in itself but I'm ignoring
-> > that for the moment so the effect of the patches can be seen.
-> > 
-> > I've posted the raw reports for each filesystem at
-> > 
-> > http://www.csn.ul.ie/~mel/postings/reclaim-20110713/writeback-ext3/sandy/comparison.html
-> > http://www.csn.ul.ie/~mel/postings/reclaim-20110713/writeback-ext4/sandy/comparison.html
-> > http://www.csn.ul.ie/~mel/postings/reclaim-20110713/writeback-btrfs/sandy/comparison.html
-> > http://www.csn.ul.ie/~mel/postings/reclaim-20110713/writeback-xfs/sandy/comparison.html
-> .....
-> > Average files per second is increased by a nice percentage albeit
-> > just within the standard deviation. Consider the type of test this is,
-> > variability was inevitable but will double check without monitoring.
-> > 
-> > The overhead (time spent in non-filesystem-related activities) is
-> > reduced a *lot* and is a lot less variable.
-> 
-> Given that userspace is doing the same amount of work in all test
-> runs, that implies that the userspace process is retaining it's
-> working set hot in the cache over syscalls with this patchset.
-> 
+If you want you can just rewrite the printks completely.  You're not
+just limited to adding the KERN_ prefixes, you could make larger
+changes than that.
 
-It's one possibility. The more likely one is that the fs_marks anonymous
-pages are getting swapped out leading to variability. If IO is less
-seeky as a result of the change, the swap in/outs would be faster.
-
-> > Direct reclaim work is significantly reduced going from 37% of all
-> > pages scanned to 1% with all patches applied. This implies that
-> > processes are getting stalled less.
-> 
-> And that directly implicates page scanning during direct reclaim as
-> the prime contributor to turfing the application's working set out
-> of the CPU cache....
-> 
-
-It's a possibility.
-
-> > Page writes by reclaim is what is motivating this series. It goes
-> > from 14511 pages to 4084 which is a big improvement. We'll see later
-> > if these were anonymous or file-backed pages.
-> 
-> Which were anon pages, so this is a major improvement. However,
-> given that there were no dirty pages writen directly by memory
-> reclaim, perhaps we don't need to do IO at all from here and
-> throttling is all that is needed?  ;)
-> 
-
-I wouldn't bet my life on it due to potential premature OOM kill problem
-if we cannot reclaim pages at all :)
-
-> > Direct reclaim writes were never a problem according to this.
-> 
-> That's true. but we disable direct reclaim for other reasons, namely
-> that writeback from direct reclaim blows the stack.
-> 
-
-Correct. I should have been clearer and said direct reclaim wasn't
-a problem in terms of queueing pages for IO.
-
--- 
-Mel Gorman
-SUSE Labs
+regards,
+dan carpenter
