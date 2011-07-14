@@ -1,117 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736Ab1GNGCm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 02:02:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38602 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752445Ab1GNGCl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 02:02:41 -0400
-Message-ID: <4E1E866E.2050405@redhat.com>
-Date: Thu, 14 Jul 2011 07:02:22 +0100
-From: Ric Wheeler <rwheeler@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: NeilBrown <neilb@suse.de>
-CC: Nico Schottelius <nico-lkml-20110623@schottelius.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@oracle.com>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: Re: Mis-Design of Btrfs?
-References: <20110623105337.GD3753@ethz.ch>	<20110627164637.377314e2@notabene.brown>	<4E0AF091.9030301@redhat.com> <20110714155620.6e9ac2cc@notabene.brown>
-In-Reply-To: <20110714155620.6e9ac2cc@notabene.brown>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752814Ab1GNGFz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 02:05:55 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:35113 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752445Ab1GNGFy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 02:05:54 -0400
+From: Ravishankar <ravishankarkm32@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>,
+        Ravishankar <ravishankarkm32@gmail.com>
+Subject: [PATCH 2/3] Staging: comedi: fix brace coding style issue in daqboard2000.c
+Date: Thu, 14 Jul 2011 11:48:31 +0530
+Message-Id: <1310624311-17875-1-git-send-email-ravishankarkm32@gmail.com>
+X-Mailer: git-send-email 1.6.5.2
+In-Reply-To: <[PATCH 2/3]Staging: comedi: fix brace coding style issue in daqboard2000.c>
+References: <[PATCH 2/3]Staging: comedi: fix brace coding style issue in daqboard2000.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2011 06:56 AM, NeilBrown wrote:
-> On Wed, 29 Jun 2011 10:29:53 +0100 Ric Wheeler<rwheeler@redhat.com>  wrote:
->
->> On 06/27/2011 07:46 AM, NeilBrown wrote:
->>> On Thu, 23 Jun 2011 12:53:37 +0200 Nico Schottelius
->>> <nico-lkml-20110623@schottelius.org>   wrote:
->>>
->>>> Good morning devs,
->>>>
->>>> I'm wondering whether the raid- and volume-management-builtin of btrfs is
->>>> actually a sane idea or not.
->>>> Currently we do have md/device-mapper support for raid
->>>> already, btrfs lacks raid5 support and re-implements stuff that
->>>> has already been done.
->>>>
->>>> I'm aware of the fact that it is very useful to know on which devices
->>>> we are in a filesystem. But I'm wondering, whether it wouldn't be
->>>> smarter to generalise the information exposure through the VFS layer
->>>> instead of replicating functionality:
->>>>
->>>> Physical:   USB-HD   SSD   USB-Flash          | Exposes information to
->>>> Raid:       Raid1, Raid5, Raid10, etc.        | higher levels
->>>> Crypto:     Luks                              |
->>>> LVM:        Groups/Volumes                    |
->>>> FS:         xfs/jfs/reiser/ext3               v
->>>>
->>>> Thus a filesystem like ext3 could be aware that it is running
->>>> on a USB HD, enable -o sync be default or have the filesystem
->>>> to rewrite blocks when running on crypto or optimise for an SSD, ...
->>> I would certainly agree that exposing information to higher levels is a good
->>> idea.  To some extent we do.  But it isn't always as easy as it might sound.
->>> Choosing exactly what information to expose is the challenge.  If you lack
->>> sufficient foresight you might expose something which turns out to be
->>> very specific to just one device, so all those upper levels which make use of
->>> the information find they are really special-casing one specific device,
->>> which isn't a good idea.
->>>
->>>
->>> However it doesn't follow that RAID5 should not be implemented in BTRFS.
->>> The levels that you have drawn are just one perspective.  While that has
->>> value, it may not be universal.
->>> I could easily argue that the LVM layer is a mistake and that filesystems
->>> should provide that functionality directly.
->>> I could almost argue the same for crypto.
->>> RAID1 can make a lot of sense to be tightly integrated with the FS.
->>> RAID5 ... I'm less convinced, but then I have a vested interest there so that
->>> isn't an objective assessment.
->>>
->>> Part of "the way Linux works" is that s/he who writes the code gets to make
->>> the design decisions.   The BTRFS developers might create something truly
->>> awesome, or might end up having to support a RAID feature that they
->>> subsequently think is a bad idea.  But it really is their decision to make.
->>>
->>> NeilBrown
->>>
->> One more thing to add here is that I think that we still have a chance to
->> increase the sharing between btrfs and the MD stack if we can get those changes
->> made. No one likes to duplicate code, but we will need a richer interface
->> between the block and file system layer to help close that gap.
->>
->> Ric
->>
-> I'm certainly open to suggestions and collaboration.  Do you have in mind any
-> particular way to make the interface richer??
->
-> NeilBrown
+From: Ravishankar <ravi.shankar@greenturtles.in>
 
-Hi Neil,
+This is a patch to the daqboard2000.c file that fixes up a brace warning found by the checkpatch.pl tool
 
-I know that Chris has a very specific set of use cases for btrfs and think that 
-Alasdair and others have started to look at what is doable.
+Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
+---
+ drivers/staging/comedi/drivers/daqboard2000.c |   33 ++++++++----------------
+ 1 files changed, 11 insertions(+), 22 deletions(-)
 
-The obvious use case is the following:
-
-If a file system uses checksumming or other data corruption detection bits, it 
-can detect that it got bad data on a write. If that data was protected by RAID, 
-it would like to ask the block layer to try to read from another mirror (for 
-raid1) or try to validate/rebuild from parity.
-
-Today, I think that a retry will basically just give us back a random chance of 
-getting data from a different mirror or the same one that we got data from on 
-the first go.
-
-Chris, Alasdair, was that a good summary of one concern?
-
-Thanks!
-
-Ric
+diff --git a/drivers/staging/comedi/drivers/daqboard2000.c b/drivers/staging/comedi/drivers/daqboard2000.c
+index 6441771..12ccdae 100644
+--- a/drivers/staging/comedi/drivers/daqboard2000.c
++++ b/drivers/staging/comedi/drivers/daqboard2000.c
+@@ -430,16 +430,14 @@ static int daqboard2000_ai_insn_read(struct comedi_device *dev,
+ 		/* Enable reading from the scanlist FIFO */
+ 		fpga->acqControl = DAQBOARD2000_SeqStartScanList;
+ 		for (timeout = 0; timeout < 20; timeout++) {
+-			if (fpga->acqControl & DAQBOARD2000_AcqConfigPipeFull) {
++			if (fpga->acqControl & DAQBOARD2000_AcqConfigPipeFull)
+ 				break;
+-			}
+ 			/* udelay(2); */
+ 		}
+ 		fpga->acqControl = DAQBOARD2000_AdcPacerEnable;
+ 		for (timeout = 0; timeout < 20; timeout++) {
+-			if (fpga->acqControl & DAQBOARD2000_AcqLogicScanning) {
++			if (fpga->acqControl & DAQBOARD2000_AcqLogicScanning)
+ 				break;
+-			}
+ 			/* udelay(2); */
+ 		}
+ 		for (timeout = 0; timeout < 20; timeout++) {
+@@ -465,9 +463,8 @@ static int daqboard2000_ao_insn_read(struct comedi_device *dev,
+ 	int i;
+ 	int chan = CR_CHAN(insn->chanspec);
+ 
+-	for (i = 0; i < insn->n; i++) {
++	for (i = 0; i < insn->n; i++)
+ 		data[i] = devpriv->ao_readback[chan];
+-	}
+ 
+ 	return i;
+ }
+@@ -490,9 +487,8 @@ static int daqboard2000_ao_insn_write(struct comedi_device *dev,
+ 		/* fpga->dacControl = (chan + 2) * 0x0010 | 0x0001; udelay(1000); */
+ 		fpga->dacSetting[chan] = data[i];
+ 		for (timeout = 0; timeout < 20; timeout++) {
+-			if ((fpga->dacControl & ((chan + 1) * 0x0010)) == 0) {
++			if ((fpga->dacControl & ((chan + 1) * 0x0010)) == 0)
+ 				break;
+-			}
+ 			/* udelay(2); */
+ 		}
+ 		devpriv->ao_readback[chan] = data[i];
+@@ -605,9 +601,8 @@ static int initialize_daqboard2000(struct comedi_device *dev,
+ 			for (; i < len; i += 2) {
+ 				int data =
+ 				    (cpld_array[i] << 8) + cpld_array[i + 1];
+-				if (!daqboard2000_writeCPLD(dev, data)) {
++				if (!daqboard2000_writeCPLD(dev, data))
+ 					break;
+-				}
+ 			}
+ 			if (i >= len) {
+ #ifdef DEBUG_EEPROM
+@@ -658,9 +653,8 @@ static void daqboard2000_activateReferenceDacs(struct comedi_device *dev)
+ 	/*  Set the + reference dac value in the FPGA */
+ 	fpga->refDacs = 0x80 | DAQBOARD2000_PosRefDacSelect;
+ 	for (timeout = 0; timeout < 20; timeout++) {
+-		if ((fpga->dacControl & DAQBOARD2000_RefBusy) == 0) {
++		if ((fpga->dacControl & DAQBOARD2000_RefBusy) == 0)
+ 			break;
+-		}
+ 		udelay(2);
+ 	}
+ /*  printk("DAQBOARD2000_PosRefDacSelect %d\n", timeout);*/
+@@ -668,9 +662,8 @@ static void daqboard2000_activateReferenceDacs(struct comedi_device *dev)
+ 	/*  Set the - reference dac value in the FPGA */
+ 	fpga->refDacs = 0x80 | DAQBOARD2000_NegRefDacSelect;
+ 	for (timeout = 0; timeout < 20; timeout++) {
+-		if ((fpga->dacControl & DAQBOARD2000_RefBusy) == 0) {
++		if ((fpga->dacControl & DAQBOARD2000_RefBusy) == 0)
+ 			break;
+-		}
+ 		udelay(2);
+ 	}
+ /*  printk("DAQBOARD2000_NegRefDacSelect %d\n", timeout);*/
+@@ -743,9 +736,8 @@ static int daqboard2000_attach(struct comedi_device *dev,
+ 	slot = it->options[1];
+ 
+ 	result = alloc_private(dev, sizeof(struct daqboard2000_private));
+-	if (result < 0) {
++	if (result < 0)
+ 		return -ENOMEM;
+-	}
+ 	for (card = pci_get_device(0x1616, 0x0409, NULL);
+ 	     card != NULL; card = pci_get_device(0x1616, 0x0409, card)) {
+ 		if (bus || slot) {
+@@ -794,9 +786,8 @@ static int daqboard2000_attach(struct comedi_device *dev,
+ 	    ioremap(pci_resource_start(card, 0), DAQBOARD2000_PLX_SIZE);
+ 	devpriv->daq =
+ 	    ioremap(pci_resource_start(card, 2), DAQBOARD2000_DAQ_SIZE);
+-	if (!devpriv->plx || !devpriv->daq) {
++	if (!devpriv->plx || !devpriv->daq)
+ 		return -ENOMEM;
+-	}
+ 
+ 	result = alloc_subdevices(dev, 3);
+ 	if (result < 0)
+@@ -869,18 +860,16 @@ static int daqboard2000_detach(struct comedi_device *dev)
+ 	if (dev->subdevices)
+ 		subdev_8255_cleanup(dev, dev->subdevices + 2);
+ 
+-	if (dev->irq) {
++	if (dev->irq)
+ 		free_irq(dev->irq, dev);
+-	}
+ 	if (devpriv) {
+ 		if (devpriv->daq)
+ 			iounmap(devpriv->daq);
+ 		if (devpriv->plx)
+ 			iounmap(devpriv->plx);
+ 		if (devpriv->pci_dev) {
+-			if (devpriv->got_regions) {
++			if (devpriv->got_regions)
+ 				comedi_pci_disable(devpriv->pci_dev);
+-			}
+ 			pci_dev_put(devpriv->pci_dev);
+ 		}
+ 	}
+-- 
+1.6.5.2
 
