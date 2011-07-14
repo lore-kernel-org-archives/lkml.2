@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754733Ab1GNMfy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 08:35:54 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:51361 "EHLO
+	id S1754743Ab1GNMg2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 08:36:28 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:51360 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754605Ab1GNMfV (ORCPT
+	with ESMTP id S1754601Ab1GNMfV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 14 Jul 2011 08:35:21 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@suse.de
 Cc: jirislaby@gmail.com, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
-        Alan Cox <alan@linux.intel.com>
-Subject: [PATCH v2 5/6] TTY: remove tty_locked
-Date: Thu, 14 Jul 2011 14:35:14 +0200
-Message-Id: <1310646915-3032-5-git-send-email-jslaby@suse.cz>
+        linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH v2 6/6] TTY: mxser+cyclades remove wait_until_sent debug code
+Date: Thu, 14 Jul 2011 14:35:15 +0200
+Message-Id: <1310646915-3032-6-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1310646915-3032-1-git-send-email-jslaby@suse.cz>
 References: <1310646915-3032-1-git-send-email-jslaby@suse.cz>
@@ -22,134 +21,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We used it really only serial and ami_serial. The rest of the
-callsites were BUG/WARN_ONs to check if BTM is held. Now that we
-pruned tty_locked from both of the real users, we can get rid of
-tty_lock along with __big_tty_mutex_owner.
+It makes the code really ugly. And since it can be enabled only before
+building and only in the source files, it can be barely used by users.
+That said, I've not seen anybody to use it in the past few years.
+
+This crap is copied to some more drivers over the tty tree. Since I'm
+not their maintainer, I'm not sure if I should remove them too?
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Alan Cox <alan@linux.intel.com>
 ---
- drivers/tty/serial/serial_core.c |    4 ----
- drivers/tty/tty_ldisc.c          |    1 -
- drivers/tty/tty_mutex.c          |   12 ------------
- drivers/tty/vt/selection.c       |    4 ++--
- include/linux/tty.h              |    2 --
- 5 files changed, 2 insertions(+), 21 deletions(-)
+ drivers/tty/cyclades.c |   12 +-----------
+ drivers/tty/mxser.c    |   13 +------------
+ 2 files changed, 2 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index 4786232..44c2963 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -1245,8 +1245,6 @@ static void uart_close(struct tty_struct *tty, struct file *filp)
- 	struct uart_port *uport;
- 	unsigned long flags;
+diff --git a/drivers/tty/cyclades.c b/drivers/tty/cyclades.c
+index c0e8f2e..5beef49 100644
+--- a/drivers/tty/cyclades.c
++++ b/drivers/tty/cyclades.c
+@@ -45,7 +45,6 @@
+ #undef	CY_DEBUG_IO
+ #undef	CY_DEBUG_COUNT
+ #undef	CY_DEBUG_DTR
+-#undef	CY_DEBUG_WAIT_UNTIL_SENT
+ #undef	CY_DEBUG_INTERRUPTS
+ #undef	CY_16Y_HACK
+ #undef	CY_ENABLE_MONITORING
+@@ -1678,16 +1677,10 @@ static void cy_wait_until_sent(struct tty_struct *tty, int timeout)
+ 	 */
+ 	if (!timeout || timeout > 2 * info->timeout)
+ 		timeout = 2 * info->timeout;
+-#ifdef CY_DEBUG_WAIT_UNTIL_SENT
+-	printk(KERN_DEBUG "In cy_wait_until_sent(%d) check=%d, jiff=%lu...",
+-		timeout, char_time, jiffies);
+-#endif
++
+ 	card = info->card;
+ 	if (!cy_is_Z(card)) {
+ 		while (cyy_readb(info, CySRER) & CyTxRdy) {
+-#ifdef CY_DEBUG_WAIT_UNTIL_SENT
+-			printk(KERN_DEBUG "Not clean (jiff=%lu)...", jiffies);
+-#endif
+ 			if (msleep_interruptible(jiffies_to_msecs(char_time)))
+ 				break;
+ 			if (timeout && time_after(jiffies, orig_jiffies +
+@@ -1697,9 +1690,6 @@ static void cy_wait_until_sent(struct tty_struct *tty, int timeout)
+ 	}
+ 	/* Run one more char cycle */
+ 	msleep_interruptible(jiffies_to_msecs(char_time * 5));
+-#ifdef CY_DEBUG_WAIT_UNTIL_SENT
+-	printk(KERN_DEBUG "Clean (jiff=%lu)...done\n", jiffies);
+-#endif
+ }
  
--	BUG_ON(!tty_locked());
+ static void cy_flush_buffer(struct tty_struct *tty)
+diff --git a/drivers/tty/mxser.c b/drivers/tty/mxser.c
+index 7fc8c02..8998d52 100644
+--- a/drivers/tty/mxser.c
++++ b/drivers/tty/mxser.c
+@@ -2005,16 +2005,9 @@ static void mxser_wait_until_sent(struct tty_struct *tty, int timeout)
+ 	 */
+ 	if (!timeout || timeout > 2 * info->timeout)
+ 		timeout = 2 * info->timeout;
+-#ifdef SERIAL_DEBUG_RS_WAIT_UNTIL_SENT
+-	printk(KERN_DEBUG "In rs_wait_until_sent(%d) check=%lu...",
+-		timeout, char_time);
+-	printk("jiff=%lu...", jiffies);
+-#endif
++
+ 	spin_lock_irqsave(&info->slock, flags);
+ 	while (!((lsr = inb(info->ioaddr + UART_LSR)) & UART_LSR_TEMT)) {
+-#ifdef SERIAL_DEBUG_RS_WAIT_UNTIL_SENT
+-		printk("lsr = %d (jiff=%lu)...", lsr, jiffies);
+-#endif
+ 		spin_unlock_irqrestore(&info->slock, flags);
+ 		schedule_timeout_interruptible(char_time);
+ 		spin_lock_irqsave(&info->slock, flags);
+@@ -2025,10 +2018,6 @@ static void mxser_wait_until_sent(struct tty_struct *tty, int timeout)
+ 	}
+ 	spin_unlock_irqrestore(&info->slock, flags);
+ 	set_current_state(TASK_RUNNING);
 -
- 	if (!state)
- 		return;
- 
-@@ -1411,7 +1409,6 @@ static void uart_hangup(struct tty_struct *tty)
- 	struct tty_port *port = &state->port;
- 	unsigned long flags;
- 
--	BUG_ON(!tty_locked());
- 	pr_debug("uart_hangup(%d)\n", state->uart_port->line);
- 
- 	mutex_lock(&port->mutex);
-@@ -1498,7 +1495,6 @@ static int uart_open(struct tty_struct *tty, struct file *filp)
- 	struct tty_port *port;
- 	int retval, line = tty->index;
- 
--	BUG_ON(!tty_locked());
- 	pr_debug("uart_open(%d) called\n", line);
- 
- 	/*
-diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
-index ef925d5..512c49f 100644
---- a/drivers/tty/tty_ldisc.c
-+++ b/drivers/tty/tty_ldisc.c
-@@ -450,7 +450,6 @@ static int tty_ldisc_open(struct tty_struct *tty, struct tty_ldisc *ld)
- 	if (ld->ops->open) {
- 		int ret;
-                 /* BTM here locks versus a hangup event */
--		WARN_ON(!tty_locked());
- 		ret = ld->ops->open(tty);
- 		if (ret)
- 			clear_bit(TTY_LDISC_OPEN, &tty->flags);
-diff --git a/drivers/tty/tty_mutex.c b/drivers/tty/tty_mutex.c
-index 3b2bb77..9ff986c 100644
---- a/drivers/tty/tty_mutex.c
-+++ b/drivers/tty/tty_mutex.c
-@@ -15,30 +15,18 @@
-  * Don't use in new code.
-  */
- static DEFINE_MUTEX(big_tty_mutex);
--struct task_struct *__big_tty_mutex_owner;
--EXPORT_SYMBOL_GPL(__big_tty_mutex_owner);
+-#ifdef SERIAL_DEBUG_RS_WAIT_UNTIL_SENT
+-	printk("lsr = %d (jiff=%lu)...done\n", lsr, jiffies);
+-#endif
+ }
  
  /*
-  * Getting the big tty mutex.
-  */
- void __lockfunc tty_lock(void)
- {
--	struct task_struct *task = current;
--
--	WARN_ON(__big_tty_mutex_owner == task);
--
- 	mutex_lock(&big_tty_mutex);
--	__big_tty_mutex_owner = task;
- }
- EXPORT_SYMBOL(tty_lock);
- 
- void __lockfunc tty_unlock(void)
- {
--	struct task_struct *task = current;
--
--	WARN_ON(__big_tty_mutex_owner != task);
--	__big_tty_mutex_owner = NULL;
--
- 	mutex_unlock(&big_tty_mutex);
- }
- EXPORT_SYMBOL(tty_unlock);
-diff --git a/drivers/tty/vt/selection.c b/drivers/tty/vt/selection.c
-index fb864e7..7a0a12a 100644
---- a/drivers/tty/vt/selection.c
-+++ b/drivers/tty/vt/selection.c
-@@ -301,6 +301,8 @@ int set_selection(const struct tiocl_selection __user *sel, struct tty_struct *t
- /* Insert the contents of the selection buffer into the
-  * queue of the tty associated with the current console.
-  * Invoked by ioctl().
-+ *
-+ * Locking: always called with BTM from vt_ioctl
-  */
- int paste_selection(struct tty_struct *tty)
- {
-@@ -310,8 +312,6 @@ int paste_selection(struct tty_struct *tty)
- 	struct  tty_ldisc *ld;
- 	DECLARE_WAITQUEUE(wait, current);
- 
--	/* always called with BTM from vt_ioctl */
--	WARN_ON(!tty_locked());
- 
- 	console_lock();
- 	poke_blanked_console();
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 44bc0c5..6d5eceb 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -600,8 +600,6 @@ extern long vt_compat_ioctl(struct tty_struct *tty,
- /* functions for preparation of BKL removal */
- extern void __lockfunc tty_lock(void) __acquires(tty_lock);
- extern void __lockfunc tty_unlock(void) __releases(tty_lock);
--extern struct task_struct *__big_tty_mutex_owner;
--#define tty_locked()		(current == __big_tty_mutex_owner)
- 
- /*
-  * wait_event_interruptible_tty -- wait for a condition with the tty lock held
 -- 
 1.7.6
 
