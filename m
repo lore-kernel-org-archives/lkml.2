@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754544Ab1GNUc4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 16:32:56 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:58018 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753071Ab1GNUcy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 16:32:54 -0400
+	id S1754708Ab1GNUdm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 16:33:42 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:56557 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753071Ab1GNUdl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 16:33:41 -0400
+Date: Thu, 14 Jul 2011 13:33:36 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dave Jones <davej@redhat.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: INFO: possible circular locking dependency detected
+Message-ID: <20110714203336.GB2317@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110714144946.GA3354@swordfish.minsk.epam.com>
+ <1310661699.2309.13.camel@laptop>
+ <20110714191508.GA3060@swordfish>
+ <20110714193412.GA2317@linux.vnet.ibm.com>
+ <20110714193827.GA11552@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <4E1F5040.50004@zytor.com>
-References: <1310462166-31469-1-git-send-email-tj@kernel.org>
-	<1310462166-31469-14-git-send-email-tj@kernel.org>
-	<4E1F4D2C.3000507@zytor.com>
-	<CAOS58YPhFWEYgB7moPoTj+BKBn6WMHCi5FqZ5eYp+m4bbEN_7A@mail.gmail.com>
-	<4E1F5040.50004@zytor.com>
-Date: Thu, 14 Jul 2011 22:32:53 +0200
-X-Google-Sender-Auth: 1HIY_LxkU0iJqbnRm6efqaWC3AI
-Message-ID: <CAOS58YM38mwmLcErARLc2+7wBrBa5Je3VOM5L28z63L6+ysqpQ@mail.gmail.com>
-Subject: Re: [PATCH 13/13] memblock, x86: Replace memblock_x86_reserve/free_range()
- with generic ones
-From: Tejun Heo <tj@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: mingo@redhat.com, tglx@linutronix.de, benh@kernel.crashing.org,
-        yinghai@kernel.org, davem@davemloft.net, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, x86@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110714193827.GA11552@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Jul 14, 2011 at 03:38:28PM -0400, Dave Jones wrote:
+> On Thu, Jul 14, 2011 at 12:34:12PM -0700, Paul E. McKenney wrote:
+> 
+>  > Thank you -- you were indeed running with CONFIG_PREEMPT and
+>  > CONFIG_RCU_BOOST, which would be the case for the bug that Steven Rostedt
+>  > found.  On reproducing, yes, it could be a bit tough, as the race window
+>  > is rather narrow.  I could probably add delays to force the situation htat
+>  > Steven found, but it would be hard to prove that this is your situation.
+>  > 
+>  > Dave, was your lockdep splat also with CONFIG_PREEMPT and
+>  > CONFIG_RCU_BOOST?
+> 
+> yeah. which might explain why I haven't seen it since. (I usually have it
+> disabled, but turn it on occasionally for a 'lets see what breaks' test)
 
-On Thu, Jul 14, 2011 at 10:23 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 07/14/2011 01:20 PM, Tejun Heo wrote:
-> Sorry I don't follow.  We display resources as [...] ranges, and in
-> particular when there are those kinds of brackets they tend to be
-> inclusive ranges.
->
-> For the internal representation, of course, [ ) ranges or (base, length)
-> are the only sensible options.
+OK, thanks for the info.  For the time being, I will assume that you
+were seeing this same bug.
 
-[ ) ranges: e820, init_memory_mapping, NUMA nodes, Zone PFN ranges, PM
-nosave memory
-
-[ ] ranges: MTRR, NODE_DATA, early_node_map, [mm]io ranges
-
-Hmm... I was only looking at the early boot messages which didn't
-include the io ranges.  It ultimately is a cosmetic issue so my
-opinions aren't very strong but I think we can leave [mm]io ranges
-alone and converge the rest into [ ) ranges sans the brackets?
-
-Thanks.
-
--- 
-tejun
+							Thanx, Paul
