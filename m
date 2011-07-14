@@ -1,64 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754574Ab1GNLwE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 07:52:04 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:33334 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754117Ab1GNLwC (ORCPT
+	id S1754589Ab1GNLw1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 07:52:27 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:27048 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754547Ab1GNLwZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 07:52:02 -0400
-From: Viliam Mateicka <viliam.mateicka@gmail.com>
-To: "David S . Miller " <davem@davemloft.net>, mirq-linux@rere.qmqm.pl,
-        Steve Glendinning <steve.glendinning@smsc.com>,
-        Rabin Vincent <rabin@rab.in>, David Decotigny <decot@google.com>,
-        linux-kernel@vger.kernel.org
-Cc: Viliam Mateicka <viliam.mateicka@gmail.com>
-Subject: [PATCH] smsc95xx: add missing .reset_resume hook and reset card
-Date: Thu, 14 Jul 2011 13:51:46 +0200
-Message-Id: <1310644306-16180-1-git-send-email-viliam.mateicka@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+	Thu, 14 Jul 2011 07:52:25 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArIDAGPVHk55LCkBgWdsb2JhbABTp1EVAQEWJiWIesFZDoVNXwSjRw
+Date: Thu, 14 Jul 2011 21:52:21 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        XFS <xfs@oss.sgi.com>, Christoph Hellwig <hch@infradead.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 2/5] mm: vmscan: Do not writeback filesystem pages in
+ kswapd except in high priority
+Message-ID: <20110714115220.GB21663@dastard>
+References: <1310567487-15367-1-git-send-email-mgorman@suse.de>
+ <1310567487-15367-3-git-send-email-mgorman@suse.de>
+ <20110713233743.GV23038@dastard>
+ <20110714062947.GO7529@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110714062947.GO7529@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the undefined behaviour (random MAC, interface goes down) of smsc95xx driver after resume from suspend.
-Calling smsc95xx_reset() is needed to properly set hw registers of card and bring interface up to defined state.
+On Thu, Jul 14, 2011 at 07:29:47AM +0100, Mel Gorman wrote:
+> On Thu, Jul 14, 2011 at 09:37:43AM +1000, Dave Chinner wrote:
+> > On Wed, Jul 13, 2011 at 03:31:24PM +0100, Mel Gorman wrote:
+> > > It is preferable that no dirty pages are dispatched for cleaning from
+> > > the page reclaim path. At normal priorities, this patch prevents kswapd
+> > > writing pages.
+> > > 
+> > > However, page reclaim does have a requirement that pages be freed
+> > > in a particular zone. If it is failing to make sufficient progress
+> > > (reclaiming < SWAP_CLUSTER_MAX at any priority priority), the priority
+> > > is raised to scan more pages. A priority of DEF_PRIORITY - 3 is
+> > > considered to tbe the point where kswapd is getting into trouble
+> > > reclaiming pages. If this priority is reached, kswapd will dispatch
+> > > pages for writing.
+> > > 
+> > > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > 
+> > Seems reasonable, but btrfs still will ignore this writeback from
+> > kswapd, and it doesn't fall over.
+> 
+> At least there are no reports of it falling over :)
 
-Signed-off-by: Viliam Mateicka <viliam.mateicka@gmail.com>
----
- drivers/net/usb/smsc95xx.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+However you want to spin it.
 
-diff --git a/drivers/net/usb/smsc95xx.c b/drivers/net/usb/smsc95xx.c
-index f74f3ce..5c33be8 100644
---- a/drivers/net/usb/smsc95xx.c
-+++ b/drivers/net/usb/smsc95xx.c
-@@ -1181,6 +1181,17 @@ static struct sk_buff *smsc95xx_tx_fixup(struct usbnet *dev,
- 	return skb;
- }
- 
-+static int smsc95xx_reset_resume(struct usb_interface *intf)
-+{
-+	struct usbnet	*dev = usb_get_intfdata(intf);
-+
-+	smsc95xx_reset(dev);
-+
-+	usbnet_resume(intf);
-+
-+	return 0;
-+}
-+
- static const struct driver_info smsc95xx_info = {
- 	.description	= "smsc95xx USB 2.0 Ethernet",
- 	.bind		= smsc95xx_bind,
-@@ -1295,6 +1306,7 @@ static struct usb_driver smsc95xx_driver = {
- 	.suspend	= usbnet_suspend,
- 	.resume		= usbnet_resume,
- 	.disconnect	= usbnet_disconnect,
-+	.reset_resume	= smsc95xx_reset_resume,
- };
- 
- static int __init smsc95xx_init(void)
+> > Given that data point, I'd like to
+> > see the results when you stop kswapd from doing writeback altogether
+> > as well.
+> > 
+> 
+> The results for this test will be identical because the ftrace results
+> show that kswapd is already writing 0 filesystem pages.
+
+You mean these numbers:
+
+Kswapd reclaim write file async I/O           4483       4286 0          1          0          0
+
+Which shows that kswapd, under this workload has been improved to
+the point that it doesn't need to do IO. Yes, you've addressed the
+one problematic workload, but the numbers do not provide the answers
+to the fundamental question that have been raised during
+discussions. i.e. do we even need IO at all from reclaim?
+
+> Where it makes a difference is when the system is under enough
+> pressure that it is failing to reclaim any memory and is in danger
+> of prematurely triggering the OOM killer. Andrea outlined some of
+> the concerns before at http://lkml.org/lkml/2010/6/15/246
+
+So put the system under more pressure such that with this patch
+series memory reclaim still writes from kswapd. Can you even get it
+to that stage, and if you can, does the system OOM more or less if
+you don't do file IO from reclaim?
+
+> > Can you try removing it altogether and seeing what that does to your
+> > test results? i.e
+> > 
+> > 			if (page_is_file_cache(page)) {
+> > 				inc_zone_page_state(page, NR_VMSCAN_WRITE_SKIP);
+> > 				goto keep_locked;
+> > 			}
+> 
+> It won't do anything, it'll still be writing 0 filesystem-backed pages.
+> 
+> Because of the possibility for the OOM killer triggering prematurely due
+> to the inability of kswapd to write pages, I'd prefer to separate such a
+> change by at least one release so that if there is an increase in OOM
+> reports, it'll be obvious what was the culprit.
+
+I'm not asking for release quality patches or even when such fixes
+would roll out.
+
+What you've shown here is that memory reclaim can be more efficient
+without issuing IO itself under medium memory pressure. Now the
+question is whether it can do so under heavy, sustained, near OOM
+memory pressure?
+
+IOWs, what I want to see is whether the fundamental principle of
+IO-less reclaim can be validated as workable or struck down.  This
+patchset demonstrates that IO-less reclaim is superior for a
+workload that produces medium levels of sustained IO-based memory
+pressure, which leads to the conclusion that the approach has merit
+and needs further investigation.
+
+It's that next step that I'm asking you to test now. What form
+potential changes take or when they are released is irrelevant to me
+at this point, because we still haven't determined if the
+fundamental concept is completely sound or not. If the concept is
+sound I'm quite happy to wait until the implementation is fully
+baked before it gets rolled out....
+
+Cheers,
+
+Dave.
 -- 
-1.7.4.1
-
+Dave Chinner
+david@fromorbit.com
