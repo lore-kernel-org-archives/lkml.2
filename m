@@ -1,53 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753865Ab1GNHhR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 03:37:17 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:36055 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753747Ab1GNHhP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 03:37:15 -0400
+	id S1753901Ab1GNHhs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 03:37:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60530 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753712Ab1GNHhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 03:37:47 -0400
+Date: Thu, 14 Jul 2011 08:37:42 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        XFS <xfs@oss.sgi.com>, Christoph Hellwig <hch@infradead.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [RFC PATCH 0/5] Reduce filesystem writeback from page reclaim
+ (again)
+Message-ID: <20110714073742.GS7529@suse.de>
+References: <1310567487-15367-1-git-send-email-mgorman@suse.de>
+ <20110714003340.GZ23038@dastard>
 MIME-Version: 1.0
-In-Reply-To: <yunhb6rec97.fsf@aiko.keithp.com>
-References: <20110621142133.GA3652@fujiko>
-	<yunhb7jxkz2.fsf@aiko.keithp.com>
-	<20110621155205.GA2488@fujiko>
-	<yunboxrxiz2.fsf@aiko.keithp.com>
-	<20110621164209.GA2155@fujiko>
-	<yun8vsvxdr4.fsf@aiko.keithp.com>
-	<20110621184757.GA2185@fujiko>
-	<yunzklb9fg1.fsf@aiko.keithp.com>
-	<20110705230101.GD2852@fujiko>
-	<CAOJsxLFVSEDEaYH8Dw4jWGo9=wkC8QQWOs4xRR6qcgVM2xCRoA@mail.gmail.com>
-	<yunhb6rec97.fsf@aiko.keithp.com>
-Date: Thu, 14 Jul 2011 10:37:15 +0300
-X-Google-Sender-Auth: UVR_DQSJoC1SMzFagsRknpMijQA
-Message-ID: <CAOJsxLGKtjCpY=X1UrHVY79qLjVCgCT3XC795yh_uEn-0_4D0w@mail.gmail.com>
-Subject: Re: Reverting rc6 by default
-From: Pekka Enberg <penberg@kernel.org>
-To: Keith Packard <keithp@keithp.com>
-Cc: Francesco Allertsen <fallertsen@gmail.com>,
-        dri-devel@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110714003340.GZ23038@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Jul 2011 10:33:06 +0300, Pekka Enberg <penberg@kernel.org> wrote:
->> AFAICT, this problem is still there in 3.0-rc7. Keith, isn't it time
->> to revert commit a51f7a6 ("drm/i915: enable rc6 by default") before
->> 3.0 is out?
+On Thu, Jul 14, 2011 at 10:33:40AM +1000, Dave Chinner wrote:
+> On Wed, Jul 13, 2011 at 03:31:22PM +0100, Mel Gorman wrote:
+> > (Revisting this from a year ago and following on from the thread
+> > "Re: [PATCH 03/27] xfs: use write_cache_pages for writeback
+> > clustering". Posting an prototype to see if anything obvious is
+> > being missed)
+> 
+> Hi Mel,
+> 
+> Thanks for picking this up again. The results are definitely
+> promising, but I'd like to see a comparison against simply not doing
+> IO from memory reclaim at all combined with the enhancements in this
+> patchset.
 
-On Tue, Jul 12, 2011 at 6:42 PM, Keith Packard <keithp@keithp.com> wrote:
-> Yes. I'll put together a few tiny patches including this.
+Convered elsewhere. In these tests we are already writing 0 pages so it
+won't make a difference and I'm wary of eliminating writes entirely
+unless kswapd has a way of priotising pages the flusher writes back
+because of the risk of premature OOM kill.
 
-This if fixed in mainline as of commit
-a94919eaddaa3fede1df8563ce4d761a75374645 ("Revert "drm/i915: enable
-rc6 by default"). Keith, it would have been nice to include a
-'Reported-by' and/or a link to this discussion in the changelog for
-future reference.
+> After all, that's what I keep asking for (so we can get
+> rid of .writepage altogether), and if the numbers don't add up, then
+> I'll shut up about it. ;)
+> 
 
-                        Pekka
+Christoph covered this.
+
+> .....
+> 
+> > use-once LRU logic). The command line for fs_mark looked something like
+> > 
+> > ./fs_mark  -d  /tmp/fsmark-2676  -D  100  -N  150  -n  150  -L  25  -t  1  -S0  -s  10485760
+> > 
+> > The machine was booted with "nr_cpus=1 mem=512M" as according to Dave
+> > this triggers the worst behaviour.
+> ....
+> > During testing, a number of monitors were running to gather information
+> > from ftrace in particular. This disrupts the results of course because
+> > recording the information generates IO in itself but I'm ignoring
+> > that for the moment so the effect of the patches can be seen.
+> > 
+> > I've posted the raw reports for each filesystem at
+> > 
+> > http://www.csn.ul.ie/~mel/postings/reclaim-20110713/writeback-ext3/sandy/comparison.html
+> > http://www.csn.ul.ie/~mel/postings/reclaim-20110713/writeback-ext4/sandy/comparison.html
+> > http://www.csn.ul.ie/~mel/postings/reclaim-20110713/writeback-btrfs/sandy/comparison.html
+> > http://www.csn.ul.ie/~mel/postings/reclaim-20110713/writeback-xfs/sandy/comparison.html
+> .....
+> > Average files per second is increased by a nice percentage albeit
+> > just within the standard deviation. Consider the type of test this is,
+> > variability was inevitable but will double check without monitoring.
+> > 
+> > The overhead (time spent in non-filesystem-related activities) is
+> > reduced a *lot* and is a lot less variable.
+> 
+> Given that userspace is doing the same amount of work in all test
+> runs, that implies that the userspace process is retaining it's
+> working set hot in the cache over syscalls with this patchset.
+> 
+
+It's one possibility. The more likely one is that the fs_marks anonymous
+pages are getting swapped out leading to variability. If IO is less
+seeky as a result of the change, the swap in/outs would be faster.
+
+> > Direct reclaim work is significantly reduced going from 37% of all
+> > pages scanned to 1% with all patches applied. This implies that
+> > processes are getting stalled less.
+> 
+> And that directly implicates page scanning during direct reclaim as
+> the prime contributor to turfing the application's working set out
+> of the CPU cache....
+> 
+
+It's a possibility.
+
+> > Page writes by reclaim is what is motivating this series. It goes
+> > from 14511 pages to 4084 which is a big improvement. We'll see later
+> > if these were anonymous or file-backed pages.
+> 
+> Which were anon pages, so this is a major improvement. However,
+> given that there were no dirty pages writen directly by memory
+> reclaim, perhaps we don't need to do IO at all from here and
+> throttling is all that is needed?  ;)
+> 
+
+I wouldn't bet my life on it due to potential premature OOM kill problem
+if we cannot reclaim pages at all :)
+
+> > Direct reclaim writes were never a problem according to this.
+> 
+> That's true. but we disable direct reclaim for other reasons, namely
+> that writeback from direct reclaim blows the stack.
+> 
+
+Correct. I should have been clearer and said direct reclaim wasn't
+a problem in terms of queueing pages for IO.
+
+-- 
+Mel Gorman
+SUSE Labs
