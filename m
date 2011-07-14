@@ -1,75 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755503Ab1GNSKV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 14:10:21 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:18753 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755400Ab1GNSKU convert rfc822-to-8bit (ORCPT
+	id S1755539Ab1GNS1i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 14:27:38 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:44670 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755517Ab1GNS1h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 14:10:20 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 14 Jul 2011 11:09:48 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        "bones@secretlab.ca" <bones@secretlab.ca>
-CC: "khali@linux-fr.org" <khali@linux-fr.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+	Thu, 14 Jul 2011 14:27:37 -0400
+Date: Thu, 14 Jul 2011 20:27:34 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        "wim@iguana.be" <wim@iguana.be>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Date: Thu, 14 Jul 2011 11:09:47 -0700
-Subject: RE: [PATCH] i2c: tegra: Use engineering names in DT compatible
- property
-Thread-Topic: [PATCH] i2c: tegra: Use engineering names in DT compatible
- property
-Thread-Index: AcxBtVrn7OnWkQNlQ2eukX7gGSlEigAm0GSA
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF049E834A2E@HQMAIL01.nvidia.com>
-References: <1309897306-22953-1-git-send-email-swarren@nvidia.com>
- <20110706053941.GE9978@ponder.secretlab.ca>
- <74CDBE0F657A3D45AFBB94109FB122FF049E834757@HQMAIL01.nvidia.com>
- <CACxGe6tojgLSmHTxzGn3hZZVqiR_z6xbWrazYekm0TwQoWK5eA@mail.gmail.com>
-In-Reply-To: <CACxGe6tojgLSmHTxzGn3hZZVqiR_z6xbWrazYekm0TwQoWK5eA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+        "tim.bird@am.sony.com" <tim.bird@am.sony.com>
+Subject: Re: [RFC 0/6] watchdog drivers converted to the new framework
+Message-ID: <20110714182734.GA31082@pengutronix.de>
+References: <1310588766-16638-1-git-send-email-w.sang@pengutronix.de>
+ <ADE657CA350FB648AAC2C43247A983F001F383E05B65@AUSP01VMBX24.collaborationhost.net>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="KsGdsel6WgEHnImy"
+Content-Disposition: inline
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F001F383E05B65@AUSP01VMBX24.collaborationhost.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant Likely wrote at Wednesday, July 13, 2011 5:34 PM:
-> On Thu, Jul 14, 2011 at 2:59 AM, Stephen Warren <swarren@nvidia.com> wrote:
-...
-> > I don't believe anyone ever sent a patch to Ben to add tegra_i2c_of_match
-> > to the driver; the OF support patch didn't include that part of the code.
-> > As such, Ben can't yet apply this to his tree. (Although I note this patch
-> > is in Grant's /arm and /test trees, which is probably good enough for now).
-> 
-> Hmmm, I thought it had been done.  It certainly is ready to go in.  Do
-> you want to put together a roll-up patch that includes all the
-> required changes and post it again? (although double check linux-next
-> first).
 
-When John Bonesio posted the patch to add DT support to i2c-tegra.c, the first
-version of the patch was missing the match table chunk. A few days later, an
-updated version was posted that added the missing chunk; see:
+--KsGdsel6WgEHnImy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-http://groups.google.com/group/linux.kernel/browse_thread/thread/d2596e8dee819b0f/c8aa04183ea2331e?show_docid=c8aa04183ea2331e
 
-It looks like the first version of the patch has actually been applied to Ben's
-next-i2c branch rather than the updated version.
+> I would also like to convert this driver into a proper platform_driver us=
+ing
+> ioremap'ed addresses instead of the static mappings.  Converting the driv=
+er
+> to the new watchdog framework would make this a bit cleaner.
 
-I guess it's simplest if I just post a patch that adds the missing chunk based
-on the latest next-i2c tree. I'll go do that.
+Try managed devices (devm_* and friends) for an extra cleanup bonus.
 
--- 
-nvpublic
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
+--KsGdsel6WgEHnImy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk4fNRUACgkQD27XaX1/VRv+OQCgyVGGLGwpS7SU/OvHYyr8erBD
+33wAoIFhwtet7vu1IGLDBYfZV+3vCOsh
+=sJqD
+-----END PGP SIGNATURE-----
+
+--KsGdsel6WgEHnImy--
