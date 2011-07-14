@@ -1,97 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab1GNT3t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 15:29:49 -0400
-Received: from arianus.sliepen.org ([92.243.30.131]:36746 "EHLO
-	arianus.sliepen.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752804Ab1GNT3s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 15:29:48 -0400
-Date: Thu, 14 Jul 2011 21:29:45 +0200
-From: Guus Sliepen <Guus.Sliepen@astro.su.se>
-To: Peter Klotz <peter.klotz99@gmail.com>
-Cc: Nick Piggin <npiggin@kernel.dk>, Christoph Hellwig <hch@infradead.org>,
-        Roman Kononov <kernel@kononov.ftml.net>, linux-kernel@vger.kernel.org,
-        xfs@oss.sgi.com
-Subject: Re: BUG: soft lockup - is this XFS problem?
-Message-ID: <20110714192945.GX18364@sliepen.org>
-Mail-Followup-To: Guus Sliepen <Guus.Sliepen@astro.su.se>,
-	Peter Klotz <peter.klotz99@gmail.com>,
-	Nick Piggin <npiggin@kernel.dk>,
-	Christoph Hellwig <hch@infradead.org>,
-	Roman Kononov <kernel@kononov.ftml.net>,
-	linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-References: <20090105064838.GA5209@wotan.suse.de>
- <20110714112324.GM30145@sliepen.org>
- <4E1F2F5D.8060505@gmail.com>
+	id S1754139Ab1GNTdq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 15:33:46 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:54488 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753888Ab1GNTdp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 15:33:45 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [PATCH 0/3] PM / Domains / shmobile fixes
+Date: Thu, 14 Jul 2011 21:34:40 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc7+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Mundt <lethal@linux-sh.org>,
+        linux-sh@vger.kernel.org
+References: <201107132352.59801.rjw@sisk.pl> <CANqRtoTLO=DqehwanGdE+rgxL_ofa5YCJjsx47doHzwZDP4Ocw@mail.gmail.com>
+In-Reply-To: <CANqRtoTLO=DqehwanGdE+rgxL_ofa5YCJjsx47doHzwZDP4Ocw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="L1EIGrW/+75u5Nmw"
-Content-Disposition: inline
-In-Reply-To: <4E1F2F5D.8060505@gmail.com>
-X-oi: oi
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107142134.40432.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---L1EIGrW/+75u5Nmw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Thu, Jul 14, 2011 at 08:03:09PM +0200, Peter Klotz wrote:
-
-> On 07/14/2011 01:23 PM, Guus Sliepen wrote:
->=20
-> >I'm having a problem with a system having an XFS filesystem on RAID lock=
-ing up
-> >fairly consistently when writing large amounts of data to it, with sever=
-al
-> >kernels, including 2.6.38.2 and 2.6.39.3, on both AMD and Intel multi-co=
-re
-> >processors. The kernel always logs this several times:
+On Thursday, July 14, 2011, Magnus Damm wrote:
+> On Thu, Jul 14, 2011 at 6:52 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > Hi,
 > >
-> >BUG: soft lockup - CPU#2 stuck for 67s! [kswapd0:33]
-[...]
-> This Bugzilla entry documents the XFS bug from 2009 in detail
-> including links:
->=20
-> http://oss.sgi.com/bugzilla/show_bug.cgi?id=3D805
+> > The following three patches fix a couple of issues in the code currently
+> > in my pm-domains branch at:
+> >
+> > git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6.git pm-domains
+> >
+> > [1/3] - Use genpd_queue_power_off_work() for queuing up the powering off
+> >        of A4LC (this avoids attempting to queue up a work item while it is
+> >        pending).
+> >
+> > [2/3] - Make the generic PM domains code react to -EBUSY returned from a
+> >        PM domain's .power_down() callback (needed for [3/3]).
+> >
+> > [3/3] - Return -EBUSY from the A4LC's .power_down() callback to indicate that
+> >        the domain hasn't been powered down on purpose and remove the confusing
+> >        (and now redundant) pm_genpd_poweron(A4LC) from pd_power_down_a3rv().
+> 
+> All patches above look great, thanks a lot for your help!
+> 
+> Acked-by: Magnus Damm <damm@opensource.se>
 
-Aha, I did not look at that before.
+Thanks!
 
-> The problem was finally solved by a patch proposed by Linus. This is
-> the reason the original patch developed by Nick never made it into
-> the kernel.
->=20
-> My tests back then showed that both patches fixed the problem.
->=20
-> It seems you have found a test case where just Nick's patch helps.
-
-Yes. I agree with Linus that the root cause should be fixed, not the sympto=
-ms.
-I don't have time to dive in the kernel code myself, but I do have several
-nearly identical machines where I can test things on. I will be happy to te=
-st
-out patches and/or different kernel versions or kernel configurations, and I
-can provide dmesg output and perhaps other information if necessary.
-
---=20
-Met vriendelijke groet / with kind regards,
-Guus Sliepen <Guus.Sliepen@astro.su.se>
-
---L1EIGrW/+75u5Nmw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk4fQ6kACgkQAxLow12M2nt0TgCgluSri0GsBwO/5BQHTWT3n10k
-Li0AoJ+JGWW6TDhFX6CcHnl7cTqLHxrE
-=k+8V
------END PGP SIGNATURE-----
-
---L1EIGrW/+75u5Nmw--
+Rafael
