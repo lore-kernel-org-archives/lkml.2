@@ -1,35 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754749Ab1GNUsu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 16:48:50 -0400
-Received: from mail.lang.hm ([64.81.33.126]:46822 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753328Ab1GNUst (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 16:48:49 -0400
-Date: Thu, 14 Jul 2011 13:48:25 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
+	id S1754862Ab1GNUuy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 16:50:54 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:34885 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753400Ab1GNUuw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 16:50:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <19999.18584.813855.541972@quad.stoffel.home>
+References: <20110623105337.GD3753@ethz.ch> <20110627164637.377314e2@notabene.brown>
+ <4E0AF091.9030301@redhat.com> <20110714155620.6e9ac2cc@notabene.brown>
+ <4E1E866E.2050405@redhat.com> <20110714163836.35a729c1@notabene.brown>
+ <20110714165516.GA15253@agk-dp.fab.redhat.com> <19999.18584.813855.541972@quad.stoffel.home>
+From: Erik Jensen <eriksjunk@rkjnsn.net>
+Date: Thu, 14 Jul 2011 13:50:31 -0700
+X-Google-Sender-Auth: _kIWXyw8Ubh5SmX-J1eox3KFen4
+Message-ID: <CAGh96GGJusudLzNePVVKqOwm8U9=HAFyz43Zm9Mypy2F5-PdSw@mail.gmail.com>
+Subject: Re: Mis-Design of Btrfs?
 To: John Stoffel <john@stoffel.org>
-cc: Alasdair G Kergon <agk@redhat.com>, NeilBrown <neilb@suse.de>,
+Cc: Alasdair G Kergon <agk@redhat.com>, NeilBrown <neilb@suse.de>,
         Ric Wheeler <rwheeler@redhat.com>,
         Nico Schottelius <nico-lkml-20110623@schottelius.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Chris Mason <chris.mason@oracle.com>,
         linux-btrfs <linux-btrfs@vger.kernel.org>
-Subject: Re: Mis-Design of Btrfs?
-In-Reply-To: <19999.18584.813855.541972@quad.stoffel.home>
-Message-ID: <alpine.DEB.2.02.1107141344250.919@asgard.lang.hm>
-References: <20110623105337.GD3753@ethz.ch> <20110627164637.377314e2@notabene.brown> <4E0AF091.9030301@redhat.com> <20110714155620.6e9ac2cc@notabene.brown> <4E1E866E.2050405@redhat.com> <20110714163836.35a729c1@notabene.brown> <20110714165516.GA15253@agk-dp.fab.redhat.com>
- <19999.18584.813855.541972@quad.stoffel.home>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Jul 2011, John Stoffel wrote:
-
+ On Thu, Jul 14, 2011 at 12:50 PM, John Stoffel <john@stoffel.org> wrote:
+>>>>>> "Alasdair" == Alasdair G Kergon <agk@redhat.com> writes:
+>
+> Alasdair> On Thu, Jul 14, 2011 at 04:38:36PM +1000, Neil Brown wrote:
+>>> It might make sense for a device to be able to report what the maximum
+>>> 'N' supported is... that might make stacked raid easier to manage...
+>
 > Alasdair> I'll just say that any solution ought to be stackable.
 >
 > I've been mulling this over too and wondering how you'd handle this,
@@ -58,23 +65,37 @@ On Thu, 14 Jul 2011, John Stoffel wrote:
 >
 > It seems to defeat the purpose of layers if you can go down and find
 > out how many layers there are underneath you....
+>
+> John
 
-this is why just an arbatrary 'method number' rather than a bitmap or 
-something like that should be used.
+A random thought: What if we allow the number to wrap at each level,
+and, each time it wraps, increment the number passed to the next lower
+level.
 
-using your example:
+A zero would propagate down, letting each level do what it wants:
+luks: 0
+raid1: 0
+raid6: 0
+nbd: 0
 
-> So if you have btrfs -> luks -> raid1 -> raid6 -> nbd -> remote disks
+And higher numbers would indicate the method at each level:
 
-raid1 has at least 2 values, raid 6 has at least 2 values, the combination 
-of the two stacked should have at least 4 values.
+For a 1:
+luks: 1
+raid1: 1
+raid6: 1
+nbd: 1
 
-if each layer can query the layer below it to find out how many methods it 
-supports, it can then combine each of the methods it supports with each of 
-the methods supported by the layer below it.
+For a 3:
+luks: 1 (only one possibility, passes three down)
+raid1: 1 (two possibilities, so we wrap back to one and pass two down,
+since we wrapped once)
+raid6: 2 (not wrapped)
+nbd: 1
 
-this will stack to an arbatrary number of layers, only limited by how 
-large the value is allowed to be limiting the combinational permutations 
-of all the layers options.
+When the bottom-most level gets an N that it can't handle, it would
+return EINVAL, which would be propagated up the stack.
 
-David Lang
+This would allow the same algorithm of incrementing N until we receive
+good data or EINVAL, and would exhaust all ways of reading the data at
+all levels.
