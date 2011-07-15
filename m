@@ -1,99 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751521Ab1GOL2v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 07:28:51 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:53588 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750775Ab1GOL2u (ORCPT
+	id S1751151Ab1GOL36 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 07:29:58 -0400
+Received: from casper.infradead.org ([85.118.1.10]:37439 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750801Ab1GOL35 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 07:28:50 -0400
-X-Authority-Analysis: v=1.1 cv=PfPQ8rIoTcZsncbPZjVSZ7K0hy8Zc4hmL68r4VPNpKE= c=1 sm=0 a=VR3q0FbkgwYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=hlDR-tgqZqmPK0ABcpQA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH -tip  00/13]tracing/kprobes: Dynamic events on module
- support
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        yrl.pp-manager.tt@hitachi.com
-In-Reply-To: <20110627072626.6528.41792.stgit@fedora15>
-References: <20110627072626.6528.41792.stgit@fedora15>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 15 Jul 2011 07:28:48 -0400
-Message-ID: <1310729328.27864.61.camel@gandalf.stny.rr.com>
+	Fri, 15 Jul 2011 07:29:57 -0400
+Subject: Re: INFO: possible circular locking dependency detected
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ed Tomlinson <edt@aei.ca>
+Cc: paulmck@linux.vnet.ibm.com, Steven Rostedt <rostedt@goodmis.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <201107150705.46248.edt@aei.ca>
+References: <20110714144946.GA3354@swordfish.minsk.epam.com>
+	 <1310665613.27864.50.camel@gandalf.stny.rr.com>
+	 <20110714191809.GF2349@linux.vnet.ibm.com>  <201107150705.46248.edt@aei.ca>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 15 Jul 2011 13:29:22 +0200
+Message-ID: <1310729362.2586.325.camel@twins>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-06-27 at 16:26 +0900, Masami Hiramatsu wrote:
-> Hi Steven,
-> 
-> Here, I'd like to push updates of dynamic events and perf-probe
-> for supporting dynamic events on module.
-> 
-> The main part of this series is 1-5th patches for kprobes and
-> dynamic event tracer, which allows us to add events on offline
-> kernel module. This means we can put events even on the init
-> functions of the drivers before loading. The requirement of
-> this feature comes from my recent experience of a driver
-> debugging. It had a timing bug in the initialization routine,
-> and it was hard to catch them without tracing the behavior.
-> 
-> I added some perf-probe updates (which including some resent
-> patches), And it's OK to pull only the main part (kprobes and
-> ftrace patches) without perf updates.
-> 
+On Fri, 2011-07-15 at 07:05 -0400, Ed Tomlinson wrote:
+> Jul 14 23:21:18 grover kernel: [  920.659426] -> #1 (rcu_node_level_0){..-...}:
+> Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff8108b7e5>] lock_acquire+0x95/0x140
+> Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff8157808b>] _raw_spin_lock+0x3b/0x50
+> Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff810ba797>] __rcu_read_unlock+0x197/0x2d0
+> Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff8103f2f5>] select_task_rq_fair+0x585/0xa80
+> Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff8104633b>] try_to_wake_up+0x17b/0x360
+> Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff81046575>] wake_up_process+0x15/0x20
+> Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff810528f4>] irq_exit+0xb4/0x100
+> Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff8158197e>] smp_apic_timer_interrupt+0x6e/0x99
+> Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff81580c53>] apic_timer_interrupt+0x13/0x20
+> Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff810ba6e9>] __rcu_read_unlock+0xe9/0x2d0 
+> Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff814c20d4>] sock_def_readable+0x94/0xc0
 
-OK I pulled in everything but patch 10, as that seemed to have an issue
-with the message that David Ahern brought up. I left that one out as it
-really wasn't necessary for the other patches. If you want to just
-resend that one patch with an update, I can pull that one in too.
+Ed, are you perchance running with force_irqthreads?
 
--- Steve
+Paul, what appears to be happening here is that some rcu_read_unlock()
+gets interrupted, possibly before calling rcu_read_unlock_special(),
+possibly not if the interrupt is itself the timer interrupt.
 
-> 
-> Thank you,
-> 
-> ---
-> 
-> Masami Hiramatsu (13):
->       perf probe: Support adding probes on offline kernel modules
->       perf probe: Add probed module in front of function
->       [RESEND]perf probe: Introduce debuginfo to encapsulate dwarf information
->       [RESEND]perf probe: Warn when more than two lines are given
->       [RESEND][CLEANUP]perf-probe: Move dwarf library routines to dwarf-aux.{c,h}
->       [RESEND][CLEANUP]perf probe: Remove redundant dwarf functions
->       [RESEND][CLEANUP]perf probe: Move strtailcmp to string.c
->       [RESEND][CLEANUP]perf probe: Rename DIE_FIND_CB_FOUND to DIE_FIND_CB_END
->       tracing/kprobe: Update symbol reference when loading module
->       tracing/kprobes: Support module init function probing
->       kprobes: Return -ENOENT if probe point doesn't exist
->       [CLEANUP]tracing/kprobes: merge trace probe enable/disable functions
->       [CLEANUP]tracing/kprobes: Rename probe_* to trace_probe_*
-> 
-> 
->  Documentation/trace/kprobetrace.txt     |    9 
->  kernel/kprobes.c                        |   33 +
->  kernel/trace/trace_kprobe.c             |  314 +++++++++----
->  tools/perf/Documentation/perf-probe.txt |    6 
->  tools/perf/Makefile                     |    2 
->  tools/perf/builtin-probe.c              |   14 -
->  tools/perf/util/dwarf-aux.c             |  663 +++++++++++++++++++++++++++
->  tools/perf/util/dwarf-aux.h             |  100 ++++
->  tools/perf/util/probe-event.c           |  165 +++++--
->  tools/perf/util/probe-event.h           |    1 
->  tools/perf/util/probe-finder.c          |  752 ++++---------------------------
->  tools/perf/util/probe-finder.h          |   43 +-
->  tools/perf/util/string.c                |   19 +
->  tools/perf/util/util.h                  |    1 
->  14 files changed, 1304 insertions(+), 818 deletions(-)
->  create mode 100644 tools/perf/util/dwarf-aux.c
->  create mode 100644 tools/perf/util/dwarf-aux.h
-> 
+Supposing ->rcu_read_unlock_special is set before, any wakeup happening
+from an interrupt hitting __rcu_read_unlock():
+
+void __rcu_read_unlock(void)
+{
+        struct task_struct *t = current;
+                
+        barrier();  /* needed if we ever invoke rcu_read_unlock in rcutree.c */
+        --t->rcu_read_lock_nesting;
+        barrier();  /* decrement before load of ->rcu_read_unlock_special */
+        if (t->rcu_read_lock_nesting == 0 &&
+            unlikely(ACCESS_ONCE(t->rcu_read_unlock_special)))
+                rcu_read_unlock_special(t);
+#ifdef CONFIG_PROVE_LOCKING
+        WARN_ON_ONCE(ACCESS_ONCE(t->rcu_read_lock_nesting) < 0);
+#endif /* #ifdef CONFIG_PROVE_LOCKING */
+}
+
+After --t->rcu_read_lock_nesting, but before calling
+rcu_read_unlock_special(), will trigger this lock inversion.
+
+The alternative case, ->rcu_read_unlock_special is not set yet, it can
+be set if the interrupt hitting in that same spot above, is the timer
+interrupt, and the wakeup happens either from the softirq ran from the
+hard IRQ tail, or as I suspect here happens, the wakeup of ksoftirqd/#.
 
 
