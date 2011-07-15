@@ -1,42 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965452Ab1GOKzI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 06:55:08 -0400
-Received: from server655-han.de-nserver.de ([85.158.177.45]:49000 "EHLO
-	server655-han.de-nserver.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964982Ab1GOKzH (ORCPT
+	id S965438Ab1GOLAe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 07:00:34 -0400
+Received: from webmail-out1.one.com ([91.198.169.16]:55296 "EHLO
+	webmail-out1.b-one.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964787Ab1GOLAc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 06:55:07 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Jul 2011 06:55:06 EDT
-Message-ID: <4E201AFB.1020105@profihost.ag>
-Date: Fri, 15 Jul 2011 12:48:27 +0200
-From: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	Fri, 15 Jul 2011 07:00:32 -0400
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: iSCSI initiator
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
-X-User-Auth: Auth by hostmaster@profihost.com through 85.158.179.66
+From: "Eric Andersson" <eric.andersson@unixphere.com>
+To: "Jonathan Cameron" <jic23@cam.ac.uk>
+CC: "Alan Cox" <alan@lxorguk.ukuu.org.uk>, dmitry.torokhov@gmail.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        zhengguang.guo@bosch-sensortec.com, stefan.nilsson@unixphere.com,
+        "Albert Zhang" <xu.zhang@bosch-sensortec.com>
+Subject: Re: [PATCH v3 1/1] input: add driver for Bosch Sensortec's BMA150
+ accelerometer
+Date: Fri, 15 Jul 2011 13:00:30 +0200
+X-Mailer: One.com webmail
+X-Originating-Ip: 213.115.10.98
+In-Reply-To: <4E1FFD3E.7090103@cam.ac.uk>
+References: <20110715082316.5A4792C03C24@bmail01.one.com>
+ <4E1FFD3E.7090103@cam.ac.uk>
+Message-Id: <20110715110030.9462398E4682E@bmail03.one.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+Thanks for your input Jonathan!
 
-i'm trying to create a new iscsi based storage system using the "new" 
-LIO implementation.
+> >>> +		values represent the range given as +/- G.
+> >>> +		Possible values are: 2, 4, 8.
+> >>> +
+> >>> +		Reading: returns the current acceleration range.
+> >>> +
+> >>> +		Writing: sets a new acceleration range.
+> >>
+> >> Same comment as last time - these values are not discoverable so it
+> >> should set the nearest bigger range.
+> > 
+> > And same answer as last time - The values can be retreived by doing
+> > a:
+> > cat range. This whole idea comes from a review comment that Jonathan
+> > Cameron
+> > gave on your bma023 driver [1].
+> Needs documenting. Right now there is no mention of that here.
 
-I'm just wondering which module / software should be used on client side.
+True. I'll add a comment on how to get the valid values in v4.
 
-Until now we're using Open-iSCSI but for example on 
-http://linux-iscsi.org/wiki/Core-iSCSI you read that Open-iSCSI is slow 
-and old and you should use Core-iSCSI but Core-ISCSI is also at least 5 
-years old and doesn't even compile against an actual kernel.
+> > If we could agree on how these values should be represented I will
+> > be glad
+> > to fix it! Dmitry, any preferences?
+> 
+> > 
+> > [1] http://www.spinics.net/lists/linux-input/msg14271.html
+> > 
+> >>> +	for (i = 0, ret = 0; i < ARRAY_SIZE(bw_val); i++)
+> >>> +		ret += sprintf(buf + ret,
+> >>> +			(bw_val[i].reg == bw) ? "[%d] " : "%d ",
+> >>> +			bw_val[i].value);
+> >>
+> >> sysfs nodes should really be single values
+> > 
+> > Once again it's a previous comment from Jonathan [1]. Please specify
+> > how
+> > you want this and I'll fix it.
+> Yes in general to the single value, but this is a pretty common syntax
+> for
+> choosing one of a set.  Got to indicate it somehow and it's either
+> this or
+> a list of available ones in a separate attribute.  There was an LWN
+> article
+> on this a while back that lays out the options very clearly
+> http://lwn.net/Articles/378884/
 
-I'm now totally confused what the the up2date way for iSCSI under Linux is.
+An extra attribute does sound a bit over-kill to me. Would it be acceptable to
+keep it the way it is?
 
-I'm NOT ON list so please CC me.
+> >>> +static const struct i2c_device_id bma150_id[] = {
+> >>> +	{ "bma150", 0 },
+> >>> +	{ "smb380", 0 },
+> >>
+> >> bma023 ?
+> > 
+> > As mentioned earlier bma023 is not an official product name from
+> > Bosch Sensortec. Hence,
+> > there will be no datasheet available or references from Bosch
+> > Sensortec. IMHO it would be
+> > confusing to add it.
+> Just ignore the marketing and add it anyway :)
 
-Greets
-Stefan
+You are probably right. I'll add it.
+
+> >> It also doesn't expose the thresholds or support interrupts which
+> >> the
+> >> one I posted did.
+> > 
+> > We were told by Bosch S that the interrupt is triggered every 333 us
+> > (data ready) which would
+> > pretty much flood the irq handler.
+> Somewhat quick, but maybe still worth having...  Just use a one shot
+> threaded interrupt and it
+> will at least run safely even if it isn't keeping up with all of them.
+> Alan, do you have a device
+> that has frequency control on chip? (very unusual not to see this on
+> an accelerometer).
+
+Ok, I will add irq handling for v4. It will be threshold triggered, meaning I will also add the
+threshold parameters from bma023. If no .irq is given it will use polldev. Does that work for you Alan?
+
+Regarding the sysfs paramters - how about removing them and use platform data only?
+
+Best regards,
+ Eric
+
+http://www.unixphere.com
