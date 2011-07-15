@@ -1,40 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753039Ab1GOQPW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 12:15:22 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51475 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752173Ab1GOQPV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 12:15:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110715063801.GC3166@albatros>
-References: <20110703103925.GA2283@albatros> <CA+55aFwfr-oAa-2L9O_rd9iZDyVr0b+gFQS=_R5PUxmhh3JEsg@mail.gmail.com>
- <20110704201339.GA5645@albatros> <20110705141301.0d3594e0.akpm@linux-foundation.org>
- <20110706163412.GA4743@albatros> <20110715063801.GC3166@albatros>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 15 Jul 2011 09:14:30 -0700
-Message-ID: <CA+55aFxE+zEhDXyXurasBJHjaQEi6Ge1kMQamwdGfiUY8WsshQ@mail.gmail.com>
-Subject: Re: [PATCH v3] proc: fix a race in do_io_accounting()
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, rientjes@google.com, wilsons@start.ca,
-        security@kernel.org, kernel-hardening@lists.openwall.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753258Ab1GOQQW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 12:16:22 -0400
+Received: from mail.perches.com ([173.55.12.10]:4033 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751346Ab1GOQQV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 12:16:21 -0400
+Subject: Re: [PATCH 11/11] dynamic_debug: use a single printk() to emit msgs
+From: Joe Perches <joe@perches.com>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: Jason Baron <jbaron@redhat.com>, gregkh@suse.de, jim.cromie@gmail.com,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <CAO+b5-qgrV=gfZAczxfPbGqVtv4ZD_zZHOn-BMVY9wnJytbrtw@mail.gmail.com>
+References: <cover.1310657068.git.jbaron@redhat.com>
+	 <3667c0a87dd8fd64fdf1b1e8107b130a9b41096e.1310657068.git.jbaron@redhat.com>
+	 <CAO+b5-qA3s92YX2izXzvzt3MOrzRaPcZtDtK0cDte0ZXnRWxhA@mail.gmail.com>
+	 <1310744914.7582.36.camel@Joe-Laptop>
+	 <CAO+b5-p2B74+oVQRGcGxMp5ULZy8ZmF215Lz4qhbU=C4RnG8dw@mail.gmail.com>
+	 <20110715160417.GB2493@redhat.com>
+	 <CAO+b5-qgrV=gfZAczxfPbGqVtv4ZD_zZHOn-BMVY9wnJytbrtw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 15 Jul 2011 09:16:20 -0700
+Message-ID: <1310746580.7582.50.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 14, 2011 at 11:38 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
->
-> Any problems with the patch?
+On Fri, 2011-07-15 at 18:10 +0200, Bart Van Assche wrote:
+> On Fri, Jul 15, 2011 at 6:04 PM, Jason Baron <jbaron@redhat.com> wrote:
+> > yes, but that approach uses 'KERN_CONT'. The point of patch 11/11 is to get rid
+> > of KERN_CONT, which is racy.
+> I know. What I'm trying to explain is that since patch 11/11 modifies
+> dynamic_emit_prefix() such that it writes its output to a buffer there
+> is no longer a need to write into that buffer with a single snprintf()
+> call. Using multiple snprintf() calls is also fine. Hence it is
+> possible to eliminate the two temporary arrays (tid[] and lineno[])
+> from dynamic_emit_prefix() without reintroducing these races.
 
-I still think that the problem you fixed is simply not important, and
-the problem that I actually might care about (the ad-hoc and
-inconsistent rules) remains.
+Ah, just so.  It's so easy to be narrow minded.
 
-So the patch is just a "not important enough to care about" for me,
-and if it comes in through Andrew I'll probably take it, but it's
-merge-window material rather than anything else.
+Jason, you are going to do this yes?
 
-                              Linus
+cheers, Joe
+
