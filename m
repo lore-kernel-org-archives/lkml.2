@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965269Ab1GOIba (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 04:31:30 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49617 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965045Ab1GOIb2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 04:31:28 -0400
-Subject: Re: 2.6.32.21 - uptime related crashes?
-From: Peter Zijlstra <peterz@infradead.org>
-To: john stultz <johnstul@us.ibm.com>
-Cc: Willy Tarreau <w@1wt.eu>, Ingo Molnar <mingo@elte.hu>,
-        "MINOURA Makoto / ?$BL'1: ?$B??" <minoura@valinux.co.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Faidon Liambotis <paravoid@debian.org>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
-        seto.hidetoshi@jp.fujitsu.com,
-        =?ISO-8859-1?Q?Herv=E9?= Commowick <hcommowick@exosec.fr>,
-        Rand@jasper.es
-In-Reply-To: <1310690138.3367.61.camel@work-vm>
-References: <20110428082625.GA23293@pcnci.linuxbox.cz>
-	 <20110428183434.GG30645@1wt.eu> <20110429100200.GB23293@pcnci.linuxbox.cz>
-	 <20110430093605.GA10529@1wt.eu> <20110430173905.GA25641@tty.gr>
-	 <BANLkTi=22QFrJ4vO7-3VuHU=9Cg39bxJ4Q@mail.gmail.com>
-	 <20110705231515.95bc758f.akpm@linux-foundation.org>
-	 <kk5d3hgi9eh.fsf@brer.local.valinux.co.jp>
-	 <1310434819.30337.21.camel@work-vm>  <20110712041938.GO27254@1wt.eu>
-	 <1310690138.3367.61.camel@work-vm>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 15 Jul 2011 10:30:03 +0200
-Message-ID: <1310718603.2586.278.camel@twins>
+	id S965297Ab1GOIcm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 04:32:42 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:63553 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965045Ab1GOIck convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:5:1>);
+	Fri, 15 Jul 2011 04:32:40 -0400
+Message-Id: <4E201743020000780004D8B8@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Fri, 15 Jul 2011 09:32:35 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Olaf Hering" <olaf@aepfle.de>
+Cc: <Ian.Campbell@citrix.com>, <xen-devel@lists.xensource.com>,
+        <konrad.wilk@oracle.com>, <linux-kernel@vger.kernel.org>,
+        <keir@xen.org>
+Subject: Re: [Xen-devel] [PATCH] xen: update machine_to_phys_order on
+	 resume
+References: <4E1DB9C70200007800072DCC@nat28.tlf.novell.com>
+ <20110714102628.GA9157@aepfle.de>
+In-Reply-To: <20110714102628.GA9157@aepfle.de>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-07-14 at 17:35 -0700, john stultz wrote:
+>>> On 14.07.11 at 12:26, Olaf Hering <olaf@aepfle.de> wrote:
+> On Wed, Jul 13, Jan Beulich wrote:
 > 
-> Peter/Ingo: Can you take a look at the above and let me know if you find
-> it too disagreeable? 
+>> >>> Ian Campbell <Ian.Campbell@citrix.com> 07/13/11 11:12 AM >>>
+>> >It's not so much an objection to this patch but this issue seems to have
+>> >been caused by Xen cset 20892:d311d1efc25e which looks to me like a
+>> >subtle ABI breakage for guests. Perhaps we should introduce a feature
+>> >flag to indicate that a guest can cope with the m2p changing size over
+>> >migration like this?
+>> 
+>> Indeed - migration was completely beyond my consideration when
+>> submitting this. A feature flag seems the right way to go to me.
+> 
+> I will prepare a patch for a new feature flag.
 
-I'm not quite sure of the calling conditions of set_cyc2ns_scale(), but
-there's two sites in there that do:
+Let me fold this into the feature handling change patch I'm close
+to submit - without those changes I don't think a guest kernel would
+have a way to actually announce its capability.
 
-+       local_irq_save(flags);
+Jan
 
-+               data = kmalloc(sizeof(*data), GFP_KERNEL);
-
-+       local_irq_restore(flags);
-
-Clearly that's not going to work well at all.
