@@ -1,141 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275Ab1GOQkT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 12:40:19 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55500 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548Ab1GOQkR (ORCPT
+	id S1753444Ab1GOQkv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 12:40:51 -0400
+Received: from mail.tanisys.com ([207.114.241.63]:38873 "EHLO
+	tanisys-ex2.Tanisys.Local" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752295Ab1GOQku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 12:40:17 -0400
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 01/15] gma500: Cursor interface
-To: greg@kroah.com, linux-kernel@vger.kernel.org
-Date: Fri, 15 Jul 2011 17:31:26 +0100
-Message-ID: <20110715163117.28759.14946.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Fri, 15 Jul 2011 12:40:50 -0400
+From: Ayman Elkhashab <aymane@elkhashab.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Tony Breeds <tony@bakeyournoodle.com>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Cc: Ayman El-Khashab <ayman@elkhashab.com>
+Subject: [v2 PATCH 1/1] powerpc/4xx: enable and fix pcie gen1/gen2 on the 460sx
+Date: Fri, 15 Jul 2011 11:40:27 -0500
+Message-Id: <1310748027-31956-1-git-send-email-aymane@elkhashab.com>
+X-Mailer: git-send-email 1.7.4.3
+In-Reply-To: <1310603611-8960-2-git-send-email-ayman@elkhashab.com>
+References: <1310603611-8960-2-git-send-email-ayman@elkhashab.com>
+X-OriginalArrivalTime: 15 Jul 2011 16:40:49.0124 (UTC) FILETIME=[F3D32A40:01CC430D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+From: Ayman El-Khashab <ayman@elkhashab.com>
 
-We need to provide an interface to create additional buffers for the cursor
+Adds a register to the config space for the 460sx.  Changes the vc0
+detect to a pll detect.  maps configuration space to test the link
+status.  changes the setup to enable gen2 devices to operate at gen2
+speeds.  fixes mapping that was not correct for the 460sx.  added
+bit definitions for the OMRxMSKL registers
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+tested on the 460sx eiger and custom board
+
+Signed-off-by: Ayman El-Khashab <ayman@elkhashab.com>
 ---
+ arch/powerpc/sysdev/ppc4xx_pci.c |   89 ++++++++++++++++++++++++++++++-------
+ arch/powerpc/sysdev/ppc4xx_pci.h |   12 +++++
+ 2 files changed, 84 insertions(+), 17 deletions(-)
 
- drivers/staging/gma500/gem.c     |   11 +++++++++++
- drivers/staging/gma500/psb_drm.h |   15 +++++++--------
- drivers/staging/gma500/psb_drv.c |    5 +++++
- drivers/staging/gma500/psb_drv.h |    8 +++++---
- 4 files changed, 28 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/staging/gma500/gem.c b/drivers/staging/gma500/gem.c
-index a63ad9e..68ecd5f 100644
---- a/drivers/staging/gma500/gem.c
-+++ b/drivers/staging/gma500/gem.c
-@@ -250,3 +250,14 @@ fail:
- 		return VM_FAULT_SIGBUS;
- 	}
- }
+diff --git a/arch/powerpc/sysdev/ppc4xx_pci.c b/arch/powerpc/sysdev/ppc4xx_pci.c
+index ad330fe..eeeeb12 100644
+--- a/arch/powerpc/sysdev/ppc4xx_pci.c
++++ b/arch/powerpc/sysdev/ppc4xx_pci.c
+@@ -1092,6 +1092,10 @@ static int __init ppc460sx_pciex_core_init(struct device_node *np)
+ 	mtdcri(SDR0, PESDR1_460SX_HSSSLEW, 0xFFFF0000);
+ 	mtdcri(SDR0, PESDR2_460SX_HSSSLEW, 0xFFFF0000);
+ 
++	/* Set HSS PRBS enabled */
++	mtdcri(SDR0, PESDR0_460SX_HSSCTLSET, 0x00001130);
++	mtdcri(SDR0, PESDR2_460SX_HSSCTLSET, 0x00001130);
 +
-+/*
-+ *	GEM interfaces for our specific client
-+ */
-+int psb_gem_create_ioctl(struct drm_device *dev, void *data,
-+					struct drm_file *file)
+ 	udelay(100);
+ 
+ 	/* De-assert PLLRESET */
+@@ -1132,9 +1136,6 @@ static int ppc460sx_pciex_init_port_hw(struct ppc4xx_pciex_port *port)
+ 		dcri_clrset(SDR0, port->sdr_base + PESDRn_UTLSET2,
+ 				0, 0x01000000);
+ 
+-	/*Gen-1*/
+-	mtdcri(SDR0, port->sdr_base + PESDRn_460SX_RCEI, 0x08000000);
+-
+ 	dcri_clrset(SDR0, port->sdr_base + PESDRn_RCSSET,
+ 			(PESDRx_RCSSET_RSTGU | PESDRx_RCSSET_RSTDL),
+ 			PESDRx_RCSSET_RSTPYN);
+@@ -1148,14 +1149,42 @@ static int ppc460sx_pciex_init_utl(struct ppc4xx_pciex_port *port)
+ {
+ 	/* Max 128 Bytes */
+ 	out_be32 (port->utl_base + PEUTL_PBBSZ,   0x00000000);
++	/* Assert VRB and TXE - per datasheet turn off addr validation */
++	out_be32(port->utl_base + PEUTL_PCTL,  0x80800000);
+ 	return 0;
+ }
+ 
++static void __init ppc460sx_pciex_check_link(struct ppc4xx_pciex_port *port)
 +{
-+	struct drm_psb_gem_create *args = data;
-+	return psb_gem_create(file, dev, args->size, &args->handle);
++	void __iomem *mbase;
++	int attempt = 50;
++
++	port->link = 0;
++
++	mbase = ioremap(port->cfg_space.start + 0x10000000, 0x1000);
++	if (mbase == NULL) {
++		printk(KERN_ERR "%s: Can't map internal config space !",
++			port->node->full_name);
++		goto done;
++	}
++
++	while (attempt && (0 == (in_le32(mbase + PECFG_460SX_DLLSTA)
++			& PECFG_460SX_DLLSTA_LINKUP))) {
++		attempt--;
++		mdelay(10);
++	}
++	if (attempt)
++		port->link = 1;
++done:
++	iounmap(mbase);
++
 +}
 +
-diff --git a/drivers/staging/gma500/psb_drm.h b/drivers/staging/gma500/psb_drm.h
-index 5dcf045..7175117 100644
---- a/drivers/staging/gma500/psb_drm.h
-+++ b/drivers/staging/gma500/psb_drm.h
-@@ -159,18 +159,11 @@ struct drm_psb_register_rw_arg {
-  * corresponding defines where they're
-  * defined elsewhere.
-  */
--#define DRM_PVR_RESERVED1	0x12
--#define DRM_PVR_RESERVED2	0x13
--#define DRM_PVR_RESERVED3	0x14
--#define DRM_PVR_RESERVED4	0x15
--#define DRM_PVR_RESERVED5	0x16
- 
-+#define DRM_PSB_GEM_CREATE	0x10
- #define DRM_PSB_DPST		0x1B
- #define DRM_PSB_GAMMA		0x1C
- #define DRM_PSB_DPST_BL		0x1D
--
--#define DRM_PVR_RESERVED6	0x1E
--
- #define DRM_PSB_GET_PIPE_FROM_CRTC_ID 0x1F
- 
- #define PSB_MODE_OPERATION_MODE_VALID	0x01
-@@ -191,4 +184,10 @@ struct psb_drm_dpu_rect {
- 	int width, height;    
- };  
- 
-+struct drm_psb_gem_create {
-+	__u64 size;
-+	__u32 handle;
-+	__u32 pad;
-+};
-+
- #endif
-diff --git a/drivers/staging/gma500/psb_drv.c b/drivers/staging/gma500/psb_drv.c
-index f626480..a753977 100644
---- a/drivers/staging/gma500/psb_drv.c
-+++ b/drivers/staging/gma500/psb_drv.c
-@@ -121,6 +121,9 @@ MODULE_DEVICE_TABLE(pci, pciidlist);
- #define DRM_IOCTL_PSB_GET_PIPE_FROM_CRTC_ID	\
- 		DRM_IOWR(DRM_PSB_GET_PIPE_FROM_CRTC_ID + DRM_COMMAND_BASE, \
- 			 struct drm_psb_get_pipe_from_crtc_id_arg)
-+#define DRM_IOCTL_PSB_GEM_CREATE	\
-+		DRM_IOWR(DRM_PSB_GEM_CREATE + DRM_COMMAND_BASE, \
-+			 struct drm_psb_gem_create)
- 
- static int psb_sizes_ioctl(struct drm_device *dev, void *data,
- 			   struct drm_file *file_priv);
-@@ -159,6 +162,8 @@ static struct drm_ioctl_desc psb_ioctls[] = {
- 	PSB_IOCTL_DEF(DRM_IOCTL_PSB_DPST_BL, psb_dpst_bl_ioctl, DRM_AUTH),
- 	PSB_IOCTL_DEF(DRM_IOCTL_PSB_GET_PIPE_FROM_CRTC_ID,
- 					psb_intel_get_pipe_from_crtc_id, 0),
-+	PSB_IOCTL_DEF(DRM_IOCTL_PSB_GEM_CREATE, psb_gem_create_ioctl,
-+						DRM_UNLOCKED | DRM_AUTH),
- 
+ static struct ppc4xx_pciex_hwops ppc460sx_pcie_hwops __initdata = {
+ 	.core_init	= ppc460sx_pciex_core_init,
+ 	.port_init_hw	= ppc460sx_pciex_init_port_hw,
+ 	.setup_utl	= ppc460sx_pciex_init_utl,
+-	.check_link	= ppc4xx_pciex_check_link_sdr,
++	.check_link	= ppc460sx_pciex_check_link,
  };
  
-diff --git a/drivers/staging/gma500/psb_drv.h b/drivers/staging/gma500/psb_drv.h
-index 50a4f17..12d13ae 100644
---- a/drivers/staging/gma500/psb_drv.h
-+++ b/drivers/staging/gma500/psb_drv.h
-@@ -782,18 +782,20 @@ extern const struct drm_connector_helper_funcs
- 					psb_intel_lvds_connector_helper_funcs;
- extern const struct drm_connector_funcs psb_intel_lvds_connector_funcs;
+ #endif /* CONFIG_44x */
+@@ -1338,15 +1367,15 @@ static int __init ppc4xx_pciex_port_init(struct ppc4xx_pciex_port *port)
+ 	if (rc != 0)
+ 		return rc;
  
--/* psb_gem.c */
-+/* gem.c */
- extern int psb_gem_init_object(struct drm_gem_object *obj);
- extern void psb_gem_free_object(struct drm_gem_object *obj);
- extern int psb_gem_get_aperture(struct drm_device *dev, void *data,
--				struct drm_file *file);
-+			struct drm_file *file);
- extern int psb_gem_dumb_create(struct drm_file *file, struct drm_device *dev,
- 			struct drm_mode_create_dumb *args);
- extern int psb_gem_dumb_destroy(struct drm_file *file, struct drm_device *dev,
- 			uint32_t handle);
- extern int psb_gem_dumb_map_gtt(struct drm_file *file, struct drm_device *dev,
--			 uint32_t handle, uint64_t *offset);
-+			uint32_t handle, uint64_t *offset);
- extern int psb_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf);
-+extern int psb_gem_create_ioctl(struct drm_device *dev, void *data,
-+			struct drm_file *file);
+-	if (ppc4xx_pciex_hwops->check_link)
+-		ppc4xx_pciex_hwops->check_link(port);
+-
+ 	/*
+ 	 * Initialize mapping: disable all regions and configure
+ 	 * CFG and REG regions based on resources in the device tree
+ 	 */
+ 	ppc4xx_pciex_port_init_mapping(port);
  
- /* psb_device.c */
- extern const struct psb_ops psb_chip_ops;
++	if (ppc4xx_pciex_hwops->check_link)
++		ppc4xx_pciex_hwops->check_link(port);
++
+ 	/*
+ 	 * Map UTL
+ 	 */
+@@ -1360,13 +1389,23 @@ static int __init ppc4xx_pciex_port_init(struct ppc4xx_pciex_port *port)
+ 		ppc4xx_pciex_hwops->setup_utl(port);
+ 
+ 	/*
+-	 * Check for VC0 active and assert RDY.
++	 * Check for VC0 active or PLL Locked and assert RDY.
+ 	 */
+ 	if (port->sdr_base) {
+-		if (port->link &&
+-		    ppc4xx_pciex_wait_on_sdr(port, PESDRn_RCSSTS,
+-					     1 << 16, 1 << 16, 5000)) {
+-			printk(KERN_INFO "PCIE%d: VC0 not active\n", port->index);
++		if (of_device_is_compatible(port->node,
++				"ibm,plb-pciex-460sx")){
++			if (port->link && ppc4xx_pciex_wait_on_sdr(port,
++					PESDRn_RCSSTS,
++					1 << 12, 1 << 12, 5000)) {
++				printk(KERN_INFO "PCIE%d: PLL not locked\n",
++						port->index);
++				port->link = 0;
++			}
++		} else if (port->link &&
++			ppc4xx_pciex_wait_on_sdr(port, PESDRn_RCSSTS,
++				1 << 16, 1 << 16, 5000)) {
++			printk(KERN_INFO "PCIE%d: VC0 not active\n",
++					port->index);
+ 			port->link = 0;
+ 		}
+ 
+@@ -1573,8 +1612,15 @@ static int __init ppc4xx_setup_one_pciex_POM(struct ppc4xx_pciex_port	*port,
+ 		dcr_write(port->dcrs, DCRO_PEGPL_OMR1BAH, lah);
+ 		dcr_write(port->dcrs, DCRO_PEGPL_OMR1BAL, lal);
+ 		dcr_write(port->dcrs, DCRO_PEGPL_OMR1MSKH, 0x7fffffff);
+-		/* Note that 3 here means enabled | single region */
+-		dcr_write(port->dcrs, DCRO_PEGPL_OMR1MSKL, sa | 3);
++		/*Enabled and single region */
++		if (of_device_is_compatible(port->node, "ibm,plb-pciex-460sx"))
++			dcr_write(port->dcrs, DCRO_PEGPL_OMR1MSKL,
++				sa | DCRO_PEGPL_460SX_OMR1MSKL_UOT
++					| DCRO_PEGPL_OMRxMSKL_VAL);
++		else
++			dcr_write(port->dcrs, DCRO_PEGPL_OMR1MSKL,
++				sa | DCRO_PEGPL_OMR1MSKL_UOT
++					| DCRO_PEGPL_OMRxMSKL_VAL);
+ 		break;
+ 	case 1:
+ 		out_le32(mbase + PECFG_POM1LAH, pciah);
+@@ -1582,8 +1628,8 @@ static int __init ppc4xx_setup_one_pciex_POM(struct ppc4xx_pciex_port	*port,
+ 		dcr_write(port->dcrs, DCRO_PEGPL_OMR2BAH, lah);
+ 		dcr_write(port->dcrs, DCRO_PEGPL_OMR2BAL, lal);
+ 		dcr_write(port->dcrs, DCRO_PEGPL_OMR2MSKH, 0x7fffffff);
+-		/* Note that 3 here means enabled | single region */
+-		dcr_write(port->dcrs, DCRO_PEGPL_OMR2MSKL, sa | 3);
++		dcr_write(port->dcrs, DCRO_PEGPL_OMR2MSKL,
++				sa | DCRO_PEGPL_OMRxMSKL_VAL);
+ 		break;
+ 	case 2:
+ 		out_le32(mbase + PECFG_POM2LAH, pciah);
+@@ -1592,7 +1638,9 @@ static int __init ppc4xx_setup_one_pciex_POM(struct ppc4xx_pciex_port	*port,
+ 		dcr_write(port->dcrs, DCRO_PEGPL_OMR3BAL, lal);
+ 		dcr_write(port->dcrs, DCRO_PEGPL_OMR3MSKH, 0x7fffffff);
+ 		/* Note that 3 here means enabled | IO space !!! */
+-		dcr_write(port->dcrs, DCRO_PEGPL_OMR3MSKL, sa | 3);
++		dcr_write(port->dcrs, DCRO_PEGPL_OMR3MSKL,
++				sa | DCRO_PEGPL_OMR3MSKL_IO
++					| DCRO_PEGPL_OMRxMSKL_VAL);
+ 		break;
+ 	}
+ 
+@@ -1693,6 +1741,9 @@ static void __init ppc4xx_configure_pciex_PIMs(struct ppc4xx_pciex_port *port,
+ 		if (res->flags & IORESOURCE_PREFETCH)
+ 			sa |= 0x8;
+ 
++		if (of_device_is_compatible(port->node, "ibm,plb-pciex-460sx"))
++			sa |= PCI_BASE_ADDRESS_MEM_TYPE_64;
++
+ 		out_le32(mbase + PECFG_BAR0HMPA, RES_TO_U32_HIGH(sa));
+ 		out_le32(mbase + PECFG_BAR0LMPA, RES_TO_U32_LOW(sa));
+ 
+@@ -1854,6 +1905,10 @@ static void __init ppc4xx_pciex_port_setup_hose(struct ppc4xx_pciex_port *port)
+ 	}
+ 	out_le16(mbase + 0x202, val);
+ 
++	/* Enable Bus master, memory, and io space */
++	if (of_device_is_compatible(port->node, "ibm,plb-pciex-460sx"))
++		out_le16(mbase + 0x204, 0x7);
++
+ 	if (!port->endpoint) {
+ 		/* Set Class Code to PCI-PCI bridge and Revision Id to 1 */
+ 		out_le32(mbase + 0x208, 0x06040001);
+diff --git a/arch/powerpc/sysdev/ppc4xx_pci.h b/arch/powerpc/sysdev/ppc4xx_pci.h
+index 56d9e5d..61b3659 100644
+--- a/arch/powerpc/sysdev/ppc4xx_pci.h
++++ b/arch/powerpc/sysdev/ppc4xx_pci.h
+@@ -464,6 +464,18 @@
+ #define PECFG_POM2LAL		0x390
+ #define PECFG_POM2LAH		0x394
+ 
++/* 460sx only */
++#define PECFG_460SX_DLLSTA     0x3f8
++
++/* 460sx Bit Mappings */
++#define PECFG_460SX_DLLSTA_LINKUP	 0x00000010
++#define DCRO_PEGPL_460SX_OMR1MSKL_UOT	 0x00000004
++
++/* PEGPL Bit Mappings */
++#define DCRO_PEGPL_OMRxMSKL_VAL	 0x00000001
++#define DCRO_PEGPL_OMR1MSKL_UOT	 0x00000002
++#define DCRO_PEGPL_OMR3MSKL_IO	 0x00000002
++
+ /* SDR Bit Mappings */
+ #define PESDRx_RCSSET_HLDPLB	0x10000000
+ #define PESDRx_RCSSET_RSTGU	0x01000000
+-- 
+1.7.4.3
 
