@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396Ab1GORrr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 13:47:47 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:33258
-	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
+	id S1755202Ab1GORrp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 13:47:45 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:37247
+	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754064Ab1GORaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754068Ab1GORaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Jul 2011 13:30:00 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 049/117] Staging: hv: netvsc: Get rid of an unnecessary print statement in netvsc_probe()
-Date: Fri, 15 Jul 2011 10:46:37 -0700
-Message-Id: <1310752065-27895-49-git-send-email-kys@microsoft.com>
+Subject: [PATCH 050/117] Staging: hv: vmbus: Retry vmbus_post_msg() before giving up
+Date: Fri, 15 Jul 2011 10:46:38 -0700
+Message-Id: <1310752065-27895-50-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1310752065-27895-1-git-send-email-kys@microsoft.com>
 References: <1310752024-27854-1-git-send-email-kys@microsoft.com>
@@ -23,29 +23,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of an unnecessary print statement in netvsc_probe(). Furthermore,
-this fixes a bug since netdev_err is being invoked after the device has
-been freed.
+The function hv_post_msg() can fail because of transient resource
+conditions. It may be useful to retry the operation.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/staging/hv/netvsc_drv.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/hyperv.h   |    1 +
+ drivers/staging/hv/connection.c |   18 +++++++++++++++++-
+ 2 files changed, 18 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
-index 11c03ae..542be65 100644
---- a/drivers/staging/hv/netvsc_drv.c
-+++ b/drivers/staging/hv/netvsc_drv.c
-@@ -357,8 +357,6 @@ static int netvsc_probe(struct hv_device *dev)
- 	if (ret != 0) {
- 		free_netdev(net);
- 		dev_set_drvdata(&dev->device, NULL);
--
--		netdev_err(net, "unable to add netvsc device (ret %d)\n", ret);
- 		return ret;
- 	}
+diff --git a/arch/x86/include/asm/hyperv.h b/arch/x86/include/asm/hyperv.h
+index 5df477a..b80420b 100644
+--- a/arch/x86/include/asm/hyperv.h
++++ b/arch/x86/include/asm/hyperv.h
+@@ -189,5 +189,6 @@
+ #define HV_STATUS_INVALID_HYPERCALL_CODE	2
+ #define HV_STATUS_INVALID_HYPERCALL_INPUT	3
+ #define HV_STATUS_INVALID_ALIGNMENT		4
++#define HV_STATUS_INSUFFICIENT_BUFFERS		19
  
+ #endif
+diff --git a/drivers/staging/hv/connection.c b/drivers/staging/hv/connection.c
+index 0e7efce..a88ad70 100644
+--- a/drivers/staging/hv/connection.c
++++ b/drivers/staging/hv/connection.c
+@@ -25,6 +25,7 @@
+ #include <linux/kernel.h>
+ #include <linux/sched.h>
+ #include <linux/wait.h>
++#include <linux/delay.h>
+ #include <linux/mm.h>
+ #include <linux/slab.h>
+ #include <linux/vmalloc.h>
+@@ -268,10 +269,25 @@ void vmbus_on_event(unsigned long data)
+ int vmbus_post_msg(void *buffer, size_t buflen)
+ {
+ 	union hv_connection_id conn_id;
++	int ret = 0;
++	int retries = 0;
+ 
+ 	conn_id.asu32 = 0;
+ 	conn_id.u.id = VMBUS_MESSAGE_CONNECTION_ID;
+-	return hv_post_message(conn_id, 1, buffer, buflen);
++
++	/*
++	 * hv_post_message() can have transient failures because of
++	 * insufficient resources. Retry the operation a couple of
++	 * times before giving up.
++	 */
++	while (retries < 3) {
++		ret =  hv_post_message(conn_id, 1, buffer, buflen);
++		if (ret != HV_STATUS_INSUFFICIENT_BUFFERS)
++			return ret;
++		retries++;
++		msleep(100);
++	}
++	return ret;
+ }
+ 
+ /*
 -- 
 1.7.4.1
 
