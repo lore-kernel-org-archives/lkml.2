@@ -1,53 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522Ab1GOVhB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 17:37:01 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:48312 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752622Ab1GOVhA (ORCPT
+	id S1753241Ab1GOVhr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 17:37:47 -0400
+Received: from vms173017pub.verizon.net ([206.46.173.17]:44091 "EHLO
+	vms173017pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752051Ab1GOVhq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 17:37:00 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Fri, 15 Jul 2011 23:35:22 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Benny Halevy <bhalevy@panasas.com>, <osd-dev@open-osd.org>,
-        Jonathan Cameron <jic23@cam.ac.uk>,
-        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: RFC: Boiler plate functions for ida / idr allocation?
-Message-ID: <20110715233522.66fd988f@stein>
-In-Reply-To: <4E208302.9020908@panasas.com>
-References: <4E1D6900.6040500@cam.ac.uk>
-	<20110713144119.6e28dc03@stein>
-	<4E208302.9020908@panasas.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 15 Jul 2011 17:37:46 -0400
+Date: Fri, 15 Jul 2011 17:37:15 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, x86@kernel.org,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>
+Subject: [PATCH v3] x86 intel power: Initialize MSR_IA32_ENERGY_PERF_BIAS
+In-reply-to: <alpine.LFD.2.02.1107140051020.18606@x980>
+Message-id: <alpine.LFD.2.02.1107151732480.18606@x980>
+References: <alpine.LFD.2.02.1103301819250.31342@x980>
+ <20110414090854.GB9248@elte.hu> <alpine.LFD.2.02.1104150202310.29365@x980>
+ <20110415101712.GB28007@elte.hu> <alpine.LFD.2.02.1107131640280.9546@x980>
+ <CA+55aFxBkgwBbnqwO7DuizsWiVcULYtPzqr-mYrT6aHmXV0zZw@mail.gmail.com>
+ <4E1E106E.4060408@zytor.com> <alpine.LFD.2.02.1107140051020.18606@x980>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jul 15 Boaz Harrosh wrote:
-> On 07/13/2011 05:41 AM, Stefan Richter wrote:
-> > osd_uld.c::osd_minor_ida is accessed unsafely.
-> > Device probe() and remove() methods are not globally serialized.
-> 
-> Sorry for the delay. Vacation
-> 
-> Thanks Stefan I'll look into it. I remember I thought about
-> it and tested it at the time, but I might be wrong. I'll look
-> into it.
+From: Len Brown <len.brown@intel.com>
 
-Could actually be that there was or even still is some degree of
-serialization by the SCSI core in typical usage.  But I think the
-general case is nowadays fully concurrent.  E.g.
-    echo $name > /sys/bus/scsi/drivers/osd*/{,un}bind
-if issued in parallel for different device names.  Though it is probably
-borderline impossible to actually hit a concurrent osd_minor_ida access on
-purpose.
+Since 2.6.36 (23016bf0d25), Linux prints the existence of "epb" in /proc/cpuinfo,
+Since 2.6.38 (d5532ee7b40), the x86_energy_perf_policy(8) utility has
+been available in-tree to update MSR_IA32_ENERGY_PERF_BIAS.
+
+However, the typical BIOS fails to initialize the MSR, presumably
+because this is handled by high-volume shrink-wrap operating systems...
+
+Linux distros, on the other hand, do not yet invoke x86_energy_perf_policy(8).
+As a result, WSM-EP, SNB, and later hardware from Intel will run in its
+default hardware power-on state (performance), which assumes that users
+care for performance at all costs and not for energy efficiency.
+While that is fine for performance benchmarks, the hardware's intended default
+operating point is "normal" mode...
+
+Initialize the MSR to the "normal" by default during kernel boot.
+
+x86_energy_perf_policy(8) is available to change the default after boot,
+should the user have a different preference.
+
+cc: stable@kernel.org
+Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Len Brown <len.brown@intel.com>
+---
+v3: fix #define typo in header and ',' typo in printk
+shorten printk to fix in 80 columns
+
+ arch/x86/include/asm/msr-index.h |    3 +++
+ arch/x86/kernel/cpu/intel.c      |   18 ++++++++++++++++++
+ 2 files changed, 21 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
+index 43a18c7..55a11e0 100644
+--- a/arch/x86/include/asm/msr-index.h
++++ b/arch/x86/include/asm/msr-index.h
+@@ -250,6 +250,9 @@
+ #define MSR_IA32_TEMPERATURE_TARGET	0x000001a2
+ 
+ #define MSR_IA32_ENERGY_PERF_BIAS	0x000001b0
++#define ENERGY_PERF_BIAS_PERFORMANCE	0
++#define ENERGY_PERF_BIAS_NORMAL		6
++#define ENERGY_PERF_BIAS_POWERSAVE	15
+ 
+ #define MSR_IA32_PACKAGE_THERM_STATUS		0x000001b1
+ 
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index d16c2c5..24cba78 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -448,6 +448,24 @@ static void __cpuinit init_intel(struct cpuinfo_x86 *c)
+ 
+ 	if (cpu_has(c, X86_FEATURE_VMX))
+ 		detect_vmx_virtcap(c);
++
++	/*
++	 * Initialize MSR_IA32_ENERGY_PERF_BIAS if BIOS did not.
++	 * x86_energy_perf_policy(8) is available to change it at run-time
++	 */
++	if (cpu_has(c, X86_FEATURE_EPB)) {
++		u64 epb;
++
++		rdmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
++		if ((epb & 0xF) == ENERGY_PERF_BIAS_PERFORMANCE) {
++			printk_once(KERN_WARNING "ENERGY_PERF_BIAS:"
++				" Set to 'normal', was 'performance'\n"
++				"ENERGY_PERF_BIAS: View and update with"
++				" x86_energy_perf_policy(8)\n");
++			epb = (epb & ~0xF) | ENERGY_PERF_BIAS_NORMAL;
++			wrmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
++		}
++	}
+ }
+ 
+ #ifdef CONFIG_X86_32
 -- 
-Stefan Richter
--=====-==-== -=== -====
-http://arcgraph.de/sr/
+1.7.6.134.gcf13f
+
