@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753585Ab1GOQmd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 12:42:33 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:35817 "EHLO
+	id S1753664Ab1GOQmr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 12:42:47 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:35820 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753441Ab1GOQmc (ORCPT
+	with ESMTP id S1753611Ab1GOQmq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 12:42:32 -0400
+	Fri, 15 Jul 2011 12:42:46 -0400
 From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 06/15] gma500: Make crtc count a property of the device
+Subject: [PATCH 07/15] gma500: fix compile warnings when
+ CONFIG_BACKLIGHT_CLASS_DEVICE is not defined
 To: greg@kroah.com, linux-kernel@vger.kernel.org
-Date: Fri, 15 Jul 2011 17:33:43 +0100
-Message-ID: <20110715163336.28759.2163.stgit@localhost.localdomain>
+Date: Fri, 15 Jul 2011 17:33:57 +0100
+Message-ID: <20110715163353.28759.57635.stgit@localhost.localdomain>
 In-Reply-To: <20110715163117.28759.14946.stgit@localhost.localdomain>
 References: <20110715163117.28759.14946.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
@@ -22,135 +23,181 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+From: Octavian Purdila <octavian.purdila@intel.com>
 
-Octavian Purdila posted a patch that sets num_crtc to 1 for Moorestown, but
-Oaktrail has 2 so we need to split Oaktrail/Moorestown more sensibly, and
-also cope with some other differences later on.
-
+Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
+[Fixed up for other changes, and tidied some existing variable names]
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/staging/gma500/framebuffer.c  |    2 +-
- drivers/staging/gma500/mdfld_device.c |    1 +
- drivers/staging/gma500/mrst_device.c  |   41 +++++++++++++++++++++++++++++++++
- drivers/staging/gma500/psb_device.c   |    1 +
- drivers/staging/gma500/psb_drv.h      |    1 +
- 5 files changed, 45 insertions(+), 1 deletions(-)
+ drivers/staging/gma500/backlight.c        |    2 ++
+ drivers/staging/gma500/mdfld_dsi_output.c |    5 ++---
+ drivers/staging/gma500/psb_drv.c          |   28 +++++++++++++---------------
+ drivers/staging/gma500/psb_intel_lvds.c   |   19 +++++++------------
+ 4 files changed, 24 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/staging/gma500/framebuffer.c b/drivers/staging/gma500/framebuffer.c
-index d890a50..ebfde13 100644
---- a/drivers/staging/gma500/framebuffer.c
-+++ b/drivers/staging/gma500/framebuffer.c
-@@ -578,7 +578,7 @@ int psb_fbdev_init(struct drm_device *dev)
- 	dev_priv->fbdev = fbdev;
- 	fbdev->psb_fb_helper.funcs = &psb_fb_helper_funcs;
+diff --git a/drivers/staging/gma500/backlight.c b/drivers/staging/gma500/backlight.c
+index d3e698b..2079395 100644
+--- a/drivers/staging/gma500/backlight.c
++++ b/drivers/staging/gma500/backlight.c
+@@ -31,6 +31,8 @@ int gma_backlight_init(struct drm_device *dev)
+ #ifdef CONFIG_BACKLIGHT_CLASS_DEVICE
+ 	struct drm_psb_private *dev_priv = dev->dev_private;
+ 	return dev_priv->ops->backlight_init(dev);
++#else
++	return 0;
+ #endif
+ }
  
--	drm_fb_helper_init(dev, &fbdev->psb_fb_helper, 2,
-+	drm_fb_helper_init(dev, &fbdev->psb_fb_helper, dev_priv->ops->crtcs,
- 							INTELFB_CONN_LIMIT);
+diff --git a/drivers/staging/gma500/mdfld_dsi_output.c b/drivers/staging/gma500/mdfld_dsi_output.c
+index e911ef2..ff75ece 100644
+--- a/drivers/staging/gma500/mdfld_dsi_output.c
++++ b/drivers/staging/gma500/mdfld_dsi_output.c
+@@ -467,8 +467,6 @@ static int mdfld_dsi_connector_set_property(struct drm_connector * connector,
+ 											uint64_t value)
+ {
+ 	struct drm_encoder * encoder = connector->encoder;
+-	struct backlight_device * psb_bd;
+-	struct drm_psb_private * dev_priv = encoder->dev->dev_private;
  
- 	drm_fb_helper_single_add_all_connectors(&fbdev->psb_fb_helper);
-diff --git a/drivers/staging/gma500/mdfld_device.c b/drivers/staging/gma500/mdfld_device.c
-index f258b06..f47aeb7 100644
---- a/drivers/staging/gma500/mdfld_device.c
-+++ b/drivers/staging/gma500/mdfld_device.c
-@@ -691,6 +691,7 @@ const struct psb_ops mdfld_chip_ops = {
- 	.name = "Medfield",
- 	.accel_2d = 0,
- 	.pipes = 3,
-+	.crtcs = 2,
- 	.sgx_offset = MRST_SGX_OFFSET,
+ 	if (!strcmp(property->name, "scaling mode") && encoder) {
+ 		struct psb_intel_crtc * psb_crtc = to_psb_intel_crtc(encoder->crtc);
+@@ -515,13 +513,14 @@ static int mdfld_dsi_connector_set_property(struct drm_connector * connector,
+ 		}
+ #ifdef CONFIG_BACKLIGHT_CLASS_DEVICE
+ 	} else if (!strcmp(property->name, "backlight") && encoder) {
++		struct drm_psb_private *dev_priv = encoder->dev->dev_private;
++		struct backlight_device *psb_bd = dev_priv->backlight_device;
+ 		dev_dbg(encoder->dev->dev, "backlight level = %d\n", (int)value);
+ 		if (drm_connector_property_set_value(connector, property, value))
+ 			goto set_prop_error;
+ 		else {
+ 			dev_dbg(encoder->dev->dev,
+ 			                "set brightness to %d", (int)value);
+-			psb_bd = dev_priv->backlight_device;
+ 			if (psb_bd) {
+ 				psb_bd->props.brightness = value;
+ 				backlight_update_status(psb_bd);
+diff --git a/drivers/staging/gma500/psb_drv.c b/drivers/staging/gma500/psb_drv.c
+index f96a619..6b03951ebd 100644
+--- a/drivers/staging/gma500/psb_drv.c
++++ b/drivers/staging/gma500/psb_drv.c
+@@ -536,20 +536,24 @@ static int psb_dc_state_ioctl(struct drm_device *dev, void * data,
+ 	return -EINVAL;
+ }
  
- 	.chip_setup = mid_chip_setup,
-diff --git a/drivers/staging/gma500/mrst_device.c b/drivers/staging/gma500/mrst_device.c
-index 436580d..3d525a0 100644
---- a/drivers/staging/gma500/mrst_device.c
-+++ b/drivers/staging/gma500/mrst_device.c
-@@ -24,9 +24,12 @@
- #include "psb_drv.h"
- #include "psb_reg.h"
- #include "psb_intel_reg.h"
-+#include <asm/mrst.h>
- #include <asm/intel_scu_ipc.h>
- #include "mid_bios.h"
- 
-+static const struct psb_ops oaktrail_chip_ops;
+-static int psb_dpst_bl_ioctl(struct drm_device *dev, void *data,
+-		       struct drm_file *file_priv)
++static inline void get_brightness(struct backlight_device *bd)
+ {
+-	struct drm_psb_private *dev_priv = psb_priv(dev);
+-	uint32_t *arg = data;
+-	struct backlight_device *bd = dev_priv->backlight_device;
+-	dev_priv->blc_adj2 = *arg;
+-
+ #ifdef CONFIG_BACKLIGHT_CLASS_DEVICE
+ 	if (bd) {
+ 		bd->props.brightness = bd->ops->get_brightness(bd);
+ 		backlight_update_status(bd);
+ 	}
+ #endif
++}
 +
- /* IPC message and command defines used to enable/disable mipi panel voltages */
- #define IPC_MSG_PANEL_ON_OFF    0xE9
- #define IPC_CMD_PANEL_ON        1
-@@ -352,10 +355,48 @@ static int mrst_power_up(struct drm_device *dev)
++static int psb_dpst_bl_ioctl(struct drm_device *dev, void *data,
++		       struct drm_file *file_priv)
++{
++	struct drm_psb_private *dev_priv = psb_priv(dev);
++	uint32_t *arg = data;
++
++	dev_priv->blc_adj2 = *arg;
++	get_brightness(dev_priv->backlight_device);
  	return 0;
  }
  
-+static int mrst_chip_setup(struct drm_device *dev)
-+{
-+	struct drm_psb_private *dev_priv = dev->dev_private;
-+
-+#if defined(CONFIG_X86_MRST)
-+	if (mrst_identify_cpu())
-+		return mid_chip_setup(dev);
-+#endif
-+	dev_priv->ops = &oaktrail_chip_ops;
-+	/* Check - may be better to go via BIOS paths ? */
-+	return mid_chip_setup(dev);
-+}
-+	
- const struct psb_ops mrst_chip_ops = {
- 	.name = "Moorestown",
- 	.accel_2d = 1,
- 	.pipes = 1,
-+	.crtcs = 1,
-+	.sgx_offset = MRST_SGX_OFFSET,
-+
-+	.chip_setup = mrst_chip_setup,
-+	.crtc_helper = &mrst_helper_funcs,
-+	.crtc_funcs = &psb_intel_crtc_funcs,
-+
-+	.output_init = mrst_output_init,
-+
-+#ifdef CONFIG_BACKLIGHT_CLASS_DEVICE
-+	.backlight_init = mrst_backlight_init,
-+#endif
-+
-+	.init_pm = mrst_init_pm,
-+	.save_regs = mrst_save_display_registers,
-+	.restore_regs = mrst_restore_display_registers,
-+	.power_down = mrst_power_down,
-+	.power_up = mrst_power_up,
-+};
-+
-+static const struct psb_ops oaktrail_chip_ops = {
-+	.name = "Oaktrail",
-+	.accel_2d = 1,
-+	.pipes = 2,
-+	.crtcs = 2,
- 	.sgx_offset = MRST_SGX_OFFSET,
+@@ -558,15 +562,9 @@ static int psb_adb_ioctl(struct drm_device *dev, void *data,
+ {
+ 	struct drm_psb_private *dev_priv = psb_priv(dev);
+ 	uint32_t *arg = data;
+-	struct backlight_device *bd = dev_priv->backlight_device;
+-	dev_priv->blc_adj1 = *arg;
  
- 	.chip_setup = mid_chip_setup,
-diff --git a/drivers/staging/gma500/psb_device.c b/drivers/staging/gma500/psb_device.c
-index 1e117f0..4659132 100644
---- a/drivers/staging/gma500/psb_device.c
-+++ b/drivers/staging/gma500/psb_device.c
-@@ -331,6 +331,7 @@ const struct psb_ops psb_chip_ops = {
- 	.name = "Poulsbo",
- 	.accel_2d = 1,
- 	.pipes = 2,
-+	.crtcs = 2,
- 	.sgx_offset = PSB_SGX_OFFSET,
- 	.chip_setup = psb_chip_setup,
+-#ifdef CONFIG_BACKLIGHT_CLASS_DEVICE
+-	if (bd) {
+-		bd->props.brightness = bd->ops->get_brightness(bd);
+-		backlight_update_status(bd);
+-	}
+-#endif
++	dev_priv->blc_adj1 = *arg;
++	get_brightness(dev_priv->backlight_device);
+ 	return 0;
+ }
  
-diff --git a/drivers/staging/gma500/psb_drv.h b/drivers/staging/gma500/psb_drv.h
-index daf3ca5..8184c23 100644
---- a/drivers/staging/gma500/psb_drv.h
-+++ b/drivers/staging/gma500/psb_drv.h
-@@ -622,6 +622,7 @@ struct psb_ops {
- 	const char *name;
- 	unsigned int accel_2d:1;
- 	int pipes;		/* Number of output pipes */
-+	int crtcs;		/* Number of CRTCs */
- 	int sgx_offset;		/* Base offset of SGX device */
+diff --git a/drivers/staging/gma500/psb_intel_lvds.c b/drivers/staging/gma500/psb_intel_lvds.c
+index 03132a4..da6f5c8 100644
+--- a/drivers/staging/gma500/psb_intel_lvds.c
++++ b/drivers/staging/gma500/psb_intel_lvds.c
+@@ -467,8 +467,6 @@ static void psb_intel_lvds_mode_set(struct drm_encoder *encoder,
+ 				struct drm_display_mode *mode,
+ 				struct drm_display_mode *adjusted_mode)
+ {
+-	struct psb_intel_mode_device *mode_dev =
+-	    enc_to_psb_intel_output(encoder)->mode_dev;
+ 	struct drm_device *dev = encoder->dev;
+ 	struct drm_psb_private *dev_priv = dev->dev_private;
+ 	u32 pfit_control;
+@@ -571,17 +569,14 @@ int psb_intel_lvds_set_property(struct drm_connector *connector,
+ 				       uint64_t value)
+ {
+ 	struct drm_encoder *encoder = connector->encoder;
+-	struct drm_psb_private *dev_priv;
  
- 	/* Sub functions */
+ 	if (!encoder)
+ 		return -1;
+ 
+-	dev_priv = encoder->dev->dev_private;
+-
+ 	if (!strcmp(property->name, "scaling mode")) {
+ 		struct psb_intel_crtc *crtc =
+ 					to_psb_intel_crtc(encoder->crtc);
+-		uint64_t curValue;
++		uint64_t curval;
+ 
+ 		if (!crtc)
+ 			goto set_prop_error;
+@@ -599,10 +594,10 @@ int psb_intel_lvds_set_property(struct drm_connector *connector,
+ 
+ 		if (drm_connector_property_get_value(connector,
+ 						     property,
+-						     &curValue))
++						     &curval))
+ 			goto set_prop_error;
+ 
+-		if (curValue == value)
++		if (curval == value)
+ 			goto set_prop_done;
+ 
+ 		if (drm_connector_property_set_value(connector,
+@@ -626,8 +621,8 @@ int psb_intel_lvds_set_property(struct drm_connector *connector,
+ 			goto set_prop_error;
+ 		else {
+ #ifdef CONFIG_BACKLIGHT_CLASS_DEVICE
+-			struct backlight_device *bd =
+-					dev_priv->backlight_device;
++			struct drm_psb_private *devp = encoder->dev->dev_private;
++			struct backlight_device *bd = devp->backlight_device;
+ 			if (bd) {
+ 				bd->props.brightness = value;
+ 				backlight_update_status(bd);
+@@ -635,9 +630,9 @@ int psb_intel_lvds_set_property(struct drm_connector *connector,
+ #endif
+ 		}
+ 	} else if (!strcmp(property->name, "DPMS")) {
+-		struct drm_encoder_helper_funcs *pEncHFuncs
++		struct drm_encoder_helper_funcs *hfuncs
+ 						= encoder->helper_private;
+-		pEncHFuncs->dpms(encoder, value);
++		hfuncs->dpms(encoder, value);
+ 	}
+ 
+ set_prop_done:
 
