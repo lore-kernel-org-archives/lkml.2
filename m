@@ -1,167 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319Ab1GOQMf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 12:12:35 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39030 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750968Ab1GOQMd convert rfc822-to-8bit (ORCPT
+	id S1753039Ab1GOQPW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 12:15:22 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51475 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752173Ab1GOQPV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 12:12:33 -0400
-Subject: Re: INFO: possible circular locking dependency detected
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: paulmck@linux.vnet.ibm.com
-Cc: Ed Tomlinson <edt@aei.ca>, Steven Rostedt <rostedt@goodmis.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <20110715155916.GB2327@linux.vnet.ibm.com>
-References: <20110714144946.GA3354@swordfish.minsk.epam.com>
-	 <1310665613.27864.50.camel@gandalf.stny.rr.com>
-	 <20110714191809.GF2349@linux.vnet.ibm.com> <201107150705.46248.edt@aei.ca>
-	 <1310729362.2586.325.camel@twins>
-	 <20110715124206.GA2376@linux.vnet.ibm.com>
-	 <1310735259.2586.330.camel@twins>
-	 <20110715143651.GB2376@linux.vnet.ibm.com>
-	 <1310742267.2586.353.camel@twins>
-	 <20110715155916.GB2327@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 15 Jul 2011 18:11:55 +0200
-Message-ID: <1310746315.2586.370.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 15 Jul 2011 12:15:21 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110715063801.GC3166@albatros>
+References: <20110703103925.GA2283@albatros> <CA+55aFwfr-oAa-2L9O_rd9iZDyVr0b+gFQS=_R5PUxmhh3JEsg@mail.gmail.com>
+ <20110704201339.GA5645@albatros> <20110705141301.0d3594e0.akpm@linux-foundation.org>
+ <20110706163412.GA4743@albatros> <20110715063801.GC3166@albatros>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 15 Jul 2011 09:14:30 -0700
+Message-ID: <CA+55aFxE+zEhDXyXurasBJHjaQEi6Ge1kMQamwdGfiUY8WsshQ@mail.gmail.com>
+Subject: Re: [PATCH v3] proc: fix a race in do_io_accounting()
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, rientjes@google.com, wilsons@start.ca,
+        security@kernel.org, kernel-hardening@lists.openwall.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-15 at 08:59 -0700, Paul E. McKenney wrote:
+On Thu, Jul 14, 2011 at 11:38 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
+>
+> Any problems with the patch?
 
-> > Because we're in irq_exit(), after decrementing preempt_count, so
-> > in_irq() returns false.
-> 
-> Can we delay decrementing preempt_count so that RCU has some chance
-> of actually working?
+I still think that the problem you fixed is simply not important, and
+the problem that I actually might care about (the ad-hoc and
+inconsistent rules) remains.
 
-No, softirqs must be ran with in_irq() being false.
+So the patch is just a "not important enough to care about" for me,
+and if it comes in through Andrew I'll probably take it, but it's
+merge-window material rather than anything else.
 
-> > No, the *BANG* being that we end up calling rcu_read_unlock_special()
-> > while holding scheduler locks, which is BAD(tm).
-> 
-> Well, it certainly is BAD(tm) if you guys continue to deprive
-> rcu_read_unlock_special() of the means of determining whether it is
-> being invoked from hardware irq handler context.
-
-hard irq handler isn't really the problem here, its the nested softirq
-code that is.
-
-> > >  (Which I believe, perhaps
-> > > incorrectly, to be prevented by the fact that all modifications to
-> > > ->rcu_read_unlock_special are carried out with irqs disabled on the
-> > > corresponding CPU, at least given no RCU_BOOST.)  The check for in_irq()
-> > > should prevent the from-irq rcu_read_unlock_special() from attempting
-> > > to acquire any locks.
-> > 
-> > Right, so in_irq() simply checks a few bits in preempt_count, which we
-> > just cleared due to being in irq_exit().
-> 
-> Right.  So how about delaying clearing those bits until after you get
-> done messing with the scheduler from hardware irq handler context?
-
-Can't do.
-
-> > But in_irq() isn't sufficient for RCU usage after the hardirq ends, see
-> > irq_exit(). Also there's all of softirq to consider, that too can run
-> > and not get caught by in_irq().
-> 
-> Change the rules without adjusting the callers can in fact result in some
-> breakage.  ;-)
-
-There's no changing the rules here, this is how its worked for a very
-long time indeed. Softirqs can run from the hardirq tail.
-
-> The bit about local_irq_save() and local_irq_restore() invoking the
-> scheduler is rather surprising -- is there a raw_ version that avoids
-> this?
-
-They don't, they might for -rt, but that's a different story. But
-looking at the latest version I have its only local_irq_save_rt() and
-friends that do that.
-
-> > > 3.	It is possible that the task is preempted after the
-> > > 	--rcu_read_lock_nesting, in which case the task won't be queued.
-> > > 	Of course the task might already be queued if there was an
-> > > 	earlier preemption during this same RCU read-side critical
-> > > 	section, in which case #2 applies.
-> > > 
-> > > 	In other words, a preemption in __rcu_read_unlock() after the
-> > > 	--rcu_read_lock_nesting has no effect on RCU state: either the
-> > > 	task was already marked RCU_READ_UNLOCK_BLOCKED, or it wasn't.
-> > > 	Either way, rcu_note_context_switch() does not see this task as
-> > > 	being in an RCU read-side critical section.
-> > > 
-> > > So what am I missing here?
-> > 
-> >  $task			IRQ		SoftIRQ
-> > 
-> >  rcu_read_lock()
-> > 
-> >  /* do stuff */
-> > 
-> >  <preempt> |= UNLOCK_BLOCKED
-> > 
-> >  rcu_read_unlock()
-> >    --t->rcu_read_lock_nesting
-> > 
-> > 			irq_enter();
-> > 			/* do stuff, don't use RCU */
-> > 			irq_exit();
-> > 			  sub_preempt_count(IRQ_EXIT_OFFSET);
-> > 			  invoke_softirq()
-> 
-> Why can't we exchange the order of the above two so that RCU correctly
-> avoids messing with the scheduler if called from hardware interrupt
-> context?
-
-Because softirqs != hardirq ? This has been so like forever, can't go
-change the semantics of this without risking tons of borkage. Every time
-we try to change softirq semantics (we tried with -rt, because softirqs
-are a massive pain) everything goes tits up fast.
-
-> > 
-> > 					ttwu();
-> > 					  spin_lock_irq(&pi->lock)
-> > 					  rcu_read_lock();
-> > 					  /* do stuff */
-> > 					  rcu_read_unlock();
-> > 					    rcu_read_unlock_special()
-> > 					      rcu_report_exp_rnp()
-> > 					        ttwu()
-> > 					          spin_lock_irq(&pi->lock) /* deadlock */
-> > 					      
-> > 
-> >    rcu_read_unlock_special(t);
-> > 
-> > Ed can simply trigger this 'easy' because invoke_softirq() immediately
-> > does a ttwu() of ksoftirqd/# instead of doing the in-place softirq stuff
-> > first, but even without that the above happens.
-> 
-> An easily reproduced bug is certainly a nice change of pace...
-> 
-> > Something like the below _might_ fix it..
-> 
-> Maybe, but how does tglx make PREEMPT_RT work in this case?  The problem
-> is that PREEMPT_RT allows ksoftirqd to be preempted, and thus allows it
-> to be RCU priority boosted.
-
-RT is mostly easier since it doesn't nest as many contexts, softirqs for
-example always run in task context, and the only way to run them in a
-random tasks' context is through local_bh_enable() and since there's no
-local_bh_enable() call in the middle of __rcu_read_unlock() you're
-pretty good there.
-
-I know tglx has some softirq changes he hasn't yet shared with me, but
-if the patch I send earlier fixes the problem for mainline, I'm fairly
-confident I can cook one up for him as well.
-
-
+                              Linus
