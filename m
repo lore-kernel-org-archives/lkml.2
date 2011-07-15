@@ -1,103 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755199Ab1GOTEi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 15:04:38 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:57563 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753980Ab1GOTEh (ORCPT
+	id S1755127Ab1GOTMz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 15:12:55 -0400
+Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.121]:50163 "EHLO
+	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752251Ab1GOTMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 15:04:37 -0400
-Message-ID: <4E208F59.7070003@tech-chat.de>
-Date: Fri, 15 Jul 2011 21:04:57 +0200
-From: Andreas Weber <spam@tech-chat.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110626 Icedove/3.1.11
+	Fri, 15 Jul 2011 15:12:53 -0400
+Authentication-Results: cdptpa-omtalb.mail.rr.com smtp.user=psusi@cfl.rr.com; auth=pass (PLAIN)
+X-Authority-Analysis: v=1.1 cv=8mDY8c80ZOa76EOwICuS+E2YRQjxDgO9xqUnRMONc7w= c=1 sm=0 a=aAvtD6xXQTUA:10 a=p8NdAnTFcCEA:10 a=pg4Dpxby4z7sZisWVyJ9NA==:17 a=9-Jv4ekX_Sh413Ua8wQA:9 a=wPNLvfGTeEIA:10 a=DfNHnWVPAAAA:8 a=danhDmx_AAAA:8 a=imx6bq5wevw5aM2f5rEA:9 a=X2OimeIR18glAeU5rKoA:7 a=lBRciGGoxdUA:10 a=pg4Dpxby4z7sZisWVyJ9NA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.242.190.170
+Message-ID: <4E209132.7000704@cfl.rr.com>
+Date: Fri, 15 Jul 2011 15:12:50 -0400
+From: Phillip Susi <psusi@cfl.rr.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.18) Gecko/20110616 Thunderbird/3.1.11
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: spam@tech-chat.de
-Subject: sporadic oops and freeze when booting 2.6.39-2-amd64 on debian wheezy
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:z7sr3mFr9lq//mH0C/601kLPOfrB4iiOGqUbt0+IWvT
- mQ0PpjhI/kDCIGEI9IhI+81GQF4A9G8KyfMI6JdQTfSpWehsX4
- k9H4Yjdyulvzlzl7OI3TxksOzXlTpFKSSRpwsU5CGwrdLUFamw
- VCX1TMd9JcXUA1hWhzXErzW95LZwVyNVVEC9tb1WPC1wPySLyA
- H6nLk35FZztUM6x7OXNrpJdxXZTub9AoFlI8GzabDA=
+To: Ayan George <ayan@ayan.net>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: loop device auto release patch
+References: <4E1F3BE0.8040506@ayan.net>
+In-Reply-To: <4E1F3BE0.8040506@ayan.net>
+Content-Type: multipart/mixed;
+ boundary="------------080706050103020705080803"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear kernel mailing list,
+This is a multi-part message in MIME format.
+--------------080706050103020705080803
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-the boot process freezes sometimes(average once from 15 boots) since
-2.6.39-2-amd64.
+On 7/14/2011 2:56 PM, Ayan George wrote:
+>
+> Hi Philip,
+>
+> This is the patch I'd like to submit for the loop device. I'm in the
+> process of testing it now. I'm pretty confident it will work.
 
-I have uploaded a kernel.log when the boot process freezes:
-http://www.tech-chat.de/files/kern_failed.log
-
-After waiting 15min I made a hard reset and this time the computer
-booted successfully:
-http://www.tech-chat.de/files/kern_working.log
-
-I have cropped the date and made a diff with
-awk 'BEGIN{FS="]"}{$1="";print $0}' kern_failed.log >
-kern_failed_without_time.log
-awk 'BEGIN{FS="]"}{$1="";print $0}' kern_working.log >
-kern_working_without_time.log
-diff -uN kern_failed_without_time.log kern_working_without_time.log>
-diff.log
-
-http://www.tech-chat.de/files/diff.log
-
-Here some interessting parts from the diff.log
-...
-  BIOS-e820: 00000000cfea8000 - 00000000cfed0000 (ACPI NVS)
-  BIOS-e820: 00000000cfed0000 - 00000000cff00000 (reserved)
-  BIOS-e820: 00000000ffe00000 - 0000000100000000 (reserved)
-- BIOS-e820: 0000000100000000 - 00000001a0000000 (usable)
-+ BIOS-e820: 0000000100000000 - 0000000220000000 (usable)
-...
--last_pfn = 0x1a0000 max_arch_pfn = 0x400000000
-+last_pfn = 0x220000 max_arch_pfn = 0x400000000
-...
--TOM2: 00000001b0000000 aka 6912M
-+TOM2: 0000000230000000 aka 8960M
-...
--  Normal zone: 8960 pages used for memmap
--  Normal zone: 646400 pages, LIFO batch:31
-+  Normal zone: 16128 pages used for memmap
-+  Normal zone: 1163520 pages, LIFO batch:31
-...
--  IP: [<ffffffff81042b3d>  load_balance+0x5e4/0x688
--  PGD 1605067 PUD 0
--  Oops: 0000 [#1  SMP
--  last sysfs file: /sys/module/crc_itu_t/initstate
--  CPU 3
---
--  IP: [<ffffffff81042b3d>  load_balance+0x5e4/0x688
--  PGD 1605067 PUD 0
--  Oops: 0000 [#2  SMP
--  last sysfs file: /sys/module/nfsd/initstate
--  CPU 0
-...
-
-I think the BIOS reports sometimes bogus data?
-The motherboard is a Asus M4A89GTD-PRO/USB3 with BIOS 2101
-(http://www.asus.com/Motherboards/AMD_AM3/M4A89GTD_PROUSB3/#download)
+Looks good to me.  Forwarding to Andrew Morton.  Andrew, please 
+disregard my previous patch as I think this one is better.
 
 
-This all leads finally to:
+--------------080706050103020705080803
+Content-Type: text/x-patch;
+ name="0001-Always-invalidate-cleared-loop-block-devices.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-Always-invalidate-cleared-loop-block-devices.patch"
 
-Jul 13 17:02:01 PhenomBabe kernel: [   13.137385] BUG: unable to handle
-kernel paging request at ffffffff0a646ecf
-Jul 13 17:02:01 PhenomBabe kernel: [   13.141181] IP:
-[<ffffffff81042b3d>] load_balance+0x5e4/0x688
-Jul 13 17:02:01 PhenomBabe kernel: [   13.141181] PGD 1605067 PUD 0
-Jul 13 17:02:01 PhenomBabe kernel: [   13.141181] Oops: 0000 [#2] SMP
+>From c783ba6a26eff42d3cb0061e4fcb8ee8a16b3e67 Mon Sep 17 00:00:00 2001
+From: Ayan George <ayan.george@canonical.com>
+Date: Thu, 14 Jul 2011 14:16:58 -0400
+Subject: [PATCH] Always invalidate cleared loop block devices
 
-Any hints on that or may I provide further data?
+The API for loop_clr_fd() is confusing -- the second argument (bdev)
+isn't necessesary as struct loop_device contains a pointer to the block
+device it is assocated with.
 
-Please add me to CC if possible.
+There is a cases where loop_clr_fd() is called with NULL for bdev
+which prevents the block device from ever being invalidated with
+invalidate_bdev() and prevents a uevent from being emitted.
 
-Thank you very much,
-best regards Andy
+This patch removes the bdev argument from loop_clr_fd(), unconditionally
+invalidates lo->lo_device when cleared, and unconditionally emits a
+uevent for removed loops.
+
+Launchpad bug for reference:
+
+BugLink: https://bugs.launchpad.net/bugs/548546
+
+Signed-off-by: Ayan George <ayan.george@canonical.com>
+---
+ drivers/block/loop.c |   24 ++++++++++++++----------
+ 1 files changed, 14 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index 76c8da7..a40e12b 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -987,11 +987,13 @@ loop_init_xfer(struct loop_device *lo, struct loop_func_table *xfer,
+ 	return err;
+ }
+ 
+-static int loop_clr_fd(struct loop_device *lo, struct block_device *bdev)
++static int loop_clr_fd(struct loop_device *lo)
+ {
+ 	struct file *filp = lo->lo_backing_file;
+ 	gfp_t gfp = lo->old_gfp_mask;
+ 
++	struct block_device *bdev = lo->lo_device;
++
+ 	if (lo->lo_state != Lo_bound)
+ 		return -ENXIO;
+ 
+@@ -1022,15 +1024,17 @@ static int loop_clr_fd(struct loop_device *lo, struct block_device *bdev)
+ 	memset(lo->lo_encrypt_key, 0, LO_KEY_SIZE);
+ 	memset(lo->lo_crypt_name, 0, LO_NAME_SIZE);
+ 	memset(lo->lo_file_name, 0, LO_NAME_SIZE);
+-	if (bdev)
+-		invalidate_bdev(bdev);
++
++	invalidate_bdev(bdev);
++
+ 	set_capacity(lo->lo_disk, 0);
+ 	loop_sysfs_exit(lo);
+-	if (bdev) {
+-		bd_set_size(bdev, 0);
+-		/* let user-space know about this change */
+-		kobject_uevent(&disk_to_dev(bdev->bd_disk)->kobj, KOBJ_CHANGE);
+-	}
++
++	bd_set_size(bdev, 0);
++
++	/* let user-space know about this change */
++	kobject_uevent(&disk_to_dev(bdev->bd_disk)->kobj, KOBJ_CHANGE);
++
+ 	mapping_set_gfp_mask(filp->f_mapping, gfp);
+ 	lo->lo_state = Lo_unbound;
+ 	/* This is safe: open() is still holding a reference. */
+@@ -1298,7 +1302,7 @@ static int lo_ioctl(struct block_device *bdev, fmode_t mode,
+ 		break;
+ 	case LOOP_CLR_FD:
+ 		/* loop_clr_fd would have unlocked lo_ctl_mutex on success */
+-		err = loop_clr_fd(lo, bdev);
++		err = loop_clr_fd(lo);
+ 		if (!err)
+ 			goto out_unlocked;
+ 		break;
+@@ -1509,7 +1513,7 @@ static int lo_release(struct gendisk *disk, fmode_t mode)
+ 		 * In autoclear mode, stop the loop thread
+ 		 * and remove configuration after last close.
+ 		 */
+-		err = loop_clr_fd(lo, NULL);
++		err = loop_clr_fd(lo);
+ 		if (!err)
+ 			goto out_unlocked;
+ 	} else {
+-- 
+1.7.4.1
+
+
+--------------080706050103020705080803--
