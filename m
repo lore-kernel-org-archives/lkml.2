@@ -1,74 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945Ab1GOP0x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 11:26:53 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:44432 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751216Ab1GOP0v (ORCPT
+	id S1753032Ab1GOP10 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 11:27:26 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:51111 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752174Ab1GOP1Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 11:26:51 -0400
-Date: Fri, 15 Jul 2011 19:26:41 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Stephen Smalley <sds@tycho.nsa.gov>
-Cc: NeilBrown <neilb@suse.de>, kernel-hardening@lists.openwall.com,
-        Solar Designer <solar@openwall.com>, James Morris <jmorris@namei.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Eric Paris <eparis@redhat.com>, Willy Tarreau <w@1wt.eu>,
-        Sebastian Krahmer <krahmer@suse.de>
-Subject: Re: [kernel-hardening] Re: [PATCH] move RLIMIT_NPROC check from
- set_user() to do_execve_common()
-Message-ID: <20110715152641.GA6286@albatros>
-References: <20110713170657.59dae548@notabene.brown>
- <CA+55aFwQKqvNvzTMYXVW_yKkFtNsyv8uuBiWiwYLof-nPqPu9w@mail.gmail.com>
- <alpine.LRH.2.00.1107141009510.17067@tundra.namei.org>
- <20110714112751.1bfd998f@notabene.brown>
- <20110714150602.GA30019@openwall.com>
- <20110715133013.4fa38d19@notabene.brown>
- <20110715063113.GA3166@albatros>
- <20110715170650.585f1dad@notabene.brown>
- <20110715073823.GA3821@albatros>
- <1310738313.30257.27.camel@moss-pluto>
+	Fri, 15 Jul 2011 11:27:25 -0400
+Message-ID: <4E205C58.30607@gmail.com>
+Date: Fri, 15 Jul 2011 09:27:20 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1310738313.30257.27.camel@moss-pluto>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: mingo@elte.hu, fweisbec@gmail.com
+CC: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        acme@ghostprotocols.net, peterz@infradead.org, paulus@samba.org
+Subject: Re: [PATCH] perf tools, x86: fix 32-bit compile on 64-bit system
+References: <1310420304-21452-1-git-send-email-dsahern@gmail.com>
+In-Reply-To: <1310420304-21452-1-git-send-email-dsahern@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On 07/11/2011 03:38 PM, David Ahern wrote:
+> Builds for 32-bit binaries on a 64-bit host currently fail with the error:
+> 
+> gcc -o /tmp/perf-ppc/bench/mem-memcpy-x86-64-asm.o -c -fno-omit-frame-pointer -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6 -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -Wformat-y2k -Wshadow -Winit-self -Wpacked -Wredundant-decls -Wstrict-aliasing=3 -Wswitch-default -Wswitch-enum -Wno-system-headers -Wundef -Wwrite-strings -Wbad-function-cast -Wmissing-declarations -Wmissing-prototypes -Wnested-externs -Wold-style-definition -Wstrict-prototypes -Wdeclaration-after-statement -m32 -fstack-protector-all -Wstack-protector -Wvolatile-register-var -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -Iutil/include -Iarch/x86/include -I/tmp/perf-ppc/ -DLIBELF_NO_MMAP -DDWARF_SUPPORT -DNO_NEWT_SUPPORT -DNO_LIBPERL -DNO_LIBPYTHON -DHAVE_CPLUS_DEMANGLE -DNO_STRLCPY -DARCH_X86_64 bench/mem-memcpy-x86-64-asm.S
+> bench/../../../arch/x86/lib/memcpy_64.S: Assembler messages:
+> bench/../../../arch/x86/lib/memcpy_64.S:29: Error: bad register name `%rdi'
+> bench/../../../arch/x86/lib/memcpy_64.S:34: Error: invalid instruction suffix for `movs'
+> bench/../../../arch/x86/lib/memcpy_64.S:50: Error: bad register name `%rdi'
+> bench/../../../arch/x86/lib/memcpy_64.S:61: Error: bad register name `%rdi'
+> ...
+> 
+> The problem is the detection of the host arch without considering passed in
+> flags. This change fixes 32-bit builds via:
+> 
+> make EXTRA_CFLAGS=-m32 
+> 
+> and 64-bit builds still reference the memcpy_64.S.
+> 
 
-On Fri, Jul 15, 2011 at 09:58 -0400, Stephen Smalley wrote:
-> Does this have implications for Android's zygote model?  There you have
-> a long running uid 0 / all caps process (the zygote), which forks itself
-> upon receiving a request to spawn an app and then calls
+Fairly trivial change to the Makefile. Any objections? I believe Arnaldo
+is out for a few more days and realistically another week to get through
+a month's backlog.
 
-> setgroups();
-> setrlimit(); setgid(); setuid();
+David
 
-Is RLIMIT_NPROC forced in your model and setuid() is expected to fail
-because of NPROC exceeding?  If no, then it is not touched at all.
-
-> Also, can't setuid() fail under other conditions, e.g. ENOMEM upon
-> prepare_creds() allocation failure?  Is it ever reasonable for a program
-> to not check setuid() for failure?  Certainly there are plenty of
-> examples of programs not doing that, but it isn't clear that this is a
-> bug in the kernel.
-
-This thing is better to discuss separately, after the patch is applied.
-Shorter, in current implementation it is not possible as mm layer tries
-to alloc small structures (less than 8 pages) indefinitely.  cred and
-user_struct are less than 64kb, so ENOMEM is impossible.
-
-Thanks,
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+> Signed-off-by: David Ahern <dsahern@gmail.com>
+> ---
+>  tools/perf/Makefile |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
+> 
+> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> index 940257b..c168366 100644
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
+> @@ -52,7 +52,10 @@ ifeq ($(ARCH),i386)
+>  endif
+>  ifeq ($(ARCH),x86_64)
+>  	ARCH := x86
+> -	IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -xc - | tail -n 1)
+> +	IS_X86_64 := 0
+> +	ifeq (, $(findstring m32,$(EXTRA_CFLAGS)))
+> +		IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -xc - | tail -n 1)
+> +	endif
+>  	ifeq (${IS_X86_64}, 1)
+>  		RAW_ARCH := x86_64
+>  		ARCH_CFLAGS := -DARCH_X86_64
