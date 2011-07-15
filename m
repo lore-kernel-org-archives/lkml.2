@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671Ab1GORaW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 13:30:22 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:33411
-	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
+	id S1754645Ab1GORaU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 13:30:20 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:60232
+	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754287Ab1GORaN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 13:30:13 -0400
+	id S1753994Ab1GORaK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 13:30:10 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 113/117] Staging: hv: util: Adjust guest time in a process context
-Date: Fri, 15 Jul 2011 10:47:41 -0700
-Message-Id: <1310752065-27895-113-git-send-email-kys@microsoft.com>
+Subject: [PATCH 105/117] Staging: hv: storvsc: Make some non static functions, static functions
+Date: Fri, 15 Jul 2011 10:47:33 -0700
+Message-Id: <1310752065-27895-105-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1310752065-27895-1-git-send-email-kys@microsoft.com>
 References: <1310752024-27854-1-git-send-email-kys@microsoft.com>
@@ -23,72 +23,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current code was adjusting guest time in interrupt context; do this
-in process context since we may have to initiate cross-processor
-interrupts as part of setting time.
+Make some non static functions, static functions.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/staging/hv/hv_util.c |   30 ++++++++++++++++++++++++++++--
- 1 files changed, 28 insertions(+), 2 deletions(-)
+ drivers/staging/hv/storvsc_drv.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/hv/hv_util.c b/drivers/staging/hv/hv_util.c
-index 070e61f..d3fb017 100644
---- a/drivers/staging/hv/hv_util.c
-+++ b/drivers/staging/hv/hv_util.c
-@@ -109,6 +109,24 @@ static inline void do_adj_guesttime(u64 hosttime)
+diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
+index 02f9c1e..a1e8d6a 100644
+--- a/drivers/staging/hv/storvsc_drv.c
++++ b/drivers/staging/hv/storvsc_drv.c
+@@ -645,7 +645,7 @@ static int storvsc_connect_to_vsp(struct hv_device *device, u32 ring_size)
+ 	return ret;
  }
  
- /*
-+ * Set the host time in a process context.
-+ */
-+
-+struct adj_time_work {
-+	struct work_struct work;
-+	u64	host_time;
-+};
-+
-+static void hv_set_host_time(struct work_struct *work)
-+{
-+	struct adj_time_work	*wrk;
-+
-+	wrk = container_of(work, struct adj_time_work, work);
-+	do_adj_guesttime(wrk->host_time);
-+	kfree(wrk);
-+}
-+
-+/*
-  * Synchronize time with host after reboot, restore, etc.
-  *
-  * ICTIMESYNCFLAG_SYNC flag bit indicates reboot, restore events of the VM.
-@@ -121,16 +139,24 @@ static inline void do_adj_guesttime(u64 hosttime)
-  */
- static inline void adj_guesttime(u64 hosttime, u8 flags)
+-int storvsc_dev_add(struct hv_device *device,
++static int storvsc_dev_add(struct hv_device *device,
+ 					void *additional_info)
  {
-+	struct adj_time_work    *wrk;
- 	static s32 scnt = 50;
- 
-+	wrk = kmalloc(sizeof(struct adj_time_work), GFP_ATOMIC);
-+	if (wrk == NULL)
-+		return;
-+
-+	wrk->host_time = hosttime;
- 	if ((flags & ICTIMESYNCFLAG_SYNC) != 0) {
--		do_adj_guesttime(hosttime);
-+		INIT_WORK(&wrk->work, hv_set_host_time);
-+		schedule_work(&wrk->work);
- 		return;
- 	}
- 
- 	if ((flags & ICTIMESYNCFLAG_SAMPLE) != 0 && scnt > 0) {
- 		scnt--;
--		do_adj_guesttime(hosttime);
-+		INIT_WORK(&wrk->work, hv_set_host_time);
-+		schedule_work(&wrk->work);
- 	}
+ 	struct storvsc_device *stor_device;
+@@ -680,7 +680,7 @@ int storvsc_dev_add(struct hv_device *device,
+ 	return ret;
  }
  
+-int storvsc_dev_remove(struct hv_device *device)
++static int storvsc_dev_remove(struct hv_device *device)
+ {
+ 	struct storvsc_device *stor_device;
+ 	unsigned long flags;
+@@ -714,7 +714,7 @@ int storvsc_dev_remove(struct hv_device *device)
+ 	return 0;
+ }
+ 
+-int storvsc_do_io(struct hv_device *device,
++static int storvsc_do_io(struct hv_device *device,
+ 			      struct hv_storvsc_request *request)
+ {
+ 	struct storvsc_device *stor_device;
 -- 
 1.7.4.1
 
