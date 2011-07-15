@@ -1,95 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965214Ab1GOIXU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 04:23:20 -0400
-Received: from webmail-out1.one.com ([91.198.169.16]:27720 "EHLO
-	webmail-out1.b-one.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965123Ab1GOIXS convert rfc822-to-8bit (ORCPT
+	id S965280Ab1GOI0A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 04:26:00 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:52794 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965146Ab1GOIZ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 04:23:18 -0400
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
-From: "Eric Andersson" <eric.andersson@unixphere.com>
-To: "Alan Cox" <alan@lxorguk.ukuu.org.uk>
-CC: dmitry.torokhov@gmail.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, zhengguang.guo@bosch-sensortec.com,
-        stefan.nilsson@unixphere.com,
-        "Albert Zhang" <xu.zhang@bosch-sensortec.com>
-Subject: Re: [PATCH v3 1/1] input: add driver for Bosch Sensortec's BMA150
- accelerometer
-Date: Fri, 15 Jul 2011 10:23:16 +0200
-X-Mailer: One.com webmail
-X-Originating-Ip: 213.115.10.98
-In-Reply-To: <20110714234030.30d6b455@lxorguk.ukuu.org.uk>
-References: <1310680572-27410-2-git-send-email-eric.andersson@unixphere.com>
- <20110714234030.30d6b455@lxorguk.ukuu.org.uk>
-Message-Id: <20110715082316.5A4792C03C24@bmail01.one.com>
+	Fri, 15 Jul 2011 04:25:57 -0400
+From: Peter Korsgaard <jacmet@sunsite.dk>
+To: grant.likely@secretlab.ca, linux-kernel@vger.kernel.org
+Cc: Peter Korsgaard <jacmet@sunsite.dk>
+Subject: [PATCHv2 2/3] mcp23s08: isolate spi specific parts
+Date: Fri, 15 Jul 2011 10:25:31 +0200
+Message-Id: <1310718332-10438-2-git-send-email-jacmet@sunsite.dk>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1310718332-10438-1-git-send-email-jacmet@sunsite.dk>
+References: <1310718332-10438-1-git-send-email-jacmet@sunsite.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +		values represent the range given as +/- G.
-> > +		Possible values are: 2, 4, 8.
-> > +
-> > +		Reading: returns the current acceleration range.
-> > +
-> > +		Writing: sets a new acceleration range.
-> 
-> Same comment as last time - these values are not discoverable so it
-> should set the nearest bigger range.
+Change spi member of struct mcp23s08 to be a ops-specific opaque data
+pointer, and move spi specific knowledge out of mcp23s08_probe_one().
 
-And same answer as last time - The values can be retreived by doing a:
-cat range. This whole idea comes from a review comment that Jonathan Cameron
-gave on your bma023 driver [1].
-If we could agree on how these values should be represented I will be glad
-to fix it! Dmitry, any preferences?
+No functional change, but is needed to add i2c support.
 
-[1] http://www.spinics.net/lists/linux-input/msg14271.html
+Signed-off-by: Peter Korsgaard <jacmet@sunsite.dk>
+---
+Changes since v1:
+- Adjust according to Grants feedback
+- Add mcp23s08_spi_{init,exit} wrappers
 
-> > +	for (i = 0, ret = 0; i < ARRAY_SIZE(bw_val); i++)
-> > +		ret += sprintf(buf + ret,
-> > +			(bw_val[i].reg == bw) ? "[%d] " : "%d ",
-> > +			bw_val[i].value);
-> 
-> sysfs nodes should really be single values
+ drivers/gpio/gpio-mcp23s08.c |   81 +++++++++++++++++++++++++++++------------
+ 1 files changed, 57 insertions(+), 24 deletions(-)
 
-Once again it's a previous comment from Jonathan [1]. Please specify how
-you want this and I'll fix it.
-
-> > +static const struct i2c_device_id bma150_id[] = {
-> > +	{ "bma150", 0 },
-> > +	{ "smb380", 0 },
-> 
-> bma023 ?
-
-As mentioned earlier bma023 is not an official product name from Bosch Sensortec. Hence,
-there will be no datasheet available or references from Bosch Sensortec. IMHO it would be
-confusing to add it.
+diff --git a/drivers/gpio/gpio-mcp23s08.c b/drivers/gpio/gpio-mcp23s08.c
+index ef61234..7b78f94 100644
+--- a/drivers/gpio/gpio-mcp23s08.c
++++ b/drivers/gpio/gpio-mcp23s08.c
+@@ -50,7 +50,6 @@ struct mcp23s08_ops {
+ };
  
-> It also doesn't expose the thresholds or support interrupts which the
-> one I posted did.
+ struct mcp23s08 {
+-	struct spi_device	*spi;
+ 	u8			addr;
+ 
+ 	u16			cache[11];
+@@ -60,6 +59,7 @@ struct mcp23s08 {
+ 	struct gpio_chip	chip;
+ 
+ 	const struct mcp23s08_ops	*ops;
++	void			*data; /* ops specific data */
+ };
+ 
+ /* A given spi_device can represent up to eight mcp23sxx chips
+@@ -73,6 +73,8 @@ struct mcp23s08_driver_data {
+ 	struct mcp23s08		chip[];
+ };
+ 
++#ifdef CONFIG_SPI_MASTER
++
+ static int mcp23s08_read(struct mcp23s08 *mcp, unsigned reg)
+ {
+ 	u8	tx[2], rx[1];
+@@ -80,7 +82,7 @@ static int mcp23s08_read(struct mcp23s08 *mcp, unsigned reg)
+ 
+ 	tx[0] = mcp->addr | 0x01;
+ 	tx[1] = reg;
+-	status = spi_write_then_read(mcp->spi, tx, sizeof tx, rx, sizeof rx);
++	status = spi_write_then_read(mcp->data, tx, sizeof tx, rx, sizeof rx);
+ 	return (status < 0) ? status : rx[0];
+ }
+ 
+@@ -91,7 +93,7 @@ static int mcp23s08_write(struct mcp23s08 *mcp, unsigned reg, unsigned val)
+ 	tx[0] = mcp->addr;
+ 	tx[1] = reg;
+ 	tx[2] = val;
+-	return spi_write_then_read(mcp->spi, tx, sizeof tx, NULL, 0);
++	return spi_write_then_read(mcp->data, tx, sizeof tx, NULL, 0);
+ }
+ 
+ static int
+@@ -106,7 +108,7 @@ mcp23s08_read_regs(struct mcp23s08 *mcp, unsigned reg, u16 *vals, unsigned n)
+ 	tx[1] = reg;
+ 
+ 	tmp = (u8 *)vals;
+-	status = spi_write_then_read(mcp->spi, tx, sizeof tx, tmp, n);
++	status = spi_write_then_read(mcp->data, tx, sizeof tx, tmp, n);
+ 	if (status >= 0) {
+ 		while (n--)
+ 			vals[n] = tmp[n]; /* expand to 16bit */
+@@ -121,7 +123,7 @@ static int mcp23s17_read(struct mcp23s08 *mcp, unsigned reg)
+ 
+ 	tx[0] = mcp->addr | 0x01;
+ 	tx[1] = reg << 1;
+-	status = spi_write_then_read(mcp->spi, tx, sizeof tx, rx, sizeof rx);
++	status = spi_write_then_read(mcp->data, tx, sizeof tx, rx, sizeof rx);
+ 	return (status < 0) ? status : (rx[0] | (rx[1] << 8));
+ }
+ 
+@@ -133,7 +135,7 @@ static int mcp23s17_write(struct mcp23s08 *mcp, unsigned reg, unsigned val)
+ 	tx[1] = reg << 1;
+ 	tx[2] = val;
+ 	tx[3] = val >> 8;
+-	return spi_write_then_read(mcp->spi, tx, sizeof tx, NULL, 0);
++	return spi_write_then_read(mcp->data, tx, sizeof tx, NULL, 0);
+ }
+ 
+ static int
+@@ -147,7 +149,7 @@ mcp23s17_read_regs(struct mcp23s08 *mcp, unsigned reg, u16 *vals, unsigned n)
+ 	tx[0] = mcp->addr | 0x01;
+ 	tx[1] = reg << 1;
+ 
+-	status = spi_write_then_read(mcp->spi, tx, sizeof tx,
++	status = spi_write_then_read(mcp->data, tx, sizeof tx,
+ 				     (u8 *)vals, n * 2);
+ 	if (status >= 0) {
+ 		while (n--)
+@@ -169,6 +171,7 @@ static const struct mcp23s08_ops mcp23s17_ops = {
+ 	.read_regs	= mcp23s17_read_regs,
+ };
+ 
++#endif /* CONFIG_SPI_MASTER */
+ 
+ /*----------------------------------------------------------------------*/
+ 
+@@ -296,17 +299,16 @@ done:
+ 
+ /*----------------------------------------------------------------------*/
+ 
+-static int mcp23s08_probe_one(struct spi_device *spi, unsigned addr,
++static int mcp23s08_probe_one(struct mcp23s08 *mcp, struct device *dev,
++			      void *data, unsigned addr,
+ 			      unsigned type, unsigned base, unsigned pullups)
+ {
+-	struct mcp23s08_driver_data	*data = spi_get_drvdata(spi);
+-	struct mcp23s08			*mcp = data->mcp[addr];
+-	int				status;
++	int status;
+ 
+ 	mutex_init(&mcp->lock);
+ 
+-	mcp->spi = spi;
+-	mcp->addr = 0x40 | (addr << 1);
++	mcp->data = data;
++	mcp->addr = addr;
+ 
+ 	mcp->chip.direction_input = mcp23s08_direction_input;
+ 	mcp->chip.get = mcp23s08_get;
+@@ -314,18 +316,29 @@ static int mcp23s08_probe_one(struct spi_device *spi, unsigned addr,
+ 	mcp->chip.set = mcp23s08_set;
+ 	mcp->chip.dbg_show = mcp23s08_dbg_show;
+ 
+-	if (type == MCP_TYPE_S17) {
+-		mcp->ops = &mcp23s17_ops;
+-		mcp->chip.ngpio = 16;
+-		mcp->chip.label = "mcp23s17";
+-	} else {
++	switch (type) {
++#ifdef CONFIG_SPI_MASTER
++	case MCP_TYPE_S08:
+ 		mcp->ops = &mcp23s08_ops;
+ 		mcp->chip.ngpio = 8;
+ 		mcp->chip.label = "mcp23s08";
++		break;
++
++	case MCP_TYPE_S17:
++		mcp->ops = &mcp23s17_ops;
++		mcp->chip.ngpio = 16;
++		mcp->chip.label = "mcp23s17";
++		break;
++#endif /* CONFIG_SPI_MASTER */
++
++	default:
++		dev_err(dev, "invalid device type (%d)\n", type);
++		return -EINVAL;
+ 	}
++
+ 	mcp->chip.base = base;
+ 	mcp->chip.can_sleep = 1;
+-	mcp->chip.dev = &spi->dev;
++	mcp->chip.dev = dev;
+ 	mcp->chip.owner = THIS_MODULE;
+ 
+ 	/* verify MCP_IOCON.SEQOP = 0, so sequential reads work,
+@@ -371,11 +384,13 @@ static int mcp23s08_probe_one(struct spi_device *spi, unsigned addr,
+ 	status = gpiochip_add(&mcp->chip);
+ fail:
+ 	if (status < 0)
+-		dev_dbg(&spi->dev, "can't setup chip %d, --> %d\n",
+-				addr, status);
++		dev_dbg(dev, "can't setup chip %d, --> %d\n",
++			addr, status);
+ 	return status;
+ }
+ 
++#ifdef CONFIG_SPI_MASTER
++
+ static int mcp23s08_probe(struct spi_device *spi)
+ {
+ 	struct mcp23s08_platform_data	*pdata;
+@@ -418,7 +433,8 @@ static int mcp23s08_probe(struct spi_device *spi)
+ 			continue;
+ 		chips--;
+ 		data->mcp[addr] = &data->chip[chips];
+-		status = mcp23s08_probe_one(spi, addr, type, base,
++		status = mcp23s08_probe_one(data->mcp[addr], &spi->dev, spi,
++					    0x40 | (addr << 1), type, base,
+ 					    pdata->chip[addr].pullups);
+ 		if (status < 0)
+ 			goto fail;
+@@ -488,11 +504,28 @@ static struct spi_driver mcp23s08_driver = {
+ 	},
+ };
+ 
++static int __init mcp23s08_spi_init(void)
++{
++	return spi_register_driver(&mcp23s08_driver);
++}
++
++static void mcp23s08_spi_exit(void)
++{
++	spi_unregister_driver(&mcp23s08_driver);
++}
++
++#else
++
++static int __init mcp23s08_spi_init(void) { return 0; }
++static void mcp23s08_spi_exit(void) { }
++
++#endif /* CONFIG_SPI_MASTER */
++
+ /*----------------------------------------------------------------------*/
+ 
+ static int __init mcp23s08_init(void)
+ {
+-	return spi_register_driver(&mcp23s08_driver);
++	return mcp23s08_spi_init();
+ }
+ /* register after spi postcore initcall and before
+  * subsys initcalls that may rely on these GPIOs
+@@ -501,7 +534,7 @@ subsys_initcall(mcp23s08_init);
+ 
+ static void __exit mcp23s08_exit(void)
+ {
+-	spi_unregister_driver(&mcp23s08_driver);
++	mcp23s08_spi_exit();
+ }
+ module_exit(mcp23s08_exit);
+ 
+-- 
+1.7.5.4
 
-We were told by Bosch S that the interrupt is triggered every 333 us (data ready) which would
-pretty much flood the irq handler.
-However, if this is stopping the patch we can add it. Would it be acceptable to have a driver
-that supports both a polling and irq driven setup, e.g. by checking if the .irq is non zero?
-
-> So while its better it still seems incomplete - its certainly nowhere
-> near where it can replace the one I posted months ago and doesn't seem
-> to
-> be making any headway.
-> 
-> Dmitry shall I repost the intel one - at this point I think it would
-> be a
-> better starting point as it supports more features, interrupts and the
-> like although it's not perfect either.
-
-My hope is that we can sort out the differences before I post v4. Dmitry, if you have time
-could you please give an objective review of the patch?
-
-Best regards,
- Eric
-
-http://www.unixphere.com
