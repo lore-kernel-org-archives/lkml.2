@@ -1,75 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753155Ab1GOWlX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 18:41:23 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:47922 "EHLO
+	id S1752931Ab1GOWm0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 18:42:26 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:48246 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752861Ab1GOWlR (ORCPT
+	with ESMTP id S1751980Ab1GOWmZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 18:41:17 -0400
-From: Mandeep Singh Baines <msb@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Mandeep Singh Baines <msb@chromium.org>,
+	Fri, 15 Jul 2011 18:42:25 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=R6jXXDNFemw5GeAp/a3iVLdrxRdgJRh4O52n+fcMyqhVRPm0IKPbtQdrznULDyfKL
+	IWY+Xa9Uyr6JS9nFA4yzA==
+MIME-Version: 1.0
+In-Reply-To: <CABV1ukEF_VY-X5ZmBLoiCgNXg_KM06Y7duQQ-qyE0wdEc+eEJw@mail.gmail.com>
+References: <1310675693-9204-1-git-send-email-mikew@google.com>
+ <1310675693-9204-2-git-send-email-mikew@google.com> <20110714234248.7ed43534@lxorguk.ukuu.org.uk>
+ <CAGTjWtDHH_VXXAsh5WPspTwPEhzcKi4_Jno7w=jReiS7HSALQw@mail.gmail.com>
+ <20110715000037.3fc1670a@lxorguk.ukuu.org.uk> <CAGTjWtA5qobWAZb=SbM1y5SFtDKPuJVuAsbDKmkaxxL7mA6OKg@mail.gmail.com>
+ <20110715003912.149dcedd@lxorguk.ukuu.org.uk> <CAGTjWtD+5cZxQiE+tikUyz2SNgm3bR95GE2veevEv15cPX1E9A@mail.gmail.com>
+ <CAGTjWtAo8dE4ASWYPZ0QJdNg3jFzpO=QP4eT5P3mNakxKy-5+g@mail.gmail.com>
+ <4E20839A.8060200@zytor.com> <CABV1ukEF_VY-X5ZmBLoiCgNXg_KM06Y7duQQ-qyE0wdEc+eEJw@mail.gmail.com>
+From: Mike Waychison <mikew@google.com>
+Date: Fri, 15 Jul 2011 15:42:01 -0700
+Message-ID: <CAGTjWtBUavDUMFoFAFGrUQ700U7YDUBQL_w5rezOsLhp3fjGzw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] x86: Allow disabling of sys_iopl, sys_ioperm
+To: "Andrew G. Morgan" <agm@google.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Huang Ying <ying.huang@intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>, Olaf Hering <olaf@aepfle.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Dave Airlie <airlied@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 2/2] panic, vt: do not force oops output when panic_timeout < 0
-Date: Fri, 15 Jul 2011 15:40:00 -0700
-Message-Id: <1310769600-9234-2-git-send-email-msb@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1310769600-9234-1-git-send-email-msb@chromium.org>
-References: <1310769600-9234-1-git-send-email-msb@chromium.org>
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Klibc mailing list <klibc@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't force output if you intend to reboot immediately.
+On Fri, Jul 15, 2011 at 3:30 PM, Andrew G. Morgan <agm@google.com> wrote:
+> I'd put it in kinit too.
+>
+> I think you may have to think about the call_usermodehelper code, and
+> you might want to look at dropping CAP_SYS_MODULE too.
 
-In this patch, I'm disabling the functionality enabled by
-vc->vc_panic_force_write if panic_timeout < 0 (i.e. no timeout).
-vc_panic_force_write is only enabled for fb video consoles if the
-FBINFO_CAN_FORCE_OUTPUT flag is set.
+Looks like usermodehelpers are configurable for both the inheritable
+set and the bounding set via /proc/sys/kernel/usermodehelper/bset and
+/proc/sys/kernel/usermodehelper/inheritable thanks to Eric Paris
+(17f60a7da, available in 3.0-rc1).
 
-For our application, we're using ram_oops to preserved the panic in memory.
-We want to reliably, and as fast as possible, machine_restart. The
-vc_panic_force_write flag results in a bunch of graphics driver code to be
-invoked which slows down restart and decreases reliability. Since we're
-already storing the panic in RAM and are going to reboot immediately, there
-is no benefit in mode switching back to the vc in order to display the panic
-output. The log buffer will get flushed by the console_unblank() call so
-remote management consoles should see all output.
-
-Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Huang Ying <ying.huang@intel.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Olaf Hering <olaf@aepfle.de>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Dave Airlie <airlied@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
----
- include/linux/vt_kern.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/vt_kern.h b/include/linux/vt_kern.h
-index 4d05e14..c2164fa 100644
---- a/include/linux/vt_kern.h
-+++ b/include/linux/vt_kern.h
-@@ -137,7 +137,7 @@ int vty_init(const struct file_operations *console_fops);
- 
- static inline bool vt_force_oops_output(struct vc_data *vc)
- {
--	if (oops_in_progress && vc->vc_panic_force_write)
-+	if (oops_in_progress && vc->vc_panic_force_write  && panic_timeout >= 0)
- 		return true;
- 	return false;
- }
--- 
-1.7.3.1
-
+>
+> Cheers
+>
+> Andrew
+>
+> On Fri, Jul 15, 2011 at 11:14 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 07/15/2011 11:13 AM, Mike Waychison wrote:
+>>>
+>>> So the question is, should this go in the kernel proper such that it
+>>> manipulates the init_cred structure, or should this be plumbed down in
+>>> kinit (in klibc, which we use for bootup)?
+>>>
+>>
+>> It certainly would be trivial to do in kinit.
+>>
+>>        -hpa
+>>
+>> --
+>> H. Peter Anvin, Intel Open Source Technology Center
+>> I work for Intel.  I don't speak on their behalf.
+>>
+>>
+>
