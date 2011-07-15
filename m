@@ -1,37 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751571Ab1GOU6F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 16:58:05 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:40917 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751041Ab1GOU6E (ORCPT
+	id S1751905Ab1GOU76 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 16:59:58 -0400
+Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:39855 "EHLO
+	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751501Ab1GOU75 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 16:58:04 -0400
-Message-ID: <4E20A9D8.6080907@gmail.com>
-Date: Fri, 15 Jul 2011 22:58:00 +0200
-From: =?UTF-8?B?TWlsYW4gUGzFvsOtaw==?= <milan.plzik@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110619 Lightning/1.0b3pre Thunderbird/3.1.10
+	Fri, 15 Jul 2011 16:59:57 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EADqpIE5tg2Sw/2dsb2JhbABTp254iHoCwmEOhiwEozs
+Date: Fri, 15 Jul 2011 22:59:54 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Nick Bowler <nbowler@elliptictech.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 0/3] SP805 updates for Versatile Express
+Message-ID: <20110715205954.GR3834@infomag.iguana.be>
+References: <1310742242-14647-1-git-send-email-nbowler@elliptictech.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Dysfunctional zcache in 3.0rc7 (Re: zcache: rename zcache.c to avoid
- build problem)
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1310742242-14647-1-git-send-email-nbowler@elliptictech.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello,
+Hi Nick,
 
-  in linux-3.0rc7 (and possibly others), zcache doesn't build correctly
--- zcache.o is omitted from linking. This results in kernel containing
-tmem.o, but not zcache.o and no zcache functionality.
+> Here are some updates to get the SP805 watchdog working on the ARM
+> Versatile Express.  The first two patches fix observed issues; the
+> third fixes a potential (but not observed) issue with asynchronous
+> posted writes.
+> 
+> All three patches are independent and should be applicable in any
+> order, with some fuzz on the third.
 
-  This issue (and also a patch) was previously mentioned at
-https://patchwork.kernel.org/patch/903912/ , however no action was taken
-up to now, and 3.0 release is really close. Patch mentioned above makes
-zcache work properly.
+looks good at first glance.
 
-  Regards,
-    Milan Plzik
+Russel: what's your opinion?
+
+Kind regards,
+Wim.
+
