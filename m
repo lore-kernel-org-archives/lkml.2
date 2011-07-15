@@ -1,102 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755910Ab1GOR6L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 13:58:11 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:58969 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755825Ab1GOR6J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 13:58:09 -0400
-From: greearb@candelatech.com
-To: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Ben Greear <greearb@candelatech.com>
-Subject: [PATCH (RESEND) 09/12] nfs:  Propagate src-addr in client code.
-Date: Fri, 15 Jul 2011 10:56:05 -0700
-Message-Id: <1310752568-21280-10-git-send-email-greearb@candelatech.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1310752568-21280-1-git-send-email-greearb@candelatech.com>
-References: <1310752568-21280-1-git-send-email-greearb@candelatech.com>
+	id S1755758Ab1GOSAI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 14:00:08 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:36978 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754905Ab1GOSAG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 14:00:06 -0400
+Subject: Re: 2.6.32.21 - uptime related crashes?
+From: john stultz <johnstul@us.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Willy Tarreau <w@1wt.eu>, Ingo Molnar <mingo@elte.hu>,
+        "MINOURA Makoto / ?$BL'1: ?$B??" <minoura@valinux.co.jp>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Faidon Liambotis <paravoid@debian.org>, linux-kernel@vger.kernel.org,
+        stable@kernel.org, Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
+        seto.hidetoshi@jp.fujitsu.com,
+        =?ISO-8859-1?Q?Herv=E9?= Commowick <hcommowick@exosec.fr>,
+        Rand@jasper.es
+In-Reply-To: <1310724097.2586.296.camel@twins>
+References: <20110428082625.GA23293@pcnci.linuxbox.cz>
+	 <20110428183434.GG30645@1wt.eu> <20110429100200.GB23293@pcnci.linuxbox.cz>
+	 <20110430093605.GA10529@1wt.eu> <20110430173905.GA25641@tty.gr>
+	 <BANLkTi=22QFrJ4vO7-3VuHU=9Cg39bxJ4Q@mail.gmail.com>
+	 <20110705231515.95bc758f.akpm@linux-foundation.org>
+	 <kk5d3hgi9eh.fsf@brer.local.valinux.co.jp>
+	 <1310434819.30337.21.camel@work-vm>  <20110712041938.GO27254@1wt.eu>
+	 <1310690138.3367.61.camel@work-vm>  <1310724097.2586.296.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 15 Jul 2011 10:59:55 -0700
+Message-ID: <1310752795.2945.4.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Greear <greearb@candelatech.com>
+On Fri, 2011-07-15 at 12:01 +0200, Peter Zijlstra wrote:
+> On Thu, 2011-07-14 at 17:35 -0700, john stultz wrote:
+> > 
+> > Peter/Ingo: Can you take a look at the above and let me know if you find
+> > it too disagreeable?
+> 
+> +static unsigned long long __cycles_2_ns(unsigned long long cyc)
+> +{
+> +       unsigned long long ns = 0;
+> +       struct x86_sched_clock_data *data;
+> +       int cpu = smp_processor_id();
+> +
+> +       rcu_read_lock();
+> +       data = rcu_dereference(per_cpu(cpu_sched_clock_data, cpu));
+> +
+> +       if (unlikely(!data))
+> +               goto out;
+> +
+> +       ns = ((cyc - data->base_cycles) * data->mult) >> CYC2NS_SCALE_FACTOR;
+> +       ns += data->accumulated_ns;
+> +out:
+> +       rcu_read_unlock();
+> +       return ns;
+> +}
+> 
+> The way I read that we're still not wrapping properly if freq scaling
+> 'never' happens.
 
-This ties the srcaddr supplied by mount to the
-rpc code.
+Right, this doesn't address the mult overflow behavior. As I mentioned
+in the patch that the rework allows for solving that in the future using
+a (possibly very rare) timer that would accumulate cycles to ns.
 
-Signed-off-by: Ben Greear <greearb@candelatech.com>
----
-:100644 100644 223785f... 8b8766a... M	fs/nfs/client.c
- fs/nfs/client.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
+This rework just really addresses the multiplication overflow->negative
+roll under that currently occurs with the cyc2ns_offset value.
 
-diff --git a/fs/nfs/client.c b/fs/nfs/client.c
-index 223785f..8b8766a 100644
---- a/fs/nfs/client.c
-+++ b/fs/nfs/client.c
-@@ -161,6 +161,8 @@ static struct nfs_client *nfs_alloc_client(const struct nfs_client_initdata *cl_
- 
- 	memcpy(&clp->cl_addr, cl_init->addr, cl_init->addrlen);
- 	clp->cl_addrlen = cl_init->addrlen;
-+	memcpy(&clp->srcaddr, cl_init->srcaddr, cl_init->srcaddrlen);
-+	clp->srcaddrlen = cl_init->srcaddrlen;
- 
- 	if (cl_init->hostname) {
- 		err = -ENOMEM;
-@@ -655,6 +657,7 @@ static int nfs_create_rpc_client(struct nfs_client *clp,
- 		.net		= &init_net,
- 		.protocol	= clp->cl_proto,
- 		.address	= (struct sockaddr *)&clp->cl_addr,
-+		.saddress	= (struct sockaddr *)&clp->srcaddr,
- 		.addrsize	= clp->cl_addrlen,
- 		.timeout	= timeparms,
- 		.servername	= clp->cl_hostname,
-@@ -839,6 +842,8 @@ static int nfs_init_server(struct nfs_server *server,
- 		.hostname = data->nfs_server.hostname,
- 		.addr = (const struct sockaddr *)&data->nfs_server.address,
- 		.addrlen = data->nfs_server.addrlen,
-+		.srcaddr = (const struct sockaddr *)&data->srcaddr.address,
-+		.srcaddrlen = data->srcaddr.addrlen,
- 		.rpc_ops = &nfs_v2_clientops,
- 		.proto = data->nfs_server.protocol,
- 	};
-@@ -1419,6 +1424,8 @@ static int nfs4_set_client(struct nfs_server *server,
- 		const struct sockaddr *addr,
- 		const size_t addrlen,
- 		const char *ip_addr,
-+		const struct sockaddr *srcaddr,
-+		const size_t srcaddrlen,
- 		rpc_authflavor_t authflavour,
- 		int proto, const struct rpc_timeout *timeparms,
- 		u32 minorversion)
-@@ -1430,6 +1437,8 @@ static int nfs4_set_client(struct nfs_server *server,
- 		.rpc_ops = &nfs_v4_clientops,
- 		.proto = proto,
- 		.minorversion = minorversion,
-+		.srcaddr = srcaddr,
-+		.srcaddrlen = srcaddrlen,
- 	};
- 	struct nfs_client *clp;
- 	int error;
-@@ -1604,6 +1613,8 @@ static int nfs4_init_server(struct nfs_server *server,
- 			(const struct sockaddr *)&data->nfs_server.address,
- 			data->nfs_server.addrlen,
- 			data->client_address,
-+			(const struct sockaddr *)&data->srcaddr.address,
-+			data->srcaddr.addrlen,
- 			data->auth_flavors[0],
- 			data->nfs_server.protocol,
- 			&timeparms,
-@@ -1701,6 +1712,8 @@ struct nfs_server *nfs4_create_referral_server(struct nfs_clone_mount *data,
- 				data->addr,
- 				data->addrlen,
- 				parent_client->cl_ipaddr,
-+				(const struct sockaddr *)&parent_client->srcaddr,
-+				parent_client->srcaddrlen,
- 				data->authflavor,
- 				parent_server->client->cl_xprt->prot,
- 				parent_server->client->cl_timeout,
--- 
-1.7.3.4
+> Because then we're wrapping on accumulated_ns + 2^54.
+> 
+> Something like resetting base, and adding ns to accumulated_ns and
+> returning the latter would make more sense.
+
+Although we have to update the base_cycles and accumulated_ns
+atomically, so its probably not something to do in the sched_clock path.
+
+thanks
+-john
+
+
+
 
