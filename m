@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754894Ab1GORgK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 13:36:10 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:33338
+	id S1754835Ab1GORgJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 13:36:09 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:33367
 	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754227Ab1GORaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754229Ab1GORaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Jul 2011 13:30:09 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 087/117] Staging: hv: storvsc: Further cleanup reference counting of stor_device
-Date: Fri, 15 Jul 2011 10:47:15 -0700
-Message-Id: <1310752065-27895-87-git-send-email-kys@microsoft.com>
+Subject: [PATCH 097/117] Staging: hv: storvsc: Add code to handle IDE devices using the storvsc driver
+Date: Fri, 15 Jul 2011 10:47:25 -0700
+Message-Id: <1310752065-27895-97-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1310752065-27895-1-git-send-email-kys@microsoft.com>
 References: <1310752024-27854-1-git-send-email-kys@microsoft.com>
@@ -23,85 +23,119 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Further cleanup reference counting of stor_device - when the device is being
-destroyed, we will permit incoming traffic only to drain outstanding
-requests.
+Add code to handle IDE devices using the storvsc driver. The storvsc_probe()
+is modified so that the storvsc driver can surface all disks presented to the
+guest as scsi devices using generic upper level Linux scsi drivers.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/staging/hv/hyperv_storage.h |    3 +--
- drivers/staging/hv/storvsc.c        |   22 +++++++++++++---------
- 2 files changed, 14 insertions(+), 11 deletions(-)
+ drivers/staging/hv/storvsc_drv.c |   62 +++++++++++++++++++++++++++++++-------
+ 1 files changed, 51 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/staging/hv/hyperv_storage.h b/drivers/staging/hv/hyperv_storage.h
-index d946211..a1f3e27 100644
---- a/drivers/staging/hv/hyperv_storage.h
-+++ b/drivers/staging/hv/hyperv_storage.h
-@@ -287,7 +287,6 @@ struct storvsc_device {
+diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
+index 0f2fc2f..efbc603 100644
+--- a/drivers/staging/hv/storvsc_drv.c
++++ b/drivers/staging/hv/storvsc_drv.c
+@@ -61,6 +61,17 @@ struct storvsc_cmd_request {
+ 	struct hv_storvsc_request request;
  };
  
++static void storvsc_get_ide_info(struct hv_device *dev, int *target, int *path)
++{
++	*target =
++		dev->dev_instance.b[5] << 8 | dev->dev_instance.b[4];
++
++	*path =
++		dev->dev_instance.b[3] << 24 |
++		dev->dev_instance.b[2] << 16 |
++		dev->dev_instance.b[1] << 8  | dev->dev_instance.b[0];
++}
++
  
--/* Get the stordevice object iff exists and its refcount > 1 */
- static inline struct storvsc_device *get_out_stor_device(
- 					struct hv_device *device)
+ static int storvsc_device_alloc(struct scsi_device *sdevice)
  {
-@@ -296,7 +295,7 @@ static inline struct storvsc_device *get_out_stor_device(
+@@ -654,6 +665,14 @@ static const struct hv_vmbus_device_id id_table[] = {
+ };
  
- 	spin_lock_irqsave(&device->ext_lock, flags);
- 	stor_device = (struct storvsc_device *)device->ext;
--	if (stor_device && (stor_device->ref_count > 1) &&
-+	if (stor_device && (stor_device->ref_count) &&
- 		!stor_device->destroy)
- 		stor_device->ref_count++;
- 	else
-diff --git a/drivers/staging/hv/storvsc.c b/drivers/staging/hv/storvsc.c
-index a41be2a..4d13044 100644
---- a/drivers/staging/hv/storvsc.c
-+++ b/drivers/staging/hv/storvsc.c
-@@ -40,9 +40,7 @@ static inline struct storvsc_device *alloc_stor_device(struct hv_device *device)
- 	if (!stor_device)
- 		return NULL;
+ MODULE_DEVICE_TABLE(vmbus, id_table);
++
++static const uuid_le blk_guid = {
++	.b = {
++		0x32, 0x26, 0x41, 0x32, 0xcb, 0x86, 0xa2, 0x44,
++		0x9b, 0x5c, 0x50, 0xd1, 0x41, 0x73, 0x54, 0xf5
++	}
++};
++
+ /*
+  * storvsc_probe - Add a new device for this driver
+  */
+@@ -664,6 +683,14 @@ static int storvsc_probe(struct hv_device *device)
+ 	struct Scsi_Host *host;
+ 	struct hv_host_device *host_dev;
+ 	struct storvsc_device_info device_info;
++	bool dev_is_ide;
++	int path = 0;
++	int target = 0;
++
++	if (!uuid_le_cmp(device->dev_type, blk_guid))
++		dev_is_ide = true;
++	else
++		dev_is_ide = false;
  
--	/* Set to 2 to allow both inbound and outbound traffics */
--	/* (ie get_out_stor_device() and get_in_stor_device()) to proceed. */
--	stor_device->ref_count = 2;
-+	stor_device->ref_count = 1;
- 	stor_device->destroy = false;
- 	init_waitqueue_head(&stor_device->waiting_to_drain);
- 	stor_device->device = device;
-@@ -51,8 +49,6 @@ static inline struct storvsc_device *alloc_stor_device(struct hv_device *device)
- 	return stor_device;
+ 	host = scsi_host_alloc(&scsi_driver,
+ 			       sizeof(struct hv_host_device));
+@@ -699,8 +726,14 @@ static int storvsc_probe(struct hv_device *device)
+ 		return -ENODEV;
+ 	}
+ 
+-	host_dev->path = device_info.path_id;
+-	host_dev->target = device_info.target_id;
++	if (dev_is_ide) {
++		storvsc_get_ide_info(device, &target, &path);
++		host_dev->path = device_info.path_id;
++		host_dev->target = device_info.target_id;
++	} else {
++		host_dev->path = device_info.path_id;
++		host_dev->target = device_info.target_id;
++	}
+ 
+ 	/* max # of devices per target */
+ 	host->max_lun = STORVSC_MAX_LUNS_PER_TARGET;
+@@ -711,17 +744,24 @@ static int storvsc_probe(struct hv_device *device)
+ 
+ 	/* Register the HBA and start the scsi bus scan */
+ 	ret = scsi_add_host(host, &device->device);
+-	if (ret != 0) {
+-
+-		storvsc_dev_remove(device);
+-
+-		kmem_cache_destroy(host_dev->request_pool);
+-		scsi_host_put(host);
+-		return -ENODEV;
+-	}
++	if (ret != 0)
++		goto err_out;
+ 
+-	scsi_scan_host(host);
++	if (dev_is_ide) {
++		ret = scsi_add_device(host, 0, target, 0);
++		if (ret) {
++			scsi_remove_host(host);
++			goto err_out;
++		}
++	} else
++		scsi_scan_host(host);
+ 	return ret;
++
++err_out:
++	storvsc_dev_remove(device);
++	kmem_cache_destroy(host_dev->request_pool);
++	scsi_host_put(host);
++	return -ENODEV;
  }
  
--
--/* Get the stordevice object iff exists and its refcount > 0 */
- static inline struct storvsc_device *get_in_stor_device(
- 					struct hv_device *device)
- {
-@@ -61,10 +57,18 @@ static inline struct storvsc_device *get_in_stor_device(
- 
- 	spin_lock_irqsave(&device->ext_lock, flags);
- 	stor_device = (struct storvsc_device *)device->ext;
--	if (stor_device && stor_device->ref_count)
--		stor_device->ref_count++;
--	else
--		stor_device = NULL;
-+	if (!stor_device)
-+		goto cleanup;
-+
-+	/*
-+	 * If the device is being destroyed; allow incoming
-+	 * traffic only to cleanup outstanding requests.
-+	 */
-+	if (stor_device->destroy &&
-+		 (atomic_read(&stor_device->num_outstanding_req) == 0))
-+		goto cleanup;
-+	stor_device->ref_count++;
-+cleanup:
- 	spin_unlock_irqrestore(&device->ext_lock, flags);
- 
- 	return stor_device;
+ /* The one and only one */
 -- 
 1.7.4.1
 
