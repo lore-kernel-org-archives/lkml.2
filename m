@@ -1,80 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082Ab1GOUVJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 16:21:09 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:47805
-	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751639Ab1GOUVH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 16:21:07 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 1/1] Staging: hv: vmbus: Don't wait indefinitely for IRQ resouces
-Date: Fri, 15 Jul 2011 13:38:56 -0700
-Message-Id: <1310762336-30795-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1751571Ab1GOU6F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 16:58:05 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:40917 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751041Ab1GOU6E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 16:58:04 -0400
+Message-ID: <4E20A9D8.6080907@gmail.com>
+Date: Fri, 15 Jul 2011 22:58:00 +0200
+From: =?UTF-8?B?TWlsYW4gUGzFvsOtaw==?= <milan.plzik@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110619 Lightning/1.0b3pre Thunderbird/3.1.10
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: Dysfunctional zcache in 3.0rc7 (Re: zcache: rename zcache.c to avoid
+ build problem)
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If an attempt is made to load the vmbus driver on a non-Hyper-V platform,
-the load operation will hang since we currently wait indefinitely to 
-retrieve the IRQ information. This is done in the context of an acpi callback
-context (which will obviously not happen when this driver is
-loaded on a non-Hyper-V platform). This patch fixes the problem. 
+  Hello,
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/staging/hv/vmbus_drv.c |   19 ++++++++++++++-----
- 1 files changed, 14 insertions(+), 5 deletions(-)
+  in linux-3.0rc7 (and possibly others), zcache doesn't build correctly
+-- zcache.o is omitted from linking. This results in kernel containing
+tmem.o, but not zcache.o and no zcache functionality.
 
-diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
-index 433be51..b382829 100644
---- a/drivers/staging/hv/vmbus_drv.c
-+++ b/drivers/staging/hv/vmbus_drv.c
-@@ -702,7 +702,7 @@ static struct acpi_driver vmbus_acpi_driver = {
- 
- static int __init hv_acpi_init(void)
- {
--	int ret;
-+	int ret, t;
- 
- 	init_completion(&probe_event);
- 
-@@ -715,16 +715,25 @@ static int __init hv_acpi_init(void)
- 	if (ret)
- 		return ret;
- 
--	wait_for_completion(&probe_event);
-+	t = wait_for_completion_timeout(&probe_event, 5*HZ);
-+	if (t == 0) {
-+		ret = -ETIMEDOUT;
-+		goto cleanup;
-+	}
- 
- 	if (irq <= 0) {
--		acpi_bus_unregister_driver(&vmbus_acpi_driver);
--		return -ENODEV;
-+		ret = -ENODEV;
-+		goto cleanup;
- 	}
- 
- 	ret = vmbus_bus_init(irq);
- 	if (ret)
--		acpi_bus_unregister_driver(&vmbus_acpi_driver);
-+		goto cleanup;
-+
-+	return 0;
-+
-+cleanup:
-+	acpi_bus_unregister_driver(&vmbus_acpi_driver);
- 	return ret;
- }
- 
--- 
-1.7.4.1
+  This issue (and also a patch) was previously mentioned at
+https://patchwork.kernel.org/patch/903912/ , however no action was taken
+up to now, and 3.0 release is really close. Patch mentioned above makes
+zcache work properly.
 
+  Regards,
+    Milan Plzik
