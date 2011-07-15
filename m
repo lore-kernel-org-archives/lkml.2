@@ -1,102 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751847Ab1GONIE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 09:08:04 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35564 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750865Ab1GONIC convert rfc822-to-8bit (ORCPT
+	id S1751639Ab1GONKi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 09:10:38 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59046 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750770Ab1GONKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 09:08:02 -0400
-Subject: Re: INFO: possible circular locking dependency detected
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: paulmck@linux.vnet.ibm.com
-Cc: Ed Tomlinson <edt@aei.ca>, Steven Rostedt <rostedt@goodmis.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <20110715124206.GA2376@linux.vnet.ibm.com>
-References: <20110714144946.GA3354@swordfish.minsk.epam.com>
-	 <1310665613.27864.50.camel@gandalf.stny.rr.com>
-	 <20110714191809.GF2349@linux.vnet.ibm.com> <201107150705.46248.edt@aei.ca>
-	 <1310729362.2586.325.camel@twins>
-	 <20110715124206.GA2376@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 15 Jul 2011 15:07:39 +0200
-Message-ID: <1310735259.2586.330.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 15 Jul 2011 09:10:37 -0400
+Date: Fri, 15 Jul 2011 22:10:26 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Greg KH <greg@kroah.com>, Grant Likely <grant@secretlab.ca>,
+        Ben Dooks <ben-linux@fluff.org>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Samuel Oritz <sameo@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] regulator: Convert tps65023 to use regmap API
+Message-ID: <20110715131023.GC10026@opensource.wolfsonmicro.com>
+References: <20110715062215.GN32716@opensource.wolfsonmicro.com>
+ <1310710992-24462-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <1310710992-24462-4-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <20110715123121.735688a6@endymion.delvare>
+ <20110715121646.GA10026@opensource.wolfsonmicro.com>
+ <20110715145848.750a85aa@endymion.delvare>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110715145848.750a85aa@endymion.delvare>
+X-Cookie: You should go home.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-15 at 05:42 -0700, Paul E. McKenney wrote:
-> On Fri, Jul 15, 2011 at 01:29:22PM +0200, Peter Zijlstra wrote:
-> > On Fri, 2011-07-15 at 07:05 -0400, Ed Tomlinson wrote:
-> > > Jul 14 23:21:18 grover kernel: [  920.659426] -> #1 (rcu_node_level_0){..-...}:
-> > > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff8108b7e5>] lock_acquire+0x95/0x140
-> > > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff8157808b>] _raw_spin_lock+0x3b/0x50
-> > > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff810ba797>] __rcu_read_unlock+0x197/0x2d0
-> > > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff8103f2f5>] select_task_rq_fair+0x585/0xa80
-> > > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff8104633b>] try_to_wake_up+0x17b/0x360
-> > > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff81046575>] wake_up_process+0x15/0x20
-> > > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff810528f4>] irq_exit+0xb4/0x100
-> > > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff8158197e>] smp_apic_timer_interrupt+0x6e/0x99
-> > > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff81580c53>] apic_timer_interrupt+0x13/0x20
-> > > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff810ba6e9>] __rcu_read_unlock+0xe9/0x2d0 
-> > > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff814c20d4>] sock_def_readable+0x94/0xc0
-> > 
-> > Ed, are you perchance running with force_irqthreads?
-> > 
-> > Paul, what appears to be happening here is that some rcu_read_unlock()
-> > gets interrupted, possibly before calling rcu_read_unlock_special(),
-> > possibly not if the interrupt is itself the timer interrupt.
-> > 
-> > Supposing ->rcu_read_unlock_special is set before, any wakeup happening
-> > from an interrupt hitting __rcu_read_unlock():
-> > 
-> > void __rcu_read_unlock(void)
-> > {
-> >         struct task_struct *t = current;
-> >                 
-> >         barrier();  /* needed if we ever invoke rcu_read_unlock in rcutree.c */
-> >         --t->rcu_read_lock_nesting;
-> >         barrier();  /* decrement before load of ->rcu_read_unlock_special */
-> >         if (t->rcu_read_lock_nesting == 0 &&
-> >             unlikely(ACCESS_ONCE(t->rcu_read_unlock_special)))
-> >                 rcu_read_unlock_special(t);
-> > #ifdef CONFIG_PROVE_LOCKING
-> >         WARN_ON_ONCE(ACCESS_ONCE(t->rcu_read_lock_nesting) < 0);
-> > #endif /* #ifdef CONFIG_PROVE_LOCKING */
-> > }
-> > 
-> > After --t->rcu_read_lock_nesting, but before calling
-> > rcu_read_unlock_special(), will trigger this lock inversion.
-> > 
-> > The alternative case, ->rcu_read_unlock_special is not set yet, it can
-> > be set if the interrupt hitting in that same spot above, is the timer
-> > interrupt, and the wakeup happens either from the softirq ran from the
-> > hard IRQ tail, or as I suspect here happens, the wakeup of ksoftirqd/#.
+On Fri, Jul 15, 2011 at 02:58:48PM +0200, Jean Delvare wrote:
+> On Fri, 15 Jul 2011 21:16:50 +0900, Mark Brown wrote:
 
-OK, so the latter case cannot happen (rcu_preempt_check_callbacks only
-sets NEED_QS when rcu_read_lock_nesting), we need two interrupts for
-this to happen.
+> > regmap API.  As far as I can tell this isn't really a big deal except
+> > for those device classes like hwmon which are frequently deployed in
+> > PCs, anything else just won't care.
 
-rcu_read_lock()
+> Mostly correct. There are a few other devices which can also be found
+> on PCs: multiplexers and EEPROMs at least.
 
- <IRQ>
-   |= RCU_READ_UNLOCK_NEED_QS
+I did say "device classes like" for a reason :)
 
-rcu_read_unlock()
-  __rcu_read_unlock()
-   --rcu_read_lock_nesting;
-     <IRQ>
-	ttwu()
-          rcu_read_lock()
-	  rcu_read_unlock()
-	    rcu_read_unlock_special()
-	      *BANG*
-   rcu_read_unlock_special()
+> > This should be reasonably simple to handle in the regmap API, just teach
+> > the I2C module to fall back to using the SMBus operations if the
+> > controller is limited to that.  This should be done incrementally as it
+> > adds complexity, and ideally would be done by someone with some access
+> > to hardware that can use the SMBus API (I don't have any myself) so they
+> > can test.
 
+> You do have access ;) The i2c core will translate SMBus to I2C as
+> needed, so all you have to do is temporarily alter the regmap core to
+> unconditionally translate to SMBus. This will be inefficient (regmap ->
+> SMBus -> I2C) but should be suitable for testing.
 
+I have access to host controllers obviously, what I don't have is access
+to any client devices with suitable register maps.
+
+> > > >  static int tps_65023_set_bits(struct tps_pmic *tps, u8 reg, u8 mask)
+> > > >  {
+> > > > -	int err, data;
+
+> > *Please* could people delete unneeded context from mails?
+
+> ? There were more comments from me in the rest of the code, which is
+> why I left it.
+
+You should delete all the text that isn't directly related to your
+comments, you appeared to have not deleted any content at all from the
+mail.  There were pages and pages of stuff with no comments at all.
+
+This really helpful both for finding the content (it's really easy to
+just page past stuff) and for those of us who read mail on mobile
+devices.
