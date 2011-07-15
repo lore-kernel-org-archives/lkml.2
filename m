@@ -1,47 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752954Ab1GOPUc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 11:20:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37756 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752891Ab1GOPUa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 11:20:30 -0400
-Date: Fri, 15 Jul 2011 17:19:16 +0200
-From: Greg KH <gregkh@suse.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Theodore Tso <tytso@MIT.EDU>, Mike Waychison <mikew@google.com>,
+	id S1752945Ab1GOP0x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 11:26:53 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:44432 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751216Ab1GOP0v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 11:26:51 -0400
+Date: Fri, 15 Jul 2011 19:26:41 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Stephen Smalley <sds@tycho.nsa.gov>
+Cc: NeilBrown <neilb@suse.de>, kernel-hardening@lists.openwall.com,
+        Solar Designer <solar@openwall.com>, James Morris <jmorris@namei.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Kconfig: Allow disabling of CONFIG_DEVPORT
-Message-ID: <20110715151916.GC4747@suse.de>
-References: <1310675693-9204-1-git-send-email-mikew@google.com>
- <20110714212113.GA28639@suse.de>
- <CAGTjWtB53vW5B2EJ5=+C3buDAY0RtsfANxx5NhC5aWnmEx08EQ@mail.gmail.com>
- <20110715064147.GA1021@suse.de>
- <C70E3912-6AA9-4EB3-85CC-11BF90D230C8@mit.edu>
- <20110715145132.GA4296@suse.de>
- <20110715155835.4e019ca5@lxorguk.ukuu.org.uk>
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Eric Paris <eparis@redhat.com>, Willy Tarreau <w@1wt.eu>,
+        Sebastian Krahmer <krahmer@suse.de>
+Subject: Re: [kernel-hardening] Re: [PATCH] move RLIMIT_NPROC check from
+ set_user() to do_execve_common()
+Message-ID: <20110715152641.GA6286@albatros>
+References: <20110713170657.59dae548@notabene.brown>
+ <CA+55aFwQKqvNvzTMYXVW_yKkFtNsyv8uuBiWiwYLof-nPqPu9w@mail.gmail.com>
+ <alpine.LRH.2.00.1107141009510.17067@tundra.namei.org>
+ <20110714112751.1bfd998f@notabene.brown>
+ <20110714150602.GA30019@openwall.com>
+ <20110715133013.4fa38d19@notabene.brown>
+ <20110715063113.GA3166@albatros>
+ <20110715170650.585f1dad@notabene.brown>
+ <20110715073823.GA3821@albatros>
+ <1310738313.30257.27.camel@moss-pluto>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110715155835.4e019ca5@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1310738313.30257.27.camel@moss-pluto>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 15, 2011 at 03:58:35PM +0100, Alan Cox wrote:
-> > But none of them are on the Signed-off-by: line area, right?
-> 
-> We have a fair number of people using things like
-> 
-> Fixes-bug: [URL]
-> 
-> 
-> Its useful public info, it makes it easier to grep
+Hi Stephen,
 
-That's fine, but that is not what was done here.  And those URLs had
-better be public as well.
+On Fri, Jul 15, 2011 at 09:58 -0400, Stephen Smalley wrote:
+> Does this have implications for Android's zygote model?  There you have
+> a long running uid 0 / all caps process (the zygote), which forks itself
+> upon receiving a request to spawn an app and then calls
 
-greg k-h
+> setgroups();
+> setrlimit(); setgid(); setuid();
+
+Is RLIMIT_NPROC forced in your model and setuid() is expected to fail
+because of NPROC exceeding?  If no, then it is not touched at all.
+
+> Also, can't setuid() fail under other conditions, e.g. ENOMEM upon
+> prepare_creds() allocation failure?  Is it ever reasonable for a program
+> to not check setuid() for failure?  Certainly there are plenty of
+> examples of programs not doing that, but it isn't clear that this is a
+> bug in the kernel.
+
+This thing is better to discuss separately, after the patch is applied.
+Shorter, in current implementation it is not possible as mm layer tries
+to alloc small structures (less than 8 pages) indefinitely.  cred and
+user_struct are less than 64kb, so ENOMEM is impossible.
+
+Thanks,
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
