@@ -1,120 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751056Ab1GOM0b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 08:26:31 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:46030 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863Ab1GOM0a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 08:26:30 -0400
-X-AuditID: b753bd60-a32aeba0000019f4-2e-4e2031f2389f
-X-AuditID: b753bd60-a32aeba0000019f4-2e-4e2031f2389f
-Message-ID: <4E2031D8.3090902@hitachi.com>
-Date: Fri, 15 Jul 2011 21:26:00 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	id S1751464Ab1GOMag (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 08:30:36 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:1064 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751058Ab1GOMaf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 08:30:35 -0400
+X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
+Message-ID: <4E2032D7.9000704@broadcom.com>
+Date: Fri, 15 Jul 2011 14:30:15 +0200
+From: "Roland Vossen" <rvossen@broadcom.com>
+Organization: Broadcom
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17)
+ Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH -tip  00/13]tracing/kprobes: Dynamic events on module
- support
-References: <20110627072626.6528.41792.stgit@fedora15> <1310729328.27864.61.camel@gandalf.stny.rr.com>
-In-Reply-To: <1310729328.27864.61.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: "Jonas Gorski" <jonas.gorski@gmail.com>,
+        "Geert Uytterhoeven" <geert@linux-m68k.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>
+Subject: Re: Status of MIPS on 3.0.0-rc6 kernel
+References: <4E1ECE3B.10308@broadcom.com>
+ <CAOiHx=kznEFL1BELeg2psg9yw+=-A5reunG0VYTu89DGKwrSzA@mail.gmail.com>
+ <201107142151.24763.rjw@sisk.pl>
+In-Reply-To: <201107142151.24763.rjw@sisk.pl>
+X-WSS-ID: 623EEB993B421038137-01-01
+Content-Type: text/plain;
+ charset=utf-8;
+ format=flowed
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/07/15 20:28), Steven Rostedt wrote:
-> On Mon, 2011-06-27 at 16:26 +0900, Masami Hiramatsu wrote:
->> Hi Steven,
->>
->> Here, I'd like to push updates of dynamic events and perf-probe
->> for supporting dynamic events on module.
->>
->> The main part of this series is 1-5th patches for kprobes and
->> dynamic event tracer, which allows us to add events on offline
->> kernel module. This means we can put events even on the init
->> functions of the drivers before loading. The requirement of
->> this feature comes from my recent experience of a driver
->> debugging. It had a timing bug in the initialization routine,
->> and it was hard to catch them without tracing the behavior.
->>
->> I added some perf-probe updates (which including some resent
->> patches), And it's OK to pull only the main part (kprobes and
->> ftrace patches) without perf updates.
->>
-> 
-> OK I pulled in everything but patch 10, as that seemed to have an issue
-> with the message that David Ahern brought up. I left that one out as it
-> really wasn't necessary for the other patches. If you want to just
-> resend that one patch with an update, I can pull that one in too.
+> Please check if the appended patch helps.
 
-Thanks, and patch 10, I've found that that actually fixed a bug
-of perf probe itself and have sent it to Ingo as another bugfix,
-so feel free to drop it from your tree.
+It does, I am able to build a big endian MIPS kernel now. Can you notify 
+me if you submit this patch ?
 
-Thank you,
+Thanks, Roland.
 
-> 
-> -- Steve
-> 
->>
->> Thank you,
->>
->> ---
->>
->> Masami Hiramatsu (13):
->>       perf probe: Support adding probes on offline kernel modules
->>       perf probe: Add probed module in front of function
->>       [RESEND]perf probe: Introduce debuginfo to encapsulate dwarf information
->>       [RESEND]perf probe: Warn when more than two lines are given
->>       [RESEND][CLEANUP]perf-probe: Move dwarf library routines to dwarf-aux.{c,h}
->>       [RESEND][CLEANUP]perf probe: Remove redundant dwarf functions
->>       [RESEND][CLEANUP]perf probe: Move strtailcmp to string.c
->>       [RESEND][CLEANUP]perf probe: Rename DIE_FIND_CB_FOUND to DIE_FIND_CB_END
->>       tracing/kprobe: Update symbol reference when loading module
->>       tracing/kprobes: Support module init function probing
->>       kprobes: Return -ENOENT if probe point doesn't exist
->>       [CLEANUP]tracing/kprobes: merge trace probe enable/disable functions
->>       [CLEANUP]tracing/kprobes: Rename probe_* to trace_probe_*
->>
->>
->>  Documentation/trace/kprobetrace.txt     |    9 
->>  kernel/kprobes.c                        |   33 +
->>  kernel/trace/trace_kprobe.c             |  314 +++++++++----
->>  tools/perf/Documentation/perf-probe.txt |    6 
->>  tools/perf/Makefile                     |    2 
->>  tools/perf/builtin-probe.c              |   14 -
->>  tools/perf/util/dwarf-aux.c             |  663 +++++++++++++++++++++++++++
->>  tools/perf/util/dwarf-aux.h             |  100 ++++
->>  tools/perf/util/probe-event.c           |  165 +++++--
->>  tools/perf/util/probe-event.h           |    1 
->>  tools/perf/util/probe-finder.c          |  752 ++++---------------------------
->>  tools/perf/util/probe-finder.h          |   43 +-
->>  tools/perf/util/string.c                |   19 +
->>  tools/perf/util/util.h                  |    1 
->>  14 files changed, 1304 insertions(+), 818 deletions(-)
->>  create mode 100644 tools/perf/util/dwarf-aux.c
->>  create mode 100644 tools/perf/util/dwarf-aux.h
->>
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>
+> Thanks,
+> Rafael
+>
+> ---
+> From: Rafael J. Wysocki<rjw@sisk.pl>
+> Subject: MIPS: Convert i8259.c to using syscore_ops
+>
+> The code in arch/mips/kernel/i8259.c still hasn't been converted to
+> using struct syscore_ops instead of a sysdev for resume and shutdown.
+> As a result, this code doesn't build any more after suspend, resume
+> and shutdown callbacks have been removed from struct sysdev_class.
+> Fix this problem by converting i8259.c to using syscore_ops.
+>
+> Signed-off-by: Rafael J. Wysocki<rjw@sisk.pl>
+> ---
+>   arch/mips/kernel/i8259.c |   22 ++++++----------------
+>   1 file changed, 6 insertions(+), 16 deletions(-)
+>
+> Index: linux-2.6/arch/mips/kernel/i8259.c
+> ===================================================================
+> --- linux-2.6.orig/arch/mips/kernel/i8259.c
+> +++ linux-2.6/arch/mips/kernel/i8259.c
+> @@ -14,7 +14,7 @@
+>   #include<linux/interrupt.h>
+>   #include<linux/kernel.h>
+>   #include<linux/spinlock.h>
+> -#include<linux/sysdev.h>
+> +#include<linux/syscore_ops.h>
+>   #include<linux/irq.h>
+>
+>   #include<asm/i8259.h>
+> @@ -215,14 +215,13 @@ spurious_8259A_irq:
+>   	}
+>   }
+>
+> -static int i8259A_resume(struct sys_device *dev)
+> +static void i8259A_resume(void)
+>   {
+>   	if (i8259A_auto_eoi>= 0)
+>   		init_8259A(i8259A_auto_eoi);
+> -	return 0;
+>   }
+>
+> -static int i8259A_shutdown(struct sys_device *dev)
+> +static void i8259A_shutdown(void)
+>   {
+>   	/* Put the i8259A into a quiescent state that
+>   	 * the kernel initialization code can get it
+> @@ -232,26 +231,17 @@ static int i8259A_shutdown(struct sys_de
+>   		outb(0xff, PIC_MASTER_IMR);	/* mask all of 8259A-1 */
+>   		outb(0xff, PIC_SLAVE_IMR);	/* mask all of 8259A-1 */
+>   	}
+> -	return 0;
+>   }
+>
+> -static struct sysdev_class i8259_sysdev_class = {
+> -	.name = "i8259",
+> +static struct syscore_ops i8259_syscore_ops = {
+>   	.resume = i8259A_resume,
+>   	.shutdown = i8259A_shutdown,
+>   };
+>
+> -static struct sys_device device_i8259A = {
+> -	.id	= 0,
+> -	.cls	=&i8259_sysdev_class,
+> -};
+> -
+>   static int __init i8259A_init_sysfs(void)
+>   {
+> -	int error = sysdev_class_register(&i8259_sysdev_class);
+> -	if (!error)
+> -		error = sysdev_register(&device_i8259A);
+> -	return error;
+> +	register_syscore_ops(&i8259_syscore_ops);
+> +	return 0;
+>   }
+>
+>   device_initcall(i8259A_init_sysfs);
+>
 
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
