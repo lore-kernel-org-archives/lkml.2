@@ -1,52 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932680Ab1GOAp6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 20:45:58 -0400
-Received: from ozlabs.org ([203.10.76.45]:46908 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932409Ab1GOAp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 20:45:57 -0400
-Date: Fri, 15 Jul 2011 10:45:47 +1000
-From: Anton Blanchard <anton@samba.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: mahesh@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, mingo@elte.hu, benh@kernel.crashing.org,
-        torvalds@linux-foundation.org
-Subject: Re: [regression] 3.0-rc boot failure -- bisected to cd4ea6ae3982
-Message-ID: <20110715104547.29c3c509@kryten>
-In-Reply-To: <1310649379.2586.273.camel@twins>
-References: <20110707102107.GA16666@in.ibm.com>
-	<1310036375.3282.509.camel@twins>
-	<20110714103418.7ef25b68@kryten>
-	<20110714143521.5fe4fab6@kryten>
-	<1310649379.2586.273.camel@twins>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932673Ab1GOAtP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 20:49:15 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:30752 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932409Ab1GOAtO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 20:49:14 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=WN4a00NO9sl3trIbCiN2zokD1aVAhdwStSvzU3FRubUhWeX1y/D2KgPJTGdIOkHBU
+	5VolbA6KHot7S6Ygevr+Q==
+MIME-Version: 1.0
+In-Reply-To: <20110715003912.149dcedd@lxorguk.ukuu.org.uk>
+References: <1310675693-9204-1-git-send-email-mikew@google.com>
+ <1310675693-9204-2-git-send-email-mikew@google.com> <20110714234248.7ed43534@lxorguk.ukuu.org.uk>
+ <CAGTjWtDHH_VXXAsh5WPspTwPEhzcKi4_Jno7w=jReiS7HSALQw@mail.gmail.com>
+ <20110715000037.3fc1670a@lxorguk.ukuu.org.uk> <CAGTjWtA5qobWAZb=SbM1y5SFtDKPuJVuAsbDKmkaxxL7mA6OKg@mail.gmail.com>
+ <20110715003912.149dcedd@lxorguk.ukuu.org.uk>
+From: Mike Waychison <mikew@google.com>
+Date: Thu, 14 Jul 2011 17:48:48 -0700
+Message-ID: <CAGTjWtD+5cZxQiE+tikUyz2SNgm3bR95GE2veevEv15cPX1E9A@mail.gmail.com>
+Subject: Re: [PATCH 2/2] x86: Allow disabling of sys_iopl, sys_ioperm
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jul 14, 2011 at 4:39 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> In my case, I simply don't want these "features", which is why I took
+>> the compile time approach to turning this stuff off.  I realize that
+>> these syscalls (and the /dev/port interface) are not comprehensive (I
+>> didn't say they were either).  I'm happy though to take suggestions
+>
+> Indeed - but from the point of view of doing the job to a standard for
+> an upstream kernel there ought to be a meaningful testable definition of
+> what the security shift you achieve is.
+>
+>> for stuff I probably should be disabling considering my goal of making
+>> it difficult for root to compromise a system.  And yes, modules are
+>> disabled :)
+>
+> If you have CAP_SYS_RAWIO and some of the other interfaces you only think
+> it is - the kiddies toolkits already include out of the box direct module
+> loading hacks (in fact its fairly easy if you've got GPU PCI access to
+> just put the module into video memory so that only the patching needs to
+> be done and the module internal addresses are all fixed and can be
+> arranged on a suitably convenient target address)
+>
+> So really there needs to be a definition of what you are trying to
+> achieve. My own guess is that for
+>
+>        "Disallow direct access paths to hardware"
+>
+> the actual answer is 'revoke RAWIO' and then give it back to very
+> specific selected code in very specific selected ways or possibly in some
+> cases where rawio is needed for stuff that shouldn't be by writing new
+> driver bits to provide the proper interface that we are lacking ?
+>
+> So lets turn the question around a moment - what breaks if you simply
+> take CAP_SYS_RAWIO away from everything ?
+>
 
-Hi,
+Alright, I see your point.   ISTR that CAP_SYS_RAWIO was required for
+accessing block devices directly, but this doesn't seem to be the
+case.
 
-> Urgh.. so those spans are generated by sched_domain_node_span(), and
-> it looks like that simply picks the 15 nearest nodes to the one we've
-> got without consideration for overlap with previously generated spans.
+I think the approach I'll try next is to try and drop it with
+PR_CAPBSET_DROP from early userspace's init.
 
-I do wonder if we need this extra level at all on ppc64. From memory
-SGI added it for their massive setups, but our largest setup is 32 nodes
-and breaking that down into 16 node chunks seems overkill.
-
-I just realised we were setting NEWIDLE on our node definition and that
-was causing large amounts of rebalance work even with
-SD_NODES_PER_DOMAIN=16.
-
-After removing it and bumping SD_NODES_PER_DOMAIN to 32, things look
-pretty good.
-
-Perhaps we should allow an arch to override SD_NODES_PER_DOMAIN so this
-extra level is only used by SGI boxes.
-
-Anton
+Any other vectors you would suggest to keep the kiddies away?
