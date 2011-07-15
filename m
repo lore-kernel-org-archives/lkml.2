@@ -1,214 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965227Ab1GOGXl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 02:23:41 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51192 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S965167Ab1GOGXj (ORCPT
+	id S964949Ab1GOGbW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 02:31:22 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:50788 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964790Ab1GOGbV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 02:23:39 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Greg KH <greg@kroah.com>, Grant Likely <grant@secretlab.ca>,
-        Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>
-Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Samuel Oritz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 4/4] regulator: Convert tps65023 to use regmap API
-Date: Fri, 15 Jul 2011 15:23:12 +0900
-Message-Id: <1310710992-24462-4-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1310710992-24462-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <20110715062215.GN32716@opensource.wolfsonmicro.com>
- <1310710992-24462-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Fri, 15 Jul 2011 02:31:21 -0400
+Date: Fri, 15 Jul 2011 10:31:13 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: kernel-hardening@lists.openwall.com
+Cc: Solar Designer <solar@openwall.com>, James Morris <jmorris@namei.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Eric Paris <eparis@redhat.com>, Stephen Smalley <sds@tycho.nsa.gov>,
+        Willy Tarreau <w@1wt.eu>, Sebastian Krahmer <krahmer@suse.de>
+Subject: Re: [kernel-hardening] Re: [PATCH] move RLIMIT_NPROC check from
+ set_user() to do_execve_common()
+Message-ID: <20110715063113.GA3166@albatros>
+References: <20110712132723.GA3193@albatros>
+ <CA+55aFysXOeBqEvmVbuqL3i0jRFDcE=vDuVhmYL38XQ0+x=deQ@mail.gmail.com>
+ <20110713091408.0d456352@notabene.brown>
+ <20110713063142.GA19976@openwall.com>
+ <20110713170657.59dae548@notabene.brown>
+ <CA+55aFwQKqvNvzTMYXVW_yKkFtNsyv8uuBiWiwYLof-nPqPu9w@mail.gmail.com>
+ <alpine.LRH.2.00.1107141009510.17067@tundra.namei.org>
+ <20110714112751.1bfd998f@notabene.brown>
+ <20110714150602.GA30019@openwall.com>
+ <20110715133013.4fa38d19@notabene.brown>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110715133013.4fa38d19@notabene.brown>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Acked-by: Liam Girdwood <lrg@ti.com>
----
- drivers/regulator/Kconfig              |    1 +
- drivers/regulator/tps65023-regulator.c |   98 +++++++++-----------------------
- 2 files changed, 28 insertions(+), 71 deletions(-)
+Neil,
 
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index d7ed20f..c8dc5f0 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -235,6 +235,7 @@ config REGULATOR_TPS6105X
- config REGULATOR_TPS65023
- 	tristate "TI TPS65023 Power regulators"
- 	depends on I2C
-+	select REGMAP
- 	help
- 	  This driver supports TPS65023 voltage regulator chips. TPS65023 provides
- 	  three step-down converters and two general-purpose LDO voltage regulators.
-diff --git a/drivers/regulator/tps65023-regulator.c b/drivers/regulator/tps65023-regulator.c
-index fbddc15..3fa3ba5 100644
---- a/drivers/regulator/tps65023-regulator.c
-+++ b/drivers/regulator/tps65023-regulator.c
-@@ -25,6 +25,7 @@
- #include <linux/i2c.h>
- #include <linux/delay.h>
- #include <linux/slab.h>
-+#include <linux/regmap.h>
- 
- /* Register definitions */
- #define	TPS65023_REG_VERSION		0
-@@ -125,93 +126,35 @@ struct tps_pmic {
- 	struct i2c_client *client;
- 	struct regulator_dev *rdev[TPS65023_NUM_REGULATOR];
- 	const struct tps_info *info[TPS65023_NUM_REGULATOR];
--	struct mutex io_lock;
-+	struct regmap *regmap;
- };
- 
--static inline int tps_65023_read(struct tps_pmic *tps, u8 reg)
--{
--	return i2c_smbus_read_byte_data(tps->client, reg);
--}
--
--static inline int tps_65023_write(struct tps_pmic *tps, u8 reg, u8 val)
--{
--	return i2c_smbus_write_byte_data(tps->client, reg, val);
--}
--
- static int tps_65023_set_bits(struct tps_pmic *tps, u8 reg, u8 mask)
- {
--	int err, data;
--
--	mutex_lock(&tps->io_lock);
--
--	data = tps_65023_read(tps, reg);
--	if (data < 0) {
--		dev_err(&tps->client->dev, "Read from reg 0x%x failed\n", reg);
--		err = data;
--		goto out;
--	}
--
--	data |= mask;
--	err = tps_65023_write(tps, reg, data);
--	if (err)
--		dev_err(&tps->client->dev, "Write for reg 0x%x failed\n", reg);
--
--out:
--	mutex_unlock(&tps->io_lock);
--	return err;
-+	return regmap_update_bits(tps->regmap, reg, mask, mask);
- }
- 
- static int tps_65023_clear_bits(struct tps_pmic *tps, u8 reg, u8 mask)
- {
--	int err, data;
--
--	mutex_lock(&tps->io_lock);
--
--	data = tps_65023_read(tps, reg);
--	if (data < 0) {
--		dev_err(&tps->client->dev, "Read from reg 0x%x failed\n", reg);
--		err = data;
--		goto out;
--	}
--
--	data &= ~mask;
--
--	err = tps_65023_write(tps, reg, data);
--	if (err)
--		dev_err(&tps->client->dev, "Write for reg 0x%x failed\n", reg);
--
--out:
--	mutex_unlock(&tps->io_lock);
--	return err;
--
-+	return regmap_update_bits(tps->regmap, reg, mask, 0);
- }
- 
- static int tps_65023_reg_read(struct tps_pmic *tps, u8 reg)
- {
--	int data;
-+	unsigned int val;
-+	int ret;
- 
--	mutex_lock(&tps->io_lock);
-+	ret = regmap_read(tps->regmap, reg, &val);
- 
--	data = tps_65023_read(tps, reg);
--	if (data < 0)
--		dev_err(&tps->client->dev, "Read from reg 0x%x failed\n", reg);
--
--	mutex_unlock(&tps->io_lock);
--	return data;
-+	if (ret != 0)
-+		return ret;
-+	else
-+		return val;
- }
- 
- static int tps_65023_reg_write(struct tps_pmic *tps, u8 reg, u8 val)
- {
--	int err;
--
--	mutex_lock(&tps->io_lock);
--
--	err = tps_65023_write(tps, reg, val);
--	if (err < 0)
--		dev_err(&tps->client->dev, "Write for reg 0x%x failed\n", reg);
--
--	mutex_unlock(&tps->io_lock);
--	return err;
-+	return regmap_write(tps->regmap, reg, val);
- }
- 
- static int tps65023_dcdc_is_enabled(struct regulator_dev *dev)
-@@ -463,6 +406,10 @@ static struct regulator_ops tps65023_ldo_ops = {
- 	.list_voltage = tps65023_ldo_list_voltage,
- };
- 
-+static struct regmap_config tps65023_regmap_config = {
-+	.reg_bits = 8, .val_bits = 8,
-+};
-+
- static int __devinit tps_65023_probe(struct i2c_client *client,
- 				     const struct i2c_device_id *id)
- {
-@@ -488,7 +435,13 @@ static int __devinit tps_65023_probe(struct i2c_client *client,
- 	if (!tps)
- 		return -ENOMEM;
- 
--	mutex_init(&tps->io_lock);
-+	tps->regmap = regmap_init(&client->dev, &tps65023_regmap_config);
-+	if (IS_ERR(tps->regmap)) {
-+		error = PTR_ERR(tps->regmap);
-+		dev_err(&client->dev, "Failed to allocate register map: %d\n",
-+			error);
-+		goto fail_alloc;
-+	}
- 
- 	/* common for all regulators */
- 	tps->client = client;
-@@ -523,10 +476,12 @@ static int __devinit tps_65023_probe(struct i2c_client *client,
- 
- 	return 0;
- 
-- fail:
-+fail:
- 	while (--i >= 0)
- 		regulator_unregister(tps->rdev[i]);
- 
-+	regmap_exit(tps->regmap);
-+fail_alloc:
- 	kfree(tps);
- 	return error;
- }
-@@ -545,6 +500,7 @@ static int __devexit tps_65023_remove(struct i2c_client *client)
- 	for (i = 0; i < TPS65023_NUM_REGULATOR; i++)
- 		regulator_unregister(tps->rdev[i]);
- 
-+	regmap_exit(tps->regmap);
- 	kfree(tps);
- 
- 	return 0;
+On Fri, Jul 15, 2011 at 13:30 +1000, NeilBrown wrote:
+> I'm still bothers that the proposed patch can cause exec to fail for an
+> separate 'innocent' process.
+> It also seems to 'hide' the problem - just shuffling code around.
+> The comment in do_execve_common helps.  A similar comment in set_user
+> wouldn't hurt.
+> 
+> But what do you think of this.  It sure that only the process which ignored
+> the return value from setuid is inconvenienced.
+
+I don't like it.  You're mixing the main problem and an RLIMIT check
+enforcement.  The main goal is denying setuid() to fail unless there is not
+enough privileges, RLIMIT in execve() is just an *attempt* to still count
+NPROC in *some* widespread cases.  But you're trying to fix setuid()
+where RLIMIT accounting is simple :\
+
+Your patch doesn't address the core issue in this situation:
+
+    setuid(); /* it fails because of RLIMIT */
+    do_some_fs();
+    execve();
+
+do_some_fs() should be called ONLY if root is dropped.  In your scheme
+the process may interact with FS as root while thinking it is nonroot,
+which almost always leads to privilege escalation.
+
+Thanks,
+
 -- 
-1.7.5.4
-
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
