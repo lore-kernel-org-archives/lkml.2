@@ -1,159 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964942Ab1GOCy7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 22:54:59 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:60883 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964801Ab1GOCxb (ORCPT
+	id S964957Ab1GOCzJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 22:55:09 -0400
+Received: from vms173019pub.verizon.net ([206.46.173.19]:41062 "EHLO
+	vms173019pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964801Ab1GOCzF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 22:53:31 -0400
-Date: Thu, 14 Jul 2011 20:53:27 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Greg KH <greg@kroah.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Samuel Oritz <sameo@linux.intel.com>,
-        Graeme Gregory <gg@slimlogic.co.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] regmap: Add SPI bus support
-Message-ID: <20110715025327.GI2927@ponder.secretlab.ca>
-References: <20110709044923.GB13074@opensource.wolfsonmicro.com>
- <1310187044-13269-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <1310187044-13269-3-git-send-email-broonie@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1310187044-13269-3-git-send-email-broonie@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 14 Jul 2011 22:55:05 -0400
+Date: Thu, 14 Jul 2011 22:52:46 -0400 (EDT)
+From: Peter Foley <pefoley2@verizon.net>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Peter Foley <pefoley2@verizon.net>, Michal Marek <mmarek@suse.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel: prevent unnecessary rebuilding due to
+ config_data.gz
+In-reply-to: <20110706083329.9755dc70.rdunlap@xenotime.net>
+Message-id: <alpine.LNX.2.00.1107142252160.59744@linux>
+References: <alpine.LNX.2.00.1107051741390.20637@linux>
+ <20110706083329.9755dc70.rdunlap@xenotime.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 09, 2011 at 01:50:43PM +0900, Mark Brown wrote:
-> We initialise at postcore_initcall() so that we are available before users
-> - some users such as PMICs initialise very early. We won't actually try to
-> use any of the bus until a device initialises a register map.
+On Wed, 6 Jul 2011, Randy Dunlap wrote:
+
+> On Tue, 05 Jul 2011 19:42:18 -0400 (EDT) Peter Foley wrote:
 > 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Acked-by: Liam Girdwood <lrg@ti.com>
+> > When IKCONFIG is built-in make oldconfig will cause the kernel to be 
+> > relinked even if .config didn't change. This happens because of a 
+> > config_data.gz dependency on .config. This patch changes the if_changed to 
+> > a filechk so that config_data.h is only rebuilt when the contents 
+> > have actually changed.
+> > 
+> > Signed-off-by: Peter Foley <pefoley2@verizon.net>
+> 
+> Michal,
+> If this looks OK to you, please merge it.
+> 
+> Thanks.
+> 
+> > ---
+> >  kernel/Makefile |    5 ++---
+> >  1 files changed, 2 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/kernel/Makefile b/kernel/Makefile
+> > index 2d64cfc..d06467f 100644
+> > --- a/kernel/Makefile
+> > +++ b/kernel/Makefile
+> > @@ -125,11 +125,10 @@ targets += config_data.gz
+> >  $(obj)/config_data.gz: $(KCONFIG_CONFIG) FORCE
+> >  	$(call if_changed,gzip)
+> >  
+> > -quiet_cmd_ikconfiggz = IKCFG   $@
+> > -      cmd_ikconfiggz = (echo "static const char kernel_config_data[] __used = MAGIC_START"; cat $< | scripts/bin2c; echo "MAGIC_END;") > $@
+> > +      filechk_ikconfiggz = (echo "static const char kernel_config_data[] __used = MAGIC_START"; cat $< | scripts/bin2c; echo "MAGIC_END;")
+> >  targets += config_data.h
+> >  $(obj)/config_data.h: $(obj)/config_data.gz FORCE
+> > -	$(call if_changed,ikconfiggz)
+> > +	$(call filechk,ikconfiggz)
+> >  
+> >  $(obj)/time.o: $(obj)/timeconst.h
+> >  
+> > -- 
+> 
+> 
 > ---
->  drivers/base/regmap/Makefile     |    1 +
->  drivers/base/regmap/regmap-spi.c |   75 ++++++++++++++++++++++++++++++++++++++
->  2 files changed, 76 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/base/regmap/regmap-spi.c
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
 > 
-> diff --git a/drivers/base/regmap/Makefile b/drivers/base/regmap/Makefile
-> index 641c20a..74c6680 100644
-> --- a/drivers/base/regmap/Makefile
-> +++ b/drivers/base/regmap/Makefile
-> @@ -1,2 +1,3 @@
->  obj-$(CONFIG_REGMAP) += regmap.o
->  obj-$(CONFIG_I2C) += regmap-i2c.o
-> +obj-$(CONFIG_SPI) += regmap-spi.o
 
-I would think this code should live with drivers/spi.c  And similar
-for the i2c implementation.
-
-> diff --git a/drivers/base/regmap/regmap-spi.c b/drivers/base/regmap/regmap-spi.c
-> new file mode 100644
-> index 0000000..04328c7
-> --- /dev/null
-> +++ b/drivers/base/regmap/regmap-spi.c
-> @@ -0,0 +1,75 @@
-> +/*
-> + * Register map access API - SPI support
-> + *
-> + * Copyright 2011 Wolfson Microelectronics plc
-> + *
-> + * Author: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/regmap.h>
-> +#include <linux/spi/spi.h>
-> +
-> +static int regmap_spi_write(struct device *dev, const void *data, size_t count)
-> +{
-> +	struct spi_device *spi = to_spi_device(dev);
-> +
-> +	return spi_write(spi, data, count);
-> +}
-> +
-> +static int regmap_spi_gather_write(struct device *dev,
-> +				   const void *reg, size_t reg_len,
-> +				   const void *val, size_t val_len)
-> +{
-> +	struct spi_device *spi = to_spi_device(dev);
-> +	struct spi_message m;
-> +	struct spi_transfer t[2];
-> +
-> +	spi_message_init(&m);
-> +
-> +	memset(&t, 0, sizeof(t));
-
-If you do:
-
-	struct spi_transfer t[2] = { {.tx_buf = reg, .len = reg_len},
-				     {.tx_buf = val, .len = val_len}};
-
-Then the memset() and t[0]/t[1] lines can all be culled.
-
-> +
-> +	t[0].tx_buf = reg;
-> +	t[0].len = reg_len;
-> +	spi_message_add_tail(&t[0], &m);
-> +
-> +	t[1].tx_buf = val;
-> +	t[1].len = val_len;
-> +	spi_message_add_tail(&t[0], &m);
-
-t[0]?
-
-> +
-> +	return spi_sync(spi, &m);
-> +}
-> +
-> +static int regmap_spi_read(struct device *dev,
-> +			   const void *reg, size_t reg_size,
-> +			   void *val, size_t val_size)
-> +{
-> +	struct spi_device *spi = to_spi_device(dev);
-> +
-> +	return spi_write_then_read(spi, reg, reg_size, val, val_size);
-
-... of course, after looking at this function, maybe it would be
-better to just add a spi_write_then_write() helper.  :-)
-
-> +}
-> +
-> +static struct regmap_bus regmap_spi = {
-> +	.type = &spi_bus_type,
-> +	.write = regmap_spi_write,
-> +	.gather_write = regmap_spi_gather_write,
-> +	.read = regmap_spi_read,
-> +	.owner = THIS_MODULE,
-> +	.read_flag_mask = 0x80,
-> +};
-> +
-> +static int __init regmap_spi_init(void)
-> +{
-> +	regmap_add_bus(&regmap_spi);
-> +	return 0;
-> +}
-> +postcore_initcall(regmap_spi_init);
-> +
-> +static void __exit regmap_spi_exit(void)
-> +{
-> +	regmap_del_bus(&regmap_spi);
-> +}
-> +module_exit(regmap_spi_exit);
-> -- 
-> 1.7.5.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Ping?
