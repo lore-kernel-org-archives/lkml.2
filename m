@@ -1,107 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753183Ab1GORYL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 13:24:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6225 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751548Ab1GORYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 13:24:09 -0400
-Message-ID: <4E2077A4.4010307@redhat.com>
-Date: Fri, 15 Jul 2011 18:23:48 +0100
-From: Ric Wheeler <rwheeler@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1753941Ab1GORYd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 13:24:33 -0400
+Received: from nfitmail.nfit.au.dk ([130.225.31.129]:55234 "EHLO
+	smtp.nfit.au.dk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753625Ab1GORYc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 13:24:32 -0400
+X-Greylist: delayed 544 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Jul 2011 13:24:31 EDT
+From: Soeren Sandmann <sandmann@cs.au.dk>
+To: sysprof-list@gnome.org, gnome-announce-list@gnome.org,
+        linux-kernel@vger.kernel.org
+Subject: Announce: Sysprof 1.1.8 system-wide CPU profiler for Linux 
+Date: Fri, 15 Jul 2011 19:15:22 +0200
+Message-ID: <ye8mxgfpis5.fsf@llama05.cs.au.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: david@lang.hm
-CC: Chris Mason <chris.mason@oracle.com>, NeilBrown <neilb@suse.de>,
-        Nico Schottelius <nico-lkml-20110623@schottelius.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: Re: Mis-Design of Btrfs?
-References: <20110623105337.GD3753@ethz.ch> <20110627164637.377314e2@notabene.brown> <4E0AF091.9030301@redhat.com> <20110714155620.6e9ac2cc@notabene.brown> <4E1E866E.2050405@redhat.com> <20110714163836.35a729c1@notabene.brown> <4E1E9372.3030208@redhat.com> <1310696606-sup-710@shiny> <alpine.DEB.2.02.1107142149420.3558@asgard.lang.hm> <20110715163354.74fa2083@notabene.brown> <1310728784-sup-9024@shiny> <4E20395C.1000301@redhat.com> <1310735821-sup-2589@shiny> <alpine.DEB.2.02.1107150920180.3745@asgard.lang.hm> <4E206FF8.9090803@redhat.com> <alpine.DEB.2.02.1107150954300.3745@asgard.lang.hm>
-In-Reply-To: <alpine.DEB.2.02.1107150954300.3745@asgard.lang.hm>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-NFIT-ADSL: 0
+X-NFIT-RelayAddr: 130.225.0.251
+X-Sim: 5b23ab220ab0a106491bb9f3028833c34c0e19374b62f7f021136ee3ead8886f 1289
+X-NFIT-Solido-Score: 5.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2011 06:01 PM, david@lang.hm wrote:
-> On Fri, 15 Jul 2011, Ric Wheeler wrote:
->
->> On 07/15/2011 05:23 PM, david@lang.hm wrote:
->>> On Fri, 15 Jul 2011, Chris Mason wrote:
->>>
->>>> Excerpts from Ric Wheeler's message of 2011-07-15 08:58:04 -0400:
->>>>> On 07/15/2011 12:34 PM, Chris Mason wrote:
->>>>
->>>> By bubble up I mean that if you have multiple layers capable of doing
->>>> retries, the lowest levels would retry first.  Basically by the time we
->>>> get an -EIO_ALREADY_RETRIED we know there's nothing that lower level can
->>>> do to help.
->>>
->>> the problem with doing this is that it can end up stalling the box for 
->>> significant amounts of time while all the retries happen.
->>>
->>> we already see this happening today where a disk read failure is retried 
->>> multiple times by the disk, multiple times by the raid controller, and then 
->>> multiple times by Linux, resulting is multi-minute stalls when you hit a 
->>> disk error in some cases.
->>>
->>> having the lower layers do the retries automatically runs the risk of making 
->>> this even worse.
->>>
->>> This needs to be able to be throttled by some layer that can see the entire 
->>> picture (either by cutting off the retries after a number, after some time, 
->>> or by spacing out the retries to allow other queries to get in and let the 
->>> box do useful work in the meantime)
->>>
->>> David Lang
->>>
->>
->> That should not be an issue - we have a "fast fail" path for IO that should 
->> avoid retrying just for those reasons (i.e., for multi-path or when 
->> recovering a flaky drive).
->>
->> This is not a scheme for unbounded retries. If you have a 3 disk mirror in 
->> RAID1, you would read the data no more than 2 extra times and almost never 
->> more than once.  That should be *much* faster than the multiple-second long 
->> timeout you see when waiting for SCSI timeout to fire, etc.
->
-> this issue is when you stack things.
->
-> what if you have a 3 piece raid 1 on top of a 4 piece raid 6?
->
-> so you have 3 raid1 retries * N raid 6 retries. depending on the order that 
-> you do the retries in, and how long it takes that try to fail, this could 
-> start to take significant amounts of time.
->
-> if you do a retry on the lower level first, the raid 6 could try several 
-> different ways to combine the drives to get the valid data (disks 1,2  2,3 3,4 
-> 1,3 1,4 2,4 1,2,3 1,2,4 1,3,4 2,3,4) add more disks and it gets worse fast.
->
-> add more layers and you multiple the number of possible retries.
->
-> my guess is that changing to a different method at the upper level is going to 
-> avoid the problem area faster then doing so at a lower level (because there is 
-> less hardware in common with the method that just gave the wrong answer)
->
-> David Lang
+Sysprof 1.1.8 is now available. This is a release candidate for a
+1.2.0 stable release.
 
-At some point, the question is why would you do that?  Two parity drives for 
-each 4 drive RAID-6 set and then mirror that 3 times (12 drives in total, only 2 
-data drives)? Better off doing a 4 way mirror :)
+Sysprof is a sampling system-wide CPU profiler for Linux. The 1.1.8
+version is based on the perf counter interface in 2.6.31 kernels and
+will not work with earlier kernels.
 
-I think that you are still missing the point.
+Download:               http://sysprof.com/sysprof-1.1.8.tar.gz
+Sysprof web site:       http://sysprof.com/
+Git:                    git://git.gnome.org/sysprof
+Sysprof mailing list:   http://mail.gnome.org/mailman/listinfo/sysprof-list
 
-If the lowest layer can repair the data, it would return the first validated 
-answer. The major time sync would be the IO to read the sectors from each of the 
-4 drives in your example, not computing the various combination of parity or 
-validating (all done in memory).
+Please send patches and bug reports to the sysprof mailing list.
 
-If the RAID-6 layer failed, you would do the same for each of the mirrors which 
-would read the IO from each of their RAID-6 low levels exactly once as well (and 
-then verify in memory).
+Thanks,
+Soren
 
-Ric
 
+Log since 1.1.6:
+
+Damien Lespiau (4):
+      Add a .gitignore file
+      tracker: Silence a debug message
+      cli: Allow to get samples from single pid
+      tracker: Fix the map look up
+
+Javier Jardón (3):
+      autogen.sh: Use autoreconf
+      Remove INSTALL file, It's autogenerated
+      build: Update autotools configuration a bit
+
+Søren Sandmann Pedersen (7):
+      Post-release version bump to 1.1.7
+      Right align the samples label
+      Call gdk_flush() in set_busy().
+      footreestore: Eliminate some type checks that were showing up on profiles
+      Don't compute CRC32s that we know will fail.
+      Speed up map locating in tracker.c
+      Pre-release version bump to 1.1.8
+
+
+Thanks,
+Soren
