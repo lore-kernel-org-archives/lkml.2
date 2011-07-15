@@ -1,64 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932612Ab1GOATD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 20:19:03 -0400
-Received: from hera.kernel.org ([140.211.167.34]:36030 "EHLO hera.kernel.org"
+	id S964784Ab1GOAbF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 20:31:05 -0400
+Received: from mga09.intel.com ([134.134.136.24]:46482 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753938Ab1GOATB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 20:19:01 -0400
-Date: Fri, 15 Jul 2011 00:18:51 GMT
-From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
-Message-ID: <tip-4bb82178f5cb074783aaeaa06f9f840c67af7707@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        tglx@linutronix.de, hpa@linux.intel.com, len.brown@intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, len.brown@intel.com
-In-Reply-To: <tip-abe48b108247e9b90b4c6739662a2e5c765ed114@git.kernel.org>
-References: <tip-abe48b108247e9b90b4c6739662a2e5c765ed114@git.kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cpu] x86, msr: Fix typo in ENERGY_PERF_BIAS_POWERSAVE
-Git-Commit-ID: 4bb82178f5cb074783aaeaa06f9f840c67af7707
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S932409Ab1GOAbD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 20:31:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,531,1304319600"; 
+   d="scan'208";a="26055814"
+Message-ID: <4E1F8A44.8080609@intel.com>
+Date: Fri, 15 Jul 2011 08:31:00 +0800
+From: Huang Ying <ying.huang@intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110626 Iceowl/1.0b2 Icedove/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 15 Jul 2011 00:18:51 +0000 (UTC)
+To: Don Zickus <dzickus@redhat.com>
+CC: Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH 08/17] ACPI, APEI, GHES, Support disable GHES at boot
+ time
+References: <1310534068-30547-1-git-send-email-ying.huang@intel.com> <1310534068-30547-9-git-send-email-ying.huang@intel.com> <20110714144716.GA3080@redhat.com>
+In-Reply-To: <20110714144716.GA3080@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4bb82178f5cb074783aaeaa06f9f840c67af7707
-Gitweb:     http://git.kernel.org/tip/4bb82178f5cb074783aaeaa06f9f840c67af7707
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Thu, 14 Jul 2011 14:58:44 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 14 Jul 2011 14:58:44 -0700
+On 07/14/2011 10:47 PM, Don Zickus wrote:
+> On Wed, Jul 13, 2011 at 01:14:19PM +0800, Huang Ying wrote:
+>> Some machine may have broken firmware so that GHES and firmware first
+>> mode should be disabled.  This patch adds support to that.
+> 
+> Does this still work if you have disabled ghes module support in the
+> previous patch?
 
-x86, msr: Fix typo in ENERGY_PERF_BIAS_POWERSAVE
+Yes.  Module param can be specified in kernel command line, for example
+"ghes.disable=y".
 
-Fix a trivial typo in the name of the constant
-ENERGY_PERF_BIAS_POWERSAVE.  This didn't cause trouble because this
-constant is not currently used for anything.
-
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Len Brown <len.brown@intel.com>
-Link: http://lkml.kernel.org/r/tip-abe48b108247e9b90b4c6739662a2e5c765ed114@git.kernel.org
----
- arch/x86/include/asm/msr-index.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
-index 23a9d89..d96bdb2 100644
---- a/arch/x86/include/asm/msr-index.h
-+++ b/arch/x86/include/asm/msr-index.h
-@@ -261,7 +261,7 @@
- #define MSR_IA32_ENERGY_PERF_BIAS	0x000001b0
- #define ENERGY_PERF_BIAS_PERFORMANCE	0
- #define ENERGY_PERF_BIAS_NORMAL		6
--#define ENERGY_PERF_BIAS_POWERSWAVE	15
-+#define ENERGY_PERF_BIAS_POWERSAVE	15
- 
- #define MSR_IA32_PACKAGE_THERM_STATUS		0x000001b1
- 
+Best Regards,
+Huang Ying
