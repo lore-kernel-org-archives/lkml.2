@@ -1,93 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753328Ab1GOQFH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 12:05:07 -0400
-Received: from mail.lang.hm ([64.81.33.126]:33902 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753018Ab1GOQFF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 12:05:05 -0400
-Date: Fri, 15 Jul 2011 09:03:39 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: NeilBrown <neilb@suse.de>
-cc: Chris Mason <chris.mason@oracle.com>, Ric Wheeler <rwheeler@redhat.com>,
-        Nico Schottelius <nico-lkml-20110623@schottelius.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: Re: Mis-Design of Btrfs?
-In-Reply-To: <20110715163354.74fa2083@notabene.brown>
-Message-ID: <alpine.DEB.2.02.1107150900110.3745@asgard.lang.hm>
-References: <20110623105337.GD3753@ethz.ch> <20110627164637.377314e2@notabene.brown> <4E0AF091.9030301@redhat.com> <20110714155620.6e9ac2cc@notabene.brown> <4E1E866E.2050405@redhat.com> <20110714163836.35a729c1@notabene.brown> <4E1E9372.3030208@redhat.com>
- <1310696606-sup-710@shiny> <alpine.DEB.2.02.1107142149420.3558@asgard.lang.hm> <20110715163354.74fa2083@notabene.brown>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1753359Ab1GOQF2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 12:05:28 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:61336 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753224Ab1GOQF0 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:5:1>);
+	Fri, 15 Jul 2011 12:05:26 -0400
+Message-Id: <4E208162020000780004DA39@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Fri, 15 Jul 2011 17:05:22 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Ian Campbell" <Ian.Campbell@citrix.com>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        "Keir Fraser" <keir@xen.org>
+Cc: "Olaf Hering" <olaf@aepfle.de>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] xen: update machine_to_phys_order on
+	 resume
+References: <20110701104148.GA32729@aepfle.de>
+ <20110712164342.GA12867@aepfle.de> <20110712181118.GA18662@dumpdata.com>
+ <1310548364.634.355.camel@zakaz.uk.xensource.com>
+In-Reply-To: <1310548364.634.355.camel@zakaz.uk.xensource.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Jul 2011, NeilBrown wrote:
+>>> On 13.07.11 at 11:12, Ian Campbell <Ian.Campbell@citrix.com> wrote:
+> It's not so much an objection to this patch but this issue seems to have
+> been caused by Xen cset 20892:d311d1efc25e which looks to me like a
+> subtle ABI breakage for guests. Perhaps we should introduce a feature
+> flag to indicate that a guest can cope with the m2p changing size over
+> migration like this?
 
-> On Thu, 14 Jul 2011 21:58:46 -0700 (PDT) david@lang.hm wrote:
->
->> On Thu, 14 Jul 2011, Chris Mason wrote:
->>
->>> Excerpts from Ric Wheeler's message of 2011-07-14 02:57:54 -0400:
->>>> On 07/14/2011 07:38 AM, NeilBrown wrote:
->>>>> On Thu, 14 Jul 2011 07:02:22 +0100 Ric Wheeler<rwheeler@redhat.com>  wrote:
->>>>>
->>
->> I would suggest that each layer take the value it's give, do an integer
->> division by the number of values that layer supports, using the modulo
->> value for that layer and pass the rest of the result down to the next
->> layer.
->
-> I, on the other hand, would suggest that each layer be given the freedom, and
-> the responsibility, to do whatever it thinks is most appropriate.
->
-> This would probably involved checking the lower levels to see how many
-> strategies each has, and doing some appropriate arithmetic depending on how
-> it combines those devices.
+That's actually not strait forward, as the hypervisor can't see the ELF
+note specified features of a DomU kernel. Passing this information
+down from the tools or from the guest kernel itself otoh doesn't
+necessarily seem worth it. Instead a guest that can deal with the
+upper bound of the M2P table changing can easily obtain the
+desired information through XENMEM_maximum_ram_page. So I
+think on the hypervisor side we're good with the patch I sent
+earlier today.
 
-nothing is wrong with doing something smarter than what I was proposing, I 
-was just intending to propose a default rule that would work (just about) 
-everywhere. I was specifically trying to counter the throught hat the 
-method number would/should be contant as it's passed down the layers.
+Now - does anyone remember why machine_to_phys_order got
+introduced in the first place (rather than doing a precise upper
+bound check using the maximum number the hypervisor returned)?
+I really can't see any benefit in calculating and using the much
+more coarse order only.
 
-The proposal had been made to have each layer do the retries for the layer 
-below it, that would avoid this stacking problem, but at the cost of 
-potentially doing a LOT of retries without the upper level being able to 
-limit it.
+Jan
 
-David Lang
 
-> One problem here is the assumption that the lower levels don't change, and we
-> know that not to be the case.
-> However this is already a problem.  It is entirely possible that the request
-> size parameters of devices can change at any moment, even while a request is
-> in-flight ... though we try to avoid that or work around it.
->
-> The sort of dependencies that we see forming here would probably just make
-> the problem worse.
->
-> Not sure what to do about it though.... maybe just hope it isn't a problem.
->
-> NeilBrown
->
->
->>
->> this works for just trying values until you get the error that tells you
->> there are no more options.
->>
->>
->> things can get very 'intersesting' if the different options below you have
->> different number of options (say a raid1 across a raid5 and a single disk)
->> but I can't think of any good way to figure this out and assemble a
->> sane order without doing an exaustive search down to find the number of
->> options for each layer (and since this can be different for different
->> blocks, you would have to do this each time you invoked this option)
->>
->> David Lang
->
->
