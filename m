@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965231Ab1GOGVy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 02:21:54 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:59558 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965082Ab1GOGVv (ORCPT
+	id S964988Ab1GOGWD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 02:22:03 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:60383 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965082Ab1GOGV7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 02:21:51 -0400
-Subject: [PATCH 14/16] SCSI: wd7000: remove Scsi_Cmnd
+	Fri, 15 Jul 2011 02:21:59 -0400
+Subject: [PATCH 15/16] SCSI: remove Scsi_Cmnd
 From: Davidlohr Bueso <dave.bueso@gmail.com>
 Reply-To: dave@gnu.org
 To: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Miroslav Zagorac <zaga@fly.cc.fer.hr>
+        linux-scsi <linux-scsi@vger.kernel.org>
 Cc: lkml <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset="UTF-8"
 Organization: GNU
-Date: Fri, 15 Jul 2011 02:20:35 -0400
-Message-ID: <1310710835.3184.65.camel@offbook>
+Date: Fri, 15 Jul 2011 02:20:39 -0400
+Message-ID: <1310710839.3184.66.camel@offbook>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2
 Content-Transfer-Encoding: 7bit
@@ -31,22 +30,112 @@ Change this for struct scsi_cmnd.
 
 Signed-off-by: Davidlohr Bueso <dave@gnu.org>
 ---
- drivers/scsi/wd7000.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/scsi/dtc.h         |    4 ++--
+ drivers/scsi/fd_mcs.c      |   10 +++++-----
+ drivers/scsi/nsp32_debug.c |    2 +-
+ drivers/scsi/pas16.h       |    4 ++--
+ 4 files changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/scsi/wd7000.c b/drivers/scsi/wd7000.c
-index 9ee0afe..6127672 100644
---- a/drivers/scsi/wd7000.c
-+++ b/drivers/scsi/wd7000.c
-@@ -1568,7 +1568,7 @@ static int wd7000_release(struct Scsi_Host *shost)
- /*
-  *  I have absolutely NO idea how to do an abort with the WD7000...
-  */
--static int wd7000_abort(Scsi_Cmnd * SCpnt)
-+static int wd7000_abort(struct scsi_cmnd * SCpnt)
- {
- 	Adapter *host = (Adapter *) SCpnt->device->host->hostdata;
+diff --git a/drivers/scsi/dtc.h b/drivers/scsi/dtc.h
+index cdc6212..1fbddca 100644
+--- a/drivers/scsi/dtc.h
++++ b/drivers/scsi/dtc.h
+@@ -32,12 +32,12 @@
+ #define DTCDEBUG_INIT	0x1
+ #define DTCDEBUG_TRANSFER 0x2
  
+-static int dtc_abort(Scsi_Cmnd *);
++static int dtc_abort(struct scsi_cmnd *);
+ static int dtc_biosparam(struct scsi_device *, struct block_device *,
+ 		         sector_t, int*);
+ static int dtc_detect(struct scsi_host_template *);
+ static int dtc_queue_command(struct Scsi_Host *, struct scsi_cmnd *);
+-static int dtc_bus_reset(Scsi_Cmnd *);
++static int dtc_bus_reset(struct scsi_cmnd *);
+ 
+ #ifndef CMD_PER_LUN
+ #define CMD_PER_LUN 2
+diff --git a/drivers/scsi/fd_mcs.c b/drivers/scsi/fd_mcs.c
+index a2c6135..b598665 100644
+--- a/drivers/scsi/fd_mcs.c
++++ b/drivers/scsi/fd_mcs.c
+@@ -185,7 +185,7 @@ struct fd_hostdata {
+ 	int _bios_major;
+ 	int _bios_minor;
+ 	volatile int _in_command;
+-	Scsi_Cmnd *_current_SC;
++	struct scsi_cmnd *_current_SC;
+ 	enum chip_type _chip;
+ 	int _adapter_mask;
+ 	int _fifo_count;	/* Number of 512 byte blocks before INTR */
+@@ -1072,7 +1072,7 @@ static int fd_mcs_release(struct Scsi_Host *shpnt)
+ 	return 0;
+ }
+ 
+-static int fd_mcs_queue_lck(Scsi_Cmnd * SCpnt, void (*done) (Scsi_Cmnd *))
++static int fd_mcs_queue_lck(struct scsi_cmnd * SCpnt, void (*done) (struct scsi_cmnd *))
+ {
+ 	struct Scsi_Host *shpnt = SCpnt->device->host;
+ 
+@@ -1125,7 +1125,7 @@ static int fd_mcs_queue_lck(Scsi_Cmnd * SCpnt, void (*done) (Scsi_Cmnd *))
+ static DEF_SCSI_QCMD(fd_mcs_queue)
+ 
+ #if DEBUG_ABORT || DEBUG_RESET
+-static void fd_mcs_print_info(Scsi_Cmnd * SCpnt)
++static void fd_mcs_print_info(struct scsi_cmnd * SCpnt)
+ {
+ 	unsigned int imr;
+ 	unsigned int irr;
+@@ -1196,7 +1196,7 @@ static void fd_mcs_print_info(Scsi_Cmnd * SCpnt)
+ }
+ #endif
+ 
+-static int fd_mcs_abort(Scsi_Cmnd * SCpnt)
++static int fd_mcs_abort(struct scsi_cmnd * SCpnt)
+ {
+ 	struct Scsi_Host *shpnt = SCpnt->device->host;
+ 
+@@ -1232,7 +1232,7 @@ static int fd_mcs_abort(Scsi_Cmnd * SCpnt)
+ 	return SUCCESS;
+ }
+ 
+-static int fd_mcs_bus_reset(Scsi_Cmnd * SCpnt) {
++static int fd_mcs_bus_reset(struct scsi_cmnd * SCpnt) {
+ 	struct Scsi_Host *shpnt = SCpnt->device->host;
+ 	unsigned long flags;
+ 
+diff --git a/drivers/scsi/nsp32_debug.c b/drivers/scsi/nsp32_debug.c
+index 58806f4..4f1d4bf 100644
+--- a/drivers/scsi/nsp32_debug.c
++++ b/drivers/scsi/nsp32_debug.c
+@@ -137,7 +137,7 @@ static void print_commandk (unsigned char *command)
+ 	printk("\n");
+ }
+ 
+-static void show_command(Scsi_Cmnd *SCpnt)
++static void show_command(struct scsi_cmnd *SCpnt)
+ {
+ 	print_commandk(SCpnt->cmnd);
+ }
+diff --git a/drivers/scsi/pas16.h b/drivers/scsi/pas16.h
+index a04281c..6a61c62 100644
+--- a/drivers/scsi/pas16.h
++++ b/drivers/scsi/pas16.h
+@@ -114,12 +114,12 @@
+ 
+
+ #ifndef ASM
+-static int pas16_abort(Scsi_Cmnd *);
++static int pas16_abort(struct scsi_cmnd *);
+ static int pas16_biosparam(struct scsi_device *, struct block_device *,
+ 			   sector_t, int*);
+ static int pas16_detect(struct scsi_host_template *);
+ static int pas16_queue_command(struct Scsi_Host *, struct scsi_cmnd *);
+-static int pas16_bus_reset(Scsi_Cmnd *);
++static int pas16_bus_reset(struct scsi_cmnd *);
+ 
+ #ifndef CMD_PER_LUN
+ #define CMD_PER_LUN 2
 -- 
 1.7.4.1
 
