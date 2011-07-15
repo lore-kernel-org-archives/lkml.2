@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964988Ab1GOGWD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 02:22:03 -0400
+	id S965274Ab1GOGWK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 02:22:10 -0400
 Received: from mail-qw0-f46.google.com ([209.85.216.46]:60383 "EHLO
 	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965082Ab1GOGV7 (ORCPT
+	with ESMTP id S965121Ab1GOGWG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 02:21:59 -0400
-Subject: [PATCH 15/16] SCSI: remove Scsi_Cmnd
+	Fri, 15 Jul 2011 02:22:06 -0400
+Subject: [PATCH 16/16] SCSI: remove Scsi_Cmnd
 From: Davidlohr Bueso <dave.bueso@gmail.com>
 Reply-To: dave@gnu.org
 To: James Bottomley <James.Bottomley@hansenpartnership.com>,
@@ -15,8 +15,8 @@ To: James Bottomley <James.Bottomley@hansenpartnership.com>,
 Cc: lkml <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset="UTF-8"
 Organization: GNU
-Date: Fri, 15 Jul 2011 02:20:39 -0400
-Message-ID: <1310710839.3184.66.camel@offbook>
+Date: Fri, 15 Jul 2011 02:20:43 -0400
+Message-ID: <1310710843.3184.67.camel@offbook>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2
 Content-Transfer-Encoding: 7bit
@@ -26,116 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Davidlohr Bueso <dave@gnu.org>
 
-Change this for struct scsi_cmnd.
+Now that no driver is using this typedef, we can finally get rid of this ugly file.
 
 Signed-off-by: Davidlohr Bueso <dave@gnu.org>
 ---
- drivers/scsi/dtc.h         |    4 ++--
- drivers/scsi/fd_mcs.c      |   10 +++++-----
- drivers/scsi/nsp32_debug.c |    2 +-
- drivers/scsi/pas16.h       |    4 ++--
- 4 files changed, 10 insertions(+), 10 deletions(-)
+ drivers/scsi/scsi.h          |    3 ---
+ drivers/scsi/scsi_typedefs.h |    2 --
+ 2 files changed, 0 insertions(+), 5 deletions(-)
+ delete mode 100644 drivers/scsi/scsi_typedefs.h
 
-diff --git a/drivers/scsi/dtc.h b/drivers/scsi/dtc.h
-index cdc6212..1fbddca 100644
---- a/drivers/scsi/dtc.h
-+++ b/drivers/scsi/dtc.h
-@@ -32,12 +32,12 @@
- #define DTCDEBUG_INIT	0x1
- #define DTCDEBUG_TRANSFER 0x2
+diff --git a/drivers/scsi/scsi.h b/drivers/scsi/scsi.h
+index d5a55fa..db67d4c 100644
+--- a/drivers/scsi/scsi.h
++++ b/drivers/scsi/scsi.h
+@@ -42,7 +42,4 @@ struct scsi_device;
+ struct scsi_target;
+ struct scatterlist;
  
--static int dtc_abort(Scsi_Cmnd *);
-+static int dtc_abort(struct scsi_cmnd *);
- static int dtc_biosparam(struct scsi_device *, struct block_device *,
- 		         sector_t, int*);
- static int dtc_detect(struct scsi_host_template *);
- static int dtc_queue_command(struct Scsi_Host *, struct scsi_cmnd *);
--static int dtc_bus_reset(Scsi_Cmnd *);
-+static int dtc_bus_reset(struct scsi_cmnd *);
- 
- #ifndef CMD_PER_LUN
- #define CMD_PER_LUN 2
-diff --git a/drivers/scsi/fd_mcs.c b/drivers/scsi/fd_mcs.c
-index a2c6135..b598665 100644
---- a/drivers/scsi/fd_mcs.c
-+++ b/drivers/scsi/fd_mcs.c
-@@ -185,7 +185,7 @@ struct fd_hostdata {
- 	int _bios_major;
- 	int _bios_minor;
- 	volatile int _in_command;
--	Scsi_Cmnd *_current_SC;
-+	struct scsi_cmnd *_current_SC;
- 	enum chip_type _chip;
- 	int _adapter_mask;
- 	int _fifo_count;	/* Number of 512 byte blocks before INTR */
-@@ -1072,7 +1072,7 @@ static int fd_mcs_release(struct Scsi_Host *shpnt)
- 	return 0;
- }
- 
--static int fd_mcs_queue_lck(Scsi_Cmnd * SCpnt, void (*done) (Scsi_Cmnd *))
-+static int fd_mcs_queue_lck(struct scsi_cmnd * SCpnt, void (*done) (struct scsi_cmnd *))
- {
- 	struct Scsi_Host *shpnt = SCpnt->device->host;
- 
-@@ -1125,7 +1125,7 @@ static int fd_mcs_queue_lck(Scsi_Cmnd * SCpnt, void (*done) (Scsi_Cmnd *))
- static DEF_SCSI_QCMD(fd_mcs_queue)
- 
- #if DEBUG_ABORT || DEBUG_RESET
--static void fd_mcs_print_info(Scsi_Cmnd * SCpnt)
-+static void fd_mcs_print_info(struct scsi_cmnd * SCpnt)
- {
- 	unsigned int imr;
- 	unsigned int irr;
-@@ -1196,7 +1196,7 @@ static void fd_mcs_print_info(Scsi_Cmnd * SCpnt)
- }
- #endif
- 
--static int fd_mcs_abort(Scsi_Cmnd * SCpnt)
-+static int fd_mcs_abort(struct scsi_cmnd * SCpnt)
- {
- 	struct Scsi_Host *shpnt = SCpnt->device->host;
- 
-@@ -1232,7 +1232,7 @@ static int fd_mcs_abort(Scsi_Cmnd * SCpnt)
- 	return SUCCESS;
- }
- 
--static int fd_mcs_bus_reset(Scsi_Cmnd * SCpnt) {
-+static int fd_mcs_bus_reset(struct scsi_cmnd * SCpnt) {
- 	struct Scsi_Host *shpnt = SCpnt->device->host;
- 	unsigned long flags;
- 
-diff --git a/drivers/scsi/nsp32_debug.c b/drivers/scsi/nsp32_debug.c
-index 58806f4..4f1d4bf 100644
---- a/drivers/scsi/nsp32_debug.c
-+++ b/drivers/scsi/nsp32_debug.c
-@@ -137,7 +137,7 @@ static void print_commandk (unsigned char *command)
- 	printk("\n");
- }
- 
--static void show_command(Scsi_Cmnd *SCpnt)
-+static void show_command(struct scsi_cmnd *SCpnt)
- {
- 	print_commandk(SCpnt->cmnd);
- }
-diff --git a/drivers/scsi/pas16.h b/drivers/scsi/pas16.h
-index a04281c..6a61c62 100644
---- a/drivers/scsi/pas16.h
-+++ b/drivers/scsi/pas16.h
-@@ -114,12 +114,12 @@
- 
-
- #ifndef ASM
--static int pas16_abort(Scsi_Cmnd *);
-+static int pas16_abort(struct scsi_cmnd *);
- static int pas16_biosparam(struct scsi_device *, struct block_device *,
- 			   sector_t, int*);
- static int pas16_detect(struct scsi_host_template *);
- static int pas16_queue_command(struct Scsi_Host *, struct scsi_cmnd *);
--static int pas16_bus_reset(Scsi_Cmnd *);
-+static int pas16_bus_reset(struct scsi_cmnd *);
- 
- #ifndef CMD_PER_LUN
- #define CMD_PER_LUN 2
+-/* obsolete typedef junk. */
+-#include "scsi_typedefs.h"
+-
+ #endif /* _SCSI_H */
+diff --git a/drivers/scsi/scsi_typedefs.h b/drivers/scsi/scsi_typedefs.h
+deleted file mode 100644
+index 2ed4c5c..0000000
+--- a/drivers/scsi/scsi_typedefs.h
++++ /dev/null
+@@ -1,2 +0,0 @@
+-
+-typedef struct scsi_cmnd Scsi_Cmnd;
 -- 
 1.7.4.1
 
