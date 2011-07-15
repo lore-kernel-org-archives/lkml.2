@@ -1,123 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753428Ab1GOVwo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 17:52:44 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:57556 "EHLO ogre.sisk.pl"
+	id S1751801Ab1GOWEx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 18:04:53 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:55012 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752710Ab1GOVwn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 17:52:43 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH] MIPS: Convert i8259.c to using syscore_ops (was: Re: Status of MIPS on 3.0.0-rc6 kernel)
-Date: Fri, 15 Jul 2011 23:53:37 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc7+; KDE/4.6.0; x86_64; ; )
-Cc: "Roland Vossen" <rvossen@broadcom.com>,
-        "Jonas Gorski" <jonas.gorski@gmail.com>,
-        "Geert Uytterhoeven" <geert@linux-m68k.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-References: <4E1ECE3B.10308@broadcom.com> <201107142151.24763.rjw@sisk.pl> <4E2032D7.9000704@broadcom.com>
-In-Reply-To: <4E2032D7.9000704@broadcom.com>
+	id S1750815Ab1GOWEw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 18:04:52 -0400
+Date: Fri, 15 Jul 2011 15:04:47 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Ed Tomlinson <edt@aei.ca>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: INFO: possible circular locking dependency detected
+Message-ID: <20110715220447.GJ2327@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1310665613.27864.50.camel@gandalf.stny.rr.com>
+ <1310746315.2586.370.camel@twins>
+ <20110715165613.GC2327@linux.vnet.ibm.com>
+ <201107151748.07109.edt@aei.ca>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107152353.38004.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201107151748.07109.edt@aei.ca>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 15, 2011, Roland Vossen wrote:
-> > Please check if the appended patch helps.
+On Fri, Jul 15, 2011 at 05:48:06PM -0400, Ed Tomlinson wrote:
+> On Friday 15 July 2011 12:56:13 Paul E. McKenney wrote:
+
+[ . . . ]
+
+> > OK.  Ed, would you be willing to try the patch out?
 > 
-> It does, I am able to build a big endian MIPS kernel now. Can you notify 
-> me if you submit this patch ?
+> I am booted at the same git commit with a bluetooth and the disable local_bh around softirq()
+> patch from this thread.  So far so good.  Not sure how 'easy' this one is to trigger a second time -
+> I've been running with threadirq enabled since .39 came out.  Last night was the first deadlock...
+> If nothing happened post rc6 to make it more likely it could be a while before it triggers again.
 
-Well, it's been submitted already. :-)
+Thank you for trying it out, Ed!  And I know that you will not be shy
+should the problem recur.  ;-)
 
-Ralf, the appended patch is necessary to fix build on MIPS due to a
-missing conversion to syscore_ops.  Please take it to your tree or
-let me know if you want me to push it myself.
-
-Thanks,
-Rafael
-
----
-From: Rafael J. Wysocki <rjw@sisk.pl>
-Subject: MIPS: Convert i8259.c to using syscore_ops
-
-The code in arch/mips/kernel/i8259.c still hasn't been converted to
-using struct syscore_ops instead of a sysdev for resume and shutdown.
-As a result, this code doesn't build any more after suspend, resume
-and shutdown callbacks have been removed from struct sysdev_class.
-Fix this problem by converting i8259.c to using syscore_ops.
-
-Reported-and-tested-by: Roland Vossen <rvossen@broadcom.com>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- arch/mips/kernel/i8259.c |   22 ++++++----------------
- 1 file changed, 6 insertions(+), 16 deletions(-)
-
-Index: linux-2.6/arch/mips/kernel/i8259.c
-===================================================================
---- linux-2.6.orig/arch/mips/kernel/i8259.c
-+++ linux-2.6/arch/mips/kernel/i8259.c
-@@ -14,7 +14,7 @@
- #include <linux/interrupt.h>
- #include <linux/kernel.h>
- #include <linux/spinlock.h>
--#include <linux/sysdev.h>
-+#include <linux/syscore_ops.h>
- #include <linux/irq.h>
- 
- #include <asm/i8259.h>
-@@ -215,14 +215,13 @@ spurious_8259A_irq:
- 	}
- }
- 
--static int i8259A_resume(struct sys_device *dev)
-+static void i8259A_resume(void)
- {
- 	if (i8259A_auto_eoi >= 0)
- 		init_8259A(i8259A_auto_eoi);
--	return 0;
- }
- 
--static int i8259A_shutdown(struct sys_device *dev)
-+static void i8259A_shutdown(void)
- {
- 	/* Put the i8259A into a quiescent state that
- 	 * the kernel initialization code can get it
-@@ -232,26 +231,17 @@ static int i8259A_shutdown(struct sys_de
- 		outb(0xff, PIC_MASTER_IMR);	/* mask all of 8259A-1 */
- 		outb(0xff, PIC_SLAVE_IMR);	/* mask all of 8259A-1 */
- 	}
--	return 0;
- }
- 
--static struct sysdev_class i8259_sysdev_class = {
--	.name = "i8259",
-+static struct syscore_ops i8259_syscore_ops = {
- 	.resume = i8259A_resume,
- 	.shutdown = i8259A_shutdown,
- };
- 
--static struct sys_device device_i8259A = {
--	.id	= 0,
--	.cls	= &i8259_sysdev_class,
--};
--
- static int __init i8259A_init_sysfs(void)
- {
--	int error = sysdev_class_register(&i8259_sysdev_class);
--	if (!error)
--		error = sysdev_register(&device_i8259A);
--	return error;
-+	register_syscore_ops(&i8259_syscore_ops);
-+	return 0;
- }
- 
- device_initcall(i8259A_init_sysfs);
- 
+							Thanx, Paul
