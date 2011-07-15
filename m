@@ -1,116 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965343Ab1GOIlg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 04:41:36 -0400
-Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:46936 "EHLO
-	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965119Ab1GOIle (ORCPT
+	id S965354Ab1GOIo0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 04:44:26 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53432 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965119Ab1GOIoZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 04:41:34 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4E1FFD3E.7090103@cam.ac.uk>
-Date: Fri, 15 Jul 2011 09:41:34 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.input,gmane.linux.kernel
-To: Eric Andersson <eric.andersson@unixphere.com>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, dmitry.torokhov@gmail.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        zhengguang.guo@bosch-sensortec.com, stefan.nilsson@unixphere.com,
-        Albert Zhang <xu.zhang@bosch-sensortec.com>
-Subject: Re: [PATCH v3 1/1] input: add driver for Bosch Sensortec's BMA150
- accelerometer
-References: <1310680572-27410-2-git-send-email-eric.andersson@unixphere.com> <20110714234030.30d6b455@lxorguk.ukuu.org.uk> <20110715082316.5A4792C03C24@bmail01.one.com>
-In-Reply-To: <20110715082316.5A4792C03C24@bmail01.one.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 15 Jul 2011 04:44:25 -0400
+Subject: Re: [PATCH 0/1] Fixup write permission of TLB on powerpc e500 core
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: MailingLists <haishan.bai@gmail.com>
+Cc: benh@kernel.crashing.org, paulus@samba.org, tglx@linutronix.de,
+        walken@google.com, dhowells@redhat.com, cmetcalf@tilera.com,
+        tony.luck@intel.com, akpm@linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+In-Reply-To: <4E1FFC7B.4000209@gmail.com>
+References: <1310717238-13857-1-git-send-email-haishan.bai@gmail.com>
+	 <1310718056.2586.275.camel@twins>  <4E1FFC7B.4000209@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 15 Jul 2011 10:44:05 +0200
+Message-ID: <1310719445.2586.288.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/11 09:23, Eric Andersson wrote:
->>> +		values represent the range given as +/- G.
->>> +		Possible values are: 2, 4, 8.
->>> +
->>> +		Reading: returns the current acceleration range.
->>> +
->>> +		Writing: sets a new acceleration range.
->>
->> Same comment as last time - these values are not discoverable so it
->> should set the nearest bigger range.
+On Fri, 2011-07-15 at 16:38 +0800, MailingLists wrote:
+> On 07/15/2011 04:20 PM, Peter Zijlstra wrote:
+> > On Fri, 2011-07-15 at 16:07 +0800, Shan Hai wrote:
+> >> The following test case could reveal a bug in the futex_lock_pi()
+> >>
+> >> BUG: On FUTEX_LOCK_PI, there is a infinite loop in the futex_lock_pi()
+> >>          on Powerpc e500 core.
+> >> Cause: The linux kernel on the e500 core has no write permission on
+> >>          the COW page, refer the head comment of the following test code.
+> >>
+> >> ftrace on test case:
+> >> [000]   353.990181: futex_lock_pi_atomic<-futex_lock_pi
+> >> [000]   353.990185: cmpxchg_futex_value_locked<-futex_lock_pi_atomic
+> >> [snip]
+> >> [000]   353.990191: do_page_fault<-handle_page_fault
+> >> [000]   353.990192: bad_page_fault<-handle_page_fault
+> >> [000]   353.990193: search_exception_tables<-bad_page_fault
+> >> [snip]
+> >> [000]   353.990199: get_user_pages<-fault_in_user_writeable
+> >> [snip]
+> >> [000]   353.990208: mark_page_accessed<-follow_page
+> >> [000]   353.990222: futex_lock_pi_atomic<-futex_lock_pi
+> >> [snip]
+> >> [000]   353.990230: cmpxchg_futex_value_locked<-futex_lock_pi_atomic
+> >> [ a loop occures here ]
+> >>
+> >
+> > But but but but, that get_user_pages(.write=1, .force=0) should result
+> > in a COW break, getting our own writable page.
+> >
+> > What is this e500 thing smoking that this doesn't work?
 > 
-> And same answer as last time - The values can be retreived by doing a:
-> cat range. This whole idea comes from a review comment that Jonathan Cameron
-> gave on your bma023 driver [1].
-Needs documenting. Right now there is no mention of that here.
-> If we could agree on how these values should be represented I will be glad
-> to fix it! Dmitry, any preferences?
+> A page could be set to read only by the kernel (supervisor in the powerpc
+> literature) on the e500, and that's what the kernel do. Set SW(supervisor
+> write) bit in the TLB entry to grant write permission to the kernel on a
+> page.
+> 
+> And further the SW bit is set according to the DIRTY flag of the PTE,
+> PTE.DIRTY is set in the do_page_fault(), the futex_lock_pi() disabled
+> page fault, the PTE.DIRTY never can be set, so do the SW bit, unbreakable
+> COW occurred, infinite loop followed.
 
-> 
-> [1] http://www.spinics.net/lists/linux-input/msg14271.html
-> 
->>> +	for (i = 0, ret = 0; i < ARRAY_SIZE(bw_val); i++)
->>> +		ret += sprintf(buf + ret,
->>> +			(bw_val[i].reg == bw) ? "[%d] " : "%d ",
->>> +			bw_val[i].value);
->>
->> sysfs nodes should really be single values
-> 
-> Once again it's a previous comment from Jonathan [1]. Please specify how
-> you want this and I'll fix it.
-Yes in general to the single value, but this is a pretty common syntax for
-choosing one of a set.  Got to indicate it somehow and it's either this or
-a list of available ones in a separate attribute.  There was an LWN article
-on this a while back that lays out the options very clearly http://lwn.net/Articles/378884/
-> 
->>> +static const struct i2c_device_id bma150_id[] = {
->>> +	{ "bma150", 0 },
->>> +	{ "smb380", 0 },
->>
->> bma023 ?
-> 
-> As mentioned earlier bma023 is not an official product name from Bosch Sensortec. Hence,
-> there will be no datasheet available or references from Bosch Sensortec. IMHO it would be
-> confusing to add it.
-Just ignore the marketing and add it anyway :)
->  
->> It also doesn't expose the thresholds or support interrupts which the
->> one I posted did.
-> 
-> We were told by Bosch S that the interrupt is triggered every 333 us (data ready) which would
-> pretty much flood the irq handler.
-Somewhat quick, but maybe still worth having...  Just use a one shot threaded interrupt and it
-will at least run safely even if it isn't keeping up with all of them.  Alan, do you have a device
-that has frequency control on chip? (very unusual not to see this on an accelerometer).
+I'm fairly sure fault_in_user_writeable() has PF enabled as it takes
+mmap_sem, an pagefaul_disable() is akin to preemp_disable() on mainline.
 
-> However, if this is stopping the patch we can add it. Would it be acceptable to have a driver
-> that supports both a polling and irq driven setup, e.g. by checking if the .irq is non zero?
-Yes: common situation. See the recent kionix driver for an example.
-You definitely want the theshold stuff from Alan's driver though.
-> 
->> So while its better it still seems incomplete - its certainly nowhere
->> near where it can replace the one I posted months ago and doesn't seem
->> to
->> be making any headway.
->>
->> Dmitry shall I repost the intel one - at this point I think it would
->> be a
->> better starting point as it supports more features, interrupts and the
->> like although it's not perfect either.
-> 
-> My hope is that we can sort out the differences before I post v4. Dmitry, if you have time
-> could you please give an objective review of the patch?
-> 
-> Best regards,
->  Eric
-> 
-> http://www.unixphere.com
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
+Also get_user_pages() fully expects to be able to schedule, and in fact
+can call the full pf handler path all by its lonesome self.
