@@ -1,135 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751063Ab1GOMxj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 08:53:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44652 "EHLO mx1.redhat.com"
+	id S1751019Ab1GOM6b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 08:58:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55158 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750770Ab1GOMxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 08:53:38 -0400
-From: Stefan Assmann <sassmann@kpanic.de>
-To: linux-acpi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, lenb@kernel.org, jeremy@goop.org,
-        mingo@redhat.com, tglx@linutronix.de, rostedt@goodmis.org,
-        sassmann@kpanic.de
-Subject: [PATCH] ACPI: fix CONFIG_X86_REROUTE_FOR_BROKEN_BOOT_IRQS
-Date: Fri, 15 Jul 2011 14:52:30 +0200
-Message-Id: <1310734350-15947-1-git-send-email-sassmann@kpanic.de>
+	id S1750770Ab1GOM6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 08:58:30 -0400
+Message-ID: <4E20395C.1000301@redhat.com>
+Date: Fri, 15 Jul 2011 13:58:04 +0100
+From: Ric Wheeler <rwheeler@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Chris Mason <chris.mason@oracle.com>
+CC: NeilBrown <neilb@suse.de>, david <david@lang.hm>,
+        Nico Schottelius <nico-lkml-20110623@schottelius.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: Re: Mis-Design of Btrfs?
+References: <20110623105337.GD3753@ethz.ch> <20110627164637.377314e2@notabene.brown> <4E0AF091.9030301@redhat.com> <20110714155620.6e9ac2cc@notabene.brown> <4E1E866E.2050405@redhat.com> <20110714163836.35a729c1@notabene.brown> <4E1E9372.3030208@redhat.com> <1310696606-sup-710@shiny> <alpine.DEB.2.02.1107142149420.3558@asgard.lang.hm> <20110715163354.74fa2083@notabene.brown> <1310728784-sup-9024@shiny>
+In-Reply-To: <1310728784-sup-9024@shiny>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following was observed by Steve Rostedt on 3.0.0-rc5
-Backtrace:
-irq 16: nobody cared (try booting with the "irqpoll" option)
-Pid: 65, comm: irq/16-uhci_hcd Not tainted 3.0.0-rc5-test+ #94
-Call Trace:
- [<ffffffff810aa643>] __report_bad_irq+0x37/0xc1
- [<ffffffff810aaa2d>] note_interrupt+0x14e/0x1c9
- [<ffffffff810a9a05>] ? irq_thread_fn+0x3c/0x3c
- [<ffffffff810a990e>] irq_thread+0xf6/0x1b1
- [<ffffffff810a9818>] ? irq_finalize_oneshot+0xb3/0xb3
- [<ffffffff8106b4d6>] kthread+0x9f/0xa7
- [<ffffffff814f1f04>] kernel_thread_helper+0x4/0x10
- [<ffffffff8103ca09>] ? finish_task_switch+0x7b/0xc0
- [<ffffffff814eac78>] ? retint_restore_args+0x13/0x13
- [<ffffffff8106b437>] ? __init_kthread_worker+0x5a/0x5a
- [<ffffffff814f1f00>] ? gs_change+0x13/0x13
-handlers:
-[<ffffffff810a912d>] irq_default_primary_handler threaded [<ffffffff8135eaa6>] usb_hcd_irq
-[<ffffffff810a912d>] irq_default_primary_handler threaded [<ffffffff8135eaa6>] usb_hcd_irq
-Disabling IRQ #16
+On 07/15/2011 12:34 PM, Chris Mason wrote:
+> Excerpts from NeilBrown's message of 2011-07-15 02:33:54 -0400:
+>> On Thu, 14 Jul 2011 21:58:46 -0700 (PDT) david@lang.hm wrote:
+>>
+>>> On Thu, 14 Jul 2011, Chris Mason wrote:
+>>>
+>>>> Excerpts from Ric Wheeler's message of 2011-07-14 02:57:54 -0400:
+>>>>> On 07/14/2011 07:38 AM, NeilBrown wrote:
+>>>>>> On Thu, 14 Jul 2011 07:02:22 +0100 Ric Wheeler<rwheeler@redhat.com>   wrote:
+>>>>>>
+>>>>>>>> I'm certainly open to suggestions and collaboration.  Do you have in mind any
+>>>>>>>> particular way to make the interface richer??
+>>>>>>>>
+>>>>>>>> NeilBrown
+>>>>>>> Hi Neil,
+>>>>>>>
+>>>>>>> I know that Chris has a very specific set of use cases for btrfs and think that
+>>>>>>> Alasdair and others have started to look at what is doable.
+>>>>>>>
+>>>>>>> The obvious use case is the following:
+>>>>>>>
+>>>>>>> If a file system uses checksumming or other data corruption detection bits, it
+>>>>>>> can detect that it got bad data on a write. If that data was protected by RAID,
+>>>>>>> it would like to ask the block layer to try to read from another mirror (for
+>>>>>>> raid1) or try to validate/rebuild from parity.
+>>>>>>>
+>>>>>>> Today, I think that a retry will basically just give us back a random chance of
+>>>>>>> getting data from a different mirror or the same one that we got data from on
+>>>>>>> the first go.
+>>>>>>>
+>>>>>>> Chris, Alasdair, was that a good summary of one concern?
+>>>>>>>
+>>>>>>> Thanks!
+>>>>>>>
+>>>>>>> Ric
+>>>>>> I imagine a new field in 'struct bio' which was normally zero but could be
+>>>>>> some small integer.  It is only meaningful for read.
+>>>>>> When 0 it means "get this data way you like".
+>>>>>> When non-zero it means "get this data using method N", where the different
+>>>>>> methods are up to the device.
+>>>>>>
+>>>>>> For a mirrored RAID, method N means read from device N-1.
+>>>>>> For stripe/parity RAID, method 1 means "use other data blocks and parity
+>>>>>> blocks to reconstruct data.
+>>>>>>
+>>>>>> The default for non RAID devices is to return EINVAL for any N>   0.
+>>>>>> A remapping device (dm-linear, dm-stripe etc) would just pass the number
+>>>>>> down.  I'm not sure how RAID1 over RAID5 would handle it... that might need
+>>>>>> some thought.
+>>>>>>
+>>>>>> So if btrfs reads a block and the checksum looks wrong, it reads again with
+>>>>>> a larger N.  It continues incrementing N and retrying until it gets a block
+>>>>>> that it likes or it gets EINVAL.  There should probably be an error code
+>>>>>> (EAGAIN?) which means "I cannot work with that number, but try the next one".
+>>>>>>
+>>>>>> It would be trivial for me to implement this for RAID1 and RAID10, and
+>>>>>> relatively easy for RAID5.
+>>>>>> I'd need to give a bit of thought to RAID6 as there are possibly multiple
+>>>>>> ways to reconstruct from different combinations of parity and data.  I'm not
+>>>>>> sure if there would be much point in doing that though.
+>>>>>>
+>>>>>> It might make sense for a device to be able to report what the maximum
+>>>>>> 'N' supported is... that might make stacked raid easier to manage...
+>>>>>>
+>>>>>> NeilBrown
+>>>>>>
+>>>>> I think that the above makes sense. Not sure what your "0" definition is, but I
+>>>>> would assume that for non-raided devices (i.e., a single s-ata disk), "0" would
+>>>>> be an indication that there is nothing more that can be tried. The data you got
+>>>>> is all you are ever going to get :)
+>>>>>
+>>>>> For multiple mirrors, you might want to have a scheme where you would be able to
+>>>>> cycle through the mirrors. You could retry, cycling through the various mirrors
+>>>>> until you have tried and returned them all at which point you would get a "no
+>>>>> more" error back or some such thing.
+>>>> Hi everyone,
+>>>>
+>>>> The mirror number idea is basically what btrfs does today, and I think
+>>>> it fits in with Neil's idea to have different policies for different
+>>>> blocks.
+>>>>
+>>>> Basically what btrfs does:
+>>>>
+>>>> read_block(block_num, mirror = 0)
+>>>> if (no io error and not csum error)
+>>>>      horray()
+>>>>
+>>>> num_mirrors = get_num_copies(block number)
+>>>> for (i = 1; i<  num_mirrors; i++) {
+>>>>      read_block(block_num, mirror = i);
+>>>> }
+>>>>
+>>>> In a stacked configuration, the get_num_copies function can be smarter,
+>>>> basically adding up all the copies of the lower levels and finding a way
+>>>> to combine them.  We could just send down a fake bio that is responsible
+>>>> for adding up the storage combinations into a bitmask or whatever works.
+>>>>
+>>>> We could also just keep retrying until the lower layers reported no more
+>>>> mirror were available.
+>>>>
+>>>> In btrfs at least, we don't set the data blocks up to date until the crc
+>>>> has passed, so replacing bogus blocks is easy.  Metadata is a little
+>>>> more complex, but that's not really related to this topic.
+>>>>
+>>>> mirror number 0 just means "no mirror preference/pick the fastest
+>>>> mirror" to the btrfs block mapping code.
+>>>>
+>>>> Btrfs has the concept of different raid levels for different logical
+>>>> block numbers, so you get_num_copies might return one answer for block A
+>>>> and a different answer for block B.
+>>>>
+>>>> Either way, we could easily make use of a bio field here if it were
+>>>> exported out.
+>>> you don't want to just pass the value down as that will cause problems
+>>> with layering (especially if the lower layer supports more values than a
+>>> higher layer)
+>>>
+>>> I would suggest that each layer take the value it's give, do an integer
+>>> division by the number of values that layer supports, using the modulo
+>>> value for that layer and pass the rest of the result down to the next
+>>> layer.
+>> I, on the other hand, would suggest that each layer be given the freedom, and
+>> the responsibility, to do whatever it thinks is most appropriate.
+>>
+>> This would probably involved checking the lower levels to see how many
+>> strategies each has, and doing some appropriate arithmetic depending on how
+>> it combines those devices.
+>>
+>> One problem here is the assumption that the lower levels don't change, and we
+>> know that not to be the case.
+>> However this is already a problem.  It is entirely possible that the request
+>> size parameters of devices can change at any moment, even while a request is
+>> in-flight ... though we try to avoid that or work around it.
+>>
+>> The sort of dependencies that we see forming here would probably just make
+>> the problem worse.
+>>
+>> Not sure what to do about it though.... maybe just hope it isn't a problem.
+> Agreed, if we want to go beyond best effort for a stacking config, we'll
+> need to put some state struct in the bio that each layer can play with.
+> That way each layer knows which mirrors have already been tried.
+>
+> But, maybe the whole btrfs model is backwards for a generic layer.
+> Instead of sending down ios and testing when they come back, we could
+> just set a verification function (or stack of them?).
+>
+> For metadata, btrfs compares the crc and a few other fields of the
+> metadata block, so we can easily add a compare function pointer and a
+> void * to pass in.
+>
+> The problem is the crc can take a lot of CPU, so btrfs kicks it off to
+> threading pools so saturate all the cpus on the box.  But there's no
+> reason we can't make that available lower down.
+>
+> If we pushed the verification down, the retries could bubble up the
+> stack instead of the other way around.
+>
+> -chris
 
-The problem being that a device triggers boot interrupts (due to threaded
-interrupt handling and masking of the IO-APIC), which are forwarded
-to the PIRQ line of the device. These interrupts are not handled on the PIRQ
-line because the interrupt handler is not present there.
-This should have already been fixed by CONFIG_X86_REROUTE_FOR_BROKEN_BOOT_IRQS.
-However some parts of the quirk got lost in the ACPI merge. This is a resent of
-the patch proposed in 2009.
-See http://lkml.org/lkml/2009/9/7/192
+I do like the idea of having the ability to do the verification and retries down 
+the stack where you actually have the most context to figure out what is possible...
 
-Signed-off-by: Stefan Assmann <sassmann@kpanic.de>
-Tested-by: Steven Rostedt <rostedt@goodmis.org>
----
- drivers/acpi/pci_irq.c |   58 ++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 58 insertions(+), 0 deletions(-)
+Why would you need to bubble back up anything other than an error when all 
+retries have failed?
 
-diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
-index f907cfb..7f9eba9 100644
---- a/drivers/acpi/pci_irq.c
-+++ b/drivers/acpi/pci_irq.c
-@@ -303,6 +303,61 @@ void acpi_pci_irq_del_prt(struct pci_bus *bus)
- /* --------------------------------------------------------------------------
-                           PCI Interrupt Routing Support
-    -------------------------------------------------------------------------- */
-+#ifdef CONFIG_X86_IO_APIC
-+extern int noioapicquirk;
-+extern int noioapicreroute;
-+
-+static int bridge_has_boot_interrupt_variant(struct pci_bus *bus)
-+{
-+	struct pci_bus *bus_it;
-+
-+	for (bus_it = bus ; bus_it ; bus_it = bus_it->parent) {
-+		if (!bus_it->self)
-+			return 0;
-+		if (bus_it->self->irq_reroute_variant)
-+			return bus_it->self->irq_reroute_variant;
-+	}
-+	return 0;
-+}
-+
-+/*
-+ * Some chipsets (e.g. Intel 6700PXH) generate a legacy INTx when the IRQ
-+ * entry in the chipset's IO-APIC is masked (as, e.g. the RT kernel does
-+ * during interrupt handling). When this INTx generation cannot be disabled,
-+ * we reroute these interrupts to their legacy equivalent to get rid of
-+ * spurious interrupts.
-+ */
-+static int acpi_reroute_boot_interrupt(struct pci_dev *dev,
-+				       struct acpi_prt_entry *entry)
-+{
-+	if (noioapicquirk || noioapicreroute) {
-+		return 0;
-+	} else {
-+		switch (bridge_has_boot_interrupt_variant(dev->bus)) {
-+		case 0:
-+			/* no rerouting necessary */
-+			return 0;
-+		case INTEL_IRQ_REROUTE_VARIANT:
-+			/*
-+			 * Remap according to INTx routing table in 6700PXH
-+			 * specs, intel order number 302628-002, section
-+			 * 2.15.2. Other chipsets (80332, ...) have the same
-+			 * mapping and are handled here as well.
-+			 */
-+			dev_info(&dev->dev, "PCI IRQ %d -> rerouted to legacy "
-+				 "IRQ %d\n", entry->index,
-+				 (entry->index % 4) + 16);
-+			entry->index = (entry->index % 4) + 16;
-+			return 1;
-+		default:
-+			dev_warn(&dev->dev, "Cannot reroute IRQ %d to legacy "
-+				 "IRQ: unknown mapping\n", entry->index);
-+			return -1;
-+		}
-+	}
-+}
-+#endif /* CONFIG_X86_IO_APIC */
-+
- static struct acpi_prt_entry *acpi_pci_irq_lookup(struct pci_dev *dev, int pin)
- {
- 	struct acpi_prt_entry *entry;
-@@ -311,6 +366,9 @@ static struct acpi_prt_entry *acpi_pci_irq_lookup(struct pci_dev *dev, int pin)
- 
- 	entry = acpi_pci_irq_find_prt_entry(dev, pin);
- 	if (entry) {
-+#ifdef CONFIG_X86_IO_APIC
-+		acpi_reroute_boot_interrupt(dev, entry);
-+#endif /* CONFIG_X86_IO_APIC */
- 		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Found %s[%c] _PRT entry\n",
- 				  pci_name(dev), pin_name(pin)));
- 		return entry;
--- 
-1.7.4.4
+Ric
 
