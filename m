@@ -1,58 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754239Ab1GOSvW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 14:51:22 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:37548 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753357Ab1GOSvW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 14:51:22 -0400
-Date: Fri, 15 Jul 2011 11:50:51 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Greg KH <gregkh@suse.de>, Theodore Tso <tytso@MIT.EDU>,
-        Mike Waychison <mikew@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Kconfig: Allow disabling of CONFIG_DEVPORT
-Message-Id: <20110715115051.02c013b0.akpm@linux-foundation.org>
-In-Reply-To: <20110715155835.4e019ca5@lxorguk.ukuu.org.uk>
-References: <1310675693-9204-1-git-send-email-mikew@google.com>
-	<20110714212113.GA28639@suse.de>
-	<CAGTjWtB53vW5B2EJ5=+C3buDAY0RtsfANxx5NhC5aWnmEx08EQ@mail.gmail.com>
-	<20110715064147.GA1021@suse.de>
-	<C70E3912-6AA9-4EB3-85CC-11BF90D230C8@mit.edu>
-	<20110715145132.GA4296@suse.de>
-	<20110715155835.4e019ca5@lxorguk.ukuu.org.uk>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754585Ab1GOSwJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 14:52:09 -0400
+Received: from mga11.intel.com ([192.55.52.93]:6671 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753919Ab1GOSwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 14:52:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,209,1309762800"; 
+   d="scan'208";a="30831116"
+Message-ID: <4E208C55.30507@linux.intel.com>
+Date: Fri, 15 Jul 2011 11:52:05 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Chris Friesen <chris.friesen@genband.com>
+CC: Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <dada1@cosmosbay.com>, Darren Hart <dvhltc@us.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: App blocked in futex() burns 14% CPU.
+References: <alpine.LNX.2.00.1107150019580.26455@swampdragon.chaosbits.net> <4E1F72E1.3040102@genband.com>
+In-Reply-To: <4E1F72E1.3040102@genband.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Jul 2011 15:58:35 +0100
-Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
 
-> > But none of them are on the Signed-off-by: line area, right?
+
+On 07/14/2011 03:51 PM, Chris Friesen wrote:
+> On 07/14/2011 04:34 PM, Jesper Juhl wrote:
+>> So, I've recently started enabling the KDE desktop search on my box and it
+>> runs some indexing services (naturally) to keep track of changes to files.
+>> One of the apps it starts is a process named "virtuoso-t". This process
+>> burns a *lot* of CPU when it's just started, but once it has caught up
+>> with recent changes it quiets down. It doesn't quite quiet down to the
+>> level I'd expect though. I see it constantly using 12-14% CPU time in
+>> 'top' even when there is *nothing* going on on the machine :
+>>
+>> top - 00:25:09 up  2:38,  2 users,  load average: 0.01, 0.04, 0.05
+>> Tasks: 155 total,   1 running, 153 sleeping,   0 stopped,   1 zombie
+>> Cpu(s):  0.7%us,  0.8%sy,  3.7%ni, 94.6%id,  0.1%wa,  0.0%hi,  0.0%si,  0.0%st
+>> Mem:   3853028k total,  2154696k used,  1698332k free,   184280k buffers
+>> Swap:  4200992k total,        0k used,  4200992k free,   996824k cached
+>>
+>>    PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
+>>   1952 jj        39  19  362m 263m 6544 S   14  7.0  25:09.54 virtuoso-t
+>>   1811 jj        20   0  635m  27m  17m S    2  0.7   2:49.78 knotify4
+>>   1928 jj        39  19  595m  26m  18m S    1  0.7   2:58.40 nepomukservices
+>>
+>> This box has a dual core Intel core i5-560M CPU with hyperthreading, so it
+>> is 12-14% of a fairly capable CPU - that's rather a lot more than I'd
+>> expect when the box is idle and there's nothing for the process to do.
+>>
+>> So, I tried strace'ing the process and it seems to just be blocked in
+>> futex() most of the time (like 99%) :
+>>
+>> [jj@dragon ~]$ strace -p 1952
+>> Process 1952 attached - interrupt to quit
+>> futex(0x3086424, FUTEX_WAIT_PRIVATE, 503, NULL
+
+Try strace with -f. If you really want to collect statistics about where
+it is spending it's time, consider oprofile or perf.
+
+>>
+>> So it's just sitting there doing nothing, which lead me to think that this
+>> is probably not a bug in the application - if it was doing some silly
+>> polling loop or similar I would not just see it blocked in a futex() call.
+>> So I'm guessing something must be happening in kernel space that's burning
+>> a lot of CPU.. I could be completely wrong of course, and if I am, please
+>> feel free to enlighten me.
 > 
-> We have a fair number of people using things like
+> You don't have enough kernel activity to account for 14% of a cpu.  Have 
+> you checked whether there's another thread within the process that's 
+> doing something in userspace?
 > 
-> Fixes-bug: [URL]
 
-I use
+Agreed.
 
-	Addresses http://bugzilla....
-
-> Its useful public info, it makes it easier to grep
-
-I don't think this issue is worth the knicker-knotting.  If someone
-really wants to see the original report they can send an email to the
-patch author asking for it, shrug.  If the organization-specific tag
-is omitted, they'd never think to do that.
-
-What concerns me more (and which happens a lot more often) is people
-forgetting to include any reference to the original bug report.  And
-people forgetting Reported-by:.
-
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
