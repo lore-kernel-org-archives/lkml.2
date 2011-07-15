@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755761Ab1GOTdR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 15:33:17 -0400
-Received: from inx.pm.waw.pl ([195.116.170.130]:35900 "EHLO inx.pm.waw.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755107Ab1GOTdQ convert rfc822-to-8bit (ORCPT
+	id S1755965Ab1GOTyx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 15:54:53 -0400
+Received: from msux-gh1-uea01.nsa.gov ([63.239.65.39]:55502 "EHLO
+	msux-gh1-uea01.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755920Ab1GOTyv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 15:33:16 -0400
-From: Krzysztof Halasa <khc@pm.waw.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH REPOST] ARM: fix regression in IXP4xx clocksource
-Date: Fri, 15 Jul 2011 21:33:12 +0200
-Message-ID: <m3zkkfpcef.fsf@intrepid.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 15 Jul 2011 15:54:51 -0400
+Subject: Re: [kernel-hardening] Re: [PATCH] move RLIMIT_NPROC check from
+ set_user() to do_execve_common()
+From: Stephen Smalley <sds@tycho.nsa.gov>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: NeilBrown <neilb@suse.de>, kernel-hardening@lists.openwall.com,
+        Solar Designer <solar@openwall.com>, James Morris <jmorris@namei.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Eric Paris <eparis@redhat.com>, Willy Tarreau <w@1wt.eu>,
+        Sebastian Krahmer <krahmer@suse.de>
+In-Reply-To: <20110715152641.GA6286@albatros>
+References: <20110713170657.59dae548@notabene.brown>
+	 <CA+55aFwQKqvNvzTMYXVW_yKkFtNsyv8uuBiWiwYLof-nPqPu9w@mail.gmail.com>
+	 <alpine.LRH.2.00.1107141009510.17067@tundra.namei.org>
+	 <20110714112751.1bfd998f@notabene.brown>
+	 <20110714150602.GA30019@openwall.com>
+	 <20110715133013.4fa38d19@notabene.brown> <20110715063113.GA3166@albatros>
+	 <20110715170650.585f1dad@notabene.brown> <20110715073823.GA3821@albatros>
+	 <1310738313.30257.27.camel@moss-pluto>  <20110715152641.GA6286@albatros>
+Content-Type: text/plain; charset="UTF-8"
+Organization: National Security Agency
+Date: Fri, 15 Jul 2011 15:54:43 -0400
+Message-ID: <1310759683.30257.123.camel@moss-pluto>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Richard Cochran <richardcochran@gmail.com>
+On Fri, 2011-07-15 at 19:26 +0400, Vasiliy Kulikov wrote:
+> Hi Stephen,
+> 
+> On Fri, Jul 15, 2011 at 09:58 -0400, Stephen Smalley wrote:
+> > Does this have implications for Android's zygote model?  There you have
+> > a long running uid 0 / all caps process (the zygote), which forks itself
+> > upon receiving a request to spawn an app and then calls
+> 
+> > setgroups();
+> > setrlimit(); setgid(); setuid();
+> 
+> Is RLIMIT_NPROC forced in your model and setuid() is expected to fail
+> because of NPROC exceeding?  If no, then it is not touched at all.
 
-Commit 234b6ceddb4fc2a4bc5b9a7670f070f6e69e0868
+I don't know what their intent is.  But it is an example of a case where
+moving the enforcement from setuid() to a subsequent execve() causes the
+check to never get applied.  As to whether or not they care, I don't
+know.  An app that calls fork() repeatedly will still be stopped, but an
+app that repeatedly connects to the zygote and asks to spawn another
+instance of itself would be unlimited.
 
-   clocksource: convert ARM 32-bit up counting clocksources
-
-broke the build for ixp4xx and made big endian operation impossible.
-This commit restores the original behaviour.
-
-Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
-Signed-off-by: Krzysztof Hałasa <khc@pm.waw.pl>
-
-diff --git a/arch/arm/mach-ixp4xx/common.c b/arch/arm/mach-ixp4xx/common.c
-index 74ed81a..0777257 100644
---- a/arch/arm/mach-ixp4xx/common.c
-+++ b/arch/arm/mach-ixp4xx/common.c
-@@ -419,14 +419,20 @@ static void notrace ixp4xx_update_sched_clock(void)
- /*
-  * clocksource
-  */
-+
-+static cycle_t ixp4xx_clocksource_read(struct clocksource *c)
-+{
-+	return *IXP4XX_OSTS;
-+}
-+
- unsigned long ixp4xx_timer_freq = IXP4XX_TIMER_FREQ;
- EXPORT_SYMBOL(ixp4xx_timer_freq);
- static void __init ixp4xx_clocksource_init(void)
- {
- 	init_sched_clock(&cd, ixp4xx_update_sched_clock, 32, ixp4xx_timer_freq);
- 
--	clocksource_mmio_init(&IXP4XX_OSTS, "OSTS", ixp4xx_timer_freq, 200, 32,
--			clocksource_mmio_readl_up);
-+	clocksource_mmio_init(NULL, "OSTS", ixp4xx_timer_freq, 200, 32,
-+			ixp4xx_clocksource_read);
- }
- 
- /*
-
+OTOH, the current RLIMIT_NPROC check and lack of setuid() error checking
+has been a repeated issue for Android.
 
 -- 
-Krzysztof Halasa
+Stephen Smalley
+National Security Agency
+
