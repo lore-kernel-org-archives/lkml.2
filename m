@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755251Ab1GOHmE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 03:42:04 -0400
-Received: from lucidpixels.com ([72.73.18.11]:49417 "EHLO lucidpixels.com"
+	id S964972Ab1GOHyQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 03:54:16 -0400
+Received: from mga09.intel.com ([134.134.136.24]:55310 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752426Ab1GOHmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 03:42:03 -0400
-Date: Fri, 15 Jul 2011 03:42:01 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: linux-kernel@vger.kernel.org
-cc: Alan Piszcz <ap@solarrain.com>
-Subject: Re: 2.6.39.2: discard not supported on mpt2sas
-In-Reply-To: <alpine.DEB.2.02.1107141752580.4904@p34.internal.lan>
-Message-ID: <alpine.DEB.2.02.1107150341350.17582@p34.internal.lan>
-References: <alpine.DEB.2.02.1107141752580.4904@p34.internal.lan>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S964863Ab1GOHyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 03:54:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,534,1304319600"; 
+   d="scan'208";a="27976986"
+From: Andi Kleen <andi@firstfloor.org>
+To: Anton Blanchard <anton@samba.org>
+Cc: dwg@au1.ibm.com, mel@csn.ul.ie, akpm@linux-foundation.org,
+        hughd@google.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] hugepage: Allow parallelization of the hugepage fault path
+References: <20110125143226.37532ea2@kryten> <20110125143414.1dbb150c@kryten>
+Date: Fri, 15 Jul 2011 00:52:38 -0700
+In-Reply-To: <20110125143414.1dbb150c@kryten> (Anton Blanchard's message of
+	"Tue, 25 Jan 2011 14:34:14 +1100")
+Message-ID: <m2zkkg6kvs.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Thu, 14 Jul 2011, Justin Piszcz wrote:
-
-> Hi,
->
-> Something interesting to note:
->
-> When I have an Intel 510 SSD plugged into an mpt2sas board, discard (TRIM) is 
-> not supported:
->
-> [   16.483409] EXT4-fs (sda2): re-mounted. Opts: discard
-> [   17.814743] EXT4-fs warning (device sda2): release_blocks_on_commit:2679: 
-> discard not supported, disabling
->
-> With a regular SATA port or an (PCI-e 2.0 x1 card), it works but with the 
-> overhead, PCI-e x1 seems to peak around 400-430MiB/s for reads, whereas with 
-> an X8 SAS controller I see 480-495MiB/s as the benchmarks show on various 
-> websites, ah well, its one thing or the other.
->
-> Justin.
->
-
-Hi,
-
-Is there anyway to allow pass through for TRIM via mp2sas or is it 
-strictly for SATA controllers only?
-
-Justin.
+Anton Blanchard <anton@samba.org> writes:
 
 
+> This patch improves the situation by replacing the single mutex with a
+> table of mutexes, selected based on a hash of the address_space and
+> file offset being faulted (or mm and virtual address for MAP_PRIVATE
+> mappings).
+
+It's unclear to me how this solves the original OOM problem.
+But then you can still have early oom over all the hugepages if they
+happen to hash to different pages, can't you? 
+
+I think it would be better to move out the clearing out of the lock,
+and possibly take the lock only when the hugepages are about to 
+go OOM.
+
+-Andi
+
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
