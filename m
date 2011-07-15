@@ -1,153 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755232Ab1GODZR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 23:25:17 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58408 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755137Ab1GODZP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 23:25:15 -0400
-Date: Fri, 15 Jul 2011 12:25:05 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Greg KH <greg@kroah.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Samuel Oritz <sameo@linux.intel.com>,
-        Graeme Gregory <gg@slimlogic.co.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] regmap: Add generic non-memory mapped register
- access API
-Message-ID: <20110715032503.GH32716@opensource.wolfsonmicro.com>
-References: <20110709044923.GB13074@opensource.wolfsonmicro.com>
- <1310187044-13269-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <20110715025326.GH2927@ponder.secretlab.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110715025326.GH2927@ponder.secretlab.ca>
-X-Cookie: You will be married within a year.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932713Ab1GODai (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 23:30:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34866 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932589Ab1GODag (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jul 2011 23:30:36 -0400
+Date: Fri, 15 Jul 2011 13:30:13 +1000
+From: NeilBrown <neilb@suse.de>
+To: Solar Designer <solar@openwall.com>
+Cc: James Morris <jmorris@namei.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Vasiliy Kulikov <segoon@openwall.com>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        kernel-hardening@lists.openwall.com, Jiri Slaby <jslaby@suse.cz>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Eric Paris <eparis@redhat.com>, Stephen Smalley <sds@tycho.nsa.gov>,
+        Willy Tarreau <w@1wt.eu>, Sebastian Krahmer <krahmer@suse.de>
+Subject: Re: [PATCH] move RLIMIT_NPROC check from set_user() to
+ do_execve_common()
+Message-ID: <20110715133013.4fa38d19@notabene.brown>
+In-Reply-To: <20110714150602.GA30019@openwall.com>
+References: <20110707075610.GA3411@albatros>
+	<20110707081930.GA4393@albatros>
+	<20110712132723.GA3193@albatros>
+	<CA+55aFysXOeBqEvmVbuqL3i0jRFDcE=vDuVhmYL38XQ0+x=deQ@mail.gmail.com>
+	<20110713091408.0d456352@notabene.brown>
+	<20110713063142.GA19976@openwall.com>
+	<20110713170657.59dae548@notabene.brown>
+	<CA+55aFwQKqvNvzTMYXVW_yKkFtNsyv8uuBiWiwYLof-nPqPu9w@mail.gmail.com>
+	<alpine.LRH.2.00.1107141009510.17067@tundra.namei.org>
+	<20110714112751.1bfd998f@notabene.brown>
+	<20110714150602.GA30019@openwall.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 14, 2011 at 08:53:26PM -0600, Grant Likely wrote:
+On Thu, 14 Jul 2011 19:06:02 +0400 Solar Designer <solar@openwall.com> wrote:
 
-Please delete unneeded context, I may have missed some of your comments
-due to skimming.
+> On Thu, Jul 14, 2011 at 11:27:51AM +1000, NeilBrown wrote:
+> > I'm still trying to understand the full consequences, but I agree that there
+> > is no rush - the code has been this way for quite a while and their is no
+> > obvious threat that would expedite things (as far as I know).
+> 
+> I don't insist on getting this in sooner than in the next merge window,
+> although I would have liked that.  Relevant userspace vulnerabilities
+> are being found quite often - I'll include some examples below.
+> 
+> > However I'm not convinced that testing will help all that much - if there are
+> > problems they will be is rare corner cases that testing is unlikely to find.
+> 
+> This makes sense.
+> 
+> > The only case where this change will improve safety is where:
+> >  1/ a process has RLIMIT_NPROC set
+> >  2/ the process is running with root privileges
+> >  3/ the process calls setuid() and doesn't handle errors.
+> 
+> Yes, and this is a pretty common case.
+> 
+> > I think the only times that a root process would have RLIMIT_NPROC set are:
+> >  1/ if it explicitly set up rlimits before calling setuid.  In this case
+> >       we should be able to expect that the process checks setuid .. maybe
+> >       this is naive(?)
+> 
+> RLIMIT_NPROC could be set by the parent process or by pam_limits.  The
+> machine I am typing this on has:
+> 
+> *       hard    nproc   200
+> 
+> (as well as other limits) in /etc/security/limits.conf, so if this
+> machine's kernel let setuid() fail on RLIMIT_NPROC, I would be taking
+> extra risk of a security compromise by reducing the risk of system
+> crashes from inadvertent excessive resource consumption by runaway
+> processes - a tradeoff I'd rather avoid.
+> 
+> >  2/ if the process was setuid-root and inherited rlimits from before, and
+> >       never re-set them.  In this case it is easy to imagine that a setuid()
+> >       would not be checked.
+> 
+> Right.  (In practice, all kinds of programs tend to forget to check
+> setuid() return value, though.)
+> 
+> Actually, for the problem to apply to setuid-root programs, they need to
+> switch their real uid first (more fully become root), then try to switch
+> to a user - but this is common.
+> 
+> Here are some examples for 2011-2010:
+> 
+> "... missing setuid() retval check in opielogin which leads to easy root
+> compromise":
+> 
+> http://www.openwall.com/lists/oss-security/2011/06/22/6
+> 
+> "The /usr/lib/libgnomesu/gnomesu-pam-backend suid binary which belongs
+> to the libgnomesu package is not checking setuid() return values.
+> 
+> As a result, two cooperating users, or users with access to guest,
+> cgi or web accounts can run arbitrary commands as root very easily."
+> 
+> http://www.openwall.com/lists/oss-security/2011/05/30/2
+> 
+> pam_xauth (exploitable if pam_limits is also used):
+> 
+> http://www.openwall.com/lists/oss-security/2010/08/16/2
+> 
+> A collection of examples from 2006:
+> 
+> http://lists.openwall.net/linux-kernel/2006/08/20/156
 
-> > +struct regmap {
-> > +	struct mutex lock;
-> > +
-> > +	struct device *dev; /* Device we do I/O on */
-> > +	void *work_buf;     /* Scratch buffer used to format I/O */
-> > +	struct regmap_format format;  /* Buffer format */
-> > +	const struct regmap_bus *bus;
-> > +};
+This is useful background that I think would be good have int the changelog.
 
-> Some /** kerneldoc on these structures would be helpful.
+I'm still bothers that the proposed patch can cause exec to fail for an
+separate 'innocent' process.
+It also seems to 'hide' the problem - just shuffling code around.
+The comment in do_execve_common helps.  A similar comment in set_user
+wouldn't hurt.
 
-I didn't kerneldoc it because it's internal only and shouldn't appear in
-the API reference for the API.
+But what do you think of this.  It sure that only the process which ignored
+the return value from setuid is inconvenienced.
+??
 
-> > +/**
-> > + * remap_init: Initialise register map
+NeilBrown
 
-> nit: "remap_init() - Initialise reigster map"
+commit e47554d38340d4c4c3eccf207de682fe6b29224e
+Author: NeilBrown <neilb@suse.de>
+Date:   Fri Jul 15 13:20:09 2011 +1000
 
-> > +struct regmap *regmap_init(struct device *dev,
-> > +			   const struct regmap_config *config)
-> > +{
-> > +	struct regmap *map;
-> > +	int ret = -EINVAL;
-> > +
-> > +	map = kzalloc(sizeof(*map), GFP_KERNEL);
-> > +	if (map == NULL) {
-> > +		ret = -ENOMEM;
-> > +		goto err;
-> > +	}
+    Protect execve from being used after 'setuid' has failed.
+    
+    Many programs do not check setuid for failure so when it fails they
+    might continue to use elevated privileged without intending to.
+    Of particular concern is a call to 'exec' as this is common after
+    dropping privileges and allows the elevated privileges to be misused.
+    
+    The patch http://lkml.org/lkml/2003/7/13/226 introduced a RLIMIT_NPROC
+    check in set_user() to check for NPROC exceeding via setuid() and
+    similar functions.  Before the check there was a possibility to greatly
+    exceed the allowed number of processes by an unprivileged user if the
+    program relied on rlimit only.  But the check created new security
+    threat: many poorly written programs simply don't check setuid() return
+    code and believe it cannot fail if executed with root privileges.  So,
+    when the check fails we set a process flag which causes execve to fail.
+    
+    Following examples of vulnerabilities due to processes not checking
+    error from setuid provided by Solar Designer <solar@openwall.com>:
+    
+    Here are some examples for 2011-2010:
+    
+    "... missing setuid() retval check in opielogin which leads to easy root
+    compromise":
+    
+    http://www.openwall.com/lists/oss-security/2011/06/22/6
+    
+    "The /usr/lib/libgnomesu/gnomesu-pam-backend suid binary which belongs
+    to the libgnomesu package is not checking setuid() return values.
+    
+    As a result, two cooperating users, or users with access to guest,
+    cgi or web accounts can run arbitrary commands as root very easily."
+    
+    http://www.openwall.com/lists/oss-security/2011/05/30/2
+    
+    pam_xauth (exploitable if pam_limits is also used):
+    
+    http://www.openwall.com/lists/oss-security/2010/08/16/2
+    
+    A collection of examples from 2006:
+    
+    http://lists.openwall.net/linux-kernel/2006/08/20/156
+    
+    Signed-off-by: NeilBrown <neilb@suse.de>
 
-> Wouldn't it be appropriate to allow drivers to embed the regmap in a
-> private data structure?
-
-Not until we're more confident of the internals, I'd rather not have to
-worry about what people are doing with them until they seem more stable.
-
-> Rather than a big case statement, could this be cleaner with a lookup
-> table?
-
-Yeah, I did it that way initially but it got annoying to write.  I'm
-swithering about going back to that, though.  The problem was the 4x12
-and 7x9 cases.  I don't really like either way and this just happened to
-be the last one that got implemented.
-
-> I'm a bit concerned that the overall structure of the init function
-> will be inflexible in the long run.  Specifically, the way the
-
-That's fine, we can rewrite it.  Like I said I'm not
-
-> instance structure is hidden from the caller, there isn't any way for
-> a device driver to explicitly override the accessor functions if it
-> needs to.  One of the things I like about the generic irq_chip work
-> that tglx did was that it set up a lot of things for the irq
-> controller, but the controller could still provide its own hooks when
-> necessary.
-
-This is mostly the API internals thing again.
-
-For overrides my plan was to let drivers set the hooks in the
-regmap_config they pass in, but I'd like to try to get as far as we can
-without needing to do that.  Specifically I'd like to get the cache
-stuff in before exposing the internals as I think that that may suggest
-some refactorings.
-
-> > +	/* Figure out which bus to use, and also grab a lock on the
-> > +	 * module supplying it. */
-> > +	mutex_lock(&regmap_bus_lock);
-> > +	list_for_each_entry(map->bus, &regmap_bus_list, list)
-> > +		if (map->bus->type == dev->bus &&
-> > +		    try_module_get(map->bus->owner))
-> > +			break;
-> > +	mutex_unlock(&regmap_bus_lock);
-
-> Hmmmm.  Two things here.  First, grabbing a reference to the module
-> mostly works, but it highlights a deficiency in the driver model.
-> Really what we want here is a refcount on the /bound/ instance of the
-> driver+device.  The driver model does actually support unbinding a
-> device without removing the module.
-
-I know, but all the other subsystems are doing it :)
-
-> Second, combining a device reference with the register access library
-> conflates two things which seem to me to be separate.  Actually, which
-> it seems odd, it doesn't bother me too much, but it looks completely
-> wrong for this library to need specific bus-type knowledge.  Why does
-> the bus type need to be known (other than to choose the appropriate IO
-> routines)?  If it is only for setting up the io accessors, I'd rather
-> see the caller use a bus-specific setup funtion and pass the
-> appropriate {i2c,spi,...}_device which will take care of type
-> checking.
-
-It's for the I/O accessors at present, though it will also get used for
-trace and diagnostics - experience with ASoC has been that it's very
-useful to have an off the shelf set of register I/O trace and dump
-facilities that you can turn on easily.  For example, once we get the
-drivers telling us more about their register maps I'd expect to
-replicate the ASoC debugfs dump access.  For that stuff being able to
-say what device we're talking about is obviously helpful.
-
-The reasoning behind the I/O is that for all the I2C/SPI devices you
-usually end up with a common probe()/exit() function which gets called
-by the bus-specific ones and doing things this way means that for most
-devices we move an extra call and check block from the bus specific code
-into the common code.
-
-> > +err:
-> > +	return ERR_PTR(ret);
-
-> Personal soapbox: I'm not at all a fan of the ERR_PTR() pattern
-> because it provides no clues to the caller (gcc) if a failure is
-> returned as a NULL or as a 0.  Unless there is a really strong
-> argument for needing to differentiate between "no data" and "things
-> went bad", I'd rather see APIs that return NULL on failure.
-
-We should just switch to C++ and use exceptions :)
+diff --git a/fs/exec.c b/fs/exec.c
+index 6075a1e..c282ebb 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1434,6 +1434,16 @@ static int do_execve_common(const char *filename,
+ 	bool clear_in_exec;
+ 	int retval;
+ 
++	if (current->flags & PF_SETUSER_FAILED) {
++		/* setuid failed and program is trying to 
++		 * 'exec' anyway (rather than e.g. clean up and
++		 * exit), so fail rather than allow a possible
++		 * security breach
++		 */
++		retval = -EAGAIN;
++		goto out_ret;
++	}
++
+ 	retval = unshare_files(&displaced);
+ 	if (retval)
+ 		goto out_ret;
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 496770a..6b13923 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1759,6 +1759,7 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
+ #define PF_DUMPCORE	0x00000200	/* dumped core */
+ #define PF_SIGNALED	0x00000400	/* killed by a signal */
+ #define PF_MEMALLOC	0x00000800	/* Allocating memory */
++#define PF_SETUSER_FAILED 0x00001000	/* set_user failed so privs should not be used */
+ #define PF_USED_MATH	0x00002000	/* if unset the fpu must be initialized before use */
+ #define PF_FREEZING	0x00004000	/* freeze in progress. do not account to load */
+ #define PF_NOFREEZE	0x00008000	/* this thread should not be frozen */
+diff --git a/kernel/cred.c b/kernel/cred.c
+index 174fa84..05c46fc 100644
+--- a/kernel/cred.c
++++ b/kernel/cred.c
+@@ -508,10 +508,8 @@ int commit_creds(struct cred *new)
+ 		key_fsgid_changed(task);
+ 
+ 	/* do it
+-	 * - What if a process setreuid()'s and this brings the
+-	 *   new uid over his NPROC rlimit?  We can check this now
+-	 *   cheaply with the new uid cache, so if it matters
+-	 *   we should be checking for it.  -DaveM
++	 * RLIMIT_NPROC limits on user->processes have already been imposed
++	 * in set_user().
+ 	 */
+ 	alter_cred_subscribers(new, 2);
+ 	if (new->user != old->user)
+diff --git a/kernel/sys.c b/kernel/sys.c
+index e4128b2..9b8f03f 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -588,6 +588,8 @@ static int set_user(struct cred *new)
+ 	struct user_struct *new_user;
+ 
+ 	new_user = alloc_uid(current_user_ns(), new->uid);
++	current->flags |= PF_SETUSER_FAILED;
++
+ 	if (!new_user)
+ 		return -EAGAIN;
+ 
+@@ -596,6 +598,7 @@ static int set_user(struct cred *new)
+ 		free_uid(new_user);
+ 		return -EAGAIN;
+ 	}
++	current->flags &= ~PF_SETUSER_FAILED;
+ 
+ 	free_uid(new->user);
+ 	new->user = new_user;
