@@ -1,198 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965053Ab1GOHHP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 03:07:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41677 "EHLO mx2.suse.de"
+	id S964968Ab1GOH2T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 03:28:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43541 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964786Ab1GOHHK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 03:07:10 -0400
-Date: Fri, 15 Jul 2011 17:06:50 +1000
-From: NeilBrown <neilb@suse.de>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: kernel-hardening@lists.openwall.com, Solar Designer <solar@openwall.com>,
-        James Morris <jmorris@namei.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Eric Paris <eparis@redhat.com>, Stephen Smalley <sds@tycho.nsa.gov>,
-        Willy Tarreau <w@1wt.eu>, Sebastian Krahmer <krahmer@suse.de>
-Subject: Re: [kernel-hardening] Re: [PATCH] move RLIMIT_NPROC check from
- set_user() to do_execve_common()
-Message-ID: <20110715170650.585f1dad@notabene.brown>
-In-Reply-To: <20110715063113.GA3166@albatros>
-References: <20110712132723.GA3193@albatros>
-	<CA+55aFysXOeBqEvmVbuqL3i0jRFDcE=vDuVhmYL38XQ0+x=deQ@mail.gmail.com>
-	<20110713091408.0d456352@notabene.brown>
-	<20110713063142.GA19976@openwall.com>
-	<20110713170657.59dae548@notabene.brown>
-	<CA+55aFwQKqvNvzTMYXVW_yKkFtNsyv8uuBiWiwYLof-nPqPu9w@mail.gmail.com>
-	<alpine.LRH.2.00.1107141009510.17067@tundra.namei.org>
-	<20110714112751.1bfd998f@notabene.brown>
-	<20110714150602.GA30019@openwall.com>
-	<20110715133013.4fa38d19@notabene.brown>
-	<20110715063113.GA3166@albatros>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S964908Ab1GOH2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 03:28:18 -0400
+Date: Fri, 15 Jul 2011 09:28:14 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] memcg: make oom_lock 0 and 1 based rather than
+ coutner
+Message-ID: <20110715072814.GA6239@tiehlicka.suse.cz>
+References: <20110714115913.cf8d1b9d.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110714090017.GD19408@tiehlicka.suse.cz>
+ <20110714183014.8b15e9b9.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110714095152.GG19408@tiehlicka.suse.cz>
+ <20110714191728.058859cd.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110714110935.GK19408@tiehlicka.suse.cz>
+ <20110714113009.GL19408@tiehlicka.suse.cz>
+ <20110714205012.8b78691e.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110714125555.GA27954@tiehlicka.suse.cz>
+ <20110715084755.1e0a4c14.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110715084755.1e0a4c14.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Jul 2011 10:31:13 +0400 Vasiliy Kulikov <segoon@openwall.com>
-wrote:
-
-> Neil,
+On Fri 15-07-11 08:47:55, KAMEZAWA Hiroyuki wrote:
+> On Thu, 14 Jul 2011 14:55:55 +0200
+> Michal Hocko <mhocko@suse.cz> wrote:
 > 
-> On Fri, Jul 15, 2011 at 13:30 +1000, NeilBrown wrote:
-> > I'm still bothers that the proposed patch can cause exec to fail for an
-> > separate 'innocent' process.
-> > It also seems to 'hide' the problem - just shuffling code around.
-> > The comment in do_execve_common helps.  A similar comment in set_user
-> > wouldn't hurt.
+> > On Thu 14-07-11 20:50:12, KAMEZAWA Hiroyuki wrote:
+> > > On Thu, 14 Jul 2011 13:30:09 +0200
+> > > Michal Hocko <mhocko@suse.cz> wrote:
+> > [...]
+> > > >  static bool mem_cgroup_oom_lock(struct mem_cgroup *mem)
+> > > >  {
+> > > > -	int x, lock_count = 0;
+> > > > -	struct mem_cgroup *iter;
+> > > > +	int x, lock_count = -1;
+> > > > +	struct mem_cgroup *iter, *failed = NULL;
+> > > > +	bool cond = true;
+> > > >  
+> > > > -	for_each_mem_cgroup_tree(iter, mem) {
+> > > > -		x = atomic_inc_return(&iter->oom_lock);
+> > > > -		lock_count = max(x, lock_count);
+> > > > +	for_each_mem_cgroup_tree_cond(iter, mem, cond) {
+> > > > +		x = !!atomic_add_unless(&iter->oom_lock, 1, 1);
+> > > > +		if (lock_count == -1)
+> > > > +			lock_count = x;
+> > > > +		else if (lock_count != x) {
+> > > > +			/*
+> > > > +			 * this subtree of our hierarchy is already locked
+> > > > +			 * so we cannot give a lock.
+> > > > +			 */
+> > > > +			lock_count = 0;
+> > > > +			failed = iter;
+> > > > +			cond = false;
+> > > > +		}
+> > > >  	}
+> > > 
+> > > Hm ? assuming B-C-D is locked and a new thread tries a lock on A-B-C-D-E.
+> > > And for_each_mem_cgroup_tree will find groups in order of A->B->C->D->E.
+> > > Before lock
+> > >   A  0
+> > >   B  1
+> > >   C  1
+> > >   D  1
+> > >   E  0
+> > > 
+> > > After lock
+> > >   A  1
+> > >   B  1
+> > >   C  1
+> > >   D  1
+> > >   E  0
+> > > 
+> > > here, failed = B, cond = false. Undo routine will unlock A.
+> > > Hmm, seems to work in this case.
+> > > 
+> > > But....A's oom_lock==0 and memcg_oom_wakeup() at el will not able to
+> > > know "A" is in OOM. wakeup processes in A which is waiting for oom recover..
 > > 
-> > But what do you think of this.  It sure that only the process which ignored
-> > the return value from setuid is inconvenienced.
+> > Hohm, we need to have 2 different states. lock and mark_oom.
+> > oom_recovert would check only the under_oom.
+> > 
 > 
-> I don't like it.  You're mixing the main problem and an RLIMIT check
-> enforcement.  The main goal is denying setuid() to fail unless there is not
-> enough privileges, RLIMIT in execve() is just an *attempt* to still count
-> NPROC in *some* widespread cases.  But you're trying to fix setuid()
-> where RLIMIT accounting is simple :\
+> yes. I think so, too.
 > 
-> Your patch doesn't address the core issue in this situation:
+> > > 
+> > > Will this work ?
+> > 
+> > No it won't because the rest of the world has no idea that A is
+> > under_oom as well.
+> > 
+> > > ==
+> > >  # cgcreate -g memory:A
+> > >  # cgset -r memory.use_hierarchy=1 A
+> > >  # cgset -r memory.oom_control=1   A
+> > >  # cgset -r memory.limit_in_bytes= 100M
+> > >  # cgset -r memory.memsw.limit_in_bytes= 100M
+> > >  # cgcreate -g memory:A/B
+> > >  # cgset -r memory.oom_control=1 A/B
+> > >  # cgset -r memory.limit_in_bytes=20M
+> > >  # cgset -r memory.memsw.limit_in_bytes=20M
+> > > 
+> > >  Assume malloc XXX is a program allocating XXX Megabytes of memory.
+> > > 
+> > >  # cgexec -g memory:A/B malloc 30  &    #->this will be blocked by OOM of group B
+> > >  # cgexec -g memory:A   malloc 80  &    #->this will be blocked by OOM of group A
+> > > 
+> > > 
+> > > Here, 2 procs are blocked by OOM. Here, relax A's limitation and clear OOM.
+> > > 
+> > >  # cgset -r memory.memsw.limit_in_bytes=300M A
+> > >  # cgset -r memory.limit_in_bytes=300M A
+> > > 
+> > >  malloc 80 will end.
+> > 
+> > What about yet another approach? Very similar what you proposed, I
+> > guess. Again not tested and needs some cleanup just to illustrate.
+> > What do you think?
 > 
->     setuid(); /* it fails because of RLIMIT */
->     do_some_fs();
->     execve();
+> Hmm, I think this will work. Please go ahead.
+> Unfortunately, I'll not be able to make a quick response for a week
+> because of other tasks. I'm sorry.
 > 
-> do_some_fs() should be called ONLY if root is dropped.  In your scheme
-> the process may interact with FS as root while thinking it is nonroot,
-> which almost always leads to privilege escalation.
+> Anyway,
+> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> 
+
+Thanks
+
 > 
-> Thanks,
+> BTW, it's better to add "How-to-test" and the result in description.
+> Some test similar to mine will show the result we want.
+
+Agreed. I will hammer it today and repost with cleaned up description
+with your example as well as mine that triggered the convoy behavior.
+
+I hope you don't mine if I add you s-o-b to the patch as this was a
+cooperative work.
+
+> ==
+> Make a hierarchy of memcg, which has 300MB memory+swap limit.
 > 
+>  %cgcreate -g memory:A
+>  %cgset -r memory.limit_in_bytes=300M A
+>  %cgset -r memory.memsw.limit_in_bytes=300M A
+> 
+> Then, running folloing program under A.
+>  %cgexec -g memory:A ./fork
+> ==
+> int main(int argc, char *argv[])
+> {
+>         int i;
+>         int status;
+> 
+>         for (i = 0; i < 5000; i++) {
+>                 if (fork() == 0) {
+>                         char *c;
+>                         c = malloc(1024*1024);
+>                         memset(c, 0, 1024*1024);
+>                         sleep(20);
+>                         fprintf(stderr, "[%d]\n", i);
+>                         exit(0);
+>                 }
+>                 printf("%d\n", i);
+>                 waitpid(-1, &status, WNOHANG);
+>         }
+>         while (1) {
+>                 int ret;
+>                 ret = waitpid(-1, &status, WNOHANG);
+> 
+>                 if (ret == -1)
+>                         break;
+>                 if (!ret)
+>                         sleep(1);
+>         }
+>         return 0;
+> }
+> ==
+> 
+> Thank you for your effort.
+> -Kame
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-How about this then?
-
->From 4a1411d10c90510a4eedf94bfd6b2578425271ba Mon Sep 17 00:00:00 2001
-From: NeilBrown <neilb@suse.de>
-Date: Fri, 15 Jul 2011 13:20:09 +1000
-Subject: [PATCH] Protect execve from being used after 'setuid' exceeds RLIMIT_NPROC
-
-Many programs to not check setuid for failure so it is not safe
-for it to fail.  So impose the RLIMIT_NPROC limit by noting the
-excess in set_user with a process flag, and failing exec() if the
-flag is set.
-
-The patch http://lkml.org/lkml/2003/7/13/226 introduced a RLIMIT_NPROC
-check in set_user() to check for NPROC exceeding via setuid() and
-similar functions.  Before the check there was a possibility to greatly
-exceed the allowed number of processes by an unprivileged user if the
-program relied on rlimit only.  But the check created new security
-threat: many poorly written programs simply don't check setuid() return
-code and believe it cannot fail if executed with root privileges.  So,
-when the check fails we set a process flag which causes execve to fail.
-
-Following examples of vulnerabilities due to processes not checking
-error from setuid provided by Solar Designer <solar@openwall.com>:
-
-Here are some examples for 2011-2010:
-
-"... missing setuid() retval check in opielogin which leads to easy root
-compromise":
-
-http://www.openwall.com/lists/oss-security/2011/06/22/6
-
-"The /usr/lib/libgnomesu/gnomesu-pam-backend suid binary which belongs
-to the libgnomesu package is not checking setuid() return values.
-
-As a result, two cooperating users, or users with access to guest,
-cgi or web accounts can run arbitrary commands as root very easily."
-
-http://www.openwall.com/lists/oss-security/2011/05/30/2
-
-pam_xauth (exploitable if pam_limits is also used):
-
-http://www.openwall.com/lists/oss-security/2010/08/16/2
-
-A collection of examples from 2006:
-
-http://lists.openwall.net/linux-kernel/2006/08/20/156
-
-Signed-off-by: NeilBrown <neilb@suse.de>
-
-diff --git a/fs/exec.c b/fs/exec.c
-index 6075a1e..dfe9c61 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1434,6 +1434,17 @@ static int do_execve_common(const char *filename,
- 	bool clear_in_exec;
- 	int retval;
- 
-+	if (current->flags & PF_NPROC_EXCEEDED) {
-+		/* setuid noticed that RLIMIT_NPROC was
-+		 * exceeded, but didn't fail as that easily
-+		 * leads to privileges leaking.  So fail
-+		 * here instead - we still limit the number of
-+		 * processes running the user's code.
-+		 */
-+		retval = -EAGAIN;
-+		goto out_ret;
-+	}
-+
- 	retval = unshare_files(&displaced);
- 	if (retval)
- 		goto out_ret;
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 496770a..f024c63 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1759,6 +1759,7 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
- #define PF_DUMPCORE	0x00000200	/* dumped core */
- #define PF_SIGNALED	0x00000400	/* killed by a signal */
- #define PF_MEMALLOC	0x00000800	/* Allocating memory */
-+#define PF_NPROC_EXCEEDED 0x00001000	/* set_user noticed that RLIMIT_NPROC was exceeded */
- #define PF_USED_MATH	0x00002000	/* if unset the fpu must be initialized before use */
- #define PF_FREEZING	0x00004000	/* freeze in progress. do not account to load */
- #define PF_NOFREEZE	0x00008000	/* this thread should not be frozen */
-diff --git a/kernel/cred.c b/kernel/cred.c
-index 174fa84..8ef31f5 100644
---- a/kernel/cred.c
-+++ b/kernel/cred.c
-@@ -508,10 +508,8 @@ int commit_creds(struct cred *new)
- 		key_fsgid_changed(task);
- 
- 	/* do it
--	 * - What if a process setreuid()'s and this brings the
--	 *   new uid over his NPROC rlimit?  We can check this now
--	 *   cheaply with the new uid cache, so if it matters
--	 *   we should be checking for it.  -DaveM
-+	 * RLIMIT_NPROC limits on user->processes have already been checked
-+	 * in set_user().
- 	 */
- 	alter_cred_subscribers(new, 2);
- 	if (new->user != old->user)
-diff --git a/kernel/sys.c b/kernel/sys.c
-index e4128b2..dd1fb9d 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -592,10 +592,9 @@ static int set_user(struct cred *new)
- 		return -EAGAIN;
- 
- 	if (atomic_read(&new_user->processes) >= rlimit(RLIMIT_NPROC) &&
--			new_user != INIT_USER) {
--		free_uid(new_user);
--		return -EAGAIN;
--	}
-+			new_user != INIT_USER)
-+		/* Cause any subsequent 'exec' to fail */
-+		current->flags |= PF_NPROC_EXCEEDED;
- 
- 	free_uid(new->user);
- 	new->user = new_user;
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
