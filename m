@@ -1,80 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751902Ab1GOOOj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 10:14:39 -0400
-Received: from msux-gh1-uea02.nsa.gov ([63.239.65.40]:33706 "EHLO
-	msux-gh1-uea02.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751068Ab1GOOOh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 10:14:37 -0400
-X-Greylist: delayed 955 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Jul 2011 10:14:36 EDT
-Subject: Re: [kernel-hardening] Re: [PATCH] move RLIMIT_NPROC check from
- set_user() to do_execve_common()
-From: Stephen Smalley <sds@tycho.nsa.gov>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: NeilBrown <neilb@suse.de>, kernel-hardening@lists.openwall.com,
-        Solar Designer <solar@openwall.com>, James Morris <jmorris@namei.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Eric Paris <eparis@redhat.com>, Willy Tarreau <w@1wt.eu>,
-        Sebastian Krahmer <krahmer@suse.de>
-In-Reply-To: <20110715073823.GA3821@albatros>
-References: <20110713091408.0d456352@notabene.brown>
-	 <20110713063142.GA19976@openwall.com>
-	 <20110713170657.59dae548@notabene.brown>
-	 <CA+55aFwQKqvNvzTMYXVW_yKkFtNsyv8uuBiWiwYLof-nPqPu9w@mail.gmail.com>
-	 <alpine.LRH.2.00.1107141009510.17067@tundra.namei.org>
-	 <20110714112751.1bfd998f@notabene.brown>
-	 <20110714150602.GA30019@openwall.com>
-	 <20110715133013.4fa38d19@notabene.brown> <20110715063113.GA3166@albatros>
-	 <20110715170650.585f1dad@notabene.brown>  <20110715073823.GA3821@albatros>
-Content-Type: text/plain; charset="UTF-8"
-Organization: National Security Agency
-Date: Fri, 15 Jul 2011 09:58:33 -0400
-Message-ID: <1310738313.30257.27.camel@moss-pluto>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1752121Ab1GOOTS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 10:19:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25947 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752040Ab1GOOTR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 10:19:17 -0400
+Date: Fri, 15 Jul 2011 10:18:47 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>, ebiederm@xmission.com,
+        hbabu@us.ibm.com, mahesh@linux.vnet.ibm.com, oomichi@mxs.nes.nec.co.jp,
+        horms@verge.net.au, heiko.carstens@de.ibm.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org
+Subject: Re: [patch 0/9] kdump: Patch series for s390 support
+Message-ID: <20110715141847.GD3428@redhat.com>
+References: <20110707193321.GE28850@redhat.com>
+ <20110708110121.5acfc3c9@mschwide>
+ <20110711144255.GE30674@redhat.com>
+ <20110711175626.121dcc58@mschwide>
+ <20110713160239.GE4426@redhat.com>
+ <20110713184611.6dcb09b4@mschwide>
+ <20110713200004.GG4426@redhat.com>
+ <20110714091800.720da848@mschwide>
+ <20110714175532.GE6672@redhat.com>
+ <1310738181.10789.16.camel@br98xy6r>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1310738181.10789.16.camel@br98xy6r>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-15 at 11:38 +0400, Vasiliy Kulikov wrote:
-> Neil,
+On Fri, Jul 15, 2011 at 03:56:21PM +0200, Michael Holzheu wrote:
+> Hello Vivec,
 > 
-> On Fri, Jul 15, 2011 at 17:06 +1000, NeilBrown wrote:
-> > How about this then?
+> On Thu, 2011-07-14 at 13:55 -0400, Vivek Goyal wrote:
 > 
-> AFAIU, with this patch:
+> [snip]
 > 
-> 1) setuid() doesn't fail in NPROC exceed case.
-> 2) NPROC is forced on execve() after setuid().
-> 3) execve() fails only if NPROC was exceeded during setuid() execution.
-> 4) Other processes of the same user doesn't suffer from "occasional"
-> execve() failures.
+> > > The first thing we want to do is to check if
+> > > the purgatory is still fine, that is do a checksum. If we have the
+> > > infrastructure in place to do one checksum then we can easily do the
+> > > other checksums as well.
+> > 
+> > Some piece of code you have to assume is fine. Are you not already
+> > assuming that IPL code you have in first 64K bytes is fine and no
+> > body has overwritten it.
 > 
-> If it is correct, then I like the patch :)  It does RLIMIT_NPROC
-> enforcement without mixing other execve() calls like -ow patch did.
+> We can assume that the IPL dump code is fine, because it is freshly
+> loaded into memory. Only when the disk is somehow corrupted we have a
+> problem.
+> 
+> > Are you not assuming that hook in panic()
+> > (I think you are calling it shutdown trigger) is fine so that it
+> > can help you jump to right place.
+> 
+> Yes, that is correct for automatic dump in case of panic(). The panic()
+> path can fail.
+> 
+> But there are two other options where really *no* code that was in
+> memory, when the system crashed, is used for the dump process or
+> verification of kdump:
+> 1) Manual IPL/boot of stand-alone dump by the operator via the virtual
+> guest console
+> 2) Automatic IPL/boot of stand-alone dump by our z/VM hypervisor
+> watchdog
 
-Does this have implications for Android's zygote model?  There you have
-a long running uid 0 / all caps process (the zygote), which forks itself
-upon receiving a request to spawn an app and then calls setgroups();
-setrlimit(); setgid(); setuid(); assuming the limits and credentials of
-the app but never does an exec at all, as it is just loading the app's
-class and executing it from memory.
+Hi Michael,
 
-Also, can't setuid() fail under other conditions, e.g. ENOMEM upon
-prepare_creds() allocation failure?  Is it ever reasonable for a program
-to not check setuid() for failure?  Certainly there are plenty of
-examples of programs not doing that, but it isn't clear that this is a
-bug in the kernel.
+Ok. So IIUC, then purgatory code corruption is equivalent of panic() code
+corruption and in that case above two options will help an admin capture
+the dump.
 
--- 
-Stephen Smalley
-National Security Agency
+That's precisely the point I am trying to make that stand alone dump
+tools still remains the backup mechanism when kdump fails. Kdump can
+fail ether because checksum of loaded kernel is bad or because purgatory
+code itself got corrupted. In first case, purgatory itself can make
+sure of jumping to location to IPL the dump tools and in second case
+above two options will come into picture (manual dump via operator or
+hypervisor watchdog initiated IPL).
 
+If we go this path, this will should simplify the design a lot. dump
+tools don't have to know anything about kdump kernel and there is no
+need to pass any information. 
+
+And in common case kdump should be able to capture the dump and filter
+it. Only in extreme corner cases, we need to trigger this dump tool
+mechanism and capture full memory dump.
+
+How about doing it that way. This should not require much chagens in
+common kexec code. Will require some changes in kexec-tools though, 
+as you shall have to create a mechanism for purgatory to jump to in
+case kdump kernel checksum fails.
+
+Thanks
+Vivek 
