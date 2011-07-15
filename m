@@ -1,111 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755236Ab1GOGzR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 02:55:17 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:41922 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754932Ab1GOGzP (ORCPT
+	id S964881Ab1GOG5i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 02:57:38 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:59503 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751744Ab1GOG5h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 02:55:15 -0400
-X-AuditID: b753bd60-a14abba0000019f4-91-4e1fe450ea67
-X-AuditID: b753bd60-a14abba0000019f4-91-4e1fe450ea67
-Message-ID: <4E1FE446.4040208@hitachi.com>
-Date: Fri, 15 Jul 2011 15:55:02 +0900
-From: Nao Nishijima <nao.nishijima.xt@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	Fri, 15 Jul 2011 02:57:37 -0400
+From: Peter Korsgaard <jacmet@sunsite.dk>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] mcp23s08: isolate spi specific parts
+References: <1310673568-30577-1-git-send-email-jacmet@sunsite.dk>
+	<1310673568-30577-3-git-send-email-jacmet@sunsite.dk>
+	<20110715025358.GZ2927@ponder.secretlab.ca>
+Date: Fri, 15 Jul 2011 08:57:24 +0200
+In-Reply-To: <20110715025358.GZ2927@ponder.secretlab.ca> (Grant Likely's
+	message of "Thu, 14 Jul 2011 20:53:58 -0600")
+Message-ID: <87aacgav57.fsf@macbook.be.48ers.dk>
+User-Agent: Gnus/5.110009 (No Gnus v0.9) Emacs/22.3 (gnu/linux)
 MIME-Version: 1.0
-To: Karel Zak <kzak@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        James.Bottomley@HansenPartnership.com, kay.sievers@vrfy.org,
-        jcm@redhat.com, greg@kroah.com, dle-develop@lists.sourceforge.net,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        yrl.pp-manager.tt@hitachi.com, dgilbert@interlog.com,
-        stefanr@s5r6.in-berlin.de, hare@suse.de
-Subject: Re: [RFC PATCH 0/4] Persistent device name using alias name
-References: <20110708084547.2091.55262.stgit@ltc197.sdl.hitachi.co.jp> <20110708194501.GU6418@nb.net.home>
-In-Reply-To: <20110708194501.GU6418@nb.net.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, karel
+>>>>> "Grant" == Grant Likely <grant.likely@secretlab.ca> writes:
 
-(2011/07/09 4:45), Karel Zak wrote:
-> On Fri, Jul 08, 2011 at 05:45:47PM +0900, Nao Nishijima wrote:
->> This patch series provides an "alias name" of the disk into kernel and procfs
->> messages. The user can assign a preferred name to an alias name of the device.
->>
->> Based on previous discussion (*), I changed patches as follows
->> - This is "alias name"
->> - An "alias name" is stored in gendisk struct
->> - Add document to Documentation/ABI/testing/sysfs-block
->> - When the user changes an "alias name", kernel notifies udev
->>
->> (*) http://marc.info/?l=linux-scsi&m=130812625531219&w=2
->>
-> 
-> [...]
-> 
->> [localhost]# cat /proc/partitions
->> major minor  #blocks  name
->>
->>    8        0   12582912 foo
->>    8        1   12582878 foo1
->>    8        0    8388608 sdb
->>    8        1     512000 sdb1
->>    8        2    7875584 sdb2
-> 
->  If there is not /dev/foo and /sys/block/foo then the patch introduces
->  a REGRESSION. 
->  
->  The names from /proc/partitions are used in many applications
->  (libblkid, fdisk, ...) for many many years. The applications will not
->  work as expected.
-> 
+ Grant> On Thu, Jul 14, 2011 at 09:59:27PM +0200, Peter Korsgaard wrote:
+ >> Change spi member of struct mcp23s08 to be a ops-specific opaque data
+ >> pointer, and move spi specific knowledge out of mcp23s08_probe_one().
+ >> 
+ >> No functional change, but is needed to add i2c support.
+ >> 
+ >> Signed-off-by: Peter Korsgaard <jacmet@sunsite.dk>
+ >> ---
+ >> drivers/gpio/mcp23s08.c |   75 ++++++++++++++++++++++++++++++++--------------
+ >> static int __init mcp23s08_init(void)
+ >> {
+ >> -	return spi_register_driver(&mcp23s08_driver);
+ >> +	int ret = 0;
 
-I think that it is not a regression when users do not set an alias name.
-Of course, I am going to modify all these utils so that users can use
-alias names.
+ Grant> '= 0' is redundant.
 
-The purpose of alias names is to unify the name of device which users
-operate and see. Therefore, I think that users would like to get an
-alias name from it, because currently they get a device name form it.
+Will fix.
 
-However, for who wants to use alias name only for dmesg, I have an
-enhancement idea that users can choose alias names or device names in
-procfs by sysctl (default is device names).
+ >> +
+ >> +#ifdef CONFIG_SPI_MASTER
+ >> +	ret = spi_register_driver(&mcp23s08_driver);
+ >> +	if (ret)
+ >> +		return ret;
+ >> +#endif /* CONFIG_SPI_MASTER */
+ >> +
+ >> +	return ret;
 
-I would like to hear your opinion about this.
+ Grant> This change really belongs in the 3rd patch that adds the i2c
+ Grant> registration.
 
->  It's crazy to assume that all the applications will be improved to
->  translate the "pretty name" from /proc/partitions by /sys/block/<maj>:<min>.
-> 
->  Note, it's pretty naive to expect that people will use the pretty
->  names for printk()/dmesg only. I'm absolutely sure that it's will be
->  expected (by end-users) in /etc/fstab, mount, df, fdisk, ...
-> 
->  It's will be necessary to modify all these utils. 
-> 
+You can argue for both ways. With my approach the 3rd patch doesn't
+touch any of the spi stuff, but OK - I'll change.
 
-Yes, I am going to modify all these utils to support udev persistent
-names(including alias name).
-
-I had looked over some commands where those get a device name from.
-Most of them get a device name from /proc/partitions, also other
-commands get it from /etc/fstab, /sys/block/ or own device database.
-
-I am going to modify those commands to get a device name from /dev/disk.
-
->  The patch is opening Pandora's box :-(
-> 
-
-Best regards,
 
 -- 
-Nao NISHIJIMA
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., YOKOHAMA Research  Laboratory
-Email： nao.nishijima.xt@hitachi.com
+Bye, Peter Korsgaard
