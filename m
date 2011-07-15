@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753611Ab1GOR1q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 13:27:46 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:38081 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752907Ab1GOR1p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 13:27:45 -0400
-X-Authority-Analysis: v=1.1 cv=yMxAJ7W7nAoPh8ZdbvCArpG6pAdHwgpzIvOq8QbMesM= c=1 sm=0 a=j18ZI8npW5gA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=3nbZYyFuAAAA:8 a=meVymXHHAAAA:8 a=pGLkceISAAAA:8 a=20KFwNOVAAAA:8 a=2Y8_S9Y3w5jIkkz3IXsA:9 a=PUjeQqilurYA:10 a=EvKJbDF4Ut8A:10 a=jeBq3FmKZ4MA:10 a=MSl-tDqOz04A:10 a=jEp0ucaQiEUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH -tip 02/13] [CLEANUP]tracing/kprobes: merge trace probe
- enable/disable functions
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        yrl.pp-manager.tt@hitachi.com, Ingo Molnar <mingo@redhat.com>
-In-Reply-To: <20110627072644.6528.26910.stgit@fedora15>
-References: <20110627072626.6528.41792.stgit@fedora15>
-	 <20110627072644.6528.26910.stgit@fedora15>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 15 Jul 2011 13:27:42 -0400
-Message-ID: <1310750862.27864.71.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	id S1753888Ab1GOR3S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 13:29:18 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:60008
+	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753122Ab1GOR3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 13:29:17 -0400
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 0000/0117] Staging: hv: Driver cleanup
+Date: Fri, 15 Jul 2011 10:47:04 -0700
+Message-Id: <1310752024-27854-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-06-27 at 16:26 +0900, Masami Hiramatsu wrote:
-> Merge redundant enable/disable functions into enable_trace_probe()
-> and disable_trace_probe().
-> 
-> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> ---
+Further cleanup of the hv drivers. Back in June I had sent two patch
+sets to address these issues. I have addressed the comments I got from
+the community on my earlier patches here:
 
-This patch failed to compile with:
+	1) Implement code for autoloading the vmbus drivers without using PCI or DMI
+	   signatures. I have implemented this based on Greg's feedback on my earlier
+	   implementation.
 
-/home/rostedt/work/autotest/nobackup/linux-test.git/kernel/trace/trace_kprobe.c: In function 'kprobe_trace_self_tests_init':
-/home/rostedt/work/autotest/nobackup/linux-test.git/kernel/trace/trace_kprobe.c:1888:4: error: implicit declaration of function 'probe_event_enable'
+	2) Cleanup error handling across the board and use standard Linux error codes.
 
+	3) General cleanup
 
--- Steve
+	4) Some bug fixes.
+
+	5) Cleanup the reference counting mess for both stor and net devices.
+
+	6) Handle all block devices using the storvsc driver. I have modified
+	   the implementation here based on Christoph's feedback on my earlier
+	   implementation.
+
+	7) Accomodate some host side scsi emulation bugs.
+
+	8) In case of scsi errors off-line the device.
+
+This patch-set further reduces the size of Hyper-V drivers - the code is
+about 10% smaller. This reduction is mainly because we have eliminated the
+blkvsc driver.
+	  
+
+Regards,
+
+K. Y 
 
 
