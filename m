@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996Ab1GONSg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 09:18:36 -0400
-Received: from DMZ-MAILSEC-SCANNER-8.MIT.EDU ([18.7.68.37]:52644 "EHLO
-	dmz-mailsec-scanner-8.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751683Ab1GONSe (ORCPT
+	id S1752018Ab1GONUc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 09:20:32 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:49165 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750849Ab1GONUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 09:18:34 -0400
-X-Greylist: delayed 300 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Jul 2011 09:18:34 EDT
-X-AuditID: 12074425-b7bcaae000000a1b-ce-4e203cd5289d
-Subject: Re: [PATCH 1/2] Kconfig: Allow disabling of CONFIG_DEVPORT
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Theodore Tso <tytso@MIT.EDU>
-In-Reply-To: <20110715064147.GA1021@suse.de>
-Date: Fri, 15 Jul 2011 09:13:27 -0400
-Cc: Mike Waychison <mikew@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 7bit
-Message-Id: <C70E3912-6AA9-4EB3-85CC-11BF90D230C8@mit.edu>
-References: <1310675693-9204-1-git-send-email-mikew@google.com> <20110714212113.GA28639@suse.de> <CAGTjWtB53vW5B2EJ5=+C3buDAY0RtsfANxx5NhC5aWnmEx08EQ@mail.gmail.com> <20110715064147.GA1021@suse.de>
-To: Greg KH <gregkh@suse.de>
-X-Mailer: Apple Mail (2.1084)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrIKsWRmVeSWpSXmKPExsUixG6nonvVRsHP4PtOVYs569ewWfz5uYnV
-	YtpGcYvLu+awWex4u5jZ4tKBBUwWmzdNZbb4seExqwOHx4JNpR6bVnWyebw7d47d48SM3ywe
-	7/ddZfPYfLra4/MmOY8TLV9YAziiuGxSUnMyy1KL9O0SuDLef3zIXvCTuaL94z3GBsYJzF2M
-	nBwSAiYSa9rbWCBsMYkL99azdTFycQgJ7GOUmPb3CjOEs4FRYv60KewgVUICp5kkdj7IBLGF
-	BZwlXl1oZwSxeQUMJZZuagerYRbQkrjx7yUTiM0moCRx59N+sA2cAjoS+x8vB9vMIqAq8XTG
-	B3aQBcwCXUwSU5f9Y4NolpfY/nYOM8RQK4n/V/6wQ1xxlFFixbubYJNEBGQkvhw7DrSZA+hu
-	WYmmZRkTGAVnIbljFpI7ZiEZu4CReRWjbEpulW5uYmZOcWqybnFyYl5eapGuhV5uZoleakrp
-	JkZwzLio7mCccEjpEKMAB6MSD6+huLyfEGtiWXFl7iFGSQ4mJVHej9YKfkJ8SfkplRmJxRnx
-	RaU5qcWHGCU4mJVEePOYgHK8KYmVValF+TApaQ4WJXHeEO//vkIC6YklqdmpqQWpRTBZGQ4O
-	JQneQmBqEBIsSk1PrUjLzClBSDNxcIIM5wEang1Sw1tckJhbnJkOkT/FqCglzmsPkhAASWSU
-	5sH1wlLaK0ZxoFeEeZNAqniA6RCu+xXQYCagweusZEEGlyQipKQaGCfmBDEd/6elXS2psF1J
-	efPCwxNLjduqhVYu7H5h4D3XQ3bL7B6haSr5tr7TK/KD+05N36oXZuR26vt+EXsD3+3/rq+4
-	sFQx7RN3yzuf2t4Pf+8F8raZ69X1lGVdSrCw0Zd3WKx14ihblOanEIYy41fXbO8tiD12Infe
-	lBXcUYrFWk3b2UwtlFiKMxINtZiLihMBzDTPpEQDAAA=
+	Fri, 15 Jul 2011 09:20:30 -0400
+X-Greylist: delayed 38863 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Jul 2011 09:20:30 EDT
+Content-Type: text/plain; charset=UTF-8
+From: Chris Mason <chris.mason@oracle.com>
+To: Ric Wheeler <rwheeler@redhat.com>
+Cc: NeilBrown <neilb@suse.de>, david <david@lang.hm>,
+        Nico Schottelius <nico-lkml-20110623@schottelius.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: Re: Mis-Design of Btrfs?
+In-reply-to: <4E20395C.1000301@redhat.com>
+References: <20110623105337.GD3753@ethz.ch> <20110627164637.377314e2@notabene.brown> <4E0AF091.9030301@redhat.com> <20110714155620.6e9ac2cc@notabene.brown> <4E1E866E.2050405@redhat.com> <20110714163836.35a729c1@notabene.brown> <4E1E9372.3030208@redhat.com> <1310696606-sup-710@shiny> <alpine.DEB.2.02.1107142149420.3558@asgard.lang.hm> <20110715163354.74fa2083@notabene.brown> <1310728784-sup-9024@shiny> <4E20395C.1000301@redhat.com>
+Date: Fri, 15 Jul 2011 09:20:00 -0400
+Message-Id: <1310735821-sup-2589@shiny>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4E203E8B.015A:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Excerpts from Ric Wheeler's message of 2011-07-15 08:58:04 -0400:
+> On 07/15/2011 12:34 PM, Chris Mason wrote:
 
-On Jul 15, 2011, at 2:41 AM, Greg KH wrote:
+[ triggering IO retries on failed crc or other checks ]
 
+> >
+> > But, maybe the whole btrfs model is backwards for a generic layer.
+> > Instead of sending down ios and testing when they come back, we could
+> > just set a verification function (or stack of them?).
+> >
+> > For metadata, btrfs compares the crc and a few other fields of the
+> > metadata block, so we can easily add a compare function pointer and a
+> > void * to pass in.
+> >
+> > The problem is the crc can take a lot of CPU, so btrfs kicks it off to
+> > threading pools so saturate all the cpus on the box.  But there's no
+> > reason we can't make that available lower down.
+> >
+> > If we pushed the verification down, the retries could bubble up the
+> > stack instead of the other way around.
+> >
+> > -chris
 > 
-> Ok, but what happens if all 2000+ different companies start adding their
-> fields to the signed-off-by: area of the kernel for their internal
-> tracking systems?
+> I do like the idea of having the ability to do the verification and retries down 
+> the stack where you actually have the most context to figure out what is possible...
+> 
+> Why would you need to bubble back up anything other than an error when all 
+> retries have failed?
 
-That's been happening for a long time; there have been kernel patches
-referencing LTC, RHEL, and SLES bugzilla entries; many of those
-bug entries are not public so as not to reveal customer confidential
-information.   I've never seen anyone complain about that before.
+By bubble up I mean that if you have multiple layers capable of doing
+retries, the lowest levels would retry first.  Basically by the time we
+get an -EIO_ALREADY_RETRIED we know there's nothing that lower level can
+do to help.
 
--- Ted
-
+-chris
