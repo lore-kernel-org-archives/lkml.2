@@ -1,113 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753241Ab1GOVhr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 17:37:47 -0400
-Received: from vms173017pub.verizon.net ([206.46.173.17]:44091 "EHLO
-	vms173017pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752051Ab1GOVhq (ORCPT
+	id S1751617Ab1GOVjv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 17:39:51 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:24857 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758Ab1GOVjt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 17:37:46 -0400
-Date: Fri, 15 Jul 2011 17:37:15 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, x86@kernel.org,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+	Fri, 15 Jul 2011 17:39:49 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:sender:date:from:to:cc:subject:message-id:
+	references:mime-version:content-type:content-disposition:in-reply-to:
+	x-operating-system:user-agent:x-system-of-record;
+	b=TUZsCLaukfaVK+hIwQFihz37eTnUWCkyrWiW4KYUIib240RxcWzdrP+UsnHEz+3iO
+	bLejv5gPuDecDNYLsSGUQ==
+Date: Fri, 15 Jul 2011 14:39:27 -0700
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Mandeep Singh Baines <msb@chromium.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: [PATCH v3] x86 intel power: Initialize MSR_IA32_ENERGY_PERF_BIAS
-In-reply-to: <alpine.LFD.2.02.1107140051020.18606@x980>
-Message-id: <alpine.LFD.2.02.1107151732480.18606@x980>
-References: <alpine.LFD.2.02.1103301819250.31342@x980>
- <20110414090854.GB9248@elte.hu> <alpine.LFD.2.02.1104150202310.29365@x980>
- <20110415101712.GB28007@elte.hu> <alpine.LFD.2.02.1107131640280.9546@x980>
- <CA+55aFxBkgwBbnqwO7DuizsWiVcULYtPzqr-mYrT6aHmXV0zZw@mail.gmail.com>
- <4E1E106E.4060408@zytor.com> <alpine.LFD.2.02.1107140051020.18606@x980>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+        Huang Ying <ying.huang@intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, Olaf Hering <olaf@aepfle.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Dave Airlie <airlied@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] panic, vt: do not force oops output when panic_timeout
+ < 0
+Message-ID: <20110715213927.GD17254@google.com>
+References: <1308612129-12488-1-git-send-email-msb@chromium.org>
+ <1308612129-12488-2-git-send-email-msb@chromium.org>
+ <20110622223039.GA13916@google.com>
+ <20110707085341.200a3c2b@lxorguk.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110707085341.200a3c2b@lxorguk.ukuu.org.uk>
+X-Operating-System: Linux/2.6.32-gg426-generic (x86_64)
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Len Brown <len.brown@intel.com>
+Alan Cox (alan@lxorguk.ukuu.org.uk) wrote:
+> > a serial port. When I disabled the serial out, my machine started to
+> > get wedged on a panic. I guess screen_unblank was in bust_spinlocks
+> > for a reason. It probably bust some spin_locks somewhere.
+> 
+> No something else is wrong here. The console panic should be reliably
+> breaking the locks but a quick test of taking the console lock and BUG()
+> on a current kernel shows something has broken this.
+> 
 
-Since 2.6.36 (23016bf0d25), Linux prints the existence of "epb" in /proc/cpuinfo,
-Since 2.6.38 (d5532ee7b40), the x86_energy_perf_policy(8) utility has
-been available in-tree to update MSR_IA32_ENERGY_PERF_BIAS.
+Root caused to the issue I reported earlier with unblank_screen:
 
-However, the typical BIOS fails to initialize the MSR, presumably
-because this is handled by high-volume shrink-wrap operating systems...
+http://lkml.org/lkml/2011/6/20/394
 
-Linux distros, on the other hand, do not yet invoke x86_energy_perf_policy(8).
-As a result, WSM-EP, SNB, and later hardware from Intel will run in its
-default hardware power-on state (performance), which assumes that users
-care for performance at all costs and not for energy efficiency.
-While that is fine for performance benchmarks, the hardware's intended default
-operating point is "normal" mode...
+console_unblank()
+  -> c_unblank()
+    -> unblank_screen()
+      -> ...
+        -> mutex_lock()
 
-Initialize the MSR to the "normal" by default during kernel boot.
+> > Below is a replacement for this patch which calls screen_unblank but
+> > does not force output when the panic timeout is negative (no wait).
+> 
+> The on screen console is not always just a vt, and some people log remote
+> management console output so we really really don't want to do this.
+> 
 
-x86_energy_perf_policy(8) is available to change the default after boot,
-should the user have a different preference.
+In this patch, I'm disabling the functionality enabled by
+vc->vc_panic_force_write if panic_timeout < 0 (i.e. no timeout).
+vc_panic_force_write is only enabled for fb video consoles if the
+FBINFO_CAN_FORCE_OUTPUT flag is set.
 
-cc: stable@kernel.org
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-Signed-off-by: Len Brown <len.brown@intel.com>
----
-v3: fix #define typo in header and ',' typo in printk
-shorten printk to fix in 80 columns
+For our application, we're using ram_oops to preserved the panic in memory.
+We want to reliably, and as fast as possible, machine_restart. The
+vc_panic_force_write flag results in a bunch of graphics driver code to be
+invoked which slows down restart and decreases reliability. Since we're
+already storing the panic in RAM and are going to reboot immediately, there
+is no benefit in mode switching back to the vc in order to display the panic
+output. The log buffer will get flushed by the console_unblank() call so
+remote management consoles should see all output.
 
- arch/x86/include/asm/msr-index.h |    3 +++
- arch/x86/kernel/cpu/intel.c      |   18 ++++++++++++++++++
- 2 files changed, 21 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
-index 43a18c7..55a11e0 100644
---- a/arch/x86/include/asm/msr-index.h
-+++ b/arch/x86/include/asm/msr-index.h
-@@ -250,6 +250,9 @@
- #define MSR_IA32_TEMPERATURE_TARGET	0x000001a2
- 
- #define MSR_IA32_ENERGY_PERF_BIAS	0x000001b0
-+#define ENERGY_PERF_BIAS_PERFORMANCE	0
-+#define ENERGY_PERF_BIAS_NORMAL		6
-+#define ENERGY_PERF_BIAS_POWERSAVE	15
- 
- #define MSR_IA32_PACKAGE_THERM_STATUS		0x000001b1
- 
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index d16c2c5..24cba78 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -448,6 +448,24 @@ static void __cpuinit init_intel(struct cpuinfo_x86 *c)
- 
- 	if (cpu_has(c, X86_FEATURE_VMX))
- 		detect_vmx_virtcap(c);
-+
-+	/*
-+	 * Initialize MSR_IA32_ENERGY_PERF_BIAS if BIOS did not.
-+	 * x86_energy_perf_policy(8) is available to change it at run-time
-+	 */
-+	if (cpu_has(c, X86_FEATURE_EPB)) {
-+		u64 epb;
-+
-+		rdmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
-+		if ((epb & 0xF) == ENERGY_PERF_BIAS_PERFORMANCE) {
-+			printk_once(KERN_WARNING "ENERGY_PERF_BIAS:"
-+				" Set to 'normal', was 'performance'\n"
-+				"ENERGY_PERF_BIAS: View and update with"
-+				" x86_energy_perf_policy(8)\n");
-+			epb = (epb & ~0xF) | ENERGY_PERF_BIAS_NORMAL;
-+			wrmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
-+		}
-+	}
- }
- 
- #ifdef CONFIG_X86_32
--- 
-1.7.6.134.gcf13f
-
+> Instead the bug in the lock busting needs fixing. To start with it will
+> be hiding a ton of other oopses/bugs as hangs.
+> 
+> Alan
