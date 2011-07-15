@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753551Ab1GOQmQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 12:42:16 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:35814 "EHLO
+	id S1753585Ab1GOQmd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 12:42:33 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:35817 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548Ab1GOQmO (ORCPT
+	with ESMTP id S1753441Ab1GOQmc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 12:42:14 -0400
+	Fri, 15 Jul 2011 12:42:32 -0400
 From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 05/15] gma500: remove the legacy PM method
+Subject: [PATCH 06/15] gma500: Make crtc count a property of the device
 To: greg@kroah.com, linux-kernel@vger.kernel.org
-Date: Fri, 15 Jul 2011 17:33:26 +0100
-Message-ID: <20110715163319.28759.14659.stgit@localhost.localdomain>
+Date: Fri, 15 Jul 2011 17:33:43 +0100
+Message-ID: <20110715163336.28759.2163.stgit@localhost.localdomain>
 In-Reply-To: <20110715163117.28759.14946.stgit@localhost.localdomain>
 References: <20110715163117.28759.14946.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
@@ -22,97 +22,135 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Octavian Purdila <octavian.purdila@intel.com>
+From: Alan Cox <alan@linux.intel.com>
 
-PCI core only prefer one of legacy PM and new PM. And since runtime pm
-is implemented, which requires the new PM method, we should remove the
-legacy PM method.
+Octavian Purdila posted a patch that sets num_crtc to 1 for Moorestown, but
+Oaktrail has 2 so we need to split Oaktrail/Moorestown more sensibly, and
+also cope with some other differences later on.
 
-Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/staging/gma500/power.c   |    9 +++++----
- drivers/staging/gma500/power.h   |    4 ++--
- drivers/staging/gma500/psb_drv.c |    6 ++----
- 3 files changed, 9 insertions(+), 10 deletions(-)
+ drivers/staging/gma500/framebuffer.c  |    2 +-
+ drivers/staging/gma500/mdfld_device.c |    1 +
+ drivers/staging/gma500/mrst_device.c  |   41 +++++++++++++++++++++++++++++++++
+ drivers/staging/gma500/psb_device.c   |    1 +
+ drivers/staging/gma500/psb_drv.h      |    1 +
+ 5 files changed, 45 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/gma500/power.c b/drivers/staging/gma500/power.c
-index 5cd5023..972bea7 100644
---- a/drivers/staging/gma500/power.c
-+++ b/drivers/staging/gma500/power.c
-@@ -185,8 +185,9 @@ static bool gma_resume_pci(struct pci_dev *pdev)
-  *	perform the necessary shut down steps and save enough state that
-  *	we can undo this when resume is called.
-  */
--int gma_power_suspend(struct pci_dev *pdev, pm_message_t state)
-+int gma_power_suspend(struct device *_dev)
- {
-+	struct pci_dev *pdev = container_of(_dev, struct pci_dev, dev);
- 	struct drm_device *dev = pci_get_drvdata(pdev);
- 	struct drm_psb_private *dev_priv = dev->dev_private;
+diff --git a/drivers/staging/gma500/framebuffer.c b/drivers/staging/gma500/framebuffer.c
+index d890a50..ebfde13 100644
+--- a/drivers/staging/gma500/framebuffer.c
++++ b/drivers/staging/gma500/framebuffer.c
+@@ -578,7 +578,7 @@ int psb_fbdev_init(struct drm_device *dev)
+ 	dev_priv->fbdev = fbdev;
+ 	fbdev->psb_fb_helper.funcs = &psb_fb_helper_funcs;
  
-@@ -210,8 +211,9 @@ int gma_power_suspend(struct pci_dev *pdev, pm_message_t state)
-  *
-  *	Resume the PCI side of the graphics and then the displays
-  */
--int gma_power_resume(struct pci_dev *pdev)
-+int gma_power_resume(struct device *_dev)
- {
-+	struct pci_dev *pdev = container_of(_dev, struct pci_dev, dev);
- 	struct drm_device *dev = pci_get_drvdata(pdev);
+-	drm_fb_helper_init(dev, &fbdev->psb_fb_helper, 2,
++	drm_fb_helper_init(dev, &fbdev->psb_fb_helper, dev_priv->ops->crtcs,
+ 							INTELFB_CONN_LIMIT);
  
- 	mutex_lock(&power_mutex);
-@@ -295,8 +297,7 @@ void gma_power_end(struct drm_device *dev)
+ 	drm_fb_helper_single_add_all_connectors(&fbdev->psb_fb_helper);
+diff --git a/drivers/staging/gma500/mdfld_device.c b/drivers/staging/gma500/mdfld_device.c
+index f258b06..f47aeb7 100644
+--- a/drivers/staging/gma500/mdfld_device.c
++++ b/drivers/staging/gma500/mdfld_device.c
+@@ -691,6 +691,7 @@ const struct psb_ops mdfld_chip_ops = {
+ 	.name = "Medfield",
+ 	.accel_2d = 0,
+ 	.pipes = 3,
++	.crtcs = 2,
+ 	.sgx_offset = MRST_SGX_OFFSET,
  
- int psb_runtime_suspend(struct device *dev)
- {
--	static pm_message_t dummy;
--	return gma_power_suspend(to_pci_dev(dev), dummy);
-+	return gma_power_suspend(dev);
+ 	.chip_setup = mid_chip_setup,
+diff --git a/drivers/staging/gma500/mrst_device.c b/drivers/staging/gma500/mrst_device.c
+index 436580d..3d525a0 100644
+--- a/drivers/staging/gma500/mrst_device.c
++++ b/drivers/staging/gma500/mrst_device.c
+@@ -24,9 +24,12 @@
+ #include "psb_drv.h"
+ #include "psb_reg.h"
+ #include "psb_intel_reg.h"
++#include <asm/mrst.h>
+ #include <asm/intel_scu_ipc.h>
+ #include "mid_bios.h"
+ 
++static const struct psb_ops oaktrail_chip_ops;
++
+ /* IPC message and command defines used to enable/disable mipi panel voltages */
+ #define IPC_MSG_PANEL_ON_OFF    0xE9
+ #define IPC_CMD_PANEL_ON        1
+@@ -352,10 +355,48 @@ static int mrst_power_up(struct drm_device *dev)
+ 	return 0;
  }
  
- int psb_runtime_resume(struct device *dev)
-diff --git a/drivers/staging/gma500/power.h b/drivers/staging/gma500/power.h
-index 333b28d..1969d2e 100644
---- a/drivers/staging/gma500/power.h
-+++ b/drivers/staging/gma500/power.h
-@@ -39,8 +39,8 @@ void gma_power_uninit(struct drm_device *dev);
- /*
-  * The kernel bus power management  will call these functions
-  */
--int gma_power_suspend(struct pci_dev *pdev, pm_message_t state);
--int gma_power_resume(struct pci_dev *pdev);
-+int gma_power_suspend(struct device *dev);
-+int gma_power_resume(struct device *dev);
++static int mrst_chip_setup(struct drm_device *dev)
++{
++	struct drm_psb_private *dev_priv = dev->dev_private;
++
++#if defined(CONFIG_X86_MRST)
++	if (mrst_identify_cpu())
++		return mid_chip_setup(dev);
++#endif
++	dev_priv->ops = &oaktrail_chip_ops;
++	/* Check - may be better to go via BIOS paths ? */
++	return mid_chip_setup(dev);
++}
++	
+ const struct psb_ops mrst_chip_ops = {
+ 	.name = "Moorestown",
+ 	.accel_2d = 1,
+ 	.pipes = 1,
++	.crtcs = 1,
++	.sgx_offset = MRST_SGX_OFFSET,
++
++	.chip_setup = mrst_chip_setup,
++	.crtc_helper = &mrst_helper_funcs,
++	.crtc_funcs = &psb_intel_crtc_funcs,
++
++	.output_init = mrst_output_init,
++
++#ifdef CONFIG_BACKLIGHT_CLASS_DEVICE
++	.backlight_init = mrst_backlight_init,
++#endif
++
++	.init_pm = mrst_init_pm,
++	.save_regs = mrst_save_display_registers,
++	.restore_regs = mrst_restore_display_registers,
++	.power_down = mrst_power_down,
++	.power_up = mrst_power_up,
++};
++
++static const struct psb_ops oaktrail_chip_ops = {
++	.name = "Oaktrail",
++	.accel_2d = 1,
++	.pipes = 2,
++	.crtcs = 2,
+ 	.sgx_offset = MRST_SGX_OFFSET,
  
- /*
-  * These are the functions the driver should use to wrap all hw access
-diff --git a/drivers/staging/gma500/psb_drv.c b/drivers/staging/gma500/psb_drv.c
-index b8b9864..f96a619 100644
---- a/drivers/staging/gma500/psb_drv.c
-+++ b/drivers/staging/gma500/psb_drv.c
-@@ -1144,6 +1144,8 @@ static void psb_remove(struct pci_dev *pdev)
- }
+ 	.chip_setup = mid_chip_setup,
+diff --git a/drivers/staging/gma500/psb_device.c b/drivers/staging/gma500/psb_device.c
+index 1e117f0..4659132 100644
+--- a/drivers/staging/gma500/psb_device.c
++++ b/drivers/staging/gma500/psb_device.c
+@@ -331,6 +331,7 @@ const struct psb_ops psb_chip_ops = {
+ 	.name = "Poulsbo",
+ 	.accel_2d = 1,
+ 	.pipes = 2,
++	.crtcs = 2,
+ 	.sgx_offset = PSB_SGX_OFFSET,
+ 	.chip_setup = psb_chip_setup,
  
- static const struct dev_pm_ops psb_pm_ops = {
-+	.resume = gma_power_resume,
-+	.suspend = gma_power_suspend,
- 	.runtime_suspend = psb_runtime_suspend,
- 	.runtime_resume = psb_runtime_resume,
- 	.runtime_idle = psb_runtime_idle,
-@@ -1205,13 +1207,9 @@ static struct drm_driver driver = {
- static struct pci_driver psb_pci_driver = {
- 	.name = DRIVER_NAME,
- 	.id_table = pciidlist,
--	.resume = gma_power_resume,
--	.suspend = gma_power_suspend,
- 	.probe = psb_probe,
- 	.remove = psb_remove,
--#ifdef CONFIG_PM
- 	.driver.pm = &psb_pm_ops,
--#endif
- };
+diff --git a/drivers/staging/gma500/psb_drv.h b/drivers/staging/gma500/psb_drv.h
+index daf3ca5..8184c23 100644
+--- a/drivers/staging/gma500/psb_drv.h
++++ b/drivers/staging/gma500/psb_drv.h
+@@ -622,6 +622,7 @@ struct psb_ops {
+ 	const char *name;
+ 	unsigned int accel_2d:1;
+ 	int pipes;		/* Number of output pipes */
++	int crtcs;		/* Number of CRTCs */
+ 	int sgx_offset;		/* Base offset of SGX device */
  
- static int psb_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	/* Sub functions */
 
