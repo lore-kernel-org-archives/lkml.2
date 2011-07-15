@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755871Ab1GOR5i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 13:57:38 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:58955 "EHLO
+	id S1755874Ab1GOR5r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 13:57:47 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:58960 "EHLO
 	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755644Ab1GOR5g (ORCPT
+	with ESMTP id S1755580Ab1GOR5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 13:57:36 -0400
+	Fri, 15 Jul 2011 13:57:44 -0400
 From: greearb@candelatech.com
 To: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Ben Greear <greearb@candelatech.com>
-Subject: [PATCH (RESEND) 06/12] nfs:  Use srcaddr in nfs_match_client.
-Date: Fri, 15 Jul 2011 10:56:02 -0700
-Message-Id: <1310752568-21280-7-git-send-email-greearb@candelatech.com>
+Subject: [PATCH (RESEND) 07/12] nfs:  Add srcaddr to /proc/fs/nfsfs/servers
+Date: Fri, 15 Jul 2011 10:56:03 -0700
+Message-Id: <1310752568-21280-8-git-send-email-greearb@candelatech.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1310752568-21280-1-git-send-email-greearb@candelatech.com>
 References: <1310752568-21280-1-git-send-email-greearb@candelatech.com>
@@ -22,53 +22,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ben Greear <greearb@candelatech.com>
 
-For bound clients, we have to make sure we do not re-use
-a client that is bound differently.
+Helps users understand whether a server instance is
+bound to a local IP or not.
 
 Signed-off-by: Ben Greear <greearb@candelatech.com>
 ---
-:100644 100644 c571a97... 5d8998a... M	fs/nfs/client.c
- fs/nfs/client.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+:100644 100644 5d8998a... 223785f... M	fs/nfs/client.c
+ fs/nfs/client.c |   18 ++++++++++++++++--
+ 1 files changed, 16 insertions(+), 2 deletions(-)
 
 diff --git a/fs/nfs/client.c b/fs/nfs/client.c
-index c571a97..5d8998a 100644
+index 5d8998a..223785f 100644
 --- a/fs/nfs/client.c
 +++ b/fs/nfs/client.c
-@@ -131,7 +131,9 @@ struct rpc_program		nfsacl_program = {
- struct nfs_client_initdata {
- 	const char *hostname;
- 	const struct sockaddr *addr;
-+	const struct sockaddr *srcaddr;
- 	size_t addrlen;
-+	size_t srcaddrlen;
- 	const struct nfs_rpc_ops *rpc_ops;
- 	int proto;
- 	u32 minorversion;
-@@ -463,6 +465,9 @@ static struct nfs_client *nfs_match_client(const struct nfs_client_initdata *dat
+@@ -1895,20 +1895,34 @@ static int nfs_server_list_show(struct seq_file *m, void *v)
  
- 	list_for_each_entry(clp, &nfs_client_list, cl_share_link) {
- 	        const struct sockaddr *clap = (struct sockaddr *)&clp->cl_addr;
-+		const struct sockaddr *sa;
-+		sa = (const struct sockaddr *)&clp->srcaddr;
-+
- 		/* Don't match clients that failed to initialise properly */
- 		if (clp->cl_cons_state < 0)
- 			continue;
-@@ -480,6 +485,13 @@ static struct nfs_client *nfs_match_client(const struct nfs_client_initdata *dat
- 		if (!nfs_sockaddr_cmp(sap, clap))
- 			continue;
- 
-+		/* Check to make sure local-IP bindings match,
-+		 * but just the IP-addr.
-+		 */
-+		if (data->srcaddr &&
-+		    !nfs_sockaddr_match_ipaddr(data->srcaddr, sa))
-+			continue;
-+
- 		atomic_inc(&clp->cl_count);
- 		return clp;
+ 	/* display header on line 1 */
+ 	if (v == &nfs_client_list) {
+-		seq_puts(m, "NV SERVER   PORT USE HOSTNAME\n");
++		seq_puts(m, "NV SERVER   PORT USE HOSTNAME"
++			 "           SRCADDR\n");
+ 		return 0;
  	}
+ 
+ 	/* display one transport per line on subsequent lines */
+ 	clp = list_entry(v, struct nfs_client, cl_share_link);
+ 
+-	seq_printf(m, "v%u %s %s %3d %s\n",
++	seq_printf(m, "v%u %s %s %3d %s",
+ 		   clp->rpc_ops->version,
+ 		   rpc_peeraddr2str(clp->cl_rpcclient, RPC_DISPLAY_HEX_ADDR),
+ 		   rpc_peeraddr2str(clp->cl_rpcclient, RPC_DISPLAY_HEX_PORT),
+ 		   atomic_read(&clp->cl_count),
+ 		   clp->cl_hostname);
+ 
++	if (clp->srcaddr.ss_family == AF_INET) {
++		const struct sockaddr_in *sin;
++		sin = (const struct sockaddr_in *)&clp->srcaddr;
++		seq_printf(m, "   %pI4\n", &sin->sin_addr.s_addr);
++	} else if (clp->srcaddr.ss_family == AF_INET6) {
++		const struct sockaddr_in6 *sin6;
++		sin6 = (const struct sockaddr_in6 *)&clp->srcaddr;
++		seq_printf(m, "   %pI6c\n", &sin6->sin6_addr);
++	} else if (clp->srcaddr.ss_family == AF_UNSPEC)
++		seq_printf(m, "   ANY\n");
++	else
++		seq_printf(m, "   UNKNOWN_%i\n", (int)(clp->srcaddr.ss_family));
++
+ 	return 0;
+ }
+ 
 -- 
 1.7.3.4
 
