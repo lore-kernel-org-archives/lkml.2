@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753207Ab1GOQCr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 12:02:47 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:46650 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753018Ab1GOQCq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 12:02:46 -0400
-Message-ID: <4E2064A2.10807@gmail.com>
-Date: Fri, 15 Jul 2011 10:02:42 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1753282Ab1GOQEZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 12:04:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56964 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753224Ab1GOQEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 12:04:24 -0400
+Date: Fri, 15 Jul 2011 12:04:18 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: Joe Perches <joe@perches.com>, gregkh@suse.de, jim.cromie@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/11] dynamic_debug: use a single printk() to emit msgs
+Message-ID: <20110715160417.GB2493@redhat.com>
+References: <cover.1310657068.git.jbaron@redhat.com>
+ <3667c0a87dd8fd64fdf1b1e8107b130a9b41096e.1310657068.git.jbaron@redhat.com>
+ <CAO+b5-qA3s92YX2izXzvzt3MOrzRaPcZtDtK0cDte0ZXnRWxhA@mail.gmail.com>
+ <1310744914.7582.36.camel@Joe-Laptop>
+ <CAO+b5-p2B74+oVQRGcGxMp5ULZy8ZmF215Lz4qhbU=C4RnG8dw@mail.gmail.com>
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
-        paulus@samba.org
-Subject: Re: [PATCH] perf tools: fix endian conversion reading event attr
- from header
-References: <1310483959-23621-1-git-send-email-dsahern@gmail.com> <20110715154711.GB6590@somewhere>
-In-Reply-To: <20110715154711.GB6590@somewhere>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAO+b5-p2B74+oVQRGcGxMp5ULZy8ZmF215Lz4qhbU=C4RnG8dw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2011 09:47 AM, Frederic Weisbecker wrote:
->> -		if (perf_header__getbuffer64(header, fd, &f_attr, sizeof(f_attr)))
->> +		if (readn(fd, &f_attr, sizeof(f_attr)) <= 0)
->>  			goto out_errno;
->>  
->> +		if (header->needs_swap) {
->> +			f_attr.attr.type = bswap_32(f_attr.attr.type);
->> +			f_attr.attr.size = bswap_32(f_attr.attr.size);
->> +			mem_bswap_64(&f_attr.attr.config,
->> +				     sizeof(struct perf_event_attr) - 8);
->> +		}
->> +
+On Fri, Jul 15, 2011 at 05:57:11PM +0200, Bart Van Assche wrote:
+> On Fri, Jul 15, 2011 at 5:48 PM, Joe Perches <joe@perches.com> wrote:
+> > On Fri, 2011-07-15 at 12:05 +0200, Bart Van Assche wrote:
+> >> Not that's it important, but this change makes is possible to
+> >> eliminate the tid[] and lineno[] arrays again. Has that been
+> >> considered ?
+> >
+> > tid and lineno are decimal.  Not using intermediate
+> > arrays would require awkward contortions to snprintf
+> > them without emitting 0 in the output.
 > 
-> Good catch!
-
-A long, painful discovery
-
-> But would be nice to also handle the wakeup_events and bp_type fields.
+> Sorry, but I do not agree with the above. The current implementation
+> of __dynamic_pr_debug() shows that an implementation without temporary
+> arrays does not require any awkward constructs. See e.g.
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=blob;f=lib/dynamic_debug.c
+> for the source code of the current implementation of
+> __dynamic_pr_debug().
 > 
+> This may be subjective, but my opinion is that following that style
+> results in shorter and more elegant code than the approach with the
+> temporary arrays proposed in patch 11/11.
+> 
+> Bart.
 
-I did not think those values were used in userspace, so did not touch
-them. But then your inquiry pushed me into cscope and I found the
-perf_event__attr_swap() function. I'll redo the patch leveraging the
-swapping done there.
+yes, but that approach uses 'KERN_CONT'. The point of patch 11/11 is to get rid
+of KERN_CONT, which is racy. 
 
-David
+Thanks,
+
+-Jason
