@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755557Ab1GORrw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 13:47:52 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:37235
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
+	id S1755497Ab1GORru (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 13:47:50 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:60119
+	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754056Ab1GORaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754063Ab1GORaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Jul 2011 13:30:00 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 048/117] Staging: hv: vmbus: Cleanup the error return value in vmbus_recvpacket_raw()
-Date: Fri, 15 Jul 2011 10:46:36 -0700
-Message-Id: <1310752065-27895-48-git-send-email-kys@microsoft.com>
+Subject: [PATCH 044/117] Staging: hv: vmbus: Rename openMsg to open_msg in channel.c
+Date: Fri, 15 Jul 2011 10:46:32 -0700
+Message-Id: <1310752065-27895-44-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1310752065-27895-1-git-send-email-kys@microsoft.com>
 References: <1310752024-27854-1-git-send-email-kys@microsoft.com>
@@ -23,55 +23,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use standard Linux errno values.
+Rename openMsg to open_msg in channel.c.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/staging/hv/channel.c  |    2 +-
- drivers/staging/hv/hv_mouse.c |    2 +-
- drivers/staging/hv/netvsc.c   |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/staging/hv/channel.c |   20 ++++++++++----------
+ 1 files changed, 10 insertions(+), 10 deletions(-)
 
 diff --git a/drivers/staging/hv/channel.c b/drivers/staging/hv/channel.c
-index 9eb8def..ac92c1f 100644
+index aa0a150..ebd7552 100644
 --- a/drivers/staging/hv/channel.c
 +++ b/drivers/staging/hv/channel.c
-@@ -811,7 +811,7 @@ int vmbus_recvpacket_raw(struct vmbus_channel *channel, void *buffer,
- 		pr_err("Buffer too small - needed %d bytes but "
- 			"got space for only %d bytes\n",
- 			packetlen, bufferlen);
--		return -2;
-+		return -ENOBUFS;
+@@ -119,7 +119,7 @@ int vmbus_open(struct vmbus_channel *newchannel, u32 send_ringbuffer_size,
+ 		     u32 recv_ringbuffer_size, void *userdata, u32 userdatalen,
+ 		     void (*onchannelcallback)(void *context), void *context)
+ {
+-	struct vmbus_channel_open_channel *openMsg;
++	struct vmbus_channel_open_channel *open_msg;
+ 	struct vmbus_channel_msginfo *openInfo = NULL;
+ 	void *in, *out;
+ 	unsigned long flags;
+@@ -183,14 +183,14 @@ int vmbus_open(struct vmbus_channel *newchannel, u32 send_ringbuffer_size,
+ 
+ 	init_completion(&openInfo->waitevent);
+ 
+-	openMsg = (struct vmbus_channel_open_channel *)openInfo->msg;
+-	openMsg->header.msgtype = CHANNELMSG_OPENCHANNEL;
+-	openMsg->openid = newchannel->offermsg.child_relid;
+-	openMsg->child_relid = newchannel->offermsg.child_relid;
+-	openMsg->ringbuffer_gpadlhandle = newchannel->ringbuffer_gpadlhandle;
+-	openMsg->downstream_ringbuffer_pageoffset = send_ringbuffer_size >>
++	open_msg = (struct vmbus_channel_open_channel *)openInfo->msg;
++	open_msg->header.msgtype = CHANNELMSG_OPENCHANNEL;
++	open_msg->openid = newchannel->offermsg.child_relid;
++	open_msg->child_relid = newchannel->offermsg.child_relid;
++	open_msg->ringbuffer_gpadlhandle = newchannel->ringbuffer_gpadlhandle;
++	open_msg->downstream_ringbuffer_pageoffset = send_ringbuffer_size >>
+ 						  PAGE_SHIFT;
+-	openMsg->server_contextarea_gpadlhandle = 0;
++	open_msg->server_contextarea_gpadlhandle = 0;
+ 
+ 	if (userdatalen > MAX_USER_DEFINED_BYTES) {
+ 		err = -EINVAL;
+@@ -198,14 +198,14 @@ int vmbus_open(struct vmbus_channel *newchannel, u32 send_ringbuffer_size,
  	}
  
- 	*requestid = desc.trans_id;
-diff --git a/drivers/staging/hv/hv_mouse.c b/drivers/staging/hv/hv_mouse.c
-index e0cede3..30aa709 100644
---- a/drivers/staging/hv/hv_mouse.c
-+++ b/drivers/staging/hv/hv_mouse.c
-@@ -542,7 +542,7 @@ static void mousevsc_on_channel_callback(void *context)
- 				}
- 				break;
- 			}
--		} else if (ret == -2) {
-+		} else if (ret == -ENOBUFS) {
- 			/* Handle large packet */
- 			bufferlen = bytes_recvd;
- 			buffer = kzalloc(bytes_recvd, GFP_KERNEL);
-diff --git a/drivers/staging/hv/netvsc.c b/drivers/staging/hv/netvsc.c
-index d547ff6..b89ac7e 100644
---- a/drivers/staging/hv/netvsc.c
-+++ b/drivers/staging/hv/netvsc.c
-@@ -884,7 +884,7 @@ static void netvsc_channel_cb(void *context)
+ 	if (userdatalen)
+-		memcpy(openMsg->userdata, userdata, userdatalen);
++		memcpy(open_msg->userdata, userdata, userdatalen);
  
- 				break;
- 			}
--		} else if (ret == -2) {
-+		} else if (ret == -ENOBUFS) {
- 			/* Handle large packet */
- 			buffer = kmalloc(bytes_recvd, GFP_ATOMIC);
- 			if (buffer == NULL) {
+ 	spin_lock_irqsave(&vmbus_connection.channelmsg_lock, flags);
+ 	list_add_tail(&openInfo->msglistentry,
+ 		      &vmbus_connection.chn_msg_list);
+ 	spin_unlock_irqrestore(&vmbus_connection.channelmsg_lock, flags);
+ 
+-	ret = vmbus_post_msg(openMsg,
++	ret = vmbus_post_msg(open_msg,
+ 			       sizeof(struct vmbus_channel_open_channel));
+ 
+ 	if (ret != 0)
 -- 
 1.7.4.1
 
