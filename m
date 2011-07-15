@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965151Ab1GOGVT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 02:21:19 -0400
+	id S965180Ab1GOGVb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 02:21:31 -0400
 Received: from mail-qw0-f46.google.com ([209.85.216.46]:44080 "EHLO
 	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964894Ab1GOGVQ (ORCPT
+	with ESMTP id S965157Ab1GOGV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 02:21:16 -0400
-Subject: [PATCH 10/16] SCSI: aha152x: remove Scsi_Cmnd
+	Fri, 15 Jul 2011 02:21:27 -0400
+Subject: [PATCH 11/16] SCSI: in2000: remove Scsi_Cmnd
 From: Davidlohr Bueso <dave.bueso@gmail.com>
 Reply-To: dave@gnu.org
 To: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        "Juergen E. Fischer" <fischer@norbit.de>
+        linux-scsi <linux-scsi@vger.kernel.org>
 Cc: lkml <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset="UTF-8"
 Organization: GNU
-Date: Fri, 15 Jul 2011 02:20:16 -0400
-Message-ID: <1310710817.3184.61.camel@offbook>
+Date: Fri, 15 Jul 2011 02:20:21 -0400
+Message-ID: <1310710821.3184.62.camel@offbook>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2
 Content-Transfer-Encoding: 7bit
@@ -31,256 +30,322 @@ Change this for struct scsi_cmnd.
 
 Signed-off-by: Davidlohr Bueso <dave@gnu.org>
 ---
- drivers/scsi/aha152x.c |   68 ++++++++++++++++++++++++------------------------
- 1 files changed, 34 insertions(+), 34 deletions(-)
+ drivers/scsi/in2000.c |   68 ++++++++++++++++++++++++------------------------
+ drivers/scsi/in2000.h |   12 ++++----
+ 2 files changed, 40 insertions(+), 40 deletions(-)
 
-diff --git a/drivers/scsi/aha152x.c b/drivers/scsi/aha152x.c
-index c5169f0..44fdf8d 100644
---- a/drivers/scsi/aha152x.c
-+++ b/drivers/scsi/aha152x.c
-@@ -462,16 +462,16 @@ enum aha152x_state {
-  *
+diff --git a/drivers/scsi/in2000.c b/drivers/scsi/in2000.c
+index 112f1be..f11dd83 100644
+--- a/drivers/scsi/in2000.c
++++ b/drivers/scsi/in2000.c
+@@ -255,7 +255,7 @@ static unsigned long read_3393_count(struct IN2000_hostdata *hostdata)
+  * will be a DATA_OUT phase with this command, false otherwise.
+  * (Thanks to Joerg Dorchain for the research and suggestion.)
   */
- struct aha152x_hostdata {
--	Scsi_Cmnd *issue_SC;
-+	struct scsi_cmnd *issue_SC;
- 		/* pending commands to issue */
- 
--	Scsi_Cmnd *current_SC;
-+	struct scsi_cmnd *current_SC;
- 		/* current command on the bus */
- 
--	Scsi_Cmnd *disconnected_SC;
-+	struct scsi_cmnd *disconnected_SC;
- 		/* commands that disconnected */
- 
--	Scsi_Cmnd *done_SC;
-+	struct scsi_cmnd *done_SC;
- 		/* command that was completed */
- 
- 	spinlock_t lock;
-@@ -558,7 +558,7 @@ struct aha152x_hostdata {
-  *
-  */
- struct aha152x_scdata {
--	Scsi_Cmnd *next;	/* next sc in queue */
-+	struct scsi_cmnd *next;	/* next sc in queue */
- 	struct completion *done;/* semaphore to block on */
- 	struct scsi_eh_save ses;
- };
-@@ -682,7 +682,7 @@ static void done(struct Scsi_Host *shpnt, int error);
- 
- /* diagnostics */
- static void disp_ports(struct Scsi_Host *shpnt);
--static void show_command(Scsi_Cmnd * ptr);
-+static void show_command(struct scsi_cmnd * ptr);
- static void show_queues(struct Scsi_Host *shpnt);
- static void disp_enintr(struct Scsi_Host *shpnt);
- 
-@@ -691,9 +691,9 @@ static void disp_enintr(struct Scsi_Host *shpnt);
-  *  queue services:
-  *
-  */
--static inline void append_SC(Scsi_Cmnd **SC, Scsi_Cmnd *new_SC)
-+static inline void append_SC(struct scsi_cmnd **SC, struct scsi_cmnd *new_SC)
+-static int is_dir_out(Scsi_Cmnd * cmd)
++static int is_dir_out(struct scsi_cmnd * cmd)
  {
--	Scsi_Cmnd *end;
-+	struct scsi_cmnd *end;
+ 	switch (cmd->cmnd[0]) {
+ 	case WRITE_6:
+@@ -334,18 +334,18 @@ static uchar calc_sync_xfer(unsigned int period, unsigned int offset)
  
- 	SCNEXT(new_SC) = NULL;
- 	if (!*SC)
-@@ -705,9 +705,9 @@ static inline void append_SC(Scsi_Cmnd **SC, Scsi_Cmnd *new_SC)
+ static void in2000_execute(struct Scsi_Host *instance);
+ 
+-static int in2000_queuecommand_lck(Scsi_Cmnd * cmd, void (*done) (Scsi_Cmnd *))
++static int in2000_queuecommand_lck(struct scsi_cmnd * cmd, void (*done) (struct scsi_cmnd *))
+ {
+ 	struct Scsi_Host *instance;
+ 	struct IN2000_hostdata *hostdata;
+-	Scsi_Cmnd *tmp;
++	struct scsi_cmnd *tmp;
+ 
+ 	instance = cmd->device->host;
+ 	hostdata = (struct IN2000_hostdata *) instance->hostdata;
+ 
+ 	DB(DB_QUEUE_COMMAND, scmd_printk(KERN_DEBUG, cmd, "Q-%02x(", cmd->cmnd[0]))
+ 
+-/* Set up a few fields in the Scsi_Cmnd structure for our own use:
++/* Set up a few fields in the struct scsi_cmnd structure for our own use:
+  *  - host_scribble is the pointer to the next cmd in the input queue
+  *  - scsi_done points to the routine we call when a cmd is finished
+  *  - result is what you'd expect
+@@ -417,7 +417,7 @@ static int in2000_queuecommand_lck(Scsi_Cmnd * cmd, void (*done) (Scsi_Cmnd *))
+ 		cmd->host_scribble = (uchar *) hostdata->input_Q;
+ 		hostdata->input_Q = cmd;
+ 	} else {		/* find the end of the queue */
+-		for (tmp = (Scsi_Cmnd *) hostdata->input_Q; tmp->host_scribble; tmp = (Scsi_Cmnd *) tmp->host_scribble);
++		for (tmp = (struct scsi_cmnd *) hostdata->input_Q; tmp->host_scribble; tmp = (struct scsi_cmnd *) tmp->host_scribble);
+ 		tmp->host_scribble = (uchar *) cmd;
  	}
+ 
+@@ -446,7 +446,7 @@ static DEF_SCSI_QCMD(in2000_queuecommand)
+ static void in2000_execute(struct Scsi_Host *instance)
+ {
+ 	struct IN2000_hostdata *hostdata;
+-	Scsi_Cmnd *cmd, *prev;
++	struct scsi_cmnd *cmd, *prev;
+ 	int i;
+ 	unsigned short *sp;
+ 	unsigned short f;
+@@ -469,13 +469,13 @@ static void in2000_execute(struct Scsi_Host *instance)
+ 	 * for an idle target/lun.
+ 	 */
+ 
+-	cmd = (Scsi_Cmnd *) hostdata->input_Q;
++	cmd = (struct scsi_cmnd *) hostdata->input_Q;
+ 	prev = NULL;
+ 	while (cmd) {
+ 		if (!(hostdata->busy[cmd->device->id] & (1 << cmd->device->lun)))
+ 			break;
+ 		prev = cmd;
+-		cmd = (Scsi_Cmnd *) cmd->host_scribble;
++		cmd = (struct scsi_cmnd *) cmd->host_scribble;
+ 	}
+ 
+ 	/* quit if queue empty or all possible targets are busy */
+@@ -492,7 +492,7 @@ static void in2000_execute(struct Scsi_Host *instance)
+ 	if (prev)
+ 		prev->host_scribble = cmd->host_scribble;
+ 	else
+-		hostdata->input_Q = (Scsi_Cmnd *) cmd->host_scribble;
++		hostdata->input_Q = (struct scsi_cmnd *) cmd->host_scribble;
+ 
+ #ifdef PROC_STATISTICS
+ 	hostdata->cmd_cnt[cmd->device->id]++;
+@@ -541,9 +541,9 @@ static void in2000_execute(struct Scsi_Host *instance)
+ 		goto yes;
+ 	if (!(hostdata->input_Q))	/* input_Q empty? */
+ 		goto no;
+-	for (prev = (Scsi_Cmnd *) hostdata->input_Q; prev; prev = (Scsi_Cmnd *) prev->host_scribble) {
++	for (prev = (struct scsi_cmnd *) hostdata->input_Q; prev; prev = (struct scsi_cmnd *) prev->host_scribble) {
+ 		if ((prev->device->id != cmd->device->id) || (prev->device->lun != cmd->device->lun)) {
+-			for (prev = (Scsi_Cmnd *) hostdata->input_Q; prev; prev = (Scsi_Cmnd *) prev->host_scribble)
++			for (prev = (struct scsi_cmnd *) hostdata->input_Q; prev; prev = (struct scsi_cmnd *) prev->host_scribble)
+ 				prev->SCp.phase = 1;
+ 			goto yes;
+ 		}
+@@ -745,7 +745,7 @@ static void transfer_pio(uchar * buf, int cnt, int data_in_dir, struct IN2000_ho
+ 
+
+
+-static void transfer_bytes(Scsi_Cmnd * cmd, int data_in_dir)
++static void transfer_bytes(struct scsi_cmnd * cmd, int data_in_dir)
+ {
+ 	struct IN2000_hostdata *hostdata;
+ 	unsigned short *sp;
+@@ -835,7 +835,7 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
+ {
+ 	struct Scsi_Host *instance = dev_id;
+ 	struct IN2000_hostdata *hostdata;
+-	Scsi_Cmnd *patch, *cmd;
++	struct scsi_cmnd *patch, *cmd;
+ 	uchar asr, sr, phs, id, lun, *ucp, msg;
+ 	int i, j;
+ 	unsigned long length;
+@@ -911,7 +911,7 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
+  *    (Big thanks to Bill Earnest for getting me out of the mud in here.)
+  */
+ 
+-		cmd = (Scsi_Cmnd *) hostdata->connected;	/* assume we're connected */
++		cmd = (struct scsi_cmnd *) hostdata->connected;	/* assume we're connected */
+ 		CHECK_NULL(cmd, "fifo_int")
+ 
+ 		    if (hostdata->fifo == FI_FIFO_READING) {
+@@ -993,7 +993,7 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
+  * detailed info from FIFO_READING and FIFO_WRITING (see below).
+  */
+ 
+-	cmd = (Scsi_Cmnd *) hostdata->connected;	/* assume we're connected */
++	cmd = (struct scsi_cmnd *) hostdata->connected;	/* assume we're connected */
+ 	sr = read_3393(hostdata, WD_SCSI_STATUS);	/* clear the interrupt */
+ 	phs = read_3393(hostdata, WD_COMMAND_PHASE);
+ 
+@@ -1070,7 +1070,7 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
+ 		    if (hostdata->state == S_RUNNING_LEVEL2)
+ 			hostdata->connected = NULL;
+ 		else {
+-			cmd = (Scsi_Cmnd *) hostdata->selecting;	/* get a valid cmd */
++			cmd = (struct scsi_cmnd *) hostdata->selecting;	/* get a valid cmd */
+ 			CHECK_NULL(cmd, "csr_timeout")
+ 			    hostdata->selecting = NULL;
+ 		}
+@@ -1092,7 +1092,7 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
+ 
+ 	case CSR_SELECT:
+ 		DB(DB_INTR, printk("SELECT"))
+-		    hostdata->connected = cmd = (Scsi_Cmnd *) hostdata->selecting;
++		    hostdata->connected = cmd = (struct scsi_cmnd *) hostdata->selecting;
+ 		CHECK_NULL(cmd, "csr_select")
+ 		    hostdata->selecting = NULL;
+ 
+@@ -1493,7 +1493,7 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
+ 		    if (hostdata->level2 <= L2_NONE) {
+ 
+ 			if (hostdata->selecting) {
+-				cmd = (Scsi_Cmnd *) hostdata->selecting;
++				cmd = (struct scsi_cmnd *) hostdata->selecting;
+ 				hostdata->selecting = NULL;
+ 				hostdata->busy[cmd->device->id] &= ~(1 << cmd->device->lun);
+ 				cmd->host_scribble = (uchar *) hostdata->input_Q;
+@@ -1534,13 +1534,13 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
+ 
+ 		/* Now we look for the command that's reconnecting. */
+ 
+-		cmd = (Scsi_Cmnd *) hostdata->disconnected_Q;
++		cmd = (struct scsi_cmnd *) hostdata->disconnected_Q;
+ 		patch = NULL;
+ 		while (cmd) {
+ 			if (id == cmd->device->id && lun == cmd->device->lun)
+ 				break;
+ 			patch = cmd;
+-			cmd = (Scsi_Cmnd *) cmd->host_scribble;
++			cmd = (struct scsi_cmnd *) cmd->host_scribble;
+ 		}
+ 
+ 		/* Hmm. Couldn't find a valid command.... What to do? */
+@@ -1555,7 +1555,7 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
+ 		if (patch)
+ 			patch->host_scribble = cmd->host_scribble;
+ 		else
+-			hostdata->disconnected_Q = (Scsi_Cmnd *) cmd->host_scribble;
++			hostdata->disconnected_Q = (struct scsi_cmnd *) cmd->host_scribble;
+ 		hostdata->connected = cmd;
+ 
+ 		/* We don't need to worry about 'initialize_SCp()' or 'hostdata->busy[]'
+@@ -1640,7 +1640,7 @@ static int reset_hardware(struct Scsi_Host *instance, int type)
+ 
+
+
+-static int in2000_bus_reset(Scsi_Cmnd * cmd)
++static int in2000_bus_reset(struct scsi_cmnd * cmd)
+ {
+ 	struct Scsi_Host *instance;
+ 	struct IN2000_hostdata *hostdata;
+@@ -1676,11 +1676,11 @@ static int in2000_bus_reset(Scsi_Cmnd * cmd)
+ 	return SUCCESS;
  }
  
--static inline Scsi_Cmnd *remove_first_SC(Scsi_Cmnd ** SC)
-+static inline struct scsi_cmnd *remove_first_SC(struct scsi_cmnd ** SC)
+-static int __in2000_abort(Scsi_Cmnd * cmd)
++static int __in2000_abort(struct scsi_cmnd * cmd)
  {
--	Scsi_Cmnd *ptr;
-+	struct scsi_cmnd *ptr;
+ 	struct Scsi_Host *instance;
+ 	struct IN2000_hostdata *hostdata;
+-	Scsi_Cmnd *tmp, *prev;
++	struct scsi_cmnd *tmp, *prev;
+ 	uchar sr, asr;
+ 	unsigned long timeout;
  
- 	ptr = *SC;
- 	if (ptr) {
-@@ -717,9 +717,9 @@ static inline Scsi_Cmnd *remove_first_SC(Scsi_Cmnd ** SC)
- 	return ptr;
- }
- 
--static inline Scsi_Cmnd *remove_lun_SC(Scsi_Cmnd ** SC, int target, int lun)
-+static inline struct scsi_cmnd *remove_lun_SC(struct scsi_cmnd ** SC, int target, int lun)
- {
--	Scsi_Cmnd *ptr, *prev;
-+	struct scsi_cmnd *ptr, *prev;
- 
- 	for (ptr = *SC, prev = NULL;
- 	     ptr && ((ptr->device->id != target) || (ptr->device->lun != lun));
-@@ -738,9 +738,9 @@ static inline Scsi_Cmnd *remove_lun_SC(Scsi_Cmnd ** SC, int target, int lun)
- 	return ptr;
- }
- 
--static inline Scsi_Cmnd *remove_SC(Scsi_Cmnd **SC, Scsi_Cmnd *SCp)
-+static inline struct scsi_cmnd *remove_SC(struct scsi_cmnd **SC, struct scsi_cmnd *SCp)
- {
--	Scsi_Cmnd *ptr, *prev;
-+	struct scsi_cmnd *ptr, *prev;
- 
- 	for (ptr = *SC, prev = NULL;
- 	     ptr && SCp!=ptr;
-@@ -972,8 +972,8 @@ static int setup_expected_interrupts(struct Scsi_Host *shpnt)
- /* 
-  *  Queue a command and setup interrupts for a free bus.
+@@ -1695,7 +1695,7 @@ static int __in2000_abort(Scsi_Cmnd * cmd)
+  *     from the inout_Q.
   */
--static int aha152x_internal_queue(Scsi_Cmnd *SCpnt, struct completion *complete,
--		int phase, void (*done)(Scsi_Cmnd *))
-+static int aha152x_internal_queue(struct scsi_cmnd *SCpnt, struct completion *complete,
-+		int phase, void (*done)(struct scsi_cmnd *))
- {
- 	struct Scsi_Host *shpnt = SCpnt->device->host;
- 	unsigned long flags;
-@@ -1056,7 +1056,7 @@ static int aha152x_internal_queue(Scsi_Cmnd *SCpnt, struct completion *complete,
-  *  queue a command
-  *
-  */
--static int aha152x_queue_lck(Scsi_Cmnd *SCpnt, void (*done)(Scsi_Cmnd *))
-+static int aha152x_queue_lck(struct scsi_cmnd *SCpnt, void (*done)(struct scsi_cmnd *))
- {
- #if 0
- 	if(*SCpnt->cmnd == REQUEST_SENSE) {
-@@ -1077,7 +1077,7 @@ static DEF_SCSI_QCMD(aha152x_queue)
-  *  
-  *
-  */
--static void reset_done(Scsi_Cmnd *SCpnt)
-+static void reset_done(struct scsi_cmnd *SCpnt)
- {
- #if 0
- 	struct Scsi_Host *shpnt = SCpnt->host;
-@@ -1094,10 +1094,10 @@ static void reset_done(Scsi_Cmnd *SCpnt)
-  *  Abort a command
-  *
-  */
--static int aha152x_abort(Scsi_Cmnd *SCpnt)
-+static int aha152x_abort(struct scsi_cmnd *SCpnt)
- {
- 	struct Scsi_Host *shpnt = SCpnt->device->host;
--	Scsi_Cmnd *ptr;
-+	struct scsi_cmnd *ptr;
- 	unsigned long flags;
  
- #if defined(AHA152X_DEBUG)
-@@ -1143,7 +1143,7 @@ static int aha152x_abort(Scsi_Cmnd *SCpnt)
-  * Reset a device
-  *
-  */
--static int aha152x_device_reset(Scsi_Cmnd * SCpnt)
-+static int aha152x_device_reset(struct scsi_cmnd * SCpnt)
- {
- 	struct Scsi_Host *shpnt = SCpnt->device->host;
- 	DECLARE_COMPLETION(done);
-@@ -1208,13 +1208,13 @@ static int aha152x_device_reset(Scsi_Cmnd * SCpnt)
- 	return ret;
- }
+-	tmp = (Scsi_Cmnd *) hostdata->input_Q;
++	tmp = (struct scsi_cmnd *) hostdata->input_Q;
+ 	prev = NULL;
+ 	while (tmp) {
+ 		if (tmp == cmd) {
+@@ -1708,7 +1708,7 @@ static int __in2000_abort(Scsi_Cmnd * cmd)
+ 			return SUCCESS;
+ 		}
+ 		prev = tmp;
+-		tmp = (Scsi_Cmnd *) tmp->host_scribble;
++		tmp = (struct scsi_cmnd *) tmp->host_scribble;
+ 	}
  
--static void free_hard_reset_SCs(struct Scsi_Host *shpnt, Scsi_Cmnd **SCs)
-+static void free_hard_reset_SCs(struct Scsi_Host *shpnt, struct scsi_cmnd **SCs)
- {
--	Scsi_Cmnd *ptr;
-+	struct scsi_cmnd *ptr;
- 
- 	ptr=*SCs;
- 	while(ptr) {
--		Scsi_Cmnd *next;
-+		struct scsi_cmnd *next;
- 
- 		if(SCDATA(ptr)) {
- 			next = SCNEXT(ptr);
-@@ -1277,7 +1277,7 @@ static int aha152x_bus_reset_host(struct Scsi_Host *shpnt)
-  * Reset the bus
-  *
-  */
--static int aha152x_bus_reset(Scsi_Cmnd *SCpnt)
-+static int aha152x_bus_reset(struct scsi_cmnd *SCpnt)
- {
- 	return aha152x_bus_reset_host(SCpnt->device->host);
- }
-@@ -1339,7 +1339,7 @@ int aha152x_host_reset_host(struct Scsi_Host *shpnt)
-  * Reset the host (bus and controller)
-  * 
-  */
--static int aha152x_host_reset(Scsi_Cmnd *SCpnt)
-+static int aha152x_host_reset(struct scsi_cmnd *SCpnt)
- {
- 	return aha152x_host_reset_host(SCpnt->device->host);
- }
-@@ -1569,7 +1569,7 @@ static void busfree_run(struct Scsi_Host *shpnt)
- 
- 			if(!(DONE_SC->SCp.phase & not_issued)) {
- 				struct aha152x_scdata *sc;
--				Scsi_Cmnd *ptr = DONE_SC;
-+				struct scsi_cmnd *ptr = DONE_SC;
- 				DONE_SC=NULL;
- #if 0
- 				DPRINTK(debug_eh, ERR_LEAD "requesting sense\n", CMDINFO(ptr));
-@@ -1596,7 +1596,7 @@ static void busfree_run(struct Scsi_Host *shpnt)
- 			int id=DONE_SC->device->id & 0xf;
- 			int lun=DONE_SC->device->lun & 0x7;
- #endif
--			Scsi_Cmnd *ptr = DONE_SC;
-+			struct scsi_cmnd *ptr = DONE_SC;
- 			DONE_SC=NULL;
- 
- 			/* turn led off, when no commands are in the driver */
-@@ -2466,13 +2466,13 @@ static void parerr_run(struct Scsi_Host *shpnt)
-  */
- static void rsti_run(struct Scsi_Host *shpnt)
- {
--	Scsi_Cmnd *ptr;
-+	struct scsi_cmnd *ptr;
- 
- 	printk(KERN_NOTICE "aha152x%d: scsi reset in\n", HOSTNO);
- 	
- 	ptr=DISCONNECTED_SC;
- 	while(ptr) {
--		Scsi_Cmnd *next = SCNEXT(ptr);
-+		struct scsi_cmnd *next = SCNEXT(ptr);
- 
- 		if (!ptr->device->soft_reset) {
- 			remove_SC(&DISCONNECTED_SC, ptr);
-@@ -2906,7 +2906,7 @@ static void disp_enintr(struct Scsi_Host *shpnt)
  /*
-  * Show the command data of a command
+@@ -1775,7 +1775,7 @@ static int __in2000_abort(Scsi_Cmnd * cmd)
+  * an ABORT_SNOOZE and hope for the best...
   */
--static void show_command(Scsi_Cmnd *ptr)
-+static void show_command(struct scsi_cmnd *ptr)
- {
- 	scmd_printk(KERN_DEBUG, ptr, "%p: cmnd=(", ptr);
  
-@@ -2945,7 +2945,7 @@ static void show_command(Scsi_Cmnd *ptr)
-  */
- static void show_queues(struct Scsi_Host *shpnt)
+-	for (tmp = (Scsi_Cmnd *) hostdata->disconnected_Q; tmp; tmp = (Scsi_Cmnd *) tmp->host_scribble)
++	for (tmp = (struct scsi_cmnd *) hostdata->disconnected_Q; tmp; tmp = (struct scsi_cmnd *) tmp->host_scribble)
+ 		if (cmd == tmp) {
+ 			printk(KERN_DEBUG "scsi%d: unable to abort disconnected command.\n", instance->host_no);
+ 			return FAILED;
+@@ -1797,7 +1797,7 @@ static int __in2000_abort(Scsi_Cmnd * cmd)
+ 	return SUCCESS;
+ }
+ 
+-static int in2000_abort(Scsi_Cmnd * cmd)
++static int in2000_abort(struct scsi_cmnd * cmd)
  {
--	Scsi_Cmnd *ptr;
-+	struct scsi_cmnd *ptr;
+ 	int rc;
+ 
+@@ -2176,7 +2176,7 @@ static int in2000_proc_info(struct Scsi_Host *instance, char *buf, char **start,
+ 	char tbuf[128];
  	unsigned long flags;
+ 	struct IN2000_hostdata *hd;
+-	Scsi_Cmnd *cmd;
++	struct scsi_cmnd *cmd;
+ 	int x, i;
+ 	static int stop = 0;
  
- 	DO_LOCK(flags);
-@@ -2971,7 +2971,7 @@ static void show_queues(struct Scsi_Host *shpnt)
- #undef SPRINTF
- #define SPRINTF(args...) pos += sprintf(pos, ## args)
+@@ -2268,27 +2268,27 @@ static int in2000_proc_info(struct Scsi_Host *instance, char *buf, char **start,
+ 	if (hd->proc & PR_CONNECTED) {
+ 		strcat(bp, "\nconnected:     ");
+ 		if (hd->connected) {
+-			cmd = (Scsi_Cmnd *) hd->connected;
++			cmd = (struct scsi_cmnd *) hd->connected;
+ 			sprintf(tbuf, " %d:%d(%02x)", cmd->device->id, cmd->device->lun, cmd->cmnd[0]);
+ 			strcat(bp, tbuf);
+ 		}
+ 	}
+ 	if (hd->proc & PR_INPUTQ) {
+ 		strcat(bp, "\ninput_Q:       ");
+-		cmd = (Scsi_Cmnd *) hd->input_Q;
++		cmd = (struct scsi_cmnd *) hd->input_Q;
+ 		while (cmd) {
+ 			sprintf(tbuf, " %d:%d(%02x)", cmd->device->id, cmd->device->lun, cmd->cmnd[0]);
+ 			strcat(bp, tbuf);
+-			cmd = (Scsi_Cmnd *) cmd->host_scribble;
++			cmd = (struct scsi_cmnd *) cmd->host_scribble;
+ 		}
+ 	}
+ 	if (hd->proc & PR_DISCQ) {
+ 		strcat(bp, "\ndisconnected_Q:");
+-		cmd = (Scsi_Cmnd *) hd->disconnected_Q;
++		cmd = (struct scsi_cmnd *) hd->disconnected_Q;
+ 		while (cmd) {
+ 			sprintf(tbuf, " %d:%d(%02x)", cmd->device->id, cmd->device->lun, cmd->cmnd[0]);
+ 			strcat(bp, tbuf);
+-			cmd = (Scsi_Cmnd *) cmd->host_scribble;
++			cmd = (struct scsi_cmnd *) cmd->host_scribble;
+ 		}
+ 	}
+ 	if (hd->proc & PR_TEST) {
+diff --git a/drivers/scsi/in2000.h b/drivers/scsi/in2000.h
+index 5821e1f..9e8e40f 100644
+--- a/drivers/scsi/in2000.h
++++ b/drivers/scsi/in2000.h
+@@ -283,10 +283,10 @@ struct IN2000_hostdata {
+     unsigned int     dip_switch;       /* dip switch settings */
+     unsigned int     hrev;             /* hardware revision of card */
+     volatile uchar   busy[8];          /* index = target, bit = lun */
+-    volatile Scsi_Cmnd *input_Q;       /* commands waiting to be started */
+-    volatile Scsi_Cmnd *selecting;     /* trying to select this command */
+-    volatile Scsi_Cmnd *connected;     /* currently connected command */
+-    volatile Scsi_Cmnd *disconnected_Q;/* commands waiting for reconnect */
++    volatile struct scsi_cmnd *input_Q;       /* commands waiting to be started */
++    volatile struct scsi_cmnd *selecting;     /* trying to select this command */
++    volatile struct scsi_cmnd *connected;     /* currently connected command */
++    volatile struct scsi_cmnd *disconnected_Q;/* commands waiting for reconnect */
+     uchar            state;            /* what we are currently doing */
+     uchar            fifo;             /* what the FIFO is up to */
+     uchar            level2;           /* extent to which Level-2 commands are used */
+@@ -397,11 +397,11 @@ struct IN2000_hostdata {
  
--static int get_command(char *pos, Scsi_Cmnd * ptr)
-+static int get_command(char *pos, struct scsi_cmnd * ptr)
- {
- 	char *start = pos;
- 	int i;
-@@ -3321,7 +3321,7 @@ static int aha152x_proc_info(struct Scsi_Host *shpnt, char *buffer, char **start
- {
- 	int i;
- 	char *pos = buffer;
--	Scsi_Cmnd *ptr;
-+	struct scsi_cmnd *ptr;
- 	unsigned long flags;
- 	int thislength;
+ static int in2000_detect(struct scsi_host_template *) in2000__INIT;
+ static int in2000_queuecommand(struct Scsi_Host *, struct scsi_cmnd *);
+-static int in2000_abort(Scsi_Cmnd *);
++static int in2000_abort(struct scsi_cmnd *);
+ static void in2000_setup(char *, int *) in2000__INIT;
+ static int in2000_biosparam(struct scsi_device *, struct block_device *,
+ 		sector_t, int *);
+-static int in2000_bus_reset(Scsi_Cmnd *);
++static int in2000_bus_reset(struct scsi_cmnd *);
  
+
+ #define IN2000_CAN_Q    16
 -- 
 1.7.4.1
 
