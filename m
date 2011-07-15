@@ -1,43 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755888Ab1GOSPr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 14:15:47 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44972 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754666Ab1GOSPq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 14:15:46 -0400
-Message-ID: <4E20839A.8060200@zytor.com>
-Date: Fri, 15 Jul 2011 11:14:50 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Mike Waychison <mikew@google.com>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Klibc mailing list <klibc@zytor.com>, Andrew Morgan <agm@google.com>
-Subject: Re: [PATCH 2/2] x86: Allow disabling of sys_iopl, sys_ioperm
-References: <1310675693-9204-1-git-send-email-mikew@google.com> <1310675693-9204-2-git-send-email-mikew@google.com> <20110714234248.7ed43534@lxorguk.ukuu.org.uk> <CAGTjWtDHH_VXXAsh5WPspTwPEhzcKi4_Jno7w=jReiS7HSALQw@mail.gmail.com> <20110715000037.3fc1670a@lxorguk.ukuu.org.uk> <CAGTjWtA5qobWAZb=SbM1y5SFtDKPuJVuAsbDKmkaxxL7mA6OKg@mail.gmail.com> <20110715003912.149dcedd@lxorguk.ukuu.org.uk> <CAGTjWtD+5cZxQiE+tikUyz2SNgm3bR95GE2veevEv15cPX1E9A@mail.gmail.com> <CAGTjWtAo8dE4ASWYPZ0QJdNg3jFzpO=QP4eT5P3mNakxKy-5+g@mail.gmail.com>
-In-Reply-To: <CAGTjWtAo8dE4ASWYPZ0QJdNg3jFzpO=QP4eT5P3mNakxKy-5+g@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1755922Ab1GOSQy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 14:16:54 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33915 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754653Ab1GOSQx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 14:16:53 -0400
+Subject: Re: [PATCH 1/1] Fixup write permission of TLB on powerpc e500 core
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Shan Hai <haishan.bai@gmail.com>
+Cc: benh@kernel.crashing.org, paulus@samba.org, tglx@linutronix.de,
+        walken@google.com, dhowells@redhat.com, cmetcalf@tilera.com,
+        tony.luck@intel.com, akpm@linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+In-Reply-To: <4E205A63.90401@gmail.com>
+References: <1310717238-13857-1-git-send-email-haishan.bai@gmail.com>
+	 <1310717238-13857-2-git-send-email-haishan.bai@gmail.com>
+	 <1310725418.2586.309.camel@twins>  <4E205A63.90401@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 15 Jul 2011 17:24:37 +0200
+Message-ID: <1310743477.2586.358.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2011 11:13 AM, Mike Waychison wrote:
+On Fri, 2011-07-15 at 11:18 -0400, Shan Hai wrote:
+
+> >> +	vma = find_vma(mm, address);
+> > Uhm, find_vma() needs mmap_sem, and futex_atomic_cmpxchg_inatomic() is
+> > most certainly not called with that lock held.
+> >
 > 
-> So the question is, should this go in the kernel proper such that it
-> manipulates the init_cred structure, or should this be plumbed down in
-> kinit (in klibc, which we use for bootup)?
+> My fault, that will be fixed in the V2 patch.
+
+But you cannot, the function isn't called _atomic_ just for kicks, its
+used while holding spinlocks.
+
+> >> +	if (likely(vma)) {
+> >> +		/* only fixup present page */
+> >> +		if (follow_page(vma, address, FOLL_WRITE)) {
+> >> +			handle_mm_fault(mm, vma, address, FAULT_FLAG_WRITE);
+> > So how can this toggle your sw dirty/young tracking, that's pretty much
+> > what gup(.write=1) does too!
+> >
 > 
+> because of the kernel read only permission of the page is transparent
+> to the follow_page(),  the handle_mm_fault() is not to be activated
+> in the __get_use_pages(), so the gup(.write=1) could not help to fixup
+> the write permission.
 
-It certainly would be trivial to do in kinit.
+So why do you need the vma? Is it like I wrote earlier that you don't
+have spare PTE bits and need the vma flags to see if it may become
+writable?
 
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+gup(.write=1) not triggering this is a serious problem though, not
+something you can just paper over. I wouldn't be at all surprised to
+find there's more things broken because of that.
