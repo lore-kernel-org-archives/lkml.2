@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751787Ab1GOPcv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 11:32:51 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:33641 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810Ab1GOPcu (ORCPT
+	id S1752556Ab1GOPdG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 11:33:06 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:54071 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752251Ab1GOPdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 11:32:50 -0400
-Message-ID: <4E205D96.7010109@gmail.com>
-Date: Fri, 15 Jul 2011 11:32:38 -0400
-From: Shan Hai <haishan.bai@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+	Fri, 15 Jul 2011 11:33:03 -0400
+Date: Fri, 15 Jul 2011 17:32:57 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>
+Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        acme@ghostprotocols.net, peterz@infradead.org, paulus@samba.org
+Subject: Re: [PATCH] perf tools, x86: fix 32-bit compile on 64-bit system
+Message-ID: <20110715153253.GA6590@somewhere>
+References: <1310420304-21452-1-git-send-email-dsahern@gmail.com>
+ <4E205C58.30607@gmail.com>
 MIME-Version: 1.0
-To: David Laight <David.Laight@ACULAB.COM>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, tony.luck@intel.com,
-        linux-kernel@vger.kernel.org, cmetcalf@tilera.com, dhowells@redhat.com,
-        paulus@samba.org, tglx@linutronix.de, walken@google.com,
-        linuxppc-dev@lists.ozlabs.org, akpm@linux-foundation.org
-Subject: Re: [PATCH 0/1] Fixup write permission of TLB on powerpc e500 core
-References: <AE90C24D6B3A694183C094C60CF0A2F6D8ADFC@saturn3.aculab.com>
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6D8ADFC@saturn3.aculab.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E205C58.30607@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2011 06:32 AM, David Laight wrote:
->
->> The fault causing futex_atomic_cmpxchg_inatomic() is
->> protected by pagefault_disable(), so the page fault handler has
->> no chance to toggle the SW dirty/young tracking.
-> Perhaps that is the bug!
-> Whatever pagefault_disable() does, it shouldn't disable the
-> SW dirty/young tracking - which should only needs bits moving
-> in the page table itself (and TLB update??) rather than any
-> operations on the rest of the data areas.
->
-> It looks to me as though this could happen any time a page
-> is marked inaccessible by the dirty/young tracking.
-> Not just as a result of COW.
->
+On Fri, Jul 15, 2011 at 09:27:20AM -0600, David Ahern wrote:
+> On 07/11/2011 03:38 PM, David Ahern wrote:
+> > Builds for 32-bit binaries on a 64-bit host currently fail with the error:
+> > 
+> > gcc -o /tmp/perf-ppc/bench/mem-memcpy-x86-64-asm.o -c -fno-omit-frame-pointer -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6 -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -Wformat-y2k -Wshadow -Winit-self -Wpacked -Wredundant-decls -Wstrict-aliasing=3 -Wswitch-default -Wswitch-enum -Wno-system-headers -Wundef -Wwrite-strings -Wbad-function-cast -Wmissing-declarations -Wmissing-prototypes -Wnested-externs -Wold-style-definition -Wstrict-prototypes -Wdeclaration-after-statement -m32 -fstack-protector-all -Wstack-protector -Wvolatile-register-var -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -Iutil/include -Iarch/x86/include -I/tmp/perf-ppc/ -DLIBELF_NO_MMAP -DDWARF_SUPPORT -DNO_NEWT_SUPPORT -DNO_LIBPERL -DNO_LIBPYTHON -DHAVE_CPLUS_DEMANGLE -DNO_STRLCPY -DARCH_X86_64 bench/mem-memcpy-x86-64-asm.S
+> > bench/../../../arch/x86/lib/memcpy_64.S: Assembler messages:
+> > bench/../../../arch/x86/lib/memcpy_64.S:29: Error: bad register name `%rdi'
+> > bench/../../../arch/x86/lib/memcpy_64.S:34: Error: invalid instruction suffix for `movs'
+> > bench/../../../arch/x86/lib/memcpy_64.S:50: Error: bad register name `%rdi'
+> > bench/../../../arch/x86/lib/memcpy_64.S:61: Error: bad register name `%rdi'
+> > ...
+> > 
+> > The problem is the detection of the host arch without considering passed in
+> > flags. This change fixes 32-bit builds via:
+> > 
+> > make EXTRA_CFLAGS=-m32 
+> > 
+> > and 64-bit builds still reference the memcpy_64.S.
+> > 
+> 
+> Fairly trivial change to the Makefile. Any objections? I believe Arnaldo
+> is out for a few more days and realistically another week to get through
+> a month's backlog.
+> 
+> David
 
-I agree with you, the problem could be triggered by accessing
-any user space page which has kernel read only permission
-in the page fault disabled context, the problem also affects
-architectures which depend on SW dirty/young tracking as
-stated by Benjamin in this thread.
+Yeah, looks good.
 
-In the e500 case, the commit 6cfd8990e27d3a491c1c605d6cbc18a46ae51fef
-removed the write permission fixup from TLB miss handlers and left it to
-generic code, so it might be right time to fixup the write permission here
-in the generic code.
+Thanks.
 
-
-Thanks
-Shan Hai
-
-> 	David
->
->
-
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
