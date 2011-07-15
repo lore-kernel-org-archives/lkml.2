@@ -1,56 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076Ab1GOXW1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 19:22:27 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:45407 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751278Ab1GOXW0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 19:22:26 -0400
-Date: Fri, 15 Jul 2011 16:22:10 -0700 (PDT)
-Message-Id: <20110715.162210.346975929824395806.davem@davemloft.net>
-To: mfwitten@gmail.com
-Cc: error27@gmail.com, kys@microsoft.com, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Subject: Re: Large Patch Series in Email
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <2069ac4443284c47983ba731368ddb56-mfwitten@gmail.com>
-References: <84fa825a57d34571a5aa66ae7299461c-mfwitten@gmail.com>
-	<20110715210903.GF18655@shale.localdomain>
-	<2069ac4443284c47983ba731368ddb56-mfwitten@gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 15 Jul 2011 16:22:11 -0700 (PDT)
+	id S1754008Ab1GOXc1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 19:32:27 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:33037 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751278Ab1GOXc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 19:32:26 -0400
+Date: Fri, 15 Jul 2011 16:32:03 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, David Miller <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
+        Mike Frysinger <vapier@gentoo.org>, Ralf Baechle <ralf@linux-mips.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Russell King <linux@arm.linux.org.uk>,
+        Paul Mackerras <paulus@samba.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH 0/3] rcu: Fix some rcu uses in extended quiescent state
+Message-ID: <20110715233203.GM2327@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1310416472-2554-1-git-send-email-fweisbec@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1310416472-2554-1-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Witten <mfwitten@gmail.com>
-Date: Fri, 15 Jul 2011 22:55:29 -0000
-
-> On Sat, 16 Jul 2011 00:09:03 +0300, Dan Carpenter wrote:
+On Mon, Jul 11, 2011 at 10:34:29PM +0200, Frederic Weisbecker wrote:
+> Hi,
 > 
->> On Fri, Jul 15, 2011 at 06:25:55PM -0000, Michael Witten wrote:
->>>   Do not send more than 15 patches at once to the vger
->>>   mailing lists!!!
->>
->> ... Don't be a whinge bucket.
+> First patch lays the ground to fix rcu uses in dyntick idle mode
+> by splitting rcu extended qs state logic from tick nohz one.
 > 
-> Or be respectful of bandwidth, differing email environments, and the
-> official guidelines for submitting patches, which I will quote again:
+> The rest fixes the misuses that RCU has detected for me in x86.
+
+These look good to me -- I have queued them and will try testing
+them out.
+
+> I'll try to fix those Paul has detected in PowerPc.
+
+Looking forward to that one as well.  ;-)
+
+It would be really cool if this approach could serve as RCU's idle-CPU
+detection regardless of whether or not CONFIG_NO_HZ was set.  For one
+thing, this would simplify the RCU code that treats idle tasks as extended
+quiescent states.  Except during boot time.  :-/
+
+							Thanx, Paul
+
+> Frederic Weisbecker (3):
+>   nohz: Split extended quiescent state handling from nohz switch
+>   x86: Enter rcu extended qs after idle notifier call
+>   x86: Call idle notifier after irq_enter()
 > 
->     If you cannot condense your patch set into a smaller set
->     of patches, then only post say 15 or so at a time and wait
->     for review and integration.
->     ...
->     Do not send more than 15 patches at once to the vger
->     mailing lists!!!
-
-Indeed, it really sucks when people send huge patch sets, do
-not do it.
-
-If the official SubmittingPatches document isn't convincing
-enough, then maybe me (the vger postmaster) saying it will.
+>  arch/arm/kernel/process.c                |    4 +-
+>  arch/avr32/kernel/process.c              |    4 +-
+>  arch/blackfin/kernel/process.c           |    4 +-
+>  arch/microblaze/kernel/process.c         |    4 +-
+>  arch/mips/kernel/process.c               |    4 +-
+>  arch/powerpc/kernel/idle.c               |    4 +-
+>  arch/powerpc/platforms/iseries/setup.c   |    8 +++---
+>  arch/s390/kernel/process.c               |    4 +-
+>  arch/sh/kernel/idle.c                    |    2 +-
+>  arch/sparc/kernel/process_64.c           |    4 +-
+>  arch/tile/kernel/process.c               |    4 +-
+>  arch/um/kernel/process.c                 |    4 +-
+>  arch/unicore32/kernel/process.c          |    4 +-
+>  arch/x86/kernel/apic/apic.c              |    6 ++--
+>  arch/x86/kernel/apic/io_apic.c           |    2 +-
+>  arch/x86/kernel/cpu/mcheck/mce.c         |    2 +-
+>  arch/x86/kernel/cpu/mcheck/therm_throt.c |    2 +-
+>  arch/x86/kernel/cpu/mcheck/threshold.c   |    2 +-
+>  arch/x86/kernel/irq.c                    |    6 ++--
+>  arch/x86/kernel/process_32.c             |    4 +-
+>  arch/x86/kernel/process_64.c             |    5 ++++
+>  include/linux/tick.h                     |   10 +++++--
+>  kernel/time/tick-sched.c                 |   36 ++++++++++++++++++++++++++---
+>  23 files changed, 83 insertions(+), 46 deletions(-)
+> 
+> -- 
+> 1.7.5.4
+> 
