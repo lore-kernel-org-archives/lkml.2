@@ -1,208 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964968Ab1GOH2T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 03:28:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43541 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964908Ab1GOH2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 03:28:18 -0400
-Date: Fri, 15 Jul 2011 09:28:14 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] memcg: make oom_lock 0 and 1 based rather than
- coutner
-Message-ID: <20110715072814.GA6239@tiehlicka.suse.cz>
-References: <20110714115913.cf8d1b9d.kamezawa.hiroyu@jp.fujitsu.com>
- <20110714090017.GD19408@tiehlicka.suse.cz>
- <20110714183014.8b15e9b9.kamezawa.hiroyu@jp.fujitsu.com>
- <20110714095152.GG19408@tiehlicka.suse.cz>
- <20110714191728.058859cd.kamezawa.hiroyu@jp.fujitsu.com>
- <20110714110935.GK19408@tiehlicka.suse.cz>
- <20110714113009.GL19408@tiehlicka.suse.cz>
- <20110714205012.8b78691e.kamezawa.hiroyu@jp.fujitsu.com>
- <20110714125555.GA27954@tiehlicka.suse.cz>
- <20110715084755.1e0a4c14.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1755063Ab1GOHic (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 03:38:32 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:61390 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752185Ab1GOHia (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 03:38:30 -0400
+Date: Fri, 15 Jul 2011 11:38:23 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: NeilBrown <neilb@suse.de>
+Cc: kernel-hardening@lists.openwall.com, Solar Designer <solar@openwall.com>,
+        James Morris <jmorris@namei.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Eric Paris <eparis@redhat.com>, Stephen Smalley <sds@tycho.nsa.gov>,
+        Willy Tarreau <w@1wt.eu>, Sebastian Krahmer <krahmer@suse.de>
+Subject: Re: [kernel-hardening] Re: [PATCH] move RLIMIT_NPROC check from
+ set_user() to do_execve_common()
+Message-ID: <20110715073823.GA3821@albatros>
+References: <20110713091408.0d456352@notabene.brown>
+ <20110713063142.GA19976@openwall.com>
+ <20110713170657.59dae548@notabene.brown>
+ <CA+55aFwQKqvNvzTMYXVW_yKkFtNsyv8uuBiWiwYLof-nPqPu9w@mail.gmail.com>
+ <alpine.LRH.2.00.1107141009510.17067@tundra.namei.org>
+ <20110714112751.1bfd998f@notabene.brown>
+ <20110714150602.GA30019@openwall.com>
+ <20110715133013.4fa38d19@notabene.brown>
+ <20110715063113.GA3166@albatros>
+ <20110715170650.585f1dad@notabene.brown>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110715084755.1e0a4c14.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110715170650.585f1dad@notabene.brown>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 15-07-11 08:47:55, KAMEZAWA Hiroyuki wrote:
-> On Thu, 14 Jul 2011 14:55:55 +0200
-> Michal Hocko <mhocko@suse.cz> wrote:
-> 
-> > On Thu 14-07-11 20:50:12, KAMEZAWA Hiroyuki wrote:
-> > > On Thu, 14 Jul 2011 13:30:09 +0200
-> > > Michal Hocko <mhocko@suse.cz> wrote:
-> > [...]
-> > > >  static bool mem_cgroup_oom_lock(struct mem_cgroup *mem)
-> > > >  {
-> > > > -	int x, lock_count = 0;
-> > > > -	struct mem_cgroup *iter;
-> > > > +	int x, lock_count = -1;
-> > > > +	struct mem_cgroup *iter, *failed = NULL;
-> > > > +	bool cond = true;
-> > > >  
-> > > > -	for_each_mem_cgroup_tree(iter, mem) {
-> > > > -		x = atomic_inc_return(&iter->oom_lock);
-> > > > -		lock_count = max(x, lock_count);
-> > > > +	for_each_mem_cgroup_tree_cond(iter, mem, cond) {
-> > > > +		x = !!atomic_add_unless(&iter->oom_lock, 1, 1);
-> > > > +		if (lock_count == -1)
-> > > > +			lock_count = x;
-> > > > +		else if (lock_count != x) {
-> > > > +			/*
-> > > > +			 * this subtree of our hierarchy is already locked
-> > > > +			 * so we cannot give a lock.
-> > > > +			 */
-> > > > +			lock_count = 0;
-> > > > +			failed = iter;
-> > > > +			cond = false;
-> > > > +		}
-> > > >  	}
-> > > 
-> > > Hm ? assuming B-C-D is locked and a new thread tries a lock on A-B-C-D-E.
-> > > And for_each_mem_cgroup_tree will find groups in order of A->B->C->D->E.
-> > > Before lock
-> > >   A  0
-> > >   B  1
-> > >   C  1
-> > >   D  1
-> > >   E  0
-> > > 
-> > > After lock
-> > >   A  1
-> > >   B  1
-> > >   C  1
-> > >   D  1
-> > >   E  0
-> > > 
-> > > here, failed = B, cond = false. Undo routine will unlock A.
-> > > Hmm, seems to work in this case.
-> > > 
-> > > But....A's oom_lock==0 and memcg_oom_wakeup() at el will not able to
-> > > know "A" is in OOM. wakeup processes in A which is waiting for oom recover..
-> > 
-> > Hohm, we need to have 2 different states. lock and mark_oom.
-> > oom_recovert would check only the under_oom.
-> > 
-> 
-> yes. I think so, too.
-> 
-> > > 
-> > > Will this work ?
-> > 
-> > No it won't because the rest of the world has no idea that A is
-> > under_oom as well.
-> > 
-> > > ==
-> > >  # cgcreate -g memory:A
-> > >  # cgset -r memory.use_hierarchy=1 A
-> > >  # cgset -r memory.oom_control=1   A
-> > >  # cgset -r memory.limit_in_bytes= 100M
-> > >  # cgset -r memory.memsw.limit_in_bytes= 100M
-> > >  # cgcreate -g memory:A/B
-> > >  # cgset -r memory.oom_control=1 A/B
-> > >  # cgset -r memory.limit_in_bytes=20M
-> > >  # cgset -r memory.memsw.limit_in_bytes=20M
-> > > 
-> > >  Assume malloc XXX is a program allocating XXX Megabytes of memory.
-> > > 
-> > >  # cgexec -g memory:A/B malloc 30  &    #->this will be blocked by OOM of group B
-> > >  # cgexec -g memory:A   malloc 80  &    #->this will be blocked by OOM of group A
-> > > 
-> > > 
-> > > Here, 2 procs are blocked by OOM. Here, relax A's limitation and clear OOM.
-> > > 
-> > >  # cgset -r memory.memsw.limit_in_bytes=300M A
-> > >  # cgset -r memory.limit_in_bytes=300M A
-> > > 
-> > >  malloc 80 will end.
-> > 
-> > What about yet another approach? Very similar what you proposed, I
-> > guess. Again not tested and needs some cleanup just to illustrate.
-> > What do you think?
-> 
-> Hmm, I think this will work. Please go ahead.
-> Unfortunately, I'll not be able to make a quick response for a week
-> because of other tasks. I'm sorry.
-> 
-> Anyway,
-> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> 
+Neil,
 
-Thanks
+On Fri, Jul 15, 2011 at 17:06 +1000, NeilBrown wrote:
+> How about this then?
 
-> 
-> BTW, it's better to add "How-to-test" and the result in description.
-> Some test similar to mine will show the result we want.
+AFAIU, with this patch:
 
-Agreed. I will hammer it today and repost with cleaned up description
-with your example as well as mine that triggered the convoy behavior.
+1) setuid() doesn't fail in NPROC exceed case.
+2) NPROC is forced on execve() after setuid().
+3) execve() fails only if NPROC was exceeded during setuid() execution.
+4) Other processes of the same user doesn't suffer from "occasional"
+execve() failures.
 
-I hope you don't mine if I add you s-o-b to the patch as this was a
-cooperative work.
+If it is correct, then I like the patch :)  It does RLIMIT_NPROC
+enforcement without mixing other execve() calls like -ow patch did.
 
-> ==
-> Make a hierarchy of memcg, which has 300MB memory+swap limit.
-> 
->  %cgcreate -g memory:A
->  %cgset -r memory.limit_in_bytes=300M A
->  %cgset -r memory.memsw.limit_in_bytes=300M A
-> 
-> Then, running folloing program under A.
->  %cgexec -g memory:A ./fork
-> ==
-> int main(int argc, char *argv[])
-> {
->         int i;
->         int status;
-> 
->         for (i = 0; i < 5000; i++) {
->                 if (fork() == 0) {
->                         char *c;
->                         c = malloc(1024*1024);
->                         memset(c, 0, 1024*1024);
->                         sleep(20);
->                         fprintf(stderr, "[%d]\n", i);
->                         exit(0);
->                 }
->                 printf("%d\n", i);
->                 waitpid(-1, &status, WNOHANG);
->         }
->         while (1) {
->                 int ret;
->                 ret = waitpid(-1, &status, WNOHANG);
-> 
->                 if (ret == -1)
->                         break;
->                 if (!ret)
->                         sleep(1);
->         }
->         return 0;
-> }
-> ==
-> 
-> Thank you for your effort.
-> -Kame
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+See minor suggestions about the comments below.
+
+
+> Signed-off-by: NeilBrown <neilb@suse.de>
+
+Acked-by: Vasiliy Kulikov <segoon@openwall.com>
+
+> diff --git a/fs/exec.c b/fs/exec.c
+> index 6075a1e..dfe9c61 100644
+> --- a/fs/exec.c
+> +++ b/fs/exec.c
+> @@ -1434,6 +1434,17 @@ static int do_execve_common(const char *filename,
+>  	bool clear_in_exec;
+>  	int retval;
+>  
+> +	if (current->flags & PF_NPROC_EXCEEDED) {
+> +		/* setuid noticed that RLIMIT_NPROC was
+> +		 * exceeded, but didn't fail as that easily
+> +		 * leads to privileges leaking.
+
+It doesn't lead to privileges leaking as is, it is a threat of buggy
+programs not checking return code of syscalls dropping privileges (setuid here).
+
+>  So fail
+> +		 * here instead - we still limit the number of
+> +		 * processes running the user's code.
+> +		 */
+> +		retval = -EAGAIN;
+> +		goto out_ret;
+> +	}
+> +
+>  	retval = unshare_files(&displaced);
+>  	if (retval)
+>  		goto out_ret;
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 496770a..f024c63 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -1759,6 +1759,7 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
+>  #define PF_DUMPCORE	0x00000200	/* dumped core */
+>  #define PF_SIGNALED	0x00000400	/* killed by a signal */
+>  #define PF_MEMALLOC	0x00000800	/* Allocating memory */
+> +#define PF_NPROC_EXCEEDED 0x00001000	/* set_user noticed that RLIMIT_NPROC was exceeded */
+>  #define PF_USED_MATH	0x00002000	/* if unset the fpu must be initialized before use */
+>  #define PF_FREEZING	0x00004000	/* freeze in progress. do not account to load */
+>  #define PF_NOFREEZE	0x00008000	/* this thread should not be frozen */
+> diff --git a/kernel/cred.c b/kernel/cred.c
+> index 174fa84..8ef31f5 100644
+> --- a/kernel/cred.c
+> +++ b/kernel/cred.c
+> @@ -508,10 +508,8 @@ int commit_creds(struct cred *new)
+>  		key_fsgid_changed(task);
+>  
+>  	/* do it
+> -	 * - What if a process setreuid()'s and this brings the
+> -	 *   new uid over his NPROC rlimit?  We can check this now
+> -	 *   cheaply with the new uid cache, so if it matters
+> -	 *   we should be checking for it.  -DaveM
+> +	 * RLIMIT_NPROC limits on user->processes have already been checked
+> +	 * in set_user().
+>  	 */
+>  	alter_cred_subscribers(new, 2);
+>  	if (new->user != old->user)
+> diff --git a/kernel/sys.c b/kernel/sys.c
+> index e4128b2..dd1fb9d 100644
+> --- a/kernel/sys.c
+> +++ b/kernel/sys.c
+> @@ -592,10 +592,9 @@ static int set_user(struct cred *new)
+>  		return -EAGAIN;
+>  
+>  	if (atomic_read(&new_user->processes) >= rlimit(RLIMIT_NPROC) &&
+> -			new_user != INIT_USER) {
+> -		free_uid(new_user);
+> -		return -EAGAIN;
+> -	}
+> +			new_user != INIT_USER)
+> +		/* Cause any subsequent 'exec' to fail */
+
+The comment about why all this bustle is needed is better to put here
+because the check is logically belongs to set_user().
+
+Specifically, I'd mention that (1) we don't want setuid() to fail while
+having enough privileges and (2) RLIMIT_NPROC can be still harmlessly
+checked for programs doing setuid()+execve() if the error code is
+deferred to the execve stage.
+
+> +		current->flags |= PF_NPROC_EXCEEDED;
+>  
+>  	free_uid(new->user);
+>  	new->user = new_user;
+
+Thanks,
 
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
