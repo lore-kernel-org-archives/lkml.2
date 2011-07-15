@@ -1,28 +1,36 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1758421Ab1GLBwn (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
-        Mon, 11 Jul 2011 21:52:43 -0400
-Received: from webmail.terengganu.gov.my ([202.188.29.6]:41679 "EHLO
-        terengganu.gov.my" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1752630Ab1GLBwm (ORCPT
+        id S1756035Ab1GOURq (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
+        Fri, 15 Jul 2011 16:17:46 -0400
+Received: from smtp6.freeserve.com ([193.252.22.191]:2858 "EHLO
+        smtp6.freeserve.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1755937Ab1GOURo (ORCPT
         <rfc822;linux-kernel@vger.kernel.org>);
-        Mon, 11 Jul 2011 21:52:42 -0400
-From: "Mat Hassan b Ariffin UPMN" <hassan@terengganu.gov.my>
-Reply-To: mr.milton_danel04@yahoo.com.hk
-Subject: $250,000.00
-Date: Tue, 12 Jul 2011 02:20:50 +0800
-Message-Id: <20110711182056.M54135@terengganu.gov.my>
-X-Mailer: OpenWebMail 2.53 
-X-OriginatingIP: 82.128.17.135 (hassan)
+        Fri, 15 Jul 2011 16:17:44 -0400
+X-ME-UUID: 20110715201330155.03C797004C66@mwinf3616.me.freeserve.com
+Reply-To: <ogawa1sho@hotmail.my>
+From: "Shoichi Ogawa" <info@mail.com>
+Subject: Hello
+Date: Fri, 15 Jul 2011 21:13:33 +0100
 MIME-Version: 1.0
 Content-Type: text/plain;
-        charset=iso-8859-1
+        charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+Message-Id: <20110715201330.03C797004C66@mwinf3616.me.freeserve.com>
 To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 
-Please be informed that you have $250,000.00 Lodged in our Western Union to 
-transfer to you as Compensation. Contact Mr.Milton Daniel Further detail Via 
-Email: mr.milton_daniel01@yahoo.com.hk
+Hello
+
+My name is Mr Shoichi Ogawa. I have a business offer for you. Please reply to this message if you are interested in knowing more.
+
+Best Regards
+
+Shoichi Ogawa
+
 
