@@ -1,44 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753094Ab1GOP1q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 11:27:46 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:37230
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752382Ab1GOP1p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 11:27:45 -0400
-Date: Fri, 15 Jul 2011 11:27:38 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 00/14] Swap-over-NBD without deadlocking v5
-Message-ID: <20110715152738.GA2276@infradead.org>
-References: <1308575540-25219-1-git-send-email-mgorman@suse.de>
- <20110706165146.be7ab61b.akpm@linux-foundation.org>
- <20110707094737.GG15285@suse.de>
- <20110707125831.GA15412@infradead.org>
- <20110715141021.GZ7529@suse.de>
+	id S1751665Ab1GOP2r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 11:28:47 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:42060 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750775Ab1GOP2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 11:28:46 -0400
+Date: Fri, 15 Jul 2011 16:28:06 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Subject: [git pull] drm radeon pciids update
+Message-ID: <alpine.DEB.2.00.1107151627340.9563@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110715141021.GZ7529@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 15, 2011 at 03:10:21PM +0100, Mel Gorman wrote:
-> Any objection to the swap-over-NBD stuff going ahead to get part of the
-> complexity out of the way?
 
-Sure, that's what I was advocating for.  The filesystem interfaces in
-the current swap over nbd patches on the other hand are complete crap
-and need to be redone, but we've already discussed that a lot of times.
+Hi Linus,
 
+just some pci ids from AMD.
+
+Dave.
+
+The following changes since commit 5dcd07b9f39ca3e9be5bcc387d193fc0674e1c81:
+
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-2.6-fixes (2011-07-14 10:20:42 -0700)
+
+are available in the git repository at:
+
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
+
+Alex Deucher (1):
+      drm/radeon/kms: add new NI pci ids
+
+ include/drm/drm_pciids.h |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
