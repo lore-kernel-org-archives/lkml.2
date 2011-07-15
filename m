@@ -1,88 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755434Ab1GOR4Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 13:56:24 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:58924 "EHLO
+	id S1755715Ab1GOR4f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 13:56:35 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:58930 "EHLO
 	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754092Ab1GOR4X (ORCPT
+	with ESMTP id S1755623Ab1GOR4d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 13:56:23 -0400
+	Fri, 15 Jul 2011 13:56:33 -0400
 From: greearb@candelatech.com
 To: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Ben Greear <greearb@candelatech.com>
-Subject: [PATCH (RESEND) 00/12] Support binding nfs/rpc to local IP address.
-Date: Fri, 15 Jul 2011 10:55:56 -0700
-Message-Id: <1310752568-21280-1-git-send-email-greearb@candelatech.com>
+Subject: [PATCH (RESEND) 10/12] nfs: Bind to srcaddr in rpcb_create.
+Date: Fri, 15 Jul 2011 10:56:06 -0700
+Message-Id: <1310752568-21280-11-git-send-email-greearb@candelatech.com>
 X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1310752568-21280-1-git-send-email-greearb@candelatech.com>
+References: <1310752568-21280-1-git-send-email-greearb@candelatech.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ben Greear <greearb@candelatech.com>
 
+This more properly clones the existing client connection
+settings, allowing rpc calls to take advantage of routing
+rules based on source IP addresses.
 
-This patch series allows binding the nfs and rpc logic to a specific local
-IP address.
+Signed-off-by: Ben Greear <greearb@candelatech.com>
+---
+:100644 100644 e45d2fb... 13dae70... M	net/sunrpc/rpcb_clnt.c
+:100644 100644 90c292e... 22841e1... M	net/sunrpc/sunrpc.h
+:100644 100644 37299c0... 72408c2... M	net/sunrpc/xprtsock.c
+ net/sunrpc/rpcb_clnt.c |   28 ++++++++++++++++++++++++++--
+ net/sunrpc/sunrpc.h    |   45 +++++++++++++++++++++++++++++++++++++++++++++
+ net/sunrpc/xprtsock.c  |   43 -------------------------------------------
+ 3 files changed, 71 insertions(+), 45 deletions(-)
 
-Features/Benefits:
-
-*  Allow multiple unique mounts to the same server using unique
-   source IP addresses on client system.
-
-   Routing rules can then be created based on the source IP address for
-   advanced routing of the NFS traffic.
-
-   This could allow someone to use two 1G interfaces to access a
-   server with 10G connectivity and allow aggregate 2Gbps transfer,
-   for instance.
-
-   This is also useful for load testing NFS servers as well as the
-   client-side NFS logic (note the bugs & fixed found while testing
-   this code!)
-
-*  Allow using a specific IP address on multi-homed system.  This could
-   increase security in some cases and in general gives the user more
-   control over how the services are configured.
-
-This code has been tested under load on 3.0 and a similar version has
-been tested under load on 2.6.38 and previous kernels.
-
-Full implementation of this feature requires patches to mount.nfs,
-which have been agreed to be accepted if the kernel patches are accepted.
-
-Ben Greear (12):
-  sunrpc:  Don't attempt to bind to AF_UNSPEC address.
-  nfs:  Two AF_UNSPEC addresses should always match each other.
-  nfs:  Add srcaddr member to nfs_client.
-  nfs:  Use request destination addr as callback source addr.
-  nfs:  Pay attention to srcaddr in v4.1 callback logic.
-  nfs:  Use srcaddr in nfs_match_client.
-  nfs:  Add srcaddr to /proc/fs/nfsfs/servers
-  nfs:  Pass srcaddr into mount request.
-  nfs:  Propagate src-addr in client code.
-  nfs: Bind to srcaddr in rpcb_create.
-  nfs: Support srcaddr= to bind to specific IP address.
-  lockd: Support binding nlm client to specific address.
-
- fs/lockd/clntlock.c         |    3 +-
- fs/lockd/host.c             |   17 +++++++++-
- fs/nfs/callback.h           |    3 ++
- fs/nfs/callback_proc.c      |    3 +-
- fs/nfs/callback_xdr.c       |    3 ++
- fs/nfs/client.c             |   73 ++++++++++++++++++++++++++++++++++++++++--
- fs/nfs/internal.h           |   10 +++++-
- fs/nfs/mount_clnt.c         |    1 +
- fs/nfs/super.c              |   33 +++++++++++++++++++-
- include/linux/lockd/bind.h  |    1 +
- include/linux/lockd/lockd.h |    1 +
- include/linux/nfs_fs_sb.h   |    4 ++
- include/linux/sunrpc/clnt.h |    2 +
- include/linux/sunrpc/svc.h  |    5 +++
- net/sunrpc/rpcb_clnt.c      |   28 +++++++++++++++-
- net/sunrpc/sunrpc.h         |   45 ++++++++++++++++++++++++++
- net/sunrpc/xprtsock.c       |   47 +--------------------------
- 17 files changed, 223 insertions(+), 56 deletions(-)
-
+diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
+index e45d2fb..13dae70 100644
+--- a/net/sunrpc/rpcb_clnt.c
++++ b/net/sunrpc/rpcb_clnt.c
+@@ -28,6 +28,7 @@
+ #include <linux/sunrpc/clnt.h>
+ #include <linux/sunrpc/sched.h>
+ #include <linux/sunrpc/xprtsock.h>
++#include "sunrpc.h"
+ 
+ #ifdef RPC_DEBUG
+ # define RPCDBG_FACILITY	RPCDBG_BIND
+@@ -292,11 +293,13 @@ out:
+ }
+ 
+ static struct rpc_clnt *rpcb_create(char *hostname, struct sockaddr *srvaddr,
+-				    size_t salen, int proto, u32 version)
++				    size_t salen, int proto, u32 version,
++				    struct sockaddr *srcaddr)
+ {
+ 	struct rpc_create_args args = {
+ 		.net		= &init_net,
+ 		.protocol	= proto,
++		.saddress	= srcaddr,
+ 		.address	= srvaddr,
+ 		.addrsize	= salen,
+ 		.servername	= hostname,
+@@ -601,11 +604,32 @@ void rpcb_getport_async(struct rpc_task *task)
+ 	struct rpc_task	*child;
+ 	struct sockaddr_storage addr;
+ 	struct sockaddr *sap = (struct sockaddr *)&addr;
++	struct sockaddr_storage srcaddr;
++	struct sockaddr *srcaddra = NULL;
+ 	size_t salen;
+ 	int status;
++	struct sock_xprt *sxprt;
+ 
+ 	clnt = rpcb_find_transport_owner(task->tk_client);
+ 	xprt = clnt->cl_xprt;
++	sxprt = container_of(xprt, struct sock_xprt, xprt);
++
++	/* We just want to bind to the IP, not the port */
++	memset(&srcaddr, 0, sizeof(srcaddr));
++	srcaddr.ss_family = sxprt->srcaddr.ss_family;
++	if (sxprt->srcaddr.ss_family == AF_INET) {
++		struct sockaddr_in *si = (struct sockaddr_in *)(&srcaddr);
++		struct sockaddr_in *si2;
++		si2 = (struct sockaddr_in *)(&sxprt->srcaddr);
++		si->sin_addr.s_addr = si2->sin_addr.s_addr;
++		srcaddra = (struct sockaddr *)(&srcaddr);
++	} else if (sxprt->srcaddr.ss_family == AF_INET6) {
++		struct sockaddr_in6 *si = (struct sockaddr_in6 *)(&srcaddr);
++		struct sockaddr_in6 *si2;
++		si2 = (struct sockaddr_in6 *)(&sxprt->srcaddr);
++		memcpy(&si->sin6_addr, &si2->sin6_addr, sizeof(si2->sin6_addr));
++		srcaddra = (struct sockaddr *)(&srcaddr);
++	}
+ 
+ 	dprintk("RPC: %5u %s(%s, %u, %u, %d)\n",
+ 		task->tk_pid, __func__,
+@@ -660,7 +684,7 @@ void rpcb_getport_async(struct rpc_task *task)
+ 		task->tk_pid, __func__, bind_version);
+ 
+ 	rpcb_clnt = rpcb_create(clnt->cl_server, sap, salen, xprt->prot,
+-				bind_version);
++				bind_version, srcaddra);
+ 	if (IS_ERR(rpcb_clnt)) {
+ 		status = PTR_ERR(rpcb_clnt);
+ 		dprintk("RPC: %5u %s: rpcb_create failed, error %ld\n",
+diff --git a/net/sunrpc/sunrpc.h b/net/sunrpc/sunrpc.h
+index 90c292e..22841e1 100644
+--- a/net/sunrpc/sunrpc.h
++++ b/net/sunrpc/sunrpc.h
+@@ -37,6 +37,51 @@ struct rpc_buffer {
+ 	char	data[];
+ };
+ 
++struct sock_xprt {
++	struct rpc_xprt		xprt;
++
++	/*
++	 * Network layer
++	 */
++	struct socket		*sock;
++	struct sock		*inet;
++
++	/*
++	 * State of TCP reply receive
++	 */
++	__be32			tcp_fraghdr,
++				tcp_xid,
++				tcp_calldir;
++
++	u32			tcp_offset,
++				tcp_reclen;
++
++	unsigned long		tcp_copied,
++				tcp_flags;
++
++	/*
++	 * Connection of transports
++	 */
++	struct delayed_work	connect_worker;
++	struct sockaddr_storage	srcaddr;
++	unsigned short		srcport;
++
++	/*
++	 * UDP socket buffer size parameters
++	 */
++	size_t			rcvsize,
++				sndsize;
++
++	/*
++	 * Saved socket callback addresses
++	 */
++	void			(*old_data_ready)(struct sock *, int);
++	void			(*old_state_change)(struct sock *);
++	void			(*old_write_space)(struct sock *);
++	void			(*old_error_report)(struct sock *);
++};
++
++
+ static inline int rpc_reply_expected(struct rpc_task *task)
+ {
+ 	return (task->tk_msg.rpc_proc != NULL) &&
+diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
+index 37299c0..72408c2 100644
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -202,49 +202,6 @@ static inline void xs_pktdump(char *msg, u32 *packet, unsigned int count)
+ }
+ #endif
+ 
+-struct sock_xprt {
+-	struct rpc_xprt		xprt;
+-
+-	/*
+-	 * Network layer
+-	 */
+-	struct socket *		sock;
+-	struct sock *		inet;
+-
+-	/*
+-	 * State of TCP reply receive
+-	 */
+-	__be32			tcp_fraghdr,
+-				tcp_xid,
+-				tcp_calldir;
+-
+-	u32			tcp_offset,
+-				tcp_reclen;
+-
+-	unsigned long		tcp_copied,
+-				tcp_flags;
+-
+-	/*
+-	 * Connection of transports
+-	 */
+-	struct delayed_work	connect_worker;
+-	struct sockaddr_storage	srcaddr;
+-	unsigned short		srcport;
+-
+-	/*
+-	 * UDP socket buffer size parameters
+-	 */
+-	size_t			rcvsize,
+-				sndsize;
+-
+-	/*
+-	 * Saved socket callback addresses
+-	 */
+-	void			(*old_data_ready)(struct sock *, int);
+-	void			(*old_state_change)(struct sock *);
+-	void			(*old_write_space)(struct sock *);
+-	void			(*old_error_report)(struct sock *);
+-};
+ 
+ /*
+  * TCP receive state flags
 -- 
 1.7.3.4
 
