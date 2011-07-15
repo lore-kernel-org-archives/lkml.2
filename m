@@ -1,75 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753412Ab1GOWyB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 18:54:01 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:59915 "EHLO
+	id S1753359Ab1GOW4M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 18:56:12 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:60592 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753258Ab1GOWx7 (ORCPT
+	with ESMTP id S1752657Ab1GOW4L convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 18:53:59 -0400
+	Fri, 15 Jul 2011 18:56:11 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:sender:in-reply-to:references:date:
+	x-google-sender-auth:message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=jzD8MGztgg1+CJfBC/VqNeOjx0HDFQ0otDUMOR5UiY+aEYkvpaRr1ydmYQgBiSU0D
+	BQaz5iirnJTRw+AdpbjmA==
+MIME-Version: 1.0
+In-Reply-To: <1310769600-9234-1-git-send-email-msb@chromium.org>
+References: <1310769600-9234-1-git-send-email-msb@chromium.org>
+Date: Fri, 15 Jul 2011 15:56:08 -0700
+X-Google-Sender-Auth: 0ulcyOYzNWUJ1iDQhr20pqve8OY
+Message-ID: <CACBanvp9-Q4qOzAZZ04uWKfJN2cP6-k8APG+9PR2mnVRqhmU8w@mail.gmail.com>
+Subject: Re: [PATCH 1/2] panic: panic=-1 for immediate reboot
 From: Mandeep Singh Baines <msb@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Mandeep Singh Baines <msb@chromium.org>,
+Cc: Hugh Dickins <hughd@chromium.org>, Mandeep Singh Baines <msb@chromium.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Huang Ying <ying.huang@intel.com>, Andi Kleen <ak@linux.intel.com>,
         Hugh Dickins <hughd@google.com>, Olaf Hering <olaf@aepfle.de>,
         Jesse Barnes <jbarnes@virtuousgeek.org>,
         Dave Airlie <airlied@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>,
         Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 2/2] panic, vt: do not force oops output when panic_timeout < 0
-Date: Fri, 15 Jul 2011 15:53:21 -0700
-Message-Id: <1310770401-10739-2-git-send-email-msb@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1310770401-10739-1-git-send-email-msb@chromium.org>
-References: <1310770401-10739-1-git-send-email-msb@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't force output if you intend to reboot immediately.
+On Fri, Jul 15, 2011 at 3:39 PM, Mandeep Singh Baines <msb@chromium.org> wrote:
+> From: Hugh Dickins <hughd@chromium.org>
+>
+> When kernel BUG or oops occurs, ChromeOS intends to panic and immediately
+> reboot, with stacktrace and other messages preserved in RAM across reboot.
+> But the longer we delay, the more likely the user is to poweroff and lose
+> the info.
+>
+> panic_timeout (seconds before rebooting) is set by panic= boot option
+> or sysctl or /proc/sys/kernel/panic; but 0 means wait forever, so at
+> present we have to delay at least 1 second.
+>
+> Let a negative number mean reboot immediately (with the small cosmetic
+> benefit of suppressing that newline-less "Rebooting in %d seconds.."
+> message).
+>
 
-In this patch, I'm disabling the functionality enabled by
-vc->vc_panic_force_write if panic_timeout < 0 (i.e. no timeout).
-vc_panic_force_write is only enabled for fb video consoles if the
-FBINFO_CAN_FORCE_OUTPUT flag is set.
+Ignore this patch. I re-posted the series with documentation updates:
 
-For our application, we're using ram_oops to preserved the panic in memory.
-We want to reliably, and as fast as possible, machine_restart. The
-vc_panic_force_write flag results in a bunch of graphics driver code to be
-invoked which slows down restart and decreases reliability. Since we're
-already storing the panic in RAM and are going to reboot immediately, there
-is no benefit in mode switching back to the vc in order to display the panic
-output. The log buffer will get flushed by the console_unblank() call so
-remote management consoles should see all output.
+http://lkml.kernel.org/r/1310770401-10739-1-git-send-email-msb@chromium.org
 
-Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Huang Ying <ying.huang@intel.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Olaf Hering <olaf@aepfle.de>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Dave Airlie <airlied@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
----
- include/linux/vt_kern.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/vt_kern.h b/include/linux/vt_kern.h
-index 4d05e14..c2164fa 100644
---- a/include/linux/vt_kern.h
-+++ b/include/linux/vt_kern.h
-@@ -137,7 +137,7 @@ int vty_init(const struct file_operations *console_fops);
- 
- static inline bool vt_force_oops_output(struct vc_data *vc)
- {
--	if (oops_in_progress && vc->vc_panic_force_write)
-+	if (oops_in_progress && vc->vc_panic_force_write  && panic_timeout >= 0)
- 		return true;
- 	return false;
- }
--- 
-1.7.3.1
-
+> Signed-off-by: Hugh Dickins <hughd@chromium.org>
+> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Huang Ying <ying.huang@intel.com>
+> Cc: Andi Kleen <ak@linux.intel.com>
+> Cc: Hugh Dickins <hughd@google.com>
+> Cc: Olaf Hering <olaf@aepfle.de>
+> Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+> Cc: Dave Airlie <airlied@gmail.com>
+> Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+> ---
+>  kernel/panic.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+>
+> diff --git a/kernel/panic.c b/kernel/panic.c
+> index 6923167..d7bb697 100644
+> --- a/kernel/panic.c
+> +++ b/kernel/panic.c
+> @@ -119,6 +119,8 @@ NORET_TYPE void panic(const char * fmt, ...)
+>                        }
+>                        mdelay(PANIC_TIMER_STEP);
+>                }
+> +       }
+> +       if (panic_timeout != 0) {
+>                /*
+>                 * This will not be a clean reboot, with everything
+>                 * shutting down.  But if there is a chance of
+> --
+> 1.7.3.1
+>
+>
