@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751718Ab1GONdi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 09:33:38 -0400
-Received: from mail06-md.ns.itscom.net ([175.177.155.116]:37685 "EHLO
-	mail06-md.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750924Ab1GONdh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 09:33:37 -0400
-From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Subject: Re: [PATCH 0/7] overlay filesystem: request for inclusion
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Andrew Morton <akpm@linux-foundation.org>, NeilBrown <neilb@suse.de>,
-        viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        apw@canonical.com, nbd@openwrt.org, hramrach@centrum.cz,
-        jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu
-In-Reply-To: <87fwm7d74s.fsf@tucsk.pomaz.szeredi.hu>
-References: <1306932380-10280-1-git-send-email-miklos@szeredi.hu> <20110608153208.dc705cda.akpm@linux-foundation.org> <20110609115934.3c53f78f@notabene.brown> <20110608205233.ebfedc4d.akpm@linux-foundation.org> <87wrgvb28a.fsf@tucsk.pomaz.szeredi.hu> <20110609123843.77153b27.akpm@linux-foundation.org> <877h8uzmsi.fsf@tucsk.pomaz.szeredi.hu> <21324.1307677721@jrobl> <871uyxa7ol.fsf@tucsk.pomaz.szeredi.hu> <8739ig3k93.fsf@tucsk.pomaz.szeredi.hu> <8536.1310214135@jrobl> <87k4bjd8pc.fsf@tucsk.pomaz.szeredi.hu> <12864.1310734928@jrobl> <87fwm7d74s.fsf@tucsk.pomaz.szeredi.hu>
-Date: Fri, 15 Jul 2011 22:33:34 +0900
-Message-ID: <13585.1310736814@jrobl>
+	id S1752082Ab1GONeF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 09:34:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32803 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751203Ab1GONeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 09:34:02 -0400
+Date: Fri, 15 Jul 2011 09:33:49 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH 08/17] ACPI, APEI, GHES, Support disable GHES at boot time
+Message-ID: <20110715133349.GX3765@redhat.com>
+References: <1310534068-30547-1-git-send-email-ying.huang@intel.com>
+ <1310534068-30547-9-git-send-email-ying.huang@intel.com>
+ <20110714144716.GA3080@redhat.com>
+ <4E1F8A44.8080609@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E1F8A44.8080609@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jul 15, 2011 at 08:31:00AM +0800, Huang Ying wrote:
+> On 07/14/2011 10:47 PM, Don Zickus wrote:
+> > On Wed, Jul 13, 2011 at 01:14:19PM +0800, Huang Ying wrote:
+> >> Some machine may have broken firmware so that GHES and firmware first
+> >> mode should be disabled.  This patch adds support to that.
+> > 
+> > Does this still work if you have disabled ghes module support in the
+> > previous patch?
+> 
+> Yes.  Module param can be specified in kernel command line, for example
+> "ghes.disable=y".
 
-Miklos Szeredi:
-> Overlayfs will create a private clone of both the lower and upper
-> mounts.  The mnt_flags are only modified on the private clone, whose
-> sole user is overlayfs itself.
+Ok.  I just tested that too.  Didn't realize a built-in could still use
+module params.
 
-Yes, I've found overlayfs creates private clone mounts. Sorry noise
-again.
-By cloning privately, users cannot change mount flags. But it will not
-be a big problem.
-
-By the way, you might remember that I have asked about overriding
-creditials and signals.
-When a process issues chmod, rename or something, then the internal
-copyup happens. If RLIMIT_FSIZE is set to the process, then it may
-fire SIGXFSZ and return EFBIG. It looks strange. But I don't know how
-important is it since setting RLIMIT_FSIZE is less popular I am afraid.
-
-
-J. R. Okajima
+Tested-and-Reviewed-by: Don Zickus <dzickus@redhat.com>
