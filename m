@@ -1,51 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615Ab1GOSLd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 14:11:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38725 "EHLO mail.zytor.com"
+	id S1755839Ab1GOSMG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 14:12:06 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:37819 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751249Ab1GOSLc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 14:11:32 -0400
-Message-ID: <4E2082A5.8090205@zytor.com>
-Date: Fri, 15 Jul 2011 11:10:45 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Mike Waychison <mikew@google.com>
-CC: Greg KH <gregkh@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Theodore Tso <tytso@mit.edu>,
+	id S1754666Ab1GOSME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 14:12:04 -0400
+Date: Fri, 15 Jul 2011 11:11:47 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ed Tomlinson <edt@aei.ca>, Steven Rostedt <rostedt@goodmis.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Kconfig: Allow disabling of CONFIG_DEVPORT
-References: <1310675693-9204-1-git-send-email-mikew@google.com> <20110714212113.GA28639@suse.de> <CAGTjWtB53vW5B2EJ5=+C3buDAY0RtsfANxx5NhC5aWnmEx08EQ@mail.gmail.com> <20110715064147.GA1021@suse.de> <C70E3912-6AA9-4EB3-85CC-11BF90D230C8@mit.edu> <20110715145132.GA4296@suse.de> <20110715155835.4e019ca5@lxorguk.ukuu.org.uk> <20110715151916.GC4747@suse.de> <CAGTjWtDszSANuye-y9MxvwE781DkVetG4m7XsjYpyMVFDTE+6w@mail.gmail.com> <20110715170112.GA5771@suse.de> <CAGTjWtCzU7pzWM5Eq5bP27683-ysEpi-m3K015g2AMTr=pR+6Q@mail.gmail.com>
-In-Reply-To: <CAGTjWtCzU7pzWM5Eq5bP27683-ysEpi-m3K015g2AMTr=pR+6Q@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: INFO: possible circular locking dependency detected
+Message-ID: <20110715181147.GF2327@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110714144946.GA3354@swordfish.minsk.epam.com>
+ <1310665613.27864.50.camel@gandalf.stny.rr.com>
+ <20110714191809.GF2349@linux.vnet.ibm.com>
+ <201107150705.46248.edt@aei.ca>
+ <1310729362.2586.325.camel@twins>
+ <1310729960.2586.327.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1310729960.2586.327.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2011 10:51 AM, Mike Waychison wrote:
->>
->> Unless you feel we should come up with something like:
->>        Internal-reference-id: XXXXX
->> and use a general tag like that for all companies, please don't put
->> company-specific and internal references in a place where they will be
->> commited to the public tree.
+On Fri, Jul 15, 2011 at 01:39:20PM +0200, Peter Zijlstra wrote:
+> On Fri, 2011-07-15 at 13:29 +0200, Peter Zijlstra wrote:
+> > 
+> > Paul, what appears to be happening here is that some rcu_read_unlock()
+> > gets interrupted, possibly before calling rcu_read_unlock_special(),
+> > possibly not if the interrupt is itself the timer interrupt.
+> > 
+> > Supposing ->rcu_read_unlock_special is set before, any wakeup happening
+> > from an interrupt hitting __rcu_read_unlock():
 > 
-> I'd be fine with something like "Internal-reference-id".
-> 
+> Hmm, ok not any wakeup from interrupt context because you have that
+> in_irq() test in there, but if that IRQ doesn't happen to use RCU and
+> does trigger softirqs and one of that softirq does a wakeup we're still
+> in the same boat.
 
-I would go even further, and do something like:
+Agreed.  All fallout from adding rcu_read_unlock() while holding
+rq/pi locks without the needed adjustments.  :-(
 
-Patch-ID: <id@sender> ...
+							Thanx, Paul
 
-... if it has internal structure to the poster that would be up to them.
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+> > void __rcu_read_unlock(void)
+> > {
+> >         struct task_struct *t = current;
+> >                 
+> >         barrier();  /* needed if we ever invoke rcu_read_unlock in rcutree.c */
+> >         --t->rcu_read_lock_nesting;
+> >         barrier();  /* decrement before load of ->rcu_read_unlock_special */
+> >         if (t->rcu_read_lock_nesting == 0 &&
+> >             unlikely(ACCESS_ONCE(t->rcu_read_unlock_special)))
+> >                 rcu_read_unlock_special(t);
+> > #ifdef CONFIG_PROVE_LOCKING
+> >         WARN_ON_ONCE(ACCESS_ONCE(t->rcu_read_lock_nesting) < 0);
+> > #endif /* #ifdef CONFIG_PROVE_LOCKING */
+> > }
+> > 
+> > After --t->rcu_read_lock_nesting, but before calling
+> > rcu_read_unlock_special(), will trigger this lock inversion.
+> > 
+> > The alternative case, ->rcu_read_unlock_special is not set yet, it can
+> > be set if the interrupt hitting in that same spot above, is the timer
+> > interrupt, and the wakeup happens either from the softirq ran from the
+> > hard IRQ tail, or as I suspect here happens, the wakeup of ksoftirqd/#.
+> > 
+> > 
