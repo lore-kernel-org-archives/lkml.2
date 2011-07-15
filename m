@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755635Ab1GORtc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 13:49:32 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:37199
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754017Ab1GOR36 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 13:29:58 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 031/117] Staging: hv: netvsc: Get rid of the driver name initialization in netvsc.c
-Date: Fri, 15 Jul 2011 10:46:19 -0700
-Message-Id: <1310752065-27895-31-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1310752065-27895-1-git-send-email-kys@microsoft.com>
-References: <1310752024-27854-1-git-send-email-kys@microsoft.com>
- <1310752065-27895-1-git-send-email-kys@microsoft.com>
+	id S1755704Ab1GORue (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 13:50:34 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:55076 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755655Ab1GORua (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 13:50:30 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:x-system-of-record;
+	b=uy5ZjVtFYPBu3Vewn8x2dk0t8jql86QFDycnpAEV/QnQoSKVmQfkVvPPyD/ht3Hqa
+	kRTW2+3gd09fquLB0mBxQ==
+MIME-Version: 1.0
+In-Reply-To: <1310719682.2586.289.camel@twins>
+References: <1310679495-29104-1-git-send-email-vnagarnaik@google.com>
+ <1310679495-29104-5-git-send-email-vnagarnaik@google.com> <20110714220233.GC26786@somewhere.redhat.com>
+ <1310719682.2586.289.camel@twins>
+From: David Sharp <dhsharp@google.com>
+Date: Fri, 15 Jul 2011 10:50:07 -0700
+Message-ID: <CAJL_ektnxUZaRJmx14H9psJ8MFBZ8iD5ET14WgT8CoJdMvH40w@mail.gmail.com>
+Subject: Re: [PATCH 4/6] trace: Add tracepoints to reschedule interrupt handler
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Michael Rubin <mrubin@google.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, get rid of the driver name initialization in  int netvsc_initialize().
+On Fri, Jul 15, 2011 at 1:48 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Fri, 2011-07-15 at 00:02 +0200, Frederic Weisbecker wrote:
+>> > This is a part of overall effort to trace all the interrupts happening
+>> > in a system to figure out what time is spent in kernel space versus user
+>> > space.
+>
+> How about you enable CONFIG_IRQ_TIME_ACCOUNTING and get all that?
+>
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/staging/hv/netvsc.c |    5 -----
- 1 files changed, 0 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/staging/hv/netvsc.c b/drivers/staging/hv/netvsc.c
-index 6f4541b..d085018 100644
---- a/drivers/staging/hv/netvsc.c
-+++ b/drivers/staging/hv/netvsc.c
-@@ -32,9 +32,6 @@
- #include "hyperv_net.h"
- 
- 
--/* Globals */
--static const char *driver_name = "netvsc";
--
- static struct netvsc_device *alloc_net_device(struct hv_device *device)
- {
- 	struct netvsc_device *net_device;
-@@ -999,7 +996,5 @@ cleanup:
- int netvsc_initialize(struct hv_driver *drv)
- {
- 
--	drv->name = driver_name;
--
- 	return 0;
- }
--- 
-1.7.4.1
-
+It's not just about how long, it's when, and what other events the
+interrupts are interacting with.
