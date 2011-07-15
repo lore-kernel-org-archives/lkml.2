@@ -1,234 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964921Ab1GOCy6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 22:54:58 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:64844 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964803Ab1GOCxb (ORCPT
+	id S932697Ab1GODMQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 23:12:16 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:57199 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754817Ab1GODMP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 22:53:31 -0400
-Date: Thu, 14 Jul 2011 20:53:28 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Greg KH <greg@kroah.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Samuel Oritz <sameo@linux.intel.com>,
-        Graeme Gregory <gg@slimlogic.co.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] regulator: Convert tps65023 to use regmap API
-Message-ID: <20110715025328.GJ2927@ponder.secretlab.ca>
-References: <20110709044923.GB13074@opensource.wolfsonmicro.com>
- <1310187044-13269-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <1310187044-13269-4-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Thu, 14 Jul 2011 23:12:15 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqEDACmvH055LCkBgWdsb2JhbABUp14VAQEWJiWIesMLDoVNXwSjRw
+Date: Fri, 15 Jul 2011 13:12:10 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        XFS <xfs@oss.sgi.com>, Christoph Hellwig <hch@infradead.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 2/5] mm: vmscan: Do not writeback filesystem pages in
+ kswapd except in high priority
+Message-ID: <20110715031210.GD21663@dastard>
+References: <1310567487-15367-1-git-send-email-mgorman@suse.de>
+ <1310567487-15367-3-git-send-email-mgorman@suse.de>
+ <20110713233743.GV23038@dastard>
+ <20110714062947.GO7529@suse.de>
+ <20110714115220.GB21663@dastard>
+ <20110714131745.GU7529@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1310187044-13269-4-git-send-email-broonie@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110714131745.GU7529@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 09, 2011 at 01:50:44PM +0900, Mark Brown wrote:
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Acked-by: Liam Girdwood <lrg@ti.com>
-> ---
->  drivers/regulator/Kconfig              |    1 +
->  drivers/regulator/tps65023-regulator.c |   98 +++++++++-----------------------
->  2 files changed, 28 insertions(+), 71 deletions(-)
-
-Nice diffstat.  :-)
-
+On Thu, Jul 14, 2011 at 02:17:45PM +0100, Mel Gorman wrote:
+> On Thu, Jul 14, 2011 at 09:52:21PM +1000, Dave Chinner wrote:
+> > On Thu, Jul 14, 2011 at 07:29:47AM +0100, Mel Gorman wrote:
+> > > On Thu, Jul 14, 2011 at 09:37:43AM +1000, Dave Chinner wrote:
+> > > > On Wed, Jul 13, 2011 at 03:31:24PM +0100, Mel Gorman wrote:
+> > > > > It is preferable that no dirty pages are dispatched for cleaning from
+> > > > > the page reclaim path. At normal priorities, this patch prevents kswapd
+> > > > > writing pages.
+> > > > > 
+> > > > > However, page reclaim does have a requirement that pages be freed
+> > > > > in a particular zone. If it is failing to make sufficient progress
+> > > > > (reclaiming < SWAP_CLUSTER_MAX at any priority priority), the priority
+> > > > > is raised to scan more pages. A priority of DEF_PRIORITY - 3 is
+> > > > > considered to tbe the point where kswapd is getting into trouble
+> > > > > reclaiming pages. If this priority is reached, kswapd will dispatch
+> > > > > pages for writing.
+> > > > > 
+> > > > > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > > > 
+> > > > Seems reasonable, but btrfs still will ignore this writeback from
+> > > > kswapd, and it doesn't fall over.
+> > > 
+> > > At least there are no reports of it falling over :)
+> > 
+> > However you want to spin it.
 > 
-> diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-> index 065892a..8128db3 100644
-> --- a/drivers/regulator/Kconfig
-> +++ b/drivers/regulator/Kconfig
-> @@ -235,6 +235,7 @@ config REGULATOR_TPS6105X
->  config REGULATOR_TPS65023
->  	tristate "TI TPS65023 Power regulators"
->  	depends on I2C
-> +	select REGMAP
->  	help
->  	  This driver supports TPS65023 voltage regulator chips. TPS65023 provides
->  	  three step-down converters and two general-purpose LDO voltage regulators.
-> diff --git a/drivers/regulator/tps65023-regulator.c b/drivers/regulator/tps65023-regulator.c
-> index fbddc15..3fa3ba5 100644
-> --- a/drivers/regulator/tps65023-regulator.c
-> +++ b/drivers/regulator/tps65023-regulator.c
-> @@ -25,6 +25,7 @@
->  #include <linux/i2c.h>
->  #include <linux/delay.h>
->  #include <linux/slab.h>
-> +#include <linux/regmap.h>
->  
->  /* Register definitions */
->  #define	TPS65023_REG_VERSION		0
-> @@ -125,93 +126,35 @@ struct tps_pmic {
->  	struct i2c_client *client;
->  	struct regulator_dev *rdev[TPS65023_NUM_REGULATOR];
->  	const struct tps_info *info[TPS65023_NUM_REGULATOR];
-> -	struct mutex io_lock;
-> +	struct regmap *regmap;
->  };
->  
-> -static inline int tps_65023_read(struct tps_pmic *tps, u8 reg)
-> -{
-> -	return i2c_smbus_read_byte_data(tps->client, reg);
-> -}
-> -
-> -static inline int tps_65023_write(struct tps_pmic *tps, u8 reg, u8 val)
-> -{
-> -	return i2c_smbus_write_byte_data(tps->client, reg, val);
-> -}
-> -
->  static int tps_65023_set_bits(struct tps_pmic *tps, u8 reg, u8 mask)
->  {
-> -	int err, data;
-> -
-> -	mutex_lock(&tps->io_lock);
-> -
-> -	data = tps_65023_read(tps, reg);
-> -	if (data < 0) {
-> -		dev_err(&tps->client->dev, "Read from reg 0x%x failed\n", reg);
-> -		err = data;
-> -		goto out;
-> -	}
-> -
-> -	data |= mask;
-> -	err = tps_65023_write(tps, reg, data);
-> -	if (err)
-> -		dev_err(&tps->client->dev, "Write for reg 0x%x failed\n", reg);
-> -
-> -out:
-> -	mutex_unlock(&tps->io_lock);
-> -	return err;
-> +	return regmap_update_bits(tps->regmap, reg, mask, mask);
->  }
->  
->  static int tps_65023_clear_bits(struct tps_pmic *tps, u8 reg, u8 mask)
->  {
-> -	int err, data;
-> -
-> -	mutex_lock(&tps->io_lock);
-> -
-> -	data = tps_65023_read(tps, reg);
-> -	if (data < 0) {
-> -		dev_err(&tps->client->dev, "Read from reg 0x%x failed\n", reg);
-> -		err = data;
-> -		goto out;
-> -	}
-> -
-> -	data &= ~mask;
-> -
-> -	err = tps_65023_write(tps, reg, data);
-> -	if (err)
-> -		dev_err(&tps->client->dev, "Write for reg 0x%x failed\n", reg);
-> -
-> -out:
-> -	mutex_unlock(&tps->io_lock);
-> -	return err;
-> -
-> +	return regmap_update_bits(tps->regmap, reg, mask, 0);
->  }
->  
->  static int tps_65023_reg_read(struct tps_pmic *tps, u8 reg)
->  {
-> -	int data;
-> +	unsigned int val;
-> +	int ret;
->  
-> -	mutex_lock(&tps->io_lock);
-> +	ret = regmap_read(tps->regmap, reg, &val);
->  
-> -	data = tps_65023_read(tps, reg);
-> -	if (data < 0)
-> -		dev_err(&tps->client->dev, "Read from reg 0x%x failed\n", reg);
-> -
-> -	mutex_unlock(&tps->io_lock);
-> -	return data;
-> +	if (ret != 0)
-> +		return ret;
-> +	else
-> +		return val;
->  }
->  
->  static int tps_65023_reg_write(struct tps_pmic *tps, u8 reg, u8 val)
->  {
-> -	int err;
-> -
-> -	mutex_lock(&tps->io_lock);
-> -
-> -	err = tps_65023_write(tps, reg, val);
-> -	if (err < 0)
-> -		dev_err(&tps->client->dev, "Write for reg 0x%x failed\n", reg);
-> -
-> -	mutex_unlock(&tps->io_lock);
-> -	return err;
-> +	return regmap_write(tps->regmap, reg, val);
->  }
->  
->  static int tps65023_dcdc_is_enabled(struct regulator_dev *dev)
-> @@ -463,6 +406,10 @@ static struct regulator_ops tps65023_ldo_ops = {
->  	.list_voltage = tps65023_ldo_list_voltage,
->  };
->  
-> +static struct regmap_config tps65023_regmap_config = {
-> +	.reg_bits = 8, .val_bits = 8,
-> +};
-> +
->  static int __devinit tps_65023_probe(struct i2c_client *client,
->  				     const struct i2c_device_id *id)
->  {
-> @@ -488,7 +435,13 @@ static int __devinit tps_65023_probe(struct i2c_client *client,
->  	if (!tps)
->  		return -ENOMEM;
->  
-> -	mutex_init(&tps->io_lock);
-> +	tps->regmap = regmap_init(&client->dev, &tps65023_regmap_config);
+> I regret that it is coming across as spin.
 
-Yeah, if this usage is typical, the caller will always know exactly
-what kind of regmap it needs to set up because it had an i2c_client or
-an spi_device instance.  I think it would be better to drop the
-central registration of regmap bus types and use bus-specific init
-variant.  It just makes for one more bit of registration
-infrastructure that needs to be setup before any drivers us it.
+Shit, sorry, I didn't mean it that way. I forgot to add the smiley
+at the end of that comment. It was meant in jest and not to be
+derogatory - I do understand your concerns.
 
-> +	if (IS_ERR(tps->regmap)) {
-> +		error = PTR_ERR(tps->regmap);
-> +		dev_err(&client->dev, "Failed to allocate register map: %d\n",
-> +			error);
-> +		goto fail_alloc;
-> +	}
->  
->  	/* common for all regulators */
->  	tps->client = client;
-> @@ -523,10 +476,12 @@ static int __devinit tps_65023_probe(struct i2c_client *client,
->  
->  	return 0;
->  
-> - fail:
-> +fail:
->  	while (--i >= 0)
->  		regulator_unregister(tps->rdev[i]);
->  
-> +	regmap_exit(tps->regmap);
-> +fail_alloc:
->  	kfree(tps);
->  	return error;
->  }
-> @@ -545,6 +500,7 @@ static int __devexit tps_65023_remove(struct i2c_client *client)
->  	for (i = 0; i < TPS65023_NUM_REGULATOR; i++)
->  		regulator_unregister(tps->rdev[i]);
->  
-> +	regmap_exit(tps->regmap);
->  	kfree(tps);
->  
->  	return 0;
-> -- 
-> 1.7.5.4
+> > > > Given that data point, I'd like to
+> > > > see the results when you stop kswapd from doing writeback altogether
+> > > > as well.
+> > > > 
+> > > 
+> > > The results for this test will be identical because the ftrace results
+> > > show that kswapd is already writing 0 filesystem pages.
+> > 
+> > You mean these numbers:
+> > 
+> > Kswapd reclaim write file async I/O           4483       4286 0          1          0          0
+> > 
+> > Which shows that kswapd, under this workload has been improved to
+> > the point that it doesn't need to do IO. Yes, you've addressed the
+> > one problematic workload, but the numbers do not provide the answers
+> > to the fundamental question that have been raised during
+> > discussions. i.e. do we even need IO at all from reclaim?
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> I don't know and at best will only be able to test with a single
+> disk which is why I wanted to separate this series from a complete
+> preventing of kswapd writing pages. I may be able to get access to
+> a machine with more disks but it'll take time.
+
+That, to me, seems like a major problem, and explains why swapping
+was affecting your results - you've got your test filesystem and
+your swap partition on the same spindle. In the server admin world,
+that's the first thing anyone concerned with performance avoids and
+as such I tend to avoid doing that, too.
+
+The lack of spindles/bandwidth used in testing the mm code is also
+potentially another reason why XFS tends to show up mm problems.
+That is, most testing and production use of XFS occurs on disk
+subsystems much more bandwidth than a single spindle, and hence the
+effects of bad IO show up much more obviously than for a single
+spindle.
+
+> > > Where it makes a difference is when the system is under enough
+> > > pressure that it is failing to reclaim any memory and is in danger
+> > > of prematurely triggering the OOM killer. Andrea outlined some of
+> > > the concerns before at http://lkml.org/lkml/2010/6/15/246
+> > 
+> > So put the system under more pressure such that with this patch
+> > series memory reclaim still writes from kswapd. Can you even get it
+> > to that stage, and if you can, does the system OOM more or less if
+> > you don't do file IO from reclaim?
+> 
+> I can setup such a tests, it'll be at least next week before I
+> configure such a test and get it queued. It'll probably take a few
+> days to run then because more iterations will be required to pinpoint
+> where the OOM threshold is.  I know from the past that pushing a
+> system near OOM causes a non-deterministic number of triggers that
+> depend heavily on what was killed so the only real choice is to start
+> light and increase the load until boom which is time consuming.
+> 
+> Even then, the test will be inconclusive because it'll be just one
+> or two machines that I'll have to test on.
+
+Which is why I have a bunch of test VMs with different
+CPU/RAM/platform configs.  I regularly use 1p/1GB x86-64, 1p/2GB
+i686 (to stress highmem), 2p/2GB, 8p/4GB and 8p/16GB x86-64 VMs. I
+have a bunch of different disk images for the VMs to work off,
+located on storage from shared single SATA spindles to a 16TB volume
+to a short-stroked, 1GB/s, 5kiops, 12 disk dm RAID-0 setup.
+
+I mix and match the VMs with the disk images all the time - this is
+one of the benefits of using a virtualised test environment. One
+slightly beefy piece of hardware that costs $10k can be used to test
+many, many different configurations. That's why I complain about
+corner cases all the time ;)
+
+> There will be important
+> corner cases that I won't be able to test for.  For example;
+> 
+>   o small lowest zone that is critical for operation of some reason and
+>     the pages must be cleaned from there even though there is a large
+>     amount of memory overall
+
+That's the i686 highmem case, using a large amount of memory (e.g.
+4GB or more) to make sure that the highmem zone is much larger than
+the lowmem zone. inode caching uses low memory, so directory
+intensive operations on large sets of files (e.g. 10 million)
+tend to stress low memory availability.
+
+>   o small highest zone causing high kswapd usage as it fails to balance
+>     continually due to pages being dirtied constantly and the window
+>     between when flushers clean the page and kswapd reclaim the page
+>     being too big. I might be able to simulate this one but bugs of
+>     this nature tend to be workload specific and affect some machines
+>     worse than others
+
+And that is also testable with i686 highmem, but simply use smaller
+amounts of ram (say 1.5GB). Use page cache pressure to fill and
+dirty highmem, and inode cache pressure to fill lowmem.
+
+Guess what one of my ad hoc tests for XFS shrinker balancing is.  :)
+
+>   o Machines with many nodes and dirty pages spread semi-randomly
+>     on all nodes. If the flusher thread is not cleaning pages from
+>     a particular node that is under memory pressure due to affinity,
+>     processes will stall for long periods of time until the relevant
+>     inodes expire and gets cleaned. This will be particularly
+>     problematic if zone_reclaim is enabled
+
+And you can create large node-count virtual machines via the kvm
+-numa option. I haven't been doing this as yet because getting stuff
+working well on single node SMP needs to be done first.
+
+So, like you, I really only have one or two tests machine available
+locally, but I've been creative in working around that
+limitation.... :/
+
+> > It's that next step that I'm asking you to test now. What form
+> > potential changes take or when they are released is irrelevant to me
+> > at this point, because we still haven't determined if the
+> > fundamental concept is completely sound or not. If the concept is
+> > sound I'm quite happy to wait until the implementation is fully
+> > baked before it gets rolled out....
+> 
+> I'll setup a suitable test next week then.
+
+Sounds great. Thanks Mel.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
