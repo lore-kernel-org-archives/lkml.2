@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752206Ab1GOWaQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 18:30:16 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:44124 "EHLO
+	id S1752757Ab1GOWlG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 18:41:06 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:55716 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750815Ab1GOWaO convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751560Ab1GOWlF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 18:30:14 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=tDynQqi3SIKKZ409IPuXWdTAchH+VIfrnji0b1s5isA7VhXtTPQtkEz6DjTGqFeog
-	782QrZ9ER/cYkPJXH/Ciw==
-MIME-Version: 1.0
-In-Reply-To: <4E20839A.8060200@zytor.com>
-References: <1310675693-9204-1-git-send-email-mikew@google.com>
-	<1310675693-9204-2-git-send-email-mikew@google.com>
-	<20110714234248.7ed43534@lxorguk.ukuu.org.uk>
-	<CAGTjWtDHH_VXXAsh5WPspTwPEhzcKi4_Jno7w=jReiS7HSALQw@mail.gmail.com>
-	<20110715000037.3fc1670a@lxorguk.ukuu.org.uk>
-	<CAGTjWtA5qobWAZb=SbM1y5SFtDKPuJVuAsbDKmkaxxL7mA6OKg@mail.gmail.com>
-	<20110715003912.149dcedd@lxorguk.ukuu.org.uk>
-	<CAGTjWtD+5cZxQiE+tikUyz2SNgm3bR95GE2veevEv15cPX1E9A@mail.gmail.com>
-	<CAGTjWtAo8dE4ASWYPZ0QJdNg3jFzpO=QP4eT5P3mNakxKy-5+g@mail.gmail.com>
-	<4E20839A.8060200@zytor.com>
-Date: Fri, 15 Jul 2011 15:30:10 -0700
-Message-ID: <CABV1ukEF_VY-X5ZmBLoiCgNXg_KM06Y7duQQ-qyE0wdEc+eEJw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] x86: Allow disabling of sys_iopl, sys_ioperm
-From: "Andrew G. Morgan" <agm@google.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Mike Waychison <mikew@google.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
+	Fri, 15 Jul 2011 18:41:05 -0400
+From: Mandeep Singh Baines <msb@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Hugh Dickins <hughd@chromium.org>, Mandeep Singh Baines <msb@chromium.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Klibc mailing list <klibc@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        Huang Ying <ying.huang@intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, Olaf Hering <olaf@aepfle.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Dave Airlie <airlied@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH 1/2] panic: panic=-1 for immediate reboot
+Date: Fri, 15 Jul 2011 15:39:59 -0700
+Message-Id: <1310769600-9234-1-git-send-email-msb@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'd put it in kinit too.
+From: Hugh Dickins <hughd@chromium.org>
 
-I think you may have to think about the call_usermodehelper code, and
-you might want to look at dropping CAP_SYS_MODULE too.
+When kernel BUG or oops occurs, ChromeOS intends to panic and immediately
+reboot, with stacktrace and other messages preserved in RAM across reboot.
+But the longer we delay, the more likely the user is to poweroff and lose
+the info.
 
-Cheers
+panic_timeout (seconds before rebooting) is set by panic= boot option
+or sysctl or /proc/sys/kernel/panic; but 0 means wait forever, so at
+present we have to delay at least 1 second.
 
-Andrew
+Let a negative number mean reboot immediately (with the small cosmetic
+benefit of suppressing that newline-less "Rebooting in %d seconds.."
+message).
 
-On Fri, Jul 15, 2011 at 11:14 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 07/15/2011 11:13 AM, Mike Waychison wrote:
->>
->> So the question is, should this go in the kernel proper such that it
->> manipulates the init_cred structure, or should this be plumbed down in
->> kinit (in klibc, which we use for bootup)?
->>
->
-> It certainly would be trivial to do in kinit.
->
->        -hpa
->
-> --
-> H. Peter Anvin, Intel Open Source Technology Center
-> I work for Intel.  I don't speak on their behalf.
->
->
+Signed-off-by: Hugh Dickins <hughd@chromium.org>
+Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Huang Ying <ying.huang@intel.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Olaf Hering <olaf@aepfle.de>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Dave Airlie <airlied@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+---
+ kernel/panic.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/panic.c b/kernel/panic.c
+index 6923167..d7bb697 100644
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -119,6 +119,8 @@ NORET_TYPE void panic(const char * fmt, ...)
+ 			}
+ 			mdelay(PANIC_TIMER_STEP);
+ 		}
++	}
++	if (panic_timeout != 0) {
+ 		/*
+ 		 * This will not be a clean reboot, with everything
+ 		 * shutting down.  But if there is a chance of
+-- 
+1.7.3.1
+
