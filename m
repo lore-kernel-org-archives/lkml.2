@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965090Ab1GOGUw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 02:20:52 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:36036 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964894Ab1GOGUu (ORCPT
+	id S965111Ab1GOGVA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 02:21:00 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:44080 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964894Ab1GOGU6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 02:20:50 -0400
-Subject: [PATCH 07/16] SCSI: sym53c416: remove Scsi_Cmnd
+	Fri, 15 Jul 2011 02:20:58 -0400
+Subject: [PATCH 08/16] SCSI: aha1542: remove Scsi_Cmnd
 From: Davidlohr Bueso <dave.bueso@gmail.com>
 Reply-To: dave@gnu.org
 To: James Bottomley <James.Bottomley@hansenpartnership.com>,
@@ -15,8 +15,8 @@ To: James Bottomley <James.Bottomley@hansenpartnership.com>,
 Cc: lkml <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset="UTF-8"
 Organization: GNU
-Date: Fri, 15 Jul 2011 02:20:03 -0400
-Message-ID: <1310710803.3184.58.camel@offbook>
+Date: Fri, 15 Jul 2011 02:20:07 -0400
+Message-ID: <1310710807.3184.59.camel@offbook>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2
 Content-Transfer-Encoding: 7bit
@@ -30,54 +30,158 @@ Change this for struct scsi_cmnd.
 
 Signed-off-by: Davidlohr Bueso <dave@gnu.org>
 ---
- drivers/scsi/sym53c416.c |    6 +++---
- drivers/scsi/sym53c416.h |    2 +-
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/scsi/aha1542.c |   28 ++++++++++++++--------------
+ drivers/scsi/aha1542.h |   10 +++++-----
+ 2 files changed, 19 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/scsi/sym53c416.c b/drivers/scsi/sym53c416.c
-index 012c86e..d37f985 100644
---- a/drivers/scsi/sym53c416.c
-+++ b/drivers/scsi/sym53c416.c
-@@ -225,7 +225,7 @@ static host hosts[MAXHOSTS] = {
- 
- static int host_index = 0;
- static char info[120];
--static Scsi_Cmnd *current_command = NULL;
-+static struct scsi_cmnd *current_command = NULL;
- static int fastpio = 1;
- 
- static int probeaddrs[] = {0x200, 0x220, 0x240, 0};
-@@ -734,7 +734,7 @@ const char *sym53c416_info(struct Scsi_Host *SChost)
- 	return info;
+diff --git a/drivers/scsi/aha1542.c b/drivers/scsi/aha1542.c
+index 195823a..8d60472 100644
+--- a/drivers/scsi/aha1542.c
++++ b/drivers/scsi/aha1542.c
+@@ -131,7 +131,7 @@ struct aha1542_hostdata {
+ 	int bios_translation;	/* Mapping bios uses - for compatibility */
+ 	int aha1542_last_mbi_used;
+ 	int aha1542_last_mbo_used;
+-	Scsi_Cmnd *SCint[AHA1542_MAILBOXES];
++	struct scsi_cmnd *SCint[AHA1542_MAILBOXES];
+ 	struct mailbox mb[2 * AHA1542_MAILBOXES];
+ 	struct ccb ccb[AHA1542_MAILBOXES];
+ };
+@@ -400,11 +400,11 @@ static irqreturn_t do_aha1542_intr_handle(int dummy, void *dev_id)
+ /* A "high" level interrupt handler */
+ static void aha1542_intr_handle(struct Scsi_Host *shost)
+ {
+-	void (*my_done) (Scsi_Cmnd *) = NULL;
++	void (*my_done) (struct scsi_cmnd *) = NULL;
+ 	int errstatus, mbi, mbo, mbistatus;
+ 	int number_serviced;
+ 	unsigned long flags;
+-	Scsi_Cmnd *SCtmp;
++	struct scsi_cmnd *SCtmp;
+ 	int flag;
+ 	int needs_restart;
+ 	struct mailbox *mb;
+@@ -558,7 +558,7 @@ static void aha1542_intr_handle(struct Scsi_Host *shost)
+ 	};
  }
  
--static int sym53c416_queuecommand_lck(Scsi_Cmnd *SCpnt, void (*done)(Scsi_Cmnd *))
-+static int sym53c416_queuecommand_lck(struct scsi_cmnd *SCpnt, void (*done)(struct scsi_cmnd *))
+-static int aha1542_queuecommand_lck(Scsi_Cmnd * SCpnt, void (*done) (Scsi_Cmnd *))
++static int aha1542_queuecommand_lck(struct scsi_cmnd * SCpnt, void (*done) (struct scsi_cmnd *))
  {
- 	int base;
- 	unsigned long flags = 0;
-@@ -763,7 +763,7 @@ static int sym53c416_queuecommand_lck(Scsi_Cmnd *SCpnt, void (*done)(Scsi_Cmnd *
- 
- DEF_SCSI_QCMD(sym53c416_queuecommand)
- 
--static int sym53c416_host_reset(Scsi_Cmnd *SCpnt)
-+static int sym53c416_host_reset(struct scsi_cmnd *SCpnt)
+ 	unchar ahacmd = CMD_START_SCSI;
+ 	unchar direction;
+@@ -1286,7 +1286,7 @@ static int aha1542_restart(struct Scsi_Host *shost)
+  * This is a device reset.  This is handled by sending a special command
+  * to the device.
+  */
+-static int aha1542_dev_reset(Scsi_Cmnd * SCpnt)
++static int aha1542_dev_reset(struct scsi_cmnd * SCpnt)
  {
- 	int base;
- 	int scsi_id = -1;	
-diff --git a/drivers/scsi/sym53c416.h b/drivers/scsi/sym53c416.h
-index 387de5d..d4adda0 100644
---- a/drivers/scsi/sym53c416.h
-+++ b/drivers/scsi/sym53c416.h
-@@ -26,7 +26,7 @@ static int sym53c416_detect(struct scsi_host_template *);
- static const char *sym53c416_info(struct Scsi_Host *);
- static int sym53c416_release(struct Scsi_Host *);
- static int sym53c416_queuecommand(struct Scsi_Host *, struct scsi_cmnd *);
--static int sym53c416_host_reset(Scsi_Cmnd *);
-+static int sym53c416_host_reset(struct scsi_cmnd *);
- static int sym53c416_bios_param(struct scsi_device *, struct block_device *,
+ 	unsigned long flags;
+ 	struct mailbox *mb;
+@@ -1364,7 +1364,7 @@ static int aha1542_dev_reset(Scsi_Cmnd * SCpnt)
+ 	for (i = 0; i < AHA1542_MAILBOXES; i++) {
+ 		if (HOSTDATA(SCpnt->host)->SCint[i] &&
+ 		    HOSTDATA(SCpnt->host)->SCint[i]->target == SCpnt->target) {
+-			Scsi_Cmnd *SCtmp;
++			struct scsi_cmnd *SCtmp;
+ 			SCtmp = HOSTDATA(SCpnt->host)->SCint[i];
+ 			kfree(SCtmp->host_scribble);
+ 			SCtmp->host_scribble = NULL;
+@@ -1378,7 +1378,7 @@ static int aha1542_dev_reset(Scsi_Cmnd * SCpnt)
+ #endif				/* ERIC_neverdef */
+ }
+ 
+-static int aha1542_bus_reset(Scsi_Cmnd * SCpnt)
++static int aha1542_bus_reset(struct scsi_cmnd * SCpnt)
+ {
+ 	int i;
+ 
+@@ -1414,7 +1414,7 @@ static int aha1542_bus_reset(Scsi_Cmnd * SCpnt)
+ 
+ 	for (i = 0; i < AHA1542_MAILBOXES; i++) {
+ 		if (HOSTDATA(SCpnt->device->host)->SCint[i] != NULL) {
+-			Scsi_Cmnd *SCtmp;
++			struct scsi_cmnd *SCtmp;
+ 			SCtmp = HOSTDATA(SCpnt->device->host)->SCint[i];
+ 
+
+@@ -1442,7 +1442,7 @@ fail:
+ 	return FAILED;
+ }
+ 
+-static int aha1542_host_reset(Scsi_Cmnd * SCpnt)
++static int aha1542_host_reset(struct scsi_cmnd * SCpnt)
+ {
+ 	int i;
+ 
+@@ -1483,7 +1483,7 @@ static int aha1542_host_reset(Scsi_Cmnd * SCpnt)
+ 
+ 	for (i = 0; i < AHA1542_MAILBOXES; i++) {
+ 		if (HOSTDATA(SCpnt->device->host)->SCint[i] != NULL) {
+-			Scsi_Cmnd *SCtmp;
++			struct scsi_cmnd *SCtmp;
+ 			SCtmp = HOSTDATA(SCpnt->device->host)->SCint[i];
+ 
+ 			if (SCtmp->device->soft_reset) {
+@@ -1515,7 +1515,7 @@ fail:
+  * These are the old error handling routines.  They are only temporarily
+  * here while we play with the new error handling code.
+  */
+-static int aha1542_old_abort(Scsi_Cmnd * SCpnt)
++static int aha1542_old_abort(struct scsi_cmnd * SCpnt)
+ {
+ #if 0
+ 	unchar ahacmd = CMD_START_SCSI;
+@@ -1593,7 +1593,7 @@ static int aha1542_old_abort(Scsi_Cmnd * SCpnt)
+    For a first go, we assume that the 1542 notifies us with all of the
+    pending commands (it does implement soft reset, after all). */
+ 
+-static int aha1542_old_reset(Scsi_Cmnd * SCpnt, unsigned int reset_flags)
++static int aha1542_old_reset(struct scsi_cmnd * SCpnt, unsigned int reset_flags)
+ {
+ 	unchar ahacmd = CMD_START_SCSI;
+ 	int i;
+@@ -1636,7 +1636,7 @@ static int aha1542_old_reset(Scsi_Cmnd * SCpnt, unsigned int reset_flags)
+ 
+ 		for (i = 0; i < AHA1542_MAILBOXES; i++)
+ 			if (HOSTDATA(SCpnt->host)->SCint[i] != NULL) {
+-				Scsi_Cmnd *SCtmp;
++				struct scsi_cmnd *SCtmp;
+ 				SCtmp = HOSTDATA(SCpnt->host)->SCint[i];
+ 				SCtmp->result = DID_RESET << 16;
+ 				kfree(SCtmp->host_scribble);
+@@ -1680,7 +1680,7 @@ fail:
+ 				for (i = 0; i < AHA1542_MAILBOXES; i++)
+ 					if (HOSTDATA(SCpnt->host)->SCint[i] &&
+ 					    HOSTDATA(SCpnt->host)->SCint[i]->target == SCpnt->target) {
+-						Scsi_Cmnd *SCtmp;
++						struct scsi_cmnd *SCtmp;
+ 						SCtmp = HOSTDATA(SCpnt->host)->SCint[i];
+ 						SCtmp->result = DID_RESET << 16;
+ 						kfree(SCtmp->host_scribble);
+diff --git a/drivers/scsi/aha1542.h b/drivers/scsi/aha1542.h
+index b871d2b..875a78b 100644
+--- a/drivers/scsi/aha1542.h
++++ b/drivers/scsi/aha1542.h
+@@ -133,12 +133,12 @@ struct ccb {			/* Command Control Block 5.3 */
+ 
+ static int aha1542_detect(struct scsi_host_template *);
+ static int aha1542_queuecommand(struct Scsi_Host *, struct scsi_cmnd *);
+-static int aha1542_bus_reset(Scsi_Cmnd * SCpnt);
+-static int aha1542_dev_reset(Scsi_Cmnd * SCpnt);
+-static int aha1542_host_reset(Scsi_Cmnd * SCpnt);
++static int aha1542_bus_reset(struct scsi_cmnd * SCpnt);
++static int aha1542_dev_reset(struct scsi_cmnd * SCpnt);
++static int aha1542_host_reset(struct scsi_cmnd * SCpnt);
+ #if 0
+-static int aha1542_old_abort(Scsi_Cmnd * SCpnt);
+-static int aha1542_old_reset(Scsi_Cmnd *, unsigned int);
++static int aha1542_old_abort(struct scsi_cmnd * SCpnt);
++static int aha1542_old_reset(struct scsi_cmnd *, unsigned int);
+ #endif
+ static int aha1542_biosparam(struct scsi_device *, struct block_device *,
  		sector_t, int *);
- static void sym53c416_setup(char *str, int *ints);
 -- 
 1.7.4.1
 
