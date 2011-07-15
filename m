@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965061Ab1GOGUp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 02:20:45 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:44080 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964914Ab1GOGUm (ORCPT
+	id S965090Ab1GOGUw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 02:20:52 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:36036 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964894Ab1GOGUu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 02:20:42 -0400
-Subject: [PATCH 06/16] SCSI: ibmmca: remove Scsi_Cmnd
+	Fri, 15 Jul 2011 02:20:50 -0400
+Subject: [PATCH 07/16] SCSI: sym53c416: remove Scsi_Cmnd
 From: Davidlohr Bueso <dave.bueso@gmail.com>
 Reply-To: dave@gnu.org
 To: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Michael Lang <langa2@kph.uni-mainz.de>
+        linux-scsi <linux-scsi@vger.kernel.org>
 Cc: lkml <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset="UTF-8"
 Organization: GNU
-Date: Fri, 15 Jul 2011 02:20:00 -0400
-Message-ID: <1310710800.3184.57.camel@offbook>
+Date: Fri, 15 Jul 2011 02:20:03 -0400
+Message-ID: <1310710803.3184.58.camel@offbook>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2
 Content-Transfer-Encoding: 7bit
@@ -27,122 +26,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Davidlohr Bueso <dave@gnu.org>
 
-Change this for struct scsi_cmnd
+Change this for struct scsi_cmnd.
 
 Signed-off-by: Davidlohr Bueso <dave@gnu.org>
 ---
- drivers/scsi/ibmmca.c |   26 +++++++++++++-------------
- 1 files changed, 13 insertions(+), 13 deletions(-)
+ drivers/scsi/sym53c416.c |    6 +++---
+ drivers/scsi/sym53c416.h |    2 +-
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/scsi/ibmmca.c b/drivers/scsi/ibmmca.c
-index 67fc8ff..cb2e6d7 100644
---- a/drivers/scsi/ibmmca.c
-+++ b/drivers/scsi/ibmmca.c
-@@ -40,8 +40,8 @@
+diff --git a/drivers/scsi/sym53c416.c b/drivers/scsi/sym53c416.c
+index 012c86e..d37f985 100644
+--- a/drivers/scsi/sym53c416.c
++++ b/drivers/scsi/sym53c416.c
+@@ -225,7 +225,7 @@ static host hosts[MAXHOSTS] = {
  
- /* Common forward declarations for all Linux-versions: */
- static int ibmmca_queuecommand (struct Scsi_Host *, struct scsi_cmnd *);
--static int ibmmca_abort (Scsi_Cmnd *);
--static int ibmmca_host_reset (Scsi_Cmnd *);
-+static int ibmmca_abort (struct scsi_cmnd *);
-+static int ibmmca_host_reset (struct scsi_cmnd *);
- static int ibmmca_biosparam (struct scsi_device *, struct block_device *, sector_t, int *);
- static int ibmmca_proc_info(struct Scsi_Host *shpnt, char *buffer, char **start, off_t offset, int length, int inout);
+ static int host_index = 0;
+ static char info[120];
+-static Scsi_Cmnd *current_command = NULL;
++static struct scsi_cmnd *current_command = NULL;
+ static int fastpio = 1;
  
-@@ -315,7 +315,7 @@ struct logical_device {
- 	struct im_tsb tsb;	/* SCSI command complete status block structure */
- 	struct im_sge sge[16];	/* scatter gather list structure */
- 	unsigned char buf[256];	/* SCSI command return data buffer */
--	Scsi_Cmnd *cmd;		/* SCSI-command that is currently in progress */
-+	struct scsi_cmnd *cmd;	/* SCSI-command that is currently in progress */
- 	int device_type;	/* type of the SCSI-device. See include/scsi/scsi.h
- 				   for interpretation of the possible values */
- 	int block_length;	/* blocksize of a particular logical SCSI-device */
-@@ -476,7 +476,7 @@ static char ibm_ansi_order = 0;
- #endif
- 
- static void issue_cmd(struct Scsi_Host *, unsigned long, unsigned char);
--static void internal_done(Scsi_Cmnd * cmd);
-+static void internal_done(struct scsi_cmnd * cmd);
- static void check_devices(struct Scsi_Host *, int);
- static int immediate_assign(struct Scsi_Host *, unsigned int, unsigned int, unsigned int, unsigned int);
- static int immediate_feature(struct Scsi_Host *, unsigned int, unsigned int);
-@@ -503,7 +503,7 @@ static irqreturn_t interrupt_handler(int irq, void *dev_id)
- 	unsigned int cmd_result;
- 	unsigned int ldn;
- 	unsigned long flags;
--	Scsi_Cmnd *cmd;
-+	struct scsi_cmnd *cmd;
- 	int lastSCSI;
- 	struct device *dev = dev_id;
- 	struct Scsi_Host *shpnt = dev_get_drvdata(dev);
-@@ -726,7 +726,7 @@ static void issue_cmd(struct Scsi_Host *shpnt, unsigned long cmd_reg,
- 	spin_unlock_irqrestore(shpnt->host_lock, flags);
+ static int probeaddrs[] = {0x200, 0x220, 0x240, 0};
+@@ -734,7 +734,7 @@ const char *sym53c416_info(struct Scsi_Host *SChost)
+ 	return info;
  }
  
--static void internal_done(Scsi_Cmnd * cmd)
-+static void internal_done(struct scsi_cmnd * cmd)
+-static int sym53c416_queuecommand_lck(Scsi_Cmnd *SCpnt, void (*done)(Scsi_Cmnd *))
++static int sym53c416_queuecommand_lck(struct scsi_cmnd *SCpnt, void (*done)(struct scsi_cmnd *))
  {
- 	cmd->SCp.Status++;
- 	return;
-@@ -1691,7 +1691,7 @@ static int __devexit ibmmca_remove(struct device *dev)
- }
+ 	int base;
+ 	unsigned long flags = 0;
+@@ -763,7 +763,7 @@ static int sym53c416_queuecommand_lck(Scsi_Cmnd *SCpnt, void (*done)(Scsi_Cmnd *
  
- /* The following routine is the SCSI command queue for the midlevel driver */
--static int ibmmca_queuecommand_lck(Scsi_Cmnd * cmd, void (*done) (Scsi_Cmnd *))
-+static int ibmmca_queuecommand_lck(struct scsi_cmnd * cmd, void (*done) (struct scsi_cmnd *))
+ DEF_SCSI_QCMD(sym53c416_queuecommand)
+ 
+-static int sym53c416_host_reset(Scsi_Cmnd *SCpnt)
++static int sym53c416_host_reset(struct scsi_cmnd *SCpnt)
  {
- 	unsigned int ldn;
- 	unsigned int scsi_cmd;
-@@ -1998,7 +1998,7 @@ static int ibmmca_queuecommand_lck(Scsi_Cmnd * cmd, void (*done) (Scsi_Cmnd *))
- 
- static DEF_SCSI_QCMD(ibmmca_queuecommand)
- 
--static int __ibmmca_abort(Scsi_Cmnd * cmd)
-+static int __ibmmca_abort(struct scsi_cmnd * cmd)
- {
- 	/* Abort does not work, as the adapter never generates an interrupt on
- 	 * whatever situation is simulated, even when really pending commands
-@@ -2006,7 +2006,7 @@ static int __ibmmca_abort(Scsi_Cmnd * cmd)
- 
- 	struct Scsi_Host *shpnt;
- 	unsigned int ldn;
--	void (*saved_done) (Scsi_Cmnd *);
-+	void (*saved_done) (struct scsi_cmnd *);
- 	int target;
- 	int max_pun;
- 	unsigned long imm_command;
-@@ -2092,7 +2092,7 @@ static int __ibmmca_abort(Scsi_Cmnd * cmd)
- 	}
- }
- 
--static int ibmmca_abort(Scsi_Cmnd * cmd)
-+static int ibmmca_abort(struct scsi_cmnd * cmd)
- {
- 	struct Scsi_Host *shpnt = cmd->device->host;
- 	int rc;
-@@ -2104,10 +2104,10 @@ static int ibmmca_abort(Scsi_Cmnd * cmd)
- 	return rc;
- }
- 
--static int __ibmmca_host_reset(Scsi_Cmnd * cmd)
-+static int __ibmmca_host_reset(struct scsi_cmnd * cmd)
- {
- 	struct Scsi_Host *shpnt;
--	Scsi_Cmnd *cmd_aid;
-+	struct scsi_cmnd *cmd_aid;
- 	int ticks, i;
- 	unsigned long imm_command;
- 
-@@ -2184,7 +2184,7 @@ static int __ibmmca_host_reset(Scsi_Cmnd * cmd)
- 	return SUCCESS;
- }
- 
--static int ibmmca_host_reset(Scsi_Cmnd * cmd)
-+static int ibmmca_host_reset(struct scsi_cmnd * cmd)
- {
- 	struct Scsi_Host *shpnt = cmd->device->host;
- 	int rc;
+ 	int base;
+ 	int scsi_id = -1;	
+diff --git a/drivers/scsi/sym53c416.h b/drivers/scsi/sym53c416.h
+index 387de5d..d4adda0 100644
+--- a/drivers/scsi/sym53c416.h
++++ b/drivers/scsi/sym53c416.h
+@@ -26,7 +26,7 @@ static int sym53c416_detect(struct scsi_host_template *);
+ static const char *sym53c416_info(struct Scsi_Host *);
+ static int sym53c416_release(struct Scsi_Host *);
+ static int sym53c416_queuecommand(struct Scsi_Host *, struct scsi_cmnd *);
+-static int sym53c416_host_reset(Scsi_Cmnd *);
++static int sym53c416_host_reset(struct scsi_cmnd *);
+ static int sym53c416_bios_param(struct scsi_device *, struct block_device *,
+ 		sector_t, int *);
+ static void sym53c416_setup(char *str, int *ints);
 -- 
 1.7.4.1
 
