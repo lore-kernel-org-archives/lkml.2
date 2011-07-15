@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965143Ab1GOGXe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 02:23:34 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51186 "EHLO
+	id S965227Ab1GOGXl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 02:23:41 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51192 "EHLO
 	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S965082Ab1GOGXb (ORCPT
+	by vger.kernel.org with ESMTP id S965167Ab1GOGXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 02:23:31 -0400
+	Fri, 15 Jul 2011 02:23:39 -0400
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Greg KH <greg@kroah.com>, Grant Likely <grant@secretlab.ca>,
         Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>
@@ -14,9 +14,9 @@ Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
         Liam Girdwood <lrg@ti.com>, Samuel Oritz <sameo@linux.intel.com>,
         linux-kernel@vger.kernel.org,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 2/4] regmap: Add I2C bus support
-Date: Fri, 15 Jul 2011 15:23:10 +0900
-Message-Id: <1310710992-24462-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 4/4] regulator: Convert tps65023 to use regmap API
+Date: Fri, 15 Jul 2011 15:23:12 +0900
+Message-Id: <1310710992-24462-4-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1310710992-24462-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 References: <20110715062215.GN32716@opensource.wolfsonmicro.com>
@@ -25,177 +25,190 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We initialise at postcore_initcall() so that we are available before users
-- some users such as PMICs initialise very early. We won't actually try to
-use any of the bus until a device initialises a register map.
-
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Acked-by: Liam Girdwood <lrg@ti.com>
-Acked-by: Wolfram Sang <w.sang@pengutronix.de>
 ---
- drivers/base/regmap/Makefile |    1 -
- drivers/i2c/Kconfig          |    4 ++
- drivers/i2c/Makefile         |    1 +
- drivers/i2c/i2c-regmap.c     |  111 ++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 116 insertions(+), 1 deletions(-)
- create mode 100644 drivers/i2c/i2c-regmap.c
+ drivers/regulator/Kconfig              |    1 +
+ drivers/regulator/tps65023-regulator.c |   98 +++++++++-----------------------
+ 2 files changed, 28 insertions(+), 71 deletions(-)
 
-diff --git a/drivers/base/regmap/Makefile b/drivers/base/regmap/Makefile
-index 1e5037e..7532e13 100644
---- a/drivers/base/regmap/Makefile
-+++ b/drivers/base/regmap/Makefile
-@@ -1,2 +1 @@
- obj-$(CONFIG_REGMAP) += regmap.o
--
-diff --git a/drivers/i2c/Kconfig b/drivers/i2c/Kconfig
-index 30f06e9..cba758b 100644
---- a/drivers/i2c/Kconfig
-+++ b/drivers/i2c/Kconfig
-@@ -6,6 +6,7 @@ menuconfig I2C
- 	tristate "I2C support"
- 	depends on HAS_IOMEM
- 	select RT_MUTEXES
-+	select I2C_REGMAP if REGMAP
- 	---help---
- 	  I2C (pronounce: I-square-C) is a slow serial bus protocol used in
- 	  many micro controller applications and developed by Philips.  SMBus,
-@@ -110,4 +111,7 @@ config I2C_DEBUG_BUS
- 	  a problem with I2C support and want to see more of what is going
- 	  on.
- 
-+config I2C_REGMAP
-+	tristate
-+
- endif # I2C
-diff --git a/drivers/i2c/Makefile b/drivers/i2c/Makefile
-index beee6b2..85d6699 100644
---- a/drivers/i2c/Makefile
-+++ b/drivers/i2c/Makefile
-@@ -7,6 +7,7 @@ obj-$(CONFIG_I2C)		+= i2c-core.o
- obj-$(CONFIG_I2C_SMBUS)		+= i2c-smbus.o
- obj-$(CONFIG_I2C_CHARDEV)	+= i2c-dev.o
- obj-$(CONFIG_I2C_MUX)		+= i2c-mux.o
-+obj-$(CONFIG_I2C_REGMAP)	+= i2c-regmap.o
- obj-y				+= algos/ busses/ muxes/
- 
- ccflags-$(CONFIG_I2C_DEBUG_CORE) := -DDEBUG
-diff --git a/drivers/i2c/i2c-regmap.c b/drivers/i2c/i2c-regmap.c
-new file mode 100644
-index 0000000..6a60eb3
---- /dev/null
-+++ b/drivers/i2c/i2c-regmap.c
-@@ -0,0 +1,111 @@
-+/*
-+ * Register map access API - I2C support
-+ *
-+ * Copyright 2011 Wolfson Microelectronics plc
-+ *
-+ * Author: Mark Brown <broonie@opensource.wolfsonmicro.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index d7ed20f..c8dc5f0 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -235,6 +235,7 @@ config REGULATOR_TPS6105X
+ config REGULATOR_TPS65023
+ 	tristate "TI TPS65023 Power regulators"
+ 	depends on I2C
++	select REGMAP
+ 	help
+ 	  This driver supports TPS65023 voltage regulator chips. TPS65023 provides
+ 	  three step-down converters and two general-purpose LDO voltage regulators.
+diff --git a/drivers/regulator/tps65023-regulator.c b/drivers/regulator/tps65023-regulator.c
+index fbddc15..3fa3ba5 100644
+--- a/drivers/regulator/tps65023-regulator.c
++++ b/drivers/regulator/tps65023-regulator.c
+@@ -25,6 +25,7 @@
+ #include <linux/i2c.h>
+ #include <linux/delay.h>
+ #include <linux/slab.h>
 +#include <linux/regmap.h>
-+#include <linux/i2c.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+
-+static int regmap_i2c_write(struct device *dev, const void *data, size_t count)
-+{
-+	struct i2c_client *i2c = to_i2c_client(dev);
+ 
+ /* Register definitions */
+ #define	TPS65023_REG_VERSION		0
+@@ -125,93 +126,35 @@ struct tps_pmic {
+ 	struct i2c_client *client;
+ 	struct regulator_dev *rdev[TPS65023_NUM_REGULATOR];
+ 	const struct tps_info *info[TPS65023_NUM_REGULATOR];
+-	struct mutex io_lock;
++	struct regmap *regmap;
+ };
+ 
+-static inline int tps_65023_read(struct tps_pmic *tps, u8 reg)
+-{
+-	return i2c_smbus_read_byte_data(tps->client, reg);
+-}
+-
+-static inline int tps_65023_write(struct tps_pmic *tps, u8 reg, u8 val)
+-{
+-	return i2c_smbus_write_byte_data(tps->client, reg, val);
+-}
+-
+ static int tps_65023_set_bits(struct tps_pmic *tps, u8 reg, u8 mask)
+ {
+-	int err, data;
+-
+-	mutex_lock(&tps->io_lock);
+-
+-	data = tps_65023_read(tps, reg);
+-	if (data < 0) {
+-		dev_err(&tps->client->dev, "Read from reg 0x%x failed\n", reg);
+-		err = data;
+-		goto out;
+-	}
+-
+-	data |= mask;
+-	err = tps_65023_write(tps, reg, data);
+-	if (err)
+-		dev_err(&tps->client->dev, "Write for reg 0x%x failed\n", reg);
+-
+-out:
+-	mutex_unlock(&tps->io_lock);
+-	return err;
++	return regmap_update_bits(tps->regmap, reg, mask, mask);
+ }
+ 
+ static int tps_65023_clear_bits(struct tps_pmic *tps, u8 reg, u8 mask)
+ {
+-	int err, data;
+-
+-	mutex_lock(&tps->io_lock);
+-
+-	data = tps_65023_read(tps, reg);
+-	if (data < 0) {
+-		dev_err(&tps->client->dev, "Read from reg 0x%x failed\n", reg);
+-		err = data;
+-		goto out;
+-	}
+-
+-	data &= ~mask;
+-
+-	err = tps_65023_write(tps, reg, data);
+-	if (err)
+-		dev_err(&tps->client->dev, "Write for reg 0x%x failed\n", reg);
+-
+-out:
+-	mutex_unlock(&tps->io_lock);
+-	return err;
+-
++	return regmap_update_bits(tps->regmap, reg, mask, 0);
+ }
+ 
+ static int tps_65023_reg_read(struct tps_pmic *tps, u8 reg)
+ {
+-	int data;
++	unsigned int val;
 +	int ret;
-+
-+	ret = i2c_master_send(i2c, data, count);
-+	if (ret == count)
-+		return 0;
-+	else if (ret < 0)
+ 
+-	mutex_lock(&tps->io_lock);
++	ret = regmap_read(tps->regmap, reg, &val);
+ 
+-	data = tps_65023_read(tps, reg);
+-	if (data < 0)
+-		dev_err(&tps->client->dev, "Read from reg 0x%x failed\n", reg);
+-
+-	mutex_unlock(&tps->io_lock);
+-	return data;
++	if (ret != 0)
 +		return ret;
 +	else
-+		return -EIO;
-+}
-+
-+static int regmap_i2c_gather_write(struct device *dev,
-+				   const void *reg, size_t reg_size,
-+				   const void *val, size_t val_size)
-+{
-+	struct i2c_client *i2c = to_i2c_client(dev);
-+	struct i2c_msg xfer[2];
-+	int ret;
-+
-+	/* If the I2C controller can't do a gather tell the core, it
-+	 * will substitute in a linear write for us.
-+	 */
-+	if (!i2c_check_functionality(i2c->adapter, I2C_FUNC_PROTOCOL_MANGLING))
-+		return -ENOTSUPP;
-+
-+	xfer[0].addr = i2c->addr;
-+	xfer[0].flags = 0;
-+	xfer[0].len = reg_size;
-+	xfer[0].buf = (void *)reg;
-+
-+	xfer[1].addr = i2c->addr;
-+	xfer[1].flags = I2C_M_NOSTART;
-+	xfer[1].len = val_size;
-+	xfer[1].buf = (void *)val;
-+
-+	ret = i2c_transfer(i2c->adapter, xfer, 2);
-+	if (ret == 2)
-+		return 0;
-+	if (ret < 0)
-+		return ret;
-+	else
-+		return -EIO;
-+}
-+
-+static int regmap_i2c_read(struct device *dev,
-+			   const void *reg, size_t reg_size,
-+			   void *val, size_t val_size)
-+{
-+	struct i2c_client *i2c = to_i2c_client(dev);
-+	struct i2c_msg xfer[2];
-+	int ret;
-+
-+	xfer[0].addr = i2c->addr;
-+	xfer[0].flags = 0;
-+	xfer[0].len = reg_size;
-+	xfer[0].buf = (void *)reg;
-+
-+	xfer[1].addr = i2c->addr;
-+	xfer[1].flags = I2C_M_RD;
-+	xfer[1].len = val_size;
-+	xfer[1].buf = val;
-+
-+	ret = i2c_transfer(i2c->adapter, xfer, 2);
-+	if (ret == 2)
-+		return 0;
-+	else if (ret < 0)
-+		return ret;
-+	else
-+		return -EIO;
-+}
-+
-+static struct regmap_bus regmap_i2c = {
-+	.type = &i2c_bus_type,
-+	.write = regmap_i2c_write,
-+	.gather_write = regmap_i2c_gather_write,
-+	.read = regmap_i2c_read,
-+	.owner = THIS_MODULE,
++		return val;
+ }
+ 
+ static int tps_65023_reg_write(struct tps_pmic *tps, u8 reg, u8 val)
+ {
+-	int err;
+-
+-	mutex_lock(&tps->io_lock);
+-
+-	err = tps_65023_write(tps, reg, val);
+-	if (err < 0)
+-		dev_err(&tps->client->dev, "Write for reg 0x%x failed\n", reg);
+-
+-	mutex_unlock(&tps->io_lock);
+-	return err;
++	return regmap_write(tps->regmap, reg, val);
+ }
+ 
+ static int tps65023_dcdc_is_enabled(struct regulator_dev *dev)
+@@ -463,6 +406,10 @@ static struct regulator_ops tps65023_ldo_ops = {
+ 	.list_voltage = tps65023_ldo_list_voltage,
+ };
+ 
++static struct regmap_config tps65023_regmap_config = {
++	.reg_bits = 8, .val_bits = 8,
 +};
 +
-+static int __init regmap_i2c_init(void)
-+{
-+	regmap_add_bus(&regmap_i2c);
-+	return 0;
-+}
-+postcore_initcall(regmap_i2c_init);
-+
-+static void __exit regmap_i2c_exit(void)
-+{
-+	regmap_del_bus(&regmap_i2c);
-+}
-+module_exit(regmap_i2c_exit);
+ static int __devinit tps_65023_probe(struct i2c_client *client,
+ 				     const struct i2c_device_id *id)
+ {
+@@ -488,7 +435,13 @@ static int __devinit tps_65023_probe(struct i2c_client *client,
+ 	if (!tps)
+ 		return -ENOMEM;
+ 
+-	mutex_init(&tps->io_lock);
++	tps->regmap = regmap_init(&client->dev, &tps65023_regmap_config);
++	if (IS_ERR(tps->regmap)) {
++		error = PTR_ERR(tps->regmap);
++		dev_err(&client->dev, "Failed to allocate register map: %d\n",
++			error);
++		goto fail_alloc;
++	}
+ 
+ 	/* common for all regulators */
+ 	tps->client = client;
+@@ -523,10 +476,12 @@ static int __devinit tps_65023_probe(struct i2c_client *client,
+ 
+ 	return 0;
+ 
+- fail:
++fail:
+ 	while (--i >= 0)
+ 		regulator_unregister(tps->rdev[i]);
+ 
++	regmap_exit(tps->regmap);
++fail_alloc:
+ 	kfree(tps);
+ 	return error;
+ }
+@@ -545,6 +500,7 @@ static int __devexit tps_65023_remove(struct i2c_client *client)
+ 	for (i = 0; i < TPS65023_NUM_REGULATOR; i++)
+ 		regulator_unregister(tps->rdev[i]);
+ 
++	regmap_exit(tps->regmap);
+ 	kfree(tps);
+ 
+ 	return 0;
 -- 
 1.7.5.4
 
