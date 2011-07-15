@@ -1,52 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965457Ab1GOKxM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 06:53:12 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:41635 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965172Ab1GOKxL (ORCPT
+	id S965452Ab1GOKzI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 06:55:08 -0400
+Received: from server655-han.de-nserver.de ([85.158.177.45]:49000 "EHLO
+	server655-han.de-nserver.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964982Ab1GOKzH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 06:53:11 -0400
-X-Authority-Analysis: v=1.1 cv=PfPQ8rIoTcZsncbPZjVSZ7K0hy8Zc4hmL68r4VPNpKE= c=1 sm=0 a=4bmUdTBhvz4A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=QyXUC8HyAAAA:8 a=D19gQVrFAAAA:8 a=aqOKIsZ-SrYTTsoPL78A:9 a=QEXdDO2ut3YA:10 a=dGJ0OcVc7YAA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] ftrace: Fix building warning with
- !CONFIG_FUNCTION_TRACER
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <1310708664.18875.351.camel@minggr.sh.intel.com>
-References: <1310707962.18875.349.camel@minggr.sh.intel.com>
-	 <CAM_iQpWrpY456YuHeR3QuLj_5FoFFgoOfNwGRqagwjiZKga7Gg@mail.gmail.com>
-	 <1310708664.18875.351.camel@minggr.sh.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 15 Jul 2011 06:53:08 -0400
-Message-ID: <1310727188.27864.59.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 8bit
+	Fri, 15 Jul 2011 06:55:07 -0400
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Jul 2011 06:55:06 EDT
+Message-ID: <4E201AFB.1020105@profihost.ag>
+Date: Fri, 15 Jul 2011 12:48:27 +0200
+From: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: iSCSI initiator
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
+X-User-Auth: Auth by hostmaster@profihost.com through 85.158.179.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-15 at 13:44 +0800, Lin Ming wrote:
-> On Fri, 2011-07-15 at 13:30 +0800, Américo Wang wrote:
-> > On Fri, Jul 15, 2011 at 1:32 PM, Lin Ming <ming.m.lin@intel.com> wrote:
-> > > Commit 43dd61c(ftrace: Fix regression of :mod:module function enabling)
-> > > causes below warning because ‘struct ftrace_hash’ is not declared with
-> > > !CONFIG_FUNCTION_TRACER.
-> > 
-> > It is fixed,
-> > https://lkml.org/lkml/2011/7/14/390
-> 
-> OK.
-> 
-> It's not in -tip yet, so I still see the warnings.
+Hi guys,
 
-Yeah, Ingo was the one to report it to me first, and I posted the fix
-the next day. I also resent it last night as well.
+i'm trying to create a new iscsi based storage system using the "new" 
+LIO implementation.
 
--- Steve
+I'm just wondering which module / software should be used on client side.
 
+Until now we're using Open-iSCSI but for example on 
+http://linux-iscsi.org/wiki/Core-iSCSI you read that Open-iSCSI is slow 
+and old and you should use Core-iSCSI but Core-ISCSI is also at least 5 
+years old and doesn't even compile against an actual kernel.
 
+I'm now totally confused what the the up2date way for iSCSI under Linux is.
+
+I'm NOT ON list so please CC me.
+
+Greets
+Stefan
