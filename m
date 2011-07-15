@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754907Ab1GORgM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 13:36:12 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:60213
-	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
+	id S1754894Ab1GORgK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 13:36:10 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:33338
+	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754224Ab1GORaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754227Ab1GORaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Jul 2011 13:30:09 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 096/117] Staging: hv: netvsc: Further cleanup reference counting of netvsc_device
-Date: Fri, 15 Jul 2011 10:47:24 -0700
-Message-Id: <1310752065-27895-96-git-send-email-kys@microsoft.com>
+Subject: [PATCH 087/117] Staging: hv: storvsc: Further cleanup reference counting of stor_device
+Date: Fri, 15 Jul 2011 10:47:15 -0700
+Message-Id: <1310752065-27895-87-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1310752065-27895-1-git-send-email-kys@microsoft.com>
 References: <1310752024-27854-1-git-send-email-kys@microsoft.com>
@@ -23,98 +23,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Further cleanup reference counting of netvsc_device. Since once the device
-is marked for destruction, we only allow incoming traffic to drain out
-outstanding sends, we can simplify reference counting.
+Further cleanup reference counting of stor_device - when the device is being
+destroyed, we will permit incoming traffic only to drain outstanding
+requests.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/staging/hv/netvsc.c |   27 ++++++++++++++++++---------
- 1 files changed, 18 insertions(+), 9 deletions(-)
+ drivers/staging/hv/hyperv_storage.h |    3 +--
+ drivers/staging/hv/storvsc.c        |   22 +++++++++++++---------
+ 2 files changed, 14 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/staging/hv/netvsc.c b/drivers/staging/hv/netvsc.c
-index 4ef17d8..16a80b1 100644
---- a/drivers/staging/hv/netvsc.c
-+++ b/drivers/staging/hv/netvsc.c
-@@ -17,6 +17,7 @@
-  * Authors:
-  *   Haiyang Zhang <haiyangz@microsoft.com>
-  *   Hank Janssen  <hjanssen@microsoft.com>
-+ *   K. Y. Srinivasan <kys@microsoft.com>
-  */
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+diff --git a/drivers/staging/hv/hyperv_storage.h b/drivers/staging/hv/hyperv_storage.h
+index d946211..a1f3e27 100644
+--- a/drivers/staging/hv/hyperv_storage.h
++++ b/drivers/staging/hv/hyperv_storage.h
+@@ -287,7 +287,6 @@ struct storvsc_device {
+ };
  
-@@ -40,8 +41,7 @@ static struct netvsc_device *alloc_net_device(struct hv_device *device)
- 	if (!net_device)
+ 
+-/* Get the stordevice object iff exists and its refcount > 1 */
+ static inline struct storvsc_device *get_out_stor_device(
+ 					struct hv_device *device)
+ {
+@@ -296,7 +295,7 @@ static inline struct storvsc_device *get_out_stor_device(
+ 
+ 	spin_lock_irqsave(&device->ext_lock, flags);
+ 	stor_device = (struct storvsc_device *)device->ext;
+-	if (stor_device && (stor_device->ref_count > 1) &&
++	if (stor_device && (stor_device->ref_count) &&
+ 		!stor_device->destroy)
+ 		stor_device->ref_count++;
+ 	else
+diff --git a/drivers/staging/hv/storvsc.c b/drivers/staging/hv/storvsc.c
+index a41be2a..4d13044 100644
+--- a/drivers/staging/hv/storvsc.c
++++ b/drivers/staging/hv/storvsc.c
+@@ -40,9 +40,7 @@ static inline struct storvsc_device *alloc_stor_device(struct hv_device *device)
+ 	if (!stor_device)
  		return NULL;
  
--	/* Set to 2 to allow both inbound and outbound traffic */
--	net_device->refcnt = 2;
-+	net_device->refcnt = 1;
- 
- 	net_device->destroy = false;
- 	net_device->dev = device;
-@@ -50,7 +50,6 @@ static struct netvsc_device *alloc_net_device(struct hv_device *device)
- 	return net_device;
+-	/* Set to 2 to allow both inbound and outbound traffics */
+-	/* (ie get_out_stor_device() and get_in_stor_device()) to proceed. */
+-	stor_device->ref_count = 2;
++	stor_device->ref_count = 1;
+ 	stor_device->destroy = false;
+ 	init_waitqueue_head(&stor_device->waiting_to_drain);
+ 	stor_device->device = device;
+@@ -51,8 +49,6 @@ static inline struct storvsc_device *alloc_stor_device(struct hv_device *device)
+ 	return stor_device;
  }
  
--/* Get the net device object iff exists and its refcount > 1 */
- static struct netvsc_device *get_outbound_net_device(struct hv_device *device)
+-
+-/* Get the stordevice object iff exists and its refcount > 0 */
+ static inline struct storvsc_device *get_in_stor_device(
+ 					struct hv_device *device)
  {
- 	struct netvsc_device *net_device;
-@@ -58,7 +57,7 @@ static struct netvsc_device *get_outbound_net_device(struct hv_device *device)
+@@ -61,10 +57,18 @@ static inline struct storvsc_device *get_in_stor_device(
  
  	spin_lock_irqsave(&device->ext_lock, flags);
- 	net_device = device->ext;
--	if (net_device && (net_device->refcnt > 1) &&
-+	if (net_device && (net_device->refcnt) &&
- 		!net_device->destroy)
- 		net_device->refcnt++;
- 	else
-@@ -68,7 +67,6 @@ static struct netvsc_device *get_outbound_net_device(struct hv_device *device)
- 	return net_device;
- }
- 
--/* Get the net device object iff exists and its refcount > 0 */
- static struct netvsc_device *get_inbound_net_device(struct hv_device *device)
- {
- 	struct netvsc_device *net_device;
-@@ -76,11 +74,23 @@ static struct netvsc_device *get_inbound_net_device(struct hv_device *device)
- 
- 	spin_lock_irqsave(&device->ext_lock, flags);
- 	net_device = device->ext;
--	if (net_device && net_device->refcnt)
--		net_device->refcnt++;
+ 	stor_device = (struct storvsc_device *)device->ext;
+-	if (stor_device && stor_device->ref_count)
+-		stor_device->ref_count++;
 -	else
-+
-+	if (!net_device)
+-		stor_device = NULL;
++	if (!stor_device)
 +		goto cleanup;
 +
 +	/*
 +	 * If the device is being destroyed; allow incoming
 +	 * traffic only to cleanup outstanding requests.
 +	 */
-+	if (net_device->destroy &&
-+		(atomic_read(&net_device->num_outstanding_sends) == 0)) {
- 		net_device = NULL;
++	if (stor_device->destroy &&
++		 (atomic_read(&stor_device->num_outstanding_req) == 0))
 +		goto cleanup;
-+	}
- 
-+	net_device->refcnt++;
-+
++	stor_device->ref_count++;
 +cleanup:
  	spin_unlock_irqrestore(&device->ext_lock, flags);
- 	return net_device;
- }
-@@ -400,7 +410,6 @@ int netvsc_device_remove(struct hv_device *device)
- 	netvsc_disconnect_vsp(net_device);
  
- 	spin_lock_irqsave(&device->ext_lock, flags);
--	net_device->refcnt--;
- 	device->ext = NULL;
- 	spin_unlock_irqrestore(&device->ext_lock, flags);
- 
+ 	return stor_device;
 -- 
 1.7.4.1
 
