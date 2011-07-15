@@ -1,124 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754024Ab1GOSeS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 14:34:18 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:34815 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548Ab1GOSeR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 14:34:17 -0400
-From: David Ahern <dsahern@gmail.com>
-To: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
-        fweisbec@gmail.com, paulus@samba.org, David Ahern <dsahern@gmail.com>
-Subject: [PATCH v2] perf tools: fix endian conversion reading event attr from file header
-Date: Fri, 15 Jul 2011 12:34:09 -0600
-Message-Id: <1310754849-12474-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.6
+	id S1754081Ab1GOSep (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 14:34:45 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:38796 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751548Ab1GOSeo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 14:34:44 -0400
+Date: Fri, 15 Jul 2011 11:33:19 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ed Tomlinson <edt@aei.ca>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: INFO: possible circular locking dependency detected
+Message-ID: <20110715183319.GG2327@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110714191809.GF2349@linux.vnet.ibm.com>
+ <201107150705.46248.edt@aei.ca>
+ <1310729362.2586.325.camel@twins>
+ <20110715124206.GA2376@linux.vnet.ibm.com>
+ <1310735259.2586.330.camel@twins>
+ <1310748957.27864.62.camel@gandalf.stny.rr.com>
+ <20110715170304.GD2327@linux.vnet.ibm.com>
+ <1310750204.27864.69.camel@gandalf.stny.rr.com>
+ <20110715172416.GE2327@linux.vnet.ibm.com>
+ <1310751751.27864.74.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1310751751.27864.74.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The perf_event_attr struct has 2 __u32's at the top and need to
-be swapped individually. With this change I was able to analyze
-a perf.data collected in a 32-bit PPC VM on an x86 system. I
-tested both 32-bit and 64-bit binaries for the Intel analysis
-side; both read the PPC perf.data file correctly.
+On Fri, Jul 15, 2011 at 01:42:31PM -0400, Steven Rostedt wrote:
+> On Fri, 2011-07-15 at 10:24 -0700, Paul E. McKenney wrote:
+> 
+> > But the rcu_read_unlock() called from within the irq handler would
+> > take a second snapshot of ->special.  It could then enter
+> > rcu_read_unlock_special().
+> 
+> You agree that an interrupt preempting the rcu_read_unlock() is causing
+> the issues correct? But it is also contained within rcu_read_unlock().
+> That is, we just don't want interrupts or softirqs from calling the
+> special function when it preempted rcu_read_unlock().
+> 
+> How about this patch? (again totally untested and not even compiled)
 
-v1 -> v2:
-- changed the existing perf_event__attr_swap to swap only elements
-  of perf_event_attr and exported it for use in swapping the
-  attributes in the file header
-- updated swap_ops used for processing events
+I really dislike the added overhead, especially the implied
+preempt_disable() and preempt_enable() calls.  I am actually trying to
+-reduce- its overhead, for example, by removing the function call...
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
----
- tools/perf/util/header.c  |    5 ++++-
- tools/perf/util/session.c |   30 ++++++++++++++++++------------
- tools/perf/util/session.h |    1 +
- 3 files changed, 23 insertions(+), 13 deletions(-)
+But as a short-term hack-around, it could be OK.  It does seem to
+cover all the possible conditions, at least all the ones I can see at
+the moment.
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index afb0849..cb2959a 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -877,9 +877,12 @@ int perf_session__read_header(struct perf_session *session, int fd)
- 		struct perf_evsel *evsel;
- 		off_t tmp;
- 
--		if (perf_header__getbuffer64(header, fd, &f_attr, sizeof(f_attr)))
-+		if (readn(fd, &f_attr, sizeof(f_attr)) <= 0)
- 			goto out_errno;
- 
-+		if (header->needs_swap)
-+			perf_event__attr_swap(&f_attr.attr);
-+
- 		tmp = lseek(fd, 0, SEEK_CUR);
- 		evsel = perf_evsel__new(&f_attr.attr, i);
- 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 080e533..a3c13bc 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -413,20 +413,26 @@ static void perf_event__read_swap(union perf_event *event)
- 	event->read.id		 = bswap_64(event->read.id);
- }
- 
--static void perf_event__attr_swap(union perf_event *event)
-+/* exported for swapping attributes in file header */
-+void perf_event__attr_swap(struct perf_event_attr *attr)
-+{
-+	attr->type		= bswap_32(attr->type);
-+	attr->size		= bswap_32(attr->size);
-+	attr->config		= bswap_64(attr->config);
-+	attr->sample_period	= bswap_64(attr->sample_period);
-+	attr->sample_type	= bswap_64(attr->sample_type);
-+	attr->read_format	= bswap_64(attr->read_format);
-+	attr->wakeup_events	= bswap_32(attr->wakeup_events);
-+	attr->bp_type		= bswap_32(attr->bp_type);
-+	attr->bp_addr		= bswap_64(attr->bp_addr);
-+	attr->bp_len		= bswap_64(attr->bp_len);
-+}
-+
-+static void perf_event__hdr_attr_swap(union perf_event *event)
- {
- 	size_t size;
- 
--	event->attr.attr.type		= bswap_32(event->attr.attr.type);
--	event->attr.attr.size		= bswap_32(event->attr.attr.size);
--	event->attr.attr.config		= bswap_64(event->attr.attr.config);
--	event->attr.attr.sample_period	= bswap_64(event->attr.attr.sample_period);
--	event->attr.attr.sample_type	= bswap_64(event->attr.attr.sample_type);
--	event->attr.attr.read_format	= bswap_64(event->attr.attr.read_format);
--	event->attr.attr.wakeup_events	= bswap_32(event->attr.attr.wakeup_events);
--	event->attr.attr.bp_type	= bswap_32(event->attr.attr.bp_type);
--	event->attr.attr.bp_addr	= bswap_64(event->attr.attr.bp_addr);
--	event->attr.attr.bp_len		= bswap_64(event->attr.attr.bp_len);
-+	perf_event__attr_swap(&event->attr.attr);
- 
- 	size = event->header.size;
- 	size -= (void *)&event->attr.id - (void *)event;
-@@ -454,7 +460,7 @@ static perf_event__swap_op perf_event__swap_ops[] = {
- 	[PERF_RECORD_LOST]		  = perf_event__all64_swap,
- 	[PERF_RECORD_READ]		  = perf_event__read_swap,
- 	[PERF_RECORD_SAMPLE]		  = perf_event__all64_swap,
--	[PERF_RECORD_HEADER_ATTR]	  = perf_event__attr_swap,
-+	[PERF_RECORD_HEADER_ATTR]	  = perf_event__hdr_attr_swap,
- 	[PERF_RECORD_HEADER_EVENT_TYPE]	  = perf_event__event_type_swap,
- 	[PERF_RECORD_HEADER_TRACING_DATA] = perf_event__tracing_data_swap,
- 	[PERF_RECORD_HEADER_BUILD_ID]	  = NULL,
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 5de754f..170601e 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -112,6 +112,7 @@ int perf_session__set_kallsyms_ref_reloc_sym(struct map **maps,
- 					     u64 addr);
- 
- void mem_bswap_64(void *src, int byte_size);
-+void perf_event__attr_swap(struct perf_event_attr *attr);
- 
- int perf_session__create_kernel_maps(struct perf_session *self);
- 
--- 
-1.7.6
+Longer term, enclosing the rq/pi lock critical sections with
+rcu_read_lock() and rcu_read_unlock() seems more reasonable.
 
+Hmmm...  Does just setting CONFIG_IRQ_FORCED_THREADING suffice to test
+this stuff?  Or is "threadirqs" also required on the kernel command line?
+
+							Thanx, Paul
+
+> -- Steve
+> 
+> diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
+> index 7784bd2..0bdf0ea 100644
+> --- a/kernel/rcupdate.c
+> +++ b/kernel/rcupdate.c
+> @@ -46,6 +46,8 @@
+>  #include <linux/module.h>
+>  #include <linux/hardirq.h>
+> 
+> +DEFINE_PER_CPU(int, in_rcu_read_unlock);
+> +
+>  #ifdef CONFIG_DEBUG_LOCK_ALLOC
+>  static struct lock_class_key rcu_lock_key;
+>  struct lockdep_map rcu_lock_map =
+> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+> index 14dc7dd..a4adbb7 100644
+> --- a/kernel/rcutree_plugin.h
+> +++ b/kernel/rcutree_plugin.h
+> @@ -375,6 +375,8 @@ static void rcu_read_unlock_special(struct task_struct *t)
+>  	}
+>  }
+> 
+> +DECLARE_PER_CPU(int, in_rcu_read_unlock);
+> +
+>  /*
+>   * Tree-preemptible RCU implementation for rcu_read_unlock().
+>   * Decrement ->rcu_read_lock_nesting.  If the result is zero (outermost
+> @@ -386,12 +388,16 @@ void __rcu_read_unlock(void)
+>  {
+>  	struct task_struct *t = current;
+> 
+> +	get_cpu_var(in_rcu_read_unlock)++;
+>  	barrier();  /* needed if we ever invoke rcu_read_unlock in rcutree.c */
+>  	--t->rcu_read_lock_nesting;
+>  	barrier();  /* decrement before load of ->rcu_read_unlock_special */
+>  	if (t->rcu_read_lock_nesting == 0 &&
+> +	    __get_cpu_var(in_rcu_read_unlock) == 1 &&
+>  	    unlikely(ACCESS_ONCE(t->rcu_read_unlock_special)))
+>  		rcu_read_unlock_special(t);
+> +	__get_cpu_var(in_rcu_read_unlock)--;
+> +	put_cpu_var(in_rcu_read_unlock);
+>  #ifdef CONFIG_PROVE_LOCKING
+>  	WARN_ON_ONCE(ACCESS_ONCE(t->rcu_read_lock_nesting) < 0);
+>  #endif /* #ifdef CONFIG_PROVE_LOCKING */
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
