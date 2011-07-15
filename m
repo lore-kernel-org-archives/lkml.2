@@ -1,771 +1,529 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964816Ab1GOCxc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 22:53:32 -0400
+	id S964868Ab1GOCxq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 22:53:46 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:64844 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964799Ab1GOCxa (ORCPT
+	with ESMTP id S964799Ab1GOCxo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 22:53:30 -0400
-Date: Thu, 14 Jul 2011 20:53:26 -0600
+	Thu, 14 Jul 2011 22:53:44 -0400
+Date: Thu, 14 Jul 2011 20:53:39 -0600
 From: Grant Likely <grant.likely@secretlab.ca>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Greg KH <greg@kroah.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Samuel Oritz <sameo@linux.intel.com>,
-        Graeme Gregory <gg@slimlogic.co.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] regmap: Add generic non-memory mapped register
- access API
-Message-ID: <20110715025326.GH2927@ponder.secretlab.ca>
-References: <20110709044923.GB13074@opensource.wolfsonmicro.com>
- <1310187044-13269-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Cc: Jeremy Kerr <jeremy.kerr@canonical.com>, Grant Likely <grant@secretlab.ca>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-sh@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH 6/6] clk: Add initial WM831x clock driver
+Message-ID: <20110715025339.GO2927@ponder.secretlab.ca>
+References: <20110711025344.GA27497@opensource.wolfsonmicro.com>
+ <1310352837-4277-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <1310352837-4277-6-git-send-email-broonie@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1310187044-13269-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <1310352837-4277-6-git-send-email-broonie@opensource.wolfsonmicro.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 09, 2011 at 01:50:41PM +0900, Mark Brown wrote:
-> There are many places in the tree where we implement register access for
-> devices on non-memory mapped buses, especially I2C and SPI. Since hardware
-> designers seem to have settled on a relatively consistent set of register
-> interfaces this can be effectively factored out into shared code.  There
-> are a standard set of formats for marshalling data for exchange with the
-> device, with the actual I/O mechanisms generally being simple byte
-> streams.
+On Mon, Jul 11, 2011 at 11:53:57AM +0900, Mark Brown wrote:
+> The WM831x and WM832x series of PMICs contain a flexible clocking
+> subsystem intended to provide always on and system core clocks.  It
+> features:
 > 
-> We create an abstraction for marshaling data into formats which can be
-> sent on the control interfaces, and create a standard method for
-> plugging in actual transport underneath that.
+> - A 32.768kHz crystal oscillator which can optionally be used to pass
+>   through an externally generated clock.
+> - A FLL which can be clocked from either the 32.768kHz oscillator or
+>   the CLKIN pin.
+> - A CLKOUT pin which can bring out either the oscillator or the FLL
+>   output.
+> - The 32.768kHz clock can also optionally be brought out on the GPIO
+>   pins of the device.
 > 
-> This is mostly a refactoring and renaming of the bottom level of the
-> existing code for sharing register I/O which we have in ASoC. A
-> subsequent patch in this series converts ASoC to use this.  The main
-> difference in interface is that reads return values by writing to a
-> location provided by a pointer rather than in the return value, ensuring
-> we can use the full range of the type for register data.  We also use
-> unsigned types rather than ints for the same reason.
+> This driver fully supports the 32.768kHz oscillator and CLKOUT.  The FLL
+> is supported only in AUTO mode, the full flexibility of the FLL cannot
+> currently be used.  The use of clock references other than the internal
+> oscillator is not currently supported, and since clk_set_parent() is not
+> implemented in the generic clock API the clock tree configuration cannot
+> be changed at runtime.
 > 
-> As some of the devices can have very large register maps the existing
-> ASoC code also contains infrastructure for managing register caches.
-> This cache work will be moved over in a future stage to allow for
-> separate review, the current patch only deals with the physical I/O.
-> We also only deal with access to a single register at a time initially
-> as this is the most common case.
+> Due to a lack of access to systems where the core SoC has been converted
+> to use the generic clock API this driver has been compile tested only.
+
+Generally seems okay.  Minor comments below.
+
+g.
+
 > 
 > Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Acked-by: Liam Girdwood <lrg@ti.com>
-
-Hey Mark.
-
-I've missed most of the discussion on this patch, but I support the
-idea.  I've got some concerns about the API and the way it is intended
-to be used.  Comments below...
-
 > ---
->  MAINTAINERS                  |    7 +
->  drivers/base/Kconfig         |    2 +
->  drivers/base/Makefile        |    1 +
->  drivers/base/regmap/Kconfig  |    6 +
->  drivers/base/regmap/Makefile |    2 +
->  drivers/base/regmap/regmap.c |  481 ++++++++++++++++++++++++++++++++++++++++++
->  include/linux/regmap.h       |   76 +++++++
->  7 files changed, 575 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/base/regmap/Kconfig
->  create mode 100644 drivers/base/regmap/Makefile
->  create mode 100644 drivers/base/regmap/regmap.c
->  create mode 100644 include/linux/regmap.h
+>  MAINTAINERS              |    1 +
+>  drivers/clk/Kconfig      |    5 +
+>  drivers/clk/Makefile     |    1 +
+>  drivers/clk/clk-wm831x.c |  389 ++++++++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 396 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/clk/clk-wm831x.c
 > 
 > diff --git a/MAINTAINERS b/MAINTAINERS
-> index bf0e348..0cf0f9f 100644
+> index ae563fa..c234756 100644
 > --- a/MAINTAINERS
 > +++ b/MAINTAINERS
-> @@ -5343,6 +5343,13 @@ L:	reiserfs-devel@vger.kernel.org
+> @@ -6969,6 +6969,7 @@ T:	git git://opensource.wolfsonmicro.com/linux-2.6-audioplus
+>  W:	http://opensource.wolfsonmicro.com/content/linux-drivers-wolfson-devices
 >  S:	Supported
->  F:	fs/reiserfs/
->  
-> +REGISTER MAP ABSTRACTION
-> +M:	Mark Brown <broonie@opensource.wolfsonmicro.com>
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git
-> +S:	Supported
-> +F:	drivers/base/regmap/
-> +F:	include/linux/regmap.h
-> +
->  RFKILL
->  M:	Johannes Berg <johannes@sipsolutions.net>
->  L:	linux-wireless@vger.kernel.org
-> diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
-> index fa64fa0..21cf46f 100644
-> --- a/drivers/base/Kconfig
-> +++ b/drivers/base/Kconfig
-> @@ -172,4 +172,6 @@ config SYS_HYPERVISOR
+>  F:	Documentation/hwmon/wm83??
+> +F:	drivers/clk/clk-wm83*.c
+>  F:	drivers/leds/leds-wm83*.c
+>  F:	drivers/mfd/wm8*.c
+>  F:	drivers/power/wm83*.c
+> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+> index 1fd0070..7f6eec2 100644
+> --- a/drivers/clk/Kconfig
+> +++ b/drivers/clk/Kconfig
+> @@ -10,6 +10,7 @@ config GENERIC_CLK_BUILD_TEST
+>  	depends on EXPERIMENTAL && GENERIC_CLK
+>  	select GENERIC_CLK_FIXED
+>  	select GENERIC_CLK_GATE
+> +	select GENERIC_CLK_WM831X if MFD_WM831X=y
+
+Hmmm, this could get unwieldy in a hurry.
+
+>  	help
+>  	   Enable all possible generic clock drivers.  This is only
+>  	   useful for improving build coverage, it is not useful for
+> @@ -22,3 +23,7 @@ config GENERIC_CLK_FIXED
+>  config GENERIC_CLK_GATE
 >  	bool
->  	default n
->  
-> +source "drivers/base/regmap/Kconfig"
+>  	depends on GENERIC_CLK
 > +
->  endmenu
-> diff --git a/drivers/base/Makefile b/drivers/base/Makefile
-> index 4c5701c..dd4f9b2 100644
-> --- a/drivers/base/Makefile
-> +++ b/drivers/base/Makefile
-> @@ -18,6 +18,7 @@ ifeq ($(CONFIG_SYSFS),y)
->  obj-$(CONFIG_MODULES)	+= module.o
->  endif
->  obj-$(CONFIG_SYS_HYPERVISOR) += hypervisor.o
-> +obj-$(CONFIG_REGMAP)	+= regmap/
->  
->  ccflags-$(CONFIG_DEBUG_DRIVER) := -DDEBUG
->  
-> diff --git a/drivers/base/regmap/Kconfig b/drivers/base/regmap/Kconfig
+> +config GENERIC_CLK_WM831X
+> +	tristate
+> +	depends on GENERIC_CLK && MFD_WM831X
+> diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+> index d186446..6628ad5 100644
+> --- a/drivers/clk/Makefile
+> +++ b/drivers/clk/Makefile
+> @@ -3,3 +3,4 @@ obj-$(CONFIG_CLKDEV_LOOKUP)	+= clkdev.o
+>  obj-$(CONFIG_GENERIC_CLK)	+= clk.o
+>  obj-$(CONFIG_GENERIC_CLK_FIXED)	+= clk-fixed.o
+>  obj-$(CONFIG_GENERIC_CLK_GATE)	+= clk-gate.o
+> +obj-$(CONFIG_GENERIC_CLK_WM831X) += clk-wm831x.o
+> diff --git a/drivers/clk/clk-wm831x.c b/drivers/clk/clk-wm831x.c
 > new file mode 100644
-> index 0000000..fc0eb1d
+> index 0000000..82782f1
 > --- /dev/null
-> +++ b/drivers/base/regmap/Kconfig
-> @@ -0,0 +1,6 @@
-> +# Generic register map support.  There are no user servicable options here,
-> +# this is an API intended to be used by other kernel subsystems.  These
-> +# subsystems should select the appropriate symbols.
-> +
-> +config REGMAP
-> +	bool
-> diff --git a/drivers/base/regmap/Makefile b/drivers/base/regmap/Makefile
-> new file mode 100644
-> index 0000000..1e5037e
-> --- /dev/null
-> +++ b/drivers/base/regmap/Makefile
-> @@ -0,0 +1,2 @@
-> +obj-$(CONFIG_REGMAP) += regmap.o
-> +
-> diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-> new file mode 100644
-> index 0000000..f6a83e9
-> --- /dev/null
-> +++ b/drivers/base/regmap/regmap.c
-> @@ -0,0 +1,481 @@
+> +++ b/drivers/clk/clk-wm831x.c
+> @@ -0,0 +1,389 @@
 > +/*
-> + * Register map access API
+> + * WM831x clock control
 > + *
-> + * Copyright 2011 Wolfson Microelectronics plc
+> + * Copyright 2011 Wolfson Microelectronics PLC.
 > + *
 > + * Author: Mark Brown <broonie@opensource.wolfsonmicro.com>
 > + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
+> + *  This program is free software; you can redistribute  it and/or modify it
+> + *  under  the terms of  the GNU General  Public License as published by the
+> + *  Free Software Foundation;  either version 2 of the  License, or (at your
+> + *  option) any later version.
+> + *
 > + */
 > +
+> +#include <linux/clk.h>
+> +#include <linux/module.h>
 > +#include <linux/slab.h>
-> +#include <linux/module.h>
-> +#include <linux/mutex.h>
-> +#include <linux/err.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/mfd/wm831x/core.h>
 > +
-> +#include <linux/regmap.h>
-> +
-> +struct regmap;
-> +
-> +static DEFINE_MUTEX(regmap_bus_lock);
-> +static LIST_HEAD(regmap_bus_list);
-> +
-> +struct regmap_format {
-> +	size_t buf_size;
-> +	size_t reg_bytes;
-> +	size_t val_bytes;
-> +	void (*format_write)(struct regmap *map,
-> +			     unsigned int reg, unsigned int val);
-> +	void (*format_reg)(void *buf, unsigned int reg);
-> +	void (*format_val)(void *buf, unsigned int val);
-> +	unsigned int (*parse_val)(void *buf);
+> +struct wm831x_clk {
+> +	struct wm831x *wm831x;
+> +	struct clk_hw xtal_hw;
+> +	struct clk_hw fll_hw;
+> +	struct clk_hw clkout_hw;
+> +	bool xtal_ena;
 > +};
 > +
-> +struct regmap {
-> +	struct mutex lock;
+> +static int wm831x_xtal_enable(struct clk_hw *hw)
+> +{
+> +	struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
+> +						  xtal_hw);
+
+This container of is used 10 times.  A static inline would be
+reasonable.
+
 > +
-> +	struct device *dev; /* Device we do I/O on */
-> +	void *work_buf;     /* Scratch buffer used to format I/O */
-> +	struct regmap_format format;  /* Buffer format */
-> +	const struct regmap_bus *bus;
+> +	if (clkdata->xtal_ena)
+> +		return 0;
+> +	else
+> +		return -EPERM;
+> +}
+
+Nit: return clkdata->xtal_ena ? 0 : -EPERM;
+
+Just makes for more concise code.
+
+> +
+> +static unsigned long wm831x_xtal_recalc_rate(struct clk_hw *hw)
+> +{
+> +	struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
+> +						  xtal_hw);
+> +
+> +	if (clkdata->xtal_ena)
+> +		return 32768;
+> +	else
+> +		return 0;
+> +}
+> +
+> +static long wm831x_xtal_round_rate(struct clk_hw *hw, unsigned long rate)
+> +{
+> +	return wm831x_xtal_recalc_rate(hw);
+> +}
+> +
+> +static const struct clk_hw_ops wm831x_xtal_ops = {
+> +	.enable = wm831x_xtal_enable,
+> +	.recalc_rate = wm831x_xtal_recalc_rate,
+> +	.round_rate = wm831x_xtal_round_rate,
 > +};
-
-Some /** kerneldoc on these structures would be helpful.
-
 > +
-> +static void regmap_format_4_12_write(struct regmap *map,
-> +				     unsigned int reg, unsigned int val)
+> +static const unsigned long wm831x_fll_auto_rates[] = {
+> +	 2048000,
+> +	11289600,
+> +	12000000,
+> +	12288000,
+> +	19200000,
+> +	22579600,
+> +	24000000,
+> +	24576000,
+> +};
+> +
+> +static bool wm831x_fll_enabled(struct wm831x *wm831x)
 > +{
-> +	__be16 *out = map->work_buf;
-> +	*out = cpu_to_be16((reg << 12) | val);
-> +}
+> +	int ret;
 > +
-> +static void regmap_format_7_9_write(struct regmap *map,
-> +				    unsigned int reg, unsigned int val)
-> +{
-> +	__be16 *out = map->work_buf;
-> +	*out = cpu_to_be16((reg << 9) | val);
-> +}
-> +
-> +static void regmap_format_8(void *buf, unsigned int val)
-> +{
-> +	u8 *b = buf;
-> +
-> +	b[0] = val;
-> +}
-> +
-> +static void regmap_format_16(void *buf, unsigned int val)
-> +{
-> +	__be16 *b = buf;
-> +
-> +	b[0] = cpu_to_be16(val);
-> +}
-> +
-> +static unsigned int regmap_parse_8(void *buf)
-> +{
-> +	u8 *b = buf;
-> +
-> +	return b[0];
-> +}
-> +
-> +static unsigned int regmap_parse_16(void *buf)
-> +{
-> +	__be16 *b = buf;
-> +
-> +	b[0] = be16_to_cpu(b[0]);
-> +
-> +	return b[0];
-> +}
-> +
-> +/**
-> + * remap_init: Initialise register map
-
-nit: "remap_init() - Initialise reigster map"
-
-> + *
-> + * @dev: Device that will be interacted with
-> + * @config: Configuration for register map
-> + *
-> + * The return value will be an ERR_PTR() on error or a valid pointer
-> + * to a struct regmap.
-> + */
-> +struct regmap *regmap_init(struct device *dev,
-> +			   const struct regmap_config *config)
-> +{
-> +	struct regmap *map;
-> +	int ret = -EINVAL;
-> +
-> +	map = kzalloc(sizeof(*map), GFP_KERNEL);
-> +	if (map == NULL) {
-> +		ret = -ENOMEM;
-> +		goto err;
+> +	ret = wm831x_reg_read(wm831x, WM831X_FLL_CONTROL_1);
+> +	if (ret < 0) {
+> +		dev_err(wm831x->dev, "Unable to read FLL_CONTROL_1: %d\n",
+> +			ret);
+> +		return true;
 > +	}
+> +
+> +	if (ret & WM831X_FLL_ENA)
+> +		return true;
+> +	else
+> +		return false;
 
-Wouldn't it be appropriate to allow drivers to embed the regmap in a
-private data structure?
+similarly, return (ret & WM831X_FLL_ENA) != 0;
 
+> +}
 > +
-> +	mutex_init(&map->lock);
-> +	map->format.buf_size = (config->reg_bits + config->val_bits) / 8;
-> +	map->format.reg_bytes = config->reg_bits / 8;
-> +	map->format.val_bytes = config->val_bits / 8;
-> +	map->dev = dev;
+> +static int wm831x_fll_prepare(struct clk_hw *hw)
+> +{
+> +	struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
+> +						  fll_hw);
+> +	struct wm831x *wm831x = clkdata->wm831x;
+> +	int ret;
 > +
-> +	switch (config->reg_bits) {
-> +	case 4:
-> +		switch (config->val_bits) {
-> +		case 12:
-> +			map->format.format_write = regmap_format_4_12_write;
+> +	ret = wm831x_set_bits(wm831x, WM831X_FLL_CONTROL_2,
+> +			      WM831X_FLL_ENA, WM831X_FLL_ENA);
+> +	if (ret != 0)
+> +		dev_crit(wm831x->dev, "Failed to enable FLL: %d\n", ret);
+> +
+> +	return ret;
+> +}
+> +
+> +static void wm831x_fll_unprepare(struct clk_hw *hw)
+> +{
+> +	struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
+> +						  fll_hw);
+> +	struct wm831x *wm831x = clkdata->wm831x;
+> +	int ret;
+> +
+> +	ret = wm831x_set_bits(wm831x, WM831X_FLL_CONTROL_2, WM831X_FLL_ENA, 0);
+> +	if (ret != 0)
+> +		dev_crit(wm831x->dev, "Failed to disaable FLL: %d\n", ret);
+> +}
+> +
+> +static unsigned long wm831x_fll_recalc_rate(struct clk_hw *hw)
+> +{
+> +	struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
+> +						  fll_hw);
+> +	struct wm831x *wm831x = clkdata->wm831x;
+> +	int ret;
+> +
+> +	ret = wm831x_reg_read(wm831x, WM831X_CLOCK_CONTROL_2);
+> +	if (ret < 0) {
+> +		dev_err(wm831x->dev, "Unable to read CLOCK_CONTROL_2: %d\n",
+> +			ret);
+> +		return 0;
+> +	}
+> +
+> +	if (ret & WM831X_FLL_AUTO)
+> +		return wm831x_fll_auto_rates[ret & WM831X_FLL_AUTO_FREQ_MASK];
+> +
+> +	dev_err(wm831x->dev, "FLL only supported in AUTO mode\n");
+> +	return 0;
+> +}
+> +
+> +static int wm831x_fll_set_rate(struct clk_hw *hw, unsigned long rate,
+> +			       unsigned long *parent_rate)
+> +{
+> +	struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
+> +						  fll_hw);
+> +	struct wm831x *wm831x = clkdata->wm831x;
+> +	int i;
+> +
+> +	for (i = 0; i < ARRAY_SIZE(wm831x_fll_auto_rates); i++)
+> +		if (wm831x_fll_auto_rates[i] == rate)
 > +			break;
-> +		default:
-> +			goto err_map;
-> +		}
-> +		break;
+> +	if (i == ARRAY_SIZE(wm831x_fll_auto_rates))
+> +		return -EINVAL;
 > +
-> +	case 7:
-> +		switch (config->val_bits) {
-> +		case 9:
-> +			map->format.format_write = regmap_format_7_9_write;
-> +			break;
-> +		default:
-> +			goto err_map;
-> +		}
-> +		break;
+> +	if (wm831x_fll_enabled(wm831x))
+> +		return -EPERM;
 > +
-> +	case 8:
-> +		map->format.format_reg = regmap_format_8;
-> +		break;
+> +	return wm831x_set_bits(wm831x, WM831X_CLOCK_CONTROL_2,
+> +			       WM831X_FLL_AUTO_FREQ_MASK, i);
+> +}
 > +
-> +	case 16:
-> +		map->format.format_reg = regmap_format_16;
-> +		break;
+> +static struct clk *wm831x_fll_get_parent(struct clk_hw *hw)
+> +{
+> +	struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
+> +						  fll_hw);
+> +	struct wm831x *wm831x = clkdata->wm831x;
+> +	int ret;
 > +
+> +	/* AUTO mode is always clocked from the crystal */
+> +	ret = wm831x_reg_read(wm831x, WM831X_CLOCK_CONTROL_2);
+> +	if (ret < 0) {
+> +		dev_err(wm831x->dev, "Unable to read CLOCK_CONTROL_2: %d\n",
+> +			ret);
+> +		return NULL;
+> +	}
+> +
+> +	if (ret & WM831X_FLL_AUTO)
+> +		return clkdata->xtal_hw.clk;
+> +
+> +	ret = wm831x_reg_read(wm831x, WM831X_FLL_CONTROL_5);
+> +	if (ret < 0) {
+> +		dev_err(wm831x->dev, "Unable to read FLL_CONTROL_5: %d\n",
+> +			ret);
+> +		return NULL;
+> +	}
+> +
+> +	switch (ret & WM831X_FLL_CLK_SRC_MASK) {
+> +	case 0:
+> +		return clkdata->xtal_hw.clk;
+> +	case 1:
+> +		dev_warn(wm831x->dev,
+> +			 "FLL clocked from CLKIN not yet supported\n");
+> +		return NULL;
 > +	default:
-> +		goto err_map;
+> +		dev_err(wm831x->dev, "Unsupported FLL clock source %d\n",
+> +			ret & WM831X_FLL_CLK_SRC_MASK);
+> +		return NULL;
+> +	}
+> +}
+> +
+> +static const struct clk_hw_ops wm831x_fll_ops = {
+> +	.prepare = wm831x_fll_prepare,
+> +	.unprepare = wm831x_fll_unprepare,
+> +	.recalc_rate = wm831x_fll_recalc_rate,
+> +	.set_rate = wm831x_fll_set_rate,
+> +	.get_parent = wm831x_fll_get_parent,
+> +};
+> +
+> +static int wm831x_clkout_prepare(struct clk_hw *hw)
+> +{
+> +	struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
+> +						  clkout_hw);
+> +	struct wm831x *wm831x = clkdata->wm831x;
+> +	int ret;
+> +
+> +	ret = wm831x_reg_unlock(wm831x);
+> +	if (ret != 0) {
+> +		dev_crit(wm831x->dev, "Failed to lock registers: %d\n", ret);
+> +		return ret;
 > +	}
 > +
-> +	switch (config->val_bits) {
-> +	case 8:
-> +		map->format.format_val = regmap_format_8;
-> +		map->format.parse_val = regmap_parse_8;
-> +		break;
-> +	case 16:
-> +		map->format.format_val = regmap_format_16;
-> +		map->format.parse_val = regmap_parse_16;
-> +		break;
+> +	ret = wm831x_set_bits(wm831x, WM831X_CLOCK_CONTROL_1,
+> +			      WM831X_CLKOUT_ENA, WM831X_CLKOUT_ENA);
+> +	if (ret != 0)
+> +		dev_crit(wm831x->dev, "Failed to enable CLKOUT: %d\n", ret);
+> +
+> +	wm831x_reg_lock(wm831x);
+> +
+> +	return ret;
+> +}
+> +
+> +static void wm831x_clkout_unprepare(struct clk_hw *hw)
+> +{
+> +	struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
+> +						  clkout_hw);
+> +	struct wm831x *wm831x = clkdata->wm831x;
+> +	int ret;
+> +
+> +	ret = wm831x_reg_unlock(wm831x);
+> +	if (ret != 0) {
+> +		dev_crit(wm831x->dev, "Failed to lock registers: %d\n", ret);
+> +		return;
 > +	}
-
-Rather than a big case statement, could this be cleaner with a lookup
-table?
-
-I'm a bit concerned that the overall structure of the init function
-will be inflexible in the long run.  Specifically, the way the
-instance structure is hidden from the caller, there isn't any way for
-a device driver to explicitly override the accessor functions if it
-needs to.  One of the things I like about the generic irq_chip work
-that tglx did was that it set up a lot of things for the irq
-controller, but the controller could still provide its own hooks when
-necessary.
-
 > +
-> +	if (!map->format.format_write &&
-> +	    !(map->format.format_reg && map->format.format_val))
-> +		goto err_map;
+> +	ret = wm831x_set_bits(wm831x, WM831X_CLOCK_CONTROL_1,
+> +			      WM831X_CLKOUT_ENA, 0);
+> +	if (ret != 0)
+> +		dev_crit(wm831x->dev, "Failed to disable CLKOUT: %d\n", ret);
 > +
-> +	/* Figure out which bus to use, and also grab a lock on the
-> +	 * module supplying it. */
-> +	mutex_lock(&regmap_bus_lock);
-> +	list_for_each_entry(map->bus, &regmap_bus_list, list)
-> +		if (map->bus->type == dev->bus &&
-> +		    try_module_get(map->bus->owner))
-> +			break;
-> +	mutex_unlock(&regmap_bus_lock);
-
-Hmmmm.  Two things here.  First, grabbing a reference to the module
-mostly works, but it highlights a deficiency in the driver model.
-Really what we want here is a refcount on the /bound/ instance of the
-driver+device.  The driver model does actually support unbinding a
-device without removing the module.
-
-Second, combining a device reference with the register access library
-conflates two things which seem to me to be separate.  Actually, which
-it seems odd, it doesn't bother me too much, but it looks completely
-wrong for this library to need specific bus-type knowledge.  Why does
-the bus type need to be known (other than to choose the appropriate IO
-routines)?  If it is only for setting up the io accessors, I'd rather
-see the caller use a bus-specific setup funtion and pass the
-appropriate {i2c,spi,...}_device which will take care of type
-checking.
-
+> +	wm831x_reg_lock(wm831x);
+> +}
 > +
-> +	if (map->bus == NULL) {
+> +static unsigned long wm831x_clkout_recalc_rate(struct clk_hw *hw)
+> +{
+> +	return clk_get_rate(clk_get_parent(hw->clk));
+> +}
+> +
+> +static long wm831x_clkout_round_rate(struct clk_hw *hw, unsigned long rate)
+> +{
+> +	return clk_round_rate(clk_get_parent(hw->clk), rate);
+> +}
+> +
+> +static int wm831x_clkout_set_rate(struct clk_hw *hw, unsigned long rate,
+> +				  unsigned long *parent_rate)
+> +{
+> +	*parent_rate = rate;
+> +	return CLK_SET_RATE_PROPAGATE;
+> +}
+> +
+> +static struct clk *wm831x_clkout_get_parent(struct clk_hw *hw)
+> +{
+> +	struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
+> +						  clkout_hw);
+> +	struct wm831x *wm831x = clkdata->wm831x;
+> +	int ret;
+> +
+> +	ret = wm831x_reg_read(wm831x, WM831X_CLOCK_CONTROL_1);
+> +	if (ret < 0) {
+> +		dev_err(wm831x->dev, "Unable to read CLOCK_CONTROL_1: %d\n",
+> +			ret);
+> +		return NULL;
+> +	}
+> +
+> +	if (ret & WM831X_CLKOUT_SRC)
+> +		return clkdata->xtal_hw.clk;
+> +	else
+> +		return clkdata->fll_hw.clk;
+> +}
+> +
+> +static const struct clk_hw_ops wm831x_clkout_ops = {
+> +	.prepare = wm831x_clkout_prepare,
+> +	.unprepare = wm831x_clkout_unprepare,
+> +	.recalc_rate = wm831x_clkout_recalc_rate,
+> +	.round_rate = wm831x_clkout_round_rate,
+> +	.set_rate = wm831x_clkout_set_rate,
+> +	.get_parent = wm831x_clkout_get_parent,
+> +};
+> +
+> +static __devinit int wm831x_clk_probe(struct platform_device *pdev)
+> +{
+> +	struct wm831x *wm831x = dev_get_drvdata(pdev->dev.parent);
+> +	struct wm831x_clk *clkdata;
+> +	int ret;
+> +
+> +	clkdata = kzalloc(sizeof(*clkdata), GFP_KERNEL);
+> +	if (!clkdata)
+> +		return -ENOMEM;
+> +
+> +	/* XTAL_ENA can only be set via OTP/InstantConfig so just read once */
+> +	ret = wm831x_reg_read(wm831x, WM831X_CLOCK_CONTROL_2);
+> +	if (ret < 0) {
+> +		dev_err(wm831x->dev, "Unable to read CLOCK_CONTROL_2: %d\n",
+> +			ret);
+> +		goto err_alloc;
+> +	}
+> +	clkdata->xtal_ena = ret & WM831X_XTAL_ENA;
+> +
+> +	if (!clk_register(wm831x->dev, &wm831x_xtal_ops, &clkdata->xtal_hw,
+> +			  "xtal")) {
 > +		ret = -EINVAL;
-> +		goto err_map;
+> +		goto err_alloc;
 > +	}
 > +
-> +	map->work_buf = kmalloc(map->format.buf_size, GFP_KERNEL);
-> +	if (map->work_buf == NULL) {
-> +		ret = -ENOMEM;
-> +		goto err_bus;
+> +	if (!clk_register(wm831x->dev, &wm831x_fll_ops, &clkdata->fll_hw,
+> +			  "fll")) {
+> +		ret = -EINVAL;
+> +		goto err_xtal;
 > +	}
 > +
-> +	return map;
-> +
-> +err_bus:
-> +	module_put(map->bus->owner);
-> +err_map:
-> +	kfree(map);
-> +err:
-> +	return ERR_PTR(ret);
+> +	if (!clk_register(wm831x->dev, &wm831x_clkout_ops, &clkdata->clkout_hw,
+> +			  "clkout")) {
+> +		ret = -EINVAL;
+> +		goto err_fll;
+> +	}
 
-Personal soapbox: I'm not at all a fan of the ERR_PTR() pattern
-because it provides no clues to the caller (gcc) if a failure is
-returned as a NULL or as a 0.  Unless there is a really strong
-argument for needing to differentiate between "no data" and "things
-went bad", I'd rather see APIs that return NULL on failure.
+How common will this pattern be?  Is there need for a
+clk_register_many() variant?
 
-> +}
-> +EXPORT_SYMBOL_GPL(regmap_init);
 > +
-> +/**
-> + * regmap_exit: Free a previously allocated register map
-> + */
-> +void regmap_exit(struct regmap *map)
-> +{
-> +	kfree(map->work_buf);
-> +	module_put(map->bus->owner);
-> +	kfree(map);
-> +}
-> +EXPORT_SYMBOL_GPL(regmap_exit);
+> +	dev_set_drvdata(&pdev->dev, clkdata);
 > +
-> +static int _regmap_raw_write(struct regmap *map, unsigned int reg,
-> +			     const void *val, size_t val_len)
-> +{
-> +	void *buf;
-> +	int ret = -ENOTSUPP;
-> +	size_t len;
+> +	return 0;
 > +
-> +	map->format.format_reg(map->work_buf, reg);
-> +
-> +	/* Try to do a gather write if we can */
-> +	if (map->bus->gather_write)
-> +		ret = map->bus->gather_write(map->dev, map->work_buf,
-> +					     map->format.reg_bytes,
-> +					     val, val_len);
-> +
-> +	/* Otherwise fall back on linearising by hand. */
-> +	if (ret == -ENOTSUPP) {
-> +		len = map->format.reg_bytes + val_len;
-> +		buf = kmalloc(len, GFP_KERNEL);
-> +		if (!buf)
-> +			return -ENOMEM;
-> +
-> +		memcpy(buf, map->work_buf, map->format.reg_bytes);
-> +		memcpy(buf + map->format.reg_bytes, val, val_len);
-> +		ret = map->bus->write(map->dev, buf, len);
-> +
-> +		kfree(buf);
-> +	}
-> +
+> +err_fll:
+> +	clk_unregister(clkdata->fll_hw.clk);
+> +err_xtal:
+> +	clk_unregister(clkdata->xtal_hw.clk);
+> +err_alloc:
+> +	kfree(clkdata);
 > +	return ret;
 > +}
 > +
-> +static int _regmap_write(struct regmap *map, unsigned int reg,
-> +			 unsigned int val)
+> +static __devexit int wm831x_clk_remove(struct platform_device *pdev)
 > +{
-> +	BUG_ON(!map->format.format_write && !map->format.format_val);
+> +	struct wm831x_clk *clkdata = dev_get_drvdata(&pdev->dev);
 > +
-> +	if (map->format.format_write) {
-> +		map->format.format_write(map, reg, val);
-> +
-> +		return map->bus->write(map->dev, map->work_buf,
-> +				       map->format.buf_size);
-> +	} else {
-> +		map->format.format_val(map->work_buf + map->format.reg_bytes,
-> +				       val);
-> +		return _regmap_raw_write(map, reg,
-> +					 map->work_buf + map->format.reg_bytes,
-> +					 map->format.val_bytes);
-> +	}
-> +}
-> +
-> +/**
-> + * regmap_write: Write a value to a single register
-> + *
-> + * @map: Register map to write to
-> + * @reg: Register to write to
-> + * @val: Value to be written
-> + *
-> + * A value of zero will be returned on success, a negative errno will
-> + * be returned in error cases.
-> + */
-> +int regmap_write(struct regmap *map, unsigned int reg, unsigned int val)
-> +{
-> +	int ret;
-> +
-> +	mutex_lock(&map->lock);
-> +
-> +	ret = _regmap_write(map, reg, val);
-> +
-> +	mutex_unlock(&map->lock);
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(regmap_write);
-> +
-> +/**
-> + * regmap_raw_write: Write raw values to one or more registers
-> + *
-> + * @map: Register map to write to
-> + * @reg: Initial register to write to
-> + * @val: Block of data to be written, laid out for direct transmission to the
-> + *       device
-> + * @val_len: Length of data pointed to by val.
-> + *
-> + * This function is intended to be used for things like firmware
-> + * download where a large block of data needs to be transferred to the
-> + * device.  No formatting will be done on the data provided.
-> + *
-> + * A value of zero will be returned on success, a negative errno will
-> + * be returned in error cases.
-> + */
-> +int regmap_raw_write(struct regmap *map, unsigned int reg,
-> +		     const void *val, size_t val_len)
-> +{
-> +	int ret;
-> +
-> +	mutex_lock(&map->lock);
-> +
-> +	ret = _regmap_raw_write(map, reg, val, val_len);
-> +
-> +	mutex_unlock(&map->lock);
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(regmap_raw_write);
-> +
-> +static int _regmap_raw_read(struct regmap *map, unsigned int reg, void *val,
-> +			    unsigned int val_len)
-> +{
-> +	u8 *u8 = map->work_buf;
-> +	int ret;
-> +
-> +	map->format.format_reg(map->work_buf, reg);
-> +
-> +	/*
-> +	 * Some buses flag reads by setting the high bits in the
-> +	 * register addresss; since it's always the high bits for all
-> +	 * current formats we can do this here rather than in
-> +	 * formatting.  This may break if we get interesting formats.
-> +	 */
-> +	if (map->bus->read_flag_mask)
-> +		u8[0] |= map->bus->read_flag_mask;
-> +
-> +	ret = map->bus->read(map->dev, map->work_buf, map->format.reg_bytes,
-> +			     val, map->format.val_bytes);
-> +	if (ret != 0)
-> +		return ret;
+> +	clk_unregister(clkdata->clkout_hw.clk);
+> +	clk_unregister(clkdata->fll_hw.clk);
+> +	clk_unregister(clkdata->xtal_hw.clk);
+> +	kfree(clkdata);
 > +
 > +	return 0;
 > +}
 > +
-> +static int _regmap_read(struct regmap *map, unsigned int reg,
-> +			unsigned int *val)
-> +{
-> +	int ret;
-> +
-> +	if (!map->format.parse_val)
-> +		return -EINVAL;
-> +
-> +	ret = _regmap_raw_read(map, reg, map->work_buf, map->format.val_bytes);
-> +	if (ret == 0)
-> +		*val = map->format.parse_val(map->work_buf);
-> +
-> +	return ret;
-> +}
-> +
-> +/**
-> + * regmap_read: Read a value from a single register
-> + *
-> + * @map: Register map to write to
-> + * @reg: Register to be read from
-> + * @val: Pointer to store read value
-> + *
-> + * A value of zero will be returned on success, a negative errno will
-> + * be returned in error cases.
-> + */
-> +int regmap_read(struct regmap *map, unsigned int reg, unsigned int *val)
-> +{
-> +	int ret;
-> +
-> +	mutex_lock(&map->lock);
-> +
-> +	ret = _regmap_read(map, reg, val);
-> +
-> +	mutex_unlock(&map->lock);
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(regmap_read);
-> +
-> +/**
-> + * regmap_raw_read: Read raw data from the device
-> + *
-> + * @map: Register map to write to
-> + * @reg: First register to be read from
-> + * @val: Pointer to store read value
-> + * @val_len: Size of data to read
-> + *
-> + * A value of zero will be returned on success, a negative errno will
-> + * be returned in error cases.
-> + */
-> +int regmap_raw_read(struct regmap *map, unsigned int reg, void *val,
-> +		    size_t val_len)
-> +{
-> +	int ret;
-> +
-> +	mutex_lock(&map->lock);
-> +
-> +	ret = _regmap_raw_read(map, reg, val, val_len);
-> +
-> +	mutex_unlock(&map->lock);
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(regmap_raw_read);
-> +
-> +/**
-> + * regmap_bulk_read: Read multiple registers from the device
-> + *
-> + * @map: Register map to write to
-> + * @reg: First register to be read from
-> + * @val: Pointer to store read value, in native register size for device
-> + * @val_count: Number of registers to read
-> + *
-> + * A value of zero will be returned on success, a negative errno will
-> + * be returned in error cases.
-> + */
-> +int regmap_bulk_read(struct regmap *map, unsigned int reg, void *val,
-> +		     size_t val_count)
-> +{
-> +	int ret, i;
-> +	size_t val_bytes = map->format.val_bytes;
-> +
-> +	if (!map->format.parse_val)
-> +		return -EINVAL;
-> +
-> +	ret = regmap_raw_read(map, reg, val, val_bytes * val_count);
-> +	if (ret != 0)
-> +		return ret;
-> +
-> +	for (i = 0; i < val_count * val_bytes; i += val_bytes)
-> +		map->format.parse_val(val + i);
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(regmap_bulk_read);
-> +
-> +/**
-> + * remap_update_bits: Perform a read/modify/write cycle on the register map
-> + *
-> + * @map: Register map to update
-> + * @reg: Register to update
-> + * @mask: Bitmask to change
-> + * @val: New value for bitmask
-> + *
-> + * Returns zero for success, a negative number on error.
-> + */
-> +int regmap_update_bits(struct regmap *map, unsigned int reg,
-> +		       unsigned int mask, unsigned int val)
-> +{
-> +	int ret;
-> +	unsigned int tmp;
-> +
-> +	mutex_lock(&map->lock);
-> +
-> +	ret = _regmap_read(map, reg, &tmp);
-> +	if (ret != 0)
-> +		goto out;
-> +
-> +	tmp &= ~mask;
-> +	tmp |= val & mask;
-> +
-> +	ret = _regmap_write(map, reg, tmp);
-> +
-> +out:
-> +	mutex_unlock(&map->lock);
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(regmap_update_bits);
-> +
-> +void regmap_add_bus(struct regmap_bus *bus)
-> +{
-> +	mutex_lock(&regmap_bus_lock);
-> +	list_add(&bus->list, &regmap_bus_list);
-> +	mutex_unlock(&regmap_bus_lock);
-> +}
-> +EXPORT_SYMBOL_GPL(regmap_add_bus);
-> +
-> +void regmap_del_bus(struct regmap_bus *bus)
-> +{
-> +	mutex_lock(&regmap_bus_lock);
-> +	list_del(&bus->list);
-> +	mutex_unlock(&regmap_bus_lock);
-> +}
-> +EXPORT_SYMBOL_GPL(regmap_del_bus);
-> diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-> new file mode 100644
-> index 0000000..b033979
-> --- /dev/null
-> +++ b/include/linux/regmap.h
-> @@ -0,0 +1,76 @@
-> +#ifndef __LINUX_REGMAP_H
-> +#define __LINUX_REGMAP_H
-> +
-> +/*
-> + * Register map access API
-> + *
-> + * Copyright 2011 Wolfson Microelectronics plc
-> + *
-> + * Author: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/device.h>
-> +#include <linux/list.h>
-> +#include <linux/module.h>
-> +
-> +struct regmap_config {
-> +	int reg_bits;
-> +	int val_bits;
+> +static struct platform_driver wm831x_clk_driver = {
+> +	.probe = wm831x_clk_probe,
+> +	.remove = __devexit_p(wm831x_clk_remove),
+> +	.driver		= {
+> +		.name	= "wm831x-clk",
+> +		.owner	= THIS_MODULE,
+> +	},
 > +};
 > +
-> +typedef int (*regmap_hw_write)(struct device *dev, const void *data,
-> +			       size_t count);
-> +typedef int (*regmap_hw_gather_write)(struct device *dev,
-> +				      const void *reg, size_t reg_len,
-> +				      const void *val, size_t val_len);
-> +typedef int (*regmap_hw_read)(struct device *dev,
-> +			      const void *reg_buf, size_t reg_size,
-> +			      void *val_buf, size_t val_size);
+> +static int __init wm831x_clk_init(void)
+> +{
+> +	int ret;
 > +
-> +/**
-> + * Description of a hardware bus for the register map infrastructure.
-> + *
-> + * @list: Internal use.
-> + * @type: Bus type, used to identify bus to be used for a device.
-> + * @write: Write operation.
-> + * @gather_write: Write operation with split register/value, return -ENOTSUPP
-> + *                if not implemented  on a given device.
-> + * @read: Read operation.  Data is returned in the buffer used to transmit
-> + *         data.
-> + * @owner: Module with the bus implementation, used to pin the implementation
-> + *         in memory.
-> + * @read_flag_mask: Mask to be set in the top byte of the register when doing
-> + *                  a read.
-> + */
-> +struct regmap_bus {
-> +	struct list_head list;
-> +	struct bus_type *type;
-> +	regmap_hw_write write;
-> +	regmap_hw_gather_write gather_write;
-> +	regmap_hw_read read;
-> +	struct module *owner;
-> +	u8 read_flag_mask;
-> +};
+> +	ret = platform_driver_register(&wm831x_clk_driver);
+> +	if (ret != 0)
+> +		pr_err("Failed to register WM831x clock driver: %d\n", ret);
+> +
+> +	return ret;
+> +}
 
-Further to my comment from earlier, the need for a linked list of bus
-types goes away if the driver calls a bus-specific setup routine, and
-there doesn't need to be any regmap add/del management.
+Driver registration is very well implemented and debugged.  Just do
+"return platform_driver_register();"
 
+> +module_init(wm831x_clk_init);
 > +
-> +struct regmap *regmap_init(struct device *dev,
-> +			   const struct regmap_config *config);
-> +void regmap_exit(struct regmap *map);
-> +int regmap_write(struct regmap *map, unsigned int reg, unsigned int val);
-> +int regmap_raw_write(struct regmap *map, unsigned int reg,
-> +		     const void *val, size_t val_len);
-> +int regmap_read(struct regmap *map, unsigned int reg, unsigned int *val);
-> +int regmap_raw_read(struct regmap *map, unsigned int reg,
-> +		    void *val, size_t val_len);
-> +int regmap_bulk_read(struct regmap *map, unsigned int reg, void *val,
-> +		     size_t val_count);
-> +int regmap_update_bits(struct regmap *map, unsigned int reg,
-> +		       unsigned int mask, unsigned int val);
+> +static void __exit wm831x_clk_exit(void)
+> +{
+> +	platform_driver_unregister(&wm831x_clk_driver);
+> +}
+> +module_exit(wm831x_clk_exit);
 > +
-> +void regmap_add_bus(struct regmap_bus *bus);
-> +void regmap_del_bus(struct regmap_bus *bus);
-> +
-> +#endif
+> +/* Module information */
+> +MODULE_AUTHOR("Mark Brown <broonie@opensource.wolfsonmicro.com>");
+> +MODULE_DESCRIPTION("WM831x clock driver");
+> +MODULE_LICENSE("GPL");
+> +MODULE_ALIAS("platform:wm831x-clk");
 > -- 
 > 1.7.5.4
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
