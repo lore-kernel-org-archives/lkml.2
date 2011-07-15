@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831Ab1GOPyw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 11:54:52 -0400
-Received: from mail.perches.com ([173.55.12.10]:4018 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751910Ab1GOPyv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 11:54:51 -0400
-Subject: Re: [PATCH 03/11] dynamic_debug: Remove uses of KERN_CONT in
- dynamic_emit_prefix
-From: Joe Perches <joe@perches.com>
-To: Jason Baron <jbaron@redhat.com>
-Cc: Bart Van Assche <bvanassche@acm.org>, gregkh@suse.de, jim.cromie@gmail.com,
+	id S1752891Ab1GOP5e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 11:57:34 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:58030 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752174Ab1GOP5d convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 11:57:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <1310744914.7582.36.camel@Joe-Laptop>
+References: <cover.1310657068.git.jbaron@redhat.com> <3667c0a87dd8fd64fdf1b1e8107b130a9b41096e.1310657068.git.jbaron@redhat.com>
+ <CAO+b5-qA3s92YX2izXzvzt3MOrzRaPcZtDtK0cDte0ZXnRWxhA@mail.gmail.com> <1310744914.7582.36.camel@Joe-Laptop>
+From: Bart Van Assche <bvanassche@acm.org>
+Date: Fri, 15 Jul 2011 17:57:11 +0200
+X-Google-Sender-Auth: efn-Kx7KnzIrxgvtnVy2E6tWu6Q
+Message-ID: <CAO+b5-p2B74+oVQRGcGxMp5ULZy8ZmF215Lz4qhbU=C4RnG8dw@mail.gmail.com>
+Subject: Re: [PATCH 11/11] dynamic_debug: use a single printk() to emit msgs
+To: Joe Perches <joe@perches.com>
+Cc: Jason Baron <jbaron@redhat.com>, gregkh@suse.de, jim.cromie@gmail.com,
         linux-kernel@vger.kernel.org
-In-Reply-To: <20110715150734.GA2493@redhat.com>
-References: <cover.1310657068.git.jbaron@redhat.com>
-	 <07ef9de13b16d5c50bc36f8c8d9a9aa28a05f2ca.1310657068.git.jbaron@redhat.com>
-	 <CAO+b5-qQ452VojorX_p4W2orh4DKnM206TA3F5yA2fnhcPhXsQ@mail.gmail.com>
-	 <20110715150734.GA2493@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 15 Jul 2011 08:54:50 -0700
-Message-ID: <1310745290.7582.40.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-15 at 11:07 -0400, Jason Baron wrote:
-> On Fri, Jul 15, 2011 at 12:04:22PM +0200, Bart Van Assche wrote:
-> > On Thu, Jul 14, 2011 at 6:09 PM, Jason Baron <jbaron@redhat.com> wrote:
-> > > +       char tid[sizeof(int) + sizeof(int)/2 + 4];
-> > > +       char lineno[sizeof(int) + sizeof(int)/2];
-> > It's not clear to me where the array bounds come from ? Also, why
-> > sizeof(int) + sizeof(int)/2 instead of sizeof(int)*3 + 1 ?
-> hmmm...for the tid it bounded by PID_MAX_LIMIT, which is 4 million, so
-> you need 7 characters + 3 for the brackets and space = 10. So that looks
-> right to me. Although I'm not sure where the sizeof() comes from? Joe?
+On Fri, Jul 15, 2011 at 5:48 PM, Joe Perches <joe@perches.com> wrote:
+> On Fri, 2011-07-15 at 12:05 +0200, Bart Van Assche wrote:
+>> Not that's it important, but this change makes is possible to
+>> eliminate the tid[] and lineno[] arrays again. Has that been
+>> considered ?
+>
+> tid and lineno are decimal.  Not using intermediate
+> arrays would require awkward contortions to snprintf
+> them without emitting 0 in the output.
 
-It's incorrect.
+Sorry, but I do not agree with the above. The current implementation
+of __dynamic_pr_debug() shows that an implementation without temporary
+arrays does not require any awkward constructs. See e.g.
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=blob;f=lib/dynamic_debug.c
+for the source code of the current implementation of
+__dynamic_pr_debug().
 
-sizeof(int) => # decimal digits + terminating 0
-4 => 11
-8 => 21
+This may be subjective, but my opinion is that following that style
+results in shorter and more elegant code than the approach with the
+temporary arrays proposed in patch 11/11.
 
-I think I meant to type sizeof(int) * 2 + sizeof(int) / 2 + 1
-
-> For the lineno, it is 24 bits, so it can be 2^24 = 16,777,216, or 8
-> characters, so I think the 6 is incorrect. Although, in practice I don't
-> think we have any files that are that big.
-
-Then the tid size should be based on PID_MAX_LIMIT.
-I don't much care.
-I just wanted to minimize stack consumption.
-
+Bart.
