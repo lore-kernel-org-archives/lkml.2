@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752395Ab1GOOlZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 10:41:25 -0400
-Received: from correo1.usc.es ([193.144.75.21]:15597 "EHLO correo1.usc.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750924Ab1GOOlX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 10:41:23 -0400
-X-Greylist: delayed 586 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Jul 2011 10:41:22 EDT
-X-IronPort-AV: E=Sophos;i="4.65,535,1304287200"; 
-   d="scan'208";a="12433360"
-Message-ID: <20110715163133.5o6xanngnsw8o4o8@correoweb.usc.es>
-Date: Fri, 15 Jul 2011 16:31:33 +0200
-From: "Mr. Vincent Cheng" <vincent@usc.es>
-Reply-to: choi_chu112@yahoo.co.jp
-To: undisclosed-recipients:;
-Subject: 
+	id S1752643Ab1GOOmh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 10:42:37 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:43789 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752557Ab1GOOmg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 10:42:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.6)
-X-Originating-IP: 74.115.0.2
-X-AuthUser: beatriz.moreiras@usc.es
+Date: Fri, 15 Jul 2011 22:42:34 +0800
+Message-ID: <CAJd=RBCVy6SCpdamCghNCysVi_aEpdkhngkOYj+-VrU8h38gkA@mail.gmail.com>
+Subject: [RFC] sched: clean up RT task_woken
+From: Hillf Danton <dhillf@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Steven
 
-Good Day,
+Cleanup is made for task_woken_rt(), as the following
 
-I have a business proposal of USD $22,500,000.00 only for you to transact with
-me from my bank to your country.
-Reply to address:choi_chu112@yahoo.co.jp and I will let you know what is
-required of you.
+#1 p->rt.nr_cpus_allowed > 1
+Since @rq is checked to has pushable tasks, @p is covered by the check.
+And if only @p is considered to be pushed, @p may be not the highest next.
 
-Best Regards,
+#2 rt_task(rq->curr)
+Since curr is checked not to be rescheduled, curr must be RT task.
 
-Mr. Vincent Cheng
+#3 rq->curr->rt.nr_cpus_allowed < 2
+Since running task is never pushed even if pushable.
+
+#4 rq->curr->prio < p->prio
+Since curr is checked not to be rescheduled.
 
 
+Hillf
+---
+ kernel/sched_rt.c |    6 +-----
+ 1 files changed, 1 insertions(+), 5 deletions(-)
 
-
-
+diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
+index 97540f0..7e6349f 100644
+--- a/kernel/sched_rt.c
++++ b/kernel/sched_rt.c
+@@ -1577,11 +1577,7 @@ static void task_woken_rt(struct rq *rq, struct
+task_struct *p)
+ {
+ 	if (!task_running(rq, p) &&
+ 	    !test_tsk_need_resched(rq->curr) &&
+-	    has_pushable_tasks(rq) &&
+-	    p->rt.nr_cpus_allowed > 1 &&
+-	    rt_task(rq->curr) &&
+-	    (rq->curr->rt.nr_cpus_allowed < 2 ||
+-	     rq->curr->prio < p->prio))
++	    has_pushable_tasks(rq))
+ 		push_rt_tasks(rq);
+ }
