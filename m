@@ -1,92 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751346Ab1GOL2O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 07:28:14 -0400
-Received: from mail001.aei.ca ([206.123.6.130]:56032 "EHLO mail001.aei.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750977Ab1GOL2M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 07:28:12 -0400
-From: Ed Tomlinson <edt@aei.ca>
-To: Luiz Augusto von Dentz <luiz.dentz@gmail.com>
-Subject: Re: [BUG] Bluetooth broken post rc7
-Date: Fri, 15 Jul 2011 07:28:03 -0400
-User-Agent: KMail/1.13.7 (Linux/3.0.0-rc7-crc+; KDE/4.6.5; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        Ilia Kolomisnky <iliak@ti.com>, David Miller <davem@davemloft.net>
-References: <201107142318.33080.edt@aei.ca> <CABBYNZ+fxUWhi0uF0b_6Z8iqYd7Pp_4zPBRyM6Gyh3zJH1am5Q@mail.gmail.com>
-In-Reply-To: <CABBYNZ+fxUWhi0uF0b_6Z8iqYd7Pp_4zPBRyM6Gyh3zJH1am5Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1751521Ab1GOL2v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 07:28:51 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:53588 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775Ab1GOL2u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 07:28:50 -0400
+X-Authority-Analysis: v=1.1 cv=PfPQ8rIoTcZsncbPZjVSZ7K0hy8Zc4hmL68r4VPNpKE= c=1 sm=0 a=VR3q0FbkgwYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=hlDR-tgqZqmPK0ABcpQA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH -tip  00/13]tracing/kprobes: Dynamic events on module
+ support
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        yrl.pp-manager.tt@hitachi.com
+In-Reply-To: <20110627072626.6528.41792.stgit@fedora15>
+References: <20110627072626.6528.41792.stgit@fedora15>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 15 Jul 2011 07:28:48 -0400
+Message-ID: <1310729328.27864.61.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201107150728.04355.edt@aei.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 15 July 2011 06:11:04 Luiz Augusto von Dentz wrote:
-> Hi,
+On Mon, 2011-06-27 at 16:26 +0900, Masami Hiramatsu wrote:
+> Hi Steven,
 > 
-> On Fri, Jul 15, 2011 at 6:18 AM, Ed Tomlinson <edt@aei.ca> wrote:
-> > Hi,
-> >
-> > I booted to todays linux git and bluetooth is no longer working.  My magic mouse will not connect correctly.
-> >
-> > Reverting:
-> >
-> > commit 9fa7e4f76f3658ba1f44fbdb95c77e7df3f53f95
-> > Author: Gustavo F. Padovan <padovan@profusion.mobi>
-> > Date:   Thu Jun 30 16:11:30 2011 -0300
-> >
-> >    Bluetooth: Fix regression with incoming L2CAP connections
-> >
-> >    PTS test A2DP/SRC/SRC_SET/TC_SRC_SET_BV_02_I revealed that
-> >    ( probably after the df3c3931e commit ) the l2cap connection
-> >    could not be established in case when the "Auth Complete" HCI
-> >    event does not arive before the initiator send "Configuration
-> >    request", in which case l2cap replies with "Command rejected"
-> >    since the channel is still in BT_CONNECT2 state.
-> >
-> >    Based on patch from: Ilia Kolomisnky <iliak@ti.com>
-> >
-> >    Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
-> >
-> > Fixes the bug here (things work like rc7).
-> >
-> > Do we really need 9fa7e4f76f3658ba1f44fbdb95c77e7df3f53f95 in 3.0?
-> >
-> > Thanks,
-> >
-> > Ed Tomlinson
-> > --
+> Here, I'd like to push updates of dynamic events and perf-probe
+> for supporting dynamic events on module.
 > 
-> I've changed the check to something like this:
+> The main part of this series is 1-5th patches for kprobes and
+> dynamic event tracer, which allows us to add events on offline
+> kernel module. This means we can put events even on the init
+> functions of the drivers before loading. The requirement of
+> this feature comes from my recent experience of a driver
+> debugging. It had a timing bug in the initialization routine,
+> and it was hard to catch them without tracing the behavior.
 > 
-> diff --git a/net/bluetooth/l2cap_core.c b/net/bluetooth/l2cap_core.c
-> index ebff14c..f88b9c8 100644
-> --- a/net/bluetooth/l2cap_core.c
-> +++ b/net/bluetooth/l2cap_core.c
-> @@ -2323,8 +2323,7 @@ static inline int l2cap_config_req(struct
-> l2cap_conn *conn, struct l2cap_cmd_hdr
+> I added some perf-probe updates (which including some resent
+> patches), And it's OK to pull only the main part (kprobes and
+> ftrace patches) without perf updates.
 > 
->         sk = chan->sk;
-> 
-> -       if ((bt_sk(sk)->defer_setup && sk->sk_state != BT_CONNECT2) ||
-> -                (!bt_sk(sk)->defer_setup && sk->sk_state != BT_CONFIG)) {
-> +       if ((sk->sk_state != BT_CONNECT2) && (sk->sk_state != BT_CONFIG)) {
->                 struct l2cap_cmd_rej rej;
-> 
->                 rej.reason = cpu_to_le16(0x0002);
-> 
-> Seems to work fine.
 
-And here too.  You can can my tested by
- 
-Tested By: Ed Tomlinson <edt@aei.ca>
+OK I pulled in everything but patch 10, as that seemed to have an issue
+with the message that David Ahern brought up. I left that one out as it
+really wasn't necessary for the other patches. If you want to just
+resend that one patch with an update, I can pull that one in too.
 
-IMHO this should be in 3.0.0
+-- Steve
 
-Thanks!
-Ed Tomlinson
+> 
+> Thank you,
+> 
+> ---
+> 
+> Masami Hiramatsu (13):
+>       perf probe: Support adding probes on offline kernel modules
+>       perf probe: Add probed module in front of function
+>       [RESEND]perf probe: Introduce debuginfo to encapsulate dwarf information
+>       [RESEND]perf probe: Warn when more than two lines are given
+>       [RESEND][CLEANUP]perf-probe: Move dwarf library routines to dwarf-aux.{c,h}
+>       [RESEND][CLEANUP]perf probe: Remove redundant dwarf functions
+>       [RESEND][CLEANUP]perf probe: Move strtailcmp to string.c
+>       [RESEND][CLEANUP]perf probe: Rename DIE_FIND_CB_FOUND to DIE_FIND_CB_END
+>       tracing/kprobe: Update symbol reference when loading module
+>       tracing/kprobes: Support module init function probing
+>       kprobes: Return -ENOENT if probe point doesn't exist
+>       [CLEANUP]tracing/kprobes: merge trace probe enable/disable functions
+>       [CLEANUP]tracing/kprobes: Rename probe_* to trace_probe_*
+> 
+> 
+>  Documentation/trace/kprobetrace.txt     |    9 
+>  kernel/kprobes.c                        |   33 +
+>  kernel/trace/trace_kprobe.c             |  314 +++++++++----
+>  tools/perf/Documentation/perf-probe.txt |    6 
+>  tools/perf/Makefile                     |    2 
+>  tools/perf/builtin-probe.c              |   14 -
+>  tools/perf/util/dwarf-aux.c             |  663 +++++++++++++++++++++++++++
+>  tools/perf/util/dwarf-aux.h             |  100 ++++
+>  tools/perf/util/probe-event.c           |  165 +++++--
+>  tools/perf/util/probe-event.h           |    1 
+>  tools/perf/util/probe-finder.c          |  752 ++++---------------------------
+>  tools/perf/util/probe-finder.h          |   43 +-
+>  tools/perf/util/string.c                |   19 +
+>  tools/perf/util/util.h                  |    1 
+>  14 files changed, 1304 insertions(+), 818 deletions(-)
+>  create mode 100644 tools/perf/util/dwarf-aux.c
+>  create mode 100644 tools/perf/util/dwarf-aux.h
+> 
+
 
