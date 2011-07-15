@@ -1,44 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964979Ab1GOG6k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 02:58:40 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:44212 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964770Ab1GOG6i (ORCPT
+	id S965020Ab1GOHDp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 03:03:45 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:38901 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964836Ab1GOHDo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 02:58:38 -0400
-Message-ID: <4E1FE51B.70009@pobox.com>
-Date: Fri, 15 Jul 2011 02:58:35 -0400
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc14 Thunderbird/3.1.11
+	Fri, 15 Jul 2011 03:03:44 -0400
+From: Peter Korsgaard <jacmet@sunsite.dk>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] mcp23s08: add i2c support
+References: <1310673568-30577-1-git-send-email-jacmet@sunsite.dk>
+	<1310673568-30577-4-git-send-email-jacmet@sunsite.dk>
+	<20110715025355.GX2927@ponder.secretlab.ca>
+Date: Fri, 15 Jul 2011 09:03:29 +0200
+In-Reply-To: <20110715025355.GX2927@ponder.secretlab.ca> (Grant Likely's
+	message of "Thu, 14 Jul 2011 20:53:55 -0600")
+Message-ID: <8762n4auv2.fsf@macbook.be.48ers.dk>
+User-Agent: Gnus/5.110009 (No Gnus v0.9) Emacs/22.3 (gnu/linux)
 MIME-Version: 1.0
-To: Vasiliy Kulikov <segoon@openwall.com>
-CC: Len Brown <lenb@kernel.org>, kernel-hardening@lists.openwall.com,
-        Shaohua Li <shaohua.li@intel.com>, Zhang Rui <rui.zhang@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH] acpi: constify ops structs
-References: <20110625170752.GA10458@albatros> <20110715063526.GB3166@albatros>
-In-Reply-To: <20110715063526.GB3166@albatros>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2011 02:35 AM, Vasiliy Kulikov wrote:
-> Hi Len,
->
-> On Sat, Jun 25, 2011 at 21:07 +0400, Vasiliy Kulikov wrote:
->> Structs battery_file, acpi_dock_ops, file_operations,
->> thermal_cooling_device_ops, thermal_zone_device_ops, kernel_param_ops
->> are not changed in runtime.  It is safe to make them const.
->> register_hotplug_dock_device() was altered to take const "ops" argument
->> to respect acpi_dock_ops' const notion.
->>
->> Signed-off-by: Vasiliy Kulikov<segoon@openwall.com>
+>>>>> "Grant" == Grant Likely <grant.likely@secretlab.ca> writes:
 
-Acked-by: Jeff Garzik <jgarzik@redhat.com>
+ Grant> On Thu, Jul 14, 2011 at 09:59:28PM +0200, Peter Korsgaard wrote:
+ >> Add i2c bindings for the mcp230xx devices. This is quite a lot simpler
+ >> than the spi ones as there's no funky sub addressing done (one struct
+ >> i2c_client per struct gpio_chip).
+ >> 
+ >> The mcp23s08_platform_data structure is reused for i2c, even though
+ >> only a single mcp23s08_chip_info structure is needed.
+ >> 
+ >> To make the platform data bus independent, the setup/teardown prototypes
+ >> are slightly changed, so the bus specific struct (spi_device / i2c_client)
+ >> is passed as a void pointer instead.
+ >> 
+ >> There's no in-tree users of these callbacks.
 
+ Grant> Why don't we just remove them then?  The notifier mechanism is more
+ Grant> generic anyway.
 
+Ok, will do.
+
+ Grant> [...]
+ >> @@ -537,9 +705,13 @@ static int __init mcp23s08_init(void)
+ >> return ret;
+ >> #endif /* CONFIG_SPI_MASTER */
+ >> 
+ >> +#ifdef CONFIG_I2C
+ >> +	ret = i2c_add_driver(&mcp230xx_driver);
+ >> +#endif /* CONFIG_I2C */
+ >> +
+
+ Grant> Need to unwind on failure to register, or put the i2c driver into a
+ Grant> separate module so that each module gets it's own init/exit hooks.
+
+Ok, will unwind.
+
+Thanks for the quick review, will send an updated patch series shortly.
+
+-- 
+Bye, Peter Korsgaard
