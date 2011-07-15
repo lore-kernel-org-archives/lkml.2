@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755337Ab1GORkm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 13:40:42 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:60172
-	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
+	id S1755290Ab1GORkk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 13:40:40 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:33311
+	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754163Ab1GORaG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754166Ab1GORaG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Jul 2011 13:30:06 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 075/117] Staging: hv: storvsc: Inline free_stor_device()
-Date: Fri, 15 Jul 2011 10:47:03 -0700
-Message-Id: <1310752065-27895-75-git-send-email-kys@microsoft.com>
+Subject: [PATCH 071/117] Staging: hv: mouse: Change the jump label Cleanup to cleanup
+Date: Fri, 15 Jul 2011 10:46:59 -0700
+Message-Id: <1310752065-27895-71-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1310752065-27895-1-git-send-email-kys@microsoft.com>
 References: <1310752024-27854-1-git-send-email-kys@microsoft.com>
@@ -23,45 +23,115 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Inline the code for  free_stor_device() and get rid of the function.
+Change the jump label "Cleanup" to "cleanup".
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/staging/hv/storvsc.c |    8 ++------
- 1 files changed, 2 insertions(+), 6 deletions(-)
+ drivers/staging/hv/hv_mouse.c |   22 +++++++++++-----------
+ 1 files changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/staging/hv/storvsc.c b/drivers/staging/hv/storvsc.c
-index 827b6a3..8c62829 100644
---- a/drivers/staging/hv/storvsc.c
-+++ b/drivers/staging/hv/storvsc.c
-@@ -51,10 +51,6 @@ static inline struct storvsc_device *alloc_stor_device(struct hv_device *device)
- 	return stor_device;
- }
+diff --git a/drivers/staging/hv/hv_mouse.c b/drivers/staging/hv/hv_mouse.c
+index 30aa709..1c17658 100644
+--- a/drivers/staging/hv/hv_mouse.c
++++ b/drivers/staging/hv/hv_mouse.c
+@@ -339,7 +339,7 @@ static void mousevsc_on_receive_device_info(struct mousevsc_dev *input_device,
  
--static inline void free_stor_device(struct storvsc_device *device)
--{
--	kfree(device);
--}
- 
- /* Get the stordevice object iff exists and its refcount > 0 */
- static inline struct storvsc_device *must_get_stor_device(
-@@ -394,7 +390,7 @@ int storvsc_dev_add(struct hv_device *device,
- 	/* Send it back up */
- 	ret = storvsc_connect_to_vsp(device, device_info->ring_buffer_size);
- 	if (ret) {
--		free_stor_device(stor_device);
-+		kfree(stor_device);
- 		return ret;
+ 	if (!input_device->hid_desc) {
+ 		pr_err("unable to allocate hid descriptor - size %d", desc->bLength);
+-		goto Cleanup;
++		goto cleanup;
  	}
- 	device_info->path_id = stor_device->path_id;
-@@ -422,7 +418,7 @@ int storvsc_dev_remove(struct hv_device *device)
- 	/* Close the channel */
- 	vmbus_close(device->channel);
  
--	free_stor_device(stor_device);
-+	kfree(stor_device);
- 	return 0;
+ 	memcpy(input_device->hid_desc, desc, desc->bLength);
+@@ -352,7 +352,7 @@ static void mousevsc_on_receive_device_info(struct mousevsc_dev *input_device,
+ 	if (!input_device->report_desc) {
+ 		pr_err("unable to allocate report descriptor - size %d",
+ 			   input_device->report_desc_size);
+-		goto Cleanup;
++		goto cleanup;
+ 	}
+ 
+ 	memcpy(input_device->report_desc,
+@@ -379,7 +379,7 @@ static void mousevsc_on_receive_device_info(struct mousevsc_dev *input_device,
+ 	if (ret != 0) {
+ 		pr_err("unable to send synthhid device info ack - ret %d",
+ 			   ret);
+-		goto Cleanup;
++		goto cleanup;
+ 	}
+ 
+ 	input_device->device_wait_condition = 1;
+@@ -387,7 +387,7 @@ static void mousevsc_on_receive_device_info(struct mousevsc_dev *input_device,
+ 
+ 	return;
+ 
+-Cleanup:
++cleanup:
+ 	kfree(input_device->hid_desc);
+ 	input_device->hid_desc = NULL;
+ 
+@@ -606,7 +606,7 @@ static int mousevsc_connect_to_vsp(struct hv_device *device)
+ 					VMBUS_DATA_PACKET_FLAG_COMPLETION_REQUESTED);
+ 	if (ret != 0) {
+ 		pr_err("unable to send synthhid protocol request.");
+-		goto Cleanup;
++		goto cleanup;
+ 	}
+ 
+ 	input_dev->protocol_wait_condition = 0;
+@@ -614,7 +614,7 @@ static int mousevsc_connect_to_vsp(struct hv_device *device)
+ 		input_dev->protocol_wait_condition, msecs_to_jiffies(1000));
+ 	if (input_dev->protocol_wait_condition == 0) {
+ 		ret = -ETIMEDOUT;
+-		goto Cleanup;
++		goto cleanup;
+ 	}
+ 
+ 	response = &input_dev->protocol_resp;
+@@ -623,7 +623,7 @@ static int mousevsc_connect_to_vsp(struct hv_device *device)
+ 		pr_err("synthhid protocol request failed (version %d)",
+ 		       SYNTHHID_INPUT_VERSION);
+ 		ret = -1;
+-		goto Cleanup;
++		goto cleanup;
+ 	}
+ 
+ 	input_dev->device_wait_condition = 0;
+@@ -631,7 +631,7 @@ static int mousevsc_connect_to_vsp(struct hv_device *device)
+ 		input_dev->device_wait_condition, msecs_to_jiffies(1000));
+ 	if (input_dev->device_wait_condition == 0) {
+ 		ret = -ETIMEDOUT;
+-		goto Cleanup;
++		goto cleanup;
+ 	}
+ 
+ 	/*
+@@ -643,7 +643,7 @@ static int mousevsc_connect_to_vsp(struct hv_device *device)
+ 	else
+ 		ret = -1;
+ 
+-Cleanup:
++cleanup:
+ 	put_input_device(device);
+ 
+ 	return ret;
+@@ -661,7 +661,7 @@ static int mousevsc_on_device_add(struct hv_device *device,
+ 
+ 	if (!input_dev) {
+ 		ret = -1;
+-		goto Cleanup;
++		goto cleanup;
+ 	}
+ 
+ 	input_dev->init_complete = false;
+@@ -714,7 +714,7 @@ static int mousevsc_on_device_add(struct hv_device *device,
+ 
+ 	input_dev->init_complete = true;
+ 
+-Cleanup:
++cleanup:
+ 	return ret;
  }
  
 -- 
