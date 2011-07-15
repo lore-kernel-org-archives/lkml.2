@@ -1,159 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752112Ab1GOOg6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 10:36:58 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:47368 "EHLO e5.ny.us.ibm.com"
+	id S1752214Ab1GOOib (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 10:38:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63984 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751139Ab1GOOg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 10:36:56 -0400
-Date: Fri, 15 Jul 2011 07:36:51 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ed Tomlinson <edt@aei.ca>, Steven Rostedt <rostedt@goodmis.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: INFO: possible circular locking dependency detected
-Message-ID: <20110715143651.GB2376@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110714144946.GA3354@swordfish.minsk.epam.com>
- <1310665613.27864.50.camel@gandalf.stny.rr.com>
- <20110714191809.GF2349@linux.vnet.ibm.com>
- <201107150705.46248.edt@aei.ca>
- <1310729362.2586.325.camel@twins>
- <20110715124206.GA2376@linux.vnet.ibm.com>
- <1310735259.2586.330.camel@twins>
+	id S1750924Ab1GOOia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 10:38:30 -0400
+Date: Fri, 15 Jul 2011 10:38:20 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>, ebiederm@xmission.com,
+        hbabu@us.ibm.com, mahesh@linux.vnet.ibm.com, oomichi@mxs.nes.nec.co.jp,
+        horms@verge.net.au, heiko.carstens@de.ibm.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org
+Subject: Re: [patch 0/9] kdump: Patch series for s390 support
+Message-ID: <20110715143820.GG3428@redhat.com>
+References: <20110708110121.5acfc3c9@mschwide>
+ <20110711144255.GE30674@redhat.com>
+ <20110711175626.121dcc58@mschwide>
+ <20110713160239.GE4426@redhat.com>
+ <20110713184611.6dcb09b4@mschwide>
+ <20110713200004.GG4426@redhat.com>
+ <20110714091800.720da848@mschwide>
+ <20110714175532.GE6672@redhat.com>
+ <20110714180528.GF6672@redhat.com>
+ <1310739717.10789.31.camel@br98xy6r>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1310735259.2586.330.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1310739717.10789.31.camel@br98xy6r>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 15, 2011 at 03:07:39PM +0200, Peter Zijlstra wrote:
-> On Fri, 2011-07-15 at 05:42 -0700, Paul E. McKenney wrote:
-> > On Fri, Jul 15, 2011 at 01:29:22PM +0200, Peter Zijlstra wrote:
-> > > On Fri, 2011-07-15 at 07:05 -0400, Ed Tomlinson wrote:
-> > > > Jul 14 23:21:18 grover kernel: [  920.659426] -> #1 (rcu_node_level_0){..-...}:
-> > > > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff8108b7e5>] lock_acquire+0x95/0x140
-> > > > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff8157808b>] _raw_spin_lock+0x3b/0x50
-> > > > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff810ba797>] __rcu_read_unlock+0x197/0x2d0
-
-Yow...  Looks like rcu_read_unlock_special() is being inlined
-into __rcu_read_unlock().
-
-> > > > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff8103f2f5>] select_task_rq_fair+0x585/0xa80
-> > > > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff8104633b>] try_to_wake_up+0x17b/0x360
-> > > > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff81046575>] wake_up_process+0x15/0x20
-> > > > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff810528f4>] irq_exit+0xb4/0x100
-
-OK, so all the above stuff is in the context of an irq handler, right?
-
-In which case, why didn't the in_irq() check kick us out before we
-had a chance to attempt to acquire any locks?
-
-> > > > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff8158197e>] smp_apic_timer_interrupt+0x6e/0x99
-> > > > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff81580c53>] apic_timer_interrupt+0x13/0x20
-> > > > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff810ba6e9>] __rcu_read_unlock+0xe9/0x2d0 
-> > > > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff814c20d4>] sock_def_readable+0x94/0xc0
+On Fri, Jul 15, 2011 at 04:21:57PM +0200, Michael Holzheu wrote:
+> On Thu, 2011-07-14 at 14:05 -0400, Vivek Goyal wrote:
+> > On Thu, Jul 14, 2011 at 01:55:32PM -0400, Vivek Goyal wrote:
+> > 
+> > [..]
+> > > > > So we first try to take purgatory path which does the checksum and is
+> > > > > consistent with other architectures. If that does not work in case
+> > > > > of hard hang, you always have the option of IPLing the stand alone tool
+> > > > > later manually.
+> > > > 
+> > > > How are we suddenly on the purgatory path again? The code that gets
+> > > > control in case of a hard crash + IPL is the stand-alone dump tool,
+> > > > not the purgatory code.
 > > > 
-> > > Ed, are you perchance running with force_irqthreads?
-
-Ah!  Would that mean that local_irq_save() gets mapped to locking?
-Now -that- could be exciting!  ;-)
-
-> > > Paul, what appears to be happening here is that some rcu_read_unlock()
-> > > gets interrupted, possibly before calling rcu_read_unlock_special(),
-> > > possibly not if the interrupt is itself the timer interrupt.
+> > > I think that's the biggest contetion point. From the start of discussion
+> > > you have this hardcoded requirement that the moment panic() happens
+> > > you are jumping to some IPL code and that's what I am questioning. Why
+> > > can't you execute some more code after panic() (purgatory), before
+> > > you jump to IPL code (only if you have to). 
 > > > 
-> > > Supposing ->rcu_read_unlock_special is set before, any wakeup happening
-> > > from an interrupt hitting __rcu_read_unlock():
-> > > 
-> > > void __rcu_read_unlock(void)
-> > > {
-> > >         struct task_struct *t = current;
-> > >                 
-> > >         barrier();  /* needed if we ever invoke rcu_read_unlock in rcutree.c */
-> > >         --t->rcu_read_lock_nesting;
-> > >         barrier();  /* decrement before load of ->rcu_read_unlock_special */
-> > >         if (t->rcu_read_lock_nesting == 0 &&
-> > >             unlikely(ACCESS_ONCE(t->rcu_read_unlock_special)))
-> > >                 rcu_read_unlock_special(t);
-> > > #ifdef CONFIG_PROVE_LOCKING
-> > >         WARN_ON_ONCE(ACCESS_ONCE(t->rcu_read_lock_nesting) < 0);
-> > > #endif /* #ifdef CONFIG_PROVE_LOCKING */
-> > > }
-> > > 
-> > > After --t->rcu_read_lock_nesting, but before calling
-> > > rcu_read_unlock_special(), will trigger this lock inversion.
-> > > 
-> > > The alternative case, ->rcu_read_unlock_special is not set yet, it can
-> > > be set if the interrupt hitting in that same spot above, is the timer
-> > > interrupt, and the wakeup happens either from the softirq ran from the
-> > > hard IRQ tail, or as I suspect here happens, the wakeup of ksoftirqd/#.
+> > 
+> > In your parlance of shutdown actions, I think it is equivalnet to saying
+> > that "kdump" is a shutdown action and that that means is that for specific
+> > trigger points we will execute "crash_kexec()" function which will try
+> > to capture the dump.
+> > 
+> > In user space I think one can modify the kexec-tools infrastrucuture a
+> > bit so that one is able to define an entry point in case checksum of
+> > loaded segment failes. Once you are loding kdump kernel, you can define
+> > that entry point. (And this would be jump to IPL etc.).
 > 
-> OK, so the latter case cannot happen (rcu_preempt_check_callbacks only
-> sets NEED_QS when rcu_read_lock_nesting), we need two interrupts for
-> this to happen.
+> You mean to jump back into the crashed kernel code in case the kdump
+> checksum failed?
+
+No. I meant jump to entry point so that one can IPL the dump tools. I
+am not sure how do initiate the IPL after panic. Similar thing needs
+to be done here. If it is as simple as jumping to some location in
+low memory, then purgatory should be able to do that. I think we
+shall have to figure out the details here.
+
+Basically I am saying that purgatory detected that kdump kernel is
+corrupted. In x86_64 we spin in inifinite loop as we don't have a
+backup plan. But s390 has a backup plan of being able to IPL dump
+tools.
+
+Or in first step we can keep it even simpler. We can spin in infinite
+loop and wait for either hypervisor watchdog to kick in for automatic
+IPL or wait for operator intervention. That would simplify it even
+further. 
+
 > 
-> rcu_read_lock()
+> In the meantime I was looking a bit more into the kexec code to find
+> out, what we would have to do, if we use the preallocated ELF header as
+> you want us to do. With our actual solution, we do not have to reserve
+> any special areas for the kdump kernel. Now we have to reserve the ELF
+> header. So what are the options?
+
+ELF headers go into same memory area as kdump kenrel. Anyway you are
+doing to reserve memory for kdump kernel and ELF headers will go 
+right there.
+
+Once you swap the kernel I think ELF headers continue to remain in
+original location. Or may be you can move ELF headers too depending
+on what turns out to be easier.
+
 > 
->  <IRQ>
->    |= RCU_READ_UNLOCK_NEED_QS
+> The x86 implementation uses a kernel parameter "memmap=exactmap" to do
+> that.
+
+It tells second kernel to use a memory map defined on command line.
+Kexec-tools prepares this memory map with the help of memap= options. This
+is to limit the memory second kernel use to boot into so that it does not
+overwrite in any piece of memory used by first kernel.
+
+In your case I think you shall have to do little more so that second
+kernel also seems some of the lower memory areas so that later swapping
+of kernel can be done.
+
 > 
-> rcu_read_unlock()
->   __rcu_read_unlock()
->    --rcu_read_lock_nesting;
->      <IRQ>
-> 	ttwu()
->           rcu_read_lock()
-> 	  rcu_read_unlock()
-> 	    rcu_read_unlock_special()
-> 	      *BANG*
->    rcu_read_unlock_special()
+> On ia64 - if I understood the code correctly - they seem to pass a kdump
+> segment "EFI_memmap" to the kdump kernel that contains information about
+> all loaded kexec segments. With this segment they can find out the size
+> of the ELF header segment in the kdump kernel and then do the memory
+> reservation at boot time. Is that correct?
 
-The "*BANG*" indicating that the upper-level rcu_read_unlock_special()
-might overwrite the lower-level rcu_read_unlock_special()'s attempt
-to clear RCU_READ_UNLOCK_NEED_QS?  (Which I believe, perhaps
-incorrectly, to be prevented by the fact that all modifications to
-->rcu_read_unlock_special are carried out with irqs disabled on the
-corresponding CPU, at least given no RCU_BOOST.)  The check for in_irq()
-should prevent the from-irq rcu_read_unlock_special() from attempting
-to acquire any locks.
+Sorry, I don't know the details of IA64. May be somebody else on the list
+can pitch in with some clarifications here.
 
-Or am I missing the point of your example?
-
-On the other points, to the extent that I have analyzed them so far:
-
-1.	If the task is preempted after the --rcu_read_lock_nesting,
-	it won't see it as being in an RCU read-side critical section,
-	so won't queue it.
-
-2.	Of course, the task might have preempted earlier.  In this
-	case, the RCU_READ_UNLOCK_BLOCKED is already set, so we will be
-	invoking rcu_read_unlock_special() anyway.
-
-	If an interrupt happens between the decrement and the call to
-	rcu_read_unlock_special(), then, yes, the irq handler will also
-	call rcu_read_unlock_special() if it calls rcu_read_unlock(), but
-	the check for in_irq() will prevent the irq handler's invocation
-	of rcu_read_unlock_special() from acquiring any locks.
-
-3.	It is possible that the task is preempted after the
-	--rcu_read_lock_nesting, in which case the task won't be queued.
-	Of course the task might already be queued if there was an
-	earlier preemption during this same RCU read-side critical
-	section, in which case #2 applies.
-
-	In other words, a preemption in __rcu_read_unlock() after the
-	--rcu_read_lock_nesting has no effect on RCU state: either the
-	task was already marked RCU_READ_UNLOCK_BLOCKED, or it wasn't.
-	Either way, rcu_note_context_switch() does not see this task as
-	being in an RCU read-side critical section.
-
-So what am I missing here?
-
-							Thanx, Paul
+Thanks
+Vivek
