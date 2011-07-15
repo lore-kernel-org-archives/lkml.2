@@ -1,37 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932625Ab1GOCno (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 22:43:44 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56439 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932217Ab1GOCnn (ORCPT
+	id S932668Ab1GOCtJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 22:49:09 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:36592 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932472Ab1GOCtH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 22:43:43 -0400
-Date: Fri, 15 Jul 2011 11:43:32 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
+	Thu, 14 Jul 2011 22:49:07 -0400
+MIME-Version: 1.0
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <20110715024330.GG32716@opensource.wolfsonmicro.com>
+References: <1310650159.6854.1.camel@phoenix> <20110714234805.GA32716@opensource.wolfsonmicro.com>
+ <CAF+7xWnOZkOpMSiOBJKA2HMpstzqUt1GT3Gr+g783trYH+kj3A@mail.gmail.com> <20110715024330.GG32716@opensource.wolfsonmicro.com>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Fri, 15 Jul 2011 10:48:46 +0800
+Message-ID: <CAF+7xWk4sPUfPaK7uys9rpzuEzH3bj3SeYJptteDnP=hfKUoFQ@mail.gmail.com>
 Subject: Re: [PATCH] regulator: Fix memory leak in set_machine_constraints()
  error paths
-Message-ID: <20110715024330.GG32716@opensource.wolfsonmicro.com>
-References: <1310650159.6854.1.camel@phoenix>
- <20110714234805.GA32716@opensource.wolfsonmicro.com>
- <CAF+7xWnOZkOpMSiOBJKA2HMpstzqUt1GT3Gr+g783trYH+kj3A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAF+7xWnOZkOpMSiOBJKA2HMpstzqUt1GT3Gr+g783trYH+kj3A@mail.gmail.com>
-X-Cookie: You will be married within a year.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 15, 2011 at 08:44:53AM +0800, Axel Lin wrote:
+> So, then does this perhaps open paths where ret might be used
+> uninitialized?  In general this seems like an unrelated stylistic change
+> which is unfortunately hard to review from a context diff alone.
+>
+I got your point. will send a new version of the patch.
 
-> I think it does checking null pointer for rdev->constraints in current
-> implementation:
-
-So, then does this perhaps open paths where ret might be used
-uninitialized?  In general this seems like an unrelated stylistic change
-which is unfortunately hard to review from a context diff alone.
+Thanks,
+Axel
