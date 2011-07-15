@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753359Ab1GOQF2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 12:05:28 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:61336 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753224Ab1GOQF0 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:5:1>);
-	Fri, 15 Jul 2011 12:05:26 -0400
-Message-Id: <4E208162020000780004DA39@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Fri, 15 Jul 2011 17:05:22 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Ian Campbell" <Ian.Campbell@citrix.com>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        "Keir Fraser" <keir@xen.org>
-Cc: "Olaf Hering" <olaf@aepfle.de>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH] xen: update machine_to_phys_order on
-	 resume
-References: <20110701104148.GA32729@aepfle.de>
- <20110712164342.GA12867@aepfle.de> <20110712181118.GA18662@dumpdata.com>
- <1310548364.634.355.camel@zakaz.uk.xensource.com>
-In-Reply-To: <1310548364.634.355.camel@zakaz.uk.xensource.com>
+	id S1753385Ab1GOQIh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 12:08:37 -0400
+Received: from mail.perches.com ([173.55.12.10]:4023 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750775Ab1GOQIg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 12:08:36 -0400
+Subject: Re: [PATCH 11/11] dynamic_debug: use a single printk() to emit msgs
+From: Joe Perches <joe@perches.com>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: Jason Baron <jbaron@redhat.com>, gregkh@suse.de, jim.cromie@gmail.com,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <CAO+b5-p2B74+oVQRGcGxMp5ULZy8ZmF215Lz4qhbU=C4RnG8dw@mail.gmail.com>
+References: <cover.1310657068.git.jbaron@redhat.com>
+	 <3667c0a87dd8fd64fdf1b1e8107b130a9b41096e.1310657068.git.jbaron@redhat.com>
+	 <CAO+b5-qA3s92YX2izXzvzt3MOrzRaPcZtDtK0cDte0ZXnRWxhA@mail.gmail.com>
+	 <1310744914.7582.36.camel@Joe-Laptop>
+	 <CAO+b5-p2B74+oVQRGcGxMp5ULZy8ZmF215Lz4qhbU=C4RnG8dw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 15 Jul 2011 09:08:34 -0700
+Message-ID: <1310746114.7582.45.camel@Joe-Laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 13.07.11 at 11:12, Ian Campbell <Ian.Campbell@citrix.com> wrote:
-> It's not so much an objection to this patch but this issue seems to have
-> been caused by Xen cset 20892:d311d1efc25e which looks to me like a
-> subtle ABI breakage for guests. Perhaps we should introduce a feature
-> flag to indicate that a guest can cope with the m2p changing size over
-> migration like this?
+On Fri, 2011-07-15 at 17:57 +0200, Bart Van Assche wrote:
+> On Fri, Jul 15, 2011 at 5:48 PM, Joe Perches <joe@perches.com> wrote:
+> > On Fri, 2011-07-15 at 12:05 +0200, Bart Van Assche wrote:
+> >> Not that's it important, but this change makes is possible to
+> >> eliminate the tid[] and lineno[] arrays again. Has that been
+> >> considered ?
+> > tid and lineno are decimal.  Not using intermediate
+> > arrays would require awkward contortions to snprintf
+> > them without emitting 0 in the output.
+> Sorry, but I do not agree with the above.
 
-That's actually not strait forward, as the hypervisor can't see the ELF
-note specified features of a DomU kernel. Passing this information
-down from the tools or from the guest kernel itself otoh doesn't
-necessarily seem worth it. Instead a guest that can deal with the
-upper bound of the M2P table changing can easily obtain the
-desired information through XENMEM_maximum_ram_page. So I
-think on the hypervisor side we're good with the patch I sent
-earlier today.
+Hey Bart.
 
-Now - does anyone remember why machine_to_phys_order got
-introduced in the first place (rather than doing a precise upper
-bound check using the maximum number the hypervisor returned)?
-I really can't see any benefit in calculating and using the much
-more coarse order only.
+Then I think you don't understand the goal
+of the change.
 
-Jan
+The goal is to avoid possible interleaving
+of multiple printks from different threads.
 
+> The current implementation
+> of __dynamic_pr_debug() shows that an implementation without temporary
+> arrays does not require any awkward constructs. See e.g.
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=blob;f=lib/dynamic_debug.c
+> for the source code of the current implementation of
+> __dynamic_pr_debug().
+> This may be subjective, but my opinion is that following that style
+> results in shorter and more elegant code than the approach with the
+> temporary arrays proposed in patch 11/11.
+
+It requires awkward contortions to emit
+a decimal value or "" without multiple
+printks or temporaries.
+
+cheers, Joe
 
