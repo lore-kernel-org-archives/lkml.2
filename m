@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964828Ab1GOFiy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 01:38:54 -0400
-Received: from 1wt.eu ([62.212.114.60]:37566 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753899Ab1GOFix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 01:38:53 -0400
-Date: Fri, 15 Jul 2011 07:35:05 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: NeilBrown <neilb@suse.de>
-Cc: Solar Designer <solar@openwall.com>, James Morris <jmorris@namei.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Vasiliy Kulikov <segoon@openwall.com>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        kernel-hardening@lists.openwall.com, Jiri Slaby <jslaby@suse.cz>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Eric Paris <eparis@redhat.com>, Stephen Smalley <sds@tycho.nsa.gov>,
-        Sebastian Krahmer <krahmer@suse.de>
-Subject: Re: [PATCH] move RLIMIT_NPROC check from set_user() to do_execve_common()
-Message-ID: <20110715053505.GA24870@1wt.eu>
-References: <20110712132723.GA3193@albatros> <CA+55aFysXOeBqEvmVbuqL3i0jRFDcE=vDuVhmYL38XQ0+x=deQ@mail.gmail.com> <20110713091408.0d456352@notabene.brown> <20110713063142.GA19976@openwall.com> <20110713170657.59dae548@notabene.brown> <CA+55aFwQKqvNvzTMYXVW_yKkFtNsyv8uuBiWiwYLof-nPqPu9w@mail.gmail.com> <alpine.LRH.2.00.1107141009510.17067@tundra.namei.org> <20110714112751.1bfd998f@notabene.brown> <20110714150602.GA30019@openwall.com> <20110715133013.4fa38d19@notabene.brown>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S932734Ab1GOFpV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 01:45:21 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:43900 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932310Ab1GOFpT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 01:45:19 -0400
+Date: Fri, 15 Jul 2011 07:45:12 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de,
+        benh@kernel.crashing.org, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH 2.5/13] memblock: Use __meminit[data] instead of
+ __init[data]
+Message-ID: <20110715054512.GK3455@htj.dyndns.org>
+References: <1310462166-31469-1-git-send-email-tj@kernel.org>
+ <20110714094203.GE3455@htj.dyndns.org>
+ <CAE9FiQU92k-GAy3DVB4HYpn6D6_u=4T7t9_8FOGh8BLDEAKD=Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110715133013.4fa38d19@notabene.brown>
-User-Agent: Mutt/1.4.2.3i
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAE9FiQU92k-GAy3DVB4HYpn6D6_u=4T7t9_8FOGh8BLDEAKD=Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Neil,
+Hello,
 
-On Fri, Jul 15, 2011 at 01:30:13PM +1000, NeilBrown wrote:
-(...)
-> But what do you think of this.  It sure that only the process which ignored
-> the return value from setuid is inconvenienced.
-(...)
+On Thu, Jul 14, 2011 at 02:00:51PM -0700, Yinghai Lu wrote:
+> >  #ifdef ARCH_DISCARD_MEMBLOCK
+> > -#define __init_memblock __init
+> > -#define __initdata_memblock __initdata
+> > +#define __init_memblock __meminit
+> > +#define __initdata_memblock __meminitdata
+> >  #else
+> >  #define __init_memblock
+> >  #define __initdata_memblock
+> 
+> that is not good. It will keep memblock.reserved related data and
+> functions after boot.
+> and those data/func are not used after slab is ready.
 
-I think this is a smart idea. But will the flag be inherited by children
-over a fork() ? If not, we might as well block fork(), because we can
-expect a lot of fork+exec situations which are as dangerous as the simple
-execve().
+Yeah, if MEMORY_HOTPLUG is enabled.  It isn't too big area to begin
+with and early_node_map[] and related code removal should offset it.
+The problem is that refining different __init tags here is a bit
+complex thanks to DISCARD_MEMBLOCK.  We end up having to deal with the
+combination of DISCARD_MEMBLOCK and MEMORY_HOTPLUG.  I was hoping that
+once we get memblock usage more consistent across different archs, we
+could do away with DISCARD_MEMBLOCK.
 
-Regards,
-Willy
+Thank you.
 
+-- 
+tejun
