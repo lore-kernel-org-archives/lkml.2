@@ -1,91 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753359Ab1GOW4M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 18:56:12 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:60592 "EHLO
+	id S1753319Ab1GOW5g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 18:57:36 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:61021 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752657Ab1GOW4L convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751980Ab1GOW5f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 18:56:11 -0400
+	Fri, 15 Jul 2011 18:57:35 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:sender:in-reply-to:references:date:
-	x-google-sender-auth:message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=jzD8MGztgg1+CJfBC/VqNeOjx0HDFQ0otDUMOR5UiY+aEYkvpaRr1ydmYQgBiSU0D
-	BQaz5iirnJTRw+AdpbjmA==
-MIME-Version: 1.0
-In-Reply-To: <1310769600-9234-1-git-send-email-msb@chromium.org>
-References: <1310769600-9234-1-git-send-email-msb@chromium.org>
-Date: Fri, 15 Jul 2011 15:56:08 -0700
-X-Google-Sender-Auth: 0ulcyOYzNWUJ1iDQhr20pqve8OY
-Message-ID: <CACBanvp9-Q4qOzAZZ04uWKfJN2cP6-k8APG+9PR2mnVRqhmU8w@mail.gmail.com>
-Subject: Re: [PATCH 1/2] panic: panic=-1 for immediate reboot
+	h=dkim-signature:sender:date:from:to:cc:subject:message-id:
+	references:mime-version:content-type:content-disposition:in-reply-to:
+	x-operating-system:user-agent:x-system-of-record;
+	b=jimo8SeTlEDomb9PRHZ5+/Sqr7hdskfLQ7nJS/VxFFVHRj3BXsAAxgqRlWAjf6Ctv
+	8cXB1lVlVJzuqfBObvK4Q==
+Date: Fri, 15 Jul 2011 15:57:07 -0700
 From: Mandeep Singh Baines <msb@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Hugh Dickins <hughd@chromium.org>, Mandeep Singh Baines <msb@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Huang Ying <ying.huang@intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>, Olaf Hering <olaf@aepfle.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Dave Airlie <airlied@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mandeep Singh Baines <msb@chromium.org>, Huang Ying <ying.huang@intel.com>,
+        Andi Kleen <ak@linux.intel.com>, Hugh Dickins <hughd@chromium.org>,
+        Olaf Hering <olaf@aepfle.de>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Dave Airlie <airlied@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] panic, vt: do not force oops output when panic_timeout
+ < 0
+Message-ID: <20110715225707.GE17254@google.com>
+References: <1308612129-12488-1-git-send-email-msb@chromium.org>
+ <1308612129-12488-2-git-send-email-msb@chromium.org>
+ <20110622223039.GA13916@google.com>
+ <20110706163312.17c104dc.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110706163312.17c104dc.akpm@linux-foundation.org>
+X-Operating-System: Linux/2.6.32-gg426-generic (x86_64)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 15, 2011 at 3:39 PM, Mandeep Singh Baines <msb@chromium.org> wrote:
-> From: Hugh Dickins <hughd@chromium.org>
->
-> When kernel BUG or oops occurs, ChromeOS intends to panic and immediately
-> reboot, with stacktrace and other messages preserved in RAM across reboot.
-> But the longer we delay, the more likely the user is to poweroff and lose
-> the info.
->
-> panic_timeout (seconds before rebooting) is set by panic= boot option
-> or sysctl or /proc/sys/kernel/panic; but 0 means wait forever, so at
-> present we have to delay at least 1 second.
->
-> Let a negative number mean reboot immediately (with the small cosmetic
-> benefit of suppressing that newline-less "Rebooting in %d seconds.."
-> message).
->
+Andrew Morton (akpm@linux-foundation.org) wrote:
+> On Wed, 22 Jun 2011 15:30:39 -0700
+> Mandeep Singh Baines <msb@chromium.org> wrote:
+> 
+> > Mandeep Singh Baines (msb@chromium.org) wrote:
+> > > Avoid risk (of screen_unblank) and wasted cycles unblanking if
+> > > you intend to reboot immediately.
+> > > 
+> > 
+> > The original patch doesn't work. It worked fine when I tested with
+> > a serial port. When I disabled the serial out, my machine started to
+> > get wedged on a panic. I guess screen_unblank was in bust_spinlocks
+> > for a reason. It probably bust some spin_locks somewhere.
+> > 
+> > Below is a replacement for this patch which calls screen_unblank but
+> > does not force output when the panic timeout is negative (no wait).
+> > 
+> > -- >8 -- (snip)
+> > 
+> > Don't force output if you intend to reboot immediately.
+> > 
+> > This patch depends on:
+> > 
+> > http://lkml.kernel.org/r/1308612129-12488-1-git-send-email-msb@chromium.org
+> 
+> Please fold this into that and resend the patch series.  Please add
+> the needed update to Documentation/kernel-parameters.txt.
 
-Ignore this patch. I re-posted the series with documentation updates:
+Done:
 
 http://lkml.kernel.org/r/1310770401-10739-1-git-send-email-msb@chromium.org
-
-> Signed-off-by: Hugh Dickins <hughd@chromium.org>
-> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Huang Ying <ying.huang@intel.com>
-> Cc: Andi Kleen <ak@linux.intel.com>
-> Cc: Hugh Dickins <hughd@google.com>
-> Cc: Olaf Hering <olaf@aepfle.de>
-> Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-> Cc: Dave Airlie <airlied@gmail.com>
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-> ---
->  kernel/panic.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
->
-> diff --git a/kernel/panic.c b/kernel/panic.c
-> index 6923167..d7bb697 100644
-> --- a/kernel/panic.c
-> +++ b/kernel/panic.c
-> @@ -119,6 +119,8 @@ NORET_TYPE void panic(const char * fmt, ...)
->                        }
->                        mdelay(PANIC_TIMER_STEP);
->                }
-> +       }
-> +       if (panic_timeout != 0) {
->                /*
->                 * This will not be a clean reboot, with everything
->                 * shutting down.  But if there is a chance of
-> --
-> 1.7.3.1
->
->
