@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965020Ab1GOHDp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 03:03:45 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:38901 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964836Ab1GOHDo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 03:03:44 -0400
-From: Peter Korsgaard <jacmet@sunsite.dk>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] mcp23s08: add i2c support
-References: <1310673568-30577-1-git-send-email-jacmet@sunsite.dk>
-	<1310673568-30577-4-git-send-email-jacmet@sunsite.dk>
-	<20110715025355.GX2927@ponder.secretlab.ca>
-Date: Fri, 15 Jul 2011 09:03:29 +0200
-In-Reply-To: <20110715025355.GX2927@ponder.secretlab.ca> (Grant Likely's
-	message of "Thu, 14 Jul 2011 20:53:55 -0600")
-Message-ID: <8762n4auv2.fsf@macbook.be.48ers.dk>
-User-Agent: Gnus/5.110009 (No Gnus v0.9) Emacs/22.3 (gnu/linux)
+	id S965013Ab1GOHHA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 03:07:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41667 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964786Ab1GOHHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 03:07:00 -0400
+Date: Fri, 15 Jul 2011 08:41:47 +0200
+From: Greg KH <gregkh@suse.de>
+To: Mike Waychison <mikew@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Kconfig: Allow disabling of CONFIG_DEVPORT
+Message-ID: <20110715064147.GA1021@suse.de>
+References: <1310675693-9204-1-git-send-email-mikew@google.com>
+ <20110714212113.GA28639@suse.de>
+ <CAGTjWtB53vW5B2EJ5=+C3buDAY0RtsfANxx5NhC5aWnmEx08EQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGTjWtB53vW5B2EJ5=+C3buDAY0RtsfANxx5NhC5aWnmEx08EQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Grant" == Grant Likely <grant.likely@secretlab.ca> writes:
+On Thu, Jul 14, 2011 at 03:17:24PM -0700, Mike Waychison wrote:
+> On Thu, Jul 14, 2011 at 2:21 PM, Greg KH <gregkh@suse.de> wrote:
+> > On Thu, Jul 14, 2011 at 01:34:52PM -0700, Mike Waychison wrote:
+> >> It would be useful to build kernels with disabled support of /dev/port
+> >> for systems where we do not want to allow an administrator to access IO
+> >> ports directly.
+> >>
+> >> To do so however, CONFIG_DEVPORT needs to be user-selectable.  Give this
+> >> configuration option a name and help description.
+> >>
+> >> Google-Bug-Id: 3177114
+> >
+> > What is that field?  It's not something that I've ever seen before...
+> 
+> This is for our internal reference.
 
- Grant> On Thu, Jul 14, 2011 at 09:59:28PM +0200, Peter Korsgaard wrote:
- >> Add i2c bindings for the mcp230xx devices. This is quite a lot simpler
- >> than the spi ones as there's no funky sub addressing done (one struct
- >> i2c_client per struct gpio_chip).
- >> 
- >> The mcp23s08_platform_data structure is reused for i2c, even though
- >> only a single mcp23s08_chip_info structure is needed.
- >> 
- >> To make the platform data bus independent, the setup/teardown prototypes
- >> are slightly changed, so the bus specific struct (spi_device / i2c_client)
- >> is passed as a void pointer instead.
- >> 
- >> There's no in-tree users of these callbacks.
+Internal reference to where?
 
- Grant> Why don't we just remove them then?  The notifier mechanism is more
- Grant> generic anyway.
+> > Please don't push internal fields like this to public patches, it only
+> > causes confusion...
+> 
+> It hasn't caused any problems so far.  It helps us track things as we
+> pull code back downstream.
 
-Ok, will do.
+Ok, but what happens if all 2000+ different companies start adding their
+fields to the signed-off-by: area of the kernel for their internal
+tracking systems?
 
- Grant> [...]
- >> @@ -537,9 +705,13 @@ static int __init mcp23s08_init(void)
- >> return ret;
- >> #endif /* CONFIG_SPI_MASTER */
- >> 
- >> +#ifdef CONFIG_I2C
- >> +	ret = i2c_add_driver(&mcp230xx_driver);
- >> +#endif /* CONFIG_I2C */
- >> +
+So please, don't do this, it makes no sense to the kernel community at
+all and we really don't want to start adding more fields to this area if
+we don't have to.
 
- Grant> Need to unwind on failure to register, or put the i2c driver into a
- Grant> separate module so that each module gets it's own init/exit hooks.
-
-Ok, will unwind.
-
-Thanks for the quick review, will send an updated patch series shortly.
-
--- 
-Bye, Peter Korsgaard
+greg k-h
