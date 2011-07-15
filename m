@@ -1,76 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965354Ab1GOIo0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 04:44:26 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53432 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965119Ab1GOIoZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 04:44:25 -0400
-Subject: Re: [PATCH 0/1] Fixup write permission of TLB on powerpc e500 core
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: MailingLists <haishan.bai@gmail.com>
-Cc: benh@kernel.crashing.org, paulus@samba.org, tglx@linutronix.de,
-        walken@google.com, dhowells@redhat.com, cmetcalf@tilera.com,
-        tony.luck@intel.com, akpm@linux-foundation.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-In-Reply-To: <4E1FFC7B.4000209@gmail.com>
-References: <1310717238-13857-1-git-send-email-haishan.bai@gmail.com>
-	 <1310718056.2586.275.camel@twins>  <4E1FFC7B.4000209@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 15 Jul 2011 10:44:05 +0200
-Message-ID: <1310719445.2586.288.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S965373Ab1GOIom (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 04:44:42 -0400
+Received: from mga03.intel.com ([143.182.124.21]:31150 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753524Ab1GOIok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 04:44:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,534,1304319600"; 
+   d="scan'208";a="27559529"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH] scsi: cxgbi: use native DIV_ROUND_UP macro
+Date: Fri, 15 Jul 2011 11:44:02 +0300
+Message-Id: <0459b9438da78289a8143367f4778d5fc89af3e2.1310719270.git.andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-15 at 16:38 +0800, MailingLists wrote:
-> On 07/15/2011 04:20 PM, Peter Zijlstra wrote:
-> > On Fri, 2011-07-15 at 16:07 +0800, Shan Hai wrote:
-> >> The following test case could reveal a bug in the futex_lock_pi()
-> >>
-> >> BUG: On FUTEX_LOCK_PI, there is a infinite loop in the futex_lock_pi()
-> >>          on Powerpc e500 core.
-> >> Cause: The linux kernel on the e500 core has no write permission on
-> >>          the COW page, refer the head comment of the following test code.
-> >>
-> >> ftrace on test case:
-> >> [000]   353.990181: futex_lock_pi_atomic<-futex_lock_pi
-> >> [000]   353.990185: cmpxchg_futex_value_locked<-futex_lock_pi_atomic
-> >> [snip]
-> >> [000]   353.990191: do_page_fault<-handle_page_fault
-> >> [000]   353.990192: bad_page_fault<-handle_page_fault
-> >> [000]   353.990193: search_exception_tables<-bad_page_fault
-> >> [snip]
-> >> [000]   353.990199: get_user_pages<-fault_in_user_writeable
-> >> [snip]
-> >> [000]   353.990208: mark_page_accessed<-follow_page
-> >> [000]   353.990222: futex_lock_pi_atomic<-futex_lock_pi
-> >> [snip]
-> >> [000]   353.990230: cmpxchg_futex_value_locked<-futex_lock_pi_atomic
-> >> [ a loop occures here ]
-> >>
-> >
-> > But but but but, that get_user_pages(.write=1, .force=0) should result
-> > in a COW break, getting our own writable page.
-> >
-> > What is this e500 thing smoking that this doesn't work?
-> 
-> A page could be set to read only by the kernel (supervisor in the powerpc
-> literature) on the e500, and that's what the kernel do. Set SW(supervisor
-> write) bit in the TLB entry to grant write permission to the kernel on a
-> page.
-> 
-> And further the SW bit is set according to the DIRTY flag of the PTE,
-> PTE.DIRTY is set in the do_page_fault(), the futex_lock_pi() disabled
-> page fault, the PTE.DIRTY never can be set, so do the SW bit, unbreakable
-> COW occurred, infinite loop followed.
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+ drivers/scsi/cxgbi/cxgb4i/cxgb4i.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I'm fairly sure fault_in_user_writeable() has PF enabled as it takes
-mmap_sem, an pagefaul_disable() is akin to preemp_disable() on mainline.
+diff --git a/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c b/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c
+index f3a4cd7..5f41b9d 100644
+--- a/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c
++++ b/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c
+@@ -16,6 +16,7 @@
+ #include <linux/version.h>
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
++#include <linux/kernel.h>
+ #include <scsi/scsi_host.h>
+ #include <net/tcp.h>
+ #include <net/dst.h>
+@@ -169,7 +170,6 @@ static struct scsi_transport_template *cxgb4i_stt;
+  * The section below implments CPLs that related to iscsi tcp connection
+  * open/close/abort and data send/receive.
+  */
+-#define DIV_ROUND_UP(n, d)	(((n) + (d) - 1) / (d))
+ #define RCV_BUFSIZ_MASK		0x3FFU
+ #define MAX_IMM_TX_PKT_LEN	128
+ 
+-- 
+1.7.5.4
 
-Also get_user_pages() fully expects to be able to schedule, and in fact
-can call the full pf handler path all by its lonesome self.
