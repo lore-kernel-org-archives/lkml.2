@@ -1,94 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753755Ab1GORBk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 13:01:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43277 "EHLO mx2.suse.de"
+	id S1753918Ab1GORCU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 13:02:20 -0400
+Received: from mail.lang.hm ([64.81.33.126]:49627 "EHLO bifrost.lang.hm"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753225Ab1GORBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 13:01:39 -0400
-Date: Fri, 15 Jul 2011 19:01:12 +0200
-From: Greg KH <gregkh@suse.de>
-To: Mike Waychison <mikew@google.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Theodore Tso <tytso@mit.edu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Kconfig: Allow disabling of CONFIG_DEVPORT
-Message-ID: <20110715170112.GA5771@suse.de>
-References: <1310675693-9204-1-git-send-email-mikew@google.com>
- <20110714212113.GA28639@suse.de>
- <CAGTjWtB53vW5B2EJ5=+C3buDAY0RtsfANxx5NhC5aWnmEx08EQ@mail.gmail.com>
- <20110715064147.GA1021@suse.de>
- <C70E3912-6AA9-4EB3-85CC-11BF90D230C8@mit.edu>
- <20110715145132.GA4296@suse.de>
- <20110715155835.4e019ca5@lxorguk.ukuu.org.uk>
- <20110715151916.GC4747@suse.de>
- <CAGTjWtDszSANuye-y9MxvwE781DkVetG4m7XsjYpyMVFDTE+6w@mail.gmail.com>
+	id S1753339Ab1GORCT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 13:02:19 -0400
+Date: Fri, 15 Jul 2011 10:01:54 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: Ric Wheeler <rwheeler@redhat.com>
+cc: Chris Mason <chris.mason@oracle.com>, NeilBrown <neilb@suse.de>,
+        Nico Schottelius <nico-lkml-20110623@schottelius.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: Re: Mis-Design of Btrfs?
+In-Reply-To: <4E206FF8.9090803@redhat.com>
+Message-ID: <alpine.DEB.2.02.1107150954300.3745@asgard.lang.hm>
+References: <20110623105337.GD3753@ethz.ch> <20110627164637.377314e2@notabene.brown> <4E0AF091.9030301@redhat.com> <20110714155620.6e9ac2cc@notabene.brown> <4E1E866E.2050405@redhat.com> <20110714163836.35a729c1@notabene.brown> <4E1E9372.3030208@redhat.com>
+ <1310696606-sup-710@shiny> <alpine.DEB.2.02.1107142149420.3558@asgard.lang.hm> <20110715163354.74fa2083@notabene.brown> <1310728784-sup-9024@shiny> <4E20395C.1000301@redhat.com> <1310735821-sup-2589@shiny> <alpine.DEB.2.02.1107150920180.3745@asgard.lang.hm>
+ <4E206FF8.9090803@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAGTjWtDszSANuye-y9MxvwE781DkVetG4m7XsjYpyMVFDTE+6w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 15, 2011 at 09:45:20AM -0700, Mike Waychison wrote:
-> On Fri, Jul 15, 2011 at 8:19 AM, Greg KH <gregkh@suse.de> wrote:
-> > On Fri, Jul 15, 2011 at 03:58:35PM +0100, Alan Cox wrote:
-> >> > But none of them are on the Signed-off-by: line area, right?
-> >>
-> >> We have a fair number of people using things like
-> >>
-> >> Fixes-bug: [URL]
-> >>
-> >>
-> >> Its useful public info, it makes it easier to grep
-> >
-> > That's fine, but that is not what was done here.  And those URLs had
-> > better be public as well.
-> >
-> 
-> Greg, this is a bit ridiculous.  If adding a bug reference number to a
-> patch isn't used in lieu of a good patch description, I don't see how
-> this hurts anybody in the public.  You're only making it more
-> difficult for those who actually want to contribute to the public
-> sources.
+On Fri, 15 Jul 2011, Ric Wheeler wrote:
 
-What?  Come on now, do you seriously want to start seeing _every_
-company put random things in the signed-off-by area depending on their
-internal development workflow that has _nothing_ to do with the kernel
-development community?
+> On 07/15/2011 05:23 PM, david@lang.hm wrote:
+>> On Fri, 15 Jul 2011, Chris Mason wrote:
+>> 
+>>> Excerpts from Ric Wheeler's message of 2011-07-15 08:58:04 -0400:
+>>>> On 07/15/2011 12:34 PM, Chris Mason wrote:
+>>> 
+>>> By bubble up I mean that if you have multiple layers capable of doing
+>>> retries, the lowest levels would retry first.  Basically by the time we
+>>> get an -EIO_ALREADY_RETRIED we know there's nothing that lower level can
+>>> do to help.
+>> 
+>> the problem with doing this is that it can end up stalling the box for 
+>> significant amounts of time while all the retries happen.
+>> 
+>> we already see this happening today where a disk read failure is retried 
+>> multiple times by the disk, multiple times by the raid controller, and then 
+>> multiple times by Linux, resulting is multi-minute stalls when you hit a 
+>> disk error in some cases.
+>> 
+>> having the lower layers do the retries automatically runs the risk of 
+>> making this even worse.
+>> 
+>> This needs to be able to be throttled by some layer that can see the entire 
+>> picture (either by cutting off the retries after a number, after some time, 
+>> or by spacing out the retries to allow other queries to get in and let the 
+>> box do useful work in the meantime)
+>> 
+>> David Lang
+>> 
+>
+> That should not be an issue - we have a "fast fail" path for IO that should 
+> avoid retrying just for those reasons (i.e., for multi-path or when 
+> recovering a flaky drive).
+>
+> This is not a scheme for unbounded retries. If you have a 3 disk mirror in 
+> RAID1, you would read the data no more than 2 extra times and almost never 
+> more than once.  That should be *much* faster than the multiple-second long 
+> timeout you see when waiting for SCSI timeout to fire, etc.
 
-You do realize just how many different companies contribute every year,
-right?
+this issue is when you stack things.
 
-The information in a git commit is for the developers of the kernel, the
-community, not for the individual companies that might contribute.
+what if you have a 3 piece raid 1 on top of a 4 piece raid 6?
 
-We need consistancy in commit logs, and by putting stuff like this in
-them, in the area that is parsed by tools, that don't fit any rhyme or
-reason, causes problems.  Look at the discussion that took place to just
-figure out how to properly reference email threads that result in a
-patch.  We worked it out, right?  But that was so we all can come to a
-common goal and understanding.
+so you have 3 raid1 retries * N raid 6 retries. depending on the order 
+that you do the retries in, and how long it takes that try to fail, this 
+could start to take significant amounts of time.
 
-Unless you feel we should come up with something like:
-	Internal-reference-id: XXXXX
-and use a general tag like that for all companies, please don't put
-company-specific and internal references in a place where they will be
-commited to the public tree.
+if you do a retry on the lower level first, the raid 6 could try several 
+different ways to combine the drives to get the valid data (disks 1,2  2,3 
+3,4 1,3 1,4 2,4 1,2,3 1,2,4 1,3,4 2,3,4) add more disks and it gets worse 
+fast.
 
-Personally, I want to see the information in git commits to be useful
-for everyone, and not reference private information, as that helps no
-one except a very tiny minority of the community out, which, in my
-opinion, is very selfish of them.
+add more layers and you multiple the number of possible retries.
 
-And yes, this means that if someone sees a reference to a private
-bugzilla url, then that should be fixed either by making that bug open,
-or removing that url from the git commit area.
+my guess is that changing to a different method at the upper level is 
+going to avoid the problem area faster then doing so at a lower level 
+(because there is less hardware in common with the method that just gave 
+the wrong answer)
 
-thanks,
-
-greg k-h
+David Lang
