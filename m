@@ -1,264 +1,308 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063Ab1GOShb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 14:37:31 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37415 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548Ab1GOSha (ORCPT
+	id S1754189Ab1GOSnS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 14:43:18 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:53084 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750934Ab1GOSnR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 14:37:30 -0400
-Subject: [PATCH v2] dt: add of_alias_scan and of_alias_get_id
-To: devicetree-discuss@lists.ozlabs.org, Shawn Guo <shawn.guo@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 15 Jul 2011 12:37:27 -0600
-Message-ID: <20110715183638.3669.32838.stgit@ponder>
-User-Agent: StGit/0.15
+	Fri, 15 Jul 2011 14:43:17 -0400
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH] gma500: Add medfield header
+To: greg@kroah.com, linux-kernel@vger.kernel.org
+Date: Fri, 15 Jul 2011 19:34:26 +0100
+Message-ID: <20110715183426.3165.46369.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shawn Guo <shawn.guo@linaro.org>
+From: Alan Cox <alan@linux.intel.com>
 
-The patch adds function of_alias_scan to populate a global lookup
-table with the properties of 'aliases' node and function
-of_alias_get_id for drivers to find alias id from the lookup table.
-
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-[grant.likey: add locking and rework parse loop]
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
-Hi Shawn,
+ drivers/staging/gma500/medfield.h |  270 +++++++++++++++++++++++++++++++++++++
+ 1 files changed, 270 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/gma500/medfield.h
 
-I've reworked as discussed on the ML.  Please test and let me know if
-it still works for you.
-
-g.
-
- drivers/of/base.c      |  130 ++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/of/fdt.c       |    4 +
- include/linux/of.h     |    8 +++
- include/linux/of_fdt.h |    1 
- 4 files changed, 141 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index b8b65fd..6d9adc6 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -17,14 +17,39 @@
-  *      as published by the Free Software Foundation; either version
-  *      2 of the License, or (at your option) any later version.
-  */
-+#include <linux/ctype.h>
- #include <linux/module.h>
- #include <linux/of.h>
- #include <linux/spinlock.h>
- #include <linux/slab.h>
- #include <linux/proc_fs.h>
- 
-+/**
-+ * struct alias_prop - Alias property in 'aliases' node
-+ * @link:	List node to link the structure in aliases_lookup list
-+ * @alias:	Alias property name
-+ * @np:		Pointer to device_node that the alias stands for
-+ * @id:		Index value from end of alias name
-+ * @stem:	Alias string without the index
+diff --git a/drivers/staging/gma500/medfield.h b/drivers/staging/gma500/medfield.h
+new file mode 100644
+index 0000000..38165e8
+--- /dev/null
++++ b/drivers/staging/gma500/medfield.h
+@@ -0,0 +1,270 @@
++/*
++ * Copyright © 2011 Intel Corporation
 + *
-+ * The structure represents one alias property of 'aliases' node as
-+ * an entry in aliases_lookup list.
++ * Permission is hereby granted, free of charge, to any person obtaining a
++ * copy of this software and associated documentation files (the "Software"),
++ * to deal in the Software without restriction, including without limitation
++ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
++ * and/or sell copies of the Software, and to permit persons to whom the
++ * Software is furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice (including the next
++ * paragraph) shall be included in all copies or substantial portions of the
++ * Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++ * DEALINGS IN THE SOFTWARE.
 + */
-+struct alias_prop {
-+	struct list_head link;
-+	const char *alias;
-+	struct device_node *np;
-+	int id;
-+	char stem[0];
++
++#define DRM_MODE_ENCODER_MIPI  5
++
++/* Medfield DSI controller registers */
++
++#define MIPIA_DEVICE_READY_REG				0xb000
++#define MIPIA_INTR_STAT_REG				0xb004
++#define MIPIA_INTR_EN_REG				0xb008
++#define MIPIA_DSI_FUNC_PRG_REG				0xb00c
++#define MIPIA_HS_TX_TIMEOUT_REG				0xb010
++#define MIPIA_LP_RX_TIMEOUT_REG				0xb014
++#define MIPIA_TURN_AROUND_TIMEOUT_REG			0xb018
++#define MIPIA_DEVICE_RESET_TIMER_REG			0xb01c
++#define MIPIA_DPI_RESOLUTION_REG			0xb020
++#define MIPIA_DBI_FIFO_THROTTLE_REG			0xb024
++#define MIPIA_HSYNC_COUNT_REG				0xb028
++#define MIPIA_HBP_COUNT_REG				0xb02c
++#define MIPIA_HFP_COUNT_REG				0xb030
++#define MIPIA_HACTIVE_COUNT_REG				0xb034
++#define MIPIA_VSYNC_COUNT_REG				0xb038
++#define MIPIA_VBP_COUNT_REG				0xb03c
++#define MIPIA_VFP_COUNT_REG				0xb040
++#define MIPIA_HIGH_LOW_SWITCH_COUNT_REG			0xb044
++#define MIPIA_DPI_CONTROL_REG				0xb048
++#define MIPIA_DPI_DATA_REG				0xb04c
++#define MIPIA_INIT_COUNT_REG				0xb050
++#define MIPIA_MAX_RETURN_PACK_SIZE_REG			0xb054
++#define MIPIA_VIDEO_MODE_FORMAT_REG			0xb058
++#define MIPIA_EOT_DISABLE_REG				0xb05c
++#define MIPIA_LP_BYTECLK_REG				0xb060
++#define MIPIA_LP_GEN_DATA_REG				0xb064
++#define MIPIA_HS_GEN_DATA_REG				0xb068
++#define MIPIA_LP_GEN_CTRL_REG				0xb06c
++#define MIPIA_HS_GEN_CTRL_REG				0xb070
++#define MIPIA_GEN_FIFO_STAT_REG				0xb074
++#define MIPIA_HS_LS_DBI_ENABLE_REG			0xb078
++#define MIPIA_DPHY_PARAM_REG				0xb080
++#define MIPIA_DBI_BW_CTRL_REG				0xb084
++#define MIPIA_CLK_LANE_SWITCH_TIME_CNT_REG		0xb088
++
++#define DSI_DEVICE_READY				(0x1)
++#define DSI_POWER_STATE_ULPS_ENTER			(0x2 << 1)
++#define DSI_POWER_STATE_ULPS_EXIT			(0x1 << 1)
++#define DSI_POWER_STATE_ULPS_OFFSET			(0x1)
++
++
++#define DSI_ONE_DATA_LANE				(0x1)
++#define DSI_TWO_DATA_LANE				(0x2)
++#define DSI_THREE_DATA_LANE				(0X3)
++#define DSI_FOUR_DATA_LANE				(0x4)
++#define DSI_DPI_VIRT_CHANNEL_OFFSET			(0x3)
++#define DSI_DBI_VIRT_CHANNEL_OFFSET			(0x5)
++#define DSI_DPI_COLOR_FORMAT_RGB565			(0x01 << 7)
++#define DSI_DPI_COLOR_FORMAT_RGB666			(0x02 << 7)
++#define DSI_DPI_COLOR_FORMAT_RGB666_UNPACK		(0x03 << 7)
++#define DSI_DPI_COLOR_FORMAT_RGB888			(0x04 << 7)
++#define DSI_DBI_COLOR_FORMAT_OPTION2			(0x05 << 13)
++
++#define DSI_INTR_STATE_RXSOTERROR			1
++
++#define DSI_INTR_STATE_SPL_PKG_SENT			(1 << 30)
++#define DSI_INTR_STATE_TE				(1 << 31)
++
++#define DSI_HS_TX_TIMEOUT_MASK				(0xffffff)
++
++#define DSI_LP_RX_TIMEOUT_MASK				(0xffffff)
++
++#define DSI_TURN_AROUND_TIMEOUT_MASK			(0x3f)
++
++#define DSI_RESET_TIMER_MASK				(0xffff)
++
++#define DSI_DBI_FIFO_WM_HALF				(0x0)
++#define DSI_DBI_FIFO_WM_QUARTER				(0x1)
++#define DSI_DBI_FIFO_WM_LOW				(0x2)
++
++#define DSI_DPI_TIMING_MASK				(0xffff)
++
++#define DSI_INIT_TIMER_MASK				(0xffff)
++
++#define DSI_DBI_RETURN_PACK_SIZE_MASK			(0x3ff)
++
++#define DSI_LP_BYTECLK_MASK				(0x0ffff)
++
++#define DSI_HS_CTRL_GEN_SHORT_W0			(0x03)
++#define DSI_HS_CTRL_GEN_SHORT_W1			(0x13)
++#define DSI_HS_CTRL_GEN_SHORT_W2			(0x23)
++#define DSI_HS_CTRL_GEN_R0				(0x04)
++#define DSI_HS_CTRL_GEN_R1				(0x14)
++#define DSI_HS_CTRL_GEN_R2				(0x24)
++#define DSI_HS_CTRL_GEN_LONG_W				(0x29)
++#define DSI_HS_CTRL_MCS_SHORT_W0			(0x05)
++#define DSI_HS_CTRL_MCS_SHORT_W1			(0x15)
++#define DSI_HS_CTRL_MCS_R0				(0x06)
++#define DSI_HS_CTRL_MCS_LONG_W				(0x39)
++#define DSI_HS_CTRL_VC_OFFSET				(0x06)
++#define DSI_HS_CTRL_WC_OFFSET				(0x08)
++
++#define	DSI_FIFO_GEN_HS_DATA_FULL			(1 << 0)
++#define DSI_FIFO_GEN_HS_DATA_HALF_EMPTY			(1 << 1)
++#define DSI_FIFO_GEN_HS_DATA_EMPTY			(1 << 2)
++#define DSI_FIFO_GEN_LP_DATA_FULL			(1 << 8)
++#define DSI_FIFO_GEN_LP_DATA_HALF_EMPTY			(1 << 9)
++#define DSI_FIFO_GEN_LP_DATA_EMPTY			(1 << 10)
++#define DSI_FIFO_GEN_HS_CTRL_FULL			(1 << 16)
++#define DSI_FIFO_GEN_HS_CTRL_HALF_EMPTY			(1 << 17)
++#define DSI_FIFO_GEN_HS_CTRL_EMPTY			(1 << 18)
++#define DSI_FIFO_GEN_LP_CTRL_FULL			(1 << 24)
++#define DSI_FIFO_GEN_LP_CTRL_HALF_EMPTY			(1 << 25)
++#define DSI_FIFO_GEN_LP_CTRL_EMPTY			(1 << 26)
++#define DSI_FIFO_DBI_EMPTY				(1 << 27)
++#define DSI_FIFO_DPI_EMPTY				(1 << 28)
++
++#define DSI_DBI_HS_LP_SWITCH_MASK			(0x1)
++
++#define DSI_HS_LP_SWITCH_COUNTER_OFFSET			(0x0)
++#define DSI_LP_HS_SWITCH_COUNTER_OFFSET			(0x16)
++
++#define DSI_DPI_CTRL_HS_SHUTDOWN			(0x00000001)
++#define DSI_DPI_CTRL_HS_TURN_ON				(0x00000002)
++
++/* Medfield DSI adapter registers */
++#define MIPIA_CONTROL_REG				0xb104
++#define MIPIA_DATA_ADD_REG				0xb108
++#define MIPIA_DATA_LEN_REG				0xb10c
++#define MIPIA_CMD_ADD_REG				0xb110
++#define MIPIA_CMD_LEN_REG				0xb114
++
++/*dsi power modes*/
++#define DSI_POWER_MODE_DISPLAY_ON	(1 << 2)
++#define DSI_POWER_MODE_NORMAL_ON	(1 << 3)
++#define DSI_POWER_MODE_SLEEP_OUT	(1 << 4)
++#define DSI_POWER_MODE_PARTIAL_ON	(1 << 5)
++#define DSI_POWER_MODE_IDLE_ON		(1 << 6)
++
++enum {
++	MDFLD_DSI_ENCODER_DBI = 0,
++	MDFLD_DSI_ENCODER_DPI,
 +};
 +
-+static LIST_HEAD(aliases_lookup);
++enum {
++	MDFLD_DSI_VIDEO_NON_BURST_MODE_SYNC_PULSE = 1,
++	MDFLD_DSI_VIDEO_NON_BURST_MODE_SYNC_EVENTS = 2,
++	MDFLD_DSI_VIDEO_BURST_MODE = 3,
++};
 +
- struct device_node *allnodes;
- struct device_node *of_chosen;
-+struct device_node *of_aliases;
++#define DSI_DPI_COMPLETE_LAST_LINE			(1 << 2)
++#define DSI_DPI_DISABLE_BTA				(1 << 3)
++/* Panel types */
++enum {
++	TPO_CMD,
++	TPO_VID,
++	TMD_CMD,
++	TMD_VID,
++	PYR_CMD,
++	PYR_VID,
++	TPO,
++	TMD,
++	PYR,
++	HDMI,
++	GCT_DETECT
++};
 +
-+static DEFINE_MUTEX(of_aliases_mutex);
- 
- /* use when traversing tree through the allnext, child, sibling,
-  * or parent members of struct device_node.
-@@ -980,3 +1005,108 @@ out_unlock:
- }
- #endif /* defined(CONFIG_OF_DYNAMIC) */
- 
-+static void of_alias_add(struct alias_prop *ap, struct device_node *np,
-+			 int id, const char *stem, int stem_len)
-+{
-+	ap->id = id;
-+	strncpy(ap->stem, stem, stem_len);
-+	ap->stem[stem_len] = 0;
-+	list_add_tail(&ap->link, &aliases_lookup);
-+	pr_debug("adding DT alias:%s: stem=%s id=%i node=%s\n",
-+		 ap->alias, ap->stem, ap->id, np ? np->full_name : NULL);
-+}
++/* Junk that belongs elsewhere */
++#define TPO_PANEL_WIDTH		84
++#define TPO_PANEL_HEIGHT	46
++#define TMD_PANEL_WIDTH		39
++#define TMD_PANEL_HEIGHT	71
++#define PYR_PANEL_WIDTH		53
++#define PYR_PANEL_HEIGHT	95
 +
-+/**
-+ * of_alias_scan() - Scan all properties of 'aliases' node
-+ *
-+ * The function scans all the properties of 'aliases' node and populate
-+ * the the global lookup table with the properties.  It returns the
-+ * number of alias_prop found, or error code in error case.
++/* Panel interface */
++struct panel_info {
++	u32 width_mm;
++	u32 height_mm;
++};
++
++struct mdfld_dsi_dbi_output;
++
++struct mdfld_dsi_connector_state {
++	u32 mipi_ctrl_reg;
++};
++
++struct mdfld_dsi_encoder_state {
++
++};
++
++struct mdfld_dsi_connector {
++	/*
++	 * This is ugly, but I have to use connector in it! :-(
++	 * FIXME: use drm_connector instead.
++	 */
++	struct psb_intel_output base;
++
++	int pipe;
++	void *private;
++	void *pkg_sender;
++
++	/* Connection status */
++	enum drm_connector_status status;
++};
++
++struct mdfld_dsi_encoder {
++	struct drm_encoder base;
++	void *private;
++};
++
++/*
++ * DSI config, consists of one DSI connector, two DSI encoders.
++ * DRM will pick up on DSI encoder basing on differents configs.
 + */
-+__init void of_alias_scan(void)
-+{
-+	struct property *pp;
++struct mdfld_dsi_config {
++	struct drm_device *dev;
++	struct drm_display_mode *fixed_mode;
++	struct drm_display_mode *mode;
 +
-+	if (!of_aliases)
-+		return;
++	struct mdfld_dsi_connector *connector;
++	struct mdfld_dsi_encoder *encoders[DRM_CONNECTOR_MAX_ENCODER];
++	struct mdfld_dsi_encoder *encoder;
 +
-+	for_each_property(pp, of_aliases->properties) {
-+		const char *start = pp->name;
-+		const char *end = start + strlen(start);
-+		struct device_node *np;
-+		struct alias_prop *ap;
-+		int id, len;
++	int changed;
 +
-+		/* Skip those we do not want to proceed */
-+		if (!strcmp(pp->name, "name") ||
-+		    !strcmp(pp->name, "phandle") ||
-+		    !strcmp(pp->name, "linux,phandle"))
-+			continue;
++	int bpp;
++	int type;
++	int lane_count;
++	/*Virtual channel number for this encoder*/
++	int channel_num;
++	/*video mode configure*/
++	int video_mode;
 +
-+		np = of_find_node_by_path(pp->value);
-+		if (!np)
-+			continue;
++	int dvr_ic_inited;
++};
 +
-+		/* walk the alias backwards to extract the id and work out
-+		 * the 'stem' string */
-+		while (isdigit(*(end-1)) && end > start)
-+			end--;
-+		len = end - start;
-+		id = strlen(end) ? simple_strtoul(end, NULL, 10) : -1;
++#define MDFLD_DSI_CONNECTOR(psb_output) \
++		(container_of(psb_output, struct mdfld_dsi_connector, base))
 +
-+		/* Allocate an alias_prop with enough space for the stem */
-+		ap = early_init_dt_alloc_memory_arch(sizeof(*ap) + len + 1, 4);
-+		if (!ap)
-+			continue;
-+		ap->alias = start;
-+		of_alias_add(ap, np, id, start, len);
-+	}
-+}
++#define MDFLD_DSI_ENCODER(encoder) \
++		(container_of(encoder, struct mdfld_dsi_encoder, base))
 +
-+/**
-+ * of_alias_get_id() - Get alias id for the given device_node
-+ * @np:		Pointer to the given device_node
-+ * @stem:	Alias stem of the given device_node
-+ *
-+ * The function travels the lookup table to get alias id for the given
-+ * device_node and alias stem.  It returns the alias id if find it.
-+ * If not, dynamically creates one in the lookup table and returns it,
-+ * or returns error code if fail to create.
-+ */
-+int of_alias_get_id(struct device_node *np, const char *stem)
-+{
-+	struct alias_prop *app;
-+	int id = 0;
-+	bool found = false;
++struct panel_funcs {
++	const struct drm_encoder_funcs *encoder_funcs;
++	const struct drm_encoder_helper_funcs *encoder_helper_funcs;
++	struct drm_display_mode *(*get_config_mode) (struct drm_device *);
++	void (*update_fb) (struct mdfld_dsi_dbi_output *, int);
++	int (*get_panel_info) (struct drm_device *, int, struct panel_info *);
++	int (*reset)(int pipe);
++	void (*drv_ic_init)(struct mdfld_dsi_config *dsi_config, int pipe);
++};
 +
-+	mutex_lock(&of_aliases_mutex);
-+	list_for_each_entry(app, &aliases_lookup, link) {
-+		if (strcmp(app->stem, stem) != 0)
-+			continue;
-+
-+		if (np == app->np) {
-+			found = true;
-+			id = app->id;
-+			break;
-+		}
-+
-+		if (id <= app->id)
-+			id = app->id + 1;
-+	}
-+
-+	/* If an id is not found, then allocate a new one */
-+	if (!found) {
-+		app = kzalloc(sizeof(*app) + strlen(stem) + 1, 4);
-+		if (!app) {
-+			id = -ENODEV;
-+			goto out;
-+		}
-+		of_alias_add(app, np, id, stem, strlen(stem));
-+	}
-+
-+ out:
-+	mutex_unlock(&of_aliases_mutex);
-+
-+	return id;
-+}
-+EXPORT_SYMBOL_GPL(of_alias_get_id);
-diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-index 65200af..13d6d3a 100644
---- a/drivers/of/fdt.c
-+++ b/drivers/of/fdt.c
-@@ -707,10 +707,12 @@ void __init unflatten_device_tree(void)
- 	__unflatten_device_tree(initial_boot_params, &allnodes,
- 				early_init_dt_alloc_memory_arch);
- 
--	/* Get pointer to OF "/chosen" node for use everywhere */
-+	/* Get pointer to "/chosen" and "/aliasas" nodes for use everywhere */
- 	of_chosen = of_find_node_by_path("/chosen");
- 	if (of_chosen == NULL)
- 		of_chosen = of_find_node_by_path("/chosen@0");
-+	of_aliases = of_find_node_by_path("/aliases");
-+	of_alias_scan();
- }
- 
- #endif /* CONFIG_OF_EARLY_FLATTREE */
-diff --git a/include/linux/of.h b/include/linux/of.h
-index 4fc4c1b..e334c11 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -68,6 +68,7 @@ struct device_node {
- /* Pointer for first entry in chain of all nodes. */
- extern struct device_node *allnodes;
- extern struct device_node *of_chosen;
-+extern struct device_node *of_aliases;
- extern rwlock_t devtree_lock;
- 
- static inline bool of_have_populated_dt(void)
-@@ -205,6 +206,9 @@ extern int of_device_is_available(const struct device_node *device);
- extern const void *of_get_property(const struct device_node *node,
- 				const char *name,
- 				int *lenp);
-+#define for_each_property(pp, properties) \
-+	for (pp = properties; pp != NULL; pp = pp->next)
-+
- extern int of_n_addr_cells(struct device_node *np);
- extern int of_n_size_cells(struct device_node *np);
- extern const struct of_device_id *of_match_node(
-@@ -217,6 +221,10 @@ extern int of_parse_phandles_with_args(struct device_node *np,
- 	const char *list_name, const char *cells_name, int index,
- 	struct device_node **out_node, const void **out_args);
- 
-+extern void *early_init_dt_alloc_memory_arch(u64 size, u64 align);
-+extern void of_alias_scan(void);
-+extern int of_alias_get_id(struct device_node *np, const char *stem);
-+
- extern int of_machine_is_compatible(const char *compat);
- 
- extern int prom_add_property(struct device_node* np, struct property* prop);
-diff --git a/include/linux/of_fdt.h b/include/linux/of_fdt.h
-index c84d900..b74b74f 100644
---- a/include/linux/of_fdt.h
-+++ b/include/linux/of_fdt.h
-@@ -97,7 +97,6 @@ extern void early_init_dt_check_for_initrd(unsigned long node);
- extern int early_init_dt_scan_memory(unsigned long node, const char *uname,
- 				     int depth, void *data);
- extern void early_init_dt_add_memory_arch(u64 base, u64 size);
--extern void * early_init_dt_alloc_memory_arch(u64 size, u64 align);
- extern u64 dt_mem_next_cell(int s, __be32 **cellp);
- 
- /*
 
