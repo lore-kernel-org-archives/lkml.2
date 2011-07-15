@@ -1,103 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751501Ab1GOMc4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 08:32:56 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:61123 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810Ab1GOMcz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 08:32:55 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Cc: Andrew Morton <akpm@linux-foundation.org>, NeilBrown <neilb@suse.de>,
-        viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        apw@canonical.com, nbd@openwrt.org, hramrach@centrum.cz,
-        jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu
-Subject: Re: [PATCH 0/7] overlay filesystem: request for inclusion
-References: <1306932380-10280-1-git-send-email-miklos@szeredi.hu>
-	<20110608153208.dc705cda.akpm@linux-foundation.org>
-	<20110609115934.3c53f78f@notabene.brown>
-	<20110608205233.ebfedc4d.akpm@linux-foundation.org>
-	<87wrgvb28a.fsf@tucsk.pomaz.szeredi.hu>
-	<20110609123843.77153b27.akpm@linux-foundation.org>
-	<877h8uzmsi.fsf@tucsk.pomaz.szeredi.hu> <21324.1307677721@jrobl>
-	<871uyxa7ol.fsf@tucsk.pomaz.szeredi.hu>
-	<8739ig3k93.fsf@tucsk.pomaz.szeredi.hu> <8536.1310214135@jrobl>
-Date: Fri, 15 Jul 2011 14:33:51 +0200
-In-Reply-To: <8536.1310214135@jrobl> (J. R. Okajima's message of "Sat, 09 Jul
-	2011 21:22:15 +0900")
-Message-ID: <87k4bjd8pc.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1751574Ab1GOMmZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 08:42:25 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:50812 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750823Ab1GOMmY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 08:42:24 -0400
+Date: Fri, 15 Jul 2011 05:42:06 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ed Tomlinson <edt@aei.ca>, Steven Rostedt <rostedt@goodmis.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: INFO: possible circular locking dependency detected
+Message-ID: <20110715124206.GA2376@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110714144946.GA3354@swordfish.minsk.epam.com>
+ <1310665613.27864.50.camel@gandalf.stny.rr.com>
+ <20110714191809.GF2349@linux.vnet.ibm.com>
+ <201107150705.46248.edt@aei.ca>
+ <1310729362.2586.325.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1310729362.2586.325.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"J. R. Okajima" <hooanon05@yahoo.co.jp> writes:
+On Fri, Jul 15, 2011 at 01:29:22PM +0200, Peter Zijlstra wrote:
+> On Fri, 2011-07-15 at 07:05 -0400, Ed Tomlinson wrote:
+> > Jul 14 23:21:18 grover kernel: [  920.659426] -> #1 (rcu_node_level_0){..-...}:
+> > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff8108b7e5>] lock_acquire+0x95/0x140
+> > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff8157808b>] _raw_spin_lock+0x3b/0x50
+> > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff810ba797>] __rcu_read_unlock+0x197/0x2d0
+> > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff8103f2f5>] select_task_rq_fair+0x585/0xa80
+> > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff8104633b>] try_to_wake_up+0x17b/0x360
+> > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff81046575>] wake_up_process+0x15/0x20
+> > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff810528f4>] irq_exit+0xb4/0x100
+> > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff8158197e>] smp_apic_timer_interrupt+0x6e/0x99
+> > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff81580c53>] apic_timer_interrupt+0x13/0x20
+> > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff810ba6e9>] __rcu_read_unlock+0xe9/0x2d0 
+> > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff814c20d4>] sock_def_readable+0x94/0xc0
+> 
+> Ed, are you perchance running with force_irqthreads?
+> 
+> Paul, what appears to be happening here is that some rcu_read_unlock()
+> gets interrupted, possibly before calling rcu_read_unlock_special(),
+> possibly not if the interrupt is itself the timer interrupt.
+> 
+> Supposing ->rcu_read_unlock_special is set before, any wakeup happening
+> from an interrupt hitting __rcu_read_unlock():
+> 
+> void __rcu_read_unlock(void)
+> {
+>         struct task_struct *t = current;
+>                 
+>         barrier();  /* needed if we ever invoke rcu_read_unlock in rcutree.c */
+>         --t->rcu_read_lock_nesting;
+>         barrier();  /* decrement before load of ->rcu_read_unlock_special */
+>         if (t->rcu_read_lock_nesting == 0 &&
+>             unlikely(ACCESS_ONCE(t->rcu_read_unlock_special)))
+>                 rcu_read_unlock_special(t);
+> #ifdef CONFIG_PROVE_LOCKING
+>         WARN_ON_ONCE(ACCESS_ONCE(t->rcu_read_lock_nesting) < 0);
+> #endif /* #ifdef CONFIG_PROVE_LOCKING */
+> }
+> 
+> After --t->rcu_read_lock_nesting, but before calling
+> rcu_read_unlock_special(), will trigger this lock inversion.
+> 
+> The alternative case, ->rcu_read_unlock_special is not set yet, it can
+> be set if the interrupt hitting in that same spot above, is the timer
+> interrupt, and the wakeup happens either from the softirq ran from the
+> hard IRQ tail, or as I suspect here happens, the wakeup of ksoftirqd/#.
 
-> Miklos Szeredi:
->> Here's a patch to document these limitations.
->
-> If you want covering limitations as possible, I'd suggest you to add
-> these.
-> - Some versions of GNU find(1) may produce a warning about the link
->   count of a directory. When a sub dir exists, find(1) expects it
->   increments the link count of the parent dir.
+Argh.  I am looking into this.
 
-st_nlink==1 for directories is widely accepted way of saying that the
-number of subdirectories is unknown.  Various filesystems already do
-this, and versions of GNU utils that I have come across accept it.
-
-> - If I remember correctly, Valerie Aurora has pointed out that
->   open(O_RDONLY) + fchmod() will work correctly in UnionMount.
->   It is true in overlayfs too?
-
-Neither union-mounts nor overlayfs can handle this case.
-
-I hadn't thought about this case, so overlayfs would modify the lower
-filesystem in that case, which is a no-no.
-
-Following patch fixes this and return -EROFS for the above case.  I also
-updated the non-standard section in the docs.
-
-Thanks,
-Miklos
-----
-
-Subject: ovl: make lower mount read-only
-
-From: Miklos Szeredi <mszeredi@suse.cz>
-
-If a file only existing on the lower fs is operned for O_RDONLY and
-fchmod/fchown/etc is performed on the open file then this will modify
-the lower fs, which is not what we want.
-
-Copying up at this point is not possible.  The best solution is to
-return an error for this corner case and hope applications are not
-relying on it.
-
-Reported-by: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
----
- fs/overlayfs/super.c |    6 ++++++
- 1 file changed, 6 insertions(+)
-
-Index: linux-2.6/fs/overlayfs/super.c
-===================================================================
---- linux-2.6.orig/fs/overlayfs/super.c	2011-07-15 12:48:03.000000000 +0200
-+++ linux-2.6/fs/overlayfs/super.c	2011-07-15 13:47:35.000000000 +0200
-@@ -569,6 +569,12 @@ static int ovl_fill_super(struct super_b
- 		goto out_put_upper_mnt;
- 	}
- 
-+	/*
-+	 * Make lower_mnt R/O.  That way fchmod/fchown on lower file
-+	 * will fail instead of modifying lower fs.
-+	 */
-+	ufs->lower_mnt->mnt_flags |= MNT_READONLY;
-+
- 	/* If the upper fs is r/o, we mark overlayfs r/o too */
- 	if (ufs->upper_mnt->mnt_sb->s_flags & MS_RDONLY)
- 		sb->s_flags |= MS_RDONLY;
+							Thanx, Paul
