@@ -1,72 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965Ab1GOTyx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 15:54:53 -0400
-Received: from msux-gh1-uea01.nsa.gov ([63.239.65.39]:55502 "EHLO
-	msux-gh1-uea01.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755920Ab1GOTyv (ORCPT
+	id S1754759Ab1GOT4a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 15:56:30 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52955 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752157Ab1GOT43 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 15:54:51 -0400
-Subject: Re: [kernel-hardening] Re: [PATCH] move RLIMIT_NPROC check from
- set_user() to do_execve_common()
-From: Stephen Smalley <sds@tycho.nsa.gov>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: NeilBrown <neilb@suse.de>, kernel-hardening@lists.openwall.com,
-        Solar Designer <solar@openwall.com>, James Morris <jmorris@namei.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Eric Paris <eparis@redhat.com>, Willy Tarreau <w@1wt.eu>,
-        Sebastian Krahmer <krahmer@suse.de>
-In-Reply-To: <20110715152641.GA6286@albatros>
-References: <20110713170657.59dae548@notabene.brown>
-	 <CA+55aFwQKqvNvzTMYXVW_yKkFtNsyv8uuBiWiwYLof-nPqPu9w@mail.gmail.com>
-	 <alpine.LRH.2.00.1107141009510.17067@tundra.namei.org>
-	 <20110714112751.1bfd998f@notabene.brown>
-	 <20110714150602.GA30019@openwall.com>
-	 <20110715133013.4fa38d19@notabene.brown> <20110715063113.GA3166@albatros>
-	 <20110715170650.585f1dad@notabene.brown> <20110715073823.GA3821@albatros>
-	 <1310738313.30257.27.camel@moss-pluto>  <20110715152641.GA6286@albatros>
-Content-Type: text/plain; charset="UTF-8"
-Organization: National Security Agency
-Date: Fri, 15 Jul 2011 15:54:43 -0400
-Message-ID: <1310759683.30257.123.camel@moss-pluto>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Fri, 15 Jul 2011 15:56:29 -0400
+Date: Fri, 15 Jul 2011 13:56:26 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Peter Korsgaard <jacmet@sunsite.dk>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 1/3] mcp23s08: get rid of setup/teardown callbacks
+Message-ID: <20110715195626.GH2833@ponder.secretlab.ca>
+References: <1310718332-10438-1-git-send-email-jacmet@sunsite.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1310718332-10438-1-git-send-email-jacmet@sunsite.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-15 at 19:26 +0400, Vasiliy Kulikov wrote:
-> Hi Stephen,
+On Fri, Jul 15, 2011 at 10:25:30AM +0200, Peter Korsgaard wrote:
+> There's no in-tree users, and bus notifiers are more generic anyway.
 > 
-> On Fri, Jul 15, 2011 at 09:58 -0400, Stephen Smalley wrote:
-> > Does this have implications for Android's zygote model?  There you have
-> > a long running uid 0 / all caps process (the zygote), which forks itself
-> > upon receiving a request to spawn an app and then calls
+> Signed-off-by: Peter Korsgaard <jacmet@sunsite.dk>
+
+Applied all three, thanks.
+
+g.
+
+> ---
+>  drivers/gpio/gpio-mcp23s08.c |   19 -------------------
+>  include/linux/spi/mcp23s08.h |    9 ---------
+>  2 files changed, 0 insertions(+), 28 deletions(-)
 > 
-> > setgroups();
-> > setrlimit(); setgid(); setuid();
+> diff --git a/drivers/gpio/gpio-mcp23s08.c b/drivers/gpio/gpio-mcp23s08.c
+> index da3e04f..ef61234 100644
+> --- a/drivers/gpio/gpio-mcp23s08.c
+> +++ b/drivers/gpio/gpio-mcp23s08.c
+> @@ -432,14 +432,6 @@ static int mcp23s08_probe(struct spi_device *spi)
+>  	 * handled here...
+>  	 */
+>  
+> -	if (pdata->setup) {
+> -		status = pdata->setup(spi,
+> -				pdata->base, data->ngpio,
+> -				pdata->context);
+> -		if (status < 0)
+> -			dev_dbg(&spi->dev, "setup --> %d\n", status);
+> -	}
+> -
+>  	return 0;
+>  
+>  fail:
+> @@ -459,20 +451,9 @@ fail:
+>  static int mcp23s08_remove(struct spi_device *spi)
+>  {
+>  	struct mcp23s08_driver_data	*data = spi_get_drvdata(spi);
+> -	struct mcp23s08_platform_data	*pdata = spi->dev.platform_data;
+>  	unsigned			addr;
+>  	int				status = 0;
+>  
+> -	if (pdata->teardown) {
+> -		status = pdata->teardown(spi,
+> -				pdata->base, data->ngpio,
+> -				pdata->context);
+> -		if (status < 0) {
+> -			dev_err(&spi->dev, "%s --> %d\n", "teardown", status);
+> -			return status;
+> -		}
+> -	}
+> -
+>  	for (addr = 0; addr < ARRAY_SIZE(data->mcp); addr++) {
+>  		int tmp;
+>  
+> diff --git a/include/linux/spi/mcp23s08.h b/include/linux/spi/mcp23s08.h
+> index c42cff8..2d676d5 100644
+> --- a/include/linux/spi/mcp23s08.h
+> +++ b/include/linux/spi/mcp23s08.h
+> @@ -22,13 +22,4 @@ struct mcp23s08_platform_data {
+>  	 * base to base+15 (or base+31 for s17 variant).
+>  	 */
+>  	unsigned	base;
+> -
+> -	void		*context;	/* param to setup/teardown */
+> -
+> -	int		(*setup)(struct spi_device *spi,
+> -					int gpio, unsigned ngpio,
+> -					void *context);
+> -	int		(*teardown)(struct spi_device *spi,
+> -					int gpio, unsigned ngpio,
+> -					void *context);
+>  };
+> -- 
+> 1.7.5.4
 > 
-> Is RLIMIT_NPROC forced in your model and setuid() is expected to fail
-> because of NPROC exceeding?  If no, then it is not touched at all.
-
-I don't know what their intent is.  But it is an example of a case where
-moving the enforcement from setuid() to a subsequent execve() causes the
-check to never get applied.  As to whether or not they care, I don't
-know.  An app that calls fork() repeatedly will still be stopped, but an
-app that repeatedly connects to the zygote and asks to spawn another
-instance of itself would be unlimited.
-
-OTOH, the current RLIMIT_NPROC check and lack of setuid() error checking
-has been a repeated issue for Android.
-
--- 
-Stephen Smalley
-National Security Agency
-
