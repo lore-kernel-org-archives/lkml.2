@@ -1,83 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965437Ab1GOKLH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 06:11:07 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:62440 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965378Ab1GOKLG convert rfc822-to-8bit (ORCPT
+	id S965440Ab1GOKOe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 06:14:34 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55565 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965014Ab1GOKOd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 06:11:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <201107142318.33080.edt@aei.ca>
-References: <201107142318.33080.edt@aei.ca>
-Date: Fri, 15 Jul 2011 13:11:04 +0300
-Message-ID: <CABBYNZ+fxUWhi0uF0b_6Z8iqYd7Pp_4zPBRyM6Gyh3zJH1am5Q@mail.gmail.com>
-Subject: Re: [BUG] Bluetooth broken post rc7
-From: Luiz Augusto von Dentz <luiz.dentz@gmail.com>
-To: Ed Tomlinson <edt@aei.ca>
-Cc: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        Ilia Kolomisnky <iliak@ti.com>, David Miller <davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 15 Jul 2011 06:14:33 -0400
+Subject: Re: [PATCH] sched: Separate group-scheduling code more clearly
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Jan H." =?ISO-8859-1?Q?Sch=F6nherr?= <schnhrr@cs.tu-berlin.de>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+In-Reply-To: <1310661163-16606-1-git-send-email-schnhrr@cs.tu-berlin.de>
+References: <1310580816-10861-1-git-send-email-schnhrr@cs.tu-berlin.de>
+	 <1310580816-10861-4-git-send-email-schnhrr@cs.tu-berlin.de>
+	 <1310590063.2586.32.camel@twins>
+	 <1310661163-16606-1-git-send-email-schnhrr@cs.tu-berlin.de>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Fri, 15 Jul 2011 12:14:16 +0200
+Message-ID: <1310724856.2586.298.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 2011-07-14 at 18:32 +0200, Jan H. SchÃ¶nherr wrote:
+> 
+> I get your point, then what about doing it the other way round?
+> The patch below should be more to your liking.
 
-On Fri, Jul 15, 2011 at 6:18 AM, Ed Tomlinson <edt@aei.ca> wrote:
-> Hi,
->
-> I booted to todays linux git and bluetooth is no longer working.  My magic mouse will not connect correctly.
->
-> Reverting:
->
-> commit 9fa7e4f76f3658ba1f44fbdb95c77e7df3f53f95
-> Author: Gustavo F. Padovan <padovan@profusion.mobi>
-> Date:   Thu Jun 30 16:11:30 2011 -0300
->
->    Bluetooth: Fix regression with incoming L2CAP connections
->
->    PTS test A2DP/SRC/SRC_SET/TC_SRC_SET_BV_02_I revealed that
->    ( probably after the df3c3931e commit ) the l2cap connection
->    could not be established in case when the "Auth Complete" HCI
->    event does not arive before the initiator send "Configuration
->    request", in which case l2cap replies with "Command rejected"
->    since the channel is still in BT_CONNECT2 state.
->
->    Based on patch from: Ilia Kolomisnky <iliak@ti.com>
->
->    Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
->
-> Fixes the bug here (things work like rc7).
->
-> Do we really need 9fa7e4f76f3658ba1f44fbdb95c77e7df3f53f95 in 3.0?
->
-> Thanks,
->
-> Ed Tomlinson
-> --
+Yes, Thanks!
 
-I've changed the check to something like this:
+> One could do something similar with sched_init() to get rid of
+> some #ifdefs, i. e. separating code based on features instead
+> of handling all features intermixed. Not sure whether it is 
+> worth the effort, though...
 
-diff --git a/net/bluetooth/l2cap_core.c b/net/bluetooth/l2cap_core.c
-index ebff14c..f88b9c8 100644
---- a/net/bluetooth/l2cap_core.c
-+++ b/net/bluetooth/l2cap_core.c
-@@ -2323,8 +2323,7 @@ static inline int l2cap_config_req(struct
-l2cap_conn *conn, struct l2cap_cmd_hdr
+I'll try and remember next time someone needs to touch that code ;-)
 
-        sk = chan->sk;
+> PS: This time with an extra From line, so that your tools hopefully
+> work without any problems. :) 
 
--       if ((bt_sk(sk)->defer_setup && sk->sk_state != BT_CONNECT2) ||
--                (!bt_sk(sk)->defer_setup && sk->sk_state != BT_CONFIG)) {
-+       if ((sk->sk_state != BT_CONNECT2) && (sk->sk_state != BT_CONFIG)) {
-                struct l2cap_cmd_rej rej;
-
-                rej.reason = cpu_to_le16(0x0002);
-
-Seems to work fine.
-
--- 
-Luiz Augusto von Dentz
+They do, again thanks!
