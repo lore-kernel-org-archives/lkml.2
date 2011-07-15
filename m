@@ -1,57 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752351Ab1GOOvt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 10:51:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36247 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751622Ab1GOOvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 10:51:48 -0400
-Date: Fri, 15 Jul 2011 16:51:32 +0200
-From: Greg KH <gregkh@suse.de>
-To: Theodore Tso <tytso@MIT.EDU>
-Cc: Mike Waychison <mikew@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Kconfig: Allow disabling of CONFIG_DEVPORT
-Message-ID: <20110715145132.GA4296@suse.de>
-References: <1310675693-9204-1-git-send-email-mikew@google.com>
- <20110714212113.GA28639@suse.de>
- <CAGTjWtB53vW5B2EJ5=+C3buDAY0RtsfANxx5NhC5aWnmEx08EQ@mail.gmail.com>
- <20110715064147.GA1021@suse.de>
- <C70E3912-6AA9-4EB3-85CC-11BF90D230C8@mit.edu>
+	id S1751350Ab1GOOys (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 10:54:48 -0400
+Received: from frost.carfax.org.uk ([212.13.194.111]:46072 "EHLO
+	frost.carfax.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750705Ab1GOOyq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 10:54:46 -0400
+Date: Fri, 15 Jul 2011 15:54:36 +0100
+From: Hugo Mills <hugo-lkml@carfax.org.uk>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: Ric Wheeler <rwheeler@redhat.com>, NeilBrown <neilb@suse.de>,
+        david <david@lang.hm>,
+        Nico Schottelius <nico-lkml-20110623@schottelius.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: Re: Mis-Design of Btrfs?
+Message-ID: <20110715145436.GB29265@carfax.org.uk>
+Mail-Followup-To: Hugo Mills <hugo-lkml@carfax.org.uk>,
+	Chris Mason <chris.mason@oracle.com>,
+	Ric Wheeler <rwheeler@redhat.com>, NeilBrown <neilb@suse.de>,
+	david <david@lang.hm>,
+	Nico Schottelius <nico-lkml-20110623@schottelius.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	linux-btrfs <linux-btrfs@vger.kernel.org>,
+	Alasdair G Kergon <agk@redhat.com>
+References: <1310696606-sup-710@shiny>
+ <alpine.DEB.2.02.1107142149420.3558@asgard.lang.hm>
+ <20110715163354.74fa2083@notabene.brown>
+ <1310728784-sup-9024@shiny>
+ <4E20395C.1000301@redhat.com>
+ <1310735821-sup-2589@shiny>
+ <4E204139.5060702@redhat.com>
+ <1310738205-sup-715@shiny>
+ <20110715140724.GA29265@carfax.org.uk>
+ <1310739313-sup-2118@shiny>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="kXdP64Ggrk/fb43R"
 Content-Disposition: inline
-In-Reply-To: <C70E3912-6AA9-4EB3-85CC-11BF90D230C8@mit.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1310739313-sup-2118@shiny>
+X-GPG-Fingerprint: 8C59 86C7 81F3 93FE BB02  DDB1 20AC B3BE 515C 238D
+X-GPG-Key: 515C238D
+X-Parrot: It is no more. It has joined the choir invisible.
+X-IRC-Nicks: darksatanic darkersatanic darkling darkthing
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-frost.carfax.org.uk-Spam-Score: 0.0 (/)
+X-frost.carfax.org.uk-Spam-Report: Spam detection software, running on the system "admin.kwak.bitfolk.com", has
+ identified this incoming email as possible spam.  The original message
+ has been attached to this so you can view it (if it isn't spam) or label
+ similar future email.  If you have any questions, see
+ the administrator of that system for details.
+ Content preview:  On Fri, Jul 15, 2011 at 10:24:25AM -0400, Chris Mason wrote:
+    > Excerpts from Hugo Mills's message of 2011-07-15 10:07:24 -0400: > > On
+    Fri, Jul 15, 2011 at 10:00:35AM -0400, Chris Mason wrote: > > > Excerpts
+   from Ric Wheeler's message of 2011-07-15 09:31:37 -0400: > > > > On 07/15/2011
+    02:20 PM, Chris Mason wrote: > > > > > Excerpts from Ric Wheeler's message
+    of 2011-07-15 08:58:04 -0400: > > > > >> On 07/15/2011 12:34 PM, Chris Mason
+    wrote: > > > > > [ triggering IO retries on failed crc or other checks ]
+   > > > > > > > > > >>> But, maybe the whole btrfs model is backwards for a
+   generic layer. > > > > >>> Instead of sending down ios and testing when they
+    come back, we could > > > > >>> just set a verification function (or stack
+    of them?). > > > > >>> > > > > >>> For metadata, btrfs compares the crc and
+    a few other fields of the > > > > >>> metadata block, so we can easily add
+    a compare function pointer and a > > > > >>> void * to pass in. > > > > >>>
+    > > > > >>> The problem is the crc can take a lot of CPU, so btrfs kicks
+   it off to > > > > >>> threading pools so saturate all the cpus on the box.
+    But there's no > > > > >>> reason we can't make that available lower down.
+    > > > > >>> > > > > >>> If we pushed the verification down, the retries could
+    bubble up the > > > > >>> stack instead of the other way around. > > > >
+   >>> > > > > >>> -chris > > > > >> I do like the idea of having the ability
+    to do the verification and retries down > > > > >> the stack where you actually
+    have the most context to figure out what is possible... > > > > >> > > >
+   > >> Why would you need to bubble back up anything other than an error when
+    all > > > > >> retries have failed? > > > > > By bubble up I mean that if
+    you have multiple layers capable of doing > > > > > retries, the lowest levels
+    would retry first. Basically by the time we > > > > > get an -EIO_ALREADY_RETRIED
+    we know there's nothing that lower level can > > > > > do to help. > > >
+   > > > > > > > -chris > > > > > > > > Absolutely sounds like the most sane
+   way to go to me, [...] 
+ Content analysis details:   (0.0 points, 5.0 required)
+  pts rule name              description
+ ---- ---------------------- --------------------------------------------------
+  0.0 RP_MATCHES_RCVD        Envelope sender domain matches handover relay domain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 15, 2011 at 09:13:27AM -0400, Theodore Tso wrote:
-> 
-> On Jul 15, 2011, at 2:41 AM, Greg KH wrote:
-> 
+
+--kXdP64Ggrk/fb43R
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Fri, Jul 15, 2011 at 10:24:25AM -0400, Chris Mason wrote:
+> Excerpts from Hugo Mills's message of 2011-07-15 10:07:24 -0400:
+> > On Fri, Jul 15, 2011 at 10:00:35AM -0400, Chris Mason wrote:
+> > > Excerpts from Ric Wheeler's message of 2011-07-15 09:31:37 -0400:
+> > > > On 07/15/2011 02:20 PM, Chris Mason wrote:
+> > > > > Excerpts from Ric Wheeler's message of 2011-07-15 08:58:04 -0400:
+> > > > >> On 07/15/2011 12:34 PM, Chris Mason wrote:
+> > > > > [ triggering IO retries on failed crc or other checks ]
+> > > > >
+> > > > >>> But, maybe the whole btrfs model is backwards for a generic layer.
+> > > > >>> Instead of sending down ios and testing when they come back, we could
+> > > > >>> just set a verification function (or stack of them?).
+> > > > >>>
+> > > > >>> For metadata, btrfs compares the crc and a few other fields of the
+> > > > >>> metadata block, so we can easily add a compare function pointer and a
+> > > > >>> void * to pass in.
+> > > > >>>
+> > > > >>> The problem is the crc can take a lot of CPU, so btrfs kicks it off to
+> > > > >>> threading pools so saturate all the cpus on the box.  But there's no
+> > > > >>> reason we can't make that available lower down.
+> > > > >>>
+> > > > >>> If we pushed the verification down, the retries could bubble up the
+> > > > >>> stack instead of the other way around.
+> > > > >>>
+> > > > >>> -chris
+> > > > >> I do like the idea of having the ability to do the verification and retries down
+> > > > >> the stack where you actually have the most context to figure out what is possible...
+> > > > >>
+> > > > >> Why would you need to bubble back up anything other than an error when all
+> > > > >> retries have failed?
+> > > > > By bubble up I mean that if you have multiple layers capable of doing
+> > > > > retries, the lowest levels would retry first.  Basically by the time we
+> > > > > get an -EIO_ALREADY_RETRIED we know there's nothing that lower level can
+> > > > > do to help.
+> > > > >
+> > > > > -chris
+> > > > 
+> > > > Absolutely sounds like the most sane way to go to me, thanks!
+> > > > 
+> > > 
+> > > It really seemed like a good idea, but I just realized it doesn't work
+> > > well when parts of the stack transform the data.
+> > > 
+> > > Picture dm-crypt on top of raid1.  If raid1 is responsible for the
+> > > crc retries, there's no way to crc the data because it needs to be
+> > > decrypted first.
+> > > 
+> > > I think the raided dm-crypt config is much more common (and interesting)
+> > > than multiple layers that can retry for other reasons (raid1 on top of
+> > > raid10?)
 > > 
-> > Ok, but what happens if all 2000+ different companies start adding their
-> > fields to the signed-off-by: area of the kernel for their internal
-> > tracking systems?
+> >    Isn't this a case where the transformative mid-layer would replace
+> > the validation function before passing it down the stack? So btrfs
+> > hands dm-crypt a checksum function; dm-crypt then stores that function
+> > for its own purposes and hands off a new function to the DM layer
+> > below that which decrypts the data and calls the btrfs checksum
+> > function it stored earlier.
 > 
-> That's been happening for a long time; there have been kernel patches
-> referencing LTC, RHEL, and SLES bugzilla entries; many of those
-> bug entries are not public so as not to reveal customer confidential
-> information.   I've never seen anyone complain about that before.
+> Then we're requiring each transformation layer to have their own crcs,
+> and if the higher layers have a stronger crc (or other checks), there's
+> no path to ask the lower layers for other copies.
+> 
+> Here's a concrete example.  In each metadata block, btrfs stores the
+> fsid and the transid of the transaction that created it.  In the case of
+> a missed write, we'll read a perfect block from the lower layers.  Any
+> crcs will be correct and it'll pass through dm-crypt with flying colors.
+> 
+> But, it won't be the right block.  Btrfs will notice this and EIO.  In
+> the current ask-for-another-mirror config we'll go down and grab the
+> other copy.
+> 
+> In the stacked validation function model, dm-crypt replaces our
+> verification functions with something that operates on the encrypted
+> data, and it won't be able to detect the error or kick down to the
+> underlying raid1 for another copy.
 
-But none of them are on the Signed-off-by: line area, right?
+   What I'm suggesting is easiest to describe with a functional
+language, or mathematical notation, but I'll try without those
+anyway...
 
-Also, putting it in the text of the changelog, with a url, is fine.  And
-it had better be a public url, otherwise it makes no sense at all.  I've
-seen many public SUSE and Ubuntu urls in changelog entries, any
-non-public ones should not be in there at all.
+   A generic validation function is a two-parameter function, taking a
+block of data and some layer-dependent state, and returning a boolean.
 
-Just like with gerrit ids in signed-off-by areas, references to internal
-bugzilla entries, in the signed-off-by area, should not be there at all.
+So, at the btrfs layer, we have something like:
 
-greg k-h
+struct btrfs_validate_state {
+	u32 cs;
+};
+
+bool btrfs_validate(void *state, char *data) {
+	return crc32(data) == (btrfs_validate_state*)state->cs;
+}
+
+   When reading a specific block, we look up the checksum for that
+block, put it in state->cs and pass both our state and the
+btrfs_validate function to the lower layer.
+
+   The crypto layer beneath will look something like:
+
+struct crypto_validate_state {
+	void *old_state;
+	bool (*old_validator)(void *state, char* data);
+};
+
+bool crypto_validate(void *state, char *data) {
+	char plaintext[4096];
+	decrypt(plaintext, data);
+	
+	return state->old_validator(state->old_state, plaintext);
+}
+
+   Then, when a request is received from the upper layer, we can put
+the (state, validator) pair into a crypto_validate_state structure,
+call that our new state, and pass on the new (state, crypto_validate)
+to the layer underneath.
+
+   So, where a transformative layer exists in the stack, it replaces
+the validation function with a helper function that does the necessary
+transformation, and performs the check.
+
+   The code I've described above would clearly need to be hooked into
+the existing data-transformation paths so that we don't replicate the
+effort of decrypting or uncompressing good data once we've decided
+that it _is_ good.
+
+   Oh, and if there's a layer with its own validation, we can put in a
+"firebreak" implementation of the above code, which basically drops
+the validator it's passed, and replaces it completely with its own.
+(This would look exactly like the btrfs version at the top of my reply
+here).
+
+   The standard case for most block-layer implementations will simply
+be to pass the (state, validator) pair unchanged to the lower layer,
+because the block being checked won't be any different. It's only
+where we have layers that change things, or definitely know better
+than the top layer that we need to play tricks.
+
+   Hugo.
+
+-- 
+=== Hugo Mills: hugo@... carfax.org.uk | darksatanic.net | lug.org.uk ===
+  PGP key: 515C238D from wwwkeys.eu.pgp.net or http://www.carfax.org.uk
+           --- Sometimes, when I'm alone, I Google myself. ---           
+
+--kXdP64Ggrk/fb43R
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iD8DBQFOIFSsIKyzvlFcI40RAmDbAKCYpvLnPaHv2yf/MZ0L1SZDSY8nRACfR1JI
+wH4nXu/G2u9NjBR6Wgj2F4g=
+=+EYq
+-----END PGP SIGNATURE-----
+
+--kXdP64Ggrk/fb43R--
