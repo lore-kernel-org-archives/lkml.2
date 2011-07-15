@@ -1,111 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965001Ab1GOGiI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 02:38:08 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:61871 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964778Ab1GOGiH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 02:38:07 -0400
-Date: Fri, 15 Jul 2011 10:38:01 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk, rientjes@google.com,
-        wilsons@start.ca, security@kernel.org,
-        kernel-hardening@lists.openwall.com
-Subject: Re: [PATCH v3] proc: fix a race in do_io_accounting()
-Message-ID: <20110715063801.GC3166@albatros>
-References: <20110703103925.GA2283@albatros>
- <CA+55aFwfr-oAa-2L9O_rd9iZDyVr0b+gFQS=_R5PUxmhh3JEsg@mail.gmail.com>
- <20110704201339.GA5645@albatros>
- <20110705141301.0d3594e0.akpm@linux-foundation.org>
- <20110706163412.GA4743@albatros>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110706163412.GA4743@albatros>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S965010Ab1GOGl4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 02:41:56 -0400
+Received: from mail.perches.com ([173.55.12.10]:4008 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964778Ab1GOGlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 02:41:55 -0400
+Subject: Re: [PATCH 11/11] dynamic_debug: use a single printk() to emit msgs
+From: Joe Perches <joe@perches.com>
+To: Jason Baron <jbaron@redhat.com>
+Cc: gregkh@suse.de, jim.cromie@gmail.com, bvanassche@acm.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <3667c0a87dd8fd64fdf1b1e8107b130a9b41096e.1310657068.git.jbaron@redhat.com>
+References: <cover.1310657068.git.jbaron@redhat.com>
+	 <3667c0a87dd8fd64fdf1b1e8107b130a9b41096e.1310657068.git.jbaron@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 14 Jul 2011 23:41:53 -0700
+Message-ID: <1310712113.7582.24.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, 2011-07-14 at 12:09 -0400, Jason Baron wrote:
+> We were using KERN_CONT to combine msgs with their prefix.
+[]
+> diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
 
-On Wed, Jul 06, 2011 at 20:34 +0400, Vasiliy Kulikov wrote:
-> If inode's mode permits to open /proc/PID/io and the resulted file
-> descriptor is kept across execve() of setuid or similar binary, the
-> ptrace_may_access() check tries to prevent using this fd against the
-> task with escalated privileges.  Unfortunately, there is a race of the
-> check against execve().  If execve() is processed after the ptrace
-> check, but before the actual io information gathering, io statistics
-> will be gathered from the privileged process.  At least in theory this
-> might lead to gathering sensible information (like ssh/ftp password
-> length) that wouldn't be available otherwise.
-> 
-> Holding task->signal->cred_guard_mutex while gathering the io
-> information should protect against the race.
-> 
-> The order of locking is similar to the one inside of
-> ptrace_attach(): first goes cred_guard_mutex, then lock_task_sighand().
+Perhaps instead:
 
-Any problems with the patch?
+> +static int dynamic_emit_prefix(const struct _ddebug *descriptor, char *buf)
 
-> v3 - better description.
-> v2 - use mutex_lock_killable() instead of mutex_lock().
-> 
-> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-> Cc: stable@kernel.org
-> ---
->  fs/proc/base.c |   16 +++++++++++++---
->  1 files changed, 13 insertions(+), 3 deletions(-)
-> 
-> diff --git a/fs/proc/base.c b/fs/proc/base.c
-> index 083a4f2..4b9f159 100644
-> --- a/fs/proc/base.c
-> +++ b/fs/proc/base.c
-> @@ -2711,9 +2711,16 @@ static int do_io_accounting(struct task_struct *task, char *buffer, int whole)
->  {
->  	struct task_io_accounting acct = task->ioac;
->  	unsigned long flags;
-> +	int result;
->  
-> -	if (!ptrace_may_access(task, PTRACE_MODE_READ))
-> -		return -EACCES;
-> +	result = mutex_lock_killable(&task->signal->cred_guard_mutex);
-> +	if (result)
-> +		return result;
-> +
-> +	if (!ptrace_may_access(task, PTRACE_MODE_READ)) {
-> +		result = -EACCES;
-> +		goto out_unlock;
-> +	}
->  
->  	if (whole && lock_task_sighand(task, &flags)) {
->  		struct task_struct *t = task;
-> @@ -2724,7 +2731,7 @@ static int do_io_accounting(struct task_struct *task, char *buffer, int whole)
->  
->  		unlock_task_sighand(task, &flags);
->  	}
-> -	return sprintf(buffer,
-> +	result = sprintf(buffer,
->  			"rchar: %llu\n"
->  			"wchar: %llu\n"
->  			"syscr: %llu\n"
-> @@ -2739,6 +2746,9 @@ static int do_io_accounting(struct task_struct *task, char *buffer, int whole)
->  			(unsigned long long)acct.read_bytes,
->  			(unsigned long long)acct.write_bytes,
->  			(unsigned long long)acct.cancelled_write_bytes);
-> +out_unlock:
-> +	mutex_unlock(&task->signal->cred_guard_mutex);
-> +	return result;
->  }
->  
->  static int proc_tid_io_accounting(struct task_struct *task, char *buffer)
-> -- 
-> 1.7.0.4
-> 
+static char *dynamic_emit_prefix(...)
+[]
 
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+	snprintf(buf, PREFIX_SIZE, KERN_DEBUG"%s%s%s%s%s%s",
+
+Add a space please after KERN_DEBUG
+
+[]
+	return buf;
+
+>  int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
+[]
+> +	res = dynamic_emit_prefix(descriptor, buf);
+> +	res += printk("%s %pV", buf, &vaf);
+
+This double counts the length of dynamic_emit_prefix.
+I think this and the others should be:
+
+	res = printk("%s %pV", dynamic_emit_prefix(descriptor, buf), &vaf);
+ 
+
