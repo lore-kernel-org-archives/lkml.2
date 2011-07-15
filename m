@@ -1,87 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751617Ab1GOVjv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 17:39:51 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:24857 "EHLO
+	id S1752229Ab1GOVmR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 17:42:17 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:34243 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758Ab1GOVjt (ORCPT
+	with ESMTP id S1750815Ab1GOVmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 17:39:49 -0400
+	Fri, 15 Jul 2011 17:42:16 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:sender:date:from:to:cc:subject:message-id:
-	references:mime-version:content-type:content-disposition:in-reply-to:
-	x-operating-system:user-agent:x-system-of-record;
-	b=TUZsCLaukfaVK+hIwQFihz37eTnUWCkyrWiW4KYUIib240RxcWzdrP+UsnHEz+3iO
-	bLejv5gPuDecDNYLsSGUQ==
-Date: Fri, 15 Jul 2011 14:39:27 -0700
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Mandeep Singh Baines <msb@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Huang Ying <ying.huang@intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>, Olaf Hering <olaf@aepfle.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Dave Airlie <airlied@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] panic, vt: do not force oops output when panic_timeout
- < 0
-Message-ID: <20110715213927.GD17254@google.com>
-References: <1308612129-12488-1-git-send-email-msb@chromium.org>
- <1308612129-12488-2-git-send-email-msb@chromium.org>
- <20110622223039.GA13916@google.com>
- <20110707085341.200a3c2b@lxorguk.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110707085341.200a3c2b@lxorguk.ukuu.org.uk>
-X-Operating-System: Linux/2.6.32-gg426-generic (x86_64)
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-System-Of-Record: true
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=SjMOLhd/Yc4ZJwmMSzWYDb375S8ZWtXLZpMtcHxNfGQ9Xmy8V+c/uktAxhzP61FdA
+	AWjOY9N2PEX5x1Hh2QBIg==
+From: Dan Ehrenberg <dehrenberg@google.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eric Sandeen <sandeen@redhat.com>
+Cc: Dan Ehrenberg <dehrenberg@google.com>
+Subject: [PATCH v2 1/2] ext4: Preallocation is a multiple of stripe size
+Date: Fri, 15 Jul 2011 14:41:54 -0700
+Message-Id: <1310766115-4164-1-git-send-email-dehrenberg@google.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Cox (alan@lxorguk.ukuu.org.uk) wrote:
-> > a serial port. When I disabled the serial out, my machine started to
-> > get wedged on a panic. I guess screen_unblank was in bust_spinlocks
-> > for a reason. It probably bust some spin_locks somewhere.
-> 
-> No something else is wrong here. The console panic should be reliably
-> breaking the locks but a quick test of taking the console lock and BUG()
-> on a current kernel shows something has broken this.
-> 
+Previously, if a stripe width was provided, then it would be used
+as the preallocation granularity, with no santiy checking and no
+way to override this. Now, mb_prealloc_size defaults to the smallest
+multiple of stripe size that is greater than or equal to the old
+default mb_prealloc_size, and this can be overridden with the sysfs
+interface.
 
-Root caused to the issue I reported earlier with unblank_screen:
+Signed-off-by: Dan Ehrenberg <dehrenberg@google.com>
+---
+ fs/ext4/mballoc.c |   29 ++++++++++++++++++++---------
+ 1 files changed, 20 insertions(+), 9 deletions(-)
 
-http://lkml.org/lkml/2011/6/20/394
+diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+index 6ed859d..754eb29 100644
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -128,12 +128,13 @@
+  * we are doing a group prealloc we try to normalize the request to
+  * sbi->s_mb_group_prealloc. Default value of s_mb_group_prealloc is
+  * 512 blocks. This can be tuned via
+- * /sys/fs/ext4/<partition/mb_group_prealloc. The value is represented in
++ * /sys/fs/ext4/<partition>/mb_group_prealloc. The value is represented in
+  * terms of number of blocks. If we have mounted the file system with -O
+  * stripe=<value> option the group prealloc request is normalized to the
+- * stripe value (sbi->s_stripe)
++ * the smallest multiple of the stripe value (sbi->s_stripe) which is
++ * greater than the default mb_group_prealloc.
+  *
+- * The regular allocator(using the buddy cache) supports few tunables.
++ * The regular allocator (using the buddy cache) supports a few tunables.
+  *
+  * /sys/fs/ext4/<partition>/mb_min_to_scan
+  * /sys/fs/ext4/<partition>/mb_max_to_scan
+@@ -2472,6 +2473,18 @@ int ext4_mb_init(struct super_block *sb, int needs_recovery)
+ 	sbi->s_mb_stream_request = MB_DEFAULT_STREAM_THRESHOLD;
+ 	sbi->s_mb_order2_reqs = MB_DEFAULT_ORDER2_REQS;
+ 	sbi->s_mb_group_prealloc = MB_DEFAULT_GROUP_PREALLOC;
++	/*
++	 * If there is a s_stripe > 1, then we set the s_mb_group_prealloc
++	 * to the lowest multiple of s_stripe which is bigger than
++	 * the s_mb_group_prealloc as determined above. We want
++	 * the preallocation size to be an exact multiple of the
++	 * RAID stripe size so that preallocations don't fragment
++	 * the stripes.
++	 */
++	if (sbi->s_stripe > 1) {
++		sbi->s_mb_group_prealloc = roundup(
++			sbi->s_mb_group_prealloc, sbi->s_stripe);
++	}
+ 
+ 	sbi->s_locality_groups = alloc_percpu(struct ext4_locality_group);
+ 	if (sbi->s_locality_groups == NULL) {
+@@ -2830,8 +2843,9 @@ out_err:
+ 
+ /*
+  * here we normalize request for locality group
+- * Group request are normalized to s_strip size if we set the same via mount
+- * option. If not we set it to s_mb_group_prealloc which can be configured via
++ * Group request are normalized to s_mb_group_prealloc, which goes to
++ * s_strip if we set the same via mount option.
++ * s_mb_group_prealloc can be configured via
+  * /sys/fs/ext4/<partition>/mb_group_prealloc
+  *
+  * XXX: should we try to preallocate more than the group has now?
+@@ -2842,10 +2856,7 @@ static void ext4_mb_normalize_group_request(struct ext4_allocation_context *ac)
+ 	struct ext4_locality_group *lg = ac->ac_lg;
+ 
+ 	BUG_ON(lg == NULL);
+-	if (EXT4_SB(sb)->s_stripe)
+-		ac->ac_g_ex.fe_len = EXT4_SB(sb)->s_stripe;
+-	else
+-		ac->ac_g_ex.fe_len = EXT4_SB(sb)->s_mb_group_prealloc;
++	ac->ac_g_ex.fe_len = EXT4_SB(sb)->s_mb_group_prealloc;
+ 	mb_debug(1, "#%u: goal %u blocks for locality group\n",
+ 		current->pid, ac->ac_g_ex.fe_len);
+ }
+-- 
+1.7.3.1
 
-console_unblank()
-  -> c_unblank()
-    -> unblank_screen()
-      -> ...
-        -> mutex_lock()
-
-> > Below is a replacement for this patch which calls screen_unblank but
-> > does not force output when the panic timeout is negative (no wait).
-> 
-> The on screen console is not always just a vt, and some people log remote
-> management console output so we really really don't want to do this.
-> 
-
-In this patch, I'm disabling the functionality enabled by
-vc->vc_panic_force_write if panic_timeout < 0 (i.e. no timeout).
-vc_panic_force_write is only enabled for fb video consoles if the
-FBINFO_CAN_FORCE_OUTPUT flag is set.
-
-For our application, we're using ram_oops to preserved the panic in memory.
-We want to reliably, and as fast as possible, machine_restart. The
-vc_panic_force_write flag results in a bunch of graphics driver code to be
-invoked which slows down restart and decreases reliability. Since we're
-already storing the panic in RAM and are going to reboot immediately, there
-is no benefit in mode switching back to the vc in order to display the panic
-output. The log buffer will get flushed by the console_unblank() call so
-remote management consoles should see all output.
-
-> Instead the bug in the lock busting needs fixing. To start with it will
-> be hiding a ton of other oopses/bugs as hangs.
-> 
-> Alan
