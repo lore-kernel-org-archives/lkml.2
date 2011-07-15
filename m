@@ -1,60 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753282Ab1GOQEZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 12:04:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56964 "EHLO mx1.redhat.com"
+	id S1753328Ab1GOQFH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 12:05:07 -0400
+Received: from mail.lang.hm ([64.81.33.126]:33902 "EHLO bifrost.lang.hm"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753224Ab1GOQEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 12:04:24 -0400
-Date: Fri, 15 Jul 2011 12:04:18 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: Joe Perches <joe@perches.com>, gregkh@suse.de, jim.cromie@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 11/11] dynamic_debug: use a single printk() to emit msgs
-Message-ID: <20110715160417.GB2493@redhat.com>
-References: <cover.1310657068.git.jbaron@redhat.com>
- <3667c0a87dd8fd64fdf1b1e8107b130a9b41096e.1310657068.git.jbaron@redhat.com>
- <CAO+b5-qA3s92YX2izXzvzt3MOrzRaPcZtDtK0cDte0ZXnRWxhA@mail.gmail.com>
- <1310744914.7582.36.camel@Joe-Laptop>
- <CAO+b5-p2B74+oVQRGcGxMp5ULZy8ZmF215Lz4qhbU=C4RnG8dw@mail.gmail.com>
+	id S1753018Ab1GOQFF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 12:05:05 -0400
+Date: Fri, 15 Jul 2011 09:03:39 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: NeilBrown <neilb@suse.de>
+cc: Chris Mason <chris.mason@oracle.com>, Ric Wheeler <rwheeler@redhat.com>,
+        Nico Schottelius <nico-lkml-20110623@schottelius.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: Re: Mis-Design of Btrfs?
+In-Reply-To: <20110715163354.74fa2083@notabene.brown>
+Message-ID: <alpine.DEB.2.02.1107150900110.3745@asgard.lang.hm>
+References: <20110623105337.GD3753@ethz.ch> <20110627164637.377314e2@notabene.brown> <4E0AF091.9030301@redhat.com> <20110714155620.6e9ac2cc@notabene.brown> <4E1E866E.2050405@redhat.com> <20110714163836.35a729c1@notabene.brown> <4E1E9372.3030208@redhat.com>
+ <1310696606-sup-710@shiny> <alpine.DEB.2.02.1107142149420.3558@asgard.lang.hm> <20110715163354.74fa2083@notabene.brown>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAO+b5-p2B74+oVQRGcGxMp5ULZy8ZmF215Lz4qhbU=C4RnG8dw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 15, 2011 at 05:57:11PM +0200, Bart Van Assche wrote:
-> On Fri, Jul 15, 2011 at 5:48 PM, Joe Perches <joe@perches.com> wrote:
-> > On Fri, 2011-07-15 at 12:05 +0200, Bart Van Assche wrote:
-> >> Not that's it important, but this change makes is possible to
-> >> eliminate the tid[] and lineno[] arrays again. Has that been
-> >> considered ?
-> >
-> > tid and lineno are decimal.  Not using intermediate
-> > arrays would require awkward contortions to snprintf
-> > them without emitting 0 in the output.
-> 
-> Sorry, but I do not agree with the above. The current implementation
-> of __dynamic_pr_debug() shows that an implementation without temporary
-> arrays does not require any awkward constructs. See e.g.
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=blob;f=lib/dynamic_debug.c
-> for the source code of the current implementation of
-> __dynamic_pr_debug().
-> 
-> This may be subjective, but my opinion is that following that style
-> results in shorter and more elegant code than the approach with the
-> temporary arrays proposed in patch 11/11.
-> 
-> Bart.
+On Fri, 15 Jul 2011, NeilBrown wrote:
 
-yes, but that approach uses 'KERN_CONT'. The point of patch 11/11 is to get rid
-of KERN_CONT, which is racy. 
+> On Thu, 14 Jul 2011 21:58:46 -0700 (PDT) david@lang.hm wrote:
+>
+>> On Thu, 14 Jul 2011, Chris Mason wrote:
+>>
+>>> Excerpts from Ric Wheeler's message of 2011-07-14 02:57:54 -0400:
+>>>> On 07/14/2011 07:38 AM, NeilBrown wrote:
+>>>>> On Thu, 14 Jul 2011 07:02:22 +0100 Ric Wheeler<rwheeler@redhat.com>  wrote:
+>>>>>
+>>
+>> I would suggest that each layer take the value it's give, do an integer
+>> division by the number of values that layer supports, using the modulo
+>> value for that layer and pass the rest of the result down to the next
+>> layer.
+>
+> I, on the other hand, would suggest that each layer be given the freedom, and
+> the responsibility, to do whatever it thinks is most appropriate.
+>
+> This would probably involved checking the lower levels to see how many
+> strategies each has, and doing some appropriate arithmetic depending on how
+> it combines those devices.
 
-Thanks,
+nothing is wrong with doing something smarter than what I was proposing, I 
+was just intending to propose a default rule that would work (just about) 
+everywhere. I was specifically trying to counter the throught hat the 
+method number would/should be contant as it's passed down the layers.
 
--Jason
+The proposal had been made to have each layer do the retries for the layer 
+below it, that would avoid this stacking problem, but at the cost of 
+potentially doing a LOT of retries without the upper level being able to 
+limit it.
+
+David Lang
+
+> One problem here is the assumption that the lower levels don't change, and we
+> know that not to be the case.
+> However this is already a problem.  It is entirely possible that the request
+> size parameters of devices can change at any moment, even while a request is
+> in-flight ... though we try to avoid that or work around it.
+>
+> The sort of dependencies that we see forming here would probably just make
+> the problem worse.
+>
+> Not sure what to do about it though.... maybe just hope it isn't a problem.
+>
+> NeilBrown
+>
+>
+>>
+>> this works for just trying values until you get the error that tells you
+>> there are no more options.
+>>
+>>
+>> things can get very 'intersesting' if the different options below you have
+>> different number of options (say a raid1 across a raid5 and a single disk)
+>> but I can't think of any good way to figure this out and assemble a
+>> sane order without doing an exaustive search down to find the number of
+>> options for each layer (and since this can be different for different
+>> blocks, you would have to do this each time you invoked this option)
+>>
+>> David Lang
+>
+>
