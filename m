@@ -1,78 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751639Ab1GONKi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 09:10:38 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59046 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750770Ab1GONKh (ORCPT
+	id S1751879Ab1GONLd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 09:11:33 -0400
+Received: from smtpauth21.prod.mesa1.secureserver.net ([64.202.165.38]:37844
+	"HELO smtpauth21.prod.mesa1.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751139Ab1GONLb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 09:10:37 -0400
-Date: Fri, 15 Jul 2011 22:10:26 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Greg KH <greg@kroah.com>, Grant Likely <grant@secretlab.ca>,
-        Ben Dooks <ben-linux@fluff.org>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Samuel Oritz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] regulator: Convert tps65023 to use regmap API
-Message-ID: <20110715131023.GC10026@opensource.wolfsonmicro.com>
-References: <20110715062215.GN32716@opensource.wolfsonmicro.com>
- <1310710992-24462-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <1310710992-24462-4-git-send-email-broonie@opensource.wolfsonmicro.com>
- <20110715123121.735688a6@endymion.delvare>
- <20110715121646.GA10026@opensource.wolfsonmicro.com>
- <20110715145848.750a85aa@endymion.delvare>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110715145848.750a85aa@endymion.delvare>
-X-Cookie: You should go home.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 15 Jul 2011 09:11:31 -0400
+X-Greylist: delayed 354 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Jul 2011 09:11:31 EDT
+Date: Fri, 15 Jul 2011 09:12:34 -0400
+From: MK <mk@cognitivedissonance.ca>
+To: linux-kernel@vger.kernel.org
+Subject: Re: AVX "Sandy Bridge" hardware issue?
+Message-Id: <20110715091234.087d94a2.mk@cognitivedissonance.ca>
+In-Reply-To: <m2k4bn57j4.fsf@firstfloor.org>
+References: <20110712161616.b5196a3b.mk@cognitivedissonance.ca>
+	<m2k4bn57j4.fsf@firstfloor.org>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 15, 2011 at 02:58:48PM +0200, Jean Delvare wrote:
-> On Fri, 15 Jul 2011 21:16:50 +0900, Mark Brown wrote:
+On Tue, 12 Jul 2011 17:49:35 -0700
+Andi Kleen <andi@firstfloor.org> wrote:
+> If there's a problem then it's likely in the VM. Maybe it leaks
+> AVX partially through only.
+> 
+> For example I had a similar problem a long time ago on a system
+> which had inconsistent CPU features for different CPUs. The kernel
+> will chose the least common denominator, but an application
+> directly calling CPUID can sometimes see different flags and then
+> crash when it switches CPUs.
+> 
+> The symptoms would be consistent with that.
+> 
+> I would contact the VM vendor.
 
-> > regmap API.  As far as I can tell this isn't really a big deal except
-> > for those device classes like hwmon which are frequently deployed in
-> > PCs, anything else just won't care.
+I think I will go the developer list for openVZ first and get some more
+info.  The vendor is trepidatious as no one else has had a problem (I
+dunno how many, if any, of the other clients use mod_perl) and this
+could be an unsolvable headache headache for them.
 
-> Mostly correct. There are a few other devices which can also be found
-> on PCs: multiplexers and EEPROMs at least.
+Thanks all for the input!
 
-I did say "device classes like" for a reason :)
+-- 
+"Enthusiasm is not the enemy of the intellect." (said of Irving Howe)
+"The angel of history[...]is turned toward the past." (Walter Benjamin)
 
-> > This should be reasonably simple to handle in the regmap API, just teach
-> > the I2C module to fall back to using the SMBus operations if the
-> > controller is limited to that.  This should be done incrementally as it
-> > adds complexity, and ideally would be done by someone with some access
-> > to hardware that can use the SMBus API (I don't have any myself) so they
-> > can test.
-
-> You do have access ;) The i2c core will translate SMBus to I2C as
-> needed, so all you have to do is temporarily alter the regmap core to
-> unconditionally translate to SMBus. This will be inefficient (regmap ->
-> SMBus -> I2C) but should be suitable for testing.
-
-I have access to host controllers obviously, what I don't have is access
-to any client devices with suitable register maps.
-
-> > > >  static int tps_65023_set_bits(struct tps_pmic *tps, u8 reg, u8 mask)
-> > > >  {
-> > > > -	int err, data;
-
-> > *Please* could people delete unneeded context from mails?
-
-> ? There were more comments from me in the rest of the code, which is
-> why I left it.
-
-You should delete all the text that isn't directly related to your
-comments, you appeared to have not deleted any content at all from the
-mail.  There were pages and pages of stuff with no comments at all.
-
-This really helpful both for finding the content (it's really easy to
-just page past stuff) and for those of us who read mail on mobile
-devices.
