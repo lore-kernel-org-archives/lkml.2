@@ -1,365 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792Ab1GOPSJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 11:18:09 -0400
-Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:14691
-	"EHLO AM1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751726Ab1GOPSH (ORCPT
+	id S1752897Ab1GOPTQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 11:19:16 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43011 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751177Ab1GOPTO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 11:18:07 -0400
-X-SpamScore: -13
-X-BigFish: VS-13(zz1431J148cM1432N98dKc8kzz1202hzz8275dhz2dh2a8h668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Fri, 15 Jul 2011 23:24:50 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Shawn Guo <shawn.guo@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <linux-serial@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <patches@linaro.org>
-Subject: Re: [PATCH v2 1/5] dt: add of_alias_scan and of_alias_get_id
-Message-ID: <20110715152449.GF1840@S2100-06.ap.freescale.net>
-References: <1308938676-31121-1-git-send-email-shawn.guo@linaro.org>
- <1308938676-31121-2-git-send-email-shawn.guo@linaro.org>
- <20110715025320.GE2927@ponder.secretlab.ca>
+	Fri, 15 Jul 2011 11:19:14 -0400
+Message-ID: <4E205A63.90401@gmail.com>
+Date: Fri, 15 Jul 2011 11:18:59 -0400
+From: Shan Hai <haishan.bai@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20110715025320.GE2927@ponder.secretlab.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: benh@kernel.crashing.org, paulus@samba.org, tglx@linutronix.de,
+        walken@google.com, dhowells@redhat.com, cmetcalf@tilera.com,
+        tony.luck@intel.com, akpm@linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] Fixup write permission of TLB on powerpc e500 core
+References: <1310717238-13857-1-git-send-email-haishan.bai@gmail.com>	 <1310717238-13857-2-git-send-email-haishan.bai@gmail.com> <1310725418.2586.309.camel@twins>
+In-Reply-To: <1310725418.2586.309.camel@twins>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 14, 2011 at 08:53:20PM -0600, Grant Likely wrote:
-> On Sat, Jun 25, 2011 at 02:04:32AM +0800, Shawn Guo wrote:
-> > The patch adds function of_alias_scan to populate a global lookup
-> > table with the properties of 'aliases' node and function
-> > of_alias_get_id for drivers to find alias id from the lookup table.
-> > 
-> > Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-> > Cc: Grant Likely <grant.likely@secretlab.ca>
-> 
-> Hey Shawn,
-> 
-> Comments below, but I've gone ahead and fixed them because I'm keen to
-> get this patch merged.  I just wanted to let you know what I changed.
-> I'll post the modified version so you can test it.
-> 
-Thanks for doing this.  It makes the wheel spin fast.  I respect
-changes you made, and will give it a test once you post it.
+On 07/15/2011 06:23 AM, Peter Zijlstra wrote:
+> On Fri, 2011-07-15 at 16:07 +0800, Shan Hai wrote:
+>> The kernel has no write permission on COW pages by default on e500 core, this
+>> will cause endless loop in futex_lock_pi, because futex code assumes the kernel
+>> has write permission on COW pages. Grant write permission to the kernel on COW
+>> pages when access violation page fault occurs.
+>>
+>> Signed-off-by: Shan Hai<haishan.bai@gmail.com>
+>> ---
+>>   arch/powerpc/include/asm/futex.h |   11 ++++++++++-
+>>   arch/powerpc/include/asm/tlb.h   |   25 +++++++++++++++++++++++++
+>>   2 files changed, 35 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/arch/powerpc/include/asm/futex.h b/arch/powerpc/include/asm/futex.h
+>> index c94e4a3..54c3e74 100644
+>> --- a/arch/powerpc/include/asm/futex.h
+>> +++ b/arch/powerpc/include/asm/futex.h
+>> @@ -8,6 +8,7 @@
+>>   #include<asm/errno.h>
+>>   #include<asm/synch.h>
+>>   #include<asm/asm-compat.h>
+>> +#include<asm/tlb.h>
+>>
+>>   #define __futex_atomic_op(insn, ret, oldval, uaddr, oparg) \
+>>     __asm__ __volatile ( \
+>> @@ -113,7 +114,15 @@ futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
+>>           : "cc", "memory");
+>>
+>>   	*uval = prev;
+>> -        return ret;
+>> +
+>> +	/* Futex assumes the kernel has permission to write to
+>> +	 * COW pages, grant the kernel write permission on COW
+>> +	 * pages because it has none by default.
+>> +	 */
+>> +	if (ret == -EFAULT)
+>> +		__tlb_fixup_write_permission(current->mm, (unsigned long)uaddr);
+>> +
+>> +	return ret;
+>>   }
+>>
+>>   #endif /* __KERNEL__ */
+>> diff --git a/arch/powerpc/include/asm/tlb.h b/arch/powerpc/include/asm/tlb.h
+>> index e2b428b..3863c6a 100644
+>> --- a/arch/powerpc/include/asm/tlb.h
+>> +++ b/arch/powerpc/include/asm/tlb.h
+>> @@ -45,5 +45,30 @@ static inline void __tlb_remove_tlb_entry(struct mmu_gather *tlb, pte_t *ptep,
+>>   #endif
+>>   }
+>>
+>> +/* Grant write permission to the kernel on a page. */
+>> +static inline void __tlb_fixup_write_permission(struct mm_struct *mm,
+>> +						unsigned long address)
+>> +{
+>> +#if defined(CONFIG_FSL_BOOKE)
+>> +	/* Grant write permission to the kernel on a page by setting TLB.SW
+>> +	 * bit, the bit setting operation is tricky here, calling
+>> +	 * handle_mm_fault with FAULT_FLAG_WRITE causes _PAGE_DIRTY bit of
+>> +	 * the pte to be set, the _PAGE_DIRTY of the pte is translated into
+>> +	 * TLB.SW on Powerpc e500 core.
+>> +	 */
+>> +
+>> +	struct vm_area_struct *vma;
+>> +
+>> +	vma = find_vma(mm, address);
+> Uhm, find_vma() needs mmap_sem, and futex_atomic_cmpxchg_inatomic() is
+> most certainly not called with that lock held.
+>
 
-Regards,
-Shawn
+My fault, that will be fixed in the V2 patch.
 
-> > ---
-> >  drivers/of/base.c  |  181 ++++++++++++++++++++++++++++++++++++++++++++++++++++
-> >  drivers/of/fdt.c   |    6 ++
-> >  include/linux/of.h |    7 ++
-> >  3 files changed, 194 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/of/base.c b/drivers/of/base.c
-> > index 632ebae..89efd10 100644
-> > --- a/drivers/of/base.c
-> > +++ b/drivers/of/base.c
-> > @@ -17,14 +17,38 @@
-> >   *      as published by the Free Software Foundation; either version
-> >   *      2 of the License, or (at your option) any later version.
-> >   */
-> > +#include <linux/bootmem.h>
-> > +#include <linux/ctype.h>
-> >  #include <linux/module.h>
-> >  #include <linux/of.h>
-> >  #include <linux/spinlock.h>
-> >  #include <linux/slab.h>
-> >  #include <linux/proc_fs.h>
-> >  
-> > +/**
-> > + * struct alias_prop - Alias property in 'aliases' node
-> > + * @link:	List node to link the structure in aliases_lookup list
-> > + * @alias:	Alias property name
-> > + * @np:		Pointer to device_node that the alias stands for
-> > + * @alias_id:	Alias id decoded from alias
-> > + * @alias_stem:	Alias stem name decoded from alias
-> > + *
-> > + * The structure represents one alias property of 'aliases' node as
-> > + * an entry in aliases_lookup list.
-> > + */
-> > +struct alias_prop {
-> > +	struct list_head link;
-> > +	const char *alias;
-> > +	struct device_node *np;
-> > +	int alias_id;
-> > +	char alias_stem[0];
-> > +};
-> > +
-> > +static LIST_HEAD(aliases_lookup);
-> > +
-> >  struct device_node *allnodes;
-> >  struct device_node *of_chosen;
-> > +struct device_node *of_aliases;
-> >  
-> >  /* use when traversing tree through the allnext, child, sibling,
-> >   * or parent members of struct device_node.
-> > @@ -922,3 +946,160 @@ out_unlock:
-> >  }
-> >  #endif /* defined(CONFIG_OF_DYNAMIC) */
-> >  
-> > +/*
-> > + * of_alias_find_available_id - Find an available id for the given device_node
-> 
-> Nit: kerneldoc format is "/**" to start the comment, and function
-> names should have '()' on it.
-> 
-> > + * @np:		Pointer to the given device_node
-> > + * @stem:	Alias stem of the given device_node
-> > + *
-> > + * The function travels the lookup table to find an available id for the
-> > + * given device_node with given alias stem.  It returns the id found.
-> > + */
-> > +static int of_alias_find_available_id(struct device_node *np, const char *stem)
-> > +{
-> > +	struct alias_prop *app;
-> > +	int id = 0;
-> > +
-> > +	while (1) {
-> > +		bool used = false;
-> > +		list_for_each_entry(app, &aliases_lookup, link) {
-> > +			if (!strcmp(app->alias_stem, stem) &&
-> > +			    app->alias_id == id) {
-> > +				used = true;
-> > +				break;
-> > +			}
-> > +		}
-> > +
-> > +		if (used)
-> > +			id++;
-> > +		else
-> > +			return id;
-> > +	}
-> > +}
-> 
-> I've simplified this somewhat to do the list_for_each_entry() only
-> once, and to bump up the id to +1 the largest entry:
-> 
-> 	list_for_each_entry(app, &aliases_lookup, link)
-> 		if ((strcmp(app->stem, stem) == 0) && id <= app->id)
-> 			id = app->id + 1;
-> 
-> .... actually, after looking further, I've rolled this code into the
-> of_alias_get_id() function.
-> 
-> > +
-> > +/**
-> > + * of_alias_lookup_add - Add alias into lookup table
-> > + * @alias:	Alias name
-> > + * @id:		Alias id
-> > + * @stem:	Alias stem name
-> > + * @np:		Pointer to device_node
-> > + *
-> > + * The function adds one alias into the lookup table and populate it
-> > + * with the info passed in.  It returns 0 in sucess, or error code.
-> > + */
-> > +static int of_alias_lookup_add(char *alias, int id, const char *stem,
-> > +			       struct device_node *np)
-> > +{
-> > +	struct alias_prop *app;
-> > +	size_t sz = sizeof(*app) + strlen(stem) + 1;
-> > +
-> > +	app = kzalloc(sz, GFP_KERNEL);
-> > +	if (!app) {
-> > +		/*
-> > +		 * It may fail due to being called by boot code,
-> > +		 * so try alloc_bootmem before return error.
-> > +		 */
-> > +		app = alloc_bootmem(sz);
-> > +		if (!app)
-> > +			return -ENOMEM;
-> > +	}
-> 
-> I'm not too fond of this since we *know* when this is going to be
-> called from early boot.  So, instead, I've changed the code to use the
-> already existing dt_alloc functions as an argument to of_alias_lookup_add().
-> 
-> Also, alloc_bootmem() doesn't work on all platforms.
-> early_init_dt_alloc_memory_arch() needs to be used instead.
-> 
-> 
-> > +
-> > +	app->np = np;
-> > +	app->alias = alias;
-> > +	app->alias_id = id;
-> > +	strcpy(app->alias_stem, stem);
-> > +	list_add_tail(&app->link, &aliases_lookup);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +/**
-> > + * of_alias_decode - Decode alias stem and id from alias name
-> > + * @alias:	Alias name to be decoded
-> > + * @stem:	Pointer used to return stem name
-> > + *
-> > + * The function decodes alias stem name and alias id from the given
-> > + * alias name.  It returns stem name via parameter 'stem', and stem id
-> > + * via the return value.  If no id is found in alias name, it returns 0
-> > + * as the default.
-> > + */
-> > +static int of_alias_decode(char *alias, char *stem)
-> > +{
-> > +	int len = strlen(alias);
-> > +	char *end = alias + len;
-> > +
-> > +	while (isdigit(*--end))
-> > +		len--;
-> 
-> Need to protect against len < 0
-> 
-> > +
-> > +	strncpy(stem, alias, len);
-> > +	stem[len] = '\0';
-> > +
-> > +	return strlen(++end) ? simple_strtoul(end, NULL, 10) : 0;
-> > +}
-> > +
-> > +/**
-> > + * of_alias_scan - Scan all properties of 'aliases' node
-> > + *
-> > + * The function scans all the properties of 'aliases' node and populate
-> > + * the the global lookup table with the properties.  It returns the
-> > + * number of alias_prop found, or error code in error case.
-> > + */
-> > +int of_alias_scan(void)
-> 
-> Changed to '__init void of_aliases_scan(void)'.  There is no point in
-> returning an error code since it is never checked, and there is no
-> point in bailing on an error just in case it is a problem with only
-> one alias.
-> 
-> > +{
-> > +	struct property *pp;
-> > +	int ret, num = 0;
-> > +
-> > +	if (!of_aliases)
-> > +		return -ENODEV;
-> > +
-> > +	for_each_property(pp, of_aliases->properties) {
-> > +		char stem[32];
-> > +		int id = of_alias_decode(pp->name, stem);
-> > +
-> > +		/* Skip those we do not want to proceed */
-> > +		if (!strcmp(pp->name, "name") ||
-> > +		    !strcmp(pp->name, "phandle") ||
-> > +		    !strcmp(pp->name, "linux,phandle"))
-> > +			continue;
-> > +
-> > +		ret = of_alias_lookup_add(pp->name, id, stem,
-> > +					  of_find_node_by_path(pp->value));
-> > +		if (ret < 0)
-> > +			return ret;
-> > +		else
-> > +			num++;
-> > +	}
-> > +
-> > +	return num;
-> > +}
-> > +
-> > +/**
-> > + * of_alias_get_id - Get alias id for the given device_node
-> > + * @np:		Pointer to the given device_node
-> > + * @stem:	Alias stem of the given device_node
-> > + *
-> > + * The function travels the lookup table to get alias id for the given
-> > + * device_node and alias stem.  It returns the alias id if find it.
-> > + * If not, dynamically creates one in the lookup table and returns it,
-> > + * or returns error code if fail to create.
-> > + */
-> > +int of_alias_get_id(struct device_node *np, const char *stem)
-> > +{
-> > +	struct alias_prop *app;
-> > +	int id = -1;
-> > +
-> > +	list_for_each_entry(app, &aliases_lookup, link) {
-> > +		if (np == app->np) {
-> > +			id = app->alias_id;
-> > +			break;
-> > +		}
-> > +	}
-> > +
-> > +	if (id == -1) {
-> > +		id = of_alias_find_available_id(np, stem);
-> > +		if (of_alias_lookup_add(NULL, id, stem, np) < 0)
-> > +			return -ENODEV;
-> > +	}
-> > +
-> > +	return id;
-> > +}
-> 
-> This whole function needs to be protected by a mutex.
-> 
-> > +EXPORT_SYMBOL_GPL(of_alias_get_id);
-> > diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-> > index 65200af..998dc63 100644
-> > --- a/drivers/of/fdt.c
-> > +++ b/drivers/of/fdt.c
-> > @@ -711,6 +711,12 @@ void __init unflatten_device_tree(void)
-> >  	of_chosen = of_find_node_by_path("/chosen");
-> >  	if (of_chosen == NULL)
-> >  		of_chosen = of_find_node_by_path("/chosen@0");
-> > +
-> > +	of_aliases = of_find_node_by_path("/aliases");
-> > +	if (of_aliases == NULL)
-> > +		of_aliases = of_find_node_by_path("/aliases@0");
-> 
-> I don't think the /aliases@0 variant is necessary.  I've dropped it.
-> 
-> g.
-> 
-> > +
-> > +	of_alias_scan();
-> >  }
-> >  
-> >  #endif /* CONFIG_OF_EARLY_FLATTREE */
-> > diff --git a/include/linux/of.h b/include/linux/of.h
-> > index bfc0ed1..c35cc47 100644
-> > --- a/include/linux/of.h
-> > +++ b/include/linux/of.h
-> > @@ -68,6 +68,7 @@ struct device_node {
-> >  /* Pointer for first entry in chain of all nodes. */
-> >  extern struct device_node *allnodes;
-> >  extern struct device_node *of_chosen;
-> > +extern struct device_node *of_aliases;
-> >  extern rwlock_t devtree_lock;
-> >  
-> >  static inline bool of_have_populated_dt(void)
-> > @@ -201,6 +202,9 @@ extern int of_device_is_available(const struct device_node *device);
-> >  extern const void *of_get_property(const struct device_node *node,
-> >  				const char *name,
-> >  				int *lenp);
-> > +#define for_each_property(pp, properties) \
-> > +	for (pp = properties; pp != NULL; pp = pp->next)
-> > +
-> >  extern int of_n_addr_cells(struct device_node *np);
-> >  extern int of_n_size_cells(struct device_node *np);
-> >  extern const struct of_device_id *of_match_node(
-> > @@ -213,6 +217,9 @@ extern int of_parse_phandles_with_args(struct device_node *np,
-> >  	const char *list_name, const char *cells_name, int index,
-> >  	struct device_node **out_node, const void **out_args);
-> >  
-> > +extern int of_alias_scan(void);
-> > +extern int of_alias_get_id(struct device_node *np, const char *stem);
-> > +
-> >  extern int of_machine_is_compatible(const char *compat);
-> >  
-> >  extern int prom_add_property(struct device_node* np, struct property* prop);
-> > -- 
-> > 1.7.4.1
-> > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+>> +	if (likely(vma)) {
+>> +		/* only fixup present page */
+>> +		if (follow_page(vma, address, FOLL_WRITE)) {
+>> +			handle_mm_fault(mm, vma, address, FAULT_FLAG_WRITE);
+> So how can this toggle your sw dirty/young tracking, that's pretty much
+> what gup(.write=1) does too!
+>
+
+because of the kernel read only permission of the page is transparent
+to the follow_page(),  the handle_mm_fault() is not to be activated
+in the __get_use_pages(), so the gup(.write=1) could not help to fixup
+the write permission.
+
+
+Thanks
+Shan Hai
+
+>> +			flush_tlb_page(vma, address);
+>> +		}
+>> +	}
+>> +#endif
+>> +}
+>> +
+>>   #endif /* __KERNEL__ */
+>>   #endif /* __ASM_POWERPC_TLB_H */
 
