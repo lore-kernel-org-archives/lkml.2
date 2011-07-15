@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755874Ab1GOR5r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 13:57:47 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:58960 "EHLO
+	id S1755901Ab1GOR6C (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 13:58:02 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:58967 "EHLO
 	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755580Ab1GOR5o (ORCPT
+	with ESMTP id S1755882Ab1GOR6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 13:57:44 -0400
+	Fri, 15 Jul 2011 13:58:00 -0400
 From: greearb@candelatech.com
 To: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Ben Greear <greearb@candelatech.com>
-Subject: [PATCH (RESEND) 07/12] nfs:  Add srcaddr to /proc/fs/nfsfs/servers
-Date: Fri, 15 Jul 2011 10:56:03 -0700
-Message-Id: <1310752568-21280-8-git-send-email-greearb@candelatech.com>
+Subject: [PATCH (RESEND) 08/12] nfs:  Pass srcaddr into mount request.
+Date: Fri, 15 Jul 2011 10:56:04 -0700
+Message-Id: <1310752568-21280-9-git-send-email-greearb@candelatech.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1310752568-21280-1-git-send-email-greearb@candelatech.com>
 References: <1310752568-21280-1-git-send-email-greearb@candelatech.com>
@@ -22,56 +22,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ben Greear <greearb@candelatech.com>
 
-Helps users understand whether a server instance is
-bound to a local IP or not.
+This starts tying the srcaddr logic together.
 
 Signed-off-by: Ben Greear <greearb@candelatech.com>
 ---
-:100644 100644 5d8998a... 223785f... M	fs/nfs/client.c
- fs/nfs/client.c |   18 ++++++++++++++++--
- 1 files changed, 16 insertions(+), 2 deletions(-)
+:100644 100644 60a36a2... eaf9c66... M	fs/nfs/internal.h
+:100644 100644 d4c2d6b... 5ca6e12... M	fs/nfs/mount_clnt.c
+:100644 100644 cb41131... e45f616... M	fs/nfs/super.c
+ fs/nfs/internal.h   |    1 +
+ fs/nfs/mount_clnt.c |    1 +
+ fs/nfs/super.c      |    2 ++
+ 3 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/fs/nfs/client.c b/fs/nfs/client.c
-index 5d8998a..223785f 100644
---- a/fs/nfs/client.c
-+++ b/fs/nfs/client.c
-@@ -1895,20 +1895,34 @@ static int nfs_server_list_show(struct seq_file *m, void *v)
- 
- 	/* display header on line 1 */
- 	if (v == &nfs_client_list) {
--		seq_puts(m, "NV SERVER   PORT USE HOSTNAME\n");
-+		seq_puts(m, "NV SERVER   PORT USE HOSTNAME"
-+			 "           SRCADDR\n");
- 		return 0;
- 	}
- 
- 	/* display one transport per line on subsequent lines */
- 	clp = list_entry(v, struct nfs_client, cl_share_link);
- 
--	seq_printf(m, "v%u %s %s %3d %s\n",
-+	seq_printf(m, "v%u %s %s %3d %s",
- 		   clp->rpc_ops->version,
- 		   rpc_peeraddr2str(clp->cl_rpcclient, RPC_DISPLAY_HEX_ADDR),
- 		   rpc_peeraddr2str(clp->cl_rpcclient, RPC_DISPLAY_HEX_PORT),
- 		   atomic_read(&clp->cl_count),
- 		   clp->cl_hostname);
- 
-+	if (clp->srcaddr.ss_family == AF_INET) {
-+		const struct sockaddr_in *sin;
-+		sin = (const struct sockaddr_in *)&clp->srcaddr;
-+		seq_printf(m, "   %pI4\n", &sin->sin_addr.s_addr);
-+	} else if (clp->srcaddr.ss_family == AF_INET6) {
-+		const struct sockaddr_in6 *sin6;
-+		sin6 = (const struct sockaddr_in6 *)&clp->srcaddr;
-+		seq_printf(m, "   %pI6c\n", &sin6->sin6_addr);
-+	} else if (clp->srcaddr.ss_family == AF_UNSPEC)
-+		seq_printf(m, "   ANY\n");
-+	else
-+		seq_printf(m, "   UNKNOWN_%i\n", (int)(clp->srcaddr.ss_family));
-+
- 	return 0;
- }
- 
+diff --git a/fs/nfs/internal.h b/fs/nfs/internal.h
+index 60a36a2..eaf9c66 100644
+--- a/fs/nfs/internal.h
++++ b/fs/nfs/internal.h
+@@ -133,6 +133,7 @@ struct nfs_parsed_mount_data {
+ /* mount_clnt.c */
+ struct nfs_mount_request {
+ 	struct sockaddr		*sap;
++	struct sockaddr         *srcaddr;
+ 	size_t			salen;
+ 	char			*hostname;
+ 	char			*dirpath;
+diff --git a/fs/nfs/mount_clnt.c b/fs/nfs/mount_clnt.c
+index d4c2d6b..5ca6e12 100644
+--- a/fs/nfs/mount_clnt.c
++++ b/fs/nfs/mount_clnt.c
+@@ -155,6 +155,7 @@ int nfs_mount(struct nfs_mount_request *info)
+ 	struct rpc_create_args args = {
+ 		.net		= &init_net,
+ 		.protocol	= info->protocol,
++		.saddress	= info->srcaddr,
+ 		.address	= info->sap,
+ 		.addrsize	= info->salen,
+ 		.servername	= info->hostname,
+diff --git a/fs/nfs/super.c b/fs/nfs/super.c
+index cb41131..e45f616 100644
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -1600,6 +1600,8 @@ static int nfs_try_mount(struct nfs_parsed_mount_data *args,
+ 	struct nfs_mount_request request = {
+ 		.sap		= (struct sockaddr *)
+ 						&args->mount_server.address,
++		.salen		= args->mount_server.addrlen,
++		.srcaddr	= (struct sockaddr *)&args->srcaddr.address,
+ 		.dirpath	= args->nfs_server.export_path,
+ 		.protocol	= args->mount_server.protocol,
+ 		.fh		= root_fh,
 -- 
 1.7.3.4
 
