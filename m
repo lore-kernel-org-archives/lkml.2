@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755949Ab1GOSE0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 14:04:26 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47423 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751630Ab1GOSDR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 14:03:17 -0400
-Subject: Re: INFO: possible circular locking dependency detected
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ed Tomlinson <edt@aei.ca>
-Cc: paulmck@linux.vnet.ibm.com, Steven Rostedt <rostedt@goodmis.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <1310729362.2586.325.camel@twins>
-References: <20110714144946.GA3354@swordfish.minsk.epam.com>
-	 <1310665613.27864.50.camel@gandalf.stny.rr.com>
-	 <20110714191809.GF2349@linux.vnet.ibm.com>  <201107150705.46248.edt@aei.ca>
-	 <1310729362.2586.325.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 15 Jul 2011 13:39:20 +0200
-Message-ID: <1310729960.2586.327.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1755776Ab1GOSDQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 14:03:16 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:60793
+	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1750915Ab1GOSDN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 14:03:13 -0400
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: [PATCH 021/117] Staging: hv: vmbus: Get rid of an unnecessary include line in vmbus_drv.c
+Date: Fri, 15 Jul 2011 10:46:09 -0700
+Message-Id: <1310752065-27895-21-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1310752065-27895-1-git-send-email-kys@microsoft.com>
+References: <1310752024-27854-1-git-send-email-kys@microsoft.com>
+ <1310752065-27895-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-15 at 13:29 +0200, Peter Zijlstra wrote:
-> 
-> Paul, what appears to be happening here is that some rcu_read_unlock()
-> gets interrupted, possibly before calling rcu_read_unlock_special(),
-> possibly not if the interrupt is itself the timer interrupt.
-> 
-> Supposing ->rcu_read_unlock_special is set before, any wakeup happening
-> from an interrupt hitting __rcu_read_unlock():
+Get rid of an unnecessary include line in vmbus_drv.c.
 
-Hmm, ok not any wakeup from interrupt context because you have that
-in_irq() test in there, but if that IRQ doesn't happen to use RCU and
-does trigger softirqs and one of that softirq does a wakeup we're still
-in the same boat.
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+---
+ drivers/staging/hv/vmbus_drv.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-> void __rcu_read_unlock(void)
-> {
->         struct task_struct *t = current;
->                 
->         barrier();  /* needed if we ever invoke rcu_read_unlock in rcutree.c */
->         --t->rcu_read_lock_nesting;
->         barrier();  /* decrement before load of ->rcu_read_unlock_special */
->         if (t->rcu_read_lock_nesting == 0 &&
->             unlikely(ACCESS_ONCE(t->rcu_read_unlock_special)))
->                 rcu_read_unlock_special(t);
-> #ifdef CONFIG_PROVE_LOCKING
->         WARN_ON_ONCE(ACCESS_ONCE(t->rcu_read_lock_nesting) < 0);
-> #endif /* #ifdef CONFIG_PROVE_LOCKING */
-> }
-> 
-> After --t->rcu_read_lock_nesting, but before calling
-> rcu_read_unlock_special(), will trigger this lock inversion.
-> 
-> The alternative case, ->rcu_read_unlock_special is not set yet, it can
-> be set if the interrupt hitting in that same spot above, is the timer
-> interrupt, and the wakeup happens either from the softirq ran from the
-> hard IRQ tail, or as I suspect here happens, the wakeup of ksoftirqd/#.
-> 
-> 
+diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
+index 3a8eb36..9a0df2c 100644
+--- a/drivers/staging/hv/vmbus_drv.c
++++ b/drivers/staging/hv/vmbus_drv.c
+@@ -28,7 +28,6 @@
+ #include <linux/irq.h>
+ #include <linux/interrupt.h>
+ #include <linux/sysctl.h>
+-#include <linux/dmi.h>
+ #include <linux/slab.h>
+ #include <linux/acpi.h>
+ #include <acpi/acpi_bus.h>
+-- 
+1.7.4.1
+
