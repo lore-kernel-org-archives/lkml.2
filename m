@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754422Ab1GORaI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 13:30:08 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:37205
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
+	id S1754629Ab1GORhw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 13:37:52 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:33330
+	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754026Ab1GOR37 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 13:29:59 -0400
+	id S1754216Ab1GORaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 13:30:08 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 032/117] Staging: hv: netvsc: Get rid of the empty function netvsc_initialize()
-Date: Fri, 15 Jul 2011 10:46:20 -0700
-Message-Id: <1310752065-27895-32-git-send-email-kys@microsoft.com>
+Subject: [PATCH 083/117] Staging: hv: storvsc: Prevent outgoing traffic when stor dev is destroyed
+Date: Fri, 15 Jul 2011 10:47:11 -0700
+Message-Id: <1310752065-27895-83-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1310752065-27895-1-git-send-email-kys@microsoft.com>
 References: <1310752024-27854-1-git-send-email-kys@microsoft.com>
@@ -23,59 +23,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, get rid of the empty function netvsc_initialize().
+Prevent outgoing traffic when stor dev is destroyed.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/staging/hv/hyperv_net.h |    1 -
- drivers/staging/hv/netvsc.c     |    9 ---------
- drivers/staging/hv/netvsc_drv.c |    3 ---
- 3 files changed, 0 insertions(+), 13 deletions(-)
+ drivers/staging/hv/hyperv_storage.h |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/hv/hyperv_net.h b/drivers/staging/hv/hyperv_net.h
-index 27f987b..5782fea 100644
---- a/drivers/staging/hv/hyperv_net.h
-+++ b/drivers/staging/hv/hyperv_net.h
-@@ -96,7 +96,6 @@ void netvsc_linkstatus_callback(struct hv_device *device_obj,
- 				unsigned int status);
- int netvsc_recv_callback(struct hv_device *device_obj,
- 			struct hv_netvsc_packet *packet);
--int netvsc_initialize(struct hv_driver *drv);
- int rndis_filter_open(struct hv_device *dev);
- int rndis_filter_close(struct hv_device *dev);
- int rndis_filter_device_add(struct hv_device *dev,
-diff --git a/drivers/staging/hv/netvsc.c b/drivers/staging/hv/netvsc.c
-index d085018..cb02eed 100644
---- a/drivers/staging/hv/netvsc.c
-+++ b/drivers/staging/hv/netvsc.c
-@@ -989,12 +989,3 @@ cleanup:
+diff --git a/drivers/staging/hv/hyperv_storage.h b/drivers/staging/hv/hyperv_storage.h
+index 6b20f1d..53b65be 100644
+--- a/drivers/staging/hv/hyperv_storage.h
++++ b/drivers/staging/hv/hyperv_storage.h
+@@ -296,7 +296,8 @@ static inline struct storvsc_device *get_out_stor_device(
  
- 	return ret;
- }
--
--/*
-- * netvsc_initialize - Main entry point
-- */
--int netvsc_initialize(struct hv_driver *drv)
--{
--
--	return 0;
--}
-diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
-index dd66073..11c03ae 100644
---- a/drivers/staging/hv/netvsc_drv.c
-+++ b/drivers/staging/hv/netvsc_drv.c
-@@ -451,9 +451,6 @@ static int __init netvsc_drv_init(void)
- 
- 	pr_info("initializing....");
- 
--	/* Callback to client driver to complete the initialization */
--	netvsc_initialize(drv);
--
- 	drv->driver.name = driver_name;
- 
- 	/* The driver belongs to vmbus */
+ 	spin_lock_irqsave(&device->ext_lock, flags);
+ 	stor_device = (struct storvsc_device *)device->ext;
+-	if (stor_device && atomic_read(&stor_device->ref_count) > 1)
++	if (stor_device && (atomic_read(&stor_device->ref_count) > 1) &&
++		!stor_device->destroy)
+ 		atomic_inc(&stor_device->ref_count);
+ 	else
+ 		stor_device = NULL;
 -- 
 1.7.4.1
 
