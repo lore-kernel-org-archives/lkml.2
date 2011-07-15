@@ -1,63 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965013Ab1GOHHA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 03:07:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41667 "EHLO mx2.suse.de"
+	id S965053Ab1GOHHP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 03:07:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41677 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964786Ab1GOHHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 03:07:00 -0400
-Date: Fri, 15 Jul 2011 08:41:47 +0200
-From: Greg KH <gregkh@suse.de>
-To: Mike Waychison <mikew@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Kconfig: Allow disabling of CONFIG_DEVPORT
-Message-ID: <20110715064147.GA1021@suse.de>
-References: <1310675693-9204-1-git-send-email-mikew@google.com>
- <20110714212113.GA28639@suse.de>
- <CAGTjWtB53vW5B2EJ5=+C3buDAY0RtsfANxx5NhC5aWnmEx08EQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAGTjWtB53vW5B2EJ5=+C3buDAY0RtsfANxx5NhC5aWnmEx08EQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S964786Ab1GOHHK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 03:07:10 -0400
+Date: Fri, 15 Jul 2011 17:06:50 +1000
+From: NeilBrown <neilb@suse.de>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: kernel-hardening@lists.openwall.com, Solar Designer <solar@openwall.com>,
+        James Morris <jmorris@namei.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Eric Paris <eparis@redhat.com>, Stephen Smalley <sds@tycho.nsa.gov>,
+        Willy Tarreau <w@1wt.eu>, Sebastian Krahmer <krahmer@suse.de>
+Subject: Re: [kernel-hardening] Re: [PATCH] move RLIMIT_NPROC check from
+ set_user() to do_execve_common()
+Message-ID: <20110715170650.585f1dad@notabene.brown>
+In-Reply-To: <20110715063113.GA3166@albatros>
+References: <20110712132723.GA3193@albatros>
+	<CA+55aFysXOeBqEvmVbuqL3i0jRFDcE=vDuVhmYL38XQ0+x=deQ@mail.gmail.com>
+	<20110713091408.0d456352@notabene.brown>
+	<20110713063142.GA19976@openwall.com>
+	<20110713170657.59dae548@notabene.brown>
+	<CA+55aFwQKqvNvzTMYXVW_yKkFtNsyv8uuBiWiwYLof-nPqPu9w@mail.gmail.com>
+	<alpine.LRH.2.00.1107141009510.17067@tundra.namei.org>
+	<20110714112751.1bfd998f@notabene.brown>
+	<20110714150602.GA30019@openwall.com>
+	<20110715133013.4fa38d19@notabene.brown>
+	<20110715063113.GA3166@albatros>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 14, 2011 at 03:17:24PM -0700, Mike Waychison wrote:
-> On Thu, Jul 14, 2011 at 2:21 PM, Greg KH <gregkh@suse.de> wrote:
-> > On Thu, Jul 14, 2011 at 01:34:52PM -0700, Mike Waychison wrote:
-> >> It would be useful to build kernels with disabled support of /dev/port
-> >> for systems where we do not want to allow an administrator to access IO
-> >> ports directly.
-> >>
-> >> To do so however, CONFIG_DEVPORT needs to be user-selectable.  Give this
-> >> configuration option a name and help description.
-> >>
-> >> Google-Bug-Id: 3177114
-> >
-> > What is that field?  It's not something that I've ever seen before...
+On Fri, 15 Jul 2011 10:31:13 +0400 Vasiliy Kulikov <segoon@openwall.com>
+wrote:
+
+> Neil,
 > 
-> This is for our internal reference.
-
-Internal reference to where?
-
-> > Please don't push internal fields like this to public patches, it only
-> > causes confusion...
+> On Fri, Jul 15, 2011 at 13:30 +1000, NeilBrown wrote:
+> > I'm still bothers that the proposed patch can cause exec to fail for an
+> > separate 'innocent' process.
+> > It also seems to 'hide' the problem - just shuffling code around.
+> > The comment in do_execve_common helps.  A similar comment in set_user
+> > wouldn't hurt.
+> > 
+> > But what do you think of this.  It sure that only the process which ignored
+> > the return value from setuid is inconvenienced.
 > 
-> It hasn't caused any problems so far.  It helps us track things as we
-> pull code back downstream.
+> I don't like it.  You're mixing the main problem and an RLIMIT check
+> enforcement.  The main goal is denying setuid() to fail unless there is not
+> enough privileges, RLIMIT in execve() is just an *attempt* to still count
+> NPROC in *some* widespread cases.  But you're trying to fix setuid()
+> where RLIMIT accounting is simple :\
+> 
+> Your patch doesn't address the core issue in this situation:
+> 
+>     setuid(); /* it fails because of RLIMIT */
+>     do_some_fs();
+>     execve();
+> 
+> do_some_fs() should be called ONLY if root is dropped.  In your scheme
+> the process may interact with FS as root while thinking it is nonroot,
+> which almost always leads to privilege escalation.
+> 
+> Thanks,
+> 
 
-Ok, but what happens if all 2000+ different companies start adding their
-fields to the signed-off-by: area of the kernel for their internal
-tracking systems?
+How about this then?
 
-So please, don't do this, it makes no sense to the kernel community at
-all and we really don't want to start adding more fields to this area if
-we don't have to.
+>From 4a1411d10c90510a4eedf94bfd6b2578425271ba Mon Sep 17 00:00:00 2001
+From: NeilBrown <neilb@suse.de>
+Date: Fri, 15 Jul 2011 13:20:09 +1000
+Subject: [PATCH] Protect execve from being used after 'setuid' exceeds RLIMIT_NPROC
 
-greg k-h
+Many programs to not check setuid for failure so it is not safe
+for it to fail.  So impose the RLIMIT_NPROC limit by noting the
+excess in set_user with a process flag, and failing exec() if the
+flag is set.
+
+The patch http://lkml.org/lkml/2003/7/13/226 introduced a RLIMIT_NPROC
+check in set_user() to check for NPROC exceeding via setuid() and
+similar functions.  Before the check there was a possibility to greatly
+exceed the allowed number of processes by an unprivileged user if the
+program relied on rlimit only.  But the check created new security
+threat: many poorly written programs simply don't check setuid() return
+code and believe it cannot fail if executed with root privileges.  So,
+when the check fails we set a process flag which causes execve to fail.
+
+Following examples of vulnerabilities due to processes not checking
+error from setuid provided by Solar Designer <solar@openwall.com>:
+
+Here are some examples for 2011-2010:
+
+"... missing setuid() retval check in opielogin which leads to easy root
+compromise":
+
+http://www.openwall.com/lists/oss-security/2011/06/22/6
+
+"The /usr/lib/libgnomesu/gnomesu-pam-backend suid binary which belongs
+to the libgnomesu package is not checking setuid() return values.
+
+As a result, two cooperating users, or users with access to guest,
+cgi or web accounts can run arbitrary commands as root very easily."
+
+http://www.openwall.com/lists/oss-security/2011/05/30/2
+
+pam_xauth (exploitable if pam_limits is also used):
+
+http://www.openwall.com/lists/oss-security/2010/08/16/2
+
+A collection of examples from 2006:
+
+http://lists.openwall.net/linux-kernel/2006/08/20/156
+
+Signed-off-by: NeilBrown <neilb@suse.de>
+
+diff --git a/fs/exec.c b/fs/exec.c
+index 6075a1e..dfe9c61 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1434,6 +1434,17 @@ static int do_execve_common(const char *filename,
+ 	bool clear_in_exec;
+ 	int retval;
+ 
++	if (current->flags & PF_NPROC_EXCEEDED) {
++		/* setuid noticed that RLIMIT_NPROC was
++		 * exceeded, but didn't fail as that easily
++		 * leads to privileges leaking.  So fail
++		 * here instead - we still limit the number of
++		 * processes running the user's code.
++		 */
++		retval = -EAGAIN;
++		goto out_ret;
++	}
++
+ 	retval = unshare_files(&displaced);
+ 	if (retval)
+ 		goto out_ret;
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 496770a..f024c63 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1759,6 +1759,7 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
+ #define PF_DUMPCORE	0x00000200	/* dumped core */
+ #define PF_SIGNALED	0x00000400	/* killed by a signal */
+ #define PF_MEMALLOC	0x00000800	/* Allocating memory */
++#define PF_NPROC_EXCEEDED 0x00001000	/* set_user noticed that RLIMIT_NPROC was exceeded */
+ #define PF_USED_MATH	0x00002000	/* if unset the fpu must be initialized before use */
+ #define PF_FREEZING	0x00004000	/* freeze in progress. do not account to load */
+ #define PF_NOFREEZE	0x00008000	/* this thread should not be frozen */
+diff --git a/kernel/cred.c b/kernel/cred.c
+index 174fa84..8ef31f5 100644
+--- a/kernel/cred.c
++++ b/kernel/cred.c
+@@ -508,10 +508,8 @@ int commit_creds(struct cred *new)
+ 		key_fsgid_changed(task);
+ 
+ 	/* do it
+-	 * - What if a process setreuid()'s and this brings the
+-	 *   new uid over his NPROC rlimit?  We can check this now
+-	 *   cheaply with the new uid cache, so if it matters
+-	 *   we should be checking for it.  -DaveM
++	 * RLIMIT_NPROC limits on user->processes have already been checked
++	 * in set_user().
+ 	 */
+ 	alter_cred_subscribers(new, 2);
+ 	if (new->user != old->user)
+diff --git a/kernel/sys.c b/kernel/sys.c
+index e4128b2..dd1fb9d 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -592,10 +592,9 @@ static int set_user(struct cred *new)
+ 		return -EAGAIN;
+ 
+ 	if (atomic_read(&new_user->processes) >= rlimit(RLIMIT_NPROC) &&
+-			new_user != INIT_USER) {
+-		free_uid(new_user);
+-		return -EAGAIN;
+-	}
++			new_user != INIT_USER)
++		/* Cause any subsequent 'exec' to fail */
++		current->flags |= PF_NPROC_EXCEEDED;
+ 
+ 	free_uid(new->user);
+ 	new->user = new_user;
