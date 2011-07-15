@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755827Ab1GOR5H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 13:57:07 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:58942 "EHLO
+	id S1755847Ab1GOR5X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 13:57:23 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:58947 "EHLO
 	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755798Ab1GOR5D (ORCPT
+	with ESMTP id S1755744Ab1GOR5U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 13:57:03 -0400
+	Fri, 15 Jul 2011 13:57:20 -0400
 From: greearb@candelatech.com
 To: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Ben Greear <greearb@candelatech.com>
-Subject: [PATCH (RESEND) 03/12] nfs:  Add srcaddr member to nfs_client.
-Date: Fri, 15 Jul 2011 10:55:59 -0700
-Message-Id: <1310752568-21280-4-git-send-email-greearb@candelatech.com>
+Subject: [PATCH (RESEND) 04/12] nfs:  Use request destination addr as callback source addr.
+Date: Fri, 15 Jul 2011 10:56:00 -0700
+Message-Id: <1310752568-21280-5-git-send-email-greearb@candelatech.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1310752568-21280-1-git-send-email-greearb@candelatech.com>
 References: <1310752568-21280-1-git-send-email-greearb@candelatech.com>
@@ -22,61 +22,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ben Greear <greearb@candelatech.com>
 
+This helps make sure that responses use the correct
+source address on multi-homed machines.
 
 Signed-off-by: Ben Greear <greearb@candelatech.com>
 ---
-:100644 100644 2a55347... 93979a9... M	fs/nfs/internal.h
-:100644 100644 ce40e5c... cb41131... M	fs/nfs/super.c
-:100644 100644 87694ca... 9db4473... M	include/linux/nfs_fs_sb.h
- fs/nfs/internal.h         |    5 +++++
- fs/nfs/super.c            |    2 ++
- include/linux/nfs_fs_sb.h |    4 ++++
+:100644 100644 b257383... 00902ec... M	fs/nfs/callback.h
+:100644 100644 c6c86a7... ed5be89... M	fs/nfs/callback_xdr.c
+:100644 100644 ea29330... 45d5d7c... M	include/linux/sunrpc/svc.h
+ fs/nfs/callback.h          |    3 +++
+ fs/nfs/callback_xdr.c      |    3 +++
+ include/linux/sunrpc/svc.h |    5 +++++
  3 files changed, 11 insertions(+), 0 deletions(-)
 
-diff --git a/fs/nfs/internal.h b/fs/nfs/internal.h
-index 2a55347..93979a9 100644
---- a/fs/nfs/internal.h
-+++ b/fs/nfs/internal.h
-@@ -107,6 +107,11 @@ struct nfs_parsed_mount_data {
- 	struct {
- 		struct sockaddr_storage	address;
- 		size_t			addrlen;
-+	} srcaddr;
-+
-+	struct {
-+		struct sockaddr_storage address;
-+		size_t                  addrlen;
- 		char			*hostname;
- 		u32			version;
- 		int			port;
-diff --git a/fs/nfs/super.c b/fs/nfs/super.c
-index ce40e5c..cb41131 100644
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -904,6 +904,8 @@ static struct nfs_parsed_mount_data *nfs_alloc_parsed_mount_data(unsigned int ve
- 		data->auth_flavor_len	= 1;
- 		data->version		= version;
- 		data->minorversion	= 0;
-+		data->srcaddr.address.ss_family = AF_UNSPEC;
-+		data->srcaddr.addrlen = sizeof(data->srcaddr.address);
- 	}
- 	return data;
- }
-diff --git a/include/linux/nfs_fs_sb.h b/include/linux/nfs_fs_sb.h
-index 87694ca..9db4473 100644
---- a/include/linux/nfs_fs_sb.h
-+++ b/include/linux/nfs_fs_sb.h
-@@ -80,6 +80,10 @@ struct nfs_client {
- 	struct list_head	cl_layouts;
- #endif /* CONFIG_NFS_V4 */
+diff --git a/fs/nfs/callback.h b/fs/nfs/callback.h
+index b257383..00902ec 100644
+--- a/fs/nfs/callback.h
++++ b/fs/nfs/callback.h
+@@ -57,6 +57,7 @@ struct cb_compound_hdr_res {
  
-+	/* If we should bind to a local IP, it should be specified below. */
-+	struct sockaddr_storage	srcaddr;
-+	size_t			srcaddrlen;
+ struct cb_getattrargs {
+ 	struct sockaddr *addr;
++	struct sockaddr *srcaddr;
+ 	struct nfs_fh fh;
+ 	uint32_t bitmap[2];
+ };
+@@ -72,6 +73,7 @@ struct cb_getattrres {
+ 
+ struct cb_recallargs {
+ 	struct sockaddr *addr;
++	struct sockaddr *srcaddr;
+ 	struct nfs_fh fh;
+ 	nfs4_stateid stateid;
+ 	uint32_t truncate;
+@@ -92,6 +94,7 @@ struct referring_call_list {
+ 
+ struct cb_sequenceargs {
+ 	struct sockaddr			*csa_addr;
++	struct sockaddr                 *csa_daddr;
+ 	struct nfs4_sessionid		csa_sessionid;
+ 	uint32_t			csa_sequenceid;
+ 	uint32_t			csa_slotid;
+diff --git a/fs/nfs/callback_xdr.c b/fs/nfs/callback_xdr.c
+index c6c86a7..ed5be89 100644
+--- a/fs/nfs/callback_xdr.c
++++ b/fs/nfs/callback_xdr.c
+@@ -196,6 +196,7 @@ static __be32 decode_getattr_args(struct svc_rqst *rqstp, struct xdr_stream *xdr
+ 	if (unlikely(status != 0))
+ 		goto out;
+ 	args->addr = svc_addr(rqstp);
++	args->srcaddr = svc_daddr(rqstp);
+ 	status = decode_bitmap(xdr, args->bitmap);
+ out:
+ 	dprintk("%s: exit with status = %d\n", __func__, ntohl(status));
+@@ -208,6 +209,7 @@ static __be32 decode_recall_args(struct svc_rqst *rqstp, struct xdr_stream *xdr,
+ 	__be32 status;
+ 
+ 	args->addr = svc_addr(rqstp);
++	args->srcaddr = svc_daddr(rqstp);
+ 	status = decode_stateid(xdr, &args->stateid);
+ 	if (unlikely(status != 0))
+ 		goto out;
+@@ -442,6 +444,7 @@ static __be32 decode_cb_sequence_args(struct svc_rqst *rqstp,
+ 		goto out;
+ 
+ 	args->csa_addr = svc_addr(rqstp);
++	args->csa_daddr = svc_daddr(rqstp);
+ 	args->csa_sequenceid = ntohl(*p++);
+ 	args->csa_slotid = ntohl(*p++);
+ 	args->csa_highestslotid = ntohl(*p++);
+diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
+index ea29330..45d5d7c 100644
+--- a/include/linux/sunrpc/svc.h
++++ b/include/linux/sunrpc/svc.h
+@@ -299,6 +299,11 @@ static inline struct sockaddr *svc_addr(const struct svc_rqst *rqst)
+ 	return (struct sockaddr *) &rqst->rq_addr;
+ }
+ 
++static inline struct sockaddr *svc_daddr(struct svc_rqst *rqst)
++{
++	return (struct sockaddr *) &rqst->rq_daddr;
++}
 +
- #ifdef CONFIG_NFS_FSCACHE
- 	struct fscache_cookie	*fscache;	/* client index cache cookie */
- #endif
+ /*
+  * Check buffer bounds after decoding arguments
+  */
 -- 
 1.7.3.4
 
