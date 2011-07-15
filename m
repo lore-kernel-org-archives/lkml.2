@@ -1,75 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752814Ab1GOPJg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 11:09:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36947 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752281Ab1GOPJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 11:09:04 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux.com>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] mm: page allocator: Reconsider zones for allocation after direct reclaim
-Date: Fri, 15 Jul 2011 16:09:00 +0100
-Message-Id: <1310742540-22780-3-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1310742540-22780-1-git-send-email-mgorman@suse.de>
-References: <1310742540-22780-1-git-send-email-mgorman@suse.de>
+	id S1752839Ab1GOPK6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 11:10:58 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:41124 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751956Ab1GOPK5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 11:10:57 -0400
+Date: Fri, 15 Jul 2011 08:10:45 -0700 (PDT)
+Message-Id: <20110715.081045.395109170877608048.davem@davemloft.net>
+To: Michael.Thalmeier@sigmatek.at
+Cc: florian@openwrt.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        michael@thalmeier.at
+Subject: Re: [PATCH 1/1] r6040: only disable RX interrupt if
+ napi_schedule_prep is successful
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1310729306-12190-1-git-send-email-Michael.Thalmeier@sigmatek.at>
+References: <1310729306-12190-1-git-send-email-Michael.Thalmeier@sigmatek.at>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 15 Jul 2011 08:10:47 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With zone_reclaim_mode enabled, it's possible for zones to be considered
-full in the zonelist_cache so they are skipped in the future. If the
-process enters direct reclaim, the ZLC may still consider zones to be
-full even after reclaiming pages. Reconsider all zones for allocation
-if direct reclaim returns successfully.
+From: Michael Thalmeier <Michael.Thalmeier@sigmatek.at>
+Date: Fri, 15 Jul 2011 13:28:26 +0200
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/page_alloc.c |   19 +++++++++++++++++++
- 1 files changed, 19 insertions(+), 0 deletions(-)
+> When receiving the first RX interrupt before the internal call
+> to napi_schedule_prep is successful the RX interrupt gets disabled
+> and is never enabled again as the poll function never gets executed.
+> 
+> Signed-off-by: Michael Thalmeier <Michael.Thalmeier@sigmatek.at>
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 6913854..149409c 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1616,6 +1616,21 @@ static void zlc_mark_zone_full(struct zonelist *zonelist, struct zoneref *z)
- 	set_bit(i, zlc->fullzones);
- }
- 
-+/*
-+ * clear all zones full, called after direct reclaim makes progress so that
-+ * a zone that was recently full is not skipped over for up to a second
-+ */
-+static void zlc_clear_zones_full(struct zonelist *zonelist)
-+{
-+	struct zonelist_cache *zlc;	/* cached zonelist speedup info */
-+
-+	zlc = zonelist->zlcache_ptr;
-+	if (!zlc)
-+		return;
-+
-+	bitmap_zero(zlc->fullzones, MAX_ZONES_PER_ZONELIST);
-+}
-+
- #else	/* CONFIG_NUMA */
- 
- static nodemask_t *zlc_setup(struct zonelist *zonelist, int alloc_flags)
-@@ -1963,6 +1978,10 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
- 	if (unlikely(!(*did_some_progress)))
- 		return NULL;
- 
-+	/* After successful reclaim, reconsider all zones for allocation */
-+	if (NUMA_BUILD)
-+		zlc_clear_zones_full(zonelist);
-+
- retry:
- 	page = get_page_from_freelist(gfp_mask, nodemask, order,
- 					zonelist, high_zoneidx,
--- 
-1.7.3.4
-
+Applied.
