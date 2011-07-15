@@ -1,94 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754119Ab1GOXmD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 19:42:03 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:45726 "EHLO
+	id S1754078Ab1GOXns (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 19:43:48 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:44694 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753595Ab1GOXmB (ORCPT
+	with ESMTP id S1751084Ab1GOXnq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 19:42:01 -0400
-Date: Sat, 16 Jul 2011 01:41:56 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, David Miller <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
-        Mike Frysinger <vapier@gentoo.org>, Ralf Baechle <ralf@linux-mips.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Russell King <linux@arm.linux.org.uk>,
-        Paul Mackerras <paulus@samba.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH 0/3] rcu: Fix some rcu uses in extended quiescent state
-Message-ID: <20110715234154.GC6590@somewhere>
-References: <1310416472-2554-1-git-send-email-fweisbec@gmail.com>
- <20110715233203.GM2327@linux.vnet.ibm.com>
+	Fri, 15 Jul 2011 19:43:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110715233203.GM2327@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAL1RGDUDbEG4ypr0GJLLi_0PTjZK0HshMVwTs=aY+=hhFdjK5g@mail.gmail.com>
+References: <D010E79907AF0D4E90B603DE907837D504CA6365D6@azsmsx504.amr.corp.intel.com>
+	<4E1CAEEB.8050506@kernel.dk>
+	<20110713171011.GA11864@parisc-linux.org>
+	<CAL1RGDUDbEG4ypr0GJLLi_0PTjZK0HshMVwTs=aY+=hhFdjK5g@mail.gmail.com>
+Date: Fri, 15 Jul 2011 16:43:44 -0700
+Message-ID: <CAHQAjVGK97KU0dB700WSTS1bH0YkW1_MCVaAtjR9aFQRJTcsbA@mail.gmail.com>
+Subject: Re: rq_affinity doesn't seem to work?
+From: ersatz splatt <ersatzsplatt@gmail.com>
+To: Roland Dreier <roland@purestorage.com>
+Cc: Matthew Wilcox <matthew@wil.cx>, Jens Axboe <axboe@kernel.dk>,
+        "Jiang, Dave" <dave.jiang@intel.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        "Foong, Annie" <annie.foong@intel.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Nadolski, Edmund" <edmund.nadolski@intel.com>,
+        "Skirvin, Jeffrey D" <jeffrey.d.skirvin@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 15, 2011 at 04:32:03PM -0700, Paul E. McKenney wrote:
-> On Mon, Jul 11, 2011 at 10:34:29PM +0200, Frederic Weisbecker wrote:
-> > Hi,
-> > 
-> > First patch lays the ground to fix rcu uses in dyntick idle mode
-> > by splitting rcu extended qs state logic from tick nohz one.
-> > 
-> > The rest fixes the misuses that RCU has detected for me in x86.
-> 
-> These look good to me -- I have queued them and will try testing
-> them out.
-> 
-> > I'll try to fix those Paul has detected in PowerPc.
-> 
-> Looking forward to that one as well.  ;-)
-> 
-> It would be really cool if this approach could serve as RCU's idle-CPU
-> detection regardless of whether or not CONFIG_NO_HZ was set.  For one
-> thing, this would simplify the RCU code that treats idle tasks as extended
-> quiescent states.  Except during boot time.  :-/
+On Thu, Jul 14, 2011 at 10:02 AM, Roland Dreier <roland@purestorage.com> wrote:
 
-For that we could just build rcu_enter_nohz() things on CONFIG_NO_HZ || CONFIG_PROVE_RCU.
+> The problem as we've seen it is that on a dual-socket Westmere (Xeon
+> 56xx) system, we have two sockets with 6 cores (12 threads) each, all
+> sharing L3 cache, and so we end up with all block softirqs on only 2
+> out of 24 threads, which is not enough to handle all the IOPS that
+> fast storage can provide.
 
-> 
-> 							Thanx, Paul
-> 
-> > Frederic Weisbecker (3):
-> >   nohz: Split extended quiescent state handling from nohz switch
-> >   x86: Enter rcu extended qs after idle notifier call
-> >   x86: Call idle notifier after irq_enter()
-> > 
-> >  arch/arm/kernel/process.c                |    4 +-
-> >  arch/avr32/kernel/process.c              |    4 +-
-> >  arch/blackfin/kernel/process.c           |    4 +-
-> >  arch/microblaze/kernel/process.c         |    4 +-
-> >  arch/mips/kernel/process.c               |    4 +-
-> >  arch/powerpc/kernel/idle.c               |    4 +-
-> >  arch/powerpc/platforms/iseries/setup.c   |    8 +++---
-> >  arch/s390/kernel/process.c               |    4 +-
-> >  arch/sh/kernel/idle.c                    |    2 +-
-> >  arch/sparc/kernel/process_64.c           |    4 +-
-> >  arch/tile/kernel/process.c               |    4 +-
-> >  arch/um/kernel/process.c                 |    4 +-
-> >  arch/unicore32/kernel/process.c          |    4 +-
-> >  arch/x86/kernel/apic/apic.c              |    6 ++--
-> >  arch/x86/kernel/apic/io_apic.c           |    2 +-
-> >  arch/x86/kernel/cpu/mcheck/mce.c         |    2 +-
-> >  arch/x86/kernel/cpu/mcheck/therm_throt.c |    2 +-
-> >  arch/x86/kernel/cpu/mcheck/threshold.c   |    2 +-
-> >  arch/x86/kernel/irq.c                    |    6 ++--
-> >  arch/x86/kernel/process_32.c             |    4 +-
-> >  arch/x86/kernel/process_64.c             |    5 ++++
-> >  include/linux/tick.h                     |   10 +++++--
-> >  kernel/time/tick-sched.c                 |   36 ++++++++++++++++++++++++++---
-> >  23 files changed, 83 insertions(+), 46 deletions(-)
-> > 
-> > -- 
-> > 1.7.5.4
-> > 
+I have a dual socket system with Tylersburg chipset (approximately
+Westmere I gather).
+With two Xeon X5660 packages I get this when running with more iops
+potential than the system can handle:
+
+02:15:00 PM CPU  %usr  %nice %sys %iowait  %irq  %soft  %steal  %guest %idle
+02:15:02 PM  all    2.76    0.00   30.40   28.28    0.00   13.74
+0.00    0.00   24.81
+02:15:02 PM    0    0.00    0.00    0.00    0.00    0.00  100.00
+0.00    0.00    0.00
+02:15:02 PM    1    0.00    0.00    0.50    0.00    0.00    0.00
+0.00    0.00   99.50
+02:15:02 PM    2    3.02    0.00   36.68   52.26    0.00    8.04
+0.00    0.00    0.00
+02:15:02 PM    3    2.50    0.00   36.00   54.50    0.00    7.00
+0.00    0.00    0.00
+02:15:02 PM    4    5.47    0.00   64.18   18.91    0.00   11.44
+0.00    0.00    0.00
+02:15:02 PM    5    3.02    0.00   37.69   53.27    0.00    6.03
+0.00    0.00    0.00
+02:15:02 PM    6    0.00    0.00    0.50    0.00    0.00   91.54
+0.00    0.00    7.96
+02:15:02 PM    7    0.00    0.00    0.00    0.00    0.00    0.00
+0.00    0.00  100.00
+02:15:02 PM    8    3.00    0.00   35.50   55.00    0.00    6.50
+0.00    0.00    0.00
+02:15:02 PM    9    3.02    0.00   39.70   50.25    0.00    7.04
+0.00    0.00    0.00
+02:15:02 PM   10    3.50    0.00   36.50   53.00    0.00    7.00
+0.00    0.00    0.00
+02:15:02 PM   11    6.53    0.00   70.85    9.05    0.00   13.57
+0.00    0.00    0.00
+02:15:02 PM   12    0.00    0.00    0.57    0.00    0.00    0.00
+0.00    0.00   99.43
+02:15:02 PM   13    3.00    0.00    0.00    0.00    0.00    0.00
+0.00    0.00   97.00
+02:15:02 PM   14    2.50    0.00   36.50   54.00    0.00    7.00
+0.00    0.00    0.00
+02:15:02 PM   15    3.52    0.00   36.18   53.77    0.00    6.53
+0.00    0.00    0.00
+02:15:02 PM   16    5.00    0.00   64.00   21.00    0.00   10.00
+0.00    0.00    0.00
+02:15:02 PM   17    3.02    0.00   37.19   52.76    0.00    7.04
+0.00    0.00    0.00
+02:15:02 PM   18    0.00    0.00    0.00    0.00    0.00    0.00
+0.00    0.00  100.00
+02:15:02 PM   19    0.00    0.00    1.01    0.00    0.00    0.00
+0.00    0.00   98.99
+02:15:02 PM   20    3.48    0.00   38.31   52.24    0.00    5.97
+0.00    0.00    0.00
+02:15:02 PM   21    5.50    0.00   63.00   18.50    0.00   13.00
+0.00    0.00    0.00
+02:15:02 PM   22    2.50    0.00   35.00   54.50    0.00    8.00
+0.00    0.00    0.00
+02:15:02 PM   23    5.03    0.00   58.79   23.62    0.00   12.56
+0.00    0.00    0.00
+
+By "more IOPS potential than the system can handle", I mean that with
+about a quarter of the targets I get the same figure.  The HBA is
+known to handle more than twice the IOPS I'm seeing.
+
+I'm using 16 targets with fio driving one target with each core you
+see sys activity on.  You can see that two additional cores are
+getting weighed down -- 0 and 6.  Is that indicative of the
+bottleneck?
+
+These results are without using any of the patches suggested in this
+e-mail thread.  I'll have to try and see if they help.
+
+What is the top number of IOPS I should hope for with this system and
+the Linux kernel?
+Dave Jiang (or anyone else) -- can you share the max IOPS that you are seeing?
+
+
+> It's not clear to me what the right answer or tradeoffs are here.  It
+> might make sense to use only one hyperthread per core for block
+> softirqs.  As I understand the Westmere cache topology, there's not
+> really an obvious intermediate step -- all the cores in a package
+> share the L3, and then each core has its own L2.
+>
+> Limiting softirqs to 10% of a core seems a bit low, since we seem to
+> be able to use more than 100% of a core handling block softirqs, and
+> anyway magic numbers like that seem to always be wrong sometimes.
+> Perhaps we could use the queue length on the destination CPU as a
+> proxy for how busy ksoftirq is?
+>
+>  - R.
