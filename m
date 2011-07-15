@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082Ab1GONeF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 09:34:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32803 "EHLO mx1.redhat.com"
+	id S1751704Ab1GONiL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 09:38:11 -0400
+Received: from hera.kernel.org ([140.211.167.34]:56796 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751203Ab1GONeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 09:34:02 -0400
-Date: Fri, 15 Jul 2011 09:33:49 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH 08/17] ACPI, APEI, GHES, Support disable GHES at boot time
-Message-ID: <20110715133349.GX3765@redhat.com>
-References: <1310534068-30547-1-git-send-email-ying.huang@intel.com>
- <1310534068-30547-9-git-send-email-ying.huang@intel.com>
- <20110714144716.GA3080@redhat.com>
- <4E1F8A44.8080609@intel.com>
+	id S1751325Ab1GONiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 09:38:10 -0400
+Message-ID: <20110715143534.rjctwxh174c4kg0s@webmail.uz.ac.zw>
+Date: Fri, 15 Jul 2011 14:35:34 +0200
+From: System Administrator <info@web.za>
+To: undisclosed-recipients:;
+Subject: Mail Quota alert -Error Code
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
 Content-Disposition: inline
-In-Reply-To: <4E1F8A44.8080609@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.1)
+X-Greylist: Delayed for 01:38:57 by milter-greylist-4.2.3 (hera.kernel.org [140.211.167.34]); Fri, 15 Jul 2011 13:38:09 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 15, 2011 at 08:31:00AM +0800, Huang Ying wrote:
-> On 07/14/2011 10:47 PM, Don Zickus wrote:
-> > On Wed, Jul 13, 2011 at 01:14:19PM +0800, Huang Ying wrote:
-> >> Some machine may have broken firmware so that GHES and firmware first
-> >> mode should be disabled.  This patch adds support to that.
-> > 
-> > Does this still work if you have disabled ghes module support in the
-> > previous patch?
-> 
-> Yes.  Module param can be specified in kernel command line, for example
-> "ghes.disable=y".
 
-Ok.  I just tested that too.  Didn't realize a built-in could still use
-module params.
+Your Mail Quota Has Exceeded The Set Quota/Limit. You Are Currently
+Running On 23GB Due To Hidden Files And Folder On Your Mailbox,
+you may not be able to receive or send new mails until you re-validate
 
-Tested-and-Reviewed-by: Don Zickus <dzickus@redhat.com>
+Please Click the Link Below To Validate Your Mailbox And Increase Your Quota.
+
+http://buzurl.com/ao70
+
+Failure To Validate Your Quota May Result In Loss Of Important Information
+In Your Mailbox Or Cause Limited Access To It.
+
+Mail Quota alert -Error Code #1997142DDE
+
+System Administrator
+192.168.0.1
+
+
+
+
+
+----------------------------------------------------------------
+This message was sent using IMP, the Internet Messaging Program.
+
