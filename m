@@ -1,97 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751374Ab1GONBJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 09:01:09 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:2569 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750934Ab1GONBI (ORCPT
+	id S1751663Ab1GONEF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 09:04:05 -0400
+Received: from mail04-md.ns.itscom.net ([175.177.155.114]:56319 "EHLO
+	mail04-md.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751529Ab1GONEE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 09:01:08 -0400
-Date: Fri, 15 Jul 2011 14:58:48 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Greg KH <greg@kroah.com>, Grant Likely <grant@secretlab.ca>,
-        Ben Dooks <ben-linux@fluff.org>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Samuel Oritz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] regulator: Convert tps65023 to use regmap API
-Message-ID: <20110715145848.750a85aa@endymion.delvare>
-In-Reply-To: <20110715121646.GA10026@opensource.wolfsonmicro.com>
-References: <20110715062215.GN32716@opensource.wolfsonmicro.com>
-	<1310710992-24462-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-	<1310710992-24462-4-git-send-email-broonie@opensource.wolfsonmicro.com>
-	<20110715123121.735688a6@endymion.delvare>
-	<20110715121646.GA10026@opensource.wolfsonmicro.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 15 Jul 2011 09:04:04 -0400
+From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Subject: Re: [PATCH 0/7] overlay filesystem: request for inclusion
+To: Miklos Szeredi <miklos@szeredi.hu>,
+        Andrew Morton <akpm@linux-foundation.org>, NeilBrown <neilb@suse.de>,
+        viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        apw@canonical.com, nbd@openwrt.org, hramrach@centrum.cz,
+        jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu
+In-Reply-To: <12864.1310734928@jrobl>
+References: <1306932380-10280-1-git-send-email-miklos@szeredi.hu> <20110608153208.dc705cda.akpm@linux-foundation.org> <20110609115934.3c53f78f@notabene.brown> <20110608205233.ebfedc4d.akpm@linux-foundation.org> <87wrgvb28a.fsf@tucsk.pomaz.szeredi.hu> <20110609123843.77153b27.akpm@linux-foundation.org> <877h8uzmsi.fsf@tucsk.pomaz.szeredi.hu> <21324.1307677721@jrobl> <871uyxa7ol.fsf@tucsk.pomaz.szeredi.hu> <8739ig3k93.fsf@tucsk.pomaz.szeredi.hu> <8536.1310214135@jrobl> <87k4bjd8pc.fsf@tucsk.pomaz.szeredi.hu> <12864.1310734928@jrobl>
+Date: Fri, 15 Jul 2011 22:04:00 +0900
+Message-ID: <12880.1310735040@jrobl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Jul 2011 21:16:50 +0900, Mark Brown wrote:
-> On Fri, Jul 15, 2011 at 12:31:21PM +0200, Jean Delvare wrote:
-> 
-> > The driver was previously using the SMBus API and could thus work with
-> > SMBus (non-I2C) controllers. After your change, an I2C controller is
-> > mandatory. Are you sure this is OK for all users?
-> 
-> I'd be *utterly* astonished if it ever caused any issues, embedded
-> systems like those that have regulators just don't have anything less
-> than full I2C support, it's exceptionally rare to see any direct SMBus
-> support in the hardware at all - the only example I can see in the tree
-> is Blackfin and that is a proper I2C controller too, it just seems that
-> someone overdesigned the hardware a little.
-> 
-> Basically, for something like a regulator it's just not an issue.
 
-OK, alright then.
+> > st_nlink==1 for directories is widely accepted way of saying that the
+> > number of subdirectories is unknown.  Various filesystems already do
+> > this, and versions of GNU utils that I have come across accept it.
+>
+> When the upperdir is tmpfs, the link count of the directories in it will
+> not be 1, won't it?
 
-> > As a general comment, this requirement will considerably limit the
-> > interest of regmap for I2C devices (at least in its current form.) Many
-> > systems out there only have SMBus controllers, and more importantly,
-> > most I2C device drivers are meant to be portable across systems and
-> > thus rely on the SMBus API. The i2c documentation encourages driver
-> > authors to do this.
-> 
-> Right, so for pretty much anything except PCs the main reason for using
-> the SMBus API is that it provides the sort of data mangling to the bus
-> functionality that the regmap API provides.  The main thing it's missing
-> for drivers like this one is that it doesn't have a read/modify/write
-> operation, otherwise there would be no current value in switching to the
-> regmap API.  As far as I can tell this isn't really a big deal except
-> for those device classes like hwmon which are frequently deployed in
-> PCs, anything else just won't care.
+Ah, I've found overlayfs sets it to 1 now.
 
-Mostly correct. There are a few other devices which can also be found
-on PCs: multiplexers and EEPROMs at least.
-
-> This should be reasonably simple to handle in the regmap API, just teach
-> the I2C module to fall back to using the SMBus operations if the
-> controller is limited to that.  This should be done incrementally as it
-> adds complexity, and ideally would be done by someone with some access
-> to hardware that can use the SMBus API (I don't have any myself) so they
-> can test.
-
-You do have access ;) The i2c core will translate SMBus to I2C as
-needed, so all you have to do is temporarily alter the regmap core to
-unconditionally translate to SMBus. This will be inefficient (regmap ->
-SMBus -> I2C) but should be suitable for testing.
-
-> Does that sound reasonable to you?
-
-Yes, no objection.
-
-> > >  static int tps_65023_set_bits(struct tps_pmic *tps, u8 reg, u8 mask)
-> > >  {
-> > > -	int err, data;
-> 
-> *Please* could people delete unneeded context from mails?
-
-? There were more comments from me in the rest of the code, which is
-why I left it.
-
--- 
-Jean Delvare
+Thanks
+J. R. Okajima
