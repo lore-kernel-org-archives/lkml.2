@@ -1,83 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964844Ab1GOFFQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 01:05:16 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48766 "EHLO
+	id S932650Ab1GOFJz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 01:09:55 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48782 "EHLO
 	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932307Ab1GOFFO (ORCPT
+	by vger.kernel.org with ESMTP id S932253Ab1GOFJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 01:05:14 -0400
-Date: Fri, 15 Jul 2011 14:05:05 +0900
+	Fri, 15 Jul 2011 01:09:54 -0400
+Date: Fri, 15 Jul 2011 14:09:44 +0900
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Jeremy Kerr <jeremy.kerr@canonical.com>, Grant Likely <grant@secretlab.ca>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-sh@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 6/6] clk: Add initial WM831x clock driver
-Message-ID: <20110715050503.GL32716@opensource.wolfsonmicro.com>
-References: <20110711025344.GA27497@opensource.wolfsonmicro.com>
- <1310352837-4277-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <1310352837-4277-6-git-send-email-broonie@opensource.wolfsonmicro.com>
- <20110715025339.GO2927@ponder.secretlab.ca>
+Cc: Greg KH <greg@kroah.com>, Jean Delvare <khali@linux-fr.org>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Samuel Oritz <sameo@linux.intel.com>,
+        Graeme Gregory <gg@slimlogic.co.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] regmap: Add SPI bus support
+Message-ID: <20110715050939.GM32716@opensource.wolfsonmicro.com>
+References: <20110709044923.GB13074@opensource.wolfsonmicro.com>
+ <1310187044-13269-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <1310187044-13269-3-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <20110715025327.GI2927@ponder.secretlab.ca>
+ <20110715043922.GJ32716@opensource.wolfsonmicro.com>
+ <CACxGe6sjTTnB2_e2omp51bnc+4kshkhNRfqDPdB3fYQG=oiWmQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110715025339.GO2927@ponder.secretlab.ca>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACxGe6sjTTnB2_e2omp51bnc+4kshkhNRfqDPdB3fYQG=oiWmQ@mail.gmail.com>
 X-Cookie: You will be married within a year.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 14, 2011 at 08:53:39PM -0600, Grant Likely wrote:
-> On Mon, Jul 11, 2011 at 11:53:57AM +0900, Mark Brown wrote:
+On Thu, Jul 14, 2011 at 11:04:27PM -0600, Grant Likely wrote:
+> On Thu, Jul 14, 2011 at 10:39 PM, Mark Brown
+> <broonie@opensource.wolfsonmicro.com> wrote:
 
-> > @@ -10,6 +10,7 @@ config GENERIC_CLK_BUILD_TEST
-> >  	depends on EXPERIMENTAL && GENERIC_CLK
-> >  	select GENERIC_CLK_FIXED
-> >  	select GENERIC_CLK_GATE
-> > +	select GENERIC_CLK_WM831X if MFD_WM831X=y
+[Regmap API I2C bus code.]
+> > There was a bit about this in the cover mail - it's the interace
+> > stability issue again, the plan is to move them once we're more
+> > confident that the interface used will stay stable.
 
-> Hmmm, this could get unwieldy in a hurry.
+> I've got no problem with churn in drivers/spi, and I'm fine to have
+> changes in drivers/spi merged via other trees if it means the code is
+> in the logical place.
 
-It's not really any hassle, we've got a one of these in ASoC.  The list
-gets long but if you keep it sorted it's not an issue for merges and
-otherwise it's just long not complicated.  The ability to get build
-coverage is *really* useful.
+Can I add an ack from you for that?  If/when it does get merged I'd
+appreciate it if you pushed any code to me for review.
 
-> > +static int wm831x_xtal_enable(struct clk_hw *hw)
-> > +{
-> > +	struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
-> > +						  xtal_hw);
+> >>       struct spi_transfer t[2] = { {.tx_buf = reg, .len = reg_len},
+> >>                                    {.tx_buf = val, .len = val_len}};
 
-> This container of is used 10 times.  A static inline would be
-> reasonable.
+> >> Then the memset() and t[0]/t[1] lines can all be culled.
 
-Not quite - it's used in three different variants (one for each of the
-clocks).
+> > That does the init to zero?
 
-> > +	if (clkdata->xtal_ena)
-> > +		return 0;
-> > +	else
-> > +		return -EPERM;
-> > +}
+> You might want to double check, but I believe it gets implemented as a
+> memcpy of a static initializer.
 
-> Nit: return clkdata->xtal_ena ? 0 : -EPERM;
-
-> Just makes for more concise code.
-
-I have an extremely strong dislike of the ternery operator, I find it
-does nothing for legibility.
-
-> > +	if (!clk_register(wm831x->dev, &wm831x_clkout_ops, &clkdata->clkout_hw,
-> > +			  "clkout")) {
-> > +		ret = -EINVAL;
-> > +		goto err_fll;
-> > +	}
-
-> How common will this pattern be?  Is there need for a
-> clk_register_many() variant?
-
-I dunno, I think a lot of the SoCs may be doing one clk per device.  But
-equally well it's not like it'd be hard if someone starts working on the
-API again.
+Hrm, given that neither of us is 100% sure I think it's safer to leave
+it written out long hand and avoid confusing anyone else.
