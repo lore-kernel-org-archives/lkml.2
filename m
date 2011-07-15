@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755208Ab1GORoU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 13:44:20 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:37273
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
+	id S1753814Ab1GORoQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 13:44:16 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:60133
+	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754110Ab1GORaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754078Ab1GORaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Jul 2011 13:30:04 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 061/117] Staging: hv: netvsc: Cleanup error return codes in netvsc_destroy_recv_buf()
-Date: Fri, 15 Jul 2011 10:46:49 -0700
-Message-Id: <1310752065-27895-61-git-send-email-kys@microsoft.com>
+Subject: [PATCH 054/117] Staging: hv: storvsc: Cleanup error handling in storvsc_do_io()
+Date: Fri, 15 Jul 2011 10:46:42 -0700
+Message-Id: <1310752065-27895-54-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1310752065-27895-1-git-send-email-kys@microsoft.com>
 References: <1310752024-27854-1-git-send-email-kys@microsoft.com>
@@ -23,36 +23,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleanup error return codes in netvsc_destroy_recv_buf().
+Use standard Linux error codes.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/staging/hv/netvsc.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/hv/storvsc.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/hv/netvsc.c b/drivers/staging/hv/netvsc.c
-index b89ac7e..baa0c8d 100644
---- a/drivers/staging/hv/netvsc.c
-+++ b/drivers/staging/hv/netvsc.c
-@@ -160,7 +160,7 @@ static int netvsc_destroy_recv_buf(struct netvsc_device *net_device)
- 		if (ret != 0) {
- 			dev_err(&net_device->dev->device, "unable to send "
- 				"revoke receive buffer to netvsp");
--			return -1;
-+			return ret;
- 		}
- 	}
+diff --git a/drivers/staging/hv/storvsc.c b/drivers/staging/hv/storvsc.c
+index 2b73f72..2b914e4 100644
+--- a/drivers/staging/hv/storvsc.c
++++ b/drivers/staging/hv/storvsc.c
+@@ -454,7 +454,7 @@ int storvsc_do_io(struct hv_device *device,
+ 	stor_device = get_stor_device(device);
  
-@@ -175,7 +175,7 @@ static int netvsc_destroy_recv_buf(struct netvsc_device *net_device)
- 		if (ret != 0) {
- 			dev_err(&net_device->dev->device,
- 				   "unable to teardown receive buffer's gpadl");
--			return -1;
-+			return -ret;
- 		}
- 		net_device->recv_buf_gpadl_handle = 0;
- 	}
+ 	if (!stor_device)
+-		return -2;
++		return -ENODEV;
+ 
+ 
+ 	request->device  = device;
 -- 
 1.7.4.1
 
