@@ -1,60 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932734Ab1GOFpV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 01:45:21 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:43900 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932310Ab1GOFpT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 01:45:19 -0400
-Date: Fri, 15 Jul 2011 07:45:12 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de,
-        benh@kernel.crashing.org, davem@davemloft.net,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: [PATCH 2.5/13] memblock: Use __meminit[data] instead of
- __init[data]
-Message-ID: <20110715054512.GK3455@htj.dyndns.org>
-References: <1310462166-31469-1-git-send-email-tj@kernel.org>
- <20110714094203.GE3455@htj.dyndns.org>
- <CAE9FiQU92k-GAy3DVB4HYpn6D6_u=4T7t9_8FOGh8BLDEAKD=Q@mail.gmail.com>
+	id S932739Ab1GOFqq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 01:46:46 -0400
+Received: from hera.kernel.org ([140.211.167.34]:49844 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932310Ab1GOFqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 01:46:44 -0400
+Date: Fri, 15 Jul 2011 05:46:28 GMT
+From: tip-bot for Oleg Nesterov <oleg@redhat.com>
+Message-ID: <tip-905f29e2aa004560907199cc96248fa11bafea8a@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        oleg@redhat.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, oleg@redhat.com, hpa@linux.intel.com
+In-Reply-To: <20110710192724.GA31755@redhat.com>
+References: <20110710192724.GA31755@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/signal] x86, signals: Convert the IA32_EMULATION code to use set_current_blocked()
+Git-Commit-ID: 905f29e2aa004560907199cc96248fa11bafea8a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAE9FiQU92k-GAy3DVB4HYpn6D6_u=4T7t9_8FOGh8BLDEAKD=Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 15 Jul 2011 05:46:28 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Commit-ID:  905f29e2aa004560907199cc96248fa11bafea8a
+Gitweb:     http://git.kernel.org/tip/905f29e2aa004560907199cc96248fa11bafea8a
+Author:     Oleg Nesterov <oleg@redhat.com>
+AuthorDate: Sun, 10 Jul 2011 21:27:24 +0200
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 14 Jul 2011 21:21:31 -0700
 
-On Thu, Jul 14, 2011 at 02:00:51PM -0700, Yinghai Lu wrote:
-> >  #ifdef ARCH_DISCARD_MEMBLOCK
-> > -#define __init_memblock __init
-> > -#define __initdata_memblock __initdata
-> > +#define __init_memblock __meminit
-> > +#define __initdata_memblock __meminitdata
-> >  #else
-> >  #define __init_memblock
-> >  #define __initdata_memblock
-> 
-> that is not good. It will keep memblock.reserved related data and
-> functions after boot.
-> and those data/func are not used after slab is ready.
+x86, signals: Convert the IA32_EMULATION code to use set_current_blocked()
 
-Yeah, if MEMORY_HOTPLUG is enabled.  It isn't too big area to begin
-with and early_node_map[] and related code removal should offset it.
-The problem is that refining different __init tags here is a bit
-complex thanks to DISCARD_MEMBLOCK.  We end up having to deal with the
-combination of DISCARD_MEMBLOCK and MEMORY_HOTPLUG.  I was hoping that
-once we get memblock usage more consistent across different archs, we
-could do away with DISCARD_MEMBLOCK.
+sys32_sigsuspend() and sys32_*sigreturn() change ->blocked directly.
+This is not correct, see the changelog in e6fa16ab
+"signal: sigprocmask() should do retarget_shared_pending()"
 
-Thank you.
+Change them to use set_current_blocked().
 
--- 
-tejun
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Link: http://lkml.kernel.org/r/20110710192724.GA31755@redhat.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/ia32/ia32_signal.c |   22 +++++++++-------------
+ 1 files changed, 9 insertions(+), 13 deletions(-)
+
+diff --git a/arch/x86/ia32/ia32_signal.c b/arch/x86/ia32/ia32_signal.c
+index 588a7aa..6557769 100644
+--- a/arch/x86/ia32/ia32_signal.c
++++ b/arch/x86/ia32/ia32_signal.c
+@@ -127,15 +127,17 @@ int copy_siginfo_from_user32(siginfo_t *to, compat_siginfo_t __user *from)
+ 
+ asmlinkage long sys32_sigsuspend(int history0, int history1, old_sigset_t mask)
+ {
+-	mask &= _BLOCKABLE;
+-	spin_lock_irq(&current->sighand->siglock);
++	sigset_t blocked;
++
+ 	current->saved_sigmask = current->blocked;
+-	siginitset(&current->blocked, mask);
+-	recalc_sigpending();
+-	spin_unlock_irq(&current->sighand->siglock);
++
++	mask &= _BLOCKABLE;
++	siginitset(&blocked, mask);
++	set_current_blocked(&blocked);
+ 
+ 	current->state = TASK_INTERRUPTIBLE;
+ 	schedule();
++
+ 	set_restore_sigmask();
+ 	return -ERESTARTNOHAND;
+ }
+@@ -279,10 +281,7 @@ asmlinkage long sys32_sigreturn(struct pt_regs *regs)
+ 		goto badframe;
+ 
+ 	sigdelsetmask(&set, ~_BLOCKABLE);
+-	spin_lock_irq(&current->sighand->siglock);
+-	current->blocked = set;
+-	recalc_sigpending();
+-	spin_unlock_irq(&current->sighand->siglock);
++	set_current_blocked(&set);
+ 
+ 	if (ia32_restore_sigcontext(regs, &frame->sc, &ax))
+ 		goto badframe;
+@@ -308,10 +307,7 @@ asmlinkage long sys32_rt_sigreturn(struct pt_regs *regs)
+ 		goto badframe;
+ 
+ 	sigdelsetmask(&set, ~_BLOCKABLE);
+-	spin_lock_irq(&current->sighand->siglock);
+-	current->blocked = set;
+-	recalc_sigpending();
+-	spin_unlock_irq(&current->sighand->siglock);
++	set_current_blocked(&set);
+ 
+ 	if (ia32_restore_sigcontext(regs, &frame->uc.uc_mcontext, &ax))
+ 		goto badframe;
