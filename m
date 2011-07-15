@@ -1,55 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932717Ab1GOFOk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 01:14:40 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:50393 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932309Ab1GOFOj (ORCPT
+	id S964832Ab1GOFPy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 01:15:54 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:42365 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932310Ab1GOFPx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 01:14:39 -0400
-Message-ID: <4E1FCCB4.4080205@gmail.com>
-Date: Fri, 15 Jul 2011 15:14:28 +1000
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+	Fri, 15 Jul 2011 01:15:53 -0400
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Grant Likely <grant@secretlab.ca>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 6/6] clk: Add initial WM831x clock driver
-References: <20110711025344.GA27497@opensource.wolfsonmicro.com> <1310352837-4277-1-git-send-email-broonie@opensource.wolfsonmicro.com> <1310352837-4277-6-git-send-email-broonie@opensource.wolfsonmicro.com> <20110715025339.GO2927@ponder.secretlab.ca> <20110715050503.GL32716@opensource.wolfsonmicro.com>
-In-Reply-To: <20110715050503.GL32716@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CABi1daHh7cgyhJ4c3zo+jSUY4uzbFtihtgw0Q2Mcrndno_gcTA@mail.gmail.com>
+References: <CAJ8eaTzLmSTSMOY-0Xg0tE-DEbZ6RNA+uh70Dn3K5CbrjQsEiA@mail.gmail.com>
+	<CABi1daHh7cgyhJ4c3zo+jSUY4uzbFtihtgw0Q2Mcrndno_gcTA@mail.gmail.com>
+Date: Fri, 15 Jul 2011 10:45:52 +0530
+Message-ID: <CAJ8eaTyqOBq2mbfvuTun=bVvhFSrMqJ5uVyd+cozF5PtVeSVaw@mail.gmail.com>
+Subject: Re: ARM cortex A9 feature
+From: naveen yadav <yad.naveen@gmail.com>
+To: Dave Hylands <dhylands@gmail.com>
+Cc: kernelnewbies@nl.linux.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/07/11 15:05, Mark Brown wrote:
-> On Thu, Jul 14, 2011 at 08:53:39PM -0600, Grant Likely wrote:
->> On Mon, Jul 11, 2011 at 11:53:57AM +0900, Mark Brown wrote:
->>> +	if (clkdata->xtal_ena)
->>> +		return 0;
->>> +	else
->>> +		return -EPERM;
->>> +}
->> Nit: return clkdata->xtal_ena ? 0 : -EPERM;
->> Just makes for more concise code.
-> I have an extremely strong dislike of the ternery operator, I find it
-> does nothing for legibility.
+Hi dave,
+
+Thanks for answering, but I think question 2, answer  is still not clear to me .
+
+my question is why exclusive L2.
+
+8.1.4 Exclusive L2 cache
+The Cortex-A9 processor can be connected to an L2 cache that supports
+an exclusive cache
+mode. This mode must be activated both in the Cortex-A9 processor and
+in the L2 cache
+controller.
+In this mode, the data cache of the Cortex-A9 processor and the L2
+cache are exclusive. At any
+time, a given address is cached in either L1 data caches or in the L2
+cache, but not in both. This
+has the effect of greatly increasing the usable space and efficiency
+of an L2 cache connected to
+the Cortex-A9 processor. When exclusive cache configuration is selected:
+• Data cache line replacement policy is modified so that the victim
+line always gets evicted
+to L2 memory, even if it is clean.
+• If a line is dirty in the L2 cache controller, a read request to this address
+
+
+what is usecase for this . This is my question .
+
+Thanks
+
+
+On Thu, Jul 14, 2011 at 10:26 PM, Dave Hylands <dhylands@gmail.com> wrote:
+> Hi Naveen,
 >
-I prefer this:
-
-     if (!clkdata->xtal_ena)
-         return -EPERM;
-
-     return 0;
-}
-
-Which makes the error check clear and makes the success case visible 
-right at the bottom of the function.
-
-~Ryan
-
+> On Wed, Jul 13, 2011 at 11:26 PM, naveen yadav <yad.naveen@gmail.com> wrote:
+>> Hi All,
+>>
+>> I am reading ARM cortex a9 manual and got few question in mind.
+>>
+>> 1. Where I need strong order type memory ? any sample example is very helpfull.
+>
+> Often when dealing with hardware, you need to ensure that when your code does:
+>
+> reg1 = val1;
+> reg2 = val2;
+>
+> that these writes actually occur in the order that the code issues
+> them. Using volatile pointers will get the compiler to not reorder the
+> instructions, but you still need the writes to hit the hardware in the
+> same order that they were issued. Using strongly ordered memory is one
+> way to achieve that.
+>
+>> 2. L2 cache, Cortex a9 support exclusive L2 cache feature, where we need it ?
+>
+> L2 cache can improve your performance.
+>
+> --
+> Dave Hylands
+> Shuswap, BC, Canada
+> http://www.davehylands.com
+>
