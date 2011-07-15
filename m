@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623Ab1GORaS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 13:30:18 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:33380
-	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
+	id S1754597Ab1GORaR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 13:30:17 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:60135
+	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752251Ab1GORaK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 13:30:10 -0400
+	id S1754086Ab1GORaB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 13:30:01 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 104/117] Staging: hv: storvsc: Cleanup storvsc_drv.c after adding the contents of hyperv_storage.h
-Date: Fri, 15 Jul 2011 10:47:32 -0700
-Message-Id: <1310752065-27895-104-git-send-email-kys@microsoft.com>
+Subject: [PATCH 034/117] Staging: hv: mouse: Get rid of the dev_type guid in hv_mouse.c
+Date: Fri, 15 Jul 2011 10:46:22 -0700
+Message-Id: <1310752065-27895-34-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1310752065-27895-1-git-send-email-kys@microsoft.com>
 References: <1310752024-27854-1-git-send-email-kys@microsoft.com>
@@ -23,69 +23,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleanup storvsc_drv.c after adding the contents of hyperv_storage.h.
+Get rid of the dev_type guid in hv_mouse.c, as it is not used.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/staging/hv/storvsc_drv.c |   30 +-----------------------------
- 1 files changed, 1 insertions(+), 29 deletions(-)
+ drivers/staging/hv/hv_mouse.c |    9 ---------
+ 1 files changed, 0 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index 463b428..02f9c1e 100644
---- a/drivers/staging/hv/storvsc_drv.c
-+++ b/drivers/staging/hv/storvsc_drv.c
-@@ -22,6 +22,7 @@
+diff --git a/drivers/staging/hv/hv_mouse.c b/drivers/staging/hv/hv_mouse.c
+index 95986fb..e0cede3 100644
+--- a/drivers/staging/hv/hv_mouse.c
++++ b/drivers/staging/hv/hv_mouse.c
+@@ -179,12 +179,6 @@ struct mousevsc_dev {
  
- #include <linux/kernel.h>
- #include <linux/sched.h>
-+#include <linux/wait.h>
- #include <linux/completion.h>
- #include <linux/string.h>
- #include <linux/mm.h>
-@@ -42,32 +43,6 @@
- #include "hyperv.h"
+ static const char *driver_name = "mousevsc";
  
- 
--/*
-- *
-- * Copyright (c) 2011, Microsoft Corporation.
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms and conditions of the GNU General Public License,
-- * version 2, as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope it will be useful, but WITHOUT
-- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-- * more details.
-- *
-- * You should have received a copy of the GNU General Public License along with
-- * this program; if not, write to the Free Software Foundation, Inc., 59 Temple
-- * Place - Suite 330, Boston, MA 02111-1307 USA.
-- *
-- * Authors:
-- *   Haiyang Zhang <haiyangz@microsoft.com>
-- *   Hank Janssen  <hjanssen@microsoft.com>
-- *   K. Y. Srinivasan <kys@microsoft.com>
-- *
-- */
+-/* {CFA8B69E-5B4A-4cc0-B98B-8BA1A1F3F95A} */
+-static const uuid_le mouse_guid = {
+-	.b = {0x9E, 0xB6, 0xA8, 0xCF, 0x4A, 0x5B, 0xc0, 0x4c,
+-		 0xB9, 0x8B, 0x8B, 0xA1, 0xA1, 0xF3, 0xF9, 0x5A}
+-};
 -
+ static void deviceinfo_callback(struct hv_device *dev, struct hv_input_dev_info *info);
+ static void inputreport_callback(struct hv_device *dev, void *packet, u32 len);
+ static void reportdesc_callback(struct hv_device *dev, void *packet, u32 len);
+@@ -953,9 +947,6 @@ static int __init mousevsc_init(void)
+ 
+ 	DPRINT_INFO(INPUTVSC_DRV, "Hyper-V Mouse driver initializing.");
+ 
+-	memcpy(&drv->dev_type, &mouse_guid,
+-	       sizeof(uuid_le));
 -
--
- /* vstorage.w revision number.  This is used in the case of a version match, */
- /* to alert the user that structure sizes may be mismatched even though the */
- /* protocol versions match. */
-@@ -240,9 +215,6 @@ struct vstor_packet {
- #define VSC_LEGAL_FLAGS		(REQUEST_COMPLETION_FLAG)
+ 	drv->driver.name = driver_name;
  
- 
--#include <linux/kernel.h>
--#include <linux/wait.h>
--#include "hyperv.h"
- 
- /* Defines */
- #define STORVSC_RING_BUFFER_SIZE			(20*PAGE_SIZE)
+ 	/* The driver belongs to vmbus */
 -- 
 1.7.4.1
 
