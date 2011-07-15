@@ -1,68 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752649Ab1GOPE2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 11:04:28 -0400
-Received: from mail.elliptictech.com ([209.217.122.41]:33252 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011Ab1GOPE1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 11:04:27 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: linux-arm-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org,
+	id S1752160Ab1GOPHo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 11:07:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52402 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751084Ab1GOPHn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 11:07:43 -0400
+Date: Fri, 15 Jul 2011 11:07:34 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: gregkh@suse.de, joe@perches.com, jim.cromie@gmail.com,
         linux-kernel@vger.kernel.org
-Cc: Russell King <linux@arm.linux.org.uk>, Wim Van Sebroeck <wim@iguana.be>
-Subject: [PATCH 1/3] ARM: vexpress: Add clock definition for the SP805.
-Date: Fri, 15 Jul 2011 11:04:00 -0400
-Message-Id: <1310742242-14647-2-git-send-email-nbowler@elliptictech.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1310742242-14647-1-git-send-email-nbowler@elliptictech.com>
-References: <1310742242-14647-1-git-send-email-nbowler@elliptictech.com>
+Subject: Re: [PATCH 03/11] dynamic_debug: Remove uses of KERN_CONT in
+ dynamic_emit_prefix
+Message-ID: <20110715150734.GA2493@redhat.com>
+References: <cover.1310657068.git.jbaron@redhat.com>
+ <07ef9de13b16d5c50bc36f8c8d9a9aa28a05f2ca.1310657068.git.jbaron@redhat.com>
+ <CAO+b5-qQ452VojorX_p4W2orh4DKnM206TA3F5yA2fnhcPhXsQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAO+b5-qQ452VojorX_p4W2orh4DKnM206TA3F5yA2fnhcPhXsQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It seems that an entry for the SP805 watchdog in the table of clocks was
-missing.  This results in the sp805_wdt driver rejecting the device with
-the following errors:
+On Fri, Jul 15, 2011 at 12:04:22PM +0200, Bart Van Assche wrote:
+> On Thu, Jul 14, 2011 at 6:09 PM, Jason Baron <jbaron@redhat.com> wrote:
+> > +       char tid[sizeof(int) + sizeof(int)/2 + 4];
+> > +       char lineno[sizeof(int) + sizeof(int)/2];
+> 
+> It's not clear to me where the array bounds come from ? Also, why
+> sizeof(int) + sizeof(int)/2 instead of sizeof(int)*3 + 1 ?
+> 
+> Bart.
 
-  sp805-wdt mb:wdt: Clock not found
-  sp805-wdt mb:wdt: Probe Failed!!!
-  sp805-wdt: probe of mb:wdt failed with error -2
+hmmm...for the tid it bounded by PID_MAX_LIMIT, which is 4 million, so
+you need 7 characters + 3 for the brackets and space = 10. So that looks
+right to me. Although I'm not sure where the sizeof() comes from? Joe?
 
-While not obviously stated in the hardware docs, the onboard SP810's
-"REFCLK" is connected to a 32.768KHz crystal, and this drives the
-watchdog.  Add a struct clk and corresponding lookup entry for it.
+For the lineno, it is 24 bits, so it can be 2^24 = 16,777,216, or 8
+characters, so I think the 6 is incorrect. Although, in practice I don't
+think we have any files that are that big. Joe?
 
-Signed-off-by: Nick Bowler <nbowler@elliptictech.com>
----
- arch/arm/mach-vexpress/v2m.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+Thanks,
 
-diff --git a/arch/arm/mach-vexpress/v2m.c b/arch/arm/mach-vexpress/v2m.c
-index 9e6b93b..d0d267a 100644
---- a/arch/arm/mach-vexpress/v2m.c
-+++ b/arch/arm/mach-vexpress/v2m.c
-@@ -318,6 +318,10 @@ static struct clk v2m_sp804_clk = {
- 	.rate	= 1000000,
- };
- 
-+static struct clk v2m_ref_clk = {
-+	.rate   = 32768,
-+};
-+
- static struct clk dummy_apb_pclk;
- 
- static struct clk_lookup v2m_lookups[] = {
-@@ -348,6 +352,9 @@ static struct clk_lookup v2m_lookups[] = {
- 	}, {	/* CLCD */
- 		.dev_id		= "mb:clcd",
- 		.clk		= &osc1_clk,
-+	}, {	/* SP805 WDT */
-+		.dev_id		= "mb:wdt",
-+		.clk		= &v2m_ref_clk,
- 	}, {	/* SP804 timers */
- 		.dev_id		= "sp804",
- 		.con_id		= "v2m-timer0",
--- 
-1.7.3.4
-
+-Jason
