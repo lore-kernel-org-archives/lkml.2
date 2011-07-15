@@ -1,78 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751151Ab1GOL36 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 07:29:58 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37439 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750801Ab1GOL35 convert rfc822-to-8bit (ORCPT
+	id S1751574Ab1GOLer (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 07:34:47 -0400
+Received: from isc-mx.mymailwall.com ([91.212.136.3]:56142 "EHLO
+	mx.mymailwall.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750980Ab1GOLeq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 07:29:57 -0400
-Subject: Re: INFO: possible circular locking dependency detected
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ed Tomlinson <edt@aei.ca>
-Cc: paulmck@linux.vnet.ibm.com, Steven Rostedt <rostedt@goodmis.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <201107150705.46248.edt@aei.ca>
-References: <20110714144946.GA3354@swordfish.minsk.epam.com>
-	 <1310665613.27864.50.camel@gandalf.stny.rr.com>
-	 <20110714191809.GF2349@linux.vnet.ibm.com>  <201107150705.46248.edt@aei.ca>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 15 Jul 2011 13:29:22 +0200
-Message-ID: <1310729362.2586.325.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 15 Jul 2011 07:34:46 -0400
+X-Greylist: delayed 362 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Jul 2011 07:34:46 EDT
+X-MyMailWallStatus: Email scanned(37957944)
+From: Michael Thalmeier <Michael.Thalmeier@sigmatek.at>
+To: Florian Fainelli <florian@openwrt.org>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, michael@thalmeier.at,
+        Michael Thalmeier <Michael.Thalmeier@sigmatek.at>
+Subject: [PATCH 1/1] r6040: only disable RX interrupt if napi_schedule_prep is successful
+Date: Fri, 15 Jul 2011 13:28:26 +0200
+Message-Id: <1310729306-12190-1-git-send-email-Michael.Thalmeier@sigmatek.at>
+X-Mailer: git-send-email 1.7.1
+Reply-To: Michael.Thalmeier@sigmatek.at
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-15 at 07:05 -0400, Ed Tomlinson wrote:
-> Jul 14 23:21:18 grover kernel: [  920.659426] -> #1 (rcu_node_level_0){..-...}:
-> Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff8108b7e5>] lock_acquire+0x95/0x140
-> Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff8157808b>] _raw_spin_lock+0x3b/0x50
-> Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff810ba797>] __rcu_read_unlock+0x197/0x2d0
-> Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff8103f2f5>] select_task_rq_fair+0x585/0xa80
-> Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff8104633b>] try_to_wake_up+0x17b/0x360
-> Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff81046575>] wake_up_process+0x15/0x20
-> Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff810528f4>] irq_exit+0xb4/0x100
-> Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff8158197e>] smp_apic_timer_interrupt+0x6e/0x99
-> Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff81580c53>] apic_timer_interrupt+0x13/0x20
-> Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff810ba6e9>] __rcu_read_unlock+0xe9/0x2d0 
-> Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff814c20d4>] sock_def_readable+0x94/0xc0
+When receiving the first RX interrupt before the internal call
+to napi_schedule_prep is successful the RX interrupt gets disabled
+and is never enabled again as the poll function never gets executed.
 
-Ed, are you perchance running with force_irqthreads?
+Signed-off-by: Michael Thalmeier <Michael.Thalmeier@sigmatek.at>
+---
+ drivers/net/r6040.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-Paul, what appears to be happening here is that some rcu_read_unlock()
-gets interrupted, possibly before calling rcu_read_unlock_special(),
-possibly not if the interrupt is itself the timer interrupt.
-
-Supposing ->rcu_read_unlock_special is set before, any wakeup happening
-from an interrupt hitting __rcu_read_unlock():
-
-void __rcu_read_unlock(void)
-{
-        struct task_struct *t = current;
-                
-        barrier();  /* needed if we ever invoke rcu_read_unlock in rcutree.c */
-        --t->rcu_read_lock_nesting;
-        barrier();  /* decrement before load of ->rcu_read_unlock_special */
-        if (t->rcu_read_lock_nesting == 0 &&
-            unlikely(ACCESS_ONCE(t->rcu_read_unlock_special)))
-                rcu_read_unlock_special(t);
-#ifdef CONFIG_PROVE_LOCKING
-        WARN_ON_ONCE(ACCESS_ONCE(t->rcu_read_lock_nesting) < 0);
-#endif /* #ifdef CONFIG_PROVE_LOCKING */
-}
-
-After --t->rcu_read_lock_nesting, but before calling
-rcu_read_unlock_special(), will trigger this lock inversion.
-
-The alternative case, ->rcu_read_unlock_special is not set yet, it can
-be set if the interrupt hitting in that same spot above, is the timer
-interrupt, and the wakeup happens either from the softirq ran from the
-hard IRQ tail, or as I suspect here happens, the wakeup of ksoftirqd/#.
-
+diff --git a/drivers/net/r6040.c b/drivers/net/r6040.c
+index 200a363..0ffec46 100644
+--- a/drivers/net/r6040.c
++++ b/drivers/net/r6040.c
+@@ -677,9 +677,11 @@ static irqreturn_t r6040_interrupt(int irq, void *dev_id)
+ 		if (status & RX_FIFO_FULL)
+ 			dev->stats.rx_fifo_errors++;
+ 
+-		/* Mask off RX interrupt */
+-		misr &= ~RX_INTS;
+-		napi_schedule(&lp->napi);
++		if (likely(napi_schedule_prep(&lp->napi))) {
++			/* Mask off RX interrupt */
++			misr &= ~RX_INTS;
++			__napi_schedule(&lp->napi);
++		}
+ 	}
+ 
+ 	/* TX interrupt request */
+-- 
+1.7.1
 
