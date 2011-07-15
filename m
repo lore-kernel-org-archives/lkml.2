@@ -1,61 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751556Ab1GONCQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 09:02:16 -0400
-Received: from mail03-md.ns.itscom.net ([175.177.155.113]:49638 "EHLO
-	mail03-md.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893Ab1GONCO (ORCPT
+	id S1751374Ab1GONBJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 09:01:09 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:2569 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750934Ab1GONBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 09:02:14 -0400
-From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Subject: Re: [PATCH 0/7] overlay filesystem: request for inclusion
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Andrew Morton <akpm@linux-foundation.org>, NeilBrown <neilb@suse.de>,
-        viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        apw@canonical.com, nbd@openwrt.org, hramrach@centrum.cz,
-        jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu
-In-Reply-To: <87k4bjd8pc.fsf@tucsk.pomaz.szeredi.hu>
-References: <1306932380-10280-1-git-send-email-miklos@szeredi.hu> <20110608153208.dc705cda.akpm@linux-foundation.org> <20110609115934.3c53f78f@notabene.brown> <20110608205233.ebfedc4d.akpm@linux-foundation.org> <87wrgvb28a.fsf@tucsk.pomaz.szeredi.hu> <20110609123843.77153b27.akpm@linux-foundation.org> <877h8uzmsi.fsf@tucsk.pomaz.szeredi.hu> <21324.1307677721@jrobl> <871uyxa7ol.fsf@tucsk.pomaz.szeredi.hu> <8739ig3k93.fsf@tucsk.pomaz.szeredi.hu> <8536.1310214135@jrobl> <87k4bjd8pc.fsf@tucsk.pomaz.szeredi.hu>
-Date: Fri, 15 Jul 2011 22:02:08 +0900
-Message-ID: <12864.1310734928@jrobl>
+	Fri, 15 Jul 2011 09:01:08 -0400
+Date: Fri, 15 Jul 2011 14:58:48 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Greg KH <greg@kroah.com>, Grant Likely <grant@secretlab.ca>,
+        Ben Dooks <ben-linux@fluff.org>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Samuel Oritz <sameo@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] regulator: Convert tps65023 to use regmap API
+Message-ID: <20110715145848.750a85aa@endymion.delvare>
+In-Reply-To: <20110715121646.GA10026@opensource.wolfsonmicro.com>
+References: <20110715062215.GN32716@opensource.wolfsonmicro.com>
+	<1310710992-24462-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	<1310710992-24462-4-git-send-email-broonie@opensource.wolfsonmicro.com>
+	<20110715123121.735688a6@endymion.delvare>
+	<20110715121646.GA10026@opensource.wolfsonmicro.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 15 Jul 2011 21:16:50 +0900, Mark Brown wrote:
+> On Fri, Jul 15, 2011 at 12:31:21PM +0200, Jean Delvare wrote:
+> 
+> > The driver was previously using the SMBus API and could thus work with
+> > SMBus (non-I2C) controllers. After your change, an I2C controller is
+> > mandatory. Are you sure this is OK for all users?
+> 
+> I'd be *utterly* astonished if it ever caused any issues, embedded
+> systems like those that have regulators just don't have anything less
+> than full I2C support, it's exceptionally rare to see any direct SMBus
+> support in the hardware at all - the only example I can see in the tree
+> is Blackfin and that is a proper I2C controller too, it just seems that
+> someone overdesigned the hardware a little.
+> 
+> Basically, for something like a regulator it's just not an issue.
 
-Miklos Szeredi:
-> st_nlink==1 for directories is widely accepted way of saying that the
-> number of subdirectories is unknown.  Various filesystems already do
-> this, and versions of GNU utils that I have come across accept it.
+OK, alright then.
 
-When the upperdir is tmpfs, the link count of the directories in it will
-not be 1, won't it?
+> > As a general comment, this requirement will considerably limit the
+> > interest of regmap for I2C devices (at least in its current form.) Many
+> > systems out there only have SMBus controllers, and more importantly,
+> > most I2C device drivers are meant to be portable across systems and
+> > thus rely on the SMBus API. The i2c documentation encourages driver
+> > authors to do this.
+> 
+> Right, so for pretty much anything except PCs the main reason for using
+> the SMBus API is that it provides the sort of data mangling to the bus
+> functionality that the regmap API provides.  The main thing it's missing
+> for drivers like this one is that it doesn't have a read/modify/write
+> operation, otherwise there would be no current value in switching to the
+> regmap API.  As far as I can tell this isn't really a big deal except
+> for those device classes like hwmon which are frequently deployed in
+> PCs, anything else just won't care.
 
+Mostly correct. There are a few other devices which can also be found
+on PCs: multiplexers and EEPROMs at least.
 
-> > - If I remember correctly, Valerie Aurora has pointed out that
-> >   open(O_RDONLY) + fchmod() will work correctly in UnionMount.
-> >   It is true in overlayfs too?
->
-> Neither union-mounts nor overlayfs can handle this case.
+> This should be reasonably simple to handle in the regmap API, just teach
+> the I2C module to fall back to using the SMBus operations if the
+> controller is limited to that.  This should be done incrementally as it
+> adds complexity, and ideally would be done by someone with some access
+> to hardware that can use the SMBus API (I don't have any myself) so they
+> can test.
 
-Oh, I meant "will work NOT correctly". Sorry.
+You do have access ;) The i2c core will translate SMBus to I2C as
+needed, so all you have to do is temporarily alter the regmap core to
+unconditionally translate to SMBus. This will be inefficient (regmap ->
+SMBus -> I2C) but should be suitable for testing.
 
+> Does that sound reasonable to you?
 
-> I hadn't thought about this case, so overlayfs would modify the lower
-> filesystem in that case, which is a no-no.
->
-> Following patch fixes this and return -EROFS for the above case.  I also
-> updated the non-standard section in the docs.
+Yes, no objection.
 
-Hmm, such changes to mnt_flags looks slightly rude to me. Do we have to
-consider about these?
-- there may exist files opened as RW on the lower.
-- when overlayfs is unmounted, it should restore the original mnt_flags.
-- (there may exist more...)
+> > >  static int tps_65023_set_bits(struct tps_pmic *tps, u8 reg, u8 mask)
+> > >  {
+> > > -	int err, data;
+> 
+> *Please* could people delete unneeded context from mails?
 
-If overlayfs doesn't expect the lower mounted as RW, then it might be
-better to reject it simply at mounting.
+? There were more comments from me in the rest of the code, which is
+why I left it.
 
-
-J. R. Okajima
+-- 
+Jean Delvare
