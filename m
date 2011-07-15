@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194Ab1GOSuf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 14:50:35 -0400
-Received: from smtp.microsoft.com ([131.107.115.215]:29943 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753357Ab1GOSue convert rfc822-to-8bit (ORCPT
+	id S1754239Ab1GOSvW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 14:51:22 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37548 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753357Ab1GOSvW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 14:50:34 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Michael Witten <mfwitten@gmail.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: RE: Large Patch Series in Email         (was Re: [PATCH 0000/0117]
- Staging: hv: Driver cleanup)
-Thread-Topic: Large Patch Series in Email         (was Re: [PATCH 0000/0117]
- Staging: hv: Driver cleanup)
-Thread-Index: AQHMQx0VULIM7vivl0i5zha55Jq+aZTtt9ww
-Date: Fri, 15 Jul 2011 18:50:33 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0480817A309@TK5EX14MBXC124.redmond.corp.microsoft.com>
-References: <1310752024-27854-1-git-send-email-kys@microsoft.com>
- <84fa825a57d34571a5aa66ae7299461c-mfwitten@gmail.com>
-In-Reply-To: <84fa825a57d34571a5aa66ae7299461c-mfwitten@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.37]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 15 Jul 2011 14:51:22 -0400
+Date: Fri, 15 Jul 2011 11:50:51 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Greg KH <gregkh@suse.de>, Theodore Tso <tytso@MIT.EDU>,
+        Mike Waychison <mikew@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Kconfig: Allow disabling of CONFIG_DEVPORT
+Message-Id: <20110715115051.02c013b0.akpm@linux-foundation.org>
+In-Reply-To: <20110715155835.4e019ca5@lxorguk.ukuu.org.uk>
+References: <1310675693-9204-1-git-send-email-mikew@google.com>
+	<20110714212113.GA28639@suse.de>
+	<CAGTjWtB53vW5B2EJ5=+C3buDAY0RtsfANxx5NhC5aWnmEx08EQ@mail.gmail.com>
+	<20110715064147.GA1021@suse.de>
+	<C70E3912-6AA9-4EB3-85CC-11BF90D230C8@mit.edu>
+	<20110715145132.GA4296@suse.de>
+	<20110715155835.4e019ca5@lxorguk.ukuu.org.uk>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 15 Jul 2011 15:58:35 +0100
+Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
 
-
-> -----Original Message-----
-> From: Michael Witten [mailto:mfwitten@gmail.com]
-> Sent: Friday, July 15, 2011 2:26 PM
-> To: KY Srinivasan
-> Cc: Greg Kroah-Hartman; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org
-> Subject: Large Patch Series in Email (was Re: [PATCH 0000/0117] Staging: hv:
-> Driver cleanup)
+> > But none of them are on the Signed-off-by: line area, right?
 > 
-> On Fri, 15 Jul 2011 10:47:04 -0700, K. Y. Srinivasan wrote:
+> We have a fair number of people using things like
 > 
-> > Subject: [PATCH 0000/0117] Staging: hv: Driver cleanup
-> 
-> Now, admittedly, I'm a nobody.
+> Fixes-bug: [URL]
 
-You and I have something in common! I am sorry for flooding your
-mailbox. In the past Greg had indicated that he could handle large
-patch-sets and so, I sent out this large patch-set. Perhaps I should not have
-included the vger mailing list.
+I use
 
-Regards,
+	Addresses http://bugzilla....
 
-K. Y
+> Its useful public info, it makes it easier to grep
+
+I don't think this issue is worth the knicker-knotting.  If someone
+really wants to see the original report they can send an email to the
+patch author asking for it, shrug.  If the organization-specific tag
+is omitted, they'd never think to do that.
+
+What concerns me more (and which happens a lot more often) is people
+forgetting to include any reference to the original bug report.  And
+people forgetting Reported-by:.
+
