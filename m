@@ -1,82 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751909Ab1GOLfy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 07:35:54 -0400
-Received: from mail001.aei.ca ([206.123.6.130]:56106 "EHLO mail001.aei.ca"
+	id S1752017Ab1GOLoe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 07:44:34 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:57124 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751462Ab1GOLfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 07:35:53 -0400
-From: Ed Tomlinson <edt@aei.ca>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: INFO: possible circular locking dependency detected
-Date: Fri, 15 Jul 2011 07:35:49 -0400
-User-Agent: KMail/1.13.7 (Linux/3.0.0-rc7-crc+; KDE/4.6.5; x86_64; ; )
-Cc: paulmck@linux.vnet.ibm.com, Steven Rostedt <rostedt@goodmis.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org
-References: <20110714144946.GA3354@swordfish.minsk.epam.com> <201107150705.46248.edt@aei.ca> <1310729362.2586.325.camel@twins>
-In-Reply-To: <1310729362.2586.325.camel@twins>
+	id S1750759Ab1GOLod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 07:44:33 -0400
+From: Abhilash K V <abhilash.kv@ti.com>
+To: <linux-omap@vger.kernel.org>
+CC: <tony@atomide.com>, <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Abhilash K V <abhilash.kv@ti.com>
+Subject: [PATCH v2] OMAP3: powerdomains: Match silicon revision to select the correct "core_pwrdm" definition
+Date: Fri, 15 Jul 2011 17:14:10 +0530
+Message-ID: <1310730250-10920-1-git-send-email-abhilash.kv@ti.com>
+X-Mailer: git-send-email 1.6.2.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107150735.50478.edt@aei.ca>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 15 July 2011 07:29:22 Peter Zijlstra wrote:
-> On Fri, 2011-07-15 at 07:05 -0400, Ed Tomlinson wrote:
-> > Jul 14 23:21:18 grover kernel: [  920.659426] -> #1 (rcu_node_level_0){..-...}:
-> > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff8108b7e5>] lock_acquire+0x95/0x140
-> > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff8157808b>] _raw_spin_lock+0x3b/0x50
-> > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff810ba797>] __rcu_read_unlock+0x197/0x2d0
-> > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff8103f2f5>] select_task_rq_fair+0x585/0xa80
-> > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff8104633b>] try_to_wake_up+0x17b/0x360
-> > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff81046575>] wake_up_process+0x15/0x20
-> > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff810528f4>] irq_exit+0xb4/0x100
-> > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff8158197e>] smp_apic_timer_interrupt+0x6e/0x99
-> > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff81580c53>] apic_timer_interrupt+0x13/0x20
-> > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff810ba6e9>] __rcu_read_unlock+0xe9/0x2d0 
-> > Jul 14 23:21:18 grover kernel: [  920.659426]        [<ffffffff814c20d4>] sock_def_readable+0x94/0xc0
-> 
-> Ed, are you perchance running with force_irqthreads?
+powerdomains3xxx_data.c defines core_3xxx_pre_es3_1_pwrdm and
+core_3xxx_es3_1_pwrdm to take care of differences in "core_pwrdm"
+implementations across revisions.
+However,_pwrdm_lookup("core_pwrdm") always matches the first definition for
+3630 ES 1.1 and 1.2 which is incorrect. This patch fixes this issue by adding
+code to match silicon revision as well while looking up "core_pwrdm" in
+_pwrdm_lookup().
+core_3xxx_es3_1_pwrdm is different from core_3xxx_pre_es3_1_pwrdm in
+that the former adds hardware save-restore support for USBTLL for 3430
+ES3.1 and for 3630 ES1.1 and ES1.2.
 
-Yes.  
+Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
+---
+v2:
+* now tested on 3630 (ES1.2 and ES1.0) and 3530 (ES3.0 and ES3.1)
+* fixed checkpatch errors/warnings.
 
-I'm off to work - will test any patches when I get back in 8-10 hours.
+ arch/arm/mach-omap2/powerdomain.c |   19 +++++++++++++++++++
+ 1 files changed, 19 insertions(+), 0 deletions(-)
 
-Thanks
-Ed
+diff --git a/arch/arm/mach-omap2/powerdomain.c b/arch/arm/mach-omap2/powerdomain.c
+index 9af0847..82a2e30 100644
+--- a/arch/arm/mach-omap2/powerdomain.c
++++ b/arch/arm/mach-omap2/powerdomain.c
+@@ -32,6 +32,7 @@
+ #include "powerdomain.h"
+ #include "clockdomain.h"
+ #include <plat/prcm.h>
++#include <plat/cpu.h>
+ 
+ #include "pm.h"
+ 
+@@ -58,6 +59,24 @@ static struct powerdomain *_pwrdm_lookup(const char *name)
+ 
+ 	list_for_each_entry(temp_pwrdm, &pwrdm_list, node) {
+ 		if (!strcmp(name, temp_pwrdm->name)) {
++			if (!strcmp(name, "core_pwrdm") && cpu_is_omap3630()) {
++				if (omap_rev() > OMAP3630_REV_ES1_0) {
++					/*
++					 * match omap_chip info for OMAP3630
++					 * Rev ES1.1, ES1.2 or higher
++					 */
++					if (!(temp_pwrdm->omap_chip.oc
++						& CHIP_GE_OMAP3630ES1_1))
++						continue;
++				} else {
++					/* match omap_chip info for OMAP3630
++					 * Rev ES1.0
++					 */
++					if (!(temp_pwrdm->omap_chip.oc
++						 & CHIP_IS_OMAP3630ES1))
++						continue;
++				}
++			}
+ 			pwrdm = temp_pwrdm;
+ 			break;
+ 		}
+-- 
+1.7.1
 
-> Paul, what appears to be happening here is that some rcu_read_unlock()
-> gets interrupted, possibly before calling rcu_read_unlock_special(),
-> possibly not if the interrupt is itself the timer interrupt.
-> 
-> Supposing ->rcu_read_unlock_special is set before, any wakeup happening
-> from an interrupt hitting __rcu_read_unlock():
-> 
-> void __rcu_read_unlock(void)
-> {
->         struct task_struct *t = current;
->                 
->         barrier();  /* needed if we ever invoke rcu_read_unlock in rcutree.c */
->         --t->rcu_read_lock_nesting;
->         barrier();  /* decrement before load of ->rcu_read_unlock_special */
->         if (t->rcu_read_lock_nesting == 0 &&
->             unlikely(ACCESS_ONCE(t->rcu_read_unlock_special)))
->                 rcu_read_unlock_special(t);
-> #ifdef CONFIG_PROVE_LOCKING
->         WARN_ON_ONCE(ACCESS_ONCE(t->rcu_read_lock_nesting) < 0);
-> #endif /* #ifdef CONFIG_PROVE_LOCKING */
-> }
-> 
-> After --t->rcu_read_lock_nesting, but before calling
-> rcu_read_unlock_special(), will trigger this lock inversion.
-> 
-> The alternative case, ->rcu_read_unlock_special is not set yet, it can
-> be set if the interrupt hitting in that same spot above, is the timer
-> interrupt, and the wakeup happens either from the softirq ran from the
-> hard IRQ tail, or as I suspect here happens, the wakeup of ksoftirqd/#.
