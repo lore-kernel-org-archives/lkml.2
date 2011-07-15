@@ -1,120 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965438Ab1GOLAe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 07:00:34 -0400
-Received: from webmail-out1.one.com ([91.198.169.16]:55296 "EHLO
-	webmail-out1.b-one.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964787Ab1GOLAc convert rfc822-to-8bit (ORCPT
+	id S965463Ab1GOLAw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 07:00:52 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:54954 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964787Ab1GOLAv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 07:00:32 -0400
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
-From: "Eric Andersson" <eric.andersson@unixphere.com>
-To: "Jonathan Cameron" <jic23@cam.ac.uk>
-CC: "Alan Cox" <alan@lxorguk.ukuu.org.uk>, dmitry.torokhov@gmail.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        zhengguang.guo@bosch-sensortec.com, stefan.nilsson@unixphere.com,
-        "Albert Zhang" <xu.zhang@bosch-sensortec.com>
-Subject: Re: [PATCH v3 1/1] input: add driver for Bosch Sensortec's BMA150
- accelerometer
-Date: Fri, 15 Jul 2011 13:00:30 +0200
-X-Mailer: One.com webmail
-X-Originating-Ip: 213.115.10.98
-In-Reply-To: <4E1FFD3E.7090103@cam.ac.uk>
-References: <20110715082316.5A4792C03C24@bmail01.one.com>
- <4E1FFD3E.7090103@cam.ac.uk>
-Message-Id: <20110715110030.9462398E4682E@bmail03.one.com>
+	Fri, 15 Jul 2011 07:00:51 -0400
+Subject: Re: Dropped IRQ disables Radeon 3D
+Date: Fri, 15 Jul 2011 10:53:41 -0000
+From: Michael Witten <mfwitten@gmail.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Arnuschky <arnuschky@xylon.de>, linux-kernel@vger.kernel.org
+Message-ID: <15f2d51a1ab5412a9d7c327ab67b8166-mfwitten@gmail.com>
+In-Reply-To: <1310720984.4968.313.camel@pasglop>
+References: <d74f405530c34a2f9fdae3d7cf37e0fcmfwitten@gmail.com>
+            <0fe54f4a77b64475b9e6041d9ef5772b-mfwitten@gmail.com>
+            <1310720984.4968.313.camel@pasglop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for your input Jonathan!
+On Fri, 15 Jul 2011 19:09:44 +1000, Benjamin Herrenschmidt wrote:
 
-> >>> +		values represent the range given as +/- G.
-> >>> +		Possible values are: 2, 4, 8.
-> >>> +
-> >>> +		Reading: returns the current acceleration range.
-> >>> +
-> >>> +		Writing: sets a new acceleration range.
-> >>
-> >> Same comment as last time - these values are not discoverable so it
-> >> should set the nearest bigger range.
-> > 
-> > And same answer as last time - The values can be retreived by doing
-> > a:
-> > cat range. This whole idea comes from a review comment that Jonathan
-> > Cameron
-> > gave on your bma023 driver [1].
-> Needs documenting. Right now there is no mention of that here.
+> On Fri, 2011-07-15 at 08:20 +0000, Michael Witten wrote:
+>> 
+>> Arnuschky wrote to me about this related Debian bug report:
+>> 
+>>   Fri, 2010-06-18 10:21:05 +0000
+>>   http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=586312
+>> 
+>> I popped over to #radeon on freenode where user agd5f told me to
+>> try the following on the kernel command line:
+>> 
+>>   pci=nomsi
+>> 
+>> After reading about MSIs and the requisite CONFIG_* settings, I
+>> realized that I didn't even have MSI support in the kernel anyway.
+>> Then agd5f suggested the following patches by Benjamin Herrenschmidt
+>> might be of help:
+>
+> Another problem I noticed is some cards, when not using MSIs, still seem
+> to shoot an MSI with whatever value was last programmed into the MSI
+> configuration space. Can you check with lspci -vv if there's a non-0
+> value in there ? It -could- be that your get bogus MSIs.
 
-True. I'll add a comment on how to get the valid values in v4.
-
-> > If we could agree on how these values should be represented I will
-> > be glad
-> > to fix it! Dmitry, any preferences?
-> 
-> > 
-> > [1] http://www.spinics.net/lists/linux-input/msg14271.html
-> > 
-> >>> +	for (i = 0, ret = 0; i < ARRAY_SIZE(bw_val); i++)
-> >>> +		ret += sprintf(buf + ret,
-> >>> +			(bw_val[i].reg == bw) ? "[%d] " : "%d ",
-> >>> +			bw_val[i].value);
-> >>
-> >> sysfs nodes should really be single values
-> > 
-> > Once again it's a previous comment from Jonathan [1]. Please specify
-> > how
-> > you want this and I'll fix it.
-> Yes in general to the single value, but this is a pretty common syntax
-> for
-> choosing one of a set.  Got to indicate it somehow and it's either
-> this or
-> a list of available ones in a separate attribute.  There was an LWN
-> article
-> on this a while back that lays out the options very clearly
-> http://lwn.net/Articles/378884/
-
-An extra attribute does sound a bit over-kill to me. Would it be acceptable to
-keep it the way it is?
-
-> >>> +static const struct i2c_device_id bma150_id[] = {
-> >>> +	{ "bma150", 0 },
-> >>> +	{ "smb380", 0 },
-> >>
-> >> bma023 ?
-> > 
-> > As mentioned earlier bma023 is not an official product name from
-> > Bosch Sensortec. Hence,
-> > there will be no datasheet available or references from Bosch
-> > Sensortec. IMHO it would be
-> > confusing to add it.
-> Just ignore the marketing and add it anyway :)
-
-You are probably right. I'll add it.
-
-> >> It also doesn't expose the thresholds or support interrupts which
-> >> the
-> >> one I posted did.
-> > 
-> > We were told by Bosch S that the interrupt is triggered every 333 us
-> > (data ready) which would
-> > pretty much flood the irq handler.
-> Somewhat quick, but maybe still worth having...  Just use a one shot
-> threaded interrupt and it
-> will at least run safely even if it isn't keeping up with all of them.
-> Alan, do you have a device
-> that has frequency control on chip? (very unusual not to see this on
-> an accelerometer).
-
-Ok, I will add irq handling for v4. It will be threshold triggered, meaning I will also add the
-threshold parameters from bma023. If no .irq is given it will use polldev. Does that work for you Alan?
-
-Regarding the sysfs paramters - how about removing them and use platform data only?
-
-Best regards,
- Eric
-
-http://www.unixphere.com
+So, you want me to boot my Linux version that doesn't have MSI support
+and check whether `sudo lspci -vv' says that it is using MSIs?
