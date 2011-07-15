@@ -1,37 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751663Ab1GONEF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 09:04:05 -0400
-Received: from mail04-md.ns.itscom.net ([175.177.155.114]:56319 "EHLO
-	mail04-md.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751529Ab1GONEE (ORCPT
+	id S1751762Ab1GONEa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 09:04:30 -0400
+Received: from mother.openwall.net ([195.42.179.200]:57506 "HELO
+	mother.openwall.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751617Ab1GONE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 09:04:04 -0400
-From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Subject: Re: [PATCH 0/7] overlay filesystem: request for inclusion
-To: Miklos Szeredi <miklos@szeredi.hu>,
-        Andrew Morton <akpm@linux-foundation.org>, NeilBrown <neilb@suse.de>,
-        viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        apw@canonical.com, nbd@openwrt.org, hramrach@centrum.cz,
-        jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu
-In-Reply-To: <12864.1310734928@jrobl>
-References: <1306932380-10280-1-git-send-email-miklos@szeredi.hu> <20110608153208.dc705cda.akpm@linux-foundation.org> <20110609115934.3c53f78f@notabene.brown> <20110608205233.ebfedc4d.akpm@linux-foundation.org> <87wrgvb28a.fsf@tucsk.pomaz.szeredi.hu> <20110609123843.77153b27.akpm@linux-foundation.org> <877h8uzmsi.fsf@tucsk.pomaz.szeredi.hu> <21324.1307677721@jrobl> <871uyxa7ol.fsf@tucsk.pomaz.szeredi.hu> <8739ig3k93.fsf@tucsk.pomaz.szeredi.hu> <8536.1310214135@jrobl> <87k4bjd8pc.fsf@tucsk.pomaz.szeredi.hu> <12864.1310734928@jrobl>
-Date: Fri, 15 Jul 2011 22:04:00 +0900
-Message-ID: <12880.1310735040@jrobl>
+	Fri, 15 Jul 2011 09:04:28 -0400
+Date: Fri, 15 Jul 2011 17:04:09 +0400
+From: Solar Designer <solar@openwall.com>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: NeilBrown <neilb@suse.de>, kernel-hardening@lists.openwall.com,
+        James Morris <jmorris@namei.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Eric Paris <eparis@redhat.com>, Stephen Smalley <sds@tycho.nsa.gov>,
+        Willy Tarreau <w@1wt.eu>, Sebastian Krahmer <krahmer@suse.de>
+Subject: Re: [PATCH] move RLIMIT_NPROC check from set_user() to do_execve_common()
+Message-ID: <20110715130409.GA2700@openwall.com>
+References: <20110713063142.GA19976@openwall.com> <20110713170657.59dae548@notabene.brown> <CA+55aFwQKqvNvzTMYXVW_yKkFtNsyv8uuBiWiwYLof-nPqPu9w@mail.gmail.com> <alpine.LRH.2.00.1107141009510.17067@tundra.namei.org> <20110714112751.1bfd998f@notabene.brown> <20110714150602.GA30019@openwall.com> <20110715133013.4fa38d19@notabene.brown> <20110715063113.GA3166@albatros> <20110715170650.585f1dad@notabene.brown> <20110715073823.GA3821@albatros>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110715073823.GA3821@albatros>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Neil, Vasiliy -
 
-> > st_nlink==1 for directories is widely accepted way of saying that the
-> > number of subdirectories is unknown.  Various filesystems already do
-> > this, and versions of GNU utils that I have come across accept it.
->
-> When the upperdir is tmpfs, the link count of the directories in it will
-> not be 1, won't it?
+On Fri, Jul 15, 2011 at 11:38:23AM +0400, Vasiliy Kulikov wrote:
+> On Fri, Jul 15, 2011 at 17:06 +1000, NeilBrown wrote:
+> > How about this then?
+> 
+> AFAIU, with this patch:
+> 
+> 1) setuid() doesn't fail in NPROC exceed case.
+> 2) NPROC is forced on execve() after setuid().
+> 3) execve() fails only if NPROC was exceeded during setuid() execution.
+> 4) Other processes of the same user doesn't suffer from "occasional"
+> execve() failures.
+> 
+> If it is correct, then I like the patch :)
 
-Ah, I've found overlayfs sets it to 1 now.
+I'm not convinced this has any advantages over the patch Vasiliy had
+posted (which simply moved the RLIMIT_NPROC check), but I don't mind,
+with one important correction:
 
-Thanks
-J. R. Okajima
+Although in the primary use cases we're considering, setuid() is very
+soon followed by execve(), this doesn't always have to be the case.
+There may be cases where the process would sleep between these two calls
+(for a variety of reasons).  It would be surprising to see a process
+fail on execve() because of RLIMIT_NPROC when that limit had been
+reached, say, days ago and is no longer reached at the time of execve().
+
+Thus, if we go with Neil's proposal (adding/checking an extra flag), we
+should also re-check the process count against RLIMIT_NPROC on execve(),
+and fail the exec only when both the flag is set and the current process
+count is excessive (still or again).
+
+Also, if we go with a patch like this, it brings up the question of
+whether the flag should be preserved or reset on fork().  I think it
+should be preserved.
+
+> It does RLIMIT_NPROC
+> enforcement without mixing other execve() calls like -ow patch did.
+
+"Mixing other execve() calls" (4 on the list above) is not obviously
+undesirable.  Thus, either Vasiliy's original patch or Neil's patch with
+the addition mentioned above would be fine by me.
+
+Thanks,
+
+Alexander
