@@ -1,103 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965116Ab1GOIGA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 04:06:00 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:63574 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965024Ab1GOIFx (ORCPT
+	id S965153Ab1GOIV1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 04:21:27 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38058 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964935Ab1GOIVZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 04:05:53 -0400
-From: Shan Hai <haishan.bai@gmail.com>
-To: benh@kernel.crashing.org, paulus@samba.org
-Cc: tglx@linutronix.de, walken@google.com, dhowells@redhat.com,
-        cmetcalf@tilera.com, tony.luck@intel.com, akpm@linux-foundation.org,
-        a.p.zijlstra@chello.nl, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Shan Hai <haishan.bai@gmail.com>
-Subject: [PATCH 1/1] Fixup write permission of TLB on powerpc e500 core
-Date: Fri, 15 Jul 2011 16:07:18 +0800
-Message-Id: <1310717238-13857-2-git-send-email-haishan.bai@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Fri, 15 Jul 2011 04:21:25 -0400
+Subject: Re: [PATCH 0/1] Fixup write permission of TLB on powerpc e500 core
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Shan Hai <haishan.bai@gmail.com>
+Cc: benh@kernel.crashing.org, paulus@samba.org, tglx@linutronix.de,
+        walken@google.com, dhowells@redhat.com, cmetcalf@tilera.com,
+        tony.luck@intel.com, akpm@linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
 In-Reply-To: <1310717238-13857-1-git-send-email-haishan.bai@gmail.com>
 References: <1310717238-13857-1-git-send-email-haishan.bai@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 15 Jul 2011 10:20:56 +0200
+Message-ID: <1310718056.2586.275.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kernel has no write permission on COW pages by default on e500 core, this
-will cause endless loop in futex_lock_pi, because futex code assumes the kernel
-has write permission on COW pages. Grant write permission to the kernel on COW
-pages when access violation page fault occurs.
+On Fri, 2011-07-15 at 16:07 +0800, Shan Hai wrote:
+> 
+> The following test case could reveal a bug in the futex_lock_pi()
+> 
+> BUG: On FUTEX_LOCK_PI, there is a infinite loop in the futex_lock_pi() 
+>         on Powerpc e500 core.
+> Cause: The linux kernel on the e500 core has no write permission on
+>         the COW page, refer the head comment of the following test code.
+>  
+> ftrace on test case:
+> [000]   353.990181: futex_lock_pi_atomic <-futex_lock_pi
+> [000]   353.990185: cmpxchg_futex_value_locked <-futex_lock_pi_atomic
+> [snip]
+> [000]   353.990191: do_page_fault <-handle_page_fault
+> [000]   353.990192: bad_page_fault <-handle_page_fault
+> [000]   353.990193: search_exception_tables <-bad_page_fault
+> [snip]
+> [000]   353.990199: get_user_pages <-fault_in_user_writeable
+> [snip]
+> [000]   353.990208: mark_page_accessed <-follow_page
+> [000]   353.990222: futex_lock_pi_atomic <-futex_lock_pi
+> [snip]
+> [000]   353.990230: cmpxchg_futex_value_locked <-futex_lock_pi_atomic
+> [ a loop occures here ]
+> 
 
-Signed-off-by: Shan Hai <haishan.bai@gmail.com>
----
- arch/powerpc/include/asm/futex.h |   11 ++++++++++-
- arch/powerpc/include/asm/tlb.h   |   25 +++++++++++++++++++++++++
- 2 files changed, 35 insertions(+), 1 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/futex.h b/arch/powerpc/include/asm/futex.h
-index c94e4a3..54c3e74 100644
---- a/arch/powerpc/include/asm/futex.h
-+++ b/arch/powerpc/include/asm/futex.h
-@@ -8,6 +8,7 @@
- #include <asm/errno.h>
- #include <asm/synch.h>
- #include <asm/asm-compat.h>
-+#include <asm/tlb.h>
- 
- #define __futex_atomic_op(insn, ret, oldval, uaddr, oparg) \
-   __asm__ __volatile ( \
-@@ -113,7 +114,15 @@ futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
-         : "cc", "memory");
- 
- 	*uval = prev;
--        return ret;
-+
-+	/* Futex assumes the kernel has permission to write to
-+	 * COW pages, grant the kernel write permission on COW
-+	 * pages because it has none by default.
-+	 */
-+	if (ret == -EFAULT)
-+		__tlb_fixup_write_permission(current->mm, (unsigned long)uaddr);
-+
-+	return ret;
- }
- 
- #endif /* __KERNEL__ */
-diff --git a/arch/powerpc/include/asm/tlb.h b/arch/powerpc/include/asm/tlb.h
-index e2b428b..3863c6a 100644
---- a/arch/powerpc/include/asm/tlb.h
-+++ b/arch/powerpc/include/asm/tlb.h
-@@ -45,5 +45,30 @@ static inline void __tlb_remove_tlb_entry(struct mmu_gather *tlb, pte_t *ptep,
- #endif
- }
- 
-+/* Grant write permission to the kernel on a page. */
-+static inline void __tlb_fixup_write_permission(struct mm_struct *mm,
-+						unsigned long address)
-+{
-+#if defined(CONFIG_FSL_BOOKE)
-+	/* Grant write permission to the kernel on a page by setting TLB.SW
-+	 * bit, the bit setting operation is tricky here, calling
-+	 * handle_mm_fault with FAULT_FLAG_WRITE causes _PAGE_DIRTY bit of
-+	 * the pte to be set, the _PAGE_DIRTY of the pte is translated into
-+	 * TLB.SW on Powerpc e500 core.
-+	 */
-+
-+	struct vm_area_struct *vma;
-+
-+	vma = find_vma(mm, address);
-+	if (likely(vma)) {
-+		/* only fixup present page */
-+		if (follow_page(vma, address, FOLL_WRITE)) {
-+			handle_mm_fault(mm, vma, address, FAULT_FLAG_WRITE);
-+			flush_tlb_page(vma, address);
-+		}
-+	}
-+#endif
-+}
-+
- #endif /* __KERNEL__ */
- #endif /* __ASM_POWERPC_TLB_H */
--- 
-1.7.1
+But but but but, that get_user_pages(.write=1, .force=0) should result
+in a COW break, getting our own writable page.
 
+What is this e500 thing smoking that this doesn't work?
