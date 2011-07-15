@@ -1,133 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932585Ab1GOCWb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 22:22:31 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:50375 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932356Ab1GOCWa (ORCPT
+	id S932657Ab1GOCec (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 22:34:32 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49819 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753683Ab1GOCea (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 22:22:30 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqEDABihH055LCkBgWdsb2JhbABUp18VAQEWJiXMGg6FTV8Eo0c
-Date: Fri, 15 Jul 2011 12:22:26 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        XFS <xfs@oss.sgi.com>, Johannes Weiner <jweiner@redhat.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 1/5] mm: vmscan: Do not writeback filesystem pages in
- direct reclaim
-Message-ID: <20110715022226.GD31294@dastard>
-References: <1310567487-15367-1-git-send-email-mgorman@suse.de>
- <1310567487-15367-2-git-send-email-mgorman@suse.de>
- <20110714103801.83e10fdb.kamezawa.hiroyu@jp.fujitsu.com>
- <20110714044643.GA3203@infradead.org>
- <20110714134634.4a7a15c8.kamezawa.hiroyu@jp.fujitsu.com>
+	Thu, 14 Jul 2011 22:34:30 -0400
+Date: Fri, 15 Jul 2011 09:57:54 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: ashishj3 <ashish.jangam@kpitcummins.com>
+Cc: linaro-dev@lists.linaro.org, cbou@mail.ru, dwmw2@infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Patch v1 04/11]Power: DA9052 battery driver
+Message-ID: <20110715005749.GA2760@opensource.wolfsonmicro.com>
+References: <1310633828.284.88.camel@L-0532.kpit.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110714134634.4a7a15c8.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1310633828.284.88.camel@L-0532.kpit.com>
+X-Cookie: You dialed 5483.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 14, 2011 at 01:46:34PM +0900, KAMEZAWA Hiroyuki wrote:
-> On Thu, 14 Jul 2011 00:46:43 -0400
-> Christoph Hellwig <hch@infradead.org> wrote:
-> 
-> > On Thu, Jul 14, 2011 at 10:38:01AM +0900, KAMEZAWA Hiroyuki wrote:
-> > > > +			/*
-> > > > +			 * Only kswapd can writeback filesystem pages to
-> > > > +			 * avoid risk of stack overflow
-> > > > +			 */
-> > > > +			if (page_is_file_cache(page) && !current_is_kswapd()) {
-> > > > +				inc_zone_page_state(page, NR_VMSCAN_WRITE_SKIP);
-> > > > +				goto keep_locked;
-> > > > +			}
-> > > > +
-> > > 
-> > > 
-> > > This will cause tons of memcg OOM kill because we have no help of kswapd (now).
-> > 
-> > XFS and btrfs already disable writeback from memcg context, as does ext4
-> > for the typical non-overwrite workloads, and none has fallen apart.
-> > 
-> > In fact there's no way we can enable them as the memcg calling contexts
-> > tend to have massive stack usage.
-> > 
-> 
-> Hmm, XFS/btrfs adds pages to radix-tree in deep stack ?
+On Thu, Jul 14, 2011 at 02:27:08PM +0530, ashishj3 wrote:
 
-Here's an example writeback stack trace. Notice how deep it is from
-the __writepage() call?
+> +static inline int volt_reg_to_mV(int value)
+> +		{ return ((value*1000) / 512) + 2500; }
+> +static inline int ichg_reg_to_mA(int value)
+> +		{ return ((value * 3900) / 1000); }
 
-$ cat /sys/kernel/debug/tracing/stack_trace
-        Depth    Size   Location    (50 entries)
-        -----    ----   --------
-  0)     5000      80   enqueue_task_fair+0x63/0x4f0
-  1)     4920      48   enqueue_task+0x6a/0x80
-  2)     4872      32   activate_task+0x2d/0x40
-  3)     4840      32   ttwu_activate+0x21/0x50
-  4)     4808      32   T.2130+0x3c/0x60
-  5)     4776     112   try_to_wake_up+0x25e/0x2d0
-  6)     4664      16   wake_up_process+0x15/0x20
-  7)     4648      16   wake_up_worker+0x24/0x30
-  8)     4632      16   insert_work+0x6f/0x80
-  9)     4616      96   __queue_work+0xf9/0x3f0
- 10)     4520      16   queue_work_on+0x25/0x40
- 11)     4504      16   queue_work+0x1f/0x30
- 12)     4488      16   queue_delayed_work+0x2d/0x40
- 13)     4472      32   blk_run_queue_async+0x41/0x60
- 14)     4440      64   queue_unplugged+0x8e/0xc0
- 15)     4376     112   blk_flush_plug_list+0x1f5/0x240
- 16)     4264     176   schedule+0x4c3/0x8b0
- 17)     4088     128   schedule_timeout+0x1a5/0x280
- 18)     3960     160   wait_for_common+0xdb/0x180
- 19)     3800      16   wait_for_completion+0x1d/0x20
- 20)     3784      48   xfs_buf_iowait+0x30/0xc0
- 21)     3736      32   _xfs_buf_read+0x60/0x70
- 22)     3704      48   xfs_buf_read+0xa2/0x100
- 23)     3656      80   xfs_trans_read_buf+0x1ef/0x430
- 24)     3576      96   xfs_btree_read_buf_block+0x5e/0xd0
- 25)     3480      96   xfs_btree_lookup_get_block+0x83/0xf0
- 26)     3384     176   xfs_btree_lookup+0xd7/0x490
- 27)     3208      16   xfs_alloc_lookup_eq+0x19/0x20
- 28)     3192     112   xfs_alloc_fixup_trees+0x2b5/0x350
- 29)     3080     224   xfs_alloc_ag_vextent_near+0x631/0xb60
- 30)     2856      32   xfs_alloc_ag_vextent+0xd5/0x100
- 31)     2824      96   xfs_alloc_vextent+0x2a4/0x5f0
- 32)     2728     256   xfs_bmap_btalloc+0x257/0x720
- 33)     2472      16   xfs_bmap_alloc+0x21/0x40
- 34)     2456     432   xfs_bmapi+0x9b7/0x1150
- 35)     2024     192   xfs_iomap_write_allocate+0x17d/0x350
- 36)     1832     144   xfs_map_blocks+0x1e2/0x270
- 37)     1688     208   xfs_vm_writepage+0x19f/0x500
- 38)     1480      32   __writepage+0x17/0x40
- 39)     1448     304   write_cache_pages+0x21d/0x4d0
- 40)     1144      96   generic_writepages+0x51/0x80
- 41)     1048      48   xfs_vm_writepages+0x5d/0x80
- 42)     1000      16   do_writepages+0x21/0x40
- 43)      984      96   writeback_single_inode+0x10e/0x270
- 44)      888      96   writeback_sb_inodes+0xdb/0x1b0
- 45)      792     208   wb_writeback+0x1bf/0x420
- 46)      584     160   wb_do_writeback+0x9f/0x270
- 47)      424     144   bdi_writeback_thread+0xaa/0x270
- 48)      280      96   kthread+0x96/0xa0
- 49)      184     184   kernel_thread_helper+0x4/0x10
+It'd be better to use the standard coding style for this stuff.
 
-So from ->writepage, there is about 3.5k of stack usage here.  2.5k
-of that is in XFS, and the worst I've seen is around 4k before
-getting to the IO subsystem, which in the worst case I've seen
-consumed 2.5k of stack. IOWs, I've seen stack usage from .writepage
-down to IO take over 6k of stack space on x86_64....
+> +static int da9052_battery_read_temperature(struct da9052_battery *battery,
+> +					    int *bat_temp)
+> +{
+> +	int count, avg_value[DA9052_AVERAGE_SIZE];
+> +
+> +	for (count = 0; count < DA9052_AVERAGE_SIZE; count++)
+> +		avg_value[count] = da9052_adc_temperature_read(battery->da9052);
+> +		if (avg_value[count] < 0)
+> +			return avg_value[count];
+> +
+> +	*bat_temp = da9052_average_calcuation(avg_value);
+> +
+> +	return 0;
+> +}
 
+Don't do this, just return the reading let something higher up the stack
+figure out if it needs to take an average reading.  Probably userspace.
+This isn't specific to this device, if we need to do something in the
+kernel it should be a core feature but I'd expect userspace can do a
+better job by looking at longer term trends.
 
-Cheers,
+> +static struct power_supply template_battery = {
+> +	.name		= "da9052-bat",
+> +	.type		= POWER_SUPPLY_TYPE_BATTERY,
+> +	.properties	= da9052_bat_props,
+> +	.num_properties	= ARRAY_SIZE(da9052_bat_props),
+> +	.get_property	= da9052_bat_get_property,
+> +	.use_for_apm	= 1,
+> +};
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Hrm, use_for_apm isn't typically set by embedded battery drivers so
+probably shouldn't be set by this one.  We should figure out some better
+way to set this, perhaps board specific, if it's needed.
