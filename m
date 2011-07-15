@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932659Ab1GOAmM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jul 2011 20:42:12 -0400
-Received: from host1743200242118.direcway.com ([174.32.118.242]:33646 "EHLO
-	aexorsyst.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S932409Ab1GOAmK (ORCPT
+	id S932667Ab1GOApQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jul 2011 20:45:16 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:58513 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932640Ab1GOApN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jul 2011 20:42:10 -0400
-From: "John Z. Bohach" <jzb2@aexorsyst.com>
-To: linux-kernel@vger.kernel.org
-Subject: Re: large initramfs causes h/w reset after decompressing
-Date: Thu, 14 Jul 2011 17:35:36 -0700
-User-Agent: KMail/1.9.6
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-References: <201107140906.46404.jzb2@aexorsyst.com> <201107141635.07673.jzb2@aexorsyst.com> <4E1F86AE.9090903@zytor.com>
-In-Reply-To: <4E1F86AE.9090903@zytor.com>
+	Thu, 14 Jul 2011 20:45:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201107141735.36175.jzb2@aexorsyst.com>
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <20110714234805.GA32716@opensource.wolfsonmicro.com>
+References: <1310650159.6854.1.camel@phoenix> <20110714234805.GA32716@opensource.wolfsonmicro.com>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Fri, 15 Jul 2011 08:44:53 +0800
+Message-ID: <CAF+7xWnOZkOpMSiOBJKA2HMpstzqUt1GT3Gr+g783trYH+kj3A@mail.gmail.com>
+Subject: Re: [PATCH] regulator: Fix memory leak in set_machine_constraints()
+ error paths
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Sorry, I thought initramfs would be clear on its own that its not
-> > initrd, but I guess some people do use it interchangeably.  Anyway,
-> > I have some experience in programming, so is there anything you
-> > could suggest that I might tweak to test your theory on the
-> > decompressor?  Or would this be more of a kernel VM allocator
-> > issue?  Also, would ramdisk_size have any bearing on this?
+2011/7/15 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> On Thu, Jul 14, 2011 at 09:29:19PM +0800, Axel Lin wrote:
+>>  static int set_machine_constraints(struct regulator_dev *rdev,
+>>       const struct regulation_constraints *constraints)
+>>  {
+>> -     int ret = 0;
+>> +     int ret;
+>>       struct regulator_ops *ops = rdev->desc->ops;
+>>
 >
-> initramfs can be built in or loaded via the initrd protocol.
+> This doesn't look like a leak fix?  There's nothing that checks for
+> other errors here (like null pointers)?
 >
-> Anyway, it's hard to say for sure what to look for, but the first
-> thing is to try to "fence" the problem... that is, establish the
-> latest point which is successfully crossed and the earliest point
-> which is not.
 
-Fair enough...I'll start with a 2 GB boundary and see where it takes 
-me...thanks for you feedback.
+I think it does checking null pointer for rdev->constraints in current
+implementation:
 
---john
+static int set_machine_constraints(struct regulator_dev *rdev,
+        const struct regulation_constraints *constraints)
+{
+        int ret;
+        struct regulator_ops *ops = rdev->desc->ops;
 
+        rdev->constraints = kmemdup(constraints, sizeof(*constraints),
+                                    GFP_KERNEL);
+        if (!rdev->constraints)
+                return -ENOMEM;
+
+
+Regards,
+Axel
