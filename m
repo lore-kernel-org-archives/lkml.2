@@ -1,79 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755819Ab1GOSDR (ORCPT <rfc822;w@1wt.eu>);
+	id S1755949Ab1GOSE0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 14:04:26 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47423 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751630Ab1GOSDR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Jul 2011 14:03:17 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:59678
-	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1750926Ab1GOSDN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 14:03:13 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 004/117] Staging: hv: Add code to parse struct hv_vmbus_device_id table
-Date: Fri, 15 Jul 2011 10:45:52 -0700
-Message-Id: <1310752065-27895-4-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1310752065-27895-1-git-send-email-kys@microsoft.com>
-References: <1310752024-27854-1-git-send-email-kys@microsoft.com>
- <1310752065-27895-1-git-send-email-kys@microsoft.com>
+Subject: Re: INFO: possible circular locking dependency detected
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ed Tomlinson <edt@aei.ca>
+Cc: paulmck@linux.vnet.ibm.com, Steven Rostedt <rostedt@goodmis.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <1310729362.2586.325.camel@twins>
+References: <20110714144946.GA3354@swordfish.minsk.epam.com>
+	 <1310665613.27864.50.camel@gandalf.stny.rr.com>
+	 <20110714191809.GF2349@linux.vnet.ibm.com>  <201107150705.46248.edt@aei.ca>
+	 <1310729362.2586.325.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 15 Jul 2011 13:39:20 +0200
+Message-ID: <1310729960.2586.327.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add code to parse struct hv_vmbus_device_id table.
+On Fri, 2011-07-15 at 13:29 +0200, Peter Zijlstra wrote:
+> 
+> Paul, what appears to be happening here is that some rcu_read_unlock()
+> gets interrupted, possibly before calling rcu_read_unlock_special(),
+> possibly not if the interrupt is itself the timer interrupt.
+> 
+> Supposing ->rcu_read_unlock_special is set before, any wakeup happening
+> from an interrupt hitting __rcu_read_unlock():
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- scripts/mod/file2alias.c |   25 +++++++++++++++++++++++++
- 1 files changed, 25 insertions(+), 0 deletions(-)
+Hmm, ok not any wakeup from interrupt context because you have that
+in_irq() test in there, but if that IRQ doesn't happen to use RCU and
+does trigger softirqs and one of that softirq does a wakeup we're still
+in the same boat.
 
-diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
-index e26e2fb..b74d21a 100644
---- a/scripts/mod/file2alias.c
-+++ b/scripts/mod/file2alias.c
-@@ -735,6 +735,27 @@ static int do_virtio_entry(const char *filename, struct virtio_device_id *id,
- 	return 1;
- }
- 
-+/*
-+ * Looks like: vmbus:guid
-+ * Each byte of the guid will be represented by two hex characters
-+ * in the name.
-+ */
-+
-+static int do_vmbus_entry(const char *filename, struct hv_vmbus_device_id *id,
-+			  char *alias)
-+{
-+	int i;
-+	char guid_name[((sizeof(struct hv_vmbus_device_id) + 1)) * 2];
-+
-+	for (i = 0; i < (sizeof(struct hv_vmbus_device_id) * 2); i += 2)
-+		sprintf(&guid_name[i], "%02x", id->guid[i/2]);
-+
-+	strcpy(alias, "vmbus:");
-+	strcat(alias, guid_name);
-+
-+	return 1;
-+}
-+
- /* Looks like: i2c:S */
- static int do_i2c_entry(const char *filename, struct i2c_device_id *id,
- 			char *alias)
-@@ -994,6 +1015,10 @@ void handle_moddevtable(struct module *mod, struct elf_info *info,
- 		do_table(symval, sym->st_size,
- 			 sizeof(struct virtio_device_id), "virtio",
- 			 do_virtio_entry, mod);
-+	else if (sym_is(symname, "__mod_vmbus_device_table"))
-+		do_table(symval, sym->st_size,
-+			 sizeof(struct hv_vmbus_device_id), "vmbus",
-+			 do_vmbus_entry, mod);
- 	else if (sym_is(symname, "__mod_i2c_device_table"))
- 		do_table(symval, sym->st_size,
- 			 sizeof(struct i2c_device_id), "i2c",
--- 
-1.7.4.1
-
+> void __rcu_read_unlock(void)
+> {
+>         struct task_struct *t = current;
+>                 
+>         barrier();  /* needed if we ever invoke rcu_read_unlock in rcutree.c */
+>         --t->rcu_read_lock_nesting;
+>         barrier();  /* decrement before load of ->rcu_read_unlock_special */
+>         if (t->rcu_read_lock_nesting == 0 &&
+>             unlikely(ACCESS_ONCE(t->rcu_read_unlock_special)))
+>                 rcu_read_unlock_special(t);
+> #ifdef CONFIG_PROVE_LOCKING
+>         WARN_ON_ONCE(ACCESS_ONCE(t->rcu_read_lock_nesting) < 0);
+> #endif /* #ifdef CONFIG_PROVE_LOCKING */
+> }
+> 
+> After --t->rcu_read_lock_nesting, but before calling
+> rcu_read_unlock_special(), will trigger this lock inversion.
+> 
+> The alternative case, ->rcu_read_unlock_special is not set yet, it can
+> be set if the interrupt hitting in that same spot above, is the timer
+> interrupt, and the wakeup happens either from the softirq ran from the
+> hard IRQ tail, or as I suspect here happens, the wakeup of ksoftirqd/#.
+> 
+> 
