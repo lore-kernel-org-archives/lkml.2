@@ -1,62 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752315Ab1GPDZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 23:25:28 -0400
-Received: from eastrmfepo102.cox.net ([68.230.241.214]:40021 "EHLO
-	eastrmfepo102.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751420Ab1GPDZ1 (ORCPT
+	id S1752891Ab1GPD0U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 23:26:20 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:31252 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751420Ab1GPD0T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 23:25:27 -0400
-X-Greylist: delayed 902 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Jul 2011 23:25:27 EDT
-X-CT-Class: Clean
-X-CT-Score: 0.00
-X-CT-RefID: str=0001.0A020208.4E21011B.0002,ss=1,re=0.000,fgs=0
-X-CT-Spam: 0
-X-Authority-Analysis: v=1.1 cv=mwl0/2xM3ubHJTXa6l4kGPt5l4r2ytuQtfJUKIGJKFg=
- c=1 sm=1 a=SbnaPJgvhvEA:10 a=6ozKSxwDZsYA:10 a=kj9zAlcOel0A:10
- a=P/0Lj++K3U41h/fRNoatIQ==:17 a=9YPF7Q6M6CNIacGhoq4A:9
- a=sQauaP2SSAhirK_V2gAA:7 a=CjuIK1q_8ugA:10 a=P/0Lj++K3U41h/fRNoatIQ==:117
-X-CM-Score: 0.00
-Authentication-Results: cox.net; none
-Date: Fri, 15 Jul 2011 23:05:15 -0400
-From: Will Simoneau <simoneau@ele.uri.edu>
-To: davem@davemloft.net
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] sun4m SMP: fix wrong shift instruction in IPI handler
-Message-ID: <20110716030515.GA13614@ele.uri.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 [Linux 2.6.38 x86_64]
+	Fri, 15 Jul 2011 23:26:19 -0400
+X-AuditID: cbfee61b-b7c3dae000002cb8-16-4e2104d91d66
+Date: Sat, 16 Jul 2011 12:26:41 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+Subject: Re: [PATCH] clocksource: convert S5PV210 32-bit down counting
+ clocksource
+In-reply-to: <034d01cc4364$3f5075d0$bdf16170$%kim@samsung.com>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
+        "'Ben Dooks'" <ben-linux@fluff.org>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'linux-arm-kernel'" <linux-arm-kernel@lists.infradead.org>,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>
+Message-id: <4E2104F1.9050104@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7BIT
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+References: <4E1BE0CF.7060207@samsung.com>
+ <034d01cc4364$3f5075d0$bdf16170$%kim@samsung.com>
+X-OriginalArrivalTime: 16 Jul 2011 03:26:42.0580 (UTC)
+ FILETIME=[2EAF4540:01CC4368]
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This shift instruction appears to be shifting in the wrong direction.
-Without this change, my SparcStation-20MP hangs just after bringing up
-the second CPU:
+Kukjin Kim wrote:
+> Chanwoo Choi wrote:
+>> Convert the S5PV210 32-bit down-counting clocksource to the generic
+>> mmio clocksource infrastructure
+>>
+>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> ---
+>>  arch/arm/Kconfig             |    1 +
+>>  arch/arm/plat-s5p/s5p-time.c |   20 +++-----------------
+>>  2 files changed, 4 insertions(+), 17 deletions(-)
+>>
+>> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+>> index 9adc278..d7cd6f9 100644
+>> --- a/arch/arm/Kconfig
+>> +++ b/arch/arm/Kconfig
+>> @@ -749,6 +749,7 @@ config ARCH_S5PV210
+>>  	bool "Samsung S5PV210/S5PC110"
+>>  	select CPU_V7
+>>  	select ARCH_SPARSEMEM_ENABLE
+>> +	select CLKSRC_MMIO
+>>  	select GENERIC_GPIO
+>>  	select HAVE_CLK
+>>  	select ARM_L1_CACHE_SHIFT_6
+>> diff --git a/arch/arm/plat-s5p/s5p-time.c b/arch/arm/plat-s5p/s5p-time.c
+>> index 612934c..5666f55 100644
+>> --- a/arch/arm/plat-s5p/s5p-time.c
+>> +++ b/arch/arm/plat-s5p/s5p-time.c
+>> @@ -314,13 +314,6 @@ static void __iomem *s5p_timer_reg(void)
+>>  	return S3C_TIMERREG(offset);
+>>  }
+>>
+>> -static cycle_t s5p_timer_read(struct clocksource *cs)
+>> -{
+>> -	void __iomem *reg = s5p_timer_reg();
+>> -
+>> -	return (cycle_t) (reg ? ~__raw_readl(reg) : 0);
+>> -}
+>> -
+>>  /*
+>>   * Override the global weak sched_clock symbol with this
+>>   * local implementation which uses the clocksource to get some
+>> @@ -350,14 +343,6 @@ static void notrace s5p_update_sched_clock(void)
+>>  	update_sched_clock(&cd, ~__raw_readl(reg), (u32)~0);
+>>  }
+>>
+>> -struct clocksource time_clocksource = {
+>> -	.name		= "s5p_clocksource_timer",
+>> -	.rating		= 250,
+>> -	.read		= s5p_timer_read,
+>> -	.mask		= CLOCKSOURCE_MASK(32),
+>> -	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
+>> -};
+>> -
+>>  static void __init s5p_clocksource_init(void)
+>>  {
+>>  	unsigned long pclk;
+>> @@ -375,8 +360,9 @@ static void __init s5p_clocksource_init(void)
+>>
+>>  	init_sched_clock(&cd, s5p_update_sched_clock, 32, clock_rate);
+>>
+>> -	if (clocksource_register_hz(&time_clocksource, clock_rate))
+>> -		panic("%s: can't register clocksource\n", time_clocksource.name);
+>> +	if (clocksource_mmio_init(s5p_timer_reg(), "s5p_clocksource_timer",
+>> +			clock_rate, 250, 32, clocksource_mmio_readl_down))
+>> +		panic("s5p_clocksource_timer: can't register clocksource\n");
+>>  }
+>>
+>>  static void __init s5p_timer_resources(void)
+>> --
+>> 1.7.0.4
+> 
+> The s5p-time is also used on S5P64X0, so CLKSRC_MMIO should be add in that.
+> 
+OK, I will repost the modified patch.
 
-Entering SMP Mode...
-Starting CPU 2 at f02b4e90
-Brought up 2 CPUs
-Total of 2 processors activated (99.52 BogoMIPS).
-   *** stuck ***
-
-Signed-off-by: Will Simoneau <simoneau@ele.uri.edu>
----
- arch/sparc/kernel/entry.S |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/sparc/kernel/entry.S b/arch/sparc/kernel/entry.S
-index 9fe08a1..f445e98 100644
---- a/arch/sparc/kernel/entry.S
-+++ b/arch/sparc/kernel/entry.S
-@@ -293,7 +293,7 @@ maybe_smp4m_msg:
- 	WRITE_PAUSE
- 	wr	%l4, PSR_ET, %psr
- 	WRITE_PAUSE
--	sll	%o3, 28, %o2		! shift for simpler checks below
-+	srl	%o3, 28, %o2		! shift for simpler checks below
- maybe_smp4m_msg_check_single:
- 	andcc	%o2, 0x1, %g0
- 	beq,a	maybe_smp4m_msg_check_mask
+Thanks & Regards,
+Chanwoo Choi
