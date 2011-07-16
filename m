@@ -1,395 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752362Ab1GPIXf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jul 2011 04:23:35 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:40140 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751955Ab1GPIXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jul 2011 04:23:31 -0400
-From: Borislav Petkov <bp@alien8.de>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-doc@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@alien8.de>
-Subject: [PATCH] Documentation: Refresh sysctl/kernel.txt
-Date: Sat, 16 Jul 2011 10:23:21 +0200
-Message-Id: <1310804601-27645-1-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.7.5.3.401.gfb674
+	id S1752654Ab1GPIgi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jul 2011 04:36:38 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:52937 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752018Ab1GPIgg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Jul 2011 04:36:36 -0400
+Date: Sat, 16 Jul 2011 16:36:21 +0800
+From: Harry Wei <jiaweiwei.xiyou@gmail.com>
+To: greg@kroah.com
+Cc: linux-kernel@vger.kernel.org, kongjianjun@gmail.com, joe@perches.com,
+        rdunlap@xenotime.net, harryxiyou@gamil.com
+Subject: Re: [Patch Resend]Fix the messy code file
+ Documentation/zh_CN/SubmitChecklist
+Message-ID: <20110716083618.GA4941@gmail.com>
+Mail-Followup-To: greg@kroah.com, linux-kernel@vger.kernel.org,
+	kongjianjun@gmail.com, joe@perches.com, rdunlap@xenotime.net,
+	harryxiyou@gamil.com
+References: <20110716074255.GA4150@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=unknown-8bit
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110716074255.GA4150@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-More specifically,
+From: Harry Wei <harryxiyou@gmail.com>
 
-- drop stale index entries
-- sync and sort index and entries
-- reflow sticking out paragraphs to colwidth 72
-- correct typos
-- cleanup whitespace
+So sorry with a mistake, which i did not check my patch with
+./checkpatch.pl. This one is all well for checkpatch.pl. It 
+can fix the messy code file Documentation/zh_CN/SubmitChecklist correctly.
 
-Signed-off-by: Borislav Petkov <bp@alien8.de>
+Signed-off-by: Harry Wei <harryxiyou@gmail.com>
 ---
- Documentation/sysctl/kernel.txt |  215 ++++++++++++++++++++-------------------
- 1 files changed, 110 insertions(+), 105 deletions(-)
+ Documentation/zh_CN/SubmitChecklist |  118 +++++++++++++++++-----------------
+ 1 files changed, 59 insertions(+), 59 deletions(-)
 
-diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-index 5e7cb39..1c7fb0a 100644
---- a/Documentation/sysctl/kernel.txt
-+++ b/Documentation/sysctl/kernel.txt
-@@ -17,23 +17,21 @@ before actually making adjustments.
+diff --git a/Documentation/zh_CN/SubmitChecklist b/Documentation/zh_CN/SubmitChecklist
+index 951415b..7f41713 100644
+--- a/Documentation/zh_CN/SubmitChecklist
++++ b/Documentation/zh_CN/SubmitChecklist
+@@ -8,102 +8,102 @@ or if there is a problem with the translation.
  
- Currently, these files might (depending on your configuration)
- show up in /proc/sys/kernel:
--- acpi_video_flags
-+
- - acct
-+- acpi_video_flags
-+- auto_msgmni
- - bootloader_type	     [ X86 only ]
- - bootloader_version	     [ X86 only ]
- - callhome		     [ S390 only ]
--- auto_msgmni
- - core_pattern
- - core_pipe_limit
- - core_uses_pid
- - ctrl-alt-del
--- dentry-state
- - dmesg_restrict
- - domainname
- - hostname
- - hotplug
--- java-appletviewer           [ binfmt_java, obsolete ]
--- java-interpreter            [ binfmt_java, obsolete ]
- - kptr_restrict
- - kstack_depth_to_print       [ X86 only ]
- - l2cr                        [ PPC only ]
-@@ -48,10 +46,14 @@ show up in /proc/sys/kernel:
- - overflowgid
- - overflowuid
- - panic
-+- panic_on_oops
-+- panic_on_unrecovered_nmi
- - pid_max
- - powersave-nap               [ PPC only ]
--- panic_on_unrecovered_nmi
- - printk
-+- printk_delay
-+- printk_ratelimit
-+- printk_ratelimit_burst
- - randomize_va_space
- - real-root-dev               ==> Documentation/initrd.txt
- - reboot-cmd                  [ SPARC only ]
-@@ -62,6 +64,7 @@ show up in /proc/sys/kernel:
- - shmall
- - shmmax                      [ sysv ipc ]
- - shmmni
-+- softlockup_thresh
- - stop-a                      [ SPARC only ]
- - sysrq                       ==> Documentation/sysrq.txt
- - tainted
-@@ -71,15 +74,6 @@ show up in /proc/sys/kernel:
+ Chinese maintainer: Harry Wei <harryxiyou@gmail.com>
+ ---------------------------------------------------------------------
+-Documentation/SubmitChecklist ?????ķ???
++Documentation/SubmitChecklist 的中文翻译
  
- ==============================================================
+-?????????ۻ????±??ĵ????ݣ???ֱ??��ϵԭ?ĵ???ά???ߡ???????ʹ??Ӣ??
+-??????��?ѵĻ???Ҳ?????????İ?ά?????????????�����?????²???ʱ???߷?
+-?????????⣬??��ϵ???İ?ά???ߡ?
++如果想评论或更新本文的内容，请直接联系原文档的维护者。如果你使用英文
++交流有困难的话，也可以向中文版维护者求助。如果本翻译更新不及时或者翻
++译存在问题，请联系中文版维护者。
  
--acpi_video_flags:
--
--flags
--
--See Doc*/kernel/power/video.txt, it allows mode of video boot to be
--set during run time.
--
--==============================================================
--
- acct:
+-???İ?ά???ߣ? ?????? Harry Wei <harryxiyou@gmail.com>
+-???İ淭???ߣ? ?????? Harry Wei <harryxiyou@gmail.com>
+-???İ?У???ߣ? ?????? Harry Wei <harryxiyou@gmail.com>
++中文版维护者： 贾威威 Harry Wei <harryxiyou@gmail.com>
++中文版翻译者： 贾威威 Harry Wei <harryxiyou@gmail.com>
++中文版校译者： 贾威威 Harry Wei <harryxiyou@gmail.com>
  
- highwater lowwater frequency
-@@ -97,6 +91,25 @@ valid for 30 seconds.
  
- ==============================================================
+-????Ϊ????
++以下为正文
+ ---------------------------------------------------------------------
+-Linux?ں??ύ?嵥
++Linux内核提交清单
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  
-+acpi_video_flags:
-+
-+flags
-+
-+See Doc*/kernel/power/video.txt, it allows mode of video boot to be
-+set during run time.
-+
-+==============================================================
-+
-+auto_msgmni:
-+
-+Enables/Disables automatic recomputing of msgmni upon memory add/remove
-+or upon ipc namespace creation/removal (see the msgmni description
-+above). Echoing "1" into this file enables msgmni automatic recomputing.
-+Echoing "0" turns it off. auto_msgmni default value is 1.
-+
-+
-+==============================================================
-+
- bootloader_type:
+-??????һЩ?ں˿?????Ӧ?????Ļ??????飬?????????뿴???Լ????ں˲????ύ
+-?????ܵĸ??졣
++这里有一些内核开发者应该做的基本事情，如果他们想看到自己的内核补丁提交
++被接受的更快。
  
- x86 bootloader identification
-@@ -172,22 +185,24 @@ core_pattern is used to specify a core dumpfile pattern name.
+-??Щ???ǳ???Documentation/SubmittingPatches?ĵ??????ṩ???Լ?????
+-?????ύLinux?ں˲?????˵????
++这些都是超出Documentation/SubmittingPatches文档里所提供的以及其他
++关于提交Linux内核补丁的说明。
  
- core_pipe_limit:
+-1????????ʹ????һ????????ô??#include????/?????Ǹ????ܵ??Ǹ??ļ???
+-   ??Ҫ?��????????????붨??/?????Ǹ????ܵ?ͷ?ļ???
++1：如果你使用了一个功能那么就#include定义/声明那个功能的那个文件。
++   不要依靠其他间接引入定义/声明那个功能的头文件。
  
--This sysctl is only applicable when core_pattern is configured to pipe core
--files to a user space helper (when the first character of core_pattern is a '|',
--see above).  When collecting cores via a pipe to an application, it is
--occasionally useful for the collecting application to gather data about the
--crashing process from its /proc/pid directory.  In order to do this safely, the
--kernel must wait for the collecting process to exit, so as not to remove the
--crashing processes proc files prematurely.  This in turn creates the possibility
--that a misbehaving userspace collecting process can block the reaping of a
--crashed process simply by never exiting.  This sysctl defends against that.  It
--defines how many concurrent crashing processes may be piped to user space
--applications in parallel.  If this value is exceeded, then those crashing
--processes above that value are noted via the kernel log and their cores are
--skipped.  0 is a special value, indicating that unlimited processes may be
--captured in parallel, but that no waiting will take place (i.e. the collecting
--process is not guaranteed access to /proc/<crashing pid>/).  This value defaults
--to 0.
-+This sysctl is only applicable when core_pattern is configured to pipe
-+core files to a user space helper (when the first character of
-+core_pattern is a '|', see above).  When collecting cores via a pipe
-+to an application, it is occasionally useful for the collecting
-+application to gather data about the crashing process from its
-+/proc/pid directory.  In order to do this safely, the kernel must wait
-+for the collecting process to exit, so as not to remove the crashing
-+processes proc files prematurely.  This in turn creates the
-+possibility that a misbehaving userspace collecting process can block
-+the reaping of a crashed process simply by never exiting.  This sysctl
-+defends against that.  It defines how many concurrent crashing
-+processes may be piped to user space applications in parallel.  If
-+this value is exceeded, then those crashing processes above that value
-+are noted via the kernel log and their cores are skipped.  0 is a
-+special value, indicating that unlimited processes may be captured in
-+parallel, but that no waiting will take place (i.e. the collecting
-+process is not guaranteed access to /proc/<crashing pid>/).  This
-+value defaults to 0.
+-2?????????????û??߸???CONFIGѡ?? =y??=m??????=n??
+-   ??Ҫ?б??뾯??/?????? ??Ҫ??��?Ӿ???/??????
++2：构建简洁适用或者更改CONFIG选项 =y，=m，或者=n.
++   不要有编译警告/错误， 不要有链接警告/错误.
  
- ==============================================================
+-2b??ͨ?? allnoconfig, allmodconfig
++2b：通过 allnoconfig, allmodconfig
  
-@@ -218,14 +233,14 @@ to decide what to do with it.
+-2c????ʹ?? 0=builddir ?ɹ??ع???
++2c：当使用 0=builddir 成功地构建
  
- dmesg_restrict:
+-3??ͨ??ʹ?ñ??ؽ??????빤?߻???????һЩ???????????ڶ?CPU?????Ϲ?????
++3：通过使用本地交叉编译工具或者其他一些构建产所，在多CPU框架上构建。
  
--This toggle indicates whether unprivileged users are prevented from using
--dmesg(8) to view messages from the kernel's log buffer.  When
--dmesg_restrict is set to (0) there are no restrictions.  When
-+This toggle indicates whether unprivileged users are prevented
-+from using dmesg(8) to view messages from the kernel's log buffer.
-+When dmesg_restrict is set to (0) there are no restrictions. When
- dmesg_restrict is set set to (1), users must have CAP_SYSLOG to use
- dmesg(8).
+-4??ppc64 ??һ???ܺõļ??齻???????Ŀ??ܣ???Ϊ???????ѡ?unsigned long??
+-   ??64λֵ��ʹ?á?
++4：ppc64 是一个很好的检查交叉编译的框架，因为它往往把‘unsigned long’
++   当64位值来使用。
  
--The kernel config option CONFIG_SECURITY_DMESG_RESTRICT sets the default
--value of dmesg_restrict.
-+The kernel config option CONFIG_SECURITY_DMESG_RESTRICT sets the
-+default value of dmesg_restrict.
+-5??????Documentation/CodingStyle?ļ???????ϸ???����????㲹??????????????
+-   ʹ?ò?????????????????Υ??(scripts/checkpatch.pl)??????Ա?????ύ??
+-   ??Ӧ?õ??????????㲹???е?????Υ?档
++5：按照Documentation/CodingStyle文件里的详细描述，检查你补丁的整体风格。
++   使用补丁风格检查琐碎的违规(scripts/checkpatch.pl)，审核员优先提交。
++   你应该调整遗留在你补丁中的所有违规。
  
- ==============================================================
+-6???κθ??»??߸Ķ?CONFIGѡ????ܴ??????ò˵???
++6：任何更新或者改动CONFIG选项都不能打乱配置菜单。
  
-@@ -256,13 +271,6 @@ Default value is "/sbin/hotplug".
+-7?????е?Kconfigѡ?????¶?Ҫ??˵?????֡?
++7：所有的Kconfig选项更新都要有说明文字。
  
- ==============================================================
+-8???Ѿ????????ܽ??????ص?Kconfig???ϡ????Ǻ???ͨ?????????õ?--??��???????½???
++8：已经认真地总结了相关的Kconfig组合。这是很难通过测试做好的--脑力在这里下降。
  
--l2cr: (PPC only)
--
--This flag controls the L2 cache of G3 processor boards. If
--0, the cache is disabled. Enabled if nonzero.
--
--==============================================================
--
- kptr_restrict:
+-9?????????м????ԡ?
++9：检查具有简洁性。
  
- This toggle indicates whether restrictions are placed on
-@@ -283,6 +291,13 @@ kernel stack.
+-10??ʹ??'make checkstack'??'make namespacecheck'???飬Ȼ???޸????ҵ??????⡣
+-    ע?⣺??ջ???鲻????ȷ?س??????⣬?????κε?һ???????ڶ?ջ??ʹ?ö???512?ֽ?
+-    ??Ҫ׼???޸ġ?
++10：使用'make checkstack'和'make namespacecheck'检查，然后修改所找到的问题。
++    注意：堆栈检查不会明确地出现问题，但是任何的一个函数在堆栈上使用多于512字节
++    都要准备修改。
  
- ==============================================================
+-11??????kernel-doc??ȫ???ں?APIs?ļ???????Ҫ????̬?ĺ????????ǰ???Ҳ????ν????
+-    ʹ??'make htmldocs'????'make mandocs'��????kernel-doc??Ȼ???޸??κ?
+-    ???ֵ????⡣
++11：包含kernel-doc到全局内核APIs文件。（不要求静态的函数，但是包含也无所谓。）
++    使用'make htmldocs'或者'make mandocs'来检查kernel-doc，然后修改任何
++    发现的问题。
  
-+l2cr: (PPC only)
-+
-+This flag controls the L2 cache of G3 processor boards. If
-+0, the cache is disabled. Enabled if nonzero.
-+
-+==============================================================
-+
- modules_disabled:
+-12???Ѿ?ͨ??CONFIG_PREEMPT, CONFIG_DEBUG_PREEMPT,
++12：已经通过CONFIG_PREEMPT, CONFIG_DEBUG_PREEMPT,
+     CONFIG_DEBUG_SLAB, CONFIG_DEBUG_PAGEALLOC, CONFIG_DEBUG_MUTEXES,
+-    CONFIG_DEBUG_SPINLOCK, CONFIG_DEBUG_SPINLOCK_SLEEP???ԣ?????ͬʱ??
+-    ʹ?ܡ?
++    CONFIG_DEBUG_SPINLOCK, CONFIG_DEBUG_SPINLOCK_SLEEP测试，并且同时都
++    使能。
  
- A toggle value indicating if modules are allowed to be loaded
-@@ -293,6 +308,21 @@ to false.
+-13???Ѿ???????????ʹ?û??߲?ʹ?? CONFIG_SMP ?? CONFIG_PREEMPT????ִ??ʱ?䡣
++13：已经都构建并且使用或者不使用 CONFIG_SMP 和 CONFIG_PREEMPT测试执行时间。
  
- ==============================================================
+-14?????�����Ӱ??IO/Disk???ȵȣ??Ѿ?ͨ??ʹ?û??߲?ʹ?? CONFIG_LBDAF ???ԡ?
++14：如果补丁影响IO/Disk，等等：已经通过使用或者不使用 CONFIG_LBDAF 测试。
  
-+nmi_watchdog:
-+
-+Enables/Disables the NMI watchdog on x86 systems. When the value is
-+non-zero the NMI watchdog is enabled and will continuously test all
-+online cpus to determine whether or not they are still functioning
-+properly. Currently, passing "nmi_watchdog=" parameter at boot time is
-+required for this function to work.
-+
-+If LAPIC NMI watchdog method is in use (nmi_watchdog=2 kernel
-+parameter), the NMI watchdog shares registers with oprofile. By
-+disabling the NMI watchdog, oprofile may have more registers to
-+utilize.
-+
-+==============================================================
-+
- osrelease, ostype & version:
+-15?????е?codepaths?Ѿ???ʹ????lockdep???ù??ܡ?
++15：所有的codepaths已经行使所有lockdep启用功能。
  
- # cat osrelease
-@@ -312,10 +342,10 @@ The only way to tune these values is to rebuild the kernel :-)
+-16?????е?/proc??¼???¶?Ҫ?????ļ?????Documentation/Ŀ¼?¡?
++16：所有的/proc记录更新都要作成文件放在Documentation/目录下。
  
- overflowgid & overflowuid:
+-17?????е??ں??����??????¶?????¼??Documentation/kernel-parameters.txt?ļ??С?
++17：所有的内核启动参数更新都被记录到Documentation/kernel-parameters.txt文件中。
  
--if your architecture did not always support 32-bit UIDs (i.e. arm, i386,
--m68k, sh, and sparc32), a fixed UID and GID will be returned to
--applications that use the old 16-bit UID/GID system calls, if the actual
--UID or GID would exceed 65535.
-+if your architecture did not always support 32-bit UIDs (i.e. arm,
-+i386, m68k, sh, and sparc32), a fixed UID and GID will be returned to
-+applications that use the old 16-bit UID/GID system calls, if the
-+actual UID or GID would exceed 65535.
+-18?????е?ģ?????????¶???MODULE_PARM_DESC()??¼??
++18：所有的模块参数更新都用MODULE_PARM_DESC()记录。
  
- These sysctls allow you to change the value of the fixed UID and GID.
- The default is 65534.
-@@ -324,9 +354,22 @@ The default is 65534.
+-19?????е??û??ռ??ӿڸ??¶?????¼??Documentation/ABI/???鿴Documentation/ABI/README
+-    ???Ի??ø???????Ϣ???ı??û??ռ??ӿڵĲ???Ӧ?ñ??ʼ????͸?linux-api@vger.kernel.org??
++19：所有的用户空间接口更新都被记录到Documentation/ABI/。查看Documentation/ABI/README
++    可以获得更多的信息。改变用户空间接口的补丁应该被邮件抄送给linux-api@vger.kernel.org。
  
- panic:
+-20?????????ǲ??Ƕ?ͨ??`make headers_check'??
++20：检查它是不是都通过`make headers_check'。
  
--The value in this file represents the number of seconds the
--kernel waits before rebooting on a panic. When you use the
--software watchdog, the recommended setting is 60.
-+The value in this file represents the number of seconds the kernel
-+waits before rebooting on a panic. When you use the software watchdog,
-+the recommended setting is 60.
-+
-+==============================================================
-+
-+panic_on_unrecovered_nmi:
-+
-+The default Linux behaviour on an NMI of either memory or unknown is
-+to continue operation. For many environments such as scientific
-+computing it is preferable that the box is taken out and the error
-+dealt with than an uncorrected parity/ECC error get propagated.
-+
-+A small number of systems do generate NMI's for bizarre random reasons
-+such as power management so the default is off. That sysctl works like
-+the existing panic controls already in that directory.
+-21???Ѿ?ͨ??????????slab??page-allocationʧ?ܼ??顣?鿴Documentation/fault-injection/??
++21：已经通过至少引入slab和page-allocation失败检查。查看Documentation/fault-injection/。
  
- ==============================================================
+-22???¼?????Դ???Ѿ?ͨ??`gcc -W'??ʹ??"make EXTRA_CFLAGS=-W"?????롣???????????ܶෳ?գ?
+-    ???Ƕ???Ѱ??©???????洦??????:"warning: comparison between signed and unsigned"??
++22：新加入的源码已经通过`gcc -W'（使用"make EXTRA_CFLAGS=-W"）编译。这样将产生很多烦恼，
++    但是对于寻找漏洞很有益处，例如:"warning: comparison between signed and unsigned"。
  
-@@ -376,6 +419,14 @@ the different loglevels.
+-23?????????ϲ???-mm?????????ٲ??ԣ???��ȷ?????Ƿ񻹺Ͳ????????е????�����һ???????Լ???VM??VFS
+-    ????????ϵͳ?и????仯??
++23：当它被合并到-mm补丁集后再测试，用来确定它是否还和补丁队列中的其他补丁一起工作以及在VM，VFS
++    和其他子系统中各个变化。
  
- ==============================================================
+-24?????е??ڴ?????{e.g., barrier(), rmb(), wmb()}??Ҫ??Դ?????е?һ??ע??��???????Ƕ??Ǹ?ʲô??
+-    ?Լ?ԭ????
++24：所有的内存屏障{e.g., barrier(), rmb(), wmb()}需要在源代码中的一个注释来解释他们都是干什么的
++    以及原因。
  
-+printk_delay:
-+
-+Delay each printk message in printk_delay milliseconds
-+
-+Value from 0 - 10000 is allowed.
-+
-+==============================================================
-+
- printk_ratelimit:
+-25?????????κ????????????ƵĲ????????ӣ?ҲҪ????Documentation/ioctl/ioctl-number.txt??
++25：如果有任何输入输出控制的补丁被添加，也要更新Documentation/ioctl/ioctl-number.txt。
  
- Some warning messages are rate limited. printk_ratelimit specifies
-@@ -395,15 +446,7 @@ send before ratelimiting kicks in.
+-26?????????ĸ??Ĵ????��?????ʹ???κε??ں?APIs????????????kconfig?????й?ϵ?Ĺ??ܣ?????Ҫ
+-    ʹ?????ص?kconfig???Źرգ? and/or =m??????ѡ???ṩ??[??ͬһʱ?䲻?????õĶ????ã?????????????????
+-    ????????]??
++26：如果你的更改代码依靠或者使用任何的内核APIs或者与下面的kconfig符号有关系的功能，你就要
++    使用相关的kconfig符号关闭， and/or =m（如果选项提供）[在同一时间不是所用的都启用，仅仅各个或者自由
++    组合他们]：
  
- ==============================================================
- 
--printk_delay:
--
--Delay each printk message in printk_delay milliseconds
--
--Value from 0 - 10000 is allowed.
--
--==============================================================
--
--randomize-va-space:
-+randomize_va_space:
- 
- This option can be used to select the type of process address
- space randomization that is used in the system, for architectures
-@@ -466,11 +509,11 @@ are doing anyway :)
- 
- ==============================================================
- 
--shmmax: 
-+shmmax:
- 
- This value can be used to query and set the run time limit
- on the maximum shared memory segment size that can be created.
--Shared memory segments up to 1Gb are now supported in the 
-+Shared memory segments up to 1Gb are now supported in the
- kernel.  This value defaults to SHMMAX.
- 
- ==============================================================
-@@ -484,7 +527,7 @@ tunable to zero will disable the softlockup detection altogether.
- 
- ==============================================================
- 
--tainted: 
-+tainted:
- 
- Non-zero if the kernel has been tainted.  Numeric values, which
- can be ORed together:
-@@ -509,49 +552,11 @@ can be ORed together:
- 
- ==============================================================
- 
--auto_msgmni:
--
--Enables/Disables automatic recomputing of msgmni upon memory add/remove or
--upon ipc namespace creation/removal (see the msgmni description above).
--Echoing "1" into this file enables msgmni automatic recomputing.
--Echoing "0" turns it off.
--auto_msgmni default value is 1.
--
--==============================================================
--
--nmi_watchdog:
--
--Enables/Disables the NMI watchdog on x86 systems.  When the value is non-zero
--the NMI watchdog is enabled and will continuously test all online cpus to
--determine whether or not they are still functioning properly. Currently,
--passing "nmi_watchdog=" parameter at boot time is required for this function
--to work.
--
--If LAPIC NMI watchdog method is in use (nmi_watchdog=2 kernel parameter), the
--NMI watchdog shares registers with oprofile. By disabling the NMI watchdog,
--oprofile may have more registers to utilize.
--
--==============================================================
--
- unknown_nmi_panic:
- 
--The value in this file affects behavior of handling NMI. When the value is
--non-zero, unknown NMI is trapped and then panic occurs. At that time, kernel
--debugging information is displayed on console.
--
--NMI switch that most IA32 servers have fires unknown NMI up, for example.
--If a system hangs up, try pressing the NMI switch.
--
--==============================================================
--
--panic_on_unrecovered_nmi:
--
--The default Linux behaviour on an NMI of either memory or unknown is to continue
--operation. For many environments such as scientific computing it is preferable
--that the box is taken out and the error dealt with than an uncorrected
--parity/ECC error get propogated.
--
--A small number of systems do generate NMI's for bizarre random reasons such as
--power management so the default is off. That sysctl works like the existing
--panic controls already in that directory.
-+The value in this file affects behavior of handling NMI. When the
-+value is non-zero, unknown NMI is trapped and then panic occurs. At
-+that time, kernel debugging information is displayed on console.
- 
-+NMI switch that most IA32 servers have fires unknown NMI up, for
-+example.  If a system hangs up, try pressing the NMI switch.
+     CONFIG_SMP, CONFIG_SYSFS, CONFIG_PROC_FS, CONFIG_INPUT, CONFIG_PCI,
+     CONFIG_BLOCK, CONFIG_PM, CONFIG_HOTPLUG, CONFIG_MAGIC_SYSRQ,
+-    CONFIG_NET, CONFIG_INET=n (??һ??ʹ?? CONFIG_NET=y)
++    CONFIG_NET, CONFIG_INET=n (后一个使用 CONFIG_NET=y)
 -- 
-1.7.5.3.401.gfb674
+1.7.0.4
 
