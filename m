@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354Ab1GPBLg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 21:11:36 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:43785 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752702Ab1GPBLf (ORCPT
+	id S1752186Ab1GPCC4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 22:02:56 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:40011
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751578Ab1GPCCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 21:11:35 -0400
-From: Mariano Guerra <luismarianoguerra@gmail.com>
-To: gregkh@suse.de, abbotti@mev.co.uk, fmhess@users.sourceforge.net
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Mariano Guerra <luismarianoguerra@gmail.com>
-Subject: [PATCH] Staging: comedi: do not initialise statics to 0 or NULL
-Date: Sat, 16 Jul 2011 02:11:23 +0100
-Message-Id: <1310778683-3717-1-git-send-email-luismarianoguerra@gmail.com>
-X-Mailer: git-send-email 1.7.6
+	Fri, 15 Jul 2011 22:02:54 -0400
+Date: Fri, 15 Jul 2011 22:02:50 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH 020/117] Staging: hv: vmbus: Support the notion of id
+ tables in vmbus_match()
+Message-ID: <20110716020250.GA7199@infradead.org>
+References: <1310752024-27854-1-git-send-email-kys@microsoft.com>
+ <1310752065-27895-1-git-send-email-kys@microsoft.com>
+ <1310752065-27895-20-git-send-email-kys@microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1310752065-27895-20-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to adv_pci_dio.c that fixes an error initializing
+On Fri, Jul 15, 2011 at 10:46:08AM -0700, K. Y. Srinivasan wrote:
+> +static bool is_not_null_guid(const __u8 *guid)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < (sizeof(struct hv_vmbus_device_id)); i++)
+> +		if (guid[i] != 0)
+> +			return true;
+> +	return false;
+> +}
 
-static struct pci_dio_private *pci_priv to NULL
-
-removed the initialization.
-found by the checkpatch.pl tool.
-
-	Signed-off-by: Mariano Guerra <luismarianoguerra@gmail.com>
----
- drivers/staging/comedi/drivers/adv_pci_dio.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/staging/comedi/drivers/adv_pci_dio.c b/drivers/staging/comedi/drivers/adv_pci_dio.c
-index d23799b..69334f6 100644
---- a/drivers/staging/comedi/drivers/adv_pci_dio.c
-+++ b/drivers/staging/comedi/drivers/adv_pci_dio.c
-@@ -422,7 +422,7 @@ struct pci_dio_private {
- 	unsigned short IDIFiltrHigh[8];	/*  IDI's filter value high signal */
- };
- 
--static struct pci_dio_private *pci_priv = NULL;	/* list of allocated cards */
-+static struct pci_dio_private *pci_priv;	/* list of allocated cards */
- 
- #define devpriv ((struct pci_dio_private *)dev->private)
- #define this_board ((const struct dio_boardtype *)dev->board_ptr)
--- 
-1.7.6
-
+would be nice to add uuid_{le,be}_is_nil helpers to uuid.h.  I also
+think simply using a memcpy might be more efficient than the hand-rolled
+loop.
