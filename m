@@ -1,331 +1,654 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753777Ab1GPLX1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jul 2011 07:23:27 -0400
+	id S1754201Ab1GPLX3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jul 2011 07:23:29 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:50140 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753873Ab1GPLW5 (ORCPT
+	with ESMTP id S1754054Ab1GPLXE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jul 2011 07:22:57 -0400
-X-Authority-Analysis: v=1.1 cv=5asQ6euaRPJxDdFxwvXsn6JDb7fmFbz8qWDLMfa45gU= c=1 sm=0 a=vhdKIqpQuCYA:10 a=q9YcuSip_usA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=3nbZYyFuAAAA:8 a=JfrnYn6hAAAA:8 a=pGLkceISAAAA:8 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=2BD_jbDVSw3bbrVNNnQA:9 a=H7PyG7W4uE13GQigV44A:7 a=EvKJbDF4Ut8A:10 a=3Rfx1nUSh_UA:10 a=MSl-tDqOz04A:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=DIKJ85Zm1CJpZc0h:21 a=qPuyR-6qAK3KJ3aN:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Sat, 16 Jul 2011 07:23:04 -0400
+X-Authority-Analysis: v=1.1 cv=5asQ6euaRPJxDdFxwvXsn6JDb7fmFbz8qWDLMfa45gU= c=1 sm=0 a=vhdKIqpQuCYA:10 a=igLPs7-D8H4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=3nbZYyFuAAAA:8 a=pGLkceISAAAA:8 a=hGzw-44bAAAA:8 a=h3sCQ_blAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=EKZIeAwg58j3HTaFed0A:9 a=dUqt09FD3-Ek-skmLqIA:7 a=EvKJbDF4Ut8A:10 a=MSl-tDqOz04A:10 a=dowx1zmaLagA:10 a=fNChW5oJl9MA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110716112254.421302197@goodmis.org>
+Message-Id: <20110716112256.121070511@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Sat, 16 Jul 2011 07:22:12 -0400
+Date: Sat, 16 Jul 2011 07:22:18 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 12/20] tracing/kprobes: Support module init function probing
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [PATCH 18/20] perf probe: Introduce debuginfo to encapsulate dwarf information
 References: <20110716112200.096203519@goodmis.org>
-Content-Disposition: inline; filename=0012-tracing-kprobes-Support-module-init-function-probing.patch
+Content-Disposition: inline; filename=0018-perf-probe-Introduce-debuginfo-to-encapsulate-dwarf-.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-To support probing module init functions, kprobe-tracer allows
-user to define a probe on non-existed function when it is given
-with a module name. This also enables user to set a probe on
-a function on a specific module, even if a same name (but different)
-function is locally defined in another module.
-
-The module name must be in the front of function name and separated
-by a ':'. e.g. btrfs:btrfs_init_sysfs
+Introduce debuginfo to encapsulate dwarf information.
+This new object allows us to reuse and expand debuginfo easily.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Link: http://lkml.kernel.org/r/20110627072656.6528.89970.stgit@fedora15
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Link: http://lkml.kernel.org/r/20110627072739.6528.12438.stgit@fedora15
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- Documentation/trace/kprobetrace.txt |    9 +-
- kernel/trace/trace_kprobe.c         |  164 +++++++++++++++++++++++++++++------
- 2 files changed, 143 insertions(+), 30 deletions(-)
+ tools/perf/util/probe-event.c  |   78 ++++++++++------
+ tools/perf/util/probe-finder.c |  201 +++++++++++++++++++++-------------------
+ tools/perf/util/probe-finder.h |   39 ++++++--
+ 3 files changed, 182 insertions(+), 136 deletions(-)
 
-diff --git a/Documentation/trace/kprobetrace.txt b/Documentation/trace/kprobetrace.txt
-index c83bd6b..d0d0bb9 100644
---- a/Documentation/trace/kprobetrace.txt
-+++ b/Documentation/trace/kprobetrace.txt
-@@ -22,14 +22,15 @@ current_tracer. Instead of that, add probe points via
- 
- Synopsis of kprobe_events
- -------------------------
--  p[:[GRP/]EVENT] SYMBOL[+offs]|MEMADDR [FETCHARGS]	: Set a probe
--  r[:[GRP/]EVENT] SYMBOL[+0] [FETCHARGS]		: Set a return probe
-+  p[:[GRP/]EVENT] [MOD:]SYM[+offs]|MEMADDR [FETCHARGS]	: Set a probe
-+  r[:[GRP/]EVENT] [MOD:]SYM[+0] [FETCHARGS]		: Set a return probe
-   -:[GRP/]EVENT						: Clear a probe
- 
-  GRP		: Group name. If omitted, use "kprobes" for it.
-  EVENT		: Event name. If omitted, the event name is generated
--		  based on SYMBOL+offs or MEMADDR.
-- SYMBOL[+offs]	: Symbol+offset where the probe is inserted.
-+		  based on SYM+offs or MEMADDR.
-+ MOD		: Module name which has given SYM.
-+ SYM[+offs]	: Symbol+offset where the probe is inserted.
-  MEMADDR	: Address where the probe is inserted.
- 
-  FETCHARGS	: Arguments. Each probe can have up to 128 args.
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 3be50c5..acc6664 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -536,6 +536,7 @@ struct probe_arg {
- /* Flags for trace_probe */
- #define TP_FLAG_TRACE	1
- #define TP_FLAG_PROFILE	2
-+#define TP_FLAG_REGISTERED 4
- 
- struct trace_probe {
- 	struct list_head	list;
-@@ -565,6 +566,39 @@ static __kprobes const char *trace_probe_symbol(struct trace_probe *tp)
- 	return tp->symbol ? tp->symbol : "unknown";
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index f022316..920c195 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -170,16 +170,17 @@ const char *kernel_get_module_path(const char *module)
  }
  
-+static __kprobes unsigned long trace_probe_offset(struct trace_probe *tp)
-+{
-+	return tp->rp.kp.offset;
-+}
-+
-+static __kprobes bool trace_probe_is_enabled(struct trace_probe *tp)
-+{
-+	return !!(tp->flags & (TP_FLAG_TRACE | TP_FLAG_PROFILE));
-+}
-+
-+static __kprobes bool trace_probe_is_registered(struct trace_probe *tp)
-+{
-+	return !!(tp->flags & TP_FLAG_REGISTERED);
-+}
-+
-+static __kprobes bool trace_probe_has_gone(struct trace_probe *tp)
-+{
-+	return !!(kprobe_gone(&tp->rp.kp));
-+}
-+
-+static __kprobes bool trace_probe_within_module(struct trace_probe *tp,
-+						struct module *mod)
-+{
-+	int len = strlen(mod->name);
-+	const char *name = trace_probe_symbol(tp);
-+	return strncmp(mod->name, name, len) == 0 && name[len] == ':';
-+}
-+
-+static __kprobes bool trace_probe_is_on_module(struct trace_probe *tp)
-+{
-+	return !!strchr(trace_probe_symbol(tp), ':');
-+}
-+
- static int register_probe_event(struct trace_probe *tp);
- static void unregister_probe_event(struct trace_probe *tp);
- 
-@@ -689,7 +723,8 @@ static int enable_trace_probe(struct trace_probe *tp, int flag)
- 	int ret = 0;
- 
- 	tp->flags |= flag;
--	if (tp->flags & (TP_FLAG_TRACE | TP_FLAG_PROFILE)) {
-+	if (trace_probe_is_enabled(tp) && trace_probe_is_registered(tp) &&
-+	    !trace_probe_has_gone(tp)) {
- 		if (trace_probe_is_return(tp))
- 			ret = enable_kretprobe(&tp->rp);
- 		else
-@@ -703,7 +738,7 @@ static int enable_trace_probe(struct trace_probe *tp, int flag)
- static void disable_trace_probe(struct trace_probe *tp, int flag)
+ #ifdef DWARF_SUPPORT
+-static int open_vmlinux(const char *module)
++/* Open new debuginfo of given module */
++static struct debuginfo *open_debuginfo(const char *module)
  {
- 	tp->flags &= ~flag;
--	if (!(tp->flags & (TP_FLAG_TRACE | TP_FLAG_PROFILE))) {
-+	if (!trace_probe_is_enabled(tp) && trace_probe_is_registered(tp)) {
- 		if (trace_probe_is_return(tp))
- 			disable_kretprobe(&tp->rp);
- 		else
-@@ -711,13 +746,64 @@ static void disable_trace_probe(struct trace_probe *tp, int flag)
+ 	const char *path = kernel_get_module_path(module);
++
+ 	if (!path) {
+ 		pr_err("Failed to find path of %s module.\n",
+ 		       module ?: "kernel");
+-		return -ENOENT;
++		return NULL;
  	}
+-	pr_debug("Try to open %s\n", path);
+-	return open(path, O_RDONLY);
++	return debuginfo__new(path);
  }
  
--/* Unregister a trace_probe and probe_event: call with locking probe_lock */
--static void unregister_trace_probe(struct trace_probe *tp)
-+/* Internal register function - just handle k*probes and flags */
-+static int __register_trace_probe(struct trace_probe *tp)
- {
-+	int ret;
+ /*
+@@ -193,13 +194,24 @@ static int kprobe_convert_to_perf_probe(struct probe_trace_point *tp,
+ 	struct map *map;
+ 	u64 addr;
+ 	int ret = -ENOENT;
++	struct debuginfo *dinfo;
+ 
+ 	sym = __find_kernel_function_by_name(tp->symbol, &map);
+ 	if (sym) {
+ 		addr = map->unmap_ip(map, sym->start + tp->offset);
+ 		pr_debug("try to find %s+%ld@%" PRIx64 "\n", tp->symbol,
+ 			 tp->offset, addr);
+-		ret = find_perf_probe_point((unsigned long)addr, pp);
 +
-+	if (trace_probe_is_registered(tp))
-+		return -EINVAL;
-+
-+	/* Set/clear disabled flag according to tp->flag */
-+	if (trace_probe_is_enabled(tp))
-+		tp->rp.kp.flags &= ~KPROBE_FLAG_DISABLED;
-+	else
-+		tp->rp.kp.flags |= KPROBE_FLAG_DISABLED;
-+
- 	if (trace_probe_is_return(tp))
--		unregister_kretprobe(&tp->rp);
-+		ret = register_kretprobe(&tp->rp);
- 	else
--		unregister_kprobe(&tp->rp.kp);
-+		ret = register_kprobe(&tp->rp.kp);
-+
-+	if (ret == 0)
-+		tp->flags |= TP_FLAG_REGISTERED;
-+	else {
-+		pr_warning("Could not insert probe at %s+%lu: %d\n",
-+			   trace_probe_symbol(tp), trace_probe_offset(tp), ret);
-+		if (ret == -ENOENT && trace_probe_is_on_module(tp)) {
-+			pr_warning("This probe might be able to register after"
-+				   "target module is loaded. Continue.\n");
-+			ret = 0;
-+		} else if (ret == -EILSEQ) {
-+			pr_warning("Probing address(0x%p) is not an "
-+				   "instruction boundary.\n",
-+				   tp->rp.kp.addr);
-+			ret = -EINVAL;
++		dinfo = debuginfo__new_online_kernel(addr);
++		if (dinfo) {
++			ret = debuginfo__find_probe_point(dinfo,
++						 (unsigned long)addr, pp);
++			debuginfo__delete(dinfo);
++		} else {
++			pr_debug("Failed to open debuginfo at 0x%" PRIx64 "\n",
++				 addr);
++			ret = -ENOENT;
 +		}
-+	}
-+
-+	return ret;
-+}
-+
-+/* Internal unregister function - just handle k*probes and flags */
-+static void __unregister_trace_probe(struct trace_probe *tp)
-+{
-+	if (trace_probe_is_registered(tp)) {
-+		if (trace_probe_is_return(tp))
-+			unregister_kretprobe(&tp->rp);
-+		else
-+			unregister_kprobe(&tp->rp.kp);
-+		tp->flags &= ~TP_FLAG_REGISTERED;
-+		/* Cleanup kprobe for reuse */
-+		if (tp->rp.kp.symbol_name)
-+			tp->rp.kp.addr = NULL;
-+	}
-+}
-+
-+/* Unregister a trace_probe and probe_event: call with locking probe_lock */
-+static void unregister_trace_probe(struct trace_probe *tp)
-+{
-+	__unregister_trace_probe(tp);
- 	list_del(&tp->list);
- 	unregister_probe_event(tp);
- }
-@@ -730,41 +816,65 @@ static int register_trace_probe(struct trace_probe *tp)
- 
- 	mutex_lock(&probe_lock);
- 
--	/* register as an event */
-+	/* Delete old (same name) event if exist */
- 	old_tp = find_trace_probe(tp->call.name, tp->call.class->system);
- 	if (old_tp) {
--		/* delete old event */
- 		unregister_trace_probe(old_tp);
- 		free_trace_probe(old_tp);
  	}
-+
-+	/* Register new event */
- 	ret = register_probe_event(tp);
- 	if (ret) {
- 		pr_warning("Failed to register probe event(%d)\n", ret);
- 		goto end;
+ 	if (ret <= 0) {
+ 		pr_debug("Failed to find corresponding probes from "
+@@ -220,20 +232,22 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
+ 					   int max_tevs, const char *module)
+ {
+ 	bool need_dwarf = perf_probe_event_need_dwarf(pev);
+-	int fd, ntevs;
++	struct debuginfo *dinfo = open_debuginfo(module);
++	int ntevs;
+ 
+-	fd = open_vmlinux(module);
+-	if (fd < 0) {
++	if (!dinfo) {
+ 		if (need_dwarf) {
+ 			pr_warning("Failed to open debuginfo file.\n");
+-			return fd;
++			return -ENOENT;
+ 		}
+-		pr_debug("Could not open vmlinux. Try to use symbols.\n");
++		pr_debug("Could not open debuginfo. Try to use symbols.\n");
+ 		return 0;
  	}
  
--	tp->rp.kp.flags |= KPROBE_FLAG_DISABLED;
--	if (trace_probe_is_return(tp))
--		ret = register_kretprobe(&tp->rp);
--	else
--		ret = register_kprobe(&tp->rp.kp);
--
--	if (ret) {
--		pr_warning("Could not insert probe(%d)\n", ret);
--		if (ret == -EILSEQ) {
--			pr_warning("Probing address(0x%p) is not an "
--				   "instruction boundary.\n",
--				   tp->rp.kp.addr);
--			ret = -EINVAL;
--		}
-+	/* Register k*probe */
-+	ret = __register_trace_probe(tp);
-+	if (ret < 0)
- 		unregister_probe_event(tp);
--	} else
-+	else
- 		list_add_tail(&tp->list, &probe_list);
+-	/* Searching trace events corresponding to probe event */
+-	ntevs = find_probe_trace_events(fd, pev, tevs, max_tevs);
++	/* Searching trace events corresponding to a probe event */
++	ntevs = debuginfo__find_trace_events(dinfo, pev, tevs, max_tevs);
 +
- end:
- 	mutex_unlock(&probe_lock);
++	debuginfo__delete(dinfo);
+ 
+ 	if (ntevs > 0) {	/* Succeeded to find trace events */
+ 		pr_debug("find %d probe_trace_events.\n", ntevs);
+@@ -371,8 +385,9 @@ int show_line_range(struct line_range *lr, const char *module)
+ {
+ 	int l = 1;
+ 	struct line_node *ln;
++	struct debuginfo *dinfo;
+ 	FILE *fp;
+-	int fd, ret;
++	int ret;
+ 	char *tmp;
+ 
+ 	/* Search a line range */
+@@ -380,13 +395,14 @@ int show_line_range(struct line_range *lr, const char *module)
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	fd = open_vmlinux(module);
+-	if (fd < 0) {
++	dinfo = open_debuginfo(module);
++	if (!dinfo) {
+ 		pr_warning("Failed to open debuginfo file.\n");
+-		return fd;
++		return -ENOENT;
+ 	}
+ 
+-	ret = find_line_range(fd, lr);
++	ret = debuginfo__find_line_range(dinfo, lr);
++	debuginfo__delete(dinfo);
+ 	if (ret == 0) {
+ 		pr_warning("Specified source line is not found.\n");
+ 		return -ENOENT;
+@@ -448,7 +464,8 @@ end:
  	return ret;
  }
  
-+/* Module notifier call back, checking event on the module */
-+static int trace_probe_module_callback(struct notifier_block *nb,
-+				       unsigned long val, void *data)
-+{
-+	struct module *mod = data;
-+	struct trace_probe *tp;
-+	int ret;
-+
-+	if (val != MODULE_STATE_COMING)
-+		return NOTIFY_DONE;
-+
-+	/* Update probes on coming module */
-+	mutex_lock(&probe_lock);
-+	list_for_each_entry(tp, &probe_list, list) {
-+		if (trace_probe_within_module(tp, mod)) {
-+			__unregister_trace_probe(tp);
-+			ret = __register_trace_probe(tp);
-+			if (ret)
-+				pr_warning("Failed to re-register probe %s on"
-+					   "%s: %d\n",
-+					   tp->call.name, mod->name, ret);
-+		}
+-static int show_available_vars_at(int fd, struct perf_probe_event *pev,
++static int show_available_vars_at(struct debuginfo *dinfo,
++				  struct perf_probe_event *pev,
+ 				  int max_vls, struct strfilter *_filter,
+ 				  bool externs)
+ {
+@@ -463,7 +480,8 @@ static int show_available_vars_at(int fd, struct perf_probe_event *pev,
+ 		return -EINVAL;
+ 	pr_debug("Searching variables at %s\n", buf);
+ 
+-	ret = find_available_vars_at(fd, pev, &vls, max_vls, externs);
++	ret = debuginfo__find_available_vars_at(dinfo, pev, &vls,
++						max_vls, externs);
+ 	if (ret <= 0) {
+ 		pr_err("Failed to find variables at %s (%d)\n", buf, ret);
+ 		goto end;
+@@ -504,24 +522,26 @@ int show_available_vars(struct perf_probe_event *pevs, int npevs,
+ 			int max_vls, const char *module,
+ 			struct strfilter *_filter, bool externs)
+ {
+-	int i, fd, ret = 0;
++	int i, ret = 0;
++	struct debuginfo *dinfo;
+ 
+ 	ret = init_vmlinux();
+ 	if (ret < 0)
+ 		return ret;
+ 
++	dinfo = open_debuginfo(module);
++	if (!dinfo) {
++		pr_warning("Failed to open debuginfo file.\n");
++		return -ENOENT;
 +	}
-+	mutex_unlock(&probe_lock);
 +
-+	return NOTIFY_DONE;
-+}
+ 	setup_pager();
+ 
+-	for (i = 0; i < npevs && ret >= 0; i++) {
+-		fd = open_vmlinux(module);
+-		if (fd < 0) {
+-			pr_warning("Failed to open debug information file.\n");
+-			ret = fd;
+-			break;
+-		}
+-		ret = show_available_vars_at(fd, &pevs[i], max_vls, _filter,
++	for (i = 0; i < npevs && ret >= 0; i++)
++		ret = show_available_vars_at(dinfo, &pevs[i], max_vls, _filter,
+ 					     externs);
+-	}
 +
-+static struct notifier_block trace_probe_module_nb = {
-+	.notifier_call = trace_probe_module_callback,
-+	.priority = 1	/* Invoked after kprobe module callback */
-+};
-+
- /* Split symbol and offset. */
- static int split_symbol_offset(char *symbol, unsigned long *offset)
- {
-@@ -990,8 +1100,8 @@ static int create_trace_probe(int argc, char **argv)
- {
- 	/*
- 	 * Argument syntax:
--	 *  - Add kprobe: p[:[GRP/]EVENT] KSYM[+OFFS]|KADDR [FETCHARGS]
--	 *  - Add kretprobe: r[:[GRP/]EVENT] KSYM[+0] [FETCHARGS]
-+	 *  - Add kprobe: p[:[GRP/]EVENT] [MOD:]KSYM[+OFFS]|KADDR [FETCHARGS]
-+	 *  - Add kretprobe: r[:[GRP/]EVENT] [MOD:]KSYM[+0] [FETCHARGS]
- 	 * Fetch args:
- 	 *  $retval	: fetch return value
- 	 *  $stack	: fetch stack address
-@@ -1186,7 +1296,6 @@ static void release_all_trace_probes(void)
- 	mutex_unlock(&probe_lock);
++	debuginfo__delete(dinfo);
+ 	return ret;
  }
  
--
- /* Probes listing interfaces */
- static void *probes_seq_start(struct seq_file *m, loff_t *pos)
- {
-@@ -1827,6 +1936,9 @@ static __init int init_kprobe_trace(void)
- 	struct dentry *d_tracer;
- 	struct dentry *entry;
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index 53d219b..3e44a3e 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -116,29 +116,37 @@ static const Dwfl_Callbacks offline_callbacks = {
+ };
  
-+	if (register_module_notifier(&trace_probe_module_nb))
-+		return -EINVAL;
+ /* Get a Dwarf from offline image */
+-static Dwarf *dwfl_init_offline_dwarf(int fd, Dwfl **dwflp, Dwarf_Addr *bias)
++static int debuginfo__init_offline_dwarf(struct debuginfo *self,
++					 const char *path)
+ {
+ 	Dwfl_Module *mod;
+-	Dwarf *dbg = NULL;
++	int fd;
+ 
+-	if (!dwflp)
+-		return NULL;
++	fd = open(path, O_RDONLY);
++	if (fd < 0)
++		return fd;
+ 
+-	*dwflp = dwfl_begin(&offline_callbacks);
+-	if (!*dwflp)
+-		return NULL;
++	self->dwfl = dwfl_begin(&offline_callbacks);
++	if (!self->dwfl)
++		goto error;
+ 
+-	mod = dwfl_report_offline(*dwflp, "", "", fd);
++	mod = dwfl_report_offline(self->dwfl, "", "", fd);
+ 	if (!mod)
+ 		goto error;
+ 
+-	dbg = dwfl_module_getdwarf(mod, bias);
+-	if (!dbg) {
++	self->dbg = dwfl_module_getdwarf(mod, &self->bias);
++	if (!self->dbg)
++		goto error;
 +
- 	d_tracer = tracing_init_dentry();
- 	if (!d_tracer)
- 		return 0;
++	return 0;
+ error:
+-		dwfl_end(*dwflp);
+-		*dwflp = NULL;
+-	}
+-	return dbg;
++	if (self->dwfl)
++		dwfl_end(self->dwfl);
++	else
++		close(fd);
++	memset(self, 0, sizeof(*self));
++
++	return -ENOENT;
+ }
+ 
+ #if _ELFUTILS_PREREQ(0, 148)
+@@ -174,53 +182,82 @@ static const Dwfl_Callbacks kernel_callbacks = {
+ };
+ 
+ /* Get a Dwarf from live kernel image */
+-static Dwarf *dwfl_init_live_kernel_dwarf(Dwarf_Addr addr, Dwfl **dwflp,
+-					  Dwarf_Addr *bias)
++static int debuginfo__init_online_kernel_dwarf(struct debuginfo *self,
++					       Dwarf_Addr addr)
+ {
+-	Dwarf *dbg;
+-
+-	if (!dwflp)
+-		return NULL;
+-
+-	*dwflp = dwfl_begin(&kernel_callbacks);
+-	if (!*dwflp)
+-		return NULL;
++	self->dwfl = dwfl_begin(&kernel_callbacks);
++	if (!self->dwfl)
++		return -EINVAL;
+ 
+ 	/* Load the kernel dwarves: Don't care the result here */
+-	dwfl_linux_kernel_report_kernel(*dwflp);
+-	dwfl_linux_kernel_report_modules(*dwflp);
++	dwfl_linux_kernel_report_kernel(self->dwfl);
++	dwfl_linux_kernel_report_modules(self->dwfl);
+ 
+-	dbg = dwfl_addrdwarf(*dwflp, addr, bias);
++	self->dbg = dwfl_addrdwarf(self->dwfl, addr, &self->bias);
+ 	/* Here, check whether we could get a real dwarf */
+-	if (!dbg) {
++	if (!self->dbg) {
+ 		pr_debug("Failed to find kernel dwarf at %lx\n",
+ 			 (unsigned long)addr);
+-		dwfl_end(*dwflp);
+-		*dwflp = NULL;
++		dwfl_end(self->dwfl);
++		memset(self, 0, sizeof(*self));
++		return -ENOENT;
+ 	}
+-	return dbg;
++
++	return 0;
+ }
+ #else
+ /* With older elfutils, this just support kernel module... */
+-static Dwarf *dwfl_init_live_kernel_dwarf(Dwarf_Addr addr __used, Dwfl **dwflp,
+-					  Dwarf_Addr *bias)
++static int debuginfo__init_online_kernel_dwarf(struct debuginfo *self,
++					       Dwarf_Addr addr __used)
+ {
+-	int fd;
+ 	const char *path = kernel_get_module_path("kernel");
+ 
+ 	if (!path) {
+ 		pr_err("Failed to find vmlinux path\n");
+-		return NULL;
++		return -ENOENT;
+ 	}
+ 
+ 	pr_debug2("Use file %s for debuginfo\n", path);
+-	fd = open(path, O_RDONLY);
+-	if (fd < 0)
++	return debuginfo__init_offline_dwarf(self, path);
++}
++#endif
++
++struct debuginfo *debuginfo__new(const char *path)
++{
++	struct debuginfo *self = zalloc(sizeof(struct debuginfo));
++	if (!self)
+ 		return NULL;
+ 
+-	return dwfl_init_offline_dwarf(fd, dwflp, bias);
++	if (debuginfo__init_offline_dwarf(self, path) < 0) {
++		free(self);
++		self = NULL;
++	}
++
++	return self;
++}
++
++struct debuginfo *debuginfo__new_online_kernel(unsigned long addr)
++{
++	struct debuginfo *self = zalloc(sizeof(struct debuginfo));
++	if (!self)
++		return NULL;
++
++	if (debuginfo__init_online_kernel_dwarf(self, (Dwarf_Addr)addr) < 0) {
++		free(self);
++		self = NULL;
++	}
++
++	return self;
++}
++
++void debuginfo__delete(struct debuginfo *self)
++{
++	if (self) {
++		if (self->dwfl)
++			dwfl_end(self->dwfl);
++		free(self);
++	}
+ }
+-#endif
+ 
+ /*
+  * Probe finder related functions
+@@ -949,28 +986,18 @@ static int pubname_search_cb(Dwarf *dbg, Dwarf_Global *gl, void *data)
+ }
+ 
+ /* Find probe points from debuginfo */
+-static int find_probes(int fd, struct probe_finder *pf)
++static int debuginfo__find_probes(struct debuginfo *self,
++				  struct probe_finder *pf)
+ {
+ 	struct perf_probe_point *pp = &pf->pev->point;
+ 	Dwarf_Off off, noff;
+ 	size_t cuhl;
+ 	Dwarf_Die *diep;
+-	Dwarf *dbg = NULL;
+-	Dwfl *dwfl;
+-	Dwarf_Addr bias;	/* Currently ignored */
+ 	int ret = 0;
+ 
+-	dbg = dwfl_init_offline_dwarf(fd, &dwfl, &bias);
+-	if (!dbg) {
+-		pr_warning("No debug information found in the vmlinux - "
+-			"please rebuild with CONFIG_DEBUG_INFO=y.\n");
+-		close(fd);	/* Without dwfl_end(), fd isn't closed. */
+-		return -EBADF;
+-	}
+-
+ #if _ELFUTILS_PREREQ(0, 142)
+ 	/* Get the call frame information from this dwarf */
+-	pf->cfi = dwarf_getcfi(dbg);
++	pf->cfi = dwarf_getcfi(self->dbg);
+ #endif
+ 
+ 	off = 0;
+@@ -989,7 +1016,8 @@ static int find_probes(int fd, struct probe_finder *pf)
+ 			.data = pf,
+ 		};
+ 
+-		dwarf_getpubnames(dbg, pubname_search_cb, &pubname_param, 0);
++		dwarf_getpubnames(self->dbg, pubname_search_cb,
++				  &pubname_param, 0);
+ 		if (pubname_param.found) {
+ 			ret = probe_point_search_cb(&pf->sp_die, &probe_param);
+ 			if (ret)
+@@ -998,9 +1026,9 @@ static int find_probes(int fd, struct probe_finder *pf)
+ 	}
+ 
+ 	/* Loop on CUs (Compilation Unit) */
+-	while (!dwarf_nextcu(dbg, off, &noff, &cuhl, NULL, NULL, NULL)) {
++	while (!dwarf_nextcu(self->dbg, off, &noff, &cuhl, NULL, NULL, NULL)) {
+ 		/* Get the DIE(Debugging Information Entry) of this CU */
+-		diep = dwarf_offdie(dbg, off + cuhl, &pf->cu_die);
++		diep = dwarf_offdie(self->dbg, off + cuhl, &pf->cu_die);
+ 		if (!diep)
+ 			continue;
+ 
+@@ -1027,8 +1055,6 @@ static int find_probes(int fd, struct probe_finder *pf)
+ 
+ found:
+ 	line_list__free(&pf->lcache);
+-	if (dwfl)
+-		dwfl_end(dwfl);
+ 
+ 	return ret;
+ }
+@@ -1074,8 +1100,9 @@ static int add_probe_trace_event(Dwarf_Die *sp_die, struct probe_finder *pf)
+ }
+ 
+ /* Find probe_trace_events specified by perf_probe_event from debuginfo */
+-int find_probe_trace_events(int fd, struct perf_probe_event *pev,
+-			    struct probe_trace_event **tevs, int max_tevs)
++int debuginfo__find_trace_events(struct debuginfo *self,
++				 struct perf_probe_event *pev,
++				 struct probe_trace_event **tevs, int max_tevs)
+ {
+ 	struct trace_event_finder tf = {
+ 			.pf = {.pev = pev, .callback = add_probe_trace_event},
+@@ -1090,7 +1117,7 @@ int find_probe_trace_events(int fd, struct perf_probe_event *pev,
+ 	tf.tevs = *tevs;
+ 	tf.ntevs = 0;
+ 
+-	ret = find_probes(fd, &tf.pf);
++	ret = debuginfo__find_probes(self, &tf.pf);
+ 	if (ret < 0) {
+ 		free(*tevs);
+ 		*tevs = NULL;
+@@ -1184,9 +1211,10 @@ out:
+ }
+ 
+ /* Find available variables at given probe point */
+-int find_available_vars_at(int fd, struct perf_probe_event *pev,
+-			   struct variable_list **vls, int max_vls,
+-			   bool externs)
++int debuginfo__find_available_vars_at(struct debuginfo *self,
++				      struct perf_probe_event *pev,
++				      struct variable_list **vls,
++				      int max_vls, bool externs)
+ {
+ 	struct available_var_finder af = {
+ 			.pf = {.pev = pev, .callback = add_available_vars},
+@@ -1201,7 +1229,7 @@ int find_available_vars_at(int fd, struct perf_probe_event *pev,
+ 	af.vls = *vls;
+ 	af.nvls = 0;
+ 
+-	ret = find_probes(fd, &af.pf);
++	ret = debuginfo__find_probes(self, &af.pf);
+ 	if (ret < 0) {
+ 		/* Free vlist for error */
+ 		while (af.nvls--) {
+@@ -1219,28 +1247,19 @@ int find_available_vars_at(int fd, struct perf_probe_event *pev,
+ }
+ 
+ /* Reverse search */
+-int find_perf_probe_point(unsigned long addr, struct perf_probe_point *ppt)
++int debuginfo__find_probe_point(struct debuginfo *self, unsigned long addr,
++				struct perf_probe_point *ppt)
+ {
+ 	Dwarf_Die cudie, spdie, indie;
+-	Dwarf *dbg = NULL;
+-	Dwfl *dwfl = NULL;
+-	Dwarf_Addr _addr, baseaddr, bias = 0;
++	Dwarf_Addr _addr, baseaddr;
+ 	const char *fname = NULL, *func = NULL, *tmp;
+ 	int baseline = 0, lineno = 0, ret = 0;
+ 
+-	/* Open the live linux kernel */
+-	dbg = dwfl_init_live_kernel_dwarf(addr, &dwfl, &bias);
+-	if (!dbg) {
+-		pr_warning("No debug information found in the vmlinux - "
+-			"please rebuild with CONFIG_DEBUG_INFO=y.\n");
+-		ret = -EINVAL;
+-		goto end;
+-	}
+-
+ 	/* Adjust address with bias */
+-	addr += bias;
++	addr += self->bias;
++
+ 	/* Find cu die */
+-	if (!dwarf_addrdie(dbg, (Dwarf_Addr)addr - bias, &cudie)) {
++	if (!dwarf_addrdie(self->dbg, (Dwarf_Addr)addr - self->bias, &cudie)) {
+ 		pr_warning("Failed to find debug information for address %lx\n",
+ 			   addr);
+ 		ret = -EINVAL;
+@@ -1316,8 +1335,6 @@ post:
+ 		}
+ 	}
+ end:
+-	if (dwfl)
+-		dwfl_end(dwfl);
+ 	if (ret == 0 && (fname || func))
+ 		ret = 1;	/* Found a point */
+ 	return ret;
+@@ -1427,26 +1444,15 @@ static int find_line_range_by_func(struct line_finder *lf)
+ 	return param.retval;
+ }
+ 
+-int find_line_range(int fd, struct line_range *lr)
++int debuginfo__find_line_range(struct debuginfo *self, struct line_range *lr)
+ {
+ 	struct line_finder lf = {.lr = lr, .found = 0};
+ 	int ret = 0;
+ 	Dwarf_Off off = 0, noff;
+ 	size_t cuhl;
+ 	Dwarf_Die *diep;
+-	Dwarf *dbg = NULL;
+-	Dwfl *dwfl;
+-	Dwarf_Addr bias;	/* Currently ignored */
+ 	const char *comp_dir;
+ 
+-	dbg = dwfl_init_offline_dwarf(fd, &dwfl, &bias);
+-	if (!dbg) {
+-		pr_warning("No debug information found in the vmlinux - "
+-			"please rebuild with CONFIG_DEBUG_INFO=y.\n");
+-		close(fd);	/* Without dwfl_end(), fd isn't closed. */
+-		return -EBADF;
+-	}
+-
+ 	/* Fastpath: lookup by function name from .debug_pubnames section */
+ 	if (lr->function) {
+ 		struct pubname_callback_param pubname_param = {
+@@ -1455,7 +1461,8 @@ int find_line_range(int fd, struct line_range *lr)
+ 		struct dwarf_callback_param line_range_param = {
+ 			.data = (void *)&lf, .retval = 0};
+ 
+-		dwarf_getpubnames(dbg, pubname_search_cb, &pubname_param, 0);
++		dwarf_getpubnames(self->dbg, pubname_search_cb,
++				  &pubname_param, 0);
+ 		if (pubname_param.found) {
+ 			line_range_search_cb(&lf.sp_die, &line_range_param);
+ 			if (lf.found)
+@@ -1465,11 +1472,12 @@ int find_line_range(int fd, struct line_range *lr)
+ 
+ 	/* Loop on CUs (Compilation Unit) */
+ 	while (!lf.found && ret >= 0) {
+-		if (dwarf_nextcu(dbg, off, &noff, &cuhl, NULL, NULL, NULL) != 0)
++		if (dwarf_nextcu(self->dbg, off, &noff, &cuhl,
++				 NULL, NULL, NULL) != 0)
+ 			break;
+ 
+ 		/* Get the DIE(Debugging Information Entry) of this CU */
+-		diep = dwarf_offdie(dbg, off + cuhl, &lf.cu_die);
++		diep = dwarf_offdie(self->dbg, off + cuhl, &lf.cu_die);
+ 		if (!diep)
+ 			continue;
+ 
+@@ -1503,7 +1511,6 @@ found:
+ 	}
+ 
+ 	pr_debug("path: %s\n", lr->path);
+-	dwfl_end(dwfl);
+ 	return (ret < 0) ? ret : lf.found;
+ }
+ 
+diff --git a/tools/perf/util/probe-finder.h b/tools/perf/util/probe-finder.h
+index 0f1ed3d..c478b42 100644
+--- a/tools/perf/util/probe-finder.h
++++ b/tools/perf/util/probe-finder.h
+@@ -16,23 +16,42 @@ static inline int is_c_varname(const char *name)
+ }
+ 
+ #ifdef DWARF_SUPPORT
++
++#include "dwarf-aux.h"
++
++/* TODO: export debuginfo data structure even if no dwarf support */
++
++/* debug information structure */
++struct debuginfo {
++	Dwarf		*dbg;
++	Dwfl		*dwfl;
++	Dwarf_Addr	bias;
++};
++
++extern struct debuginfo *debuginfo__new(const char *path);
++extern struct debuginfo *debuginfo__new_online_kernel(unsigned long addr);
++extern void debuginfo__delete(struct debuginfo *self);
++
+ /* Find probe_trace_events specified by perf_probe_event from debuginfo */
+-extern int find_probe_trace_events(int fd, struct perf_probe_event *pev,
+-				    struct probe_trace_event **tevs,
+-				    int max_tevs);
++extern int debuginfo__find_trace_events(struct debuginfo *self,
++					struct perf_probe_event *pev,
++					struct probe_trace_event **tevs,
++					int max_tevs);
+ 
+ /* Find a perf_probe_point from debuginfo */
+-extern int find_perf_probe_point(unsigned long addr,
+-				 struct perf_probe_point *ppt);
++extern int debuginfo__find_probe_point(struct debuginfo *self,
++				       unsigned long addr,
++				       struct perf_probe_point *ppt);
+ 
+ /* Find a line range */
+-extern int find_line_range(int fd, struct line_range *lr);
++extern int debuginfo__find_line_range(struct debuginfo *self,
++				      struct line_range *lr);
+ 
+ /* Find available variables */
+-extern int find_available_vars_at(int fd, struct perf_probe_event *pev,
+-				  struct variable_list **vls, int max_points,
+-				  bool externs);
+-#include "dwarf-aux.h"
++extern int debuginfo__find_available_vars_at(struct debuginfo *self,
++					     struct perf_probe_event *pev,
++					     struct variable_list **vls,
++					     int max_points, bool externs);
+ 
+ struct probe_finder {
+ 	struct perf_probe_event	*pev;		/* Target probe event */
 -- 
 1.7.5.4
 
