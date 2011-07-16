@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751639Ab1GPAOw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 20:14:52 -0400
-Received: from claw.goop.org ([74.207.240.146]:45379 "EHLO claw.goop.org"
+	id S1751621Ab1GPAVk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 20:21:40 -0400
+Received: from gate.crashing.org ([63.228.1.57]:36361 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751080Ab1GPAOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 20:14:51 -0400
-Message-ID: <4E20D7E9.6070802@goop.org>
-Date: Fri, 15 Jul 2011 17:14:33 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        "H.J. Lu" <hjl.tools@gmail.com>
-Subject: Re: [PATCH RFC 0/7] x86: convert ticketlocks to C and remove duplicate
- code
-References: <cover.1308259496.git.jeremy.fitzhardinge@citrix.com> <4E0506A8.3010102@zytor.com> <4E0512BC.5010900@goop.org> <1ade2577-044b-4391-a607-91a4a989c3ff@email.android.com> <4E2077E1.4060606@goop.org> <4E20C80A.4050307@zytor.com>
-In-Reply-To: <4E20C80A.4050307@zytor.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
+	id S1751067Ab1GPAVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 20:21:39 -0400
+Subject: Re: [PATCH 0/1] Fixup write permission of TLB on powerpc e500 core
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Shan Hai <haishan.bai@gmail.com>
+Cc: David Laight <David.Laight@ACULAB.COM>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, tony.luck@intel.com,
+        linux-kernel@vger.kernel.org, cmetcalf@tilera.com, dhowells@redhat.com,
+        paulus@samba.org, tglx@linutronix.de, walken@google.com,
+        linuxppc-dev@lists.ozlabs.org, akpm@linux-foundation.org
+In-Reply-To: <4E205D96.7010109@gmail.com>
+References: <AE90C24D6B3A694183C094C60CF0A2F6D8ADFC@saturn3.aculab.com>
+	 <4E205D96.7010109@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 16 Jul 2011 10:20:49 +1000
+Message-ID: <1310775649.25044.5.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2011 04:06 PM, H. Peter Anvin wrote:
-> On 07/15/2011 10:24 AM, Jeremy Fitzhardinge wrote:
->> I posted a bug about gcc not generating cmp %ah, %al in this case, but the general consensus was that
->> it's not a good choice on current Intel chips, because it causes a partial word stall, and that the
->> current generated code is better.  (And gcc can generate "cmp %Xh, %Xl" if it wants to - see below.)
->>
-> Which version of gcc is this, and also, do you have the gcc bug report
-> number?  I was talking to H.J. and he said he thought it sounded strange.
+On Fri, 2011-07-15 at 11:32 -0400, Shan Hai wrote:
+> 
+> I agree with you, the problem could be triggered by accessing
+> any user space page which has kernel read only permission
+> in the page fault disabled context, the problem also affects
+> architectures which depend on SW dirty/young tracking as
+> stated by Benjamin in this thread.
+> 
+> In the e500 case, the commit 6cfd8990e27d3a491c1c605d6cbc18a46ae51fef
+> removed the write permission fixup from TLB miss handlers and left it to
+> generic code, so it might be right time to fixup the write permission here
+> in the generic code.
 
-gcc version 4.6.0 20110530 (Red Hat 4.6.0-9) (GCC)
+But we can't. The must not modify the PTE from an interrupt context and
+the "atomic" variants of user accesses can be called in such contexts.
 
-It's bug 47556.
+I think the problem is that we try to actually do things other than just
+"peek" at user memory (for backtraces etc...) but actually useful things
+in page fault disabled contexts. That's bad and various archs mm were
+designed with the assumption that this never happens.
 
-    J
+If the futex case is seldom here, we could probably find a way to work
+around in that specific case.
+
+However, I -still- don't understand why gup didn't fixup the write
+permission. gup doesn't set dirty ?
+
+Cheers,
+Ben.
+
+
