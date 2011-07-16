@@ -1,78 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454Ab1GPCMf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 22:12:35 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:47424 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752002Ab1GPCMe (ORCPT
+	id S1753537Ab1GPCOd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 22:14:33 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37209 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751883Ab1GPCOc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 22:12:34 -0400
+	Fri, 15 Jul 2011 22:14:32 -0400
+Date: Sat, 16 Jul 2011 11:13:46 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Greg KH <greg@kroah.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Samuel Oritz <sameo@linux.intel.com>,
+        Graeme Gregory <gg@slimlogic.co.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] regulator: Convert tps65023 to use regmap API
+Message-ID: <20110716021343.GB17883@opensource.wolfsonmicro.com>
+References: <20110709044923.GB13074@opensource.wolfsonmicro.com>
+ <1310187044-13269-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <1310187044-13269-4-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <20110715025328.GJ2927@ponder.secretlab.ca>
+ <20110715044800.GK32716@opensource.wolfsonmicro.com>
+ <20110715182954.GB2833@ponder.secretlab.ca>
+ <20110716014536.GA17883@opensource.wolfsonmicro.com>
+ <20110716020618.GB16014@ponder.secretlab.ca>
 MIME-Version: 1.0
-In-Reply-To: <CAHQAjVGK97KU0dB700WSTS1bH0YkW1_MCVaAtjR9aFQRJTcsbA@mail.gmail.com>
-References: <D010E79907AF0D4E90B603DE907837D504CA6365D6@azsmsx504.amr.corp.intel.com>
-	<4E1CAEEB.8050506@kernel.dk>
-	<20110713171011.GA11864@parisc-linux.org>
-	<CAL1RGDUDbEG4ypr0GJLLi_0PTjZK0HshMVwTs=aY+=hhFdjK5g@mail.gmail.com>
-	<CAHQAjVGK97KU0dB700WSTS1bH0YkW1_MCVaAtjR9aFQRJTcsbA@mail.gmail.com>
-Date: Fri, 15 Jul 2011 19:12:32 -0700
-Message-ID: <CAHQAjVFTVf91Pk9rJQfsAkiuP896cfK7t9Pt2_ZOiLNq0FxYbg@mail.gmail.com>
-Subject: Re: rq_affinity doesn't seem to work?
-From: ersatz splatt <ersatzsplatt@gmail.com>
-To: Roland Dreier <roland@purestorage.com>
-Cc: Matthew Wilcox <matthew@wil.cx>, Jens Axboe <axboe@kernel.dk>,
-        "Jiang, Dave" <dave.jiang@intel.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        "Foong, Annie" <annie.foong@intel.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Nadolski, Edmund" <edmund.nadolski@intel.com>,
-        "Skirvin, Jeffrey D" <jeffrey.d.skirvin@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110716020618.GB16014@ponder.secretlab.ca>
+X-Cookie: Excellent day to have a rotten day.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the quickest and easiest fix (the first suggestion from Jens
-Axboe), I was able to get another 20%+ in IOPS.  Thank you.
+On Fri, Jul 15, 2011 at 08:06:18PM -0600, Grant Likely wrote:
+> On Sat, Jul 16, 2011 at 10:47:09AM +0900, Mark Brown wrote:
 
-(Pardon the previous ugly wrap on the data.  I'm not sure how to stop
-that with my e-mail vendor)
+> > Still, the merge window is getting near so I guess I'll make the change :/
 
-Driving more IOPS on the same system looks like this for me:
-CPU %usr  %nice  %sys %iowait %irq   %soft  %steal  %guest  %idle
-  all    2.85    0.00   31.37   12.05    0.00   14.84    0.00    0.00   38.90
-  0    2.44    0.00    0.00    0.00    0.00    4.39    0.00    0.00   93.17
-  1    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00  100.00
-  2    1.51    0.00   23.12   70.85    0.00    4.52    0.00    0.00    0.00
-  3    5.05    0.00   51.01   19.70    0.00   24.24    0.00    0.00    0.00
-  4    5.47    0.00   62.19    1.00    0.00   31.34    0.00    0.00    0.00
-  5    4.00    0.00   50.00   22.50    0.00   23.50    0.00    0.00    0.00
-  6    0.00    0.00    0.00    0.00    0.00    0.47    0.00    0.00   99.53
-  7    0.00    0.00    0.22    0.00    0.00    0.00    0.00    0.00   99.78
-  8    4.48    0.00   53.23   16.92    0.00   25.37    0.00    0.00    0.00
-  9    4.48    0.00   50.25   19.40    0.00   25.87    0.00    0.00    0.00
-10    5.53    0.00   63.82    0.50    0.00   30.15    0.00    0.00    0.00
-11    3.50    0.00   52.00   20.50    0.00   24.00    0.00    0.00    0.00
-12    0.50    0.00    1.00    1.49    0.00    0.00    0.00    0.00   97.01
-13    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00  100.00
-14    3.50    0.00   43.50   35.50    0.00   17.50    0.00    0.00    0.00
-15    4.02    0.00   51.26   20.60    0.00   24.12    0.00    0.00    0.00
-16    6.03    0.00   57.29    8.54    0.00   28.14    0.00    0.00    0.00
-17    4.50    0.00   49.00   25.00    0.00   21.50    0.00    0.00    0.00
-18    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00  100.00
-19    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00  100.00
-20    4.98    0.00   57.21   11.44    0.00   26.37    0.00    0.00    0.00
-21    4.50    0.00   54.00   16.00    0.00   25.50    0.00    0.00    0.00
-22    5.50    0.00   58.00    7.00    0.00   29.50    0.00    0.00    0.00
-23    4.00    0.00   49.50   22.50    0.00   24.00    0.00    0.00    0.00
+> :)  Indeed.  We can merge without and then enjoy the argument at our
+> leisure after the merge window.
 
-I'm happy to have the performance improvement, but I would like to
-know how I could do much better.  The storage hardware is all capable
-of about twice the IOPS I'm getting now.
-
-I see that "sys" is eating most of the CPU time at this point.  What
-do I need to fix?  Is fio too heavy in implementation?  ... or is this
-a scsi midlayer bottleneck?
-
-I would be happy to get advice on what I should do to better
-illuminate the bottleneck.
+I've actually already made the change, just testing now.
