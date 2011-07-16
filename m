@@ -1,145 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754528Ab1GPL0P (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jul 2011 07:26:15 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:61337 "EHLO
+	id S1754359Ab1GPL0M (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jul 2011 07:26:12 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:61343 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753537Ab1GPLWy (ORCPT
+	with ESMTP id S1753597Ab1GPLWy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 16 Jul 2011 07:22:54 -0400
-X-Authority-Analysis: v=1.1 cv=IOX921YOuPvYFce5aSLzPVIStpiCPR9M8R83dyHW74w= c=1 sm=0 a=vhdKIqpQuCYA:10 a=tpeXPjjy7K0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=N-S-364DWvpOpsW6GvwA:9 a=k7iRHsbmjbCg8c4RAuYA:7 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Authority-Analysis: v=1.1 cv=IOX921YOuPvYFce5aSLzPVIStpiCPR9M8R83dyHW74w= c=1 sm=0 a=vhdKIqpQuCYA:10 a=EFbp286fV7wA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=aGSmZ8zflFX0ffpJo1AA:9 a=QB1M6VmUMlts2c8EtdMA:7 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110716112252.536093524@goodmis.org>
+Message-Id: <20110716112251.969749160@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Sat, 16 Jul 2011 07:22:05 -0400
+Date: Sat, 16 Jul 2011 07:22:03 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 05/20] ftrace: Fix dynamic selftest failure on some archs
+Subject: [PATCH 03/20] ftrace: Balance records when updating the hash
 References: <20110716112200.096203519@goodmis.org>
-Content-Disposition: inline; filename=0005-ftrace-Fix-dynamic-selftest-failure-on-some-archs.patch
+Content-Disposition: inline; filename=0003-ftrace-Balance-records-when-updating-the-hash.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-Archs that do not implement CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST, will
-fail the dynamic ftrace selftest.
+Whenever the hash of the ftrace_ops is updated, the record counts
+must be balance. This requires disabling the records that are set
+in the original hash, and then enabling the records that are set
+in the updated hash.
 
-The function tracer has a quick 'off' variable that will prevent
-the call back functions from being called. This variable is called
-function_trace_stop. In x86, this is implemented directly in the mcount
-assembly, but for other archs, an intermediate function is used called
-ftrace_test_stop_func().
+Moving the update into ftrace_hash_move() removes the bug where the
+hash was updated but the records were not, which results in ftrace
+triggering a warning and disabling itself because the ftrace_ops filter
+is updated while the ftrace_ops was registered, and then the failure
+happens when the ftrace_ops is unregistered.
 
-In dynamic ftrace, the function pointer variable ftrace_trace_function is
-used to update the caller code in the mcount caller. But for archs that
-do not have CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST set, it only calls
-ftrace_test_stop_func() instead, which in turn calls __ftrace_trace_function.
-
-When more than one ftrace_ops is registered, the function it calls is
-ftrace_ops_list_func(), which will iterate over all registered ftrace_ops
-and call the callbacks that have their hash matching.
-
-The issue happens when two ftrace_ops are registered for different functions
-and one is then unregistered. The __ftrace_trace_function is then pointed
-to the remaining ftrace_ops callback function directly. This mean it will
-be called for all functions that were registered to trace by both ftrace_ops
-that were registered.
-
-This is not an issue for archs with CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST,
-because the update of ftrace_trace_function doesn't happen until after all
-functions have been updated, and then the mcount caller is updated. But
-for those archs that do use the ftrace_test_stop_func(), the update is
-immediate.
-
-The dynamic selftest fails because it hits this situation, and the
-ftrace_ops that it registers fails to only trace what it was suppose to
-and instead traces all other functions.
-
-The solution is to delay the setting of __ftrace_trace_function until
-after all the functions have been updated according to the registered
-ftrace_ops. Also, function_trace_stop is set during the update to prevent
-function tracing from calling code that is caused by the function tracer
-itself.
+The current code will not trigger this bug, but new code will.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/ftrace.c |   26 ++++++++++++++++++++++++++
- 1 files changed, 26 insertions(+), 0 deletions(-)
+ kernel/trace/ftrace.c |   49 +++++++++++++++++++++++++++++++++----------------
+ 1 files changed, 33 insertions(+), 16 deletions(-)
 
 diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index a0dc0de..62e26d9 100644
+index df93392..853f6f0 100644
 --- a/kernel/trace/ftrace.c
 +++ b/kernel/trace/ftrace.c
-@@ -88,6 +88,7 @@ static struct ftrace_ops ftrace_list_end __read_mostly = {
- static struct ftrace_ops *ftrace_global_list __read_mostly = &ftrace_list_end;
- static struct ftrace_ops *ftrace_ops_list __read_mostly = &ftrace_list_end;
- ftrace_func_t ftrace_trace_function __read_mostly = ftrace_stub;
-+static ftrace_func_t __ftrace_trace_function_delay __read_mostly = ftrace_stub;
- ftrace_func_t __ftrace_trace_function __read_mostly = ftrace_stub;
- ftrace_func_t ftrace_pid_function __read_mostly = ftrace_stub;
- static struct ftrace_ops global_ops;
-@@ -146,9 +147,11 @@ void clear_ftrace_function(void)
- {
- 	ftrace_trace_function = ftrace_stub;
- 	__ftrace_trace_function = ftrace_stub;
-+	__ftrace_trace_function_delay = ftrace_stub;
- 	ftrace_pid_function = ftrace_stub;
+@@ -1170,8 +1170,14 @@ alloc_and_copy_ftrace_hash(int size_bits, struct ftrace_hash *hash)
+ 	return NULL;
  }
  
-+#undef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
- #ifndef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
++static void
++ftrace_hash_rec_disable(struct ftrace_ops *ops, int filter_hash);
++static void
++ftrace_hash_rec_enable(struct ftrace_ops *ops, int filter_hash);
++
+ static int
+-ftrace_hash_move(struct ftrace_hash **dst, struct ftrace_hash *src)
++ftrace_hash_move(struct ftrace_ops *ops, int enable,
++		 struct ftrace_hash **dst, struct ftrace_hash *src)
+ {
+ 	struct ftrace_func_entry *entry;
+ 	struct hlist_node *tp, *tn;
+@@ -1181,9 +1187,16 @@ ftrace_hash_move(struct ftrace_hash **dst, struct ftrace_hash *src)
+ 	unsigned long key;
+ 	int size = src->count;
+ 	int bits = 0;
++	int ret;
+ 	int i;
+ 
+ 	/*
++	 * Remove the current set, update the hash and add
++	 * them back.
++	 */
++	ftrace_hash_rec_disable(ops, enable);
++
++	/*
+ 	 * If the new source is empty, just free dst and assign it
+ 	 * the empty_hash.
+ 	 */
+@@ -1203,9 +1216,10 @@ ftrace_hash_move(struct ftrace_hash **dst, struct ftrace_hash *src)
+ 	if (bits > FTRACE_HASH_MAX_BITS)
+ 		bits = FTRACE_HASH_MAX_BITS;
+ 
++	ret = -ENOMEM;
+ 	new_hash = alloc_ftrace_hash(bits);
+ 	if (!new_hash)
+-		return -ENOMEM;
++		goto out;
+ 
+ 	size = 1 << src->size_bits;
+ 	for (i = 0; i < size; i++) {
+@@ -1224,7 +1238,16 @@ ftrace_hash_move(struct ftrace_hash **dst, struct ftrace_hash *src)
+ 	rcu_assign_pointer(*dst, new_hash);
+ 	free_ftrace_hash_rcu(old_hash);
+ 
+-	return 0;
++	ret = 0;
++ out:
++	/*
++	 * Enable regardless of ret:
++	 *  On success, we enable the new hash.
++	 *  On failure, we re-enable the original hash.
++	 */
++	ftrace_hash_rec_enable(ops, enable);
++
++	return ret;
+ }
+ 
  /*
-  * For those archs that do not test ftrace_trace_stop in their
-@@ -208,7 +211,12 @@ static void update_ftrace_function(void)
- #ifdef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
- 	ftrace_trace_function = func;
- #else
-+#ifdef CONFIG_DYNAMIC_FTRACE
-+	/* do not update till all functions have been modified */
-+	__ftrace_trace_function_delay = func;
-+#else
- 	__ftrace_trace_function = func;
-+#endif
- 	ftrace_trace_function = ftrace_test_stop_func;
- #endif
- }
-@@ -1607,6 +1615,12 @@ static int __ftrace_modify_code(void *data)
- {
- 	int *command = data;
+@@ -2845,7 +2868,7 @@ ftrace_set_regex(struct ftrace_ops *ops, unsigned char *buf, int len,
+ 		ftrace_match_records(hash, buf, len);
  
-+	/*
-+	 * Do not call function tracer while we update the code.
-+	 * We are in stop machine, no worrying about races.
-+	 */
-+	function_trace_stop++;
+ 	mutex_lock(&ftrace_lock);
+-	ret = ftrace_hash_move(orig_hash, hash);
++	ret = ftrace_hash_move(ops, enable, orig_hash, hash);
+ 	mutex_unlock(&ftrace_lock);
+ 
+ 	mutex_unlock(&ftrace_regex_lock);
+@@ -3028,18 +3051,12 @@ ftrace_regex_release(struct inode *inode, struct file *file)
+ 			orig_hash = &iter->ops->notrace_hash;
+ 
+ 		mutex_lock(&ftrace_lock);
+-		/*
+-		 * Remove the current set, update the hash and add
+-		 * them back.
+-		 */
+-		ftrace_hash_rec_disable(iter->ops, filter_hash);
+-		ret = ftrace_hash_move(orig_hash, iter->hash);
+-		if (!ret) {
+-			ftrace_hash_rec_enable(iter->ops, filter_hash);
+-			if (iter->ops->flags & FTRACE_OPS_FL_ENABLED
+-			    && ftrace_enabled)
+-				ftrace_run_update_code(FTRACE_ENABLE_CALLS);
+-		}
++		ret = ftrace_hash_move(iter->ops, filter_hash,
++				       orig_hash, iter->hash);
++		if (!ret && (iter->ops->flags & FTRACE_OPS_FL_ENABLED)
++		    && ftrace_enabled)
++			ftrace_run_update_code(FTRACE_ENABLE_CALLS);
 +
- 	if (*command & FTRACE_ENABLE_CALLS)
- 		ftrace_replace_code(1);
- 	else if (*command & FTRACE_DISABLE_CALLS)
-@@ -1620,6 +1634,18 @@ static int __ftrace_modify_code(void *data)
- 	else if (*command & FTRACE_STOP_FUNC_RET)
- 		ftrace_disable_ftrace_graph_caller();
- 
-+#ifndef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
-+	/*
-+	 * For archs that call ftrace_test_stop_func(), we must
-+	 * wait till after we update all the function callers
-+	 * before we update the callback. This keeps different
-+	 * ops that record different functions from corrupting
-+	 * each other.
-+	 */
-+	__ftrace_trace_function = __ftrace_trace_function_delay;
-+#endif
-+	function_trace_stop--;
-+
- 	return 0;
- }
- 
+ 		mutex_unlock(&ftrace_lock);
+ 	}
+ 	free_ftrace_hash(iter->hash);
 -- 
 1.7.5.4
 
