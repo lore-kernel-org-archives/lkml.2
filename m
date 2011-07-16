@@ -1,206 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752357Ab1GPAn0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 20:43:26 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:49826
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751739Ab1GPAnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 20:43:24 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, tglx@linutronix.de
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 1/1] Staging: hv: Integrate the time source driver with Hyper-V detection code
-Date: Fri, 15 Jul 2011 18:01:14 -0700
-Message-Id: <1310778074-31664-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1752852Ab1GPBHm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 21:07:42 -0400
+Received: from smtp12.ono.com ([62.42.230.20]:22365 "EHLO resmaa12.ono.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752163Ab1GPBHl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jul 2011 21:07:41 -0400
+X-Greylist: delayed 356 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Jul 2011 21:07:41 EDT
+Date: Sat, 16 Jul 2011 03:01:41 +0200
+From: JA =?ISO-8859-1?B?TWFnYWxs824=?= <jamagallon@ono.com>
+To: autofs@linux.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: autofs does not resolve names ?
+Message-ID: <20110716030141.3e6916e3@werewolf.home>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.5; x86_64-mandriva-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Hyper-V timesource driver is best integrated with Hyper-V detection code
-since: (a) Linux guests running on Hyper-V need this timesource and (b)
-by integrating with Hyper-V detection, we could significantly  minimize the
-code in the timesource driver.
+Hi all...
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- arch/x86/kernel/cpu/mshyperv.c     |   24 ++++++++
- drivers/staging/hv/Makefile        |    2 +-
- drivers/staging/hv/hv_timesource.c |  102 ------------------------------------
- 3 files changed, 25 insertions(+), 103 deletions(-)
- delete mode 100644 drivers/staging/hv/hv_timesource.c
+Since the update to autofs-5.0.6, I have a curious problem. Probably it is not autofs
+to blame, but I ask here to see if someone can give me some light...
 
-diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
-index d944bf6..c97f88d 100644
---- a/arch/x86/kernel/cpu/mshyperv.c
-+++ b/arch/x86/kernel/cpu/mshyperv.c
-@@ -11,6 +11,8 @@
-  */
- 
- #include <linux/types.h>
-+#include <linux/time.h>
-+#include <linux/clocksource.h>
- #include <linux/module.h>
- #include <asm/processor.h>
- #include <asm/hypervisor.h>
-@@ -36,6 +38,25 @@ static bool __init ms_hyperv_platform(void)
- 		!memcmp("Microsoft Hv", hyp_signature, 12);
- }
- 
-+static cycle_t read_hv_clock(struct clocksource *arg)
-+{
-+	cycle_t current_tick;
-+	/*
-+	 * Read the partition counter to get the current tick count. This count
-+	 * is set to 0 when the partition is created and is incremented in
-+	 * 100 nanosecond units.
-+	 */
-+	rdmsrl(HV_X64_MSR_TIME_REF_COUNT, current_tick);
-+	return current_tick;
-+}
-+
-+static struct clocksource hyperv_cs = {
-+	.name           = "hyperv_clocksource",
-+	.rating         = 400, /* use this when running on Hyperv*/
-+	.read           = read_hv_clock,
-+	.mask           = CLOCKSOURCE_MASK(64),
-+};
-+
- static void __init ms_hyperv_init_platform(void)
- {
- 	/*
-@@ -46,6 +67,9 @@ static void __init ms_hyperv_init_platform(void)
- 
- 	printk(KERN_INFO "HyperV: features 0x%x, hints 0x%x\n",
- 	       ms_hyperv.features, ms_hyperv.hints);
-+
-+
-+	clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
- }
- 
- const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
-diff --git a/drivers/staging/hv/Makefile b/drivers/staging/hv/Makefile
-index bd176b1..3e0d7e6 100644
---- a/drivers/staging/hv/Makefile
-+++ b/drivers/staging/hv/Makefile
-@@ -1,4 +1,4 @@
--obj-$(CONFIG_HYPERV)		+= hv_vmbus.o hv_timesource.o
-+obj-$(CONFIG_HYPERV)		+= hv_vmbus.o
- obj-$(CONFIG_HYPERV_STORAGE)	+= hv_storvsc.o
- obj-$(CONFIG_HYPERV_NET)	+= hv_netvsc.o
- obj-$(CONFIG_HYPERV_UTILS)	+= hv_utils.o
-diff --git a/drivers/staging/hv/hv_timesource.c b/drivers/staging/hv/hv_timesource.c
-deleted file mode 100644
-index 0efb049..0000000
---- a/drivers/staging/hv/hv_timesource.c
-+++ /dev/null
-@@ -1,102 +0,0 @@
--/*
-- * A clocksource for Linux running on HyperV.
-- *
-- *
-- * Copyright (C) 2010, Novell, Inc.
-- * Author : K. Y. Srinivasan <ksrinivasan@novell.com>
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful, but
-- * WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-- * NON INFRINGEMENT.  See the GNU General Public License for more
-- * details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
-- *
-- */
--#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
--
--#include <linux/version.h>
--#include <linux/clocksource.h>
--#include <linux/init.h>
--#include <linux/module.h>
--#include <linux/pci.h>
--#include <linux/dmi.h>
--#include <asm/hyperv.h>
--#include <asm/mshyperv.h>
--#include <asm/hypervisor.h>
--
--#define HV_CLOCK_SHIFT	22
--
--static cycle_t read_hv_clock(struct clocksource *arg)
--{
--	cycle_t current_tick;
--	/*
--	 * Read the partition counter to get the current tick count. This count
--	 * is set to 0 when the partition is created and is incremented in
--	 * 100 nanosecond units.
--	 */
--	rdmsrl(HV_X64_MSR_TIME_REF_COUNT, current_tick);
--	return current_tick;
--}
--
--static struct clocksource hyperv_cs = {
--	.name           = "hyperv_clocksource",
--	.rating         = 400, /* use this when running on Hyperv*/
--	.read           = read_hv_clock,
--	.mask           = CLOCKSOURCE_MASK(64),
--	/*
--	 * The time ref counter in HyperV is in 100ns units.
--	 * The definition of mult is:
--	 * mult/2^shift = ns/cyc = 100
--	 * mult = (100 << shift)
--	 */
--	.mult           = (100 << HV_CLOCK_SHIFT),
--	.shift          = HV_CLOCK_SHIFT,
--};
--
--static const struct dmi_system_id __initconst
--hv_timesource_dmi_table[] __maybe_unused  = {
--	{
--		.ident = "Hyper-V",
--		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Microsoft Corporation"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "Virtual Machine"),
--			DMI_MATCH(DMI_BOARD_NAME, "Virtual Machine"),
--		},
--	},
--	{ },
--};
--MODULE_DEVICE_TABLE(dmi, hv_timesource_dmi_table);
--
--static const struct pci_device_id __initconst
--hv_timesource_pci_table[] __maybe_unused = {
--	{ PCI_DEVICE(0x1414, 0x5353) }, /* VGA compatible controller */
--	{ 0 }
--};
--MODULE_DEVICE_TABLE(pci, hv_timesource_pci_table);
--
--
--static int __init init_hv_clocksource(void)
--{
--	if ((x86_hyper != &x86_hyper_ms_hyperv) ||
--		!(ms_hyperv.features & HV_X64_MSR_TIME_REF_COUNT_AVAILABLE))
--		return -ENODEV;
--
--	if (!dmi_check_system(hv_timesource_dmi_table))
--		return -ENODEV;
--
--	pr_info("Registering HyperV clock source\n");
--	return clocksource_register(&hyperv_cs);
--}
--
--module_init(init_hv_clocksource);
--MODULE_DESCRIPTION("HyperV based clocksource");
--MODULE_AUTHOR("K. Y. Srinivasan <ksrinivasan@novell.com>");
--MODULE_LICENSE("GPL");
+Setup:
+/etc/autofs/auto.master:
+
+/home   ldap://danae-nfs.cps.unizar.es/automountMapName=auto_home,o=diis --timeout=60,tcp,nobrowse
+
+(user homes map from LDAP, shared homes at a server)
+
+The name is resolved:
+
+annwn:/etc/autofs# host danae-nfs
+danae-nfs.cps.unizar.es has address 155.210.152.202
+annwn:/etc/autofs# ping danae-nfs
+PING danae-nfs.cps.unizar.es (155.210.152.202) 56(84) bytes of data.
+64 bytes from danae-nfs.cps.unizar.es (155.210.152.202): icmp_req=1 ttl=255 time=0.339 ms
+...
+
+But when I access home (ssh the box):
+
+Jul 15 01:39:31 annwn automount[7774]: Starting automounter version 5.0.6, master map auto.master
+Jul 15 01:39:31 annwn automount[7774]: using kernel protocol version 5.02
+Jul 15 01:39:31 annwn automount[7774]: lookup_nss_read_master: reading master files auto.master
+...
+Jul 15 01:39:31 annwn automount[7774]: mount_mount: mount(nfs): root=/home name=magallon what=danae-nfs:/export/home/usuarios/giga/magallon, fstype=nfs, options=tcp,quota
+Jul 15 01:39:31 annwn automount[7774]: mount_mount: mount(nfs): nfs options="tcp,quota", nobind=0, nosymlink=0, ro=0
+Jul 15 01:39:31 annwn automount[7774]: get_nfs_info: called with host danae-nfs(69.65.19.116) proto udp version 0x30
+Jul 15 01:39:37 annwn automount[7774]: get_nfs_info: called with host danae-nfs(69.65.19.116) proto tcp version 0x30
+
+Where the hell does it get that IP address for my server ????
+
+Diggin a bit more:
+
+annwn:/var/log# host 69.65.19.116
+116.19.65.69.in-addr.arpa domain name pointer nx-deleted-host-1.no-ip.com
+
+because I have at /etc/resolv.conf:
+
+search cps.unizar.es unizar.es no-ip.org
+
+Why did it not resolved first with the first domain ?
+
+If I delete the no-ip.org domain, I get:
+
+Jul 15 01:47:18 annwn automount[8068]: mount_mount: mount(nfs): root=/home name=magallon what=danae-nfs:/export/home/usuarios/giga/magallon, fstype=nfs, options=tcp,quota
+Jul 15 01:47:18 annwn automount[8068]: mount_mount: mount(nfs): nfs options="tcp,quota", nobind=0, nosymlink=0, ro=0
+Jul 15 01:47:20 annwn automount[8068]: add_host_addrs: hostname lookup failed: Name or service not known
+Jul 15 01:47:20 annwn automount[8068]: mount(nfs): no hosts available
+Jul 15 01:47:20 annwn automount[8068]: dev_ioctl_send_fail: token = 28
+Jul 15 01:47:20 annwn automount[8068]: failed to mount /home/magallon
+
+automount does not add the search domains and resolve ? what am I doing wrong ?
+is it a bug ? uuhhh ?
+
+TIA
+
 -- 
-1.7.4.1
-
+J.A. Magallon <jamagallon()ono!com>     \                 Winter is coming...
