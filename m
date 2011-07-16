@@ -1,38 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757Ab1GPJKA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jul 2011 05:10:00 -0400
-Received: from logistix.cr ([201.201.66.140]:17102 "EHLO mail.alsa.co.cr"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751692Ab1GPJJ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jul 2011 05:09:59 -0400
-Reply-To: <barrabrooke@ymail.com>
-From: "Barrister Ardison Brooke" <abrooke_chamber@lawyer.com>
-Subject: For your prompt response
-Date: Fri, 8 Jul 2011 14:49:17 +0200
+	id S1753079Ab1GPJ1M (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jul 2011 05:27:12 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:64596 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752658Ab1GPJ1K convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Jul 2011 05:27:10 -0400
+Message-ID: <4E21595D.2040309@cn.fujitsu.com>
+Date: Sat, 16 Jul 2011 17:26:53 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-Id: <20110708132146.4D4FA2E292B8@mail.alsa.co.cr>
-To: undisclosed-recipients:;
-X-Antivirus: Scanned by F-Prot Antivirus (http://www.f-prot.com)
+To: jiaweiwei.xiyou@gmail.com
+CC: greg@kroah.com, linux-kernel@vger.kernel.org, kongjianjun@gmail.com,
+        joe@perches.com, rdunlap@xenotime.net, harryxiyou@gamil.com
+Subject: Re: [Patch Resend]Fix the messy code file Documentation/zh_CN/SubmitChecklist
+References: <20110716074255.GA4150@gmail.com> <20110716083618.GA4941@gmail.com>
+In-Reply-To: <20110716083618.GA4941@gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-07-16 17:26:20,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-07-16 17:26:20
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ardison Brooke & Partners'
+16:36, Harry Wei wrote:
+> From: Harry Wei <harryxiyou@gmail.com>
+> 
+> So sorry with a mistake, which i did not check my patch with
+> ./checkpatch.pl. This one is all well for checkpatch.pl. It 
+> can fix the messy code file Documentation/zh_CN/SubmitChecklist correctly.
+> 
 
-On behalf of the Administrator and Executor of the estate of Late Engr. Kruger Kroger . I once again try to notify you as my earlier letter were returned undelivered. I wish to inform you that late Engr. Kruger Kroger  made you a beneficiary to his WILL. He left (11%) of the total sum of Thirty Million, One Hundred Thousand Dollars (USD$30, 100.000.00) to you in the Codicil and last testament to his WILL.
+I'm not fond of kernel documentation translation.. but after a quick
+look, I don't think the quality of this translation is satisfying..
 
-This may sound strange and unbelievable to you, but no doubt it is a life reality and true. Being a widely traveled man, he must have been in contact with you in the past or simply you were nominated to him by one of his numerous friends abroad who wished you well and good future.
-Engr. Kruger Kroger until his death was a member of the Helicopter Society and the Institute of Electronic & Electrical Engineers. Please if I reach you as I am hopeful, endeavor to get back to me as soon as possible to enable me conclude my job. For more details contact this Email: barrabrooke@ymail.com
+I'm not going to review the whole doc, just a few comments below.
 
-Yours in Service,
-BARR. ARDISON BROOKE ESQ.
+> Signed-off-by: Harry Wei <harryxiyou@gmail.com>
+> ---
+>  Documentation/zh_CN/SubmitChecklist |  118 +++++++++++++++++-----------------
+>  1 files changed, 59 insertions(+), 59 deletions(-)
+> 
+> diff --git a/Documentation/zh_CN/SubmitChecklist b/Documentation/zh_CN/SubmitChecklist
+> index 951415b..7f41713 100644
+> --- a/Documentation/zh_CN/SubmitChecklist
+> +++ b/Documentation/zh_CN/SubmitChecklist
+> @@ -8,102 +8,102 @@ or if there is a problem with the translation.
+>  
+>  Chinese maintainer: Harry Wei <harryxiyou@gmail.com>
+>  ---------------------------------------------------------------------
+> -Documentation/SubmitChecklist ?????ķ???
+> +Documentation/SubmitChecklist 的中文翻译
+>  
+> -?????????ۻ????±??ĵ????ݣ???ֱ??�ϵԭ?ĵ???ά???ߡ???????ʹ??Ӣ??
+> -??????�?ѵĻ???Ҳ?????????İ?ά?????????????�?????²???ʱ???߷?
+> -?????????⣬??�ϵ???İ?ά???ߡ?
+> +如果想评论或更新本文的内容，请直接联系原文档的维护者。如果你使用英文
+> +交流有困难的话，也可以向中文版维护者求助。如果本翻译更新不及时或者翻
+> +译存在问题，请联系中文版维护者。
+>  
+> -???İ?ά???ߣ? ?????? Harry Wei <harryxiyou@gmail.com>
+> -???İ淭???ߣ? ?????? Harry Wei <harryxiyou@gmail.com>
+> -???İ?У???ߣ? ?????? Harry Wei <harryxiyou@gmail.com>
+> +中文版维护者： 贾威威 Harry Wei <harryxiyou@gmail.com>
+> +中文版翻译者： 贾威威 Harry Wei <harryxiyou@gmail.com>
+> +中文版校译者： 贾威威 Harry Wei <harryxiyou@gmail.com>
 
+I don't think you can be the reviewer as well as the translator.
 
+>  
+>  
+> -????Ϊ????
+> +以下为正文
+>  ---------------------------------------------------------------------
+> -Linux?ں??ύ?嵥
+> +Linux内核提交清单
+>  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+>  
+> -??????һЩ?ں˿?????Ӧ?????Ļ??????飬?????????뿴???Լ????ں˲????ύ
+> -?????ܵĸ??졣
+> +这里有一些内核开发者应该做的基本事情，如果他们想看到自己的内核补丁提交
+> +被接受的更快。
+
+You're a bit rigid in translation. I believe this should be better:
+
+如果他们想看到自己提交的内核补丁被接受的更快。
+
+[snip]
+
+>  
+> -15?????е?codepaths?Ѿ???ʹ????lockdep???ù??ܡ?
+> +15：所有的codepaths已经行使所有lockdep启用功能。
+
+I suspect you don't really understand the original sentence, because
+the translated text isn't understandable at all.
+
+"在打开lockdep功能的情况下，所有的代码路径都被运行过。"
+
+>  
+[snip]
