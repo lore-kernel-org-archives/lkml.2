@@ -1,101 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751149Ab1GPEB1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jul 2011 00:01:27 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:35077 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750713Ab1GPEBZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jul 2011 00:01:25 -0400
-Date: Sat, 16 Jul 2011 14:01:17 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Jonas Bonn <jonas@southpole.se>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Russell King <rmk@arm.linux.org.uk>
-Subject: arm-soc tree inclusion
-Message-Id: <20110716140117.084315e1977e88b9bd6949cf@canb.auug.org.au>
-In-Reply-To: <201107071305.02061.arnd@arndb.de>
-References: <1309641352-18714-1-git-send-email-jonas@southpole.se>
-	<1309967491.3393.41.camel@jerome>
-	<20110707163231.ebc75eef6be02f5490c949d7@canb.auug.org.au>
-	<201107071305.02061.arnd@arndb.de>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Sat__16_Jul_2011_14_01_17_+1000_NwWoleV.8g23U.i1"
+	id S1751762Ab1GPGJj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jul 2011 02:09:39 -0400
+Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:35227 "EHLO
+	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750758Ab1GPGJh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Jul 2011 02:09:37 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EACkqIU5tg2Sw/2dsb2JhbABTp3F4iHzCGA6GLASjPQ
+Date: Sat, 16 Jul 2011 08:09:34 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Olaf Hering <olaf@aepfle.de>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>
+Subject: [GIT PULL REQUEST] watchdog - v3.0-rc7 - Fixes
+Message-ID: <20110716060934.GS3834@infomag.iguana.be>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__16_Jul_2011_14_01_17_+1000_NwWoleV.8g23U.i1
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Linus,
 
-Hi Arnd,
+Please pull from 'master' branch of
+	git://git.kernel.org/pub/scm/linux/kernel/git/wim/linux-2.6-watchdog.git
+or if master.kernel.org hasn't synced up yet:
+	master.kernel.org:/pub/scm/linux/kernel/git/wim/linux-2.6-watchdog.git
 
-On Thu, 7 Jul 2011 13:05:01 +0200 Arnd Bergmann <arnd@arndb.de> wrote:
->
-> Ok, I guess that means you also won't be able to merge the arm-soc tree
-> before the merge window, right?
->=20
-> I meant to ask you to include the master branch of
->=20
-> git://git.kernel.org/pub/scm/linux/kernel/git/arm/linux-arm-soc.git
->=20
-> but we first had to move it into the right location. Can you add
-> that when you get back?
+This will update the following files:
 
-I will add this tree in the next linux-next release.
+ drivers/watchdog/Kconfig |    1 -
+ 1 file changed, 1 deletion(-)
 
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
+with these Changes:
 
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-	Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
+Author: Olaf Hering <olaf@aepfle.de>
+Date:   Fri Jul 15 23:23:33 2011 +0200
 
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
+    watchdog: fix hpwdt Kconfig regression in 3.0-rc
+    
+    Remove Kconfig regression caused by commit
+    a4616153deae053b29a2b7dd9ec4b2a225accfc5 "watchdog: hpwdt: build hpwdt as
+    module by default with NMI_DECODING enabled"
+    
+    With the above change applied, hpwdt will be enabled unconditionally by just
+    entering the Watchdog subscreen in menuconfig. Since this driver is not
+    essential to boot any box it should remain disabled until it gets manually
+    enabled, just like all other drivers.
+    
+    Signed-off-by: Olaf Hering <olaf@aepfle.de>
+    Cc: Tony Camuso <tcamuso@redhat.com>
+    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
+The Changes can also be looked at on:
+	http://www.kernel.org/git/?p=linux/kernel/git/wim/linux-2.6-watchdog.git;a=summary
 
-Legal Stuff:
-By participating in linux-next, your subsystem tree contributions are
-public and will be included in the linux-next trees.  You may be sent
-e-mail messages indicating errors or other issues when the
-patches/commits from your subsystem tree are merged and tested in
-linux-next.  These messages may also be cross-posted to the linux-next
-mailing list, the linux-kernel mailing list, etc.  The linux-next tree
-project and IBM (my employer) make no warranties regarding the linux-next
-project, the testing procedures, the results, the e-mails, etc.  If you
-don't agree to these ground rules, let me know and I'll remove your tree
-from participation in linux-next.
+For completeness, I added the overal diff below.
 
---Signature=_Sat__16_Jul_2011_14_01_17_+1000_NwWoleV.8g23U.i1
-Content-Type: application/pgp-signature
+Greetings,
+Wim.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOIQ0NAAoJEDMEi1NhKgbsKvoH/3Df18OUIZG5bOMcMEEpc9KJ
-4jSWaDarHCUtf/CPaYcYpzhoe3w81WeDmGvC06XendxukejK0QXOBRMoXK5g9WkC
-V11YXT4YkWHuFvsRN333dxIhvWei/4Lj5wdoSf0m1MhYpk0QLu4EAyYSCgyYN8CV
-0zxKc2422kiJoqiXN4l2RdJ1gI7625yRMZND0HtWOFCdLXiCsWyyO9aHmllT3Uhs
-J1QDLztLbbMVNil8Yrj2tIiYqMezSic+Alnxk0UTerh8atdeXWVardZGw9OE6bKp
-5/1obv/OQfddW8jBD+wYjNgvfCgYh88bqT2Ot5JgzI6J6oaoGTxwWNxo7mWwWuo=
-=DlmJ
------END PGP SIGNATURE-----
-
---Signature=_Sat__16_Jul_2011_14_01_17_+1000_NwWoleV.8g23U.i1--
+================================================================================
+diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+index 9536d38..c57419b 100644
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -600,7 +600,6 @@ config IT87_WDT
+ config HP_WATCHDOG
+ 	tristate "HP ProLiant iLO2+ Hardware Watchdog Timer"
+ 	depends on X86
+-	default m
+ 	help
+ 	  A software monitoring watchdog and NMI sourcing driver. This driver
+ 	  will detect lockups and provide a stack trace. This is a driver that
