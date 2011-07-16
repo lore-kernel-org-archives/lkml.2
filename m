@@ -1,85 +1,282 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755574Ab1GPVBk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jul 2011 17:01:40 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:47010 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755397Ab1GPVBi (ORCPT
+	id S1751831Ab1GPVaF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jul 2011 17:30:05 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:56077 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751230Ab1GPVaD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jul 2011 17:01:38 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=sWtEvS1zZWiwxa9D1cy+IoR6CSJlxS7SwLxlNSt5sfu5Qzmg841ZBpj3xD37Ad6DeOSuzBXkySh75kfPKH0+ZOzaqLZMrVRxSPVRopq2xMbq/pxWJzLxJD4mjGXMgJcx;
-Date: Sat, 16 Jul 2011 14:01:35 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: dmitry@broadcom.com
-Cc: "David Miller" <davem@davemloft.net>,
-        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Eilon Greenstein" <eilong@broadcom.com>
-Subject: Re: linux-next: Tree for July 16 (net/bnx2x)
-Message-Id: <20110716140135.b471aa27.rdunlap@xenotime.net>
-In-Reply-To: <1310848256.2826.3.camel@lb-tlvb-dmitry>
-References: <20110717000815.c83755be9598d34ac8431908@canb.auug.org.au>
-	<20110716121427.11760128.rdunlap@xenotime.net>
-	<1310847842.2826.1.camel@lb-tlvb-dmitry>
-	<20110716.132643.101780166611692580.davem@davemloft.net>
-	<1310848256.2826.3.camel@lb-tlvb-dmitry>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Sat, 16 Jul 2011 17:30:03 -0400
+Subject: [PATCH] Summary: fix most of the errors/warnings from checkpatch
+From: Toon Schoenmakers <nighteyes1993@gmail.com>
+To: acho@novell.com, randy.dunlap@oracle.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 16 Jul 2011 23:29:59 +0200
+Message-ID: <1310851799.4191.2.camel@Rarity>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 16 Jul 2011 23:30:56 +0300 Dmitry Kravkov wrote:
-
-> On Sat, 2011-07-16 at 13:26 -0700, David Miller wrote:
-> > From: "Dmitry Kravkov" <dmitry@broadcom.com>
-> > Date: Sat, 16 Jul 2011 23:24:02 +0300
-> > 
-> > > @@ -1403,8 +1403,8 @@ void bnx2x_netif_stop(struct bnx2x *bp, int
-> > > disable_hw)
-> > >  
-> > 
-> > Patch corrupted by your email client, this long line was chopped
-> > up into two lines.
-> > 
-> bnx2x: Fix compilation when CNIC is not selected in config
-> 
-> Reported-by:  Randy Dunlap <rdunlap@xenotime.net>
-> Signed-off-by: Dmitry Kravkov <dmitry@broadcom.com>
-
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
-
-Thanks.
-
-> ---
->  drivers/net/bnx2x/bnx2x_cmn.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/net/bnx2x/bnx2x_cmn.c b/drivers/net/bnx2x/bnx2x_cmn.c
-> index e5fac62..b05ce93 100644
-> --- a/drivers/net/bnx2x/bnx2x_cmn.c
-> +++ b/drivers/net/bnx2x/bnx2x_cmn.c
-> @@ -1403,8 +1403,8 @@ void bnx2x_netif_stop(struct bnx2x *bp, int disable_hw)
->  
->  u16 bnx2x_select_queue(struct net_device *dev, struct sk_buff *skb)
->  {
-> -#ifdef BCM_CNIC
->  	struct bnx2x *bp = netdev_priv(dev);
-> +#ifdef BCM_CNIC
->  	if (NO_FCOE(bp))
->  		return skb_tx_hash(dev, skb);
->  	else {
-> -- 
-
+>From 5ace7f8476ac9f85a992b0cf5e3e9a15f0460309 Mon Sep 17 00:00:00 2001
+From: Toon Schoenmakers <nighteyes1993@gmail.com>
+Date: Sat, 16 Jul 2011 23:19:16 +0200
+Subject: [PATCH] Summary: fix most of the errors/warnings from checkpatch
+ Fixed most of the warnings and errors
+ Signed-off-by: Toon Schoenmakers <nighteyes1993@gmail.com>
 
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ drivers/staging/keucr/smscsi.c |  151 +++++++++++++++++++++++-----------------
+ 1 files changed, 86 insertions(+), 65 deletions(-)
+
+diff --git a/drivers/staging/keucr/smscsi.c b/drivers/staging/keucr/smscsi.c
+index a6fa77f..05a6457 100644
+--- a/drivers/staging/keucr/smscsi.c
++++ b/drivers/staging/keucr/smscsi.c
+@@ -9,74 +9,89 @@
+ #include "usb.h"
+ #include "scsiglue.h"
+ #include "transport.h"
+-//#include "smcommon.h"
++/*#include "smcommon.h"*/
+ #include "smil.h"
+ 
+-int SM_SCSI_Test_Unit_Ready (struct us_data *us, struct scsi_cmnd *srb);
+-int SM_SCSI_Inquiry         (struct us_data *us, struct scsi_cmnd *srb);
+-int SM_SCSI_Mode_Sense      (struct us_data *us, struct scsi_cmnd *srb);
+-int SM_SCSI_Start_Stop      (struct us_data *us, struct scsi_cmnd *srb);
+-int SM_SCSI_Read_Capacity   (struct us_data *us, struct scsi_cmnd *srb);
+-int SM_SCSI_Read            (struct us_data *us, struct scsi_cmnd *srb);
+-int SM_SCSI_Write           (struct us_data *us, struct scsi_cmnd *srb);
++int SM_SCSI_Test_Unit_Ready(struct us_data *us, struct scsi_cmnd *srb);
++int SM_SCSI_Inquiry(struct us_data *us, struct scsi_cmnd *srb);
++int SM_SCSI_Mode_Sense(struct us_data *us, struct scsi_cmnd *srb);
++int SM_SCSI_Start_Stop(struct us_data *us, struct scsi_cmnd *srb);
++int SM_SCSI_Read_Capacity(struct us_data *us, struct scsi_cmnd *srb);
++int SM_SCSI_Read(struct us_data *us, struct scsi_cmnd *srb);
++int SM_SCSI_Write(struct us_data *us, struct scsi_cmnd *srb);
+ 
+ extern PBYTE                SMHostAddr;
+ extern DWORD                ErrXDCode;
+ 
+-//----- SM_SCSIIrp() --------------------------------------------------
++/*----- SM_SCSIIrp() --------------------------------------------------*/
+ int SM_SCSIIrp(struct us_data *us, struct scsi_cmnd *srb)
+ {
+ 	int    result;
+ 
+ 	us->SrbStatus = SS_SUCCESS;
+-	switch (srb->cmnd[0])
+-	{
+-		case TEST_UNIT_READY :  result = SM_SCSI_Test_Unit_Ready (us, srb);  break; //0x00
+-		case INQUIRY         :  result = SM_SCSI_Inquiry         (us, srb);  break; //0x12
+-		case MODE_SENSE      :  result = SM_SCSI_Mode_Sense      (us, srb);  break; //0x1A
+-		case READ_CAPACITY   :  result = SM_SCSI_Read_Capacity   (us, srb);  break; //0x25
+-		case READ_10         :  result = SM_SCSI_Read            (us, srb);  break; //0x28
+-		case WRITE_10        :  result = SM_SCSI_Write           (us, srb);  break; //0x2A
+-
+-		default:
+-			us->SrbStatus = SS_ILLEGAL_REQUEST;
+-			result = USB_STOR_TRANSPORT_FAILED;
+-			break;
++	switch (srb->cmnd[0]) {
++	case TEST_UNIT_READY:
++		result = SM_SCSI_Test_Unit_Ready(us, srb);
++		break; /*0x00*/
++	case INQUIRY:
++		result = SM_SCSI_Inquiry(us, srb);
++		break; /*0x12*/
++	case MODE_SENSE:
++		result = SM_SCSI_Mode_Sense(us, srb);
++		break; /*0x1A*/
++	case READ_CAPACITY:
++		result = SM_SCSI_Read_Capacity(us, srb);
++		break; /*0x25*/
++	case READ_10:
++		result = SM_SCSI_Read(us, srb);
++		break; /*0x28*/
++	case WRITE_10:
++		result = SM_SCSI_Write(us, srb);
++		break; /*0x2A*/
++
++	default:
++		us->SrbStatus = SS_ILLEGAL_REQUEST;
++		result = USB_STOR_TRANSPORT_FAILED;
++		break;
+ 	}
+ 	return result;
+ }
+ 
+-//----- SM_SCSI_Test_Unit_Ready() --------------------------------------------------
++/*-----SM_SCSI_Test_Unit_Ready()----------------------------------------------*/
+ int SM_SCSI_Test_Unit_Ready(struct us_data *us, struct scsi_cmnd *srb)
+ {
+-	//printk("SM_SCSI_Test_Unit_Ready\n");
++	/*printk("SM_SCSI_Test_Unit_Ready\n");*/
+ 	if (us->SM_Status.Insert && us->SM_Status.Ready)
+ 		return USB_STOR_TRANSPORT_GOOD;
+-	else
+-	{
++	else {
+ 		ENE_SMInit(us);
+ 		return USB_STOR_TRANSPORT_GOOD;
+ 	}
+-		
++
+ 	return USB_STOR_TRANSPORT_GOOD;
+ }
+ 
+-//----- SM_SCSI_Inquiry() --------------------------------------------------
++/*----- SM_SCSI_Inquiry() --------------------------------------------------*/
+ int SM_SCSI_Inquiry(struct us_data *us, struct scsi_cmnd *srb)
+ {
+-	//printk("SM_SCSI_Inquiry\n");
+-	BYTE data_ptr[36] = {0x00, 0x80, 0x02, 0x00, 0x1F, 0x00, 0x00, 0x00, 0x55, 0x53, 0x42, 0x32, 0x2E, 0x30, 0x20, 0x20, 0x43, 0x61, 0x72, 0x64, 0x52, 0x65, 0x61, 0x64, 0x65, 0x72, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x30, 0x31, 0x30, 0x30};
++	/*printk("SM_SCSI_Inquiry\n");*/
++	BYTE data_ptr[36] = {0x00, 0x80, 0x02, 0x00, 0x1F, 0x00, 0x00, 0x00,
++	0x55, 0x53, 0x42, 0x32, 0x2E, 0x30, 0x20, 0x20, 0x43, 0x61, 0x72, 0x64,
++	0x52,	0x65, 0x61, 0x64, 0x65, 0x72, 0x20, 0x20, 0x20, 0x20, 0x20,
++	0x20, 0x30,	0x31,	0x30, 0x30};
+ 
+ 	usb_stor_set_xfer_buf(us, data_ptr, 36, srb, TO_XFER_BUF);
+ 	return USB_STOR_TRANSPORT_GOOD;
+ }
+ 
+ 
+-//----- SM_SCSI_Mode_Sense() --------------------------------------------------
++/*----- SM_SCSI_Mode_Sense()----------------------------------------------*/
+ int SM_SCSI_Mode_Sense(struct us_data *us, struct scsi_cmnd *srb)
+ {
+-	BYTE	mediaNoWP[12] = {0x0b,0x00,0x00,0x08,0x00,0x00,0x71,0xc0,0x00,0x00,0x02,0x00};
+-	BYTE	mediaWP[12]   = {0x0b,0x00,0x80,0x08,0x00,0x00,0x71,0xc0,0x00,0x00,0x02,0x00};
++	BYTE	mediaNoWP[12] = {0x0b, 0x00, 0x00, 0x08, 0x00, 0x00,
++				 0x71, 0xc0, 0x00, 0x00, 0x02, 0x00};
++	BYTE	mediaWP[12]   = {0x0b, 0x00, 0x80, 0x08, 0x00, 0x00,
++				 0x71, 0xc0, 0x00, 0x00, 0x02, 0x00};
+ 
+ 	if (us->SM_Status.WtP)
+ 		usb_stor_set_xfer_buf(us, mediaWP, 12, srb, TO_XFER_BUF);
+@@ -87,7 +102,7 @@ int SM_SCSI_Mode_Sense(struct us_data *us, struct scsi_cmnd *srb)
+ 	return USB_STOR_TRANSPORT_GOOD;
+ }
+ 
+-//----- SM_SCSI_Read_Capacity() --------------------------------------------------
++/*----- SM_SCSI_Read_Capacity()---------------------------------------*/
+ int SM_SCSI_Read_Capacity(struct us_data *us, struct scsi_cmnd *srb)
+ {
+ 	unsigned int offset = 0;
+@@ -96,49 +111,54 @@ int SM_SCSI_Read_Capacity(struct us_data *us, struct scsi_cmnd *srb)
+ 	WORD    bl_len;
+ 	BYTE    buf[8];
+ 
+-	printk("SM_SCSI_Read_Capacity\n");
++	printk(KERN_INFO, "SM_SCSI_Read_Capacity\n");
+ 
+ 	bl_len = 0x200;
+ 	bl_num = Ssfdc.MaxLogBlocks * Ssfdc.MaxSectors * Ssfdc.MaxZones - 1;
+-	//printk("MaxLogBlocks = %x\n", Ssfdc.MaxLogBlocks);
+-	//printk("MaxSectors   = %x\n", Ssfdc.MaxSectors);
+-	//printk("MaxZones     = %x\n", Ssfdc.MaxZones);
+-	//printk("bl_num       = %x\n", bl_num);
++	/*printk("MaxLogBlocks = %x\n", Ssfdc.MaxLogBlocks);
++	printk("MaxSectors   = %x\n", Ssfdc.MaxSectors);
++	printk("MaxZones     = %x\n", Ssfdc.MaxZones);
++	printk("bl_num       = %x\n", bl_num);*/
+ 
+ 	us->bl_num = bl_num;
+-	printk("bl_len = %x\n", bl_len);
+-	printk("bl_num = %x\n", bl_num);
+-
+-	//srb->request_bufflen = 8;
+-	buf[0] = (bl_num>>24) & 0xff;
+-	buf[1] = (bl_num>>16) & 0xff;
+-	buf[2] = (bl_num>> 8) & 0xff;
+-	buf[3] = (bl_num>> 0) & 0xff;
+-	buf[4] = (bl_len>>24) & 0xff;
+-	buf[5] = (bl_len>>16) & 0xff;
+-	buf[6] = (bl_len>> 8) & 0xff;
+-	buf[7] = (bl_len>> 0) & 0xff;
+-	
++	printk(KERN_INFO, "bl_len = %x\n", bl_len);
++	printk(KERN_INFO, "bl_num = %x\n", bl_num);
++
++	/*srb->request_bufflen = 8;*/
++	buf[0] = (bl_num >> 24) & 0xff;
++	buf[1] = (bl_num >> 16) & 0xff;
++	buf[2] = (bl_num >>  8) & 0xff;
++	buf[3] = (bl_num >>  0) & 0xff;
++	buf[4] = (bl_len >> 24) & 0xff;
++	buf[5] = (bl_len >> 16) & 0xff;
++	buf[6] = (bl_len >>  8) & 0xff;
++	buf[7] = (bl_len >>  0) & 0xff;
++
+ 	usb_stor_access_xfer_buf(us, buf, 8, srb, &sg, &offset, TO_XFER_BUF);
+-	//usb_stor_set_xfer_buf(us, buf, srb->request_bufflen, srb, TO_XFER_BUF);
++	/*usb_stor_set_xfer_buf(us, buf, srb->request_bufflen, srb,
++	TO_XFER_BUF);*/
+ 
+ 	return USB_STOR_TRANSPORT_GOOD;
+ }
+ 
+-//----- SM_SCSI_Read() --------------------------------------------------
++/*----- SM_SCSI_Read() --------------------------------------------------*/
+ int SM_SCSI_Read(struct us_data *us, struct scsi_cmnd *srb)
+ {
+-	//struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
+-	int result=0;
++	/*struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;*/
++	int result = 0;
+ 	PBYTE	Cdb = srb->cmnd;
+-	DWORD bn  =  ((Cdb[2]<<24) & 0xff000000) | ((Cdb[3]<<16) & 0x00ff0000) |
+-                   ((Cdb[4]<< 8) & 0x0000ff00) | ((Cdb[5]<< 0) & 0x000000ff);
+-	WORD  blen = ((Cdb[7]<< 8) & 0xff00)     | ((Cdb[8]<< 0) & 0x00ff);
++	DWORD bn = ((Cdb[2] << 24) & 0xff000000) |
++		   ((Cdb[3] << 16) & 0x00ff0000) |
++		   ((Cdb[4] <<  8) & 0x0000ff00) |
++		   ((Cdb[5] << 0) & 0x000000ff);
++	WORD  blen = ((Cdb[7] << 8) & 0xff00) |
++		     ((Cdb[8] << 0) & 0x00ff);
+ 	DWORD	blenByte = blen * 0x200;
+ 	void	*buf;
+ 
+-	//printk("SCSIOP_READ --- bn = %X, blen = %X, srb->use_sg = %X\n", bn, blen, srb->use_sg);
+-	
++	/*printk("SCSIOP_READ --- bn = %X, blen = %X, srb->use_sg = %X\n", bn,
++blen, srb->use_sg);*/
++
+ 	if (bn > us->bl_num)
+ 		return USB_STOR_TRANSPORT_ERROR;
+ 
+@@ -157,19 +177,20 @@ int SM_SCSI_Read(struct us_data *us, struct scsi_cmnd *srb)
+ 	return USB_STOR_TRANSPORT_GOOD;
+ }
+ 
+-//----- SM_SCSI_Write() --------------------------------------------------
++/*----- SM_SCSI_Write() --------------------------------------------------*/
+ int SM_SCSI_Write(struct us_data *us, struct scsi_cmnd *srb)
+ {
+-	//struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
++	/*struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;*
+ 	int result=0;
+ 	PBYTE	Cdb = srb->cmnd;
+ 	DWORD bn  =  ((Cdb[2]<<24) & 0xff000000) | ((Cdb[3]<<16) & 0x00ff0000) |
+-                   ((Cdb[4]<< 8) & 0x0000ff00) | ((Cdb[5]<< 0) & 0x000000ff);
++		((Cdb[4]<< 8) & 0x0000ff00) | ((Cdb[5]<< 0) &0x000000ff);
+ 	WORD  blen = ((Cdb[7]<< 8) & 0xff00)     | ((Cdb[8]<< 0) & 0x00ff);
+ 	DWORD	blenByte = blen * 0x200;
+ 	void	*buf;
+ 
+-	//printk("SCSIOP_Write --- bn = %X, blen = %X, srb->use_sg = %X\n", bn, blen, srb->use_sg);
++	/*printk("SCSIOP_Write --- bn = %X, blen = %X, srb->use_sg = %X\n", bn,
++blen, srb->use_sg);*/
+ 
+ 	if (bn > us->bl_num)
+ 		return USB_STOR_TRANSPORT_ERROR;
+-- 
+1.7.4.4
+
+
+
