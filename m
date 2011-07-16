@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755299Ab1GPNSK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jul 2011 09:18:10 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:57698 "EHLO smtps.tip.net.au"
+	id S1755327Ab1GPOFo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jul 2011 10:05:44 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:55710 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755053Ab1GPNSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jul 2011 09:18:07 -0400
-Date: Sat, 16 Jul 2011 23:18:00 +1000
+	id S1755252Ab1GPOFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Jul 2011 10:05:42 -0400
+Date: Sun, 17 Jul 2011 00:05:31 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
+To: James Morris <jmorris@namei.org>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>
-Subject: linux-next: build failure after merge of the staging tree
-Message-Id: <20110716231800.62389022e6eef4b3456db52e@canb.auug.org.au>
+        Stefan Berger <stefanb@linux.vnet.ibm.com>,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+Subject: linux-next: build failure after merge of the final tree
+ (security-testing tree related)
+Message-Id: <20110717000531.d2e8d6269343e10732a8f542@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA1";
- boundary="Signature=_Sat__16_Jul_2011_23_18_00_+1000_CJejqOlv6A=oj3Ri"
+ boundary="Signature=_Sun__17_Jul_2011_00_05_31_+1000_cWtM+Jk6mGKCU=vE"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__16_Jul_2011_23_18_00_+1000_CJejqOlv6A=oj3Ri
+--Signature=_Sun__17_Jul_2011_00_05_31_+1000_cWtM+Jk6mGKCU=vE
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Greg,
+Hi all,
 
-After merging the staging tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-In file included from drivers/staging/gma500/backlight.c:23:0:
-drivers/staging/gma500/psb_drv.h:34:22: fatal error: medfield.h: No such fi=
-le or directory
-In file included from drivers/staging/gma500/accel_2d.c:39:0:
-drivers/staging/gma500/psb_drv.h:34:22: fatal error: medfield.h: No such fi=
-le or directory
-In file included from drivers/staging/gma500/gem.c:29:0:
-drivers/staging/gma500/psb_drv.h:34:22: fatal error: medfield.h: No such fi=
-le or directory
-In file included from drivers/staging/gma500/framebuffer.c:36:0:
-drivers/staging/gma500/psb_drv.h:34:22: fatal error: medfield.h: No such fi=
-le or directory
-In file included from drivers/staging/gma500/gtt.c:23:0:
-drivers/staging/gma500/psb_drv.h:34:22: fatal error: medfield.h: No such fi=
-le or directory
-In file included from drivers/staging/gma500/intel_bios.c:24:0:
-drivers/staging/gma500/psb_drv.h:34:22: fatal error: medfield.h: No such fi=
-le or directory
+drivers/char/tpm/tpm_tis.c: In function 'tpm_tis_resume':
+drivers/char/tpm/tpm_tis.c:845:3: error: implicit declaration of function '=
+tpm_tis_reenable_interrupts'
 
-Caused by commit 3caa89e93364 ("gma500: resync with Medfield progress").
+Caused by commit 45baa1d1fa39 ("tpm_tis: Re-enable interrupts upon (S3)
+resume").
 
-I have used the staging tree from next-20110707 for today.
+I have just left this error for today.
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 http://www.canb.auug.org.au/~sfr/
 
---Signature=_Sat__16_Jul_2011_23_18_00_+1000_CJejqOlv6A=oj3Ri
+--Signature=_Sun__17_Jul_2011_00_05_31_+1000_cWtM+Jk6mGKCU=vE
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQEcBAEBAgAGBQJOIY+IAAoJEDMEi1NhKgbsYpYH/iBxzf1MNAmyK21+8xkyDiWP
-ythWx2SbPlhx+vg5EXOBxC4Ip8jCa5QsFmgAt58J+r7MI1P6PLOca1Qnt0FkAw9w
-W2CPZ8MBbRDH+PVOr1F5PrL9rTLgBkSnW/CWGbmAqrTmf8DaYhXCe+FMzHn5CDjQ
-d9gdqXyzRi5E8jhsgaO/DbckJFr8ElXAsnbTEn0OU+scsPKuzMKhRPxtoqn+Y+yY
-iqqj+YDVpCsGY4iB2E5i+QRSoX/lyAq9FH7MJWzpgzvUIuzjrmB2Ak0ZDYlz1gsb
-0+4Y34uhgNVIoXdYKu1ZQF8QqzvtcCb0iL3tp9rHaC+ugO3G8xrSYTb4/KI5R8o=
-=kPsk
+iQEcBAEBAgAGBQJOIZqrAAoJEDMEi1NhKgbsYZEH/i4h7Qx+pSFMNFK3OrJFU2bA
+21Xs5OjpGFuRr2q/w7qfVUiPD2JDKakplM89bUIKejPLkOtF1mCUn7t36EzpeAxs
+aweHAL3MmW/eOe+VxovLcqo2gdBXH9H6P/AFLZt8R44dFKtWU5fNuGYuNf2jDzpM
+4+IkLUJUrWS4xCazIC7v19ggrM5m8PdHsH2nYQ4eTicUs7kIW5L/bg+gali+TIaM
++sin8Yl+d3SZ5+ePfMUJPAiE0yieF/0IcsWTdbuX8RUkyJBH+bssceAQ5sMTDN14
+H9tbfnaLThHHHX9N791BVpxzqVh9aJ8/CcqfnCV3+Ynu+ilGKmGk6i9yRoWjdJY=
+=HZFh
 -----END PGP SIGNATURE-----
 
---Signature=_Sat__16_Jul_2011_23_18_00_+1000_CJejqOlv6A=oj3Ri--
+--Signature=_Sun__17_Jul_2011_00_05_31_+1000_cWtM+Jk6mGKCU=vE--
