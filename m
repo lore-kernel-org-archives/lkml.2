@@ -1,46 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753413Ab1GPCkZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 22:40:25 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:45471
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751420Ab1GPCkX (ORCPT
+	id S1753128Ab1GPCsc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 22:48:32 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41590 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751179Ab1GPCsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 22:40:23 -0400
-Date: Fri, 15 Jul 2011 22:40:15 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: ersatz splatt <ersatzsplatt@gmail.com>
-Cc: Roland Dreier <roland@purestorage.com>, Matthew Wilcox <matthew@wil.cx>,
-        Jens Axboe <axboe@kernel.dk>, "Jiang, Dave" <dave.jiang@intel.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        "Foong, Annie" <annie.foong@intel.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Nadolski, Edmund" <edmund.nadolski@intel.com>,
-        "Skirvin, Jeffrey D" <jeffrey.d.skirvin@intel.com>
-Subject: Re: rq_affinity doesn't seem to work?
-Message-ID: <20110716024015.GA32253@infradead.org>
-References: <D010E79907AF0D4E90B603DE907837D504CA6365D6@azsmsx504.amr.corp.intel.com>
- <4E1CAEEB.8050506@kernel.dk>
- <20110713171011.GA11864@parisc-linux.org>
- <CAL1RGDUDbEG4ypr0GJLLi_0PTjZK0HshMVwTs=aY+=hhFdjK5g@mail.gmail.com>
- <CAHQAjVGK97KU0dB700WSTS1bH0YkW1_MCVaAtjR9aFQRJTcsbA@mail.gmail.com>
+	Fri, 15 Jul 2011 22:48:31 -0400
+Date: Sat, 16 Jul 2011 11:48:22 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Greg KH <greg@kroah.com>, Grant Likely <grant@secretlab.ca>,
+        Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>
+Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Samuel Oritz <sameo@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4] regmap: Generic I2C and SPI register map library
+Message-ID: <20110716024817.GC17883@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAHQAjVGK97KU0dB700WSTS1bH0YkW1_MCVaAtjR9aFQRJTcsbA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 15, 2011 at 04:43:44PM -0700, ersatz splatt wrote:
-> I have a dual socket system with Tylersburg chipset (approximately
-> Westmere I gather).
-> With two Xeon X5660 packages I get this when running with more iops
-> potential than the system can handle:
+This is a version of a series I've been posting for most of this release
+cycle which abstracts out a bunch of widely duplicated code for doing
+register I/O on devices with control slow buses like I2C and SPI.  As
+well as saving us code for the register I/O itself this should also make
+it easier to factor out further higher level code for this class of
+devices.
 
-What HBA do you use? Does it already have a lockless ->queuecommand?
+This version of the series includes a number of fairly small updates
+from review by Grant and Jean and also a moderately invasive change to
+have bus-specific registration functions at Grant's request.
 
+I realise it's a bit late in the cycle but it'd be really good if we
+could get this merged in the next merge window, or accepted for about
+then so we can create a stable branch we can merge into subsystem trees
+in order to get drivers using this merged for 3.2.  As there's only one
+user included the series it should be pretty low risk.
+
+The code is in a subdirectory because I'm anticipating it'll grow quite
+a bit as we add facilities like fancy cache mechanisms on top of it.
+
+A more verbose cover letter:
+
+Many I2C and SPI based devices implement register maps on top of the raw
+wire interface.  This is generally done in a very standard fashion by
+devices, resulting in a lot of very similar code in drivers.  For some
+time now ASoC has factored this code out into the subsystem but that's
+only useful for audio devices.  The intention with this series is to
+generalise the concept so that it can be used throughout the kernel.
+
+It's not intended that this be suitable for all devices - some devices
+have things that are hard to generalise like registers with variable
+size and paging which are hard to support genericly.  At the minute the
+code is focused on the common cases.  It is likely that the same code
+could be used with other buses with similar properties to I2C and SPI.
+
+Currently only physical I/O is handled, the intention is that once this
+support has been reviewed and merged the generic register cache code
+that ASoC includes will also be factored out too, along with logging and
+diagnostic infrastructure for register maps.  For devices with read
+heavy workloads (especially those that need a lot of read/modify/write
+cycles) or which don't support read at all this can provide a useful
+performance improvement and for sparse register maps there's a lot of
+benefit in relatively complex cache code.
+ 
+I'm not entirely happy with the implementation currently but am fairly
+happy with the external interfaces.
+
+A bunch more drivers have been converted to use this framework,
+including the existing ASoC register I/O code, but due to various -next
+dependencies these don't apply easily so I've omitted them from this
+posting of the series - you can see them in the mailing list archives,
+they've not been updated during the review.
+
+There's a git branch at:
+
+   git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git for-next
+
+I've also created a regmap-asoc branch there which merges current ASoC
+code with the regmap code.
+
+The following changes since commit 620917de59eeb934b9f8cf35cc2d95c1ac8ed0fc:
+
+  Linux 3.0-rc7 (2011-07-11 16:51:52 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git for-next
+
+Mark Brown (4):
+      regmap: Add generic non-memory mapped register access API
+      regmap: Add I2C bus support
+      regmap: Add SPI bus support
+      regulator: Convert tps65023 to use regmap API
+
+ MAINTAINERS                            |    9 +
+ drivers/base/Kconfig                   |    2 +
+ drivers/base/Makefile                  |    1 +
+ drivers/base/regmap/Kconfig            |    6 +
+ drivers/base/regmap/Makefile           |    1 +
+ drivers/base/regmap/regmap.c           |  455 ++++++++++++++++++++++++++++++++
+ drivers/i2c/Kconfig                    |    4 +
+ drivers/i2c/Makefile                   |    1 +
+ drivers/i2c/i2c-regmap.c               |  115 ++++++++
+ drivers/regulator/Kconfig              |    1 +
+ drivers/regulator/tps65023-regulator.c |   97 ++-----
+ drivers/spi/Kconfig                    |    4 +
+ drivers/spi/Makefile                   |    1 +
+ drivers/spi/spi-regmap.c               |   73 +++++
+ include/linux/regmap.h                 |   79 ++++++
+ 15 files changed, 779 insertions(+), 70 deletions(-)
+ create mode 100644 drivers/base/regmap/Kconfig
+ create mode 100644 drivers/base/regmap/Makefile
+ create mode 100644 drivers/base/regmap/regmap.c
+ create mode 100644 drivers/i2c/i2c-regmap.c
+ create mode 100644 drivers/spi/spi-regmap.c
+ create mode 100644 include/linux/regmap.h
