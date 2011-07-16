@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754668Ab1GPTPA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jul 2011 15:15:00 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:59803 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752757Ab1GPTO6 (ORCPT
+	id S1754821Ab1GPTRj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jul 2011 15:17:39 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:60500 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754286Ab1GPTRi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jul 2011 15:14:58 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: linux-next: Tree for July 16
-Date: Sat, 16 Jul 2011 21:14:09 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-References: <20110717000815.c83755be9598d34ac8431908@canb.auug.org.au>
+	Sat, 16 Jul 2011 15:17:38 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=IrxPVRyLHFqRLUWBsJrqXjOEEQTaBKLwmQx1YfaM/wLHJFvPtVhHmlSp+jlnT/5Yp3edlA8IXhW4/qSbzGaClCii5+iKaTejkXa/d7Rt++88nkOWi6/Y/GBCUal/uobQ;
+Date: Sat, 16 Jul 2011 12:17:34 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, tpmdd-devel@lists.sourceforge.net
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        James Morris <jmorris@namei.org>
+Subject: Re: linux-next: Tree for July 16 (tpm)
+Message-Id: <20110716121734.97b2e291.rdunlap@xenotime.net>
 In-Reply-To: <20110717000815.c83755be9598d34ac8431908@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+References: <20110717000815.c83755be9598d34ac8431908@canb.auug.org.au>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201107162114.09441.arnd@arndb.de>
-X-Provags-ID: V02:K0:XRtGe4eQVZnnXYDtFzoELag3A5lvCY/2+a1hT28OXq1
- amZwktKXmfFGYMHSE2Ebu9Yf5EPkOuItnSmGRlS4bWHC/aR7He
- oZ+Tyogo116mDYYeSRXTP+ZiZ0XcFp/2jUcpSfIItVyGleDSCS
- VXp/QFLOEnDxWloN1TBRoSRfwak3K0HXK8Ad6erPpuOl92kLoF
- o3O2Ys9AT8ixOEushNJPA==
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 16 July 2011 16:08:15 Stephen Rothwell wrote:
-> The pci-current tree lost its build failure.
+On Sun, 17 Jul 2011 00:08:15 +1000 Stephen Rothwell wrote:
+
+> Hi all,
 > 
-> The arm-soc tree has complex conflicts against the arm tree so I have
-> dropped it for today.
+> Changes since 20110707:
 
-Sorry about that. I was notified of this before, but didn't get to cleanly
-redo the tree yet. The problem was that I first tried to merge the for-next
-branch of the ARM tree into the arm-soc master branch, but I couldn't find\
-a way to deal with the arm-soc tree getting rebased.
+When CONFIG_PNP is not enabled:
 
-I now plan to start a new arm-soc/for-next branch that will have the same
-contents but also gets rebased. I'll let you know when I get there.
+drivers/char/tpm/tpm_tis.c:845: error: implicit declaration of function 'tpm_tis_reenable_interrupts'
 
-	Arnd
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
