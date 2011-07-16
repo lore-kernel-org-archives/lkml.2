@@ -1,140 +1,353 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753816Ab1GPLW4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jul 2011 07:22:56 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:50140 "EHLO
+	id S1754064Ab1GPLXE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jul 2011 07:23:04 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:39349 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753143Ab1GPLWx (ORCPT
+	with ESMTP id S1753767Ab1GPLW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jul 2011 07:22:53 -0400
-X-Authority-Analysis: v=1.1 cv=5asQ6euaRPJxDdFxwvXsn6JDb7fmFbz8qWDLMfa45gU= c=1 sm=0 a=vhdKIqpQuCYA:10 a=YhTgZTORN4oA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=VnNF1IyMAAAA:8 a=meVymXHHAAAA:8 a=DAz7-d-wjv9Io5UqZgwA:9 a=poTzZO6F3hRWVEBxnmgA:7 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Sat, 16 Jul 2011 07:22:56 -0400
+X-Authority-Analysis: v=1.1 cv=yMxAJ7W7nAoPh8ZdbvCArpG6pAdHwgpzIvOq8QbMesM= c=1 sm=0 a=vhdKIqpQuCYA:10 a=8LuBwlhw72gA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=6rqHouBjAAAA:8 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=1XWaLZrsAAAA:8 a=QyXUC8HyAAAA:8 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=w3mPwZPB-OOMFM1IscgA:9 a=u-X1jlyC6NeTTn2V4BAA:7 a=TAmEwCHjoHMA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=UTB_XpHje0EA:10 a=dGJ0OcVc7YAA:10 a=MSl-tDqOz04A:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110716112251.423929607@goodmis.org>
+Message-Id: <20110716112253.316404480@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Sat, 16 Jul 2011 07:22:01 -0400
+Date: Sat, 16 Jul 2011 07:22:08 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [PATCH 01/20] tracing: Still trace filtered irq functions when irq trace is
+        Don Zickus <dzickus@redhat.com>, Cyrill Gorcunov <gorcunov@openvz.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>, Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 08/20] perf, x86: P4 PMU - Introduce event alias feature
 References: <20110716112200.096203519@goodmis.org>
-Content-Disposition: inline; filename=0001-tracing-Still-trace-filtered-irq-functions-when-irq-.patch
- disabled
+Content-Disposition: inline; filename=0008-perf-x86-P4-PMU-Introduce-event-alias-feature.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Cyrill Gorcunov <gorcunov@openvz.org>
 
-If a function is set to be traced by the set_graph_function, but the
-option funcgraph-irqs is zero, and the traced function happens to be
-called from a interrupt, it will not be traced.
+Instead of hw_nmi_watchdog_set_attr() weak function
+and appropriate x86_pmu::hw_watchdog_set_attr() call
+we introduce even alias mechanism which allow us
+to drop this routines completely and isolate quirks
+of Netburst architecture inside P4 PMU code only.
 
-The point of funcgraph-irqs is to not trace interrupts when we are
-preempted by an irq, not to not trace functions we want to trace that
-happen to be *in* a irq.
+The main idea remains the same though -- to allow
+nmi-watchdog and perf top run simultaneously.
 
-Luckily the current->trace_recursion element is perfect to add a flag
-to help us be able to trace functions within an interrupt even when
-we are not tracing interrupts that preempt the trace.
+Note the aliasing mechanism applies to generic
+PERF_COUNT_HW_CPU_CYCLES event only because arbitrary
+event (say passed as RAW initially) might have some
+additional bits set inside ESCR register changing
+the behaviour of event and we can't guarantee anymore
+that alias event will give the same result.
 
-Reported-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Tested-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+P.S. Thanks a huge to Don and Steven for for testing
+     and early review.
+
+Acked-by: Don Zickus <dzickus@redhat.com>
+Tested-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Stephane Eranian <eranian@google.com>
+CC: Lin Ming <ming.m.lin@intel.com>
+CC: Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: Frederic Weisbecker <fweisbec@gmail.com>
+Link: http://lkml.kernel.org/r/20110708201712.GS23657@sun
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace.h                 |   50 +++++++++++++++++++++++-----------
- kernel/trace/trace_functions_graph.c |    2 +-
- 2 files changed, 35 insertions(+), 17 deletions(-)
+ arch/x86/include/asm/perf_event_p4.h |   33 ++++++++
+ arch/x86/kernel/cpu/perf_event.c     |    7 --
+ arch/x86/kernel/cpu/perf_event_p4.c  |  135 ++++++++++++++++++++++++++-------
+ kernel/watchdog.c                    |    2 -
+ 4 files changed, 139 insertions(+), 38 deletions(-)
 
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index a3e2db7..651f35b 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -278,6 +278,29 @@ struct tracer {
+diff --git a/arch/x86/include/asm/perf_event_p4.h b/arch/x86/include/asm/perf_event_p4.h
+index 56fd9e3..4d86c86 100644
+--- a/arch/x86/include/asm/perf_event_p4.h
++++ b/arch/x86/include/asm/perf_event_p4.h
+@@ -102,6 +102,14 @@
+ #define P4_CONFIG_HT			(1ULL << P4_CONFIG_HT_SHIFT)
+ 
+ /*
++ * If an event has alias it should be marked
++ * with a special bit. (Don't forget to check
++ * P4_PEBS_CONFIG_MASK and related bits on
++ * modification.)
++ */
++#define P4_CONFIG_ALIASABLE		(1 << 9)
++
++/*
+  * The bits we allow to pass for RAW events
+  */
+ #define P4_CONFIG_MASK_ESCR		\
+@@ -123,6 +131,31 @@
+ 	(p4_config_pack_escr(P4_CONFIG_MASK_ESCR))	| \
+ 	(p4_config_pack_cccr(P4_CONFIG_MASK_CCCR))
+ 
++/*
++ * In case of event aliasing we need to preserve some
++ * caller bits otherwise the mapping won't be complete.
++ */
++#define P4_CONFIG_EVENT_ALIAS_MASK			  \
++	(p4_config_pack_escr(P4_CONFIG_MASK_ESCR)	| \
++	 p4_config_pack_cccr(P4_CCCR_EDGE		| \
++			     P4_CCCR_THRESHOLD_MASK	| \
++			     P4_CCCR_COMPLEMENT		| \
++			     P4_CCCR_COMPARE))
++
++#define  P4_CONFIG_EVENT_ALIAS_IMMUTABLE_BITS		  \
++	((P4_CONFIG_HT)					| \
++	 p4_config_pack_escr(P4_ESCR_T0_OS		| \
++			     P4_ESCR_T0_USR		| \
++			     P4_ESCR_T1_OS		| \
++			     P4_ESCR_T1_USR)		| \
++	 p4_config_pack_cccr(P4_CCCR_OVF		| \
++			     P4_CCCR_CASCADE		| \
++			     P4_CCCR_FORCE_OVF		| \
++			     P4_CCCR_THREAD_ANY		| \
++			     P4_CCCR_OVF_PMI_T0		| \
++			     P4_CCCR_OVF_PMI_T1		| \
++			     P4_CONFIG_ALIASABLE))
++
+ static inline bool p4_is_event_cascaded(u64 config)
+ {
+ 	u32 cccr = p4_config_unpack_cccr(config);
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index c53d433..b7a010f 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -274,7 +274,6 @@ struct x86_pmu {
+ 	void		(*enable_all)(int added);
+ 	void		(*enable)(struct perf_event *);
+ 	void		(*disable)(struct perf_event *);
+-	void		(*hw_watchdog_set_attr)(struct perf_event_attr *attr);
+ 	int		(*hw_config)(struct perf_event *event);
+ 	int		(*schedule_events)(struct cpu_hw_events *cpuc, int n, int *assign);
+ 	unsigned	eventsel;
+@@ -360,12 +359,6 @@ static u64 __read_mostly hw_cache_extra_regs
+ 				[PERF_COUNT_HW_CACHE_OP_MAX]
+ 				[PERF_COUNT_HW_CACHE_RESULT_MAX];
+ 
+-void hw_nmi_watchdog_set_attr(struct perf_event_attr *wd_attr)
+-{
+-	if (x86_pmu.hw_watchdog_set_attr)
+-		x86_pmu.hw_watchdog_set_attr(wd_attr);
+-}
+-
+ /*
+  * Propagate event elapsed time into the generic event.
+  * Can only be executed on the CPU where the event is active.
+diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
+index fb901c5..8b7a0c3 100644
+--- a/arch/x86/kernel/cpu/perf_event_p4.c
++++ b/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -570,11 +570,92 @@ static __initconst const u64 p4_hw_cache_event_ids
+  },
  };
  
- 
-+/* Only current can touch trace_recursion */
-+#define trace_recursion_inc() do { (current)->trace_recursion++; } while (0)
-+#define trace_recursion_dec() do { (current)->trace_recursion--; } while (0)
-+
-+/* Ring buffer has the 10 LSB bits to count */
-+#define trace_recursion_buffer() ((current)->trace_recursion & 0x3ff)
-+
-+/* for function tracing recursion */
-+#define TRACE_INTERNAL_BIT		(1<<11)
-+#define TRACE_GLOBAL_BIT		(1<<12)
 +/*
-+ * Abuse of the trace_recursion.
-+ * As we need a way to maintain state if we are tracing the function
-+ * graph in irq because we want to trace a particular function that
-+ * was called in irq context but we have irq tracing off. Since this
-+ * can only be modified by current, we can reuse trace_recursion.
++ * Because of Netburst being quite restricted in now
++ * many same events can run simultaneously, we use
++ * event aliases, ie different events which have the
++ * same functionallity but use non-intersected resources
++ * (ESCR/CCCR/couter registers). This allow us to run
++ * two or more semi-same events together. It is done
++ * transparently to a user space.
++ *
++ * Never set any cusom internal bits such as P4_CONFIG_HT,
++ * P4_CONFIG_ALIASABLE or bits for P4_PEBS_METRIC, they are
++ * either up-to-dated automatically either not appliable
++ * at all.
++ *
++ * And be really carefull choosing aliases!
 + */
-+#define TRACE_IRQ_BIT			(1<<13)
++struct p4_event_alias {
++	u64 orig;
++	u64 alter;
++} p4_event_aliases[] = {
++	{
++		/*
++		 * Non-halted cycles can be substituted with
++		 * non-sleeping cycles (see Intel SDM Vol3b for
++		 * details).
++		 */
++	.orig	=
++		p4_config_pack_escr(P4_ESCR_EVENT(P4_EVENT_GLOBAL_POWER_EVENTS)		|
++				    P4_ESCR_EMASK_BIT(P4_EVENT_GLOBAL_POWER_EVENTS, RUNNING)),
++	.alter	=
++		p4_config_pack_escr(P4_ESCR_EVENT(P4_EVENT_EXECUTION_EVENT)		|
++				    P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS0)|
++				    P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS1)|
++				    P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS2)|
++				    P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS3)|
++				    P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS0)	|
++				    P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS1)	|
++				    P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS2)	|
++				    P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS3))|
++		p4_config_pack_cccr(P4_CCCR_THRESHOLD(15) | P4_CCCR_COMPLEMENT		|
++				    P4_CCCR_COMPARE),
++	},
++};
 +
-+#define trace_recursion_set(bit)	do { (current)->trace_recursion |= (bit); } while (0)
-+#define trace_recursion_clear(bit)	do { (current)->trace_recursion &= ~(bit); } while (0)
-+#define trace_recursion_test(bit)	((current)->trace_recursion & (bit))
++static u64 p4_get_alias_event(u64 config)
++{
++	u64 config_match;
++	int i;
 +
- #define TRACE_PIPE_ALL_CPU	-1
- 
- int tracer_init(struct tracer *t, struct trace_array *tr);
-@@ -516,8 +539,18 @@ static inline int ftrace_graph_addr(unsigned long addr)
- 		return 1;
- 
- 	for (i = 0; i < ftrace_graph_count; i++) {
--		if (addr == ftrace_graph_funcs[i])
-+		if (addr == ftrace_graph_funcs[i]) {
-+			/*
-+			 * If no irqs are to be traced, but a set_graph_function
-+			 * is set, and called by an interrupt handler, we still
-+			 * want to trace it.
-+			 */
-+			if (in_irq())
-+				trace_recursion_set(TRACE_IRQ_BIT);
-+			else
-+				trace_recursion_clear(TRACE_IRQ_BIT);
- 			return 1;
++	/*
++	 * Probably we're lucky and don't have to do
++	 * matching over all config bits.
++	 */
++	if (!(config & P4_CONFIG_ALIASABLE))
++		return 0;
++
++	config_match = config & P4_CONFIG_EVENT_ALIAS_MASK;
++
++	/*
++	 * If an event was previously swapped to the alter config
++	 * we should swap it back otherwise contnention on registers
++	 * will return back.
++	 */
++	for (i = 0; i < ARRAY_SIZE(p4_event_aliases); i++) {
++		if (config_match == p4_event_aliases[i].orig) {
++			config_match = p4_event_aliases[i].alter;
++			break;
++		} else if (config_match == p4_event_aliases[i].alter) {
++			config_match = p4_event_aliases[i].orig;
++			break;
 +		}
- 	}
++	}
++
++	if (i >= ARRAY_SIZE(p4_event_aliases))
++		return 0;
++
++	return config_match |
++		(config & P4_CONFIG_EVENT_ALIAS_IMMUTABLE_BITS);
++}
++
+ static u64 p4_general_events[PERF_COUNT_HW_MAX] = {
+   /* non-halted CPU clocks */
+   [PERF_COUNT_HW_CPU_CYCLES] =
+ 	p4_config_pack_escr(P4_ESCR_EVENT(P4_EVENT_GLOBAL_POWER_EVENTS)		|
+-		P4_ESCR_EMASK_BIT(P4_EVENT_GLOBAL_POWER_EVENTS, RUNNING)),
++		P4_ESCR_EMASK_BIT(P4_EVENT_GLOBAL_POWER_EVENTS, RUNNING))	|
++		P4_CONFIG_ALIASABLE,
  
+   /*
+    * retired instructions
+@@ -719,31 +800,6 @@ static int p4_validate_raw_event(struct perf_event *event)
  	return 0;
-@@ -794,19 +827,4 @@ extern const char *__stop___trace_bprintk_fmt[];
- 	FTRACE_ENTRY(call, struct_name, id, PARAMS(tstruct), PARAMS(print))
- #include "trace_entries.h"
+ }
  
--/* Only current can touch trace_recursion */
--#define trace_recursion_inc() do { (current)->trace_recursion++; } while (0)
--#define trace_recursion_dec() do { (current)->trace_recursion--; } while (0)
+-static void p4_hw_watchdog_set_attr(struct perf_event_attr *wd_attr)
+-{
+-	/*
+-	 * Watchdog ticks are special on Netburst, we use
+-	 * that named "non-sleeping" ticks as recommended
+-	 * by Intel SDM Vol3b.
+-	 */
+-	WARN_ON_ONCE(wd_attr->type	!= PERF_TYPE_HARDWARE ||
+-		     wd_attr->config	!= PERF_COUNT_HW_CPU_CYCLES);
 -
--/* Ring buffer has the 10 LSB bits to count */
--#define trace_recursion_buffer() ((current)->trace_recursion & 0x3ff)
+-	wd_attr->type	= PERF_TYPE_RAW;
+-	wd_attr->config	=
+-		p4_config_pack_escr(P4_ESCR_EVENT(P4_EVENT_EXECUTION_EVENT)		|
+-			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS0)		|
+-			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS1)		|
+-			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS2)		|
+-			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS3)		|
+-			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS0)		|
+-			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS1)		|
+-			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS2)		|
+-			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS3))		|
+-		p4_config_pack_cccr(P4_CCCR_THRESHOLD(15) | P4_CCCR_COMPLEMENT		|
+-			P4_CCCR_COMPARE);
+-}
 -
--/* for function tracing recursion */
--#define TRACE_INTERNAL_BIT		(1<<11)
--#define TRACE_GLOBAL_BIT		(1<<12)
--
--#define trace_recursion_set(bit)	do { (current)->trace_recursion |= (bit); } while (0)
--#define trace_recursion_clear(bit)	do { (current)->trace_recursion &= ~(bit); } while (0)
--#define trace_recursion_test(bit)	((current)->trace_recursion & (bit))
--
- #endif /* _LINUX_KERNEL_TRACE_H */
-diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-index e8d6bb5..a7d2a4c 100644
---- a/kernel/trace/trace_functions_graph.c
-+++ b/kernel/trace/trace_functions_graph.c
-@@ -227,7 +227,7 @@ int __trace_graph_entry(struct trace_array *tr,
- 
- static inline int ftrace_graph_ignore_irqs(void)
+ static int p4_hw_config(struct perf_event *event)
  {
--	if (!ftrace_graph_skip_irqs)
-+	if (!ftrace_graph_skip_irqs || trace_recursion_test(TRACE_IRQ_BIT))
- 		return 0;
+ 	int cpu = get_cpu();
+@@ -1159,6 +1215,8 @@ static int p4_pmu_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign
+ 	struct p4_event_bind *bind;
+ 	unsigned int i, thread, num;
+ 	int cntr_idx, escr_idx;
++	u64 config_alias;
++	int pass;
  
- 	return in_irq();
+ 	bitmap_zero(used_mask, X86_PMC_IDX_MAX);
+ 	bitmap_zero(escr_mask, P4_ESCR_MSR_TABLE_SIZE);
+@@ -1167,6 +1225,17 @@ static int p4_pmu_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign
+ 
+ 		hwc = &cpuc->event_list[i]->hw;
+ 		thread = p4_ht_thread(cpu);
++		pass = 0;
++
++again:
++		/*
++		 * Aliases are swappable so we may hit circular
++		 * lock if both original config and alias need
++		 * resources (MSR registers) which already busy.
++		 */
++		if (pass > 2)
++			goto done;
++
+ 		bind = p4_config_get_bind(hwc->config);
+ 		escr_idx = p4_get_escr_idx(bind->escr_msr[thread]);
+ 		if (unlikely(escr_idx == -1))
+@@ -1180,8 +1249,17 @@ static int p4_pmu_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign
+ 		}
+ 
+ 		cntr_idx = p4_next_cntr(thread, used_mask, bind);
+-		if (cntr_idx == -1 || test_bit(escr_idx, escr_mask))
+-			goto done;
++		if (cntr_idx == -1 || test_bit(escr_idx, escr_mask)) {
++			/*
++			 * Probably an event alias is still available.
++			 */
++			config_alias = p4_get_alias_event(hwc->config);
++			if (!config_alias)
++				goto done;
++			hwc->config = config_alias;
++			pass++;
++			goto again;
++		}
+ 
+ 		p4_pmu_swap_config_ts(hwc, cpu);
+ 		if (assign)
+@@ -1218,7 +1296,6 @@ static __initconst const struct x86_pmu p4_pmu = {
+ 	.cntval_bits		= ARCH_P4_CNTRVAL_BITS,
+ 	.cntval_mask		= ARCH_P4_CNTRVAL_MASK,
+ 	.max_period		= (1ULL << (ARCH_P4_CNTRVAL_BITS - 1)) - 1,
+-	.hw_watchdog_set_attr	= p4_hw_watchdog_set_attr,
+ 	.hw_config		= p4_hw_config,
+ 	.schedule_events	= p4_pmu_schedule_events,
+ 	/*
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index a933e3a..36491cd 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -200,7 +200,6 @@ static int is_softlockup(unsigned long touch_ts)
+ }
+ 
+ #ifdef CONFIG_HARDLOCKUP_DETECTOR
+-void __weak hw_nmi_watchdog_set_attr(struct perf_event_attr *wd_attr) { }
+ 
+ static struct perf_event_attr wd_hw_attr = {
+ 	.type		= PERF_TYPE_HARDWARE,
+@@ -372,7 +371,6 @@ static int watchdog_nmi_enable(int cpu)
+ 
+ 	wd_attr = &wd_hw_attr;
+ 	wd_attr->sample_period = hw_nmi_get_sample_period(watchdog_thresh);
+-	hw_nmi_watchdog_set_attr(wd_attr);
+ 
+ 	/* Try to register using hardware perf events */
+ 	event = perf_event_create_kernel_counter(wd_attr, cpu, NULL, watchdog_overflow_callback, NULL);
 -- 
 1.7.5.4
 
