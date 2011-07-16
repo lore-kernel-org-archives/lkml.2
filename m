@@ -1,57 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755526Ab1GPU2K (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jul 2011 16:28:10 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:57569 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753309Ab1GPU2I (ORCPT
+	id S1755558Ab1GPU2v (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jul 2011 16:28:51 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:47044 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753309Ab1GPU2u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jul 2011 16:28:08 -0400
-Date: Sat, 16 Jul 2011 21:27:53 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Americo Wang <xiyou.wangcong@gmail.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jarod Wilson <jwilson@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: Re: [RFC][PATCH] Replace a function call chain of
- kmsg_dump(KMSG_DUMP_KEXEC) with static function calls
-Message-ID: <20110716202753.GA16161@srcf.ucam.org>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C17AAE59A@USINDEVS01.corp.hds.com>
- <m14o2mjj5l.fsf@fess.ebiederm.org>
- <20110716162805.GA13127@srcf.ucam.org>
- <m1hb6mgf3w.fsf@fess.ebiederm.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1hb6mgf3w.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Sat, 16 Jul 2011 16:28:50 -0400
+Date: Sat, 16 Jul 2011 13:26:43 -0700 (PDT)
+Message-Id: <20110716.132643.101780166611692580.davem@davemloft.net>
+To: dmitry@broadcom.com
+Cc: rdunlap@xenotime.net, sfr@canb.auug.org.au, netdev@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        eilong@broadcom.com
+Subject: Re: linux-next: Tree for July 16 (net/bnx2x)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1310847842.2826.1.camel@lb-tlvb-dmitry>
+References: <20110717000815.c83755be9598d34ac8431908@canb.auug.org.au>
+	<20110716121427.11760128.rdunlap@xenotime.net>
+	<1310847842.2826.1.camel@lb-tlvb-dmitry>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 16 Jul 2011 13:26:44 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 16, 2011 at 01:11:47PM -0700, Eric W. Biederman wrote:
+From: "Dmitry Kravkov" <dmitry@broadcom.com>
+Date: Sat, 16 Jul 2011 23:24:02 +0300
 
-> Without some real understanding of what is going on I'm not inclined
-> to meet any of this half way and summarily reject every change to
-> the kexec on panic code path.
+> @@ -1403,8 +1403,8 @@ void bnx2x_netif_stop(struct bnx2x *bp, int
+> disable_hw)
+>  
 
-There are platforms that simply refuse to correctly function with a 1:1 
-physical/virtual mapping. But that's not the point here - this patch 
-simply hardcodes saving dmesg to an EFI variable rather than using 
-kmsg_dump and pstore in order to avoid handling the locking, and does 
-nothing whatsoever to change the amount of EFI code involved.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Patch corrupted by your email client, this long line was chopped
+up into two lines.
