@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754505Ab1GPM4y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jul 2011 08:56:54 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:35650 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751163Ab1GPM4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jul 2011 08:56:50 -0400
-Date: Sat, 16 Jul 2011 22:56:43 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vitaliy Ivanov <vitalivanov@gmail.com>, Jiri Kosina <jkosina@suse.cz>
-Subject: linux-next: manual merge of the staging tree with the trivial tree
-Message-Id: <20110716225643.426f99dafa7fcebab4cd9be8@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Sat__16_Jul_2011_22_56_43_+1000_9q/_3xgVD1mz/G/d"
+	id S1754558Ab1GPM5d (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jul 2011 08:57:33 -0400
+Received: from smtp.microsoft.com ([131.107.115.215]:34617 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751163Ab1GPM5a convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Jul 2011 08:57:30 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Christoph Hellwig <hch@infradead.org>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: [PATCH 097/117] Staging: hv: storvsc: Add code to handle IDE
+ devices using the storvsc driver
+Thread-Topic: [PATCH 097/117] Staging: hv: storvsc: Add code to handle IDE
+ devices using the storvsc driver
+Thread-Index: AQHMQxTVnqS9spDprUK7R5lIXPTpYJTuqKiAgABAUyA=
+Date: Sat, 16 Jul 2011 12:57:29 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0480817A4DA@TK5EX14MBXC124.redmond.corp.microsoft.com>
+References: <1310752024-27854-1-git-send-email-kys@microsoft.com>
+ <1310752065-27895-1-git-send-email-kys@microsoft.com>
+ <1310752065-27895-97-git-send-email-kys@microsoft.com>
+ <20110716020447.GB7199@infradead.org>
+In-Reply-To: <20110716020447.GB7199@infradead.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.36]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__16_Jul_2011_22_56_43_+1000_9q/_3xgVD1mz/G/d
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Greg,
 
-Today's linux-next merge of the staging tree got a conflict in
-drivers/staging/westbridge/astoria/arch/arm/plat-omap/include/mach/westbrid=
-ge/westbridge-omap3-pnand-hal/cyashalomap_kernel.h
-drivers/staging/westbridge/astoria/gadget/cyasgadget.h between commit
-e44ba033c565 ("treewide: remove duplicate includes") from the trivial
-tree and commit 78f23926dff9 ("Staging: delete westbridge code") from the
-staging tree.
+> -----Original Message-----
+> From: Christoph Hellwig [mailto:hch@infradead.org]
+> Sent: Friday, July 15, 2011 10:05 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang
+> Subject: Re: [PATCH 097/117] Staging: hv: storvsc: Add code to handle IDE devices
+> using the storvsc driver
+> 
+> Thanks, this looks much cleaner than the initial variant.
+> 
+> > +	if (dev_is_ide) {
+> > +		storvsc_get_ide_info(device, &target, &path);
+> > +		host_dev->path = device_info.path_id;
+> > +		host_dev->target = device_info.target_id;
+> > +	} else {
+> > +		host_dev->path = device_info.path_id;
+> > +		host_dev->target = device_info.target_id;
+> > +	}
+> 
+> Is using the device_info values in both branches intentional?  If so
+> there's no need to have these assignments duplicated.
 
-The latter removes the files, so I did that.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+While we set the values in both the branches, the value set is different;
+The IDE side encodes the bits differently and is appropriately parsed in the
+function storvsc_get_ide_info().
 
---Signature=_Sat__16_Jul_2011_22_56_43_+1000_9q/_3xgVD1mz/G/d
-Content-Type: application/pgp-signature
+Regards,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOIYqLAAoJEDMEi1NhKgbsiN4H/j2oC60IZCr5wPGjORmwzvMn
-4C3F8LadoOUayPDdcM34eMFffb1smE3Gp7urrUUVuNdzfMFmrtn3bno+Onv0D9Zi
-jkoS5S3ev9Uu+wS3msr4EHYo19ANZDkN2qs1M1TTruok2q1nqaO1aT+Q2TI2kgr6
-e7DNfWO0EzyxJ5UNX9PBfEPRIi1zGWqOgXeNRWjSpqRTjdEDk/orhaQdHHbfNEc+
-m8RM3l1N0rVEiejmf0EJb/hyELG/Zjformb4PGoOpqID/eUWizGBiql8wXWluNAh
-IT0GDKSG6kSWdNW45bQR16+rMxzjMGFcM24LiCmTyw3zFWmvgOXUo3YFYSvCFf4=
-=KdcM
------END PGP SIGNATURE-----
-
---Signature=_Sat__16_Jul_2011_22_56_43_+1000_9q/_3xgVD1mz/G/d--
+K. Y
