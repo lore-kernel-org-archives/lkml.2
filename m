@@ -1,92 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754864Ab1GPXpI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jul 2011 19:45:08 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:52180 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753033Ab1GPXpG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jul 2011 19:45:06 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=guWZn1ROjZHIxtXI4OppoaTNxfAm4xl06MLngrg4qmp0EET4gdpT7myfbhqBXNi06FXah1WFZjokMoiHhwpSXEDZAu2apA9BGYtHgXOCv703ZV4vMKXakSVnVQpVqQ5r;
-Date: Sat, 16 Jul 2011 16:45:03 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Len Brown <lenb@kernel.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-acpi@vger.kernel.org,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ACPI: APEI build fix
-Message-Id: <20110716164503.0ee2dc3d.rdunlap@xenotime.net>
-In-Reply-To: <alpine.LFD.2.02.1107161815220.4339@x980>
-References: <20110717000815.c83755be9598d34ac8431908@canb.auug.org.au>
-	<20110716120304.83d79985.rdunlap@xenotime.net>
-	<alpine.LFD.2.02.1107161815220.4339@x980>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	id S1754877Ab1GPXuo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jul 2011 19:50:44 -0400
+Received: from gate.crashing.org ([63.228.1.57]:33041 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752488Ab1GPXun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Jul 2011 19:50:43 -0400
+Subject: Re: [PATCH 1/1] Fixup write permission of TLB on powerpc e500 core
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Shan Hai <haishan.bai@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, paulus@samba.org,
+        tglx@linutronix.de, walken@google.com, dhowells@redhat.com,
+        cmetcalf@tilera.com, tony.luck@intel.com, akpm@linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+In-Reply-To: <4E21A526.8010904@gmail.com>
+References: <1310717238-13857-1-git-send-email-haishan.bai@gmail.com>
+	 <1310717238-13857-2-git-send-email-haishan.bai@gmail.com>
+	 <1310725418.2586.309.camel@twins>  <4E21A526.8010904@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 17 Jul 2011 09:49:54 +1000
+Message-ID: <1310860194.25044.17.camel@pasglop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 16 Jul 2011 18:16:20 -0400 (EDT) Len Brown wrote:
-
-> From: Len Brown <len.brown@intel.com>
+On Sat, 2011-07-16 at 10:50 -0400, Shan Hai wrote:
 > 
-> as GHES is optional...
+> That's right the gup(.write=1) want to do the same thing as the
+> above code snippet, but it failed for the following reason:
+> because the get_user_pages() would not dirty pte for the reason
+> the follow_page() returns not NULL on *present* and *writable*
+> page, the page which holds the lock is present because its a shared
+> page,
+> writable because demand paging set that up so for shared
+> writable page, so the handle_mm_fault() in the __get_user_page()
+> could not be called.
 > 
-> When # CONFIG_ACPI_APEI_GHES is not set:
+> Why the above code could do the same task, because by calling
+> handle_mm_fault() will set pte dirty by
+> [do_annonymous_page(), memory.c]
+> if (vma->vm_flags & VM_WRITE)
+>                  entry = pte_mkwrite(pte_mkdirty(entry));
 > 
-> (.init.text+0x4c22): undefined reference to `ghes_disable'
-> 
-> Signed-off-by: Len Brown <len.brown@intel.com>
 
-Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+Right. gup won't set page_dirty, it expects the caller to do so (in case
+it doesn't dirty all the gup'ed pages a suppose).
 
-Thanks.
+You could probably fix the problem here by setting dirty after gup in
+the futex code if you know you're going to write. You must do that with
+the PTE lock held though and -not- at interrupt time.
 
-> ---
->  drivers/acpi/bus.c  |    2 --
->  include/acpi/apei.h |    4 ++++
->  2 files changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
-> index 43ce3b0..437ddbf 100644
-> --- a/drivers/acpi/bus.c
-> +++ b/drivers/acpi/bus.c
-> @@ -544,10 +544,8 @@ static void acpi_bus_osc_support(void)
->  	capbuf[OSC_SUPPORT_TYPE] |= OSC_SB_PPC_OST_SUPPORT;
->  #endif
->  
-> -#ifdef CONFIG_ACPI_APEI_GHES
->  	if (!ghes_disable)
->  		capbuf[OSC_SUPPORT_TYPE] |= OSC_SB_APEI_SUPPORT;
-> -#endif
->  	if (ACPI_FAILURE(acpi_get_handle(NULL, "\\_SB", &handle)))
->  		return;
->  	if (ACPI_SUCCESS(acpi_run_osc(handle, &context))) {
-> diff --git a/include/acpi/apei.h b/include/acpi/apei.h
-> index d40bc55..51a527d 100644
-> --- a/include/acpi/apei.h
-> +++ b/include/acpi/apei.h
-> @@ -18,7 +18,11 @@
->  
->  extern int hest_disable;
->  extern int erst_disable;
-> +#ifdef CONFIG_ACPI_APEI_GHES
->  extern int ghes_disable;
-> +#else
-> +#define ghes_disable 1
-> +#endif
->  
->  #ifdef CONFIG_ACPI_APEI
->  void __init acpi_hest_init(void);
-> -- 
+Note however that the exact same problem exist with normal "read"
+accesses and page_young (_PAGE_ACCESSED on powerpc). The page will not
+be accessible until that bit is set and it's set by SW.
 
+As I wrote earlier, fixing that by making "atomic" page faults perform
+the dirty/accessed tracking is not right, since such faults can happen
+at interrupt time and the PTE lock cannot be taken at interrupt time.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+IE. The implementation of those "SW" TLB archs heavily relies on the PTE
+lock to serialize write access to the PTE and writing it outside of that
+lock would do really bad things.
+
+So there's a deeper problem here. The whole user access "in atomic"
+concept is by itself a violation of some of the basic access rules of
+user memory that have existed from day 1 of the kernel. That we allow it
+for semi-harmless (and allowed to fail) things like snapshot of
+backtraces for perf is one thing, but relying on it for the futex case
+like that is not going to fly very well. I sincerely hope that this kind
+of usage is not going to become a habit.
+
+In the meantime, other than rewriting the futex code to not require
+those in-atomic accesses (can't it just access the pages via the linear
+mapping and/or kmap after the gup ?), all I see would be a way to force
+dirty and young after gup, with appropriate locks, or a variant of gup
+(via a flag ?) to require it to do so.
+
+Cheers,
+Ben.
+
