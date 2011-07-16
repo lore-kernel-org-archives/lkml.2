@@ -1,38 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755397Ab1GPUTh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jul 2011 16:19:37 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:40238 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750975Ab1GPUTg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jul 2011 16:19:36 -0400
-Date: Sat, 16 Jul 2011 13:17:33 -0700 (PDT)
-Message-Id: <20110716.131733.1746593505234880481.davem@davemloft.net>
-To: jkosina@suse.cz
-Cc: edt@aei.ca, luiz.dentz@gmail.com, linux-kernel@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org, padovan@profusion.mobi, iliak@ti.com,
-        torvalds@linux-foundation.org
-Subject: Re: [BUG] Bluetooth broken post rc7
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.LRH.2.00.1107162141340.7178@twin.jikos.cz>
-References: <CABBYNZ+fxUWhi0uF0b_6Z8iqYd7Pp_4zPBRyM6Gyh3zJH1am5Q@mail.gmail.com>
-	<201107150728.04355.edt@aei.ca>
-	<alpine.LRH.2.00.1107162141340.7178@twin.jikos.cz>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1755499Ab1GPUYU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jul 2011 16:24:20 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:4472 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751948Ab1GPUYT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Jul 2011 16:24:19 -0400
+X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
+Subject: Re: linux-next: Tree for July 16 (net/bnx2x)
+From: "Dmitry Kravkov" <dmitry@broadcom.com>
+Reply-to: dmitry@broadcom.com
+To: "Randy Dunlap" <rdunlap@xenotime.net>
+cc: "Stephen Rothwell" <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Eilon Greenstein" <eilong@broadcom.com>
+In-Reply-To: <20110716121427.11760128.rdunlap@xenotime.net>
+References: <20110717000815.c83755be9598d34ac8431908@canb.auug.org.au>
+ <20110716121427.11760128.rdunlap@xenotime.net>
+Organization: BROADCOM
+Date: Sat, 16 Jul 2011 23:24:02 +0300
+Message-ID: <1310847842.2826.1.camel@lb-tlvb-dmitry>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.32.2
+X-WSS-ID: 623F2B015ZC2073775-01-01
+Content-Type: text/plain;
+ charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 16 Jul 2011 13:17:36 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Kosina <jkosina@suse.cz>
-Date: Sat, 16 Jul 2011 21:43:06 +0200 (CEST)
+On Sat, 2011-07-16 at 12:14 -0700, Randy Dunlap wrote:
+> On Sun, 17 Jul 2011 00:08:15 +1000 Stephen Rothwell wrote:
+> 
+> > Hi all,
+> > 
+> > Changes since 20110707:
+> 
+> When BCM_CNIC is not defined:
+> 
+> drivers/net/bnx2x/bnx2x_cmn.c:1429: error: 'bp' undeclared (first use in this function)
+> 
+> Full kernel config file is attached.
+> 
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+bnx2x: Fix compilation when CNIC is not selected in config
 
-> could you please repost the patch with proper changelog and your 
-> Signed-off-by, so that it could (hopefully) be applied for 3.0 still?
+Reported-by:  Randy Dunlap <rdunlap@xenotime.net>
+Signed-off-by: Dmitry Kravkov <dmitry@broadcom.com>
+---
+ drivers/net/bnx2x/bnx2x_cmn.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-It's already in my networking tree and on the way to Linus, and has
-been so for half a day.
+diff --git a/drivers/net/bnx2x/bnx2x_cmn.c
+b/drivers/net/bnx2x/bnx2x_cmn.c
+index e5fac62..b05ce93 100644
+--- a/drivers/net/bnx2x/bnx2x_cmn.c
++++ b/drivers/net/bnx2x/bnx2x_cmn.c
+@@ -1403,8 +1403,8 @@ void bnx2x_netif_stop(struct bnx2x *bp, int
+disable_hw)
+ 
+ u16 bnx2x_select_queue(struct net_device *dev, struct sk_buff *skb)
+ {
+-#ifdef BCM_CNIC
+ 	struct bnx2x *bp = netdev_priv(dev);
++#ifdef BCM_CNIC
+ 	if (NO_FCOE(bp))
+ 		return skb_tx_hash(dev, skb);
+ 	else {
+-- 
+1.7.2.2
+
+
+
+
