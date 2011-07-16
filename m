@@ -1,54 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753689Ab1GPS1a (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jul 2011 14:27:30 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:38630
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751689Ab1GPS10 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jul 2011 14:27:26 -0400
-Date: Sat, 16 Jul 2011 14:27:23 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: KY Srinivasan <kys@microsoft.com>, Christoph Hellwig <hch@infradead.org>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: Re: [PATCH 097/117] Staging: hv: storvsc: Add code to handle IDE
- devices using the storvsc driver
-Message-ID: <20110716182723.GA21943@infradead.org>
-References: <1310752024-27854-1-git-send-email-kys@microsoft.com>
- <1310752065-27895-1-git-send-email-kys@microsoft.com>
- <1310752065-27895-97-git-send-email-kys@microsoft.com>
- <20110716020447.GB7199@infradead.org>
- <6E21E5352C11B742B20C142EB499E0480817A4DA@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <1310821299.1976.2.camel@lappy>
+	id S1753665Ab1GPSwJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jul 2011 14:52:09 -0400
+Received: from hera.kernel.org ([140.211.167.34]:48231 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752014Ab1GPSwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Jul 2011 14:52:07 -0400
+Date: Sat, 16 Jul 2011 18:52:00 GMT
+From: tip-bot for Len Brown <len.brown@intel.com>
+Message-ID: <tip-17edf2d79f1ea6dfdb4c444801d928953b9f98d6@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        table@kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
+        len.brown@intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        table@kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
+        len.brown@intel.com
+In-Reply-To: <alpine.LFD.2.02.1107151732480.18606@x980>
+References: <alpine.LFD.2.02.1107151732480.18606@x980>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/cpu] x86, intel, power: Correct the MSR_IA32_ENERGY_PERF_BIAS message
+Git-Commit-ID: 17edf2d79f1ea6dfdb4c444801d928953b9f98d6
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1310821299.1976.2.camel@lappy>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 16 Jul 2011 18:52:01 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 16, 2011 at 04:01:39PM +0300, Sasha Levin wrote:
-> Is think that what Christoph meant was simplifying it to:
-> 
-> 	if (dev_is_ide)
-> 		storvsc_get_ide_info(device, &target, &path);
-> 	
-> 	host_dev->path = device_info.path_id;
-> 	host_dev->target = device_info.target_id;
+Commit-ID:  17edf2d79f1ea6dfdb4c444801d928953b9f98d6
+Gitweb:     http://git.kernel.org/tip/17edf2d79f1ea6dfdb4c444801d928953b9f98d6
+Author:     Len Brown <len.brown@intel.com>
+AuthorDate: Fri, 15 Jul 2011 17:37:15 -0400
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 15 Jul 2011 15:13:55 -0700
 
-Indeed.  In addition path is unused and target is only used in the
-second dev_is_ide conditional, so both the call and the target and path
-variables can be moved into that one to further simplify the function.
+x86, intel, power: Correct the MSR_IA32_ENERGY_PERF_BIAS message
 
-But I'm fine with delaying that cleanup to a follow on patch so that
-we can make progress in getting this pile merged.
+Fix the printk_once() so that it actually prints (didn't print before
+due to a stray comma.)
 
+[ hpa: changed to an incremental patch and adjusted the description
+  accordingly. ]
+
+Signed-off-by: Len Brown <len.brown@intel.com>
+Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1107151732480.18606@x980
+Cc: <table@kernel.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/cpu/intel.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index da0d779..ed6086e 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -465,11 +465,11 @@ static void __cpuinit init_intel(struct cpuinfo_x86 *c)
+ 		u64 epb;
+ 
+ 		rdmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
+-		if ((epb & 0xF) == 0) {
+-			printk_once(KERN_WARNING, "x86: updated energy_perf_bias"
+-				" to 'normal' from 'performance'\n"
+-				"You can view and update epb via utility,"
+-				" such as x86_energy_perf_policy(8)\n");
++		if ((epb & 0xF) == ENERGY_PERF_BIAS_PERFORMANCE) {
++			printk_once(KERN_WARNING "ENERGY_PERF_BIAS:"
++				" Set to 'normal', was 'performance'\n"
++				"ENERGY_PERF_BIAS: View and update with"
++				" x86_energy_perf_policy(8)\n");
+ 			epb = (epb & ~0xF) | ENERGY_PERF_BIAS_NORMAL;
+ 			wrmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
+ 		}
