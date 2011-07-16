@@ -1,300 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751689Ab1GPGcq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jul 2011 02:32:46 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:55245 "EHLO
-	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750758Ab1GPGcp (ORCPT
+	id S1752001Ab1GPHnT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jul 2011 03:43:19 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:35894 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164Ab1GPHnS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jul 2011 02:32:45 -0400
-X-SpamScore: -11
-X-BigFish: VS-11(zz14e0M1432N98dKc8kzz1202hzz8275dhz2dh2a8h668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Sat, 16 Jul 2011 14:39:32 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: <devicetree-discuss@lists.ozlabs.org>, Shawn Guo <shawn.guo@linaro.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2] dt: add of_alias_scan and of_alias_get_id
-Message-ID: <20110716063931.GH1840@S2100-06.ap.freescale.net>
-References: <20110715183638.3669.32838.stgit@ponder>
+	Sat, 16 Jul 2011 03:43:18 -0400
+Date: Sat, 16 Jul 2011 15:43:01 +0800
+From: Harry Wei <jiaweiwei.xiyou@gmail.com>
+To: greg@kroah.com
+Cc: linux-kernel@vger.kernel.org, kongjianjun@gmail.com, harryxiyou@gmail.com,
+        joe@perches.com, rdunlap@xenotime.net
+Subject: [Patch Resend]Fix the messy code file
+ Documentation/zh_CN/SubmitChecklist
+Message-ID: <20110716074255.GA4150@gmail.com>
+Mail-Followup-To: greg@kroah.com, linux-kernel@vger.kernel.org,
+	kongjianjun@gmail.com, harryxiyou@gmail.com, joe@perches.com,
+	rdunlap@xenotime.net
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=unknown-8bit
 Content-Disposition: inline
-In-Reply-To: <20110715183638.3669.32838.stgit@ponder>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 15, 2011 at 12:37:27PM -0600, Grant Likely wrote:
-> From: Shawn Guo <shawn.guo@linaro.org>
-> 
-> The patch adds function of_alias_scan to populate a global lookup
-> table with the properties of 'aliases' node and function
-> of_alias_get_id for drivers to find alias id from the lookup table.
-> 
-> Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-> [grant.likey: add locking and rework parse loop]
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> ---
-> 
-> Hi Shawn,
-> 
-> I've reworked as discussed on the ML.  Please test and let me know if
-> it still works for you.
-> 
-Grant, please see comments below.
+From: Harry Wei <harryxiyou@gmail.com>
 
-> g.
-> 
->  drivers/of/base.c      |  130 ++++++++++++++++++++++++++++++++++++++++++++++++
->  drivers/of/fdt.c       |    4 +
->  include/linux/of.h     |    8 +++
->  include/linux/of_fdt.h |    1 
->  4 files changed, 141 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index b8b65fd..6d9adc6 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -17,14 +17,39 @@
->   *      as published by the Free Software Foundation; either version
->   *      2 of the License, or (at your option) any later version.
->   */
-> +#include <linux/ctype.h>
->  #include <linux/module.h>
->  #include <linux/of.h>
->  #include <linux/spinlock.h>
->  #include <linux/slab.h>
->  #include <linux/proc_fs.h>
->  
-> +/**
-> + * struct alias_prop - Alias property in 'aliases' node
-> + * @link:	List node to link the structure in aliases_lookup list
-> + * @alias:	Alias property name
-> + * @np:		Pointer to device_node that the alias stands for
-> + * @id:		Index value from end of alias name
-> + * @stem:	Alias string without the index
-> + *
-> + * The structure represents one alias property of 'aliases' node as
-> + * an entry in aliases_lookup list.
-> + */
-> +struct alias_prop {
-> +	struct list_head link;
-> +	const char *alias;
-> +	struct device_node *np;
-> +	int id;
-> +	char stem[0];
-> +};
-> +
-> +static LIST_HEAD(aliases_lookup);
-> +
->  struct device_node *allnodes;
->  struct device_node *of_chosen;
-> +struct device_node *of_aliases;
-> +
-> +static DEFINE_MUTEX(of_aliases_mutex);
->  
->  /* use when traversing tree through the allnext, child, sibling,
->   * or parent members of struct device_node.
-> @@ -980,3 +1005,108 @@ out_unlock:
->  }
->  #endif /* defined(CONFIG_OF_DYNAMIC) */
->  
-> +static void of_alias_add(struct alias_prop *ap, struct device_node *np,
-> +			 int id, const char *stem, int stem_len)
-> +{
-> +	ap->id = id;
-> +	strncpy(ap->stem, stem, stem_len);
-> +	ap->stem[stem_len] = 0;
-> +	list_add_tail(&ap->link, &aliases_lookup);
-> +	pr_debug("adding DT alias:%s: stem=%s id=%i node=%s\n",
-> +		 ap->alias, ap->stem, ap->id, np ? np->full_name : NULL);
-> +}
+This patch can fix the messy code file Documentation/zh_CN/SubmitChecklist.
 
-We need to do "ap->np = np;" in this function, otherwise the match of
-(np == app->np) in function of_alias_get_id() will always fail.
+Signed-off-by: Harry Wei <harryxiyou@gmail.com>
+---
+ Documentation/zh_CN/SubmitChecklist |  118 +++++++++++++++++-----------------
+ 1 files changed, 59 insertions(+), 59 deletions(-)
 
-Nit: I initially name pointer (struct alias_prop *) as 'app', while
-the codes you add name it as 'ap'.  You may want to get them consistent.
-
-> +
-> +/**
-> + * of_alias_scan() - Scan all properties of 'aliases' node
-> + *
-> + * The function scans all the properties of 'aliases' node and populate
-> + * the the global lookup table with the properties.  It returns the
-
-There is an extra "the".  I did this :)
-
-> + * number of alias_prop found, or error code in error case.
-> + */
-> +__init void of_alias_scan(void)
-> +{
-> +	struct property *pp;
-> +
-> +	if (!of_aliases)
-> +		return;
-> +
-> +	for_each_property(pp, of_aliases->properties) {
-> +		const char *start = pp->name;
-> +		const char *end = start + strlen(start);
-> +		struct device_node *np;
-> +		struct alias_prop *ap;
-> +		int id, len;
-> +
-> +		/* Skip those we do not want to proceed */
-> +		if (!strcmp(pp->name, "name") ||
-> +		    !strcmp(pp->name, "phandle") ||
-> +		    !strcmp(pp->name, "linux,phandle"))
-> +			continue;
-> +
-> +		np = of_find_node_by_path(pp->value);
-> +		if (!np)
-> +			continue;
-> +
-> +		/* walk the alias backwards to extract the id and work out
-> +		 * the 'stem' string */
-
-/*
- * bla
- */
-
-> +		while (isdigit(*(end-1)) && end > start)
-> +			end--;
-> +		len = end - start;
-> +		id = strlen(end) ? simple_strtoul(end, NULL, 10) : -1;
-> +
-> +		/* Allocate an alias_prop with enough space for the stem */
-> +		ap = early_init_dt_alloc_memory_arch(sizeof(*ap) + len + 1, 4);
-> +		if (!ap)
-> +			continue;
-> +		ap->alias = start;
-> +		of_alias_add(ap, np, id, start, len);
-> +	}
-> +}
-> +
-> +/**
-> + * of_alias_get_id() - Get alias id for the given device_node
-> + * @np:		Pointer to the given device_node
-> + * @stem:	Alias stem of the given device_node
-> + *
-> + * The function travels the lookup table to get alias id for the given
-> + * device_node and alias stem.  It returns the alias id if find it.
-> + * If not, dynamically creates one in the lookup table and returns it,
-> + * or returns error code if fail to create.
-> + */
-> +int of_alias_get_id(struct device_node *np, const char *stem)
-> +{
-> +	struct alias_prop *app;
-> +	int id = 0;
-> +	bool found = false;
-> +
-> +	mutex_lock(&of_aliases_mutex);
-> +	list_for_each_entry(app, &aliases_lookup, link) {
-> +		if (strcmp(app->stem, stem) != 0)
-> +			continue;
-> +
-> +		if (np == app->np) {
-> +			found = true;
-> +			id = app->id;
-> +			break;
-> +		}
-> +
-> +		if (id <= app->id)
-> +			id = app->id + 1;
-> +	}
-> +
-> +	/* If an id is not found, then allocate a new one */
-> +	if (!found) {
-> +		app = kzalloc(sizeof(*app) + strlen(stem) + 1, 4);
-> +		if (!app) {
-> +			id = -ENODEV;
-> +			goto out;
-> +		}
-> +		of_alias_add(app, np, id, stem, strlen(stem));
-> +	}
-> +
-> + out:
-> +	mutex_unlock(&of_aliases_mutex);
-> +
-> +	return id;
-> +}
-> +EXPORT_SYMBOL_GPL(of_alias_get_id);
-> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-> index 65200af..13d6d3a 100644
-> --- a/drivers/of/fdt.c
-> +++ b/drivers/of/fdt.c
-> @@ -707,10 +707,12 @@ void __init unflatten_device_tree(void)
->  	__unflatten_device_tree(initial_boot_params, &allnodes,
->  				early_init_dt_alloc_memory_arch);
->  
-> -	/* Get pointer to OF "/chosen" node for use everywhere */
-> +	/* Get pointer to "/chosen" and "/aliasas" nodes for use everywhere */
->  	of_chosen = of_find_node_by_path("/chosen");
->  	if (of_chosen == NULL)
->  		of_chosen = of_find_node_by_path("/chosen@0");
-> +	of_aliases = of_find_node_by_path("/aliases");
-> +	of_alias_scan();
->  }
->  
->  #endif /* CONFIG_OF_EARLY_FLATTREE */
-> diff --git a/include/linux/of.h b/include/linux/of.h
-> index 4fc4c1b..e334c11 100644
-> --- a/include/linux/of.h
-> +++ b/include/linux/of.h
-> @@ -68,6 +68,7 @@ struct device_node {
->  /* Pointer for first entry in chain of all nodes. */
->  extern struct device_node *allnodes;
->  extern struct device_node *of_chosen;
-> +extern struct device_node *of_aliases;
->  extern rwlock_t devtree_lock;
->  
->  static inline bool of_have_populated_dt(void)
-> @@ -205,6 +206,9 @@ extern int of_device_is_available(const struct device_node *device);
->  extern const void *of_get_property(const struct device_node *node,
->  				const char *name,
->  				int *lenp);
-> +#define for_each_property(pp, properties) \
-> +	for (pp = properties; pp != NULL; pp = pp->next)
-> +
->  extern int of_n_addr_cells(struct device_node *np);
->  extern int of_n_size_cells(struct device_node *np);
->  extern const struct of_device_id *of_match_node(
-> @@ -217,6 +221,10 @@ extern int of_parse_phandles_with_args(struct device_node *np,
->  	const char *list_name, const char *cells_name, int index,
->  	struct device_node **out_node, const void **out_args);
->  
-> +extern void *early_init_dt_alloc_memory_arch(u64 size, u64 align);
-> +extern void of_alias_scan(void);
-> +extern int of_alias_get_id(struct device_node *np, const char *stem);
-> +
->  extern int of_machine_is_compatible(const char *compat);
->  
->  extern int prom_add_property(struct device_node* np, struct property* prop);
-> diff --git a/include/linux/of_fdt.h b/include/linux/of_fdt.h
-> index c84d900..b74b74f 100644
-> --- a/include/linux/of_fdt.h
-> +++ b/include/linux/of_fdt.h
-> @@ -97,7 +97,6 @@ extern void early_init_dt_check_for_initrd(unsigned long node);
->  extern int early_init_dt_scan_memory(unsigned long node, const char *uname,
->  				     int depth, void *data);
->  extern void early_init_dt_add_memory_arch(u64 base, u64 size);
-> -extern void * early_init_dt_alloc_memory_arch(u64 size, u64 align);
->  extern u64 dt_mem_next_cell(int s, __be32 **cellp);
->  
->  /*
-> 
-> _______________________________________________
-> devicetree-discuss mailing list
-> devicetree-discuss@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/devicetree-discuss
-> 
-
+diff --git a/Documentation/zh_CN/SubmitChecklist b/Documentation/zh_CN/SubmitChecklist
+index 951415b..7f41713 100644
+--- a/Documentation/zh_CN/SubmitChecklist
++++ b/Documentation/zh_CN/SubmitChecklist
+@@ -8,102 +8,102 @@ or if there is a problem with the translation.
+ 
+ Chinese maintainer: Harry Wei <harryxiyou@gmail.com>
+ ---------------------------------------------------------------------
+-Documentation/SubmitChecklist ?????ķ???
++Documentation/SubmitChecklist 的中文翻译
+ 
+-?????????ۻ????±??ĵ????ݣ???ֱ??��ϵԭ?ĵ???ά???ߡ???????ʹ??Ӣ??
+-??????��?ѵĻ???Ҳ?????????İ?ά?????????????�����?????²???ʱ???߷?
+-?????????⣬??��ϵ???İ?ά???ߡ?
++如果想评论或更新本文的内容，请直接联系原文档的维护者。如果你使用英文
++交流有困难的话，也可以向中文版维护者求助。如果本翻译更新不及时或者翻
++译存在问题，请联系中文版维护者。
+ 
+-???İ?ά???ߣ? ?????? Harry Wei <harryxiyou@gmail.com>
+-???İ淭???ߣ? ?????? Harry Wei <harryxiyou@gmail.com>
+-???İ?У???ߣ? ?????? Harry Wei <harryxiyou@gmail.com>
++中文版维护者： 贾威威 Harry Wei <harryxiyou@gmail.com>
++中文版翻译者： 贾威威 Harry Wei <harryxiyou@gmail.com>
++中文版校译者： 贾威威 Harry Wei <harryxiyou@gmail.com>
+ 
+ 
+-????Ϊ????
++以下为正文
+ ---------------------------------------------------------------------
+-Linux?ں??ύ?嵥
++Linux内核提交清单
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 
+-??????һЩ?ں˿?????Ӧ?????Ļ??????飬?????????뿴???Լ????ں˲????ύ
+-?????ܵĸ??졣
++这里有一些内核开发者应该做的基本事情，如果他们想看到自己的内核补丁提交
++被接受的更快。
+ 
+-??Щ???ǳ???Documentation/SubmittingPatches?ĵ??????ṩ???Լ?????
+-?????ύLinux?ں˲?????˵????
++这些都是超出Documentation/SubmittingPatches文档里所提供的以及其他
++关于提交Linux内核补丁的说明。
+ 
+-1????????ʹ????һ????????ô??#include????/?????Ǹ????ܵ??Ǹ??ļ???
+-   ??Ҫ?��????????????붨??/?????Ǹ????ܵ?ͷ?ļ???
++1：如果你使用了一个功能那么就#include定义/声明那个功能的那个文件。
++   不要依靠其他间接引入定义/声明那个功能的头文件。
+ 
+-2?????????????û??߸???CONFIGѡ?? =y??=m??????=n??
+-   ??Ҫ?б??뾯??/?????? ??Ҫ??��?Ӿ???/??????
++2：构建简洁适用或者更改CONFIG选项 =y，=m，或者=n.   
++   不要有编译警告/错误， 不要有链接警告/错误.
+ 
+-2b??ͨ?? allnoconfig, allmodconfig
++2b：通过 allnoconfig, allmodconfig
+ 
+-2c????ʹ?? 0=builddir ?ɹ??ع???
++2c：当使用 0=builddir 成功地构建
+ 
+-3??ͨ??ʹ?ñ??ؽ??????빤?߻???????һЩ???????????ڶ?CPU?????Ϲ?????
++3：通过使用本地交叉编译工具或者其他一些构建产所，在多CPU框架上构建。
+ 
+-4??ppc64 ??һ???ܺõļ??齻???????Ŀ??ܣ???Ϊ???????ѡ?unsigned long??
+-   ??64λֵ��ʹ?á?
++4：ppc64 是一个很好的检查交叉编译的框架，因为它往往把‘unsigned long’
++   当64位值来使用。
+ 
+-5??????Documentation/CodingStyle?ļ???????ϸ???����????㲹??????????????
+-   ʹ?ò?????????????????Υ??(scripts/checkpatch.pl)??????Ա?????ύ??
+-   ??Ӧ?õ??????????㲹???е?????Υ?档
++5：按照Documentation/CodingStyle文件里的详细描述，检查你补丁的整体风格。
++   使用补丁风格检查琐碎的违规(scripts/checkpatch.pl)，审核员优先提交。
++   你应该调整遗留在你补丁中的所有违规。
+ 
+-6???κθ??»??߸Ķ?CONFIGѡ????ܴ??????ò˵???
++6：任何更新或者改动CONFIG选项都不能打乱配置菜单。
+ 
+-7?????е?Kconfigѡ?????¶?Ҫ??˵?????֡?
++7：所有的Kconfig选项更新都要有说明文字。
+ 
+-8???Ѿ????????ܽ??????ص?Kconfig???ϡ????Ǻ???ͨ?????????õ?--??��???????½???
++8：已经认真地总结了相关的Kconfig组合。这是很难通过测试做好的--脑力在这里下降。
+ 
+-9?????????м????ԡ?
++9：检查具有简洁性。
+ 
+-10??ʹ??'make checkstack'??'make namespacecheck'???飬Ȼ???޸????ҵ??????⡣
+-    ע?⣺??ջ???鲻????ȷ?س??????⣬?????κε?һ???????ڶ?ջ??ʹ?ö???512?ֽ?
+-    ??Ҫ׼???޸ġ?
++10：使用'make checkstack'和'make namespacecheck'检查，然后修改所找到的问题。
++    注意：堆栈检查不会明确地出现问题，但是任何的一个函数在堆栈上使用多于512字节
++    都要准备修改。
+ 
+-11??????kernel-doc??ȫ???ں?APIs?ļ???????Ҫ????̬?ĺ????????ǰ???Ҳ????ν????
+-    ʹ??'make htmldocs'????'make mandocs'��????kernel-doc??Ȼ???޸??κ?
+-    ???ֵ????⡣
++11：包含kernel-doc到全局内核APIs文件。（不要求静态的函数，但是包含也无所谓。）
++    使用'make htmldocs'或者'make mandocs'来检查kernel-doc，然后修改任何
++    发现的问题。
+ 
+-12???Ѿ?ͨ??CONFIG_PREEMPT, CONFIG_DEBUG_PREEMPT,
++12：已经通过CONFIG_PREEMPT, CONFIG_DEBUG_PREEMPT,
+     CONFIG_DEBUG_SLAB, CONFIG_DEBUG_PAGEALLOC, CONFIG_DEBUG_MUTEXES,
+-    CONFIG_DEBUG_SPINLOCK, CONFIG_DEBUG_SPINLOCK_SLEEP???ԣ?????ͬʱ??
+-    ʹ?ܡ?
++    CONFIG_DEBUG_SPINLOCK, CONFIG_DEBUG_SPINLOCK_SLEEP测试，并且同时都
++    使能。
+ 
+-13???Ѿ???????????ʹ?û??߲?ʹ?? CONFIG_SMP ?? CONFIG_PREEMPT????ִ??ʱ?䡣
++13：已经都构建并且使用或者不使用 CONFIG_SMP 和 CONFIG_PREEMPT测试执行时间。
+ 
+-14?????�����Ӱ??IO/Disk???ȵȣ??Ѿ?ͨ??ʹ?û??߲?ʹ?? CONFIG_LBDAF ???ԡ?
++14：如果补丁影响IO/Disk，等等：已经通过使用或者不使用 CONFIG_LBDAF 测试。
+ 
+-15?????е?codepaths?Ѿ???ʹ????lockdep???ù??ܡ?
++15：所有的codepaths已经行使所有lockdep启用功能。
+ 
+-16?????е?/proc??¼???¶?Ҫ?????ļ?????Documentation/Ŀ¼?¡?
++16：所有的/proc记录更新都要作成文件放在Documentation/目录下。
+ 
+-17?????е??ں??����??????¶?????¼??Documentation/kernel-parameters.txt?ļ??С?
++17：所有的内核启动参数更新都被记录到Documentation/kernel-parameters.txt文件中。
+ 
+-18?????е?ģ?????????¶???MODULE_PARM_DESC()??¼??
++18：所有的模块参数更新都用MODULE_PARM_DESC()记录。
+ 
+-19?????е??û??ռ??ӿڸ??¶?????¼??Documentation/ABI/???鿴Documentation/ABI/README
+-    ???Ի??ø???????Ϣ???ı??û??ռ??ӿڵĲ???Ӧ?ñ??ʼ????͸?linux-api@vger.kernel.org??
++19：所有的用户空间接口更新都被记录到Documentation/ABI/。查看Documentation/ABI/README
++    可以获得更多的信息。改变用户空间接口的补丁应该被邮件抄送给linux-api@vger.kernel.org。
+ 
+-20?????????ǲ??Ƕ?ͨ??`make headers_check'??
++20：检查它是不是都通过`make headers_check'。
+ 
+-21???Ѿ?ͨ??????????slab??page-allocationʧ?ܼ??顣?鿴Documentation/fault-injection/??
++21：已经通过至少引入slab和page-allocation失败检查。查看Documentation/fault-injection/。
+ 
+-22???¼?????Դ???Ѿ?ͨ??`gcc -W'??ʹ??"make EXTRA_CFLAGS=-W"?????롣???????????ܶෳ?գ?
+-    ???Ƕ???Ѱ??©???????洦??????:"warning: comparison between signed and unsigned"??
++22：新加入的源码已经通过`gcc -W'（使用"make EXTRA_CFLAGS=-W"）编译。这样将产生很多烦恼，
++    但是对于寻找漏洞很有益处，例如:"warning: comparison between signed and unsigned"。
+ 
+-23?????????ϲ???-mm?????????ٲ??ԣ???��ȷ?????Ƿ񻹺Ͳ????????е????�����һ???????Լ???VM??VFS
+-    ????????ϵͳ?и????仯??
++23：当它被合并到-mm补丁集后再测试，用来确定它是否还和补丁队列中的其他补丁一起工作以及在VM，VFS
++    和其他子系统中各个变化。
+ 
+-24?????е??ڴ?????{e.g., barrier(), rmb(), wmb()}??Ҫ??Դ?????е?һ??ע??��???????Ƕ??Ǹ?ʲô??
+-    ?Լ?ԭ????
++24：所有的内存屏障{e.g., barrier(), rmb(), wmb()}需要在源代码中的一个注释来解释他们都是干什么的
++    以及原因。
+ 
+-25?????????κ????????????ƵĲ????????ӣ?ҲҪ????Documentation/ioctl/ioctl-number.txt??
++25：如果有任何输入输出控制的补丁被添加，也要更新Documentation/ioctl/ioctl-number.txt。
+ 
+-26?????????ĸ??Ĵ????��?????ʹ???κε??ں?APIs????????????kconfig?????й?ϵ?Ĺ??ܣ?????Ҫ
+-    ʹ?????ص?kconfig???Źرգ? and/or =m??????ѡ???ṩ??[??ͬһʱ?䲻?????õĶ????ã?????????????????
+-    ????????]??
++26：如果你的更改代码依靠或者使用任何的内核APIs或者与下面的kconfig符号有关系的功能，你就要
++    使用相关的kconfig符号关闭， and/or =m（如果选项提供）[在同一时间不是所用的都启用，仅仅各个或者自由
++    组合他们]：
+ 
+     CONFIG_SMP, CONFIG_SYSFS, CONFIG_PROC_FS, CONFIG_INPUT, CONFIG_PCI,
+     CONFIG_BLOCK, CONFIG_PM, CONFIG_HOTPLUG, CONFIG_MAGIC_SYSRQ,
+-    CONFIG_NET, CONFIG_INET=n (??һ??ʹ?? CONFIG_NET=y)
++    CONFIG_NET, CONFIG_INET=n (后一个使用 CONFIG_NET=y)
 -- 
-Regards,
-Shawn
+1.7.0.4
 
