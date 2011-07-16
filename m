@@ -1,37 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752827Ab1GPCFX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 22:05:23 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:40021
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751471Ab1GPCFW (ORCPT
+	id S1752720Ab1GPCGZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 22:06:25 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:51461 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751357Ab1GPCGV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 22:05:22 -0400
-Date: Fri, 15 Jul 2011 22:05:20 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>
-Subject: Re: [PATCH 098/117] Staging: hv: storvsc: Handle IDE devices using
- the storvsc driver
-Message-ID: <20110716020520.GC7199@infradead.org>
-References: <1310752024-27854-1-git-send-email-kys@microsoft.com>
- <1310752065-27895-1-git-send-email-kys@microsoft.com>
- <1310752065-27895-98-git-send-email-kys@microsoft.com>
+	Fri, 15 Jul 2011 22:06:21 -0400
+Date: Fri, 15 Jul 2011 20:06:18 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Greg KH <greg@kroah.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Samuel Oritz <sameo@linux.intel.com>,
+        Graeme Gregory <gg@slimlogic.co.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] regulator: Convert tps65023 to use regmap API
+Message-ID: <20110716020618.GB16014@ponder.secretlab.ca>
+References: <20110709044923.GB13074@opensource.wolfsonmicro.com>
+ <1310187044-13269-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <1310187044-13269-4-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <20110715025328.GJ2927@ponder.secretlab.ca>
+ <20110715044800.GK32716@opensource.wolfsonmicro.com>
+ <20110715182954.GB2833@ponder.secretlab.ca>
+ <20110716014536.GA17883@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1310752065-27895-98-git-send-email-kys@microsoft.com>
+In-Reply-To: <20110716014536.GA17883@opensource.wolfsonmicro.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 15, 2011 at 10:47:26AM -0700, K. Y. Srinivasan wrote:
-> Now, enable handling of all IDE devices by extending the storvsc
-> device id table to handle IDE guid. As part of this cleanup Kconfig
-> and Hyper-V Makefile to not build the IDE driver (blkvsc).
+On Sat, Jul 16, 2011 at 10:47:09AM +0900, Mark Brown wrote:
+> On Fri, Jul 15, 2011 at 12:29:54PM -0600, Grant Likely wrote:
+> > On Fri, Jul 15, 2011 at 01:48:05PM +0900, Mark Brown wrote:
+> 
+> > > Right, the driver is always going to know exactly what bus it registered
+> > > on but for many drivers we don't really have any bus-specific code once
+> > > we factor out the register I/O.
+> 
+> > Exactly my point.  The only time a global registration list is needed
+> > is at setup time.  Once the regmap structure is initialized, it
+> > doesn't need to reference the list.  I far prefer the simplicity of an
+> > explicit bus type initialization than the implicit method with the
+> 
+> I'm just not seeing massive complexity here, and I am writing a lot of
+> multi-bus drivers with bolierplate code.  My ideal world would be one
+> line probe and exit functions for the buses, or better yet a single ops
+> structure assigned to both buses, as with my user hat on if I'm telling
+> the API the struct device to use I really shouldn't be having to tell it
+> what bus the device is on since I just told it that.
+> 
+> > extra indirection code needed to implement it, by my measure, ~60-70
+> > lines of code.
+> 
+> If you're talking about pure lines of code here then obviously you don't
+> need to convert terribly many drivers before you end up with a saving
+> overall.
+> 
+> > Also, making is explicit guarantees that there is no question about
+> > the i2c or spi module of regmap getting loaded before it gets used.
+> 
+> The bus must obviously be ready for the device to probe in the first
+> place and the regmap API is static only so it'll always be there.  We
+> just need to load the regmap hooks along with the bus core and we're
+> fine.
+> 
+> Still, the merge window is getting near so I guess I'll make the change :/
 
-I think this should be part of the previous patch.
+:)  Indeed.  We can merge without and then enjoy the argument at our
+leisure after the merge window.
+
+g.
