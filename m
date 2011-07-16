@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754020Ab1GPCtU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 22:49:20 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41612 "EHLO
+	id S1752027Ab1GPCtg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 22:49:36 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41608 "EHLO
 	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753481Ab1GPCsz (ORCPT
+	by vger.kernel.org with ESMTP id S1753392Ab1GPCsz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Jul 2011 22:48:55 -0400
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
@@ -14,9 +14,9 @@ Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
         Liam Girdwood <lrg@ti.com>, Samuel Oritz <sameo@linux.intel.com>,
         linux-kernel@vger.kernel.org,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 3/4] regmap: Add SPI bus support
-Date: Sat, 16 Jul 2011 11:48:39 +0900
-Message-Id: <1310784520-8961-3-git-send-email-broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 4/4] regulator: Convert tps65023 to use regmap API
+Date: Sat, 16 Jul 2011 11:48:40 +0900
+Message-Id: <1310784520-8961-4-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1310784520-8961-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 References: <20110716024817.GC17883@opensource.wolfsonmicro.com>
@@ -27,154 +27,184 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Acked-by: Liam Girdwood <lrg@ti.com>
-Acked-by: Wolfram Sang <w.sang@pengutronix.de>
 ---
- MAINTAINERS              |    1 +
- drivers/spi/Kconfig      |    4 ++
- drivers/spi/Makefile     |    1 +
- drivers/spi/spi-regmap.c |   73 ++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/regmap.h   |    3 ++
- 5 files changed, 82 insertions(+), 0 deletions(-)
- create mode 100644 drivers/spi/spi-regmap.c
+ drivers/regulator/Kconfig              |    1 +
+ drivers/regulator/tps65023-regulator.c |   97 +++++++++-----------------------
+ 2 files changed, 28 insertions(+), 70 deletions(-)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 21d7698..dbe1d4f 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -5319,6 +5319,7 @@ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git
- S:	Supported
- F:	drivers/base/regmap/
- F:	drivers/i2c/i2c-regmap.c
-+F:	drivers/spi/spi-regmap.c
- F:	include/linux/regmap.h
- 
- RFKILL
-diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
-index de35c3a..1c689a8 100644
---- a/drivers/spi/Kconfig
-+++ b/drivers/spi/Kconfig
-@@ -43,12 +43,16 @@ config SPI_MASTER
- #	boolean "SPI Master Support"
- 	boolean
- 	default SPI
-+	select SPI_REGMAP if REGMAP
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index d7ed20f..c8dc5f0 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -235,6 +235,7 @@ config REGULATOR_TPS6105X
+ config REGULATOR_TPS65023
+ 	tristate "TI TPS65023 Power regulators"
+ 	depends on I2C
++	select REGMAP
  	help
- 	  If your system has an master-capable SPI controller (which
- 	  provides the clock and chipselect), you can enable that
- 	  controller and the protocol drivers for the SPI slave chips
- 	  that are connected.
- 
-+config SPI_REGMAP
-+	boolean
-+
- if SPI_MASTER
- 
- comment "SPI Master Controller Drivers"
-diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
-index 0f8c69b..52dcf27 100644
---- a/drivers/spi/Makefile
-+++ b/drivers/spi/Makefile
-@@ -7,6 +7,7 @@ ccflags-$(CONFIG_SPI_DEBUG) := -DDEBUG
- # small core, mostly translating board-specific
- # config declarations into driver model code
- obj-$(CONFIG_SPI_MASTER)		+= spi.o
-+obj-$(CONFIG_SPI_REGMAP)		+= spi-regmap.o
- 
- # SPI master controller drivers (bus)
- obj-$(CONFIG_SPI_ALTERA)		+= spi_altera.o
-diff --git a/drivers/spi/spi-regmap.c b/drivers/spi/spi-regmap.c
-new file mode 100644
-index 0000000..b994218
---- /dev/null
-+++ b/drivers/spi/spi-regmap.c
-@@ -0,0 +1,73 @@
-+/*
-+ * Register map access API - SPI support
-+ *
-+ * Copyright 2011 Wolfson Microelectronics plc
-+ *
-+ * Author: Mark Brown <broonie@opensource.wolfsonmicro.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
+ 	  This driver supports TPS65023 voltage regulator chips. TPS65023 provides
+ 	  three step-down converters and two general-purpose LDO voltage regulators.
+diff --git a/drivers/regulator/tps65023-regulator.c b/drivers/regulator/tps65023-regulator.c
+index fbddc15..bedb549 100644
+--- a/drivers/regulator/tps65023-regulator.c
++++ b/drivers/regulator/tps65023-regulator.c
+@@ -25,6 +25,7 @@
+ #include <linux/i2c.h>
+ #include <linux/delay.h>
+ #include <linux/slab.h>
 +#include <linux/regmap.h>
-+#include <linux/spi/spi.h>
-+#include <linux/init.h>
-+
-+static int regmap_spi_write(struct device *dev, const void *data, size_t count)
-+{
-+	struct spi_device *spi = to_spi_device(dev);
-+
-+	return spi_write(spi, data, count);
-+}
-+
-+static int regmap_spi_gather_write(struct device *dev,
-+				   const void *reg, size_t reg_len,
-+				   const void *val, size_t val_len)
-+{
-+	struct spi_device *spi = to_spi_device(dev);
-+	struct spi_message m;
-+	struct spi_transfer t[2] = { { .tx_buf = reg, .len = reg_len, },
-+				     { .tx_buf = val, .len = val_len, }, };
-+
-+	spi_message_init(&m);
-+	spi_message_add_tail(&t[0], &m);
-+	spi_message_add_tail(&t[1], &m);
-+
-+	return spi_sync(spi, &m);
-+}
-+
-+static int regmap_spi_read(struct device *dev,
-+			   const void *reg, size_t reg_size,
-+			   void *val, size_t val_size)
-+{
-+	struct spi_device *spi = to_spi_device(dev);
-+
-+	return spi_write_then_read(spi, reg, reg_size, val, val_size);
-+}
-+
-+static struct regmap_bus regmap_spi = {
-+	.type = &spi_bus_type,
-+	.write = regmap_spi_write,
-+	.gather_write = regmap_spi_gather_write,
-+	.read = regmap_spi_read,
-+	.owner = THIS_MODULE,
-+	.read_flag_mask = 0x80,
+ 
+ /* Register definitions */
+ #define	TPS65023_REG_VERSION		0
+@@ -125,93 +126,35 @@ struct tps_pmic {
+ 	struct i2c_client *client;
+ 	struct regulator_dev *rdev[TPS65023_NUM_REGULATOR];
+ 	const struct tps_info *info[TPS65023_NUM_REGULATOR];
+-	struct mutex io_lock;
++	struct regmap *regmap;
+ };
+ 
+-static inline int tps_65023_read(struct tps_pmic *tps, u8 reg)
+-{
+-	return i2c_smbus_read_byte_data(tps->client, reg);
+-}
+-
+-static inline int tps_65023_write(struct tps_pmic *tps, u8 reg, u8 val)
+-{
+-	return i2c_smbus_write_byte_data(tps->client, reg, val);
+-}
+-
+ static int tps_65023_set_bits(struct tps_pmic *tps, u8 reg, u8 mask)
+ {
+-	int err, data;
+-
+-	mutex_lock(&tps->io_lock);
+-
+-	data = tps_65023_read(tps, reg);
+-	if (data < 0) {
+-		dev_err(&tps->client->dev, "Read from reg 0x%x failed\n", reg);
+-		err = data;
+-		goto out;
+-	}
+-
+-	data |= mask;
+-	err = tps_65023_write(tps, reg, data);
+-	if (err)
+-		dev_err(&tps->client->dev, "Write for reg 0x%x failed\n", reg);
+-
+-out:
+-	mutex_unlock(&tps->io_lock);
+-	return err;
++	return regmap_update_bits(tps->regmap, reg, mask, mask);
+ }
+ 
+ static int tps_65023_clear_bits(struct tps_pmic *tps, u8 reg, u8 mask)
+ {
+-	int err, data;
+-
+-	mutex_lock(&tps->io_lock);
+-
+-	data = tps_65023_read(tps, reg);
+-	if (data < 0) {
+-		dev_err(&tps->client->dev, "Read from reg 0x%x failed\n", reg);
+-		err = data;
+-		goto out;
+-	}
+-
+-	data &= ~mask;
+-
+-	err = tps_65023_write(tps, reg, data);
+-	if (err)
+-		dev_err(&tps->client->dev, "Write for reg 0x%x failed\n", reg);
+-
+-out:
+-	mutex_unlock(&tps->io_lock);
+-	return err;
+-
++	return regmap_update_bits(tps->regmap, reg, mask, 0);
+ }
+ 
+ static int tps_65023_reg_read(struct tps_pmic *tps, u8 reg)
+ {
+-	int data;
++	unsigned int val;
++	int ret;
+ 
+-	mutex_lock(&tps->io_lock);
++	ret = regmap_read(tps->regmap, reg, &val);
+ 
+-	data = tps_65023_read(tps, reg);
+-	if (data < 0)
+-		dev_err(&tps->client->dev, "Read from reg 0x%x failed\n", reg);
+-
+-	mutex_unlock(&tps->io_lock);
+-	return data;
++	if (ret != 0)
++		return ret;
++	else
++		return val;
+ }
+ 
+ static int tps_65023_reg_write(struct tps_pmic *tps, u8 reg, u8 val)
+ {
+-	int err;
+-
+-	mutex_lock(&tps->io_lock);
+-
+-	err = tps_65023_write(tps, reg, val);
+-	if (err < 0)
+-		dev_err(&tps->client->dev, "Write for reg 0x%x failed\n", reg);
+-
+-	mutex_unlock(&tps->io_lock);
+-	return err;
++	return regmap_write(tps->regmap, reg, val);
+ }
+ 
+ static int tps65023_dcdc_is_enabled(struct regulator_dev *dev)
+@@ -463,6 +406,11 @@ static struct regulator_ops tps65023_ldo_ops = {
+ 	.list_voltage = tps65023_ldo_list_voltage,
+ };
+ 
++static struct regmap_config tps65023_regmap_config = {
++	.reg_bits = 8,
++	.val_bits = 8,
 +};
 +
-+/**
-+ * regmap_init_spi(): Initialise register map
-+ *
-+ * @dev: Device that will be interacted with
-+ * @config: Configuration for register map
-+ *
-+ * The return value will be an ERR_PTR() on error or a valid pointer to
-+ * a struct regmap.
-+ */
-+struct regmap *regmap_init_spi(struct device *dev,
-+			       const struct regmap_config *config)
-+{
-+	return regmap_init(dev, &regmap_spi, config);
-+}
-+EXPORT_SYMBOL_GPL(regmap_init_spi);
-+
-diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-index e509bac..c549632 100644
---- a/include/linux/regmap.h
-+++ b/include/linux/regmap.h
-@@ -61,6 +61,9 @@ struct regmap *regmap_init(struct device *dev,
- 			   const struct regmap_config *config);
- struct regmap *regmap_init_i2c(struct device *dev,
- 			       const struct regmap_config *config);
-+struct regmap *regmap_init_spi(struct device *dev,
-+			       const struct regmap_config *config);
-+
- void regmap_exit(struct regmap *map);
- int regmap_write(struct regmap *map, unsigned int reg, unsigned int val);
- int regmap_raw_write(struct regmap *map, unsigned int reg,
+ static int __devinit tps_65023_probe(struct i2c_client *client,
+ 				     const struct i2c_device_id *id)
+ {
+@@ -488,7 +436,13 @@ static int __devinit tps_65023_probe(struct i2c_client *client,
+ 	if (!tps)
+ 		return -ENOMEM;
+ 
+-	mutex_init(&tps->io_lock);
++	tps->regmap = regmap_init_i2c(&client->dev, &tps65023_regmap_config);
++	if (IS_ERR(tps->regmap)) {
++		error = PTR_ERR(tps->regmap);
++		dev_err(&client->dev, "Failed to allocate register map: %d\n",
++			error);
++		goto fail_alloc;
++	}
+ 
+ 	/* common for all regulators */
+ 	tps->client = client;
+@@ -527,6 +481,8 @@ static int __devinit tps_65023_probe(struct i2c_client *client,
+ 	while (--i >= 0)
+ 		regulator_unregister(tps->rdev[i]);
+ 
++	regmap_exit(tps->regmap);
++ fail_alloc:
+ 	kfree(tps);
+ 	return error;
+ }
+@@ -545,6 +501,7 @@ static int __devexit tps_65023_remove(struct i2c_client *client)
+ 	for (i = 0; i < TPS65023_NUM_REGULATOR; i++)
+ 		regulator_unregister(tps->rdev[i]);
+ 
++	regmap_exit(tps->regmap);
+ 	kfree(tps);
+ 
+ 	return 0;
 -- 
 1.7.5.4
 
