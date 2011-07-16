@@ -1,204 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753673Ab1GPLLP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jul 2011 07:11:15 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:48164 "EHLO
+	id S1753816Ab1GPLW4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jul 2011 07:22:56 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:50140 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752997Ab1GPLLO (ORCPT
+	with ESMTP id S1753143Ab1GPLWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jul 2011 07:11:14 -0400
-X-Authority-Analysis: v=1.1 cv=5asQ6euaRPJxDdFxwvXsn6JDb7fmFbz8qWDLMfa45gU= c=1 sm=0 a=ON99fBoUYPsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=3nbZYyFuAAAA:8 a=meVymXHHAAAA:8 a=pGLkceISAAAA:8 a=20KFwNOVAAAA:8 a=-TLkxdQCdBZjBqNEBr4A:9 a=hG1mX66-JhdNCUnWGJcA:7 a=PUjeQqilurYA:10 a=EvKJbDF4Ut8A:10 a=jeBq3FmKZ4MA:10 a=MSl-tDqOz04A:10 a=jEp0ucaQiEUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Sat, 16 Jul 2011 07:22:53 -0400
+X-Authority-Analysis: v=1.1 cv=5asQ6euaRPJxDdFxwvXsn6JDb7fmFbz8qWDLMfa45gU= c=1 sm=0 a=vhdKIqpQuCYA:10 a=YhTgZTORN4oA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=VnNF1IyMAAAA:8 a=meVymXHHAAAA:8 a=DAz7-d-wjv9Io5UqZgwA:9 a=poTzZO6F3hRWVEBxnmgA:7 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH -tip v2] [CLEANUP]tracing/kprobes: merge trace probe
- enable/disable functions
+Message-Id: <20110716112251.423929607@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Sat, 16 Jul 2011 07:22:01 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@elte.hu>, yrl.pp-manager.tt@hitachi.com,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-In-Reply-To: <20110716103331.24432.98638.stgit@fedora15>
-References: <1310750862.27864.71.camel@gandalf.stny.rr.com>
-	 <20110716103331.24432.98638.stgit@fedora15>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Sat, 16 Jul 2011 07:11:11 -0400
-Message-ID: <1310814671.27864.79.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [PATCH 01/20] tracing: Still trace filtered irq functions when irq trace is
+References: <20110716112200.096203519@goodmis.org>
+Content-Disposition: inline; filename=0001-tracing-Still-trace-filtered-irq-functions-when-irq-.patch
+ disabled
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-07-16 at 19:33 +0900, Masami Hiramatsu wrote:
-> Merge redundant enable/disable functions into enable_trace_probe()
-> and disable_trace_probe().
-> 
-> Changes from v1:
-> - replace probe_event_enable() with enable_trace_probe()
->   in self-test code too.
+From: Steven Rostedt <srostedt@redhat.com>
 
-Ah, I already fixed it and ran it through all my tests. I'll send it out
-in a minute. I'll make sure I fixed it the same way first.
+If a function is set to be traced by the set_graph_function, but the
+option funcgraph-irqs is zero, and the traced function happens to be
+called from a interrupt, it will not be traced.
 
-Thanks!
+The point of funcgraph-irqs is to not trace interrupts when we are
+preempted by an irq, not to not trace functions we want to trace that
+happen to be *in* a irq.
 
--- Steve
+Luckily the current->trace_recursion element is perfect to add a flag
+to help us be able to trace functions within an interrupt even when
+we are not tracing interrupts that preempt the trace.
 
-> 
-> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> ---
-> 
->  kernel/trace/trace_kprobe.c |   92 +++++++++++++++++--------------------------
->  1 files changed, 36 insertions(+), 56 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-> index 14b88ed..3be50c5 100644
-> --- a/kernel/trace/trace_kprobe.c
-> +++ b/kernel/trace/trace_kprobe.c
-> @@ -683,6 +683,34 @@ static struct trace_probe *find_trace_probe(const char *event,
->  	return NULL;
->  }
->  
-> +/* Enable trace_probe - @flag must be TP_FLAG_TRACE or TP_FLAG_PROFILE */
-> +static int enable_trace_probe(struct trace_probe *tp, int flag)
-> +{
-> +	int ret = 0;
-> +
-> +	tp->flags |= flag;
-> +	if (tp->flags & (TP_FLAG_TRACE | TP_FLAG_PROFILE)) {
-> +		if (trace_probe_is_return(tp))
-> +			ret = enable_kretprobe(&tp->rp);
-> +		else
-> +			ret = enable_kprobe(&tp->rp.kp);
-> +	}
-> +
-> +	return ret;
-> +}
-> +
-> +/* Disable trace_probe - @flag must be TP_FLAG_TRACE or TP_FLAG_PROFILE */
-> +static void disable_trace_probe(struct trace_probe *tp, int flag)
-> +{
-> +	tp->flags &= ~flag;
-> +	if (!(tp->flags & (TP_FLAG_TRACE | TP_FLAG_PROFILE))) {
-> +		if (trace_probe_is_return(tp))
-> +			disable_kretprobe(&tp->rp);
-> +		else
-> +			disable_kprobe(&tp->rp.kp);
-> +	}
-> +}
-> +
->  /* Unregister a trace_probe and probe_event: call with locking probe_lock */
->  static void unregister_trace_probe(struct trace_probe *tp)
->  {
-> @@ -1514,30 +1542,6 @@ partial:
->  	return TRACE_TYPE_PARTIAL_LINE;
->  }
->  
-> -static int probe_event_enable(struct ftrace_event_call *call)
-> -{
-> -	struct trace_probe *tp = (struct trace_probe *)call->data;
-> -
-> -	tp->flags |= TP_FLAG_TRACE;
-> -	if (trace_probe_is_return(tp))
-> -		return enable_kretprobe(&tp->rp);
-> -	else
-> -		return enable_kprobe(&tp->rp.kp);
-> -}
-> -
-> -static void probe_event_disable(struct ftrace_event_call *call)
-> -{
-> -	struct trace_probe *tp = (struct trace_probe *)call->data;
-> -
-> -	tp->flags &= ~TP_FLAG_TRACE;
-> -	if (!(tp->flags & (TP_FLAG_TRACE | TP_FLAG_PROFILE))) {
-> -		if (trace_probe_is_return(tp))
-> -			disable_kretprobe(&tp->rp);
-> -		else
-> -			disable_kprobe(&tp->rp.kp);
-> -	}
-> -}
-> -
->  #undef DEFINE_FIELD
->  #define DEFINE_FIELD(type, item, name, is_signed)			\
->  	do {								\
-> @@ -1716,49 +1720,25 @@ static __kprobes void kretprobe_perf_func(struct kretprobe_instance *ri,
->  	head = this_cpu_ptr(call->perf_events);
->  	perf_trace_buf_submit(entry, size, rctx, entry->ret_ip, 1, regs, head);
->  }
-> -
-> -static int probe_perf_enable(struct ftrace_event_call *call)
-> -{
-> -	struct trace_probe *tp = (struct trace_probe *)call->data;
-> -
-> -	tp->flags |= TP_FLAG_PROFILE;
-> -
-> -	if (trace_probe_is_return(tp))
-> -		return enable_kretprobe(&tp->rp);
-> -	else
-> -		return enable_kprobe(&tp->rp.kp);
-> -}
-> -
-> -static void probe_perf_disable(struct ftrace_event_call *call)
-> -{
-> -	struct trace_probe *tp = (struct trace_probe *)call->data;
-> -
-> -	tp->flags &= ~TP_FLAG_PROFILE;
-> -
-> -	if (!(tp->flags & TP_FLAG_TRACE)) {
-> -		if (trace_probe_is_return(tp))
-> -			disable_kretprobe(&tp->rp);
-> -		else
-> -			disable_kprobe(&tp->rp.kp);
-> -	}
-> -}
->  #endif	/* CONFIG_PERF_EVENTS */
->  
->  static __kprobes
->  int kprobe_register(struct ftrace_event_call *event, enum trace_reg type)
->  {
-> +	struct trace_probe *tp = (struct trace_probe *)event->data;
-> +
->  	switch (type) {
->  	case TRACE_REG_REGISTER:
-> -		return probe_event_enable(event);
-> +		return enable_trace_probe(tp, TP_FLAG_TRACE);
->  	case TRACE_REG_UNREGISTER:
-> -		probe_event_disable(event);
-> +		disable_trace_probe(tp, TP_FLAG_TRACE);
->  		return 0;
->  
->  #ifdef CONFIG_PERF_EVENTS
->  	case TRACE_REG_PERF_REGISTER:
-> -		return probe_perf_enable(event);
-> +		return enable_trace_probe(tp, TP_FLAG_PROFILE);
->  	case TRACE_REG_PERF_UNREGISTER:
-> -		probe_perf_disable(event);
-> +		disable_trace_probe(tp, TP_FLAG_PROFILE);
->  		return 0;
->  #endif
->  	}
-> @@ -1905,7 +1885,7 @@ static __init int kprobe_trace_self_tests_init(void)
->  			pr_warning("error on getting new probe.\n");
->  			warn++;
->  		} else
-> -			probe_event_enable(&tp->call);
-> +			enable_trace_probe(tp, TP_FLAG_TRACE);
->  	}
->  
->  	ret = command_trace_probe("r:testprobe2 kprobe_trace_selftest_target "
-> @@ -1920,7 +1900,7 @@ static __init int kprobe_trace_self_tests_init(void)
->  			pr_warning("error on getting new probe.\n");
->  			warn++;
->  		} else
-> -			probe_event_enable(&tp->call);
-> +			enable_trace_probe(tp, TP_FLAG_TRACE);
->  	}
->  
->  	if (warn)
+Reported-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Tested-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace.h                 |   50 +++++++++++++++++++++++-----------
+ kernel/trace/trace_functions_graph.c |    2 +-
+ 2 files changed, 35 insertions(+), 17 deletions(-)
+
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index a3e2db7..651f35b 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -278,6 +278,29 @@ struct tracer {
+ };
+ 
+ 
++/* Only current can touch trace_recursion */
++#define trace_recursion_inc() do { (current)->trace_recursion++; } while (0)
++#define trace_recursion_dec() do { (current)->trace_recursion--; } while (0)
++
++/* Ring buffer has the 10 LSB bits to count */
++#define trace_recursion_buffer() ((current)->trace_recursion & 0x3ff)
++
++/* for function tracing recursion */
++#define TRACE_INTERNAL_BIT		(1<<11)
++#define TRACE_GLOBAL_BIT		(1<<12)
++/*
++ * Abuse of the trace_recursion.
++ * As we need a way to maintain state if we are tracing the function
++ * graph in irq because we want to trace a particular function that
++ * was called in irq context but we have irq tracing off. Since this
++ * can only be modified by current, we can reuse trace_recursion.
++ */
++#define TRACE_IRQ_BIT			(1<<13)
++
++#define trace_recursion_set(bit)	do { (current)->trace_recursion |= (bit); } while (0)
++#define trace_recursion_clear(bit)	do { (current)->trace_recursion &= ~(bit); } while (0)
++#define trace_recursion_test(bit)	((current)->trace_recursion & (bit))
++
+ #define TRACE_PIPE_ALL_CPU	-1
+ 
+ int tracer_init(struct tracer *t, struct trace_array *tr);
+@@ -516,8 +539,18 @@ static inline int ftrace_graph_addr(unsigned long addr)
+ 		return 1;
+ 
+ 	for (i = 0; i < ftrace_graph_count; i++) {
+-		if (addr == ftrace_graph_funcs[i])
++		if (addr == ftrace_graph_funcs[i]) {
++			/*
++			 * If no irqs are to be traced, but a set_graph_function
++			 * is set, and called by an interrupt handler, we still
++			 * want to trace it.
++			 */
++			if (in_irq())
++				trace_recursion_set(TRACE_IRQ_BIT);
++			else
++				trace_recursion_clear(TRACE_IRQ_BIT);
+ 			return 1;
++		}
+ 	}
+ 
+ 	return 0;
+@@ -794,19 +827,4 @@ extern const char *__stop___trace_bprintk_fmt[];
+ 	FTRACE_ENTRY(call, struct_name, id, PARAMS(tstruct), PARAMS(print))
+ #include "trace_entries.h"
+ 
+-/* Only current can touch trace_recursion */
+-#define trace_recursion_inc() do { (current)->trace_recursion++; } while (0)
+-#define trace_recursion_dec() do { (current)->trace_recursion--; } while (0)
+-
+-/* Ring buffer has the 10 LSB bits to count */
+-#define trace_recursion_buffer() ((current)->trace_recursion & 0x3ff)
+-
+-/* for function tracing recursion */
+-#define TRACE_INTERNAL_BIT		(1<<11)
+-#define TRACE_GLOBAL_BIT		(1<<12)
+-
+-#define trace_recursion_set(bit)	do { (current)->trace_recursion |= (bit); } while (0)
+-#define trace_recursion_clear(bit)	do { (current)->trace_recursion &= ~(bit); } while (0)
+-#define trace_recursion_test(bit)	((current)->trace_recursion & (bit))
+-
+ #endif /* _LINUX_KERNEL_TRACE_H */
+diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
+index e8d6bb5..a7d2a4c 100644
+--- a/kernel/trace/trace_functions_graph.c
++++ b/kernel/trace/trace_functions_graph.c
+@@ -227,7 +227,7 @@ int __trace_graph_entry(struct trace_array *tr,
+ 
+ static inline int ftrace_graph_ignore_irqs(void)
+ {
+-	if (!ftrace_graph_skip_irqs)
++	if (!ftrace_graph_skip_irqs || trace_recursion_test(TRACE_IRQ_BIT))
+ 		return 0;
+ 
+ 	return in_irq();
+-- 
+1.7.5.4
 
 
