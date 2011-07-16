@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755480Ab1GPPmm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jul 2011 11:42:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35136 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751398Ab1GPPmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jul 2011 11:42:40 -0400
-Message-ID: <4E21B169.4020902@redhat.com>
-Date: Sat, 16 Jul 2011 12:42:33 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL for 3.0] master
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1755522Ab1GPQBP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jul 2011 12:01:15 -0400
+Received: from mail.southpole.se ([193.12.106.18]:34232 "EHLO
+	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129Ab1GPQBM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Jul 2011 12:01:12 -0400
+Subject: Re: linux-next: manual merge of the rr tree with the openrisc tree
+From: Jonas Bonn <jonas@southpole.se>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110716181723.08d5a7b96cca094dee74f825@canb.auug.org.au>
+References: <20110716181723.08d5a7b96cca094dee74f825@canb.auug.org.au>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-BftSC4ePodWVm8672H8F"
+Organization: South Pole Consulting AB
+Date: Sat, 16 Jul 2011 18:01:08 +0200
+Message-ID: <1310832068.14168.5.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+X-Assp-Client-SSL: yes
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
 
-Please pull from:
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
 
-For a couple of regression fixes for 3.0.
+--=-BftSC4ePodWVm8672H8F
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Thanks!
-Mauro
+On Sat, 2011-07-16 at 18:17 +1000, Stephen Rothwell wrote:
+> Today's linux-next merge of the rr tree got a conflict in
+> arch/openrisc/kernel/module.c between commit 07319a81a55f ("OpenRISC:
+> Module support") from the openrisc tree and commit 7c71b2f8e35c
+> ("modules: make arch's use default loader hooks") from the rr tree.
+>=20
+> This is an indirect conflict that turns up because
+> arch/openrisc/kernel/module.c is based very closely on a file that is
+> modified by the rr commit.  I have just used the openrisc version of the
+> file, but I assume that much of it could be removed.
 
-The following changes since commit ddc6ff31cc22720c46c1547a5310ea260a968ae9:
+The OpenRISC tree should depend on that patch from Rusty's tree and the
+file arch/openrisc/kernel/module.c should be a bit simpler.  I'll push
+out an updated OpenRISC tree this evening that has that fixed and we'll
+see if the conflict doesn't go away.
 
-  [media] msp3400: fill in v4l2_tuner based on vt->type field (2011-07-07 17:28:30 -0300)
+That said, I don't quite understand why there's a conflict there at
+all... the OpenRISC tree should have been independent of that patch in
+any case.
 
-are available in the git repository at:
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
+/Jonas
 
-Devin Heitmueller (1):
-      [media] dvb_frontend: fix race condition in stopping/starting frontend
+--=-BftSC4ePodWVm8672H8F
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-Jarod Wilson (2):
-      [media] Revert "V4L/DVB: cx23885: Enable Message Signaled Interrupts(MSI)"
-      [media] nuvoton-cir: make idle timeout more sane
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Mauro Carvalho Chehab (1):
-      [media] tuner-core: fix a 2.6.39 regression with mt20xx
+iEYEABECAAYFAk4htcIACgkQ70gcjN2673N5ywCfSU3N6+JeSw6U6e1cYMHoaXuC
+lCAAoMx/xr8pEV6OsaWtOTqhopSmJ3qQ
+=X54U
+-----END PGP SIGNATURE-----
 
-Rafi Rubin (2):
-      [media] mceusb: Timeout unit corrections
-      [media] mceusb: increase default timeout to 100ms
-
-Ralf Baechle (1):
-      [media] MEDIA: Fix non-ISA_DMA_API link failure of sound code
-
-Randy Dunlap (1):
-      [media] media: fix radio-sf16fmr2 build when SND is not enabled
-
- drivers/media/dvb/dvb-core/dvb_frontend.c  |    8 ++++++++
- drivers/media/radio/Kconfig                |    4 ++--
- drivers/media/rc/mceusb.c                  |    9 +++++----
- drivers/media/rc/nuvoton-cir.c             |    2 +-
- drivers/media/video/cx23885/cx23885-core.c |    9 ++-------
- drivers/media/video/tuner-core.c           |   16 ++++++++++++----
- 6 files changed, 30 insertions(+), 18 deletions(-)
+--=-BftSC4ePodWVm8672H8F--
 
