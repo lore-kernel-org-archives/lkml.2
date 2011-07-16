@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755629Ab1GPUpG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jul 2011 16:45:06 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:51290 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755575Ab1GPUpE (ORCPT
+	id S1755574Ab1GPVBk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jul 2011 17:01:40 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:47010 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755397Ab1GPVBi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jul 2011 16:45:04 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Joerg Heckenbach <joerg@heckenbach-aw.de>
-Subject: usbvision: disable scaling for Nogatech MicroCam
-Date: Sat, 16 Jul 2011 22:44:47 +0200
-User-Agent: KMail/1.9.10
-Cc: Dwaine Garden <dwainegarden@rogers.com>, linux-media@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
+	Sat, 16 Jul 2011 17:01:38 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=sWtEvS1zZWiwxa9D1cy+IoR6CSJlxS7SwLxlNSt5sfu5Qzmg841ZBpj3xD37Ad6DeOSuzBXkySh75kfPKH0+ZOzaqLZMrVRxSPVRopq2xMbq/pxWJzLxJD4mjGXMgJcx;
+Date: Sat, 16 Jul 2011 14:01:35 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: dmitry@broadcom.com
+Cc: "David Miller" <davem@davemloft.net>,
+        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Eilon Greenstein" <eilong@broadcom.com>
+Subject: Re: linux-next: Tree for July 16 (net/bnx2x)
+Message-Id: <20110716140135.b471aa27.rdunlap@xenotime.net>
+In-Reply-To: <1310848256.2826.3.camel@lb-tlvb-dmitry>
+References: <20110717000815.c83755be9598d34ac8431908@canb.auug.org.au>
+	<20110716121427.11760128.rdunlap@xenotime.net>
+	<1310847842.2826.1.camel@lb-tlvb-dmitry>
+	<20110716.132643.101780166611692580.davem@davemloft.net>
+	<1310848256.2826.3.camel@lb-tlvb-dmitry>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201107162244.52979.linux@rainbow-software.org>
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Scaling causes bad artifacts (horizontal lines) with compression at least
-with Nogatech MicroCam so disable it (for this HW).
+On Sat, 16 Jul 2011 23:30:56 +0300 Dmitry Kravkov wrote:
 
-This also fixes messed up image with some programs (Cheese with 160x120,
-Adobe Flash). HW seems to support only image widths that are multiple of 64
-but the driver does not account that in vidioc_try_fmt_vid_cap(). Cheese
-calls try_fmt with 160x120, succeeds and then assumes that it really gets
-data in that resolution - but it gets 128x120 instead. Don't know if this
-affects other usbvision devices, it would be great if someone could test it.
+> On Sat, 2011-07-16 at 13:26 -0700, David Miller wrote:
+> > From: "Dmitry Kravkov" <dmitry@broadcom.com>
+> > Date: Sat, 16 Jul 2011 23:24:02 +0300
+> > 
+> > > @@ -1403,8 +1403,8 @@ void bnx2x_netif_stop(struct bnx2x *bp, int
+> > > disable_hw)
+> > >  
+> > 
+> > Patch corrupted by your email client, this long line was chopped
+> > up into two lines.
+> > 
+> bnx2x: Fix compilation when CNIC is not selected in config
+> 
+> Reported-by:  Randy Dunlap <rdunlap@xenotime.net>
+> Signed-off-by: Dmitry Kravkov <dmitry@broadcom.com>
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
 
-diff -urp linux-2.6.39-rc2-/drivers/media/video/usbvision//usbvision-video.c linux-2.6.39-rc2/drivers/media/video/usbvision/usbvision-video.c
---- linux-2.6.39-rc2-/drivers/media/video/usbvision//usbvision-video.c	2011-07-16 16:42:35.000000000 +0200
-+++ linux-2.6.39-rc2/drivers/media/video/usbvision/usbvision-video.c	2011-07-16 16:36:43.000000000 +0200
-@@ -924,6 +924,11 @@ static int vidioc_try_fmt_vid_cap(struct
- 	RESTRICT_TO_RANGE(vf->fmt.pix.width, MIN_FRAME_WIDTH, MAX_FRAME_WIDTH);
- 	RESTRICT_TO_RANGE(vf->fmt.pix.height, MIN_FRAME_HEIGHT, MAX_FRAME_HEIGHT);
- 
-+	if (usbvision_device_data[usbvision->dev_model].codec == CODEC_WEBCAM) {
-+		vf->fmt.pix.width = MAX_FRAME_WIDTH;
-+		vf->fmt.pix.height = MAX_FRAME_HEIGHT;
-+	}
-+
- 	vf->fmt.pix.bytesperline = vf->fmt.pix.width*
- 		usbvision->palette.bytes_per_pixel;
- 	vf->fmt.pix.sizeimage = vf->fmt.pix.bytesperline*vf->fmt.pix.height;
-@@ -952,6 +957,11 @@ static int vidioc_s_fmt_vid_cap(struct f
- 
- 	usbvision->cur_frame = NULL;
- 
-+	if (usbvision_device_data[usbvision->dev_model].codec == CODEC_WEBCAM) {
-+		vf->fmt.pix.width = MAX_FRAME_WIDTH;
-+		vf->fmt.pix.height = MAX_FRAME_HEIGHT;
-+	}
-+
- 	/* by now we are committed to the new data... */
- 	usbvision_set_output(usbvision, vf->fmt.pix.width, vf->fmt.pix.height);
- 
+Thanks.
 
--- 
-Ondrej Zary
+> ---
+>  drivers/net/bnx2x/bnx2x_cmn.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/net/bnx2x/bnx2x_cmn.c b/drivers/net/bnx2x/bnx2x_cmn.c
+> index e5fac62..b05ce93 100644
+> --- a/drivers/net/bnx2x/bnx2x_cmn.c
+> +++ b/drivers/net/bnx2x/bnx2x_cmn.c
+> @@ -1403,8 +1403,8 @@ void bnx2x_netif_stop(struct bnx2x *bp, int disable_hw)
+>  
+>  u16 bnx2x_select_queue(struct net_device *dev, struct sk_buff *skb)
+>  {
+> -#ifdef BCM_CNIC
+>  	struct bnx2x *bp = netdev_priv(dev);
+> +#ifdef BCM_CNIC
+>  	if (NO_FCOE(bp))
+>  		return skb_tx_hash(dev, skb);
+>  	else {
+> -- 
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
