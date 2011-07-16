@@ -1,109 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752357Ab1GPDTa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jul 2011 23:19:30 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:12038 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751420Ab1GPDT2 (ORCPT
+	id S1752315Ab1GPDZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jul 2011 23:25:28 -0400
+Received: from eastrmfepo102.cox.net ([68.230.241.214]:40021 "EHLO
+	eastrmfepo102.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751420Ab1GPDZ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jul 2011 23:19:28 -0400
-X-AuditID: cbfee61b-b7c3dae000002cb8-00-4e21033e0ddf
-Date: Sat, 16 Jul 2011 12:19:19 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: RE: [PATCHv3] ARM: EXYNOS4: Support for generic I/O power domains on
- EXYNOS4210
-In-reply-to: <4E16A171.7040509@samsung.com>
-To: "'Chanwoo Choi'" <cw00.choi@samsung.com>
-Cc: "'Rafael J. Wysocki'" <rjw@sisk.pl>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'MyungJoo Ham'" <myungjoo.ham@samsung.com>,
-        "'Sylwester Nawrocki'" <snjw23@gmail.com>,
-        linux-pm@lists.linux-foundation.org,
-        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>
-Message-id: <035201cc4367$2b165c80$81431580$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=UTF-8
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: Acw9Nv7Ys4QbONjjT2ucCjIuop/iXAGLYFPw
-References: <4E165C64.8090808@samsung.com>
- <000e01cc3d2f$eca5d530$c5f17f90$%kim@samsung.com>
- <4E16A171.7040509@samsung.com>
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 15 Jul 2011 23:25:27 -0400
+X-Greylist: delayed 902 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Jul 2011 23:25:27 EDT
+X-CT-Class: Clean
+X-CT-Score: 0.00
+X-CT-RefID: str=0001.0A020208.4E21011B.0002,ss=1,re=0.000,fgs=0
+X-CT-Spam: 0
+X-Authority-Analysis: v=1.1 cv=mwl0/2xM3ubHJTXa6l4kGPt5l4r2ytuQtfJUKIGJKFg=
+ c=1 sm=1 a=SbnaPJgvhvEA:10 a=6ozKSxwDZsYA:10 a=kj9zAlcOel0A:10
+ a=P/0Lj++K3U41h/fRNoatIQ==:17 a=9YPF7Q6M6CNIacGhoq4A:9
+ a=sQauaP2SSAhirK_V2gAA:7 a=CjuIK1q_8ugA:10 a=P/0Lj++K3U41h/fRNoatIQ==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; none
+Date: Fri, 15 Jul 2011 23:05:15 -0400
+From: Will Simoneau <simoneau@ele.uri.edu>
+To: davem@davemloft.net
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] sun4m SMP: fix wrong shift instruction in IPI handler
+Message-ID: <20110716030515.GA13614@ele.uri.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 [Linux 2.6.38 x86_64]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chanwoo Choi wrote:
-> 
-> Kukjin Kim wrote:
+This shift instruction appears to be shifting in the wrong direction.
+Without this change, my SparcStation-20MP hangs just after bringing up
+the second CPU:
 
-(snip)
+Entering SMP Mode...
+Starting CPU 2 at f02b4e90
+Brought up 2 CPUs
+Total of 2 processors activated (99.52 BogoMIPS).
+   *** stuck ***
 
-> >> @@ -183,6 +183,7 @@ config MACH_NURI
-> >>  	select EXYNOS4_SETUP_SDHCI
-> >>  	select EXYNOS4_SETUP_USB_PHY
-> >>  	select SAMSUNG_DEV_PWM
-> >> +	select PM_GENERIC_DOMAINS if PM
-> >
-> > Do you _really_ think this should be under MACH_NURI?
-> >
-> This patch apply the generic power-domain to NURI board.
+Signed-off-by: Will Simoneau <simoneau@ele.uri.edu>
+---
+ arch/sparc/kernel/entry.S |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I mean, the PM_GENERIC_DOMAINS feature depends on CPU not board even though this is for only NURI board.
-
-(snip)
-
-> >> diff --git a/arch/arm/mach-exynos4/include/mach/pm-exynos4210.h
-> >> b/arch/arm/mach-exynos4/include/mach/pm-exynos4210.h
-> >> new file mode 100644
-> >> index 0000000..ab09034
-> >> --- /dev/null
-> >> +++ b/arch/arm/mach-exynos4/include/mach/pm-exynos4210.h
-> >> @@ -0,0 +1,53 @@
-> >> +/* linux/arch/arm/mach-exynos4/include/mach/pm-exynos4.h
-> >
-> > According to your file name, should be linux/arch/arm/mach-
-> exynos4/include/mach/pm-exynos4210.h ?
-> 
-I said just typo...
-
-+/* linux/arch/arm/mach-exynos4/include/mach/pm-exynos4210.h
-
-> This patch support only power-domain of EXYNOS4210, so I named "pm-
-> exynos4210.h"
-> If EXYNOS4 series board will be released, I will modify include file name
-> from "pm-exynos4210.h" to "pm-exynos4.h" to support all EXYNOS4 series.
-
-No need it, it's different.
-
-(snip)
-
-> > Would be better if you could add some common function for pd_power_up and
-> _down...
-> 
-> What do you mean about common function?
-> 
-I thought, pd_power_up and _down can be implemented in one function.
-
-(snip)
-
-> > I wonder why we need to add this for handling power domain not update current
-> pd.
-> 
-See arch/arm/mach-exynos4/dev-pd.c
-
-I mean, we _really_ need to keep duplication files for handling power domain?...
-
-(snip)
-
-Thanks.
-
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
-
+diff --git a/arch/sparc/kernel/entry.S b/arch/sparc/kernel/entry.S
+index 9fe08a1..f445e98 100644
+--- a/arch/sparc/kernel/entry.S
++++ b/arch/sparc/kernel/entry.S
+@@ -293,7 +293,7 @@ maybe_smp4m_msg:
+ 	WRITE_PAUSE
+ 	wr	%l4, PSR_ET, %psr
+ 	WRITE_PAUSE
+-	sll	%o3, 28, %o2		! shift for simpler checks below
++	srl	%o3, 28, %o2		! shift for simpler checks below
+ maybe_smp4m_msg_check_single:
+ 	andcc	%o2, 0x1, %g0
+ 	beq,a	maybe_smp4m_msg_check_mask
