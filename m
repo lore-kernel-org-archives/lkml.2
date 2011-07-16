@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752014Ab1GPR44 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jul 2011 13:56:56 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:58641 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750948Ab1GPR4z (ORCPT
+	id S1753195Ab1GPSY7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jul 2011 14:24:59 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:38622
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751605Ab1GPSY7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jul 2011 13:56:55 -0400
-Date: Sat, 16 Jul 2011 10:49:53 -0700 (PDT)
-Message-Id: <20110716.104953.216007489476538586.davem@davemloft.net>
-To: simoneau@ele.uri.edu
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sun4m SMP: fix wrong shift instruction in IPI handler
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110716.104636.222054324515998844.davem@davemloft.net>
-References: <20110716030515.GA13614@ele.uri.edu>
-	<20110716.104636.222054324515998844.davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 16 Jul 2011 10:50:46 -0700 (PDT)
+	Sat, 16 Jul 2011 14:24:59 -0400
+Date: Sat, 16 Jul 2011 14:24:54 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Christoph Hellwig <hch@infradead.org>, "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH 020/117] Staging: hv: vmbus: Support the notion of id
+ tables in vmbus_match()
+Message-ID: <20110716182454.GA19023@infradead.org>
+References: <1310752024-27854-1-git-send-email-kys@microsoft.com>
+ <1310752065-27895-1-git-send-email-kys@microsoft.com>
+ <1310752065-27895-20-git-send-email-kys@microsoft.com>
+ <20110716020250.GA7199@infradead.org>
+ <6E21E5352C11B742B20C142EB499E0480817A4C9@TK5EX14MBXC124.redmond.corp.microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0480817A4C9@TK5EX14MBXC124.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Miller <davem@davemloft.net>
-Date: Sat, 16 Jul 2011 10:46:36 -0700 (PDT)
+On Sat, Jul 16, 2011 at 12:54:46PM +0000, KY Srinivasan wrote:
+> > would be nice to add uuid_{le,be}_is_nil helpers to uuid.h.  I also
+> > think simply using a memcpy might be more efficient than the hand-rolled
+> > loop.
+> Having a helper function would be great. With regards to the efficiency of this loop,
+> this is not a performance critical path. If people feel strongly about this, I could 
+> change this; perhaps as a separate patch on top of this series; I don't want to send a large
+> patch-set like this again.
 
-> From: Will Simoneau <simoneau@ele.uri.edu>
-> Date: Fri, 15 Jul 2011 23:05:15 -0400
-> 
->> This shift instruction appears to be shifting in the wrong direction.
->> Without this change, my SparcStation-20MP hangs just after bringing up
->> the second CPU:
->> 
->> Entering SMP Mode...
->> Starting CPU 2 at f02b4e90
->> Brought up 2 CPUs
->> Total of 2 processors activated (99.52 BogoMIPS).
->>    *** stuck ***
->> 
->> Signed-off-by: Will Simoneau <simoneau@ele.uri.edu>
-> 
-> Applied, thanks a lot Will.
+I'm fine with doing it later.
 
-BTW, in the future please post sparc patches to
-sparclinux@vger.kernel.org so that they 1) go to the correct audience
-and 2) get tracked properly at patchwork.ozlabs.org
-
-Thanks
