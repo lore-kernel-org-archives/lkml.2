@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756198Ab1GQPKl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jul 2011 11:10:41 -0400
-Received: from mail.southpole.se ([193.12.106.18]:34899 "EHLO
+	id S1756220Ab1GQPKr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jul 2011 11:10:47 -0400
+Received: from mail.southpole.se ([193.12.106.18]:34898 "EHLO
 	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756076Ab1GQPJk (ORCPT
+	with ESMTP id S1756074Ab1GQPJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jul 2011 11:09:40 -0400
+	Sun, 17 Jul 2011 11:09:37 -0400
 From: Jonas Bonn <jonas@southpole.se>
 To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
 Cc: Jonas Bonn <jonas@southpole.se>
-Subject: [PATCH v3 13/19] OpenRISC: GPIO
-Date: Sun, 17 Jul 2011 17:08:23 +0200
-Message-Id: <a6921c54ff60a21ec4fee2f3266a1ed200710f00.1310913472.git.jonas@southpole.se>
+Subject: [PATCH v3 11/19] OpenRISC: Idle/Power management
+Date: Sun, 17 Jul 2011 17:08:21 +0200
+Message-Id: <305465d31b6d4c2781f5bf779e0cbfeb2312772d.1310913472.git.jonas@southpole.se>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <cover.1310913472.git.jonas@southpole.se>
 References: <cover.1310913472.git.jonas@southpole.se>
@@ -24,84 +24,98 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+Minimal functionality...
+
 Signed-off-by: Jonas Bonn <jonas@southpole.se>
 Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/openrisc/include/asm/gpio.h |   65 ++++++++++++++++++++++++++++++++++++++
- 1 files changed, 65 insertions(+), 0 deletions(-)
- create mode 100644 arch/openrisc/include/asm/gpio.h
+ arch/openrisc/kernel/idle.c |   77 +++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 77 insertions(+), 0 deletions(-)
+ create mode 100644 arch/openrisc/kernel/idle.c
 
-diff --git a/arch/openrisc/include/asm/gpio.h b/arch/openrisc/include/asm/gpio.h
+diff --git a/arch/openrisc/kernel/idle.c b/arch/openrisc/kernel/idle.c
 new file mode 100644
-index 0000000..0b0d174
+index 0000000..d5bc5f8
 --- /dev/null
-+++ b/arch/openrisc/include/asm/gpio.h
-@@ -0,0 +1,65 @@
++++ b/arch/openrisc/kernel/idle.c
+@@ -0,0 +1,77 @@
 +/*
-+ * OpenRISC Linux
++ * OpenRISC idle.c
 + *
 + * Linux architectural port borrowing liberally from similar works of
 + * others.  All original copyrights apply as per the original source
 + * declaration.
 + *
-+ * OpenRISC implementation:
++ * Modifications for the OpenRISC architecture:
 + * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
 + * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
-+ * et al.
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
++ *      This program is free software; you can redistribute it and/or
++ *      modify it under the terms of the GNU General Public License
++ *      as published by the Free Software Foundation; either version
++ *      2 of the License, or (at your option) any later version.
++ *
++ * Idle daemon for or32.  Idle daemon will handle any action
++ * that needs to be taken when the system becomes idle.
 + */
-+
-+#ifndef __ASM_OPENRISC_GPIO_H
-+#define __ASM_OPENRISC_GPIO_H
 +
 +#include <linux/errno.h>
-+#include <asm-generic/gpio.h>
++#include <linux/sched.h>
++#include <linux/kernel.h>
++#include <linux/mm.h>
++#include <linux/smp.h>
++#include <linux/stddef.h>
++#include <linux/unistd.h>
++#include <linux/ptrace.h>
++#include <linux/slab.h>
++#include <linux/tick.h>
 +
-+#ifdef CONFIG_GPIOLIB
++#include <asm/pgtable.h>
++#include <asm/uaccess.h>
++#include <asm/system.h>
++#include <asm/io.h>
++#include <asm/processor.h>
++#include <asm/mmu.h>
++#include <asm/cache.h>
++#include <asm/pgalloc.h>
 +
-+/*
-+ * OpenRISC (or1k) does not have on-chip GPIO's so there is not really
-+ * any standardized implementation that makes sense here.  If passing
-+ * through gpiolib becomes a bottleneck then it may make sense, on a
-+ * case-by-case basis, to implement these inlined/rapid versions.
-+ *
-+ * Just call gpiolib.
-+ */
-+static inline int gpio_get_value(unsigned int gpio)
++void (*powersave) (void) = NULL;
++
++static inline void pm_idle(void)
 +{
-+	return __gpio_get_value(gpio);
++	barrier();
 +}
 +
-+static inline void gpio_set_value(unsigned int gpio, int value)
++void cpu_idle(void)
 +{
-+	__gpio_set_value(gpio, value);
++	set_thread_flag(TIF_POLLING_NRFLAG);
++
++	/* endless idle loop with no priority at all */
++	while (1) {
++		tick_nohz_stop_sched_tick(1);
++
++		while (!need_resched()) {
++			check_pgt_cache();
++			rmb();
++
++			clear_thread_flag(TIF_POLLING_NRFLAG);
++
++			local_irq_disable();
++			/* Don't trace irqs off for idle */
++			stop_critical_timings();
++			if (!need_resched() && powersave != NULL)
++				powersave();
++			start_critical_timings();
++			local_irq_enable();
++			set_thread_flag(TIF_POLLING_NRFLAG);
++		}
++
++		tick_nohz_restart_sched_tick();
++		preempt_enable_no_resched();
++		schedule();
++		preempt_disable();
++	}
 +}
-+
-+static inline int gpio_cansleep(unsigned int gpio)
-+{
-+	return __gpio_cansleep(gpio);
-+}
-+
-+/*
-+ * Not implemented, yet.
-+ */
-+static inline int gpio_to_irq(unsigned int gpio)
-+{
-+	return -ENOSYS;
-+}
-+
-+static inline int irq_to_gpio(unsigned int irq)
-+{
-+	return -EINVAL;
-+}
-+
-+#endif /* CONFIG_GPIOLIB */
-+
-+#endif /* __ASM_OPENRISC_GPIO_H */
 -- 
 1.7.4.1
 
