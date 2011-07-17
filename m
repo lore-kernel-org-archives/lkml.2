@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755958Ab1GQXQR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jul 2011 19:16:17 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:34636 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754074Ab1GQXQQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jul 2011 19:16:16 -0400
-Date: Mon, 18 Jul 2011 00:16:10 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] vfs: fix race in rcu lookup of pruned dentry
-Message-ID: <20110717231610.GR11013@ZenIV.linux.org.uk>
-References: <alpine.LSU.2.00.1107171356480.3175@sister.anvils>
- <CA+55aFw5LhGq-a6mAhgZbGP2FJ+tnV9HRxKoiFuVYbttOo2tNw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFw5LhGq-a6mAhgZbGP2FJ+tnV9HRxKoiFuVYbttOo2tNw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755477Ab1GQXQi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jul 2011 19:16:38 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:56870 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755504Ab1GQXQh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Jul 2011 19:16:37 -0400
+Date: Mon, 18 Jul 2011 09:16:24 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Stefan Berger <stefanb@linux.vnet.ibm.com>
+Cc: rdunlap@xenotime.net, Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Morris <jmorris@namei.org>, linux-next@vger.kernel.org
+Subject: Re: [PATCH] tpm: Fix compilation warning when CONFIG_PNP is not
+ defined
+Message-Id: <20110718091624.bd262188190c5d7a05416b99@canb.auug.org.au>
+In-Reply-To: <1310903758.15064.9.camel@d941e-10>
+References: <1310903758.15064.9.camel@d941e-10>
+X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__18_Jul_2011_09_16_24_+1000_Sfwjr4.RsX0XiBnz"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 17, 2011 at 03:00:06PM -0700, Linus Torvalds wrote:
+--Signature=_Mon__18_Jul_2011_09_16_24_+1000_Sfwjr4.RsX0XiBnz
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Yes. However, looking at it, I'm not very happy with your patch. It
-> doesn't really make sense to me to special-case the NULL inode and
-> only do a seq_retry for that case.
-> 
-> I kind of see why you do it for that particular bug, but at the same
-> time, it just makes me go "Eww". If that inode isn't NULL yet, you
-> then return the dentry that can get a NULL d_inode later. So the only
-> special thing there is that we happen to check for a NULL inode there.
-> What protects *later* checks for a NULL d_inode?
-> 
-> So my gut feel is that we should instead
-> 
->  - either remove the -ENOENT return at that point entirely, and move
-> it to after we have re-verified the dentry lookup for other reasons.
-> That looks pretty involved, though, and those paths do end up
-> accessing inode data structures etc, so it looks less than trivial.
-> 
-> OR
-> 
->  - simply just not clear d_inode at all in d_kill(), so that when we
-> prune a dentry due to memory pressure, it doesn't actually change the
-> state of the dentry.
+Hi Stefan,
 
-OR
+On Sun, 17 Jul 2011 07:55:58 -0400 Stefan Berger <stefanb@linux.vnet.ibm.co=
+m> wrote:
+>
+> The is_itpm() function is only accessed from a block surrounded by
+> #ifdef CONFIG_PNP. Therefore, also surround it with #ifdef CONFIG_PNP
+                ^^^
 
- - keep part of the patch from Hugh, treating negative in RCU mode as
-"need to unlazy".  Leaving everything else as-is.  Normally we'll
-confirm that sucker is negative and that'll be it.  Or we'll see that
-it's being evicted and fall back to non-lazy mode, which is what we'll
-need to do anyway.  IOW, this:
+> --- linux-2.6.orig/drivers/char/tpm/tpm_tis.c
+> +++ linux-2.6/drivers/char/tpm/tpm_tis.c
+> @@ -80,7 +80,7 @@ enum tis_defaults {
+>  static LIST_HEAD(tis_chips);
+>  static DEFINE_SPINLOCK(tis_lock);
+> =20
+> -#ifdef CONFIG_ACPI
+> +#ifdef CONFIG_PNPN
+                 ^^^^
+Is this a typo?
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 5c867dd..48a38de 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -1171,6 +1171,8 @@ static int do_lookup(struct nameidata *nd, struct qstr *name,
- 		path->dentry = dentry;
- 		if (unlikely(!__follow_mount_rcu(nd, path, inode)))
- 			goto unlazy;
-+		if (unlikely(!*inode))
-+			goto unlazy;
- 		if (unlikely(path->dentry->d_flags & DCACHE_NEED_AUTOMOUNT))
- 			goto unlazy;
- 		return 0;
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__18_Jul_2011_09_16_24_+1000_Sfwjr4.RsX0XiBnz
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOI21IAAoJEDMEi1NhKgbsC7AIAJCXuCvY0V1QVMs8TUdCJo+P
+zTJXc3Te1F6Dai+0WLF5MTBL0SDMiRh+AYYJxpWIh45Kryi4y2R9roG8JnOyIDQv
+P5U69P+PmepW2ppI1MqyTsA2klu1fKtrsQ1FA9GntG0yw4bEgF/rMUOXT+kvNBt5
+zm+lfVCsMjl33DmuBKedyUb6dtilp7Xe3zODryV45UeQTRMJbxTrXMx6Tl78Q5gj
+HM6NnrjTOrtVgpdoiEcOPR/n6cVcI+MNoumcIVevOrCInMPwfUaaQexRraDAzMVp
+2Tm/m/aw+bnyOgd0k2G7RGM/oZIftJKz94h1zwwRp2QajTRFG+TBphOuO9+q+4A=
+=rX8J
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__18_Jul_2011_09_16_24_+1000_Sfwjr4.RsX0XiBnz--
