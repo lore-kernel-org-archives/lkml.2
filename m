@@ -1,160 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756132Ab1GQQgs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jul 2011 12:36:48 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:55242 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756027Ab1GQQgo (ORCPT
+	id S1756147Ab1GQRIM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jul 2011 13:08:12 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:47577 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754345Ab1GQRIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jul 2011 12:36:44 -0400
-Message-ID: <4E230F98.3040000@gmail.com>
-Date: Sun, 17 Jul 2011 10:36:40 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-CC: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        yrl.pp-manager.tt@hitachi.com, Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH -tip v2 6/6] perf script: add option resolving vmlinux
- path
-References: <20110717093031.3447.52715.stgit@linux3> <20110717093115.3447.11599.stgit@linux3>
-In-Reply-To: <20110717093115.3447.11599.stgit@linux3>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 17 Jul 2011 13:08:10 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=j2gvXTY64pZ/yHa5XRjqJZnZ+SA8mXF19AXsF4LnNctTHIUOPjhAfjaduhK1MY9XBSpXsJzV2NxEfghtL6QYdw0vFt10SDONM6VkoH9Thy76jQaAivXCyre90k0OvJ/l;
+Date: Sun, 17 Jul 2011 10:08:07 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Stefan Berger <stefanb@linux.vnet.ibm.com>
+Cc: Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Morris <jmorris@namei.org>, linux-next@vger.kernel.org
+Subject: Re: [PATCH] tpm: Fix compilation warning when CONFIG_PNP is not
+ defined
+Message-Id: <20110717100807.97637264.rdunlap@xenotime.net>
+In-Reply-To: <1310903758.15064.9.camel@d941e-10>
+References: <1310903758.15064.9.camel@d941e-10>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2011 03:31 AM, Akihiro Nagai wrote:
-> Add the option get the path of [kernel.kallsyms].
-> Specify '--show-kernel-path' option to use this function.
-> This patch enables other applications to use this output easily.
+On Sun, 17 Jul 2011 07:55:58 -0400 Stefan Berger wrote:
+
+> The is_itpm() function is only accessed from a block surrounded by
+> #ifdef CONFIG_PNP. Therefore, also surround it with #ifdef CONFIG_PNP
+> and remove the #else branch causing the warning.
 > 
-> Without --show-kernel-path  option
+> http://lxr.linux.no/#linux+v2.6.39/drivers/char/tpm/tpm_tis.c#L622
 > 
-> # perf script -f ip,dso
-> ffffffff81467612 irq_return ([kernel.kallsyms])
-> ffffffff81467612 irq_return ([kernel.kallsyms])
->     7f24fc02a6b3 _start (/lib64/ld-2.14.so)
-> [snip]
+> Signed-off-by: Stefan Berger <stefanb@linux.vnet.ibm.com>
+
+Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+Acked-by:  Randy Dunlap <rdunlap@xenotime.net>
+
+Thanks.
+
 > 
-> With --show-kernel-path option
-> 
-> # perf script -f ip,dso --show-kernel-path
-> ffffffff81467612 irq_return (/lib/modules/3.0.0-rc6-tip+/build/vmlinux)
-> ffffffff81467612 irq_return (/lib/modules/3.0.0-rc6-tip+/build/vmlinux)
->     7f24fc02a6b3 _start (/lib64/ld-2.14.so)
-> [snip]
-> 
-> Signed-off-by: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 > ---
+>  drivers/char/tpm/tpm_tis.c |    7 +------
+>  1 file changed, 1 insertion(+), 6 deletions(-)
 > 
->  tools/perf/Documentation/perf-script.txt |    3 +++
->  tools/perf/builtin-script.c              |    2 ++
->  tools/perf/util/map.c                    |    7 +++++--
->  tools/perf/util/session.c                |    2 ++
->  tools/perf/util/symbol.c                 |    1 +
->  tools/perf/util/symbol.h                 |    1 +
->  6 files changed, 14 insertions(+), 2 deletions(-)
+> Index: linux-2.6/drivers/char/tpm/tpm_tis.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/char/tpm/tpm_tis.c
+> +++ linux-2.6/drivers/char/tpm/tpm_tis.c
+> @@ -80,7 +80,7 @@ enum tis_defaults {
+>  static LIST_HEAD(tis_chips);
+>  static DEFINE_SPINLOCK(tis_lock);
+>  
+> -#ifdef CONFIG_ACPI
+> +#ifdef CONFIG_PNPN
+>  static int is_itpm(struct pnp_dev *dev)
+>  {
+>  	struct acpi_device *acpi = pnp_acpi_device(dev);
+> @@ -93,11 +93,6 @@ static int is_itpm(struct pnp_dev *dev)
+>  
+>  	return 0;
+>  }
+> -#else
+> -static int is_itpm(struct pnp_dev *dev)
+> -{
+> -	return 0;
+> -}
+>  #endif
+>  
+>  static int check_locality(struct tpm_chip *chip, int l)
 > 
-> diff --git a/tools/perf/Documentation/perf-script.txt b/tools/perf/Documentation/perf-script.txt
-> index ee4d477..5383671 100644
-> --- a/tools/perf/Documentation/perf-script.txt
-> +++ b/tools/perf/Documentation/perf-script.txt
-> @@ -188,6 +188,9 @@ OPTIONS
->  	CPUs are specified with -: 0-2. Default is to report samples on all
->  	CPUs.
->  
-> +--show-kernel-path::
-> +	Try to resolve the path of [kernel.kallsyms]
-> +
->  SEE ALSO
->  --------
->  linkperf:perf-record[1], linkperf:perf-script-perl[1],
-> diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-> index fd68185..0d04788 100644
-> --- a/tools/perf/builtin-script.c
-> +++ b/tools/perf/builtin-script.c
-> @@ -1099,6 +1099,8 @@ static const struct option options[] = {
->  		     "addr,offs",
->  		     parse_output_fields),
->  	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
-> +	OPT_BOOLEAN('\0', "show-kernel-path", &show_kernel_path,
-> +		    "Show the path of [kernel.kallsyms]"),
->  
->  	OPT_END()
->  };
-> diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-> index dddc0f3..1645967 100644
-> --- a/tools/perf/util/map.c
-> +++ b/tools/perf/util/map.c
-> @@ -204,9 +204,12 @@ void map__print_dsoname(struct map *self)
->  {
->  	const char *dsoname;
->  
-> -	if (self && self->dso && self->dso->name)
-> +	if (self && self->dso && (self->dso->name || self->dso->long_name)) {
-> +		if (show_kernel_path && self->dso->long_name)
-> +			dsoname = self->dso->long_name;
-> +		else if (self->dso->name)
->  			dsoname = self->dso->name;
-> -	else
-> +	} else
->  		dsoname = "[unknown]";
->  
->  	printf("%s", dsoname);
-> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-> index 3728e67..34c5887 100644
-> --- a/tools/perf/util/session.c
-> +++ b/tools/perf/util/session.c
-> @@ -14,6 +14,8 @@
->  #include "util.h"
->  #include "cpumap.h"
->  
-> +bool show_kernel_path;
-> +
->  static int perf_session__open(struct perf_session *self, bool force)
->  {
->  	struct stat input_stat;
-> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-> index abfecf6..3356d6e 100644
-> --- a/tools/perf/util/symbol.c
-> +++ b/tools/perf/util/symbol.c
-> @@ -41,6 +41,7 @@ static int dso__load_guest_kernel_sym(struct dso *dso, struct map *map,
->  			symbol_filter_t filter);
->  static int vmlinux_path__nr_entries;
->  static char **vmlinux_path;
-> +bool show_kernel_path;
-
-declared twice. See above in session.c. I suggest removing the one in
-session.c
-
-David
 
 
->  
->  struct symbol_conf symbol_conf = {
->  	.exclude_other	  = true,
-> diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-> index 554b2fe..88000e5 100644
-> --- a/tools/perf/util/symbol.h
-> +++ b/tools/perf/util/symbol.h
-> @@ -96,6 +96,7 @@ struct symbol_conf {
->  };
->  
->  extern struct symbol_conf symbol_conf;
-> +extern bool show_kernel_path;
->  
->  static inline void *symbol__priv(struct symbol *sym)
->  {
-> 
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
