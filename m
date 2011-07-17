@@ -1,50 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752397Ab1GQHBM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jul 2011 03:01:12 -0400
-Received: from jester.euphonynet.be ([212.87.96.13]:36812 "EHLO
-	mailpush2.euphonynet.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751852Ab1GQHBK (ORCPT
+	id S1752987Ab1GQHqN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jul 2011 03:46:13 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:46934 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752243Ab1GQHqM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jul 2011 03:01:10 -0400
-From: Bart Van Assche <bvanassche@acm.org>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] futex: Fix spelling in a source code comment
-Date: Sun, 17 Jul 2011 09:01:00 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.38.8-scst; KDE/4.6.0; x86_64; ; )
-Cc: Darren Hart <dvhltc@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
-        trivial@kernel.org
+	Sun, 17 Jul 2011 03:46:12 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107170901.00119.bvanassche@acm.org>
+Date: Sun, 17 Jul 2011 15:46:11 +0800
+Message-ID: <CAM_iQpX_0U26_1yX+VJwhkkA7Un6Mj53AqPpRK36ONM32u4BKA@mail.gmail.com>
+Subject: [Patch] fix a headers_check warning in include/linux/kernel.h
+From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=001517740bf68cccf604a83f13ff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change a single occurrence of "unlcoked" into "unlocked".
+--001517740bf68cccf604a83f13ff
+Content-Type: text/plain; charset=UTF-8
 
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Cc: Darren Hart <dvhltc@us.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/futex.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+This fixes the warning:
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index fe28dc2..dc5e742 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -1763,7 +1763,7 @@ static void futex_wait_queue_me(struct futex_hash_bucket *hb, struct futex_q *q,
-  *
-  * Returns:
-  *  0 - uaddr contains val and hb has been locked
-- * <1 - -EFAULT or -EWOULDBLOCK (uaddr does not contain val) and hb is unlcoked
-+ * <1 - -EFAULT or -EWOULDBLOCK (uaddr does not contain val) and hb is unlocked
-  */
- static int futex_wait_setup(u32 __user *uaddr, u32 val, unsigned int flags,
- 			   struct futex_q *q, struct futex_hash_bucket **hb)
--- 
-1.7.3.4
+linux-2.6/usr/include/linux/kernel.h:65: userspace cannot reference
+function or variable defined in the kernel
 
+As Michal noted, BUILD_BUG_ON stuffs should be moved
+under #ifdef __KERNEL__.
+
+Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+
+--001517740bf68cccf604a83f13ff
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="include-linux-kernel_h-fix-headers-check-warning.diff"
+Content-Disposition: attachment; 
+	filename="include-linux-kernel_h-fix-headers-check-warning.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gq7pb5ku0
+
+ZGlmZiAtLWdpdCBhL2luY2x1ZGUvbGludXgva2VybmVsLmggYi9pbmNsdWRlL2xpbnV4L2tlcm5l
+bC5oCmluZGV4IDk1MzM1MmEuLjc0OGQwMDQgMTAwNjQ0Ci0tLSBhL2luY2x1ZGUvbGludXgva2Vy
+bmVsLmgKKysrIGIvaW5jbHVkZS9saW51eC9rZXJuZWwuaApAQCAtNjQ2LDI5ICs2NDYsNiBAQCBz
+dGF0aWMgaW5saW5lIHZvaWQgZnRyYWNlX2R1bXAoZW51bSBmdHJhY2VfZHVtcF9tb2RlIG9vcHNf
+ZHVtcF9tb2RlKSB7IH0KIAljb25zdCB0eXBlb2YoICgodHlwZSAqKTApLT5tZW1iZXIgKSAqX19t
+cHRyID0gKHB0cik7CVwKIAkodHlwZSAqKSggKGNoYXIgKilfX21wdHIgLSBvZmZzZXRvZih0eXBl
+LG1lbWJlcikgKTt9KQogCi1zdHJ1Y3Qgc3lzaW5mbzsKLWV4dGVybiBpbnQgZG9fc3lzaW5mbyhz
+dHJ1Y3Qgc3lzaW5mbyAqaW5mbyk7Ci0KLSNlbmRpZiAvKiBfX0tFUk5FTF9fICovCi0KLSNkZWZp
+bmUgU0lfTE9BRF9TSElGVAkxNgotc3RydWN0IHN5c2luZm8gewotCWxvbmcgdXB0aW1lOwkJCS8q
+IFNlY29uZHMgc2luY2UgYm9vdCAqLwotCXVuc2lnbmVkIGxvbmcgbG9hZHNbM107CQkvKiAxLCA1
+LCBhbmQgMTUgbWludXRlIGxvYWQgYXZlcmFnZXMgKi8KLQl1bnNpZ25lZCBsb25nIHRvdGFscmFt
+OwkJLyogVG90YWwgdXNhYmxlIG1haW4gbWVtb3J5IHNpemUgKi8KLQl1bnNpZ25lZCBsb25nIGZy
+ZWVyYW07CQkvKiBBdmFpbGFibGUgbWVtb3J5IHNpemUgKi8KLQl1bnNpZ25lZCBsb25nIHNoYXJl
+ZHJhbTsJLyogQW1vdW50IG9mIHNoYXJlZCBtZW1vcnkgKi8KLQl1bnNpZ25lZCBsb25nIGJ1ZmZl
+cnJhbTsJLyogTWVtb3J5IHVzZWQgYnkgYnVmZmVycyAqLwotCXVuc2lnbmVkIGxvbmcgdG90YWxz
+d2FwOwkvKiBUb3RhbCBzd2FwIHNwYWNlIHNpemUgKi8KLQl1bnNpZ25lZCBsb25nIGZyZWVzd2Fw
+OwkJLyogc3dhcCBzcGFjZSBzdGlsbCBhdmFpbGFibGUgKi8KLQl1bnNpZ25lZCBzaG9ydCBwcm9j
+czsJCS8qIE51bWJlciBvZiBjdXJyZW50IHByb2Nlc3NlcyAqLwotCXVuc2lnbmVkIHNob3J0IHBh
+ZDsJCS8qIGV4cGxpY2l0IHBhZGRpbmcgZm9yIG02OGsgKi8KLQl1bnNpZ25lZCBsb25nIHRvdGFs
+aGlnaDsJLyogVG90YWwgaGlnaCBtZW1vcnkgc2l6ZSAqLwotCXVuc2lnbmVkIGxvbmcgZnJlZWhp
+Z2g7CQkvKiBBdmFpbGFibGUgaGlnaCBtZW1vcnkgc2l6ZSAqLwotCXVuc2lnbmVkIGludCBtZW1f
+dW5pdDsJCS8qIE1lbW9yeSB1bml0IHNpemUgaW4gYnl0ZXMgKi8KLQljaGFyIF9mWzIwLTIqc2l6
+ZW9mKGxvbmcpLXNpemVvZihpbnQpXTsJLyogUGFkZGluZzogbGliYzUgdXNlcyB0aGlzLi4gKi8K
+LX07Ci0KICNpZmRlZiBfX0NIRUNLRVJfXwogI2RlZmluZSBCVUlMRF9CVUdfT05fTk9UX1BPV0VS
+X09GXzIobikKICNkZWZpbmUgQlVJTERfQlVHX09OX1pFUk8oZSkgKDApCkBAIC03MTQsNiArNjkx
+LDMwIEBAIGV4dGVybiBpbnQgX19idWlsZF9idWdfb25fZmFpbGVkOwogI2VuZGlmCiAjZW5kaWYJ
+LyogX19DSEVDS0VSX18gKi8KIAorCitzdHJ1Y3Qgc3lzaW5mbzsKK2V4dGVybiBpbnQgZG9fc3lz
+aW5mbyhzdHJ1Y3Qgc3lzaW5mbyAqaW5mbyk7CisKKyNlbmRpZiAvKiBfX0tFUk5FTF9fICovCisK
+KyNkZWZpbmUgU0lfTE9BRF9TSElGVAkxNgorc3RydWN0IHN5c2luZm8geworCWxvbmcgdXB0aW1l
+OwkJCS8qIFNlY29uZHMgc2luY2UgYm9vdCAqLworCXVuc2lnbmVkIGxvbmcgbG9hZHNbM107CQkv
+KiAxLCA1LCBhbmQgMTUgbWludXRlIGxvYWQgYXZlcmFnZXMgKi8KKwl1bnNpZ25lZCBsb25nIHRv
+dGFscmFtOwkJLyogVG90YWwgdXNhYmxlIG1haW4gbWVtb3J5IHNpemUgKi8KKwl1bnNpZ25lZCBs
+b25nIGZyZWVyYW07CQkvKiBBdmFpbGFibGUgbWVtb3J5IHNpemUgKi8KKwl1bnNpZ25lZCBsb25n
+IHNoYXJlZHJhbTsJLyogQW1vdW50IG9mIHNoYXJlZCBtZW1vcnkgKi8KKwl1bnNpZ25lZCBsb25n
+IGJ1ZmZlcnJhbTsJLyogTWVtb3J5IHVzZWQgYnkgYnVmZmVycyAqLworCXVuc2lnbmVkIGxvbmcg
+dG90YWxzd2FwOwkvKiBUb3RhbCBzd2FwIHNwYWNlIHNpemUgKi8KKwl1bnNpZ25lZCBsb25nIGZy
+ZWVzd2FwOwkJLyogc3dhcCBzcGFjZSBzdGlsbCBhdmFpbGFibGUgKi8KKwl1bnNpZ25lZCBzaG9y
+dCBwcm9jczsJCS8qIE51bWJlciBvZiBjdXJyZW50IHByb2Nlc3NlcyAqLworCXVuc2lnbmVkIHNo
+b3J0IHBhZDsJCS8qIGV4cGxpY2l0IHBhZGRpbmcgZm9yIG02OGsgKi8KKwl1bnNpZ25lZCBsb25n
+IHRvdGFsaGlnaDsJLyogVG90YWwgaGlnaCBtZW1vcnkgc2l6ZSAqLworCXVuc2lnbmVkIGxvbmcg
+ZnJlZWhpZ2g7CQkvKiBBdmFpbGFibGUgaGlnaCBtZW1vcnkgc2l6ZSAqLworCXVuc2lnbmVkIGlu
+dCBtZW1fdW5pdDsJCS8qIE1lbW9yeSB1bml0IHNpemUgaW4gYnl0ZXMgKi8KKwljaGFyIF9mWzIw
+LTIqc2l6ZW9mKGxvbmcpLXNpemVvZihpbnQpXTsJLyogUGFkZGluZzogbGliYzUgdXNlcyB0aGlz
+Li4gKi8KK307CisKIC8qIFRyYXAgcGFzdGVycyBvZiBfX0ZVTkNUSU9OX18gYXQgY29tcGlsZS10
+aW1lICovCiAjZGVmaW5lIF9fRlVOQ1RJT05fXyAoX19mdW5jX18pCiAK
+--001517740bf68cccf604a83f13ff--
