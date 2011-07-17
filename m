@@ -1,73 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755944Ab1GQOtO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jul 2011 10:49:14 -0400
-Received: from gate.crashing.org ([63.228.1.57]:54648 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752748Ab1GQOtN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jul 2011 10:49:13 -0400
-Subject: Re: [PATCH 1/1] Fixup write permission of TLB on powerpc e500 core
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Shan Hai <haishan.bai@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, paulus@samba.org,
-        tglx@linutronix.de, walken@google.com, dhowells@redhat.com,
-        cmetcalf@tilera.com, tony.luck@intel.com, akpm@linux-foundation.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-In-Reply-To: <4E22E4AC.7040600@gmail.com>
-References: <1310717238-13857-1-git-send-email-haishan.bai@gmail.com>
-	 <1310717238-13857-2-git-send-email-haishan.bai@gmail.com>
-	 <1310725418.2586.309.camel@twins>  <4E21A526.8010904@gmail.com>
-	 <1310860194.25044.17.camel@pasglop> <1310900561.13765.22.camel@twins>
-	 <4E22E4AC.7040600@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Jul 2011 00:48:37 +1000
-Message-ID: <1310914117.25044.216.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1755996Ab1GQPFz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jul 2011 11:05:55 -0400
+Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:14911 "EHLO
+	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755722Ab1GQPFx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Jul 2011 11:05:53 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAHz5Ik5tg1I8/2dsb2JhbABSp3B4iH7BCQ6FT18Eoz0
+Date: Sun, 17 Jul 2011 17:05:50 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Olaf Hering <olaf@aepfle.de>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>
+Subject: Re: [GIT PULL REQUEST] watchdog - v3.0-rc7 - Fixes
+Message-ID: <20110717150550.GA10330@infomag.iguana.be>
+References: <20110716060934.GS3834@infomag.iguana.be>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110716060934.GS3834@infomag.iguana.be>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-07-17 at 21:33 +0800, Shan Hai wrote:
-> 
-> On ARM you could not protect pages from supervisor-mode writes,
-> isn't it?  That means, all writable user pages are writable for
-> supervisor too, but its not hold for at least x86 and powerpc,
-> x86 and powerpc can be configured to protect pages from
-> supervisor-mode writes.
+Hi Linus,
 
-That doesn't sound right... how would put_user() work properly then ? A
-cursory glance at the ARM code doesn't show it doing anything "special",
-just stores ... but I might have missing something.
+Please pull from 'master' branch of
+	git://git.kernel.org/pub/scm/linux/kernel/git/wim/linux-2.6-watchdog.git
+or if master.kernel.org hasn't synced up yet:
+	master.kernel.org:/pub/scm/linux/kernel/git/wim/linux-2.6-watchdog.git
 
-> Think about the following situation,
-> a page fault occurs on the kernel trying to write to a writable shared
-> user page which is read only to the kernel, the following conditions
-> hold,
-> - the page is *present*, because its a shared page
-> - the page is *writable*, because demand paging sets up the pte for
->      the current process to so
-> 
-> The follow_page() called in the __get_user_page() returns non NULL
-> to its caller on the above mentioned *present* and *writable* page,
-> so the gup(.write=1) has no chance to set pte dirty by calling 
-> handle_mm_fault,
-> the follow_page() has no knowledge of supervisor-mode write protected
-> pages,
-> that's the culprit in the bug discussed here. 
+This will update the following files:
 
-Right, the problem is with writable pages that have "lost" (or never had
-but usually it's lost, due to swapping for example) their dirty bit, or
-any page that has lost young.
+ drivers/watchdog/Kconfig |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
->From what I can tell, we need to either fix those bits from the caller
-of gup (futex code), which sound nasty, or more easily fix those from
-gup itself, possibly under control of flags in the "write" argument to 
-avoid breaking code relying on the existing behaviour, expecially vs.
-dirty.
+with these Changes:
 
-Cheers,
-Ben.
+Author: Randy Dunlap <rdunlap@xenotime.net>
+Date:   Sat Jul 16 12:25:49 2011 -0700
 
+    watchdog: hpwdt depends on PCI
+    
+    hpwdt is a PCI driver so it should depend on PCI.
+    Fixes these build errors:
+    
+    drivers/watchdog/hpwdt.c:762: error: implicit declaration of function 'pci_iomap'
+    drivers/watchdog/hpwdt.c:762: warning: assignment makes pointer from integer without a cast
+    drivers/watchdog/hpwdt.c:797: error: implicit declaration of function 'pci_iounmap'
+    
+    Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+    Cc: Thomas Mingarelli <thomas.mingarelli@hp.com>
 
+Author: Olaf Hering <olaf@aepfle.de>
+Date:   Fri Jul 15 23:23:33 2011 +0200
+
+    watchdog: fix hpwdt Kconfig regression in 3.0-rc
+    
+    Remove Kconfig regression caused by commit
+    a4616153deae053b29a2b7dd9ec4b2a225accfc5 "watchdog: hpwdt: build hpwdt as
+    module by default with NMI_DECODING enabled"
+    
+    With the above change applied, hpwdt will be enabled unconditionally by just
+    entering the Watchdog subscreen in menuconfig. Since this driver is not
+    essential to boot any box it should remain disabled until it gets manually
+    enabled, just like all other drivers.
+    
+    Signed-off-by: Olaf Hering <olaf@aepfle.de>
+    Cc: Tony Camuso <tcamuso@redhat.com>
+    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+
+The Changes can also be looked at on:
+	http://www.kernel.org/git/?p=linux/kernel/git/wim/linux-2.6-watchdog.git;a=summary
+
+For completeness, I added the overal diff below.
+
+Greetings,
+Wim.
+
+================================================================================
+diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+index 9536d38..21d816e 100644
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -599,8 +599,7 @@ config IT87_WDT
+ 
+ config HP_WATCHDOG
+ 	tristate "HP ProLiant iLO2+ Hardware Watchdog Timer"
+-	depends on X86
+-	default m
++	depends on X86 && PCI
+ 	help
+ 	  A software monitoring watchdog and NMI sourcing driver. This driver
+ 	  will detect lockups and provide a stack trace. This is a driver that
