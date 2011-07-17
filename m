@@ -1,46 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755837Ab1GQLfc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jul 2011 07:35:32 -0400
-Received: from relay.parallels.com ([195.214.232.42]:46571 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755804Ab1GQLf2 (ORCPT
+	id S1752755Ab1GQLxp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jul 2011 07:53:45 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:52346 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751490Ab1GQLxn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jul 2011 07:35:28 -0400
-Subject: [PATCH] mm: remove useless rcu lock-unlock from mapping_tagged()
-To: Andrew Morton <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Date: Sun, 17 Jul 2011 15:35:23 +0400
-Message-ID: <20110717113522.17196.13682.stgit@localhost6>
-User-Agent: StGit/0.15
+	Sun, 17 Jul 2011 07:53:43 -0400
+Date: Sun, 17 Jul 2011 19:53:23 +0800
+From: Harry Wei <jiaweiwei.xiyou@gmail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: stefanb@linux.vnet.ibm.com, sfr@canb.auug.org.au,
+        srajiv@linux.vnet.ibm.com, jmorris@namei.org,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        kongjianjun@gmail.com, harryxiyou@gmail.com
+Subject: Re: [PATCH] tpm: Move tpm_tis_reenable_interrupts out of
+ CONFIG_PNP block
+Message-ID: <20110717115320.GA14595@gmail.com>
+Mail-Followup-To: Randy Dunlap <rdunlap@xenotime.net>,
+	stefanb@linux.vnet.ibm.com, sfr@canb.auug.org.au,
+	srajiv@linux.vnet.ibm.com, jmorris@namei.org,
+	linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+	kongjianjun@gmail.com, harryxiyou@gmail.com
+References: <1310879064.15064.4.camel@d941e-10>
+ <20110716223426.f1507465.rdunlap@xenotime.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=gb2312
+Content-Disposition: inline
+In-Reply-To: <20110716223426.f1507465.rdunlap@xenotime.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-radix_tree_tagged() is lockless, it does not require any protection.
+On Sat, Jul 16, 2011 at 10:34:26PM -0700, Randy Dunlap wrote:
+> New warning:
+> drivers/char/tpm/tpm_tis.c:97: warning: 'is_itpm' defined but not used
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+From: Harry Wei <harryxiyou@gmail.com>
+
+This patch can fix above warning.
+
+Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+Signed-off-by: Harry Wei <harryxiyou@gmail.com>
 ---
- mm/page-writeback.c |    6 +-----
- 1 files changed, 1 insertions(+), 5 deletions(-)
+ drivers/char/tpm/tpm_tis.c |   20 --------------------
+ 1 files changed, 0 insertions(+), 20 deletions(-)
 
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 31f6988..919b45e 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -1405,10 +1405,6 @@ EXPORT_SYMBOL(test_set_page_writeback);
-  */
- int mapping_tagged(struct address_space *mapping, int tag)
+diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
+index dd21df5..5929bb2 100644
+--- a/drivers/char/tpm/tpm_tis.c
++++ b/drivers/char/tpm/tpm_tis.c
+@@ -79,26 +79,6 @@ enum tis_defaults {
+ static LIST_HEAD(tis_chips);
+ static DEFINE_SPINLOCK(tis_lock);
+ 
+-#ifdef CONFIG_ACPI
+-static int is_itpm(struct pnp_dev *dev)
+-{
+-	struct acpi_device *acpi = pnp_acpi_device(dev);
+-	struct acpi_hardware_id *id;
+-
+-	list_for_each_entry(id, &acpi->pnp.ids, list) {
+-		if (!strcmp("INTC0102", id->id))
+-			return 1;
+-	}
+-
+-	return 0;
+-}
+-#else
+-static int is_itpm(struct pnp_dev *dev)
+-{
+-	return 0;
+-}
+-#endif
+-
+ static int check_locality(struct tpm_chip *chip, int l)
  {
--	int ret;
--	rcu_read_lock();
--	ret = radix_tree_tagged(&mapping->page_tree, tag);
--	rcu_read_unlock();
--	return ret;
-+	return radix_tree_tagged(&mapping->page_tree, tag);
- }
- EXPORT_SYMBOL(mapping_tagged);
+ 	if ((ioread8(chip->vendor.iobase + TPM_ACCESS(l)) &
+-- 
+1.7.0.4
 
