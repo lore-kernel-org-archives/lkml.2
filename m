@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756118Ab1GQPJw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jul 2011 11:09:52 -0400
-Received: from mail.southpole.se ([193.12.106.18]:34887 "EHLO
+	id S1756099Ab1GQPJq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jul 2011 11:09:46 -0400
+Received: from mail.southpole.se ([193.12.106.18]:34897 "EHLO
 	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756073Ab1GQPJh (ORCPT
+	with ESMTP id S1756061Ab1GQPJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jul 2011 11:09:37 -0400
+	Sun, 17 Jul 2011 11:09:36 -0400
 From: Jonas Bonn <jonas@southpole.se>
 To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Cc: Jonas Bonn <jonas@southpole.se>
-Subject: [PATCH v3 12/19] OpenRISC: Scheduling/Process management
-Date: Sun, 17 Jul 2011 17:08:22 +0200
-Message-Id: <542643f1cc43d6d2c64f988d9f35adf459d67171.1310913472.git.jonas@southpole.se>
+Cc: Jonas Bonn <jonas@southpole.se>, tglx@linutronix.de
+Subject: [PATCH v3 09/19] OpenRISC: IRQ
+Date: Sun, 17 Jul 2011 17:08:19 +0200
+Message-Id: <af04be287cc896360ffad4f30a1e0e2f4b8fddfd.1310913472.git.jonas@southpole.se>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <cover.1310913472.git.jonas@southpole.se>
 References: <cover.1310913472.git.jonas@southpole.se>
@@ -24,21 +24,26 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+This patch adds support for the OpenRISC PIC.
+
 Signed-off-by: Jonas Bonn <jonas@southpole.se>
+Cc: tglx@linutronix.de
 Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/openrisc/include/asm/thread_info.h |  134 +++++++++++++
- arch/openrisc/kernel/process.c          |  311 +++++++++++++++++++++++++++++++
- 2 files changed, 445 insertions(+), 0 deletions(-)
- create mode 100644 arch/openrisc/include/asm/thread_info.h
- create mode 100644 arch/openrisc/kernel/process.c
+ arch/openrisc/include/asm/irq.h      |   27 ++++++
+ arch/openrisc/include/asm/irqflags.h |   29 ++++++
+ arch/openrisc/kernel/irq.c           |  172 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 228 insertions(+), 0 deletions(-)
+ create mode 100644 arch/openrisc/include/asm/irq.h
+ create mode 100644 arch/openrisc/include/asm/irqflags.h
+ create mode 100644 arch/openrisc/kernel/irq.c
 
-diff --git a/arch/openrisc/include/asm/thread_info.h b/arch/openrisc/include/asm/thread_info.h
+diff --git a/arch/openrisc/include/asm/irq.h b/arch/openrisc/include/asm/irq.h
 new file mode 100644
-index 0000000..07a8bc0
+index 0000000..eb612b1
 --- /dev/null
-+++ b/arch/openrisc/include/asm/thread_info.h
-@@ -0,0 +1,134 @@
++++ b/arch/openrisc/include/asm/irq.h
+@@ -0,0 +1,27 @@
 +/*
 + * OpenRISC Linux
 + *
@@ -57,439 +62,228 @@ index 0000000..07a8bc0
 + * (at your option) any later version.
 + */
 +
-+#ifndef _ASM_THREAD_INFO_H
-+#define _ASM_THREAD_INFO_H
++#ifndef __ASM_OPENRISC_IRQ_H__
++#define __ASM_OPENRISC_IRQ_H__
 +
-+#ifdef __KERNEL__
++#define	NR_IRQS		32
++#include <asm-generic/irq.h>
 +
-+#ifndef __ASSEMBLY__
-+#include <asm/types.h>
-+#include <asm/processor.h>
-+#endif
++#define NO_IRQ		(-1)
 +
-+
-+/* THREAD_SIZE is the size of the task_struct/kernel_stack combo.
-+ * normally, the stack is found by doing something like p + THREAD_SIZE
-+ * in or32, a page is 8192 bytes, which seems like a sane size
-+ */
-+
-+#define THREAD_SIZE_ORDER 0
-+#define THREAD_SIZE       (PAGE_SIZE << THREAD_SIZE_ORDER)
-+
-+/*
-+ * low level task data that entry.S needs immediate access to
-+ * - this struct should fit entirely inside of one cache line
-+ * - this struct shares the supervisor stack pages
-+ * - if the contents of this structure are changed, the assembly constants
-+ *   must also be changed
-+ */
-+#ifndef __ASSEMBLY__
-+
-+typedef unsigned long mm_segment_t;
-+
-+struct thread_info {
-+	struct task_struct	*task;		/* main task structure */
-+	struct exec_domain	*exec_domain;	/* execution domain */
-+	unsigned long		flags;		/* low level flags */
-+	__u32			cpu;		/* current CPU */
-+	__s32			preempt_count; /* 0 => preemptable, <0 => BUG */
-+
-+	mm_segment_t		addr_limit; /* thread address space:
-+					       0-0x7FFFFFFF for user-thead
-+					       0-0xFFFFFFFF for kernel-thread
-+					     */
-+	struct restart_block    restart_block;
-+	__u8			supervisor_stack[0];
-+
-+	/* saved context data */
-+	unsigned long           ksp;
-+};
-+#endif
-+
-+/*
-+ * macros/functions for gaining access to the thread information structure
-+ *
-+ * preempt_count needs to be 1 initially, until the scheduler is functional.
-+ */
-+#ifndef __ASSEMBLY__
-+#define INIT_THREAD_INFO(tsk)				\
-+{							\
-+	.task		= &tsk,				\
-+	.exec_domain	= &default_exec_domain,		\
-+	.flags		= 0,				\
-+	.cpu		= 0,				\
-+	.preempt_count	= 1,				\
-+	.addr_limit	= KERNEL_DS,			\
-+	.restart_block  = {				\
-+			  .fn = do_no_restart_syscall,	\
-+	},						\
-+	.ksp            = 0,                            \
-+}
-+
-+#define init_thread_info	(init_thread_union.thread_info)
-+
-+/* how to get the thread information struct from C */
-+register struct thread_info *current_thread_info_reg asm("r10");
-+#define current_thread_info()   (current_thread_info_reg)
-+
-+#define get_thread_info(ti) get_task_struct((ti)->task)
-+#define put_thread_info(ti) put_task_struct((ti)->task)
-+
-+#endif /* !__ASSEMBLY__ */
-+
-+/*
-+ * thread information flags
-+ *   these are process state flags that various assembly files may need to
-+ *   access
-+ *   - pending work-to-be-done flags are in LSW
-+ *   - other flags in MSW
-+ */
-+#define TIF_SYSCALL_TRACE	0	/* syscall trace active */
-+#define TIF_NOTIFY_RESUME	1	/* resumption notification requested */
-+#define TIF_SIGPENDING		2	/* signal pending */
-+#define TIF_NEED_RESCHED	3	/* rescheduling necessary */
-+#define TIF_SINGLESTEP		4	/* restore singlestep on return to user
-+					 * mode
-+					 */
-+#define TIF_SYSCALL_TRACEPOINT  8       /* for ftrace syscall instrumentation */
-+#define TIF_RESTORE_SIGMASK     9
-+#define TIF_POLLING_NRFLAG	16	/* true if poll_idle() is polling						 * TIF_NEED_RESCHED
-+					 */
-+#define TIF_MEMDIE              17
-+
-+#define _TIF_SYSCALL_TRACE	(1<<TIF_SYSCALL_TRACE)
-+#define _TIF_NOTIFY_RESUME	(1<<TIF_NOTIFY_RESUME)
-+#define _TIF_SIGPENDING		(1<<TIF_SIGPENDING)
-+#define _TIF_NEED_RESCHED	(1<<TIF_NEED_RESCHED)
-+#define _TIF_SINGLESTEP		(1<<TIF_SINGLESTEP)
-+#define _TIF_RESTORE_SIGMASK     (1<<TIF_RESTORE_SIGMASK)
-+#define _TIF_POLLING_NRFLAG	(1<<TIF_POLLING_NRFLAG)
-+
-+
-+/* Work to do when returning from interrupt/exception */
-+/* For OpenRISC, this is anything in the LSW other than syscall trace */
-+#define _TIF_WORK_MASK (0xff & ~(_TIF_SYSCALL_TRACE|_TIF_SINGLESTEP))
-+
-+#endif /* __KERNEL__ */
-+
-+#endif /* _ASM_THREAD_INFO_H */
-diff --git a/arch/openrisc/kernel/process.c b/arch/openrisc/kernel/process.c
++#endif /* __ASM_OPENRISC_IRQ_H__ */
+diff --git a/arch/openrisc/include/asm/irqflags.h b/arch/openrisc/include/asm/irqflags.h
 new file mode 100644
-index 0000000..e4209af
+index 0000000..dc86c65
 --- /dev/null
-+++ b/arch/openrisc/kernel/process.c
-@@ -0,0 +1,311 @@
++++ b/arch/openrisc/include/asm/irqflags.h
+@@ -0,0 +1,29 @@
 +/*
-+ * OpenRISC process.c
++ * OpenRISC Linux
++ *
++ * Linux architectural port borrowing liberally from similar works of
++ * others.  All original copyrights apply as per the original source
++ * declaration.
++ *
++ * OpenRISC implementation:
++ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ * et al.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef ___ASM_OPENRISC_IRQFLAGS_H
++#define ___ASM_OPENRISC_IRQFLAGS_H
++
++#include <asm/spr_defs.h>
++
++#define ARCH_IRQ_DISABLED        0x00
++#define ARCH_IRQ_ENABLED         (SPR_SR_IEE|SPR_SR_TEE)
++
++#include <asm-generic/irqflags.h>
++
++#endif /* ___ASM_OPENRISC_IRQFLAGS_H */
+diff --git a/arch/openrisc/kernel/irq.c b/arch/openrisc/kernel/irq.c
+new file mode 100644
+index 0000000..59b3023
+--- /dev/null
++++ b/arch/openrisc/kernel/irq.c
+@@ -0,0 +1,172 @@
++/*
++ * OpenRISC irq.c
 + *
 + * Linux architectural port borrowing liberally from similar works of
 + * others.  All original copyrights apply as per the original source
 + * declaration.
 + *
 + * Modifications for the OpenRISC architecture:
-+ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
 + * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
 + *
 + *      This program is free software; you can redistribute it and/or
 + *      modify it under the terms of the GNU General Public License
 + *      as published by the Free Software Foundation; either version
 + *      2 of the License, or (at your option) any later version.
-+ *
-+ * This file handles the architecture-dependent parts of process handling...
 + */
 +
-+#define __KERNEL_SYSCALLS__
-+#include <stdarg.h>
-+
-+#include <linux/errno.h>
-+#include <linux/sched.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/mm.h>
-+#include <linux/stddef.h>
-+#include <linux/unistd.h>
 +#include <linux/ptrace.h>
-+#include <linux/slab.h>
-+#include <linux/elfcore.h>
++#include <linux/errno.h>
 +#include <linux/interrupt.h>
-+#include <linux/delay.h>
-+#include <linux/init_task.h>
-+#include <linux/mqueue.h>
-+#include <linux/fs.h>
++#include <linux/init.h>
++#include <linux/of.h>
++#include <linux/ftrace.h>
++#include <linux/irq.h>
++#include <linux/seq_file.h>
++#include <linux/kernel_stat.h>
 +
-+#include <asm/uaccess.h>
-+#include <asm/pgtable.h>
-+#include <asm/system.h>
-+#include <asm/io.h>
-+#include <asm/processor.h>
-+#include <asm/spr_defs.h>
++#include <linux/irqflags.h>
 +
-+#include <linux/smp.h>
++/* read interrupt enabled status */
++unsigned long arch_local_save_flags(void)
++{
++	return mfspr(SPR_SR) & (SPR_SR_IEE|SPR_SR_TEE);
++}
++EXPORT_SYMBOL(arch_local_save_flags);
 +
-+/*
-+ * Pointer to Current thread info structure.
-+ *
-+ * Used at user space -> kernel transitions.
++/* set interrupt enabled status */
++void arch_local_irq_restore(unsigned long flags)
++{
++	mtspr(SPR_SR, ((mfspr(SPR_SR) & ~(SPR_SR_IEE|SPR_SR_TEE)) | flags));
++}
++EXPORT_SYMBOL(arch_local_irq_restore);
++
++
++/* OR1K PIC implementation */
++
++/* We're a couple of cycles faster than the generic implementations with
++ * these 'fast' versions.
 + */
-+struct thread_info *current_thread_info_set[NR_CPUS] = { &init_thread_info, };
 +
-+void machine_restart(void)
++static void or1k_pic_mask(struct irq_data *data)
 +{
-+	printk(KERN_INFO "*** MACHINE RESTART ***\n");
-+	__asm__("l.nop 1");
++	mtspr(SPR_PICMR, mfspr(SPR_PICMR) & ~(1UL << data->irq));
 +}
 +
-+/*
-+ * Similar to machine_power_off, but don't shut off power.  Add code
-+ * here to freeze the system for e.g. post-mortem debug purpose when
-+ * possible.  This halt has nothing to do with the idle halt.
-+ */
-+void machine_halt(void)
++static void or1k_pic_unmask(struct irq_data *data)
 +{
-+	printk(KERN_INFO "*** MACHINE HALT ***\n");
-+	__asm__("l.nop 1");
++	mtspr(SPR_PICMR, mfspr(SPR_PICMR) | (1UL << data->irq));
 +}
 +
-+/* If or when software power-off is implemented, add code here.  */
-+void machine_power_off(void)
++static void or1k_pic_ack(struct irq_data *data)
 +{
-+	printk(KERN_INFO "*** MACHINE POWER OFF ***\n");
-+	__asm__("l.nop 1");
-+}
-+
-+void (*pm_power_off) (void) = machine_power_off;
-+
-+/*
-+ * When a process does an "exec", machine state like FPU and debug
-+ * registers need to be reset.  This is a hook function for that.
-+ * Currently we don't have any such state to reset, so this is empty.
-+ */
-+void flush_thread(void)
-+{
-+}
-+
-+void show_regs(struct pt_regs *regs)
-+{
-+	extern void show_registers(struct pt_regs *regs);
-+
-+	/* __PHX__ cleanup this mess */
-+	show_registers(regs);
-+}
-+
-+unsigned long thread_saved_pc(struct task_struct *t)
-+{
-+	return (unsigned long)user_regs(t->stack)->pc;
-+}
-+
-+void release_thread(struct task_struct *dead_task)
-+{
-+}
-+
-+/*
-+ * Copy the thread-specific (arch specific) info from the current
-+ * process to the new one p
-+ */
-+extern asmlinkage void ret_from_fork(void);
-+
-+int
-+copy_thread(unsigned long clone_flags, unsigned long usp,
-+	    unsigned long unused, struct task_struct *p, struct pt_regs *regs)
-+{
-+	struct pt_regs *childregs;
-+	struct pt_regs *kregs;
-+	unsigned long sp = (unsigned long)task_stack_page(p) + THREAD_SIZE;
-+	struct thread_info *ti;
-+	unsigned long top_of_kernel_stack;
-+
-+	top_of_kernel_stack = sp;
-+
-+	p->set_child_tid = p->clear_child_tid = NULL;
-+
-+	/* Copy registers */
-+	/* redzone */
-+	sp -= STACK_FRAME_OVERHEAD;
-+	sp -= sizeof(struct pt_regs);
-+	childregs = (struct pt_regs *)sp;
-+
-+	/* Copy parent registers */
-+	*childregs = *regs;
-+
-+	if ((childregs->sr & SPR_SR_SM) == 1) {
-+		/* for kernel thread, set `current_thread_info'
-+		 * and stackptr in new task
-+		 */
-+		childregs->sp = (unsigned long)task_stack_page(p) + THREAD_SIZE;
-+		childregs->gpr[10] = (unsigned long)task_thread_info(p);
-+	} else {
-+		childregs->sp = usp;
-+	}
-+
-+	childregs->gpr[11] = 0;	/* Result from fork() */
-+
-+	/*
-+	 * The way this works is that at some point in the future
-+	 * some task will call _switch to switch to the new task.
-+	 * That will pop off the stack frame created below and start
-+	 * the new task running at ret_from_fork.  The new task will
-+	 * do some house keeping and then return from the fork or clone
-+	 * system call, using the stack frame created above.
++	/* EDGE-triggered interrupts need to be ack'ed in order to clear
++	 * the latch.
++	 * LEVER-triggered interrupts do not need to be ack'ed; however,
++	 * ack'ing the interrupt has no ill-effect and is quicker than
++	 * trying to figure out what type it is...
 +	 */
-+	/* redzone */
-+	sp -= STACK_FRAME_OVERHEAD;
-+	sp -= sizeof(struct pt_regs);
-+	kregs = (struct pt_regs *)sp;
 +
-+	ti = task_thread_info(p);
-+	ti->ksp = sp;
-+
-+	/* kregs->sp must store the location of the 'pre-switch' kernel stack
-+	 * pointer... for a newly forked process, this is simply the top of
-+	 * the kernel stack.
++	/* The OpenRISC 1000 spec says to write a 1 to the bit to ack the
++	 * interrupt, but the OR1200 does this backwards and requires a 0
++	 * to be written...
 +	 */
-+	kregs->sp = top_of_kernel_stack;
-+	kregs->gpr[3] = (unsigned long)current;	/* arg to schedule_tail */
-+	kregs->gpr[10] = (unsigned long)task_thread_info(p);
-+	kregs->gpr[9] = (unsigned long)ret_from_fork;
 +
-+	return 0;
-+}
-+
-+/*
-+ * Set up a thread for executing a new program
-+ */
-+void start_thread(struct pt_regs *regs, unsigned long pc, unsigned long sp)
-+{
-+	unsigned long sr = regs->sr & ~SPR_SR_SM;
-+
-+	set_fs(USER_DS);
-+	memset(regs->gpr, 0, sizeof(regs->gpr));
-+
-+	regs->pc = pc;
-+	regs->sr = sr;
-+	regs->sp = sp;
-+
-+/*	printk("start thread, ksp = %lx\n", current_thread_info()->ksp);*/
-+}
-+
-+/* Fill in the fpu structure for a core dump.  */
-+int dump_fpu(struct pt_regs *regs, elf_fpregset_t * fpu)
-+{
-+	/* TODO */
-+	return 0;
-+}
-+
-+extern struct thread_info *_switch(struct thread_info *old_ti,
-+				   struct thread_info *new_ti);
-+
-+struct task_struct *__switch_to(struct task_struct *old,
-+				struct task_struct *new)
-+{
-+	struct task_struct *last;
-+	struct thread_info *new_ti, *old_ti;
-+	unsigned long flags;
-+
-+	local_irq_save(flags);
-+
-+	/* current_set is an array of saved current pointers
-+	 * (one for each cpu). we need them at user->kernel transition,
-+	 * while we save them at kernel->user transition
++#ifdef CONFIG_OR1K_1200
++	/* There are two oddities with the OR1200 PIC implementation:
++	 * i)  LEVEL-triggered interrupts are latched and need to be cleared
++	 * ii) the interrupt latch is cleared by writing a 0 to the bit,
++	 *     as opposed to a 1 as mandated by the spec
 +	 */
-+	new_ti = new->stack;
-+	old_ti = old->stack;
 +
-+	current_thread_info_set[smp_processor_id()] = new_ti;
-+	last = (_switch(old_ti, new_ti))->task;
-+
-+	local_irq_restore(flags);
-+
-+	return last;
++	mtspr(SPR_PICSR, mfspr(SPR_PICSR) & ~(1UL << data->irq));
++#else
++	WARN(1, "Interrupt handling possibily broken\n");
++	mtspr(SPR_PICSR, (1UL << irq));
++#endif
 +}
 +
-+/*
-+ * Write out registers in core dump format, as defined by the
-+ * struct user_regs_struct
-+ */
-+void dump_elf_thread(elf_greg_t *dest, struct pt_regs* regs)
++static void or1k_pic_mask_ack(struct irq_data *data)
 +{
-+	dest[0] = 0; /* r0 */
-+	memcpy(dest+1, regs->gpr+1, 31*sizeof(unsigned long));
-+	dest[32] = regs->pc;
-+	dest[33] = regs->sr;
-+	dest[34] = 0;
-+	dest[35] = 0;
++	/* Comments for pic_ack apply here, too */
++
++#ifdef CONFIG_OR1K_1200
++	mtspr(SPR_PICSR, mfspr(SPR_PICSR) & ~(1UL << data->irq));
++#else
++	WARN(1, "Interrupt handling possibily broken\n");
++	mtspr(SPR_PICSR, (1UL << irq));
++#endif
 +}
 +
-+extern void _kernel_thread_helper(void);
-+
-+void __noreturn kernel_thread_helper(int (*fn) (void *), void *arg)
++static int or1k_pic_set_type(struct irq_data *data, unsigned int flow_type)
 +{
-+	do_exit(fn(arg));
++	/* There's nothing to do in the PIC configuration when changing
++	 * flow type.  Level and edge-triggered interrupts are both
++	 * supported, but it's PIC-implementation specific which type
++	 * is handled. */
++
++	return irq_setup_alt_chip(data, flow_type);
 +}
 +
-+/*
-+ * Create a kernel thread.
-+ */
-+int kernel_thread(int (*fn) (void *), void *arg, unsigned long flags)
++static inline int pic_get_irq(int first)
 +{
-+	struct pt_regs regs;
++	int irq;
 +
-+	memset(&regs, 0, sizeof(regs));
++	irq = ffs(mfspr(SPR_PICSR) >> first);
 +
-+	regs.gpr[20] = (unsigned long)fn;
-+	regs.gpr[22] = (unsigned long)arg;
-+	regs.sr = mfspr(SPR_SR);
-+	regs.pc = (unsigned long)_kernel_thread_helper;
-+
-+	return do_fork(flags | CLONE_VM | CLONE_UNTRACED,
-+		       0, &regs, 0, NULL, NULL);
++	return irq ? irq + first - 1 : NO_IRQ;
 +}
 +
-+/*
-+ * sys_execve() executes a new program.
-+ */
-+asmlinkage long _sys_execve(const char __user *name,
-+			    const char __user * const __user *argv,
-+			    const char __user * const __user *envp,
-+			    struct pt_regs *regs)
++static void __init or1k_irq_init(void)
 +{
-+	int error;
-+	char *filename;
++	struct irq_chip_generic *gc;
++	struct irq_chip_type *ct;
 +
-+	filename = getname(name);
-+	error = PTR_ERR(filename);
++	/* Disable all interrupts until explicitly requested */
++	mtspr(SPR_PICMR, (0UL));
 +
-+	if (IS_ERR(filename))
-+		goto out;
++	gc = irq_alloc_generic_chip("or1k-PIC", 1, 0, 0, handle_level_irq);
++	ct = gc->chip_types;
 +
-+	error = do_execve(filename, argv, envp, regs);
-+	putname(filename);
++	ct->chip.irq_unmask = or1k_pic_unmask;
++	ct->chip.irq_mask = or1k_pic_mask;
++	ct->chip.irq_ack = or1k_pic_ack;
++	ct->chip.irq_mask_ack = or1k_pic_mask_ack;
++	ct->chip.irq_set_type = or1k_pic_set_type;
 +
-+out:
-+	return error;
++	/* The OR1K PIC can handle both level and edge trigged
++	 * interrupts in roughly the same manner
++	 */
++#if 0
++	/* FIXME: chip.type??? */
++	ct->chip.type = IRQ_TYPE_EDGE_BOTH | IRQ_TYPE_LEVEL_MASK;
++#endif
++
++	irq_setup_generic_chip(gc, IRQ_MSK(NR_IRQS), 0,
++			       IRQ_NOREQUEST, IRQ_LEVEL | IRQ_NOPROBE);
 +}
 +
-+unsigned long get_wchan(struct task_struct *p)
++void __init init_IRQ(void)
 +{
-+	/* TODO */
-+
-+	return 0;
++	or1k_irq_init();
 +}
 +
-+int kernel_execve(const char *filename, char *const argv[], char *const envp[])
++void __irq_entry do_IRQ(struct pt_regs *regs)
 +{
-+	register long __res asm("r11") = __NR_execve;
-+	register long __a asm("r3") = (long)(filename);
-+	register long __b asm("r4") = (long)(argv);
-+	register long __c asm("r5") = (long)(envp);
-+	__asm__ volatile ("l.sys 1"
-+			  : "=r" (__res), "=r"(__a), "=r"(__b), "=r"(__c)
-+			  : "0"(__res), "1"(__a), "2"(__b), "3"(__c)
-+			  : "r6", "r7", "r8", "r12", "r13", "r15",
-+			    "r17", "r19", "r21", "r23", "r25", "r27",
-+			    "r29", "r31");
-+	__asm__ volatile ("l.nop");
-+	return __res;
++	int irq = -1;
++	struct pt_regs *old_regs = set_irq_regs(regs);
++
++	irq_enter();
++
++	while ((irq = pic_get_irq(irq + 1)) != NO_IRQ)
++		generic_handle_irq(irq);
++
++	irq_exit();
++	set_irq_regs(old_regs);
 +}
++
++unsigned int irq_create_of_mapping(struct device_node *controller,
++				   const u32 *intspec, unsigned int intsize)
++{
++	return intspec[0];
++}
++EXPORT_SYMBOL_GPL(irq_create_of_mapping);
 -- 
 1.7.4.1
 
