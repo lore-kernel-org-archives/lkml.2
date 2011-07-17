@@ -1,95 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755957Ab1GQOg3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jul 2011 10:36:29 -0400
-Received: from mail001.aei.ca ([206.123.6.130]:55976 "EHLO mail001.aei.ca"
+	id S1755971Ab1GQOhv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jul 2011 10:37:51 -0400
+Received: from gate.crashing.org ([63.228.1.57]:59267 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755892Ab1GQOg0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jul 2011 10:36:26 -0400
-From: Ed Tomlinson <edt@aei.ca>
-To: David Miller <davem@davemloft.net>
-Subject: Re: [GIT] Networking
-Date: Sun, 17 Jul 2011 10:36:17 -0400
-User-Agent: KMail/1.13.7 (Linux/3.0.0-rc7-crc+; KDE/4.6.5; x86_64; ; )
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20110716.104325.1217042780857481057.davem@davemloft.net>
-In-Reply-To: <20110716.104325.1217042780857481057.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201107171036.18470.edt@aei.ca>
+	id S1752866Ab1GQOhu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Jul 2011 10:37:50 -0400
+Subject: Re: [PATCH 1/1] Fixup write permission of TLB on powerpc e500 core
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Shan Hai <haishan.bai@gmail.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        paulus@samba.org, tglx@linutronix.de, walken@google.com,
+        dhowells@redhat.com, cmetcalf@tilera.com, tony.luck@intel.com,
+        akpm@linux-foundation.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <4b337921-d430-4b63-bc36-ad31753cf800@email.android.com>
+References: <1310717238-13857-1-git-send-email-haishan.bai@gmail.com>
+	 <1310717238-13857-2-git-send-email-haishan.bai@gmail.com>
+	 <1310725418.2586.309.camel@twins> <4E21A526.8010904@gmail.com>
+	 <1310860194.25044.17.camel@pasglop>
+	 <4b337921-d430-4b63-bc36-ad31753cf800@email.android.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 18 Jul 2011 00:29:50 +1000
+Message-ID: <1310912990.25044.203.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 16 July 2011 13:43:25 David Miller wrote:
-> 
-> A small batch of fixes:
-> 
-> 1) Fix two regressions in checksum offload handling.
->    a) Do not set SCTP packets to CHECKSUM_UNNECESSARY, we don't
->       have software fallbacks in the TX path for SCTP checksumming
->       and therefore won't be able to handle a divert of a packet
->       from a device that can do SCTP checksums to one that cannot.
->    b) We propagate certain hardware offloads transparently through
->       "software" devices (like vlan and bonding) but we cannot do
->       that when we lack software fallbacks in the TX path and this
->       is relevant for SCTP and FCoE checksumming.  Get rid of the
->       NETIF_F_ALL_TX_OFFLOADS macro since it's misuse is what
->       introduced this regression.
-> 
-> 2) L2CAP bluetooth connection procedure regression fix from
->    Gustavo F. Padovan.
-> 
-> 3) L2CAP incomming connections can crash with defer_setup enabled
->    because ->parent isn't setup yet, handle that properly.  Also
->    from Gustavo.
-> 
-> 4) gianfar driver need to be more selective of when the RX parser
->    of the chip is enabled, from Sebastian Poehn.
-> 
-> 5) r6040 NAPI logic has a bug that can disabled interrupts forever,
->    fix from Michael Thalmeier.
-> 
-> Please pull, thanks a lot!
-> 
-> The following changes since commit 1765a367a3b5d5e9692949b0c5ec933eff2c0701:
-> 
->   Merge branch 'gpio/merge' of git://git.secretlab.ca/git/linux-2.6 (2011-07-15 18:03:30 -0700)
-> 
-> are available in the git repository at:
-> 
->   master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
-> 
-> Gustavo F. Padovan (1):
->       Bluetooth: Fix regression in L2CAP connection procedure
-> 
-> Ilia Kolomisnky (1):
->       Bluetooth: Fix crash with incoming L2CAP connections
-> 
-> Michael Thalmeier (1):
->       r6040: only disable RX interrupt if napi_schedule_prep is successful
-> 
-> Michał Mirosław (2):
->       net: sctp: fix checksum marking for outgoing packets
->       net: remove NETIF_F_ALL_TX_OFFLOADS
-> 
-> Sebastian Pöhn (1):
->       gianfar: rx parser
-> 
->  drivers/net/bonding/bond_main.c |    6 +++---
->  drivers/net/gianfar.c           |   24 +++++++++++++++++++-----
->  drivers/net/gianfar.h           |    3 ++-
->  drivers/net/r6040.c             |    8 +++++---
->  include/linux/netdevice.h       |    6 ------
->  net/8021q/vlan_dev.c            |    6 +++++-
->  net/bluetooth/l2cap_core.c      |    9 +++++----
->  net/sctp/output.c               |   19 ++++++++-----------
->  8 files changed, 47 insertions(+), 34 deletions(-)
+On Sun, 2011-07-17 at 11:38 +0200, Peter Zijlstra wrote:
 
-This just to confirm that Gustavo's fixes correct the problems reported in thread: "[BUG] Bluetooth broken post rc7"
+> Whats this talk about interrup context? There is non of that involved.
 
-Ed 
+Ok, let's not mix things here. I was going to fast and may have murkied
+the waters. First let's get back to the futex code issue with gup:
+
+> Furthermore, I still dont see the problem. The futex code is
+> optimistically trying to poke at user memory while holding spinlocks.
+> 
+> We fully expect that to fail, hence the error path that drops all
+> locks and does the gup(.write=1) to fix up the mapping after which we
+> try again.
+
+See below
+
+> This has worked for years, its by no means new code. Nor do I see how
+> its broken.
+
+No it hasn't worked for years, it's been broken for years on some archs
+but nobody noticed :-)
+
+The problem I see is that gup doesn't set dirty (or young) itself. It
+requires the caller to set dirty before releasing the pages basically
+and there's no provision for young. Afaik, callers set it directly in
+the struct page and not the PTE too (which means a spurrious fault on
+subsequent access for archs that do dirty tracking).
+
+On archs where dirty and young are SW tracked, pages that don't have
+them set in the PTE will fault on access. The lack of dirty means the
+page is effectively going to be read-only and the lack of young means
+the page will be inaccessible.
+
+gup itself isn't mean to fix those, at least the way it's been used so
+far, the caller of gup is.
+
+Thus the only "proper" way to fix that is to have the futex code itself
+perform dirty and accessed updates, which sucks (means going back down
+the page tables, taking the PTL and doing the deed).
+
+Having the actual fault handlers do the fixup even when in atomic isn't
+a good option for us:
+
+I don't know what other archs that rely on that SW tracking do, but in
+the case of powerpc, that would be problematic due to the fact that
+those archs have been written with the assumption that all changes to
+PTEs are done under the PTL (which allows to simplify code and thus make
+things faster).
+
+Among others, that also means no changes at interrupt time. Enabling our
+fault handlers to update the dirty & young bits even while in "atomic"
+context would potentially open the door to things like interrupt-time
+perf backtraces to cause PTE updates, etc... (in addition to generally
+breaking the locking rules for PTE modifications).
+
+Now, I suppose we -could- differentiate preempt disabled from real
+interrupt time in the fault handlers, tho that's somewhat sucky. It
+might require moving the dirty/young updates from generic code to arch
+code, I suppose.
+
+I'm also not sure how risky it would be to take the PTL in that case...
+code doing user accesses within pagefault_disable() might be written
+with the assumption that the PTL won't be taken (it might be already
+held ? I don't know what all the users are at this point, too late to
+grep, I can have a look tomorrow). It makes me a bit nervous too.
+
+A better approach might be a flag to pass to gup (via the "write"
+argument ? top bits ?) to tell it to immediately perform dirty/young
+updates.
+
+Cheers,
+Ben.
+
+
