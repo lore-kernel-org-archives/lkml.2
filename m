@@ -1,40 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756302Ab1GQTwS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jul 2011 15:52:18 -0400
-Received: from mail.perches.com ([173.55.12.10]:4078 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754566Ab1GQTwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jul 2011 15:52:17 -0400
-Subject: Re: [PATCH 0/3] ath6kl: neatening
-From: Joe Perches <joe@perches.com>
-To: Kalle Valo <kvalo@qca.qualcomm.com>
-Cc: devel@linuxdriverproject.org, gregkh@suse.de, error27@gmail.com,
-        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org
-In-Reply-To: <4E23307B.4060504@qca.qualcomm.com>
-References: <cover.1310927985.git.joe@perches.com>
-	 <4E23307B.4060504@qca.qualcomm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 17 Jul 2011 12:52:14 -0700
-Message-ID: <1310932335.2286.8.camel@Joe-Laptop>
+	id S1756323Ab1GQTxV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jul 2011 15:53:21 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:59716 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756232Ab1GQTxU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Jul 2011 15:53:20 -0400
+Date: Sun, 17 Jul 2011 12:53:14 -0700 (PDT)
+Message-Id: <20110717.125314.2233794351034635919.davem@davemloft.net>
+To: mst@redhat.com
+Cc: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv9] vhost: experimental tx zero-copy support
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110717193540.GA29392@redhat.com>
+References: <20110717193540.GA29392@redhat.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 17 Jul 2011 12:53:15 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-07-17 at 21:56 +0300, Kalle Valo wrote:
-> On 07/17/2011 09:43 PM, Joe Perches wrote:
-> > Joe Perches (3):
-> >   ath6kl: Add missing newlines and coalesce messages
-> >   ath6kl: Remove __func__ uses from ath6kl_err
-> >   ath6kl: cfg80211: Add and use ath6kl_cfg80211_ready helper
-> Nice, thanks a lot. I'm planning to send v3 of athk6kl patches later
-> today. Is it okay for you if I amend your three patches to that patchset?
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Date: Sun, 17 Jul 2011 22:36:14 +0300
 
-'course.
+> The below is what I came up with. We add the feature enabled
+> by default ...
 
-
-
+s/enabled/disabled/  Well, at least you got it right in the
+commit message where it counts :-)
