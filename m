@@ -1,315 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756249Ab1GQSoB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jul 2011 14:44:01 -0400
-Received: from mail.perches.com ([173.55.12.10]:4074 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754062Ab1GQSn7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jul 2011 14:43:59 -0400
-From: Joe Perches <joe@perches.com>
-To: Kalle Valo <kvalo@qca.qualcomm.com>, linux-kernel@vger.kernel.org
-Cc: devel@linuxdriverproject.org, gregkh@suse.de, error27@gmail.com,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org
-Subject: [PATCH 3/3] ath6kl: cfg80211: Add and use ath6kl_cfg80211_ready helper
-Date: Sun, 17 Jul 2011 11:43:44 -0700
-Message-Id: <46870c7654d2d0d10b44ee45097762c482eee1d0.1310927985.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.6.131.g99019
-In-Reply-To: <cover.1310927985.git.joe@perches.com>
-References: <cover.1310927985.git.joe@perches.com>
+	id S1756191Ab1GQSrj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jul 2011 14:47:39 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:20755 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754172Ab1GQSri (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Jul 2011 14:47:38 -0400
+Date: Sun, 17 Jul 2011 20:47:36 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Darren Hart <dvhart@linux.intel.com>
+cc: Chris Friesen <chris.friesen@genband.com>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <dada1@cosmosbay.com>, Darren Hart <dvhltc@us.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: App blocked in futex() burns 14% CPU.
+In-Reply-To: <4E208C55.30507@linux.intel.com>
+Message-ID: <alpine.LNX.2.00.1107172043550.32359@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1107150019580.26455@swampdragon.chaosbits.net> <4E1F72E1.3040102@genband.com> <4E208C55.30507@linux.intel.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reduce code duplication by using a helper function to
-check if the device is ready.
+On Fri, 15 Jul 2011, Darren Hart wrote:
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/net/wireless/ath/ath6kl/cfg80211.c |  150 ++++++----------------------
- 1 files changed, 30 insertions(+), 120 deletions(-)
+> 
+> 
+> On 07/14/2011 03:51 PM, Chris Friesen wrote:
+> > On 07/14/2011 04:34 PM, Jesper Juhl wrote:
+> >> So, I've recently started enabling the KDE desktop search on my box and it
+> >> runs some indexing services (naturally) to keep track of changes to files.
+> >> One of the apps it starts is a process named "virtuoso-t". This process
+> >> burns a *lot* of CPU when it's just started, but once it has caught up
+> >> with recent changes it quiets down. It doesn't quite quiet down to the
+> >> level I'd expect though. I see it constantly using 12-14% CPU time in
+> >> 'top' even when there is *nothing* going on on the machine :
+> >>
+> >> top - 00:25:09 up  2:38,  2 users,  load average: 0.01, 0.04, 0.05
+> >> Tasks: 155 total,   1 running, 153 sleeping,   0 stopped,   1 zombie
+> >> Cpu(s):  0.7%us,  0.8%sy,  3.7%ni, 94.6%id,  0.1%wa,  0.0%hi,  0.0%si,  0.0%st
+> >> Mem:   3853028k total,  2154696k used,  1698332k free,   184280k buffers
+> >> Swap:  4200992k total,        0k used,  4200992k free,   996824k cached
+> >>
+> >>    PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
+> >>   1952 jj        39  19  362m 263m 6544 S   14  7.0  25:09.54 virtuoso-t
+> >>   1811 jj        20   0  635m  27m  17m S    2  0.7   2:49.78 knotify4
+> >>   1928 jj        39  19  595m  26m  18m S    1  0.7   2:58.40 nepomukservices
+> >>
+> >> This box has a dual core Intel core i5-560M CPU with hyperthreading, so it
+> >> is 12-14% of a fairly capable CPU - that's rather a lot more than I'd
+> >> expect when the box is idle and there's nothing for the process to do.
+> >>
+> >> So, I tried strace'ing the process and it seems to just be blocked in
+> >> futex() most of the time (like 99%) :
+> >>
+> >> [jj@dragon ~]$ strace -p 1952
+> >> Process 1952 attached - interrupt to quit
+> >> futex(0x3086424, FUTEX_WAIT_PRIVATE, 503, NULL
+> 
+> Try strace with -f. If you really want to collect statistics about where
+> it is spending it's time, consider oprofile or perf.
+> 
+> >>
+> >> So it's just sitting there doing nothing, which lead me to think that this
+> >> is probably not a bug in the application - if it was doing some silly
+> >> polling loop or similar I would not just see it blocked in a futex() call.
+> >> So I'm guessing something must be happening in kernel space that's burning
+> >> a lot of CPU.. I could be completely wrong of course, and if I am, please
+> >> feel free to enlighten me.
+> > 
+> > You don't have enough kernel activity to account for 14% of a cpu.  Have 
+> > you checked whether there's another thread within the process that's 
+> > doing something in userspace?
+> > 
+> 
+> Agreed.
+> 
 
-diff --git a/drivers/net/wireless/ath/ath6kl/cfg80211.c b/drivers/net/wireless/ath/ath6kl/cfg80211.c
-index 34df184..71515bb 100644
---- a/drivers/net/wireless/ath/ath6kl/cfg80211.c
-+++ b/drivers/net/wireless/ath/ath6kl/cfg80211.c
-@@ -217,6 +217,21 @@ static void ath6kl_set_key_mgmt(struct ath6kl *ar, u32 key_mgmt)
- 	}
- }
- 
-+static bool ath6kl_cfg80211_ready(struct ath6kl *ar)
-+{
-+	if (!test_bit(WMI_READY, &ar->flag)) {
-+		ath6kl_err("wmi is not ready\n");
-+		return false;
-+	}
-+
-+	if (ar->wlan_state == WLAN_DISABLED) {
-+		ath6kl_err("wlan disabled\n");
-+		return false;
-+	}
-+
-+	return true;
-+}
-+
- static int ath6kl_cfg80211_connect(struct wiphy *wiphy, struct net_device *dev,
- 				   struct cfg80211_connect_params *sme)
- {
-@@ -225,15 +240,8 @@ static int ath6kl_cfg80211_connect(struct wiphy *wiphy, struct net_device *dev,
- 
- 	ar->sme_state = SME_CONNECTING;
- 
--	if (!test_bit(WMI_READY, &ar->flag)) {
--		ath6kl_err("wmi is not ready yet\n");
-+	if (!ath6kl_cfg80211_ready(ar))
- 		return -EIO;
--	}
--
--	if (ar->wlan_state == WLAN_DISABLED) {
--		ath6kl_err("wlan disabled\n");
--		return -EIO;
--	}
- 
- 	if (test_bit(DESTROY_IN_PROGRESS, &ar->flag)) {
- 		ath6kl_err("destroy in progress\n");
-@@ -575,15 +583,8 @@ static int ath6kl_cfg80211_disconnect(struct wiphy *wiphy,
- 	ath6kl_dbg(ATH6KL_DBG_WLAN_CFG, "%s: reason=%u\n", __func__,
- 		   reason_code);
- 
--	if (!test_bit(WMI_READY, &ar->flag)) {
--		ath6kl_err("wmi is not ready\n");
--		return -EIO;
--	}
--
--	if (ar->wlan_state == WLAN_DISABLED) {
--		ath6kl_err("wlan disabled\n");
-+	if (!ath6kl_cfg80211_ready(ar))
- 		return -EIO;
--	}
- 
- 	if (test_bit(DESTROY_IN_PROGRESS, &ar->flag)) {
- 		ath6kl_err("busy, destroy in progress\n");
-@@ -781,15 +782,8 @@ static int ath6kl_cfg80211_scan(struct wiphy *wiphy, struct net_device *ndev,
- 	int ret = 0;
- 	u32 force_fg_scan = 0;
- 
--	if (!test_bit(WMI_READY, &ar->flag)) {
--		ath6kl_err("wmi is not ready\n");
-+	if (!ath6kl_cfg80211_ready(ar))
- 		return -EIO;
--	}
--
--	if (ar->wlan_state == WLAN_DISABLED) {
--		ath6kl_err("wlan disabled\n");
--		return -EIO;
--	}
- 
- 	if (!ar->usr_bss_filter) {
- 		if (ath6kl_wmi_bssfilter_cmd(ar->wmi,
-@@ -866,15 +860,8 @@ static int ath6kl_cfg80211_add_key(struct wiphy *wiphy, struct net_device *ndev,
- 	u8 key_type;
- 	int status = 0;
- 
--	if (!test_bit(WMI_READY, &ar->flag)) {
--		ath6kl_err("wmi is not ready\n");
--		return -EIO;
--	}
--
--	if (ar->wlan_state == WLAN_DISABLED) {
--		ath6kl_err("wlan disabled\n");
-+	if (!ath6kl_cfg80211_ready(ar))
- 		return -EIO;
--	}
- 
- 	if (key_index < WMI_MIN_KEY_INDEX || key_index > WMI_MAX_KEY_INDEX) {
- 		ath6kl_dbg(ATH6KL_DBG_WLAN_CFG,
-@@ -951,15 +938,8 @@ static int ath6kl_cfg80211_del_key(struct wiphy *wiphy, struct net_device *ndev,
- 
- 	ath6kl_dbg(ATH6KL_DBG_WLAN_CFG, "%s: index %d\n", __func__, key_index);
- 
--	if (!test_bit(WMI_READY, &ar->flag)) {
--		ath6kl_err("wmi is not ready\n");
--		return -EIO;
--	}
--
--	if (ar->wlan_state == WLAN_DISABLED) {
--		ath6kl_err("wlan disabled\n");
-+	if (!ath6kl_cfg80211_ready(ar))
- 		return -EIO;
--	}
- 
- 	if (key_index < WMI_MIN_KEY_INDEX || key_index > WMI_MAX_KEY_INDEX) {
- 		ath6kl_dbg(ATH6KL_DBG_WLAN_CFG,
-@@ -991,15 +971,8 @@ static int ath6kl_cfg80211_get_key(struct wiphy *wiphy, struct net_device *ndev,
- 
- 	ath6kl_dbg(ATH6KL_DBG_WLAN_CFG, "%s: index %d\n", __func__, key_index);
- 
--	if (!test_bit(WMI_READY, &ar->flag)) {
--		ath6kl_err("wmi is not ready\n");
--		return -EIO;
--	}
--
--	if (ar->wlan_state == WLAN_DISABLED) {
--		ath6kl_err("wlan disabled\n");
-+	if (!ath6kl_cfg80211_ready(ar))
- 		return -EIO;
--	}
- 
- 	if (key_index < WMI_MIN_KEY_INDEX || key_index > WMI_MAX_KEY_INDEX) {
- 		ath6kl_dbg(ATH6KL_DBG_WLAN_CFG,
-@@ -1033,15 +1006,8 @@ static int ath6kl_cfg80211_set_default_key(struct wiphy *wiphy,
- 
- 	ath6kl_dbg(ATH6KL_DBG_WLAN_CFG, "%s: index %d\n", __func__, key_index);
- 
--	if (!test_bit(WMI_READY, &ar->flag)) {
--		ath6kl_err("wmi is not ready\n");
--		return -EIO;
--	}
--
--	if (ar->wlan_state == WLAN_DISABLED) {
--		ath6kl_err("wlan disabled\n");
-+	if (!ath6kl_cfg80211_ready(ar))
- 		return -EIO;
--	}
- 
- 	if (key_index < WMI_MIN_KEY_INDEX || key_index > WMI_MAX_KEY_INDEX) {
- 		ath6kl_dbg(ATH6KL_DBG_WLAN_CFG,
-@@ -1081,15 +1047,8 @@ static int ath6kl_cfg80211_set_default_mgmt_key(struct wiphy *wiphy,
- 
- 	ath6kl_dbg(ATH6KL_DBG_WLAN_CFG, "%s: index %d\n", __func__, key_index);
- 
--	if (!test_bit(WMI_READY, &ar->flag)) {
--		ath6kl_err("wmi is not ready\n");
-+	if (!ath6kl_cfg80211_ready(ar))
- 		return -EIO;
--	}
--
--	if (ar->wlan_state == WLAN_DISABLED) {
--		ath6kl_err("wlan disabled\n");
--		return -EIO;
--	}
- 
- 	ath6kl_dbg(ATH6KL_DBG_WLAN_CFG, "%s: not supported\n", __func__);
- 	return -ENOTSUPP;
-@@ -1115,15 +1074,8 @@ static int ath6kl_cfg80211_set_wiphy_params(struct wiphy *wiphy, u32 changed)
- 	ath6kl_dbg(ATH6KL_DBG_WLAN_CFG, "%s: changed 0x%x\n", __func__,
- 		   changed);
- 
--	if (!test_bit(WMI_READY, &ar->flag)) {
--		ath6kl_err("wmi is not ready\n");
--		return -EIO;
--	}
--
--	if (ar->wlan_state == WLAN_DISABLED) {
--		ath6kl_err("wlan disabled\n");
-+	if (!ath6kl_cfg80211_ready(ar))
- 		return -EIO;
--	}
- 
- 	if (changed & WIPHY_PARAM_RTS_THRESHOLD) {
- 		ret = ath6kl_wmi_set_rts_cmd(ar->wmi, wiphy->rts_threshold);
-@@ -1150,15 +1102,8 @@ static int ath6kl_cfg80211_set_txpower(struct wiphy *wiphy,
- 	ath6kl_dbg(ATH6KL_DBG_WLAN_CFG, "%s: type 0x%x, dbm %d\n", __func__,
- 		   type, dbm);
- 
--	if (!test_bit(WMI_READY, &ar->flag)) {
--		ath6kl_err("wmi is not ready\n");
--		return -EIO;
--	}
--
--	if (ar->wlan_state == WLAN_DISABLED) {
--		ath6kl_err("wlan disabled\n");
-+	if (!ath6kl_cfg80211_ready(ar))
- 		return -EIO;
--	}
- 
- 	switch (type) {
- 	case NL80211_TX_POWER_AUTOMATIC:
-@@ -1181,15 +1126,8 @@ static int ath6kl_cfg80211_get_txpower(struct wiphy *wiphy, int *dbm)
- {
- 	struct ath6kl *ar = (struct ath6kl *)wiphy_priv(wiphy);
- 
--	if (!test_bit(WMI_READY, &ar->flag)) {
--		ath6kl_err("wmi is not ready\n");
--		return -EIO;
--	}
--
--	if (ar->wlan_state == WLAN_DISABLED) {
--		ath6kl_err("wlan disabled\n");
-+	if (!ath6kl_cfg80211_ready(ar))
- 		return -EIO;
--	}
- 
- 	if (test_bit(CONNECTED, &ar->flag)) {
- 		ar->tx_pwr = 0;
-@@ -1222,15 +1160,8 @@ static int ath6kl_cfg80211_set_power_mgmt(struct wiphy *wiphy,
- 	ath6kl_dbg(ATH6KL_DBG_WLAN_CFG, "%s: pmgmt %d, timeout %d\n",
- 		   __func__, pmgmt, timeout);
- 
--	if (!test_bit(WMI_READY, &ar->flag)) {
--		ath6kl_err("wmi is not ready\n");
--		return -EIO;
--	}
--
--	if (ar->wlan_state == WLAN_DISABLED) {
--		ath6kl_err("wlan disabled\n");
-+	if (!ath6kl_cfg80211_ready(ar))
- 		return -EIO;
--	}
- 
- 	if (pmgmt) {
- 		ath6kl_dbg(ATH6KL_DBG_WLAN_CFG, "%s: max perf\n", __func__);
-@@ -1258,15 +1189,8 @@ static int ath6kl_cfg80211_change_iface(struct wiphy *wiphy,
- 
- 	ath6kl_dbg(ATH6KL_DBG_WLAN_CFG, "%s: type %u\n", __func__, type);
- 
--	if (!test_bit(WMI_READY, &ar->flag)) {
--		ath6kl_err("wmi is not ready\n");
--		return -EIO;
--	}
--
--	if (ar->wlan_state == WLAN_DISABLED) {
--		ath6kl_err("wlan disabled\n");
-+	if (!ath6kl_cfg80211_ready(ar))
- 		return -EIO;
--	}
- 
- 	switch (type) {
- 	case NL80211_IFTYPE_STATION:
-@@ -1292,15 +1216,8 @@ static int ath6kl_cfg80211_join_ibss(struct wiphy *wiphy,
- 	struct ath6kl *ar = ath6kl_priv(dev);
- 	int status;
- 
--	if (!test_bit(WMI_READY, &ar->flag)) {
--		ath6kl_err("wmi is not ready\n");
--		return -EIO;
--	}
--
--	if (ar->wlan_state == WLAN_DISABLED) {
--		ath6kl_err("wlan disabled\n");
-+	if (!ath6kl_cfg80211_ready(ar))
- 		return -EIO;
--	}
- 
- 	if (!ibss_param->ssid_len ||
- 	    IEEE80211_MAX_SSID_LEN < ibss_param->ssid_len) {
-@@ -1367,15 +1284,8 @@ static int ath6kl_cfg80211_leave_ibss(struct wiphy *wiphy,
- {
- 	struct ath6kl *ar = (struct ath6kl *)ath6kl_priv(dev);
- 
--	if (!test_bit(WMI_READY, &ar->flag)) {
--		ath6kl_err("wmi is not ready\n");
--		return -EIO;
--	}
--
--	if (ar->wlan_state == WLAN_DISABLED) {
--		ath6kl_err("wlan disabled\n");
-+	if (!ath6kl_cfg80211_ready(ar))
- 		return -EIO;
--	}
- 
- 	ath6kl_disconnect(ar);
- 	memset(ar->ssid, 0, sizeof(ar->ssid));
+Ok, so I attempted to dig a bit deeper, but for some reason I'm now unable 
+to reproduce the situation :-(
+
+What I see now is that "virtuoso-t" uses 0-1% CPU and strace -f shows me 
+this:
+
+[jj@dragon ~]$ strace -f -p 3821
+Process 3821 attached with 6 threads - interrupt to quit
+[pid  3825] futex(0x7f66606eeb64, FUTEX_WAIT_PRIVATE, 243425, NULL <unfinished ...>
+[pid  3824] select(17, [8 10 11 12 14 15 16], [], NULL, {1, 378259} <unfinished ...>
+[pid  3848] futex(0x7f66606eeae4, FUTEX_WAIT_PRIVATE, 242407, NULL <unfinished ...>
+[pid  3843] futex(0x7f66606eeb24, FUTEX_WAIT_PRIVATE, 242547, NULL <unfinished ...>
+[pid  3822] futex(0x31621b4, FUTEX_WAIT_PRIVATE, 655, NULL <unfinished ...>
+[pid  3821] futex(0x309f424, FUTEX_WAIT_PRIVATE, 181, NULL <unfinished ...>
+[pid  3824] <... select resumed> )      = 0 (Timeout)
+[pid  3824] stat("/etc/localtime", {st_mode=S_IFREG|0644, st_size=2134, ...}) = 0
+[pid  3824] stat("/etc/localtime", {st_mode=S_IFREG|0644, st_size=2134, ...}) = 0
+[pid  3824] stat("/etc/localtime", {st_mode=S_IFREG|0644, st_size=2134, ...}) = 0
+[pid  3824] select(17, [8 10 11 12 14 15 16], [], NULL, {2, 0}) = 0 (Timeout)
+[pid  3824] stat("/etc/localtime", {st_mode=S_IFREG|0644, st_size=2134, ...}) = 0
+[pid  3824] stat("/etc/localtime", {st_mode=S_IFREG|0644, st_size=2134, ...}) = 0
+[pid  3824] stat("/etc/localtime", {st_mode=S_IFREG|0644, st_size=2134, ...}) = 0
+[pid  3824] select(17, [8 10 11 12 14 15 16], [], NULL, {2, 0}) = 0 (Timeout)
+[pid  3824] stat("/etc/localtime", {st_mode=S_IFREG|0644, st_size=2134, ...}) = 0
+[pid  3824] stat("/etc/localtime", {st_mode=S_IFREG|0644, st_size=2134, ...}) = 0
+[pid  3824] stat("/etc/localtime", {st_mode=S_IFREG|0644, st_size=2134, ...}) = 0
+[pid  3824] select(17, [8 10 11 12 14 15 16], [], NULL, {2, 0}) = 0 (Timeout)
+[pid  3824] stat("/etc/localtime", {st_mode=S_IFREG|0644, st_size=2134, ...}) = 0
+[pid  3824] stat("/etc/localtime", {st_mode=S_IFREG|0644, st_size=2134, ...}) = 0
+[pid  3824] stat("/etc/localtime", {st_mode=S_IFREG|0644, st_size=2134, ...}) = 0
+[pid  3824] select(17, [8 10 11 12 14 15 16], [], NULL, {2, 0}) = 0 (Timeout)
+...
+
+which is not what I'd call a problem.
+
+I'll make sure to grab a lot more data if I see it again, but for now just 
+forget about this.
+
 -- 
-1.7.6.131.g99019
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
