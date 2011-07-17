@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754901Ab1GQJaS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jul 2011 05:30:18 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:57547 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754419Ab1GQJaD (ORCPT
+	id S1754860Ab1GQJiW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jul 2011 05:38:22 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:44550 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754108Ab1GQJiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jul 2011 05:30:03 -0400
-X-AuditID: b753bd60-a3c7dba0000050a4-2c-4e22ab9779dd
-X-AuditID: b753bd60-a3c7dba0000050a4-2c-4e22ab9779dd
-From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Subject: [PATCH -tip v2 1/6] [BUGFIX] perf script: print correct IP address
-To: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        yrl.pp-manager.tt@hitachi.com,
-        Akihiro Nagai <akihiro.nagai.hw@hitachi.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        David Ahern <dsahern@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Date: Sun, 17 Jul 2011 18:30:45 +0900
-Message-ID: <20110717093045.3447.27199.stgit@linux3>
-In-Reply-To: <20110717093031.3447.52715.stgit@linux3>
-References: <20110717093031.3447.52715.stgit@linux3>
-User-Agent: StGIT/0.14.3
+	Sun, 17 Jul 2011 05:38:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Date: Sun, 17 Jul 2011 17:38:18 +0800
+Message-ID: <CAM_iQpV0jNmb7MCW4fFpwhCQ=YNefBZwdemHH4cFjUVVsHb-fA@mail.gmail.com>
+Subject: [Patch] xtensa: fix a build error in arch/xtensa/include/asm/uaccess.h
+From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Chris Zankel <chris@zankel.net>
+Content-Type: multipart/mixed; boundary=0050450144bc8d98bb04a840a455
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-perf_session_print_ip() prints addr_location->addr as IP address.
-It's not always same as IP address. To correct it, this function
-must print sample->ip.
+--0050450144bc8d98bb04a840a455
+Content-Type: text/plain; charset=UTF-8
 
-Changes in v2:
- - add this patch
+This patch fixes the following build error,
 
-Signed-off-by: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+
+src/arch/xtensa/include/asm/uaccess.h:403: error: implicit declaration
+of function 'prefetch': 1 errors in 1 logs
+        v3.0-rc6/xtensa/xtensa-defconfig
+src/arch/xtensa/include/asm/uaccess.h:412: error: implicit declaration
+of function 'prefetchw': 1 errors in 1 logs
+        v3.0-rc6/xtensa/xtensa-defconfig
+
+Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+Cc: Chris Zankel <chris@zankel.net>
+
 ---
 
- tools/perf/util/session.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+--0050450144bc8d98bb04a840a455
+Content-Type: text/x-patch; charset=US-ASCII; name="xtensa-include-prefetch_h.diff"
+Content-Disposition: attachment; filename="xtensa-include-prefetch_h.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gq7tbm360
 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 080e533..453a010 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1263,7 +1263,7 @@ void perf_session__print_ip(union perf_event *event,
- 		}
- 
- 	} else {
--		printf("%16" PRIx64, al.addr);
-+		printf("%16" PRIx64, sample->ip);
- 		if (print_sym) {
- 			if (al.sym && al.sym->name)
- 				symname = al.sym->name;
-
+ZGlmZiAtLWdpdCBhL2FyY2gveHRlbnNhL2luY2x1ZGUvYXNtL3VhY2Nlc3MuaCBiL2FyY2gveHRl
+bnNhL2luY2x1ZGUvYXNtL3VhY2Nlc3MuaAppbmRleCA1YjBjMThjLi5jMTQxYjExIDEwMDY0NAot
+LS0gYS9hcmNoL3h0ZW5zYS9pbmNsdWRlL2FzbS91YWNjZXNzLmgKKysrIGIvYXJjaC94dGVuc2Ev
+aW5jbHVkZS9hc20vdWFjY2Vzcy5oCkBAIC0xNyw2ICsxNyw3IEBACiAjZGVmaW5lIF9YVEVOU0Ff
+VUFDQ0VTU19ICiAKICNpbmNsdWRlIDxsaW51eC9lcnJuby5oPgorI2luY2x1ZGUgPGxpbnV4L3By
+ZWZldGNoLmg+CiAKICNkZWZpbmUgVkVSSUZZX1JFQUQgICAgMAogI2RlZmluZSBWRVJJRllfV1JJ
+VEUgICAxCg==
+--0050450144bc8d98bb04a840a455--
