@@ -1,176 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566Ab1GQB5E (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jul 2011 21:57:04 -0400
-Received: from mail001.aei.ca ([206.123.6.130]:51118 "EHLO mail001.aei.ca"
+	id S1752352Ab1GQDUj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jul 2011 23:20:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40669 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755208Ab1GQB5C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jul 2011 21:57:02 -0400
-From: Ed Tomlinson <edt@aei.ca>
-To: paulmck@linux.vnet.ibm.com
-Subject: Re: INFO: possible circular locking dependency detected
-Date: Sat, 16 Jul 2011 21:56:56 -0400
-User-Agent: KMail/1.13.7 (Linux/3.0.0-rc7-crc+; KDE/4.6.5; x86_64; ; )
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org
-References: <1310665613.27864.50.camel@gandalf.stny.rr.com> <201107161542.31755.edt@aei.ca> <20110717000217.GB2370@linux.vnet.ibm.com>
-In-Reply-To: <20110717000217.GB2370@linux.vnet.ibm.com>
+	id S1750924Ab1GQDUh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Jul 2011 23:20:37 -0400
+Message-ID: <4E2254FA.8080200@redhat.com>
+Date: Sun, 17 Jul 2011 00:20:26 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT pull for 3.0] media regression fixes: Was: Re: [GIT PULL for
+ 3.0] master
+References: <4E21B169.4020902@redhat.com>
+In-Reply-To: <4E21B169.4020902@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201107162156.56830.edt@aei.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 16 July 2011 20:02:17 Paul E. McKenney wrote:
-> On Sat, Jul 16, 2011 at 03:42:30PM -0400, Ed Tomlinson wrote:
-> > On Friday 15 July 2011 18:04:47 Paul E. McKenney wrote:
-> > > On Fri, Jul 15, 2011 at 05:48:06PM -0400, Ed Tomlinson wrote:
-> > > > On Friday 15 July 2011 12:56:13 Paul E. McKenney wrote:
-> > > 
-> > > [ . . . ]
-> > > 
-> > > > > OK.  Ed, would you be willing to try the patch out?
-> > > > 
-> > > > I am booted at the same git commit with a bluetooth and the disable local_bh around softirq()
-> > > > patch from this thread.  So far so good.  Not sure how 'easy' this one is to trigger a second time -
-> > > > I've been running with threadirq enabled since .39 came out.  Last night was the first deadlock...
-> > > > If nothing happened post rc6 to make it more likely it could be a while before it triggers again.
-> > > 
-> > > Thank you for trying it out, Ed!  And I know that you will not be shy
-> > > should the problem recur.  ;-)
-> > 
-> > Found this in dmesg this afternoon.  This time, though X was dead, I was able to cancel and restart
-> > it.  This is with Peter's patch to call softirq() with local_bh disabled.
-> 
-> Hmmm...  Was RCU_BOOST enabled?  If so, could you please try the
-> following patch?  If not, more thought is required.
->
+Em 16-07-2011 12:42, Mauro Carvalho Chehab escreveu:
+> Linus,
 
-Paul,
+In time:
 
-No boost set. 
+Email subject got wrong... 
 
-grover linux # grep RCU .config
-# RCU Subsystem
-CONFIG_TREE_PREEMPT_RCU=y
-CONFIG_PREEMPT_RCU=y
-# CONFIG_RCU_TRACE is not set
-CONFIG_RCU_FANOUT=64
-# CONFIG_RCU_FANOUT_EXACT is not set
-# CONFIG_TREE_RCU_TRACE is not set
-# CONFIG_RCU_BOOST is not set
-# CONFIG_PROVE_RCU is not set
-# CONFIG_SPARSE_RCU_POINTER is not set
-CONFIG_RCU_TORTURE_TEST=m
-CONFIG_RCU_CPU_STALL_TIMEOUT=60
-# CONFIG_RCU_CPU_STALL_VERBOSE is not set
+Note to myself: I should avoid rush sending emails just before a weekend travel...
 
-thinking cap time I would guess.
+The patches at the tree are correct, and I double-checked it on my
+notebook.
 
-If I enable boost do you think the patch might help?
-
-Ed
+Thanks!
+Mauro
 
 > 
-> ------------------------------------------------------------------------
+> Please pull from:
+>   ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
 > 
-> rcu: Fix RCU_BOOST race handling current->rcu_read_unlock_special
+> For a couple of regression fixes for 3.0.
 > 
-> The RCU_BOOST commits for TREE_PREEMPT_RCU introduced an other-task
-> write to a new RCU_READ_UNLOCK_BOOSTED bit in the task_struct structure's
-> ->rcu_read_unlock_special field, but, as noted by Steven Rostedt, without
-> correctly synchronizing all accesses to ->rcu_read_unlock_special.
-> This could result in bits in ->rcu_read_unlock_special being spuriously
-> set and cleared due to conflicting accesses, which in turn could result
-> in deadlocks between the rcu_node structure's ->lock and the scheduler's
-> rq and pi locks.  These deadlocks would result from RCU incorrectly
-> believing that the just-ended RCU read-side critical section had been
-> preempted and/or boosted.  If that RCU read-side critical section was
-> executed with either rq or pi locks held, RCU's ensuing (incorrect)
-> calls to the scheduler would cause the scheduler to attempt to once
-> again acquire the rq and pi locks, resulting in deadlock.  More complex
-> deadlock cycles are also possible, involving multiple rq and pi locks
-> as well as locks from multiple rcu_node structures.
+> Thanks!
+> Mauro
 > 
-> This commit fixes synchronization by creating ->rcu_boosted field in
-> task_struct that is accessed and modified only when holding the ->lock
-> in the rcu_node structure on which the task is queued (on that rcu_node
-> structure's ->blkd_tasks list).  This results in tasks accessing only
-> their own current->rcu_read_unlock_special fields, making unsynchronized
-> access once again legal, and keeping the rcu_read_unlock() fastpath free
-> of atomic instructions and memory barriers.
+> The following changes since commit ddc6ff31cc22720c46c1547a5310ea260a968ae9:
 > 
-> The reason that the rcu_read_unlock() fastpath does not need to access
-> the new current->rcu_boosted field is that this new field cannot
-> be non-zero unless the RCU_READ_UNLOCK_BLOCKED bit is set in the
-> current->rcu_read_unlock_special field.  Therefore, rcu_read_unlock()
-> need only test current->rcu_read_unlock_special: if that is zero, then
-> current->rcu_boosted must also be zero.
+>   [media] msp3400: fill in v4l2_tuner based on vt->type field (2011-07-07 17:28:30 -0300)
 > 
-> This bug does not affect TINY_PREEMPT_RCU because this implementation
-> of RCU accesses current->rcu_read_unlock_special with irqs disabled,
-> thus preventing races on the !SMP systems that TINY_PREEMPT_RCU runs on.
+> are available in the git repository at:
+>   ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
 > 
-> Maybe-reported-by: Dave Jones <davej@redhat.com>
-> Maybe-reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> Reported-by: Steven Rostedt <rostedt@goodmis.org>
-> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+> Devin Heitmueller (1):
+>       [media] dvb_frontend: fix race condition in stopping/starting frontend
 > 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 496770a..76676a4 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1254,6 +1254,9 @@ struct task_struct {
->  #ifdef CONFIG_PREEMPT_RCU
->  	int rcu_read_lock_nesting;
->  	char rcu_read_unlock_special;
-> +#if defined(CONFIG_RCU_BOOST) && defined(CONFIG_TREE_PREEMPT_RCU)
-> +	int rcu_boosted;
-> +#endif /* #if defined(CONFIG_RCU_BOOST) && defined(CONFIG_TREE_PREEMPT_RCU) */
->  	struct list_head rcu_node_entry;
->  #endif /* #ifdef CONFIG_PREEMPT_RCU */
->  #ifdef CONFIG_TREE_PREEMPT_RCU
-> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> index 75113cb..8d38a98 100644
-> --- a/kernel/rcutree_plugin.h
-> +++ b/kernel/rcutree_plugin.h
-> @@ -342,6 +342,11 @@ static void rcu_read_unlock_special(struct task_struct *t)
->  #ifdef CONFIG_RCU_BOOST
->  		if (&t->rcu_node_entry == rnp->boost_tasks)
->  			rnp->boost_tasks = np;
-> +		/* Snapshot and clear ->rcu_boosted with rcu_node lock held. */
-> +		if (t->rcu_boosted) {
-> +			special |= RCU_READ_UNLOCK_BOOSTED;
-> +			t->rcu_boosted = 0;
-> +		}
->  #endif /* #ifdef CONFIG_RCU_BOOST */
->  		t->rcu_blocked_node = NULL;
->  
-> @@ -358,7 +363,6 @@ static void rcu_read_unlock_special(struct task_struct *t)
->  #ifdef CONFIG_RCU_BOOST
->  		/* Unboost if we were boosted. */
->  		if (special & RCU_READ_UNLOCK_BOOSTED) {
-> -			t->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_BOOSTED;
->  			rt_mutex_unlock(t->rcu_boost_mutex);
->  			t->rcu_boost_mutex = NULL;
->  		}
-> @@ -1174,7 +1178,7 @@ static int rcu_boost(struct rcu_node *rnp)
->  	t = container_of(tb, struct task_struct, rcu_node_entry);
->  	rt_mutex_init_proxy_locked(&mtx, t);
->  	t->rcu_boost_mutex = &mtx;
-> -	t->rcu_read_unlock_special |= RCU_READ_UNLOCK_BOOSTED;
-> +	t->rcu_boosted = 1;
->  	raw_spin_unlock_irqrestore(&rnp->lock, flags);
->  	rt_mutex_lock(&mtx);  /* Side effect: boosts task t's priority. */
->  	rt_mutex_unlock(&mtx);  /* Keep lockdep happy. */
+> Jarod Wilson (2):
+>       [media] Revert "V4L/DVB: cx23885: Enable Message Signaled Interrupts(MSI)"
+>       [media] nuvoton-cir: make idle timeout more sane
 > 
+> Mauro Carvalho Chehab (1):
+>       [media] tuner-core: fix a 2.6.39 regression with mt20xx
 > 
+> Rafi Rubin (2):
+>       [media] mceusb: Timeout unit corrections
+>       [media] mceusb: increase default timeout to 100ms
+> 
+> Ralf Baechle (1):
+>       [media] MEDIA: Fix non-ISA_DMA_API link failure of sound code
+> 
+> Randy Dunlap (1):
+>       [media] media: fix radio-sf16fmr2 build when SND is not enabled
+> 
+>  drivers/media/dvb/dvb-core/dvb_frontend.c  |    8 ++++++++
+>  drivers/media/radio/Kconfig                |    4 ++--
+>  drivers/media/rc/mceusb.c                  |    9 +++++----
+>  drivers/media/rc/nuvoton-cir.c             |    2 +-
+>  drivers/media/video/cx23885/cx23885-core.c |    9 ++-------
+>  drivers/media/video/tuner-core.c           |   16 ++++++++++++----
+>  6 files changed, 30 insertions(+), 18 deletions(-)
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
