@@ -1,103 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752767Ab1GQVED (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jul 2011 17:04:03 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:33377 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922Ab1GQVD7 (ORCPT
+	id S1753074Ab1GQVIr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jul 2011 17:08:47 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:40048 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752576Ab1GQVIp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jul 2011 17:03:59 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	message-id:user-agent:mime-version:content-type:x-system-of-record;
-	b=mC0ua4knn2lwpy/ye846OqmvSHQVFiLmZozERsaqOeJGvid89WTD/1I/lnZBodoEh
-	UPk3CxbujnqzUTnYXl3yQ==
-Date: Sun, 17 Jul 2011 14:03:44 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Al Viro <viro@zeniv.linux.org.uk>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: [PATCH] vfs: fix race in rcu lookup of pruned dentry
-Message-ID: <alpine.LSU.2.00.1107171356480.3175@sister.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Sun, 17 Jul 2011 17:08:45 -0400
+Subject: Re: [PATCH][Resend] SCSI, target, loopback: Fix memory leak in
+	tcm_loop_make_scsi_hba()
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Dan Carpenter <error27@gmail.com>
+Cc: Jesper Juhl <jj@chaosbits.net>, James Bottomley <jbottomley@parallels.com>,
+        Christoph Hellwig <hch@lst.de>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        target-devel <target-devel@vger.kernel.org>
+In-Reply-To: <20110628062235.GB14591@shale.localdomain>
+References: <alpine.LNX.2.00.1106272351520.30245@swampdragon.chaosbits.net>
+	 <20110627222526.GA14591@shale.localdomain>
+	 <alpine.LNX.2.00.1106280029150.30245@swampdragon.chaosbits.net>
+	 <20110628062235.GB14591@shale.localdomain>
+Content-Type: text/plain
+Date: Sun, 17 Jul 2011 13:59:34 -0700
+Message-Id: <1310936374.26130.75.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the RCU dcache lookup came in, on five occasions a "cp -a" in my dual
-kbuild swapping tests has failed because a source file vanished momentarily
-e.g. cp: cannot open `/usr/src/linux/include/linux/cramfs_fs.h' for reading:
-No such file or directory
+On Tue, 2011-06-28 at 09:22 +0300, Dan Carpenter wrote:
+> On Tue, Jun 28, 2011 at 12:30:17AM +0200, Jesper Juhl wrote:
+> > 
+> > You mean like this - right?
+> 
+> Yeah.
+> 
+> Acked-by: Dan Carpenter <error27@gmail.com>
+> 
 
-That -ENOENT in walk_component: isn't it assuming we found a negative
-dentry, before reaching the read_seqcount_retry which complete_walk
-(or nameidata_drop_rcu_last before 3.0) would use to confirm a successful
-lookup?  And can't memory pressure prune a dentry, coming to dentry_kill
-which __d_drops to unhash before dentry_iput resets d_inode to NULL, but
-the dentry_rcuwalk_barrier between those is ineffective if the other end
-ignores the seqcount?
+Hi Guys,
 
-Move !inode -ENOENT checks from walk_component down into do_lookup,
-adding read_seqcount_retry confirmation in the RCU case.  And use
-path_put_conditional instead of path_to_nameidata (a reverse way of
-doing the same) in the non-RCU case, to match the error case just above.
+Following up on some items that where missed over my summer holiday.
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: stable@kernel.org
----
-I think I now have a faster script (four slightly staggered "cp -a"s of
-kernel source, run in limited memory) to reproduce this in hours rather
-than weeks; but I'm still calibrating that, cannot yet say whether this
-patch fixes it.  Sending patch on ahead in case it's obvious to you.
+Committed and pushed this patch into lio-core-2.6.git/master recently as
+the following.
 
- fs/namei.c |   16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
+Thanks JesperJ and DanC!
 
---- 3.0-git/fs/namei.c	2011-07-15 19:40:03.269867213 -0700
-+++ linux/fs/namei.c	2011-07-17 10:08:17.586475293 -0700
-@@ -1173,7 +1173,10 @@ static int do_lookup(struct nameidata *n
- 			goto unlazy;
- 		if (unlikely(path->dentry->d_flags & DCACHE_NEED_AUTOMOUNT))
- 			goto unlazy;
--		return 0;
-+		if (*inode)
-+			return 0;
-+		if (!read_seqcount_retry(&dentry->d_seq, nd->seq))
-+			return -ENOENT;
- unlazy:
- 		if (unlazy_walk(nd, dentry))
- 			return -ECHILD;
-@@ -1223,6 +1226,10 @@ retry:
- 		return err;
- 	}
- 	*inode = path->dentry->d_inode;
-+	if (!*inode) {
-+		path_put_conditional(path, nd);
-+		return -ENOENT;
-+	}
- 	return 0;
- }
+--nab
+
+--------------------------------------------------------------------
+
+commit 90e104e39aa30437a8ac4572e4499e7c3a914458
+Author: Jesper Juhl <jj@chaosbits.net>
+Date:   Tue Jun 28 00:30:17 2011 +0200
+
+    loopback: Fix memory leak in tcm_loop_make_scsi_hba()
+    
+    There is a memory leak in tcm_loop_make_scsi_hba().
+    
+    If all the strstr() calls return NULL and we end up at return ERR_PTR(-EINVAL);
+    then we'll be leaking the memory previously allocated to tl_hba as
+    that variable goes out of scope.
+    
+    This patch should fix the leak.
+    
+    Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+    Signed-off-by: Dan Carpenter <error27@gmail.com>
+    Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+
+diff --git a/drivers/target/loopback/tcm_loop.c b/drivers/target/loopback/tcm_loop.c
+index 5075e9b..f603698 100644
+--- a/drivers/target/loopback/tcm_loop.c
++++ b/drivers/target/loopback/tcm_loop.c
+@@ -1288,22 +1288,21 @@ struct se_wwn *tcm_loop_make_scsi_hba(
+                goto check_len;
+        }
+        ptr = strstr(name, "iqn.");
+-       if (ptr) {
+-               tl_hba->tl_proto_id = SCSI_PROTOCOL_ISCSI;
+-               goto check_len;
++       if (!ptr) {
++               printk(KERN_ERR "Unable to locate prefix for emulated Target "
++                               "Port: %s\n", name);
++               ret = -EINVAL;
++               goto out;
+        }
+-
+-       printk(KERN_ERR "Unable to locate prefix for emulated Target Port:"
+-                       " %s\n", name);
+-       return ERR_PTR(-EINVAL);
++       tl_hba->tl_proto_id = SCSI_PROTOCOL_ISCSI;
  
-@@ -1276,15 +1283,10 @@ static inline int walk_component(struct
- 	if (unlikely(type != LAST_NORM))
- 		return handle_dots(nd, type);
- 	err = do_lookup(nd, name, path, &inode);
--	if (unlikely(err)) {
-+	if (err) {
- 		terminate_walk(nd);
- 		return err;
- 	}
--	if (!inode) {
--		path_to_nameidata(path, nd);
--		terminate_walk(nd);
--		return -ENOENT;
--	}
- 	if (unlikely(inode->i_op->follow_link) && follow) {
- 		if (nd->flags & LOOKUP_RCU) {
- 			if (unlikely(unlazy_walk(nd, path->dentry))) {
+ check_len:
+        if (strlen(name) >= TL_WWN_ADDR_LEN) {
+                printk(KERN_ERR "Emulated NAA %s Address: %s, exceeds"
+                        " max: %d\n", name, tcm_loop_dump_proto_id(tl_hba),
+                        TL_WWN_ADDR_LEN);
+-               kfree(tl_hba);
+-               return ERR_PTR(-EINVAL);
++               ret = -EINVAL;
++               goto out;
+        }
+        snprintf(&tl_hba->tl_wwn_address[0], TL_WWN_ADDR_LEN, "%s", &name[off]);
+
+
+
+
+
