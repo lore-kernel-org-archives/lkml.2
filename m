@@ -1,73 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755936Ab1GQO3H (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jul 2011 10:29:07 -0400
-Received: from queueout02-winn.ispmail.ntl.com ([81.103.221.56]:53975 "EHLO
-	queueout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755884Ab1GQO3D (ORCPT
+	id S1755957Ab1GQOg3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jul 2011 10:36:29 -0400
+Received: from mail001.aei.ca ([206.123.6.130]:55976 "EHLO mail001.aei.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755892Ab1GQOg0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jul 2011 10:29:03 -0400
-Subject: Re: State of Linux-RT Patches and full inclusion into linus tree
-From: Bob Ham <rah@bash.sh>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: Bryan Donlan <bdonlan@gmail.com>, Shawn Starr <shawn.starr@rogers.com>,
-        linux-kernel@vger.kernel.org, RT <linux-rt-users@vger.kernel.org>
-In-Reply-To: <20110711065437.6c913cca@bike.lwn.net>
-References: <1449505.pSCLrkaxpL@segfault.sh0n.net>
-	 <CAF_S4t_Q1gMnP+mfM+XGPjJYG_jNPwXhY1557bkZPC9c=mS-xg@mail.gmail.com>
-	 <20110711065437.6c913cca@bike.lwn.net>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-sgNwEcVRTP7LMdwoNQ7E"
-Date: Sun, 17 Jul 2011 14:58:42 +0100
-Message-ID: <1310911122.7557.2.camel@myrtle.6gnip.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=FEN-0PyJjGEA:10 a=wPDyFdB5xvgA:10 a=xqWC_Br6kY4A:10 a=pGLkceISAAAA:8 a=onhi19IbAAAA:8 a=07d9gI8wAAAA:8 a=95c_CUOBm6mfynOkatwA:9 a=QEXdDO2ut3YA:10 a=MSl-tDqOz04A:10 a=Ma507JNFj8MA:10 a=LVagLHMoUV-83Aa5xFEA:9 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+	Sun, 17 Jul 2011 10:36:26 -0400
+From: Ed Tomlinson <edt@aei.ca>
+To: David Miller <davem@davemloft.net>
+Subject: Re: [GIT] Networking
+Date: Sun, 17 Jul 2011 10:36:17 -0400
+User-Agent: KMail/1.13.7 (Linux/3.0.0-rc7-crc+; KDE/4.6.5; x86_64; ; )
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20110716.104325.1217042780857481057.davem@davemloft.net>
+In-Reply-To: <20110716.104325.1217042780857481057.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201107171036.18470.edt@aei.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Saturday 16 July 2011 13:43:25 David Miller wrote:
+> 
+> A small batch of fixes:
+> 
+> 1) Fix two regressions in checksum offload handling.
+>    a) Do not set SCTP packets to CHECKSUM_UNNECESSARY, we don't
+>       have software fallbacks in the TX path for SCTP checksumming
+>       and therefore won't be able to handle a divert of a packet
+>       from a device that can do SCTP checksums to one that cannot.
+>    b) We propagate certain hardware offloads transparently through
+>       "software" devices (like vlan and bonding) but we cannot do
+>       that when we lack software fallbacks in the TX path and this
+>       is relevant for SCTP and FCoE checksumming.  Get rid of the
+>       NETIF_F_ALL_TX_OFFLOADS macro since it's misuse is what
+>       introduced this regression.
+> 
+> 2) L2CAP bluetooth connection procedure regression fix from
+>    Gustavo F. Padovan.
+> 
+> 3) L2CAP incomming connections can crash with defer_setup enabled
+>    because ->parent isn't setup yet, handle that properly.  Also
+>    from Gustavo.
+> 
+> 4) gianfar driver need to be more selective of when the RX parser
+>    of the chip is enabled, from Sebastian Poehn.
+> 
+> 5) r6040 NAPI logic has a bug that can disabled interrupts forever,
+>    fix from Michael Thalmeier.
+> 
+> Please pull, thanks a lot!
+> 
+> The following changes since commit 1765a367a3b5d5e9692949b0c5ec933eff2c0701:
+> 
+>   Merge branch 'gpio/merge' of git://git.secretlab.ca/git/linux-2.6 (2011-07-15 18:03:30 -0700)
+> 
+> are available in the git repository at:
+> 
+>   master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
+> 
+> Gustavo F. Padovan (1):
+>       Bluetooth: Fix regression in L2CAP connection procedure
+> 
+> Ilia Kolomisnky (1):
+>       Bluetooth: Fix crash with incoming L2CAP connections
+> 
+> Michael Thalmeier (1):
+>       r6040: only disable RX interrupt if napi_schedule_prep is successful
+> 
+> Michał Mirosław (2):
+>       net: sctp: fix checksum marking for outgoing packets
+>       net: remove NETIF_F_ALL_TX_OFFLOADS
+> 
+> Sebastian Pöhn (1):
+>       gianfar: rx parser
+> 
+>  drivers/net/bonding/bond_main.c |    6 +++---
+>  drivers/net/gianfar.c           |   24 +++++++++++++++++++-----
+>  drivers/net/gianfar.h           |    3 ++-
+>  drivers/net/r6040.c             |    8 +++++---
+>  include/linux/netdevice.h       |    6 ------
+>  net/8021q/vlan_dev.c            |    6 +++++-
+>  net/bluetooth/l2cap_core.c      |    9 +++++----
+>  net/sctp/output.c               |   19 ++++++++-----------
+>  8 files changed, 47 insertions(+), 34 deletions(-)
 
---=-sgNwEcVRTP7LMdwoNQ7E
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+This just to confirm that Gustavo's fixes correct the problems reported in thread: "[BUG] Bluetooth broken post rc7"
 
-On Mon, 2011-07-11 at 06:54 -0600, Jonathan Corbet wrote:
-> On Mon, 11 Jul 2011 00:46:31 -0400
-> Bryan Donlan <bdonlan@gmail.com> wrote:
->=20
-> > On Sun, Jul 10, 2011 at 20:43, Shawn Starr <shawn.starr@rogers.com> wro=
-te:
-
-> > > I was wondering if (or ever) will the full Linux RT patches be merged=
- into
-> > > Linus's tree?
-
-> Thomas gave a talk on this subject back in April:
->=20
-> 	http://lwn.net/Articles/440064/
-
-That article contains the following sentence:
-
-  "There are plans to update to 2.6.38 soon."
-
-Just out of curiosity, is that update under way?
-
---=20
-Bob Ham <rah@bash.sh>
-
-for (;;) { ++pancakes; }
-
---=-sgNwEcVRTP7LMdwoNQ7E
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAk4i6o8ACgkQ7whsMRnFexQJiACeLyo9CSpehJVvmpaE68DegfDa
-P3gAoNuv2TzdnHnLoFYC/owGRXewbmKw
-=i/+2
------END PGP SIGNATURE-----
-
---=-sgNwEcVRTP7LMdwoNQ7E--
-
+Ed 
