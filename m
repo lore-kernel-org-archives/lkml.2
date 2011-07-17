@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074Ab1GQVrt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jul 2011 17:47:49 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:45524 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752576Ab1GQVrs (ORCPT
+	id S1755904Ab1GQVtx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jul 2011 17:49:53 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:39226 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752730Ab1GQVtv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jul 2011 17:47:48 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=n8SE5RsZJZGTpTcu1dFhQf25Wrg1eYQhs7EkMM7wpyojY1xgfxOn4NnV1O0pBSqOKoTYYfYLNeowr0bV6UdtCdFawQq8oJRbrV41QwngWyDBVAGWlqsUk2DBn5ZTcBaO;
-Date: Sun, 17 Jul 2011 14:47:46 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: `make headers_check' bustage
-Message-Id: <20110717144746.78063c97.rdunlap@xenotime.net>
-In-Reply-To: <20110707171627.4f15035e.akpm@linux-foundation.org>
-References: <20110707171627.4f15035e.akpm@linux-foundation.org>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sun, 17 Jul 2011 17:49:51 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6410"; a="104072136"
+X-IronPort-AV: E=Sophos;i="4.67,218,1309762800"; 
+   d="scan'208";a="155115134"
+Message-ID: <4E2358F7.3020709@qca.qualcomm.com>
+Date: Mon, 18 Jul 2011 00:49:43 +0300
+From: Kalle Valo <kvalo@qca.qualcomm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: <devel@linuxdriverproject.org>, <gregkh@suse.de>, <error27@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <linux-wireless@vger.kernel.org>,
+        <netdev@vger.kernel.org>
+Subject: Re: [PATCH 0/2] ath6kl: more neatening
+References: <4E2349D4.4000204@qca.qualcomm.com> <cover.1310938421.git.joe@perches.com>
+In-Reply-To: <cover.1310938421.git.joe@perches.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+X-Originating-IP: [10.234.11.54]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Jul 2011 17:16:27 -0700 Andrew Morton wrote:
-
-> It is just me, or is headers_check busted in current -linus?
+On 07/18/2011 12:38 AM, Joe Perches wrote:
+>> Great, thanks. I have now applied your patches to ath6kl-cleanup tree
+>> and they will be included in patchset v3.
 > 
-> z:/usr/src/25> make mrproper; make allmodconfig; make headers_check
-> ...
-> /usr/src/25/usr/include/linux/kernel.h:65: userspace cannot reference function or variable defined in the kernel
-> /usr/src/25/usr/include/linux/quota.h:175: userspace cannot reference function or variable defined in the kernel
-> /usr/src/25/usr/include/linux/sdla.h:116: userspace cannot reference function or variable defined in the kernel
-> /usr/src/25/usr/include/linux/soundcard.h:1054: userspace cannot reference function or variable defined in the kernel
+> Here's a couple of more.
+> 
+> Joe Perches (2):
+>   ath6kl: Remove __func__ uses from ath6kl_dbg
+>   ath6kl: Remove trailing unpaired close paren from ath6kl_err uses
 
-What does it take to reproduce this?
-Does it fail on either type of X86 or is this from some other $ARCH?
-I can't make it fail on X86 (3.0-rc7).
+Thanks again.
 
-thanks,
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+I just sent v3. But if I need to create v4 (I hope not) I'll include
+your patches. If v3 is ok, I can resend your patches to wireless-testing
+so that you don't need to followup.
+
+Kalle
