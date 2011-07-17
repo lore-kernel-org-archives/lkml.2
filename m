@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756142Ab1GQPKc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jul 2011 11:10:32 -0400
-Received: from mail.southpole.se ([193.12.106.18]:34902 "EHLO
+	id S1756123Ab1GQPK1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jul 2011 11:10:27 -0400
+Received: from mail.southpole.se ([193.12.106.18]:34901 "EHLO
 	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756081Ab1GQPJl (ORCPT
+	with ESMTP id S1756079Ab1GQPJl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 17 Jul 2011 11:09:41 -0400
 From: Jonas Bonn <jonas@southpole.se>
 To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
 Cc: Jonas Bonn <jonas@southpole.se>
-Subject: [PATCH v3 18/19] OpenRISC: Miscellaneous
-Date: Sun, 17 Jul 2011 17:08:28 +0200
-Message-Id: <8a5c40a83fe34cd1e5e8746d7a77bfb2adee28c7.1310913472.git.jonas@southpole.se>
+Subject: [PATCH v3 16/19] OpenRISC: Headers
+Date: Sun, 17 Jul 2011 17:08:26 +0200
+Message-Id: <2846e60ac7e401bbe2fba2bad0e8e43669f59101.1310913472.git.jonas@southpole.se>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <cover.1310913472.git.jonas@southpole.se>
 References: <cover.1310913472.git.jonas@southpole.se>
@@ -24,1178 +24,1591 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Adds README file, TODO list, config file for or1ksim simulator, and a
-couple of other pieces that didn't seem to fit into any other patch.
-
 Signed-off-by: Jonas Bonn <jonas@southpole.se>
 Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/openrisc/README.openrisc      |  102 ++++
- arch/openrisc/TODO.openrisc        |   18 +
- arch/openrisc/kernel/asm-offsets.c |   70 +++
- arch/openrisc/kernel/or32_ksyms.c  |   46 ++
- arch/openrisc/or1ksim.cfg          |  888 ++++++++++++++++++++++++++++++++++++
- 5 files changed, 1124 insertions(+), 0 deletions(-)
- create mode 100644 arch/openrisc/README.openrisc
- create mode 100644 arch/openrisc/TODO.openrisc
- create mode 100644 arch/openrisc/kernel/asm-offsets.c
- create mode 100644 arch/openrisc/kernel/or32_ksyms.c
- create mode 100644 arch/openrisc/or1ksim.cfg
+ arch/openrisc/include/asm/asm-offsets.h  |    1 +
+ arch/openrisc/include/asm/bitops.h       |   59 +++
+ arch/openrisc/include/asm/bitops/__ffs.h |   33 ++
+ arch/openrisc/include/asm/bitops/__fls.h |   33 ++
+ arch/openrisc/include/asm/bitops/ffs.h   |   32 ++
+ arch/openrisc/include/asm/bitops/fls.h   |   33 ++
+ arch/openrisc/include/asm/byteorder.h    |    1 +
+ arch/openrisc/include/asm/cpuinfo.h      |   34 ++
+ arch/openrisc/include/asm/delay.h        |   24 ++
+ arch/openrisc/include/asm/elf.h          |  108 ++++++
+ arch/openrisc/include/asm/io.h           |   51 +++
+ arch/openrisc/include/asm/linkage.h      |   25 ++
+ arch/openrisc/include/asm/mutex.h        |   27 ++
+ arch/openrisc/include/asm/param.h        |   26 ++
+ arch/openrisc/include/asm/processor.h    |  113 ++++++
+ arch/openrisc/include/asm/serial.h       |   36 ++
+ arch/openrisc/include/asm/spinlock.h     |   24 ++
+ arch/openrisc/include/asm/spr.h          |   42 ++
+ arch/openrisc/include/asm/spr_defs.h     |  604 ++++++++++++++++++++++++++++++
+ arch/openrisc/include/asm/system.h       |   35 ++
+ arch/openrisc/include/asm/unaligned.h    |   51 +++
+ arch/openrisc/kernel/vmlinux.h           |   12 +
+ 22 files changed, 1404 insertions(+), 0 deletions(-)
+ create mode 100644 arch/openrisc/include/asm/asm-offsets.h
+ create mode 100644 arch/openrisc/include/asm/bitops.h
+ create mode 100644 arch/openrisc/include/asm/bitops/__ffs.h
+ create mode 100644 arch/openrisc/include/asm/bitops/__fls.h
+ create mode 100644 arch/openrisc/include/asm/bitops/ffs.h
+ create mode 100644 arch/openrisc/include/asm/bitops/fls.h
+ create mode 100644 arch/openrisc/include/asm/byteorder.h
+ create mode 100644 arch/openrisc/include/asm/cpuinfo.h
+ create mode 100644 arch/openrisc/include/asm/delay.h
+ create mode 100644 arch/openrisc/include/asm/elf.h
+ create mode 100644 arch/openrisc/include/asm/io.h
+ create mode 100644 arch/openrisc/include/asm/linkage.h
+ create mode 100644 arch/openrisc/include/asm/mutex.h
+ create mode 100644 arch/openrisc/include/asm/param.h
+ create mode 100644 arch/openrisc/include/asm/processor.h
+ create mode 100644 arch/openrisc/include/asm/serial.h
+ create mode 100644 arch/openrisc/include/asm/spinlock.h
+ create mode 100644 arch/openrisc/include/asm/spr.h
+ create mode 100644 arch/openrisc/include/asm/spr_defs.h
+ create mode 100644 arch/openrisc/include/asm/system.h
+ create mode 100644 arch/openrisc/include/asm/unaligned.h
+ create mode 100644 arch/openrisc/kernel/vmlinux.h
 
-diff --git a/arch/openrisc/README.openrisc b/arch/openrisc/README.openrisc
+diff --git a/arch/openrisc/include/asm/asm-offsets.h b/arch/openrisc/include/asm/asm-offsets.h
 new file mode 100644
-index 0000000..fbf656f
+index 0000000..d370ee3
 --- /dev/null
-+++ b/arch/openrisc/README.openrisc
-@@ -0,0 +1,102 @@
-+OpenRISC Linux
-+==============
-+
-+This is a port of Linux to the OpenRISC class of microprocessors; the initial
-+target architecture, specifically, is the 32-bit OpenRISC 1000 family (or1k).
-+
-+For more information about OpenRISC processors and ongoing development:
-+
-+	website		http://openrisc.net
-+
-+Additional information, though not kept up to date by the site maintainers,
-+can be found at http://opencores.org/openrisc
-+
-+For information about Linux on OpenRISC, please contact South Pole AB.
-+
-+	email:		info@southpole.se
-+
-+	website:	http://southpole.se
-+			http://southpoleconsulting.com
-+
-+---------------------------------------------------------------------
-+
-+Build instructions for OpenRISC toolchain and Linux
-+===================================================
-+
-+In order to build and run Linux for OpenRISC, you'll need at least a basic
-+toolchain and, perhaps, the architectural simulator.  Steps to get these bits
-+in place are outlined here.
-+
-+1)  The toolchain can be obtained from openrisc.net.  Instructions for building
-+a toolchain can be found at:
-+
-+http://openrisc.net/toolchain-build.html
-+
-+2) or1ksim (optional)
-+
-+or1ksim is the architectural simulator which will allow you to actually run
-+your OpenRISC Linux kernel if you don't have an OpenRISC processor at hand.
-+
-+	git clone git://openrisc.net/jonas/or1ksim-svn
-+
-+	cd or1ksim
-+	./configure --prefix=$OPENRISC_PREFIX
-+	make
-+	make install
-+
-+3)  Linux kernel
-+
-+Build the kernel as usual
-+
-+	make ARCH=openrisc defconfig
-+	make ARCH=openrisc
-+
-+4)  Run in architectural simulator
-+
-+There's a configuration file for the architectural simulator (or1ksim) in the
-+arch/openrisc directory, allowing you to run your kernel with the following
-+incantation:
-+
-+	sim -f arch/openrisc/or1ksim.cfg vmlinux
-+
-+---------------------------------------------------------------------
-+
-+Terminology
-+===========
-+
-+In the code, the following particles are used on symbols to limit the scope
-+to more or less specific processor implementations:
-+
-+openrisc: the OpenRISC class of processors
-+or1k:     the OpenRISC 1000 family of processors
-+or1200:   the OpenRISC 1200 processor
-+
-+---------------------------------------------------------------------
-+
-+History
-+========
-+
-+18. 11. 2003	Matjaz Breskvar (phoenix@bsemi.com)
-+	initial port of linux to OpenRISC/or32 architecture.
-+        all the core stuff is implemented and seams usable.
-+
-+08. 12. 2003	Matjaz Breskvar (phoenix@bsemi.com)
-+	complete change of TLB miss handling.
-+	rewrite of exceptions handling.
-+	fully functional sash-3.6 in default initrd.
-+	a much improved version with changes all around.
-+
-+10. 04. 2004	Matjaz Breskvar (phoenix@bsemi.com)
-+	alot of bugfixes all over.
-+	ethernet support, functional http and telnet servers.
-+	running many standard linux apps.
-+
-+26. 06. 2004	Matjaz Breskvar (phoenix@bsemi.com)
-+	port to 2.6.x
-+
-+30. 11. 2004	Matjaz Breskvar (phoenix@bsemi.com)
-+	lots of bugfixes and enhancments.
-+	added opencores framebuffer driver.
-+
-+09. 10. 2010    Jonas Bonn (jonas@southpole.se)
-+	major rewrite to bring up to par with upstream Linux 2.6.36
-diff --git a/arch/openrisc/TODO.openrisc b/arch/openrisc/TODO.openrisc
++++ b/arch/openrisc/include/asm/asm-offsets.h
+@@ -0,0 +1 @@
++#include <generated/asm-offsets.h>
+diff --git a/arch/openrisc/include/asm/bitops.h b/arch/openrisc/include/asm/bitops.h
 new file mode 100644
-index 0000000..814ecc1
+index 0000000..a9e11ef
 --- /dev/null
-+++ b/arch/openrisc/TODO.openrisc
-@@ -0,0 +1,18 @@
-+The OpenRISC Linux port is fully functional and has been tracking upstream
-+since 2.6.35.  There are, however, remaining items to be completed within
-+the coming months.  Here's a list of known-to-be-less-than-stellar items
-+that are due for investigation shortly, i.e. our TODO list:
-+
-+Implement the rest of the DMA API... dma_map_sg, etc.
-+
-+Consolidate usage of memblock and bootmem... move everything over to memblock.
-+
-+Clean up defconfigs:
-+- remove initramfs, cross-compile, local version, etc.
-+
-+Finish the renaming cleanup... there are references to or32 in the code
-+which was an older name for the architecture.  The name we've settled on is
-+or1k and this change is slowly trickling through the stack.  For the time
-+being, or32 is equivalent to or1k.
-+
-+Implement optimized version of memcpy and memset
-diff --git a/arch/openrisc/kernel/asm-offsets.c b/arch/openrisc/kernel/asm-offsets.c
-new file mode 100644
-index 0000000..1a242a0
---- /dev/null
-+++ b/arch/openrisc/kernel/asm-offsets.c
-@@ -0,0 +1,70 @@
++++ b/arch/openrisc/include/asm/bitops.h
+@@ -0,0 +1,59 @@
 +/*
-+ * OpenRISC asm-offsets.c
++ * OpenRISC Linux
 + *
 + * Linux architectural port borrowing liberally from similar works of
 + * others.  All original copyrights apply as per the original source
 + * declaration.
 + *
-+ * Modifications for the OpenRISC architecture:
++ * OpenRISC implementation:
 + * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
 + * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ * et al.
 + *
-+ *      This program is free software; you can redistribute it and/or
-+ *      modify it under the terms of the GNU General Public License
-+ *      as published by the Free Software Foundation; either version
-+ *      2 of the License, or (at your option) any later version.
-+ *
-+ * This program is used to generate definitions needed by
-+ * assembly language modules.
-+ *
-+ * We use the technique used in the OSF Mach kernel code:
-+ * generate asm statements containing #defines,
-+ * compile this file to assembler, and then extract the
-+ * #defines from the assembly-language output.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
 + */
 +
-+#include <linux/signal.h>
-+#include <linux/sched.h>
-+#include <linux/kernel.h>
-+#include <linux/errno.h>
-+#include <linux/string.h>
++#ifndef __ASM_OPENRISC_BITOPS_H
++#define __ASM_OPENRISC_BITOPS_H
++
++/*
++ * Where we haven't written assembly versions yet, we fall back to the
++ * generic implementations.  Otherwise, we pull in our (hopefully)
++ * optimized versions.
++ */
++
++#include <linux/irqflags.h>
++#include <linux/compiler.h>
++
++/*
++ * clear_bit may not imply a memory barrier
++ */
++#ifndef smp_mb__before_clear_bit
++#define smp_mb__before_clear_bit()	smp_mb()
++#define smp_mb__after_clear_bit()	smp_mb()
++#endif
++
++#include <asm/bitops/__ffs.h>
++#include <asm-generic/bitops/ffz.h>
++#include <asm/bitops/fls.h>
++#include <asm/bitops/__fls.h>
++#include <asm-generic/bitops/fls64.h>
++#include <asm-generic/bitops/find.h>
++
++#ifndef _LINUX_BITOPS_H
++#error only <linux/bitops.h> can be included directly
++#endif
++
++#include <asm-generic/bitops/sched.h>
++#include <asm/bitops/ffs.h>
++#include <asm-generic/bitops/hweight.h>
++#include <asm-generic/bitops/lock.h>
++
++#include <asm-generic/bitops/atomic.h>
++#include <asm-generic/bitops/non-atomic.h>
++#include <asm-generic/bitops/ext2-atomic.h>
++
++#endif /* __ASM_GENERIC_BITOPS_H */
+diff --git a/arch/openrisc/include/asm/bitops/__ffs.h b/arch/openrisc/include/asm/bitops/__ffs.h
+new file mode 100644
+index 0000000..6c8368a
+--- /dev/null
++++ b/arch/openrisc/include/asm/bitops/__ffs.h
+@@ -0,0 +1,33 @@
++/*
++ * OpenRISC Linux
++ *
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef __ASM_OPENRISC___FFS_H
++#define __ASM_OPENRISC___FFS_H
++
++
++#ifdef CONFIG_OPENRISC_HAVE_INST_FF1
++
++static inline unsigned long __ffs(unsigned long x)
++{
++	int ret;
++
++	__asm__ ("l.ff1 %0,%1"
++		 : "=r" (ret)
++		 : "r" (x));
++
++	return ret-1;
++}
++
++#else
++#include <asm-generic/bitops/__ffs.h>
++#endif
++
++#endif /* __ASM_OPENRISC___FFS_H */
+diff --git a/arch/openrisc/include/asm/bitops/__fls.h b/arch/openrisc/include/asm/bitops/__fls.h
+new file mode 100644
+index 0000000..c4ecdb4
+--- /dev/null
++++ b/arch/openrisc/include/asm/bitops/__fls.h
+@@ -0,0 +1,33 @@
++/*
++ * OpenRISC Linux
++ *
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef __ASM_OPENRISC___FLS_H
++#define __ASM_OPENRISC___FLS_H
++
++
++#ifdef CONFIG_OPENRISC_HAVE_INST_FL1
++
++static inline unsigned long __fls(unsigned long x)
++{
++	int ret;
++
++	__asm__ ("l.fl1 %0,%1"
++		 : "=r" (ret)
++		 : "r" (x));
++
++	return ret-1;
++}
++
++#else
++#include <asm-generic/bitops/__fls.h>
++#endif
++
++#endif /* __ASM_OPENRISC___FLS_H */
+diff --git a/arch/openrisc/include/asm/bitops/ffs.h b/arch/openrisc/include/asm/bitops/ffs.h
+new file mode 100644
+index 0000000..9de4624
+--- /dev/null
++++ b/arch/openrisc/include/asm/bitops/ffs.h
+@@ -0,0 +1,32 @@
++/*
++ * OpenRISC Linux
++ *
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef __ASM_OPENRISC_FFS_H
++#define __ASM_OPENRISC_FFS_H
++
++#ifdef CONFIG_OPENRISC_HAVE_INST_FF1
++
++static inline int ffs(int x)
++{
++	int ret;
++
++	__asm__ ("l.ff1 %0,%1"
++		 : "=r" (ret)
++		 : "r" (x));
++
++	return ret;
++}
++
++#else
++#include <asm-generic/bitops/ffs.h>
++#endif
++
++#endif /* __ASM_OPENRISC_FFS_H */
+diff --git a/arch/openrisc/include/asm/bitops/fls.h b/arch/openrisc/include/asm/bitops/fls.h
+new file mode 100644
+index 0000000..9efbf9a
+--- /dev/null
++++ b/arch/openrisc/include/asm/bitops/fls.h
+@@ -0,0 +1,33 @@
++/*
++ * OpenRISC Linux
++ *
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef __ASM_OPENRISC_FLS_H
++#define __ASM_OPENRISC_FLS_H
++
++
++#ifdef CONFIG_OPENRISC_HAVE_INST_FL1
++
++static inline int fls(int x)
++{
++	int ret;
++
++	__asm__ ("l.fl1 %0,%1"
++		 : "=r" (ret)
++		 : "r" (x));
++
++	return ret;
++}
++
++#else
++#include <asm-generic/bitops/fls.h>
++#endif
++
++#endif /* __ASM_OPENRISC_FLS_H */
+diff --git a/arch/openrisc/include/asm/byteorder.h b/arch/openrisc/include/asm/byteorder.h
+new file mode 100644
+index 0000000..60d14f7
+--- /dev/null
++++ b/arch/openrisc/include/asm/byteorder.h
+@@ -0,0 +1 @@
++#include <linux/byteorder/big_endian.h>
+diff --git a/arch/openrisc/include/asm/cpuinfo.h b/arch/openrisc/include/asm/cpuinfo.h
+new file mode 100644
+index 0000000..917318b
+--- /dev/null
++++ b/arch/openrisc/include/asm/cpuinfo.h
+@@ -0,0 +1,34 @@
++/*
++ * OpenRISC Linux
++ *
++ * Linux architectural port borrowing liberally from similar works of
++ * others.  All original copyrights apply as per the original source
++ * declaration.
++ *
++ * OpenRISC implementation:
++ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ * et al.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef __ASM_OPENRISC_CPUINFO_H
++#define __ASM_OPENRISC_CPUINFO_H
++
++struct cpuinfo {
++	u32 clock_frequency;
++
++	u32 icache_size;
++	u32 icache_block_size;
++
++	u32 dcache_size;
++	u32 dcache_block_size;
++};
++
++extern struct cpuinfo cpuinfo;
++
++#endif /* __ASM_OPENRISC_CPUINFO_H */
+diff --git a/arch/openrisc/include/asm/delay.h b/arch/openrisc/include/asm/delay.h
+new file mode 100644
+index 0000000..17f8bf5
+--- /dev/null
++++ b/arch/openrisc/include/asm/delay.h
+@@ -0,0 +1,24 @@
++/*
++ * OpenRISC Linux
++ *
++ * Linux architectural port borrowing liberally from similar works of
++ * others.  All original copyrights apply as per the original source
++ * declaration.
++ *
++ * OpenRISC implementation:
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef __ASM_OPENRISC_DELAY_H
++#define __ASM_OPENRISC_DELAY_H
++
++#include <asm-generic/delay.h>
++
++extern unsigned long loops_per_jiffy;
++
++#endif
+diff --git a/arch/openrisc/include/asm/elf.h b/arch/openrisc/include/asm/elf.h
+new file mode 100644
+index 0000000..2ce603b
+--- /dev/null
++++ b/arch/openrisc/include/asm/elf.h
+@@ -0,0 +1,108 @@
++/*
++ * OpenRISC Linux
++ *
++ * Linux architectural port borrowing liberally from similar works of
++ * others.  All original copyrights apply as per the original source
++ * declaration.
++ *
++ * OpenRISC implementation:
++ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ * et al.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef __ASM_OPENRISC_ELF_H
++#define __ASM_OPENRISC_ELF_H
++
++/*
++ * ELF register definitions..
++ */
 +#include <linux/types.h>
 +#include <linux/ptrace.h>
-+#include <linux/mman.h>
-+#include <linux/mm.h>
-+#include <linux/io.h>
-+#include <linux/thread_info.h>
-+#include <asm/page.h>
-+#include <asm/pgtable.h>
-+#include <asm/processor.h>
 +
-+#define DEFINE(sym, val) \
-+		asm volatile("\n->" #sym " %0 " #val : : "i" (val))
 +
-+#define BLANK() asm volatile("\n->" : : )
++/* The OR1K relocation types... not all relevant for module loader */
++#define R_OR32_NONE	0
++#define R_OR32_32	1
++#define R_OR32_16	2
++#define R_OR32_8	3
++#define R_OR32_CONST	4
++#define R_OR32_CONSTH	5
++#define R_OR32_JUMPTARG	6
++#define R_OR32_VTINHERIT 7
++#define R_OR32_VTENTRY	8
 +
-+int main(void)
-+{
-+	/* offsets into the task_struct */
-+	DEFINE(TASK_STATE, offsetof(struct task_struct, state));
-+	DEFINE(TASK_FLAGS, offsetof(struct task_struct, flags));
-+	DEFINE(TASK_PTRACE, offsetof(struct task_struct, ptrace));
-+	DEFINE(TASK_THREAD, offsetof(struct task_struct, thread));
-+	DEFINE(TASK_MM, offsetof(struct task_struct, mm));
-+	DEFINE(TASK_ACTIVE_MM, offsetof(struct task_struct, active_mm));
++typedef unsigned long elf_greg_t;
 +
-+	/* offsets into thread_info */
-+	DEFINE(TI_TASK, offsetof(struct thread_info, task));
-+	DEFINE(TI_FLAGS, offsetof(struct thread_info, flags));
-+	DEFINE(TI_PREEMPT, offsetof(struct thread_info, preempt_count));
-+	DEFINE(TI_KSP, offsetof(struct thread_info, ksp));
-+
-+	DEFINE(PT_SIZE, sizeof(struct pt_regs));
-+
-+	/* Interrupt register frame */
-+	DEFINE(STACK_FRAME_OVERHEAD, STACK_FRAME_OVERHEAD);
-+	DEFINE(INT_FRAME_SIZE, STACK_FRAME_OVERHEAD + sizeof(struct pt_regs));
-+
-+	DEFINE(NUM_USER_SEGMENTS, TASK_SIZE >> 28);
-+	return 0;
-+}
-diff --git a/arch/openrisc/kernel/or32_ksyms.c b/arch/openrisc/kernel/or32_ksyms.c
-new file mode 100644
-index 0000000..83ccf7c
---- /dev/null
-+++ b/arch/openrisc/kernel/or32_ksyms.c
-@@ -0,0 +1,46 @@
 +/*
-+ * OpenRISC or32_ksyms.c
++ * Note that NGREG is defined to ELF_NGREG in include/linux/elfcore.h, and is
++ * thus exposed to user-space.
++ */
++#define ELF_NGREG (sizeof(struct user_regs_struct) / sizeof(elf_greg_t))
++typedef elf_greg_t elf_gregset_t[ELF_NGREG];
++
++/* A placeholder; OR32 does not have fp support yes, so no fp regs for now.  */
++typedef unsigned long elf_fpregset_t;
++
++/* This should be moved to include/linux/elf.h */
++#define EM_OR32         0x8472
++#define EM_OPENRISC     92     /* OpenRISC 32-bit embedded processor */
++
++/*
++ * These are used to set parameters in the core dumps.
++ */
++#define ELF_ARCH	EM_OR32
++#define ELF_CLASS	ELFCLASS32
++#define ELF_DATA	ELFDATA2MSB
++
++#ifdef __KERNEL__
++
++/*
++ * This is used to ensure we don't load something for the wrong architecture.
++ */
++
++#define elf_check_arch(x) \
++	(((x)->e_machine == EM_OR32) || ((x)->e_machine == EM_OPENRISC))
++
++/* This is the location that an ET_DYN program is loaded if exec'ed.  Typical
++   use of this is to invoke "./ld.so someprog" to test out a new version of
++   the loader.  We need to make sure that it is out of the way of the program
++   that it will "exec", and that there is sufficient room for the brk.  */
++
++#define ELF_ET_DYN_BASE         (0x08000000)
++
++/*
++ * Enable dump using regset.
++ * This covers all of general/DSP/FPU regs.
++ */
++#define CORE_DUMP_USE_REGSET
++
++#define ELF_EXEC_PAGESIZE	8192
++
++extern void dump_elf_thread(elf_greg_t *dest, struct pt_regs *pt);
++#define ELF_CORE_COPY_REGS(dest, regs) dump_elf_thread(dest, regs);
++
++/* This yields a mask that user programs can use to figure out what
++   instruction set this cpu supports.  This could be done in userspace,
++   but it's not easy, and we've already done it here.  */
++
++#define ELF_HWCAP	(0)
++
++/* This yields a string that ld.so will use to load implementation
++   specific libraries for optimization.  This is more specific in
++   intent than poking at uname or /proc/cpuinfo.
++
++   For the moment, we have only optimizations for the Intel generations,
++   but that could change... */
++
++#define ELF_PLATFORM	(NULL)
++
++#define SET_PERSONALITY(ex) set_personality(PER_LINUX)
++
++#endif /* __KERNEL__ */
++#endif
+diff --git a/arch/openrisc/include/asm/io.h b/arch/openrisc/include/asm/io.h
+new file mode 100644
+index 0000000..07f5299
+--- /dev/null
++++ b/arch/openrisc/include/asm/io.h
+@@ -0,0 +1,51 @@
++/*
++ * OpenRISC Linux
 + *
 + * Linux architectural port borrowing liberally from similar works of
 + * others.  All original copyrights apply as per the original source
 + * declaration.
 + *
-+ * Modifications for the OpenRISC architecture:
-+ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
++ * OpenRISC implementation:
 + * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ * et al.
 + *
-+ *      This program is free software; you can redistribute it and/or
-+ *      modify it under the terms of the GNU General Public License
-+ *      as published by the Free Software Foundation; either version
-+ *      2 of the License, or (at your option) any later version.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
 + */
 +
-+#include <linux/module.h>
-+#include <linux/elfcore.h>
-+#include <linux/sched.h>
-+#include <linux/in6.h>
-+#include <linux/interrupt.h>
-+#include <linux/vmalloc.h>
-+#include <linux/semaphore.h>
++#ifndef __ASM_OPENRISC_IO_H
++#define __ASM_OPENRISC_IO_H
 +
-+#include <asm/processor.h>
-+#include <asm/uaccess.h>
-+#include <asm/checksum.h>
-+#include <asm/io.h>
-+#include <asm/hardirq.h>
-+#include <asm/delay.h>
-+#include <asm/pgalloc.h>
++/*
++ * PCI: can we really do 0 here if we have no port IO?
++ */
++#define IO_SPACE_LIMIT		0
 +
-+#define DECLARE_EXPORT(name) extern void name(void); EXPORT_SYMBOL(name)
++/* OpenRISC has no port IO */
++#define HAVE_ARCH_PIO_SIZE	1
++#define PIO_RESERVED		0X0UL
++#define PIO_OFFSET		0
++#define PIO_MASK		0
 +
-+/* compiler generated symbols */
-+DECLARE_EXPORT(__udivsi3);
-+DECLARE_EXPORT(__divsi3);
-+DECLARE_EXPORT(__umodsi3);
-+DECLARE_EXPORT(__modsi3);
-+DECLARE_EXPORT(__muldi3);
-+DECLARE_EXPORT(__ashrdi3);
-+DECLARE_EXPORT(__ashldi3);
-+DECLARE_EXPORT(__lshrdi3);
++#include <asm-generic/io.h>
 +
-+EXPORT_SYMBOL(__copy_tofrom_user);
-diff --git a/arch/openrisc/or1ksim.cfg b/arch/openrisc/or1ksim.cfg
++extern void __iomem *__ioremap(phys_addr_t offset, unsigned long size,
++				pgprot_t prot);
++
++static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
++{
++	return __ioremap(offset, size, PAGE_KERNEL);
++}
++
++/* #define _PAGE_CI       0x002 */
++static inline void __iomem *ioremap_nocache(phys_addr_t offset,
++					     unsigned long size)
++{
++	return __ioremap(offset, size,
++			 __pgprot(pgprot_val(PAGE_KERNEL) | _PAGE_CI));
++}
++
++extern void iounmap(void *addr);
++#endif
+diff --git a/arch/openrisc/include/asm/linkage.h b/arch/openrisc/include/asm/linkage.h
 new file mode 100644
-index 0000000..65f5e87
+index 0000000..e263875
 --- /dev/null
-+++ b/arch/openrisc/or1ksim.cfg
-@@ -0,0 +1,888 @@
-+/* sim.cfg -- Simulator configuration script file
-+   Copyright (C) 2001-2002, Marko Mlinar, markom@opencores.org
-+
-+This file is part of OpenRISC 1000 Architectural Simulator.
-+It contains the default configuration and help about configuring
-+the simulator.
-+
-+This program is free software; you can redistribute it and/or modify
-+it under the terms of the GNU General Public License as published by
-+the Free Software Foundation; either version 2 of the License, or
-+(at your option) any later version.
-+
-+This program is distributed in the hope that it will be useful,
-+but WITHOUT ANY WARRANTY; without even the implied warranty of
-+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+GNU General Public License for more details.
-+
-+You should have received a copy of the GNU General Public License
-+along with this program; if not, write to the Free Software
-+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
-+
-+
-+/* INTRODUCTION
-+
-+   The ork1sim has various parameters, that are set in configuration files
-+   like this one. The user can switch between configurations at startup by
-+   specifying the required configuration file with the -f <filename.cfg> option.
-+   If no configuration file is specified or1ksim searches for the default
-+   configuration file sim.cfg. First it searches for './sim.cfg'. If this
-+   file is not found, it searches for '~/or1k/sim.cfg'. If this file is
-+   not found too, it reverts to the built-in default configuration.
-+
-+   NOTE: Users should not rely on the built-in configuration, since the
-+         default configuration may differ between version.
-+         Rather create a configuration file that sets all critical values.
-+
-+   This file may contain (standard C) comments only - no // support.
-+
-+   Configure files may be be included, using:
-+   include "file_name_to_include"
-+
-+   Like normal configuration files, the included file is divided into
-+   sections. Each section is described in detail also.
-+
-+   Some section have subsections. One example of such a subsection is:
-+
-+   device <index>
-+     instance specific parameters...
-+   enddevice
-+
-+   which creates a device instance.
-+*/
-+
-+
-+/* MEMORY SECTION
-+
-+   This section specifies how the memory is generated and the blocks
-+   it consists of.
-+
-+   type = random/unknown/pattern
-+      Specifies the initial memory values.
-+      'random' generates random memory using seed 'random_seed'.
-+      'pattern' fills memory with 'pattern'.
-+      'unknown' does not specify how memory should be generated,
-+      leaving the memory in a undefined state. This is the fastest
-+      option.
-+
-+   random_seed = <value>
-+      random seed for randomizer, used if type = 'random'.
-+
-+   pattern = <value>
-+      pattern to fill memory, used if type = 'pattern'.
-+
-+   nmemories = <value>
-+      number of memory instances connected
-+
-+   baseaddr = <hex_value>
-+      memory start address
-+
-+   size = <hex_value>
-+      memory size
-+
-+   name = "<string>"
-+      memory block name
-+
-+   ce = <value>
-+      chip enable index of the memory instance
-+
-+   mc = <value>
-+      memory controller this memory is connected to
-+
-+   delayr = <value>
-+      cycles, required for read access, -1 if instance does not support reading
-+
-+   delayw = <value>
-+      cycles, required for write access, -1 if instance does not support writing
-+
-+   log = "<filename>"
-+      filename, where to log memory accesses to, no log, if log command is not specified
-+*/
-+
-+
-+section memory
-+  /*random_seed = 12345
-+  type = random*/
-+  pattern = 0x00
-+  type = unknown /* Fastest */
-+
-+  name = "FLASH"
-+  ce = 0
-+  mc = 0
-+  baseaddr = 0xf0000000
-+  size = 0x01000000
-+  delayr =  1
-+  delayw = -1
-+end
-+
-+section memory
-+  /*random_seed = 12345
-+  type = random*/
-+  pattern = 0x00
-+  type = unknown /* Fastest */
-+
-+  name = "RAM"
-+  ce = 1
-+  mc = 0
-+  baseaddr = 0x00000000
-+  size = 0x02000000
-+  delayr = 1
-+  delayw = 1
-+end
-+
-+section memory
-+  /*random_seed = 12345
-+  type = random*/
-+  pattern = 0x00
-+  type = unknown /* Fastest */
-+
-+  name = "SRAM"
-+  mc = 0
-+  ce = 2
-+  baseaddr = 0xa4000000
-+  size = 0x00100000
-+  delayr = 1
-+  delayw = 2
-+end
-+
-+
-+/* IMMU SECTION
-+
-+    This section configures the Instruction Memory Manangement Unit
-+
-+    enabled = 0/1
-+       '0': disabled
-+       '1': enabled
-+       (NOTE: UPR bit is set)
-+
-+    nsets = <value>
-+       number of ITLB sets; must be power of two
-+
-+    nways = <value>
-+       number of ITLB ways
-+
-+    pagesize = <value>
-+       instruction page size; must be power of two
-+
-+    entrysize = <value>
-+       instruction entry size in bytes
-+
-+    ustates = <value>
-+       number of ITLB usage states (2, 3, 4 etc., max is 4)
-+
-+    hitdelay = <value>
-+       number of cycles immu hit costs
-+
-+    missdelay = <value>
-+       number of cycles immu miss costs
-+*/
-+
-+section immu
-+  enabled = 1
-+  nsets = 64
-+  nways = 1
-+  pagesize = 8192
-+  hitdelay = 0
-+  missdelay = 0
-+end
-+
-+
-+/* DMMU SECTION
-+
-+    This section configures the Data Memory Manangement Unit
-+
-+    enabled = 0/1
-+       '0': disabled
-+       '1': enabled
-+       (NOTE: UPR bit is set)
-+
-+    nsets = <value>
-+       number of DTLB sets; must be power of two
-+
-+    nways = <value>
-+       number of DTLB ways
-+
-+    pagesize = <value>
-+       data page size; must be power of two
-+
-+    entrysize = <value>
-+       data entry size in bytes
-+
-+    ustates = <value>
-+       number of DTLB usage states (2, 3, 4 etc., max is 4)
-+
-+    hitdelay = <value>
-+       number of cycles dmmu hit costs
-+
-+    missdelay = <value>
-+       number of cycles dmmu miss costs
-+*/
-+
-+section dmmu
-+  enabled = 1
-+  nsets = 64
-+  nways = 1
-+  pagesize = 8192
-+  hitdelay = 0
-+  missdelay = 0
-+end
-+
-+
-+/* IC SECTION
-+
-+   This section configures the Instruction Cache
-+
-+   enabled = 0/1
-+       '0': disabled
-+       '1': enabled
-+      (NOTE: UPR bit is set)
-+
-+   nsets = <value>
-+      number of IC sets; must be power of two
-+
-+   nways = <value>
-+      number of IC ways
-+
-+   blocksize = <value>
-+      IC block size in bytes; must be power of two
-+
-+   ustates = <value>
-+      number of IC usage states (2, 3, 4 etc., max is 4)
-+
-+   hitdelay = <value>
-+      number of cycles ic hit costs
-+
-+    missdelay = <value>
-+      number of cycles ic miss costs
-+*/
-+
-+section ic
-+  enabled = 0
-+  nsets = 512
-+  nways = 1
-+  blocksize = 16
-+  hitdelay = 1
-+  missdelay = 1
-+end
-+
-+
-+/* DC SECTION
-+
-+   This section configures the Data Cache
-+
-+   enabled = 0/1
-+       '0': disabled
-+       '1': enabled
-+      (NOTE: UPR bit is set)
-+
-+   nsets = <value>
-+      number of DC sets; must be power of two
-+
-+   nways = <value>
-+      number of DC ways
-+
-+   blocksize = <value>
-+      DC block size in bytes; must be power of two
-+
-+   ustates = <value>
-+      number of DC usage states (2, 3, 4 etc., max is 4)
-+
-+   load_hitdelay = <value>
-+      number of cycles dc load hit costs
-+
-+   load_missdelay = <value>
-+      number of cycles dc load miss costs
-+
-+   store_hitdelay = <value>
-+      number of cycles dc load hit costs
-+
-+   store_missdelay = <value>
-+      number of cycles dc load miss costs
-+*/
-+
-+section dc
-+  enabled = 0
-+  nsets = 512
-+  nways = 1
-+  blocksize = 16
-+  load_hitdelay = 1
-+  load_missdelay = 1
-+  store_hitdelay = 1
-+  store_missdelay = 1
-+end
-+
-+
-+/* SIM SECTION
-+
-+  This section specifies how or1ksim should behave.
-+
-+  verbose = 0/1
-+       '0': don't print extra messages
-+       '1': print extra messages
-+
-+  debug = 0-9
-+      0  : no debug messages
-+      1-9: debug message level.
-+           higher numbers produce more messages
-+
-+  profile = 0/1
-+      '0': don't generate profiling file 'sim.profile'
-+      '1': don't generate profiling file 'sim.profile'
-+
-+  prof_fn = "<filename>"
-+      optional filename for the profiling file.
-+      valid only if 'profile' is set
-+
-+  mprofile = 0/1
-+      '0': don't generate memory profiling file 'sim.mprofile'
-+      '1': generate memory profiling file 'sim.mprofile'
-+
-+  mprof_fn = "<filename>"
-+      optional filename for the memory profiling file.
-+      valid only if 'mprofile' is set
-+
-+  history = 0/1
-+      '0': don't track execution flow
-+      '1': track execution flow
-+      Execution flow can be tracked for the simulator's
-+      'hist' command. Useful for back-trace debugging.
-+
-+  iprompt = 0/1
-+     '0': start in <not interactive prompt> (so what do we start in ???)
-+     '1': start in interactive prompt.
-+
-+  exe_log = 0/1
-+      '0': don't generate execution log.
-+      '1': generate execution log.
-+
-+  exe_log = default/hardware/simple/software
-+      type of execution log, default is used when not specified
-+
-+  exe_log_start = <value>
-+      index of first instruction to start logging, default = 0
-+
-+  exe_log_end = <value>
-+      index of last instruction to end logging; not limited, if omitted
-+
-+  exe_log_marker = <value>
-+      <value> specifies number of instructions before horizontal marker is
-+      printed; if zero, markers are disabled (default)
-+
-+  exe_log_fn = "<filename>"
-+      filename for the exection log file.
-+      valid only if 'exe_log' is set
-+
-+  clkcycle = <value>[ps|ns|us|ms]
-+      specifies time measurement for one cycle
-+*/
-+
-+section sim
-+  verbose = 1
-+  debug = 0
-+  profile = 0
-+  history = 0
-+
-+  clkcycle = 10ns
-+end
-+
-+
-+/* SECTION VAPI
-+
-+    This section configures the Verification API, used for Advanced
-+    Core Verification.
-+
-+    enabled = 0/1
-+        '0': disbable VAPI server
-+        '1': enable/start VAPI server
-+
-+    server_port = <value>
-+        TCP/IP port to start VAPI server on
-+
-+    log_enabled = 0/1
-+       '0': disable VAPI requests logging
-+       '1': enable VAPI requests logging
-+
-+    hide_device_id = 0/1
-+       '0': don't log device id (for compatability with old version)
-+       '1': log device id
-+
-+
-+    vapi_fn = <filename>
-+       filename for the log file.
-+       valid only if log_enabled is set
-+*/
-+
-+section VAPI
-+  enabled = 0
-+  server_port = 9998
-+  log_enabled = 0
-+  vapi_log_fn = "vapi.log"
-+end
-+
-+
-+/* CPU SECTION
-+
-+   This section specifies various CPU parameters.
-+
-+   ver = <value>
-+   rev = <value>
-+      specifies version and revision of the CPU used
-+
-+   upr = <value>
-+      changes the upr register
-+
-+   sr = <value>
-+      sets the initial Supervision Register value
-+      supervisor mode (SM) and fixed one (FO) set = 0x8001
-+      exception prefix high (EPH, vectors@0xf0000000) = 0x4000
-+      together, (SM | FO | EPH) = 0xc001
-+   superscalar = 0/1
-+      '0': CPU is scalar
-+      '1': CPU is superscalar
-+      (modify cpu/or32/execute.c to tune superscalar model)
-+
-+   hazards = 0/1
-+      '0': don't track data hazards in superscalar CPU
-+      '1': track data hazards in superscalar CPU
-+      If tracked, data hazards can be displayed using the
-+      simulator's 'r' command.
-+
-+   dependstats = 0/1
-+      '0': don't calculate inter-instruction dependencies.
-+      '1': calculate inter-instruction dependencies.
-+      If calculated, inter-instruction dependencies can be
-+      displayed using the simulator's 'stat' command.
-+
-+   sbuf_len = <value>
-+      length of store buffer (<= 256), 0 = disabled
-+*/
-+
-+section cpu
-+  ver = 0x12
-+  cfg = 0x00
-+  rev = 0x01
-+  sr =  0x8001 /*SPR_SR_FO  | SPR_SR_SM | SPR_SR_EPH */
-+  /* upr = */
-+  superscalar = 0
-+  hazards = 0
-+  dependstats = 0
-+  sbuf_len = 0
-+end
-+
-+
-+/* PM SECTION
-+
-+   This section specifies Power Management parameters
-+
-+   enabled = 0/1
-+      '0': disable power management
-+      '1': enable power management
-+*/
-+
-+section pm
-+  enabled = 0
-+end
-+
-+
-+/* BPB SECTION
-+
-+   This section specifies how branch prediction should behave.
-+
-+   enabled = 0/1
-+     '0': disable branch prediction
-+     '1': enable branch prediction
-+
-+   btic = 0/1
-+     '0': disable branch target instruction cache model
-+     '1': enable branch target instruction cache model
-+
-+   sbp_bf_fwd = 0/1
-+     Static branch prediction for 'l.bf'
-+     '0': don't use forward prediction
-+     '1': use forward prediction
-+
-+   sbp_bnf_fwd = 0/1
-+     Static branch prediction for 'l.bnf'
-+     '0': don't use forward prediction
-+     '1': use forward prediction
-+
-+   hitdelay = <value>
-+       number of cycles bpb hit costs
-+
-+   missdelay = <value>
-+       number of cycles bpb miss costs
-+*/
-+
-+section bpb
-+  enabled = 0
-+  btic = 0
-+  sbp_bf_fwd = 0
-+  sbp_bnf_fwd = 0
-+  hitdelay = 0
-+  missdelay = 0
-+end
-+
-+
-+/* DEBUG SECTION
-+
-+   This sections specifies how the debug unit should behave.
-+
-+   enabled = 0/1
-+      '0': disable debug unit
-+      '1': enable debug unit
-+
-+   gdb_enabled = 0/1
-+      '0': don't start gdb server
-+      '1': start gdb server at port 'server_port'
-+
-+   server_port = <value>
-+      TCP/IP port to start gdb server on
-+      valid only if gdb_enabled is set
-+
-+   vapi_id = <hex_value>
-+      Used to create "fake" vapi log file containing the JTAG proxy messages.
-+*/
-+section debug
-+  enabled = 0
-+/*  gdb_enabled = 0 */
-+/*  server_port = 9999*/
-+  rsp_enabled = 1
-+  rsp_port = 50001
-+end
-+
-+
-+/* MC SECTION
-+
-+   This section configures the memory controller
-+
-+   enabled = 0/1
-+     '0': disable memory controller
-+     '1': enable memory controller
-+
-+   baseaddr = <hex_value>
-+      address of first MC register
-+
-+   POC = <hex_value>
-+      Power On Configuration register
-+
-+   index = <value>
-+      Index of this memory controller amongst all the memory controllers
-+*/
-+
-+section mc
-+  enabled = 0
-+  baseaddr = 0x93000000
-+  POC = 0x00000008                 /* Power on configuration register */
-+  index = 0
-+end
-+
-+
-+/* UART SECTION
-+
-+   This section configures the UARTs
-+
-+     enabled = <0|1>
-+        Enable/disable the peripheral.  By default if it is enabled.
-+
-+     baseaddr = <hex_value>
-+        address of first UART register for this device
-+
-+
-+     channel = <channeltype>:<args>
-+
-+        The channel parameter indicates the source of received UART characters
-+        and the sink for transmitted UART characters.
-+
-+        The <channeltype> can be either "file", "xterm", "tcp", "fd", or "tty"
-+        (without quotes).
-+
-+          A) To send/receive characters from a pair of files, use a file
-+             channel:
-+
-+               channel=file:<rxfile>,<txfile>
-+
-+	  B) To create an interactive terminal window, use an xterm channel:
-+
-+               channel=xterm:[<xterm_arg>]*
-+
-+	  C) To create a bidirectional tcp socket which one could, for example,
-+             access via telnet, use a tcp channel:
-+
-+               channel=tcp:<port number>
-+
-+	  D) To cause the UART to read/write from existing numeric file
-+             descriptors, use an fd channel:
-+
-+               channel=fd:<rx file descriptor num>,<tx file descriptor num>
-+
-+          E) To connect the UART to a physical serial port, create a tty
-+             channel:
-+
-+	       channel=tty:device=/dev/ttyS0,baud=9600
-+
-+     irq = <value>
-+        irq number for this device
-+
-+     16550 = 0/1
-+        '0': this device is a UART16450
-+        '1': this device is a UART16550
-+
-+     jitter = <value>
-+        in msecs... time to block, -1 to disable it
-+
-+     vapi_id = <hex_value>
-+        VAPI id of this instance
-+*/
-+
-+section uart
-+  enabled = 1
-+  baseaddr = 0x90000000
-+  irq = 2
-+  /* channel = "file:uart0.rx,uart0.tx" */
-+  channel = "tcp:10084"
-+/*   channel = "xterm:"  */
-+  jitter = -1                     /* async behaviour */
-+  16550 = 1
-+end
-+
-+
-+/* DMA SECTION
-+
-+   This section configures the DMAs
-+
-+     enabled = <0|1>
-+        Enable/disable the peripheral.  By default if it is enabled.
-+
-+     baseaddr = <hex_value>
-+        address of first DMA register for this device
-+
-+     irq = <value>
-+        irq number for this device
-+
-+     vapi_id = <hex_value>
-+        VAPI id of this instance
-+*/
-+
-+section dma
-+  enabled = 1
-+  baseaddr = 0x9a000000
-+  irq = 11
-+end
-+
-+
-+/* ETHERNET SECTION
-+
-+   This section configures the ETHERNETs
-+
-+     enabled = <0|1>
-+        Enable/disable the peripheral.  By default if it is enabled.
-+
-+     baseaddr = <hex_value>
-+        address of first ethernet register for this device
-+
-+     dma = <value>
-+        which controller is this ethernet "connected" to
-+
-+     irq = <value>
-+        ethernet mac IRQ level
-+
-+     rtx_type = <value>
-+        use 0 - file interface, 1 - socket interface
-+
-+     rx_channel = <value>
-+        DMA channel used for RX
-+
-+     tx_channel = <value>
-+        DMA channel used for TX
-+
-+     rxfile = "<filename>"
-+        filename, where to read data from
-+
-+     txfile = "<filename>"
-+        filename, where to write data to
-+
-+     sockif = "<ifacename>"
-+        interface name of ethernet socket
-+
-+     vapi_id = <hex_value>
-+        VAPI id of this instance
-+*/
-+
-+section ethernet
-+  enabled = 1
-+  baseaddr = 0x92000000
-+  /* dma = 0 */
-+  irq = 4
-+  rtx_type = "tap"
-+  tap_dev = "tap0"
-+  /* tx_channel = 0 */
-+  /* rx_channel = 1 */
-+  rxfile = "eth0.rx"
-+  txfile = "eth0.tx"
-+  sockif = "eth0"
-+end
-+
-+
-+/* GPIO SECTION
-+
-+   This section configures the GPIOs
-+
-+     enabled = <0|1>
-+        Enable/disable the peripheral.  By default if it is enabled.
-+
-+     baseaddr = <hex_value>
-+        address of first GPIO register for this device
-+
-+     irq = <value>
-+        irq number for this device
-+
-+     base_vapi_id = <hex_value>
-+        first VAPI id of this instance
-+	GPIO uses 8 consecutive VAPI IDs
-+*/
-+
-+section gpio
-+  enabled = 0
-+  baseaddr = 0x91000000
-+  irq = 3
-+  base_vapi_id = 0x0200
-+end
-+
-+/* VGA SECTION
-+
-+    This section configures the VGA/LCD controller
-+
-+      enabled = <0|1>
-+        Enable/disable the peripheral.  By default if it is enabled.
-+
-+      baseaddr = <hex_value>
-+        address of first VGA register
-+
-+      irq = <value>
-+        irq number for this device
-+
-+      refresh_rate = <value>
-+        number of cycles between screen dumps
-+
-+      filename = "<filename>"
-+        template name for generated names (e.g. "primary" produces "primary0023.bmp")
-+*/
-+
-+section vga
-+  enabled = 0
-+  baseaddr = 0x97100000
-+  irq = 8
-+  refresh_rate = 100000
-+  filename = "primary"
-+end
-+
-+
-+/* TICK TIMER SECTION
-+
-+    This section configures tick timer
-+
-+    enabled = 0/1
-+      whether tick timer is enabled
-+*/
-+
-+section pic
-+  enabled = 1
-+  edge_trigger = 1
-+end
-+
-+/* FB SECTION
-+
-+    This section configures the frame buffer
-+
-+    enabled = <0|1>
-+      Enable/disable the peripheral.  By default if it is enabled.
-+
-+    baseaddr = <hex_value>
-+      base address of frame buffer
-+
-+    paladdr = <hex_value>
-+      base address of first palette entry
-+
-+    refresh_rate = <value>
-+      number of cycles between screen dumps
-+
-+    filename = "<filename>"
-+      template name for generated names (e.g. "primary" produces "primary0023.bmp")
-+*/
-+
-+section fb
-+  enabled = 0
-+  baseaddr = 0x97000000
-+  refresh_rate = 1000000
-+  filename = "primary"
-+end
-+
-+
-+/* KBD SECTION
-+
-+    This section configures the PS/2 compatible keyboard
-+
-+    baseaddr = <hex_value>
-+      base address of the keyboard device
-+
-+    rxfile = "<filename>"
-+      filename, where to read data from
-+*/
-+
-+section kbd
-+  enabled = 0
-+  irq = 5
-+  baseaddr = 0x94000000
-+  rxfile = "kbd.rx"
-+end
-+
-+
-+/* ATA SECTION
-+
-+    This section configures the ATA/ATAPI host controller
-+
-+      baseaddr = <hex_value>
-+        address of first ATA register
-+
-+      enabled = <0|1>
-+        Enable/disable the peripheral.  By default if it is enabled.
-+
-+      irq = <value>
-+        irq number for this device
-+
-+      debug = <value>
-+        debug level for ata models.
-+	0: no debug messages
-+	1: verbose messages
-+	3: normal messages (more messages than verbose)
-+        5: debug messages (normal debug messages)
-+	7: flow control messages (debug statemachine flows)
-+	9: low priority message (display everything the code does)
-+
-+      dev_type0/1 = <value>
-+        ata device 0 type
-+        0: NO_CONNeCT: none (not connected)
-+	1: FILE      : simulated harddisk
-+	2: LOCAL     : local system harddisk
-+
-+      dev_file0/1 = "<filename>"
-+        filename for simulated ATA device
-+	valid only if dev_type0 == 1
-+
-+      dev_size0/1 = <value>
-+        size of simulated hard-disk (in MBytes)
-+	valid only if dev_type0 == 1
-+
-+      dev_packet0/1 = <value>
-+        0: simulated ATA device does NOT implement PACKET command feature set
-+	1: simulated ATA device does implement PACKET command feature set
-+
-+   FIXME: irq number
-+*/
-+
-+section ata
-+  enabled = 0
-+  baseaddr = 0x9e000000
-+  irq = 15
-+
-+end
++++ b/arch/openrisc/include/asm/linkage.h
+@@ -0,0 +1,25 @@
++/*
++ * OpenRISC Linux
++ *
++ * Linux architectural port borrowing liberally from similar works of
++ * others.  All original copyrights apply as per the original source
++ * declaration.
++ *
++ * OpenRISC implementation:
++ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ * et al.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef __ASM_OPENRISC_LINKAGE_H
++#define __ASM_OPENRISC_LINKAGE_H
++
++#define __ALIGN      .align 0
++#define __ALIGN_STR ".align 0"
++
++#endif /* __ASM_OPENRISC_LINKAGE_H */
+diff --git a/arch/openrisc/include/asm/mutex.h b/arch/openrisc/include/asm/mutex.h
+new file mode 100644
+index 0000000..b85a0cf
+--- /dev/null
++++ b/arch/openrisc/include/asm/mutex.h
+@@ -0,0 +1,27 @@
++/*
++ * OpenRISC Linux
++ *
++ * Linux architectural port borrowing liberally from similar works of
++ * others.  All original copyrights apply as per the original source
++ * declaration.
++ *
++ * OpenRISC implementation:
++ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ * et al.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++/*
++ * Pull in the generic implementation for the mutex fastpath.
++ *
++ * TODO: implement optimized primitives instead, or leave the generic
++ * implementation in place, or pick the atomic_xchg() based generic
++ * implementation. (see asm-generic/mutex-xchg.h for details)
++ */
++
++#include <asm-generic/mutex-dec.h>
+diff --git a/arch/openrisc/include/asm/param.h b/arch/openrisc/include/asm/param.h
+new file mode 100644
+index 0000000..c39a336
+--- /dev/null
++++ b/arch/openrisc/include/asm/param.h
+@@ -0,0 +1,26 @@
++/*
++ * OpenRISC Linux
++ *
++ * Linux architectural port borrowing liberally from similar works of
++ * others.  All original copyrights apply as per the original source
++ * declaration.
++ *
++ * OpenRISC implementation:
++ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ * et al.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef __ASM_OPENRISC_PARAM_H
++#define __ASM_OPENRISC_PARAM_H
++
++#define EXEC_PAGESIZE	8192
++
++#include <asm-generic/param.h>
++
++#endif /* __ASM_OPENRISC_PARAM_H */
+diff --git a/arch/openrisc/include/asm/processor.h b/arch/openrisc/include/asm/processor.h
+new file mode 100644
+index 0000000..bb54c97
+--- /dev/null
++++ b/arch/openrisc/include/asm/processor.h
+@@ -0,0 +1,113 @@
++/*
++ * OpenRISC Linux
++ *
++ * Linux architectural port borrowing liberally from similar works of
++ * others.  All original copyrights apply as per the original source
++ * declaration.
++ *
++ * OpenRISC implementation:
++ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ * et al.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef __ASM_OPENRISC_PROCESSOR_H
++#define __ASM_OPENRISC_PROCESSOR_H
++
++#include <asm/spr_defs.h>
++#include <asm/page.h>
++#include <asm/ptrace.h>
++
++#define STACK_TOP       TASK_SIZE
++#define STACK_TOP_MAX	STACK_TOP
++/* Kernel and user SR register setting */
++#define KERNEL_SR (SPR_SR_DME | SPR_SR_IME | SPR_SR_ICE \
++		   | SPR_SR_DCE | SPR_SR_SM)
++#define USER_SR   (SPR_SR_DME | SPR_SR_IME | SPR_SR_ICE \
++		   | SPR_SR_DCE | SPR_SR_IEE | SPR_SR_TEE)
++/*
++ * Default implementation of macro that returns current
++ * instruction pointer ("program counter").
++ */
++#define current_text_addr() ({ __label__ _l; _l: &&_l; })
++
++/*
++ * User space process size. This is hardcoded into a few places,
++ * so don't change it unless you know what you are doing.
++ */
++
++#define TASK_SIZE       (0x80000000UL)
++
++/* This decides where the kernel will search for a free chunk of vm
++ * space during mmap's.
++ */
++#define TASK_UNMAPPED_BASE      (TASK_SIZE / 8 * 3)
++
++#ifndef __ASSEMBLY__
++
++struct task_struct;
++
++struct thread_struct {
++};
++
++/*
++ * At user->kernel entry, the pt_regs struct is stacked on the top of the
++ * kernel-stack.  This macro allows us to find those regs for a task.
++ * Notice that subsequent pt_regs stackings, like recursive interrupts
++ * occurring while we're in the kernel, won't affect this - only the first
++ * user->kernel transition registers are reached by this (i.e. not regs
++ * for running signal handler)
++ */
++#define user_regs(thread_info)  (((struct pt_regs *)((unsigned long)(thread_info) + THREAD_SIZE - STACK_FRAME_OVERHEAD)) - 1)
++
++/*
++ * Dito but for the currently running task
++ */
++
++#define task_pt_regs(task) user_regs(task_thread_info(task))
++#define current_regs() user_regs(current_thread_info())
++
++extern inline void prepare_to_copy(struct task_struct *tsk)
++{
++}
++
++#define INIT_SP         (sizeof(init_stack) + (unsigned long) &init_stack)
++
++#define INIT_THREAD  { }
++
++
++#define KSTK_EIP(tsk)   (task_pt_regs(tsk)->pc);
++#define KSTK_ESP(tsk)   (task_pt_regs(tsk)->sp);
++
++
++extern int kernel_thread(int (*fn)(void *), void * arg, unsigned long flags);
++
++void start_thread(struct pt_regs *regs, unsigned long nip, unsigned long sp);
++void release_thread(struct task_struct *);
++unsigned long get_wchan(struct task_struct *p);
++
++/*
++ * Free current thread data structures etc..
++ */
++
++extern inline void exit_thread(void)
++{
++	/* Nothing needs to be done.  */
++}
++
++/*
++ * Return saved PC of a blocked thread. For now, this is the "user" PC
++ */
++extern unsigned long thread_saved_pc(struct task_struct *t);
++
++#define init_stack      (init_thread_union.stack)
++
++#define cpu_relax()     do { } while (0)
++
++#endif /* __ASSEMBLY__ */
++#endif /* __ASM_OPENRISC_PROCESSOR_H */
+diff --git a/arch/openrisc/include/asm/serial.h b/arch/openrisc/include/asm/serial.h
+new file mode 100644
+index 0000000..270a452
+--- /dev/null
++++ b/arch/openrisc/include/asm/serial.h
+@@ -0,0 +1,36 @@
++/*
++ * OpenRISC Linux
++ *
++ * Linux architectural port borrowing liberally from similar works of
++ * others.  All original copyrights apply as per the original source
++ * declaration.
++ *
++ * OpenRISC implementation:
++ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ * et al.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef __ASM_OPENRISC_SERIAL_H
++#define __ASM_OPENRISC_SERIAL_H
++
++#ifdef __KERNEL__
++
++#include <asm/cpuinfo.h>
++
++/* There's a generic version of this file, but it assumes a 1.8MHz UART clk...
++ * this, on the other hand, assumes the UART clock is tied to the system
++ * clock... 8250_early.c (early 8250 serial console) actually uses this, so
++ * it needs to be correct to get the early console working.
++ */
++
++#define BASE_BAUD (cpuinfo.clock_frequency/16)
++
++#endif /* __KERNEL__ */
++
++#endif /* __ASM_OPENRISC_SERIAL_H */
+diff --git a/arch/openrisc/include/asm/spinlock.h b/arch/openrisc/include/asm/spinlock.h
+new file mode 100644
+index 0000000..fd00a3a
+--- /dev/null
++++ b/arch/openrisc/include/asm/spinlock.h
+@@ -0,0 +1,24 @@
++/*
++ * OpenRISC Linux
++ *
++ * Linux architectural port borrowing liberally from similar works of
++ * others.  All original copyrights apply as per the original source
++ * declaration.
++ *
++ * OpenRISC implementation:
++ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ * et al.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef __ASM_OPENRISC_SPINLOCK_H
++#define __ASM_OPENRISC_SPINLOCK_H
++
++#error "or32 doesn't do SMP yet"
++
++#endif
+diff --git a/arch/openrisc/include/asm/spr.h b/arch/openrisc/include/asm/spr.h
+new file mode 100644
+index 0000000..1cccb42
+--- /dev/null
++++ b/arch/openrisc/include/asm/spr.h
+@@ -0,0 +1,42 @@
++/*
++ * OpenRISC Linux
++ *
++ * Linux architectural port borrowing liberally from similar works of
++ * others.  All original copyrights apply as per the original source
++ * declaration.
++ *
++ * OpenRISC implementation:
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef __ASM_OPENRISC_SPR_H
++#define __ASM_OPENRISC_SPR_H
++
++#define mtspr(_spr, _val) __asm__ __volatile__ (		\
++	"l.mtspr r0,%1,%0"					\
++	: : "K" (_spr), "r" (_val))
++#define mtspr_off(_spr, _off, _val) __asm__ __volatile__ (	\
++	"l.mtspr %0,%1,%2"					\
++	: : "r" (_off), "r" (_val), "K" (_spr))
++
++static inline unsigned long mfspr(unsigned long add)
++{
++	unsigned long ret;
++	__asm__ __volatile__ ("l.mfspr %0,r0,%1" : "=r" (ret) : "K" (add));
++	return ret;
++}
++
++static inline unsigned long mfspr_off(unsigned long add, unsigned long offset)
++{
++	unsigned long ret;
++	__asm__ __volatile__ ("l.mfspr %0,%1,%2" : "=r" (ret)
++						 : "r" (offset), "K" (add));
++	return ret;
++}
++
++#endif
+diff --git a/arch/openrisc/include/asm/spr_defs.h b/arch/openrisc/include/asm/spr_defs.h
+new file mode 100644
+index 0000000..5dbc668
+--- /dev/null
++++ b/arch/openrisc/include/asm/spr_defs.h
+@@ -0,0 +1,604 @@
++/*
++ * OpenRISC Linux
++ *
++ * SPR Definitions
++ *
++ * Copyright (C) 2000 Damjan Lampret
++ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
++ * Copyright (C) 2008, 2010 Embecosm Limited
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ * et al.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This file is part of OpenRISC 1000 Architectural Simulator.
++ */
++
++#ifndef SPR_DEFS__H
++#define SPR_DEFS__H
++
++/* Definition of special-purpose registers (SPRs). */
++
++#define MAX_GRPS (32)
++#define MAX_SPRS_PER_GRP_BITS (11)
++#define MAX_SPRS_PER_GRP (1 << MAX_SPRS_PER_GRP_BITS)
++#define MAX_SPRS (0x10000)
++
++/* Base addresses for the groups */
++#define SPRGROUP_SYS	(0 << MAX_SPRS_PER_GRP_BITS)
++#define SPRGROUP_DMMU	(1 << MAX_SPRS_PER_GRP_BITS)
++#define SPRGROUP_IMMU	(2 << MAX_SPRS_PER_GRP_BITS)
++#define SPRGROUP_DC	(3 << MAX_SPRS_PER_GRP_BITS)
++#define SPRGROUP_IC	(4 << MAX_SPRS_PER_GRP_BITS)
++#define SPRGROUP_MAC	(5 << MAX_SPRS_PER_GRP_BITS)
++#define SPRGROUP_D	(6 << MAX_SPRS_PER_GRP_BITS)
++#define SPRGROUP_PC	(7 << MAX_SPRS_PER_GRP_BITS)
++#define SPRGROUP_PM	(8 << MAX_SPRS_PER_GRP_BITS)
++#define SPRGROUP_PIC	(9 << MAX_SPRS_PER_GRP_BITS)
++#define SPRGROUP_TT	(10 << MAX_SPRS_PER_GRP_BITS)
++#define SPRGROUP_FP	(11 << MAX_SPRS_PER_GRP_BITS)
++
++/* System control and status group */
++#define SPR_VR		(SPRGROUP_SYS + 0)
++#define SPR_UPR		(SPRGROUP_SYS + 1)
++#define SPR_CPUCFGR	(SPRGROUP_SYS + 2)
++#define SPR_DMMUCFGR	(SPRGROUP_SYS + 3)
++#define SPR_IMMUCFGR	(SPRGROUP_SYS + 4)
++#define SPR_DCCFGR	(SPRGROUP_SYS + 5)
++#define SPR_ICCFGR	(SPRGROUP_SYS + 6)
++#define SPR_DCFGR	(SPRGROUP_SYS + 7)
++#define SPR_PCCFGR	(SPRGROUP_SYS + 8)
++#define SPR_NPC         (SPRGROUP_SYS + 16)  /* CZ 21/06/01 */
++#define SPR_SR		(SPRGROUP_SYS + 17)  /* CZ 21/06/01 */
++#define SPR_PPC         (SPRGROUP_SYS + 18)  /* CZ 21/06/01 */
++#define SPR_FPCSR       (SPRGROUP_SYS + 20)  /* CZ 21/06/01 */
++#define SPR_EPCR_BASE	(SPRGROUP_SYS + 32)  /* CZ 21/06/01 */
++#define SPR_EPCR_LAST	(SPRGROUP_SYS + 47)  /* CZ 21/06/01 */
++#define SPR_EEAR_BASE	(SPRGROUP_SYS + 48)
++#define SPR_EEAR_LAST	(SPRGROUP_SYS + 63)
++#define SPR_ESR_BASE	(SPRGROUP_SYS + 64)
++#define SPR_ESR_LAST	(SPRGROUP_SYS + 79)
++#define SPR_GPR_BASE	(SPRGROUP_SYS + 1024)
++
++/* Data MMU group */
++#define SPR_DMMUCR	(SPRGROUP_DMMU + 0)
++#define SPR_DTLBEIR	(SPRGROUP_DMMU + 2)
++#define SPR_DTLBMR_BASE(WAY)	(SPRGROUP_DMMU + 0x200 + (WAY) * 0x100)
++#define SPR_DTLBMR_LAST(WAY)	(SPRGROUP_DMMU + 0x27f + (WAY) * 0x100)
++#define SPR_DTLBTR_BASE(WAY)	(SPRGROUP_DMMU + 0x280 + (WAY) * 0x100)
++#define SPR_DTLBTR_LAST(WAY)	(SPRGROUP_DMMU + 0x2ff + (WAY) * 0x100)
++
++/* Instruction MMU group */
++#define SPR_IMMUCR	(SPRGROUP_IMMU + 0)
++#define SPR_ITLBEIR	(SPRGROUP_IMMU + 2)
++#define SPR_ITLBMR_BASE(WAY)	(SPRGROUP_IMMU + 0x200 + (WAY) * 0x100)
++#define SPR_ITLBMR_LAST(WAY)	(SPRGROUP_IMMU + 0x27f + (WAY) * 0x100)
++#define SPR_ITLBTR_BASE(WAY)	(SPRGROUP_IMMU + 0x280 + (WAY) * 0x100)
++#define SPR_ITLBTR_LAST(WAY)	(SPRGROUP_IMMU + 0x2ff + (WAY) * 0x100)
++
++/* Data cache group */
++#define SPR_DCCR	(SPRGROUP_DC + 0)
++#define SPR_DCBPR	(SPRGROUP_DC + 1)
++#define SPR_DCBFR	(SPRGROUP_DC + 2)
++#define SPR_DCBIR	(SPRGROUP_DC + 3)
++#define SPR_DCBWR	(SPRGROUP_DC + 4)
++#define SPR_DCBLR	(SPRGROUP_DC + 5)
++#define SPR_DCR_BASE(WAY)	(SPRGROUP_DC + 0x200 + (WAY) * 0x200)
++#define SPR_DCR_LAST(WAY)	(SPRGROUP_DC + 0x3ff + (WAY) * 0x200)
++
++/* Instruction cache group */
++#define SPR_ICCR	(SPRGROUP_IC + 0)
++#define SPR_ICBPR	(SPRGROUP_IC + 1)
++#define SPR_ICBIR	(SPRGROUP_IC + 2)
++#define SPR_ICBLR	(SPRGROUP_IC + 3)
++#define SPR_ICR_BASE(WAY)	(SPRGROUP_IC + 0x200 + (WAY) * 0x200)
++#define SPR_ICR_LAST(WAY)	(SPRGROUP_IC + 0x3ff + (WAY) * 0x200)
++
++/* MAC group */
++#define SPR_MACLO	(SPRGROUP_MAC + 1)
++#define SPR_MACHI	(SPRGROUP_MAC + 2)
++
++/* Debug group */
++#define SPR_DVR(N)	(SPRGROUP_D + (N))
++#define SPR_DCR(N)	(SPRGROUP_D + 8 + (N))
++#define SPR_DMR1	(SPRGROUP_D + 16)
++#define SPR_DMR2	(SPRGROUP_D + 17)
++#define SPR_DWCR0	(SPRGROUP_D + 18)
++#define SPR_DWCR1	(SPRGROUP_D + 19)
++#define SPR_DSR		(SPRGROUP_D + 20)
++#define SPR_DRR		(SPRGROUP_D + 21)
++
++/* Performance counters group */
++#define SPR_PCCR(N)	(SPRGROUP_PC + (N))
++#define SPR_PCMR(N)	(SPRGROUP_PC + 8 + (N))
++
++/* Power management group */
++#define SPR_PMR (SPRGROUP_PM + 0)
++
++/* PIC group */
++#define SPR_PICMR (SPRGROUP_PIC + 0)
++#define SPR_PICPR (SPRGROUP_PIC + 1)
++#define SPR_PICSR (SPRGROUP_PIC + 2)
++
++/* Tick Timer group */
++#define SPR_TTMR (SPRGROUP_TT + 0)
++#define SPR_TTCR (SPRGROUP_TT + 1)
++
++/*
++ * Bit definitions for the Version Register
++ *
++ */
++#define SPR_VR_VER	0xff000000  /* Processor version */
++#define SPR_VR_CFG	0x00ff0000  /* Processor configuration */
++#define SPR_VR_RES	0x0000ffc0  /* Reserved */
++#define SPR_VR_REV	0x0000003f  /* Processor revision */
++
++#define SPR_VR_VER_OFF	24
++#define SPR_VR_CFG_OFF	16
++#define SPR_VR_REV_OFF	0
++
++/*
++ * Bit definitions for the Unit Present Register
++ *
++ */
++#define SPR_UPR_UP	   0x00000001  /* UPR present */
++#define SPR_UPR_DCP	   0x00000002  /* Data cache present */
++#define SPR_UPR_ICP	   0x00000004  /* Instruction cache present */
++#define SPR_UPR_DMP	   0x00000008  /* Data MMU present */
++#define SPR_UPR_IMP	   0x00000010  /* Instruction MMU present */
++#define SPR_UPR_MP	   0x00000020  /* MAC present */
++#define SPR_UPR_DUP	   0x00000040  /* Debug unit present */
++#define SPR_UPR_PCUP	   0x00000080  /* Performance counters unit present */
++#define SPR_UPR_PMP	   0x00000100  /* Power management present */
++#define SPR_UPR_PICP	   0x00000200  /* PIC present */
++#define SPR_UPR_TTP	   0x00000400  /* Tick timer present */
++#define SPR_UPR_RES	   0x00fe0000  /* Reserved */
++#define SPR_UPR_CUP	   0xff000000  /* Context units present */
++
++/*
++ * JPB: Bit definitions for the CPU configuration register
++ *
++ */
++#define SPR_CPUCFGR_NSGF   0x0000000f  /* Number of shadow GPR files */
++#define SPR_CPUCFGR_CGF	   0x00000010  /* Custom GPR file */
++#define SPR_CPUCFGR_OB32S  0x00000020  /* ORBIS32 supported */
++#define SPR_CPUCFGR_OB64S  0x00000040  /* ORBIS64 supported */
++#define SPR_CPUCFGR_OF32S  0x00000080  /* ORFPX32 supported */
++#define SPR_CPUCFGR_OF64S  0x00000100  /* ORFPX64 supported */
++#define SPR_CPUCFGR_OV64S  0x00000200  /* ORVDX64 supported */
++#define SPR_CPUCFGR_RES	   0xfffffc00  /* Reserved */
++
++/*
++ * JPB: Bit definitions for the Debug configuration register and other
++ * constants.
++ *
++ */
++
++#define SPR_DCFGR_NDP      0x00000007  /* Number of matchpoints mask */
++#define SPR_DCFGR_NDP1     0x00000000  /* One matchpoint supported */
++#define SPR_DCFGR_NDP2     0x00000001  /* Two matchpoints supported */
++#define SPR_DCFGR_NDP3     0x00000002  /* Three matchpoints supported */
++#define SPR_DCFGR_NDP4     0x00000003  /* Four matchpoints supported */
++#define SPR_DCFGR_NDP5     0x00000004  /* Five matchpoints supported */
++#define SPR_DCFGR_NDP6     0x00000005  /* Six matchpoints supported */
++#define SPR_DCFGR_NDP7     0x00000006  /* Seven matchpoints supported */
++#define SPR_DCFGR_NDP8     0x00000007  /* Eight matchpoints supported */
++#define SPR_DCFGR_WPCI     0x00000008  /* Watchpoint counters implemented */
++
++#define MATCHPOINTS_TO_NDP(n) (1 == n ? SPR_DCFGR_NDP1 : \
++                               2 == n ? SPR_DCFGR_NDP2 : \
++                               3 == n ? SPR_DCFGR_NDP3 : \
++                               4 == n ? SPR_DCFGR_NDP4 : \
++                               5 == n ? SPR_DCFGR_NDP5 : \
++                               6 == n ? SPR_DCFGR_NDP6 : \
++                               7 == n ? SPR_DCFGR_NDP7 : SPR_DCFGR_NDP8)
++#define MAX_MATCHPOINTS  8
++#define MAX_WATCHPOINTS  (MAX_MATCHPOINTS + 2)
++
++/*
++ * Bit definitions for the Supervision Register
++ *
++ */
++#define SPR_SR_SM          0x00000001  /* Supervisor Mode */
++#define SPR_SR_TEE         0x00000002  /* Tick timer Exception Enable */
++#define SPR_SR_IEE         0x00000004  /* Interrupt Exception Enable */
++#define SPR_SR_DCE         0x00000008  /* Data Cache Enable */
++#define SPR_SR_ICE         0x00000010  /* Instruction Cache Enable */
++#define SPR_SR_DME         0x00000020  /* Data MMU Enable */
++#define SPR_SR_IME         0x00000040  /* Instruction MMU Enable */
++#define SPR_SR_LEE         0x00000080  /* Little Endian Enable */
++#define SPR_SR_CE          0x00000100  /* CID Enable */
++#define SPR_SR_F           0x00000200  /* Condition Flag */
++#define SPR_SR_CY          0x00000400  /* Carry flag */
++#define SPR_SR_OV          0x00000800  /* Overflow flag */
++#define SPR_SR_OVE         0x00001000  /* Overflow flag Exception */
++#define SPR_SR_DSX         0x00002000  /* Delay Slot Exception */
++#define SPR_SR_EPH         0x00004000  /* Exception Prefix High */
++#define SPR_SR_FO          0x00008000  /* Fixed one */
++#define SPR_SR_SUMRA       0x00010000  /* Supervisor SPR read access */
++#define SPR_SR_RES         0x0ffe0000  /* Reserved */
++#define SPR_SR_CID         0xf0000000  /* Context ID */
++
++/*
++ * Bit definitions for the Data MMU Control Register
++ *
++ */
++#define SPR_DMMUCR_P2S	   0x0000003e  /* Level 2 Page Size */
++#define SPR_DMMUCR_P1S	   0x000007c0  /* Level 1 Page Size */
++#define SPR_DMMUCR_VADDR_WIDTH	0x0000f800  /* Virtual ADDR Width */
++#define SPR_DMMUCR_PADDR_WIDTH	0x000f0000  /* Physical ADDR Width */
++
++/*
++ * Bit definitions for the Instruction MMU Control Register
++ *
++ */
++#define SPR_IMMUCR_P2S	   0x0000003e  /* Level 2 Page Size */
++#define SPR_IMMUCR_P1S	   0x000007c0  /* Level 1 Page Size */
++#define SPR_IMMUCR_VADDR_WIDTH	0x0000f800  /* Virtual ADDR Width */
++#define SPR_IMMUCR_PADDR_WIDTH	0x000f0000  /* Physical ADDR Width */
++
++/*
++ * Bit definitions for the Data TLB Match Register
++ *
++ */
++#define SPR_DTLBMR_V	   0x00000001  /* Valid */
++#define SPR_DTLBMR_PL1	   0x00000002  /* Page Level 1 (if 0 then PL2) */
++#define SPR_DTLBMR_CID	   0x0000003c  /* Context ID */
++#define SPR_DTLBMR_LRU	   0x000000c0  /* Least Recently Used */
++#define SPR_DTLBMR_VPN	   0xfffff000  /* Virtual Page Number */
++
++/*
++ * Bit definitions for the Data TLB Translate Register
++ *
++ */
++#define SPR_DTLBTR_CC	   0x00000001  /* Cache Coherency */
++#define SPR_DTLBTR_CI	   0x00000002  /* Cache Inhibit */
++#define SPR_DTLBTR_WBC	   0x00000004  /* Write-Back Cache */
++#define SPR_DTLBTR_WOM	   0x00000008  /* Weakly-Ordered Memory */
++#define SPR_DTLBTR_A	   0x00000010  /* Accessed */
++#define SPR_DTLBTR_D	   0x00000020  /* Dirty */
++#define SPR_DTLBTR_URE	   0x00000040  /* User Read Enable */
++#define SPR_DTLBTR_UWE	   0x00000080  /* User Write Enable */
++#define SPR_DTLBTR_SRE	   0x00000100  /* Supervisor Read Enable */
++#define SPR_DTLBTR_SWE	   0x00000200  /* Supervisor Write Enable */
++#define SPR_DTLBTR_PPN	   0xfffff000  /* Physical Page Number */
++
++/*
++ * Bit definitions for the Instruction TLB Match Register
++ *
++ */
++#define SPR_ITLBMR_V	   0x00000001  /* Valid */
++#define SPR_ITLBMR_PL1	   0x00000002  /* Page Level 1 (if 0 then PL2) */
++#define SPR_ITLBMR_CID	   0x0000003c  /* Context ID */
++#define SPR_ITLBMR_LRU	   0x000000c0  /* Least Recently Used */
++#define SPR_ITLBMR_VPN	   0xfffff000  /* Virtual Page Number */
++
++/*
++ * Bit definitions for the Instruction TLB Translate Register
++ *
++ */
++#define SPR_ITLBTR_CC	   0x00000001  /* Cache Coherency */
++#define SPR_ITLBTR_CI	   0x00000002  /* Cache Inhibit */
++#define SPR_ITLBTR_WBC	   0x00000004  /* Write-Back Cache */
++#define SPR_ITLBTR_WOM	   0x00000008  /* Weakly-Ordered Memory */
++#define SPR_ITLBTR_A	   0x00000010  /* Accessed */
++#define SPR_ITLBTR_D	   0x00000020  /* Dirty */
++#define SPR_ITLBTR_SXE	   0x00000040  /* User Read Enable */
++#define SPR_ITLBTR_UXE	   0x00000080  /* User Write Enable */
++#define SPR_ITLBTR_PPN	   0xfffff000  /* Physical Page Number */
++
++/*
++ * Bit definitions for Data Cache Control register
++ *
++ */
++#define SPR_DCCR_EW	   0x000000ff  /* Enable ways */
++
++/*
++ * Bit definitions for Insn Cache Control register
++ *
++ */
++#define SPR_ICCR_EW	   0x000000ff  /* Enable ways */
++
++/*
++ * Bit definitions for Data Cache Configuration Register
++ *
++ */
++
++#define SPR_DCCFGR_NCW		0x00000007
++#define SPR_DCCFGR_NCS		0x00000078
++#define SPR_DCCFGR_CBS		0x00000080
++#define SPR_DCCFGR_CWS		0x00000100
++#define SPR_DCCFGR_CCRI		0x00000200
++#define SPR_DCCFGR_CBIRI	0x00000400
++#define SPR_DCCFGR_CBPRI	0x00000800
++#define SPR_DCCFGR_CBLRI	0x00001000
++#define SPR_DCCFGR_CBFRI	0x00002000
++#define SPR_DCCFGR_CBWBRI	0x00004000
++
++#define SPR_DCCFGR_NCW_OFF      0
++#define SPR_DCCFGR_NCS_OFF      3
++#define SPR_DCCFGR_CBS_OFF	7
++
++/*
++ * Bit definitions for Instruction Cache Configuration Register
++ *
++ */
++#define SPR_ICCFGR_NCW		0x00000007
++#define SPR_ICCFGR_NCS		0x00000078
++#define SPR_ICCFGR_CBS		0x00000080
++#define SPR_ICCFGR_CCRI		0x00000200
++#define SPR_ICCFGR_CBIRI	0x00000400
++#define SPR_ICCFGR_CBPRI	0x00000800
++#define SPR_ICCFGR_CBLRI	0x00001000
++
++#define SPR_ICCFGR_NCW_OFF      0
++#define SPR_ICCFGR_NCS_OFF      3
++#define SPR_ICCFGR_CBS_OFF	7
++
++/*
++ * Bit definitions for Data MMU Configuration Register
++ *
++ */
++
++#define SPR_DMMUCFGR_NTW	0x00000003
++#define SPR_DMMUCFGR_NTS	0x0000001C
++#define SPR_DMMUCFGR_NAE	0x000000E0
++#define SPR_DMMUCFGR_CRI	0x00000100
++#define SPR_DMMUCFGR_PRI        0x00000200
++#define SPR_DMMUCFGR_TEIRI	0x00000400
++#define SPR_DMMUCFGR_HTR	0x00000800
++
++#define SPR_DMMUCFGR_NTW_OFF	0
++#define SPR_DMMUCFGR_NTS_OFF	2
++
++/*
++ * Bit definitions for Instruction MMU Configuration Register
++ *
++ */
++
++#define SPR_IMMUCFGR_NTW	0x00000003
++#define SPR_IMMUCFGR_NTS	0x0000001C
++#define SPR_IMMUCFGR_NAE	0x000000E0
++#define SPR_IMMUCFGR_CRI	0x00000100
++#define SPR_IMMUCFGR_PRI	0x00000200
++#define SPR_IMMUCFGR_TEIRI	0x00000400
++#define SPR_IMMUCFGR_HTR	0x00000800
++
++#define SPR_IMMUCFGR_NTW_OFF	0
++#define SPR_IMMUCFGR_NTS_OFF	2
++
++/*
++ * Bit definitions for Debug Control registers
++ *
++ */
++#define SPR_DCR_DP	0x00000001  /* DVR/DCR present */
++#define SPR_DCR_CC	0x0000000e  /* Compare condition */
++#define SPR_DCR_SC	0x00000010  /* Signed compare */
++#define SPR_DCR_CT	0x000000e0  /* Compare to */
++
++/* Bit results with SPR_DCR_CC mask */
++#define SPR_DCR_CC_MASKED 0x00000000
++#define SPR_DCR_CC_EQUAL  0x00000002
++#define SPR_DCR_CC_LESS   0x00000004
++#define SPR_DCR_CC_LESSE  0x00000006
++#define SPR_DCR_CC_GREAT  0x00000008
++#define SPR_DCR_CC_GREATE 0x0000000a
++#define SPR_DCR_CC_NEQUAL 0x0000000c
++
++/* Bit results with SPR_DCR_CT mask */
++#define SPR_DCR_CT_DISABLED 0x00000000
++#define SPR_DCR_CT_IFEA     0x00000020
++#define SPR_DCR_CT_LEA      0x00000040
++#define SPR_DCR_CT_SEA      0x00000060
++#define SPR_DCR_CT_LD       0x00000080
++#define SPR_DCR_CT_SD       0x000000a0
++#define SPR_DCR_CT_LSEA     0x000000c0
++#define SPR_DCR_CT_LSD	    0x000000e0
++/* SPR_DCR_CT_LSD doesn't seem to be implemented anywhere in or1ksim. 2004-1-30 HP */
++
++/*
++ * Bit definitions for Debug Mode 1 register
++ *
++ */
++#define SPR_DMR1_CW       0x000fffff  /* Chain register pair data */
++#define SPR_DMR1_CW0_AND  0x00000001
++#define SPR_DMR1_CW0_OR   0x00000002
++#define SPR_DMR1_CW0      (SPR_DMR1_CW0_AND | SPR_DMR1_CW0_OR)
++#define SPR_DMR1_CW1_AND  0x00000004
++#define SPR_DMR1_CW1_OR   0x00000008
++#define SPR_DMR1_CW1      (SPR_DMR1_CW1_AND | SPR_DMR1_CW1_OR)
++#define SPR_DMR1_CW2_AND  0x00000010
++#define SPR_DMR1_CW2_OR   0x00000020
++#define SPR_DMR1_CW2      (SPR_DMR1_CW2_AND | SPR_DMR1_CW2_OR)
++#define SPR_DMR1_CW3_AND  0x00000040
++#define SPR_DMR1_CW3_OR   0x00000080
++#define SPR_DMR1_CW3      (SPR_DMR1_CW3_AND | SPR_DMR1_CW3_OR)
++#define SPR_DMR1_CW4_AND  0x00000100
++#define SPR_DMR1_CW4_OR   0x00000200
++#define SPR_DMR1_CW4      (SPR_DMR1_CW4_AND | SPR_DMR1_CW4_OR)
++#define SPR_DMR1_CW5_AND  0x00000400
++#define SPR_DMR1_CW5_OR   0x00000800
++#define SPR_DMR1_CW5      (SPR_DMR1_CW5_AND | SPR_DMR1_CW5_OR)
++#define SPR_DMR1_CW6_AND  0x00001000
++#define SPR_DMR1_CW6_OR   0x00002000
++#define SPR_DMR1_CW6      (SPR_DMR1_CW6_AND | SPR_DMR1_CW6_OR)
++#define SPR_DMR1_CW7_AND  0x00004000
++#define SPR_DMR1_CW7_OR   0x00008000
++#define SPR_DMR1_CW7      (SPR_DMR1_CW7_AND | SPR_DMR1_CW7_OR)
++#define SPR_DMR1_CW8_AND  0x00010000
++#define SPR_DMR1_CW8_OR   0x00020000
++#define SPR_DMR1_CW8      (SPR_DMR1_CW8_AND | SPR_DMR1_CW8_OR)
++#define SPR_DMR1_CW9_AND  0x00040000
++#define SPR_DMR1_CW9_OR   0x00080000
++#define SPR_DMR1_CW9      (SPR_DMR1_CW9_AND | SPR_DMR1_CW9_OR)
++#define SPR_DMR1_RES1      0x00300000  /* Reserved */
++#define SPR_DMR1_ST	  0x00400000  /* Single-step trace*/
++#define SPR_DMR1_BT	  0x00800000  /* Branch trace */
++#define SPR_DMR1_RES2	  0xff000000  /* Reserved */
++
++/*
++ * Bit definitions for Debug Mode 2 register. AWTC and WGB corrected by JPB
++ *
++ */
++#define SPR_DMR2_WCE0	   0x00000001  /* Watchpoint counter 0 enable */
++#define SPR_DMR2_WCE1	   0x00000002  /* Watchpoint counter 0 enable */
++#define SPR_DMR2_AWTC	   0x00000ffc  /* Assign watchpoints to counters */
++#define SPR_DMR2_AWTC_OFF           2  /* Bit offset to AWTC field */
++#define SPR_DMR2_WGB	   0x003ff000  /* Watchpoints generating breakpoint */
++#define SPR_DMR2_WGB_OFF           12  /* Bit offset to WGB field */
++#define SPR_DMR2_WBS	   0xffc00000  /* JPB: Watchpoint status */
++#define SPR_DMR2_WBS_OFF           22  /* Bit offset to WBS field */
++
++/*
++ * Bit definitions for Debug watchpoint counter registers
++ *
++ */
++#define SPR_DWCR_COUNT	    0x0000ffff  /* Count */
++#define SPR_DWCR_MATCH	    0xffff0000  /* Match */
++#define SPR_DWCR_MATCH_OFF          16  /* Match bit offset */
++
++/*
++ * Bit definitions for Debug stop register
++ *
++ */
++#define SPR_DSR_RSTE	0x00000001  /* Reset exception */
++#define SPR_DSR_BUSEE	0x00000002  /* Bus error exception */
++#define SPR_DSR_DPFE	0x00000004  /* Data Page Fault exception */
++#define SPR_DSR_IPFE	0x00000008  /* Insn Page Fault exception */
++#define SPR_DSR_TTE	0x00000010  /* Tick Timer exception */
++#define SPR_DSR_AE	0x00000020  /* Alignment exception */
++#define SPR_DSR_IIE	0x00000040  /* Illegal Instruction exception */
++#define SPR_DSR_IE	0x00000080  /* Interrupt exception */
++#define SPR_DSR_DME	0x00000100  /* DTLB miss exception */
++#define SPR_DSR_IME	0x00000200  /* ITLB miss exception */
++#define SPR_DSR_RE	0x00000400  /* Range exception */
++#define SPR_DSR_SCE	0x00000800  /* System call exception */
++#define SPR_DSR_FPE     0x00001000  /* Floating Point Exception */
++#define SPR_DSR_TE	0x00002000  /* Trap exception */
++
++/*
++ * Bit definitions for Debug reason register
++ *
++ */
++#define SPR_DRR_RSTE	0x00000001  /* Reset exception */
++#define SPR_DRR_BUSEE	0x00000002  /* Bus error exception */
++#define SPR_DRR_DPFE	0x00000004  /* Data Page Fault exception */
++#define SPR_DRR_IPFE	0x00000008  /* Insn Page Fault exception */
++#define SPR_DRR_TTE	0x00000010  /* Tick Timer exception */
++#define SPR_DRR_AE	0x00000020  /* Alignment exception */
++#define SPR_DRR_IIE	0x00000040  /* Illegal Instruction exception */
++#define SPR_DRR_IE	0x00000080  /* Interrupt exception */
++#define SPR_DRR_DME	0x00000100  /* DTLB miss exception */
++#define SPR_DRR_IME	0x00000200  /* ITLB miss exception */
++#define SPR_DRR_RE	0x00000400  /* Range exception */
++#define SPR_DRR_SCE	0x00000800  /* System call exception */
++#define SPR_DRR_FPE     0x00001000  /* Floating Point Exception */
++#define SPR_DRR_TE	0x00002000  /* Trap exception */
++
++/*
++ * Bit definitions for Performance counters mode registers
++ *
++ */
++#define SPR_PCMR_CP	0x00000001  /* Counter present */
++#define SPR_PCMR_UMRA	0x00000002  /* User mode read access */
++#define SPR_PCMR_CISM	0x00000004  /* Count in supervisor mode */
++#define SPR_PCMR_CIUM	0x00000008  /* Count in user mode */
++#define SPR_PCMR_LA	0x00000010  /* Load access event */
++#define SPR_PCMR_SA	0x00000020  /* Store access event */
++#define SPR_PCMR_IF	0x00000040  /* Instruction fetch event*/
++#define SPR_PCMR_DCM	0x00000080  /* Data cache miss event */
++#define SPR_PCMR_ICM	0x00000100  /* Insn cache miss event */
++#define SPR_PCMR_IFS	0x00000200  /* Insn fetch stall event */
++#define SPR_PCMR_LSUS	0x00000400  /* LSU stall event */
++#define SPR_PCMR_BS	0x00000800  /* Branch stall event */
++#define SPR_PCMR_DTLBM	0x00001000  /* DTLB miss event */
++#define SPR_PCMR_ITLBM	0x00002000  /* ITLB miss event */
++#define SPR_PCMR_DDS	0x00004000  /* Data dependency stall event */
++#define SPR_PCMR_WPE	0x03ff8000  /* Watchpoint events */
++
++/*
++ * Bit definitions for the Power management register
++ *
++ */
++#define SPR_PMR_SDF	0x0000000f  /* Slow down factor */
++#define SPR_PMR_DME	0x00000010  /* Doze mode enable */
++#define SPR_PMR_SME	0x00000020  /* Sleep mode enable */
++#define SPR_PMR_DCGE	0x00000040  /* Dynamic clock gating enable */
++#define SPR_PMR_SUME	0x00000080  /* Suspend mode enable */
++
++/*
++ * Bit definitions for PICMR
++ *
++ */
++#define SPR_PICMR_IUM	0xfffffffc  /* Interrupt unmask */
++
++/*
++ * Bit definitions for PICPR
++ *
++ */
++#define SPR_PICPR_IPRIO	0xfffffffc  /* Interrupt priority */
++
++/*
++ * Bit definitions for PICSR
++ *
++ */
++#define SPR_PICSR_IS	0xffffffff  /* Interrupt status */
++
++/*
++ * Bit definitions for Tick Timer Control Register
++ *
++ */
++
++#define SPR_TTCR_CNT	0xffffffff  /* Count, time period */
++#define SPR_TTMR_TP	0x0fffffff  /* Time period */
++#define SPR_TTMR_IP	0x10000000  /* Interrupt Pending */
++#define SPR_TTMR_IE	0x20000000  /* Interrupt Enable */
++#define SPR_TTMR_DI	0x00000000  /* Disabled */
++#define SPR_TTMR_RT	0x40000000  /* Restart tick */
++#define SPR_TTMR_SR     0x80000000  /* Single run */
++#define SPR_TTMR_CR     0xc0000000  /* Continuous run */
++#define SPR_TTMR_M      0xc0000000  /* Tick mode */
++
++/*
++ * Bit definitions for the FP Control Status Register
++ *
++ */
++#define SPR_FPCSR_FPEE  0x00000001  /* Floating Point Exception Enable */
++#define SPR_FPCSR_RM    0x00000006  /* Rounding Mode */
++#define SPR_FPCSR_OVF   0x00000008  /* Overflow Flag */
++#define SPR_FPCSR_UNF   0x00000010  /* Underflow Flag */
++#define SPR_FPCSR_SNF   0x00000020  /* SNAN Flag */
++#define SPR_FPCSR_QNF   0x00000040  /* QNAN Flag */
++#define SPR_FPCSR_ZF    0x00000080  /* Zero Flag */
++#define SPR_FPCSR_IXF   0x00000100  /* Inexact Flag */
++#define SPR_FPCSR_IVF   0x00000200  /* Invalid Flag */
++#define SPR_FPCSR_INF   0x00000400  /* Infinity Flag */
++#define SPR_FPCSR_DZF   0x00000800  /* Divide By Zero Flag */
++#define SPR_FPCSR_ALLF (SPR_FPCSR_OVF | SPR_FPCSR_UNF | SPR_FPCSR_SNF | \
++			SPR_FPCSR_QNF | SPR_FPCSR_ZF | SPR_FPCSR_IXF |  \
++			SPR_FPCSR_IVF | SPR_FPCSR_INF | SPR_FPCSR_DZF)
++
++#define FPCSR_RM_RN (0<<1)
++#define FPCSR_RM_RZ (1<<1)
++#define FPCSR_RM_RIP (2<<1)
++#define FPCSR_RM_RIN (3<<1)
++
++/*
++ * l.nop constants
++ *
++ */
++#define NOP_NOP          0x0000      /* Normal nop instruction */
++#define NOP_EXIT         0x0001      /* End of simulation */
++#define NOP_REPORT       0x0002      /* Simple report */
++/*#define NOP_PRINTF       0x0003       Simprintf instruction (obsolete)*/
++#define NOP_PUTC         0x0004      /* JPB: Simputc instruction */
++#define NOP_CNT_RESET    0x0005	     /* Reset statistics counters */
++#define NOP_GET_TICKS    0x0006	     /* JPB: Get # ticks running */
++#define NOP_GET_PS       0x0007      /* JPB: Get picosecs/cycle */
++#define NOP_REPORT_FIRST 0x0400      /* Report with number */
++#define NOP_REPORT_LAST  0x03ff      /* Report with number */
++
++#endif	/* SPR_DEFS__H */
+diff --git a/arch/openrisc/include/asm/system.h b/arch/openrisc/include/asm/system.h
+new file mode 100644
+index 0000000..cf65888
+--- /dev/null
++++ b/arch/openrisc/include/asm/system.h
+@@ -0,0 +1,35 @@
++/*
++ * OpenRISC Linux
++ *
++ * Linux architectural port borrowing liberally from similar works of
++ * others.  All original copyrights apply as per the original source
++ * declaration.
++ *
++ * OpenRISC implementation:
++ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ * et al.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef __ASM_OPENRISC_SYSTEM_H
++#define __ASM_OPENRISC_SYSTEM_H
++
++#ifdef __KERNEL__
++#ifndef __ASSEMBLY__
++
++#include <asm/spr.h>
++#include <asm-generic/system.h>
++
++/* We probably need this definition, but the generic system.h provides it
++ * and it's not used on our arch anyway...
++ */
++/*#define nop() __asm__ __volatile__ ("l.nop"::)*/
++
++#endif /* __ASSEMBLY__ */
++#endif /* __KERNEL__ */
++#endif /* __ASM_OPENRISC_SYSTEM_H */
+diff --git a/arch/openrisc/include/asm/unaligned.h b/arch/openrisc/include/asm/unaligned.h
+new file mode 100644
+index 0000000..1141cbd
+--- /dev/null
++++ b/arch/openrisc/include/asm/unaligned.h
+@@ -0,0 +1,51 @@
++/*
++ * OpenRISC Linux
++ *
++ * Linux architectural port borrowing liberally from similar works of
++ * others.  All original copyrights apply as per the original source
++ * declaration.
++ *
++ * OpenRISC implementation:
++ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ * et al.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef __ASM_OPENRISC_UNALIGNED_H
++#define __ASM_OPENRISC_UNALIGNED_H
++
++/*
++ * This is copied from the generic implementation and the C-struct
++ * variant replaced with the memmove variant.  The GCC compiler
++ * for the OR32 arch optimizes too aggressively for the C-struct
++ * variant to work, so use the memmove variant instead.
++ *
++ * It may be worth considering implementing the unaligned access
++ * exception handler and allowing unaligned accesses (access_ok.h)...
++ * not sure if it would be much of a performance win without further
++ * investigation.
++ */
++#include <asm/byteorder.h>
++
++#if defined(__LITTLE_ENDIAN)
++# include <linux/unaligned/le_memmove.h>
++# include <linux/unaligned/be_byteshift.h>
++# include <linux/unaligned/generic.h>
++# define get_unaligned	__get_unaligned_le
++# define put_unaligned	__put_unaligned_le
++#elif defined(__BIG_ENDIAN)
++# include <linux/unaligned/be_memmove.h>
++# include <linux/unaligned/le_byteshift.h>
++# include <linux/unaligned/generic.h>
++# define get_unaligned	__get_unaligned_be
++# define put_unaligned	__put_unaligned_be
++#else
++# error need to define endianess
++#endif
++
++#endif /* __ASM_OPENRISC_UNALIGNED_H */
+diff --git a/arch/openrisc/kernel/vmlinux.h b/arch/openrisc/kernel/vmlinux.h
+new file mode 100644
+index 0000000..ee842a2
+--- /dev/null
++++ b/arch/openrisc/kernel/vmlinux.h
+@@ -0,0 +1,12 @@
++#ifndef __OPENRISC_VMLINUX_H_
++#define __OPENRISC_VMLINUX_H_
++
++extern char _stext, _etext, _edata, _end;
++#ifdef CONFIG_BLK_DEV_INITRD
++extern char __initrd_start, __initrd_end;
++extern char __initramfs_start;
++#endif
++
++extern u32 __dtb_start[];
++
++#endif
 -- 
 1.7.4.1
 
