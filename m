@@ -1,88 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752987Ab1GQHqN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jul 2011 03:46:13 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:46934 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752243Ab1GQHqM (ORCPT
+	id S1753386Ab1GQIWY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jul 2011 04:22:24 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59085 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752299Ab1GQIWV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jul 2011 03:46:12 -0400
+	Sun, 17 Jul 2011 04:22:21 -0400
 MIME-Version: 1.0
-Date: Sun, 17 Jul 2011 15:46:11 +0800
-Message-ID: <CAM_iQpX_0U26_1yX+VJwhkkA7Un6Mj53AqPpRK36ONM32u4BKA@mail.gmail.com>
-Subject: [Patch] fix a headers_check warning in include/linux/kernel.h
+Date: Sun, 17 Jul 2011 16:22:20 +0800
+Message-ID: <CAM_iQpWDrhHw8-Hf4q1miHR+rT33wQb=ZSb=ffsxaSak=UHPMw@mail.gmail.com>
+Subject: [Patch] include/linux/sdla.h: remove the prototype of sdla()
 From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
 To: Michal Marek <mmarek@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=001517740bf68cccf604a83f13ff
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Linux Kernel Network Developers <netdev@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=001517740bf6d735a504a83f942f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001517740bf68cccf604a83f13ff
+--001517740bf6d735a504a83f942f
 Content-Type: text/plain; charset=UTF-8
 
-This fixes the warning:
+`make headers_check` complains that
 
-linux-2.6/usr/include/linux/kernel.h:65: userspace cannot reference
+linux-2.6/usr/include/linux/sdla.h:116: userspace cannot reference
 function or variable defined in the kernel
 
-As Michal noted, BUILD_BUG_ON stuffs should be moved
-under #ifdef __KERNEL__.
+this is due to that there is no such a kernel function,
+
+void sdla(void *cfg_info, char *dev, struct frad_conf *conf, int quiet);
+
+I don't know why we have it in a kernel header, so remove it.
 
 Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
 
---001517740bf68cccf604a83f13ff
+--001517740bf6d735a504a83f942f
 Content-Type: text/x-patch; charset=US-ASCII; 
-	name="include-linux-kernel_h-fix-headers-check-warning.diff"
+	name="include-linux-sdla_h-fix-headers-check-warning.diff"
 Content-Disposition: attachment; 
-	filename="include-linux-kernel_h-fix-headers-check-warning.diff"
+	filename="include-linux-sdla_h-fix-headers-check-warning.diff"
 Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gq7pb5ku0
+X-Attachment-Id: f_gq7qm20t0
 
-ZGlmZiAtLWdpdCBhL2luY2x1ZGUvbGludXgva2VybmVsLmggYi9pbmNsdWRlL2xpbnV4L2tlcm5l
-bC5oCmluZGV4IDk1MzM1MmEuLjc0OGQwMDQgMTAwNjQ0Ci0tLSBhL2luY2x1ZGUvbGludXgva2Vy
-bmVsLmgKKysrIGIvaW5jbHVkZS9saW51eC9rZXJuZWwuaApAQCAtNjQ2LDI5ICs2NDYsNiBAQCBz
-dGF0aWMgaW5saW5lIHZvaWQgZnRyYWNlX2R1bXAoZW51bSBmdHJhY2VfZHVtcF9tb2RlIG9vcHNf
-ZHVtcF9tb2RlKSB7IH0KIAljb25zdCB0eXBlb2YoICgodHlwZSAqKTApLT5tZW1iZXIgKSAqX19t
-cHRyID0gKHB0cik7CVwKIAkodHlwZSAqKSggKGNoYXIgKilfX21wdHIgLSBvZmZzZXRvZih0eXBl
-LG1lbWJlcikgKTt9KQogCi1zdHJ1Y3Qgc3lzaW5mbzsKLWV4dGVybiBpbnQgZG9fc3lzaW5mbyhz
-dHJ1Y3Qgc3lzaW5mbyAqaW5mbyk7Ci0KLSNlbmRpZiAvKiBfX0tFUk5FTF9fICovCi0KLSNkZWZp
-bmUgU0lfTE9BRF9TSElGVAkxNgotc3RydWN0IHN5c2luZm8gewotCWxvbmcgdXB0aW1lOwkJCS8q
-IFNlY29uZHMgc2luY2UgYm9vdCAqLwotCXVuc2lnbmVkIGxvbmcgbG9hZHNbM107CQkvKiAxLCA1
-LCBhbmQgMTUgbWludXRlIGxvYWQgYXZlcmFnZXMgKi8KLQl1bnNpZ25lZCBsb25nIHRvdGFscmFt
-OwkJLyogVG90YWwgdXNhYmxlIG1haW4gbWVtb3J5IHNpemUgKi8KLQl1bnNpZ25lZCBsb25nIGZy
-ZWVyYW07CQkvKiBBdmFpbGFibGUgbWVtb3J5IHNpemUgKi8KLQl1bnNpZ25lZCBsb25nIHNoYXJl
-ZHJhbTsJLyogQW1vdW50IG9mIHNoYXJlZCBtZW1vcnkgKi8KLQl1bnNpZ25lZCBsb25nIGJ1ZmZl
-cnJhbTsJLyogTWVtb3J5IHVzZWQgYnkgYnVmZmVycyAqLwotCXVuc2lnbmVkIGxvbmcgdG90YWxz
-d2FwOwkvKiBUb3RhbCBzd2FwIHNwYWNlIHNpemUgKi8KLQl1bnNpZ25lZCBsb25nIGZyZWVzd2Fw
-OwkJLyogc3dhcCBzcGFjZSBzdGlsbCBhdmFpbGFibGUgKi8KLQl1bnNpZ25lZCBzaG9ydCBwcm9j
-czsJCS8qIE51bWJlciBvZiBjdXJyZW50IHByb2Nlc3NlcyAqLwotCXVuc2lnbmVkIHNob3J0IHBh
-ZDsJCS8qIGV4cGxpY2l0IHBhZGRpbmcgZm9yIG02OGsgKi8KLQl1bnNpZ25lZCBsb25nIHRvdGFs
-aGlnaDsJLyogVG90YWwgaGlnaCBtZW1vcnkgc2l6ZSAqLwotCXVuc2lnbmVkIGxvbmcgZnJlZWhp
-Z2g7CQkvKiBBdmFpbGFibGUgaGlnaCBtZW1vcnkgc2l6ZSAqLwotCXVuc2lnbmVkIGludCBtZW1f
-dW5pdDsJCS8qIE1lbW9yeSB1bml0IHNpemUgaW4gYnl0ZXMgKi8KLQljaGFyIF9mWzIwLTIqc2l6
-ZW9mKGxvbmcpLXNpemVvZihpbnQpXTsJLyogUGFkZGluZzogbGliYzUgdXNlcyB0aGlzLi4gKi8K
-LX07Ci0KICNpZmRlZiBfX0NIRUNLRVJfXwogI2RlZmluZSBCVUlMRF9CVUdfT05fTk9UX1BPV0VS
-X09GXzIobikKICNkZWZpbmUgQlVJTERfQlVHX09OX1pFUk8oZSkgKDApCkBAIC03MTQsNiArNjkx
-LDMwIEBAIGV4dGVybiBpbnQgX19idWlsZF9idWdfb25fZmFpbGVkOwogI2VuZGlmCiAjZW5kaWYJ
-LyogX19DSEVDS0VSX18gKi8KIAorCitzdHJ1Y3Qgc3lzaW5mbzsKK2V4dGVybiBpbnQgZG9fc3lz
-aW5mbyhzdHJ1Y3Qgc3lzaW5mbyAqaW5mbyk7CisKKyNlbmRpZiAvKiBfX0tFUk5FTF9fICovCisK
-KyNkZWZpbmUgU0lfTE9BRF9TSElGVAkxNgorc3RydWN0IHN5c2luZm8geworCWxvbmcgdXB0aW1l
-OwkJCS8qIFNlY29uZHMgc2luY2UgYm9vdCAqLworCXVuc2lnbmVkIGxvbmcgbG9hZHNbM107CQkv
-KiAxLCA1LCBhbmQgMTUgbWludXRlIGxvYWQgYXZlcmFnZXMgKi8KKwl1bnNpZ25lZCBsb25nIHRv
-dGFscmFtOwkJLyogVG90YWwgdXNhYmxlIG1haW4gbWVtb3J5IHNpemUgKi8KKwl1bnNpZ25lZCBs
-b25nIGZyZWVyYW07CQkvKiBBdmFpbGFibGUgbWVtb3J5IHNpemUgKi8KKwl1bnNpZ25lZCBsb25n
-IHNoYXJlZHJhbTsJLyogQW1vdW50IG9mIHNoYXJlZCBtZW1vcnkgKi8KKwl1bnNpZ25lZCBsb25n
-IGJ1ZmZlcnJhbTsJLyogTWVtb3J5IHVzZWQgYnkgYnVmZmVycyAqLworCXVuc2lnbmVkIGxvbmcg
-dG90YWxzd2FwOwkvKiBUb3RhbCBzd2FwIHNwYWNlIHNpemUgKi8KKwl1bnNpZ25lZCBsb25nIGZy
-ZWVzd2FwOwkJLyogc3dhcCBzcGFjZSBzdGlsbCBhdmFpbGFibGUgKi8KKwl1bnNpZ25lZCBzaG9y
-dCBwcm9jczsJCS8qIE51bWJlciBvZiBjdXJyZW50IHByb2Nlc3NlcyAqLworCXVuc2lnbmVkIHNo
-b3J0IHBhZDsJCS8qIGV4cGxpY2l0IHBhZGRpbmcgZm9yIG02OGsgKi8KKwl1bnNpZ25lZCBsb25n
-IHRvdGFsaGlnaDsJLyogVG90YWwgaGlnaCBtZW1vcnkgc2l6ZSAqLworCXVuc2lnbmVkIGxvbmcg
-ZnJlZWhpZ2g7CQkvKiBBdmFpbGFibGUgaGlnaCBtZW1vcnkgc2l6ZSAqLworCXVuc2lnbmVkIGlu
-dCBtZW1fdW5pdDsJCS8qIE1lbW9yeSB1bml0IHNpemUgaW4gYnl0ZXMgKi8KKwljaGFyIF9mWzIw
-LTIqc2l6ZW9mKGxvbmcpLXNpemVvZihpbnQpXTsJLyogUGFkZGluZzogbGliYzUgdXNlcyB0aGlz
-Li4gKi8KK307CisKIC8qIFRyYXAgcGFzdGVycyBvZiBfX0ZVTkNUSU9OX18gYXQgY29tcGlsZS10
-aW1lICovCiAjZGVmaW5lIF9fRlVOQ1RJT05fXyAoX19mdW5jX18pCiAK
---001517740bf68cccf604a83f13ff--
+ZGlmZiAtLWdpdCBhL2luY2x1ZGUvbGludXgvc2RsYS5oIGIvaW5jbHVkZS9saW51eC9zZGxhLmgK
+aW5kZXggNTY0YWNkMy4uOTk5NWM3ZiAxMDA2NDQKLS0tIGEvaW5jbHVkZS9saW51eC9zZGxhLmgK
+KysrIGIvaW5jbHVkZS9saW51eC9zZGxhLmgKQEAgLTExMiwxMSArMTEyLDcgQEAgc3RydWN0IHNk
+bGFfZGxjaV9jb25mIHsKICAgIHNob3J0IFRiX21heDsKIH07CiAKLSNpZm5kZWYgX19LRVJORUxf
+XwotCi12b2lkIHNkbGEodm9pZCAqY2ZnX2luZm8sIGNoYXIgKmRldiwgc3RydWN0IGZyYWRfY29u
+ZiAqY29uZiwgaW50IHF1aWV0KTsKLQotI2Vsc2UKKyNpZmRlZiBfX0tFUk5FTF9fCiAKIC8qIGlt
+cG9ydGFudCBaODAgd2luZG93IGFkZHJlc3NlcyAqLwogI2RlZmluZSBTRExBX0NPTlRST0xfV05E
+CQkweEUwMDAK
+--001517740bf6d735a504a83f942f--
