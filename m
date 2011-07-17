@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753674Ab1GQPMQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jul 2011 11:12:16 -0400
-Received: from mail.southpole.se ([193.12.106.18]:34893 "EHLO
+	id S1755734Ab1GQPMc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jul 2011 11:12:32 -0400
+Received: from mail.southpole.se ([193.12.106.18]:34891 "EHLO
 	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756038Ab1GQPJe (ORCPT
+	with ESMTP id S1756027Ab1GQPJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jul 2011 11:09:34 -0400
+	Sun, 17 Jul 2011 11:09:33 -0400
 From: Jonas Bonn <jonas@southpole.se>
 To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Cc: Jonas Bonn <jonas@southpole.se>, tglx@linutronix.de
-Subject: [PATCH v3 08/19] OpenRISC: Timekeeping
-Date: Sun, 17 Jul 2011 17:08:18 +0200
-Message-Id: <917b64b2af5bf8569188cfa398ad0659e682b768.1310913472.git.jonas@southpole.se>
+Cc: Jonas Bonn <jonas@southpole.se>
+Subject: [PATCH v3 06/19] OpenRISC: PTrace
+Date: Sun, 17 Jul 2011 17:08:16 +0200
+Message-Id: <13d338b955ae0f6b9ee1eda6aede2ee2be33c446.1310913472.git.jonas@southpole.se>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <cover.1310913472.git.jonas@southpole.se>
 References: <cover.1310913472.git.jonas@southpole.se>
@@ -24,26 +24,29 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Implements support for the OpenRISC timer which is a 28 bit cycle counter
-that can be read out of a special purpose register.  This counter is
-used as a both a clock event and clocksource device.
+This patch implements minimal PTrace support.  The pt_regs structure is
+not exported to userspace for OpenRISC; rather, the GETREGSET mechanism
+is intended to be used and the registers, as such, exported in the core
+dump format which is ABI stable.  This is in line with what is intended
+for new architectures as of 2.6.34 and has the advantage of permitting
+the layout of the registers on the kernel stack (as per pt_regs) to be
+freely modified.
 
 Signed-off-by: Jonas Bonn <jonas@southpole.se>
-Cc: tglx@linutronix.de
 Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/openrisc/include/asm/timex.h |   36 ++++++++
- arch/openrisc/kernel/time.c       |  181 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 217 insertions(+), 0 deletions(-)
- create mode 100644 arch/openrisc/include/asm/timex.h
- create mode 100644 arch/openrisc/kernel/time.c
+ arch/openrisc/include/asm/ptrace.h |  131 ++++++++++++++++++++++
+ arch/openrisc/kernel/ptrace.c      |  211 ++++++++++++++++++++++++++++++++++++
+ 2 files changed, 342 insertions(+), 0 deletions(-)
+ create mode 100644 arch/openrisc/include/asm/ptrace.h
+ create mode 100644 arch/openrisc/kernel/ptrace.c
 
-diff --git a/arch/openrisc/include/asm/timex.h b/arch/openrisc/include/asm/timex.h
+diff --git a/arch/openrisc/include/asm/ptrace.h b/arch/openrisc/include/asm/ptrace.h
 new file mode 100644
-index 0000000..9935cad
+index 0000000..054537c
 --- /dev/null
-+++ b/arch/openrisc/include/asm/timex.h
-@@ -0,0 +1,36 @@
++++ b/arch/openrisc/include/asm/ptrace.h
+@@ -0,0 +1,131 @@
 +/*
 + * OpenRISC Linux
 + *
@@ -52,7 +55,9 @@ index 0000000..9935cad
 + * declaration.
 + *
 + * OpenRISC implementation:
++ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
 + * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ * et al.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License as published by
@@ -60,40 +65,135 @@ index 0000000..9935cad
 + * (at your option) any later version.
 + */
 +
-+#ifndef __ASM_OPENRISC_TIMEX_H
-+#define __ASM_OPENRISC_TIMEX_H
++#ifndef __ASM_OPENRISC_PTRACE_H
++#define __ASM_OPENRISC_PTRACE_H
 +
-+#define get_cycles get_cycles
-+
-+#include <asm-generic/timex.h>
-+#include <asm/spr.h>
 +#include <asm/spr_defs.h>
 +
-+static inline cycles_t get_cycles(void)
-+{
-+	return mfspr(SPR_TTCR);
-+}
-+
-+/* This isn't really used any more */
-+#define CLOCK_TICK_RATE 1000
-+
-+#define ARCH_HAS_READ_CURRENT_TIMER
-+
-+#endif
-diff --git a/arch/openrisc/kernel/time.c b/arch/openrisc/kernel/time.c
-new file mode 100644
-index 0000000..bd946ef
---- /dev/null
-+++ b/arch/openrisc/kernel/time.c
-@@ -0,0 +1,181 @@
++#ifndef __ASSEMBLY__
 +/*
-+ * OpenRISC time.c
++ * This is the layout of the regset returned by the GETREGSET ptrace call
++ */
++struct user_regs_struct {
++	/* GPR R0-R31... */
++	unsigned long gpr[32];
++	unsigned long pc;
++	unsigned long sr;
++	unsigned long pad1;
++	unsigned long pad2;
++};
++#endif
++
++#ifdef __KERNEL__
++
++/*
++ * Make kernel PTrace/register structures opaque to userspace... userspace can
++ * access thread state via the regset mechanism.  This allows us a bit of
++ * flexibility in how we order the registers on the stack, permitting some
++ * optimizations like packing call-clobbered registers together so that
++ * they share a cacheline (not done yet, though... future optimization).
++ */
++
++#ifndef __ASSEMBLY__
++/*
++ * This struct describes how the registers are laid out on the kernel stack
++ * during a syscall or other kernel entry.
++ *
++ * This structure should always be cacheline aligned on the stack.
++ * FIXME: I don't think that's the case right now.  The alignment is
++ * taken care of elsewhere... head.S, process.c, etc.
++ */
++
++struct pt_regs {
++	union {
++		struct {
++			/* Named registers */
++			long  sr;	/* Stored in place of r0 */
++			long  sp;	/* r1 */
++		};
++		struct {
++			/* Old style */
++			long offset[2];
++			long gprs[30];
++		};
++		struct {
++			/* New style */
++			long gpr[32];
++		};
++	};
++	long  pc;
++	long  orig_gpr11;	/* For restarting system calls */
++	long  syscallno;	/* Syscall number (used by strace) */
++	long dummy;		/* Cheap alignment fix */
++};
++#endif /* __ASSEMBLY__ */
++
++/* TODO: Rename this to REDZONE because that's what it is */
++#define STACK_FRAME_OVERHEAD  128  /* size of minimum stack frame */
++
++#define instruction_pointer(regs)	((regs)->pc)
++#define user_mode(regs)			(((regs)->sr & SPR_SR_SM) == 0)
++#define user_stack_pointer(regs)	((unsigned long)(regs)->sp)
++#define profile_pc(regs)		instruction_pointer(regs)
++
++/*
++ * Offsets used by 'ptrace' system call interface.
++ */
++#define PT_SR         0
++#define PT_SP         4
++#define PT_GPR2       8
++#define PT_GPR3       12
++#define PT_GPR4       16
++#define PT_GPR5       20
++#define PT_GPR6       24
++#define PT_GPR7       28
++#define PT_GPR8       32
++#define PT_GPR9       36
++#define PT_GPR10      40
++#define PT_GPR11      44
++#define PT_GPR12      48
++#define PT_GPR13      52
++#define PT_GPR14      56
++#define PT_GPR15      60
++#define PT_GPR16      64
++#define PT_GPR17      68
++#define PT_GPR18      72
++#define PT_GPR19      76
++#define PT_GPR20      80
++#define PT_GPR21      84
++#define PT_GPR22      88
++#define PT_GPR23      92
++#define PT_GPR24      96
++#define PT_GPR25      100
++#define PT_GPR26      104
++#define PT_GPR27      108
++#define PT_GPR28      112
++#define PT_GPR29      116
++#define PT_GPR30      120
++#define PT_GPR31      124
++#define PT_PC	      128
++#define PT_ORIG_GPR11 132
++#define PT_SYSCALLNO  136
++
++#endif /* __KERNEL__ */
++
++#endif /* __ASM_OPENRISC_PTRACE_H */
+diff --git a/arch/openrisc/kernel/ptrace.c b/arch/openrisc/kernel/ptrace.c
+new file mode 100644
+index 0000000..656b94b
+--- /dev/null
++++ b/arch/openrisc/kernel/ptrace.c
+@@ -0,0 +1,211 @@
++/*
++ * OpenRISC ptrace.c
 + *
 + * Linux architectural port borrowing liberally from similar works of
 + * others.  All original copyrights apply as per the original source
 + * declaration.
 + *
 + * Modifications for the OpenRISC architecture:
++ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
++ * Copyright (C) 2005 Gyorgy Jeney <nog@bsemi.com>
 + * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
 + *
 + *      This program is free software; you can redistribute it and/or
@@ -102,170 +202,198 @@ index 0000000..bd946ef
 + *      2 of the License, or (at your option) any later version.
 + */
 +
++#include <stddef.h>
 +#include <linux/kernel.h>
-+#include <linux/time.h>
-+#include <linux/timex.h>
-+#include <linux/interrupt.h>
-+#include <linux/ftrace.h>
++#include <linux/sched.h>
++#include <linux/string.h>
 +
-+#include <linux/clocksource.h>
-+#include <linux/clockchips.h>
-+#include <linux/irq.h>
-+#include <linux/io.h>
++#include <linux/mm.h>
++#include <linux/errno.h>
++#include <linux/ptrace.h>
++#include <linux/audit.h>
++#include <linux/regset.h>
++#include <linux/tracehook.h>
++#include <linux/elf.h>
 +
-+#include <asm/cpuinfo.h>
++#include <asm/thread_info.h>
++#include <asm/segment.h>
++#include <asm/page.h>
++#include <asm/pgtable.h>
++#include <asm/system.h>
 +
-+static int openrisc_timer_set_next_event(unsigned long delta,
-+					 struct clock_event_device *dev)
-+{
-+	u32 c;
-+
-+	/* Read 32-bit counter value, add delta, mask off the low 28 bits.
-+	 * We're guaranteed delta won't be bigger than 28 bits because the
-+	 * generic timekeeping code ensures that for us.
-+	 */
-+	c = mfspr(SPR_TTCR);
-+	c += delta;
-+	c &= SPR_TTMR_TP;
-+
-+	/* Set counter and enable interrupt.
-+	 * Keep timer in continuous mode always.
-+	 */
-+	mtspr(SPR_TTMR, SPR_TTMR_CR | SPR_TTMR_IE | c);
-+
-+	return 0;
-+}
-+
-+static void openrisc_timer_set_mode(enum clock_event_mode mode,
-+				    struct clock_event_device *evt)
-+{
-+	switch (mode) {
-+	case CLOCK_EVT_MODE_PERIODIC:
-+		pr_debug(KERN_INFO "%s: periodic\n", __func__);
-+		BUG();
-+		break;
-+	case CLOCK_EVT_MODE_ONESHOT:
-+		pr_debug(KERN_INFO "%s: oneshot\n", __func__);
-+		break;
-+	case CLOCK_EVT_MODE_UNUSED:
-+		pr_debug(KERN_INFO "%s: unused\n", __func__);
-+		break;
-+	case CLOCK_EVT_MODE_SHUTDOWN:
-+		pr_debug(KERN_INFO "%s: shutdown\n", __func__);
-+		break;
-+	case CLOCK_EVT_MODE_RESUME:
-+		pr_debug(KERN_INFO "%s: resume\n", __func__);
-+		break;
-+	}
-+}
-+
-+/* This is the clock event device based on the OR1K tick timer.
-+ * As the timer is being used as a continuous clock-source (required for HR
-+ * timers) we cannot enable the PERIODIC feature.  The tick timer can run using
-+ * one-shot events, so no problem.
++/*
++ * Copy the thread state to a regset that can be interpreted by userspace.
++ *
++ * It doesn't matter what our internal pt_regs structure looks like.  The
++ * important thing is that we export a consistent view of the thread state
++ * to userspace.  As such, we need to make sure that the regset remains
++ * ABI compatible as defined by the struct user_regs_struct:
++ *
++ * (Each item is a 32-bit word)
++ * r0 = 0 (exported for clarity)
++ * 31 GPRS r1-r31
++ * PC (Program counter)
++ * SR (Supervision register)
 + */
-+
-+static struct clock_event_device clockevent_openrisc_timer = {
-+	.name = "openrisc_timer_clockevent",
-+	.features = CLOCK_EVT_FEAT_ONESHOT,
-+	.rating = 300,
-+	.set_next_event = openrisc_timer_set_next_event,
-+	.set_mode = openrisc_timer_set_mode,
-+};
-+
-+static inline void timer_ack(void)
++static int genregs_get(struct task_struct *target,
++		       const struct user_regset *regset,
++		       unsigned int pos, unsigned int count,
++		       void *kbuf, void __user * ubuf)
 +{
-+	/* Clear the IP bit and disable further interrupts */
-+	/* This can be done very simply... we just need to keep the timer
-+	   running, so just maintain the CR bits while clearing the rest
-+	   of the register
-+	 */
-+	mtspr(SPR_TTMR, SPR_TTMR_CR);
++	const struct pt_regs *regs = task_pt_regs(target);
++	int ret;
++
++	/* r0 */
++	ret = user_regset_copyout_zero(&pos, &count, &kbuf, &ubuf, 0, 4);
++
++	if (!ret)
++		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
++					  regs->gpr+1, 4, 4*32);
++	if (!ret)
++		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
++				  &regs->pc, 4*32, 4*33);
++	if (!ret)
++		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
++					  &regs->sr, 4*33, 4*34);
++	if (!ret)
++		ret = user_regset_copyout_zero(&pos, &count, &kbuf, &ubuf,
++					       4*34, -1);
++
++	return ret;
 +}
 +
 +/*
-+ * The timer interrupt is mostly handled in generic code nowadays... this
-+ * function just acknowledges the interrupt and fires the event handler that
-+ * has been set on the clockevent device by the generic time management code.
-+ *
-+ * This function needs to be called by the timer exception handler and that's
-+ * all the exception handler needs to do.
++ * Set the thread state from a regset passed in via ptrace
 + */
-+
-+irqreturn_t __irq_entry timer_interrupt(struct pt_regs *regs)
++static int genregs_set(struct task_struct *target,
++		       const struct user_regset *regset,
++		       unsigned int pos, unsigned int count,
++		       const void *kbuf, const void __user * ubuf)
 +{
-+	struct pt_regs *old_regs = set_irq_regs(regs);
-+	struct clock_event_device *evt = &clockevent_openrisc_timer;
++	struct pt_regs *regs = task_pt_regs(target);
++	int ret;
 +
-+	timer_ack();
-+
++	/* ignore r0 */
++	ret = user_regset_copyin_ignore(&pos, &count, &kbuf, &ubuf, 0, 4);
++	/* r1 - r31 */
++	if (!ret)
++		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
++					 regs->gpr+1, 4, 4*32);
++	/* PC */
++	if (!ret)
++		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
++				 &regs->pc, 4*32, 4*33);
 +	/*
-+	 * update_process_times() expects us to have called irq_enter().
++	 * Skip SR and padding... userspace isn't allowed to changes bits in
++	 * the Supervision register
 +	 */
-+	irq_enter();
-+	evt->event_handler(evt);
-+	irq_exit();
++	if (!ret)
++		ret = user_regset_copyin_ignore(&pos, &count, &kbuf, &ubuf,
++						4*33, -1);
 +
-+	set_irq_regs(old_regs);
-+
-+	return IRQ_HANDLED;
++	return ret;
 +}
 +
-+static __init void openrisc_clockevent_init(void)
-+{
-+	clockevents_calc_mult_shift(&clockevent_openrisc_timer,
-+				    cpuinfo.clock_frequency, 4);
-+
-+	/* We only have 28 bits */
-+	clockevent_openrisc_timer.max_delta_ns =
-+	    clockevent_delta2ns((u32) 0x0fffffff, &clockevent_openrisc_timer);
-+	clockevent_openrisc_timer.min_delta_ns =
-+	    clockevent_delta2ns(1, &clockevent_openrisc_timer);
-+	clockevent_openrisc_timer.cpumask = cpumask_of(0);
-+	clockevents_register_device(&clockevent_openrisc_timer);
-+}
-+
-+/**
-+ * Clocksource: Based on OpenRISC timer/counter
-+ *
-+ * This sets up the OpenRISC Tick Timer as a clock source.  The tick timer
-+ * is 32 bits wide and runs at the CPU clock frequency.
++/*
++ * Define the register sets available on OpenRISC under Linux
 + */
-+
-+static cycle_t openrisc_timer_read(struct clocksource *cs)
-+{
-+	return (cycle_t) mfspr(SPR_TTCR);
-+}
-+
-+static struct clocksource openrisc_timer = {
-+	.name = "openrisc_timer",
-+	.rating = 200,
-+	.read = openrisc_timer_read,
-+	.mask = CLOCKSOURCE_MASK(32),
-+	.flags = CLOCK_SOURCE_IS_CONTINUOUS,
++enum or1k_regset {
++	REGSET_GENERAL,
 +};
 +
-+static int __init openrisc_timer_init(void)
++static const struct user_regset or1k_regsets[] = {
++	[REGSET_GENERAL] = {
++			    .core_note_type = NT_PRSTATUS,
++			    .n = ELF_NGREG,
++			    .size = sizeof(long),
++			    .align = sizeof(long),
++			    .get = genregs_get,
++			    .set = genregs_set,
++			    },
++};
++
++static const struct user_regset_view user_or1k_native_view = {
++	.name = "or1k",
++	.e_machine = EM_OPENRISC,
++	.regsets = or1k_regsets,
++	.n = ARRAY_SIZE(or1k_regsets),
++};
++
++const struct user_regset_view *task_user_regset_view(struct task_struct *task)
 +{
-+	if (clocksource_register_hz(&openrisc_timer, cpuinfo.clock_frequency))
-+		panic("failed to register clocksource");
-+
-+	/* Enable the incrementer: 'continuous' mode with interrupt disabled */
-+	mtspr(SPR_TTMR, SPR_TTMR_CR);
-+
-+	return 0;
++	return &user_or1k_native_view;
 +}
 +
-+void __init time_init(void)
++/*
++ * does not yet catch signals sent when the child dies.
++ * in exit.c or in signal.c.
++ */
++
++
++/*
++ * Called by kernel/ptrace.c when detaching..
++ *
++ * Make sure the single step bit is not set.
++ */
++void ptrace_disable(struct task_struct *child)
 +{
-+	u32 upr;
++	pr_debug("ptrace_disable(): TODO\n");
 +
-+	upr = mfspr(SPR_UPR);
-+	if (!(upr & SPR_UPR_TTP))
-+		panic("Linux not supported on devices without tick timer");
++	user_disable_single_step(child);
++	clear_tsk_thread_flag(child, TIF_SYSCALL_TRACE);
++}
 +
-+	openrisc_timer_init();
-+	openrisc_clockevent_init();
++long arch_ptrace(struct task_struct *child, long request, unsigned long addr,
++		 unsigned long data)
++{
++	int ret;
++
++	switch (request) {
++	default:
++		ret = ptrace_request(child, request, addr, data);
++		break;
++	}
++
++	return ret;
++}
++
++/*
++ * Notification of system call entry/exit
++ * - triggered by current->work.syscall_trace
++ */
++asmlinkage long do_syscall_trace_enter(struct pt_regs *regs)
++{
++	long ret = 0;
++
++	if (test_thread_flag(TIF_SYSCALL_TRACE) &&
++	    tracehook_report_syscall_entry(regs))
++		/*
++		 * Tracing decided this syscall should not happen.
++		 * We'll return a bogus call number to get an ENOSYS
++		 * error, but leave the original number in <something>.
++		 */
++		ret = -1L;
++
++	/* Are these regs right??? */
++	if (unlikely(current->audit_context))
++		audit_syscall_entry(audit_arch(), regs->syscallno,
++				    regs->gpr[3], regs->gpr[4],
++				    regs->gpr[5], regs->gpr[6]);
++
++	return ret ? : regs->syscallno;
++}
++
++asmlinkage void do_syscall_trace_leave(struct pt_regs *regs)
++{
++	int step;
++
++	if (unlikely(current->audit_context))
++		audit_syscall_exit(AUDITSC_RESULT(regs->gpr[11]),
++				   regs->gpr[11]);
++
++	step = test_thread_flag(TIF_SINGLESTEP);
++	if (step || test_thread_flag(TIF_SYSCALL_TRACE))
++		tracehook_report_syscall_exit(regs, step);
 +}
 -- 
 1.7.4.1
