@@ -1,131 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755914Ab1GQO2g (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jul 2011 10:28:36 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:37068 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755884Ab1GQO2c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jul 2011 10:28:32 -0400
-Date: Sun, 17 Jul 2011 07:28:14 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Ed Tomlinson <edt@aei.ca>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: INFO: possible circular locking dependency detected
-Message-ID: <20110717142814.GC2370@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1310665613.27864.50.camel@gandalf.stny.rr.com>
- <201107161542.31755.edt@aei.ca>
- <20110717000217.GB2370@linux.vnet.ibm.com>
- <201107162156.56830.edt@aei.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201107162156.56830.edt@aei.ca>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755936Ab1GQO3H (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jul 2011 10:29:07 -0400
+Received: from queueout02-winn.ispmail.ntl.com ([81.103.221.56]:53975 "EHLO
+	queueout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755884Ab1GQO3D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Jul 2011 10:29:03 -0400
+Subject: Re: State of Linux-RT Patches and full inclusion into linus tree
+From: Bob Ham <rah@bash.sh>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: Bryan Donlan <bdonlan@gmail.com>, Shawn Starr <shawn.starr@rogers.com>,
+        linux-kernel@vger.kernel.org, RT <linux-rt-users@vger.kernel.org>
+In-Reply-To: <20110711065437.6c913cca@bike.lwn.net>
+References: <1449505.pSCLrkaxpL@segfault.sh0n.net>
+	 <CAF_S4t_Q1gMnP+mfM+XGPjJYG_jNPwXhY1557bkZPC9c=mS-xg@mail.gmail.com>
+	 <20110711065437.6c913cca@bike.lwn.net>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-sgNwEcVRTP7LMdwoNQ7E"
+Date: Sun, 17 Jul 2011 14:58:42 +0100
+Message-ID: <1310911122.7557.2.camel@myrtle.6gnip.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=FEN-0PyJjGEA:10 a=wPDyFdB5xvgA:10 a=xqWC_Br6kY4A:10 a=pGLkceISAAAA:8 a=onhi19IbAAAA:8 a=07d9gI8wAAAA:8 a=95c_CUOBm6mfynOkatwA:9 a=QEXdDO2ut3YA:10 a=MSl-tDqOz04A:10 a=Ma507JNFj8MA:10 a=LVagLHMoUV-83Aa5xFEA:9 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 16, 2011 at 09:56:56PM -0400, Ed Tomlinson wrote:
-> On Saturday 16 July 2011 20:02:17 Paul E. McKenney wrote:
-> > On Sat, Jul 16, 2011 at 03:42:30PM -0400, Ed Tomlinson wrote:
-> > > On Friday 15 July 2011 18:04:47 Paul E. McKenney wrote:
-> > > > On Fri, Jul 15, 2011 at 05:48:06PM -0400, Ed Tomlinson wrote:
-> > > > > On Friday 15 July 2011 12:56:13 Paul E. McKenney wrote:
-> > > > 
-> > > > [ . . . ]
-> > > > 
-> > > > > > OK.  Ed, would you be willing to try the patch out?
-> > > > > 
-> > > > > I am booted at the same git commit with a bluetooth and the disable local_bh around softirq()
-> > > > > patch from this thread.  So far so good.  Not sure how 'easy' this one is to trigger a second time -
-> > > > > I've been running with threadirq enabled since .39 came out.  Last night was the first deadlock...
-> > > > > If nothing happened post rc6 to make it more likely it could be a while before it triggers again.
-> > > > 
-> > > > Thank you for trying it out, Ed!  And I know that you will not be shy
-> > > > should the problem recur.  ;-)
-> > > 
-> > > Found this in dmesg this afternoon.  This time, though X was dead, I was able to cancel and restart
-> > > it.  This is with Peter's patch to call softirq() with local_bh disabled.
-> > 
-> > Hmmm...  Was RCU_BOOST enabled?  If so, could you please try the
-> > following patch?  If not, more thought is required.
-> >
-> 
-> Paul,
-> 
-> No boost set. 
-> 
-> grover linux # grep RCU .config
-> # RCU Subsystem
-> CONFIG_TREE_PREEMPT_RCU=y
-> CONFIG_PREEMPT_RCU=y
-> # CONFIG_RCU_TRACE is not set
-> CONFIG_RCU_FANOUT=64
-> # CONFIG_RCU_FANOUT_EXACT is not set
-> # CONFIG_TREE_RCU_TRACE is not set
-> # CONFIG_RCU_BOOST is not set
-> # CONFIG_PROVE_RCU is not set
-> # CONFIG_SPARSE_RCU_POINTER is not set
-> CONFIG_RCU_TORTURE_TEST=m
-> CONFIG_RCU_CPU_STALL_TIMEOUT=60
-> # CONFIG_RCU_CPU_STALL_VERBOSE is not set
-> 
-> thinking cap time I would guess.
-> 
-> If I enable boost do you think the patch might help?
 
-It is worth a try -- it should at least fail in a different way, which
-might shed more light on the bug.
+--=-sgNwEcVRTP7LMdwoNQ7E
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-However, in the meantime, could you please try out the following patch?
-It should take care of part of the problem.  I am still working on the
-remainder, and should have a second patch out in a day or two.
+On Mon, 2011-07-11 at 06:54 -0600, Jonathan Corbet wrote:
+> On Mon, 11 Jul 2011 00:46:31 -0400
+> Bryan Donlan <bdonlan@gmail.com> wrote:
+>=20
+> > On Sun, Jul 10, 2011 at 20:43, Shawn Starr <shawn.starr@rogers.com> wro=
+te:
 
-							Thanx, Paul
+> > > I was wondering if (or ever) will the full Linux RT patches be merged=
+ into
+> > > Linus's tree?
 
-------------------------------------------------------------------------
+> Thomas gave a talk on this subject back in April:
+>=20
+> 	http://lwn.net/Articles/440064/
 
-rcu: decrease rcu_report_exp_rnp coupling with scheduler
+That article contains the following sentence:
 
-PREEMPT_RCU read-side critical sections blocking an expedited grace
-period invoke rcu_report_exp_rnp().  When the last such critical section
-has completed, rcu_report_exp_rnp() invokes the scheduler to wake up the
-task that invoked synchronize_rcu_expedited() -- needlessly holding the
-root rcu_node structure's lock while doing so, thus needlessly providing
-a way for RCU and the scheduler to deadlock.
+  "There are plans to update to 2.6.38 soon."
 
-This commit therefore releases the root rcu_node structure's lock before
-calling wake_up().
+Just out of curiosity, is that update under way?
 
-Reported-by: Ed Tomlinson <edt@aei.ca>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+--=20
+Bob Ham <rah@bash.sh>
 
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index f0d8c61..6fcc044 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -707,8 +707,10 @@ static void rcu_report_exp_rnp(struct rcu_state *rsp, struct rcu_node *rnp)
- 	raw_spin_lock_irqsave(&rnp->lock, flags);
- 	for (;;) {
- 		if (!sync_rcu_preempt_exp_done(rnp))
-+			raw_spin_unlock_irqrestore(&rnp->lock, flags);
- 			break;
- 		if (rnp->parent == NULL) {
-+			raw_spin_unlock_irqrestore(&rnp->lock, flags);
- 			wake_up(&sync_rcu_preempt_exp_wq);
- 			break;
- 		}
-@@ -718,7 +720,6 @@ static void rcu_report_exp_rnp(struct rcu_state *rsp, struct rcu_node *rnp)
- 		raw_spin_lock(&rnp->lock); /* irqs already disabled */
- 		rnp->expmask &= ~mask;
- 	}
--	raw_spin_unlock_irqrestore(&rnp->lock, flags);
- }
- 
- /*
+for (;;) { ++pancakes; }
+
+--=-sgNwEcVRTP7LMdwoNQ7E
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAk4i6o8ACgkQ7whsMRnFexQJiACeLyo9CSpehJVvmpaE68DegfDa
+P3gAoNuv2TzdnHnLoFYC/owGRXewbmKw
+=i/+2
+-----END PGP SIGNATURE-----
+
+--=-sgNwEcVRTP7LMdwoNQ7E--
+
