@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755873Ab1GQPMz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jul 2011 11:12:55 -0400
-Received: from mail.southpole.se ([193.12.106.18]:34889 "EHLO
+	id S1756048Ab1GQPNO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jul 2011 11:13:14 -0400
+Received: from mail.southpole.se ([193.12.106.18]:34886 "EHLO
 	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755933Ab1GQPJd (ORCPT
+	with ESMTP id S1755882Ab1GQPJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jul 2011 11:09:33 -0400
+	Sun, 17 Jul 2011 11:09:32 -0400
 From: Jonas Bonn <jonas@southpole.se>
 To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
 Cc: Jonas Bonn <jonas@southpole.se>
-Subject: [PATCH v3 05/19] OpenRISC: Build infrastructure
-Date: Sun, 17 Jul 2011 17:08:15 +0200
-Message-Id: <009f716051e6c5ac8071d1f1eaa4f677ff386f3b.1310913472.git.jonas@southpole.se>
+Subject: [PATCH v3 03/19] OpenRISC: Memory management
+Date: Sun, 17 Jul 2011 17:08:13 +0200
+Message-Id: <55c3b4bf2cbfd095b22d83fea73698a76e5f2275.1310913472.git.jonas@southpole.se>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <cover.1310913472.git.jonas@southpole.se>
 References: <cover.1310913472.git.jonas@southpole.se>
@@ -27,501 +27,1440 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Signed-off-by: Jonas Bonn <jonas@southpole.se>
 Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/openrisc/Kconfig                   |  207 +++++++++++++++++++++++++++++++
- arch/openrisc/Makefile                  |   66 ++++++++++
- arch/openrisc/boot/Makefile             |   15 +++
- arch/openrisc/configs/or1ksim_defconfig |   65 ++++++++++
- arch/openrisc/include/asm/Kbuild        |   64 ++++++++++
- arch/openrisc/kernel/Makefile           |   14 ++
- arch/openrisc/kernel/vmlinux.lds.S      |  115 +++++++++++++++++
- arch/openrisc/lib/Makefile              |    5 +
- arch/openrisc/mm/Makefile               |    5 +
- 9 files changed, 556 insertions(+), 0 deletions(-)
- create mode 100644 arch/openrisc/Kconfig
- create mode 100644 arch/openrisc/Makefile
- create mode 100644 arch/openrisc/boot/Makefile
- create mode 100644 arch/openrisc/configs/or1ksim_defconfig
- create mode 100644 arch/openrisc/include/asm/Kbuild
- create mode 100644 arch/openrisc/kernel/Makefile
- create mode 100644 arch/openrisc/kernel/vmlinux.lds.S
- create mode 100644 arch/openrisc/lib/Makefile
- create mode 100644 arch/openrisc/mm/Makefile
+ arch/openrisc/include/asm/cache.h       |   29 ++
+ arch/openrisc/include/asm/fixmap.h      |   87 ++++++
+ arch/openrisc/include/asm/memblock.h    |   24 ++
+ arch/openrisc/include/asm/mmu.h         |   26 ++
+ arch/openrisc/include/asm/mmu_context.h |   43 +++
+ arch/openrisc/include/asm/page.h        |  110 ++++++++
+ arch/openrisc/include/asm/pgalloc.h     |  102 +++++++
+ arch/openrisc/include/asm/pgtable.h     |  463 +++++++++++++++++++++++++++++++
+ arch/openrisc/include/asm/tlb.h         |   34 +++
+ arch/openrisc/include/asm/tlbflush.h    |   55 ++++
+ arch/openrisc/include/asm/uaccess.h     |  355 +++++++++++++++++++++++
+ arch/openrisc/mm/fault.c                |  338 ++++++++++++++++++++++
+ arch/openrisc/mm/init.c                 |  283 +++++++++++++++++++
+ arch/openrisc/mm/ioremap.c              |  137 +++++++++
+ arch/openrisc/mm/tlb.c                  |  193 +++++++++++++
+ 15 files changed, 2279 insertions(+), 0 deletions(-)
+ create mode 100644 arch/openrisc/include/asm/cache.h
+ create mode 100644 arch/openrisc/include/asm/fixmap.h
+ create mode 100644 arch/openrisc/include/asm/memblock.h
+ create mode 100644 arch/openrisc/include/asm/mmu.h
+ create mode 100644 arch/openrisc/include/asm/mmu_context.h
+ create mode 100644 arch/openrisc/include/asm/page.h
+ create mode 100644 arch/openrisc/include/asm/pgalloc.h
+ create mode 100644 arch/openrisc/include/asm/pgtable.h
+ create mode 100644 arch/openrisc/include/asm/tlb.h
+ create mode 100644 arch/openrisc/include/asm/tlbflush.h
+ create mode 100644 arch/openrisc/include/asm/uaccess.h
+ create mode 100644 arch/openrisc/mm/fault.c
+ create mode 100644 arch/openrisc/mm/init.c
+ create mode 100644 arch/openrisc/mm/ioremap.c
+ create mode 100644 arch/openrisc/mm/tlb.c
 
-diff --git a/arch/openrisc/Kconfig b/arch/openrisc/Kconfig
+diff --git a/arch/openrisc/include/asm/cache.h b/arch/openrisc/include/asm/cache.h
 new file mode 100644
-index 0000000..4558baf
+index 0000000..4ce7a01
 --- /dev/null
-+++ b/arch/openrisc/Kconfig
-@@ -0,0 +1,207 @@
-+#
-+# For a description of the syntax of this configuration file,
-+# see Documentation/kbuild/config-language.txt.
-+#
-+
-+config OPENRISC
-+	def_bool y
-+	select OF
-+	select OF_EARLY_FLATTREE
-+	select HAVE_MEMBLOCK
-+	select ARCH_WANT_OPTIONAL_GPIOLIB
-+        select HAVE_ARCH_TRACEHOOK
-+	select HAVE_GENERIC_HARDIRQS
-+	select GENERIC_IRQ_CHIP
-+	select GENERIC_IRQ_PROBE
-+	select GENERIC_IRQ_SHOW
-+	select GENERIC_IOMAP
-+
-+config MMU
-+	def_bool y
-+
-+config WISHBONE_BUS_BIG_ENDIAN
-+	def_bool y
-+
-+config SYMBOL_PREFIX
-+        string
-+        default ""
-+
-+config HAVE_DMA_ATTRS
-+	def_bool y
-+
-+config UID16
-+	def_bool y
-+
-+config RWSEM_GENERIC_SPINLOCK
-+	def_bool y
-+
-+config RWSEM_XCHGADD_ALGORITHM
-+	def_bool n
-+
-+config GENERIC_HWEIGHT
-+	def_bool y
-+
-+config GENERIC_IOMAP
-+	def_bool y
-+
-+config NO_IOPORT
-+	def_bool y
-+
-+config GENERIC_GPIO
-+	def_bool y
-+
-+config GENERIC_CLOCKEVENTS
-+	def_bool y
-+
-+config TRACE_IRQFLAGS_SUPPORT
-+        def_bool y
-+
-+# For now, use generic checksum functions
-+#These can be reimplemented in assembly later if so inclined
-+config GENERIC_CSUM
-+        def_bool y
-+
-+config GENERIC_FIND_NEXT_BIT
-+	def_bool y
-+
-+source "init/Kconfig"
-+
-+
-+menu "Processor type and features"
-+
-+choice
-+	prompt "Subarchitecture"
-+	default OR1K_1200
-+
-+config OR1K_1200
-+	bool "OR1200"
-+	help
-+	  Generic OpenRISC 1200 architecture
-+
-+endchoice
-+
-+config OPENRISC_BUILTIN_DTB
-+        string "Builtin DTB"
-+        default ""
-+
-+menu "Class II Instructions"
-+
-+config OPENRISC_HAVE_INST_FF1
-+	bool "Have instruction l.ff1"
-+	default y
-+	help
-+	  Select this if your implementation has the Class II instruction l.ff1
-+
-+config OPENRISC_HAVE_INST_FL1
-+	bool "Have instruction l.fl1"
-+	default y
-+	help
-+	  Select this if your implementation has the Class II instruction l.fl1
-+
-+config OPENRISC_HAVE_INST_MUL
-+	bool "Have instruction l.mul for hardware multiply"
-+	default y
-+	help
-+	  Select this if your implementation has a hardware multiply instruction
-+
-+config OPENRISC_HAVE_INST_DIV
-+	bool "Have instruction l.div for hardware divide"
-+	default y
-+	help
-+	  Select this if your implementation has a hardware divide instruction
-+endmenu
-+
-+
-+source "kernel/time/Kconfig"
-+source kernel/Kconfig.hz
-+source kernel/Kconfig.preempt
-+source "mm/Kconfig"
-+
-+config OPENRISC_NO_SPR_SR_DSX
-+	bool "use SPR_SR_DSX software emulation" if OR1K_1200
-+	default y
-+	help
-+	  SPR_SR_DSX bit is status register bit indicating whether
-+	  the last exception has happened in delay slot.
-+
-+	  OpenRISC architecture makes it optional to have it implemented
-+	  in hardware and the OR1200 does not have it.
-+
-+	  Say N here if you know that your OpenRISC processor has
-+	  SPR_SR_DSX bit implemented. Say Y if you are unsure.
-+
-+config CMDLINE
-+        string "Default kernel command string"
-+        default ""
-+        help
-+          On some architectures there is currently no way for the boot loader
-+          to pass arguments to the kernel. For these architectures, you should
-+          supply some command-line options at build time by entering them
-+          here.
-+
-+menu "Debugging options"
-+
-+config DEBUG_STACKOVERFLOW
-+	bool "Check for kernel stack overflow"
-+	default y
-+	help
-+	  Make extra checks for space avaliable on stack in some
-+          critical functions. This will cause kernel to run a bit slower,
-+	  but will catch most of kernel stack overruns and exit gracefuly.
-+
-+	  Say Y if you are unsure.
-+
-+config JUMP_UPON_UNHANDLED_EXCEPTION
-+	bool "Try to die gracefully"
-+	default y
-+	help
-+	  Now this puts kernel into infinite loop after first oops. Till
-+	  your kernel crashes this doesn't have any influence.
-+
-+	  Say Y if you are unsure.
-+
-+config OPENRISC_EXCEPTION_DEBUG
-+	bool "Print processor state at each exception"
-+	default n
-+	help
-+	  This option will make your kernel unusable for all but kernel
-+	  debugging.
-+
-+	  Say N if you are unsure.
-+
-+config OPENRISC_ESR_EXCEPTION_BUG_CHECK
-+	bool "Check for possible ESR exception bug"
-+	default n
-+	help
-+	  This option enables some checks that might expose some problems
-+          in kernel.
-+
-+	  Say N if you are unsure.
-+
-+endmenu
-+
-+endmenu
-+
-+menu "Executable file formats"
-+
-+source "fs/Kconfig.binfmt"
-+
-+endmenu
-+
-+source "net/Kconfig"
-+
-+source "drivers/Kconfig"
-+
-+source "fs/Kconfig"
-+
-+source "security/Kconfig"
-+
-+source "crypto/Kconfig"
-+
-+source "lib/Kconfig"
-+
-+menu "Kernel hacking"
-+
-+source "lib/Kconfig.debug"
-+
-+endmenu
-diff --git a/arch/openrisc/Makefile b/arch/openrisc/Makefile
-new file mode 100644
-index 0000000..9881c45
---- /dev/null
-+++ b/arch/openrisc/Makefile
-@@ -0,0 +1,66 @@
-+# BK Id: %F% %I% %G% %U% %#%
-+#
-+# This file is included by the global makefile so that you can add your own
-+# architecture-specific flags and dependencies. Remember to do have actions
-+# for "archclean" and "archdep" for cleaning up and making dependencies for
-+# this architecture
-+#
-+# This file is subject to the terms and conditions of the GNU General Public
-+# License.  See the file "COPYING" in the main directory of this archive
-+# for more details.
-+#
-+# Copyright (C) 1994 by Linus Torvalds
-+
-+# Changes for or32 by Matjaz Breskvar
-+# Based on:
-+# arch/i386/Makefile
-+
-+KBUILD_DEFCONFIG := or1ksim_defconfig
-+
-+LDFLAGS         :=
-+OBJCOPYFLAGS    := -O binary -R .note -R .comment -S
-+LDFLAGS_vmlinux :=
-+LIBGCC 		 = $(shell $(CC) $(CFLAGS) -print-file-name=libgcc.a)
-+
-+#KBUILD_CFLAGS		+= -pipe -g -mredzone=0
-+KBUILD_CFLAGS		+= -pipe -ffixed-r10
-+#KBUILD_CFLAGS		+= -fsigned-char -pipe -ffixed-r10 \
-+#		   -ffixed-r16 -ffixed-r17 -ffixed-r18 -ffixed-r19 \
-+#		   -ffixed-r20 -ffixed-r21 -ffixed-r22 -ffixed-r23 \
-+#		   -ffixed-r24 -ffixed-r25 -ffixed-r26 -ffixed-r27 \
-+#		   -ffixed-r28 -ffixed-r29 -ffixed-r30 -ffixed-r31 \
-+#                   -Wno-uninitialized
-+
-+#KBUILD_CFLAGS += $(call cc-option,-mredzone=128)
-+#KBUILD_CFLAGS += -mredzone=0
-+
-+ifeq ($(CONFIG_OPENRISC_HAVE_INST_MUL),y)
-+	KBUILD_CFLAGS += $(call cc-option,-mhard-mul)
-+else
-+	KBUILD_CFLAGS += $(call cc-option,-msoft-mul)
-+endif
-+
-+ifeq ($(CONFIG_OPENRISC_HAVE_INST_DIV),y)
-+	KBUILD_CFLAGS += $(call cc-option,-mhard-div)
-+else
-+	KBUILD_CFLAGS += $(call cc-option,-msoft-div)
-+endif
-+
-+
-+
-+head-y 		:= arch/openrisc/kernel/head.o arch/openrisc/kernel/init_task.o
-+
-+
-+core-y		+= arch/openrisc/lib/ \
-+		   arch/openrisc/kernel/ \
-+		   arch/openrisc/mm/
-+libs-y		+= $(LIBGCC)
-+
-+ifneq '$(CONFIG_OPENRISC_BUILTIN_DTB)' '""'
-+BUILTIN_DTB := y
-+else
-+BUILTIN_DTB := n
-+endif
-+core-$(BUILTIN_DTB) += arch/openrisc/boot/
-+
-+all: vmlinux
-diff --git a/arch/openrisc/boot/Makefile b/arch/openrisc/boot/Makefile
-new file mode 100644
-index 0000000..98ca185
---- /dev/null
-+++ b/arch/openrisc/boot/Makefile
-@@ -0,0 +1,15 @@
-+
-+
-+ifneq '$(CONFIG_OPENRISC_BUILTIN_DTB)' '""'
-+BUILTIN_DTB := $(patsubst "%",%,$(CONFIG_OPENRISC_BUILTIN_DTB)).dtb.o
-+else
-+BUILTIN_DTB :=
-+endif
-+obj-y += $(BUILTIN_DTB)
-+
-+clean-files := *.dtb.S
-+
-+#DTC_FLAGS ?= -p 1024
-+
-+$(obj)/%.dtb: $(src)/dts/%.dts
-+	$(call cmd,dtc)
-diff --git a/arch/openrisc/configs/or1ksim_defconfig b/arch/openrisc/configs/or1ksim_defconfig
-new file mode 100644
-index 0000000..ea172bd
---- /dev/null
-+++ b/arch/openrisc/configs/or1ksim_defconfig
-@@ -0,0 +1,65 @@
-+CONFIG_CROSS_COMPILE="or32-linux-"
-+CONFIG_LOG_BUF_SHIFT=14
-+CONFIG_BLK_DEV_INITRD=y
-+# CONFIG_RD_GZIP is not set
-+CONFIG_EXPERT=y
-+# CONFIG_SYSCTL_SYSCALL is not set
-+# CONFIG_KALLSYMS is not set
-+# CONFIG_EPOLL is not set
-+# CONFIG_TIMERFD is not set
-+# CONFIG_EVENTFD is not set
-+# CONFIG_AIO is not set
-+# CONFIG_VM_EVENT_COUNTERS is not set
-+# CONFIG_COMPAT_BRK is not set
-+CONFIG_SLOB=y
-+CONFIG_MODULES=y
-+# CONFIG_BLOCK is not set
-+CONFIG_OPENRISC_BUILTIN_DTB="or1ksim"
-+CONFIG_NO_HZ=y
-+CONFIG_HZ_100=y
-+CONFIG_NET=y
-+CONFIG_PACKET=y
-+CONFIG_UNIX=y
-+CONFIG_INET=y
-+# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
-+# CONFIG_INET_XFRM_MODE_TUNNEL is not set
-+# CONFIG_INET_XFRM_MODE_BEET is not set
-+# CONFIG_INET_LRO is not set
-+# CONFIG_INET_DIAG is not set
-+CONFIG_TCP_CONG_ADVANCED=y
-+# CONFIG_TCP_CONG_BIC is not set
-+# CONFIG_TCP_CONG_CUBIC is not set
-+# CONFIG_TCP_CONG_WESTWOOD is not set
-+# CONFIG_TCP_CONG_HTCP is not set
-+# CONFIG_IPV6 is not set
-+# CONFIG_WIRELESS is not set
-+CONFIG_DEVTMPFS=y
-+CONFIG_DEVTMPFS_MOUNT=y
-+# CONFIG_PREVENT_FIRMWARE_BUILD is not set
-+# CONFIG_FW_LOADER is not set
-+CONFIG_PROC_DEVICETREE=y
-+CONFIG_NETDEVICES=y
-+CONFIG_MICREL_PHY=y
-+CONFIG_NET_ETHERNET=y
-+CONFIG_ETHOC=y
-+# CONFIG_NETDEV_1000 is not set
-+# CONFIG_NETDEV_10000 is not set
-+# CONFIG_WLAN is not set
-+# CONFIG_INPUT is not set
-+# CONFIG_SERIO is not set
-+# CONFIG_VT is not set
-+# CONFIG_LEGACY_PTYS is not set
-+# CONFIG_DEVKMEM is not set
-+CONFIG_SERIAL_8250=y
-+CONFIG_SERIAL_8250_CONSOLE=y
-+CONFIG_SERIAL_OF_PLATFORM=y
-+# CONFIG_HW_RANDOM is not set
-+# CONFIG_HWMON is not set
-+# CONFIG_MFD_SUPPORT is not set
-+# CONFIG_USB_SUPPORT is not set
-+# CONFIG_DNOTIFY is not set
-+CONFIG_TMPFS=y
-+CONFIG_NFS_FS=y
-+CONFIG_NFS_V3=y
-+# CONFIG_ENABLE_WARN_DEPRECATED is not set
-+# CONFIG_ENABLE_MUST_CHECK is not set
-diff --git a/arch/openrisc/include/asm/Kbuild b/arch/openrisc/include/asm/Kbuild
-new file mode 100644
-index 0000000..11162e6
---- /dev/null
-+++ b/arch/openrisc/include/asm/Kbuild
-@@ -0,0 +1,64 @@
-+include include/asm-generic/Kbuild.asm
-+
-+header-y += spr_defs.h
-+
-+generic-y += atomic.h
-+generic-y += auxvec.h
-+generic-y += bitsperlong.h
-+generic-y += bug.h
-+generic-y += bugs.h
-+generic-y += cacheflush.h
-+generic-y += checksum.h
-+generic-y += cmpxchg.h
-+generic-y += cmpxchg-local.h
-+generic-y += cpumask.h
-+generic-y += cputime.h
-+generic-y += current.h
-+generic-y += device.h
-+generic-y += div64.h
-+generic-y += dma.h
-+generic-y += emergency-restart.h
-+generic-y += errno.h
-+generic-y += fb.h
-+generic-y += fcntl.h
-+generic-y += ftrace.h
-+generic-y += futex.h
-+generic-y += hardirq.h
-+generic-y += hw_irq.h
-+generic-y += ioctl.h
-+generic-y += ioctls.h
-+generic-y += ipcbuf.h
-+generic-y += irq_regs.h
-+generic-y += kdebug.h
-+generic-y += kmap_types.h
-+generic-y += local.h
-+generic-y += mman.h
-+generic-y += module.h
-+generic-y += msgbuf.h
-+generic-y += pci.h
-+generic-y += percpu.h
-+generic-y += poll.h
-+generic-y += posix_types.h
-+generic-y += resource.h
-+generic-y += rmap.h
-+generic-y += scatterlist.h
-+generic-y += sections.h
-+generic-y += segment.h
-+generic-y += sembuf.h
-+generic-y += setup.h
-+generic-y += shmbuf.h
-+generic-y += shmparam.h
-+generic-y += siginfo.h
-+generic-y += signal.h
-+generic-y += socket.h
-+generic-y += sockios.h
-+generic-y += statfs.h
-+generic-y += stat.h
-+generic-y += string.h
-+generic-y += swab.h
-+generic-y += termbits.h
-+generic-y += termios.h
-+generic-y += topology.h
-+generic-y += types.h
-+generic-y += ucontext.h
-+generic-y += user.h
-diff --git a/arch/openrisc/kernel/Makefile b/arch/openrisc/kernel/Makefile
-new file mode 100644
-index 0000000..9a4c270
---- /dev/null
-+++ b/arch/openrisc/kernel/Makefile
-@@ -0,0 +1,14 @@
-+#
-+# Makefile for the linux kernel.
-+#
-+
-+extra-y	:= head.o vmlinux.lds init_task.o
-+
-+obj-y	:= setup.o idle.o or32_ksyms.o process.o dma.o \
-+	   traps.o time.o irq.o entry.o ptrace.o signal.o sys_or32.o \
-+	   sys_call_table.o
-+
-+obj-$(CONFIG_MODULES)		+= module.o
-+obj-$(CONFIG_OF)		+= prom.o
-+
-+clean:
-diff --git a/arch/openrisc/kernel/vmlinux.lds.S b/arch/openrisc/kernel/vmlinux.lds.S
-new file mode 100644
-index 0000000..2d69a85
---- /dev/null
-+++ b/arch/openrisc/kernel/vmlinux.lds.S
-@@ -0,0 +1,115 @@
++++ b/arch/openrisc/include/asm/cache.h
+@@ -0,0 +1,29 @@
 +/*
-+ * OpenRISC vmlinux.lds.S
++ * OpenRISC Linux
++ *
++ * Linux architectural port borrowing liberally from similar works of
++ * others.  All original copyrights apply as per the original source
++ * declaration.
++ *
++ * OpenRISC implementation:
++ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ * et al.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef __ASM_OPENRISC_CACHE_H
++#define __ASM_OPENRISC_CACHE_H
++
++/* FIXME: How can we replace these with values from the CPU...
++ * they shouldn't be hard-coded!
++ */
++
++#define L1_CACHE_BYTES 16
++#define L1_CACHE_SHIFT 4
++
++#endif /* __ASM_OPENRISC_CACHE_H */
+diff --git a/arch/openrisc/include/asm/fixmap.h b/arch/openrisc/include/asm/fixmap.h
+new file mode 100644
+index 0000000..5273341
+--- /dev/null
++++ b/arch/openrisc/include/asm/fixmap.h
+@@ -0,0 +1,87 @@
++/*
++ * OpenRISC Linux
++ *
++ * Linux architectural port borrowing liberally from similar works of
++ * others.  All original copyrights apply as per the original source
++ * declaration.
++ *
++ * OpenRISC implementation:
++ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ * et al.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef __ASM_OPENRISC_FIXMAP_H
++#define __ASM_OPENRISC_FIXMAP_H
++
++/* Why exactly do we need 2 empty pages between the top of the fixed
++ * addresses and the top of virtual memory?  Something is using that
++ * memory space but not sure what right now... If you find it, leave
++ * a comment here.
++ */
++#define FIXADDR_TOP	((unsigned long) (-2*PAGE_SIZE))
++
++#include <linux/kernel.h>
++#include <asm/page.h>
++
++/*
++ * On OpenRISC we use these special fixed_addresses for doing ioremap
++ * early in the boot process before memory initialization is complete.
++ * This is used, in particular, by the early serial console code.
++ *
++ * It's not really 'fixmap', per se, but fits loosely into the same
++ * paradigm.
++ */
++enum fixed_addresses {
++	/*
++	 * FIX_IOREMAP entries are useful for mapping physical address
++	 * space before ioremap() is useable, e.g. really early in boot
++	 * before kmalloc() is working.
++	 */
++#define FIX_N_IOREMAPS  32
++	FIX_IOREMAP_BEGIN,
++	FIX_IOREMAP_END = FIX_IOREMAP_BEGIN + FIX_N_IOREMAPS - 1,
++	__end_of_fixed_addresses
++};
++
++#define FIXADDR_SIZE		(__end_of_fixed_addresses << PAGE_SHIFT)
++/* FIXADDR_BOTTOM might be a better name here... */
++#define FIXADDR_START		(FIXADDR_TOP - FIXADDR_SIZE)
++
++#define __fix_to_virt(x)	(FIXADDR_TOP - ((x) << PAGE_SHIFT))
++#define __virt_to_fix(x)	((FIXADDR_TOP - ((x)&PAGE_MASK)) >> PAGE_SHIFT)
++
++/*
++ * 'index to address' translation. If anyone tries to use the idx
++ * directly without tranlation, we catch the bug with a NULL-deference
++ * kernel oops. Illegal ranges of incoming indices are caught too.
++ */
++static __always_inline unsigned long fix_to_virt(const unsigned int idx)
++{
++	/*
++	 * this branch gets completely eliminated after inlining,
++	 * except when someone tries to use fixaddr indices in an
++	 * illegal way. (such as mixing up address types or using
++	 * out-of-range indices).
++	 *
++	 * If it doesn't get removed, the linker will complain
++	 * loudly with a reasonably clear error message..
++	 */
++	if (idx >= __end_of_fixed_addresses)
++		BUG();
++
++	return __fix_to_virt(idx);
++}
++
++static inline unsigned long virt_to_fix(const unsigned long vaddr)
++{
++	BUG_ON(vaddr >= FIXADDR_TOP || vaddr < FIXADDR_START);
++	return __virt_to_fix(vaddr);
++}
++
++#endif
+diff --git a/arch/openrisc/include/asm/memblock.h b/arch/openrisc/include/asm/memblock.h
+new file mode 100644
+index 0000000..bbe5a1c
+--- /dev/null
++++ b/arch/openrisc/include/asm/memblock.h
+@@ -0,0 +1,24 @@
++/*
++ * OpenRISC Linux
++ *
++ * Linux architectural port borrowing liberally from similar works of
++ * others.  All original copyrights apply as per the original source
++ * declaration.
++ *
++ * OpenRISC implementation:
++ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ * et al.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef __ASM_OPENRISC_MEMBLOCK_H
++#define __ASM_OPENRISC_MEMBLOCK_H
++
++/* empty */
++
++#endif /* __ASM_OPENRISC_MEMBLOCK_H */
+diff --git a/arch/openrisc/include/asm/mmu.h b/arch/openrisc/include/asm/mmu.h
+new file mode 100644
+index 0000000..d069bc2
+--- /dev/null
++++ b/arch/openrisc/include/asm/mmu.h
+@@ -0,0 +1,26 @@
++/*
++ * OpenRISC Linux
++ *
++ * Linux architectural port borrowing liberally from similar works of
++ * others.  All original copyrights apply as per the original source
++ * declaration.
++ *
++ * OpenRISC implementation:
++ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ * et al.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef __ASM_OPENRISC_MMU_H
++#define __ASM_OPENRISC_MMU_H
++
++#ifndef __ASSEMBLY__
++typedef unsigned long mm_context_t;
++#endif
++
++#endif
+diff --git a/arch/openrisc/include/asm/mmu_context.h b/arch/openrisc/include/asm/mmu_context.h
+new file mode 100644
+index 0000000..e94b814
+--- /dev/null
++++ b/arch/openrisc/include/asm/mmu_context.h
+@@ -0,0 +1,43 @@
++/*
++ * OpenRISC Linux
++ *
++ * Linux architectural port borrowing liberally from similar works of
++ * others.  All original copyrights apply as per the original source
++ * declaration.
++ *
++ * OpenRISC implementation:
++ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ * et al.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef __ASM_OPENRISC_MMU_CONTEXT_H
++#define __ASM_OPENRISC_MMU_CONTEXT_H
++
++#include <asm-generic/mm_hooks.h>
++
++extern int init_new_context(struct task_struct *tsk, struct mm_struct *mm);
++extern void destroy_context(struct mm_struct *mm);
++extern void switch_mm(struct mm_struct *prev, struct mm_struct *next,
++		      struct task_struct *tsk);
++
++#define deactivate_mm(tsk, mm)	do { } while (0)
++
++#define activate_mm(prev, next) switch_mm((prev), (next), NULL)
++
++/* current active pgd - this is similar to other processors pgd
++ * registers like cr3 on the i386
++ */
++
++extern volatile pgd_t *current_pgd;   /* defined in arch/openrisc/mm/fault.c */
++
++static inline void enter_lazy_tlb(struct mm_struct *mm, struct task_struct *tsk)
++{
++}
++
++#endif
+diff --git a/arch/openrisc/include/asm/page.h b/arch/openrisc/include/asm/page.h
+new file mode 100644
+index 0000000..b041b34
+--- /dev/null
++++ b/arch/openrisc/include/asm/page.h
+@@ -0,0 +1,110 @@
++/*
++ * OpenRISC Linux
++ *
++ * Linux architectural port borrowing liberally from similar works of
++ * others.  All original copyrights apply as per the original source
++ * declaration.
++ *
++ * OpenRISC implementation:
++ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ * et al.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef __ASM_OPENRISC_PAGE_H
++#define __ASM_OPENRISC_PAGE_H
++
++
++/* PAGE_SHIFT determines the page size */
++
++#define PAGE_SHIFT      13
++#ifdef __ASSEMBLY__
++#define PAGE_SIZE       (1 << PAGE_SHIFT)
++#else
++#define PAGE_SIZE       (1UL << PAGE_SHIFT)
++#endif
++#define PAGE_MASK       (~(PAGE_SIZE-1))
++
++#define PAGE_OFFSET	0xc0000000
++#define KERNELBASE	PAGE_OFFSET
++
++/* This is not necessarily the right place for this, but it's needed by
++ * drivers/of/fdt.c
++ */
++#include <asm/setup.h>
++
++#ifndef __ASSEMBLY__
++
++#define get_user_page(vaddr)            __get_free_page(GFP_KERNEL)
++#define free_user_page(page, addr)      free_page(addr)
++
++#define clear_page(page)	memset((page), 0, PAGE_SIZE)
++#define copy_page(to, from)	memcpy((to), (from), PAGE_SIZE)
++
++#define clear_user_page(page, vaddr, pg)        clear_page(page)
++#define copy_user_page(to, from, vaddr, pg)     copy_page(to, from)
++
++/*
++ * These are used to make use of C type-checking..
++ */
++typedef struct {
++	unsigned long pte;
++} pte_t;
++typedef struct {
++	unsigned long pgd;
++} pgd_t;
++typedef struct {
++	unsigned long pgprot;
++} pgprot_t;
++typedef struct page *pgtable_t;
++
++#define pte_val(x)	((x).pte)
++#define pgd_val(x)	((x).pgd)
++#define pgprot_val(x)	((x).pgprot)
++
++#define __pte(x)	((pte_t) { (x) })
++#define __pgd(x)	((pgd_t) { (x) })
++#define __pgprot(x)	((pgprot_t) { (x) })
++
++extern unsigned long memory_start;
++extern unsigned long memory_end;
++
++#endif /* !__ASSEMBLY__ */
++
++
++#ifndef __ASSEMBLY__
++
++#define __va(x) ((void *)((unsigned long)(x) + PAGE_OFFSET))
++#define __pa(x) ((unsigned long) (x) - PAGE_OFFSET)
++
++#define virt_to_pfn(kaddr)      (__pa(kaddr) >> PAGE_SHIFT)
++#define pfn_to_virt(pfn)        __va((pfn) << PAGE_SHIFT)
++
++#define virt_to_page(addr) \
++	(mem_map + (((unsigned long)(addr)-PAGE_OFFSET) >> PAGE_SHIFT))
++#define page_to_virt(page) \
++	((((page) - mem_map) << PAGE_SHIFT) + PAGE_OFFSET)
++
++#define page_to_phys(page)      ((dma_addr_t)page_to_pfn(page) << PAGE_SHIFT)
++
++#define pfn_valid(pfn)          ((pfn) < max_mapnr)
++
++#define virt_addr_valid(kaddr)  (((void *)(kaddr) >= (void *)PAGE_OFFSET) && \
++				((void *)(kaddr) < (void *)memory_end))
++
++#endif /* __ASSEMBLY__ */
++
++
++#define VM_DATA_DEFAULT_FLAGS	(VM_READ | VM_WRITE | VM_EXEC | \
++				 VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
++
++
++#include <asm-generic/memory_model.h>
++#include <asm-generic/getorder.h>
++
++#endif /* __ASM_OPENRISC_PAGE_H */
+diff --git a/arch/openrisc/include/asm/pgalloc.h b/arch/openrisc/include/asm/pgalloc.h
+new file mode 100644
+index 0000000..05c39ec
+--- /dev/null
++++ b/arch/openrisc/include/asm/pgalloc.h
+@@ -0,0 +1,102 @@
++/*
++ * OpenRISC Linux
++ *
++ * Linux architectural port borrowing liberally from similar works of
++ * others.  All original copyrights apply as per the original source
++ * declaration.
++ *
++ * OpenRISC implementation:
++ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ * et al.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef __ASM_OPENRISC_PGALLOC_H
++#define __ASM_OPENRISC_PGALLOC_H
++
++#include <asm/page.h>
++#include <linux/threads.h>
++#include <linux/mm.h>
++#include <linux/memblock.h>
++#include <linux/bootmem.h>
++
++extern int mem_init_done;
++
++#define pmd_populate_kernel(mm, pmd, pte) \
++	set_pmd(pmd, __pmd(_KERNPG_TABLE + __pa(pte)))
++
++static inline void pmd_populate(struct mm_struct *mm, pmd_t *pmd,
++				struct page *pte)
++{
++	set_pmd(pmd, __pmd(_KERNPG_TABLE +
++		     ((unsigned long)page_to_pfn(pte) <<
++		     (unsigned long) PAGE_SHIFT)));
++}
++
++/*
++ * Allocate and free page tables.
++ */
++static inline pgd_t *pgd_alloc(struct mm_struct *mm)
++{
++	pgd_t *ret = (pgd_t *)__get_free_page(GFP_KERNEL);
++
++	if (ret) {
++		memset(ret, 0, USER_PTRS_PER_PGD * sizeof(pgd_t));
++		memcpy(ret + USER_PTRS_PER_PGD,
++		       swapper_pg_dir + USER_PTRS_PER_PGD,
++		       (PTRS_PER_PGD - USER_PTRS_PER_PGD) * sizeof(pgd_t));
++
++	}
++	return ret;
++}
++
++#if 0
++/* FIXME: This seems to be the preferred style, but we are using
++ * current_pgd (from mm->pgd) to load kernel pages so we need it
++ * initialized.  This needs to be looked into.
++ */
++extern inline pgd_t *pgd_alloc(struct mm_struct *mm)
++{
++	return (pgd_t *)get_zeroed_page(GFP_KERNEL);
++}
++#endif
++
++static inline void pgd_free(struct mm_struct *mm, pgd_t *pgd)
++{
++	free_page((unsigned long)pgd);
++}
++
++extern pte_t *pte_alloc_one_kernel(struct mm_struct *mm, unsigned long address);
++
++static inline struct page *pte_alloc_one(struct mm_struct *mm,
++					 unsigned long address)
++{
++	struct page *pte;
++	pte = alloc_pages(GFP_KERNEL|__GFP_REPEAT, 0);
++	if (pte)
++		clear_page(page_address(pte));
++	return pte;
++}
++
++static inline void pte_free_kernel(struct mm_struct *mm, pte_t *pte)
++{
++	free_page((unsigned long)pte);
++}
++
++static inline void pte_free(struct mm_struct *mm, struct page *pte)
++{
++	__free_page(pte);
++}
++
++
++#define __pte_free_tlb(tlb, pte, addr) tlb_remove_page((tlb), (pte))
++#define pmd_pgtable(pmd) pmd_page(pmd)
++
++#define check_pgt_cache()          do { } while (0)
++
++#endif
+diff --git a/arch/openrisc/include/asm/pgtable.h b/arch/openrisc/include/asm/pgtable.h
+new file mode 100644
+index 0000000..043505d
+--- /dev/null
++++ b/arch/openrisc/include/asm/pgtable.h
+@@ -0,0 +1,463 @@
++/*
++ * OpenRISC Linux
++ *
++ * Linux architectural port borrowing liberally from similar works of
++ * others.  All original copyrights apply as per the original source
++ * declaration.
++ *
++ * OpenRISC implementation:
++ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ * et al.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++/* or32 pgtable.h - macros and functions to manipulate page tables
++ *
++ * Based on:
++ * include/asm-cris/pgtable.h
++ */
++
++#ifndef __ASM_OPENRISC_PGTABLE_H
++#define __ASM_OPENRISC_PGTABLE_H
++
++#include <asm-generic/pgtable-nopmd.h>
++
++#ifndef __ASSEMBLY__
++#include <asm/mmu.h>
++#include <asm/fixmap.h>
++
++/*
++ * The Linux memory management assumes a three-level page table setup. On
++ * or32, we use that, but "fold" the mid level into the top-level page
++ * table. Since the MMU TLB is software loaded through an interrupt, it
++ * supports any page table structure, so we could have used a three-level
++ * setup, but for the amounts of memory we normally use, a two-level is
++ * probably more efficient.
++ *
++ * This file contains the functions and defines necessary to modify and use
++ * the or32 page table tree.
++ */
++
++extern void paging_init(void);
++
++/* Certain architectures need to do special things when pte's
++ * within a page table are directly modified.  Thus, the following
++ * hook is made available.
++ */
++#define set_pte(pteptr, pteval) ((*(pteptr)) = (pteval))
++#define set_pte_at(mm, addr, ptep, pteval) set_pte(ptep, pteval)
++/*
++ * (pmds are folded into pgds so this doesn't get actually called,
++ * but the define is needed for a generic inline function.)
++ */
++#define set_pmd(pmdptr, pmdval) (*(pmdptr) = pmdval)
++
++#define PGDIR_SHIFT	(PAGE_SHIFT + (PAGE_SHIFT-2))
++#define PGDIR_SIZE	(1UL << PGDIR_SHIFT)
++#define PGDIR_MASK	(~(PGDIR_SIZE-1))
++
++/*
++ * entries per page directory level: we use a two-level, so
++ * we don't really have any PMD directory physically.
++ * pointers are 4 bytes so we can use the page size and
++ * divide it by 4 (shift by 2).
++ */
++#define PTRS_PER_PTE	(1UL << (PAGE_SHIFT-2))
++
++#define PTRS_PER_PGD	(1UL << (PAGE_SHIFT-2))
++
++/* calculate how many PGD entries a user-level program can use
++ * the first mappable virtual address is 0
++ * (TASK_SIZE is the maximum virtual address space)
++ */
++
++#define USER_PTRS_PER_PGD       (TASK_SIZE/PGDIR_SIZE)
++#define FIRST_USER_ADDRESS      0
++
++/*
++ * Kernels own virtual memory area.
++ */
++
++/*
++ * The size and location of the vmalloc area are chosen so that modules
++ * placed in this area aren't more than a 28-bit signed offset from any
++ * kernel functions that they may need.  This greatly simplifies handling
++ * of the relocations for l.j and l.jal instructions as we don't need to
++ * introduce any trampolines for reaching "distant" code.
++ *
++ * 64 MB of vmalloc area is comparable to what's available on other arches.
++ */
++
++#define VMALLOC_START	(PAGE_OFFSET-0x04000000)
++#define VMALLOC_END	(PAGE_OFFSET)
++#define VMALLOC_VMADDR(x) ((unsigned long)(x))
++
++/* Define some higher level generic page attributes.
++ *
++ * If you change _PAGE_CI definition be sure to change it in
++ * io.h for ioremap_nocache() too.
++ */
++
++/*
++ * An OR32 PTE looks like this:
++ *
++ * |  31 ... 10 |  9  |  8 ... 6  |  5  |  4  |  3  |  2  |  1  |  0  |
++ *  Phys pg.num    L     PP Index    D     A    WOM   WBC   CI    CC
++ *
++ *  L  : link
++ *  PPI: Page protection index
++ *  D  : Dirty
++ *  A  : Accessed
++ *  WOM: Weakly ordered memory
++ *  WBC: Write-back cache
++ *  CI : Cache inhibit
++ *  CC : Cache coherent
++ *
++ * The protection bits below should correspond to the layout of the actual
++ * PTE as per above
++ */
++
++#define _PAGE_CC       0x001 /* software: pte contains a translation */
++#define _PAGE_CI       0x002 /* cache inhibit          */
++#define _PAGE_WBC      0x004 /* write back cache       */
++#define _PAGE_FILE     0x004 /* set: pagecache, unset: swap (when !PRESENT) */
++#define _PAGE_WOM      0x008 /* weakly ordered memory  */
++
++#define _PAGE_A        0x010 /* accessed               */
++#define _PAGE_D        0x020 /* dirty                  */
++#define _PAGE_URE      0x040 /* user read enable       */
++#define _PAGE_UWE      0x080 /* user write enable      */
++
++#define _PAGE_SRE      0x100 /* superuser read enable  */
++#define _PAGE_SWE      0x200 /* superuser write enable */
++#define _PAGE_EXEC     0x400 /* software: page is executable */
++#define _PAGE_U_SHARED 0x800 /* software: page is shared in user space */
++
++/* 0x001 is cache coherency bit, which should always be set to
++ *       1 - for SMP (when we support it)
++ *       0 - otherwise
++ *
++ * we just reuse this bit in software for _PAGE_PRESENT and
++ * force it to 0 when loading it into TLB.
++ */
++#define _PAGE_PRESENT  _PAGE_CC
++#define _PAGE_USER     _PAGE_URE
++#define _PAGE_WRITE    (_PAGE_UWE | _PAGE_SWE)
++#define _PAGE_DIRTY    _PAGE_D
++#define _PAGE_ACCESSED _PAGE_A
++#define _PAGE_NO_CACHE _PAGE_CI
++#define _PAGE_SHARED   _PAGE_U_SHARED
++#define _PAGE_READ     (_PAGE_URE | _PAGE_SRE)
++
++#define _PAGE_CHG_MASK	(PAGE_MASK | _PAGE_ACCESSED | _PAGE_DIRTY)
++#define _PAGE_BASE     (_PAGE_PRESENT | _PAGE_ACCESSED)
++#define _PAGE_ALL      (_PAGE_PRESENT | _PAGE_ACCESSED)
++#define _KERNPG_TABLE \
++	(_PAGE_BASE | _PAGE_SRE | _PAGE_SWE | _PAGE_ACCESSED | _PAGE_DIRTY)
++
++#define PAGE_NONE       __pgprot(_PAGE_ALL)
++#define PAGE_READONLY   __pgprot(_PAGE_ALL | _PAGE_URE | _PAGE_SRE)
++#define PAGE_READONLY_X __pgprot(_PAGE_ALL | _PAGE_URE | _PAGE_SRE | _PAGE_EXEC)
++#define PAGE_SHARED \
++	__pgprot(_PAGE_ALL | _PAGE_URE | _PAGE_SRE | _PAGE_UWE | _PAGE_SWE \
++		 | _PAGE_SHARED)
++#define PAGE_SHARED_X \
++	__pgprot(_PAGE_ALL | _PAGE_URE | _PAGE_SRE | _PAGE_UWE | _PAGE_SWE \
++		 | _PAGE_SHARED | _PAGE_EXEC)
++#define PAGE_COPY       __pgprot(_PAGE_ALL | _PAGE_URE | _PAGE_SRE)
++#define PAGE_COPY_X     __pgprot(_PAGE_ALL | _PAGE_URE | _PAGE_SRE | _PAGE_EXEC)
++
++#define PAGE_KERNEL \
++	__pgprot(_PAGE_ALL | _PAGE_SRE | _PAGE_SWE \
++		 | _PAGE_SHARED | _PAGE_DIRTY | _PAGE_EXEC)
++#define PAGE_KERNEL_RO \
++	__pgprot(_PAGE_ALL | _PAGE_SRE \
++		 | _PAGE_SHARED | _PAGE_DIRTY | _PAGE_EXEC)
++#define PAGE_KERNEL_NOCACHE \
++	__pgprot(_PAGE_ALL | _PAGE_SRE | _PAGE_SWE \
++		 | _PAGE_SHARED | _PAGE_DIRTY | _PAGE_EXEC | _PAGE_CI)
++
++#define __P000	PAGE_NONE
++#define __P001	PAGE_READONLY_X
++#define __P010	PAGE_COPY
++#define __P011	PAGE_COPY_X
++#define __P100	PAGE_READONLY
++#define __P101	PAGE_READONLY_X
++#define __P110	PAGE_COPY
++#define __P111	PAGE_COPY_X
++
++#define __S000	PAGE_NONE
++#define __S001	PAGE_READONLY_X
++#define __S010	PAGE_SHARED
++#define __S011	PAGE_SHARED_X
++#define __S100	PAGE_READONLY
++#define __S101	PAGE_READONLY_X
++#define __S110	PAGE_SHARED
++#define __S111	PAGE_SHARED_X
++
++/* zero page used for uninitialized stuff */
++extern unsigned long empty_zero_page[2048];
++#define ZERO_PAGE(vaddr) (virt_to_page(empty_zero_page))
++
++/* number of bits that fit into a memory pointer */
++#define BITS_PER_PTR			(8*sizeof(unsigned long))
++
++/* to align the pointer to a pointer address */
++#define PTR_MASK			(~(sizeof(void *)-1))
++
++/* sizeof(void*)==1<<SIZEOF_PTR_LOG2 */
++/* 64-bit machines, beware!  SRB. */
++#define SIZEOF_PTR_LOG2			2
++
++/* to find an entry in a page-table */
++#define PAGE_PTR(address) \
++((unsigned long)(address)>>(PAGE_SHIFT-SIZEOF_PTR_LOG2)&PTR_MASK&~PAGE_MASK)
++
++/* to set the page-dir */
++#define SET_PAGE_DIR(tsk, pgdir)
++
++#define pte_none(x)	(!pte_val(x))
++#define pte_present(x)	(pte_val(x) & _PAGE_PRESENT)
++#define pte_clear(mm, addr, xp)	do { pte_val(*(xp)) = 0; } while (0)
++
++#define pmd_none(x)	(!pmd_val(x))
++#define	pmd_bad(x)	((pmd_val(x) & (~PAGE_MASK)) != _KERNPG_TABLE)
++#define pmd_present(x)	(pmd_val(x) & _PAGE_PRESENT)
++#define pmd_clear(xp)	do { pmd_val(*(xp)) = 0; } while (0)
++
++/*
++ * The following only work if pte_present() is true.
++ * Undefined behaviour if not..
++ */
++
++static inline int pte_read(pte_t pte)  { return pte_val(pte) & _PAGE_READ; }
++static inline int pte_write(pte_t pte) { return pte_val(pte) & _PAGE_WRITE; }
++static inline int pte_exec(pte_t pte)  { return pte_val(pte) & _PAGE_EXEC; }
++static inline int pte_dirty(pte_t pte) { return pte_val(pte) & _PAGE_DIRTY; }
++static inline int pte_young(pte_t pte) { return pte_val(pte) & _PAGE_ACCESSED; }
++static inline int pte_file(pte_t pte)  { return pte_val(pte) & _PAGE_FILE; }
++static inline int pte_special(pte_t pte) { return 0; }
++static inline pte_t pte_mkspecial(pte_t pte) { return pte; }
++
++static inline pte_t pte_wrprotect(pte_t pte)
++{
++	pte_val(pte) &= ~(_PAGE_WRITE);
++	return pte;
++}
++
++static inline pte_t pte_rdprotect(pte_t pte)
++{
++	pte_val(pte) &= ~(_PAGE_READ);
++	return pte;
++}
++
++static inline pte_t pte_exprotect(pte_t pte)
++{
++	pte_val(pte) &= ~(_PAGE_EXEC);
++	return pte;
++}
++
++static inline pte_t pte_mkclean(pte_t pte)
++{
++	pte_val(pte) &= ~(_PAGE_DIRTY);
++	return pte;
++}
++
++static inline pte_t pte_mkold(pte_t pte)
++{
++	pte_val(pte) &= ~(_PAGE_ACCESSED);
++	return pte;
++}
++
++static inline pte_t pte_mkwrite(pte_t pte)
++{
++	pte_val(pte) |= _PAGE_WRITE;
++	return pte;
++}
++
++static inline pte_t pte_mkread(pte_t pte)
++{
++	pte_val(pte) |= _PAGE_READ;
++	return pte;
++}
++
++static inline pte_t pte_mkexec(pte_t pte)
++{
++	pte_val(pte) |= _PAGE_EXEC;
++	return pte;
++}
++
++static inline pte_t pte_mkdirty(pte_t pte)
++{
++	pte_val(pte) |= _PAGE_DIRTY;
++	return pte;
++}
++
++static inline pte_t pte_mkyoung(pte_t pte)
++{
++	pte_val(pte) |= _PAGE_ACCESSED;
++	return pte;
++}
++
++/*
++ * Conversion functions: convert a page and protection to a page entry,
++ * and a page entry and page directory to the page they refer to.
++ */
++
++/* What actually goes as arguments to the various functions is less than
++ * obvious, but a rule of thumb is that struct page's goes as struct page *,
++ * really physical DRAM addresses are unsigned long's, and DRAM "virtual"
++ * addresses (the 0xc0xxxxxx's) goes as void *'s.
++ */
++
++static inline pte_t __mk_pte(void *page, pgprot_t pgprot)
++{
++	pte_t pte;
++	/* the PTE needs a physical address */
++	pte_val(pte) = __pa(page) | pgprot_val(pgprot);
++	return pte;
++}
++
++#define mk_pte(page, pgprot) __mk_pte(page_address(page), (pgprot))
++
++#define mk_pte_phys(physpage, pgprot) \
++({                                                                      \
++	pte_t __pte;                                                    \
++									\
++	pte_val(__pte) = (physpage) + pgprot_val(pgprot);               \
++	__pte;                                                          \
++})
++
++static inline pte_t pte_modify(pte_t pte, pgprot_t newprot)
++{
++	pte_val(pte) = (pte_val(pte) & _PAGE_CHG_MASK) | pgprot_val(newprot);
++	return pte;
++}
++
++
++/*
++ * pte_val refers to a page in the 0x0xxxxxxx physical DRAM interval
++ * __pte_page(pte_val) refers to the "virtual" DRAM interval
++ * pte_pagenr refers to the page-number counted starting from the virtual
++ * DRAM start
++ */
++
++static inline unsigned long __pte_page(pte_t pte)
++{
++	/* the PTE contains a physical address */
++	return (unsigned long)__va(pte_val(pte) & PAGE_MASK);
++}
++
++#define pte_pagenr(pte)         ((__pte_page(pte) - PAGE_OFFSET) >> PAGE_SHIFT)
++
++/* permanent address of a page */
++
++#define __page_address(page) (PAGE_OFFSET + (((page) - mem_map) << PAGE_SHIFT))
++#define pte_page(pte)		(mem_map+pte_pagenr(pte))
++
++/*
++ * only the pte's themselves need to point to physical DRAM (see above)
++ * the pagetable links are purely handled within the kernel SW and thus
++ * don't need the __pa and __va transformations.
++ */
++static inline void pmd_set(pmd_t *pmdp, pte_t *ptep)
++{
++	pmd_val(*pmdp) = _KERNPG_TABLE | (unsigned long) ptep;
++}
++
++#define pmd_page(pmd)		(pfn_to_page(pmd_val(pmd) >> PAGE_SHIFT))
++#define pmd_page_kernel(pmd)    ((unsigned long) __va(pmd_val(pmd) & PAGE_MASK))
++
++/* to find an entry in a page-table-directory. */
++#define pgd_index(address)      ((address >> PGDIR_SHIFT) & (PTRS_PER_PGD-1))
++
++#define __pgd_offset(address)   pgd_index(address)
++
++#define pgd_offset(mm, address) ((mm)->pgd+pgd_index(address))
++
++/* to find an entry in a kernel page-table-directory */
++#define pgd_offset_k(address) pgd_offset(&init_mm, address)
++
++#define __pmd_offset(address) \
++	(((address) >> PMD_SHIFT) & (PTRS_PER_PMD-1))
++
++/*
++ * the pte page can be thought of an array like this: pte_t[PTRS_PER_PTE]
++ *
++ * this macro returns the index of the entry in the pte page which would
++ * control the given virtual address
++ */
++#define __pte_offset(address)                   \
++	(((address) >> PAGE_SHIFT) & (PTRS_PER_PTE - 1))
++#define pte_offset_kernel(dir, address)         \
++	((pte_t *) pmd_page_kernel(*(dir)) +  __pte_offset(address))
++#define pte_offset_map(dir, address)	        \
++	((pte_t *)page_address(pmd_page(*(dir))) + __pte_offset(address))
++#define pte_offset_map_nested(dir, address)     \
++	pte_offset_map(dir, address)
++
++#define pte_unmap(pte)          do { } while (0)
++#define pte_unmap_nested(pte)   do { } while (0)
++#define pte_pfn(x)		((unsigned long)(((x).pte)) >> PAGE_SHIFT)
++#define pfn_pte(pfn, prot)  __pte((((pfn) << PAGE_SHIFT)) | pgprot_val(prot))
++
++#define pte_ERROR(e) \
++	printk(KERN_ERR "%s:%d: bad pte %p(%08lx).\n", \
++	       __FILE__, __LINE__, &(e), pte_val(e))
++#define pgd_ERROR(e) \
++	printk(KERN_ERR "%s:%d: bad pgd %p(%08lx).\n", \
++	       __FILE__, __LINE__, &(e), pgd_val(e))
++
++extern pgd_t swapper_pg_dir[PTRS_PER_PGD]; /* defined in head.S */
++
++/*
++ * or32 doesn't have any external MMU info: the kernel page
++ * tables contain all the necessary information.
++ *
++ * Actually I am not sure on what this could be used for.
++ */
++static inline void update_mmu_cache(struct vm_area_struct *vma,
++	unsigned long address, pte_t *pte)
++{
++}
++
++/* __PHX__ FIXME, SWAP, this probably doesn't work */
++
++/* Encode and de-code a swap entry (must be !pte_none(e) && !pte_present(e)) */
++/* Since the PAGE_PRESENT bit is bit 4, we can use the bits above */
++
++#define __swp_type(x)			(((x).val >> 5) & 0x7f)
++#define __swp_offset(x)			((x).val >> 12)
++#define __swp_entry(type, offset) \
++	((swp_entry_t) { ((type) << 5) | ((offset) << 12) })
++#define __pte_to_swp_entry(pte)		((swp_entry_t) { pte_val(pte) })
++#define __swp_entry_to_pte(x)		((pte_t) { (x).val })
++
++/* Encode and decode a nonlinear file mapping entry */
++
++#define PTE_FILE_MAX_BITS               26
++#define pte_to_pgoff(x)	                (pte_val(x) >> 6)
++#define pgoff_to_pte(x)	                __pte(((x) << 6) | _PAGE_FILE)
++
++#define kern_addr_valid(addr)           (1)
++
++#define io_remap_pfn_range(vma, vaddr, pfn, size, prot)         \
++	remap_pfn_range(vma, vaddr, pfn, size, prot)
++
++#include <asm-generic/pgtable.h>
++
++/*
++ * No page table caches to initialise
++ */
++#define pgtable_cache_init()		do { } while (0)
++#define io_remap_page_range		remap_page_range
++
++typedef pte_t *pte_addr_t;
++
++#endif /* __ASSEMBLY__ */
++#endif /* __ASM_OPENRISC_PGTABLE_H */
+diff --git a/arch/openrisc/include/asm/tlb.h b/arch/openrisc/include/asm/tlb.h
+new file mode 100644
+index 0000000..fa4376a
+--- /dev/null
++++ b/arch/openrisc/include/asm/tlb.h
+@@ -0,0 +1,34 @@
++/*
++ * OpenRISC Linux
++ *
++ * Linux architectural port borrowing liberally from similar works of
++ * others.  All original copyrights apply as per the original source
++ * declaration.
++ *
++ * OpenRISC implementation:
++ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ * et al.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef __ASM_OPENRISC_TLB_H__
++#define __ASM_OPENRISC_TLB_H__
++
++/*
++ * or32 doesn't need any special per-pte or
++ * per-vma handling..
++ */
++#define tlb_start_vma(tlb, vma) do { } while (0)
++#define tlb_end_vma(tlb, vma) do { } while (0)
++#define __tlb_remove_tlb_entry(tlb, ptep, address) do { } while (0)
++
++#define tlb_flush(tlb) flush_tlb_mm((tlb)->mm)
++#include <linux/pagemap.h>
++#include <asm-generic/tlb.h>
++
++#endif /* __ASM_OPENRISC_TLB_H__ */
+diff --git a/arch/openrisc/include/asm/tlbflush.h b/arch/openrisc/include/asm/tlbflush.h
+new file mode 100644
+index 0000000..6a2accd
+--- /dev/null
++++ b/arch/openrisc/include/asm/tlbflush.h
+@@ -0,0 +1,55 @@
++/*
++ * OpenRISC Linux
++ *
++ * Linux architectural port borrowing liberally from similar works of
++ * others.  All original copyrights apply as per the original source
++ * declaration.
++ *
++ * OpenRISC implementation:
++ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ * et al.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef __ASM_OPENRISC_TLBFLUSH_H
++#define __ASM_OPENRISC_TLBFLUSH_H
++
++#include <linux/mm.h>
++#include <asm/processor.h>
++#include <asm/pgtable.h>
++#include <asm/pgalloc.h>
++#include <asm/current.h>
++#include <linux/sched.h>
++
++/*
++ *  - flush_tlb() flushes the current mm struct TLBs
++ *  - flush_tlb_all() flushes all processes TLBs
++ *  - flush_tlb_mm(mm) flushes the specified mm context TLB's
++ *  - flush_tlb_page(vma, vmaddr) flushes one page
++ *  - flush_tlb_range(mm, start, end) flushes a range of pages
++ */
++
++void flush_tlb_all(void);
++void flush_tlb_mm(struct mm_struct *mm);
++void flush_tlb_page(struct vm_area_struct *vma, unsigned long addr);
++void flush_tlb_range(struct vm_area_struct *vma,
++		     unsigned long start,
++		     unsigned long end);
++
++static inline void flush_tlb(void)
++{
++	flush_tlb_mm(current->mm);
++}
++
++static inline void flush_tlb_kernel_range(unsigned long start,
++					  unsigned long end)
++{
++	flush_tlb_range(NULL, start, end);
++}
++
++#endif /* __ASM_OPENRISC_TLBFLUSH_H */
+diff --git a/arch/openrisc/include/asm/uaccess.h b/arch/openrisc/include/asm/uaccess.h
+new file mode 100644
+index 0000000..c310e45
+--- /dev/null
++++ b/arch/openrisc/include/asm/uaccess.h
+@@ -0,0 +1,355 @@
++/*
++ * OpenRISC Linux
++ *
++ * Linux architectural port borrowing liberally from similar works of
++ * others.  All original copyrights apply as per the original source
++ * declaration.
++ *
++ * OpenRISC implementation:
++ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ * et al.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef __ASM_OPENRISC_UACCESS_H
++#define __ASM_OPENRISC_UACCESS_H
++
++/*
++ * User space memory access functions
++ */
++#include <linux/errno.h>
++#include <linux/thread_info.h>
++#include <linux/prefetch.h>
++#include <linux/string.h>
++#include <linux/thread_info.h>
++#include <asm/page.h>
++
++#define VERIFY_READ	0
++#define VERIFY_WRITE	1
++
++/*
++ * The fs value determines whether argument validity checking should be
++ * performed or not.  If get_fs() == USER_DS, checking is performed, with
++ * get_fs() == KERNEL_DS, checking is bypassed.
++ *
++ * For historical reasons, these macros are grossly misnamed.
++ */
++
++/* addr_limit is the maximum accessible address for the task. we misuse
++ * the KERNEL_DS and USER_DS values to both assign and compare the
++ * addr_limit values through the equally misnamed get/set_fs macros.
++ * (see above)
++ */
++
++#define KERNEL_DS	(~0UL)
++#define get_ds()	(KERNEL_DS)
++
++#define USER_DS		(TASK_SIZE)
++#define get_fs()	(current_thread_info()->addr_limit)
++#define set_fs(x)	(current_thread_info()->addr_limit = (x))
++
++#define segment_eq(a, b)	((a) == (b))
++
++/* Ensure that the range from addr to addr+size is all within the process'
++ * address space
++ */
++#define __range_ok(addr, size) (size <= get_fs() && addr <= (get_fs()-size))
++
++/* Ensure that addr is below task's addr_limit */
++#define __addr_ok(addr) ((unsigned long) addr < get_fs())
++
++#define access_ok(type, addr, size) \
++	__range_ok((unsigned long)addr, (unsigned long)size)
++
++/*
++ * The exception table consists of pairs of addresses: the first is the
++ * address of an instruction that is allowed to fault, and the second is
++ * the address at which the program should continue.  No registers are
++ * modified, so it is entirely up to the continuation code to figure out
++ * what to do.
++ *
++ * All the routines below use bits of fixup code that are out of line
++ * with the main instruction path.  This means when everything is well,
++ * we don't even have to jump over them.  Further, they do not intrude
++ * on our cache or tlb entries.
++ */
++
++struct exception_table_entry {
++	unsigned long insn, fixup;
++};
++
++/* Returns 0 if exception not found and fixup otherwise.  */
++extern unsigned long search_exception_table(unsigned long);
++extern void sort_exception_table(void);
++
++/*
++ * These are the main single-value transfer routines.  They automatically
++ * use the right size if we just have the right pointer type.
++ *
++ * This gets kind of ugly. We want to return _two_ values in "get_user()"
++ * and yet we don't want to do any pointers, because that is too much
++ * of a performance impact. Thus we have a few rather ugly macros here,
++ * and hide all the uglyness from the user.
++ *
++ * The "__xxx" versions of the user access functions are versions that
++ * do not verify the address space, that must have been done previously
++ * with a separate "access_ok()" call (this is used when we do multiple
++ * accesses to the same area of user memory).
++ *
++ * As we use the same address space for kernel and user data on the
++ * PowerPC, we can just do these as direct assignments.  (Of course, the
++ * exception handling means that it's no longer "just"...)
++ */
++#define get_user(x, ptr) \
++	__get_user_check((x), (ptr), sizeof(*(ptr)))
++#define put_user(x, ptr) \
++	__put_user_check((__typeof__(*(ptr)))(x), (ptr), sizeof(*(ptr)))
++
++#define __get_user(x, ptr) \
++	__get_user_nocheck((x), (ptr), sizeof(*(ptr)))
++#define __put_user(x, ptr) \
++	__put_user_nocheck((__typeof__(*(ptr)))(x), (ptr), sizeof(*(ptr)))
++
++extern long __put_user_bad(void);
++
++#define __put_user_nocheck(x, ptr, size)		\
++({							\
++	long __pu_err;					\
++	__put_user_size((x), (ptr), (size), __pu_err);	\
++	__pu_err;					\
++})
++
++#define __put_user_check(x, ptr, size)					\
++({									\
++	long __pu_err = -EFAULT;					\
++	__typeof__(*(ptr)) *__pu_addr = (ptr);				\
++	if (access_ok(VERIFY_WRITE, __pu_addr, size))			\
++		__put_user_size((x), __pu_addr, (size), __pu_err);	\
++	__pu_err;							\
++})
++
++#define __put_user_size(x, ptr, size, retval)				\
++do {									\
++	retval = 0;							\
++	switch (size) {							\
++	case 1: __put_user_asm(x, ptr, retval, "l.sb"); break;		\
++	case 2: __put_user_asm(x, ptr, retval, "l.sh"); break;		\
++	case 4: __put_user_asm(x, ptr, retval, "l.sw"); break;		\
++	case 8: __put_user_asm2(x, ptr, retval); break;			\
++	default: __put_user_bad();					\
++	}								\
++} while (0)
++
++struct __large_struct {
++	unsigned long buf[100];
++};
++#define __m(x) (*(struct __large_struct *)(x))
++
++/*
++ * We don't tell gcc that we are accessing memory, but this is OK
++ * because we do not write to any memory gcc knows about, so there
++ * are no aliasing issues.
++ */
++#define __put_user_asm(x, addr, err, op)			\
++	__asm__ __volatile__(					\
++		"1:	"op" 0(%2),%1\n"			\
++		"2:\n"						\
++		".section .fixup,\"ax\"\n"			\
++		"3:	l.addi %0,r0,%3\n"			\
++		"	l.j 2b\n"				\
++		"	l.nop\n"				\
++		".previous\n"					\
++		".section __ex_table,\"a\"\n"			\
++		"	.align 2\n"				\
++		"	.long 1b,3b\n"				\
++		".previous"					\
++		: "=r"(err)					\
++		: "r"(x), "r"(addr), "i"(-EFAULT), "0"(err))
++
++#define __put_user_asm2(x, addr, err)				\
++	__asm__ __volatile__(					\
++		"1:	l.sw 0(%2),%1\n"			\
++		"2:	l.sw 4(%2),%H1\n"			\
++		"3:\n"						\
++		".section .fixup,\"ax\"\n"			\
++		"4:	l.addi %0,r0,%3\n"			\
++		"	l.j 3b\n"				\
++		"	l.nop\n"				\
++		".previous\n"					\
++		".section __ex_table,\"a\"\n"			\
++		"	.align 2\n"				\
++		"	.long 1b,4b\n"				\
++		"	.long 2b,4b\n"				\
++		".previous"					\
++		: "=r"(err)					\
++		: "r"(x), "r"(addr), "i"(-EFAULT), "0"(err))
++
++#define __get_user_nocheck(x, ptr, size)			\
++({								\
++	long __gu_err, __gu_val;				\
++	__get_user_size(__gu_val, (ptr), (size), __gu_err);	\
++	(x) = (__typeof__(*(ptr)))__gu_val;			\
++	__gu_err;						\
++})
++
++#define __get_user_check(x, ptr, size)					\
++({									\
++	long __gu_err = -EFAULT, __gu_val = 0;				\
++	const __typeof__(*(ptr)) * __gu_addr = (ptr);			\
++	if (access_ok(VERIFY_READ, __gu_addr, size))			\
++		__get_user_size(__gu_val, __gu_addr, (size), __gu_err);	\
++	(x) = (__typeof__(*(ptr)))__gu_val;				\
++	__gu_err;							\
++})
++
++extern long __get_user_bad(void);
++
++#define __get_user_size(x, ptr, size, retval)				\
++do {									\
++	retval = 0;							\
++	switch (size) {							\
++	case 1: __get_user_asm(x, ptr, retval, "l.lbz"); break;		\
++	case 2: __get_user_asm(x, ptr, retval, "l.lhz"); break;		\
++	case 4: __get_user_asm(x, ptr, retval, "l.lwz"); break;		\
++	case 8: __get_user_asm2(x, ptr, retval);			\
++	default: (x) = __get_user_bad();				\
++	}								\
++} while (0)
++
++#define __get_user_asm(x, addr, err, op)		\
++	__asm__ __volatile__(				\
++		"1:	"op" %1,0(%2)\n"		\
++		"2:\n"					\
++		".section .fixup,\"ax\"\n"		\
++		"3:	l.addi %0,r0,%3\n"		\
++		"	l.addi %1,r0,0\n"		\
++		"	l.j 2b\n"			\
++		"	l.nop\n"			\
++		".previous\n"				\
++		".section __ex_table,\"a\"\n"		\
++		"	.align 2\n"			\
++		"	.long 1b,3b\n"			\
++		".previous"				\
++		: "=r"(err), "=r"(x)			\
++		: "r"(addr), "i"(-EFAULT), "0"(err))
++
++#define __get_user_asm2(x, addr, err)			\
++	__asm__ __volatile__(				\
++		"1:	l.lwz %1,0(%2)\n"		\
++		"2:	l.lwz %H1,4(%2)\n"		\
++		"3:\n"					\
++		".section .fixup,\"ax\"\n"		\
++		"4:	l.addi %0,r0,%3\n"		\
++		"	l.addi %1,r0,0\n"		\
++		"	l.addi %H1,r0,0\n"		\
++		"	l.j 3b\n"			\
++		"	l.nop\n"			\
++		".previous\n"				\
++		".section __ex_table,\"a\"\n"		\
++		"	.align 2\n"			\
++		"	.long 1b,4b\n"			\
++		"	.long 2b,4b\n"			\
++		".previous"				\
++		: "=r"(err), "=&r"(x)			\
++		: "r"(addr), "i"(-EFAULT), "0"(err))
++
++/* more complex routines */
++
++extern unsigned long __must_check
++__copy_tofrom_user(void *to, const void *from, unsigned long size);
++
++#define __copy_from_user(to, from, size) \
++	__copy_tofrom_user(to, from, size)
++#define __copy_to_user(to, from, size) \
++	__copy_tofrom_user(to, from, size)
++
++#define __copy_to_user_inatomic __copy_to_user
++#define __copy_from_user_inatomic __copy_from_user
++
++static inline unsigned long
++copy_from_user(void *to, const void *from, unsigned long n)
++{
++	unsigned long over;
++
++	if (access_ok(VERIFY_READ, from, n))
++		return __copy_tofrom_user(to, from, n);
++	if ((unsigned long)from < TASK_SIZE) {
++		over = (unsigned long)from + n - TASK_SIZE;
++		return __copy_tofrom_user(to, from, n - over) + over;
++	}
++	return n;
++}
++
++static inline unsigned long
++copy_to_user(void *to, const void *from, unsigned long n)
++{
++	unsigned long over;
++
++	if (access_ok(VERIFY_WRITE, to, n))
++		return __copy_tofrom_user(to, from, n);
++	if ((unsigned long)to < TASK_SIZE) {
++		over = (unsigned long)to + n - TASK_SIZE;
++		return __copy_tofrom_user(to, from, n - over) + over;
++	}
++	return n;
++}
++
++extern unsigned long __clear_user(void *addr, unsigned long size);
++
++static inline __must_check unsigned long
++clear_user(void *addr, unsigned long size)
++{
++
++	if (access_ok(VERIFY_WRITE, addr, size))
++		return __clear_user(addr, size);
++	if ((unsigned long)addr < TASK_SIZE) {
++		unsigned long over = (unsigned long)addr + size - TASK_SIZE;
++		return __clear_user(addr, size - over) + over;
++	}
++	return size;
++}
++
++extern int __strncpy_from_user(char *dst, const char *src, long count);
++
++static inline long strncpy_from_user(char *dst, const char *src, long count)
++{
++	if (access_ok(VERIFY_READ, src, 1))
++		return __strncpy_from_user(dst, src, count);
++	return -EFAULT;
++}
++
++/*
++ * Return the size of a string (including the ending 0)
++ *
++ * Return 0 for error
++ */
++
++extern int __strnlen_user(const char *str, long len, unsigned long top);
++
++/*
++ * Returns the length of the string at str (including the null byte),
++ * or 0 if we hit a page we can't access,
++ * or something > len if we didn't find a null byte.
++ *
++ * The `top' parameter to __strnlen_user is to make sure that
++ * we can never overflow from the user area into kernel space.
++ */
++static inline long strnlen_user(const char __user *str, long len)
++{
++	unsigned long top = (unsigned long)get_fs();
++	unsigned long res = 0;
++
++	if (__addr_ok(str))
++		res = __strnlen_user(str, len, top);
++
++	return res;
++}
++
++#define strlen_user(str) strnlen_user(str, TASK_SIZE-1)
++
++#endif /* __ASM_OPENRISC_UACCESS_H */
+diff --git a/arch/openrisc/mm/fault.c b/arch/openrisc/mm/fault.c
+new file mode 100644
+index 0000000..a5dce82
+--- /dev/null
++++ b/arch/openrisc/mm/fault.c
+@@ -0,0 +1,338 @@
++/*
++ * OpenRISC fault.c
 + *
 + * Linux architectural port borrowing liberally from similar works of
 + * others.  All original copyrights apply as per the original source
@@ -535,128 +1474,960 @@ index 0000000..2d69a85
 + *      modify it under the terms of the GNU General Public License
 + *      as published by the Free Software Foundation; either version
 + *      2 of the License, or (at your option) any later version.
++ */
++
++#include <linux/mm.h>
++#include <linux/interrupt.h>
++#include <linux/module.h>
++#include <linux/sched.h>
++
++#include <asm/uaccess.h>
++#include <asm/siginfo.h>
++#include <asm/signal.h>
++
++#define NUM_TLB_ENTRIES 64
++#define TLB_OFFSET(add) (((add) >> PAGE_SHIFT) & (NUM_TLB_ENTRIES-1))
++
++unsigned long pte_misses;	/* updated by do_page_fault() */
++unsigned long pte_errors;	/* updated by do_page_fault() */
++
++/* __PHX__ :: - check the vmalloc_fault in do_page_fault()
++ *            - also look into include/asm-or32/mmu_context.h
++ */
++volatile pgd_t *current_pgd;
++
++extern void die(char *, struct pt_regs *, long);
++
++/*
++ * This routine handles page faults.  It determines the address,
++ * and the problem, and then passes it off to one of the appropriate
++ * routines.
 + *
-+ * ld script for OpenRISC architecture
++ * If this routine detects a bad access, it returns 1, otherwise it
++ * returns 0.
 + */
 +
-+/* TODO
-+ *		- clean up __offset & stuff
-+ *		- change all 8192 aligment to PAGE !!!
-+ *		- recheck if all aligments are really needed
-+ */
-+
-+#  define LOAD_OFFSET  PAGE_OFFSET
-+#  define LOAD_BASE    PAGE_OFFSET
-+
-+#include <asm/page.h>
-+#include <asm/cache.h>
-+#include <asm-generic/vmlinux.lds.h>
-+
-+OUTPUT_FORMAT("elf32-or32", "elf32-or32", "elf32-or32")
-+jiffies = jiffies_64 + 4;
-+
-+SECTIONS
++asmlinkage void do_page_fault(struct pt_regs *regs, unsigned long address,
++			      unsigned long vector, int write_acc)
 +{
-+        /* Read-only sections, merged into text segment: */
-+        . = LOAD_BASE ;
++	struct task_struct *tsk;
++	struct mm_struct *mm;
++	struct vm_area_struct *vma;
++	siginfo_t info;
++	int fault;
 +
-+	/* _s_kernel_ro must be page aligned */
-+	. = ALIGN(PAGE_SIZE);
-+	_s_kernel_ro = .;
++	tsk = current;
 +
-+        .text                   : AT(ADDR(.text) - LOAD_OFFSET)
-+	{
-+          _stext = .;
-+	  TEXT_TEXT
-+	  SCHED_TEXT
-+	  LOCK_TEXT
-+	  KPROBES_TEXT
-+	  IRQENTRY_TEXT
-+	  *(.fixup)
-+	  *(.text.__*)
-+	  _etext = .;
-+	}
-+	/* TODO: Check if fixup and text.__* are really necessary
-+	 * fixup is definitely necessary
++	/*
++	 * We fault-in kernel-space virtual memory on-demand. The
++	 * 'reference' page table is init_mm.pgd.
++	 *
++	 * NOTE! We MUST NOT take any locks for this case. We may
++	 * be in an interrupt or a critical region, and should
++	 * only copy the information from the master page table,
++	 * nothing more.
++	 *
++	 * NOTE2: This is done so that, when updating the vmalloc
++	 * mappings we don't have to walk all processes pgdirs and
++	 * add the high mappings all at once. Instead we do it as they
++	 * are used. However vmalloc'ed page entries have the PAGE_GLOBAL
++	 * bit set so sometimes the TLB can use a lingering entry.
++	 *
++	 * This verifies that the fault happens in kernel space
++	 * and that the fault was not a protection error.
 +	 */
 +
-+	_sdata = .;
++	if (address >= VMALLOC_START &&
++	    (vector != 0x300 && vector != 0x400) &&
++	    !user_mode(regs))
++		goto vmalloc_fault;
 +
-+	/* Page alignment required for RO_DATA_SECTION */
-+	RO_DATA_SECTION(PAGE_SIZE)
-+	_e_kernel_ro = .;
-+
-+	/* Whatever comes after _e_kernel_ro had better be page-aligend, too */
-+
-+	/* 32 here is cacheline size... recheck this */
-+	RW_DATA_SECTION(32, PAGE_SIZE, PAGE_SIZE)
-+
-+        _edata  =  .;
-+
-+	EXCEPTION_TABLE(4)
-+	NOTES
-+
-+	/* Init code and data */
-+	. = ALIGN(PAGE_SIZE);
-+	__init_begin = .;
-+
-+	HEAD_TEXT_SECTION
-+
-+	/* Page aligned */
-+	INIT_TEXT_SECTION(PAGE_SIZE)
-+
-+	/* Align __setup_start on 16 byte boundary */
-+	INIT_DATA_SECTION(16)
-+
-+	PERCPU_SECTION(L1_CACHE_BYTES)
-+
-+        __init_end = .;
-+
-+	. = ALIGN(PAGE_SIZE);
-+	.initrd			: AT(ADDR(.initrd) - LOAD_OFFSET)
-+	{
-+		__initrd_start = .;
-+		*(.initrd)
-+		__initrd_end = .;
-+		FILL (0);
-+                . = ALIGN (PAGE_SIZE);
++	/* If exceptions were enabled, we can reenable them here */
++	if (user_mode(regs)) {
++		/* Exception was in userspace: reenable interrupts */
++		local_irq_enable();
++	} else {
++		/* If exception was in a syscall, then IRQ's may have
++		 * been enabled or disabled.  If they were enabled,
++		 * reenable them.
++		 */
++		if (regs->sr && (SPR_SR_IEE | SPR_SR_TEE))
++			local_irq_enable();
 +	}
 +
-+        __vmlinux_end = .;            /* last address of the physical file */
++	mm = tsk->mm;
++	info.si_code = SEGV_MAPERR;
 +
-+	BSS_SECTION(0, 0, 0x20)
++	/*
++	 * If we're in an interrupt or have no user
++	 * context, we must not take the fault..
++	 */
 +
-+        _end = .;
++	if (in_interrupt() || !mm)
++		goto no_context;
 +
-+	/* Throw in the debugging sections */
-+	STABS_DEBUG
-+	DWARF_DEBUG
++	down_read(&mm->mmap_sem);
++	vma = find_vma(mm, address);
 +
-+        /* Sections to be discarded -- must be last */
-+	DISCARDS
++	if (!vma)
++		goto bad_area;
++
++	if (vma->vm_start <= address)
++		goto good_area;
++
++	if (!(vma->vm_flags & VM_GROWSDOWN))
++		goto bad_area;
++
++	if (user_mode(regs)) {
++		/*
++		 * accessing the stack below usp is always a bug.
++		 * we get page-aligned addresses so we can only check
++		 * if we're within a page from usp, but that might be
++		 * enough to catch brutal errors at least.
++		 */
++		if (address + PAGE_SIZE < regs->sp)
++			goto bad_area;
++	}
++	if (expand_stack(vma, address))
++		goto bad_area;
++
++	/*
++	 * Ok, we have a good vm_area for this memory access, so
++	 * we can handle it..
++	 */
++
++good_area:
++	info.si_code = SEGV_ACCERR;
++
++	/* first do some preliminary protection checks */
++
++	if (write_acc) {
++		if (!(vma->vm_flags & VM_WRITE))
++			goto bad_area;
++	} else {
++		/* not present */
++		if (!(vma->vm_flags & (VM_READ | VM_EXEC)))
++			goto bad_area;
++	}
++
++	/* are we trying to execute nonexecutable area */
++	if ((vector == 0x400) && !(vma->vm_page_prot.pgprot & _PAGE_EXEC))
++		goto bad_area;
++
++	/*
++	 * If for any reason at all we couldn't handle the fault,
++	 * make sure we exit gracefully rather than endlessly redo
++	 * the fault.
++	 */
++
++	fault = handle_mm_fault(mm, vma, address, write_acc);
++	if (unlikely(fault & VM_FAULT_ERROR)) {
++		if (fault & VM_FAULT_OOM)
++			goto out_of_memory;
++		else if (fault & VM_FAULT_SIGBUS)
++			goto do_sigbus;
++		BUG();
++	}
++	/*RGD modeled on Cris */
++	if (fault & VM_FAULT_MAJOR)
++		tsk->maj_flt++;
++	else
++		tsk->min_flt++;
++
++	up_read(&mm->mmap_sem);
++	return;
++
++	/*
++	 * Something tried to access memory that isn't in our memory map..
++	 * Fix it, but check if it's kernel or user first..
++	 */
++
++bad_area:
++	up_read(&mm->mmap_sem);
++
++bad_area_nosemaphore:
++
++	/* User mode accesses just cause a SIGSEGV */
++
++	if (user_mode(regs)) {
++		info.si_signo = SIGSEGV;
++		info.si_errno = 0;
++		/* info.si_code has been set above */
++		info.si_addr = (void *)address;
++		force_sig_info(SIGSEGV, &info, tsk);
++		return;
++	}
++
++no_context:
++
++	/* Are we prepared to handle this kernel fault?
++	 *
++	 * (The kernel has valid exception-points in the source
++	 *  when it acesses user-memory. When it fails in one
++	 *  of those points, we find it in a table and do a jump
++	 *  to some fixup code that loads an appropriate error
++	 *  code)
++	 */
++
++	{
++		const struct exception_table_entry *entry;
++
++		__asm__ __volatile__("l.nop 42");
++
++		if ((entry = search_exception_tables(regs->pc)) != NULL) {
++			/* Adjust the instruction pointer in the stackframe */
++			regs->pc = entry->fixup;
++			return;
++		}
++	}
++
++	/*
++	 * Oops. The kernel tried to access some bad page. We'll have to
++	 * terminate things with extreme prejudice.
++	 */
++
++	if ((unsigned long)(address) < PAGE_SIZE)
++		printk(KERN_ALERT
++		       "Unable to handle kernel NULL pointer dereference");
++	else
++		printk(KERN_ALERT "Unable to handle kernel access");
++	printk(" at virtual address 0x%08lx\n", address);
++
++	die("Oops", regs, write_acc);
++
++	do_exit(SIGKILL);
++
++	/*
++	 * We ran out of memory, or some other thing happened to us that made
++	 * us unable to handle the page fault gracefully.
++	 */
++
++out_of_memory:
++	__asm__ __volatile__("l.nop 42");
++	__asm__ __volatile__("l.nop 1");
++
++	up_read(&mm->mmap_sem);
++	printk("VM: killing process %s\n", tsk->comm);
++	if (user_mode(regs))
++		do_exit(SIGKILL);
++	goto no_context;
++
++do_sigbus:
++	up_read(&mm->mmap_sem);
++
++	/*
++	 * Send a sigbus, regardless of whether we were in kernel
++	 * or user mode.
++	 */
++	info.si_signo = SIGBUS;
++	info.si_errno = 0;
++	info.si_code = BUS_ADRERR;
++	info.si_addr = (void *)address;
++	force_sig_info(SIGBUS, &info, tsk);
++
++	/* Kernel mode? Handle exceptions or die */
++	if (!user_mode(regs))
++		goto no_context;
++	return;
++
++vmalloc_fault:
++	{
++		/*
++		 * Synchronize this task's top level page-table
++		 * with the 'reference' page table.
++		 *
++		 * Use current_pgd instead of tsk->active_mm->pgd
++		 * since the latter might be unavailable if this
++		 * code is executed in a misfortunately run irq
++		 * (like inside schedule() between switch_mm and
++		 *  switch_to...).
++		 */
++
++		int offset = pgd_index(address);
++		pgd_t *pgd, *pgd_k;
++		pud_t *pud, *pud_k;
++		pmd_t *pmd, *pmd_k;
++		pte_t *pte_k;
++
++/*
++		phx_warn("do_page_fault(): vmalloc_fault will not work, "
++			 "since current_pgd assign a proper value somewhere\n"
++			 "anyhow we don't need this at the moment\n");
++
++		phx_mmu("vmalloc_fault");
++*/
++		pgd = (pgd_t *)current_pgd + offset;
++		pgd_k = init_mm.pgd + offset;
++
++		/* Since we're two-level, we don't need to do both
++		 * set_pgd and set_pmd (they do the same thing). If
++		 * we go three-level at some point, do the right thing
++		 * with pgd_present and set_pgd here.
++		 *
++		 * Also, since the vmalloc area is global, we don't
++		 * need to copy individual PTE's, it is enough to
++		 * copy the pgd pointer into the pte page of the
++		 * root task. If that is there, we'll find our pte if
++		 * it exists.
++		 */
++
++		pud = pud_offset(pgd, address);
++		pud_k = pud_offset(pgd_k, address);
++		if (!pud_present(*pud_k))
++			goto no_context;
++
++		pmd = pmd_offset(pud, address);
++		pmd_k = pmd_offset(pud_k, address);
++
++		if (!pmd_present(*pmd_k))
++			goto bad_area_nosemaphore;
++
++		set_pmd(pmd, *pmd_k);
++
++		/* Make sure the actual PTE exists as well to
++		 * catch kernel vmalloc-area accesses to non-mapped
++		 * addresses. If we don't do this, this will just
++		 * silently loop forever.
++		 */
++
++		pte_k = pte_offset_kernel(pmd_k, address);
++		if (!pte_present(*pte_k))
++			goto no_context;
++
++		return;
++	}
 +}
-diff --git a/arch/openrisc/lib/Makefile b/arch/openrisc/lib/Makefile
+diff --git a/arch/openrisc/mm/init.c b/arch/openrisc/mm/init.c
 new file mode 100644
-index 0000000..966f65d
+index 0000000..359dcb2
 --- /dev/null
-+++ b/arch/openrisc/lib/Makefile
-@@ -0,0 +1,5 @@
-+#
-+# Makefile for or32 specific library files..
-+#
++++ b/arch/openrisc/mm/init.c
+@@ -0,0 +1,283 @@
++/*
++ * OpenRISC idle.c
++ *
++ * Linux architectural port borrowing liberally from similar works of
++ * others.  All original copyrights apply as per the original source
++ * declaration.
++ *
++ * Modifications for the OpenRISC architecture:
++ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ *
++ *      This program is free software; you can redistribute it and/or
++ *      modify it under the terms of the GNU General Public License
++ *      as published by the Free Software Foundation; either version
++ *      2 of the License, or (at your option) any later version.
++ */
 +
-+obj-y  = string.o delay.o
-diff --git a/arch/openrisc/mm/Makefile b/arch/openrisc/mm/Makefile
++#include <linux/signal.h>
++#include <linux/sched.h>
++#include <linux/kernel.h>
++#include <linux/errno.h>
++#include <linux/string.h>
++#include <linux/types.h>
++#include <linux/ptrace.h>
++#include <linux/mman.h>
++#include <linux/mm.h>
++#include <linux/swap.h>
++#include <linux/smp.h>
++#include <linux/bootmem.h>
++#include <linux/init.h>
++#include <linux/delay.h>
++#include <linux/blkdev.h>	/* for initrd_* */
++#include <linux/pagemap.h>
++#include <linux/memblock.h>
++
++#include <asm/system.h>
++#include <asm/segment.h>
++#include <asm/pgalloc.h>
++#include <asm/pgtable.h>
++#include <asm/dma.h>
++#include <asm/io.h>
++#include <asm/tlb.h>
++#include <asm/mmu_context.h>
++#include <asm/kmap_types.h>
++#include <asm/fixmap.h>
++#include <asm/tlbflush.h>
++
++int mem_init_done;
++
++DEFINE_PER_CPU(struct mmu_gather, mmu_gathers);
++
++static void __init zone_sizes_init(void)
++{
++	unsigned long zones_size[MAX_NR_ZONES];
++
++	/* Clear the zone sizes */
++	memset(zones_size, 0, sizeof(zones_size));
++
++	/*
++	 * We use only ZONE_NORMAL
++	 */
++	zones_size[ZONE_NORMAL] = max_low_pfn;
++
++	free_area_init(zones_size);
++}
++
++extern const char _s_kernel_ro[], _e_kernel_ro[];
++
++/*
++ * Map all physical memory into kernel's address space.
++ *
++ * This is explicitly coded for two-level page tables, so if you need
++ * something else then this needs to change.
++ */
++static void __init map_ram(void)
++{
++	unsigned long v, p, e;
++	pgprot_t prot;
++	pgd_t *pge;
++	pud_t *pue;
++	pmd_t *pme;
++	pte_t *pte;
++	/* These mark extents of read-only kernel pages...
++	 * ...from vmlinux.lds.S
++	 */
++	struct memblock_region *region;
++
++	v = PAGE_OFFSET;
++
++	for_each_memblock(memory, region) {
++		p = (u32) region->base & PAGE_MASK;
++		e = p + (u32) region->size;
++
++		v = (u32) __va(p);
++		pge = pgd_offset_k(v);
++
++		while (p < e) {
++			int j;
++			pue = pud_offset(pge, v);
++			pme = pmd_offset(pue, v);
++
++			if ((u32) pue != (u32) pge || (u32) pme != (u32) pge) {
++				panic("%s: OR1K kernel hardcoded for "
++				      "two-level page tables",
++				     __func__);
++			}
++
++			/* Alloc one page for holding PTE's... */
++			pte = (pte_t *) alloc_bootmem_low_pages(PAGE_SIZE);
++			set_pmd(pme, __pmd(_KERNPG_TABLE + __pa(pte)));
++
++			/* Fill the newly allocated page with PTE'S */
++			for (j = 0; p < e && j < PTRS_PER_PGD;
++			     v += PAGE_SIZE, p += PAGE_SIZE, j++, pte++) {
++				if (v >= (u32) _e_kernel_ro ||
++				    v < (u32) _s_kernel_ro)
++					prot = PAGE_KERNEL;
++				else
++					prot = PAGE_KERNEL_RO;
++
++				set_pte(pte, mk_pte_phys(p, prot));
++			}
++
++			pge++;
++		}
++
++		printk(KERN_INFO "%s: Memory: 0x%x-0x%x\n", __func__,
++		       region->base, region->base + region->size);
++	}
++}
++
++void __init paging_init(void)
++{
++	extern void tlb_init(void);
++
++	unsigned long end;
++	int i;
++
++	printk(KERN_INFO "Setting up paging and PTEs.\n");
++
++	/* clear out the init_mm.pgd that will contain the kernel's mappings */
++
++	for (i = 0; i < PTRS_PER_PGD; i++)
++		swapper_pg_dir[i] = __pgd(0);
++
++	/* make sure the current pgd table points to something sane
++	 * (even if it is most probably not used until the next
++	 *  switch_mm)
++	 */
++	current_pgd = init_mm.pgd;
++
++	end = (unsigned long)__va(max_low_pfn * PAGE_SIZE);
++
++	map_ram();
++
++	zone_sizes_init();
++
++	/* self modifying code ;) */
++	/* Since the old TLB miss handler has been running up until now,
++	 * the kernel pages are still all RW, so we can still modify the
++	 * text directly... after this change and a TLB flush, the kernel
++	 * pages will become RO.
++	 */
++	{
++		extern unsigned long dtlb_miss_handler;
++		extern unsigned long itlb_miss_handler;
++
++		unsigned long *dtlb_vector = __va(0x900);
++		unsigned long *itlb_vector = __va(0xa00);
++
++		printk(KERN_INFO "dtlb_miss_handler %p\n", &dtlb_miss_handler);
++		*dtlb_vector = ((unsigned long)&dtlb_miss_handler -
++				(unsigned long)dtlb_vector) >> 2;
++
++		printk(KERN_INFO "itlb_miss_handler %p\n", &itlb_miss_handler);
++		*itlb_vector = ((unsigned long)&itlb_miss_handler -
++				(unsigned long)itlb_vector) >> 2;
++	}
++
++	/* Invalidate instruction caches after code modification */
++	mtspr(SPR_ICBIR, 0x900);
++	mtspr(SPR_ICBIR, 0xa00);
++
++	/* New TLB miss handlers and kernel page tables are in now place.
++	 * Make sure that page flags get updated for all pages in TLB by
++	 * flushing the TLB and forcing all TLB entries to be recreated
++	 * from their page table flags.
++	 */
++	flush_tlb_all();
++}
++
++/* References to section boundaries */
++
++extern char _stext, _etext, _edata, __bss_start, _end;
++extern char __init_begin, __init_end;
++
++static int __init free_pages_init(void)
++{
++	int reservedpages, pfn;
++
++	/* this will put all low memory onto the freelists */
++	totalram_pages = free_all_bootmem();
++
++	reservedpages = 0;
++	for (pfn = 0; pfn < max_low_pfn; pfn++) {
++		/*
++		 * Only count reserved RAM pages
++		 */
++		if (PageReserved(mem_map + pfn))
++			reservedpages++;
++	}
++
++	return reservedpages;
++}
++
++static void __init set_max_mapnr_init(void)
++{
++	max_mapnr = num_physpages = max_low_pfn;
++}
++
++void __init mem_init(void)
++{
++	int codesize, reservedpages, datasize, initsize;
++
++	if (!mem_map)
++		BUG();
++
++	set_max_mapnr_init();
++
++	high_memory = (void *)__va(max_low_pfn * PAGE_SIZE);
++
++	/* clear the zero-page */
++	memset((void *)empty_zero_page, 0, PAGE_SIZE);
++
++	reservedpages = free_pages_init();
++
++	codesize = (unsigned long)&_etext - (unsigned long)&_stext;
++	datasize = (unsigned long)&_edata - (unsigned long)&_etext;
++	initsize = (unsigned long)&__init_end - (unsigned long)&__init_begin;
++
++	printk(KERN_INFO
++	       "Memory: %luk/%luk available (%dk kernel code, %dk reserved, %dk data, %dk init, %ldk highmem)\n",
++	       (unsigned long)nr_free_pages() << (PAGE_SHIFT - 10),
++	       max_mapnr << (PAGE_SHIFT - 10), codesize >> 10,
++	       reservedpages << (PAGE_SHIFT - 10), datasize >> 10,
++	       initsize >> 10, (unsigned long)(0 << (PAGE_SHIFT - 10))
++	    );
++
++	printk("mem_init_done ...........................................\n");
++	mem_init_done = 1;
++	return;
++}
++
++#ifdef CONFIG_BLK_DEV_INITRD
++void free_initrd_mem(unsigned long start, unsigned long end)
++{
++	printk(KERN_INFO "Freeing initrd memory: %ldk freed\n",
++	       (end - start) >> 10);
++
++	for (; start < end; start += PAGE_SIZE) {
++		ClearPageReserved(virt_to_page(start));
++		init_page_count(virt_to_page(start));
++		free_page(start);
++		totalram_pages++;
++	}
++}
++#endif
++
++void free_initmem(void)
++{
++	unsigned long addr;
++
++	addr = (unsigned long)(&__init_begin);
++	for (; addr < (unsigned long)(&__init_end); addr += PAGE_SIZE) {
++		ClearPageReserved(virt_to_page(addr));
++		init_page_count(virt_to_page(addr));
++		free_page(addr);
++		totalram_pages++;
++	}
++	printk(KERN_INFO "Freeing unused kernel memory: %luk freed\n",
++	       ((unsigned long)&__init_end -
++		(unsigned long)&__init_begin) >> 10);
++}
+diff --git a/arch/openrisc/mm/ioremap.c b/arch/openrisc/mm/ioremap.c
 new file mode 100644
-index 0000000..324ba26
+index 0000000..62b08ef
 --- /dev/null
-+++ b/arch/openrisc/mm/Makefile
-@@ -0,0 +1,5 @@
-+#
-+# Makefile for the linux openrisc-specific parts of the memory manager.
-+#
++++ b/arch/openrisc/mm/ioremap.c
+@@ -0,0 +1,137 @@
++/*
++ * OpenRISC ioremap.c
++ *
++ * Linux architectural port borrowing liberally from similar works of
++ * others.  All original copyrights apply as per the original source
++ * declaration.
++ *
++ * Modifications for the OpenRISC architecture:
++ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ *
++ *      This program is free software; you can redistribute it and/or
++ *      modify it under the terms of the GNU General Public License
++ *      as published by the Free Software Foundation; either version
++ *      2 of the License, or (at your option) any later version.
++ */
 +
-+obj-y	:= fault.o tlb.o init.o ioremap.o
++#include <linux/vmalloc.h>
++#include <linux/io.h>
++#include <asm/pgalloc.h>
++#include <asm/kmap_types.h>
++#include <asm/fixmap.h>
++#include <asm/bug.h>
++#include <asm/pgtable.h>
++#include <linux/sched.h>
++#include <asm/tlbflush.h>
++
++extern int mem_init_done;
++
++static unsigned int fixmaps_used __initdata;
++
++/*
++ * Remap an arbitrary physical address space into the kernel virtual
++ * address space. Needed when the kernel wants to access high addresses
++ * directly.
++ *
++ * NOTE! We need to allow non-page-aligned mappings too: we will obviously
++ * have to convert them into an offset in a page-aligned mapping, but the
++ * caller shouldn't need to know that small detail.
++ */
++void __iomem *__init_refok
++__ioremap(phys_addr_t addr, unsigned long size, pgprot_t prot)
++{
++	phys_addr_t p;
++	unsigned long v;
++	unsigned long offset, last_addr;
++	struct vm_struct *area = NULL;
++
++	/* Don't allow wraparound or zero size */
++	last_addr = addr + size - 1;
++	if (!size || last_addr < addr)
++		return NULL;
++
++	/*
++	 * Mappings have to be page-aligned
++	 */
++	offset = addr & ~PAGE_MASK;
++	p = addr & PAGE_MASK;
++	size = PAGE_ALIGN(last_addr + 1) - p;
++
++	if (likely(mem_init_done)) {
++		area = get_vm_area(size, VM_IOREMAP);
++		if (!area)
++			return NULL;
++		v = (unsigned long)area->addr;
++	} else {
++		if ((fixmaps_used + (size >> PAGE_SHIFT)) > FIX_N_IOREMAPS)
++			return NULL;
++		v = fix_to_virt(FIX_IOREMAP_BEGIN + fixmaps_used);
++		fixmaps_used += (size >> PAGE_SHIFT);
++	}
++
++	if (ioremap_page_range(v, v + size, p, prot)) {
++		if (likely(mem_init_done))
++			vfree(area->addr);
++		else
++			fixmaps_used -= (size >> PAGE_SHIFT);
++		return NULL;
++	}
++
++	return (void __iomem *)(offset + (char *)v);
++}
++
++void iounmap(void *addr)
++{
++	/* If the page is from the fixmap pool then we just clear out
++	 * the fixmap mapping.
++	 */
++	if (unlikely((unsigned long)addr > FIXADDR_START)) {
++		/* This is a bit broken... we don't really know
++		 * how big the area is so it's difficult to know
++		 * how many fixed pages to invalidate...
++		 * just flush tlb and hope for the best...
++		 * consider this a FIXME
++		 *
++		 * Really we should be clearing out one or more page
++		 * table entries for these virtual addresses so that
++		 * future references cause a page fault... for now, we
++		 * rely on two things:
++		 *   i)  this code never gets called on known boards
++		 *   ii) invalid accesses to the freed areas aren't made
++		 */
++		flush_tlb_all();
++		return;
++	}
++
++	return vfree((void *)(PAGE_MASK & (unsigned long)addr));
++}
++
++/**
++ * OK, this one's a bit tricky... ioremap can get called before memory is
++ * initialized (early serial console does this) and will want to alloc a page
++ * for its mapping.  No userspace pages will ever get allocated before memory
++ * is initialized so this applies only to kernel pages.  In the event that
++ * this is called before memory is initialized we allocate the page using
++ * the memblock infrastructure.
++ */
++
++pte_t __init_refok *pte_alloc_one_kernel(struct mm_struct *mm,
++					 unsigned long address)
++{
++	pte_t *pte;
++
++	if (likely(mem_init_done)) {
++		pte = (pte_t *) __get_free_page(GFP_KERNEL | __GFP_REPEAT);
++	} else {
++		pte = (pte_t *) alloc_bootmem_low_pages(PAGE_SIZE);
++#if 0
++		/* FIXME: use memblock... */
++		pte = (pte_t *) __va(memblock_alloc(PAGE_SIZE, PAGE_SIZE));
++#endif
++	}
++
++	if (pte)
++		clear_page(pte);
++	return pte;
++}
+diff --git a/arch/openrisc/mm/tlb.c b/arch/openrisc/mm/tlb.c
+new file mode 100644
+index 0000000..56b0b89
+--- /dev/null
++++ b/arch/openrisc/mm/tlb.c
+@@ -0,0 +1,193 @@
++/*
++ * OpenRISC tlb.c
++ *
++ * Linux architectural port borrowing liberally from similar works of
++ * others.  All original copyrights apply as per the original source
++ * declaration.
++ *
++ * Modifications for the OpenRISC architecture:
++ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
++ * Copyright (C) 2010-2011 Julius Baxter <julius.baxter@orsoc.se>
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ *
++ *      This program is free software; you can redistribute it and/or
++ *      modify it under the terms of the GNU General Public License
++ *      as published by the Free Software Foundation; either version
++ *      2 of the License, or (at your option) any later version.
++ */
++
++#include <linux/sched.h>
++#include <linux/kernel.h>
++#include <linux/errno.h>
++#include <linux/string.h>
++#include <linux/types.h>
++#include <linux/ptrace.h>
++#include <linux/mman.h>
++#include <linux/mm.h>
++#include <linux/init.h>
++
++#include <asm/system.h>
++#include <asm/segment.h>
++#include <asm/tlbflush.h>
++#include <asm/pgtable.h>
++#include <asm/mmu_context.h>
++#include <asm/spr_defs.h>
++
++#define NO_CONTEXT -1
++
++#define NUM_DTLB_SETS (1 << ((mfspr(SPR_IMMUCFGR) & SPR_IMMUCFGR_NTS) >> \
++			    SPR_DMMUCFGR_NTS_OFF))
++#define NUM_ITLB_SETS (1 << ((mfspr(SPR_IMMUCFGR) & SPR_IMMUCFGR_NTS) >> \
++			    SPR_IMMUCFGR_NTS_OFF))
++#define DTLB_OFFSET(addr) (((addr) >> PAGE_SHIFT) & (NUM_DTLB_SETS-1))
++#define ITLB_OFFSET(addr) (((addr) >> PAGE_SHIFT) & (NUM_ITLB_SETS-1))
++/*
++ * Invalidate all TLB entries.
++ *
++ * This comes down to setting the 'valid' bit for all xTLBMR registers to 0.
++ * Easiest way to accomplish this is to just zero out the xTLBMR register
++ * completely.
++ *
++ */
++
++void flush_tlb_all(void)
++{
++	int i;
++	unsigned long num_tlb_sets;
++
++	/* Determine number of sets for IMMU. */
++	/* FIXME: Assumption is I & D nsets equal. */
++	num_tlb_sets = NUM_ITLB_SETS;
++
++	for (i = 0; i < num_tlb_sets; i++) {
++		mtspr_off(SPR_DTLBMR_BASE(0), i, 0);
++		mtspr_off(SPR_ITLBMR_BASE(0), i, 0);
++	}
++}
++
++#define have_dtlbeir (mfspr(SPR_DMMUCFGR) & SPR_DMMUCFGR_TEIRI)
++#define have_itlbeir (mfspr(SPR_IMMUCFGR) & SPR_IMMUCFGR_TEIRI)
++
++/*
++ * Invalidate a single page.  This is what the xTLBEIR register is for.
++ *
++ * There's no point in checking the vma for PAGE_EXEC to determine whether it's
++ * the data or instruction TLB that should be flushed... that would take more
++ * than the few instructions that the following compiles down to!
++ *
++ * The case where we don't have the xTLBEIR register really only works for
++ * MMU's with a single way and is hard-coded that way.
++ */
++
++#define flush_dtlb_page_eir(addr) mtspr(SPR_DTLBEIR, addr)
++#define flush_dtlb_page_no_eir(addr) \
++	mtspr_off(SPR_DTLBMR_BASE(0), DTLB_OFFSET(addr), 0);
++
++#define flush_itlb_page_eir(addr) mtspr(SPR_ITLBEIR, addr)
++#define flush_itlb_page_no_eir(addr) \
++	mtspr_off(SPR_ITLBMR_BASE(0), ITLB_OFFSET(addr), 0);
++
++void flush_tlb_page(struct vm_area_struct *vma, unsigned long addr)
++{
++	if (have_dtlbeir)
++		flush_dtlb_page_eir(addr);
++	else
++		flush_dtlb_page_no_eir(addr);
++
++	if (have_itlbeir)
++		flush_itlb_page_eir(addr);
++	else
++		flush_itlb_page_no_eir(addr);
++}
++
++void flush_tlb_range(struct vm_area_struct *vma,
++		     unsigned long start, unsigned long end)
++{
++	int addr;
++	bool dtlbeir;
++	bool itlbeir;
++
++	dtlbeir = have_dtlbeir;
++	itlbeir = have_itlbeir;
++
++	for (addr = start; addr < end; addr += PAGE_SIZE) {
++		if (dtlbeir)
++			flush_dtlb_page_eir(addr);
++		else
++			flush_dtlb_page_no_eir(addr);
++
++		if (itlbeir)
++			flush_itlb_page_eir(addr);
++		else
++			flush_itlb_page_no_eir(addr);
++	}
++}
++
++/*
++ * Invalidate the selected mm context only.
++ *
++ * FIXME: Due to some bug here, we're flushing everything for now.
++ * This should be changed to loop over over mm and call flush_tlb_range.
++ */
++
++void flush_tlb_mm(struct mm_struct *mm)
++{
++
++	/* Was seeing bugs with the mm struct passed to us. Scrapped most of
++	   this function. */
++	/* Several architctures do this */
++	flush_tlb_all();
++}
++
++/* called in schedule() just before actually doing the switch_to */
++
++void switch_mm(struct mm_struct *prev, struct mm_struct *next,
++	       struct task_struct *next_tsk)
++{
++	/* remember the pgd for the fault handlers
++	 * this is similar to the pgd register in some other CPU's.
++	 * we need our own copy of it because current and active_mm
++	 * might be invalid at points where we still need to derefer
++	 * the pgd.
++	 */
++	current_pgd = next->pgd;
++
++	/* We don't have context support implemented, so flush all
++	 * entries belonging to previous map
++	 */
++
++	if (prev != next)
++		flush_tlb_mm(prev);
++
++}
++
++/*
++ * Initialize the context related info for a new mm_struct
++ * instance.
++ */
++
++int init_new_context(struct task_struct *tsk, struct mm_struct *mm)
++{
++	mm->context = NO_CONTEXT;
++	return 0;
++}
++
++/* called by __exit_mm to destroy the used MMU context if any before
++ * destroying the mm itself. this is only called when the last user of the mm
++ * drops it.
++ */
++
++void destroy_context(struct mm_struct *mm)
++{
++	flush_tlb_mm(mm);
++
++}
++
++/* called once during VM initialization, from init.c */
++
++void __init tlb_init(void)
++{
++	/* Do nothing... */
++	/* invalidate the entire TLB */
++	/* flush_tlb_all(); */
++}
 -- 
 1.7.4.1
 
