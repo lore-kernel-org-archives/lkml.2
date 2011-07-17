@@ -1,99 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755886Ab1GQWAb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jul 2011 18:00:31 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53428 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753479Ab1GQWAa convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jul 2011 18:00:30 -0400
+	id S1755838Ab1GQWJH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jul 2011 18:09:07 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61675 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753447Ab1GQWJF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Jul 2011 18:09:05 -0400
+From: Naohiro Aota <naota@elisp.net>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-fsdevel@vger.kernel.org, Christoph Hellwig <hch@tuxera.com>,
+        Eric Sandeen <sandeen@redhat.com>,
+        Anton Salikhmetov <alexo@tuxera.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] hfsplus: Add additional range check to handle on-disk corruptions
+References: <87mxgku044.fsf@elisp.net> <20110714145313.GA16776@infradead.org>
+Date: Mon, 18 Jul 2011 07:08:40 +0900
+In-Reply-To: <20110714145313.GA16776@infradead.org> (Christoph Hellwig's
+	message of "Thu, 14 Jul 2011 10:53:13 -0400")
+Message-ID: <871uxoimqf.fsf_-_@elisp.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.00.1107171356480.3175@sister.anvils>
-References: <alpine.LSU.2.00.1107171356480.3175@sister.anvils>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 17 Jul 2011 15:00:06 -0700
-Message-ID: <CA+55aFw5LhGq-a6mAhgZbGP2FJ+tnV9HRxKoiFuVYbttOo2tNw@mail.gmail.com>
-Subject: Re: [PATCH] vfs: fix race in rcu lookup of pruned dentry
-To: Hugh Dickins <hughd@google.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 17, 2011 at 2:03 PM, Hugh Dickins <hughd@google.com> wrote:
+Christoph Hellwig <hch@infradead.org> writes:
+
+>> 
+>> diff --git a/fs/hfsplus/brec.c b/fs/hfsplus/brec.c
+>> index 2312de3..5c51d04 100644
+>> --- a/fs/hfsplus/brec.c
+>> +++ b/fs/hfsplus/brec.c
+>> @@ -43,6 +43,10 @@ u16 hfs_brec_keylen(struct hfs_bnode *node, u16 rec)
+>>  			node->tree->node_size - (rec + 1) * 2);
+>>  		if (!recoff)
+>>  			return 0;
+>> +		if (recoff >= node->tree->node_size) {
+>> +			printk(KERN_ERR "hfs: recoff %d too large\n", recoff);
+>> +			return 0;
+>> +		}
 >
-> That -ENOENT in walk_component: isn't it assuming we found a negative
-> dentry, before reaching the read_seqcount_retry which complete_walk
-> (or nameidata_drop_rcu_last before 3.0) would use to confirm a successful
-> lookup?
+> As non-obvious as it sounds 0 is indded the canonical error return from
+> hfs_brec_keylen, so that patch looks good to me.  Can you resend it
+> with a better title and description mentioning better validatation of
+> the on-disk structures? 
 
-Hmm. I think you're right. The ENOENT will basically short-circuit the
-full proper checks.
+I've revised the patch and description.
 
->  And can't memory pressure prune a dentry, coming to dentry_kill
-> which __d_drops to unhash before dentry_iput resets d_inode to NULL, but
-> the dentry_rcuwalk_barrier between those is ineffective if the other end
-> ignores the seqcount?
+Change from v1:
 
-Yes. However, looking at it, I'm not very happy with your patch. It
-doesn't really make sense to me to special-case the NULL inode and
-only do a seq_retry for that case.
+Change the check from "recoff >= node->tree->node_size" to "recoff >
+node->tree->node_size - 2": Check not only the first byte but also the
+last byte to be read is in to be read is in node range.
 
-I kind of see why you do it for that particular bug, but at the same
-time, it just makes me go "Eww". If that inode isn't NULL yet, you
-then return the dentry that can get a NULL d_inode later. So the only
-special thing there is that we happen to check for a NULL inode there.
-What protects *later* checks for a NULL d_inode?
+>From 68382a218dac9ba4fe659aa77e350bce3a1c365a Mon Sep 17 00:00:00 2001
+From: Naohiro Aota <naota@elisp.net>
+Date: Tue, 12 Jul 2011 02:54:13 +0900
 
-So my gut feel is that we should instead
+'recoff' is read from disk and used for an argument to memcpy, so if
+the value read from disk is larger than the page size, it result to
+"general protection fault". This patch add additional range check for
+the value, so that disk fuzz won't cause such fault.
 
- - either remove the -ENOENT return at that point entirely, and move
-it to after we have re-verified the dentry lookup for other reasons.
-That looks pretty involved, though, and those paths do end up
-accessing inode data structures etc, so it looks less than trivial.
+Signed-off-by: Naohiro Aota <naota@elisp.net>
+---
+ fs/hfsplus/brec.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-OR
+diff --git a/fs/hfsplus/brec.c b/fs/hfsplus/brec.c
+index 2312de3..2a734cf 100644
+--- a/fs/hfsplus/brec.c
++++ b/fs/hfsplus/brec.c
+@@ -43,6 +43,10 @@ u16 hfs_brec_keylen(struct hfs_bnode *node, u16 rec)
+ 			node->tree->node_size - (rec + 1) * 2);
+ 		if (!recoff)
+ 			return 0;
++		if (recoff > node->tree->node_size - 2) {
++			printk(KERN_ERR "hfs: recoff %d too large\n", recoff);
++			return 0;
++		}
+ 
+ 		retval = hfs_bnode_read_u16(node, recoff) + 2;
+ 		if (retval > node->tree->max_key_len + 2) {
+-- 
+1.7.6
 
- - simply just not clear d_inode at all in d_kill(), so that when we
-prune a dentry due to memory pressure, it doesn't actually change the
-state of the dentry.
-
-and I think the second solution is the right one. It's kind of odd:
-we'll have called down to the iput() routine, and the inode will be
-"gone", but that is already true for the *normal* race of actually
-deleting a file too, and we have that whole "inodes are RCU-released",
-so the inode allocation will still exist.
-
-So my gut feel is that we should instead just do this:
-
-  --- a/fs/dcache.c
-  +++ b/fs/dcache.c
-  @@ -187,7 +187,6 @@ static void dentry_iput(struct dentry * dentry)
-   {
-          struct inode *inode = dentry->d_inode;
-          if (inode) {
-  -               dentry->d_inode = NULL;
-                  list_del_init(&dentry->d_alias);
-                  spin_unlock(&dentry->d_lock);
-                  spin_unlock(&inode->i_lock);
-
-and see what the fall-out from that would be. Nobody should then *use*
-the stale inode, because __d_drop has done that
-dentry_rcuwalk_barrier(). So we avoid the NULL inode special case
-entirely.
-
-Comments?
-
-The above (whitespace-damaged) patch may look trivial, but it is
-*entirely* untested, and maybe my gut feel that the above is the right
-way to solve the problem is just wrong.
-
-Al, any reactions? Hugh, does the above patch work for your
-stress-test case? Or, indeed, at all?
-
-                       Linus
