@@ -1,79 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756323Ab1GQVMv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jul 2011 17:12:51 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:64633 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745Ab1GQVMu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jul 2011 17:12:50 -0400
-From: Jim Rotmalm <jim.rotmalm@gmail.com>
-To: geert@linux-m68k.org
-Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jim Rotmalm <jim.rotmalm@gmail.com>
-Subject: [PATCH] drivers: zorro: fix four checkpatch warnings
-Date: Sun, 17 Jul 2011 23:12:30 +0200
-Message-Id: <1310937150-27890-1-git-send-email-jim.rotmalm@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1753065Ab1GQVjF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jul 2011 17:39:05 -0400
+Received: from mail.perches.com ([173.55.12.10]:4089 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751835Ab1GQVjE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Jul 2011 17:39:04 -0400
+From: Joe Perches <joe@perches.com>
+To: Kalle Valo <kvalo@qca.qualcomm.com>
+Cc: devel@linuxdriverproject.org, gregkh@suse.de, error27@gmail.com,
+        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: [PATCH 0/2] ath6kl: more neatening
+Date: Sun, 17 Jul 2011 14:38:55 -0700
+Message-Id: <cover.1310938421.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.6.131.g99019
+In-Reply-To: <4E2349D4.4000204@qca.qualcomm.com>
+References: <4E2349D4.4000204@qca.qualcomm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-zorro-driver.c: fix four checkpatch warnings of:
-WARNING: EXPORT_SYMBOL(foo); should immediately follow its function/variable
+> Great, thanks. I have now applied your patches to ath6kl-cleanup tree
+> and they will be included in patchset v3.
 
-I had a cat. The cat was mine.
-His name was Zorro. Amiga is fine.
+Here's a couple of more.
 
-Signed-off-by: Jim Rotmalm <jim.rotmalm@gmail.com>
----
- drivers/zorro/zorro-driver.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+Joe Perches (2):
+  ath6kl: Remove __func__ uses from ath6kl_dbg
+  ath6kl: Remove trailing unpaired close paren from ath6kl_err uses
 
-diff --git a/drivers/zorro/zorro-driver.c b/drivers/zorro/zorro-driver.c
-index 7ee2b6e..229624f 100644
---- a/drivers/zorro/zorro-driver.c
-+++ b/drivers/zorro/zorro-driver.c
-@@ -37,6 +37,7 @@ zorro_match_device(const struct zorro_device_id *ids,
- 	}
- 	return NULL;
- }
-+EXPORT_SYMBOL(zorro_match_device);
- 
- 
- static int zorro_device_probe(struct device *dev)
-@@ -91,6 +92,7 @@ int zorro_register_driver(struct zorro_driver *drv)
- 	/* register with core */
- 	return driver_register(&drv->driver);
- }
-+EXPORT_SYMBOL(zorro_register_driver);
- 
- 
-     /**
-@@ -107,6 +109,7 @@ void zorro_unregister_driver(struct zorro_driver *drv)
- {
- 	driver_unregister(&drv->driver);
- }
-+EXPORT_SYMBOL(zorro_unregister_driver);
- 
- 
-     /**
-@@ -168,6 +171,7 @@ struct bus_type zorro_bus_type = {
- 	.probe	= zorro_device_probe,
- 	.remove	= zorro_device_remove,
- };
-+EXPORT_SYMBOL(zorro_bus_type);
- 
- 
- static int __init zorro_driver_init(void)
-@@ -177,7 +181,3 @@ static int __init zorro_driver_init(void)
- 
- postcore_initcall(zorro_driver_init);
- 
--EXPORT_SYMBOL(zorro_match_device);
--EXPORT_SYMBOL(zorro_register_driver);
--EXPORT_SYMBOL(zorro_unregister_driver);
--EXPORT_SYMBOL(zorro_bus_type);
+ drivers/net/wireless/ath/ath6kl/bmi.c      |    4 +-
+ drivers/net/wireless/ath/ath6kl/cfg80211.c |  101 ++++++++++++---------------
+ drivers/net/wireless/ath/ath6kl/debug.c    |   20 +++---
+ drivers/net/wireless/ath/ath6kl/debug.h    |   27 ++++----
+ drivers/net/wireless/ath/ath6kl/htc.c      |   11 ++--
+ drivers/net/wireless/ath/ath6kl/init.c     |    8 +-
+ drivers/net/wireless/ath/ath6kl/main.c     |   13 ++--
+ drivers/net/wireless/ath/ath6kl/sdio.c     |   12 ++--
+ drivers/net/wireless/ath/ath6kl/txrx.c     |   30 ++++-----
+ drivers/net/wireless/ath/ath6kl/wmi.c      |    8 +--
+ 10 files changed, 107 insertions(+), 127 deletions(-)
+
 -- 
-1.7.0.4
+1.7.6.131.g99019
 
