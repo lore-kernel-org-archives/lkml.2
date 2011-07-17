@@ -1,101 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755432Ab1GQJj3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jul 2011 05:39:29 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:35264 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754108Ab1GQJj1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jul 2011 05:39:27 -0400
-References: <1310717238-13857-1-git-send-email-haishan.bai@gmail.com> <1310717238-13857-2-git-send-email-haishan.bai@gmail.com> <1310725418.2586.309.camel@twins> <4E21A526.8010904@gmail.com> <1310860194.25044.17.camel@pasglop>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <1310860194.25044.17.camel@pasglop>
+	id S1755598Ab1GQJmS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jul 2011 05:42:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55646 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752470Ab1GQJmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Jul 2011 05:42:16 -0400
+Date: Sun, 17 Jul 2011 12:42:01 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Roopa Prabhu <roprabhu@cisco.com>
+Cc: Tom Lendacky <tahm@linux.vnet.ibm.com>,
+        Krishna Kumar2 <krkumar2@in.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Carsten Otte <cotte@de.ibm.com>, habanero@linux.vnet.ibm.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, kvm@vger.kernel.org,
+        lguest@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux390@de.ibm.com,
+        netdev@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>, steved@us.ibm.com,
+        virtualization@lists.linux-foundation.org, Shirley Ma <xma@us.ibm.com>
+Subject: Re: RFT: virtio_net: limit xmit polling
+Message-ID: <20110717094201.GB17404@redhat.com>
+References: <20110629084206.GA14627@redhat.com>
+ <CA4493AD.2E273%roprabhu@cisco.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH 1/1] Fixup write permission of TLB on powerpc e500 core
-From: Peter Zijlstra <peterz@infradead.org>
-Date: Sun, 17 Jul 2011 11:38:11 +0200
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Shan Hai <haishan.bai@gmail.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, paulus@samba.org,
-        tglx@linutronix.de, walken@google.com, dhowells@redhat.com,
-        cmetcalf@tilera.com, tony.luck@intel.com, akpm@linux-foundation.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Message-ID: <4b337921-d430-4b63-bc36-ad31753cf800@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA4493AD.2E273%roprabhu@cisco.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
+On Thu, Jul 14, 2011 at 12:38:05PM -0700, Roopa Prabhu wrote:
+> Michael, below are some numbers I got from one round of runs.
+> Thanks,
+> Roopa
 
->On Sat, 2011-07-16 at 10:50 -0400, Shan Hai wrote:
->> 
->> That's right the gup(.write=1) want to do the same thing as the
->> above code snippet, but it failed for the following reason:
->> because the get_user_pages() would not dirty pte for the reason
->> the follow_page() returns not NULL on *present* and *writable*
->> page, the page which holds the lock is present because its a shared
->> page,
->> writable because demand paging set that up so for shared
->> writable page, so the handle_mm_fault() in the __get_user_page()
->> could not be called.
->> 
->> Why the above code could do the same task, because by calling
->> handle_mm_fault() will set pte dirty by
->> [do_annonymous_page(), memory.c]
->> if (vma->vm_flags & VM_WRITE)
->>                  entry = pte_mkwrite(pte_mkdirty(entry));
->> 
->
->Right. gup won't set page_dirty, it expects the caller to do so (in
->case
->it doesn't dirty all the gup'ed pages a suppose).
->
->You could probably fix the problem here by setting dirty after gup in
->the futex code if you know you're going to write. You must do that with
->the PTE lock held though and -not- at interrupt time.
->
->Note however that the exact same problem exist with normal "read"
->accesses and page_young (_PAGE_ACCESSED on powerpc). The page will not
->be accessible until that bit is set and it's set by SW.
->
->As I wrote earlier, fixing that by making "atomic" page faults perform
->the dirty/accessed tracking is not right, since such faults can happen
->at interrupt time and the PTE lock cannot be taken at interrupt time.
->
->IE. The implementation of those "SW" TLB archs heavily relies on the
->PTE
->lock to serialize write access to the PTE and writing it outside of
->that
->lock would do really bad things.
->
->So there's a deeper problem here. The whole user access "in atomic"
->concept is by itself a violation of some of the basic access rules of
->user memory that have existed from day 1 of the kernel. That we allow
->it
->for semi-harmless (and allowed to fail) things like snapshot of
->backtraces for perf is one thing, but relying on it for the futex case
->like that is not going to fly very well. I sincerely hope that this
->kind
->of usage is not going to become a habit.
->
->In the meantime, other than rewriting the futex code to not require
->those in-atomic accesses (can't it just access the pages via the linear
->mapping and/or kmap after the gup ?), all I see would be a way to force
->dirty and young after gup, with appropriate locks, or a variant of gup
->(via a flag ?) to require it to do so.
->
->Cheers,
->Ben.
+Thanks!
+At this point it does not appear like there's any measureable
+impact from moving the polling around.
 
-Whats this talk about interrup context? There is non of that involved.
-
-Furthermore, I still dont see the problem. The futex code is optimistically trying to poke at user memory while holding spinlocks.
-
-We fully expect that to fail, hence the error path that drops all locks and does the gup(.write=1) to fix up the mapping after which we try again.
-
-This has worked for years, its by no means new code. Nor do I see how its broken.
 -- 
-Sent from my Android phone with K-9 Mail. Please excuse my brevity.
+MST
