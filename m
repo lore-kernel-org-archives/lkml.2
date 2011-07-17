@@ -1,83 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755Ab1GQLxp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jul 2011 07:53:45 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:52346 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751490Ab1GQLxn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jul 2011 07:53:43 -0400
-Date: Sun, 17 Jul 2011 19:53:23 +0800
-From: Harry Wei <jiaweiwei.xiyou@gmail.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: stefanb@linux.vnet.ibm.com, sfr@canb.auug.org.au,
-        srajiv@linux.vnet.ibm.com, jmorris@namei.org,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        kongjianjun@gmail.com, harryxiyou@gmail.com
-Subject: Re: [PATCH] tpm: Move tpm_tis_reenable_interrupts out of
- CONFIG_PNP block
-Message-ID: <20110717115320.GA14595@gmail.com>
-Mail-Followup-To: Randy Dunlap <rdunlap@xenotime.net>,
-	stefanb@linux.vnet.ibm.com, sfr@canb.auug.org.au,
-	srajiv@linux.vnet.ibm.com, jmorris@namei.org,
-	linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-	kongjianjun@gmail.com, harryxiyou@gmail.com
-References: <1310879064.15064.4.camel@d941e-10>
- <20110716223426.f1507465.rdunlap@xenotime.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=gb2312
-Content-Disposition: inline
-In-Reply-To: <20110716223426.f1507465.rdunlap@xenotime.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755653Ab1GQL5w (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jul 2011 07:57:52 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:34426 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751490Ab1GQL5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Jul 2011 07:57:49 -0400
+Subject: [PATCH] tpm: Fix compilation warning when CONFIG_PNP is not defined
+From: Stefan Berger <stefanb@linux.vnet.ibm.com>
+To: rdunlap@xenotime.net, Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Morris <jmorris@namei.org>, linux-next@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 17 Jul 2011 07:55:58 -0400
+Message-ID: <1310903758.15064.9.camel@d941e-10>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 16, 2011 at 10:34:26PM -0700, Randy Dunlap wrote:
-> New warning:
-> drivers/char/tpm/tpm_tis.c:97: warning: 'is_itpm' defined but not used
+The is_itpm() function is only accessed from a block surrounded by
+#ifdef CONFIG_PNP. Therefore, also surround it with #ifdef CONFIG_PNP
+and remove the #else branch causing the warning.
 
-From: Harry Wei <harryxiyou@gmail.com>
+http://lxr.linux.no/#linux+v2.6.39/drivers/char/tpm/tpm_tis.c#L622
 
-This patch can fix above warning.
+Signed-off-by: Stefan Berger <stefanb@linux.vnet.ibm.com>
 
-Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-Signed-off-by: Harry Wei <harryxiyou@gmail.com>
 ---
- drivers/char/tpm/tpm_tis.c |   20 --------------------
- 1 files changed, 0 insertions(+), 20 deletions(-)
+ drivers/char/tpm/tpm_tis.c |    7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
-diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
-index dd21df5..5929bb2 100644
---- a/drivers/char/tpm/tpm_tis.c
-+++ b/drivers/char/tpm/tpm_tis.c
-@@ -79,26 +79,6 @@ enum tis_defaults {
+Index: linux-2.6/drivers/char/tpm/tpm_tis.c
+===================================================================
+--- linux-2.6.orig/drivers/char/tpm/tpm_tis.c
++++ linux-2.6/drivers/char/tpm/tpm_tis.c
+@@ -80,7 +80,7 @@ enum tis_defaults {
  static LIST_HEAD(tis_chips);
  static DEFINE_SPINLOCK(tis_lock);
  
 -#ifdef CONFIG_ACPI
--static int is_itpm(struct pnp_dev *dev)
--{
--	struct acpi_device *acpi = pnp_acpi_device(dev);
--	struct acpi_hardware_id *id;
--
--	list_for_each_entry(id, &acpi->pnp.ids, list) {
--		if (!strcmp("INTC0102", id->id))
--			return 1;
--	}
--
--	return 0;
--}
++#ifdef CONFIG_PNPN
+ static int is_itpm(struct pnp_dev *dev)
+ {
+ 	struct acpi_device *acpi = pnp_acpi_device(dev);
+@@ -93,11 +93,6 @@ static int is_itpm(struct pnp_dev *dev)
+ 
+ 	return 0;
+ }
 -#else
 -static int is_itpm(struct pnp_dev *dev)
 -{
 -	return 0;
 -}
--#endif
--
+ #endif
+ 
  static int check_locality(struct tpm_chip *chip, int l)
- {
- 	if ((ioread8(chip->vendor.iobase + TPM_ACCESS(l)) &
--- 
-1.7.0.4
 
