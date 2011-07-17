@@ -1,60 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756147Ab1GQRbL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jul 2011 13:31:11 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:44613 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753695Ab1GQRbK (ORCPT
+	id S1756153Ab1GQRqU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jul 2011 13:46:20 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:20445 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753218Ab1GQRqS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jul 2011 13:31:10 -0400
-Date: Sun, 17 Jul 2011 19:31:06 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: David Ahern <dsahern@gmail.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>
-Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        paulus@samba.org, tglx@linutronix.de
-Subject: Re: [PATCH] perf script: fix display of IP address for non-callchain
- path
-Message-ID: <20110717173103.GB29355@somewhere>
-References: <1306768587-15376-1-git-send-email-dsahern@gmail.com>
+	Sun, 17 Jul 2011 13:46:18 -0400
+Date: Sun, 17 Jul 2011 19:46:16 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: netdev@vger.kernel.org, coreteam@netfilter.org, netfilter@vger.kernel.org,
+        netfilter-devel@vger.kernel.org,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        James Morris <jmorris@namei.org>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "David S. Miller" <davem@davemloft.net>,
+        Patrick McHardy <kaber@trash.net>
+Subject: [PATCH][RFC] netfilter: Fix small leak in
+ ipq_build_packet_message()
+Message-ID: <alpine.LNX.2.00.1107171942400.32359@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1306768587-15376-1-git-send-email-dsahern@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 30, 2011 at 09:16:27AM -0600, David Ahern wrote:
-> Non-callchain path is using al.addr which prints as:
->   openssl 14564 17672.003587:       7862d _x86_64_AES_encrypt_compact
-> 
-> This should be sample->ip to print as:
->   openssl 14564 17672.003587:  3f7867862d _x86_64_AES_encrypt_compact
-> 
-> Signed-off-by: David Ahern <dsahern@gmail.com>
+ipq_build_packet_message() in net/ipv4/netfilter/ip_queue.c and
+net/ipv6/netfilter/ip6_queue.c contain a small potential mem leak as
+far as I can tell.
 
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+We allocate memory for 'skb' with alloc_skb() annd then call
+ nlh = NLMSG_PUT(skb, 0, 0, IPQM_PACKET, size - sizeof(*nlh));
 
-> ---
->  tools/perf/util/session.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-> index e6cf0e2..360d8c4 100644
-> --- a/tools/perf/util/session.c
-> +++ b/tools/perf/util/session.c
-> @@ -1247,7 +1247,7 @@ void perf_session__print_ip(union perf_event *event,
->  		}
->  
->  	} else {
-> -		printf("%16" PRIx64, al.addr);
-> +		printf("%16" PRIx64, sample->ip);
->  		if (print_sym) {
->  			if (al.sym && al.sym->name)
->  				symname = al.sym->name;
-> -- 
-> 1.7.5.2
-> 
+NLMSG_PUT is a macro
+ NLMSG_PUT(skb, pid, seq, type, len) \
+  		NLMSG_NEW(skb, pid, seq, type, len, 0)
+
+that expands to NLMSG_NEW, which is also a macro which expands to:
+ NLMSG_NEW(skb, pid, seq, type, len, flags) \
+  	({	if (unlikely(skb_tailroom(skb) < (int)NLMSG_SPACE(len))) \
+  			goto nlmsg_failure; \
+  		__nlmsg_put(skb, pid, seq, type, len, flags); })
+
+If we take the true branch of the 'if' statement and 'goto
+nlmsg_failure', then we'll, at that point, return from
+ipq_build_packet_message() without having assigned 'skb' to anything
+and we'll leak the memory we allocated for it when it goes out of
+scope.
+
+Fix this by placing a 'kfree(skb)' at 'nlmsg_failure'.
+
+I admit that I do not know how likely this to actually happen or even
+if there's something that guarantees that it will never happen - I'm
+not that familiar with this code, but if that is so, I've not been
+able to spot it.
+
+Please review and commit if you believe this is correct. Thanks.
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ net/ipv4/netfilter/ip_queue.c  |    1 +
+ net/ipv6/netfilter/ip6_queue.c |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
+
+  Disclaimer: Patch is compile tested only.
+
+diff --git a/net/ipv4/netfilter/ip_queue.c b/net/ipv4/netfilter/ip_queue.c
+index 5c9b9d9..48f7d5b 100644
+--- a/net/ipv4/netfilter/ip_queue.c
++++ b/net/ipv4/netfilter/ip_queue.c
+@@ -218,6 +218,7 @@ ipq_build_packet_message(struct nf_queue_entry *entry, int *errp)
+ 	return skb;
+ 
+ nlmsg_failure:
++	kfree_skb(skb);
+ 	*errp = -EINVAL;
+ 	printk(KERN_ERR "ip_queue: error creating packet message\n");
+ 	return NULL;
+diff --git a/net/ipv6/netfilter/ip6_queue.c b/net/ipv6/netfilter/ip6_queue.c
+index 2493948..87b243a 100644
+--- a/net/ipv6/netfilter/ip6_queue.c
++++ b/net/ipv6/netfilter/ip6_queue.c
+@@ -218,6 +218,7 @@ ipq_build_packet_message(struct nf_queue_entry *entry, int *errp)
+ 	return skb;
+ 
+ nlmsg_failure:
++	kfree_skb(skb);
+ 	*errp = -EINVAL;
+ 	printk(KERN_ERR "ip6_queue: error creating packet message\n");
+ 	return NULL;
+-- 
+1.7.6
+
+
+PS. Please CC me on replies since I'm not subscribed to all the lists 
+copied on this mail.
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
