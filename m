@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755727Ab1GQLfV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jul 2011 07:35:21 -0400
-Received: from relay.parallels.com ([195.214.232.42]:46554 "EHLO
+	id S1755837Ab1GQLfc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jul 2011 07:35:32 -0400
+Received: from relay.parallels.com ([195.214.232.42]:46571 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752873Ab1GQLfS (ORCPT
+	with ESMTP id S1755804Ab1GQLf2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jul 2011 07:35:18 -0400
-Subject: [PATCH] vfs: use ERR_CAST for err-ptr tossing in
- lookup_instantiate_filp
+	Sun, 17 Jul 2011 07:35:28 -0400
+Subject: [PATCH] mm: remove useless rcu lock-unlock from mapping_tagged()
 To: Andrew Morton <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Date: Sun, 17 Jul 2011 15:35:12 +0400
-Message-ID: <20110717113512.17120.29865.stgit@localhost6>
+Date: Sun, 17 Jul 2011 15:35:23 +0400
+Message-ID: <20110717113522.17196.13682.stgit@localhost6>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -21,24 +20,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace unclear (struct dentry *) to (struct file *) typecast with ERR_CAST() macro.
+radix_tree_tagged() is lockless, it does not require any protection.
 
 Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 ---
- fs/open.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ mm/page-writeback.c |    6 +-----
+ 1 files changed, 1 insertions(+), 5 deletions(-)
 
-diff --git a/fs/open.c b/fs/open.c
-index b52cf01..739b751 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -793,7 +793,7 @@ out:
- 	return nd->intent.open.file;
- out_err:
- 	release_open_intent(nd);
--	nd->intent.open.file = (struct file *)dentry;
-+	nd->intent.open.file = ERR_CAST(dentry);
- 	goto out;
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 31f6988..919b45e 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -1405,10 +1405,6 @@ EXPORT_SYMBOL(test_set_page_writeback);
+  */
+ int mapping_tagged(struct address_space *mapping, int tag)
+ {
+-	int ret;
+-	rcu_read_lock();
+-	ret = radix_tree_tagged(&mapping->page_tree, tag);
+-	rcu_read_unlock();
+-	return ret;
++	return radix_tree_tagged(&mapping->page_tree, tag);
  }
- EXPORT_SYMBOL_GPL(lookup_instantiate_filp);
+ EXPORT_SYMBOL(mapping_tagged);
 
