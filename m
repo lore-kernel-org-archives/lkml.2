@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932076Ab1GQPJu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jul 2011 11:09:50 -0400
-Received: from mail.southpole.se ([193.12.106.18]:34896 "EHLO
+	id S1756118Ab1GQPJw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jul 2011 11:09:52 -0400
+Received: from mail.southpole.se ([193.12.106.18]:34887 "EHLO
 	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756060Ab1GQPJg (ORCPT
+	with ESMTP id S1756073Ab1GQPJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jul 2011 11:09:36 -0400
+	Sun, 17 Jul 2011 11:09:37 -0400
 From: Jonas Bonn <jonas@southpole.se>
 To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
 Cc: Jonas Bonn <jonas@southpole.se>
-Subject: [PATCH v3 10/19] OpenRISC: System calls
-Date: Sun, 17 Jul 2011 17:08:20 +0200
-Message-Id: <430f51c6792aeff3ddc11caec8e5d48770c0ab54.1310913472.git.jonas@southpole.se>
+Subject: [PATCH v3 12/19] OpenRISC: Scheduling/Process management
+Date: Sun, 17 Jul 2011 17:08:22 +0200
+Message-Id: <542643f1cc43d6d2c64f988d9f35adf459d67171.1310913472.git.jonas@southpole.se>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <cover.1310913472.git.jonas@southpole.se>
 References: <cover.1310913472.git.jonas@southpole.se>
@@ -24,36 +24,21 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-The OpenRISC Linux kernel conforms to the "generic" syscall interface which
-contains only the reduced set of syscalls deemed necessary for new
-architectures.  Unfortunately, the uClibc port for OpenRISC does not fully
-support this reduced set; as such, an additional patch available out-of-tree
-needs to be applied to the kernel in order to use the current uClibc.  This
-is just a temporary measure until the libc port can be straightened out; it
-is likely that OpenRISC will make the transition to glibc shortly where the
-generic syscall interface is better supported.
-
 Signed-off-by: Jonas Bonn <jonas@southpole.se>
 Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/openrisc/include/asm/syscall.h   |   77 +++++++++++++++++++++++++++++++++
- arch/openrisc/include/asm/syscalls.h  |   27 +++++++++++
- arch/openrisc/include/asm/unistd.h    |   31 +++++++++++++
- arch/openrisc/kernel/sys_call_table.c |   28 ++++++++++++
- arch/openrisc/kernel/sys_or32.c       |   57 ++++++++++++++++++++++++
- 5 files changed, 220 insertions(+), 0 deletions(-)
- create mode 100644 arch/openrisc/include/asm/syscall.h
- create mode 100644 arch/openrisc/include/asm/syscalls.h
- create mode 100644 arch/openrisc/include/asm/unistd.h
- create mode 100644 arch/openrisc/kernel/sys_call_table.c
- create mode 100644 arch/openrisc/kernel/sys_or32.c
+ arch/openrisc/include/asm/thread_info.h |  134 +++++++++++++
+ arch/openrisc/kernel/process.c          |  311 +++++++++++++++++++++++++++++++
+ 2 files changed, 445 insertions(+), 0 deletions(-)
+ create mode 100644 arch/openrisc/include/asm/thread_info.h
+ create mode 100644 arch/openrisc/kernel/process.c
 
-diff --git a/arch/openrisc/include/asm/syscall.h b/arch/openrisc/include/asm/syscall.h
+diff --git a/arch/openrisc/include/asm/thread_info.h b/arch/openrisc/include/asm/thread_info.h
 new file mode 100644
-index 0000000..9f03370
+index 0000000..07a8bc0
 --- /dev/null
-+++ b/arch/openrisc/include/asm/syscall.h
-@@ -0,0 +1,77 @@
++++ b/arch/openrisc/include/asm/thread_info.h
+@@ -0,0 +1,134 @@
 +/*
 + * OpenRISC Linux
 + *
@@ -72,177 +57,130 @@ index 0000000..9f03370
 + * (at your option) any later version.
 + */
 +
-+#ifndef __ASM_OPENRISC_SYSCALL_H__
-+#define __ASM_OPENRISC_SYSCALL_H__
++#ifndef _ASM_THREAD_INFO_H
++#define _ASM_THREAD_INFO_H
 +
-+#include <linux/err.h>
-+#include <linux/sched.h>
++#ifdef __KERNEL__
 +
-+static inline int
-+syscall_get_nr(struct task_struct *task, struct pt_regs *regs)
-+{
-+	return regs->syscallno ? regs->syscallno : -1;
-+}
-+
-+static inline void
-+syscall_rollback(struct task_struct *task, struct pt_regs *regs)
-+{
-+	regs->gpr[11] = regs->orig_gpr11;
-+}
-+
-+static inline long
-+syscall_get_error(struct task_struct *task, struct pt_regs *regs)
-+{
-+	return IS_ERR_VALUE(regs->gpr[11]) ? regs->gpr[11] : 0;
-+}
-+
-+static inline long
-+syscall_get_return_value(struct task_struct *task, struct pt_regs *regs)
-+{
-+	return regs->gpr[11];
-+}
-+
-+static inline void
-+syscall_set_return_value(struct task_struct *task, struct pt_regs *regs,
-+			 int error, long val)
-+{
-+	if (error)
-+		regs->gpr[11] = -error;
-+	else
-+		regs->gpr[11] = val;
-+}
-+
-+static inline void
-+syscall_get_arguments(struct task_struct *task, struct pt_regs *regs,
-+		      unsigned int i, unsigned int n, unsigned long *args)
-+{
-+	BUG_ON(i + n > 6);
-+
-+	memcpy(args, &regs->gpr[3 + i], n * sizeof(args[0]));
-+}
-+
-+static inline void
-+syscall_set_arguments(struct task_struct *task, struct pt_regs *regs,
-+		      unsigned int i, unsigned int n, const unsigned long *args)
-+{
-+	BUG_ON(i + n > 6);
-+
-+	memcpy(&regs->gpr[3 + i], args, n * sizeof(args[0]));
-+}
-+
++#ifndef __ASSEMBLY__
++#include <asm/types.h>
++#include <asm/processor.h>
 +#endif
-diff --git a/arch/openrisc/include/asm/syscalls.h b/arch/openrisc/include/asm/syscalls.h
-new file mode 100644
-index 0000000..84a978a
---- /dev/null
-+++ b/arch/openrisc/include/asm/syscalls.h
-@@ -0,0 +1,27 @@
-+/*
-+ * OpenRISC Linux
-+ *
-+ * Linux architectural port borrowing liberally from similar works of
-+ * others.  All original copyrights apply as per the original source
-+ * declaration.
-+ *
-+ * OpenRISC implementation:
-+ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
-+ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
-+ * et al.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
++
++
++/* THREAD_SIZE is the size of the task_struct/kernel_stack combo.
++ * normally, the stack is found by doing something like p + THREAD_SIZE
++ * in or32, a page is 8192 bytes, which seems like a sane size
 + */
 +
-+#ifndef __ASM_OPENRISC_SYSCALLS_H
-+#define __ASM_OPENRISC_SYSCALLS_H
++#define THREAD_SIZE_ORDER 0
++#define THREAD_SIZE       (PAGE_SIZE << THREAD_SIZE_ORDER)
 +
-+asmlinkage long sys_or1k_atomic(unsigned long type, unsigned long *v1,
-+				unsigned long *v2);
-+
-+#include <asm-generic/syscalls.h>
-+
-+#endif /* __ASM_OPENRISC_SYSCALLS_H */
-diff --git a/arch/openrisc/include/asm/unistd.h b/arch/openrisc/include/asm/unistd.h
-new file mode 100644
-index 0000000..89af3ab
---- /dev/null
-+++ b/arch/openrisc/include/asm/unistd.h
-@@ -0,0 +1,31 @@
 +/*
-+ * OpenRISC Linux
-+ *
-+ * Linux architectural port borrowing liberally from similar works of
-+ * others.  All original copyrights apply as per the original source
-+ * declaration.
-+ *
-+ * OpenRISC implementation:
-+ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
-+ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
-+ * et al.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
++ * low level task data that entry.S needs immediate access to
++ * - this struct should fit entirely inside of one cache line
++ * - this struct shares the supervisor stack pages
++ * - if the contents of this structure are changed, the assembly constants
++ *   must also be changed
 + */
++#ifndef __ASSEMBLY__
 +
-+#if !defined(__ASM_OPENRISC_UNISTD_H) || defined(__SYSCALL)
-+#define __ASM_OPENRISC_UNISTD_H
++typedef unsigned long mm_segment_t;
 +
-+#define __ARCH_HAVE_MMU
++struct thread_info {
++	struct task_struct	*task;		/* main task structure */
++	struct exec_domain	*exec_domain;	/* execution domain */
++	unsigned long		flags;		/* low level flags */
++	__u32			cpu;		/* current CPU */
++	__s32			preempt_count; /* 0 => preemptable, <0 => BUG */
 +
-+#define sys_mmap2 sys_mmap_pgoff
++	mm_segment_t		addr_limit; /* thread address space:
++					       0-0x7FFFFFFF for user-thead
++					       0-0xFFFFFFFF for kernel-thread
++					     */
++	struct restart_block    restart_block;
++	__u8			supervisor_stack[0];
 +
-+#include <asm-generic/unistd.h>
-+
-+#define __NR_or1k_atomic __NR_arch_specific_syscall
-+__SYSCALL(__NR_or1k_atomic, sys_or1k_atomic)
-+
-+#endif /* __ASM_OPENRISC_UNISTD_H */
-diff --git a/arch/openrisc/kernel/sys_call_table.c b/arch/openrisc/kernel/sys_call_table.c
-new file mode 100644
-index 0000000..e1f8ce8
---- /dev/null
-+++ b/arch/openrisc/kernel/sys_call_table.c
-@@ -0,0 +1,28 @@
-+/*
-+ * OpenRISC sys_call_table.c
-+ *
-+ * Linux architectural port borrowing liberally from similar works of
-+ * others.  All original copyrights apply as per the original source
-+ * declaration.
-+ *
-+ * Modifications for the OpenRISC architecture:
-+ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
-+ *
-+ *      This program is free software; you can redistribute it and/or
-+ *      modify it under the terms of the GNU General Public License
-+ *      as published by the Free Software Foundation; either version
-+ *      2 of the License, or (at your option) any later version.
-+ */
-+
-+#include <linux/syscalls.h>
-+#include <linux/signal.h>
-+#include <linux/unistd.h>
-+
-+#include <asm/syscalls.h>
-+
-+#undef __SYSCALL
-+#define __SYSCALL(nr, call) [nr] = (call),
-+
-+void *sys_call_table[__NR_syscalls] = {
-+#include <asm/unistd.h>
++	/* saved context data */
++	unsigned long           ksp;
 +};
-diff --git a/arch/openrisc/kernel/sys_or32.c b/arch/openrisc/kernel/sys_or32.c
-new file mode 100644
-index 0000000..5706008
---- /dev/null
-+++ b/arch/openrisc/kernel/sys_or32.c
-@@ -0,0 +1,57 @@
++#endif
++
 +/*
-+ * OpenRISC sys_or32.c
++ * macros/functions for gaining access to the thread information structure
++ *
++ * preempt_count needs to be 1 initially, until the scheduler is functional.
++ */
++#ifndef __ASSEMBLY__
++#define INIT_THREAD_INFO(tsk)				\
++{							\
++	.task		= &tsk,				\
++	.exec_domain	= &default_exec_domain,		\
++	.flags		= 0,				\
++	.cpu		= 0,				\
++	.preempt_count	= 1,				\
++	.addr_limit	= KERNEL_DS,			\
++	.restart_block  = {				\
++			  .fn = do_no_restart_syscall,	\
++	},						\
++	.ksp            = 0,                            \
++}
++
++#define init_thread_info	(init_thread_union.thread_info)
++
++/* how to get the thread information struct from C */
++register struct thread_info *current_thread_info_reg asm("r10");
++#define current_thread_info()   (current_thread_info_reg)
++
++#define get_thread_info(ti) get_task_struct((ti)->task)
++#define put_thread_info(ti) put_task_struct((ti)->task)
++
++#endif /* !__ASSEMBLY__ */
++
++/*
++ * thread information flags
++ *   these are process state flags that various assembly files may need to
++ *   access
++ *   - pending work-to-be-done flags are in LSW
++ *   - other flags in MSW
++ */
++#define TIF_SYSCALL_TRACE	0	/* syscall trace active */
++#define TIF_NOTIFY_RESUME	1	/* resumption notification requested */
++#define TIF_SIGPENDING		2	/* signal pending */
++#define TIF_NEED_RESCHED	3	/* rescheduling necessary */
++#define TIF_SINGLESTEP		4	/* restore singlestep on return to user
++					 * mode
++					 */
++#define TIF_SYSCALL_TRACEPOINT  8       /* for ftrace syscall instrumentation */
++#define TIF_RESTORE_SIGMASK     9
++#define TIF_POLLING_NRFLAG	16	/* true if poll_idle() is polling						 * TIF_NEED_RESCHED
++					 */
++#define TIF_MEMDIE              17
++
++#define _TIF_SYSCALL_TRACE	(1<<TIF_SYSCALL_TRACE)
++#define _TIF_NOTIFY_RESUME	(1<<TIF_NOTIFY_RESUME)
++#define _TIF_SIGPENDING		(1<<TIF_SIGPENDING)
++#define _TIF_NEED_RESCHED	(1<<TIF_NEED_RESCHED)
++#define _TIF_SINGLESTEP		(1<<TIF_SINGLESTEP)
++#define _TIF_RESTORE_SIGMASK     (1<<TIF_RESTORE_SIGMASK)
++#define _TIF_POLLING_NRFLAG	(1<<TIF_POLLING_NRFLAG)
++
++
++/* Work to do when returning from interrupt/exception */
++/* For OpenRISC, this is anything in the LSW other than syscall trace */
++#define _TIF_WORK_MASK (0xff & ~(_TIF_SYSCALL_TRACE|_TIF_SINGLESTEP))
++
++#endif /* __KERNEL__ */
++
++#endif /* _ASM_THREAD_INFO_H */
+diff --git a/arch/openrisc/kernel/process.c b/arch/openrisc/kernel/process.c
+new file mode 100644
+index 0000000..e4209af
+--- /dev/null
++++ b/arch/openrisc/kernel/process.c
+@@ -0,0 +1,311 @@
++/*
++ * OpenRISC process.c
 + *
 + * Linux architectural port borrowing liberally from similar works of
 + * others.  All original copyrights apply as per the original source
@@ -257,46 +195,300 @@ index 0000000..5706008
 + *      as published by the Free Software Foundation; either version
 + *      2 of the License, or (at your option) any later version.
 + *
-+ * This file contains various random system calls that
-+ * have a non-standard calling sequence on some platforms.
-+ * Since we don't have to do any backwards compatibility, our
-+ * versions are done in the most "normal" way possible.
++ * This file handles the architecture-dependent parts of process handling...
 + */
++
++#define __KERNEL_SYSCALLS__
++#include <stdarg.h>
 +
 +#include <linux/errno.h>
-+#include <linux/syscalls.h>
++#include <linux/sched.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
 +#include <linux/mm.h>
++#include <linux/stddef.h>
++#include <linux/unistd.h>
++#include <linux/ptrace.h>
++#include <linux/slab.h>
++#include <linux/elfcore.h>
++#include <linux/interrupt.h>
++#include <linux/delay.h>
++#include <linux/init_task.h>
++#include <linux/mqueue.h>
++#include <linux/fs.h>
 +
-+#include <asm/syscalls.h>
++#include <asm/uaccess.h>
++#include <asm/pgtable.h>
++#include <asm/system.h>
++#include <asm/io.h>
++#include <asm/processor.h>
++#include <asm/spr_defs.h>
 +
-+/* These are secondary entry points as the primary entry points are defined in
-+ * entry.S where we add the 'regs' parameter value
++#include <linux/smp.h>
++
++/*
++ * Pointer to Current thread info structure.
++ *
++ * Used at user space -> kernel transitions.
 + */
++struct thread_info *current_thread_info_set[NR_CPUS] = { &init_thread_info, };
 +
-+asmlinkage long _sys_clone(unsigned long clone_flags, unsigned long newsp,
-+			   int __user *parent_tid, int __user *child_tid,
-+			   struct pt_regs *regs)
++void machine_restart(void)
 +{
-+	long ret;
-+
-+	/* FIXME: Is alignment necessary? */
-+	/* newsp = ALIGN(newsp, 4); */
-+
-+	if (!newsp)
-+		newsp = regs->sp;
-+
-+	ret = do_fork(clone_flags, newsp, regs, 0, parent_tid, child_tid);
-+
-+	return ret;
++	printk(KERN_INFO "*** MACHINE RESTART ***\n");
++	__asm__("l.nop 1");
 +}
 +
-+asmlinkage int _sys_fork(struct pt_regs *regs)
++/*
++ * Similar to machine_power_off, but don't shut off power.  Add code
++ * here to freeze the system for e.g. post-mortem debug purpose when
++ * possible.  This halt has nothing to do with the idle halt.
++ */
++void machine_halt(void)
 +{
-+#ifdef CONFIG_MMU
-+	return do_fork(SIGCHLD, regs->sp, regs, 0, NULL, NULL);
-+#else
-+	return -EINVAL;
-+#endif
++	printk(KERN_INFO "*** MACHINE HALT ***\n");
++	__asm__("l.nop 1");
++}
++
++/* If or when software power-off is implemented, add code here.  */
++void machine_power_off(void)
++{
++	printk(KERN_INFO "*** MACHINE POWER OFF ***\n");
++	__asm__("l.nop 1");
++}
++
++void (*pm_power_off) (void) = machine_power_off;
++
++/*
++ * When a process does an "exec", machine state like FPU and debug
++ * registers need to be reset.  This is a hook function for that.
++ * Currently we don't have any such state to reset, so this is empty.
++ */
++void flush_thread(void)
++{
++}
++
++void show_regs(struct pt_regs *regs)
++{
++	extern void show_registers(struct pt_regs *regs);
++
++	/* __PHX__ cleanup this mess */
++	show_registers(regs);
++}
++
++unsigned long thread_saved_pc(struct task_struct *t)
++{
++	return (unsigned long)user_regs(t->stack)->pc;
++}
++
++void release_thread(struct task_struct *dead_task)
++{
++}
++
++/*
++ * Copy the thread-specific (arch specific) info from the current
++ * process to the new one p
++ */
++extern asmlinkage void ret_from_fork(void);
++
++int
++copy_thread(unsigned long clone_flags, unsigned long usp,
++	    unsigned long unused, struct task_struct *p, struct pt_regs *regs)
++{
++	struct pt_regs *childregs;
++	struct pt_regs *kregs;
++	unsigned long sp = (unsigned long)task_stack_page(p) + THREAD_SIZE;
++	struct thread_info *ti;
++	unsigned long top_of_kernel_stack;
++
++	top_of_kernel_stack = sp;
++
++	p->set_child_tid = p->clear_child_tid = NULL;
++
++	/* Copy registers */
++	/* redzone */
++	sp -= STACK_FRAME_OVERHEAD;
++	sp -= sizeof(struct pt_regs);
++	childregs = (struct pt_regs *)sp;
++
++	/* Copy parent registers */
++	*childregs = *regs;
++
++	if ((childregs->sr & SPR_SR_SM) == 1) {
++		/* for kernel thread, set `current_thread_info'
++		 * and stackptr in new task
++		 */
++		childregs->sp = (unsigned long)task_stack_page(p) + THREAD_SIZE;
++		childregs->gpr[10] = (unsigned long)task_thread_info(p);
++	} else {
++		childregs->sp = usp;
++	}
++
++	childregs->gpr[11] = 0;	/* Result from fork() */
++
++	/*
++	 * The way this works is that at some point in the future
++	 * some task will call _switch to switch to the new task.
++	 * That will pop off the stack frame created below and start
++	 * the new task running at ret_from_fork.  The new task will
++	 * do some house keeping and then return from the fork or clone
++	 * system call, using the stack frame created above.
++	 */
++	/* redzone */
++	sp -= STACK_FRAME_OVERHEAD;
++	sp -= sizeof(struct pt_regs);
++	kregs = (struct pt_regs *)sp;
++
++	ti = task_thread_info(p);
++	ti->ksp = sp;
++
++	/* kregs->sp must store the location of the 'pre-switch' kernel stack
++	 * pointer... for a newly forked process, this is simply the top of
++	 * the kernel stack.
++	 */
++	kregs->sp = top_of_kernel_stack;
++	kregs->gpr[3] = (unsigned long)current;	/* arg to schedule_tail */
++	kregs->gpr[10] = (unsigned long)task_thread_info(p);
++	kregs->gpr[9] = (unsigned long)ret_from_fork;
++
++	return 0;
++}
++
++/*
++ * Set up a thread for executing a new program
++ */
++void start_thread(struct pt_regs *regs, unsigned long pc, unsigned long sp)
++{
++	unsigned long sr = regs->sr & ~SPR_SR_SM;
++
++	set_fs(USER_DS);
++	memset(regs->gpr, 0, sizeof(regs->gpr));
++
++	regs->pc = pc;
++	regs->sr = sr;
++	regs->sp = sp;
++
++/*	printk("start thread, ksp = %lx\n", current_thread_info()->ksp);*/
++}
++
++/* Fill in the fpu structure for a core dump.  */
++int dump_fpu(struct pt_regs *regs, elf_fpregset_t * fpu)
++{
++	/* TODO */
++	return 0;
++}
++
++extern struct thread_info *_switch(struct thread_info *old_ti,
++				   struct thread_info *new_ti);
++
++struct task_struct *__switch_to(struct task_struct *old,
++				struct task_struct *new)
++{
++	struct task_struct *last;
++	struct thread_info *new_ti, *old_ti;
++	unsigned long flags;
++
++	local_irq_save(flags);
++
++	/* current_set is an array of saved current pointers
++	 * (one for each cpu). we need them at user->kernel transition,
++	 * while we save them at kernel->user transition
++	 */
++	new_ti = new->stack;
++	old_ti = old->stack;
++
++	current_thread_info_set[smp_processor_id()] = new_ti;
++	last = (_switch(old_ti, new_ti))->task;
++
++	local_irq_restore(flags);
++
++	return last;
++}
++
++/*
++ * Write out registers in core dump format, as defined by the
++ * struct user_regs_struct
++ */
++void dump_elf_thread(elf_greg_t *dest, struct pt_regs* regs)
++{
++	dest[0] = 0; /* r0 */
++	memcpy(dest+1, regs->gpr+1, 31*sizeof(unsigned long));
++	dest[32] = regs->pc;
++	dest[33] = regs->sr;
++	dest[34] = 0;
++	dest[35] = 0;
++}
++
++extern void _kernel_thread_helper(void);
++
++void __noreturn kernel_thread_helper(int (*fn) (void *), void *arg)
++{
++	do_exit(fn(arg));
++}
++
++/*
++ * Create a kernel thread.
++ */
++int kernel_thread(int (*fn) (void *), void *arg, unsigned long flags)
++{
++	struct pt_regs regs;
++
++	memset(&regs, 0, sizeof(regs));
++
++	regs.gpr[20] = (unsigned long)fn;
++	regs.gpr[22] = (unsigned long)arg;
++	regs.sr = mfspr(SPR_SR);
++	regs.pc = (unsigned long)_kernel_thread_helper;
++
++	return do_fork(flags | CLONE_VM | CLONE_UNTRACED,
++		       0, &regs, 0, NULL, NULL);
++}
++
++/*
++ * sys_execve() executes a new program.
++ */
++asmlinkage long _sys_execve(const char __user *name,
++			    const char __user * const __user *argv,
++			    const char __user * const __user *envp,
++			    struct pt_regs *regs)
++{
++	int error;
++	char *filename;
++
++	filename = getname(name);
++	error = PTR_ERR(filename);
++
++	if (IS_ERR(filename))
++		goto out;
++
++	error = do_execve(filename, argv, envp, regs);
++	putname(filename);
++
++out:
++	return error;
++}
++
++unsigned long get_wchan(struct task_struct *p)
++{
++	/* TODO */
++
++	return 0;
++}
++
++int kernel_execve(const char *filename, char *const argv[], char *const envp[])
++{
++	register long __res asm("r11") = __NR_execve;
++	register long __a asm("r3") = (long)(filename);
++	register long __b asm("r4") = (long)(argv);
++	register long __c asm("r5") = (long)(envp);
++	__asm__ volatile ("l.sys 1"
++			  : "=r" (__res), "=r"(__a), "=r"(__b), "=r"(__c)
++			  : "0"(__res), "1"(__a), "2"(__b), "3"(__c)
++			  : "r6", "r7", "r8", "r12", "r13", "r15",
++			    "r17", "r19", "r21", "r23", "r25", "r27",
++			    "r29", "r31");
++	__asm__ volatile ("l.nop");
++	return __res;
 +}
 -- 
 1.7.4.1
