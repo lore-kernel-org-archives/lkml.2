@@ -1,118 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751073Ab1GRWjv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 18:39:51 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:53203 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846Ab1GRWju (ORCPT
+	id S1751374Ab1GRWj4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 18:39:56 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:36190 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751139Ab1GRWjx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 18:39:50 -0400
+	Mon, 18 Jul 2011 18:39:53 -0400
 From: Mark Einon <mark.einon@gmail.com>
 To: gregkh@suse.de
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         o.hartmann@telovital.com, Mark Einon <mark.einon@gmail.com>
-Subject: [PATCH 1/3] staging: et131x: Convert et1310_tx.c function name from CamelCase
-Date: Mon, 18 Jul 2011 23:38:45 +0100
-Message-Id: <1311028727-4758-1-git-send-email-mark.einon@gmail.com>
+Subject: [PATCH 2/3] staging: et131x: Removing commented out code implemented elsewhere
+Date: Mon, 18 Jul 2011 23:38:46 +0100
+Message-Id: <1311028727-4758-2-git-send-email-mark.einon@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1311028727-4758-1-git-send-email-mark.einon@gmail.com>
+References: <1311028727-4758-1-git-send-email-mark.einon@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tested on an ET-131x device.
+Function et131x_set_mac_addr() contains commented out code that has been moved to
+et131x_change_mtu() in the same file.
 
 Signed-off-by: Mark Einon <mark.einon@gmail.com>
 ---
- drivers/staging/et131x/et131x.h         |    3 +--
- drivers/staging/et131x/et131x_initpci.c |   12 ++----------
- 2 files changed, 3 insertions(+), 12 deletions(-)
+ drivers/staging/et131x/et131x_netdev.c |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/staging/et131x/et131x.h b/drivers/staging/et131x/et131x.h
-index bd5330c..9523a8b 100644
---- a/drivers/staging/et131x/et131x.h
-+++ b/drivers/staging/et131x/et131x.h
-@@ -52,8 +52,7 @@
- int et131x_init_eeprom(struct et131x_adapter *etdev);
+diff --git a/drivers/staging/et131x/et131x_netdev.c b/drivers/staging/et131x/et131x_netdev.c
+index 500c7d9..da60be7 100644
+--- a/drivers/staging/et131x/et131x_netdev.c
++++ b/drivers/staging/et131x/et131x_netdev.c
+@@ -593,7 +593,6 @@ int et131x_set_mac_addr(struct net_device *netdev, void *new_mac)
  
- /* et131x_initpci.c */
--void ConfigGlobalRegs(struct et131x_adapter *pAdapter);
--void ConfigMMCRegs(struct et131x_adapter *pAdapter);
-+void et131x_config_global_regs(struct et131x_adapter *pAdapter);
- void et131x_enable_interrupts(struct et131x_adapter *adapter);
- void et131x_disable_interrupts(struct et131x_adapter *adapter);
- void et131x_align_allocated_memory(struct et131x_adapter *adapter,
-diff --git a/drivers/staging/et131x/et131x_initpci.c b/drivers/staging/et131x/et131x_initpci.c
-index d12610d..32a20ddaa 100644
---- a/drivers/staging/et131x/et131x_initpci.c
-+++ b/drivers/staging/et131x/et131x_initpci.c
-@@ -325,7 +325,7 @@ void et131x_link_detection_handler(unsigned long data)
-  *
-  * Used to configure the global registers on the JAGCore
-  */
--void ConfigGlobalRegs(struct et131x_adapter *etdev)
-+void et131x_configure_global_regs(struct et131x_adapter *etdev)
- {
- 	struct global_regs __iomem *regs = &etdev->regs->global;
+ 	/* Set the new MAC */
+ 	/* netdev->set_mac_address  = &new_mac; */
+-	/* netdev->mtu = new_mtu; */
  
-@@ -366,7 +366,6 @@ void ConfigGlobalRegs(struct et131x_adapter *etdev)
- 	writel(0, &regs->watchdog_timer);
- }
+ 	memcpy(netdev->dev_addr, address->sa_data, netdev->addr_len);
  
--
- /**
-  * et131x_adapter_setup - Set the adapter up as per cassini+ documentation
-  * @etdev: pointer to our private adapter structure
-@@ -378,7 +377,7 @@ int et131x_adapter_setup(struct et131x_adapter *etdev)
- 	int status = 0;
+@@ -603,10 +602,6 @@ int et131x_set_mac_addr(struct net_device *netdev, void *new_mac)
+ 	/* Free Rx DMA memory */
+ 	et131x_adapter_memory_free(adapter);
  
- 	/* Configure the JAGCore */
--	ConfigGlobalRegs(etdev);
-+	et131x_configure_global_regs(etdev);
+-	/* Set the config parameter for Jumbo Packet support */
+-	/* adapter->registry_jumbo_packet = new_mtu + 14; */
+-	/* blux: not needet here, we'll change the MAC */
+-
+ 	et131x_soft_reset(adapter);
  
- 	et1310_config_mac_regs1(etdev);
- 
-@@ -517,8 +516,6 @@ void et131x_adapter_memory_free(struct et131x_adapter *adapter)
- 	et131x_rx_dma_memory_free(adapter);
- }
- 
--
--
- /**
-  * et131x_adapter_init
-  * @etdev: pointer to the private adapter struct
-@@ -527,8 +524,6 @@ void et131x_adapter_memory_free(struct et131x_adapter *adapter)
-  * Initialize the data structures for the et131x_adapter object and link
-  * them together with the platform provided device structures.
-  */
--
--
- static struct et131x_adapter *et131x_adapter_init(struct net_device *netdev,
- 		struct pci_dev *pdev)
- {
-@@ -602,7 +597,6 @@ static struct et131x_adapter *et131x_adapter_init(struct net_device *netdev,
-  * contained in the pci_device_id table. This routine is the equivalent to
-  * a device insertion routine.
-  */
--
- static int __devinit et131x_pci_setup(struct pci_dev *pdev,
- 			       const struct pci_device_id *ent)
- {
-@@ -774,7 +768,6 @@ err_disable:
-  * PCI subsystem detects that a PCI device which matches the information
-  * contained in the pci_device_id table has been removed.
-  */
--
- static void __devexit et131x_pci_remove(struct pci_dev *pdev)
- {
- 	struct net_device *netdev;
-@@ -815,7 +808,6 @@ static struct pci_driver et131x_driver = {
- 	.resume		= NULL,		/* et131x_pci_resume */
- };
- 
--
- /**
-  * et131x_init_module - The "main" entry point called on driver initialization
-  *
+ 	/* Alloc and init Rx DMA memory */
 -- 
 1.7.4.4
 
