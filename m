@@ -1,177 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751702Ab1GRHBu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 03:01:50 -0400
-Received: from gate.crashing.org ([63.228.1.57]:40576 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750766Ab1GRHBs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 03:01:48 -0400
-Subject: Re: [PATCH 1/1] Fixup write permission of TLB on powerpc e500 core
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Shan Hai <haishan.bai@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, paulus@samba.org,
-        tglx@linutronix.de, walken@google.com, dhowells@redhat.com,
-        cmetcalf@tilera.com, tony.luck@intel.com, akpm@linux-foundation.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-In-Reply-To: <4E23D728.7090406@gmail.com>
-References: <1310717238-13857-1-git-send-email-haishan.bai@gmail.com>
-	 <1310717238-13857-2-git-send-email-haishan.bai@gmail.com>
-	 <1310725418.2586.309.camel@twins> <4E21A526.8010904@gmail.com>
-	 <1310860194.25044.17.camel@pasglop>
-	 <4b337921-d430-4b63-bc36-ad31753cf800@email.android.com>
-	 <1310912990.25044.203.camel@pasglop>  <1310944453.25044.262.camel@pasglop>
-	 <1310961691.25044.274.camel@pasglop>  <4E23D728.7090406@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Jul 2011 17:01:02 +1000
-Message-ID: <1310972462.25044.292.camel@pasglop>
+	id S1751605Ab1GRHF6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 03:05:58 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:18075 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750855Ab1GRHF5 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:6:1>);
+	Mon, 18 Jul 2011 03:05:57 -0400
+Message-Id: <4E23F76D020000780004DCD9@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Mon, 18 Jul 2011 08:05:49 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <Ian.Campbell@citrix.com>, "Keir Fraser" <keir.xen@gmail.com>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>, <keir@xen.org>
+Cc: <olaf@aepfle.de>, <xen-devel@lists.xensource.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] xen: update machine_to_phys_order on
+	 resume
+References: <4E20873F020000780007307B@nat28.tlf.novell.com>
+ <CA46441A.1E019%keir.xen@gmail.com>
+In-Reply-To: <CA46441A.1E019%keir.xen@gmail.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-07-18 at 14:48 +0800, Shan Hai wrote:
-
-> It could not fix the problem, refer the following reply for
-> the reasons.
-
- .../...
-
-> > diff --git a/kernel/futex.c b/kernel/futex.c
-> > index fe28dc2..02adff7 100644
-> > --- a/kernel/futex.c
-> > +++ b/kernel/futex.c
-> > @@ -355,8 +355,8 @@ static int fault_in_user_writeable(u32 __user *uaddr)
-> >   	int ret;
-> >
-> >   	down_read(&mm->mmap_sem);
-> > -	ret = get_user_pages(current, mm, (unsigned long)uaddr,
-> > -			     1, 1, 0, NULL, NULL);
-> > +	ret = __get_user_pages(current, mm, (unsigned long)uaddr, 1,
-> > +			       FOLL_WRITE | FOLL_FIXFAULT, NULL, NULL, NULL);
+>>> On 15.07.11 at 20:23, Keir Fraser <keir.xen@gmail.com> wrote:
+> On 15/07/2011 18:30, "Jan Beulich" <JBeulich@novell.com> wrote:
 > 
-> the FOLL_FIXFAULT is filtered out at the following code
-> get_user_pages()
->      if (write)
->                  flags |= FOLL_WRITE;
+>> Actually, one more thought: What's the purpose of this hypercall if
+>> it is set in stone what values it ought to return? Isn't a guest using
+>> it (supposed to be) advertising that it can deal with the values being
+>> variable (and it was just overlooked so far that this doesn't only
+>> include varying values from boot to boot, but also migration)? Or in
+>> other words, if we found a need to relocate the M2P table or grow
+>> its static maximum size, it would be impossible to migrate guests
+>> from an old to a new hypervisor.
 > 
+> Fair point. There has to be a static fallback set of return values for old
+> guests.
 
-I'm not sure what you're talking about here, you may notice that I'm
-calling __get_user_pages() not get_user_pages(). Make sure you get my
--second- post of the patch (the one with a proper description & s-o-b)
-since the first one was a mis-send of an wip version.
+Hmm, in my reading the two sentences sort of contradict each other.
+That is, I'm not certain what route we want to go here: Keep things
+the way they are after 23706:3dd399873c9e, and introduce a
+completely new discovery mechanism if we find it necessary to change
+the M2P table's location and/or size, including a mechanism for a guest
+to announce it's capable of dealing with that? If so, I think we ought
+to add a comment to the hypercall implementation documenting that
+its return values must not be changed (and why).
 
-> > +
-> > +	if (flags&  FOLL_FIXFAULT)
-> > +		handle_pte_sw_young_dirty(vma, address, ptep,
-> > +					  flags&  FOLL_WRITE);
-> >   	if (flags&  FOLL_TOUCH) {
-> >   		if ((flags&  FOLL_WRITE)&&
-> >   		!pte_dirty(pte)&&  !PageDirty(page))
-> 
-> call handle_pte_sw_young_dirty before !pte_dirty(pte)
-> might has problems.
-
-No this is on purpose. 
-
-My initial patch was only calling it under the same condition as the
-FOLL_TOUCH case, but I got concerned by this whole
-flush_tlb_fix_spurious_fault() business.
-
-Basically, our generic code is designed so that relaxing write
-protection on a PTE can be done without flushing the TLB on all CPUs, so
-that a "spurrious" fault on a secondary CPU will flush the TLB at that
-point.
-
-I don't know which arch relies on this feature (ARM maybe ?) but if we
-are going to be semantically equivalent to a real fault, we must also do
-that, so the right thing to do here is to always call in there if
-FOLL_FIXFAULT is set.
-
-It's up to the caller to only set FOLL_FIXFAULT when really trying to
-deal with an -EFAULT, to avoid possible unnecessary overhead, but in
-this case I think we are fine, this is all a fallback slow path.
-
- .../...
-
-> So what about the following?
-> diff --git a/mm/memory.c b/mm/memory.c
-> index 9b8a01d..fb48122 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -1442,6 +1442,7 @@ struct page *follow_page(struct vm_area_struct 
-> *vma, unsig
->          spinlock_t *ptl;
->          struct page *page;
->          struct mm_struct *mm = vma->vm_mm;
-> +       int fix_write_permission = false;
-> 
->          page = follow_huge_addr(mm, address, flags & FOLL_WRITE);
->          if (!IS_ERR(page)) {
-> @@ -1519,6 +1520,11 @@ split_fallthrough:
->                  if ((flags & FOLL_WRITE) &&
->                      !pte_dirty(pte) && !PageDirty(page))
->                          set_page_dirty(page);
-> +
-> +#ifdef CONFIG_FIXUP_WRITE_PERMISSION
-> +               if ((flags & FOLL_WRITE) && !pte_dirty(pte))
-> +                       fix_write_permission = true;
-> +#endif
->                  /*
->                   * pte_mkyoung() would be more correct here, but atomic 
-> care
->                   * is needed to avoid losing the dirty bit: it is 
-> easier to use
-> @@ -1551,7 +1557,7 @@ split_fallthrough:
->   unlock:
->          pte_unmap_unlock(ptep, ptl);
->   out:
-> -       return page;
-> +       return (fix_write_permission == true) ? NULL: page;
-> 
->   bad_page:
->          pte_unmap_unlock(ptep, ptl);
-
-You patch not only is uglier (more ifdef's) but also incomplete since it
-doesn't handle the young case and it doesn't handle the spurious fault
-case either.
-
-What the futex code is trying to do is use gup() as a way to fixup from
-a fault which means essentially to have the -exact- same semantics as a
-normal fault would have.
-
-Thus by factoring the common fault fixup code and using that exact same
-code in gup(), we get a much more robust guarantee that this will work
-in the long run.
-
-I don't expect gup to be that commonly used to fixup access after an
-attempt at doing a user access with page faults disabled, only those
-case will need to be modified to use the new flag. 
-
->  From the CONFIG_FIXUP_WRITE_PERMISSION and
-> (flags & FOLL_WRITE) && !pte_dirty(pte) the follow_page()
-> could figure out that the caller want to write to the
-> (present && writable && non-dirty) pte, and the architecture
-> want to fixup the problem by indicating CONFIG_FIXUP_WRITE_PERMISSION,
-> so let the follow_page() return NULL to the __get_user_pages, and
-> let the handle_mm_fault to fixup dirty/young tracking.
-> 
-> Checking the following code we can conclude that the handle_mm_fault
-> is ready to handle the faults and the write permission violation is
-> a kind of fault, so why don't we let the handle_mm_fault to
-> handle that fault?
-> 
-> __get_user_pages()
->       while (!(page = follow_page(vma, start, foll_flags))) {
->          ...
->          ret = handle_mm_fault(mm, vma, start,
->                                                          fault_flags);
->          ...
->      }
-
-Cheers,
-Ben.
-
+Jan
 
