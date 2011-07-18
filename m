@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753862Ab1GRIVP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 04:21:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48167 "EHLO mx1.redhat.com"
+	id S1753899Ab1GRIWj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 04:22:39 -0400
+Received: from mga01.intel.com ([192.55.52.88]:31720 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753749Ab1GRIVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 04:21:08 -0400
-Message-ID: <4E23ECEA.90803@redhat.com>
-Date: Mon, 18 Jul 2011 11:20:58 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, kvm@vger.kernel.org,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: Re: linux-next: Tree for July 16 (kvm)
-References: <20110717000815.c83755be9598d34ac8431908@canb.auug.org.au> <20110716115719.feedaeb2.rdunlap@xenotime.net>
-In-Reply-To: <20110716115719.feedaeb2.rdunlap@xenotime.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753770Ab1GRIWi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 04:22:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,221,1309762800"; 
+   d="scan'208";a="29176475"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH] pch_phub: use kernel's '%pM' format option to print MAC
+Date: Mon, 18 Jul 2011 11:22:06 +0300
+Message-Id: <1310977326-9362-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2011 09:57 PM, Randy Dunlap wrote:
-> On Sun, 17 Jul 2011 00:08:15 +1000 Stephen Rothwell wrote:
->
-> >  Hi all,
-> >
-> >  Changes since 20110707:
->
->
-> kvmclock.c:(.text+0x2778e): undefined reference to `kvm_disable_steal_time'
->
-> Full kernel config file is attached.
->
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/misc/pch_phub.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-CONFIG_KVM_CLOCK && !CONFIG_KVM_GUEST.
-
-What to do?  Stick a wrmsr_safe() in kvmclock.c?  Move kvm_disable 
-steal_time() inline? what about has_steal_clock?
-
+diff --git a/drivers/misc/pch_phub.c b/drivers/misc/pch_phub.c
+index 0fd7e77..7044756 100644
+--- a/drivers/misc/pch_phub.c
++++ b/drivers/misc/pch_phub.c
+@@ -594,8 +594,7 @@ static ssize_t show_pch_mac(struct device *dev, struct device_attribute *attr,
+ 
+ 	pch_phub_read_gbe_mac_addr(chip, mac);
+ 
+-	return sprintf(buf, "%02x:%02x:%02x:%02x:%02x:%02x\n",
+-				mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
++	return sprintf(buf, "%pM\n", mac);
+ }
+ 
+ static ssize_t store_pch_mac(struct device *dev, struct device_attribute *attr,
 -- 
-error compiling committee.c: too many arguments to function
+1.7.5.4
 
