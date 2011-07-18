@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756728Ab1GRNJh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 09:09:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16089 "EHLO mx1.redhat.com"
+	id S1756742Ab1GRNJq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 09:09:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45933 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753169Ab1GRNJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 09:09:34 -0400
+	id S1752625Ab1GRNJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 09:09:42 -0400
 From: Prarit Bhargava <prarit@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, linux-ia64@vger.kernel.org,
-        x86@kernel.org
-Subject: [PATCH 03/34] arch specific changes for SMBIOS and System Firmware
-Date: Mon, 18 Jul 2011 09:08:17 -0400
-Message-Id: <1310994528-26276-4-git-send-email-prarit@redhat.com>
+Cc: Prarit Bhargava <prarit@redhat.com>, lm-sensors@lm-sensors.org
+Subject: [PATCH 11/34] drivers/hwmon changes for SMBIOS and System Firmware
+Date: Mon, 18 Jul 2011 09:08:25 -0400
+Message-Id: <1310994528-26276-12-git-send-email-prarit@redhat.com>
 In-Reply-To: <1310994528-26276-1-git-send-email-prarit@redhat.com>
 References: <1310994528-26276-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,2644 +20,713 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 As part of the new SMBIOS and System Firmware code:
 
-- add in ia64 and x86 calls to initialize SMBIOS
 - Replace old dmi* structures and functions with new sysfw* and smbios*
 structures and functions in individual drivers
 - cleanup sysfw_id lookup tables
+- add exactmatch functionality
+- edit udev notifiers
 - cleanup of includes for dmi.h and mod_devicetable.h which were included in
 some files that did not need them
 
-Cc: linux-ia64@vger.kernel.org
-Cc: x86@kernel.org
+Cc: lm-sensors@lm-sensors.org
 Signed-off-by: Prarit Bhargava <prarit@redhat.com>
 ---
- arch/ia64/kernel/setup.c           |    8 +-
- arch/x86/include/asm/mmconfig.h    |    4 +-
- arch/x86/include/asm/pci_x86.h     |    6 +-
- arch/x86/kernel/acpi/boot.c        |  177 ++++++++--------
- arch/x86/kernel/acpi/sleep.c       |    1 -
- arch/x86/kernel/apic/apic.c        |   20 +-
- arch/x86/kernel/apic/bigsmp_32.c   |   37 ++--
- arch/x86/kernel/apm_32.c           |  391 ++++++++++++++++++++++--------------
- arch/x86/kernel/cpu/amd.c          |    2 +-
- arch/x86/kernel/cpu/vmware.c       |   17 ++-
- arch/x86/kernel/io_delay.c         |   42 ++--
- arch/x86/kernel/mmconf-fam10h_64.c |   28 ++--
- arch/x86/kernel/probe_roms.c       |    1 -
- arch/x86/kernel/process.c          |    8 +-
- arch/x86/kernel/reboot.c           |  132 +++++++------
- arch/x86/kernel/setup.c            |   14 +-
- arch/x86/kernel/tsc.c              |   16 +-
- arch/x86/pci/acpi.c                |   18 +-
- arch/x86/pci/broadcom_bus.c        |    1 -
- arch/x86/pci/common.c              |  163 ++++++++--------
- arch/x86/pci/direct.c              |    7 +-
- arch/x86/pci/fixup.c               |   33 ++--
- arch/x86/pci/init.c                |    4 +-
- arch/x86/pci/irq.c                 |   26 ++--
- arch/x86/pci/mmconfig-shared.c     |   10 +-
- arch/x86/pci/mrst.c                |    1 -
- drivers/cpufreq/acpi-cpufreq.c     |   16 +-
- drivers/cpufreq/powernow-k7.c      |   14 +-
- 28 files changed, 657 insertions(+), 540 deletions(-)
+ drivers/hwmon/abituguru.c    |   18 ++++++--
+ drivers/hwmon/abituguru3.c   |   75 ++++++++++++++++--------------
+ drivers/hwmon/adcxx.c        |    1 -
+ drivers/hwmon/applesmc.c     |   73 +++++++++++++++++------------
+ drivers/hwmon/asus_atk0110.c |   10 ++--
+ drivers/hwmon/fschmd.c       |  104 ++++++++++++++++++++++--------------------
+ drivers/hwmon/it87.c         |   42 ++++++++++-------
+ drivers/hwmon/lm70.c         |    1 -
+ 8 files changed, 181 insertions(+), 143 deletions(-)
 
-diff --git a/arch/ia64/kernel/setup.c b/arch/ia64/kernel/setup.c
-index 5e2c724..e170fcc 100644
---- a/arch/ia64/kernel/setup.c
-+++ b/arch/ia64/kernel/setup.c
-@@ -36,7 +36,7 @@
- #include <linux/string.h>
- #include <linux/threads.h>
- #include <linux/screen_info.h>
--#include <linux/dmi.h>
-+#include <linux/smbios.h>
- #include <linux/serial.h>
- #include <linux/serial_core.h>
- #include <linux/efi.h>
-@@ -1043,9 +1043,9 @@ check_bugs (void)
- 			       (unsigned long) __end___mckinley_e9_bundles);
- }
- 
--static int __init run_dmi_scan(void)
-+static int __init run_smbios_scan(void)
- {
--	dmi_scan_machine();
-+	smbios_init();
- 	return 0;
- }
--core_initcall(run_dmi_scan);
-+core_initcall(run_smbios_scan);
-diff --git a/arch/x86/include/asm/mmconfig.h b/arch/x86/include/asm/mmconfig.h
-index 9b119da..1831965 100644
---- a/arch/x86/include/asm/mmconfig.h
-+++ b/arch/x86/include/asm/mmconfig.h
-@@ -3,10 +3,10 @@
- 
- #ifdef CONFIG_PCI_MMCONFIG
- extern void __cpuinit fam10h_check_enable_mmcfg(void);
--extern void __cpuinit check_enable_amd_mmconf_dmi(void);
-+extern void __cpuinit check_enable_amd_pci_mmconf(void);
- #else
- static inline void fam10h_check_enable_mmcfg(void) { }
--static inline void check_enable_amd_mmconf_dmi(void) { }
-+static inline void check_enable_amd_pci_mmconf(void) { }
- #endif
- 
- #endif /* _ASM_X86_MMCONFIG_H */
-diff --git a/arch/x86/include/asm/pci_x86.h b/arch/x86/include/asm/pci_x86.h
-index 7045267..28e3f3a 100644
---- a/arch/x86/include/asm/pci_x86.h
-+++ b/arch/x86/include/asm/pci_x86.h
-@@ -39,7 +39,7 @@ enum pci_bf_sort_state {
- 	pci_bf_sort_default,
- 	pci_force_nobf,
- 	pci_force_bf,
--	pci_dmi_bf,
-+	pci_smbios_bf,
- };
- 
- /* pci-i386.c */
-@@ -109,8 +109,8 @@ extern bool port_cf9_safe;
- extern int pci_direct_probe(void);
- extern void pci_direct_init(int type);
- extern void pci_pcbios_init(void);
--extern void __init dmi_check_pciprobe(void);
--extern void __init dmi_check_skip_isa_align(void);
-+extern void __init smbios_check_pciprobe(void);
-+extern void __init smbios_check_skip_isa_align(void);
- 
- /* some common used subsys_initcalls */
- extern int __init pci_acpi_init(void);
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 4558f0d..180d4c7 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -29,7 +29,7 @@
- #include <linux/efi.h>
- #include <linux/cpumask.h>
- #include <linux/module.h>
+diff --git a/drivers/hwmon/abituguru.c b/drivers/hwmon/abituguru.c
+index 65a35cf..b9053cb 100644
+--- a/drivers/hwmon/abituguru.c
++++ b/drivers/hwmon/abituguru.c
+@@ -34,7 +34,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/hwmon.h>
+ #include <linux/hwmon-sysfs.h>
 -#include <linux/dmi.h>
 +#include <linux/sysfw.h>
- #include <linux/irq.h>
- #include <linux/slab.h>
- #include <linux/bootmem.h>
-@@ -1294,7 +1294,7 @@ static void __init acpi_process_madt(void)
- 	return;
- }
+ #include <linux/io.h>
  
--static int __init disable_acpi_irq(const struct dmi_system_id *d)
-+static int __init disable_acpi_irq(const struct sysfw_id *d)
- {
- 	if (!acpi_force) {
- 		printk(KERN_NOTICE "%s detected: force use of acpi=noirq\n",
-@@ -1304,7 +1304,7 @@ static int __init disable_acpi_irq(const struct dmi_system_id *d)
- 	return 0;
- }
+ /* Banks */
+@@ -1444,15 +1444,25 @@ static int __init abituguru_detect(void)
  
--static int __init disable_acpi_pci(const struct dmi_system_id *d)
-+static int __init disable_acpi_pci(const struct sysfw_id *d)
- {
- 	if (!acpi_force) {
- 		printk(KERN_NOTICE "%s detected: force use of pci=noacpi\n",
-@@ -1314,14 +1314,14 @@ static int __init disable_acpi_pci(const struct dmi_system_id *d)
- 	return 0;
- }
+ static struct platform_device *abituguru_pdev;
  
--static int __init dmi_disable_acpi(const struct dmi_system_id *d)
-+static int __init id_disable_acpi(const struct sysfw_id *d)
- {
- 	if (!acpi_force) {
- 		printk(KERN_NOTICE "%s detected: acpi off\n", d->ident);
- 		disable_acpi();
- 	} else {
--		printk(KERN_NOTICE
--		       "Warning: DMI blacklist says broken, but acpi forced\n");
-+		printk(KERN_NOTICE "Warning: SMBIOS blacklist says broken, "
-+		       "but acpi forced\n");
- 	}
- 	return 0;
- }
-@@ -1329,7 +1329,8 @@ static int __init dmi_disable_acpi(const struct dmi_system_id *d)
- /*
-  * Force ignoring BIOS IRQ0 pin2 override
-  */
--static int __init dmi_ignore_irq0_timer_override(const struct dmi_system_id *d)
-+static int __init
-+id_ignore_irq0_timer_override(const struct sysfw_id *d)
- {
- 	/*
- 	 * The ati_ixp4x0_rev() early PCI quirk should have set
-@@ -1348,33 +1349,32 @@ static int __init dmi_ignore_irq0_timer_override(const struct dmi_system_id *d)
-  * If your system is blacklisted here, but you find that acpi=force
-  * works for you, please contact linux-acpi@vger.kernel.org
-  */
--static struct dmi_system_id __initdata acpi_dmi_table[] = {
-+static struct sysfw_id __initdata acpi_id_table[] = {
- 	/*
- 	 * Boxes that need ACPI disabled
- 	 */
- 	{
--	 .callback = dmi_disable_acpi,
--	 .ident = "IBM Thinkpad",
--	 .matches = {
--		     DMI_MATCH(DMI_BOARD_VENDOR, "IBM"),
--		     DMI_MATCH(DMI_BOARD_NAME, "2629H1G"),
--		     },
-+		.callback = id_disable_acpi,
-+		.ident = "IBM Thinkpad",
-+		.matches = {
-+			     SYSFW_MATCH(SYSFW_BOARD_VENDOR, "IBM"),
-+			     SYSFW_MATCH(SYSFW_BOARD_NAME, "2629H1G"),
-+		},
- 	 },
--
- 	/*
- 	 * Boxes that need ACPI PCI IRQ routing disabled
- 	 */
- 	{
--	 .callback = disable_acpi_irq,
--	 .ident = "ASUS A7V",
--	 .matches = {
--		     DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTeK Computer INC"),
--		     DMI_MATCH(DMI_BOARD_NAME, "<A7V>"),
--		     /* newer BIOS, Revision 1011, does work */
--		     DMI_MATCH(DMI_BIOS_VERSION,
--			       "ASUS A7V ACPI BIOS Revision 1007"),
--		     },
--	 },
-+		.callback = disable_acpi_irq,
-+		.ident = "ASUS A7V",
-+		.matches = {
-+			SYSFW_MATCH(SYSFW_BOARD_VENDOR, "ASUSTeK Computer INC"),
-+			SYSFW_MATCH(SYSFW_BOARD_NAME, "<A7V>"),
-+			/* newer BIOS, Revision 1011, does work */
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION,
-+				    "ASUS A7V ACPI BIOS Revision 1007"),
-+			},
-+	},
- 	{
- 		/*
- 		 * Latest BIOS for IBM 600E (1.16) has bad pcinum
-@@ -1382,48 +1382,49 @@ static struct dmi_system_id __initdata acpi_dmi_table[] = {
- 		 * interrupt links to work. DSDT fix is in bug 5966.
- 		 * 2645, 2646 model numbers are shared with 600/600E/600X
- 		 */
--	 .callback = disable_acpi_irq,
--	 .ident = "IBM Thinkpad 600 Series 2645",
--	 .matches = {
--		     DMI_MATCH(DMI_BOARD_VENDOR, "IBM"),
--		     DMI_MATCH(DMI_BOARD_NAME, "2645"),
--		     },
--	 },
-+		.callback = disable_acpi_irq,
-+		.ident = "IBM Thinkpad 600 Series 2645",
-+		.matches = {
-+			SYSFW_MATCH(SYSFW_BOARD_VENDOR, "IBM"),
-+			SYSFW_MATCH(SYSFW_BOARD_NAME, "2645"),
-+		},
-+	},
- 	{
--	 .callback = disable_acpi_irq,
--	 .ident = "IBM Thinkpad 600 Series 2646",
--	 .matches = {
--		     DMI_MATCH(DMI_BOARD_VENDOR, "IBM"),
--		     DMI_MATCH(DMI_BOARD_NAME, "2646"),
--		     },
--	 },
-+		.callback = disable_acpi_irq,
-+		.ident = "IBM Thinkpad 600 Series 2646",
-+		.matches = {
-+			SYSFW_MATCH(SYSFW_BOARD_VENDOR, "IBM"),
-+			SYSFW_MATCH(SYSFW_BOARD_NAME, "2646"),
-+		},
-+	},
- 	/*
- 	 * Boxes that need ACPI PCI IRQ routing and PCI scan disabled
- 	 */
- 	{			/* _BBN 0 bug */
--	 .callback = disable_acpi_pci,
--	 .ident = "ASUS PR-DLS",
--	 .matches = {
--		     DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTeK Computer INC."),
--		     DMI_MATCH(DMI_BOARD_NAME, "PR-DLS"),
--		     DMI_MATCH(DMI_BIOS_VERSION,
--			       "ASUS PR-DLS ACPI BIOS Revision 1010"),
--		     DMI_MATCH(DMI_BIOS_DATE, "03/21/2003")
--		     },
--	 },
-+		.callback = disable_acpi_pci,
-+		.ident = "ASUS PR-DLS",
++static struct sysfw_id abitguru_id_table[] = {
++	{
++		 .ident = "Abit Motherboards",
 +		.matches = {
 +			SYSFW_MATCH(SYSFW_BOARD_VENDOR,
-+				    "ASUSTeK Computer INC."),
-+			SYSFW_MATCH(SYSFW_BOARD_NAME, "PR-DLS"),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION,
-+				    "ASUS PR-DLS ACPI BIOS Revision 1010"),
-+			SYSFW_MATCH(SYSFW_BIOS_DATE, "03/21/2003")
++				    "http://www.abit.com.tw/"),
 +		},
-+	},
- 	{
--	 .callback = disable_acpi_pci,
--	 .ident = "Acer TravelMate 36x Laptop",
--	 .matches = {
--		     DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
--		     DMI_MATCH(DMI_PRODUCT_NAME, "TravelMate 360"),
--		     },
--	 },
-+		.callback = disable_acpi_pci,
-+		.ident = "Acer TravelMate 36x Laptop",
-+		.matches = {
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Acer"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "TravelMate 360"),
-+			},
-+		},
- 	{}
- };
- 
--/* second table for DMI checks that should run after early-quirks */
--static struct dmi_system_id __initdata acpi_dmi_table_late[] = {
-+/* second table for SMBIOS checks that should run after early-quirks */
-+static struct sysfw_id __initdata acpi_id_late[] = {
- 	/*
- 	 * HP laptops which use a DSDT reporting as HP/SB400/10000,
- 	 * which includes some code which overrides all temperature
-@@ -1435,37 +1436,37 @@ static struct dmi_system_id __initdata acpi_dmi_table_late[] = {
- 	 * override in that cases.
- 	 */
- 	{
--	 .callback = dmi_ignore_irq0_timer_override,
--	 .ident = "HP nx6115 laptop",
--	 .matches = {
--		     DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
--		     DMI_MATCH(DMI_PRODUCT_NAME, "HP Compaq nx6115"),
--		     },
--	 },
-+		.callback = id_ignore_irq0_timer_override,
-+		.ident = "HP nx6115 laptop",
-+		.matches = {
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Hewlett-Packard"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "HP Compaq nx6115"),
-+		},
-+	},
- 	{
--	 .callback = dmi_ignore_irq0_timer_override,
--	 .ident = "HP NX6125 laptop",
--	 .matches = {
--		     DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
--		     DMI_MATCH(DMI_PRODUCT_NAME, "HP Compaq nx6125"),
--		     },
--	 },
-+		.callback = id_ignore_irq0_timer_override,
-+		.ident = "HP NX6125 laptop",
-+		.matches = {
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Hewlett-Packard"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "HP Compaq nx6125"),
-+		},
-+	},
- 	{
--	 .callback = dmi_ignore_irq0_timer_override,
--	 .ident = "HP NX6325 laptop",
--	 .matches = {
--		     DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
--		     DMI_MATCH(DMI_PRODUCT_NAME, "HP Compaq nx6325"),
--		     },
--	 },
-+		.callback = id_ignore_irq0_timer_override,
-+		.ident = "HP NX6325 laptop",
-+		.matches = {
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Hewlett-Packard"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "HP Compaq nx6325"),
-+		},
-+	},
- 	{
--	 .callback = dmi_ignore_irq0_timer_override,
--	 .ident = "HP 6715b laptop",
--	 .matches = {
--		     DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
--		     DMI_MATCH(DMI_PRODUCT_NAME, "HP Compaq 6715b"),
--		     },
--	 },
-+		.callback = id_ignore_irq0_timer_override,
-+		.ident = "HP 6715b laptop",
-+		.matches = {
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Hewlett-Packard"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "HP Compaq 6715b"),
-+		},
-+	},
- 	{}
- };
- 
-@@ -1490,7 +1491,7 @@ static struct dmi_system_id __initdata acpi_dmi_table_late[] = {
- 
- void __init acpi_boot_table_init(void)
- {
--	dmi_check_system(acpi_dmi_table);
-+	sysfw_callback(acpi_id_table);
- 
- 	/*
- 	 * If acpi_disabled, bail out
-@@ -1541,7 +1542,7 @@ int __init early_acpi_boot_init(void)
- int __init acpi_boot_init(void)
- {
- 	/* those are executed after early-quirks are executed */
--	dmi_check_system(acpi_dmi_table_late);
-+	sysfw_callback(acpi_id_late);
- 
- 	/*
- 	 * If acpi_disabled, bail out
-diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
-index 103b6ab..c96b82d 100644
---- a/arch/x86/kernel/acpi/sleep.c
-+++ b/arch/x86/kernel/acpi/sleep.c
-@@ -8,7 +8,6 @@
- #include <linux/acpi.h>
- #include <linux/bootmem.h>
- #include <linux/memblock.h>
--#include <linux/dmi.h>
- #include <linux/cpumask.h>
- #include <asm/segment.h>
- #include <asm/desc.h>
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index b9338b8..a3a176d 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -30,7 +30,7 @@
- #include <linux/dmar.h>
- #include <linux/init.h>
- #include <linux/cpu.h>
--#include <linux/dmi.h>
-+#include <linux/sysfw.h>
- #include <linux/smp.h>
- #include <linux/mm.h>
- 
-@@ -162,7 +162,7 @@ early_param("nox2apic", setup_nox2apic);
- 
- unsigned long mp_lapic_addr;
- int disable_apic;
--/* Disable local APIC timer from the kernel commandline or via dmi quirk */
-+/* Disable local APIC timer from the kernel commandline or via smbios quirk */
- static int disable_apic_timer __initdata;
- /* Local APIC timer works in C2 */
- int local_apic_timer_c2_ok;
-@@ -2231,7 +2231,7 @@ static int __cpuinit apic_cluster_num(void)
- static int __cpuinitdata multi_checked;
- static int __cpuinitdata multi;
- 
--static int __cpuinit set_multi(const struct dmi_system_id *d)
-+static int __cpuinit set_multi(const struct sysfw_id *d)
- {
- 	if (multi)
- 		return 0;
-@@ -2240,24 +2240,24 @@ static int __cpuinit set_multi(const struct dmi_system_id *d)
- 	return 0;
- }
- 
--static const __cpuinitconst struct dmi_system_id multi_dmi_table[] = {
-+static const __cpuinitconst struct sysfw_id set_multi_table[] = {
- 	{
- 		.callback = set_multi,
- 		.ident = "IBM System Summit2",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "IBM"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "Summit2"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "IBM"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Summit2"),
- 		},
- 	},
- 	{}
- };
- 
--static void __cpuinit dmi_check_multi(void)
-+static void __cpuinit check_set_multi(void)
- {
- 	if (multi_checked)
- 		return;
- 
--	dmi_check_system(multi_dmi_table);
-+	sysfw_callback(set_multi_table);
- 	multi_checked = 1;
- }
- 
-@@ -2267,11 +2267,11 @@ static void __cpuinit dmi_check_multi(void)
-  * Thus far, the major user of this is IBM's Summit2 series:
-  * Clustered boxes may have unsynced TSC problems if they are
-  * multi-chassis.
-- * Use DMI to check them
-+ * Use SMBIOS to check them
-  */
- __cpuinit int apic_is_clustered_box(void)
- {
--	dmi_check_multi();
-+	check_set_multi();
- 	if (multi)
- 		return 1;
- 
-diff --git a/arch/x86/kernel/apic/bigsmp_32.c b/arch/x86/kernel/apic/bigsmp_32.c
-index efd737e..76bee5d 100644
---- a/arch/x86/kernel/apic/bigsmp_32.c
-+++ b/arch/x86/kernel/apic/bigsmp_32.c
-@@ -7,7 +7,7 @@
- #include <linux/cpumask.h>
- #include <linux/kernel.h>
- #include <linux/init.h>
--#include <linux/dmi.h>
-+#include <linux/sysfw.h>
- #include <linux/smp.h>
- 
- #include <asm/apicdef.h>
-@@ -151,30 +151,35 @@ static void bigsmp_send_IPI_all(int vector)
- 	bigsmp_send_IPI_mask(cpu_online_mask, vector);
- }
- 
--static int dmi_bigsmp; /* can be set by dmi scanners */
-+static int smbios_bigsmp; /* can be set by smbios scanners */
- 
--static int hp_ht_bigsmp(const struct dmi_system_id *d)
-+static int hp_ht_bigsmp(const struct sysfw_id *d)
- {
- 	printk(KERN_NOTICE "%s detected: force use of apic=bigsmp\n", d->ident);
--	dmi_bigsmp = 1;
-+	smbios_bigsmp = 1;
- 
- 	return 0;
- }
- 
- 
--static const struct dmi_system_id bigsmp_dmi_table[] = {
--	{ hp_ht_bigsmp, "HP ProLiant DL760 G2",
--		{	DMI_MATCH(DMI_BIOS_VENDOR, "HP"),
--			DMI_MATCH(DMI_BIOS_VERSION, "P44-"),
-+static const struct sysfw_id bigsmp_id_table[] = {
-+	{
-+		.callback = hp_ht_bigsmp,
-+		.ident = "HP ProLiant DL760 G2",
-+		{
-+			SYSFW_MATCH(SYSFW_BIOS_VENDOR, "HP"),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "P44-"),
- 		}
- 	},
--
--	{ hp_ht_bigsmp, "HP ProLiant DL740",
--		{	DMI_MATCH(DMI_BIOS_VENDOR, "HP"),
--			DMI_MATCH(DMI_BIOS_VERSION, "P47-"),
-+	{
-+		.callback = hp_ht_bigsmp,
-+		.ident = "HP ProLiant DL740",
-+		{
-+			SYSFW_MATCH(SYSFW_BIOS_VENDOR, "HP"),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "P47-"),
- 		}
- 	},
--	{ } /* NULL entry stops DMI scanning */
-+	{} /* NULL entry stops SMBIOS scanning */
- };
- 
- static void bigsmp_vector_allocation_domain(int cpu, struct cpumask *retmask)
-@@ -186,11 +191,11 @@ static void bigsmp_vector_allocation_domain(int cpu, struct cpumask *retmask)
- static int probe_bigsmp(void)
- {
- 	if (def_to_bigsmp)
--		dmi_bigsmp = 1;
-+		smbios_bigsmp = 1;
- 	else
--		dmi_check_system(bigsmp_dmi_table);
-+		sysfw_callback(bigsmp_id_table);
- 
--	return dmi_bigsmp;
-+	return smbios_bigsmp;
- }
- 
- static struct apic apic_bigsmp = {
-diff --git a/arch/x86/kernel/apm_32.c b/arch/x86/kernel/apm_32.c
-index 965a766..dd804ef 100644
---- a/arch/x86/kernel/apm_32.c
-+++ b/arch/x86/kernel/apm_32.c
-@@ -223,7 +223,7 @@
- #include <linux/kernel.h>
- #include <linux/freezer.h>
- #include <linux/smp.h>
--#include <linux/dmi.h>
-+#include <linux/sysfw.h>
- #include <linux/suspend.h>
- #include <linux/kthread.h>
- #include <linux/jiffies.h>
-@@ -1931,7 +1931,7 @@ static struct miscdevice apm_device = {
- 
- 
- /* Simple "print if true" callback */
--static int __init print_if_true(const struct dmi_system_id *d)
-+static int __init print_if_true(const struct sysfw_id *d)
- {
- 	printk("%s\n", d->ident);
- 	return 0;
-@@ -1941,7 +1941,7 @@ static int __init print_if_true(const struct dmi_system_id *d)
-  * Some Bioses enable the PS/2 mouse (touchpad) at resume, even if it was
-  * disabled before the suspend. Linux used to get terribly confused by that.
-  */
--static int __init broken_ps2_resume(const struct dmi_system_id *d)
-+static int __init broken_ps2_resume(const struct sysfw_id *d)
- {
- 	printk(KERN_INFO "%s machine detected. Mousepad Resume Bug "
- 	       "workaround hopefully not needed.\n", d->ident);
-@@ -1949,7 +1949,7 @@ static int __init broken_ps2_resume(const struct dmi_system_id *d)
- }
- 
- /* Some bioses have a broken protected mode poweroff and need to use realmode */
--static int __init set_realmode_power_off(const struct dmi_system_id *d)
-+static int __init set_realmode_power_off(const struct sysfw_id *d)
- {
- 	if (apm_info.realmode_power_off == 0) {
- 		apm_info.realmode_power_off = 1;
-@@ -1960,7 +1960,7 @@ static int __init set_realmode_power_off(const struct dmi_system_id *d)
- }
- 
- /* Some laptops require interrupts to be enabled during APM calls */
--static int __init set_apm_ints(const struct dmi_system_id *d)
-+static int __init set_apm_ints(const struct sysfw_id *d)
- {
- 	if (apm_info.allow_ints == 0) {
- 		apm_info.allow_ints = 1;
-@@ -1971,7 +1971,7 @@ static int __init set_apm_ints(const struct dmi_system_id *d)
- }
- 
- /* Some APM bioses corrupt memory or just plain do not work */
--static int __init apm_is_horked(const struct dmi_system_id *d)
-+static int __init apm_is_horked(const struct sysfw_id *d)
- {
- 	if (apm_info.disabled == 0) {
- 		apm_info.disabled = 1;
-@@ -1981,7 +1981,7 @@ static int __init apm_is_horked(const struct dmi_system_id *d)
- 	return 0;
- }
- 
--static int __init apm_is_horked_d850md(const struct dmi_system_id *d)
-+static int __init apm_is_horked_d850md(const struct sysfw_id *d)
- {
- 	if (apm_info.disabled == 0) {
- 		apm_info.disabled = 1;
-@@ -1994,7 +1994,7 @@ static int __init apm_is_horked_d850md(const struct dmi_system_id *d)
- }
- 
- /* Some APM bioses hang on APM idle calls */
--static int __init apm_likes_to_melt(const struct dmi_system_id *d)
-+static int __init apm_likes_to_melt(const struct sysfw_id *d)
- {
- 	if (apm_info.forbid_idle == 0) {
- 		apm_info.forbid_idle = 1;
-@@ -2019,7 +2019,7 @@ static int __init apm_likes_to_melt(const struct dmi_system_id *d)
-  *	Phoenix A04  08/24/2000 is known bad (Dell Inspiron 5000e)
-  *	Phoenix A07  09/29/2000 is known good (Dell Inspiron 5000)
-  */
--static int __init broken_apm_power(const struct dmi_system_id *d)
-+static int __init broken_apm_power(const struct sysfw_id *d)
- {
- 	apm_info.get_power_status_broken = 1;
- 	printk(KERN_WARNING "BIOS strings suggest APM bugs, "
-@@ -2031,7 +2031,7 @@ static int __init broken_apm_power(const struct dmi_system_id *d)
-  * This bios swaps the APM minute reporting bytes over (Many sony laptops
-  * have this problem).
-  */
--static int __init swab_apm_power_in_minutes(const struct dmi_system_id *d)
-+static int __init swab_apm_power_in_minutes(const struct sysfw_id *d)
- {
- 	apm_info.get_power_status_swabinminutes = 1;
- 	printk(KERN_WARNING "BIOS strings suggest APM reports battery life "
-@@ -2039,215 +2039,314 @@ static int __init swab_apm_power_in_minutes(const struct dmi_system_id *d)
- 	return 0;
- }
- 
--static struct dmi_system_id __initdata apm_dmi_table[] = {
-+static struct sysfw_id __initdata apm_id_table[] = {
- 	{
--		print_if_true,
-+		.callback = print_if_true,
- 		KERN_WARNING "IBM T23 - BIOS 1.03b+ and controller firmware 1.02+ may be needed for Linux APM.",
--		{	DMI_MATCH(DMI_SYS_VENDOR, "IBM"),
--			DMI_MATCH(DMI_BIOS_VERSION, "1AET38WW (1.01b)"), },
-+		{	SYSFW_MATCH(SYSFW_SYS_VENDOR, "IBM"),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "1AET38WW (1.01b)"),
-+		},
- 	},
- 	{	/* Handle problems with APM on the C600 */
--		broken_ps2_resume, "Dell Latitude C600",
--		{	DMI_MATCH(DMI_SYS_VENDOR, "Dell"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude C600"), },
-+		.callback = broken_ps2_resume,
-+		.ident = "Dell Latitude C600",
-+		{	SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Latitude C600")
-+		},
- 	},
- 	{	/* Allow interrupts during suspend on Dell Latitude laptops*/
--		set_apm_ints, "Dell Latitude",
--		{	DMI_MATCH(DMI_SYS_VENDOR, "Dell Computer Corporation"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude C510"), }
-+		.callback = set_apm_ints,
-+		.ident = "Dell Latitude",
-+		{	SYSFW_MATCH(SYSFW_SYS_VENDOR,
-+				    "Dell Computer Corporation"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Latitude C510"),
-+		},
- 	},
- 	{	/* APM crashes */
--		apm_is_horked, "Dell Inspiron 2500",
--		{	DMI_MATCH(DMI_SYS_VENDOR, "Dell Computer Corporation"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "Inspiron 2500"),
--			DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
--			DMI_MATCH(DMI_BIOS_VERSION, "A11"), },
-+		.callback = apm_is_horked,
-+		.ident = "Dell Inspiron 2500",
-+		{	SYSFW_MATCH(SYSFW_SYS_VENDOR,
-+				    "Dell Computer Corporation"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Inspiron 2500"),
-+			SYSFW_MATCH(SYSFW_BIOS_VENDOR,
-+				    "Phoenix Technologies LTD"),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "A11"), },
- 	},
- 	{	/* Allow interrupts during suspend on Dell Inspiron laptops*/
--		set_apm_ints, "Dell Inspiron", {
--			DMI_MATCH(DMI_SYS_VENDOR, "Dell Computer Corporation"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "Inspiron 4000"), },
-+		.callback = set_apm_ints,
-+		.ident = "Dell Inspiron", {
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR,
-+				    "Dell Computer Corporation"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Inspiron 4000"),
-+		},
- 	},
- 	{	/* Handle problems with APM on Inspiron 5000e */
--		broken_apm_power, "Dell Inspiron 5000e",
--		{	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
--			DMI_MATCH(DMI_BIOS_VERSION, "A04"),
--			DMI_MATCH(DMI_BIOS_DATE, "08/24/2000"), },
-+		.callback = broken_apm_power,
-+		.ident = "Dell Inspiron 5000e",
-+		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
-+				    "Phoenix Technologies LTD"),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "A04"),
-+			SYSFW_MATCH(SYSFW_BIOS_DATE, "08/24/2000"),
-+		},
- 	},
- 	{	/* Handle problems with APM on Inspiron 2500 */
--		broken_apm_power, "Dell Inspiron 2500",
--		{	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
--			DMI_MATCH(DMI_BIOS_VERSION, "A12"),
--			DMI_MATCH(DMI_BIOS_DATE, "02/04/2002"), },
-+		.callback = broken_apm_power,
-+		.ident = "Dell Inspiron 2500",
-+		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
-+				     "Phoenix Technologies LTD"),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "A12"),
-+			SYSFW_MATCH(SYSFW_BIOS_DATE, "02/04/2002"),
-+		},
- 	},
- 	{	/* APM crashes */
--		apm_is_horked, "Dell Dimension 4100",
--		{	DMI_MATCH(DMI_SYS_VENDOR, "Dell Computer Corporation"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "XPS-Z"),
--			DMI_MATCH(DMI_BIOS_VENDOR, "Intel Corp."),
--			DMI_MATCH(DMI_BIOS_VERSION, "A11"), },
-+		.callback = apm_is_horked,
-+		.ident = "Dell Dimension 4100",
-+		{	SYSFW_MATCH(SYSFW_SYS_VENDOR,
-+				    "Dell Computer Corporation"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "XPS-Z"),
-+			SYSFW_MATCH(SYSFW_BIOS_VENDOR, "Intel Corp."),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "A11"),
-+		},
- 	},
- 	{	/* Allow interrupts during suspend on Compaq Laptops*/
--		set_apm_ints, "Compaq 12XL125",
--		{	DMI_MATCH(DMI_SYS_VENDOR, "Compaq"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "Compaq PC"),
--			DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
--			DMI_MATCH(DMI_BIOS_VERSION, "4.06"), },
-+		.callback = set_apm_ints,
-+		.ident = "Compaq 12XL125",
-+		{	SYSFW_MATCH(SYSFW_SYS_VENDOR, "Compaq"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Compaq PC"),
-+			SYSFW_MATCH(SYSFW_BIOS_VENDOR,
-+				    "Phoenix Technologies LTD"),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "4.06"),
-+		},
- 	},
- 	{	/* Allow interrupts during APM or the clock goes slow */
--		set_apm_ints, "ASUSTeK",
--		{	DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer Inc."),
--			DMI_MATCH(DMI_PRODUCT_NAME, "L8400K series Notebook PC"), },
-+		.callback = set_apm_ints,
-+		.ident = "ASUSTeK",
-+		{	SYSFW_MATCH(SYSFW_SYS_VENDOR,
-+				    "ASUSTeK Computer Inc."),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME,
-+				    "L8400K series Notebook PC"),
-+		},
- 	},
- 	{	/* APM blows on shutdown */
--		apm_is_horked, "ABIT KX7-333[R]",
--		{	DMI_MATCH(DMI_BOARD_VENDOR, "ABIT"),
--			DMI_MATCH(DMI_BOARD_NAME, "VT8367-8233A (KX7-333[R])"), },
-+		.callback = apm_is_horked,
-+		.ident = "ABIT KX7-333[R]",
-+		{	SYSFW_MATCH(SYSFW_BOARD_VENDOR, "ABIT"),
-+			SYSFW_MATCH(SYSFW_BOARD_NAME,
-+				    "VT8367-8233A (KX7-333[R])"), },
- 	},
- 	{	/* APM crashes */
--		apm_is_horked, "Trigem Delhi3",
--		{	DMI_MATCH(DMI_SYS_VENDOR, "TriGem Computer, Inc"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "Delhi3"), },
-+		.callback = apm_is_horked,
-+		.ident = "Trigem Delhi3",
-+		{	SYSFW_MATCH(SYSFW_SYS_VENDOR, "TriGem Computer, Inc"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Delhi3"),
-+		},
- 	},
- 	{	/* APM crashes */
--		apm_is_horked, "Fujitsu-Siemens",
--		{	DMI_MATCH(DMI_BIOS_VENDOR, "hoenix/FUJITSU SIEMENS"),
--			DMI_MATCH(DMI_BIOS_VERSION, "Version1.01"), },
-+		.callback = apm_is_horked,
-+		.ident = "Fujitsu-Siemens",
-+		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
-+				    "hoenix/FUJITSU SIEMENS"),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "Version1.01")
-+		},
- 	},
- 	{	/* APM crashes */
--		apm_is_horked_d850md, "Intel D850MD",
--		{	DMI_MATCH(DMI_BIOS_VENDOR, "Intel Corp."),
--			DMI_MATCH(DMI_BIOS_VERSION, "MV85010A.86A.0016.P07.0201251536"), },
-+		.callback = apm_is_horked_d850md,
-+		.ident = "Intel D850MD",
-+		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR, "Intel Corp."),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION,
-+				    "MV85010A.86A.0016.P07.0201251536"),
-+		},
- 	},
- 	{	/* APM crashes */
--		apm_is_horked, "Intel D810EMO",
--		{	DMI_MATCH(DMI_BIOS_VENDOR, "Intel Corp."),
--			DMI_MATCH(DMI_BIOS_VERSION, "MO81010A.86A.0008.P04.0004170800"), },
-+		.callback = apm_is_horked,
-+		.ident = "Intel D810EMO",
-+		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR, "Intel Corp."),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION,
-+				    "MO81010A.86A.0008.P04.0004170800"),
-+		},
- 	},
- 	{	/* APM crashes */
--		apm_is_horked, "Dell XPS-Z",
--		{	DMI_MATCH(DMI_BIOS_VENDOR, "Intel Corp."),
--			DMI_MATCH(DMI_BIOS_VERSION, "A11"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "XPS-Z"), },
-+		.callback = apm_is_horked,
-+		.ident = "Dell XPS-Z",
-+		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR, "Intel Corp."),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "A11"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "XPS-Z"),
-+		},
- 	},
- 	{	/* APM crashes */
--		apm_is_horked, "Sharp PC-PJ/AX",
--		{	DMI_MATCH(DMI_SYS_VENDOR, "SHARP"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "PC-PJ/AX"),
--			DMI_MATCH(DMI_BIOS_VENDOR, "SystemSoft"),
--			DMI_MATCH(DMI_BIOS_VERSION, "Version R2.08"), },
-+		.callback = apm_is_horked,
-+		.ident = "Sharp PC-PJ/AX",
-+		{	SYSFW_MATCH(SYSFW_SYS_VENDOR, "SHARP"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "PC-PJ/AX"),
-+			SYSFW_MATCH(SYSFW_BIOS_VENDOR, "SystemSoft"),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "Version R2.08"),
-+		},
- 	},
- 	{	/* APM crashes */
--		apm_is_horked, "Dell Inspiron 2500",
--		{	DMI_MATCH(DMI_SYS_VENDOR, "Dell Computer Corporation"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "Inspiron 2500"),
--			DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
--			DMI_MATCH(DMI_BIOS_VERSION, "A11"), },
-+		.callback = apm_is_horked,
-+		.ident = "Dell Inspiron 2500",
-+		{	SYSFW_MATCH(SYSFW_SYS_VENDOR,
-+				    "Dell Computer Corporation"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Inspiron 2500"),
-+			SYSFW_MATCH(SYSFW_BIOS_VENDOR,
-+				    "Phoenix Technologies LTD"),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "A11"),
-+		},
- 	},
- 	{	/* APM idle hangs */
--		apm_likes_to_melt, "Jabil AMD",
--		{	DMI_MATCH(DMI_BIOS_VENDOR, "American Megatrends Inc."),
--			DMI_MATCH(DMI_BIOS_VERSION, "0AASNP06"), },
-+		.callback = apm_likes_to_melt,
-+		.ident = "Jabil AMD",
-+		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
-+				    "American Megatrends Inc."),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "0AASNP06"),
-+		},
- 	},
- 	{	/* APM idle hangs */
--		apm_likes_to_melt, "AMI Bios",
--		{	DMI_MATCH(DMI_BIOS_VENDOR, "American Megatrends Inc."),
--			DMI_MATCH(DMI_BIOS_VERSION, "0AASNP05"), },
-+		.callback = apm_likes_to_melt,
-+		.ident = "AMI Bios",
-+		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
-+				    "American Megatrends Inc."),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "0AASNP05"),
-+		},
- 	},
- 	{	/* Handle problems with APM on Sony Vaio PCG-N505X(DE) */
--		swab_apm_power_in_minutes, "Sony VAIO",
--		{	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
--			DMI_MATCH(DMI_BIOS_VERSION, "R0206H"),
--			DMI_MATCH(DMI_BIOS_DATE, "08/23/99"), },
-+		.callback = swab_apm_power_in_minutes,
-+		.ident = "Sony VAIO",
-+		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
-+				    "Phoenix Technologies LTD"),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "R0206H"),
-+			SYSFW_MATCH(SYSFW_BIOS_DATE, "08/23/99"),
-+		},
- 	},
- 	{	/* Handle problems with APM on Sony Vaio PCG-N505VX */
--		swab_apm_power_in_minutes, "Sony VAIO",
--		{	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
--			DMI_MATCH(DMI_BIOS_VERSION, "W2K06H0"),
--			DMI_MATCH(DMI_BIOS_DATE, "02/03/00"), },
-+		.callback = swab_apm_power_in_minutes,
-+		.ident = "Sony VAIO",
-+		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
-+				    "Phoenix Technologies LTD"),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "W2K06H0"),
-+			SYSFW_MATCH(SYSFW_BIOS_DATE, "02/03/00"),
-+		},
- 	},
- 	{	/* Handle problems with APM on Sony Vaio PCG-XG29 */
--		swab_apm_power_in_minutes, "Sony VAIO",
--		{	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
--			DMI_MATCH(DMI_BIOS_VERSION, "R0117A0"),
--			DMI_MATCH(DMI_BIOS_DATE, "04/25/00"), },
-+		.callback = swab_apm_power_in_minutes,
-+		.ident = "Sony VAIO",
-+		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
-+				    "Phoenix Technologies LTD"),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "R0117A0"),
-+			SYSFW_MATCH(SYSFW_BIOS_DATE, "04/25/00"),
-+		},
- 	},
- 	{	/* Handle problems with APM on Sony Vaio PCG-Z600NE */
--		swab_apm_power_in_minutes, "Sony VAIO",
--		{	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
--			DMI_MATCH(DMI_BIOS_VERSION, "R0121Z1"),
--			DMI_MATCH(DMI_BIOS_DATE, "05/11/00"), },
-+		.callback = swab_apm_power_in_minutes,
-+		.ident = "Sony VAIO",
-+		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
-+				    "Phoenix Technologies LTD"),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "R0121Z1"),
-+			SYSFW_MATCH(SYSFW_BIOS_DATE, "05/11/00"),
-+		},
- 	},
- 	{	/* Handle problems with APM on Sony Vaio PCG-Z600NE */
--		swab_apm_power_in_minutes, "Sony VAIO",
--		{	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
--			DMI_MATCH(DMI_BIOS_VERSION, "WME01Z1"),
--			DMI_MATCH(DMI_BIOS_DATE, "08/11/00"), },
-+		.callback = swab_apm_power_in_minutes,
-+		.ident = "Sony VAIO",
-+		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
-+				    "Phoenix Technologies LTD"),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "WME01Z1"),
-+			SYSFW_MATCH(SYSFW_BIOS_DATE, "08/11/00"),
-+		},
- 	},
- 	{	/* Handle problems with APM on Sony Vaio PCG-Z600LEK(DE) */
--		swab_apm_power_in_minutes, "Sony VAIO",
--		{	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
--			DMI_MATCH(DMI_BIOS_VERSION, "R0206Z3"),
--			DMI_MATCH(DMI_BIOS_DATE, "12/25/00"), },
-+		.callback = swab_apm_power_in_minutes,
-+		.ident = "Sony VAIO",
-+		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
-+				    "Phoenix Technologies LTD"),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "R0206Z3"),
-+			SYSFW_MATCH(SYSFW_BIOS_DATE, "12/25/00"),
-+		},
- 	},
- 	{	/* Handle problems with APM on Sony Vaio PCG-Z505LS */
--		swab_apm_power_in_minutes, "Sony VAIO",
--		{	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
--			DMI_MATCH(DMI_BIOS_VERSION, "R0203D0"),
--			DMI_MATCH(DMI_BIOS_DATE, "05/12/00"), },
-+		.callback = swab_apm_power_in_minutes,
-+		.ident = "Sony VAIO",
-+		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
-+				    "Phoenix Technologies LTD"),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "R0203D0"),
-+			SYSFW_MATCH(SYSFW_BIOS_DATE, "05/12/00"),
-+		},
- 	},
- 	{	/* Handle problems with APM on Sony Vaio PCG-Z505LS */
--		swab_apm_power_in_minutes, "Sony VAIO",
--		{	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
--			DMI_MATCH(DMI_BIOS_VERSION, "R0203Z3"),
--			DMI_MATCH(DMI_BIOS_DATE, "08/25/00"), },
-+		.callback = swab_apm_power_in_minutes,
-+		.ident = "Sony VAIO",
-+		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
-+				    "Phoenix Technologies LTD"),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "R0203Z3"),
-+			SYSFW_MATCH(SYSFW_BIOS_DATE, "08/25/00"),
-+		},
- 	},
- 	{	/* Handle problems with APM on Sony Vaio PCG-Z505LS (with updated BIOS) */
--		swab_apm_power_in_minutes, "Sony VAIO",
--		{	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
--			DMI_MATCH(DMI_BIOS_VERSION, "R0209Z3"),
--			DMI_MATCH(DMI_BIOS_DATE, "05/12/01"), },
-+		.callback = swab_apm_power_in_minutes,
-+		.ident = "Sony VAIO",
-+		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
-+				    "Phoenix Technologies LTD"),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "R0209Z3"),
-+			SYSFW_MATCH(SYSFW_BIOS_DATE, "05/12/01"),
-+		},
- 	},
- 	{	/* Handle problems with APM on Sony Vaio PCG-F104K */
--		swab_apm_power_in_minutes, "Sony VAIO",
--		{	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
--			DMI_MATCH(DMI_BIOS_VERSION, "R0204K2"),
--			DMI_MATCH(DMI_BIOS_DATE, "08/28/00"), },
-+		.callback = swab_apm_power_in_minutes,
-+		.ident = "Sony VAIO",
-+		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
-+				    "Phoenix Technologies LTD"),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "R0204K2"),
-+			SYSFW_MATCH(SYSFW_BIOS_DATE, "08/28/00"),
-+		},
- 	},
- 
- 	{	/* Handle problems with APM on Sony Vaio PCG-C1VN/C1VE */
--		swab_apm_power_in_minutes, "Sony VAIO",
--		{	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
--			DMI_MATCH(DMI_BIOS_VERSION, "R0208P1"),
--			DMI_MATCH(DMI_BIOS_DATE, "11/09/00"), },
-+		.callback = swab_apm_power_in_minutes,
-+		.ident = "Sony VAIO",
-+		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
-+				    "Phoenix Technologies LTD"),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "R0208P1"),
-+			SYSFW_MATCH(SYSFW_BIOS_DATE, "11/09/00"),
-+		},
- 	},
- 	{	/* Handle problems with APM on Sony Vaio PCG-C1VE */
--		swab_apm_power_in_minutes, "Sony VAIO",
--		{	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
--			DMI_MATCH(DMI_BIOS_VERSION, "R0204P1"),
--			DMI_MATCH(DMI_BIOS_DATE, "09/12/00"), },
-+		.callback = swab_apm_power_in_minutes,
-+		.ident = "Sony VAIO",
-+		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
-+				    "Phoenix Technologies LTD"),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "R0204P1"),
-+			SYSFW_MATCH(SYSFW_BIOS_DATE, "09/12/00"),
-+		},
- 	},
- 	{	/* Handle problems with APM on Sony Vaio PCG-C1VE */
--		swab_apm_power_in_minutes, "Sony VAIO",
--		{	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
--			DMI_MATCH(DMI_BIOS_VERSION, "WXPO1Z3"),
--			DMI_MATCH(DMI_BIOS_DATE, "10/26/01"), },
-+		.callback = swab_apm_power_in_minutes,
-+		.ident = "Sony VAIO",
-+		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
-+				    "Phoenix Technologies LTD"),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "WXPO1Z3"),
-+			SYSFW_MATCH(SYSFW_BIOS_DATE, "10/26/01"),
-+		},
- 	},
- 	{	/* broken PM poweroff bios */
--		set_realmode_power_off, "Award Software v4.60 PGMA",
--		{	DMI_MATCH(DMI_BIOS_VENDOR, "Award Software International, Inc."),
--			DMI_MATCH(DMI_BIOS_VERSION, "4.60 PGMA"),
--			DMI_MATCH(DMI_BIOS_DATE, "134526184"), },
-+		.callback = set_realmode_power_off,
-+		.ident = "Award Software v4.60 PGMA",
-+		{	SYSFW_MATCH(SYSFW_BIOS_VENDOR,
-+				    "Award Software International, Inc."),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "4.60 PGMA"),
-+			SYSFW_MATCH(SYSFW_BIOS_DATE, "134526184"),
-+		},
- 	},
- 
- 	/* Generic per vendor APM settings  */
- 
- 	{	/* Allow interrupts during suspend on IBM laptops */
--		set_apm_ints, "IBM",
--		{	DMI_MATCH(DMI_SYS_VENDOR, "IBM"), },
-+		.callback = set_apm_ints,
-+		.ident = "IBM",
-+		{
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "IBM"),
-+		},
- 	},
--
--	{ }
-+	{}
- };
- 
- /*
-@@ -2265,7 +2364,7 @@ static int __init apm_init(void)
- 	struct desc_struct *gdt;
- 	int err;
- 
--	dmi_check_system(apm_dmi_table);
-+	sysfw_callback(apm_id_table);
- 
- 	if (apm_info.bios.version == 0 || paravirt_enabled() || machine_is_olpc()) {
- 		printk(KERN_INFO "apm: BIOS not found.\n");
-@@ -2288,7 +2387,7 @@ static int __init apm_init(void)
- 		apm_info.get_power_status_broken = 1;
- 	if (realmode_power_off)
- 		apm_info.realmode_power_off = 1;
--	/* User can override, but default is to trust DMI */
-+	/* User can override, but default is to trust SMBIOS */
- 	if (apm_disabled != -1)
- 		apm_info.disabled = apm_disabled;
- 
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index b13ed39..79fd786 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -587,7 +587,7 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
- 	if (c->x86 == 0x10) {
- 		/* do this for boot cpu */
- 		if (c == &boot_cpu_data)
--			check_enable_amd_mmconf_dmi();
-+			check_enable_amd_pci_mmconf();
- 
- 		fam10h_check_enable_mmcfg();
- 	}
-diff --git a/arch/x86/kernel/cpu/vmware.c b/arch/x86/kernel/cpu/vmware.c
-index d22d0c4..e427451 100644
---- a/arch/x86/kernel/cpu/vmware.c
-+++ b/arch/x86/kernel/cpu/vmware.c
-@@ -21,7 +21,7 @@
-  *
-  */
- 
--#include <linux/dmi.h>
-+#include <linux/sysfw.h>
- #include <linux/module.h>
- #include <asm/div64.h>
- #include <asm/x86_init.h>
-@@ -85,8 +85,18 @@ static void __init vmware_platform_setup(void)
- 		       "Failed to get TSC freq from the hypervisor\n");
- }
- 
-+static struct sysfw_id vmware_id_table[] = {
-+	{
-+		 .ident = "VMware",
-+		.matches = {
-+			SYSFW_MATCH(SYSFW_PRODUCT_SERIAL, "VMWare"),
-+		},
++		.exactmatch = 1,
 +	},
 +	{},
 +};
 +
- /*
-- * While checking the dmi string information, just checking the product
-+ * While checking the smbios string information, just checking the product
-  * serial key should be enough, as this will always have a VMware
-  * specific string when running under VMware hypervisor.
-  */
-@@ -100,8 +110,7 @@ static bool __init vmware_platform(void)
- 		      &hyper_vendor_id[1], &hyper_vendor_id[2]);
- 		if (!memcmp(hyper_vendor_id, "VMwareVMware", 12))
- 			return true;
--	} else if (dmi_available && dmi_name_in_serial("VMware") &&
--		   __vmware_platform())
-+	} else if (sysfw_callback(vmware_id_table) && __vmware_platform())
- 		return true;
+ static int __init abituguru_init(void)
+ {
+ 	int address, err;
+ 	struct resource res = { .flags = IORESOURCE_IO };
+-	const char *board_vendor = dmi_get_system_info(DMI_BOARD_VENDOR);
  
- 	return false;
-diff --git a/arch/x86/kernel/io_delay.c b/arch/x86/kernel/io_delay.c
-index a979b5b..27c0390 100644
---- a/arch/x86/kernel/io_delay.c
-+++ b/arch/x86/kernel/io_delay.c
-@@ -1,7 +1,7 @@
- /*
-  * I/O delay strategies for inb_p/outb_p
-  *
-- * Allow for a DMI based override of port 0x80, needed for certain HP laptops
-+ * Allow for a SMBIOS based override of port 0x80, needed for certain HP laptops
-  * and possibly other systems. Also allow for the gradual elimination of
-  * outb_p/inb_p API uses.
-  */
-@@ -9,7 +9,7 @@
- #include <linux/module.h>
- #include <linux/delay.h>
- #include <linux/init.h>
+ 	/* safety check, refuse to load on non Abit motherboards */
+-	if (!force && (!board_vendor ||
+-			strcmp(board_vendor, "http://www.abit.com.tw/")))
++	if (!force && !sysfw_callback(abitguru_id_table))
+ 		return -ENODEV;
+ 
+ 	address = abituguru_detect();
+diff --git a/drivers/hwmon/abituguru3.c b/drivers/hwmon/abituguru3.c
+index d30855a..7d36abc 100644
+--- a/drivers/hwmon/abituguru3.c
++++ b/drivers/hwmon/abituguru3.c
+@@ -36,7 +36,8 @@
+ #include <linux/platform_device.h>
+ #include <linux/hwmon.h>
+ #include <linux/hwmon-sysfs.h>
 -#include <linux/dmi.h>
++#include <linux/smbios.h>
 +#include <linux/sysfw.h>
  #include <linux/io.h>
  
- int io_delay_type __read_mostly = CONFIG_DEFAULT_IO_DELAY_TYPE;
-@@ -44,7 +44,7 @@ void native_io_delay(void)
- }
- EXPORT_SYMBOL(native_io_delay);
- 
--static int __init dmi_io_delay_0xed_port(const struct dmi_system_id *id)
-+static int __init io_delay_0xed_port(const struct sysfw_id *id)
- {
- 	if (io_delay_type == CONFIG_IO_DELAY_TYPE_0X80) {
- 		pr_notice("%s: using 0xed I/O delay port\n", id->ident);
-@@ -58,54 +58,54 @@ static int __init dmi_io_delay_0xed_port(const struct dmi_system_id *id)
-  * Quirk table for systems that misbehave (lock up, etc.) if port
-  * 0x80 is used:
-  */
--static struct dmi_system_id __initdata io_delay_0xed_port_dmi_table[] = {
-+static struct sysfw_id __initdata io_delay_0xed_port_table[] = {
- 	{
--		.callback	= dmi_io_delay_0xed_port,
-+		.callback	= io_delay_0xed_port,
- 		.ident		= "Compaq Presario V6000",
- 		.matches	= {
--			DMI_MATCH(DMI_BOARD_VENDOR,	"Quanta"),
--			DMI_MATCH(DMI_BOARD_NAME,	"30B7")
-+			SYSFW_MATCH(SYSFW_BOARD_VENDOR,	"Quanta"),
-+			SYSFW_MATCH(SYSFW_BOARD_NAME,	"30B7")
- 		}
- 	},
- 	{
--		.callback	= dmi_io_delay_0xed_port,
-+		.callback	= io_delay_0xed_port,
- 		.ident		= "HP Pavilion dv9000z",
- 		.matches	= {
--			DMI_MATCH(DMI_BOARD_VENDOR,	"Quanta"),
--			DMI_MATCH(DMI_BOARD_NAME,	"30B9")
-+			SYSFW_MATCH(SYSFW_BOARD_VENDOR,	"Quanta"),
-+			SYSFW_MATCH(SYSFW_BOARD_NAME,	"30B9")
- 		}
- 	},
- 	{
--		.callback	= dmi_io_delay_0xed_port,
-+		.callback	= io_delay_0xed_port,
- 		.ident		= "HP Pavilion dv6000",
- 		.matches	= {
--			DMI_MATCH(DMI_BOARD_VENDOR,	"Quanta"),
--			DMI_MATCH(DMI_BOARD_NAME,	"30B8")
-+			SYSFW_MATCH(SYSFW_BOARD_VENDOR,	"Quanta"),
-+			SYSFW_MATCH(SYSFW_BOARD_NAME,	"30B8")
- 		}
- 	},
- 	{
--		.callback	= dmi_io_delay_0xed_port,
-+		.callback	= io_delay_0xed_port,
- 		.ident		= "HP Pavilion tx1000",
- 		.matches	= {
--			DMI_MATCH(DMI_BOARD_VENDOR,	"Quanta"),
--			DMI_MATCH(DMI_BOARD_NAME,	"30BF")
-+			SYSFW_MATCH(SYSFW_BOARD_VENDOR,	"Quanta"),
-+			SYSFW_MATCH(SYSFW_BOARD_NAME,	"30BF")
- 		}
- 	},
- 	{
--		.callback	= dmi_io_delay_0xed_port,
-+		.callback	= io_delay_0xed_port,
- 		.ident		= "Presario F700",
- 		.matches	= {
--			DMI_MATCH(DMI_BOARD_VENDOR,	"Quanta"),
--			DMI_MATCH(DMI_BOARD_NAME,	"30D3")
-+			SYSFW_MATCH(SYSFW_BOARD_VENDOR,	"Quanta"),
-+			SYSFW_MATCH(SYSFW_BOARD_NAME,	"30D3")
- 		}
- 	},
--	{ }
-+	{}
+ /* uGuru3 bank addresses */
+@@ -121,11 +122,11 @@ struct abituguru3_sensor_info {
  };
  
- void __init io_delay_init(void)
- {
- 	if (!io_delay_override)
--		dmi_check_system(io_delay_0xed_port_dmi_table);
-+		sysfw_callback(io_delay_0xed_port_table);
- }
+ /* Avoid use of flexible array members */
+-#define ABIT_UGURU3_MAX_DMI_NAMES 2
++#define ABIT_UGURU3_MAX_SMBIOS_NAMES 2
  
- static int __init io_delay_param(char *s)
-diff --git a/arch/x86/kernel/mmconf-fam10h_64.c b/arch/x86/kernel/mmconf-fam10h_64.c
-index ac861b8..f24400a 100644
---- a/arch/x86/kernel/mmconf-fam10h_64.c
-+++ b/arch/x86/kernel/mmconf-fam10h_64.c
-@@ -6,7 +6,7 @@
- #include <linux/mm.h>
- #include <linux/string.h>
- #include <linux/pci.h>
--#include <linux/dmi.h>
-+#include <linux/sysfw.h>
- #include <linux/range.h>
+ struct abituguru3_motherboard_info {
+ 	u16 id;
+-	const char *dmi_name[ABIT_UGURU3_MAX_DMI_NAMES + 1];
++	const char *smbios_name[ABIT_UGURU3_MAX_SMBIOS_NAMES + 1];
+ 	/* + 1 -> end of sensors indicated by a sensor with name == NULL */
+ 	struct abituguru3_sensor_info sensors[ABIT_UGURU3_MAX_NO_SENSORS + 1];
+ };
+@@ -170,7 +171,7 @@ struct abituguru3_data {
  
- #include <asm/pci-direct.h>
-@@ -213,25 +213,25 @@ void __cpuinit fam10h_check_enable_mmcfg(void)
- 	wrmsrl(address, val);
- }
+ /* Constants */
+ static const struct abituguru3_motherboard_info abituguru3_motherboards[] = {
+-	{ 0x000C, { NULL } /* Unknown, need DMI string */, {
++	{ 0x000C, { NULL } /* Unknown, need SMBIOS string */, {
+ 		{ "CPU Core",		 0, 0, 10, 1, 0 },
+ 		{ "DDR",		 1, 0, 10, 1, 0 },
+ 		{ "DDR VTT",		 2, 0, 10, 1, 0 },
+@@ -192,7 +193,7 @@ static const struct abituguru3_motherboard_info abituguru3_motherboards[] = {
+ 		{ "AUX1 Fan",		35, 2, 60, 1, 0 },
+ 		{ NULL, 0, 0, 0, 0, 0 } }
+ 	},
+-	{ 0x000D, { NULL } /* Abit AW8, need DMI string */, {
++	{ 0x000D, { NULL } /* Abit AW8, need SMBIOS string */, {
+ 		{ "CPU Core",		 0, 0, 10, 1, 0 },
+ 		{ "DDR",		 1, 0, 10, 1, 0 },
+ 		{ "DDR VTT",		 2, 0, 10, 1, 0 },
+@@ -221,7 +222,7 @@ static const struct abituguru3_motherboard_info abituguru3_motherboards[] = {
+ 		{ "AUX5 Fan",		39, 2, 60, 1, 0 },
+ 		{ NULL, 0, 0, 0, 0, 0 } }
+ 	},
+-	{ 0x000E, { NULL } /* AL-8, need DMI string */, {
++	{ 0x000E, { NULL } /* AL-8, need SMBIOS string */, {
+ 		{ "CPU Core",		 0, 0, 10, 1, 0 },
+ 		{ "DDR",		 1, 0, 10, 1, 0 },
+ 		{ "DDR VTT",		 2, 0, 10, 1, 0 },
+@@ -242,7 +243,7 @@ static const struct abituguru3_motherboard_info abituguru3_motherboards[] = {
+ 		{ "SYS Fan",		34, 2, 60, 1, 0 },
+ 		{ NULL, 0, 0, 0, 0, 0 } }
+ 	},
+-	{ 0x000F, { NULL } /* Unknown, need DMI string */, {
++	{ 0x000F, { NULL } /* Unknown, need SMBIOS string */, {
  
--static int __init set_check_enable_amd_mmconf(const struct dmi_system_id *d)
-+static int __init set_check_enable_amd_mmconf(const struct sysfw_id *d)
- {
--        pci_probe |= PCI_CHECK_ENABLE_AMD_MMCONF;
--        return 0;
-+	pci_probe |= PCI_CHECK_ENABLE_AMD_MMCONF;
-+	return 0;
- }
- 
--static const struct dmi_system_id __initconst mmconf_dmi_table[] = {
--        {
--                .callback = set_check_enable_amd_mmconf,
--                .ident = "Sun Microsystems Machine",
--                .matches = {
--                        DMI_MATCH(DMI_SYS_VENDOR, "Sun Microsystems"),
--                },
--        },
-+static const struct sysfw_id __initconst mmconf_id_table[] = {
-+	{
-+		.callback = set_check_enable_amd_mmconf,
-+		.ident = "Sun Microsystems Machine",
-+		.matches = {
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Sun Microsystems"),
-+		},
-+	},
- 	{}
+ 		{ "CPU Core",		 0, 0, 10, 1, 0 },
+ 		{ "DDR",		 1, 0, 10, 1, 0 },
+@@ -264,7 +265,7 @@ static const struct abituguru3_motherboard_info abituguru3_motherboards[] = {
+ 		{ "SYS Fan",		34, 2, 60, 1, 0 },
+ 		{ NULL, 0, 0, 0, 0, 0 } }
+ 	},
+-	{ 0x0010, { NULL } /* Abit NI8 SLI GR, need DMI string */, {
++	{ 0x0010, { NULL } /* Abit NI8 SLI GR, need SMBIOS string */, {
+ 		{ "CPU Core",		 0, 0, 10, 1, 0 },
+ 		{ "DDR",		 1, 0, 10, 1, 0 },
+ 		{ "DDR VTT",		 2, 0, 10, 1, 0 },
+@@ -313,7 +314,7 @@ static const struct abituguru3_motherboard_info abituguru3_motherboards[] = {
+ 		{ "AUX3 Fan",		37, 2, 60, 1, 0 },
+ 		{ NULL, 0, 0, 0, 0, 0 } }
+ 	},
+-	{ 0x0012, { NULL } /* Abit AN8 32X, need DMI string */, {
++	{ 0x0012, { NULL } /* Abit AN8 32X, need SMBIOS string */, {
+ 		{ "CPU Core",		 0, 0, 10, 1, 0 },
+ 		{ "DDR",		 1, 0, 20, 1, 0 },
+ 		{ "DDR VTT",		 2, 0, 10, 1, 0 },
+@@ -335,7 +336,7 @@ static const struct abituguru3_motherboard_info abituguru3_motherboards[] = {
+ 		{ "AUX1 Fan",		36, 2, 60, 1, 0 },
+ 		{ NULL, 0, 0, 0, 0, 0 } }
+ 	},
+-	{ 0x0013, { NULL } /* Abit AW8D, need DMI string */, {
++	{ 0x0013, { NULL } /* Abit AW8D, need SMBIOS string */, {
+ 		{ "CPU Core",		 0, 0, 10, 1, 0 },
+ 		{ "DDR",		 1, 0, 10, 1, 0 },
+ 		{ "DDR VTT",		 2, 0, 10, 1, 0 },
+@@ -385,7 +386,7 @@ static const struct abituguru3_motherboard_info abituguru3_motherboards[] = {
+ 		{ "SYS Fan",		34, 2, 60, 1, 0 },
+ 		{ NULL, 0, 0, 0, 0, 0 } }
+ 	},
+-	{ 0x0015, { NULL } /* Unknown, need DMI string */, {
++	{ 0x0015, { NULL } /* Unknown, need SMBIOS string */, {
+ 		{ "CPU Core",		 0, 0, 10, 1, 0 },
+ 		{ "DDR",		 1, 0, 20, 1, 0 },
+ 		{ "DDR VTT",		 2, 0, 10, 1, 0 },
+@@ -437,7 +438,7 @@ static const struct abituguru3_motherboard_info abituguru3_motherboards[] = {
+ 		{ "OTES1 Fan",		38, 2, 60, 1, 0 },
+ 		{ NULL, 0, 0, 0, 0, 0 } }
+ 	},
+-	{ 0x0017, { NULL } /* Unknown, need DMI string */, {
++	{ 0x0017, { NULL } /* Unknown, need SMBIOS string */, {
+ 		{ "CPU Core",		 0, 0, 10, 1, 0 },
+ 		{ "DDR2",		 1, 0, 20, 1, 0 },
+ 		{ "DDR2 VTT",		 2, 0, 10, 1, 0 },
+@@ -544,7 +545,7 @@ static const struct abituguru3_motherboard_info abituguru3_motherboards[] = {
+ 		{ "AUX4 Fan",		37, 2, 60, 1, 0 },
+ 		{ NULL, 0, 0, 0, 0, 0 } }
+ 	},
+-	{ 0x001B, { NULL } /* Unknown, need DMI string */, {
++	{ 0x001B, { NULL } /* Unknown, need SMBIOS string */, {
+ 		{ "CPU Core",		 0, 0, 10, 1, 0 },
+ 		{ "DDR3",		 1, 0, 20, 1, 0 },
+ 		{ "DDR3 VTT",		 2, 0, 10, 1, 0 },
+@@ -1119,23 +1120,23 @@ static struct platform_driver abituguru3_driver = {
+ 	.resume = abituguru3_resume
  };
  
- /* Called from a __cpuinit function, but only on the BSP. */
--void __ref check_enable_amd_mmconf_dmi(void)
-+void __ref check_enable_amd_pci_mmconf(void)
+-static int __init abituguru3_dmi_detect(void)
++static int __init abituguru3_smbios_detect(void)
  {
--	dmi_check_system(mmconf_dmi_table);
-+	sysfw_callback(mmconf_id_table);
- }
-diff --git a/arch/x86/kernel/probe_roms.c b/arch/x86/kernel/probe_roms.c
-index ba0a4cc..e36d641 100644
---- a/arch/x86/kernel/probe_roms.c
-+++ b/arch/x86/kernel/probe_roms.c
-@@ -7,7 +7,6 @@
- #include <linux/console.h>
- #include <linux/init.h>
- #include <linux/edd.h>
--#include <linux/dmi.h>
- #include <linux/pfn.h>
- #include <linux/pci.h>
- #include <asm/pci-direct.h>
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index e1ba8cb..c1d7c54 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -10,7 +10,7 @@
- #include <linux/clockchips.h>
- #include <linux/random.h>
- #include <linux/user-return-notifier.h>
--#include <linux/dmi.h>
-+#include <linux/sysfw.h>
- #include <linux/utsname.h>
- #include <trace/events/power.h>
- #include <linux/hw_breakpoint.h>
-@@ -94,15 +94,15 @@ void show_regs_common(void)
- {
- 	const char *vendor, *product, *board;
+ 	const char *board_vendor, *board_name;
+ 	int i, err = (force) ? 1 : -ENODEV;
+-	const char *const *dmi_name;
++	const char *const *smbios_name;
+ 	size_t sublen;
  
--	vendor = dmi_get_system_info(DMI_SYS_VENDOR);
-+	vendor = sysfw_lookup(SYSFW_SYS_VENDOR);
- 	if (!vendor)
- 		vendor = "";
--	product = dmi_get_system_info(DMI_PRODUCT_NAME);
-+	product = sysfw_lookup(SYSFW_PRODUCT_NAME);
- 	if (!product)
- 		product = "";
+-	board_vendor = dmi_get_system_info(DMI_BOARD_VENDOR);
++	board_vendor = sysfw_lookup(SYSFW_BOARD_VENDOR);
+ 	if (!board_vendor || strcmp(board_vendor, "http://www.abit.com.tw/"))
+ 		return err;
  
- 	/* Board Name is optional */
--	board = dmi_get_system_info(DMI_BOARD_NAME);
-+	board = sysfw_lookup(SYSFW_BOARD_NAME);
+-	board_name = dmi_get_system_info(DMI_BOARD_NAME);
++	board_name = sysfw_lookup(SYSFW_BOARD_NAME);
+ 	if (!board_name)
+ 		return err;
  
- 	printk(KERN_CONT "\n");
- 	printk(KERN_DEFAULT "Pid: %d, comm: %.20s %s %s %.*s",
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index 4f0d46f..b3837c5 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -3,7 +3,7 @@
- #include <linux/init.h>
- #include <linux/pm.h>
- #include <linux/efi.h>
--#include <linux/dmi.h>
-+#include <linux/sysfw.h>
- #include <linux/sched.h>
- #include <linux/tboot.h>
- #include <linux/delay.h>
-@@ -127,7 +127,7 @@ __setup("reboot=", reboot_setup);
-  * Some machines require the "reboot=b"  commandline option,
-  * this quirk makes that automatic.
-  */
--static int __init set_bios_reboot(const struct dmi_system_id *d)
-+static int __init set_bios_reboot(const struct sysfw_id *d)
- {
- 	if (reboot_type != BOOT_BIOS) {
- 		reboot_type = BOOT_BIOS;
-@@ -136,178 +136,186 @@ static int __init set_bios_reboot(const struct dmi_system_id *d)
- 	return 0;
- }
- 
--static struct dmi_system_id __initdata reboot_dmi_table[] = {
-+static struct sysfw_id __initdata reboot_id_table[] = {
- 	{	/* Handle problems with rebooting on Dell E520's */
- 		.callback = set_bios_reboot,
- 		.ident = "Dell E520",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
--			DMI_MATCH(DMI_PRODUCT_NAME, "Dell DM061"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell Inc."),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Dell DM061"),
- 		},
- 	},
- 	{	/* Handle problems with rebooting on Dell 1300's */
- 		.callback = set_bios_reboot,
- 		.ident = "Dell PowerEdge 1300",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Dell Computer Corporation"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "PowerEdge 1300/"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR,
-+				    "Dell Computer Corporation"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "PowerEdge 1300/"),
- 		},
- 	},
- 	{	/* Handle problems with rebooting on Dell 300's */
- 		.callback = set_bios_reboot,
- 		.ident = "Dell PowerEdge 300",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Dell Computer Corporation"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "PowerEdge 300/"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR,
-+				    "Dell Computer Corporation"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "PowerEdge 300/"),
- 		},
- 	},
- 	{       /* Handle problems with rebooting on Dell Optiplex 745's SFF*/
- 		.callback = set_bios_reboot,
- 		.ident = "Dell OptiPlex 745",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
--			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 745"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell Inc."),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "OptiPlex 745"),
- 		},
- 	},
- 	{       /* Handle problems with rebooting on Dell Optiplex 745's DFF*/
- 		.callback = set_bios_reboot,
- 		.ident = "Dell OptiPlex 745",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
--			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 745"),
--			DMI_MATCH(DMI_BOARD_NAME, "0MM599"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell Inc."),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "OptiPlex 745"),
-+			SYSFW_MATCH(SYSFW_BOARD_NAME, "0MM599"),
- 		},
- 	},
- 	{       /* Handle problems with rebooting on Dell Optiplex 745 with 0KW626 */
- 		.callback = set_bios_reboot,
- 		.ident = "Dell OptiPlex 745",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
--			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 745"),
--			DMI_MATCH(DMI_BOARD_NAME, "0KW626"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell Inc."),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "OptiPlex 745"),
-+			SYSFW_MATCH(SYSFW_BOARD_NAME, "0KW626"),
- 		},
- 	},
- 	{   /* Handle problems with rebooting on Dell Optiplex 330 with 0KP561 */
- 		.callback = set_bios_reboot,
- 		.ident = "Dell OptiPlex 330",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
--			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 330"),
--			DMI_MATCH(DMI_BOARD_NAME, "0KP561"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell Inc."),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "OptiPlex 330"),
-+			SYSFW_MATCH(SYSFW_BOARD_NAME, "0KP561"),
- 		},
- 	},
- 	{   /* Handle problems with rebooting on Dell Optiplex 360 with 0T656F */
- 		.callback = set_bios_reboot,
- 		.ident = "Dell OptiPlex 360",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
--			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 360"),
--			DMI_MATCH(DMI_BOARD_NAME, "0T656F"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell Inc."),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "OptiPlex 360"),
-+			SYSFW_MATCH(SYSFW_BOARD_NAME, "0T656F"),
- 		},
- 	},
- 	{	/* Handle problems with rebooting on Dell OptiPlex 760 with 0G919G*/
- 		.callback = set_bios_reboot,
- 		.ident = "Dell OptiPlex 760",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
--			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 760"),
--			DMI_MATCH(DMI_BOARD_NAME, "0G919G"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell Inc."),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "OptiPlex 760"),
-+			SYSFW_MATCH(SYSFW_BOARD_NAME, "0G919G"),
- 		},
- 	},
- 	{	/* Handle problems with rebooting on Dell 2400's */
- 		.callback = set_bios_reboot,
- 		.ident = "Dell PowerEdge 2400",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Dell Computer Corporation"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "PowerEdge 2400"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR,
-+				    "Dell Computer Corporation"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "PowerEdge 2400"),
- 		},
- 	},
- 	{	/* Handle problems with rebooting on Dell T5400's */
- 		.callback = set_bios_reboot,
- 		.ident = "Dell Precision T5400",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
--			DMI_MATCH(DMI_PRODUCT_NAME, "Precision WorkStation T5400"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell Inc."),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME,
-+				    "Precision WorkStation T5400"),
- 		},
- 	},
- 	{	/* Handle problems with rebooting on Dell T7400's */
- 		.callback = set_bios_reboot,
- 		.ident = "Dell Precision T7400",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
--			DMI_MATCH(DMI_PRODUCT_NAME, "Precision WorkStation T7400"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell Inc."),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME,
-+				    "Precision WorkStation T7400"),
- 		},
- 	},
- 	{	/* Handle problems with rebooting on HP laptops */
- 		.callback = set_bios_reboot,
- 		.ident = "HP Compaq Laptop",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "HP Compaq"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Hewlett-Packard"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "HP Compaq"),
- 		},
- 	},
- 	{	/* Handle problems with rebooting on Dell XPS710 */
- 		.callback = set_bios_reboot,
- 		.ident = "Dell XPS710",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
--			DMI_MATCH(DMI_PRODUCT_NAME, "Dell XPS710"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell Inc."),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Dell XPS710"),
- 		},
- 	},
- 	{	/* Handle problems with rebooting on Dell DXP061 */
- 		.callback = set_bios_reboot,
- 		.ident = "Dell DXP061",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
--			DMI_MATCH(DMI_PRODUCT_NAME, "Dell DXP061"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell Inc."),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Dell DXP061"),
- 		},
- 	},
- 	{	/* Handle problems with rebooting on Sony VGN-Z540N */
- 		.callback = set_bios_reboot,
- 		.ident = "Sony VGN-Z540N",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "VGN-Z540N"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Sony Corporation"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "VGN-Z540N"),
- 		},
- 	},
- 	{	/* Handle problems with rebooting on CompuLab SBC-FITPC2 */
- 		.callback = set_bios_reboot,
- 		.ident = "CompuLab SBC-FITPC2",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "CompuLab"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "SBC-FITPC2"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "CompuLab"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "SBC-FITPC2"),
- 		},
- 	},
- 	{       /* Handle problems with rebooting on ASUS P4S800 */
- 		.callback = set_bios_reboot,
- 		.ident = "ASUS P4S800",
- 		.matches = {
--			DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTeK Computer INC."),
--			DMI_MATCH(DMI_BOARD_NAME, "P4S800"),
-+			SYSFW_MATCH(SYSFW_BOARD_VENDOR,
-+				    "ASUSTeK Computer INC."),
-+			SYSFW_MATCH(SYSFW_BOARD_NAME, "P4S800"),
- 		},
- 	},
- 	{	/* Handle problems with rebooting on VersaLogic Menlow boards */
- 		.callback = set_bios_reboot,
- 		.ident = "VersaLogic Menlow based board",
- 		.matches = {
--			DMI_MATCH(DMI_BOARD_VENDOR, "VersaLogic Corporation"),
--			DMI_MATCH(DMI_BOARD_NAME, "VersaLogic Menlow board"),
-+			SYSFW_MATCH(SYSFW_BOARD_VENDOR,
-+				    "VersaLogic Corporation"),
-+			SYSFW_MATCH(SYSFW_BOARD_NAME,
-+				    "VersaLogic Menlow board"),
- 		},
- 	},
- 	{ /* Handle reboot issue on Acer Aspire one */
- 		.callback = set_bios_reboot,
- 		.ident = "Acer Aspire One A110",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "AOA110"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Acer"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "AOA110"),
- 		},
- 	},
--	{ }
-+	{}
- };
- 
- static int __init reboot_init(void)
- {
--	dmi_check_system(reboot_dmi_table);
-+	sysfw_callback(reboot_id_table);
- 	return 0;
- }
- core_initcall(reboot_init);
-@@ -376,7 +384,7 @@ EXPORT_SYMBOL(machine_real_restart);
- /*
-  * Some Apple MacBook and MacBookPro's needs reboot=p to be able to reboot
-  */
--static int __init set_pci_reboot(const struct dmi_system_id *d)
-+static int __init set_pci_reboot(const struct sysfw_id *d)
- {
- 	if (reboot_type != BOOT_CF9) {
- 		reboot_type = BOOT_CF9;
-@@ -386,45 +394,45 @@ static int __init set_pci_reboot(const struct dmi_system_id *d)
- 	return 0;
- }
- 
--static struct dmi_system_id __initdata pci_reboot_dmi_table[] = {
-+static struct sysfw_id __initdata pci_reboot_id_table[] = {
- 	{	/* Handle problems with rebooting on Apple MacBook5 */
- 		.callback = set_pci_reboot,
- 		.ident = "Apple MacBook5",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
--			DMI_MATCH(DMI_PRODUCT_NAME, "MacBook5"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Apple Inc."),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "MacBook5"),
- 		},
- 	},
- 	{	/* Handle problems with rebooting on Apple MacBookPro5 */
- 		.callback = set_pci_reboot,
- 		.ident = "Apple MacBookPro5",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
--			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro5"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Apple Inc."),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "MacBookPro5"),
- 		},
- 	},
- 	{	/* Handle problems with rebooting on Apple Macmini3,1 */
- 		.callback = set_pci_reboot,
- 		.ident = "Apple Macmini3,1",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
--			DMI_MATCH(DMI_PRODUCT_NAME, "Macmini3,1"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Apple Inc."),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Macmini3,1"),
- 		},
- 	},
- 	{	/* Handle problems with rebooting on the iMac9,1. */
- 		.callback = set_pci_reboot,
- 		.ident = "Apple iMac9,1",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
--			DMI_MATCH(DMI_PRODUCT_NAME, "iMac9,1"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Apple Inc."),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "iMac9,1"),
- 		},
- 	},
--	{ }
-+	{}
- };
- 
- static int __init pci_reboot_init(void)
- {
--	dmi_check_system(pci_reboot_dmi_table);
-+	sysfw_callback(pci_reboot_id_table);
- 	return 0;
- }
- core_initcall(pci_reboot_init);
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index afaf384..8b74838 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -44,7 +44,7 @@
- #include <linux/iscsi_ibft.h>
- #include <linux/nodemask.h>
- #include <linux/kexec.h>
--#include <linux/dmi.h>
-+#include <linux/smbios.h>
- #include <linux/pfn.h>
- #include <linux/pci.h>
- #include <asm/pci-direct.h>
-@@ -81,7 +81,7 @@
- #include <asm/timer.h>
- #include <asm/i8259.h>
- #include <asm/sections.h>
--#include <asm/dmi.h>
-+#include <asm/smbios.h>
- #include <asm/io_apic.h>
- #include <asm/ist.h>
- #include <asm/setup_arch.h>
-@@ -123,8 +123,8 @@
- unsigned long max_low_pfn_mapped;
- unsigned long max_pfn_mapped;
- 
--#ifdef CONFIG_DMI
--RESERVE_BRK(dmi_alloc, 65536);
-+#ifdef CONFIG_SMBIOS
-+RESERVE_BRK(smbios_alloc, SMBIOS_SIZE);
- #endif
- 
- 
-@@ -834,11 +834,11 @@ void __init setup_arch(char **cmdline_p)
- 	if (efi_enabled)
- 		efi_init();
- 
--	dmi_scan_machine();
-+	smbios_init();
- 
- 	/*
--	 * VMware detection requires dmi to be available, so this
--	 * needs to be done after dmi_scan_machine, for the BP.
-+	 * VMware detection requires smbios to be available, so this
-+	 * needs to be done after smbios_init(), for the BP.
+ 	/* At the moment, we don't care about the part of the vendor
+-	 * DMI string contained in brackets. Truncate the string at
++	 * SMBIOS string contained in brackets. Truncate the string at
+ 	 * the first occurrence of a bracket. Trim any trailing space
+ 	 * from the substring.
  	 */
- 	init_hypervisor_platform();
+@@ -1144,11 +1145,11 @@ static int __init abituguru3_dmi_detect(void)
+ 		sublen--;
  
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index 6cc6922..36c4160 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -5,7 +5,7 @@
- #include <linux/timer.h>
- #include <linux/acpi_pmtmr.h>
- #include <linux/cpufreq.h>
--#include <linux/dmi.h>
-+#include <linux/sysfw.h>
- #include <linux/delay.h>
- #include <linux/clocksource.h>
- #include <linux/percpu.h>
-@@ -800,22 +800,22 @@ void mark_tsc_unstable(char *reason)
- 
- EXPORT_SYMBOL_GPL(mark_tsc_unstable);
- 
--static int __init dmi_mark_tsc_unstable(const struct dmi_system_id *d)
-+static int __init quirk_mark_tsc_unstable(const struct sysfw_id *d)
- {
- 	printk(KERN_NOTICE "%s detected: marking TSC unstable.\n",
--			d->ident);
-+	       d->ident);
- 	tsc_unstable = 1;
- 	return 0;
+ 	for (i = 0; abituguru3_motherboards[i].id; i++) {
+-		dmi_name = abituguru3_motherboards[i].dmi_name;
+-		for ( ; *dmi_name; dmi_name++) {
+-			if (strlen(*dmi_name) != sublen)
++		smbios_name = abituguru3_motherboards[i].smbios_name;
++		for ( ; *smbios_name; smbios_name++) {
++			if (strlen(*smbios_name) != sublen)
+ 				continue;
+-			if (!strncasecmp(board_name, *dmi_name, sublen))
++			if (!strncasecmp(board_name, *smbios_name, sublen))
+ 				return 0;
+ 		}
+ 	}
+@@ -1158,7 +1159,8 @@ static int __init abituguru3_dmi_detect(void)
  }
  
- /* List of systems that have known TSC problems */
--static struct dmi_system_id __initdata bad_tsc_dmi_table[] = {
-+static struct sysfw_id __initdata bad_tsc_table[] = {
- 	{
--		.callback = dmi_mark_tsc_unstable,
-+		.callback = quirk_mark_tsc_unstable,
- 		.ident = "IBM Thinkpad 380XD",
- 		.matches = {
--			DMI_MATCH(DMI_BOARD_VENDOR, "IBM"),
--			DMI_MATCH(DMI_BOARD_NAME, "2635FA0"),
-+			SYSFW_MATCH(SYSFW_BOARD_VENDOR, "IBM"),
-+			SYSFW_MATCH(SYSFW_BOARD_NAME, "2635FA0"),
- 		},
- 	},
- 	{}
-@@ -1011,7 +1011,7 @@ void __init tsc_init(void)
+ /* FIXME: Manual detection should die eventually; we need to collect stable
+- *        DMI model names first before we can rely entirely on CONFIG_DMI.
++ *        SMBIOS model names first before we can rely entirely on
++ *	  CONFIG_SMBIOS.
+  */
  
- 	use_tsc_delay();
- 	/* Check and install the TSC clocksource */
--	dmi_check_system(bad_tsc_dmi_table);
-+	sysfw_callback(bad_tsc_table);
+ static int __init abituguru3_detect(void)
+@@ -1192,21 +1194,26 @@ static int __init abituguru3_init(void)
+ 	struct resource res = { .flags = IORESOURCE_IO };
+ 	int err;
  
- 	if (unsynchronized_tsc())
- 		mark_tsc_unstable("TSCs unsynchronized");
-diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
-index 68c3c13..51517a1 100644
---- a/arch/x86/pci/acpi.c
-+++ b/arch/x86/pci/acpi.c
-@@ -2,7 +2,7 @@
- #include <linux/acpi.h>
- #include <linux/init.h>
- #include <linux/irq.h>
--#include <linux/dmi.h>
-+#include <linux/sysfw.h>
- #include <linux/slab.h>
- #include <asm/numa.h>
- #include <asm/pci_x86.h>
-@@ -18,20 +18,20 @@ struct pci_root_info {
- 
- static bool pci_use_crs = true;
- 
--static int __init set_use_crs(const struct dmi_system_id *id)
-+static int __init set_use_crs(const struct sysfw_id *id)
- {
- 	pci_use_crs = true;
- 	return 0;
- }
- 
--static const struct dmi_system_id pci_use_crs_table[] __initconst = {
-+static const struct sysfw_id pci_use_crs_table[] __initconst = {
- 	/* http://bugzilla.kernel.org/show_bug.cgi?id=14183 */
- 	{
- 		.callback = set_use_crs,
- 		.ident = "IBM System x3800",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "IBM"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "x3800"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "IBM"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "x3800"),
- 		},
- 	},
- 	/* https://bugzilla.kernel.org/show_bug.cgi?id=16007 */
-@@ -40,7 +40,7 @@ static const struct dmi_system_id pci_use_crs_table[] __initconst = {
- 		.callback = set_use_crs,
- 		.ident = "ASRock ALiveSATA2-GLAN",
- 		.matches = {
--			DMI_MATCH(DMI_PRODUCT_NAME, "ALiveSATA2-GLAN"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ALiveSATA2-GLAN"),
-                 },
-         },
- 	{}
-@@ -48,12 +48,10 @@ static const struct dmi_system_id pci_use_crs_table[] __initconst = {
- 
- void __init pci_acpi_crs_quirks(void)
- {
--	int year;
+-	/* Attempt DMI detection first */
+-	err = abituguru3_dmi_detect();
+-	if (err < 0)
+-		return err;
 -
--	if (dmi_get_date(DMI_BIOS_DATE, &year, NULL, NULL) && year < 2008)
-+	if (!(sysfw_get_date() >= 20080000))
- 		pci_use_crs = false;
+-	/* Fall back to manual detection if there was no exact
+-	 * board name match, or force was specified.
+-	 */
+-	if (err > 0) {
++	err = 1;
++	if (smbios_available) {
++		/* Attempts SMBIOS detection first */
++		err = abituguru3_smbios_detect();
++		if (err < 0)
++			return err;
++	}
++	if (err) {
++		/* Fall back to manual detection if there was no exact
++		 * board name match, or force was specified.
++		 */
+ 		err = abituguru3_detect();
+ 		if (err)
+ 			return err;
  
--	dmi_check_system(pci_use_crs_table);
-+	sysfw_callback(pci_use_crs_table);
+-		pr_warn("this motherboard was not detected using DMI. "
+-			"Please send the output of \"dmidecode\" to the abituguru3 maintainer (see MAINTAINERS)\n");
++		if (smbios_available)
++			pr_warn("this motherboard was not detected using "
++				"SMBIOS.  Please send the output of "
++				"\"dmidecode\" to the abituguru3 maintainer "
++				"(see MAINTAINERS)\n");
+ 	}
  
- 	/*
- 	 * If the user specifies "pci=use_crs" or "pci=nocrs" explicitly, that
-diff --git a/arch/x86/pci/broadcom_bus.c b/arch/x86/pci/broadcom_bus.c
-index ab8269b..c332b7b 100644
---- a/arch/x86/pci/broadcom_bus.c
-+++ b/arch/x86/pci/broadcom_bus.c
-@@ -11,7 +11,6 @@
+ 	err = platform_driver_register(&abituguru3_driver);
+diff --git a/drivers/hwmon/adcxx.c b/drivers/hwmon/adcxx.c
+index b2cacbe..ff47453 100644
+--- a/drivers/hwmon/adcxx.c
++++ b/drivers/hwmon/adcxx.c
+@@ -44,7 +44,6 @@
+ #include <linux/hwmon.h>
+ #include <linux/hwmon-sysfs.h>
+ #include <linux/mutex.h>
+-#include <linux/mod_devicetable.h>
+ #include <linux/spi/spi.h>
  
- #include <linux/acpi.h>
- #include <linux/delay.h>
+ #define DRVNAME		"adcxx"
+diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
+index 4c07436..a2dc0f8 100644
+--- a/drivers/hwmon/applesmc.c
++++ b/drivers/hwmon/applesmc.c
+@@ -36,7 +36,7 @@
+ #include <linux/slab.h>
+ #include <linux/module.h>
+ #include <linux/timer.h>
 -#include <linux/dmi.h>
- #include <linux/pci.h>
- #include <linux/init.h>
- #include <asm/pci_x86.h>
-diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c
-index 5fe7502..ee193bd 100644
---- a/arch/x86/pci/common.c
-+++ b/arch/x86/pci/common.c
-@@ -8,7 +8,8 @@
- #include <linux/pci.h>
- #include <linux/ioport.h>
- #include <linux/init.h>
++#include <linux/sysfw.h>
+ #include <linux/mutex.h>
+ #include <linux/hwmon-sysfs.h>
+ #include <linux/io.h>
+@@ -1184,46 +1184,59 @@ static void applesmc_release_key_backlight(void)
+ 	destroy_workqueue(applesmc_led_wq);
+ }
+ 
+-static int applesmc_dmi_match(const struct dmi_system_id *id)
+-{
+-	return 1;
+-}
+-
+-/* Note that DMI_MATCH(...,"MacBook") will match "MacBookPro1,1".
+- * So we need to put "Apple MacBook Pro" before "Apple MacBook". */
+-static __initdata struct dmi_system_id applesmc_whitelist[] = {
+-	{ applesmc_dmi_match, "Apple MacBook Air", {
+-	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+-	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookAir") },
++static __initdata struct sysfw_id applesmc_whitelist[] = {
++	{
++		.ident = "Apple MacBook Air",
++		.matches = {
++			SYSFW_MATCH(SYSFW_BOARD_VENDOR, "Apple"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "MacBookAir")
++		},
++		.exactmatch = 1,
+ 	},
+-	{ applesmc_dmi_match, "Apple MacBook Pro", {
+-	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+-	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro") },
++	{
++		.ident = "Apple MacBook Pro",
++		.matches = {
++			SYSFW_MATCH(SYSFW_BOARD_VENDOR, "Apple"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "MacBookPro")
++		},
++		.exactmatch = 1,
+ 	},
+-	{ applesmc_dmi_match, "Apple MacBook", {
+-	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+-	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBook") },
++	{
++		.ident = "Apple MacBook",
++		.matches = {
++			SYSFW_MATCH(SYSFW_BOARD_VENDOR, "Apple"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "MacBook")
++		},
+ 	},
+-	{ applesmc_dmi_match, "Apple Macmini", {
+-	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+-	  DMI_MATCH(DMI_PRODUCT_NAME, "Macmini") },
++	{
++		.ident = "Apple Macmini",
++		.matches = {
++			SYSFW_MATCH(SYSFW_BOARD_VENDOR, "Apple"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Macmini")
++		},
+ 	},
+-	{ applesmc_dmi_match, "Apple MacPro", {
+-	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+-	  DMI_MATCH(DMI_PRODUCT_NAME, "MacPro") },
++	{
++		.ident = "Apple MacPro",
++		.matches = {
++			SYSFW_MATCH(SYSFW_BOARD_VENDOR, "Apple"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "MacPro")
++		},
+ 	},
+-	{ applesmc_dmi_match, "Apple iMac", {
+-	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+-	  DMI_MATCH(DMI_PRODUCT_NAME, "iMac") },
++	{
++		.ident = "Apple iMac",
++		.matches = {
++			SYSFW_MATCH(SYSFW_BOARD_VENDOR, "Apple"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "iMac")
++		},
+ 	},
+-	{ .ident = NULL }
++	{}
+ };
+ 
+ static int __init applesmc_init(void)
+ {
+ 	int ret;
+ 
+-	if (!dmi_check_system(applesmc_whitelist)) {
++	if (!sysfw_callback(applesmc_whitelist)) {
+ 		pr_warn("supported laptop not found!\n");
+ 		ret = -ENODEV;
+ 		goto out;
+@@ -1329,4 +1342,4 @@ module_exit(applesmc_exit);
+ MODULE_AUTHOR("Nicolas Boichat");
+ MODULE_DESCRIPTION("Apple SMC");
+ MODULE_LICENSE("GPL v2");
+-MODULE_DEVICE_TABLE(dmi, applesmc_whitelist);
++MODULE_DEVICE_TABLE(sysfw, applesmc_whitelist);
+diff --git a/drivers/hwmon/asus_atk0110.c b/drivers/hwmon/asus_atk0110.c
+index dcb78a7..b355020 100644
+--- a/drivers/hwmon/asus_atk0110.c
++++ b/drivers/hwmon/asus_atk0110.c
+@@ -13,7 +13,7 @@
+ #include <linux/list.h>
+ #include <linux/module.h>
+ #include <linux/slab.h>
+-#include <linux/dmi.h>
++#include <linux/sysfw.h>
+ 
+ #include <acpi/acpi.h>
+ #include <acpi/acpixf.h>
+@@ -27,15 +27,15 @@ static bool new_if;
+ module_param(new_if, bool, 0);
+ MODULE_PARM_DESC(new_if, "Override detection heuristic and force the use of the new ATK0110 interface");
+ 
+-static const struct dmi_system_id __initconst atk_force_new_if[] = {
++static const struct sysfw_id __initconst atk_force_new_if[] = {
+ 	{
+ 		/* Old interface has broken MCH temp monitoring */
+ 		.ident = "Asus Sabertooth X58",
+ 		.matches = {
+-			DMI_MATCH(DMI_BOARD_NAME, "SABERTOOTH X58")
++			SYSFW_MATCH(SYSFW_BOARD_NAME, "SABERTOOTH X58")
+ 		}
+ 	},
+-	{ }
++	{}
+ };
+ 
+ /* Minimum time between readings, enforced in order to avoid
+@@ -1435,7 +1435,7 @@ static int __init atk0110_init(void)
+ 		return -EBUSY;
+ 	}
+ 
+-	if (dmi_check_system(atk_force_new_if))
++	if (sysfw_callback(atk_force_new_if))
+ 		new_if = true;
+ 
+ 	ret = acpi_bus_register_driver(&atk_driver);
+diff --git a/drivers/hwmon/fschmd.c b/drivers/hwmon/fschmd.c
+index aa6d8b6..ce28caf 100644
+--- a/drivers/hwmon/fschmd.c
++++ b/drivers/hwmon/fschmd.c
+@@ -41,7 +41,7 @@
+ #include <linux/err.h>
+ #include <linux/mutex.h>
+ #include <linux/sysfs.h>
 -#include <linux/dmi.h>
 +#include <linux/smbios.h>
-+#include <linux/sysfw.h>
- #include <linux/slab.h>
- 
- #include <asm/acpi.h>
-@@ -79,14 +80,15 @@ struct pci_ops pci_root_ops = {
-  */
- DEFINE_RAW_SPINLOCK(pci_config_lock);
- 
--static int __devinit can_skip_ioresource_align(const struct dmi_system_id *d)
-+static int __devinit can_skip_ioresource_align(const struct sysfw_id *d)
- {
- 	pci_probe |= PCI_CAN_SKIP_ISA_ALIGN;
- 	printk(KERN_INFO "PCI: %s detected, can skip ISA alignment\n", d->ident);
- 	return 0;
- }
- 
--static const struct dmi_system_id can_skip_pciprobe_dmi_table[] __devinitconst = {
-+static const struct sysfw_id
-+can_skip_pciprobe_smbios_table[] __devinitconst = {
- /*
-  * Systems where PCI IO resource ISA alignment can be skipped
-  * when the ISA enable bit in the bridge control is not set
-@@ -95,32 +97,32 @@ static const struct dmi_system_id can_skip_pciprobe_dmi_table[] __devinitconst =
- 		.callback = can_skip_ioresource_align,
- 		.ident = "IBM System x3800",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "IBM"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "x3800"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "IBM"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "x3800"),
- 		},
- 	},
- 	{
- 		.callback = can_skip_ioresource_align,
- 		.ident = "IBM System x3850",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "IBM"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "x3850"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "IBM"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "x3850"),
- 		},
- 	},
- 	{
- 		.callback = can_skip_ioresource_align,
- 		.ident = "IBM System x3950",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "IBM"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "x3950"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "IBM"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "x3950"),
- 		},
- 	},
- 	{}
+ #include <linux/fs.h>
+ #include <linux/watchdog.h>
+ #include <linux/miscdevice.h>
+@@ -290,14 +290,14 @@ struct fschmd_data {
+ 	u8 fan_ripple[7];	/* divider for rps */
  };
  
--void __init dmi_check_skip_isa_align(void)
-+void __init smbios_check_skip_isa_align(void)
- {
--	dmi_check_system(can_skip_pciprobe_dmi_table);
-+	sysfw_callback(can_skip_pciprobe_smbios_table);
- }
+-/* Global variables to hold information read from special DMI tables, which are
+-   available on FSC machines with an fscher or later chip. There is no need to
+-   protect these with a lock as they are only modified from our attach function
+-   which always gets called with the i2c-core lock held and never accessed
+-   before the attach function is done with them. */
+-static int dmi_mult[6] = { 490, 200, 100, 100, 200, 100 };
+-static int dmi_offset[6] = { 0, 0, 0, 0, 0, 0 };
+-static int dmi_vref = -1;
++/* Global variables to hold information read from special SMBIOS tables, which
++   are available on FSC machines with an fscher or later chip. There is no need
++   to protect these with a lock as they are only modified from our attach
++   function which always gets called with the i2c-core lock held and never
++   accessed before the attach function is done with them. */
++static int smbios_mult[6] = { 490, 200, 100, 100, 200, 100 };
++static int smbios_offset[6] = { 0, 0, 0, 0, 0, 0 };
++static int smbios_vref = -1;
  
- static void __devinit pcibios_fixup_device_resources(struct pci_dev *dev)
-@@ -173,32 +175,37 @@ void __devinit pcibios_fixup_bus(struct pci_bus *b)
- }
+ /* Somewhat ugly :( global data pointer list with all fschmd devices, so that
+    we can find our device data as when using misc_register there is no other
+@@ -326,8 +326,8 @@ static ssize_t show_in_value(struct device *dev,
+ 	struct fschmd_data *data = fschmd_update_device(dev);
  
- /*
-- * Only use DMI information to set this if nothing was passed
-+ * Only use SMBIOS information to set this if nothing was passed
-  * on the kernel command line (which was parsed earlier).
+ 	if (data->kind == fscher || data->kind >= fschrc)
+-		return sprintf(buf, "%d\n", (data->volt[index] * dmi_vref *
+-			dmi_mult[index]) / 255 + dmi_offset[index]);
++		return sprintf(buf, "%d\n", (data->volt[index] * smbios_vref *
++			smbios_mult[index]) / 255 + smbios_offset[index]);
+ 	else
+ 		return sprintf(buf, "%d\n", (data->volt[index] *
+ 			max_reading[index] + 128) / 255);
+@@ -930,54 +930,56 @@ static const struct file_operations watchdog_fops = {
+  * Detect, register, unregister and update device functions
   */
  
--static int __devinit set_bf_sort(const struct dmi_system_id *d)
-+static int __devinit set_bf_sort(const struct sysfw_id *d)
+-/* DMI decode routine to read voltage scaling factors from special DMI tables,
+-   which are available on FSC machines with an fscher or later chip. */
+-static void fschmd_dmi_decode(const struct dmi_header *header, void *dummy)
++/* SMBIOS decode routine to read voltage scaling factors from special SMBIOS
++   tables which are available on FSC machines with an fscher or later chip. */
++static int fschmd_smbios_decode(const union smbios_struct *ss, void *dummy)
  {
- 	if (pci_bf_sort == pci_bf_sort_default) {
--		pci_bf_sort = pci_dmi_bf;
-+		pci_bf_sort = pci_smbios_bf;
- 		printk(KERN_INFO "PCI: %s detected, enabling pci=bfsort.\n", d->ident);
- 	}
- 	return 0;
- }
+ 	int i, mult[3] = { 0 }, offset[3] = { 0 }, vref = 0, found = 0;
  
--static void __devinit read_dmi_type_b1(const struct dmi_header *dm,
--				       void *private_data)
-+static int __devinit dell_sort_method_decode(const union smbios_struct *ss,
-+					     void *data)
- {
--	u8 *d = (u8 *)dm + 4;
-+	u8 *p;
-+	const struct sysfw_id *d = (const struct sysfw_id *)data;
+-	/* dmi code ugliness, we get passed the address of the contents of
+-	   a complete DMI record, but in the form of a dmi_header pointer, in
+-	   reality this address holds header->length bytes of which the header
+-	   are the first 4 bytes */
+-	u8 *dmi_data = (u8 *)header;
++	/* smbios code ugliness, we get passed the address of the contents of
++	   a complete SMBIOS record, but in the form of a smbios_header pointer,
++	   in reality this address holds header->length bytes of which the
++	   header are the first 4 bytes */
++	u8 *smbios_data = (u8 *)ss;
  
--	if (dm->type != 0xB1)
+ 	/* We are looking for OEM-specific type 185 */
+-	if (header->type != 185)
 -		return;
--	switch (((*(u32 *)d) >> 9) & 0x03) {
-+	if ((ss->header.type) != 0xb1)
++	if (ss->header.type != 185)
 +		return SMBIOS_WALK_CONTINUE;
-+
-+	p = (u8 *)ss + 4;
-+	switch (((*(u32 *)p) >> 9) & 0x03) {
- 	case 0x00:
--		printk(KERN_INFO "dmi type 0xB1 record - unknown flag\n");
-+		printk(KERN_INFO "smbios type 0xB1 record - unknown flag\n");
- 		break;
- 	case 0x01: /* set pci=bfsort */
- 		smbios_type_b1_flag = 1;
-+		set_bf_sort(d);
-+		return SMBIOS_WALK_STOP;
- 		break;
- 	case 0x02: /* do not set pci=bfsort */
- 		smbios_type_b1_flag = 2;
-@@ -206,24 +213,22 @@ static void __devinit read_dmi_type_b1(const struct dmi_header *dm,
- 	default:
- 		break;
+ 
+ 	/* we are looking for what Siemens calls "subtype" 19, the subtype
+-	   is stored in byte 5 of the dmi block */
+-	if (header->length < 5 || dmi_data[4] != 19)
+-		return;
++	   is stored in byte 5 of the smbios block */
++	if (ss->header.length < 5 || smbios_data[4] != 19)
++		return SMBIOS_WALK_CONTINUE;
+ 
+ 	/* After the subtype comes 1 unknown byte and then blocks of 5 bytes,
+ 	   consisting of what Siemens calls an "Entity" number, followed by
+ 	   2 16-bit words in LSB first order */
+-	for (i = 6; (i + 4) < header->length; i += 5) {
++	for (i = 6; (i + 4) < ss->header.length; i += 5) {
+ 		/* entity 1 - 3: voltage multiplier and offset */
+-		if (dmi_data[i] >= 1 && dmi_data[i] <= 3) {
+-			/* Our in sensors order and the DMI order differ */
++		if (smbios_data[i] >= 1 && smbios_data[i] <= 3) {
++			/* Our in sensors order and the SMBIOS order differ */
+ 			const int shuffle[3] = { 1, 0, 2 };
+-			int in = shuffle[dmi_data[i] - 1];
++			int in = shuffle[smbios_data[i] - 1];
+ 
+ 			/* Check for twice the same entity */
+ 			if (found & (1 << in))
+-				return;
++				return SMBIOS_WALK_CONTINUE;
+ 
+-			mult[in] = dmi_data[i + 1] | (dmi_data[i + 2] << 8);
+-			offset[in] = dmi_data[i + 3] | (dmi_data[i + 4] << 8);
++			mult[in] = smbios_data[i + 1] |
++				   (smbios_data[i + 2] << 8);
++			offset[in] = smbios_data[i + 3] |
++				     (smbios_data[i + 4] << 8);
+ 
+ 			found |= 1 << in;
+ 		}
+ 
+ 		/* entity 7: reference voltage */
+-		if (dmi_data[i] == 7) {
++		if (smbios_data[i] == 7) {
+ 			/* Check for twice the same entity */
+ 			if (found & 0x08)
+-				return;
++				return SMBIOS_WALK_CONTINUE;
+ 
+-			vref = dmi_data[i + 1] | (dmi_data[i + 2] << 8);
++			vref = smbios_data[i + 1] | (smbios_data[i + 2] << 8);
+ 
+ 			found |= 0x08;
+ 		}
+@@ -985,20 +987,22 @@ static void fschmd_dmi_decode(const struct dmi_header *header, void *dummy)
+ 
+ 	if (found == 0x0F) {
+ 		for (i = 0; i < 3; i++) {
+-			dmi_mult[i] = mult[i] * 10;
+-			dmi_offset[i] = offset[i] * 10;
++			smbios_mult[i] = mult[i] * 10;
++			smbios_offset[i] = offset[i] * 10;
+ 		}
+-		/* According to the docs there should be separate dmi entries
++		/* According to the docs there should be separate smbios entries
+ 		   for the mult's and offsets of in3-5 of the syl, but on
+ 		   my test machine these are not present */
+-		dmi_mult[3] = dmi_mult[2];
+-		dmi_mult[4] = dmi_mult[1];
+-		dmi_mult[5] = dmi_mult[2];
+-		dmi_offset[3] = dmi_offset[2];
+-		dmi_offset[4] = dmi_offset[1];
+-		dmi_offset[5] = dmi_offset[2];
+-		dmi_vref = vref;
++		smbios_mult[3] = smbios_mult[2];
++		smbios_mult[4] = smbios_mult[1];
++		smbios_mult[5] = smbios_mult[2];
++		smbios_offset[3] = smbios_offset[2];
++		smbios_offset[4] = smbios_offset[1];
++		smbios_offset[5] = smbios_offset[2];
++		smbios_vref = vref;
  	}
--}
- 
--static int __devinit find_sort_method(const struct dmi_system_id *d)
--{
--	dmi_walk(read_dmi_type_b1, NULL);
-+	return SMBIOS_WALK_STOP;
- 
--	if (smbios_type_b1_flag == 1) {
--		set_bf_sort(d);
--		return 0;
--	}
--	return -1;
-+}
-+static int __devinit find_sort_method(const struct sysfw_id *d)
-+{
-+	if (smbios_walk(dell_sort_method_decode, (void *)d))
-+		return 1;
-+	return 0;
++
++	return SMBIOS_WALK_CONTINUE;
  }
  
- /*
-  * Enable renumbering of PCI bus# ranges to reach all PCI busses (Cardbus)
-  */
- #ifdef __i386__
--static int __devinit assign_all_busses(const struct dmi_system_id *d)
-+static int __devinit assign_all_busses(const struct sysfw_id *d)
- {
- 	pci_probe |= PCI_ASSIGN_ALL_BUSSES;
- 	printk(KERN_INFO "%s detected: enabling PCI bus# renumbering"
-@@ -232,7 +237,7 @@ static int __devinit assign_all_busses(const struct dmi_system_id *d)
- }
- #endif
+ static int fschmd_detect(struct i2c_client *client,
+@@ -1072,14 +1076,14 @@ static int fschmd_probe(struct i2c_client *client,
+ 		data->temp_max[2] = 50 + 128;
+ 	}
  
--static const struct dmi_system_id __devinitconst pciprobe_dmi_table[] = {
-+static const struct sysfw_id __devinitconst pciprobe_smbios_table[] = {
- #ifdef __i386__
- /*
-  * Laptops which need pci=assign-busses to see Cardbus cards
-@@ -241,8 +246,8 @@ static const struct dmi_system_id __devinitconst pciprobe_dmi_table[] = {
- 		.callback = assign_all_busses,
- 		.ident = "Samsung X20 Laptop",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Samsung Electronics"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "SX20S"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Samsung Electronics"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "SX20S"),
- 		},
- 	},
- #endif		/* __i386__ */
-@@ -250,151 +255,151 @@ static const struct dmi_system_id __devinitconst pciprobe_dmi_table[] = {
- 		.callback = find_sort_method,
- 		.ident = "Dell System",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell Inc"),
- 		},
- 	},
- 	{
- 		.callback = set_bf_sort,
- 		.ident = "Dell PowerEdge 1950",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Dell"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "PowerEdge 1950"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "PowerEdge 1950"),
- 		},
- 	},
- 	{
- 		.callback = set_bf_sort,
- 		.ident = "Dell PowerEdge 1955",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Dell"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "PowerEdge 1955"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "PowerEdge 1955"),
- 		},
- 	},
- 	{
- 		.callback = set_bf_sort,
- 		.ident = "Dell PowerEdge 2900",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Dell"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "PowerEdge 2900"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "PowerEdge 2900"),
- 		},
- 	},
- 	{
- 		.callback = set_bf_sort,
- 		.ident = "Dell PowerEdge 2950",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Dell"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "PowerEdge 2950"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "PowerEdge 2950"),
- 		},
- 	},
- 	{
- 		.callback = set_bf_sort,
- 		.ident = "Dell PowerEdge R900",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Dell"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "PowerEdge R900"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Dell"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "PowerEdge R900"),
- 		},
- 	},
- 	{
- 		.callback = set_bf_sort,
- 		.ident = "HP ProLiant BL20p G3",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "HP"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "ProLiant BL20p G3"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "HP"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ProLiant BL20p G3"),
- 		},
- 	},
- 	{
- 		.callback = set_bf_sort,
- 		.ident = "HP ProLiant BL20p G4",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "HP"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "ProLiant BL20p G4"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "HP"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ProLiant BL20p G4"),
- 		},
- 	},
- 	{
- 		.callback = set_bf_sort,
- 		.ident = "HP ProLiant BL30p G1",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "HP"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "ProLiant BL30p G1"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "HP"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ProLiant BL30p G1"),
- 		},
- 	},
- 	{
- 		.callback = set_bf_sort,
- 		.ident = "HP ProLiant BL25p G1",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "HP"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "ProLiant BL25p G1"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "HP"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ProLiant BL25p G1"),
- 		},
- 	},
- 	{
- 		.callback = set_bf_sort,
- 		.ident = "HP ProLiant BL35p G1",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "HP"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "ProLiant BL35p G1"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "HP"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ProLiant BL35p G1"),
- 		},
- 	},
- 	{
- 		.callback = set_bf_sort,
- 		.ident = "HP ProLiant BL45p G1",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "HP"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "ProLiant BL45p G1"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "HP"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ProLiant BL45p G1"),
- 		},
- 	},
- 	{
- 		.callback = set_bf_sort,
- 		.ident = "HP ProLiant BL45p G2",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "HP"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "ProLiant BL45p G2"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "HP"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ProLiant BL45p G2"),
- 		},
- 	},
- 	{
- 		.callback = set_bf_sort,
- 		.ident = "HP ProLiant BL460c G1",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "HP"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "ProLiant BL460c G1"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "HP"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ProLiant BL460c G1"),
- 		},
- 	},
- 	{
- 		.callback = set_bf_sort,
- 		.ident = "HP ProLiant BL465c G1",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "HP"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "ProLiant BL465c G1"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "HP"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ProLiant BL465c G1"),
- 		},
- 	},
- 	{
- 		.callback = set_bf_sort,
- 		.ident = "HP ProLiant BL480c G1",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "HP"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "ProLiant BL480c G1"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "HP"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ProLiant BL480c G1"),
- 		},
- 	},
- 	{
- 		.callback = set_bf_sort,
- 		.ident = "HP ProLiant BL685c G1",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "HP"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "ProLiant BL685c G1"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "HP"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ProLiant BL685c G1"),
- 		},
- 	},
- 	{
- 		.callback = set_bf_sort,
- 		.ident = "HP ProLiant DL360",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "HP"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "ProLiant DL360"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "HP"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ProLiant DL360"),
- 		},
- 	},
- 	{
- 		.callback = set_bf_sort,
- 		.ident = "HP ProLiant DL380",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "HP"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "ProLiant DL380"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "HP"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ProLiant DL380"),
- 		},
- 	},
- #ifdef __i386__
-@@ -402,8 +407,8 @@ static const struct dmi_system_id __devinitconst pciprobe_dmi_table[] = {
- 		.callback = assign_all_busses,
- 		.ident = "Compaq EVO N800c",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Compaq"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "EVO N800c"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Compaq"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "EVO N800c"),
- 		},
- 	},
- #endif
-@@ -411,24 +416,24 @@ static const struct dmi_system_id __devinitconst pciprobe_dmi_table[] = {
- 		.callback = set_bf_sort,
- 		.ident = "HP ProLiant DL385 G2",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "HP"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "ProLiant DL385 G2"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "HP"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ProLiant DL385 G2"),
- 		},
- 	},
- 	{
- 		.callback = set_bf_sort,
- 		.ident = "HP ProLiant DL585 G2",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "HP"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "ProLiant DL585 G2"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "HP"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "ProLiant DL585 G2"),
- 		},
- 	},
- 	{}
- };
+-	/* Read the special DMI table for fscher and newer chips */
+-	if ((kind == fscher || kind >= fschrc) && dmi_vref == -1) {
+-		dmi_walk(fschmd_dmi_decode, NULL);
+-		if (dmi_vref == -1) {
++	/* Read the special SMBIOS table for fscher and newer chips */
++	if ((kind == fscher || kind >= fschrc) && smbios_vref == -1) {
++		smbios_walk(fschmd_smbios_decode, NULL);
++		if (smbios_vref == -1) {
+ 			dev_warn(&client->dev,
+ 				"Couldn't get voltage scaling factors from "
+-				"BIOS DMI table, using builtin defaults\n");
+-			dmi_vref = 33;
++				"SMBIOS table, using builtin defaults\n");
++			smbios_vref = 33;
+ 		}
+ 	}
  
--void __init dmi_check_pciprobe(void)
-+void __init smbios_check_pciprobe(void)
- {
--	dmi_check_system(pciprobe_dmi_table);
-+	sysfw_callback(pciprobe_smbios_table);
- }
- 
- struct pci_bus * __devinit pcibios_scan_root(int busnum)
-diff --git a/arch/x86/pci/direct.c b/arch/x86/pci/direct.c
-index e6fd847..217d788 100644
---- a/arch/x86/pci/direct.c
-+++ b/arch/x86/pci/direct.c
-@@ -4,7 +4,7 @@
- 
- #include <linux/pci.h>
- #include <linux/init.h>
--#include <linux/dmi.h>
-+#include <linux/sysfw.h>
- #include <asm/pci_x86.h>
- 
- /*
-@@ -192,14 +192,13 @@ struct pci_raw_ops pci_direct_conf2 = {
- static int __init pci_sanity_check(struct pci_raw_ops *o)
- {
- 	u32 x = 0;
--	int year, devfn;
-+	int devfn;
- 
- 	if (pci_probe & PCI_NO_CHECKS)
- 		return 1;
- 	/* Assume Type 1 works for newer systems.
- 	   This handles machines that don't have anything on PCI Bus 0. */
--	dmi_get_date(DMI_BIOS_DATE, &year, NULL, NULL);
--	if (year >= 2001)
-+	if (sysfw_get_date() >= 20010000)
- 		return 1;
- 
- 	for (devfn = 0; devfn < 0x100; devfn++) {
-diff --git a/arch/x86/pci/fixup.c b/arch/x86/pci/fixup.c
-index 6dd8955..381c136 100644
---- a/arch/x86/pci/fixup.c
-+++ b/arch/x86/pci/fixup.c
-@@ -3,7 +3,7 @@
-  */
- 
- #include <linux/delay.h>
--#include <linux/dmi.h>
-+#include <linux/sysfw.h>
- #include <linux/pci.h>
- #include <linux/init.h>
- #include <asm/pci_x86.h>
-@@ -356,12 +356,12 @@ static void __devinit pci_fixup_video(struct pci_dev *pdev)
- DECLARE_PCI_FIXUP_FINAL(PCI_ANY_ID, PCI_ANY_ID, pci_fixup_video);
- 
- 
--static const struct dmi_system_id __devinitconst msi_k8t_dmi_table[] = {
-+static const struct sysfw_id __devinitconst msi_k8t_quirk_table[] = {
- 	{
- 		.ident = "MSI-K8T-Neo2Fir",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "MSI"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "MS-6702E"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "MSI"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "MS-6702E"),
- 		},
- 	},
- 	{}
-@@ -375,12 +375,12 @@ static const struct dmi_system_id __devinitconst msi_k8t_dmi_table[] = {
-  * the corresponding register-value to enable the soundcard.
-  *
-  * The soundcard is only enabled, if the mainborad is identified
-- * via DMI-tables and the soundcard is detected to be off.
-+ * via SMBIOS tables and the soundcard is detected to be off.
-  */
- static void __devinit pci_fixup_msi_k8t_onboard_sound(struct pci_dev *dev)
- {
- 	unsigned char val;
--	if (!dmi_check_system(msi_k8t_dmi_table))
-+	if (!sysfw_callback(msi_k8t_quirk_table))
- 		return; /* only applies to MSI K8T Neo2-FIR */
- 
- 	pci_read_config_byte(dev, 0x50, &val);
-@@ -413,34 +413,35 @@ DECLARE_PCI_FIXUP_RESUME(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_8237,
-  */
- static u16 toshiba_line_size;
- 
--static const struct dmi_system_id __devinitconst toshiba_ohci1394_dmi_table[] = {
-+static const struct sysfw_id __devinitconst
-+toshiba_ohci1394_quirk_table[] = {
- 	{
- 		.ident = "Toshiba PS5 based laptop",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
--			DMI_MATCH(DMI_PRODUCT_VERSION, "PS5"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "TOSHIBA"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_VERSION, "PS5"),
- 		},
- 	},
- 	{
- 		.ident = "Toshiba PSM4 based laptop",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
--			DMI_MATCH(DMI_PRODUCT_VERSION, "PSM4"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "TOSHIBA"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_VERSION, "PSM4"),
- 		},
- 	},
- 	{
- 		.ident = "Toshiba A40 based laptop",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
--			DMI_MATCH(DMI_PRODUCT_VERSION, "PSA40U"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "TOSHIBA"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_VERSION, "PSA40U"),
- 		},
- 	},
--	{ }
-+	{}
- };
- 
- static void __devinit pci_pre_fixup_toshiba_ohci1394(struct pci_dev *dev)
- {
--	if (!dmi_check_system(toshiba_ohci1394_dmi_table))
-+	if (!sysfw_callback(toshiba_ohci1394_quirk_table))
- 		return; /* only applies to certain Toshibas (so far) */
- 
- 	dev->current_state = PCI_D3cold;
-@@ -451,7 +452,7 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_TI, 0x8032,
- 
- static void __devinit pci_post_fixup_toshiba_ohci1394(struct pci_dev *dev)
- {
--	if (!dmi_check_system(toshiba_ohci1394_dmi_table))
-+	if (!sysfw_callback(toshiba_ohci1394_quirk_table))
- 		return; /* only applies to certain Toshibas (so far) */
- 
- 	/* Restore config space on Toshiba laptops */
-diff --git a/arch/x86/pci/init.c b/arch/x86/pci/init.c
-index adb62aa..9afdbc3 100644
---- a/arch/x86/pci/init.c
-+++ b/arch/x86/pci/init.c
-@@ -35,9 +35,9 @@ static __init int pci_arch_init(void)
- 		printk(KERN_ERR
- 		"PCI: Fatal: No config space access function found\n");
- 
--	dmi_check_pciprobe();
-+	smbios_check_pciprobe();
- 
--	dmi_check_skip_isa_align();
-+	smbios_check_skip_isa_align();
- 
- 	return 0;
- }
-diff --git a/arch/x86/pci/irq.c b/arch/x86/pci/irq.c
-index 372e9b8..3e2ac8f 100644
---- a/arch/x86/pci/irq.c
-+++ b/arch/x86/pci/irq.c
-@@ -9,7 +9,7 @@
- #include <linux/pci.h>
- #include <linux/init.h>
- #include <linux/interrupt.h>
--#include <linux/dmi.h>
-+#include <linux/sysfw.h>
- #include <linux/io.h>
- #include <linux/smp.h>
- #include <asm/io_apic.h>
-@@ -1070,7 +1070,7 @@ void __init pcibios_fixup_irqs(void)
-  * Work around broken HP Pavilion Notebooks which assign USB to
-  * IRQ 9 even though it is actually wired to IRQ 11
-  */
--static int __init fix_broken_hp_bios_irq9(const struct dmi_system_id *d)
-+static int __init fix_broken_hp_bios_irq9(const struct sysfw_id *d)
- {
- 	if (!broken_hp_bios_irq9) {
- 		broken_hp_bios_irq9 = 1;
-@@ -1084,7 +1084,7 @@ static int __init fix_broken_hp_bios_irq9(const struct dmi_system_id *d)
-  * Work around broken Acer TravelMate 360 Notebooks which assign
-  * Cardbus to IRQ 11 even though it is actually wired to IRQ 10
-  */
--static int __init fix_acer_tm360_irqrouting(const struct dmi_system_id *d)
-+static int __init fix_acer_tm360_irqrouting(const struct sysfw_id *d)
- {
- 	if (!acer_tm360_irqrouting) {
- 		acer_tm360_irqrouting = 1;
-@@ -1094,27 +1094,27 @@ static int __init fix_acer_tm360_irqrouting(const struct dmi_system_id *d)
- 	return 0;
- }
- 
--static struct dmi_system_id __initdata pciirq_dmi_table[] = {
-+static struct sysfw_id __initdata pciirq_quirk_table[] = {
- 	{
- 		.callback = fix_broken_hp_bios_irq9,
- 		.ident = "HP Pavilion N5400 Series Laptop",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
--			DMI_MATCH(DMI_BIOS_VERSION, "GE.M1.03"),
--			DMI_MATCH(DMI_PRODUCT_VERSION,
--				"HP Pavilion Notebook Model GE"),
--			DMI_MATCH(DMI_BOARD_VERSION, "OmniBook N32N-736"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Hewlett-Packard"),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "GE.M1.03"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_VERSION,
-+				    "HP Pavilion Notebook Model GE"),
-+			SYSFW_MATCH(SYSFW_BOARD_VERSION, "OmniBook N32N-736"),
- 		},
- 	},
- 	{
- 		.callback = fix_acer_tm360_irqrouting,
- 		.ident = "Acer TravelMate 36x Laptop",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "TravelMate 360"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Acer"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "TravelMate 360"),
- 		},
- 	},
--	{ }
-+	{}
- };
- 
- void __init pcibios_irq_init(void)
-@@ -1124,7 +1124,7 @@ void __init pcibios_irq_init(void)
- 	if (raw_pci_ops == NULL)
- 		return;
- 
--	dmi_check_system(pciirq_dmi_table);
-+	sysfw_callback(pciirq_quirk_table);
- 
- 	pirq_table = pirq_find_routing_table();
- 
-diff --git a/arch/x86/pci/mmconfig-shared.c b/arch/x86/pci/mmconfig-shared.c
-index 750c346..730b36b 100644
---- a/arch/x86/pci/mmconfig-shared.c
-+++ b/arch/x86/pci/mmconfig-shared.c
-@@ -15,7 +15,7 @@
- #include <linux/acpi.h>
- #include <linux/sfi_acpi.h>
- #include <linux/bitmap.h>
--#include <linux/dmi.h>
-+#include <linux/sysfw.h>
- #include <linux/slab.h>
- #include <asm/e820.h>
- #include <asm/pci_x86.h>
-@@ -514,19 +514,15 @@ static int __initdata known_bridge;
- static int __init acpi_mcfg_check_entry(struct acpi_table_mcfg *mcfg,
- 					struct acpi_mcfg_allocation *cfg)
- {
--	int year;
--
- 	if (cfg->address < 0xFFFFFFFF)
- 		return 0;
- 
- 	if (!strcmp(mcfg->header.oem_id, "SGI"))
- 		return 0;
- 
--	if (mcfg->header.revision >= 1) {
--		if (dmi_get_date(DMI_BIOS_DATE, &year, NULL, NULL) &&
--		    year >= 2010)
-+	if (mcfg->header.revision >= 1)
-+		if (sysfw_get_date() >= 20100000)
- 			return 0;
--	}
- 
- 	printk(KERN_ERR PREFIX "MCFG region for %04x [bus %02x-%02x] at %#llx "
- 	       "is above 4GB, ignored\n", cfg->pci_segment,
-diff --git a/arch/x86/pci/mrst.c b/arch/x86/pci/mrst.c
-index cb29191..741dbb0 100644
---- a/arch/x86/pci/mrst.c
-+++ b/arch/x86/pci/mrst.c
-@@ -22,7 +22,6 @@
- #include <linux/pci.h>
- #include <linux/ioport.h>
- #include <linux/init.h>
--#include <linux/dmi.h>
- 
- #include <asm/acpi.h>
- #include <asm/segment.h>
-diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
-index 596d5dd..6880c41 100644
---- a/drivers/cpufreq/acpi-cpufreq.c
-+++ b/drivers/cpufreq/acpi-cpufreq.c
-@@ -32,7 +32,7 @@
- #include <linux/sched.h>
- #include <linux/cpufreq.h>
- #include <linux/compiler.h>
--#include <linux/dmi.h>
-+#include <linux/sysfw.h>
- #include <linux/slab.h>
- 
- #include <linux/acpi.h>
-@@ -462,23 +462,23 @@ static int __init acpi_cpufreq_early_init(void)
-  */
- static int bios_with_sw_any_bug;
- 
--static int sw_any_bug_found(const struct dmi_system_id *d)
-+static int sw_any_bug_found(const struct sysfw_id *d)
- {
- 	bios_with_sw_any_bug = 1;
- 	return 0;
- }
- 
--static const struct dmi_system_id sw_any_bug_dmi_table[] = {
-+static const struct sysfw_id sw_any_bug_table[] = {
- 	{
- 		.callback = sw_any_bug_found,
- 		.ident = "Supermicro Server X6DLP",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Supermicro"),
--			DMI_MATCH(DMI_BIOS_VERSION, "080010"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "X6DLP"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Supermicro"),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "080010"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "X6DLP"),
- 		},
- 	},
--	{ }
-+	{}
- };
- 
- static int acpi_cpufreq_blacklist(struct cpuinfo_x86 *c)
-@@ -554,7 +554,7 @@ static int acpi_cpufreq_cpu_init(struct cpufreq_policy *policy)
- 	cpumask_copy(policy->related_cpus, perf->shared_cpu_map);
- 
- #ifdef CONFIG_SMP
--	dmi_check_system(sw_any_bug_dmi_table);
-+	sysfw_callback(sw_any_bug_table);
- 	if (bios_with_sw_any_bug && cpumask_weight(policy->cpus) == 1) {
- 		policy->shared_type = CPUFREQ_SHARED_TYPE_ALL;
- 		cpumask_copy(policy->cpus, cpu_core_mask(cpu));
-diff --git a/drivers/cpufreq/powernow-k7.c b/drivers/cpufreq/powernow-k7.c
-index d71d9f3..ce33c9f 100644
---- a/drivers/cpufreq/powernow-k7.c
-+++ b/drivers/cpufreq/powernow-k7.c
-@@ -21,7 +21,7 @@
- #include <linux/cpufreq.h>
- #include <linux/slab.h>
+diff --git a/drivers/hwmon/it87.c b/drivers/hwmon/it87.c
+index bb6405b..a0c5021 100644
+--- a/drivers/hwmon/it87.c
++++ b/drivers/hwmon/it87.c
+@@ -52,7 +52,7 @@
+ #include <linux/mutex.h>
+ #include <linux/sysfs.h>
  #include <linux/string.h>
 -#include <linux/dmi.h>
 +#include <linux/sysfw.h>
- #include <linux/timex.h>
+ #include <linux/acpi.h>
  #include <linux/io.h>
  
-@@ -598,7 +598,7 @@ static unsigned int powernow_get(unsigned int cpu)
- }
- 
- 
--static int __cpuinit acer_cpufreq_pst(const struct dmi_system_id *d)
-+static int __cpuinit acer_cpufreq_pst(const struct sysfw_id *d)
- {
- 	printk(KERN_WARNING PFX
- 		"%s laptop with broken PST tables in BIOS detected.\n",
-@@ -616,16 +616,16 @@ static int __cpuinit acer_cpufreq_pst(const struct dmi_system_id *d)
-  * A BIOS update is all that can save them.
-  * Mention this, and disable cpufreq.
-  */
--static struct dmi_system_id __cpuinitdata powernow_dmi_table[] = {
-+static struct sysfw_id __cpuinitdata powernow_id_table[] = {
- 	{
- 		.callback = acer_cpufreq_pst,
- 		.ident = "Acer Aspire",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Insyde Software"),
--			DMI_MATCH(DMI_BIOS_VERSION, "3A71"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Insyde Software"),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "3A71"),
- 		},
- 	},
--	{ }
-+	{}
+@@ -219,7 +219,7 @@ struct it87_sio_data {
+ 	u8 vid_value;
+ 	u8 beep_pin;
+ 	u8 internal;	/* Internal sensors can be labeled */
+-	/* Features skipped based on config or DMI */
++	/* Features skipped based on config or SMBIOS */
+ 	u8 skip_vid;
+ 	u8 skip_fan;
+ 	u8 skip_pwm;
+@@ -1541,13 +1541,24 @@ static const struct attribute_group it87_group_label = {
+ 	.attrs = it87_attributes_vid,
  };
  
- static int __cpuinit powernow_cpu_init(struct cpufreq_policy *policy)
-@@ -647,7 +647,7 @@ static int __cpuinit powernow_cpu_init(struct cpufreq_policy *policy)
- 	}
- 	pr_debug("FSB: %3dMHz\n", fsb/1000);
++static struct sysfw_id __initdata it87_id_table[] = {
++	{
++		 .ident = "nVIDIA FN68PT",
++		.matches = {
++			SYSFW_MATCH(SYSFW_BOARD_VENDOR, "nVIDIA"),
++			SYSFW_MATCH(SYSFW_BOARD_NAME, "FN68PT"),
++		},
++		.exactmatch = 1,
++	},
++	{},
++};
++
+ /* SuperIO detection - will change isa_address if a chip is found */
+ static int __init it87_find(unsigned short *address,
+ 	struct it87_sio_data *sio_data)
+ {
+ 	int err;
+ 	u16 chip_type;
+-	const char *board_vendor, *board_name;
  
--	if (dmi_check_system(powernow_dmi_table) || acpi_force) {
-+	if (sysfw_callback(powernow_id_table) || acpi_force) {
- 		printk(KERN_INFO PFX "PSB/PST known to be broken.  "
- 				"Trying ACPI instead\n");
- 		result = powernow_acpi_init();
+ 	err = superio_enter();
+ 	if (err)
+@@ -1671,21 +1682,16 @@ static int __init it87_find(unsigned short *address,
+ 	if (sio_data->beep_pin)
+ 		pr_info("Beeping is supported\n");
+ 
+-	/* Disable specific features based on DMI strings */
+-	board_vendor = dmi_get_system_info(DMI_BOARD_VENDOR);
+-	board_name = dmi_get_system_info(DMI_BOARD_NAME);
+-	if (board_vendor && board_name) {
+-		if (strcmp(board_vendor, "nVIDIA") == 0
+-		 && strcmp(board_name, "FN68PT") == 0) {
+-			/* On the Shuttle SN68PT, FAN_CTL2 is apparently not
+-			   connected to a fan, but to something else. One user
+-			   has reported instant system power-off when changing
+-			   the PWM2 duty cycle, so we disable it.
+-			   I use the board name string as the trigger in case
+-			   the same board is ever used in other systems. */
+-			pr_info("Disabling pwm2 due to hardware constraints\n");
+-			sio_data->skip_pwm = (1 << 1);
+-		}
++	/* Disable specific features based on system firmware strings */
++	if (sysfw_callback(it87_id_table)) {
++		/* On the Shuttle SN68PT, FAN_CTL2 is apparently not
++		   connected to a fan, but to something else. One user
++		   has reported instant system power-off when changing
++		   the PWM2 duty cycle, so we disable it.
++		   I use the board name string as the trigger in case
++		   the same board is ever used in other systems. */
++		pr_info("Disabling pwm2 due to hardware constraints\n");
++		sio_data->skip_pwm = (1 << 1);
+ 	}
+ 
+ exit:
+diff --git a/drivers/hwmon/lm70.c b/drivers/hwmon/lm70.c
+index c274ea2..bdb34f8 100644
+--- a/drivers/hwmon/lm70.c
++++ b/drivers/hwmon/lm70.c
+@@ -34,7 +34,6 @@
+ #include <linux/sysfs.h>
+ #include <linux/hwmon.h>
+ #include <linux/mutex.h>
+-#include <linux/mod_devicetable.h>
+ #include <linux/spi/spi.h>
+ #include <linux/slab.h>
+ 
 -- 
 1.6.5.2
 
