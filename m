@@ -1,119 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756511Ab1GRB5O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jul 2011 21:57:14 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:51385 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755949Ab1GRB5N (ORCPT
+	id S1756539Ab1GRCBo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jul 2011 22:01:44 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:40707 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756500Ab1GRCBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jul 2011 21:57:13 -0400
-X-Sasl-enc: Ahj4doifhm3Au3QRVtUqY0YGN9uYaq+Z3K9FM72u/AJa 1310954231
-Subject: Re: [autofs] autofs does not resolve names ?
-From: Ian Kent <raven@themaw.net>
-To: JA =?ISO-8859-1?Q?Magall=F3n?= <jamagallon@ono.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, autofs@linux.kernel.org
-In-Reply-To: <20110717013746.5c5e477a@werewolf.home>
-References: <20110716030141.3e6916e3@werewolf.home>
-	 <1310783458.3171.2.camel@perseus.themaw.net>
-	 <20110717013746.5c5e477a@werewolf.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Jul 2011 09:57:08 +0800
-Message-ID: <1310954228.3164.5.camel@perseus.themaw.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 8bit
+	Sun, 17 Jul 2011 22:01:42 -0400
+Message-ID: <4E239400.30308@gmail.com>
+Date: Sun, 17 Jul 2011 21:01:36 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: linux@arm.linux.org.uk
+CC: Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@secretlab.ca>,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Barry Song <21cnbao@gmail.com>, workgroup.linux@csr.com,
+        Olof Johansson <olof@lixom.net>, tglx@linutronix.de,
+        weizeng.he@csr.com
+Subject: Re: [PATCH v4 2/2] ARM: l2x0: Add OF based initialization
+References: <1309984979-8847-1-git-send-email-robherring2@gmail.com> <1309984979-8847-2-git-send-email-robherring2@gmail.com> <20110706210237.GB5371@ponder.secretlab.ca> <201107062326.53737.arnd@arndb.de>
+In-Reply-To: <201107062326.53737.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-07-17 at 01:37 +0200, JA Magallón wrote:
-> On Sat, 16 Jul 2011 10:30:58 +0800, Ian Kent <raven@themaw.net> wrote:
-> 
-> (CC LKML for info and completeness...)
-> 
-> > On Sat, 2011-07-16 at 03:01 +0200, JA Magallón wrote:
-> > > Hi all...
-> > > 
-> > > Since the update to autofs-5.0.6, I have a curious problem. Probably it is not autofs
-> > > to blame, but I ask here to see if someone can give me some light...
-> > 
-> > Have you applied autofs-5.0.6-fix-ipv6-name-for-lookup-fix.patch?
-> > Which fixes a stupid mistake on my part.
-> > 
-> 
-> Love you ! That did the trick, everything works again.
-> 
-> Are you planning to release a 5.0.7 with the fix ?
+Russell,
 
-That will go into 5.0.7 but it probably won't be released for a while.
-Patches, such as this, are available on
-http://www.kernel.org/pub/linux/daemons/autofs/v5 as soon as they are
-committed to the autofs repository.
-
+On 07/06/2011 04:26 PM, Arnd Bergmann wrote:
+> On Wednesday 06 July 2011 23:02:37 Grant Likely wrote:
+>>
+>> On Wed, Jul 06, 2011 at 03:42:59PM -0500, Rob Herring wrote:
+>>> From: Rob Herring <rob.herring@calxeda.com>
+>>>
+>>> This adds probing for ARM L2x0 cache controllers via device tree. Support
+>>> includes the L210, L220, and PL310 controllers. The binding allows setting
+>>> up cache RAM latencies and filter addresses (PL310 only).
+>>>
+>>> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+>>
+>> Acked-by: Grant Likely <grant.likely@secretlab.ca>
+>>
+>> By rights, this should go via the arm tree, but it depends on patches
+>> that are already in devicetree/next.  Arnd, how do you want to handle
+>> this?  I want to avoid rebasing devicetree/next.
 > 
-> > > 
-> > > Setup:
-> > > /etc/autofs/auto.master:
-> > > 
-> > > /home   ldap://danae-nfs.cps.unizar.es/automountMapName=auto_home,o=diis --timeout=60,tcp,nobrowse
-> > > 
-> > > (user homes map from LDAP, shared homes at a server)
-> > > 
-> > > The name is resolved:
-> > > 
-> > > annwn:/etc/autofs# host danae-nfs
-> > > danae-nfs.cps.unizar.es has address 155.210.152.202
-> > > annwn:/etc/autofs# ping danae-nfs
-> > > PING danae-nfs.cps.unizar.es (155.210.152.202) 56(84) bytes of data.
-> > > 64 bytes from danae-nfs.cps.unizar.es (155.210.152.202): icmp_req=1 ttl=255 time=0.339 ms
-> > > ...
-> > > 
-> > > But when I access home (ssh the box):
-> > > 
-> > > Jul 15 01:39:31 annwn automount[7774]: Starting automounter version 5.0.6, master map auto.master
-> > > Jul 15 01:39:31 annwn automount[7774]: using kernel protocol version 5.02
-> > > Jul 15 01:39:31 annwn automount[7774]: lookup_nss_read_master: reading master files auto.master
-> > > ...
-> > > Jul 15 01:39:31 annwn automount[7774]: mount_mount: mount(nfs): root=/home name=magallon what=danae-nfs:/export/home/usuarios/giga/magallon, fstype=nfs, options=tcp,quota
-> > > Jul 15 01:39:31 annwn automount[7774]: mount_mount: mount(nfs): nfs options="tcp,quota", nobind=0, nosymlink=0, ro=0
-> > > Jul 15 01:39:31 annwn automount[7774]: get_nfs_info: called with host danae-nfs(69.65.19.116) proto udp version 0x30
-> > > Jul 15 01:39:37 annwn automount[7774]: get_nfs_info: called with host danae-nfs(69.65.19.116) proto tcp version 0x30
-> > > 
-> > > Where the hell does it get that IP address for my server ????
-> > > 
-> > > Diggin a bit more:
-> > > 
-> > > annwn:/var/log# host 69.65.19.116
-> > > 116.19.65.69.in-addr.arpa domain name pointer nx-deleted-host-1.no-ip.com
-> > > 
-> > > because I have at /etc/resolv.conf:
-> > > 
-> > > search cps.unizar.es unizar.es no-ip.org
-> > > 
-> > > Why did it not resolved first with the first domain ?
-> > > 
-> > > If I delete the no-ip.org domain, I get:
-> > > 
-> > > Jul 15 01:47:18 annwn automount[8068]: mount_mount: mount(nfs): root=/home name=magallon what=danae-nfs:/export/home/usuarios/giga/magallon, fstype=nfs, options=tcp,quota
-> > > Jul 15 01:47:18 annwn automount[8068]: mount_mount: mount(nfs): nfs options="tcp,quota", nobind=0, nosymlink=0, ro=0
-> > > Jul 15 01:47:20 annwn automount[8068]: add_host_addrs: hostname lookup failed: Name or service not known
-> > > Jul 15 01:47:20 annwn automount[8068]: mount(nfs): no hosts available
-> > > Jul 15 01:47:20 annwn automount[8068]: dev_ioctl_send_fail: token = 28
-> > > Jul 15 01:47:20 annwn automount[8068]: failed to mount /home/magallon
-> > > 
-> > > automount does not add the search domains and resolve ? what am I doing wrong ?
-> > > is it a bug ? uuhhh ?
-> > > 
-> > > TIA
-> > > 
-> > 
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+> It's outside of the scope of the arm-soc tree really, the l2x0 code
+> is clearly core arm stuff, so it belongs into Russell's tree.
 > 
+> I think it's best if Russell can provide an Ack for this and you
+> put it in the tree that already has the dependencies.
 > 
 
+Do you have any objection to this patch or Grant taking it in his tree?
 
+Rob
