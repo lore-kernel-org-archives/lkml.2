@@ -1,337 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756663Ab1GRM2i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 08:28:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45167 "EHLO mx1.redhat.com"
+	id S1752262Ab1GRMcB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 08:32:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48286 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756261Ab1GRM2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 08:28:37 -0400
-Date: Mon, 18 Jul 2011 08:28:20 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Alex Neronskiy <zakmagnus@google.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Mandeep Singh Baines <msb@chromium.org>
-Subject: Re: [PATCH v2] Track hard and soft "short lockups" or "stalls."
-Message-ID: <20110718122820.GB1808@redhat.com>
-References: <1310760670-32232-1-git-send-email-zakmagnus@google.com>
+	id S1751625Ab1GRMb7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 08:31:59 -0400
+Date: Mon, 18 Jul 2011 08:31:40 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>, ebiederm@xmission.com,
+        hbabu@us.ibm.com, mahesh@linux.vnet.ibm.com, oomichi@mxs.nes.nec.co.jp,
+        horms@verge.net.au, heiko.carstens@de.ibm.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org
+Subject: Re: [patch 0/9] kdump: Patch series for s390 support
+Message-ID: <20110718123140.GB31986@redhat.com>
+References: <20110711175626.121dcc58@mschwide>
+ <20110713160239.GE4426@redhat.com>
+ <20110713184611.6dcb09b4@mschwide>
+ <20110713200004.GG4426@redhat.com>
+ <20110714091800.720da848@mschwide>
+ <20110714175532.GE6672@redhat.com>
+ <20110714180528.GF6672@redhat.com>
+ <1310739717.10789.31.camel@br98xy6r>
+ <20110715143820.GG3428@redhat.com>
+ <1310744603.10789.79.camel@br98xy6r>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1310760670-32232-1-git-send-email-zakmagnus@google.com>
+In-Reply-To: <1310744603.10789.79.camel@br98xy6r>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 15, 2011 at 01:11:10PM -0700, Alex Neronskiy wrote:
-> Enable the lockup watchdog to not only respond to lockups beyond a
-> certain threshold, but also keep track of the worst sub-threshold
-> lockup (called a "stall") seen so far. The stalls are communicated
-> to userspace via /proc/sys/kernel/worst_softstall
-> and worst_hardstall, as well as through the kernel log, where a
-> stack trace is also included. Hard lockups are checked for more
-> frequently to collect additional data. Soft stalls are described
-> by the length of time between successive instances of scheduling
-> of the watchdog thread, and hard stalls are described by the
-> number of times a hard lockup check found that no interrupts had
-> been recorded. Some thresholds on these are set, to attempt to
-> prevent floods of useless data.
+On Fri, Jul 15, 2011 at 05:43:23PM +0200, Michael Holzheu wrote:
+> Hello Vivek,
+> 
+> On Fri, 2011-07-15 at 10:38 -0400, Vivek Goyal wrote:
+> > > > In user space I think one can modify the kexec-tools infrastrucuture a
+> > > > bit so that one is able to define an entry point in case checksum of
+> > > > loaded segment failes. Once you are loding kdump kernel, you can define
+> > > > that entry point. (And this would be jump to IPL etc.).
+> > > 
+> > > You mean to jump back into the crashed kernel code in case the kdump
+> > > checksum failed?
+> > 
+> > No. I meant jump to entry point so that one can IPL the dump tools. I
+> > am not sure how do initiate the IPL after panic. Similar thing needs
+> > to be done here. If it is as simple as jumping to some location in
+> > low memory, then purgatory should be able to do that. I think we
+> > shall have to figure out the details here.
+> 
+> We have a machine instruction to IPL a dump tool from a device. The
+> parameters (e.g. device number, or WWPN/LUN for SCSI devices) are
+> currently configured via a s390 sysfs interface and an etc config file.
+> In theory we could read the sysfs files or the config file from the
+> kexec tool and patch the parameters into the purgatory code. The user
+> would then have to restart kexec each time when the configuration is
+> changed.
 
-I think this matches what I had in mind.  Though I keep wondering if there
-is a simpler way to achieve this because this is only going to print in
-the ints_missed = 3 and 4 cases.  But I can't, so I will do some testing
-on my end to make sure it doesn't break some of the cases I deal with.
-
-I think it will be fine though.
-
-Thanks!
-
-Cheers,
-Don
+I think reading WWPN/LUN of scsi device from /sys and patching purgatory
+makes sense. I think restarting kexec-tools on device set/change should
+not be a big problem. There area already many events now when a user
+is supposed to do that.
 
 > 
-> Signed-off-by: Alex Neronskiy <zakmagnus@google.com>
-> ---
-> The motivation here is to be able to gather more data about just how
-> "extreme" latency conditions get inside the kernel, without
-> necessarily triggering a threshold and potentially setting off a
-> panic.
-> The way the hard lockup watchdog works has been changed to make it
-> more compatible with this purpose. Previously it was hard to
-> collect any data from it other than "lockup" or "not lockup."
-> Now it has to fail 5 consecutive checks to be considered a lockup,
-> somewhat similarly to how soft lockups work.
+> > Basically I am saying that purgatory detected that kdump kernel is
+> > corrupted. In x86_64 we spin in inifinite loop as we don't have a
+> > backup plan. But s390 has a backup plan of being able to IPL dump
+> > tools.
+> > 
+> > Or in first step we can keep it even simpler. We can spin in infinite
+> > loop
 > 
->  include/linux/nmi.h |    6 ++-
->  kernel/sysctl.c     |   18 +++++++-
->  kernel/watchdog.c   |  122 +++++++++++++++++++++++++++++++++++++++++++-------
->  3 files changed, 127 insertions(+), 19 deletions(-)
+> Looping is probably not a good option in a hypervisor environment like
+> we have it on s390. At least we should load a disabled wait PSW.
+
+What is "disabled wait PSW"?
+
 > 
-> diff --git a/include/linux/nmi.h b/include/linux/nmi.h
-> index 2d304ef..57cda21 100644
-> --- a/include/linux/nmi.h
-> +++ b/include/linux/nmi.h
-> @@ -48,9 +48,13 @@ int hw_nmi_is_cpu_stuck(struct pt_regs *);
->  u64 hw_nmi_get_sample_period(int watchdog_thresh);
->  extern int watchdog_enabled;
->  extern int watchdog_thresh;
-> +extern unsigned long worst_softstall;
-> +#ifdef CONFIG_HARDLOCKUP_DETECTOR
-> +extern unsigned long worst_hardstall;
-> +#endif /* CONFIG_HARDLOCKUP_DETECTOR */
->  struct ctl_table;
->  extern int proc_dowatchdog(struct ctl_table *, int ,
->  			   void __user *, size_t *, loff_t *);
-> -#endif
-> +#endif /* CONFIG_LOCKUP_DETECTOR */
->  
->  #endif
-> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-> index f175d98..b52a4d5 100644
-> --- a/kernel/sysctl.c
-> +++ b/kernel/sysctl.c
-> @@ -767,7 +767,23 @@ static struct ctl_table kern_table[] = {
->  		.extra1		= &zero,
->  		.extra2		= &one,
->  	},
-> -#endif
-> +	{
-> +		.procname       = "worst_softstall",
-> +		.data           = &worst_softstall,
-> +		.maxlen         = sizeof(unsigned long),
-> +		.mode           = 0444,
-> +		.proc_handler   = proc_doulongvec_minmax,
-> +	},
-> +#ifdef CONFIG_HARDLOCKUP_DETECTOR
-> +	{
-> +		.procname       = "worst_hardstall",
-> +		.data           = &worst_hardstall,
-> +		.maxlen         = sizeof(unsigned long),
-> +		.mode           = 0444,
-> +		.proc_handler   = proc_doulongvec_minmax,
-> +	},
-> +#endif /* CONFIG_HARDLOCKUP_DETECTOR */
-> +#endif /* CONFIG_LOCKUP_DETECTOR */
->  #if defined(CONFIG_X86_LOCAL_APIC) && defined(CONFIG_X86)
->  	{
->  		.procname       = "unknown_nmi_panic",
-> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-> index 3d0c56a..7d37cc2 100644
-> --- a/kernel/watchdog.c
-> +++ b/kernel/watchdog.c
-> @@ -29,6 +29,8 @@
->  
->  int watchdog_enabled = 1;
->  int __read_mostly watchdog_thresh = 10;
-> +unsigned long worst_softstall;
-> +static DEFINE_SPINLOCK(softstall_lock);
->  
->  static DEFINE_PER_CPU(unsigned long, watchdog_touch_ts);
->  static DEFINE_PER_CPU(struct task_struct *, softlockup_watchdog);
-> @@ -40,8 +42,29 @@ static DEFINE_PER_CPU(bool, hard_watchdog_warn);
->  static DEFINE_PER_CPU(bool, watchdog_nmi_touch);
->  static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts);
->  static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts_saved);
-> +static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts_missed);
->  static DEFINE_PER_CPU(struct perf_event *, watchdog_ev);
-> -#endif
-> +
-> +unsigned long worst_hardstall;
-> +static DEFINE_SPINLOCK(hardstall_lock);
-> +
-> +/* The number of consecutive hard check failures before it's a lockup */
-> +#define hardlockup_thresh (5)
-> +
-> +/*
-> + * The minimum expected number of missed interrupts in a normal hard
-> + * lockup check.
-> + */
-> +#define hardstall_thresh (2)
-> +
-> +#endif /* CONFIG_HARDLOCKUP_DETECTOR */
-> +
-> +/*
-> + * The number of milliseconds by which a stall must be worse than the
-> + * current worst in order to be recorded. This prevents bursts of near-
-> + * identical stalls.
-> + */
-> +#define softstall_diff_thresh (100)
->  
->  /* boot commands */
->  /*
-> @@ -98,19 +121,28 @@ __setup("nosoftlockup", nosoftlockup_setup);
->   * the thresholds with a factor: we make the soft threshold twice the amount of
->   * time the hard threshold is.
->   */
-> -static int get_softlockup_thresh(void)
-> +static inline int get_softlockup_thresh(void)
->  {
->  	return watchdog_thresh * 2;
->  }
->  
->  /*
-> - * Returns seconds, approximately.  We don't need nanosecond
-> + * This is just the period of the timer function. A "stall" shorter than
-> + * this is the expected behavior and is therefore not noteworthy.
-> + */
-> +static inline int get_softstall_thresh(void)
-> +{
-> +	return 1000 / 5 * get_softlockup_thresh();
-> +}
-> +
-> +/*
-> + * Returns milliseconds, approximately.  We don't need nanosecond
->   * resolution, and we don't need to waste time with a big divide when
-> - * 2^30ns == 1.074s.
-> + * 2^20ns == 1.049ms.
->   */
->  static unsigned long get_timestamp(int this_cpu)
->  {
-> -	return cpu_clock(this_cpu) >> 30LL;  /* 2^30 ~= 10^9 */
-> +	return cpu_clock(this_cpu) >> 20LL;  /* 2^20 ~= 10^6 */
->  }
->  
->  static unsigned long get_sample_period(void)
-> @@ -176,25 +208,77 @@ void touch_softlockup_watchdog_sync(void)
->  
->  #ifdef CONFIG_HARDLOCKUP_DETECTOR
->  /* watchdog detector functions */
-> -static int is_hardlockup(void)
-> +static void update_hardstall(unsigned long stall, int this_cpu)
-> +{
-> +	int update_stall = 0;
-> +
-> +	if (stall > hardstall_thresh && stall > worst_hardstall) {
-> +		unsigned long flags;
-> +		spin_lock_irqsave(&hardstall_lock, flags);
-> +		update_stall = stall > worst_hardstall;
-> +		if (update_stall)
-> +			worst_hardstall = stall;
-> +		spin_unlock_irqrestore(&hardstall_lock, flags);
-> +	}
-> +
-> +	if (update_stall) {
-> +		printk(KERN_WARNING "new worst hard stall seen on CPU#%d: %lu interrupts missed\n",
-> +			this_cpu, stall);
-> +		dump_stack();
-> +	}
-> +}
-> +
-> +static int is_hardlockup(int this_cpu)
->  {
->  	unsigned long hrint = __this_cpu_read(hrtimer_interrupts);
-> +	unsigned long hrint_saved = __this_cpu_read(hrtimer_interrupts_saved);
-> +	unsigned long ints_missed = 0;
-> +
-> +	__this_cpu_write(hrtimer_interrupts_saved, hrint);
->  
-> -	if (__this_cpu_read(hrtimer_interrupts_saved) == hrint)
-> +	if (hrint_saved == hrint)
-> +		ints_missed = per_cpu(hrtimer_interrupts_missed, this_cpu)++;
-> +	else
-> +		__this_cpu_write(hrtimer_interrupts_missed, 0);
-> +
-> +	if (ints_missed >= hardlockup_thresh)
->  		return 1;
->  
-> -	__this_cpu_write(hrtimer_interrupts_saved, hrint);
-> +	update_hardstall(ints_missed, this_cpu);
->  	return 0;
->  }
->  #endif
->  
-> -static int is_softlockup(unsigned long touch_ts)
-> +static void update_softstall(unsigned long stall, int this_cpu)
->  {
-> -	unsigned long now = get_timestamp(smp_processor_id());
-> +	int update_stall = 0;
-> +	if (stall > get_softstall_thresh() &&
-> +			stall > worst_softstall + softstall_diff_thresh) {
-> +		unsigned long flags;
-> +		spin_lock_irqsave(&softstall_lock, flags);
-> +		update_stall = stall > worst_softstall + softstall_diff_thresh;
-> +		if (update_stall)
-> +			worst_softstall = stall;
-> +		spin_unlock_irqrestore(&softstall_lock, flags);
-> +	}
-> +
-> +	if (update_stall) {
-> +		printk(KERN_WARNING "new worst soft stall seen on CPU#%d: %lums\n",
-> +				this_cpu, stall);
-> +		dump_stack();
-> +	}
-> +}
-> +
-> +static int is_softlockup(unsigned long touch_ts, int this_cpu)
-> +{
-> +	unsigned long now = get_timestamp(this_cpu);
-> +	unsigned long stall = now - touch_ts;
->  
->  	/* Warn about unreasonable delays: */
-> -	if (time_after(now, touch_ts + get_softlockup_thresh()))
-> -		return now - touch_ts;
-> +	if (time_after(now, touch_ts + 1000 * get_softlockup_thresh()))
-> +		return stall;
-> +
-> +	update_softstall(stall, this_cpu);
->  
->  	return 0;
->  }
-> @@ -213,6 +297,9 @@ static void watchdog_overflow_callback(struct perf_event *event, int nmi,
->  		 struct perf_sample_data *data,
->  		 struct pt_regs *regs)
->  {
-> +	int lockup;
-> +	int this_cpu = smp_processor_id();
-> +
->  	/* Ensure the watchdog never gets throttled */
->  	event->hw.interrupts = 0;
->  
-> @@ -227,9 +314,8 @@ static void watchdog_overflow_callback(struct perf_event *event, int nmi,
->  	 * fired multiple times before we overflow'd.  If it hasn't
->  	 * then this is a good indication the cpu is stuck
->  	 */
-> -	if (is_hardlockup()) {
-> -		int this_cpu = smp_processor_id();
-> -
-> +	lockup = is_hardlockup(this_cpu);
-> +	if (lockup) {
->  		/* only print hardlockups once */
->  		if (__this_cpu_read(hard_watchdog_warn) == true)
->  			return;
-> @@ -260,6 +346,7 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
->  	unsigned long touch_ts = __this_cpu_read(watchdog_touch_ts);
->  	struct pt_regs *regs = get_irq_regs();
->  	int duration;
-> +	int this_cpu = smp_processor_id();
->  
->  	/* kick the hardlockup detector */
->  	watchdog_interrupt_count();
-> @@ -289,14 +376,14 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
->  	 * indicate it is getting cpu time.  If it hasn't then
->  	 * this is a good indication some task is hogging the cpu
->  	 */
-> -	duration = is_softlockup(touch_ts);
-> +	duration = is_softlockup(touch_ts, this_cpu);
->  	if (unlikely(duration)) {
->  		/* only warn once */
->  		if (__this_cpu_read(soft_watchdog_warn) == true)
->  			return HRTIMER_RESTART;
->  
->  		printk(KERN_ERR "BUG: soft lockup - CPU#%d stuck for %us! [%s:%d]\n",
-> -			smp_processor_id(), duration,
-> +			this_cpu, duration >> 10L,
->  			current->comm, task_pid_nr(current));
->  		print_modules();
->  		print_irqtrace_events(current);
-> @@ -371,6 +458,7 @@ static int watchdog_nmi_enable(int cpu)
->  	/* Try to register using hardware perf events */
->  	wd_attr = &wd_hw_attr;
->  	wd_attr->sample_period = hw_nmi_get_sample_period(watchdog_thresh);
-> +	do_div(wd_attr->sample_period, hardlockup_thresh);
->  	event = perf_event_create_kernel_counter(wd_attr, cpu, NULL, watchdog_overflow_callback);
->  	if (!IS_ERR(event)) {
->  		printk(KERN_INFO "NMI watchdog enabled, takes one hw-pmu counter.\n");
-> -- 
-> 1.7.3.1
+> > and wait for either hypervisor watchdog to kick in for automatic
+> > IPL or wait for operator intervention.
+> > That would simplify it even
+> > further. 
+> > > 
+> > > In the meantime I was looking a bit more into the kexec code to find
+> > > out, what we would have to do, if we use the preallocated ELF header as
+> > > you want us to do. With our actual solution, we do not have to reserve
+> > > any special areas for the kdump kernel. Now we have to reserve the ELF
+> > > header. So what are the options?
+> > 
+> > ELF headers go into same memory area as kdump kenrel.
 > 
+> sure
+> 
+> > Anyway you are
+> > doing to reserve memory for kdump kernel and ELF headers will go 
+> > right there.
+> > Once you swap the kernel I think ELF headers continue to remain in
+> > original location. Or may be you can move ELF headers too depending
+> > on what turns out to be easier.
+> > 
+> > > 
+> > > The x86 implementation uses a kernel parameter "memmap=exactmap" to do
+> > > that.
+> > 
+> > It tells second kernel to use a memory map defined on command line.
+> > Kexec-tools prepares this memory map with the help of memap= options. This
+> > is to limit the memory second kernel use to boot into so that it does not
+> > overwrite in any piece of memory used by first kernel.
+> 
+> And to reserve the ELF header that is prepared by kexec tools, no?
+
+Kind of. It just tells second kernel what memory can be used for boot. ELF
+headers prepared by kexec-tools are part of that memory so that second
+kernel can map that memory and can read the ELF headers and figure
+out the layout of memory as seen by first kernel. These headers also
+save the cpu state and bunch of kernel config options.
+
+> 
+> > In your case I think you shall have to do little more so that second
+> > kernel also seems some of the lower memory areas so that later swapping
+> > of kernel can be done.
+> 
+> After the swap the ELF header is contained in the same memory than the
+> kdump kernel. When the kdump kernel starts, the ELF header has to be
+> saved from being overwritten (as kernel and ramdisk). I get the address
+> from the "elfcorehdr=" kernel parameter. How will I get the size?
+
+By parsing the ELF header. It will give you information about how many
+program headers and notes are there, their sizes and locations etc.
+
+When kexec-tools loads ELF headers, it knows what's the total size of
+ELF headers and it removes that chunk of memory from the memory map
+passed to second kernel with memmap= options. IOW, some memory out
+of reserved region is not usable by second kernel because we have
+stored information in that memory. Kdump kernel maps that memory and
+gets to read the ELF headers.
+
+So you shall have to do something similar where you need to tell second
+kernel what memory areas it can use for boot and remove ELF header
+memory area from the map.
+
+ 
+> Looking at the ia64 and x86 implementations I have the feeling there are
+> different mechanism available to do that.
+> 
+> > 
+> > > 
+> > > On ia64 - if I understood the code correctly - they seem to pass a kdump
+> > > segment "EFI_memmap" to the kdump kernel that contains information about
+> > > all loaded kexec segments. With this segment they can find out the size
+> > > of the ELF header segment in the kdump kernel and then do the memory
+> > > reservation at boot time. Is that correct?
+> > 
+> > Sorry, I don't know the details of IA64. May be somebody else on the list
+> > can pitch in with some clarifications here.
+> 
+> For me it looks like a mechanism where a block of information is
+> prepared by kexec tools and a pointer to that block is passed somehow to
+> the second kernel. I would assume that the definition of this block is
+> ia64 kernel ABI. 
+
+It is possible. Even in x86, we prepare a block of information, one
+4K page and fill lots of x86 boot protocol information.
+
+Look at.
+
+kexec-tools/include/x86/x86-linux.h
+kexec-tools/kexec/arch/i386/x86-linux-setup.c
+
+Above header information contains information about e820 memory map also
+and we fill that map info for normal kexec (fastboot, not kdump) also and
+that's how second kernel comes to know about memory map of system.
+
+I think one could possibly truncate the same map for kdump kernel to
+tell second kernel about the memory to use. But IIRC, original memory
+map is also used to determine max_pfn present in first kernel so that
+in second kernel we don't try to map a memory beyond that and access
+it, etc. Hence it was decided to leave it that way and pass the memory
+map for second kernel on command line. 
+
+So its possible that IA64 is doing preparing boot protocal specific
+block and passing all the releavant information in that block instead
+of making use of commnad line.
+
+Thanks
+Vivek
