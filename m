@@ -1,37 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756579Ab1GRMOU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 08:14:20 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:57210 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751251Ab1GRMOT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 08:14:19 -0400
+	id S1756637Ab1GRMPF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 08:15:05 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:33892 "EHLO isrv.corpit.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751251Ab1GRMPD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 08:15:03 -0400
+Message-ID: <4E2423C4.6090906@msgid.tls.msk.ru>
+Date: Mon, 18 Jul 2011 16:15:00 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.16) Gecko/20110506 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <1310987909-3129-1-git-send-email-amwang@redhat.com>
-References: <1310987909-3129-1-git-send-email-amwang@redhat.com>
-Date: Mon, 18 Jul 2011 15:14:18 +0300
-X-Google-Sender-Auth: YHdshUm1N9g8FUt3aWjzkTCgPbA
-Message-ID: <CAOJsxLHuqvVEKg84jmRW_yfLic9ytB8GzeAE4YWauxSWryHGzA@mail.gmail.com>
-Subject: Re: [Patch] mm: make CONFIG_NUMA depend on CONFIG_SYSFS
-From: Pekka Enberg <penberg@kernel.org>
-To: Amerigo Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org
+To: Pekka Enberg <penberg@kernel.org>
+CC: Sasha Levin <levinsasha928@gmail.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] init: Support mounting devices from kernel command line
+References: <1310979967-13470-1-git-send-email-levinsasha928@gmail.com> <CAOJsxLG9h_L8x6-W67bMT1ObQKc=ZoLUKO8ocY4QQs=0rhw5ZQ@mail.gmail.com>
+In-Reply-To: <CAOJsxLG9h_L8x6-W67bMT1ObQKc=ZoLUKO8ocY4QQs=0rhw5ZQ@mail.gmail.com>
+X-Enigmail-Version: 1.0.1
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 18, 2011 at 2:18 PM, Amerigo Wang <amwang@redhat.com> wrote:
-> On ppc, we got this build error with randconfig:
->
-> drivers/built-in.o:(.toc1+0xf90): undefined reference to `vmstat_text': 1 errors in 1 logs
->
-> This is due to that it enabled CONFIG_NUMA but not CONFIG_SYSFS.
->
-> And the user-space tool numactl depends on sysfs files too.
-> So, I think it is very reasonable to make CONFIG_NUMA depend on CONFIG_SYSFS.
+18.07.2011 15:55, Pekka Enberg wrote:
+> On Mon, Jul 18, 2011 at 12:06 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
+>> This patch adds support to mounting devices using a kernel parameter.
+>>
+>> Such feature is usefull for virtual guests. It allows easily automating
+>> mounts without having to change the base image (which can be read-only).
+>>
+>> In /tools/kvm we are interested in such feature to allow us to automatically
+>> mount user home directory using virtio-9p from the host to the guest
+>> filesystem under '/hostfs'.
 
-Is it? CONFIG_NUMA is useful even without userspace numactl tool, no?
+Can't the same be done within initramfs just as easy?
+
+Long time ago when initramfs first appeared the plan was to,
+more or less, move all that mounting and root= handling
+functionality to userspae, and here we're adding more
+to kernel.  To me that sounds backwards...
+
+Thanks,
+
+/mjt
