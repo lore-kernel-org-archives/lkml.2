@@ -1,81 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756061Ab1GRJol (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 05:44:41 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44024 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755182Ab1GRJok (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 05:44:40 -0400
-Date: Mon, 18 Jul 2011 10:44:09 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: Nick Bowler <nbowler@elliptictech.com>, linux-watchdog@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] SP805 updates for Versatile Express
-Message-ID: <20110718094409.GQ23270@n2100.arm.linux.org.uk>
-References: <1310742242-14647-1-git-send-email-nbowler@elliptictech.com> <20110715205954.GR3834@infomag.iguana.be>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754114Ab1GRJux (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 05:50:53 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:38867 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753136Ab1GRJuw convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:6:1>);
+	Mon, 18 Jul 2011 05:50:52 -0400
+Message-Id: <4E241E15020000780004DDE4@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Mon, 18 Jul 2011 10:50:45 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Ian Campbell" <Ian.Campbell@eu.citrix.com>
+Cc: "olaf@aepfle.de" <olaf@aepfle.de>, "Keir Fraser" <keir.xen@gmail.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "KonradRzeszutek Wilk" <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "keir@xen.org" <keir@xen.org>
+Subject: Re: [Xen-devel] [PATCH] xen: update machine_to_phys_order on
+	 resume
+References: <CA499EDA.1E10E%keir.xen@gmail.com>
+ <1310977905.20648.26.camel@zakaz.uk.xensource.com>
+ <4E240F3D020000780004DD70@nat28.tlf.novell.com>
+ <1310979918.20648.31.camel@zakaz.uk.xensource.com>
+In-Reply-To: <1310979918.20648.31.camel@zakaz.uk.xensource.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20110715205954.GR3834@infomag.iguana.be>
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 15, 2011 at 10:59:54PM +0200, Wim Van Sebroeck wrote:
-> Hi Nick,
-> 
-> > Here are some updates to get the SP805 watchdog working on the ARM
-> > Versatile Express.  The first two patches fix observed issues; the
-> > third fixes a potential (but not observed) issue with asynchronous
-> > posted writes.
-> > 
-> > All three patches are independent and should be applicable in any
-> > order, with some fuzz on the third.
-> 
-> looks good at first glance.
-> 
-> Russel: what's your opinion?
+>>> On 18.07.11 at 11:05, Ian Campbell <Ian.Campbell@eu.citrix.com> wrote:
+> Note that XENFEAT_writable_descriptor_tables means that the guest kernel
+> should not make pagetable pages RO at all, which is different from the
+> hypervisor's support for writing to RO pagetables (i.e. emulating
+> pagetable updates).
 
-Win,
+Yeah, sorry, I keep mixing up the inverse meanings of
+XENFEAT_writable_page_tables and VMASST_TYPE_writable_pagetables...
 
-This series looks fine.  However, looking through the driver, there's
-a few oddities:
+Jan
 
-static u32 wdt_timeleft(void)
-{
-        u64 load, rate;
-
-        rate = clk_get_rate(wdt->clk);
-
-        spin_lock(&wdt->lock);
-        load = readl(wdt->base + WDTVALUE);
-
-        /*If the interrupt is inactive then time left is WDTValue + WDTLoad. */
-        if (!(readl(wdt->base + WDTRIS) & INT_MASK))
-                load += wdt->load_val + 1;
-        spin_unlock(&wdt->lock);
-
-        return div_u64(load, rate);
-}
-
-clk_get_rate returns an unsigned long, not a u64.  There's no point
-expanding it to a 64-bit int for div_u64 - rate might as well be
-declared as an unsigned long.
-
-Same goes for wdt_setload, and there stuff like "div_u64(rate, 2)"
-can become normal maths rather than the special 64-bit stuff.
-
-Then there's:
-
-        if (!request_mem_region(adev->res.start, resource_size(&adev->res),
-                                "sp805_wdt")) {
-                dev_warn(&adev->dev, "Failed to get memory region resource\n");
-                ret = -ENOENT;
-                goto err;
-        }
-
-Is amba_request_regions()/amba_release_regions() not good enough to
-handle requesting/releasing these regions?
