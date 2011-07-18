@@ -1,79 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756351Ab1GRKkT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 06:40:19 -0400
-Received: from mga14.intel.com ([143.182.124.37]:24624 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753330Ab1GRKkR convert rfc822-to-8bit (ORCPT
+	id S1756386Ab1GRKvC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 06:51:02 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39452 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753310Ab1GRKvB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 06:40:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,221,1309762800"; 
-   d="scan'208";a="28390530"
-Subject: Re: [PATCH 2/2] lib: call native hex_to_bin() inside _kstrtoull()
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <CACVxJT-0=cpieN52g2LZ1W+PPmpL-kR9nHCk53bBSR=Js1cbRA@mail.gmail.com>
-References: <e01fb9d779703004bf2f217ec7a2c3e7220610b9.1310977380.git.andriy.shevchenko@linux.intel.com>
-	 <5e634c6aaeea13b4a1a541fad0b776180ccfd80b.1310977380.git.andriy.shevchenko@linux.intel.com>
-	 <CACVxJT-0=cpieN52g2LZ1W+PPmpL-kR9nHCk53bBSR=Js1cbRA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: Intel Finland Oy
-Date: Mon, 18 Jul 2011 13:39:49 +0300
-Message-ID: <1310985589.3903.4.camel@smile>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+	Mon, 18 Jul 2011 06:51:01 -0400
+Date: Mon, 18 Jul 2011 19:50:54 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Greg KH <greg@kroah.com>, Grant Likely <grant@secretlab.ca>,
+        Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Samuel Oritz <sameo@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] regmap: Add generic non-memory mapped register
+ access API
+Message-ID: <20110718105053.GD7775@opensource.wolfsonmicro.com>
+References: <20110718100444.GD423@opensource.wolfsonmicro.com>
+ <1310983663-6404-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <s5hsjq3kh61.wl%tiwai@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5hsjq3kh61.wl%tiwai@suse.de>
+X-Cookie: You will have long and healthy life.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-07-18 at 13:31 +0300, Alexey Dobriyan wrote: 
-> On Mon, Jul 18, 2011 at 11:23 AM, Andy Shevchenko
-> <andriy.shevchenko@linux.intel.com> wrote:
-> > --- a/lib/kstrtox.c
-> > +++ b/lib/kstrtox.c
-> > @@ -39,25 +39,18 @@ static int _kstrtoull(const char *s, unsigned int base, unsigned long long *res)
-> >        acc = 0;
-> >        ok = 0;
-> >        while (*s) {
-> > -               unsigned int val;
-> > +               int val;
-> >
-> > -               if ('0' <= *s && *s <= '9')
-> > -                       val = *s - '0';
-> > -               else if ('a' <= TOLOWER(*s) && TOLOWER(*s) <= 'f')
-> > -                       val = TOLOWER(*s) - 'a' + 10;
-> > -               else if (*s == '\n' && *(s + 1) == '\0')
-> > +               if (unlikely(*s == '\n' && *(s + 1) == '\0'))
-> >                        break;
-> > -               else
-> > -                       return -EINVAL;
-> >
-> > -               if (val >= base)
-> > +               val = hex_to_bin(*s++);
-> > +               if (val >= base || val < 0)
-> >                        return -EINVAL;
-> >                if (acc > div_u64(ULLONG_MAX - val, base))
-> >                        return -ERANGE;
-> >                acc = acc * base + val;
-> >                ok = 1;
-> > -
-> > -               s++;
-> >        }
-> >        if (!ok)
-> >                return -EINVAL;
-> 
-> 1. unlikely() and s++ move don't have anything to do with changes
-That's true. I remove those changes.
+On Mon, Jul 18, 2011 at 12:38:14PM +0200, Takashi Iwai wrote:
 
-> 2. I don't understand desire to use some half-thought out API,
->    in fact, restricting to radix 16 is arbitrary.
->    Without such restriction hex_to_bin doesn't make sense.
-I doubt I get it. hex_to_bin validates its input indirectly. The
-behaviour of your code (without changes mentioned in 1.) is the same.
+> In most cases, val = map->work_buf + map->format.reg_bytes.
+> How about a bit optimization?
 
--- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+> 	if (ret == -ENOTSUPP) {
+
+Indeed, I'd had an additional optimization there in mind but it was to
+do the checking before we try the gather write rather than after since
+generally it'll be cheaper to do the pre-gathered write than the
+gathered write (sometimes noticably cheaper as some controllers have an
+appreciable overhead for starting transfers, especially at high data
+rates).
+
+I mostly didn't implement it yet because I was trying to minimize the
+code complexity of the initial submission in order to aid review so was
+avoiding non-essential features.
