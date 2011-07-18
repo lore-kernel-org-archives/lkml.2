@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756863Ab1GRNOr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 09:14:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4515 "EHLO mx1.redhat.com"
+	id S1756882Ab1GRNPX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 09:15:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49766 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756061Ab1GRNJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 09:09:10 -0400
+	id S1755623Ab1GRNJG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 09:09:06 -0400
 From: Prarit Bhargava <prarit@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, evel@driverdev.osuosl.org
-Subject: [PATCH 25/34] drivers/staging changes for SMBIOS and System Firmware
-Date: Mon, 18 Jul 2011 09:08:39 -0400
-Message-Id: <1310994528-26276-26-git-send-email-prarit@redhat.com>
+Cc: Prarit Bhargava <prarit@redhat.com>, netdev@vger.kernel.org
+Subject: [PATCH 19/34] drivers/net changes for SMBIOS and System Firmware
+Date: Mon, 18 Jul 2011 09:08:33 -0400
+Message-Id: <1310994528-26276-20-git-send-email-prarit@redhat.com>
 In-Reply-To: <1310994528-26276-1-git-send-email-prarit@redhat.com>
 References: <1310994528-26276-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -26,189 +26,118 @@ structures and functions in individual drivers
 - cleanup of includes for dmi.h and mod_devicetable.h which were included in
 some files that did not need them
 
-[v2]: Re-exported dmi MODULE_ALIAS
-
-Cc: evel@driverdev.osuosl.org
+Cc: netdev@vger.kernel.org
 Signed-off-by: Prarit Bhargava <prarit@redhat.com>
 ---
- drivers/staging/hv/hv_mouse.c      |    1 -
- drivers/staging/hv/hv_timesource.c |   18 +++++++++---------
- drivers/staging/hv/hv_util.c       |   17 ++++++++---------
- drivers/staging/hv/netvsc_drv.c    |   17 ++++++++---------
- drivers/staging/hv/vmbus_drv.c     |    1 -
- 5 files changed, 25 insertions(+), 29 deletions(-)
+ drivers/net/skge.c                 |   11 ++++++-----
+ drivers/net/via-rhine.c            |   18 ++++++++++--------
+ drivers/net/wireless/wl1251/sdio.c |    1 -
+ 3 files changed, 16 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/staging/hv/hv_mouse.c b/drivers/staging/hv/hv_mouse.c
-index 359e737..b40c23f 100644
---- a/drivers/staging/hv/hv_mouse.c
-+++ b/drivers/staging/hv/hv_mouse.c
-@@ -23,7 +23,6 @@
- #include <linux/hid.h>
- #include <linux/hiddev.h>
- #include <linux/pci.h>
--#include <linux/dmi.h>
- #include <linux/delay.h>
- 
- #include "hyperv.h"
-diff --git a/drivers/staging/hv/hv_timesource.c b/drivers/staging/hv/hv_timesource.c
-index 0efb049..34dc583 100644
---- a/drivers/staging/hv/hv_timesource.c
-+++ b/drivers/staging/hv/hv_timesource.c
-@@ -27,7 +27,7 @@
- #include <linux/init.h>
- #include <linux/module.h>
- #include <linux/pci.h>
--#include <linux/dmi.h>
-+#include <linux/sysfw.h>
- #include <asm/hyperv.h>
- #include <asm/mshyperv.h>
- #include <asm/hypervisor.h>
-@@ -61,19 +61,19 @@ static struct clocksource hyperv_cs = {
- 	.shift          = HV_CLOCK_SHIFT,
- };
- 
--static const struct dmi_system_id __initconst
--hv_timesource_dmi_table[] __maybe_unused  = {
-+static const struct sysfw_id __initconst
-+hv_timesource_smbios_table[] __maybe_unused = {
- 	{
- 		.ident = "Hyper-V",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Microsoft Corporation"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "Virtual Machine"),
--			DMI_MATCH(DMI_BOARD_NAME, "Virtual Machine"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Microsoft Corporation"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Virtual Machine"),
-+			SYSFW_MATCH(SYSFW_BOARD_NAME, "Virtual Machine"),
- 		},
- 	},
--	{ },
-+	{},
- };
--MODULE_DEVICE_TABLE(dmi, hv_timesource_dmi_table);
-+MODULE_DEVICE_TABLE(smbios, hv_timesource_smbios_table);
- 
- static const struct pci_device_id __initconst
- hv_timesource_pci_table[] __maybe_unused = {
-@@ -89,7 +89,7 @@ static int __init init_hv_clocksource(void)
- 		!(ms_hyperv.features & HV_X64_MSR_TIME_REF_COUNT_AVAILABLE))
- 		return -ENODEV;
- 
--	if (!dmi_check_system(hv_timesource_dmi_table))
-+	if (!sysfw_callback(hv_timesource_smbios_table))
- 		return -ENODEV;
- 
- 	pr_info("Registering HyperV clock source\n");
-diff --git a/drivers/staging/hv/hv_util.c b/drivers/staging/hv/hv_util.c
-index c164b54..2d672b8 100644
---- a/drivers/staging/hv/hv_util.c
-+++ b/drivers/staging/hv/hv_util.c
-@@ -26,8 +26,8 @@
- #include <linux/slab.h>
- #include <linux/sysctl.h>
- #include <linux/reboot.h>
--#include <linux/dmi.h>
- #include <linux/pci.h>
-+#include <linux/sysfw.h>
- 
- #include "hyperv.h"
- #include "hv_kvp.h"
-@@ -218,19 +218,18 @@ hv_utils_pci_table[] __maybe_unused = {
- MODULE_DEVICE_TABLE(pci, hv_utils_pci_table);
- 
- 
--static const struct dmi_system_id __initconst
--hv_utils_dmi_table[] __maybe_unused  = {
-+static const struct sysfw_id __initconst hv_utils_id_table[] __maybe_unused = {
- 	{
- 		.ident = "Hyper-V",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Microsoft Corporation"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "Virtual Machine"),
--			DMI_MATCH(DMI_BOARD_NAME, "Virtual Machine"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Microsoft Corporation"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Virtual Machine"),
-+			SYSFW_MATCH(SYSFW_BOARD_NAME, "Virtual Machine"),
- 		},
- 	},
--	{ },
-+	{},
- };
--MODULE_DEVICE_TABLE(dmi, hv_utils_dmi_table);
-+MODULE_DEVICE_TABLE(sysfw, hv_utils_id_table);
- 
- 
- static int __init init_hyperv_utils(void)
-@@ -241,7 +240,7 @@ static int __init init_hyperv_utils(void)
- 		return -ENODEV;
- 
- 
--	if (!dmi_check_system(hv_utils_dmi_table))
-+	if (!sysfw_callback(hv_utils_id_table))
- 		return -ENODEV;
- 
- 	shut_txf_buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
-diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
-index 7b9c229..0ffc210 100644
---- a/drivers/staging/hv/netvsc_drv.c
-+++ b/drivers/staging/hv/netvsc_drv.c
-@@ -32,8 +32,8 @@
- #include <linux/skbuff.h>
- #include <linux/in.h>
+diff --git a/drivers/net/skge.c b/drivers/net/skge.c
+index f4be5c7..1200c53 100644
+--- a/drivers/net/skge.c
++++ b/drivers/net/skge.c
+@@ -43,7 +43,7 @@
+ #include <linux/seq_file.h>
+ #include <linux/mii.h>
  #include <linux/slab.h>
 -#include <linux/dmi.h>
- #include <linux/pci.h>
 +#include <linux/sysfw.h>
- #include <net/arp.h>
- #include <net/route.h>
- #include <net/sock.h>
-@@ -439,19 +439,18 @@ static void __exit netvsc_drv_exit(void)
- }
+ #include <linux/prefetch.h>
+ #include <asm/irq.h>
  
+@@ -4089,12 +4089,13 @@ static struct pci_driver skge_driver = {
+ 	.driver.pm =	SKGE_PM_OPS,
+ };
  
--static const struct dmi_system_id __initconst
--hv_netvsc_dmi_table[] __maybe_unused  = {
-+static const struct sysfw_id __initconst hv_netvsc_id_table[] __maybe_unused = {
+-static struct dmi_system_id skge_32bit_dma_boards[] = {
++static struct sysfw_id skge_32bit_dma_boards[] = {
  	{
- 		.ident = "Hyper-V",
+ 		.ident = "Gigabyte nForce boards",
  		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Microsoft Corporation"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "Virtual Machine"),
--			DMI_MATCH(DMI_BOARD_NAME, "Virtual Machine"),
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Microsoft Corporation"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Virtual Machine"),
-+			SYSFW_MATCH(SYSFW_BOARD_NAME, "Virtual Machine"),
+-			DMI_MATCH(DMI_BOARD_VENDOR, "Gigabyte Technology Co"),
+-			DMI_MATCH(DMI_BOARD_NAME, "nForce"),
++			SYSFW_MATCH(SYSFW_BOARD_VENDOR,
++				     "Gigabyte Technology Co"),
++			SYSFW_MATCH(SYSFW_BOARD_NAME, "nForce"),
  		},
  	},
--	{ },
-+	{},
- };
--MODULE_DEVICE_TABLE(dmi, hv_netvsc_dmi_table);
-+MODULE_DEVICE_TABLE(sysfw, hv_netvsc_id_table);
+ 	{}
+@@ -4102,7 +4103,7 @@ static struct dmi_system_id skge_32bit_dma_boards[] = {
  
- static int __init netvsc_drv_init(void)
+ static int __init skge_init_module(void)
  {
-@@ -460,7 +459,7 @@ static int __init netvsc_drv_init(void)
- 
- 	pr_info("initializing....");
- 
--	if (!dmi_check_system(hv_netvsc_dmi_table))
-+	if (!sysfw_callback(hv_netvsc_id_table))
- 		return -ENODEV;
- 
- 
-diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
-index ec1d38c..18e3687 100644
---- a/drivers/staging/hv/vmbus_drv.c
-+++ b/drivers/staging/hv/vmbus_drv.c
-@@ -29,7 +29,6 @@
- #include <linux/interrupt.h>
- #include <linux/sysctl.h>
- #include <linux/pci.h>
+-	if (dmi_check_system(skge_32bit_dma_boards))
++	if (sysfw_callback(skge_32bit_dma_boards))
+ 		only_32bit_dma = 1;
+ 	skge_debug_init();
+ 	return pci_register_driver(&skge_driver);
+diff --git a/drivers/net/via-rhine.c b/drivers/net/via-rhine.c
+index 7f23ab9..81725d5 100644
+--- a/drivers/net/via-rhine.c
++++ b/drivers/net/via-rhine.c
+@@ -110,7 +110,7 @@ static const int multicast_filter_limit = 32;
+ #include <asm/io.h>
+ #include <asm/irq.h>
+ #include <asm/uaccess.h>
 -#include <linux/dmi.h>
- #include <linux/slab.h>
- #include <linux/acpi.h>
- #include <acpi/acpi_bus.h>
++#include <linux/sysfw.h>
+ 
+ /* These identify the driver base version and may not be removed. */
+ static const char version[] __devinitconst =
+@@ -2294,22 +2294,24 @@ static struct pci_driver rhine_driver = {
+ 	.shutdown =	rhine_shutdown,
+ };
+ 
+-static struct dmi_system_id __initdata rhine_dmi_table[] = {
++static struct sysfw_id __initdata rhine_id_table[] = {
+ 	{
+ 		.ident = "EPIA-M",
+ 		.matches = {
+-			DMI_MATCH(DMI_BIOS_VENDOR, "Award Software International, Inc."),
+-			DMI_MATCH(DMI_BIOS_VERSION, "6.00 PG"),
++			SYSFW_MATCH(SYSFW_BIOS_VENDOR,
++				    "Award Software International, Inc."),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "6.00 PG"),
+ 		},
+ 	},
+ 	{
+ 		.ident = "KV7",
+ 		.matches = {
+-			DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies, LTD"),
+-			DMI_MATCH(DMI_BIOS_VERSION, "6.00 PG"),
++			SYSFW_MATCH(SYSFW_BIOS_VENDOR,
++				    "Phoenix Technologies, LTD"),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "6.00 PG"),
+ 		},
+ 	},
+-	{ NULL }
++	{}
+ };
+ 
+ static int __init rhine_init(void)
+@@ -2318,7 +2320,7 @@ static int __init rhine_init(void)
+ #ifdef MODULE
+ 	pr_info("%s\n", version);
+ #endif
+-	if (dmi_check_system(rhine_dmi_table)) {
++	if (sysfw_callback(rhine_id_table)) {
+ 		/* these BIOSes fail at PXE boot if chip is in D3 */
+ 		avoid_D3 = 1;
+ 		pr_warn("Broken BIOS detected, avoid_D3 enabled\n");
+diff --git a/drivers/net/wireless/wl1251/sdio.c b/drivers/net/wireless/wl1251/sdio.c
+index f51a024..68e36d7 100644
+--- a/drivers/net/wireless/wl1251/sdio.c
++++ b/drivers/net/wireless/wl1251/sdio.c
+@@ -20,7 +20,6 @@
+  * Copyright (C) 2009 Bob Copeland (me@bobcopeland.com)
+  */
+ #include <linux/module.h>
+-#include <linux/mod_devicetable.h>
+ #include <linux/mmc/sdio_func.h>
+ #include <linux/mmc/sdio_ids.h>
+ #include <linux/platform_device.h>
 -- 
 1.6.5.2
 
