@@ -1,118 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751242Ab1GRVml (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 17:42:41 -0400
-Received: from TYO200.gate.nec.co.jp ([202.32.8.215]:51378 "EHLO
-	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750829Ab1GRVmk (ORCPT
+	id S1751400Ab1GRVnu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 17:43:50 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44595 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750752Ab1GRVnt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 17:42:40 -0400
-Message-ID: <4E24A61D.4060702@bx.jp.nec.com>
-Date: Mon, 18 Jul 2011 17:31:09 -0400
-From: Keiichi KII <k-keiichi@bx.jp.nec.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc14 Thunderbird/3.1.11
+	Mon, 18 Jul 2011 17:43:49 -0400
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Ingo Molnar <mingo@elte.hu>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Tom Zanussi <tzanussi@gmail.com>, "riel@redhat.com" <riel@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-        Keiichi KII <k-keiichi@bx.jp.nec.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        "BA, Moussa" <Moussa.BA@numonyx.com>
-Subject: [RFC PATCH -tip 0/5] perf tools: pagecache monitoring
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.LSU.2.00.1107181407060.3530@sister.anvils>
+References: <20110717231610.GR11013@ZenIV.linux.org.uk> <CA+55aFxEGKgx+_xy+Lnt=84wRzE9TyznL3VCNSqWs7HC_H35_A@mail.gmail.com>
+ <alpine.LSU.2.00.1107171641130.1274@sister.anvils> <20110718002524.GU11013@ZenIV.linux.org.uk>
+ <alpine.LSU.2.00.1107171740260.1327@sister.anvils> <20110718020818.GW11013@ZenIV.linux.org.uk>
+ <CA+55aFwXgcWxvAz7w1f_HYyzdm9b9EBJfrWhF1FW7EA3zpbJPg@mail.gmail.com>
+ <CA+55aFxKRw8NxcHKzsSeCX3ud6eDrcQvAX+LMQOUT4p5TPLp5g@mail.gmail.com>
+ <alpine.LSU.2.00.1107181135170.2722@sister.anvils> <CA+55aFycZL9zAE_Qvq9LM=HpugiDuKSjdRhKG1zi=H4LnNvhVQ@mail.gmail.com>
+ <20110718194703.GI11013@ZenIV.linux.org.uk> <CA+55aFzCeXOs9Rj5U5mMWqMZpv+jM14O2VnpFCodMJzaB1hPEg@mail.gmail.com>
+ <alpine.LSU.2.00.1107181407060.3530@sister.anvils>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 18 Jul 2011 14:42:51 -0700
+Message-ID: <CA+55aFxq1KZycxXCwLARv0WOYG_-aim=e9kt=eLcNuymmeoyiA@mail.gmail.com>
+Subject: Re: [PATCH] vfs: fix race in rcu lookup of pruned dentry
+To: Hugh Dickins <hughd@google.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=0016e6454998ba700a04a85ee29c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+--0016e6454998ba700a04a85ee29c
+Content-Type: text/plain; charset=ISO-8859-1
 
-I would propose pagecache monitoring tools using perf tools.
-The purpose of the tools is to clarify pagecache behavior in a system.
+On Mon, Jul 18, 2011 at 2:19 PM, Hugh Dickins <hughd@google.com> wrote:
+>
+> __d_lookup_rcu() is being careful about *inode, yes.
+>
+> But I'd forgotten it was even setting it: doesn't that setting get
+> overridden later by the more careless *inode = path->d_entry->d_inode
+> at the head of __follow_mount_rcu()'s loop?
+>
+> Perhaps that line just needs to be moved to the tail of the loop?
 
-We can now know system-wide pagecache usage by "/proc/meminfo".
-But we don't have any way to get higher resolution information like
-per file or per process usage than system-wide one.
-If pagecache miss hit ratio rises due to unnecessary adding/removing
-pagecaches, maybe it leads to extra I/O and affects system performance.
-But it's difficult to find out what is going on in the system.
+Ahh. Bingo. Yes, I think you found it.
 
-So, the tools I propose provide 2 functions:
+I don't think it should touch that *inode value in
+__follow_mount_rcu() unless we actually followed a mount, exactly
+because it will overwrite the thing that we were so careful about in
+__d_lookup_rcu().
 
-1. pagecache snapshooting(perf script pagecache-snapshoot)
+So how about this patch that replaces the earlier mount-point sequence
+number one. The only difference is (as you mention) to just do the
+*inode update at the end of the loop, so that we don't overwrite the
+valid inode data with a non-checked one when we don't do anything.
 
-This function clarifies pagecache usage per each file in the system.
-This function is based mainly on "pagecache object collections" that is
-developed by Wu Fengguang (http://lkml.org/lkml/2010/2/9/156).
-The following is sample output of this function.
+Untested. But this should make my propised change to fs/dcache.c be
+irrelevant, because whether we clear d_inode or not, the existing
+sequence number checks will catch it. Agreed?
 
-pagecache snapshooting (time: 14131, path: /home)
-                             file name cache(B)  file(B)  ratio  +/-(B)    age
--------------------------------------- -------- -------- ------ ------- ------
-/home/foo/git/linux-2.6-tip/.git/objec    71.0M   436.6M    16%       0   9012
-/home/foo/git/linux-2.6-tip/.git/objec    49.6M    57.7M    86%       0   9012
-/home/foo/.thunderbird/xso5zn7g.defaul    19.8M    19.8M   100%       0   7223
-/home/foo/.thunderbird/xso5zn7g.defaul     5.7M     5.7M   100%       0   6621
-/home/foo/git/linux-2.6-tip/.git/index     3.5M     3.5M   100%       0   4306
-/home/foo/.thunderbird/xso5zn7g.defaul     2.2M     2.2M   100%       0   7524
-/home/foo/.thunderbird/xso5zn7g.defaul     2.2M     2.2M   100%       0   7526
-/home/foo/.thunderbird/xso5zn7g.defaul     1.7M     1.7M   100%       0   6921
-...
+                      Linus
 
-2. continuous pagecache monitoring(perf script pagecachetop)
+--0016e6454998ba700a04a85ee29c
+Content-Type: text/x-patch; charset=US-ASCII; name="mount-sequence.diff"
+Content-Disposition: attachment; filename="mount-sequence.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gq9ylxie0
 
-This function clarifies pagecache behavior like pagecache hit ratio and
-added/removed pagecache amount on the basis of file/process.
-This functions is based on pagecache tracepoints I propose.
-While the pagecache snapshooting can take a pagecache snapshoot at a point,
-the continuous pagecache monitoring can measure dynamic change between
-2 snapshoots.
-The following is sample output of this function.
-
-pagecache behavior per file (time:15826, interval:10)
-
-                         find        hit    cache      add   remove  proc
-                file    count      ratio pages(B) pages(B) pages(B) count
--------------------- -------- ---------- -------- -------- -------- -----
-        libc-2.13.so      620    100.00%     1.2M        0        0     7
-                bash      283    100.00%   888.0K        0        0     6
-          ld-2.13.so      136    100.00%   148.0K        0        0     6
-                gawk      130    100.00%   376.0K        0        0     2
-         ld.so.cache       60    100.00%   116.0K        0        0     4
-...
-
-pagecache behavior per process (time:16294, interval:10)
-
-                         find        hit      add   remove  file
-             process    count      ratio pages(B) pages(B) count
--------------------- -------- ---------- -------- -------- -----
-            zsh-7761     2968     99.93%     4.0K        0   246
-           perf-7758      369    100.00%        0        0    17
-           xmms-7634       52    100.00%        0        0     1
-           perf-7759       11    100.00%        0        0     2
-            zsh-2815        6     83.33%     4.0K     4.0K     2
-       gconfd-2-4849        3      0.00%    12.0K    12.0K     4
-       rsyslogd-7194        1    100.00%        0        0     1
-
-
-By these 2 functions, we can find out whether pagecaches are used
-efficiently or not.
-And also these tools would help us tune some applications like database.
-It will also help us tune the kernel parameters like "vm.dirty_*".
-
-My patches are based on the latest "linux-tip.git" tree and
-also the following 3 commits in "tip:tracing/mm" and a "pagecache
-object collections" patch. 
-
-  - dcac8cd: tracing/mm: add page frame snapshot trace
-  - 1487a7a: tracing/mm: fix mapcount trace record field
-  - eb46710: tracing/mm: rename 'trigger' file to 'dump_range'
-  - http://lkml.org/lkml/2010/2/9/156
-
-Any comments are welcome.
---
-Keiichi Kii <k-keiichi@bx.jp.nec.com>
-
-
+IGZzL25hbWVpLmMgfCAgIDIxICsrKysrKysrKysrKysrKysrKystLQogMSBmaWxlcyBjaGFuZ2Vk
+LCAxOSBpbnNlcnRpb25zKCspLCAyIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2ZzL25hbWVp
+LmMgYi9mcy9uYW1laS5jCmluZGV4IDVjODY3ZGQxYzBiMy4uYjljZDU1OGEwMGJlIDEwMDY0NAot
+LS0gYS9mcy9uYW1laS5jCisrKyBiL2ZzL25hbWVpLmMKQEAgLTkzOCwxMSArOTM4LDEyIEBAIHN0
+YXRpYyBib29sIF9fZm9sbG93X21vdW50X3JjdShzdHJ1Y3QgbmFtZWlkYXRhICpuZCwgc3RydWN0
+IHBhdGggKnBhdGgsCiB7CiAJZm9yICg7OykgewogCQlzdHJ1Y3QgdmZzbW91bnQgKm1vdW50ZWQ7
+CisJCXVuc2lnbmVkIGludCBzZXE7CisKIAkJLyoKIAkJICogRG9uJ3QgZm9yZ2V0IHdlIG1pZ2h0
+IGhhdmUgYSBub24tbW91bnRwb2ludCBtYW5hZ2VkIGRlbnRyeQogCQkgKiB0aGF0IHdhbnRzIHRv
+IGJsb2NrIHRyYW5zaXQuCiAJCSAqLwotCQkqaW5vZGUgPSBwYXRoLT5kZW50cnktPmRfaW5vZGU7
+CiAJCWlmICh1bmxpa2VseShtYW5hZ2VkX2RlbnRyeV9taWdodF9ibG9jayhwYXRoLT5kZW50cnkp
+KSkKIAkJCXJldHVybiBmYWxzZTsKIApAQCAtOTUyLDkgKzk1MywyNSBAQCBzdGF0aWMgYm9vbCBf
+X2ZvbGxvd19tb3VudF9yY3Uoc3RydWN0IG5hbWVpZGF0YSAqbmQsIHN0cnVjdCBwYXRoICpwYXRo
+LAogCQltb3VudGVkID0gX19sb29rdXBfbW50KHBhdGgtPm1udCwgcGF0aC0+ZGVudHJ5LCAxKTsK
+IAkJaWYgKCFtb3VudGVkKQogCQkJYnJlYWs7CisJCXNlcSA9IHJlYWRfc2VxY291bnRfYmVnaW4o
+Jm1vdW50ZWQtPm1udF9yb290LT5kX3NlcSk7CisKKwkJLyoKKwkJICogVGhlIG1lbW9yeSBiYXJy
+aWVyIGluIHJlYWRfc2VxY291bnRfYmVnaW4oKSBpcyBzdWZmaWNpZW50LAorCQkgKiBzbyB3ZSBj
+YW4gdXNlIF9fcmVhZF9zZXFjb3VudF9yZXRyeSgpIHRvIGNoZWNrIHRoZSBwcmV2CisJCSAqIHNl
+cXVlbmNlIG51bWJlcnMuCisJCSAqLworCQlpZiAoIV9fcmVhZF9zZXFjb3VudF9yZXRyeSgmcGF0
+aC0+ZGVudHJ5LT5kX3NlcSwgbmQtPnNlcSkpCisJCQlyZXR1cm4gZmFsc2U7CiAJCXBhdGgtPm1u
+dCA9IG1vdW50ZWQ7CiAJCXBhdGgtPmRlbnRyeSA9IG1vdW50ZWQtPm1udF9yb290OwotCQluZC0+
+c2VxID0gcmVhZF9zZXFjb3VudF9iZWdpbigmcGF0aC0+ZGVudHJ5LT5kX3NlcSk7CisJCW5kLT5z
+ZXEgPSBzZXE7CisKKwkJLyoKKwkJICogVXBkYXRlIHRoZSBpbm9kZSB0b28uIFdlIGRvbid0IG5l
+ZWQgdG8gcmUtY2hlY2sgdGhlCisJCSAqIGRlbnRyeSBzZXF1ZW5jZSBudW1iZXIgaGVyZSBhZnRl
+ciB0aGlzIGRfaW5vZGUgcmVhZCwKKwkJICogYmVjYXVzZSBhIG1vdW50LXBvaW50IGlzIGFsd2F5
+cyBwaW5uZWQuCisJCSAqLworCQkqaW5vZGUgPSBwYXRoLT5kZW50cnktPmRfaW5vZGU7CiAJfQog
+CXJldHVybiB0cnVlOwogfQo=
+--0016e6454998ba700a04a85ee29c--
