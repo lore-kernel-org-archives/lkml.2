@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756146Ab1GRKbT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 06:31:19 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:57027 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754208Ab1GRKbS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 06:31:18 -0400
+	id S1752322Ab1GRKeS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 06:34:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39214 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750948Ab1GRKeR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 06:34:17 -0400
+Date: Mon, 18 Jul 2011 12:34:15 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH] perf: buildid-cache zero out buffer of filenames when
+ adding/remoing buildid
+Message-ID: <20110718103415.GA1978@jolsa.brq.redhat.com>
+References: <20110718031314.GA5802@hpt.nay.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <5e634c6aaeea13b4a1a541fad0b776180ccfd80b.1310977380.git.andriy.shevchenko@linux.intel.com>
-References: <e01fb9d779703004bf2f217ec7a2c3e7220610b9.1310977380.git.andriy.shevchenko@linux.intel.com>
-	<5e634c6aaeea13b4a1a541fad0b776180ccfd80b.1310977380.git.andriy.shevchenko@linux.intel.com>
-Date: Mon, 18 Jul 2011 13:31:18 +0300
-Message-ID: <CACVxJT-0=cpieN52g2LZ1W+PPmpL-kR9nHCk53bBSR=Js1cbRA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] lib: call native hex_to_bin() inside _kstrtoull()
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110718031314.GA5802@hpt.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 18, 2011 at 11:23 AM, Andy Shevchenko
-<andriy.shevchenko@linux.intel.com> wrote:
-> --- a/lib/kstrtox.c
-> +++ b/lib/kstrtox.c
-> @@ -39,25 +39,18 @@ static int _kstrtoull(const char *s, unsigned int base, unsigned long long *res)
->        acc = 0;
->        ok = 0;
->        while (*s) {
-> -               unsigned int val;
-> +               int val;
->
-> -               if ('0' <= *s && *s <= '9')
-> -                       val = *s - '0';
-> -               else if ('a' <= TOLOWER(*s) && TOLOWER(*s) <= 'f')
-> -                       val = TOLOWER(*s) - 'a' + 10;
-> -               else if (*s == '\n' && *(s + 1) == '\0')
-> +               if (unlikely(*s == '\n' && *(s + 1) == '\0'))
->                        break;
-> -               else
-> -                       return -EINVAL;
->
-> -               if (val >= base)
-> +               val = hex_to_bin(*s++);
-> +               if (val >= base || val < 0)
->                        return -EINVAL;
->                if (acc > div_u64(ULLONG_MAX - val, base))
->                        return -ERANGE;
->                acc = acc * base + val;
->                ok = 1;
-> -
-> -               s++;
->        }
->        if (!ok)
->                return -EINVAL;
+On Mon, Jul 18, 2011 at 11:13:14AM +0800, Han Pingtian wrote:
+> readlink() doesn't append a null byte to buf. So we should zero out buf
+> with zalloc(). Or we'll see sometimes error like this:
+> 
+> [root@intel-s3e36-01]~# /usr/bin/perf buildid-cache -a /lib/modules/2.6.32-130.el6.x86_64/kernel/crypto/twofish_common.ko -v
+> Adding f64ba8efd5f53c7ad332fc17db1d21de309038e1 /lib/modules/2.6.32-130.el6.x86_64/kernel/crypto/twofish_common.ko: Ok
+> [root@intel-s3e36-01]~# /usr/bin/perf buildid-cache -r /lib/modules/2.6.32-130.el6.x86_64/kernel/crypto/twofish_common.ko -v
+> Removing f64ba8efd5f53c7ad332fc17db1d21de309038e1 /lib/modules/2.6.32-130.el6.x86_64/kernel/crypto/twofish_common.ko: FAIL
+> /lib/modules/2.6.32-130.el6.x86_64/kernel/crypto/twofish_common.ko wasn't in the cache
+> 
+> The change in build_id_cache__add_s() is a defense.
+> 
+> Signed-off-by: Han Pingtian <phan@redhat.com>
 
-1. unlikely() and s++ move don't have anything to do with changes
-2. I don't understand desire to use some half-thought out API,
-   in fact, restricting to radix 16 is arbitrary.
-   Without such restriction hex_to_bin doesn't make sense.
+works for me
+
+Tested-by: Jiri Olsa <jolsa@redhat.com>
+
+> ---
+>  tools/perf/util/header.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+> index afb0849..36d723d 100644
+> --- a/tools/perf/util/header.c
+> +++ b/tools/perf/util/header.c
+> @@ -189,8 +189,8 @@ int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
+>  			  const char *name, bool is_kallsyms)
+>  {
+>  	const size_t size = PATH_MAX;
+> -	char *realname, *filename = malloc(size),
+> -	     *linkname = malloc(size), *targetname;
+> +	char *realname, *filename = zalloc(size),
+> +	     *linkname = zalloc(size), *targetname;
+>  	int len, err = -1;
+>  
+>  	if (is_kallsyms) {
+> @@ -254,8 +254,8 @@ static int build_id_cache__add_b(const u8 *build_id, size_t build_id_size,
+>  int build_id_cache__remove_s(const char *sbuild_id, const char *debugdir)
+>  {
+>  	const size_t size = PATH_MAX;
+> -	char *filename = malloc(size),
+> -	     *linkname = malloc(size);
+> +	char *filename = zalloc(size),
+> +	     *linkname = zalloc(size);
+>  	int err = -1;
+>  
+>  	if (filename == NULL || linkname == NULL)
+> -- 
+> 1.7.1
