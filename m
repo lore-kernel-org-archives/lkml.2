@@ -1,93 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932107Ab1GRCIZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jul 2011 22:08:25 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:60918 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756316Ab1GRCIX (ORCPT
+	id S1756561Ab1GRCWc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jul 2011 22:22:32 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:19131 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756378Ab1GRCWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jul 2011 22:08:23 -0400
-Date: Mon, 18 Jul 2011 03:08:18 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Hugh Dickins <hughd@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] vfs: fix race in rcu lookup of pruned dentry
-Message-ID: <20110718020818.GW11013@ZenIV.linux.org.uk>
-References: <alpine.LSU.2.00.1107171356480.3175@sister.anvils>
- <CA+55aFw5LhGq-a6mAhgZbGP2FJ+tnV9HRxKoiFuVYbttOo2tNw@mail.gmail.com>
- <20110717231610.GR11013@ZenIV.linux.org.uk>
- <CA+55aFxEGKgx+_xy+Lnt=84wRzE9TyznL3VCNSqWs7HC_H35_A@mail.gmail.com>
- <alpine.LSU.2.00.1107171641130.1274@sister.anvils>
- <20110718002524.GU11013@ZenIV.linux.org.uk>
- <alpine.LSU.2.00.1107171740260.1327@sister.anvils>
+	Sun, 17 Jul 2011 22:22:31 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnIDAJKVI055LCkBgWdsb2JhbABTp20VAQEWJiXKTg6FT18Eo00
+Date: Mon, 18 Jul 2011 12:22:26 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        XFS <xfs@oss.sgi.com>, Johannes Weiner <jweiner@redhat.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 1/5] mm: vmscan: Do not writeback filesystem pages in
+ direct reclaim
+Message-ID: <20110718022226.GC30254@dastard>
+References: <1310567487-15367-1-git-send-email-mgorman@suse.de>
+ <1310567487-15367-2-git-send-email-mgorman@suse.de>
+ <20110714103801.83e10fdb.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110714044643.GA3203@infradead.org>
+ <20110714134634.4a7a15c8.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110715022226.GD31294@dastard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1107171740260.1327@sister.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110715022226.GD31294@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 17, 2011 at 06:13:34PM -0700, Hugh Dickins wrote:
+On Fri, Jul 15, 2011 at 12:22:26PM +1000, Dave Chinner wrote:
+> On Thu, Jul 14, 2011 at 01:46:34PM +0900, KAMEZAWA Hiroyuki wrote:
+> > On Thu, 14 Jul 2011 00:46:43 -0400
+> > Christoph Hellwig <hch@infradead.org> wrote:
+> > 
+> > > On Thu, Jul 14, 2011 at 10:38:01AM +0900, KAMEZAWA Hiroyuki wrote:
+> > > > > +			/*
+> > > > > +			 * Only kswapd can writeback filesystem pages to
+> > > > > +			 * avoid risk of stack overflow
+> > > > > +			 */
+> > > > > +			if (page_is_file_cache(page) && !current_is_kswapd()) {
+> > > > > +				inc_zone_page_state(page, NR_VMSCAN_WRITE_SKIP);
+> > > > > +				goto keep_locked;
+> > > > > +			}
+> > > > > +
+> > > > 
+> > > > 
+> > > > This will cause tons of memcg OOM kill because we have no help of kswapd (now).
+> > > 
+> > > XFS and btrfs already disable writeback from memcg context, as does ext4
+> > > for the typical non-overwrite workloads, and none has fallen apart.
+> > > 
+> > > In fact there's no way we can enable them as the memcg calling contexts
+> > > tend to have massive stack usage.
+> > > 
+> > 
+> > Hmm, XFS/btrfs adds pages to radix-tree in deep stack ?
+> 
+> Here's an example writeback stack trace. Notice how deep it is from
+> the __writepage() call?
+....
+> 
+> So from ->writepage, there is about 3.5k of stack usage here.  2.5k
+> of that is in XFS, and the worst I've seen is around 4k before
+> getting to the IO subsystem, which in the worst case I've seen
+> consumed 2.5k of stack. IOWs, I've seen stack usage from .writepage
+> down to IO take over 6k of stack space on x86_64....
 
-> And in the genuine negative dentry case: at present (with or without
-> my or Linus's patches) there is no final nd->seq check, is there?
+BTW, here's a stack frame that indicates swap IO:
 
-For stat() - no, there isn't.  We really bail out with -ENOENT, no matter
-what.  Racy, which is what you are hitting.
+dave@test-4:~$ cat /sys/kernel/debug/tracing/stack_trace
+        Depth    Size   Location    (46 entries)
+        -----    ----   --------
+  0)     5080      40   zone_statistics+0xad/0xc0
+  1)     5040     272   get_page_from_freelist+0x2ad/0x7e0
+  2)     4768     288   __alloc_pages_nodemask+0x133/0x7b0
+  3)     4480      48   kmem_getpages+0x62/0x160
+  4)     4432     112   cache_grow+0x2d1/0x300
+  5)     4320      80   cache_alloc_refill+0x219/0x260
+  6)     4240      64   kmem_cache_alloc+0x182/0x190
+  7)     4176      16   mempool_alloc_slab+0x15/0x20
+  8)     4160     144   mempool_alloc+0x63/0x140
+  9)     4016      16   scsi_sg_alloc+0x4c/0x60
+ 10)     4000     112   __sg_alloc_table+0x66/0x140
+ 11)     3888      32   scsi_init_sgtable+0x33/0x90
+ 12)     3856      48   scsi_init_io+0x31/0xc0
+ 13)     3808      32   scsi_setup_fs_cmnd+0x79/0xe0
+ 14)     3776     112   sd_prep_fn+0x150/0xa90
+ 15)     3664      64   blk_peek_request+0xc7/0x230
+ 16)     3600      96   scsi_request_fn+0x68/0x500
+ 17)     3504      16   __blk_run_queue+0x1b/0x20
+ 18)     3488      96   __make_request+0x2cb/0x310
+ 19)     3392     192   generic_make_request+0x26d/0x500
+ 20)     3200      96   submit_bio+0x64/0xe0
+ 21)     3104      48   swap_writepage+0x83/0xd0
+ 22)     3056     112   pageout+0x122/0x2f0
+ 23)     2944     192   shrink_page_list+0x458/0x5f0
+ 24)     2752     192   shrink_inactive_list+0x1ec/0x410
+ 25)     2560     224   shrink_zone+0x468/0x500
+ 26)     2336     144   do_try_to_free_pages+0x2b7/0x3f0
+ 27)     2192     176   try_to_free_pages+0xa4/0x120
+ 28)     2016     288   __alloc_pages_nodemask+0x43f/0x7b0
+ 29)     1728      48   kmem_getpages+0x62/0x160
+ 30)     1680     128   fallback_alloc+0x192/0x240
+ 31)     1552      96   ____cache_alloc_node+0x9a/0x170
+ 32)     1456      16   __kmalloc+0x17d/0x200
+ 33)     1440     128   kmem_alloc+0x77/0xf0
+ 34)     1312     128   xfs_log_commit_cil+0x95/0x3d0
+ 35)     1184      96   _xfs_trans_commit+0x1e9/0x2a0
+ 36)     1088     208   xfs_create+0x57a/0x640
+ 37)      880      96   xfs_vn_mknod+0xa1/0x1b0
+ 38)      784      16   xfs_vn_create+0x10/0x20
+ 39)      768      64   vfs_create+0xb1/0xe0
+ 40)      704      96   do_last+0x5f5/0x770
+ 41)      608     144   path_openat+0xd5/0x400
+ 42)      464     224   do_filp_open+0x49/0xa0
+ 43)      240      96   do_sys_open+0x107/0x1e0
+ 44)      144      16   sys_open+0x20/0x30
+ 45)      128     128   system_call_fastpath+0x16/0x1b
 
-> Having found a negative dentry, we just get out at that point with
-> -ENOENT.  Now, it's true that there might be a race in which the
-> negative dentry is being made positive just as we're getting out;
-> but since we're not digging in any deeper, that seems to me just
-> a natural inevitable race, nothing to be guarded against.
->
-> Whereas your "if (!*inode) goto unlazy;" is adding an additional
-> sequence check, isn't it?  Is that a race you see as important?
-> If so, it is a different matter than I was ever considering.
 
-Umm...  I really don't think that trying to avoid that ->d_seq comparison
-is worth doing.  I understand your point, but... IMO it's safer to leave
-->d_inode cleaning as-is, at least for now.  Hell knows; I'd be a lot
-more optimistic if fs/dcache.c had been in better shape.  As it is, *and*
-considering that we are within a spitting distance from -final...
+That's pretty damn bad. From kmem_alloc to the top of the stack is
+more than 3.5k through the direct reclaim swap IO path. That, to me,
+kind of indicates that even doing swap IO on dirty anonymous pages
+from direct reclaim risks overflowing the 8k stack on x86_64....
 
-It's not as if we'd been talking about a heavy contention or cacheline
-bouncing here, let alone doing ->lookup().  I'm not entirely convinced
-that it's a valid optimization in the first place (probably is, but I'm
-seriously scared by the complexity we already have there), and I'm really
-not fond of the idea of dealing with whatever subtle crap we might
-discover with Linus' patch.  Again, dcache is not in a healthy shape
-right now; at this point dumb and straightforward is, IMO, better than
-subtle and risking to step on toes of very odd code out there.
+Umm, hold on a second, WTF is my standard create-lots-of-zero-length
+inodes-in-parallel doing swapping? Oh, shit, it's also running about
+50% slower (50-60k files/s instead of 110-120l files/s)....
 
-Hell, stuff that walks towards root with just rcu_read_lock, checking
-->d_inode as it goes and making assumptions about the lifecycle
-stages of the dentries it sees is not even all that weird, compared to
-the code actually in there ;-/
+Cheers,
 
-Once we are done with code audit, sure, I'm fine with ->d_inode being
-kept until dentry is actually freed.  Any code that relies on that thing
-being cleared is asking for trouble and should be rewritten anyway.
-The only thing is, it needs to be found before we rewrite it...
-
-Speaking of weird code - could somebody explain what the deuce is going
-on in dget_parent()?
-        rcu_read_lock();
-        ret = dentry->d_parent;
-        if (!ret) {
-                rcu_read_unlock();
-                goto out; 
-        }
-in the very beginning looks wrong - we *never* have NULL ->d_parent on
-dentries that might be seen by anyone; d_alloc(NULL, name) callers all
-set ->d_parent to dentry itself ASAP and we never put NULL there afterwards.
-
-What the hell is going on there?  Note that callers of dget_parent() will
-be really unimpressed by getting NULL from it; most of them will cheerfully
-dereference what they get.  It seems to be Nick's change; is there anybody
-who would remember reasons for it?
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
