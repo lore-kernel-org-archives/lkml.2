@@ -1,63 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751354Ab1GRVyP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 17:54:15 -0400
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:31740 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750713Ab1GRVyO (ORCPT
+	id S1751477Ab1GRWBN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 18:01:13 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:36488 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750868Ab1GRWBM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 17:54:14 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: IyavAHsVM1laAoF7LkQuQRFm_7cT.Z0fC3wmiGmCaNeLzYm
- ydLi_kcuFMwTugEVj2Q4zLY4xjN4QjPEJWRpQghOqBep7iKjV6ECSqBhIr1v
- UotcVhdrKw3vSzivXjFG5o8csokgQfU8TCpMFnqzoGxHjepfEb1touvmLqrn
- 6DmNIFek_WeIo9nv5CvCyWbVxe5tpTIhnMQmt8DKjOS3a4Edcmz6LGpOoFqT
- swMulosZI_sa4gm3mnEIFxa8Lynqa3t.ImVzlMPgg92svkBGEsALohFmwOrs
- 3t7U6N6JZ4R7aWHjq.Z4ecyM5LH55lo4uHfM7n8PB9721nGrn
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Mon, 18 Jul 2011 16:54:10 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Mel Gorman <mgorman@suse.de>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] mm: page allocator: Initialise ZLC for first zone
- eligible for zone_reclaim
-In-Reply-To: <20110718211325.GC5349@suse.de>
-Message-ID: <alpine.DEB.2.00.1107181651000.31576@router.home>
-References: <1310742540-22780-1-git-send-email-mgorman@suse.de> <1310742540-22780-2-git-send-email-mgorman@suse.de> <alpine.DEB.2.00.1107180951390.30392@router.home> <20110718160552.GB5349@suse.de> <alpine.DEB.2.00.1107181208050.31576@router.home>
- <20110718211325.GC5349@suse.de>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 18 Jul 2011 18:01:12 -0400
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Americo Wang <xiyou.wangcong@gmail.com>, Michal Marek <mmarek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Arnaud Lacombe <lacombar@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>, Mel Gorman <mgorman@suse.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [Patch] fix a headers_check warning in include/linux/kernel.h
+Date: Mon, 18 Jul 2011 18:00:57 -0400
+Message-Id: <1311026457-23534-1-git-send-email-lacombar@gmail.com>
+X-Mailer: git-send-email 1.7.6.153.g78432
+In-Reply-To: <CAM_iQpX_0U26_1yX+VJwhkkA7Un6Mj53AqPpRK36ONM32u4BKA@mail.gmail.com>
+References: <CAM_iQpX_0U26_1yX+VJwhkkA7Un6Mj53AqPpRK36ONM32u4BKA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Jul 2011, Mel Gorman wrote:
+Hi,
 
-> > We may be able to simplify the function by:
-> >
-> > 1.  Checking for the special case that the first zone is ok and that we do
-> > not want to call zlc_setup before we get to the loop.
-> >
-> > 2. Do the zlc_setup() before the loop.
-> >
-> > 3. Remove the zlc_setup() code as you did from the loop as well as the
-> > checks for zlc_active. zlc_active becomes not necessary since a zlc
-> > is always available when we go through the loop.
-> >
->
-> That initial test will involve duplication of things like the cpuset and
-> no watermarks check just to place the zlc_setup() in a different place.
-> I might be missing your point but it seems like the gain would be
-> marginal. Fancy posting a patch?
+For the sake of having a patch ready. I actually did it yesterday but did not
+send it then. Cc'ed to the authors of the relevant macros; __FUNCTION__ was
+actually exported since ages, but I really do not see why the kernel exports
+this macros...
 
-Looked at it for some time. Would have to create a new function for the
-watermark checks, the call to buffer_rmqueue and the marking of a zone as
-full. After that the goto mess could be unraveled. But I am out of time
-for today.
+ - Arnaud
 
+-- 
+From: Arnaud Lacombe <lacombar@gmail.com>
+Subject: linux/kernel.h: hide internal macros
+
+Unexpose to userland the following macros
+ - BUILD_BUG_ON.*
+ - __FUNCTION__
+ - NUMA_BUILD
+ - COMPACTION_BUILD
+ - REBUILD_DUE_TO_FTRACE_MCOUNT_RECORD
+
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
+---
+ include/linux/kernel.h |   46 +++++++++++++++++++++++-----------------------
+ 1 files changed, 23 insertions(+), 23 deletions(-)
+
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 567a6f7..9a43ad7 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -646,29 +646,6 @@ static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
+ 	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
+ 	(type *)( (char *)__mptr - offsetof(type,member) );})
+ 
+-struct sysinfo;
+-extern int do_sysinfo(struct sysinfo *info);
+-
+-#endif /* __KERNEL__ */
+-
+-#define SI_LOAD_SHIFT	16
+-struct sysinfo {
+-	long uptime;			/* Seconds since boot */
+-	unsigned long loads[3];		/* 1, 5, and 15 minute load averages */
+-	unsigned long totalram;		/* Total usable main memory size */
+-	unsigned long freeram;		/* Available memory size */
+-	unsigned long sharedram;	/* Amount of shared memory */
+-	unsigned long bufferram;	/* Memory used by buffers */
+-	unsigned long totalswap;	/* Total swap space size */
+-	unsigned long freeswap;		/* swap space still available */
+-	unsigned short procs;		/* Number of current processes */
+-	unsigned short pad;		/* explicit padding for m68k */
+-	unsigned long totalhigh;	/* Total high memory size */
+-	unsigned long freehigh;		/* Available high memory size */
+-	unsigned int mem_unit;		/* Memory unit size in bytes */
+-	char _f[20-2*sizeof(long)-sizeof(int)];	/* Padding: libc5 uses this.. */
+-};
+-
+ #ifdef __CHECKER__
+ #define BUILD_BUG_ON_NOT_POWER_OF_2(n)
+ #define BUILD_BUG_ON_ZERO(e) (0)
+@@ -736,4 +713,27 @@ extern int __build_bug_on_failed;
+ # define REBUILD_DUE_TO_FTRACE_MCOUNT_RECORD
+ #endif
+ 
++struct sysinfo;
++extern int do_sysinfo(struct sysinfo *info);
++
++#endif /* __KERNEL__ */
++
++#define SI_LOAD_SHIFT	16
++struct sysinfo {
++	long uptime;			/* Seconds since boot */
++	unsigned long loads[3];		/* 1, 5, and 15 minute load averages */
++	unsigned long totalram;		/* Total usable main memory size */
++	unsigned long freeram;		/* Available memory size */
++	unsigned long sharedram;	/* Amount of shared memory */
++	unsigned long bufferram;	/* Memory used by buffers */
++	unsigned long totalswap;	/* Total swap space size */
++	unsigned long freeswap;		/* swap space still available */
++	unsigned short procs;		/* Number of current processes */
++	unsigned short pad;		/* explicit padding for m68k */
++	unsigned long totalhigh;	/* Total high memory size */
++	unsigned long freehigh;		/* Available high memory size */
++	unsigned int mem_unit;		/* Memory unit size in bytes */
++	char _f[20-2*sizeof(long)-sizeof(int)];	/* Padding: libc5 uses this.. */
++};
++
+ #endif
+-- 
+1.7.6.153.g78432
 
