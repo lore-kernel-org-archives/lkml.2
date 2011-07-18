@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756080Ab1GRKZO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 06:25:14 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:46851 "EHLO
+	id S1756146Ab1GRKbT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 06:31:19 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:57027 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753310Ab1GRKZN convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754208Ab1GRKbS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 06:25:13 -0400
+	Mon, 18 Jul 2011 06:31:18 -0400
 MIME-Version: 1.0
-In-Reply-To: <e01fb9d779703004bf2f217ec7a2c3e7220610b9.1310977380.git.andriy.shevchenko@linux.intel.com>
+In-Reply-To: <5e634c6aaeea13b4a1a541fad0b776180ccfd80b.1310977380.git.andriy.shevchenko@linux.intel.com>
 References: <e01fb9d779703004bf2f217ec7a2c3e7220610b9.1310977380.git.andriy.shevchenko@linux.intel.com>
-Date: Mon, 18 Jul 2011 13:25:12 +0300
-Message-ID: <CACVxJT8P_0VcL6f40GixgrvYjh1TBaVwdGwHH3VatG+87mMHHg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] lib: make TOLOWER macro public
+	<5e634c6aaeea13b4a1a541fad0b776180ccfd80b.1310977380.git.andriy.shevchenko@linux.intel.com>
+Date: Mon, 18 Jul 2011 13:31:18 +0300
+Message-ID: <CACVxJT-0=cpieN52g2LZ1W+PPmpL-kR9nHCk53bBSR=Js1cbRA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] lib: call native hex_to_bin() inside _kstrtoull()
 From: Alexey Dobriyan <adobriyan@gmail.com>
 To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
@@ -22,30 +23,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NAK
-This macro sucks because name doesn't reflect hackish nature.
-_tolower() should be moved into public header.
-
 On Mon, Jul 18, 2011 at 11:23 AM, Andy Shevchenko
 <andriy.shevchenko@linux.intel.com> wrote:
-> This macro is required by *printf and kstrto* functions that are located
-> in the different modules. This patch makes TOLOWER macro public.
-> However, it's good idea to not use the macro outside of mentioned
-> functions.
-
-> --- a/include/linux/kernel.h
-> +++ b/include/linux/kernel.h
-
-> +/* Works only for digits and letters, but small and fast */
-> +#define TOLOWER(x) ((x) | 0x20)
-
 > --- a/lib/kstrtox.c
 > +++ b/lib/kstrtox.c
-> @@ -19,11 +19,6 @@
->  #include <linux/types.h>
->  #include <asm/uaccess.h>
+> @@ -39,25 +39,18 @@ static int _kstrtoull(const char *s, unsigned int base, unsigned long long *res)
+>        acc = 0;
+>        ok = 0;
+>        while (*s) {
+> -               unsigned int val;
+> +               int val;
 >
-> -static inline char _tolower(const char c)
-> -{
-> -       return c | 0x20;
-> -}
+> -               if ('0' <= *s && *s <= '9')
+> -                       val = *s - '0';
+> -               else if ('a' <= TOLOWER(*s) && TOLOWER(*s) <= 'f')
+> -                       val = TOLOWER(*s) - 'a' + 10;
+> -               else if (*s == '\n' && *(s + 1) == '\0')
+> +               if (unlikely(*s == '\n' && *(s + 1) == '\0'))
+>                        break;
+> -               else
+> -                       return -EINVAL;
+>
+> -               if (val >= base)
+> +               val = hex_to_bin(*s++);
+> +               if (val >= base || val < 0)
+>                        return -EINVAL;
+>                if (acc > div_u64(ULLONG_MAX - val, base))
+>                        return -ERANGE;
+>                acc = acc * base + val;
+>                ok = 1;
+> -
+> -               s++;
+>        }
+>        if (!ok)
+>                return -EINVAL;
+
+1. unlikely() and s++ move don't have anything to do with changes
+2. I don't understand desire to use some half-thought out API,
+   in fact, restricting to radix 16 is arbitrary.
+   Without such restriction hex_to_bin doesn't make sense.
