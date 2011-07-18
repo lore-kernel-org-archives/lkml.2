@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752522Ab1GRToM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 15:44:12 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:42329 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751248Ab1GRToK (ORCPT
+	id S1753248Ab1GRTod (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 15:44:33 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55387 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751402Ab1GRTob convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 15:44:10 -0400
-Subject: Re: [PATCH] init: Support mounting devices from kernel command line
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Michael Tokarev <mjt@tls.msk.ru>, Sasha Levin <levinsasha928@gmail.com>,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Avi Kivity <avi@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        linux-fsdevel@vger.kernel.org
-In-Reply-To: <CAOJsxLFEBknf8m5k6XOG=by_-avWT5P+ScoBBHfO0sgZbo_kSA@mail.gmail.com>
-References: <1310979967-13470-1-git-send-email-levinsasha928@gmail.com>
-	 <CAOJsxLG9h_L8x6-W67bMT1ObQKc=ZoLUKO8ocY4QQs=0rhw5ZQ@mail.gmail.com>
-	 <4E2423C4.6090906@msgid.tls.msk.ru>
-	 <CAOJsxLFEBknf8m5k6XOG=by_-avWT5P+ScoBBHfO0sgZbo_kSA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Jul 2011 14:44:06 -0500
-Message-ID: <1311018246.3531.32.camel@mulgrave>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Mon, 18 Jul 2011 15:44:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <1311016856.3648.15.camel@localhost.localdomain>
+References: <1310977597-9666-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<201107182041.EHB78622.VOFSHFMOOFtLJQ@I-love.SAKURA.ne.jp>
+	<1310991796.3903.6.camel@smile>
+	<201107182148.AGD21306.FOLtJVMSOOFQHF@I-love.SAKURA.ne.jp>
+	<1311012230.3193.35.camel@localhost.localdomain>
+	<CAHp75VcXNQKej_n4cOB8-gYDSL8MuGrv=Fs8=zdEKGp53DCtSA@mail.gmail.com>
+	<1311016856.3648.15.camel@localhost.localdomain>
+Date: Mon, 18 Jul 2011 22:44:29 +0300
+Message-ID: <CAHp75VeQSSoW6u-LGdhoNf_mh7WP5076bpzygf710Ro8aj1+Cg@mail.gmail.com>
+Subject: Re: [PATCH] Add error check to hex2bin().
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        linux-security-module@vger.kernel.org,
+        andriy.shevchenko@linux.intel.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-07-18 at 15:27 +0300, Pekka Enberg wrote:
-> On Mon, Jul 18, 2011 at 3:15 PM, Michael Tokarev <mjt@tls.msk.ru> wrote:
-> >>> In /tools/kvm we are interested in such feature to allow us to automatically
-> >>> mount user home directory using virtio-9p from the host to the guest
-> >>> filesystem under '/hostfs'.
-> >
-> > Can't the same be done within initramfs just as easy?
-> >
-> > Long time ago when initramfs first appeared the plan was to,
-> > more or less, move all that mounting and root= handling
-> > functionality to userspae, and here we're adding more
-> > to kernel.  To me that sounds backwards...
-> 
-> Well, we can currently boot distro images using custom kernel combined
-> with distro initramfs. I'm not sure how we can inject our mount point
-> to initramfs as easily.
+On Mon, Jul 18, 2011 at 10:20 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
 
-Actually, I think it can.  An initramfs is designed as an effective root
-booting system that runs from /sbin/init, does it's stuff like driver
-loading and device finding, mounts the real root and pivots to it before
-executing /sbin/init.
+>> > We probably don't need to define a separate 'safe' function.
+>> There is an opponent on any  approach. Although, small and fast error
+>> route could be good.
 
-It strikes me, therefore, that it's fairly easy to insert another initrd
-at the beginning of that process, so you alter the kernel to boot with
-virt_initrd as the initramfs.  It would prepare all your mount points
-(or muck with the parameters so they'd get mounted by the next initrd)
-and load any virt drivers, then take the next initrd into a tempfs,
-pivot to it and exec /sbin/init.
+> As nothing but trusted/encrypted keys is using hex2bin, it shouldn't be
+> a problem.  :-)
+The key word "until now". But people will start to use anything which
+has public API, won't they?
 
-That would seem to work without needing any kernel patches at all.
+>  I'll update trusted/encrypted keys to check the return
+> code.
+Actually another question shall we add __must_check to the prototype or not?
 
-James
-
-> I don't think it's backwards progress but then again, I don't really
-> use initramfs or modules for that matter so maybe I'm just old
-> fashioned.
-
-
+-- 
+With Best Regards,
+Andy Shevchenko
