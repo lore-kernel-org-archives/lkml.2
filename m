@@ -1,60 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756539Ab1GRCBo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jul 2011 22:01:44 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:40707 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756500Ab1GRCBm (ORCPT
+	id S932107Ab1GRCIZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jul 2011 22:08:25 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:60918 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756316Ab1GRCIX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jul 2011 22:01:42 -0400
-Message-ID: <4E239400.30308@gmail.com>
-Date: Sun, 17 Jul 2011 21:01:36 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
+	Sun, 17 Jul 2011 22:08:23 -0400
+Date: Mon, 18 Jul 2011 03:08:18 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Hugh Dickins <hughd@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] vfs: fix race in rcu lookup of pruned dentry
+Message-ID: <20110718020818.GW11013@ZenIV.linux.org.uk>
+References: <alpine.LSU.2.00.1107171356480.3175@sister.anvils>
+ <CA+55aFw5LhGq-a6mAhgZbGP2FJ+tnV9HRxKoiFuVYbttOo2tNw@mail.gmail.com>
+ <20110717231610.GR11013@ZenIV.linux.org.uk>
+ <CA+55aFxEGKgx+_xy+Lnt=84wRzE9TyznL3VCNSqWs7HC_H35_A@mail.gmail.com>
+ <alpine.LSU.2.00.1107171641130.1274@sister.anvils>
+ <20110718002524.GU11013@ZenIV.linux.org.uk>
+ <alpine.LSU.2.00.1107171740260.1327@sister.anvils>
 MIME-Version: 1.0
-To: linux@arm.linux.org.uk
-CC: Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@secretlab.ca>,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Barry Song <21cnbao@gmail.com>, workgroup.linux@csr.com,
-        Olof Johansson <olof@lixom.net>, tglx@linutronix.de,
-        weizeng.he@csr.com
-Subject: Re: [PATCH v4 2/2] ARM: l2x0: Add OF based initialization
-References: <1309984979-8847-1-git-send-email-robherring2@gmail.com> <1309984979-8847-2-git-send-email-robherring2@gmail.com> <20110706210237.GB5371@ponder.secretlab.ca> <201107062326.53737.arnd@arndb.de>
-In-Reply-To: <201107062326.53737.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1107171740260.1327@sister.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell,
+On Sun, Jul 17, 2011 at 06:13:34PM -0700, Hugh Dickins wrote:
 
-On 07/06/2011 04:26 PM, Arnd Bergmann wrote:
-> On Wednesday 06 July 2011 23:02:37 Grant Likely wrote:
->>
->> On Wed, Jul 06, 2011 at 03:42:59PM -0500, Rob Herring wrote:
->>> From: Rob Herring <rob.herring@calxeda.com>
->>>
->>> This adds probing for ARM L2x0 cache controllers via device tree. Support
->>> includes the L210, L220, and PL310 controllers. The binding allows setting
->>> up cache RAM latencies and filter addresses (PL310 only).
->>>
->>> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
->>
->> Acked-by: Grant Likely <grant.likely@secretlab.ca>
->>
->> By rights, this should go via the arm tree, but it depends on patches
->> that are already in devicetree/next.  Arnd, how do you want to handle
->> this?  I want to avoid rebasing devicetree/next.
-> 
-> It's outside of the scope of the arm-soc tree really, the l2x0 code
-> is clearly core arm stuff, so it belongs into Russell's tree.
-> 
-> I think it's best if Russell can provide an Ack for this and you
-> put it in the tree that already has the dependencies.
-> 
+> And in the genuine negative dentry case: at present (with or without
+> my or Linus's patches) there is no final nd->seq check, is there?
 
-Do you have any objection to this patch or Grant taking it in his tree?
+For stat() - no, there isn't.  We really bail out with -ENOENT, no matter
+what.  Racy, which is what you are hitting.
 
-Rob
+> Having found a negative dentry, we just get out at that point with
+> -ENOENT.  Now, it's true that there might be a race in which the
+> negative dentry is being made positive just as we're getting out;
+> but since we're not digging in any deeper, that seems to me just
+> a natural inevitable race, nothing to be guarded against.
+>
+> Whereas your "if (!*inode) goto unlazy;" is adding an additional
+> sequence check, isn't it?  Is that a race you see as important?
+> If so, it is a different matter than I was ever considering.
+
+Umm...  I really don't think that trying to avoid that ->d_seq comparison
+is worth doing.  I understand your point, but... IMO it's safer to leave
+->d_inode cleaning as-is, at least for now.  Hell knows; I'd be a lot
+more optimistic if fs/dcache.c had been in better shape.  As it is, *and*
+considering that we are within a spitting distance from -final...
+
+It's not as if we'd been talking about a heavy contention or cacheline
+bouncing here, let alone doing ->lookup().  I'm not entirely convinced
+that it's a valid optimization in the first place (probably is, but I'm
+seriously scared by the complexity we already have there), and I'm really
+not fond of the idea of dealing with whatever subtle crap we might
+discover with Linus' patch.  Again, dcache is not in a healthy shape
+right now; at this point dumb and straightforward is, IMO, better than
+subtle and risking to step on toes of very odd code out there.
+
+Hell, stuff that walks towards root with just rcu_read_lock, checking
+->d_inode as it goes and making assumptions about the lifecycle
+stages of the dentries it sees is not even all that weird, compared to
+the code actually in there ;-/
+
+Once we are done with code audit, sure, I'm fine with ->d_inode being
+kept until dentry is actually freed.  Any code that relies on that thing
+being cleared is asking for trouble and should be rewritten anyway.
+The only thing is, it needs to be found before we rewrite it...
+
+Speaking of weird code - could somebody explain what the deuce is going
+on in dget_parent()?
+        rcu_read_lock();
+        ret = dentry->d_parent;
+        if (!ret) {
+                rcu_read_unlock();
+                goto out; 
+        }
+in the very beginning looks wrong - we *never* have NULL ->d_parent on
+dentries that might be seen by anyone; d_alloc(NULL, name) callers all
+set ->d_parent to dentry itself ASAP and we never put NULL there afterwards.
+
+What the hell is going on there?  Note that callers of dget_parent() will
+be really unimpressed by getting NULL from it; most of them will cheerfully
+dereference what they get.  It seems to be Nick's change; is there anybody
+who would remember reasons for it?
