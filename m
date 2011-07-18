@@ -1,89 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756672Ab1GRMyl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 08:54:41 -0400
-Received: from ftcsun4.faraday-tech.com ([60.248.181.187]:56336 "EHLO
-	ftcsun4.faraday.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752264Ab1GRMyj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 08:54:39 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain; charset="big5"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH 4/5] fusb300_udc: Add missing breaks in switch/case
-Date: Mon, 18 Jul 2011 20:54:32 +0800
-Message-ID: <B3F95056718EDE47B73D925D2FF34506782CB0@EX1.faraday.com.tw>
-In-Reply-To: <20110718083640.GB2837@legolas.emea.dhcp.ti.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH 4/5] fusb300_udc: Add missing breaks in switch/case
-thread-index: AcxFJdb0C9Emr+OcRuCNiADL/09UZwAIufng
-References: <cover.1310289795.git.joe@perches.com> 
-    <08f6dd600dbf588e87734b3a6b33d897cd253fe3.1310289795.git.joe@perches.com> 
-    <20110714080830.GA7149@linutronix.de> 
-    <B3F95056718EDE47B73D925D2FF34506782BC2@EX1.faraday.com.tw> 
-    <20110714103624.GG7149@linutronix.de> 
-    <B3F95056718EDE47B73D925D2FF34506782BDB@EX1.faraday.com.tw> 
-    <20110718083640.GB2837@legolas.emea.dhcp.ti.com>
-From: =?big5?B?V2VuZHkgWXVhbi1Ic2luIENoZW4os6+kuMTJKQ==?= 
-	<yhchen@faraday-tech.com>
-To: <balbi@ti.com>
-Cc: "Sebastian Andrzej Siewior" <bigeasy@linutronix.de>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, "Joe Perches" <joe@perches.com>
+	id S1751291Ab1GRM6Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 08:58:25 -0400
+Received: from mga09.intel.com ([134.134.136.24]:36730 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750698Ab1GRM6Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 08:58:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,222,1309762800"; 
+   d="scan'208";a="27110752"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+Subject: [PATCHv2 1/2] lib: make _tolower() public
+Date: Mon, 18 Jul 2011 15:57:53 +0300
+Message-Id: <9ebc58c68603c4a5d084e77d355b77dc72225a3f.1310993826.git.andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <CACVxJT-0=cpieN52g2LZ1W+PPmpL-kR9nHCk53bBSR=Js1cbRA@mail.gmail.com>
+References: <CACVxJT-0=cpieN52g2LZ1W+PPmpL-kR9nHCk53bBSR=Js1cbRA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This function is required by *printf and kstrto* functions that are located in
+the different modules. This patch makes _tolower() public. However, it's good
+idea to not use the helper outside of mentioned functions.
 
-> >>>diff --git a/drivers/usb/gadget/fusb300_udc.c
-> >>>b/drivers/usb/gadget/fusb300_udc.c
-> >>>index 06353e7..453bc0f 100644
-> >>>--- a/drivers/usb/gadget/fusb300_udc.c
-> >>>+++ b/drivers/usb/gadget/fusb300_udc.c
-> >>>@@ -688,10 +688,13 @@ static void fusb300_cmp_dbg_fifo(struct fusb300_ep *ep,
-> >>> 	switch (length % 4) {
-> >>> 	case 1:
-> >>> 		golden_value = *tmp;
-> >>>+		break;
-> >>> 	case 2:
-> >>> 		golden_value = *tmp | *(tmp + 1) << 8;
-> >>>+		break;
-> >>> 	case 3:
-> >>> 		golden_value = *tmp | *(tmp + 1) << 8 | *(tmp + 2) << 16;
-> >>>+		break;
-> >>> 	default:
-> >>> 		break;
-> >>> 
-> >
-> >>That is in an #if 0 block. Maybe we should remove the #if 0? Yuan-Hsin?
-> >
-> >It's ok to remove the #if 0. But the warning will occur while compling.
-> 
-> By removing the #if 0 block I meant to remove the unused functions
-> fusb300_cmp_dbg_fifo() and fusb300_dbg_fifo(). There should be no warning then.
-> Are you okey with this? Are those function required?
-> 
-> These funtions are used for debugging. I think it's ok to remove them. Thanks.
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
+---
+ include/linux/kernel.h |    6 ++++++
+ lib/kstrtox.c          |    5 -----
+ lib/vsprintf.c         |   23 ++++++++++-------------
+ 3 files changed, 16 insertions(+), 18 deletions(-)
 
-maybe make a debugfs interface instead ?
-
-These functions were used to debug unstable hw fifo while developing fusb300.  It's much more stable now.
-So these functions can be removed. Thanks for your advice.
-
-Yuan-Hsin
-
-********************* Confidentiality Notice ************************
-This electronic message and any attachments may contain
-confidential and legally privileged information or
-information which is otherwise protected from disclosure.
-If you are not the intended recipient,please do not disclose
-the contents, either in whole or in part, to anyone,and
-immediately delete the message and any attachments from
-your computer system and destroy all hard copies.
-Thank you for your cooperation.
-***********************************************************************
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 567a6f7..b66d937 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -189,6 +189,12 @@ NORET_TYPE void complete_and_exit(struct completion *, long)
+ 	ATTRIB_NORET;
+ 
+ /* Internal, do not use. */
++static inline char _tolower(const char c)
++{
++       return c | 0x20;
++}
++
++/* Internal, do not use. */
+ int __must_check _kstrtoul(const char *s, unsigned int base, unsigned long *res);
+ int __must_check _kstrtol(const char *s, unsigned int base, long *res);
+ 
+diff --git a/lib/kstrtox.c b/lib/kstrtox.c
+index 2dbae88..5e06675 100644
+--- a/lib/kstrtox.c
++++ b/lib/kstrtox.c
+@@ -19,11 +19,6 @@
+ #include <linux/types.h>
+ #include <asm/uaccess.h>
+ 
+-static inline char _tolower(const char c)
+-{
+-	return c | 0x20;
+-}
+-
+ static int _kstrtoull(const char *s, unsigned int base, unsigned long long *res)
+ {
+ 	unsigned long long acc;
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index 75bace7..d7222a9 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -31,13 +31,10 @@
+ #include <asm/div64.h>
+ #include <asm/sections.h>	/* for dereference_function_descriptor() */
+ 
+-/* Works only for digits and letters, but small and fast */
+-#define TOLOWER(x) ((x) | 0x20)
+-
+ static unsigned int simple_guess_base(const char *cp)
+ {
+ 	if (cp[0] == '0') {
+-		if (TOLOWER(cp[1]) == 'x' && isxdigit(cp[2]))
++		if (_tolower(cp[1]) == 'x' && isxdigit(cp[2]))
+ 			return 16;
+ 		else
+ 			return 8;
+@@ -59,13 +56,13 @@ unsigned long long simple_strtoull(const char *cp, char **endp, unsigned int bas
+ 	if (!base)
+ 		base = simple_guess_base(cp);
+ 
+-	if (base == 16 && cp[0] == '0' && TOLOWER(cp[1]) == 'x')
++	if (base == 16 && cp[0] == '0' && _tolower(cp[1]) == 'x')
+ 		cp += 2;
+ 
+ 	while (isxdigit(*cp)) {
+ 		unsigned int value;
+ 
+-		value = isdigit(*cp) ? *cp - '0' : TOLOWER(*cp) - 'a' + 10;
++		value = isdigit(*cp) ? *cp - '0' : _tolower(*cp) - 'a' + 10;
+ 		if (value >= base)
+ 			break;
+ 		result = result * base + value;
+@@ -1036,8 +1033,8 @@ precision:
+ qualifier:
+ 	/* get the conversion qualifier */
+ 	spec->qualifier = -1;
+-	if (*fmt == 'h' || TOLOWER(*fmt) == 'l' ||
+-	    TOLOWER(*fmt) == 'z' || *fmt == 't') {
++	if (*fmt == 'h' || _tolower(*fmt) == 'l' ||
++	    _tolower(*fmt) == 'z' || *fmt == 't') {
+ 		spec->qualifier = *fmt++;
+ 		if (unlikely(spec->qualifier == *fmt)) {
+ 			if (spec->qualifier == 'l') {
+@@ -1104,7 +1101,7 @@ qualifier:
+ 			spec->type = FORMAT_TYPE_LONG;
+ 		else
+ 			spec->type = FORMAT_TYPE_ULONG;
+-	} else if (TOLOWER(spec->qualifier) == 'z') {
++	} else if (_tolower(spec->qualifier) == 'z') {
+ 		spec->type = FORMAT_TYPE_SIZE_T;
+ 	} else if (spec->qualifier == 't') {
+ 		spec->type = FORMAT_TYPE_PTRDIFF;
+@@ -1262,7 +1259,7 @@ int vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
+ 			if (qualifier == 'l') {
+ 				long *ip = va_arg(args, long *);
+ 				*ip = (str - buf);
+-			} else if (TOLOWER(qualifier) == 'z') {
++			} else if (_tolower(qualifier) == 'z') {
+ 				size_t *ip = va_arg(args, size_t *);
+ 				*ip = (str - buf);
+ 			} else {
+@@ -1549,7 +1546,7 @@ do {									\
+ 			void *skip_arg;
+ 			if (qualifier == 'l')
+ 				skip_arg = va_arg(args, long *);
+-			else if (TOLOWER(qualifier) == 'z')
++			else if (_tolower(qualifier) == 'z')
+ 				skip_arg = va_arg(args, size_t *);
+ 			else
+ 				skip_arg = va_arg(args, int *);
+@@ -1855,8 +1852,8 @@ int vsscanf(const char *buf, const char *fmt, va_list args)
+ 
+ 		/* get conversion qualifier */
+ 		qualifier = -1;
+-		if (*fmt == 'h' || TOLOWER(*fmt) == 'l' ||
+-		    TOLOWER(*fmt) == 'z') {
++		if (*fmt == 'h' || _tolower(*fmt) == 'l' ||
++		    _tolower(*fmt) == 'z') {
+ 			qualifier = *fmt++;
+ 			if (unlikely(qualifier == *fmt)) {
+ 				if (qualifier == 'h') {
+-- 
+1.7.5.4
 
