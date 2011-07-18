@@ -1,250 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460Ab1GRSxY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 14:53:24 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:60370 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751010Ab1GRSxW (ORCPT
+	id S1753981Ab1GRSyI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 14:54:08 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:55056 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752468Ab1GRSyG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 14:53:22 -0400
-Date: Mon, 18 Jul 2011 11:52:37 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        kernel-hardening@lists.openwall.com,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC v2] implement SL*B and stack usercopy runtime checks
-Message-Id: <20110718115237.14d96c03.akpm@linux-foundation.org>
-In-Reply-To: <20110718183951.GA3748@albatros>
-References: <20110703111028.GA2862@albatros>
-	<CA+55aFzXEoTyK0Sm-y=6xGmLMWzQiSQ7ELJ2-WL_PrP3r44MSg@mail.gmail.com>
-	<20110718183951.GA3748@albatros>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 18 Jul 2011 14:54:06 -0400
+MIME-Version: 1.0
+In-Reply-To: <4E1B3A1D.2050400@fusionio.com>
+References: <CAFR8uec5MxvHEWS=hgRXo1eunjQqWrpPCVXthdGMfWR+Yitw_A@mail.gmail.com>
+	<4E1B37B1.9030608@fusionio.com>
+	<CAFR8ueetLzSwTEc7D1zW4Yhd8t8iFbKvjJ07onWVQJbhzSOXLQ@mail.gmail.com>
+	<4E1B3A1D.2050400@fusionio.com>
+Date: Mon, 18 Jul 2011 11:54:05 -0700
+Message-ID: <CAFR8ued8s_V0dqxgcFfeXbzm8VrNL5eE90gqHpk-RvW8frL7QA@mail.gmail.com>
+Subject: Re: [PATCH]: block: try-2 (modified): Initialize bi_rw in mpage so
+ bio_add can make use of it.
+From: Muthu Kumar <muthu.lkml@gmail.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Jul 2011 22:39:51 +0400
-Vasiliy Kulikov <segoon@openwall.com> wrote:
+Jens,
+Here is the diff stats. Its changing more files than I expected. Let
+me know what you think... (If this is OK I can also split and send the
+patches for review).
 
->   */
->  #define access_ok(type, addr, size) (likely(__range_not_ok(addr, size) == 0))
->  
-> +#if defined(CONFIG_FRAME_POINTER)
+FYI:
+muthu@sakthi linux-2.6-head]$ wc -l blk-bio-init-rw-before-add-page.patch
+1610 blk-bio-init-rw-before-add-page.patch
 
-#ifdef is conventional in this case
+---------------------------
+ block/blk-core.c                    |    2 +-
+ block/blk-flush.c                   |    2 +-
+ block/blk-lib.c                     |    4 +-
+ block/blk-map.c                     |   12 ++++-----
+ drivers/block/drbd/drbd_actlog.c    |    3 +-
+ drivers/block/drbd/drbd_bitmap.c    |    3 +-
+ drivers/block/drbd/drbd_receiver.c  |    3 +-
+ drivers/block/floppy.c              |    2 +-
+ drivers/block/loop.c                |    2 +-
+ drivers/block/osdblk.c              |    2 +-
+ drivers/block/pktcdvd.c             |   15 +++++------
+ drivers/block/virtio_blk.c          |    2 +-
+ drivers/block/xen-blkback/blkback.c |    4 +-
+ drivers/md/dm-crypt.c               |    5 +--
+ drivers/md/dm-io.c                  |    2 +-
+ drivers/md/dm.c                     |   10 +++-----
+ drivers/md/md.c                     |   17 +++++++------
+ drivers/md/md.h                     |    2 +-
+ drivers/md/raid1.c                  |    7 +++++-
+ drivers/md/raid10.c                 |    7 +++++-
+ drivers/md/raid5.c                  |    2 +-
+ drivers/scsi/osd/osd_initiator.c    |   21 ++++++----------
+ drivers/target/target_core_iblock.c |    3 +-
+ fs/bio.c                            |   43 ++++++++++++++++++-----------------
+ fs/btrfs/compression.c              |   12 +++++-----
+ fs/btrfs/extent_io.c                |    8 +++---
+ fs/btrfs/extent_io.h                |    2 +-
+ fs/btrfs/inode.c                    |   21 +++++++++--------
+ fs/btrfs/scrub.c                    |    4 +-
+ fs/buffer.c                         |    2 +-
+ fs/direct-io.c                      |   12 +++++-----
+ fs/exofs/ios.c                      |    6 +++-
+ fs/ext4/page-io.c                   |    6 +++-
+ fs/gfs2/ops_fstype.c                |    6 +++-
+ fs/hfsplus/wrapper.c                |    2 +-
+ fs/jfs/jfs_logmgr.c                 |   12 ++++++---
+ fs/jfs/jfs_metapage.c               |    4 +-
+ fs/logfs/dev_bdev.c                 |   10 ++++----
+ fs/mpage.c                          |   11 +++++----
+ fs/nfs/objlayout/objio_osd.c        |    8 +++---
+ fs/nilfs2/segbuf.c                  |    9 ++++---
+ fs/ocfs2/cluster/heartbeat.c        |    9 ++++---
+ fs/xfs/linux-2.6/xfs_aops.c         |    8 ++++--
+ fs/xfs/linux-2.6/xfs_buf.c          |    2 +-
+ include/linux/bio.h                 |   10 ++++----
+ kernel/power/block_io.c             |    2 +-
+ mm/bounce.c                         |    2 +-
+ mm/page_io.c                        |   14 ++++++-----
+ 48 files changed, 187 insertions(+), 170 deletions(-)
+-----------------------------------
 
-> +/*
-> + * MUST be always_inline to correctly count stack frame numbers.
-> + *
-> + * low ----------------------------------------------> high
-> + * [saved bp][saved ip][args][local vars][saved bp][saved ip]
-> + *		       ^----------------^
-> + *		  allow copies only within here
-> +*/
-> +#undef arch_check_object_on_stack_frame
-> +inline static __attribute__((always_inline))
 
-static inline __always_inline
-
-> +bool arch_check_object_on_stack_frame(const void *stack,
-> +	     const void *stackend, const void *obj, unsigned long len)
-> +{
-> +	const void *frame = NULL;
-> +	const void *oldframe;
-> +
-> +	/*
-> +	 * Get the kernel_access_ok() caller frame.
-> +	 * __builtin_frame_address(0) returns kernel_access_ok() frame
-> +	 * as arch_ and stack_ are inline and kernel_ is noinline.
-> +	 */
-> +	oldframe = __builtin_frame_address(0);
-> +	if (oldframe)
-> +		frame = __builtin_frame_address(1);
-> +
-> +	while (stack <= frame && frame < stackend) {
-> +		/*
-> +		 * If obj + len extends past the last frame, this
-> +		 * check won't pass and the next frame will be 0,
-> +		 * causing us to bail out and correctly report
-> +		 * the copy as invalid.
-> +		 */
-> +		if (obj + len <= frame) {
-> +			/* EBP + EIP */
-> +			int protected_regs_size = 2*sizeof(void *);
-
-size_t?
-
-> +			if (obj >= oldframe + protected_regs_size)
-> +				return true;
-> +			return false;
-> +		}
-> +		oldframe = frame;
-> +		frame = *(const void * const *)frame;
-> +	}
-> +	return false;
-> +}
-> +#endif
-> +
->  /*
->   * The exception table consists of pairs of addresses: the first is the
->   * address of an instruction that is allowed to fault, and the second is
+On Mon, Jul 11, 2011 at 10:59 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
+> On 2011-07-11 19:52, Muthu Kumar wrote:
+>>> For this particular case, doing it when the bio is allocated makes more
+>>> sense. That will avoid a similar error in there in the future.
+>>>
+>>
+>> Sounds good. Thanks. How about for other cases that alloc a new bio
+>> and do bio_add_page() - like blkdev_issue_zeroout() and similar.
+>> Should we add there too?
 >
-> ...
+> Good question, ideally the allocator should be passed in the rw argument
+> since we need it before even submitting it for the merge cases. We don't
+> have _that_ many callers of bio_alloc() or bio_kmalloc(), so probably
+> the best option is just to bite the bullet and change the prototypes to
+> take the 'rw' argument there. Oh, and the bioset variants, too.
+> bio_init() should be passed the 'rw' argument from the allcators, so we
+> catch any private use of that, too.
 >
-> @@ -205,11 +209,30 @@ static inline unsigned long __must_check copy_from_user(void *to,
->  {
->  	int sz = __compiletime_object_size(to);
->  
-> -	if (likely(sz == -1 || sz >= n))
-> -		n = _copy_from_user(to, from, n);
-> -	else
-> +	if (likely(sz == -1 || sz >= n)) {
-> +		if (kernel_access_ok(to, n))
-> +			n = _copy_from_user(to, from, n);
-> +	} else {
->  		copy_from_user_overflow();
-> +	}
-> +
-> +	return n;
-> +}
-> +
-> +#undef copy_from_user_uncheched
-
-typo
-
-> +static inline unsigned long __must_check copy_from_user_uncheched(void *to,
-
-typo
-
-> +					  const void __user *from,
-> +					  unsigned long n)
-> +{
-> +	return _copy_from_user(to, from, n);
-> +}
->  
-> +#undef copy_to_user_uncheched
-
-typo
-
-> +static inline unsigned long copy_to_user_unchecked(void __user *to,
-> +     const void *from, unsigned long n)
-> +{
-> +	if (access_ok(VERIFY_WRITE, to, n))
-> +		n = __copy_to_user(to, from, n);
->  	return n;
->  }
->  
-> diff --git a/arch/x86/include/asm/uaccess_64.h b/arch/x86/include/asm/uaccess_64.h
-> index 1c66d30..10c5a0a 100644
-> --- a/arch/x86/include/asm/uaccess_64.h
-> +++ b/arch/x86/include/asm/uaccess_64.h
-> @@ -50,8 +50,10 @@ static inline unsigned long __must_check copy_from_user(void *to,
->  	int sz = __compiletime_object_size(to);
-
-size_t? (ssize_t?)
-
->  	might_fault();
-> -	if (likely(sz == -1 || sz >= n))
-> -		n = _copy_from_user(to, from, n);
-> +	if (likely(sz == -1 || sz >= n)) {
-> +		if (kernel_access_ok(to, n))
-> +			n = _copy_from_user(to, from, n);
-> +	}
->  #ifdef CONFIG_DEBUG_VM
->  	else
->  		WARN(1, "Buffer overflow detected!\n");
+> --
+> Jens Axboe
 >
-> ...
 >
-> --- a/mm/maccess.c
-> +++ b/mm/maccess.c
-> @@ -3,8 +3,11 @@
->   */
->  #include <linux/module.h>
->  #include <linux/mm.h>
-> +#include <linux/sched.h>
->  #include <linux/uaccess.h>
->  
-> +extern bool slab_access_ok(const void *ptr, unsigned long len);
-
-no externs in .c - use a header
-
-> +
->  /**
->   * probe_kernel_read(): safely attempt to read from a location
->   * @dst: pointer to the buffer that shall take the data
-> @@ -60,3 +63,56 @@ long __probe_kernel_write(void *dst, const void *src, size_t size)
->  	return ret ? -EFAULT : 0;
->  }
->  EXPORT_SYMBOL_GPL(probe_kernel_write);
-> +
-> +#ifdef CONFIG_DEBUG_RUNTIME_USER_COPY_CHECKS
-> +/*
-> + * stack_access_ok() checks whether object is on the stack and
-> + * whether it fits in a single stack frame (in case arch allows
-> + * to learn this information).
-> + *
-> + * Returns true in cases:
-> + * a) object is not a stack object at all
-> + * b) object is located on the stack and fits in a single frame
-> + *
-> + * MUST be inline not to confuse arch_check_object_on_stack_frame.
-> + */
-> +inline static bool __attribute__((always_inline))
-
-__always_inline
-
-> +stack_access_ok(const void *obj, unsigned long len)
-> +{
-> +	const void * const stack = task_stack_page(current);
-> +	const void * const stackend = stack + THREAD_SIZE;
-> +
-> +	/* Does obj+len overflow vm space? */
-> +	if (unlikely(obj + len < obj))
-> +		return false;
-> +
-> +	/* Does [obj; obj+len) at least touch our stack? */
-> +	if (unlikely(obj + len <= stack || stackend <= obj))
-> +		return true;
-> +
-> +	/* Does [obj; obj+len) overflow/underflow the stack? */
-> +	if (unlikely(obj < stack || stackend < obj + len))
-> +		return false;
-> +
-> +	return arch_check_object_on_stack_frame(stack, stackend, obj, len);
-> +}
-> +
-> +noinline bool __kernel_access_ok(const void *ptr, unsigned long len)
-
-noinline seems unneeded
-
-> +{
-> +	if (!slab_access_ok(ptr, len)) {
-> +		pr_alert("slab_access_ok failed, ptr = %p, length = %lu\n",
-> +			ptr, len);
-> +		dump_stack();
-> +		return false;
-> +	}
-> +	if (!stack_access_ok(ptr, len)) {
-> +		pr_alert("stack_access_ok failed, ptr = %p, length = %lu\n",
-> +			ptr, len);
-> +		dump_stack();
-> +		return false;
-> +	}
-> +
-> +	return true;
-> +}
->
-> ...
->
-
