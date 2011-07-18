@@ -1,167 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756817Ab1GRNNc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 09:13:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28235 "EHLO mx1.redhat.com"
+	id S1756369Ab1GRNJL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 09:09:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52715 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756405Ab1GRNJM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 09:09:12 -0400
+	id S1755753Ab1GRNJH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 09:09:07 -0400
 From: Prarit Bhargava <prarit@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, linux-watchdog@vger.kernel.org
-Subject: [PATCH 30/34] drivers/watchdog changes for SMBIOS and System Firmware
-Date: Mon, 18 Jul 2011 09:08:44 -0400
-Message-Id: <1310994528-26276-31-git-send-email-prarit@redhat.com>
+Cc: Prarit Bhargava <prarit@redhat.com>, eric.piel@tremplin-utc.net
+Subject: [PATCH 17/34] drivers/misc changes for SMBIOS and System Firmware
+Date: Mon, 18 Jul 2011 09:08:31 -0400
+Message-Id: <1310994528-26276-18-git-send-email-prarit@redhat.com>
 In-Reply-To: <1310994528-26276-1-git-send-email-prarit@redhat.com>
 References: <1310994528-26276-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As part of the new SMBIOS and System Firmware code:
+ part of the new SMBIOS and System Firmware code:
 
 - Replace old dmi* structures and functions with new sysfw* and smbios*
 structures and functions in individual drivers
-- cleanup sysfw_id lookup tables
+- cleanup of includes for dmi.h and mod_devicetable.h which were included in
+some files that did not need them
 
-Cc: linux-watchdog@vger.kernel.org
+Cc: eric.piel@tremplin-utc.net
 Signed-off-by: Prarit Bhargava <prarit@redhat.com>
 ---
- drivers/watchdog/hpwdt.c          |   16 +++++++++-------
- drivers/watchdog/ibmasr.c         |    9 +++------
- drivers/watchdog/sbc_fitpc2_wdt.c |   22 +++++++++++++++-------
- 3 files changed, 27 insertions(+), 20 deletions(-)
+ drivers/misc/eeprom/at24.c         |    1 -
+ drivers/misc/lis3lv02d/lis3lv02d.c |    1 -
+ drivers/misc/pch_phub.c            |   14 ++++++++++++--
+ 3 files changed, 12 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
-index 8cb2685..8849eac 100644
---- a/drivers/watchdog/hpwdt.c
-+++ b/drivers/watchdog/hpwdt.c
-@@ -28,7 +28,7 @@
- #include <linux/uaccess.h>
- #include <linux/watchdog.h>
- #ifdef CONFIG_HPWDT_NMI_DECODING
--#include <linux/dmi.h>
-+#include <linux/smbios.h>
- #include <linux/spinlock.h>
- #include <linux/nmi.h>
- #include <linux/kdebug.h>
-@@ -374,19 +374,19 @@ asm(".text                      \n\t"
-     ".previous");
+diff --git a/drivers/misc/eeprom/at24.c b/drivers/misc/eeprom/at24.c
+index ab1ad41..1e73630 100644
+--- a/drivers/misc/eeprom/at24.c
++++ b/drivers/misc/eeprom/at24.c
+@@ -16,7 +16,6 @@
+ #include <linux/delay.h>
+ #include <linux/mutex.h>
+ #include <linux/sysfs.h>
+-#include <linux/mod_devicetable.h>
+ #include <linux/log2.h>
+ #include <linux/bitops.h>
+ #include <linux/jiffies.h>
+diff --git a/drivers/misc/lis3lv02d/lis3lv02d.c b/drivers/misc/lis3lv02d/lis3lv02d.c
+index b928bc1..c48b955 100644
+--- a/drivers/misc/lis3lv02d/lis3lv02d.c
++++ b/drivers/misc/lis3lv02d/lis3lv02d.c
+@@ -24,7 +24,6 @@
  
- /*
-- *	dmi_find_cru
-+ *	smbios_find_cru
-  *
-  *	Routine Description:
-- *	This function checks whether or not a SMBIOS/DMI record is
-+ *	This function checks whether or not a SMBIOS/SMBIOS record is
-  *	the 64bit CRU info or not
-  */
--static void __devinit dmi_find_cru(const struct dmi_header *dm, void *dummy)
-+static int __devinit smbios_find_cru(const union smbios_struct *ss, void *dummy)
- {
- 	struct smbios_cru64_info *smbios_cru64_ptr;
- 	unsigned long cru_physical_address;
- 
--	if (dm->type == SMBIOS_CRU64_INFORMATION) {
--		smbios_cru64_ptr = (struct smbios_cru64_info *) dm;
-+	if (ss->header.type == SMBIOS_CRU64_INFORMATION) {
-+		smbios_cru64_ptr = (struct smbios_cru64_info *) &ss;
- 		if (smbios_cru64_ptr->signature == CRU_BIOS_SIGNATURE_VALUE) {
- 			cru_physical_address =
- 				smbios_cru64_ptr->physical_address +
-@@ -395,15 +395,17 @@ static void __devinit dmi_find_cru(const struct dmi_header *dm, void *dummy)
- 				smbios_cru64_ptr->double_length);
- 			set_memory_x((unsigned long)cru_rom_addr & PAGE_MASK,
- 				smbios_cru64_ptr->double_length >> PAGE_SHIFT);
-+			return SMBIOS_WALK_STOP;
- 		}
- 	}
-+	return SMBIOS_WALK_CONTINUE;
- }
- 
- static int __devinit detect_cru_service(void)
- {
- 	cru_rom_addr = NULL;
- 
--	dmi_walk(dmi_find_cru, NULL);
-+	smbios_walk(smbios_find_cru, NULL);
- 
- 	/* if cru_rom_addr has been set then we found a CRU service */
- 	return ((cru_rom_addr != NULL) ? 0 : -ENODEV);
-diff --git a/drivers/watchdog/ibmasr.c b/drivers/watchdog/ibmasr.c
-index 195e0f7..b8cc126 100644
---- a/drivers/watchdog/ibmasr.c
-+++ b/drivers/watchdog/ibmasr.c
-@@ -17,7 +17,7 @@
- #include <linux/timer.h>
- #include <linux/miscdevice.h>
- #include <linux/watchdog.h>
--#include <linux/dmi.h>
-+#include <linux/smbios.h>
- #include <linux/io.h>
- #include <linux/uaccess.h>
- 
-@@ -376,12 +376,9 @@ static int __init ibmasr_init(void)
- 	struct ibmasr_id *id;
- 	int rc;
- 
--	for (id = ibmasr_id_table; id->desc; id++) {
--		if (dmi_find_device(DMI_DEV_TYPE_OTHER, id->desc, NULL)) {
-+	for (id = ibmasr_id_table; id->desc; id++)
-+		if (smbios_is_onboard_device(id->desc, 0))
- 			asr_type = id->type;
--			break;
--		}
--	}
- 
- 	if (!asr_type)
- 		return -ENODEV;
-diff --git a/drivers/watchdog/sbc_fitpc2_wdt.c b/drivers/watchdog/sbc_fitpc2_wdt.c
-index d5d3994..0419e01 100644
---- a/drivers/watchdog/sbc_fitpc2_wdt.c
-+++ b/drivers/watchdog/sbc_fitpc2_wdt.c
-@@ -21,7 +21,7 @@
- #include <linux/fs.h>
+ #include <linux/kernel.h>
  #include <linux/init.h>
- #include <linux/moduleparam.h>
+-#include <linux/dmi.h>
+ #include <linux/module.h>
+ #include <linux/types.h>
+ #include <linux/platform_device.h>
+diff --git a/drivers/misc/pch_phub.c b/drivers/misc/pch_phub.c
+index 5fe79df..ecd2cb2 100644
+--- a/drivers/misc/pch_phub.c
++++ b/drivers/misc/pch_phub.c
+@@ -27,7 +27,7 @@
+ #include <linux/mutex.h>
+ #include <linux/if_ether.h>
+ #include <linux/ctype.h>
 -#include <linux/dmi.h>
 +#include <linux/sysfw.h>
- #include <linux/io.h>
- #include <linux/uaccess.h>
  
-@@ -198,17 +198,25 @@ static struct miscdevice fitpc2_wdt_miscdev = {
- 	.fops		= &fitpc2_wdt_fops,
- };
+ #define PHUB_STATUS 0x00		/* Status Register offset */
+ #define PHUB_CONTROL 0x04		/* Control Register offset */
+@@ -598,6 +598,16 @@ static ssize_t show_pch_mac(struct device *dev, struct device_attribute *attr,
+ 				mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+ }
  
-+static struct sysfw_id __initdata fitpc2_device_table[] = {
++static struct sysfw_id pcih_phub_quirk_id[] = {
 +	{
-+		.ident = "SBC-FITPC2 Watchdog",
++		 .ident = "CM-iTC",
 +		.matches = {
-+			SYSFW_MATCH(SYSFW_BOARD_NAME, "SBC-FITPC2"),
++			SYSFW_MATCH(SYSFW_BOARD_NAME, "CM-iTC"),
 +		},
 +	},
-+	{}
++	{},
 +};
 +
- static int __init fitpc2_wdt_init(void)
+ static ssize_t store_pch_mac(struct device *dev, struct device_attribute *attr,
+ 			     const char *buf, size_t count)
  {
- 	int err;
--	const char *brd_name;
-+	const struct sysfw_id *id;
+@@ -701,7 +711,7 @@ static int __devinit pch_phub_probe(struct pci_dev *pdev,
+ 					       CLKCFG_CANCLK_MASK);
  
--	brd_name = dmi_get_system_info(DMI_BOARD_NAME);
--
--	if (!brd_name || !strstr(brd_name, "SBC-FITPC2"))
-+	id = sysfw_callback(fitpc2_device_table);
-+	if (!id)
- 		return -ENODEV;
--
--	pr_info("%s found\n", brd_name);
-+	pr_info("%s found\n", id->ident);
- 
- 	if (!request_region(COMMAND_PORT, 1, WATCHDOG_NAME)) {
- 		pr_err("I/O address 0x%04x already in use\n", COMMAND_PORT);
+ 		/* quirk for CM-iTC board */
+-		if (strstr(dmi_get_system_info(DMI_BOARD_NAME), "CM-iTC"))
++		if (sysfw_callback(pcih_phub_quirk_id))
+ 			pch_phub_read_modify_write_reg(chip,
+ 						(unsigned int)CLKCFG_REG_OFFSET,
+ 						CLKCFG_UART_48MHZ | CLKCFG_BAUDDIV |
 -- 
 1.6.5.2
 
