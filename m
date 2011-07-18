@@ -1,169 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752789Ab1GROzD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 10:55:03 -0400
-Received: from mga11.intel.com ([192.55.52.93]:5449 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751520Ab1GROzC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 10:55:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,222,1309762800"; 
-   d="scan'208";a="29297803"
-Subject: Re: [PATCH v2 2/6] perf, x86: Add Intel Nehalem/Westmere uncore pmu
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1310998851.13765.106.camel@twins>
-References: <1310740503-15608-1-git-send-email-ming.m.lin@intel.com>
-	 <1310740503-15608-3-git-send-email-ming.m.lin@intel.com>
-	 <1310998851.13765.106.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Jul 2011 22:54:52 +0800
-Message-Id: <1311000892.2970.23.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1752104Ab1GRO4f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 10:56:35 -0400
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:30971 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751201Ab1GRO4e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 10:56:34 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: _d3y2UMVM1lQIRi9PPvZQTnaxTX01Ln7xgBctT_2MhU0vRt
+ n77KBMgcprJY6jxZWDPboLkkfVcULpj57WbxVzhyms7VGceSZRHDe3Hol8Lu
+ Idz6tNTkmC4J8M3zcj6qiKTyNdvw4hVycNhjFP4KBEnLr0sQQfccNj.sqrgZ
+ FmvwsvEViaJ856Jx9Iq9HtdYe295pJsX7lF46M2aTkuR31kI48aBbwXejMdi
+ x_KRi2eWpDfcV4TPXNHTk_qDk7hJxfBMOtHm_pufGKzzcKyc2pG4_Yv_R0Wg
+ Jti1g2QFenRCAg1sQtjM1zlCSVjV6sufe6EePBwZl9ObV9f8EydtB5eptSHy
+ mC.RzT0YpGsdvU6_uS2_AIZQf
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 18 Jul 2011 09:56:31 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Mel Gorman <mgorman@suse.de>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] mm: page allocator: Initialise ZLC for first zone
+ eligible for zone_reclaim
+In-Reply-To: <1310742540-22780-2-git-send-email-mgorman@suse.de>
+Message-ID: <alpine.DEB.2.00.1107180951390.30392@router.home>
+References: <1310742540-22780-1-git-send-email-mgorman@suse.de> <1310742540-22780-2-git-send-email-mgorman@suse.de>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-07-18 at 22:20 +0800, Peter Zijlstra wrote:
-> On Fri, 2011-07-15 at 14:34 +0000, Lin Ming wrote:
-> > Add Intel Nehalem/Westmere uncore pmu support.
-> > And also the generic data structure to support uncore pmu.
-> > 
-> > Uncore pmu interrupt does not work, so hrtimer is used to pull counters.
-> 
-> s/pull/poll/
+On Fri, 15 Jul 2011, Mel Gorman wrote:
 
-Will change.
+> Currently the zonelist cache is setup only after the first zone has
+> been considered and zone_reclaim() has been called. The objective was
+> to avoid a costly setup but zone_reclaim is itself quite expensive. If
+> it is failing regularly such as the first eligible zone having mostly
+> mapped pages, the cost in scanning and allocation stalls is far higher
+> than the ZLC initialisation step.
 
-> 
-> > diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> > new file mode 100644
-> > index 0000000..79a501e
-> > --- /dev/null
-> > +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> > @@ -0,0 +1,450 @@
-> > +#include "perf_event_intel_uncore.h"
-> > +
-> > +static DEFINE_PER_CPU(struct cpu_uncore_events, cpu_uncore_events);
-> > +static DEFINE_RAW_SPINLOCK(intel_uncore_lock);
-> > +
-> > +static bool uncore_pmu_initialized;
-> > +static struct intel_uncore_pmu intel_uncore_pmu __read_mostly;
-> > +
-> > +/*
-> > + * Uncore pmu interrupt does not work.
-> > + * Use hrtimer to pull the counter every 10 seconds.
-> > + */
-> > +#define UNCORE_PMU_HRTIMER_INTERVAL (10000000000ULL)
-> 
->  10 * NSEC_PER_SEC
+Would it not be easier to set zlc_active and allowednodes based on the
+zone having an active ZLC at the start of get_pages()?
 
-ok.
-
-> 
-> > +static int uncore_pmu_event_init(struct perf_event *event)
-> > +{
-> > +	struct hw_perf_event *hwc = &event->hw;
-> > +
-> > +	if (!uncore_pmu_initialized)
-> > +		return -ENOENT;
-> > +
-> > +	if (event->attr.type != uncore_pmu.type)
-> > +		return -ENOENT;
-> > +
-> > +	/*
-> > +	 * Uncore PMU does measure at all privilege level all the time.
-> > +	 * So it doesn't make sense to specify any exclude bits.
-> > +	 */
-> > +	if (event->attr.exclude_user || event->attr.exclude_kernel
-> > +	    || event->attr.exclude_hv || event->attr.exclude_idle)
-> > +		return -ENOENT;
-> 
-> -EINVAL, the PMU exists and is the right one, we just don't support
-> this.
-
-ok.
-
-> 
-> > +	/* Sampling not supported yet */
-> > +	if (hwc->sample_period)
-> > +		return -EINVAL;
-> > +
-> > +	return 0;
-> > +}
-> 
-> > +static int uncore_pmu_add(struct perf_event *event, int flags)
-> > +{
-> > +	struct cpu_uncore_events *cpuc = &__get_cpu_var(cpu_uncore_events);
-> > +	struct intel_uncore *uncore = cpuc->intel_uncore;
-> > +	int ret = 1;
-> > +	int i;
-> > +
-> > +	raw_spin_lock(&uncore->lock);
-> > +
-> > +	if (event->attr.config == UNCORE_FIXED_EVENT) {
-> > +		i = X86_PMC_IDX_FIXED;
-> > +		goto fixed_event;
-> 
-> Can the GP counters also count that event? If so, what happens if I
-> start 2 of them?
-
-For Nehalem, manual says "The fixed-function
-uncore counter increments at the rate of the U-clock when enabled."
-
-There is no same event in the Nehalem uncore events list.
-
-For SandyBridge, manual does not tell clearly what the fixed event
-counts. But I think it should be similar with Nehalem.
-
-> 
-> > +	}
-> > +
-> > +	for (i = 0; i < X86_PMC_IDX_FIXED; i++) {
-> > +fixed_event:
-> > +		if (!uncore->events[i]) {
-> > +			uncore->events[i] = event;
-> > +			uncore->n_events++;
-> > +			event->hw.idx = i;
-> > +			__set_bit(i, uncore->active_mask);
-> > +
-> > +			intel_uncore_pmu.hw_config(event);
-> > +
-> > +			if (flags & PERF_EF_START)
-> > +				uncore_pmu_start(event, flags);
-> > +			ret = 0;
-> > +			break;
-> > +		}
-> > +	}
-> > +
-> > +	if (uncore->n_events == 1) {
-> > +		uncore_pmu_start_hrtimer(uncore);
-> > +		intel_uncore_pmu.enable_all();
-> > +	}
-> > +
-> > +	raw_spin_unlock(&uncore->lock);
-> > +
-> > +	return ret;
-> > +}
-> 
-> uncore is fully symmetric and doesn't have any constraints other than
-> the fixed counter?
-
-SandyBridge uncore events 0x0180 and 0x0183 can only use counter 0.
-
-> 
-> I guess we can start with this, there is still the issue of mapping the
-> events to a single active cpu in the node, but I guess we can do that a
-> little later.
-
-Do we really need this mapping with uncore pmu interrupt disabled?
-
-Thanks for comments.
+Buffered_rmqueue is handling the situation of a zone with an ZLC in a
+weird way right now since it ignores the (potentially existing) ZLC
+for the first pass. zlc_setup() does a lot of things. So that is because
+there is a performance benefit?
 
 
