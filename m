@@ -1,86 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754136Ab1GRRUf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 13:20:35 -0400
-Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:23018 "HELO
-	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753787Ab1GRRUe (ORCPT
+	id S1754226Ab1GRRZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 13:25:27 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:61747 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753817Ab1GRRZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 13:20:34 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: pZL5RGYVM1m6kWZ1xWXrAsMvUY35oDjUHxuqkpgv_TSN1Pp
- a4ZgzjrmAvCjjkUxpu_u.lnvG319VGDMB9UykkSSNWqKVnLu1eDAMOIMhpXH
- ZIg8YIyeTI2bVxiQZV0h0T4XVbQvvLPeQKk9q6A4D6w0mxlbslX6xqV_ch7D
- 5deo01altrpSaq0t7clnwI4fKyIlbRU1yIEbBMPkFHdgJsLQWA1aMO247sUL
- Ulu9FOOks4nQO4c6xh0pr0FDQIHz3PnjF7wJ6KggyAF1GcFo.pWyPEamjl3v
- NwG_OvWbn9Ca7UWlT074D1kIhAb.xLacDcEwpUYBdBLN9KHct
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Mon, 18 Jul 2011 12:20:11 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Mel Gorman <mgorman@suse.de>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] mm: page allocator: Initialise ZLC for first zone
- eligible for zone_reclaim
-In-Reply-To: <20110718160552.GB5349@suse.de>
-Message-ID: <alpine.DEB.2.00.1107181208050.31576@router.home>
-References: <1310742540-22780-1-git-send-email-mgorman@suse.de> <1310742540-22780-2-git-send-email-mgorman@suse.de> <alpine.DEB.2.00.1107180951390.30392@router.home> <20110718160552.GB5349@suse.de>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 18 Jul 2011 13:25:26 -0400
+From: Wanlong Gao <wanlong.gao@gmail.com>
+To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Matthew Wilcox <matthew@wil.cx>, Wanlong Gao <wanlong.gao@gmail.com>,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: [PATCH] fs:update the NOTE of the file_operations structure
+Date: Tue, 19 Jul 2011 01:23:10 +0800
+Message-Id: <1311009790-10312-1-git-send-email-wanlong.gao@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Big kernel lock had been removed and setlease now use the lock_flocks()
+to hold a special spin lock file_lock_lock by Matthew.
 
+Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+---
+ include/linux/fs.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-On Mon, 18 Jul 2011, Mel Gorman wrote:
-
-> On Mon, Jul 18, 2011 at 09:56:31AM -0500, Christoph Lameter wrote:
-> > On Fri, 15 Jul 2011, Mel Gorman wrote:
-> >
-> > > Currently the zonelist cache is setup only after the first zone has
-> > > been considered and zone_reclaim() has been called. The objective was
-> > > to avoid a costly setup but zone_reclaim is itself quite expensive. If
-> > > it is failing regularly such as the first eligible zone having mostly
-> > > mapped pages, the cost in scanning and allocation stalls is far higher
-> > > than the ZLC initialisation step.
-> >
-> > Would it not be easier to set zlc_active and allowednodes based on the
-> > zone having an active ZLC at the start of get_pages()?
-> >
->
-> What do you mean by a zones active ZLC? zonelists are on a per-node,
-> not a per-zone basis (see node_zonelist) so a zone doesn't have an
-> active ZLC as such. If the zlc_active is set at the beginning of
-
-Look at get_page_from_freelist(): It sets
-zlc_active = 0 even through the zonelist under consideration may have a
-ZLC. zlc_active = 0 can also mean that the function has not bothered to
-look for the zlc information of the current zonelist.
-
-> get_page_from_freelist(), it implies that we are calling zlc_setup()
-> even when the watermarks are met which is unnecessary.
-
-Ok then that decision to not call zlc_setup() for performance reasons is
-what created the problem that you are trying to solve. In case that the
-first zones watermarks are okay we can avoid calling zlc_setup().
-
-What we do now have is checking for zlc_active in the loop just so that
-the first time around we do not call zlc_setup().
-
-
-We may be able to simplify the function by:
-
-1.  Checking for the special case that the first zone is ok and that we do
-not want to call zlc_setup before we get to the loop.
-
-2. Do the zlc_setup() before the loop.
-
-3. Remove the zlc_setup() code as you did from the loop as well as the
-checks for zlc_active. zlc_active becomes not necessary since a zlc
-is always available when we go through the loop.
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index b5b9792..fdeeb3f 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1541,7 +1541,7 @@ struct block_device_operations;
+ /*
+  * NOTE:
+  * all file operations except setlease can be called without
+- * the big kernel lock held in all filesystems.
++ * the special spin_lock file_lock_lock held in all filesystems.
+  */
+ struct file_operations {
+ 	struct module *owner;
+-- 
+1.7.4.1
 
