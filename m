@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753288Ab1GRIIb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 04:08:31 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:40501 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745Ab1GRII3 (ORCPT
+	id S1753463Ab1GRIRV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 04:17:21 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:45491 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753119Ab1GRIRU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 04:08:29 -0400
-Subject: [PATCH] platform-drivers-x86: samsung-q10: make dmi_check_callback
- return 1
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Frederick van der Wyck <fvanderwyck@gmail.com>,
-        Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org
+	Mon, 18 Jul 2011 04:17:20 -0400
+Subject: Re: vfsmount lock issues on very large ppc64 box
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Matthew Wilcox <matthew@wil.cx>, Anton Blanchard <anton@samba.org>,
+        npiggin@kernel.dk, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Tim Chen <tim.c.chen@linux.intel.com>
+In-Reply-To: <20110717084630.GC8006@one.firstfloor.org>
+References: <20110717105027.53cc3ca4@kryten>
+	 <20110717010427.GC5359@parisc-linux.org>
+	 <20110717084630.GC8006@one.firstfloor.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Jul 2011 16:08:21 +0800
-Message-ID: <1310976501.20944.1.camel@phoenix>
+Date: Mon, 18 Jul 2011 10:17:08 +0200
+Message-ID: <1310977028.5756.1.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We only care about if there is any successful match from the dmi table
-or no match at all, we can make dmi_check_system return immediately if
-we have a successful match instead of iterate thorough the whole table.
+Le dimanche 17 juillet 2011 à 10:46 +0200, Andi Kleen a écrit :
+> On Sat, Jul 16, 2011 at 07:04:28PM -0600, Matthew Wilcox wrote:
+> > On Sun, Jul 17, 2011 at 10:50:27AM +1000, Anton Blanchard wrote:
+> > > Looking closer, all of these calls are in pipefs and sockfs.
+> > > Since we never mount either filesystem they never get a long term
+> > > reference and we always end up in the very slow write brlock path
+> > > that takes a lock for each online CPU.
+> > > 
+> > > Here is a quick hack that takes a long term reference on pipefs
+> > > and sockfs which fixes the problem. Any thoughts on how we should
+> > > fix it properly?
+> > 
+> > I know Tim and Andi have been looking into this ... I forget what their
+> > fix was though.
+> 
+> Tim posted a patch, but it wasn't applied for unknown reasons.
+> 
+> https://lkml.org/lkml/2011/4/13/561
+> 
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/platform/x86/samsung-q10.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Could Tim respin his patch then ?
 
-diff --git a/drivers/platform/x86/samsung-q10.c b/drivers/platform/x86/samsung-q10.c
-index 54cf3d6..1e54ae7 100644
---- a/drivers/platform/x86/samsung-q10.c
-+++ b/drivers/platform/x86/samsung-q10.c
-@@ -127,7 +127,7 @@ static struct platform_device *samsungq10_device;
- static int __init dmi_check_callback(const struct dmi_system_id *id)
- {
- 	printk(KERN_INFO KBUILD_MODNAME ": found model '%s'\n", id->ident);
--	return 0;
-+	return 1;
- }
- 
- static struct dmi_system_id __initdata samsungq10_dmi_table[] = {
--- 
-1.7.4.1
+This problem hits even a two sockets machine.
 
 
 
