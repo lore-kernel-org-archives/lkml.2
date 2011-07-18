@@ -1,261 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751307Ab1GRGps (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 02:45:48 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:51728 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758Ab1GRGpq (ORCPT
+	id S1751415Ab1GRGrI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 02:47:08 -0400
+Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:54071 "EHLO
+	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751082Ab1GRGrG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 02:45:46 -0400
-Message-ID: <4E23D728.7090406@gmail.com>
-Date: Mon, 18 Jul 2011 14:48:08 +0800
-From: Shan Hai <haishan.bai@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	Mon, 18 Jul 2011 02:47:06 -0400
+From: Haojian Zhuang <hzhuang1@marvell.com>
+To: Leo Yan <leoy@marvell.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        Leo Yan <leoy@marvell.com>
+Date: Sun, 17 Jul 2011 23:46:42 -0700
+Subject: RE: [PATCH] ARM: mmp/brownstone: add regulator init data for max8925
+Thread-Topic: [PATCH] ARM: mmp/brownstone: add regulator init data for
+ max8925
+Thread-Index: AcxFERcPPl4dLwg4T6ynov0LwL5JbwABTYDA
+Message-ID: <25B60CDC2F704E4E9D88FFD52780CB4C05D4156856@SC-VEXCH1.marvell.com>
+References: <1310969410-451-1-git-send-email-leoy@marvell.com>
+In-Reply-To: <1310969410-451-1-git-send-email-leoy@marvell.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, paulus@samba.org,
-        tglx@linutronix.de, walken@google.com, dhowells@redhat.com,
-        cmetcalf@tilera.com, tony.luck@intel.com, akpm@linux-foundation.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] Fixup write permission of TLB on powerpc e500 core
-References: <1310717238-13857-1-git-send-email-haishan.bai@gmail.com>	 <1310717238-13857-2-git-send-email-haishan.bai@gmail.com>	 <1310725418.2586.309.camel@twins> <4E21A526.8010904@gmail.com>	 <1310860194.25044.17.camel@pasglop>	 <4b337921-d430-4b63-bc36-ad31753cf800@email.android.com>	 <1310912990.25044.203.camel@pasglop>  <1310944453.25044.262.camel@pasglop> <1310961691.25044.274.camel@pasglop>
-In-Reply-To: <1310961691.25044.274.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-On 07/18/2011 12:01 PM, Benjamin Herrenschmidt wrote:
-> On Mon, 2011-07-18 at 09:14 +1000, Benjamin Herrenschmidt wrote:
->
->> In fact, with such a flag, we could probably avoid the ifdef entirely, and
->> always go toward the PTE fixup path when called in such a fixup case, my gut
->> feeling is that this is going to be seldom enough not to hurt x86 measurably
->> but we'll have to try it out.
->>
->> That leads to that even less tested patch:
-> And here's a version that builds and fixes a bug or two
-> (still not tested :-)
->
-> Shan, can you verify whether that fixes the problem for you ?
->
-
-It could not fix the problem, refer the following reply for
-the reasons.
-
-> I also had a cursory glance at the ARM code and it seems to rely on the
-> same stuff as embedded powerpc does for dirty/young updates, so in
-> theory it should exhibit the same problem.
->
-> I suspect the scenario is rare enough in practice in embedded workloads
-> that nobody noticed until now.
->
-> Cheers,
-> Ben.
->
-> mm/futex: Fix use of gup() to "fixup" failing atomic user accesses
->
-> The futex code uses atomic (page fault disabled) accesses to user space,
-> and when they fail, uses get_user_pages() to "fixup" the PTE and try again.
->
-> However, on arch with SW tracking of the dirty and young bits, this will
-> not work properly as neither of the above will perform the necessary fixup
-> of those bits.
->
-> There's also a possible corner cases with archs who rely on
-> handle_pte_fault() to invalidate the TLB for "spurrious" faults (though
-> I don't know which arch actually needs that). Those would break the
-> same way.
->
-> This fixes it by factoring out the fixup code from handle_pte_fault() into
-> a separate function, and use it from within gup as well, whenever the
-> FOLL_FIXFAULT flag has been passed to it. The futex code is modified to
-> pass that flag.
->
-> This doesn't change the "normal" gup case (and thus avoids the overhead
-> of doing that tracking)
->
-> Signed-off-by: Benjamin Herrenschmidt<benh@kernel.crashing.org>
-> ---
->
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index 9670f71..8a76694 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -1546,6 +1546,7 @@ struct page *follow_page(struct vm_area_struct *, unsigned long address,
->   #define FOLL_MLOCK	0x40	/* mark page as mlocked */
->   #define FOLL_SPLIT	0x80	/* don't return transhuge pages, split them */
->   #define FOLL_HWPOISON	0x100	/* check page is hwpoisoned */
-> +#define FOLL_FIXFAULT	0x200	/* fixup after a fault (PTE dirty/young upd) */
->
->   typedef int (*pte_fn_t)(pte_t *pte, pgtable_t token, unsigned long addr,
->   			void *data);
-> diff --git a/kernel/futex.c b/kernel/futex.c
-> index fe28dc2..02adff7 100644
-> --- a/kernel/futex.c
-> +++ b/kernel/futex.c
-> @@ -355,8 +355,8 @@ static int fault_in_user_writeable(u32 __user *uaddr)
->   	int ret;
->
->   	down_read(&mm->mmap_sem);
-> -	ret = get_user_pages(current, mm, (unsigned long)uaddr,
-> -			     1, 1, 0, NULL, NULL);
-> +	ret = __get_user_pages(current, mm, (unsigned long)uaddr, 1,
-> +			       FOLL_WRITE | FOLL_FIXFAULT, NULL, NULL, NULL);
-
-the FOLL_FIXFAULT is filtered out at the following code
-get_user_pages()
-     if (write)
-                 flags |= FOLL_WRITE;
-
->   	up_read(&mm->mmap_sem);
->
->   	return ret<  0 ? ret : 0;
-> diff --git a/mm/memory.c b/mm/memory.c
-> index 40b7531..3c4d502 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -1419,6 +1419,29 @@ int zap_vma_ptes(struct vm_area_struct *vma, unsigned long address,
->   }
->   EXPORT_SYMBOL_GPL(zap_vma_ptes);
->
-> +static void handle_pte_sw_young_dirty(struct vm_area_struct *vma,
-> +				      unsigned long address,
-> +				      pte_t *ptep, int write)
-> +{
-> +	pte_t entry = *ptep;
-> +
-> +	if (write)
-> +		pte_mkdirty(entry);
-> +	entry = pte_mkyoung(entry);
-> +	if (ptep_set_access_flags(vma, address, ptep, entry, write)) {
-> +		update_mmu_cache(vma, address, ptep);
-> +	} else {
-> +		/*
-> +		 * This is needed only for protection faults but the arch code
-> +		 * is not yet telling us if this is a protection fault or not.
-> +		 * This still avoids useless tlb flushes for .text page faults
-> +		 * with threads.
-> +		 */
-> +		if (write)
-> +			flush_tlb_fix_spurious_fault(vma, address);
-> +	}
-> +}
-> +
->   /**
->    * follow_page - look up a page descriptor from a user-virtual address
->    * @vma: vm_area_struct mapping @address
-> @@ -1514,6 +1537,10 @@ split_fallthrough:
->
->   	if (flags&  FOLL_GET)
->   		get_page(page);
-> +
-> +	if (flags&  FOLL_FIXFAULT)
-> +		handle_pte_sw_young_dirty(vma, address, ptep,
-> +					  flags&  FOLL_WRITE);
->   	if (flags&  FOLL_TOUCH) {
->   		if ((flags&  FOLL_WRITE)&&
->   		!pte_dirty(pte)&&  !PageDirty(page))
-
-call handle_pte_sw_young_dirty before !pte_dirty(pte)
-might has problems.
-
-> @@ -1525,6 +1552,7 @@ split_fallthrough:
->   		 */
->   		mark_page_accessed(page);
->   	}
-> +
->   	if ((flags&  FOLL_MLOCK)&&  (vma->vm_flags&  VM_LOCKED)) {
->   		/*
->   		 * The preliminary mapping check is mainly to avoid the
-> @@ -3358,21 +3386,8 @@ int handle_pte_fault(struct mm_struct *mm,
->   		if (!pte_write(entry))
->   			return do_wp_page(mm, vma, address,
->   					pte, pmd, ptl, entry);
-> -		entry = pte_mkdirty(entry);
-> -	}
-> -	entry = pte_mkyoung(entry);
-> -	if (ptep_set_access_flags(vma, address, pte, entry, flags&  FAULT_FLAG_WRITE)) {
-> -		update_mmu_cache(vma, address, pte);
-> -	} else {
-> -		/*
-> -		 * This is needed only for protection faults but the arch code
-> -		 * is not yet telling us if this is a protection fault or not.
-> -		 * This still avoids useless tlb flushes for .text page faults
-> -		 * with threads.
-> -		 */
-> -		if (flags&  FAULT_FLAG_WRITE)
-> -			flush_tlb_fix_spurious_fault(vma, address);
->   	}
-> +	handle_pte_sw_young_dirty(vma, address, pte, flags&  FAULT_FLAG_WRITE);
->   unlock:
->   	pte_unmap_unlock(pte, ptl);
->   	return 0;
->
->
-
-So what about the following?
-diff --git a/mm/memory.c b/mm/memory.c
-index 9b8a01d..fb48122 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1442,6 +1442,7 @@ struct page *follow_page(struct vm_area_struct 
-*vma, unsig
-         spinlock_t *ptl;
-         struct page *page;
-         struct mm_struct *mm = vma->vm_mm;
-+       int fix_write_permission = false;
-
-         page = follow_huge_addr(mm, address, flags & FOLL_WRITE);
-         if (!IS_ERR(page)) {
-@@ -1519,6 +1520,11 @@ split_fallthrough:
-                 if ((flags & FOLL_WRITE) &&
-                     !pte_dirty(pte) && !PageDirty(page))
-                         set_page_dirty(page);
-+
-+#ifdef CONFIG_FIXUP_WRITE_PERMISSION
-+               if ((flags & FOLL_WRITE) && !pte_dirty(pte))
-+                       fix_write_permission = true;
-+#endif
-                 /*
-                  * pte_mkyoung() would be more correct here, but atomic 
-care
-                  * is needed to avoid losing the dirty bit: it is 
-easier to use
-@@ -1551,7 +1557,7 @@ split_fallthrough:
-  unlock:
-         pte_unmap_unlock(ptep, ptl);
-  out:
--       return page;
-+       return (fix_write_permission == true) ? NULL: page;
-
-  bad_page:
-         pte_unmap_unlock(ptep, ptl);
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p6I6lIu7002352
 
 
+>-----Original Message-----
+>From: Leo Yan [mailto:leoy@marvell.com]
+>Sent: 2011Äê7ÔÂ18ÈÕ 2:10 PM
+>To: linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org;
+>linux@arm.linux.org.uk; Haojian Zhuang; nicolas.pitre@linaro.org; Leo
+>Yan
+>Subject: [PATCH] ARM: mmp/brownstone: add regulator init data for
+>max8925
+>
+>Add pmic max8925's init data for brownstone board.
+>
+>Signed-off-by: Leo Yan <leoy@marvell.com>
+>---
+> arch/arm/mach-mmp/brownstone.c |  121
+>+++++++++++++++++++++++++++++++++++++++-
+> 1 files changed, 120 insertions(+), 1 deletions(-)
+>
+>diff --git a/arch/arm/mach-mmp/brownstone.c b/arch/arm/mach-
+>mmp/brownstone.c
+>index 7bb78fd..4544be5 100644
+>--- a/arch/arm/mach-mmp/brownstone.c
+>+++ b/arch/arm/mach-mmp/brownstone.c
+>@@ -158,8 +158,127 @@ static struct platform_device
+>brownstone_v_5vp_device = {
+> 	},
+> };
+>
+>+static struct regulator_consumer_supply brownstone_max8925_reg_supply[]
+>= {
+>+	[MAX8925_ID_SD1]	= REGULATOR_SUPPLY("v_sd1",   NULL),
+>+	[MAX8925_ID_SD2]	= REGULATOR_SUPPLY("v_sd2",   NULL),
+>+	[MAX8925_ID_SD3]	= REGULATOR_SUPPLY("v_sd3",   NULL),
+>+	[MAX8925_ID_LDO1]	= REGULATOR_SUPPLY("v_ldo1",  NULL),
+>+	[MAX8925_ID_LDO2]	= REGULATOR_SUPPLY("v_ldo2",  NULL),
+>+	[MAX8925_ID_LDO3]	= REGULATOR_SUPPLY("v_ldo3",  NULL),
+>+	[MAX8925_ID_LDO4]	= REGULATOR_SUPPLY("v_ldo4",  NULL),
+>+	[MAX8925_ID_LDO5]	= REGULATOR_SUPPLY("v_ldo5",  NULL),
+>+	[MAX8925_ID_LDO6]	= REGULATOR_SUPPLY("v_ldo6",  NULL),
+>+	[MAX8925_ID_LDO7]	= REGULATOR_SUPPLY("v_ldo7",  NULL),
+>+	[MAX8925_ID_LDO8]	= REGULATOR_SUPPLY("v_ldo8",  NULL),
+>+	[MAX8925_ID_LDO9]	= REGULATOR_SUPPLY("v_ldo9",  NULL),
+>+	[MAX8925_ID_LDO10]	= REGULATOR_SUPPLY("v_ldo10", NULL),
+>+	[MAX8925_ID_LDO11]	= REGULATOR_SUPPLY("v_ldo11", NULL),
+>+	[MAX8925_ID_LDO12]	= REGULATOR_SUPPLY("v_ldo12", NULL),
+>+	[MAX8925_ID_LDO13]	= REGULATOR_SUPPLY("v_ldo13", NULL),
+>+	[MAX8925_ID_LDO14]	= REGULATOR_SUPPLY("v_ldo14", NULL),
+>+	[MAX8925_ID_LDO15]	= REGULATOR_SUPPLY("v_ldo15", NULL),
+>+	[MAX8925_ID_LDO16]	= REGULATOR_SUPPLY("v_ldo16", NULL),
+>+	[MAX8925_ID_LDO17]	= REGULATOR_SUPPLY("v_ldo17", NULL),
+>+	[MAX8925_ID_LDO18]	= REGULATOR_SUPPLY("v_ldo18", NULL),
+>+	[MAX8925_ID_LDO19]	= REGULATOR_SUPPLY("v_ldo19", NULL),
+>+	[MAX8925_ID_LDO20]	= REGULATOR_SUPPLY("v_ldo20", NULL),
+Only special device need assign NULL device. Otherwise, don't assume with NULL device.
 
- From the CONFIG_FIXUP_WRITE_PERMISSION and
-(flags & FOLL_WRITE) && !pte_dirty(pte) the follow_page()
-could figure out that the caller want to write to the
-(present && writable && non-dirty) pte, and the architecture
-want to fixup the problem by indicating CONFIG_FIXUP_WRITE_PERMISSION,
-so let the follow_page() return NULL to the __get_user_pages, and
-let the handle_mm_fault to fixup dirty/young tracking.
+>+};
+>+
+>+#define MAX8925_REG_INIT(_name, _id, _min, _max, _always, _boot)	\
+>+static struct regulator_init_data max8925_reg_init_##_name =
+>	\
+>+{									\
+>+	.constraints = {						\
+>+		.name		= __stringify(_name),			\
+>+		.min_uV		= _min,					\
+>+		.max_uV		= _max,					\
+>+		.always_on	= _always,				\
+>+		.boot_on	= _boot,				\
+>+		.valid_ops_mask	= REGULATOR_CHANGE_VOLTAGE |		\
+>+				  REGULATOR_CHANGE_STATUS,		\
+>+	},								\
+>+	.num_consumer_supplies = 1,					\
+>+	.consumer_supplies = &brownstone_max8925_reg_supply[_id],	\
+>+}
+>+
+>+/*
+>+ * brownstone's pmic max8925 power domain usage;
+>+ *
+>+ * domain  voltage     usage
+>+ * ------  ---------   ------------------------------------------------
+>-
+>+ * sd1     1.2v        ddr3 termination regulator
+>+ * sd2     1.8v        soc gpio / 1.8v pheripherals / memories
+>+ * sd3     2.8v        soc gpio / 2.8v pheripherals / memories
+>+ * ldo1    2.8v        pmic max8925 adc
+>+ * ldo2    1.8v        soc plls / hdmi / hsic to usb hub
+>+ * ldo3    off/1.2v    soc mipi / mipi pheripheral i/o / mipi dsi
+>bridge
+>+ * ldo4    3.3v        soc usb / hdmi / hsic to usb hub
+>+ * ldo5    off/1.2v    soc hsic / hsic to usb hub
+>+ * ldo6    off         unused
+>+ * ldo7    off         unused
+>+ * ldo8    off/3.0v    compass / accelerometer
+>+ * ldo9    1.8v        soc pmic max8649 / jtag / slimbus
+>+ * ldo10   off/1.8v    vibrator motor
+>+ * ldo11   off/3.0v    soc mmc1 / mmc/sd card
+>+ * ldo12   1.8v/off    unused
+>+ * ldo13   off/1.5v    camera digital
+>+ * ldo14   off/3.0v    camera auto focus
+>+ * ldo15   off/2.8v    camera analog
+>+ * ldo16   off         unused
+>+ * ldo17   off/1.2v    mipi dsi bridge / 32k clk
+>+ * ldo18   off         unused
+>+ * ldo19   off         unused
+>+ * ldo20   off         unused
+>+ */
+>+MAX8925_REG_INIT(sd1,   MAX8925_ID_SD1,   637500, 1425000, 1, 1);
+>+MAX8925_REG_INIT(sd2,   MAX8925_ID_SD2,   650000, 2225000, 1, 1);
+>+MAX8925_REG_INIT(sd3,   MAX8925_ID_SD3,   750000, 3900000, 1, 1);
+>+MAX8925_REG_INIT(ldo1,  MAX8925_ID_LDO1,  750000, 3900000, 1, 1);
+>+MAX8925_REG_INIT(ldo2,  MAX8925_ID_LDO2,  650000, 2250000, 1, 1);
+>+MAX8925_REG_INIT(ldo3,  MAX8925_ID_LDO3,  650000, 2250000, 0, 0);
+>+MAX8925_REG_INIT(ldo4,  MAX8925_ID_LDO4,  750000, 3900000, 1, 1);
+>+MAX8925_REG_INIT(ldo5,  MAX8925_ID_LDO5,  750000, 3900000, 0, 0);
+>+MAX8925_REG_INIT(ldo6,  MAX8925_ID_LDO6,  750000, 3900000, 0, 0);
+>+MAX8925_REG_INIT(ldo7,  MAX8925_ID_LDO7,  750000, 3900000, 0, 0);
+>+MAX8925_REG_INIT(ldo8,  MAX8925_ID_LDO8,  750000, 3900000, 0, 0);
+>+MAX8925_REG_INIT(ldo9,  MAX8925_ID_LDO9,  750000, 3900000, 1, 1);
+>+MAX8925_REG_INIT(ldo10, MAX8925_ID_LDO10, 750000, 3900000, 0, 0);
+>+MAX8925_REG_INIT(ldo11, MAX8925_ID_LDO11, 750000, 3900000, 0, 0);
+>+MAX8925_REG_INIT(ldo12, MAX8925_ID_LDO12, 750000, 3900000, 0, 0);
+>+MAX8925_REG_INIT(ldo13, MAX8925_ID_LDO13, 750000, 1500000, 0, 0);
+>+MAX8925_REG_INIT(ldo14, MAX8925_ID_LDO14, 750000, 3000000, 0, 0);
+>+MAX8925_REG_INIT(ldo15, MAX8925_ID_LDO15, 750000, 2800000, 0, 0);
+>+MAX8925_REG_INIT(ldo16, MAX8925_ID_LDO16, 750000, 3900000, 0, 0);
+>+MAX8925_REG_INIT(ldo17, MAX8925_ID_LDO17, 650000, 2250000, 1, 1);
+>+MAX8925_REG_INIT(ldo18, MAX8925_ID_LDO18, 650000, 2250000, 0, 0);
+>+MAX8925_REG_INIT(ldo19, MAX8925_ID_LDO19, 750000, 3900000, 0, 0);
+>+MAX8925_REG_INIT(ldo20, MAX8925_ID_LDO20, 750000, 3900000, 0, 0);
+>+
+> static struct max8925_platform_data brownstone_max8925_info = {
+>-	.irq_base		= IRQ_BOARD_START,
+>+	.irq_base = IRQ_BOARD_START,
+>+
+>+	.regulator[MAX8925_ID_SD1]   = &max8925_reg_init_sd1,
+>+	.regulator[MAX8925_ID_SD2]   = &max8925_reg_init_sd2,
+>+	.regulator[MAX8925_ID_SD3]   = &max8925_reg_init_sd3,
+>+	.regulator[MAX8925_ID_LDO1]  = &max8925_reg_init_ldo1,
+>+	.regulator[MAX8925_ID_LDO2]  = &max8925_reg_init_ldo2,
+>+	.regulator[MAX8925_ID_LDO3]  = &max8925_reg_init_ldo3,
+>+	.regulator[MAX8925_ID_LDO4]  = &max8925_reg_init_ldo4,
+>+	.regulator[MAX8925_ID_LDO5]  = &max8925_reg_init_ldo5,
+>+	.regulator[MAX8925_ID_LDO6]  = &max8925_reg_init_ldo6,
+>+	.regulator[MAX8925_ID_LDO7]  = &max8925_reg_init_ldo7,
+>+	.regulator[MAX8925_ID_LDO8]  = &max8925_reg_init_ldo8,
+>+	.regulator[MAX8925_ID_LDO9]  = &max8925_reg_init_ldo9,
+>+	.regulator[MAX8925_ID_LDO10] = &max8925_reg_init_ldo10,
+>+	.regulator[MAX8925_ID_LDO11] = &max8925_reg_init_ldo11,
+>+	.regulator[MAX8925_ID_LDO12] = &max8925_reg_init_ldo12,
+>+	.regulator[MAX8925_ID_LDO13] = &max8925_reg_init_ldo13,
+>+	.regulator[MAX8925_ID_LDO14] = &max8925_reg_init_ldo14,
+>+	.regulator[MAX8925_ID_LDO15] = &max8925_reg_init_ldo15,
+>+	.regulator[MAX8925_ID_LDO16] = &max8925_reg_init_ldo16,
+>+	.regulator[MAX8925_ID_LDO17] = &max8925_reg_init_ldo17,
+>+	.regulator[MAX8925_ID_LDO18] = &max8925_reg_init_ldo18,
+>+	.regulator[MAX8925_ID_LDO19] = &max8925_reg_init_ldo19,
+>+	.regulator[MAX8925_ID_LDO20] = &max8925_reg_init_ldo20,
+> };
+>
+> static struct i2c_board_info brownstone_twsi1_info[] = {
+>--
+>1.7.4.1
 
-Checking the following code we can conclude that the handle_mm_fault
-is ready to handle the faults and the write permission violation is
-a kind of fault, so why don't we let the handle_mm_fault to
-handle that fault?
-
-__get_user_pages()
-      while (!(page = follow_page(vma, start, foll_flags))) {
-         ...
-         ret = handle_mm_fault(mm, vma, start,
-                                                         fault_flags);
-         ...
-     }
-
-Thanks
-Shan Hai
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
