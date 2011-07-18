@@ -1,54 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756526Ab1GRLPv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 07:15:51 -0400
-Received: from dakia2.marvell.com ([65.219.4.35]:46779 "EHLO
-	dakia2.marvell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756399Ab1GRLPu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 07:15:50 -0400
-X-ASG-Debug-ID: 1310987749-082cd92d0001-xx1T2L
-X-Barracuda-Envelope-From: leoy@marvell.com
-From: Leo Yan <leoy@marvell.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        haojian.zhuang@marvell.com, nicolas.pitre@linaro.org,
-        Russell King <linux@arm.linux.org.uk>
-Cc: Leo Yan <leoy@marvell.com>
-X-ASG-Orig-Subj: [PATCH 0/2] Add audio sram support
-Subject: [PATCH 0/2] Add audio sram support
-Date: Mon, 18 Jul 2011 19:18:06 +0800
-X-ASG-Orig-Subj: [PATCH 0/2] Add audio sram support
-Message-Id: <1310987888-541-1-git-send-email-leoy@marvell.com>
-X-Mailer: git-send-email 1.7.4.1
-X-Barracuda-Connect: maili.marvell.com[10.68.76.51]
-X-Barracuda-Start-Time: 1310987749
-X-Barracuda-URL: http://10.68.76.222:80/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: -1002.00
-X-Barracuda-Spam-Status: No, SCORE=-1002.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=1000.0 
+	id S1753259Ab1GRLTN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 07:19:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13359 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751304Ab1GRLTM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 07:19:12 -0400
+From: Amerigo Wang <amwang@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, WANG Cong <amwang@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mgorman@suse.de>,
+        linux-mm@kvack.org
+Subject: [Patch] mm: make CONFIG_NUMA depend on CONFIG_SYSFS
+Date: Mon, 18 Jul 2011 19:18:29 +0800
+Message-Id: <1310987909-3129-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On mmp platform, there have 16KB sram buffer dedicated
-to audio island. It can be to dynamically allocated for
-versatile pcm devices. So implement the audio sram
-allocator for managing it.
+On ppc, we got this build error with randconfig:
 
-Leo Yan (2):
-  ARM: mmp: register audio sram device
-  ARM: mmp: add audio sram allocator
+drivers/built-in.o:(.toc1+0xf90): undefined reference to `vmstat_text': 1 errors in 1 logs
 
- arch/arm/Kconfig                            |    1 +
- arch/arm/mach-mmp/Makefile                  |    2 +-
- arch/arm/mach-mmp/audio_sram.c              |  118 +++++++++++++++++++++++++++
- arch/arm/mach-mmp/brownstone.c              |    1 +
- arch/arm/mach-mmp/include/mach/audio_sram.h |   31 +++++++
- arch/arm/mach-mmp/include/mach/mmp2.h       |    6 ++
- arch/arm/mach-mmp/mmp2.c                    |    1 +
- 7 files changed, 159 insertions(+), 1 deletions(-)
- create mode 100644 arch/arm/mach-mmp/audio_sram.c
- create mode 100644 arch/arm/mach-mmp/include/mach/audio_sram.h
+This is due to that it enabled CONFIG_NUMA but not CONFIG_SYSFS.
 
--- 
-1.7.4.1
+And the user-space tool numactl depends on sysfs files too.
+So, I think it is very reasonable to make CONFIG_NUMA depend on CONFIG_SYSFS.
 
+Signed-off-by: WANG Cong <amwang@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: linux-mm@kvack.org
+
+
+---
+ arch/alpha/Kconfig   |    1 +
+ arch/ia64/Kconfig    |    1 +
+ arch/m32r/Kconfig    |    1 +
+ arch/mips/Kconfig    |    1 +
+ arch/powerpc/Kconfig |    1 +
+ arch/sh/mm/Kconfig   |    1 +
+ arch/sparc/Kconfig   |    1 +
+ arch/tile/Kconfig    |    1 +
+ arch/x86/Kconfig     |    1 +
+ 9 files changed, 9 insertions(+), 0 deletions(-)
+
+diff --git a/arch/alpha/Kconfig b/arch/alpha/Kconfig
+index 60219bf..44439ec 100644
+--- a/arch/alpha/Kconfig
++++ b/arch/alpha/Kconfig
+@@ -570,6 +570,7 @@ source "mm/Kconfig"
+ config NUMA
+ 	bool "NUMA Support (EXPERIMENTAL)"
+ 	depends on DISCONTIGMEM && BROKEN
++	depends on SYSFS
+ 	help
+ 	  Say Y to compile the kernel to support NUMA (Non-Uniform Memory
+ 	  Access).  This option is for configuring high-end multiprocessor
+diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
+index 38280ef..b12fac3 100644
+--- a/arch/ia64/Kconfig
++++ b/arch/ia64/Kconfig
+@@ -450,6 +450,7 @@ config ARCH_DISCONTIGMEM_DEFAULT
+ config NUMA
+ 	bool "NUMA support"
+ 	depends on !IA64_HP_SIM && !FLATMEM
++	depends on SYSFS
+ 	default y if IA64_SGI_SN2
+ 	select ACPI_NUMA if ACPI
+ 	help
+diff --git a/arch/m32r/Kconfig b/arch/m32r/Kconfig
+index 85b44e8..21e668d 100644
+--- a/arch/m32r/Kconfig
++++ b/arch/m32r/Kconfig
+@@ -325,6 +325,7 @@ config NR_CPUS
+ config NUMA
+ 	bool "Numa Memory Allocation Support"
+ 	depends on SMP && BROKEN
++	depends on SYSFS
+ 	default n
+ 
+ config NODES_SHIFT
+diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+index 653da62..760d0d6 100644
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@ -2072,6 +2072,7 @@ config ARCH_SPARSEMEM_ENABLE
+ config NUMA
+ 	bool "NUMA Support"
+ 	depends on SYS_SUPPORTS_NUMA
++	depends on SYSFS
+ 	help
+ 	  Say Y to compile the kernel to support NUMA (Non-Uniform Memory
+ 	  Access).  This option improves performance on systems with more
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index 2729c66..32e1bc1 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -392,6 +392,7 @@ config IRQ_ALL_CPUS
+ config NUMA
+ 	bool "NUMA support"
+ 	depends on PPC64
++	depends on SYSFS
+ 	default y if SMP && PPC_PSERIES
+ 
+ config NODES_SHIFT
+diff --git a/arch/sh/mm/Kconfig b/arch/sh/mm/Kconfig
+index c3e61b3..7928c9a 100644
+--- a/arch/sh/mm/Kconfig
++++ b/arch/sh/mm/Kconfig
+@@ -111,6 +111,7 @@ config VSYSCALL
+ config NUMA
+ 	bool "Non Uniform Memory Access (NUMA) Support"
+ 	depends on MMU && SYS_SUPPORTS_NUMA && EXPERIMENTAL
++	depends on SYSFS
+ 	default n
+ 	help
+ 	  Some SH systems have many various memories scattered around
+diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
+index 253986b..2a38c5d 100644
+--- a/arch/sparc/Kconfig
++++ b/arch/sparc/Kconfig
+@@ -338,6 +338,7 @@ endchoice
+ config NUMA
+ 	bool "NUMA support"
+ 	depends on SPARC64 && SMP
++	depends on SYSFS
+ 
+ config NODES_SHIFT
+ 	int
+diff --git a/arch/tile/Kconfig b/arch/tile/Kconfig
+index 0249b8b..fa7d219 100644
+--- a/arch/tile/Kconfig
++++ b/arch/tile/Kconfig
+@@ -187,6 +187,7 @@ config HIGHMEM
+ config NUMA
+ 	bool # "NUMA Memory Allocation and Scheduler Support"
+ 	depends on SMP && DISCONTIGMEM
++	depends on SYSFS
+ 	default y
+ 	---help---
+ 	  NUMA memory allocation is required for TILE processors
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index da34972..be0c229 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1146,6 +1146,7 @@ config DIRECT_GBPAGES
+ config NUMA
+ 	bool "Numa Memory Allocation and Scheduler Support"
+ 	depends on SMP
++	depends on SYSFS
+ 	depends on X86_64 || (X86_32 && HIGHMEM64G && (X86_NUMAQ || X86_BIGSMP || X86_SUMMIT && ACPI) && EXPERIMENTAL)
+ 	default y if (X86_NUMAQ || X86_SUMMIT || X86_BIGSMP)
+ 	---help---
