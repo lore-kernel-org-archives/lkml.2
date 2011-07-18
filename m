@@ -1,46 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753390Ab1GRU22 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 16:28:28 -0400
-Received: from seven.medozas.de ([188.40.89.202]:34235 "EHLO seven.medozas.de"
+	id S1751719Ab1GRUbL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 16:31:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23936 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751094Ab1GRU21 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 16:28:27 -0400
-Date: Mon, 18 Jul 2011 22:28:25 +0200 (CEST)
-From: Jan Engelhardt <jengelh@medozas.de>
-To: Rainer Weikusat <rweikusat@mobileactivedefense.com>
-cc: David Miller <davem@davemloft.net>, adobriyan@gmail.com, kaber@trash.net,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] netfilter: add per-namespace logging to
- nfnetlink_log.c
-In-Reply-To: <87d3h7e43n.fsf@sapphire.mobileactivedefense.com>
-Message-ID: <alpine.LNX.2.01.1107182218170.9579@frira.zrqbmnf.qr>
-References: <8739i3fp6s.fsf@sapphire.mobileactivedefense.com> <20110718191956.GA2489@p183.telecom.by> <87hb6je5nh.fsf@sapphire.mobileactivedefense.com> <20110718.124638.30010338187296272.davem@davemloft.net>
- <87d3h7e43n.fsf@sapphire.mobileactivedefense.com>
-User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751355Ab1GRUbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 16:31:09 -0400
+From: Matthew Garrett <mjg@redhat.com>
+To: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, mikew@google.com, tony.luck@intel.com
+Subject: Add an EFI pstore backend 
+Date: Mon, 18 Jul 2011 16:30:24 -0400
+Message-Id: <1311021033-7483-1-git-send-email-mjg@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 2001:470:1f07:1371:721a:4ff:fed2:9f6c
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+EFI provides enough non-volatile storage to make it convenient for storing
+crash dumps. Extend the pstore API a little to make it easier to handle
+this, then add support to efivars. Some cleanup patches from Mike Waychison
+then follow.
 
-On Monday 2011-07-18 22:17, Rainer Weikusat wrote:
->David Miller <davem@davemloft.net> writes:
->>
->>> [rw@sapphire]~/work/linux-2-6/net/netfilter $find -name '*.c' | xargs grep '^#ifdef' | wc -l
->>> 239
->>
->> You've shown nothing.  Showing exceptions does not prove that the
->> general effort has been to keep ifdef crap out of *.c files.
->
->I've 'shown' that the networking code contains a fair amount of
->#ifdefs in .c files. Consequently, 'we did it without' is wrong. At
->best, 'we would like to do without in future' seems justified.
-
-Your count of ifdefs is just telling that we use ifdef, not how we
-use it.
-
-There is a difference between #ifdefs sprinkled inside a function,
-and #ifdefs around functions or larger groups where possible,
-feasible and optically preferable (cf. security.h, xt_TEE.c).
