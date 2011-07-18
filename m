@@ -1,66 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751382Ab1GRVM4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 17:12:56 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:50751 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751281Ab1GRVMz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 17:12:55 -0400
-Date: Mon, 18 Jul 2011 16:12:48 -0500 (CDT)
-From: Manoj Iyer <manoj.iyer@canonical.com>
-X-X-Sender: manjo@lazy
-To: Chris Ball <cjb@laptop.org>
-cc: Manoj Iyer <manoj.iyer@canonical.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, jbarnes@virtuousgeek.org,
-        matsumur@nts.ricoh.co.jp, linux-pci@vger.kernel.org,
-        linux-mmc@vger.kernel.org
-Subject: Re: [PATCH] mmc: Added quirks for Ricoh 1180:e823 lower base clock
- frequency
-In-Reply-To: <m2d3h7b8pv.fsf@bob.laptop.org>
-Message-ID: <alpine.DEB.2.02.1107181606290.1677@lazy>
-References: <1310419715-13254-1-git-send-email-manoj.iyer@canonical.com> <m2sjqa2q93.fsf@bob.laptop.org> <alpine.DEB.2.02.1107131031360.3174@lazy> <201107131835.25217.arnd@arndb.de> <alpine.DEB.2.02.1107131144250.3174@lazy> <m21uxu2k96.fsf@bob.laptop.org>
- <alpine.DEB.2.02.1107131157440.3174@lazy> <m2wrfm1537.fsf@bob.laptop.org> <alpine.DEB.2.02.1107181535250.1677@lazy> <m2zkkbb9vn.fsf@bob.laptop.org> <alpine.DEB.2.02.1107181546100.1677@lazy> <m2d3h7b8pv.fsf@bob.laptop.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1751452Ab1GRVNb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 17:13:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41512 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751130Ab1GRVNa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 17:13:30 -0400
+Date: Mon, 18 Jul 2011 22:13:25 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] mm: page allocator: Initialise ZLC for first zone
+ eligible for zone_reclaim
+Message-ID: <20110718211325.GC5349@suse.de>
+References: <1310742540-22780-1-git-send-email-mgorman@suse.de>
+ <1310742540-22780-2-git-send-email-mgorman@suse.de>
+ <alpine.DEB.2.00.1107180951390.30392@router.home>
+ <20110718160552.GB5349@suse.de>
+ <alpine.DEB.2.00.1107181208050.31576@router.home>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1107181208050.31576@router.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jul 18, 2011 at 12:20:11PM -0500, Christoph Lameter wrote:
+> 
+> 
+> On Mon, 18 Jul 2011, Mel Gorman wrote:
+> 
+> > On Mon, Jul 18, 2011 at 09:56:31AM -0500, Christoph Lameter wrote:
+> > > On Fri, 15 Jul 2011, Mel Gorman wrote:
+> > >
+> > > > Currently the zonelist cache is setup only after the first zone has
+> > > > been considered and zone_reclaim() has been called. The objective was
+> > > > to avoid a costly setup but zone_reclaim is itself quite expensive. If
+> > > > it is failing regularly such as the first eligible zone having mostly
+> > > > mapped pages, the cost in scanning and allocation stalls is far higher
+> > > > than the ZLC initialisation step.
+> > >
+> > > Would it not be easier to set zlc_active and allowednodes based on the
+> > > zone having an active ZLC at the start of get_pages()?
+> > >
+> >
+> > What do you mean by a zones active ZLC? zonelists are on a per-node,
+> > not a per-zone basis (see node_zonelist) so a zone doesn't have an
+> > active ZLC as such. If the zlc_active is set at the beginning of
+> 
+> Look at get_page_from_freelist(): It sets
+> zlc_active = 0 even through the zonelist under consideration may have a
+> ZLC. zlc_active = 0 can also mean that the function has not bothered to
+> look for the zlc information of the current zonelist.
+> 
 
+Yes. So? It's only necessary if the watermarks are not met.
 
-> I see, thanks.  So we're lacking any data on what speed the card would
-> normally provide.  Perhaps you could try that card on a different
-> controller, just so we're able to see whether it's usually possible
-> to get closer to 45M/sec with it?
+> > get_page_from_freelist(), it implies that we are calling zlc_setup()
+> > even when the watermarks are met which is unnecessary.
+> 
+> Ok then that decision to not call zlc_setup() for performance reasons is
+> what created the problem that you are trying to solve. In case that the
+> first zones watermarks are okay we can avoid calling zlc_setup().
+> 
 
-Sure, let me generate some data on based on Ricoh R5C822.
+The original implementation did not check the ZLC in the first loop
+at all. It wasn't just about avoiding the cost of setup. I suspect
+this problem has been there a long time and it's taking this long
+for bug reports to show up because NUMA machines are being used for
+generic numa-unaware workloads.
 
+> What we do now have is checking for zlc_active in the loop just so that
+> the first time around we do not call zlc_setup().
+> 
 
->
-> I think I'll take your patch as-is for 3.1 -- since if there is a
-> performance degradation, it's on cards that simply don't work at all
-> right now -- and if you're able to work on a followup patch that only
-> performs the clock-lowering after the first error, I think that'd be a
-> handy patch to have around.  Does that sound good?
->
+Yes, why incur the cost for the common case?
 
-That sounds good to me, that way we limit degradation in performance only 
-to previously non-working cards. I will send the V2 soon.
+> We may be able to simplify the function by:
+> 
+> 1.  Checking for the special case that the first zone is ok and that we do
+> not want to call zlc_setup before we get to the loop.
+> 
+> 2. Do the zlc_setup() before the loop.
+> 
+> 3. Remove the zlc_setup() code as you did from the loop as well as the
+> checks for zlc_active. zlc_active becomes not necessary since a zlc
+> is always available when we go through the loop.
+> 
 
-> Thanks!
->
-> - Chris.
-> -- 
-> Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-> One Laptop Per Child
->
->
-Thanks a ton.
---
-====================
-Manoj Iyer
-Ubuntu/Canonical
-Hardware Enablement
-====================
+That initial test will involve duplication of things like the cpuset and
+no watermarks check just to place the zlc_setup() in a different place.
+I might be missing your point but it seems like the gain would be
+marginal. Fancy posting a patch?
+
+-- 
+Mel Gorman
+SUSE Labs
