@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756821Ab1GRNPA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 09:15:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47794 "EHLO mx1.redhat.com"
+	id S1756863Ab1GRNOr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 09:14:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4515 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755851Ab1GRNJJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 09:09:09 -0400
+	id S1756061Ab1GRNJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 09:09:10 -0400
 From: Prarit Bhargava <prarit@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, abelay@mit.edu
-Subject: [PATCH 22/34] drivers/pnp changes for SMBIOS and System Firmware
-Date: Mon, 18 Jul 2011 09:08:36 -0400
-Message-Id: <1310994528-26276-23-git-send-email-prarit@redhat.com>
+Cc: Prarit Bhargava <prarit@redhat.com>, evel@driverdev.osuosl.org
+Subject: [PATCH 25/34] drivers/staging changes for SMBIOS and System Firmware
+Date: Mon, 18 Jul 2011 09:08:39 -0400
+Message-Id: <1310994528-26276-26-git-send-email-prarit@redhat.com>
 In-Reply-To: <1310994528-26276-1-git-send-email-prarit@redhat.com>
 References: <1310994528-26276-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -26,89 +26,189 @@ structures and functions in individual drivers
 - cleanup of includes for dmi.h and mod_devicetable.h which were included in
 some files that did not need them
 
-Cc: abelay@mit.edu
+[v2]: Re-exported dmi MODULE_ALIAS
+
+Cc: evel@driverdev.osuosl.org
 Signed-off-by: Prarit Bhargava <prarit@redhat.com>
 ---
- drivers/pnp/pnpacpi/core.c |    1 -
- drivers/pnp/pnpbios/core.c |   20 ++++++++++----------
- 2 files changed, 10 insertions(+), 11 deletions(-)
+ drivers/staging/hv/hv_mouse.c      |    1 -
+ drivers/staging/hv/hv_timesource.c |   18 +++++++++---------
+ drivers/staging/hv/hv_util.c       |   17 ++++++++---------
+ drivers/staging/hv/netvsc_drv.c    |   17 ++++++++---------
+ drivers/staging/hv/vmbus_drv.c     |    1 -
+ 5 files changed, 25 insertions(+), 29 deletions(-)
 
-diff --git a/drivers/pnp/pnpacpi/core.c b/drivers/pnp/pnpacpi/core.c
-index ca84d50..8971996 100644
---- a/drivers/pnp/pnpacpi/core.c
-+++ b/drivers/pnp/pnpacpi/core.c
-@@ -22,7 +22,6 @@
- #include <linux/acpi.h>
- #include <linux/pnp.h>
- #include <linux/slab.h>
--#include <linux/mod_devicetable.h>
- #include <acpi/acpi_bus.h>
- 
- #include "../base.h"
-diff --git a/drivers/pnp/pnpbios/core.c b/drivers/pnp/pnpbios/core.c
-index cfe8685..7a59d1c 100644
---- a/drivers/pnp/pnpbios/core.c
-+++ b/drivers/pnp/pnpbios/core.c
-@@ -57,11 +57,11 @@
- #include <linux/slab.h>
- #include <linux/completion.h>
- #include <linux/spinlock.h>
+diff --git a/drivers/staging/hv/hv_mouse.c b/drivers/staging/hv/hv_mouse.c
+index 359e737..b40c23f 100644
+--- a/drivers/staging/hv/hv_mouse.c
++++ b/drivers/staging/hv/hv_mouse.c
+@@ -23,7 +23,6 @@
+ #include <linux/hid.h>
+ #include <linux/hiddev.h>
+ #include <linux/pci.h>
 -#include <linux/dmi.h>
  #include <linux/delay.h>
- #include <linux/acpi.h>
- #include <linux/freezer.h>
- #include <linux/kthread.h>
+ 
+ #include "hyperv.h"
+diff --git a/drivers/staging/hv/hv_timesource.c b/drivers/staging/hv/hv_timesource.c
+index 0efb049..34dc583 100644
+--- a/drivers/staging/hv/hv_timesource.c
++++ b/drivers/staging/hv/hv_timesource.c
+@@ -27,7 +27,7 @@
+ #include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+-#include <linux/dmi.h>
++#include <linux/sysfw.h>
+ #include <asm/hyperv.h>
+ #include <asm/mshyperv.h>
+ #include <asm/hypervisor.h>
+@@ -61,19 +61,19 @@ static struct clocksource hyperv_cs = {
+ 	.shift          = HV_CLOCK_SHIFT,
+ };
+ 
+-static const struct dmi_system_id __initconst
+-hv_timesource_dmi_table[] __maybe_unused  = {
++static const struct sysfw_id __initconst
++hv_timesource_smbios_table[] __maybe_unused = {
+ 	{
+ 		.ident = "Hyper-V",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Microsoft Corporation"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Virtual Machine"),
+-			DMI_MATCH(DMI_BOARD_NAME, "Virtual Machine"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Microsoft Corporation"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Virtual Machine"),
++			SYSFW_MATCH(SYSFW_BOARD_NAME, "Virtual Machine"),
+ 		},
+ 	},
+-	{ },
++	{},
+ };
+-MODULE_DEVICE_TABLE(dmi, hv_timesource_dmi_table);
++MODULE_DEVICE_TABLE(smbios, hv_timesource_smbios_table);
+ 
+ static const struct pci_device_id __initconst
+ hv_timesource_pci_table[] __maybe_unused = {
+@@ -89,7 +89,7 @@ static int __init init_hv_clocksource(void)
+ 		!(ms_hyperv.features & HV_X64_MSR_TIME_REF_COUNT_AVAILABLE))
+ 		return -ENODEV;
+ 
+-	if (!dmi_check_system(hv_timesource_dmi_table))
++	if (!sysfw_callback(hv_timesource_smbios_table))
+ 		return -ENODEV;
+ 
+ 	pr_info("Registering HyperV clock source\n");
+diff --git a/drivers/staging/hv/hv_util.c b/drivers/staging/hv/hv_util.c
+index c164b54..2d672b8 100644
+--- a/drivers/staging/hv/hv_util.c
++++ b/drivers/staging/hv/hv_util.c
+@@ -26,8 +26,8 @@
+ #include <linux/slab.h>
+ #include <linux/sysctl.h>
+ #include <linux/reboot.h>
+-#include <linux/dmi.h>
+ #include <linux/pci.h>
 +#include <linux/sysfw.h>
  
- #include <asm/page.h>
- #include <asm/desc.h>
-@@ -486,29 +486,29 @@ static int __init pnpbios_probe_system(void)
- 	return 0;
+ #include "hyperv.h"
+ #include "hv_kvp.h"
+@@ -218,19 +218,18 @@ hv_utils_pci_table[] __maybe_unused = {
+ MODULE_DEVICE_TABLE(pci, hv_utils_pci_table);
+ 
+ 
+-static const struct dmi_system_id __initconst
+-hv_utils_dmi_table[] __maybe_unused  = {
++static const struct sysfw_id __initconst hv_utils_id_table[] __maybe_unused = {
+ 	{
+ 		.ident = "Hyper-V",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Microsoft Corporation"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Virtual Machine"),
+-			DMI_MATCH(DMI_BOARD_NAME, "Virtual Machine"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Microsoft Corporation"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Virtual Machine"),
++			SYSFW_MATCH(SYSFW_BOARD_NAME, "Virtual Machine"),
+ 		},
+ 	},
+-	{ },
++	{},
+ };
+-MODULE_DEVICE_TABLE(dmi, hv_utils_dmi_table);
++MODULE_DEVICE_TABLE(sysfw, hv_utils_id_table);
+ 
+ 
+ static int __init init_hyperv_utils(void)
+@@ -241,7 +240,7 @@ static int __init init_hyperv_utils(void)
+ 		return -ENODEV;
+ 
+ 
+-	if (!dmi_check_system(hv_utils_dmi_table))
++	if (!sysfw_callback(hv_utils_id_table))
+ 		return -ENODEV;
+ 
+ 	shut_txf_buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
+diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
+index 7b9c229..0ffc210 100644
+--- a/drivers/staging/hv/netvsc_drv.c
++++ b/drivers/staging/hv/netvsc_drv.c
+@@ -32,8 +32,8 @@
+ #include <linux/skbuff.h>
+ #include <linux/in.h>
+ #include <linux/slab.h>
+-#include <linux/dmi.h>
+ #include <linux/pci.h>
++#include <linux/sysfw.h>
+ #include <net/arp.h>
+ #include <net/route.h>
+ #include <net/sock.h>
+@@ -439,19 +439,18 @@ static void __exit netvsc_drv_exit(void)
  }
  
--static int __init exploding_pnp_bios(const struct dmi_system_id *d)
-+static int __init exploding_pnp_bios(const struct sysfw_id *d)
+ 
+-static const struct dmi_system_id __initconst
+-hv_netvsc_dmi_table[] __maybe_unused  = {
++static const struct sysfw_id __initconst hv_netvsc_id_table[] __maybe_unused = {
+ 	{
+ 		.ident = "Hyper-V",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Microsoft Corporation"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Virtual Machine"),
+-			DMI_MATCH(DMI_BOARD_NAME, "Virtual Machine"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Microsoft Corporation"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Virtual Machine"),
++			SYSFW_MATCH(SYSFW_BOARD_NAME, "Virtual Machine"),
+ 		},
+ 	},
+-	{ },
++	{},
+ };
+-MODULE_DEVICE_TABLE(dmi, hv_netvsc_dmi_table);
++MODULE_DEVICE_TABLE(sysfw, hv_netvsc_id_table);
+ 
+ static int __init netvsc_drv_init(void)
  {
- 	printk(KERN_WARNING "%s detected. Disabling PnPBIOS\n", d->ident);
- 	return 0;
- }
+@@ -460,7 +459,7 @@ static int __init netvsc_drv_init(void)
  
--static struct dmi_system_id pnpbios_dmi_table[] __initdata = {
-+static struct sysfw_id pnpbios_smbios_table[] __initdata = {
- 	{			/* PnPBIOS GPF on boot */
- 	 .callback = exploding_pnp_bios,
- 	 .ident = "Higraded P14H",
- 	 .matches = {
--		     DMI_MATCH(DMI_BIOS_VENDOR, "American Megatrends Inc."),
--		     DMI_MATCH(DMI_BIOS_VERSION, "07.00T"),
--		     DMI_MATCH(DMI_SYS_VENDOR, "Higraded"),
--		     DMI_MATCH(DMI_PRODUCT_NAME, "P14H"),
-+		     SYSFW_MATCH(SYSFW_BIOS_VENDOR, "American Megatrends Inc."),
-+		     SYSFW_MATCH(SYSFW_BIOS_VERSION, "07.00T"),
-+		     SYSFW_MATCH(SYSFW_SYS_VENDOR, "Higraded"),
-+		     SYSFW_MATCH(SYSFW_PRODUCT_NAME, "P14H"),
- 		     },
- 	 },
- 	{			/* PnPBIOS GPF on boot */
- 	 .callback = exploding_pnp_bios,
- 	 .ident = "ASUS P4P800",
- 	 .matches = {
--		     DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTeK Computer Inc."),
--		     DMI_MATCH(DMI_BOARD_NAME, "P4P800"),
-+		     SYSFW_MATCH(SYSFW_BOARD_VENDOR, "ASUSTeK Computer Inc."),
-+		     SYSFW_MATCH(SYSFW_BOARD_NAME, "P4P800"),
- 		     },
- 	 },
- 	{}
-@@ -522,7 +522,7 @@ static int __init pnpbios_init(void)
- 	if (check_legacy_ioport(PNPBIOS_BASE))
+ 	pr_info("initializing....");
+ 
+-	if (!dmi_check_system(hv_netvsc_dmi_table))
++	if (!sysfw_callback(hv_netvsc_id_table))
  		return -ENODEV;
- #endif
--	if (pnpbios_disabled || dmi_check_system(pnpbios_dmi_table) ||
-+	if (pnpbios_disabled || sysfw_callback(pnpbios_smbios_table) ||
- 	    paravirt_enabled()) {
- 		printk(KERN_INFO "PnPBIOS: Disabled\n");
- 		return -ENODEV;
+ 
+ 
+diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
+index ec1d38c..18e3687 100644
+--- a/drivers/staging/hv/vmbus_drv.c
++++ b/drivers/staging/hv/vmbus_drv.c
+@@ -29,7 +29,6 @@
+ #include <linux/interrupt.h>
+ #include <linux/sysctl.h>
+ #include <linux/pci.h>
+-#include <linux/dmi.h>
+ #include <linux/slab.h>
+ #include <linux/acpi.h>
+ #include <acpi/acpi_bus.h>
 -- 
 1.6.5.2
 
