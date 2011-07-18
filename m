@@ -1,61 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754254Ab1GRI4T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 04:56:19 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:44803 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753554Ab1GRI4Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 04:56:16 -0400
-Date: Mon, 18 Jul 2011 18:56:08 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jonas Bonn <jonas@southpole.se>
-Subject: linux-next: manual merge of the akpm tree with the openrisc tree
-Message-Id: <20110718185608.97377aa900b014aa010830a2@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__18_Jul_2011_18_56_08_+1000_Ld2MedcJAZznZge+"
+	id S1754451Ab1GRJFW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 05:05:22 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:28270 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753552Ab1GRJFV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 05:05:21 -0400
+X-IronPort-AV: E=Sophos;i="4.67,221,1309737600"; 
+   d="scan'208";a="6822191"
+Subject: Re: [Xen-devel] [PATCH] xen: update machine_to_phys_order on	
+ resume
+From: Ian Campbell <Ian.Campbell@eu.citrix.com>
+To: Jan Beulich <JBeulich@novell.com>
+CC: Keir Fraser <keir.xen@gmail.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "keir@xen.org" <keir@xen.org>
+In-Reply-To: <4E240F3D020000780004DD70@nat28.tlf.novell.com>
+References: <CA499EDA.1E10E%keir.xen@gmail.com>
+	 <1310977905.20648.26.camel@zakaz.uk.xensource.com>
+	 <4E240F3D020000780004DD70@nat28.tlf.novell.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Citrix Systems, Inc.
+Date: Mon, 18 Jul 2011 10:05:18 +0100
+Message-ID: <1310979918.20648.31.camel@zakaz.uk.xensource.com>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__18_Jul_2011_18_56_08_+1000_Ld2MedcJAZznZge+
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2011-07-18 at 09:47 +0100, Jan Beulich wrote:
+> > @@ -960,6 +962,54 @@
+> >      }
+> >      break;
+> >  
+> > +    case XEN_DOMCTL_setfeatures:
+> > +    {
+> > +        struct domain *d;
+> > +        ret = -ESRCH;
+> > +        if ( (d = rcu_lock_domain_by_id(op->domain)) != NULL )
+> > +        {
+> > +            printk("dom%d set features[%d] = %#x\n", d->domain_id, op->u.setfeatures.submap_idx, op->u.setfeatures.submap);
+> > +
+> > +            switch (op->u.setfeatures.submap_idx) {
+> > +            case 0:
+> > +                if ( !paging_mode_translate(d) )
+> 
+> ... this condition looks inverted to me.
 
-Hi Andrew,
+Quite possibly. I only ever actually tested this with a dodgy PV in HVM
+container implementation.
 
-Today's linux-next merge of the scsi-post-merge tree got a conflict in
-arch/x86/include/asm/delay.h between commit 10f53642f115 ("asm-generic:
-move archictures to common delay.h") from the openrisc tree and commit
-"With a non-constant 8-bit argument, a call to udelay() generates a
-warning:" from the akpm tree.
+> > +                {
+> > +                    op->u.setfeatures.submap &= ~(1U<<XENFEAT_writable_page_tables);
+> > +                    op->u.setfeatures.submap &= ~(1U<<XENFEAT_auto_translated_physmap);
+> > +                }
+> > +                if ( !is_pvhvm_domain(d) )
+> > +                {
+> > +                    op->u.setfeatures.submap &= ~(1U<<XENFEAT_supervisor_mode_kernel);
+> > +                }
+> > +
+> > +                op->u.setfeatures.submap &= ~(1U<<XENFEAT_writable_descriptor_tables);
+> 
+> Why do you turn this off unconditionally?
 
-I just dropped this patch from the akpm tree as the former commit
-consolidated this code into asm-generic/delay.h (which doesn't solve the
-problem).
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Unless you build the hypervisor with supervisor_mode_kernel=1 (i.e.
+never) then it does not support XENFEAT_writable_descriptor_tables. In
+fact XENFEAT_supervisor_mode_kernel should also be unconditionally
+cleared (the check is a remnant of the PV in HVM container stuff).
 
---Signature=_Mon__18_Jul_2011_18_56_08_+1000_Ld2MedcJAZznZge+
-Content-Type: application/pgp-signature
+Note that XENFEAT_writable_descriptor_tables means that the guest kernel
+should not make pagetable pages RO at all, which is different from the
+hypervisor's support for writing to RO pagetables (i.e. emulating
+pagetable updates).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+> 
+> > +
+> > +                /* XXX other features */
+> 
+> That's perhaps also the place holder where the passed in information
+> would actually get stored?
 
-iQEcBAEBAgAGBQJOI/UoAAoJEDMEi1NhKgbsxiIH/jyGpGvfWmtiifRS04MsH68c
-Nwzn5OOudRFNr7qi9ff055y0DZ8nLrF7NX1ZkGejyIfoY6iEW0ihPyotPtHhFY70
-jscCPE08yHl8ZKGEyV4fEQsZq2zexeyNpnlpwqEz6Q6Ox0x+nshxrG7aDPg3P5Fq
-Dt0viYKf0K5Duit+xpAGj6whXFzeLeQY3NY8+lAcN2caTUOFQwQtQCUrnaJ7heVu
-iuQ8hLDNXECHX2QyiHc5Wo+2jq727V82VXkAp1uTQoSjjjY7oz9jzvOBei+jyC0s
-cBxezWkTLoJC+dt9VLUXAMa/a+EC/4iOI4rYKFzNo85ljGzDk9iOn+wmcg/9ESg=
-=LDDa
------END PGP SIGNATURE-----
+Yep ;-)
 
---Signature=_Mon__18_Jul_2011_18_56_08_+1000_Ld2MedcJAZznZge+--
+Ian.
+
