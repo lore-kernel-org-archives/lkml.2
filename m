@@ -1,123 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752844Ab1GRPY4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 11:24:56 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:33826 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752728Ab1GRPYy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 11:24:54 -0400
-Date: Mon, 18 Jul 2011 11:24:50 -0400
-From: Eric B Munson <emunson@mgebm.net>
-To: Anton Blanchard <anton@samba.org>
-Cc: Mel Gorman <mel@csn.ul.ie>, dwg@au1.ibm.com, akpm@linux-foundation.org,
-        hughd@google.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] hugepage: Allow parallelization of the hugepage
- fault path
-Message-ID: <20110718152450.GB3890@mgebm.net>
-References: <20110125143226.37532ea2@kryten>
- <20110125143414.1dbb150c@kryten>
- <20110126092428.GR18984@csn.ul.ie>
- <20110715160650.48d61245@kryten>
- <20110715161028.2869d307@kryten>
+	id S1752902Ab1GRP0A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 11:26:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63990 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751191Ab1GRPZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 11:25:59 -0400
+Date: Mon, 18 Jul 2011 11:25:32 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>, ebiederm@xmission.com,
+        hbabu@us.ibm.com, mahesh@linux.vnet.ibm.com, oomichi@mxs.nes.nec.co.jp,
+        horms@verge.net.au, heiko.carstens@de.ibm.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org
+Subject: Re: [patch 0/9] kdump: Patch series for s390 support
+Message-ID: <20110718152532.GF31986@redhat.com>
+References: <20110714091800.720da848@mschwide>
+ <20110714175532.GE6672@redhat.com>
+ <20110714180528.GF6672@redhat.com>
+ <1310739717.10789.31.camel@br98xy6r>
+ <20110715143820.GG3428@redhat.com>
+ <1310744603.10789.79.camel@br98xy6r>
+ <20110718123140.GB31986@redhat.com>
+ <1310997641.4427.10.camel@br98xy6r>
+ <20110718141943.GE31986@redhat.com>
+ <1311000253.4427.23.camel@br98xy6r>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Pd0ReVV5GZGQvF3a"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110715161028.2869d307@kryten>
+In-Reply-To: <1311000253.4427.23.camel@br98xy6r>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jul 18, 2011 at 04:44:13PM +0200, Michael Holzheu wrote:
+> On Mon, 2011-07-18 at 10:19 -0400, Vivek Goyal wrote:
+> > > > By parsing the ELF header. It will give you information about how many
+> > > > program headers and notes are there, their sizes and locations etc.
+> > > 
+> > > The only thing we need is the size of the preallocated header that is in
+> > > kdump memory. All other architectures seem to pass this information
+> > > somehow with different mechanisms to the kdump kernel (memmap kernel
+> > > parameter, boot parameters, etc.). Why should *we* parse the ELF header?
+> > 
+> > ELF headers and memmap parameters are communicating two different pieces
+> > of information to second kenrel.
+> > 
+> > - memap tells what memory second kernel can use to boot.
+> > - ELF headers tell what memory areas first kernel was using and using
+> >   that information how to construct ELF headers for /proc/vmcore interface
+> >   in second kernel. On x86, ELF headers also communicate where the saved
+> >   cpu state is for the first kernel.
+> > 
+> > Arch independent code in kdump kenrel (fs/proc/vmcore.c) is parsing those
+> > ELF headers to export /proc/vmcore. So if you set up the headers right
+> > you get that arch independent code for free without any changes to generic
+> > code.
+> 
+> Vivek, I know all these things. So, we (s390) do *not* have to parse the
+> ELF header. We only have to ensure the kexec prepared ELF header is
+> reserved until the /proc/vmcore parses it. All the ELF notes for CPUs,
+> etc. should automatically be reserved, because they are allocated in
+> oldmem by the old crashed kernel.
+> 
 
---Pd0ReVV5GZGQvF3a
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+[..]
+> All what I was asking is how we pass best the information "size of the
+> preallocated ELF header" to the 2nd kernel for reserving the header. We
+> currently do not have the memmap kernel parameter.
 
-On Fri, 15 Jul 2011, Anton Blanchard wrote:
+In theory you could come up with another command line option to pass
+which also tells size of header segment. But having a generic
+mechanism to provide memory map to second kernel will be more useful.
+The reason being that apart from ELF headers there might be more
+segments/memory areas which you need to exclude from the view of second
+kernel.
 
-> From: David Gibson <dwg@au1.ibm.com>
->=20
-> At present, the page fault path for hugepages is serialized by a
-> single mutex.  This is used to avoid spurious out-of-memory conditions
-> when the hugepage pool is fully utilized (two processes or threads can
-> race to instantiate the same mapping with the last hugepage from the
-> pool, the race loser returning VM_FAULT_OOM).  This problem is
-> specific to hugepages, because it is normal to want to use every
-> single hugepage in the system - with normal pages we simply assume
-> there will always be a few spare pages which can be used temporarily
-> until the race is resolved.
->=20
-> Unfortunately this serialization also means that clearing of hugepages
-> cannot be parallelized across multiple CPUs, which can lead to very
-> long process startup times when using large numbers of hugepages.
->=20
-> This patch improves the situation by replacing the single mutex with a
-> table of mutexes, selected based on a hash of the address_space and
-> file offset being faulted (or mm and virtual address for MAP_PRIVATE
-> mappings).
->=20
-> From: Anton Blanchard <anton@samba.org>
->=20
-> Forward ported and made a few changes:
->=20
-> - Use the Jenkins hash to scatter the hash, better than using just the
->   low bits.
->=20
-> - Always round num_fault_mutexes to a power of two to avoid an
->   expensive modulus in the hash calculation.
->=20
-> I also tested this patch on a large POWER7 box using a simple parallel
-> fault testcase:
->=20
-> http://ozlabs.org/~anton/junkcode/parallel_fault.c
->=20
-> Command line options:
->=20
-> parallel_fault <nr_threads> <size in kB> <skip in kB>
->=20
->=20
-> First the time taken to fault 128GB of 16MB hugepages:
->=20
-> # time hugectl --heap ./parallel_fault 1 134217728 16384
-> 40.68 seconds
->=20
-> Now the same test with 64 concurrent threads:
-> # time hugectl --heap ./parallel_fault 64 134217728 16384
-> 39.34 seconds
->=20
-> Hardly any speedup. Finally the 64 concurrent threads test with
-> this patch applied:
-> # time hugectl --heap ./parallel_fault 64 134217728 16384
-> 0.85 seconds
->=20
-> We go from 40.68 seconds to 0.85 seconds, an improvement of 47.9x
->=20
-> This was tested with the libhugetlbfs test suite, and the PASS/FAIL
-> count was the same before and after this patch.
->=20
->=20
-> Signed-off-by: David Gibson <dwg@au1.ibm.com>
-> Signed-off-by: Anton Blanchard <anton@samba.org>
+For example, backup reason on x86. This is a reason of 640K in reserved
+area where we copy the contets of first 640K of memory. In the past
+it looked like that even though we have relocatable kernel, it still
+needed some memory in low memory rgions. So we copy the contents of
+first 640K in backup area in reserved memory region and exclude that
+memory from the memory kdump kenrel can use (again using memmap=
+options).
 
-Tested-by: Eric B Munson <emunson@mgebm.net>
+How do you pass memory map to kernel in s390? Isn't there a way
+to modify that? That would be easiest I think.
 
---Pd0ReVV5GZGQvF3a
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+If you have only 1 memory area to exclude, probably you can get away
+with implementing elfcorehdrsize parameter. But this will be highly
+arch specific and works only if there is one memory area you want to
+exlucde.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Or for s390, implement a new parameter excludemem=x@y where you
+tell kernel not to use specified memory area and kexec-tools should
+be able to put right commnad line options for second kernel.
 
-iQEcBAEBAgAGBQJOJFBCAAoJEH65iIruGRnNGN0H/0VveZnL+jU6pB2yFyBR1c7e
-fwqQVNo7QRpiDv3ErGpKVKYQ0WHi8yrXGPFzFSqkYdazauupc+d+gxUnUy9ucSVh
-IbQJTIRcpHkus+MYlYFgpfgxjgqc3oattJ2YFSu8Mr8ziuYFfqEfdKvBLZdapetD
-feJw8Skvngi1tm4KUkxrpYScOa2zkdkbXE/3TCvdEbfRxlNRMMNMyLf/GaAKUJO2
-xfENxYj3POy76M3m2zHl1BLWDvavCbaMZzKaltHmPw7OjSqoR6LqeU2vH/IFPrQj
-SYH8qX61v8tRQ2IqKTT/rqhcr+OoYR9CsUeFv2trdLU6JwMwvepfr8xPcf8vXr4=
-=jHZc
------END PGP SIGNATURE-----
+> 
+> > > 
+> > > > When kexec-tools loads ELF headers, it knows what's the total size of
+> > > > ELF headers and it removes that chunk of memory from the memory map
+> > > > passed to second kernel with memmap= options. IOW, some memory out
+> > > > of reserved region is not usable by second kernel because we have
+> > > > stored information in that memory. Kdump kernel maps that memory and
+> > > > gets to read the ELF headers.
+> > > > 
+> > > > So you shall have to do something similar where you need to tell second
+> > > > kernel what memory areas it can use for boot and remove ELF header
+> > > > memory area from the map.
+> > > 
+> > > So if we do that, why should we parse the ELF header?
+> > 
+> > To know three things.
+> > 
+> > - Memory areas being used by first kernel.
+> > - Cpu states at the time of crash of first kernel.
+> > - Some config options exported by first kernel with the help of ELF notes.
+> 
+> sure
+> 
+> > fs/proc/vmcore.c already does it for you. You just need to make sure that
+> > you tell it following.
+> > 
+> > - Where to find the headers in memory (elfcorehdr=)
+> > - A way to map that memory and access contents.
+> 
+> sure
+> 
+> > - Make sure these headers are not overwritten by newly booted kernel.
+> 
+> And that was my question: What is the best way to do that. E.g. we could
+> pass a 2nd kernel parameter "elfcorehdr_size", implement s390 boot
+> parameter or implement the memmap kernel parameter.
 
---Pd0ReVV5GZGQvF3a--
+You could do that but I think a more generic parameter will make more
+sense.
+
+- Either something along the lines of memmap=
+- Or excludemem=x@y
+- Or modify memory map in s390 specific bootloading protocol block etc.
+
+Thanks
+Vivek
