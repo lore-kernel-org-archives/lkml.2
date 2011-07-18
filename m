@@ -1,175 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529Ab1GROAW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 10:00:22 -0400
-Received: from mga09.intel.com ([134.134.136.24]:33658 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751291Ab1GROAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 10:00:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,222,1309762800"; 
-   d="scan'208";a="28938241"
-Subject: Re: [PATCH v2 1/6] perf: Add interface to add general events to
- sysfs
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1310996068.13765.67.camel@twins>
-References: <1310740503-15608-1-git-send-email-ming.m.lin@intel.com>
-	 <1310740503-15608-2-git-send-email-ming.m.lin@intel.com>
-	 <1310996068.13765.67.camel@twins>
+	id S1753463Ab1GROAv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 10:00:51 -0400
+Received: from mtagate1.uk.ibm.com ([194.196.100.161]:59037 "EHLO
+	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751322Ab1GROAu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 10:00:50 -0400
+Subject: Re: [patch 0/9] kdump: Patch series for s390 support
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Reply-To: holzheu@linux.vnet.ibm.com
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>, ebiederm@xmission.com,
+        hbabu@us.ibm.com, mahesh@linux.vnet.ibm.com, oomichi@mxs.nes.nec.co.jp,
+        horms@verge.net.au, heiko.carstens@de.ibm.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org
+In-Reply-To: <20110718123140.GB31986@redhat.com>
+References: <20110711175626.121dcc58@mschwide>
+	 <20110713160239.GE4426@redhat.com> <20110713184611.6dcb09b4@mschwide>
+	 <20110713200004.GG4426@redhat.com> <20110714091800.720da848@mschwide>
+	 <20110714175532.GE6672@redhat.com> <20110714180528.GF6672@redhat.com>
+	 <1310739717.10789.31.camel@br98xy6r> <20110715143820.GG3428@redhat.com>
+	 <1310744603.10789.79.camel@br98xy6r>  <20110718123140.GB31986@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Jul 2011 22:00:15 +0800
-Message-Id: <1310997615.2970.8.camel@localhost>
+Organization: IBM
+Date: Mon, 18 Jul 2011 16:00:41 +0200
+Message-ID: <1310997641.4427.10.camel@br98xy6r>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-07-18 at 21:34 +0800, Peter Zijlstra wrote:
-> On Fri, 2011-07-15 at 14:34 +0000, Lin Ming wrote:
-> > PMU can implement ::add_events() to add its general events to sysfs.
+Hello Vivek,
+
+On Mon, 2011-07-18 at 08:31 -0400, Vivek Goyal wrote:
+> On Fri, Jul 15, 2011 at 05:43:23PM +0200, Michael Holzheu wrote:
+> > > Or in first step we can keep it even simpler. We can spin in infinite
+> > > loop
 > > 
-> > For example,
+> > Looping is probably not a good option in a hypervisor environment like
+> > we have it on s390. At least we should load a disabled wait PSW.
+> 
+> What is "disabled wait PSW"?
+
+This is a PSW where interrupts are disabled and the wait bit is on. This
+ensures that the virtual CPU is stopped and does not consume any CPU
+time.
+ 
+> > > In your case I think you shall have to do little more so that second
+> > > kernel also seems some of the lower memory areas so that later swapping
+> > > of kernel can be done.
 > > 
-> > /sys/bus/event_source/devices/uncore/events
-> > └── cycle
+> > After the swap the ELF header is contained in the same memory than the
+> > kdump kernel. When the kdump kernel starts, the ELF header has to be
+> > saved from being overwritten (as kernel and ramdisk). I get the address
+> > from the "elfcorehdr=" kernel parameter. How will I get the size?
+> 
+> By parsing the ELF header. It will give you information about how many
+> program headers and notes are there, their sizes and locations etc.
+
+The only thing we need is the size of the preallocated header that is in
+kdump memory. All other architectures seem to pass this information
+somehow with different mechanisms to the kdump kernel (memmap kernel
+parameter, boot parameters, etc.). Why should *we* parse the ELF header?
+
+> When kexec-tools loads ELF headers, it knows what's the total size of
+> ELF headers and it removes that chunk of memory from the memory map
+> passed to second kernel with memmap= options. IOW, some memory out
+> of reserved region is not usable by second kernel because we have
+> stored information in that memory. Kdump kernel maps that memory and
+> gets to read the ELF headers.
+> 
+> So you shall have to do something similar where you need to tell second
+> kernel what memory areas it can use for boot and remove ELF header
+> memory area from the map.
+
+So if we do that, why should we parse the ELF header?
+
+> > Looking at the ia64 and x86 implementations I have the feeling there are
+> > different mechanism available to do that.
 > > 
-> > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-> > ---
-> >  include/linux/perf_event.h |    9 +++++++
-> >  kernel/events/core.c       |   52 ++++++++++++++++++++++++++++++++++++++++++++
-> >  2 files changed, 61 insertions(+), 0 deletions(-)
+> > > 
+> > > > 
+> > > > On ia64 - if I understood the code correctly - they seem to pass a kdump
+> > > > segment "EFI_memmap" to the kdump kernel that contains information about
+> > > > all loaded kexec segments. With this segment they can find out the size
+> > > > of the ELF header segment in the kdump kernel and then do the memory
+> > > > reservation at boot time. Is that correct?
+> > > 
+> > > Sorry, I don't know the details of IA64. May be somebody else on the list
+> > > can pitch in with some clarifications here.
 > > 
-> > diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> > index 3f2711c..14337a3 100644
-> > --- a/include/linux/perf_event.h
-> > +++ b/include/linux/perf_event.h
-> > @@ -676,6 +676,14 @@ struct pmu {
-> >  	 * for each successful ->add() during the transaction.
-> >  	 */
-> >  	void (*cancel_txn)		(struct pmu *pmu); /* optional */
-> > +
-> > +	void (*add_events)		(void);
-> > +};
+> > For me it looks like a mechanism where a block of information is
+> > prepared by kexec tools and a pointer to that block is passed somehow to
+> > the second kernel. I would assume that the definition of this block is
+> > ia64 kernel ABI. 
 > 
-> I'd rather not have a function pointer here, and all the kobj thingies
-> can be hooking into the existing struct device, right?
-
-Right.
-
+> It is possible. Even in x86, we prepare a block of information, one
+> 4K page and fill lots of x86 boot protocol information.
 > 
-> > +struct pmu_event {
-> > +	char name[64];
-> > +	u64 config;
-> > +	struct kobj_attribute attr;
-> >  };
+> Look at.
 > 
-> Can't this live in kerne/event/internal.h?
-
-Yes, it can, with the new interface
-perf_pmu_add_event(struct pmu *pmu, const char *name, u64 config)
-
+> kexec-tools/include/x86/x86-linux.h
+> kexec-tools/kexec/arch/i386/x86-linux-setup.c
 > 
-> >  /**
-> > @@ -941,6 +949,7 @@ struct perf_output_handle {
-> >  
-> >  extern int perf_pmu_register(struct pmu *pmu, char *name, int type);
-> >  extern void perf_pmu_unregister(struct pmu *pmu);
-> > +extern void perf_pmu_add_events(struct pmu *pmu, struct pmu_event events[], int count);
-> >  
-> >  extern int perf_num_counters(void);
-> >  extern const char *perf_pmu_name(void);
-> > diff --git a/kernel/events/core.c b/kernel/events/core.c
-> > index 0567e32..9f4f463 100644
-> > --- a/kernel/events/core.c
-> > +++ b/kernel/events/core.c
-> > @@ -5571,6 +5571,8 @@ static int pmu_dev_alloc(struct pmu *pmu)
-> >  	if (ret)
-> >  		goto free_dev;
-> >  
-> > +	if (pmu->add_events)
-> > +		pmu->add_events();
-> >  out:
-> >  	return ret;
-> >  
-> > @@ -7035,4 +7037,54 @@ struct cgroup_subsys perf_subsys = {
-> >  	.exit		= perf_cgroup_exit,
-> >  	.attach_task	= perf_cgroup_attach_task,
-> >  };
-> > +
-> > +static ssize_t pmu_event_show(struct kobject *kobj,
-> > +		struct kobj_attribute *attr, char *buf)
-> > +{
-> > +	struct pmu_event *event = container_of(attr, struct pmu_event, attr);
-> > +	int size;
-> > +
-> > +	size = sprintf(buf, "%lld\n", event->config);
-> > +
-> > +	return size;
-> > +}
-> > +
-> > +void perf_pmu_add_events(struct pmu *pmu, struct pmu_event events[], int count)
-> > +{
-> > +	struct attribute_group *attr_group = NULL;
-> > +	struct attribute **all_attrs = NULL;
-> > +	struct kobj_attribute *event_attr;
-> > +	struct pmu_event *event;
-> > +	int i;
-> > +
-> > +	attr_group = kzalloc(sizeof(*attr_group), GFP_KERNEL);
-> > +	if (!attr_group)
-> > +		return;
-> > +	attr_group->name = "events";
-> > +
-> > +	all_attrs = kzalloc(sizeof(*all_attrs) * (count + 1), GFP_KERNEL);
-> > +	if (!all_attrs)
-> > +		goto fail;
-> > +
-> > +	for (i = 0; i < count; i++) {
-> > +		event = &events[i];
-> > +		event_attr = &event->attr;
-> > +
-> > +		sysfs_attr_init(&event_attr->attr);
-> > +		event_attr->attr.name = event->name;
-> > +		event_attr->attr.mode = 0444;
-> > +		event_attr->show = pmu_event_show;
-> > +
-> > +		all_attrs[i] = &event_attr->attr;
-> > +	}
-> > +
-> > +	attr_group->attrs = all_attrs;
-> > +	if (!sysfs_create_group(&pmu->dev->kobj, attr_group))
-> > +		return;
-> > +
-> > +fail:
-> > +	kfree(attr_group);
-> > +	kfree(all_attrs);
-> > +}
-> > +
-> >  #endif /* CONFIG_CGROUP_PERF */
+> Above header information contains information about e820 memory map also
+> and we fill that map info for normal kexec (fastboot, not kdump) also and
+> that's how second kernel comes to know about memory map of system.
 > 
-> Uhm, why does this live under CONFIG_CGROUP_PERF?
-
-Sorry, my mistake. I meant to put it at the end of the file.
-
+> I think one could possibly truncate the same map for kdump kernel to
+> tell second kernel about the memory to use. But IIRC, original memory
+> map is also used to determine max_pfn present in first kernel so that
+> in second kernel we don't try to map a memory beyond that and access
+> it, etc. Hence it was decided to leave it that way and pass the memory
+> map for second kernel on command line. 
 > 
-> Also, I would prefer an interface like:
-> 
-> int perf_pmu_add_event(struct pmu *pmu, const char *name, u64 config)
-> {
-> }
-> 
-> which would create the events directory if not already present and
-> allocate and add a pmu_sysfs_event thingy.
+> So its possible that IA64 is doing preparing boot protocal specific
+> block and passing all the releavant information in that block instead
+> of making use of commnad line.
 
-That's better.
+Just to come back to your initial argumentation against our meminfo
+approach: It looks like that there are already other mechanisms besides
+of ELF-header and kernel parameters to pass information to the kdump
+kernel. Where is the conceptional difference to our meminfo interface?
 
-Thanks.
-
+Michael
 
