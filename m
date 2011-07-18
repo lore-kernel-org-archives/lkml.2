@@ -1,960 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753772Ab1GRSzg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 14:55:36 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:55926 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751302Ab1GRSze (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 14:55:34 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Robert Love <rlove@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Rik van Riel <riel@redhat.com>,
-        Eric Anholt <eric@anholt.net>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [RFC][PATCH] Anonymous shared memory (ashmem) subsystem
-Date: Mon, 18 Jul 2011 11:54:34 -0700
-Message-Id: <1311015274-28650-1-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.3.2.146.gca209
+	id S1754128Ab1GRS5E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 14:57:04 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49788 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751010Ab1GRS5C convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 14:57:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <1311012230.3193.35.camel@localhost.localdomain>
+References: <1310977597-9666-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<201107182041.EHB78622.VOFSHFMOOFtLJQ@I-love.SAKURA.ne.jp>
+	<1310991796.3903.6.camel@smile>
+	<201107182148.AGD21306.FOLtJVMSOOFQHF@I-love.SAKURA.ne.jp>
+	<1311012230.3193.35.camel@localhost.localdomain>
+Date: Mon, 18 Jul 2011 21:57:00 +0300
+Message-ID: <CAHp75VcXNQKej_n4cOB8-gYDSL8MuGrv=Fs8=zdEKGp53DCtSA@mail.gmail.com>
+Subject: Re: [PATCH] Add error check to hex2bin().
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        linux-security-module@vger.kernel.org,
+        andriy.shevchenko@linux.intel.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Robert Love <rlove@google.com>
+On Mon, Jul 18, 2011 at 9:03 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> On Mon, 2011-07-18 at 21:48 +0900, Tetsuo Handa wrote:
+>> Currently, security/keys/ is the only user of hex2bin().
+>> Should I keep hex2bin() unmodified in case of bad input?
+>> If so, I'd like to make it as hex2bin_safe().
+>
+>> ----------------------------------------
+>> [PATCH] Add error check to hex2bin().
+>>
+>> Since converting 2 hexadecimal letters into a byte with error checks is
+>> commonly used, we can replace multiple hex_to_bin() calls with single hex2bin()
+>> call by changing hex2bin() to do error checks.
+>>
+>> Signed-off-by: Tetsuo Handa <penguin-kernel@I=love.SAKURA.ne.jp>
+>> ---
+>> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+>> index 953352a..186e9fc 100644
+>> --- a/include/linux/kernel.h
+>> +++ b/include/linux/kernel.h
+>> @@ -374,7 +374,7 @@ static inline char *pack_hex_byte(char *buf, u8 byte)
+>>  }
+>>
+>>  extern int hex_to_bin(char ch);
+>> -extern void hex2bin(u8 *dst, const char *src, size_t count);
+>> +extern bool hex2bin(u8 *dst, const char *src, size_t count);
+>>
+>>  /*
+>>   * General tracing related utility functions - trace_printk(),
+>> diff --git a/lib/hexdump.c b/lib/hexdump.c
+>> index f5fe6ba..1524002 100644
+>> --- a/lib/hexdump.c
+>> +++ b/lib/hexdump.c
+>> @@ -38,14 +38,22 @@ EXPORT_SYMBOL(hex_to_bin);
+>>   * @dst: binary result
+>>   * @src: ascii hexadecimal string
+>>   * @count: result length
+>> + *
+>> + * Returns true on success, false in case of bad input.
+>>   */
+>> -void hex2bin(u8 *dst, const char *src, size_t count)
+>> +bool hex2bin(u8 *dst, const char *src, size_t count)
+>>  {
+>>       while (count--) {
+>> -             *dst = hex_to_bin(*src++) << 4;
+>> -             *dst += hex_to_bin(*src++);
+>> -             dst++;
+>> +             int c = hex_to_bin(*src++);
+>> +             int d;
+>
+> Missing blank line here.
+>
+>> +             if (c < 0)
+>> +                     return false;
+>> +             d = hex_to_bin(*src++);
+>> +             if (d < 0)
+>> +                     return false;
+>> +             *dst++ = (c << 4) | d;
+>>       }
+>> +     return true;
+>>  }
+>>  EXPORT_SYMBOL(hex2bin);
+>
+> We probably don't need to define a separate 'safe' function.
+There is an opponent on any  approach. Although, small and fast error
+route could be good.
 
-Recently, Robert Love updated his ashmem patch and posted it here:
-	http://www.kernel.org/pub/linux/kernel/people/rml/ashmem/
+>
+> Instead of changing the existing code to short circuit out and return a
+> value, does only adding the return value work?  Something like:
+>
+>        bool ret = true;
+>        int c, d;
+>
+>        while (count--) {
+>                c = hex_to_bin(*src++);
+>                d = hex_to_bin(*src++);
+Here is a performance issue, yeah. The user prefers to know about an
+error as soon as possible.
 
-This reminded me that in all the conversations around the Android patches,
-I've not seen any discussion on lkml about the ashmem functionality. 
-Coming from Robert, its very clean and self-contained and seems pretty
-interesting. So I wanted to send it out for review and comments.
+>                *dst++ = (c << 4) | d;
+>
+>                if (c < 0 || d < 0)
+>                        ret = false;
+The ret value is redundant, and here you continue to fill the result
+array by something arbitrary (might be wrong data).
 
-thanks
--john
+>        }
+>        return ret;
+>
+> thanks,
+>
+> Mimi
+>
+>> In message "Re: [PATCH] net: can: remove custom hex_to_bin()",
+>> Andy Shevchenko wrote:
+>> > On Mon, 2011-07-18 at 20:41 +0900, Tetsuo Handa wrote:
+>> > > Andy Shevchenko wrote:
+>> > > >         for (i = 0, dlc_pos++; i < cf.can_dlc; i++) {
+>> > > > -
+>> > > > -               tmp = asc2nibble(sl->rbuff[dlc_pos++]);
+>> > > > -               if (tmp > 0x0F)
+>> > > > +               tmp = hex_to_bin(sl->rbuff[dlc_pos++]);
+>> > > > +               if (tmp < 0)
+>> > > >                         return;
+>> > > >                 cf.data[i] = (tmp << 4);
+>> > > > -               tmp = asc2nibble(sl->rbuff[dlc_pos++]);
+>> > > > -               if (tmp > 0x0F)
+>> > > > +               tmp = hex_to_bin(sl->rbuff[dlc_pos++]);
+>> > > > +               if (tmp < 0)
+>> > > >                         return;
+>> > > >                 cf.data[i] |= tmp;
+>> > > >         }
+>> > >
+>> > > What about changing
+>> > >
+>> > >   void hex2bin(u8 *dst, const char *src, size_t count)
+>> > >
+>> > > to
+>> > >
+>> > >   bool hex2bin(u8 *dst, const char *src, size_t count)
+>> > >
+>> > > in order to do error checks like
+>> > >
+>> > > bool hex2bin_with_validation(u8 *dst, const char *src, size_t count)
+>> > > {
+>> > >   while (count--) {
+>> > >           int c = hex_to_bin(*src++);
+>> > >           int d;
+>> > >           if (c < 0)
+>> > >                   return false;
+>> > >           d = hex_to_bin(*src++)
+>> > >           if (d < 0)
+>> > >                   return false;
+>> > >           *dst++ = (c << 4) | d;
+>> > >   }
+>> > >   return true;
+>> > > }
+>> > >
+>> > > and use hex2bin() rather than hex_to_bin()?
+>> > Perhaps, good idea. Could you submit a patch?
+>> >
+>> > --
+>> > Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+>> > Intel Finland Oy
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
 
-The anonymous shared memory (ashmem) subsystem provides a Unix-y,file-based
-shared memory interface to user-space. It works like anonymous memory (e.g.
-mmapping fd=0) except if you share the file descriptor via the usual means, you
-will share the mapping. The shared memory can be accessed via both mmap or file
-I/O. The backing store is a simple shmem file.
 
-Additionally, ashmem introduces the concept of page pinning. Pinned pages (the
-default) behave like any anonymous memory. Unpinned pages are available to the
-kernel for eviction during VM pressure. When repinning the pages, the return
-value instructs user-space as to any eviction. In this manner, user-space
-processes may implement caching and similar resource management that
-efficiently integrates with kernel memory management.
-
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Hugh Dickins <hughd@google.com>
-CC: Mel Gorman <mel@csn.ul.ie>
-CC: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: Rik van Riel <riel@redhat.com>
-CC: Eric Anholt <eric@anholt.net>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Robert Love <rlove@google.com>
-[jstultz: minor whitespace fixes for checkpatch.pl]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- include/linux/ashmem.h |   48 +++
- include/linux/mm.h     |    1 +
- init/Kconfig           |   12 +
- mm/Makefile            |    1 +
- mm/ashmem.c            |  747 ++++++++++++++++++++++++++++++++++++++++++++++++
- mm/shmem.c             |   14 +-
- 6 files changed, 818 insertions(+), 5 deletions(-)
- create mode 100644 include/linux/ashmem.h
- create mode 100644 mm/ashmem.c
-
-diff --git a/include/linux/ashmem.h b/include/linux/ashmem.h
-new file mode 100644
-index 0000000..1976b10
---- /dev/null
-+++ b/include/linux/ashmem.h
-@@ -0,0 +1,48 @@
-+/*
-+ * include/linux/ashmem.h
-+ *
-+ * Copyright 2008 Google Inc.
-+ * Author: Robert Love
-+ *
-+ * This file is dual licensed.  It may be redistributed and/or modified
-+ * under the terms of the Apache 2.0 License OR version 2 of the GNU
-+ * General Public License.
-+ */
-+
-+#ifndef _LINUX_ASHMEM_H
-+#define _LINUX_ASHMEM_H
-+
-+#include <linux/limits.h>
-+#include <linux/ioctl.h>
-+
-+#define ASHMEM_NAME_LEN		256
-+
-+#define ASHMEM_NAME_DEF		"dev/ashmem"
-+
-+/* Return values from ASHMEM_PIN: Was the mapping purged while unpinned? */
-+#define ASHMEM_NOT_PURGED	0
-+#define ASHMEM_WAS_PURGED	1
-+
-+/* Return values from ASHMEM_GET_PIN_STATUS: Is the mapping pinned? */
-+#define ASHMEM_IS_UNPINNED	0
-+#define ASHMEM_IS_PINNED	1
-+
-+struct ashmem_pin {
-+	__u32 offset;	/* offset into region, in bytes, page-aligned */
-+	__u32 len;	/* length forward from offset, in bytes, page-aligned */
-+};
-+
-+#define __ASHMEMIOC		0x77
-+
-+#define ASHMEM_SET_NAME		_IOW(__ASHMEMIOC, 1, char[ASHMEM_NAME_LEN])
-+#define ASHMEM_GET_NAME		_IOR(__ASHMEMIOC, 2, char[ASHMEM_NAME_LEN])
-+#define ASHMEM_SET_SIZE		_IOW(__ASHMEMIOC, 3, size_t)
-+#define ASHMEM_GET_SIZE		_IO(__ASHMEMIOC, 4)
-+#define ASHMEM_SET_PROT_MASK	_IOW(__ASHMEMIOC, 5, unsigned long)
-+#define ASHMEM_GET_PROT_MASK	_IO(__ASHMEMIOC, 6)
-+#define ASHMEM_PIN		_IOW(__ASHMEMIOC, 7, struct ashmem_pin)
-+#define ASHMEM_UNPIN		_IOW(__ASHMEMIOC, 8, struct ashmem_pin)
-+#define ASHMEM_GET_PIN_STATUS	_IO(__ASHMEMIOC, 9)
-+#define ASHMEM_PURGE_ALL_CACHES	_IO(__ASHMEMIOC, 10)
-+
-+#endif	/* _LINUX_ASHMEM_H */
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 9670f71..de20025 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -871,6 +871,7 @@ extern bool skip_free_areas_node(unsigned int flags, int nid);
- 
- int shmem_lock(struct file *file, int lock, struct user_struct *user);
- struct file *shmem_file_setup(const char *name, loff_t size, unsigned long flags);
-+void shmem_set_file(struct vm_area_struct *vma, struct file *file);
- int shmem_zero_setup(struct vm_area_struct *);
- 
- extern int can_do_mlock(void);
-diff --git a/init/Kconfig b/init/Kconfig
-index 412c21b..e9f7058 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -1081,6 +1081,18 @@ config SHMEM
- 	  option replaces shmem and tmpfs with the much simpler ramfs code,
- 	  which may be appropriate on small systems without swap.
- 
-+config ASHMEM
-+	bool "Enable the Anonymous Shared Memory Subsystem"
-+	default n
-+	depends on SHMEM || TINY_SHMEM
-+	help
-+	  The ashmem subsystem is a new shared memory allocator available to
-+	  user-space, similar to POSIX SHM but with different behavior and a
-+	  more Unix-y, file-based API. The ashmem subsystem also supports
-+	  the eviction of unpinned pages during VM pressure, allowing
-+	  user-space to implement caches that are automatically shrunk when
-+	  memory is low.
-+
- config AIO
- 	bool "Enable AIO support" if EXPERT
- 	default y
-diff --git a/mm/Makefile b/mm/Makefile
-index 836e416..cd41f09 100644
---- a/mm/Makefile
-+++ b/mm/Makefile
-@@ -30,6 +30,7 @@ obj-$(CONFIG_HUGETLBFS)	+= hugetlb.o
- obj-$(CONFIG_NUMA) 	+= mempolicy.o
- obj-$(CONFIG_SPARSEMEM)	+= sparse.o
- obj-$(CONFIG_SPARSEMEM_VMEMMAP) += sparse-vmemmap.o
-+obj-$(CONFIG_ASHMEM)	+= ashmem.o
- obj-$(CONFIG_SLOB) += slob.o
- obj-$(CONFIG_COMPACTION) += compaction.o
- obj-$(CONFIG_MMU_NOTIFIER) += mmu_notifier.o
-diff --git a/mm/ashmem.c b/mm/ashmem.c
-new file mode 100644
-index 0000000..7bb3c84
---- /dev/null
-+++ b/mm/ashmem.c
-@@ -0,0 +1,747 @@
-+/* mm/ashmem.c
-+**
-+** Anonymous Shared Memory Subsystem, ashmem
-+**
-+** Copyright (C) 2008 Google, Inc.
-+**
-+** Robert Love <rlove@google.com>
-+**
-+** This software is licensed under the terms of the GNU General Public
-+** License version 2, as published by the Free Software Foundation, and
-+** may be copied, distributed, and modified under those terms.
-+**
-+** This program is distributed in the hope that it will be useful,
-+** but WITHOUT ANY WARRANTY; without even the implied warranty of
-+** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+** GNU General Public License for more details.
-+*/
-+
-+#include <linux/module.h>
-+#include <linux/file.h>
-+#include <linux/fs.h>
-+#include <linux/miscdevice.h>
-+#include <linux/security.h>
-+#include <linux/mm.h>
-+#include <linux/mman.h>
-+#include <linux/uaccess.h>
-+#include <linux/personality.h>
-+#include <linux/bitops.h>
-+#include <linux/mutex.h>
-+#include <linux/shmem_fs.h>
-+#include <linux/ashmem.h>
-+
-+#define ASHMEM_NAME_PREFIX "dev/ashmem/"
-+#define ASHMEM_NAME_PREFIX_LEN (sizeof(ASHMEM_NAME_PREFIX) - 1)
-+#define ASHMEM_FULL_NAME_LEN (ASHMEM_NAME_LEN + ASHMEM_NAME_PREFIX_LEN)
-+
-+/*
-+ * ashmem_area - anonymous shared memory area
-+ * Lifecycle: From our parent file's open() until its release()
-+ * Locking: Protected by `ashmem_mutex'
-+ * Big Note: Mappings do NOT pin this structure; it dies on close()
-+ */
-+struct ashmem_area {
-+	char name[ASHMEM_FULL_NAME_LEN]; /* optional name in /proc/pid/maps */
-+	struct list_head unpinned_list;	 /* list of all ashmem areas */
-+	struct file *file;		 /* the shmem-based backing file */
-+	size_t size;			 /* size of the mapping, in bytes */
-+	unsigned long prot_mask;	 /* allowed prot bits, as vm_flags */
-+};
-+
-+/*
-+ * ashmem_range - represents an interval of unpinned (evictable) pages
-+ * Lifecycle: From unpin to pin
-+ * Locking: Protected by `ashmem_mutex'
-+ */
-+struct ashmem_range {
-+	struct list_head lru;		/* entry in LRU list */
-+	struct list_head unpinned;	/* entry in its area's unpinned list */
-+	struct ashmem_area *asma;	/* associated area */
-+	size_t pgstart;			/* starting page, inclusive */
-+	size_t pgend;			/* ending page, inclusive */
-+	unsigned int purged;		/* ASHMEM_NOT or ASHMEM_WAS_PURGED */
-+};
-+
-+/* LRU list of unpinned pages, protected by ashmem_mutex */
-+static LIST_HEAD(ashmem_lru_list);
-+
-+/* Count of pages on our LRU list, protected by ashmem_mutex */
-+static unsigned long lru_count;
-+
-+/*
-+ * ashmem_mutex - protects the list of and each individual ashmem_area
-+ *
-+ * Lock Ordering: ashmex_mutex -> i_mutex -> i_alloc_sem
-+ */
-+static DEFINE_MUTEX(ashmem_mutex);
-+
-+static struct kmem_cache *ashmem_area_cachep __read_mostly;
-+static struct kmem_cache *ashmem_range_cachep __read_mostly;
-+
-+#define range_size(range) \
-+	((range)->pgend - (range)->pgstart + 1)
-+
-+#define range_on_lru(range) \
-+	((range)->purged == ASHMEM_NOT_PURGED)
-+
-+#define page_range_subsumes_range(range, start, end) \
-+	(((range)->pgstart >= (start)) && ((range)->pgend <= (end)))
-+
-+#define page_range_subsumed_by_range(range, start, end) \
-+	(((range)->pgstart <= (start)) && ((range)->pgend >= (end)))
-+
-+#define page_in_range(range, page) \
-+	(((range)->pgstart <= (page)) && ((range)->pgend >= (page)))
-+
-+#define page_range_in_range(range, start, end) \
-+	(page_in_range(range, start) || page_in_range(range, end) || \
-+		page_range_subsumes_range(range, start, end))
-+
-+#define range_before_page(range, page) \
-+	((range)->pgend < (page))
-+
-+#define PROT_MASK		(PROT_EXEC | PROT_READ | PROT_WRITE)
-+
-+static inline void lru_add(struct ashmem_range *range)
-+{
-+	list_add_tail(&range->lru, &ashmem_lru_list);
-+	lru_count += range_size(range);
-+}
-+
-+static inline void lru_del(struct ashmem_range *range)
-+{
-+	list_del(&range->lru);
-+	lru_count -= range_size(range);
-+}
-+
-+/*
-+ * range_alloc - allocate and initialize a new ashmem_range structure
-+ *
-+ * 'asma' - associated ashmem_area
-+ * 'prev_range' - the previous ashmem_range in the sorted asma->unpinned list
-+ * 'purged' - initial purge value (ASMEM_NOT_PURGED or ASHMEM_WAS_PURGED)
-+ * 'start' - starting page, inclusive
-+ * 'end' - ending page, inclusive
-+ *
-+ * Caller must hold ashmem_mutex.
-+ */
-+static int range_alloc(struct ashmem_area *asma,
-+		       struct ashmem_range *prev_range, unsigned int purged,
-+		       size_t start, size_t end)
-+{
-+	struct ashmem_range *range;
-+
-+	range = kmem_cache_zalloc(ashmem_range_cachep, GFP_KERNEL);
-+	if (unlikely(!range))
-+		return -ENOMEM;
-+
-+	range->asma = asma;
-+	range->pgstart = start;
-+	range->pgend = end;
-+	range->purged = purged;
-+
-+	list_add_tail(&range->unpinned, &prev_range->unpinned);
-+
-+	if (range_on_lru(range))
-+		lru_add(range);
-+
-+	return 0;
-+}
-+
-+static void range_del(struct ashmem_range *range)
-+{
-+	list_del(&range->unpinned);
-+	if (range_on_lru(range))
-+		lru_del(range);
-+	kmem_cache_free(ashmem_range_cachep, range);
-+}
-+
-+/*
-+ * range_shrink - shrinks a range
-+ *
-+ * Caller must hold ashmem_mutex.
-+ */
-+static inline void range_shrink(struct ashmem_range *range,
-+				size_t start, size_t end)
-+{
-+	size_t pre = range_size(range);
-+
-+	range->pgstart = start;
-+	range->pgend = end;
-+
-+	if (range_on_lru(range))
-+		lru_count -= pre - range_size(range);
-+}
-+
-+static int ashmem_open(struct inode *inode, struct file *file)
-+{
-+	struct ashmem_area *asma;
-+	int ret;
-+
-+	ret = generic_file_open(inode, file);
-+	if (unlikely(ret))
-+		return ret;
-+
-+	asma = kmem_cache_zalloc(ashmem_area_cachep, GFP_KERNEL);
-+	if (unlikely(!asma))
-+		return -ENOMEM;
-+
-+	INIT_LIST_HEAD(&asma->unpinned_list);
-+	memcpy(asma->name, ASHMEM_NAME_PREFIX, ASHMEM_NAME_PREFIX_LEN);
-+	asma->prot_mask = PROT_MASK;
-+	file->private_data = asma;
-+
-+	return 0;
-+}
-+
-+static int ashmem_release(struct inode *ignored, struct file *file)
-+{
-+	struct ashmem_area *asma = file->private_data;
-+	struct ashmem_range *range, *next;
-+
-+	mutex_lock(&ashmem_mutex);
-+	list_for_each_entry_safe(range, next, &asma->unpinned_list, unpinned)
-+		range_del(range);
-+	mutex_unlock(&ashmem_mutex);
-+
-+	if (asma->file)
-+		fput(asma->file);
-+	kmem_cache_free(ashmem_area_cachep, asma);
-+
-+	return 0;
-+}
-+
-+static ssize_t ashmem_read(struct file *file, char __user *buf,
-+			   size_t len, loff_t *pos)
-+{
-+	struct ashmem_area *asma = file->private_data;
-+	int ret = 0;
-+
-+	mutex_lock(&ashmem_mutex);
-+
-+	/* If size is not set, or set to 0, always return EOF. */
-+	if (asma->size == 0)
-+		goto out;
-+
-+	if (!asma->file) {
-+		ret = -EBADF;
-+		goto out;
-+	}
-+
-+	ret = asma->file->f_op->read(asma->file, buf, len, pos);
-+	if (ret < 0)
-+		goto out;
-+
-+	/** Update backing file pos, since f_ops->read() doesn't */
-+	asma->file->f_pos = *pos;
-+
-+out:
-+	mutex_unlock(&ashmem_mutex);
-+	return ret;
-+}
-+
-+static loff_t ashmem_llseek(struct file *file, loff_t offset, int origin)
-+{
-+	struct ashmem_area *asma = file->private_data;
-+	int ret;
-+
-+	mutex_lock(&ashmem_mutex);
-+
-+	if (asma->size == 0) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	if (!asma->file) {
-+		ret = -EBADF;
-+		goto out;
-+	}
-+
-+	ret = asma->file->f_op->llseek(asma->file, offset, origin);
-+	if (ret < 0)
-+		goto out;
-+
-+	/** Copy f_pos from backing file, since f_ops->llseek() sets it */
-+	file->f_pos = asma->file->f_pos;
-+
-+out:
-+	mutex_unlock(&ashmem_mutex);
-+	return ret;
-+}
-+
-+static inline unsigned long calc_vm_may_flags(unsigned long prot)
-+{
-+	return _calc_vm_trans(prot, PROT_READ,  VM_MAYREAD) |
-+	       _calc_vm_trans(prot, PROT_WRITE, VM_MAYWRITE) |
-+	       _calc_vm_trans(prot, PROT_EXEC,  VM_MAYEXEC);
-+}
-+
-+static int ashmem_mmap(struct file *file, struct vm_area_struct *vma)
-+{
-+	struct ashmem_area *asma = file->private_data;
-+	int ret = 0;
-+
-+	mutex_lock(&ashmem_mutex);
-+
-+	/* user needs to SET_SIZE before mapping */
-+	if (unlikely(!asma->size)) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	/* requested protection bits must match our allowed protection mask */
-+	if (unlikely((vma->vm_flags & ~calc_vm_prot_bits(asma->prot_mask)) &
-+		     calc_vm_prot_bits(PROT_MASK))) {
-+		ret = -EPERM;
-+		goto out;
-+	}
-+	vma->vm_flags &= ~calc_vm_may_flags(~asma->prot_mask);
-+
-+	if (!asma->file) {
-+		char *name = ASHMEM_NAME_DEF;
-+		struct file *vmfile;
-+
-+		if (asma->name[ASHMEM_NAME_PREFIX_LEN] != '\0')
-+			name = asma->name;
-+
-+		/* ... and allocate the backing shmem file */
-+		vmfile = shmem_file_setup(name, asma->size, vma->vm_flags);
-+		if (unlikely(IS_ERR(vmfile))) {
-+			ret = PTR_ERR(vmfile);
-+			goto out;
-+		}
-+		asma->file = vmfile;
-+	}
-+	get_file(asma->file);
-+
-+	if (vma->vm_flags & VM_SHARED)
-+		shmem_set_file(vma, asma->file);
-+	else {
-+		if (vma->vm_file)
-+			fput(vma->vm_file);
-+		vma->vm_file = asma->file;
-+	}
-+	vma->vm_flags |= VM_CAN_NONLINEAR;
-+
-+out:
-+	mutex_unlock(&ashmem_mutex);
-+	return ret;
-+}
-+
-+/*
-+ * ashmem_shrink - our cache shrinker, called from mm/vmscan.c :: shrink_slab
-+ *
-+ * The shrink_control object contains two members we (currently) care about:
-+ *
-+ * 'nr_to_scan' is the number of objects (pages) to prune, or 0 to query how
-+ * many objects (pages) we have in total.
-+ *
-+ * 'gfp_mask' is the mask of the allocation that got us into this mess.
-+ *
-+ * Return value is the number of objects (pages) remaining, or -1 if we cannot
-+ * proceed without risk of deadlock (due to gfp_mask).
-+ *
-+ * We approximate LRU via least-recently-unpinned, jettisoning unpinned partial
-+ * chunks of ashmem regions LRU-wise one-at-a-time until we hit 'nr_to_scan'
-+ * pages freed.
-+ */
-+static int ashmem_shrink(struct shrinker *ignored, struct shrink_control *sc)
-+{
-+	struct ashmem_range *range, *next;
-+	unsigned long nr_to_scan = sc->nr_to_scan;
-+	const gfp_t gfp_mask = sc->gfp_mask;
-+
-+	/* We might recurse into filesystem code, so bail out if necessary */
-+	if (nr_to_scan && !(gfp_mask & __GFP_FS))
-+		return -1;
-+	if (!nr_to_scan)
-+		return lru_count;
-+
-+	mutex_lock(&ashmem_mutex);
-+	list_for_each_entry_safe(range, next, &ashmem_lru_list, lru) {
-+		struct inode *inode = range->asma->file->f_dentry->d_inode;
-+		loff_t start = range->pgstart * PAGE_SIZE;
-+		loff_t end = (range->pgend + 1) * PAGE_SIZE - 1;
-+
-+		vmtruncate_range(inode, start, end);
-+		range->purged = ASHMEM_WAS_PURGED;
-+		lru_del(range);
-+
-+		nr_to_scan -= range_size(range);
-+		if (nr_to_scan <= 0)
-+			break;
-+	}
-+	mutex_unlock(&ashmem_mutex);
-+
-+	return lru_count;
-+}
-+
-+static struct shrinker ashmem_shrinker = {
-+	.shrink = ashmem_shrink,
-+	.seeks = DEFAULT_SEEKS * 4,
-+};
-+
-+static int set_prot_mask(struct ashmem_area *asma, unsigned long prot)
-+{
-+	int ret = 0;
-+
-+	mutex_lock(&ashmem_mutex);
-+
-+	/* the user can only remove, not add, protection bits */
-+	if (unlikely((asma->prot_mask & prot) != prot)) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	/* does the application expect PROT_READ to imply PROT_EXEC? */
-+	if ((prot & PROT_READ) && (current->personality & READ_IMPLIES_EXEC))
-+		prot |= PROT_EXEC;
-+
-+	asma->prot_mask = prot;
-+
-+out:
-+	mutex_unlock(&ashmem_mutex);
-+	return ret;
-+}
-+
-+static int set_name(struct ashmem_area *asma, void __user *name)
-+{
-+	int ret = 0;
-+
-+	mutex_lock(&ashmem_mutex);
-+
-+	/* cannot change an existing mapping's name */
-+	if (unlikely(asma->file)) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	if (unlikely(copy_from_user(asma->name + ASHMEM_NAME_PREFIX_LEN,
-+				    name, ASHMEM_NAME_LEN)))
-+		ret = -EFAULT;
-+	asma->name[ASHMEM_FULL_NAME_LEN-1] = '\0';
-+
-+out:
-+	mutex_unlock(&ashmem_mutex);
-+
-+	return ret;
-+}
-+
-+static int get_name(struct ashmem_area *asma, void __user *name)
-+{
-+	int ret = 0;
-+
-+	mutex_lock(&ashmem_mutex);
-+	if (asma->name[ASHMEM_NAME_PREFIX_LEN] != '\0') {
-+		size_t len;
-+
-+		/*
-+		 * Copying only `len', instead of ASHMEM_NAME_LEN, bytes
-+		 * prevents us from revealing one user's stack to another.
-+		 */
-+		len = strlen(asma->name + ASHMEM_NAME_PREFIX_LEN) + 1;
-+		if (unlikely(copy_to_user(name,
-+				asma->name + ASHMEM_NAME_PREFIX_LEN, len)))
-+			ret = -EFAULT;
-+	} else {
-+		if (unlikely(copy_to_user(name, ASHMEM_NAME_DEF,
-+					  sizeof(ASHMEM_NAME_DEF))))
-+			ret = -EFAULT;
-+	}
-+	mutex_unlock(&ashmem_mutex);
-+
-+	return ret;
-+}
-+
-+/*
-+ * ashmem_pin - pin the given ashmem region, returning whether it was
-+ * previously purged (ASHMEM_WAS_PURGED) or not (ASHMEM_NOT_PURGED).
-+ *
-+ * Caller must hold ashmem_mutex.
-+ */
-+static int ashmem_pin(struct ashmem_area *asma, size_t pgstart, size_t pgend)
-+{
-+	struct ashmem_range *range, *next;
-+	int ret = ASHMEM_NOT_PURGED;
-+
-+	list_for_each_entry_safe(range, next, &asma->unpinned_list, unpinned) {
-+		/* moved past last applicable page; we can short circuit */
-+		if (range_before_page(range, pgstart))
-+			break;
-+
-+		/*
-+		 * The user can ask us to pin pages that span multiple ranges,
-+		 * or to pin pages that aren't even unpinned, so this is messy.
-+		 *
-+		 * Four cases:
-+		 * 1. The requested range subsumes an existing range, so we
-+		 *    just remove the entire matching range.
-+		 * 2. The requested range overlaps the start of an existing
-+		 *    range, so we just update that range.
-+		 * 3. The requested range overlaps the end of an existing
-+		 *    range, so we just update that range.
-+		 * 4. The requested range punches a hole in an existing range,
-+		 *    so we have to update one side of the range and then
-+		 *    create a new range for the other side.
-+		 */
-+		if (page_range_in_range(range, pgstart, pgend)) {
-+			ret |= range->purged;
-+
-+			/* Case #1: Easy. Just nuke the whole thing. */
-+			if (page_range_subsumes_range(range, pgstart, pgend)) {
-+				range_del(range);
-+				continue;
-+			}
-+
-+			/* Case #2: We overlap from the start, so adjust it */
-+			if (range->pgstart >= pgstart) {
-+				range_shrink(range, pgend + 1, range->pgend);
-+				continue;
-+			}
-+
-+			/* Case #3: We overlap from the rear, so adjust it */
-+			if (range->pgend <= pgend) {
-+				range_shrink(range, range->pgstart, pgstart-1);
-+				continue;
-+			}
-+
-+			/*
-+			 * Case #4: We eat a chunk out of the middle. A bit
-+			 * more complicated, we allocate a new range for the
-+			 * second half and adjust the first chunk's endpoint.
-+			 */
-+			range_alloc(asma, range, range->purged,
-+				    pgend + 1, range->pgend);
-+			range_shrink(range, range->pgstart, pgstart - 1);
-+			break;
-+		}
-+	}
-+
-+	return ret;
-+}
-+
-+/*
-+ * ashmem_unpin - unpin the given range of pages. Returns zero on success.
-+ *
-+ * Caller must hold ashmem_mutex.
-+ */
-+static int ashmem_unpin(struct ashmem_area *asma, size_t pgstart, size_t pgend)
-+{
-+	struct ashmem_range *range, *next;
-+	unsigned int purged = ASHMEM_NOT_PURGED;
-+
-+restart:
-+	list_for_each_entry_safe(range, next, &asma->unpinned_list, unpinned) {
-+		/* short circuit: this is our insertion point */
-+		if (range_before_page(range, pgstart))
-+			break;
-+
-+		/*
-+		 * The user can ask us to unpin pages that are already entirely
-+		 * or partially pinned. We handle those two cases here.
-+		 */
-+		if (page_range_subsumed_by_range(range, pgstart, pgend))
-+			return 0;
-+		if (page_range_in_range(range, pgstart, pgend)) {
-+			pgstart = min_t(size_t, range->pgstart, pgstart),
-+			pgend = max_t(size_t, range->pgend, pgend);
-+			purged |= range->purged;
-+			range_del(range);
-+			goto restart;
-+		}
-+	}
-+
-+	return range_alloc(asma, range, purged, pgstart, pgend);
-+}
-+
-+/*
-+ * ashmem_get_pin_status - Returns ASHMEM_IS_UNPINNED if _any_ pages in the
-+ * given interval are unpinned and ASHMEM_IS_PINNED otherwise.
-+ *
-+ * Caller must hold ashmem_mutex.
-+ */
-+static int ashmem_get_pin_status(struct ashmem_area *asma, size_t pgstart,
-+				 size_t pgend)
-+{
-+	struct ashmem_range *range;
-+	int ret = ASHMEM_IS_PINNED;
-+
-+	list_for_each_entry(range, &asma->unpinned_list, unpinned) {
-+		if (range_before_page(range, pgstart))
-+			break;
-+		if (page_range_in_range(range, pgstart, pgend)) {
-+			ret = ASHMEM_IS_UNPINNED;
-+			break;
-+		}
-+	}
-+
-+	return ret;
-+}
-+
-+static int ashmem_pin_unpin(struct ashmem_area *asma, unsigned long cmd,
-+			    void __user *p)
-+{
-+	struct ashmem_pin pin;
-+	size_t pgstart, pgend;
-+	int ret = -EINVAL;
-+
-+	if (unlikely(!asma->file))
-+		return -EINVAL;
-+
-+	if (unlikely(copy_from_user(&pin, p, sizeof(pin))))
-+		return -EFAULT;
-+
-+	/* per custom, you can pass zero for len to mean "everything onward" */
-+	if (!pin.len)
-+		pin.len = PAGE_ALIGN(asma->size) - pin.offset;
-+
-+	if (unlikely((pin.offset | pin.len) & ~PAGE_MASK))
-+		return -EINVAL;
-+
-+	if (unlikely(((__u32) -1) - pin.offset < pin.len))
-+		return -EINVAL;
-+
-+	if (unlikely(PAGE_ALIGN(asma->size) < pin.offset + pin.len))
-+		return -EINVAL;
-+
-+	pgstart = pin.offset / PAGE_SIZE;
-+	pgend = pgstart + (pin.len / PAGE_SIZE) - 1;
-+
-+	mutex_lock(&ashmem_mutex);
-+
-+	switch (cmd) {
-+	case ASHMEM_PIN:
-+		ret = ashmem_pin(asma, pgstart, pgend);
-+		break;
-+	case ASHMEM_UNPIN:
-+		ret = ashmem_unpin(asma, pgstart, pgend);
-+		break;
-+	case ASHMEM_GET_PIN_STATUS:
-+		ret = ashmem_get_pin_status(asma, pgstart, pgend);
-+		break;
-+	}
-+
-+	mutex_unlock(&ashmem_mutex);
-+
-+	return ret;
-+}
-+
-+static long ashmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-+{
-+	struct ashmem_area *asma = file->private_data;
-+	long ret = -ENOTTY;
-+
-+	switch (cmd) {
-+	case ASHMEM_SET_NAME:
-+		ret = set_name(asma, (void __user *) arg);
-+		break;
-+	case ASHMEM_GET_NAME:
-+		ret = get_name(asma, (void __user *) arg);
-+		break;
-+	case ASHMEM_SET_SIZE:
-+		ret = -EINVAL;
-+		if (!asma->file) {
-+			ret = 0;
-+			asma->size = (size_t) arg;
-+		}
-+		break;
-+	case ASHMEM_GET_SIZE:
-+		ret = asma->size;
-+		break;
-+	case ASHMEM_SET_PROT_MASK:
-+		ret = set_prot_mask(asma, arg);
-+		break;
-+	case ASHMEM_GET_PROT_MASK:
-+		ret = asma->prot_mask;
-+		break;
-+	case ASHMEM_PIN:
-+	case ASHMEM_UNPIN:
-+	case ASHMEM_GET_PIN_STATUS:
-+		ret = ashmem_pin_unpin(asma, cmd, (void __user *) arg);
-+		break;
-+	case ASHMEM_PURGE_ALL_CACHES:
-+		ret = -EPERM;
-+		if (capable(CAP_SYS_ADMIN)) {
-+			struct shrink_control sc = {
-+				.gfp_mask = GFP_KERNEL,
-+				.nr_to_scan = 0 };
-+			ret = ashmem_shrink(&ashmem_shrinker, &sc);
-+			sc.nr_to_scan = ret;
-+			ashmem_shrink(&ashmem_shrinker, &sc);
-+		}
-+		break;
-+	}
-+
-+	return ret;
-+}
-+
-+static const struct file_operations ashmem_fops = {
-+	.owner = THIS_MODULE,
-+	.open = ashmem_open,
-+	.release = ashmem_release,
-+	.read = ashmem_read,
-+	.llseek = ashmem_llseek,
-+	.mmap = ashmem_mmap,
-+	.unlocked_ioctl = ashmem_ioctl,
-+	.compat_ioctl = ashmem_ioctl,
-+};
-+
-+static struct miscdevice ashmem_misc = {
-+	.minor = MISC_DYNAMIC_MINOR,
-+	.name = "ashmem",
-+	.fops = &ashmem_fops,
-+};
-+
-+static int __init ashmem_init(void)
-+{
-+	int ret;
-+
-+	ashmem_area_cachep = kmem_cache_create("ashmem_area_cache",
-+					  sizeof(struct ashmem_area),
-+					  0, 0, NULL);
-+	if (unlikely(!ashmem_area_cachep)) {
-+		printk(KERN_ERR "ashmem: failed to create slab cache\n");
-+		return -ENOMEM;
-+	}
-+
-+	ashmem_range_cachep = kmem_cache_create("ashmem_range_cache",
-+					  sizeof(struct ashmem_range),
-+					  0, 0, NULL);
-+	if (unlikely(!ashmem_range_cachep)) {
-+		printk(KERN_ERR "ashmem: failed to create slab cache\n");
-+		return -ENOMEM;
-+	}
-+
-+	ret = misc_register(&ashmem_misc);
-+	if (unlikely(ret)) {
-+		printk(KERN_ERR "ashmem: failed to register misc device!\n");
-+		return ret;
-+	}
-+
-+	register_shrinker(&ashmem_shrinker);
-+
-+	printk(KERN_INFO "ashmem: initialized\n");
-+
-+	return 0;
-+}
-+
-+static void __exit ashmem_exit(void)
-+{
-+	int ret;
-+
-+	unregister_shrinker(&ashmem_shrinker);
-+
-+	ret = misc_deregister(&ashmem_misc);
-+	if (unlikely(ret))
-+		printk(KERN_ERR "ashmem: failed to unregister misc device!\n");
-+
-+	kmem_cache_destroy(ashmem_range_cachep);
-+	kmem_cache_destroy(ashmem_area_cachep);
-+
-+	printk(KERN_INFO "ashmem: unloaded\n");
-+}
-+
-+module_init(ashmem_init);
-+module_exit(ashmem_exit);
-+
-+MODULE_LICENSE("GPL");
-diff --git a/mm/shmem.c b/mm/shmem.c
-index fcedf54..f6de1b2 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -3015,6 +3015,14 @@ put_memory:
- }
- EXPORT_SYMBOL_GPL(shmem_file_setup);
- 
-+void shmem_set_file(struct vm_area_struct *vma, struct file *file)
-+{
-+	if (vma->vm_file)
-+		fput(vma->vm_file);
-+	vma->vm_file = file;
-+	vma->vm_ops = &shmem_vm_ops;
-+}
-+
- /**
-  * shmem_zero_setup - setup a shared anonymous mapping
-  * @vma: the vma to be mmapped is prepared by do_mmap_pgoff
-@@ -3027,11 +3035,7 @@ int shmem_zero_setup(struct vm_area_struct *vma)
- 	file = shmem_file_setup("dev/zero", size, vma->vm_flags);
- 	if (IS_ERR(file))
- 		return PTR_ERR(file);
--
--	if (vma->vm_file)
--		fput(vma->vm_file);
--	vma->vm_file = file;
--	vma->vm_ops = &shmem_vm_ops;
-+	shmem_set_file(vma, file);
- 	vma->vm_flags |= VM_CAN_NONLINEAR;
- 	return 0;
- }
 -- 
-1.7.3.2.146.gca209
-
+With Best Regards,
+Andy Shevchenko
