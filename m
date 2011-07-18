@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756757Ab1GRNMa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 09:12:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10722 "EHLO mx1.redhat.com"
+	id S1756808Ab1GRNNM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 09:13:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47754 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751902Ab1GRNJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 09:09:16 -0400
+	id S1755738Ab1GRNJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 09:09:13 -0400
 From: Prarit Bhargava <prarit@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, johnpol@2ka.mipt.ru
-Subject: [PATCH 29/34] drivers/w1 changes for SMBIOS and System Firmware
-Date: Mon, 18 Jul 2011 09:08:43 -0400
-Message-Id: <1310994528-26276-30-git-send-email-prarit@redhat.com>
+Cc: Prarit Bhargava <prarit@redhat.com>, linux-acpi@vger.kernel.org
+Subject: [PATCH 31/34] include/linux/acpi.h changes for SMBIOS and System Firmware
+Date: Mon, 18 Jul 2011 09:08:45 -0400
+Message-Id: <1310994528-26276-32-git-send-email-prarit@redhat.com>
 In-Reply-To: <1310994528-26276-1-git-send-email-prarit@redhat.com>
 References: <1310994528-26276-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -20,27 +20,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 As part of the new SMBIOS and System Firmware code:
 
-- cleanup of includes for dmi.h and mod_devicetable.h which were included in
-some files that did not need them
+- Replace old dmi* structures and functions with new sysfw* and smbios*
+structures and functions in individual drivers
 
-Cc: johnpol@2ka.mipt.ru
+Cc: linux-acpi@vger.kernel.org
 Signed-off-by: Prarit Bhargava <prarit@redhat.com>
 ---
- drivers/w1/masters/ds2490.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ include/linux/acpi.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/w1/masters/ds2490.c b/drivers/w1/masters/ds2490.c
-index 02bf7bf..56c2f90 100644
---- a/drivers/w1/masters/ds2490.c
-+++ b/drivers/w1/masters/ds2490.c
-@@ -21,7 +21,6 @@
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index 1deb2a7..29d7de8 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -217,7 +217,7 @@ static inline int acpi_video_display_switch_support(void)
+ #endif /* defined(CONFIG_ACPI_VIDEO) || defined(CONFIG_ACPI_VIDEO_MODULE) */
  
- #include <linux/module.h>
- #include <linux/kernel.h>
--#include <linux/mod_devicetable.h>
- #include <linux/usb.h>
- #include <linux/slab.h>
+ extern int acpi_blacklisted(void);
+-extern void acpi_dmi_osi_linux(int enable, const struct dmi_system_id *d);
++extern void acpi_smbios_osi_linux(int enable, const struct sysfw_id *d);
+ extern void acpi_osi_setup(char *str);
  
+ #ifdef CONFIG_ACPI_NUMA
 -- 
 1.6.5.2
 
