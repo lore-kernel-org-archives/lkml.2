@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932099Ab1GRDgf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jul 2011 23:36:35 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:41348 "EHLO smtps.tip.net.au"
+	id S932140Ab1GRDgn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jul 2011 23:36:43 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:58663 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753303Ab1GRDge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jul 2011 23:36:34 -0400
-Date: Mon, 18 Jul 2011 13:36:25 +1000
+	id S1756191Ab1GRDgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Jul 2011 23:36:39 -0400
+Date: Mon, 18 Jul 2011 13:36:36 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Al Viro <viro@ZenIV.linux.org.uk>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>, Amir Goldstein <amir73il@users.sf.net>,
-        "Theodore Ts'o" <tytso@mit.edu>
-Subject: linux-next: manual merge of the vfs tree with the ext4 tree
-Message-Id: <20110718133625.f78ac5eb9a4a2084665003fd@canb.auug.org.au>
+        Dave Chinner <dchinner@redhat.com>, Christoph Hellwig <hch@lst.de>
+Subject: linux-next: manual merge of the vfs tree with the xfs tree
+Message-Id: <20110718133636.579d9002dbb56cd6408a2a7b@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -25,45 +24,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Hi Al,
 
 Today's linux-next merge of the vfs tree got a conflict in
-fs/ext4/inode.c between commit dae1e52cb126 ("ext4: move ext4_ind_*
-functions from inode.c to indirect.c") from the ext4 tree and commit
-d1769fea6879 ("fs: simplify the blockdev_direct_IO prototype") from the
-vfs tree.
+fs/xfs/linux-2.6/xfs_super.c between commit 2bcf6e970f5a ("xfs: start
+periodic workers later") from the xfs tree and commit d86b98f73104 ("xfs:
+make use of new shrinker callout for the inode cache") from the vfs tree.
 
-A function moved to a new file.  I fixed it up and can carry the fix as
-necessary.
-
-I also needed the following merge fix patch:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 18 Jul 2011 13:28:44 +1000
-Subject: [PATCH] vfs/ext4: merge fixup for moved function
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- fs/ext4/indirect.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
-
-diff --git a/fs/ext4/indirect.c b/fs/ext4/indirect.c
-index 6c27111..b8602cd 100644
---- a/fs/ext4/indirect.c
-+++ b/fs/ext4/indirect.c
-@@ -806,10 +806,8 @@ retry:
- 				 offset, nr_segs,
- 				 ext4_get_block, NULL, NULL, 0);
- 	else {
--		ret = blockdev_direct_IO(rw, iocb, inode,
--				 inode->i_sb->s_bdev, iov,
--				 offset, nr_segs,
--				 ext4_get_block, NULL);
-+		ret = blockdev_direct_IO(rw, iocb, inode, iov,
-+				 offset, nr_segs, ext4_get_block);
- 
- 		if (unlikely((rw & WRITE) && ret < 0)) {
- 			loff_t isize = i_size_read(inode);
--- 
-1.7.5.4
-
+I fixed it up (I think, see below) and can carry the fix as necessary.
 -- 
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc fs/xfs/linux-2.6/xfs_super.c
+index 25fd2cd,a9c6ccf..0000000
+--- a/fs/xfs/linux-2.6/xfs_super.c
++++ b/fs/xfs/linux-2.6/xfs_super.c
+@@@ -1411,9 -1407,7 +1406,7 @@@ xfs_fs_fill_super
+  	sb->s_time_gran = 1;
+  	set_posix_acl_flag(sb);
+  
+- 	xfs_inode_shrinker_register(mp);
+- 
+ -	error = xfs_syncd_init(mp);
+ +	error = xfs_mountfs(mp);
+  	if (error)
+  		goto out_filestream_unmount;
+  
+@@@ -1438,8 -1432,9 +1431,7 @@@
+  
+  	return 0;
+  
+ - out_syncd_stop:
+ -	xfs_syncd_stop(mp);
+   out_filestream_unmount:
+- 	xfs_inode_shrinker_unregister(mp);
+  	xfs_filestream_unmount(mp);
+   out_free_sb:
+  	xfs_freesb(mp);
+@@@ -1453,12 -1448,16 +1445,11 @@@
+   out:
+  	return -error;
+  
+ - fail_vnrele:
+ -	if (sb->s_root) {
+ -		dput(sb->s_root);
+ -		sb->s_root = NULL;
+ -	} else {
+ -		iput(root);
+ -	}
+ -
+ - fail_unmount:
+ + out_iput:
+ +	iput(root);
+ + out_syncd_stop:
+  	xfs_syncd_stop(mp);
+ + out_unmount:
+- 	xfs_inode_shrinker_unregister(mp);
+  
+  	/*
+  	 * Blow away any referenced inode in the filestreams cache.
