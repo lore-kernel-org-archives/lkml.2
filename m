@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754786Ab1GRJbI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 05:31:08 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:60742 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753972Ab1GRJbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 05:31:06 -0400
-Date: Mon, 18 Jul 2011 19:30:53 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the final tree
-Message-Id: <20110718193053.623d28dc4643ab488b6347d5@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__18_Jul_2011_19_30_53_+1000_HE_.qhnIhBqHI=P1"
+	id S1754714Ab1GRJbe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 05:31:34 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:60527 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758Ab1GRJbc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 05:31:32 -0400
+From: Ravishankar <ravishankarkm32@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>,
+        Ravishankar <ravishankarkm32@gmail.com>
+Subject: [PATCH 30/30 v2] Staging: comedi: fix printk() issue in das16m1.c
+Date: Mon, 18 Jul 2011 15:14:20 +0530
+Message-Id: <1310982260-957-1-git-send-email-ravishankarkm32@gmail.com>
+X-Mailer: git-send-email 1.6.5.2
+In-Reply-To: <[PATCH]Staging: comedi: fix printk() issue in das16m1.c>
+References: <[PATCH]Staging: comedi: fix printk() issue in das16m1.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__18_Jul_2011_19_30_53_+1000_HE_.qhnIhBqHI=P1
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Ravishankar <ravi.shankar@greenturtles.in>
 
-Hi all,
+This is a patch to the das16m1.c file that fixes up a printk() warning found by the checkpatch.pl tool
 
-After merging the final tree, today's linux-next build (sparc64 defconfig)
-failed like this:
+Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
+---
 
-In file included from arch/sparc/include/asm/pgtable.h:4:0,
-                 from include/linux/mm.h:41,
-                 from include/linux/fs.h:395,
-                 from include/linux/compat.h:15,
-                 from arch/sparc/include/asm/siginfo.h:19,
-                 from include/linux/signal.h:5,
-                 from include/linux/sched.h:73,
-                 from arch/sparc/kernel/asm-offsets.c:13:
-arch/sparc/include/asm/pgtable_64.h: In function '__set_pte_at':
-arch/sparc/include/asm/pgtable_64.h:674:6: error: 'init_mm' undeclared (fir=
-st use in this function)
+ After understanding code I have changed  8 printk statement in int das16m1_attach function. 
 
-I assume some include file changes.  Anyone have any clues how to find
-this?
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+ drivers/staging/comedi/drivers/das16m1.c |   16 +++++++++-------
+ 1 files changed, 9 insertions(+), 7 deletions(-)
 
---Signature=_Mon__18_Jul_2011_19_30_53_+1000_HE_.qhnIhBqHI=P1
-Content-Type: application/pgp-signature
+diff --git a/drivers/staging/comedi/drivers/das16m1.c b/drivers/staging/comedi/drivers/das16m1.c
+index efc6132..d737ed2 100644
+--- a/drivers/staging/comedi/drivers/das16m1.c
++++ b/drivers/staging/comedi/drivers/das16m1.c
+@@ -680,17 +680,19 @@ static int das16m1_attach(struct comedi_device *dev,
+ 
+ 	dev->board_name = thisboard->name;
+ 
+-	printk(" io 0x%lx-0x%lx 0x%lx-0x%lx",
++	printk(KERN_INFO " requesing the I/O region from 0x%lx-0x%lx 0x%lx-0x%lx",
+ 	       iobase, iobase + DAS16M1_SIZE,
+ 	       iobase + DAS16M1_82C55, iobase + DAS16M1_82C55 + DAS16M1_SIZE2);
+ 	if (!request_region(iobase, DAS16M1_SIZE, driver_das16m1.driver_name)) {
+-		printk(" I/O port conflict\n");
+-		return -EIO;
++		printk(KERN_INFO "the IO REGION is busy, quitting\n");
++		return -EBUSY;
+ 	}
+ 	if (!request_region(iobase + DAS16M1_82C55, DAS16M1_SIZE2,
+ 			    driver_das16m1.driver_name)) {
+ 		release_region(iobase, DAS16M1_SIZE);
+- 		printk(" I/O port conflict\n");
++		printk(KERN_INFO " releasing  the I/O port region\n");
+ 		return -EIO;
+ 	}
+ 	dev->iobase = iobase;
+@@ -702,15 +704,15 @@ static int das16m1_attach(struct comedi_device *dev,
+ 		ret = request_irq(irq, das16m1_interrupt, 0,
+ 				  driver_das16m1.driver_name, dev);
+ 		if (ret < 0) {
+-			printk(", irq unavailable\n");
++			printk(KERN_INFO ", irq unavailable\n");
+ 			return ret;
+ 		}
+ 		dev->irq = irq;
+-		printk(", irq %u\n", irq);
++		printk(KERN_INFO ", irq %u\n", irq);
+ 	} else if (irq == 0) {
+-		printk(", no irq\n");
++		printk(KERN_INFO ", no irq\n");
+ 	} else {
+-		printk(", invalid irq\n"
++		printk(KERN_ERR ", invalid irq\n"
+ 		       " valid irqs are 2, 3, 5, 7, 10, 11, 12, or 15\n");
+ 		return -EINVAL;
+ 	}
+-- 
+1.6.5.2
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOI/1NAAoJEDMEi1NhKgbsl+AH/36zoa+KgbLCI8dLAOG+rJdj
-kbn86Bj/uLBrtqMDB6sqU94CpGCfnUJ6OqYOOXlrsi0YNa0PK9kqIDMP7whxGF4o
-jMbNDZlq+KyzDK2G/keFAxoPu5zXATWIDOLGJGoLpm2SMw+H7SsH0KFuLw+zpynR
-x8OhH3boiUPdEL8WyOu231RtbOElpBkAedLIplctSrVVkOi1VdwwTqiLyOoenD8z
-KcgHA4eSLH80Klmp2adLj6z6p1kzL4k2gWqMyiYjjqSnqfFVDTJOxWPADqFcsoO+
-r58T6vs8Ftpy4AyBhbJi5O9ZchRIgQMeAqDmOVXM1Lel8wg8j3W/NuCZ+mzUfW8=
-=Ayfv
------END PGP SIGNATURE-----
-
---Signature=_Mon__18_Jul_2011_19_30_53_+1000_HE_.qhnIhBqHI=P1--
