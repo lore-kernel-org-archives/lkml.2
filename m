@@ -1,123 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751357Ab1GRGST (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 02:18:19 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:63979 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820Ab1GRGSS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 02:18:18 -0400
-X-AuditID: cbfee61a-b7cf0ae000006bc6-7f-4e23d028ecee
-Date: Mon, 18 Jul 2011 15:18:09 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: RE: [PATCHv2] clocksource: convert S5PV210/S5P64X0 32-bit down
- counting clocksource
-In-reply-to: <4E2105A2.8060309@samsung.com>
-To: "'Chanwoo Choi'" <cw00.choi@samsung.com>,
-        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
-        "'Ben Dooks'" <ben-linux@fluff.org>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>
-Cc: "'linux-arm-kernel'" <linux-arm-kernel@lists.infradead.org>,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>
-Message-id: <048601cc4512$7b45ed90$71d1c8b0$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=UTF-8
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: AcxDaJV0ZJUbO0rBRyi/1GavNnLSMQBqcsRw
-References: <4E1BE0CF.7060207@samsung.com> <4E2105A2.8060309@samsung.com>
-X-Brightmail-Tracker: AAAAAA==
+	id S1751209Ab1GRGcA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 02:32:00 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:46904 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751018Ab1GRGb7 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 02:31:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110718020818.GW11013@ZenIV.linux.org.uk>
+References: <alpine.LSU.2.00.1107171356480.3175@sister.anvils>
+ <CA+55aFw5LhGq-a6mAhgZbGP2FJ+tnV9HRxKoiFuVYbttOo2tNw@mail.gmail.com>
+ <20110717231610.GR11013@ZenIV.linux.org.uk> <CA+55aFxEGKgx+_xy+Lnt=84wRzE9TyznL3VCNSqWs7HC_H35_A@mail.gmail.com>
+ <alpine.LSU.2.00.1107171641130.1274@sister.anvils> <20110718002524.GU11013@ZenIV.linux.org.uk>
+ <alpine.LSU.2.00.1107171740260.1327@sister.anvils> <20110718020818.GW11013@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 17 Jul 2011 23:31:03 -0700
+Message-ID: <CA+55aFwXgcWxvAz7w1f_HYyzdm9b9EBJfrWhF1FW7EA3zpbJPg@mail.gmail.com>
+Subject: Re: [PATCH] vfs: fix race in rcu lookup of pruned dentry
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chanwoo Choi wrote:
-> 
-> Convert the S5PV210/S5P64X0 32-bit down-counting clocksource to
-> the generic mmio clocksource infrastructure
-> 
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  arch/arm/Kconfig             |    2 ++
->  arch/arm/plat-s5p/s5p-time.c |   20 +++-----------------
->  2 files changed, 5 insertions(+), 17 deletions(-)
-> 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 9adc278..98fed17 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -721,6 +721,7 @@ config ARCH_S3C64XX
->  config ARCH_S5P64X0
->  	bool "Samsung S5P6440 S5P6450"
->  	select CPU_V6
-> +	select CLKSRC_MMIO
->  	select GENERIC_GPIO
->  	select HAVE_CLK
->  	select HAVE_S3C2410_WATCHDOG if WATCHDOG
-> @@ -749,6 +750,7 @@ config ARCH_S5PV210
->  	bool "Samsung S5PV210/S5PC110"
->  	select CPU_V7
->  	select ARCH_SPARSEMEM_ENABLE
-> +	select CLKSRC_MMIO
->  	select GENERIC_GPIO
->  	select HAVE_CLK
->  	select ARM_L1_CACHE_SHIFT_6
-> diff --git a/arch/arm/plat-s5p/s5p-time.c b/arch/arm/plat-s5p/s5p-time.c
-> index 612934c..5666f55 100644
-> --- a/arch/arm/plat-s5p/s5p-time.c
-> +++ b/arch/arm/plat-s5p/s5p-time.c
-> @@ -314,13 +314,6 @@ static void __iomem *s5p_timer_reg(void)
->  	return S3C_TIMERREG(offset);
->  }
-> 
-> -static cycle_t s5p_timer_read(struct clocksource *cs)
-> -{
-> -	void __iomem *reg = s5p_timer_reg();
-> -
-> -	return (cycle_t) (reg ? ~__raw_readl(reg) : 0);
-> -}
-> -
->  /*
->   * Override the global weak sched_clock symbol with this
->   * local implementation which uses the clocksource to get some
-> @@ -350,14 +343,6 @@ static void notrace s5p_update_sched_clock(void)
->  	update_sched_clock(&cd, ~__raw_readl(reg), (u32)~0);
->  }
-> 
-> -struct clocksource time_clocksource = {
-> -	.name		= "s5p_clocksource_timer",
-> -	.rating		= 250,
-> -	.read		= s5p_timer_read,
-> -	.mask		= CLOCKSOURCE_MASK(32),
-> -	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
-> -};
-> -
->  static void __init s5p_clocksource_init(void)
->  {
->  	unsigned long pclk;
-> @@ -375,8 +360,9 @@ static void __init s5p_clocksource_init(void)
-> 
->  	init_sched_clock(&cd, s5p_update_sched_clock, 32, clock_rate);
-> 
-> -	if (clocksource_register_hz(&time_clocksource, clock_rate))
-> -		panic("%s: can't register clocksource\n", time_clocksource.name);
-> +	if (clocksource_mmio_init(s5p_timer_reg(), "s5p_clocksource_timer",
-> +			clock_rate, 250, 32, clocksource_mmio_readl_down))
-> +		panic("s5p_clocksource_timer: can't register clocksource\n");
->  }
-> 
->  static void __init s5p_timer_resources(void)
-> --
-> 1.7.0.4
+On Sun, Jul 17, 2011 at 7:08 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Sun, Jul 17, 2011 at 06:13:34PM -0700, Hugh Dickins wrote:
+>
+>> And in the genuine negative dentry case: at present (with or without
+>> my or Linus's patches) there is no final nd->seq check, is there?
+>
+> For stat() - no, there isn't.  We really bail out with -ENOENT, no matter
+> what.  Racy, which is what you are hitting.
 
-Looks ok, applied.
-Thanks.
+The fundamental bug is in the dentry pruning. Not in lookup. If the
+lookup sees a negative dentry, it will currently return ENOENT. Not
+unlazy the thing like you claim. Your patch makes it unlazy the RCU
+walk for a negative dentry and then retry that it currently doesn't -
+for both the racy case (nobody cares, since that isn't performance
+critical) _and_ for the normal real negative case.
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+And it's that "normal real negative case" that I really think that
+your "goto unlazy" is just wrong. It's right for the sequence number
+change, but not for the "!inode" case.
 
+Now, I do agree that maybe that case simply should check the dentry
+sequence count. I wish all cases did. Hugh patch did that. But the
+reason I dislike Hugh's patch is that when I say "I wish they all
+did", I mean that I dislike the special casing. And Hugh's patch just
+adds *more* special casing for that NULL entry - I'd wish we just
+always did it regardless of whether it was NULL or not.
+
+So I claim that your patch changes *way* more than mine does. I think
+I'd prefer Hugh's over that one. I still think that right now, my
+one-liner is actually the one that changes things the least (and I
+don't mean in size of patch, but in behavior and logic).
+
+                         Linus
