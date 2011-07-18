@@ -1,84 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755680Ab1GROhn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 10:37:43 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:35206 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753361Ab1GROhl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 10:37:41 -0400
-Date: Mon, 18 Jul 2011 07:37:31 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: current_thread_info() vs task_thread_info(current)
-Message-ID: <20110718143731.GA2312@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1310988183.13765.56.camel@twins>
- <1310990097.25044.307.camel@pasglop>
+	id S1756240Ab1GROmR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 10:42:17 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:28440 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753540Ab1GROmP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 10:42:15 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=v2af/uplC4oqydRSN7aiwtcYke4AQqwHu8pP9djky1z2bRFqQEUFjkieBSvKUGFI7
+	Vq/7Tdnl0YqY0ji6moBnQ==
+Date: Mon, 18 Jul 2011 07:41:56 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] vfs: fix race in rcu lookup of pruned dentry
+In-Reply-To: <CA+55aFwXgcWxvAz7w1f_HYyzdm9b9EBJfrWhF1FW7EA3zpbJPg@mail.gmail.com>
+Message-ID: <alpine.LSU.2.00.1107180726210.2541@sister.anvils>
+References: <alpine.LSU.2.00.1107171356480.3175@sister.anvils> <CA+55aFw5LhGq-a6mAhgZbGP2FJ+tnV9HRxKoiFuVYbttOo2tNw@mail.gmail.com> <20110717231610.GR11013@ZenIV.linux.org.uk> <CA+55aFxEGKgx+_xy+Lnt=84wRzE9TyznL3VCNSqWs7HC_H35_A@mail.gmail.com>
+ <alpine.LSU.2.00.1107171641130.1274@sister.anvils> <20110718002524.GU11013@ZenIV.linux.org.uk> <alpine.LSU.2.00.1107171740260.1327@sister.anvils> <20110718020818.GW11013@ZenIV.linux.org.uk>
+ <CA+55aFwXgcWxvAz7w1f_HYyzdm9b9EBJfrWhF1FW7EA3zpbJPg@mail.gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1310990097.25044.307.camel@pasglop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 18, 2011 at 09:54:57PM +1000, Benjamin Herrenschmidt wrote:
-> On Mon, 2011-07-18 at 13:23 +0200, Peter Zijlstra wrote:
+On Sun, 17 Jul 2011, Linus Torvalds wrote:
 > 
-> > So how are we going to solve this? Naively I'd think that
-> > current_thread_info() is short for task_thread_info(current), and thus
-> > the platforms for where this isn't true are broken.
-> > 
-> > I mean, what use is the thread_info not of a thread?
-> > 
-> > Comments?
-> 
-> Thomas just hit a bug in the platform code of said platform (powerpc
-> heh ?) :-)
-> 
-> We do it right for hard IRQs and for some reason never did it right for
-> softirqs.
-> 
-> The code is like this for the former:
-> 
-> static inline void handle_one_irq(unsigned int irq)
-> {
-> 
->         .../...
-> 
-> 	call_handle_irq(irq, desc, irqtp, desc->handle_irq);
-> 	current->thread.ksp_limit = saved_sp_limit;
-> 	irqtp->task = NULL;
-> 
-> 	/* Set any flag that may have been set on the
-> 	 * alternate stack
-> 	 */
-> 	if (irqtp->flags)
-> 		set_bits(irqtp->flags, &curtp->flags);
-> }
-> 
-> So what we need, I suppose is to add those two last line to
-> do_softirq_onstack() as well.
+> So I claim that your patch changes *way* more than mine does. I think
+> I'd prefer Hugh's over that one. I still think that right now, my
+> one-liner is actually the one that changes things the least (and I
+> don't mean in size of patch, but in behavior and logic).
 
-Hmmm...  Would this explain preempt_count() inexplicably increasing by
-three across a spin_unlock_irqrestore()?  I ran into this situation when
-testing on Power over the weekend.
+A quick audit of .d_iputs suggests that they're all okay with yours;
+but it only needs one of them to say BUG_ON(dentry->d_inode) for no
+good reason, and the fix becomes much more dangerous than the tiny
+race it's trying to fix.
 
-							Thanx, Paul
+I've entirely failed to reproduce the issue since I sent you the patch:
+the last time I saw it was a couple of hours before sending the patch,
+and that was the first time in weeks (partly because of vacation).
+It's now looking as if I was just lucky to get it in hours that time.
 
-> Now indeed i386 needs a similar treatment on both hard and soft
-> irqs (along with getting rid of that stupid duplication of
-> call_on_stack in there, I don't think it's worth making the code
-> horrible like that to save one clobber and PeterZ reckons we can
-> probably avoid it using always_inline anyways).
-> 
-> I'll let you guys sort i386 out tho, I'll look at fixing ppc tomorrow :-)
-> 
-> Cheers,
-> Ben.
-> 
-> 
+I'm thinking there's some other factor, which I know nothing about,
+which opens the window to make this issue more than theoretical.
+I may be forced to opening the window artificially to get it to
+happen often enough to even begin to verify that your patch,
+or Al's, or mine, does not blow up in some unforeseen way.
+And I'm unlikely to be testing filesystem dentry_iputs at all.
+
+Your patch remains my preference, but given Al's uneasiness,
+my vote remains to make no change now for 3.0, but put yours
+in early for 3.1-rc.
+
+Hugh
