@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755949Ab1GRD1w (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jul 2011 23:27:52 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:46544 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752899Ab1GRD1s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jul 2011 23:27:48 -0400
-Date: Mon, 18 Jul 2011 04:27:47 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [git pull] more fixes for 3.0
-Message-ID: <20110718032747.GX11013@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932099Ab1GRDgf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jul 2011 23:36:35 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:41348 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753303Ab1GRDge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Jul 2011 23:36:34 -0400
+Date: Mon, 18 Jul 2011 13:36:25 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@lst.de>, Amir Goldstein <amir73il@users.sf.net>,
+        "Theodore Ts'o" <tytso@mit.edu>
+Subject: linux-next: manual merge of the vfs tree with the ext4 tree
+Message-Id: <20110718133625.f78ac5eb9a4a2084665003fd@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Assorted crap caught by ->d_parent audit (and there's more, unfortunately ;-/)
-The stuff Hugh found is not in that pile, BTW.  Please, pull from usual place:
+Hi Al,
 
-git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ for-linus
+Today's linux-next merge of the vfs tree got a conflict in
+fs/ext4/inode.c between commit dae1e52cb126 ("ext4: move ext4_ind_*
+functions from inode.c to indirect.c") from the ext4 tree and commit
+d1769fea6879 ("fs: simplify the blockdev_direct_IO prototype") from the
+vfs tree.
 
-Shortlog:
-Al Viro (7):
-      cifs: build_path_from_dentry() race fix
-      ceph analog of cifs build_path_from_dentry() race fix
-      fix exofs ->get_parent()
-      ufs should use d_splice_alias()
-      cramfs: get_cramfs_inode() returns ERR_PTR() on failure
-      hppfs: fix dentry leak
-      hppfs_lookup(): don't open-code lookup_one_len()
+A function moved to a new file.  I fixed it up and can carry the fix as
+necessary.
 
-Diffstat:
- fs/ceph/mds_client.c |   19 ++++++++++++++++---
- fs/cifs/dir.c        |   13 ++++++++++++-
- fs/cramfs/inode.c    |   22 ++++++++++++----------
- fs/exofs/super.c     |    2 +-
- fs/hppfs/hppfs.c     |   31 +++++++++----------------------
- fs/ufs/namei.c       |   12 ++++--------
- 6 files changed, 54 insertions(+), 45 deletions(-)
+I also needed the following merge fix patch:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 18 Jul 2011 13:28:44 +1000
+Subject: [PATCH] vfs/ext4: merge fixup for moved function
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ fs/ext4/indirect.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/fs/ext4/indirect.c b/fs/ext4/indirect.c
+index 6c27111..b8602cd 100644
+--- a/fs/ext4/indirect.c
++++ b/fs/ext4/indirect.c
+@@ -806,10 +806,8 @@ retry:
+ 				 offset, nr_segs,
+ 				 ext4_get_block, NULL, NULL, 0);
+ 	else {
+-		ret = blockdev_direct_IO(rw, iocb, inode,
+-				 inode->i_sb->s_bdev, iov,
+-				 offset, nr_segs,
+-				 ext4_get_block, NULL);
++		ret = blockdev_direct_IO(rw, iocb, inode, iov,
++				 offset, nr_segs, ext4_get_block);
+ 
+ 		if (unlikely((rw & WRITE) && ret < 0)) {
+ 			loff_t isize = i_size_read(inode);
+-- 
+1.7.5.4
+
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
