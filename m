@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751516Ab1GRURR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 16:17:17 -0400
-Received: from mss-uk.mssgmbh.com ([217.174.251.109]:57533 "EHLO
-	mss-uk.mssgmbh.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750829Ab1GRURQ (ORCPT
+	id S1752296Ab1GRUSZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 16:18:25 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:49213 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750894Ab1GRUSY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 16:17:16 -0400
-To: David Miller <davem@davemloft.net>
-Cc: rweikusat@mobileactivedefense.com, adobriyan@gmail.com, kaber@trash.net,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] netfilter: add per-namespace logging to nfnetlink_log.c
-In-Reply-To: <20110718.124638.30010338187296272.davem@davemloft.net> (David Miller's message of "Mon\, 18 Jul 2011 12\:46\:38 -0700 \(PDT\)")
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-References: <8739i3fp6s.fsf@sapphire.mobileactivedefense.com>
-	<20110718191956.GA2489@p183.telecom.by>
-	<87hb6je5nh.fsf@sapphire.mobileactivedefense.com>
-	<20110718.124638.30010338187296272.davem@davemloft.net>
-From: Rainer Weikusat <rweikusat@mobileactivedefense.com>
-Date: Mon, 18 Jul 2011 21:17:00 +0100
-Message-ID: <87d3h7e43n.fsf@sapphire.mobileactivedefense.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Mon, 18 Jul 2011 16:18:24 -0400
+Date: Mon, 18 Jul 2011 13:18:13 -0700 (PDT)
+Message-Id: <20110718.131813.1898495363509638037.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 18 Jul 2011 13:18:19 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller <davem@davemloft.net> writes:
-> From: Rainer Weikusat <rweikusat@mobileactivedefense.com>
-> Date: Mon, 18 Jul 2011 20:43:30 +0100
->
->> [rw@sapphire]~/work/linux-2-6/net/netfilter $find -name '*.c' | xargs grep '^#ifdef' | wc -l
->> 239
->> [rw@sapphire]~/work/linux-2-6/net/netfilter $..
->> [rw@sapphire]~/work/linux-2-6/net $find -name '*.c' | xargs grep '^#ifdef' | wc -l
->> 1672
->
-> You've shown nothing.  Showing exceptions does not prove that the
-> general effort has been to keep ifdef crap out of *.c files.
 
-I've 'shown' that the networking code contains a fair amount of
-#ifdefs in .c files. Consequently, 'we did it without' is wrong. At
-best, 'we would like to do without in future' seems justified.
+A few last-minute stragglers.  The Tulip debug message thing, in
+particular, is a really annoying regression for people who have
+that hardware.
 
-> And every developer or maintainer who says no to ifdefs in *.c files
-> for new changes is %100 right.
+1) pr_*() conversion of tulip driver turned some commented out messages
+   into pr_debug() which spams the log, just kill them off.  From Joe
+   Perches.
 
-Adding new files filled with ifdefs in order to avoid ifdefs in old
-files in favor of lines-looking-like-code-which-arent seems
-debatable to me. The same goes for adding unused structure members,
-uneeded function calls, indirections through fifteen different other
-files that turn out to do nothing etc. I spend much more time trying
-to read Linux code than to write Linux code and while I decidedly know
-worse things, Linux isn't exactly a prime example of easily accessible
-code precisely because so much of it is something completely different
-than what it appears to be.
+2) PPPOE connections are keyed on MAC address, so we have to flush all
+   connections on a device when the MAC address changes since until we
+   renegotiate with the new MAC address the remote end won't see any
+   of our packets.
 
-But this is actually a digression that is besides the point: Put
-something like 'ifdefs must not be used in new code, no matter what'
-plainly into the CodingStyle text, then you can expect other people to
-stick to this convention in the same way as to all the others (or at
-least try to stick to it).
+3) linux/sdla.h has a kernel function declaration in the userspace
+   visible area.  In fact this function hasn't been in the kernel for
+   years so just remove it outright.  From WANG Cong.
 
-> We're also specifically talking about namespace stuff, so you should have
-> at least refined your match criteria just a little bit.
+Please pull, thanks a lot.
 
-The person I was replying to wrote 'We did whole networking without
-sprinkling ifdefs'.
+The following changes since commit dc6b845044ccb7e9e6f3b7e71bd179b3cf0223b6:
+
+  si4713-i2c: avoid potential buffer overflow on si4713 (2011-07-18 09:12:21 -0700)
+
+are available in the git repository at:
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
+
+David S. Miller (1):
+      pppoe: Must flush connections when MAC address changes too.
+
+Joe Perches (1):
+      tulip: dmfe: Remove old log spamming pr_debugs
+
+WANG Cong (1):
+      include/linux/sdla.h: remove the prototype of sdla()
+
+ drivers/net/pppoe.c      |    3 ++-
+ drivers/net/tulip/dmfe.c |    4 ----
+ include/linux/sdla.h     |    6 +-----
+ 3 files changed, 3 insertions(+), 10 deletions(-)
