@@ -1,65 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756240Ab1GROmR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 10:42:17 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:28440 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753540Ab1GROmP (ORCPT
+	id S1755035Ab1GROoc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 10:44:32 -0400
+Received: from mtagate2.uk.ibm.com ([194.196.100.162]:57658 "EHLO
+	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753981Ab1GROob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 10:42:15 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=v2af/uplC4oqydRSN7aiwtcYke4AQqwHu8pP9djky1z2bRFqQEUFjkieBSvKUGFI7
-	Vq/7Tdnl0YqY0ji6moBnQ==
-Date: Mon, 18 Jul 2011 07:41:56 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] vfs: fix race in rcu lookup of pruned dentry
-In-Reply-To: <CA+55aFwXgcWxvAz7w1f_HYyzdm9b9EBJfrWhF1FW7EA3zpbJPg@mail.gmail.com>
-Message-ID: <alpine.LSU.2.00.1107180726210.2541@sister.anvils>
-References: <alpine.LSU.2.00.1107171356480.3175@sister.anvils> <CA+55aFw5LhGq-a6mAhgZbGP2FJ+tnV9HRxKoiFuVYbttOo2tNw@mail.gmail.com> <20110717231610.GR11013@ZenIV.linux.org.uk> <CA+55aFxEGKgx+_xy+Lnt=84wRzE9TyznL3VCNSqWs7HC_H35_A@mail.gmail.com>
- <alpine.LSU.2.00.1107171641130.1274@sister.anvils> <20110718002524.GU11013@ZenIV.linux.org.uk> <alpine.LSU.2.00.1107171740260.1327@sister.anvils> <20110718020818.GW11013@ZenIV.linux.org.uk>
- <CA+55aFwXgcWxvAz7w1f_HYyzdm9b9EBJfrWhF1FW7EA3zpbJPg@mail.gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Mon, 18 Jul 2011 10:44:31 -0400
+Subject: Re: [patch 0/9] kdump: Patch series for s390 support
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Reply-To: holzheu@linux.vnet.ibm.com
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>, ebiederm@xmission.com,
+        hbabu@us.ibm.com, mahesh@linux.vnet.ibm.com, oomichi@mxs.nes.nec.co.jp,
+        horms@verge.net.au, heiko.carstens@de.ibm.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org
+In-Reply-To: <20110718141943.GE31986@redhat.com>
+References: <20110713184611.6dcb09b4@mschwide>
+	 <20110713200004.GG4426@redhat.com> <20110714091800.720da848@mschwide>
+	 <20110714175532.GE6672@redhat.com> <20110714180528.GF6672@redhat.com>
+	 <1310739717.10789.31.camel@br98xy6r> <20110715143820.GG3428@redhat.com>
+	 <1310744603.10789.79.camel@br98xy6r> <20110718123140.GB31986@redhat.com>
+	 <1310997641.4427.10.camel@br98xy6r>  <20110718141943.GE31986@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: IBM
+Date: Mon, 18 Jul 2011 16:44:13 +0200
+Message-ID: <1311000253.4427.23.camel@br98xy6r>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 17 Jul 2011, Linus Torvalds wrote:
+On Mon, 2011-07-18 at 10:19 -0400, Vivek Goyal wrote:
+> > > By parsing the ELF header. It will give you information about how many
+> > > program headers and notes are there, their sizes and locations etc.
+> > 
+> > The only thing we need is the size of the preallocated header that is in
+> > kdump memory. All other architectures seem to pass this information
+> > somehow with different mechanisms to the kdump kernel (memmap kernel
+> > parameter, boot parameters, etc.). Why should *we* parse the ELF header?
 > 
-> So I claim that your patch changes *way* more than mine does. I think
-> I'd prefer Hugh's over that one. I still think that right now, my
-> one-liner is actually the one that changes things the least (and I
-> don't mean in size of patch, but in behavior and logic).
+> ELF headers and memmap parameters are communicating two different pieces
+> of information to second kenrel.
+> 
+> - memap tells what memory second kernel can use to boot.
+> - ELF headers tell what memory areas first kernel was using and using
+>   that information how to construct ELF headers for /proc/vmcore interface
+>   in second kernel. On x86, ELF headers also communicate where the saved
+>   cpu state is for the first kernel.
+> 
+> Arch independent code in kdump kenrel (fs/proc/vmcore.c) is parsing those
+> ELF headers to export /proc/vmcore. So if you set up the headers right
+> you get that arch independent code for free without any changes to generic
+> code.
 
-A quick audit of .d_iputs suggests that they're all okay with yours;
-but it only needs one of them to say BUG_ON(dentry->d_inode) for no
-good reason, and the fix becomes much more dangerous than the tiny
-race it's trying to fix.
+Vivek, I know all these things. So, we (s390) do *not* have to parse the
+ELF header. We only have to ensure the kexec prepared ELF header is
+reserved until the /proc/vmcore parses it. All the ELF notes for CPUs,
+etc. should automatically be reserved, because they are allocated in
+oldmem by the old crashed kernel.
 
-I've entirely failed to reproduce the issue since I sent you the patch:
-the last time I saw it was a couple of hours before sending the patch,
-and that was the first time in weeks (partly because of vacation).
-It's now looking as if I was just lucky to get it in hours that time.
+All what I was asking is how we pass best the information "size of the
+preallocated ELF header" to the 2nd kernel for reserving the header. We
+currently do not have the memmap kernel parameter.
 
-I'm thinking there's some other factor, which I know nothing about,
-which opens the window to make this issue more than theoretical.
-I may be forced to opening the window artificially to get it to
-happen often enough to even begin to verify that your patch,
-or Al's, or mine, does not blow up in some unforeseen way.
-And I'm unlikely to be testing filesystem dentry_iputs at all.
+> > 
+> > > When kexec-tools loads ELF headers, it knows what's the total size of
+> > > ELF headers and it removes that chunk of memory from the memory map
+> > > passed to second kernel with memmap= options. IOW, some memory out
+> > > of reserved region is not usable by second kernel because we have
+> > > stored information in that memory. Kdump kernel maps that memory and
+> > > gets to read the ELF headers.
+> > > 
+> > > So you shall have to do something similar where you need to tell second
+> > > kernel what memory areas it can use for boot and remove ELF header
+> > > memory area from the map.
+> > 
+> > So if we do that, why should we parse the ELF header?
+> 
+> To know three things.
+> 
+> - Memory areas being used by first kernel.
+> - Cpu states at the time of crash of first kernel.
+> - Some config options exported by first kernel with the help of ELF notes.
 
-Your patch remains my preference, but given Al's uneasiness,
-my vote remains to make no change now for 3.0, but put yours
-in early for 3.1-rc.
+sure
 
-Hugh
+> fs/proc/vmcore.c already does it for you. You just need to make sure that
+> you tell it following.
+> 
+> - Where to find the headers in memory (elfcorehdr=)
+> - A way to map that memory and access contents.
+
+sure
+
+> - Make sure these headers are not overwritten by newly booted kernel.
+
+And that was my question: What is the best way to do that. E.g. we could
+pass a 2nd kernel parameter "elfcorehdr_size", implement s390 boot
+parameter or implement the memmap kernel parameter.
+
+Currently the s390 kernel knows only two objects when booting: kernel
+and ramdisk. Now with the ELF header we would have a third one.
+
+Michael
+
