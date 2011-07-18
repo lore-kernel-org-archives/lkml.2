@@ -1,39 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751119Ab1GRGl4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 02:41:56 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:60368 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745Ab1GRGlz (ORCPT
+	id S1751171Ab1GRGoc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 02:44:32 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:65511 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820Ab1GRGoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 02:41:55 -0400
-Subject: Re: Spinlock assembly clarification
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Frank Coldwell <spaceportz@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <CABAWUvV2er1niFGcXacMXdzMh46iAA_cHrO1mNaWXMcYc+GW3Q@mail.gmail.com>
-References: <CABAWUvV2er1niFGcXacMXdzMh46iAA_cHrO1mNaWXMcYc+GW3Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Jul 2011 08:41:50 +0200
-Message-ID: <1310971310.2509.27.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Mon, 18 Jul 2011 02:44:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAJd=RBD+Zua+oENvJWa5B1s8JvJfF-7vc2QAJEKTOPfpao+FPg@mail.gmail.com>
+References: <201107170901.00119.bvanassche@acm.org> <CAJd=RBD+Zua+oENvJWa5B1s8JvJfF-7vc2QAJEKTOPfpao+FPg@mail.gmail.com>
+From: Bart Van Assche <bvanassche@acm.org>
+Date: Mon, 18 Jul 2011 08:44:11 +0200
+X-Google-Sender-Auth: XTpZxIkWAk_W9Q0KH2SnPWiLf8k
+Message-ID: <CAO+b5-oe8MCOUH-iNB6jJj6MPqO83Wwvj9mKfxOmMzXeAH_J4Q@mail.gmail.com>
+Subject: Re: [PATCH] futex: Fix spelling in a source code comment
+To: Hillf Danton <dhillf@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Darren Hart <dvhltc@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 18 juillet 2011 à 09:30 +0400, Frank Coldwell a écrit :
+On Sun, Jul 17, 2011 at 2:52 PM, Hillf Danton <dhillf@gmail.com> wrote:
+> On Sun, Jul 17, 2011 at 3:01 PM, Bart Van Assche <bvanassche@acm.org> wrote:
+> > Change a single occurrence of "unlcoked" into "unlocked".
+> >
+> > Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+>
+> Good catch, Acked-by: Hillf Danton <dhillf@gmail.com>
 
-> So to understand this I look at intel manual for these instructions,
-> and I could not find anything
-> for instruction xaddw ??
-> 
+Thanks. It's something I discovered accidentally while implementing a
+ticket lock in user space
+(https://bugs.kde.org/show_bug.cgi?id=270006).
 
-Look for XADD
-
-The W suffix means we operate on a 16bit word.
-
-http://faydoc.tripod.com/cpu/xadd.htm
-
-
+Bart.
