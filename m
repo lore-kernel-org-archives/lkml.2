@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754821Ab1GRTJA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 15:09:00 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:55497 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752144Ab1GRTI7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 15:08:59 -0400
+	id S1754868Ab1GRTLB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 15:11:01 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:45609 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752467Ab1GRTK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 15:10:59 -0400
+Date: Mon, 18 Jul 2011 21:10:54 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Andy Lutomirski <luto@mit.edu>
+Cc: linux-tip-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+Subject: Re: [tip:x86/vdso] x86-64: Allow alternative patching in the vDSO
+Message-ID: <20110718191054.GA18359@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Andy Lutomirski <luto@mit.edu>, linux-tip-commits@vger.kernel.org,
+	linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+	tglx@linutronix.de, hpa@linux.intel.com
+References: <e73112e4381fff29e31b882c2d0856822edaea53.1310563276.git.luto@mit.edu>
+ <tip-1b3f2a72bbcfdf92e368a44448c45eb639b05b5e@git.kernel.org>
 MIME-Version: 1.0
-Date: Mon, 18 Jul 2011 12:08:56 -0700
-Message-ID: <CAHQAjVF-58LAYWZev6zH0NB+Prmn=WudcxwtgwmiWv8jNSNQAA@mail.gmail.com>
-Subject: Looking for max iops
-From: ersatz splatt <ersatzsplatt@gmail.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Roland Dreier <roland@purestorage.com>, Matthew Wilcox <matthew@wil.cx>,
-        Jens Axboe <axboe@kernel.dk>, "Jiang, Dave" <dave.jiang@intel.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        "Foong, Annie" <annie.foong@intel.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Nadolski, Edmund" <edmund.nadolski@intel.com>,
-        "Skirvin, Jeffrey D" <jeffrey.d.skirvin@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <tip-1b3f2a72bbcfdf92e368a44448c45eb639b05b5e@git.kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The HBA controller is not released yet.  I'm using an early version.
-My hope is to cobble something together for a driver before the
-hardware is in peoples' hands and give the driver to the community.
+On Fri, Jul 15, 2011 at 04:23:18AM +0000, tip-bot for Andy Lutomirski wrote:
+> Commit-ID:  1b3f2a72bbcfdf92e368a44448c45eb639b05b5e
+> Gitweb:     http://git.kernel.org/tip/1b3f2a72bbcfdf92e368a44448c45eb639b05b5e
+> Author:     Andy Lutomirski <luto@mit.edu>
+> AuthorDate: Wed, 13 Jul 2011 09:24:11 -0400
+> Committer:  H. Peter Anvin <hpa@linux.intel.com>
+> CommitDate: Wed, 13 Jul 2011 11:23:07 -0700
+> 
+> x86-64: Allow alternative patching in the vDSO
+> 
+> This code is short enough and different enough from the module
+> loader that it's not worth trying to share anything.
+> 
+> Signed-off-by: Andy Lutomirski <luto@mit.edu>
+> Link: http://lkml.kernel.org/r/e73112e4381fff29e31b882c2d0856822edaea53.1310563276.git.luto@mit.edu
+> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 
-I would like to know if I'm breaking new ground by trying to drive the
-number of IOPS I'm pushing now.  I don't expect to be able to get a
-million with the hardware I have.  Is anybody driving that level of
-activity now?  I'm getting nowhere near half that.  If nobody has
-shared data at these speeds then I'd be happy to do some testing if it
-is wanted.
+--
+From: Borislav Petkov <bp@alien8.de>
+Date: Mon, 18 Jul 2011 21:07:25 +0200
+Subject: [PATCH] x86, vdso: Drop now wrong comment
 
-The rq_affinity change certainly helped (as I wrote before).
+Now that 1b3f2a72bbcfdf92e368a44448c45eb639b05b5e is in, it is very
+important that the below lying comment be removed! :-)
 
-By lockless, do you mean no host_lock?  The queuecommand has no
-host_lock use but does have some local locking.
+Signed-off-by: Borislav Petkov <bp@alien8.de>
+---
+ arch/x86/vdso/vclock_gettime.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-If I am to cast suspicion on locks, I suppose I should be looking at
-lock_stat (?) -- what units should I be attributing to holdtime?
+diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+index 8792d6e..6bc0e72 100644
+--- a/arch/x86/vdso/vclock_gettime.c
++++ b/arch/x86/vdso/vclock_gettime.c
+@@ -6,7 +6,6 @@
+  *
+  * The code should have no internal unresolved relocations.
+  * Check with readelf after changing.
+- * Also alternative() doesn't work.
+  */
+ 
+ /* Disable profiling for userspace code: */
+-- 
+1.7.5.3.401.gfb674
 
-
-Thanks for the response Christoph,
-David
-
-
-
-On Fri, Jul 15, 2011 at 7:40 PM, Christoph Hellwig <hch@infradead.org> wrote:
-> On Fri, Jul 15, 2011 at 04:43:44PM -0700, ersatz splatt wrote:
->> I have a dual socket system with Tylersburg chipset (approximately
->> Westmere I gather).
->> With two Xeon X5660 packages I get this when running with more iops
->> potential than the system can handle:
->
-> What HBA do you use? Does it already have a lockless ->queuecommand?
->
->
+-- 
+Regards/Gruss,
+    Boris.
