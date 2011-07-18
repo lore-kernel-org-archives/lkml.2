@@ -1,42 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755356Ab1GRTgE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 15:36:04 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:38725 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755173Ab1GRTgB convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 15:36:01 -0400
+	id S1751837Ab1GRTnn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 15:43:43 -0400
+Received: from mss-uk.mssgmbh.com ([217.174.251.109]:52058 "EHLO
+	mss-uk.mssgmbh.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750945Ab1GRTnm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 15:43:42 -0400
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Rainer Weikusat <rweikusat@mobileactivedefense.com>,
+        Patrick McHardy <kaber@trash.net>, netfilter-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] netfilter: add per-namespace logging to nfnetlink_log.c
+In-Reply-To: <20110718191956.GA2489@p183.telecom.by> (Alexey Dobriyan's message of "Mon\, 18 Jul 2011 22\:19\:56 +0300")
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+References: <87sjqqawmk.fsf@sapphire.mobileactivedefense.com>
+	<4E245D70.4030907@trash.net>
+	<8739i3fp6s.fsf@sapphire.mobileactivedefense.com>
+	<20110718191956.GA2489@p183.telecom.by>
+From: Rainer Weikusat <rweikusat@mobileactivedefense.com>
+Date: Mon, 18 Jul 2011 20:43:30 +0100
+Message-ID: <87hb6je5nh.fsf@sapphire.mobileactivedefense.com>
 MIME-Version: 1.0
-In-Reply-To: <20110718192038.GG11013@ZenIV.linux.org.uk>
-References: <20110717231610.GR11013@ZenIV.linux.org.uk> <CA+55aFxEGKgx+_xy+Lnt=84wRzE9TyznL3VCNSqWs7HC_H35_A@mail.gmail.com>
- <alpine.LSU.2.00.1107171641130.1274@sister.anvils> <20110718002524.GU11013@ZenIV.linux.org.uk>
- <alpine.LSU.2.00.1107171740260.1327@sister.anvils> <20110718020818.GW11013@ZenIV.linux.org.uk>
- <CA+55aFwXgcWxvAz7w1f_HYyzdm9b9EBJfrWhF1FW7EA3zpbJPg@mail.gmail.com>
- <CA+55aFxKRw8NxcHKzsSeCX3ud6eDrcQvAX+LMQOUT4p5TPLp5g@mail.gmail.com>
- <20110718182030.GF11013@ZenIV.linux.org.uk> <CA+55aFw+RwscYUocP0WYWTU=F+Udx+AsjMA0i63-D-y3iZKCTQ@mail.gmail.com>
- <20110718192038.GG11013@ZenIV.linux.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 18 Jul 2011 12:34:45 -0700
-Message-ID: <CA+55aFw0=9fP6HjB7rAa+_xNcStxG0hPiwj7Yp_1XJUzrOyXMQ@mail.gmail.com>
-Subject: Re: [PATCH] vfs: fix race in rcu lookup of pruned dentry
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 18, 2011 at 12:20 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+Alexey Dobriyan <adobriyan@gmail.com> writes:
+> On Mon, Jul 18, 2011 at 06:56:11PM +0100, Rainer Weikusat wrote:
+>> Patrick McHardy <kaber@trash.net> writes:
+>> > On 01.07.2011 16:44, Rainer Weikusat wrote:
+>> >> From: Rainer Weikusat <rweikusat@mobileactivedefense.com>
+>> >> 
+>> >> Presently, the nfnetlink_log.c file contains only very nominal support
+>> >> for network namespaces: While it is possible to create sockets which
+>> >> should theoretically receive NFLOG originated messages in arbitrary
+>> >> network namespaces, there is only one table of nfulnl_instance
+>> >> structures in the kernel and all log messages sent via __nfulnl_send
+>> >> are forced into the init_net namespace so that only sockets created
+>> >> in this namespace will ever actually receive log data.
+>> 
+>> [...]
+>> 
+>> >> +#define INSTANCE_BUCKETS	16
+>> >> +
+>> >> +struct nfulnl_instances {
+>> >> +	spinlock_t lock;
+>> >> +	atomic_t global_seq;
+>> >> +	struct hlist_head table[INSTANCE_BUCKETS];
+>> >> +	unsigned hash_init;
+>> >> +#ifdef NET_NS
+>> >> +	struct net *net;
+>> >> +#endif
+>> >> +};
+>> >> +
+>> >>  struct nfulnl_instance {
+>> >>  	struct hlist_node hlist;	/* global list of instances */
+>> >>  	spinlock_t lock;
+>> >> @@ -67,14 +85,92 @@ struct nfulnl_instance {
+>> >>  	u_int16_t flags;
+>> >>  	u_int8_t copy_mode;
+>> >>  	struct rcu_head rcu;
+>> >> +#ifdef NET_NS
+>> >> +	struct nfulnl_instances *instances;
+>> >> +#endif
+>> >
+>> > This seems odd, the usual way is to add the global data to the
+>> > net-ns structure.
+>> 
+>> Since a facility for having 'per subsystem' network namespace specific
+>> data exists, there seems to be little reason to not use it. The
+>> interface is defined in include/net/netns/generic.h and documented as
+>> 
+>>  * Generic net pointers are to be used by modules to put some private
+>>  * stuff on the struct net without explicit struct net modification
+>> 
+>> >> +#ifndef NET_NS
+>> >> +static struct nfulnl_instances instances;
+>> >>  
+>> >> -#define INSTANCE_BUCKETS	16
+>> >> -static struct hlist_head instance_table[INSTANCE_BUCKETS];
+>> >> -static unsigned int hash_init;
+>> >> +static inline struct nfulnl_instances *
+>> >> +instances_via_inst(struct nfulnl_instance *inst)
+>> >> +{
+>> >> +	(void)inst;
+>> >> +	return &instances;
+>> >> +}
+>> >
+>> > ... then you don't need all this because it will automatically
+>> > use the structures from init_net when CONFIG_NET_NS=n
+>> 
+>> But then, the more complicated access method via struct net will
+>> always be used while anything resembling network namespace support
+>> will be removed at compile-time if the kernel is configured without
+>> network namespace support for this code. Which happened to be the
+>> point of this exercise.
+>> 
+>> > Basically everything depending on CONFIG_NET_NS is wrong,
+>> > this is handled automatically if you're using the API the proper
+>> > way.
+>> 
+>> There is no such thing as 'an API which can be used in the proper way'
+>> here for the simple reason that not even functional documentation on
+>> this exists (AFAIK), let alone documentation about usage policies
+>> someone would like to mandate.
 >
-> Hmm...  Could you pull #for-linus (or #for-linus2, for that matter - same
-> plus cifs_get_root() fix) first?
+> We did whole networking without sprinkling ifdefs and left them only at
+> few strategic places,
 
-I'd already done that, it just wasn't pushed out to master yet. Out now.
+[rw@sapphire]~/work/linux-2-6/net/netfilter $find -name '*.c' | xargs grep '^#ifdef' | wc -l
+239
+[rw@sapphire]~/work/linux-2-6/net/netfilter $..
+[rw@sapphire]~/work/linux-2-6/net $find -name '*.c' | xargs grep '^#ifdef' | wc -l
+1672
 
-Except at the time I pulled, it was just the older 'for_linus' branch.
+> now how did we manage to do it?
 
-                   Linus
+As it seems: Not at all.
+
+> This functional doc argument, well, we aren't corporate IT shop
+> where it counts.
+
+Yes. And because of this, you cannot expect independent parties to use
+the code as if they were employees of your corporate IT shop who are
+supposed to obey to the documented procedures because there are no
+such documented procedures. Instead, it boils down to a matter of
+indivdual judgement (where different individuals will invariably end
+up doing things in different ways).
+
+> Briefly looking, there is no need for instances_via_skb(),
+> it's badly named
+
+It's named according to what it does (locates an instances table by
+going through a struct skbuff). Also, this table needs to be located
+...
+
+> and netns can be found at netlink control socket.
+
+... and 'but there is another way to do it' (except that there
+isn't really since the 'netlink control socket' is not available in
+nfulnl_log_packet, at least not w/o changing the signature of this
+function) isn't really an argument against a specific way of
+accomplishing the same.
+
+> _instances struct is unnecessary.
+
+By extension, it follows that the statically defined instances table
+in the 'stock' module should also be unnecessary. But then, the
+routine used to locate logging instances with the help of this table
+(__instance_lookup) must also be unnecessary ...
+
+
