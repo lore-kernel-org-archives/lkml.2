@@ -1,59 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219Ab1GRNbH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 09:31:07 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:53332 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082Ab1GRNbF (ORCPT
+	id S1753552Ab1GRNe4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 09:34:56 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35828 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751029Ab1GRNez convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 09:31:05 -0400
-X-Authority-Analysis: v=1.1 cv=PfPQ8rIoTcZsncbPZjVSZ7K0hy8Zc4hmL68r4VPNpKE= c=1 sm=0 a=XYJHFtupD_QA:10 a=ireDzxY-55sA:10 a=3jLnhWJ0iCQA:10 a=kj9zAlcOel0A:10 a=jYIiGc7Ns1uVrPe6EHAf2g==:17 a=SMAS4svWwT2ZaCSST1UA:9 a=CjuIK1q_8ugA:10 a=jYIiGc7Ns1uVrPe6EHAf2g==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 70.113.120.88
-Date: Mon, 18 Jul 2011 08:31:01 -0500
-From: Ayman El-Khashab <ayman@elkhashab.com>
-To: Tony Breeds <tony@bakeyournoodle.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [v2 PATCH 1/1] powerpc/4xx: enable and fix pcie gen1/gen2 on
- the 460sx
-Message-ID: <20110718133101.GB26701@crust.elkhashab.com>
-References: <1310603611-8960-2-git-send-email-ayman@elkhashab.com>
- <1310748027-31956-1-git-send-email-aymane@elkhashab.com>
- <20110718040115.GK20597@ozlabs.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110718040115.GK20597@ozlabs.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.7 (crust.elkhashab.com [127.0.0.1]); Mon, 18 Jul 2011 08:31:03 -0500 (CDT)
+	Mon, 18 Jul 2011 09:34:55 -0400
+Subject: Re: [PATCH v2 1/6] perf: Add interface to add general events to
+ sysfs
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <1310740503-15608-2-git-send-email-ming.m.lin@intel.com>
+References: <1310740503-15608-1-git-send-email-ming.m.lin@intel.com>
+	 <1310740503-15608-2-git-send-email-ming.m.lin@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 18 Jul 2011 15:34:28 +0200
+Message-ID: <1310996068.13765.67.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 18, 2011 at 02:01:15PM +1000, Tony Breeds wrote:
-> On Fri, Jul 15, 2011 at 11:40:27AM -0500, Ayman Elkhashab wrote:
+On Fri, 2011-07-15 at 14:34 +0000, Lin Ming wrote:
+> PMU can implement ::add_events() to add its general events to sysfs.
 > 
-> > @@ -1582,8 +1628,8 @@ static int __init ppc4xx_setup_one_pciex_POM(struct ppc4xx_pciex_port	*port,
-> >  		dcr_write(port->dcrs, DCRO_PEGPL_OMR2BAH, lah);
-> >  		dcr_write(port->dcrs, DCRO_PEGPL_OMR2BAL, lal);
-> >  		dcr_write(port->dcrs, DCRO_PEGPL_OMR2MSKH, 0x7fffffff);
-> > -		/* Note that 3 here means enabled | single region */
-> > -		dcr_write(port->dcrs, DCRO_PEGPL_OMR2MSKL, sa | 3);
-> > +		dcr_write(port->dcrs, DCRO_PEGPL_OMR2MSKL,
-> > +				sa | DCRO_PEGPL_OMRxMSKL_VAL);
+> For example,
 > 
-> Didn't you just change "sa | 3" to "sa | 1" ?
+> /sys/bus/event_source/devices/uncore/events
+> └── cycle
 > 
+> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> ---
+>  include/linux/perf_event.h |    9 +++++++
+>  kernel/events/core.c       |   52 ++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 61 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index 3f2711c..14337a3 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -676,6 +676,14 @@ struct pmu {
+>  	 * for each successful ->add() during the transaction.
+>  	 */
+>  	void (*cancel_txn)		(struct pmu *pmu); /* optional */
+> +
+> +	void (*add_events)		(void);
+> +};
 
-Yes, but I think that is correct for it to be "1".  The data
-sheets for these parts that I checked had bit 1 marked as
-reserved.  Only OMR1MSKL and OMR3MSKL had extra definitions
-such as the _IO and _UOT.  The parts I checked which were
-the sheets for the EX and SX (which cover another 6 or 7
-parts) all had it with just a single bit defined on that
-register.
+I'd rather not have a function pointer here, and all the kobj thingies
+can be hooking into the existing struct device, right?
 
-Ayman
+> +struct pmu_event {
+> +	char name[64];
+> +	u64 config;
+> +	struct kobj_attribute attr;
+>  };
+
+Can't this live in kerne/event/internal.h?
+
+>  /**
+> @@ -941,6 +949,7 @@ struct perf_output_handle {
+>  
+>  extern int perf_pmu_register(struct pmu *pmu, char *name, int type);
+>  extern void perf_pmu_unregister(struct pmu *pmu);
+> +extern void perf_pmu_add_events(struct pmu *pmu, struct pmu_event events[], int count);
+>  
+>  extern int perf_num_counters(void);
+>  extern const char *perf_pmu_name(void);
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index 0567e32..9f4f463 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -5571,6 +5571,8 @@ static int pmu_dev_alloc(struct pmu *pmu)
+>  	if (ret)
+>  		goto free_dev;
+>  
+> +	if (pmu->add_events)
+> +		pmu->add_events();
+>  out:
+>  	return ret;
+>  
+> @@ -7035,4 +7037,54 @@ struct cgroup_subsys perf_subsys = {
+>  	.exit		= perf_cgroup_exit,
+>  	.attach_task	= perf_cgroup_attach_task,
+>  };
+> +
+> +static ssize_t pmu_event_show(struct kobject *kobj,
+> +		struct kobj_attribute *attr, char *buf)
+> +{
+> +	struct pmu_event *event = container_of(attr, struct pmu_event, attr);
+> +	int size;
+> +
+> +	size = sprintf(buf, "%lld\n", event->config);
+> +
+> +	return size;
+> +}
+> +
+> +void perf_pmu_add_events(struct pmu *pmu, struct pmu_event events[], int count)
+> +{
+> +	struct attribute_group *attr_group = NULL;
+> +	struct attribute **all_attrs = NULL;
+> +	struct kobj_attribute *event_attr;
+> +	struct pmu_event *event;
+> +	int i;
+> +
+> +	attr_group = kzalloc(sizeof(*attr_group), GFP_KERNEL);
+> +	if (!attr_group)
+> +		return;
+> +	attr_group->name = "events";
+> +
+> +	all_attrs = kzalloc(sizeof(*all_attrs) * (count + 1), GFP_KERNEL);
+> +	if (!all_attrs)
+> +		goto fail;
+> +
+> +	for (i = 0; i < count; i++) {
+> +		event = &events[i];
+> +		event_attr = &event->attr;
+> +
+> +		sysfs_attr_init(&event_attr->attr);
+> +		event_attr->attr.name = event->name;
+> +		event_attr->attr.mode = 0444;
+> +		event_attr->show = pmu_event_show;
+> +
+> +		all_attrs[i] = &event_attr->attr;
+> +	}
+> +
+> +	attr_group->attrs = all_attrs;
+> +	if (!sysfs_create_group(&pmu->dev->kobj, attr_group))
+> +		return;
+> +
+> +fail:
+> +	kfree(attr_group);
+> +	kfree(all_attrs);
+> +}
+> +
+>  #endif /* CONFIG_CGROUP_PERF */
+
+Uhm, why does this live under CONFIG_CGROUP_PERF?
+
+Also, I would prefer an interface like:
+
+int perf_pmu_add_event(struct pmu *pmu, const char *name, u64 config)
+{
+}
+
+which would create the events directory if not already present and
+allocate and add a pmu_sysfs_event thingy.
+
 
