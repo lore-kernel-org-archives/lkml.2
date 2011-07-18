@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751556Ab1GRVox (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 17:44:53 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:46817 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750880Ab1GRVov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 17:44:51 -0400
-Subject: Re: [PATCH] Add error check to hex2bin().
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        linux-security-module@vger.kernel.org,
-        andriy.shevchenko@linux.intel.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <CAHp75VeQSSoW6u-LGdhoNf_mh7WP5076bpzygf710Ro8aj1+Cg@mail.gmail.com>
-References: <1310977597-9666-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <201107182041.EHB78622.VOFSHFMOOFtLJQ@I-love.SAKURA.ne.jp>
-	 <1310991796.3903.6.camel@smile>
-	 <201107182148.AGD21306.FOLtJVMSOOFQHF@I-love.SAKURA.ne.jp>
-	 <1311012230.3193.35.camel@localhost.localdomain>
-	 <CAHp75VcXNQKej_n4cOB8-gYDSL8MuGrv=Fs8=zdEKGp53DCtSA@mail.gmail.com>
-	 <1311016856.3648.15.camel@localhost.localdomain>
-	 <CAHp75VeQSSoW6u-LGdhoNf_mh7WP5076bpzygf710Ro8aj1+Cg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Jul 2011 17:43:08 -0400
-Message-ID: <1311025388.3648.95.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+	id S1751683Ab1GRVp5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 17:45:57 -0400
+Received: from TYO200.gate.nec.co.jp ([202.32.8.215]:51587 "EHLO
+	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750829Ab1GRVp4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 17:45:56 -0400
+Message-ID: <4E24A699.4070300@bx.jp.nec.com>
+Date: Mon, 18 Jul 2011 17:33:13 -0400
+From: Keiichi KII <k-keiichi@bx.jp.nec.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc14 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Keiichi KII <k-keiichi@bx.jp.nec.com>, Ingo Molnar <mingo@elte.hu>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Tom Zanussi <tzanussi@gmail.com>, "riel@redhat.com" <riel@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "BA, Moussa" <Moussa.BA@numonyx.com>
+Subject: [RFC PATCH -tip 1/5] perf tools: handle '-' and '*' in trace parsing
+References: <4E24A61D.4060702@bx.jp.nec.com>
+In-Reply-To: <4E24A61D.4060702@bx.jp.nec.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-07-18 at 22:44 +0300, Andy Shevchenko wrote:
-> On Mon, Jul 18, 2011 at 10:20 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> 
-> >> > We probably don't need to define a separate 'safe' function.
-> >> There is an opponent on any  approach. Although, small and fast error
-> >> route could be good.
-> 
-> > As nothing but trusted/encrypted keys is using hex2bin, it shouldn't be
-> > a problem.  :-)
-> The key word "until now". But people will start to use anything which
-> has public API, won't they?
+From: Keiichi Kii <k-keiichi@bx.jp.nec.com>
 
-Someone with more experience than me needs to responds.
+add '-' and '*' to parsing in trace parsing.
 
-> >  I'll update trusted/encrypted keys to check the return
-> > code.
-> Actually another question shall we add __must_check to the prototype or not?
+Signed-off-by: Keiichi Kii <k-keiichi@bx.jp.nec.com>
+---
 
-Probably a good idea.
+ tools/perf/util/trace-event-parse.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-thanks,
 
-Mimi
+diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
+index 0a7ed5b..447f7c0 100644
+--- a/tools/perf/util/trace-event-parse.c
++++ b/tools/perf/util/trace-event-parse.c
+@@ -2162,6 +2162,12 @@ static unsigned long long eval_num_arg(void *data, int size,
+ 		case '+':
+ 			val = left + right;
+ 			break;
++		case '*':
++			val = left * right;
++			break;
++		case '/':
++			val = left / right;
++			break;
+ 		default:
+ 			die("unknown op '%s'", arg->op.op);
+ 		}
 
 
