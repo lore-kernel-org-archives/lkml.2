@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755060Ab1GRTXo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 15:23:44 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:59933 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921Ab1GRTXm (ORCPT
+	id S1755107Ab1GRTZD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 15:25:03 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:46911 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754788Ab1GRTZA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 15:23:42 -0400
-Date: Mon, 18 Jul 2011 20:23:39 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] vfs: fix race in rcu lookup of pruned dentry
-Message-ID: <20110718192339.GH11013@ZenIV.linux.org.uk>
-References: <CA+55aFxEGKgx+_xy+Lnt=84wRzE9TyznL3VCNSqWs7HC_H35_A@mail.gmail.com>
- <alpine.LSU.2.00.1107171641130.1274@sister.anvils>
- <20110718002524.GU11013@ZenIV.linux.org.uk>
- <alpine.LSU.2.00.1107171740260.1327@sister.anvils>
- <20110718020818.GW11013@ZenIV.linux.org.uk>
- <CA+55aFwXgcWxvAz7w1f_HYyzdm9b9EBJfrWhF1FW7EA3zpbJPg@mail.gmail.com>
- <CA+55aFxKRw8NxcHKzsSeCX3ud6eDrcQvAX+LMQOUT4p5TPLp5g@mail.gmail.com>
- <20110718182030.GF11013@ZenIV.linux.org.uk>
- <CA+55aFw+RwscYUocP0WYWTU=F+Udx+AsjMA0i63-D-y3iZKCTQ@mail.gmail.com>
- <20110718192038.GG11013@ZenIV.linux.org.uk>
+	Mon, 18 Jul 2011 15:25:00 -0400
+Date: Mon, 18 Jul 2011 23:24:54 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Matt Mackall <mpm@selenic.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        kernel-hardening@lists.openwall.com,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC v2] implement SL*B and stack usercopy runtime checks
+Message-ID: <20110718192454.GA4489@albatros>
+References: <20110703111028.GA2862@albatros>
+ <CA+55aFzXEoTyK0Sm-y=6xGmLMWzQiSQ7ELJ2-WL_PrP3r44MSg@mail.gmail.com>
+ <20110718183951.GA3748@albatros>
+ <1311016102.23043.235.camel@calx>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110718192038.GG11013@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1311016102.23043.235.camel@calx>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 18, 2011 at 08:20:38PM +0100, Al Viro wrote:
+On Mon, Jul 18, 2011 at 14:08 -0500, Matt Mackall wrote:
+> On Mon, 2011-07-18 at 22:39 +0400, Vasiliy Kulikov wrote:
+> > This patch implements 2 additional checks for the data copied from
+> > kernelspace to userspace and vice versa (original PAX_USERCOPY from PaX
+> > patch).  Currently there are some very simple and cheap comparisons of
+> > supplied size and the size of a copied object known at the compile time
+> > in copy_* functions.  This patch enhances these checks to check against
+> > stack frame boundaries and against SL*B object sizes.
+> > 
+> > More precisely, it checks:
+> > 
+> > 1) if the data touches the stack, checks whether it fully fits in the stack
+> > and whether it fully fits in a single stack frame.  The latter is arch
+> > dependent, currently it is implemented for x86 with CONFIG_FRAME_POINTER=y
+> > only.  It limits infoleaks/overwrites to a single frame and local variables
+> > only, and prevents saved return instruction pointer overwriting.
+> > 
+> > 2) if the data is from the SL*B cache, checks whether it fully fits in a
+> > slab page and whether it overflows a slab object.  E.g. if the memory
+> > was allocated as kmalloc(64, GFP_KERNEL) and one tries to copy 150
+> > bytes, the copy would fail.
+> 
+> FYI, this should almost certainly be split into (at least) two patches:
+> 
+> - the stack check
+> - the SL*B check (probably one patch per allocator, preceded by one for
+> any shared infrastructure)
 
-> Hmm...  Could you pull #for-linus (or #for-linus2, for that matter - same
-> plus cifs_get_root() fix) first?
+Sure, also per architecture probably.  But I want to get the comments
+about the feature itself before the division.
 
-FWIW, diffstat and changelog for #for-linus2:
- fs/ceph/mds_client.c |   19 ++++++++-
- fs/cifs/cifsfs.c     |  100 ++++++++++++++-----------------------------------
- fs/cifs/dir.c        |   13 ++++++-
- fs/cramfs/inode.c    |   22 ++++++-----
- fs/exofs/super.c     |    2 +-
- fs/hppfs/hppfs.c     |   31 ++++-----------
- fs/ufs/namei.c       |   12 ++----
- 7 files changed, 83 insertions(+), 116 deletions(-)
-Al Viro (8):
-      cifs: build_path_from_dentry() race fix
-      ceph analog of cifs build_path_from_dentry() race fix
-      fix exofs ->get_parent()
-      ufs should use d_splice_alias()
-      cramfs: get_cramfs_inode() returns ERR_PTR() on failure
-      hppfs: fix dentry leak
-      hppfs_lookup(): don't open-code lookup_one_len()
-      Fix cifs_get_root()
+Thanks,
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
