@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754810Ab1GROuw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 10:50:52 -0400
-Received: from mail.perches.com ([173.55.12.10]:4121 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751529Ab1GROut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 10:50:49 -0400
-Subject: Re: [PATCH 11/11 re-post] dynamic_debug: use a single printk() to
- emit msgs
-From: Joe Perches <joe@perches.com>
-To: Jason Baron <jbaron@redhat.com>
-Cc: Bart Van Assche <bvanassche@acm.org>, jim.cromie@gmail.com,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>
-In-Reply-To: <20110718143036.GB2457@redhat.com>
-References: <cover.1310657068.git.jbaron@redhat.com>
-	 <3667c0a87dd8fd64fdf1b1e8107b130a9b41096e.1310657068.git.jbaron@redhat.com>
-	 <CAO+b5-qA3s92YX2izXzvzt3MOrzRaPcZtDtK0cDte0ZXnRWxhA@mail.gmail.com>
-	 <1310744914.7582.36.camel@Joe-Laptop>
-	 <CAO+b5-p2B74+oVQRGcGxMp5ULZy8ZmF215Lz4qhbU=C4RnG8dw@mail.gmail.com>
-	 <20110715160417.GB2493@redhat.com>
-	 <CAO+b5-qgrV=gfZAczxfPbGqVtv4ZD_zZHOn-BMVY9wnJytbrtw@mail.gmail.com>
-	 <1310746580.7582.50.camel@Joe-Laptop> <20110715195903.GA7470@redhat.com>
-	 <1310773591.10603.9.camel@Joe-Laptop>  <20110718143036.GB2457@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Jul 2011 07:50:48 -0700
-Message-ID: <1311000648.2286.66.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1752270Ab1GROwO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 10:52:14 -0400
+Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:57572 "EHLO
+	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750957Ab1GROwM convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 10:52:12 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: axel.lin@gmail.com
+Cc: linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] omap1: select GENERIC_IRQ_CHIP for TI OMAP1
+Organization: Texas Instruments, Inc.
+References: <1309251943.3984.1.camel@phoenix> <87boxi2eep.fsf@ti.com>
+	<CAF+7xW=DKMi9doKm0XH0+EvJLX0gzUE0_TqrZNrqHqvjuSeHdA@mail.gmail.com>
+Date: Mon, 18 Jul 2011 07:52:07 -0700
+In-Reply-To: <CAF+7xW=DKMi9doKm0XH0+EvJLX0gzUE0_TqrZNrqHqvjuSeHdA@mail.gmail.com>
+	(Axel Lin's message of "Sun, 17 Jul 2011 21:38:56 +0800")
+Message-ID: <87aacbmyjs.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-07-18 at 10:30 -0400, Jason Baron wrote:
-> On Fri, Jul 15, 2011 at 04:46:31PM -0700, Joe Perches wrote:
-> > On Fri, 2011-07-15 at 15:59 -0400, Jason Baron wrote:
-> > > diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-> > > +#define LEFT(wrote) ((PREFIX_SIZE - wrote) > 0) ? (PREFIX_SIZE - wrote) : 0
-[]
-> > > +	pos += snprintf(buf + pos, LEFT(pos), "%s", KERN_DEBUG);
-> > > +	if (desc->flags & _DPRINTK_FLAGS_INCL_TID) {
-> > >  		if (in_interrupt())
-> > > -			snprintf(tid, sizeof(tid), "%s", "<intr> ");
-> > > +			pos += snprintf(buf + pos, LEFT(pos), "%s ",
-> > > +						"<intr>");
-> > scnprintf works without using LEFT.
-> > snprintf does as well.
-> > http://lkml.org/lkml/2010/7/23/375
-> So you're saying, just pass (PREFIX_SIZE - pos), as the second argument?
+Axel Lin <axel.lin@gmail.com> writes:
 
-Yes.
+> 2011/6/28 Kevin Hilman <khilman@ti.com>:
+>> Axel Lin <axel.lin@gmail.com> writes:
+>>
+>>> The gpio-omap driver has been converted to use generic IRQ chip.
+>>> Thus select GENERIC_IRQ_CHIP for TI OMAP1 to fix below build error.
+>>>
+>>>   LD      vmlinux
+>>> drivers/built-in.o: In function `omap_mpuio_alloc_gc':
+>>> drivers/gpio/gpio-omap.c:1087: undefined reference to `irq_alloc_generic_chip'
+>>> drivers/gpio/gpio-omap.c:1100: undefined reference to `irq_setup_generic_chip'
+>>> drivers/built-in.o: In function `omap_gpio_show_rev':
+>>> drivers/gpio/gpio-omap.c:998: undefined reference to `irq_gc_mask_clr_bit'
+>>> drivers/gpio/gpio-omap.c:998: undefined reference to `irq_gc_mask_set_bit'
+>>> make: *** [vmlinux] Error 1
+>>>
+>>> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+>>
+>> Thanks, I have a fix for this already queued for v3.0-rc3 series:
+>>
+>>        http://marc.info/?l=linux-omap&m=130749135312468&w=2
+>>
+> 
+> Seems this patch is not upstream.
+> I still have the same build error with  [linux-next: Tree for July 16].
 
-> I see kernel code written both ways.
+Hmm, you're right.  Tony hasn't queued that fix yet.
 
-Perhaps one consistently used style is better than two.
- 
-> I think it's fine as written, unless you feel
-> strongly about this.
+Tony?
 
-You're the maintainer, do what you think best.
-
-cheers, Joe
-
+Kevin
