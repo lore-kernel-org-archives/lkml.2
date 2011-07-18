@@ -1,279 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752523Ab1GSMAu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 08:00:50 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:34065 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751967Ab1GSMAs convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:3:1>);
-	Tue, 19 Jul 2011 08:00:48 -0400
-Message-Id: <4E258E0D020000780004E3F0@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Tue, 19 Jul 2011 13:00:45 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/3, resend] x86: fix write lock scalability 64-bit
-	 issue
+	id S1752277Ab1GSMIU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 08:08:20 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:52968 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751032Ab1GSMIS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 08:08:18 -0400
+Subject: Re: [PATCH] Add error check to hex2bin().
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        linux-security-module@vger.kernel.org,
+        andriy.shevchenko@linux.intel.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <CAHp75VdTiMtmXdVSMq=6bAH2+rmSBHPPE9hQOLQN+Y3qPBEVFg@mail.gmail.com>
+References: <1310977597-9666-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <201107182041.EHB78622.VOFSHFMOOFtLJQ@I-love.SAKURA.ne.jp>
+	 <1310991796.3903.6.camel@smile>
+	 <201107182148.AGD21306.FOLtJVMSOOFQHF@I-love.SAKURA.ne.jp>
+	 <CAMuHMdVxR7AC7H_Yys8SiaGqM2JsNXLsRpujqojMYd_CXWxcAw@mail.gmail.com>
+	 <CAHp75VdTiMtmXdVSMq=6bAH2+rmSBHPPE9hQOLQN+Y3qPBEVFg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 18 Jul 2011 17:59:25 -0400
+Message-ID: <1311026365.3648.110.camel@localhost.localdomain>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the write lock path simply subtracting RW_LOCK_BIAS there is, on
-large systems, the theoretical possibility of overflowing the 32-bit
-value that was used so far (namely if 128 or more CPUs manage to do the
-subtraction, but don't get to do the inverse addition in the failure
-path quickly enough).
+On Tue, 2011-07-19 at 00:18 +0300, Andy Shevchenko wrote:
+> On Mon, Jul 18, 2011 at 11:49 PM, Geert Uytterhoeven
+> <geert@linux-m68k.org> wrote:
+> > What about making it return the number of unprocessed bytes left instead?
+> > Then the caller knows where the problem lies. And zero would mean success.
+> If I remember correctly it used to be src as return value in some
+> version of that patch. I don't know the details of that interim
+> solution. My current opinion is to return boolean and make an
+> additional parameter to return src value. However, it could make this
+> simple function fat.
+> P.S. Take into account that the user of it is only one so far, I would
+> like to hear a Mimi's opinion.
 
-A first measure is to modify RW_LOCK_BIAS itself - with the new value
-chosen, it is good for up to 2048 CPUs each allowed to nest over 2048
-times on the read path without causing an issue. Quite possibly it
-would even be sufficient to adjust the bias a little further, assuming
-that allowing for significantly less nesting would suffice.
+Trusted/encrypted keys are not in a critical code path. They're used for
+loading/storing key blobs from userspace. Once you change the API, short
+circuiting out and adding an error return, from a trusted/encrypted key
+perspective, it doesn't make a difference.
 
-However, as the original value chosen allowed for even more nesting
-levels, to support more than 2048 CPUs (possible currently only for
-64-bit kernels) the lock itself gets widened to 64 bits.
+thanks,
 
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
-
----
- arch/x86/include/asm/asm.h            |    2 +
- arch/x86/include/asm/rwlock.h         |   43 +++++++++++++++++++++++++++++++++-
- arch/x86/include/asm/spinlock.h       |   37 +++++++++++++++++------------
- arch/x86/include/asm/spinlock_types.h |    6 ----
- arch/x86/lib/rwlock.S                 |   12 ++++-----
- arch/x86/lib/thunk_64.S               |    1 
- 6 files changed, 73 insertions(+), 28 deletions(-)
-
---- 3.0-rc7-x86-rw.orig/arch/x86/include/asm/asm.h
-+++ 3.0-rc7-x86-rw/arch/x86/include/asm/asm.h
-@@ -3,9 +3,11 @@
- 
- #ifdef __ASSEMBLY__
- # define __ASM_FORM(x)	x
-+# define __ASM_FORM_COMMA(x) x,
- # define __ASM_EX_SEC	.section __ex_table, "a"
- #else
- # define __ASM_FORM(x)	" " #x " "
-+# define __ASM_FORM_COMMA(x) " " #x ","
- # define __ASM_EX_SEC	" .section __ex_table,\"a\"\n"
- #endif
- 
---- 3.0-rc7-x86-rw.orig/arch/x86/include/asm/rwlock.h
-+++ 3.0-rc7-x86-rw/arch/x86/include/asm/rwlock.h
-@@ -1,7 +1,48 @@
- #ifndef _ASM_X86_RWLOCK_H
- #define _ASM_X86_RWLOCK_H
- 
--#define RW_LOCK_BIAS		 0x01000000
-+#include <asm/asm.h>
-+
-+#if CONFIG_NR_CPUS <= 2048
-+
-+#ifndef __ASSEMBLY__
-+typedef union {
-+	s32 lock;
-+	s32 write;
-+} arch_rwlock_t;
-+#endif
-+
-+#define RW_LOCK_BIAS		0x00100000
-+#define READ_LOCK_SIZE(insn)	__ASM_FORM(insn##l)
-+#define READ_LOCK_ATOMIC(n)	atomic_##n
-+#define WRITE_LOCK_ADD(n)	__ASM_FORM_COMMA(addl n)
-+#define WRITE_LOCK_SUB(n)	__ASM_FORM_COMMA(subl n)
-+#define WRITE_LOCK_CMP		RW_LOCK_BIAS
-+
-+#else /* CONFIG_NR_CPUS > 2048 */
-+
-+#include <linux/const.h>
-+
-+#ifndef __ASSEMBLY__
-+typedef union {
-+	s64 lock;
-+	struct {
-+		u32 read;
-+		s32 write;
-+	};
-+} arch_rwlock_t;
-+#endif
-+
-+#define RW_LOCK_BIAS		(_AC(1,L) << 32)
-+#define READ_LOCK_SIZE(insn)	__ASM_FORM(insn##q)
-+#define READ_LOCK_ATOMIC(n)	atomic64_##n
-+#define WRITE_LOCK_ADD(n)	__ASM_FORM(incl)
-+#define WRITE_LOCK_SUB(n)	__ASM_FORM(decl)
-+#define WRITE_LOCK_CMP		1
-+
-+#endif /* CONFIG_NR_CPUS */
-+
-+#define __ARCH_RW_LOCK_UNLOCKED		{ RW_LOCK_BIAS }
- 
- /* Actual code is in asm/spinlock.h or in arch/x86/lib/rwlock.S */
- 
---- 3.0-rc7-x86-rw.orig/arch/x86/include/asm/spinlock.h
-+++ 3.0-rc7-x86-rw/arch/x86/include/asm/spinlock.h
-@@ -2,7 +2,6 @@
- #define _ASM_X86_SPINLOCK_H
- 
- #include <asm/atomic.h>
--#include <asm/rwlock.h>
- #include <asm/page.h>
- #include <asm/processor.h>
- #include <linux/compiler.h>
-@@ -234,7 +233,7 @@ static inline void arch_spin_unlock_wait
-  */
- static inline int arch_read_can_lock(arch_rwlock_t *lock)
- {
--	return (int)(lock)->lock > 0;
-+	return lock->lock > 0;
- }
- 
- /**
-@@ -243,12 +242,12 @@ static inline int arch_read_can_lock(arc
-  */
- static inline int arch_write_can_lock(arch_rwlock_t *lock)
- {
--	return (lock)->lock == RW_LOCK_BIAS;
-+	return lock->write == WRITE_LOCK_CMP;
- }
- 
- static inline void arch_read_lock(arch_rwlock_t *rw)
- {
--	asm volatile(LOCK_PREFIX " subl $1,(%0)\n\t"
-+	asm volatile(LOCK_PREFIX READ_LOCK_SIZE(dec) " (%0)\n\t"
- 		     "jns 1f\n"
- 		     "call __read_lock_failed\n\t"
- 		     "1:\n"
-@@ -257,47 +256,55 @@ static inline void arch_read_lock(arch_r
- 
- static inline void arch_write_lock(arch_rwlock_t *rw)
- {
--	asm volatile(LOCK_PREFIX " subl %1,(%0)\n\t"
-+	asm volatile(LOCK_PREFIX WRITE_LOCK_SUB(%1) "(%0)\n\t"
- 		     "jz 1f\n"
- 		     "call __write_lock_failed\n\t"
- 		     "1:\n"
--		     ::LOCK_PTR_REG (rw), "i" (RW_LOCK_BIAS) : "memory");
-+		     ::LOCK_PTR_REG (&rw->write), "i" (RW_LOCK_BIAS)
-+		     : "memory");
- }
- 
- static inline int arch_read_trylock(arch_rwlock_t *lock)
- {
--	atomic_t *count = (atomic_t *)lock;
-+	READ_LOCK_ATOMIC(t) *count = (READ_LOCK_ATOMIC(t) *)lock;
- 
--	if (atomic_dec_return(count) >= 0)
-+	if (READ_LOCK_ATOMIC(dec_return)(count) >= 0)
- 		return 1;
--	atomic_inc(count);
-+	READ_LOCK_ATOMIC(inc)(count);
- 	return 0;
- }
- 
- static inline int arch_write_trylock(arch_rwlock_t *lock)
- {
--	atomic_t *count = (atomic_t *)lock;
-+	atomic_t *count = (atomic_t *)&lock->write;
- 
--	if (atomic_sub_and_test(RW_LOCK_BIAS, count))
-+	if (atomic_sub_and_test(WRITE_LOCK_CMP, count))
- 		return 1;
--	atomic_add(RW_LOCK_BIAS, count);
-+	atomic_add(WRITE_LOCK_CMP, count);
- 	return 0;
- }
- 
- static inline void arch_read_unlock(arch_rwlock_t *rw)
- {
--	asm volatile(LOCK_PREFIX "incl %0" :"+m" (rw->lock) : : "memory");
-+	asm volatile(LOCK_PREFIX READ_LOCK_SIZE(inc) " %0"
-+		     :"+m" (rw->lock) : : "memory");
- }
- 
- static inline void arch_write_unlock(arch_rwlock_t *rw)
- {
--	asm volatile(LOCK_PREFIX "addl %1, %0"
--		     : "+m" (rw->lock) : "i" (RW_LOCK_BIAS) : "memory");
-+	asm volatile(LOCK_PREFIX WRITE_LOCK_ADD(%1) "%0"
-+		     : "+m" (rw->write) : "i" (RW_LOCK_BIAS) : "memory");
- }
- 
- #define arch_read_lock_flags(lock, flags) arch_read_lock(lock)
- #define arch_write_lock_flags(lock, flags) arch_write_lock(lock)
- 
-+#undef READ_LOCK_SIZE
-+#undef READ_LOCK_ATOMIC
-+#undef WRITE_LOCK_ADD
-+#undef WRITE_LOCK_SUB
-+#undef WRITE_LOCK_CMP
-+
- #define arch_spin_relax(lock)	cpu_relax()
- #define arch_read_relax(lock)	cpu_relax()
- #define arch_write_relax(lock)	cpu_relax()
---- 3.0-rc7-x86-rw.orig/arch/x86/include/asm/spinlock_types.h
-+++ 3.0-rc7-x86-rw/arch/x86/include/asm/spinlock_types.h
-@@ -11,10 +11,6 @@ typedef struct arch_spinlock {
- 
- #define __ARCH_SPIN_LOCK_UNLOCKED	{ 0 }
- 
--typedef struct {
--	unsigned int lock;
--} arch_rwlock_t;
--
--#define __ARCH_RW_LOCK_UNLOCKED		{ RW_LOCK_BIAS }
-+#include <asm/rwlock.h>
- 
- #endif /* _ASM_X86_SPINLOCK_TYPES_H */
---- 3.0-rc7-x86-rw.orig/arch/x86/lib/rwlock.S
-+++ 3.0-rc7-x86-rw/arch/x86/lib/rwlock.S
-@@ -15,12 +15,12 @@ ENTRY(__write_lock_failed)
- 	CFI_STARTPROC
- 	FRAME
- 0:	LOCK_PREFIX
--	addl	$RW_LOCK_BIAS, (%__lock_ptr)
-+	WRITE_LOCK_ADD($RW_LOCK_BIAS) (%__lock_ptr)
- 1:	rep; nop
--	cmpl	$RW_LOCK_BIAS, (%__lock_ptr)
-+	cmpl	$WRITE_LOCK_CMP, (%__lock_ptr)
- 	jne	1b
- 	LOCK_PREFIX
--	subl	$RW_LOCK_BIAS, (%__lock_ptr)
-+	WRITE_LOCK_SUB($RW_LOCK_BIAS) (%__lock_ptr)
- 	jnz	0b
- 	ENDFRAME
- 	ret
-@@ -31,12 +31,12 @@ ENTRY(__read_lock_failed)
- 	CFI_STARTPROC
- 	FRAME
- 0:	LOCK_PREFIX
--	incl	(%__lock_ptr)
-+	READ_LOCK_SIZE(inc) (%__lock_ptr)
- 1:	rep; nop
--	cmpl	$1, (%__lock_ptr)
-+	READ_LOCK_SIZE(cmp) $1, (%__lock_ptr)
- 	js	1b
- 	LOCK_PREFIX
--	decl	(%__lock_ptr)
-+	READ_LOCK_SIZE(dec) (%__lock_ptr)
- 	js	0b
- 	ENDFRAME
- 	ret
---- 3.0-rc7-x86-rw.orig/arch/x86/lib/thunk_64.S
-+++ 3.0-rc7-x86-rw/arch/x86/lib/thunk_64.S
-@@ -9,7 +9,6 @@
- 	#include <linux/linkage.h>
- 	#include <asm/dwarf2.h>
- 	#include <asm/calling.h>			
--	#include <asm/rwlock.h>
- 		
- 	/* rdi:	arg1 ... normal C conventions. rax is saved/restored. */ 	
- 	.macro thunk name,func
-
+Mimi
 
