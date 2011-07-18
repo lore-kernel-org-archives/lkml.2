@@ -1,152 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233Ab1GRTds (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 15:33:48 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:52492 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755012Ab1GRTdo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 15:33:44 -0400
-Date: Mon, 18 Jul 2011 23:33:38 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: kernel-hardening@lists.openwall.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [kernel-hardening] Re: [RFC v2] implement SL*B and stack
- usercopy runtime checks
-Message-ID: <20110718193337.GB4489@albatros>
-References: <20110703111028.GA2862@albatros>
- <CA+55aFzXEoTyK0Sm-y=6xGmLMWzQiSQ7ELJ2-WL_PrP3r44MSg@mail.gmail.com>
- <20110718183951.GA3748@albatros>
- <20110718115237.14d96c03.akpm@linux-foundation.org>
+	id S1755190Ab1GRTe0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 15:34:26 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38544 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754627Ab1GRTeZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 15:34:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110718115237.14d96c03.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LSU.2.00.1107181135170.2722@sister.anvils>
+References: <alpine.LSU.2.00.1107171356480.3175@sister.anvils>
+ <CA+55aFw5LhGq-a6mAhgZbGP2FJ+tnV9HRxKoiFuVYbttOo2tNw@mail.gmail.com>
+ <20110717231610.GR11013@ZenIV.linux.org.uk> <CA+55aFxEGKgx+_xy+Lnt=84wRzE9TyznL3VCNSqWs7HC_H35_A@mail.gmail.com>
+ <alpine.LSU.2.00.1107171641130.1274@sister.anvils> <20110718002524.GU11013@ZenIV.linux.org.uk>
+ <alpine.LSU.2.00.1107171740260.1327@sister.anvils> <20110718020818.GW11013@ZenIV.linux.org.uk>
+ <CA+55aFwXgcWxvAz7w1f_HYyzdm9b9EBJfrWhF1FW7EA3zpbJPg@mail.gmail.com>
+ <CA+55aFxKRw8NxcHKzsSeCX3ud6eDrcQvAX+LMQOUT4p5TPLp5g@mail.gmail.com> <alpine.LSU.2.00.1107181135170.2722@sister.anvils>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 18 Jul 2011 12:33:28 -0700
+Message-ID: <CA+55aFycZL9zAE_Qvq9LM=HpugiDuKSjdRhKG1zi=H4LnNvhVQ@mail.gmail.com>
+Subject: Re: [PATCH] vfs: fix race in rcu lookup of pruned dentry
+To: Hugh Dickins <hughd@google.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 18, 2011 at 11:52 -0700, Andrew Morton wrote:
-> On Mon, 18 Jul 2011 22:39:51 +0400
-> Vasiliy Kulikov <segoon@openwall.com> wrote:
-> 
-> >   */
-> >  #define access_ok(type, addr, size) (likely(__range_not_ok(addr, size) == 0))
-> >  
-> > +#if defined(CONFIG_FRAME_POINTER)
-> 
-> #ifdef is conventional in this case
+On Mon, Jul 18, 2011 at 12:04 PM, Hugh Dickins <hughd@google.com> wrote:
+>
+> Al has commented on that.  I'd feel more confident with a patch like
+> yours, and corrected final check in mine (if we used mine at all)
+>        if (!read_seqcount_retry(&path->dentry->d_seq, nd->seq);
+> but ignore me, I'm easily confused by mounts ;)
 
-OK.
+No, I do think I want to do it. So for post-3.0 (likely today ;), my
+current plan is to have three commits in this area:
 
-> > +/*
-> > + * MUST be always_inline to correctly count stack frame numbers.
-> > + *
-> > + * low ----------------------------------------------> high
-> > + * [saved bp][saved ip][args][local vars][saved bp][saved ip]
-> > + *		       ^----------------^
-> > + *		  allow copies only within here
-> > +*/
-> > +#undef arch_check_object_on_stack_frame
-> > +inline static __attribute__((always_inline))
-> 
-> static inline __always_inline
+ - the one-liner removal of d_inode = NULL in d_kill (but I'll add a comment)
 
-OK.
+ - the patch to properly do that dentry sequence number switch-over
+across the mount-point traversal
 
-> > +bool arch_check_object_on_stack_frame(const void *stack,
-> > +	     const void *stackend, const void *obj, unsigned long len)
-> > +{
-> > +	const void *frame = NULL;
-> > +	const void *oldframe;
-> > +
-> > +	/*
-> > +	 * Get the kernel_access_ok() caller frame.
-> > +	 * __builtin_frame_address(0) returns kernel_access_ok() frame
-> > +	 * as arch_ and stack_ are inline and kernel_ is noinline.
-> > +	 */
-> > +	oldframe = __builtin_frame_address(0);
-> > +	if (oldframe)
-> > +		frame = __builtin_frame_address(1);
-> > +
-> > +	while (stack <= frame && frame < stackend) {
-> > +		/*
-> > +		 * If obj + len extends past the last frame, this
-> > +		 * check won't pass and the next frame will be 0,
-> > +		 * causing us to bail out and correctly report
-> > +		 * the copy as invalid.
-> > +		 */
-> > +		if (obj + len <= frame) {
-> > +			/* EBP + EIP */
-> > +			int protected_regs_size = 2*sizeof(void *);
-> 
-> size_t?
+ - And possibly *some* version of your patch.
 
-Yes, it looks better here.
+However, I'm actually looking at __d_lookup_rcu(), and it does the proper
 
-> > +static inline unsigned long __must_check copy_from_user_uncheched(void *to,
-> 
-> typo
+    if (read_seqcount_retry(&dentry->d_seq, *seq))
+        goto seqretry;
 
-Oops, sure.
+*after* having pulled the inode pointer out of "dentry->d_inode". So
+I'm not actually seeing how the inode pointer could be stale at all
+right now, because we do seem to have the sequence number check there!
 
-> > diff --git a/arch/x86/include/asm/uaccess_64.h b/arch/x86/include/asm/uaccess_64.h
-> > index 1c66d30..10c5a0a 100644
-> > --- a/arch/x86/include/asm/uaccess_64.h
-> > +++ b/arch/x86/include/asm/uaccess_64.h
-> > @@ -50,8 +50,10 @@ static inline unsigned long __must_check copy_from_user(void *to,
-> >  	int sz = __compiletime_object_size(to);
-> 
-> size_t? (ssize_t?)
+Which just makes me suspect that it's *another* case of bug in the
+dentry_kill() sequence. I think the dentry_rcuwalk_barrier() thing is
+crap: it doesn't *cover* the d_inode change with the write lock, it
+just puts that "barrier" there, which is bogus. You can get a
+successful read of the changed inode without ever failing the read
+lock sequence!
 
-It doesn't touch my patch, however, ssize_t seems reasonable here.
-
-> >  	might_fault();
-> > -	if (likely(sz == -1 || sz >= n))
-> > -		n = _copy_from_user(to, from, n);
-> > +	if (likely(sz == -1 || sz >= n)) {
-> > +		if (kernel_access_ok(to, n))
-> > +			n = _copy_from_user(to, from, n);
-> > +	}
-> >  #ifdef CONFIG_DEBUG_VM
-> >  	else
-> >  		WARN(1, "Buffer overflow detected!\n");
-> >
-> > ...
-> >
-> > --- a/mm/maccess.c
-> > +++ b/mm/maccess.c
-> > @@ -3,8 +3,11 @@
-> >   */
-> >  #include <linux/module.h>
-> >  #include <linux/mm.h>
-> > +#include <linux/sched.h>
-> >  #include <linux/uaccess.h>
-> >  
-> > +extern bool slab_access_ok(const void *ptr, unsigned long len);
-> 
-> no externs in .c - use a header
-
-I thought it would make less noise.  OK, will do.
-
-> > +noinline bool __kernel_access_ok(const void *ptr, unsigned long len)
-> 
-> noinline seems unneeded
-
-It is needed here because arch_check_object_on_stack_frame() needs the
-precise number of frames it should skip.
-
-
-Thank you!
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+                                 Linus
