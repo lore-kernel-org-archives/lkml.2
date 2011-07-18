@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753054Ab1GRPwE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 11:52:04 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:43084 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752672Ab1GRPwB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 11:52:01 -0400
-Date: Mon, 18 Jul 2011 16:51:41 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        Matthew Wilcox <matthew@wil.cx>, Anton Blanchard <anton@samba.org>,
-        npiggin@kernel.dk, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Tim Chen <tim.c.chen@linux.intel.com>
-Subject: Re: vfsmount lock issues on very large ppc64 box
-Message-ID: <20110718155141.GA11013@ZenIV.linux.org.uk>
-References: <20110717105027.53cc3ca4@kryten>
- <20110717010427.GC5359@parisc-linux.org>
- <20110717084630.GC8006@one.firstfloor.org>
- <1310977028.5756.1.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20110718154008.GA29593@infradead.org>
+	id S1752352Ab1GRQF7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 12:05:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53806 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751209Ab1GRQF6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 12:05:58 -0400
+Date: Mon, 18 Jul 2011 17:05:52 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] mm: page allocator: Initialise ZLC for first zone
+ eligible for zone_reclaim
+Message-ID: <20110718160552.GB5349@suse.de>
+References: <1310742540-22780-1-git-send-email-mgorman@suse.de>
+ <1310742540-22780-2-git-send-email-mgorman@suse.de>
+ <alpine.DEB.2.00.1107180951390.30392@router.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20110718154008.GA29593@infradead.org>
+In-Reply-To: <alpine.DEB.2.00.1107180951390.30392@router.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 18, 2011 at 11:40:08AM -0400, Christoph Hellwig wrote:
-> On Mon, Jul 18, 2011 at 10:17:08AM +0200, Eric Dumazet wrote:
-> > > Tim posted a patch, but it wasn't applied for unknown reasons.
-> > > 
-> > > https://lkml.org/lkml/2011/4/13/561
-> > > 
-> > 
-> > Could Tim respin his patch then ?
+On Mon, Jul 18, 2011 at 09:56:31AM -0500, Christoph Lameter wrote:
+> On Fri, 15 Jul 2011, Mel Gorman wrote:
 > 
-> Btw, it seems like most kern_mount users want this and he's still
-> missing some like devtmpfs, sysfs or ipc.  What about splitting
-> kern_mount into a variant that gets a long-term reference for these
-> callers, and one that doesn't for afs/cifs/nfs automounts?
+> > Currently the zonelist cache is setup only after the first zone has
+> > been considered and zone_reclaim() has been called. The objective was
+> > to avoid a costly setup but zone_reclaim is itself quite expensive. If
+> > it is failing regularly such as the first eligible zone having mostly
+> > mapped pages, the cost in scanning and allocation stalls is far higher
+> > than the ZLC initialisation step.
+> 
+> Would it not be easier to set zlc_active and allowednodes based on the
+> zone having an active ZLC at the start of get_pages()?
+> 
 
-	Careful - we need to balance that on shutdown side with
-mnt_make_shortterm() before the final mntput()...  Making it too
-easy just on the kern_mount side will lead to easy-to-miss bugs.
-For one thing, it's visible only on SMP boxen; for another there's
-a lot of such internal vfsmounts (pipefs, sockets, etc.) that
-are never shut down, so there'll be no easily copied examples of
-what should not be forgotten on __exit side of things in obvious
-places...
+What do you mean by a zones active ZLC? zonelists are on a per-node,
+not a per-zone basis (see node_zonelist) so a zone doesn't have an
+active ZLC as such. If the zlc_active is set at the beginning of
+get_page_from_freelist(), it implies that we are calling zlc_setup()
+even when the watermarks are met which is unnecessary.
 
-	FWIW, I had missed the original posting back in April - had been
-without net.access then and it hadn't been resent when I came back, asked
-people to resend the important ones and shitcanned the huge pile of pending
-mail from the previous month...
+> Buffered_rmqueue is handling the situation of a zone with an ZLC in a
+> weird way right now since it ignores the (potentially existing) ZLC
+> for the first pass.
+
+Where does buffered_rmqueue() refer to a zonelist_cache?
+
+> zlc_setup() does a lot of things. So that is because
+> there is a performance benefit?
+> 
+
+I do not understand this question. Are you asking if zonelist_cache
+has a performance benefit? The answer is "yes" because you can see
+how the performance when zone_reclaim degrades when it is not used
+for the first zone.
+
+-- 
+Mel Gorman
+SUSE Labs
