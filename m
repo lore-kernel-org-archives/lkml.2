@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754717Ab1GRTI2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 15:08:28 -0400
-Received: from waste.org ([173.11.57.241]:50593 "EHLO waste.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752468Ab1GRTI1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 15:08:27 -0400
-Subject: Re: [RFC v2] implement SL*B and stack usercopy runtime checks
-From: Matt Mackall <mpm@selenic.com>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        kernel-hardening@lists.openwall.com,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org
-In-Reply-To: <20110718183951.GA3748@albatros>
-References: <20110703111028.GA2862@albatros>
-	 <CA+55aFzXEoTyK0Sm-y=6xGmLMWzQiSQ7ELJ2-WL_PrP3r44MSg@mail.gmail.com>
-	 <20110718183951.GA3748@albatros>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Jul 2011 14:08:22 -0500
-Message-ID: <1311016102.23043.235.camel@calx>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	id S1754901Ab1GRTJC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 15:09:02 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33239 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752467Ab1GRTI7 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 15:08:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110718182030.GF11013@ZenIV.linux.org.uk>
+References: <alpine.LSU.2.00.1107171356480.3175@sister.anvils>
+ <CA+55aFw5LhGq-a6mAhgZbGP2FJ+tnV9HRxKoiFuVYbttOo2tNw@mail.gmail.com>
+ <20110717231610.GR11013@ZenIV.linux.org.uk> <CA+55aFxEGKgx+_xy+Lnt=84wRzE9TyznL3VCNSqWs7HC_H35_A@mail.gmail.com>
+ <alpine.LSU.2.00.1107171641130.1274@sister.anvils> <20110718002524.GU11013@ZenIV.linux.org.uk>
+ <alpine.LSU.2.00.1107171740260.1327@sister.anvils> <20110718020818.GW11013@ZenIV.linux.org.uk>
+ <CA+55aFwXgcWxvAz7w1f_HYyzdm9b9EBJfrWhF1FW7EA3zpbJPg@mail.gmail.com>
+ <CA+55aFxKRw8NxcHKzsSeCX3ud6eDrcQvAX+LMQOUT4p5TPLp5g@mail.gmail.com> <20110718182030.GF11013@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 18 Jul 2011 12:08:04 -0700
+Message-ID: <CA+55aFw+RwscYUocP0WYWTU=F+Udx+AsjMA0i63-D-y3iZKCTQ@mail.gmail.com>
+Subject: Re: [PATCH] vfs: fix race in rcu lookup of pruned dentry
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-07-18 at 22:39 +0400, Vasiliy Kulikov wrote:
-> This patch implements 2 additional checks for the data copied from
-> kernelspace to userspace and vice versa (original PAX_USERCOPY from PaX
-> patch).  Currently there are some very simple and cheap comparisons of
-> supplied size and the size of a copied object known at the compile time
-> in copy_* functions.  This patch enhances these checks to check against
-> stack frame boundaries and against SL*B object sizes.
-> 
-> More precisely, it checks:
-> 
-> 1) if the data touches the stack, checks whether it fully fits in the stack
-> and whether it fully fits in a single stack frame.  The latter is arch
-> dependent, currently it is implemented for x86 with CONFIG_FRAME_POINTER=y
-> only.  It limits infoleaks/overwrites to a single frame and local variables
-> only, and prevents saved return instruction pointer overwriting.
-> 
-> 2) if the data is from the SL*B cache, checks whether it fully fits in a
-> slab page and whether it overflows a slab object.  E.g. if the memory
-> was allocated as kmalloc(64, GFP_KERNEL) and one tries to copy 150
-> bytes, the copy would fail.
+On Mon, Jul 18, 2011 at 11:20 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> ->mnt_mountpoint and ->mnt_root are both pinned (and protected by
+> vfsmount_lock, while we are at it).  If it manages to get stale,
+> we have worse problems...
 
-FYI, this should almost certainly be split into (at least) two patches:
+I'm not worried about the inode itself being stale as much as the
+*name* being stale, ie the whole "what happens if dentry->d_name is
+being changed concurrently with lookup" issue.
 
-- the stack check
-- the SL*B check (probably one patch per allocator, preceded by one for
-any shared infrastructure)
+But I do agree that it's very unlikely to actually cause problems.
+People just don't move mount points around, and the race would seem to
+be ridiculously hard to ever hit even if you tried to create some
+totally artificial load that does nothing but rename mount-points ;)
 
--- 
-Mathematics is the supreme nostalgia of our time.
+That said, the reason I think we should do this is that (a) it's
+really cheap to check the sequence numbers and (b) we should just make
+it a rule that whenever you set up the next sequence number for
+lookup, you should check the previous one (and do it in the right
+order - you need to check the previous one *after* you've done the
+read_seqcont_begin() for the next one, so that the sequence number
+checks always "overlap").
 
+So the patch is essentially a free "fix things to follow the general rules".
 
+But I think I'm on the same page with Hugh that at this point none of
+these issues are even remotely recent, they are basically impossible
+to hit, and the fixes are likely potentially more dangerous than the
+bugs they fix, so I'll release 3.0 without them and just apply the
+fixes (and cc stable) afterwards.
+
+                                 Linus
