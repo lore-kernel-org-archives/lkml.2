@@ -1,120 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753109Ab1GRQVK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 12:21:10 -0400
-Received: from stinky.trash.net ([213.144.137.162]:46829 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751731Ab1GRQVI (ORCPT
+	id S1753271Ab1GRQ2Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 12:28:25 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:45247 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752576Ab1GRQ2Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 12:21:08 -0400
-Message-ID: <4E245D70.4030907@trash.net>
-Date: Mon, 18 Jul 2011 18:21:04 +0200
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100620 Icedove/3.0.5
+	Mon, 18 Jul 2011 12:28:24 -0400
+Date: Mon, 18 Jul 2011 11:28:18 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        usb-storage@lists.one-eyed-alien.net, linux-kernel@vger.kernel.org
+Subject: [PATCH] usb_storage: make usb-stor-scan task non-freezable
+Message-ID: <20110718162818.GC19552@thinkpad-t410>
+Mail-Followup-To: Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+	Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+	usb-storage@lists.one-eyed-alien.net, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: Rainer Weikusat <rweikusat@mobileactivedefense.com>
-CC: netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] netfilter: add per-namespace logging to nfnetlink_log.c
-References: <87sjqqawmk.fsf@sapphire.mobileactivedefense.com>
-In-Reply-To: <87sjqqawmk.fsf@sapphire.mobileactivedefense.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01.07.2011 16:44, Rainer Weikusat wrote:
-> From: Rainer Weikusat <rweikusat@mobileactivedefense.com>
-> 
-> Presently, the nfnetlink_log.c file contains only very nominal support
-> for network namespaces: While it is possible to create sockets which
-> should theoretically receive NFLOG originated messages in arbitrary
-> network namespaces, there is only one table of nfulnl_instance
-> structures in the kernel and all log messages sent via __nfulnl_send
-> are forced into the init_net namespace so that only sockets created
-> in this namespace will ever actually receive log data. Likewise, the
-> nfulnl_rcv_nl_event notification callback won't destroy logging
-> instances created by processes in other network namespace upon process
-> death. The patch included below changes the code to use a logging
-> instance table per network namespace, to send messages generated from
-> within a specific namespace to sockets also belonging to this
-> namespace and to destroy logging instances created from other network
-> namespaces than init_net when cleaning up after a logging process
-> terminated. It doesn't touch the code dealing with nfnetlink_log /proc
-> files which thus remain restricted to the init_net namespace because
-> this isn't really needed in order to get per-namespace logging and
-> would require changes to other files, in particular, nf_log.c
-> 
-> Signed-Off-By: Rainer Weikusat <rweikusat@mobileactivedefense.com>
-> ---
-> This is a feature needed for the main product of my present employer
-> and the patch is published here in the hope that it is more generally
-> useful as well. A more thorough change of the logging infrastructure
-> is unforunately way beyond the amount of time I'm allowed to spend on
-> this.
-> 
-> diff -prNu nf-2.6/net/netfilter/nfnetlink_log.c nf-2.6.patched//net/netfilter/nfnetlink_log.c
-> --- nf-2.6/net/netfilter/nfnetlink_log.c	2011-07-01 14:08:21.833369919 +0100
-> +++ nf-2.6.patched//net/netfilter/nfnetlink_log.c	2011-07-01 14:57:01.277536330 +0100
-> @@ -39,6 +39,12 @@
->  #include "../bridge/br_private.h"
->  #endif
->  
-> +#ifdef CONFIG_NET_NS
-> +#define NET_NS 1
-> +#include <net/net_namespace.h>
-> +#include <net/netns/generic.h>
-> +#endif
-> +
->  #define NFULNL_NLBUFSIZ_DEFAULT	NLMSG_GOODSIZE
->  #define NFULNL_TIMEOUT_DEFAULT 	100	/* every second */
->  #define NFULNL_QTHRESH_DEFAULT 	100	/* 100 packets */
-> @@ -47,6 +53,18 @@
->  #define PRINTR(x, args...)	do { if (net_ratelimit()) \
->  				     printk(x, ## args); } while (0);
->  
-> +#define INSTANCE_BUCKETS	16
-> +
-> +struct nfulnl_instances {
-> +	spinlock_t lock;
-> +	atomic_t global_seq;
-> +	struct hlist_head table[INSTANCE_BUCKETS];
-> +	unsigned hash_init;
-> +#ifdef NET_NS
-> +	struct net *net;
-> +#endif
-> +};
-> +
->  struct nfulnl_instance {
->  	struct hlist_node hlist;	/* global list of instances */
->  	spinlock_t lock;
-> @@ -67,14 +85,92 @@ struct nfulnl_instance {
->  	u_int16_t flags;
->  	u_int8_t copy_mode;
->  	struct rcu_head rcu;
-> +#ifdef NET_NS
-> +	struct nfulnl_instances *instances;
-> +#endif
+The following patch is in response to a consistently reproducible
+failure to freeze tasks prior to restoring a hibernation image on a
+Toshiba NB505 netbook. This machine has a built-in USB card reader.
+Since the usb-stor-scan task is freezable but the code in
+quiesce_and_remove_host() that waits for scanning to complete is not,
+khubd can fail to freeze when processing the disconnect for the card
+reader.
 
-This seems odd, the usual way is to add the global data to the
-net-ns structure.
+It seems that both should either be freezable or not freezable. Since
+there doesn't currently seem to be any freezable way to wait on a
+completion, I started with the simpler approach of making usb-stor-scan
+non-freezable. If it would be preferable to make both freezable I can
+take that approach instead.
 
-> +#ifndef NET_NS
-> +static struct nfulnl_instances instances;
->  
-> -#define INSTANCE_BUCKETS	16
-> -static struct hlist_head instance_table[INSTANCE_BUCKETS];
-> -static unsigned int hash_init;
-> +static inline struct nfulnl_instances *
-> +instances_via_inst(struct nfulnl_instance *inst)
-> +{
-> +	(void)inst;
-> +	return &instances;
-> +}
+Thanks,
+Seth
 
-... then you don't need all this because it will automatically
-use the structures from init_net when CONFIG_NET_NS=n. Basically
-everything depending on CONFIG_NET_NS is wrong, this is handled
-automatically if you're using the API the proper way. A simple
-example would be nfnetlink.c.
+
+>From 27e456c0d6512ba599f7560139555374a45342be Mon Sep 17 00:00:00 2001
+From: Seth Forshee <seth.forshee@canonical.com>
+Date: Wed, 13 Jul 2011 23:02:48 -0500
+Subject: [PATCH] usb_storage: make usb-stor-scan task non-freezable
+
+The usb-stor-scan task is freezable, but the code in
+quiesce_and_remove_host() that waits for scanning to complete is
+not. This can cause task freezing to fail, which is happening
+consistently on at least one model of netbook with a built-in USB
+card reader when freezing tasks prior to restoring a hibernation
+image.
+
+This patch makes the usb-stor-scan task non-freezable to prevent
+this from happening. Tested across 200 S4 cycles without a single
+failure to freeze tasks.
+
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+---
+ drivers/usb/storage/usb.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/usb/storage/usb.c b/drivers/usb/storage/usb.c
+index 0ca0958..f59fc90 100644
+--- a/drivers/usb/storage/usb.c
++++ b/drivers/usb/storage/usb.c
+@@ -831,12 +831,11 @@ static int usb_stor_scan_thread(void * __us)
+ 
+ 	dev_dbg(dev, "device found\n");
+ 
+-	set_freezable();
+ 	/* Wait for the timeout to expire or for a disconnect */
+ 	if (delay_use > 0) {
+ 		dev_dbg(dev, "waiting for device to settle "
+ 				"before scanning\n");
+-		wait_event_freezable_timeout(us->delay_wait,
++		wait_event_interruptible_timeout(us->delay_wait,
+ 				test_bit(US_FLIDX_DONT_SCAN, &us->dflags),
+ 				delay_use * HZ);
+ 	}
+-- 
+1.7.4.1
+
