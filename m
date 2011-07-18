@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752987Ab1GRSkX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 14:40:23 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:39861 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751010Ab1GRSkT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 14:40:19 -0400
+	id S1752790Ab1GRSrB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 14:47:01 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:55742 "EHLO
+	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751379Ab1GRSq7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 14:46:59 -0400
+X-Greylist: delayed 528 seconds by postgrey-1.27 at vger.kernel.org; Mon, 18 Jul 2011 14:46:59 EDT
+Date: Mon, 18 Jul 2011 08:45:03 -0500
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: David Safford <safford@watson.ibm.com>
+Cc: Kyle Moffett <kyle@moffetthome.net>, Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Dmitry Kasatkin <dmitry.s.kasatkin@gmail.com>
+Subject: Re: [PATCH v7 00/16] EVM
+Message-ID: <20110718134503.GC8127@mail.hallyn.com>
+References: <1309377038-4550-1-git-send-email-zohar@linux.vnet.ibm.com>
+ <BANLkTinSsqBqX7=jzwbw_=RfXeQz29h_+A@mail.gmail.com>
+ <1309390941.3205.22.camel@localhost.localdomain>
+ <BANLkTineYVKw9MMQUqRGJ6Q_yEfgmsgJxg@mail.gmail.com>
+ <1310656045.3845.243.camel@localhost>
 MIME-Version: 1.0
-In-Reply-To: <20110713131407.GN2872@htj.dyndns.org>
-References: <CAN8TOE9CCSiS2koyx=UsZj=9KwaWZW5yDjUUqgJf2=qZU70k1w@mail.gmail.com>
-	<20110713131407.GN2872@htj.dyndns.org>
-Date: Mon, 18 Jul 2011 11:40:17 -0700
-Message-ID: <CAN8TOE9Rjujf9aLQGONDULNasFiQmVkiUPWUDX=Vf0Nx2pka7w@mail.gmail.com>
-Subject: Re: ahci_start_engine compliance with AHCI spec
-From: Brian Norris <computersforpeace@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-ide@vger.kernel.org, Valdis.Kletnieks@vt.edu,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Jeff Garzik <jgarzik@pobox.com>,
-        Michael Leun <lkml20100708@newton.leun.net>,
-        linux-kernel@vger.kernel.org, Jian Peng <jipeng2005@gmail.com>,
-        Kevin Cernekee <cernekee@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1310656045.3845.243.camel@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+Quoting David Safford (safford@watson.ibm.com):
+> On Wed, 2011-06-29 at 21:57 -0400, Kyle Moffett wrote:
+> > There have been numerous cases in the past where a corrupt or invalid
+> > filesystem causes kernel panics or even exploitable overflows or memory
+> > corruption; see the history of the "fsfuzzer" tool for more information.
+> 
+> Seems to me code bugs in the kernel should be fixed, given the universal 
+> practice of automounting of removable media, and loopback mounting 
+> images, regardless of EVM.
 
-On Wed, Jul 13, 2011 at 6:14 AM, Tejun Heo <tj@kernel.org> wrote:
-> On Fri, Jul 08, 2011 at 04:01:17PM -0700, Brian Norris wrote:
->> I'm not sure if the "error_handler" and "hard reset" processes are
->> intended for initialization...as I said I'm a little new!
->
-> That's how it's supposed to work.  EH is integral part of probing
-> sequence.
+Hi David,
 
-I began to suspect that was the case. It just seemed awkward that the
-expected operation includes a code path named "error".
+yeah, this would also be nice for making people feel cozier about
+supporting unprivileged fs mounts in general.  I wonder if a real
+project around the idea of strengthening the robustness of the fs
+code, starting with the superblock parsing for a few of the most
+comment filesystems, could take off.  A combination of
 
->> I have a few other questions:
->>
->> What operation could be putting devices in DRQ or BSY states during
->> initialization but before ahci_start_engine?
->
-> Hmmm... I have no idea, maybe it has something to do with the first
-> D2H Reg FIS device sends after link gets reset during controller init?
+  . code auditing and test (i.e. fsfuzzer)
+  . moving parts of the code to unprivileged userspace
+  . marking audited filesystems as unprivileged-mountable, in the
+    way Miklos' patchset a few years ago did
+  . so that those who want to can refuse auto-mount of any not
+    audited filesystems.
 
-OK, I'll try to track that one down, but I think that DRQ is set much
-earlier in the initialization than that and won't be cleared until
-between ahci_power_up() and ahci_start_engine() - I tried
-wait-and-poll at several different points in the process to understand
-the HBA/device initialization process.
-
-> Hmmm... what happens if you don't comment out ahci_start_engine() call
-> from ahci_start_port()?
-
-I wasn't commenting out the ahci_start_engine() from
-ahci_start_port(). Can you clarify what you mean?
-
-> Is this the same IP block that Jian Peng was using?
-
-Yes, it is. I'm taking over some of his work.
-
-Thanks for the responses.
-
-Brian
+-serge
