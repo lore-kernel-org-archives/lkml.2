@@ -1,67 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755575Ab1GRIZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 04:25:57 -0400
-Received: from mga14.intel.com ([143.182.124.37]:5963 "EHLO mga14.intel.com"
+	id S1755696Ab1GRI1I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 04:27:08 -0400
+Received: from mga02.intel.com ([134.134.136.20]:15657 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754789Ab1GRIZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 04:25:10 -0400
+	id S1754136Ab1GRI1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 04:27:06 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,221,1309762800"; 
-   d="scan'208";a="28353891"
+   d="scan'208";a="28833303"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: linux-kernel@vger.kernel.org
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Eric Paris <eparis@parisplace.org>,
-        linux-security-module@vger.kernel.org
-Subject: [PATCH] selinuxfs: remove custome hex_to_bin()
-Date: Mon, 18 Jul 2011 11:24:40 +0300
-Message-Id: <db0926c83fcf7299ac345dc050c31ba3c26bf07c.1310977455.git.andriy.shevchenko@linux.intel.com>
+        Wolfgang Grandegger <wg@grandegger.com>
+Subject: [PATCH] net: can: remove custom hex_to_bin()
+Date: Mon, 18 Jul 2011 11:26:37 +0300
+Message-Id: <1310977597-9666-1-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Eric Paris <eparis@parisplace.org>
-Cc: linux-security-module@vger.kernel.org
+Cc: Wolfgang Grandegger <wg@grandegger.com>
 ---
- security/selinux/selinuxfs.c |   14 ++++----------
- 1 files changed, 4 insertions(+), 10 deletions(-)
+ drivers/net/can/slcan.c |   26 +++++---------------------
+ 1 files changed, 5 insertions(+), 21 deletions(-)
 
-diff --git a/security/selinux/selinuxfs.c b/security/selinux/selinuxfs.c
-index 3545934..2aad7eb 100644
---- a/security/selinux/selinuxfs.c
-+++ b/security/selinux/selinuxfs.c
-@@ -752,14 +752,6 @@ out:
- 	return length;
- }
+diff --git a/drivers/net/can/slcan.c b/drivers/net/can/slcan.c
+index aa8ad73..65e54fd 100644
+--- a/drivers/net/can/slcan.c
++++ b/drivers/net/can/slcan.c
+@@ -56,6 +56,7 @@
+ #include <linux/sched.h>
+ #include <linux/delay.h>
+ #include <linux/init.h>
++#include <linux/kernel.h>
+ #include <linux/can.h>
  
--static inline int hexcode_to_int(int code) {
--	if (code == '\0' || !isxdigit(code))
--		return -1;
--	if (isdigit(code))
--		return code - '0';
--	return tolower(code) - 'a' + 10;
+ static __initdata const char banner[] =
+@@ -142,21 +143,6 @@ static struct net_device **slcan_devs;
+   *			STANDARD SLCAN DECAPSULATION			 *
+   ************************************************************************/
+ 
+-static int asc2nibble(char c)
+-{
+-
+-	if ((c >= '0') && (c <= '9'))
+-		return c - '0';
+-
+-	if ((c >= 'A') && (c <= 'F'))
+-		return c - 'A' + 10;
+-
+-	if ((c >= 'a') && (c <= 'f'))
+-		return c - 'a' + 10;
+-
+-	return 16; /* error */
 -}
 -
- static ssize_t sel_write_create(struct file *file, char *buf, size_t size)
+ /* Send one completely decapsulated can_frame to the network layer */
+ static void slc_bump(struct slcan *sl)
  {
- 	char *scon = NULL, *tcon = NULL;
-@@ -811,9 +803,11 @@ static ssize_t sel_write_create(struct file *file, char *buf, size_t size)
- 			if (c1 == '+')
- 				c1 = ' ';
- 			else if (c1 == '%') {
--				if ((c1 = hexcode_to_int(*r++)) < 0)
-+				c1 = hex_to_bin(*r++);
-+				if (c1 < 0)
- 					goto out;
--				if ((c2 = hexcode_to_int(*r++)) < 0)
-+				c2 = hex_to_bin(*r++);
-+				if (c2 < 0)
- 					goto out;
- 				c1 = (c1 << 4) | c2;
- 			}
+@@ -195,18 +181,16 @@ static void slc_bump(struct slcan *sl)
+ 	*(u64 *) (&cf.data) = 0; /* clear payload */
+ 
+ 	for (i = 0, dlc_pos++; i < cf.can_dlc; i++) {
+-
+-		tmp = asc2nibble(sl->rbuff[dlc_pos++]);
+-		if (tmp > 0x0F)
++		tmp = hex_to_bin(sl->rbuff[dlc_pos++]);
++		if (tmp < 0)
+ 			return;
+ 		cf.data[i] = (tmp << 4);
+-		tmp = asc2nibble(sl->rbuff[dlc_pos++]);
+-		if (tmp > 0x0F)
++		tmp = hex_to_bin(sl->rbuff[dlc_pos++]);
++		if (tmp < 0)
+ 			return;
+ 		cf.data[i] |= tmp;
+ 	}
+ 
+-
+ 	skb = dev_alloc_skb(sizeof(struct can_frame));
+ 	if (!skb)
+ 		return;
 -- 
 1.7.5.4
 
