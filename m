@@ -1,94 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473Ab1GRSDg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 14:03:36 -0400
-Received: from mtagate6.uk.ibm.com ([194.196.100.166]:34092 "EHLO
-	mtagate6.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752048Ab1GRSDe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 14:03:34 -0400
-Subject: Re: [patch 0/9] kdump: Patch series for s390 support
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Reply-To: holzheu@linux.vnet.ibm.com
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>, ebiederm@xmission.com,
-        hbabu@us.ibm.com, mahesh@linux.vnet.ibm.com, oomichi@mxs.nes.nec.co.jp,
-        horms@verge.net.au, heiko.carstens@de.ibm.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org
-In-Reply-To: <20110718152532.GF31986@redhat.com>
-References: <20110714091800.720da848@mschwide>
-	 <20110714175532.GE6672@redhat.com> <20110714180528.GF6672@redhat.com>
-	 <1310739717.10789.31.camel@br98xy6r> <20110715143820.GG3428@redhat.com>
-	 <1310744603.10789.79.camel@br98xy6r> <20110718123140.GB31986@redhat.com>
-	 <1310997641.4427.10.camel@br98xy6r> <20110718141943.GE31986@redhat.com>
-	 <1311000253.4427.23.camel@br98xy6r>  <20110718152532.GF31986@redhat.com>
+	id S1754024Ab1GRSEF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 14:04:05 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:53485 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752730Ab1GRSEC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 14:04:02 -0400
+Subject: Re: [PATCH] Add error check to hex2bin().
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: linux-security-module@vger.kernel.org, andriy.shevchenko@linux.intel.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <201107182148.AGD21306.FOLtJVMSOOFQHF@I-love.SAKURA.ne.jp>
+References: <1310977597-9666-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <201107182041.EHB78622.VOFSHFMOOFtLJQ@I-love.SAKURA.ne.jp>
+	 <1310991796.3903.6.camel@smile>
+	 <201107182148.AGD21306.FOLtJVMSOOFQHF@I-love.SAKURA.ne.jp>
 Content-Type: text/plain; charset="UTF-8"
-Organization: IBM
-Date: Mon, 18 Jul 2011 20:03:08 +0200
-Message-ID: <1311012188.4427.58.camel@br98xy6r>
+Date: Mon, 18 Jul 2011 14:03:50 -0400
+Message-ID: <1311012230.3193.35.camel@localhost.localdomain>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Vivek,
+On Mon, 2011-07-18 at 21:48 +0900, Tetsuo Handa wrote:
+> Currently, security/keys/ is the only user of hex2bin().
+> Should I keep hex2bin() unmodified in case of bad input?
+> If so, I'd like to make it as hex2bin_safe().
 
-On Mon, 2011-07-18 at 11:25 -0400, Vivek Goyal wrote:
-> On Mon, Jul 18, 2011 at 04:44:13PM +0200, Michael Holzheu wrote:
-> > On Mon, 2011-07-18 at 10:19 -0400, Vivek Goyal wrote:
-> > > - Make sure these headers are not overwritten by newly booted kernel.
+> ----------------------------------------
+> [PATCH] Add error check to hex2bin().
+> 
+> Since converting 2 hexadecimal letters into a byte with error checks is
+> commonly used, we can replace multiple hex_to_bin() calls with single hex2bin()
+> call by changing hex2bin() to do error checks.
+> 
+> Signed-off-by: Tetsuo Handa <penguin-kernel@I=love.SAKURA.ne.jp>
+> ---
+> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+> index 953352a..186e9fc 100644
+> --- a/include/linux/kernel.h
+> +++ b/include/linux/kernel.h
+> @@ -374,7 +374,7 @@ static inline char *pack_hex_byte(char *buf, u8 byte)
+>  }
+> 
+>  extern int hex_to_bin(char ch);
+> -extern void hex2bin(u8 *dst, const char *src, size_t count);
+> +extern bool hex2bin(u8 *dst, const char *src, size_t count);
+> 
+>  /*
+>   * General tracing related utility functions - trace_printk(),
+> diff --git a/lib/hexdump.c b/lib/hexdump.c
+> index f5fe6ba..1524002 100644
+> --- a/lib/hexdump.c
+> +++ b/lib/hexdump.c
+> @@ -38,14 +38,22 @@ EXPORT_SYMBOL(hex_to_bin);
+>   * @dst: binary result
+>   * @src: ascii hexadecimal string
+>   * @count: result length
+> + *
+> + * Returns true on success, false in case of bad input.
+>   */
+> -void hex2bin(u8 *dst, const char *src, size_t count)
+> +bool hex2bin(u8 *dst, const char *src, size_t count)
+>  {
+>  	while (count--) {
+> -		*dst = hex_to_bin(*src++) << 4;
+> -		*dst += hex_to_bin(*src++);
+> -		dst++;
+> +		int c = hex_to_bin(*src++);
+> +		int d;
+
+Missing blank line here.
+
+> +		if (c < 0)
+> +			return false;
+> +		d = hex_to_bin(*src++);
+> +		if (d < 0)
+> +			return false;
+> +		*dst++ = (c << 4) | d;
+>  	}
+> +	return true;
+>  }
+>  EXPORT_SYMBOL(hex2bin);
+
+We probably don't need to define a separate 'safe' function.
+
+Instead of changing the existing code to short circuit out and return a
+value, does only adding the return value work?  Something like:
+
+        bool ret = true;
+        int c, d;
+
+        while (count--) {
+                c = hex_to_bin(*src++);
+                d = hex_to_bin(*src++);
+                *dst++ = (c << 4) | d;
+
+                if (c < 0 || d < 0)
+                        ret = false;
+        }
+        return ret;
+
+thanks,
+
+Mimi
+
+> In message "Re: [PATCH] net: can: remove custom hex_to_bin()",
+> Andy Shevchenko wrote:
+> > On Mon, 2011-07-18 at 20:41 +0900, Tetsuo Handa wrote: 
+> > > Andy Shevchenko wrote:
+> > > >  	for (i = 0, dlc_pos++; i < cf.can_dlc; i++) {
+> > > > -
+> > > > -		tmp = asc2nibble(sl->rbuff[dlc_pos++]);
+> > > > -		if (tmp > 0x0F)
+> > > > +		tmp = hex_to_bin(sl->rbuff[dlc_pos++]);
+> > > > +		if (tmp < 0)
+> > > >  			return;
+> > > >  		cf.data[i] = (tmp << 4);
+> > > > -		tmp = asc2nibble(sl->rbuff[dlc_pos++]);
+> > > > -		if (tmp > 0x0F)
+> > > > +		tmp = hex_to_bin(sl->rbuff[dlc_pos++]);
+> > > > +		if (tmp < 0)
+> > > >  			return;
+> > > >  		cf.data[i] |= tmp;
+> > > >  	}
+> > > 
+> > > What about changing
+> > > 
+> > >   void hex2bin(u8 *dst, const char *src, size_t count)
+> > > 
+> > > to
+> > > 
+> > >   bool hex2bin(u8 *dst, const char *src, size_t count)
+> > > 
+> > > in order to do error checks like
+> > > 
+> > > bool hex2bin_with_validation(u8 *dst, const char *src, size_t count)
+> > > {
+> > > 	while (count--) {
+> > > 		int c = hex_to_bin(*src++);
+> > > 		int d;
+> > > 		if (c < 0)
+> > > 			return false;
+> > > 		d = hex_to_bin(*src++)
+> > > 		if (d < 0)
+> > > 			return false;
+> > > 		*dst++ = (c << 4) | d;
+> > > 	}
+> > > 	return true;
+> > > }
+> > > 
+> > > and use hex2bin() rather than hex_to_bin()?
+> > Perhaps, good idea. Could you submit a patch?
 > > 
-> > And that was my question: What is the best way to do that. E.g. we could
-> > pass a 2nd kernel parameter "elfcorehdr_size", implement s390 boot
-> > parameter or implement the memmap kernel parameter.
+> > -- 
+> > Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> > Intel Finland Oy
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
-> You could do that but I think a more generic parameter will make more
-> sense.
-> 
-> - Either something along the lines of memmap=
-> - Or excludemem=x@y
-> - Or modify memory map in s390 specific bootloading protocol block etc.
 
-Ok, understood. Thanks for the information.
-
-We still have discussions here, if we could somehow implement our
-original idea of triggering kdump by the stand-alone dump tools. Sorry
-for being so stubborn :-(
-
-So here comes the modified suggestion:
-
-As requested by you we can pre-allocate the ELF header and use purgatory
-as done on other architectures.
-
-To allow the stand-alone dump tools as kdump triggers, we then only
-would have to provide an s390 specific way to tell the stand-alone dump
-tools:
-1. Entry point address into purgatory
-2. Address, size and checksum for purgatory
-
-We could store address, size and checksum of the purgatory to a fixed
-offset in the kdump kernel image. This can be done in the kexec tools
-code. Then the dump tools only would need the crashkernel memory offset
-to find all information. Then dump tools will verify purgatory and
-afterwards jump to the purgatory code. Then purgatory verifies all kexec
-segments. For s390, if this check fails, we return to caller
-(stand-alone tools). If the check is ok, then purgatory code on s390
-saves all registers to the preallocated ELF notes and starts kdump.
-
-I think, this is all s390 specific and IMHO will not affect other
-architectures at all.
-
-What you as kdump framework maintainer would have to accept with this
-solution is that it is allowed now to start kdump directly via purgatory
-without using code from the old kernel (e.g. crash_kexec). This has as
-implication that all things that the old kernel has to initialize for
-kdump has to be done before the system crashes. Currently this is only
-the initialization of vmcoreinfo.
-
-Would such a solution be acceptable for you?
-
-Michael
 
