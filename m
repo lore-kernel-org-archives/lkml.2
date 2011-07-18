@@ -1,101 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753593Ab1GRIgu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 04:36:50 -0400
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:43724 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753227Ab1GRIgs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 04:36:48 -0400
-Date: Mon, 18 Jul 2011 11:36:42 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Wendy Yuan-Hsin =?utf-8?B?Q2hlbijpmbPlhYPppqgp?= 
-	<yhchen@faraday-tech.com>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>
-Subject: Re: [PATCH 4/5] fusb300_udc: Add missing breaks in switch/case
-Message-ID: <20110718083640.GB2837@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <cover.1310289795.git.joe@perches.com>
- <08f6dd600dbf588e87734b3a6b33d897cd253fe3.1310289795.git.joe@perches.com>
- <20110714080830.GA7149@linutronix.de>
- <B3F95056718EDE47B73D925D2FF34506782BC2@EX1.faraday.com.tw>
- <20110714103624.GG7149@linutronix.de>
- <B3F95056718EDE47B73D925D2FF34506782BDB@EX1.faraday.com.tw>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="kORqDWCi7qDJ0mEj"
+	id S1753781Ab1GRIrb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 04:47:31 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:50552 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753195Ab1GRIra convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:6:1>);
+	Mon, 18 Jul 2011 04:47:30 -0400
+Message-Id: <4E240F3D020000780004DD70@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Mon, 18 Jul 2011 09:47:25 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Ian Campbell" <Ian.Campbell@eu.citrix.com>,
+        "Keir Fraser" <keir.xen@gmail.com>
+Cc: "olaf@aepfle.de" <olaf@aepfle.de>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "keir@xen.org" <keir@xen.org>
+Subject: Re: [Xen-devel] [PATCH] xen: update machine_to_phys_order on
+	 resume
+References: <CA499EDA.1E10E%keir.xen@gmail.com>
+ <1310977905.20648.26.camel@zakaz.uk.xensource.com>
+In-Reply-To: <1310977905.20648.26.camel@zakaz.uk.xensource.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <B3F95056718EDE47B73D925D2FF34506782BDB@EX1.faraday.com.tw>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>> On 18.07.11 at 10:31, Ian Campbell <Ian.Campbell@eu.citrix.com> wrote:
+> Pushing things down at build time is pretty easy. FWIW here's an
+> incomplete patch to push the kernel declared features down into the
+> hypervisor at build time extracted from some old PV in HVM container
+> stuff (so not directly applicable). I can bring it up to date if the
+> approach seems useful.
 
---kORqDWCi7qDJ0mEj
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yes, that looks like what we'd want from a conceptual perspective,
+but...
 
-Hi,
+> One thing which is somewhat missing is user control of non-mandatory
+> features declared by a kernel, although normally that should be a
+> decision made by the tools/hypervisor based upon available features etc.
+> 
+> diff -r a6c4d03b7d45 tools/libxc/xc_dom_core.c
+> --- a/tools/libxc/xc_dom_core.c	Mon Feb 08 13:05:48 2010 +0000
+> +++ b/tools/libxc/xc_dom_core.c	Thu Feb 11 12:48:47 2010 +0000
+> @@ -609,6 +609,7 @@
+>  
+>  int xc_dom_parse_image(struct xc_dom_image *dom)
+>  {
+> +    DECLARE_DOMCTL;
+>      int i;
+>  
+>      xc_dom_printf("%s: called\n", __FUNCTION__);
+> @@ -629,8 +630,26 @@
+>      /* check features */
+>      for ( i = 0; i < XENFEAT_NR_SUBMAPS; i++ )
+>      {
+> -        dom->f_active[i] |= dom->f_requested[i]; /* cmd line */
+> -        dom->f_active[i] |= dom->parms.f_required[i]; /* kernel   */
+> +        domctl.cmd = XEN_DOMCTL_setfeatures;
+> +        domctl.domain = dom->guest_domid;
+> +
+> +        domctl.u.setfeatures.submap_idx = i;
+> +        domctl.u.setfeatures.submap = 0;
+> +
+> +        domctl.u.setfeatures.submap |= dom->f_requested[i]; /* cmd line */
+> +        domctl.u.setfeatures.submap |= dom->parms.f_required[i]; /* kernel   */
+> +
+> +        xc_dom_printf("requesting features[%d] = %#x\n", domctl.u.setfeatures.submap_idx, domctl.u.setfeatures.submap);
+> +        if (do_domctl(dom->guest_xc, &domctl))
+> +        {
+> +            xc_dom_panic(XC_INVALID_PARAM,
+> +                         "%s: unable to set requested features\n", __FUNCTION__);
+> +            goto err;
+> +        }
+> +
+> +        xc_dom_printf("received   features[%d] = %#x\n", domctl.u.setfeatures.submap_idx, domctl.u.setfeatures.submap);
+> +        dom->f_active[i] = domctl.u.setfeatures.submap;
+> +
+>          if ( (dom->f_active[i] & dom->parms.f_supported[i]) !=
+>               dom->f_active[i] )
+>          {
+> @@ -639,6 +658,7 @@
+>              goto err;
+>          }
+>      }
+> +
+>      return 0;
+>  
+>   err:
+> diff -r a6c4d03b7d45 tools/libxl/xl.c
+> --- a/tools/libxl/xl.c	Mon Feb 08 13:05:48 2010 +0000
+> +++ b/tools/libxl/xl.c	Thu Feb 11 12:48:47 2010 +0000
+> @@ -468,6 +468,8 @@
+>          }
+>          if (config_lookup_string (&config, "ramdisk", &buf) == CONFIG_TRUE)
+>              b_info->u.pv.ramdisk = strdup(buf);
+> +        if (config_lookup_string (&config, "features", &buf) == CONFIG_TRUE)
+> +            b_info->u.pv.features = strdup(buf);
+>      }
+>  
+>      if ((vbds = config_lookup (&config, "disk")) != NULL) {
+> diff -r a6c4d03b7d45 xen/common/domctl.c
+> --- a/xen/common/domctl.c	Mon Feb 08 13:05:48 2010 +0000
+> +++ b/xen/common/domctl.c	Thu Feb 11 12:48:47 2010 +0000
+> @@ -23,6 +23,7 @@
+>  #include <xen/paging.h>
+>  #include <asm/current.h>
+>  #include <public/domctl.h>
+> +#include <public/features.h>
+>  #include <xsm/xsm.h>
+>  
+>  static DEFINE_SPINLOCK(domctl_lock);
+> @@ -960,6 +962,54 @@
+>      }
+>      break;
+>  
+> +    case XEN_DOMCTL_setfeatures:
+> +    {
+> +        struct domain *d;
+> +        ret = -ESRCH;
+> +        if ( (d = rcu_lock_domain_by_id(op->domain)) != NULL )
+> +        {
+> +            printk("dom%d set features[%d] = %#x\n", d->domain_id, op->u.setfeatures.submap_idx, op->u.setfeatures.submap);
+> +
+> +            switch (op->u.setfeatures.submap_idx) {
+> +            case 0:
+> +                if ( !paging_mode_translate(d) )
 
-On Thu, Jul 14, 2011 at 09:28:46PM +0800, Wendy Yuan-Hsin Chen(=E9=99=B3=E5=
-=85=83=E9=A6=A8) wrote:
-> >>>diff --git a/drivers/usb/gadget/fusb300_udc.c
-> >>>b/drivers/usb/gadget/fusb300_udc.c
-> >>>index 06353e7..453bc0f 100644
-> >>>--- a/drivers/usb/gadget/fusb300_udc.c
-> >>>+++ b/drivers/usb/gadget/fusb300_udc.c
-> >>>@@ -688,10 +688,13 @@ static void fusb300_cmp_dbg_fifo(struct fusb300_=
-ep *ep,
-> >>> 	switch (length % 4) {
-> >>> 	case 1:
-> >>> 		golden_value =3D *tmp;
-> >>>+		break;
-> >>> 	case 2:
-> >>> 		golden_value =3D *tmp | *(tmp + 1) << 8;
-> >>>+		break;
-> >>> 	case 3:
-> >>> 		golden_value =3D *tmp | *(tmp + 1) << 8 | *(tmp + 2) << 16;
-> >>>+		break;
-> >>> 	default:
-> >>> 		break;
-> >>>=20
-> >
-> >>That is in an #if 0 block. Maybe we should remove the #if 0? Yuan-Hsin?
-> >
-> >It's ok to remove the #if 0. But the warning will occur while compling.
->=20
-> By removing the #if 0 block I meant to remove the unused functions
-> fusb300_cmp_dbg_fifo() and fusb300_dbg_fifo(). There should be no warning=
- then.
-> Are you okey with this? Are those function required?
->=20
-> These funtions are used for debugging. I think it's ok to remove them. Th=
-anks.
+... this condition looks inverted to me.
 
-maybe make a debugfs interface instead ?
+> +                {
+> +                    op->u.setfeatures.submap &= ~(1U<<XENFEAT_writable_page_tables);
+> +                    op->u.setfeatures.submap &= ~(1U<<XENFEAT_auto_translated_physmap);
+> +                }
+> +                if ( !is_pvhvm_domain(d) )
+> +                {
+> +                    op->u.setfeatures.submap &= ~(1U<<XENFEAT_supervisor_mode_kernel);
+> +                }
+> +
+> +                op->u.setfeatures.submap &= ~(1U<<XENFEAT_writable_descriptor_tables);
 
---=20
-balbi
+Why do you turn this off unconditionally?
 
---kORqDWCi7qDJ0mEj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> +
+> +                /* XXX other features */
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+That's perhaps also the place holder where the passed in information
+would actually get stored?
 
-iQEcBAEBAgAGBQJOI/CYAAoJEAv8Txj19kN16WgIAJ0PhCTcFgIn7axT/2VCse9F
-y55rLOMl/MIatrLIRswg3zkGKLSbq9tuLBB3uQK0NARVEpWetF8qC/CkYZ2RSHqn
-rX59hKaUrLx1GIIsIIm7shzKssBQqT8BnnStOb9BaxA7Mz1vRVU4JF6s0UmoODrY
-n4alzA1uPIR3RbKUCQJt9EKxFG9KFb0FV/6Kbju4uADbI1nc429tOQW6pet4v/ZE
-4tE+/vO89JPNHE9zvTtCtfH9HlZrpa2Z7GbGA0ZdfS/y/6la3n3L+gdfDz8U+85D
-W8qSWU5TglKvT5VJTOk1e07xgQzfJMN52gNwc20aV0d9vFQycg7DVVGYnHhCdpk=
-=FKyP
------END PGP SIGNATURE-----
+Jan
 
---kORqDWCi7qDJ0mEj--
+> +
+> +
+> +                if ( op->u.setfeatures.submap &(1U<<XENFEAT_supervisor_mode_kernel) )
+> +                    d->arch.pv_kernel_minimum_rpl = 0;
+> +
+> +                ret = 0;
+> +                break;
+> +
+> +            default:
+> +                printk("dom%d unknown feature submap %d\n", d->domain_id, op->u.setfeatures.submap_idx);
+> +                op->u.setfeatures.submap = 0;
+> +                ret = -EINVAL;
+> +                break;
+> +            }
+> +
+> +            rcu_unlock_domain(d);
+> +            ret = 0;
+> +
+> +            if ( copy_to_guest(u_domctl, op, 1) )
+> +                ret = -EFAULT;
+> +
+> +        }
+> +    }
+> +    break;
+> +
+>      default:
+>          ret = arch_do_domctl(op, u_domctl);
+>          break;
+> diff -r a6c4d03b7d45 xen/include/public/domctl.h
+> --- a/xen/include/public/domctl.h	Mon Feb 08 13:05:48 2010 +0000
+> +++ b/xen/include/public/domctl.h	Thu Feb 11 12:48:47 2010 +0000
+> @@ -169,6 +169,13 @@
+>      XEN_GUEST_HANDLE_64(xen_pfn_t) array;
+>  };
+>  
+> +/* XEN_DOMCTL_setfeatures */
+> +struct xen_domctl_setfeatures {
+> +    /* IN variables */
+> +    unsigned int submap_idx;    /* which 32-bit submap to return */
+> +    /* IN/OUT variables */
+> +    uint32_t     submap;        /* 32-bit submap, updated with actual 
+> result. */
+> +};
+>  
+>  /*
+>   * Control shadow pagetables operation
+> @@ -842,6 +848,7 @@
+>  #define XEN_DOMCTL_gettscinfo                    59
+>  #define XEN_DOMCTL_settscinfo                    60
+>  #define XEN_DOMCTL_getpageframeinfo3             61
+> +#define XEN_DOMCTL_setfeatures	                 62
+>  #define XEN_DOMCTL_gdbsx_guestmemio            1000
+>  #define XEN_DOMCTL_gdbsx_pausevcpu             1001
+>  #define XEN_DOMCTL_gdbsx_unpausevcpu           1002
+> @@ -855,6 +862,7 @@
+>          struct xen_domctl_getpageframeinfo  getpageframeinfo;
+>          struct xen_domctl_getpageframeinfo2 getpageframeinfo2;
+>          struct xen_domctl_getpageframeinfo3 getpageframeinfo3;
+> +        struct xen_domctl_setfeatures		setfeatures;
+>          struct xen_domctl_vcpuaffinity      vcpuaffinity;
+>          struct xen_domctl_shadow_op         shadow_op;
+>          struct xen_domctl_max_mem           max_mem;
+
+
