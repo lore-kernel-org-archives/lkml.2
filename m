@@ -1,73 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755107Ab1GRTZD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 15:25:03 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:46911 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754788Ab1GRTZA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 15:25:00 -0400
-Date: Mon, 18 Jul 2011 23:24:54 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Matt Mackall <mpm@selenic.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        kernel-hardening@lists.openwall.com,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC v2] implement SL*B and stack usercopy runtime checks
-Message-ID: <20110718192454.GA4489@albatros>
-References: <20110703111028.GA2862@albatros>
- <CA+55aFzXEoTyK0Sm-y=6xGmLMWzQiSQ7ELJ2-WL_PrP3r44MSg@mail.gmail.com>
- <20110718183951.GA3748@albatros>
- <1311016102.23043.235.camel@calx>
+	id S1755093Ab1GRTcv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 15:32:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35898 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750933Ab1GRTcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 15:32:50 -0400
+Date: Mon, 18 Jul 2011 21:32:48 +0200
+From: Jan Kara <jack@suse.cz>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Josef Bacik <josef@redhat.com>,
+        Lukas Czerner <lczerner@redhat.com>, Jan Kara <jack@suse.cz>
+Subject: Re: linux-next: manual merge of the vfs tree with the ext3 tree
+Message-ID: <20110718193248.GE5842@quack.suse.cz>
+References: <20110718133645.7a4a21bb51c690034ecc6d58@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1311016102.23043.235.camel@calx>
+In-Reply-To: <20110718133645.7a4a21bb51c690034ecc6d58@canb.auug.org.au>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 18, 2011 at 14:08 -0500, Matt Mackall wrote:
-> On Mon, 2011-07-18 at 22:39 +0400, Vasiliy Kulikov wrote:
-> > This patch implements 2 additional checks for the data copied from
-> > kernelspace to userspace and vice versa (original PAX_USERCOPY from PaX
-> > patch).  Currently there are some very simple and cheap comparisons of
-> > supplied size and the size of a copied object known at the compile time
-> > in copy_* functions.  This patch enhances these checks to check against
-> > stack frame boundaries and against SL*B object sizes.
-> > 
-> > More precisely, it checks:
-> > 
-> > 1) if the data touches the stack, checks whether it fully fits in the stack
-> > and whether it fully fits in a single stack frame.  The latter is arch
-> > dependent, currently it is implemented for x86 with CONFIG_FRAME_POINTER=y
-> > only.  It limits infoleaks/overwrites to a single frame and local variables
-> > only, and prevents saved return instruction pointer overwriting.
-> > 
-> > 2) if the data is from the SL*B cache, checks whether it fully fits in a
-> > slab page and whether it overflows a slab object.  E.g. if the memory
-> > was allocated as kmalloc(64, GFP_KERNEL) and one tries to copy 150
-> > bytes, the copy would fail.
+  Hi,
+
+On Mon 18-07-11 13:36:45, Stephen Rothwell wrote:
+> Today's linux-next merge of the vfs tree got a conflict in
+> fs/ext3/fsync.c between commit 785c4bcc0d88 ("ext3: Add fixed
+> tracepoints") from the ext3 tree and commit 62ec115d5b9c ("fs: push
+> i_mutex and filemap_write_and_wait down into ->fsync() handlers") from
+> the vfs tree.
 > 
-> FYI, this should almost certainly be split into (at least) two patches:
-> 
-> - the stack check
-> - the SL*B check (probably one patch per allocator, preceded by one for
-> any shared infrastructure)
+> I fixed it up (see below) but am not sure of the ordering of these two
+> separate changes.
+  Thanks. Logically, I'd expect trace_ext3_sync_file_enter() to be always
+called at the beginning of ext3_sync_file(). That means before
+filemap_write_and_wait_range()... I guess the easiest way to resolve this
+is if Al pulls the tracepoint patch from my tree to his - it's commit
+785c4bcc0d88ff006a0b2120815a71e86ecf21ce in
+git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs-2.6
 
-Sure, also per architecture probably.  But I want to get the comments
-about the feature itself before the division.
+								Honza
 
-Thanks,
-
+> diff --cc fs/ext3/fsync.c
+> index 06a4394,0bcf63a..0000000
+> --- a/fs/ext3/fsync.c
+> +++ b/fs/ext3/fsync.c
+> @@@ -52,14 -51,22 +52,24 @@@ int ext3_sync_file(struct file *file, l
+>   	int ret, needs_barrier = 0;
+>   	tid_t commit_tid;
+>   
+>  -	if (inode->i_sb->s_flags & MS_RDONLY)
+>  -		return 0;
+>  -
+> + 	ret = filemap_write_and_wait_range(inode->i_mapping, start, end);
+> + 	if (ret)
+> + 		return ret;
+> + 
+> + 	/*
+> + 	 * Taking the mutex here just to keep consistent with how fsync was
+> + 	 * called previously, however it looks like we don't need to take
+> + 	 * i_mutex at all.
+> + 	 */
+> + 	mutex_lock(&inode->i_mutex);
+> + 
+>   	J_ASSERT(ext3_journal_current_handle() == NULL);
+>   
+>  +	trace_ext3_sync_file_enter(file, datasync);
+>  +
+>  +	if (inode->i_sb->s_flags & MS_RDONLY)
+>  +		return 0;
+>  +
+> - 
+>   	/*
+>   	 * data=writeback,ordered:
+>   	 *  The caller's filemap_fdatawrite()/wait will sync the data.
+> @@@ -75,8 -82,8 +85,9 @@@
+>   	 *  safe in-journal, which is all fsync() needs to ensure.
+>   	 */
+>   	if (ext3_should_journal_data(inode)) {
+> + 		mutex_unlock(&inode->i_mutex);
+>  -		return ext3_force_commit(inode->i_sb);
+>  +		ret = ext3_force_commit(inode->i_sb);
+>  +		goto out;
+>   	}
+>   
+>   	if (datasync)
+> @@@ -97,8 -104,6 +108,9 @@@
+>   	 */
+>   	if (needs_barrier)
+>   		blkdev_issue_flush(inode->i_sb->s_bdev, GFP_KERNEL, NULL);
+> + 	mutex_unlock(&inode->i_mutex);
+>  +
+>  +out:
+>  +	trace_ext3_sync_file_exit(inode, ret);
+>   	return ret;
+>   }
 -- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
