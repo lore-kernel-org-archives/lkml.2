@@ -1,67 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755190Ab1GRTe0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 15:34:26 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:38544 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754627Ab1GRTeZ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 15:34:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.00.1107181135170.2722@sister.anvils>
-References: <alpine.LSU.2.00.1107171356480.3175@sister.anvils>
- <CA+55aFw5LhGq-a6mAhgZbGP2FJ+tnV9HRxKoiFuVYbttOo2tNw@mail.gmail.com>
- <20110717231610.GR11013@ZenIV.linux.org.uk> <CA+55aFxEGKgx+_xy+Lnt=84wRzE9TyznL3VCNSqWs7HC_H35_A@mail.gmail.com>
- <alpine.LSU.2.00.1107171641130.1274@sister.anvils> <20110718002524.GU11013@ZenIV.linux.org.uk>
- <alpine.LSU.2.00.1107171740260.1327@sister.anvils> <20110718020818.GW11013@ZenIV.linux.org.uk>
- <CA+55aFwXgcWxvAz7w1f_HYyzdm9b9EBJfrWhF1FW7EA3zpbJPg@mail.gmail.com>
- <CA+55aFxKRw8NxcHKzsSeCX3ud6eDrcQvAX+LMQOUT4p5TPLp5g@mail.gmail.com> <alpine.LSU.2.00.1107181135170.2722@sister.anvils>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 18 Jul 2011 12:33:28 -0700
-Message-ID: <CA+55aFycZL9zAE_Qvq9LM=HpugiDuKSjdRhKG1zi=H4LnNvhVQ@mail.gmail.com>
-Subject: Re: [PATCH] vfs: fix race in rcu lookup of pruned dentry
-To: Hugh Dickins <hughd@google.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755294Ab1GRTfp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 15:35:45 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:56664 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803Ab1GRTfo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 15:35:44 -0400
+Date: Mon, 18 Jul 2011 12:33:34 -0700 (PDT)
+Message-Id: <20110718.123334.586181689043364242.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, iliak@ti.com, padovan@profusion.mobi,
+        luiz.von.dentz@intel.com
+Subject: Re: linux-next: manual merge of the net tree with Linus' tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110718144138.d57ab0a2a806e06fabbcfc9b@canb.auug.org.au>
+References: <20110718144138.d57ab0a2a806e06fabbcfc9b@canb.auug.org.au>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 18 Jul 2011 12:33:37 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 18, 2011 at 12:04 PM, Hugh Dickins <hughd@google.com> wrote:
->
-> Al has commented on that.  I'd feel more confident with a patch like
-> yours, and corrected final check in mine (if we used mine at all)
->        if (!read_seqcount_retry(&path->dentry->d_seq, nd->seq);
-> but ignore me, I'm easily confused by mounts ;)
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 18 Jul 2011 14:41:38 +1000
 
-No, I do think I want to do it. So for post-3.0 (likely today ;), my
-current plan is to have three commits in this area:
+> Today's linux-next merge of the net tree got a conflict in
+> net/bluetooth/l2cap_core.c between commit 9191e6ad897a ("Bluetooth: Fix
+> regression in L2CAP connection procedure") from Linus' tree and commit
+> e2fd318e3a92 ("Bluetooth: Fixes l2cap "command reject" reply according to
+> spec") from the net tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary.
 
- - the one-liner removal of d_inode = NULL in d_kill (but I'll add a comment)
-
- - the patch to properly do that dentry sequence number switch-over
-across the mount-point traversal
-
- - And possibly *some* version of your patch.
-
-However, I'm actually looking at __d_lookup_rcu(), and it does the proper
-
-    if (read_seqcount_retry(&dentry->d_seq, *seq))
-        goto seqretry;
-
-*after* having pulled the inode pointer out of "dentry->d_inode". So
-I'm not actually seeing how the inode pointer could be stale at all
-right now, because we do seem to have the sequence number check there!
-
-Which just makes me suspect that it's *another* case of bug in the
-dentry_kill() sequence. I think the dentry_rcuwalk_barrier() thing is
-crap: it doesn't *cover* the d_inode change with the write lock, it
-just puts that "barrier" there, which is bogus. You can get a
-successful read of the changed inode without ever failing the read
-lock sequence!
-
-                                 Linus
+Thanks Stephen, I'll sort this out next time I do a merge between
+net-2.6 and net-next-2.6.
