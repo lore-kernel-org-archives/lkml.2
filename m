@@ -1,46 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199Ab1GROfV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 10:35:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47384 "EHLO mx2.suse.de"
+	id S1755680Ab1GROhn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 10:37:43 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:35206 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752719Ab1GROfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 10:35:20 -0400
-Date: Mon, 18 Jul 2011 16:35:15 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-X-X-Sender: jikos@twin.jikos.cz
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Mike Waychison <mikew@google.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] x86: Allow disabling of sys_iopl, sys_ioperm
-In-Reply-To: <4E1F5429.6080903@zytor.com>
-Message-ID: <alpine.LRH.2.00.1107181634271.11861@twin.jikos.cz>
-References: <1310675693-9204-1-git-send-email-mikew@google.com> <1310675693-9204-2-git-send-email-mikew@google.com> <4E1F5380.9020709@zytor.com> <CAGTjWtD8Obn0LsXr+Dq7xqQEYnY4UV7CAiO2+L2LLpv_1s_ufw@mail.gmail.com> <4E1F5429.6080903@zytor.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1753361Ab1GROhl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 10:37:41 -0400
+Date: Mon, 18 Jul 2011 07:37:31 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: current_thread_info() vs task_thread_info(current)
+Message-ID: <20110718143731.GA2312@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1310988183.13765.56.camel@twins>
+ <1310990097.25044.307.camel@pasglop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1310990097.25044.307.camel@pasglop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Jul 2011, H. Peter Anvin wrote:
-
-> >> Wouldn't it be more useful for this to be a sysctl?  In particular, like
-> >> many similar things it probably should be a lockable sysctl (three
-> >> states: enabled, disabled, and locked-disabled).
-> >>
-> >> Making it a compile-time option I'm very skeptical to.
-> > 
-> > Are there existing examples of this already in the tree?
+On Mon, Jul 18, 2011 at 09:54:57PM +1000, Benjamin Herrenschmidt wrote:
+> On Mon, 2011-07-18 at 13:23 +0200, Peter Zijlstra wrote:
 > 
-> I think so, but I don't know off the top of my head.
+> > So how are we going to solve this? Naively I'd think that
+> > current_thread_info() is short for task_thread_info(current), and thus
+> > the platforms for where this isn't true are broken.
+> > 
+> > I mean, what use is the thread_info not of a thread?
+> > 
+> > Comments?
+> 
+> Thomas just hit a bug in the platform code of said platform (powerpc
+> heh ?) :-)
+> 
+> We do it right for hard IRQs and for some reason never did it right for
+> softirqs.
+> 
+> The code is like this for the former:
+> 
+> static inline void handle_one_irq(unsigned int irq)
+> {
+> 
+>         .../...
+> 
+> 	call_handle_irq(irq, desc, irqtp, desc->handle_irq);
+> 	current->thread.ksp_limit = saved_sp_limit;
+> 	irqtp->task = NULL;
+> 
+> 	/* Set any flag that may have been set on the
+> 	 * alternate stack
+> 	 */
+> 	if (irqtp->flags)
+> 		set_bits(irqtp->flags, &curtp->flags);
+> }
+> 
+> So what we need, I suppose is to add those two last line to
+> do_softirq_onstack() as well.
 
-/proc/sys/kernel/modules_disabled is a sort-of that kind of thing (it 
-doesn't have three states, but only two -- enabled and locked-disabled).
+Hmmm...  Would this explain preempt_count() inexplicably increasing by
+three across a spin_unlock_irqrestore()?  I ran into this situation when
+testing on Power over the weekend.
 
--- 
-Jiri Kosina
-SUSE Labs
+							Thanx, Paul
 
+> Now indeed i386 needs a similar treatment on both hard and soft
+> irqs (along with getting rid of that stupid duplication of
+> call_on_stack in there, I don't think it's worth making the code
+> horrible like that to save one clobber and PeterZ reckons we can
+> probably avoid it using always_inline anyways).
+> 
+> I'll let you guys sort i386 out tho, I'll look at fixing ppc tomorrow :-)
+> 
+> Cheers,
+> Ben.
+> 
+> 
