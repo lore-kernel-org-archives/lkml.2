@@ -1,88 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751169Ab1GRElr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 00:41:47 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:53885 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750838Ab1GRElq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 00:41:46 -0400
-Date: Mon, 18 Jul 2011 14:41:38 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ilia Kolomisnky <iliak@ti.com>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        Luiz Augusto von Dentz <luiz.von.dentz@intel.com>
-Subject: linux-next: manual merge of the net tree with Linus' tree
-Message-Id: <20110718144138.d57ab0a2a806e06fabbcfc9b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1751532Ab1GREyB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 00:54:01 -0400
+Received: from mail-iy0-f194.google.com ([209.85.210.194]:59276 "EHLO
+	mail-iy0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751024Ab1GREyA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 00:54:00 -0400
+Message-ID: <4E23BC5F.4060200@gmail.com>
+Date: Mon, 18 Jul 2011 12:53:51 +0800
+From: Wang Sheng-Hui <shhuiw@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3.0-rc7] btrfs: Update git repository links for btrfs utilities
+ in Documentation/filesystems/btrfs.txt
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+The patch is against 3.0-rc7 kernel.
 
-Today's linux-next merge of the net tree got a conflict in
-net/bluetooth/l2cap_core.c between commit 9191e6ad897a ("Bluetooth: Fix
-regression in L2CAP connection procedure") from Linus' tree and commit
-e2fd318e3a92 ("Bluetooth: Fixes l2cap "command reject" reply according to
-spec") from the net tree.
+>From d22497ac8c5dd55a2ef9a47de5f2ddee55f8ec50 Mon Sep 17 00:00:00 2001
+From: Wang Sheng-Hui <shhuiw@gmail.com>
+Date: Sun, 17 Jul 2011 21:45:01 -0500
+Subject: [PATCH 3.0-rc7] btrfs: Update git repository links for btrfs utilities in Documentation/filesystems/btrfs.txt
 
-I fixed it up (see below) and can carry the fix as necessary.
+git repository link for btrfs utilities
+   http://git.kernel.org/?p=linux/kernel/git/mason/btrfs-progs-unstable.git
+doesn't work, and git-clone can get failed as:
+$ git clone
+http://git.kernel.org/?p=linux/kernel/git/mason/btrfs-progs-unstable.git
+Initialized empty Git repository in
+/home/crossover/dev/btrfs-progs-unstable/.git/
+fatal:
+http://git.kernel.org/?p=linux/kernel/git/mason/btrfs-progs-unstable.git/info/refs not found: did you run git update-server-info on the server?
+
+Update git repository links for btrfs utilities to the latest ones
+in Documentation/filesystems/btrfs.txt
+
+Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+---
+ Documentation/filesystems/btrfs.txt |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/Documentation/filesystems/btrfs.txt b/Documentation/filesystems/btrfs.txt
+index 64087c3..b095261 100644
+--- a/Documentation/filesystems/btrfs.txt
++++ b/Documentation/filesystems/btrfs.txt
+@@ -63,8 +63,9 @@ IRC network.
+ Userspace tools for creating and manipulating Btrfs file systems are
+ available from the git repository at the following location:
+ 
+- http://git.kernel.org/?p=linux/kernel/git/mason/btrfs-progs-unstable.git
+  git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-progs-unstable.git
++ http://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-progs-unstable.git
++ https://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-progs-unstable.git
+ 
+ These include the following tools:
+ 
 -- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+1.7.1
 
-diff --cc net/bluetooth/l2cap_core.c
-index 7705e26,f7f8e2c..0000000
---- a/net/bluetooth/l2cap_core.c
-+++ b/net/bluetooth/l2cap_core.c
-@@@ -620,11 -763,10 +763,11 @@@ static void l2cap_conn_start(struct l2c
-  					struct sock *parent = bt_sk(sk)->parent;
-  					rsp.result = cpu_to_le16(L2CAP_CR_PEND);
-  					rsp.status = cpu_to_le16(L2CAP_CS_AUTHOR_PEND);
- -					parent->sk_data_ready(parent, 0);
- +					if (parent)
- +						parent->sk_data_ready(parent, 0);
-  
-  				} else {
-- 					sk->sk_state = BT_CONFIG;
-+ 					l2cap_state_change(chan, BT_CONFIG);
-  					rsp.result = cpu_to_le16(L2CAP_CR_SUCCESS);
-  					rsp.status = cpu_to_le16(L2CAP_CS_NO_INFO);
-  				}
-@@@ -2324,10 -2523,14 +2524,13 @@@ static inline int l2cap_config_req(stru
-  
-  	sk = chan->sk;
-  
-- 	if (sk->sk_state != BT_CONFIG && sk->sk_state != BT_CONNECT2) {
-- 		struct l2cap_cmd_rej rej;
- -	if ((bt_sk(sk)->defer_setup && chan->state != BT_CONNECT2) ||
- -		 (!bt_sk(sk)->defer_setup && chan->state != BT_CONFIG)) {
-++	if (chan->state != BT_CONFIG && chan->state != BT_CONNECT2) {
-+ 		struct l2cap_cmd_rej_cid rej;
-+ 
-+ 		rej.reason = cpu_to_le16(L2CAP_REJ_INVALID_CID);
-+ 		rej.scid = cpu_to_le16(chan->scid);
-+ 		rej.dcid = cpu_to_le16(chan->dcid);
-  
-- 		rej.reason = cpu_to_le16(0x0002);
-  		l2cap_send_cmd(conn, cmd->ident, L2CAP_COMMAND_REJ,
-  				sizeof(rej), &rej);
-  		goto unlock;
-@@@ -4010,10 -4150,9 +4150,10 @@@ static int l2cap_security_cfm(struct hc
-  					struct sock *parent = bt_sk(sk)->parent;
-  					res = L2CAP_CR_PEND;
-  					stat = L2CAP_CS_AUTHOR_PEND;
- -					parent->sk_data_ready(parent, 0);
- +					if (parent)
- +						parent->sk_data_ready(parent, 0);
-  				} else {
-- 					sk->sk_state = BT_CONFIG;
-+ 					l2cap_state_change(chan, BT_CONFIG);
-  					res = L2CAP_CR_SUCCESS;
-  					stat = L2CAP_CS_NO_INFO;
-  				}
