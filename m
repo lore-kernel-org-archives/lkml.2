@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754851Ab1GRTF4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 15:05:56 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:46238 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754591Ab1GRTFz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 15:05:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <1309563076-5050-2-git-send-email-lacombar@gmail.com>
-References: <1309563076-5050-1-git-send-email-lacombar@gmail.com>
-	<1309563076-5050-2-git-send-email-lacombar@gmail.com>
-Date: Mon, 18 Jul 2011 15:05:53 -0400
-Message-ID: <CACqU3MU1kFzn9916A8vq+jB+r=4iDmWp_kk=E+thPuojWwZA6g@mail.gmail.com>
-Subject: Re: [RFC 1/4] kbuild: export MAKECMDGOALS
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Michal Marek <mmarek@suse.cz>, Arnaud Lacombe <lacombar@gmail.com>,
-        Steven Rostedt <srostedt@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754717Ab1GRTI2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 15:08:28 -0400
+Received: from waste.org ([173.11.57.241]:50593 "EHLO waste.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752468Ab1GRTI1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 15:08:27 -0400
+Subject: Re: [RFC v2] implement SL*B and stack usercopy runtime checks
+From: Matt Mackall <mpm@selenic.com>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        kernel-hardening@lists.openwall.com,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org
+In-Reply-To: <20110718183951.GA3748@albatros>
+References: <20110703111028.GA2862@albatros>
+	 <CA+55aFzXEoTyK0Sm-y=6xGmLMWzQiSQ7ELJ2-WL_PrP3r44MSg@mail.gmail.com>
+	 <20110718183951.GA3748@albatros>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 18 Jul 2011 14:08:22 -0500
+Message-ID: <1311016102.23043.235.camel@calx>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 2011-07-18 at 22:39 +0400, Vasiliy Kulikov wrote:
+> This patch implements 2 additional checks for the data copied from
+> kernelspace to userspace and vice versa (original PAX_USERCOPY from PaX
+> patch).  Currently there are some very simple and cheap comparisons of
+> supplied size and the size of a copied object known at the compile time
+> in copy_* functions.  This patch enhances these checks to check against
+> stack frame boundaries and against SL*B object sizes.
+> 
+> More precisely, it checks:
+> 
+> 1) if the data touches the stack, checks whether it fully fits in the stack
+> and whether it fully fits in a single stack frame.  The latter is arch
+> dependent, currently it is implemented for x86 with CONFIG_FRAME_POINTER=y
+> only.  It limits infoleaks/overwrites to a single frame and local variables
+> only, and prevents saved return instruction pointer overwriting.
+> 
+> 2) if the data is from the SL*B cache, checks whether it fully fits in a
+> slab page and whether it overflows a slab object.  E.g. if the memory
+> was allocated as kmalloc(64, GFP_KERNEL) and one tries to copy 150
+> bytes, the copy would fail.
 
-On Fri, Jul 1, 2011 at 7:31 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
-> Cc: Steven Rostedt <srostedt@redhat.com>
-> ---
->  Makefile |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
->
-> diff --git a/Makefile b/Makefile
-> index afb8e0d..ea517fd 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -22,6 +22,9 @@ LC_COLLATE=C
->  LC_NUMERIC=C
->  export LC_COLLATE LC_NUMERIC
->
-> +# Export make goals
-> +export MAKECMDGOALS
-> +
->  # We are using a recursive build, so we need to do a little thinking
->  # to get the ordering right.
->  #
-Michal, before I send a new version of this serie, can you tell me
-your point of view on the export of MAKECMDGOALS (or
-KBUILD_MAKECMDGOALS) and Kconfig to the environment ?
+FYI, this should almost certainly be split into (at least) two patches:
 
-Thanks,
- - Arnaud
+- the stack check
+- the SL*B check (probably one patch per allocator, preceded by one for
+any shared infrastructure)
+
+-- 
+Mathematics is the supreme nostalgia of our time.
+
+
