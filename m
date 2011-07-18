@@ -1,139 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752518Ab1GRUrm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 16:47:42 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:35203 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400Ab1GRUrk (ORCPT
+	id S1753181Ab1GRUt1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 16:49:27 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61518 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751355Ab1GRUtY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 16:47:40 -0400
-Date: Mon, 18 Jul 2011 15:47:33 -0500 (CDT)
-From: Manoj Iyer <manoj.iyer@canonical.com>
-X-X-Sender: manjo@lazy
-To: Chris Ball <cjb@laptop.org>
-cc: Manoj Iyer <manoj.iyer@canonical.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, jbarnes@virtuousgeek.org,
-        matsumur@nts.ricoh.co.jp, linux-pci@vger.kernel.org,
-        linux-mmc@vger.kernel.org
-Subject: Re: [PATCH] mmc: Added quirks for Ricoh 1180:e823 lower base clock
- frequency
-In-Reply-To: <m2zkkbb9vn.fsf@bob.laptop.org>
-Message-ID: <alpine.DEB.2.02.1107181546100.1677@lazy>
-References: <1310419715-13254-1-git-send-email-manoj.iyer@canonical.com> <m2sjqa2q93.fsf@bob.laptop.org> <alpine.DEB.2.02.1107131031360.3174@lazy> <201107131835.25217.arnd@arndb.de> <alpine.DEB.2.02.1107131144250.3174@lazy> <m21uxu2k96.fsf@bob.laptop.org>
- <alpine.DEB.2.02.1107131157440.3174@lazy> <m2wrfm1537.fsf@bob.laptop.org> <alpine.DEB.2.02.1107181535250.1677@lazy> <m2zkkbb9vn.fsf@bob.laptop.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 18 Jul 2011 16:49:24 -0400
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-513804810-1311022057=:1677"
+In-Reply-To: <201107182148.AGD21306.FOLtJVMSOOFQHF@I-love.SAKURA.ne.jp>
+References: <1310977597-9666-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<201107182041.EHB78622.VOFSHFMOOFtLJQ@I-love.SAKURA.ne.jp>
+	<1310991796.3903.6.camel@smile>
+	<201107182148.AGD21306.FOLtJVMSOOFQHF@I-love.SAKURA.ne.jp>
+Date: Mon, 18 Jul 2011 22:49:22 +0200
+X-Google-Sender-Auth: I-z4TQlT2WLhf1zvI81kLN52Q00
+Message-ID: <CAMuHMdVxR7AC7H_Yys8SiaGqM2JsNXLsRpujqojMYd_CXWxcAw@mail.gmail.com>
+Subject: Re: [PATCH] Add error check to hex2bin().
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Cc: linux-security-module@vger.kernel.org, andriy.shevchenko@linux.intel.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---8323329-513804810-1311022057=:1677
-Content-Type: TEXT/PLAIN; charset=utf-8; format=flowed
-Content-Transfer-Encoding: QUOTED-PRINTABLE
-
-
-
-Chris,
-
-Right, without the patch I get..
-
-[   52.526665] mmc0: new SDHC card at address e624
-[   52.571228] mmcblk0: mmc0:e624 SD16G 14.8 GiB
-[   52.591071] mmcblk0: retrying using single block read
-[   52.593105] mmcblk0: error -84 transferring data, sector 0, nr 8, card=
-=20
-status 0x900
-[   52.593109] end_request: I/O error, dev mmcblk0, sector 0
-[   52.594594] mmcblk0: error -84 transferring data, sector 1, nr 7, card=
-=20
-status 0x900
-[   52.594604] end_request: I/O error, dev mmcblk0, sector 1
-[   52.602893] quiet_error: 24 callbacks suppressed
-[   52.602902] Buffer I/O error on device mmcblk0, logical block 0
-[   52.605349] ldm_validate_partition_table(): Disk read failed.
-[   52.605384] Dev mmcblk0: unable to read RDB block 0
-[   52.607729]  mmcblk0: unable to read partition table
-u@u:~$
-
-So, I cannot generate any comparison data with this SD card.
-
-On Mon, 18 Jul 2011, Chris Ball wrote:
-
-> Hi Manoj,
+On Mon, Jul 18, 2011 at 14:48, Tetsuo Handa
+<penguin-kernel@i-love.sakura.ne.jp> wrote:
+> Currently, security/keys/ is the only user of hex2bin().
+> Should I keep hex2bin() unmodified in case of bad input?
+> If so, I'd like to make it as hex2bin_safe().
+> ----------------------------------------
+> [PATCH] Add error check to hex2bin().
 >
-> On Mon, Jul 18 2011, Manoj Iyer wrote:
->> Here are the results with SanDisk SDSDXP1-016G-A75 16GB Extreme Pro
->> SDHC Memory Card.
->>
->> u@u:~/flashbench$ sudo ./flashbench -a /dev/mmcblk0p1
->> [sudo] password for u:
->> align 4294967296        pre 1.16ms      on 1.15ms       post 1.15ms
->> diff -2024ns
->> align 2147483648        pre 1.2ms       on 1.2ms        post 1.2ms
->> diff 522ns
->> align 1073741824        pre 1.21ms      on 1.2ms        post 1.2ms
->> diff 570ns
->> align 536870912 pre 1.2ms       on 1.2ms        post 1.2ms      diff 662=
-ns
->> align 268435456 pre 1.2ms       on 1.2ms        post 1.2ms      diff 404=
-ns
->> align 134217728 pre 1.2ms       on 1.2ms        post 1.2ms      diff
->> -1692ns
->> align 67108864  pre 1.15ms      on 1.16ms       post 1.16ms     diff
->> 1.37=C2=B5s
->> align 33554432  pre 1.18ms      on 1.19ms       post 1.15ms     diff
->> 31.3=C2=B5s
->> align 16777216  pre 1.17ms      on 1.19ms       post 1.15ms     diff
->> 31.5=C2=B5s
->> align 8388608   pre 1.17ms      on 1.21ms       post 1.18ms     diff
->> 32.9=C2=B5s
->> align 4194304   pre 1.37ms      on 1.55ms       post 1.17ms     diff 274=
-=C2=B5s
->> align 2097152   pre 1.37ms      on 1.37ms       post 1.39ms     diff
->> -7992ns
->> align 1048576   pre 1.33ms      on 1.33ms       post 1.34ms     diff
->> -7793ns
->> align 524288    pre 1.33ms      on 1.33ms       post 1.34ms     diff
->> -6641ns
->> align 262144    pre 1.34ms      on 1.38ms       post 1.35ms     diff
->> 33.8=C2=B5s
->> align 131072    pre 1.35ms      on 1.37ms       post 1.34ms     diff
->> 27.2=C2=B5s
->> align 65536     pre 1.34ms      on 1.37ms       post 1.34ms     diff
->> 31.7=C2=B5s
->> align 32768     pre 1.33ms      on 1.37ms       post 1.34ms     diff
->> 32.5=C2=B5s
->>
->> u@u:~/flashbench$ sudo ./flashbench -O --erasesize=3D$[4 * 1024 * 1024]
->> --blocksize=3D$[256 * 1024] /dev/mmcblk0p1 --open-au-nr=3D2
->> 4MiB    23.2M/s
->> 2MiB    23.6M/s
->> 1MiB    23.5M/s
->> 512KiB  23.2M/s
->> 256KiB  23.2M/s
->> u@u:~/flashbench$
+> Since converting 2 hexadecimal letters into a byte with error checks is
+> commonly used, we can replace multiple hex_to_bin() calls with single hex2bin()
+> call by changing hex2bin() to do error checks.
 >
-> I don't understand whether these measurements are before or after your
-> patch -- we're looking to see what the *difference* in performance is
-> with the patch applied, right?
+> Signed-off-by: Tetsuo Handa <penguin-kernel@I=love.SAKURA.ne.jp>
+> ---
+> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+> index 953352a..186e9fc 100644
+> --- a/include/linux/kernel.h
+> +++ b/include/linux/kernel.h
+> @@ -374,7 +374,7 @@ static inline char *pack_hex_byte(char *buf, u8 byte)
+>  }
 >
-> Thanks,
+>  extern int hex_to_bin(char ch);
+> -extern void hex2bin(u8 *dst, const char *src, size_t count);
+> +extern bool hex2bin(u8 *dst, const char *src, size_t count);
 >
-> - Chris.
-> --=20
-> Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-> One Laptop Per Child
->
->
+>  /*
+>  * General tracing related utility functions - trace_printk(),
+> diff --git a/lib/hexdump.c b/lib/hexdump.c
+> index f5fe6ba..1524002 100644
+> --- a/lib/hexdump.c
+> +++ b/lib/hexdump.c
+> @@ -38,14 +38,22 @@ EXPORT_SYMBOL(hex_to_bin);
+>  * @dst: binary result
+>  * @src: ascii hexadecimal string
+>  * @count: result length
+> + *
+> + * Returns true on success, false in case of bad input.
+
+What about making it return the number of unprocessed bytes left instead?
+Then the caller knows where the problem lies. And zero would mean success.
+
+Gr{oetje,eeting}s,
+
+                        Geert
 
 --
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-Manoj Iyer
-Ubuntu/Canonical
-Hardware Enablement
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
---8323329-513804810-1311022057=:1677--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
