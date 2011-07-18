@@ -1,493 +1,322 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753297Ab1GRNI0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 09:08:26 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:44038 "EHLO radon.swed.at"
+	id S1752730Ab1GRNIx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 09:08:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38126 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751027Ab1GRNHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 09:07:46 -0400
-From: Richard Weinberger <richard@nod.at>
-To: user-mode-linux-devel@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>
-Subject: [PATCH 3/3] um: Implement a x86_64 vDSO
-Date: Mon, 18 Jul 2011 15:07:36 +0200
-Message-Id: <1310994456-14142-3-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1310994456-14142-1-git-send-email-richard@nod.at>
-References: <1310994456-14142-1-git-send-email-richard@nod.at>
+	id S1751702Ab1GRNIu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 09:08:50 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>
+Subject: [PATCH 00/34] System Firmware and SMBIOS Support [v3]
+Date: Mon, 18 Jul 2011 09:08:14 -0400
+Message-Id: <1310994528-26276-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Until now UML had no x86_64 vDSO.
-So glibc always used the vsyscall page for gettimeday()
-and friends.
-Calls to gettimeday() returned falsely the host time and
-confused some programs.
+[Sorry if anyone receives this twice.  It didn't make it to LKML the first
+time.]
 
-This patch adds a vDSO which turns all __vdso_* calls into
-a system call so that UML can trap them.
+This change is targeted for 3.2 in order to give is "soak" time in linux-next.
 
-As glibc still uses the vsyscall page for static binaries this
-patch improves the situation only for dynamic binaries.
+DMI, or the Desktop Management Interface, provides access to OEM and hardware
+specific details about the x86 or ia64 system the kernel is currently runnig
+on.  DMI has been deprecated since 2003, which was the last update of the DMI
+Specification.
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- arch/um/sys-x86_64/Makefile               |    2 +
- arch/um/sys-x86_64/asm/elf.h              |    9 +++
- arch/um/sys-x86_64/vdso/Makefile          |   90 +++++++++++++++++++++++++++++
- arch/um/sys-x86_64/vdso/checkundef.sh     |   10 +++
- arch/um/sys-x86_64/vdso/um_vdso.c         |   71 +++++++++++++++++++++++
- arch/um/sys-x86_64/vdso/vdso-layout.lds.S |   64 ++++++++++++++++++++
- arch/um/sys-x86_64/vdso/vdso-note.S       |   12 ++++
- arch/um/sys-x86_64/vdso/vdso.S            |   10 +++
- arch/um/sys-x86_64/vdso/vdso.lds.S        |   32 ++++++++++
- arch/um/sys-x86_64/vdso/vma.c             |   67 +++++++++++++++++++++
- 10 files changed, 367 insertions(+), 0 deletions(-)
- create mode 100644 arch/um/sys-x86_64/vdso/Makefile
- create mode 100755 arch/um/sys-x86_64/vdso/checkundef.sh
- create mode 100644 arch/um/sys-x86_64/vdso/um_vdso.c
- create mode 100644 arch/um/sys-x86_64/vdso/vdso-layout.lds.S
- create mode 100644 arch/um/sys-x86_64/vdso/vdso-note.S
- create mode 100644 arch/um/sys-x86_64/vdso/vdso.S
- create mode 100644 arch/um/sys-x86_64/vdso/vdso.lds.S
- create mode 100644 arch/um/sys-x86_64/vdso/vma.c
+The System Management BIOS, or SMBIOS, supercedes DMI -- the SMBIOS tables
+include the possibility of a _DMI_ entry and tables.  However, in the
+Linux kernel we do not access any of the DMI data and only access SMBIOS data.
 
-diff --git a/arch/um/sys-x86_64/Makefile b/arch/um/sys-x86_64/Makefile
-index c1ea9eb..cc70f7a 100644
---- a/arch/um/sys-x86_64/Makefile
-+++ b/arch/um/sys-x86_64/Makefile
-@@ -8,6 +8,8 @@ obj-y = bug.o bugs.o delay.o fault.o ldt.o mem.o ptrace.o ptrace_user.o \
- 	setjmp.o signal.o stub.o stub_segv.o syscalls.o syscall_table.o \
- 	sysrq.o ksyms.o tls.o
- 
-+obj-y += vdso/
-+
- subarch-obj-y = lib/csum-partial_64.o lib/memcpy_64.o lib/thunk_64.o \
- 		lib/rwsem_64.o
- subarch-obj-$(CONFIG_MODULES) += kernel/module.o
-diff --git a/arch/um/sys-x86_64/asm/elf.h b/arch/um/sys-x86_64/asm/elf.h
-index 74eb0ac..11a2bfb 100644
---- a/arch/um/sys-x86_64/asm/elf.h
-+++ b/arch/um/sys-x86_64/asm/elf.h
-@@ -120,4 +120,13 @@ extern long elf_aux_hwcap;
- #define SET_PERSONALITY(ex) do ; while(0)
- 
- #define __HAVE_ARCH_GATE_AREA 1
-+#define ARCH_HAS_SETUP_ADDITIONAL_PAGES 1
-+struct linux_binprm;
-+extern int arch_setup_additional_pages(struct linux_binprm *bprm,
-+	int uses_interp);
-+
-+extern unsigned long um_vdso_addr;
-+#define AT_SYSINFO_EHDR 33
-+#define ARCH_DLINFO	NEW_AUX_ENT(AT_SYSINFO_EHDR, um_vdso_addr)
-+
- #endif
-diff --git a/arch/um/sys-x86_64/vdso/Makefile b/arch/um/sys-x86_64/vdso/Makefile
-new file mode 100644
-index 0000000..5dffe6d
---- /dev/null
-+++ b/arch/um/sys-x86_64/vdso/Makefile
-@@ -0,0 +1,90 @@
-+#
-+# Building vDSO images for x86.
-+#
-+
-+VDSO64-y		:= y
-+
-+vdso-install-$(VDSO64-y)	+= vdso.so
-+
-+
-+# files to link into the vdso
-+vobjs-y := vdso-note.o um_vdso.o
-+
-+# files to link into kernel
-+obj-$(VDSO64-y)			+= vdso.o vma.o
-+
-+vobjs := $(foreach F,$(vobjs-y),$(obj)/$F)
-+
-+$(obj)/vdso.o: $(obj)/vdso.so
-+
-+targets += vdso.so vdso.so.dbg vdso.lds $(vobjs-y)
-+
-+export CPPFLAGS_vdso.lds += -P -C
-+
-+VDSO_LDFLAGS_vdso.lds = -m64 -Wl,-soname=linux-vdso.so.1 \
-+       -Wl,-z,max-page-size=4096 -Wl,-z,common-page-size=4096
-+
-+$(obj)/vdso.o: $(src)/vdso.S $(obj)/vdso.so
-+
-+$(obj)/vdso.so.dbg: $(src)/vdso.lds $(vobjs) FORCE
-+	$(call if_changed,vdso)
-+
-+$(obj)/%.so: OBJCOPYFLAGS := -S
-+$(obj)/%.so: $(obj)/%.so.dbg FORCE
-+	$(call if_changed,objcopy)
-+
-+#
-+# Don't omit frame pointers for ease of userspace debugging, but do
-+# optimize sibling calls.
-+#
-+CFL := $(PROFILING) -mcmodel=small -fPIC -O2 -fasynchronous-unwind-tables -m64 \
-+       $(filter -g%,$(KBUILD_CFLAGS)) $(call cc-option, -fno-stack-protector) \
-+       -fno-omit-frame-pointer -foptimize-sibling-calls
-+
-+$(vobjs): KBUILD_CFLAGS += $(CFL)
-+
-+#
-+# vDSO code runs in userspace and -pg doesn't help with profiling anyway.
-+#
-+CFLAGS_REMOVE_vdso-note.o = -pg
-+CFLAGS_REMOVE_um_vdso.o = -pg
-+
-+targets += vdso-syms.lds
-+obj-$(VDSO64-y)			+= vdso-syms.lds
-+
-+#
-+# Match symbols in the DSO that look like VDSO*; produce a file of constants.
-+#
-+sed-vdsosym := -e 's/^00*/0/' \
-+	-e 's/^\([0-9a-fA-F]*\) . \(VDSO[a-zA-Z0-9_]*\)$$/\2 = 0x\1;/p'
-+quiet_cmd_vdsosym = VDSOSYM $@
-+define cmd_vdsosym
-+	$(NM) $< | LC_ALL=C sed -n $(sed-vdsosym) | LC_ALL=C sort > $@
-+endef
-+
-+$(obj)/%-syms.lds: $(obj)/%.so.dbg FORCE
-+	$(call if_changed,vdsosym)
-+
-+#
-+# The DSO images are built using a special linker script.
-+#
-+quiet_cmd_vdso = VDSO    $@
-+      cmd_vdso = $(CC) -nostdlib -o $@ \
-+		       $(VDSO_LDFLAGS) $(VDSO_LDFLAGS_$(filter %.lds,$(^F))) \
-+		       -Wl,-T,$(filter %.lds,$^) $(filter %.o,$^) && \
-+		 sh $(srctree)/$(src)/checkundef.sh '$(NM)' '$@'
-+
-+VDSO_LDFLAGS = -fPIC -shared $(call cc-ldoption, -Wl$(comma)--hash-style=sysv)
-+GCOV_PROFILE := n
-+
-+#
-+# Install the unstripped copy of vdso*.so listed in $(vdso-install-y).
-+#
-+quiet_cmd_vdso_install = INSTALL $@
-+      cmd_vdso_install = cp $(obj)/$@.dbg $(MODLIB)/vdso/$@
-+$(vdso-install-y): %.so: $(obj)/%.so.dbg FORCE
-+	@mkdir -p $(MODLIB)/vdso
-+	$(call cmd,vdso_install)
-+
-+PHONY += vdso_install $(vdso-install-y)
-+vdso_install: $(vdso-install-y)
-diff --git a/arch/um/sys-x86_64/vdso/checkundef.sh b/arch/um/sys-x86_64/vdso/checkundef.sh
-new file mode 100755
-index 0000000..7ee90a9
---- /dev/null
-+++ b/arch/um/sys-x86_64/vdso/checkundef.sh
-@@ -0,0 +1,10 @@
-+#!/bin/sh
-+nm="$1"
-+file="$2"
-+$nm "$file" | grep '^ *U' > /dev/null 2>&1
-+if [ $? -eq 1 ]; then
-+    exit 0
-+else
-+    echo "$file: undefined symbols found" >&2
-+    exit 1
-+fi
-diff --git a/arch/um/sys-x86_64/vdso/um_vdso.c b/arch/um/sys-x86_64/vdso/um_vdso.c
-new file mode 100644
-index 0000000..7c441b5
---- /dev/null
-+++ b/arch/um/sys-x86_64/vdso/um_vdso.c
-@@ -0,0 +1,71 @@
-+/*
-+ * Copyright (C) 2011 Richard Weinberger <richrd@nod.at>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This vDSO turns all calls into a syscall so that UML can trap them.
-+ */
-+
-+
-+/* Disable profiling for userspace code */
-+#define DISABLE_BRANCH_PROFILING
-+
-+#include <linux/time.h>
-+#include <linux/getcpu.h>
-+#include <asm/unistd.h>
-+
-+int __vdso_clock_gettime(clockid_t clock, struct timespec *ts)
-+{
-+	long ret;
-+
-+	asm("syscall" : "=a" (ret) :
-+		"0" (__NR_clock_gettime), "D" (clock), "S" (ts) : "memory");
-+
-+	return ret;
-+}
-+int clock_gettime(clockid_t, struct timespec *)
-+	__attribute__((weak, alias("__vdso_clock_gettime")));
-+
-+int __vdso_gettimeofday(struct timeval *tv, struct timezone *tz)
-+{
-+	long ret;
-+
-+	asm("syscall" : "=a" (ret) :
-+		"0" (__NR_gettimeofday), "D" (tv), "S" (tz) : "memory");
-+
-+	return ret;
-+}
-+int gettimeofday(struct timeval *, struct timezone *)
-+	__attribute__((weak, alias("__vdso_gettimeofday")));
-+
-+time_t __vdso_time(time_t *t)
-+{
-+	long secs;
-+
-+	asm volatile("syscall"
-+		: "=a" (secs)
-+		: "0" (__NR_time), "D" (t) : "cc", "r11", "cx", "memory");
-+
-+	return secs;
-+}
-+int time(time_t *t) __attribute__((weak, alias("__vdso_time")));
-+
-+long
-+__vdso_getcpu(unsigned *cpu, unsigned *node, struct getcpu_cache *unused)
-+{
-+	/*
-+	 * UML does not support SMP, we can cheat here. :)
-+	 */
-+
-+	if (cpu)
-+		*cpu = 0;
-+	if (node)
-+		*node = 0;
-+
-+	return 0;
-+}
-+
-+long getcpu(unsigned *cpu, unsigned *node, struct getcpu_cache *tcache)
-+	__attribute__((weak, alias("__vdso_getcpu")));
-diff --git a/arch/um/sys-x86_64/vdso/vdso-layout.lds.S b/arch/um/sys-x86_64/vdso/vdso-layout.lds.S
-new file mode 100644
-index 0000000..634a2cf
---- /dev/null
-+++ b/arch/um/sys-x86_64/vdso/vdso-layout.lds.S
-@@ -0,0 +1,64 @@
-+/*
-+ * Linker script for vDSO.  This is an ELF shared object prelinked to
-+ * its virtual address, and with only one read-only segment.
-+ * This script controls its layout.
-+ */
-+
-+SECTIONS
-+{
-+	. = VDSO_PRELINK + SIZEOF_HEADERS;
-+
-+	.hash		: { *(.hash) }			:text
-+	.gnu.hash	: { *(.gnu.hash) }
-+	.dynsym		: { *(.dynsym) }
-+	.dynstr		: { *(.dynstr) }
-+	.gnu.version	: { *(.gnu.version) }
-+	.gnu.version_d	: { *(.gnu.version_d) }
-+	.gnu.version_r	: { *(.gnu.version_r) }
-+
-+	.note		: { *(.note.*) }		:text	:note
-+
-+	.eh_frame_hdr	: { *(.eh_frame_hdr) }		:text	:eh_frame_hdr
-+	.eh_frame	: { KEEP (*(.eh_frame)) }	:text
-+
-+	.dynamic	: { *(.dynamic) }		:text	:dynamic
-+
-+	.rodata		: { *(.rodata*) }		:text
-+	.data		: {
-+	      *(.data*)
-+	      *(.sdata*)
-+	      *(.got.plt) *(.got)
-+	      *(.gnu.linkonce.d.*)
-+	      *(.bss*)
-+	      *(.dynbss*)
-+	      *(.gnu.linkonce.b.*)
-+	}
-+
-+	.altinstructions	: { *(.altinstructions) }
-+	.altinstr_replacement	: { *(.altinstr_replacement) }
-+
-+	/*
-+	 * Align the actual code well away from the non-instruction data.
-+	 * This is the best thing for the I-cache.
-+	 */
-+	. = ALIGN(0x100);
-+
-+	.text		: { *(.text*) }			:text	=0x90909090
-+}
-+
-+/*
-+ * Very old versions of ld do not recognize this name token; use the constant.
-+ */
-+#define PT_GNU_EH_FRAME	0x6474e550
-+
-+/*
-+ * We must supply the ELF program headers explicitly to get just one
-+ * PT_LOAD segment, and set the flags explicitly to make segments read-only.
-+ */
-+PHDRS
-+{
-+	text		PT_LOAD		FLAGS(5) FILEHDR PHDRS; /* PF_R|PF_X */
-+	dynamic		PT_DYNAMIC	FLAGS(4);		/* PF_R */
-+	note		PT_NOTE		FLAGS(4);		/* PF_R */
-+	eh_frame_hdr	PT_GNU_EH_FRAME;
-+}
-diff --git a/arch/um/sys-x86_64/vdso/vdso-note.S b/arch/um/sys-x86_64/vdso/vdso-note.S
-new file mode 100644
-index 0000000..79a071e
---- /dev/null
-+++ b/arch/um/sys-x86_64/vdso/vdso-note.S
-@@ -0,0 +1,12 @@
-+/*
-+ * This supplies .note.* sections to go into the PT_NOTE inside the vDSO text.
-+ * Here we can supply some information useful to userland.
-+ */
-+
-+#include <linux/uts.h>
-+#include <linux/version.h>
-+#include <linux/elfnote.h>
-+
-+ELFNOTE_START(Linux, 0, "a")
-+	.long LINUX_VERSION_CODE
-+ELFNOTE_END
-diff --git a/arch/um/sys-x86_64/vdso/vdso.S b/arch/um/sys-x86_64/vdso/vdso.S
-new file mode 100644
-index 0000000..ec82c16
---- /dev/null
-+++ b/arch/um/sys-x86_64/vdso/vdso.S
-@@ -0,0 +1,10 @@
-+#include <linux/init.h>
-+
-+__INITDATA
-+
-+	.globl vdso_start, vdso_end
-+vdso_start:
-+	.incbin "arch/um/sys-x86_64/vdso/vdso.so"
-+vdso_end:
-+
-+__FINIT
-diff --git a/arch/um/sys-x86_64/vdso/vdso.lds.S b/arch/um/sys-x86_64/vdso/vdso.lds.S
-new file mode 100644
-index 0000000..b96b267
---- /dev/null
-+++ b/arch/um/sys-x86_64/vdso/vdso.lds.S
-@@ -0,0 +1,32 @@
-+/*
-+ * Linker script for 64-bit vDSO.
-+ * We #include the file to define the layout details.
-+ * Here we only choose the prelinked virtual address.
-+ *
-+ * This file defines the version script giving the user-exported symbols in
-+ * the DSO.  We can define local symbols here called VDSO* to make their
-+ * values visible using the asm-x86/vdso.h macros from the kernel proper.
-+ */
-+
-+#define VDSO_PRELINK 0xffffffffff700000
-+#include "vdso-layout.lds.S"
-+
-+/*
-+ * This controls what userland symbols we export from the vDSO.
-+ */
-+VERSION {
-+	LINUX_2.6 {
-+	global:
-+		clock_gettime;
-+		__vdso_clock_gettime;
-+		gettimeofday;
-+		__vdso_gettimeofday;
-+		getcpu;
-+		__vdso_getcpu;
-+		time;
-+		__vdso_time;
-+	local: *;
-+	};
-+}
-+
-+VDSO64_PRELINK = VDSO_PRELINK;
-diff --git a/arch/um/sys-x86_64/vdso/vma.c b/arch/um/sys-x86_64/vdso/vma.c
-new file mode 100644
-index 0000000..b62827a
---- /dev/null
-+++ b/arch/um/sys-x86_64/vdso/vma.c
-@@ -0,0 +1,67 @@
-+/*
-+ * Copyright (C) 2011 Richard Weinberger <richrd@nod.at>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/slab.h>
-+#include <linux/sched.h>
-+#include <linux/mm.h>
-+#include <asm/page.h>
-+#include <linux/init.h>
-+
-+unsigned int __read_mostly vdso_enabled = 1;
-+unsigned long um_vdso_addr;
-+
-+extern unsigned long task_size;
-+extern char vdso_start[], vdso_end[];
-+
-+static struct page **vdsop;
-+
-+static int __init init_vdso(void)
-+{
-+	struct page *um_vdso;
-+
-+	BUG_ON(vdso_end - vdso_start > PAGE_SIZE);
-+
-+	um_vdso_addr = task_size - PAGE_SIZE;
-+
-+	vdsop = kmalloc(GFP_KERNEL, sizeof(struct page *));
-+	if (!vdsop)
-+		goto oom;
-+
-+	um_vdso = alloc_page(GFP_KERNEL);
-+	if (!um_vdso) {
-+		kfree(vdsop);
-+
-+		goto oom;
-+	}
-+
-+	copy_page(page_address(um_vdso), vdso_start);
-+	*vdsop = um_vdso;
-+
-+	return 0;
-+
-+oom:
-+	printk(KERN_ERR "Cannot allocate vdso\n");
-+	vdso_enabled = 0;
-+
-+	return -ENOMEM;
-+}
-+subsys_initcall(init_vdso);
-+
-+int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
-+{
-+	struct mm_struct *mm = current->mm;
-+
-+	if (!vdso_enabled)
-+		return 0;
-+
-+	return install_special_mapping(mm, um_vdso_addr, PAGE_SIZE,
-+		VM_READ|VM_EXEC|
-+		VM_MAYREAD|VM_MAYWRITE|VM_MAYEXEC|
-+		VM_ALWAYSDUMP,
-+		vdsop);
-+}
--- 
-1.7.6
+Currently, the kernel uses dmi_* functions (as defined in
+drivers/firmware/dmi_scan.c) to access the data.  The functions allow kernel
+subsystems and modules to set specific options based on the platform and BIOS
+version.
+
+The dmi_* functions in the kernel fail in several ways.  First, as
+mentioned the dmi_* functions are really accessing SMBIOS data.  The existing
+code queries for the _SMB_ entry and determines data access after that.  The
+existing dmi_* functions create an array of x86 and ia64 specific entries
+which are defined as part of x86 and ia64 specific udev entries, and allows
+drivers and subsystems to make platform specific decisions.  In addition to
+the arch specific code, the dmi_* code creates a list of "devices" to which
+makes updating very difficult and does not easily scale.
+
+Another key issue with the existing code is that several drivers do their
+own search through the SMBIOS, for example, see drivers/pci/hotplug/cpqphp*.c.
+
+Three months (or so) ago I proposed a patch which was based on a simple request
+from a colleague --  create a sysfs file that would export the SMBIOS version.
+This simple request was not something that was easy to do given the layout of
+the existing DMI code.  The request resulted in having to create a new smbios
+class within the kernel, and essentially doing a separate search through
+memory.
+
+This new patchset reworks the existing DMI code into two separate layers.  It is
+based off of the feedback I received previously when discussing the SMBIOS
+version patch on LKML.
+
+The first layer is the System Firmware Interface, which is based upon Alan
+Cox's suggestion of a common platform driver (unfortunately, platform driver
+is already defined and used within the kernel).  This is meant to be an
+arch independent subsystem in the kernel for all arches.  It is a common
+interface which provides access to specific system values in the kernel such
+as the Chassis Manufacturer, the BIOS developer, or the BIOS date.  The
+System Firmware Interface, or sysfw allows for easy updating by simply adding
+fields to an array in include/linux/mod_devicetable.h.
+Standard simple searching functions, sysfw_lookup() and sysfw_callback()
+are provided to the kernel and modules.  sysfw_callback() is similar to
+dmi_check_system() but the new function allows for exact matching which some
+drivers required.
+
+The second layer introduced in this patchset is the SMBIOS sysfw driver.  This
+driver (obviously) registers with the interface and also provides it's own
+interface.  The reason for the separate interface is that specific drivers
+have their own need to search the SMBIOS for OEM or platform specific
+information (see, for example, drivers/watchdog/hpwdt.c, or
+drivers/pci/pci-label.c).  This new driver provides a function, smbios_walk()
+which allows individual drivers or subsystems to traverse the SMBIOS table
+looking for OEM or platform specific data.  The new SMBIOS driver can be
+easily updated by adding SMBIOS structure information to the smbios_struct
+union in include/linux/smbios.h.
+
+These changes are now targeted for 3.2 and if there are no objections (there
+have been none for v1 and v2) I will request a pull for linux-next during
+the 3.1 merge window.
+
+A git tree with these changes has been set up here:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/prarit/smbios.git
+
+with the latest changes in the smbios-3.0-rc7-v3 branch.
+
+Prarit Bhargava (34):
+  System Firmware Interface
+  New SMBIOS driver for x86 and ia64.
+  arch specific changes for SMBIOS and System Firmware
+  drivers/acpi changes for SMBIOS and System Firmware interface
+  drivers/ata changes for SMBIOS and System Firmware
+  drivers/floppy changes for SMBIOS and System Firmware
+  drivers/char changes for SMBIOS and System Firmware
+  drivers/crypto changes for SMBIOS and System Firmware
+  drivers/gpio changes for SMBIOS and System Firmware
+  drivers/gpu changes for SMBIOS and System Firmware
+  drivers/hwmon changes for SMBIOS and System Firmware
+  drivers/i2c changes for SMBIOS and System Firmware
+  drivers/ide changes for SMBIOS and System Firmware
+  drivers/input changes for SMBIOS and System Firmware
+  drivers/leds changes for SMBIOS and System Firmware
+  drivers/media changes for SMBIOS and System Firmware
+  drivers/misc changes for SMBIOS and System Firmware
+  drivers/mtd changes for SMBIOS and System Firmware
+  drivers/net changes for SMBIOS and System Firmware
+  drivers/pci changes for SMBIOS and System Firmware
+  drivers/platform changes for SMBIOS and System  Firmware
+  drivers/pnp changes for SMBIOS and System Firmware
+  drivers/power changes for SMBIOS and System Firmware
+  drivers/rtc changes for SMBIOS and System Firmware
+  drivers/staging changes for SMBIOS and System Firmware
+  drivers/tty changes for SMBIOS and System Firmware
+  drivers/usb changes for SMBIOS and System Firmware
+  drivers/video changes for SMBIOS and System Firmware
+  drivers/w1 changes for SMBIOS and System Firmware
+  drivers/watchdog changes for SMBIOS and System Firmware
+  include/linux/acpi.h changes for SMBIOS and System Firmware
+  Kernel panic changes for SMBIOS and System Firmware
+  sound/pci/hda changes for SMBIOS and System Firmware
+  Remove old DMI & SMBIOS code and make SMBIOS default on
+
+ Documentation/ABI/obsolete/sysfs-dmi           |   40 ++
+ Documentation/ABI/testing/sysfw-smbios         |   36 ++
+ arch/ia64/Kconfig                              |    5 +
+ arch/ia64/include/asm/dmi.h                    |   12 -
+ arch/ia64/include/asm/smbios.h                 |   12 +
+ arch/ia64/kernel/setup.c                       |    8 +-
+ arch/x86/Kconfig                               |    9 +-
+ arch/x86/include/asm/dmi.h                     |   19 -
+ arch/x86/include/asm/mmconfig.h                |    4 +-
+ arch/x86/include/asm/pci_x86.h                 |    6 +-
+ arch/x86/include/asm/smbios.h                  |   19 +
+ arch/x86/kernel/acpi/boot.c                    |  177 +++---
+ arch/x86/kernel/acpi/sleep.c                   |    1 -
+ arch/x86/kernel/apic/apic.c                    |   20 +-
+ arch/x86/kernel/apic/bigsmp_32.c               |   37 +-
+ arch/x86/kernel/apm_32.c                       |  391 ++++++++-----
+ arch/x86/kernel/cpu/amd.c                      |    2 +-
+ arch/x86/kernel/cpu/vmware.c                   |   17 +-
+ arch/x86/kernel/io_delay.c                     |   42 +-
+ arch/x86/kernel/mmconf-fam10h_64.c             |   28 +-
+ arch/x86/kernel/probe_roms.c                   |    1 -
+ arch/x86/kernel/process.c                      |    8 +-
+ arch/x86/kernel/reboot.c                       |  132 +++--
+ arch/x86/kernel/setup.c                        |   14 +-
+ arch/x86/kernel/tsc.c                          |   16 +-
+ arch/x86/pci/acpi.c                            |   18 +-
+ arch/x86/pci/broadcom_bus.c                    |    1 -
+ arch/x86/pci/common.c                          |  163 +++---
+ arch/x86/pci/direct.c                          |    7 +-
+ arch/x86/pci/fixup.c                           |   33 +-
+ arch/x86/pci/init.c                            |    4 +-
+ arch/x86/pci/irq.c                             |   26 +-
+ arch/x86/pci/mmconfig-shared.c                 |   10 +-
+ arch/x86/pci/mrst.c                            |    1 -
+ drivers/acpi/battery.c                         |    5 +-
+ drivers/acpi/blacklist.c                       |  125 ++--
+ drivers/acpi/bus.c                             |   16 +-
+ drivers/acpi/ec.c                              |  101 +++-
+ drivers/acpi/osl.c                             |   17 +-
+ drivers/acpi/pci_irq.c                         |   33 +-
+ drivers/acpi/pci_slot.c                        |   12 +-
+ drivers/acpi/processor_core.c                  |   25 +-
+ drivers/acpi/processor_driver.c                |    1 -
+ drivers/acpi/processor_idle.c                  |   51 ++-
+ drivers/acpi/scan.c                            |    4 +-
+ drivers/acpi/sleep.c                           |   46 +-
+ drivers/acpi/thermal.c                         |   42 +-
+ drivers/acpi/video.c                           |   28 +-
+ drivers/acpi/video_detect.c                    |    3 +-
+ drivers/ata/acard-ahci.c                       |    1 -
+ drivers/ata/ahci.c                             |  177 +++---
+ drivers/ata/ata_piix.c                         |  154 +++---
+ drivers/ata/pata_ali.c                         |   18 +-
+ drivers/ata/pata_cs5530.c                      |   12 +-
+ drivers/ata/pata_rdc.c                         |    1 -
+ drivers/ata/pata_sch.c                         |    1 -
+ drivers/ata/pata_via.c                         |   14 +-
+ drivers/ata/sata_sil.c                         |   19 +-
+ drivers/block/floppy.c                         |    1 -
+ drivers/char/i8k.c                             |   75 ++--
+ drivers/char/ipmi/ipmi_si_intf.c               |  159 +++---
+ drivers/char/sonypi.c                          |   16 +-
+ drivers/cpufreq/acpi-cpufreq.c                 |   16 +-
+ drivers/cpufreq/powernow-k7.c                  |   14 +-
+ drivers/crypto/amcc/crypto4xx_sa.c             |    1 -
+ drivers/crypto/hifn_795x.c                     |    1 -
+ drivers/firmware/Kconfig                       |   65 ++-
+ drivers/firmware/Makefile                      |    8 +-
+ drivers/firmware/dmi-id.c                      |  245 --------
+ drivers/firmware/dmi-sysfs.c                   |  696 ----------------------
+ drivers/firmware/dmi_scan.c                    |  751 ------------------------
+ drivers/firmware/smbios-sysfs.c                |  705 ++++++++++++++++++++++
+ drivers/firmware/smbios.c                      |  687 ++++++++++++++++++++++
+ drivers/firmware/sysfw-sysfs.c                 |  306 ++++++++++
+ drivers/firmware/sysfw.c                       |  168 ++++++
+ drivers/gpio/basic_mmio_gpio.c                 |    1 -
+ drivers/gpu/drm/i915/intel_lvds.c              |   81 ++--
+ drivers/gpu/vga/vga_switcheroo.c               |    1 -
+ drivers/hwmon/abituguru.c                      |   18 +-
+ drivers/hwmon/abituguru3.c                     |   75 ++--
+ drivers/hwmon/acpi_power_meter.c               |   15 +-
+ drivers/hwmon/adcxx.c                          |    1 -
+ drivers/hwmon/applesmc.c                       |   73 ++-
+ drivers/hwmon/asus_atk0110.c                   |   10 +-
+ drivers/hwmon/fschmd.c                         |  104 ++--
+ drivers/hwmon/it87.c                           |   42 +-
+ drivers/hwmon/lm70.c                           |    1 -
+ drivers/i2c/busses/i2c-i801.c                  |   76 +--
+ drivers/i2c/busses/i2c-nforce2.c               |   12 +-
+ drivers/i2c/busses/i2c-piix4.c                 |   24 +-
+ drivers/ide/alim15x3.c                         |   18 +-
+ drivers/ide/ide-acpi.c                         |   16 +-
+ drivers/ide/ide-gd.c                           |   10 +-
+ drivers/ide/via82cxxx.c                        |   14 +-
+ drivers/input/keyboard/atkbd.c                 |   80 ++--
+ drivers/input/misc/wistron_btns.c              |  239 ++++----
+ drivers/input/mouse/lifebook.c                 |   42 +-
+ drivers/input/mouse/synaptics.c                |   44 +-
+ drivers/input/serio/i8042-x86ia64io.h          |  367 ++++++------
+ drivers/input/tablet/wacom.h                   |    1 -
+ drivers/input/touchscreen/htcpen.c             |   13 +-
+ drivers/leds/leds-clevo-mail.c                 |   78 ++--
+ drivers/leds/leds-ss4200.c                     |   23 +-
+ drivers/media/dvb/firewire/firedtv-fw.c        |    1 -
+ drivers/media/dvb/firewire/firedtv.h           |    1 -
+ drivers/media/video/cafe_ccic.c                |   14 +-
+ drivers/media/video/gspca/m5602/m5602_ov9650.c |   46 +-
+ drivers/media/video/gspca/m5602/m5602_ov9650.h |    2 +-
+ drivers/media/video/gspca/m5602/m5602_s5k4aa.c |  102 ++--
+ drivers/media/video/gspca/m5602/m5602_s5k4aa.h |    2 +-
+ drivers/media/video/gspca/sn9c20x.c            |   30 +-
+ drivers/media/video/pvrusb2/pvrusb2-devattr.h  |    1 -
+ drivers/misc/eeprom/at24.c                     |    1 -
+ drivers/misc/lis3lv02d/lis3lv02d.c             |    1 -
+ drivers/misc/pch_phub.c                        |   14 +-
+ drivers/mtd/devices/m25p80.c                   |    1 -
+ drivers/net/skge.c                             |   11 +-
+ drivers/net/via-rhine.c                        |   18 +-
+ drivers/net/wireless/wl1251/sdio.c             |    1 -
+ drivers/pci/dmar.c                             |   14 +-
+ drivers/pci/hotplug/cpqphp.h                   |   81 +---
+ drivers/pci/hotplug/cpqphp_core.c              |  207 +------
+ drivers/pci/intel-iommu.c                      |   20 +-
+ drivers/pci/pci-label.c                        |   82 ++--
+ drivers/pci/pci.h                              |    2 +-
+ drivers/pci/pcie/portdrv_pci.c                 |   26 +-
+ drivers/pci/quirks.c                           |   29 +-
+ drivers/platform/x86/acer-wmi.c                |  119 ++--
+ drivers/platform/x86/acerhdf.c                 |   18 +-
+ drivers/platform/x86/asus-laptop.c             |   29 +-
+ drivers/platform/x86/compal-laptop.c           |  106 ++--
+ drivers/platform/x86/dell-laptop.c             |   66 ++-
+ drivers/platform/x86/dell-wmi.c                |   15 +-
+ drivers/platform/x86/eeepc-laptop.c            |   58 ++-
+ drivers/platform/x86/eeepc-wmi.c               |   30 +-
+ drivers/platform/x86/fujitsu-laptop.c          |   41 +-
+ drivers/platform/x86/hdaps.c                   |   76 ++--
+ drivers/platform/x86/hp_accel.c                |   98 ++--
+ drivers/platform/x86/ibm_rtl.c                 |   21 +-
+ drivers/platform/x86/intel_oaktrail.c          |   15 +-
+ drivers/platform/x86/msi-laptop.c              |  115 ++--
+ drivers/platform/x86/samsung-laptop.c          |  183 +++---
+ drivers/platform/x86/sony-laptop.c             |   16 +-
+ drivers/platform/x86/thinkpad_acpi.c           |   64 +--
+ drivers/pnp/pnpacpi/core.c                     |    1 -
+ drivers/pnp/pnpbios/core.c                     |   20 +-
+ drivers/power/max17042_battery.c               |    1 -
+ drivers/rtc/rtc-cmos.c                         |    1 -
+ drivers/rtc/rtc-mrst.c                         |    1 -
+ drivers/staging/hv/hv_mouse.c                  |    1 -
+ drivers/staging/hv/hv_timesource.c             |   18 +-
+ drivers/staging/hv/hv_util.c                   |   17 +-
+ drivers/staging/hv/netvsc_drv.c                |   17 +-
+ drivers/staging/hv/vmbus_drv.c                 |    1 -
+ drivers/tty/serial/pch_uart.c                  |   16 +-
+ drivers/usb/host/pci-quirks.c                  |   19 +-
+ drivers/usb/host/uhci-hcd.c                    |    2 +-
+ drivers/usb/host/uhci-pci.c                    |   15 +-
+ drivers/video/aty/atyfb_base.c                 |   18 +-
+ drivers/video/backlight/kb3886_bl.c            |   13 +-
+ drivers/video/efifb.c                          |  124 ++--
+ drivers/w1/masters/ds2490.c                    |    1 -
+ drivers/watchdog/hpwdt.c                       |   16 +-
+ drivers/watchdog/ibmasr.c                      |    9 +-
+ drivers/watchdog/sbc_fitpc2_wdt.c              |   22 +-
+ include/linux/acpi.h                           |    2 +-
+ include/linux/dmi.h                            |  139 -----
+ include/linux/mod_devicetable.h                |   73 ++-
+ include/linux/smbios.h                         |  243 ++++++++
+ include/linux/sysfw.h                          |  113 ++++
+ init/main.c                                    |    3 +
+ kernel/panic.c                                 |    4 +-
+ scripts/mod/file2alias.c                       |   52 +-
+ sound/pci/hda/patch_sigmatel.c                 |   29 +-
+ 174 files changed, 5506 insertions(+), 4880 deletions(-)
+ create mode 100644 Documentation/ABI/obsolete/sysfs-dmi
+ create mode 100644 Documentation/ABI/testing/sysfw-smbios
+ delete mode 100644 arch/ia64/include/asm/dmi.h
+ create mode 100644 arch/ia64/include/asm/smbios.h
+ delete mode 100644 arch/x86/include/asm/dmi.h
+ create mode 100644 arch/x86/include/asm/smbios.h
+ delete mode 100644 drivers/firmware/dmi-id.c
+ delete mode 100644 drivers/firmware/dmi-sysfs.c
+ delete mode 100644 drivers/firmware/dmi_scan.c
+ create mode 100644 drivers/firmware/smbios-sysfs.c
+ create mode 100644 drivers/firmware/smbios.c
+ create mode 100644 drivers/firmware/sysfw-sysfs.c
+ create mode 100644 drivers/firmware/sysfw.c
+ delete mode 100644 include/linux/dmi.h
+ create mode 100644 include/linux/smbios.h
+ create mode 100644 include/linux/sysfw.h
 
