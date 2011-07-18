@@ -1,44 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753593Ab1GRQyH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 12:54:07 -0400
-Received: from iabervon.org ([66.92.72.58]:40669 "EHLO iabervon.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752048Ab1GRQyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 12:54:05 -0400
-Date: Mon, 18 Jul 2011 12:46:15 -0400 (EDT)
-From: Daniel Barkalow <barkalow@iabervon.org>
-To: Seth Forshee <seth.forshee@canonical.com>
-cc: Christoph Hellwig <hch@tuxera.com>, linux-kernel@vger.kernel.org
-Subject: Re: Problems with hfsplus on ipods in 2.6.38+
-In-Reply-To: <20110718133651.GA19552@thinkpad-t410>
-Message-ID: <alpine.LNX.2.00.1107181231070.2056@iabervon.org>
-References: <alpine.LNX.2.00.1107131942190.2056@iabervon.org> <20110714135302.GA28501@thinkpad-t410> <alpine.LNX.2.00.1107141330370.2056@iabervon.org> <alpine.LNX.2.00.1107142116260.2056@iabervon.org> <20110715143900.GB19063@thinkpad-t410>
- <20110718133651.GA19552@thinkpad-t410>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753780Ab1GRQ4D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 12:56:03 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:46931 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753216Ab1GRQ4B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 12:56:01 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=eA3wcEiar2/GWVaDdu8pPNYXsd+Vn4q0urlHho8nlTQLiyV3LHULHcpDamjufgC8seT2RO4C3qd9BhmFeY6R1Juw7wkjhdI1L5oHcItI3QtMO2YHnzFj52r+CKVYhH5F;
+Date: Mon, 18 Jul 2011 09:55:57 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        davem@davemloft.net, Jonas Bonn <jonas@southpole.se>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH -next] asm-generic/iomap.h: add stubs for pci iomap/iounmap
+Message-Id: <20110718095557.cd70fa01.rdunlap@xenotime.net>
+In-Reply-To: <20110718203501.232bd176e83ff65f056366e6@canb.auug.org.au>
+References: <20110718203501.232bd176e83ff65f056366e6@canb.auug.org.au>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Jul 2011, Seth Forshee wrote:
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-> On Fri, Jul 15, 2011 at 09:39:00AM -0500, Seth Forshee wrote:
-> > What I also see are GPFs in memory allocation code, which is what I
-> > believe others have seen with my patch, and so far I haven't seen those
-> > with the reversions. So I'm suspecting memory corruption, but I don't
-> > yet see where the corruption is coming form. I found one problem, but I
-> > don't suspect it's responsible for the GPFs.
-> 
-> I had some torture tests running over the weekend with the "one
-> problem" mentioned above fixed, which was a couple of kfrees that were
-> still using the old vhdr pointers. There were no oopses over a couple of
-> days of testing. I've posted a new build on the bug in launchpad in
-> hopes of getting some testing from those who were getting oopses quite
-> readily. The updated patch follows.
+When CONFIG_PCI is not enabled, CONFIG_EISA=y, and CONFIG_GENERIC_IOMAP=y,
+drivers/net/3c59x.c build fails due to a recent small change to
+<asm-generic/iomap.h> that surrounds pci_iomap() and pci_iounmap()
+with #ifdef CONFIG_PCI/#endif.  Since that patch to iomap.h looks
+correct, add stubs for pci_iomap() and pci_iounmap() with CONFIG_PCI
+is not enabled to fix the build errors.
 
-I should be able to try it this evening.
+drivers/net/3c59x.c:1026: error: implicit declaration of function 'pci_iomap'
+drivers/net/3c59x.c:1038: error: implicit declaration of function 'pci_iounmap'
 
-	-Daniel
-*This .sig left intentionally blank*
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Jonas Bonn <jonas@southpole.se>
+Cc: Arnd Bergmann <arnd@arndb.de>
+---
+ include/asm-generic/iomap.h |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+--- linux-next-20110718.orig/include/asm-generic/iomap.h
++++ linux-next-20110718/include/asm-generic/iomap.h
+@@ -71,6 +71,14 @@ extern void ioport_unmap(void __iomem *)
+ struct pci_dev;
+ extern void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long max);
+ extern void pci_iounmap(struct pci_dev *dev, void __iomem *);
++#else
++struct pci_dev;
++static inline void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long max)
++{
++	return NULL;
++}
++static inline void pci_iounmap(struct pci_dev *dev, void __iomem *addr)
++{ }
+ #endif
+ 
+ #endif
