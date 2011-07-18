@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751569Ab1GRVSe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 17:18:34 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:58026 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751283Ab1GRVSc (ORCPT
+	id S1751613Ab1GRVUF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 17:20:05 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:36587 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751337Ab1GRVUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 17:18:32 -0400
+	Mon, 18 Jul 2011 17:20:03 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=HjrH7k2DFE78I+Q5DOKdo/31rYueHq3nBHiQEBneURWkE6QgcEB4ksPpI/wk0lmCe
+	Osq3QXXWQTWaRcd2m+ZrA==
+Date: Mon, 18 Jul 2011 14:19:38 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] vfs: fix race in rcu lookup of pruned dentry
+In-Reply-To: <CA+55aFzCeXOs9Rj5U5mMWqMZpv+jM14O2VnpFCodMJzaB1hPEg@mail.gmail.com>
+Message-ID: <alpine.LSU.2.00.1107181407060.3530@sister.anvils>
+References: <20110717231610.GR11013@ZenIV.linux.org.uk> <CA+55aFxEGKgx+_xy+Lnt=84wRzE9TyznL3VCNSqWs7HC_H35_A@mail.gmail.com> <alpine.LSU.2.00.1107171641130.1274@sister.anvils> <20110718002524.GU11013@ZenIV.linux.org.uk> <alpine.LSU.2.00.1107171740260.1327@sister.anvils>
+ <20110718020818.GW11013@ZenIV.linux.org.uk> <CA+55aFwXgcWxvAz7w1f_HYyzdm9b9EBJfrWhF1FW7EA3zpbJPg@mail.gmail.com> <CA+55aFxKRw8NxcHKzsSeCX3ud6eDrcQvAX+LMQOUT4p5TPLp5g@mail.gmail.com> <alpine.LSU.2.00.1107181135170.2722@sister.anvils>
+ <CA+55aFycZL9zAE_Qvq9LM=HpugiDuKSjdRhKG1zi=H4LnNvhVQ@mail.gmail.com> <20110718194703.GI11013@ZenIV.linux.org.uk> <CA+55aFzCeXOs9Rj5U5mMWqMZpv+jM14O2VnpFCodMJzaB1hPEg@mail.gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdVxR7AC7H_Yys8SiaGqM2JsNXLsRpujqojMYd_CXWxcAw@mail.gmail.com>
-References: <1310977597-9666-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<201107182041.EHB78622.VOFSHFMOOFtLJQ@I-love.SAKURA.ne.jp>
-	<1310991796.3903.6.camel@smile>
-	<201107182148.AGD21306.FOLtJVMSOOFQHF@I-love.SAKURA.ne.jp>
-	<CAMuHMdVxR7AC7H_Yys8SiaGqM2JsNXLsRpujqojMYd_CXWxcAw@mail.gmail.com>
-Date: Tue, 19 Jul 2011 00:18:31 +0300
-Message-ID: <CAHp75VdTiMtmXdVSMq=6bAH2+rmSBHPPE9hQOLQN+Y3qPBEVFg@mail.gmail.com>
-Subject: Re: [PATCH] Add error check to hex2bin().
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        linux-security-module@vger.kernel.org,
-        andriy.shevchenko@linux.intel.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-1603776959-1311023996=:3530"
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 18, 2011 at 11:49 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> What about making it return the number of unprocessed bytes left instead?
-> Then the caller knows where the problem lies. And zero would mean success.
-If I remember correctly it used to be src as return value in some
-version of that patch. I don't know the details of that interim
-solution. My current opinion is to return boolean and make an
-additional parameter to return src value. However, it could make this
-simple function fat.
-P.S. Take into account that the user of it is only one so far, I would
-like to hear a Mimi's opinion.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
--- 
-With Best Regards,
-Andy Shevchenko
+--8323584-1603776959-1311023996=:3530
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: QUOTED-PRINTABLE
+
+On Mon, 18 Jul 2011, Linus Torvalds wrote:
+> On Mon, Jul 18, 2011 at 12:47 PM, Al Viro <viro@zeniv.linux.org.uk> wrote=
+:
+> >
+> > Huh? =A0We do __d_drop() in there, and do that before we start messing
+> > with ->d_inode.
+>=20
+> Hmm. Yes, looking at it, the ordering all seems correct. But then what
+> did Hugh see at all?
+>=20
+> The inode thing he got from d_inode is re-verified by
+> __d_lookup_rcu(). So if inode is NULL, that means that the other CPU
+> has done dentry_iput(), which means that __d_drop has already
+> happened, which means that the dentry has been removed from the hash
+> list *and* the count has been incremented.
+
+__d_lookup_rcu() is being careful about *inode, yes.
+
+But I'd forgotten it was even setting it: doesn't that setting get
+overridden later by the more careless *inode =3D path->d_entry->d_inode
+at the head of __follow_mount_rcu()'s loop?
+
+Perhaps that line just needs to be moved to the tail of the loop?
+
+Hugh
+--8323584-1603776959-1311023996=:3530--
