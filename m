@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756556Ab1GRLlY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 07:41:24 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:64092 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128Ab1GRLlX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 07:41:23 -0400
-X-Nat-Received: from [202.181.97.72]:60505 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1310989278.7746
-To: andriy.shevchenko@linux.intel.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: can: remove custom hex_to_bin()
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <1310977597-9666-1-git-send-email-andriy.shevchenko@linux.intel.com>
-In-Reply-To: <1310977597-9666-1-git-send-email-andriy.shevchenko@linux.intel.com>
-Message-Id: <201107182041.EHB78622.VOFSHFMOOFtLJQ@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Mon, 18 Jul 2011 20:41:14 +0900
-Mime-Version: 1.0
+	id S1756566Ab1GRLny (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 07:43:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57645 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752538Ab1GRLny (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 07:43:54 -0400
+Date: Mon, 18 Jul 2011 07:43:34 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Americo Wang <xiyou.wangcong@gmail.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jarod Wilson <jwilson@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: Re: [RFC][PATCH] Replace a function call chain of
+ kmsg_dump(KMSG_DUMP_KEXEC) with static function calls
+Message-ID: <20110718114334.GA31986@redhat.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C17AAE59A@USINDEVS01.corp.hds.com>
+ <m14o2mjj5l.fsf@fess.ebiederm.org>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 17072011 #5619247, status: clean
+Content-Disposition: inline
+In-Reply-To: <m14o2mjj5l.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy Shevchenko wrote:
->  	for (i = 0, dlc_pos++; i < cf.can_dlc; i++) {
-> -
-> -		tmp = asc2nibble(sl->rbuff[dlc_pos++]);
-> -		if (tmp > 0x0F)
-> +		tmp = hex_to_bin(sl->rbuff[dlc_pos++]);
-> +		if (tmp < 0)
->  			return;
->  		cf.data[i] = (tmp << 4);
-> -		tmp = asc2nibble(sl->rbuff[dlc_pos++]);
-> -		if (tmp > 0x0F)
-> +		tmp = hex_to_bin(sl->rbuff[dlc_pos++]);
-> +		if (tmp < 0)
->  			return;
->  		cf.data[i] |= tmp;
->  	}
+On Sat, Jul 16, 2011 at 09:16:06AM -0700, Eric W. Biederman wrote:
 
-What about changing
+[..]
+> Am I wrong in thinking that the core motivation behind this patch is
+> that our EFI support sucks and thus kdump on EFI does not work on some
+> platforms?
 
-  void hex2bin(u8 *dst, const char *src, size_t count)
+One of the arguments seems is that kdump might not work 100% of the
+time and saving kernel messages atleast gets some information out
+reliably.
 
-to
+I think being able to save dmesg to NVRAM, in general sounds good to
+me (if done in a relatively clean manner). Especially if we can get
+rid of code taking locks and code path executed after crash is not
+tool long and relatively easy to audit.
 
-  bool hex2bin(u8 *dst, const char *src, size_t count)
-
-in order to do error checks like
-
-bool hex2bin_with_validation(u8 *dst, const char *src, size_t count)
-{
-	while (count--) {
-		int c = hex_to_bin(*src++);
-		int d;
-		if (c < 0)
-			return false;
-		d = hex_to_bin(*src++)
-		if (d < 0)
-			return false;
-		*dst++ = (c << 4) | d;
-	}
-	return true;
-}
-
-and use hex2bin() rather than hex_to_bin()?
+Thanks
+Vivek
