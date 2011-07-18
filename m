@@ -1,57 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755753Ab1GRJmy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 05:42:54 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:37116 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754587Ab1GRJmx convert rfc822-to-8bit (ORCPT
+	id S1755905Ab1GRJnt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 05:43:49 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:28183 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755202Ab1GRJns (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 05:42:53 -0400
+	Mon, 18 Jul 2011 05:43:48 -0400
+Date: Mon, 18 Jul 2011 11:43:46 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Ravishankar <ravishankarkm32@gmail.com>
+cc: gregkh@suse.de, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>
+Subject: Re: [PATCH 30/30 v2] Staging: comedi: fix printk() issue in
+ das16m1.c
+In-Reply-To: <1310982260-957-1-git-send-email-ravishankarkm32@gmail.com>
+Message-ID: <alpine.LNX.2.00.1107181139270.2483@swampdragon.chaosbits.net>
+References: <[PATCH]Staging: comedi: fix printk() issue in das16m1.c> <1310982260-957-1-git-send-email-ravishankarkm32@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <CAM_iQpW_NGMB0dCNRLS_OaWwL=A974jEdhW0++tiiJCK24+Wfg@mail.gmail.com>
-References: <1310951766-3840-1-git-send-email-akinobu.mita@gmail.com>
-	<1310951766-3840-3-git-send-email-akinobu.mita@gmail.com>
-	<CAM_iQpW_NGMB0dCNRLS_OaWwL=A974jEdhW0++tiiJCK24+Wfg@mail.gmail.com>
-Date: Mon, 18 Jul 2011 18:42:53 +0900
-Message-ID: <CAC5umyjqfQpaZVq3USA61idH3--koaeKy+1zkn109t6ecR8xgQ@mail.gmail.com>
-Subject: Re: [PATCH v2 2/5] cpu: CPU notifier error injection
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/7/18 Américo Wang <xiyou.wangcong@gmail.com>:
-> On Mon, Jul 18, 2011 at 9:16 AM, Akinobu Mita <akinobu.mita@gmail.com> wrote:
-> ...
->> diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
->> index 72e2384..cf0b4b7 100644
->> --- a/Documentation/feature-removal-schedule.txt
->> +++ b/Documentation/feature-removal-schedule.txt
->> @@ -583,3 +583,11 @@ Why:       Superseded by the UVCIOC_CTRL_QUERY ioctl.
->>  Who:   Laurent Pinchart <laurent.pinchart@ideasonboard.com>
->>
->>  ----------------------------
->> +
->> +What:  Support for CPU_NOTIFIER_ERROR_INJECT (cpu-notifier-error-inject.ko)
->> +When:  3.3
->> +Why:   Replaced with more generic debugfs interface in
->> +       /sys/kernel/debug/cpu-notifier-error-inject/
->> +Who:   Akinobu Mita <akinobu.mita@gmail.com>
->
-> Hi, Akinobu,
->
-> I think it is okay to just remove it by this patchset, no need to defer it.
+On Mon, 18 Jul 2011, Ravishankar wrote:
 
-The only drawback is that new machanism has no way to specify notifier
-priority and the priority is hard-coded to be -1.  So it can only inject
-error at the tail of notifier chain.
+> From: Ravishankar <ravi.shankar@greenturtles.in>
+> 
+> This is a patch to the das16m1.c file that fixes up a printk() warning found by the checkpatch.pl tool
+> 
+> Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
+> ---
+> 
+>  After understanding code I have changed  8 printk statement in int das16m1_attach function. 
+> 
+>  drivers/staging/comedi/drivers/das16m1.c |   16 +++++++++-------
+>  1 files changed, 9 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/staging/comedi/drivers/das16m1.c b/drivers/staging/comedi/drivers/das16m1.c
+> index efc6132..d737ed2 100644
+> --- a/drivers/staging/comedi/drivers/das16m1.c
+> +++ b/drivers/staging/comedi/drivers/das16m1.c
+> @@ -680,17 +680,19 @@ static int das16m1_attach(struct comedi_device *dev,
+>  
+>  	dev->board_name = thisboard->name;
+>  
+> -	printk(" io 0x%lx-0x%lx 0x%lx-0x%lx",
+> +	printk(KERN_INFO " requesing the I/O region from 0x%lx-0x%lx 0x%lx-0x%lx",
 
-My plan to fix that was the kernel parameters.  But it's not flexible
-as it needs to reboot for changing the priority.
+Correct spelling is "requesting" and the "from" should either have a 
+matching "to" or just be dropped IMHO.
 
-So I'm now considering keeping this kernel module style instead of
-initializing in late_initcall().
+Personally I'd just make it:
+" requesting I/O region 0x%lx-0x%lx 0x%lx-0x%lx"
+
+
+>  	       iobase, iobase + DAS16M1_SIZE,
+>  	       iobase + DAS16M1_82C55, iobase + DAS16M1_82C55 + DAS16M1_SIZE2);
+>  	if (!request_region(iobase, DAS16M1_SIZE, driver_das16m1.driver_name)) {
+> -		printk(" I/O port conflict\n");
+> -		return -EIO;
+> +		printk(KERN_INFO "the IO REGION is busy, quitting\n");
+> +		return -EBUSY;
+>  	}
+>  	if (!request_region(iobase + DAS16M1_82C55, DAS16M1_SIZE2,
+>  			    driver_das16m1.driver_name)) {
+>  		release_region(iobase, DAS16M1_SIZE);
+> - 		printk(" I/O port conflict\n");
+> +		printk(KERN_INFO " releasing  the I/O port region\n");
+
+I think the original text was better.
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
