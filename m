@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756739Ab1GRNOW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 09:14:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42922 "EHLO mx1.redhat.com"
+	id S1756805Ab1GRNNy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 09:13:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47079 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756146Ab1GRNJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 09:09:10 -0400
+	id S1756283Ab1GRNJL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 09:09:11 -0400
 From: Prarit Bhargava <prarit@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, rtc-linux@googlegroups.com
-Subject: [PATCH 24/34] drivers/rtc changes for SMBIOS and System Firmware
-Date: Mon, 18 Jul 2011 09:08:38 -0400
-Message-Id: <1310994528-26276-25-git-send-email-prarit@redhat.com>
+Cc: Prarit Bhargava <prarit@redhat.com>, linux-usb@vger.kernel.org
+Subject: [PATCH 27/34] drivers/usb changes for SMBIOS and System Firmware
+Date: Mon, 18 Jul 2011 09:08:41 -0400
+Message-Id: <1310994528-26276-28-git-send-email-prarit@redhat.com>
 In-Reply-To: <1310994528-26276-1-git-send-email-prarit@redhat.com>
 References: <1310994528-26276-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -20,40 +20,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 As part of the new SMBIOS and System Firmware code:
 
-- cleanup of includes for dmi.h and mod_devicetable.h which were included in
-some files that did not need them
+- Replace old dmi* structures and functions with new sysfw* and smbios*
+structures and functions in individual drivers
+- cleanup sysfw_id lookup tables
+- add exactmatch functionality
 
-Cc: rtc-linux@googlegroups.com
+Cc: linux-usb@vger.kernel.org
 Signed-off-by: Prarit Bhargava <prarit@redhat.com>
 ---
- drivers/rtc/rtc-cmos.c |    1 -
- drivers/rtc/rtc-mrst.c |    1 -
- 2 files changed, 0 insertions(+), 2 deletions(-)
+ drivers/usb/host/pci-quirks.c |   19 ++++++++++++++-----
+ drivers/usb/host/uhci-hcd.c   |    2 +-
+ drivers/usb/host/uhci-pci.c   |   15 +++++++++++----
+ 3 files changed, 26 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
-index 911e75c..56b9d6d 100644
---- a/drivers/rtc/rtc-cmos.c
-+++ b/drivers/rtc/rtc-cmos.c
-@@ -34,7 +34,6 @@
- #include <linux/interrupt.h>
- #include <linux/spinlock.h>
- #include <linux/platform_device.h>
--#include <linux/mod_devicetable.h>
- #include <linux/log2.h>
- #include <linux/pm.h>
- #include <linux/of.h>
-diff --git a/drivers/rtc/rtc-mrst.c b/drivers/rtc/rtc-mrst.c
-index 0cec565..ce8cef4 100644
---- a/drivers/rtc/rtc-mrst.c
-+++ b/drivers/rtc/rtc-mrst.c
-@@ -27,7 +27,6 @@
-  *  * Alarm function is also limited to hr/min/sec.
-  */
+diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
+index fd93061..ae2a681 100644
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -14,7 +14,7 @@
+ #include <linux/init.h>
+ #include <linux/delay.h>
+ #include <linux/acpi.h>
+-#include <linux/dmi.h>
++#include <linux/sysfw.h>
+ #include "pci-quirks.h"
+ #include "xhci-ext-caps.h"
  
--#include <linux/mod_devicetable.h>
- #include <linux/platform_device.h>
- #include <linux/interrupt.h>
- #include <linux/spinlock.h>
+@@ -507,6 +507,18 @@ static void __devinit quirk_usb_handoff_ohci(struct pci_dev *pdev)
+ 	iounmap(base);
+ }
+ 
++static const struct sysfw_id __devinitdata ehci_bios_handoff_table[] = {
++	{
++		.ident = "Pegatron Lucid (ExoPC) Tablet",
++		.matches = {
++			SYSFW_MATCH(SYSFW_BOARD_NAME, "EXOPG06411"),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "Lucid-CE-133"),
++		},
++		.exactmatch = 1,
++	},
++	{}
++};
++
+ static void __devinit ehci_bios_handoff(struct pci_dev *pdev,
+ 					void __iomem *op_reg_base,
+ 					u32 cap, u8 offset)
+@@ -517,10 +529,7 @@ static void __devinit ehci_bios_handoff(struct pci_dev *pdev,
+ 	 * seconds trying the handoff on its unused controller.  Skip
+ 	 * it. */
+ 	if (pdev->vendor == 0x8086 && pdev->device == 0x283a) {
+-		const char *dmi_bn = dmi_get_system_info(DMI_BOARD_NAME);
+-		const char *dmi_bv = dmi_get_system_info(DMI_BIOS_VERSION);
+-		if (dmi_bn && !strcmp(dmi_bn, "EXOPG06411") &&
+-		    dmi_bv && !strcmp(dmi_bv, "Lucid-CE-133"))
++		if (sysfw_callback(ehci_bios_handoff_table))
+ 			try_handoff = 0;
+ 	}
+ 
+diff --git a/drivers/usb/host/uhci-hcd.c b/drivers/usb/host/uhci-hcd.c
+index fba99b1..1b03b7a 100644
+--- a/drivers/usb/host/uhci-hcd.c
++++ b/drivers/usb/host/uhci-hcd.c
+@@ -40,7 +40,7 @@
+ #include <linux/usb.h>
+ #include <linux/usb/hcd.h>
+ #include <linux/bitops.h>
+-#include <linux/dmi.h>
++#include <linux/sysfw.h>
+ 
+ #include <asm/uaccess.h>
+ #include <asm/io.h>
+diff --git a/drivers/usb/host/uhci-pci.c b/drivers/usb/host/uhci-pci.c
+index c300bd2..ef3de10 100644
+--- a/drivers/usb/host/uhci-pci.c
++++ b/drivers/usb/host/uhci-pci.c
+@@ -88,18 +88,25 @@ static int uhci_pci_resume_detect_interrupts_are_broken(struct uhci_hcd *uhci)
+ 	return 0;
+ }
+ 
++static const struct sysfw_id bad_Asus_board_id[] = {
++	{
++		.ident = "A7V8X",
++		.matches = {
++			SYSFW_MATCH(SYSFW_BOARD_NAME, "A7V8X"),
++		},
++	},
++	{}
++};
++
+ static int uhci_pci_global_suspend_mode_is_broken(struct uhci_hcd *uhci)
+ {
+ 	int port;
+-	const char *sys_info;
+-	static const char bad_Asus_board[] = "A7V8X";
+ 
+ 	/* One of Asus's motherboards has a bug which causes it to
+ 	 * wake up immediately from suspend-to-RAM if any of the ports
+ 	 * are connected.  In such cases we will not set EGSM.
+ 	 */
+-	sys_info = dmi_get_system_info(DMI_BOARD_NAME);
+-	if (sys_info && !strcmp(sys_info, bad_Asus_board)) {
++	if (sysfw_callback(bad_Asus_board_id)) {
+ 		for (port = 0; port < uhci->rh_numports; ++port) {
+ 			if (inw(uhci->io_addr + USBPORTSC1 + port * 2) &
+ 					USBPORTSC_CCS)
 -- 
 1.6.5.2
 
