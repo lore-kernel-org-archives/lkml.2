@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752737Ab1GTAri (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 20:47:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53164 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752395Ab1GTArh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 20:47:37 -0400
-Date: Wed, 20 Jul 2011 10:47:21 +1000
-From: NeilBrown <neilb@suse.de>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] vfs: fix race in rcu lookup of pruned dentry
-Message-ID: <20110720104721.03a2a2f0@notabene.brown>
-In-Reply-To: <20110719235515.GT11013@ZenIV.linux.org.uk>
-References: <CA+55aFwXgcWxvAz7w1f_HYyzdm9b9EBJfrWhF1FW7EA3zpbJPg@mail.gmail.com>
-	<CA+55aFxKRw8NxcHKzsSeCX3ud6eDrcQvAX+LMQOUT4p5TPLp5g@mail.gmail.com>
-	<alpine.LSU.2.00.1107181135170.2722@sister.anvils>
-	<CA+55aFycZL9zAE_Qvq9LM=HpugiDuKSjdRhKG1zi=H4LnNvhVQ@mail.gmail.com>
-	<20110718194703.GI11013@ZenIV.linux.org.uk>
-	<CA+55aFzCeXOs9Rj5U5mMWqMZpv+jM14O2VnpFCodMJzaB1hPEg@mail.gmail.com>
-	<alpine.LSU.2.00.1107181407060.3530@sister.anvils>
-	<CA+55aFxq1KZycxXCwLARv0WOYG_-aim=e9kt=eLcNuymmeoyiA@mail.gmail.com>
-	<20110719234550.GR11013@ZenIV.linux.org.uk>
-	<20110719235215.GS11013@ZenIV.linux.org.uk>
-	<20110719235515.GT11013@ZenIV.linux.org.uk>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+	id S1752552Ab1GTBJU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 21:09:20 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:60341 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752411Ab1GTBJS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 21:09:18 -0400
+Subject: [PATCH v2] tpm: Fix compilation warning when CONFIG_PNP is not
+ defined
+From: Stefan Berger <stefanb@linux.vnet.ibm.com>
+To: rdunlap@xenotime.net, Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Morris <jmorris@namei.org>, linux-next@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 18 Jul 2011 09:11:55 -0400
+Message-ID: <1310994715.28315.0.camel@d941e-10>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Jul 2011 00:55:15 +0100 Al Viro <viro@ZenIV.linux.org.uk> wrote:
+The is_itpm() function is only accessed from a block surrounded by
+#ifdef CONFIG_PNP. Therefore, also surround it with #ifdef CONFIG_PNP
+and remove the #else branch causing the warning.
 
-> On Wed, Jul 20, 2011 at 12:52:16AM +0100, Al Viro wrote:
-> > On Wed, Jul 20, 2011 at 12:45:51AM +0100, Al Viro wrote:
-> > 
-> > > You know what...  I doubt that you want to mess with ->d_seq checks here.
-> > > It's definitely not Hugh's bug (unless he has bindings somewhere odd) and
-> > > both ->mnt_mountpoint and ->mnt_root are pinned (and we are holding
-> > > vfsmount_lock anyway).  *inode assignment too early is a real bug, indeed,
-> > > and we want to assign nd->seq if we cross mountpoint as both versions do,
-> > > but check just before that is, in the best case, BUG_ON() fodder.  We'd
-> > > just found a vfsmount with ->mnt_mountpoint equal to path->dentry; it *can't*
-> > > be stale, or we have a really nasty problem anyway.
-> > 
-> > Kudos to neilb for spotting the pointless check, BTW; and no, his theory
-> > that it might be needed since we could race with umount() is wrong - due to
-> > vfsmount_lock being held.
+http://lxr.linux.no/#linux+v2.6.39/drivers/char/tpm/tpm_tis.c#L622
 
-Thanks.. but that patch seems to introduce an unused variable "seq".
+v2:
+ - fixes a previous typo
 
-NeilBrown
+Signed-off-by: Stefan Berger <stefanb@linux.vnet.ibm.com>
 
+---
+ drivers/char/tpm/tpm_tis.c |    7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
-> 
-> Updated, pushed.  Please, pull from the usual place (
-> git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ for-linus
-> ).
-> 
-> Shortlog:
-> Al Viro (1):
->       Fix cifs_get_root()
-> 
-> Linus Torvalds (1):
->       vfs: fix race in rcu lookup of pruned dentry
-> 
-> Diffstat:
->  fs/cifs/cifsfs.c |  100 +++++++++++++++--------------------------------------
->  fs/namei.c       |   10 +++++-
->  2 files changed, 38 insertions(+), 72 deletions(-)
+Index: linux-2.6/drivers/char/tpm/tpm_tis.c
+===================================================================
+--- linux-2.6.orig/drivers/char/tpm/tpm_tis.c
++++ linux-2.6/drivers/char/tpm/tpm_tis.c
+@@ -80,7 +80,7 @@ enum tis_defaults {
+ static LIST_HEAD(tis_chips);
+ static DEFINE_SPINLOCK(tis_lock);
+ 
+-#ifdef CONFIG_ACPI
++#ifdef CONFIG_PNP
+ static int is_itpm(struct pnp_dev *dev)
+ {
+ 	struct acpi_device *acpi = pnp_acpi_device(dev);
+@@ -93,11 +93,6 @@ static int is_itpm(struct pnp_dev *dev)
+ 
+ 	return 0;
+ }
+-#else
+-static int is_itpm(struct pnp_dev *dev)
+-{
+-	return 0;
+-}
+ #endif
+ 
+ static int check_locality(struct tpm_chip *chip, int l)
+
 
