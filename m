@@ -1,169 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754024Ab1GRSEF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 14:04:05 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:53485 "EHLO e6.ny.us.ibm.com"
+	id S1753702Ab1GRSFg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 14:05:36 -0400
+Received: from mail.perches.com ([173.55.12.10]:4143 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752730Ab1GRSEC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 14:04:02 -0400
-Subject: Re: [PATCH] Add error check to hex2bin().
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: linux-security-module@vger.kernel.org, andriy.shevchenko@linux.intel.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <201107182148.AGD21306.FOLtJVMSOOFQHF@I-love.SAKURA.ne.jp>
-References: <1310977597-9666-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <201107182041.EHB78622.VOFSHFMOOFtLJQ@I-love.SAKURA.ne.jp>
-	 <1310991796.3903.6.camel@smile>
-	 <201107182148.AGD21306.FOLtJVMSOOFQHF@I-love.SAKURA.ne.jp>
+	id S1751115Ab1GRSFf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 14:05:35 -0400
+Subject: Re: [PATCH] tulip: dmfe: Remove old log spamming pr_debugs
+From: Joe Perches <joe@perches.com>
+To: David Miller <davem@davemloft.net>
+Cc: jdelvare@suse.de, grundler@parisc-linux.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110718.104537.546991191560526229.davem@davemloft.net>
+References: <201107181440.35886.jdelvare@suse.de>
+	 <0a5f6c4c4c948dd5ff827bb5c5517294c9410bfc.1311000440.git.joe@perches.com>
+	 <20110718.104537.546991191560526229.davem@davemloft.net>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Jul 2011 14:03:50 -0400
-Message-ID: <1311012230.3193.35.camel@localhost.localdomain>
+Date: Mon, 18 Jul 2011 11:05:32 -0700
+Message-ID: <1311012332.2286.110.camel@Joe-Laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-07-18 at 21:48 +0900, Tetsuo Handa wrote:
-> Currently, security/keys/ is the only user of hex2bin().
-> Should I keep hex2bin() unmodified in case of bad input?
-> If so, I'd like to make it as hex2bin_safe().
+On Mon, 2011-07-18 at 10:45 -0700, David Miller wrote:
+> From: Joe Perches <joe@perches.com>
+> Date: Mon, 18 Jul 2011 07:50:33 -0700
+> > Commit 726b65ad444d ("tulip: Convert uses of KERN_DEBUG") enabled
+> > some old previously inactive uses of pr_debug converted by
+> > commit dde7c8ef1679 ("tulip/dmfe.c: Use dev_<level> and pr_<level>").
+> > Remove these pr_debugs.
+> > Signed-off-by: Joe Perches <joe@perches.com>
+> Applied.
 
-> ----------------------------------------
-> [PATCH] Add error check to hex2bin().
-> 
-> Since converting 2 hexadecimal letters into a byte with error checks is
-> commonly used, we can replace multiple hex_to_bin() calls with single hex2bin()
-> call by changing hex2bin() to do error checks.
-> 
-> Signed-off-by: Tetsuo Handa <penguin-kernel@I=love.SAKURA.ne.jp>
-> ---
-> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-> index 953352a..186e9fc 100644
-> --- a/include/linux/kernel.h
-> +++ b/include/linux/kernel.h
-> @@ -374,7 +374,7 @@ static inline char *pack_hex_byte(char *buf, u8 byte)
->  }
-> 
->  extern int hex_to_bin(char ch);
-> -extern void hex2bin(u8 *dst, const char *src, size_t count);
-> +extern bool hex2bin(u8 *dst, const char *src, size_t count);
-> 
->  /*
->   * General tracing related utility functions - trace_printk(),
-> diff --git a/lib/hexdump.c b/lib/hexdump.c
-> index f5fe6ba..1524002 100644
-> --- a/lib/hexdump.c
-> +++ b/lib/hexdump.c
-> @@ -38,14 +38,22 @@ EXPORT_SYMBOL(hex_to_bin);
->   * @dst: binary result
->   * @src: ascii hexadecimal string
->   * @count: result length
-> + *
-> + * Returns true on success, false in case of bad input.
->   */
-> -void hex2bin(u8 *dst, const char *src, size_t count)
-> +bool hex2bin(u8 *dst, const char *src, size_t count)
->  {
->  	while (count--) {
-> -		*dst = hex_to_bin(*src++) << 4;
-> -		*dst += hex_to_bin(*src++);
-> -		dst++;
-> +		int c = hex_to_bin(*src++);
-> +		int d;
+I believe this should go into current if you push
+one more to Linus or maybe stable for 3.0.
 
-Missing blank line here.
-
-> +		if (c < 0)
-> +			return false;
-> +		d = hex_to_bin(*src++);
-> +		if (d < 0)
-> +			return false;
-> +		*dst++ = (c << 4) | d;
->  	}
-> +	return true;
->  }
->  EXPORT_SYMBOL(hex2bin);
-
-We probably don't need to define a separate 'safe' function.
-
-Instead of changing the existing code to short circuit out and return a
-value, does only adding the return value work?  Something like:
-
-        bool ret = true;
-        int c, d;
-
-        while (count--) {
-                c = hex_to_bin(*src++);
-                d = hex_to_bin(*src++);
-                *dst++ = (c << 4) | d;
-
-                if (c < 0 || d < 0)
-                        ret = false;
-        }
-        return ret;
-
-thanks,
-
-Mimi
-
-> In message "Re: [PATCH] net: can: remove custom hex_to_bin()",
-> Andy Shevchenko wrote:
-> > On Mon, 2011-07-18 at 20:41 +0900, Tetsuo Handa wrote: 
-> > > Andy Shevchenko wrote:
-> > > >  	for (i = 0, dlc_pos++; i < cf.can_dlc; i++) {
-> > > > -
-> > > > -		tmp = asc2nibble(sl->rbuff[dlc_pos++]);
-> > > > -		if (tmp > 0x0F)
-> > > > +		tmp = hex_to_bin(sl->rbuff[dlc_pos++]);
-> > > > +		if (tmp < 0)
-> > > >  			return;
-> > > >  		cf.data[i] = (tmp << 4);
-> > > > -		tmp = asc2nibble(sl->rbuff[dlc_pos++]);
-> > > > -		if (tmp > 0x0F)
-> > > > +		tmp = hex_to_bin(sl->rbuff[dlc_pos++]);
-> > > > +		if (tmp < 0)
-> > > >  			return;
-> > > >  		cf.data[i] |= tmp;
-> > > >  	}
-> > > 
-> > > What about changing
-> > > 
-> > >   void hex2bin(u8 *dst, const char *src, size_t count)
-> > > 
-> > > to
-> > > 
-> > >   bool hex2bin(u8 *dst, const char *src, size_t count)
-> > > 
-> > > in order to do error checks like
-> > > 
-> > > bool hex2bin_with_validation(u8 *dst, const char *src, size_t count)
-> > > {
-> > > 	while (count--) {
-> > > 		int c = hex_to_bin(*src++);
-> > > 		int d;
-> > > 		if (c < 0)
-> > > 			return false;
-> > > 		d = hex_to_bin(*src++)
-> > > 		if (d < 0)
-> > > 			return false;
-> > > 		*dst++ = (c << 4) | d;
-> > > 	}
-> > > 	return true;
-> > > }
-> > > 
-> > > and use hex2bin() rather than hex_to_bin()?
-> > Perhaps, good idea. Could you submit a patch?
-> > 
-> > -- 
-> > Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> > Intel Finland Oy
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
+cheers, Joe
 
