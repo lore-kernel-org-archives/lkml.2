@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753920Ab1GRIz4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 04:55:56 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:44696 "EHLO smtps.tip.net.au"
+	id S1754254Ab1GRI4T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 04:56:19 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:44803 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750758Ab1GRIzz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 04:55:55 -0400
-Date: Mon, 18 Jul 2011 18:55:50 +1000
+	id S1753554Ab1GRI4Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 04:56:16 -0400
+Date: Mon, 18 Jul 2011 18:56:08 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Subject: linux-next: manual merge of the akpm tree with the vfs tree
-Message-Id: <20110718185550.566328117558bea28395ca30@canb.auug.org.au>
+        Jonas Bonn <jonas@southpole.se>
+Subject: linux-next: manual merge of the akpm tree with the openrisc tree
+Message-Id: <20110718185608.97377aa900b014aa010830a2@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__18_Jul_2011_18_56_08_+1000_Ld2MedcJAZznZge+"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Mon__18_Jul_2011_18_56_08_+1000_Ld2MedcJAZznZge+
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
 Hi Andrew,
 
 Today's linux-next merge of the scsi-post-merge tree got a conflict in
-mm/truncate.c between commit ba96a361e21b ("fs: kill i_alloc_sem") from
-the vfs tree and commit "Use consistent variable names in
-truncate_pagecache(), truncate_setsize()" from the akpm tree.
+arch/x86/include/asm/delay.h between commit 10f53642f115 ("asm-generic:
+move archictures to common delay.h") from the openrisc tree and commit
+"With a non-constant 8-bit argument, a call to udelay() generates a
+warning:" from the akpm tree.
 
-I fixed it up (see below) and can carry the fix as necessary.
--- 
+I just dropped this patch from the akpm tree as the former commit
+consolidated this code into asm-generic/delay.h (which doesn't solve the
+problem).
+--=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-diff --cc mm/truncate.c
-index 003c6c6,a87d838..0000000
---- a/mm/truncate.c
-+++ b/mm/truncate.c
-@@@ -622,11 -625,12 +625,11 @@@ int vmtruncate_range(struct inode *inod
-  		return -ENOSYS;
-  
-  	mutex_lock(&inode->i_mutex);
- -	down_write(&inode->i_alloc_sem);
- +	inode_dio_wait(inode);
-- 	unmap_mapping_range(mapping, offset, (end - offset), 1);
-- 	inode->i_op->truncate_range(inode, offset, end);
-+ 	unmap_mapping_range(mapping, holebegin, holelen, 1);
-+ 	inode->i_op->truncate_range(inode, lstart, lend);
-  	/* unmap again to remove racily COWed private pages */
-- 	unmap_mapping_range(mapping, offset, (end - offset), 1);
-+ 	unmap_mapping_range(mapping, holebegin, holelen, 1);
- -	up_write(&inode->i_alloc_sem);
-  	mutex_unlock(&inode->i_mutex);
-  
-  	return 0;
+--Signature=_Mon__18_Jul_2011_18_56_08_+1000_Ld2MedcJAZznZge+
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOI/UoAAoJEDMEi1NhKgbsxiIH/jyGpGvfWmtiifRS04MsH68c
+Nwzn5OOudRFNr7qi9ff055y0DZ8nLrF7NX1ZkGejyIfoY6iEW0ihPyotPtHhFY70
+jscCPE08yHl8ZKGEyV4fEQsZq2zexeyNpnlpwqEz6Q6Ox0x+nshxrG7aDPg3P5Fq
+Dt0viYKf0K5Duit+xpAGj6whXFzeLeQY3NY8+lAcN2caTUOFQwQtQCUrnaJ7heVu
+iuQ8hLDNXECHX2QyiHc5Wo+2jq727V82VXkAp1uTQoSjjjY7oz9jzvOBei+jyC0s
+cBxezWkTLoJC+dt9VLUXAMa/a+EC/4iOI4rYKFzNo85ljGzDk9iOn+wmcg/9ESg=
+=LDDa
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__18_Jul_2011_18_56_08_+1000_Ld2MedcJAZznZge+--
