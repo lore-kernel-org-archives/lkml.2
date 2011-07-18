@@ -1,359 +1,519 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750745Ab1GRNg6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 09:36:58 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:46904 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991Ab1GRNg5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 09:36:57 -0400
-Date: Mon, 18 Jul 2011 08:36:51 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Daniel Barkalow <barkalow@iabervon.org>,
-        Christoph Hellwig <hch@tuxera.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Problems with hfsplus on ipods in 2.6.38+
-Message-ID: <20110718133651.GA19552@thinkpad-t410>
-Mail-Followup-To: Daniel Barkalow <barkalow@iabervon.org>,
-	Christoph Hellwig <hch@tuxera.com>, linux-kernel@vger.kernel.org
-References: <alpine.LNX.2.00.1107131942190.2056@iabervon.org>
- <20110714135302.GA28501@thinkpad-t410>
- <alpine.LNX.2.00.1107141330370.2056@iabervon.org>
- <alpine.LNX.2.00.1107142116260.2056@iabervon.org>
- <20110715143900.GB19063@thinkpad-t410>
+	id S1752262Ab1GRNsi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 09:48:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23035 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750991Ab1GRNsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 09:48:36 -0400
+Date: Mon, 18 Jul 2011 16:48:46 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, jj@chaosbits.net
+Subject: [PATCHv11] vhost: vhost TX zero-copy support
+Message-ID: <20110718134846.GA7107@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110715143900.GB19063@thinkpad-t410>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 15, 2011 at 09:39:00AM -0500, Seth Forshee wrote:
-> What I also see are GPFs in memory allocation code, which is what I
-> believe others have seen with my patch, and so far I haven't seen those
-> with the reversions. So I'm suspecting memory corruption, but I don't
-> yet see where the corruption is coming form. I found one problem, but I
-> don't suspect it's responsible for the GPFs.
+>From: Shirley Ma <mashirle@us.ibm.com>
 
-I had some torture tests running over the weekend with the "one
-problem" mentioned above fixed, which was a couple of kfrees that were
-still using the old vhdr pointers. There were no oopses over a couple of
-days of testing. I've posted a new build on the bug in launchpad in
-hopes of getting some testing from those who were getting oopses quite
-readily. The updated patch follows.
+This adds experimental zero copy support in vhost-net,
+disabled by default. To enable, set
+experimental_zcopytx module option to 1.
 
+This patch maintains the outstanding userspace buffers in the
+sequence it is delivered to vhost. The outstanding userspace buffers
+will be marked as done once the lower device buffers DMA has finished.
+This is monitored through last reference of kfree_skb callback. Two
+buffer indices are used for this purpose.
 
->From fee1338c82f15b1558f960e5024948bd460af6c8 Mon Sep 17 00:00:00 2001
-From: Seth Forshee <seth.forshee@canonical.com>
-Date: Fri, 27 May 2011 15:10:51 -0500
-Subject: [PATCH] hfsplus: ensure bio requests are not smaller than the hardware sectors
+The vhost-net device passes the userspace buffers info to lower device
+skb through message control. DMA done status check and guest
+notification are handled by handle_tx: in the worst case is all buffers
+in the vq are in pending/done status, so we need to notify guest to
+release DMA done buffers first before we get any new buffers from the
+vq.
 
-Currently all bio requests are 512 bytes, which may fail for media
-whose physical sector size is larger than this. Ensure these
-requests are not smaller than the block device logical block size.
+One known problem is that if the guest stops submitting
+buffers, buffers might never get used until some
+further action, e.g. device reset. This does not
+seem to affect linux guests.
 
-BugLink: http://bugs.launchpad.net/bugs/734883
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+Signed-off-by: Shirley <xma@us.ibm.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- fs/hfsplus/hfsplus_fs.h |   16 ++++++++-
- fs/hfsplus/part_tbl.c   |   32 ++++++++++--------
- fs/hfsplus/super.c      |   12 +++---
- fs/hfsplus/wrapper.c    |   83 +++++++++++++++++++++++++++++++++++-----------
- 4 files changed, 101 insertions(+), 42 deletions(-)
 
-diff --git a/fs/hfsplus/hfsplus_fs.h b/fs/hfsplus/hfsplus_fs.h
-index d685752..4e7f64b 100644
---- a/fs/hfsplus/hfsplus_fs.h
-+++ b/fs/hfsplus/hfsplus_fs.h
-@@ -13,6 +13,7 @@
- #include <linux/fs.h>
+I run some light tests and this seems to work fine for me.  Given that
+the new functionality is disabled by default, it seems a pretty safe
+patch to merge for 3.1.
+
+Changes from v10:
+	don't leak ubuf_info
+	don't allocate ubuf_info for non zero copy vqs
+Changes from v9:
+	coding style prettification suggested by Jesper Juhl
+
+ drivers/vhost/net.c   |   77 +++++++++++++++++++++++++++++-
+ drivers/vhost/vhost.c |  128 +++++++++++++++++++++++++++++++++++++++++++------
+ drivers/vhost/vhost.h |   31 ++++++++++++
+ 3 files changed, 220 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index e224a92..f0fd52c 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -12,6 +12,7 @@
+ #include <linux/virtio_net.h>
+ #include <linux/miscdevice.h>
+ #include <linux/module.h>
++#include <linux/moduleparam.h>
  #include <linux/mutex.h>
- #include <linux/buffer_head.h>
-+#include <linux/blkdev.h>
- #include "hfsplus_raw.h"
+ #include <linux/workqueue.h>
+ #include <linux/rcupdate.h>
+@@ -28,10 +29,18 @@
  
- #define DBG_BNODE_REFS	0x00000001
-@@ -110,7 +111,9 @@ struct hfsplus_vh;
- struct hfs_btree;
+ #include "vhost.h"
  
- struct hfsplus_sb_info {
-+	void *s_vhdr_buf;
- 	struct hfsplus_vh *s_vhdr;
-+	void *s_backup_vhdr_buf;
- 	struct hfsplus_vh *s_backup_vhdr;
- 	struct hfs_btree *ext_tree;
- 	struct hfs_btree *cat_tree;
-@@ -258,6 +261,15 @@ struct hfsplus_readdir_data {
- 	struct hfsplus_cat_key key;
++static int experimental_zcopytx;
++module_param(experimental_zcopytx, int, 0444);
++MODULE_PARM_DESC(experimental_zcopytx, "Enable Experimental Zero Copy TX");
++
+ /* Max number of bytes transferred before requeueing the job.
+  * Using this limit prevents one virtqueue from starving others. */
+ #define VHOST_NET_WEIGHT 0x80000
+ 
++/* MAX number of TX used buffers for outstanding zerocopy */
++#define VHOST_MAX_PEND 128
++#define VHOST_GOODCOPY_LEN 256
++
+ enum {
+ 	VHOST_NET_VQ_RX = 0,
+ 	VHOST_NET_VQ_TX = 1,
+@@ -54,6 +63,12 @@ struct vhost_net {
+ 	enum vhost_net_poll_state tx_poll_state;
  };
  
-+/*
-+ * Find minimum acceptible I/O size for an hfsplus sb.
-+ */
-+static inline unsigned short hfsplus_min_io_size(struct super_block *sb)
++static bool vhost_sock_zcopy(struct socket *sock)
 +{
-+	return max_t(unsigned short, bdev_logical_block_size(sb->s_bdev),
-+		     HFSPLUS_SECTOR_SIZE);
++	return unlikely(experimental_zcopytx) &&
++		sock_flag(sock->sk, SOCK_ZEROCOPY);
 +}
 +
- #define hfs_btree_open hfsplus_btree_open
- #define hfs_btree_close hfsplus_btree_close
- #define hfs_btree_write hfsplus_btree_write
-@@ -436,8 +448,8 @@ int hfsplus_compare_dentry(const struct dentry *parent,
- /* wrapper.c */
- int hfsplus_read_wrapper(struct super_block *);
- int hfs_part_find(struct super_block *, sector_t *, sector_t *);
--int hfsplus_submit_bio(struct block_device *bdev, sector_t sector,
--		void *data, int rw);
-+int hfsplus_submit_bio(struct super_block *sb, sector_t sector,
-+		void *buf, void **data, int rw);
+ /* Pop first len bytes from iovec. Return number of segments used. */
+ static int move_iovec_hdr(struct iovec *from, struct iovec *to,
+ 			  size_t len, int iov_count)
+@@ -129,6 +144,8 @@ static void handle_tx(struct vhost_net *net)
+ 	int err, wmem;
+ 	size_t hdr_size;
+ 	struct socket *sock;
++	struct vhost_ubuf_ref *uninitialized_var(ubufs);
++	bool zcopy;
  
- /* time macros */
- #define __hfsp_mt2ut(t)		(be32_to_cpu(t) - 2082844800U)
-diff --git a/fs/hfsplus/part_tbl.c b/fs/hfsplus/part_tbl.c
-index 40ad88c..eb355d8 100644
---- a/fs/hfsplus/part_tbl.c
-+++ b/fs/hfsplus/part_tbl.c
-@@ -88,11 +88,12 @@ static int hfs_parse_old_pmap(struct super_block *sb, struct old_pmap *pm,
- 	return -ENOENT;
- }
+ 	/* TODO: check that we are running from vhost_worker? */
+ 	sock = rcu_dereference_check(vq->private_data, 1);
+@@ -149,8 +166,13 @@ static void handle_tx(struct vhost_net *net)
+ 	if (wmem < sock->sk->sk_sndbuf / 2)
+ 		tx_poll_stop(net);
+ 	hdr_size = vq->vhost_hlen;
++	zcopy = vhost_sock_zcopy(sock);
  
--static int hfs_parse_new_pmap(struct super_block *sb, struct new_pmap *pm,
--		sector_t *part_start, sector_t *part_size)
-+static int hfs_parse_new_pmap(struct super_block *sb, void *buf,
-+		struct new_pmap *pm, sector_t *part_start, sector_t *part_size)
- {
- 	struct hfsplus_sb_info *sbi = HFSPLUS_SB(sb);
- 	int size = be32_to_cpu(pm->pmMapBlkCnt);
-+	int buf_size = hfsplus_min_io_size(sb);
- 	int res;
- 	int i = 0;
- 
-@@ -107,11 +108,14 @@ static int hfs_parse_new_pmap(struct super_block *sb, struct new_pmap *pm,
- 		if (++i >= size)
- 			return -ENOENT;
- 
--		res = hfsplus_submit_bio(sb->s_bdev,
--					 *part_start + HFS_PMAP_BLK + i,
--					 pm, READ);
--		if (res)
--			return res;
-+		pm = (struct new_pmap *)((u8 *)pm + HFSPLUS_SECTOR_SIZE);
-+		if ((u8 *)pm - (u8 *)buf >= buf_size) {
-+			res = hfsplus_submit_bio(sb,
-+						 *part_start + HFS_PMAP_BLK + i,
-+						 buf, (void **)&pm, READ);
-+			if (res)
-+				return res;
+ 	for (;;) {
++		/* Release DMAs done buffers first */
++		if (zcopy)
++			vhost_zerocopy_signal_used(vq);
++
+ 		head = vhost_get_vq_desc(&net->dev, vq, vq->iov,
+ 					 ARRAY_SIZE(vq->iov),
+ 					 &out, &in,
+@@ -166,6 +188,13 @@ static void handle_tx(struct vhost_net *net)
+ 				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
+ 				break;
+ 			}
++			/* If more outstanding DMAs, queue the work */
++			if (unlikely(vq->upend_idx - vq->done_idx >
++				     VHOST_MAX_PEND)) {
++				tx_poll_start(net, sock);
++				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
++				break;
++			}
+ 			if (unlikely(vhost_enable_notify(&net->dev, vq))) {
+ 				vhost_disable_notify(&net->dev, vq);
+ 				continue;
+@@ -188,9 +217,39 @@ static void handle_tx(struct vhost_net *net)
+ 			       iov_length(vq->hdr, s), hdr_size);
+ 			break;
+ 		}
++		/* use msg_control to pass vhost zerocopy ubuf info to skb */
++		if (zcopy) {
++			vq->heads[vq->upend_idx].id = head;
++			if (len < VHOST_GOODCOPY_LEN) {
++				/* copy don't need to wait for DMA done */
++				vq->heads[vq->upend_idx].len =
++							VHOST_DMA_DONE_LEN;
++				msg.msg_control = NULL;
++				msg.msg_controllen = 0;
++				ubufs = NULL;
++			} else {
++				struct ubuf_info *ubuf = &vq->ubuf_info[head];
++
++				vq->heads[vq->upend_idx].len = len;
++				ubuf->callback = vhost_zerocopy_callback;
++				ubuf->arg = vq->ubufs;
++				ubuf->desc = vq->upend_idx;
++				msg.msg_control = ubuf;
++				msg.msg_controllen = sizeof(ubuf);
++				ubufs = vq->ubufs;
++				kref_get(&ubufs->kref);
++			}
++			vq->upend_idx = (vq->upend_idx + 1) % UIO_MAXIOV;
 +		}
- 	} while (pm->pmSig == cpu_to_be16(HFS_NEW_PMAP_MAGIC));
- 
- 	return -ENOENT;
-@@ -124,15 +128,15 @@ static int hfs_parse_new_pmap(struct super_block *sb, struct new_pmap *pm,
- int hfs_part_find(struct super_block *sb,
- 		sector_t *part_start, sector_t *part_size)
+ 		/* TODO: Check specific error and bomb out unless ENOBUFS? */
+ 		err = sock->ops->sendmsg(NULL, sock, &msg, len);
+ 		if (unlikely(err < 0)) {
++			if (zcopy) {
++				if (ubufs)
++					vhost_ubuf_put(ubufs);
++				vq->upend_idx = ((unsigned)vq->upend_idx - 1) %
++					UIO_MAXIOV;
++			}
+ 			vhost_discard_vq_desc(vq, 1);
+ 			tx_poll_start(net, sock);
+ 			break;
+@@ -198,7 +257,8 @@ static void handle_tx(struct vhost_net *net)
+ 		if (err != len)
+ 			pr_debug("Truncated TX packet: "
+ 				 " len %d != %zd\n", err, len);
+-		vhost_add_used_and_signal(&net->dev, vq, head, 0);
++		if (!zcopy)
++			vhost_add_used_and_signal(&net->dev, vq, head, 0);
+ 		total_len += len;
+ 		if (unlikely(total_len >= VHOST_NET_WEIGHT)) {
+ 			vhost_poll_queue(&vq->poll);
+@@ -603,6 +663,7 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
  {
--	void *data;
-+	void *buf, *data;
- 	int res;
+ 	struct socket *sock, *oldsock;
+ 	struct vhost_virtqueue *vq;
++	struct vhost_ubuf_ref *ubufs, *oldubufs = NULL;
+ 	int r;
  
--	data = kmalloc(HFSPLUS_SECTOR_SIZE, GFP_KERNEL);
--	if (!data)
-+	buf = kmalloc(hfsplus_min_io_size(sb), GFP_KERNEL);
-+	if (!buf)
- 		return -ENOMEM;
+ 	mutex_lock(&n->dev.mutex);
+@@ -632,6 +693,13 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
+ 	oldsock = rcu_dereference_protected(vq->private_data,
+ 					    lockdep_is_held(&vq->mutex));
+ 	if (sock != oldsock) {
++		ubufs = vhost_ubuf_alloc(vq, sock && vhost_sock_zcopy(sock));
++		if (IS_ERR(ubufs)) {
++			r = PTR_ERR(ubufs);
++			goto err_ubufs;
++		}
++		oldubufs = vq->ubufs;
++		vq->ubufs = ubufs;
+ 		vhost_net_disable_vq(n, vq);
+ 		rcu_assign_pointer(vq->private_data, sock);
+ 		vhost_net_enable_vq(n, vq);
+@@ -639,6 +707,9 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
  
--	res = hfsplus_submit_bio(sb->s_bdev, *part_start + HFS_PMAP_BLK,
--				 data, READ);
-+	res = hfsplus_submit_bio(sb, *part_start + HFS_PMAP_BLK,
-+				 buf, &data, READ);
- 	if (res)
- 		goto out;
+ 	mutex_unlock(&vq->mutex);
  
-@@ -141,13 +145,13 @@ int hfs_part_find(struct super_block *sb,
- 		res = hfs_parse_old_pmap(sb, data, part_start, part_size);
- 		break;
- 	case HFS_NEW_PMAP_MAGIC:
--		res = hfs_parse_new_pmap(sb, data, part_start, part_size);
-+		res = hfs_parse_new_pmap(sb, buf, data, part_start, part_size);
- 		break;
- 	default:
- 		res = -ENOENT;
- 		break;
- 	}
- out:
--	kfree(data);
-+	kfree(buf);
- 	return res;
++	if (oldubufs)
++		vhost_ubuf_put_and_wait(oldubufs);
++
+ 	if (oldsock) {
+ 		vhost_net_flush_vq(n, index);
+ 		fput(oldsock->file);
+@@ -647,6 +718,8 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
+ 	mutex_unlock(&n->dev.mutex);
+ 	return 0;
+ 
++err_ubufs:
++	fput(sock->file);
+ err_vq:
+ 	mutex_unlock(&vq->mutex);
+ err:
+@@ -776,6 +849,8 @@ static struct miscdevice vhost_net_misc = {
+ 
+ static int vhost_net_init(void)
+ {
++	if (experimental_zcopytx)
++		vhost_enable_zcopy(VHOST_NET_VQ_TX);
+ 	return misc_register(&vhost_net_misc);
  }
-diff --git a/fs/hfsplus/super.c b/fs/hfsplus/super.c
-index 84a47b7..ab4857b 100644
---- a/fs/hfsplus/super.c
-+++ b/fs/hfsplus/super.c
-@@ -197,17 +197,17 @@ int hfsplus_sync_fs(struct super_block *sb, int wait)
- 		write_backup = 1;
- 	}
+ module_init(vhost_net_init);
+diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+index ea966b3..5ef2f62 100644
+--- a/drivers/vhost/vhost.c
++++ b/drivers/vhost/vhost.c
+@@ -37,6 +37,8 @@ enum {
+ 	VHOST_MEMORY_F_LOG = 0x1,
+ };
  
--	error2 = hfsplus_submit_bio(sb->s_bdev,
-+	error2 = hfsplus_submit_bio(sb,
- 				   sbi->part_start + HFSPLUS_VOLHEAD_SECTOR,
--				   sbi->s_vhdr, WRITE_SYNC);
-+				   sbi->s_vhdr_buf, NULL, WRITE_SYNC);
- 	if (!error)
- 		error = error2;
- 	if (!write_backup)
- 		goto out;
++static unsigned vhost_zcopy_mask __read_mostly;
++
+ #define vhost_used_event(vq) ((u16 __user *)&vq->avail->ring[vq->num])
+ #define vhost_avail_event(vq) ((u16 __user *)&vq->used->ring[vq->num])
  
--	error2 = hfsplus_submit_bio(sb->s_bdev,
-+	error2 = hfsplus_submit_bio(sb,
- 				  sbi->part_start + sbi->sect_count - 2,
--				  sbi->s_backup_vhdr, WRITE_SYNC);
-+				  sbi->s_backup_vhdr_buf, NULL, WRITE_SYNC);
- 	if (!error)
- 		error2 = error;
- out:
-@@ -251,8 +251,8 @@ static void hfsplus_put_super(struct super_block *sb)
- 	hfs_btree_close(sbi->ext_tree);
- 	iput(sbi->alloc_file);
- 	iput(sbi->hidden_dir);
--	kfree(sbi->s_vhdr);
--	kfree(sbi->s_backup_vhdr);
-+	kfree(sbi->s_vhdr_buf);
-+	kfree(sbi->s_backup_vhdr_buf);
- 	unload_nls(sbi->nls);
- 	kfree(sb->s_fs_info);
- 	sb->s_fs_info = NULL;
-diff --git a/fs/hfsplus/wrapper.c b/fs/hfsplus/wrapper.c
-index 4ac88ff..e3881a1 100644
---- a/fs/hfsplus/wrapper.c
-+++ b/fs/hfsplus/wrapper.c
-@@ -31,25 +31,67 @@ static void hfsplus_end_io_sync(struct bio *bio, int err)
- 	complete(bio->bi_private);
+@@ -179,6 +181,9 @@ static void vhost_vq_reset(struct vhost_dev *dev,
+ 	vq->call_ctx = NULL;
+ 	vq->call = NULL;
+ 	vq->log_ctx = NULL;
++	vq->upend_idx = 0;
++	vq->done_idx = 0;
++	vq->ubufs = NULL;
  }
  
--int hfsplus_submit_bio(struct block_device *bdev, sector_t sector,
--		void *data, int rw)
-+/*
-+ * hfsplus_submit_bio - Perfrom block I/O
-+ * @sb: super block of volume for I/O
-+ * @sector: block to read or write, for blocks of HFSPLUS_SECTOR_SIZE bytes
-+ * @buf: buffer for I/O
-+ * @data: output pointer for location of requested data
-+ * @rw: direction of I/O
-+ *
-+ * The unit of I/O is hfsplus_min_io_size(sb), which may be bigger than
-+ * HFSPLUS_SECTOR_SIZE, and @buf must be sized accordingly. On reads
-+ * @data will return a pointer to the start of the requested sector,
-+ * which may not be the same location as @buf.
-+ *
-+ * If @sector is not aligned to the bdev logical block size it will
-+ * be rounded down. For writes this means that @buf should contain data
-+ * that starts at the rounded-down address. As long as the data was
-+ * read using hfsplus_submit_bio() and the same buffer is used things
-+ * will work correctly.
+ static int vhost_worker(void *data)
+@@ -225,10 +230,28 @@ static int vhost_worker(void *data)
+ 	return 0;
+ }
+ 
++static void vhost_vq_free_iovecs(struct vhost_virtqueue *vq)
++{
++	kfree(vq->indirect);
++	vq->indirect = NULL;
++	kfree(vq->log);
++	vq->log = NULL;
++	kfree(vq->heads);
++	vq->heads = NULL;
++	kfree(vq->ubuf_info);
++	vq->ubuf_info = NULL;
++}
++
++void vhost_enable_zcopy(int vq)
++{
++	vhost_zcopy_mask |= 0x1 << vq;
++}
++
+ /* Helper to allocate iovec buffers for all vqs. */
+ static long vhost_dev_alloc_iovecs(struct vhost_dev *dev)
+ {
+ 	int i;
++	bool zcopy;
+ 
+ 	for (i = 0; i < dev->nvqs; ++i) {
+ 		dev->vqs[i].indirect = kmalloc(sizeof *dev->vqs[i].indirect *
+@@ -237,19 +260,21 @@ static long vhost_dev_alloc_iovecs(struct vhost_dev *dev)
+ 					  GFP_KERNEL);
+ 		dev->vqs[i].heads = kmalloc(sizeof *dev->vqs[i].heads *
+ 					    UIO_MAXIOV, GFP_KERNEL);
+-
++		zcopy = vhost_zcopy_mask & (0x1 << i);
++		if (zcopy)
++			dev->vqs[i].ubuf_info =
++				kmalloc(sizeof *dev->vqs[i].ubuf_info *
++					UIO_MAXIOV, GFP_KERNEL);
+ 		if (!dev->vqs[i].indirect || !dev->vqs[i].log ||
+-			!dev->vqs[i].heads)
++			!dev->vqs[i].heads ||
++			(zcopy && !dev->vqs[i].ubuf_info))
+ 			goto err_nomem;
+ 	}
+ 	return 0;
+ 
+ err_nomem:
+-	for (; i >= 0; --i) {
+-		kfree(dev->vqs[i].indirect);
+-		kfree(dev->vqs[i].log);
+-		kfree(dev->vqs[i].heads);
+-	}
++	for (; i >= 0; --i)
++		vhost_vq_free_iovecs(&dev->vqs[i]);
+ 	return -ENOMEM;
+ }
+ 
+@@ -257,14 +282,8 @@ static void vhost_dev_free_iovecs(struct vhost_dev *dev)
+ {
+ 	int i;
+ 
+-	for (i = 0; i < dev->nvqs; ++i) {
+-		kfree(dev->vqs[i].indirect);
+-		dev->vqs[i].indirect = NULL;
+-		kfree(dev->vqs[i].log);
+-		dev->vqs[i].log = NULL;
+-		kfree(dev->vqs[i].heads);
+-		dev->vqs[i].heads = NULL;
+-	}
++	for (i = 0; i < dev->nvqs; ++i)
++		vhost_vq_free_iovecs(&dev->vqs[i]);
+ }
+ 
+ long vhost_dev_init(struct vhost_dev *dev,
+@@ -287,6 +306,7 @@ long vhost_dev_init(struct vhost_dev *dev,
+ 		dev->vqs[i].log = NULL;
+ 		dev->vqs[i].indirect = NULL;
+ 		dev->vqs[i].heads = NULL;
++		dev->vqs[i].ubuf_info = NULL;
+ 		dev->vqs[i].dev = dev;
+ 		mutex_init(&dev->vqs[i].mutex);
+ 		vhost_vq_reset(dev, dev->vqs + i);
+@@ -390,6 +410,30 @@ long vhost_dev_reset_owner(struct vhost_dev *dev)
+ 	return 0;
+ }
+ 
++/* In case of DMA done not in order in lower device driver for some reason.
++ * upend_idx is used to track end of used idx, done_idx is used to track head
++ * of used idx. Once lower device DMA done contiguously, we will signal KVM
++ * guest used idx.
 + */
-+int hfsplus_submit_bio(struct super_block *sb, sector_t sector,
-+		void *buf, void **data, int rw)
- {
- 	DECLARE_COMPLETION_ONSTACK(wait);
- 	struct bio *bio;
- 	int ret = 0;
-+	unsigned int io_size;
-+	loff_t start;
-+	int offset;
++int vhost_zerocopy_signal_used(struct vhost_virtqueue *vq)
++{
++	int i;
++	int j = 0;
 +
-+	/*
-+	 * Align sector to hardware sector size and find offset. We
-+	 * assume that io_size is a power of two, which _should_
-+	 * be true.
-+	 */
-+	io_size = hfsplus_min_io_size(sb);
-+	start = (loff_t)sector << HFSPLUS_SECTOR_SHIFT;
-+	offset = start & (io_size - 1);
-+	sector &= ~((io_size >> HFSPLUS_SECTOR_SHIFT) - 1);
- 
- 	bio = bio_alloc(GFP_NOIO, 1);
- 	bio->bi_sector = sector;
--	bio->bi_bdev = bdev;
-+	bio->bi_bdev = sb->s_bdev;
- 	bio->bi_end_io = hfsplus_end_io_sync;
- 	bio->bi_private = &wait;
- 
--	/*
--	 * We always submit one sector at a time, so bio_add_page must not fail.
--	 */
--	if (bio_add_page(bio, virt_to_page(data), HFSPLUS_SECTOR_SIZE,
--			 offset_in_page(data)) != HFSPLUS_SECTOR_SIZE)
--		BUG();
-+	if (!(rw & WRITE) && data)
-+		*data = (u8 *)buf + offset;
-+
-+	while (io_size > 0) {
-+		unsigned int page_offset = offset_in_page(buf);
-+		unsigned int len = min_t(unsigned int, PAGE_SIZE - page_offset,
-+					 io_size);
-+
-+		ret = bio_add_page(bio, virt_to_page(buf), len, page_offset);
-+		if (ret != len) {
-+			ret = -EIO;
-+			goto out;
-+		}
-+		io_size -= len;
-+		buf = (u8 *)buf + len;
++	for (i = vq->done_idx; i != vq->upend_idx; i = (i + 1) % UIO_MAXIOV) {
++		if ((vq->heads[i].len == VHOST_DMA_DONE_LEN)) {
++			vq->heads[i].len = VHOST_DMA_CLEAR_LEN;
++			vhost_add_used_and_signal(vq->dev, vq,
++						  vq->heads[i].id, 0);
++			++j;
++		} else
++			break;
 +	}
++	if (j)
++		vq->done_idx = i;
++	return j;
++}
++
+ /* Caller should have device mutex */
+ void vhost_dev_cleanup(struct vhost_dev *dev)
+ {
+@@ -400,6 +444,13 @@ void vhost_dev_cleanup(struct vhost_dev *dev)
+ 			vhost_poll_stop(&dev->vqs[i].poll);
+ 			vhost_poll_flush(&dev->vqs[i].poll);
+ 		}
++		/* Wait for all lower device DMAs done. */
++		if (dev->vqs[i].ubufs)
++			vhost_ubuf_put_and_wait(dev->vqs[i].ubufs);
++
++		/* Signal guest as appropriate. */
++		vhost_zerocopy_signal_used(&dev->vqs[i]);
++
+ 		if (dev->vqs[i].error_ctx)
+ 			eventfd_ctx_put(dev->vqs[i].error_ctx);
+ 		if (dev->vqs[i].error)
+@@ -1486,3 +1537,50 @@ void vhost_disable_notify(struct vhost_dev *dev, struct vhost_virtqueue *vq)
+ 			       &vq->used->flags, r);
+ 	}
+ }
++
++static void vhost_zerocopy_done_signal(struct kref *kref)
++{
++	struct vhost_ubuf_ref *ubufs = container_of(kref, struct vhost_ubuf_ref,
++						    kref);
++	wake_up(&ubufs->wait);
++}
++
++struct vhost_ubuf_ref *vhost_ubuf_alloc(struct vhost_virtqueue *vq,
++					bool zcopy)
++{
++	struct vhost_ubuf_ref *ubufs;
++	/* No zero copy backend? Nothing to count. */
++	if (!zcopy)
++		return NULL;
++	ubufs = kmalloc(sizeof *ubufs, GFP_KERNEL);
++	if (!ubufs)
++		return ERR_PTR(-ENOMEM);
++	kref_init(&ubufs->kref);
++	kref_get(&ubufs->kref);
++	init_waitqueue_head(&ubufs->wait);
++	ubufs->vq = vq;
++	return ubufs;
++}
++
++void vhost_ubuf_put(struct vhost_ubuf_ref *ubufs)
++{
++	kref_put(&ubufs->kref, vhost_zerocopy_done_signal);
++}
++
++void vhost_ubuf_put_and_wait(struct vhost_ubuf_ref *ubufs)
++{
++	kref_put(&ubufs->kref, vhost_zerocopy_done_signal);
++	wait_event(ubufs->wait, !atomic_read(&ubufs->kref.refcount));
++	kfree(ubufs);
++}
++
++void vhost_zerocopy_callback(void *arg)
++{
++	struct ubuf_info *ubuf = arg;
++	struct vhost_ubuf_ref *ubufs = ubuf->arg;
++	struct vhost_virtqueue *vq = ubufs->vq;
++
++	/* set len = 1 to mark this desc buffers done DMA */
++	vq->heads[ubuf->desc].len = VHOST_DMA_DONE_LEN;
++	kref_put(&ubufs->kref, vhost_zerocopy_done_signal);
++}
+diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+index 8e03379..1544b78 100644
+--- a/drivers/vhost/vhost.h
++++ b/drivers/vhost/vhost.h
+@@ -13,6 +13,11 @@
+ #include <linux/virtio_ring.h>
+ #include <asm/atomic.h>
  
- 	submit_bio(rw, bio);
- 	wait_for_completion(&wait);
-@@ -57,8 +99,9 @@ int hfsplus_submit_bio(struct block_device *bdev, sector_t sector,
- 	if (!bio_flagged(bio, BIO_UPTODATE))
- 		ret = -EIO;
++/* This is for zerocopy, used buffer len is set to 1 when lower device DMA
++ * done */
++#define VHOST_DMA_DONE_LEN	1
++#define VHOST_DMA_CLEAR_LEN	0
++
+ struct vhost_device;
  
-+out:
- 	bio_put(bio);
--	return ret;
-+	return ret < 0 ? ret : 0;
+ struct vhost_work;
+@@ -50,6 +55,18 @@ struct vhost_log {
+ 	u64 len;
+ };
+ 
++struct vhost_virtqueue;
++
++struct vhost_ubuf_ref {
++	struct kref kref;
++	wait_queue_head_t wait;
++	struct vhost_virtqueue *vq;
++};
++
++struct vhost_ubuf_ref *vhost_ubuf_alloc(struct vhost_virtqueue *, bool zcopy);
++void vhost_ubuf_put(struct vhost_ubuf_ref *);
++void vhost_ubuf_put_and_wait(struct vhost_ubuf_ref *);
++
+ /* The virtqueue structure describes a queue attached to a device. */
+ struct vhost_virtqueue {
+ 	struct vhost_dev *dev;
+@@ -114,6 +131,16 @@ struct vhost_virtqueue {
+ 	/* Log write descriptors */
+ 	void __user *log_base;
+ 	struct vhost_log *log;
++	/* vhost zerocopy support fields below: */
++	/* last used idx for outstanding DMA zerocopy buffers */
++	int upend_idx;
++	/* first used idx for DMA done zerocopy buffers */
++	int done_idx;
++	/* an array of userspace buffers info */
++	struct ubuf_info *ubuf_info;
++	/* Reference counting for outstanding ubufs.
++	 * Protected by vq mutex. Writers must also take device mutex. */
++	struct vhost_ubuf_ref *ubufs;
+ };
+ 
+ struct vhost_dev {
+@@ -160,6 +187,8 @@ bool vhost_enable_notify(struct vhost_dev *, struct vhost_virtqueue *);
+ 
+ int vhost_log_write(struct vhost_virtqueue *vq, struct vhost_log *log,
+ 		    unsigned int log_num, u64 len);
++void vhost_zerocopy_callback(void *arg);
++int vhost_zerocopy_signal_used(struct vhost_virtqueue *vq);
+ 
+ #define vq_err(vq, fmt, ...) do {                                  \
+ 		pr_debug(pr_fmt(fmt), ##__VA_ARGS__);       \
+@@ -186,4 +215,6 @@ static inline int vhost_has_feature(struct vhost_dev *dev, int bit)
+ 	return acked_features & (1 << bit);
  }
  
- static int hfsplus_read_mdb(void *bufptr, struct hfsplus_wd *wd)
-@@ -147,17 +190,17 @@ int hfsplus_read_wrapper(struct super_block *sb)
- 	}
- 
- 	error = -ENOMEM;
--	sbi->s_vhdr = kmalloc(HFSPLUS_SECTOR_SIZE, GFP_KERNEL);
--	if (!sbi->s_vhdr)
-+	sbi->s_vhdr_buf = kmalloc(hfsplus_min_io_size(sb), GFP_KERNEL);
-+	if (!sbi->s_vhdr_buf)
- 		goto out;
--	sbi->s_backup_vhdr = kmalloc(HFSPLUS_SECTOR_SIZE, GFP_KERNEL);
--	if (!sbi->s_backup_vhdr)
-+	sbi->s_backup_vhdr_buf = kmalloc(hfsplus_min_io_size(sb), GFP_KERNEL);
-+	if (!sbi->s_backup_vhdr_buf)
- 		goto out_free_vhdr;
- 
- reread:
--	error = hfsplus_submit_bio(sb->s_bdev,
--				   part_start + HFSPLUS_VOLHEAD_SECTOR,
--				   sbi->s_vhdr, READ);
-+	error = hfsplus_submit_bio(sb, part_start + HFSPLUS_VOLHEAD_SECTOR,
-+				   sbi->s_vhdr_buf, (void **)&sbi->s_vhdr,
-+				   READ);
- 	if (error)
- 		goto out_free_backup_vhdr;
- 
-@@ -186,9 +229,9 @@ reread:
- 		goto reread;
- 	}
- 
--	error = hfsplus_submit_bio(sb->s_bdev,
--				   part_start + part_size - 2,
--				   sbi->s_backup_vhdr, READ);
-+	error = hfsplus_submit_bio(sb, part_start + part_size - 2,
-+				   sbi->s_backup_vhdr_buf,
-+				   (void **)&sbi->s_backup_vhdr, READ);
- 	if (error)
- 		goto out_free_backup_vhdr;
- 
++void vhost_enable_zcopy(int vq);
++
+ #endif
 -- 
-1.7.4.1
+1.7.5.53.gc233e
