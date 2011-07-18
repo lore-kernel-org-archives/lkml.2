@@ -1,40 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756605Ab1GRLsw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 07:48:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51705 "EHLO mx1.redhat.com"
+	id S1756610Ab1GRLzV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 07:55:21 -0400
+Received: from gate.crashing.org ([63.228.1.57]:53732 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756579Ab1GRLsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 07:48:51 -0400
-Date: Mon, 18 Jul 2011 14:48:34 +0300
-From: Gleb Natapov <gleb@redhat.com>
+	id S1756399Ab1GRLzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 07:55:20 -0400
+Subject: Re: current_thread_info() vs task_thread_info(current)
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 To: Peter Zijlstra <peterz@infradead.org>
 Cc: linux-arch@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         "Paul E. McKenney" <paulmck@us.ibm.com>
-Subject: Re: current_thread_info() vs task_thread_info(current)
-Message-ID: <20110718114834.GJ2400@redhat.com>
+In-Reply-To: <1310988183.13765.56.camel@twins>
 References: <1310988183.13765.56.camel@twins>
- <20110718113600.GI2400@redhat.com>
- <1310989490.13765.57.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1310989490.13765.57.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 18 Jul 2011 21:54:57 +1000
+Message-ID: <1310990097.25044.307.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 18, 2011 at 01:44:50PM +0200, Peter Zijlstra wrote:
-> On Mon, 2011-07-18 at 14:36 +0300, Gleb Natapov wrote:
-> 
-> > Why not use per cpu kernel_stack variable on all arches as x86_64 does?
-> > How big the advantage of using stack pointer to find current thread info is?
-> 
-> One less load I imagine.
-Oh, yes of course. But what I mean is that if using kernel_stack is good
-enough for most popular architecture (x86_64) may be it is good enough for
-other architectures too?
+On Mon, 2011-07-18 at 13:23 +0200, Peter Zijlstra wrote:
 
---
-			Gleb.
+> So how are we going to solve this? Naively I'd think that
+> current_thread_info() is short for task_thread_info(current), and thus
+> the platforms for where this isn't true are broken.
+> 
+> I mean, what use is the thread_info not of a thread?
+> 
+> Comments?
+
+Thomas just hit a bug in the platform code of said platform (powerpc
+heh ?) :-)
+
+We do it right for hard IRQs and for some reason never did it right for
+softirqs.
+
+The code is like this for the former:
+
+static inline void handle_one_irq(unsigned int irq)
+{
+
+        .../...
+
+	call_handle_irq(irq, desc, irqtp, desc->handle_irq);
+	current->thread.ksp_limit = saved_sp_limit;
+	irqtp->task = NULL;
+
+	/* Set any flag that may have been set on the
+	 * alternate stack
+	 */
+	if (irqtp->flags)
+		set_bits(irqtp->flags, &curtp->flags);
+}
+
+So what we need, I suppose is to add those two last line to
+do_softirq_onstack() as well.
+
+Now indeed i386 needs a similar treatment on both hard and soft
+irqs (along with getting rid of that stupid duplication of
+call_on_stack in there, I don't think it's worth making the code
+horrible like that to save one clobber and PeterZ reckons we can
+probably avoid it using always_inline anyways).
+
+I'll let you guys sort i386 out tho, I'll look at fixing ppc tomorrow :-)
+
+Cheers,
+Ben.
+ 
+
