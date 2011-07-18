@@ -1,54 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755001Ab1GRTUo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 15:20:44 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:54657 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754786Ab1GRTUn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 15:20:43 -0400
-Date: Mon, 18 Jul 2011 20:20:38 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] vfs: fix race in rcu lookup of pruned dentry
-Message-ID: <20110718192038.GG11013@ZenIV.linux.org.uk>
-References: <20110717231610.GR11013@ZenIV.linux.org.uk>
- <CA+55aFxEGKgx+_xy+Lnt=84wRzE9TyznL3VCNSqWs7HC_H35_A@mail.gmail.com>
- <alpine.LSU.2.00.1107171641130.1274@sister.anvils>
- <20110718002524.GU11013@ZenIV.linux.org.uk>
- <alpine.LSU.2.00.1107171740260.1327@sister.anvils>
- <20110718020818.GW11013@ZenIV.linux.org.uk>
- <CA+55aFwXgcWxvAz7w1f_HYyzdm9b9EBJfrWhF1FW7EA3zpbJPg@mail.gmail.com>
- <CA+55aFxKRw8NxcHKzsSeCX3ud6eDrcQvAX+LMQOUT4p5TPLp5g@mail.gmail.com>
- <20110718182030.GF11013@ZenIV.linux.org.uk>
- <CA+55aFw+RwscYUocP0WYWTU=F+Udx+AsjMA0i63-D-y3iZKCTQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFw+RwscYUocP0WYWTU=F+Udx+AsjMA0i63-D-y3iZKCTQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754921Ab1GRTW1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 15:22:27 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:33290 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750921Ab1GRTWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 15:22:25 -0400
+Subject: Re: [PATCH] Add error check to hex2bin().
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        linux-security-module@vger.kernel.org,
+        andriy.shevchenko@linux.intel.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <CAHp75VcXNQKej_n4cOB8-gYDSL8MuGrv=Fs8=zdEKGp53DCtSA@mail.gmail.com>
+References: <1310977597-9666-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <201107182041.EHB78622.VOFSHFMOOFtLJQ@I-love.SAKURA.ne.jp>
+	 <1310991796.3903.6.camel@smile>
+	 <201107182148.AGD21306.FOLtJVMSOOFQHF@I-love.SAKURA.ne.jp>
+	 <1311012230.3193.35.camel@localhost.localdomain>
+	 <CAHp75VcXNQKej_n4cOB8-gYDSL8MuGrv=Fs8=zdEKGp53DCtSA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 18 Jul 2011 15:20:56 -0400
+Message-ID: <1311016856.3648.15.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 18, 2011 at 12:08:04PM -0700, Linus Torvalds wrote:
+On Mon, 2011-07-18 at 21:57 +0300, Andy Shevchenko wrote:
+> On Mon, Jul 18, 2011 at 9:03 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> > On Mon, 2011-07-18 at 21:48 +0900, Tetsuo Handa wrote:
+> >> Currently, security/keys/ is the only user of hex2bin().
+> >> Should I keep hex2bin() unmodified in case of bad input?
+> >> If so, I'd like to make it as hex2bin_safe().
+> >
+> >> ----------------------------------------
+> >> [PATCH] Add error check to hex2bin().
+> >>
+> >> Since converting 2 hexadecimal letters into a byte with error checks is
+> >> commonly used, we can replace multiple hex_to_bin() calls with single hex2bin()
+> >> call by changing hex2bin() to do error checks.
+> >>
+> >> Signed-off-by: Tetsuo Handa <penguin-kernel@I=love.SAKURA.ne.jp>
+> >> ---
+> >> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+> >> index 953352a..186e9fc 100644
+> >> --- a/include/linux/kernel.h
+> >> +++ b/include/linux/kernel.h
+> >> @@ -374,7 +374,7 @@ static inline char *pack_hex_byte(char *buf, u8 byte)
+> >>  }
+> >>
+> >>  extern int hex_to_bin(char ch);
+> >> -extern void hex2bin(u8 *dst, const char *src, size_t count);
+> >> +extern bool hex2bin(u8 *dst, const char *src, size_t count);
+> >>
+> >>  /*
+> >>   * General tracing related utility functions - trace_printk(),
+> >> diff --git a/lib/hexdump.c b/lib/hexdump.c
+> >> index f5fe6ba..1524002 100644
+> >> --- a/lib/hexdump.c
+> >> +++ b/lib/hexdump.c
+> >> @@ -38,14 +38,22 @@ EXPORT_SYMBOL(hex_to_bin);
+> >>   * @dst: binary result
+> >>   * @src: ascii hexadecimal string
+> >>   * @count: result length
+> >> + *
+> >> + * Returns true on success, false in case of bad input.
+> >>   */
+> >> -void hex2bin(u8 *dst, const char *src, size_t count)
+> >> +bool hex2bin(u8 *dst, const char *src, size_t count)
+> >>  {
+> >>       while (count--) {
+> >> -             *dst = hex_to_bin(*src++) << 4;
+> >> -             *dst += hex_to_bin(*src++);
+> >> -             dst++;
+> >> +             int c = hex_to_bin(*src++);
+> >> +             int d;
+> >
+> > Missing blank line here.
+> >
+> >> +             if (c < 0)
+> >> +                     return false;
+> >> +             d = hex_to_bin(*src++);
+> >> +             if (d < 0)
+> >> +                     return false;
+> >> +             *dst++ = (c << 4) | d;
+> >>       }
+> >> +     return true;
+> >>  }
+> >>  EXPORT_SYMBOL(hex2bin);
+> >
+> > We probably don't need to define a separate 'safe' function.
+> There is an opponent on any  approach. Although, small and fast error
+> route could be good.
 
-> But I do agree that it's very unlikely to actually cause problems.
-> People just don't move mount points around, and the race would seem to
-> be ridiculously hard to ever hit even if you tried to create some
-> totally artificial load that does nothing but rename mount-points ;)
+As nothing but trusted/encrypted keys is using hex2bin, it shouldn't be
+a problem.  :-)  I'll update trusted/encrypted keys to check the return
+code.
 
-vfs_rename() will refuse to move mountpoints.  Required by POSIX, among
-other things...
+thanks,
 
-> But I think I'm on the same page with Hugh that at this point none of
-> these issues are even remotely recent, they are basically impossible
-> to hit, and the fixes are likely potentially more dangerous than the
-> bugs they fix, so I'll release 3.0 without them and just apply the
-> fixes (and cc stable) afterwards.
+Mimi
 
-Hmm...  Could you pull #for-linus (or #for-linus2, for that matter - same
-plus cifs_get_root() fix) first?
+> > Instead of changing the existing code to short circuit out and return a
+> > value, does only adding the return value work?  Something like:
+> >
+> >        bool ret = true;
+> >        int c, d;
+> >
+> >        while (count--) {
+> >                c = hex_to_bin(*src++);
+> >                d = hex_to_bin(*src++);
+> Here is a performance issue, yeah. The user prefers to know about an
+> error as soon as possible.
+
+ok
+
+> >                *dst++ = (c << 4) | d;
+> >
+> >                if (c < 0 || d < 0)
+> >                        ret = false;
+> The ret value is redundant, and here you continue to fill the result
+> array by something arbitrary (might be wrong data).
+
+> 
+> >        }
+> >        return ret;
+> >
+
+
