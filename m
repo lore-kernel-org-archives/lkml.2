@@ -1,87 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753271Ab1GRQ2Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 12:28:25 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:45247 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752576Ab1GRQ2Y (ORCPT
+	id S1753339Ab1GRQ3r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 12:29:47 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:35810 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752479Ab1GRQ3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 12:28:24 -0400
-Date: Mon, 18 Jul 2011 11:28:18 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        usb-storage@lists.one-eyed-alien.net, linux-kernel@vger.kernel.org
-Subject: [PATCH] usb_storage: make usb-stor-scan task non-freezable
-Message-ID: <20110718162818.GC19552@thinkpad-t410>
-Mail-Followup-To: Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-	Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-	usb-storage@lists.one-eyed-alien.net, linux-kernel@vger.kernel.org
+	Mon, 18 Jul 2011 12:29:46 -0400
+X-IronPort-AV: E=Sophos;i="4.67,223,1309737600"; 
+   d="scan'208";a="6836017"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-ID: <20004.24417.577289.167313@mariner.uk.xensource.com>
+Date: Mon, 18 Jul 2011 17:29:21 +0100
+To: <stefano.stabellini@eu.citrix.com>
+CC: <hpa@zytor.com>, <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>, <mingo@elte.hu>, <hpa@linux.intel.com>,
+        <yinghai@kernel.org>
+Subject: Re: [Xen-devel] [PATCH tip/x86/mm] x86_32: calculate additional memory
+	needed by the fixmap
+Newsgroups: chiark.mail.xen.devel
+In-Reply-To: <m2n.s.1Qimoi-131463@chiark.greenend.org.uk>
+References: <m2n.s.1Qimoi-131463@chiark.greenend.org.uk>
+X-Mailer: VM 8.0.9 under Emacs 21.4.1 (i486-pc-linux-gnu)
+From: Ian Jackson <Ian.Jackson@eu.citrix.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following patch is in response to a consistently reproducible
-failure to freeze tasks prior to restoring a hibernation image on a
-Toshiba NB505 netbook. This machine has a built-in USB card reader.
-Since the usb-stor-scan task is freezable but the code in
-quiesce_and_remove_host() that waits for scanning to complete is not,
-khubd can fail to freeze when processing the disconnect for the card
-reader.
+stefano.stabellini@eu.citrix.com writes ("[Xen-devel] [PATCH tip/x86/mm] x86_32: calculate additional memory needed by the fixmap"):
+> Unfortunately this code is rather complex and depends on the behaviour
+> of other functions but I hope to have covered all the corner cases.
 
-It seems that both should either be freezable or not freezable. Since
-there doesn't currently seem to be any freezable way to wait on a
-completion, I started with the simpler approach of making usb-stor-scan
-non-freezable. If it would be preferable to make both freezable I can
-take that approach instead.
+I'm sorry to say that think this is really the wrong approach.
+I agree that *some* change needs to be made, as this is currently a
+serious regression in tip/x86/mm.
+
+But the correct change is in fact to undo the reversion of
+  "x86,xen: introduce x86_init.mapping.pagetable_reserve"
+That was a hook with a reasonable and defined interface.
+
+What we are having instead, now, is a fragile piece of code that tries
+to second-guess the complex config- and hardware-dependent
+memory-allocation behaviour of the rest of the startup code.  This is
+a recipe for making things break.
+
+Indeed, since the reversion of "mapping.pagetable_reserve" and its
+replacement with the new "exact calculation" code, tip/x86/mm has
+already had to have two separated config-dependent fixes - and the
+thing hasn't even been pushed to Linus's tip yet !
+
+This is a hopelessly fragile approach.  We should go back to the new
+pvop.  If the interface documentation in 279b706bf800b596 is not
+satisfactory I would be happy to help improve it.  To be honest I
+think much of the contents of the commit message should be in comments
+in the code.
+
+Indeed, I agree that the current lack of coherent semantic
+specification for the pvops is a problem.  But the solution is not to
+abolish pvops in favour of fragile duplication of logic.  The solution
+is to fix the specification comments.
+
+But, if the x86 maintainers absolutely won't have the new pvop then
+this new second-guessing code, fragile as it is, has to go in to fix
+the regression.
 
 Thanks,
-Seth
-
-
->From 27e456c0d6512ba599f7560139555374a45342be Mon Sep 17 00:00:00 2001
-From: Seth Forshee <seth.forshee@canonical.com>
-Date: Wed, 13 Jul 2011 23:02:48 -0500
-Subject: [PATCH] usb_storage: make usb-stor-scan task non-freezable
-
-The usb-stor-scan task is freezable, but the code in
-quiesce_and_remove_host() that waits for scanning to complete is
-not. This can cause task freezing to fail, which is happening
-consistently on at least one model of netbook with a built-in USB
-card reader when freezing tasks prior to restoring a hibernation
-image.
-
-This patch makes the usb-stor-scan task non-freezable to prevent
-this from happening. Tested across 200 S4 cycles without a single
-failure to freeze tasks.
-
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
----
- drivers/usb/storage/usb.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/usb/storage/usb.c b/drivers/usb/storage/usb.c
-index 0ca0958..f59fc90 100644
---- a/drivers/usb/storage/usb.c
-+++ b/drivers/usb/storage/usb.c
-@@ -831,12 +831,11 @@ static int usb_stor_scan_thread(void * __us)
- 
- 	dev_dbg(dev, "device found\n");
- 
--	set_freezable();
- 	/* Wait for the timeout to expire or for a disconnect */
- 	if (delay_use > 0) {
- 		dev_dbg(dev, "waiting for device to settle "
- 				"before scanning\n");
--		wait_event_freezable_timeout(us->delay_wait,
-+		wait_event_interruptible_timeout(us->delay_wait,
- 				test_bit(US_FLIDX_DONT_SCAN, &us->dflags),
- 				delay_use * HZ);
- 	}
--- 
-1.7.4.1
-
+Ian.
