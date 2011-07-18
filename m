@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754234Ab1GRUxB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 16:53:01 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:54510 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753873Ab1GRUw7 (ORCPT
+	id S1750971Ab1GRU6a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 16:58:30 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:39067 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877Ab1GRU63 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 16:52:59 -0400
-Date: Mon, 18 Jul 2011 22:52:57 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: David Miller <davem@davemloft.net>
-Cc: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree
-Message-ID: <20110718205257.GA2537@merkur.ravnborg.org>
-References: <20110718193053.623d28dc4643ab488b6347d5@canb.auug.org.au> <20110718.105821.1680531803712429890.davem@davemloft.net>
+	Mon, 18 Jul 2011 16:58:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110718.105821.1680531803712429890.davem@davemloft.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1311021033-7483-5-git-send-email-mjg@redhat.com>
+References: <1311021033-7483-1-git-send-email-mjg@redhat.com>
+	<1311021033-7483-5-git-send-email-mjg@redhat.com>
+Date: Mon, 18 Jul 2011 13:58:28 -0700
+X-Google-Sender-Auth: -pfJNrTTnD8HxM5smtPXgxKBZb4
+Message-ID: <CA+8MBbJMHK1e_wGC9EE+8neVc2j9Y8Ut4vzPiGh2umNZENsK1Q@mail.gmail.com>
+Subject: Re: [PATCH 4/9] pstore: Allow the user to explicitly choose a backend
+From: Tony Luck <tony.luck@intel.com>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, mikew@google.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 18, 2011 at 10:58:21AM -0700, David Miller wrote:
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Mon, 18 Jul 2011 19:30:53 +1000
-> 
-> > After merging the final tree, today's linux-next build (sparc64 defconfig)
-> > failed like this:
-> > 
-> > In file included from arch/sparc/include/asm/pgtable.h:4:0,
-> >                  from include/linux/mm.h:41,
-> >                  from include/linux/fs.h:395,
-> >                  from include/linux/compat.h:15,
-> >                  from arch/sparc/include/asm/siginfo.h:19,
-> >                  from include/linux/signal.h:5,
-> >                  from include/linux/sched.h:73,
-> >                  from arch/sparc/kernel/asm-offsets.c:13:
-> > arch/sparc/include/asm/pgtable_64.h: In function '__set_pte_at':
-> > arch/sparc/include/asm/pgtable_64.h:674:6: error: 'init_mm' undeclared (first use in this function)
-> > 
-> > I assume some include file changes.  Anyone have any clues how to find
-> > this?
-> 
-> The great irony is that sparc64 doesn't use anything this file
-> generates (you won't find a single asm-offsets.h include in any
-> sparc64 code).
-Today sparc64 code actually uses AOFF_mm_context from asm-offsets.h.
-The asm-offsets.h file is likely pulled in by some other header file.
+On Mon, Jul 18, 2011 at 1:30 PM, Matthew Garrett <mjg@redhat.com> wrote:.
+> +
+> +               Pstore only supports one backend at a time. If multiple
+> +               backends are available, the preferred backend may be
+> +               set by passing the pstore.backend= argument to the kernel
+> +               or writing to /sys/module/pstore/parameters/backend .
+> \ No newline at end of file
 
-> This asm-offset mechanim is, for whatever reason, enabled on every
-> single architecture whether it's needed or not.  Maybe we should
-> rethink that.
-Most archs uses asm-offsets to some extent - trying to make it optional
-would just result in a lot of otherwise pointless ifdefs.
+Maybe we should have a newline :-)
 
-With respect to the bug that triggered the mail....
-It looks like another definition stuffed down in sched.h where is does not
-belong. mm_types.h looks like the right place.
-Then arch/sparc/include/asm/pgtable.h should obviously pull in this header.
-But I do not have -next handy to try it out.
+We don't allow backends to be unregistered (currently) - Do you think it would
+be helpful to mention in this text that you cannot change your mind and
+switch to a different back end once you have registered one? Writing
+to /sys/module/... sounds a lot more flexible than what reality will allow.
 
-	Sam
+
+> +       if (backend && strcmp(backend, psi->name)) {
+> +               spin_unlock(&pstore_lock);
+> +               return -EBUSY;
+> +       }
+
+EBUSY doesn't feel like the right error here (and we are using that
+to indicate that some other backend is already registered).  Not
+sure what is the right one though. ENOENT? EINVAL?
+
+-Tony
