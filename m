@@ -1,155 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259Ab1GRLTN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 07:19:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13359 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751304Ab1GRLTM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 07:19:12 -0400
-From: Amerigo Wang <amwang@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, WANG Cong <amwang@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org
-Subject: [Patch] mm: make CONFIG_NUMA depend on CONFIG_SYSFS
-Date: Mon, 18 Jul 2011 19:18:29 +0800
-Message-Id: <1310987909-3129-1-git-send-email-amwang@redhat.com>
+	id S1756492Ab1GRLX2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 07:23:28 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50638 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751974Ab1GRLX0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 07:23:26 -0400
+Subject: current_thread_info() vs task_thread_info(current)
+From: Peter Zijlstra <peterz@infradead.org>
+To: linux-arch@vger.kernel.org
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 18 Jul 2011 13:23:03 +0200
+Message-ID: <1310988183.13765.56.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On ppc, we got this build error with randconfig:
+Thomas just spend a lovely morning trying to make sense of a trace where
+TIF_NEED_RESCHED wasn't set after resched_task() and magically appeared
+after local_bh_enable().
 
-drivers/built-in.o:(.toc1+0xf90): undefined reference to `vmstat_text': 1 errors in 1 logs
+What happened is that on that particular platform softirqs ran on a
+separate stack, and current_thread_info() is relative to the stack
+pointer.
 
-This is due to that it enabled CONFIG_NUMA but not CONFIG_SYSFS.
+The result is that current_thread_info() isn't the same as
+task_thread_info(current), *surprise*!!
 
-And the user-space tool numactl depends on sysfs files too.
-So, I think it is very reasonable to make CONFIG_NUMA depend on CONFIG_SYSFS.
+The immediate problem is of course that we can loose TIF flags when set
+through current_thread_info() from IRQ/SoftIRQ context.
 
-Signed-off-by: WANG Cong <amwang@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: linux-mm@kvack.org
+Now I was going to add a WARN() in x86_64's current_thread_info() to
+catch all these, sadly x86_64's implementation isn't prone to this
+particular issue, which means most people (kernel devs) will not be
+affected (i386 is affected, but nobody sane uses that anymore).
 
 
----
- arch/alpha/Kconfig   |    1 +
- arch/ia64/Kconfig    |    1 +
- arch/m32r/Kconfig    |    1 +
- arch/mips/Kconfig    |    1 +
- arch/powerpc/Kconfig |    1 +
- arch/sh/mm/Kconfig   |    1 +
- arch/sparc/Kconfig   |    1 +
- arch/tile/Kconfig    |    1 +
- arch/x86/Kconfig     |    1 +
- 9 files changed, 9 insertions(+), 0 deletions(-)
+Just to give an example, RCU uses set_need_resched(), set_need_resched()
+uses current_thread_info(). The use in force_quiescent_state() is from
+softirq afaict, the one in __rcu_pending() is from hardirq.
 
-diff --git a/arch/alpha/Kconfig b/arch/alpha/Kconfig
-index 60219bf..44439ec 100644
---- a/arch/alpha/Kconfig
-+++ b/arch/alpha/Kconfig
-@@ -570,6 +570,7 @@ source "mm/Kconfig"
- config NUMA
- 	bool "NUMA Support (EXPERIMENTAL)"
- 	depends on DISCONTIGMEM && BROKEN
-+	depends on SYSFS
- 	help
- 	  Say Y to compile the kernel to support NUMA (Non-Uniform Memory
- 	  Access).  This option is for configuring high-end multiprocessor
-diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
-index 38280ef..b12fac3 100644
---- a/arch/ia64/Kconfig
-+++ b/arch/ia64/Kconfig
-@@ -450,6 +450,7 @@ config ARCH_DISCONTIGMEM_DEFAULT
- config NUMA
- 	bool "NUMA support"
- 	depends on !IA64_HP_SIM && !FLATMEM
-+	depends on SYSFS
- 	default y if IA64_SGI_SN2
- 	select ACPI_NUMA if ACPI
- 	help
-diff --git a/arch/m32r/Kconfig b/arch/m32r/Kconfig
-index 85b44e8..21e668d 100644
---- a/arch/m32r/Kconfig
-+++ b/arch/m32r/Kconfig
-@@ -325,6 +325,7 @@ config NR_CPUS
- config NUMA
- 	bool "Numa Memory Allocation Support"
- 	depends on SMP && BROKEN
-+	depends on SYSFS
- 	default n
- 
- config NODES_SHIFT
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index 653da62..760d0d6 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -2072,6 +2072,7 @@ config ARCH_SPARSEMEM_ENABLE
- config NUMA
- 	bool "NUMA Support"
- 	depends on SYS_SUPPORTS_NUMA
-+	depends on SYSFS
- 	help
- 	  Say Y to compile the kernel to support NUMA (Non-Uniform Memory
- 	  Access).  This option improves performance on systems with more
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index 2729c66..32e1bc1 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -392,6 +392,7 @@ config IRQ_ALL_CPUS
- config NUMA
- 	bool "NUMA support"
- 	depends on PPC64
-+	depends on SYSFS
- 	default y if SMP && PPC_PSERIES
- 
- config NODES_SHIFT
-diff --git a/arch/sh/mm/Kconfig b/arch/sh/mm/Kconfig
-index c3e61b3..7928c9a 100644
---- a/arch/sh/mm/Kconfig
-+++ b/arch/sh/mm/Kconfig
-@@ -111,6 +111,7 @@ config VSYSCALL
- config NUMA
- 	bool "Non Uniform Memory Access (NUMA) Support"
- 	depends on MMU && SYS_SUPPORTS_NUMA && EXPERIMENTAL
-+	depends on SYSFS
- 	default n
- 	help
- 	  Some SH systems have many various memories scattered around
-diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
-index 253986b..2a38c5d 100644
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -338,6 +338,7 @@ endchoice
- config NUMA
- 	bool "NUMA support"
- 	depends on SPARC64 && SMP
-+	depends on SYSFS
- 
- config NODES_SHIFT
- 	int
-diff --git a/arch/tile/Kconfig b/arch/tile/Kconfig
-index 0249b8b..fa7d219 100644
---- a/arch/tile/Kconfig
-+++ b/arch/tile/Kconfig
-@@ -187,6 +187,7 @@ config HIGHMEM
- config NUMA
- 	bool # "NUMA Memory Allocation and Scheduler Support"
- 	depends on SMP && DISCONTIGMEM
-+	depends on SYSFS
- 	default y
- 	---help---
- 	  NUMA memory allocation is required for TILE processors
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index da34972..be0c229 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1146,6 +1146,7 @@ config DIRECT_GBPAGES
- config NUMA
- 	bool "Numa Memory Allocation and Scheduler Support"
- 	depends on SMP
-+	depends on SYSFS
- 	depends on X86_64 || (X86_32 && HIGHMEM64G && (X86_NUMAQ || X86_BIGSMP || X86_SUMMIT && ACPI) && EXPERIMENTAL)
- 	default y if (X86_NUMAQ || X86_SUMMIT || X86_BIGSMP)
- 	---help---
+On such platforms as Thomas was playing on, the TIF bit will be lost,
+since it will be set on the thread_info associated with some interrupt
+stack, not the current process.
+
+
+So how are we going to solve this? Naively I'd think that
+current_thread_info() is short for task_thread_info(current), and thus
+the platforms for where this isn't true are broken.
+
+I mean, what use is the thread_info not of a thread?
+
+Comments?
