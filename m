@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756805Ab1GRNNy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 09:13:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47079 "EHLO mx1.redhat.com"
+	id S1756852Ab1GRNOg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 09:14:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37190 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756283Ab1GRNJL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 09:09:11 -0400
+	id S1756118Ab1GRNJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 09:09:10 -0400
 From: Prarit Bhargava <prarit@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, linux-usb@vger.kernel.org
-Subject: [PATCH 27/34] drivers/usb changes for SMBIOS and System Firmware
-Date: Mon, 18 Jul 2011 09:08:41 -0400
-Message-Id: <1310994528-26276-28-git-send-email-prarit@redhat.com>
+Cc: Prarit Bhargava <prarit@redhat.com>, rpurdie@rpsys.net
+Subject: [PATCH 15/34] drivers/leds changes for SMBIOS and System Firmware
+Date: Mon, 18 Jul 2011 09:08:29 -0400
+Message-Id: <1310994528-26276-16-git-send-email-prarit@redhat.com>
 In-Reply-To: <1310994528-26276-1-git-send-email-prarit@redhat.com>
 References: <1310994528-26276-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -23,107 +23,233 @@ As part of the new SMBIOS and System Firmware code:
 - Replace old dmi* structures and functions with new sysfw* and smbios*
 structures and functions in individual drivers
 - cleanup sysfw_id lookup tables
-- add exactmatch functionality
 
-Cc: linux-usb@vger.kernel.org
+Cc: rpurdie@rpsys.net
 Signed-off-by: Prarit Bhargava <prarit@redhat.com>
 ---
- drivers/usb/host/pci-quirks.c |   19 ++++++++++++++-----
- drivers/usb/host/uhci-hcd.c   |    2 +-
- drivers/usb/host/uhci-pci.c   |   15 +++++++++++----
- 3 files changed, 26 insertions(+), 10 deletions(-)
+ drivers/leds/leds-clevo-mail.c |   78 ++++++++++++++++++----------------------
+ drivers/leds/leds-ss4200.c     |   23 +++++-------
+ 2 files changed, 44 insertions(+), 57 deletions(-)
 
-diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
-index fd93061..ae2a681 100644
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -14,7 +14,7 @@
- #include <linux/init.h>
- #include <linux/delay.h>
- #include <linux/acpi.h>
+diff --git a/drivers/leds/leds-clevo-mail.c b/drivers/leds/leds-clevo-mail.c
+index a498135..63047de 100644
+--- a/drivers/leds/leds-clevo-mail.c
++++ b/drivers/leds/leds-clevo-mail.c
+@@ -1,14 +1,10 @@
+-
+-#include <linux/module.h>
+-
+-#include <linux/platform_device.h>
+ #include <linux/err.h>
+-#include <linux/leds.h>
+-
+-#include <linux/io.h>
 -#include <linux/dmi.h>
-+#include <linux/sysfw.h>
- #include "pci-quirks.h"
- #include "xhci-ext-caps.h"
- 
-@@ -507,6 +507,18 @@ static void __devinit quirk_usb_handoff_ohci(struct pci_dev *pdev)
- 	iounmap(base);
- }
- 
-+static const struct sysfw_id __devinitdata ehci_bios_handoff_table[] = {
-+	{
-+		.ident = "Pegatron Lucid (ExoPC) Tablet",
-+		.matches = {
-+			SYSFW_MATCH(SYSFW_BOARD_NAME, "EXOPG06411"),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "Lucid-CE-133"),
-+		},
-+		.exactmatch = 1,
-+	},
-+	{}
-+};
-+
- static void __devinit ehci_bios_handoff(struct pci_dev *pdev,
- 					void __iomem *op_reg_base,
- 					u32 cap, u8 offset)
-@@ -517,10 +529,7 @@ static void __devinit ehci_bios_handoff(struct pci_dev *pdev,
- 	 * seconds trying the handoff on its unused controller.  Skip
- 	 * it. */
- 	if (pdev->vendor == 0x8086 && pdev->device == 0x283a) {
--		const char *dmi_bn = dmi_get_system_info(DMI_BOARD_NAME);
--		const char *dmi_bv = dmi_get_system_info(DMI_BIOS_VERSION);
--		if (dmi_bn && !strcmp(dmi_bn, "EXOPG06411") &&
--		    dmi_bv && !strcmp(dmi_bv, "Lucid-CE-133"))
-+		if (sysfw_callback(ehci_bios_handoff_table))
- 			try_handoff = 0;
- 	}
- 
-diff --git a/drivers/usb/host/uhci-hcd.c b/drivers/usb/host/uhci-hcd.c
-index fba99b1..1b03b7a 100644
---- a/drivers/usb/host/uhci-hcd.c
-+++ b/drivers/usb/host/uhci-hcd.c
-@@ -40,7 +40,7 @@
- #include <linux/usb.h>
- #include <linux/usb/hcd.h>
- #include <linux/bitops.h>
--#include <linux/dmi.h>
+-
+ #include <linux/i8042.h>
++#include <linux/io.h>
++#include <linux/leds.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
 +#include <linux/sysfw.h>
  
- #include <asm/uaccess.h>
- #include <asm/io.h>
-diff --git a/drivers/usb/host/uhci-pci.c b/drivers/usb/host/uhci-pci.c
-index c300bd2..ef3de10 100644
---- a/drivers/usb/host/uhci-pci.c
-+++ b/drivers/usb/host/uhci-pci.c
-@@ -88,18 +88,25 @@ static int uhci_pci_resume_detect_interrupts_are_broken(struct uhci_hcd *uhci)
- 	return 0;
- }
+ #define CLEVO_MAIL_LED_OFF		0x0084
+ #define CLEVO_MAIL_LED_BLINK_1HZ	0x008A
+@@ -20,11 +16,12 @@ MODULE_LICENSE("GPL");
  
-+static const struct sysfw_id bad_Asus_board_id[] = {
-+	{
-+		.ident = "A7V8X",
-+		.matches = {
-+			SYSFW_MATCH(SYSFW_BOARD_NAME, "A7V8X"),
-+		},
-+	},
-+	{}
-+};
-+
- static int uhci_pci_global_suspend_mode_is_broken(struct uhci_hcd *uhci)
+ static unsigned int __initdata nodetect;
+ module_param_named(nodetect, nodetect, bool, 0);
+-MODULE_PARM_DESC(nodetect, "Skip DMI hardware detection");
++MODULE_PARM_DESC(nodetect, "Skip SMBIOS hardware detection");
+ 
+ static struct platform_device *pdev;
+ 
+-static int __init clevo_mail_led_dmi_callback(const struct dmi_system_id *id)
++static int __init
++clevo_mail_led_smbios_callback(const struct sysfw_id *id)
  {
- 	int port;
--	const char *sys_info;
--	static const char bad_Asus_board[] = "A7V8X";
+ 	printk(KERN_INFO KBUILD_MODNAME ": '%s' found\n", id->ident);
+ 	return 1;
+@@ -39,55 +36,55 @@ static int __init clevo_mail_led_dmi_callback(const struct dmi_system_id *id)
+  * detected as working, but in reality it is not) as low as
+  * possible.
+  */
+-static struct dmi_system_id __initdata mail_led_whitelist[] = {
++static struct sysfw_id __initdata mail_led_whitelist[] = {
+ 	{
+-		.callback = clevo_mail_led_dmi_callback,
++		.callback = clevo_mail_led_smbios_callback,
+ 		.ident = "Clevo D410J",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "VIA"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "K8N800"),
+-			DMI_MATCH(DMI_PRODUCT_VERSION, "VT8204B")
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "VIA"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "K8N800"),
++			SYSFW_MATCH(SYSFW_PRODUCT_VERSION, "VT8204B")
+ 		}
+ 	},
+ 	{
+-		.callback = clevo_mail_led_dmi_callback,
++		.callback = clevo_mail_led_smbios_callback,
+ 		.ident = "Clevo M5x0N",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "CLEVO Co."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "M5x0N")
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "CLEVO Co."),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "M5x0N")
+ 		}
+ 	},
+ 	{
+-		.callback = clevo_mail_led_dmi_callback,
++		.callback = clevo_mail_led_smbios_callback,
+ 		.ident = "Positivo Mobile",
+ 		.matches = {
+-			DMI_MATCH(DMI_BOARD_VENDOR, "CLEVO Co. "),
+-			DMI_MATCH(DMI_BOARD_NAME, "M5X0V "),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Positivo Mobile"),
+-			DMI_MATCH(DMI_PRODUCT_VERSION, "VT6198")
++			SYSFW_MATCH(SYSFW_BOARD_VENDOR, "CLEVO Co. "),
++			SYSFW_MATCH(SYSFW_BOARD_NAME, "M5X0V "),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Positivo Mobile"),
++			SYSFW_MATCH(SYSFW_PRODUCT_VERSION, "VT6198")
+ 		}
+ 	},
+ 	{
+-		.callback = clevo_mail_led_dmi_callback,
++		.callback = clevo_mail_led_smbios_callback,
+ 		.ident = "Clevo D400P",
+ 		.matches = {
+-			DMI_MATCH(DMI_BOARD_VENDOR, "Clevo"),
+-			DMI_MATCH(DMI_BOARD_NAME, "D400P"),
+-			DMI_MATCH(DMI_BOARD_VERSION, "Rev.A"),
+-			DMI_MATCH(DMI_PRODUCT_VERSION, "0106")
++			SYSFW_MATCH(SYSFW_BOARD_VENDOR, "Clevo"),
++			SYSFW_MATCH(SYSFW_BOARD_NAME, "D400P"),
++			SYSFW_MATCH(SYSFW_BOARD_VERSION, "Rev.A"),
++			SYSFW_MATCH(SYSFW_PRODUCT_VERSION, "0106")
+ 		}
+ 	},
+ 	{
+-		.callback = clevo_mail_led_dmi_callback,
++		.callback = clevo_mail_led_smbios_callback,
+ 		.ident = "Clevo D410V",
+ 		.matches = {
+-			DMI_MATCH(DMI_BOARD_VENDOR, "Clevo, Co."),
+-			DMI_MATCH(DMI_BOARD_NAME, "D400V/D470V"),
+-			DMI_MATCH(DMI_BOARD_VERSION, "SS78B"),
+-			DMI_MATCH(DMI_PRODUCT_VERSION, "Rev. A1")
++			SYSFW_MATCH(SYSFW_BOARD_VENDOR, "Clevo, Co."),
++			SYSFW_MATCH(SYSFW_BOARD_NAME, "D400V/D470V"),
++			SYSFW_MATCH(SYSFW_BOARD_VERSION, "SS78B"),
++			SYSFW_MATCH(SYSFW_PRODUCT_VERSION, "Rev. A1")
+ 		}
+ 	},
+-	{ }
++	{}
+ };
  
- 	/* One of Asus's motherboards has a bug which causes it to
- 	 * wake up immediately from suspend-to-RAM if any of the ports
- 	 * are connected.  In such cases we will not set EGSM.
- 	 */
--	sys_info = dmi_get_system_info(DMI_BOARD_NAME);
--	if (sys_info && !strcmp(sys_info, bad_Asus_board)) {
-+	if (sysfw_callback(bad_Asus_board_id)) {
- 		for (port = 0; port < uhci->rh_numports; ++port) {
- 			if (inw(uhci->io_addr + USBPORTSC1 + port * 2) &
- 					USBPORTSC_CCS)
+ static void clevo_mail_led_set(struct led_classdev *led_cdev,
+@@ -176,21 +173,16 @@ static struct platform_driver clevo_mail_led_driver = {
+ static int __init clevo_mail_led_init(void)
+ {
+ 	int error = 0;
+-	int count = 0;
+ 
+ 	/* Check with the help of DMI if we are running on supported hardware */
+-	if (!nodetect) {
+-		count = dmi_check_system(mail_led_whitelist);
+-	} else {
+-		count = 1;
++	if (nodetect) {
+ 		printk(KERN_ERR KBUILD_MODNAME ": Skipping DMI detection. "
+ 		       "If the driver works on your hardware please "
+ 		       "report model and the output of dmidecode in tracker "
+ 		       "at http://sourceforge.net/projects/clevo-mailled/\n");
+-	}
+-
+-	if (!count)
++	} else if (!sysfw_callback(mail_led_whitelist)) {
+ 		return -ENODEV;
++	}
+ 
+ 	pdev = platform_device_register_simple(KBUILD_MODNAME, -1, NULL, 0);
+ 	if (!IS_ERR(pdev)) {
+diff --git a/drivers/leds/leds-ss4200.c b/drivers/leds/leds-ss4200.c
+index 614ebeb..0b6b6fa 100644
+--- a/drivers/leds/leds-ss4200.c
++++ b/drivers/leds/leds-ss4200.c
+@@ -21,13 +21,13 @@
+ 
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
+-#include <linux/dmi.h>
+ #include <linux/init.h>
+ #include <linux/ioport.h>
+ #include <linux/kernel.h>
+ #include <linux/leds.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
++#include <linux/sysfw.h>
+ #include <linux/types.h>
+ #include <linux/uaccess.h>
+ 
+@@ -73,7 +73,7 @@ static const struct pci_device_id ich7_lpc_pci_id[] =
+ 
+ MODULE_DEVICE_TABLE(pci, ich7_lpc_pci_id);
+ 
+-static int __init ss4200_led_dmi_callback(const struct dmi_system_id *id)
++static int __init ss4200_led_smbios_callback(const struct sysfw_id *id)
+ {
+ 	pr_info("detected '%s'\n", id->ident);
+ 	return 1;
+@@ -81,7 +81,7 @@ static int __init ss4200_led_dmi_callback(const struct dmi_system_id *id)
+ 
+ static unsigned int __initdata nodetect;
+ module_param_named(nodetect, nodetect, bool, 0);
+-MODULE_PARM_DESC(nodetect, "Skip DMI-based hardware detection");
++MODULE_PARM_DESC(nodetect, "Skip SMBIOS-based hardware detection");
+ 
+ /*
+  * struct nas_led_whitelist - List of known good models
+@@ -92,14 +92,14 @@ MODULE_PARM_DESC(nodetect, "Skip DMI-based hardware detection");
+  * detected as working, but in reality it is not) as low as
+  * possible.
+  */
+-static struct dmi_system_id __initdata nas_led_whitelist[] = {
++static struct sysfw_id __initdata nas_led_whitelist[] = {
+ 	{
+-		.callback = ss4200_led_dmi_callback,
++		.callback = ss4200_led_smbios_callback,
+ 		.ident = "Intel SS4200-E",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Intel"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "SS4200-E"),
+-			DMI_MATCH(DMI_PRODUCT_VERSION, "1.00.00")
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Intel"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "SS4200-E"),
++			SYSFW_MATCH(SYSFW_PRODUCT_VERSION, "1.00.00")
+ 		}
+ 	},
+ 	{}
+@@ -504,16 +504,11 @@ static int __init nas_gpio_init(void)
+ {
+ 	int i;
+ 	int ret = 0;
+-	int nr_devices = 0;
+ 
+-	nr_devices = dmi_check_system(nas_led_whitelist);
+ 	if (nodetect) {
+ 		pr_info("skipping hardware autodetection\n");
+ 		pr_info("Please send 'dmidecode' output to dave@sr71.net\n");
+-		nr_devices++;
+-	}
+-
+-	if (nr_devices <= 0) {
++	} else if (!sysfw_callback(nas_led_whitelist)) {
+ 		pr_info("no LED devices found\n");
+ 		return -ENODEV;
+ 	}
 -- 
 1.6.5.2
 
