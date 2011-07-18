@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756386Ab1GRKvC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 06:51:02 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39452 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753310Ab1GRKvB (ORCPT
+	id S1756411Ab1GRKv7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 06:51:59 -0400
+Received: from mail.cs.tu-berlin.de ([130.149.17.13]:34922 "EHLO
+	mail.cs.tu-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756380Ab1GRKv6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 06:51:01 -0400
-Date: Mon, 18 Jul 2011 19:50:54 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Greg KH <greg@kroah.com>, Grant Likely <grant@secretlab.ca>,
-        Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Samuel Oritz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] regmap: Add generic non-memory mapped register
- access API
-Message-ID: <20110718105053.GD7775@opensource.wolfsonmicro.com>
-References: <20110718100444.GD423@opensource.wolfsonmicro.com>
- <1310983663-6404-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <s5hsjq3kh61.wl%tiwai@suse.de>
+	Mon, 18 Jul 2011 06:51:58 -0400
+From: =?UTF-8?q?Jan=20H=2E=20Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Cc: Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Jan=20H=2E=20Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
+Subject: [PATCH 0/2] Enforce hierarchical order of leaf CFS runqueues
+Date: Mon, 18 Jul 2011 12:50:56 +0200
+Message-Id: <1310986258-29985-1-git-send-email-schnhrr@cs.tu-berlin.de>
+X-Mailer: git-send-email 1.7.3.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <s5hsjq3kh61.wl%tiwai@suse.de>
-X-Cookie: You will have long and healthy life.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 18, 2011 at 12:38:14PM +0200, Takashi Iwai wrote:
+Code review showed, that the hierarchical order of the leaf
+CFS runqueues introduced by commit 67e8625 ("sched: Introduce 
+hierarchal order on shares update list") is not yet achieved.
+(See description of first patch for an example.)
 
-> In most cases, val = map->work_buf + map->format.reg_bytes.
-> How about a bit optimization?
+These two patches (against v3.0-rc7) try to fix that.
 
-> 	if (ret == -ENOTSUPP) {
+Patch 1 causes all leaves that are inserted during one 
+enqueue_task_fair() call to be inserted right next to each other
+at the beginning of the list.
 
-Indeed, I'd had an additional optimization there in mind but it was to
-do the checking before we try the gather write rather than after since
-generally it'll be cheaper to do the pre-gathered write than the
-gathered write (sometimes noticably cheaper as some controllers have an
-appreciable overhead for starting transfers, especially at high data
-rates).
+Patch 2 prevents the existing code from punching holes
+in the leaf-hierarchy as this would cause patch 1 to
+re-insert them at possibly wrong positions.
 
-I mostly didn't implement it yet because I was trying to minimize the
-code complexity of the initial submission in order to aid review so was
-avoiding non-essential features.
+
+What remains are some multiprocessor aspects: the leaf_cfs_rq_list
+is traversed without holding rq->lock. So it can be modified while
+a traversal is in progress. That means: while users of the list are 
+guaranteed to traverse all elements in hierarchical order, they
+are not guaranteed that they will see the parent of an already visited
+child. But as far as I currently understand the code, this seems not
+to be a problem as the code only relies on the former guarantee.
+
+Regards
+Jan
+
+Jan H. Schönherr (2):
+  sched: Enforce order of leaf CFS runqueues
+  sched: Prevent removal of leaf CFS runqueues with on_list children
+
+ kernel/sched.c      |    1 +
+ kernel/sched_fair.c |   45 +++++++++++++++++++++++++++++----------------
+ 2 files changed, 30 insertions(+), 16 deletions(-)
+
+-- 
+1.7.3.4
+
