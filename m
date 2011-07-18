@@ -1,61 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752352Ab1GRFj6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 01:39:58 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:38482 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751046Ab1GRFj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 01:39:57 -0400
-Date: Mon, 18 Jul 2011 15:39:17 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: James Morris <jmorris@namei.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Subject: linux-next: manual merge of the security-testing tree with the vfs
- tree
-Message-Id: <20110718153917.4aa9a18b80c0933cee4e638b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__18_Jul_2011_15_39_17_+1000_Cz0i/5F9Z4m_4+1O"
+	id S1752200Ab1GRGHv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 02:07:51 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:55959 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751097Ab1GRGHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 02:07:50 -0400
+Message-ID: <4E23CD7C.30902@cn.fujitsu.com>
+Date: Mon, 18 Jul 2011 14:06:52 +0800
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reply-To: gaowanlong@cn.fujitsu.com
+Organization: FNST
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110322 Red Hat/3.1.9-3.el6_0 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Wang Sheng-Hui <shhuiw@gmail.com>
+CC: Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3.0-rc7] btrfs: Update git repository links for btrfs
+ utilities in Documentation/filesystems/btrfs.txt
+References: <4E23BC5F.4060200@gmail.com>
+In-Reply-To: <4E23BC5F.4060200@gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-07-18 14:06:58,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-07-18 14:07:00,
+	Serialize complete at 2011-07-18 14:07:00
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__18_Jul_2011_15_39_17_+1000_Cz0i/5F9Z4m_4+1O
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 07/18/2011 12:53 PM, Wang Sheng-Hui wrote:
+> The patch is against 3.0-rc7 kernel.
+>
+>> From d22497ac8c5dd55a2ef9a47de5f2ddee55f8ec50 Mon Sep 17 00:00:00 2001
+> From: Wang Sheng-Hui<shhuiw@gmail.com>
+> Date: Sun, 17 Jul 2011 21:45:01 -0500
+> Subject: [PATCH 3.0-rc7] btrfs: Update git repository links for btrfs utilities in Documentation/filesystems/btrfs.txt
+>
+> git repository link for btrfs utilities
+>     http://git.kernel.org/?p=linux/kernel/git/mason/btrfs-progs-unstable.git
+> doesn't work, and git-clone can get failed as:
+> $ git clone
+> http://git.kernel.org/?p=linux/kernel/git/mason/btrfs-progs-unstable.git
+> Initialized empty Git repository in
+> /home/crossover/dev/btrfs-progs-unstable/.git/
+> fatal:
+> http://git.kernel.org/?p=linux/kernel/git/mason/btrfs-progs-unstable.git/info/refs not found: did you run git update-server-info on the server?
+>
+> Update git repository links for btrfs utilities to the latest ones
+> in Documentation/filesystems/btrfs.txt
+>
+> Signed-off-by: Wang Sheng-Hui<shhuiw@gmail.com>
+> ---
+>   Documentation/filesystems/btrfs.txt |    3 ++-
+>   1 files changed, 2 insertions(+), 1 deletions(-)
+>
+> diff --git a/Documentation/filesystems/btrfs.txt b/Documentation/filesystems/btrfs.txt
+> index 64087c3..b095261 100644
+> --- a/Documentation/filesystems/btrfs.txt
+> +++ b/Documentation/filesystems/btrfs.txt
+> @@ -63,8 +63,9 @@ IRC network.
+>   Userspace tools for creating and manipulating Btrfs file systems are
+>   available from the git repository at the following location:
+>
+> - http://git.kernel.org/?p=linux/kernel/git/mason/btrfs-progs-unstable.git
+It's the right git-web URL.
+>    git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-progs-unstable.git
+> + http://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-progs-unstable.git
+> + https://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-progs-unstable.git
+>
+>   These include the following tools:
+>
 
-Hi James,
 
-Today's linux-next merge of the security-testing tree got a conflict in
-security/tomoyo/realpath.c between commit 6ef0dd885ce8 ("get rid of
-pointless checks for dentry->sb =3D=3D NULL") from the vfs tree and commit
-5625f2e32663 ("TOMOYO: Change pathname for non-rename()able filesystems")
-from the security-testing tree.
-
-The latter includes the change from the former, so I just used the latter.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__18_Jul_2011_15_39_17_+1000_Cz0i/5F9Z4m_4+1O
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOI8cFAAoJEDMEi1NhKgbsHpYH/A9OxML+oKzFwSm34u5/QuFe
-n6wfa3nXRK1LA4jW55ReaK6mv69tfuhq413Lwtk9FYuAg0P6xPJ4TYgQ7FAxYgOU
-57mv1S55DHW7XuSRvokU6WE3s4oqrn+IFYUlLABpS/a/2N0B0OuH68G8pAjxXX/Y
-uSCQOGXblVgZD+mjvqC7lWKFHdc3d00h83NijM2ZTv4O9BvR2YNbySe8VtsXMXeW
-gpHVYmu4bEeuyTDE3Z5rkz+ug0nobbwR1ip9wo1PKzoY2CFuQW2S8iGetWYwSPdU
-ykBA/wu6RrKhsTu9lbDWDmfllY76niJm2JOIgpH1TTf0PAJkG2/mgt90pE6aOmU=
-=vewd
------END PGP SIGNATURE-----
-
---Signature=_Mon__18_Jul_2011_15_39_17_+1000_Cz0i/5F9Z4m_4+1O--
+-- 
+Thanks
+Best Regards
+Wanlong Gao
