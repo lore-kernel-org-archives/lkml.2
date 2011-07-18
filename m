@@ -1,103 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755093Ab1GRTcv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 15:32:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35898 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750933Ab1GRTcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 15:32:50 -0400
-Date: Mon, 18 Jul 2011 21:32:48 +0200
-From: Jan Kara <jack@suse.cz>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Josef Bacik <josef@redhat.com>,
-        Lukas Czerner <lczerner@redhat.com>, Jan Kara <jack@suse.cz>
-Subject: Re: linux-next: manual merge of the vfs tree with the ext3 tree
-Message-ID: <20110718193248.GE5842@quack.suse.cz>
-References: <20110718133645.7a4a21bb51c690034ecc6d58@canb.auug.org.au>
+	id S1755233Ab1GRTds (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 15:33:48 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:52492 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755012Ab1GRTdo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 15:33:44 -0400
+Date: Mon, 18 Jul 2011 23:33:38 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: kernel-hardening@lists.openwall.com
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [kernel-hardening] Re: [RFC v2] implement SL*B and stack
+ usercopy runtime checks
+Message-ID: <20110718193337.GB4489@albatros>
+References: <20110703111028.GA2862@albatros>
+ <CA+55aFzXEoTyK0Sm-y=6xGmLMWzQiSQ7ELJ2-WL_PrP3r44MSg@mail.gmail.com>
+ <20110718183951.GA3748@albatros>
+ <20110718115237.14d96c03.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110718133645.7a4a21bb51c690034ecc6d58@canb.auug.org.au>
+In-Reply-To: <20110718115237.14d96c03.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi,
-
-On Mon 18-07-11 13:36:45, Stephen Rothwell wrote:
-> Today's linux-next merge of the vfs tree got a conflict in
-> fs/ext3/fsync.c between commit 785c4bcc0d88 ("ext3: Add fixed
-> tracepoints") from the ext3 tree and commit 62ec115d5b9c ("fs: push
-> i_mutex and filemap_write_and_wait down into ->fsync() handlers") from
-> the vfs tree.
+On Mon, Jul 18, 2011 at 11:52 -0700, Andrew Morton wrote:
+> On Mon, 18 Jul 2011 22:39:51 +0400
+> Vasiliy Kulikov <segoon@openwall.com> wrote:
 > 
-> I fixed it up (see below) but am not sure of the ordering of these two
-> separate changes.
-  Thanks. Logically, I'd expect trace_ext3_sync_file_enter() to be always
-called at the beginning of ext3_sync_file(). That means before
-filemap_write_and_wait_range()... I guess the easiest way to resolve this
-is if Al pulls the tracepoint patch from my tree to his - it's commit
-785c4bcc0d88ff006a0b2120815a71e86ecf21ce in
-git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs-2.6
+> >   */
+> >  #define access_ok(type, addr, size) (likely(__range_not_ok(addr, size) == 0))
+> >  
+> > +#if defined(CONFIG_FRAME_POINTER)
+> 
+> #ifdef is conventional in this case
 
-								Honza
+OK.
 
-> diff --cc fs/ext3/fsync.c
-> index 06a4394,0bcf63a..0000000
-> --- a/fs/ext3/fsync.c
-> +++ b/fs/ext3/fsync.c
-> @@@ -52,14 -51,22 +52,24 @@@ int ext3_sync_file(struct file *file, l
->   	int ret, needs_barrier = 0;
->   	tid_t commit_tid;
->   
->  -	if (inode->i_sb->s_flags & MS_RDONLY)
->  -		return 0;
->  -
-> + 	ret = filemap_write_and_wait_range(inode->i_mapping, start, end);
-> + 	if (ret)
-> + 		return ret;
-> + 
-> + 	/*
-> + 	 * Taking the mutex here just to keep consistent with how fsync was
-> + 	 * called previously, however it looks like we don't need to take
-> + 	 * i_mutex at all.
-> + 	 */
-> + 	mutex_lock(&inode->i_mutex);
-> + 
->   	J_ASSERT(ext3_journal_current_handle() == NULL);
->   
->  +	trace_ext3_sync_file_enter(file, datasync);
->  +
->  +	if (inode->i_sb->s_flags & MS_RDONLY)
->  +		return 0;
->  +
-> - 
->   	/*
->   	 * data=writeback,ordered:
->   	 *  The caller's filemap_fdatawrite()/wait will sync the data.
-> @@@ -75,8 -82,8 +85,9 @@@
->   	 *  safe in-journal, which is all fsync() needs to ensure.
->   	 */
->   	if (ext3_should_journal_data(inode)) {
-> + 		mutex_unlock(&inode->i_mutex);
->  -		return ext3_force_commit(inode->i_sb);
->  +		ret = ext3_force_commit(inode->i_sb);
->  +		goto out;
->   	}
->   
->   	if (datasync)
-> @@@ -97,8 -104,6 +108,9 @@@
->   	 */
->   	if (needs_barrier)
->   		blkdev_issue_flush(inode->i_sb->s_bdev, GFP_KERNEL, NULL);
-> + 	mutex_unlock(&inode->i_mutex);
->  +
->  +out:
->  +	trace_ext3_sync_file_exit(inode, ret);
->   	return ret;
->   }
+> > +/*
+> > + * MUST be always_inline to correctly count stack frame numbers.
+> > + *
+> > + * low ----------------------------------------------> high
+> > + * [saved bp][saved ip][args][local vars][saved bp][saved ip]
+> > + *		       ^----------------^
+> > + *		  allow copies only within here
+> > +*/
+> > +#undef arch_check_object_on_stack_frame
+> > +inline static __attribute__((always_inline))
+> 
+> static inline __always_inline
+
+OK.
+
+> > +bool arch_check_object_on_stack_frame(const void *stack,
+> > +	     const void *stackend, const void *obj, unsigned long len)
+> > +{
+> > +	const void *frame = NULL;
+> > +	const void *oldframe;
+> > +
+> > +	/*
+> > +	 * Get the kernel_access_ok() caller frame.
+> > +	 * __builtin_frame_address(0) returns kernel_access_ok() frame
+> > +	 * as arch_ and stack_ are inline and kernel_ is noinline.
+> > +	 */
+> > +	oldframe = __builtin_frame_address(0);
+> > +	if (oldframe)
+> > +		frame = __builtin_frame_address(1);
+> > +
+> > +	while (stack <= frame && frame < stackend) {
+> > +		/*
+> > +		 * If obj + len extends past the last frame, this
+> > +		 * check won't pass and the next frame will be 0,
+> > +		 * causing us to bail out and correctly report
+> > +		 * the copy as invalid.
+> > +		 */
+> > +		if (obj + len <= frame) {
+> > +			/* EBP + EIP */
+> > +			int protected_regs_size = 2*sizeof(void *);
+> 
+> size_t?
+
+Yes, it looks better here.
+
+> > +static inline unsigned long __must_check copy_from_user_uncheched(void *to,
+> 
+> typo
+
+Oops, sure.
+
+> > diff --git a/arch/x86/include/asm/uaccess_64.h b/arch/x86/include/asm/uaccess_64.h
+> > index 1c66d30..10c5a0a 100644
+> > --- a/arch/x86/include/asm/uaccess_64.h
+> > +++ b/arch/x86/include/asm/uaccess_64.h
+> > @@ -50,8 +50,10 @@ static inline unsigned long __must_check copy_from_user(void *to,
+> >  	int sz = __compiletime_object_size(to);
+> 
+> size_t? (ssize_t?)
+
+It doesn't touch my patch, however, ssize_t seems reasonable here.
+
+> >  	might_fault();
+> > -	if (likely(sz == -1 || sz >= n))
+> > -		n = _copy_from_user(to, from, n);
+> > +	if (likely(sz == -1 || sz >= n)) {
+> > +		if (kernel_access_ok(to, n))
+> > +			n = _copy_from_user(to, from, n);
+> > +	}
+> >  #ifdef CONFIG_DEBUG_VM
+> >  	else
+> >  		WARN(1, "Buffer overflow detected!\n");
+> >
+> > ...
+> >
+> > --- a/mm/maccess.c
+> > +++ b/mm/maccess.c
+> > @@ -3,8 +3,11 @@
+> >   */
+> >  #include <linux/module.h>
+> >  #include <linux/mm.h>
+> > +#include <linux/sched.h>
+> >  #include <linux/uaccess.h>
+> >  
+> > +extern bool slab_access_ok(const void *ptr, unsigned long len);
+> 
+> no externs in .c - use a header
+
+I thought it would make less noise.  OK, will do.
+
+> > +noinline bool __kernel_access_ok(const void *ptr, unsigned long len)
+> 
+> noinline seems unneeded
+
+It is needed here because arch_check_object_on_stack_frame() needs the
+precise number of frames it should skip.
+
+
+Thank you!
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
