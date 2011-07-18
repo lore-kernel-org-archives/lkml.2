@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817Ab1GRUcR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 16:32:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41289 "EHLO mx1.redhat.com"
+	id S1753348Ab1GRUbN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 16:31:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43475 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753472Ab1GRUbO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 16:31:14 -0400
+	id S1751434Ab1GRUbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 16:31:09 -0400
 From: Matthew Garrett <mjg@redhat.com>
 To: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, mikew@google.com, tony.luck@intel.com
-Subject: [PATCH 6/9] efivars: String functions
-Date: Mon, 18 Jul 2011 16:30:30 -0400
-Message-Id: <1311021033-7483-7-git-send-email-mjg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, mikew@google.com, tony.luck@intel.com,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH 1/9] pstore: Extend API
+Date: Mon, 18 Jul 2011 16:30:25 -0400
+Message-Id: <1311021033-7483-2-git-send-email-mjg@redhat.com>
 In-Reply-To: <1311021033-7483-1-git-send-email-mjg@redhat.com>
 References: <1311021033-7483-1-git-send-email-mjg@redhat.com>
 X-SA-Do-Not-Run: Yes
@@ -22,103 +23,192 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Waychison <mikew@google.com>
+Some pstore implementations may not have a static context, so extend the
+API to pass the pstore_info struct to all calls and allow for a context
+pointer.
 
-Fix the string functions in the efivars driver to be called utf16_*
-instead of utf8_* as the encoding is utf16, not utf8.
-
-As well, rename utf16_strlen to utf16_strnlen as it takes a maxlength
-argument and the name should be consistent with the standard C function
-names.  utf16_strlen is still provided for convenience in a subsequent
-patch.
-
-Signed-off-by: Mike Waychison <mikew@google.com>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
 ---
- drivers/firmware/efivars.c |   30 +++++++++++++++++++-----------
- 1 files changed, 19 insertions(+), 11 deletions(-)
+ drivers/acpi/apei/erst.c |   18 +++++++++++++-----
+ fs/pstore/inode.c        |   10 +++++-----
+ fs/pstore/internal.h     |    2 +-
+ fs/pstore/platform.c     |   13 +++++++------
+ include/linux/pstore.h   |    8 +++++---
+ 5 files changed, 31 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index 2bbb226..4202a31 100644
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -144,23 +144,29 @@ efivar_create_sysfs_entry(struct efivars *efivars,
+diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
+index c8ba9da..8aac55e 100644
+--- a/drivers/acpi/apei/erst.c
++++ b/drivers/acpi/apei/erst.c
+@@ -932,8 +932,10 @@ static int erst_check_table(struct acpi_table_erst *erst_tab)
+ static int erst_open_pstore(struct pstore_info *psi);
+ static int erst_close_pstore(struct pstore_info *psi);
+ static ssize_t erst_reader(u64 *id, enum pstore_type_id *type,
+-		       struct timespec *time);
+-static u64 erst_writer(enum pstore_type_id type, size_t size);
++			   struct timespec *time, struct pstore_info *psi);
++static u64 erst_writer(enum pstore_type_id type, size_t size,
++		       struct pstore_info *psi);
++static int erst_clearer(u64 id, struct pstore_info *psi);
  
- /* Return the number of unicode characters in data */
- static unsigned long
--utf8_strlen(efi_char16_t *data, unsigned long maxlength)
-+utf16_strnlen(efi_char16_t *s, size_t maxlength)
- {
- 	unsigned long length = 0;
+ static struct pstore_info erst_info = {
+ 	.owner		= THIS_MODULE,
+@@ -942,7 +944,7 @@ static struct pstore_info erst_info = {
+ 	.close		= erst_close_pstore,
+ 	.read		= erst_reader,
+ 	.write		= erst_writer,
+-	.erase		= erst_clear
++	.erase		= erst_clearer
+ };
  
--	while (*data++ != 0 && length < maxlength)
-+	while (*s++ != 0 && length < maxlength)
- 		length++;
- 	return length;
+ #define CPER_CREATOR_PSTORE						\
+@@ -983,7 +985,7 @@ static int erst_close_pstore(struct pstore_info *psi)
  }
  
-+static unsigned long
-+utf16_strlen(efi_char16_t *s)
+ static ssize_t erst_reader(u64 *id, enum pstore_type_id *type,
+-		       struct timespec *time)
++			   struct timespec *time, struct pstore_info *psi)
+ {
+ 	int rc;
+ 	ssize_t len = 0;
+@@ -1037,7 +1039,8 @@ out:
+ 	return (rc < 0) ? rc : (len - sizeof(*rcd));
+ }
+ 
+-static u64 erst_writer(enum pstore_type_id type, size_t size)
++static u64 erst_writer(enum pstore_type_id type, size_t size,
++		       struct pstore_info *psi)
+ {
+ 	struct cper_pstore_record *rcd = (struct cper_pstore_record *)
+ 					(erst_info.buf - sizeof(*rcd));
+@@ -1080,6 +1083,11 @@ static u64 erst_writer(enum pstore_type_id type, size_t size)
+ 	return rcd->hdr.record_id;
+ }
+ 
++static int erst_clearer(u64 id, struct pstore_info *psi)
 +{
-+	return utf16_strnlen(s, ~0UL);
++	return erst_clear(id);
 +}
 +
- /*
-  * Return the number of bytes is the length of this string
-  * Note: this is NOT the same as the number of unicode characters
-  */
- static inline unsigned long
--utf8_strsize(efi_char16_t *data, unsigned long maxlength)
-+utf16_strsize(efi_char16_t *data, unsigned long maxlength)
+ static int __init erst_init(void)
  {
--	return utf8_strlen(data, maxlength/sizeof(efi_char16_t)) * sizeof(efi_char16_t);
-+	return utf16_strnlen(data, maxlength/sizeof(efi_char16_t)) * sizeof(efi_char16_t);
+ 	int rc = 0;
+diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
+index 977ed27..b19884a 100644
+--- a/fs/pstore/inode.c
++++ b/fs/pstore/inode.c
+@@ -40,7 +40,7 @@
+ 
+ struct pstore_private {
+ 	u64	id;
+-	int	(*erase)(u64);
++	struct pstore_info *psi;
+ 	ssize_t	size;
+ 	char	data[];
+ };
+@@ -73,7 +73,7 @@ static int pstore_unlink(struct inode *dir, struct dentry *dentry)
+ {
+ 	struct pstore_private *p = dentry->d_inode->i_private;
+ 
+-	p->erase(p->id);
++	p->psi->erase(p->id, p->psi);
+ 
+ 	return simple_unlink(dir, dentry);
  }
+@@ -175,8 +175,8 @@ int pstore_is_mounted(void)
+  * Set the mtime & ctime to the date that this record was originally stored.
+  */
+ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
+-			      char *data, size_t size,
+-			      struct timespec time, int (*erase)(u64))
++		  char *data, size_t size, struct timespec time,
++		  struct pstore_info *psi)
+ {
+ 	struct dentry		*root = pstore_sb->s_root;
+ 	struct dentry		*dentry;
+@@ -193,7 +193,7 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
+ 	if (!private)
+ 		goto fail_alloc;
+ 	private->id = id;
+-	private->erase = erase;
++	private->psi = psi;
  
- static efi_status_t
-@@ -518,7 +524,9 @@ static u64 efi_pstore_write(enum pstore_type_id type, unsigned int part,
- 		efivar_unregister(found);
+ 	switch (type) {
+ 	case PSTORE_TYPE_DMESG:
+diff --git a/fs/pstore/internal.h b/fs/pstore/internal.h
+index 8c9f23e..611c1b3 100644
+--- a/fs/pstore/internal.h
++++ b/fs/pstore/internal.h
+@@ -2,5 +2,5 @@ extern void	pstore_set_kmsg_bytes(int);
+ extern void	pstore_get_records(void);
+ extern int	pstore_mkfile(enum pstore_type_id, char *psname, u64 id,
+ 			      char *data, size_t size,
+-			      struct timespec time, int (*erase)(u64));
++			      struct timespec time, struct pstore_info *psi);
+ extern int	pstore_is_mounted(void);
+diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
+index f2c3ff2..221c04e 100644
+--- a/fs/pstore/platform.c
++++ b/fs/pstore/platform.c
+@@ -94,11 +94,12 @@ static void pstore_dump(struct kmsg_dumper *dumper,
+ 		memcpy(dst, s1 + s1_start, l1_cpy);
+ 		memcpy(dst + l1_cpy, s2 + s2_start, l2_cpy);
  
- 	if (size)
--		efivar_create_sysfs_entry(efivars, utf8_strsize(efi_name, DUMP_NAME_LEN * 2),
-+		efivar_create_sysfs_entry(efivars,
-+					  utf16_strsize(efi_name,
-+							DUMP_NAME_LEN * 2),
- 					  efi_name, &vendor);
+-		id = psinfo->write(PSTORE_TYPE_DMESG, hsize + l1_cpy + l2_cpy);
++		id = psinfo->write(PSTORE_TYPE_DMESG, hsize + l1_cpy + l2_cpy,
++				   psinfo);
+ 		if (reason == KMSG_DUMP_OOPS && pstore_is_mounted())
+ 			pstore_mkfile(PSTORE_TYPE_DMESG, psinfo->name, id,
+ 				      psinfo->buf, hsize + l1_cpy + l2_cpy,
+-				      CURRENT_TIME, psinfo->erase);
++				      CURRENT_TIME, psinfo);
+ 		l1 -= l1_cpy;
+ 		l2 -= l2_cpy;
+ 		total += l1_cpy + l2_cpy;
+@@ -166,9 +167,9 @@ void pstore_get_records(void)
+ 	if (rc)
+ 		goto out;
  
- 	return part;
-@@ -591,8 +599,8 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
- 	 * Does this variable already exist?
- 	 */
- 	list_for_each_entry_safe(search_efivar, n, &efivars->list, list) {
--		strsize1 = utf8_strsize(search_efivar->var.VariableName, 1024);
--		strsize2 = utf8_strsize(new_var->VariableName, 1024);
-+		strsize1 = utf16_strsize(search_efivar->var.VariableName, 1024);
-+		strsize2 = utf16_strsize(new_var->VariableName, 1024);
- 		if (strsize1 == strsize2 &&
- 			!memcmp(&(search_efivar->var.VariableName),
- 				new_var->VariableName, strsize1) &&
-@@ -624,8 +632,8 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
+-	while ((size = psi->read(&id, &type, &time)) > 0) {
++	while ((size = psi->read(&id, &type, &time, psi)) > 0) {
+ 		if (pstore_mkfile(type, psi->name, id, psi->buf, (size_t)size,
+-				  time, psi->erase))
++				  time, psi))
+ 			failed++;
+ 	}
+ 	psi->close(psi);
+@@ -196,10 +197,10 @@ int pstore_write(enum pstore_type_id type, char *buf, size_t size)
  
- 	/* Create the entry in sysfs.  Locking is not required here */
- 	status = efivar_create_sysfs_entry(efivars,
--					   utf8_strsize(new_var->VariableName,
--							1024),
-+					   utf16_strsize(new_var->VariableName,
-+							 1024),
- 					   new_var->VariableName,
- 					   &new_var->VendorGuid);
- 	if (status) {
-@@ -654,8 +662,8 @@ static ssize_t efivar_delete(struct file *filp, struct kobject *kobj,
- 	 * Does this variable already exist?
- 	 */
- 	list_for_each_entry_safe(search_efivar, n, &efivars->list, list) {
--		strsize1 = utf8_strsize(search_efivar->var.VariableName, 1024);
--		strsize2 = utf8_strsize(del_var->VariableName, 1024);
-+		strsize1 = utf16_strsize(search_efivar->var.VariableName, 1024);
-+		strsize2 = utf16_strsize(del_var->VariableName, 1024);
- 		if (strsize1 == strsize2 &&
- 			!memcmp(&(search_efivar->var.VariableName),
- 				del_var->VariableName, strsize1) &&
+ 	mutex_lock(&psinfo->buf_mutex);
+ 	memcpy(psinfo->buf, buf, size);
+-	id = psinfo->write(type, size);
++	id = psinfo->write(type, size, psinfo);
+ 	if (pstore_is_mounted())
+ 		pstore_mkfile(PSTORE_TYPE_DMESG, psinfo->name, id, psinfo->buf,
+-			      size, CURRENT_TIME, psinfo->erase);
++			      size, CURRENT_TIME, psinfo);
+ 	mutex_unlock(&psinfo->buf_mutex);
+ 
+ 	return 0;
+diff --git a/include/linux/pstore.h b/include/linux/pstore.h
+index 2455ef2..b2f1d97 100644
+--- a/include/linux/pstore.h
++++ b/include/linux/pstore.h
+@@ -38,9 +38,11 @@ struct pstore_info {
+ 	int		(*open)(struct pstore_info *psi);
+ 	int		(*close)(struct pstore_info *psi);
+ 	ssize_t		(*read)(u64 *id, enum pstore_type_id *type,
+-			struct timespec *time);
+-	u64		(*write)(enum pstore_type_id type, size_t size);
+-	int		(*erase)(u64 id);
++			struct timespec *time, struct pstore_info *psi);
++	u64		(*write)(enum pstore_type_id type, size_t size,
++			struct pstore_info *psi);
++	int		(*erase)(u64 id, struct pstore_info *psi);
++	void		*data;
+ };
+ 
+ #ifdef CONFIG_PSTORE
 -- 
 1.7.6
 
