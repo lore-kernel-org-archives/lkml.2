@@ -1,42 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753702Ab1GRSFg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 14:05:36 -0400
-Received: from mail.perches.com ([173.55.12.10]:4143 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751115Ab1GRSFf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 14:05:35 -0400
-Subject: Re: [PATCH] tulip: dmfe: Remove old log spamming pr_debugs
-From: Joe Perches <joe@perches.com>
-To: David Miller <davem@davemloft.net>
-Cc: jdelvare@suse.de, grundler@parisc-linux.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110718.104537.546991191560526229.davem@davemloft.net>
-References: <201107181440.35886.jdelvare@suse.de>
-	 <0a5f6c4c4c948dd5ff827bb5c5517294c9410bfc.1311000440.git.joe@perches.com>
-	 <20110718.104537.546991191560526229.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Jul 2011 11:05:32 -0700
-Message-ID: <1311012332.2286.110.camel@Joe-Laptop>
+	id S1753972Ab1GRSHW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 14:07:22 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:57716 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751455Ab1GRSHU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 14:07:20 -0400
+Date: Mon, 18 Jul 2011 11:06:17 -0700 (PDT)
+Message-Id: <20110718.110617.207141326101677046.davem@davemloft.net>
+To: xiyou.wangcong@gmail.com
+Cc: mmarek@suse.cz, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [Patch] include/linux/sdla.h: remove the prototype of sdla()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CAM_iQpWDrhHw8-Hf4q1miHR+rT33wQb=ZSb=ffsxaSak=UHPMw@mail.gmail.com>
+References: <CAM_iQpWDrhHw8-Hf4q1miHR+rT33wQb=ZSb=ffsxaSak=UHPMw@mail.gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 18 Jul 2011 11:06:18 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-07-18 at 10:45 -0700, David Miller wrote:
-> From: Joe Perches <joe@perches.com>
-> Date: Mon, 18 Jul 2011 07:50:33 -0700
-> > Commit 726b65ad444d ("tulip: Convert uses of KERN_DEBUG") enabled
-> > some old previously inactive uses of pr_debug converted by
-> > commit dde7c8ef1679 ("tulip/dmfe.c: Use dev_<level> and pr_<level>").
-> > Remove these pr_debugs.
-> > Signed-off-by: Joe Perches <joe@perches.com>
-> Applied.
+From: Américo Wang <xiyou.wangcong@gmail.com>
+Date: Sun, 17 Jul 2011 16:22:20 +0800
 
-I believe this should go into current if you push
-one more to Linus or maybe stable for 3.0.
+> `make headers_check` complains that
+> 
+> linux-2.6/usr/include/linux/sdla.h:116: userspace cannot reference
+> function or variable defined in the kernel
+> 
+> this is due to that there is no such a kernel function,
+> 
+> void sdla(void *cfg_info, char *dev, struct frad_conf *conf, int quiet);
+> 
+> I don't know why we have it in a kernel header, so remove it.
+> 
+> Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
 
-cheers, Joe
-
+Applied, thanks.
