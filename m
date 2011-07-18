@@ -1,172 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899Ab1GRHeM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 03:34:12 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:39979 "EHLO smtps.tip.net.au"
+	id S1753062Ab1GRHhH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 03:37:07 -0400
+Received: from gate.crashing.org ([63.228.1.57]:39718 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751933Ab1GRHeK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 03:34:10 -0400
-Date: Mon, 18 Jul 2011 17:34:09 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dave Chinner <dchinner@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Subject: linux-next: manual merge of the writeback tree with the vfs tree
-Message-Id: <20110718173409.2885649b65937eb7caecf943@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
+	id S1752453Ab1GRHhF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 03:37:05 -0400
+Subject: Re: [PATCH 1/1] Fixup write permission of TLB on powerpc e500 core
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Shan Hai <haishan.bai@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, paulus@samba.org,
+        tglx@linutronix.de, walken@google.com, dhowells@redhat.com,
+        cmetcalf@tilera.com, tony.luck@intel.com, akpm@linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+In-Reply-To: <4E23E02C.8090401@gmail.com>
+References: <1310717238-13857-1-git-send-email-haishan.bai@gmail.com>
+	 <1310717238-13857-2-git-send-email-haishan.bai@gmail.com>
+	 <1310725418.2586.309.camel@twins> <4E21A526.8010904@gmail.com>
+	 <1310860194.25044.17.camel@pasglop>
+	 <4b337921-d430-4b63-bc36-ad31753cf800@email.android.com>
+	 <1310912990.25044.203.camel@pasglop>  <1310944453.25044.262.camel@pasglop>
+	 <1310961691.25044.274.camel@pasglop>  <4E23D728.7090406@gmail.com>
+	 <1310972462.25044.292.camel@pasglop>  <4E23E02C.8090401@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 18 Jul 2011 17:36:31 +1000
+Message-ID: <1310974591.25044.298.camel@pasglop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wu,
+On Mon, 2011-07-18 at 15:26 +0800, Shan Hai wrote:
+> 
+> I am sorry I hadn't tried your newer patch, I tried it but it still 
+> could not work in my test environment, I will dig into and tell you
+> why that failed later.
 
-Today's linux-next merge of the writeback tree got a conflict in
-fs/fs-writeback.c between commit dffe5a6c5214 ("superblock: move
-pin_sb_for_writeback() to fs/super.c") from the vfs tree and commits
-f758eeabeb96 ("writeback: split inode_wb_list_lock into
-bdi_writeback.list_lock") and d46db3d58233 ("writeback: make
-writeback_control.nr_to_write straight") from the writeback tree.
+Ok, please let me know what you find !
 
-I fixed it up (I think - see below) and can carry the fix as necessary.
--- 
+> Yep, I know holding lots of ifdef's everywhere is not so good,
+> but if we have some other way(I don't know how till now) to
+> figure out the arch has the need to fixup up the write permission
+> we could eradicate the ugly ifdef's here.
+> 
+> I think the handle_mm_fault could do all dirty/young tracking,
+> because the purpose of making follow_page return NULL to
+> its caller is that want to the handle_mm_fault to be called
+> on write permission protection fault.
+
+I see your point. Rather than factoring the fixup code out, we could
+force gup to call handle_mm_fault()... that makes sense.
+
+However, I don't think we should special case archs. There's plenty of
+cases where we don't care about this fixup even on archs that do SW
+tracking of dirty and young. For example when gup is using for
+subsequent DMA.
+
+Only the (rare ?) cases where it's used as a mean to fixup a failing
+"atomic" user access are relevant.
+
+So I believe we should still pass an explicit flag to __get_user_pages()
+as I propose to activate that behaviour.
+
+At this point, since we have isolated the special case callers, I think
+we are pretty much in a situation where there's no point trying to
+optimize the x86 case more, it's a fairly slow path anyway, and so no
+ifdef should be needed (and x86 already #define out the TLB flush for
+spurious faults in handle_pte_fault today).
+
+We don't even need to change follow_page()... we just don't call it the
+first time around.
+
+I'll cook up another patch later but first we need to find out why the
+one you have doesn't work. There might be another problem lurking (or I
+just made a stupid mistake).
+
+BTW. Can you give me some details about how you reproduce the problem ?
+I should setup something on a booke machine here to verify things.
+
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Ben.
 
-diff --cc fs/fs-writeback.c
-index b8c507c,6d49439..0000000
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@@ -460,6 -480,63 +480,37 @@@ writeback_single_inode(struct inode *in
-  	return ret;
-  }
-  
- -/*
- - * For background writeback the caller does not have the sb pinned
- - * before calling writeback. So make sure that we do pin it, so it doesn't
- - * go away while we are writing inodes from it.
- - */
- -static bool pin_sb_for_writeback(struct super_block *sb)
- -{
- -	spin_lock(&sb_lock);
- -	if (list_empty(&sb->s_instances)) {
- -		spin_unlock(&sb_lock);
- -		return false;
- -	}
- -
- -	sb->s_count++;
- -	spin_unlock(&sb_lock);
- -
- -	if (down_read_trylock(&sb->s_umount)) {
- -		if (sb->s_root)
- -			return true;
- -		up_read(&sb->s_umount);
- -	}
- -
- -	put_super(sb);
- -	return false;
- -}
- -
-+ static long writeback_chunk_size(struct backing_dev_info *bdi,
-+ 				 struct wb_writeback_work *work)
-+ {
-+ 	long pages;
-+ 
-+ 	/*
-+ 	 * WB_SYNC_ALL mode does livelock avoidance by syncing dirty
-+ 	 * inodes/pages in one big loop. Setting wbc.nr_to_write=LONG_MAX
-+ 	 * here avoids calling into writeback_inodes_wb() more than once.
-+ 	 *
-+ 	 * The intended call sequence for WB_SYNC_ALL writeback is:
-+ 	 *
-+ 	 *      wb_writeback()
-+ 	 *          writeback_sb_inodes()       <== called only once
-+ 	 *              write_cache_pages()     <== called once for each inode
-+ 	 *                   (quickly) tag currently dirty pages
-+ 	 *                   (maybe slowly) sync all tagged pages
-+ 	 */
-+ 	if (work->sync_mode == WB_SYNC_ALL || work->tagged_writepages)
-+ 		pages = LONG_MAX;
-+ 	else {
-+ 		pages = min(bdi->avg_write_bandwidth / 2,
-+ 			    global_dirty_limit / DIRTY_SCOPE);
-+ 		pages = min(pages, work->nr_pages);
-+ 		pages = round_down(pages + MIN_WRITEBACK_PAGES,
-+ 				   MIN_WRITEBACK_PAGES);
-+ 	}
-+ 
-+ 	return pages;
-+ }
-+ 
-  /*
-   * Write a portion of b_io inodes which belong to @sb.
-   *
-@@@ -559,40 -643,41 +617,41 @@@ static long __writeback_inodes_wb(struc
-  		struct inode *inode = wb_inode(wb->b_io.prev);
-  		struct super_block *sb = inode->i_sb;
-  
- -		if (!pin_sb_for_writeback(sb)) {
- +		if (!grab_super_passive(sb)) {
-- 			requeue_io(inode);
-+ 			requeue_io(inode, wb);
-  			continue;
-  		}
-- 		ret = writeback_sb_inodes(sb, wb, wbc, false);
-+ 		wrote += writeback_sb_inodes(sb, wb, work);
-  		drop_super(sb);
-  
-- 		if (ret)
-- 			break;
-+ 		/* refer to the same tests at the end of writeback_sb_inodes */
-+ 		if (wrote) {
-+ 			if (time_is_before_jiffies(start_time + HZ / 10UL))
-+ 				break;
-+ 			if (work->nr_pages <= 0)
-+ 				break;
-+ 		}
-  	}
-- 	spin_unlock(&inode_wb_list_lock);
-  	/* Leave any unwritten inodes on b_io */
-+ 	return wrote;
-  }
-  
-- static void __writeback_inodes_sb(struct super_block *sb,
-- 		struct bdi_writeback *wb, struct writeback_control *wbc)
-+ long writeback_inodes_wb(struct bdi_writeback *wb, long nr_pages)
-  {
-- 	WARN_ON(!rwsem_is_locked(&sb->s_umount));
-+ 	struct wb_writeback_work work = {
-+ 		.nr_pages	= nr_pages,
-+ 		.sync_mode	= WB_SYNC_NONE,
-+ 		.range_cyclic	= 1,
-+ 	};
-  
-- 	spin_lock(&inode_wb_list_lock);
-- 	if (!wbc->for_kupdate || list_empty(&wb->b_io))
-- 		queue_io(wb, wbc->older_than_this);
-- 	writeback_sb_inodes(sb, wb, wbc, true);
-- 	spin_unlock(&inode_wb_list_lock);
-- }
-+ 	spin_lock(&wb->list_lock);
-+ 	if (list_empty(&wb->b_io))
-+ 		queue_io(wb, NULL);
-+ 	__writeback_inodes_wb(wb, &work);
-+ 	spin_unlock(&wb->list_lock);
-  
-- /*
--  * The maximum number of pages to writeout in a single bdi flush/kupdate
--  * operation.  We do this so we don't hold I_SYNC against an inode for
--  * enormous amounts of time, which would block a userspace task which has
--  * been forced to throttle against that inode.  Also, the code reevaluates
--  * the dirty each time it has written this many pages.
--  */
-- #define MAX_WRITEBACK_PAGES     1024
-+ 	return nr_pages - work.nr_pages;
-+ }
-  
-  static inline bool over_bground_thresh(void)
-  {
