@@ -1,41 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755294Ab1GRTfp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 15:35:45 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:56664 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803Ab1GRTfo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 15:35:44 -0400
-Date: Mon, 18 Jul 2011 12:33:34 -0700 (PDT)
-Message-Id: <20110718.123334.586181689043364242.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, iliak@ti.com, padovan@profusion.mobi,
-        luiz.von.dentz@intel.com
-Subject: Re: linux-next: manual merge of the net tree with Linus' tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110718144138.d57ab0a2a806e06fabbcfc9b@canb.auug.org.au>
-References: <20110718144138.d57ab0a2a806e06fabbcfc9b@canb.auug.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 18 Jul 2011 12:33:37 -0700 (PDT)
+	id S1755356Ab1GRTgE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 15:36:04 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38725 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755173Ab1GRTgB convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 15:36:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110718192038.GG11013@ZenIV.linux.org.uk>
+References: <20110717231610.GR11013@ZenIV.linux.org.uk> <CA+55aFxEGKgx+_xy+Lnt=84wRzE9TyznL3VCNSqWs7HC_H35_A@mail.gmail.com>
+ <alpine.LSU.2.00.1107171641130.1274@sister.anvils> <20110718002524.GU11013@ZenIV.linux.org.uk>
+ <alpine.LSU.2.00.1107171740260.1327@sister.anvils> <20110718020818.GW11013@ZenIV.linux.org.uk>
+ <CA+55aFwXgcWxvAz7w1f_HYyzdm9b9EBJfrWhF1FW7EA3zpbJPg@mail.gmail.com>
+ <CA+55aFxKRw8NxcHKzsSeCX3ud6eDrcQvAX+LMQOUT4p5TPLp5g@mail.gmail.com>
+ <20110718182030.GF11013@ZenIV.linux.org.uk> <CA+55aFw+RwscYUocP0WYWTU=F+Udx+AsjMA0i63-D-y3iZKCTQ@mail.gmail.com>
+ <20110718192038.GG11013@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 18 Jul 2011 12:34:45 -0700
+Message-ID: <CA+55aFw0=9fP6HjB7rAa+_xNcStxG0hPiwj7Yp_1XJUzrOyXMQ@mail.gmail.com>
+Subject: Re: [PATCH] vfs: fix race in rcu lookup of pruned dentry
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 18 Jul 2011 14:41:38 +1000
+On Mon, Jul 18, 2011 at 12:20 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> Hmm...  Could you pull #for-linus (or #for-linus2, for that matter - same
+> plus cifs_get_root() fix) first?
 
-> Today's linux-next merge of the net tree got a conflict in
-> net/bluetooth/l2cap_core.c between commit 9191e6ad897a ("Bluetooth: Fix
-> regression in L2CAP connection procedure") from Linus' tree and commit
-> e2fd318e3a92 ("Bluetooth: Fixes l2cap "command reject" reply according to
-> spec") from the net tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary.
+I'd already done that, it just wasn't pushed out to master yet. Out now.
 
-Thanks Stephen, I'll sort this out next time I do a merge between
-net-2.6 and net-next-2.6.
+Except at the time I pulled, it was just the older 'for_linus' branch.
+
+                   Linus
