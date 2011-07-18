@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754942Ab1GRJfj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 05:35:39 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:48531 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750758Ab1GRJfi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 05:35:38 -0400
-Date: Mon, 18 Jul 2011 19:35:25 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Avi Kivity <avi@qumranet.com>, Marcelo Tosatti <mtosatti@redhat.com>
-Subject: linux-next: build failure after merge of the final tree
-Message-Id: <20110718193525.f7ee20f705da1f0ed84955b8@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__18_Jul_2011_19_35_25_+1000_G893vTy6vEziphYl"
+	id S1755342Ab1GRJgA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 05:36:00 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61645 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754174Ab1GRJf7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 05:35:59 -0400
+From: stufever@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: Wang Shaoyan <wangshaoyan.pt@inc.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Wang Shaoyan <wangshaoyan.pt@taobao.com>
+Subject: [PATCH] TRACING: Fix a copmile warning
+Date: Mon, 18 Jul 2011 17:35:38 +0800
+Message-Id: <1310981738-13529-1-git-send-email-wangshaoyan.pt@taobao.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__18_Jul_2011_19_35_25_+1000_G893vTy6vEziphYl
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Wang Shaoyan <wangshaoyan.pt@inc.com>
 
-Hi all,
+It's harmless but annyoing.
+  kernel/trace/trace_printk.c: In function ‘module_trace_bprintk_format_notify’:
+  kernel/trace/trace_printk.c:52: warning: ‘fmt’ may be used uninitialized in this function
 
-After merging the final tree, today's linux-next build (powerpc
-allysconfig) failed like this:
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Signed-off-by: Wang Shaoyan <wangshaoyan.pt@taobao.com>
 
-arch/powerpc/kernel/exceptions-64s.S: Assembler messages:
-arch/powerpc/kernel/exceptions-64s.S:1151: Error: attempt to move .org back=
-wards
-arch/powerpc/kernel/exceptions-64s.S:1160: Error: attempt to move .org back=
-wards
+---
+ kernel/trace/trace_printk.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-This is probably powerpc or kvm tree related.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+diff --git a/kernel/trace/trace_printk.c b/kernel/trace/trace_printk.c
+index 1f06468..1a5fff8 100644
+--- a/kernel/trace/trace_printk.c
++++ b/kernel/trace/trace_printk.c
+@@ -49,7 +49,7 @@ static
+ void hold_module_trace_bprintk_format(const char **start, const char **end)
+ {
+ 	const char **iter;
+-	char *fmt;
++	char *fmt = NULL;
+ 
+ 	mutex_lock(&btrace_mutex);
+ 	for (iter = start; iter < end; iter++) {
+-- 
+1.7.4.1
 
---Signature=_Mon__18_Jul_2011_19_35_25_+1000_G893vTy6vEziphYl
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOI/5dAAoJEDMEi1NhKgbsoBQH/jmLT1Ye+7LHoHgv1rBrUVJs
-XrbavM9XnFLkC20ges+0daBMNsZqbXqD3uaxo10vCMtLEO97Rc9nDDaJXIZeZa++
-QF/8bZyXxHG9xlRLLLSZo/7vVUz1Sb0NPHJ1wWu9icN6Xly/k4pel7qrxkA36NMH
-7t8+B7iu2dOswZDJaVSmwCfqVN0QQ5pd8U4CdD6fldtX5hKxCQEebdbQTWYE0A9r
-qGwPOcrJTLeBkdWCugpaBhosU9qF92fnZBYdjHEkQUg5/mYIXgyCLRmLP8JS+gxC
-0u56L9uKbmDrw8FuUlFH7pN2mZLDC/kSW/eFK1E66PyR6Z6JPA5/8rXtsH/eTvY=
-=kIiU
------END PGP SIGNATURE-----
-
---Signature=_Mon__18_Jul_2011_19_35_25_+1000_G893vTy6vEziphYl--
