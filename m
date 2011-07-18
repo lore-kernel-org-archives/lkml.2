@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756405Ab1GRLgW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 07:36:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1384 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751128Ab1GRLgU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 07:36:20 -0400
-Date: Mon, 18 Jul 2011 14:36:00 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-arch@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>
-Subject: Re: current_thread_info() vs task_thread_info(current)
-Message-ID: <20110718113600.GI2400@redhat.com>
-References: <1310988183.13765.56.camel@twins>
-MIME-Version: 1.0
+	id S1756556Ab1GRLlY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 07:41:24 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:64092 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751128Ab1GRLlX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 07:41:23 -0400
+X-Nat-Received: from [202.181.97.72]:60505 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1310989278.7746
+To: andriy.shevchenko@linux.intel.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: can: remove custom hex_to_bin()
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <1310977597-9666-1-git-send-email-andriy.shevchenko@linux.intel.com>
+In-Reply-To: <1310977597-9666-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Message-Id: <201107182041.EHB78622.VOFSHFMOOFtLJQ@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Mon, 18 Jul 2011 20:41:14 +0900
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1310988183.13765.56.camel@twins>
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 17072011 #5619247, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 18, 2011 at 01:23:03PM +0200, Peter Zijlstra wrote:
-> Thomas just spend a lovely morning trying to make sense of a trace where
-> TIF_NEED_RESCHED wasn't set after resched_task() and magically appeared
-> after local_bh_enable().
-> 
-> What happened is that on that particular platform softirqs ran on a
-> separate stack, and current_thread_info() is relative to the stack
-> pointer.
-> 
-> The result is that current_thread_info() isn't the same as
-> task_thread_info(current), *surprise*!!
-> 
-> The immediate problem is of course that we can loose TIF flags when set
-> through current_thread_info() from IRQ/SoftIRQ context.
-> 
-> Now I was going to add a WARN() in x86_64's current_thread_info() to
-> catch all these, sadly x86_64's implementation isn't prone to this
-> particular issue, which means most people (kernel devs) will not be
-> affected (i386 is affected, but nobody sane uses that anymore).
-> 
-> 
-> Just to give an example, RCU uses set_need_resched(), set_need_resched()
-> uses current_thread_info(). The use in force_quiescent_state() is from
-> softirq afaict, the one in __rcu_pending() is from hardirq.
-> 
-> On such platforms as Thomas was playing on, the TIF bit will be lost,
-> since it will be set on the thread_info associated with some interrupt
-> stack, not the current process.
-> 
-> 
-> So how are we going to solve this? Naively I'd think that
-> current_thread_info() is short for task_thread_info(current), and thus
-> the platforms for where this isn't true are broken.
-> 
-> I mean, what use is the thread_info not of a thread?
-> 
-> Comments?
+Andy Shevchenko wrote:
+>  	for (i = 0, dlc_pos++; i < cf.can_dlc; i++) {
+> -
+> -		tmp = asc2nibble(sl->rbuff[dlc_pos++]);
+> -		if (tmp > 0x0F)
+> +		tmp = hex_to_bin(sl->rbuff[dlc_pos++]);
+> +		if (tmp < 0)
+>  			return;
+>  		cf.data[i] = (tmp << 4);
+> -		tmp = asc2nibble(sl->rbuff[dlc_pos++]);
+> -		if (tmp > 0x0F)
+> +		tmp = hex_to_bin(sl->rbuff[dlc_pos++]);
+> +		if (tmp < 0)
+>  			return;
+>  		cf.data[i] |= tmp;
+>  	}
 
-Why not use per cpu kernel_stack variable on all arches as x86_64 does?
-How big the advantage of using stack pointer to find current thread info is?
+What about changing
 
---
-			Gleb.
+  void hex2bin(u8 *dst, const char *src, size_t count)
+
+to
+
+  bool hex2bin(u8 *dst, const char *src, size_t count)
+
+in order to do error checks like
+
+bool hex2bin_with_validation(u8 *dst, const char *src, size_t count)
+{
+	while (count--) {
+		int c = hex_to_bin(*src++);
+		int d;
+		if (c < 0)
+			return false;
+		d = hex_to_bin(*src++)
+		if (d < 0)
+			return false;
+		*dst++ = (c << 4) | d;
+	}
+	return true;
+}
+
+and use hex2bin() rather than hex_to_bin()?
