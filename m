@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752104Ab1GRO4f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 10:56:35 -0400
-Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:30971 "HELO
-	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751201Ab1GRO4e (ORCPT
+	id S1751714Ab1GRPBp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 11:01:45 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:58816
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750758Ab1GRPBo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 10:56:34 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: _d3y2UMVM1lQIRi9PPvZQTnaxTX01Ln7xgBctT_2MhU0vRt
- n77KBMgcprJY6jxZWDPboLkkfVcULpj57WbxVzhyms7VGceSZRHDe3Hol8Lu
- Idz6tNTkmC4J8M3zcj6qiKTyNdvw4hVycNhjFP4KBEnLr0sQQfccNj.sqrgZ
- FmvwsvEViaJ856Jx9Iq9HtdYe295pJsX7lF46M2aTkuR31kI48aBbwXejMdi
- x_KRi2eWpDfcV4TPXNHTk_qDk7hJxfBMOtHm_pufGKzzcKyc2pG4_Yv_R0Wg
- Jti1g2QFenRCAg1sQtjM1zlCSVjV6sufe6EePBwZl9ObV9f8EydtB5eptSHy
- mC.RzT0YpGsdvU6_uS2_AIZQf
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Mon, 18 Jul 2011 09:56:31 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Mel Gorman <mgorman@suse.de>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] mm: page allocator: Initialise ZLC for first zone
- eligible for zone_reclaim
-In-Reply-To: <1310742540-22780-2-git-send-email-mgorman@suse.de>
-Message-ID: <alpine.DEB.2.00.1107180951390.30392@router.home>
-References: <1310742540-22780-1-git-send-email-mgorman@suse.de> <1310742540-22780-2-git-send-email-mgorman@suse.de>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 18 Jul 2011 11:01:44 -0400
+Date: Mon, 18 Jul 2011 11:01:41 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Daniel Barkalow <barkalow@iabervon.org>,
+        Christoph Hellwig <hch@tuxera.com>, linux-kernel@vger.kernel.org
+Subject: Re: Problems with hfsplus on ipods in 2.6.38+
+Message-ID: <20110718150141.GA28123@infradead.org>
+References: <alpine.LNX.2.00.1107131942190.2056@iabervon.org>
+ <20110714135302.GA28501@thinkpad-t410>
+ <alpine.LNX.2.00.1107141330370.2056@iabervon.org>
+ <alpine.LNX.2.00.1107142116260.2056@iabervon.org>
+ <20110715143900.GB19063@thinkpad-t410>
+ <20110718133651.GA19552@thinkpad-t410>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110718133651.GA19552@thinkpad-t410>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Jul 2011, Mel Gorman wrote:
+On Mon, Jul 18, 2011 at 08:36:51AM -0500, Seth Forshee wrote:
+> On Fri, Jul 15, 2011 at 09:39:00AM -0500, Seth Forshee wrote:
+> > What I also see are GPFs in memory allocation code, which is what I
+> > believe others have seen with my patch, and so far I haven't seen those
+> > with the reversions. So I'm suspecting memory corruption, but I don't
+> > yet see where the corruption is coming form. I found one problem, but I
+> > don't suspect it's responsible for the GPFs.
+> 
+> I had some torture tests running over the weekend with the "one
+> problem" mentioned above fixed, which was a couple of kfrees that were
+> still using the old vhdr pointers. There were no oopses over a couple of
+> days of testing. I've posted a new build on the bug in launchpad in
+> hopes of getting some testing from those who were getting oopses quite
+> readily. The updated patch follows.
 
-> Currently the zonelist cache is setup only after the first zone has
-> been considered and zone_reclaim() has been called. The objective was
-> to avoid a costly setup but zone_reclaim is itself quite expensive. If
-> it is failing regularly such as the first eligible zone having mostly
-> mapped pages, the cost in scanning and allocation stalls is far higher
-> than the ZLC initialisation step.
-
-Would it not be easier to set zlc_active and allowednodes based on the
-zone having an active ZLC at the start of get_pages()?
-
-Buffered_rmqueue is handling the situation of a zone with an ZLC in a
-weird way right now since it ignores the (potentially existing) ZLC
-for the first pass. zlc_setup() does a lot of things. So that is because
-there is a performance benefit?
-
+Thanks a lot Seth.  I'll put it into my queue for Linux 3.1, and if
+everthing works out fine we can push it out to -stable.
 
