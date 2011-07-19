@@ -1,62 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751799Ab1GSWVZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 18:21:25 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:25850 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103Ab1GSWVY (ORCPT
+	id S1751758Ab1GSWY4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 18:24:56 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:53377 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751092Ab1GSWYz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 18:21:24 -0400
-Message-ID: <4E26036E.1070903@hp.com>
-Date: Tue, 19 Jul 2011 16:21:34 -0600
-From: Terry Loftin <terry.loftin@hp.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
+	Tue, 19 Jul 2011 18:24:55 -0400
+Message-ID: <4E260400.4060401@candelatech.com>
+Date: Tue, 19 Jul 2011 15:24:00 -0700
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Bob Montgomery <bob.montgomery@hp.com>
-Subject: Re: [PATCH 2/2] sched: Fix "divide error: 0000" in find_busiest_group
-References: <4E25F009.1040309@hp.com> <1311110290.2617.3.camel@laptop>
-In-Reply-To: <1311110290.2617.3.camel@laptop>
-Content-Type: text/plain; charset=UTF-8
+To: john stultz <johnstul@us.ibm.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: BUG spinlock lockup, rtc related, 3.0-rc7+
+References: <4E1DD5DF.2040408@candelatech.com> <CANcMJZBHMKXbDqgvKnZ-iiCbFm0a_5zyP179ReXF+cmRyM=O7w@mail.gmail.com>
+In-Reply-To: <CANcMJZBHMKXbDqgvKnZ-iiCbFm0a_5zyP179ReXF+cmRyM=O7w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 07/19/2011 03:18 PM, Peter Zijlstra wrote:
-> On Tue, 2011-07-19 at 14:58 -0600, Terry Loftin wrote:
->> Add a check to sched_avg_update() to detect and reset age_stamp if the
->> clock value has wrapped.  Because __cycles_2_ns() includes an offset
->> to account for start up time, the clock may not wrap to zero, so use
->> the current clock value instead.
-> 
-> So you're running on a platform (unspecified) where we use a raw
-> sched_clock() that is buggy. Again, you're fixing symptoms not causes. 
-> 
-This x86_64.  This is the actual cause, unless the rq->clock
-value should never roll, in which case, the clock roll is the
-actual cause and you can disregard these patches.
-
--T
->> Signed-off-by: Terry Loftin <terry.loftin@hp.com>
->> Signed-off-by: Bob Montgomery <bob.montgomery@hp.com>
->> ---
->> diff --git a/kernel/sched.c b/kernel/sched.c
->> index 18d38e4..b39cae1 100644
->> --- a/kernel/sched.c
->> +++ b/kernel/sched.c
->> @@ -1256,6 +1256,8 @@ static void sched_avg_update(struct rq *rq)
->>  {
->>  	s64 period = sched_avg_period();
+On 07/19/2011 03:17 PM, john stultz wrote:
+> On Wed, Jul 13, 2011 at 10:29 AM, Ben Greear<greearb@candelatech.com>  wrote:
+>> This is on the same nfs testing machine I've been posting about.  This
+>> has some additional nfs patches included, running tests to mount, do io,
+>> unmount
+>> over and over again.  Seems that the NFS bugs might be finally fixed, but
+>> system is still un-stable in general when under load.
 >>
->> +	if (unlikely(rq->age_stamp > rq->clock))
->> +		rq->age_stamp = rq->clock;
->>  	while ((s64)(rq->clock - rq->age_stamp) > period) {
->>  		/*
->>  		 * Inline assembly required to prevent the compiler
-> 
-> 
-> 
+>> This info was printed after several other warnings that I previously posted
+>> to lkml.
+>>
+>> This one appears to lock up the machine pretty badly though...can't ssh into
+>> it anymore, and similar messages keep spewing every few minutes.
+>>
+>> I *think* the BUG at the end of this email is the important part, but
+>> maybe it's just a symptom of something else...
+>
+> Huh. So does this trigger frequently, or was this just a one time
+> thing? I suspect the latter.
+
+It seems I have been hitting a lot of rcu-boost locking issues
+on this system with my nfs mount/unmount testing.
+
+The system was having various lockups and bugs, but I don't think
+I saw this particular one more than once or perhaps twice.
+
+I plan to run some more tests with the rcu-boost locking fixes
+applied to the kernel shortly.
+
+At the time I reported this, I wasn't aware of the rcu boost bugs,
+but perhaps that is root cause here as well...I don't know enough
+about the code in question to make an educated guess.
+
+>> From the looks of it, there's the btserver process (on cpu4) which
+> during exit is caught up spinning trying to get the hrtimer base lock
+> from hrtimer_cancel() in rtc_irq_set_state() when cleaning up from
+> rtc_device_release().
+>
+> Meanwhile, On cpu0, a rtc periodic timer has fired and we're stuck in
+> rtc_handle_legacy_irq(), likely waiting for the irq_task_lock held by
+> cpu4 in rtc_irq_set_state().
+>
+> The rest of the cpus are idle, with the exception of the one that
+> detected the stall from the normal timer tick.
+>
+> Hrmm.. It sounds like a circular lock between the rtc->irq_task_lock
+> and the hrtimer base lock.
+>
+> rtc_irq_set_state: Grab irq_task_lock ->  call hrtimer_cancel ->  grab
+> hrtimer_base_lock
+>
+> IRQ:  grab hrtimer_base_lock ->  run timers ->  rtc_handle_legacy_irq ->
+> grab irq_task_lock
+>
+> But looking at __run_hrtimer(), the base lock should be released
+> before the timer is run.
+>
+> So I'm not really sure what would be gumming up things here.
+>
+> Thomas: Any thoughts? There shouldn't be an issue calling
+> hrtimer_cancel or other hrtimer operations from an  hrtimer handler
+> right?
+>
+> thanks
+> -john
+
+
+-- 
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
+
