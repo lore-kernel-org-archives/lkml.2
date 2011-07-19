@@ -1,87 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752187Ab1GSKY2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 06:24:28 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:64064 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752088Ab1GSKY0 (ORCPT
+	id S1752202Ab1GSKZX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 06:25:23 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52277 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751985Ab1GSKZW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 06:24:26 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArIDAB9YJU55LCkBgWdsb2JhbABTp0kVAQEWJiWIfMQjDoYuBJsUiD8
-Date: Tue, 19 Jul 2011 20:24:22 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Josef Bacik <josef@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        viro@ZenIV.linux.org.uk, hch@infradead.org
-Subject: Re: [PATCH] fs: push i_mutex and filemap_write_and_wait down into
- ->fsync() handlers
-Message-ID: <20110719102422.GO30254@dastard>
-References: <1309275310-10987-1-git-send-email-josef@redhat.com>
+	Tue, 19 Jul 2011 06:25:22 -0400
+From: "Hadli, Manjunath" <manjunath.hadli@ti.com>
+To: "Nori, Sekhar" <nsekhar@ti.com>, "'Jon Povey'" <Jon.Povey@racelogic.co.uk>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 19 Jul 2011 15:54:53 +0530
+Subject: RE: [PATCH] davinci: fix DM365 EVM video input mux bits
+Thread-Topic: [PATCH] davinci: fix DM365 EVM video input mux bits
+Thread-Index: AcxFxEO6UigcFyPiSea2qTqvKwuHFAAD90YgAAItJbAAAYrhkAADtLFAAAMRbOo=
+Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024BBC5CEC@dbde02.ent.ti.com>
+References: <B85A65D85D7EB246BE421B3FB0FBB593024BCEF73E@dbde02.ent.ti.com>
+ <70E876B0EA86DD4BAF101844BC814DFE0B4E0859D7@Cloud.RL.local>
+ <B85A65D85D7EB246BE421B3FB0FBB593024BCEF73F@dbde02.ent.ti.com>,<B85A65D85D7EB246BE421B3FB0FBB593024DBDC695@dbde02.ent.ti.com>
+In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024DBDC695@dbde02.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1309275310-10987-1-git-send-email-josef@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 28, 2011 at 11:35:10AM -0400, Josef Bacik wrote:
-> Btrfs needs to be able to control how filemap_write_and_wait_range() is called
-> in fsync to make it less of a painful operation, so push down taking i_mutex and
-> the calling of filemap_write_and_wait() down into the ->fsync() handlers.  Some
-> file systems can drop taking the i_mutex altogether it seems, like ext3 and
-> ocfs2.  For correctness sake I just pushed everything down in all cases to make
-> sure that we keep the current behavior the same for everybody, and then each
-> individual fs maintainer can make up their mind about what to do from there.
-> Thanks,
-> 
-> Signed-off-by: Josef Bacik <josef@redhat.com>
+Sure. Please do.
 
-.....
+Thanks and Regards,
+-Manju
+________________________________________
+From: Nori, Sekhar
+Sent: Tuesday, July 19, 2011 2:30 PM
+To: Hadli, Manjunath; 'Jon Povey'; davinci-linux-open-source@linux.davincidsp.com; linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+Subject: RE: [PATCH] davinci: fix DM365 EVM video input mux bits
 
-> diff --git a/fs/xfs/linux-2.6/xfs_file.c b/fs/xfs/linux-2.6/xfs_file.c
-> index 7f782af..9183f75 100644
-> --- a/fs/xfs/linux-2.6/xfs_file.c
-> +++ b/fs/xfs/linux-2.6/xfs_file.c
-> @@ -127,6 +127,8 @@ xfs_iozero(
->  STATIC int
->  xfs_file_fsync(
->  	struct file		*file,
-> +	loff_t			start,
-> +	loff_t			end,
->  	int			datasync)
->  {
->  	struct inode		*inode = file->f_mapping->host;
-> @@ -138,8 +140,16 @@ xfs_file_fsync(
->  
->  	trace_xfs_file_fsync(ip);
->  
-> -	if (XFS_FORCED_SHUTDOWN(mp))
-> +	error = filemap_write_and_wait_range(inode->i_mapping, start, end);
-> +	if (error)
-> +		return error;
-> +
-> +	mutex_lock(&inode->i_mutex);
-> +
-> +	if (XFS_FORCED_SHUTDOWN(mp)) {
-> +		mutex_unlock(&inode->i_mutex);
->  		return -XFS_ERROR(EIO);
-> +	}
->  
->  	xfs_iflags_clear(ip, XFS_ITRUNCATED);
+Hi Manju,
 
-Josef, FYI, this causes deadlocks in XFS.
+On Tue, Jul 19, 2011 at 12:55:13, Hadli, Manjunath wrote:
+> Will not be able to give you a sub-patch as it is combined as part of a larger implementation.
+>
+> Since the bug fix needs to go into 3.0, I am Ok if you fix the bug, and the
+> macros can be substituted later.
 
-You cannot take the i_mutex in this function as it violates locking
-order when called from xfs_file_aio_write() for O_SYNC buffered
-IO. We already hold the i_mutex when calling the function, and I
-don't think we can drop it without violating sync write atomicity...
+I am going to take this as your ack and add:
 
-Cheers,
+Acked-by: Manjunath Hadli <manjunath.hadli@ti.com>
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+while committing.
+
+Thanks,
+Sekhar
+
