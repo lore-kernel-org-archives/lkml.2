@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751928Ab1GSBnW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 21:43:22 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:45286 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751882Ab1GSBnN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 21:43:13 -0400
-X-Sasl-enc: sduN48jPOeyaTI4FfkCatfVLA/NrERIBXouXZ+Zw8qfl 1311039791
-Date: Mon, 18 Jul 2011 18:18:43 -0700
-From: Greg KH <greg@kroah.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: JiSheng Zhang <jszhang3@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] USB: xhci: fix OS want to own HC
-Message-ID: <20110719011843.GA13807@kroah.com>
-References: <20110716110419.726be2b0@ustc>
- <20110718164410.GA4879@xanatos>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110718164410.GA4879@xanatos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751779Ab1GSBtn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 21:49:43 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:57184 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751195Ab1GSBtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 21:49:42 -0400
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+To: hch@infradead.org
+Cc: wanlong.gao@gmail.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, matthew@wil.cx,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: Re: [PATCH] fs:update the NOTE of the file_operations structure
+Date: Tue, 19 Jul 2011 09:48:39 +0800
+Message-Id: <1311040119-5213-1-git-send-email-gaowanlong@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.6
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-07-19 09:48:49,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-07-19 09:48:50,
+	Serialize complete at 2011-07-19 09:48:50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 18, 2011 at 09:44:10AM -0700, Sarah Sharp wrote:
-> On Sat, Jul 16, 2011 at 11:04:19AM +0800, JiSheng Zhang wrote:
-> > Software should set XHCI_HC_OS_OWNED bit to request ownership of xHC
-> 
-> Good catch!  I'll queue this up to my for-usb-linus branch and send it
-> out to Greg later today.
-> 
-> Greg, do you think it's too late to get this into 3.0?
 
-Yes.
+Big kernel lock had been removed and setlease now use the lock_flocks()
+to hold a special spin lock file_lock_lock by Matthew.
+So just remove the out-of-date NOTE.
 
-> Shall I just add it to usb-next and mark it for stable?
+Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+---
+ include/linux/fs.h |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
-Yes.
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index b5b9792..67b2b21 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1538,11 +1538,6 @@ struct block_device_operations;
+ #define HAVE_COMPAT_IOCTL 1
+ #define HAVE_UNLOCKED_IOCTL 1
+ 
+-/*
+- * NOTE:
+- * all file operations except setlease can be called without
+- * the big kernel lock held in all filesystems.
+- */
+ struct file_operations {
+ 	struct module *owner;
+ 	loff_t (*llseek) (struct file *, loff_t, int);
+-- 
+1.7.6
 
-thanks,
-
-greg k-h
