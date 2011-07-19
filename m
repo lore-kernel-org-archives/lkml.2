@@ -1,42 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752523Ab1GSX5s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 19:57:48 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52278 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752102Ab1GSX5r convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 19:57:47 -0400
+	id S1752557Ab1GSX6n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 19:58:43 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:58023 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751942Ab1GSX6m convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 19:58:42 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110719234550.GR11013@ZenIV.linux.org.uk>
-References: <alpine.LSU.2.00.1107171740260.1327@sister.anvils>
- <20110718020818.GW11013@ZenIV.linux.org.uk> <CA+55aFwXgcWxvAz7w1f_HYyzdm9b9EBJfrWhF1FW7EA3zpbJPg@mail.gmail.com>
- <CA+55aFxKRw8NxcHKzsSeCX3ud6eDrcQvAX+LMQOUT4p5TPLp5g@mail.gmail.com>
- <alpine.LSU.2.00.1107181135170.2722@sister.anvils> <CA+55aFycZL9zAE_Qvq9LM=HpugiDuKSjdRhKG1zi=H4LnNvhVQ@mail.gmail.com>
- <20110718194703.GI11013@ZenIV.linux.org.uk> <CA+55aFzCeXOs9Rj5U5mMWqMZpv+jM14O2VnpFCodMJzaB1hPEg@mail.gmail.com>
- <alpine.LSU.2.00.1107181407060.3530@sister.anvils> <CA+55aFxq1KZycxXCwLARv0WOYG_-aim=e9kt=eLcNuymmeoyiA@mail.gmail.com>
- <20110719234550.GR11013@ZenIV.linux.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 19 Jul 2011 16:56:51 -0700
-Message-ID: <CA+55aFxLidmg=55kfK7peQxgXuvjp-pn2sU5ivpoZ+dwo1-AeQ@mail.gmail.com>
-Subject: Re: [PATCH] vfs: fix race in rcu lookup of pruned dentry
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
+X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
+In-Reply-To: <1311115617-9697-2-git-send-email-achew@nvidia.com>
+References: <1311115617-9697-1-git-send-email-achew@nvidia.com>
+	<1311115617-9697-2-git-send-email-achew@nvidia.com>
+Date: Tue, 19 Jul 2011 16:58:40 -0700
+Message-ID: <CAOesGMjKpzG6epJN70TDyvynon81Hr7e8Swh+VG1F7Pd-U818A@mail.gmail.com>
+Subject: Re: [PATCH 2/3] dt: tegra20: Add ehci host controller nodes.
+From: Olof Johansson <olof@lixom.net>
+To: achew@nvidia.com
+Cc: grant.likely@secretlab.ca, swarren@nvidia.com, dwillemsen@nvidia.com,
+        rklein@nvidia.com, mogantyv@nvidia.com,
+        devicetree-discuss@lists.ozlabs.org, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 19, 2011 at 4:45 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+Hi,
+
+On Tue, Jul 19, 2011 at 3:46 PM,  <achew@nvidia.com> wrote:
+> From: Andrew Chew <achew@nvidia.com>
 >
-> You know what...  I doubt that you want to mess with ->d_seq checks here.
+> These values were derived from various headers in arch/arm/mach-tegra.
+>
+> Signed-off-by: Andrew Chew <achew@nvidia.com>
+> ---
+>  arch/arm/boot/dts/tegra20.dtsi |   52 ++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 52 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.dtsi
+> index 83fedf3..a0353bb 100644
+> --- a/arch/arm/boot/dts/tegra20.dtsi
+> +++ b/arch/arm/boot/dts/tegra20.dtsi
+> @@ -160,5 +160,57 @@
+>                interrupts = < 63 >;
+>                status = "disabled";
+>        };
+> +
+> +       ehci@c5000000 {
+> +               #address-cells = <1>;
+> +               #size-cells = <0>;
+> +               compatible = "nvidia,tegra20-ehci";
+> +               reg = <0xc5000000 0x4000>;
+> +               interrupts = < 52 >;
+> +               mode = < 1 >;
+> +               power_down_on_bus_suspend;
+> +               type = "utmi";
+> +               hssync_start_delay = < 0 >;
+> +               idle_wait_delay = < 17 >;
+> +               elastic_limit = < 16 >;
+> +               term_range_adj = < 6 >;
+> +               xcvr_setup = < 15 >;
+> +               xcvr_lsfslew = < 2 >;
+> +               xcvr_lsrslew = < 2 >;
+> +               status = "disabled";
 
-I'm ok with doing just the "move *inode setting" patch.
+These are mostly phy related settings, maybe do a phy subnode with
+them? That way the usb_phy code can probe on that.
 
-And if we really don't even allow renames of those mounted things, I
-guess the sequence number isn't required.
 
-                 Linus
+-Olof
