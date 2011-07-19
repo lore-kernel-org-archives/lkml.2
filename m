@@ -1,57 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986Ab1GSNJJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 09:09:09 -0400
-Received: from casper.infradead.org ([85.118.1.10]:52512 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751375Ab1GSNJH convert rfc822-to-8bit (ORCPT
+	id S1751180Ab1GSNNs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 09:13:48 -0400
+Received: from DMZ-MAILSEC-SCANNER-2.MIT.EDU ([18.9.25.13]:55913 "EHLO
+	dmz-mailsec-scanner-2.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750745Ab1GSNNr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 09:09:07 -0400
-Subject: Re: [PATCH 1/2] sched: Enforce order of leaf CFS runqueues
-From: Peter Zijlstra <peterz@infradead.org>
-To: Paul Turner <pjt@google.com>
-Cc: "Jan H." =?ISO-8859-1?Q?Sch=F6nherr?= <schnhrr@cs.tu-berlin.de>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-In-Reply-To: <CAPM31RLqq0hgdhoh3GA-38petKeE1zxcL=uJYba9o3yd+_7jjw@mail.gmail.com>
-References: <1310986258-29985-1-git-send-email-schnhrr@cs.tu-berlin.de>
-	 <1310986258-29985-2-git-send-email-schnhrr@cs.tu-berlin.de>
-	 <CAPM31RLqq0hgdhoh3GA-38petKeE1zxcL=uJYba9o3yd+_7jjw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 19 Jul 2011 15:08:41 +0200
-Message-ID: <1311080921.13765.203.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Tue, 19 Jul 2011 09:13:47 -0400
+X-AuditID: 1209190d-b7be0ae000000a16-74-4e258270f087
+From: Andy Lutomirski <luto@MIT.EDU>
+To: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@MIT.EDU>
+Subject: [PATCH] x86: Set TPR to block external interrupts 0-31
+Date: Tue, 19 Jul 2011 09:13:39 -0400
+Message-Id: <120c0799734be30a05c31feaa67a4156248b20d6.1311080996.git.luto@mit.edu>
+X-Mailer: git-send-email 1.7.6
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMIsWRmVeSWpSXmKPExsUixCmqrVvQpOpnMGkrq0XflaPsFpd3zWGz
+	+LHhMasDs8fOWXfZPTat6mTz+LxJLoA5issmJTUnsyy1SN8ugSvj2tXfLAXP+CsuN/ewNzC+
+	5+li5OSQEDCRWHDtFQuELSZx4d56ti5GLg4hgX2MEns3dbBCOBsYJS6uO8cI4Txjkui6doQV
+	pIVNQEWiY+kDpi5GDg4RASGJpXfrQMLMAg4Stx8fYQSxhQXsJc7d+wJmswioSnRc2Q/WyisQ
+	JPF0xUFWiM1yEkcuP2eawMizgJFhFaNsSm6Vbm5iZk5xarJucXJiXl5qka6RXm5miV5qSukm
+	RnBISPLuYHx3UOkQowAHoxIPr+V6FT8h1sSy4srcQ4ySHExKoryu9ap+QnxJ+SmVGYnFGfFF
+	pTmpxYcYJTiYlUR4T20AKudNSaysSi3Kh0lJc7AoifOqef/3FRJITyxJzU5NLUgtgsnKcHAo
+	SfCGA0NfSLAoNT21Ii0zpwQhzcTBCTKcB2g4D0gNb3FBYm5xZjpE/hSjMcf92/ePMHJ0tAJD
+	RoglLz8vVUqcVxGkVACkNKM0D24aLK5fMYoDPSfMGwhSxQNMCXDzXgGtYgJa1aIOtqokESEl
+	1cDIVxDpePvrBameKzm3u/9EdolYmJdfrReyivusU377oY3DQ++9ki8Yd097mcg5JzP+c6bc
+	647bNQdMedY+ve3s/2K59WcL/oSvLH+mznqaWC7SEmzVNHOpkqlpRr2t18oeF8GAzpupFlVv
+	vzbMenJ197pQs+lch1l/bW3IXc1cd7WFLVV2a50SS3FGoqEWc1FxIgB4u4j3xgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-07-18 at 16:24 -0700, Paul Turner wrote:
+If an external interrupt with vector 0-31 comes in, we are likely to
+do the wrong thing, since we'll think it's a trap from the CPU.
+Depending on which vector it is, we could get even more confused,
+because some traps push an error code but traps do not, so we will
+corrupt the stack on return.
 
-> Subject: [PATCH] sched: handle on_list ancestor in leaf_add_cfs_rq()
-> From: Paul Turner <pjt@google.com>
-> Date: Mon, 18 Jul 2011 16:08:10 -0700
-> 
-> Jan H. Schönherr found that in the case of an on_list ancestor we may
-> incorrectly place the child to the right of a great-ancestor on the list.
-> 
-> Consider:
-> 
->       A
->      / \     Here, t1A results in A->cfs_rq being on_list, however when
->     B  t1A   we start enqueuing from C this will not be visible.  This is
->    /         compounded by the fact that on_list expiration may also be out
->   C          of order, punching holes in the tree.
->  /
-> t1C
-> 
-> Prevent this by making additions to the leaf_cfs_rq_list position independent.
-> This is done by maintaining additions to this list within the
-> enqueue_task_fair() path, which allows us to always enqueue against the
-> current entity's first on_list ancestor.
+We can reduce the chance that we get such an interrupt from a rogue
+or malfunctioning device by changing the APIC's TPR.
 
-The problem I have with this is that it makes the enqueue more
-expensive. We're now optimizing a relatively slow path (load-balance) at
-the cost of the hottest path in the kernel (enqueue/dequeue).
+This is not known to fix any real bugs, but it should not hurt and
+it's has no performance cost.  It is inspired by, but much less
+aggressive than this patch from Xen:
 
+http://xenbits.xen.org/hg/staging/xen-4.0-testing.hg/rev/b85a9e58ec3a
+
+Signed-off-by: Andy Lutomirski <luto@mit.edu>
+---
+
+The original paper is here and is rather interesting:
+http://www.invisiblethingslab.com/resources/2011/Software%20Attacks%20on%20Intel%20VT-d.pdf
+
+This patch *does not* prevent most of the interesting attacks in
+that paper, and the fancy mitigation tricks that Xen added seem
+silly.  They don't address all of the attacks, and they slow down
+interrupt processing.  But this particular part should be free and
+seems like a potentially worthwhile change to improve resistance to
+dumb bugs.
+
+ arch/x86/kernel/apic/apic.c |    8 +++-----
+ 1 files changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index b9338b8..125e2b2 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1252,12 +1252,10 @@ void __cpuinit setup_local_APIC(void)
+ #endif
+ 
+ 	/*
+-	 * Set Task Priority to 'accept all'. We never change this
+-	 * later on.
++	 * Set Task Priority to 'accept all external vectors'. We never
++	 * change this later on.
+ 	 */
+-	value = apic_read(APIC_TASKPRI);
+-	value &= ~APIC_TPRI_MASK;
+-	apic_write(APIC_TASKPRI, value);
++	apic_write(APIC_TASKPRI, (FIRST_EXTERNAL_VECTOR & 0xF0) - 0x10);
+ 
+ 	/*
+ 	 * After a crash, we no longer service the interrupts and a pending
+-- 
+1.7.6
 
