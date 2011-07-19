@@ -1,93 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751241Ab1GSNpn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 09:45:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45387 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750952Ab1GSNpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 09:45:41 -0400
-Message-ID: <4E258A83.3030608@suse.cz>
-Date: Tue, 19 Jul 2011 15:45:39 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
-MIME-Version: 1.0
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Arnaud Lacombe <lacombar@gmail.com>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Valdis.Kletnieks@vt.edu
-Subject: Re: [PATCH] kconfig: Only generate config_is_xxx for bool and tristate
- options
-References: <1305646532-29114-1-git-send-email-mmarek@suse.cz> <20110517195310.GA17003@merkur.ravnborg.org> <BANLkTikmO7D3kUgU62d4_VC2ZPZCnSEqKA@mail.gmail.com> <4E1D9C25.8080300@suse.cz> <20110713200813.GA11538@merkur.ravnborg.org>
-In-Reply-To: <20110713200813.GA11538@merkur.ravnborg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751302Ab1GSNqs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 09:46:48 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:55015 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751001Ab1GSNqr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 09:46:47 -0400
+Date: Tue, 19 Jul 2011 15:46:45 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 01/34] System Firmware Interface
+Message-ID: <20110719134645.GI8006@one.firstfloor.org>
+References: <1310994528-26276-1-git-send-email-prarit@redhat.com> <1310994528-26276-2-git-send-email-prarit@redhat.com> <m2vcuz3xsz.fsf@firstfloor.org> <20110719100544.55c7f7fb@lxorguk.ukuu.org.uk> <20110719132157.GG8006@one.firstfloor.org> <4E25892C.8070102@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E25892C.8070102@redhat.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13.7.2011 22:08, Sam Ravnborg wrote:
-> On Wed, Jul 13, 2011 at 03:22:45PM +0200, Michal Marek wrote:
->> On 18.5.2011 08:23, Arnaud Lacombe wrote:
->>> I've been playing a bit with the preprocessor, and reached that point:
->>>
->>> #define EXPAND(x)       __ ## x
->>> #define CONFIGURED(x)   \
->>>           ({  int __1 __maybe_unused = 1;         \
->>>               int __ ## x __maybe_unused = 0;     \
->>>               EXPAND(x); })
->>>
->>> I am not specifically proud of that, use case would be:
->>>
->>> extern func(void);
->>> int fn()
->>> {
->>>           if(CONFIGURED(CONFIG_FOO))
->>>                   func();
->>> }
->>
->> I finally got round to revisit this. Your approach inspired me to a much
->> simpler scheme: Instead of generating the config_is_xxx macros for
->> direct use in the code, name them __enabled_CONFIG_XXX or similar and
->> have a macro that expands given CONFIG_XXX symbol to the other form:
->
-> But then we clutter the namesapce with another set of variables that will
-> be misued. If not in the kernel then by other kconfig users.
-
-Well, no sane person will prefix their variables with 
-"__enabled_CONFIG_", so I'm not so worried about the namespace pollution.
+On Tue, Jul 19, 2011 at 09:39:56AM -0400, Prarit Bhargava wrote:
+> 
+> The DMI specification has not been updated since January of 2003.  It
+> has been replaced by SMBIOS.
 
 
-> Arnaud approach is nice as it does not require any additional
-> symbols to be generated.
+Yes of course, but dmidecode and the current DMI layer implements
+both anyways, don't they? (ok if you don't count the dynamic interfaces)
 
-Sure, I would also prefer a solution without that doesn't require 
-generating new macros. But your's and Arnaud's trick doesn't eliminate 
-the configured-out code at -O0, while with the help of the generated 
-helper macros, the compiler sees an if(0) or if(1).
+The tables are very similar, there are just more entries in SMBIOS.
 
+> 
+> >> 3.	Every other platform without DMI would benefit from the
+> >> 	interface being generic
+> >>     
+> > Can you expand on that? The information will be always system
+> > specific anyways. Do you really think there's that much commonality?
+> >
+> >   
+> 
+> There seems to be some commonalities.  We have other arches checking for
+> model and vendor info.
 
-> +#include<linux/compiler.h>
-> +
-> +#define __symbol_value(sym)       __ ## x
-> +#define __symbol_module(sym)      __symbol_value(__ ## sym ## _MODULE)
-> +
-> +/* return 1 if x is defined and not a module */
-> +#define KCONFIG_NON_MODULE(sym)					\
-> +	({ int __1 __maybe_unused = 1;				\
-> +	   int __ ## sym __maybe_unused = 0;			\
-> +	   __symbol_value(sym); })
-> +
-> +/* return 1 if sym is a module symbol */
-> +#define KCONFIG_MODULE(sym)					\
-> +	({ int __1 __maybe_unused = 1;				\
-> +	   int __ ## sym ## _MODULE __maybe_unused = 0;	\
-> +	   __symbol_value(sym); })
-> +
-> +/* return 1 if sym is defined - module or not */
-> +#define KCONFIG(sym) (KCONFIG_NON_MODULE(sym) || KCONFIG_MODULE(sym))
+That's two fields out of hundreds. Does that need a common layer?
 
-With this extra expansion, the passed CONFIG_FOO expands to 1 here and 
-the KCONFIG(_NON)_MODULE macros will then only see the 1 and fail.
+Right now I still fail to see the point of all of this.
 
-Michal
+At some point I wanted a slightly more expansive sysfs interface for SMBIOS
+to avoid having to start mcelog as root for reading /dev/mem, but I don't
+think such a complicated approach is justified for that. What are 
+the other use cases?
+
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
