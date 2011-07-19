@@ -1,114 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751611Ab1GSSsB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 14:48:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44818 "EHLO mx1.redhat.com"
+	id S1751749Ab1GSSsQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 14:48:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32634 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750803Ab1GSSsA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 14:48:00 -0400
-Date: Tue, 19 Jul 2011 20:45:36 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [may-be-patch?] introduce MODULE_USE_UNEXPORTED()
-Message-ID: <20110719184536.GA27224@redhat.com>
+	id S1751103Ab1GSSsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 14:48:15 -0400
+Date: Tue, 19 Jul 2011 14:47:59 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Americo Wang <xiyou.wangcong@gmail.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jarod Wilson <jwilson@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: Re: [RFC][PATCH -mmotm 0/4] Improvement of pstore/kmsg_dump in
+ kexec/panic path
+Message-ID: <20110719184759.GC7001@redhat.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C199C64C2@USINDEVS01.corp.hds.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C199C64C2@USINDEVS01.corp.hds.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+On Tue, Jul 19, 2011 at 02:23:26PM -0400, Seiji Aguchi wrote:
+> Hi,
+> 
+> [Upstream status]
+>    Discussion about kmsg_dump() in kdump path: 
+>     - Eric and Vivek are worried about reliability of existing kmsg_dump().
+>     - Especially, Vivek would like to remove a RCU  function call chain in kdump path
+> 　　　 which kernel modules can register their function calls freely. 
+> 
+>    Discussion about pstore in nmi_hander.
+>     - Don Zickus found an issue of pstore in nmi_handler due to its mutex_lock.
 
->From time to time I need to write a module for debugging purposes,
-and it is a bit annoying I can't simply use, say, put_task_struct().
+You did not answer my questions in the last posting mail thread and gone
+ahead with the new posting. How are we supposed to discuss something. This
+has been a problem on this mail thread since the beginneing. There is
+little open discussion. 
 
-Can't we do something like the simple patch below? Of course, it
-is very unsafe to use kallsyms_lookup_name() by many reasons. But
-it looks handy for the testing/debugging.
+So if you want to make any progress in this direction, what will help
+is open discussion.
 
-Yes, I am not saying this feature is terribly useful, so I agree
-in advance with the "go away, we don't need this hack" nack.
+Locking is going to be a problem. So atleast we can remove kmsg_dump()
+infrastructure from reboot path. Why can't we log something in user
+space when user initiates a reboot, let it get logged in /var/log/messages
+and then umount the file root and go ahead with reboot. Why does kernel
+need to capture that info in NVRAM.
 
-Still, what do you think?
+If we can get rid of all the logging thing on reboot path, then at least
+it does not need to be lock protected with crash path.
 
-Oleg.
-
- include/linux/module.h |    2 ++
- include/linux/kernel.h |    1 +
- kernel/module.c        |   13 +++++++++++++
- kernel/panic.c         |    2 ++
- 4 files changed, 18 insertions(+)
-
---- x/include/linux/module.h~MODSYM	2011-05-20 18:35:10.000000000 +0200
-+++ x/include/linux/module.h	2011-07-19 19:59:22.000000000 +0200
-@@ -139,6 +139,8 @@ extern struct module __this_module;
-  */
- #define MODULE_LICENSE(_license) MODULE_INFO(license, _license)
- 
-+#define MODULE_USE_UNEXPORTED()	MODULE_INFO(use_unexported, "")
-+
- /*
-  * Author(s), use "Name <email>" or just "Name", for multiple
-  * authors use multiple MODULE_AUTHOR() statements/lines.
---- x/include/linux/kernel.h~MODSYM	2011-06-16 20:16:04.000000000 +0200
-+++ x/include/linux/kernel.h	2011-07-19 19:59:45.000000000 +0200
-@@ -361,6 +361,7 @@ extern enum system_states {
- #define TAINT_WARN			9
- #define TAINT_CRAP			10
- #define TAINT_FIRMWARE_WORKAROUND	11
-+#define TAINT_USE_UNEXPORTED		12
- 
- extern const char hex_asc[];
- #define hex_asc_lo(x)	hex_asc[((x) & 0x0f)]
---- x/kernel/module.c~MODSYM	2011-05-24 18:51:32.000000000 +0200
-+++ x/kernel/module.c	2011-07-19 20:01:08.000000000 +0200
-@@ -1791,6 +1791,8 @@ static int verify_export_symbols(struct 
- 	return 0;
- }
- 
-+static char *get_modinfo(struct load_info *info, const char *tag);
-+
- /* Change all symbols so that st_value encodes the pointer directly. */
- static int simplify_symbols(struct module *mod, const struct load_info *info)
- {
-@@ -1832,6 +1834,17 @@ static int simplify_symbols(struct modul
- 			if (!ksym && ELF_ST_BIND(sym[i].st_info) == STB_WEAK)
- 				break;
- 
-+			if (!ksym && get_modinfo(info, "use_unexported")) {
-+				unsigned long addr = kallsyms_lookup_name(name);
-+				if (addr) {
-+					sym[i].st_value = addr;
-+					if (!test_taint(TAINT_USE_UNEXPORTED))
-+						printk(KERN_WARNING "bla bla bla\n");
-+					add_taint_module(mod, TAINT_USE_UNEXPORTED);
-+					break;
-+				}
-+			}
-+
- 			printk(KERN_WARNING "%s: Unknown symbol %s (err %li)\n",
- 			       mod->name, name, PTR_ERR(ksym));
- 			ret = PTR_ERR(ksym) ?: -ENOENT;
---- x/kernel/panic.c~MODSYM	2011-04-06 21:33:50.000000000 +0200
-+++ x/kernel/panic.c	2011-07-19 20:00:06.000000000 +0200
-@@ -175,6 +175,7 @@ static const struct tnt tnts[] = {
- 	{ TAINT_WARN,			'W', ' ' },
- 	{ TAINT_CRAP,			'C', ' ' },
- 	{ TAINT_FIRMWARE_WORKAROUND,	'I', ' ' },
-+	{ TAINT_USE_UNEXPORTED,		'X', ' ' },
- };
- 
- /**
-@@ -192,6 +193,7 @@ static const struct tnt tnts[] = {
-  *  'W' - Taint on warning.
-  *  'C' - modules from drivers/staging are loaded.
-  *  'I' - Working around severe firmware bug.
-+ *  'X' - Module uses unexported symbol.
-  *
-  *	The string is overwritten by the next call to print_tainted().
-  */
-
+Thanks
+Vivek
