@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751920Ab1GSKfN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 06:35:13 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:41891 "EHLO linux-mips.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751032Ab1GSKfM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 06:35:12 -0400
-Date: Tue, 19 Jul 2011 11:34:27 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, Michal Simek <monstr@monstr.eu>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Andres Salomon <dilinger@queued.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/2] irq: add irq_domain translation infrastructure
-Message-ID: <20110719103426.GA31394@linux-mips.org>
-References: <20110718222610.1911.5673.stgit@ponder>
- <20110718223140.1911.80783.stgit@ponder>
+	id S1752043Ab1GSKgH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 06:36:07 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:54046 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751032Ab1GSKgG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 06:36:06 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6411"; a="104581558"
+Message-ID: <73f3a41d26b2e3462c93c3c3b85706ca.squirrel@www.codeaurora.org>
+In-Reply-To: <201107191226.58593.oneukum@suse.de>
+References: <1308231068-24038-2-git-send-email-tlinder@codeaurora.org>
+    <201107191118.48536.oneukum@suse.de>
+    <072dac57b14fc739033c65fe289234c3.squirrel@www.codeaurora.org>
+    <201107191226.58593.oneukum@suse.de>
+Date: Tue, 19 Jul 2011 03:36:05 -0700 (PDT)
+Subject: Re: [PATCH/RFC 5/5] usb: Add support for streams alloc/dealloc to 
+     devio.c
+From: "Amit Blay" <ablay@codeaurora.org>
+To: "Oliver Neukum" <oneukum@suse.de>
+Cc: "Amit Blay" <ablay@codeaurora.org>,
+        "Sarah Sharp" <sarah.a.sharp@linux.intel.com>,
+        "Tatyana Brokhman" <tlinder@codeaurora.org>, greg@kroah.com,
+        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org, balbi@ti.com,
+        "Amit Blay" <ablay@qualcomm.com>,
+        "open list" <linux-kernel@vger.kernel.org>
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110718223140.1911.80783.stgit@ponder>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 18, 2011 at 04:31:40PM -0600, Grant Likely wrote:
+Hi Oliver,
 
-> This patch adds irq_domain infrastructure for translating from
-> hardware irq numbers to linux irqs.  This is particularly important
-> for architectures adding device tree support because the current
-> implementation (excluding PowerPC and SPARC) cannot handle
-> translation for more than a single interrupt controller.  irq_domain
-> supports device tree translation for any number of interrupt
-> controllers.
-> 
-> This patch converts x86, Microblaze, ARM and MIPS to use irq_domain
-> for device tree irq translation.  x86 is untested beyond compiling it,
-> irq_domain is enabled for MIPS and Microblaze, but the old behaviour is
-> preserved until the core code is modified to actually register an
-> irq_domain yet.  On ARM it works and is required for much of the new
-> ARM device tree board support.
-> 
-> PowerPC has /not/ been converted to use this new infrastructure.  It
-> is still missing some features before it can replace the virq
-> infrastructure already in powerpc (see documentation on
-> irq_domain_map/unmap for details).  Followup patches will add the
-> missing pieces and migrate PowerPC to use irq_domain.
-> 
-> SPARC has its own method of managing interrupts from the device tree
-> and is unaffected by this change.
+>> >> 1. Interface number [IN]
+>> >> 2. Bitmap indicating which EP to allocate streams for [IN]
+>> >
+>> > If this is a bitmap,
+>> >
+>> >> 3. Number of streams to allocate, one number [IN}
+>> >> 4. Number of streams actually allocated, one number  [OUT]
+>> >
+>> > how can those be scalars?
+>> >
+>>
+>> The bitmap only indicates which EP the user space requests to allocate
+>> streams for. The actual number is taken from #3.
+>
+> Exactly. If you specify EP with a bitmap, what do you do if multiple bits
+> are set in the map?
+>
 
-I like it - yet another building block of the conversion of MIPS to DT in
-place.
+The user space can pass multiple EPs to allocate streams for. This is
+aligned with the HCD API which expects an array of EPs and number of
+streams to allocate. Please have a look in xhci.c.
 
-Acked-by: Ralf Baechle <ralf@linux-mips.org>
+I suggest to pass a bitmap from user space to represent the list of EPs.
+An alternative is to pass an array, but I didn't find any real advantage
+for this.
 
 Thanks,
+Amit.
 
-  Ralf
+ --
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
