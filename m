@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082Ab1GSKyh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 06:54:37 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:39712 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751032Ab1GSKyg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 06:54:36 -0400
-Subject: Re: [PATCH] Add error check to hex2bin().
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        linux-security-module@vger.kernel.org,
-        andriy.shevchenko@linux.intel.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <CAHp75VdTiMtmXdVSMq=6bAH2+rmSBHPPE9hQOLQN+Y3qPBEVFg@mail.gmail.com>
-References: <1310977597-9666-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <201107182041.EHB78622.VOFSHFMOOFtLJQ@I-love.SAKURA.ne.jp>
-	 <1310991796.3903.6.camel@smile>
-	 <201107182148.AGD21306.FOLtJVMSOOFQHF@I-love.SAKURA.ne.jp>
-	 <CAMuHMdVxR7AC7H_Yys8SiaGqM2JsNXLsRpujqojMYd_CXWxcAw@mail.gmail.com>
-	 <CAHp75VdTiMtmXdVSMq=6bAH2+rmSBHPPE9hQOLQN+Y3qPBEVFg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 19 Jul 2011 06:52:46 -0400
-Message-ID: <1311072766.3258.8.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	id S1752069Ab1GSKz6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 06:55:58 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52262 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751032Ab1GSKz5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 06:55:57 -0400
+Date: Tue, 19 Jul 2011 11:55:32 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: "Nori, Sekhar" <nsekhar@ti.com>
+Cc: Jon Povey <jon.povey@racelogic.co.uk>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Hilman, Kevin" <khilman@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] davinci: fix DM365 EVM video input mux bits
+Message-ID: <20110719105532.GF26574@n2100.arm.linux.org.uk>
+References: <1311046211-2849-1-git-send-email-jon.povey@racelogic.co.uk> <B85A65D85D7EB246BE421B3FB0FBB593024DBDC68A@dbde02.ent.ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024DBDC68A@dbde02.ent.ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(sorry for re-posting, but this doesn't seem to have made it to the
-lists.)
-
-On Tue, 2011-07-19 at 00:18 +0300, Andy Shevchenko wrote:
-> On Mon, Jul 18, 2011 at 11:49 PM, Geert Uytterhoeven
-> <geert@linux-m68k.org> wrote:
-> > What about making it return the number of unprocessed bytes left instead?
-> > Then the caller knows where the problem lies. And zero would mean success.
-> If I remember correctly it used to be src as return value in some
-> version of that patch. I don't know the details of that interim
-> solution. My current opinion is to return boolean and make an
-> additional parameter to return src value. However, it could make this
-> simple function fat.
-> P.S. Take into account that the user of it is only one so far, I would
-> like to hear a Mimi's opinion.
+On Tue, Jul 19, 2011 at 02:26:50PM +0530, Nori, Sekhar wrote:
+> Since this part of the code hasn't changed since it
+> was written, this is a good candidate for stable
+> kernel series. You can just add:
 > 
+> Cc: stable@kernel.org
 
-Trusted/encrypted keys are not in a critical code path. They're used for
-loading/storing key blobs from userspace.  From a trusted/encrypted key
-perspective, it doesn't make much of a difference.
+Be careful when doing that - if you have git mail the patches out for
+review, and it picks that up, it'll send it to the stable team as well.
+The stable team will then complain "that's not how to submit patches
+to them".
 
-thanks,
-
-Mimi
-
+So, while you can add "Cc: stable@kernel.org" to the patch, its best
+to only add that just before you publish the commit after review, but
+before merging.
