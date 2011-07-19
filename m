@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752202Ab1GSXjK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 19:39:10 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:50978 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751758Ab1GSXjI (ORCPT
+	id S1752264Ab1GSXnW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 19:43:22 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54895 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751882Ab1GSXnV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 19:39:08 -0400
-Subject: [PATCH] arm/versatile: Add device tree support
-To: linux-arm-kernel@lists.infradead.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
+	Tue, 19 Jul 2011 19:43:21 -0400
+Subject: [PATCH] arm/dt: tegra devicetree support
+To: Erik Gilling <konkers@android.com>, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, Colin Cross <ccross@android.com>,
+        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org
 From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 19 Jul 2011 17:39:05 -0600
-Message-ID: <20110719233645.2528.50466.stgit@ponder>
+Cc: Russell King <linux@arm.linux.org.uk>, swarren@nvidia.com,
+        Arnd Bergmann <arnd@arndb.de>
+Date: Tue, 19 Jul 2011 17:43:17 -0600
+Message-ID: <20110719234158.2779.15394.stgit@ponder>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -23,575 +24,462 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For testing the dt work, define a dt-enabled versatile platform.
-
-This patch adds a new versatile platform for when using the device
-tree.  Add platform and amba devices are discovered and registered by
-parsing the device tree.  Clocks and initial io mappings are still
-configured statically.
-
-This patch still depends on some static platform_data for a few devices
-which is passed via the auxdata structure to of_platform_populate(),
-but it is a viable starting point until the drivers can get all
-configuration data out of the device tree.
+Everything required to populate NVIDIA Tegra devices from the device
+tree.  This patch adds a new DT_MACHINE_DESC() which matches against
+a tegra20 device tree.  So far it only registers the on-chip devices,
+but it will be refined in follow on patches to configure clocks and
+pin IO from the device tree also.
 
 Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 ---
 
-Hi Russell,
+Hi all,
 
-Assuming you're okay with this, I would like to merge this Versatile
-board support patch for v3.1.  It's not perfect, but it can be changed
-in place after it is merged and should not break existing versatile
-board support.  In fact I can build a kernel with this that boots in
-both DT and non-DT configurations; very useful for debug.
-
-It depends on patches in devicetree/next, so I'd like to merge it via
-the arm-soc tree after devicetree/next gets merged.  I'll provide a
-git branch with the relevant commits if it looks good to you.
+Similar to the versatile patch I just posted, this is certainly not
+complete board support, but it is enough to be useful.  I'd like to
+merge this for v3.1.  It should not break any existing board support.
 
 g.
 
+ arch/arm/boot/dts/tegra-harmony.dts  |   70 ++++++++++++++++
+ arch/arm/boot/dts/tegra-seaboard.dts |   28 ++++++
+ arch/arm/boot/dts/tegra20.dtsi       |  148 ++++++++++++++++++++++++++++++++++
+ arch/arm/mach-tegra/Kconfig          |    6 +
+ arch/arm/mach-tegra/Makefile         |    3 +
+ arch/arm/mach-tegra/Makefile.boot    |    3 +
+ arch/arm/mach-tegra/board-dt.c       |  117 +++++++++++++++++++++++++++
+ 7 files changed, 375 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/boot/dts/tegra-harmony.dts
+ create mode 100644 arch/arm/boot/dts/tegra-seaboard.dts
+ create mode 100644 arch/arm/boot/dts/tegra20.dtsi
+ create mode 100644 arch/arm/mach-tegra/board-dt.c
 
- Documentation/devicetree/bindings/arm/arm-boards   |   20 ++
- .../devicetree/bindings/i2c/arm-versatile.txt      |   10 +
- .../devicetree/bindings/mtd/arm-versatile.txt      |    8 +
- .../devicetree/bindings/net/smsc-lan91c111.txt     |   10 +
- arch/arm/boot/dts/versatile-ab.dts                 |  192 ++++++++++++++++++++
- arch/arm/boot/dts/versatile-pb.dts                 |   48 +++++
- arch/arm/mach-versatile/Kconfig                    |    8 +
- arch/arm/mach-versatile/Makefile                   |    1 
- arch/arm/mach-versatile/core.c                     |   61 ++++++
- arch/arm/mach-versatile/core.h                     |    2 
- arch/arm/mach-versatile/versatile_dt.c             |   51 +++++
- 11 files changed, 411 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/arm/arm-boards
- create mode 100644 Documentation/devicetree/bindings/i2c/arm-versatile.txt
- create mode 100644 Documentation/devicetree/bindings/mtd/arm-versatile.txt
- create mode 100644 Documentation/devicetree/bindings/net/smsc-lan91c111.txt
- create mode 100644 arch/arm/boot/dts/versatile-ab.dts
- create mode 100644 arch/arm/boot/dts/versatile-pb.dts
- create mode 100644 arch/arm/mach-versatile/versatile_dt.c
-
-diff --git a/Documentation/devicetree/bindings/arm/arm-boards b/Documentation/devicetree/bindings/arm/arm-boards
+diff --git a/arch/arm/boot/dts/tegra-harmony.dts b/arch/arm/boot/dts/tegra-harmony.dts
 new file mode 100644
-index 0000000..91f2614
+index 0000000..4c05334
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/arm-boards
-@@ -0,0 +1,20 @@
-+ARM Versatile Application and Platform Baseboards
-+-------------------------------------------------
-+ARM's development hardware platform with connectors for customizable
-+core tiles.  The hardware configuration of the Versatile boards is
-+highly customizable.
-+
-+Required properties (in root node):
-+	compatible = "arm,versatile-ab";  /* Application baseboard */
-+	compatible = "arm,versatile-pb";  /* Platform baseboard */
-+
-+Interrupt controllers:
-+- VIC required properties:
-+	compatible = "arm,versatile-vic";
-+	interrupt-controller;
-+	#interrupt-cells = <1>;
-+
-+- SIC required properties:
-+	compatible = "arm,versatile-sic";
-+	interrupt-controller;
-+	#interrupt-cells = <1>;
-diff --git a/Documentation/devicetree/bindings/i2c/arm-versatile.txt b/Documentation/devicetree/bindings/i2c/arm-versatile.txt
-new file mode 100644
-index 0000000..361d31c
---- /dev/null
-+++ b/Documentation/devicetree/bindings/i2c/arm-versatile.txt
-@@ -0,0 +1,10 @@
-+i2c Controller on ARM Versatile platform:
-+
-+Required properties:
-+- compatible : Must be "arm,versatile-i2c";
-+- reg
-+- #address-cells = <1>;
-+- #size-cells = <0>;
-+
-+Optional properties:
-+- Child nodes conforming to i2c bus binding
-diff --git a/Documentation/devicetree/bindings/mtd/arm-versatile.txt b/Documentation/devicetree/bindings/mtd/arm-versatile.txt
-new file mode 100644
-index 0000000..476845d
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mtd/arm-versatile.txt
-@@ -0,0 +1,8 @@
-+Flash device on ARM Versatile board
-+
-+Required properties:
-+- compatible : must be "arm,versatile-flash";
-+- bank-width : width in bytes of flash interface.
-+
-+Optional properties:
-+- Subnode partition map from mtd flash binding
-diff --git a/Documentation/devicetree/bindings/net/smsc-lan91c111.txt b/Documentation/devicetree/bindings/net/smsc-lan91c111.txt
-new file mode 100644
-index 0000000..953049b
---- /dev/null
-+++ b/Documentation/devicetree/bindings/net/smsc-lan91c111.txt
-@@ -0,0 +1,10 @@
-+SMSC LAN91c111 Ethernet mac
-+
-+Required properties:
-+- compatible = "smsc,lan91c111";
-+- reg : physical address and size of registers
-+- interrupts : interrupt connection
-+
-+Optional properties:
-+- phy-device : phandle to Ethernet phy
-+- local-mac-address : Ethernet mac address to use
-diff --git a/arch/arm/boot/dts/versatile-ab.dts b/arch/arm/boot/dts/versatile-ab.dts
-new file mode 100644
-index 0000000..0b32925
---- /dev/null
-+++ b/arch/arm/boot/dts/versatile-ab.dts
-@@ -0,0 +1,192 @@
++++ b/arch/arm/boot/dts/tegra-harmony.dts
+@@ -0,0 +1,70 @@
 +/dts-v1/;
-+/include/ "skeleton.dtsi"
++
++/memreserve/ 0x1c000000 0x04000000;
++/include/ "tegra20.dtsi"
 +
 +/ {
-+	model = "ARM Versatile AB";
-+	compatible = "arm,versatile-ab";
-+	#address-cells = <1>;
-+	#size-cells = <1>;
-+	interrupt-parent = <&vic>;
++	model = "NVIDIA Tegra2 Harmony evaluation board";
++	compatible = "nvidia,harmony", "nvidia,tegra20";
 +
-+	aliases {
-+		serial0 = &uart0;
-+		serial1 = &uart1;
-+		serial2 = &uart2;
-+		i2c0 = &i2c0;
++	chosen {
++		bootargs = "vmalloc=192M video=tegrafb console=ttyS0,115200n8 root=/dev/mmcblk0p2 rw rootwait";
 +	};
 +
-+	memory {
-+		reg = <0x0 0x08000000>;
++	memory@0 {
++		reg = < 0x00000000 0x40000000 >;
 +	};
 +
-+	flash@34000000 {
-+		compatible = "arm,versatile-flash";
-+		reg = <0x34000000 0x4000000>;
-+		bank-width = <4>;
-+	};
++	i2c@7000c000 {
++		clock-frequency = <400000>;
 +
-+	i2c0: i2c@10002000 {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		compatible = "arm,versatile-i2c";
-+		reg = <0x10002000 0x1000>;
++		codec: wm8903@1a {
++			compatible = "wlf,wm8903";
++			reg = <0x1a>;
++			interrupts = < 347 >;
 +
-+		rtc@68 {
-+			compatible = "dallas,ds1338";
-+			reg = <0x68>;
++			gpio-controller;
++			#gpio-cells = <2>;
++
++			/* 0x8000 = Not configured */
++			gpio-cfg = < 0x8000 0x8000 0 0x8000 0x8000 >;
 +		};
 +	};
 +
-+	net@10010000 {
-+		compatible = "smsc,lan91c111";
-+		reg = <0x10010000 0x10000>;
-+		interrupts = <25>;
++	i2c@7000c400 {
++		clock-frequency = <400000>;
 +	};
 +
-+	lcd@10008000 {
-+		compatible = "arm,versatile-lcd";
-+		reg = <0x10008000 0x1000>;
++	i2c@7000c500 {
++		clock-frequency = <400000>;
 +	};
++
++	i2c@7000d000 {
++		clock-frequency = <400000>;
++	};
++
++	sound {
++		compatible = "nvidia,harmony-sound", "nvidia,tegra-wm8903";
++
++		spkr-en-gpios = <&codec 2 0>;
++		hp-det-gpios = <&gpio 178 0>;
++		int-mic-en-gpios = <&gpio 184 0>;
++		ext-mic-en-gpios = <&gpio 185 0>;
++	};
++
++	serial@70006300 {
++		clock-frequency = < 216000000 >;
++	};
++
++	sdhci@c8000200 {
++		gpios = <&gpio 69 0>, /* cd, gpio PI5 */
++			<&gpio 57 0>, /* wp, gpio PH1 */
++			<&gpio 155 0>; /* power, gpio PT3 */
++	};
++
++	sdhci@c8000600 {
++		gpios = <&gpio 58 0>, /* cd, gpio PH2 */
++			<&gpio 59 0>, /* wp, gpio PH3 */
++			<&gpio 70 0>; /* power, gpio PI6 */
++	};
++};
+diff --git a/arch/arm/boot/dts/tegra-seaboard.dts b/arch/arm/boot/dts/tegra-seaboard.dts
+new file mode 100644
+index 0000000..1940cae
+--- /dev/null
++++ b/arch/arm/boot/dts/tegra-seaboard.dts
+@@ -0,0 +1,28 @@
++/dts-v1/;
++
++/memreserve/ 0x1c000000 0x04000000;
++/include/ "tegra20.dtsi"
++
++/ {
++	model = "NVIDIA Seaboard";
++	compatible = "nvidia,seaboard", "nvidia,tegra20";
++
++	chosen {
++		bootargs = "vmalloc=192M video=tegrafb console=ttyS0,115200n8 root=/dev/mmcblk1p3 rw rootwait";
++	};
++
++	memory {
++		device_type = "memory";
++		reg = < 0x00000000 0x40000000 >;
++	};
++
++	serial@70006300 {
++		clock-frequency = < 216000000 >;
++	};
++
++	sdhci@c8000400 {
++		gpios = <&gpio 69 0>, /* cd, gpio PI5 */
++			<&gpio 57 0>, /* wp, gpio PH1 */
++			<&gpio 70 0>; /* power, gpio PI6 */
++	};
++};
+diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.dtsi
+new file mode 100644
+index 0000000..18a1f45
+--- /dev/null
++++ b/arch/arm/boot/dts/tegra20.dtsi
+@@ -0,0 +1,148 @@
++/include/ "skeleton.dtsi"
++
++/ {
++	model = "NVIDIA Tegra 250";
++	compatible = "nvidia,tegra20";
++	interrupt-parent = <&intc>;
 +
 +	amba {
-+		compatible = "arm,amba-bus";
++		compatible = "simple-bus";
 +		#address-cells = <1>;
 +		#size-cells = <1>;
 +		ranges;
 +
-+		vic: intc@10140000 {
-+			compatible = "arm,versatile-vic";
++		intc: interrupt-controller@50041000 {
++			compatible = "nvidia,tegra20-gic", "arm,gic";
 +			interrupt-controller;
 +			#interrupt-cells = <1>;
-+			reg = <0x10140000 0x1000>;
-+		};
-+
-+		sic: intc@10003000 {
-+			compatible = "arm,versatile-sic";
-+			interrupt-controller;
-+			#interrupt-cells = <1>;
-+			reg = <0x10003000 0x1000>;
-+			interrupt-parent = <&vic>;
-+			interrupts = <31>; /* Cascaded to vic */
-+		};
-+
-+		dma@10130000 {
-+			compatible = "arm,pl081", "arm,primecell";
-+			reg = <0x10130000 0x1000>;
-+			interrupts = <17>;
-+		};
-+
-+		uart0: uart@101f1000 {
-+			compatible = "arm,pl011", "arm,primecell";
-+			reg = <0x101f1000 0x1000>;
-+			interrupts = <12>;
-+		};
-+
-+		uart1: uart@101f2000 {
-+			compatible = "arm,pl011", "arm,primecell";
-+			reg = <0x101f2000 0x1000>;
-+			interrupts = <13>;
-+		};
-+
-+		uart2: uart@101f3000 {
-+			compatible = "arm,pl011", "arm,primecell";
-+			reg = <0x101f3000 0x1000>;
-+			interrupts = <14>;
-+		};
-+
-+		smc@10100000 {
-+			compatible = "arm,primecell";
-+			reg = <0x10100000 0x1000>;
-+		};
-+
-+		mpmc@10110000 {
-+			compatible = "arm,primecell";
-+			reg = <0x10110000 0x1000>;
-+		};
-+
-+		display@10120000 {
-+			compatible = "arm,pl110", "arm,primecell";
-+			reg = <0x10120000 0x1000>;
-+			interrupts = <16>;
-+		};
-+
-+		sctl@101e0000 {
-+			compatible = "arm,primecell";
-+			reg = <0x101e0000 0x1000>;
-+		};
-+
-+		watchdog@101e1000 {
-+			compatible = "arm,primecell";
-+			reg = <0x101e1000 0x1000>;
-+			interrupts = <0>;
-+		};
-+
-+		gpio0: gpio@101e4000 {
-+			compatible = "arm,pl061", "arm,primecell";
-+			reg = <0x101e4000 0x1000>;
-+			gpio-controller;
-+			interrupts = <6>;
-+			#gpio-cells = <2>;
-+			interrupt-controller;
-+			#interrupt-cells = <2>;
-+		};
-+
-+		gpio1: gpio@101e5000 {
-+			compatible = "arm,pl061", "arm,primecell";
-+			reg = <0x101e5000 0x1000>;
-+			interrupts = <7>;
-+			gpio-controller;
-+			#gpio-cells = <2>;
-+			interrupt-controller;
-+			#interrupt-cells = <2>;
-+		};
-+
-+		rtc@101e8000 {
-+			compatible = "arm,pl030", "arm,primecell";
-+			reg = <0x101e8000 0x1000>;
-+			interrupts = <10>;
-+		};
-+
-+		sci@101f0000 {
-+			compatible = "arm,primecell";
-+			reg = <0x101f0000 0x1000>;
-+			interrupts = <15>;
-+		};
-+
-+		ssp@101f4000 {
-+			compatible = "arm,pl022", "arm,primecell";
-+			reg = <0x101f4000 0x1000>;
-+			interrupts = <11>;
-+		};
-+
-+		fpga {
-+			compatible = "arm,versatile-fpga", "simple-bus";
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			ranges = <0 0x10000000 0x10000>;
-+
-+			aaci@4000 {
-+				compatible = "arm,primecell";
-+				reg = <0x4000 0x1000>;
-+				interrupts = <24>;
-+			};
-+			mmc@5000 {
-+				compatible = "arm,primecell";
-+				reg = < 0x5000 0x1000>;
-+				interrupts = <22>;
-+			};
-+			kmi@6000 {
-+				compatible = "arm,pl050", "arm,primecell";
-+				reg = <0x6000 0x1000>;
-+				interrupt-parent = <&sic>;
-+				interrupts = <3>;
-+			};
-+			kmi@7000 {
-+				compatible = "arm,pl050", "arm,primecell";
-+				reg = <0x7000 0x1000>;
-+				interrupt-parent = <&sic>;
-+				interrupts = <4>;
-+			};
++			reg = < 0x50041000 0x1000 >,
++			      < 0x50040100 0x0100 >;
 +		};
 +	};
-+};
-diff --git a/arch/arm/boot/dts/versatile-pb.dts b/arch/arm/boot/dts/versatile-pb.dts
-new file mode 100644
-index 0000000..8a614e3
---- /dev/null
-+++ b/arch/arm/boot/dts/versatile-pb.dts
-@@ -0,0 +1,48 @@
-+/include/ "versatile-ab.dts"
 +
-+/ {
-+	model = "ARM Versatile PB";
-+	compatible = "arm,versatile-pb";
 +
-+	amba {
-+		gpio2: gpio@101e6000 {
-+			compatible = "arm,pl061", "arm,primecell";
-+			reg = <0x101e6000 0x1000>;
-+			interrupts = <8>;
-+			gpio-controller;
-+			#gpio-cells = <2>;
-+			interrupt-controller;
-+			#interrupt-cells = <2>;
-+		};
++	i2c@7000c000 {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		compatible = "nvidia,tegra20-i2c";
++		reg = <0x7000C000 0x100>;
++		interrupts = < 70 >;
++	};
 +
-+		gpio3: gpio@101e7000 {
-+			compatible = "arm,pl061", "arm,primecell";
-+			reg = <0x101e7000 0x1000>;
-+			interrupts = <9>;
-+			gpio-controller;
-+			#gpio-cells = <2>;
-+			interrupt-controller;
-+			#interrupt-cells = <2>;
-+		};
++	i2c@7000c400 {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		compatible = "nvidia,tegra20-i2c";
++		reg = <0x7000C400 0x100>;
++		interrupts = < 116 >;
++	};
 +
-+		fpga {
-+			uart@9000 {
-+				compatible = "arm,pl011", "arm,primecell";
-+				reg = <0x9000 0x1000>;
-+				interrupt-parent = <&sic>;
-+				interrupts = <6>;
-+			};
-+			sci@a000 {
-+				compatible = "arm,primecell";
-+				reg = <0xa000 0x1000>;
-+				interrupt-parent = <&sic>;
-+				interrupts = <5>;
-+			};
-+			mmc@b000 {
-+				compatible = "arm,primecell";
-+				reg = <0xb000 0x1000>;
-+				interrupts = <23>;
-+			};
-+		};
++	i2c@7000c500 {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		compatible = "nvidia,tegra20-i2c";
++		reg = <0x7000C500 0x100>;
++		interrupts = < 124 >;
++	};
++
++	i2c@7000d000 {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		compatible = "nvidia,tegra20-i2c";
++		reg = <0x7000D000 0x200>;
++		interrupts = < 85 >;
++	};
++
++	i2s@70002800 {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		compatible = "nvidia,tegra20-i2s";
++		reg = <0x70002800 0x200>;
++		interrupts = < 45 >;
++		dma-channel = < 2 >;
++	};
++
++	i2s@70002a00 {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		compatible = "nvidia,tegra20-i2s";
++		reg = <0x70002a00 0x200>;
++		interrupts = < 35 >;
++		dma-channel = < 1 >;
++	};
++
++	das@70000c00 {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		compatible = "nvidia,tegra20-das";
++		reg = <0x70000c00 0x80>;
++	};
++
++	gpio: gpio@6000d000 {
++		compatible = "nvidia,tegra20-gpio";
++		reg = < 0x6000d000 0x1000 >;
++		interrupts = < 64 65 66 67 87 119 121 >;
++		#gpio-cells = <2>;
++		gpio-controller;
++	};
++
++	serial@70006000 {
++		compatible = "nvidia,tegra20-uart";
++		reg = <0x70006000 0x40>;
++		reg-shift = <2>;
++		interrupts = < 68 >;
++	};
++
++	serial@70006040 {
++		compatible = "nvidia,tegra20-uart";
++		reg = <0x70006040 0x40>;
++		reg-shift = <2>;
++		interrupts = < 69 >;
++	};
++
++	serial@70006200 {
++		compatible = "nvidia,tegra20-uart";
++		reg = <0x70006200 0x100>;
++		reg-shift = <2>;
++		interrupts = < 78 >;
++	};
++
++	serial@70006300 {
++		compatible = "nvidia,tegra20-uart";
++		reg = <0x70006300 0x100>;
++		reg-shift = <2>;
++		interrupts = < 122 >;
++	};
++
++	serial@70006400 {
++		compatible = "nvidia,tegra20-uart";
++		reg = <0x70006400 0x100>;
++		reg-shift = <2>;
++		interrupts = < 123 >;
++	};
++
++	sdhci@c8000000 {
++		compatible = "nvidia,tegra20-sdhci";
++		reg = <0xc8000000 0x200>;
++		interrupts = < 46 >;
++	};
++
++	sdhci@c8000200 {
++		compatible = "nvidia,tegra20-sdhci";
++		reg = <0xc8000200 0x200>;
++		interrupts = < 47 >;
++	};
++
++	sdhci@c8000400 {
++		compatible = "nvidia,tegra20-sdhci";
++		reg = <0xc8000400 0x200>;
++		interrupts = < 51 >;
++	};
++
++	sdhci@c8000600 {
++		compatible = "nvidia,tegra20-sdhci";
++		reg = <0xc8000600 0x200>;
++		interrupts = < 63 >;
 +	};
 +};
-diff --git a/arch/arm/mach-versatile/Kconfig b/arch/arm/mach-versatile/Kconfig
-index 9cdec5a..c1f38f6 100644
---- a/arch/arm/mach-versatile/Kconfig
-+++ b/arch/arm/mach-versatile/Kconfig
-@@ -17,4 +17,12 @@ config MACH_VERSATILE_AB
- 	  Include support for the ARM(R) Versatile Application Baseboard
- 	  for the ARM926EJ-S.
++
+diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
+index 5ec1846..4b8abf9 100644
+--- a/arch/arm/mach-tegra/Kconfig
++++ b/arch/arm/mach-tegra/Kconfig
+@@ -51,6 +51,12 @@ config MACH_SEABOARD
+ 	 also be included for some of the derivative boards that
+ 	 have large similarities with the seaboard design.
  
-+config MACH_VERSATILE_DT
-+	bool "Support Versatile platform from device tree"
++config MACH_TEGRA_DT
++	bool "Generic Tegra board (FDT support)"
 +	select USE_OF
-+	select CPU_ARM926T
 +	help
-+	  Include support for the ARM(R) Versatile/PB platform,
-+	  using the device tree for discovery
++	  Support for generic nVidia Tegra boards using Flattened Device Tree
 +
- endmenu
-diff --git a/arch/arm/mach-versatile/Makefile b/arch/arm/mach-versatile/Makefile
-index 97cf4d8..81fa3fe 100644
---- a/arch/arm/mach-versatile/Makefile
-+++ b/arch/arm/mach-versatile/Makefile
-@@ -5,4 +5,5 @@
- obj-y					:= core.o
- obj-$(CONFIG_ARCH_VERSATILE_PB)		+= versatile_pb.o
- obj-$(CONFIG_MACH_VERSATILE_AB)		+= versatile_ab.o
-+obj-$(CONFIG_MACH_VERSATILE_DT)		+= versatile_dt.o
- obj-$(CONFIG_PCI)			+= pci.o
-diff --git a/arch/arm/mach-versatile/core.c b/arch/arm/mach-versatile/core.c
-index 0c99cf0..4770dcd 100644
---- a/arch/arm/mach-versatile/core.c
-+++ b/arch/arm/mach-versatile/core.c
-@@ -24,6 +24,8 @@
- #include <linux/platform_device.h>
- #include <linux/sysdev.h>
- #include <linux/interrupt.h>
-+#include <linux/of_address.h>
-+#include <linux/of_platform.h>
- #include <linux/amba/bus.h>
- #include <linux/amba/clcd.h>
- #include <linux/amba/pl061.h>
-@@ -83,13 +85,26 @@ static struct fpga_irq_data sic_irq = {
- #define PIC_MASK	0
- #endif
+ config MACH_TRIMSLICE
+        bool "TrimSlice board"
+        select TEGRA_PCI
+diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
+index 823c703..6d3d695 100644
+--- a/arch/arm/mach-tegra/Makefile
++++ b/arch/arm/mach-tegra/Makefile
+@@ -30,5 +30,8 @@ obj-${CONFIG_MACH_PAZ00}		+= board-paz00-pinmux.o
+ obj-${CONFIG_MACH_SEABOARD}             += board-seaboard.o
+ obj-${CONFIG_MACH_SEABOARD}             += board-seaboard-pinmux.o
  
-+/* Lookup table for finding a DT node that represents the vic instance */
-+static const struct of_device_id vic_of_match[] __initconst = {
-+	{ .compatible = "arm,versatile-vic", },
-+	{}
-+};
++obj-${CONFIG_MACH_TEGRA_DT}             += board-dt.o
++obj-${CONFIG_MACH_TEGRA_DT}             += board-harmony-pinmux.o
 +
-+static const struct of_device_id sic_of_match[] __initconst = {
-+	{ .compatible = "arm,versatile-sic", },
-+	{}
-+};
+ obj-${CONFIG_MACH_TRIMSLICE}            += board-trimslice.o
+ obj-${CONFIG_MACH_TRIMSLICE}            += board-trimslice-pinmux.o
+diff --git a/arch/arm/mach-tegra/Makefile.boot b/arch/arm/mach-tegra/Makefile.boot
+index db52d61..428ad12 100644
+--- a/arch/arm/mach-tegra/Makefile.boot
++++ b/arch/arm/mach-tegra/Makefile.boot
+@@ -1,3 +1,6 @@
+ zreladdr-$(CONFIG_ARCH_TEGRA_2x_SOC)	:= 0x00008000
+ params_phys-$(CONFIG_ARCH_TEGRA_2x_SOC)	:= 0x00000100
+ initrd_phys-$(CONFIG_ARCH_TEGRA_2x_SOC)	:= 0x00800000
 +
- void __init versatile_init_irq(void)
- {
- 	vic_init(VA_VIC_BASE, IRQ_VIC_START, ~0, 0);
-+	irq_domain_generate_simple(vic_of_match, VERSATILE_VIC_BASE, IRQ_VIC_START);
- 
- 	writel(~0, VA_SIC_BASE + SIC_IRQ_ENABLE_CLEAR);
- 
- 	fpga_irq_init(IRQ_VICSOURCE31, ~PIC_MASK, &sic_irq);
-+	irq_domain_generate_simple(sic_of_match, VERSATILE_SIC_BASE, IRQ_SIC_START);
- 
- 	/*
- 	 * Interrupts on secondary controller from 0 to 8 are routed to
-@@ -646,6 +661,52 @@ static struct amba_device *amba_devs[] __initdata = {
- 	&kmi1_device,
- };
- 
-+#ifdef CONFIG_OF
-+/*
-+ * Lookup table for attaching a specific name and platform_data pointer to
-+ * devices as they get created by of_platform_populate().  Ideally this table
-+ * would not exist, but the current clock implementation depends on some devices
-+ * having a specific name.
-+ */
-+struct of_dev_auxdata versatile_auxdata_lookup[] __initdata = {
-+	OF_DEV_AUXDATA("arm,primecell", VERSATILE_MMCI0_BASE, "fpga:05", NULL),
-+	OF_DEV_AUXDATA("arm,primecell", VERSATILE_KMI0_BASE, "fpga:06", NULL),
-+	OF_DEV_AUXDATA("arm,primecell", VERSATILE_KMI1_BASE, "fpga:07", NULL),
-+	OF_DEV_AUXDATA("arm,primecell", VERSATILE_UART3_BASE, "fpga:09", NULL),
-+	OF_DEV_AUXDATA("arm,primecell", VERSATILE_MMCI1_BASE, "fpga:0b", NULL),
-+
-+	OF_DEV_AUXDATA("arm,primecell", VERSATILE_CLCD_BASE, "dev:20", &clcd_plat_data),
-+	OF_DEV_AUXDATA("arm,primecell", VERSATILE_UART0_BASE, "dev:f1", NULL),
-+	OF_DEV_AUXDATA("arm,primecell", VERSATILE_UART1_BASE, "dev:f2", NULL),
-+	OF_DEV_AUXDATA("arm,primecell", VERSATILE_UART2_BASE, "dev:f3", NULL),
-+	OF_DEV_AUXDATA("arm,primecell", VERSATILE_SSP_BASE, "dev:f4", NULL),
-+
-+#if 0
-+	/*
-+	 * These entries are unnecessary because no clocks referencing
-+	 * them.  I've left them in for now as place holders in case
-+	 * any of them need to be added back, but they should be
-+	 * removed before actually committing this patch.  --gcl
-+	 */
-+	OF_DEV_AUXDATA("arm,primecell", VERSATILE_AACI_BASE, "fpga:04", NULL),
-+	OF_DEV_AUXDATA("arm,primecell", VERSATILE_SCI1_BASE, "fpga:0a", NULL),
-+	OF_DEV_AUXDATA("arm,primecell", VERSATILE_SMC_BASE, "dev:00", NULL),
-+	OF_DEV_AUXDATA("arm,primecell", VERSATILE_MPMC_BASE, "dev:10", NULL),
-+	OF_DEV_AUXDATA("arm,primecell", VERSATILE_DMAC_BASE, "dev:30", NULL),
-+
-+	OF_DEV_AUXDATA("arm,primecell", VERSATILE_SCTL_BASE, "dev:e0", NULL),
-+	OF_DEV_AUXDATA("arm,primecell", VERSATILE_WATCHDOG_BASE, "dev:e1", NULL),
-+	OF_DEV_AUXDATA("arm,primecell", VERSATILE_GPIO0_BASE, "dev:e4", NULL),
-+	OF_DEV_AUXDATA("arm,primecell", VERSATILE_GPIO1_BASE, "dev:e5", NULL),
-+	OF_DEV_AUXDATA("arm,primecell", VERSATILE_GPIO2_BASE, "dev:e6", NULL),
-+	OF_DEV_AUXDATA("arm,primecell", VERSATILE_GPIO3_BASE, "dev:e7", NULL),
-+	OF_DEV_AUXDATA("arm,primecell", VERSATILE_RTC_BASE, "dev:e8", NULL),
-+	OF_DEV_AUXDATA("arm,primecell", VERSATILE_SCI_BASE, "dev:f0", NULL),
-+#endif
-+	{}
-+};
-+#endif
-+
- #ifdef CONFIG_LEDS
- #define VA_LEDS_BASE (__io_address(VERSATILE_SYS_BASE) + VERSATILE_SYS_LED_OFFSET)
- 
-diff --git a/arch/arm/mach-versatile/core.h b/arch/arm/mach-versatile/core.h
-index fd6404e..70b1555 100644
---- a/arch/arm/mach-versatile/core.h
-+++ b/arch/arm/mach-versatile/core.h
-@@ -23,6 +23,7 @@
- #define __ASM_ARCH_VERSATILE_H
- 
- #include <linux/amba/bus.h>
-+#include <linux/of_platform.h>
- 
- extern void __init versatile_init(void);
- extern void __init versatile_init_early(void);
-@@ -30,6 +31,7 @@ extern void __init versatile_init_irq(void);
- extern void __init versatile_map_io(void);
- extern struct sys_timer versatile_timer;
- extern unsigned int mmc_status(struct device *dev);
-+extern struct of_dev_auxdata versatile_auxdata_lookup[];
- 
- #define AMBA_DEVICE(name,busid,base,plat)			\
- static struct amba_device name##_device = {			\
-diff --git a/arch/arm/mach-versatile/versatile_dt.c b/arch/arm/mach-versatile/versatile_dt.c
++dtb-$(CONFIG_MACH_HARMONY) += tegra-harmony.dtb
++dtb-$(CONFIG_MACH_SEABOARD) += tegra-seaboard.dtb
+diff --git a/arch/arm/mach-tegra/board-dt.c b/arch/arm/mach-tegra/board-dt.c
 new file mode 100644
-index 0000000..54e037c
+index 0000000..1e3fbc3
 --- /dev/null
-+++ b/arch/arm/mach-versatile/versatile_dt.c
-@@ -0,0 +1,51 @@
++++ b/arch/arm/mach-tegra/board-dt.c
+@@ -0,0 +1,117 @@
 +/*
-+ * Versatile board support using the device tree
++ * nVidia Tegra device tree board support
 + *
-+ *  Copyright (C) 2010 Secret Lab Technologies Ltd.
-+ *  Copyright (C) 2009 Jeremy Kerr <jeremy.kerr@canonical.com>
-+ *  Copyright (C) 2004 ARM Limited
-+ *  Copyright (C) 2000 Deep Blue Solutions Ltd
++ * Copyright (C) 2010 Secret Lab Technologies, Ltd.
++ * Copyright (C) 2010 Google, Inc.
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
 + *
 + * This program is distributed in the hope that it will be useful,
 + * but WITHOUT ANY WARRANTY; without even the implied warranty of
 + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 + * GNU General Public License for more details.
 + *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 + */
 +
++#include <linux/kernel.h>
 +#include <linux/init.h>
++#include <linux/platform_device.h>
++#include <linux/serial_8250.h>
++#include <linux/clk.h>
++#include <linux/dma-mapping.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/of_fdt.h>
 +#include <linux/of_irq.h>
 +#include <linux/of_platform.h>
++#include <linux/pda_power.h>
++#include <linux/io.h>
++#include <linux/i2c.h>
++#include <linux/i2c-tegra.h>
++
 +#include <asm/mach-types.h>
 +#include <asm/mach/arch.h>
++#include <asm/mach/time.h>
++#include <asm/setup.h>
 +
-+#include "core.h"
++#include <mach/iomap.h>
++#include <mach/irqs.h>
 +
-+static void __init versatile_dt_init(void)
-+{
-+	of_platform_populate(NULL, of_default_bus_match_table,
-+			     versatile_auxdata_lookup, NULL);
-+}
++#include "board.h"
++#include "board-harmony.h"
++#include "clock.h"
++#include "devices.h"
 +
-+static const char *versatile_dt_match[] __initconst = {
-+	"arm,versatile-ab",
-+	"arm,versatile-pb",
-+	NULL,
++void harmony_pinmux_init(void);
++void seaboard_pinmux_init(void);
++
++
++struct of_dev_auxdata tegra20_auxdata_lookup[] __initdata = {
++	OF_DEV_AUXDATA("nvidia,tegra20-sdhci", TEGRA_SDMMC1_BASE, "sdhci-tegra.0", NULL),
++	OF_DEV_AUXDATA("nvidia,tegra20-sdhci", TEGRA_SDMMC2_BASE, "sdhci-tegra.1", NULL),
++	OF_DEV_AUXDATA("nvidia,tegra20-sdhci", TEGRA_SDMMC3_BASE, "sdhci-tegra.2", NULL),
++	OF_DEV_AUXDATA("nvidia,tegra20-sdhci", TEGRA_SDMMC4_BASE, "sdhci-tegra.3", NULL),
++	OF_DEV_AUXDATA("nvidia,tegra20-i2c", TEGRA_I2C_BASE, "tegra-i2c.0", NULL),
++	OF_DEV_AUXDATA("nvidia,tegra20-i2c", TEGRA_I2C2_BASE, "tegra-i2c.1", NULL),
++	OF_DEV_AUXDATA("nvidia,tegra20-i2c", TEGRA_I2C3_BASE, "tegra-i2c.2", NULL),
++	OF_DEV_AUXDATA("nvidia,tegra20-i2c", TEGRA_DVC_BASE, "tegra-i2c.3", NULL),
++	OF_DEV_AUXDATA("nvidia,tegra20-i2s", TEGRA_I2S1_BASE, "tegra-i2s.0", NULL),
++	OF_DEV_AUXDATA("nvidia,tegra20-i2s", TEGRA_I2S1_BASE, "tegra-i2s.1", NULL),
++	OF_DEV_AUXDATA("nvidia,tegra20-das", TEGRA_APB_MISC_DAS_BASE, "tegra-das", NULL),
++	{}
 +};
 +
-+DT_MACHINE_START(VERSATILE_PB, "ARM-Versatile (Device Tree Support)")
-+	.map_io		= versatile_map_io,
-+	.init_early	= versatile_init_early,
-+	.init_irq	= versatile_init_irq,
-+	.timer		= &versatile_timer,
-+	.init_machine	= versatile_dt_init,
-+	.dt_compat	= versatile_dt_match,
++static __initdata struct tegra_clk_init_table tegra_dt_clk_init_table[] = {
++	/* name		parent		rate		enabled */
++	{ "uartd",	"pll_p",	216000000,	true },
++	{ NULL,		NULL,		0,		0},
++};
++
++static struct of_device_id tegra_dt_match_table[] __initdata = {
++	{ .compatible = "simple-bus", },
++	{}
++};
++
++static struct of_device_id tegra_dt_gic_match[] __initdata = {
++	{ .compatible = "nvidia,tegra20-gic", },
++	{}
++};
++
++static void __init tegra_dt_init(void)
++{
++	struct device_node *node;
++
++	node = of_find_matching_node_by_address(NULL, tegra_dt_gic_match,
++						TEGRA_ARM_INT_DIST_BASE);
++	if (node)
++		irq_domain_add_simple(node, INT_GIC_BASE);
++
++	tegra_clk_init_from_table(tegra_dt_clk_init_table);
++
++	if (of_machine_is_compatible("nvidia,harmony"))
++		harmony_pinmux_init();
++	else if (of_machine_is_compatible("nvidia,seaboard"))
++		seaboard_pinmux_init();
++
++	/*
++	 * Finished with the static registrations now; fill in the missing
++	 * devices
++	 */
++	of_platform_populate(NULL, tegra_dt_match_table, tegra20_auxdata_lookup, NULL);
++}
++
++static const char * tegra_dt_board_compat[] = {
++	"nvidia,tegra20",
++	NULL
++};
++
++DT_MACHINE_START(TEGRA_DT, "nVidia Tegra (Flattened Device Tree)")
++	.map_io		= tegra_map_common_io,
++	.init_early	= tegra_init_early,
++	.init_irq	= tegra_init_irq,
++	.timer		= &tegra_timer,
++	.init_machine	= tegra_dt_init,
++	.dt_compat	= tegra_dt_board_compat,
 +MACHINE_END
 
