@@ -1,50 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751483Ab1GSV7I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 17:59:08 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:36511 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750952Ab1GSV7G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 17:59:06 -0400
-Subject: Re: [RFC][PATCH] Anonymous shared memory (ashmem) subsystem
-From: John Stultz <john.stultz@linaro.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>, Bryan Donlan <bdonlan@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Robert Love <rlove@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>, Eric Anholt <eric@anholt.net>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-In-Reply-To: <20110719154130.GA26245@infradead.org>
-References: <1311015274-28650-1-git-send-email-john.stultz@linaro.org>
-	 <20110719021947.GA16986@infradead.org>
-	 <CAF_S4t_oOwsuPJdMXv+wPVhzecUag=TOWj1-KtFJqYUZOCBbog@mail.gmail.com>
-	 <20110719033602.GA4867@infradead.org> <1311089863.29817.172.camel@nimitz>
-	 <20110719154130.GA26245@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 19 Jul 2011 14:58:56 -0700
-Message-ID: <1311112736.2945.106.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1751561Ab1GSWRG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 18:17:06 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52114 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750952Ab1GSWRE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 18:17:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <4E1DD5DF.2040408@candelatech.com>
+References: <4E1DD5DF.2040408@candelatech.com>
+Date: Tue, 19 Jul 2011 15:17:03 -0700
+X-Google-Sender-Auth: MExAPxmmWZkEMgVjyx83cZyVFgI
+Message-ID: <CANcMJZBHMKXbDqgvKnZ-iiCbFm0a_5zyP179ReXF+cmRyM=O7w@mail.gmail.com>
+Subject: Re: BUG spinlock lockup, rtc related, 3.0-rc7+
+From: john stultz <johnstul@us.ibm.com>
+To: Ben Greear <greearb@candelatech.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-19 at 11:41 -0400, Christoph Hellwig wrote:
-> On Tue, Jul 19, 2011 at 08:37:43AM -0700, Dave Hansen wrote:
-> > This implementation has some real show-stopper things in it, like its
-> > own LRU.  But, the concept seems interesting at least.
-[snip]
-> Having a madvice flag to allow reclaiming tmpfs
-> pages, and using the normal VM infrastructure sounds like a perfectly
-> fine feature.
+On Wed, Jul 13, 2011 at 10:29 AM, Ben Greear <greearb@candelatech.com> wrote:
+> This is on the same nfs testing machine I've been posting about.  This
+> has some additional nfs patches included, running tests to mount, do io,
+> unmount
+> over and over again.  Seems that the NFS bugs might be finally fixed, but
+> system is still un-stable in general when under load.
+>
+> This info was printed after several other warnings that I previously posted
+> to lkml.
+>
+> This one appears to lock up the machine pretty badly though...can't ssh into
+> it anymore, and similar messages keep spewing every few minutes.
+>
+> I *think* the BUG at the end of this email is the important part, but
+> maybe it's just a symptom of something else...
 
-Ok. Thanks all for the review and comments. I'll see if something like
-what was suggested can be worked out.
+Huh. So does this trigger frequently, or was this just a one time
+thing? I suspect the latter.
 
-thanks again,
+>From the looks of it, there's the btserver process (on cpu4) which
+during exit is caught up spinning trying to get the hrtimer base lock
+from hrtimer_cancel() in rtc_irq_set_state() when cleaning up from
+rtc_device_release().
+
+Meanwhile, On cpu0, a rtc periodic timer has fired and we're stuck in
+rtc_handle_legacy_irq(), likely waiting for the irq_task_lock held by
+cpu4 in rtc_irq_set_state().
+
+The rest of the cpus are idle, with the exception of the one that
+detected the stall from the normal timer tick.
+
+Hrmm.. It sounds like a circular lock between the rtc->irq_task_lock
+and the hrtimer base lock.
+
+rtc_irq_set_state: Grab irq_task_lock -> call hrtimer_cancel -> grab
+hrtimer_base_lock
+
+IRQ:  grab hrtimer_base_lock -> run timers -> rtc_handle_legacy_irq ->
+grab irq_task_lock
+
+But looking at __run_hrtimer(), the base lock should be released
+before the timer is run.
+
+So I'm not really sure what would be gumming up things here.
+
+Thomas: Any thoughts? There shouldn't be an issue calling
+hrtimer_cancel or other hrtimer operations from an  hrtimer handler
+right?
+
+thanks
 -john
-
-
-
