@@ -1,95 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752463Ab1GSMYJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 08:24:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43671 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751839Ab1GSMYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 08:24:08 -0400
-Message-ID: <4E25775A.4050306@redhat.com>
-Date: Tue, 19 Jul 2011 08:23:54 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100505 Fedora/3.0.4-2.el6 Thunderbird/3.0.4
+	id S1752570Ab1GSMjB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 08:39:01 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:36632 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751375Ab1GSMjA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 08:39:00 -0400
+Message-ID: <4E257ACD.6080608@ru.mvista.com>
+Date: Tue, 19 Jul 2011 16:38:37 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 01/34] System Firmware Interface
-References: <1310994528-26276-1-git-send-email-prarit@redhat.com>	<1310994528-26276-2-git-send-email-prarit@redhat.com>	<m2vcuz3xsz.fsf@firstfloor.org> <20110719100544.55c7f7fb@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110719100544.55c7f7fb@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org
+Subject: Re: [PATCH] gpio/mxc/mxs: fix build error introduced by the reanming
+ of irq_gc_ack()
+References: <1311046444-25423-1-git-send-email-shawn.guo@linaro.org>
+In-Reply-To: <1311046444-25423-1-git-send-email-shawn.guo@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello.
 
+On 19-07-2011 7:34, Shawn Guo wrote:
 
-On 07/19/2011 05:05 AM, Alan Cox wrote:
-> On Mon, 18 Jul 2011 17:43:08 -0700
-> Andi Kleen <andi@firstfloor.org> wrote:
+> The following commit renames irq_gc_ack() to irq_gc_ack_set_bit(),
+> and makes gpio-mxc and gpio-mxs fail to build.
+
+>    659fb32d1b67476f4ade25e9ea0e2642a5b9c4b5
+>    genirq: replace irq_gc_ack() with {set,clr}_bit variants (fwd)
+
+> Signed-off-by: Shawn Guo<shawn.guo@linaro.org>
+> ---
+> The build error is being seen on linux-next.
+
+>   drivers/gpio/gpio-mxc.c |    2 +-
+>   drivers/gpio/gpio-mxs.c |    2 +-
+>   2 files changed, 2 insertions(+), 2 deletions(-)
+
+> diff --git a/drivers/gpio/gpio-mxc.c b/drivers/gpio/gpio-mxc.c
+> index 89fda58..4a46fbe 100644
+> --- a/drivers/gpio/gpio-mxc.c
+> +++ b/drivers/gpio/gpio-mxc.c
+> @@ -297,7 +297,7 @@ static void __init mxc_gpio_init_gc(struct mxc_gpio_port *port)
+>   	gc->private = port;
 >
->   
+>   	ct = gc->chip_types;
+> -	ct->chip.irq_ack = irq_gc_ack,
+> +	ct->chip.irq_ack = irq_gc_ack_set_bit,
 
-Hey Andi,
+    There should be semicolon rathern than comma at the end.
 
->> Prarit Bhargava <prarit@redhat.com> writes:
->>
->> Wow that's a cc list from hell. Cut down to linux-kernel.
->>     
-> Which meant I very nearly missed it so you very nearly missed your answer
-> 8)
->   
-
-Sorry everyone -- I was just following what I thought was the proper
-protocol ... I'll definitely cut down the cc list on the next submission.
-
->   
->>> This patch introduces a general System Firmware interface to the kernel, called
->>> sysfw.
->>>       
->> Could you expand somewhat WHY you want this. What is wrong with the
->> current code?
->>     
-> See the previous discussions
+>   	ct->chip.irq_mask = irq_gc_mask_clr_bit;
+>   	ct->chip.irq_unmask = irq_gc_mask_set_bit;
+>   	ct->chip.irq_set_type = gpio_set_irq_type;
+> diff --git a/drivers/gpio/gpio-mxs.c b/drivers/gpio/gpio-mxs.c
+> index d8cafba..88f8506 100644
+> --- a/drivers/gpio/gpio-mxs.c
+> +++ b/drivers/gpio/gpio-mxs.c
+> @@ -156,7 +156,7 @@ static void __init mxs_gpio_init_gc(struct mxs_gpio_port *port)
+>   	gc->private = port;
 >
->   
+>   	ct = gc->chip_types;
+> -	ct->chip.irq_ack = irq_gc_ack,
+> +	ct->chip.irq_ack = irq_gc_ack_set_bit,
 
-There is some additional information I'd like to throw out here as
-well.  SMBIOS also provides information on the system state after the
-BIOS/EFI is finished and before the kernel has been booted.  This has
-been *invaluable* to me when diagnosing some wonky hardware from OEMs. 
-I want to expand the SMBIOS layer to dump that information out when I
-need it... but that's all for a later patch.  I will note not all
-SMBIOSes are the same and sometimes the information has not been
-correct, but when it is correct it has been extremely useful.  The
-problem is that kludging this stuff into the existing dmi layer is a
-PITA and just makes things messier with adding new dmi "devices" and
-other junk.  It feels like I'm just hacking more code in to an already
-broken mechanism.
+    Same here.
 
-tl;dr: There are some other useful bits of SMBIOS we could take
-advantage of but the current "dmi" layer is difficult to work with.
-
-Beyond that, what Alan said.
-
-P.
->> As for user space access on x86 "dmidecode"/libdmi works for nearly everyone,
->> doesn't it?
->>     
-> "on x86" (and on PC only generally)
->
-> There are three core problems
->
-> 1.	DMI in this sense is basically an x86 PC class device hack
-> 2.	It is obsoleted and at some point it'll vanish even on PC
-> 3.	Every other platform without DMI would benefit from the
-> 	interface being generic
->
-> So either we carry on hacking other interfaces (often more informative
-> ones) into our dmi glue, and trying to keep up the fakery for every case,
-> or we do what I should have done originally and made the interface a
-> generic way to query firmware/board information that can be extended
-> nicely.
->
-> We'll still need a spot of fakery for userspace I suspect.
->   
+WBR, Sergei
