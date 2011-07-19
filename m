@@ -1,91 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511Ab1GSHwK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 03:52:10 -0400
-Received: from mga01.intel.com ([192.55.52.88]:34996 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752339Ab1GSHwI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 03:52:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,227,1309762800"; 
-   d="scan'208";a="31951334"
-Subject: Re: [PATCH v2 1/6] perf: Add interface to add general events to
- sysfs
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1310996068.13765.67.camel@twins>
-References: <1310740503-15608-1-git-send-email-ming.m.lin@intel.com>
-	 <1310740503-15608-2-git-send-email-ming.m.lin@intel.com>
-	 <1310996068.13765.67.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 19 Jul 2011 15:52:06 +0800
-Message-ID: <1311061926.3938.205.camel@minggr.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1752550Ab1GSICR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 04:02:17 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:38778 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752431Ab1GSICQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 04:02:16 -0400
+Message-ID: <4E253A02.9020806@dsn.okisemi.com>
+Date: Tue, 19 Jul 2011 17:02:10 +0900
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Grant Likely <grant.likely@secretlab.ca>, tglx@linutronix.de
+CC: linux-kernel@vger.kernel.org, alexander.stein@systec-electronic.com,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com
+Subject: Re: [PATCH v4] pch_gpio: Support interrupt function
+References: <1309486572-2789-1-git-send-email-tomoya-linux@dsn.okisemi.com> <20110704163137.GA28042@ponder.secretlab.ca> <4E128A7D.9020508@dsn.okisemi.com> <20110705035902.GB13713@ponder.secretlab.ca> <4E12A69C.8030709@dsn.okisemi.com> <4E1AB3F7.2070600@dsn.okisemi.com> <20110715201414.GK2833@ponder.secretlab.ca>
+In-Reply-To: <20110715201414.GK2833@ponder.secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-07-18 at 21:34 +0800, Peter Zijlstra wrote:
-> On Fri, 2011-07-15 at 14:34 +0000, Lin Ming wrote:
-> > PMU can implement ::add_events() to add its general events to sysfs.
-> > 
-> > For example,
-> > 
-> > /sys/bus/event_source/devices/uncore/events
-> > └── cycle
-> > 
-> > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-> > ---
-> >  include/linux/perf_event.h |    9 +++++++
-> >  kernel/events/core.c       |   52 ++++++++++++++++++++++++++++++++++++++++++++
-> >  2 files changed, 61 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> > index 3f2711c..14337a3 100644
-> > --- a/include/linux/perf_event.h
-> > +++ b/include/linux/perf_event.h
-> > @@ -676,6 +676,14 @@ struct pmu {
-> >  	 * for each successful ->add() during the transaction.
-> >  	 */
-> >  	void (*cancel_txn)		(struct pmu *pmu); /* optional */
-> > +
-> > +	void (*add_events)		(void);
-> > +};
-> 
-> I'd rather not have a function pointer here, and all the kobj thingies
-> can be hooking into the existing struct device, right?
-
-I forgot to mention one important reason why I added a function pointer.
-
-The events can only be added to sysfs after PMU sysfs is initialized in
-perf_event_sysfs_init ->
-    pmu_dev_alloc
-
-> @@ -5571,6 +5571,8 @@ static int pmu_dev_alloc(struct pmu *pmu)
->        if (ret)
->                goto free_dev;
+(2011/07/16 5:14), Grant Likely wrote:
+> Sounds like the platform is not correctly reserving the irq descs it
+> is using.  You'll need to dig into the irq desc allocation code to
+> debug it.
 >
-> +       if (pmu->add_events)
-> +               pmu->add_events();
 
-So we need a pmu callback which is called in pmu_dev_alloc to add events
-to sysfs.
+We can't.
+It's difficult for us to debug irq platform code.
 
-You suggested a new interface,
-int perf_pmu_add_event(struct pmu *pmu, const char *name, u64 config)
+ > TO: Thomas Gleixner
+Could you give us your opinion about this issue?
 
-But where should it be called?
-I guess you mean to call it in pmu init function, for example,
-uncore_pmu_init.
+Thanks,
 
-But pmu init function maybe called before perf_event_sysfs_init, which
-means the pmu sysfs has not been initialized yet.
-
-Lin Ming
-
+-- 
+tomoya
+OKI SEMICONDUCTOR CO., LTD.
