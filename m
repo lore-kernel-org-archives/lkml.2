@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751953Ab1GSCiM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 22:38:12 -0400
-Received: from void.printf.net ([89.145.121.20]:45320 "EHLO void.printf.net"
+	id S1751965Ab1GSDEJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 23:04:09 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:40534 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751260Ab1GSCiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 22:38:11 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] vfs: fix race in rcu lookup of pruned dentry
-References: <alpine.LSU.2.00.1107181407060.3530@sister.anvils>
-	<CA+55aFxq1KZycxXCwLARv0WOYG_-aim=e9kt=eLcNuymmeoyiA@mail.gmail.com>
-	<alpine.LSU.2.00.1107181533590.3909@sister.anvils>
-	<20110718231738.GJ11013@ZenIV.linux.org.uk>
-	<20110718232114.GK11013@ZenIV.linux.org.uk>
-	<CA+55aFzAK52MZXs1ZAdJhnKgnO8OnzUggvS67VUP4mgiYHi5kQ@mail.gmail.com>
-	<20110718234012.GL11013@ZenIV.linux.org.uk>
-	<alpine.LSU.2.00.1107181903350.23830@sister.anvils>
-	<CA+55aFwafi1p=RgrwsauKw+40mcUx9nOs4pkvSFsGBmsb25dDQ@mail.gmail.com>
-	<CA+55aFzMP3oYV9G8bzskkyNEpqcHGSBR3rWCF_TWF4QhOMmR8A@mail.gmail.com>
-	<20110719022305.GO11013@ZenIV.linux.org.uk>
-Date: Mon, 18 Jul 2011 22:37:44 -0400
-In-Reply-To: <20110719022305.GO11013@ZenIV.linux.org.uk> (Al Viro's message of
-	"Tue, 19 Jul 2011 03:23:05 +0100")
-Message-ID: <m2livv9err.fsf@bob.laptop.org>
-User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
+	id S1751230Ab1GSDEH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 23:04:07 -0400
+Date: Mon, 18 Jul 2011 20:04:04 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: current_thread_info() vs task_thread_info(current)
+Message-ID: <20110719030404.GA2355@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1310988183.13765.56.camel@twins>
+ <1310990097.25044.307.camel@pasglop>
+ <20110718143731.GA2312@linux.vnet.ibm.com>
+ <1311024983.25044.325.camel@pasglop>
+ <20110719003930.GF2312@linux.vnet.ibm.com>
+ <1311037057.25044.346.camel@pasglop>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1311037057.25044.346.camel@pasglop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Jul 19, 2011 at 10:57:37AM +1000, Benjamin Herrenschmidt wrote:
+> On Mon, 2011-07-18 at 17:39 -0700, Paul E. McKenney wrote:
+> > > Hrm, no I don't see that happening no. The preempt count when
+> > exiting an
+> > > irq or softirq stack should be the exact same as when entering it,
+> > which
+> > > is why we don't bother copying it over. Do you see any case where
+> > that
+> > > wouldn't hold ?
+> > 
+> > Nope, other than seeing preempt_count() transition from zero to three
+> > across a spin_unlock_irqrestore() for no good reason that I could see.
+> 
+> Do you have a nice repro-case ? :-)
+> 
+> That sounds really nasty ... smells really like something bad's
+> happening from an interrupt, but we don't copy back the preempt-count
+> from the interrupt stacks at all, so that's really really odd.
 
-On Mon, Jul 18 2011, Al Viro wrote:
->> Oh, and Al - just fold the thing into the original patch rather than
->> carry a buggy patch and the fix around. You might as well credit Hugh
->> as author for the whole thing, since he ended up being not just the
->> one to find the problem, but describe the solution anyway and fix the
->> patch.
->
-> Umm...  Is there any convenient way to make git commit --amend change
-> the author of commit?
+Good question...  The system I reproduced on four times over the
+weekend is out of commission.  Trying the same test on another system
+with a minimal patch -- will let you know how it goes.
 
-`git commit --amend --author="Foo Bar <foo@bar>"` works fine.
-
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+							Thanx, Paul
