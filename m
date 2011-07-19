@@ -1,84 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697Ab1GSJMl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 05:12:41 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:19211 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752175Ab1GSJMj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 05:12:39 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6411"; a="104366664"
-Message-ID: <8bcfda19cbc633e011e6b28a6183e68b.squirrel@www.codeaurora.org>
-In-Reply-To: <20110630174538.GA7979@xanatos>
-References: <1308231068-24038-2-git-send-email-tlinder@codeaurora.org>
-    <1308231068-24038-6-git-send-email-tlinder@codeaurora.org>
-    <20110630174538.GA7979@xanatos>
-Date: Tue, 19 Jul 2011 02:12:39 -0700 (PDT)
-Subject: Re: [PATCH/RFC 5/5] usb: Add support for streams alloc/dealloc to 
-     devio.c
-From: "Amit Blay" <ablay@codeaurora.org>
-To: "Sarah Sharp" <sarah.a.sharp@linux.intel.com>
-Cc: "Tatyana Brokhman" <tlinder@codeaurora.org>, greg@kroah.com,
+	id S1752760Ab1GSJQN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 05:16:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48656 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752364Ab1GSJQL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 05:16:11 -0400
+From: Oliver Neukum <oneukum@suse.de>
+Organization: SUSE
+To: "Amit Blay" <ablay@codeaurora.org>
+Subject: Re: [PATCH/RFC 5/5] usb: Add support for streams alloc/dealloc to devio.c
+Date: Tue, 19 Jul 2011 11:18:48 +0200
+User-Agent: KMail/1.13.5 (Linux/3.0.0-rc6-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: "Sarah Sharp" <sarah.a.sharp@linux.intel.com>,
+        "Tatyana Brokhman" <tlinder@codeaurora.org>, greg@kroah.com,
         linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org, balbi@ti.com,
-        ablay@codeaurora.org, "Amit Blay" <ablay@qualcomm.com>,
+        "Amit Blay" <ablay@qualcomm.com>,
         "open list" <linux-kernel@vger.kernel.org>
-User-Agent: SquirrelMail/1.4.17
+References: <1308231068-24038-2-git-send-email-tlinder@codeaurora.org> <20110630174538.GA7979@xanatos> <8bcfda19cbc633e011e6b28a6183e68b.squirrel@www.codeaurora.org>
+In-Reply-To: <8bcfda19cbc633e011e6b28a6183e68b.squirrel@www.codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107191118.48536.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sarah,
+Am Dienstag, 19. Juli 2011, 11:12:39 schrieb Amit Blay:
 
-I apologize for the delay responding to the thread. Thanks for your
-comments. I would like to continue and fix the previous patch according to
-the comments.
-Also, I would like to split this patch, and implement the actual usage of
-streams for bulk EP transfers (passing the stream ID with the URB) to a
-different patch.
+> > So it seems like you also need a way for userspace to specify which
+> > endpoints get streams, and which endpoints have streams freed.  I will
+> 
+> What I have in mind is user space passing a structure holding:
+> 
+> 1. Interface number [IN]
+> 2. Bitmap indicating which EP to allocate streams for [IN]
 
->
-> It looks like userspace doesn't have a way to specify the number of
-> streams USBFS needs to allocate.  Not all userspace applications are
+If this is a bitmap,
 
-> You probably also need a way to communicate back to userspace how many
-> streams were actually allocated.  The program could choose to free
+> 3. Number of streams to allocate, one number [IN}
+> 4. Number of streams actually allocated, one number  [OUT]
 
-> So you're just taking the max_streams from the first endpoint that has
-> streams?  What if other endpoints have varying numbers of max streams?
+how can those be scalars? 
 
-> What if you have endpoints on an interface that don't support streams?
-
-> So it seems like you also need a way for userspace to specify which
-> endpoints get streams, and which endpoints have streams freed.  I will
-
-What I have in mind is user space passing a structure holding:
-
-1. Interface number [IN]
-2. Bitmap indicating which EP to allocate streams for [IN]
-3. Number of streams to allocate, one number [IN}
-4. Number of streams actually allocated, one number  [OUT]
-
-The devio alloc function will double check if all EPs belong to the
-interface passed by the user space.
-Then it will call the HCI alloc function with the required number of
-streams. It will return the number of streams actually allocated by the
-HCD. Items 3 & 4 can be merged to one IN/OUT parameter.
-
-No error checking will be done in devio for number of required streams
-(i.e, comparing it with the reported max streams). This kind of error
-checking is already done by the xHCI driver.
-
-Please let me know if the solution is acceptable.
-
-Thanks,
-Amit.
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+	Regards
+		Oliver
