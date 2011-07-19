@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751199Ab1GSOeD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 10:34:03 -0400
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:26971 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751008Ab1GSOeB (ORCPT
+	id S1751421Ab1GSOep (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 10:34:45 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:42406 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751354Ab1GSOen (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 10:34:01 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 7A.lgDoVM1m9PKBUNf18XLGnC5jxzsLHJQKiB8yKcigFidm
- qm7zy.BBUuHxsF0bfyH37QDl4Ww0Fv1oKAIyaMBItH2AM5u93y21FRreQvbJ
- JyTqPP.BX87q0nPGPhje2nMoyfxJU936HvRnC02eMfD_uLF4xRJOaZbqJvpx
- l_2.Q8hqOeStMJM13Z45YKgLibVphgmH_G6RR8UcHELcqEUNjERsBe_nlfnx
- 9.vGXAKM.D_YJ3kOGTM876.iIwXWRGzn1RJcFbH44dfI7SK5wLWoYG1FpVXx
- uoSAlCTD0xOVuAWvoDexHz0Qv0XmN1MD619tnwwqBgUOKGZkr3yTOV_AWfqT
- iMa9zWq9S9BsOkJjBs64_qaEn
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 19 Jul 2011 09:33:56 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: John Stultz <john.stultz@linaro.org>
-cc: LKML <linux-kernel@vger.kernel.org>, Robert Love <rlove@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Rik van Riel <riel@redhat.com>,
-        Eric Anholt <eric@anholt.net>, Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [RFC][PATCH] Anonymous shared memory (ashmem) subsystem
-In-Reply-To: <1311015274-28650-1-git-send-email-john.stultz@linaro.org>
-Message-ID: <alpine.DEB.2.00.1107190931450.1199@router.home>
-References: <1311015274-28650-1-git-send-email-john.stultz@linaro.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 19 Jul 2011 10:34:43 -0400
+Subject: Re: [PATCH] Add error check to hex2bin().
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        linux-security-module@vger.kernel.org,
+        andriy.shevchenko@linux.intel.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <CAHp75VdTiMtmXdVSMq=6bAH2+rmSBHPPE9hQOLQN+Y3qPBEVFg@mail.gmail.com>
+References: <1310977597-9666-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <201107182041.EHB78622.VOFSHFMOOFtLJQ@I-love.SAKURA.ne.jp>
+	 <1310991796.3903.6.camel@smile>
+	 <201107182148.AGD21306.FOLtJVMSOOFQHF@I-love.SAKURA.ne.jp>
+	 <CAMuHMdVxR7AC7H_Yys8SiaGqM2JsNXLsRpujqojMYd_CXWxcAw@mail.gmail.com>
+	 <CAHp75VdTiMtmXdVSMq=6bAH2+rmSBHPPE9hQOLQN+Y3qPBEVFg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 18 Jul 2011 21:00:54 -0400
+Message-ID: <1311037254.3648.209.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Jul 2011, John Stultz wrote:
+(sorry for re-posting, but this doesn't seem to have been sent.)
 
-> Additionally, ashmem introduces the concept of page pinning. Pinned pages (the
-> default) behave like any anonymous memory. Unpinned pages are available to the
-> kernel for eviction during VM pressure. When repinning the pages, the return
-> value instructs user-space as to any eviction. In this manner, user-space
-> processes may implement caching and similar resource management that
-> efficiently integrates with kernel memory management.
+On Tue, 2011-07-19 at 00:18 +0300, Andy Shevchenko wrote:
+> On Mon, Jul 18, 2011 at 11:49 PM, Geert Uytterhoeven
+> <geert@linux-m68k.org> wrote:
+> > What about making it return the number of unprocessed bytes left instead?
+> > Then the caller knows where the problem lies. And zero would mean success.
+> If I remember correctly it used to be src as return value in some
+> version of that patch. I don't know the details of that interim
+> solution. My current opinion is to return boolean and make an
+> additional parameter to return src value. However, it could make this
+> simple function fat.
+> P.S. Take into account that the user of it is only one so far, I would
+> like to hear a Mimi's opinion.
+> 
 
-Memory locking (mlock) may be a better term to use here. mlock prevents
-eviction. Page pinning also prevents the movement of the pages in memory
-(as needed by page migration, compaction etc).
+Trusted/encrypted keys are not in a critical code path. They're used for
+loading/storing key blobs from userspace. Once you change the API, short
+circuiting out and adding an error return, from a trusted/encrypted key
+perspective, it doesn't make a difference.
+
+thanks,
+
+Mimi
 
