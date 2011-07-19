@@ -1,52 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200Ab1GSU6y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 16:58:54 -0400
-Received: from mail.windriver.com ([147.11.1.11]:37828 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751787Ab1GSU6w (ORCPT
+	id S1752164Ab1GSVAC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 17:00:02 -0400
+Received: from fep32.mx.upcmail.net ([62.179.121.50]:34751 "EHLO
+	fep32.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752016Ab1GSVAB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 16:58:52 -0400
-From: Jason Wessel <jason.wessel@windriver.com>
-To: <davem@davemloft.net>
-CC: <kgdb-bugreport@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>,
-        <sparclinux@vger.kernel.org>, <vapier@gentoo.org>
-Subject: [PATCH] sparc,kgdbts: fix compile regression with kgdb test suite
-Date: Tue, 19 Jul 2011 15:58:32 -0500
-Message-ID: <1311109112-12909-1-git-send-email-jason.wessel@windriver.com>
-X-Mailer: git-send-email 1.7.1
+	Tue, 19 Jul 2011 17:00:01 -0400
+X-SourceIP: 120.141.198.47
+Reply-To: <linhuang0@w.cn>
+From: "Lin Huang" <jan.lako@lencos.sk>
+To: info@info.net
+Subject: Are you interested?
+Date: Wed, 20 Jul 2011 04:58:27 +0800
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-Id: <20110719205831.LQZC1513.viefep18-int.chello.at@edge05.upcmail.net>
+X-Cloudmark-Analysis: v=1.1 cv=FXfX1j538S0toKVv4AeTokQJ/Dr7x98IW2CddS+R9NE= c=1 sm=0 a=Dyoqhi_TatcA:10 a=8u6a-11WpOwA:10 a=8EU9Q7FnrCoA:10 a=irksWdcRafoA:10 a=Cfj4BQAnxiAA:10 a=ezrhXFIWVI5jZBlk2SIA:9 a=Ft8UYL4EG9YA:10 a=_tqv6fmNvCtuxPJT:21 a=I2SpYfRI5R-ujPid:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 63ab25ebbc (kgdbts: unify/generalize gdb breakpoint adjustment)
-introduced a compile regression on sparc.
+This is to inform you about a late client of mine that bears the same last name as yours leaving behind 19 million dollars. 
 
-kgdbts.c: In function 'check_and_rewind_pc':
-kgdbts.c:307: error: implicit declaration of function 'instruction_pointer_set'
-
-Simply add the correct macro definition for instruction pointer on the
-Sparc architecture.
-
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
----
- arch/sparc/include/asm/ptrace.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/arch/sparc/include/asm/ptrace.h b/arch/sparc/include/asm/ptrace.h
-index c7ad3fe..b928b31 100644
---- a/arch/sparc/include/asm/ptrace.h
-+++ b/arch/sparc/include/asm/ptrace.h
-@@ -205,6 +205,7 @@ do {	current_thread_info()->syscall_noerror = 1; \
- } while (0)
- #define user_mode(regs) (!((regs)->tstate & TSTATE_PRIV))
- #define instruction_pointer(regs) ((regs)->tpc)
-+#define instruction_pointer_set(regs, val) ((regs)->tpc = (val))
- #define user_stack_pointer(regs) ((regs)->u_regs[UREG_FP])
- #define regs_return_value(regs) ((regs)->u_regs[UREG_I0])
- #ifdef CONFIG_SMP
--- 
-1.7.1
-
+Best regards
+Lin Huang
