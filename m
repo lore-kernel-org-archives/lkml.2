@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751421Ab1GSBAB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 21:00:01 -0400
-Received: from gate.crashing.org ([63.228.1.57]:57134 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750977Ab1GSBAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 21:00:00 -0400
-Subject: Re: current_thread_info() vs task_thread_info(current)
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <20110719003930.GF2312@linux.vnet.ibm.com>
-References: <1310988183.13765.56.camel@twins>
-	 <1310990097.25044.307.camel@pasglop>
-	 <20110718143731.GA2312@linux.vnet.ibm.com>
-	 <1311024983.25044.325.camel@pasglop>
-	 <20110719003930.GF2312@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 19 Jul 2011 10:57:37 +1000
-Message-ID: <1311037057.25044.346.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1751616Ab1GSBMu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 21:12:50 -0400
+Received: from infernal.debian.net ([87.230.26.131]:53427 "EHLO
+	infernal.debian.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750983Ab1GSBMs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 21:12:48 -0400
+X-Greylist: delayed 2258 seconds by postgrey-1.27 at vger.kernel.org; Mon, 18 Jul 2011 21:12:48 EDT
+Date: Tue, 19 Jul 2011 02:35:04 +0200
+From: Andreas Bombe <aeb@debian.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: gregkh@suse.de, jirislaby@gmail.com, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v2 1/6] TTY: serial, remove BTM from wait_until_sent
+Message-ID: <20110719003503.GA4138@amos.fritz.box>
+References: <1310646915-3032-1-git-send-email-jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1310646915-3032-1-git-send-email-jslaby@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-07-18 at 17:39 -0700, Paul E. McKenney wrote:
-> > Hrm, no I don't see that happening no. The preempt count when
-> exiting an
-> > irq or softirq stack should be the exact same as when entering it,
-> which
-> > is why we don't bother copying it over. Do you see any case where
-> that
-> > wouldn't hold ?
-> 
-> Nope, other than seeing preempt_count() transition from zero to three
-> across a spin_unlock_irqrestore() for no good reason that I could see.
+On Thu, Jul 14, 2011 at 02:35:10PM +0200, Jiri Slaby wrote:
+> This should also fix the issue Andreas is seeing (BTM in comparison to
+> BKL doesn't have any hidden functionality like unlocking during
+> sleeping).
 
-Do you have a nice repro-case ? :-)
+I tested the patch series and it does not appear to make a difference
+for the internal (16550A) serial ports on my system. Also, I am still
+unclear on why it freezes the X display during the timeout period.
 
-That sounds really nasty ... smells really like something bad's
-happening from an interrupt, but we don't copy back the preempt-count
-from the interrupt stacks at all, so that's really really odd.
+The other serial port device I have at hand is a FTDI USB->Dual UART
+which appears to not have a timeout at all, but then that shows no
+difference whether your patches are applied or not. I don't remember if
+it was always that way, at least 2.6.39 also acts identically.
 
-Cheers,
-Ben.
-
-
+-- 
+Andreas Bombe
