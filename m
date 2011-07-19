@@ -1,293 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751434Ab1GSS2u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 14:28:50 -0400
-Received: from usindmx02.hds.com ([207.126.252.13]:53913 "EHLO
-	usindmx02.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750835Ab1GSS2s convert rfc822-to-8bit (ORCPT
+	id S1751302Ab1GSScc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 14:32:32 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:39837 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803Ab1GSScb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 14:28:48 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Americo Wang <xiyou.wangcong@gmail.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jarod Wilson <jwilson@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>
-CC: "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Date: Tue, 19 Jul 2011 14:27:36 -0400
-Subject: [RFC][PATCH -mmotm 4/4] pstore: ramoops support
-Thread-Topic: [RFC][PATCH -mmotm 4/4] pstore: ramoops support
-Thread-Index: AcxGQPNfkgYolSqJQyKgeplzzN4MfQAAHXcQ
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C199C64C9@USINDEVS01.corp.hds.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 19 Jul 2011 14:32:31 -0400
+Date: Tue, 19 Jul 2011 21:30:23 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: joe@perches.com
+Cc: Andrew Morton <akpm@linux-foundation.org>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch] Add scripts/rename_review.pl
+Message-ID: <20110719183023.GB6445@shale.localdomain>
+References: <1310959183-24787-1-git-send-email-Larry.Finger@lwfinger.net>
+ <1310959183-24787-2-git-send-email-Larry.Finger@lwfinger.net>
+ <1310961230.2286.45.camel@Joe-Laptop>
+ <4E244436.7040302@lwfinger.net>
+ <20110718171812.GB4010@shale.localdomain>
+ <1311013831.2286.116.camel@Joe-Laptop>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1311013831.2286.116.camel@Joe-Laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+rename_review.pl is a tool for reviewing refactoring patches that
+rename variables.  You pipe a diff to it, and it strips out the
+renames and the white space changes and leaves the more complicated
+and interesting code changes.
 
-Pstore can support ramoops with this patch.
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
- drivers/char/Kconfig
- - Add "depends on PSTORE" to CONFIG_RAMOOPS
-
- drivers/char/ramoops.c
- - Add pstore_info structure so that ramoops can call pstore_register()
- - Remove kmsg_dump_unregister because pstore doesn't support unregister operation
- - Remove do_gettimeofday() from kexec/panic path for avoiding dead lock due to logbuf_lock of WARN_ON() in getnstimeofday().
-
- kernel/time/timekeeping.c
- - introduce get_useconds() which get "xtime.nsec / 1000" without taking lock 
-
-TODO:
-  - I couldn't find any Documentation about ramoops.
-    Please let me know how to test my patch.
-
-  - I haven't implemented reader/eraser callbacks supported by pstore.
-
-  - If ramoops users would like to unload module,
-    pstore needs to support unregister operation.
-
- Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
-
----
- drivers/char/Kconfig      |    1 +
- drivers/char/ramoops.c    |  114 ++++++++++++++++++++++++++++++---------------
- include/linux/time.h      |    1 +
- kernel/time/timekeeping.c |    6 ++
- 4 files changed, 85 insertions(+), 37 deletions(-)
-
-diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
-index 423fd56..c805d1e 100644
---- a/drivers/char/Kconfig
-+++ b/drivers/char/Kconfig
-@@ -603,6 +603,7 @@ source "drivers/s390/char/Kconfig"
- config RAMOOPS
- 	tristate "Log panic/oops to a RAM buffer"
- 	depends on HAS_IOMEM
-+	depends on PSTORE
- 	default n
- 	help
- 	  This enables panic and oops messages to be logged to a circular
-diff --git a/drivers/char/ramoops.c b/drivers/char/ramoops.c
-index 8092c31..41c82e3 100644
---- a/drivers/char/ramoops.c
-+++ b/drivers/char/ramoops.c
-@@ -24,6 +24,7 @@
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/kmsg_dump.h>
-+#include <linux/pstore.h>
- #include <linux/time.h>
- #include <linux/io.h>
- #include <linux/ioport.h>
-@@ -34,6 +35,7 @@
- #include <linux/debugfs.h>
- 
- #define RAMOOPS_KERNMSG_HDR "===="
-+#define RAMOOPS_HDR_SIZE 44 /* 4 (RAMOOPS_KERN_MSG_HDR)  + 40 (timestamp) */
- #define MIN_MEM_SIZE 4096UL
- #define RAMOOPS_DIR "ramoops"
- #define RAMOOPS_NEXT "next"
-@@ -58,6 +60,43 @@ module_param(dump_oops, int, 0600);
- MODULE_PARM_DESC(dump_oops,
- 		"set to 1 to dump oopses, 0 to only dump panics (default 1)");
- 
-+static unsigned long total_size;
-+static int ramoops_open(struct pstore_info *psi);
-+static int ramoops_close(struct pstore_info *psi);
-+static ssize_t ramoops_reader(u64 *id, enum pstore_type_id *type,
-+			      struct timespec *time);
-+static u64 ramoops_dumper(enum pstore_type_id type, size_t size,
-+			  enum kmsg_dump_reason reason);
-+static int ramoops_eraser(u64 record_id);
+diff --git a/scripts/rename_review.pl b/scripts/rename_review.pl
+new file mode 100755
+index 0000000..2cc7b6f
+--- /dev/null
++++ b/scripts/rename_review.pl
+@@ -0,0 +1,154 @@
++#!/usr/bin/perl
 +
-+static struct pstore_info ramoops_info = {
-+	.owner		= THIS_MODULE,
-+	.name		= "ramoops",
-+	.open		= ramoops_open,
-+	.close		= ramoops_close,
-+	.read		= ramoops_reader,
-+	.write		= ramoops_dumper,
-+	.erase		= ramoops_eraser
-+};
++# This is a tool to help review variable rename patches. The goal is
++# to strip out the automatic sed renames and the white space changes
++# and leaves the interesting code changes.
++#
++# Example 1: A patch renames openInfo to open_info:
++#     cat diff | rename_review.pl openInfo open_info
++#
++# Example 2: A patch swaps the first two arguments to some_func():
++#     cat diff | rename_review.pl \
++#                    -e 's/some_func\((.*?),(.*?),/some_func\($2, $1,/'
++#
++# Example 3: A patch removes the xkcd_ prefix from some but not all the
++# variables.  Instead of trying to figure out which variables were renamed
++# just remove the prefix from them all:
++#     cat diff | rename_review.pl -ea 's/xkcd_//g'
++#
++# Example 4: A patch renames 20 CamelCase variables.  To review this let's
++# just ignore all case changes and all '_' chars.
++#     cat diff | rename_review -ea 'tr/[A-Z]/[a-z]/' -ea 's/_//g'
++#
++# The other arguments are:
++# -nc removes comments
++# -ns removes '\' chars if they are at the end of the line.
 +
-+static int ramoops_open(struct pstore_info *psi)
-+{
-+	return 0;
++use strict;
++use File::Temp qw/ :mktemp  /;
++
++sub usage() {
++    print "usage: cat diff | $0 old new old new old new...\n";
++    print "   or: cat diff | $0 -e 's/old/new/g'\n";
++    print " -e : execute on old lines\n";
++    print " -ea: execute on all lines\n";
++    print " -nc: strip one line comments\n";
++    print " -ns: no slashes at the end of a line\n";
++    exit(1);
 +}
++my @subs;
++my @cmds;
++my $strip_comments;
++my $strip_slashes;
 +
-+static int ramoops_close(struct pstore_info *psi)
-+{
-+	return 0;
-+}
-+
-+static ssize_t ramoops_reader(u64 *id, enum pstore_type_id *type,
-+			      struct timespec *time)
-+{
-+	return -EINVAL;
-+}
-+
-+
-+
- static struct ramoops_context {
- 	struct kmsg_dumper dump;
- 	void *virt_addr;
-@@ -141,49 +180,51 @@ static const struct file_operations ramoops_next_fops = {
- 	.read = ramoops_read_next,
- };
- 
--static void ramoops_do_dump(struct kmsg_dumper *dumper,
--		enum kmsg_dump_reason reason, const char *s1, unsigned long l1,
--		const char *s2, unsigned long l2)
-+static u64 ramoops_dumper(enum pstore_type_id type, size_t size,
-+			  enum kmsg_dump_reason reason)
- {
--	struct ramoops_context *cxt = container_of(dumper,
--			struct ramoops_context, dump);
--	unsigned long s1_start, s2_start;
--	unsigned long l1_cpy, l2_cpy;
--	int res, hdr_size;
--	char *buf, *buf_orig;
-+	char *buf;
- 	struct timeval timestamp;
-+	struct ramoops_context *cxt = &oops_cxt;
- 
- 	if (reason != KMSG_DUMP_OOPS &&
--	    reason != KMSG_DUMP_PANIC)
--		return;
-+	    reason != KMSG_DUMP_PANIC &&
-+	    reason != KMSG_DUMP_KEXEC)
-+		return 0;
- 
- 	/* Only dump oopses if dump_oops is set */
- 	if (reason == KMSG_DUMP_OOPS && !cxt->dump_oops)
--		return;
-+		return 0;
- 
--	mutex_lock(&ramoops_mutex);
--	buf = cxt->virt_addr + (cxt->count * cxt->record_size);
--	buf_orig = buf;
-+	if (total_size >= record_size)
-+		return 0;
- 
--	memset(buf, '\0', cxt->record_size);
--	res = sprintf(buf, "%s", RAMOOPS_KERNMSG_HDR);
--	buf += res;
--	do_gettimeofday(&timestamp);
--	res = sprintf(buf, "%lu.%lu\n", (long)timestamp.tv_sec, (long)timestamp.tv_usec);
--	buf += res;
-+	if (reason == KMSG_DUMP_OOPS) {
-+		mutex_lock(&ramoops_mutex);
-+		do_gettimeofday(&timestamp);
-+	} else {
-+		timestamp.tv_sec = get_seconds();
-+		timestamp.tv_usec = get_useconds();
++sub filter($) {
++    my $_ = shift();
++    my $old = 0;
++    if ($_ =~ /^-/) {
++        $old = 1;
++    }
++    # remove the first char
++    s/^[ +-]//;
++    if ($strip_comments) {
++        s/\/\*.*?\*\///g;
++        s/\/\/.*//;
++    }
++    foreach my $cmd (@cmds) {
++        if ($old || $cmd->[0] =~ /^-ea$/) {
++		eval $cmd->[1];
 +	}
- 
--	hdr_size = buf - buf_orig;
--	l2_cpy = min(l2, cxt->record_size - hdr_size);
--	l1_cpy = min(l1, cxt->record_size - hdr_size - l2_cpy);
-+	buf = cxt->virt_addr + (cxt->count * record_size);
-+	snprintf(buf, RAMOOPS_HDR_SIZE, "%s%lu.%lu\n",
-+		 RAMOOPS_KERNMSG_HDR, (long)timestamp.tv_sec,
-+		 (long)timestamp.tv_usec);
-+	ramoops_info.buf += record_size;
-+	total_size = total_size + size + RAMOOPS_HDR_SIZE;
- 
--	s2_start = l2 - l2_cpy;
--	s1_start = l1 - l1_cpy;
-+	cxt->count = (cxt->count + 1) % cxt->max_count;
- 
--	memcpy(buf, s1 + s1_start, l1_cpy);
--	memcpy(buf + l1_cpy, s2 + s2_start, l2_cpy);
-+	if (reason == KMSG_DUMP_OOPS)
-+		mutex_unlock(&ramoops_mutex);
- 
--	cxt->count = (cxt->count + 1) % cxt->max_count;
--	mutex_unlock(&ramoops_mutex);
-+	return 0;
++    }
++    foreach my $sub (@subs) {
++	if ($old) {
++		s/$sub->[0]/$sub->[1]/g;
++	}
++    }
++    return $_;
 +}
 +
-+static int ramoops_eraser(u64 record_id)
-+{
-+	return 0;
- }
- 
- static int __init ramoops_probe(struct platform_device *pdev)
-@@ -233,11 +274,13 @@ static int __init ramoops_probe(struct platform_device *pdev)
- 		pr_err("ioremap failed\n");
- 		goto fail2;
- 	}
-+	memset(cxt->virt_addr, '\0', cxt->size);
- 
--	cxt->dump.dump = ramoops_do_dump;
--	err = kmsg_dump_register(&cxt->dump);
--	if (err) {
--		pr_err("registering kmsg dumper failed\n");
-+	mutex_init(&ramoops_info.buf_mutex);
-+	ramoops_info.buf = cxt->virt_addr + RAMOOPS_HDR_SIZE;
-+	ramoops_info.bufsize = record_size - RAMOOPS_HDR_SIZE;
-+	if (pstore_register(&ramoops_info)) {
-+		printk(KERN_ERR "Could not register with persistent store\n");
- 		goto fail1;
- 	}
- 
-@@ -284,9 +327,6 @@ static int __exit ramoops_remove(struct platform_device *pdev)
- {
- 	struct ramoops_context *cxt = &oops_cxt;
- 
--	if (kmsg_dump_unregister(&cxt->dump) < 0)
--		pr_warn("could not unregister kmsg_dumper\n");
--
- 	iounmap(cxt->virt_addr);
- 	release_mem_region(cxt->phys_addr, cxt->size);
- 	return 0;
-diff --git a/include/linux/time.h b/include/linux/time.h
-index b306178..cff6bb5 100644
---- a/include/linux/time.h
-+++ b/include/linux/time.h
-@@ -121,6 +121,7 @@ void timekeeping_init(void);
- extern int timekeeping_suspended;
- 
- unsigned long get_seconds(void);
-+unsigned long get_useconds(void);
- struct timespec current_kernel_time(void);
- struct timespec __current_kernel_time(void); /* does not take xtime_lock */
- struct timespec get_monotonic_coarse(void);
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 342408c..1927edc 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -1029,6 +1029,12 @@ unsigned long get_seconds(void)
- }
- EXPORT_SYMBOL(get_seconds);
- 
-+unsigned long get_useconds(void)
-+{
-+	return xtime.tv_sec / 1000;
++while (my $param1 = shift()) {
++    if ($param1 =~ /^-nc$/) {
++        $strip_comments = 1;
++        next;
++    }
++    if ($param1 =~ /^-ns$/) {
++        $strip_slashes = 1;
++        next;
++    }
++    my $param2 = shift();
++    if ($param2 =~ /^$/) {
++	usage();
++    }
++    if ($param1 =~ /^-e(a|)$/) {
++        push @cmds, [$param1, $param2];
++	next;
++    }
++    push @subs, [$param1, $param2];
 +}
-+EXPORT_SYMBOL(get_useconds);
 +
- struct timespec __current_kernel_time(void)
- {
- 	return xtime;
--- 
-1.7.1
++my ($oldfh, $oldfile) = mkstemp("/tmp/oldXXXXX");
++my ($newfh, $newfile) = mkstemp("/tmp/newXXXXX");
++
++while (<>) {
++    if ($_ =~ /^(---|\+\+\+)/) {
++	next;
++    }
++    my $output = filter($_);
++    if ($_ =~ /^-/) {
++	print $oldfh $output;
++	next;
++    }
++    if ($_ =~ /^\+/) {
++	print $newfh $output;
++	next;
++    }
++    print $oldfh $output;
++    print $newfh $output;
++}
++
++my $hunk;
++my $old_txt;
++my $new_txt;
++
++open diff, "diff -uw $oldfile $newfile |";
++while (<diff>) {
++    if ($_ =~ /^(---|\+\+\+)/) {
++	next;
++    }
++
++    if ($_ =~ /^@/) {
++	if ($old_txt ne $new_txt) {
++ 	    print $hunk;
++	    print $_;
++	}
++	$hunk = "";
++	$old_txt = "";
++	$new_txt = "";
++	next;
++    }
++
++    $hunk = $hunk . $_;
++
++    if ($strip_slashes) {
++	s/\\$//;
++    }
++
++    if ($_ =~ /^-/) {
++	s/-//;
++	s/[ \t\n]//g;
++	$old_txt = $old_txt . $_;
++	next;
++    }
++    if ($_ =~ /^\+/) {
++	s/\+//;
++	s/[ \t\n]//g;
++	$new_txt = $new_txt . $_;
++	next;
++    }
++}
++if ($old_txt ne $new_txt) {
++    print $hunk;
++}
++
++unlink($oldfile);
++unlink($newfile);
 
