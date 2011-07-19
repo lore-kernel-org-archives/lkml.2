@@ -1,85 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751441Ab1GSPBM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 11:01:12 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:41804 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751114Ab1GSPBL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 11:01:11 -0400
-Subject: Re: Regression in handling of unsafe UBI shutdown
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Daniel Mack <zonque@gmail.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Sven Neumann <s.neumann@raumfeld.com>
-Date: Tue, 19 Jul 2011 18:02:27 +0300
-In-Reply-To: <CACTFLANAFT=G4kFvHUqvLrt=MxgpJnJ-EeHY8zd49pZvsNRejw@mail.gmail.com>
-References: <CACTFLANAFT=G4kFvHUqvLrt=MxgpJnJ-EeHY8zd49pZvsNRejw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1311087753.20738.101.camel@sauron>
-Mime-Version: 1.0
+	id S1751529Ab1GSPEj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 11:04:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24699 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751354Ab1GSPEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 11:04:37 -0400
+Date: Tue, 19 Jul 2011 18:04:34 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH RFC] vhost: optimize interrupt enable/disable
+Message-ID: <20110719150434.GA3413@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-19 at 15:57 +0200, Daniel Mack wrote:
-> Hey,
-> 
-> we're facing a new behaviour with 3.0-rc7 kernels wrt UBI file systems
-> that are not properly unmounted on shut down. The newest kernel we're
-> using in production is 2.6.36.4, and this version doesn't show the
-> effect.
-> 
-> When our devices boot up, the bootloader (U-Boot) initializes its UBI
-> code, reads in the uImage from the root partition and executes it.
-> This worked very well in thousands of installations previously (with
-> kernels up to version 2.6.36.4), and generally, it still does work
-> well with the latest cutting edge when the kernel is shut down
-> properly and unmounts the UBI partitions safely. However, if the power
-> is removed out of a sudden from a running system, U-Boot now doesn't
-> like the FS anymore upon the next boot:
-> 
-> 
-> Creating 1 MTD partitions on "nand0":
-> 0x00120000-0x08000000 : "mtd=3"
-> UBI: attaching mtd1 to ubi0
-> UBI: physical eraseblock size:   131072 bytes (128 KiB)
-> UBI: logical eraseblock size:    126976 bytes
-> UBI: smallest flash I/O unit:    2048
-> UBI: VID header offset:          2048 (aligned 2048)
-> UBI: data offset:                4096
-> UBI: attached mtd1 to ubi0
-> UBI: MTD device name:            "mtd=3"
-> UBI: MTD device size:            126 MiB
-> UBI: number of good PEBs:        1014
-> UBI: number of bad PEBs:         1
-> UBI: max. allowed volumes:       128
-> UBI: wear-leveling threshold:    4096
-> UBI: number of internal volumes: 1
-> UBI: number of user volumes:     2
-> UBI: available PEBs:             8
-> UBI: total number of reserved PEBs: 1006
-> UBI: number of PEBs reserved for bad PEB handling: 10
-> UBI: max/mean erase counter: 4/3
-> UBIFS: recovery needed
-> Error reading superblock on volume 'ubi:RootFS'!
-> UBIFS not mounted, use ubifs mount to mount volume first!
-> Wrong Image Format for bootm command
-> ERROR: can't get kernel image!
-> 
-> 
-> Hence my question is: were there any radical changes in the UBI/UBIFS
-> code on the kernel side that make older code not like the new content
-> anymore?
+As we now only update used ring after enabling
+the backend, we can write flags with __put_user:
+as that's done on data path, it matters.
 
-Not sure if there were radical changes, but please, enable UBIFS
-debugging and provide UBIFS messages. Here are some hints:
-http://www.linux-mtd.infradead.org/doc/ubifs.html#L_how_send_bugreport
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
 
+It seems an obvious optimization so I queued this up
+already.
+
+ drivers/vhost/vhost.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+index c16d225..c14c42b 100644
+--- a/drivers/vhost/vhost.c
++++ b/drivers/vhost/vhost.c
+@@ -998,7 +998,7 @@ int vhost_log_write(struct vhost_virtqueue *vq, struct vhost_log *log,
+ static int vhost_update_used_flags(struct vhost_virtqueue *vq)
+ {
+ 	void __user *used;
+-	if (put_user(vq->used_flags, &vq->used->flags) < 0)
++	if (__put_user(vq->used_flags, &vq->used->flags) < 0)
+ 		return -EFAULT;
+ 	if (unlikely(vq->log_used)) {
+ 		/* Make sure the flag is seen before log. */
+@@ -1016,7 +1016,7 @@ static int vhost_update_used_flags(struct vhost_virtqueue *vq)
+ 
+ static int vhost_update_avail_event(struct vhost_virtqueue *vq, u16 avail_event)
+ {
+-	if (put_user(vq->avail_idx, vhost_avail_event(vq)))
++	if (__put_user(vq->avail_idx, vhost_avail_event(vq)))
+ 		return -EFAULT;
+ 	if (unlikely(vq->log_used)) {
+ 		void __user *used;
 -- 
-Best Regards,
-Artem Bityutskiy
-
+1.7.5.53.gc233e
