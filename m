@@ -1,227 +1,437 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751241Ab1GSUJB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 16:09:01 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:35196 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750885Ab1GSUI7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 16:08:59 -0400
+	id S1751740Ab1GSUOR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 16:14:17 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:56766 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751403Ab1GSUOP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 16:14:15 -0400
+Date: Tue, 19 Jul 2011 13:14:10 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: tglx@linutronix.de
+Cc: laijs@cn.fujitsu.com, darren@dvhart.com, a.p.zijlstra@chello.nl,
+        rostedt@goodmis.org, mingo@elte.hu, linux-kernel@vger.kernel.org
+Subject: [PATCH RFC] rtmutex: Permit rt_mutex_unlock() to be invoked with
+ irqs disabled
+Message-ID: <20110719201410.GA10553@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1107151455140.28453@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1107151455140.28453@swampdragon.chaosbits.net>
-Date: Tue, 19 Jul 2011 16:08:58 -0400
-X-Google-Sender-Auth: 4Ln0CMhJeBm5gY5wgdbuc6G5obs
-Message-ID: <CAOcJUbz9ZeUHOzkgVfktwJ4vH9+HOP3=EfVP2xbaYhB49Gcbug@mail.gmail.com>
-Subject: Re: Hauppauge model 73219 rev D1F5 tuner doesn't detect signal, older
- rev D1E9 works
-From: Michael Krufky <mkrufky@kernellabs.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-media@vger.kernel.org, Mike Isely <isely@pobox.com>,
-        Aurelien Alleaume <slts@free.fr>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-kernel@vger.kernel.org, Michael Krufky <mkrufky@kernellabs.com>,
-        Michael Krufky <mkrufky@linuxtv.org>
-Content-Type: multipart/mixed; boundary=005045013e15a6cada04a871af18
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---005045013e15a6cada04a871af18
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Because rcu_read_unlock() can be invoked with interrupts disabled, it can
+in turn invoke rt_mutex_unlock() with interrupts disabled.  This situation
+results in lockdep splats (https://lkml.org/lkml/2011/7/7/362) because the
+rt_mutex structure's ->lock_wait is acquired elsewhere without disabling
+interrupts, which can result in deadlocks.
 
-On Tue, Jul 19, 2011 at 3:37 AM, Jesper Juhl <jj@chaosbits.net> wrote:
-> Hi
->
-> I have a bunch of Hauppauge HVR-1900 model 73219's, some are revision D1E=
-9
-> and work perfectly, but with the newer revision D1F5's the tuner fails to
-> detect a signal and consequently just gives me blank output on
-> /dev/video0. Other input sources, like composite or s-video, work just
-> fine on the new revision, it's just the tuner that does not work.
->
-> I'm 100% certain that there is a live signal since I can use the same
-> source successfully with a D1E9 and then move it to a D1F5 and see it
-> fail. I've also tried both with a real TV signal and with a signal
-> generator (so I could be 100% certain what signal was generated and at
-> what frequency etc).
-> I'm also fairly certain that it's not just a case of a random broken
-> D1F5 since I have several and they all behave identically (and the driver
-> doesn't complain about broken hardware).
->
-> Here's what I get in dmesg when plugging one of the newer, non-working,
-> devices into my laptop (running 2.6.39.3 by the way):
->
-> [43171.480193] pvrusb2: Device being rendered inoperable
-> [43173.195741] usb 1-1.1: new high speed USB device number 21 using ehci_=
-hcd
-> [43173.289999] pvrusb2: Hardware description: WinTV HVR-1900 Model 73xxx
-> [43173.321796] pvrusb2: Binding ir_rx_z8f0811_haup to i2c address 0x71.
-> [43173.321817] pvrusb2: Binding ir_tx_z8f0811_haup to i2c address 0x70.
-> [43173.325212] cx25840 18-0044: cx25843-24 found @ 0x88 (pvrusb2_a)
-> [43173.335618] pvrusb2: Attached sub-driver cx25840
-> [43173.339439] tuner 18-0042: Tuner -1 found with type(s) Radio TV.
-> [43173.339448] pvrusb2: Attached sub-driver tuner
-> [43175.538224] cx25840 18-0044: loaded v4l-cx25840.fw firmware (16382 byt=
-es)
-> [43175.641103] tveeprom 18-00a2: Hauppauge model 73219, rev D1F5, serial#=
- 6569758
-> [43175.641109] tveeprom 18-00a2: MAC address is 00:0d:fe:64:3f:1e
-> [43175.641114] tveeprom 18-00a2: tuner model is NXP 18271C2 (idx 155, typ=
-e 54)
-> [43175.641119] tveeprom 18-00a2: TV standards PAL(B/G) PAL(I) SECAM(L/L')=
- PAL(D/D1/K) ATSC/DVB Digital (eeprom 0xf4)
-> [43175.641124] tveeprom 18-00a2: audio processor is CX25843 (idx 37)
-> [43175.641128] tveeprom 18-00a2: decoder processor is CX25843 (idx 30)
-> [43175.641132] tveeprom 18-00a2: has radio, has IR receiver, has IR trans=
-mitter
-> [43175.641142] pvrusb2: Supported video standard(s) reported available in=
- hardware: PAL-B/B1/D/D1/G/H/I/K;SECAM-B/D/G/H/K/K
-> [43175.641152] pvrusb2: Mapping standards mask=3D0x3ff00ff (PAL-B/B1/D/D1=
-/G/H/I/K;SECAM-B/D/G/H/K/K1/L/LC;ATSC-8VSB/16VSB)
-> [43175.641156] pvrusb2: Setting up 20 unique standard(s)
-> [43175.641161] pvrusb2: Set up standard idx=3D0 name=3DPAL-B/G
-> [43175.641165] pvrusb2: Set up standard idx=3D1 name=3DPAL-D/K
-> [43175.641169] pvrusb2: Set up standard idx=3D2 name=3DSECAM-B/G
-> [43175.641172] pvrusb2: Set up standard idx=3D3 name=3DSECAM-D/K
-> [43175.641176] pvrusb2: Set up standard idx=3D4 name=3DPAL-B
-> [43175.641179] pvrusb2: Set up standard idx=3D5 name=3DPAL-B1
-> [43175.641182] pvrusb2: Set up standard idx=3D6 name=3DPAL-G
-> [43175.641185] pvrusb2: Set up standard idx=3D7 name=3DPAL-H
-> [43175.641189] pvrusb2: Set up standard idx=3D8 name=3DPAL-I
-> [43175.641192] pvrusb2: Set up standard idx=3D9 name=3DPAL-D
-> [43175.641195] pvrusb2: Set up standard idx=3D10 name=3DPAL-D1
-> [43175.641198] pvrusb2: Set up standard idx=3D11 name=3DPAL-K
-> [43175.641202] pvrusb2: Set up standard idx=3D12 name=3DSECAM-B
-> [43175.641205] pvrusb2: Set up standard idx=3D13 name=3DSECAM-D
-> [43175.641208] pvrusb2: Set up standard idx=3D14 name=3DSECAM-G
-> [43175.641212] pvrusb2: Set up standard idx=3D15 name=3DSECAM-H
-> [43175.641215] pvrusb2: Set up standard idx=3D16 name=3DSECAM-K
-> [43175.641218] pvrusb2: Set up standard idx=3D17 name=3DSECAM-K1
-> [43175.641221] pvrusb2: Set up standard idx=3D18 name=3DSECAM-L
-> [43175.641225] pvrusb2: Set up standard idx=3D19 name=3DSECAM-LC
-> [43175.641228] pvrusb2: Initial video standard auto-selected to PAL-B/G
-> [43175.641240] pvrusb2: Device initialization completed successfully.
-> [43175.641361] pvrusb2: registered device video1 [mpeg]
-> [43175.641365] DVB: registering new adapter (pvrusb2-dvb)
-> [43177.891568] cx25840 18-0044: loaded v4l-cx25840.fw firmware (16382 byt=
-es)
-> [43178.010913] tda829x 18-0042: setting tuner address to 60
-> [43178.034089] tda18271 18-0060: creating new instance
-> [43178.070613] TDA18271HD/C2 detected @ 18-0060
-> [43179.945888] tda18271: performing RF tracking filter calibration
-> [43192.930384] tda18271: RF tracking filter calibration complete
-> [43192.973646] tda829x 18-0042: type set to tda8295+18271
-> [43196.561274] cx25840 18-0044: 0x0000 is not a valid video input!
-> [43196.593146] DVB: registering adapter 0 frontend 0 (NXP TDA10048HN DVB-=
-T)...
-> [43196.594644] tda829x 18-0042: type set to tda8295
-> [43196.630097] tda18271 18-0060: attaching existing instance
-> [43205.439659] cx25840 18-0044: loaded v4l-cx25840.fw firmware (16382 byt=
-es)
->
-> The only differences between this output and a working device is the
-> revision number and the fact that the tuner is a TDA18271HD/C2 whereas
-> with the older (working) devices it's a TDA18271HD/C1.
->
-> Here's what I do to test problem:
-> [root@dragon ~]# echo television > /sys/class/pvrusb2/sn-6569758/ctl_inpu=
-t/cur_val
-> [root@dragon ~]# echo 140250000 > /sys/class/pvrusb2/sn-6569758/ctl_frequ=
-ency/cur_val
-> [root@dragon ~]# cat /sys/class/pvrusb2/sn-6569758/ctl_signal_present/cur=
-_val
-> 0
-> [root@dragon ~]#
->
-> If I now do 'cat /dev/video0 > test.mpg' I get a perfectly valid MPEG
-> stream, but a rather boring one - just a black display and no audio.
->
-> With the old D1E9 revision I get
->
-> [root@dragon ~]# cat /sys/class/pvrusb2/sn-6569758/ctl_signal_present/cur=
-_val
-> 65535
-> [root@dragon ~]#
->
-> and 'cat /dev/video0 > test.mpg' gives me the stream I'd expect (as in
-> actual contents, not just a black screen).
->
-> Any ideas on how to fix this?
->
-> I can test any patches you may come up with and if there's any further
-> information you need from me in order to get an idea about what the
-> problem is, then just ask.
->
-> Please CC me on replies since I'm not subscribed to the linux-media list.
->
-> --
-> Jesper Juhl <jj@chaosbits.net> =A0 =A0 =A0 http://www.chaosbits.net/
-> Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-> Plain text mails only, please.
->
->
+This commit therefore changes the rt_mutex structure's ->lock_wait
+acquisitions to disable interrupts.
 
-I have a suspicion as per the cause of this problem...  Would you care
-to try a patch to see if it fixes the problem?  (note:  this should
-not be merged, as it is not an actual fix -- simply an test to show us
-how to arrive at the appropriate fix)
+An alternative fix is to prohibit invoking rcu_read_unlock() with
+interrupts disabled unless the entire preceding RCU read-side critical
+section has run with interrupts disabled.  However, there is already
+at least one case in mainline where this potential rule is violated,
+and there might well be many more.  These would likely be found one at
+a time using the lockdep-water-torture method, hence the alternative
+fix in the form of this commit.
 
---005045013e15a6cada04a871af18
-Content-Type: application/octet-stream; name="73xxxD1F9.patch"
-Content-Disposition: attachment; filename="73xxxD1F9.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gqbapnpk0
+Reported-by: Ben Greear <greearb@candelatech.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-LS0tCiBsaW51eC9kcml2ZXJzL21lZGlhL3ZpZGVvL3B2cnVzYjIvcHZydXNiMi1kZXZhdHRyLmMg
-fCAgIDMzICsrKysrKysrKysrKysrKysrKysrCiAxIGZpbGUgY2hhbmdlZCwgMzMgaW5zZXJ0aW9u
-cygrKQoKLS0tIHY0bC1kdmIub3JpZy9saW51eC9kcml2ZXJzL21lZGlhL3ZpZGVvL3B2cnVzYjIv
-cHZydXNiMi1kZXZhdHRyLmMKKysrIHY0bC1kdmIvbGludXgvZHJpdmVycy9tZWRpYS92aWRlby9w
-dnJ1c2IyL3B2cnVzYjItZGV2YXR0ci5jCkBAIC0yOTMsMTEgKzI5Myw0NCBAQAogCS5kaXNhYmxl
-X2dhdGVfYWNjZXNzID0gMSwKIH07CiAKK3N0YXRpYyBzdHJ1Y3QgdGRhMTgyNzFfc3RkX21hcCB0
-ZGExODI3MWMxX3N0ZF9tYXAgPSB7CisgICAgICAgIC5mbV9yYWRpbyA9IHsgLmlmX2ZyZXEgPSAx
-MjUwLCAuZm1fcmZuID0gMSwgLmFnY19tb2RlID0gMywgLnN0ZCA9IDAsCisgICAgICAgICAgICAg
-ICAgICAgICAgLmlmX2x2bCA9IDAsIC5yZmFnY190b3AgPSAweDJjLCB9LCAvKiBFUDNbNDowXSAw
-eDE4ICovCisgICAgICAgIC5hdHZfYiAgICA9IHsgLmlmX2ZyZXEgPSA2NzUwLCAuZm1fcmZuID0g
-MCwgLmFnY19tb2RlID0gMSwgLnN0ZCA9IDYsCisgICAgICAgICAgICAgICAgICAgICAgLmlmX2x2
-bCA9IDAsIC5yZmFnY190b3AgPSAweDJjLCB9LCAvKiBFUDNbNDowXSAweDBlICovCisgICAgICAg
-IC5hdHZfZGsgICA9IHsgLmlmX2ZyZXEgPSA3NzUwLCAuZm1fcmZuID0gMCwgLmFnY19tb2RlID0g
-MSwgLnN0ZCA9IDcsCisgICAgICAgICAgICAgICAgICAgICAgLmlmX2x2bCA9IDAsIC5yZmFnY190
-b3AgPSAweDJjLCB9LCAvKiBFUDNbNDowXSAweDBmICovCisgICAgICAgIC5hdHZfZ2ggICA9IHsg
-LmlmX2ZyZXEgPSA3NzUwLCAuZm1fcmZuID0gMCwgLmFnY19tb2RlID0gMSwgLnN0ZCA9IDcsCisg
-ICAgICAgICAgICAgICAgICAgICAgLmlmX2x2bCA9IDAsIC5yZmFnY190b3AgPSAweDJjLCB9LCAv
-KiBFUDNbNDowXSAweDBmICovCisgICAgICAgIC5hdHZfaSAgICA9IHsgLmlmX2ZyZXEgPSA3NzUw
-LCAuZm1fcmZuID0gMCwgLmFnY19tb2RlID0gMSwgLnN0ZCA9IDcsCisgICAgICAgICAgICAgICAg
-ICAgICAgLmlmX2x2bCA9IDAsIC5yZmFnY190b3AgPSAweDJjLCB9LCAvKiBFUDNbNDowXSAweDBm
-ICovCisgICAgICAgIC5hdHZfbCAgICA9IHsgLmlmX2ZyZXEgPSA3NzUwLCAuZm1fcmZuID0gMCwg
-LmFnY19tb2RlID0gMSwgLnN0ZCA9IDcsCisgICAgICAgICAgICAgICAgICAgICAgLmlmX2x2bCA9
-IDAsIC5yZmFnY190b3AgPSAweDJjLCB9LCAvKiBFUDNbNDowXSAweDBmICovCisgICAgICAgIC5h
-dHZfbGMgICA9IHsgLmlmX2ZyZXEgPSAxMjUwLCAuZm1fcmZuID0gMCwgLmFnY19tb2RlID0gMSwg
-LnN0ZCA9IDcsCisgICAgICAgICAgICAgICAgICAgICAgLmlmX2x2bCA9IDAsIC5yZmFnY190b3Ag
-PSAweDJjLCB9LCAvKiBFUDNbNDowXSAweDBmICovCisgICAgICAgIC5hdHZfbW4gICA9IHsgLmlm
-X2ZyZXEgPSA1NzUwLCAuZm1fcmZuID0gMCwgLmFnY19tb2RlID0gMSwgLnN0ZCA9IDUsCisgICAg
-ICAgICAgICAgICAgICAgICAgLmlmX2x2bCA9IDAsIC5yZmFnY190b3AgPSAweDJjLCB9LCAvKiBF
-UDNbNDowXSAweDBkICovCisgICAgICAgIC5hdHNjXzYgICA9IHsgLmlmX2ZyZXEgPSAzMjUwLCAu
-Zm1fcmZuID0gMCwgLmFnY19tb2RlID0gMywgLnN0ZCA9IDQsCisgICAgICAgICAgICAgICAgICAg
-ICAgLmlmX2x2bCA9IDEsIC5yZmFnY190b3AgPSAweDM3LCB9LCAvKiBFUDNbNDowXSAweDFjICov
-CisgICAgICAgIC5kdmJ0XzYgICA9IHsgLmlmX2ZyZXEgPSAzMzAwLCAuZm1fcmZuID0gMCwgLmFn
-Y19tb2RlID0gMywgLnN0ZCA9IDQsCisgICAgICAgICAgICAgICAgICAgICAgLmlmX2x2bCA9IDEs
-IC5yZmFnY190b3AgPSAweDM3LCB9LCAvKiBFUDNbNDowXSAweDFjICovCisgICAgICAgIC5kdmJ0
-XzcgICA9IHsgLmlmX2ZyZXEgPSAzODAwLCAuZm1fcmZuID0gMCwgLmFnY19tb2RlID0gMywgLnN0
-ZCA9IDUsCisgICAgICAgICAgICAgICAgICAgICAgLmlmX2x2bCA9IDEsIC5yZmFnY190b3AgPSAw
-eDM3LCB9LCAvKiBFUDNbNDowXSAweDFkICovCisgICAgICAgIC5kdmJ0XzggICA9IHsgLmlmX2Zy
-ZXEgPSA0MzAwLCAuZm1fcmZuID0gMCwgLmFnY19tb2RlID0gMywgLnN0ZCA9IDYsCisgICAgICAg
-ICAgICAgICAgICAgICAgLmlmX2x2bCA9IDEsIC5yZmFnY190b3AgPSAweDM3LCB9LCAvKiBFUDNb
-NDowXSAweDFlICovCisgICAgICAgIC5xYW1fNiAgICA9IHsgLmlmX2ZyZXEgPSA0MDAwLCAuZm1f
-cmZuID0gMCwgLmFnY19tb2RlID0gMywgLnN0ZCA9IDUsCisgICAgICAgICAgICAgICAgICAgICAg
-LmlmX2x2bCA9IDEsIC5yZmFnY190b3AgPSAweDM3LCB9LCAvKiBFUDNbNDowXSAweDFkICovCisg
-ICAgICAgIC5xYW1fOCAgICA9IHsgLmlmX2ZyZXEgPSA1MDAwLCAuZm1fcmZuID0gMCwgLmFnY19t
-b2RlID0gMywgLnN0ZCA9IDcsCisgICAgICAgICAgICAgICAgICAgICAgLmlmX2x2bCA9IDEsIC5y
-ZmFnY190b3AgPSAweDM3LCB9LCAvKiBFUDNbNDowXSAweDFmICovCit9OworCisKIHN0YXRpYyBz
-dHJ1Y3QgdGRhODI5eF9jb25maWcgdGRhODI5eF9ub19wcm9iZSA9IHsKIAkucHJvYmVfdHVuZXIg
-PSBUREE4MjlYX0RPTlRfUFJPQkUsCiB9OwogCiBzdGF0aWMgc3RydWN0IHRkYTE4MjcxX2NvbmZp
-ZyBoYXVwcGF1Z2VfdGRhMTgyNzFfZHZiX2NvbmZpZyA9IHsKKwkuc3RkX21hcCA9ICZ0ZGExODI3
-MWMxX3N0ZF9tYXAsCiAJLmdhdGUgICAgPSBUREExODI3MV9HQVRFX0FOQUxPRywKIAkub3V0cHV0
-X29wdCA9IFREQTE4MjcxX09VVFBVVF9MVF9PRkYsCiB9Owo=
---005045013e15a6cada04a871af18--
+diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
+index ab44911..598c3bf 100644
+--- a/kernel/rtmutex.c
++++ b/kernel/rtmutex.c
+@@ -232,7 +232,7 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
+ 	/* Deadlock detection */
+ 	if (lock == orig_lock || rt_mutex_owner(lock) == top_task) {
+ 		debug_rt_mutex_deadlock(deadlock_detect, orig_waiter, lock);
+-		raw_spin_unlock(&lock->wait_lock);
++		raw_spin_unlock(&lock->wait_lock); /* irqs remain disabled. */
+ 		ret = deadlock_detect ? -EDEADLK : 0;
+ 		goto out_unlock_pi;
+ 	}
+@@ -245,7 +245,7 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
+ 	plist_add(&waiter->list_entry, &lock->wait_list);
+ 
+ 	/* Release the task */
+-	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
++	raw_spin_unlock(&task->pi_lock); /* irqs remain disabled. */
+ 	if (!rt_mutex_owner(lock)) {
+ 		/*
+ 		 * If the requeue above changed the top waiter, then we need
+@@ -254,7 +254,7 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
+ 
+ 		if (top_waiter != rt_mutex_top_waiter(lock))
+ 			wake_up_process(rt_mutex_top_waiter(lock)->task);
+-		raw_spin_unlock(&lock->wait_lock);
++		raw_spin_unlock_irqrestore(&lock->wait_lock, flags);
+ 		goto out_put_task;
+ 	}
+ 	put_task_struct(task);
+@@ -262,7 +262,7 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
+ 	/* Grab the next task */
+ 	task = rt_mutex_owner(lock);
+ 	get_task_struct(task);
+-	raw_spin_lock_irqsave(&task->pi_lock, flags);
++	raw_spin_lock(&task->pi_lock); /* irqs already disabled. */
+ 
+ 	if (waiter == rt_mutex_top_waiter(lock)) {
+ 		/* Boost the owner */
+@@ -280,10 +280,10 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
+ 		__rt_mutex_adjust_prio(task);
+ 	}
+ 
+-	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
++	raw_spin_unlock(&task->pi_lock); /* irqs remain disabled. */
+ 
+ 	top_waiter = rt_mutex_top_waiter(lock);
+-	raw_spin_unlock(&lock->wait_lock);
++	raw_spin_unlock_irqrestore(&lock->wait_lock, flags);
+ 
+ 	if (!detect_deadlock && waiter != top_waiter)
+ 		goto out_put_task;
+@@ -348,10 +348,9 @@ static int try_to_take_rt_mutex(struct rt_mutex *lock, struct task_struct *task,
+ 	}
+ 
+ 	if (waiter || rt_mutex_has_waiters(lock)) {
+-		unsigned long flags;
+ 		struct rt_mutex_waiter *top;
+ 
+-		raw_spin_lock_irqsave(&task->pi_lock, flags);
++		raw_spin_lock(&task->pi_lock); /* irqs already disabled. */
+ 
+ 		/* remove the queued waiter. */
+ 		if (waiter) {
+@@ -368,7 +367,7 @@ static int try_to_take_rt_mutex(struct rt_mutex *lock, struct task_struct *task,
+ 			top->pi_list_entry.prio = top->list_entry.prio;
+ 			plist_add(&top->pi_list_entry, &task->pi_waiters);
+ 		}
+-		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
++		raw_spin_unlock(&task->pi_lock); /* irqs remain disabled. */
+ 	}
+ 
+ 	/* We got the lock. */
+@@ -391,14 +390,14 @@ static int try_to_take_rt_mutex(struct rt_mutex *lock, struct task_struct *task,
+ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
+ 				   struct rt_mutex_waiter *waiter,
+ 				   struct task_struct *task,
+-				   int detect_deadlock)
++				   int detect_deadlock,
++				   unsigned long *flags)
+ {
+ 	struct task_struct *owner = rt_mutex_owner(lock);
+ 	struct rt_mutex_waiter *top_waiter = waiter;
+-	unsigned long flags;
+ 	int chain_walk = 0, res;
+ 
+-	raw_spin_lock_irqsave(&task->pi_lock, flags);
++	raw_spin_lock(&task->pi_lock); /* irqs already disabled. */
+ 	__rt_mutex_adjust_prio(task);
+ 	waiter->task = task;
+ 	waiter->lock = lock;
+@@ -412,20 +411,20 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
+ 
+ 	task->pi_blocked_on = waiter;
+ 
+-	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
++	raw_spin_unlock(&task->pi_lock); /* irqs remain disabled. */
+ 
+ 	if (!owner)
+ 		return 0;
+ 
+ 	if (waiter == rt_mutex_top_waiter(lock)) {
+-		raw_spin_lock_irqsave(&owner->pi_lock, flags);
++		raw_spin_lock(&owner->pi_lock); /* irqs already disabled. */
+ 		plist_del(&top_waiter->pi_list_entry, &owner->pi_waiters);
+ 		plist_add(&waiter->pi_list_entry, &owner->pi_waiters);
+ 
+ 		__rt_mutex_adjust_prio(owner);
+ 		if (owner->pi_blocked_on)
+ 			chain_walk = 1;
+-		raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
++		raw_spin_unlock(&owner->pi_lock); /* irqs remain disabled. */
+ 	}
+ 	else if (debug_rt_mutex_detect_deadlock(waiter, detect_deadlock))
+ 		chain_walk = 1;
+@@ -440,12 +439,12 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
+ 	 */
+ 	get_task_struct(owner);
+ 
+-	raw_spin_unlock(&lock->wait_lock);
++	raw_spin_unlock(&lock->wait_lock); /* irqs remain disabled. */
+ 
+ 	res = rt_mutex_adjust_prio_chain(owner, detect_deadlock, lock, waiter,
+ 					 task);
+ 
+-	raw_spin_lock(&lock->wait_lock);
++	raw_spin_lock(&lock->wait_lock); /* irqs already disabled. */
+ 
+ 	return res;
+ }
+@@ -460,9 +459,8 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
+ static void wakeup_next_waiter(struct rt_mutex *lock)
+ {
+ 	struct rt_mutex_waiter *waiter;
+-	unsigned long flags;
+ 
+-	raw_spin_lock_irqsave(&current->pi_lock, flags);
++	raw_spin_lock(&current->pi_lock); /* irqs already disabled. */
+ 
+ 	waiter = rt_mutex_top_waiter(lock);
+ 
+@@ -476,7 +474,7 @@ static void wakeup_next_waiter(struct rt_mutex *lock)
+ 
+ 	rt_mutex_set_owner(lock, NULL);
+ 
+-	raw_spin_unlock_irqrestore(&current->pi_lock, flags);
++	raw_spin_unlock(&current->pi_lock); /* irqs remain disabled. */
+ 
+ 	wake_up_process(waiter->task);
+ }
+@@ -488,24 +486,24 @@ static void wakeup_next_waiter(struct rt_mutex *lock)
+  * have just failed to try_to_take_rt_mutex().
+  */
+ static void remove_waiter(struct rt_mutex *lock,
+-			  struct rt_mutex_waiter *waiter)
++			  struct rt_mutex_waiter *waiter,
++			  unsigned long *flags)
+ {
+ 	int first = (waiter == rt_mutex_top_waiter(lock));
+ 	struct task_struct *owner = rt_mutex_owner(lock);
+-	unsigned long flags;
+ 	int chain_walk = 0;
+ 
+-	raw_spin_lock_irqsave(&current->pi_lock, flags);
++	raw_spin_lock_irqsave(&current->pi_lock, *flags);
+ 	plist_del(&waiter->list_entry, &lock->wait_list);
+ 	current->pi_blocked_on = NULL;
+-	raw_spin_unlock_irqrestore(&current->pi_lock, flags);
++	raw_spin_unlock_irqrestore(&current->pi_lock, *flags);
+ 
+ 	if (!owner)
+ 		return;
+ 
+ 	if (first) {
+ 
+-		raw_spin_lock_irqsave(&owner->pi_lock, flags);
++		raw_spin_lock(&owner->pi_lock); /* irqs already disabled. */
+ 
+ 		plist_del(&waiter->pi_list_entry, &owner->pi_waiters);
+ 
+@@ -520,7 +518,7 @@ static void remove_waiter(struct rt_mutex *lock,
+ 		if (owner->pi_blocked_on)
+ 			chain_walk = 1;
+ 
+-		raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
++		raw_spin_unlock(&owner->pi_lock); /* irqs remain disabled. */
+ 	}
+ 
+ 	WARN_ON(!plist_node_empty(&waiter->pi_list_entry));
+@@ -531,11 +529,11 @@ static void remove_waiter(struct rt_mutex *lock,
+ 	/* gets dropped in rt_mutex_adjust_prio_chain()! */
+ 	get_task_struct(owner);
+ 
+-	raw_spin_unlock(&lock->wait_lock);
++	raw_spin_unlock_irqrestore(&lock->wait_lock, *flags);
+ 
+ 	rt_mutex_adjust_prio_chain(owner, 0, lock, NULL, current);
+ 
+-	raw_spin_lock(&lock->wait_lock);
++	raw_spin_lock_irqsave(&lock->wait_lock, *flags);
+ }
+ 
+ /*
+@@ -576,7 +574,8 @@ void rt_mutex_adjust_pi(struct task_struct *task)
+ static int __sched
+ __rt_mutex_slowlock(struct rt_mutex *lock, int state,
+ 		    struct hrtimer_sleeper *timeout,
+-		    struct rt_mutex_waiter *waiter)
++		    struct rt_mutex_waiter *waiter,
++		    unsigned long *flags)
+ {
+ 	int ret = 0;
+ 
+@@ -599,13 +598,13 @@ __rt_mutex_slowlock(struct rt_mutex *lock, int state,
+ 				break;
+ 		}
+ 
+-		raw_spin_unlock(&lock->wait_lock);
++		raw_spin_unlock_irqrestore(&lock->wait_lock, *flags);
+ 
+ 		debug_rt_mutex_print_deadlock(waiter);
+ 
+ 		schedule_rt_mutex(lock);
+ 
+-		raw_spin_lock(&lock->wait_lock);
++		raw_spin_lock_irqsave(&lock->wait_lock, *flags);
+ 		set_current_state(state);
+ 	}
+ 
+@@ -622,14 +621,15 @@ rt_mutex_slowlock(struct rt_mutex *lock, int state,
+ {
+ 	struct rt_mutex_waiter waiter;
+ 	int ret = 0;
++	unsigned long flags;
+ 
+ 	debug_rt_mutex_init_waiter(&waiter);
+ 
+-	raw_spin_lock(&lock->wait_lock);
++	raw_spin_lock_irqsave(&lock->wait_lock, flags);
+ 
+ 	/* Try to acquire the lock again: */
+ 	if (try_to_take_rt_mutex(lock, current, NULL)) {
+-		raw_spin_unlock(&lock->wait_lock);
++		raw_spin_unlock_irqrestore(&lock->wait_lock, flags);
+ 		return 0;
+ 	}
+ 
+@@ -642,15 +642,17 @@ rt_mutex_slowlock(struct rt_mutex *lock, int state,
+ 			timeout->task = NULL;
+ 	}
+ 
+-	ret = task_blocks_on_rt_mutex(lock, &waiter, current, detect_deadlock);
++	ret = task_blocks_on_rt_mutex(lock, &waiter, current,
++				      detect_deadlock, &flags);
+ 
+ 	if (likely(!ret))
+-		ret = __rt_mutex_slowlock(lock, state, timeout, &waiter);
++		ret = __rt_mutex_slowlock(lock, state, timeout,
++					  &waiter, &flags);
+ 
+ 	set_current_state(TASK_RUNNING);
+ 
+ 	if (unlikely(ret))
+-		remove_waiter(lock, &waiter);
++		remove_waiter(lock, &waiter, &flags);
+ 
+ 	/*
+ 	 * try_to_take_rt_mutex() sets the waiter bit
+@@ -658,7 +660,7 @@ rt_mutex_slowlock(struct rt_mutex *lock, int state,
+ 	 */
+ 	fixup_rt_mutex_waiters(lock);
+ 
+-	raw_spin_unlock(&lock->wait_lock);
++	raw_spin_unlock_irqrestore(&lock->wait_lock, flags);
+ 
+ 	/* Remove pending timer: */
+ 	if (unlikely(timeout))
+@@ -675,9 +677,10 @@ rt_mutex_slowlock(struct rt_mutex *lock, int state,
+ static inline int
+ rt_mutex_slowtrylock(struct rt_mutex *lock)
+ {
++	unsigned long flags;
+ 	int ret = 0;
+ 
+-	raw_spin_lock(&lock->wait_lock);
++	raw_spin_lock_irqsave(&lock->wait_lock, flags);
+ 
+ 	if (likely(rt_mutex_owner(lock) != current)) {
+ 
+@@ -689,7 +692,7 @@ rt_mutex_slowtrylock(struct rt_mutex *lock)
+ 		fixup_rt_mutex_waiters(lock);
+ 	}
+ 
+-	raw_spin_unlock(&lock->wait_lock);
++	raw_spin_unlock_irqrestore(&lock->wait_lock, flags);
+ 
+ 	return ret;
+ }
+@@ -700,7 +703,9 @@ rt_mutex_slowtrylock(struct rt_mutex *lock)
+ static void __sched
+ rt_mutex_slowunlock(struct rt_mutex *lock)
+ {
+-	raw_spin_lock(&lock->wait_lock);
++	unsigned long flags;
++
++	raw_spin_lock_irqsave(&lock->wait_lock, flags);
+ 
+ 	debug_rt_mutex_unlock(lock);
+ 
+@@ -708,13 +713,13 @@ rt_mutex_slowunlock(struct rt_mutex *lock)
+ 
+ 	if (!rt_mutex_has_waiters(lock)) {
+ 		lock->owner = NULL;
+-		raw_spin_unlock(&lock->wait_lock);
++		raw_spin_unlock_irqrestore(&lock->wait_lock, flags);
+ 		return;
+ 	}
+ 
+ 	wakeup_next_waiter(lock);
+ 
+-	raw_spin_unlock(&lock->wait_lock);
++	raw_spin_unlock_irqrestore(&lock->wait_lock, flags);
+ 
+ 	/* Undo pi boosting if necessary: */
+ 	rt_mutex_adjust_prio(current);
+@@ -949,16 +954,18 @@ int rt_mutex_start_proxy_lock(struct rt_mutex *lock,
+ 			      struct rt_mutex_waiter *waiter,
+ 			      struct task_struct *task, int detect_deadlock)
+ {
++	unsigned long flags;
+ 	int ret;
+ 
+-	raw_spin_lock(&lock->wait_lock);
++	raw_spin_lock_irqsave(&lock->wait_lock, flags);
+ 
+ 	if (try_to_take_rt_mutex(lock, task, NULL)) {
+-		raw_spin_unlock(&lock->wait_lock);
++		raw_spin_unlock_irqrestore(&lock->wait_lock, flags);
+ 		return 1;
+ 	}
+ 
+-	ret = task_blocks_on_rt_mutex(lock, waiter, task, detect_deadlock);
++	ret = task_blocks_on_rt_mutex(lock, waiter, task,
++				      detect_deadlock, &flags);
+ 
+ 	if (ret && !rt_mutex_owner(lock)) {
+ 		/*
+@@ -971,9 +978,9 @@ int rt_mutex_start_proxy_lock(struct rt_mutex *lock,
+ 	}
+ 
+ 	if (unlikely(ret))
+-		remove_waiter(lock, waiter);
++		remove_waiter(lock, waiter, &flags);
+ 
+-	raw_spin_unlock(&lock->wait_lock);
++	raw_spin_unlock_irqrestore(&lock->wait_lock, flags);
+ 
+ 	debug_rt_mutex_print_deadlock(waiter);
+ 
+@@ -1021,18 +1028,19 @@ int rt_mutex_finish_proxy_lock(struct rt_mutex *lock,
+ 			       struct rt_mutex_waiter *waiter,
+ 			       int detect_deadlock)
+ {
++	unsigned long flags;
+ 	int ret;
+ 
+-	raw_spin_lock(&lock->wait_lock);
++	raw_spin_lock_irqsave(&lock->wait_lock, flags);
+ 
+ 	set_current_state(TASK_INTERRUPTIBLE);
+ 
+-	ret = __rt_mutex_slowlock(lock, TASK_INTERRUPTIBLE, to, waiter);
++	ret = __rt_mutex_slowlock(lock, TASK_INTERRUPTIBLE, to, waiter, &flags);
+ 
+ 	set_current_state(TASK_RUNNING);
+ 
+ 	if (unlikely(ret))
+-		remove_waiter(lock, waiter);
++		remove_waiter(lock, waiter, &flags);
+ 
+ 	/*
+ 	 * try_to_take_rt_mutex() sets the waiter bit unconditionally. We might
+@@ -1040,7 +1048,7 @@ int rt_mutex_finish_proxy_lock(struct rt_mutex *lock,
+ 	 */
+ 	fixup_rt_mutex_waiters(lock);
+ 
+-	raw_spin_unlock(&lock->wait_lock);
++	raw_spin_unlock_irqrestore(&lock->wait_lock, flags);
+ 
+ 	return ret;
+ }
