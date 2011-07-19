@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752301Ab1GSXvG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 19:51:06 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:14545 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751942Ab1GSXvE convert rfc822-to-8bit (ORCPT
+	id S1752455Ab1GSXwU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 19:52:20 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:38074 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751942Ab1GSXwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 19:51:04 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 19 Jul 2011 16:50:54 -0700
-From: Andrew Chew <AChew@nvidia.com>
-To: Stephen Warren <swarren@nvidia.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "olof@lixom.net" <olof@lixom.net>,
-        Dan Willemsen <dwillemsen@nvidia.com>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Venkat Moganty <vmoganty@nvidia.com>
-CC: "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 19 Jul 2011 16:50:53 -0700
-Subject: RE: [PATCH 3/3] dt: tegra20: Add ehci nodes to Seaboard.
-Thread-Topic: [PATCH 3/3] dt: tegra20: Add ehci nodes to Seaboard.
-Thread-Index: AcxGZjkx5ggFPfwHSci0NC6oKmMXGAAAYWJQAAGgtVA=
-Message-ID: <643E69AA4436674C8F39DCC2C05F76383CF0DD2271@HQMAIL03.nvidia.com>
-References: <1311115617-9697-1-git-send-email-achew@nvidia.com>
- <1311115617-9697-3-git-send-email-achew@nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF049EBDED2A@HQMAIL01.nvidia.com>
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF049EBDED2A@HQMAIL01.nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 19 Jul 2011 19:52:19 -0400
+Date: Wed, 20 Jul 2011 00:52:16 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, neilb@suse.de
+Subject: Re: [PATCH] vfs: fix race in rcu lookup of pruned dentry
+Message-ID: <20110719235215.GS11013@ZenIV.linux.org.uk>
+References: <20110718020818.GW11013@ZenIV.linux.org.uk>
+ <CA+55aFwXgcWxvAz7w1f_HYyzdm9b9EBJfrWhF1FW7EA3zpbJPg@mail.gmail.com>
+ <CA+55aFxKRw8NxcHKzsSeCX3ud6eDrcQvAX+LMQOUT4p5TPLp5g@mail.gmail.com>
+ <alpine.LSU.2.00.1107181135170.2722@sister.anvils>
+ <CA+55aFycZL9zAE_Qvq9LM=HpugiDuKSjdRhKG1zi=H4LnNvhVQ@mail.gmail.com>
+ <20110718194703.GI11013@ZenIV.linux.org.uk>
+ <CA+55aFzCeXOs9Rj5U5mMWqMZpv+jM14O2VnpFCodMJzaB1hPEg@mail.gmail.com>
+ <alpine.LSU.2.00.1107181407060.3530@sister.anvils>
+ <CA+55aFxq1KZycxXCwLARv0WOYG_-aim=e9kt=eLcNuymmeoyiA@mail.gmail.com>
+ <20110719234550.GR11013@ZenIV.linux.org.uk>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110719234550.GR11013@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Although that said, since many of the USB properties are 
-> board-specific
-> and determined by system characterization, they aren't generally
-> applicable to all Tegra devices. As such, should those values be moved
-> into tegra-seaboard.dts instead? Perhaps tegra20.dtsi should specify
-> the default values that the driver currently uses if not supplied with
-> platform data though... I think the Seaboard values are the defaults,
-> which still would make this patch obsolete.
+On Wed, Jul 20, 2011 at 12:45:51AM +0100, Al Viro wrote:
 
-Turns out the ones I put in tegra20.dtsi are NOT the defaults.  The defaults are in arch/arm/mach-tegra/usb_phy.c, contained in "utmip_defaults[]".
+> You know what...  I doubt that you want to mess with ->d_seq checks here.
+> It's definitely not Hugh's bug (unless he has bindings somewhere odd) and
+> both ->mnt_mountpoint and ->mnt_root are pinned (and we are holding
+> vfsmount_lock anyway).  *inode assignment too early is a real bug, indeed,
+> and we want to assign nd->seq if we cross mountpoint as both versions do,
+> but check just before that is, in the best case, BUG_ON() fodder.  We'd
+> just found a vfsmount with ->mnt_mountpoint equal to path->dentry; it *can't*
+> be stale, or we have a really nasty problem anyway.
 
-I think I'm going to put those utmip_defaults[] stuff into tegra20.dtsi, and override them in tegra-seaboard.dts.  How's that sound?
-
-And since there are defaults specified in tegra20.dtsi, does it really make sense to also have default values assigned in ehci-tegra.c (for when a property is not present)?  I worry that the information is now duplicated.  If those properties aren't present, then someone's mucked with the tegra20.dtsi ehci properties.
+Kudos to neilb for spotting the pointless check, BTW; and no, his theory
+that it might be needed since we could race with umount() is wrong - due to
+vfsmount_lock being held.
