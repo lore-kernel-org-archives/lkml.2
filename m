@@ -1,120 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751529Ab1GSRlt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 13:41:49 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:40799 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751043Ab1GSRls (ORCPT
+	id S1751289Ab1GSRtT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 13:49:19 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:29617 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750903Ab1GSRtR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 13:41:48 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: linux-kernel@vger.kernel.org
-Cc: Neil Horman <nhorman@tuxdriver.com>, Divy LeRay <divy@chelsio.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Joerg Roedel <joerg.roedel@amd.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH] dma-debug: hash_bucket_find needs to allow for offsets within an entry
-Date: Tue, 19 Jul 2011 13:41:18 -0400
-Message-Id: <1311097278-30841-1-git-send-email-nhorman@tuxdriver.com>
-X-Mailer: git-send-email 1.7.6
-X-Spam-Score: -2.6 (--)
+	Tue, 19 Jul 2011 13:49:17 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=IPn/Ozkzib+Srw6UZFeAeA9R3HqZncFswpOusVjQEdJus5lNMj5wqCxLja078xIgF
+	Nfq3ZNDqiho08D9zpjCvQ==
+MIME-Version: 1.0
+In-Reply-To: <1311080921.13765.203.camel@twins>
+References: <1310986258-29985-1-git-send-email-schnhrr@cs.tu-berlin.de>
+ <1310986258-29985-2-git-send-email-schnhrr@cs.tu-berlin.de>
+ <CAPM31RLqq0hgdhoh3GA-38petKeE1zxcL=uJYba9o3yd+_7jjw@mail.gmail.com> <1311080921.13765.203.camel@twins>
+From: Paul Turner <pjt@google.com>
+Date: Tue, 19 Jul 2011 10:48:44 -0700
+Message-ID: <CAPM31RK1cFCLZ=KrNs2Q2KamQ8PLfMHaUrhf49hSj-=cmEaHvA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] sched: Enforce order of leaf CFS runqueues
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Jan H." <schnhrr@cs.tu-berlin.de>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Users of the pci_dma_sync_single_* api allow users to sync address ranges within
-the range of a mapped entry (i.e. you can dma map address X to dma_addr_t A and
-then pci_dma_sync_single on dma_addr_t A+1.  The dma-debug library however
-assume dma syncs will always occur using the base address of a mapped region,
-and uses that assumption to find entries in its hash table.  Since thats often
-(but not always the case), the dma debug library can give us false errors about
-missing entries, which are reported as syncing of memory not allocated by the
-driver.  This was noted in the cxgb3 driver as this error:
+On Tue, Jul 19, 2011 at 6:08 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, 2011-07-18 at 16:24 -0700, Paul Turner wrote:
+>
+>> Subject: [PATCH] sched: handle on_list ancestor in leaf_add_cfs_rq()
+>> From: Paul Turner <pjt@google.com>
+>> Date: Mon, 18 Jul 2011 16:08:10 -0700
+>>
+>> Jan H. Schönherr found that in the case of an on_list ancestor we may
+>> incorrectly place the child to the right of a great-ancestor on the list.
+>>
+>> Consider:
+>>
+>>       A
+>>      / \     Here, t1A results in A->cfs_rq being on_list, however when
+>>     B  t1A   we start enqueuing from C this will not be visible.  This is
+>>    /         compounded by the fact that on_list expiration may also be out
+>>   C          of order, punching holes in the tree.
+>>  /
+>> t1C
+>>
+>> Prevent this by making additions to the leaf_cfs_rq_list position independent.
+>> This is done by maintaining additions to this list within the
+>> enqueue_task_fair() path, which allows us to always enqueue against the
+>> current entity's first on_list ancestor.
+>
+> The problem I have with this is that it makes the enqueue more
+> expensive. We're now optimizing a relatively slow path (load-balance) at
+> the cost of the hottest path in the kernel (enqueue/dequeue).
+>
 
-WARNING: at lib/dma-debug.c:902 check_sync+0xdd/0x48c()
-Hardware name: To be filled by O.E.M.
-cxgb3 0000:01:00.0: DMA-API: device driver tries to sync DMA memory it has not
-allocated [device address=0x00000000fff97800] [size=1984 bytes]
-Modules linked in: autofs4 sunrpc cpufreq_ondemand acpi_cpufreq freq_table
-mperf ip6t_REJECT nf_conntrack_ipv6 ip6table_filter ip6_tables ipv6 uinput
-snd_hda_codec_intelhdmi snd_hda_codec_realtek snd_hda_intel snd_hda_codec
-snd_hwdep snd_seq snd_seq_device snd_pcm snd_timer e1000e snd soundcore r8169
-cxgb3 iTCO_wdt snd_page_alloc mii shpchp i2c_i801 iTCO_vendor_support mdio
-microcode firewire_ohci firewire_core crc_itu_t ata_generic pata_acpi i915
-drm_kms_helper drm i2c_algo_bit i2c_core video output [last unloaded:
-scsi_wait_scan]
-Pid: 1818, comm: ifconfig Not tainted 2.6.35-0.23.rc3.git6.fc14.x86_64 #1
-Call Trace:
-[<ffffffff81050f71>] warn_slowpath_common+0x85/0x9d
-[<ffffffff8105102c>] warn_slowpath_fmt+0x46/0x48
-[<ffffffff8124658e>] ? check_sync+0x39/0x48c
-[<ffffffff8107c470>] ? trace_hardirqs_on+0xd/0xf
-[<ffffffff81246632>] check_sync+0xdd/0x48c
-[<ffffffff81246ca6>] debug_dma_sync_single_for_device+0x3f/0x41
-[<ffffffffa011615c>] ? pci_map_page+0x84/0x97 [cxgb3]
-[<ffffffffa0117bc3>] pci_dma_sync_single_for_device.clone.0+0x65/0x6e [cxgb3]
-[<ffffffffa0117ed1>] refill_fl+0x305/0x30a [cxgb3]
-[<ffffffffa011857d>] t3_sge_alloc_qset+0x6a7/0x821 [cxgb3]
-[<ffffffffa010a07b>] cxgb_up+0x4d0/0xe62 [cxgb3]
-[<ffffffff81086037>] ? __module_text_address+0x12/0x58
-[<ffffffffa010aa4c>] cxgb_open+0x3f/0x309 [cxgb3]
-[<ffffffff813e9f6c>] __dev_open+0x8e/0xbc
-[<ffffffff813e7ca5>] __dev_change_flags+0xbe/0x142
-[<ffffffff813e9ea8>] dev_change_flags+0x21/0x57
-[<ffffffff81445937>] devinet_ioctl+0x29a/0x54b
-[<ffffffff811f9a87>] ? inode_has_perm+0xaa/0xce
-[<ffffffff81446ed2>] inet_ioctl+0x8f/0xa7
-[<ffffffff813d683a>] sock_do_ioctl+0x29/0x48
-[<ffffffff813d6c83>] sock_ioctl+0x213/0x222
-[<ffffffff81137f78>] vfs_ioctl+0x32/0xa6
-[<ffffffff811384e2>] do_vfs_ioctl+0x47a/0x4b3
-[<ffffffff81138571>] sys_ioctl+0x56/0x79
-[<ffffffff81009c32>] system_call_fastpath+0x16/0x1b
----[ end trace 69a4d4cc77b58004 ]---
+So this is a concern that I kept in mind.  I don't think this should
+actually add any measurable overhead:
 
-This patch corrects the issue by changing the hash_bucket_find function so that
-it matches on entries where the referenced address  and size fall within the
-range of a given entry without overlapping.
+- on_rq always implies on_list so we are guaranteed never to go past
+where we have to go for enqueuing; moreover we're touching the same
+lines that enqueue will use for continuing it s walk
+- it takes on_list ~40ms+ to expire so the extra walk above can only
+happen on this order.
 
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-Reported-by: Jay Fenalson <fenlason@redhat.com>
-CC: Divy LeRay <divy@chelsio.com>
-CC: Stanislaw Gruszka <sgruszka@redhat.com>
-CC: Joerg Roedel <joerg.roedel@amd.com>
-CC: Arnd Bergmann <arnd@arndb.de>
----
- lib/dma-debug.c |   17 +++++++++++++++--
- 1 files changed, 15 insertions(+), 2 deletions(-)
+I can't think of any benchmark that's going to measure anything for
+this.  pipe-bench et al are just going to always hit the single
+on_list branch which should be the same cost as the previous == 1
+check.
 
-diff --git a/lib/dma-debug.c b/lib/dma-debug.c
-index db07bfd..333f0ee 100644
---- a/lib/dma-debug.c
-+++ b/lib/dma-debug.c
-@@ -248,10 +248,23 @@ static struct dma_debug_entry *hash_bucket_find(struct hash_bucket *bucket,
- {
- 	struct dma_debug_entry *entry, *ret = NULL;
- 	int matches = 0, match_lvl, last_lvl = 0;
-+	u64 estart, eend, rstart, rend;
-+
-+	rstart = ref->dev_addr;
-+	rend = rstart + ref->size;
- 
- 	list_for_each_entry(entry, &bucket->list, list) {
--		if ((entry->dev_addr != ref->dev_addr) ||
--		    (entry->dev != ref->dev))
-+		estart = entry->dev_addr;
-+		eend = estart + entry->size;
-+
-+		/*
-+		 * An entry matches if the address range specified by the ref
-+		 * dev_addr and size falls entirely within the range specified
-+		 * by the entries dev_addr and size and the devices match
-+		 */
-+		if (entry->dev != ref->dev)
-+			continue;
-+		if ((estart > rstart) || (eend < rend))
- 			continue;
- 
- 		/*
--- 
-1.7.6
-
+>
+>
