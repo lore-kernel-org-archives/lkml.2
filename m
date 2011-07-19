@@ -1,61 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751992Ab1GSElI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 00:41:08 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:11631 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751123Ab1GSElG (ORCPT
+	id S1751918Ab1GSEmn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 00:42:43 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:36656 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788Ab1GSEmn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 00:41:06 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Tue, 19 Jul 2011 00:41:04 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nick Piggin <npiggin@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] vfs: fix race in rcu lookup of pruned dentry
-In-reply-to: <20110719022305.GO11013@ZenIV.linux.org.uk>
-Message-id: <alpine.LFD.2.00.1107190036490.21187@xanadu.home>
-References: <alpine.LSU.2.00.1107181407060.3530@sister.anvils>
- <CA+55aFxq1KZycxXCwLARv0WOYG_-aim=e9kt=eLcNuymmeoyiA@mail.gmail.com>
- <alpine.LSU.2.00.1107181533590.3909@sister.anvils>
- <20110718231738.GJ11013@ZenIV.linux.org.uk>
- <20110718232114.GK11013@ZenIV.linux.org.uk>
- <CA+55aFzAK52MZXs1ZAdJhnKgnO8OnzUggvS67VUP4mgiYHi5kQ@mail.gmail.com>
- <20110718234012.GL11013@ZenIV.linux.org.uk>
- <alpine.LSU.2.00.1107181903350.23830@sister.anvils>
- <CA+55aFwafi1p=RgrwsauKw+40mcUx9nOs4pkvSFsGBmsb25dDQ@mail.gmail.com>
- <CA+55aFzMP3oYV9G8bzskkyNEpqcHGSBR3rWCF_TWF4QhOMmR8A@mail.gmail.com>
- <20110719022305.GO11013@ZenIV.linux.org.uk>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Tue, 19 Jul 2011 00:42:43 -0400
+From: Ravishankar <ravishankarkm32@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>,
+        Ravishankar <ravishankarkm32@gmail.com>
+Subject: [PATCH 1/2 v3] Staging: comedi: fix printk() issue in adv_pci1710.c
+Date: Tue, 19 Jul 2011 10:25:38 +0530
+Message-Id: <1311051338-9275-1-git-send-email-ravishankarkm32@gmail.com>
+X-Mailer: git-send-email 1.6.5.2
+In-Reply-To: <[PATCH]Staging: comedi: fix printk() issue in adv_pci1710.c>
+References: <[PATCH]Staging: comedi: fix printk() issue in adv_pci1710.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Jul 2011, Al Viro wrote:
+From: Ravishankar <ravi.shankar@greenturtles.in>
 
-> On Mon, Jul 18, 2011 at 07:17:18PM -0700, Linus Torvalds wrote:
-> > On Mon, Jul 18, 2011 at 7:14 PM, Linus Torvalds
-> > <torvalds@linux-foundation.org> wrote:
-> > >
-> > > Good catch, that test was indeed the wrong way around. Thanks.
-> > 
-> > Oh, and Al - just fold the thing into the original patch rather than
-> > carry a buggy patch and the fix around. You might as well credit Hugh
-> > as author for the whole thing, since he ended up being not just the
-> > one to find the problem, but describe the solution anyway and fix the
-> > patch.
-> 
-> Umm...  Is there any convenient way to make git commit --amend change
-> the author of commit?
+This is a patch to the adv_pci1710.c file that fixes up a printk() warning found by the checkpatch.pl tool
 
-	git commit --amend --author="Hugh Dickins <hughd@google.com>"
+Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
+---
+KERN_CONT issue is fixed
 
+ drivers/staging/comedi/drivers/adv_pci1710.c |   20 ++++++++++----------
+ 1 files changed, 10 insertions(+), 10 deletions(-)
 
-Nicolas
+diff --git a/drivers/staging/comedi/drivers/adv_pci1710.c b/drivers/staging/comedi/drivers/adv_pci1710.c
+index fd71cc6..093b9e6 100644
+--- a/drivers/staging/comedi/drivers/adv_pci1710.c
++++ b/drivers/staging/comedi/drivers/adv_pci1710.c
+@@ -1396,14 +1396,14 @@ static int pci1710_attach(struct comedi_device *dev,
+ 	int i;
+ 	int board_index;
+ 
+-	printk("comedi%d: adv_pci1710: ", dev->minor);
++	printk(KERN_CONT "comedi%d: adv_pci1710: ", dev->minor);
+ 
+ 	opt_bus = it->options[0];
+ 	opt_slot = it->options[1];
+ 
+ 	ret = alloc_private(dev, sizeof(struct pci1710_private));
+ 	if (ret < 0) {
+-		printk(" - Allocation failed!\n");
++		printk(KERN_CONT " - Allocation failed!\n");
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -1451,10 +1451,10 @@ static int pci1710_attach(struct comedi_device *dev,
+ 
+ 	if (!pcidev) {
+ 		if (opt_bus || opt_slot) {
+-			printk(" - Card at b:s %d:%d %s\n",
++			printk(KERN_ERR " - Card at b:s %d:%d %s\n",
+ 			       opt_bus, opt_slot, errstr);
+ 		} else {
+-			printk(" - Card %s\n", errstr);
++			printk(KERN_ERR " - Card %s\n", errstr);
+ 		}
+ 		return -EIO;
+ 	}
+@@ -1465,7 +1465,7 @@ static int pci1710_attach(struct comedi_device *dev,
+ 	irq = pcidev->irq;
+ 	iobase = pci_resource_start(pcidev, 2);
+ 
+-	printk(", b:s:f=%d:%d:%d, io=0x%4lx", pci_bus, pci_slot, pci_func,
++	printk(KERN_CONT ", b:s:f=%d:%d:%d, io=0x%4lx", pci_bus, pci_slot,
++	  pci_func, iobase);
+ 
+ 	dev->iobase = iobase;
+@@ -1487,7 +1487,7 @@ static int pci1710_attach(struct comedi_device *dev,
+ 
+ 	ret = alloc_subdevices(dev, n_subdevices);
+ 	if (ret < 0) {
+-		printk(" - Allocation failed!\n");
++		printk(KERN_CONT " - Allocation failed!\n");
+ 		return ret;
+ 	}
+ 
+@@ -1499,14 +1499,14 @@ static int pci1710_attach(struct comedi_device *dev,
+ 					IRQF_SHARED, "Advantech PCI-1710",
+ 					dev)) {
+ 				printk
+-				    (", unable to allocate IRQ %d, DISABLING IT",
++				    (KERN_CONT ", unable to allocate IRQ %d, DISABLING IT",
+ 				     irq);
+ 				irq = 0;	/* Can't use IRQ */
+ 			} else {
+-				printk(", irq=%u", irq);
++				printk(KERN_CONT ", irq=%u", irq);
+ 			}
+ 		} else {
+-			printk(", IRQ disabled");
++			printk(KERN_CONT ", IRQ disabled");
+ 		}
+ 	} else {
+ 		irq = 0;
+@@ -1514,7 +1514,7 @@ static int pci1710_attach(struct comedi_device *dev,
+ 
+ 	dev->irq = irq;
+ 
+-	printk(".\n");
++	printk(KERN_CONT ".\n");
+ 
+ 	subdev = 0;
+ 
+-- 
+1.6.5.2
+
