@@ -1,50 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751621Ab1GSJ5j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 05:57:39 -0400
-Received: from list.bajajcapital.com ([209.20.93.67]:45055 "EHLO
-	list.bajajcapital.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303Ab1GSJ5i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 05:57:38 -0400
-X-DomainKeys: Sendmail DomainKeys Filter v1.0.1 list.bajajcapital.com 7AC7D173839
-DomainKey-Signature: a=rsa-sha1; s=signer; d=bajajcapital.com; c=simple; q=dns;
-	b=jEMILtzCTEjzQY8BSRXbB4yb7uYG3vZjSGHa5dUwPSO6qwt/8A6vuwOURrQN3Xro/
-	LuJ/1zqQUcEgfFrAjDtuA==
-Recieved: 
-Date: Tue, 19 Jul 2011 15:27:38 +0580
-To: linux-kernel@vger.kernel.org
-From: List Administrator <list@bajajcapital.com>
-Subject: Goodbye from our Newsletter
-Message-ID: <f7539854a3e8d1797b11cf49d4859c37@list.bajajcapital.com>
-X-Priority: 3
-X-Mailer: PHPMailer [version 1.73]
-X-Mailer: phplist v2.10.8
-X-MessageID: systemmessage
-X-ListMember: linux-kernel@vger.kernel.org
+	id S1751767Ab1GSJ5r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 05:57:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23251 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751657Ab1GSJ5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 05:57:44 -0400
+Date: Tue, 19 Jul 2011 11:57:27 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: rostedt@goodmis.org, a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [RFC 3/4] perf, ftrace: Add new perf ioctl for function trace
+ filter
+Message-ID: <20110719095727.GA3008@jolsa.brq.redhat.com>
+References: <1310390576-8289-1-git-send-email-jolsa@redhat.com>
+ <1310390576-8289-4-git-send-email-jolsa@redhat.com>
+ <20110718151229.GA32167@somewhere>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110718151229.GA32167@somewhere>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jul 18, 2011 at 05:12:33PM +0200, Frederic Weisbecker wrote:
+> On Mon, Jul 11, 2011 at 03:22:55PM +0200, Jiri Olsa wrote:
+> > As the amount of kernel functions obtained by the ftrace:function tracepoint
+> > is quite big, it's desirable to be able to set the filter on the ftrace
+> > level.
+> > 
+> > Added PERF_EVENT_IOC_SET_FTRACE ioctl to be able to specify function filter
+> > for perf event. The interface is the same as for the set_ftrace_filter file.
+> > 
+> > Also the same string parser is used as for the set_ftrace_filter file.
+> 
+> I'm not sure I understand why an ioctl is needed for that.
+> Why not using the ftrace filter?
+> 
+> The first idea was to do something like this:
+> 
+> 	ip == func1 || ip == func2 || ....
 
-  
-  Goodbye from our Newsletter, sorry to see you go.
+The part where I got stuck is when you start to combine the fields
+in the filter like:
 
-  You have been unsubscribed from our newsletters.
+	ip == func1 || ip_parent != func2
+	ip == func1 || (ip == func2 && ip_parent != func3)
 
-  This is the last email you will receive from us. We have added you to our
-  "blacklist", which means that our newsletter system will refuse to send
-  you any other email, without manual intervention by our administrator.
+Which is ok when all functions are enabled and ip/parent_ip fields
+are treated as values. But I'd need enable proper set of functions
+based on above filter parsing.. which might not be that easy :)
 
-  If there is an error in this information, you can re-subscribe:
-  please go to http://list.bajajcapital.com/lists/?p=subscribe and follow
-the steps.
+So I thought it'd be easier to have the filter as above,
+plus you could specify the amount of traced functions with
+ioctl command.
 
-  Thank you
-  
-  
+> 
+> But that makes a too long expression. So I thought we
+> could bring support for the "+" operator and have expressions
+> like:
+> 
+> 	ip == func1 + func2 + func3 + ....
+> 
+> 	ip == !func1
 
+So would you like to have just simple filter for function event?
+(embedded into the current event filter..) like:
 
+	ip == func1 + func2 + func3 + 
+
+Support just one 'ip' field and whatever we got in the parameter
+we put into the ftrace filter.. ?
+
+thanks,
+jirka
