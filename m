@@ -1,116 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751980Ab1GSKxN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 06:53:13 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:35088 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751032Ab1GSKxM convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:4:1>);
-	Tue, 19 Jul 2011 06:53:12 -0400
-Message-Id: <4E257E33020000780004E319@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Tue, 19 Jul 2011 11:53:07 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <mjg@redhat.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86: serialize EFI time accesses on rtc_lock
+	id S1752082Ab1GSKyh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 06:54:37 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:39712 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751032Ab1GSKyg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 06:54:36 -0400
+Subject: Re: [PATCH] Add error check to hex2bin().
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        linux-security-module@vger.kernel.org,
+        andriy.shevchenko@linux.intel.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <CAHp75VdTiMtmXdVSMq=6bAH2+rmSBHPPE9hQOLQN+Y3qPBEVFg@mail.gmail.com>
+References: <1310977597-9666-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <201107182041.EHB78622.VOFSHFMOOFtLJQ@I-love.SAKURA.ne.jp>
+	 <1310991796.3903.6.camel@smile>
+	 <201107182148.AGD21306.FOLtJVMSOOFQHF@I-love.SAKURA.ne.jp>
+	 <CAMuHMdVxR7AC7H_Yys8SiaGqM2JsNXLsRpujqojMYd_CXWxcAw@mail.gmail.com>
+	 <CAHp75VdTiMtmXdVSMq=6bAH2+rmSBHPPE9hQOLQN+Y3qPBEVFg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 19 Jul 2011 06:52:46 -0400
+Message-ID: <1311072766.3258.8.camel@localhost.localdomain>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The EFI specification requires that callers of the time related runtime
-functions serialize with other CMOS accesses in the kernel, as the EFI
-time functions may choose to also use the legacy CMOS RTC.
+(sorry for re-posting, but this doesn't seem to have made it to the
+lists.)
 
-Besides fixing a latent bug, this is a prerequisite to safely enable
-the rtc-efi driver for x86, which ought to be preferred over rtc-cmos
-on all EFI platforms.
+On Tue, 2011-07-19 at 00:18 +0300, Andy Shevchenko wrote:
+> On Mon, Jul 18, 2011 at 11:49 PM, Geert Uytterhoeven
+> <geert@linux-m68k.org> wrote:
+> > What about making it return the number of unprocessed bytes left instead?
+> > Then the caller knows where the problem lies. And zero would mean success.
+> If I remember correctly it used to be src as return value in some
+> version of that patch. I don't know the details of that interim
+> solution. My current opinion is to return boolean and make an
+> additional parameter to return src value. However, it could make this
+> simple function fat.
+> P.S. Take into account that the user of it is only one so far, I would
+> like to hear a Mimi's opinion.
+> 
 
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
-Cc: Matthew Garrett <mjg@redhat.com>
+Trusted/encrypted keys are not in a critical code path. They're used for
+loading/storing key blobs from userspace.  From a trusted/encrypted key
+perspective, it doesn't make much of a difference.
 
----
- arch/x86/platform/efi/efi.c |   39 +++++++++++++++++++++++++++++++++------
- 1 file changed, 33 insertions(+), 6 deletions(-)
+thanks,
 
---- 3.0-rc7/arch/x86/platform/efi/efi.c
-+++ 3.0-rc7-x86-rtc-lock-EFI/arch/x86/platform/efi/efi.c
-@@ -79,26 +79,50 @@ early_param("add_efi_memmap", setup_add_
- 
- static efi_status_t virt_efi_get_time(efi_time_t *tm, efi_time_cap_t *tc)
- {
--	return efi_call_virt2(get_time, tm, tc);
-+	unsigned long flags;
-+	efi_status_t status;
-+
-+	spin_lock_irqsave(&rtc_lock, flags);
-+	status = efi_call_virt2(get_time, tm, tc);
-+	spin_unlock_irqrestore(&rtc_lock, flags);
-+	return status;
- }
- 
- static efi_status_t virt_efi_set_time(efi_time_t *tm)
- {
--	return efi_call_virt1(set_time, tm);
-+	unsigned long flags;
-+	efi_status_t status;
-+
-+	spin_lock_irqsave(&rtc_lock, flags);
-+	status = efi_call_virt1(set_time, tm);
-+	spin_unlock_irqrestore(&rtc_lock, flags);
-+	return status;
- }
- 
- static efi_status_t virt_efi_get_wakeup_time(efi_bool_t *enabled,
- 					     efi_bool_t *pending,
- 					     efi_time_t *tm)
- {
--	return efi_call_virt3(get_wakeup_time,
--			      enabled, pending, tm);
-+	unsigned long flags;
-+	efi_status_t status;
-+
-+	spin_lock_irqsave(&rtc_lock, flags);
-+	status = efi_call_virt3(get_wakeup_time,
-+				enabled, pending, tm);
-+	spin_unlock_irqrestore(&rtc_lock, flags);
-+	return status;
- }
- 
- static efi_status_t virt_efi_set_wakeup_time(efi_bool_t enabled, efi_time_t *tm)
- {
--	return efi_call_virt2(set_wakeup_time,
--			      enabled, tm);
-+	unsigned long flags;
-+	efi_status_t status;
-+
-+	spin_lock_irqsave(&rtc_lock, flags);
-+	status = efi_call_virt2(set_wakeup_time,
-+				enabled, tm);
-+	spin_unlock_irqrestore(&rtc_lock, flags);
-+	return status;
- }
- 
- static efi_status_t virt_efi_get_variable(efi_char16_t *name,
-@@ -164,11 +188,14 @@ static efi_status_t __init phys_efi_set_
- static efi_status_t __init phys_efi_get_time(efi_time_t *tm,
- 					     efi_time_cap_t *tc)
- {
-+	unsigned long flags;
- 	efi_status_t status;
- 
-+	spin_lock_irqsave(&rtc_lock, flags);
- 	efi_call_phys_prelog();
- 	status = efi_call_phys2(efi_phys.get_time, tm, tc);
- 	efi_call_phys_epilog();
-+	spin_unlock_irqrestore(&rtc_lock, flags);
- 	return status;
- }
- 
-
-
+Mimi
 
