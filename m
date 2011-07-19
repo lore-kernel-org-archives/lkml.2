@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751351Ab1GSVv0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 17:51:26 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35000 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750952Ab1GSVvZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 17:51:25 -0400
-Date: Tue, 19 Jul 2011 15:51:20 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Greg KH <greg@kroah.com>, Grant Likely <grant@secretlab.ca>,
-        Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Samuel Oritz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] regmap: Add SPI bus support
-Message-ID: <20110719215120.GS6848@ponder.secretlab.ca>
-References: <20110718100444.GD423@opensource.wolfsonmicro.com>
- <1310983663-6404-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <1310983663-6404-3-git-send-email-broonie@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1310983663-6404-3-git-send-email-broonie@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751483Ab1GSV7I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 17:59:08 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:36511 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750952Ab1GSV7G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 17:59:06 -0400
+Subject: Re: [RFC][PATCH] Anonymous shared memory (ashmem) subsystem
+From: John Stultz <john.stultz@linaro.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>, Bryan Donlan <bdonlan@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Robert Love <rlove@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>, Eric Anholt <eric@anholt.net>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+In-Reply-To: <20110719154130.GA26245@infradead.org>
+References: <1311015274-28650-1-git-send-email-john.stultz@linaro.org>
+	 <20110719021947.GA16986@infradead.org>
+	 <CAF_S4t_oOwsuPJdMXv+wPVhzecUag=TOWj1-KtFJqYUZOCBbog@mail.gmail.com>
+	 <20110719033602.GA4867@infradead.org> <1311089863.29817.172.camel@nimitz>
+	 <20110719154130.GA26245@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 19 Jul 2011 14:58:56 -0700
+Message-ID: <1311112736.2945.106.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 18, 2011 at 07:07:42PM +0900, Mark Brown wrote:
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Acked-by: Liam Girdwood <lrg@ti.com>
-> Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+On Tue, 2011-07-19 at 11:41 -0400, Christoph Hellwig wrote:
+> On Tue, Jul 19, 2011 at 08:37:43AM -0700, Dave Hansen wrote:
+> > This implementation has some real show-stopper things in it, like its
+> > own LRU.  But, the concept seems interesting at least.
+[snip]
+> Having a madvice flag to allow reclaiming tmpfs
+> pages, and using the normal VM infrastructure sounds like a perfectly
+> fine feature.
 
-One comment below, but otherwise:
+Ok. Thanks all for the review and comments. I'll see if something like
+what was suggested can be worked out.
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
+thanks again,
+-john
 
-on the whole series.
-> diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-> index e509bac..c549632 100644
-> --- a/include/linux/regmap.h
-> +++ b/include/linux/regmap.h
-> @@ -61,6 +61,9 @@ struct regmap *regmap_init(struct device *dev,
->  			   const struct regmap_config *config);
->  struct regmap *regmap_init_i2c(struct device *dev,
->  			       const struct regmap_config *config);
-> +struct regmap *regmap_init_spi(struct device *dev,
-> +			       const struct regmap_config *config);
-> +
 
-regmap_init_i2c/spi should take an i2c_client and spi_device pointer
-respectively so it can be type checked.
 
->  void regmap_exit(struct regmap *map);
->  int regmap_write(struct regmap *map, unsigned int reg, unsigned int val);
->  int regmap_raw_write(struct regmap *map, unsigned int reg,
-> -- 
-> 1.7.5.4
-> 
