@@ -1,37 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121Ab1GSVGY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 17:06:24 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:49297 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751602Ab1GSVGX (ORCPT
+	id S1752120Ab1GSVMl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 17:12:41 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49016 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751602Ab1GSVMk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 17:06:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <1311109112-12909-1-git-send-email-jason.wessel@windriver.com>
-References: <1311109112-12909-1-git-send-email-jason.wessel@windriver.com>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Tue, 19 Jul 2011 17:06:01 -0400
-X-Google-Sender-Auth: Wr-2qoI7OYgQD2gvrePryOTXawg
-Message-ID: <CAJaTeTr1HxcEX9MT83iDZHmCyE=yGhXYDUB0xBmwAn43F_+4ew@mail.gmail.com>
-Subject: Re: [PATCH] sparc,kgdbts: fix compile regression with kgdb test suite
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: davem@davemloft.net, kgdb-bugreport@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 19 Jul 2011 17:12:40 -0400
+Subject: Re: [PATCH 1/2] sched: Fix "divide error: 0000" in
+ find_busiest_group
+From: Peter Zijlstra <peterz@infradead.org>
+To: Terry Loftin <terry.loftin@hp.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Bob Montgomery <bob.montgomery@hp.com>
+In-Reply-To: <4E25F006.2010205@hp.com>
+References: <4E25F006.2010205@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 19 Jul 2011 23:17:04 +0200
+Message-ID: <1311110224.2617.1.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 19, 2011 at 16:58, Jason Wessel wrote:
-> Commit 63ab25ebbc (kgdbts: unify/generalize gdb breakpoint adjustment)
-> introduced a compile regression on sparc.
->
-> kgdbts.c: In function 'check_and_rewind_pc':
-> kgdbts.c:307: error: implicit declaration of function 'instruction_pointer_set'
->
-> Simply add the correct macro definition for instruction pointer on the
-> Sparc architecture.
+On Tue, 2011-07-19 at 14:58 -0600, Terry Loftin wrote:
+> Correct the protection expression in update_cpu_power() to avoid setting
+> rq->cpu_power to zero.
 
-Acked-by: Mike Frysinger <vapier@gentoo.org>
--mike
+Firstly you fail to mention what kernel this is again, secondly this
+should never happen in the first place, so this fix is wrong. At best it
+papers over another bug.
+
+> Signed-off-by: Terry Loftin <terry.loftin@hp.com>
+> Signed-off-by: Bob Montgomery <bob.montgomery@hp.com>
+> ---
+> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+> index 0c26e2d..9c50020 100644
+> --- a/kernel/sched_fair.c
+> +++ b/kernel/sched_fair.c
+> @@ -2549,7 +2549,7 @@ static void update_cpu_power(struct sched_domain *sd, int cpu)
+>  	power *= scale_rt_power(cpu);
+>  	power >>= SCHED_LOAD_SHIFT;
+> 
+> -	if (!power)
+> +	if ((u32)power == 0)
+>  		power = 1;
+> 
+>  	cpu_rq(cpu)->cpu_power = power;
+
+
+
