@@ -1,92 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054Ab1GSFaK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 01:30:10 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:57917 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751021Ab1GSFaI convert rfc822-to-8bit (ORCPT
+	id S1751949Ab1GSFfD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 01:35:03 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:41882 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751021Ab1GSFfB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 01:30:08 -0400
-From: "Hadli, Manjunath" <manjunath.hadli@ti.com>
-To: "'Jon Povey'" <jon.povey@racelogic.co.uk>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 19 Jul 2011 10:59:49 +0530
-Subject: RE: [PATCH] davinci: fix DM365 EVM video input mux bits
-Thread-Topic: [PATCH] davinci: fix DM365 EVM video input mux bits
-Thread-Index: AcxFxEO6UigcFyPiSea2qTqvKwuHFAAD90Yg
-Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024BCEF73E@dbde02.ent.ti.com>
-References: <1311046211-2849-1-git-send-email-jon.povey@racelogic.co.uk>
-In-Reply-To: <1311046211-2849-1-git-send-email-jon.povey@racelogic.co.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 19 Jul 2011 01:35:01 -0400
 MIME-Version: 1.0
+In-Reply-To: <201107162350.51025.rjw@sisk.pl>
+References: <201107162350.51025.rjw@sisk.pl>
+Date: Tue, 19 Jul 2011 14:35:00 +0900
+Message-ID: <CACBHAewP5twv0X=SOJw+Yb0HVvr7binRQ+VknSzh6=dVBPw_ww@mail.gmail.com>
+Subject: Re: [GIT PULL] MIPS build fix related to power management for 3.0
+From: Yuasa Yoichi <tripeaks@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jon,
+Hi,
 
-The fix looks correct. As a part of a different implementation which will go soon upstream, this has been taken care of, where we have used macros 
-CPLD_VIDEO_INPUT_MUX_TVP7002    0x1
-CPLD_VIDEO_INPUT_MUX_IMAGER     0x2
+2011/7/17 Rafael J. Wysocki <rjw@sisk.pl>:
+> Hi Linus,
+>
+> Please pull a MIPS build fix related to PM for 3.0 from:
+>
+> git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6.git pm-fixes
+>
+> It fixes a build regression resulting from a missing conversion from using
+> a sysdev to using syscore_ops for PM/shutdown in the MIPS tree.
 
-So, if you can do the same, it will look better.
+It has already been fixed in MIPS tree.
 
-Thanks,
--Manju
-
-
-On Tue, Jul 19, 2011 at 09:00:11, Jon Povey wrote:
-> Video input mux settings for tvp7002 and imager inputs were swapped.
-> Comment was correct.
-> 
-> Tested on EVM with tvp7002 input.
-> 
-> Signed-off-by: Jon Povey <jon.povey@racelogic.co.uk>
-> ---
-> As a bugfix maybe this should try to get into 3.0?
-> 
->  arch/arm/mach-davinci/board-dm365-evm.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/mach-davinci/board-dm365-evm.c b/arch/arm/mach-davinci/board-dm365-evm.c
-> index c67f684..09a87e6 100644
-> --- a/arch/arm/mach-davinci/board-dm365-evm.c
-> +++ b/arch/arm/mach-davinci/board-dm365-evm.c
-> @@ -520,7 +520,7 @@ fail:
->  	 */
->  	if (have_imager()) {
->  		label = "HD imager";
-> -		mux |= 1;
-> +		mux |= 2;
->  
->  		/* externally mux MMC1/ENET/AIC33 to imager */
->  		mux |= BIT(6) | BIT(5) | BIT(3);
-> @@ -540,7 +540,7 @@ fail:
->  		resets &= ~BIT(1);
->  
->  		if (have_tvp7002()) {
-> -			mux |= 2;
-> +			mux |= 1;
->  			resets &= ~BIT(2);
->  			label = "tvp7002 HD";
->  		} else {
-> --
-> 1.6.3.3
-> 
-> _______________________________________________
-> Davinci-linux-open-source mailing list
-> Davinci-linux-open-source@linux.davincidsp.com
-> http://linux.davincidsp.com/mailman/listinfo/davinci-linux-open-source
-> 
-
+Yoichi
