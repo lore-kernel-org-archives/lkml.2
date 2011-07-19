@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751988Ab1GSKjI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 06:39:08 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:8681 "EHLO
+	id S1751980Ab1GSKxN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 06:53:13 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:35088 "EHLO
 	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751080Ab1GSKjH convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:3:1>);
-	Tue, 19 Jul 2011 06:39:07 -0400
-Message-Id: <4E257AE7020000780004E2FF@nat28.tlf.novell.com>
+	with ESMTP id S1751032Ab1GSKxM convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:4:1>);
+	Tue, 19 Jul 2011 06:53:12 -0400
+Message-Id: <4E257E33020000780004E319@nat28.tlf.novell.com>
 X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Tue, 19 Jul 2011 11:39:03 +0100
+Date: Tue, 19 Jul 2011 11:53:07 +0100
 From: "Jan Beulich" <JBeulich@novell.com>
 To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86: serialize SMP boot's CMOS accesses on rtc_lock
+Cc: <mjg@redhat.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86: serialize EFI time accesses on rtc_lock
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
@@ -22,52 +22,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With CPU hotplug, there is a theoretical race between other CMOS
-(namely RTC) accesses and those done in the SMP secondary processor
-bringup path. I am unware of the problem having been noticed by anyone
-in practice, but it would very likely be rather spurious and very hard
-to reproduce. So to be on the safe side, acquire rtc_lock around those
-accesses.
+The EFI specification requires that callers of the time related runtime
+functions serialize with other CMOS accesses in the kernel, as the EFI
+time functions may choose to also use the legacy CMOS RTC.
+
+Besides fixing a latent bug, this is a prerequisite to safely enable
+the rtc-efi driver for x86, which ought to be preferred over rtc-cmos
+on all EFI platforms.
 
 Signed-off-by: Jan Beulich <jbeulich@novell.com>
+Cc: Matthew Garrett <mjg@redhat.com>
 
 ---
- arch/x86/include/asm/smpboot_hooks.h |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ arch/x86/platform/efi/efi.c |   39 +++++++++++++++++++++++++++++++++------
+ 1 file changed, 33 insertions(+), 6 deletions(-)
 
---- 3.0-rc7/arch/x86/include/asm/smpboot_hooks.h
-+++ 3.0-rc7-x86-rtc-lock-SMP/arch/x86/include/asm/smpboot_hooks.h
-@@ -10,7 +10,11 @@ static inline void smpboot_clear_io_apic
+--- 3.0-rc7/arch/x86/platform/efi/efi.c
++++ 3.0-rc7-x86-rtc-lock-EFI/arch/x86/platform/efi/efi.c
+@@ -79,26 +79,50 @@ early_param("add_efi_memmap", setup_add_
  
- static inline void smpboot_setup_warm_reset_vector(unsigned long start_eip)
+ static efi_status_t virt_efi_get_time(efi_time_t *tm, efi_time_cap_t *tc)
  {
+-	return efi_call_virt2(get_time, tm, tc);
 +	unsigned long flags;
++	efi_status_t status;
 +
 +	spin_lock_irqsave(&rtc_lock, flags);
- 	CMOS_WRITE(0xa, 0xf);
++	status = efi_call_virt2(get_time, tm, tc);
 +	spin_unlock_irqrestore(&rtc_lock, flags);
- 	local_flush_tlb();
- 	pr_debug("1.\n");
- 	*((volatile unsigned short *)phys_to_virt(apic->trampoline_phys_high)) =
-@@ -23,6 +27,8 @@ static inline void smpboot_setup_warm_re
- 
- static inline void smpboot_restore_warm_reset_vector(void)
- {
-+	unsigned long flags;
-+
- 	/*
- 	 * Install writable page 0 entry to set BIOS data area.
- 	 */
-@@ -32,7 +38,9 @@ static inline void smpboot_restore_warm_
- 	 * Paranoid:  Set warm reset code and vector here back
- 	 * to default values.
- 	 */
-+	spin_lock_irqsave(&rtc_lock, flags);
- 	CMOS_WRITE(0, 0xf);
-+	spin_unlock_irqrestore(&rtc_lock, flags);
- 
- 	*((volatile u32 *)phys_to_virt(apic->trampoline_phys_low)) = 0;
++	return status;
  }
+ 
+ static efi_status_t virt_efi_set_time(efi_time_t *tm)
+ {
+-	return efi_call_virt1(set_time, tm);
++	unsigned long flags;
++	efi_status_t status;
++
++	spin_lock_irqsave(&rtc_lock, flags);
++	status = efi_call_virt1(set_time, tm);
++	spin_unlock_irqrestore(&rtc_lock, flags);
++	return status;
+ }
+ 
+ static efi_status_t virt_efi_get_wakeup_time(efi_bool_t *enabled,
+ 					     efi_bool_t *pending,
+ 					     efi_time_t *tm)
+ {
+-	return efi_call_virt3(get_wakeup_time,
+-			      enabled, pending, tm);
++	unsigned long flags;
++	efi_status_t status;
++
++	spin_lock_irqsave(&rtc_lock, flags);
++	status = efi_call_virt3(get_wakeup_time,
++				enabled, pending, tm);
++	spin_unlock_irqrestore(&rtc_lock, flags);
++	return status;
+ }
+ 
+ static efi_status_t virt_efi_set_wakeup_time(efi_bool_t enabled, efi_time_t *tm)
+ {
+-	return efi_call_virt2(set_wakeup_time,
+-			      enabled, tm);
++	unsigned long flags;
++	efi_status_t status;
++
++	spin_lock_irqsave(&rtc_lock, flags);
++	status = efi_call_virt2(set_wakeup_time,
++				enabled, tm);
++	spin_unlock_irqrestore(&rtc_lock, flags);
++	return status;
+ }
+ 
+ static efi_status_t virt_efi_get_variable(efi_char16_t *name,
+@@ -164,11 +188,14 @@ static efi_status_t __init phys_efi_set_
+ static efi_status_t __init phys_efi_get_time(efi_time_t *tm,
+ 					     efi_time_cap_t *tc)
+ {
++	unsigned long flags;
+ 	efi_status_t status;
+ 
++	spin_lock_irqsave(&rtc_lock, flags);
+ 	efi_call_phys_prelog();
+ 	status = efi_call_phys2(efi_phys.get_time, tm, tc);
+ 	efi_call_phys_epilog();
++	spin_unlock_irqrestore(&rtc_lock, flags);
+ 	return status;
+ }
+ 
 
 
 
