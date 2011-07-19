@@ -1,189 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751763Ab1GSVeI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 17:34:08 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:33942 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139Ab1GSVeE (ORCPT
+	id S1751630Ab1GSVjR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 17:39:17 -0400
+Received: from mss-uk.mssgmbh.com ([217.174.251.109]:50170 "EHLO
+	mss-uk.mssgmbh.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750952Ab1GSVjP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 17:34:04 -0400
-From: Per Forlin <per.forlin@linaro.org>
-To: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-doc@vger.kernel.org,
-        Venkatraman S <svenkatr@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Sourav Poddar <sourav.poddar@ti.com>,
-        Chris Ball <cjb@laptop.org>, Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, Per Forlin <per.forlin@linaro.org>
-Subject: [PATCH v2 2/3] mmc: core: add random fault injection
-Date: Tue, 19 Jul 2011 23:31:45 +0200
-Message-Id: <1311111106-26814-3-git-send-email-per.forlin@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1311111106-26814-1-git-send-email-per.forlin@linaro.org>
-References: <1311111106-26814-1-git-send-email-per.forlin@linaro.org>
+	Tue, 19 Jul 2011 17:39:15 -0400
+To: Jan Engelhardt <jengelh@medozas.de>
+Cc: Rainer Weikusat <rweikusat@mobileactivedefense.com>,
+        David Miller <davem@davemloft.net>, adobriyan@gmail.com,
+        kaber@trash.net, netfilter-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] netfilter: add per-namespace logging to nfnetlink_log.c
+In-Reply-To: <alpine.LNX.2.01.1107182218170.9579@frira.zrqbmnf.qr> (Jan Engelhardt's message of "Mon\, 18 Jul 2011 22\:28\:25 +0200 \(CEST\)")
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+References: <8739i3fp6s.fsf@sapphire.mobileactivedefense.com>
+	<20110718191956.GA2489@p183.telecom.by>
+	<87hb6je5nh.fsf@sapphire.mobileactivedefense.com>
+	<20110718.124638.30010338187296272.davem@davemloft.net>
+	<87d3h7e43n.fsf@sapphire.mobileactivedefense.com>
+	<alpine.LNX.2.01.1107182218170.9579@frira.zrqbmnf.qr>
+From: Rainer Weikusat <rweikusat@mobileactivedefense.com>
+Date: Tue, 19 Jul 2011 22:38:57 +0100
+Message-ID: <878vruymq6.fsf@sapphire.mobileactivedefense.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds support to inject data errors after a completed host transfer.
-The mmc core will return error even though the host transfer is successful.
-This simple fault injection proved to be very useful to test the
-non-blocking error handling in the mmc_blk_issue_rw_rq().
-Random faults can also test how the host driver handles pre_req()
-and post_req() in case of errors.
+Jan Engelhardt <jengelh@medozas.de> writes:
+> On Monday 2011-07-18 22:17, Rainer Weikusat wrote:
+>>David Miller <davem@davemloft.net> writes:
+>>>
+>>>> [rw@sapphire]~/work/linux-2-6/net/netfilter $find -name '*.c' | xargs grep '^#ifdef' | wc -l
+>>>> 239
+>>>
+>>> You've shown nothing.  Showing exceptions does not prove that the
+>>> general effort has been to keep ifdef crap out of *.c files.
+>>
+>>I've 'shown' that the networking code contains a fair amount of
+>>#ifdefs in .c files. Consequently, 'we did it without' is wrong. At
+>>best, 'we would like to do without in future' seems justified.
+>
+> Your count of ifdefs is just telling that we use ifdef, not how we
+> use it.
+>
+> There is a difference between #ifdefs sprinkled inside a function,
+> and #ifdefs around functions or larger groups where possible,
+> feasible and optically preferable (cf. security.h, xt_TEE.c).
 
-Signed-off-by: Per Forlin <per.forlin@linaro.org>
----
- drivers/mmc/core/core.c    |   58 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/mmc/core/debugfs.c |    5 ++++
- include/linux/mmc/host.h   |    3 ++
- lib/Kconfig.debug          |   11 ++++++++
- 4 files changed, 77 insertions(+), 0 deletions(-)
+Counting this one-by-one results in
 
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index ab36c7b..3f822b4 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -23,6 +23,8 @@
- #include <linux/log2.h>
- #include <linux/regulator/consumer.h>
- #include <linux/pm_runtime.h>
-+#include <linux/fault-inject.h>
-+#include <linux/random.h>
- 
- #include <linux/mmc/card.h>
- #include <linux/mmc/host.h>
-@@ -82,6 +84,58 @@ static void mmc_flush_scheduled_work(void)
- 	flush_workqueue(workqueue);
- }
- 
-+#ifdef CONFIG_FAIL_MMC_REQUEST
-+
-+static DECLARE_FAULT_ATTR(fail_mmc_request);
-+
-+static int __init setup_fail_mmc_request(char *str)
-+{
-+	return setup_fault_attr(&fail_mmc_request, str);
-+}
-+__setup("fail_mmc_request=", setup_fail_mmc_request);
-+
-+static void mmc_should_fail_request(struct mmc_host *host,
-+				    struct mmc_request *mrq)
-+{
-+	struct mmc_command *cmd = mrq->cmd;
-+	struct mmc_data *data = mrq->data;
-+	static const int data_errors[] = {
-+		-ETIMEDOUT,
-+		-EILSEQ,
-+		-EIO,
-+	};
-+
-+	if (!data)
-+		return;
-+
-+	if (cmd->error || data->error || !host->make_it_fail ||
-+	    !should_fail(&fail_mmc_request, data->blksz * data->blocks))
-+		return;
-+
-+	data->error = data_errors[random32() % ARRAY_SIZE(data_errors)];
-+	data->bytes_xfered = (random32() % (data->bytes_xfered >> 9)) << 9;
-+}
-+
-+static int __init fail_mmc_request_debugfs(void)
-+{
-+	return init_fault_attr_dentries(&fail_mmc_request,
-+					"fail_mmc_request");
-+}
-+
-+#else /* CONFIG_FAIL_MMC_REQUEST */
-+
-+static void mmc_should_fail_request(struct mmc_host *host,
-+				    struct mmc_request *mrq)
-+{
-+}
-+
-+static int __init fail_mmc_request_debugfs(void)
-+{
-+	return 0;
-+}
-+#endif /* CONFIG_FAIL_MMC_REQUEST */
-+
-+
- /**
-  *	mmc_request_done - finish processing an MMC request
-  *	@host: MMC host which completed request
-@@ -108,6 +162,8 @@ void mmc_request_done(struct mmc_host *host, struct mmc_request *mrq)
- 		cmd->error = 0;
- 		host->ops->request(host, mrq);
- 	} else {
-+		mmc_should_fail_request(host, mrq);
-+
- 		led_trigger_event(host->led, LED_OFF);
- 
- 		pr_debug("%s: req done (CMD%u): %d: %08x %08x %08x %08x\n",
-@@ -2064,6 +2120,8 @@ static int __init mmc_init(void)
- 	if (ret)
- 		goto unregister_host_class;
- 
-+	fail_mmc_request_debugfs();
-+
- 	return 0;
- 
- unregister_host_class:
-diff --git a/drivers/mmc/core/debugfs.c b/drivers/mmc/core/debugfs.c
-index 998797e..588e76f 100644
---- a/drivers/mmc/core/debugfs.c
-+++ b/drivers/mmc/core/debugfs.c
-@@ -188,6 +188,11 @@ void mmc_add_host_debugfs(struct mmc_host *host)
- 				root, &host->clk_delay))
- 		goto err_node;
- #endif
-+#ifdef CONFIG_FAIL_MMC_REQUEST
-+	if (!debugfs_create_u8("make-it-fail", S_IRUSR | S_IWUSR,
-+			       root, &host->make_it_fail))
-+		goto err_node;
-+#endif
- 	return;
- 
- err_node:
-diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
-index 771455f..250b46d 100644
---- a/include/linux/mmc/host.h
-+++ b/include/linux/mmc/host.h
-@@ -303,6 +303,9 @@ struct mmc_host {
- 
- 	struct mmc_async_req	*areq;		/* active async req */
- 
-+#ifdef CONFIG_FAIL_MMC_REQUEST
-+	u8			make_it_fail;
-+#endif
- 	unsigned long		private[0] ____cacheline_aligned;
- };
- 
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index c768bcd..c2d1423 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -1057,6 +1057,17 @@ config FAIL_IO_TIMEOUT
- 	  Only works with drivers that use the generic timeout handling,
- 	  for others it wont do anything.
- 
-+config FAIL_MMC_REQUEST
-+	bool "Fault-injection capability for MMC IO"
-+	select DEBUG_FS
-+	depends on FAULT_INJECTION && MMC
-+	help
-+	  Provide fault-injection capability for MMC IO.
-+	  This will make the mmc core return data errors. This is
-+	  useful to test the error handling in the mmc block device
-+	  and to test how the mmc host driver handles retries from
-+	  the block device.
-+
- config FAULT_INJECTION_DEBUG_FS
- 	bool "Debugfs entries for fault-injection capabilities"
- 	depends on FAULT_INJECTION && SYSFS && DEBUG_FS
--- 
-1.7.4.1
+	1.An #ifdef block in order to include the namespace headers
+          conditionally. This could essentially just be dumped without
+          any effects except a minor increase in compilation time.
 
+	2.Two of them in order to conditionally include
+          a single, namespace-specific pointer in the two structures.
+          This is not 'sprinkled across functions' but inside a
+          declaration which happens to be in a .c file. Could be
+          omitted at the cost of including two otherwise useless
+          pointers in the two structures when compiling w/o netns
+          support.
+
+	3.A 'large functional group' which conditionally compiles
+          either the 'dummy' access functions that all reduce to
+          using the static logging instances table the same way it is
+          used in the existing code or the more complicated ones that
+          actually go via a struct net in order to locate the
+          per-namespace logging instance table. In this case, the
+          possible cost for someoe who doesn't want to use the network
+          namespace is a call to an not entirely trivial function per
+          logged packet plus two additional pointer dereferences per
+          batch of logged packets forwarded to a userspace
+          application.
+
+	4.A conditional pointer assignment in instance_create. That's
+          not going to help much in either case and could just be
+          dumped alongside the conditionally included pointers.
+
+	5.A conditionally compiled function body for
+          instances_for_seq. Could be moved into the 'larger group'
+          mentioned in 3.
+
+	6.Another 'larger group' which contains the namespace-specific
+	  initialization/ finalization code and the corresponding
+	  structure definition. Could be dumped completely by
+	  exploiting the 'non-namespace' register_pernet_ interface.
+
+	7.Two blocks of conditional additions to the module
+	  initialization/ finalization routines. Both routines already
+	  contain conditionally compiled code blocks (for proc
+	  support). Apart from that, same as 6.
+
+My opinion on that would be that 1), 6) and 7) should be removed and
+that 2) and 4) are essentially cosmetic and thus, should be removed,
+too. 5) should just be unified with 3) (meaning, treated identically
+to it. 3), however, is different since this would impose an
+essentially unbound additional cost on someone who doesn't want to use
+network namespaces (roughly proportional to the number packets
+logged). And this doesn't seem particularly fair to me (if someone
+doesn't want to use network namespace, he shouldn't be paying for the
+people who do want to use them).
+
+It is, however, possible to change the instances_via_skb function to
+something which gcc (at least 4.4.5) can correctly identify as no-op
+for the 'no network namespace' case and to change the remaining code
+such that only the 'lookup instances by going through a struct net'
+inline routine is still conditionally compiled (either doing a
+net_generic call or returning the value of a file scope pointer
+variable). This means that the compiled code is roughly identical to
+the one produced by the patch I originally posted while the set of
+source code changes has become (relatively) significantly smaller and less
+'variable'. I did this over the course of the day, mainly because I
+was curious if it could be done and the result works with the
+2.6.36.4-derived kernel used on 'our' appliances. A patch for nf-2.6
+current/ 3.0-rc? also exists but I haven't gotten around to actually
+testing that today. Provided that also works (which I expect), I will
+post an updated change tomorrow.
