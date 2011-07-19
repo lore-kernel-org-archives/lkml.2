@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752035Ab1GSD6S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 23:58:18 -0400
-Received: from sand.ocn.ne.jp ([122.28.30.136]:55587 "EHLO smtp.sand.ocn.ne.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751583Ab1GSD6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 23:58:17 -0400
-X-Greylist: delayed 1653 seconds by postgrey-1.27 at vger.kernel.org; Mon, 18 Jul 2011 23:58:16 EDT
-From: Jon Povey <jon.povey@racelogic.co.uk>
-To: davinci-linux-open-source@linux.davincidsp.com,
-        linux-arm-kernel@lists.infradead.org, Sekhar Nori <nsekhar@ti.com>
-Cc: linux-kernel@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
-        Jon Povey <jon.povey@racelogic.co.uk>
-Subject: [PATCH] davinci: fix DM365 EVM video input mux bits
-Date: Tue, 19 Jul 2011 12:30:11 +0900
-Message-Id: <1311046211-2849-1-git-send-email-jon.povey@racelogic.co.uk>
-X-Mailer: git-send-email 1.6.3.3
+	id S1751442Ab1GSEH0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 00:07:26 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:36798 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751032Ab1GSEHY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 00:07:24 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Al8DAC8AJU55LCkBgWdsb2JhbABTp0kVAQEWJiXNZw6FT18EmxKIPw
+Date: Tue, 19 Jul 2011 14:07:21 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        xfs@oss.sgi.com
+Subject: Re: [PATCH 0/2] splice: i_mutex vs splice write deadlock
+Message-ID: <20110719040721.GE31294@dastard>
+References: <1310961884-11634-1-git-send-email-david@fromorbit.com>
+ <20110719031003.GA18166@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110719031003.GA18166@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Video input mux settings for tvp7002 and imager inputs were swapped.
-Comment was correct.
+On Mon, Jul 18, 2011 at 11:10:03PM -0400, Christoph Hellwig wrote:
+> I don't really like this very much.  Not taking the i_mutex at all
+> makes the splice_write method in XFS use different locking than
+> everyone else, and different from the normal XFS write path.
+> 
+> For example ocfs2 which has the same locking issues just has an
+> own implementation of the splice_write method, which isn't
+> too nice but at least marginally better.  I think the right
+> fix for both xfs and ocfs2 would be to have a generic_file_splice_write
+> variant that takes an "actor" function pointer, which defaults to
+> a smaller wrapper around file_remove_suid, file_update_time and
+> splice_from_pipe_feed, and then XFS and ocfs2 can provide their
+> own actors that add the additional locking.
 
-Tested on EVM with tvp7002 input.
+Yeah I thought about doing that, but wanted to try a simpler version
+first. I'll code up the actor variant.
 
-Signed-off-by: Jon Povey <jon.povey@racelogic.co.uk>
----
-As a bugfix maybe this should try to get into 3.0?
+Cheers,
 
- arch/arm/mach-davinci/board-dm365-evm.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm/mach-davinci/board-dm365-evm.c b/arch/arm/mach-davinci/board-dm365-evm.c
-index c67f684..09a87e6 100644
---- a/arch/arm/mach-davinci/board-dm365-evm.c
-+++ b/arch/arm/mach-davinci/board-dm365-evm.c
-@@ -520,7 +520,7 @@ fail:
- 	 */
- 	if (have_imager()) {
- 		label = "HD imager";
--		mux |= 1;
-+		mux |= 2;
- 
- 		/* externally mux MMC1/ENET/AIC33 to imager */
- 		mux |= BIT(6) | BIT(5) | BIT(3);
-@@ -540,7 +540,7 @@ fail:
- 		resets &= ~BIT(1);
- 
- 		if (have_tvp7002()) {
--			mux |= 2;
-+			mux |= 1;
- 			resets &= ~BIT(2);
- 			label = "tvp7002 HD";
- 		} else {
+Dave.
 -- 
-1.6.3.3
-
+Dave Chinner
+david@fromorbit.com
