@@ -1,48 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703Ab1GSJBd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 05:01:33 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40714 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751394Ab1GSJBc (ORCPT
+	id S1752720Ab1GSJCx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 05:02:53 -0400
+Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:57063 "EHLO
+	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752387Ab1GSJCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 05:01:32 -0400
-Date: Tue, 19 Jul 2011 17:00:14 +0800
-From: wangyanqing <udknight@gmail.com>
-To: gregkh@suse.de
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH]drivers:net:Kconfig
-Message-ID: <20110719090014.GA5455@udknight>
+	Tue, 19 Jul 2011 05:02:52 -0400
+Message-ID: <4E254067.1060408@st.com>
+Date: Tue, 19 Jul 2011 13:59:27 +0530
+From: viresh kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Koul, Vinod" <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Shiraz HASHIM <shiraz.hashim@st.com>,
+        Armando VISCONTI <armando.visconti@st.com>
+Subject: [Query]: What should we do in txd->tx_submit() and device_issue_pending()
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Broadcom Tigon3 driver tg3.ko can't work without the Broadcom PHY,
- so maybe we should add a dependence on it.Or at least we should add
- notice in the help txt.
+Hi Dan/Vinod,
 
-Signed-off-by: wang yanqing <udknight@gmail.com>
----
- drivers/net/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+I have one query regarding implementation of few routines in DMA drivers.
 
-diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
-index 93359fa..c2607cd 100644
---- a/drivers/net/Kconfig
-+++ b/drivers/net/Kconfig
-@@ -2353,7 +2353,7 @@ config VIA_VELOCITY
- 
- config TIGON3
- 	tristate "Broadcom Tigon3 support"
--	depends on PCI
-+	depends on PCI && BROADCOM_PHY
- 	select PHYLIB
- 	help
- 	  This driver supports Broadcom Tigon3 based gigabit Ethernet cards.
+What the exact purpose of txd->tx_submit() and device_issue_pending() routines?
+
+Should tx_submit() always start physical transfer (Obviously, if channel is free)?
+Or should it just queue requests and then finally a call to device_issue_pending()
+must start physical transfers?
+
 -- 
-1.7.3.4
-
+viresh
