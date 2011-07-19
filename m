@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752096Ab1GSEwb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 00:52:31 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:42268 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750974Ab1GSEw3 (ORCPT
+	id S1751737Ab1GSFOw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 01:14:52 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:52712 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751146Ab1GSFOv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 00:52:29 -0400
-Message-ID: <4E250E28.2020108@gmail.com>
-Date: Tue, 19 Jul 2011 12:55:04 +0800
+	Tue, 19 Jul 2011 01:14:51 -0400
+Message-ID: <4E251365.9090004@gmail.com>
+Date: Tue, 19 Jul 2011 13:17:25 +0800
 From: Shan Hai <haishan.bai@gmail.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
@@ -56,17 +56,20 @@ On 07/19/2011 12:29 PM, Benjamin Herrenschmidt wrote:
 > but let us know anyway.
 >
 
-Ok, I will test the patch, I think this should work, because
-it's similar to my first posted patch, the difference is that
-I tried to do it in the futex_atomic_cmpxchg_inatomic() in
-the ppc specific path, lower level than yours as in
-fault_in_user_writable :-)
-
-Anyway, I will notify you on the test result.
+The patch works, but I have certain confusions,
+- Do we want to handle_mm_fault on each futex_lock_pi
+     even though in most cases there is no write permission
+     fixup's needed?
+- How about let the archs do their own write permission
+     fixup as what I did in my original
+     "[PATCH 1/1] Fixup write permission of TLB on powerpc e500 core"?
+     (I will fix the stupid errors in my original patch if the concept 
+is acceptable)
+     in this way we could decrease the overhead of handle_mm_fault
+     in the path which does not need write permission fixup.
 
 Thanks
 Shan Hai
-
 > Cheers,
 > Ben.
 >
