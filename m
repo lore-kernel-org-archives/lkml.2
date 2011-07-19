@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751442Ab1GSEH0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 00:07:26 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:36798 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751032Ab1GSEHY (ORCPT
+	id S1751351Ab1GSEQD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 00:16:03 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:45472 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750788Ab1GSEQB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 00:07:24 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Al8DAC8AJU55LCkBgWdsb2JhbABTp0kVAQEWJiXNZw6FT18EmxKIPw
-Date: Tue, 19 Jul 2011 14:07:21 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        xfs@oss.sgi.com
-Subject: Re: [PATCH 0/2] splice: i_mutex vs splice write deadlock
-Message-ID: <20110719040721.GE31294@dastard>
-References: <1310961884-11634-1-git-send-email-david@fromorbit.com>
- <20110719031003.GA18166@infradead.org>
+	Tue, 19 Jul 2011 00:16:01 -0400
+Message-ID: <4E2504FD.6090107@dsn.okisemi.com>
+Date: Tue, 19 Jul 2011 13:15:57 +0900
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110719031003.GA18166@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+CC: Alexander Stein <alexander.stein@systec-electronic.com>,
+        "toshiharu-linux@dsn.okisemi.com" <toshiharu-linux@dsn.okisemi.com>,
+        "Ewe, Kok Howg" <kok.howg.ewe@intel.com>,
+        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
+        "Clark, Joel" <joel.clark@intel.com>
+Subject: serial/pch_uart: AT command behavior
+References: <1308736219-19975-1-git-send-email-alexander.stein@systec-electronic.com> <4E02857C.1010304@dsn.okisemi.com>
+In-Reply-To: <4E02857C.1010304@dsn.okisemi.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 18, 2011 at 11:10:03PM -0400, Christoph Hellwig wrote:
-> I don't really like this very much.  Not taking the i_mutex at all
-> makes the splice_write method in XFS use different locking than
-> everyone else, and different from the normal XFS write path.
-> 
-> For example ocfs2 which has the same locking issues just has an
-> own implementation of the splice_write method, which isn't
-> too nice but at least marginally better.  I think the right
-> fix for both xfs and ocfs2 would be to have a generic_file_splice_write
-> variant that takes an "actor" function pointer, which defaults to
-> a smaller wrapper around file_remove_suid, file_update_time and
-> splice_from_pipe_feed, and then XFS and ocfs2 can provide their
-> own actors that add the additional locking.
+Hi,
 
-Yeah I thought about doing that, but wanted to try a simpler version
-first. I'll code up the actor variant.
+I have a question for UART driver AT command behavior.
+When installing pch_uart, AT command "AT+GCAP^M" are sent for 4 times.
+This command is sent first install only.
+(After the above, removing pch_uart and installing pch_uart again,
+this command is not sent.)
 
-Cheers,
+Let me know the behavior is normal or not ?
 
-Dave.
+Thanks,
 -- 
-Dave Chinner
-david@fromorbit.com
+tomoya
+OKI SEMICONDUCTOR CO., LTD.
