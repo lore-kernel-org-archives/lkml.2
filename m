@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751043Ab1GSNRc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 09:17:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43000 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750745Ab1GSNRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 09:17:31 -0400
-From: Marcus Meissner <meissner@novell.com>
-To: avi@redhat.com, mtosatti@redhat.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, kvm@vger.kernel.org,
+	id S1750993Ab1GSNWB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 09:22:01 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:46725 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750829Ab1GSNWA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 09:22:00 -0400
+Date: Tue, 19 Jul 2011 15:21:58 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Andi Kleen <andi@firstfloor.org>, Prarit Bhargava <prarit@redhat.com>,
         linux-kernel@vger.kernel.org
-Cc: Marcus Meissner <meissner@novell.com>, Marcus Meissner <meissner@suse.de>
-Subject: [PATCH] kvm: Initialize all struct members to avoid stack information leak
-Date: Tue, 19 Jul 2011 15:17:18 +0200
-Message-Id: <1311081438-1731-1-git-send-email-meissner@novell.com>
-X-Mailer: git-send-email 1.7.6
+Subject: Re: [PATCH 01/34] System Firmware Interface
+Message-ID: <20110719132157.GG8006@one.firstfloor.org>
+References: <1310994528-26276-1-git-send-email-prarit@redhat.com> <1310994528-26276-2-git-send-email-prarit@redhat.com> <m2vcuz3xsz.fsf@firstfloor.org> <20110719100544.55c7f7fb@lxorguk.ukuu.org.uk>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110719100544.55c7f7fb@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Jul 19, 2011 at 10:05:44AM +0100, Alan Cox wrote:
+> > Could you expand somewhat WHY you want this. What is wrong with the
+> > current code?
+> 
+> See the previous discussions
 
-Reported to us by Stephan Mueller of atsec.
+Ok I will put that now as description into all my code submissions @)
 
-Several .pad struct members are not set to something, so they
-will leak stack content back to user space.
+Seriously, that REALLY belongs into a patch description.
 
-Ciao, Marcus
+> 
+> > As for user space access on x86 "dmidecode"/libdmi works for nearly everyone,
+> > doesn't it?
+> 
+> "on x86" (and on PC only generally)
+> 
+> There are three core problems
+> 
+> 1.	DMI in this sense is basically an x86 PC class device hack
+> 2.	It is obsoleted and at some point it'll vanish even on PC
 
-Reported-by: Stephan Mueller <smueller@atsec.com>
-Signed-off-by: Marcus Meissner <meissner@suse.de>
----
- arch/x86/kvm/x86.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Huh? What obsoleted it? 
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 77c9d86..621ffb6 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -3002,6 +3002,7 @@ long kvm_arch_vcpu_ioctl(struct file *filp,
- 	case KVM_GET_VCPU_EVENTS: {
- 		struct kvm_vcpu_events events;
- 
-+		memset(&events, 0, sizeof(events));
- 		kvm_vcpu_ioctl_x86_get_vcpu_events(vcpu, &events);
- 
- 		r = -EFAULT;
+> 3.	Every other platform without DMI would benefit from the
+> 	interface being generic
+
+Can you expand on that? The information will be always system
+specific anyways. Do you really think there's that much commonality?
+
+
+-Andi
 -- 
-1.7.6
-
+ak@linux.intel.com -- Speaking for myself only.
