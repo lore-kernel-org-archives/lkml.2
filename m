@@ -1,197 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752221Ab1GSGRG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 02:17:06 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:63390 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752138Ab1GSGRD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 02:17:03 -0400
+	id S1752186Ab1GSGUh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 02:20:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20982 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751828Ab1GSGUg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 02:20:36 -0400
+Message-ID: <4E25221F.6060605@redhat.com>
+Date: Tue, 19 Jul 2011 14:20:15 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc14 Thunderbird/3.1.11
 MIME-Version: 1.0
-In-Reply-To: <1309539333-2606-12-git-send-email-per.forlin@linaro.org>
-References: <1309539333-2606-1-git-send-email-per.forlin@linaro.org>
-	<1309539333-2606-12-git-send-email-per.forlin@linaro.org>
-Date: Tue, 19 Jul 2011 08:17:02 +0200
-Message-ID: <CAJ0pr19Ktx_R8Zmr=rDivhc5A__N7OwoSj3ehitX_pS_xmooSA@mail.gmail.com>
-Subject: Re: [PATCH v9 11/12] mmc: core: add random fault injection
-From: Per Forlin <per.forlin@linaro.org>
-To: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, Venkatraman S <svenkatr@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Sourav Poddar <sourav.poddar@ti.com>,
-        Chris Ball <cjb@laptop.org>
-Cc: Per Forlin <per.forlin@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Mel Gorman <mgorman@suse.de>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Andi Kleen <andi@firstfloor.org>, linux-mm@kvack.org
+Subject: Re: [Patch] mm: make CONFIG_NUMA depend on CONFIG_SYSFS
+References: <1310987909-3129-1-git-send-email-amwang@redhat.com> <20110718135243.GA5349@suse.de>
+In-Reply-To: <20110718135243.GA5349@suse.de>
+Content-Type: multipart/mixed;
+ boundary="------------080008090106070507020000"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch prevents mmc core to be built as a module if mmc fault
-injection is selected.
+This is a multi-part message in MIME format.
+--------------080008090106070507020000
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 
-Changes needed to resolve this:
- * remove fault inject module from core.c
- * export should_fail() and init_fault_attr_dentries() in fault-injection.c
- * update documentation fault-injection.txt
+äºŽ 2011å¹´07æœˆ18æ—¥ 21:52, Mel Gorman å†™é“:
+> On Mon, Jul 18, 2011 at 07:18:29PM +0800, Amerigo Wang wrote:
+>> On ppc, we got this build error with randconfig:
+>>
+>> drivers/built-in.o:(.toc1+0xf90): undefined reference to `vmstat_text': 1 errors in 1 logs
+>>
+>> This is due to that it enabled CONFIG_NUMA but not CONFIG_SYSFS.
+>>
+>> And the user-space tool numactl depends on sysfs files too.
+>> So, I think it is very reasonable to make CONFIG_NUMA depend on CONFIG_SYSFS.
+>>
+>
+> That looks a bit awful. There is no obvious connection between SYSFS
+> and NUMA. One is exporting information to userspace and the other is
+> the memory model. Without sysfs, NUMA support might be less useful
+> but the memory policies should still work and set_mempolicy() should
+> still be an option.
+>
+> You didn't post where the buggy reference to vmstat_text but I'm
+> assuming it is in drivers/base/node.c . It would be preferable that
+> it be fixed to not reference vmstat_text unless either CONFIG_PROC_FS
+> or CONFIG_SYSFS is defined similar to what is in mm/vmstat.c .
+>
 
-On 1 July 2011 18:55, Per Forlin <per.forlin@linaro.org> wrote:
-> This simple fault injection proved to be very useful to
-> test the error handling in the block.c rw_rq(). It may
-> still be useful to test if the host driver handle
-> pre_req() and post_req() correctly in case of errors.
->
-> Signed-off-by: Per Forlin <per.forlin@linaro.org>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> Reviewed-by: Venkatraman S <svenkatr@ti.com>
-> Tested-by: Sourav Poddar<sourav.poddar@ti.com>
-> Tested-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
->  drivers/mmc/core/core.c    |   54 ++++++++++++++++++++++++++++++++++++++++++++
->  drivers/mmc/core/debugfs.c |    5 ++++
->  include/linux/mmc/host.h   |    3 ++
->  lib/Kconfig.debug          |   11 +++++++++
->  4 files changed, 73 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-> index d2d7239..62a8cc7 100644
-> --- a/drivers/mmc/core/core.c
-> +++ b/drivers/mmc/core/core.c
-> @@ -23,6 +23,8 @@
->  #include <linux/log2.h>
->  #include <linux/regulator/consumer.h>
->  #include <linux/pm_runtime.h>
-> +#include <linux/fault-inject.h>
-> +#include <linux/random.h>
->
->  #include <linux/mmc/card.h>
->  #include <linux/mmc/host.h>
-> @@ -82,6 +84,56 @@ static void mmc_flush_scheduled_work(void)
->        flush_workqueue(workqueue);
->  }
->
-> +#ifdef CONFIG_FAIL_MMC_REQUEST
-> +
-> +static DECLARE_FAULT_ATTR(fail_mmc_request);
-> +
-> +static int __init setup_fail_mmc_request(char *str)
-> +{
-> +       return setup_fault_attr(&fail_mmc_request, str);
-> +}
-> +__setup("fail_mmc_request=", setup_fail_mmc_request);
-> +
-> +static void mmc_should_fail_request(struct mmc_host *host,
-> +                                   struct mmc_request *mrq)
-> +{
-> +       struct mmc_command *cmd = mrq->cmd;
-> +       struct mmc_data *data = mrq->data;
-> +       static const int data_errors[] = {
-> +               -ETIMEDOUT,
-> +               -EILSEQ,
-> +               -EIO,
-> +       };
-> +
-> +       if (!data)
-> +               return;
-> +
-> +       if (cmd->error || data->error || !host->make_it_fail ||
-> +           !should_fail(&fail_mmc_request, data->blksz * data->blocks))
-> +               return;
-> +
-> +       data->error = data_errors[random32() % ARRAY_SIZE(data_errors)];
-> +       data->bytes_xfered = (random32() % (data->bytes_xfered >> 9)) << 9;
-> +}
-> +
-> +static int __init fail_mmc_request_debugfs(void)
-> +{
-> +       return init_fault_attr_dentries(&fail_mmc_request,
-> +                                       "fail_mmc_request");
-> +}
-> +
-> +late_initcall(fail_mmc_request_debugfs);
-This line prevents mmc core to be built as a module, since there will
-be two init_module (the mmc core one and this one) for the same
-module.
+Hmm, since we don't have to enable SYSFS for NUMA, how about
+make a new Kconfig for drivers/base/node.c? I.e., CONFIG_NUMA_SYSFS,
+like patch below.
 
-> +
-> +#else /* CONFIG_FAIL_MMC_REQUEST */
-> +
-> +static void mmc_should_fail_request(struct mmc_host *host,
-> +                                   struct mmc_request *mrq)
-> +{
-> +}
-> +
-+static int __init fail_mmc_request_debugfs(void)
-+{
-+}
-Add fail_mmc_request_debugfs here and call it from mmc_init()
+Thanks.
 
-> +#endif /* CONFIG_FAIL_MMC_REQUEST */
-> +
-> +
->  /**
->  *     mmc_request_done - finish processing an MMC request
->  *     @host: MMC host which completed request
-> @@ -108,6 +160,8 @@ void mmc_request_done(struct mmc_host *host, struct mmc_request *mrq)
->                cmd->error = 0;
->                host->ops->request(host, mrq);
->        } else {
-> +               mmc_should_fail_request(host, mrq);
-> +
->                led_trigger_event(host->led, LED_OFF);
->
->                pr_debug("%s: req done (CMD%u): %d: %08x %08x %08x %08x\n",
-> diff --git a/drivers/mmc/core/debugfs.c b/drivers/mmc/core/debugfs.c
-> index 998797e..588e76f 100644
-> --- a/drivers/mmc/core/debugfs.c
-> +++ b/drivers/mmc/core/debugfs.c
-> @@ -188,6 +188,11 @@ void mmc_add_host_debugfs(struct mmc_host *host)
->                                root, &host->clk_delay))
->                goto err_node;
->  #endif
-> +#ifdef CONFIG_FAIL_MMC_REQUEST
-> +       if (!debugfs_create_u8("make-it-fail", S_IRUSR | S_IWUSR,
-> +                              root, &host->make_it_fail))
-> +               goto err_node;
-> +#endif
->        return;
->
->  err_node:
-> diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
-> index 59db6f2..0d0a48f 100644
-> --- a/include/linux/mmc/host.h
-> +++ b/include/linux/mmc/host.h
-> @@ -301,6 +301,9 @@ struct mmc_host {
->
->        struct mmc_async_req    *areq;          /* active async req */
->
-> +#ifdef CONFIG_FAIL_MMC_REQUEST
-> +       u8                      make_it_fail;
-> +#endif
->        unsigned long           private[0] ____cacheline_aligned;
->  };
->
-> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-> index c768bcd..330fc70 100644
-> --- a/lib/Kconfig.debug
-> +++ b/lib/Kconfig.debug
-> @@ -1057,6 +1057,17 @@ config FAIL_IO_TIMEOUT
->          Only works with drivers that use the generic timeout handling,
->          for others it wont do anything.
->
-> +config FAIL_MMC_REQUEST
-> +       bool "Fault-injection capability for MMC IO"
-> +       select DEBUG_FS
-> +       depends on FAULT_INJECTION
-depends on FAULT_INJECTION && MMC
+--------------080008090106070507020000
+Content-Type: text/plain;
+ name="numa-depends-on-sysfs.diff"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="numa-depends-on-sysfs.diff"
 
-> +       help
-> +         Provide fault-injection capability for MMC IO.
-> +         This will make the mmc core return data errors. This is
-> +         useful for testing the error handling in the mmc block device
-> +         and how the mmc host driver handle retries from
-> +         the block device.
-and test how the mmc host driver handle retries from
+SW50cm9kdWNlIGEgbmV3IEtjb25maWcgQ09ORklHX05VTUFfU1lTRlMgZm9yIGRyaXZlcnMv
+YmFzZS9ub2RlLmMKd2hpY2gganVzdCBwcm92aWRlcyBzeXNmcyBpbnRlcmZhY2UsIHNvIHRo
+YXQgd2hlbiB3ZSBzZWxlY3QKQ09ORklHX05VTUEsIHdlIGRvbid0IGhhdmUgdG8gZW5hYmxl
+IHRoZSBzeXNmcyBpbnRlcmZhY2UgdG9vLgoKVGhpcyBieSB0aGUgd2F5IGZpeGVzIGEgcmFu
+ZGNvbmZpZyBidWlsZCBlcnJvciB3aGVuIE5VTUEgJiYgIVNZU0ZTLgoKU2lnbmVkLW9mZi1i
+eTogV0FORyBDb25nIDxhbXdhbmdAcmVkaGF0LmNvbT4KCi0tLQpkaWZmIC0tZ2l0IGEvZHJp
+dmVycy9iYXNlL01ha2VmaWxlIGIvZHJpdmVycy9iYXNlL01ha2VmaWxlCmluZGV4IDRjNTcw
+MWMuLmYzNGFiZTYgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvYmFzZS9NYWtlZmlsZQorKysgYi9k
+cml2ZXJzL2Jhc2UvTWFrZWZpbGUKQEAgLTEwLDcgKzEwLDcgQEAgb2JqLSQoQ09ORklHX0hB
+U19ETUEpCSs9IGRtYS1tYXBwaW5nLm8KIG9iai0kKENPTkZJR19IQVZFX0dFTkVSSUNfRE1B
+X0NPSEVSRU5UKSArPSBkbWEtY29oZXJlbnQubwogb2JqLSQoQ09ORklHX0lTQSkJKz0gaXNh
+Lm8KIG9iai0kKENPTkZJR19GV19MT0FERVIpCSs9IGZpcm13YXJlX2NsYXNzLm8KLW9iai0k
+KENPTkZJR19OVU1BKQkrPSBub2RlLm8KK29iai0kKENPTkZJR19OVU1BX1NZU0ZTKQkrPSBu
+b2RlLm8KIG9iai0kKENPTkZJR19NRU1PUllfSE9UUExVR19TUEFSU0UpICs9IG1lbW9yeS5v
+CiBvYmotJChDT05GSUdfU01QKQkrPSB0b3BvbG9neS5vCiBvYmotJChDT05GSUdfSU9NTVVf
+QVBJKSArPSBpb21tdS5vCmRpZmYgLS1naXQgYS9tbS9LY29uZmlnIGIvbW0vS2NvbmZpZwpp
+bmRleCA4Y2E0N2E1Li5mODlhYjE5IDEwMDY0NAotLS0gYS9tbS9LY29uZmlnCisrKyBiL21t
+L0tjb25maWcKQEAgLTM0MCw2ICszNDAsMTYgQEAgY2hvaWNlCiAJICBiZW5lZml0LgogZW5k
+Y2hvaWNlCiAKK2NvbmZpZyBOVU1BX1NZU0ZTCisJYm9vbCAiRW5hYmxlIE5VTUEgc3lzZnMg
+aW50ZXJmYWNlIGZvciB1c2VyLXNwYWNlIgorCWRlcGVuZHMgb24gTlVNQQorCWRlcGVuZHMg
+b24gU1lTRlMKKwlkZWZhdWx0IHkKKwloZWxwCisJICBUaGlzIGVuYWJsZXMgTlVNQSBzeXNm
+cyBpbnRlcmZhY2UsIC9zeXMvZGV2aWNlcy9zeXN0ZW0vbm9kZS8sCisJICBmb3IgdXNlci1z
+cGFjZSB0b29scywgbGlrZSBudW1hY3RsLiBJZiB5b3UgaGF2ZSBlbmFibGVkIE5VTUEsCisJ
+ICBwcm9iYWJseSB5b3UgYWxzbyBuZWVkIHRoaXMgb25lLgorCiAjCiAjIFVQIGFuZCBub21t
+dSBhcmNocyB1c2Uga20gYmFzZWQgcGVyY3B1IGFsbG9jYXRvcgogIwo=
+--------------080008090106070507020000--
