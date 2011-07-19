@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995Ab1GSPYn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 11:24:43 -0400
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:51808 "EHLO
+	id S1751962Ab1GSPYm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 11:24:42 -0400
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:51809 "EHLO
 	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751764Ab1GSPX6 (ORCPT
+	with ESMTP id S1751767Ab1GSPX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 19 Jul 2011 11:23:58 -0400
 From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
 To: rafael.carre@savoirfairelinux.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/5] mtd: move support for TS-5500 MTD
-Date: Tue, 19 Jul 2011 11:16:21 -0400
-Message-Id: <1311088581-17337-6-git-send-email-vivien.didelot@savoirfairelinux.com>
+Subject: [PATCH 1/5] x86: base support for TS-5500 Single Board Computer
+Date: Tue, 19 Jul 2011 11:16:17 -0400
+Message-Id: <1311088581-17337-2-git-send-email-vivien.didelot@savoirfairelinux.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1311088581-17337-1-git-send-email-vivien.didelot@savoirfairelinux.com>
 References: <1311088581-17337-1-git-send-email-vivien.didelot@savoirfairelinux.com>
@@ -19,385 +19,439 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves the existing driver for the TS-5500 Flash from
-drivers/mtd/maps/ts5500_flash.c to arch/x86/platform/ts5500/, to regroup every
-TS-5500 drivers under the same platform directory.
+Add base support for TS-5500 in arch/x86/platform/ts5500 and documentation in
+Documentation/ABI/testing/sysfs-platform-ts5500.
 
 Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
 ---
- MAINTAINERS                             |    1 +
- arch/x86/platform/ts5500/Kconfig        |   20 +++++
- arch/x86/platform/ts5500/Makefile       |    1 +
- arch/x86/platform/ts5500/ts5500.c       |    5 ++
- arch/x86/platform/ts5500/ts5500_flash.c |  118 ++++++++++++++++++++++++++++++
- drivers/mtd/maps/Kconfig                |   18 -----
- drivers/mtd/maps/Makefile               |    1 -
- drivers/mtd/maps/ts5500_flash.c         |  121 -------------------------------
- 8 files changed, 145 insertions(+), 140 deletions(-)
- create mode 100644 arch/x86/platform/ts5500/ts5500_flash.c
- delete mode 100644 drivers/mtd/maps/ts5500_flash.c
+ Documentation/ABI/testing/sysfs-platform-ts5500 |   46 ++++
+ MAINTAINERS                                     |    7 +
+ arch/x86/Kconfig                                |    2 +
+ arch/x86/platform/Makefile                      |    1 +
+ arch/x86/platform/ts5500/Kconfig                |    7 +
+ arch/x86/platform/ts5500/Makefile               |    1 +
+ arch/x86/platform/ts5500/ts5500.c               |  296 +++++++++++++++++++++++
+ 7 files changed, 360 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-platform-ts5500
+ create mode 100644 arch/x86/platform/ts5500/Kconfig
+ create mode 100644 arch/x86/platform/ts5500/Makefile
+ create mode 100644 arch/x86/platform/ts5500/ts5500.c
 
+diff --git a/Documentation/ABI/testing/sysfs-platform-ts5500 b/Documentation/ABI/testing/sysfs-platform-ts5500
+new file mode 100644
+index 0000000..c870564
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-platform-ts5500
+@@ -0,0 +1,46 @@
++What:		/sys/devices/platform/ts5500/id
++Date:		July 2011
++KernelVersion:	2.6.39
++Contact:	"Savoir-faire Linux, Inc." <kernel-ts@savoirfairelinux.com>
++Description:
++		Product ID of the TS board. TS-5500 ID is 0x60.
++
++What:		/sys/devices/platform/ts5500/sram
++Date:		July 2011
++KernelVersion:	2.6.39
++Contact:	"Savoir-faire Linux, Inc." <kernel-ts@savoirfairelinux.com>
++Description:
++		Say if the SRAM feature is present. If it is enabled, it will
++		display "1", otherwise "0".
++
++What:		/sys/devices/platform/ts5500/ereset
++Date:		July 2011
++KernelVersion:	2.6.39
++Contact:	"Savoir-faire Linux, Inc." <kernel-ts@savoirfairelinux.com>
++Description:
++		Say if an external reset is present. If it is present, it will
++		display "1", otherwise "0".
++
++What:		/sys/devices/platform/ts5500/jp{1,2,3,4,5,6}
++Date:		July 2011
++KernelVersion:	2.6.39
++Contact:	"Savoir-faire Linux, Inc." <kernel-ts@savoirfairelinux.com>
++Description:
++		Show the state of a plugged jumper. If it is present, it will
++		display "1", otherwise "0".
++
++What:		/sys/devices/platform/ts5500/adc
++Date:		July 2011
++KernelVersion:	2.6.39
++Contact:	"Savoir-faire Linux, Inc." <kernel-ts@savoirfairelinux.com>
++Description:
++		Say if the Analogic to Digital Converter is present. If it is
++		enabled, it will display "1", otherwise "0".
++
++What:		/sys/devices/platform/ts5500/rs485
++Date:		July 2011
++KernelVersion:	2.6.39
++Contact:	"Savoir-faire Linux, Inc." <kernel-ts@savoirfairelinux.com>
++Description:
++		Say if the RS485 feature is present. If it is enabled, it
++		will display "1", otherwise "0".
+\ No newline at end of file
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 967f5cc..5789eca 100644
+index 187282d..be8ce4b 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -6145,6 +6145,7 @@ F:  arch/x86/platform/ts5500/ts5500_gpio.h
- F:  arch/x86/platform/ts5500/ts5500_leds.c
- F:  arch/x86/platform/ts5500/ts5500_adc.c
- F:  arch/x86/platform/ts5500/ts5500_adc.h
-+F:  arch/x86/platform/ts5500/ts5500_flash.c
+@@ -6134,6 +6134,13 @@ W:	http://tcp-lp-mod.sourceforge.net/
+ S:	Maintained
+ F:	net/ipv4/tcp_lp.c
  
++TECHNOLOGIC SYSTEMS TS5500 MACHINE SUPPORT
++M:	Savoir-faire Linux Inc. <ts-kernel@savoirfairelinux.com>
++S:	Maintained
++F:  arch/x86/platform/ts5500/Kconfig
++F:  arch/x86/platform/ts5500/Makefile
++F:  arch/x86/platform/ts5500/ts5500.c
++
  TEGRA SUPPORT
  M:	Colin Cross <ccross@android.com>
+ M:	Erik Gilling <konkers@android.com>
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index da34972..cd4bf1a 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -2079,6 +2079,8 @@ config OLPC_XO1
+ 	---help---
+ 	  Add support for non-essential features of the OLPC XO-1 laptop.
+ 
++source "arch/x86/platform/ts5500/Kconfig"
++
+ endif # X86_32
+ 
+ config AMD_NB
+diff --git a/arch/x86/platform/Makefile b/arch/x86/platform/Makefile
+index 021eee9..1bdc038 100644
+--- a/arch/x86/platform/Makefile
++++ b/arch/x86/platform/Makefile
+@@ -8,3 +8,4 @@ obj-y	+= scx200/
+ obj-y	+= sfi/
+ obj-y	+= visws/
+ obj-y	+= uv/
++obj-y	+= ts5500/
 diff --git a/arch/x86/platform/ts5500/Kconfig b/arch/x86/platform/ts5500/Kconfig
-index f38c8b6..b7e4cd0 100644
---- a/arch/x86/platform/ts5500/Kconfig
-+++ b/arch/x86/platform/ts5500/Kconfig
-@@ -6,6 +6,26 @@ config TS5500
- 
- 	  If you have a TS-5500, say Y here.
- 
-+config TS5500_MTD
-+	tristate "JEDEC Flash device mapped on TS-5500"
-+	depends on TS5500 && MTD
-+	select MTD_PARTITIONS
-+	select MTD_JEDECPROBE
-+	select MTD_CFI_AMDSTD
-+	select CONFIG_RFD_FTL
-+	help
-+	  This provides a driver for the on-board flash of the Technologic
-+	  System's TS-5500 board. The 2MB flash is split into 3 partitions
-+	  which are accessed as separate MTD devices.
-+
-+	  mtd0 and mtd2 are the two BIOS drives, which use the resident
-+	  flash disk (RFD) flash translation layer.
-+
-+	  mtd1 allows you to reprogram your BIOS. BE VERY CAREFUL.
-+
-+	  Note that jumper 3 ("Write Enable Drive A") must be set
-+	  otherwise detection won't succeed.
-+
- config TS5500_GPIO
- 	bool "TS-5500 GPIO support"
- 	depends on TS5500
-diff --git a/arch/x86/platform/ts5500/Makefile b/arch/x86/platform/ts5500/Makefile
-index 79b8d10..249f0de 100644
---- a/arch/x86/platform/ts5500/Makefile
-+++ b/arch/x86/platform/ts5500/Makefile
-@@ -2,3 +2,4 @@ obj-$(CONFIG_TS5500)			+= ts5500.o
- obj-$(CONFIG_TS5500_GPIO)		+= ts5500_gpio.o
- obj-$(CONFIG_TS5500_LEDS)		+= ts5500_leds.o
- obj-$(CONFIG_TS5500_ADC)		+= ts5500_adc.o
-+obj-$(CONFIG_TS5500_MTD)		+= ts5500_flash.o
-\ No newline at end of file
-diff --git a/arch/x86/platform/ts5500/ts5500.c b/arch/x86/platform/ts5500/ts5500.c
-index d0c496a..960066ae 100644
---- a/arch/x86/platform/ts5500/ts5500.c
-+++ b/arch/x86/platform/ts5500/ts5500.c
-@@ -417,6 +417,11 @@ static int __init ts5500_init(void)
- 	if (ret)
- 		goto release_pdev;
- 
-+
-+#ifdef CONFIG_TS5500_MTD
-+	if (!TS5500_IS_JP_SET(ts5500, 3))
-+		pr_warn("Jumper 3 is not set, Flash drive A is read-only.");
-+#endif
- 	return 0;
- 
- release_pdev:
-diff --git a/arch/x86/platform/ts5500/ts5500_flash.c b/arch/x86/platform/ts5500/ts5500_flash.c
 new file mode 100644
-index 0000000..3472e77
+index 0000000..6428ca5
 --- /dev/null
-+++ b/arch/x86/platform/ts5500/ts5500_flash.c
-@@ -0,0 +1,118 @@
++++ b/arch/x86/platform/ts5500/Kconfig
+@@ -0,0 +1,7 @@
++config TS5500
++	bool "Technologic Systems TS-5500 Single Board Computer support"
++	depends on MELAN
++	help
++	  Add support for the Technologic Systems TS-5500 platform features.
++
++	  If you have a TS-5500, say Y here.
+diff --git a/arch/x86/platform/ts5500/Makefile b/arch/x86/platform/ts5500/Makefile
+new file mode 100644
+index 0000000..0a689a7
+--- /dev/null
++++ b/arch/x86/platform/ts5500/Makefile
+@@ -0,0 +1 @@
++obj-$(CONFIG_TS5500)			+= ts5500.o
+diff --git a/arch/x86/platform/ts5500/ts5500.c b/arch/x86/platform/ts5500/ts5500.c
+new file mode 100644
+index 0000000..0135dbd
+--- /dev/null
++++ b/arch/x86/platform/ts5500/ts5500.c
+@@ -0,0 +1,296 @@
 +/*
-+ * ts5500_flash.c -- MTD map driver for Technology Systems TS-5500 board
++ * Technologic Systems TS-5500 board - SBC info layer
 + *
-+ * Copyright (C) 2004 Sean Young <sean@mess.org>
++ * Copyright (c) 2010-2011 Savoir-faire Linux Inc.
++ *	Alexandre Savard <alexandre.savard@savoirfairelinux.com>
++ *	Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>
++ *	Vivien Didelot <vivien.didelot@savoirfairelinux.com>
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
++ * Portions originate from ts_sbcinfo.c (c) Technologic Systems
++ *	Liberty Young <liberty@embeddedx86.com>
 + *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
++ * These functions add sysfs platform entries to display information about
++ * the Technologic Systems TS-5500 Single Board Computer (SBC).
 + *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
-+ *
-+ * Note:
-+ * - In order for detection to work, jumper 3 must be set.
-+ * - Drive A and B use the resident flash disk (RFD) flash translation layer.
-+ * - If you have created your own jffs file system and the bios overwrites
-+ *   it during boot, try disabling Drive A: and B: in the boot order.
++ * For further information about sysfs entries, see
++ * Documentation/ABI/testing/sysfs-platform-ts5500
 + */
 +
-+#include <linux/init.h>
 +#include <linux/module.h>
++#include <linux/ioport.h>
++#include <linux/platform_device.h>
 +#include <linux/kernel.h>
-+#include <linux/mtd/map.h>
-+#include <linux/mtd/mtd.h>
-+#include <linux/mtd/partitions.h>
-+#include <linux/types.h>
++#include <linux/mutex.h>
++#include <linux/io.h>
++#include <linux/slab.h>
++#include <asm/processor.h>
 +
-+#define WINDOW_ADDR	0x09400000
-+#define WINDOW_SIZE	0x00200000
++/* Hardware info for pre-detection */
++#define AMD_ELAN_FAMILY			4
++#define AMD_ELAN_SC520			9
 +
-+static struct map_info ts5500_map = {
-+	.name = "TS-5500 Flash",
-+	.size = WINDOW_SIZE,
-+	.bankwidth = 1,
-+	.phys = WINDOW_ADDR
++/* Product code register */
++#define TS5500_PRODUCT_CODE_REG		0x74
++#define TS5500_PRODUCT_CODE		0x60	/* TS-5500 product code */
++
++/* SRAM/RS-485/ADC options, and RS-485 RTS/Automatic RS-485 flags register */
++#define TS5500_SRAM_RS485_ADC_REG	0x75
++#define TS5500_SRAM_OPT			0x01	/* SRAM option */
++#define TS5500_RS485_OPT		0x02	/* RS-485 option */
++#define TS5500_ADC_OPT			0x04	/* A/D converter option */
++#define TS5500_RS485_RTS_FLAG		0x40	/* RTS for RS-485 */
++#define TS5500_RS485_AUTO_FLAG		0x80	/* Automatic RS-485 */
++
++/* External Reset/Industrial Temperature Range options register */
++#define TS5500_ERESET_ITR_REG		0x76
++#define TS5500_ERESET_OPT		0x01	/*  External Reset option */
++#define TS5500_ITR_OPT			0x02	/* Indust. Temp. Range option */
++
++/* LED/Jumpers register */
++#define TS5500_LED_JMPRS_REG		0x77
++#define TS5500_LED_FLAG			0x01	/* LED flag */
++#define TS5500_JP1			0x02	/* Automatic CMOS */
++#define TS5500_JP2			0x04	/* Enable Serial Console */
++#define TS5500_JP3			0x08	/* Write Enable Drive A */
++#define TS5500_JP4			0x10	/* Fast Console (115K baud) */
++#define TS5500_JP5			0x20	/* User Jumper */
++#define TS5500_JP6			0x40	/* Console on COM1 (req. JP2) */
++#define TS5500_JP7			0x80	/* Undocumented (Unused) */
++
++/**
++ * struct ts5500_sbc - TS-5500 SBC main structure
++ * @lock:		Read/Write mutex.
++ * @board_id:		Board name.
++ * @sram:		Check SRAM option.
++ * @rs485:		Check RS-485 option.
++ * @adc:		Check Analogic/Digital converter option.
++ * @ereset:		Check External Reset option.
++ * @itr:		Check Industrial Temperature Range option.
++ * @jumpers:		States of jumpers 1-7.
++ */
++struct ts5500_sbc {
++	struct mutex		lock;
++	int			board_id;
++	bool			sram;
++	bool			rs485;
++	bool			adc;
++	bool			ereset;
++	bool			itr;
++	u8			jumpers;
 +};
 +
-+static struct mtd_partition ts5500_partitions[] = {
-+	{
-+		.name = "Drive A",
-+		.offset = 0,
-+		.size = 0x0e0000
-+	},
-+	{
-+		.name = "BIOS",
-+		.offset = 0x0e0000,
-+		.size = 0x020000,
-+	},
-+	{
-+		.name = "Drive B",
-+		.offset = 0x100000,
-+		.size = 0x100000
-+	}
-+};
++/* Current platform */
++struct ts5500_sbc *ts5500;
 +
-+#define NUM_PARTITIONS ARRAY_SIZE(ts5500_partitions)
-+
-+static struct mtd_info *mymtd;
-+
-+static int __init init_ts5500_map(void)
++/**
++ * ts5500_pre_detect() - check for TS-5500 specific features
++ *
++ * It is not safe to read ID register if we are not sure that it's a TS SBC.
++ * Since TS SBCs don't have DMI support, it is safer to check for a TS-5500
++ * specific feature such as the processor.
++ */
++static int ts5500_pre_detect(void)
 +{
-+	int rc = 0;
++	/* Check for AMD ElanSC520 Microcontroller */
++	if (!(cpu_info.x86_vendor == X86_VENDOR_AMD &&
++	      cpu_info.x86 == AMD_ELAN_FAMILY &&
++	      cpu_info.x86_model == AMD_ELAN_SC520))
++		return -ENODEV;
 +
-+	ts5500_map.virt = ioremap_nocache(ts5500_map.phys, ts5500_map.size);
++	return 0;
++}
 +
-+	if (!ts5500_map.virt) {
-+		printk(KERN_ERR "Failed to ioremap_nocache\n");
-+		rc = -EIO;
-+		goto err2;
++/**
++ * ts5500_detect_config() - detect the TS board
++ * @sbc:		Structure where to store the detected board's details.
++ */
++static int ts5500_detect_config(struct ts5500_sbc *sbc)
++{
++	u8 tmp;
++	int ret = 0;
++
++	if (!request_region(TS5500_PRODUCT_CODE_REG, 4, "ts5500"))
++		return -EBUSY;
++
++	mutex_lock(&ts5500->lock);
++	tmp = inb(TS5500_PRODUCT_CODE_REG);
++	if (tmp != TS5500_PRODUCT_CODE) {
++		pr_err("This platform is not a TS-5500 (found ID 0x%x)\n", tmp);
++		ret = -ENODEV;
++		goto error;
++	}
++	sbc->board_id = tmp;
++
++	tmp = inb(TS5500_SRAM_RS485_ADC_REG);
++	ts5500->sram = !!(tmp & TS5500_SRAM_OPT);
++	ts5500->rs485 = !!(tmp & TS5500_RS485_OPT);
++	ts5500->adc = !!(tmp & TS5500_ADC_OPT);
++
++	tmp = inb(TS5500_ERESET_ITR_REG);
++	ts5500->ereset = !!(tmp & TS5500_ERESET_OPT);
++	ts5500->itr = !!(tmp & TS5500_ITR_OPT);
++
++	tmp = inb(TS5500_LED_JMPRS_REG);
++	sbc->jumpers = tmp & 0xFE;	/* All bits except the first (LED) */
++
++error:
++	mutex_unlock(&ts5500->lock);
++	release_region(TS5500_PRODUCT_CODE_REG, 4);
++	return ret;
++}
++
++#define TS5500_IS_JP_SET(sbc, jmp) (!!(sbc->jumpers & TS5500_JP##jmp))
++
++static struct platform_device *ts5500_devices[] __initdata = {
++};
++
++static ssize_t ts5500_show_id(struct device *dev,
++			      struct device_attribute *attr, char *buf)
++{
++	struct ts5500_sbc *sbc = dev_get_drvdata(dev);
++
++	return sprintf(buf, "0x%x\n", sbc->board_id);
++}
++
++static ssize_t ts5500_show_sram(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	struct ts5500_sbc *sbc = dev_get_drvdata(dev);
++
++	return sprintf(buf, "%d\n", sbc->sram);
++}
++
++static ssize_t ts5500_show_rs485(struct device *dev,
++				 struct device_attribute *attr, char *buf)
++{
++	struct ts5500_sbc *sbc = dev_get_drvdata(dev);
++
++	return sprintf(buf, "%d\n", sbc->rs485);
++}
++
++static ssize_t ts5500_show_adc(struct device *dev,
++			       struct device_attribute *attr, char *buf)
++{
++	struct ts5500_sbc *sbc = dev_get_drvdata(dev);
++
++	return sprintf(buf, "%d\n", sbc->adc);
++}
++
++static ssize_t ts5500_show_ereset(struct device *dev,
++					  struct device_attribute *attr,
++					  char *buf)
++{
++	struct ts5500_sbc *sbc = dev_get_drvdata(dev);
++
++	return sprintf(buf, "%d\n", sbc->ereset);
++}
++
++static ssize_t ts5500_show_itr(struct device *dev,
++			       struct device_attribute *attr,
++			       char *buf)
++{
++	struct ts5500_sbc *sbc = dev_get_drvdata(dev);
++
++	return sprintf(buf, "%d\n", sbc->itr);
++}
++
++#define TS5500_SHOW_JP(jp)						\
++	static ssize_t ts5500_show_jp##jp(struct device *dev,		\
++					  struct device_attribute *attr,\
++					  char *buf)			\
++	{								\
++		struct ts5500_sbc *sbc = dev_get_drvdata(dev);		\
++		return sprintf(buf, "%d\n", TS5500_IS_JP_SET(sbc, jp)); \
 +	}
 +
-+	simple_map_init(&ts5500_map);
++TS5500_SHOW_JP(1)
++TS5500_SHOW_JP(2)
++TS5500_SHOW_JP(3)
++TS5500_SHOW_JP(4)
++TS5500_SHOW_JP(5)
++TS5500_SHOW_JP(6)
 +
-+	mymtd = do_map_probe("jedec_probe", &ts5500_map);
-+	if (!mymtd)
-+		mymtd = do_map_probe("map_rom", &ts5500_map);
++static DEVICE_ATTR(id, S_IRUGO, ts5500_show_id, NULL);
++static DEVICE_ATTR(sram, S_IRUGO, ts5500_show_sram, NULL);
++static DEVICE_ATTR(rs485, S_IRUGO, ts5500_show_rs485, NULL);
++static DEVICE_ATTR(adc, S_IRUGO, ts5500_show_adc, NULL);
++static DEVICE_ATTR(ereset, S_IRUGO, ts5500_show_ereset, NULL);
++static DEVICE_ATTR(itr, S_IRUGO, ts5500_show_itr, NULL);
++static DEVICE_ATTR(jp1, S_IRUGO, ts5500_show_jp1, NULL);
++static DEVICE_ATTR(jp2, S_IRUGO, ts5500_show_jp2, NULL);
++static DEVICE_ATTR(jp3, S_IRUGO, ts5500_show_jp3, NULL);
++static DEVICE_ATTR(jp4, S_IRUGO, ts5500_show_jp4, NULL);
++static DEVICE_ATTR(jp5, S_IRUGO, ts5500_show_jp5, NULL);
++static DEVICE_ATTR(jp6, S_IRUGO, ts5500_show_jp6, NULL);
 +
-+	if (!mymtd) {
-+		rc = -ENXIO;
-+		goto err1;
++static struct attribute *ts5500_attributes[] = {
++	&dev_attr_id.attr,
++	&dev_attr_sram.attr,
++	&dev_attr_rs485.attr,
++	&dev_attr_adc.attr,
++	&dev_attr_ereset.attr,
++	&dev_attr_itr.attr,
++	&dev_attr_jp1.attr,
++	&dev_attr_jp2.attr,
++	&dev_attr_jp3.attr,
++	&dev_attr_jp4.attr,
++	&dev_attr_jp5.attr,
++	&dev_attr_jp6.attr,
++	NULL
++};
++
++static const struct attribute_group ts5500_attr_group = {
++	.attrs = ts5500_attributes
++};
++
++static int __init ts5500_init(void)
++{
++	int ret;
++	struct platform_device *pdev;
++
++	/* Firstly, check specific TS-5500 hardware, such as CPU. */
++	ret = ts5500_pre_detect();
++	if (ret)
++		return ret;
++
++	ts5500 = kzalloc(sizeof(struct ts5500_sbc), GFP_KERNEL);
++	if (!ts5500)
++		return -ENOMEM;
++	mutex_init(&ts5500->lock);
++
++	ret = ts5500_detect_config(ts5500);
++	if (ret)
++		goto release_mem;
++
++	pdev = platform_device_register_simple("ts5500", -1, NULL, 0);
++	if (IS_ERR(pdev)) {
++		ret = PTR_ERR(pdev);
++		goto release_mem;
 +	}
++	platform_set_drvdata(pdev, ts5500);
 +
-+	mymtd->owner = THIS_MODULE;
-+	mtd_device_register(mymtd, ts5500_partitions, NUM_PARTITIONS);
++	ret = platform_add_devices(ts5500_devices, ARRAY_SIZE(ts5500_devices));
++	if (ret)
++		goto release_pdev;
++
++	ret = sysfs_create_group(&pdev->dev.kobj,
++				 &ts5500_attr_group);
++	if (ret)
++		goto release_pdev;
 +
 +	return 0;
 +
-+err1:
-+	iounmap(ts5500_map.virt);
-+err2:
-+	return rc;
++release_pdev:
++	platform_device_unregister(pdev);
++release_mem:
++	kfree(ts5500);
++
++	return ret;
 +}
-+module_init(init_ts5500_map);
++postcore_initcall(ts5500_init);
 +
-+static void __exit cleanup_ts5500_map(void)
-+{
-+	if (mymtd) {
-+		mtd_device_unregister(mymtd);
-+		map_destroy(mymtd);
-+	}
-+
-+	if (ts5500_map.virt) {
-+		iounmap(ts5500_map.virt);
-+		ts5500_map.virt = NULL;
-+	}
-+}
-+module_exit(cleanup_ts5500_map);
-+
++MODULE_AUTHOR("Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>");
++MODULE_AUTHOR("Alexandre Savard <alexandre.savard@savoirfairelinux.com>");
++MODULE_AUTHOR("Vivien Didelot <vivien.didelot@savoirfairelinux.com>");
++MODULE_DESCRIPTION("Technologic Systems TS-5500 Board's platform driver");
 +MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Sean Young <sean@mess.org>");
-+MODULE_DESCRIPTION("MTD map driver for Techology Systems TS-5500 board");
-diff --git a/drivers/mtd/maps/Kconfig b/drivers/mtd/maps/Kconfig
-index c0c328c..41cb511 100644
---- a/drivers/mtd/maps/Kconfig
-+++ b/drivers/mtd/maps/Kconfig
-@@ -127,24 +127,6 @@ config MTD_NETSC520
- 	  demonstration board. If you have one of these boards and would like
- 	  to use the flash chips on it, say 'Y'.
- 
--config MTD_TS5500
--	tristate "JEDEC Flash device mapped on Technologic Systems TS-5500"
--	depends on X86
--	select MTD_JEDECPROBE
--	select MTD_CFI_AMDSTD
--	help
--	  This provides a driver for the on-board flash of the Technologic
--	  System's TS-5500 board. The 2MB flash is split into 3 partitions
--	  which are accessed as separate MTD devices.
--
--	  mtd0 and mtd2 are the two BIOS drives, which use the resident
--	  flash disk (RFD) flash translation layer.
--
--	  mtd1 allows you to reprogram your BIOS. BE VERY CAREFUL.
--
--	  Note that jumper 3 ("Write Enable Drive A") must be set
--	  otherwise detection won't succeed.
--
- config MTD_SBC_GXX
- 	tristate "CFI Flash device mapped on Arcom SBC-GXx boards"
- 	depends on X86 && MTD_CFI_INTELEXT && MTD_COMPLEX_MAPPINGS
-diff --git a/drivers/mtd/maps/Makefile b/drivers/mtd/maps/Makefile
-index cb48b11..f999fa3 100644
---- a/drivers/mtd/maps/Makefile
-+++ b/drivers/mtd/maps/Makefile
-@@ -32,7 +32,6 @@ obj-$(CONFIG_MTD_SA1100)	+= sa1100-flash.o
- obj-$(CONFIG_MTD_SBC_GXX)	+= sbc_gxx.o
- obj-$(CONFIG_MTD_SC520CDP)	+= sc520cdp.o
- obj-$(CONFIG_MTD_NETSC520)	+= netsc520.o
--obj-$(CONFIG_MTD_TS5500)	+= ts5500_flash.o
- obj-$(CONFIG_MTD_SUN_UFLASH)	+= sun_uflash.o
- obj-$(CONFIG_MTD_VMAX)		+= vmax301.o
- obj-$(CONFIG_MTD_SCx200_DOCFLASH)+= scx200_docflash.o
-diff --git a/drivers/mtd/maps/ts5500_flash.c b/drivers/mtd/maps/ts5500_flash.c
-deleted file mode 100644
-index d1d671d..0000000
---- a/drivers/mtd/maps/ts5500_flash.c
-+++ /dev/null
-@@ -1,121 +0,0 @@
--/*
-- * ts5500_flash.c -- MTD map driver for Technology Systems TS-5500 board
-- *
-- * Copyright (C) 2004 Sean Young <sean@mess.org>
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License as published by
-- * the Free Software Foundation; either version 2 of the License, or
-- * (at your option) any later version.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
-- *
-- * Note:
-- * - In order for detection to work, jumper 3 must be set.
-- * - Drive A and B use the resident flash disk (RFD) flash translation layer.
-- * - If you have created your own jffs file system and the bios overwrites
-- *   it during boot, try disabling Drive A: and B: in the boot order.
-- */
--
--#include <linux/init.h>
--#include <linux/module.h>
--#include <linux/kernel.h>
--#include <linux/mtd/map.h>
--#include <linux/mtd/mtd.h>
--#include <linux/mtd/partitions.h>
--#include <linux/types.h>
--
--
--#define WINDOW_ADDR	0x09400000
--#define WINDOW_SIZE	0x00200000
--
--static struct map_info ts5500_map = {
--	.name = "TS-5500 Flash",
--	.size = WINDOW_SIZE,
--	.bankwidth = 1,
--	.phys = WINDOW_ADDR
--};
--
--static struct mtd_partition ts5500_partitions[] = {
--	{
--		.name = "Drive A",
--		.offset = 0,
--		.size = 0x0e0000
--	},
--	{
--		.name = "BIOS",
--		.offset = 0x0e0000,
--		.size = 0x020000,
--	},
--	{
--		.name = "Drive B",
--		.offset = 0x100000,
--		.size = 0x100000
--	}
--};
--
--#define NUM_PARTITIONS ARRAY_SIZE(ts5500_partitions)
--
--static struct mtd_info *mymtd;
--
--static int __init init_ts5500_map(void)
--{
--	int rc = 0;
--
--	ts5500_map.virt = ioremap_nocache(ts5500_map.phys, ts5500_map.size);
--
--	if (!ts5500_map.virt) {
--		printk(KERN_ERR "Failed to ioremap_nocache\n");
--		rc = -EIO;
--		goto err2;
--	}
--
--	simple_map_init(&ts5500_map);
--
--	mymtd = do_map_probe("jedec_probe", &ts5500_map);
--	if (!mymtd)
--		mymtd = do_map_probe("map_rom", &ts5500_map);
--
--	if (!mymtd) {
--		rc = -ENXIO;
--		goto err1;
--	}
--
--	mymtd->owner = THIS_MODULE;
--	mtd_device_register(mymtd, ts5500_partitions, NUM_PARTITIONS);
--
--	return 0;
--
--err1:
--	iounmap(ts5500_map.virt);
--err2:
--	return rc;
--}
--
--static void __exit cleanup_ts5500_map(void)
--{
--	if (mymtd) {
--		mtd_device_unregister(mymtd);
--		map_destroy(mymtd);
--	}
--
--	if (ts5500_map.virt) {
--		iounmap(ts5500_map.virt);
--		ts5500_map.virt = NULL;
--	}
--}
--
--module_init(init_ts5500_map);
--module_exit(cleanup_ts5500_map);
--
--MODULE_LICENSE("GPL");
--MODULE_AUTHOR("Sean Young <sean@mess.org>");
--MODULE_DESCRIPTION("MTD map driver for Techology Systems TS-5500 board");
--
 -- 
 1.7.6
 
