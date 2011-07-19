@@ -1,119 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751630Ab1GSQvy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 12:51:54 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:49166
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751092Ab1GSQvw (ORCPT
+	id S1751733Ab1GSQwG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 12:52:06 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:49966 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751668Ab1GSQwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 12:51:52 -0400
-Date: Tue, 19 Jul 2011 12:51:49 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Christoph Hellwig <hch@infradead.org>, Curt Wohlgemuth <curtw@google.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, fengguang.wu@intel.com
-Subject: Re: [PATCH] writeback: Don't wait for completion in
- writeback_inodes_sb_nr
-Message-ID: <20110719165149.GA11540@infradead.org>
-References: <20110629175534.GA32236@infradead.org>
- <20110629191518.GA23196@quack.suse.cz>
- <BANLkTinndb4oHi6kNQrTsL86UrKDB=2rK6-gA8FM1Nj8CKYZ+w@mail.gmail.com>
- <20110711170042.GE5482@quack.suse.cz>
- <CAO81RMairX_L5qGOcKKpw7gWdcTd2Y+5NL=+BA9EwTCNLCNmLw@mail.gmail.com>
- <20110711194835.GI5482@quack.suse.cz>
- <20110711201157.GA21460@infradead.org>
- <20110712103453.GC31226@quack.suse.cz>
- <20110712104132.GA14189@infradead.org>
- <20110712223715.GC13656@quack.suse.cz>
+	Tue, 19 Jul 2011 12:52:04 -0400
+Date: Wed, 20 Jul 2011 01:51:55 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "mgorman@suse.de" <mgorman@suse.de>, linux-mm <linux-mm@kvack.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH]vmscan: fix a livelock in kswapd
+Message-ID: <20110719165155.GB2978@barrios-desktop>
+References: <1311059367.15392.299.camel@sli10-conroe>
+ <CAEwNFnB6HKJ3j9cWzyb2e3BS2BQrE66F6eT02C4cozRC9YQ7kw@mail.gmail.com>
+ <1311065584.15392.300.camel@sli10-conroe>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110712223715.GC13656@quack.suse.cz>
+In-Reply-To: <1311065584.15392.300.camel@sli10-conroe>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 13, 2011 at 12:37:15AM +0200, Jan Kara wrote:
-> -static int __sync_filesystem(struct super_block *sb, int wait)
-> +static void __sync_filesystem(struct super_block *sb, int wait)
->  {
-> -	/*
-> -	 * This should be safe, as we require bdi backing to actually
-> -	 * write out data in the first place
-> -	 */
-> -	if (sb->s_bdi == &noop_backing_dev_info)
-> -		return 0;
-> -
->  	if (sb->s_qcop && sb->s_qcop->quota_sync)
->  		sb->s_qcop->quota_sync(sb, -1, wait);
->  
-> @@ -47,7 +40,6 @@ static int __sync_filesystem(struct super_block *sb, int wait)
->  
->  	if (sb->s_op->sync_fs)
->  		sb->s_op->sync_fs(sb, wait);
-> -	return __sync_blockdev(sb->s_bdev, wait);
+On Tue, Jul 19, 2011 at 04:53:04PM +0800, Shaohua Li wrote:
+> On Tue, 2011-07-19 at 16:45 +0800, Minchan Kim wrote:
+> > On Tue, Jul 19, 2011 at 4:09 PM, Shaohua Li <shaohua.li@intel.com> wrote:
+> > > I'm running a workload which triggers a lot of swap in a machine with 4 nodes.
+> > > After I kill the workload, I found a kswapd livelock. Sometimes kswapd3 or
+> > > kswapd2 are keeping running and I can't access filesystem, but most memory is
+> > > free. This looks like a regression since commit 08951e545918c159.
+> > 
+> > Could you tell me what is 08951e545918c159?
+> > You mean [ebd64e21ec5a,
+> > mm-vmscan-only-read-new_classzone_idx-from-pgdat-when-reclaiming-successfully]
+> > ?
+> ha, sorry, I should copy the commit title.
+> 08951e545918c159(mm: vmscan: correct check for kswapd sleeping in
+> sleeping_prematurely)
+> 
 
-Removing this call breaks sys_syncfs and similar semantics on filesystem
-just pushing metadata into buffers in ->write_inode or ->sync_fs and
-then expecting the caller to write them out.  This list of filesystem
-includes ext2 and in general most filesystems without journaling or
-similar technics.
+I don't mean it. In my bogus git tree, I can't find it but I can look at it in repaired git tree. :)
+Anyway, I have a comment. Please look at below.
 
-I'm perfectly fine with pushing the sync_blockdev call into the
-filesystem for these, but we'll need a way to handle them.
+On Tue, Jul 19, 2011 at 03:09:27PM +0800, Shaohua Li wrote:
+> I'm running a workload which triggers a lot of swap in a machine with 4 nodes.
+> After I kill the workload, I found a kswapd livelock. Sometimes kswapd3 or
+> kswapd2 are keeping running and I can't access filesystem, but most memory is
+> free. This looks like a regression since commit 08951e545918c159.
+> Node 2 and 3 have only ZONE_NORMAL, but balance_pgdat() will return 0 for
+> classzone_idx. The reason is end_zone in balance_pgdat() is 0 by default, if
+> all zones have watermark ok, end_zone will keep 0.
+> Later sleeping_prematurely() always returns true. Because this is an order 3
+> wakeup, and if classzone_idx is 0, both balanced_pages and present_pages
+> in pgdat_balanced() are 0.
 
-> +	/*
-> +	 * This should be safe, as we require bdi backing to actually
-> +	 * write out data in the first place.
-> +	 */
-> +	if (sb->s_bdi == &noop_backing_dev_info)
-> +		return 0;
+Sigh. Yes.
 
-There's really no reason to do that check early.  There's nothing
-no reason to not have a filesystem that doesn't use the writeback
-code, but still has a ->sync_fs method.  IMHO this check should
-move into sync_inodes_sb/writeback_inodes_sb.
+> We add a special case here. If a zone has no page, we think it's balanced. This
+> fixes the livelock.
 
-> +static void sync_all_bdevs(int wait)
-> +{
-> +	struct inode *inode, *old_inode = NULL;
-> +
-> +	spin_lock(&inode_sb_list_lock);
-> +	list_for_each_entry(inode, &blockdev_superblock->s_inodes, i_sb_list) {
-> +		struct address_space *mapping = inode->i_mapping;
-> +
-> +		spin_lock(&inode->i_lock);
-> +		if (inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW) ||
-> +		    mapping->nrpages == 0) {
-> +			spin_unlock(&inode->i_lock);
-> +			continue;
-> +		}
-> +		__iget(inode);
-> +		spin_unlock(&inode->i_lock);
-> +		spin_unlock(&inode_sb_list_lock);
-> +		/*
-> +		 * We hold a reference to 'inode' so it couldn't have been
-> +		 * removed from s_inodes list while we dropped the
-> +		 * inode_sb_list_lock.  We cannot iput the inode now as we can
-> +		 * be holding the last reference and we cannot iput it under
-> +		 * inode_sb_list_lock. So we keep the reference and iput it
-> +		 * later.
-> +		 */
-> +		iput(old_inode);
-> +		old_inode = inode;
-> +
-> +		__sync_blockdev(I_BDEV(inode), wait);
-> +
-> +		spin_lock(&inode_sb_list_lock);
-> +	}
-> +	spin_unlock(&inode_sb_list_lock);
-> +	iput(old_inode);
+Yes. Your patch can fix it but I don't like that it adds handling special case.
+(Although Andrew merged quickly).
 
-At which point we could fold this code into a blkdev_sync_fs method for
-now.  Long term we'll need to support multiple BDIs per SB anyway, at
-which point the code can go away again.
+The problem is to return 0-classzone_idx if all zones was okay.
+So how about this?
 
+This can change old behavior slightly.
+For example, if balance_pgdat calls with order-3 and all zones are okay about order-3,
+it will recheck order-0 as end_zone isn't 0 any more.
+But I think it's desriable side effect we have missed.
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 5ed24b9..cfef52b 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2389,7 +2389,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+        unsigned long balanced;
+        int priority;
+        int i;
+-       int end_zone = 0;       /* Inclusive.  0 = ZONE_DMA */
++       int end_zone = *classzone_idx;
+        unsigned long total_scanned;
+        struct reclaim_state *reclaim_state = current->reclaim_state;
+        unsigned long nr_soft_reclaimed;
+
+-- 
+Kinds regards,
+Minchan Kim
