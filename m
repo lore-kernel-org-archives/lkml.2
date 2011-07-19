@@ -1,213 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752120Ab1GSGCl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 02:02:41 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:55877 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751092Ab1GSGCk convert rfc822-to-8bit (ORCPT
+	id S1752149Ab1GSGHf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 02:07:35 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:53703 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751645Ab1GSGHe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 02:02:40 -0400
+	Tue, 19 Jul 2011 02:07:34 -0400
+Message-ID: <4E251F1F.2080406@gmail.com>
+Date: Tue, 19 Jul 2011 16:07:27 +1000
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Reply-To: myungjoo.ham@gmail.com
-In-Reply-To: <04a601cc4520$d2d97b40$788c71c0$%kim@samsung.com>
-References: <1309395085-22084-1-git-send-email-myungjoo.ham@samsung.com>
-	<1309395085-22084-2-git-send-email-myungjoo.ham@samsung.com>
-	<04a601cc4520$d2d97b40$788c71c0$%kim@samsung.com>
-Date: Tue, 19 Jul 2011 15:02:39 +0900
-X-Google-Sender-Auth: I_zN58mnlyyi4pCkKNc993I73T8
-Message-ID: <CAJ0PZbRsnO-W4P=3kZvcSn+st4p38ARjsE458TzSreHAche1gw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] ARM: EXYNOS4: Add more registers to be saved and
- restored for PM
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Jaecheol Lee <jc.lee@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Ravishankar <ravishankarkm32@gmail.com>
+CC: gregkh@suse.de, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>
+Subject: Re: [PATCH 1/2 v3] Staging: comedi: fix printk() issue in adv_pci1710.c
+References: <[PATCH]Staging: comedi: fix printk() issue in adv_pci1710.c> <1311054656-14207-1-git-send-email-ravishanakarkm32@gmail.com>
+In-Reply-To: <1311054656-14207-1-git-send-email-ravishanakarkm32@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 18, 2011 at 5:00 PM, Kukjin Kim <kgene.kim@samsung.com> wrote:
-> MyungJoo Ham wrote:
->>
->> We need more registers to be saved and restored for PM of Exynos4210.
->> Otherwise, with additional drivers running, suspend-to-RAM fails to wake
->> up properly. This patch adds registers omitted in the initial PM
->> patches.
->>
->> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->> ---
->>  arch/arm/mach-exynos4/pm.c |   77
->> +++++++++++++++++++++++++++++++++++++++++++-
->>  1 files changed, 76 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/arm/mach-exynos4/pm.c b/arch/arm/mach-exynos4/pm.c
->> index a103c13..24c9265 100644
->> --- a/arch/arm/mach-exynos4/pm.c
->> +++ b/arch/arm/mach-exynos4/pm.c
->> @@ -27,6 +27,8 @@
->>  #include <plat/cpu.h>
->>  #include <plat/pm.h>
->>  #include <plat/pll.h>
->> +#include <plat/regs-srom.h>
->> +#include <plat/regs-timer.h>
->>
->>  #include <mach/regs-irq.h>
->>  #include <mach/regs-gpio.h>
->> @@ -60,14 +62,20 @@ static struct sleep_save exynos4_vpll_save[] = {
->>
->>  static struct sleep_save exynos4_core_save[] = {
->>       /* CMU side */
->> +     SAVE_ITEM(S5P_CLKSRC_LEFTBUS),
+On 19/07/11 15:50, Ravishankar wrote:
+> From: Ravishankar<ravi.shankar@greenturtles.in>
 >
-> I think, the reset/default value(0x0, SCLKMPLL) has no problem.
+> This is a patch to the adv_pci1710.c file that fixes up a printk() warning found by the checkpatch.pl tool
 >
->> +     SAVE_ITEM(S5P_CLKOUT_CMU_LEFTBUS),
+> Signed-off-by: Ravishankar<ravishankarkm32@gmail.com>
+> ---
+> KERN_CONT issue is fixed
 >
-> This is for debugging? So I think no need this.
+>   drivers/staging/comedi/drivers/adv_pci1710.c |   20 ++++++++++----------
+>   1 files changed, 10 insertions(+), 10 deletions(-)
 >
->> +     SAVE_ITEM(S5P_CLKSRC_RIGHTBUS),
+> diff --git a/drivers/staging/comedi/drivers/adv_pci1710.c b/drivers/staging/comedi/drivers/adv_pci1710.c
+> index fd71cc6..093b9e6 100644
+> --- a/drivers/staging/comedi/drivers/adv_pci1710.c
+> +++ b/drivers/staging/comedi/drivers/adv_pci1710.c
+> @@ -1396,14 +1396,14 @@ static int pci1710_attach(struct comedi_device *dev,
+>   	int i;
+>   	int board_index;
 >
-> Same as 'CLKSRC_LEFTBUS'
+> -	printk("comedi%d: adv_pci1710: ", dev->minor);
+> +	printk(KERN_INFO "comedi%d: adv_pci1710: ", dev->minor);
 >
->> +     SAVE_ITEM(S5P_CLKOUT_CMU_RIGHTBUS),
+>   	opt_bus = it->options[0];
+>   	opt_slot = it->options[1];
 >
-> Same as 'CMU_LEFTBUS'
->
->> +     SAVE_ITEM(S5P_CLKOUT_CMU_TOP),
->
-> For debugging...
->
->> +     SAVE_ITEM(S5P_CLKOUT_CMU_DMC),
->
-> Same as above.
->
-> (snip)
->
->> +     SAVE_ITEM(S5P_APLL_LOCK),
->> +     SAVE_ITEM(S5P_MPLL_LOCK),
->> +     SAVE_ITEM(S5P_APLL_CON0),
->> +     SAVE_ITEM(S5P_APLL_CON1),
->> +     SAVE_ITEM(S5P_MPLL_CON0),
->> +     SAVE_ITEM(S5P_MPLL_CON1),
->
-> Basically, these value should be set in boot-loader after wake up.
->
-> (snip)
->
->> +     /* PMU */
->> +     SAVE_ITEM(S5P_HDMI_PHY_CONTROL),
->> +     SAVE_ITEM(S5P_USBOTG_PHY_CONTROL),
->> +     SAVE_ITEM(S5P_USBHOST_PHY_CONTROL),
->> +     SAVE_ITEM(S5P_DAC_CONTROL),
->> +     SAVE_ITEM(S5P_MIPI_CONTROL0),
->> +     SAVE_ITEM(S5P_MIPI_CONTROL1),
->> +     SAVE_ITEM(S5P_ADC_CONTROL),
->> +     SAVE_ITEM(S5P_PCIE_CONTROL),
->> +     SAVE_ITEM(S5P_SATA_CONTROL),
->> +     SAVE_ITEM(S5P_PMU_DEBUG),
->> +     SAVE_ITEM(S5P_ARM_CORE0_CONFIGURATION),
->> +     SAVE_ITEM(S5P_ARM_CORE1_CONFIGURATION),
->> +     SAVE_ITEM(S5P_ARM_CPU_L2_0_CONFIGURATION),
->> +     SAVE_ITEM(S5P_ARM_CPU_L2_1_CONFIGURATION),
->> +     SAVE_ITEM(S5P_XUSBXTI_CONFIGURATION),
->> +     SAVE_ITEM(S5P_XXTI_CONFIGURATION),
->> +     SAVE_ITEM(S5P_PMU_CAM_CONF),
->> +     SAVE_ITEM(S5P_PMU_TV_CONF),
->> +     SAVE_ITEM(S5P_PMU_MFC_CONF),
->> +     SAVE_ITEM(S5P_PMU_G3D_CONF),
->> +     SAVE_ITEM(S5P_PMU_LCD0_CONF),
->> +     SAVE_ITEM(S5P_PMU_LCD1_CONF),
->> +     SAVE_ITEM(S5P_MAUDIO_CONFIGURATION),
->> +     SAVE_ITEM(S5P_PMU_GPS_CONF),
->
-> Since PMU part is alive block, so no need.
->
->> +
->> +     /* System Controller side */
->> +     SAVE_ITEM(S3C_VA_SYS + 0x0210),
->> +     SAVE_ITEM(S3C_VA_SYS + 0x0214),
->> +     SAVE_ITEM(S3C_VA_SYS + 0x0218),
->> +     SAVE_ITEM(S3C_VA_SYS + 0x0220),
->> +     SAVE_ITEM(S3C_VA_SYS + 0x0230),
->
-> Hmm..really need this?
->
->> +
->>       /* GIC side */
->>       SAVE_ITEM(S5P_VA_GIC_CPU + 0x000),
->>       SAVE_ITEM(S5P_VA_GIC_CPU + 0x004),
->> @@ -232,11 +286,32 @@ static struct sleep_save exynos4_core_save[] = {
->>       SAVE_ITEM(S5P_VA_GIC_DIST + 0xC20),
->>       SAVE_ITEM(S5P_VA_GIC_DIST + 0xC24),
->>
->> -
->>       SAVE_ITEM(S5P_VA_COMBINER_BASE + 0x000),
->>       SAVE_ITEM(S5P_VA_COMBINER_BASE + 0x010),
->>       SAVE_ITEM(S5P_VA_COMBINER_BASE + 0x020),
->>       SAVE_ITEM(S5P_VA_COMBINER_BASE + 0x030),
->> +     SAVE_ITEM(S5P_VA_COMBINER_BASE + 0x040),
->> +     SAVE_ITEM(S5P_VA_COMBINER_BASE + 0x050),
->> +     SAVE_ITEM(S5P_VA_COMBINER_BASE + 0x060),
->> +     SAVE_ITEM(S5P_VA_COMBINER_BASE + 0x070),
->> +     SAVE_ITEM(S5P_VA_COMBINER_BASE + 0x080),
->> +     SAVE_ITEM(S5P_VA_COMBINER_BASE + 0x090),
->
-> No need to save/restore external GIC part...
->
-> (snip)
->
->> +     /* PWM Register */
->> +     SAVE_ITEM(S3C2410_TCFG0),
->> +     SAVE_ITEM(S3C2410_TCFG1),
->> +     SAVE_ITEM(S3C64XX_TINT_CSTAT),
->> +     SAVE_ITEM(S3C2410_TCON),
->> +     SAVE_ITEM(S3C2410_TCNTB(0)),
->> +     SAVE_ITEM(S3C2410_TCMPB(0)),
->> +     SAVE_ITEM(S3C2410_TCNTO(0)),
->
-> PWM? I'm not sure why this is needed here.
->
-> (snip)
->
-> Others, ok.
->
-> Thanks.
->
-> Best regards,
-> Kgene.
-> --
-> Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-> SW Solution Development Team, Samsung Electronics Co., Ltd.
->
->
-Hello,
+>   	ret = alloc_private(dev, sizeof(struct pci1710_private));
+>   	if (ret<  0) {
+> -		printk(" - Allocation failed!\n");
+> +		printk(KERN_CONT "\n");
+> +		printk(KERN_ERR "Comedi%d: adv_pci1710: Allocation failed\n",
+> +		dev->minor);
 
+This still isn't correct. The initial printk (KERN_INFO above) has no 
+trailing newline. Here you are almost doing it correctly, except that 
+you are adding an extra newline. This error message will look like this:
 
-Removing the registers you've mentioned didn't break the PM test as
-NURI board also does not use debug clocks.
+comedi0: adv_pci1710:
+comedi0: adv_pci1710: Allocation failed
 
-And, PWM driver appears to backup and restore ctirical register; thus,
-we don't need to back them up at pm.c. That's good.
+Which is just silly. The printk's below are broken in that you are using 
+KERN_ERR where you should be using KERN_CONT.
 
-For PLLs, I'll let it rely on bootloader as you've mentioned.
+As it stands the code is a little tricky to follow since the trailing 
+newline gets added at the end unless there is an error when it gets 
+added in place. It might be better just to print the full message, 
+including the "comedi%d: adv_pci1710:" bit, at each printk call site and 
+get rid of the whole KERN_CONT nonsense altogether. Alternatively you 
+could create a comedi_printk function (or use pr_fmt) which wraps this up.
 
-The corrected patch will follow this reply soon.
+Also, do we really need to print out things like allocation failures? We 
+have the errno value already and allocation failures for devices drivers 
+aren't so common that we error messages for them?
 
+~Ryan
 
-Thanks.
+>   		return -ENOMEM;
+>   	}
+>
+> @@ -1451,10 +1451,10 @@ static int pci1710_attach(struct comedi_device *dev,
+>
+>   	if (!pcidev) {
+>   		if (opt_bus || opt_slot) {
+> -			printk(" - Card at b:s %d:%d %s\n",
+> +			printk(KERN_ERR " - Card at b:s %d:%d %s\n",
+>   			       opt_bus, opt_slot, errstr);
+>   		} else {
+> -			printk(" - Card %s\n", errstr);
+> +			printk(KERN_ERR " - Card %s\n", errstr);
+>   		}
+>   		return -EIO;
+>   	}
+> @@ -1465,7 +1465,7 @@ static int pci1710_attach(struct comedi_device *dev,
+>   	irq = pcidev->irq;
+>   	iobase = pci_resource_start(pcidev, 2);
+>
+> -	printk(", b:s:f=%d:%d:%d, io=0x%4lx", pci_bus, pci_slot, pci_func,
+> +	printk(KERN_INFO ", b:s:f=%d:%d:%d, io=0x%4lx", pci_bus, pci_slot,
+> +	  pci_func, iobase);
+>
+>   	dev->iobase = iobase;
+> @@ -1487,7 +1487,7 @@ static int pci1710_attach(struct comedi_device *dev,
+>
+>   	ret = alloc_subdevices(dev, n_subdevices);
+>   	if (ret<  0) {
+> -		printk(" - Allocation failed!\n");
+> +		printk(KERN_CONT " - Allocation failed!\n");
+>   		return ret;
+>   	}
+>
+> @@ -1499,14 +1499,14 @@ static int pci1710_attach(struct comedi_device *dev,
+>   					IRQF_SHARED, "Advantech PCI-1710",
+>   					dev)) {
+>   				printk
+> -				    (", unable to allocate IRQ %d, DISABLING IT",
+> +				    (KERN_INFO ", unable to allocate IRQ %d, DISABLING IT",
+>   				     irq);
+>   				irq = 0;	/* Can't use IRQ */
+>   			} else {
+> -				printk(", irq=%u", irq);
+> +				printk(KERN_CONT ", irq=%u", irq);
+>   			}
+>   		} else {
+> -			printk(", IRQ disabled");
+> +			printk(KERN_CONT ", IRQ disabled");
+>   		}
+>   	} else {
+>   		irq = 0;
+> @@ -1514,7 +1514,7 @@ static int pci1710_attach(struct comedi_device *dev,
+>
+>   	dev->irq = irq;
+>
+> -	printk(".\n");
+> +	printk(KERN_CONT ".\n");
+>
+>   	subdev = 0;
+>
 
-- MyungJoo
-
--- 
-MyungJoo Ham (함명주), Ph.D.
-Mobile Software Platform Lab,
-Digital Media and Communications (DMC) Business
-Samsung Electronics
-cell: 82-10-6714-2858
