@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752316Ab1GSGqE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 02:46:04 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:57960 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752156Ab1GSGqC convert rfc822-to-8bit (ORCPT
+	id S1752304Ab1GSGsb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 02:48:31 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:33705 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752111Ab1GSGsa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 02:46:02 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E2525BA.4090902@gmail.com>
-References: <4E252076.1050309@gmail.com>
-	<CAD2nsn12vOXv-msWR+GF7edz3Q26P-pb4H-SO4rf2RHjC7mG+w@mail.gmail.com>
-	<4E2525BA.4090902@gmail.com>
-Date: Tue, 19 Jul 2011 12:16:00 +0530
-Message-ID: <CAD2nsn3ifSMa_eFr2vQ0VVF9Ga-0VD3YB_beb28r+eoAHKv4kQ@mail.gmail.com>
-Subject: Re: ath: Unable to reset channel (2412 MHz), reset status -5
-From: Mohammed Shafi <shafi.wireless@gmail.com>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-wireless@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 19 Jul 2011 02:48:30 -0400
+Subject: [PATCH] dma: intel_mid_dma: remove redundant pci_set_drvdata calls
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Yong Wang <yong.y.wang@intel.com>, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 19 Jul 2011 14:48:17 +0800
+Message-ID: <1311058097.2873.2.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 19, 2011 at 12:05 PM, Justin P. Mattock
-<justinmattock@gmail.com> wrote:
-> On 07/18/2011 11:25 PM, Mohammed Shafi wrote:
->>
->> On Tue, Jul 19, 2011 at 11:43 AM, Justin P. Mattock
->> <justinmattock@gmail.com>  wrote:
->>>
->>> seems with the latest Mainline I am getting the ath9k carpping out after
->>> a
->>> while of streaming(dmesg below)..:
->>> http://fpaste.org/D7wM/
->>>
->>> will try a bisect if I have the time..
->>
->> I will try to recreate here with 3.0.0-rc7-wl, we can get more
->> information by ath9k debug=0xffffffff.
->> thanks.
->>
->
-> cool!
-> seems to fire off randomly over here.
+Call pci_set_drvdata() once in intel_mid_dma_probe() is enough.
+Remove redundant pci_set_drvdata() calls in dma_suspend() and dma_resume().
 
-I have got AR5416, will try with that.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/dma/intel_mid_dma.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/dma/intel_mid_dma.c b/drivers/dma/intel_mid_dma.c
+index f653517..8a3fdd8 100644
+--- a/drivers/dma/intel_mid_dma.c
++++ b/drivers/dma/intel_mid_dma.c
+@@ -1351,7 +1351,6 @@ int dma_suspend(struct pci_dev *pci, pm_message_t state)
+ 			return -EAGAIN;
+ 	}
+ 	device->state = SUSPENDED;
+-	pci_set_drvdata(pci, device);
+ 	pci_save_state(pci);
+ 	pci_disable_device(pci);
+ 	pci_set_power_state(pci, PCI_D3hot);
+@@ -1380,7 +1379,6 @@ int dma_resume(struct pci_dev *pci)
+ 	}
+ 	device->state = RUNNING;
+ 	iowrite32(REG_BIT0, device->dma_base + DMA_CFG);
+-	pci_set_drvdata(pci, device);
+ 	return 0;
+ }
+ 
 -- 
-shafi
+1.7.4.1
+
+
+
