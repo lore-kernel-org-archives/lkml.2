@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752554Ab1GSI27 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 04:28:59 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:57834 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752190Ab1GSI25 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 04:28:57 -0400
-x-mimeole: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1752594Ab1GSIjk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 04:39:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45725 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752386Ab1GSIjj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 04:39:39 -0400
+Date: Tue, 19 Jul 2011 09:39:32 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH]vmscan: fix a livelock in kswapd
+Message-ID: <20110719083932.GD5349@suse.de>
+References: <1311059367.15392.299.camel@sli10-conroe>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [RFC/PATCH] mm/futex: Fix futex writes on archs with SW trackingof dirty & young
-Date: Tue, 19 Jul 2011 09:26:35 +0100
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6D8ADFF@saturn3.aculab.com>
-In-Reply-To: <4E253F40.2010104@gmail.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-thread-topic: [RFC/PATCH] mm/futex: Fix futex writes on archs with SW trackingof dirty & young
-thread-index: AcxF7Kw+G1LNYN0XQJaOW+WeDbVWRwAAFR/g
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Shan Hai" <haishan.bai@gmail.com>,
-        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>
-Cc: <tony.luck@intel.com>, "Peter Zijlstra" <a.p.zijlstra@chello.nl>,
-        "Peter Zijlstra" <peterz@infradead.org>,
-        <linux-kernel@vger.kernel.org>, <cmetcalf@tilera.com>,
-        <dhowells@redhat.com>, <paulus@samba.org>, <tglx@linutronix.de>,
-        <walken@google.com>, <linuxppc-dev@lists.ozlabs.org>,
-        <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1311059367.15392.299.camel@sli10-conroe>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
-> Got it, if the fault_in_user_writeable() is designed to catch the
-> exact same write permission fault problem we discuss here, so
-> your patch fixed that very nicely, we should fixup it by directly
-> calling handle_mm_fault like what you did because we are for sure
-> to know what just happened(permission violation), its not necessary
-> to check what's happened by calling gup-->follow_page, and
-> further the follow_page failed to report the fault :-)
+On Tue, Jul 19, 2011 at 03:09:27PM +0800, Shaohua Li wrote:
+> I'm running a workload which triggers a lot of swap in a machine with 4 nodes.
+> After I kill the workload, I found a kswapd livelock. Sometimes kswapd3 or
+> kswapd2 are keeping running and I can't access filesystem, but most memory is
+> free. This looks like a regression since commit 08951e545918c159.
+> Node 2 and 3 have only ZONE_NORMAL, but balance_pgdat() will return 0 for
+> classzone_idx. The reason is end_zone in balance_pgdat() is 0 by default, if
+> all zones have watermark ok, end_zone will keep 0.
+> Later sleeping_prematurely() always returns true. Because this is an order 3
+> wakeup, and if classzone_idx is 0, both balanced_pages and present_pages
+> in pgdat_balanced() are 0.
+> We add a special case here. If a zone has no page, we think it's balanced. This
+> fixes the livelock.
+> 
+> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+> 
 
-One thought I've had - and I don't know enough about the data
-area in use to know if it is a problem - is what happens if
-a different cpu faults on the same user page and has already
-marked it 'valid' between the fault happening and the fault
-handler looking at the page tables to find out why.
-If any of the memory areas are shared, it might be that the
-PTE (etc) might already show the page a writable by the
-time the fault handler is looking at them - this might confuse it!
+Acked-by: Mel Gorman <mgorman@suse.de>
 
-	David
+It's also needed for 3.0 and 2.6.39-stable I believe.
 
-
+-- 
+Mel Gorman
+SUSE Labs
