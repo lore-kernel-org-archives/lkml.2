@@ -1,47 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752204Ab1GSGP6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 02:15:58 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63277 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752089Ab1GSGP5 (ORCPT
+	id S1752221Ab1GSGRG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 02:17:06 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:63390 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752138Ab1GSGRD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 02:15:57 -0400
-Message-ID: <4E252117.4000500@gmail.com>
-Date: Tue, 19 Jul 2011 16:15:51 +1000
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+	Tue, 19 Jul 2011 02:17:03 -0400
 MIME-Version: 1.0
-To: Dan Carpenter <error27@gmail.com>
-CC: Ravishankar <ravishankarkm32@gmail.com>, devel@driverdev.osuosl.org,
-        gregkh@suse.de, linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>
-Subject: Re: [PATCH 1/2 v3] Staging: comedi: fix printk() issue in adv_pci1710.c
-References: <1311054656-14207-1-git-send-email-ravishanakarkm32@gmail.com> <4E251F1F.2080406@gmail.com> <20110719061226.GF4010@shale.localdomain>
-In-Reply-To: <20110719061226.GF4010@shale.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1309539333-2606-12-git-send-email-per.forlin@linaro.org>
+References: <1309539333-2606-1-git-send-email-per.forlin@linaro.org>
+	<1309539333-2606-12-git-send-email-per.forlin@linaro.org>
+Date: Tue, 19 Jul 2011 08:17:02 +0200
+Message-ID: <CAJ0pr19Ktx_R8Zmr=rDivhc5A__N7OwoSj3ehitX_pS_xmooSA@mail.gmail.com>
+Subject: Re: [PATCH v9 11/12] mmc: core: add random fault injection
+From: Per Forlin <per.forlin@linaro.org>
+To: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, Venkatraman S <svenkatr@ti.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>, Sourav Poddar <sourav.poddar@ti.com>,
+        Chris Ball <cjb@laptop.org>
+Cc: Per Forlin <per.forlin@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/07/11 16:12, Dan Carpenter wrote:
-> On Tue, Jul 19, 2011 at 04:07:27PM +1000, Ryan Mallon wrote:
->> This still isn't correct. The initial printk (KERN_INFO above) has
->> no trailing newline. Here you are almost doing it correctly, except
->> that you are adding an extra newline. This error message will look
->> like this:
->>
->> comedi0: adv_pci1710:
->> comedi0: adv_pci1710: Allocation failed
->>
-> Actually kmalloc() prints an message with a stack trace on failure as
-> well so that would go in the middle, just before the first newline.
+This patch prevents mmc core to be built as a module if mmc fault
+injection is selected.
+
+Changes needed to resolve this:
+ * remove fault inject module from core.c
+ * export should_fail() and init_fault_attr_dentries() in fault-injection.c
+ * update documentation fault-injection.txt
+
+On 1 July 2011 18:55, Per Forlin <per.forlin@linaro.org> wrote:
+> This simple fault injection proved to be very useful to
+> test the error handling in the block.c rw_rq(). It may
+> still be useful to test if the host driver handle
+> pre_req() and post_req() correctly in case of errors.
 >
+> Signed-off-by: Per Forlin <per.forlin@linaro.org>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> Reviewed-by: Venkatraman S <svenkatr@ti.com>
+> Tested-by: Sourav Poddar<sourav.poddar@ti.com>
+> Tested-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+>  drivers/mmc/core/core.c    |   54 ++++++++++++++++++++++++++++++++++++++++++++
+>  drivers/mmc/core/debugfs.c |    5 ++++
+>  include/linux/mmc/host.h   |    3 ++
+>  lib/Kconfig.debug          |   11 +++++++++
+>  4 files changed, 73 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+> index d2d7239..62a8cc7 100644
+> --- a/drivers/mmc/core/core.c
+> +++ b/drivers/mmc/core/core.c
+> @@ -23,6 +23,8 @@
+>  #include <linux/log2.h>
+>  #include <linux/regulator/consumer.h>
+>  #include <linux/pm_runtime.h>
+> +#include <linux/fault-inject.h>
+> +#include <linux/random.h>
+>
+>  #include <linux/mmc/card.h>
+>  #include <linux/mmc/host.h>
+> @@ -82,6 +84,56 @@ static void mmc_flush_scheduled_work(void)
+>        flush_workqueue(workqueue);
+>  }
+>
+> +#ifdef CONFIG_FAIL_MMC_REQUEST
+> +
+> +static DECLARE_FAULT_ATTR(fail_mmc_request);
+> +
+> +static int __init setup_fail_mmc_request(char *str)
+> +{
+> +       return setup_fault_attr(&fail_mmc_request, str);
+> +}
+> +__setup("fail_mmc_request=", setup_fail_mmc_request);
+> +
+> +static void mmc_should_fail_request(struct mmc_host *host,
+> +                                   struct mmc_request *mrq)
+> +{
+> +       struct mmc_command *cmd = mrq->cmd;
+> +       struct mmc_data *data = mrq->data;
+> +       static const int data_errors[] = {
+> +               -ETIMEDOUT,
+> +               -EILSEQ,
+> +               -EIO,
+> +       };
+> +
+> +       if (!data)
+> +               return;
+> +
+> +       if (cmd->error || data->error || !host->make_it_fail ||
+> +           !should_fail(&fail_mmc_request, data->blksz * data->blocks))
+> +               return;
+> +
+> +       data->error = data_errors[random32() % ARRAY_SIZE(data_errors)];
+> +       data->bytes_xfered = (random32() % (data->bytes_xfered >> 9)) << 9;
+> +}
+> +
+> +static int __init fail_mmc_request_debugfs(void)
+> +{
+> +       return init_fault_attr_dentries(&fail_mmc_request,
+> +                                       "fail_mmc_request");
+> +}
+> +
+> +late_initcall(fail_mmc_request_debugfs);
+This line prevents mmc core to be built as a module, since there will
+be two init_module (the mmc core one and this one) for the same
+module.
 
-Thanks. Didn't know that. Is that a KConfig option or by default?
+> +
+> +#else /* CONFIG_FAIL_MMC_REQUEST */
+> +
+> +static void mmc_should_fail_request(struct mmc_host *host,
+> +                                   struct mmc_request *mrq)
+> +{
+> +}
+> +
++static int __init fail_mmc_request_debugfs(void)
++{
++}
+Add fail_mmc_request_debugfs here and call it from mmc_init()
 
-Either way, it's another good reason to get rid of all the KERN_CONT 
-stuff in the driver.
+> +#endif /* CONFIG_FAIL_MMC_REQUEST */
+> +
+> +
+>  /**
+>  *     mmc_request_done - finish processing an MMC request
+>  *     @host: MMC host which completed request
+> @@ -108,6 +160,8 @@ void mmc_request_done(struct mmc_host *host, struct mmc_request *mrq)
+>                cmd->error = 0;
+>                host->ops->request(host, mrq);
+>        } else {
+> +               mmc_should_fail_request(host, mrq);
+> +
+>                led_trigger_event(host->led, LED_OFF);
+>
+>                pr_debug("%s: req done (CMD%u): %d: %08x %08x %08x %08x\n",
+> diff --git a/drivers/mmc/core/debugfs.c b/drivers/mmc/core/debugfs.c
+> index 998797e..588e76f 100644
+> --- a/drivers/mmc/core/debugfs.c
+> +++ b/drivers/mmc/core/debugfs.c
+> @@ -188,6 +188,11 @@ void mmc_add_host_debugfs(struct mmc_host *host)
+>                                root, &host->clk_delay))
+>                goto err_node;
+>  #endif
+> +#ifdef CONFIG_FAIL_MMC_REQUEST
+> +       if (!debugfs_create_u8("make-it-fail", S_IRUSR | S_IWUSR,
+> +                              root, &host->make_it_fail))
+> +               goto err_node;
+> +#endif
+>        return;
+>
+>  err_node:
+> diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
+> index 59db6f2..0d0a48f 100644
+> --- a/include/linux/mmc/host.h
+> +++ b/include/linux/mmc/host.h
+> @@ -301,6 +301,9 @@ struct mmc_host {
+>
+>        struct mmc_async_req    *areq;          /* active async req */
+>
+> +#ifdef CONFIG_FAIL_MMC_REQUEST
+> +       u8                      make_it_fail;
+> +#endif
+>        unsigned long           private[0] ____cacheline_aligned;
+>  };
+>
+> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+> index c768bcd..330fc70 100644
+> --- a/lib/Kconfig.debug
+> +++ b/lib/Kconfig.debug
+> @@ -1057,6 +1057,17 @@ config FAIL_IO_TIMEOUT
+>          Only works with drivers that use the generic timeout handling,
+>          for others it wont do anything.
+>
+> +config FAIL_MMC_REQUEST
+> +       bool "Fault-injection capability for MMC IO"
+> +       select DEBUG_FS
+> +       depends on FAULT_INJECTION
+depends on FAULT_INJECTION && MMC
 
-~Ryan
+> +       help
+> +         Provide fault-injection capability for MMC IO.
+> +         This will make the mmc core return data errors. This is
+> +         useful for testing the error handling in the mmc block device
+> +         and how the mmc host driver handle retries from
+> +         the block device.
+and test how the mmc host driver handle retries from
