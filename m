@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751241Ab1GSTPL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 15:15:11 -0400
-Received: from usindmx02.hds.com ([207.126.252.13]:40949 "EHLO
-	usindmx02.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750874Ab1GSTPJ convert rfc822-to-8bit (ORCPT
+	id S1751105Ab1GSTSy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 15:18:54 -0400
+Received: from usindmx04.hds.com ([207.126.252.15]:56650 "EHLO
+	usindmx04.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750829Ab1GSTSx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 15:15:09 -0400
+	Tue, 19 Jul 2011 15:18:53 -0400
 From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Matthew Garrett <mjg@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
 CC: "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
         "Eric W. Biederman" <ebiederm@xmission.com>,
-        Vivek Goyal <vgoyal@redhat.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Americo Wang <xiyou.wangcong@gmail.com>,
+        Matthew Garrett <mjg@redhat.com>,
         "tony.luck@intel.com" <tony.luck@intel.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Jarod Wilson <jwilson@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
@@ -23,63 +23,81 @@ CC: "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
         "dle-develop@lists.sourceforge.net" 
 	<dle-develop@lists.sourceforge.net>,
         Satoru Moriya <satoru.moriya@hds.com>
-Date: Tue, 19 Jul 2011 15:14:22 -0400
-Subject: RE: [RFC][PATCH -mmotm 1/4] Add static function calls of pstore to
- kexec path
-Thread-Topic: [RFC][PATCH -mmotm 1/4] Add static function calls of pstore to
- kexec path
-Thread-Index: AcxGRPtCnItce4g8S62kXFPR9rxEzwAApICg
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C199C64E5@USINDEVS01.corp.hds.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C199C64C3@USINDEVS01.corp.hds.com>
- <20110719183506.GA23770@srcf.ucam.org>
- <5C4C569E8A4B9B42A84A977CF070A35B2C199C64D6@USINDEVS01.corp.hds.com>
- <20110719185213.GA24420@srcf.ucam.org>
-In-Reply-To: <20110719185213.GA24420@srcf.ucam.org>
+Date: Tue, 19 Jul 2011 15:18:15 -0400
+Subject: RE: [RFC][PATCH -mmotm 0/4] Improvement of pstore/kmsg_dump in
+ kexec/panic path
+Thread-Topic: [RFC][PATCH -mmotm 0/4] Improvement of pstore/kmsg_dump in
+ kexec/panic path
+Thread-Index: AcxGRGRcQx7/QfEmSqyp64QpXnGABQAA7sHA
+Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C199C64EC@USINDEVS01.corp.hds.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C199C64C2@USINDEVS01.corp.hds.com>
+ <20110719184759.GC7001@redhat.com>
+In-Reply-To: <20110719184759.GC7001@redhat.com>
 Accept-Language: ja-JP, en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
 acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p6JJJ2lC008900
 
+Hi,
 
->And how does that handle the case where we're halfway through a pstore
->access when the NMI arrives? ERST, at least, has a complex state
->machine. You can't guarantee what starting one transaction without
->completing one that was in process will do.
+>Why can't we log something in user
+>space when user initiates a reboot, let it get logged in /var/log/messages
+>and then umount the file root and go ahead with reboot. Why does kernel
+>need to capture that info in NVRAM.
 
-As for ERST, write access is protected by raw_spin_trylock_irqsave(&erst_lock).
-Are there anything I'm missing?
+Thank you for coordinating discussion.
+I will reply to your question.
+
+Regards,
 
 Seiji
 
-
 >-----Original Message-----
->From: Matthew Garrett [mailto:mjg@redhat.com]
->Sent: Tuesday, July 19, 2011 2:52 PM
+>From: Vivek Goyal [mailto:vgoyal@redhat.com]
+>Sent: Tuesday, July 19, 2011 2:48 PM
 >To: Seiji Aguchi
->Cc: kexec@lists.infradead.org; linux-kernel@vger.kernel.org; linux-mtd@lists.infradead.org; Eric W. Biederman; Vivek
->Goyal; KOSAKI Motohiro; Americo Wang; tony.luck@intel.com; Andrew Morton; Jarod Wilson; hpa@zytor.com; dzickus@redhat.com;
->dle-develop@lists.sourceforge.net; Satoru Moriya
->Subject: Re: [RFC][PATCH -mmotm 1/4] Add static function calls of pstore to kexec path
+>Cc: kexec@lists.infradead.org; linux-kernel@vger.kernel.org; linux-mtd@lists.infradead.org; Eric W. Biederman; KOSAKI
+>Motohiro; Americo Wang; Matthew Garrett; tony.luck@intel.com; Andrew Morton; Jarod Wilson; hpa@zytor.com;
+>dzickus@redhat.com; dle-develop@lists.sourceforge.net; Satoru Moriya
+>Subject: Re: [RFC][PATCH -mmotm 0/4] Improvement of pstore/kmsg_dump in kexec/panic path
 >
->On Tue, Jul 19, 2011 at 02:48:22PM -0400, Seiji Aguchi wrote:
->> >How is this safe? What happens if there's a pstore access in process
->> >when you hit this codepath?
+>On Tue, Jul 19, 2011 at 02:23:26PM -0400, Seiji Aguchi wrote:
+>> Hi,
 >>
->> This will never happen because pstore_kmsg_dump_in_interrupt() is called after machine_crash_shutdown().
+>> [Upstream status]
+>>    Discussion about kmsg_dump() in kdump path:
+>>     - Eric and Vivek are worried about reliability of existing kmsg_dump().
+>>     - Especially, Vivek would like to remove a RCU  function call chain in kdump path
+>> ã€€ã€€ã€€ which kernel modules can register their function calls freely.
 >>
->> Panicked cpu sends NMI to all other cpus in machine_crash_shutdown() and they stop.
+>>    Discussion about pstore in nmi_hander.
+>>     - Don Zickus found an issue of pstore in nmi_handler due to its mutex_lock.
 >
->And how does that handle the case where we're halfway through a pstore
->access when the NMI arrives? ERST, at least, has a complex state
->machine. You can't guarantee what starting one transaction without
->completing one that was in process will do.
+>You did not answer my questions in the last posting mail thread and gone
+>ahead with the new posting. How are we supposed to discuss something. This
+>has been a problem on this mail thread since the beginneing. There is
+>little open discussion.
 >
->--
->Matthew Garrett | mjg59@srcf.ucam.org
+>So if you want to make any progress in this direction, what will help
+>is open discussion.
+>
+>Locking is going to be a problem. So atleast we can remove kmsg_dump()
+>infrastructure from reboot path. Why can't we log something in user
+>space when user initiates a reboot, let it get logged in /var/log/messages
+>and then umount the file root and go ahead with reboot. Why does kernel
+>need to capture that info in NVRAM.
+>
+>If we can get rid of all the logging thing on reboot path, then at least
+>it does not need to be lock protected with crash path.
+>
+>Thanks
+>Vivek
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
