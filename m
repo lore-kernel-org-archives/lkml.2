@@ -1,176 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751737Ab1GSFOw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 01:14:52 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:52712 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146Ab1GSFOv (ORCPT
+	id S1752047Ab1GSFSL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 01:18:11 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:39678 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751059Ab1GSFSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 01:14:51 -0400
-Message-ID: <4E251365.9090004@gmail.com>
-Date: Tue, 19 Jul 2011 13:17:25 +0800
-From: Shan Hai <haishan.bai@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, paulus@samba.org,
-        tglx@linutronix.de, walken@google.com, dhowells@redhat.com,
-        cmetcalf@tilera.com, tony.luck@intel.com, akpm@linux-foundation.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC/PATCH] mm/futex: Fix futex writes on archs with SW tracking
- of dirty & young
-References: <1310717238-13857-1-git-send-email-haishan.bai@gmail.com>	 <1310717238-13857-2-git-send-email-haishan.bai@gmail.com>	 <1310725418.2586.309.camel@twins> <4E21A526.8010904@gmail.com>	 <1310860194.25044.17.camel@pasglop>	 <4b337921-d430-4b63-bc36-ad31753cf800@email.android.com>	 <1310912990.25044.203.camel@pasglop>  <1310944453.25044.262.camel@pasglop>	 <1310961691.25044.274.camel@pasglop>  <4E23D728.7090406@gmail.com>	 <1310972462.25044.292.camel@pasglop>  <4E23E02C.8090401@gmail.com>	 <1310974591.25044.298.camel@pasglop>  <4E24FA51.70602@gmail.com> <1311049762.25044.392.camel@pasglop>
-In-Reply-To: <1311049762.25044.392.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Tue, 19 Jul 2011 01:18:10 -0400
+Subject: Re: [PATCH 1/2] scsi: target: fix typo Assoication -> Association
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        James Bottomley <jbottomley@parallels.com>,
+        target-devel <target-devel@vger.kernel.org>
+In-Reply-To: <f051412fa68688dea6d9445d66fbd8085a07bdb7.1310977653.git.andriy.shevchenko@linux.intel.com>
+References: <f051412fa68688dea6d9445d66fbd8085a07bdb7.1310977653.git.andriy.shevchenko@linux.intel.com>
+Content-Type: text/plain
+Date: Mon, 18 Jul 2011 22:08:58 -0700
+Message-Id: <1311052138.16756.18.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2011 12:29 PM, Benjamin Herrenschmidt wrote:
-> The futex code currently attempts to write to user memory within
-> a pagefault disabled section, and if that fails, tries to fix it
-> up using get_user_pages().
->
-> This doesn't work on archs where the dirty and young bits are
-> maintained by software, since they will gate access permission
-> in the TLB, and will not be updated by gup().
->
-> In addition, there's an expectation on some archs that a
-> spurious write fault triggers a local TLB flush, and that is
-> missing from the picture as well.
->
-> I decided that adding those "features" to gup() would be too much
-> for this already too complex function, and instead added a new
-> simpler fixup_user_fault() which is essentially a wrapper around
-> handle_mm_fault() which the futex code can call.
->
-> Signed-off-by: Benjamin Herrenschmidt<benh@kernel.crashing.org>
+On Mon, 2011-07-18 at 11:27 +0300, Andy Shevchenko wrote:
+> Additionally this patch brings proper apply of the designator type.
+> However, the original code luckily has no bug, because the association
+> equals to 0.
+> 
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+> Cc: James Bottomley <jbottomley@parallels.com>
 > ---
->
-> Shan, can you test this ? It might not fix the problem since I'm
-> starting to have the nasty feeling that you are hitting what is
-> somewhat a subtly different issue or my previous patch should
-> have worked (but then I might have done a stupid mistake as well)
-> but let us know anyway.
->
+>  drivers/target/target_core_cdb.c      |   10 +++++-----
+>  drivers/target/target_core_configfs.c |    2 +-
+>  2 files changed, 6 insertions(+), 6 deletions(-)
+> 
 
-The patch works, but I have certain confusions,
-- Do we want to handle_mm_fault on each futex_lock_pi
-     even though in most cases there is no write permission
-     fixup's needed?
-- How about let the archs do their own write permission
-     fixup as what I did in my original
-     "[PATCH 1/1] Fixup write permission of TLB on powerpc e500 core"?
-     (I will fix the stupid errors in my original patch if the concept 
-is acceptable)
-     in this way we could decrease the overhead of handle_mm_fault
-     in the path which does not need write permission fixup.
+Committed as 300094f75ab1d into lio-core-2.6.git
 
-Thanks
-Shan Hai
-> Cheers,
-> Ben.
->
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index 9670f71..1036614 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -985,6 +985,8 @@ int get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
->   int get_user_pages_fast(unsigned long start, int nr_pages, int write,
->   			struct page **pages);
->   struct page *get_dump_page(unsigned long addr);
-> +extern int fixup_user_fault(struct task_struct *tsk, struct mm_struct *mm,
-> +			    unsigned long address, unsigned int fault_flags);
->
->   extern int try_to_release_page(struct page * page, gfp_t gfp_mask);
->   extern void do_invalidatepage(struct page *page, unsigned long offset);
-> diff --git a/kernel/futex.c b/kernel/futex.c
-> index fe28dc2..7a0a4ed 100644
-> --- a/kernel/futex.c
-> +++ b/kernel/futex.c
-> @@ -355,8 +355,8 @@ static int fault_in_user_writeable(u32 __user *uaddr)
->   	int ret;
->
->   	down_read(&mm->mmap_sem);
-> -	ret = get_user_pages(current, mm, (unsigned long)uaddr,
-> -			     1, 1, 0, NULL, NULL);
-> +	ret = fixup_user_fault(current, mm, (unsigned long)uaddr,
-> +			       FAULT_FLAG_WRITE);
->   	up_read(&mm->mmap_sem);
->
->   	return ret<  0 ? ret : 0;
-> diff --git a/mm/memory.c b/mm/memory.c
-> index 40b7531..b967fb0 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -1815,7 +1815,64 @@ next_page:
->   }
->   EXPORT_SYMBOL(__get_user_pages);
->
-> -/**
-> +/*
-> + * fixup_user_fault() - manually resolve a user page  fault
-> + * @tsk:	the task_struct to use for page fault accounting, or
-> + *		NULL if faults are not to be recorded.
-> + * @mm:		mm_struct of target mm
-> + * @address:	user address
-> + * @fault_flags:flags to pass down to handle_mm_fault()
-> + *
-> + * This is meant to be called in the specific scenario where for
-> + * locking reasons we try to access user memory in atomic context
-> + * (within a pagefault_disable() section), this returns -EFAULT,
-> + * and we want to resolve the user fault before trying again.
-> + *
-> + * Typically this is meant to be used by the futex code.
-> + *
-> + * The main difference with get_user_pages() is that this function
-> + * will unconditionally call handle_mm_fault() which will in turn
-> + * perform all the necessary SW fixup of the dirty and young bits
-> + * in the PTE, while handle_mm_fault() only guarantees to update
-> + * these in the struct page.
-> + *
-> + * This is important for some architectures where those bits also
-> + * gate the access permission to the page because their are
-> + * maintained in software. On such architecture, gup() will not
-> + * be enough to make a subsequent access succeed.
-> + *
-> + * This should be called with the mm_sem held for read.
-> + */
-> +int fixup_user_fault(struct task_struct *tsk, struct mm_struct *mm,
-> +		     unsigned long address, unsigned int fault_flags)
-> +{
-> +	struct vm_area_struct *vma;
-> +	int ret;
-> +
-> +	vma = find_extend_vma(mm, address);
-> +	if (!vma || address<  vma->vm_start)
-> +		return -EFAULT;
-> +	
-> +	ret = handle_mm_fault(mm, vma, address, fault_flags);
-> +	if (ret&  VM_FAULT_ERROR) {
-> +		if (ret&  VM_FAULT_OOM)
-> +			return -ENOMEM;
-> +		if (ret&  (VM_FAULT_HWPOISON | VM_FAULT_HWPOISON_LARGE))
-> +			return -EHWPOISON;
-> +		if (ret&  VM_FAULT_SIGBUS)
-> +			return -EFAULT;
-> +		BUG();
-> +	}
-> +	if (tsk) {
-> +		if (ret&  VM_FAULT_MAJOR)
-> +			tsk->maj_flt++;
-> +		else
-> +			tsk->min_flt++;
-> +	}
-> +	return 0;
-> +}
-> +
-> +/*
->    * get_user_pages() - pin user pages in memory
->    * @tsk:	the task_struct to use for page fault accounting, or
->    *		NULL if faults are not to be recorded.
->
->
+Thanks Andy!
+
+--nab
 
