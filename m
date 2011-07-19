@@ -1,64 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191Ab1GSGx3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 02:53:29 -0400
-Received: from fallback.mail.timico.net ([62.121.11.168]:54921 "EHLO
-	fallback.mail.timico.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752045Ab1GSGx2 convert rfc822-to-8bit (ORCPT
+	id S1752265Ab1GSGxd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 02:53:33 -0400
+Received: from mail-ey0-f171.google.com ([209.85.215.171]:63959 "EHLO
+	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752045Ab1GSGxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 02:53:28 -0400
-X-Greylist: delayed 1115 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Jul 2011 02:53:27 EDT
-From: Jon Povey <Jon.Povey@racelogic.co.uk>
-To: "Hadli, Manjunath" <manjunath.hadli@ti.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Class: urn:content-classes:message
-Date: Tue, 19 Jul 2011 07:28:19 +0100
-Subject: RE: [PATCH] davinci: fix DM365 EVM video input mux bits
-Thread-Topic: [PATCH] davinci: fix DM365 EVM video input mux bits
-Thread-Index: AcxFxEO6UigcFyPiSea2qTqvKwuHFAAD90YgAAItJbA=
-Message-ID: <70E876B0EA86DD4BAF101844BC814DFE0B4E0859D7@Cloud.RL.local>
-In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024BCEF73E@dbde02.ent.ti.com>
-Accept-Language: en-US, en-GB
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, en-GB
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Tue, 19 Jul 2011 02:53:30 -0400
+Date: Tue, 19 Jul 2011 10:53:22 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        kernel-hardening@lists.openwall.com,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC v2] implement SL*B and stack usercopy runtime checks
+Message-ID: <20110719065322.GA3228@albatros>
+References: <20110703111028.GA2862@albatros>
+ <CA+55aFzXEoTyK0Sm-y=6xGmLMWzQiSQ7ELJ2-WL_PrP3r44MSg@mail.gmail.com>
+ <20110718183951.GA3748@albatros>
+ <alpine.DEB.2.00.1107181610350.31576@router.home>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1107181610350.31576@router.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hadli, Manjunath wrote:
-> Jon,
->
-> The fix looks correct. As a part of a different
-> implementation which will go soon upstream, this has been
-> taken care of, where we have used macros
-> CPLD_VIDEO_INPUT_MUX_TVP7002    0x1
-> CPLD_VIDEO_INPUT_MUX_IMAGER     0x2
->
-> So, if you can do the same, it will look better.
+On Mon, Jul 18, 2011 at 16:18 -0500, Christoph Lameter wrote:
+> On Mon, 18 Jul 2011, Vasiliy Kulikov wrote:
+> 
+> > --- a/mm/slab.c
+> > +++ b/mm/slab.c
+> > @@ -3844,6 +3844,40 @@ unsigned int kmem_cache_size(struct kmem_cache *cachep)
+> >  EXPORT_SYMBOL(kmem_cache_size);
+> >
+> >  /*
+> > + * Returns false if and only if [ptr; ptr+len) touches the slab,
+> > + * but breaks objects boundaries.  It doesn't check whether the
+> > + * accessed object is actually allocated.
+> > + */
+> > +bool slab_access_ok(const void *ptr, unsigned long len)
+> > +{
+> > +	struct page *page;
+> > +	struct kmem_cache *cachep = NULL;
+> 
+> Why = NULL?
 
-If you have a patch you can split out that has your defines
-where and how you want them then great.
+Indeed, redundant.
 
-Otherwise I'd suggest just getting this or something equivalent
-in to fix the bug first, and reimplement it later.
+> > +	struct slab *slabp;
+> > +	unsigned int objnr;
+> > +	unsigned long offset;
+> > +
+> > +	if (!len)
+> > +		return true;
+> > +	if (!virt_addr_valid(ptr))
+> > +		return true;
+> > +	page = virt_to_head_page(ptr);
+> > +	if (!PageSlab(page))
+> > +		return true;
+> > +
+> > +	cachep = page_get_cache(page);
+> > +	slabp = page_get_slab(page);
+> > +	objnr = obj_to_index(cachep, slabp, (void *)ptr);
+> > +	BUG_ON(objnr >= cachep->num);
+> > +	offset = (const char *)ptr - obj_offset(cachep) -
+> > +	    (const char *)index_to_obj(cachep, slabp, objnr);
+> > +	if (offset <= obj_size(cachep) && len <= obj_size(cachep) - offset)
+> > +		return true;
+> > +
+> > +	return false;
+> > +}
+> > +EXPORT_SYMBOL(slab_access_ok);
+> > +
+> > +/*
+> >   * This initializes kmem_list3 or resizes various caches for all nodes.
+> >   */
+> >  static int alloc_kmemlist(struct kmem_cache *cachep, gfp_t gfp)
+> 
+> > --- a/mm/slub.c
+> > +++ b/mm/slub.c
+> > @@ -2623,6 +2623,34 @@ unsigned int kmem_cache_size(struct kmem_cache *s)
+> >  }
+> >  EXPORT_SYMBOL(kmem_cache_size);
+> >
+> > +/*
+> > + * Returns false if and only if [ptr; ptr+len) touches the slab,
+> > + * but breaks objects boundaries.  It doesn't check whether the
+> > + * accessed object is actually allocated.
+> > + */
+> > +bool slab_access_ok(const void *ptr, unsigned long len)
+> > +{
+> > +	struct page *page;
+> > +	struct kmem_cache *s = NULL;
+> 
+> No need to assign NULL.
 
---
-Jon Povey
-jon.povey@racelogic.co.uk
+Ditto.
 
-Racelogic is a limited company registered in England. Registered number 2743719 .
-Registered Office Unit 10, Swan Business Centre, Osier Way, Buckingham, Bucks, MK18 1TB .
+> > +	unsigned long offset;
+> > +
+> > +	if (len == 0)
+> > +		return true;
+> > +	if (!virt_addr_valid(ptr))
+> > +		return true;
+> > +	page = virt_to_head_page(ptr);
+> > +	if (!PageSlab(page))
+> > +		return true;
+> > +
+> > +	s = page->slab;
+> > +	offset = ((const char *)ptr - (const char *)page_address(page)) % s->size;
+> 
+> Are the casts necessary? Both are pointers to void *
 
-The information contained in this electronic mail transmission is intended by Racelogic Ltd for the use of the named individual or entity to which it is directed and may contain information that is confidential or privileged. If you have received this electronic mail transmission in error, please delete it from your system without copying or forwarding it, and notify the sender of the error by reply email so that the sender's address records can be corrected. The views expressed by the sender of this communication do not necessarily represent those of Racelogic Ltd. Please note that Racelogic reserves the right to monitor e-mail communications passing through its network
+Is it normal kernel style to use void* pointer arithmetic?
+
+> > +	if (offset <= s->objsize && len <= s->objsize - offset)
+> 
+> If offset == s->objsize then we access the first byte after the object.
+
+Well, then objsize - offset == 0 and len can be 0 only to pass the right
+part of && check.  But (len == 0) case is already handled above.
+
+But yes, for better readability it should be "<".
 
 
+Thank you,
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
