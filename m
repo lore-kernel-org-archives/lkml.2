@@ -1,82 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016Ab1GSPto (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 11:49:44 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:61250 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751747Ab1GSPtm convert rfc822-to-8bit (ORCPT
+	id S1752033Ab1GSPyh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 11:54:37 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:53980
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751481Ab1GSPyg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 11:49:42 -0400
+	Tue, 19 Jul 2011 11:54:36 -0400
+Date: Tue, 19 Jul 2011 11:54:31 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Curt Wohlgemuth <curtw@google.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        fengguang.wu@intel.com
+Subject: Re: [PATCH] writeback: Don't wait for completion in
+ writeback_inodes_sb_nr
+Message-ID: <20110719155431.GA5631@infradead.org>
+References: <1309304616-8657-1-git-send-email-curtw@google.com>
+ <20110629005422.GQ32466@dastard>
+ <BANLkTimKtwVZo3D+w9AB2-C83d08YROcMw@mail.gmail.com>
+ <20110629081155.GA5558@infradead.org>
+ <BANLkTinoFOnQoo3k3KiDgqd7+uBH6shNesxhmVRo9wWr0WCkEw@mail.gmail.com>
+ <20110629180010.GB32236@infradead.org>
+ <BANLkTi=5Jgrb_wQ_AKn3LJOYERTcTix01BCGPYnjGi4iJZhxgA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4E25A1E3.9080707@gmail.com>
-References: <4E252076.1050309@gmail.com>
-	<CAD2nsn12vOXv-msWR+GF7edz3Q26P-pb4H-SO4rf2RHjC7mG+w@mail.gmail.com>
-	<4E2525BA.4090902@gmail.com>
-	<CAD2nsn3ifSMa_eFr2vQ0VVF9Ga-0VD3YB_beb28r+eoAHKv4kQ@mail.gmail.com>
-	<4E25A1E3.9080707@gmail.com>
-Date: Tue, 19 Jul 2011 21:19:40 +0530
-Message-ID: <CAD2nsn1xEB-e33_wrGqLETZ4MwFy12gtyawtg5XHLH0=-9vs2w@mail.gmail.com>
-Subject: Re: ath: Unable to reset channel (2412 MHz), reset status -5
-From: Mohammed Shafi <shafi.wireless@gmail.com>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-wireless@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTi=5Jgrb_wQ_AKn3LJOYERTcTix01BCGPYnjGi4iJZhxgA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 19, 2011 at 8:55 PM, Justin P. Mattock
-<justinmattock@gmail.com> wrote:
-> On 07/18/2011 11:46 PM, Mohammed Shafi wrote:
->>
->> On Tue, Jul 19, 2011 at 12:05 PM, Justin P. Mattock
->> <justinmattock@gmail.com>  wrote:
->>>
->>> On 07/18/2011 11:25 PM, Mohammed Shafi wrote:
->>>>
->>>> On Tue, Jul 19, 2011 at 11:43 AM, Justin P. Mattock
->>>> <justinmattock@gmail.com>    wrote:
->>>>>
->>>>> seems with the latest Mainline I am getting the ath9k carpping out
->>>>> after
->>>>> a
->>>>> while of streaming(dmesg below)..:
->>>>> http://fpaste.org/D7wM/
->>>>>
->>>>> will try a bisect if I have the time..
->>>>
->>>> I will try to recreate here with 3.0.0-rc7-wl, we can get more
->>>> information by ath9k debug=0xffffffff.
->>>> thanks.
->>>>
->>>
->>> cool!
->>> seems to fire off randomly over here.
->>
->> I have got AR5416, will try with that.
->>
->
-> I can try the bisect, but might take a while, since external
-> activities(job). Seems this is just starting i.g. with
-> 3.0.0-rc1 I never saw this, but with 3.0.0-rc7-00125-gf560f66
-> its making noise.
+On Wed, Jun 29, 2011 at 02:30:17PM -0700, Curt Wohlgemuth wrote:
+> I can definitely see how tagging with the start of sync would be
+> helpful; also how going from three to two passes seems like a
+> no-brainer.
+> 
+> But what's the real point of doing even two passes -- one SYNC_NONE
+> followed by one SYNC_ALL?  Is it try to get through as many inodes as
+> possible before we potentially lock up by waiting on an inode on an
+> unavailable device?
 
-I am unable to get this problem in my AR5416 :( will also try
-tomorrow. I am using the card for browsing etc.
-recently there were patches for hardware code changes.
-just a guess, please check does this patch helps(or is it already
-there). i think this will be called via
-ath_set_channel->ath9k_hw_reset->ath9k_hw_init_bb and may be
-https://patchwork.kernel.org/patch/957902/
+Yes.  Or at least that's the idea, I'd love to see an actual
+prove for it.
 
->
-> Justin P. Mattock
->
-
-
-
--- 
-shafi
