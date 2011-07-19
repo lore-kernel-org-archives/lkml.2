@@ -1,178 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752332Ab1GSLyP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 07:54:15 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:62442 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751032Ab1GSLyO convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:3:1>);
-	Tue, 19 Jul 2011 07:54:14 -0400
-Message-Id: <4E258C82020000780004E3C2@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Tue, 19 Jul 2011 12:54:10 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86: constify PCI raw ops structures
+	id S1752103Ab1GSL7E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 07:59:04 -0400
+Received: from filtteri2.pp.htv.fi ([213.243.153.185]:50635 "EHLO
+	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751265Ab1GSL7D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 07:59:03 -0400
+Subject: Re: [RFA][PATCH] trace/mm: Remove kmem.h from slab_def.h
+From: Pekka Enberg <penberg@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        Eduard - Gabriel Munteanu <eduard.munteanu@linux360.ro>,
+        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>, cl@linux.com
+In-Reply-To: <1310614265.27864.16.camel@gandalf.stny.rr.com>
+References: <1310614265.27864.16.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Tue, 19 Jul 2011 14:59:00 +0300
+Message-ID: <1311076740.5161.3.camel@jaguar>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As with any other such change, the goal is to prevent inadvertent
-writes to these structures (assuming DEBUG_RODATA is enabled), and to
-separate data (possibly frequently) written to from such never getting
-modified.
+On Wed, 2011-07-13 at 23:31 -0400, Steven Rostedt wrote:
+> [ RFA - Request for Acks ]
+> 
+> Having event headers in other headers can cause the necessary macro
+> magic to break. For example, if we have in some C file:
+> 
+> #define CREATE_TRACE_POINTS
+> #include <trace/events/foo.h>
+> 
+> But then in trace/events/foo.h, for some reason it needs to include
+> linux/slab.h. Which includes linux/slab_def.h which happens to include
+> the trace/events/kmem.h, and causes the TRACE_EVENT() macros in that
+> file to be processed, then all hell breaks loose.
+> 
+> To avoid this problem, it is better to just include trace/events/kmem.h
+> in the C files that need it. It is already included in most of them,
+> only mm/slab.c also needed to include it.
+> 
+> I tested this with ktest running 10 randconfigs each with SLAB, SLUB,
+> and SLOB enabled (for a total of 30 randconfig builds). With 30
+> successful builds, this change should not be an issue. SLUB and SLOB
+> have it already done.
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
+Acked-by: Pekka Enberg <penberg@kernel.org>
 
----
- arch/x86/include/asm/pci_x86.h |    6 +++---
- arch/x86/pci/ce4100.c          |    2 +-
- arch/x86/pci/common.c          |    4 ++--
- arch/x86/pci/direct.c          |    6 +++---
- arch/x86/pci/mmconfig_32.c     |    2 +-
- arch/x86/pci/mmconfig_64.c     |    2 +-
- arch/x86/pci/numaq_32.c        |    2 +-
- arch/x86/pci/olpc.c            |    2 +-
- arch/x86/pci/pcbios.c          |    4 ++--
- 9 files changed, 15 insertions(+), 15 deletions(-)
-
---- 3.0-rc7/arch/x86/include/asm/pci_x86.h
-+++ 3.0-rc7-x86-pci-raw-ops-const/arch/x86/include/asm/pci_x86.h
-@@ -99,10 +99,10 @@ struct pci_raw_ops {
- 						int reg, int len, u32 val);
- };
- 
--extern struct pci_raw_ops *raw_pci_ops;
--extern struct pci_raw_ops *raw_pci_ext_ops;
-+extern const struct pci_raw_ops *raw_pci_ops;
-+extern const struct pci_raw_ops *raw_pci_ext_ops;
- 
--extern struct pci_raw_ops pci_direct_conf1;
-+extern const struct pci_raw_ops pci_direct_conf1;
- extern bool port_cf9_safe;
- 
- /* arch_initcall level */
---- 3.0-rc7/arch/x86/pci/ce4100.c
-+++ 3.0-rc7-x86-pci-raw-ops-const/arch/x86/pci/ce4100.c
-@@ -302,7 +302,7 @@ static int ce4100_conf_write(unsigned in
- 	return pci_direct_conf1.write(seg, bus, devfn, reg, len, value);
- }
- 
--struct pci_raw_ops ce4100_pci_conf = {
-+static const struct pci_raw_ops ce4100_pci_conf = {
- 	.read =	ce4100_conf_read,
- 	.write = ce4100_conf_write,
- };
---- 3.0-rc7/arch/x86/pci/common.c
-+++ 3.0-rc7-x86-pci-raw-ops-const/arch/x86/pci/common.c
-@@ -33,8 +33,8 @@ int noioapicreroute = 1;
- int pcibios_last_bus = -1;
- unsigned long pirq_table_addr;
- struct pci_bus *pci_root_bus;
--struct pci_raw_ops *raw_pci_ops;
--struct pci_raw_ops *raw_pci_ext_ops;
-+const struct pci_raw_ops *__read_mostly raw_pci_ops;
-+const struct pci_raw_ops *__read_mostly raw_pci_ext_ops;
- 
- int raw_pci_read(unsigned int domain, unsigned int bus, unsigned int devfn,
- 						int reg, int len, u32 *val)
---- 3.0-rc7/arch/x86/pci/direct.c
-+++ 3.0-rc7-x86-pci-raw-ops-const/arch/x86/pci/direct.c
-@@ -79,7 +79,7 @@ static int pci_conf1_write(unsigned int
- 
- #undef PCI_CONF1_ADDRESS
- 
--struct pci_raw_ops pci_direct_conf1 = {
-+const struct pci_raw_ops pci_direct_conf1 = {
- 	.read =		pci_conf1_read,
- 	.write =	pci_conf1_write,
- };
-@@ -173,7 +173,7 @@ static int pci_conf2_write(unsigned int
- 
- #undef PCI_CONF2_ADDRESS
- 
--struct pci_raw_ops pci_direct_conf2 = {
-+static const struct pci_raw_ops pci_direct_conf2 = {
- 	.read =		pci_conf2_read,
- 	.write =	pci_conf2_write,
- };
-@@ -189,7 +189,7 @@ struct pci_raw_ops pci_direct_conf2 = {
-  * This should be close to trivial, but it isn't, because there are buggy
-  * chipsets (yes, you guessed it, by Intel and Compaq) that have no class ID.
-  */
--static int __init pci_sanity_check(struct pci_raw_ops *o)
-+static int __init pci_sanity_check(const struct pci_raw_ops *o)
- {
- 	u32 x = 0;
- 	int year, devfn;
---- 3.0-rc7/arch/x86/pci/mmconfig_32.c
-+++ 3.0-rc7-x86-pci-raw-ops-const/arch/x86/pci/mmconfig_32.c
-@@ -117,7 +117,7 @@ static int pci_mmcfg_write(unsigned int
- 	return 0;
- }
- 
--static struct pci_raw_ops pci_mmcfg = {
-+static const struct pci_raw_ops pci_mmcfg = {
- 	.read =		pci_mmcfg_read,
- 	.write =	pci_mmcfg_write,
- };
---- 3.0-rc7/arch/x86/pci/mmconfig_64.c
-+++ 3.0-rc7-x86-pci-raw-ops-const/arch/x86/pci/mmconfig_64.c
-@@ -81,7 +81,7 @@ static int pci_mmcfg_write(unsigned int
- 	return 0;
- }
- 
--static struct pci_raw_ops pci_mmcfg = {
-+static const struct pci_raw_ops pci_mmcfg = {
- 	.read =		pci_mmcfg_read,
- 	.write =	pci_mmcfg_write,
- };
---- 3.0-rc7/arch/x86/pci/numaq_32.c
-+++ 3.0-rc7-x86-pci-raw-ops-const/arch/x86/pci/numaq_32.c
-@@ -108,7 +108,7 @@ static int pci_conf1_mq_write(unsigned i
- 
- #undef PCI_CONF1_MQ_ADDRESS
- 
--static struct pci_raw_ops pci_direct_conf1_mq = {
-+static const struct pci_raw_ops pci_direct_conf1_mq = {
- 	.read	= pci_conf1_mq_read,
- 	.write	= pci_conf1_mq_write
- };
---- 3.0-rc7/arch/x86/pci/olpc.c
-+++ 3.0-rc7-x86-pci-raw-ops-const/arch/x86/pci/olpc.c
-@@ -297,7 +297,7 @@ static int pci_olpc_write(unsigned int s
- 	return 0;
- }
- 
--static struct pci_raw_ops pci_olpc_conf = {
-+static const struct pci_raw_ops pci_olpc_conf = {
- 	.read =	pci_olpc_read,
- 	.write = pci_olpc_write,
- };
---- 3.0-rc7/arch/x86/pci/pcbios.c
-+++ 3.0-rc7-x86-pci-raw-ops-const/arch/x86/pci/pcbios.c
-@@ -301,7 +301,7 @@ static int pci_bios_write(unsigned int s
-  * Function table for BIOS32 access
-  */
- 
--static struct pci_raw_ops pci_bios_access = {
-+static const struct pci_raw_ops pci_bios_access = {
- 	.read =		pci_bios_read,
- 	.write =	pci_bios_write
- };
-@@ -310,7 +310,7 @@ static struct pci_raw_ops pci_bios_acces
-  * Try to find PCI BIOS.
-  */
- 
--static struct pci_raw_ops * __devinit pci_find_bios(void)
-+static const struct pci_raw_ops * __devinit pci_find_bios(void)
- {
- 	union bios32 *check;
- 	unsigned char sum;
+> diff --git a/include/linux/slab_def.h b/include/linux/slab_def.h
+> index 83203ae..d12c70a 100644
+> --- a/include/linux/slab_def.h
+> +++ b/include/linux/slab_def.h
+> @@ -15,8 +15,6 @@
+>  #include <asm/cache.h>		/* kmalloc_sizes.h needs L1_CACHE_BYTES */
+>  #include <linux/compiler.h>
+>  
+> -#include <trace/events/kmem.h>
+> -
+>  /*
+>   * Enforce a minimum alignment for the kmalloc caches.
+>   * Usually, the kmalloc caches are cache_line_size() aligned, except when
+> diff --git a/mm/slab.c b/mm/slab.c
+> index d96e223..e4bd1ec 100644
+> --- a/mm/slab.c
+> +++ b/mm/slab.c
+> @@ -121,6 +121,8 @@
+>  #include	<asm/tlbflush.h>
+>  #include	<asm/page.h>
+>  
+> +#include	<trace/events/kmem.h>
+> +
+>  /*
+>   * DEBUG	- 1 for kmem_cache_create() to honour; SLAB_RED_ZONE & SLAB_POISON.
+>   *		  0 for faster, smaller code (especially in the critical paths).
+> 
+> 
 
 
