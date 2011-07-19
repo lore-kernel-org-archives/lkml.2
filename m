@@ -1,41 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770Ab1GSJJa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 05:09:30 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:58021 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752673Ab1GSJJ3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 05:09:29 -0400
-Subject: Re: [PATCH]drivers:net:Kconfig
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: wangyanqing <udknight@gmail.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org
-In-Reply-To: <20110719090014.GA5455@udknight>
-References: <20110719090014.GA5455@udknight>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 19 Jul 2011 11:09:19 +0200
-Message-ID: <1311066559.2375.15.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1752475Ab1GSJLV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 05:11:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26855 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752210Ab1GSJLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 05:11:20 -0400
+Message-ID: <4E254A24.7060209@redhat.com>
+Date: Tue, 19 Jul 2011 17:11:00 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc14 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, Andi Kleen <andi@firstfloor.org>,
+        linux-mm@kvack.org
+Subject: Re: [Patch] mm: make CONFIG_NUMA depend on CONFIG_SYSFS
+References: <1310987909-3129-1-git-send-email-amwang@redhat.com>	 <20110718135243.GA5349@suse.de>  <4E25221F.6060605@redhat.com>	 <1311058498.16961.15.camel@edumazet-laptop>  <4E252CA1.803@redhat.com> <1311065361.2375.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+In-Reply-To: <1311065361.2375.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 19 juillet 2011 à 17:00 +0800, wangyanqing a écrit :
-> Broadcom Tigon3 driver tg3.ko can't work without the Broadcom PHY,
->  so maybe we should add a dependence on it.Or at least we should add
->  notice in the help txt.
-> 
+于 2011年07月19日 16:49, Eric Dumazet 写道:
+>
+> Sorry, I misread the patch, I was confused by the title, since it still
+> claims "make CONFIG_NUMA depend on CONFIG_SYSFS" ;)
+>
 
-Thats strange.
-
-Here I have a (running) tg3 adapter, but
-
-$ zgrep BROADCOM /proc/config.gz
-# CONFIG_BROADCOM_PHY is not set
-
-Could you elaborate ?
-
-
+My bad, /me forgot to change $subject. :-/
