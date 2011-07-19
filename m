@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751767Ab1GSJ5r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 05:57:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23251 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751657Ab1GSJ5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 05:57:44 -0400
-Date: Tue, 19 Jul 2011 11:57:27 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: rostedt@goodmis.org, a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [RFC 3/4] perf, ftrace: Add new perf ioctl for function trace
- filter
-Message-ID: <20110719095727.GA3008@jolsa.brq.redhat.com>
-References: <1310390576-8289-1-git-send-email-jolsa@redhat.com>
- <1310390576-8289-4-git-send-email-jolsa@redhat.com>
- <20110718151229.GA32167@somewhere>
+	id S1751727Ab1GSKHl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 06:07:41 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:38146 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750882Ab1GSKHk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 06:07:40 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6411"; a="104371853"
+Message-ID: <072dac57b14fc739033c65fe289234c3.squirrel@www.codeaurora.org>
+In-Reply-To: <201107191118.48536.oneukum@suse.de>
+References: <1308231068-24038-2-git-send-email-tlinder@codeaurora.org>
+    <20110630174538.GA7979@xanatos>
+    <8bcfda19cbc633e011e6b28a6183e68b.squirrel@www.codeaurora.org>
+    <201107191118.48536.oneukum@suse.de>
+Date: Tue, 19 Jul 2011 03:07:39 -0700 (PDT)
+Subject: Re: [PATCH/RFC 5/5] usb: Add support for streams alloc/dealloc to 
+     devio.c
+From: "Amit Blay" <ablay@codeaurora.org>
+To: "Oliver Neukum" <oneukum@suse.de>
+Cc: "Amit Blay" <ablay@codeaurora.org>,
+        "Sarah Sharp" <sarah.a.sharp@linux.intel.com>,
+        "Tatyana Brokhman" <tlinder@codeaurora.org>, greg@kroah.com,
+        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org, balbi@ti.com,
+        "Amit Blay" <ablay@qualcomm.com>,
+        "open list" <linux-kernel@vger.kernel.org>
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110718151229.GA32167@somewhere>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 18, 2011 at 05:12:33PM +0200, Frederic Weisbecker wrote:
-> On Mon, Jul 11, 2011 at 03:22:55PM +0200, Jiri Olsa wrote:
-> > As the amount of kernel functions obtained by the ftrace:function tracepoint
-> > is quite big, it's desirable to be able to set the filter on the ftrace
-> > level.
-> > 
-> > Added PERF_EVENT_IOC_SET_FTRACE ioctl to be able to specify function filter
-> > for perf event. The interface is the same as for the set_ftrace_filter file.
-> > 
-> > Also the same string parser is used as for the set_ftrace_filter file.
-> 
-> I'm not sure I understand why an ioctl is needed for that.
-> Why not using the ftrace filter?
-> 
-> The first idea was to do something like this:
-> 
-> 	ip == func1 || ip == func2 || ....
+Hi Oliver,
 
-The part where I got stuck is when you start to combine the fields
-in the filter like:
+>> 1. Interface number [IN]
+>> 2. Bitmap indicating which EP to allocate streams for [IN]
+>
+> If this is a bitmap,
+>
+>> 3. Number of streams to allocate, one number [IN}
+>> 4. Number of streams actually allocated, one number  [OUT]
+>
+> how can those be scalars?
+>
 
-	ip == func1 || ip_parent != func2
-	ip == func1 || (ip == func2 && ip_parent != func3)
+The bitmap only indicates which EP the user space requests to allocate
+streams for. The actual number is taken from #3.
 
-Which is ok when all functions are enabled and ip/parent_ip fields
-are treated as values. But I'd need enable proper set of functions
-based on above filter parsing.. which might not be that easy :)
+Thanks,
+Amit.
 
-So I thought it'd be easier to have the filter as above,
-plus you could specify the amount of traced functions with
-ioctl command.
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-> 
-> But that makes a too long expression. So I thought we
-> could bring support for the "+" operator and have expressions
-> like:
-> 
-> 	ip == func1 + func2 + func3 + ....
-> 
-> 	ip == !func1
-
-So would you like to have just simple filter for function event?
-(embedded into the current event filter..) like:
-
-	ip == func1 + func2 + func3 + 
-
-Support just one 'ip' field and whatever we got in the parameter
-we put into the ftrace filter.. ?
-
-thanks,
-jirka
