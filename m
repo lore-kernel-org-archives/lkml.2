@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527Ab1GSLvX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 07:51:23 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:24548 "EHLO
+	id S1752332Ab1GSLyP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 07:54:15 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:62442 "EHLO
 	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752456Ab1GSLvW convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751032Ab1GSLyO convert rfc822-to-8bit (ORCPT
 	<rfc822;groupwise-JBeulich@novell.com:3:1>);
-	Tue, 19 Jul 2011 07:51:22 -0400
-Message-Id: <4E258BD6020000780004E3BE@nat28.tlf.novell.com>
+	Tue, 19 Jul 2011 07:54:14 -0400
+Message-Id: <4E258C82020000780004E3C2@nat28.tlf.novell.com>
 X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Tue, 19 Jul 2011 12:51:18 +0100
+Date: Tue, 19 Jul 2011 12:54:10 +0100
 From: "Jan Beulich" <JBeulich@novell.com>
 To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
 Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86: PCI config space accessor functions should not
-	 ignore the segment argument
+Subject: [PATCH] x86: constify PCI raw ops structures
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
@@ -23,142 +22,157 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without this change, the majority of the raw PCI config space access
-functions silently ignore a non-zero segment argument, which is
-certainly wrong.
-
-Apart from pci_direct_conf1, all other non-MMCFG access methods get
-used only for non-extended accesses (i.e. assigned to raw_pci_ops
-only). Consequently, with the way raw_pci_{read,write}() work, it would
-be a coding error to call these functions with a non-zero segment (with
-the current call flow this cannot happen afaict).
-
-The access method 1 accessor, as it can be used for extended accesses
-(on AMD systems) instead gets added checks for the passed in segment to
-be zero (returning an error just like out of range values of the other
-arguments would cause).
+As with any other such change, the goal is to prevent inadvertent
+writes to these structures (assuming DEBUG_RODATA is enabled), and to
+separate data (possibly frequently) written to from such never getting
+modified.
 
 Signed-off-by: Jan Beulich <jbeulich@novell.com>
 
 ---
- arch/x86/pci/ce4100.c   |    4 ++++
- arch/x86/pci/direct.c   |    6 ++++--
- arch/x86/pci/numaq_32.c |    2 ++
- arch/x86/pci/olpc.c     |    4 ++++
- arch/x86/pci/pcbios.c   |    2 ++
- 5 files changed, 16 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/pci_x86.h |    6 +++---
+ arch/x86/pci/ce4100.c          |    2 +-
+ arch/x86/pci/common.c          |    4 ++--
+ arch/x86/pci/direct.c          |    6 +++---
+ arch/x86/pci/mmconfig_32.c     |    2 +-
+ arch/x86/pci/mmconfig_64.c     |    2 +-
+ arch/x86/pci/numaq_32.c        |    2 +-
+ arch/x86/pci/olpc.c            |    2 +-
+ arch/x86/pci/pcbios.c          |    4 ++--
+ 9 files changed, 15 insertions(+), 15 deletions(-)
 
+--- 3.0-rc7/arch/x86/include/asm/pci_x86.h
++++ 3.0-rc7-x86-pci-raw-ops-const/arch/x86/include/asm/pci_x86.h
+@@ -99,10 +99,10 @@ struct pci_raw_ops {
+ 						int reg, int len, u32 val);
+ };
+ 
+-extern struct pci_raw_ops *raw_pci_ops;
+-extern struct pci_raw_ops *raw_pci_ext_ops;
++extern const struct pci_raw_ops *raw_pci_ops;
++extern const struct pci_raw_ops *raw_pci_ext_ops;
+ 
+-extern struct pci_raw_ops pci_direct_conf1;
++extern const struct pci_raw_ops pci_direct_conf1;
+ extern bool port_cf9_safe;
+ 
+ /* arch_initcall level */
 --- 3.0-rc7/arch/x86/pci/ce4100.c
-+++ 3.0-rc7-x86-pci-access-seg/arch/x86/pci/ce4100.c
-@@ -257,6 +257,8 @@ static int ce4100_conf_read(unsigned int
- {
- 	int i;
++++ 3.0-rc7-x86-pci-raw-ops-const/arch/x86/pci/ce4100.c
+@@ -302,7 +302,7 @@ static int ce4100_conf_write(unsigned in
+ 	return pci_direct_conf1.write(seg, bus, devfn, reg, len, value);
+ }
  
-+	BUG_ON(seg);
-+
- 	if (bus == 1) {
- 		for (i = 0; i < ARRAY_SIZE(bus1_fixups); i++) {
- 			if (bus1_fixups[i].dev_func == devfn &&
-@@ -282,6 +284,8 @@ static int ce4100_conf_write(unsigned in
- {
- 	int i;
+-struct pci_raw_ops ce4100_pci_conf = {
++static const struct pci_raw_ops ce4100_pci_conf = {
+ 	.read =	ce4100_conf_read,
+ 	.write = ce4100_conf_write,
+ };
+--- 3.0-rc7/arch/x86/pci/common.c
++++ 3.0-rc7-x86-pci-raw-ops-const/arch/x86/pci/common.c
+@@ -33,8 +33,8 @@ int noioapicreroute = 1;
+ int pcibios_last_bus = -1;
+ unsigned long pirq_table_addr;
+ struct pci_bus *pci_root_bus;
+-struct pci_raw_ops *raw_pci_ops;
+-struct pci_raw_ops *raw_pci_ext_ops;
++const struct pci_raw_ops *__read_mostly raw_pci_ops;
++const struct pci_raw_ops *__read_mostly raw_pci_ext_ops;
  
-+	BUG_ON(seg);
-+
- 	if (bus == 1) {
- 		for (i = 0; i < ARRAY_SIZE(bus1_fixups); i++) {
- 			if (bus1_fixups[i].dev_func == devfn &&
+ int raw_pci_read(unsigned int domain, unsigned int bus, unsigned int devfn,
+ 						int reg, int len, u32 *val)
 --- 3.0-rc7/arch/x86/pci/direct.c
-+++ 3.0-rc7-x86-pci-access-seg/arch/x86/pci/direct.c
-@@ -22,7 +22,7 @@ static int pci_conf1_read(unsigned int s
++++ 3.0-rc7-x86-pci-raw-ops-const/arch/x86/pci/direct.c
+@@ -79,7 +79,7 @@ static int pci_conf1_write(unsigned int
+ 
+ #undef PCI_CONF1_ADDRESS
+ 
+-struct pci_raw_ops pci_direct_conf1 = {
++const struct pci_raw_ops pci_direct_conf1 = {
+ 	.read =		pci_conf1_read,
+ 	.write =	pci_conf1_write,
+ };
+@@ -173,7 +173,7 @@ static int pci_conf2_write(unsigned int
+ 
+ #undef PCI_CONF2_ADDRESS
+ 
+-struct pci_raw_ops pci_direct_conf2 = {
++static const struct pci_raw_ops pci_direct_conf2 = {
+ 	.read =		pci_conf2_read,
+ 	.write =	pci_conf2_write,
+ };
+@@ -189,7 +189,7 @@ struct pci_raw_ops pci_direct_conf2 = {
+  * This should be close to trivial, but it isn't, because there are buggy
+  * chipsets (yes, you guessed it, by Intel and Compaq) that have no class ID.
+  */
+-static int __init pci_sanity_check(struct pci_raw_ops *o)
++static int __init pci_sanity_check(const struct pci_raw_ops *o)
  {
- 	unsigned long flags;
+ 	u32 x = 0;
+ 	int year, devfn;
+--- 3.0-rc7/arch/x86/pci/mmconfig_32.c
++++ 3.0-rc7-x86-pci-raw-ops-const/arch/x86/pci/mmconfig_32.c
+@@ -117,7 +117,7 @@ static int pci_mmcfg_write(unsigned int
+ 	return 0;
+ }
  
--	if ((bus > 255) || (devfn > 255) || (reg > 4095)) {
-+	if (seg || (bus > 255) || (devfn > 255) || (reg > 4095)) {
- 		*value = -1;
- 		return -EINVAL;
- 	}
-@@ -53,7 +53,7 @@ static int pci_conf1_write(unsigned int
- {
- 	unsigned long flags;
+-static struct pci_raw_ops pci_mmcfg = {
++static const struct pci_raw_ops pci_mmcfg = {
+ 	.read =		pci_mmcfg_read,
+ 	.write =	pci_mmcfg_write,
+ };
+--- 3.0-rc7/arch/x86/pci/mmconfig_64.c
++++ 3.0-rc7-x86-pci-raw-ops-const/arch/x86/pci/mmconfig_64.c
+@@ -81,7 +81,7 @@ static int pci_mmcfg_write(unsigned int
+ 	return 0;
+ }
  
--	if ((bus > 255) || (devfn > 255) || (reg > 4095))
-+	if (seg || (bus > 255) || (devfn > 255) || (reg > 4095))
- 		return -EINVAL;
- 
- 	raw_spin_lock_irqsave(&pci_config_lock, flags);
-@@ -97,6 +97,7 @@ static int pci_conf2_read(unsigned int s
- 	unsigned long flags;
- 	int dev, fn;
- 
-+	BUG_ON(seg);
- 	if ((bus > 255) || (devfn > 255) || (reg > 255)) {
- 		*value = -1;
- 		return -EINVAL;
-@@ -138,6 +139,7 @@ static int pci_conf2_write(unsigned int
- 	unsigned long flags;
- 	int dev, fn;
- 
-+	BUG_ON(seg);
- 	if ((bus > 255) || (devfn > 255) || (reg > 255)) 
- 		return -EINVAL;
- 
+-static struct pci_raw_ops pci_mmcfg = {
++static const struct pci_raw_ops pci_mmcfg = {
+ 	.read =		pci_mmcfg_read,
+ 	.write =	pci_mmcfg_write,
+ };
 --- 3.0-rc7/arch/x86/pci/numaq_32.c
-+++ 3.0-rc7-x86-pci-access-seg/arch/x86/pci/numaq_32.c
-@@ -34,6 +34,7 @@ static int pci_conf1_mq_read(unsigned in
- 	unsigned long flags;
- 	void *adr __iomem = XQUAD_PORT_ADDR(0xcfc, BUS2QUAD(bus));
++++ 3.0-rc7-x86-pci-raw-ops-const/arch/x86/pci/numaq_32.c
+@@ -108,7 +108,7 @@ static int pci_conf1_mq_write(unsigned i
  
-+	BUG_ON(seg);
- 	if (!value || (bus >= MAX_MP_BUSSES) || (devfn > 255) || (reg > 255))
- 		return -EINVAL;
+ #undef PCI_CONF1_MQ_ADDRESS
  
-@@ -73,6 +74,7 @@ static int pci_conf1_mq_write(unsigned i
- 	unsigned long flags;
- 	void *adr __iomem = XQUAD_PORT_ADDR(0xcfc, BUS2QUAD(bus));
- 
-+	BUG_ON(seg);
- 	if ((bus >= MAX_MP_BUSSES) || (devfn > 255) || (reg > 255)) 
- 		return -EINVAL;
- 
+-static struct pci_raw_ops pci_direct_conf1_mq = {
++static const struct pci_raw_ops pci_direct_conf1_mq = {
+ 	.read	= pci_conf1_mq_read,
+ 	.write	= pci_conf1_mq_write
+ };
 --- 3.0-rc7/arch/x86/pci/olpc.c
-+++ 3.0-rc7-x86-pci-access-seg/arch/x86/pci/olpc.c
-@@ -206,6 +206,8 @@ static int pci_olpc_read(unsigned int se
- {
- 	uint32_t *addr;
++++ 3.0-rc7-x86-pci-raw-ops-const/arch/x86/pci/olpc.c
+@@ -297,7 +297,7 @@ static int pci_olpc_write(unsigned int s
+ 	return 0;
+ }
  
-+	BUG_ON(seg);
-+
- 	/* Use the hardware mechanism for non-simulated devices */
- 	if (!is_simulated(bus, devfn))
- 		return pci_direct_conf1.read(seg, bus, devfn, reg, len, value);
-@@ -264,6 +266,8 @@ static int pci_olpc_read(unsigned int se
- static int pci_olpc_write(unsigned int seg, unsigned int bus,
- 		unsigned int devfn, int reg, int len, uint32_t value)
- {
-+	BUG_ON(seg);
-+
- 	/* Use the hardware mechanism for non-simulated devices */
- 	if (!is_simulated(bus, devfn))
- 		return pci_direct_conf1.write(seg, bus, devfn, reg, len, value);
+-static struct pci_raw_ops pci_olpc_conf = {
++static const struct pci_raw_ops pci_olpc_conf = {
+ 	.read =	pci_olpc_read,
+ 	.write = pci_olpc_write,
+ };
 --- 3.0-rc7/arch/x86/pci/pcbios.c
-+++ 3.0-rc7-x86-pci-access-seg/arch/x86/pci/pcbios.c
-@@ -181,6 +181,7 @@ static int pci_bios_read(unsigned int se
- 	unsigned long flags;
- 	unsigned long bx = (bus << 8) | devfn;
++++ 3.0-rc7-x86-pci-raw-ops-const/arch/x86/pci/pcbios.c
+@@ -301,7 +301,7 @@ static int pci_bios_write(unsigned int s
+  * Function table for BIOS32 access
+  */
  
-+	BUG_ON(seg);
- 	if (!value || (bus > 255) || (devfn > 255) || (reg > 255))
- 		return -EINVAL;
+-static struct pci_raw_ops pci_bios_access = {
++static const struct pci_raw_ops pci_bios_access = {
+ 	.read =		pci_bios_read,
+ 	.write =	pci_bios_write
+ };
+@@ -310,7 +310,7 @@ static struct pci_raw_ops pci_bios_acces
+  * Try to find PCI BIOS.
+  */
  
-@@ -247,6 +248,7 @@ static int pci_bios_write(unsigned int s
- 	unsigned long flags;
- 	unsigned long bx = (bus << 8) | devfn;
- 
-+	BUG_ON(seg);
- 	if ((bus > 255) || (devfn > 255) || (reg > 255)) 
- 		return -EINVAL;
- 
+-static struct pci_raw_ops * __devinit pci_find_bios(void)
++static const struct pci_raw_ops * __devinit pci_find_bios(void)
+ {
+ 	union bios32 *check;
+ 	unsigned char sum;
 
 
