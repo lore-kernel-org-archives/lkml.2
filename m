@@ -1,75 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054Ab1GSU5c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 16:57:32 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:49255 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751924Ab1GSU5a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 16:57:30 -0400
-Subject: Re: [PATCH v7 00/16] EVM
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: James Morris <jmorris@namei.org>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, David Safford <safford@watson.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Dmitry Kasatkin <dmitry.s.kasatkin@gmail.com>
-In-Reply-To: <alpine.LRH.2.00.1107190948540.16033@tundra.namei.org>
-References: <1309377038-4550-1-git-send-email-zohar@linux.vnet.ibm.com>
-	 <alpine.LRH.2.00.1107190948540.16033@tundra.namei.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 19 Jul 2011 16:56:11 -0400
-Message-ID: <1311108971.3374.17.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+	id S1752084Ab1GSU6c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 16:58:32 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:28979 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751668Ab1GSU6b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 16:58:31 -0400
+Message-ID: <4E25F002.2080503@hp.com>
+Date: Tue, 19 Jul 2011 14:58:42 -0600
+From: Terry Loftin <terry.loftin@hp.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Bob Montgomery <bob.montgomery@hp.com>
+Subject: [PATCH 0/2] sched: Fix "divide error: 0000" in find_busiest_group
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-19 at 09:52 +1000, James Morris wrote:
-> The discussion on this seems to have run its course.
-> 
-> Does anyone have any further issues with these patches?
-> 
-> Otherwise, I will merge EVM.
-> 
-> 
-> - James
+Howdy,
 
-James,
+The divide error occurs in inlined function update_sg_lb_stats() in
+kernel/sched.c when we adjust the relative CPU power of a group by
+dividing group_load by group->cpu_power:
 
-If/when you're ready to merge the EVM patches, they have been rebased
-against the latest security-testing-2.6/#next and a couple of
-whitespaces removed.  No other changes were made.
+    /* Adjust by relative CPU power of the group */ sgs->avg_load =
+    (sgs->group_load * SCHED_LOAD_SCALE) / group->cpu_power;
 
-The following changes since commit 0f2a55d5bb2372058275b0b343d90dd5d640d045:
+In this case, group->cpu_power is zero.  This was set in
+update_cpu_power(), which depends on scale_rt_power() among other things.
+scale_rt_power() is based in part on the rq->clock and rq->age_stamp
+values for the runqueue:
 
-  TOMOYO: Update kernel-doc. (2011-07-14 17:50:03 +1000)
+    total = sched_avg_period() + (rq->clock - rq->age_stamp);
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/zohar/ima-2.6.git next-evm
+The clock and age_stamp values are in nanoseconds and come from
+__cycles_2_ns() which converts the CPU tsc counter to nanoseconds.
+On 64-bit systems, the computation returned from __cycles_2_ns() wraps
+when the nanosecond value is 54 bits or larger (about 208.5 days).
 
-Dmitry Kasatkin (5):
-      evm: add support for different security.evm data types
-      evm: crypto hash replaced by shash
-      evm: additional parameter to pass integrity cache entry 'iint'
-      evm: evm_verify_hmac must not return INTEGRITY_UNKNOWN
-      evm: replace hmac_status with evm_status
+The rq->age_stamp is designed to follow the clock value but does not
+account for the fact that the clock value may wrap, and it is never reset.
+After rq->clock wraps, the expression (rq->clock - rq->age_stamp) leads
+to large negative values which in turn lead to very large values for
+scale_rt_power().
 
-Mimi Zohar (11):
-      security: new security_inode_init_security API adds function callback
-      integrity: move ima inode integrity data management
-      xattr: define vfs_getxattr_alloc and vfs_xattr_cmp
-      evm: re-release
-      security: imbed evm calls in security hooks
-      evm: evm_inode_post_removexattr
-      evm: imbed evm_inode_post_setattr
-      evm: add evm_inode_init_security to initialize new files
-      evm: call evm_inode_init_security from security_inode_init_security
-      evm: permit only valid security.evm xattrs to be updated
-      evm: add evm_inode_setattr to prevent updating an invalid security.evm
+In update_cpu_power(), an unsigned long local variable, 'power', is
+used to hold the intermediate result, including the return value from
+scale_rt_power(), before it is placed in an unsigned int rq->cpu_power.
+If the power calculated in update_cpu_power() is > 32 bits, but all
+the low order bits are zero, then the value will be truncated and
+rq->cpu_power will be set to zero, leading to the divide by zero error.
+There is a protective check immediately before the assignment, but it
+compares the full 64-bit value instead of the 32-bit portion that will
+be stored in rq->cpu_power.
 
-thanks,
+I have analyzed two crash dumps from systems that were up 220 and 230
+days to confirm this.
 
-Mimi
+-T
+
+Signed-off-by: Terry Loftin <terry.loftin@hp.com>
+Signed-off-by: Bob Montgomery <bob.montgomery@hp.com>
+
 
