@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751187Ab1GSON6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 10:13:58 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35584 "EHLO arroyo.ext.ti.com"
+	id S1751297Ab1GSOPO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 10:15:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10157 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750803Ab1GSON4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 10:13:56 -0400
-From: Keshava Munegowda <keshava_mgowda@ti.com>
-To: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Keshava Munegowda <keshava_mgowda@ti.com>, <balbi@ti.com>,
-        <gadiyar@ti.com>, <sameo@linux.intel.com>, <parthab@india.ti.com>,
-        <kishon@ti.com>, Keshava Munegowda <Keshava_mgowda@ti.com>
-Subject: [PATCH] arm: omap: usb: clock enable typo fix in usbhs driver
-Date: Tue, 19 Jul 2011 19:41:43 +0530
-Message-ID: <1311084703-10266-1-git-send-email-keshava_mgowda@ti.com>
-X-Mailer: git-send-email 1.6.0.4
+	id S1751001Ab1GSOPM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 10:15:12 -0400
+From: Juan Quintela <quintela@redhat.com>
+To: Marcus Meissner <meissner@novell.com>
+Cc: avi@redhat.com, mtosatti@redhat.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Marcus Meissner <meissner@suse.de>
+Subject: Re: [PATCH] kvm: Initialize all struct members to avoid stack information leak
+In-Reply-To: <1311081438-1731-1-git-send-email-meissner@novell.com> (Marcus
+	Meissner's message of "Tue, 19 Jul 2011 15:17:18 +0200")
+References: <1311081438-1731-1-git-send-email-meissner@novell.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+Reply-To: quintela@redhat.com
+Date: Tue, 19 Jul 2011 16:12:58 +0200
+Message-ID: <m3livutl3p.fsf@neno.neno>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Keshava Munegowda <Keshava_mgowda@ti.com>
+Marcus Meissner <meissner@novell.com> wrote:
+> Hi,
+>
+> Reported to us by Stephan Mueller of atsec.
+>
+> Several .pad struct members are not set to something, so they
+> will leak stack content back to user space.
+>
+> Ciao, Marcus
+>
+> Reported-by: Stephan Mueller <smueller@atsec.com>
+> Signed-off-by: Marcus Meissner <meissner@suse.de>
+> ---
+>  arch/x86/kvm/x86.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 77c9d86..621ffb6 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -3002,6 +3002,7 @@ long kvm_arch_vcpu_ioctl(struct file *filp,
+>  	case KVM_GET_VCPU_EVENTS: {
+>  		struct kvm_vcpu_events events;
+>  
+> +		memset(&events, 0, sizeof(events));
+>  		kvm_vcpu_ioctl_x86_get_vcpu_events(vcpu, &events);
+>  
+>  		r = -EFAULT;
 
-The usbhs_disable function was invoking clk_enable api
-instead of clk_disable; The clk_disable is called to
-disble the port clocks of usbhs
+Looking at arch/x86/include/asm/kvm.h & arch/x86/kvm/x86.c I can't see
+what pad fields are not initialized.  My reading is that everything is
+initialized in kvm_vcpu_ioctl_x86_get_vcpu_events().  What field are you
+refering to?
 
-Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
----
- drivers/mfd/omap-usb-host.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-index 1717144..29601e7 100644
---- a/drivers/mfd/omap-usb-host.c
-+++ b/drivers/mfd/omap-usb-host.c
-@@ -998,9 +998,9 @@ static void usbhs_disable(struct device *dev)
- 
- 	if (is_omap_usbhs_rev2(omap)) {
- 		if (is_ehci_tll_mode(pdata->port_mode[0]))
--			clk_enable(omap->usbtll_p1_fck);
-+			clk_disable(omap->usbtll_p1_fck);
- 		if (is_ehci_tll_mode(pdata->port_mode[1]))
--			clk_enable(omap->usbtll_p2_fck);
-+			clk_disable(omap->usbtll_p2_fck);
- 		clk_disable(omap->utmi_p2_fck);
- 		clk_disable(omap->utmi_p1_fck);
- 	}
--- 
-1.6.0.4
-
+Later, Juan.
