@@ -1,60 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751727Ab1GSKHl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 06:07:41 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:38146 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750882Ab1GSKHk (ORCPT
+	id S1751929Ab1GSKPc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 06:15:32 -0400
+Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:2769
+	"EHLO AM1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751061Ab1GSKP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 06:07:40 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6411"; a="104371853"
-Message-ID: <072dac57b14fc739033c65fe289234c3.squirrel@www.codeaurora.org>
-In-Reply-To: <201107191118.48536.oneukum@suse.de>
-References: <1308231068-24038-2-git-send-email-tlinder@codeaurora.org>
-    <20110630174538.GA7979@xanatos>
-    <8bcfda19cbc633e011e6b28a6183e68b.squirrel@www.codeaurora.org>
-    <201107191118.48536.oneukum@suse.de>
-Date: Tue, 19 Jul 2011 03:07:39 -0700 (PDT)
-Subject: Re: [PATCH/RFC 5/5] usb: Add support for streams alloc/dealloc to 
-     devio.c
-From: "Amit Blay" <ablay@codeaurora.org>
-To: "Oliver Neukum" <oneukum@suse.de>
-Cc: "Amit Blay" <ablay@codeaurora.org>,
-        "Sarah Sharp" <sarah.a.sharp@linux.intel.com>,
-        "Tatyana Brokhman" <tlinder@codeaurora.org>, greg@kroah.com,
-        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org, balbi@ti.com,
-        "Amit Blay" <ablay@qualcomm.com>,
-        "open list" <linux-kernel@vger.kernel.org>
-User-Agent: SquirrelMail/1.4.17
+	Tue, 19 Jul 2011 06:15:29 -0400
+X-SpamScore: 1
+X-BigFish: VS1(zzzz1202hzz8275bhz2ei87h2a8h668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPVD:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
+X-FB-DOMAIN-IP-MATCH: fail
+From: Sonic Zhang <sonic.adi@gmail.com>
+To: Alan Cox <alan@linux.intel.com>
+CC: <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Sonic Zhang <sonic.zhang@analog.com>
+Subject: [PATCH 1/2] serial:blackfin: Correct coding style in bfin serial driver.
+Date: Tue, 19 Jul 2011 18:09:24 +0800
+Message-ID: <1311070165-29402-1-git-send-email-sonic.adi@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Oliver,
+From: Sonic Zhang <sonic.zhang@analog.com>
 
->> 1. Interface number [IN]
->> 2. Bitmap indicating which EP to allocate streams for [IN]
->
-> If this is a bitmap,
->
->> 3. Number of streams to allocate, one number [IN}
->> 4. Number of streams actually allocated, one number  [OUT]
->
-> how can those be scalars?
->
+Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+---
+ drivers/tty/serial/bfin_5xx.c |   25 ++++++++++++++++---------
+ 1 files changed, 16 insertions(+), 9 deletions(-)
 
-The bitmap only indicates which EP the user space requests to allocate
-streams for. The actual number is taken from #3.
-
-Thanks,
-Amit.
-
+diff --git a/drivers/tty/serial/bfin_5xx.c b/drivers/tty/serial/bfin_5xx.c
+index 9b1ff2b..6981e2a 100644
+--- a/drivers/tty/serial/bfin_5xx.c
++++ b/drivers/tty/serial/bfin_5xx.c
+@@ -234,8 +234,8 @@ static void bfin_serial_rx_chars(struct bfin_serial_port *uart)
+ 	status = UART_GET_LSR(uart);
+ 	UART_CLEAR_LSR(uart);
+ 
+- 	ch = UART_GET_CHAR(uart);
+- 	uart->port.icount.rx++;
++	ch = UART_GET_CHAR(uart);
++	uart->port.icount.rx++;
+ 
+ #if defined(CONFIG_KGDB_SERIAL_CONSOLE) || \
+ 	defined(CONFIG_KGDB_SERIAL_CONSOLE_MODULE)
+@@ -739,9 +739,8 @@ static int bfin_serial_startup(struct uart_port *port)
+ 			pr_info("Unable to attach BlackFin UART CTS interrupt. So, disable it.\n");
+ 		}
+ 	}
+-	if (uart->rts_pin >= 0) {
++	if (uart->rts_pin >= 0)
+ 		gpio_direction_output(uart->rts_pin, 0);
+-	}
+ #endif
+ #ifdef CONFIG_SERIAL_BFIN_HARD_CTSRTS
+ 	if (uart->cts_pin >= 0 && request_irq(uart->status_irq,
+@@ -1091,10 +1090,18 @@ bfin_serial_console_get_options(struct bfin_serial_port *uart, int *baud,
+ 				*parity = 'o';
+ 		}
+ 		switch (lcr & 0x03) {
+-			case 0:	*bits = 5; break;
+-			case 1:	*bits = 6; break;
+-			case 2:	*bits = 7; break;
+-			case 3:	*bits = 8; break;
++		case 0:
++			*bits = 5;
++			break;
++		case 1:
++			*bits = 6;
++			break;
++		case 2:
++			*bits = 7;
++			break;
++		case 3:
++			*bits = 8;
++			break;
+ 		}
+ 		/* Set DLAB in LCR to Access DLL and DLH */
+ 		UART_SET_DLAB(uart);
+@@ -1183,7 +1190,7 @@ static struct console bfin_serial_console = {
+ 	.index		= -1,
+ 	.data		= &bfin_serial_reg,
+ };
+-#define BFIN_SERIAL_CONSOLE	&bfin_serial_console
++#define BFIN_SERIAL_CONSOLE	(&bfin_serial_console)
+ #else
+ #define BFIN_SERIAL_CONSOLE	NULL
+ #endif /* CONFIG_SERIAL_BFIN_CONSOLE */
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+1.7.0.4
+
 
