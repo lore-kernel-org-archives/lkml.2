@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751073Ab1GSOHo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 10:07:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46881 "EHLO mx2.suse.de"
+	id S1751187Ab1GSON6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 10:13:58 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:35584 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750829Ab1GSOHn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 10:07:43 -0400
-Message-ID: <4E258FAE.6040807@suse.cz>
-Date: Tue, 19 Jul 2011 16:07:42 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	id S1750803Ab1GSON4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 10:13:56 -0400
+From: Keshava Munegowda <keshava_mgowda@ti.com>
+To: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Keshava Munegowda <keshava_mgowda@ti.com>, <balbi@ti.com>,
+        <gadiyar@ti.com>, <sameo@linux.intel.com>, <parthab@india.ti.com>,
+        <kishon@ti.com>, Keshava Munegowda <Keshava_mgowda@ti.com>
+Subject: [PATCH] arm: omap: usb: clock enable typo fix in usbhs driver
+Date: Tue, 19 Jul 2011 19:41:43 +0530
+Message-ID: <1311084703-10266-1-git-send-email-keshava_mgowda@ti.com>
+X-Mailer: git-send-email 1.6.0.4
 MIME-Version: 1.0
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Steven Rostedt <srostedt@redhat.com>
-Subject: Re: [RFC 1/4] kbuild: export MAKECMDGOALS
-References: <1309563076-5050-1-git-send-email-lacombar@gmail.com> <1309563076-5050-2-git-send-email-lacombar@gmail.com> <CACqU3MU1kFzn9916A8vq+jB+r=4iDmWp_kk=E+thPuojWwZA6g@mail.gmail.com>
-In-Reply-To: <CACqU3MU1kFzn9916A8vq+jB+r=4iDmWp_kk=E+thPuojWwZA6g@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18.7.2011 21:05, Arnaud Lacombe wrote:
-> Hi,
->
-> On Fri, Jul 1, 2011 at 7:31 PM, Arnaud Lacombe<lacombar@gmail.com>  wrote:
->> Cc: Steven Rostedt<srostedt@redhat.com>
->> ---
->>   Makefile |    3 +++
->>   1 files changed, 3 insertions(+), 0 deletions(-)
->>
->> diff --git a/Makefile b/Makefile
->> index afb8e0d..ea517fd 100644
->> --- a/Makefile
->> +++ b/Makefile
->> @@ -22,6 +22,9 @@ LC_COLLATE=C
->>   LC_NUMERIC=C
->>   export LC_COLLATE LC_NUMERIC
->>
->> +# Export make goals
->> +export MAKECMDGOALS
->> +
->>   # We are using a recursive build, so we need to do a little thinking
->>   # to get the ordering right.
->>   #
-> Michal, before I send a new version of this serie, can you tell me
-> your point of view on the export of MAKECMDGOALS (or
-> KBUILD_MAKECMDGOALS) and Kconfig to the environment ?
+From: Keshava Munegowda <Keshava_mgowda@ti.com>
 
-A cleaner interface would IMO be to check the target in the makefile and 
-pass a commandline option to streamline_config.pl, so that it's easier 
-to run it manually.
+The usbhs_disable function was invoking clk_enable api
+instead of clk_disable; The clk_disable is called to
+disble the port clocks of usbhs
 
-Michal
+Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
+---
+ drivers/mfd/omap-usb-host.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
+index 1717144..29601e7 100644
+--- a/drivers/mfd/omap-usb-host.c
++++ b/drivers/mfd/omap-usb-host.c
+@@ -998,9 +998,9 @@ static void usbhs_disable(struct device *dev)
+ 
+ 	if (is_omap_usbhs_rev2(omap)) {
+ 		if (is_ehci_tll_mode(pdata->port_mode[0]))
+-			clk_enable(omap->usbtll_p1_fck);
++			clk_disable(omap->usbtll_p1_fck);
+ 		if (is_ehci_tll_mode(pdata->port_mode[1]))
+-			clk_enable(omap->usbtll_p2_fck);
++			clk_disable(omap->usbtll_p2_fck);
+ 		clk_disable(omap->utmi_p2_fck);
+ 		clk_disable(omap->utmi_p1_fck);
+ 	}
+-- 
+1.6.0.4
+
