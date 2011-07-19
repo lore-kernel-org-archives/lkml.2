@@ -1,119 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752114Ab1GSFiT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 01:38:19 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:44770 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751021Ab1GSFiS (ORCPT
+	id S1752152Ab1GSFiv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 01:38:51 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:49033 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751021Ab1GSFit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 01:38:18 -0400
-From: Ravishankar <ravishankarkm32@gmail.com>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>,
-        Ravishankar <ravishankarkm32@gmail.com>
-Subject: [PATCH 1/2 v3] Staging: comedi: fix printk() issue in adv_pci1710.c
-Date: Tue, 19 Jul 2011 11:20:56 +0530
-Message-Id: <1311054656-14207-1-git-send-email-ravishanakarkm32@gmail.com>
-X-Mailer: git-send-email 1.6.5.2
-In-Reply-To: <[PATCH]Staging: comedi: fix printk() issue in adv_pci1710.c>
-References: <[PATCH]Staging: comedi: fix printk() issue in adv_pci1710.c>
+	Tue, 19 Jul 2011 01:38:49 -0400
+MIME-Version: 1.0
+X-Originating-IP: [93.172.253.223]
+In-Reply-To: <20110609171210.GB3877@ucw.cz>
+References: <1308640714-17961-1-git-send-email-ohad@wizery.com>
+ <1308640714-17961-8-git-send-email-ohad@wizery.com> <20110609171210.GB3877@ucw.cz>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Tue, 19 Jul 2011 08:38:28 +0300
+Message-ID: <CAK=WgbY=gay-mLKhssinPhv1ic6FszGoLyLo9E6y7=3QOLx2FQ@mail.gmail.com>
+Subject: Re: [RFC 7/8] drivers: introduce rpmsg, a remote-processor messaging bus
+To: Pavel Machek <pavel@ucw.cz>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
+        Brian Swetland <swetland@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        davinci-linux-open-source 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ravishankar <ravi.shankar@greenturtles.in>
+Hi Pavel,
 
-This is a patch to the adv_pci1710.c file that fixes up a printk() warning found by the checkpatch.pl tool
+On Thu, Jun 9, 2011 at 8:12 PM, Pavel Machek <pavel@ucw.cz> wrote:
+> So this is basically networking... right? Why not implement it as
+> sockets? (accept, connect, read, write)?
 
-Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
----
-KERN_CONT issue is fixed
+This patch focuses on adding the core rpmsg kernel infrastructure. The
+next step, after getting the basic stuff in, would be adding rpmsg
+drivers, and exposing user space API.
 
- drivers/staging/comedi/drivers/adv_pci1710.c |   20 ++++++++++----------
- 1 files changed, 10 insertions(+), 10 deletions(-)
+For some use cases, where userland talks directly with remote entities
+(and otherwise requires no kernel involvement besides exposing the
+transport), socket API is very nice as it's flexible and prevalent.
 
-diff --git a/drivers/staging/comedi/drivers/adv_pci1710.c b/drivers/staging/comedi/drivers/adv_pci1710.c
-index fd71cc6..093b9e6 100644
---- a/drivers/staging/comedi/drivers/adv_pci1710.c
-+++ b/drivers/staging/comedi/drivers/adv_pci1710.c
-@@ -1396,14 +1396,14 @@ static int pci1710_attach(struct comedi_device *dev,
- 	int i;
- 	int board_index;
- 
--	printk("comedi%d: adv_pci1710: ", dev->minor);
-+	printk(KERN_INFO "comedi%d: adv_pci1710: ", dev->minor);
- 
- 	opt_bus = it->options[0];
- 	opt_slot = it->options[1];
- 
- 	ret = alloc_private(dev, sizeof(struct pci1710_private));
- 	if (ret < 0) {
--		printk(" - Allocation failed!\n");
-+		printk(KERN_CONT "\n");
-+		printk(KERN_ERR "Comedi%d: adv_pci1710: Allocation failed\n",
-+		dev->minor);
- 		return -ENOMEM;
- 	}
- 
-@@ -1451,10 +1451,10 @@ static int pci1710_attach(struct comedi_device *dev,
- 
- 	if (!pcidev) {
- 		if (opt_bus || opt_slot) {
--			printk(" - Card at b:s %d:%d %s\n",
-+			printk(KERN_ERR " - Card at b:s %d:%d %s\n",
- 			       opt_bus, opt_slot, errstr);
- 		} else {
--			printk(" - Card %s\n", errstr);
-+			printk(KERN_ERR " - Card %s\n", errstr);
- 		}
- 		return -EIO;
- 	}
-@@ -1465,7 +1465,7 @@ static int pci1710_attach(struct comedi_device *dev,
- 	irq = pcidev->irq;
- 	iobase = pci_resource_start(pcidev, 2);
- 
--	printk(", b:s:f=%d:%d:%d, io=0x%4lx", pci_bus, pci_slot, pci_func,
-+	printk(KERN_INFO ", b:s:f=%d:%d:%d, io=0x%4lx", pci_bus, pci_slot,
-+	  pci_func, iobase);
- 
- 	dev->iobase = iobase;
-@@ -1487,7 +1487,7 @@ static int pci1710_attach(struct comedi_device *dev,
- 
- 	ret = alloc_subdevices(dev, n_subdevices);
- 	if (ret < 0) {
--		printk(" - Allocation failed!\n");
-+		printk(KERN_CONT " - Allocation failed!\n");
- 		return ret;
- 	}
- 
-@@ -1499,14 +1499,14 @@ static int pci1710_attach(struct comedi_device *dev,
- 					IRQF_SHARED, "Advantech PCI-1710",
- 					dev)) {
- 				printk
--				    (", unable to allocate IRQ %d, DISABLING IT",
-+				    (KERN_INFO ", unable to allocate IRQ %d, DISABLING IT",
- 				     irq);
- 				irq = 0;	/* Can't use IRQ */
- 			} else {
--				printk(", irq=%u", irq);
-+				printk(KERN_CONT ", irq=%u", irq);
- 			}
- 		} else {
--			printk(", IRQ disabled");
-+			printk(KERN_CONT ", IRQ disabled");
- 		}
- 	} else {
- 		irq = 0;
-@@ -1514,7 +1514,7 @@ static int pci1710_attach(struct comedi_device *dev,
- 
- 	dev->irq = irq;
- 
--	printk(".\n");
-+	printk(KERN_CONT ".\n");
- 
- 	subdev = 0;
- 
--- 
-1.6.5.2
+We already have several rpmsg drivers and a rpmsg-based socket API
+implementation too, but we'll get to it only after the core stuff gets
+in.
 
+Thanks,
+Ohad.
