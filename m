@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751630Ab1GSRym (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 13:54:42 -0400
-Received: from goliath.siemens.de ([192.35.17.28]:22364 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751151Ab1GSRyk (ORCPT
+	id S1751746Ab1GSRyq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 13:54:46 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:53893 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751654Ab1GSRyn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 13:54:40 -0400
-X-Greylist: delayed 921 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Jul 2011 13:54:40 EDT
-Message-ID: <4E25C113.9080500@siemens.com>
-Date: Tue, 19 Jul 2011 19:38:27 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	Tue, 19 Jul 2011 13:54:43 -0400
+Date: Tue, 19 Jul 2011 18:54:32 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Rakib Mullick <rakib.mullick@gmail.com>
+Cc: Jan Beulich <JBeulich@novell.com>, mingo@elte.hu, tglx@linutronix.de,
+        hpa@zytor.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: serialize EFI time accesses on rtc_lock
+Message-ID: <20110719175432.GA23018@srcf.ucam.org>
+References: <4E257E33020000780004E319@nat28.tlf.novell.com>
+ <CADZ9YHiBkfcM3jjjJVh_Ydn+uJxjYM6SnDZ=5J3Mmki7fp3NbQ@mail.gmail.com>
 MIME-Version: 1.0
-To: quintela@redhat.com
-CC: Marcus Meissner <meissner@novell.com>, avi@redhat.com, mtosatti@redhat.com,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marcus Meissner <meissner@suse.de>
-Subject: Re: [PATCH] kvm: Initialize all struct members to avoid stack information
- leak
-References: <1311081438-1731-1-git-send-email-meissner@novell.com> <m3livutl3p.fsf@neno.neno>
-In-Reply-To: <m3livutl3p.fsf@neno.neno>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CADZ9YHiBkfcM3jjjJVh_Ydn+uJxjYM6SnDZ=5J3Mmki7fp3NbQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-07-19 16:12, Juan Quintela wrote:
-> Marcus Meissner <meissner@novell.com> wrote:
->> Hi,
->>
->> Reported to us by Stephan Mueller of atsec.
->>
->> Several .pad struct members are not set to something, so they
->> will leak stack content back to user space.
->>
->> Ciao, Marcus
->>
->> Reported-by: Stephan Mueller <smueller@atsec.com>
->> Signed-off-by: Marcus Meissner <meissner@suse.de>
->> ---
->>  arch/x86/kvm/x86.c |    1 +
->>  1 files changed, 1 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
->> index 77c9d86..621ffb6 100644
->> --- a/arch/x86/kvm/x86.c
->> +++ b/arch/x86/kvm/x86.c
->> @@ -3002,6 +3002,7 @@ long kvm_arch_vcpu_ioctl(struct file *filp,
->>  	case KVM_GET_VCPU_EVENTS: {
->>  		struct kvm_vcpu_events events;
->>  
->> +		memset(&events, 0, sizeof(events));
->>  		kvm_vcpu_ioctl_x86_get_vcpu_events(vcpu, &events);
->>  
->>  		r = -EFAULT;
+On Tue, Jul 19, 2011 at 11:32:05PM +0600, Rakib Mullick wrote:
+
+> If I'm not missing anything, this implementation (serialization) could
+> be simpler by holding rtc_lock at the time of calling those functions.
+> I mean, holding rtc_lock before calling EFI services
+> virt_efi_get/set_time and virt_efi_get/set_wakeup_time - something
+> like below:
 > 
-> Looking at arch/x86/include/asm/kvm.h & arch/x86/kvm/x86.c I can't see
-> what pad fields are not initialized.  My reading is that everything is
-> initialized in kvm_vcpu_ioctl_x86_get_vcpu_events().  What field are you
-> refering to?
+>              spin_lock_irqsave(&rtc_lock, flags);
+>              efi.get_time = virt_efi_get_time;
+>              efi.set_time = virt_efi_set_time;
+>              efi.get_wakeup_time = virt_efi_get_wakeup_time;
+>              efi.set_wakeup_time = virt_efi_set_wakeup_time;
+>             spin_unlock_irqrestore(&rtc_lock, flags);
 
-Good question. Information leaks were once addressed by 97e69aa62f, and
-kvm_vcpu_events was not changed since then.
-
-Jan
+That's just assigning some function pointers, not actually making the 
+calls. There's potentially several routes to each of the calls, so it 
+makes sense to do the locking there.
 
 -- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+Matthew Garrett | mjg59@srcf.ucam.org
