@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996Ab1GSDzY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 23:55:24 -0400
-Received: from mail.perches.com ([173.55.12.10]:4160 "EHLO mail.perches.com"
+	id S1752035Ab1GSD6S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 23:58:18 -0400
+Received: from sand.ocn.ne.jp ([122.28.30.136]:55587 "EHLO smtp.sand.ocn.ne.jp"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751260Ab1GSDzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 23:55:24 -0400
-Subject: Re: [PATCH 1/2 v2] Staging: comedi: fix printk() issue in
- adv_pci1710.c
-From: Joe Perches <joe@perches.com>
-To: Ravishankar <ravishankarkm32@gmail.com>
-Cc: gregkh@suse.de, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>
-In-Reply-To: <1311047521-4113-1-git-send-email-ravishankarkm32@gmail.com>
-References: <[PATCH]Staging: comedi: fix printk() issue in adv_pci1710.c>
-	 <1311047521-4113-1-git-send-email-ravishankarkm32@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Jul 2011 20:55:21 -0700
-Message-ID: <1311047721.2286.134.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1751583Ab1GSD6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jul 2011 23:58:17 -0400
+X-Greylist: delayed 1653 seconds by postgrey-1.27 at vger.kernel.org; Mon, 18 Jul 2011 23:58:16 EDT
+From: Jon Povey <jon.povey@racelogic.co.uk>
+To: davinci-linux-open-source@linux.davincidsp.com,
+        linux-arm-kernel@lists.infradead.org, Sekhar Nori <nsekhar@ti.com>
+Cc: linux-kernel@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
+        Jon Povey <jon.povey@racelogic.co.uk>
+Subject: [PATCH] davinci: fix DM365 EVM video input mux bits
+Date: Tue, 19 Jul 2011 12:30:11 +0900
+Message-Id: <1311046211-2849-1-git-send-email-jon.povey@racelogic.co.uk>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-19 at 09:22 +0530, Ravishankar wrote:
-> From: Ravishankar <ravi.shankar@greenturtles.in>
-> This is a patch to the adv_pci1710.c file that fixes up a printk() warning found by the checkpatch.pl tool
-> Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
-> ---
->  KERN_INFO is replaced by KERN_ERR.
->  drivers/staging/comedi/drivers/adv_pci1710.c |   20 ++++++++++----------
->  1 files changed, 10 insertions(+), 10 deletions(-)
-> diff --git a/drivers/staging/comedi/drivers/adv_pci1710.c b/drivers/staging/comedi/drivers/adv_pci1710.c
-> index fd71cc6..093b9e6 100644
-> --- a/drivers/staging/comedi/drivers/adv_pci1710.c
-> +++ b/drivers/staging/comedi/drivers/adv_pci1710.c
-> @@ -1396,14 +1396,14 @@ static int pci1710_attach(struct comedi_device *dev,\
-[]
-> -	printk("comedi%d: adv_pci1710: ", dev->minor);
-> +	printk(KERN_INFO "comedi%d: adv_pci1710: ", dev->minor);
-[]
->  	if (ret < 0) {
-> -		printk(" - Allocation failed!\n");
-> +		printk(KERN_ERR " - Allocation failed!\n");
->  		return -ENOMEM;
->  	}
+Video input mux settings for tvp7002 and imager inputs were swapped.
+Comment was correct.
 
-Ravi, (may I call you Ravi?)
-you've done this several times now.
+Tested on EVM with tvp7002 input.
 
-Please understand that a printk without a "\n" termination
-can be continued by subsequent printks.
+Signed-off-by: Jon Povey <jon.povey@racelogic.co.uk>
+---
+As a bugfix maybe this should try to get into 3.0?
 
-When that happens, you should use printk(KERN_CONT... or
-pr_cont(... to continue the previous message, not give a
-new error level to the continuation.
+ arch/arm/mach-davinci/board-dm365-evm.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-cheers, Joe
-
+diff --git a/arch/arm/mach-davinci/board-dm365-evm.c b/arch/arm/mach-davinci/board-dm365-evm.c
+index c67f684..09a87e6 100644
+--- a/arch/arm/mach-davinci/board-dm365-evm.c
++++ b/arch/arm/mach-davinci/board-dm365-evm.c
+@@ -520,7 +520,7 @@ fail:
+ 	 */
+ 	if (have_imager()) {
+ 		label = "HD imager";
+-		mux |= 1;
++		mux |= 2;
+ 
+ 		/* externally mux MMC1/ENET/AIC33 to imager */
+ 		mux |= BIT(6) | BIT(5) | BIT(3);
+@@ -540,7 +540,7 @@ fail:
+ 		resets &= ~BIT(1);
+ 
+ 		if (have_tvp7002()) {
+-			mux |= 2;
++			mux |= 1;
+ 			resets &= ~BIT(2);
+ 			label = "tvp7002 HD";
+ 		} else {
+-- 
+1.6.3.3
 
