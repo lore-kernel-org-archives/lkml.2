@@ -1,43 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752001Ab1GSPqg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 11:46:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52016 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751745Ab1GSPqe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 11:46:34 -0400
-Date: Tue, 19 Jul 2011 11:43:04 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, chrisw@redhat.com,
-        ddutile@redhat.com, iommu@lists.linux-foundation.org
-Subject: Re: [PATCH] kvm: Disable device assignment without interrupt
- remapping
-Message-ID: <20110719144304.GA31520@amt.cnet>
-References: <20110714192500.4065.28234.stgit@s20.home>
+	id S1752016Ab1GSPto (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 11:49:44 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:61250 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751747Ab1GSPtm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 11:49:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110714192500.4065.28234.stgit@s20.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4E25A1E3.9080707@gmail.com>
+References: <4E252076.1050309@gmail.com>
+	<CAD2nsn12vOXv-msWR+GF7edz3Q26P-pb4H-SO4rf2RHjC7mG+w@mail.gmail.com>
+	<4E2525BA.4090902@gmail.com>
+	<CAD2nsn3ifSMa_eFr2vQ0VVF9Ga-0VD3YB_beb28r+eoAHKv4kQ@mail.gmail.com>
+	<4E25A1E3.9080707@gmail.com>
+Date: Tue, 19 Jul 2011 21:19:40 +0530
+Message-ID: <CAD2nsn1xEB-e33_wrGqLETZ4MwFy12gtyawtg5XHLH0=-9vs2w@mail.gmail.com>
+Subject: Re: ath: Unable to reset channel (2412 MHz), reset status -5
+From: Mohammed Shafi <shafi.wireless@gmail.com>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        linux-wireless@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 14, 2011 at 01:27:03PM -0600, Alex Williamson wrote:
-> IOMMU interrupt remapping support provides a further layer of
-> isolation for device assignment by preventing arbitrary interrupt
-> block DMA writes by a malicious guest from reaching the host.  By
-> default, we should require that the platform provides interrupt
-> remapping support, with an opt-in mechanism for existing behavior.
-> 
-> Both AMD IOMMU and Intel VT-d2 hardware support interrupt
-> remapping, however we currently only have software support on
-> the Intel side.  Users wishing to re-enable device assignment
-> when interrupt remapping is not supported on the platform can
-> use the "allow_unsafe_assigned_interrupts=1" module option.
-> 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+On Tue, Jul 19, 2011 at 8:55 PM, Justin P. Mattock
+<justinmattock@gmail.com> wrote:
+> On 07/18/2011 11:46 PM, Mohammed Shafi wrote:
+>>
+>> On Tue, Jul 19, 2011 at 12:05 PM, Justin P. Mattock
+>> <justinmattock@gmail.com>  wrote:
+>>>
+>>> On 07/18/2011 11:25 PM, Mohammed Shafi wrote:
+>>>>
+>>>> On Tue, Jul 19, 2011 at 11:43 AM, Justin P. Mattock
+>>>> <justinmattock@gmail.com>    wrote:
+>>>>>
+>>>>> seems with the latest Mainline I am getting the ath9k carpping out
+>>>>> after
+>>>>> a
+>>>>> while of streaming(dmesg below)..:
+>>>>> http://fpaste.org/D7wM/
+>>>>>
+>>>>> will try a bisect if I have the time..
+>>>>
+>>>> I will try to recreate here with 3.0.0-rc7-wl, we can get more
+>>>> information by ath9k debug=0xffffffff.
+>>>> thanks.
+>>>>
+>>>
+>>> cool!
+>>> seems to fire off randomly over here.
+>>
+>> I have got AR5416, will try with that.
+>>
+>
+> I can try the bisect, but might take a while, since external
+> activities(job). Seems this is just starting i.g. with
+> 3.0.0-rc1 I never saw this, but with 3.0.0-rc7-00125-gf560f66
+> its making noise.
 
-Applied, thanks.
+I am unable to get this problem in my AR5416 :( will also try
+tomorrow. I am using the card for browsing etc.
+recently there were patches for hardware code changes.
+just a guess, please check does this patch helps(or is it already
+there). i think this will be called via
+ath_set_channel->ath9k_hw_reset->ath9k_hw_init_bb and may be
+https://patchwork.kernel.org/patch/957902/
 
+>
+> Justin P. Mattock
+>
+
+
+
+-- 
+shafi
