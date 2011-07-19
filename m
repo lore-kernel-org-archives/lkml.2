@@ -1,87 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751263Ab1GSNxE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 09:53:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16372 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751001Ab1GSNxB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 09:53:01 -0400
-Message-ID: <4E258C2D.2070808@redhat.com>
-Date: Tue, 19 Jul 2011 09:52:45 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100505 Fedora/3.0.4-2.el6 Thunderbird/3.0.4
+	id S1751355Ab1GSN5I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 09:57:08 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:53328 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751024Ab1GSN5H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 09:57:07 -0400
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Andi Kleen <andi@firstfloor.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 01/34] System Firmware Interface
-References: <1310994528-26276-1-git-send-email-prarit@redhat.com> <1310994528-26276-2-git-send-email-prarit@redhat.com> <m2vcuz3xsz.fsf@firstfloor.org> <20110719100544.55c7f7fb@lxorguk.ukuu.org.uk> <4E25775A.4050306@redhat.com> <20110719132531.GH8006@one.firstfloor.org>
-In-Reply-To: <20110719132531.GH8006@one.firstfloor.org>
+Date: Tue, 19 Jul 2011 15:57:06 +0200
+Message-ID: <CACTFLANAFT=G4kFvHUqvLrt=MxgpJnJ-EeHY8zd49pZvsNRejw@mail.gmail.com>
+Subject: Regression in handling of unsafe UBI shutdown
+From: Daniel Mack <zonque@gmail.com>
+To: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Sven Neumann <s.neumann@raumfeld.com>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Adrian Hunter <adrian.hunter@nokia.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hey,
+
+we're facing a new behaviour with 3.0-rc7 kernels wrt UBI file systems
+that are not properly unmounted on shut down. The newest kernel we're
+using in production is 2.6.36.4, and this version doesn't show the
+effect.
+
+When our devices boot up, the bootloader (U-Boot) initializes its UBI
+code, reads in the uImage from the root partition and executes it.
+This worked very well in thousands of installations previously (with
+kernels up to version 2.6.36.4), and generally, it still does work
+well with the latest cutting edge when the kernel is shut down
+properly and unmounts the UBI partitions safely. However, if the power
+is removed out of a sudden from a running system, U-Boot now doesn't
+like the FS anymore upon the next boot:
 
 
-On 07/19/2011 09:25 AM, Andi Kleen wrote:
-> Playing the devils advocate here, but this is really unclear...
->
->   
+Creating 1 MTD partitions on "nand0":
+0x00120000-0x08000000 : "mtd=3"
+UBI: attaching mtd1 to ubi0
+UBI: physical eraseblock size:   131072 bytes (128 KiB)
+UBI: logical eraseblock size:    126976 bytes
+UBI: smallest flash I/O unit:    2048
+UBI: VID header offset:          2048 (aligned 2048)
+UBI: data offset:                4096
+UBI: attached mtd1 to ubi0
+UBI: MTD device name:            "mtd=3"
+UBI: MTD device size:            126 MiB
+UBI: number of good PEBs:        1014
+UBI: number of bad PEBs:         1
+UBI: max. allowed volumes:       128
+UBI: wear-leveling threshold:    4096
+UBI: number of internal volumes: 1
+UBI: number of user volumes:     2
+UBI: available PEBs:             8
+UBI: total number of reserved PEBs: 1006
+UBI: number of PEBs reserved for bad PEB handling: 10
+UBI: max/mean erase counter: 4/3
+UBIFS: recovery needed
+Error reading superblock on volume 'ubi:RootFS'!
+UBIFS not mounted, use ubifs mount to mount volume first!
+Wrong Image Format for bootm command
+ERROR: can't get kernel image!
 
-Sorry, I'll try to be more specific.
 
->> There is some additional information I'd like to throw out here as
->> well.  SMBIOS also provides information on the system state after the
->> BIOS/EFI is finished and before the kernel has been booted.  This has
->> been *invaluable* to me when diagnosing some wonky hardware from OEMs. 
->>     
-> Hmm this is for SMBIOS tables that changes at runtime?
-> Why exactly is the kernel booting a good point to dump that?
->
->   
+Hence my question is: were there any radical changes in the UBI/UBIFS
+code on the kernel side that make older code not like the new content
+anymore?
 
-Let me back up :) as I clearly didn't do a good job of explaining this.
 
-I have systems/have had systems in which NO kernel would boot because of
-faulty hardware.  That hardware was identified as bad during the BIOS
-POST but no information on it could be determined because we didn't make
-it very far through boot :/.  As you know Andi, booting with bad memory
-or a bad cpu is excruciatingly difficult to diagnose.
-
-The SMBIOS does provide access to a system log in which details on
-failed hardware (again, failed hardware having been identified by the
-BIOS) and that information was immensely useful to me during the system
-boot.  (see the Type 15 System Event Log Structure).
-
-Plugging that into the existing "dmi" code was a headache.  The code is
-just not laid out to make expansion of dmi devices easy.
-
->   
->> I want to expand the SMBIOS layer to dump that information out when I
->>     
-> What information exactly?
->
-> And dumping = print to system log?
->   
-
-Yes, to the system log.
-
->   
->> tl;dr: There are some other useful bits of SMBIOS we could take
->> advantage of but the current "dmi" layer is difficult to work with.
->>     
-> Like what?
->
->   
-
-Like the above example ;) ... but there are other things like the type
-of memory in the system from a HW debug point of view become important. 
-My #1 goal is to get the SMBIOS version # exported via sysfs and to get
-the type 15 stuff output as debug info.
-
-P.
-
-> -Andi
->
->   
+Thanks,
+Daniel
