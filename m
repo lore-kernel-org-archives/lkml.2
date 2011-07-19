@@ -1,91 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752296Ab1GSXEd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 19:04:33 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:9925 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751483Ab1GSXEb convert rfc822-to-8bit (ORCPT
+	id S1752351Ab1GSXNR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 19:13:17 -0400
+Received: from hapkido.dreamhost.com ([66.33.216.122]:50367 "EHLO
+	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752054Ab1GSXNQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 19:04:31 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 19 Jul 2011 16:04:23 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Andrew Chew <AChew@nvidia.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "olof@lixom.net" <olof@lixom.net>,
-        Dan Willemsen <dwillemsen@nvidia.com>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Venkat Moganty <vmoganty@nvidia.com>
-CC: "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@vger.kernel.org" <linux-arm-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Chew <AChew@nvidia.com>
-Date: Tue, 19 Jul 2011 16:04:22 -0700
-Subject: RE: [PATCH 3/3] dt: tegra20: Add ehci nodes to Seaboard.
-Thread-Topic: [PATCH 3/3] dt: tegra20: Add ehci nodes to Seaboard.
-Thread-Index: AcxGZjkx5ggFPfwHSci0NC6oKmMXGAAAYWJQ
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF049EBDED2A@HQMAIL01.nvidia.com>
-References: <1311115617-9697-1-git-send-email-achew@nvidia.com>
- <1311115617-9697-3-git-send-email-achew@nvidia.com>
-In-Reply-To: <1311115617-9697-3-git-send-email-achew@nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 19 Jul 2011 19:13:16 -0400
+Subject: Re: [PATCH 00/16] Replace Scsi_Cmnd
+From: Davidlohr Bueso <dave@gnu.org>
+Reply-To: dave@gnu.org
+To: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        JBottomley@parallels.com
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <1310710771.3184.51.camel@offbook>
+References: <1310710771.3184.51.camel@offbook>
+Content-Type: text/plain; charset="UTF-8"
+Organization: GNU
+Date: Tue, 19 Jul 2011 19:12:33 -0400
+Message-ID: <1311117153.3215.2.camel@offbook>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-achew@nvidia.com wrote at Tuesday, July 19, 2011 4:47 PM:
-> From: Andrew Chew <achew@nvidia.com>
+Hi James,
+
+Can I get some input on this?
+
+Thanks,
+Davidlohr
+
+On Fri, 2011-07-15 at 02:19 -0400, Davidlohr Bueso wrote:
+> Hi,
 > 
-> Signed-off-by: Andrew Chew <achew@nvidia.com>
-
-Removing status="disabled" from tegra20.dtsi makes this patch obsolete.
-
-Although that said, since many of the USB properties are board-specific
-and determined by system characterization, they aren't generally
-applicable to all Tegra devices. As such, should those values be moved
-into tegra-seaboard.dts instead? Perhaps tegra20.dtsi should specify
-the default values that the driver currently uses if not supplied with
-platform data though... I think the Seaboard values are the defaults,
-which still would make this patch obsolete.
-
-> ---
->  arch/arm/boot/dts/tegra-seaboard.dts |   12 ++++++++++++
->  1 files changed, 12 insertions(+), 0 deletions(-)
+> Plenty of older drivers are still using the ugly Scsi_Cmd typedef. The
+> following patchset removes it and change it for struct scsi_cmnd.
 > 
-> diff --git a/arch/arm/boot/dts/tegra-seaboard.dts b/arch/arm/boot/dts/tegra-seaboard.dts
-> index 5a99b4c..c5a1b71 100644
-> --- a/arch/arm/boot/dts/tegra-seaboard.dts
-> +++ b/arch/arm/boot/dts/tegra-seaboard.dts
-> @@ -31,4 +31,16 @@
->  	sdhci@c8000600 {
->  		status = "ok";
->  	};
-> +
-> +	ehci@c5000000 {
-> +		status = "ok";
-> +	};
-> +
-> +	ehci@c5004000 {
-> +		status = "ok";
-> +	};
-> +
-> +	ehci@c5008000 {
-> +		status = "ok";
-> +	};
->  };
+> drivers/scsi/NCR5380.c       |   72 +++++++++++++++++-----------------
+> drivers/scsi/NCR5380.h       |   14 +++---
+> drivers/scsi/NCR53c406a.c    |    6 +-
+> drivers/scsi/aha152x.c       |   68 ++++++++++++++++----------------
+> drivers/scsi/aha1542.c       |   28 ++++++------
+> drivers/scsi/aha1542.h       |   10 ++--
+> drivers/scsi/aha1740.c       |    8 ++--
+> drivers/scsi/aha1740.h       |    4 +-
+> drivers/scsi/atari_NCR5380.c |   90
+> +++++++++++++++++++++---------------------
+> drivers/scsi/atari_scsi.c    |   10 ++--
+> drivers/scsi/atari_scsi.h    |    2 +-
+> drivers/scsi/dtc.h           |    4 +-
+> drivers/scsi/fd_mcs.c        |   10 ++--
+> drivers/scsi/g_NCR5380.c     |   10 ++--
+> drivers/scsi/g_NCR5380.h     |    4 +-
+> drivers/scsi/gdth.c          |   64 +++++++++++++++---------------
+> drivers/scsi/gdth.h          |   10 ++--
+> drivers/scsi/gdth_proc.c     |    2 +-
+> drivers/scsi/ibmmca.c        |   26 ++++++------
+> drivers/scsi/in2000.c        |   68 ++++++++++++++++----------------
+> drivers/scsi/in2000.h        |   12 +++---
+> drivers/scsi/megaraid.c      |   28 ++++++------
+> drivers/scsi/megaraid.h      |   16 ++++----
+> drivers/scsi/nsp32_debug.c   |    2 +-
+> drivers/scsi/pas16.h         |    4 +-
+> drivers/scsi/scsi.h          |    3 -
+> drivers/scsi/scsi_typedefs.h |    2 -
+> drivers/scsi/sym53c416.c     |    6 +-
+> drivers/scsi/sym53c416.h     |    2 +-
+> drivers/scsi/wd7000.c        |    2 +-
+> 30 files changed, 291 insertions(+), 296 deletions(-) 
+> 
+> 
 > --
-> 1.7.6
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
--- 
-nvpublic
 
