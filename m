@@ -1,72 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752043Ab1GSKgH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 06:36:07 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:54046 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751032Ab1GSKgG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 06:36:06 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6411"; a="104581558"
-Message-ID: <73f3a41d26b2e3462c93c3c3b85706ca.squirrel@www.codeaurora.org>
-In-Reply-To: <201107191226.58593.oneukum@suse.de>
-References: <1308231068-24038-2-git-send-email-tlinder@codeaurora.org>
-    <201107191118.48536.oneukum@suse.de>
-    <072dac57b14fc739033c65fe289234c3.squirrel@www.codeaurora.org>
-    <201107191226.58593.oneukum@suse.de>
-Date: Tue, 19 Jul 2011 03:36:05 -0700 (PDT)
-Subject: Re: [PATCH/RFC 5/5] usb: Add support for streams alloc/dealloc to 
-     devio.c
-From: "Amit Blay" <ablay@codeaurora.org>
-To: "Oliver Neukum" <oneukum@suse.de>
-Cc: "Amit Blay" <ablay@codeaurora.org>,
-        "Sarah Sharp" <sarah.a.sharp@linux.intel.com>,
-        "Tatyana Brokhman" <tlinder@codeaurora.org>, greg@kroah.com,
-        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org, balbi@ti.com,
-        "Amit Blay" <ablay@qualcomm.com>,
-        "open list" <linux-kernel@vger.kernel.org>
-User-Agent: SquirrelMail/1.4.17
-MIME-Version: 1.0
+	id S1751988Ab1GSKjI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 06:39:08 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:8681 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751080Ab1GSKjH convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:3:1>);
+	Tue, 19 Jul 2011 06:39:07 -0400
+Message-Id: <4E257AE7020000780004E2FF@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Tue, 19 Jul 2011 11:39:03 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86: serialize SMP boot's CMOS accesses on rtc_lock
+Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Oliver,
+With CPU hotplug, there is a theoretical race between other CMOS
+(namely RTC) accesses and those done in the SMP secondary processor
+bringup path. I am unware of the problem having been noticed by anyone
+in practice, but it would very likely be rather spurious and very hard
+to reproduce. So to be on the safe side, acquire rtc_lock around those
+accesses.
 
->> >> 1. Interface number [IN]
->> >> 2. Bitmap indicating which EP to allocate streams for [IN]
->> >
->> > If this is a bitmap,
->> >
->> >> 3. Number of streams to allocate, one number [IN}
->> >> 4. Number of streams actually allocated, one number  [OUT]
->> >
->> > how can those be scalars?
->> >
->>
->> The bitmap only indicates which EP the user space requests to allocate
->> streams for. The actual number is taken from #3.
->
-> Exactly. If you specify EP with a bitmap, what do you do if multiple bits
-> are set in the map?
->
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
 
-The user space can pass multiple EPs to allocate streams for. This is
-aligned with the HCD API which expects an array of EPs and number of
-streams to allocate. Please have a look in xhci.c.
+---
+ arch/x86/include/asm/smpboot_hooks.h |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-I suggest to pass a bitmap from user space to represent the list of EPs.
-An alternative is to pass an array, but I didn't find any real advantage
-for this.
+--- 3.0-rc7/arch/x86/include/asm/smpboot_hooks.h
++++ 3.0-rc7-x86-rtc-lock-SMP/arch/x86/include/asm/smpboot_hooks.h
+@@ -10,7 +10,11 @@ static inline void smpboot_clear_io_apic
+ 
+ static inline void smpboot_setup_warm_reset_vector(unsigned long start_eip)
+ {
++	unsigned long flags;
++
++	spin_lock_irqsave(&rtc_lock, flags);
+ 	CMOS_WRITE(0xa, 0xf);
++	spin_unlock_irqrestore(&rtc_lock, flags);
+ 	local_flush_tlb();
+ 	pr_debug("1.\n");
+ 	*((volatile unsigned short *)phys_to_virt(apic->trampoline_phys_high)) =
+@@ -23,6 +27,8 @@ static inline void smpboot_setup_warm_re
+ 
+ static inline void smpboot_restore_warm_reset_vector(void)
+ {
++	unsigned long flags;
++
+ 	/*
+ 	 * Install writable page 0 entry to set BIOS data area.
+ 	 */
+@@ -32,7 +38,9 @@ static inline void smpboot_restore_warm_
+ 	 * Paranoid:  Set warm reset code and vector here back
+ 	 * to default values.
+ 	 */
++	spin_lock_irqsave(&rtc_lock, flags);
+ 	CMOS_WRITE(0, 0xf);
++	spin_unlock_irqrestore(&rtc_lock, flags);
+ 
+ 	*((volatile u32 *)phys_to_virt(apic->trampoline_phys_low)) = 0;
+ }
 
-Thanks,
-Amit.
 
- --
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
