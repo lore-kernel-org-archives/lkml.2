@@ -1,130 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751977Ab1GTWCQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 18:02:16 -0400
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:38803 "EHLO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751536Ab1GTWCP convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 18:02:15 -0400
-From: Bing Zhao <bzhao@marvell.com>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 20 Jul 2011 14:46:32 -0700
-Subject: RE: [PATCH 3/3] wireless: mwifiex: print hw address via %pM
-Thread-Topic: [PATCH 3/3] wireless: mwifiex: print hw address via %pM
-Thread-Index: AcxG4eVfznsqlnOaSO6iDcJwmVNGKwARFzqA
-Message-ID: <477F20668A386D41ADCC57781B1F704307FFBB2835@SC-VEXCH1.marvell.com>
-References: <fddeabc04a1b81a5c1f51a4164d93366dccf5f8e.1311162926.git.andriy.shevchenko@linux.intel.com>
- <8f12d3ad71585e863084560b227534a4b9e4af54.1311162926.git.andriy.shevchenko@linux.intel.com>
-In-Reply-To: <8f12d3ad71585e863084560b227534a4b9e4af54.1311162926.git.andriy.shevchenko@linux.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	id S1752076Ab1GTWCW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 18:02:22 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:46171 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751536Ab1GTWCT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 18:02:19 -0400
+From: Per Forlin <per.forlin@linaro.org>
+To: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-doc@vger.kernel.org,
+        Venkatraman S <svenkatr@ti.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>, Sourav Poddar <sourav.poddar@ti.com>,
+        Chris Ball <cjb@laptop.org>, Akinobu Mita <akinobu.mita@gmail.com>,
+        J Freyensee <james_p_freyensee@linux.intel.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Per Forlin <per.forlin@linaro.org>
+Subject: [PATCH v3 1/3] fault-inject: make fault injection available for modules
+Date: Thu, 21 Jul 2011 00:01:59 +0200
+Message-Id: <1311199321-4618-2-git-send-email-per.forlin@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1311199321-4618-1-git-send-email-per.forlin@linaro.org>
+References: <1311199321-4618-1-git-send-email-per.forlin@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy,
+export symbols should_fail() and init_fault_attr_dentries() in order
+to make modules use the fault injection functionality
 
-Thanks for the patch.
+Signed-off-by: Per Forlin <per.forlin@linaro.org>
+---
+ lib/fault-inject.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-> -----Original Message-----
-> From: Andy Shevchenko [mailto:andriy.shevchenko@linux.intel.com]
-> Sent: Wednesday, July 20, 2011 6:35 AM
-> To: linux-wireless@vger.kernel.org; netdev@vger.kernel.org; John W. Linville; linux-
-> kernel@vger.kernel.org
-> Cc: Andy Shevchenko; Bing Zhao
-> Subject: [PATCH 3/3] wireless: mwifiex: print hw address via %pM
-> 
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> Cc: Bing Zhao <bzhao@marvell.com>
-
-Acked-by: Bing Zhao <bzhao@marvell.com>
-
-Thanks,
-Bing
-
-> ---
->  drivers/net/wireless/mwifiex/debugfs.c |   33 +++++++------------------------
->  1 files changed, 8 insertions(+), 25 deletions(-)
-> 
-> diff --git a/drivers/net/wireless/mwifiex/debugfs.c b/drivers/net/wireless/mwifiex/debugfs.c
-> index 1bcf9ea..d26a78b 100644
-> --- a/drivers/net/wireless/mwifiex/debugfs.c
-> +++ b/drivers/net/wireless/mwifiex/debugfs.c
-> @@ -216,28 +216,19 @@ mwifiex_info_read(struct file *file, char __user *ubuf,
->  	p += sprintf(p, "bss_mode=\"%s\"\n", bss_modes[info.bss_mode]);
->  	p += sprintf(p, "media_state=\"%s\"\n",
->  		     (!priv->media_connected ? "Disconnected" : "Connected"));
-> -	p += sprintf(p, "mac_address=\"%02x:%02x:%02x:%02x:%02x:%02x\"\n",
-> -		     netdev->dev_addr[0], netdev->dev_addr[1],
-> -		     netdev->dev_addr[2], netdev->dev_addr[3],
-> -		     netdev->dev_addr[4], netdev->dev_addr[5]);
-> +	p += sprintf(p, "mac_address=\"%pM\"\n", netdev->dev_addr);
-> 
->  	if (GET_BSS_ROLE(priv) == MWIFIEX_BSS_ROLE_STA) {
->  		p += sprintf(p, "multicast_count=\"%d\"\n",
->  			     netdev_mc_count(netdev));
->  		p += sprintf(p, "essid=\"%s\"\n", info.ssid.ssid);
-> -		p += sprintf(p, "bssid=\"%02x:%02x:%02x:%02x:%02x:%02x\"\n",
-> -			     info.bssid[0], info.bssid[1],
-> -			     info.bssid[2], info.bssid[3],
-> -			     info.bssid[4], info.bssid[5]);
-> +		p += sprintf(p, "bssid=\"%pM\"\n", info.bssid);
->  		p += sprintf(p, "channel=\"%d\"\n", (int) info.bss_chan);
->  		p += sprintf(p, "region_code = \"%02x\"\n", info.region_code);
-> 
->  		netdev_for_each_mc_addr(ha, netdev)
-> -			p += sprintf(p, "multicast_address[%d]="
-> -				     "\"%02x:%02x:%02x:%02x:%02x:%02x\"\n", i++,
-> -				     ha->addr[0], ha->addr[1],
-> -				     ha->addr[2], ha->addr[3],
-> -				     ha->addr[4], ha->addr[5]);
-> +			p += sprintf(p, "multicast_address[%d]=\"%pM\"\n",
-> +					i++, ha->addr);
->  	}
-> 
->  	p += sprintf(p, "num_tx_bytes = %lu\n", priv->stats.tx_bytes);
-> @@ -451,26 +442,18 @@ mwifiex_debug_read(struct file *file, char __user *ubuf,
->  	if (info.tx_tbl_num) {
->  		p += sprintf(p, "Tx BA stream table:\n");
->  		for (i = 0; i < info.tx_tbl_num; i++)
-> -			p += sprintf(p, "tid = %d, "
-> -				     "ra = %02x:%02x:%02x:%02x:%02x:%02x\n",
-> -				     info.tx_tbl[i].tid, info.tx_tbl[i].ra[0],
-> -				     info.tx_tbl[i].ra[1], info.tx_tbl[i].ra[2],
-> -				     info.tx_tbl[i].ra[3], info.tx_tbl[i].ra[4],
-> -				     info.tx_tbl[i].ra[5]);
-> +			p += sprintf(p, "tid = %d, ra = %pM\n",
-> +				     info.tx_tbl[i].tid, info.tx_tbl[i].ra);
->  	}
-> 
->  	if (info.rx_tbl_num) {
->  		p += sprintf(p, "Rx reorder table:\n");
->  		for (i = 0; i < info.rx_tbl_num; i++) {
-> -
-> -			p += sprintf(p, "tid = %d, "
-> -				     "ta = %02x:%02x:%02x:%02x:%02x:%02x, "
-> +			p += sprintf(p, "tid = %d, ta = %pM, "
->  				     "start_win = %d, "
->  				     "win_size = %d, buffer: ",
->  				     info.rx_tbl[i].tid,
-> -				     info.rx_tbl[i].ta[0], info.rx_tbl[i].ta[1],
-> -				     info.rx_tbl[i].ta[2], info.rx_tbl[i].ta[3],
-> -				     info.rx_tbl[i].ta[4], info.rx_tbl[i].ta[5],
-> +				     info.rx_tbl[i].ta,
->  				     info.rx_tbl[i].start_win,
->  				     info.rx_tbl[i].win_size);
-> 
-> --
-> 1.7.5.4
+diff --git a/lib/fault-inject.c b/lib/fault-inject.c
+index 7e65af7..27783da 100644
+--- a/lib/fault-inject.c
++++ b/lib/fault-inject.c
+@@ -131,6 +131,7 @@ bool should_fail(struct fault_attr *attr, ssize_t size)
+ 
+ 	return true;
+ }
++EXPORT_SYMBOL_GPL(should_fail);
+ 
+ #ifdef CONFIG_FAULT_INJECTION_DEBUG_FS
+ 
+@@ -311,5 +312,6 @@ fail:
+ 	cleanup_fault_attr_dentries(attr);
+ 	return -ENOMEM;
+ }
++EXPORT_SYMBOL_GPL(init_fault_attr_dentries);
+ 
+ #endif /* CONFIG_FAULT_INJECTION_DEBUG_FS */
+-- 
+1.7.4.1
 
