@@ -1,65 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725Ab1GTT2j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 15:28:39 -0400
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:20072 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752460Ab1GTT2h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 15:28:37 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: WVJdxMEVM1kjyJCwBT9HjSLmF7ASXFOQtVhTdwrRG.AWuf4
- FrLaMF0VN5FHwOAnFrOMhkJJXnjXoSZ.IEZZ9G2ouZ3IcgtKkWCWlO4PqA5b
- YnUueAlKhAsDyuhdSGsY5vk01vjkIInDg8cigwBbKSeIPcbjDDZCA.XlVRhm
- 0gfmZtyV.adJn.sADFAeY3pZ0t1Ka8Mxuct_HQXA23QAwt9_qncsyusVFYUe
- 4Mfwcd12u6emlRC1R1GU93r4AScyyo7GpRo4UPon_vPhDUPlR7rl7WCTZgSR
- zm811bRwQVfgo8wmvLdkwc2vhmqotuELAcgoYZ2E4hGr6etEHKyxAmvny.Gx
- 8pVf26YwlOQAOjneMGXHHd5rP
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 20 Jul 2011 14:28:32 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Mel Gorman <mgorman@suse.de>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] mm: page allocator: Initialise ZLC for first zone
- eligible for zone_reclaim
-In-Reply-To: <20110720191858.GO5349@suse.de>
-Message-ID: <alpine.DEB.2.00.1107201425200.1472@router.home>
-References: <1310742540-22780-1-git-send-email-mgorman@suse.de> <1310742540-22780-2-git-send-email-mgorman@suse.de> <alpine.DEB.2.00.1107180951390.30392@router.home> <20110718160552.GB5349@suse.de> <alpine.DEB.2.00.1107181208050.31576@router.home>
- <20110718211325.GC5349@suse.de> <alpine.DEB.2.00.1107181651000.31576@router.home> <alpine.DEB.2.00.1107190901120.1199@router.home> <alpine.DEB.2.00.1107201307530.1472@router.home> <20110720191858.GO5349@suse.de>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752685Ab1GTT35 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 15:29:57 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:33704 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752032Ab1GTT34 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 15:29:56 -0400
+Date: Wed, 20 Jul 2011 12:29:49 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Ben Greear <greearb@candelatech.com>, Ed Tomlinson <edt@aei.ca>,
+        linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org, edward.tomlinson@aero.bombardier.com
+Subject: Re: [PATCH rcu/urgent 0/6] Fixes for RCU/scheduler/irq-threads
+ trainwreck
+Message-ID: <20110720192949.GM2313@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <201107192130.02080.edt@aei.ca>
+ <201107192207.33813.edt@aei.ca>
+ <20110720044435.GB2400@linux.vnet.ibm.com>
+ <CA+55aFyaCY=qzFKswi2NR097KZtb5x98sba3rHJ7B0rchtzm2g@mail.gmail.com>
+ <20110720133443.GG2400@linux.vnet.ibm.com>
+ <4E270A0E.6090902@candelatech.com>
+ <20110720171532.GB2313@linux.vnet.ibm.com>
+ <20110720184413.GD17977@elte.hu>
+ <1311187978.29152.58.camel@twins>
+ <CA+55aFyuKTj3zEvWJEx4_RDzLQ+ipJ58UWFYH84nmcwGF_c4aA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFyuKTj3zEvWJEx4_RDzLQ+ipJ58UWFYH84nmcwGF_c4aA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Jul 2011, Mel Gorman wrote:
+On Wed, Jul 20, 2011 at 12:02:47PM -0700, Linus Torvalds wrote:
+> On Wed, Jul 20, 2011 at 11:52 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> >>  6 files changed, 105 insertions(+), 30 deletions(-)
+> >>
+> >> looks very scary to me.
+> >
+> > A lot of that is also relevant to !BOOST.
+> 
+> Can we limit this somehow? Or split it up? Which part of this is "fix
+> new BOOST features, not ever even executed without BOOST", and which
+> part of this is "fixes core stuff"?
 
-> On Wed, Jul 20, 2011 at 01:08:46PM -0500, Christoph Lameter wrote:
-> > Hmmm... Looking at get_page_from_freelist and considering speeding that up
-> > in general: Could we move the whole watermark logic into the slow path?
-> > Only check when we refill the per cpu queues?
->
-> Each CPU list can hold 186 pages (on my currently running
-> kernel at least) which is 744K. As I'm running with THP enabled,
-> the min watermark is 25852K so with 34 of more CPUs, there is a
-> risk that a zone would be fully depleted due to lack of watermark
-> checking. Bit unlikely that 34 CPUs would be on one node but the risk
-> is there. Without THP, the min watermark would have been something like
-> 32K where it would be much easier to accidentally consume all memory.
->
-> Yes, moving the watermark checks to the slow path would be faster
-> but under some conditions, the system will lock up.
+#2 (Fix RCU_BOOST race handling current->rcu_read_unlock_special) and
+#7 (align __lock_task_sighand() irq disabling and RCU) are needed only
+for RCU_BOOST.  The rest fix problems that can occur even with !RCU_BOOST.
+I believe that #4 (protect __rcu_read_unlock() against scheduler-using 
+irq handlers) turns #1 (decrease rcu_report_exp_rnp coupling with scheduler)
+into a longer-term maintenance issue rather than an urgent fix.
 
-Well the fastpath would simply grab a page if its on the list. If the list
-is empty then we would be checking the watermarks and extract pages from
-the buddylists. The pages in the per cpu lists would not be accounted for
-for reclaim. Counters would reflect the buddy allocator pages available.
-Reclaim  flushes the per cpu pages so the buddy allocator pages would be
-replenished.
+> I *really* hate the timing of this. The code that is only impacted by
+> BOOST I cannot find it in myself to care about, and I'd be willing to
+> consider it basically EXPERIMENTAL and just pulling it.
 
+I can only say that I completely failed in my goal of making my code
+go in without a ripple.  :-(
 
+> IOW, is the core non-boost fix just a few obvious oneliners?
+> 
+> The "it all broke completely" in previous version of this also doesn't
+> make me get all the warm fuzzies. Which all makes me go "what is
+> minimal and really really SAFE?"
+
+Peter, does #4 (protect __rcu_read_unlock() against scheduler-using
+irq handlers) remove the need for #5 (Add irq_{enter,exit}() to
+scheduler_ipi()) and #6 (Inform RCU of irq_exit() activity)?  My guess is
+"no" for #5 and "yes" for #6.
+
+If my guess is correct, then the minimal non-RCU_BOOST fix is #4 (which
+drags along #3) and #6.  Which are not one-liners, but somewhat smaller:
+
+ b/kernel/rcutree_plugin.h |   12 ++++++------
+ b/kernel/softirq.c        |   12 ++++++++++--
+ kernel/rcutree_plugin.h   |   31 +++++++++++++++++++++++++------
+ 3 files changed, 41 insertions(+), 14 deletions(-)
+
+How would you like to proceed?
+
+							Thanx, Paul
