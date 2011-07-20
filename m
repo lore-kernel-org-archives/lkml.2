@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028Ab1GTNj6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 09:39:58 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:37566 "EHLO
+	id S1752009Ab1GTNkd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 09:40:33 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:37542 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751898Ab1GTNjY (ORCPT
+	with ESMTP id S1750979Ab1GTNjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 09:39:24 -0400
+	Wed, 20 Jul 2011 09:39:22 -0400
 From: djkurtz@chromium.org
 To: dmitry.torokhov@gmail.com, rydberg@euromail.se,
         chase.douglas@canonical.com, rubini@cvml.unipv.it
 Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         derek.foreman@collabora.co.uk, daniel.stone@collabora.co.uk,
         olofj@chromium.org, Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 7/9 v2] Input: synaptics - improved 2->3 finger transition handling
-Date: Wed, 20 Jul 2011 21:39:04 +0800
-Message-Id: <1311169146-20066-8-git-send-email-djkurtz@chromium.org>
+Subject: [PATCH 3/9 v2] Input: synaptics - refactor initialization of abs position axes
+Date: Wed, 20 Jul 2011 21:39:00 +0800
+Message-Id: <1311169146-20066-4-git-send-email-djkurtz@chromium.org>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1311169146-20066-1-git-send-email-djkurtz@chromium.org>
 References: <1311169146-20066-1-git-send-email-djkurtz@chromium.org>
@@ -26,101 +26,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Daniel Kurtz <djkurtz@chromium.org>
 
-As long as we know which slots are currently contained in SGM and AGM
-packets, it is possible to track the slot 0 finger when transitioning from
-2->3 fingers.  This is the case when fingers are being added one at a
-time, 1->2->3.
-
-However, when fingers are removed, we sometimes lose track of which slots
-are contained in SGM and AGM. In particular, when transitioning from 3->2
-and sometimes 3->1.  In both of these cases, we can no longer track slot 0
-during 2->3 transitions.
-
 Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 ---
- drivers/input/mouse/synaptics.c |   33 +++++++++++++++++++++++++++------
- drivers/input/mouse/synaptics.h |    1 +
- 2 files changed, 28 insertions(+), 6 deletions(-)
+ drivers/input/mouse/synaptics.c |   44 +++++++++++++++++---------------------
+ 1 files changed, 20 insertions(+), 24 deletions(-)
 
 diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-index b626b98..893e567 100644
+index e966894..30d05fd 100644
 --- a/drivers/input/mouse/synaptics.c
 +++ b/drivers/input/mouse/synaptics.c
-@@ -659,6 +659,7 @@ static void synaptics_image_sensor_0f(struct synaptics_data *priv,
- 				      struct synaptics_mt_state *mt_state)
- {
- 	synaptics_mt_state_set(mt_state, 0, -1, -1);
-+	priv->mt_state_lost = false;
- }
- 
- /* Handle case where mt_state->count = 1 */
-@@ -726,6 +727,7 @@ static void synaptics_image_sensor_1f(struct synaptics_data *priv,
- 		 * So, empty all slots. We will guess slot 0 on subsequent 1->1
- 		 */
- 		synaptics_mt_state_set(mt_state, 0, -1, -1);
-+		priv->mt_state_lost = true;
- 		break;
- 	}
- }
-@@ -771,6 +773,7 @@ static void synaptics_image_sensor_2f(struct synaptics_data *priv,
- 		 * subsequent 2->2
- 		 */
- 		synaptics_mt_state_set(mt_state, 0, -1, -1);
-+		priv->mt_state_lost = true;
- 		break;
- 	}
- }
-@@ -800,14 +803,32 @@ static void synaptics_image_sensor_3f(struct synaptics_data *priv,
- 		break;
- 	case 2:
- 		/*
--		 * On 2->3 transitions, we are given no indication which finger
--		 * was added.
--		 * We don't even know what finger the current AGM packet
--		 * contained.
-+		 * After some 3->1 and all 3->2 transitions, we lose track
-+		 * of which slot is reported by sgm and agm.
- 		 *
--		 * So, empty all slots. They get filled on a subsequent 3->3
-+		 * For 2->3 in this state, empty all slots, and we will guess
-+		 * (0,1) on a subsequent 0->3.
-+		 *
-+		 * To userspace, the resulting transition will look like:
-+		 *    2:[0,1] -> 0:[-1,-1] -> 3:[0,2]
- 		 */
--		synaptics_mt_state_set(mt_state, 0, -1, -1);
-+		if (priv->mt_state_lost) {
-+			synaptics_mt_state_set(mt_state, 0, -1, -1);
-+			break;
-+		}
+@@ -712,39 +712,38 @@ static psmouse_ret_t synaptics_process_byte(struct psmouse *psmouse)
+ /*****************************************************************************
+  *	Driver initialization/cleanup functions
+  ****************************************************************************/
++static void set_abs_position_params(struct input_dev *dev,
++				    struct synaptics_data *priv, int x_code,
++				    int y_code)
++{
++	int x_min = priv->x_min ?: XMIN_NOMINAL;
++	int x_max = priv->x_max ?: XMAX_NOMINAL;
++	int y_min = priv->y_min ?: YMIN_NOMINAL;
++	int y_max = priv->y_max ?: YMAX_NOMINAL;
++	int fuzz = SYN_CAP_REDUCED_FILTERING(priv->ext_cap_0c) ?
++			SYN_REDUCED_FILTER_FUZZ : 0;
 +
-+		/*
-+		 * If the (SGM,AGM) really previously contained slots (0, 1),
-+		 * then we cannot know what slot was just reported by the AGM,
-+		 * because the 2->3 transition can occur either before or after
-+		 * the AGM packet. Thus, this most recent AGM could contain
-+		 * either the same old slot 1 or the new slot 2.
-+		 * Subsequent AGMs will be reporting slot 2.
-+		 *
-+		 * To userspace, the resulting transition will look like:
-+		 *    2:[0,1] -> 1:[0,-1] -> 3:[0,2]
-+		 */
-+		synaptics_mt_state_set(mt_state, 1, 0, -1);
- 		break;
- 	case 3:
- 		/*
-diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
-index 87be1fe..e3edfea 100644
---- a/drivers/input/mouse/synaptics.h
-+++ b/drivers/input/mouse/synaptics.h
-@@ -162,6 +162,7 @@ struct synaptics_data {
- 	struct serio *pt_port;			/* Pass-through serio port */
++	input_set_abs_params(dev, x_code, x_min, x_max, fuzz, 0);
++	input_set_abs_params(dev, y_code, y_min, y_max, fuzz, 0);
++	input_abs_set_res(dev, x_code, priv->x_res);
++	input_abs_set_res(dev, y_code, priv->y_res);
++}
++
+ static void set_input_params(struct input_dev *dev, struct synaptics_data *priv)
+ {
+ 	int i;
+-	int fuzz = SYN_CAP_REDUCED_FILTERING(priv->ext_cap_0c) ?
+-			SYN_REDUCED_FILTER_FUZZ : 0;
  
- 	struct synaptics_mt_state mt_state;	/* Current mt finger state */
-+	bool mt_state_lost;			/* mt_state may be incorrect */
+ 	__set_bit(INPUT_PROP_POINTER, dev->propbit);
  
- 	/*
- 	 * Last received Advanced Gesture Mode (AGM) packet. An AGM packet
+ 	__set_bit(EV_ABS, dev->evbit);
+-	input_set_abs_params(dev, ABS_X,
+-			     priv->x_min ?: XMIN_NOMINAL,
+-			     priv->x_max ?: XMAX_NOMINAL,
+-			     fuzz, 0);
+-	input_set_abs_params(dev, ABS_Y,
+-			     priv->y_min ?: YMIN_NOMINAL,
+-			     priv->y_max ?: YMAX_NOMINAL,
+-			     fuzz, 0);
++	set_abs_position_params(dev, priv, ABS_X, ABS_Y);
+ 	input_set_abs_params(dev, ABS_PRESSURE, 0, 255, 0, 0);
+ 
+ 	if (SYN_CAP_ADV_GESTURE(priv->ext_cap_0c)) {
+ 		__set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
+ 		input_mt_init_slots(dev, 2);
+-		input_set_abs_params(dev, ABS_MT_POSITION_X,
+-				     priv->x_min ?: XMIN_NOMINAL,
+-				     priv->x_max ?: XMAX_NOMINAL,
+-				     fuzz, 0);
+-		input_set_abs_params(dev, ABS_MT_POSITION_Y,
+-				     priv->y_min ?: YMIN_NOMINAL,
+-				     priv->y_max ?: YMAX_NOMINAL,
+-				     fuzz, 0);
+-
+-		input_abs_set_res(dev, ABS_MT_POSITION_X, priv->x_res);
+-		input_abs_set_res(dev, ABS_MT_POSITION_Y, priv->y_res);
++		set_abs_position_params(dev, priv, ABS_MT_POSITION_X,
++					ABS_MT_POSITION_Y);
+ 	}
+ 
+ 	if (SYN_CAP_PALMDETECT(priv->capabilities))
+@@ -777,9 +776,6 @@ static void set_input_params(struct input_dev *dev, struct synaptics_data *priv)
+ 	__clear_bit(REL_X, dev->relbit);
+ 	__clear_bit(REL_Y, dev->relbit);
+ 
+-	input_abs_set_res(dev, ABS_X, priv->x_res);
+-	input_abs_set_res(dev, ABS_Y, priv->y_res);
+-
+ 	if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
+ 		__set_bit(INPUT_PROP_BUTTONPAD, dev->propbit);
+ 		/* Clickpads report only left button */
 -- 
 1.7.3.1
 
