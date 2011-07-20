@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753179Ab1GTS0p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 14:26:45 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:46642 "EHLO e5.ny.us.ibm.com"
+	id S1753146Ab1GTS0o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 14:26:44 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:51012 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752634Ab1GTS0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752633Ab1GTS0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Jul 2011 14:26:40 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -14,11 +14,11 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         patches@linaro.org, greearb@candelatech.com, edt@aei.ca,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/urgent 5/7] sched: Add irq_{enter,exit}() to scheduler_ipi()
-Date: Wed, 20 Jul 2011 11:26:21 -0700
-Message-Id: <1311186383-24819-5-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/urgent 4/7] rcu: protect __rcu_read_unlock() against scheduler-using irq handlers
+Date: Wed, 20 Jul 2011 11:26:20 -0700
+Message-Id: <1311186383-24819-4-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20110720182512.GA22946@linux.vnet.ibm.com>
 References: <20110720182512.GA22946@linux.vnet.ibm.com>
@@ -26,98 +26,147 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Paul E. McKenney <paul.mckenney@linaro.org>
 
-Ensure scheduler_ipi() calls irq_{enter,exit} when it does some actual
-work. Traditionally we never did any actual work from the resched IPI
-and all magic happened in the return from interrupt path.
+The addition of RCU read-side critical sections within runqueue and
+priority-inheritance lock critical sections introduced some deadlock
+cycles, for example, involving interrupts from __rcu_read_unlock()
+where the interrupt handlers call wake_up().  This situation can cause
+the instance of __rcu_read_unlock() invoked from interrupt to do some
+of the processing that would otherwise have been carried out by the
+task-level instance of __rcu_read_unlock().  When the interrupt-level
+instance of __rcu_read_unlock() is called with a scheduler lock held
+from interrupt-entry/exit situations where in_irq() returns false,
+deadlock can result.
 
-Now that we do do some work, we need to ensure irq_{enter,exit} are
-called so that we don't confuse things.
+This commit resolves these deadlocks by using negative values of
+the per-task ->rcu_read_lock_nesting counter to indicate that an
+instance of __rcu_read_unlock() is in flight, which in turn prevents
+instances from interrupt handlers from doing any special processing.
+This patch is inspired by Steven Rostedt's earlier patch that similarly
+made __rcu_read_unlock() guard against interrupt-mediated recursion
+(see https://lkml.org/lkml/2011/7/15/326), but this commit refines
+Steven's approach to avoid the need for preemption disabling on the
+__rcu_read_unlock() fastpath and to also avoid the need for manipulating
+a separate per-CPU variable.
 
-This affects things like timekeeping, NO_HZ and RCU, basically
-everything with a hook in irq_enter/exit.
+This patch avoids need for preempt_disable() by instead using negative
+values of the per-task ->rcu_read_lock_nesting counter.  Note that nested
+rcu_read_lock()/rcu_read_unlock() pairs are still permitted, but they will
+never see ->rcu_read_lock_nesting go to zero, and will therefore never
+invoke rcu_read_unlock_special(), thus preventing them from seeing the
+RCU_READ_UNLOCK_BLOCKED bit should it be set in ->rcu_read_unlock_special.
+This patch also adds a check for ->rcu_read_unlock_special being negative
+in rcu_check_callbacks(), thus preventing the RCU_READ_UNLOCK_NEED_QS
+bit from being set should a scheduling-clock interrupt occur while
+__rcu_read_unlock() is exiting from an outermost RCU read-side critical
+section.
 
-Explicit examples of things going wrong are:
+Of course, __rcu_read_unlock() can be preempted during the time that
+->rcu_read_lock_nesting is negative.  This could result in the setting
+of the RCU_READ_UNLOCK_BLOCKED bit after __rcu_read_unlock() checks it,
+and would also result it this task being queued on the corresponding
+rcu_node structure's blkd_tasks list.  Therefore, some later RCU read-side
+critical section would enter rcu_read_unlock_special() to clean up --
+which could result in deadlock if that critical section happened to be in
+the scheduler where the runqueue or priority-inheritance locks were held.
 
-  sched_clock_cpu() -- has a callback when leaving NO_HZ state to take
-                    a new reading from GTOD and TSC. Without this
-                    callback, time is stuck in the past.
+This situation is dealt with by making rcu_preempt_note_context_switch()
+check for negative ->rcu_read_lock_nesting, thus refraining from
+queuing the task (and from setting RCU_READ_UNLOCK_BLOCKED) if we are
+already exiting from the outermost RCU read-side critical section (in
+other words, we really are no longer actually in that RCU read-side
+critical section).  In addition, rcu_preempt_note_context_switch()
+invokes rcu_read_unlock_special() to carry out the cleanup in this case,
+which clears out the ->rcu_read_unlock_special bits and dequeues the task
+(if necessary), in turn avoiding needless delay of the current RCU grace
+period and needless RCU priority boosting.
 
-  RCU -- needs in_irq() to work in order to avoid some nasty deadlocks
+It is still illegal to call rcu_read_unlock() while holding a scheduler
+lock if the prior RCU read-side critical section has ever had either
+preemption or irqs enabled.  However, the common use case is legal,
+namely where then entire RCU read-side critical section executes with
+irqs disabled, for example, when the scheduler lock is held across the
+entire lifetime of the RCU read-side critical section.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/sched.c |   44 ++++++++++++++++++++++++++++++++++++++------
- 1 files changed, 38 insertions(+), 6 deletions(-)
+ kernel/rcutree_plugin.h |   29 ++++++++++++++++++++++++-----
+ 1 files changed, 24 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 9769c75..1930ee1 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -2544,13 +2544,9 @@ static int ttwu_remote(struct task_struct *p, int wake_flags)
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 4d2c068..d9d7a89 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -68,6 +68,7 @@ struct rcu_state rcu_preempt_state = RCU_STATE_INITIALIZER(rcu_preempt_state);
+ DEFINE_PER_CPU(struct rcu_data, rcu_preempt_data);
+ static struct rcu_state *rcu_state = &rcu_preempt_state;
+ 
++static void rcu_read_unlock_special(struct task_struct *t);
+ static int rcu_preempted_readers_exp(struct rcu_node *rnp);
+ 
+ /*
+@@ -147,7 +148,7 @@ static void rcu_preempt_note_context_switch(int cpu)
+ 	struct rcu_data *rdp;
+ 	struct rcu_node *rnp;
+ 
+-	if (t->rcu_read_lock_nesting &&
++	if (t->rcu_read_lock_nesting > 0 &&
+ 	    (t->rcu_read_unlock_special & RCU_READ_UNLOCK_BLOCKED) == 0) {
+ 
+ 		/* Possibly blocking in an RCU read-side critical section. */
+@@ -190,6 +191,14 @@ static void rcu_preempt_note_context_switch(int cpu)
+ 				rnp->gp_tasks = &t->rcu_node_entry;
+ 		}
+ 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
++	} else if (t->rcu_read_lock_nesting < 0 &&
++		   t->rcu_read_unlock_special) {
++
++		/*
++		 * Complete exit from RCU read-side critical section on
++		 * behalf of preempted instance of __rcu_read_unlock().
++		 */
++		rcu_read_unlock_special(t);
+ 	}
+ 
+ 	/*
+@@ -391,13 +400,22 @@ void __rcu_read_unlock(void)
+ 	struct task_struct *t = current;
+ 
+ 	barrier();  /* needed if we ever invoke rcu_read_unlock in rcutree.c */
+-	if (--t->rcu_read_lock_nesting == 0) {
+-		barrier();  /* decr before ->rcu_read_unlock_special load */
++	if (t->rcu_read_lock_nesting != 1)
++		--t->rcu_read_lock_nesting;
++	else {
++		t->rcu_read_lock_nesting = INT_MIN;
++		barrier();  /* assign before ->rcu_read_unlock_special load */
+ 		if (unlikely(ACCESS_ONCE(t->rcu_read_unlock_special)))
+ 			rcu_read_unlock_special(t);
++		barrier();  /* ->rcu_read_unlock_special load before assign */
++		t->rcu_read_lock_nesting = 0;
+ 	}
+ #ifdef CONFIG_PROVE_LOCKING
+-	WARN_ON_ONCE(ACCESS_ONCE(t->rcu_read_lock_nesting) < 0);
++	{
++		int rrln = ACCESS_ONCE(t->rcu_read_lock_nesting);
++
++		WARN_ON_ONCE(rrln < 0 && rrln > INT_MIN / 2);
++	}
+ #endif /* #ifdef CONFIG_PROVE_LOCKING */
+ }
+ EXPORT_SYMBOL_GPL(__rcu_read_unlock);
+@@ -593,7 +611,8 @@ static void rcu_preempt_check_callbacks(int cpu)
+ 		rcu_preempt_qs(cpu);
+ 		return;
+ 	}
+-	if (per_cpu(rcu_preempt_data, cpu).qs_pending)
++	if (t->rcu_read_lock_nesting > 0 &&
++	    per_cpu(rcu_preempt_data, cpu).qs_pending)
+ 		t->rcu_read_unlock_special |= RCU_READ_UNLOCK_NEED_QS;
  }
  
- #ifdef CONFIG_SMP
--static void sched_ttwu_pending(void)
-+static void sched_ttwu_do_pending(struct task_struct *list)
- {
- 	struct rq *rq = this_rq();
--	struct task_struct *list = xchg(&rq->wake_list, NULL);
--
--	if (!list)
--		return;
- 
- 	raw_spin_lock(&rq->lock);
- 
-@@ -2563,9 +2559,45 @@ static void sched_ttwu_pending(void)
- 	raw_spin_unlock(&rq->lock);
- }
- 
-+#ifdef CONFIG_HOTPLUG_CPU
-+
-+static void sched_ttwu_pending(void)
-+{
-+	struct rq *rq = this_rq();
-+	struct task_struct *list = xchg(&rq->wake_list, NULL);
-+
-+	if (!list)
-+		return;
-+
-+	sched_ttwu_do_pending(list);
-+}
-+
-+#endif /* CONFIG_HOTPLUG_CPU */
-+
- void scheduler_ipi(void)
- {
--	sched_ttwu_pending();
-+	struct rq *rq = this_rq();
-+	struct task_struct *list = xchg(&rq->wake_list, NULL);
-+
-+	if (!list)
-+		return;
-+
-+	/*
-+	 * Not all reschedule IPI handlers call irq_enter/irq_exit, since
-+	 * traditionally all their work was done from the interrupt return
-+	 * path. Now that we actually do some work, we need to make sure
-+	 * we do call them.
-+	 *
-+	 * Some archs already do call them, luckily irq_enter/exit nest
-+	 * properly.
-+	 *
-+	 * Arguably we should visit all archs and update all handlers,
-+	 * however a fair share of IPIs are still resched only so this would
-+	 * somewhat pessimize the simple resched case.
-+	 */
-+	irq_enter();
-+	sched_ttwu_do_pending(list);
-+	irq_exit();
- }
- 
- static void ttwu_queue_remote(struct task_struct *p, int cpu)
 -- 
 1.7.3.2
 
