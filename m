@@ -1,47 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751652Ab1GTKOJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 06:14:09 -0400
-Received: from trinity.fluff.org ([89.16.178.74]:59775 "EHLO trinity.fluff.org"
+	id S1751674Ab1GTKOl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 06:14:41 -0400
+Received: from ozlabs.org ([203.10.76.45]:32878 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751289Ab1GTKOH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 06:14:07 -0400
-Date: Wed, 20 Jul 2011 11:13:58 +0100
-From: Ben Dooks <ben@trinity.fluff.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Abraham <thomas.ab@samsung.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: linux-next: manual merge of the s5p tree with the arm-soc tree
-Message-ID: <20110720101358.GT21138@trinity.fluff.org>
-References: <20110720113536.72c28c19d623c5e7f8604ca2@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110720113536.72c28c19d623c5e7f8604ca2@canb.auug.org.au>
-X-Disclaimer: These are my views alone.
-X-URL: http://www.fluff.org/
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@trinity.fluff.org
-X-SA-Exim-Scanned: No (on trinity.fluff.org); SAEximRunCond expanded to false
+	id S1751321Ab1GTKOj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 06:14:39 -0400
+Date: Wed, 20 Jul 2011 20:14:36 +1000
+From: Anton Blanchard <anton@samba.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: mahesh@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, mingo@elte.hu, benh@kernel.crashing.org,
+        torvalds@linux-foundation.org
+Subject: Re: [regression] 3.0-rc boot failure -- bisected to cd4ea6ae3982
+Message-ID: <20110720201436.19e9689a@kryten>
+In-Reply-To: <1311070894.13765.180.camel@twins>
+References: <20110707102107.GA16666@in.ibm.com>
+	<1310036375.3282.509.camel@twins>
+	<20110714103418.7ef25b68@kryten>
+	<20110714143521.5fe4fab6@kryten>
+	<1310649379.2586.273.camel@twins>
+	<20110715104547.29c3c509@kryten>
+	<1311024956.2309.22.camel@laptop>
+	<20110719144451.79bc69ab@kryten>
+	<1311070894.13765.180.camel@twins>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 20, 2011 at 11:35:36AM +1000, Stephen Rothwell wrote:
-> Hi Kukjin,
-> 
-> Today's linux-next merge of the s5p tree got conflicts in drivers/tty/serial/s3c2400.c and drivers/tty/serial/s3c24a0.c between commits 632b7cf6c056 ("ARM: mach-s3c2400: delete") and af0e060e24ce ("ARM: mach-s3c24a0: delete")from the arm-soc tree and commit 470805f8f958 ("serial: Remove redundant console_initcall from s3c and s5p console drivers") from the s5p tree.
-> 
-> The former removes these files, so I did that.
 
-Yes, there's little chance of these socs ever being added, so nico
-removed all reference to them.
+Hi Peter,
 
--- 
-Ben Dooks, ben@fluff.org, http://www.fluff.org/ben/
+> That looks very strange indeed.. up to node 23 there is the normal
+> symmetric matrix with all the trace elements on 10 (as we would expect
+> for local access), and some 4x4 sub-matrix stacked around the trace
+> with 20, suggesting a single hop distance, and the rest on 40 being
+> out-there.
 
-Large Hadron Colada: A large Pina Colada that makes the universe disappear.
+I retested with the latest version of numactl, and get correct results.
+
+I worked out why the patches don't boot, we weren't allocating any
+space for the cpumask and ran off the end of the allocation.
+
+Should we also use cpumask_copy instead of open coding it? I added that
+too.
+
+Anton
+
+Index: linux-2.6/kernel/sched.c
+===================================================================
+--- linux-2.6.orig/kernel/sched.c	2011-07-20 01:54:08.191668781 -0500
++++ linux-2.6/kernel/sched.c	2011-07-20 04:45:36.203750525 -0500
+@@ -7020,8 +7020,8 @@
+ 		if (cpumask_test_cpu(i, covered))
+ 			continue;
+ 
+-		sg = kzalloc_node(sizeof(struct sched_group), GFP_KERNEL,
+-				cpu_to_node(i));
++		sg = kzalloc_node(sizeof(struct sched_group) + cpumask_size(),
++				  GFP_KERNEL, cpu_to_node(i));
+ 
+ 		if (!sg)
+ 			goto fail;
+@@ -7031,7 +7031,7 @@
+ 		child = *per_cpu_ptr(sdd->sd, i);
+ 		if (child->child) {
+ 			child = child->child;
+-			*sg_span = *sched_domain_span(child);
++			cpumask_copy(sg_span, sched_domain_span(child));
+ 		} else
+ 			cpumask_set_cpu(i, sg_span);
+ 
+
 
