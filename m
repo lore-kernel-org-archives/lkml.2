@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113Ab1GTSpa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 14:45:30 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:39017 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752974Ab1GTSp1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 14:45:27 -0400
-Date: Wed, 20 Jul 2011 20:44:14 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Ben Greear <greearb@candelatech.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ed Tomlinson <edt@aei.ca>, linux-kernel@vger.kernel.org,
-        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, patches@linaro.org,
-        edward.tomlinson@aero.bombardier.com
-Subject: Re: [PATCH rcu/urgent 0/6] Fixes for RCU/scheduler/irq-threads
- trainwreck
-Message-ID: <20110720184413.GD17977@elte.hu>
-References: <20110720001738.GA16369@linux.vnet.ibm.com>
- <201107192130.02080.edt@aei.ca>
- <201107192207.33813.edt@aei.ca>
- <20110720044435.GB2400@linux.vnet.ibm.com>
- <CA+55aFyaCY=qzFKswi2NR097KZtb5x98sba3rHJ7B0rchtzm2g@mail.gmail.com>
- <20110720133443.GG2400@linux.vnet.ibm.com>
- <4E270A0E.6090902@candelatech.com>
- <20110720171532.GB2313@linux.vnet.ibm.com>
+	id S1752893Ab1GTSsA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 14:48:00 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:41981 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751437Ab1GTSr7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 14:47:59 -0400
+Date: Wed, 20 Jul 2011 12:47:58 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Erik Gilling <konkers@android.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH] arm/dt: tegra devicetree support
+Message-ID: <20110720184758.GG4642@ponder.secretlab.ca>
+References: <20110719234158.2779.15394.stgit@ponder>
+ <74CDBE0F657A3D45AFBB94109FB122FF049EBDEE27@HQMAIL01.nvidia.com>
+ <20110720160355.GB2406@sirena.org.uk>
+ <20110720183133.GE4642@ponder.secretlab.ca>
+ <74CDBE0F657A3D45AFBB94109FB122FF049EBDEF01@HQMAIL01.nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110720171532.GB2313@linux.vnet.ibm.com>
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF049EBDEF01@HQMAIL01.nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 20, 2011 at 11:40:28AM -0700, Stephen Warren wrote:
+> Grant Likely wrote at Wednesday, July 20, 2011 12:32 PM:
+> > The compatible property here definitely represents the hardware
+> > because it reflects the sound infrastructure on the harmony board.
+> 
+> I can see that argument for "nvidia,harmony-sound".
+> 
+> But "nvidia,tegra-wm8903" is pretty generic; I can certainly see there
+> being Tegra 20 systems that use a WM8903 but are so different from either
+> Harmony or anything supported by sound/soc/tegra/tegra_wm8903.c that the
+> existing driver isn't applicable. And hence, there may be a different
+> ASoC driver for such board(s), and hence choosing such a generic name as
+> "tegra-wm8903" for Harmony/Seaboard's audio layout seems like it might
+> cause problems in the future.
+> 
+> I'm fine with such a generic name for the platform driver, since that name
+> can fairly easily be modified just by editing the driver and the board file.
+> But since *.dts files are at least logically separate from the kernel, such
+> naming future-proofing is a little more important.
 
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+Sure, the tegra-wm8903 property can be dropped.  If we start to see a
+really well established pattern of the tegra paired with a wm8903,
+then at that point we can define a compatible property for it and
+document exactly what it means (document the boundaries and
+assumptions that the compatible value requires).
 
-> RCU boost is new and counts as strange for another few days at least.
-
-I'd rather prefer a oneliner patch that turns it off in the Kconfig 
-for now.
-
-We are awfully late in the -rc cycle and this diffstat:
-
- b/include/linux/sched.h   |    3 ++
- b/kernel/rcutree_plugin.h |    6 +++--
- b/kernel/sched.c          |   44 ++++++++++++++++++++++++++++++++++-----
- b/kernel/signal.c         |   19 +++++++++++------
- b/kernel/softirq.c        |   12 +++++++++-
- kernel/rcutree_plugin.h   |   51 +++++++++++++++++++++++++++++++++-------------
- 6 files changed, 105 insertions(+), 30 deletions(-)
-
-looks very scary to me.
-
-Thanks,
-
-	Ingo
+g.
