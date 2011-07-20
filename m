@@ -1,103 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752019Ab1GTVGv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 17:06:51 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:43593 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751957Ab1GTVGs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 17:06:48 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=fwUW0Z+L7mYYEdggRXMas29cAWbZa2uitcxqbafWtmKRl8IFM4iqiboWKe1aydky85ieVoJnmpzjfyj58ZHaWIELxU6LhpDZLZQU/9vCmf+/miBVC1u0LoyRnHhylLEY;
-Date: Wed, 20 Jul 2011 14:06:46 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: David Lamparter <equinox@diac24.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>,
-        linux-next@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>, linux-driver@qlogic.com,
-        Anirban Chakraborty <anirban.chakraborty@qlogic.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH] net: vlan: fix compile breakage from 69ecca8
-Message-Id: <20110720140646.b66bd02b.rdunlap@xenotime.net>
-In-Reply-To: <1311191033-714631-1-git-send-email-equinox@diac24.net>
-References: <0E5EAE44-204C-4F4D-926C-F4D973B0CDB1@qlogic.com>
-	<1311191033-714631-1-git-send-email-equinox@diac24.net>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	id S1752099Ab1GTVHK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 17:07:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9270 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751912Ab1GTVHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 17:07:06 -0400
+Date: Wed, 20 Jul 2011 17:07:04 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: ZAK Magnus <zakmagnus@google.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Track hard and soft "short lockups" or "stalls."
+Message-ID: <20110720210704.GF3400@redhat.com>
+References: <1310760670-32232-1-git-send-email-zakmagnus@google.com>
+ <20110718122820.GB1808@redhat.com>
+ <CAAuSN9106qmYF27oRrfUBtqwOmSQgDJWwv3iz_NmTTuYNEymHA@mail.gmail.com>
+ <20110720154124.GS3765@redhat.com>
+ <CAAuSN9362PvjiJCQti=GAKGjZNnptV3e9Ot0kBpo40b8L7u0mA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAAuSN9362PvjiJCQti=GAKGjZNnptV3e9Ot0kBpo40b8L7u0mA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Jul 2011 21:43:53 +0200 David Lamparter wrote:
+On Wed, Jul 20, 2011 at 12:41:39PM -0700, ZAK Magnus wrote:
+> > I then count to 10 seconds to make sure the timer is within reason.
+> >
+> > So I did the above test and noticed the panic looked funny because it spit
+> > out the
+> >
+> > new worst hard stall seen on CPU#0: 3 interrupts missed
+> >
+> > and then
+> >
+> > new worst hard stall seen on CPU#0: 4 interrupts missed
+> >
+> > and then finally the HARDLOCKUP message
+> >
+> > I am not sure that is what we want as it confuses people as to where the
+> > panic really is.
+> Are the stack traces very different? I don't understand in what sense
+> it's confusing.
 
-> well, there was too much wood to see the tree and I messed up the
-> configuration dependencies. let's make it work with unset
-> CONFIG_VLAN_8021Q and remove the second definition of vlan_find_dev.
+The fact that there are 3 of them telling me the samething.  Most people
+look at the first stack trace to figure out what is going on and will just
+notice the warning.  They might completely miss the HARDLOCKUP message on
+the third stack trace down.
+
+It just looked odd when I ran it the first time.  I feel like I would
+constantly be trying to educate people on why we do it like that.
+
 > 
-> Signed-off-by: David Lamparter <equinox@diac24.net>
-> Cc: linux-driver@qlogic.com
-> Cc: Anirban Chakraborty <anirban.chakraborty@qlogic.com>
-> Cc: David S. Miller <davem@davemloft.net>
-> Cc: Randy Dunlap <rdunlap@xenotime.net>
+> > What if you moved the 'update_hardstall()' to just underneath the zero'ing
+> > out of the hrtimer_interrupts_missed?  This only then prints out the
+> > interrupts missed line when you know the end point.  And avoids printing
+> > it all together in the case of a true HARDLOCKUP.  Like the patch below
+> >
+> > diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+> > index 7d37cc2..ba41a74 100644
+> > --- a/kernel/watchdog.c
+> > +++ b/kernel/watchdog.c
+> > @@ -238,13 +238,14 @@ static int is_hardlockup(int this_cpu)
+> >
+> >        if (hrint_saved == hrint)
+> >                ints_missed = per_cpu(hrtimer_interrupts_missed, this_cpu)++;
+> > -       else
+> > +       else {
+> >                __this_cpu_write(hrtimer_interrupts_missed, 0);
+> > +               update_hardstall(ints_missed, this_cpu);
+> > +       }
+> >
+> >        if (ints_missed >= hardlockup_thresh)
+> >                return 1;
+> >
+> > -       update_hardstall(ints_missed, this_cpu);
+> >        return 0;
+> >  }
+> >  #endif
+> >
+> > The softlockup case probably needs the same.
+> >
+> > Thoughts?
+> I don't think that exact patch would work (wouldn't it cause
+> update_hardstall to only ever be called with 0 as its first argument?)
+> but I hope I still understand what you're saying. You're saying stalls
+> should only be recorded once they're finished, right? I don't know if
+> this is the best approach. If we wait until interrupts stop being
+> missed, it means the code could have exited whatever section caused
+> the stall to begin with. Maybe your data indicates otherwise, but I
+> would think this means the stack trace would not really be
 
-Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+Crap.  good point.
 
-Thanks.
-
-> ---
-> sorry for the mess-up... compiled with CONFIG_VLAN_8021Q=n,m and y
-> this time; don't have qlcnic hw to test.
+> informative. It's one thing to know a stall occurs, but its occurrence
+> is generally reflective of a bug or a suboptimal section, so it would
+> be good to know where that is in order to try and fix it.
 > 
->  drivers/net/qlcnic/qlcnic_main.c |    4 +++-
->  include/linux/if_vlan.h          |    5 -----
->  2 files changed, 3 insertions(+), 6 deletions(-)
+> For soft stalls, I think the same is true. Also, since the soft lockup
+> system just relies on checking a timestamp compared to now, it can't
+> know how long a stall was after it has already finished. The hard
+> system only knows because it keeps a running count of the number of
+> failed checks. An additional timestamp could be introduced and the
+> difference between the two retroactively checked in order to reproduce
+> this, but the stack trace issue would still apply. Also, while not
+> hugely complex, the change would be more significant than the sort
+> your patch presents.
 > 
-> diff --git a/drivers/net/qlcnic/qlcnic_main.c b/drivers/net/qlcnic/qlcnic_main.c
-> index 3579229..a2c39e9 100644
-> --- a/drivers/net/qlcnic/qlcnic_main.c
-> +++ b/drivers/net/qlcnic/qlcnic_main.c
-> @@ -4198,13 +4198,15 @@ static void
->  qlcnic_restore_indev_addr(struct net_device *netdev, unsigned long event)
->  {
->  	struct qlcnic_adapter *adapter = netdev_priv(netdev);
-> -	struct vlan_group *grp;
-> +	struct vlan_group *grp = NULL;
->  	struct net_device *dev;
->  	u16 vid;
->  
->  	qlcnic_config_indev_addr(adapter, netdev, event);
->  
-> +#if defined(CONFIG_VLAN_8021Q) || defined(CONFIG_VLAN_8021Q_MODULE)
->  	grp = rcu_dereference_rtnl(netdev->vlgrp);
-> +#endif
->  	if (!grp)
->  		return;
->  
-> diff --git a/include/linux/if_vlan.h b/include/linux/if_vlan.h
-> index bc03e40..dbe41dc 100644
-> --- a/include/linux/if_vlan.h
-> +++ b/include/linux/if_vlan.h
-> @@ -135,11 +135,6 @@ vlan_gro_frags(struct napi_struct *napi, struct vlan_group *grp,
->  	       unsigned int vlan_tci);
->  
->  #else
-> -static inline struct net_device *vlan_find_dev(struct net_device *real_dev,
-> -					       u16 vlan_id)
-> -{
-> -	return NULL;
-> -}
->  
->  static inline struct net_device *vlan_dev_real_dev(const struct net_device *dev)
->  {
-> -- 
+> The bottom line is that I think catching a stall in progress is the
+> most informative thing to do, and I don't understand the downsides of
+> doing so. Could you please explain them?
+> 
+> On another note, I'm working on a patch on top of this one which would
+> change the hard lockup system to be more like the soft lockup system.
+> It would use a timestamp as well, so it can have a more exact read on
+> how long the timer has been delayed. This adds resolution and gets rid
+> of that problem where it can only report missed = 3 or 4. Any
+> preliminary comments? Or should I just put the patch up before
+> discussing it?
 
+That might work.  I would have to see the patch.  What clock would you use
+to read the time?  I don't think you can use 'now' if interrupts are
+disabled.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Cheers,
+Don
+
