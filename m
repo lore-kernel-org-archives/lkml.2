@@ -1,59 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752202Ab1GTQED (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 12:04:03 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:35955 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751754Ab1GTQEB (ORCPT
+	id S1752296Ab1GTQEo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 12:04:44 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:46818 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752149Ab1GTQEn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 12:04:01 -0400
-Date: Wed, 20 Jul 2011 17:03:55 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Erik Gilling <konkers@android.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] arm/dt: tegra devicetree support
-Message-ID: <20110720160355.GB2406@sirena.org.uk>
-References: <20110719234158.2779.15394.stgit@ponder>
- <74CDBE0F657A3D45AFBB94109FB122FF049EBDEE27@HQMAIL01.nvidia.com>
+	Wed, 20 Jul 2011 12:04:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF049EBDEE27@HQMAIL01.nvidia.com>
-X-Cookie: Formatted to fit your screen.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <1311173910.5345.94.camel@twins>
+References: <20110707102107.GA16666@in.ibm.com> <1310036375.3282.509.camel@twins>
+ <20110714103418.7ef25b68@kryten> <20110714143521.5fe4fab6@kryten>
+ <1310649379.2586.273.camel@twins> <20110715104547.29c3c509@kryten>
+ <1311024956.2309.22.camel@laptop> <20110719144451.79bc69ab@kryten>
+ <1311070894.13765.180.camel@twins> <20110720201436.19e9689a@kryten>
+ <1311158708.5345.12.camel@twins> <20110720221420.153b0830@kryten>
+ <CA+55aFxzaaMj8OUaust90c_hYKzg8NpRfmX4SzJ9SMwXzg5ocA@mail.gmail.com> <1311173910.5345.94.camel@twins>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 20 Jul 2011 09:04:00 -0700
+Message-ID: <CA+55aFxpH9-4rkH6CRXbjFCQMGNYGRMKgdgHUEthefQPumFKVg@mail.gmail.com>
+Subject: Re: [regression] 3.0-rc boot failure -- bisected to cd4ea6ae3982
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Anton Blanchard <anton@samba.org>, mahesh@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        mingo@elte.hu, benh@kernel.crashing.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 20, 2011 at 08:37:19AM -0700, Stephen Warren wrote:
-> Grant Likely wrote at Tuesday, July 19, 2011 5:43 PM:
+On Wed, Jul 20, 2011 at 7:58 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+>
+> Right, so we can either merge my scary patches now and have 3.0 boot on
+> 16+ node machines (and risk breaking something), or delay them until
+> 3.0.1 and have 16+ node machines suffer a little.
 
-> > +	sound {
-> > +		compatible = "nvidia,harmony-sound", "nvidia,tegra-wm8903";
+So how much impact does your scary patch have on machines that don't
+have multiple nodes? If it's a "the code isn't even called by normal
+machines" kind of setup, I don't think I care a lot.
 
-> I thought the sound bindings were still somewhat experimental and not
-> completely agreed upon. One issue I see is that Device Tree is
-> supposed to represent pure HW, rather than driver-required abstractions,
-> and at least the compatible name here is pretty Linux-driver-specific.
-
-The current decision is that the schematic for embedded audio hardware
-is sufficiently interesting to be considered hardware in its own right
-separately to the chips contained within it.  
-
-> > +		spkr-en-gpios = <&codec 2 0>;
-
-> Should that be "gpio" not "gpios", since there is only one?
-
-There's only one in this board but one does see designs with separate
-left and right channel enables sometimes, or separate front and back
-speaker enables for phones.
+                  Linus
