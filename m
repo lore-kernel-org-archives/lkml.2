@@ -1,92 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752672Ab1GTAnY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 20:43:24 -0400
-Received: from mga01.intel.com ([192.55.52.88]:50075 "EHLO mga01.intel.com"
+	id S1752737Ab1GTAri (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 20:47:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53164 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752332Ab1GTAnX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 20:43:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,231,1309762800"; 
-   d="scan'208";a="29993789"
-Subject: Re: [PATCH]vmscan: fix a livelock in kswapd
-From: Shaohua Li <shaohua.li@intel.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "mgorman@suse.de" <mgorman@suse.de>, linux-mm <linux-mm@kvack.org>,
-        lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110719165155.GB2978@barrios-desktop>
-References: <1311059367.15392.299.camel@sli10-conroe>
-	 <CAEwNFnB6HKJ3j9cWzyb2e3BS2BQrE66F6eT02C4cozRC9YQ7kw@mail.gmail.com>
-	 <1311065584.15392.300.camel@sli10-conroe>
-	 <20110719165155.GB2978@barrios-desktop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 20 Jul 2011 08:43:21 +0800
-Message-ID: <1311122601.15392.310.camel@sli10-conroe>
+	id S1752395Ab1GTArh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 20:47:37 -0400
+Date: Wed, 20 Jul 2011 10:47:21 +1000
+From: NeilBrown <neilb@suse.de>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] vfs: fix race in rcu lookup of pruned dentry
+Message-ID: <20110720104721.03a2a2f0@notabene.brown>
+In-Reply-To: <20110719235515.GT11013@ZenIV.linux.org.uk>
+References: <CA+55aFwXgcWxvAz7w1f_HYyzdm9b9EBJfrWhF1FW7EA3zpbJPg@mail.gmail.com>
+	<CA+55aFxKRw8NxcHKzsSeCX3ud6eDrcQvAX+LMQOUT4p5TPLp5g@mail.gmail.com>
+	<alpine.LSU.2.00.1107181135170.2722@sister.anvils>
+	<CA+55aFycZL9zAE_Qvq9LM=HpugiDuKSjdRhKG1zi=H4LnNvhVQ@mail.gmail.com>
+	<20110718194703.GI11013@ZenIV.linux.org.uk>
+	<CA+55aFzCeXOs9Rj5U5mMWqMZpv+jM14O2VnpFCodMJzaB1hPEg@mail.gmail.com>
+	<alpine.LSU.2.00.1107181407060.3530@sister.anvils>
+	<CA+55aFxq1KZycxXCwLARv0WOYG_-aim=e9kt=eLcNuymmeoyiA@mail.gmail.com>
+	<20110719234550.GR11013@ZenIV.linux.org.uk>
+	<20110719235215.GS11013@ZenIV.linux.org.uk>
+	<20110719235515.GT11013@ZenIV.linux.org.uk>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-07-20 at 00:51 +0800, Minchan Kim wrote:
-> On Tue, Jul 19, 2011 at 04:53:04PM +0800, Shaohua Li wrote:
-> > On Tue, 2011-07-19 at 16:45 +0800, Minchan Kim wrote:
-> > > On Tue, Jul 19, 2011 at 4:09 PM, Shaohua Li <shaohua.li@intel.com> wrote:
-> > > > I'm running a workload which triggers a lot of swap in a machine with 4 nodes.
-> > > > After I kill the workload, I found a kswapd livelock. Sometimes kswapd3 or
-> > > > kswapd2 are keeping running and I can't access filesystem, but most memory is
-> > > > free. This looks like a regression since commit 08951e545918c159.
-> > > 
-> > > Could you tell me what is 08951e545918c159?
-> > > You mean [ebd64e21ec5a,
-> > > mm-vmscan-only-read-new_classzone_idx-from-pgdat-when-reclaiming-successfully]
-> > > ?
-> > ha, sorry, I should copy the commit title.
-> > 08951e545918c159(mm: vmscan: correct check for kswapd sleeping in
-> > sleeping_prematurely)
+On Wed, 20 Jul 2011 00:55:15 +0100 Al Viro <viro@ZenIV.linux.org.uk> wrote:
+
+> On Wed, Jul 20, 2011 at 12:52:16AM +0100, Al Viro wrote:
+> > On Wed, Jul 20, 2011 at 12:45:51AM +0100, Al Viro wrote:
 > > 
-> 
-> I don't mean it. In my bogus git tree, I can't find it but I can look at it in repaired git tree. :)
-> Anyway, I have a comment. Please look at below.
-> 
-> On Tue, Jul 19, 2011 at 03:09:27PM +0800, Shaohua Li wrote:
-> > I'm running a workload which triggers a lot of swap in a machine with 4 nodes.
-> > After I kill the workload, I found a kswapd livelock. Sometimes kswapd3 or
-> > kswapd2 are keeping running and I can't access filesystem, but most memory is
-> > free. This looks like a regression since commit 08951e545918c159.
-> > Node 2 and 3 have only ZONE_NORMAL, but balance_pgdat() will return 0 for
-> > classzone_idx. The reason is end_zone in balance_pgdat() is 0 by default, if
-> > all zones have watermark ok, end_zone will keep 0.
-> > Later sleeping_prematurely() always returns true. Because this is an order 3
-> > wakeup, and if classzone_idx is 0, both balanced_pages and present_pages
-> > in pgdat_balanced() are 0.
-> 
-> Sigh. Yes.
-> 
-> > We add a special case here. If a zone has no page, we think it's balanced. This
-> > fixes the livelock.
-> 
-> Yes. Your patch can fix it but I don't like that it adds handling special case.
-> (Although Andrew merged quickly).
-The special case is reasonable, because if a zone has no page, it should
-be considered balanced.
+> > > You know what...  I doubt that you want to mess with ->d_seq checks here.
+> > > It's definitely not Hugh's bug (unless he has bindings somewhere odd) and
+> > > both ->mnt_mountpoint and ->mnt_root are pinned (and we are holding
+> > > vfsmount_lock anyway).  *inode assignment too early is a real bug, indeed,
+> > > and we want to assign nd->seq if we cross mountpoint as both versions do,
+> > > but check just before that is, in the best case, BUG_ON() fodder.  We'd
+> > > just found a vfsmount with ->mnt_mountpoint equal to path->dentry; it *can't*
+> > > be stale, or we have a really nasty problem anyway.
+> > 
+> > Kudos to neilb for spotting the pointless check, BTW; and no, his theory
+> > that it might be needed since we could race with umount() is wrong - due to
+> > vfsmount_lock being held.
 
-> The problem is to return 0-classzone_idx if all zones was okay.
-> So how about this?
-My original implementation is like this (I return a populated zone with
-minimum zone index). But I changed my mind later. the end_zone is zone
-we work, so return 0 is reasonable, because all zones are ok. Maybe we
-should return -1 if all zones are ok, but this is another story.
+Thanks.. but that patch seems to introduce an unused variable "seq".
 
-> This can change old behavior slightly.
-> For example, if balance_pgdat calls with order-3 and all zones are okay about order-3,
-> it will recheck order-0 as end_zone isn't 0 any more.
-> But I think it's desriable side effect we have missed.
-if order-3 is ok, order-0 is ok too I think, so the check is
-unnecessary.
+NeilBrown
 
-Thanks,
-Shaohua
+
+> 
+> Updated, pushed.  Please, pull from the usual place (
+> git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ for-linus
+> ).
+> 
+> Shortlog:
+> Al Viro (1):
+>       Fix cifs_get_root()
+> 
+> Linus Torvalds (1):
+>       vfs: fix race in rcu lookup of pruned dentry
+> 
+> Diffstat:
+>  fs/cifs/cifsfs.c |  100 +++++++++++++++--------------------------------------
+>  fs/namei.c       |   10 +++++-
+>  2 files changed, 38 insertions(+), 72 deletions(-)
 
