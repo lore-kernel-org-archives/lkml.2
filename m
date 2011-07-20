@@ -1,394 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751876Ab1GTVzt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 17:55:49 -0400
-Received: from mail001.aei.ca ([206.123.6.130]:47969 "EHLO mail001.aei.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751460Ab1GTVzs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 17:55:48 -0400
-From: Ed Tomlinson <edt@aei.ca>
-To: Ingo Molnar <mingo@elte.hu>, "Paul E. McKenney" <paulmck@us.ibm.com>
-Subject: Re: [GIT PULL] RCU fixes for v3.0
-Date: Wed, 20 Jul 2011 17:55:37 -0400
-User-Agent: KMail/1.13.7 (Linux/3.0.0-rc7-crc+; KDE/4.6.5; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ben Greear <greearb@candelatech.com>, linux-kernel@vger.kernel.org,
-        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org
-References: <CA+55aFyaCY=qzFKswi2NR097KZtb5x98sba3rHJ7B0rchtzm2g@mail.gmail.com> <20110720195742.GA14671@elte.hu> <20110720210426.GA30743@elte.hu>
-In-Reply-To: <20110720210426.GA30743@elte.hu>
+	id S1751921Ab1GTV6B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 17:58:01 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:45630 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751543Ab1GTV57 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 17:57:59 -0400
+Message-ID: <4E274F5F.7000604@gmail.com>
+Date: Wed, 20 Jul 2011 15:57:51 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Anton Blanchard <anton@samba.org>, Paul Mackerras <paulus@samba.org>,
+        linux-perf-users@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: perf PPC: kernel panic with callchains and context switch events
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201107201755.38653.edt@aei.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 20 July 2011 17:04:26 Ingo Molnar wrote:
-> 
-> * Ingo Molnar <mingo@elte.hu> wrote:
-> 
-> > Having put some testing into your rcu/urgent branch today i'd feel 
-> > more comfortable with taking this plus perhaps an RCU_BOOST 
-> > disabling patch. That makes it all fundamentally tested by a number 
-> > of people (including those who reported/reproduced the problems).
-> > 
-> > Linus, would that approach be fine with you? I'll send an RFC pull 
-> > request for the 6 patches as a reply to this mail, in a couple of 
-> > minutes.
-> 
-> here it is:
-> 
-> Linus,
-> 
-> Please pull the latest core-urgent-for-linus git tree from:
-> 
->    git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git core-urgent-for-linus
+I am hoping someone familiar with PPC can help understand a panic that
+is generated when capturing callchains with context switch events.
 
-I've been running on the previous version of this tree along with a fix for the first patch.  An 
-additional patch was added this morning to prevent an invalid warning from triggering.  Aside 
-from that warning the system was stable with no other unexpected output in dmesg.  
+Call trace is below. The short of it is that walking the callchain
+generates a page fault. To handle the page fault the mmap_sem is needed,
+but it is currently held by setup_arg_pages. setup_arg_pages calls
+shift_arg_pages with the mmap_sem held. shift_arg_pages then calls
+move_page_tables which has a cond_resched at the top of its for loop. If
+the cond_resched() is removed from move_page_tables everything works
+beautifully - no panics.
 
-Resetting to master and pulling the above tree gives me a clean boot.  On atleast one box that was
-seeing problems this seems too be making things better (boost and threadirqs enabled).
+So, the question: is it normal for walking the stack to trigger a page
+fault on PPC? The panic is not seen on x86 based systems.
 
-Thanks
-Ed
+ [<b0180e00>]rb_erase+0x1b4/0x3e8
+ [<b00430f4>]__dequeue_entity+0x50/0xe8
+ [<b0043304>]set_next_entity+0x178/0x1bc
+ [<b0043440>]pick_next_task_fair+0xb0/0x118
+ [<b02ada80>]schedule+0x500/0x614
+ [<b02afaa8>]rwsem_down_failed_common+0xf0/0x264
+ [<b02afca0>]rwsem_down_read_failed+0x34/0x54
+ [<b02aed4c>]down_read+0x3c/0x54
+ [<b0023b58>]do_page_fault+0x114/0x5e8
+ [<b001e350>]handle_page_fault+0xc/0x80
+ [<b0022dec>]perf_callchain+0x224/0x31c
+ [<b009ba70>]perf_prepare_sample+0x240/0x2fc
+ [<b009d760>]__perf_event_overflow+0x280/0x398
+ [<b009d914>]perf_swevent_overflow+0x9c/0x10c
+ [<b009db54>]perf_swevent_ctx_event+0x1d0/0x230
+ [<b009dc38>]do_perf_sw_event+0x84/0xe4
+ [<b009dde8>]perf_sw_event_context_switch+0x150/0x1b4
+ [<b009de90>]perf_event_task_sched_out+0x44/0x2d4
+ [<b02ad840>]schedule+0x2c0/0x614
+ [<b0047dc0>]__cond_resched+0x34/0x90
+ [<b02adcc8>]_cond_resched+0x4c/0x68
+ [<b00bccf8>]move_page_tables+0xb0/0x418
+ [<b00d7ee0>]setup_arg_pages+0x184/0x2a0
+ [<b0110914>]load_elf_binary+0x394/0x1208
+ [<b00d6e28>]search_binary_handler+0xe0/0x2c4
+ [<b00d834c>]do_execve+0x1bc/0x268
+ [<b0015394>]sys_execve+0x84/0xc8
+ [<b001df10>]ret_from_syscall+0x0/0x3c
 
-> In addition to the testing Paul & co has performed i have boot tested 
-> x86 defconfig/allno/allyes/allmod and a fair number of randconfigs, 
-> and i build tested a dozen architecture defconfigs, amongst them the 
-> key ones.
-> 
-> ( We could also mark RCU_BOOST in init/Kconfig as EXPERIMENTAL, to
->   further de-risk it - but that change is not part of this pull
->   request. )
-> 
->  Thanks,
-> 
-> 	Ingo
-> 
-> ------------------>
-> Paul E. McKenney (5):
->       rcu: decrease rcu_report_exp_rnp coupling with scheduler
->       rcu: Fix RCU_BOOST race handling current->rcu_read_unlock_special
->       rcu: Streamline code produced by __rcu_read_unlock()
->       rcu: protect __rcu_read_unlock() against scheduler-using irq handlers
->       signal: align __lock_task_sighand() irq disabling and RCU
-> 
-> Peter Zijlstra (2):
->       sched: Add irq_{enter,exit}() to scheduler_ipi()
->       softirq,rcu: Inform RCU of irq_exit() activity
-> 
-> 
->  include/linux/sched.h   |    3 ++
->  kernel/rcutree_plugin.h |   53 ++++++++++++++++++++++++++++++++++------------
->  kernel/sched.c          |   44 +++++++++++++++++++++++++++++++++-----
->  kernel/signal.c         |   19 +++++++++++-----
->  kernel/softirq.c        |   12 ++++++++-
->  5 files changed, 103 insertions(+), 28 deletions(-)
-> 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 496770a..76676a4 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1254,6 +1254,9 @@ struct task_struct {
->  #ifdef CONFIG_PREEMPT_RCU
->  	int rcu_read_lock_nesting;
->  	char rcu_read_unlock_special;
-> +#if defined(CONFIG_RCU_BOOST) && defined(CONFIG_TREE_PREEMPT_RCU)
-> +	int rcu_boosted;
-> +#endif /* #if defined(CONFIG_RCU_BOOST) && defined(CONFIG_TREE_PREEMPT_RCU) */
->  	struct list_head rcu_node_entry;
->  #endif /* #ifdef CONFIG_PREEMPT_RCU */
->  #ifdef CONFIG_TREE_PREEMPT_RCU
-> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> index 75113cb..8aafbb8 100644
-> --- a/kernel/rcutree_plugin.h
-> +++ b/kernel/rcutree_plugin.h
-> @@ -68,6 +68,7 @@ struct rcu_state rcu_preempt_state = RCU_STATE_INITIALIZER(rcu_preempt_state);
->  DEFINE_PER_CPU(struct rcu_data, rcu_preempt_data);
->  static struct rcu_state *rcu_state = &rcu_preempt_state;
->  
-> +static void rcu_read_unlock_special(struct task_struct *t);
->  static int rcu_preempted_readers_exp(struct rcu_node *rnp);
->  
->  /*
-> @@ -147,7 +148,7 @@ static void rcu_preempt_note_context_switch(int cpu)
->  	struct rcu_data *rdp;
->  	struct rcu_node *rnp;
->  
-> -	if (t->rcu_read_lock_nesting &&
-> +	if (t->rcu_read_lock_nesting > 0 &&
->  	    (t->rcu_read_unlock_special & RCU_READ_UNLOCK_BLOCKED) == 0) {
->  
->  		/* Possibly blocking in an RCU read-side critical section. */
-> @@ -190,6 +191,14 @@ static void rcu_preempt_note_context_switch(int cpu)
->  				rnp->gp_tasks = &t->rcu_node_entry;
->  		}
->  		raw_spin_unlock_irqrestore(&rnp->lock, flags);
-> +	} else if (t->rcu_read_lock_nesting < 0 &&
-> +		   t->rcu_read_unlock_special) {
-> +
-> +		/*
-> +		 * Complete exit from RCU read-side critical section on
-> +		 * behalf of preempted instance of __rcu_read_unlock().
-> +		 */
-> +		rcu_read_unlock_special(t);
->  	}
->  
->  	/*
-> @@ -284,7 +293,7 @@ static struct list_head *rcu_next_node_entry(struct task_struct *t,
->   * notify RCU core processing or task having blocked during the RCU
->   * read-side critical section.
->   */
-> -static void rcu_read_unlock_special(struct task_struct *t)
-> +static noinline void rcu_read_unlock_special(struct task_struct *t)
->  {
->  	int empty;
->  	int empty_exp;
-> @@ -309,7 +318,7 @@ static void rcu_read_unlock_special(struct task_struct *t)
->  	}
->  
->  	/* Hardware IRQ handlers cannot block. */
-> -	if (in_irq()) {
-> +	if (in_irq() || in_serving_softirq()) {
->  		local_irq_restore(flags);
->  		return;
->  	}
-> @@ -342,6 +351,11 @@ static void rcu_read_unlock_special(struct task_struct *t)
->  #ifdef CONFIG_RCU_BOOST
->  		if (&t->rcu_node_entry == rnp->boost_tasks)
->  			rnp->boost_tasks = np;
-> +		/* Snapshot and clear ->rcu_boosted with rcu_node lock held. */
-> +		if (t->rcu_boosted) {
-> +			special |= RCU_READ_UNLOCK_BOOSTED;
-> +			t->rcu_boosted = 0;
-> +		}
->  #endif /* #ifdef CONFIG_RCU_BOOST */
->  		t->rcu_blocked_node = NULL;
->  
-> @@ -358,7 +372,6 @@ static void rcu_read_unlock_special(struct task_struct *t)
->  #ifdef CONFIG_RCU_BOOST
->  		/* Unboost if we were boosted. */
->  		if (special & RCU_READ_UNLOCK_BOOSTED) {
-> -			t->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_BOOSTED;
->  			rt_mutex_unlock(t->rcu_boost_mutex);
->  			t->rcu_boost_mutex = NULL;
->  		}
-> @@ -387,13 +400,22 @@ void __rcu_read_unlock(void)
->  	struct task_struct *t = current;
->  
->  	barrier();  /* needed if we ever invoke rcu_read_unlock in rcutree.c */
-> -	--t->rcu_read_lock_nesting;
-> -	barrier();  /* decrement before load of ->rcu_read_unlock_special */
-> -	if (t->rcu_read_lock_nesting == 0 &&
-> -	    unlikely(ACCESS_ONCE(t->rcu_read_unlock_special)))
-> -		rcu_read_unlock_special(t);
-> +	if (t->rcu_read_lock_nesting != 1)
-> +		--t->rcu_read_lock_nesting;
-> +	else {
-> +		t->rcu_read_lock_nesting = INT_MIN;
-> +		barrier();  /* assign before ->rcu_read_unlock_special load */
-> +		if (unlikely(ACCESS_ONCE(t->rcu_read_unlock_special)))
-> +			rcu_read_unlock_special(t);
-> +		barrier();  /* ->rcu_read_unlock_special load before assign */
-> +		t->rcu_read_lock_nesting = 0;
-> +	}
->  #ifdef CONFIG_PROVE_LOCKING
-> -	WARN_ON_ONCE(ACCESS_ONCE(t->rcu_read_lock_nesting) < 0);
-> +	{
-> +		int rrln = ACCESS_ONCE(t->rcu_read_lock_nesting);
-> +
-> +		WARN_ON_ONCE(rrln < 0 && rrln > INT_MIN / 2);
-> +	}
->  #endif /* #ifdef CONFIG_PROVE_LOCKING */
->  }
->  EXPORT_SYMBOL_GPL(__rcu_read_unlock);
-> @@ -589,7 +611,8 @@ static void rcu_preempt_check_callbacks(int cpu)
->  		rcu_preempt_qs(cpu);
->  		return;
->  	}
-> -	if (per_cpu(rcu_preempt_data, cpu).qs_pending)
-> +	if (t->rcu_read_lock_nesting > 0 &&
-> +	    per_cpu(rcu_preempt_data, cpu).qs_pending)
->  		t->rcu_read_unlock_special |= RCU_READ_UNLOCK_NEED_QS;
->  }
->  
-> @@ -695,9 +718,12 @@ static void rcu_report_exp_rnp(struct rcu_state *rsp, struct rcu_node *rnp)
->  
->  	raw_spin_lock_irqsave(&rnp->lock, flags);
->  	for (;;) {
-> -		if (!sync_rcu_preempt_exp_done(rnp))
-> +		if (!sync_rcu_preempt_exp_done(rnp)) {
-> +			raw_spin_unlock_irqrestore(&rnp->lock, flags);
->  			break;
-> +		}
->  		if (rnp->parent == NULL) {
-> +			raw_spin_unlock_irqrestore(&rnp->lock, flags);
->  			wake_up(&sync_rcu_preempt_exp_wq);
->  			break;
->  		}
-> @@ -707,7 +733,6 @@ static void rcu_report_exp_rnp(struct rcu_state *rsp, struct rcu_node *rnp)
->  		raw_spin_lock(&rnp->lock); /* irqs already disabled */
->  		rnp->expmask &= ~mask;
->  	}
-> -	raw_spin_unlock_irqrestore(&rnp->lock, flags);
->  }
->  
->  /*
-> @@ -1174,7 +1199,7 @@ static int rcu_boost(struct rcu_node *rnp)
->  	t = container_of(tb, struct task_struct, rcu_node_entry);
->  	rt_mutex_init_proxy_locked(&mtx, t);
->  	t->rcu_boost_mutex = &mtx;
-> -	t->rcu_read_unlock_special |= RCU_READ_UNLOCK_BOOSTED;
-> +	t->rcu_boosted = 1;
->  	raw_spin_unlock_irqrestore(&rnp->lock, flags);
->  	rt_mutex_lock(&mtx);  /* Side effect: boosts task t's priority. */
->  	rt_mutex_unlock(&mtx);  /* Keep lockdep happy. */
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index 3dc716f..31e92ae 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -2544,13 +2544,9 @@ static int ttwu_remote(struct task_struct *p, int wake_flags)
->  }
->  
->  #ifdef CONFIG_SMP
-> -static void sched_ttwu_pending(void)
-> +static void sched_ttwu_do_pending(struct task_struct *list)
->  {
->  	struct rq *rq = this_rq();
-> -	struct task_struct *list = xchg(&rq->wake_list, NULL);
-> -
-> -	if (!list)
-> -		return;
->  
->  	raw_spin_lock(&rq->lock);
->  
-> @@ -2563,9 +2559,45 @@ static void sched_ttwu_pending(void)
->  	raw_spin_unlock(&rq->lock);
->  }
->  
-> +#ifdef CONFIG_HOTPLUG_CPU
-> +
-> +static void sched_ttwu_pending(void)
-> +{
-> +	struct rq *rq = this_rq();
-> +	struct task_struct *list = xchg(&rq->wake_list, NULL);
-> +
-> +	if (!list)
-> +		return;
-> +
-> +	sched_ttwu_do_pending(list);
-> +}
-> +
-> +#endif /* CONFIG_HOTPLUG_CPU */
-> +
->  void scheduler_ipi(void)
->  {
-> -	sched_ttwu_pending();
-> +	struct rq *rq = this_rq();
-> +	struct task_struct *list = xchg(&rq->wake_list, NULL);
-> +
-> +	if (!list)
-> +		return;
-> +
-> +	/*
-> +	 * Not all reschedule IPI handlers call irq_enter/irq_exit, since
-> +	 * traditionally all their work was done from the interrupt return
-> +	 * path. Now that we actually do some work, we need to make sure
-> +	 * we do call them.
-> +	 *
-> +	 * Some archs already do call them, luckily irq_enter/exit nest
-> +	 * properly.
-> +	 *
-> +	 * Arguably we should visit all archs and update all handlers,
-> +	 * however a fair share of IPIs are still resched only so this would
-> +	 * somewhat pessimize the simple resched case.
-> +	 */
-> +	irq_enter();
-> +	sched_ttwu_do_pending(list);
-> +	irq_exit();
->  }
->  
->  static void ttwu_queue_remote(struct task_struct *p, int cpu)
-> diff --git a/kernel/signal.c b/kernel/signal.c
-> index ff76786..415d85d 100644
-> --- a/kernel/signal.c
-> +++ b/kernel/signal.c
-> @@ -1178,18 +1178,25 @@ struct sighand_struct *__lock_task_sighand(struct task_struct *tsk,
->  {
->  	struct sighand_struct *sighand;
->  
-> -	rcu_read_lock();
->  	for (;;) {
-> +		local_irq_save(*flags);
-> +		rcu_read_lock();
->  		sighand = rcu_dereference(tsk->sighand);
-> -		if (unlikely(sighand == NULL))
-> +		if (unlikely(sighand == NULL)) {
-> +			rcu_read_unlock();
-> +			local_irq_restore(*flags);
->  			break;
-> +		}
->  
-> -		spin_lock_irqsave(&sighand->siglock, *flags);
-> -		if (likely(sighand == tsk->sighand))
-> +		spin_lock(&sighand->siglock);
-> +		if (likely(sighand == tsk->sighand)) {
-> +			rcu_read_unlock();
->  			break;
-> -		spin_unlock_irqrestore(&sighand->siglock, *flags);
-> +		}
-> +		spin_unlock(&sighand->siglock);
-> +		rcu_read_unlock();
-> +		local_irq_restore(*flags);
->  	}
-> -	rcu_read_unlock();
->  
->  	return sighand;
->  }
-> diff --git a/kernel/softirq.c b/kernel/softirq.c
-> index 40cf63d..fca82c3 100644
-> --- a/kernel/softirq.c
-> +++ b/kernel/softirq.c
-> @@ -315,16 +315,24 @@ static inline void invoke_softirq(void)
->  {
->  	if (!force_irqthreads)
->  		__do_softirq();
-> -	else
-> +	else {
-> +		__local_bh_disable((unsigned long)__builtin_return_address(0),
-> +				SOFTIRQ_OFFSET);
->  		wakeup_softirqd();
-> +		__local_bh_enable(SOFTIRQ_OFFSET);
-> +	}
->  }
->  #else
->  static inline void invoke_softirq(void)
->  {
->  	if (!force_irqthreads)
->  		do_softirq();
-> -	else
-> +	else {
-> +		__local_bh_disable((unsigned long)__builtin_return_address(0),
-> +				SOFTIRQ_OFFSET);
->  		wakeup_softirqd();
-> +		__local_bh_enable(SOFTIRQ_OFFSET);
-> +	}
->  }
->  #endif
->  
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
+Thanks,
+David
