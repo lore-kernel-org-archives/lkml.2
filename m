@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752238Ab1GTQCp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 12:02:45 -0400
-Received: from mail.perches.com ([173.55.12.10]:4205 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751584Ab1GTQCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 12:02:43 -0400
-Subject: Re: [PATCH 1/3] wireless: rtlwifi: throw away MAC_FMT and use %pM
- instead
-From: Joe Perches <joe@perches.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <4E26F879.8010601@lwfinger.net>
-References: <fddeabc04a1b81a5c1f51a4164d93366dccf5f8e.1311162926.git.andriy.shevchenko@linux.intel.com>
-	 <4E26F879.8010601@lwfinger.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 20 Jul 2011 09:02:42 -0700
-Message-ID: <1311177762.1663.9.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1752202Ab1GTQED (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 12:04:03 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:35955 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751754Ab1GTQEB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 12:04:01 -0400
+Date: Wed, 20 Jul 2011 17:03:55 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Erik Gilling <konkers@android.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH] arm/dt: tegra devicetree support
+Message-ID: <20110720160355.GB2406@sirena.org.uk>
+References: <20110719234158.2779.15394.stgit@ponder>
+ <74CDBE0F657A3D45AFBB94109FB122FF049EBDEE27@HQMAIL01.nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF049EBDEE27@HQMAIL01.nvidia.com>
+X-Cookie: Formatted to fit your screen.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-07-20 at 10:47 -0500, Larry Finger wrote:
-> Thanks for the patch.
+On Wed, Jul 20, 2011 at 08:37:19AM -0700, Stephen Warren wrote:
+> Grant Likely wrote at Tuesday, July 19, 2011 5:43 PM:
 
-Hey Larry.
+> > +	sound {
+> > +		compatible = "nvidia,harmony-sound", "nvidia,tegra-wm8903";
 
-rtlwifi has a CONFIG_BT_COEXIST which is currently
-unused/undefined by Kconfig.
+> I thought the sound bindings were still somewhat experimental and not
+> completely agreed upon. One issue I see is that Device Tree is
+> supposed to represent pure HW, rather than driver-required abstractions,
+> and at least the compatible name here is pretty Linux-driver-specific.
 
-Are there plans to enable this or should the code
-just be removed?
+The current decision is that the schematic for embedded audio hardware
+is sufficiently interesting to be considered hardware in its own right
+separately to the chips contained within it.  
 
-There may be a few dependencies in rtlwifi for
-variables set in this block so it seems from
-superficial reading that removal might be a bit
-involved.  I didn't look much more than that,
-but struct btcoexist_priv doesn't seem to be
-specified by the code anywhere.
+> > +		spkr-en-gpios = <&codec 2 0>;
 
+> Should that be "gpio" not "gpios", since there is only one?
 
+There's only one in this board but one does see designs with separate
+left and right channel enables sometimes, or separate front and back
+speaker enables for phones.
