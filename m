@@ -1,81 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951Ab1GTVRq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 17:17:46 -0400
-Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:32200 "HELO
-	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751593Ab1GTVRp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 17:17:45 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: mBWKkOIVM1mwgwBItEevp0.PyVZs3UehO2AQYgLszfr8Abz
- i26MzmT4AWfsecElU3ogDjFApTXwneXLhdg87a80gjyL8OBNDT1H.sPhUFsL
- FRrr126kf97myVjynBCx3iC8pzzXVPC6Iy0KB_unU4LCmc4Mb30j1pzSKZHX
- coVZyh4HENb6Q8VBZirDxhx2.H7kh8MkcY0c3pkWl6OhHynbxSxH809H047o
- kpwDXW9gfUUrPFroJVXFaNLHNaShDn1BgUB73Mj_6omDr8z1XDbnu7OODnUA
- SWUseFXiQqu7az50_YN_bgiazjPZlOLcpOtaT11yktf_EyG1y
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 20 Jul 2011 16:17:41 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Mel Gorman <mgorman@suse.de>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] mm: page allocator: Initialise ZLC for first zone
- eligible for zone_reclaim
-In-Reply-To: <alpine.DEB.2.00.1107201443400.1472@router.home>
-Message-ID: <alpine.DEB.2.00.1107201617050.1472@router.home>
-References: <1310742540-22780-1-git-send-email-mgorman@suse.de> <1310742540-22780-2-git-send-email-mgorman@suse.de> <alpine.DEB.2.00.1107180951390.30392@router.home> <20110718160552.GB5349@suse.de> <alpine.DEB.2.00.1107181208050.31576@router.home>
- <20110718211325.GC5349@suse.de> <alpine.DEB.2.00.1107181651000.31576@router.home> <alpine.DEB.2.00.1107190901120.1199@router.home> <alpine.DEB.2.00.1107201307530.1472@router.home> <20110720191858.GO5349@suse.de> <alpine.DEB.2.00.1107201425200.1472@router.home>
- <alpine.DEB.2.00.1107201443400.1472@router.home>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1751970Ab1GTVZz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 17:25:55 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:58667 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751837Ab1GTVZx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 17:25:53 -0400
+Date: Wed, 20 Jul 2011 14:12:17 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Ben Greear <greearb@candelatech.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ed Tomlinson <edt@aei.ca>,
+        linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org, edward.tomlinson@aero.bombardier.com
+Subject: Re: [PATCH rcu/urgent 0/6] Fixes for RCU/scheduler/irq-threads
+ trainwreck
+Message-ID: <20110720211217.GS2313@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4E270A0E.6090902@candelatech.com>
+ <20110720171532.GB2313@linux.vnet.ibm.com>
+ <20110720184413.GD17977@elte.hu>
+ <1311187978.29152.58.camel@twins>
+ <CA+55aFyuKTj3zEvWJEx4_RDzLQ+ipJ58UWFYH84nmcwGF_c4aA@mail.gmail.com>
+ <20110720192949.GM2313@linux.vnet.ibm.com>
+ <20110720193925.GB7910@elte.hu>
+ <20110720195742.GA14671@elte.hu>
+ <20110720203300.GQ2313@linux.vnet.ibm.com>
+ <4E274099.20704@candelatech.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E274099.20704@candelatech.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hmmm... Maybe we can bypass the checks?
+On Wed, Jul 20, 2011 at 01:54:49PM -0700, Ben Greear wrote:
+> On 07/20/2011 01:33 PM, Paul E. McKenney wrote:
+> >On Wed, Jul 20, 2011 at 09:57:42PM +0200, Ingo Molnar wrote:
+> >>
+> >>* Ingo Molnar<mingo@elte.hu>  wrote:
+> >>
+> >>>
+> >>>* Paul E. McKenney<paulmck@linux.vnet.ibm.com>  wrote:
+> >>>
+> >>>>If my guess is correct, then the minimal non-RCU_BOOST fix is #4
+> >>>>(which drags along #3) and #6.  Which are not one-liners, but
+> >>>>somewhat smaller:
+> >>>>
+> >>>>  b/kernel/rcutree_plugin.h |   12 ++++++------
+> >>>>  b/kernel/softirq.c        |   12 ++++++++++--
+> >>>>  kernel/rcutree_plugin.h   |   31 +++++++++++++++++++++++++------
+> >>>>  3 files changed, 41 insertions(+), 14 deletions(-)
+> >>>
+> >>>That's half the patch size and half the patch count.
+> >>>
+> >>>PeterZ's question is relevant: since we apparently had similar bugs
+> >>>in v2.6.39 as well, what changed in v3.0 that makes them so urgent
+> >>>to fix?
+> >>>
+> >>>If it's just better instrumentation that proves them better then
+> >>>i'd suggest fixing this in v3.1 and not risking v3.0 with an
+> >>>unintended side effect.
+> >>
+> >>Ok, i looked some more at the background and the symptoms that people
+> >>are seeing: kernel crashes and lockups. I think we want these
+> >>problems fixed in v3.0, even if it was the recent introduction of
+> >>RCU_BOOST that made it really prominent.
+> >>
+> >>Having put some testing into your rcu/urgent branch today i'd feel
+> >>more comfortable with taking this plus perhaps an RCU_BOOST disabling
+> >>patch. That makes it all fundamentally tested by a number of people
+> >>(including those who reported/reproduced the problems).
+> >
+> >RCU_BOOST is currently default=n.  Is that sufficient?  If not, one
+> 
+> Not if it remains broken I think..unless you put it under CONFIG_BROKEN
+> or something.  Otherwise, folks are liable to turn it on and not realize
+> it's the cause of subtle bugs.
 
-Subject: [page allocator] Do not check watermarks if there is a page available on the per cpu freelists
+Good point, I could easily add "depends on BROKEN".
 
-One should be able to grab a page from the per cpu freelists if available.
-The pages on the per cpu freelists are not accounted for in VM statistics
-so getting a page from there has no impact on reclaim.
+> For what it's worth, my tests have been running clean for around 2 hours, so the full set of
+> fixes with RCU_BOOST appears good, so far.  I'll let it continue to run
+> at least overnight to make sure I'm not just getting lucky...
 
-Check for this condition in get_page_from_freelist and short circuit
-to the call to buffered_rmqueue if so.
+Continuing to think good thoughts...  ;-)
 
-Note that there is a race here. We may deplete the reserve pools by
-one page if either the process is rescheduled on a different processor
-or if another process grabs the last page from the per cpu freelist.
-
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
----
- mm/page_alloc.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
-
-Index: linux-2.6/mm/page_alloc.c
-===================================================================
---- linux-2.6.orig/mm/page_alloc.c	2011-07-20 15:27:20.544825852 -0500
-+++ linux-2.6/mm/page_alloc.c	2011-07-20 15:30:05.314824797 -0500
-@@ -1666,6 +1666,16 @@ zonelist_scan:
- 			!cpuset_zone_allowed_softwall(zone, gfp_mask))
- 				goto try_next_zone;
-
-+		/*
-+		 * Short circuit allocation if we have a usable object on
-+		 * the percpu freelist. Note that this can only be an
-+		 * optimization since there is no guarantee that we will
-+		 * be executing on the same cpu. Another process could also
-+		 * be scheduled and take the available page from us.
-+		 */
-+		if (order == 0 && this_cpu_read(zone->pageset->pcp.count))
-+			goto try_this_zone;
-+
- 		BUILD_BUG_ON(ALLOC_NO_WATERMARKS < NR_WMARK);
- 		if (!(alloc_flags & ALLOC_NO_WATERMARKS)) {
- 			unsigned long mark;
+							Thanx, Paul
