@@ -1,97 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751703Ab1GTUdV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 16:33:21 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:45674 "EHLO e9.ny.us.ibm.com"
+	id S1751837Ab1GTUfd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 16:35:33 -0400
+Received: from outbound.usca.edu ([74.253.4.12]:36317 "EHLO outbound.usca.edu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751311Ab1GTUdU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 16:33:20 -0400
-Date: Wed, 20 Jul 2011 13:33:00 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ben Greear <greearb@candelatech.com>, Ed Tomlinson <edt@aei.ca>,
-        linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, edward.tomlinson@aero.bombardier.com
-Subject: Re: [PATCH rcu/urgent 0/6] Fixes for RCU/scheduler/irq-threads
- trainwreck
-Message-ID: <20110720203300.GQ2313@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CA+55aFyaCY=qzFKswi2NR097KZtb5x98sba3rHJ7B0rchtzm2g@mail.gmail.com>
- <20110720133443.GG2400@linux.vnet.ibm.com>
- <4E270A0E.6090902@candelatech.com>
- <20110720171532.GB2313@linux.vnet.ibm.com>
- <20110720184413.GD17977@elte.hu>
- <1311187978.29152.58.camel@twins>
- <CA+55aFyuKTj3zEvWJEx4_RDzLQ+ipJ58UWFYH84nmcwGF_c4aA@mail.gmail.com>
- <20110720192949.GM2313@linux.vnet.ibm.com>
- <20110720193925.GB7910@elte.hu>
- <20110720195742.GA14671@elte.hu>
+	id S1751584Ab1GTUfc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 16:35:32 -0400
+X-Greylist: delayed 1190 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Jul 2011 16:35:32 EDT
+X-ASG-Debug-ID: 1311192874-d18a08af67b7-xx1T2L
+X-Barracuda-Envelope-From: LEFREDERICK@usca.edu
+From: "Frederick, Lauren" <LEFREDERICK@usca.edu>
+X-Barracuda-Apparent-Source-IP: fe80::7471:fa31:24f5:6c04
+Date: Wed, 20 Jul 2011 12:54:53 -0400
+Subject: PENDING PROJECT!
+Thread-Topic: PENDING PROJECT!
+X-ASG-Orig-Subj: PENDING PROJECT!
+Thread-Index: AQHMRv290hglXs18bE62frvAAL+wtA==
+Message-ID: <5565E6D14819394CBC8F62B52F10FDAE96DB65F540@EXCHANGE.usca.edu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110720195742.GA14671@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Barracuda-Connect: UNKNOWN[172.17.130.6]
+X-Barracuda-Start-Time: 1311192908
+X-Barracuda-URL: http://172.17.130.8:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 2.50
+X-Barracuda-Spam-Status: No, SCORE=2.50 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=BSF_SC7_SA298e, DATE_IN_PAST_03_06, DATE_IN_PAST_03_06_2, MISSING_HEADERS, TO_CC_NONE
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.69496
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.01 DATE_IN_PAST_03_06     Date: is 3 to 6 hours before Received: date
+	1.21 MISSING_HEADERS        Missing To: header
+	0.00 TO_CC_NONE             No To: or Cc: header
+	1.08 DATE_IN_PAST_03_06_2   DATE_IN_PAST_03_06_2
+	0.20 BSF_SC7_SA298e         Custom Rule SA298e
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 20, 2011 at 09:57:42PM +0200, Ingo Molnar wrote:
-> 
-> * Ingo Molnar <mingo@elte.hu> wrote:
-> 
-> > 
-> > * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> > 
-> > > If my guess is correct, then the minimal non-RCU_BOOST fix is #4 
-> > > (which drags along #3) and #6.  Which are not one-liners, but 
-> > > somewhat smaller:
-> > > 
-> > >  b/kernel/rcutree_plugin.h |   12 ++++++------
-> > >  b/kernel/softirq.c        |   12 ++++++++++--
-> > >  kernel/rcutree_plugin.h   |   31 +++++++++++++++++++++++++------
-> > >  3 files changed, 41 insertions(+), 14 deletions(-)
-> > 
-> > That's half the patch size and half the patch count.
-> > 
-> > PeterZ's question is relevant: since we apparently had similar bugs 
-> > in v2.6.39 as well, what changed in v3.0 that makes them so urgent 
-> > to fix?
-> > 
-> > If it's just better instrumentation that proves them better then 
-> > i'd suggest fixing this in v3.1 and not risking v3.0 with an 
-> > unintended side effect.
-> 
-> Ok, i looked some more at the background and the symptoms that people 
-> are seeing: kernel crashes and lockups. I think we want these 
-> problems fixed in v3.0, even if it was the recent introduction of 
-> RCU_BOOST that made it really prominent.
-> 
-> Having put some testing into your rcu/urgent branch today i'd feel 
-> more comfortable with taking this plus perhaps an RCU_BOOST disabling 
-> patch. That makes it all fundamentally tested by a number of people 
-> (including those who reported/reproduced the problems).
 
-RCU_BOOST is currently default=n.  Is that sufficient?  If not, one
-low-risk approach would be for me to just remove RCU_BOOST from init/Kconfig
-in 3.0 and add it back in for 3.1.  Please let me know what works best.
 
-							Thanx, Paul
-
-> Linus, would that approach be fine with you? I'll send an RFC pull 
-> request for the 6 patches as a reply to this mail, in a couple of 
-> minutes.
-> 
-> Thanks,
-> 
-> 	Ingo
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+I want to discuss an important Project with you.
+I write to know if this is your valid email. 
+E-mail me back for details:ukrmj@9.cn
