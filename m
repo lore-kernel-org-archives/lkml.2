@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752933Ab1GTSZd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 14:25:33 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:50822 "EHLO e9.ny.us.ibm.com"
+	id S1753196Ab1GTS0q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 14:26:46 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:33572 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752167Ab1GTSZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 14:25:32 -0400
-Date: Wed, 20 Jul 2011 11:25:12 -0700
+	id S1753123Ab1GTS0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 14:26:43 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,91 +13,122 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, greearb@candelatech.com, edt@aei.ca
-Subject: [PATCH rcu/urgent 0/7 v2] Fixes for RCU/scheduler/irq-threads
- trainwreck
-Message-ID: <20110720182512.GA22946@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110720001738.GA16369@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110720001738.GA16369@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        patches@linaro.org, greearb@candelatech.com, edt@aei.ca,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/urgent 6/7] softirq,rcu: Inform RCU of irq_exit() activity
+Date: Wed, 20 Jul 2011 11:26:22 -0700
+Message-Id: <1311186383-24819-6-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.3.2
+In-Reply-To: <20110720182512.GA22946@linux.vnet.ibm.com>
+References: <20110720182512.GA22946@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-This patch set contains version 2 of fixes for a trainwreck involving
-RCU, the scheduler, and threaded interrupts.  This trainwreck involved
-RCU failing to properly protect one of its bit fields, use of RCU by
-the scheduler from portions of irq_exit() where in_irq() returns false,
-uses of the scheduler by RCU colliding with uses of RCU by the scheduler,
-threaded interrupts exercising the problematic portions of irq_exit()
-more heavily, and so on.  The patches are as follows:
+The rcu_read_unlock_special() function relies on in_irq() to exclude
+scheduler activity from interrupt level.  This fails because exit_irq()
+can invoke the scheduler after clearing the preempt_count() bits that
+in_irq() uses to determine that it is at interrupt level.  This situation
+can result in failures as follows:
 
-1.	Properly protect current->rcu_read_unlock_special().
-	Lack of protection was causing RCU to recurse on itself, which
-	in turn resulted in deadlocks involving RCU and the scheduler.
-	This affects only RCU_BOOST=y configurations.
-2.	Streamline code produced by __rcu_read_unlock().  This one is
-	an innocent bystander that is being carried due to conflicts
-	with other patches.  (A later version will likely merge it
-	with #3 below.)
-3.	Make __rcu_read_unlock() delay counting the per-task
-	->rcu_read_lock_nesting variable to zero until all cleanup for the
-	just-ended RCU read-side critical section has completed.  This
-	prevents a number of other cases that could result in deadlock
-	due to self recursion.	This affects only TREE_PREEMPT_RCU=y
-	configurations.
-4.	Make scheduler_ipi() correctly identify itself as being
-	in_irq() when it needs to do anything that might involve RCU,
-	thus enabling RCU to avoid yet another class of potential
-	self-recursions and deadlocks.	This affects PREEMPT_RCU=y
-	configurations.
-5.	Make irq_exit() inform RCU when it is invoking the scheduler
-	in situations where in_irq() would return false, thus
-	allowing RCU to correctly avoid self-recursion.  This affects
-	TREE_PREEMPT_RCU=y configurations.
-6.	Make __lock_task_sighand() execute the entire RCU read-side
-	critical section with irqs disabled.  (An experimental patch at
-	http://marc.info/?l=linux-kernel&m=131110647222185 might possibly
-	make it legal to have an RCU read-side critical section where
-	the rcu_read_unlock() is executed with interrupts disabled,
-	but where some protion of the RCU read-side critical section
-	was preemptible.)  This affects TREE_PREEMPT_RCU=y configurations.
+ $task			IRQ		SoftIRQ
 
-TINY_PREEMPT_RCU will also need a few of these changes, but in the
-meantime this patch stack helps organize things better for testing.
+ rcu_read_lock()
 
-Changes from v1 (lkml.kernel.org/r/20110720001738.GA16369@linux.vnet.ibm.com):
+ /* do stuff */
 
-o	Fix an embarrassing missing-braces bug in rcu_report_exp_rnp().
+ <preempt> |= UNLOCK_BLOCKED
 
-o	Fix the WARN_ON_ONCE() in __rcu_read_unlock() to correctly handle
-	the new negative values.
+ rcu_read_unlock()
+   --t->rcu_read_lock_nesting
 
-o	Make the RCU read-side critical section in __lock_task_sighand()
-	cover the full sighand->siglock critical section.
+			irq_enter();
+			/* do stuff, don't use RCU */
+			irq_exit();
+			  sub_preempt_count(IRQ_EXIT_OFFSET);
+			  invoke_softirq()
 
-Many thanks to Peter for his review and to Ed and Ben for their testing.
+					ttwu();
+					  spin_lock_irq(&pi->lock)
+					  rcu_read_lock();
+					  /* do stuff */
+					  rcu_read_unlock();
+					    rcu_read_unlock_special()
+					      rcu_report_exp_rnp()
+					        ttwu()
+					          spin_lock_irq(&pi->lock) /* deadlock */
 
-These are also available from the following subject-to-rebase git branch:
+   rcu_read_unlock_special(t);
 
-git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/urgent
+Ed can simply trigger this 'easy' because invoke_softirq() immediately
+does a ttwu() of ksoftirqd/# instead of doing the in-place softirq stuff
+first, but even without that the above happens.
 
-Or will be once kernel.org's mirrors have updated.
+Cure this by also excluding softirqs from the
+rcu_read_unlock_special() handler and ensuring the force_irqthreads
+ksoftirqd/# wakeup is done from full softirq context.
 
-							Thanx, Paul
+[ Alternatively, delaying the ->rcu_read_lock_nesting decrement
+  until after the special handling would make the thing more robust
+  in the face of interrupts as well.  And there is a separate patch
+  for that. ]
 
-------------------------------------------------------------------------
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Reported-and-tested-by: Ed Tomlinson <edt@aei.ca>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ kernel/rcutree_plugin.h |    2 +-
+ kernel/softirq.c        |   12 ++++++++++--
+ 2 files changed, 11 insertions(+), 3 deletions(-)
 
- b/include/linux/sched.h   |    3 ++
- b/kernel/rcutree_plugin.h |    6 +++--
- b/kernel/sched.c          |   44 ++++++++++++++++++++++++++++++++++-----
- b/kernel/signal.c         |   19 +++++++++++------
- b/kernel/softirq.c        |   12 +++++++++-
- kernel/rcutree_plugin.h   |   51 +++++++++++++++++++++++++++++++++-------------
- 6 files changed, 105 insertions(+), 30 deletions(-)
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index d9d7a89..8aafbb8 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -318,7 +318,7 @@ static noinline void rcu_read_unlock_special(struct task_struct *t)
+ 	}
+ 
+ 	/* Hardware IRQ handlers cannot block. */
+-	if (in_irq()) {
++	if (in_irq() || in_serving_softirq()) {
+ 		local_irq_restore(flags);
+ 		return;
+ 	}
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 40cf63d..fca82c3 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -315,16 +315,24 @@ static inline void invoke_softirq(void)
+ {
+ 	if (!force_irqthreads)
+ 		__do_softirq();
+-	else
++	else {
++		__local_bh_disable((unsigned long)__builtin_return_address(0),
++				SOFTIRQ_OFFSET);
+ 		wakeup_softirqd();
++		__local_bh_enable(SOFTIRQ_OFFSET);
++	}
+ }
+ #else
+ static inline void invoke_softirq(void)
+ {
+ 	if (!force_irqthreads)
+ 		do_softirq();
+-	else
++	else {
++		__local_bh_disable((unsigned long)__builtin_return_address(0),
++				SOFTIRQ_OFFSET);
+ 		wakeup_softirqd();
++		__local_bh_enable(SOFTIRQ_OFFSET);
++	}
+ }
+ #endif
+ 
+-- 
+1.7.3.2
+
