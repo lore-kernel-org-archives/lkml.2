@@ -1,67 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752258Ab1GTUG6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 16:06:58 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:40716 "EHLO e9.ny.us.ibm.com"
+	id S1752773Ab1GTUHQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 16:07:16 -0400
+Received: from spaceboyz.net ([87.106.131.203]:33016 "EHLO spaceboyz.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751368Ab1GTUG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 16:06:57 -0400
-Date: Wed, 20 Jul 2011 13:06:39 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Ben Greear <greearb@candelatech.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ed Tomlinson <edt@aei.ca>, linux-kernel@vger.kernel.org,
-        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, edward.tomlinson@aero.bombardier.com
-Subject: Re: [PATCH rcu/urgent 0/6] Fixes for RCU/scheduler/irq-threads
- trainwreck
-Message-ID: <20110720200639.GO2313@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <201107192207.33813.edt@aei.ca>
- <20110720044435.GB2400@linux.vnet.ibm.com>
- <CA+55aFyaCY=qzFKswi2NR097KZtb5x98sba3rHJ7B0rchtzm2g@mail.gmail.com>
- <20110720133443.GG2400@linux.vnet.ibm.com>
- <4E270A0E.6090902@candelatech.com>
- <20110720171532.GB2313@linux.vnet.ibm.com>
- <20110720184413.GD17977@elte.hu>
- <1311187978.29152.58.camel@twins>
- <20110720190141.GJ2313@linux.vnet.ibm.com>
- <1311189946.29152.88.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311189946.29152.88.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752647Ab1GTUHN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 16:07:13 -0400
+X-Greylist: delayed 1355 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Jul 2011 16:07:13 EDT
+From: David Lamparter <equinox@diac24.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>,
+        linux-next@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        David Lamparter <equinox@diac24.net>, linux-driver@qlogic.com,
+        Anirban Chakraborty <anirban.chakraborty@qlogic.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: [PATCH] net: vlan: fix compile breakage from 69ecca8
+Date: Wed, 20 Jul 2011 21:43:53 +0200
+Message-Id: <1311191033-714631-1-git-send-email-equinox@diac24.net>
+X-Mailer: git-send-email 1.7.5.3
+In-Reply-To: <0E5EAE44-204C-4F4D-926C-F4D973B0CDB1@qlogic.com>
+References: <0E5EAE44-204C-4F4D-926C-F4D973B0CDB1@qlogic.com>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 20, 2011 at 09:25:46PM +0200, Peter Zijlstra wrote:
-> On Wed, 2011-07-20 at 12:01 -0700, Paul E. McKenney wrote:
-> >   This can interact badly with the recently
-> > added RCU read-side critical sections in the scheduler that have
-> > either the runqueue or the priority-inheritance locks held, especially
-> > when interrupts occur towards the end of __rcu_read_unlock(). 
-> 
-> Right, so while I recently added a lot more, there have been rcu usage
-> sites under rq->lock for a long while, see commits
-> 
-> a18b83b7ef ("cpuacct: make cpuacct hierarchy walk in cpuacct_charge()
-> safe when rcupreempt is used -v2") -- March 2009.
-> 
-> f3b577dec1 ("rcu: apply RCU protection to wake_affine()") -- Jun 2010
-> 
-> b0a0f667 ("sched: suppress RCU lockdep splat in task_fork_fair") -- Oct
-> 2010
-> 
-> So I'm not quite seeing how the problems we're hitting now are new.
+well, there was too much wood to see the tree and I messed up the
+configuration dependencies. let's make it work with unset
+CONFIG_VLAN_8021Q and remove the second definition of vlan_find_dev.
 
-My guess is that the problem has been there for quite some time, but
-that the probability of hitting it has increased, at least for some
-combinations of config options.
+Signed-off-by: David Lamparter <equinox@diac24.net>
+Cc: linux-driver@qlogic.com
+Cc: Anirban Chakraborty <anirban.chakraborty@qlogic.com>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+---
+sorry for the mess-up... compiled with CONFIG_VLAN_8021Q=n,m and y
+this time; don't have qlcnic hw to test.
 
-							Thanx, Paul
+ drivers/net/qlcnic/qlcnic_main.c |    4 +++-
+ include/linux/if_vlan.h          |    5 -----
+ 2 files changed, 3 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/net/qlcnic/qlcnic_main.c b/drivers/net/qlcnic/qlcnic_main.c
+index 3579229..a2c39e9 100644
+--- a/drivers/net/qlcnic/qlcnic_main.c
++++ b/drivers/net/qlcnic/qlcnic_main.c
+@@ -4198,13 +4198,15 @@ static void
+ qlcnic_restore_indev_addr(struct net_device *netdev, unsigned long event)
+ {
+ 	struct qlcnic_adapter *adapter = netdev_priv(netdev);
+-	struct vlan_group *grp;
++	struct vlan_group *grp = NULL;
+ 	struct net_device *dev;
+ 	u16 vid;
+ 
+ 	qlcnic_config_indev_addr(adapter, netdev, event);
+ 
++#if defined(CONFIG_VLAN_8021Q) || defined(CONFIG_VLAN_8021Q_MODULE)
+ 	grp = rcu_dereference_rtnl(netdev->vlgrp);
++#endif
+ 	if (!grp)
+ 		return;
+ 
+diff --git a/include/linux/if_vlan.h b/include/linux/if_vlan.h
+index bc03e40..dbe41dc 100644
+--- a/include/linux/if_vlan.h
++++ b/include/linux/if_vlan.h
+@@ -135,11 +135,6 @@ vlan_gro_frags(struct napi_struct *napi, struct vlan_group *grp,
+ 	       unsigned int vlan_tci);
+ 
+ #else
+-static inline struct net_device *vlan_find_dev(struct net_device *real_dev,
+-					       u16 vlan_id)
+-{
+-	return NULL;
+-}
+ 
+ static inline struct net_device *vlan_dev_real_dev(const struct net_device *dev)
+ {
+-- 
+1.7.5.3
+
