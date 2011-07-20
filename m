@@ -1,62 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750967Ab1GTEJK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 00:09:10 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:60054 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750747Ab1GTEJJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 00:09:09 -0400
-Date: Wed, 20 Jul 2011 14:08:59 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Kashyap, Desai" <kashyap.desai@lsi.com>
-Subject: linux-next: build warning after merge of the scsi tree
-Message-Id: <20110720140859.b7d44a8c9aa20a43ec50f054@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__20_Jul_2011_14_08_59_+1000_VxJuSKTbK/Q1ElmT"
+	id S1751269Ab1GTEJk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 00:09:40 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:48788 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750726Ab1GTEJj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 00:09:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <1311122601.15392.310.camel@sli10-conroe>
+References: <1311059367.15392.299.camel@sli10-conroe>
+	<CAEwNFnB6HKJ3j9cWzyb2e3BS2BQrE66F6eT02C4cozRC9YQ7kw@mail.gmail.com>
+	<1311065584.15392.300.camel@sli10-conroe>
+	<20110719165155.GB2978@barrios-desktop>
+	<1311122601.15392.310.camel@sli10-conroe>
+Date: Wed, 20 Jul 2011 13:09:38 +0900
+Message-ID: <CAEwNFnCg4+mK62oC0k+7wHib_0dFFvDYbJ3VkP91WHY+f5XcpQ@mail.gmail.com>
+Subject: Re: [PATCH]vmscan: fix a livelock in kswapd
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "mgorman@suse.de" <mgorman@suse.de>, linux-mm <linux-mm@kvack.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__20_Jul_2011_14_08_59_+1000_VxJuSKTbK/Q1ElmT
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jul 20, 2011 at 9:43 AM, Shaohua Li <shaohua.li@intel.com> wrote:
+> On Wed, 2011-07-20 at 00:51 +0800, Minchan Kim wrote:
+>> On Tue, Jul 19, 2011 at 04:53:04PM +0800, Shaohua Li wrote:
+>> > On Tue, 2011-07-19 at 16:45 +0800, Minchan Kim wrote:
+>> > > On Tue, Jul 19, 2011 at 4:09 PM, Shaohua Li <shaohua.li@intel.com> wrote:
+>> > > > I'm running a workload which triggers a lot of swap in a machine with 4 nodes.
+>> > > > After I kill the workload, I found a kswapd livelock. Sometimes kswapd3 or
+>> > > > kswapd2 are keeping running and I can't access filesystem, but most memory is
+>> > > > free. This looks like a regression since commit 08951e545918c159.
+>> > >
+>> > > Could you tell me what is 08951e545918c159?
+>> > > You mean [ebd64e21ec5a,
+>> > > mm-vmscan-only-read-new_classzone_idx-from-pgdat-when-reclaiming-successfully]
+>> > > ?
+>> > ha, sorry, I should copy the commit title.
+>> > 08951e545918c159(mm: vmscan: correct check for kswapd sleeping in
+>> > sleeping_prematurely)
+>> >
+>>
+>> I don't mean it. In my bogus git tree, I can't find it but I can look at it in repaired git tree. :)
+>> Anyway, I have a comment. Please look at below.
+>>
+>> On Tue, Jul 19, 2011 at 03:09:27PM +0800, Shaohua Li wrote:
+>> > I'm running a workload which triggers a lot of swap in a machine with 4 nodes.
+>> > After I kill the workload, I found a kswapd livelock. Sometimes kswapd3 or
+>> > kswapd2 are keeping running and I can't access filesystem, but most memory is
+>> > free. This looks like a regression since commit 08951e545918c159.
+>> > Node 2 and 3 have only ZONE_NORMAL, but balance_pgdat() will return 0 for
+>> > classzone_idx. The reason is end_zone in balance_pgdat() is 0 by default, if
+>> > all zones have watermark ok, end_zone will keep 0.
+>> > Later sleeping_prematurely() always returns true. Because this is an order 3
+>> > wakeup, and if classzone_idx is 0, both balanced_pages and present_pages
+>> > in pgdat_balanced() are 0.
+>>
+>> Sigh. Yes.
+>>
+>> > We add a special case here. If a zone has no page, we think it's balanced. This
+>> > fixes the livelock.
+>>
+>> Yes. Your patch can fix it but I don't like that it adds handling special case.
+>> (Although Andrew merged quickly).
+> The special case is reasonable, because if a zone has no page, it should
+> be considered balanced.
 
-Hi James,
+Yes. It's not bad and even simple but my concern is that at the moment
+kswapd code is very complicated and it's not hot path so I would like
+to add more readable code.
 
-After merging the scsi tree, today's linux-next build (powerpc
-ppc64_defconfig) produced this warning:
+>
+>> The problem is to return 0-classzone_idx if all zones was okay.
+>> So how about this?
+> My original implementation is like this (I return a populated zone with
+> minimum zone index). But I changed my mind later. the end_zone is zone
+> we work, so return 0 is reasonable, because all zones are ok. Maybe we
 
-drivers/scsi/mpt2sas/mpt2sas_scsih.c: In function '_scsih_sas_broadcast_pri=
-mative_event':
-drivers/scsi/mpt2sas/mpt2sas_scsih.c:5591:40: warning: unused variable 'eve=
-nt_data'
+If it is reasonable, did you work on ZONE_DMA(zone index: 0)?
 
-Probably introduced by commit f93213de5c28 ("[SCSI] mpt2sas: fix
-broadcast AEN and task management issue").
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+> should return -1 if all zones are ok, but this is another story.
 
---Signature=_Wed__20_Jul_2011_14_08_59_+1000_VxJuSKTbK/Q1ElmT
-Content-Type: application/pgp-signature
+I think that return classzone_id(-1) and handle such case is more readable.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+>
+>> This can change old behavior slightly.
+>> For example, if balance_pgdat calls with order-3 and all zones are okay about order-3,
+>> it will recheck order-0 as end_zone isn't 0 any more.
+>> But I think it's desriable side effect we have missed.
+> if order-3 is ok, order-0 is ok too I think, so the check is
+> unnecessary.
 
-iQEcBAEBAgAGBQJOJlTbAAoJEDMEi1NhKgbsFs0H/3wHCw7u7hu2vnnBQ7efxyF1
-yXp7MM5uhf1ugY1/wsuYqp/KSEVyy0gvAQ92U0sBV5XZ9bT1gq0mWTsZRbV5Ngzu
-5DGzQ1nSNi31sdRCI1tvxknCWpvKDN780nXs59O98CObjT2DyM7WOF8OCGzYecmb
-/DKY3cAj1s+qUsJ8MF+2Iq3RGY3Lbayfcxn2IdjcQF9cL/CGr+uz7th+IR6YEMBx
-M2F6P6yH8fqleWQUN/AQsmJ5DIlTwQ7S+mnwVGxqWywxVmwz/qdSxzD8wCRuMmVs
-nTj8zmrtp65nhdaauXra5z3s1V6R8TJK8WNVKFW9p837b4rexnWUtjeaeoYEFvQ=
-=kYFM
------END PGP SIGNATURE-----
+No. It's not for the zone but *zones.
+In case of reclaiming higher order zone, it can sleep without all
+zones being balanced so that precious order-0 of some zone would be
+not balanced.
+Even we can lost chance of clearing congestion flag of the zone.
+It would be a another patch.
 
---Signature=_Wed__20_Jul_2011_14_08_59_+1000_VxJuSKTbK/Q1ElmT--
+In conclusion, I would like to avoid complicated thing but I am going
+to be not against you strongly if other doesn't agree on me.
+I might need a time to clean kswapd's spagetti up.
+
+-- 
+Kind regards,
+Minchan Kim
