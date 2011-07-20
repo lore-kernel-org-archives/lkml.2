@@ -1,44 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751511Ab1GTKMI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 06:12:08 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:25846 "EHLO
+	id S1751754Ab1GTKM7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 06:12:59 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:25884 "EHLO
 	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750936Ab1GTKMH (ORCPT
+	by vger.kernel.org with ESMTP id S1751440Ab1GTKMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 06:12:07 -0400
+	Wed, 20 Jul 2011 06:12:08 -0400
 From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 To: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
         alexander.stein@systec-electronic.com
 Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
         kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com,
         Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: [PATCH 1/6] pch_gpio: Delete invalid "restore" code in suspend()
-Date: Wed, 20 Jul 2011 19:10:57 +0900
-Message-Id: <1311156662-3044-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+Subject: [PATCH 5/6] pch_gpio: Save register value in suspend()
+Date: Wed, 20 Jul 2011 19:11:01 +0900
+Message-Id: <1311156662-3044-5-git-send-email-tomoya-linux@dsn.okisemi.com>
 X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1311156662-3044-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+References: <1311156662-3044-1-git-send-email-tomoya-linux@dsn.okisemi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Currently, when suspend is occurred, register im0/1 and gpio_use_sel are not
+saved.
+This patch modifies so that register im0/1 and gpio_use_sel are saved.
 
 Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 ---
- drivers/gpio/pch_gpio.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ drivers/gpio/pch_gpio.c |   22 +++++++++++++++++++++-
+ 1 files changed, 21 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/gpio/pch_gpio.c b/drivers/gpio/pch_gpio.c
-index 36919e7..ca9c7b0 100644
+index 4ac69bd..7f773af 100644
 --- a/drivers/gpio/pch_gpio.c
 +++ b/drivers/gpio/pch_gpio.c
-@@ -241,7 +241,6 @@ static int pch_gpio_suspend(struct pci_dev *pdev, pm_message_t state)
- 	struct pch_gpio *chip = pci_get_drvdata(pdev);
+@@ -30,7 +30,8 @@ struct pch_regs {
+ 	u32	pm;
+ 	u32	im0;
+ 	u32	im1;
+-	u32	reserved[4];
++	u32	reserved[3];
++	u32	gpio_use_sel;
+ 	u32	reset;
+ };
  
- 	pch_gpio_save_reg_conf(chip);
--	pch_gpio_restore_reg_conf(chip);
+@@ -51,10 +52,17 @@ static int gpio_pins[] = {
+  * struct pch_gpio_reg_data - The register store data.
+  * @po_reg:	To store contents of PO register.
+  * @pm_reg:	To store contents of PM register.
++ * @im0_reg:	To store contents of IM0 register.
++ * @im1_reg:	To store contents of IM1 register.
++ * @gpio_use_sel_reg : To store contents of GPIO_USE_SEL register.
++ *		       (Only ML7223 Bus-n)
+  */
+ struct pch_gpio_reg_data {
+ 	u32 po_reg;
+ 	u32 pm_reg;
++	u32 im0_reg;
++	u32 im1_reg;
++	u32 gpio_use_sel_reg;
+ };
  
- 	ret = pci_save_state(pdev);
- 	if (ret) {
+ /**
+@@ -149,6 +157,12 @@ static void pch_gpio_save_reg_conf(struct pch_gpio *chip)
+ {
+ 	chip->pch_gpio_reg.po_reg = ioread32(&chip->reg->po);
+ 	chip->pch_gpio_reg.pm_reg = ioread32(&chip->reg->pm);
++	chip->pch_gpio_reg.im0_reg = ioread32(&chip->reg->im0);
++	if (chip->ioh == INTEL_EG20T_PCH)
++		chip->pch_gpio_reg.im1_reg = ioread32(&chip->reg->im1);
++	if (chip->ioh == OKISEMI_ML7223n_IOH)
++		chip->pch_gpio_reg.gpio_use_sel_reg =\
++					    ioread32(&chip->reg->gpio_use_sel);
+ }
+ 
+ /*
+@@ -160,6 +174,12 @@ static void pch_gpio_restore_reg_conf(struct pch_gpio *chip)
+ 	iowrite32(chip->pch_gpio_reg.po_reg, &chip->reg->po);
+ 	/* to store contents of PM register */
+ 	iowrite32(chip->pch_gpio_reg.pm_reg, &chip->reg->pm);
++	iowrite32(chip->pch_gpio_reg.im0_reg, &chip->reg->im0);
++	if (chip->ioh == INTEL_EG20T_PCH)
++		iowrite32(chip->pch_gpio_reg.im1_reg, &chip->reg->im1);
++	if (chip->ioh == OKISEMI_ML7223n_IOH)
++		iowrite32(chip->pch_gpio_reg.gpio_use_sel_reg,
++			  &chip->reg->gpio_use_sel);
+ }
+ 
+ static void pch_gpio_setup(struct pch_gpio *chip)
 -- 
 1.7.4.4
 
