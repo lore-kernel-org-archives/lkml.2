@@ -1,81 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752372Ab1GTOcd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 10:32:33 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:46326 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752098Ab1GTOca (ORCPT
+	id S1752430Ab1GTOcl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 10:32:41 -0400
+Received: from relay.parallels.com ([195.214.232.42]:43812 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752285Ab1GTOcj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 10:32:30 -0400
-Date: Wed, 20 Jul 2011 10:32:22 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Divy LeRay <divy@chelsio.com>, Stanislaw Gruszka <sgruszka@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] dma-debug: hash_bucket_find needs to allow for offsets
- within an entry
-Message-ID: <20110720143222.GB12349@hmsreliant.think-freely.org>
-References: <1311097278-30841-1-git-send-email-nhorman@tuxdriver.com>
- <20110720103813.GL15108@amd.com>
- <20110720111156.GA12349@hmsreliant.think-freely.org>
- <20110720132925.GB21948@amd.com>
+	Wed, 20 Jul 2011 10:32:39 -0400
+Message-ID: <4E26E705.8050704@parallels.com>
+Date: Wed, 20 Jul 2011 18:32:37 +0400
+From: Konstantin Khlebnikov <khlebnikov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.18) Gecko/20110416 SeaMonkey/2.0.13
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110720132925.GB21948@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -1.9 (-)
+To: Mel Gorman <mgorman@suse.de>
+CC: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matt Mackall <mpm@selenic.com>
+Subject: Re: [PATCH] mm-slab: allocate kmem_cache with __GFP_REPEAT
+References: <20110720121612.28888.38970.stgit@localhost6> <alpine.DEB.2.00.1107201611010.3528@tiger> <4E26D7EA.3000902@parallels.com> <alpine.DEB.2.00.1107201638520.4921@tiger> <alpine.DEB.2.00.1107200852590.32737@router.home> <20110720142018.GL5349@suse.de>
+In-Reply-To: <20110720142018.GL5349@suse.de>
+Content-Type: text/plain; charset="ISO-8859-15"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 20, 2011 at 03:29:25PM +0200, Roedel, Joerg wrote:
-> On Wed, Jul 20, 2011 at 07:11:56AM -0400, Neil Horman wrote:
-> > On Wed, Jul 20, 2011 at 12:38:13PM +0200, Roedel, Joerg wrote:
-> 
-> > > But it is not that easy. The hash_fn works on the dev_addr, this means
-> > > to search all entries which might match you need to scan multiple
-> > > hash-buckets potentially.
-> > > In fact, you need to scan
-> > > 
-> > > 	hash_fn(estart) <= idx <= hash_fn(eend)
-> > > 
-> > Ah, good point.  Its actually a bit more difficult that what you describe I
-> > think.  Given a ref->dev_addr, this check needs to find the entry in any bucket
-> > for a matching device that has an entry->dev_addr less than ref->dev_addr, where
-> > the former has a larger size than the latter.  And since we don't know the true
-> > size of the entry we are looking for, we could have crossed the HASH_FN_SHIFT
-> > many times over to get to the ref->dev addr that was passed in.  It almost
-> > sounds like the hash table for this needs to be accessible by device rather than
-> > by address.
-> 
-> You are right. We need to scan
-> 
-> 	0 <= idx <= hash_fn(rstart)
-> 
-> Probably we can fix that with a better hash-function. Any ideas? Using
-> the device is not an option because then all entries would end up in
-> only a few buckets. This will impact scanning performance too much.
-> 
-Unfortunately I don't have any ideas for a better hash function here, but I had
-been thinking about fixing this in add_dma_entry.  We could detect there that a
-debug entry to be added crossed one or more hash bucket boundaries, and, if it
-did, split it along those boundaries into multiple entries, hashing each of them
-in separately.  The check_unmap and check_sync routines would of course then
-potentially have to do multiple lookups as well to ensure that they found all of
-the correct entries to validate/remove.  It would work in all cases, but it
-might be overkill.  What do you think?
+Mel Gorman wrote:
+> On Wed, Jul 20, 2011 at 08:54:10AM -0500, Christoph Lameter wrote:
+>> On Wed, 20 Jul 2011, Pekka Enberg wrote:
+>>
+>>> On Wed, 20 Jul 2011, Konstantin Khlebnikov wrote:
+>>>>> The changelog isn't that convincing, really. This is kmem_cache_create()
+>>>>> so I'm surprised we'd ever get NULL here in practice. Does this fix some
+>>>>> problem you're seeing? If this is really an issue, I'd blame the page
+>>>>> allocator as GFP_KERNEL should just work.
+>>>>
+>>>> nf_conntrack creates separate slab-cache for each net-namespace,
+>>>> this patch of course not eliminates the chance of failure, but makes it more
+>>>> acceptable.
+>>>
+>>> I'm still surprised you are seeing failures. mm/slab.c hasn't changed
+>>> significantly in a long time. Why hasn't anyone reported this before? I'd
+>>> still be inclined to shift the blame to the page allocator... Mel, Christoph?
+>>
+>> There was a lot of recent fiddling with the reclaim logic. Maybe some of
+>> those changes caused the problem?
+>>
+>
+> It's more likely that creating new slabs while under memory pressure
+> significant enough to fail an order-4 allocation is a situation that is
+> rarely tested.
+>
+> What kernel version did this failure occur on? What was the system doing
+> at the time of failure? Can the page allocation failure message be
+> posted?
+>
 
-> For now, the partial syncs seem to happen rarely enough so that we can
-> make it a slow-path. It is probably the best to do the exact scan first
-> and do the full scan only if exact-scan failed (until we come up with a
-> better solution).
-> 
-Agreed, if you don't like my above idea, I'll get to work on this this
-afternoon.
+I catch this on our rhel6-openvz kernel, and yes it very patchy,
+but I don't see any reasons why this cannot be reproduced on mainline kernel.
 
-Regards
-Neil
-
-
+there was abount ten containers with random stuff, node already do intensive swapout but still alive,
+in this situation starting new containers sometimes (1 per 1000) fails due to kmem_cache_create failures in nf_conntrack,
+there no other messages except:
+Unable to create nf_conn slab cache
+and some
+nf_conntrack: falling back to vmalloc.
+(it try allocates huge hash table and do it via vmalloc if kmalloc fails)
