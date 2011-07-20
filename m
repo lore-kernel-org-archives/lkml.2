@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751907Ab1GTTC4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 15:02:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59436 "EHLO mx1.redhat.com"
+	id S1751828Ab1GTTDT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 15:03:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32977 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751593Ab1GTTCz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 15:02:55 -0400
-Date: Wed, 20 Jul 2011 21:00:19 +0200
+	id S1751418Ab1GTTDS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 15:03:18 -0400
+Date: Wed, 20 Jul 2011 21:00:36 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Vasiliy Kulikov <segoon@openwall.com>
 Cc: Balbir Singh <bsingharora@gmail.com>,
         Jerome Marchand <jmarchan@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] taskstats: add_del_listener() shouldn't use the wrong
-	node
-Message-ID: <20110720190019.GA21753@redhat.com>
+Subject: [PATCH 2/2] taskstats: add_del_listener() should ignore !valid
+	listener's
+Message-ID: <20110720190036.GB21753@redhat.com>
 References: <20110720185959.GA21749@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,65 +25,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. 26c4caea "don't allow duplicate entries in listener mode"
-   changed add_del_listener(REGISTER) so that "next_cpu:" can
-   reuse the listener allocated for the previous cpu, this
-   doesn't look exactly right even if minor.
+When send_cpu_listeners() finds the orphaned listener it marks
+it as !valid and drops listeners->sem. Before it takes this sem
+for wrinting, s->pid can be reused and add_del_listener() can
+wrongly try to re-use this entry.
 
-   Change the code to kfree() in the already-registered case,
-   this case is unlikely anyway so the extra kmalloc_node()
-   shouldn't hurt but looke more correct and clean.
-
-2. use the plain list_for_each_entry() instead of _safe() to
-   scan listeners->list.
-
-3. Remove the unneeded INIT_LIST_HEAD(&s->list), we are going
-   to list_add(&s->list).
+Change add_del_listener() to check ->valid = T.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
 
- kernel/taskstats.c |   16 +++++++---------
- 1 file changed, 7 insertions(+), 9 deletions(-)
+ kernel/taskstats.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- ts/kernel/taskstats.c~1_cleanup	2011-07-03 16:27:57.000000000 +0200
-+++ ts/kernel/taskstats.c	2011-07-20 19:35:38.000000000 +0200
-@@ -291,30 +291,28 @@ static int add_del_listener(pid_t pid, c
- 	if (!cpumask_subset(mask, cpu_possible_mask))
- 		return -EINVAL;
- 
--	s = NULL;
- 	if (isadd == REGISTER) {
- 		for_each_cpu(cpu, mask) {
--			if (!s)
--				s = kmalloc_node(sizeof(struct listener),
--						 GFP_KERNEL, cpu_to_node(cpu));
-+			s = kmalloc_node(sizeof(struct listener),
-+					GFP_KERNEL, cpu_to_node(cpu));
- 			if (!s)
- 				goto cleanup;
-+
- 			s->pid = pid;
--			INIT_LIST_HEAD(&s->list);
- 			s->valid = 1;
- 
+--- ts/kernel/taskstats.c~2_ck_valid	2011-07-20 20:18:19.000000000 +0200
++++ ts/kernel/taskstats.c	2011-07-20 20:18:47.000000000 +0200
+@@ -304,7 +304,7 @@ static int add_del_listener(pid_t pid, c
  			listeners = &per_cpu(listener_array, cpu);
  			down_write(&listeners->sem);
--			list_for_each_entry_safe(s2, tmp, &listeners->list, list) {
-+			list_for_each_entry(s2, &listeners->list, list) {
- 				if (s2->pid == pid)
--					goto next_cpu;
-+					goto exists;
+ 			list_for_each_entry(s2, &listeners->list, list) {
+-				if (s2->pid == pid)
++				if (s2->pid == pid && s2->valid)
+ 					goto exists;
  			}
  			list_add(&s->list, &listeners->list);
- 			s = NULL;
--next_cpu:
-+exists:
- 			up_write(&listeners->sem);
-+			kfree(s); /* nop if NULL */
- 		}
--		kfree(s);
- 		return 0;
- 	}
- 
 
