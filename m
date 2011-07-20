@@ -1,26 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752356Ab1GTOb6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 10:31:58 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46649 "EHLO arroyo.ext.ti.com"
+	id S1752334Ab1GTOb4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 10:31:56 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:43615 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751611Ab1GTOab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751643Ab1GTOab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Jul 2011 10:30:31 -0400
 From: <pavan_savoy@ti.com>
 To: <greg@kroah.com>, <linux-kernel@vger.kernel.org>
 CC: pavan_savoy@sify.com, Pavan Savoy <pavan_savoy@ti.com>
-Subject: [PATCH 2/4] drivers:misc:ti-st: platform hooks for chip states
-Date: Wed, 20 Jul 2011 09:30:23 -0500
-Message-ID: <1311172225-17678-8-git-send-email-pavan_savoy@ti.com>
+Subject: [PATCH 3/4] drivers:misc: ti-st: reinit completion on ver read
+Date: Wed, 20 Jul 2011 09:30:19 -0500
+Message-ID: <1311172225-17678-4-git-send-email-pavan_savoy@ti.com>
 X-Mailer: git-send-email 1.5.6.3
-In-Reply-To: <1311172225-17678-7-git-send-email-pavan_savoy@ti.com>
+In-Reply-To: <1311172225-17678-3-git-send-email-pavan_savoy@ti.com>
 References: <1311172225-17678-1-git-send-email-pavan_savoy@ti.com>
  <1311172225-17678-2-git-send-email-pavan_savoy@ti.com>
  <1311172225-17678-3-git-send-email-pavan_savoy@ti.com>
- <1311172225-17678-4-git-send-email-pavan_savoy@ti.com>
- <1311172225-17678-5-git-send-email-pavan_savoy@ti.com>
- <1311172225-17678-6-git-send-email-pavan_savoy@ti.com>
- <1311172225-17678-7-git-send-email-pavan_savoy@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
@@ -29,165 +25,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Pavan Savoy <pavan_savoy@ti.com>
 
-Certain platform specific or Host-WiLink Interface specific actions would be
-required to be taken when the chip is being enabled and after the chip is
-disabled such as configuration of the mux modes for the GPIO of host connected
-to the nshutdown of the chip or relinquishing UART after the chip is disabled.
-
-Similar actions can also be taken when the chip is in deep sleep or when the
-chip is awake. Performance enhancements such as configuring the host to run
-faster when chip is awake and slower when chip is asleep can also be made
-here.
+After the version information has been read, the completion which assists in
+wait_for_completion during the firmware send/wait sequence is being re-used
+and hence this needs to be re-initialised for fool proof firmware download
+retries.
 
 Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
 ---
- drivers/misc/ti-st/st_kim.c  |   12 ++++++++++++
- drivers/misc/ti-st/st_ll.c   |   19 +++++++++++++++++++
- include/linux/ti_wilink_st.h |   27 ++++++++++++++++++++++++++-
- 3 files changed, 57 insertions(+), 1 deletions(-)
+ drivers/misc/ti-st/st_kim.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/misc/ti-st/st_kim.c b/drivers/misc/ti-st/st_kim.c
-index 38fd2f0..6884dd1 100644
+index 6884dd1..e5639ca 100644
 --- a/drivers/misc/ti-st/st_kim.c
 +++ b/drivers/misc/ti-st/st_kim.c
-@@ -434,11 +434,17 @@ long st_kim_start(void *kim_data)
- {
- 	long err = 0;
- 	long retry = POR_RETRY_COUNT;
-+	struct ti_st_plat_data	*pdata;
- 	struct kim_data_s	*kim_gdata = (struct kim_data_s *)kim_data;
- 
- 	pr_info(" %s", __func__);
-+	pdata = kim_gdata->kim_pdev->dev.platform_data;
- 
- 	do {
-+		/* platform specific enabling code here */
-+		if (pdata->chip_enable)
-+			pdata->chip_enable(kim_gdata);
-+
- 		/* Configure BT nShutdown to HIGH state */
- 		gpio_set_value(kim_gdata->nshutdown, GPIO_LOW);
- 		mdelay(5);	/* FIXME: a proper toggle */
-@@ -489,6 +495,8 @@ long st_kim_stop(void *kim_data)
- {
- 	long err = 0;
- 	struct kim_data_s	*kim_gdata = (struct kim_data_s *)kim_data;
-+	struct ti_st_plat_data	*pdata =
-+		kim_gdata->kim_pdev->dev.platform_data;
- 
- 	INIT_COMPLETION(kim_gdata->ldisc_installed);
- 
-@@ -515,6 +523,10 @@ long st_kim_stop(void *kim_data)
- 	gpio_set_value(kim_gdata->nshutdown, GPIO_HIGH);
- 	mdelay(1);
- 	gpio_set_value(kim_gdata->nshutdown, GPIO_LOW);
-+
-+	/* platform specific disable */
-+	if (pdata->chip_disable)
-+		pdata->chip_disable(kim_gdata);
- 	return err;
- }
- 
-diff --git a/drivers/misc/ti-st/st_ll.c b/drivers/misc/ti-st/st_ll.c
-index 3f24951..1ff460a 100644
---- a/drivers/misc/ti-st/st_ll.c
-+++ b/drivers/misc/ti-st/st_ll.c
-@@ -22,6 +22,7 @@
- #define pr_fmt(fmt) "(stll) :" fmt
- #include <linux/skbuff.h>
- #include <linux/module.h>
-+#include <linux/platform_device.h>
- #include <linux/ti_wilink_st.h>
- 
- /**********************************************************************/
-@@ -37,6 +38,9 @@ static void send_ll_cmd(struct st_data_s *st_data,
- 
- static void ll_device_want_to_sleep(struct st_data_s *st_data)
- {
-+	struct kim_data_s	*kim_data;
-+	struct ti_st_plat_data	*pdata;
-+
- 	pr_debug("%s", __func__);
- 	/* sanity check */
- 	if (st_data->ll_state != ST_LL_AWAKE)
-@@ -46,10 +50,19 @@ static void ll_device_want_to_sleep(struct st_data_s *st_data)
- 	send_ll_cmd(st_data, LL_SLEEP_ACK);
- 	/* update state */
- 	st_data->ll_state = ST_LL_ASLEEP;
-+
-+	/* communicate to platform about chip asleep */
-+	kim_data = st_data->kim_data;
-+	pdata = kim_data->kim_pdev->dev.platform_data;
-+	if (pdata->chip_asleep)
-+		pdata->chip_asleep(NULL);
- }
- 
- static void ll_device_want_to_wakeup(struct st_data_s *st_data)
- {
-+	struct kim_data_s	*kim_data;
-+	struct ti_st_plat_data	*pdata;
-+
- 	/* diff actions in diff states */
- 	switch (st_data->ll_state) {
- 	case ST_LL_ASLEEP:
-@@ -70,6 +83,12 @@ static void ll_device_want_to_wakeup(struct st_data_s *st_data)
+@@ -210,6 +210,7 @@ static long read_local_version(struct kim_data_s *kim_gdata, char *bts_scr_name)
+ 		pr_err(" waiting for ver info- timed out ");
+ 		return -ETIMEDOUT;
  	}
- 	/* update state */
- 	st_data->ll_state = ST_LL_AWAKE;
-+
-+	/* communicate to platform about chip wakeup */
-+	kim_data = st_data->kim_data;
-+	pdata = kim_data->kim_pdev->dev.platform_data;
-+	if (pdata->chip_asleep)
-+		pdata->chip_awake(NULL);
- }
++	INIT_COMPLETION(kim_gdata->kim_rcvd);
  
- /**********************************************************************/
-diff --git a/include/linux/ti_wilink_st.h b/include/linux/ti_wilink_st.h
-index b004e55..2ef4385 100644
---- a/include/linux/ti_wilink_st.h
-+++ b/include/linux/ti_wilink_st.h
-@@ -410,7 +410,28 @@ struct gps_event_hdr {
- 	u16 plen;
- } __attribute__ ((packed));
- 
--/* platform data */
-+/**
-+ * struct ti_st_plat_data - platform data shared between ST driver and
-+ *	platform specific board file which adds the ST device.
-+ * @nshutdown_gpio: Host's GPIO line to which chip's BT_EN is connected.
-+ * @dev_name: The UART/TTY name to which chip is interfaced. (eg: /dev/ttyS1)
-+ * @flow_cntrl: Should always be 1, since UART's CTS/RTS is used for PM
-+ *	purposes.
-+ * @baud_rate: The baud rate supported by the Host UART controller, this will
-+ *	be shared across with the chip via a HCI VS command from User-Space Init
-+ *	Mgr application.
-+ * @suspend:
-+ * @resume: legacy PM routines hooked to platform specific board file, so as
-+ *	to take chip-host interface specific action.
-+ * @chip_enable:
-+ * @chip_disable: Platform/Interface specific mux mode setting, GPIO
-+ *	configuring, Host side PM disabling etc.. can be done here.
-+ * @chip_asleep:
-+ * @chip_awake: Chip specific deep sleep states is communicated to Host
-+ *	specific board-xx.c to take actions such as cut UART clocks when chip
-+ *	asleep or run host faster when chip awake etc..
-+ *
-+ */
- struct ti_st_plat_data {
- 	long nshutdown_gpio;
- 	unsigned char dev_name[UART_DEV_NAME_LEN]; /* uart name */
-@@ -418,6 +439,10 @@ struct ti_st_plat_data {
- 	unsigned long baud_rate;
- 	int (*suspend)(struct platform_device *, pm_message_t);
- 	int (*resume)(struct platform_device *);
-+	int (*chip_enable) (struct kim_data_s *);
-+	int (*chip_disable) (struct kim_data_s *);
-+	int (*chip_asleep) (struct kim_data_s *);
-+	int (*chip_awake) (struct kim_data_s *);
- };
- 
- #endif /* TI_WILINK_ST_H */
+ 	version =
+ 		MAKEWORD(kim_gdata->resp_buffer[13],
 -- 
 1.7.4.1
 
