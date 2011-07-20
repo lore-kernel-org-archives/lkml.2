@@ -1,67 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751752Ab1GTNeu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 09:34:50 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:36906 "EHLO e5.ny.us.ibm.com"
+	id S1751850Ab1GTNfO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 09:35:14 -0400
+Received: from mga11.intel.com ([192.55.52.93]:3961 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750979Ab1GTNet (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 09:34:49 -0400
-Date: Wed, 20 Jul 2011 06:34:43 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ed Tomlinson <edt@aei.ca>, linux-kernel@vger.kernel.org, mingo@elte.hu,
-        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, patches@linaro.org, greearb@candelatech.com,
-        edward.tomlinson@aero.bombardier.com
-Subject: Re: [PATCH rcu/urgent 0/6] Fixes for RCU/scheduler/irq-threads
- trainwreck
-Message-ID: <20110720133443.GG2400@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110720001738.GA16369@linux.vnet.ibm.com>
- <201107192130.02080.edt@aei.ca>
- <201107192207.33813.edt@aei.ca>
- <20110720044435.GB2400@linux.vnet.ibm.com>
- <CA+55aFyaCY=qzFKswi2NR097KZtb5x98sba3rHJ7B0rchtzm2g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFyaCY=qzFKswi2NR097KZtb5x98sba3rHJ7B0rchtzm2g@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751780Ab1GTNfM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 09:35:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,235,1309762800"; 
+   d="scan'208";a="30207999"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-kernel@vger.kernel.org
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: [PATCH 1/3] wireless: rtlwifi: throw away MAC_FMT and use %pM instead
+Date: Wed, 20 Jul 2011 16:34:29 +0300
+Message-Id: <fddeabc04a1b81a5c1f51a4164d93366dccf5f8e.1311162926.git.andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 19, 2011 at 10:03:05PM -0700, Linus Torvalds wrote:
-> On Tue, Jul 19, 2011 at 9:44 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > On Tue, Jul 19, 2011 at 10:07:32PM -0400, Ed Tomlinson wrote:
-> >> On Tuesday 19 July 2011 21:30:00 Ed Tomlinson wrote:
-> >> > On Tuesday 19 July 2011 20:17:38 Paul E. McKenney wrote:
-> >>
-> >> Paul,
-> >>
-> >> Two things to add.  Its possible an eariler error is missing from the log below.  My serial console was missing
-> >> entries from before '0 and 40ish' and I did think I saw a bunch of FFFFFFFs scroll by eariler...
-> >>
-> >> Second, booting with threadirqs and boost enabled in .config with patches 2,5,6 is ok so far.
-> >
-> > Patches 3 and 4 resulted in failures?  (Patch 1 certainly did.)
-> 
-> Gaah. Any possibility of getting this resolved soon?
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>
+---
+ drivers/net/wireless/rtlwifi/base.c         |   11 +++++------
+ drivers/net/wireless/rtlwifi/cam.c          |    4 ++--
+ drivers/net/wireless/rtlwifi/core.c         |    6 +++---
+ drivers/net/wireless/rtlwifi/debug.h        |    5 -----
+ drivers/net/wireless/rtlwifi/rtl8192ce/hw.c |    2 +-
+ drivers/net/wireless/rtlwifi/rtl8192de/hw.c |    2 +-
+ drivers/net/wireless/rtlwifi/rtl8192se/hw.c |    2 +-
+ 7 files changed, 13 insertions(+), 19 deletions(-)
 
-I believe that we are very close.  These failures all involve unusual
-configurations, which is why they showed up so late.
+diff --git a/drivers/net/wireless/rtlwifi/base.c b/drivers/net/wireless/rtlwifi/base.c
+index bc13533..5f46efd 100644
+--- a/drivers/net/wireless/rtlwifi/base.c
++++ b/drivers/net/wireless/rtlwifi/base.c
+@@ -756,18 +756,17 @@ bool rtl_action_proc(struct ieee80211_hw *hw, struct sk_buff *skb, u8 is_tx)
+ 				return false;
+ 
+ 			RT_TRACE(rtlpriv, (COMP_SEND | COMP_RECV), DBG_DMESG,
+-				 ("%s ACT_ADDBAREQ From :" MAC_FMT "\n",
+-				  is_tx ? "Tx" : "Rx", MAC_ARG(hdr->addr2)));
++				 ("%s ACT_ADDBAREQ From :%pM\n",
++				  is_tx ? "Tx" : "Rx", hdr->addr2));
+ 			break;
+ 		case ACT_ADDBARSP:
+ 			RT_TRACE(rtlpriv, (COMP_SEND | COMP_RECV), DBG_DMESG,
+-				 ("%s ACT_ADDBARSP From :" MAC_FMT "\n",
+-				  is_tx ? "Tx" : "Rx", MAC_ARG(hdr->addr2)));
++				 ("%s ACT_ADDBARSP From :%pM\n",
++				  is_tx ? "Tx" : "Rx", hdr->addr2));
+ 			break;
+ 		case ACT_DELBA:
+ 			RT_TRACE(rtlpriv, (COMP_SEND | COMP_RECV), DBG_DMESG,
+-				 ("ACT_ADDBADEL From :" MAC_FMT "\n",
+-				  MAC_ARG(hdr->addr2)));
++				 ("ACT_ADDBADEL From :%pM\n", hdr->addr2));
+ 			break;
+ 		}
+ 		break;
+diff --git a/drivers/net/wireless/rtlwifi/cam.c b/drivers/net/wireless/rtlwifi/cam.c
+index 7295af0..66588c2 100644
+--- a/drivers/net/wireless/rtlwifi/cam.c
++++ b/drivers/net/wireless/rtlwifi/cam.c
+@@ -131,9 +131,9 @@ u8 rtl_cam_add_one_entry(struct ieee80211_hw *hw, u8 *mac_addr,
+ 
+ 	RT_TRACE(rtlpriv, COMP_SEC, DBG_DMESG,
+ 		 ("EntryNo:%x, ulKeyId=%x, ulEncAlg=%x, "
+-		  "ulUseDK=%x MacAddr" MAC_FMT "\n",
++		  "ulUseDK=%x MacAddr %pM\n",
+ 		  ul_entry_idx, ul_key_id, ul_enc_alg,
+-		  ul_default_key, MAC_ARG(mac_addr)));
++		  ul_default_key, mac_addr));
+ 
+ 	if (ul_key_id == TOTAL_CAM_ENTRY) {
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_WARNING,
+diff --git a/drivers/net/wireless/rtlwifi/core.c b/drivers/net/wireless/rtlwifi/core.c
+index 03ce696..1bdc1aa 100644
+--- a/drivers/net/wireless/rtlwifi/core.c
++++ b/drivers/net/wireless/rtlwifi/core.c
+@@ -456,7 +456,7 @@ static int rtl_op_sta_add(struct ieee80211_hw *hw,
+ 			sta_entry->wireless_mode = WIRELESS_MODE_G;
+ 
+ 		RT_TRACE(rtlpriv, COMP_MAC80211, DBG_DMESG,
+-			("Add sta addr is "MAC_FMT"\n", MAC_ARG(sta->addr)));
++			("Add sta addr is %pM\n", sta->addr));
+ 		rtlpriv->cfg->ops->update_rate_tbl(hw, sta, 0);
+ 	}
+ 	return 0;
+@@ -469,7 +469,7 @@ static int rtl_op_sta_remove(struct ieee80211_hw *hw,
+ 	struct rtl_sta_info *sta_entry;
+ 	if (sta) {
+ 		RT_TRACE(rtlpriv, COMP_MAC80211, DBG_DMESG,
+-			("Remove sta addr is "MAC_FMT"\n", MAC_ARG(sta->addr)));
++			("Remove sta addr is %pM\n", sta->addr));
+ 		sta_entry = (struct rtl_sta_info *) sta->drv_priv;
+ 		sta_entry->wireless_mode = 0;
+ 		sta_entry->ratr_index = 0;
+@@ -678,7 +678,7 @@ static void rtl_op_bss_info_changed(struct ieee80211_hw *hw,
+ 					      (u8 *) bss_conf->bssid);
+ 
+ 		RT_TRACE(rtlpriv, COMP_MAC80211, DBG_DMESG,
+-			 (MAC_FMT "\n", MAC_ARG(bss_conf->bssid)));
++			 ("%pM\n", bss_conf->bssid));
+ 
+ 		mac->vendor = PEER_UNKNOWN;
+ 		memcpy(mac->bssid, bss_conf->bssid, 6);
+diff --git a/drivers/net/wireless/rtlwifi/debug.h b/drivers/net/wireless/rtlwifi/debug.h
+index e4aa868..160dd06 100644
+--- a/drivers/net/wireless/rtlwifi/debug.h
++++ b/drivers/net/wireless/rtlwifi/debug.h
+@@ -204,10 +204,5 @@ enum dbgp_flag_e {
+ 		} \
+ 	} while (0);
+ 
+-#define MAC_FMT "%02x:%02x:%02x:%02x:%02x:%02x"
+-#define MAC_ARG(x) \
+-	((u8 *)(x))[0], ((u8 *)(x))[1], ((u8 *)(x))[2],\
+-	((u8 *)(x))[3], ((u8 *)(x))[4], ((u8 *)(x))[5]
+-
+ void rtl_dbgp_flag_init(struct ieee80211_hw *hw);
+ #endif
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
+index 9e2a9e3..a3deaef 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
+@@ -1592,7 +1592,7 @@ static void _rtl92ce_read_adapter_info(struct ieee80211_hw *hw)
+ 	}
+ 
+ 	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG,
+-		 (MAC_FMT "\n", MAC_ARG(rtlefuse->dev_addr)));
++		 ("%pM\n", rtlefuse->dev_addr));
+ 
+ 	_rtl92ce_read_txpower_info_from_hwpg(hw,
+ 					     rtlefuse->autoload_failflag,
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192de/hw.c b/drivers/net/wireless/rtlwifi/rtl8192de/hw.c
+index 5a65bea..0073cf1 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192de/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192de/hw.c
+@@ -1829,7 +1829,7 @@ static void _rtl92de_read_adapter_info(struct ieee80211_hw *hw)
+ 	rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_ETHER_ADDR,
+ 				      rtlefuse->dev_addr);
+ 	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG,
+-		 (MAC_FMT "\n", MAC_ARG(rtlefuse->dev_addr)));
++		 ("%pM\n", rtlefuse->dev_addr));
+ 	_rtl92de_read_txpower_info(hw, rtlefuse->autoload_failflag, hwinfo);
+ 
+ 	/* Read Channel Plan */
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/hw.c b/drivers/net/wireless/rtlwifi/rtl8192se/hw.c
+index b1d0213..fe2b0b9 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192se/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192se/hw.c
+@@ -1682,7 +1682,7 @@ static void _rtl92se_read_adapter_info(struct ieee80211_hw *hw)
+ 		rtl_write_byte(rtlpriv, MACIDR0 + i, rtlefuse->dev_addr[i]);
+ 
+ 	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG,
+-		 (MAC_FMT "\n", MAC_ARG(rtlefuse->dev_addr)));
++		 ("%pM\n", rtlefuse->dev_addr));
+ 
+ 	/* Get Tx Power Level by Channel */
+ 	/* Read Tx power of Channel 1 ~ 14 from EEPROM. */
+-- 
+1.7.5.4
 
-> I've merged the pathname lookup fix. I was hoping all the RCU issues
-> were behind us..
-
-If we have time, I would like to see what Ed gets with the most recent
-fix.  If we absolutely need to release today, then I will push patches
-2,5,6 which are covering Ed's particular situation.  My concern with doing
-so is that other failures might pop up.
-
-							Thanx, Paul
