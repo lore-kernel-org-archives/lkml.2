@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751613Ab1GTNLP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 09:11:15 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:44515 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750979Ab1GTNLO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 09:11:14 -0400
-Date: Wed, 20 Jul 2011 09:09:04 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ian Jackson <Ian.Jackson@eu.citrix.com>
-Cc: stefano.stabellini@eu.citrix.com, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@elte.hu,
-        hpa@linux.intel.com, yinghai@kernel.org
-Subject: Re: [Xen-devel] [PATCH tip/x86/mm] x86_32: calculate additional
- memory needed by the fixmap
-Message-ID: <20110720130904.GA19186@dumpdata.com>
-References: <m2n.s.1Qimoi-131463@chiark.greenend.org.uk>
- <20004.24417.577289.167313@mariner.uk.xensource.com>
+	id S1751674Ab1GTNLy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 09:11:54 -0400
+Received: from mail.sysgo.com ([195.145.229.155]:46091 "EHLO mail.sysgo.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751103Ab1GTNLx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 09:11:53 -0400
+X-Greylist: delayed 491 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Jul 2011 09:11:52 EDT
+Message-ID: <4E26D22B.1040702@sysgo.com>
+Date: Wed, 20 Jul 2011 15:03:39 +0200
+From: David Engraf <david.engraf@sysgo.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20004.24417.577289.167313@mariner.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4E26D37E.0004:SCFMA922111,ss=1,re=-4.000,fgs=0
+To: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: [PATCH] shwdt: fix usage of mod_timer
+Content-Type: multipart/mixed;
+ boundary="------------020705060108020003000904"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 18, 2011 at 05:29:21PM +0100, Ian Jackson wrote:
-> stefano.stabellini@eu.citrix.com writes ("[Xen-devel] [PATCH tip/x86/mm] x86_32: calculate additional memory needed by the fixmap"):
-> > Unfortunately this code is rather complex and depends on the behaviour
-> > of other functions but I hope to have covered all the corner cases.
-> 
-> I'm sorry to say that think this is really the wrong approach.
-> I agree that *some* change needs to be made, as this is currently a
-> serious regression in tip/x86/mm.
+This is a multi-part message in MIME format.
+--------------020705060108020003000904
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 
-tip/x86/mm should boot with this patch, right?
+This patch fixes the usage of mod_timer and makes the driver usable. 
+mod_timer must be called with an absolute timeout in jiffies, the old 
+implementation used a relative timeout thus the hardware watchdog was 
+never triggered.
 
-> 
-> But the correct change is in fact to undo the reversion of
->   "x86,xen: introduce x86_init.mapping.pagetable_reserve"
-> That was a hook with a reasonable and defined interface.
-> 
-> What we are having instead, now, is a fragile piece of code that tries
-> to second-guess the complex config- and hardware-dependent
-> memory-allocation behaviour of the rest of the startup code.  This is
-> a recipe for making things break.
+Signed-off-by: David Engraf <david.engraf@sysgo.com>
 
-Stefano did an excellent job at doing an archaeological excavation
-and finding all the little pieces and bringing them up to surface
-via this function. We have now the full accounting of the early
-bootup code and its page table creation. And based on that we can
-tighten the dance between pgt_end/pgt_begin/pgt_top to WARN much
-sooner - and I hope make the code more simpler.
 
-Sure there are some bugs that we won't find until more folks start
-testing it - I've only found this one b/c of playing with a bigger
-set of .config variants. But that is part of the 3.1-rcX cycle - to
-find them and fix them. Or if we cannot fix them, then revert this
-whole patchset and think then some more - maybe at the Linux Plumbers
-Conference or the Linux Kernel mini-summits.
+
+--------------020705060108020003000904
+Content-Type: text/x-diff;
+ name="shwdt.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="shwdt.patch"
+
+diff --git a/drivers/watchdog/shwdt.c b/drivers/watchdog/shwdt.c
+index db84f23..a267dc0 100644
+--- a/drivers/watchdog/shwdt.c
++++ b/drivers/watchdog/shwdt.c
+@@ -64,7 +64,7 @@
+  * misses its deadline, the kernel timer will allow the WDT to overflow.
+  */
+ static int clock_division_ratio = WTCSR_CKS_4096;
+-#define next_ping_period(cks)	msecs_to_jiffies(cks - 4)
++#define next_ping_period(cks)	(jiffies + msecs_to_jiffies(cks - 4))
+ 
+ static const struct watchdog_info sh_wdt_info;
+ static struct platform_device *sh_wdt_dev;
+
+--------------020705060108020003000904--
