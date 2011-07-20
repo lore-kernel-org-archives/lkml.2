@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752030Ab1GTTwU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 15:52:20 -0400
-Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:24070 "HELO
-	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751309Ab1GTTwT (ORCPT
+	id S1752297Ab1GTTxH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 15:53:07 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:1637 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751309Ab1GTTxF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 15:52:19 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: XK5AwW0VM1npqQ1ZEG.tpkzMahMdAhkDKbG_HZLVI8zU4Rf
- JLLRd4LgeCcXOuuvdRQ77b6EkNQ50yyJko_X6rmXF.3C2TjEff6vER7DZPCV
- WWsDQd4cuDjrY9WXx2l0pZv.i86Q34efI0OIbsqjH3qXnF0kO1AIbaRcs9Hv
- .fWSGuKmCZvZdVBStTHVmfmqll8yKpBLIrXD2WSCMFUmTO2SlWSvaKo_LwHZ
- V0XGGQpqePtFofe_VqiFUPIsLUusfPYUdCYCRSpq56eB4JpB..6NgIOFbM15
- aBuPPNWIbW0gbsuuYy5ebPsbLhMdh6y5PqUGU3QzHwwqyX7Or
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 20 Jul 2011 14:52:15 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Mel Gorman <mgorman@suse.de>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] mm: page allocator: Initialise ZLC for first zone
- eligible for zone_reclaim
-In-Reply-To: <alpine.DEB.2.00.1107201425200.1472@router.home>
-Message-ID: <alpine.DEB.2.00.1107201443400.1472@router.home>
-References: <1310742540-22780-1-git-send-email-mgorman@suse.de> <1310742540-22780-2-git-send-email-mgorman@suse.de> <alpine.DEB.2.00.1107180951390.30392@router.home> <20110718160552.GB5349@suse.de> <alpine.DEB.2.00.1107181208050.31576@router.home>
- <20110718211325.GC5349@suse.de> <alpine.DEB.2.00.1107181651000.31576@router.home> <alpine.DEB.2.00.1107190901120.1199@router.home> <alpine.DEB.2.00.1107201307530.1472@router.home> <20110720191858.GO5349@suse.de>
- <alpine.DEB.2.00.1107201425200.1472@router.home>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 20 Jul 2011 15:53:05 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 20 Jul 2011 12:52:59 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Andrew Chew <AChew@nvidia.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "olof@lixom.net" <olof@lixom.net>,
+        Dan Willemsen <dwillemsen@nvidia.com>,
+        Rhyland Klein <rklein@nvidia.com>,
+        Venkat Moganty <vmoganty@nvidia.com>
+CC: "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Chew <AChew@nvidia.com>
+Date: Wed, 20 Jul 2011 12:52:58 -0700
+Subject: RE: [PATCH 2/3 v2] dt: tegra20: Add ehci host controller nodes.
+Thread-Topic: [PATCH 2/3 v2] dt: tegra20: Add ehci host controller nodes.
+Thread-Index: AcxHFQkTrlnS7JYKR3qmibRzuwTR8QAAWrDQ
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF049EBDEF50@HQMAIL01.nvidia.com>
+References: <1311190690-18334-1-git-send-email-achew@nvidia.com>
+ <1311190690-18334-2-git-send-email-achew@nvidia.com>
+In-Reply-To: <1311190690-18334-2-git-send-email-achew@nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The existing way of deciding if watermarks have been met looks broken to
-me.
+achew@nvidia.com wrote at Wednesday, July 20, 2011 1:38 PM:
+> These values were derived from various headers in arch/arm/mach-tegra.
+> 
+> Signed-off-by: Andrew Chew <achew@nvidia.com>
 
-There are two pools of pages: One is the pages available from the buddy
-lists and another the pages in the per cpu lists.
+Patches 2 and 3:
 
-zone_watermark_ok() only checks those in the buddy lists
-(NR_FREE_PAGES) is not updated when we get a page from the per cpu lists).
+Acked-by: Stephen Warren <swarren@nvidia.com>
 
-And we do check zone_watermark_ok() before even attempting to allocate
-pages that may be available from the per cpu lists?
+I know Olof had suggested splitting the phy properties into a sub-node
+of the EHCI controller. I'll let you and him discuss that; I don't
+really have an opinion on that.
 
-So the allocator may pass on a zone and/or go into reclaim despite of the
-availability of pages on per cpu lists. The more pages one puts into the
-per cpu lists the higher the chance of an OOM. ... Ok that is not true
-since we flush the per cpu pages and get them back into the buddy lists
-before that happens.
-
+-- 
+nvpublic
 
