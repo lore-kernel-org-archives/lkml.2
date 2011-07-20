@@ -1,80 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751483Ab1GTPJC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 11:09:02 -0400
-Received: from vms173007pub.verizon.net ([206.46.173.7]:46648 "EHLO
-	vms173007pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750980Ab1GTPJA (ORCPT
+	id S1751606Ab1GTPJb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 11:09:31 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:45454 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750980Ab1GTPJa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 11:09:00 -0400
-X-Greylist: delayed 3601 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Jul 2011 11:09:00 EDT
-Date: Wed, 20 Jul 2011 10:06:37 -0400 (EDT)
-From: Peter Foley <pefoley2@verizon.net>
-To: Peter Foley <pefoley2@verizon.net>
-Cc: Michal Marek <mmarek@suse.cz>, Arnaud Lacombe <lacombar@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Kbuild Mailing List <linux-kbuild@vger.kernel.org>
-Subject: [PATCH V3] kbuild: silence generated makefile message
-In-reply-to: <alpine.LNX.2.00.1107041852390.20463@linux>
-Message-id: <alpine.LNX.2.00.1107201006120.64272@linux>
-References: <alpine.LNX.2.00.1106271619350.24034@linux>
- <BANLkTimrUYk-8GSsf35mUmLVBAaO84R6dA@mail.gmail.com>
- <alpine.LNX.2.00.1106271915160.38876@linux>
- <alpine.LNX.2.00.1106271932480.13060@linux>
- <20110701134733.GB25895@sepie.suse.cz>
- <alpine.LNX.2.00.1107041852390.20463@linux>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 20 Jul 2011 11:09:30 -0400
+Subject: Re: [PATCH] mm-slab: allocate kmem_cache with __GFP_REPEAT
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Mel Gorman <mgorman@suse.de>, Pekka Enberg <penberg@kernel.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>
+In-Reply-To: <alpine.DEB.2.00.1107200950270.1472@router.home>
+References: <20110720121612.28888.38970.stgit@localhost6>
+	 <alpine.DEB.2.00.1107201611010.3528@tiger> <20110720134342.GK5349@suse.de>
+	 <alpine.DEB.2.00.1107200854390.32737@router.home>
+	 <1311170893.2338.29.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <alpine.DEB.2.00.1107200950270.1472@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 20 Jul 2011 17:09:22 +0200
+Message-ID: <1311174562.2338.42.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Jul 2011, Peter Foley wrote:
-
-> This patch silences the "make -C /usr/src/git O=/usr/src/git/build/." 
-> message shown when using the generated makefile in KBUILD_OUTDIR.
+Le mercredi 20 juillet 2011 à 09:52 -0500, Christoph Lameter a écrit :
+> On Wed, 20 Jul 2011, Eric Dumazet wrote:
 > 
-> Signed-off-by: Peter Foley <pefoley2@verizon.net>
-> ---
-> V2: Show message when V=1
-> V3: Check if V=1 comes from the commandline
+> > > Slab's kmem_cache is configured with an array of NR_CPUS which is the
+> > > maximum nr of cpus supported. Some distros support 4096 cpus in order to
+> > > accomodate SGI machines. That array then will have the size of 4096 * 8 =
+> > > 32k
+> >
+> > We currently support a dynamic schem for the possible nodes :
+> >
+> > cache_cache.buffer_size = offsetof(struct kmem_cache, nodelists) +
+> > 	nr_node_ids * sizeof(struct kmem_list3 *);
+> >
+> > We could have a similar trick to make the real size both depends on
+> > nr_node_ids and nr_cpu_ids.
+> >
+> > (struct kmem_cache)->array would become a pointer.
 > 
->  scripts/mkmakefile |    9 ++++++++-
->  1 files changed, 8 insertions(+), 1 deletions(-)
-> 
-> diff --git a/scripts/mkmakefile b/scripts/mkmakefile
-> index 5325423..0cc0442 100644
-> --- a/scripts/mkmakefile
-> +++ b/scripts/mkmakefile
-> @@ -30,6 +30,13 @@ PATCHLEVEL = $4
->  lastword = \$(word \$(words \$(1)),\$(1))
->  makedir := \$(dir \$(call lastword,\$(MAKEFILE_LIST)))
->  
-> +ifeq ("\$(origin V)", "command line")
-> +VERBOSE := \$(V)
-> +endif
-> +ifneq (\$(VERBOSE),1)
-> +Q := @
-> +endif
-> +
->  MAKEARGS := -C $1
->  MAKEARGS += O=\$(if \$(patsubst /%,,\$(makedir)),\$(CURDIR)/)\$(patsubst
-> %/,%,\$(makedir))
->  
-> @@ -40,7 +47,7 @@ MAKEFLAGS += --no-print-directory
->  all	:= \$(filter-out all Makefile,\$(MAKECMDGOALS))
->  
->  all:
-> -	\$(MAKE) \$(MAKEARGS) \$(all)
-> +	\$(Q)\$(MAKE) \$(MAKEARGS) \$(all)
->  
->  Makefile:;
->  
-> -- 
-> 1.7.6
-> 
-> 
+> We should be making it a per cpu pointer like slub then. I looked at what
+> it would take to do so a couple of month ago but it was quite invasive.
 > 
 
-Ping?
+Lets try this first patch, simple enough : No need to setup percpu data
+for a one time use structure...
+
+[PATCH] slab: remove one NR_CPUS dependency
+
+Reduce high order allocations in do_tune_cpucache() for some setups.
+(NR_CPUS=4096 -> we need 64KB)
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Pekka Enberg <penberg@kernel.org>
+CC: Christoph Lameter <cl@linux.com>
+---
+ mm/slab.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/mm/slab.c b/mm/slab.c
+index d96e223..862bd12 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -3933,7 +3933,7 @@ fail:
+ 
+ struct ccupdate_struct {
+ 	struct kmem_cache *cachep;
+-	struct array_cache *new[NR_CPUS];
++	struct array_cache *new[0];
+ };
+ 
+ static void do_ccupdate_local(void *info)
+@@ -3955,7 +3955,8 @@ static int do_tune_cpucache(struct kmem_cache *cachep, int limit,
+ 	struct ccupdate_struct *new;
+ 	int i;
+ 
+-	new = kzalloc(sizeof(*new), gfp);
++	new = kzalloc(sizeof(*new) + nr_cpu_ids * sizeof(struct array_cache *),
++		      gfp);
+ 	if (!new)
+ 		return -ENOMEM;
+ 
+
+
