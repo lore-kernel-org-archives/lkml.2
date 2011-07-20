@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751990Ab1GTN4Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 09:56:16 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:33316 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751616Ab1GTN4P (ORCPT
+	id S1752030Ab1GTN4c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 09:56:32 -0400
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:31304 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751616Ab1GTN4b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 09:56:15 -0400
-From: Krishna Kumar <krkumar2@in.ibm.com>
-To: Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Krishna Kumar <krkumar2@in.ibm.com>,
-        virtualization@lists.linux-foundation.org
-Date: Wed, 20 Jul 2011 19:26:02 +0530
-Message-Id: <20110720135602.18705.21405.sendpatchset@krkumar2.in.ibm.com>
-Subject: [PATCH repost] Fix panic in virtnet_remove
+	Wed, 20 Jul 2011 09:56:31 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: HM_M604VM1m26as.8um_87fmmUAzcN0VYIE9bGwOdijLYLv
+ Eg._bwjPeCYPE3mDTilG0A0iS1H7okdBXcEZ2ifXyXq3gLKFf8Ljv8RBx8on
+ z5c_m2T4NOZrFuMK4Kpb1gOzCngvl2MmHZFT2OQNXjcq_2KaGxtAsxEK2Gaj
+ 2rMRXr4bTVWPhaQLK9iM85nE0uZCuv.BPDvvHrB0XBA0xCfWQwy8tP_3mbOf
+ k7mX7UJwHOtpxwjSS6OYgnSUx8oo0ZfDgUyfBurrpoANputp0oXuHmdF_h4C
+ BXhsoGjsCCzW4_6bHRskQJpqVlBHUMlOFmRdh91tlS2CWkVEONWvi1G2_0Fu
+ 4ZA1V1.MKsCzX1i_V9Oi4DGoW
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Wed, 20 Jul 2011 08:56:27 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Mel Gorman <mgorman@suse.de>
+cc: Pekka Enberg <penberg@kernel.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>
+Subject: Re: [PATCH] mm-slab: allocate kmem_cache with __GFP_REPEAT
+In-Reply-To: <20110720134342.GK5349@suse.de>
+Message-ID: <alpine.DEB.2.00.1107200854390.32737@router.home>
+References: <20110720121612.28888.38970.stgit@localhost6> <alpine.DEB.2.00.1107201611010.3528@tiger> <20110720134342.GK5349@suse.de>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a panic in virtnet_remove. unregister_netdev has already
-freed up the netdev (and virtnet_info) due to dev->destructor
-being set, while virtnet_info is still required. Remove
-virtnet_free altogether, and move the freeing of the per-cpu
-statistics from virtnet_free to virtnet_remove.
+On Wed, 20 Jul 2011, Mel Gorman wrote:
 
-Tested patch below.
+> > The changelog isn't that convincing, really. This is
+> > kmem_cache_create() so I'm surprised we'd ever get NULL here in
+> > practice. Does this fix some problem you're seeing? If this is
+> > really an issue, I'd blame the page allocator as GFP_KERNEL should
+> > just work.
+> >
+>
+> Besides, is allocating from cache_cache really a
+> PAGE_ALLOC_COSTLY_ORDER allocation? On my laptop at least, it's an
+> order-2 allocation which is supporting up to 512 CPUs and 512 nodes.
 
-Signed-off-by: Krishna Kumar <krkumar2@in.ibm.com>
----
-(Michael suggested me to re-post with copy to all maintainers)
+Slab's kmem_cache is configured with an array of NR_CPUS which is the
+maximum nr of cpus supported. Some distros support 4096 cpus in order to
+accomodate SGI machines. That array then will have the size of 4096 * 8 =
+32k
 
- drivers/net/virtio_net.c |   10 +---------
- 1 file changed, 1 insertion(+), 9 deletions(-)
-
-diff -ruNp org/drivers/net/virtio_net.c new/drivers/net/virtio_net.c
---- org/drivers/net/virtio_net.c	2011-07-18 09:14:02.000000000 +0530
-+++ new/drivers/net/virtio_net.c	2011-07-18 09:16:35.000000000 +0530
-@@ -705,14 +705,6 @@ static void virtnet_netpoll(struct net_d
- }
- #endif
- 
--static void virtnet_free(struct net_device *dev)
--{
--	struct virtnet_info *vi = netdev_priv(dev);
--
--	free_percpu(vi->stats);
--	free_netdev(dev);
--}
--
- static int virtnet_open(struct net_device *dev)
- {
- 	struct virtnet_info *vi = netdev_priv(dev);
-@@ -959,7 +951,6 @@ static int virtnet_probe(struct virtio_d
- 	/* Set up network device as normal. */
- 	dev->netdev_ops = &virtnet_netdev;
- 	dev->features = NETIF_F_HIGHDMA;
--	dev->destructor = virtnet_free;
- 
- 	SET_ETHTOOL_OPS(dev, &virtnet_ethtool_ops);
- 	SET_NETDEV_DEV(dev, &vdev->dev);
-@@ -1122,6 +1113,7 @@ static void __devexit virtnet_remove(str
- 	while (vi->pages)
- 		__free_pages(get_a_page(vi, GFP_KERNEL), 0);
- 
-+	free_percpu(vi->stats);
- 	free_netdev(vi->dev);
- }
- 
