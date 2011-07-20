@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751660Ab1GTQbM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 12:31:12 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:63131 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178Ab1GTQbK (ORCPT
+	id S1751605Ab1GTQgh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 12:36:37 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:55902 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751227Ab1GTQgf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 12:31:10 -0400
-Message-ID: <4E2702CB.9030909@lwfinger.net>
-Date: Wed, 20 Jul 2011 11:31:07 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-kernel@vger.kernel.org,
-        "'Chaoming_Li'" <chaoming_li@realsil.com.cn>
-Subject: Re: [PATCH 1/3] wireless: rtlwifi: throw away MAC_FMT and use %pM
- instead
-References: <fddeabc04a1b81a5c1f51a4164d93366dccf5f8e.1311162926.git.andriy.shevchenko@linux.intel.com>	 <4E26F879.8010601@lwfinger.net> <1311177762.1663.9.camel@Joe-Laptop>
-In-Reply-To: <1311177762.1663.9.camel@Joe-Laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Wed, 20 Jul 2011 12:36:35 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=WGypvrKU/AzoNYHlnwh82JSsUud+ZtheSQf3Qfu/xm2iMpKMVjPbmU6DwAc+4njf+WyY6gY5hENcq+OXBTe/hkKInYgT4ZNhKoHlCcEy97U9EScvQkbVQqr6G9JQ1xWC;
+Date: Wed, 20 Jul 2011 09:36:33 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-acpi@vger.kernel.org
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for July 20 (acpi/apei/ghes)
+Message-Id: <20110720093633.ca9cf794.rdunlap@xenotime.net>
+In-Reply-To: <20110720180041.5774ca335e6697c17374dca5@canb.auug.org.au>
+References: <20110720180041.5774ca335e6697c17374dca5@canb.auug.org.au>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/20/2011 11:02 AM, Joe Perches wrote:
-> On Wed, 2011-07-20 at 10:47 -0500, Larry Finger wrote:
->> Thanks for the patch.
->
-> Hey Larry.
->
-> rtlwifi has a CONFIG_BT_COEXIST which is currently
-> unused/undefined by Kconfig.
->
-> Are there plans to enable this or should the code
-> just be removed?
->
-> There may be a few dependencies in rtlwifi for
-> variables set in this block so it seems from
-> superficial reading that removal might be a bit
-> involved.  I didn't look much more than that,
-> but struct btcoexist_priv doesn't seem to be
-> specified by the code anywhere.
+On Wed, 20 Jul 2011 18:00:41 +1000 Stephen Rothwell wrote:
 
-I don't know the answer to that, but I have added Chaoming Li to the Cc. He will 
-know if Realtek has any plans for BT coexistence.
+> Hi all,
 
-Larry
+On i386 (X86_32):
+
+drivers/acpi/apei/ghes.c:542: warning: integer overflow in expression
+drivers/acpi/apei/ghes.c:619: warning: integer overflow in expression
+
+ghes.c:(.text+0x46289): undefined reference to `__udivdi3'
+  in function ghes_estatus_cache_add().
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
