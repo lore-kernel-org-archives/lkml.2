@@ -1,135 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751818Ab1GTI7h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 04:59:37 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:27555 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751248Ab1GTI51 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 04:57:27 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN
-Date: Wed, 20 Jul 2011 10:57:14 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCH 2/8] mm: alloc_contig_freed_pages() added
-In-reply-to: <1311152240-16384-1-git-send-email-m.szyprowski@samsung.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org
-Cc: Michal Nazarewicz <mina86@mina86.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
-        Arnd Bergmann <arnd@arndb.de>, Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>
-Message-id: <1311152240-16384-3-git-send-email-m.szyprowski@samsung.com>
-X-Mailer: git-send-email 1.7.6
-References: <1311152240-16384-1-git-send-email-m.szyprowski@samsung.com>
+	id S1751351Ab1GTJFI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 05:05:08 -0400
+Received: from lo.gmane.org ([80.91.229.12]:45740 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750936Ab1GTJFG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 05:05:06 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: David Kastrup <dak@gnu.org>
+Subject: Re: [ANNOUNCE] 3.0-rc7-rt0
+Date: Wed, 20 Jul 2011 11:02:40 +0200
+Organization: Organization?!?
+Message-ID: <87hb6hpbnz.fsf@fencepost.gnu.org>
+References: <alpine.LFD.2.02.1107200153070.2702@ionos>
+Mime-Version: 1.0
+Content-Type: text/plain
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: p508e97c0.dip.t-dialin.net
+X-Face: 2FEFf>]>q>2iw=B6,xrUubRI>pR&Ml9=ao@P@i)L:\urd*t9M~y1^:+Y]'C0~{mAl`oQuAl
+ \!3KEIp?*w`|bL5qr,H)LFO6Q=qx~iH4DN;i";/yuIsqbLLCh/!U#X[S~(5eZ41to5f%E@'ELIi$t^
+ Vc\LWP@J5p^rst0+('>Er0=^1{]M9!p?&:\z]|;&=NP3AhB!B_bi^]Pfkw
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+Cancel-Lock: sha1:Y6jwRKb26X3IdSOTkYltlchw6hY=
+Cc: linux-rt-users@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Thomas Gleixner <tglx@linutronix.de> writes:
 
-This commit introduces alloc_contig_freed_pages() function
-which allocates (ie. removes from buddy system) free pages
-in range.  Caller has to guarantee that all pages in range
-are in buddy system.
+> The overall patch size has shrunk significantly and the readability
+> (except for the missing changelogs in various patches) is at an
+> acceptable level.
 
-Along with this function, a free_contig_pages() function is
-provided which frees all (or a subset of) pages allocated
-with alloc_contig_free_pages().
+Well, thanks for all the work.  I am actually already using per-irq
+threads and priorities on a 3.0-rc kernel (there is some boot option to
+enable them), and that helps for audio operation.
 
-Michal Nazarewicz has modified the function to make it easier
-to allocate not MAX_ORDER_NR_PAGES aligned pages by making it
-return pfn of one-past-the-last allocated page.
+It would be really great if realtime can move upstream completely
+eventually, and it looks like the current approach is a better match to
+the existing kernel, partly due to upstream improvements, partly through
+rewritten realtime code.
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-CC: Michal Nazarewicz <mina86@mina86.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
----
- include/linux/page-isolation.h |    3 ++
- mm/page_alloc.c                |   44 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 47 insertions(+), 0 deletions(-)
+The ongoing work seems very promising and seems to involve fewer
+compromises, boding well not just for the chances of getting merged
+upstream, but also of minimizing regressions compared to the
+non-realtime kernel.
 
-diff --git a/include/linux/page-isolation.h b/include/linux/page-isolation.h
-index 58cdbac..f1417ed 100644
---- a/include/linux/page-isolation.h
-+++ b/include/linux/page-isolation.h
-@@ -32,6 +32,9 @@ test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn);
-  */
- extern int set_migratetype_isolate(struct page *page);
- extern void unset_migratetype_isolate(struct page *page);
-+extern unsigned long alloc_contig_freed_pages(unsigned long start,
-+					      unsigned long end, gfp_t flag);
-+extern void free_contig_pages(struct page *page, int nr_pages);
- 
- /*
-  * For migration.
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 4e8985a..00e9b24 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5600,6 +5600,50 @@ out:
- 	spin_unlock_irqrestore(&zone->lock, flags);
- }
- 
-+unsigned long alloc_contig_freed_pages(unsigned long start, unsigned long end,
-+				       gfp_t flag)
-+{
-+	unsigned long pfn = start, count;
-+	struct page *page;
-+	struct zone *zone;
-+	int order;
-+
-+	VM_BUG_ON(!pfn_valid(start));
-+	zone = page_zone(pfn_to_page(start));
-+
-+	spin_lock_irq(&zone->lock);
-+
-+	page = pfn_to_page(pfn);
-+	for (;;) {
-+		VM_BUG_ON(page_count(page) || !PageBuddy(page));
-+		list_del(&page->lru);
-+		order = page_order(page);
-+		zone->free_area[order].nr_free--;
-+		rmv_page_order(page);
-+		__mod_zone_page_state(zone, NR_FREE_PAGES, -(1UL << order));
-+		pfn  += 1 << order;
-+		if (pfn >= end)
-+			break;
-+		VM_BUG_ON(!pfn_valid(pfn));
-+		page += 1 << order;
-+	}
-+
-+	spin_unlock_irq(&zone->lock);
-+
-+	/* After this, pages in the range can be freed one be one */
-+	page = pfn_to_page(start);
-+	for (count = pfn - start; count; --count, ++page)
-+		prep_new_page(page, 0, flag);
-+
-+	return pfn;
-+}
-+
-+void free_contig_pages(struct page *page, int nr_pages)
-+{
-+	for (; nr_pages; --nr_pages, ++page)
-+		__free_page(page);
-+}
-+
- #ifdef CONFIG_MEMORY_HOTREMOVE
- /*
-  * All pages in the range must be isolated before calling this.
+Thanks!
+
 -- 
-1.7.1.569.g6f426
+David Kastrup
 
