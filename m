@@ -1,41 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751910Ab1GTXcW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 19:32:22 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:36239 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751531Ab1GTXcW (ORCPT
+	id S1751981Ab1GTXgb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 19:36:31 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:56220 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701Ab1GTXga (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 19:32:22 -0400
+	Wed, 20 Jul 2011 19:36:30 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6413"; a="104763449"
+Message-ID: <4E27667D.9060200@codeaurora.org>
+Date: Wed, 20 Jul 2011 16:36:29 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-Date: Wed, 20 Jul 2011 18:32:21 -0500
-Message-ID: <CAO9HMNEk50bU4ytmFtBNEvdEJSf2Oy9kVZqAs1Ln4iiL5yfpbw@mail.gmail.com>
-Subject: How does group scheduling interact with sched_batch, sched_idle, etc?
-From: Steve Bergman <sbergman27@gmail.com>
-To: linux-kernel@vger.kernel.org
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Imre Kaloz <kaloz@openwrt.org>, Eric Miao <eric.y.miao@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Krzysztof Halasa <khc@pm.waw.pl>
+Subject: Re: [PATCH] ARM: Migrate to asm-generic wrapper support
+References: <1311204225-13169-1-git-send-email-sboyd@codeaurora.org> <20110720232819.GC20310@n2100.arm.linux.org.uk>
+In-Reply-To: <20110720232819.GC20310@n2100.arm.linux.org.uk>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I normally run einstein@home under BOINC at a nice level of 19 with
-sched_batch. I like the longer timeslices of sched_batch from the
-standpoint of L2 cache efficiency. I've now turned
-sched_autogroup_enable on, and set the autogroup to nice 19. The BOINC
-startup script sets the individual boinc application processes to nice
-19 and sched_batch. I'm trying to understand what things I've actually
-changed. Do I still have the longer timeslices of sched_batch, along
-with the guarantee that they will never be treated as interactive? How
-do the autogroup nice level, the individual process nice level, and
-the sched_normal, sched_idleprio, and sched_normal parameters all play
-together?
+On 07/20/2011 04:28 PM, Russell King - ARM Linux wrote:
+> On Wed, Jul 20, 2011 at 04:23:45PM -0700, Stephen Boyd wrote:
+>> With d8ecc5c (kbuild: asm-generic support, 2011-04-27) we can
+>> remove a handful of asm-generic wrappers in ARM code.
+>>
+>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+>> Cc: Imre Kaloz <kaloz@openwrt.org>
+>> Cc: Krzysztof Halasa <khc@pm.waw.pl>
+>> Cc: Eric Miao <eric.y.miao@gmail.com>
+>> ---
+>>
+>> I've specifically left out topology.h as it looks like that will not
+>> be generic much longer.
+>
+> You don't mention in the commit log about the change to SZ_48M.
+>
 
-Also, I'm wondering what the impact of the group scheduling overhead
-might be in the most common case, where I'm not using the machine, and
-it's mainly just the 4 boinc processes, all in the same cgroup, using
-the processor.
+Sorry. I figured it was a minor detail. How about:
 
-I'm running 2.6.38 x86_64.
+With d8ecc5c (kbuild: asm-generic support, 2011-04-27) we can
+remove a handful of asm-generic wrappers in ARM code. Since the
+generic version of sizes.h doesn't contain SZ_48M, we replace
+the 3 users of SZ_48M with the equivalent SZ_32M + SZ_16M.
 
-Thanks for any information,
-Steve Bergman
+
+? If that works I'll make sure to include it when submitting to the
+patch tracker.
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
