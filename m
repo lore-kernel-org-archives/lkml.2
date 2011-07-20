@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752999Ab1GTSH0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 14:07:26 -0400
-Received: from waste.org ([173.11.57.241]:46593 "EHLO waste.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752613Ab1GTSHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 14:07:18 -0400
-Subject: Re: [PATCH] mm-slab: allocate kmem_cache with __GFP_REPEAT
-From: Matt Mackall <mpm@selenic.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <alpine.DEB.2.00.1107202040240.2847@tiger>
-References: <20110720121612.28888.38970.stgit@localhost6>
-	 <alpine.DEB.2.00.1107201611010.3528@tiger> <20110720134342.GK5349@suse.de>
-	 <alpine.DEB.2.00.1107200854390.32737@router.home>
-	 <1311170893.2338.29.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <alpine.DEB.2.00.1107200950270.1472@router.home>
-	 <1311174562.2338.42.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <alpine.DEB.2.00.1107201033080.1472@router.home>
-	 <1311177362.2338.57.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <alpine.DEB.2.00.1107201114480.1472@router.home>
-	 <1311179465.2338.62.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <1311181463.2338.72.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <alpine.DEB.2.00.1107201212140.1472@router.home>
-	 <alpine.DEB.2.00.1107202028050.2847@tiger>
-	 <alpine.DEB.2.00.1107201237190.1472@router.home>
-	 <alpine.DEB.2.00.1107202040240.2847@tiger>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 20 Jul 2011 13:07:04 -0500
-Message-ID: <1311185224.14555.43.camel@calx>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	id S1752986Ab1GTSIK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 14:08:10 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:40553 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752504Ab1GTSIJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 14:08:09 -0400
+Message-ID: <4E271A66.40307@colorfullife.com>
+Date: Wed, 20 Jul 2011 20:11:50 +0200
+From: Manfred Spraul <manfred@colorfullife.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Harald Laabs <kernelml@dasr.de>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [BUG] null-pointer in task_rq_lock (2.6.35 to 3.0-rc7)
+References: <4E25E2F5.7090807@dasr.de> <1311110082.3113.27.camel@edumazet-laptop>
+In-Reply-To: <1311110082.3113.27.camel@edumazet-laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-07-20 at 20:41 +0300, Pekka Enberg wrote:
-> On Wed, 20 Jul 2011, Pekka Enberg wrote:
-> >> On Wed, 20 Jul 2011, Eric Dumazet wrote:
-> >>>> [PATCH v2] slab: shrinks sizeof(struct kmem_cache)
-> >>
-> >> On Wed, 20 Jul 2011, Christoph Lameter wrote:
-> >>> This will solve the issue for small nr_cpu_ids but those with 4k cpus will
-> >>> still have the issue.
-> >>>
-> >>> Acked-by: Christoph Lameter <cl@linux.com>
-> >>
-> >> Applied, thanks! Do we still want the __GFP_REPEAT patch from Konstantin
-> >> though?
-> 
-> On Wed, 20 Jul 2011, Christoph Lameter wrote:
-> > Those with 4k cpus will be thankful I guess.
-> 
-> OTOH, I'm slightly worried that it might mask a real problem 
-> with GFP_KERNEL not being aggressive enough. Mel?
+On 07/19/2011 11:14 PM, Eric Dumazet wrote:
+> Le mardi 19 juillet 2011 à 22:03 +0200, Harald Laabs a écrit :Hi,
+>>
+>> I'm not able to fix or understand this bug myself, its already in
+>> bugzilla with the call trace:
+>> https://bugzilla.kernel.org/show_bug.cgi?id=27142
+>>
+>> Is there any more useful information I can provide? Anything to test?
+Could you build a kernel with CONFIG_DEBUG_LIST enabled?
+Does it report anything?
+>> Does anyone know of changes from 2.6.34 to 2.6.35 that might have
+>> broken this? (The diff and the changelog do not enlighten me, too
+>> much changed and I understand little of it.)
+> I feel commit 0a2b9d4c79671b059568 might be the bug origin
+> (ipc/sem.c: move wake_up_process out of the spinlock section)
+>
+I'll try to reproduce the bug tomorrow.
+Perhaps a race with multiple processes sleeping, some/all woken up by a 
+signal an a concurrent IPC_RM.
 
-I think that's already been demonstrated here, yes. It's just waiting
-for another obscure workload to trigger it.
+But I don't see the bug yet.
 
--- 
-Mathematics is the supreme nostalgia of our time.
-
+--
+     Manfred
 
