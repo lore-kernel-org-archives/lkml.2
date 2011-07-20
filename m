@@ -1,65 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751874Ab1GTOUX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 10:20:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57089 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751418Ab1GTOUW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 10:20:22 -0400
-Date: Wed, 20 Jul 2011 15:20:18 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        Konstantin Khlebnikov <khlebnikov@parallels.com>,
+	id S1751946Ab1GTOVu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 10:21:50 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:41341 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751418Ab1GTOVt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 10:21:49 -0400
+Date: Wed, 20 Jul 2011 09:21:29 -0500
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>, Nathan Lynch <ntl@pobox.com>,
+        Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>, Serge Hallyn <serge@hallyn.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        Glauber Costa <glommer@parallels.com>, Oleg Nesterov <oleg@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matt Mackall <mpm@selenic.com>
-Subject: Re: [PATCH] mm-slab: allocate kmem_cache with __GFP_REPEAT
-Message-ID: <20110720142018.GL5349@suse.de>
-References: <20110720121612.28888.38970.stgit@localhost6>
- <alpine.DEB.2.00.1107201611010.3528@tiger>
- <4E26D7EA.3000902@parallels.com>
- <alpine.DEB.2.00.1107201638520.4921@tiger>
- <alpine.DEB.2.00.1107200852590.32737@router.home>
+        Linux Containers <containers@lists.osdl.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [EXAMPLE CODE] Parasite thread injection using PTRACE_SEIZE and
+ friends
+Message-ID: <20110720142129.GB19603@peqn>
+References: <20110720140037.GM3455@htj.dyndns.org>
+ <20110720140335.GN3455@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1107200852590.32737@router.home>
+In-Reply-To: <20110720140335.GN3455@htj.dyndns.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 20, 2011 at 08:54:10AM -0500, Christoph Lameter wrote:
-> On Wed, 20 Jul 2011, Pekka Enberg wrote:
+Quoting Tejun Heo (tj@kernel.org):
+> On Wed, Jul 20, 2011 at 04:00:37PM +0200, Tejun Heo wrote:
+> > With new ptrace requests, a process can be captured and manipulated
+> > practically transparently.  Other than syscall retry or -EINTR failure
+> > in special cases and timing difference, everything including job
+> > control stop state stays transparent across ptrace operations.
 > 
-> > On Wed, 20 Jul 2011, Konstantin Khlebnikov wrote:
-> > > > The changelog isn't that convincing, really. This is kmem_cache_create()
-> > > > so I'm surprised we'd ever get NULL here in practice. Does this fix some
-> > > > problem you're seeing? If this is really an issue, I'd blame the page
-> > > > allocator as GFP_KERNEL should just work.
-> > >
-> > > nf_conntrack creates separate slab-cache for each net-namespace,
-> > > this patch of course not eliminates the chance of failure, but makes it more
-> > > acceptable.
-> >
-> > I'm still surprised you are seeing failures. mm/slab.c hasn't changed
-> > significantly in a long time. Why hasn't anyone reported this before? I'd
-> > still be inclined to shift the blame to the page allocator... Mel, Christoph?
-> 
-> There was a lot of recent fiddling with the reclaim logic. Maybe some of
-> those changes caused the problem?
-> 
+> Ooh, forgot to mention something.  The ptracer can also reliably
+> determine whether job control stop is in effect or not, so the whole
+> job control state can be captured.
 
-It's more likely that creating new slabs while under memory pressure
-significant enough to fail an order-4 allocation is a situation that is
-rarely tested. 
+It sounds cool, thanks.  Is this completely separate from Pavel's
+CR patchset (which I've not yet gotten around to looking at in
+detail)?
 
-What kernel version did this failure occur on? What was the system doing
-at the time of failure? Can the page allocation failure message be
-posted?
-
--- 
-Mel Gorman
-SUSE Labs
+-serge
