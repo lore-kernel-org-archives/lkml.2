@@ -1,78 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752540Ab1GTFkX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 01:40:23 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:37796 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751868Ab1GTFkW convert rfc822-to-8bit (ORCPT
+	id S1752633Ab1GTFnz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 01:43:55 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:38872 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751868Ab1GTFny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 01:40:22 -0400
+	Wed, 20 Jul 2011 01:43:54 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110712205000.GA2500@redhat.com>
-References: <1309244992-2305-1-git-send-email-jim.cromie@gmail.com>
- <1310370416-6322-1-git-send-email-jim.cromie@gmail.com> <1310370416-6322-22-git-send-email-jim.cromie@gmail.com>
- <1310430335.3550.3.camel@Joe-Laptop> <20110712205000.GA2500@redhat.com>
-From: Jim Cromie <jim.cromie@gmail.com>
-Date: Tue, 19 Jul 2011 23:39:52 -0600
-Message-ID: <CAJfuBxxaL=Xz4vWnuHizGZrEbJyTPGy4aN4ByaWBy42mjo_Ypw@mail.gmail.com>
-Subject: Re: [PATCH 21/21] dynamic_debug: delete pending queries
-To: Jason Baron <jbaron@redhat.com>
-Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
-        bvanassche@acm.org, gregkh@suse.de, gnb@fmeh.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1311139104.15392.344.camel@sli10-conroe>
+References: <1311059367.15392.299.camel@sli10-conroe>
+	<CAEwNFnB6HKJ3j9cWzyb2e3BS2BQrE66F6eT02C4cozRC9YQ7kw@mail.gmail.com>
+	<1311065584.15392.300.camel@sli10-conroe>
+	<20110719165155.GB2978@barrios-desktop>
+	<1311122601.15392.310.camel@sli10-conroe>
+	<CAEwNFnCg4+mK62oC0k+7wHib_0dFFvDYbJ3VkP91WHY+f5XcpQ@mail.gmail.com>
+	<1311139104.15392.344.camel@sli10-conroe>
+Date: Wed, 20 Jul 2011 14:43:53 +0900
+Message-ID: <CAEwNFnDC7mFJ=Hz4nvbvr0syAarFOxJ5NBoJSLQMbd-_tVBagQ@mail.gmail.com>
+Subject: Re: [PATCH]vmscan: fix a livelock in kswapd
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "mgorman@suse.de" <mgorman@suse.de>, linux-mm <linux-mm@kvack.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 12, 2011 at 2:50 PM, Jason Baron <jbaron@redhat.com> wrote:
-> On Mon, Jul 11, 2011 at 05:25:35PM -0700, Joe Perches wrote:
->> On Mon, 2011-07-11 at 01:46 -0600, Jim Cromie wrote:
->> > delete pending queries by re-issuing it with disabled flags
->> []
->> > diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
->> []
->> > @@ -505,7 +505,17 @@ static int ddebug_save_pending(struct ddebug_query *query,
+On Wed, Jul 20, 2011 at 2:18 PM, Shaohua Li <shaohua.li@intel.com> wrote:
+> On Wed, 2011-07-20 at 12:09 +0800, Minchan Kim wrote:
+>> On Wed, Jul 20, 2011 at 9:43 AM, Shaohua Li <shaohua.li@intel.com> wrote:
+>> > On Wed, 2011-07-20 at 00:51 +0800, Minchan Kim wrote:
+>> >> On Tue, Jul 19, 2011 at 04:53:04PM +0800, Shaohua Li wrote:
+>> >> > On Tue, 2011-07-19 at 16:45 +0800, Minchan Kim wrote:
+>> >> > > On Tue, Jul 19, 2011 at 4:09 PM, Shaohua Li <shaohua.li@intel.com> wrote:
+>> >> > > > I'm running a workload which triggers a lot of swap in a machine with 4 nodes.
+>> >> > > > After I kill the workload, I found a kswapd livelock. Sometimes kswapd3 or
+>> >> > > > kswapd2 are keeping running and I can't access filesystem, but most memory is
+>> >> > > > free. This looks like a regression since commit 08951e545918c159.
+>> >> > >
+>> >> > > Could you tell me what is 08951e545918c159?
+>> >> > > You mean [ebd64e21ec5a,
+>> >> > > mm-vmscan-only-read-new_classzone_idx-from-pgdat-when-reclaiming-successfully]
+>> >> > > ?
+>> >> > ha, sorry, I should copy the commit title.
+>> >> > 08951e545918c159(mm: vmscan: correct check for kswapd sleeping in
+>> >> > sleeping_prematurely)
+>> >> >
+>> >>
+>> >> I don't mean it. In my bogus git tree, I can't find it but I can look at it in repaired git tree. :)
+>> >> Anyway, I have a comment. Please look at below.
+>> >>
+>> >> On Tue, Jul 19, 2011 at 03:09:27PM +0800, Shaohua Li wrote:
+>> >> > I'm running a workload which triggers a lot of swap in a machine with 4 nodes.
+>> >> > After I kill the workload, I found a kswapd livelock. Sometimes kswapd3 or
+>> >> > kswapd2 are keeping running and I can't access filesystem, but most memory is
+>> >> > free. This looks like a regression since commit 08951e545918c159.
+>> >> > Node 2 and 3 have only ZONE_NORMAL, but balance_pgdat() will return 0 for
+>> >> > classzone_idx. The reason is end_zone in balance_pgdat() is 0 by default, if
+>> >> > all zones have watermark ok, end_zone will keep 0.
+>> >> > Later sleeping_prematurely() always returns true. Because this is an order 3
+>> >> > wakeup, and if classzone_idx is 0, both balanced_pages and present_pages
+>> >> > in pgdat_balanced() are 0.
+>> >>
+>> >> Sigh. Yes.
+>> >>
+>> >> > We add a special case here. If a zone has no page, we think it's balanced. This
+>> >> > fixes the livelock.
+>> >>
+>> >> Yes. Your patch can fix it but I don't like that it adds handling special case.
+>> >> (Although Andrew merged quickly).
+>> > The special case is reasonable, because if a zone has no page, it should
+>> > be considered balanced.
+>>
+>> Yes. It's not bad and even simple but my concern is that at the moment
+>> kswapd code is very complicated and it's not hot path so I would like
+>> to add more readable code.
+>>
 >> >
->> >     list_for_each_entry_safe(pq, pqnext, &pending_queries, link) {
->> >             if (queries_match(query, &pq->query)) {
->> > -                   /* query already in list, update flags */
->> > +                   /* query already in list */
->> > +                   if (!flags) {
->> > +                           /* zeroed flags, remove query */
->> > +                           if (verbose)
->> > +                                   pr_info("delete pending: %s\n",
->> > +                                           show_pending_query(pq));
+>> >> The problem is to return 0-classzone_idx if all zones was okay.
+>> >> So how about this?
+>> > My original implementation is like this (I return a populated zone with
+>> > minimum zone index). But I changed my mind later. the end_zone is zone
+>> > we work, so return 0 is reasonable, because all zones are ok. Maybe we
 >>
->> I think these should be pr_debug.
->> I know you're only using the current style.
+>> If it is reasonable, did you work on ZONE_DMA(zone index: 0)?
+> return -1 can help.
+>
+>> > should return -1 if all zones are ok, but this is another story.
 >>
->> Jason, any reason these can not be converted?
+>> I think that return classzone_id(-1) and handle such case is more readable.
+> sure, we need another patch to clean up it.
+>
+>> >
+>> >> This can change old behavior slightly.
+>> >> For example, if balance_pgdat calls with order-3 and all zones are okay about order-3,
+>> >> it will recheck order-0 as end_zone isn't 0 any more.
+>> >> But I think it's desriable side effect we have missed.
+>> > if order-3 is ok, order-0 is ok too I think, so the check is
+>> > unnecessary.
 >>
+>> No. It's not for the zone but *zones.
+>> In case of reclaiming higher order zone, it can sleep without all
+>> zones being balanced so that precious order-0 of some zone would be
+>> not balanced.
+> when balance_pgdat() skips the loop for higher order zone, it already
+> sets end_zone, so I thought this isn't a problem.
+
+In case of higher order zone reclaiming, we just make sure 25% of
+zones are balanced but not for order-0 on *all* zones.
+
 >
-> it should be ok, although we have to be careful not to use them in the
-> printing path, since that will cause a recursion.
+>> Even we can lost chance of clearing congestion flag of the zone.
+>> It would be a another patch.
+> yep, the congestion flag clearing is a bit confusing. I don't even know
+> why just do it in high order allocation. If all zones are ok, we should
+> clear the flag regardless the order.
+
+We do in not-high-order allocation as well as high order allocation if
+the zone is watermark_okay.
+
+
 >
-> Also, if there is an issue with the dynamic debug code, it makes it more
-> of a pain to debug :)
->
-> -Jason
->
+>> In conclusion, I would like to avoid complicated thing but I am going
+>> to be not against you strongly if other doesn't agree on me.
+>> I might need a time to clean kswapd's spagetti up.
+> ok, understand it. I have similar concerns actually. I thought my patch
+> is simple enough to solve the livelock. But we do have space to cleanup
+> balance_pgdat().
 
+Okay. I will put it in my TODO.
+Thanks, Shaohua.
 
-I replaced almost all pr_info with pr_debug,
-works nicely.
-
-One pr_info remains, cuz code also uses pr_cont(),
-which has no corresponding fn
-
-	if (verbose) {
-		int i;
-		pr_info("split into words: %d ", i);
-		for (i = 0 ; i < nwords ; i++)
-			pr_cont(" \"%s\"", words[i]);
-		pr_cont("\n");
-	}
-
-Would you consider adding it ?
-If so, I can drop verbose var completely.
+-- 
+Kind regards,
+Minchan Kim
