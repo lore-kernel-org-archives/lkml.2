@@ -1,102 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752187Ab1GTTu4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 15:50:56 -0400
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:36236 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751664Ab1GTTuz (ORCPT
+	id S1752600Ab1GTTvS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 15:51:18 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:1347 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751584Ab1GTTvQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 15:50:55 -0400
-Date: Wed, 20 Jul 2011 23:50:48 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] taskstats: add_del_listener() shouldn't use the
- wrong node
-Message-ID: <20110720195048.GB3385@albatros>
-References: <20110720185959.GA21749@redhat.com>
- <20110720190019.GA21753@redhat.com>
+	Wed, 20 Jul 2011 15:51:16 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 20 Jul 2011 12:51:09 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Andrew Chew <AChew@nvidia.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "olof@lixom.net" <olof@lixom.net>,
+        Dan Willemsen <dwillemsen@nvidia.com>,
+        Rhyland Klein <rklein@nvidia.com>,
+        Venkat Moganty <vmoganty@nvidia.com>
+CC: "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Chew <AChew@nvidia.com>
+Date: Wed, 20 Jul 2011 12:51:08 -0700
+Subject: RE: [PATCH 1/3 v2] usb: tegra20-ehci: Add devicetree support.
+Thread-Topic: [PATCH 1/3 v2] usb: tegra20-ehci: Add devicetree support.
+Thread-Index: AcxHFQhXD+pPdG2NRAaHk0KHbUzMLQAAM9gQ
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF049EBDEF4E@HQMAIL01.nvidia.com>
+References: <1311190690-18334-1-git-send-email-achew@nvidia.com>
+In-Reply-To: <1311190690-18334-1-git-send-email-achew@nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110720190019.GA21753@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 20, 2011 at 21:00 +0200, Oleg Nesterov wrote:
-> 1. 26c4caea "don't allow duplicate entries in listener mode"
->    changed add_del_listener(REGISTER) so that "next_cpu:" can
->    reuse the listener allocated for the previous cpu, this
->    doesn't look exactly right even if minor.
+achew@nvidia.com wrote at Wednesday, July 20, 2011 1:38 PM:
+> From: Andrew Chew <achew@nvidia.com>
 > 
->    Change the code to kfree() in the already-registered case,
->    this case is unlikely anyway so the extra kmalloc_node()
->    shouldn't hurt but looke more correct and clean.
+> Add code to try to get platform data information (register base, irq,
+> modes, various tuning parameters) from device tree, if not present in board
+> files.
 > 
-> 2. use the plain list_for_each_entry() instead of _safe() to
->    scan listeners->list.
-> 
-> 3. Remove the unneeded INIT_LIST_HEAD(&s->list), we are going
->    to list_add(&s->list).
+> Signed-off-by: Andrew Chew <achew@nvidia.com>
 
-I don't know whether (1) is needed, looks very minor to me.  Other than
-that:
+> +++ b/Documentation/devicetree/bindings/usb/tegra20-ehci.txt
+...
+> +Required properties for type = "ulpi":
+> + - reset_gpio: The GPIO used to drive reset
+> + - clk
 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+We should probably document what this is. I know you're finding out more
+about this internally.
 
-Reviewed-by: Vasiliy Kulikov <segoon@openwall.com>
+> diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
+> +	retval = of_property_read_u32(dn, "power_down_on_bus_suspend",
+> +				      &pdata->power_down_on_bus_suspend);
 
-> ---
-> 
->  kernel/taskstats.c |   16 +++++++---------
->  1 file changed, 7 insertions(+), 9 deletions(-)
-> 
-> --- ts/kernel/taskstats.c~1_cleanup	2011-07-03 16:27:57.000000000 +0200
-> +++ ts/kernel/taskstats.c	2011-07-20 19:35:38.000000000 +0200
-> @@ -291,30 +291,28 @@ static int add_del_listener(pid_t pid, c
->  	if (!cpumask_subset(mask, cpu_possible_mask))
->  		return -EINVAL;
->  
-> -	s = NULL;
->  	if (isadd == REGISTER) {
->  		for_each_cpu(cpu, mask) {
-> -			if (!s)
-> -				s = kmalloc_node(sizeof(struct listener),
-> -						 GFP_KERNEL, cpu_to_node(cpu));
-> +			s = kmalloc_node(sizeof(struct listener),
-> +					GFP_KERNEL, cpu_to_node(cpu));
->  			if (!s)
->  				goto cleanup;
-> +
->  			s->pid = pid;
-> -			INIT_LIST_HEAD(&s->list);
->  			s->valid = 1;
->  
->  			listeners = &per_cpu(listener_array, cpu);
->  			down_write(&listeners->sem);
-> -			list_for_each_entry_safe(s2, tmp, &listeners->list, list) {
-> +			list_for_each_entry(s2, &listeners->list, list) {
->  				if (s2->pid == pid)
-> -					goto next_cpu;
-> +					goto exists;
->  			}
->  			list_add(&s->list, &listeners->list);
->  			s = NULL;
-> -next_cpu:
-> +exists:
->  			up_write(&listeners->sem);
-> +			kfree(s); /* nop if NULL */
->  		}
-> -		kfree(s);
->  		return 0;
->  	}
->  
-> 
+Sorry I missed this before, but perhaps we should skip reading that
+property unless mode=="host"?
+
+Otherwise,
+Acked-by: Stephen Warren <swarren@nvidia.com>
 
 -- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+nvpublic
+
