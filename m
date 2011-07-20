@@ -1,22 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752334Ab1GTOb4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 10:31:56 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:43615 "EHLO bear.ext.ti.com"
+	id S1752297Ab1GTObz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 10:31:55 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:46651 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751643Ab1GTOab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751764Ab1GTOab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Jul 2011 10:30:31 -0400
 From: <pavan_savoy@ti.com>
 To: <greg@kroah.com>, <linux-kernel@vger.kernel.org>
 CC: pavan_savoy@sify.com, Pavan Savoy <pavan_savoy@ti.com>
 Subject: [PATCH 3/4] drivers:misc: ti-st: reinit completion on ver read
-Date: Wed, 20 Jul 2011 09:30:19 -0500
-Message-ID: <1311172225-17678-4-git-send-email-pavan_savoy@ti.com>
+Date: Wed, 20 Jul 2011 09:30:24 -0500
+Message-ID: <1311172225-17678-9-git-send-email-pavan_savoy@ti.com>
 X-Mailer: git-send-email 1.5.6.3
-In-Reply-To: <1311172225-17678-3-git-send-email-pavan_savoy@ti.com>
+In-Reply-To: <1311172225-17678-8-git-send-email-pavan_savoy@ti.com>
 References: <1311172225-17678-1-git-send-email-pavan_savoy@ti.com>
  <1311172225-17678-2-git-send-email-pavan_savoy@ti.com>
  <1311172225-17678-3-git-send-email-pavan_savoy@ti.com>
+ <1311172225-17678-4-git-send-email-pavan_savoy@ti.com>
+ <1311172225-17678-5-git-send-email-pavan_savoy@ti.com>
+ <1311172225-17678-6-git-send-email-pavan_savoy@ti.com>
+ <1311172225-17678-7-git-send-email-pavan_savoy@ti.com>
+ <1311172225-17678-8-git-send-email-pavan_savoy@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
