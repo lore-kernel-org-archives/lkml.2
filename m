@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752276Ab1GTWDF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 18:03:05 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:46171 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751545Ab1GTWCP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 18:02:15 -0400
-From: Per Forlin <per.forlin@linaro.org>
-To: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-doc@vger.kernel.org,
-        Venkatraman S <svenkatr@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Sourav Poddar <sourav.poddar@ti.com>,
-        Chris Ball <cjb@laptop.org>, Akinobu Mita <akinobu.mita@gmail.com>,
-        J Freyensee <james_p_freyensee@linux.intel.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, Per Forlin <per.forlin@linaro.org>
-Subject: [PATCH v3 0/3] Make fault injection available for MMC IO
-Date: Thu, 21 Jul 2011 00:01:58 +0200
-Message-Id: <1311199321-4618-1-git-send-email-per.forlin@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
+	id S1751917Ab1GTWEo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 18:04:44 -0400
+Received: from mail.perches.com ([173.55.12.10]:4207 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751536Ab1GTWEn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 18:04:43 -0400
+Subject: Re: [PATCH] rtlwifi: Convert printks to pr_<level>
+From: Joe Perches <joe@perches.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <4E27048F.9090004@lwfinger.net>
+References: <b57f00fc1d0947443aa1830c11c288e78924af44.1311177059.git.joe@perches.com>
+	 <4E27048F.9090004@lwfinger.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 20 Jul 2011 15:04:42 -0700
+Message-ID: <1311199482.1663.13.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The first version of this patch is a part of mmc non-blocking v9 patchset:
-[PATCH v9 11/12] mmc: core: add random fault injection
+On Wed, 2011-07-20 at 11:38 -0500, Larry Finger wrote:
+> On 07/20/2011 10:51 AM, Joe Perches wrote:
+> > Use the current logging styles.
+> > Add pr_fmt where appropriate.
+> > Remove now unnecessary prefixes from printks.
+> > Convert hard coded prefix to __func__.
+> > Add a missing "\n" to a format.
+[]
+> In general these look good, but why not define pr_fmt in rtlwifi/wifi.h. That 
+> header is used by every source file, and you only need the define once.
 
-change log:
- v2 - Resolve build issue in mmc core.c due to multiple init_module by
-      removing the fault inject module.
-    - Export fault injection functions to make them available for modules
-    - Update fault injection documentation on MMC IO  
- v3 - add function descriptions in core.c
-    - use export GPL for fault injection functions
+Because that's not the first #include in every file.
 
-Per Forlin (3):
-  fault-inject: make fault injection available for modules
-  mmc: core: add random fault injection
-  fault injection: add documentation on MMC IO fault injection
+The #define pr_fmt has to be before anything that
+includes kernel.h so it's safest/best to have it
+be the first thing in the file.
 
- Documentation/fault-injection/fault-injection.txt |    5 ++
- drivers/mmc/core/core.c                           |   69 +++++++++++++++++++++
- drivers/mmc/core/debugfs.c                        |    5 ++
- include/linux/mmc/host.h                          |    3 +
- lib/Kconfig.debug                                 |   11 +++
- lib/fault-inject.c                                |    2 +
- 6 files changed, 95 insertions(+), 0 deletions(-)
+At some point in the next year or so, all of the
+uses of:
 
--- 
-1.7.4.1
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+
+should be removed and that should become the default.
+
+cheers, Joe
 
