@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752789Ab1GTDCF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 23:02:05 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:35803 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752522Ab1GTDCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 23:02:03 -0400
-Date: Wed, 20 Jul 2011 13:01:52 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: linux-next: manual merge of the of-pci tree with the arm-soc tree
-Message-Id: <20110720130152.1e2f099c084dbf22e55d2a16@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__20_Jul_2011_13_01_52_+1000_RhkGCb6mPRP2q5.W"
+	id S1752817Ab1GTDYL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 23:24:11 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:57050 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752758Ab1GTDYK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 23:24:10 -0400
+X-Nat-Received: from [202.181.97.72]:60743 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1311131972.18633
+Message-Id: <201107200319.p6K3JWN5001223@www262.sakura.ne.jp>
+Subject: [PATCH linux-next-20110718] Fix build error at mm/slab.c .
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+To: cl@linux.com, penberg@kernel.org
+Cc: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Date: Wed, 20 Jul 2011 12:19:32 +0900
+Content-Type: text/plain; charset="ISO-2022-JP"
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 20072011 #5646396, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__20_Jul_2011_13_01_52_+1000_RhkGCb6mPRP2q5.W
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+ARCH_SLAB_MINALIGN might be defined as
 
-Hi Benjamin,
+  #define ARCH_SLAB_MINALIGN __alignof__(unsigned long long)
 
-Today's linux-next merge of the of-pci tree got a conflict in
-arch/microblaze/include/asm/pci-bridge.h between commit f4ffd5e5dfda
-("pci: move microblaze and powerpc pci flag functions into asm-generic")
-from the arm-soc tree and commit 72bdee79f89f ("microblaze/pci: Remove
-powermac originated cruft") from the of-pci tree.
+but gcc 3.3 cannot understand
 
-The former removal removed a superset of what the latter removed, so I
-used the former.
+  #if __alignof__(unsigned long long)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+line.
 
---Signature=_Wed__20_Jul_2011_13_01_52_+1000_RhkGCb6mPRP2q5.W
-Content-Type: application/pgp-signature
+  CC      mm/slab.o
+mm/slab.c:3156:5: warning: "__alignof__" is not defined
+mm/slab.c:3156:5: missing binary operator before token "("
+make[1]: *** [mm/slab.o] Error 1
+make: *** [mm] Error 2
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Use "if (ARCH_SLAB_MINALIGN)" rather than "#if ARCH_SLAB_MINALIGN".
 
-iQEcBAEBAgAGBQJOJkUgAAoJEDMEi1NhKgbsDMYIAJWFAEfC8BbFv3A4ktyhDW97
-p6CIqVsIpD/HDhXFBV5GJXj0zJYhUbC4TTfqcfQTO1MFxObkNdcwJwmvvJ9Z51ka
-NZ+SNnoA8U0NfFSFaZs9Pi3KtGokFCHgrFncQKzVsphDNUVYfItN+c0DEvbFbiSm
-hhI7tDjcTncWbxsKvmqVNN9B4xKSeywZ61h6TFqfa+BYDkCg0EY21PHAcjn3wQ7X
-nPMRb/VUGosGiRz5CIXsKbf1CzlwdSXeScP/hen/NYCtFcn1ocF8imjJ2xsWWMDR
-y8imUSTSDVEtMApnpxB7B9CmfbDAQQ8q59CjI7jp5Ll4PaBtvWWYwt2n5ZziSlg=
-=M24m
------END PGP SIGNATURE-----
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+---
+ mm/slab.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
---Signature=_Wed__20_Jul_2011_13_01_52_+1000_RhkGCb6mPRP2q5.W--
+--- linux-3.0-next.orig/mm/slab.c
++++ linux-3.0-next/mm/slab.c
+@@ -3153,12 +3153,9 @@ static void *cache_alloc_debugcheck_afte
+ 	objp += obj_offset(cachep);
+ 	if (cachep->ctor && cachep->flags & SLAB_POISON)
+ 		cachep->ctor(objp);
+-#if ARCH_SLAB_MINALIGN
+-	if ((u32)objp & (ARCH_SLAB_MINALIGN-1)) {
++	if (ARCH_SLAB_MINALIGN && ((u32)objp & (ARCH_SLAB_MINALIGN-1)))
+ 		printk(KERN_ERR "0x%p: not aligned to ARCH_SLAB_MINALIGN=%d\n",
+ 		       objp, ARCH_SLAB_MINALIGN);
+-	}
+-#endif
+ 	return objp;
+ }
+ #else
