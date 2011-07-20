@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772Ab1GTF5h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 01:57:37 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:37808 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751538Ab1GTF5g (ORCPT
+	id S1751819Ab1GTGDL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 02:03:11 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38878 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777Ab1GTGDJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 01:57:36 -0400
-From: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
-To: grant.likely@secretlab.ca, spi-devel-general@lists.sourceforge.net,
+	Wed, 20 Jul 2011 02:03:09 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 20 Jul 2011 14:55:53 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, Balbir Singh <bsingharora@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, tomoya-linux@dsn.okisemi.com,
-        Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
-Subject: [PATCH] spi_topcliff_pch: supports a spi mode setup and bit order setup by IO control
-Date: Wed, 20 Jul 2011 14:56:54 +0900
-Message-Id: <1311141414-12867-1-git-send-email-toshiharu-linux@dsn.okisemi.com>
-X-Mailer: git-send-email 1.7.4.4
+Subject: Re: [PATCH 2/2] memcg: change memcg_oom_mutex to spinlock
+Message-Id: <20110720145553.7703dbcb.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <b24894c23d0bb06f849822cb30726b532ea3a4c5.1310732789.git.mhocko@suse.cz>
+References: <cover.1310732789.git.mhocko@suse.cz>
+	<b24894c23d0bb06f849822cb30726b532ea3a4c5.1310732789.git.mhocko@suse.cz>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch supports a spi mode setup and bit order setup by IO control.
-    spi mode:     mode 0 to mode 3
-    bit order:    LSB first, MSB first
+On Thu, 14 Jul 2011 17:29:51 +0200
+Michal Hocko <mhocko@suse.cz> wrote:
 
-Signed-off-by: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
----
- drivers/spi/spi_topcliff_pch.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+> memcg_oom_mutex is used to protect memcg OOM path and eventfd interface
+> for oom_control. None of the critical sections which it protects sleep
+> (eventfd_signal works from atomic context and the rest are simple linked
+> list resp. oom_lock atomic operations).
+> Mutex is also too heavy weight for those code paths because it triggers
+> a lot of scheduling. It also makes makes convoying effects more visible
+> when we have a big number of oom killing because we take the lock
+> mutliple times during mem_cgroup_handle_oom so we have multiple places
+> where many processes can sleep.
+> 
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
 
-diff --git a/drivers/spi/spi_topcliff_pch.c b/drivers/spi/spi_topcliff_pch.c
-index 79e48d4..dec83c9 100644
---- a/drivers/spi/spi_topcliff_pch.c
-+++ b/drivers/spi/spi_topcliff_pch.c
-@@ -1038,6 +1038,7 @@ static int pch_spi_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 	master->num_chipselect = PCH_MAX_CS;
- 	master->setup = pch_spi_setup;
- 	master->transfer = pch_spi_transfer;
-+	master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_LSB_FIRST;
- 	dev_dbg(&pdev->dev,
- 		"%s transfer member of SPI master initialized\n", __func__);
- 
--- 
-1.7.4.4
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
 
