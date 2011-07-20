@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752001Ab1GTTLB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 15:11:01 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45329 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751593Ab1GTTLA (ORCPT
+	id S1752102Ab1GTTL4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 15:11:56 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33398 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751868Ab1GTTLz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 15:11:00 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Date: Wed, 20 Jul 2011 21:10:43 +0200
-Message-Id: <1311189043-23175-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <alpine.LFD.2.02.1107200153070.2702@ionos>
-References: <alpine.LFD.2.02.1107200153070.2702@ionos>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-Subject: [PATCH] Fix build failure for modular ext3/4 builds
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on metis.ext.pengutronix.de)
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 20 Jul 2011 15:11:55 -0400
+Subject: Re: sched: fix/optimise some issues
+From: Peter Zijlstra <peterz@infradead.org>
+To: stephan.baerwolf@tu-ilmenau.de
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        ncrao@google.com
+In-Reply-To: <4E26DB41.9070002@tu-ilmenau.de>
+References: <4E26DB41.9070002@tu-ilmenau.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 20 Jul 2011 21:11:33 +0200
+Message-ID: <1311189093.29152.74.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Followup for fs-jbd-replace-bh_state-lock.patch
+On Wed, 2011-07-20 at 15:42 +0200, Stephan Bärwolf wrote:
+> "entity_key()" is only used in "__enqueue_entity()" and
+> its only function is to subtract a tasks vruntime by
+> its groups minvruntime.
+> Before this patch a rbtree enqueue-decision is done by
+> comparing two tasks in the style:
+> 
+>         "if (entity_key(cfs_rq, se) < entity_key(cfs_rq, entry))"
+> 
+> which would be
+> 
+>         "if (se->vruntime-cfs_rq->min_vruntime < entry->vruntime-cfs_rq->min_vruntime)"
+> 
+> or (if reducing cfs_rq->min_vruntime out)
+> 
+>         "if (se->vruntime < entry->vruntime)"
+> 
+> which is
+> 
+>         "if (entity_before(se, entry))"
+> 
+> So we do not need "entity_key()".
+> If "entity_before()" is inline we will also save one subtraction (only one,
+> because "entity_key(cfs_rq, se)"  was cached in "key") 
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
- include/linux/buffer_head.h |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/buffer_head.h b/include/linux/buffer_head.h
-index 7283b77..d839fba 100644
---- a/include/linux/buffer_head.h
-+++ b/include/linux/buffer_head.h
-@@ -74,7 +74,8 @@ struct buffer_head {
- 	atomic_t b_count;		/* users using this buffer_head */
- #ifdef CONFIG_PREEMPT_RT_BASE
- 	spinlock_t b_uptodate_lock;
--#if defined(CONFIG_JBD) || defined(CONFIG_JBD2)
-+#if defined(CONFIG_JBD) || defined(CONFIG_JBD_MODULE) || \
-+	defined(CONFIG_JBD2) || defined(CONFIG_JBD2_MODULE)
- 	spinlock_t b_state_lock;
- 	spinlock_t b_journal_head_lock;
- #endif
--- 
-1.7.5.4
-
+Indeed, thanks!
