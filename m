@@ -1,43 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985Ab1GTSIv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 14:08:51 -0400
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:44304 "HELO
-	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751822Ab1GTSIu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 14:08:50 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: G2n77aIVM1mVak5WyBXbAiIBCVvvO0nVzjhGgajKhc5Ut5l
- lARgRY50OCSeUOekoVkN4HPIKd4nKN5XHyRRW_vTaU_H9y_orNOVFQfpsrY3
- qpGy.9_sJmhnlTd2QK3Hz3O8dbcuy7AJJifS3cKzHjgOduTM.VPKunPCuwhI
- NPU98gf19I27hquLJg549ZU1yzh.3GWA1tbaJqWMFrF92AwO0yNN2xBambmP
- nKC76lITDtG7bFj9Qojg3k9qDIzNr_UeNK6OPfLwKoCkB3N98EbXRGVV4YSK
- 28qJXNPMTjhdZkwoxED4Qe587G0OQHN1YWTxuarHWNiznoe2HfhqZRBCEKFY
- nUEKl_eBqyAk3S9AZ2iXmbg4-
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 20 Jul 2011 13:08:46 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Mel Gorman <mgorman@suse.de>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] mm: page allocator: Initialise ZLC for first zone
- eligible for zone_reclaim
-In-Reply-To: <alpine.DEB.2.00.1107190901120.1199@router.home>
-Message-ID: <alpine.DEB.2.00.1107201307530.1472@router.home>
-References: <1310742540-22780-1-git-send-email-mgorman@suse.de> <1310742540-22780-2-git-send-email-mgorman@suse.de> <alpine.DEB.2.00.1107180951390.30392@router.home> <20110718160552.GB5349@suse.de> <alpine.DEB.2.00.1107181208050.31576@router.home>
- <20110718211325.GC5349@suse.de> <alpine.DEB.2.00.1107181651000.31576@router.home> <alpine.DEB.2.00.1107190901120.1199@router.home>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753052Ab1GTSJR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 14:09:17 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:33285 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751920Ab1GTSJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 14:09:16 -0400
+From: Richard Weinberger <richard@nod.at>
+To: Andy Lutomirski <luto@mit.edu>
+Subject: Re: [PATCH 3/3] um: Implement a x86_64 vDSO
+Date: Wed, 20 Jul 2011 20:09:11 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.37.6-0.5-desktop; KDE/4.6.5; x86_64; ; )
+Cc: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+References: <1310994456-14142-1-git-send-email-richard@nod.at> <1310994456-14142-3-git-send-email-richard@nod.at> <4E27163A.6090102@mit.edu>
+In-Reply-To: <4E27163A.6090102@mit.edu>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107202009.12279.richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hmmm... Looking at get_page_from_freelist and considering speeding that up
-in general: Could we move the whole watermark logic into the slow path?
-Only check when we refill the per cpu queues?
+Am Mittwoch 20 Juli 2011, 19:54:02 schrieb Andy Lutomirski:
+> On 07/18/2011 09:07 AM, Richard Weinberger wrote:
+> > Until now UML had no x86_64 vDSO.
+> > So glibc always used the vsyscall page for gettimeday()
+> > and friends.
+> > Calls to gettimeday() returned falsely the host time and
+> > confused some programs.
+> > 
+> > This patch adds a vDSO which turns all __vdso_* calls into
+> > a system call so that UML can trap them.
+> > 
+> > As glibc still uses the vsyscall page for static binaries this
+> > patch improves the situation only for dynamic binaries.
+> > 
+> > Signed-off-by: Richard Weinberger<richard@nod.at>
+> > 
+> > +	asm("syscall" : "=a" (ret) :
+> > +		"0" (__NR_clock_gettime), "D" (clock), "S" (ts) : "memory");
+> > +
+> 
+> The x86-64 ABI and glibc think that rcx, and r11 are clobbered.  glibc
+> also thinks that cc is clobbered.  I personally think that rdx and
+> r8-r15 ought to be clobbered under the principle that syscall should
+> look like a function call.
 
+Hmm, I thought my implementation is fine because it follows 
+arch/x86/vdso/vclock_gettime.c (Linus' tree).
+
+notrace static long vdso_fallback_gettime(long clock, struct timespec *ts)
+{
+  long ret;
+  asm("syscall" : "=a" (ret) :
+      "0" (__NR_clock_gettime),"D" (clock), "S" (ts) : "memory");
+  return ret;
+}
+
+Am I missing something or needs vdso_fallback_gettime() also some updates?
+
+> It's hard to imagine this causing a problem in a function this trivial,
+> though.
+> 
+> This applies to the other two syscall instructions as well.
+> 
+> --Andy
+> 
+> P.S.  If you really care, with the changes in tip/x86/vdso, it ought to
+> be possible for UML to trap vsyscalls as well.  This would need a change
+> to do_emulate_vsyscall to honor TIF_SYSCALL_EMU with intelligent
+> semantics.  I know nothing about ptrace, so I'm not volunteering :)
+
+Ok, I'll have at look at it.
+
+Thanks,
+//richard
