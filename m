@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632Ab1GTARp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 20:17:45 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:48707 "EHLO e4.ny.us.ibm.com"
+	id S1752687Ab1GTASh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 20:18:37 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:48875 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752377Ab1GTARn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 20:17:43 -0400
-Date: Tue, 19 Jul 2011 17:17:38 -0700
+	id S1752377Ab1GTASd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 20:18:33 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,74 +13,114 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, greearb@candelatech.com, edt@aei.ca
-Subject: [PATCH rcu/urgent 0/6] Fixes for RCU/scheduler/irq-threads
- trainwreck
-Message-ID: <20110720001738.GA16369@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        patches@linaro.org, greearb@candelatech.com, edt@aei.ca,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/urgent 2/7] rcu: Fix RCU_BOOST race handling current->rcu_read_unlock_special
+Date: Tue, 19 Jul 2011 17:18:18 -0700
+Message-Id: <1311121103-16978-2-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.3.2
+In-Reply-To: <20110720001738.GA16369@linux.vnet.ibm.com>
+References: <20110720001738.GA16369@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+From: Paul E. McKenney <paul.mckenney@linaro.org>
 
-This patch set contains fixes for a trainwreck involving RCU, the
-scheduler, and threaded interrupts.  This trainwreck involved RCU failing
-to properly protect one of its bit fields, use of RCU by the scheduler
-from portions of irq_exit() where in_irq() returns false, uses of the
-scheduler by RCU colliding with uses of RCU by the scheduler, threaded
-interrupts exercising the problematic portions of irq_exit() more heavily,
-and so on.  The patches are as follows:
+The RCU_BOOST commits for TREE_PREEMPT_RCU introduced an other-task
+write to a new RCU_READ_UNLOCK_BOOSTED bit in the task_struct structure's
+->rcu_read_unlock_special field, but, as noted by Steven Rostedt, without
+correctly synchronizing all accesses to ->rcu_read_unlock_special.
+This could result in bits in ->rcu_read_unlock_special being spuriously
+set and cleared due to conflicting accesses, which in turn could result
+in deadlocks between the rcu_node structure's ->lock and the scheduler's
+rq and pi locks.  These deadlocks would result from RCU incorrectly
+believing that the just-ended RCU read-side critical section had been
+preempted and/or boosted.  If that RCU read-side critical section was
+executed with either rq or pi locks held, RCU's ensuing (incorrect)
+calls to the scheduler would cause the scheduler to attempt to once
+again acquire the rq and pi locks, resulting in deadlock.  More complex
+deadlock cycles are also possible, involving multiple rq and pi locks
+as well as locks from multiple rcu_node structures.
 
-1.	Properly protect current->rcu_read_unlock_special().
-	Lack of protection was causing RCU to recurse on itself, which
-	in turn resulted in deadlocks involving RCU and the scheduler.
-	This affects only RCU_BOOST=y configurations.
-2.	Streamline code produced by __rcu_read_unlock().  This one is
-	an innocent bystander that is being carried due to conflicts
-	with other patches.  (A later version will likely merge it
-	with #3 below.)
-3.	Make __rcu_read_unlock() delay counting the per-task
-	->rcu_read_lock_nesting variable to zero until all cleanup for the
-	just-ended RCU read-side critical section has completed.  This
-	prevents a number of other cases that could result in deadlock
-	due to self recursion.	This affects only TREE_PREEMPT_RCU=y
-	configurations.
-4.	Make scheduler_ipi() correctly identify itself as being
-	in_irq() when it needs to do anything that might involve RCU,
-	thus enabling RCU to avoid yet another class of potential
-	self-recursions and deadlocks.	This affects PREEMPT_RCU=y
-	configurations.
-5.	Make irq_exit() inform RCU when it is invoking the scheduler
-	in situations where in_irq() would return false, thus
-	allowing RCU to correctly avoid self-recursion.  This affects
-	TREE_PREEMPT_RCU=y configurations.
-6.	Make __lock_task_sighand() execute the entire RCU read-side
-	critical section with irqs disabled.  (An experimental patch at
-	http://marc.info/?l=linux-kernel&m=131110647222185 might possibly
-	make it legal to have an RCU read-side critical section where
-	the rcu_read_unlock() is executed with interrupts disabled,
-	but where some protion of the RCU read-side critical section
-	was preemptible.)  This affects TREE_PREEMPT_RCU=y configurations.
+This commit fixes synchronization by creating ->rcu_boosted field in
+task_struct that is accessed and modified only when holding the ->lock
+in the rcu_node structure on which the task is queued (on that rcu_node
+structure's ->blkd_tasks list).  This results in tasks accessing only
+their own current->rcu_read_unlock_special fields, making unsynchronized
+access once again legal, and keeping the rcu_read_unlock() fastpath free
+of atomic instructions and memory barriers.
 
-TINY_PREEMPT_RCU will also need a few of these changes, but in the
-meantime this patch stack helps organize things better for testing.
-These are also available from the following subject-to-rebase git branch:
+The reason that the rcu_read_unlock() fastpath does not need to access
+the new current->rcu_boosted field is that this new field cannot
+be non-zero unless the RCU_READ_UNLOCK_BLOCKED bit is set in the
+current->rcu_read_unlock_special field.  Therefore, rcu_read_unlock()
+need only test current->rcu_read_unlock_special: if that is zero, then
+current->rcu_boosted must also be zero.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/urgent
+This bug does not affect TINY_PREEMPT_RCU because this implementation
+of RCU accesses current->rcu_read_unlock_special with irqs disabled,
+thus preventing races on the !SMP systems that TINY_PREEMPT_RCU runs on.
 
-							Thanx, Paul
+Maybe-reported-by: Dave Jones <davej@redhat.com>
+Maybe-reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Reported-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/linux/sched.h   |    3 +++
+ kernel/rcutree_plugin.h |    8 ++++++--
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
-------------------------------------------------------------------------
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 496770a..76676a4 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1254,6 +1254,9 @@ struct task_struct {
+ #ifdef CONFIG_PREEMPT_RCU
+ 	int rcu_read_lock_nesting;
+ 	char rcu_read_unlock_special;
++#if defined(CONFIG_RCU_BOOST) && defined(CONFIG_TREE_PREEMPT_RCU)
++	int rcu_boosted;
++#endif /* #if defined(CONFIG_RCU_BOOST) && defined(CONFIG_TREE_PREEMPT_RCU) */
+ 	struct list_head rcu_node_entry;
+ #endif /* #ifdef CONFIG_PREEMPT_RCU */
+ #ifdef CONFIG_TREE_PREEMPT_RCU
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 94a674e..82b3c58 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -342,6 +342,11 @@ static void rcu_read_unlock_special(struct task_struct *t)
+ #ifdef CONFIG_RCU_BOOST
+ 		if (&t->rcu_node_entry == rnp->boost_tasks)
+ 			rnp->boost_tasks = np;
++		/* Snapshot and clear ->rcu_boosted with rcu_node lock held. */
++		if (t->rcu_boosted) {
++			special |= RCU_READ_UNLOCK_BOOSTED;
++			t->rcu_boosted = 0;
++		}
+ #endif /* #ifdef CONFIG_RCU_BOOST */
+ 		t->rcu_blocked_node = NULL;
+ 
+@@ -358,7 +363,6 @@ static void rcu_read_unlock_special(struct task_struct *t)
+ #ifdef CONFIG_RCU_BOOST
+ 		/* Unboost if we were boosted. */
+ 		if (special & RCU_READ_UNLOCK_BOOSTED) {
+-			t->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_BOOSTED;
+ 			rt_mutex_unlock(t->rcu_boost_mutex);
+ 			t->rcu_boost_mutex = NULL;
+ 		}
+@@ -1175,7 +1179,7 @@ static int rcu_boost(struct rcu_node *rnp)
+ 	t = container_of(tb, struct task_struct, rcu_node_entry);
+ 	rt_mutex_init_proxy_locked(&mtx, t);
+ 	t->rcu_boost_mutex = &mtx;
+-	t->rcu_read_unlock_special |= RCU_READ_UNLOCK_BOOSTED;
++	t->rcu_boosted = 1;
+ 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ 	rt_mutex_lock(&mtx);  /* Side effect: boosts task t's priority. */
+ 	rt_mutex_unlock(&mtx);  /* Keep lockdep happy. */
+-- 
+1.7.3.2
 
- b/include/linux/sched.h   |    3 +++
- b/kernel/rcutree_plugin.h |    3 ++-
- b/kernel/sched.c          |   44 ++++++++++++++++++++++++++++++++++++++------
- b/kernel/signal.c         |   16 +++++++++++-----
- b/kernel/softirq.c        |   12 ++++++++++--
- kernel/rcutree_plugin.h   |   45 ++++++++++++++++++++++++++++++++-------------
- 6 files changed, 96 insertions(+), 27 deletions(-)
