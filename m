@@ -1,78 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752592Ab1GTSHE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 14:07:04 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:5773 "EHLO
-	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751671Ab1GTSHB convert rfc822-to-8bit (ORCPT
+	id S1752942Ab1GTSHY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 14:07:24 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:52232 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751697Ab1GTSHC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 14:07:01 -0400
-X-SpamScore: -20
-X-BigFish: VPS-20(zz9371M1432N98dK14ffOzz1202hzz8275ch8275bhz2ei2a8h668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:198.70.193.64;KIP:(null);UIP:(null);IPVD:NLI;H:avexcashub1.qlogic.com;RD:avexcashub2.qlogic.com;EFVD:NLI
-From: Anirban Chakraborty <anirban.chakraborty@qlogic.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux Driver <Linux-Driver@qlogic.com>,
-        David Lamparter <equinox@diac24.net>
-Date: Wed, 20 Jul 2011 11:10:18 -0700
-Subject: Re: linux-next: Tree for July 20 (qlcnic)
-Thread-Topic: linux-next: Tree for July 20 (qlcnic)
-Thread-Index: AcxHB89dR5JsjPvAR/G9eq299hBYpQ==
-Message-ID: <0E5EAE44-204C-4F4D-926C-F4D973B0CDB1@qlogic.com>
-References: <20110720180041.5774ca335e6697c17374dca5@canb.auug.org.au>
- <20110720091945.39f0a8a5.rdunlap@xenotime.net>
-In-Reply-To: <20110720091945.39f0a8a5.rdunlap@xenotime.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 20 Jul 2011 14:07:02 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:to:cc:subject:message-id:references:
+	mime-version:content-type:content-disposition:in-reply-to:user-agent:x-system-of-record;
+	b=ETgDzFfkrARAZd7Eri8B8kjoAdcaHuy8GFkbE3/yYY1qxmW/j3w7uEYqUl3zpagyV
+	0tSuzvJGbeLyCitZwIvgQ==
+Date: Wed, 20 Jul 2011 11:06:55 -0700
+From: Todd Poynor <toddpoynor@google.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Crash in schedule path after worker thread dies
+Message-ID: <20110720180655.GA27115@google.com>
+References: <20110720000738.GA18774@google.com>
+ <20110720170717.GF9924@mtj.dyndns.org>
 MIME-Version: 1.0
-X-OriginatorOrg: qlogic.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110720170717.GF9924@mtj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Tejun,
 
-On Jul 20, 2011, at 9:19 AM, Randy Dunlap wrote:
-
-> On Wed, 20 Jul 2011 18:00:41 +1000 Stephen Rothwell wrote:
+On Wed, Jul 20, 2011 at 07:07:17PM +0200, Tejun Heo wrote:
+> On Tue, Jul 19, 2011 at 05:07:38PM -0700, Todd Poynor wrote:
+> > After a worker thread died due to a bug in a work function, a NULL
+> > dereference was seen when schedule calls wq_worker_sleeping calls
+> > kthread_data:
+> > 
+> >           return to_kthread(task)->data;
+> > 
+> > mm_release has apparently already set the task's vfork_done = NULL,
+> > causing to_kthread to return a bad address (on 3.0-rc7 on ARM).
+> > [...]
 > 
->> Hi all,
+> Hmmm... the scheduler code is oopsing after the worker already oopsed,
+> escalating the failure mode, right?  Avoiding the scheduler oops can
+> be done simply by clearing PF_WQ_WORKER in do_exit(); however, it
+> would still leave workqueue code assuming the worker is busy running
+> and may lead to workqueue stall.
+
+Right, the worker oops took out that thread (don't know if
+workqueue processing would have gracefully recovered if not for the
+scheduler oops), but the scheduler oops was catastrophic.
+
+> Cleaning that up would require more code but at that point it isn't
+> really clear what we would be buying with the added complexity.
+> Hmmm... maybe it would still be worthwhile to at least keep scheduler
+> working.  Something like this?
 > 
-> When CONFIG_VLAN_8021Q is not enabled:
-> 
-> drivers/net/qlcnic/qlcnic_main.c:4207: error: 'struct net_device' has no member named 'vlgrp'
+> diff --git a/kernel/exit.c b/kernel/exit.c
+> index 6c7fbbe..412ead0 100644
+> --- a/kernel/exit.c
+> +++ b/kernel/exit.c
+> @@ -915,6 +915,7 @@ NORET_TYPE void do_exit(long code)
+>  	 * kernel address.
+>  	 */
+>  	set_fs(USER_DS);
+> +	tsk->flags &= ~PF_WQ_WORKER;
+>  
+>  	ptrace_event(PTRACE_EVENT_EXIT, code);
 
-This is caused by the following commit:
+Sounds good to me, thanks!
 
-commit 69ecca86da4890c13a5e29c51b4ac76a1a8a62c9                                                      
-Refs: v3.0-rc7-1265-g69ecca8                                                                         
-Author:     David Lamparter <equinox@diac24.net>                                                     
-AuthorDate: Sun Jul 17 08:53:12 2011 +0000                                                           
-Commit:     David S. Miller <davem@davemloft.net>                                                    
-CommitDate: Sun Jul 17 12:33:22 2011 -0700                                                           
-                                                                                                     
-    net: vlan, qlcnic: make vlan_find_dev private                                                    
-                                                                                                     
-    there is only one user of vlan_find_dev outside of the actual vlan code:                         
-    qlcnic uses it to iterate over some VLANs it knows.                                              
-                                                                                                     
-    let's just make vlan_find_dev private to the VLAN code and have the                              
-    iteration in qlcnic be a bit more direct. (a few rcu dereferences less                           
-    too)                                                                                             
-                                                                                                     
-    Signed-off-by: David Lamparter <equinox@diac24.net>                                              
-    Cc: Patrick McHardy <kaber@trash.net>                                                            
-    Cc: Amit Kumar Salecha <amit.salecha@qlogic.com>                                                 
-    Cc: Anirban Chakraborty <anirban.chakraborty@qlogic.com>                                         
-    Cc: linux-driver@qlogic.com                                                                      
-    Signed-off-by: David S. Miller <davem@davemloft.net>                                             
+Todd
 
-
+>  
+> -- 
+> tejun
