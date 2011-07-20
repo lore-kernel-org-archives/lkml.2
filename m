@@ -1,70 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752430Ab1GTOcl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 10:32:41 -0400
-Received: from relay.parallels.com ([195.214.232.42]:43812 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752285Ab1GTOcj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 10:32:39 -0400
-Message-ID: <4E26E705.8050704@parallels.com>
-Date: Wed, 20 Jul 2011 18:32:37 +0400
-From: Konstantin Khlebnikov <khlebnikov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.18) Gecko/20110416 SeaMonkey/2.0.13
+	id S1752250Ab1GTObx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 10:31:53 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:43617 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751866Ab1GTOab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 10:30:31 -0400
+From: <pavan_savoy@ti.com>
+To: <greg@kroah.com>, <linux-kernel@vger.kernel.org>
+CC: pavan_savoy@sify.com, Pavan Savoy <pavan_savoy@ti.com>
+Subject: [PATCH 2/4] drivers:misc:ti-st: platform hooks for chip states
+Date: Wed, 20 Jul 2011 09:30:18 -0500
+Message-ID: <1311172225-17678-3-git-send-email-pavan_savoy@ti.com>
+X-Mailer: git-send-email 1.5.6.3
+In-Reply-To: <1311172225-17678-2-git-send-email-pavan_savoy@ti.com>
+References: <1311172225-17678-1-git-send-email-pavan_savoy@ti.com>
+ <1311172225-17678-2-git-send-email-pavan_savoy@ti.com>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matt Mackall <mpm@selenic.com>
-Subject: Re: [PATCH] mm-slab: allocate kmem_cache with __GFP_REPEAT
-References: <20110720121612.28888.38970.stgit@localhost6> <alpine.DEB.2.00.1107201611010.3528@tiger> <4E26D7EA.3000902@parallels.com> <alpine.DEB.2.00.1107201638520.4921@tiger> <alpine.DEB.2.00.1107200852590.32737@router.home> <20110720142018.GL5349@suse.de>
-In-Reply-To: <20110720142018.GL5349@suse.de>
-Content-Type: text/plain; charset="ISO-8859-15"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mel Gorman wrote:
-> On Wed, Jul 20, 2011 at 08:54:10AM -0500, Christoph Lameter wrote:
->> On Wed, 20 Jul 2011, Pekka Enberg wrote:
->>
->>> On Wed, 20 Jul 2011, Konstantin Khlebnikov wrote:
->>>>> The changelog isn't that convincing, really. This is kmem_cache_create()
->>>>> so I'm surprised we'd ever get NULL here in practice. Does this fix some
->>>>> problem you're seeing? If this is really an issue, I'd blame the page
->>>>> allocator as GFP_KERNEL should just work.
->>>>
->>>> nf_conntrack creates separate slab-cache for each net-namespace,
->>>> this patch of course not eliminates the chance of failure, but makes it more
->>>> acceptable.
->>>
->>> I'm still surprised you are seeing failures. mm/slab.c hasn't changed
->>> significantly in a long time. Why hasn't anyone reported this before? I'd
->>> still be inclined to shift the blame to the page allocator... Mel, Christoph?
->>
->> There was a lot of recent fiddling with the reclaim logic. Maybe some of
->> those changes caused the problem?
->>
->
-> It's more likely that creating new slabs while under memory pressure
-> significant enough to fail an order-4 allocation is a situation that is
-> rarely tested.
->
-> What kernel version did this failure occur on? What was the system doing
-> at the time of failure? Can the page allocation failure message be
-> posted?
->
+From: Pavan Savoy <pavan_savoy@ti.com>
 
-I catch this on our rhel6-openvz kernel, and yes it very patchy,
-but I don't see any reasons why this cannot be reproduced on mainline kernel.
+Certain platform specific or Host-WiLink Interface specific actions would be
+required to be taken when the chip is being enabled and after the chip is
+disabled such as configuration of the mux modes for the GPIO of host connected
+to the nshutdown of the chip or relinquishing UART after the chip is disabled.
 
-there was abount ten containers with random stuff, node already do intensive swapout but still alive,
-in this situation starting new containers sometimes (1 per 1000) fails due to kmem_cache_create failures in nf_conntrack,
-there no other messages except:
-Unable to create nf_conn slab cache
-and some
-nf_conntrack: falling back to vmalloc.
-(it try allocates huge hash table and do it via vmalloc if kmalloc fails)
+Similar actions can also be taken when the chip is in deep sleep or when the
+chip is awake. Performance enhancements such as configuring the host to run
+faster when chip is awake and slower when chip is asleep can also be made
+here.
+
+Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+---
+ drivers/misc/ti-st/st_kim.c  |   12 ++++++++++++
+ drivers/misc/ti-st/st_ll.c   |   19 +++++++++++++++++++
+ include/linux/ti_wilink_st.h |   27 ++++++++++++++++++++++++++-
+ 3 files changed, 57 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/misc/ti-st/st_kim.c b/drivers/misc/ti-st/st_kim.c
+index 38fd2f0..6884dd1 100644
+--- a/drivers/misc/ti-st/st_kim.c
++++ b/drivers/misc/ti-st/st_kim.c
+@@ -434,11 +434,17 @@ long st_kim_start(void *kim_data)
+ {
+ 	long err = 0;
+ 	long retry = POR_RETRY_COUNT;
++	struct ti_st_plat_data	*pdata;
+ 	struct kim_data_s	*kim_gdata = (struct kim_data_s *)kim_data;
+ 
+ 	pr_info(" %s", __func__);
++	pdata = kim_gdata->kim_pdev->dev.platform_data;
+ 
+ 	do {
++		/* platform specific enabling code here */
++		if (pdata->chip_enable)
++			pdata->chip_enable(kim_gdata);
++
+ 		/* Configure BT nShutdown to HIGH state */
+ 		gpio_set_value(kim_gdata->nshutdown, GPIO_LOW);
+ 		mdelay(5);	/* FIXME: a proper toggle */
+@@ -489,6 +495,8 @@ long st_kim_stop(void *kim_data)
+ {
+ 	long err = 0;
+ 	struct kim_data_s	*kim_gdata = (struct kim_data_s *)kim_data;
++	struct ti_st_plat_data	*pdata =
++		kim_gdata->kim_pdev->dev.platform_data;
+ 
+ 	INIT_COMPLETION(kim_gdata->ldisc_installed);
+ 
+@@ -515,6 +523,10 @@ long st_kim_stop(void *kim_data)
+ 	gpio_set_value(kim_gdata->nshutdown, GPIO_HIGH);
+ 	mdelay(1);
+ 	gpio_set_value(kim_gdata->nshutdown, GPIO_LOW);
++
++	/* platform specific disable */
++	if (pdata->chip_disable)
++		pdata->chip_disable(kim_gdata);
+ 	return err;
+ }
+ 
+diff --git a/drivers/misc/ti-st/st_ll.c b/drivers/misc/ti-st/st_ll.c
+index 3f24951..1ff460a 100644
+--- a/drivers/misc/ti-st/st_ll.c
++++ b/drivers/misc/ti-st/st_ll.c
+@@ -22,6 +22,7 @@
+ #define pr_fmt(fmt) "(stll) :" fmt
+ #include <linux/skbuff.h>
+ #include <linux/module.h>
++#include <linux/platform_device.h>
+ #include <linux/ti_wilink_st.h>
+ 
+ /**********************************************************************/
+@@ -37,6 +38,9 @@ static void send_ll_cmd(struct st_data_s *st_data,
+ 
+ static void ll_device_want_to_sleep(struct st_data_s *st_data)
+ {
++	struct kim_data_s	*kim_data;
++	struct ti_st_plat_data	*pdata;
++
+ 	pr_debug("%s", __func__);
+ 	/* sanity check */
+ 	if (st_data->ll_state != ST_LL_AWAKE)
+@@ -46,10 +50,19 @@ static void ll_device_want_to_sleep(struct st_data_s *st_data)
+ 	send_ll_cmd(st_data, LL_SLEEP_ACK);
+ 	/* update state */
+ 	st_data->ll_state = ST_LL_ASLEEP;
++
++	/* communicate to platform about chip asleep */
++	kim_data = st_data->kim_data;
++	pdata = kim_data->kim_pdev->dev.platform_data;
++	if (pdata->chip_asleep)
++		pdata->chip_asleep(NULL);
+ }
+ 
+ static void ll_device_want_to_wakeup(struct st_data_s *st_data)
+ {
++	struct kim_data_s	*kim_data;
++	struct ti_st_plat_data	*pdata;
++
+ 	/* diff actions in diff states */
+ 	switch (st_data->ll_state) {
+ 	case ST_LL_ASLEEP:
+@@ -70,6 +83,12 @@ static void ll_device_want_to_wakeup(struct st_data_s *st_data)
+ 	}
+ 	/* update state */
+ 	st_data->ll_state = ST_LL_AWAKE;
++
++	/* communicate to platform about chip wakeup */
++	kim_data = st_data->kim_data;
++	pdata = kim_data->kim_pdev->dev.platform_data;
++	if (pdata->chip_asleep)
++		pdata->chip_awake(NULL);
+ }
+ 
+ /**********************************************************************/
+diff --git a/include/linux/ti_wilink_st.h b/include/linux/ti_wilink_st.h
+index b004e55..2ef4385 100644
+--- a/include/linux/ti_wilink_st.h
++++ b/include/linux/ti_wilink_st.h
+@@ -410,7 +410,28 @@ struct gps_event_hdr {
+ 	u16 plen;
+ } __attribute__ ((packed));
+ 
+-/* platform data */
++/**
++ * struct ti_st_plat_data - platform data shared between ST driver and
++ *	platform specific board file which adds the ST device.
++ * @nshutdown_gpio: Host's GPIO line to which chip's BT_EN is connected.
++ * @dev_name: The UART/TTY name to which chip is interfaced. (eg: /dev/ttyS1)
++ * @flow_cntrl: Should always be 1, since UART's CTS/RTS is used for PM
++ *	purposes.
++ * @baud_rate: The baud rate supported by the Host UART controller, this will
++ *	be shared across with the chip via a HCI VS command from User-Space Init
++ *	Mgr application.
++ * @suspend:
++ * @resume: legacy PM routines hooked to platform specific board file, so as
++ *	to take chip-host interface specific action.
++ * @chip_enable:
++ * @chip_disable: Platform/Interface specific mux mode setting, GPIO
++ *	configuring, Host side PM disabling etc.. can be done here.
++ * @chip_asleep:
++ * @chip_awake: Chip specific deep sleep states is communicated to Host
++ *	specific board-xx.c to take actions such as cut UART clocks when chip
++ *	asleep or run host faster when chip awake etc..
++ *
++ */
+ struct ti_st_plat_data {
+ 	long nshutdown_gpio;
+ 	unsigned char dev_name[UART_DEV_NAME_LEN]; /* uart name */
+@@ -418,6 +439,10 @@ struct ti_st_plat_data {
+ 	unsigned long baud_rate;
+ 	int (*suspend)(struct platform_device *, pm_message_t);
+ 	int (*resume)(struct platform_device *);
++	int (*chip_enable) (struct kim_data_s *);
++	int (*chip_disable) (struct kim_data_s *);
++	int (*chip_asleep) (struct kim_data_s *);
++	int (*chip_awake) (struct kim_data_s *);
+ };
+ 
+ #endif /* TI_WILINK_ST_H */
+-- 
+1.7.4.1
+
