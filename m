@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752009Ab1GTNkd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 09:40:33 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:37542 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750979Ab1GTNjW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751837Ab1GTNjW (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 20 Jul 2011 09:39:22 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:35104 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750979Ab1GTNjU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 09:39:20 -0400
 From: djkurtz@chromium.org
 To: dmitry.torokhov@gmail.com, rydberg@euromail.se,
         chase.douglas@canonical.com, rubini@cvml.unipv.it
 Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         derek.foreman@collabora.co.uk, daniel.stone@collabora.co.uk,
         olofj@chromium.org, Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 3/9 v2] Input: synaptics - refactor initialization of abs position axes
-Date: Wed, 20 Jul 2011 21:39:00 +0800
-Message-Id: <1311169146-20066-4-git-send-email-djkurtz@chromium.org>
+Subject: [PATCH 2/9 v2] Input: synaptics - refactor agm packet parsing
+Date: Wed, 20 Jul 2011 21:38:59 +0800
+Message-Id: <1311169146-20066-3-git-send-email-djkurtz@chromium.org>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1311169146-20066-1-git-send-email-djkurtz@chromium.org>
 References: <1311169146-20066-1-git-send-email-djkurtz@chromium.org>
@@ -26,85 +26,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Daniel Kurtz <djkurtz@chromium.org>
 
+When a Synaptics touchpad is in "AGM" mode, and multiple fingers are
+detected, the touchpad sends alternating "Advanced Gesture Mode" (AGM) and
+"Simple Gesture Mode" (SGM) packets.
+  The AGM packets have w=2, and contain reduced resolution finger data.
+  The SGM packets have w={0,1} and contain full resolution finger data.
+
+Refactor the parsing of agm packets to its own function, and rename the
+synaptics_data.mt field to .agm to indicate that it contains the contents of
+the last agm packet.
+
 Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 ---
- drivers/input/mouse/synaptics.c |   44 +++++++++++++++++---------------------
- 1 files changed, 20 insertions(+), 24 deletions(-)
+ drivers/input/mouse/synaptics.c |   19 ++++++++++++++-----
+ drivers/input/mouse/synaptics.h |    6 +++++-
+ 2 files changed, 19 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-index e966894..30d05fd 100644
+index 297e88f..e966894 100644
 --- a/drivers/input/mouse/synaptics.c
 +++ b/drivers/input/mouse/synaptics.c
-@@ -712,39 +712,38 @@ static psmouse_ret_t synaptics_process_byte(struct psmouse *psmouse)
- /*****************************************************************************
-  *	Driver initialization/cleanup functions
+@@ -419,6 +419,17 @@ static void synaptics_pt_create(struct psmouse *psmouse)
+  *	Functions to interpret the absolute mode packets
   ****************************************************************************/
-+static void set_abs_position_params(struct input_dev *dev,
-+				    struct synaptics_data *priv, int x_code,
-+				    int y_code)
+ 
++static void synaptics_parse_agm(const unsigned char buf[],
++				struct synaptics_data *priv)
 +{
-+	int x_min = priv->x_min ?: XMIN_NOMINAL;
-+	int x_max = priv->x_max ?: XMAX_NOMINAL;
-+	int y_min = priv->y_min ?: YMIN_NOMINAL;
-+	int y_max = priv->y_max ?: YMAX_NOMINAL;
-+	int fuzz = SYN_CAP_REDUCED_FILTERING(priv->ext_cap_0c) ?
-+			SYN_REDUCED_FILTER_FUZZ : 0;
++	struct synaptics_hw_state *agm = &priv->agm;
 +
-+	input_set_abs_params(dev, x_code, x_min, x_max, fuzz, 0);
-+	input_set_abs_params(dev, y_code, y_min, y_max, fuzz, 0);
-+	input_abs_set_res(dev, x_code, priv->x_res);
-+	input_abs_set_res(dev, y_code, priv->y_res);
++	/* Gesture packet: (x, y, z) at half resolution */
++	agm->x = (((buf[4] & 0x0f) << 8) | buf[1]) << 1;
++	agm->y = (((buf[4] & 0xf0) << 4) | buf[2]) << 1;
++	agm->z = ((buf[3] & 0x30) | (buf[5] & 0x0f)) << 1;
 +}
 +
- static void set_input_params(struct input_dev *dev, struct synaptics_data *priv)
- {
- 	int i;
--	int fuzz = SYN_CAP_REDUCED_FILTERING(priv->ext_cap_0c) ?
--			SYN_REDUCED_FILTER_FUZZ : 0;
+ static int synaptics_parse_hw_state(const unsigned char buf[],
+ 				    struct synaptics_data *priv,
+ 				    struct synaptics_hw_state *hw)
+@@ -453,10 +464,7 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
+ 		}
  
- 	__set_bit(INPUT_PROP_POINTER, dev->propbit);
+ 		if (SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) && hw->w == 2) {
+-			/* Gesture packet: (x, y, z) at half resolution */
+-			priv->mt.x = (((buf[4] & 0x0f) << 8) | buf[1]) << 1;
+-			priv->mt.y = (((buf[4] & 0xf0) << 4) | buf[2]) << 1;
+-			priv->mt.z = ((buf[3] & 0x30) | (buf[5] & 0x0f)) << 1;
++			synaptics_parse_agm(buf, priv);
+ 			return 1;
+ 		}
  
- 	__set_bit(EV_ABS, dev->evbit);
--	input_set_abs_params(dev, ABS_X,
--			     priv->x_min ?: XMIN_NOMINAL,
--			     priv->x_max ?: XMAX_NOMINAL,
--			     fuzz, 0);
--	input_set_abs_params(dev, ABS_Y,
--			     priv->y_min ?: YMIN_NOMINAL,
--			     priv->y_max ?: YMAX_NOMINAL,
--			     fuzz, 0);
-+	set_abs_position_params(dev, priv, ABS_X, ABS_Y);
- 	input_set_abs_params(dev, ABS_PRESSURE, 0, 255, 0, 0);
- 
- 	if (SYN_CAP_ADV_GESTURE(priv->ext_cap_0c)) {
- 		__set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
- 		input_mt_init_slots(dev, 2);
--		input_set_abs_params(dev, ABS_MT_POSITION_X,
--				     priv->x_min ?: XMIN_NOMINAL,
--				     priv->x_max ?: XMAX_NOMINAL,
--				     fuzz, 0);
--		input_set_abs_params(dev, ABS_MT_POSITION_Y,
--				     priv->y_min ?: YMIN_NOMINAL,
--				     priv->y_max ?: YMAX_NOMINAL,
--				     fuzz, 0);
--
--		input_abs_set_res(dev, ABS_MT_POSITION_X, priv->x_res);
--		input_abs_set_res(dev, ABS_MT_POSITION_Y, priv->y_res);
-+		set_abs_position_params(dev, priv, ABS_MT_POSITION_X,
-+					ABS_MT_POSITION_Y);
+@@ -595,7 +603,8 @@ static void synaptics_process_packet(struct psmouse *psmouse)
  	}
  
- 	if (SYN_CAP_PALMDETECT(priv->capabilities))
-@@ -777,9 +776,6 @@ static void set_input_params(struct input_dev *dev, struct synaptics_data *priv)
- 	__clear_bit(REL_X, dev->relbit);
- 	__clear_bit(REL_Y, dev->relbit);
+ 	if (SYN_CAP_ADV_GESTURE(priv->ext_cap_0c))
+-		synaptics_report_semi_mt_data(dev, &hw, &priv->mt, num_fingers);
++		synaptics_report_semi_mt_data(dev, &hw, &priv->agm,
++					      num_fingers);
  
--	input_abs_set_res(dev, ABS_X, priv->x_res);
--	input_abs_set_res(dev, ABS_Y, priv->y_res);
--
- 	if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
- 		__set_bit(INPUT_PROP_BUTTONPAD, dev->propbit);
- 		/* Clickpads report only left button */
+ 	/* Post events
+ 	 * BTN_TOUCH has to be first as mousedev relies on it when doing
+diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
+index a4394e1..da8e969 100644
+--- a/drivers/input/mouse/synaptics.h
++++ b/drivers/input/mouse/synaptics.h
+@@ -146,7 +146,11 @@ struct synaptics_data {
+ 
+ 	struct serio *pt_port;			/* Pass-through serio port */
+ 
+-	struct synaptics_hw_state mt;		/* current gesture packet */
++	/*
++	 * Last received Advanced Gesture Mode (AGM) packet. An AGM packet
++	 * contains position data for a second contact, at half resolution.
++	 */
++	struct synaptics_hw_state agm;
+ };
+ 
+ void synaptics_module_init(void);
 -- 
 1.7.3.1
 
