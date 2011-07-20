@@ -1,48 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808Ab1GTD2o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 23:28:44 -0400
-Received: from smtp2.Stanford.EDU ([171.67.219.82]:42567 "EHLO
-	smtp.stanford.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752613Ab1GTD2n (ORCPT
+	id S1752824Ab1GTDcN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 23:32:13 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:50631 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752613Ab1GTDcM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 23:28:43 -0400
-X-Greylist: delayed 353 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Jul 2011 23:28:43 EDT
-Message-ID: <4E2649FE.7090308@localhost>
-Date: Tue, 19 Jul 2011 20:22:38 -0700
-From: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.10
-MIME-Version: 1.0
-To: frank.rowand@am.sony.com
-CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Carsten Emde <ce@ceag.ch>, Clark Williams <williams@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Kumar Gala <galak@gate.crashing.org>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: Re: [ANNOUNCE] 3.0-rc7-rt0
-References: <alpine.LFD.2.02.1107200153070.2702@ionos> <4E264203.1030802@am.sony.com>
-In-Reply-To: <4E264203.1030802@am.sony.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 19 Jul 2011 23:32:12 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19kgEAG4aRkQKTmjPL9ABuRKWpb/eUM/7mV5dNviH
+	+omZ5OcogTZgwH
+Subject: Re: [PATCH 1/2] sched: Fix "divide error: 0000" in
+ find_busiest_group
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Terry Loftin <terry.loftin@hp.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Bob Montgomery <bob.montgomery@hp.com>
+In-Reply-To: <1311128991.5345.0.camel@twins>
+References: <4E25F006.2010205@hp.com>  <1311110224.2617.1.camel@laptop>
+	 <1311128780.7789.12.camel@marge.simson.net> <1311128991.5345.0.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 20 Jul 2011 05:32:08 +0200
+Message-ID: <1311132728.7789.29.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2011 07:48 PM, Frank Rowand wrote:
-> On 07/19/11 17:37, Thomas Gleixner wrote:
->> Dear RT Folks,
->>
->> I'm pleased to announce the first drop of the 3.0-rc7 based RT
->> patch.
->
-> I'll start the chorus:  THANK YOU for all the work you have put
-> into this!!!
->
-> I'll dig around for a suitable ARM platform and should be able
-> to start doing some testing soon.
+On Wed, 2011-07-20 at 04:29 +0200, Peter Zijlstra wrote:
+> On Wed, 2011-07-20 at 04:26 +0200, Mike Galbraith wrote:
+> > On Tue, 2011-07-19 at 23:17 +0200, Peter Zijlstra wrote:
+> > > On Tue, 2011-07-19 at 14:58 -0600, Terry Loftin wrote:
+> > > > Correct the protection expression in update_cpu_power() to avoid setting
+> > > > rq->cpu_power to zero.
+> > > 
+> > > Firstly you fail to mention what kernel this is again, secondly this
+> > > should never happen in the first place, so this fix is wrong. At best it
+> > > papers over another bug.
+> > > 
+> > > > Signed-off-by: Terry Loftin <terry.loftin@hp.com>
+> > > > Signed-off-by: Bob Montgomery <bob.montgomery@hp.com>
+> > > > ---
+> > > > diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+> > > > index 0c26e2d..9c50020 100644
+> > > > --- a/kernel/sched_fair.c
+> > > > +++ b/kernel/sched_fair.c
+> > > > @@ -2549,7 +2549,7 @@ static void update_cpu_power(struct sched_domain *sd, int cpu)
+> > > >  	power *= scale_rt_power(cpu);
+> > > >  	power >>= SCHED_LOAD_SHIFT;
+> > > > 
+> > > > -	if (!power)
+> > > > +	if ((u32)power == 0)
+> > > >  		power = 1;
+> > > > 
+> > > >  	cpu_rq(cpu)->cpu_power = power;
+> > 
+> > I put that (and a bunch more protection+warnings) in an enterprise
+> > kernel so it would not explode, but would gather some data.  The entire
+> > world has been utterly silent, except for a gaggle of POWER7 boxen,
+> > which manage to convince scale_rt_power() to return negative values.
+> > 
+> > Turning on PRINTK_TIME made these boxen go silent.  A printk with
+> > timestamps, which doesn't happen, hides the problem.  Tilt.
+> 
+> Did those kernels contain the scale_rt_power() hunk from commit
+> aa483808516ca5cacfa0e5849691f64fec25828e? Venki thought that might cure
+> sure woes, but since we never could reproduce...
 
-Same here, THANKS!
-I'll start testing asap (i386/x86_64)...
--- Fernando
+Yeah, that commit is present.
+
+	-Mike 
+
+
