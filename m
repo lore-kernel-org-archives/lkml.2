@@ -1,127 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751654Ab1GTTjg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 15:39:36 -0400
-Received: from smtpo.poczta.interia.pl ([217.74.65.205]:11719 "EHLO
-	smtpo.poczta.interia.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178Ab1GTTje (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 15:39:34 -0400
-From: Rafal Bilski <rafalbilski@interia.pl>
-To: Dave Jones <davej@redhat.com>
-Cc: cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?b?UmFmYcWC?= Bilski <rafalbilski@interia.pl>
-Subject: [PATCH] e_powersaver: Additional checks
-Date: Wed, 20 Jul 2011 20:42:23 +0100
-Message-Id: <1311190943-6660-1-git-send-email-rafalbilski@interia.pl>
-X-Mailer: git-send-email 1.7.6
+	id S1751818Ab1GTTk2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 15:40:28 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:47944 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751464Ab1GTTk1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 15:40:27 -0400
+Date: Wed, 20 Jul 2011 21:39:25 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ben Greear <greearb@candelatech.com>, Ed Tomlinson <edt@aei.ca>,
+        linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org, edward.tomlinson@aero.bombardier.com
+Subject: Re: [PATCH rcu/urgent 0/6] Fixes for RCU/scheduler/irq-threads
+ trainwreck
+Message-ID: <20110720193925.GB7910@elte.hu>
+References: <201107192207.33813.edt@aei.ca>
+ <20110720044435.GB2400@linux.vnet.ibm.com>
+ <CA+55aFyaCY=qzFKswi2NR097KZtb5x98sba3rHJ7B0rchtzm2g@mail.gmail.com>
+ <20110720133443.GG2400@linux.vnet.ibm.com>
+ <4E270A0E.6090902@candelatech.com>
+ <20110720171532.GB2313@linux.vnet.ibm.com>
+ <20110720184413.GD17977@elte.hu>
+ <1311187978.29152.58.camel@twins>
+ <CA+55aFyuKTj3zEvWJEx4_RDzLQ+ipJ58UWFYH84nmcwGF_c4aA@mail.gmail.com>
+ <20110720192949.GM2313@linux.vnet.ibm.com>
 MIME-Version: 1.0
-X-Interia-Antivirus: OK
-X-EMID: a0771958
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110720192949.GM2313@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafał Bilski <rafalbilski@interia.pl>
 
-Some systems are using 1,2Ghz@844mV processors running at 600MHz@796mV.
-Try to detect such systems and don't touch anything on it. If CPU doesn't have
-P-States in BIOS it should run at maximum frequency.
-Allow user to bypass checks by means of two new options.
-Don't set frequency to maximum on module unloading to avoid bada boom.
-It is also possible that some processors may have incorrect values in min/max
-registers caused by error in manufacturing process. Probably it would be BIOS
-job to set them to right frequency and P-States tables would have correct
-values inside.
-Two additional sanity checks for voltage.
+* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-Signed-off-by: Rafał Bilski <rafalbilski@interia.pl>
----
- drivers/cpufreq/e_powersaver.c |   41 +++++++++++++++++++++++++++++----------
- 1 files changed, 30 insertions(+), 11 deletions(-)
+> If my guess is correct, then the minimal non-RCU_BOOST fix is #4 
+> (which drags along #3) and #6.  Which are not one-liners, but 
+> somewhat smaller:
+> 
+>  b/kernel/rcutree_plugin.h |   12 ++++++------
+>  b/kernel/softirq.c        |   12 ++++++++++--
+>  kernel/rcutree_plugin.h   |   31 +++++++++++++++++++++++++------
+>  3 files changed, 41 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/cpufreq/e_powersaver.c b/drivers/cpufreq/e_powersaver.c
-index 7883ffa..cab543b 100644
---- a/drivers/cpufreq/e_powersaver.c
-+++ b/drivers/cpufreq/e_powersaver.c
-@@ -32,6 +32,10 @@ struct eps_cpu_data {
- 
- static struct eps_cpu_data *eps_cpu[NR_CPUS];
- 
-+/* Module parameters */
-+static int freq_failsafe_off;
-+static int voltage_failsafe_off;
-+
- 
- static unsigned int eps_get(unsigned int cpu)
- {
-@@ -253,9 +257,27 @@ static int eps_cpu_init(struct cpufreq_policy *policy)
- 		return -EINVAL;
- 	if (current_voltage > 0x1f || max_voltage > 0x1f)
- 		return -EINVAL;
--	if (max_voltage < min_voltage)
-+	if (max_voltage < min_voltage
-+	    || current_voltage < min_voltage
-+	    || current_voltage > max_voltage)
- 		return -EINVAL;
- 
-+	/* Check for systems using underclocked CPU */
-+	if (!freq_failsafe_off && max_multiplier != current_multiplier) {
-+		printk(KERN_INFO "eps: Your processor is running at different "
-+			"frequency then its maximum. Aborting.\n");
-+		printk(KERN_INFO "eps: You can use freq_failsafe_off option "
-+			"to disable this check.\n");
-+		return -EINVAL;
-+	}
-+	if (!voltage_failsafe_off && max_voltage != current_voltage) {
-+		printk(KERN_INFO "eps: Your processor is running at different "
-+			"voltage then its maximum. Aborting.\n");
-+		printk(KERN_INFO "eps: You can use voltage_failsafe_off "
-+			"option to disable this check.\n");
-+		return -EINVAL;
-+	}
-+
- 	/* Calc FSB speed */
- 	fsb = cpu_khz / current_multiplier;
- 	/* Calc number of p-states supported */
-@@ -312,17 +334,7 @@ static int eps_cpu_init(struct cpufreq_policy *policy)
- static int eps_cpu_exit(struct cpufreq_policy *policy)
- {
- 	unsigned int cpu = policy->cpu;
--	struct eps_cpu_data *centaur;
--	u32 lo, hi;
--
--	if (eps_cpu[cpu] == NULL)
--		return -ENODEV;
--	centaur = eps_cpu[cpu];
- 
--	/* Get max frequency */
--	rdmsr(MSR_IA32_PERF_STATUS, lo, hi);
--	/* Set max frequency */
--	eps_set_state(centaur, cpu, hi & 0xffff);
- 	/* Bye */
- 	cpufreq_frequency_table_put_attr(policy->cpu);
- 	kfree(eps_cpu[cpu]);
-@@ -368,6 +380,13 @@ static void __exit eps_exit(void)
- 	cpufreq_unregister_driver(&eps_driver);
- }
- 
-+/* Allow user to overclock his machine or to change frequency to higher after
-+ * unloading module */
-+module_param(freq_failsafe_off, int, 0644);
-+MODULE_PARM_DESC(freq_failsafe_off, "Disable current vs max frequency check");
-+module_param(voltage_failsafe_off, int, 0644);
-+MODULE_PARM_DESC(voltage_failsafe_off, "Disable current vs max voltage check");
-+
- MODULE_AUTHOR("Rafal Bilski <rafalbilski@interia.pl>");
- MODULE_DESCRIPTION("Enhanced PowerSaver driver for VIA C7 CPU's.");
- MODULE_LICENSE("GPL");
--- 
-1.7.6
+That's half the patch size and half the patch count.
 
+PeterZ's question is relevant: since we apparently had similar bugs 
+in v2.6.39 as well, what changed in v3.0 that makes them so urgent
+to fix?
 
-----------------------------------------------------------------
-Znajdz samochod idealny dla siebie!
-Szukaj >> http://linkint.pl/f29e2
+If it's just better instrumentation that proves them better then i'd 
+suggest fixing this in v3.1 and not risking v3.0 with an unintended 
+side effect.
+
+Thanks,
+
+	Ingo
