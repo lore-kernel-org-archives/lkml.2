@@ -1,105 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752503Ab1GTTZl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 15:25:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33014 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752196Ab1GTTZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 15:25:40 -0400
-Date: Wed, 20 Jul 2011 15:25:09 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>, ebiederm@xmission.com,
-        hbabu@us.ibm.com, mahesh@linux.vnet.ibm.com, oomichi@mxs.nes.nec.co.jp,
-        horms@verge.net.au, heiko.carstens@de.ibm.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org
-Subject: Re: [patch 0/9] kdump: Patch series for s390 support
-Message-ID: <20110720192509.GD10079@redhat.com>
-References: <20110714180528.GF6672@redhat.com>
- <1310739717.10789.31.camel@br98xy6r>
- <20110715143820.GG3428@redhat.com>
- <1310744603.10789.79.camel@br98xy6r>
- <20110718123140.GB31986@redhat.com>
- <1310997641.4427.10.camel@br98xy6r>
- <20110718141943.GE31986@redhat.com>
- <1311000253.4427.23.camel@br98xy6r>
- <20110718152532.GF31986@redhat.com>
- <1311012188.4427.58.camel@br98xy6r>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311012188.4427.58.camel@br98xy6r>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752554Ab1GTT0n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 15:26:43 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55587 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752443Ab1GTT0m convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 15:26:42 -0400
+Subject: Re: [PATCH rcu/urgent 0/6] Fixes for RCU/scheduler/irq-threads
+ trainwreck
+From: Peter Zijlstra <peterz@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Ingo Molnar <mingo@elte.hu>, Ben Greear <greearb@candelatech.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ed Tomlinson <edt@aei.ca>, linux-kernel@vger.kernel.org,
+        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org, edward.tomlinson@aero.bombardier.com
+In-Reply-To: <20110720190141.GJ2313@linux.vnet.ibm.com>
+References: <20110720001738.GA16369@linux.vnet.ibm.com>
+	 <201107192130.02080.edt@aei.ca> <201107192207.33813.edt@aei.ca>
+	 <20110720044435.GB2400@linux.vnet.ibm.com>
+	 <CA+55aFyaCY=qzFKswi2NR097KZtb5x98sba3rHJ7B0rchtzm2g@mail.gmail.com>
+	 <20110720133443.GG2400@linux.vnet.ibm.com>
+	 <4E270A0E.6090902@candelatech.com>
+	 <20110720171532.GB2313@linux.vnet.ibm.com> <20110720184413.GD17977@elte.hu>
+	 <1311187978.29152.58.camel@twins>
+	 <20110720190141.GJ2313@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 20 Jul 2011 21:25:46 +0200
+Message-ID: <1311189946.29152.88.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 18, 2011 at 08:03:08PM +0200, Michael Holzheu wrote:
-> Hello Vivek,
-> 
-> On Mon, 2011-07-18 at 11:25 -0400, Vivek Goyal wrote:
-> > On Mon, Jul 18, 2011 at 04:44:13PM +0200, Michael Holzheu wrote:
-> > > On Mon, 2011-07-18 at 10:19 -0400, Vivek Goyal wrote:
-> > > > - Make sure these headers are not overwritten by newly booted kernel.
-> > > 
-> > > And that was my question: What is the best way to do that. E.g. we could
-> > > pass a 2nd kernel parameter "elfcorehdr_size", implement s390 boot
-> > > parameter or implement the memmap kernel parameter.
-> > 
-> > You could do that but I think a more generic parameter will make more
-> > sense.
-> > 
-> > - Either something along the lines of memmap=
-> > - Or excludemem=x@y
-> > - Or modify memory map in s390 specific bootloading protocol block etc.
-> 
-> Ok, understood. Thanks for the information.
-> 
-> We still have discussions here, if we could somehow implement our
-> original idea of triggering kdump by the stand-alone dump tools. Sorry
-> for being so stubborn :-(
-> 
-> So here comes the modified suggestion:
-> 
-> As requested by you we can pre-allocate the ELF header and use purgatory
-> as done on other architectures.
-> 
-> To allow the stand-alone dump tools as kdump triggers, we then only
-> would have to provide an s390 specific way to tell the stand-alone dump
-> tools:
-> 1. Entry point address into purgatory
-> 2. Address, size and checksum for purgatory
-> 
-> We could store address, size and checksum of the purgatory to a fixed
-> offset in the kdump kernel image. This can be done in the kexec tools
-> code. Then the dump tools only would need the crashkernel memory offset
-> to find all information. Then dump tools will verify purgatory and
-> afterwards jump to the purgatory code. Then purgatory verifies all kexec
-> segments. For s390, if this check fails, we return to caller
-> (stand-alone tools). If the check is ok, then purgatory code on s390
-> saves all registers to the preallocated ELF notes and starts kdump.
-> 
-> I think, this is all s390 specific and IMHO will not affect other
-> architectures at all.
-> 
-> What you as kdump framework maintainer would have to accept with this
-> solution is that it is allowed now to start kdump directly via purgatory
-> without using code from the old kernel (e.g. crash_kexec). This has as
-> implication that all things that the old kernel has to initialize for
-> kdump has to be done before the system crashes. Currently this is only
-> the initialization of vmcoreinfo.
+On Wed, 2011-07-20 at 12:01 -0700, Paul E. McKenney wrote:
+>   This can interact badly with the recently
+> added RCU read-side critical sections in the scheduler that have
+> either the runqueue or the priority-inheritance locks held, especially
+> when interrupts occur towards the end of __rcu_read_unlock(). 
 
-Hi Michael,
+Right, so while I recently added a lot more, there have been rcu usage
+sites under rq->lock for a long while, see commits
 
-Instead of introdcuing a new entry point for second kernel, why not
-jump to crash_kexec() from stand alone tools? That should be functionally
-equivalent to what you described above without any need to pass the 
-purgatory details to stand alone tools.
+a18b83b7ef ("cpuacct: make cpuacct hierarchy walk in cpuacct_charge()
+safe when rcupreempt is used -v2") -- March 2009.
 
-Only thing which needs to be figured out is how to pass the address of
-crash_kexec() to stand alone tools and set registers/parameters 
-appropriately.
+f3b577dec1 ("rcu: apply RCU protection to wake_affine()") -- Jun 2010
 
-Thanks
-Vivek
+b0a0f667 ("sched: suppress RCU lockdep splat in task_fork_fair") -- Oct
+2010
+
+So I'm not quite seeing how the problems we're hitting now are new.
