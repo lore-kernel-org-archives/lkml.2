@@ -1,46 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751839Ab1GTLb1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 07:31:27 -0400
-Received: from mail001.aei.ca ([206.123.6.130]:39278 "EHLO mail001.aei.ca"
+	id S1751421Ab1GTLtf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 07:49:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49516 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751652Ab1GTLb0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 07:31:26 -0400
-From: Ed Tomlinson <edt@aei.ca>
-To: paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH tip/core/urgent 1/7] rcu: decrease rcu_report_exp_rnp coupling with scheduler
-Date: Wed, 20 Jul 2011 07:31:22 -0400
-User-Agent: KMail/1.13.7 (Linux/3.0.0-rcr-crc+; KDE/4.6.5; x86_64; ; )
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        eric.dumazet@gmail.com, darren@dvhart.com, patches@linaro.org,
-        greearb@candelatech.com
-References: <20110720001738.GA16369@linux.vnet.ibm.com> <20110720045414.GC2400@linux.vnet.ibm.com> <201107200723.33819.edt@aei.ca>
-In-Reply-To: <201107200723.33819.edt@aei.ca>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107200731.23667.edt@aei.ca>
+	id S1750936Ab1GTLte (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 07:49:34 -0400
+Date: Wed, 20 Jul 2011 13:49:33 +0200
+From: Marcus Meissner <meissner@suse.de>
+To: Jan Kiszka <jan.kiszka@siemens.com>
+Cc: quintela@redhat.com, Marcus Meissner <meissner@novell.com>, avi@redhat.com,
+        mtosatti@redhat.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kvm: Initialize all struct members to avoid stack information leak
+Message-ID: <20110720114933.GD4856@suse.de>
+References: <1311081438-1731-1-git-send-email-meissner@novell.com> <m3livutl3p.fsf@neno.neno> <4E25C113.9080500@siemens.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E25C113.9080500@siemens.com>
+Organization: SUSE LINUX Products GmbH, GF: Jeff Hawn, Jennifer Guild, Felix Imendoerffer, HRB 16746 (AG Nuernberg)
+User-Agent: Mutt/1.5.9i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 20 July 2011 07:23:32 Ed Tomlinson wrote:
-
-[omitted] 
-
-> Paul/Peter,
+On Tue, Jul 19, 2011 at 07:38:27PM +0200, Jan Kiszka wrote:
+> On 2011-07-19 16:12, Juan Quintela wrote:
+> > Marcus Meissner <meissner@novell.com> wrote:
+> >> Hi,
+> >>
+> >> Reported to us by Stephan Mueller of atsec.
+> >>
+> >> Several .pad struct members are not set to something, so they
+> >> will leak stack content back to user space.
+> >>
+> >> Ciao, Marcus
+> >>
+> >> Reported-by: Stephan Mueller <smueller@atsec.com>
+> >> Signed-off-by: Marcus Meissner <meissner@suse.de>
+> >> ---
+> >>  arch/x86/kvm/x86.c |    1 +
+> >>  1 files changed, 1 insertions(+), 0 deletions(-)
+> >>
+> >> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> >> index 77c9d86..621ffb6 100644
+> >> --- a/arch/x86/kvm/x86.c
+> >> +++ b/arch/x86/kvm/x86.c
+> >> @@ -3002,6 +3002,7 @@ long kvm_arch_vcpu_ioctl(struct file *filp,
+> >>  	case KVM_GET_VCPU_EVENTS: {
+> >>  		struct kvm_vcpu_events events;
+> >>  
+> >> +		memset(&events, 0, sizeof(events));
+> >>  		kvm_vcpu_ioctl_x86_get_vcpu_events(vcpu, &events);
+> >>  
+> >>  		r = -EFAULT;
+> > 
+> > Looking at arch/x86/include/asm/kvm.h & arch/x86/kvm/x86.c I can't see
+> > what pad fields are not initialized.  My reading is that everything is
+> > initialized in kvm_vcpu_ioctl_x86_get_vcpu_events().  What field are you
+> > refering to?
 > 
-> With all 7 fixes applied with the above version of patch 1, I get a warning during boot:
+> Good question. Information leaks were once addressed by 97e69aa62f, and
+> kvm_vcpu_events was not changed since then.
 
-[omitted]
+I was looking at old code, did not cross check if it is fixed in mainline.
 
-I rebooted to see if the warning was solid and it is.  I'm now running with all 7 patches and will see what happens.
-I'll send you a report in a few hours from my work email if all seems ok.  Meanwhile I'll see if I cannot keep this
-box busy for a few hours.
+Sorry for the noise.
 
-Ed
+Ciao, Marcus
