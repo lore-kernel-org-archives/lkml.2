@@ -1,86 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751789Ab1GTN3m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 09:29:42 -0400
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:18472
-	"EHLO AM1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751006Ab1GTN3l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 09:29:41 -0400
-X-SpamScore: -22
-X-BigFish: VPS-22(zz1432N98dK4015Lzz1202hzz15d4Rz32i668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LOMW51-02-CVA-02
-X-M-MSG: 
-Date: Wed, 20 Jul 2011 15:29:25 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Neil Horman <nhorman@tuxdriver.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Divy LeRay <divy@chelsio.com>, Stanislaw Gruszka <sgruszka@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] dma-debug: hash_bucket_find needs to allow for offsets
- within an entry
-Message-ID: <20110720132925.GB21948@amd.com>
-References: <1311097278-30841-1-git-send-email-nhorman@tuxdriver.com>
- <20110720103813.GL15108@amd.com>
- <20110720111156.GA12349@hmsreliant.think-freely.org>
+	id S1751752Ab1GTNeu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 09:34:50 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:36906 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750979Ab1GTNet (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 09:34:49 -0400
+Date: Wed, 20 Jul 2011 06:34:43 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ed Tomlinson <edt@aei.ca>, linux-kernel@vger.kernel.org, mingo@elte.hu,
+        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, patches@linaro.org, greearb@candelatech.com,
+        edward.tomlinson@aero.bombardier.com
+Subject: Re: [PATCH rcu/urgent 0/6] Fixes for RCU/scheduler/irq-threads
+ trainwreck
+Message-ID: <20110720133443.GG2400@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110720001738.GA16369@linux.vnet.ibm.com>
+ <201107192130.02080.edt@aei.ca>
+ <201107192207.33813.edt@aei.ca>
+ <20110720044435.GB2400@linux.vnet.ibm.com>
+ <CA+55aFyaCY=qzFKswi2NR097KZtb5x98sba3rHJ7B0rchtzm2g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110720111156.GA12349@hmsreliant.think-freely.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFyaCY=qzFKswi2NR097KZtb5x98sba3rHJ7B0rchtzm2g@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 20, 2011 at 07:11:56AM -0400, Neil Horman wrote:
-> On Wed, Jul 20, 2011 at 12:38:13PM +0200, Roedel, Joerg wrote:
+On Tue, Jul 19, 2011 at 10:03:05PM -0700, Linus Torvalds wrote:
+> On Tue, Jul 19, 2011 at 9:44 PM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> > On Tue, Jul 19, 2011 at 10:07:32PM -0400, Ed Tomlinson wrote:
+> >> On Tuesday 19 July 2011 21:30:00 Ed Tomlinson wrote:
+> >> > On Tuesday 19 July 2011 20:17:38 Paul E. McKenney wrote:
+> >>
+> >> Paul,
+> >>
+> >> Two things to add.  Its possible an eariler error is missing from the log below.  My serial console was missing
+> >> entries from before '0 and 40ish' and I did think I saw a bunch of FFFFFFFs scroll by eariler...
+> >>
+> >> Second, booting with threadirqs and boost enabled in .config with patches 2,5,6 is ok so far.
+> >
+> > Patches 3 and 4 resulted in failures?  (Patch 1 certainly did.)
+> 
+> Gaah. Any possibility of getting this resolved soon?
 
-> > But it is not that easy. The hash_fn works on the dev_addr, this means
-> > to search all entries which might match you need to scan multiple
-> > hash-buckets potentially.
-> > In fact, you need to scan
-> > 
-> > 	hash_fn(estart) <= idx <= hash_fn(eend)
-> > 
-> Ah, good point.  Its actually a bit more difficult that what you describe I
-> think.  Given a ref->dev_addr, this check needs to find the entry in any bucket
-> for a matching device that has an entry->dev_addr less than ref->dev_addr, where
-> the former has a larger size than the latter.  And since we don't know the true
-> size of the entry we are looking for, we could have crossed the HASH_FN_SHIFT
-> many times over to get to the ref->dev addr that was passed in.  It almost
-> sounds like the hash table for this needs to be accessible by device rather than
-> by address.
+I believe that we are very close.  These failures all involve unusual
+configurations, which is why they showed up so late.
 
-You are right. We need to scan
+> I've merged the pathname lookup fix. I was hoping all the RCU issues
+> were behind us..
 
-	0 <= idx <= hash_fn(rstart)
+If we have time, I would like to see what Ed gets with the most recent
+fix.  If we absolutely need to release today, then I will push patches
+2,5,6 which are covering Ed's particular situation.  My concern with doing
+so is that other failures might pop up.
 
-Probably we can fix that with a better hash-function. Any ideas? Using
-the device is not an option because then all entries would end up in
-only a few buckets. This will impact scanning performance too much.
-
-For now, the partial syncs seem to happen rarely enough so that we can
-make it a slow-path. It is probably the best to do the exact scan first
-and do the full scan only if exact-scan failed (until we come up with a
-better solution).
-
-
-> > to be sure. The patch above also lifts up the check_unmap which is not
-> > desired.
-> Hm, you're right, I suppose we need to add an exact map option to the passed in
-> ref structure or some such, I'll rework this
-
-Thanks,
-
-	Joerg
-
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+							Thanx, Paul
