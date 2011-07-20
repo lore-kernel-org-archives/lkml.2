@@ -1,74 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945Ab1GTRyL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 13:54:11 -0400
-Received: from DMZ-MAILSEC-SCANNER-7.MIT.EDU ([18.7.68.36]:47316 "EHLO
-	dmz-mailsec-scanner-7.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752899Ab1GTRyJ (ORCPT
+	id S1752592Ab1GTSHE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 14:07:04 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:5773 "EHLO
+	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751671Ab1GTSHB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 13:54:09 -0400
-X-AuditID: 12074424-b7b0fae000000a08-da-4e27164b1d88
-Message-ID: <4E27163A.6090102@mit.edu>
-Date: Wed, 20 Jul 2011 13:54:02 -0400
-From: Andy Lutomirski <luto@MIT.EDU>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
+	Wed, 20 Jul 2011 14:07:01 -0400
+X-SpamScore: -20
+X-BigFish: VPS-20(zz9371M1432N98dK14ffOzz1202hzz8275ch8275bhz2ei2a8h668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:198.70.193.64;KIP:(null);UIP:(null);IPVD:NLI;H:avexcashub1.qlogic.com;RD:avexcashub2.qlogic.com;EFVD:NLI
+From: Anirban Chakraborty <anirban.chakraborty@qlogic.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux Driver <Linux-Driver@qlogic.com>,
+        David Lamparter <equinox@diac24.net>
+Date: Wed, 20 Jul 2011 11:10:18 -0700
+Subject: Re: linux-next: Tree for July 20 (qlcnic)
+Thread-Topic: linux-next: Tree for July 20 (qlcnic)
+Thread-Index: AcxHB89dR5JsjPvAR/G9eq299hBYpQ==
+Message-ID: <0E5EAE44-204C-4F4D-926C-F4D973B0CDB1@qlogic.com>
+References: <20110720180041.5774ca335e6697c17374dca5@canb.auug.org.au>
+ <20110720091945.39f0a8a5.rdunlap@xenotime.net>
+In-Reply-To: <20110720091945.39f0a8a5.rdunlap@xenotime.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] um: Implement a x86_64 vDSO
-References: <1310994456-14142-1-git-send-email-richard@nod.at> <1310994456-14142-3-git-send-email-richard@nod.at>
-In-Reply-To: <1310994456-14142-3-git-send-email-richard@nod.at>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLIsWRmVeSWpSXmKPExsUixCmqrOstpu5nsHOGhMXlXXPYLCbvfMNo
-	Mat3CosDs8fuBZ+ZPG7OK/T4vEkugDmKyyYlNSezLLVI3y6BK6Nx7yWWgt1cFW/fbmBtYFzO
-	0cXIySEhYCJx+vJnVghbTOLCvfVsXYxcHEIC+xglnp0+wgiSEBLYwCjRdzgTInGBSWLy7k8s
-	IAleATWJrTe+gRWxCKhKdE8+CTaJTUBFomPpA6YuRg4OUYFKiTmHLCDKBSVOznwC1ioioC7x
-	7uVUNhCbWcBX4s/7y2BjhIEOOrW4jwVib6HEmzUXmEBsTgF7iXkru8BGMgtYS3zbXQTRKi+x
-	/e0c5gmMgrOQbJiFUDULSdUCRuZVjLIpuVW6uYmZOcWpybrFyYl5ealFuuZ6uZkleqkppZsY
-	QaHM7qKyg7H5kNIhRgEORiUeXkc+dT8h1sSy4srcQ4ySHExKorwyIkAhvqT8lMqMxOKM+KLS
-	nNTiQ4wSHMxKIryK/9T8hHhTEiurUovyYVLSHCxK4ryl3v99hQTSE0tSs1NTC1KLYLIyHBxK
-	Erx9okBDBYtS01Mr0jJzShDSTBycIMN5gIargdTwFhck5hZnpkPkTzEqSonzLgBJCIAkMkrz
-	4HphqeYVozjQK8K8i0CqeIBpCq77FdBgJqDBLeqqIINLEhFSUg2MYh/m6Uh3nPKYEesytdH/
-	VPYKmxOTdA9vuKj3myewSGpFUoCV/+rfBz5cmpNyg7s+KnFl/JorLZeez5X03ssjPLPT//6b
-	PXf+CQX7s22+rr4tmq8z8vqCZwfnfrx8zef845JIBiXOUrksrdubbpueZN9xYYvrxoMrqudf
-	94x9pcew4e7lVXM2/FdiKc5INNRiLipOBAAf/MwmEAMAAA==
+X-OriginatorOrg: qlogic.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2011 09:07 AM, Richard Weinberger wrote:
-> Until now UML had no x86_64 vDSO.
-> So glibc always used the vsyscall page for gettimeday()
-> and friends.
-> Calls to gettimeday() returned falsely the host time and
-> confused some programs.
->
-> This patch adds a vDSO which turns all __vdso_* calls into
-> a system call so that UML can trap them.
->
-> As glibc still uses the vsyscall page for static binaries this
-> patch improves the situation only for dynamic binaries.
->
-> Signed-off-by: Richard Weinberger<richard@nod.at>
 
-> +	asm("syscall" : "=a" (ret) :
-> +		"0" (__NR_clock_gettime), "D" (clock), "S" (ts) : "memory");
-> +
+On Jul 20, 2011, at 9:19 AM, Randy Dunlap wrote:
 
-The x86-64 ABI and glibc think that rcx, and r11 are clobbered.  glibc 
-also thinks that cc is clobbered.  I personally think that rdx and 
-r8-r15 ought to be clobbered under the principle that syscall should 
-look like a function call.
+> On Wed, 20 Jul 2011 18:00:41 +1000 Stephen Rothwell wrote:
+> 
+>> Hi all,
+> 
+> When CONFIG_VLAN_8021Q is not enabled:
+> 
+> drivers/net/qlcnic/qlcnic_main.c:4207: error: 'struct net_device' has no member named 'vlgrp'
 
-It's hard to imagine this causing a problem in a function this trivial, 
-though.
+This is caused by the following commit:
 
-This applies to the other two syscall instructions as well.
+commit 69ecca86da4890c13a5e29c51b4ac76a1a8a62c9                                                      
+Refs: v3.0-rc7-1265-g69ecca8                                                                         
+Author:     David Lamparter <equinox@diac24.net>                                                     
+AuthorDate: Sun Jul 17 08:53:12 2011 +0000                                                           
+Commit:     David S. Miller <davem@davemloft.net>                                                    
+CommitDate: Sun Jul 17 12:33:22 2011 -0700                                                           
+                                                                                                     
+    net: vlan, qlcnic: make vlan_find_dev private                                                    
+                                                                                                     
+    there is only one user of vlan_find_dev outside of the actual vlan code:                         
+    qlcnic uses it to iterate over some VLANs it knows.                                              
+                                                                                                     
+    let's just make vlan_find_dev private to the VLAN code and have the                              
+    iteration in qlcnic be a bit more direct. (a few rcu dereferences less                           
+    too)                                                                                             
+                                                                                                     
+    Signed-off-by: David Lamparter <equinox@diac24.net>                                              
+    Cc: Patrick McHardy <kaber@trash.net>                                                            
+    Cc: Amit Kumar Salecha <amit.salecha@qlogic.com>                                                 
+    Cc: Anirban Chakraborty <anirban.chakraborty@qlogic.com>                                         
+    Cc: linux-driver@qlogic.com                                                                      
+    Signed-off-by: David S. Miller <davem@davemloft.net>                                             
 
---Andy
 
-P.S.  If you really care, with the changes in tip/x86/vdso, it ought to 
-be possible for UML to trap vsyscalls as well.  This would need a change 
-to do_emulate_vsyscall to honor TIF_SYSCALL_EMU with intelligent 
-semantics.  I know nothing about ptrace, so I'm not volunteering :)
