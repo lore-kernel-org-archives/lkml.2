@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753078Ab1GTSwC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 14:52:02 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:63689 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752518Ab1GTSwA (ORCPT
+	id S1752076Ab1GTSyn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 14:54:43 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48947 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751464Ab1GTSym convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 14:52:00 -0400
-Date: Wed, 20 Jul 2011 12:51:59 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Cc: linux-kernel@vger.kernel.org, alexander.stein@systec-electronic.com,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com
-Subject: Re: [PATCH 1/6] pch_gpio: Delete invalid "restore" code in suspend()
-Message-ID: <20110720185159.GH4642@ponder.secretlab.ca>
-References: <1311156662-3044-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311156662-3044-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 20 Jul 2011 14:54:42 -0400
+Subject: Re: [PATCH rcu/urgent 0/6] Fixes for RCU/scheduler/irq-threads
+ trainwreck
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ben Greear <greearb@candelatech.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ed Tomlinson <edt@aei.ca>, linux-kernel@vger.kernel.org,
+        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org, edward.tomlinson@aero.bombardier.com
+In-Reply-To: <20110720184413.GD17977@elte.hu>
+References: <20110720001738.GA16369@linux.vnet.ibm.com>
+	 <201107192130.02080.edt@aei.ca> <201107192207.33813.edt@aei.ca>
+	 <20110720044435.GB2400@linux.vnet.ibm.com>
+	 <CA+55aFyaCY=qzFKswi2NR097KZtb5x98sba3rHJ7B0rchtzm2g@mail.gmail.com>
+	 <20110720133443.GG2400@linux.vnet.ibm.com>
+	 <4E270A0E.6090902@candelatech.com>
+	 <20110720171532.GB2313@linux.vnet.ibm.com> <20110720184413.GD17977@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 20 Jul 2011 20:52:58 +0200
+Message-ID: <1311187978.29152.58.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 20, 2011 at 07:10:57PM +0900, Tomoya MORINAGA wrote:
+On Wed, 2011-07-20 at 20:44 +0200, Ingo Molnar wrote:
+> * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 > 
-> Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-
-Hi Tomoya,
-
-I'm deferring this series to v3.2.  You'll need to rebase it against
-gpio/next or linux-next before I can apply it because there has been a
-reorganization of the drivers/gpio tree.
-
-g.
-
-> ---
->  drivers/gpio/pch_gpio.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
+> > RCU boost is new and counts as strange for another few days at least.
 > 
-> diff --git a/drivers/gpio/pch_gpio.c b/drivers/gpio/pch_gpio.c
-> index 36919e7..ca9c7b0 100644
-> --- a/drivers/gpio/pch_gpio.c
-> +++ b/drivers/gpio/pch_gpio.c
-> @@ -241,7 +241,6 @@ static int pch_gpio_suspend(struct pci_dev *pdev, pm_message_t state)
->  	struct pch_gpio *chip = pci_get_drvdata(pdev);
->  
->  	pch_gpio_save_reg_conf(chip);
-> -	pch_gpio_restore_reg_conf(chip);
->  
->  	ret = pci_save_state(pdev);
->  	if (ret) {
-> -- 
-> 1.7.4.4
+> I'd rather prefer a oneliner patch that turns it off in the Kconfig 
+> for now.
 > 
+> We are awfully late in the -rc cycle and this diffstat:
+> 
+>  b/include/linux/sched.h   |    3 ++
+>  b/kernel/rcutree_plugin.h |    6 +++--
+>  b/kernel/sched.c          |   44 ++++++++++++++++++++++++++++++++++-----
+>  b/kernel/signal.c         |   19 +++++++++++------
+>  b/kernel/softirq.c        |   12 +++++++++-
+>  kernel/rcutree_plugin.h   |   51 +++++++++++++++++++++++++++++++++-------------
+>  6 files changed, 105 insertions(+), 30 deletions(-)
+> 
+> looks very scary to me.
+
+A lot of that is also relevant to !BOOST.
