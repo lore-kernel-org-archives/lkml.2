@@ -1,88 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751631Ab1GTU4Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 16:56:16 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:58514 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810Ab1GTU4P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 16:56:15 -0400
-Message-ID: <4E274099.20704@candelatech.com>
-Date: Wed, 20 Jul 2011 13:54:49 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ed Tomlinson <edt@aei.ca>,
-        linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, edward.tomlinson@aero.bombardier.com
-Subject: Re: [PATCH rcu/urgent 0/6] Fixes for RCU/scheduler/irq-threads trainwreck
-References: <CA+55aFyaCY=qzFKswi2NR097KZtb5x98sba3rHJ7B0rchtzm2g@mail.gmail.com> <20110720133443.GG2400@linux.vnet.ibm.com> <4E270A0E.6090902@candelatech.com> <20110720171532.GB2313@linux.vnet.ibm.com> <20110720184413.GD17977@elte.hu> <1311187978.29152.58.camel@twins> <CA+55aFyuKTj3zEvWJEx4_RDzLQ+ipJ58UWFYH84nmcwGF_c4aA@mail.gmail.com> <20110720192949.GM2313@linux.vnet.ibm.com> <20110720193925.GB7910@elte.hu> <20110720195742.GA14671@elte.hu> <20110720203300.GQ2313@linux.vnet.ibm.com>
-In-Reply-To: <20110720203300.GQ2313@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751800Ab1GTU4l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 16:56:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2396 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751309Ab1GTU4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 16:56:40 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: tony.luck@intel.com
+Cc: LKML <linux-kernel@vger.kernel.org>, ying.huang@intel.com,
+        Don Zickus <dzickus@redhat.com>
+Subject: [PATCH] pstore: change mutex locking to spin_locks
+Date: Wed, 20 Jul 2011 16:56:26 -0400
+Message-Id: <1311195386-22743-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/20/2011 01:33 PM, Paul E. McKenney wrote:
-> On Wed, Jul 20, 2011 at 09:57:42PM +0200, Ingo Molnar wrote:
->>
->> * Ingo Molnar<mingo@elte.hu>  wrote:
->>
->>>
->>> * Paul E. McKenney<paulmck@linux.vnet.ibm.com>  wrote:
->>>
->>>> If my guess is correct, then the minimal non-RCU_BOOST fix is #4
->>>> (which drags along #3) and #6.  Which are not one-liners, but
->>>> somewhat smaller:
->>>>
->>>>   b/kernel/rcutree_plugin.h |   12 ++++++------
->>>>   b/kernel/softirq.c        |   12 ++++++++++--
->>>>   kernel/rcutree_plugin.h   |   31 +++++++++++++++++++++++++------
->>>>   3 files changed, 41 insertions(+), 14 deletions(-)
->>>
->>> That's half the patch size and half the patch count.
->>>
->>> PeterZ's question is relevant: since we apparently had similar bugs
->>> in v2.6.39 as well, what changed in v3.0 that makes them so urgent
->>> to fix?
->>>
->>> If it's just better instrumentation that proves them better then
->>> i'd suggest fixing this in v3.1 and not risking v3.0 with an
->>> unintended side effect.
->>
->> Ok, i looked some more at the background and the symptoms that people
->> are seeing: kernel crashes and lockups. I think we want these
->> problems fixed in v3.0, even if it was the recent introduction of
->> RCU_BOOST that made it really prominent.
->>
->> Having put some testing into your rcu/urgent branch today i'd feel
->> more comfortable with taking this plus perhaps an RCU_BOOST disabling
->> patch. That makes it all fundamentally tested by a number of people
->> (including those who reported/reproduced the problems).
->
-> RCU_BOOST is currently default=n.  Is that sufficient?  If not, one
+pstore was using mutex locking to protect read/write access to the
+backend plug-ins.  This causes problems when pstore is executed in
+an NMI context through panic() -> kmsg_dump().
 
-Not if it remains broken I think..unless you put it under CONFIG_BROKEN
-or something.  Otherwise, folks are liable to turn it on and not realize
-it's the cause of subtle bugs.
+This patch changes the mutex to a spin_lock_irqsave then also checks to
+see if we are in an NMI context.  If we are in an NMI and can't get the
+lock, just print a message stating that and blow by the locking.
 
-For what it's worth, my tests have been running clean for around 2 hours, so the full set of
-fixes with RCU_BOOST appears good, so far.  I'll let it continue to run
-at least overnight to make sure I'm not just getting lucky...
+All this is probably a hack around the bigger locking problem but it
+solves my current situation of trying to sleep in an NMI context.
 
-Thanks,
-Ben
+Tested by loading the lkdtm module and executing a HARDLOCKUP which
+will cause the machine to panic inside the nmi handler.
 
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ drivers/acpi/apei/erst.c |    2 +-
+ fs/pstore/platform.c     |   28 ++++++++++++++++++++++------
+ include/linux/pstore.h   |    2 +-
+ 3 files changed, 24 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
+index e6cef8e..3d9c2a3 100644
+--- a/drivers/acpi/apei/erst.c
++++ b/drivers/acpi/apei/erst.c
+@@ -1155,7 +1155,7 @@ static int __init erst_init(void)
+ 		goto err_release_erange;
+ 
+ 	buf = kmalloc(erst_erange.size, GFP_KERNEL);
+-	mutex_init(&erst_info.buf_mutex);
++	spin_lock_init(&erst_info.buf_lock);
+ 	if (buf) {
+ 		erst_info.buf = buf + sizeof(struct cper_pstore_record);
+ 		erst_info.bufsize = erst_erange.size -
+diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
+index f2c3ff2..53ba00b 100644
+--- a/fs/pstore/platform.c
++++ b/fs/pstore/platform.c
+@@ -27,6 +27,7 @@
+ #include <linux/string.h>
+ #include <linux/slab.h>
+ #include <linux/uaccess.h>
++#include <linux/hardirq.h>
+ 
+ #include "internal.h"
+ 
+@@ -68,13 +69,21 @@ static void pstore_dump(struct kmsg_dumper *dumper,
+ 	char		*dst, *why;
+ 	u64		id;
+ 	int		hsize, part = 1;
++	unsigned long	flags = 0;
++	int 		is_locked = 0;
+ 
+ 	if (reason < ARRAY_SIZE(reason_str))
+ 		why = reason_str[reason];
+ 	else
+ 		why = "Unknown";
+ 
+-	mutex_lock(&psinfo->buf_mutex);
++	if (in_nmi()) {
++		is_locked = spin_trylock(&psinfo->buf_lock);
++		if (!is_locked)
++			pr_err("pstore dump routine blocked in NMI, may corrupt error record\n");
++	} else {
++		spin_lock_irqsave(&psinfo->buf_lock, flags);
++	}
+ 	oopscount++;
+ 	while (total < kmsg_bytes) {
+ 		dst = psinfo->buf;
+@@ -103,7 +112,12 @@ static void pstore_dump(struct kmsg_dumper *dumper,
+ 		l2 -= l2_cpy;
+ 		total += l1_cpy + l2_cpy;
+ 	}
+-	mutex_unlock(&psinfo->buf_mutex);
++	if (in_nmi()) {
++		if (is_locked)
++			spin_unlock(&psinfo->buf_lock);
++	} else {
++		spin_unlock_irqrestore(&psinfo->buf_lock, flags);
++	}
+ }
+ 
+ static struct kmsg_dumper pstore_dumper = {
+@@ -157,11 +171,12 @@ void pstore_get_records(void)
+ 	enum pstore_type_id	type;
+ 	struct timespec		time;
+ 	int			failed = 0, rc;
++	unsigned long		flags;
+ 
+ 	if (!psi)
+ 		return;
+ 
+-	mutex_lock(&psinfo->buf_mutex);
++	spin_lock_irqsave(&psinfo->buf_lock, flags);
+ 	rc = psi->open(psi);
+ 	if (rc)
+ 		goto out;
+@@ -173,7 +188,7 @@ void pstore_get_records(void)
+ 	}
+ 	psi->close(psi);
+ out:
+-	mutex_unlock(&psinfo->buf_mutex);
++	spin_unlock_irqrestore(&psinfo->buf_lock, flags);
+ 
+ 	if (failed)
+ 		printk(KERN_WARNING "pstore: failed to load %d record(s) from '%s'\n",
+@@ -187,6 +202,7 @@ out:
+ int pstore_write(enum pstore_type_id type, char *buf, size_t size)
+ {
+ 	u64	id;
++	unsigned long flags;
+ 
+ 	if (!psinfo)
+ 		return -ENODEV;
+@@ -194,13 +210,13 @@ int pstore_write(enum pstore_type_id type, char *buf, size_t size)
+ 	if (size > psinfo->bufsize)
+ 		return -EFBIG;
+ 
+-	mutex_lock(&psinfo->buf_mutex);
++	spin_lock_irqsave(&psinfo->buf_lock, flags);
+ 	memcpy(psinfo->buf, buf, size);
+ 	id = psinfo->write(type, size);
+ 	if (pstore_is_mounted())
+ 		pstore_mkfile(PSTORE_TYPE_DMESG, psinfo->name, id, psinfo->buf,
+ 			      size, CURRENT_TIME, psinfo->erase);
+-	mutex_unlock(&psinfo->buf_mutex);
++	spin_unlock_irqrestore(&psinfo->buf_lock, flags);
+ 
+ 	return 0;
+ }
+diff --git a/include/linux/pstore.h b/include/linux/pstore.h
+index 2455ef2..2d77b82 100644
+--- a/include/linux/pstore.h
++++ b/include/linux/pstore.h
+@@ -32,7 +32,7 @@ enum pstore_type_id {
+ struct pstore_info {
+ 	struct module	*owner;
+ 	char		*name;
+-	struct mutex	buf_mutex;	/* serialize access to 'buf' */
++	spinlock_t	buf_lock;	/* serialize access to 'buf' */
+ 	char		*buf;
+ 	size_t		bufsize;
+ 	int		(*open)(struct pstore_info *psi);
 -- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
+1.7.6
 
