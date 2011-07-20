@@ -1,56 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752625Ab1GTAOs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 20:14:48 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:31344 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752346Ab1GTAOr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 20:14:47 -0400
-Message-ID: <4E261DF2.7070705@dsn.okisemi.com>
-Date: Wed, 20 Jul 2011 09:14:42 +0900
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	id S1752632Ab1GTARp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 20:17:45 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:48707 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752377Ab1GTARn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 20:17:43 -0400
+Date: Tue, 19 Jul 2011 17:17:38 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org, greearb@candelatech.com, edt@aei.ca
+Subject: [PATCH rcu/urgent 0/6] Fixes for RCU/scheduler/irq-threads
+ trainwreck
+Message-ID: <20110720001738.GA16369@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Alexander Stein <alexander.stein@systec-electronic.com>,
-        "toshiharu-linux@dsn.okisemi.com" <toshiharu-linux@dsn.okisemi.com>,
-        "Ewe, Kok Howg" <kok.howg.ewe@intel.com>,
-        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
-        "Clark, Joel" <joel.clark@intel.com>
-Subject: Re: serial/pch_uart: AT command behavior
-References: <1308736219-19975-1-git-send-email-alexander.stein@systec-electronic.com>	<4E02857C.1010304@dsn.okisemi.com>	<4E2504FD.6090107@dsn.okisemi.com> <20110719100613.21b9eb32@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110719100613.21b9eb32@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/07/19 18:06), Alan Cox wrote:
-> On Tue, 19 Jul 2011 13:15:57 +0900
-> Tomoya MORINAGA<tomoya-linux@dsn.okisemi.com>  wrote:
->
->> Hi,
->>
->> I have a question for UART driver AT command behavior.
->> When installing pch_uart, AT command "AT+GCAP^M" are sent for 4 times.
->> This command is sent first install only.
->> (After the above, removing pch_uart and installing pch_uart again,
->> this command is not sent.)
->>
->> Let me know the behavior is normal or not ?
->
-> As your distribution, it isn't the kernel.
->
-Thank you for your information.
-The above behavior looks Fedora's.
-In fact,I confirmed MeeGo doesn't send any AT command message.
+Hello!
 
-Thanks,
+This patch set contains fixes for a trainwreck involving RCU, the
+scheduler, and threaded interrupts.  This trainwreck involved RCU failing
+to properly protect one of its bit fields, use of RCU by the scheduler
+from portions of irq_exit() where in_irq() returns false, uses of the
+scheduler by RCU colliding with uses of RCU by the scheduler, threaded
+interrupts exercising the problematic portions of irq_exit() more heavily,
+and so on.  The patches are as follows:
 
--- 
-tomoya
-OKI SEMICONDUCTOR CO., LTD.
+1.	Properly protect current->rcu_read_unlock_special().
+	Lack of protection was causing RCU to recurse on itself, which
+	in turn resulted in deadlocks involving RCU and the scheduler.
+	This affects only RCU_BOOST=y configurations.
+2.	Streamline code produced by __rcu_read_unlock().  This one is
+	an innocent bystander that is being carried due to conflicts
+	with other patches.  (A later version will likely merge it
+	with #3 below.)
+3.	Make __rcu_read_unlock() delay counting the per-task
+	->rcu_read_lock_nesting variable to zero until all cleanup for the
+	just-ended RCU read-side critical section has completed.  This
+	prevents a number of other cases that could result in deadlock
+	due to self recursion.	This affects only TREE_PREEMPT_RCU=y
+	configurations.
+4.	Make scheduler_ipi() correctly identify itself as being
+	in_irq() when it needs to do anything that might involve RCU,
+	thus enabling RCU to avoid yet another class of potential
+	self-recursions and deadlocks.	This affects PREEMPT_RCU=y
+	configurations.
+5.	Make irq_exit() inform RCU when it is invoking the scheduler
+	in situations where in_irq() would return false, thus
+	allowing RCU to correctly avoid self-recursion.  This affects
+	TREE_PREEMPT_RCU=y configurations.
+6.	Make __lock_task_sighand() execute the entire RCU read-side
+	critical section with irqs disabled.  (An experimental patch at
+	http://marc.info/?l=linux-kernel&m=131110647222185 might possibly
+	make it legal to have an RCU read-side critical section where
+	the rcu_read_unlock() is executed with interrupts disabled,
+	but where some protion of the RCU read-side critical section
+	was preemptible.)  This affects TREE_PREEMPT_RCU=y configurations.
+
+TINY_PREEMPT_RCU will also need a few of these changes, but in the
+meantime this patch stack helps organize things better for testing.
+These are also available from the following subject-to-rebase git branch:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/urgent
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+ b/include/linux/sched.h   |    3 +++
+ b/kernel/rcutree_plugin.h |    3 ++-
+ b/kernel/sched.c          |   44 ++++++++++++++++++++++++++++++++++++++------
+ b/kernel/signal.c         |   16 +++++++++++-----
+ b/kernel/softirq.c        |   12 ++++++++++--
+ kernel/rcutree_plugin.h   |   45 ++++++++++++++++++++++++++++++++-------------
+ 6 files changed, 96 insertions(+), 27 deletions(-)
