@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752011Ab1GTWIp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 18:08:45 -0400
-Received: from mail.perches.com ([173.55.12.10]:4213 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751545Ab1GTWIp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 18:08:45 -0400
-Subject: Re: [PATCH 21/21] dynamic_debug: delete pending queries
-From: Joe Perches <joe@perches.com>
-To: Jim Cromie <jim.cromie@gmail.com>
-Cc: jbaron@redhat.com, linux-kernel@vger.kernel.org, bvanassche@acm.org,
-        gregkh@suse.de, gnb@fmeh.org
-In-Reply-To: <CAJfuBxwtgOd+JAb+P2bMY7fAOb3zmgg0eLn0JmBycLpjPK783w@mail.gmail.com>
-References: <1309244992-2305-1-git-send-email-jim.cromie@gmail.com>
-	 <1310370416-6322-1-git-send-email-jim.cromie@gmail.com>
-	 <1310370416-6322-22-git-send-email-jim.cromie@gmail.com>
-	 <1310430335.3550.3.camel@Joe-Laptop>
-	 <CAJfuBxwtgOd+JAb+P2bMY7fAOb3zmgg0eLn0JmBycLpjPK783w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 20 Jul 2011 15:08:42 -0700
-Message-ID: <1311199722.1663.17.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1752193Ab1GTWXS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 18:23:18 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:1697 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751593Ab1GTWXQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 18:23:16 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 20 Jul 2011 15:23:08 -0700
+From: Andrew Chew <AChew@nvidia.com>
+To: "'Grant Likely'" <grant.likely@secretlab.ca>
+CC: "olof@lixom.net" <olof@lixom.net>, Stephen Warren <swarren@nvidia.com>,
+        Dan Willemsen <dwillemsen@nvidia.com>,
+        Rhyland Klein <rklein@nvidia.com>,
+        Venkat Moganty <vmoganty@nvidia.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 20 Jul 2011 15:23:07 -0700
+Subject: RE: [PATCH 1/3 v2] usb: tegra20-ehci: Add devicetree support.
+Thread-Topic: [PATCH 1/3 v2] usb: tegra20-ehci: Add devicetree support.
+Thread-Index: AcxHF/dB+sbXVNoRSQiKUl6LNrkNkwAEu7sQ
+Message-ID: <643E69AA4436674C8F39DCC2C05F76383CF0DD2279@HQMAIL03.nvidia.com>
+References: <1311190690-18334-1-git-send-email-achew@nvidia.com>
+ <CACxGe6uDVdemjbjY_i-_M_-VT8HuLdtXP-R9V8kB+pSSin4dEw@mail.gmail.com>
+In-Reply-To: <CACxGe6uDVdemjbjY_i-_M_-VT8HuLdtXP-R9V8kB+pSSin4dEw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-07-20 at 11:43 -0600, Jim Cromie wrote:
-> On Mon, Jul 11, 2011 at 6:25 PM, Joe Perches <joe@perches.com> wrote:
-> > On Mon, 2011-07-11 at 01:46 -0600, Jim Cromie wrote:
-> >> diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-> > []
-> >> @@ -505,7 +505,17 @@ static int ddebug_save_pending(struct ddebug_query *query,
-[]
-> >> +                             if (verbose)
-> >> +                                     pr_info("delete pending: %s\n",
-> >> +                                             show_pending_query(pq));
-> > I think these should be pr_debug.
-> > I know you're only using the current style.
-> > Jason, any reason these can not be converted?
-> one other corner case (in addition to pr_cont, which I probly should
-> have addressed to you)
-> +#define pr_fmt(fmt) KBUILD_MODNAME ":%s: " fmt, __func__
-> makes pr_debug unconditionally print stuff that can be
-> doubled up if flags are also used.
-> Ive done s/pr_info/pr_debug/ locally, when combined with:
->   ddebug_query="module dynamic_debug +pfmlt "
-> lines are too long, and are redundant
-> This is pretty trivial, and can be avoided by
-> "dont add those flags then", but I could imagine it
-> being a minor annoyance wherever both pr_debug
-> and pr_info|warn|err|etc are used together.
-> Perhaps pr_debug and friends should ignore pr_fmt
-> under CONFIG_DYNAMIC_DEBUG ?
+> > +Required properties for type = "utmi".  These values are 
+> derived from
+> > +characterization by system engineering.
+> > + - hssync_start_delay
+> > + - idle_wait_delay
+> > + - elastic_limit
+> > + - term_range_adj
+> > + - xcvr_setup
+> > + - xcvr_lsfslew
+> > + - xcvr_lsrslew
+> 
+> All of these custom properties should be prefixed with "nvidia," to
+> avoid namespace collisions.
 
-Better I think would be to remove __func__ from those
-dynamic debug pr_fmt defines.
-
-Actually, I think it's better to never use __func__,
-but that's an argument for a different day.
-
-I think the only reason Jason did it was to always
-have __func__ printed.  If those become pr_debug
-then anyone that really wants to can use +pf.
-
-cheers, Joe
-
+Are you saying we should prefix with "nvidia," on ALL of the properties I've defined for the tegra20-ehci node?  Or specifically those seven that you pointed out?  Because I don't see a difference in terms of "custom"-ality between say, hssync-start-delay, and the other stuff like phy-type, mode, power-down-on-bus-suspend, and the reset-gpio and clk from phy-type=ulpi...unless we're considering stuff like phy-type to be a standard USB host controller node property.
