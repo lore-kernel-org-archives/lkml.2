@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751151Ab1GTIaq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 04:30:46 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48906 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750936Ab1GTIap (ORCPT
+	id S1751146Ab1GTIet (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 04:34:49 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:33557 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750936Ab1GTIes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 04:30:45 -0400
-Date: Wed, 20 Jul 2011 09:30:36 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Nick Bowler <nbowler@elliptictech.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: kmemleak fails to report detected leaks after allocation
- failure
-Message-ID: <20110720083036.GG28726@e102109-lin.cambridge.arm.com>
-References: <20110719211438.GA21588@elliptictech.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110719211438.GA21588@elliptictech.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 20 Jul 2011 04:34:48 -0400
+From: reimth@googlemail.com
+To: Dave Airlie <airlied@redhat.com>, Alex Deucher <alexdeucher@gmail.com>,
+        Mario Kleiner <mario.kleiner@tuebingen.mpg.de>,
+        Jean Delvare <khali@linux-fr.org>,
+        Tyson Whitehead <twhitehead@gmail.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Stephen Michaels <Stephen.Micheals@gmail.com>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Thomas Reim <reimth@gmail.com>
+Subject: [PATCH] drm/radeon: Fix ECS A740GM-M DVI-D EDID error flooding problem
+Date: Wed, 20 Jul 2011 10:34:05 +0200
+Message-Id: <1311150845-19198-1-git-send-email-reimth@gmail.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1309995012-5873-1-git-send-email-reimth@gmail.com>
+References: <1309995012-5873-1-git-send-email-reimth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 19, 2011 at 10:14:38PM +0100, Nick Bowler wrote:
-> I just ran into a somewhat amusing issue with kmemleak.  After running
-> for a while (10 days), and detecting about 100 "suspected memory leaks",
-> kmemleak ultimately reported:
-> 
->   kmemleak: Cannot allocate a kmemleak_object structure
->   kmemleak: Automatic memory scanning thread ended
->   kmemleak: Kernel memory leak detector disabled
-> 
-> OK, so something failed and kmemleak apparently can't recover from
-> this.  However, at this point, it appears that kmemleak has *also*
-> lost the ability to report the earlier leaks that it actually
-> detected.
-> 
->   cat: /sys/kernel/debug/kmemleak: Device or resource busy
-> 
-> It seems to me that kmemleak shouldn't lose the ability to report leaks
-> that it already detected after it disables itself due to an issue that
-> was potentially caused by the very leaks that it managed to detect
-> (unlikely in this instance, but still...).
+From: Thomas Reim <reimth@gmail.com>
 
-Very good point, I haven't thought of this. I'll try to improve this
-part.
+   ECS A740GM-M with ATI RADEON 2100 sends data to i2c bus
+   for a DVI connector that is not implemented/existent on the board.
 
-Thanks.
+   Fix by applying extented DDC probing for this connector.
 
+   Requires [PATCH] drm/radeon: Fix Asus M2A-VM HDMI EDID error flooding problem
+
+   BugLink: http://bugs.launchpad.net/bugs/810926
+
+Signed-off-by: Thomas Reim <reimth@gmail.com>
+---
+ drivers/gpu/drm/radeon/radeon_connectors.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/gpu/drm/radeon/radeon_connectors.c b/drivers/gpu/drm/radeon/radeon_connectors.c
+index 2e70be2..82dacc6 100644
+--- a/drivers/gpu/drm/radeon/radeon_connectors.c
++++ b/drivers/gpu/drm/radeon/radeon_connectors.c
+@@ -449,6 +449,15 @@ static bool radeon_connector_needs_extended_probe(struct radeon_device *dev,
+ 		    (supported_device == ATOM_DEVICE_DFP2_SUPPORT))
+ 			return true;
+ 	}
++	/* ECS A740GM-M with ATI RADEON 2100 sends data to i2c bus
++	 * for a DVI connector that is not implemented */
++	if ((dev->pdev->device == 0x796e) &&
++	    (dev->pdev->subsystem_vendor == 0x1019) &&
++	    (dev->pdev->subsystem_device == 0x2615)) {
++		if ((connector_type == DRM_MODE_CONNECTOR_DVID) &&
++		    (supported_device == ATOM_DEVICE_DFP2_SUPPORT))
++			return true;
++	}
+ 
+ 	/* Default: no EDID header probe required for DDC probing */
+ 	return false;
 -- 
-Catalin
+1.7.1
+
