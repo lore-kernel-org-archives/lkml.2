@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751819Ab1GTNyI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 09:54:08 -0400
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:39099 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103Ab1GTNyG (ORCPT
+	id S1751907Ab1GTNyR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 09:54:17 -0400
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:34067 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751103Ab1GTNyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 09:54:06 -0400
-Date: Wed, 20 Jul 2011 16:53:56 +0300 (EEST)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tiger
-To: Konstantin Khlebnikov <khlebnikov@parallels.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
+	Wed, 20 Jul 2011 09:54:14 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: hPI7MJ0VM1nRJy0aSQd8tmq_7jw1mS2MbXrlho09qn1f4Xi
+ TNvcyxf_uhJxzofaS7KZ9.8VuEUCY3m.jsNeS8XAsEf0LB8vhcHK7tOUyoaR
+ XA9J2ykVNj_pbiLTUHQrvtdwU6uR61lyS3xr2XLdyoEjFQjmSXVI0O0iMih1
+ uz6nOuS8N1HHKDpxN0gPNNlT498P8bcy6VPiShLMApfqK1uxa_0hroIIzmn_
+ TjkHKC0erkg4SHTtayoRu0O4NjR2ojEfuIjeHojIWozljJPUOqmvHN7Jk2KL
+ SbSQG4Pc0x4OA.eKhLpXfVhk9j.edNPg6gOmpMCfFce1WECGp
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Wed, 20 Jul 2011 08:54:10 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Pekka Enberg <penberg@kernel.org>
+cc: Konstantin Khlebnikov <khlebnikov@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Matt Mackall <mpm@selenic.com>, "mgorman@suse.de" <mgorman@suse.de>
 Subject: Re: [PATCH] mm-slab: allocate kmem_cache with __GFP_REPEAT
-In-Reply-To: <4E26DD25.4010707@parallels.com>
-Message-ID: <alpine.DEB.2.00.1107201653080.4921@tiger>
-References: <20110720121612.28888.38970.stgit@localhost6> <alpine.DEB.2.00.1107201611010.3528@tiger> <4E26D7EA.3000902@parallels.com> <alpine.DEB.2.00.1107201638520.4921@tiger> <4E26DD25.4010707@parallels.com>
+In-Reply-To: <alpine.DEB.2.00.1107201638520.4921@tiger>
+Message-ID: <alpine.DEB.2.00.1107200852590.32737@router.home>
+References: <20110720121612.28888.38970.stgit@localhost6> <alpine.DEB.2.00.1107201611010.3528@tiger> <4E26D7EA.3000902@parallels.com> <alpine.DEB.2.00.1107201638520.4921@tiger>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Jul 2011, Konstantin Khlebnikov wrote:
->>>> The changelog isn't that convincing, really. This is kmem_cache_create()
->>>> so I'm surprised we'd ever get NULL here in practice. Does this fix some
->>>> problem you're seeing? If this is really an issue, I'd blame the page
->>>> allocator as GFP_KERNEL should just work.
->>> 
->>> nf_conntrack creates separate slab-cache for each net-namespace,
->>> this patch of course not eliminates the chance of failure, but makes it 
->>> more
->>> acceptable.
->> 
->> I'm still surprised you are seeing failures. mm/slab.c hasn't changed
->> significantly in a long time. Why hasn't anyone reported this before? I'd
->> still be inclined to shift the blame to the page allocator... Mel,
->> Christoph?
->> 
->> On Wed, 20 Jul 2011, Konstantin Khlebnikov wrote:
->>> struct kmem_size for slub is more compact, it uses pecpu-pointers instead 
->>> of
->>> dumb NR_CPUS-size array.
->>> probably better to fix this side...
->> 
->> So how big is 'struct kmem_cache' for your configuration anyway? Fixing
->> the per-cpu data structures would be nice but I'm guessing it'll be
->> slightly painful for mm/slab.c.
+On Wed, 20 Jul 2011, Pekka Enberg wrote:
+
+> On Wed, 20 Jul 2011, Konstantin Khlebnikov wrote:
+> > > The changelog isn't that convincing, really. This is kmem_cache_create()
+> > > so I'm surprised we'd ever get NULL here in practice. Does this fix some
+> > > problem you're seeing? If this is really an issue, I'd blame the page
+> > > allocator as GFP_KERNEL should just work.
+> >
+> > nf_conntrack creates separate slab-cache for each net-namespace,
+> > this patch of course not eliminates the chance of failure, but makes it more
+> > acceptable.
 >
-> With NR_CPUS=4096 and MAX_NUMNODES=512 its over 9k!
-> so it require order-4 page, meanwhile PAGE_ALLOC_COSTLY_ORDER is 3
+> I'm still surprised you are seeing failures. mm/slab.c hasn't changed
+> significantly in a long time. Why hasn't anyone reported this before? I'd
+> still be inclined to shift the blame to the page allocator... Mel, Christoph?
 
-That's somewhat sad. I suppose I can just merge your patch unless other 
-people object to it. I'd like a v2 with better changelog though.
-
- 			Pekka
+There was a lot of recent fiddling with the reclaim logic. Maybe some of
+those changes caused the problem?
