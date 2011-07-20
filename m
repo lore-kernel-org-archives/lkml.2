@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752986Ab1GTSIK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 14:08:10 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:40553 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752504Ab1GTSIJ (ORCPT
+	id S1752985Ab1GTSIv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 14:08:51 -0400
+Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:44304 "HELO
+	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751822Ab1GTSIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 14:08:09 -0400
-Message-ID: <4E271A66.40307@colorfullife.com>
-Date: Wed, 20 Jul 2011 20:11:50 +0200
-From: Manfred Spraul <manfred@colorfullife.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
+	Wed, 20 Jul 2011 14:08:50 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: G2n77aIVM1mVak5WyBXbAiIBCVvvO0nVzjhGgajKhc5Ut5l
+ lARgRY50OCSeUOekoVkN4HPIKd4nKN5XHyRRW_vTaU_H9y_orNOVFQfpsrY3
+ qpGy.9_sJmhnlTd2QK3Hz3O8dbcuy7AJJifS3cKzHjgOduTM.VPKunPCuwhI
+ NPU98gf19I27hquLJg549ZU1yzh.3GWA1tbaJqWMFrF92AwO0yNN2xBambmP
+ nKC76lITDtG7bFj9Qojg3k9qDIzNr_UeNK6OPfLwKoCkB3N98EbXRGVV4YSK
+ 28qJXNPMTjhdZkwoxED4Qe587G0OQHN1YWTxuarHWNiznoe2HfhqZRBCEKFY
+ nUEKl_eBqyAk3S9AZ2iXmbg4-
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Wed, 20 Jul 2011 13:08:46 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Mel Gorman <mgorman@suse.de>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] mm: page allocator: Initialise ZLC for first zone
+ eligible for zone_reclaim
+In-Reply-To: <alpine.DEB.2.00.1107190901120.1199@router.home>
+Message-ID: <alpine.DEB.2.00.1107201307530.1472@router.home>
+References: <1310742540-22780-1-git-send-email-mgorman@suse.de> <1310742540-22780-2-git-send-email-mgorman@suse.de> <alpine.DEB.2.00.1107180951390.30392@router.home> <20110718160552.GB5349@suse.de> <alpine.DEB.2.00.1107181208050.31576@router.home>
+ <20110718211325.GC5349@suse.de> <alpine.DEB.2.00.1107181651000.31576@router.home> <alpine.DEB.2.00.1107190901120.1199@router.home>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Harald Laabs <kernelml@dasr.de>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [BUG] null-pointer in task_rq_lock (2.6.35 to 3.0-rc7)
-References: <4E25E2F5.7090807@dasr.de> <1311110082.3113.27.camel@edumazet-laptop>
-In-Reply-To: <1311110082.3113.27.camel@edumazet-laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2011 11:14 PM, Eric Dumazet wrote:
-> Le mardi 19 juillet 2011 à 22:03 +0200, Harald Laabs a écrit :Hi,
->>
->> I'm not able to fix or understand this bug myself, its already in
->> bugzilla with the call trace:
->> https://bugzilla.kernel.org/show_bug.cgi?id=27142
->>
->> Is there any more useful information I can provide? Anything to test?
-Could you build a kernel with CONFIG_DEBUG_LIST enabled?
-Does it report anything?
->> Does anyone know of changes from 2.6.34 to 2.6.35 that might have
->> broken this? (The diff and the changelog do not enlighten me, too
->> much changed and I understand little of it.)
-> I feel commit 0a2b9d4c79671b059568 might be the bug origin
-> (ipc/sem.c: move wake_up_process out of the spinlock section)
->
-I'll try to reproduce the bug tomorrow.
-Perhaps a race with multiple processes sleeping, some/all woken up by a 
-signal an a concurrent IPC_RM.
-
-But I don't see the bug yet.
-
---
-     Manfred
+Hmmm... Looking at get_page_from_freelist and considering speeding that up
+in general: Could we move the whole watermark logic into the slow path?
+Only check when we refill the per cpu queues?
 
