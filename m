@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752543Ab1GTWxH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 18:53:07 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:4662 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751906Ab1GTWxE convert rfc822-to-8bit (ORCPT
+	id S1752578Ab1GTWyj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 18:54:39 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:60807 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752338Ab1GTWyi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 18:53:04 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 20 Jul 2011 15:52:56 -0700
-From: Andrew Chew <AChew@nvidia.com>
-To: "'Grant Likely'" <grant.likely@secretlab.ca>
-CC: "olof@lixom.net" <olof@lixom.net>, Stephen Warren <swarren@nvidia.com>,
-        Dan Willemsen <dwillemsen@nvidia.com>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Venkat Moganty <vmoganty@nvidia.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 20 Jul 2011 15:52:55 -0700
-Subject: RE: [PATCH 1/3 v2] usb: tegra20-ehci: Add devicetree support.
-Thread-Topic: [PATCH 1/3 v2] usb: tegra20-ehci: Add devicetree support.
-Thread-Index: AcxHF/dB+sbXVNoRSQiKUl6LNrkNkwAF5Waw
-Message-ID: <643E69AA4436674C8F39DCC2C05F76383CF0DD227C@HQMAIL03.nvidia.com>
-References: <1311190690-18334-1-git-send-email-achew@nvidia.com>
- <CACxGe6uDVdemjbjY_i-_M_-VT8HuLdtXP-R9V8kB+pSSin4dEw@mail.gmail.com>
-In-Reply-To: <CACxGe6uDVdemjbjY_i-_M_-VT8HuLdtXP-R9V8kB+pSSin4dEw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Wed, 20 Jul 2011 18:54:38 -0400
+Date: Wed, 20 Jul 2011 23:54:06 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: David Brown <davidb@codeaurora.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] MSM fix
+Message-ID: <20110720225406.GB20310@n2100.arm.linux.org.uk>
+References: <20110720203703.GA4495@huya.qualcomm.com> <1989166.1WcWHOXyl7@wuerfel> <20110720225010.GA18381@huya.qualcomm.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110720225010.GA18381@huya.qualcomm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +       retval = of_property_read_u32(dn, "hssync_start_delay",
-> > +                                     (u32 
-> *)&phy_config->hssync_start_delay);
+On Wed, Jul 20, 2011 at 03:50:10PM -0700, David Brown wrote:
+> On Wed, Jul 20, 2011 at 11:06:15PM +0200, Arnd Bergmann wrote:
+> > On Wednesday 20 July 2011 13:37:03 David Brown wrote:
+> > > I seem to have missed this fix when it was sent out in April.
+> > > 
+> > > The following changes since commit 620917de59eeb934b9f8cf35cc2d95c1ac8ed0fc:
+> > > 
+> > >   Linux 3.0-rc7 (2011-07-11 16:51:52 -0700)
+> > > 
+> > > are available in the git repository at:
+> > >   git://codeaurora.org/quic/kernel/davidb/linux-msm.git msm-fix
+> > > 
+> > > Jeff Ohlstein (1):
+> > >       msm: platsmp: actually read core count in get_core_count
+> > > 
+> > 
+> > Hmm, this one seems like it really applies to older kernels as well, so
+> > we can just as well add a cc:stable@kernel.org tag and put it into the
+> > arm-soc/next/fixes branch, right?
 > 
-> Gah!  Don't cast pointers that way.  It will break badly if the sizes
-> don't match.  The variable *must* be a u32.
+> It looks like it would apply to 2.6.38 and 39 as well.  I'm not sure
+> it qualifies under the "It must fix a real bug that bothers people".
+> It would only apply if someone had set NR_CPUS to more than 2.
 
-Can we have u16 and u8 versions of of_property_read, then?  It'll simplify code.  I'll be happy to submit a patch for that if that's what we want.
+Err, this makes no sense.  MSM doesn't have a get_core_count function
+and as far as I can see never has done in mainline.
+
+And where is the patch?
+
+We shouldn't be pulling git requests into arm-soc without having seen
+the patches on LAKML.
