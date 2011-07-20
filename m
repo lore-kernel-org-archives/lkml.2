@@ -1,193 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753043Ab1GTSQZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 14:16:25 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:60906 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752649Ab1GTSQX (ORCPT
+	id S1753072Ab1GTSTA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 14:19:00 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:57985 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752933Ab1GTSS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 14:16:23 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX193SM8L48B3CJ23/4cvIZ8EfU8d5cdm4eSfu+FPeg
-	z31SAcMpKNGM9V
-Message-ID: <4E271B72.3070909@gmx.de>
-Date: Wed, 20 Jul 2011 18:16:18 +0000
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110702 Icedove/3.0.11
-MIME-Version: 1.0
-To: lethal@linux-sh.org
-CC: linux-fbdev@vger.kernel.org, francis.moro@gmail.com,
-        torvalds@linux-foundation.org, bonbons@linux-vserver.org,
-        linux-kernel@vger.kernel.org,
-        Herton Ronaldo Krzesinski <herton@mandriva.com.br>, stable@kernel.org
-Subject: Re: [PATCH] fb: avoid possible deadlock caused by fb_set_suspend
-References: <4DF7B0B4.4060002@gmx.de> <1308337359-3480-1-git-send-email-FlorianSchandinat@gmx.de>
-In-Reply-To: <1308337359-3480-1-git-send-email-FlorianSchandinat@gmx.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	Wed, 20 Jul 2011 14:18:59 -0400
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: vinod.koul@intel.com, dan.j.williams@intel.com,
+        rmk+kernel@arm.linux.org.uk, linus.walleij@stericsson.com,
+        per.friden@stericsson.com, wei.zhang@freescale.com,
+        ebony.zhu@freescale.com, iws@ovro.caltech.edu, s.hauer@pengutronix.de,
+        maciej.sosnowski@intel.com, saeed@marvell.com, shawn.guo@freescale.com,
+        yur@emcraft.com, agust@denx.de, iwamatsu.nobuhiro@renesas.com,
+        per.forlin@stericsson.com, jonas.aberg@stericsson.com,
+        anemo@mba.ocn.ne.jp, Jassi Brar <jaswinder.singh@linaro.org>
+Subject: [PATCH] DMAEngine: Let dmac drivers set chan_id
+Date: Wed, 20 Jul 2011 23:48:26 +0530
+Message-Id: <1311185906-7813-1-git-send-email-jaswinder.singh@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+A DMAC driver might put chan_id to better use by directly
+mapping system-wide channel numbers on them (and not DMAC
+relative index). Now client drivers can employ simpler
+dma_filter_fn callbacks.
 
-what are your plans for the patch below? Do you queue it for 3.1?
-The only feedback so far was that one driver (sh_mobile_hdmi) would require more 
-work with a patch for that proposed. Without any objections to the patch I think 
-we should take it as fixing the subsystem is more important than causing 
-potential issues with a single driver.
+Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
+---
 
+The rest of DMAC drivers already assign chan_id (albeit
+only to be overwritten by core driver).
 
-Thanks,
+ drivers/dma/amba-pl08x.c  |    1 +
+ drivers/dma/coh901318.c   |    3 ++-
+ drivers/dma/dmaengine.c   |    1 -
+ drivers/dma/fsldma.c      |    2 +-
+ drivers/dma/imx-dma.c     |    1 +
+ drivers/dma/imx-sdma.c    |    4 +++-
+ drivers/dma/ioat/dma.c    |    1 +
+ drivers/dma/iop-adma.c    |    1 +
+ drivers/dma/mv_xor.c      |    1 +
+ drivers/dma/mxs-dma.c     |    2 +-
+ drivers/dma/ppc4xx/adma.c |    1 +
+ drivers/dma/shdma.c       |    1 +
+ drivers/dma/ste_dma40.c   |    1 +
+ drivers/dma/txx9dmac.c    |    1 +
+ 14 files changed, 16 insertions(+), 5 deletions(-)
 
-Florian Tobias Schandinat
-
-On 06/17/2011 07:02 PM, Florian Tobias Schandinat wrote:
-> From: Herton Ronaldo Krzesinski<herton@mandriva.com.br>
->
-> A lock ordering issue can cause deadlocks: in framebuffer/console code,
-> all needed struct fb_info locks are taken before acquire_console_sem(),
-> in places which need to take console semaphore.
->
-> But fb_set_suspend is always called with console semaphore held, and
-> inside it we call lock_fb_info which gets the fb_info lock, inverse
-> locking order of what the rest of the code does. This causes a real
-> deadlock issue, when we write to state fb sysfs attribute (which calls
-> fb_set_suspend) while a framebuffer is being unregistered by
-> remove_conflicting_framebuffers, as can be shown by following show
-> blocked state trace on a test program which loads i915 and runs another
-> forked processes writing to state attribute:
->
-> Test process with semaphore held and trying to get fb_info lock:
-> ..
-> fb-test2      D 0000000000000000     0   237    228 0x00000000
->   ffff8800774f3d68 0000000000000082 00000000000135c0 00000000000135c0
->   ffff880000000000 ffff8800774f3fd8 ffff8800774f3fd8 ffff880076ee4530
->   00000000000135c0 ffff8800774f3fd8 ffff8800774f2000 00000000000135c0
-> Call Trace:
->   [<ffffffff8141287a>] __mutex_lock_slowpath+0x11a/0x1e0
->   [<ffffffff814142f2>] ? _raw_spin_lock_irq+0x22/0x40
->   [<ffffffff814123d3>] mutex_lock+0x23/0x50
->   [<ffffffff8125dfc5>] lock_fb_info+0x25/0x60
->   [<ffffffff8125e3f0>] fb_set_suspend+0x20/0x80
->   [<ffffffff81263e2f>] store_fbstate+0x4f/0x70
->   [<ffffffff812e7f70>] dev_attr_store+0x20/0x30
->   [<ffffffff811c46b4>] sysfs_write_file+0xd4/0x160
->   [<ffffffff81155a26>] vfs_write+0xc6/0x190
->   [<ffffffff81155d51>] sys_write+0x51/0x90
->   [<ffffffff8100c012>] system_call_fastpath+0x16/0x1b
-> ..
-> modprobe process stalled because has the fb_info lock (got inside
-> unregister_framebuffer) but waiting for the semaphore held by the
-> test process which is waiting to get the fb_info lock:
-> ..
-> modprobe      D 0000000000000000     0   230    218 0x00000000
->   ffff880077a4d618 0000000000000082 0000000000000001 0000000000000001
->   ffff880000000000 ffff880077a4dfd8 ffff880077a4dfd8 ffff8800775a2e20
->   00000000000135c0 ffff880077a4dfd8 ffff880077a4c000 00000000000135c0
-> Call Trace:
->   [<ffffffff81411fe5>] schedule_timeout+0x215/0x310
->   [<ffffffff81058051>] ? get_parent_ip+0x11/0x50
->   [<ffffffff814130dd>] __down+0x6d/0xb0
->   [<ffffffff81089f71>] down+0x41/0x50
->   [<ffffffff810629ac>] acquire_console_sem+0x2c/0x50
->   [<ffffffff812ca53d>] unbind_con_driver+0xad/0x2d0
->   [<ffffffff8126f5f7>] fbcon_event_notify+0x457/0x890
->   [<ffffffff814144ff>] ? _raw_spin_unlock_irqrestore+0x1f/0x50
->   [<ffffffff81058051>] ? get_parent_ip+0x11/0x50
->   [<ffffffff8141836d>] notifier_call_chain+0x4d/0x70
->   [<ffffffff8108a3b8>] __blocking_notifier_call_chain+0x58/0x80
->   [<ffffffff8108a3f6>] blocking_notifier_call_chain+0x16/0x20
->   [<ffffffff8125dabb>] fb_notifier_call_chain+0x1b/0x20
->   [<ffffffff8125e6ac>] unregister_framebuffer+0x7c/0x130
->   [<ffffffff8125e8b3>] remove_conflicting_framebuffers+0x153/0x180
->   [<ffffffff8125eef3>] register_framebuffer+0x93/0x2c0
->   [<ffffffffa0331112>] drm_fb_helper_single_fb_probe+0x252/0x2f0 [drm_kms_helper]
->   [<ffffffffa03314a3>] drm_fb_helper_initial_config+0x2f3/0x6d0 [drm_kms_helper]
->   [<ffffffffa03318dd>] ? drm_fb_helper_single_add_all_connectors+0x5d/0x1c0 [drm_kms_helper]
->   [<ffffffffa037b588>] intel_fbdev_init+0xa8/0x160 [i915]
->   [<ffffffffa0343d74>] i915_driver_load+0x854/0x12b0 [i915]
->   [<ffffffffa02f0e7e>] drm_get_pci_dev+0x19e/0x360 [drm]
->   [<ffffffff8141821d>] ? sub_preempt_count+0x9d/0xd0
->   [<ffffffffa0386f91>] i915_pci_probe+0x15/0x17 [i915]
->   [<ffffffff8124481f>] local_pci_probe+0x5f/0xd0
->   [<ffffffff81244f89>] pci_device_probe+0x119/0x120
->   [<ffffffff812eccaa>] ? driver_sysfs_add+0x7a/0xb0
->   [<ffffffff812ed003>] driver_probe_device+0xa3/0x290
->   [<ffffffff812ed1f0>] ? __driver_attach+0x0/0xb0
->   [<ffffffff812ed29b>] __driver_attach+0xab/0xb0
->   [<ffffffff812ed1f0>] ? __driver_attach+0x0/0xb0
->   [<ffffffff812ebd3e>] bus_for_each_dev+0x5e/0x90
->   [<ffffffff812ecc2e>] driver_attach+0x1e/0x20
->   [<ffffffff812ec6f2>] bus_add_driver+0xe2/0x320
->   [<ffffffffa03aa000>] ? i915_init+0x0/0x96 [i915]
->   [<ffffffff812ed536>] driver_register+0x76/0x140
->   [<ffffffffa03aa000>] ? i915_init+0x0/0x96 [i915]
->   [<ffffffff81245216>] __pci_register_driver+0x56/0xd0
->   [<ffffffffa02f1264>] drm_pci_init+0xe4/0xf0 [drm]
->   [<ffffffffa03aa000>] ? i915_init+0x0/0x96 [i915]
->   [<ffffffffa02e84a8>] drm_init+0x58/0x70 [drm]
->   [<ffffffffa03aa094>] i915_init+0x94/0x96 [i915]
->   [<ffffffff81002194>] do_one_initcall+0x44/0x190
->   [<ffffffff810a066b>] sys_init_module+0xcb/0x210
->   [<ffffffff8100c012>] system_call_fastpath+0x16/0x1b
-> ..
->
-> fb-test2 which reproduces above is available on kernel.org bug #26232.
-> To solve this issue, avoid calling lock_fb_info inside fb_set_suspend,
-> and move it out to where needed (callers of fb_set_suspend must call
-> lock_fb_info before if needed). So far, the only place which needs to
-> call lock_fb_info is store_fbstate, all other places which calls
-> fb_set_suspend are suspend/resume hooks that should not need the lock as
-> they should be run only when processes are already frozen in
-> suspend/resume.
->
-> References: https://bugzilla.kernel.org/show_bug.cgi?id=26232
-> Signed-off-by: Herton Ronaldo Krzesinski<herton@mandriva.com.br>
-> Signed-off-by: Florian Tobias Schandinat<FlorianSchandinat@gmx.de>
-> Cc: stable@kernel.org
-> ---
->   drivers/video/fbmem.c   |    3 ---
->   drivers/video/fbsysfs.c |    3 +++
->   2 files changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
-> index 5aac00e..ad93629 100644
-> --- a/drivers/video/fbmem.c
-> +++ b/drivers/video/fbmem.c
-> @@ -1738,8 +1738,6 @@ void fb_set_suspend(struct fb_info *info, int state)
->   {
->   	struct fb_event event;
->
-> -	if (!lock_fb_info(info))
-> -		return;
->   	event.info = info;
->   	if (state) {
->   		fb_notifier_call_chain(FB_EVENT_SUSPEND,&event);
-> @@ -1748,7 +1746,6 @@ void fb_set_suspend(struct fb_info *info, int state)
->   		info->state = FBINFO_STATE_RUNNING;
->   		fb_notifier_call_chain(FB_EVENT_RESUME,&event);
->   	}
-> -	unlock_fb_info(info);
->   }
->
->   /**
-> diff --git a/drivers/video/fbsysfs.c b/drivers/video/fbsysfs.c
-> index 04251ce..67afa9c 100644
-> --- a/drivers/video/fbsysfs.c
-> +++ b/drivers/video/fbsysfs.c
-> @@ -399,9 +399,12 @@ static ssize_t store_fbstate(struct device *device,
->
->   	state = simple_strtoul(buf,&last, 0);
->
-> +	if (!lock_fb_info(fb_info))
-> +		return -ENODEV;
->   	console_lock();
->   	fb_set_suspend(fb_info, (int)state);
->   	console_unlock();
-> +	unlock_fb_info(fb_info);
->
->   	return count;
->   }
+diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
+index e6d7228..40083ef 100644
+--- a/drivers/dma/amba-pl08x.c
++++ b/drivers/dma/amba-pl08x.c
+@@ -1738,6 +1738,7 @@ static int pl08x_dma_init_virtual_channels(struct pl08x_driver_data *pl08x,
+ 		tasklet_init(&chan->tasklet, pl08x_tasklet,
+ 			     (unsigned long) chan);
+ 
++		chan->chan.chan_id = i;
+ 		list_add_tail(&chan->chan.device_node, &dmadev->channels);
+ 	}
+ 	dev_info(&pl08x->adev->dev, "initialized %d virtual %s channels\n",
+diff --git a/drivers/dma/coh901318.c b/drivers/dma/coh901318.c
+index af8c0b5..3d8b67a 100644
+--- a/drivers/dma/coh901318.c
++++ b/drivers/dma/coh901318.c
+@@ -1414,7 +1414,7 @@ void coh901318_base_init(struct dma_device *dma, const int *pick_chans,
+ 			 struct coh901318_base *base)
+ {
+ 	int chans_i;
+-	int i = 0;
++	int i = 0, id = 0;
+ 	struct coh901318_chan *cohc;
+ 
+ 	INIT_LIST_HEAD(&dma->channels);
+@@ -1442,6 +1442,7 @@ void coh901318_base_init(struct dma_device *dma, const int *pick_chans,
+ 			tasklet_init(&cohc->tasklet, dma_tasklet,
+ 				     (unsigned long) cohc);
+ 
++			cohc->chan.chan_id = id++;
+ 			list_add_tail(&cohc->chan.device_node,
+ 				      &dma->channels);
+ 		}
+diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
+index 8bcb15f..d166088 100644
+--- a/drivers/dma/dmaengine.c
++++ b/drivers/dma/dmaengine.c
+@@ -735,7 +735,6 @@ int dma_async_device_register(struct dma_device *device)
+ 			goto err_out;
+ 		}
+ 
+-		chan->chan_id = chancnt++;
+ 		chan->dev->device.class = &dma_devclass;
+ 		chan->dev->device.parent = device->dev;
+ 		chan->dev->chan = chan;
+diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+index 8a78154..477a821 100644
+--- a/drivers/dma/fsldma.c
++++ b/drivers/dma/fsldma.c
+@@ -1309,7 +1309,7 @@ static int __devinit fsl_dma_chan_probe(struct fsldma_device *fdev,
+ 
+ 	/* Add the channel to DMA device channel list */
+ 	list_add_tail(&chan->common.device_node, &fdev->common.channels);
+-	fdev->common.chancnt++;
++	chan->common.chan_id = fdev->common.chancnt++;
+ 
+ 	dev_info(fdev->dev, "#%d (%s), irq %d\n", chan->id, compatible,
+ 		 chan->irq != NO_IRQ ? chan->irq : fdev->irq);
+diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
+index e18eaab..bbf8619 100644
+--- a/drivers/dma/imx-dma.c
++++ b/drivers/dma/imx-dma.c
+@@ -368,6 +368,7 @@ static int __init imxdma_probe(struct platform_device *pdev)
+ 		imxdmac->chan.device = &imxdma->dma_device;
+ 		imxdmac->channel = i;
+ 
++		imxdmac->chan.chan_id = i;
+ 		/* Add the channel to the DMAC list */
+ 		list_add_tail(&imxdmac->chan.device_node, &imxdma->dma_device.channels);
+ 	}
+diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+index b6d1455..be1d481 100644
+--- a/drivers/dma/imx-sdma.c
++++ b/drivers/dma/imx-sdma.c
+@@ -1305,9 +1305,11 @@ static int __init sdma_probe(struct platform_device *pdev)
+ 		 * because we need it internally in the SDMA driver. This also means
+ 		 * that channel 0 in dmaengine counting matches sdma channel 1.
+ 		 */
+-		if (i)
++		if (i) {
++			sdmac->chan.chan_id = i - 1;
+ 			list_add_tail(&sdmac->chan.device_node,
+ 					&sdma->dma_device.channels);
++		}
+ 	}
+ 
+ 	ret = sdma_init(sdma);
+diff --git a/drivers/dma/ioat/dma.c b/drivers/dma/ioat/dma.c
+index a4d6cb0..7c1dbe5 100644
+--- a/drivers/dma/ioat/dma.c
++++ b/drivers/dma/ioat/dma.c
+@@ -107,6 +107,7 @@ void ioat_init_channel(struct ioatdma_device *device, struct ioat_chan_common *c
+ 	chan->reg_base = device->reg_base + (0x80 * (idx + 1));
+ 	spin_lock_init(&chan->cleanup_lock);
+ 	chan->common.device = dma;
++	chan->common.chan_id = idx;
+ 	list_add_tail(&chan->common.device_node, &dma->channels);
+ 	device->idx[idx] = chan;
+ 	init_timer(&chan->timer);
+diff --git a/drivers/dma/iop-adma.c b/drivers/dma/iop-adma.c
+index e03f811..8778e63 100644
+--- a/drivers/dma/iop-adma.c
++++ b/drivers/dma/iop-adma.c
+@@ -1565,6 +1565,7 @@ static int __devinit iop_adma_probe(struct platform_device *pdev)
+ 	INIT_LIST_HEAD(&iop_chan->chain);
+ 	INIT_LIST_HEAD(&iop_chan->all_slots);
+ 	iop_chan->common.device = dma_dev;
++	iop_chan->common.chan_id = 0;
+ 	list_add_tail(&iop_chan->common.device_node, &dma_dev->channels);
+ 
+ 	if (dma_has_cap(DMA_MEMCPY, dma_dev->cap_mask)) {
+diff --git a/drivers/dma/mv_xor.c b/drivers/dma/mv_xor.c
+index 954e334..722c668 100644
+--- a/drivers/dma/mv_xor.c
++++ b/drivers/dma/mv_xor.c
+@@ -1215,6 +1215,7 @@ static int __devinit mv_xor_probe(struct platform_device *pdev)
+ 	INIT_LIST_HEAD(&mv_chan->all_slots);
+ 	mv_chan->common.device = dma_dev;
+ 
++	mv_chan->common.chan_id = 0;
+ 	list_add_tail(&mv_chan->common.device_node, &dma_dev->channels);
+ 
+ 	if (dma_has_cap(DMA_MEMCPY, dma_dev->cap_mask)) {
+diff --git a/drivers/dma/mxs-dma.c b/drivers/dma/mxs-dma.c
+index 88aad4f..f79599e 100644
+--- a/drivers/dma/mxs-dma.c
++++ b/drivers/dma/mxs-dma.c
+@@ -655,7 +655,7 @@ static int __init mxs_dma_probe(struct platform_device *pdev)
+ 		tasklet_init(&mxs_chan->tasklet, mxs_dma_tasklet,
+ 			     (unsigned long) mxs_chan);
+ 
+-
++		mxs_chan->chan.chan_id = i;
+ 		/* Add the channel to mxs_chan list */
+ 		list_add_tail(&mxs_chan->chan.device_node,
+ 			&mxs_dma->dma_device.channels);
+diff --git a/drivers/dma/ppc4xx/adma.c b/drivers/dma/ppc4xx/adma.c
+index fc457a7..bacd896 100644
+--- a/drivers/dma/ppc4xx/adma.c
++++ b/drivers/dma/ppc4xx/adma.c
+@@ -4529,6 +4529,7 @@ static int __devinit ppc440spe_adma_probe(struct platform_device *ofdev)
+ 	INIT_LIST_HEAD(&chan->all_slots);
+ 	chan->device = adev;
+ 	chan->common.device = &adev->common;
++	chan->common.chan_id = 0;
+ 	list_add_tail(&chan->common.device_node, &adev->common.channels);
+ 	tasklet_init(&chan->irq_tasklet, ppc440spe_adma_tasklet,
+ 		     (unsigned long)chan);
+diff --git a/drivers/dma/shdma.c b/drivers/dma/shdma.c
+index 0283300..469cdb8 100644
+--- a/drivers/dma/shdma.c
++++ b/drivers/dma/shdma.c
+@@ -1028,6 +1028,7 @@ static int __devinit sh_dmae_chan_probe(struct sh_dmae_device *shdev, int id,
+ 	INIT_LIST_HEAD(&new_sh_chan->ld_queue);
+ 	INIT_LIST_HEAD(&new_sh_chan->ld_free);
+ 
++	new_sh_chan->common.chan_id = id;
+ 	/* Add the channel to DMA device channel list */
+ 	list_add_tail(&new_sh_chan->common.device_node,
+ 			&shdev->common.channels);
+diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+index 8f222d4..a30d37b 100644
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -2345,6 +2345,7 @@ static void __init d40_chan_init(struct d40_base *base, struct dma_device *dma,
+ 		tasklet_init(&d40c->tasklet, dma_tasklet,
+ 			     (unsigned long) d40c);
+ 
++		d40c->chan.chan_id = i - offset;
+ 		list_add_tail(&d40c->chan.device_node,
+ 			      &dma->channels);
+ 	}
+diff --git a/drivers/dma/txx9dmac.c b/drivers/dma/txx9dmac.c
+index cbd83e36..271e8d3 100644
+--- a/drivers/dma/txx9dmac.c
++++ b/drivers/dma/txx9dmac.c
+@@ -1186,6 +1186,7 @@ static int __init txx9dmac_chan_probe(struct platform_device *pdev)
+ 	dc->ddev->chan[ch] = dc;
+ 	dc->chan.device = &dc->dma;
+ 	list_add_tail(&dc->chan.device_node, &dc->chan.device->channels);
++	dc->chan.chan_id = 0;
+ 	dc->chan.cookie = dc->completed = 1;
+ 
+ 	if (is_dmac64(dc))
+-- 
+1.7.4.1
 
