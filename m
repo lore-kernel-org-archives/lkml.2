@@ -1,73 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753094Ab1GTSTe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 14:19:34 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:58601 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753032Ab1GTSTd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 14:19:33 -0400
+	id S1752933Ab1GTSZd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 14:25:33 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:50822 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752167Ab1GTSZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 14:25:32 -0400
+Date: Wed, 20 Jul 2011 11:25:12 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org, greearb@candelatech.com, edt@aei.ca
+Subject: [PATCH rcu/urgent 0/7 v2] Fixes for RCU/scheduler/irq-threads
+ trainwreck
+Message-ID: <20110720182512.GA22946@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110720001738.GA16369@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <201107202009.12279.richard@nod.at>
-References: <1310994456-14142-1-git-send-email-richard@nod.at>
- <1310994456-14142-3-git-send-email-richard@nod.at> <4E27163A.6090102@mit.edu> <201107202009.12279.richard@nod.at>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Wed, 20 Jul 2011 14:19:13 -0400
-X-Google-Sender-Auth: wdGAFnoET8RTmC3XD8Z_XF0AExE
-Message-ID: <CAObL_7Gss0GcB8OtoCf-rUdsi8n4345gBESBub+5hu4g9fcssw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] um: Implement a x86_64 vDSO
-To: Richard Weinberger <richard@nod.at>
-Cc: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110720001738.GA16369@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 20, 2011 at 2:09 PM, Richard Weinberger <richard@nod.at> wrote:
-> Am Mittwoch 20 Juli 2011, 19:54:02 schrieb Andy Lutomirski:
->> On 07/18/2011 09:07 AM, Richard Weinberger wrote:
->> > Until now UML had no x86_64 vDSO.
->> > So glibc always used the vsyscall page for gettimeday()
->> > and friends.
->> > Calls to gettimeday() returned falsely the host time and
->> > confused some programs.
->> >
->> > This patch adds a vDSO which turns all __vdso_* calls into
->> > a system call so that UML can trap them.
->> >
->> > As glibc still uses the vsyscall page for static binaries this
->> > patch improves the situation only for dynamic binaries.
->> >
->> > Signed-off-by: Richard Weinberger<richard@nod.at>
->> >
->> > +   asm("syscall" : "=a" (ret) :
->> > +           "0" (__NR_clock_gettime), "D" (clock), "S" (ts) : "memory");
->> > +
->>
->> The x86-64 ABI and glibc think that rcx, and r11 are clobbered.  glibc
->> also thinks that cc is clobbered.  I personally think that rdx and
->> r8-r15 ought to be clobbered under the principle that syscall should
->> look like a function call.
->
-> Hmm, I thought my implementation is fine because it follows
-> arch/x86/vdso/vclock_gettime.c (Linus' tree).
->
-> notrace static long vdso_fallback_gettime(long clock, struct timespec *ts)
-> {
->  long ret;
->  asm("syscall" : "=a" (ret) :
->      "0" (__NR_clock_gettime),"D" (clock), "S" (ts) : "memory");
->  return ret;
-> }
->
-> Am I missing something or needs vdso_fallback_gettime() also some updates?
+Hello!
 
-vdso_fallback_gettime is going away :)
+This patch set contains version 2 of fixes for a trainwreck involving
+RCU, the scheduler, and threaded interrupts.  This trainwreck involved
+RCU failing to properly protect one of its bit fields, use of RCU by
+the scheduler from portions of irq_exit() where in_irq() returns false,
+uses of the scheduler by RCU colliding with uses of RCU by the scheduler,
+threaded interrupts exercising the problematic portions of irq_exit()
+more heavily, and so on.  The patches are as follows:
 
-I haven't read all of the sysret code paths, but it looks like at
-least r11 is used in a comment.  That being said, your code is an
-uninlinable function, and functions already clobber all those
-registers, so the code shouldn't cause problems in real life.
+1.	Properly protect current->rcu_read_unlock_special().
+	Lack of protection was causing RCU to recurse on itself, which
+	in turn resulted in deadlocks involving RCU and the scheduler.
+	This affects only RCU_BOOST=y configurations.
+2.	Streamline code produced by __rcu_read_unlock().  This one is
+	an innocent bystander that is being carried due to conflicts
+	with other patches.  (A later version will likely merge it
+	with #3 below.)
+3.	Make __rcu_read_unlock() delay counting the per-task
+	->rcu_read_lock_nesting variable to zero until all cleanup for the
+	just-ended RCU read-side critical section has completed.  This
+	prevents a number of other cases that could result in deadlock
+	due to self recursion.	This affects only TREE_PREEMPT_RCU=y
+	configurations.
+4.	Make scheduler_ipi() correctly identify itself as being
+	in_irq() when it needs to do anything that might involve RCU,
+	thus enabling RCU to avoid yet another class of potential
+	self-recursions and deadlocks.	This affects PREEMPT_RCU=y
+	configurations.
+5.	Make irq_exit() inform RCU when it is invoking the scheduler
+	in situations where in_irq() would return false, thus
+	allowing RCU to correctly avoid self-recursion.  This affects
+	TREE_PREEMPT_RCU=y configurations.
+6.	Make __lock_task_sighand() execute the entire RCU read-side
+	critical section with irqs disabled.  (An experimental patch at
+	http://marc.info/?l=linux-kernel&m=131110647222185 might possibly
+	make it legal to have an RCU read-side critical section where
+	the rcu_read_unlock() is executed with interrupts disabled,
+	but where some protion of the RCU read-side critical section
+	was preemptible.)  This affects TREE_PREEMPT_RCU=y configurations.
 
---Andy
+TINY_PREEMPT_RCU will also need a few of these changes, but in the
+meantime this patch stack helps organize things better for testing.
+
+Changes from v1 (lkml.kernel.org/r/20110720001738.GA16369@linux.vnet.ibm.com):
+
+o	Fix an embarrassing missing-braces bug in rcu_report_exp_rnp().
+
+o	Fix the WARN_ON_ONCE() in __rcu_read_unlock() to correctly handle
+	the new negative values.
+
+o	Make the RCU read-side critical section in __lock_task_sighand()
+	cover the full sighand->siglock critical section.
+
+Many thanks to Peter for his review and to Ed and Ben for their testing.
+
+These are also available from the following subject-to-rebase git branch:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/urgent
+
+Or will be once kernel.org's mirrors have updated.
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+ b/include/linux/sched.h   |    3 ++
+ b/kernel/rcutree_plugin.h |    6 +++--
+ b/kernel/sched.c          |   44 ++++++++++++++++++++++++++++++++++-----
+ b/kernel/signal.c         |   19 +++++++++++------
+ b/kernel/softirq.c        |   12 +++++++++-
+ kernel/rcutree_plugin.h   |   51 +++++++++++++++++++++++++++++++++-------------
+ 6 files changed, 105 insertions(+), 30 deletions(-)
