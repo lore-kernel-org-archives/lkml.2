@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752205Ab1GTOai (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 10:30:38 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46650 "EHLO arroyo.ext.ti.com"
+	id S1752258Ab1GTObK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 10:31:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5303 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751631Ab1GTOab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 10:30:31 -0400
-From: <pavan_savoy@ti.com>
-To: <greg@kroah.com>, <linux-kernel@vger.kernel.org>
-CC: pavan_savoy@sify.com, Vijay Badawadagi <bvijay@ti.com>,
-        Pavan Savoy <pavan_savoy@ti.com>
-Subject: [PATCH 4/4] drivers:misc: ti-st: fail-safe on wrong pkt type
-Date: Wed, 20 Jul 2011 09:30:25 -0500
-Message-ID: <1311172225-17678-10-git-send-email-pavan_savoy@ti.com>
-X-Mailer: git-send-email 1.5.6.3
-In-Reply-To: <1311172225-17678-9-git-send-email-pavan_savoy@ti.com>
-References: <1311172225-17678-1-git-send-email-pavan_savoy@ti.com>
- <1311172225-17678-2-git-send-email-pavan_savoy@ti.com>
- <1311172225-17678-3-git-send-email-pavan_savoy@ti.com>
- <1311172225-17678-4-git-send-email-pavan_savoy@ti.com>
- <1311172225-17678-5-git-send-email-pavan_savoy@ti.com>
- <1311172225-17678-6-git-send-email-pavan_savoy@ti.com>
- <1311172225-17678-7-git-send-email-pavan_savoy@ti.com>
- <1311172225-17678-8-git-send-email-pavan_savoy@ti.com>
- <1311172225-17678-9-git-send-email-pavan_savoy@ti.com>
+	id S1752191Ab1GTObH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 10:31:07 -0400
+Date: Wed, 20 Jul 2011 17:31:15 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Krishna Kumar <krkumar2@in.ibm.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, shemminger@vyatta.com
+Subject: Re: [PATCH repost] Fix panic in virtnet_remove
+Message-ID: <20110720143115.GB6787@redhat.com>
+References: <20110720135602.18705.21405.sendpatchset@krkumar2.in.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110720135602.18705.21405.sendpatchset@krkumar2.in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vijay Badawadagi <bvijay@ti.com>
+On Wed, Jul 20, 2011 at 07:26:02PM +0530, Krishna Kumar wrote:
+> Fix a panic in virtnet_remove. unregister_netdev has already
+> freed up the netdev (and virtnet_info) due to dev->destructor
+> being set, while virtnet_info is still required. Remove
+> virtnet_free altogether, and move the freeing of the per-cpu
+> statistics from virtnet_free to virtnet_remove.
+> 
+> Tested patch below.
+> 
+> Signed-off-by: Krishna Kumar <krkumar2@in.ibm.com>
 
-Texas Instrument's shared transport driver interpret incoming data from the
-UART based on the various protocol drivers registered to the driver such as
-btwilink driver or FM or GPS driver which provide logical channel IDs.
+Also note that the crash was apparently introduced by
+3fa2a1df909482cc234524906e4bd30dee3514df in net-next,
+so this is a net-next only patch.
 
-In case of bad-behavior from chip such as HCI Event response for a GPS command
-or a HCI Event (h/w error event) for a FM response & In case of bad-behavior
-from UART driver such as dropping data bytes a fail-safe is required to avoid
-kernel panic.
+Stephen, was there any special reason to free the memory
+in the destructor like you did?
 
-Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
-Signed-off-by: Vijay Badawadagi <bvijay@ti.com>
----
- drivers/misc/ti-st/st_core.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 
-diff --git a/drivers/misc/ti-st/st_core.c b/drivers/misc/ti-st/st_core.c
-index c8e335d..1f973ce 100644
---- a/drivers/misc/ti-st/st_core.c
-+++ b/drivers/misc/ti-st/st_core.c
-@@ -338,6 +338,12 @@ void st_int_recv(void *disc_data,
- 			/* Unknow packet? */
- 		default:
- 			type = *ptr;
-+			if (st_gdata->list[type] == NULL) {
-+				pr_err("chip/interface misbehavior dropping"
-+					" frame starting with 0x%02x", type);
-+				goto done;
-+
-+			}
- 			st_gdata->rx_skb = alloc_skb(
- 					st_gdata->list[type]->max_frame_size,
- 					GFP_ATOMIC);
-@@ -354,6 +360,7 @@ void st_int_recv(void *disc_data,
- 		ptr++;
- 		count--;
- 	}
-+done:
- 	spin_unlock_irqrestore(&st_gdata->lock, flags);
- 	pr_debug("done %s", __func__);
- 	return;
--- 
-1.7.4.1
-
+> ---
+> (Michael suggested me to re-post with copy to all maintainers)
+> 
+>  drivers/net/virtio_net.c |   10 +---------
+>  1 file changed, 1 insertion(+), 9 deletions(-)
+> 
+> diff -ruNp org/drivers/net/virtio_net.c new/drivers/net/virtio_net.c
+> --- org/drivers/net/virtio_net.c	2011-07-18 09:14:02.000000000 +0530
+> +++ new/drivers/net/virtio_net.c	2011-07-18 09:16:35.000000000 +0530
+> @@ -705,14 +705,6 @@ static void virtnet_netpoll(struct net_d
+>  }
+>  #endif
+>  
+> -static void virtnet_free(struct net_device *dev)
+> -{
+> -	struct virtnet_info *vi = netdev_priv(dev);
+> -
+> -	free_percpu(vi->stats);
+> -	free_netdev(dev);
+> -}
+> -
+>  static int virtnet_open(struct net_device *dev)
+>  {
+>  	struct virtnet_info *vi = netdev_priv(dev);
+> @@ -959,7 +951,6 @@ static int virtnet_probe(struct virtio_d
+>  	/* Set up network device as normal. */
+>  	dev->netdev_ops = &virtnet_netdev;
+>  	dev->features = NETIF_F_HIGHDMA;
+> -	dev->destructor = virtnet_free;
+>  
+>  	SET_ETHTOOL_OPS(dev, &virtnet_ethtool_ops);
+>  	SET_NETDEV_DEV(dev, &vdev->dev);
+> @@ -1122,6 +1113,7 @@ static void __devexit virtnet_remove(str
+>  	while (vi->pages)
+>  		__free_pages(get_a_page(vi, GFP_KERNEL), 0);
+>  
+> +	free_percpu(vi->stats);
+>  	free_netdev(vi->dev);
+>  }
+>  
