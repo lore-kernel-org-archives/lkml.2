@@ -1,79 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753052Ab1GTSJR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 14:09:17 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:33285 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751920Ab1GTSJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 14:09:16 -0400
-From: Richard Weinberger <richard@nod.at>
-To: Andy Lutomirski <luto@mit.edu>
-Subject: Re: [PATCH 3/3] um: Implement a x86_64 vDSO
-Date: Wed, 20 Jul 2011 20:09:11 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.37.6-0.5-desktop; KDE/4.6.5; x86_64; ; )
-Cc: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-References: <1310994456-14142-1-git-send-email-richard@nod.at> <1310994456-14142-3-git-send-email-richard@nod.at> <4E27163A.6090102@mit.edu>
-In-Reply-To: <4E27163A.6090102@mit.edu>
+	id S1753043Ab1GTSQZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 14:16:25 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:60906 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752649Ab1GTSQX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 14:16:23 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX193SM8L48B3CJ23/4cvIZ8EfU8d5cdm4eSfu+FPeg
+	z31SAcMpKNGM9V
+Message-ID: <4E271B72.3070909@gmx.de>
+Date: Wed, 20 Jul 2011 18:16:18 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110702 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: lethal@linux-sh.org
+CC: linux-fbdev@vger.kernel.org, francis.moro@gmail.com,
+        torvalds@linux-foundation.org, bonbons@linux-vserver.org,
+        linux-kernel@vger.kernel.org,
+        Herton Ronaldo Krzesinski <herton@mandriva.com.br>, stable@kernel.org
+Subject: Re: [PATCH] fb: avoid possible deadlock caused by fb_set_suspend
+References: <4DF7B0B4.4060002@gmx.de> <1308337359-3480-1-git-send-email-FlorianSchandinat@gmx.de>
+In-Reply-To: <1308337359-3480-1-git-send-email-FlorianSchandinat@gmx.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201107202009.12279.richard@nod.at>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch 20 Juli 2011, 19:54:02 schrieb Andy Lutomirski:
-> On 07/18/2011 09:07 AM, Richard Weinberger wrote:
-> > Until now UML had no x86_64 vDSO.
-> > So glibc always used the vsyscall page for gettimeday()
-> > and friends.
-> > Calls to gettimeday() returned falsely the host time and
-> > confused some programs.
-> > 
-> > This patch adds a vDSO which turns all __vdso_* calls into
-> > a system call so that UML can trap them.
-> > 
-> > As glibc still uses the vsyscall page for static binaries this
-> > patch improves the situation only for dynamic binaries.
-> > 
-> > Signed-off-by: Richard Weinberger<richard@nod.at>
-> > 
-> > +	asm("syscall" : "=a" (ret) :
-> > +		"0" (__NR_clock_gettime), "D" (clock), "S" (ts) : "memory");
-> > +
-> 
-> The x86-64 ABI and glibc think that rcx, and r11 are clobbered.  glibc
-> also thinks that cc is clobbered.  I personally think that rdx and
-> r8-r15 ought to be clobbered under the principle that syscall should
-> look like a function call.
+Hi Paul,
 
-Hmm, I thought my implementation is fine because it follows 
-arch/x86/vdso/vclock_gettime.c (Linus' tree).
+what are your plans for the patch below? Do you queue it for 3.1?
+The only feedback so far was that one driver (sh_mobile_hdmi) would require more 
+work with a patch for that proposed. Without any objections to the patch I think 
+we should take it as fixing the subsystem is more important than causing 
+potential issues with a single driver.
 
-notrace static long vdso_fallback_gettime(long clock, struct timespec *ts)
-{
-  long ret;
-  asm("syscall" : "=a" (ret) :
-      "0" (__NR_clock_gettime),"D" (clock), "S" (ts) : "memory");
-  return ret;
-}
-
-Am I missing something or needs vdso_fallback_gettime() also some updates?
-
-> It's hard to imagine this causing a problem in a function this trivial,
-> though.
-> 
-> This applies to the other two syscall instructions as well.
-> 
-> --Andy
-> 
-> P.S.  If you really care, with the changes in tip/x86/vdso, it ought to
-> be possible for UML to trap vsyscalls as well.  This would need a change
-> to do_emulate_vsyscall to honor TIF_SYSCALL_EMU with intelligent
-> semantics.  I know nothing about ptrace, so I'm not volunteering :)
-
-Ok, I'll have at look at it.
 
 Thanks,
-//richard
+
+Florian Tobias Schandinat
+
+On 06/17/2011 07:02 PM, Florian Tobias Schandinat wrote:
+> From: Herton Ronaldo Krzesinski<herton@mandriva.com.br>
+>
+> A lock ordering issue can cause deadlocks: in framebuffer/console code,
+> all needed struct fb_info locks are taken before acquire_console_sem(),
+> in places which need to take console semaphore.
+>
+> But fb_set_suspend is always called with console semaphore held, and
+> inside it we call lock_fb_info which gets the fb_info lock, inverse
+> locking order of what the rest of the code does. This causes a real
+> deadlock issue, when we write to state fb sysfs attribute (which calls
+> fb_set_suspend) while a framebuffer is being unregistered by
+> remove_conflicting_framebuffers, as can be shown by following show
+> blocked state trace on a test program which loads i915 and runs another
+> forked processes writing to state attribute:
+>
+> Test process with semaphore held and trying to get fb_info lock:
+> ..
+> fb-test2      D 0000000000000000     0   237    228 0x00000000
+>   ffff8800774f3d68 0000000000000082 00000000000135c0 00000000000135c0
+>   ffff880000000000 ffff8800774f3fd8 ffff8800774f3fd8 ffff880076ee4530
+>   00000000000135c0 ffff8800774f3fd8 ffff8800774f2000 00000000000135c0
+> Call Trace:
+>   [<ffffffff8141287a>] __mutex_lock_slowpath+0x11a/0x1e0
+>   [<ffffffff814142f2>] ? _raw_spin_lock_irq+0x22/0x40
+>   [<ffffffff814123d3>] mutex_lock+0x23/0x50
+>   [<ffffffff8125dfc5>] lock_fb_info+0x25/0x60
+>   [<ffffffff8125e3f0>] fb_set_suspend+0x20/0x80
+>   [<ffffffff81263e2f>] store_fbstate+0x4f/0x70
+>   [<ffffffff812e7f70>] dev_attr_store+0x20/0x30
+>   [<ffffffff811c46b4>] sysfs_write_file+0xd4/0x160
+>   [<ffffffff81155a26>] vfs_write+0xc6/0x190
+>   [<ffffffff81155d51>] sys_write+0x51/0x90
+>   [<ffffffff8100c012>] system_call_fastpath+0x16/0x1b
+> ..
+> modprobe process stalled because has the fb_info lock (got inside
+> unregister_framebuffer) but waiting for the semaphore held by the
+> test process which is waiting to get the fb_info lock:
+> ..
+> modprobe      D 0000000000000000     0   230    218 0x00000000
+>   ffff880077a4d618 0000000000000082 0000000000000001 0000000000000001
+>   ffff880000000000 ffff880077a4dfd8 ffff880077a4dfd8 ffff8800775a2e20
+>   00000000000135c0 ffff880077a4dfd8 ffff880077a4c000 00000000000135c0
+> Call Trace:
+>   [<ffffffff81411fe5>] schedule_timeout+0x215/0x310
+>   [<ffffffff81058051>] ? get_parent_ip+0x11/0x50
+>   [<ffffffff814130dd>] __down+0x6d/0xb0
+>   [<ffffffff81089f71>] down+0x41/0x50
+>   [<ffffffff810629ac>] acquire_console_sem+0x2c/0x50
+>   [<ffffffff812ca53d>] unbind_con_driver+0xad/0x2d0
+>   [<ffffffff8126f5f7>] fbcon_event_notify+0x457/0x890
+>   [<ffffffff814144ff>] ? _raw_spin_unlock_irqrestore+0x1f/0x50
+>   [<ffffffff81058051>] ? get_parent_ip+0x11/0x50
+>   [<ffffffff8141836d>] notifier_call_chain+0x4d/0x70
+>   [<ffffffff8108a3b8>] __blocking_notifier_call_chain+0x58/0x80
+>   [<ffffffff8108a3f6>] blocking_notifier_call_chain+0x16/0x20
+>   [<ffffffff8125dabb>] fb_notifier_call_chain+0x1b/0x20
+>   [<ffffffff8125e6ac>] unregister_framebuffer+0x7c/0x130
+>   [<ffffffff8125e8b3>] remove_conflicting_framebuffers+0x153/0x180
+>   [<ffffffff8125eef3>] register_framebuffer+0x93/0x2c0
+>   [<ffffffffa0331112>] drm_fb_helper_single_fb_probe+0x252/0x2f0 [drm_kms_helper]
+>   [<ffffffffa03314a3>] drm_fb_helper_initial_config+0x2f3/0x6d0 [drm_kms_helper]
+>   [<ffffffffa03318dd>] ? drm_fb_helper_single_add_all_connectors+0x5d/0x1c0 [drm_kms_helper]
+>   [<ffffffffa037b588>] intel_fbdev_init+0xa8/0x160 [i915]
+>   [<ffffffffa0343d74>] i915_driver_load+0x854/0x12b0 [i915]
+>   [<ffffffffa02f0e7e>] drm_get_pci_dev+0x19e/0x360 [drm]
+>   [<ffffffff8141821d>] ? sub_preempt_count+0x9d/0xd0
+>   [<ffffffffa0386f91>] i915_pci_probe+0x15/0x17 [i915]
+>   [<ffffffff8124481f>] local_pci_probe+0x5f/0xd0
+>   [<ffffffff81244f89>] pci_device_probe+0x119/0x120
+>   [<ffffffff812eccaa>] ? driver_sysfs_add+0x7a/0xb0
+>   [<ffffffff812ed003>] driver_probe_device+0xa3/0x290
+>   [<ffffffff812ed1f0>] ? __driver_attach+0x0/0xb0
+>   [<ffffffff812ed29b>] __driver_attach+0xab/0xb0
+>   [<ffffffff812ed1f0>] ? __driver_attach+0x0/0xb0
+>   [<ffffffff812ebd3e>] bus_for_each_dev+0x5e/0x90
+>   [<ffffffff812ecc2e>] driver_attach+0x1e/0x20
+>   [<ffffffff812ec6f2>] bus_add_driver+0xe2/0x320
+>   [<ffffffffa03aa000>] ? i915_init+0x0/0x96 [i915]
+>   [<ffffffff812ed536>] driver_register+0x76/0x140
+>   [<ffffffffa03aa000>] ? i915_init+0x0/0x96 [i915]
+>   [<ffffffff81245216>] __pci_register_driver+0x56/0xd0
+>   [<ffffffffa02f1264>] drm_pci_init+0xe4/0xf0 [drm]
+>   [<ffffffffa03aa000>] ? i915_init+0x0/0x96 [i915]
+>   [<ffffffffa02e84a8>] drm_init+0x58/0x70 [drm]
+>   [<ffffffffa03aa094>] i915_init+0x94/0x96 [i915]
+>   [<ffffffff81002194>] do_one_initcall+0x44/0x190
+>   [<ffffffff810a066b>] sys_init_module+0xcb/0x210
+>   [<ffffffff8100c012>] system_call_fastpath+0x16/0x1b
+> ..
+>
+> fb-test2 which reproduces above is available on kernel.org bug #26232.
+> To solve this issue, avoid calling lock_fb_info inside fb_set_suspend,
+> and move it out to where needed (callers of fb_set_suspend must call
+> lock_fb_info before if needed). So far, the only place which needs to
+> call lock_fb_info is store_fbstate, all other places which calls
+> fb_set_suspend are suspend/resume hooks that should not need the lock as
+> they should be run only when processes are already frozen in
+> suspend/resume.
+>
+> References: https://bugzilla.kernel.org/show_bug.cgi?id=26232
+> Signed-off-by: Herton Ronaldo Krzesinski<herton@mandriva.com.br>
+> Signed-off-by: Florian Tobias Schandinat<FlorianSchandinat@gmx.de>
+> Cc: stable@kernel.org
+> ---
+>   drivers/video/fbmem.c   |    3 ---
+>   drivers/video/fbsysfs.c |    3 +++
+>   2 files changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
+> index 5aac00e..ad93629 100644
+> --- a/drivers/video/fbmem.c
+> +++ b/drivers/video/fbmem.c
+> @@ -1738,8 +1738,6 @@ void fb_set_suspend(struct fb_info *info, int state)
+>   {
+>   	struct fb_event event;
+>
+> -	if (!lock_fb_info(info))
+> -		return;
+>   	event.info = info;
+>   	if (state) {
+>   		fb_notifier_call_chain(FB_EVENT_SUSPEND,&event);
+> @@ -1748,7 +1746,6 @@ void fb_set_suspend(struct fb_info *info, int state)
+>   		info->state = FBINFO_STATE_RUNNING;
+>   		fb_notifier_call_chain(FB_EVENT_RESUME,&event);
+>   	}
+> -	unlock_fb_info(info);
+>   }
+>
+>   /**
+> diff --git a/drivers/video/fbsysfs.c b/drivers/video/fbsysfs.c
+> index 04251ce..67afa9c 100644
+> --- a/drivers/video/fbsysfs.c
+> +++ b/drivers/video/fbsysfs.c
+> @@ -399,9 +399,12 @@ static ssize_t store_fbstate(struct device *device,
+>
+>   	state = simple_strtoul(buf,&last, 0);
+>
+> +	if (!lock_fb_info(fb_info))
+> +		return -ENODEV;
+>   	console_lock();
+>   	fb_set_suspend(fb_info, (int)state);
+>   	console_unlock();
+> +	unlock_fb_info(fb_info);
+>
+>   	return count;
+>   }
+
