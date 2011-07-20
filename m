@@ -1,91 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685Ab1GTT35 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 15:29:57 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:33704 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752032Ab1GTT34 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 15:29:56 -0400
-Date: Wed, 20 Jul 2011 12:29:49 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Ben Greear <greearb@candelatech.com>, Ed Tomlinson <edt@aei.ca>,
-        linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, edward.tomlinson@aero.bombardier.com
-Subject: Re: [PATCH rcu/urgent 0/6] Fixes for RCU/scheduler/irq-threads
- trainwreck
-Message-ID: <20110720192949.GM2313@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <201107192130.02080.edt@aei.ca>
- <201107192207.33813.edt@aei.ca>
- <20110720044435.GB2400@linux.vnet.ibm.com>
- <CA+55aFyaCY=qzFKswi2NR097KZtb5x98sba3rHJ7B0rchtzm2g@mail.gmail.com>
- <20110720133443.GG2400@linux.vnet.ibm.com>
- <4E270A0E.6090902@candelatech.com>
- <20110720171532.GB2313@linux.vnet.ibm.com>
- <20110720184413.GD17977@elte.hu>
- <1311187978.29152.58.camel@twins>
- <CA+55aFyuKTj3zEvWJEx4_RDzLQ+ipJ58UWFYH84nmcwGF_c4aA@mail.gmail.com>
+	id S1751654Ab1GTTjg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 15:39:36 -0400
+Received: from smtpo.poczta.interia.pl ([217.74.65.205]:11719 "EHLO
+	smtpo.poczta.interia.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751178Ab1GTTje (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 15:39:34 -0400
+From: Rafal Bilski <rafalbilski@interia.pl>
+To: Dave Jones <davej@redhat.com>
+Cc: cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?b?UmFmYcWC?= Bilski <rafalbilski@interia.pl>
+Subject: [PATCH] e_powersaver: Additional checks
+Date: Wed, 20 Jul 2011 20:42:23 +0100
+Message-Id: <1311190943-6660-1-git-send-email-rafalbilski@interia.pl>
+X-Mailer: git-send-email 1.7.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+X-Interia-Antivirus: OK
+X-EMID: a0771958
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFyuKTj3zEvWJEx4_RDzLQ+ipJ58UWFYH84nmcwGF_c4aA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 20, 2011 at 12:02:47PM -0700, Linus Torvalds wrote:
-> On Wed, Jul 20, 2011 at 11:52 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> >> �6 files changed, 105 insertions(+), 30 deletions(-)
-> >>
-> >> looks very scary to me.
-> >
-> > A lot of that is also relevant to !BOOST.
-> 
-> Can we limit this somehow? Or split it up? Which part of this is "fix
-> new BOOST features, not ever even executed without BOOST", and which
-> part of this is "fixes core stuff"?
+From: Rafał Bilski <rafalbilski@interia.pl>
 
-#2 (Fix RCU_BOOST race handling current->rcu_read_unlock_special) and
-#7 (align __lock_task_sighand() irq disabling and RCU) are needed only
-for RCU_BOOST.  The rest fix problems that can occur even with !RCU_BOOST.
-I believe that #4 (protect __rcu_read_unlock() against scheduler-using 
-irq handlers) turns #1 (decrease rcu_report_exp_rnp coupling with scheduler)
-into a longer-term maintenance issue rather than an urgent fix.
+Some systems are using 1,2Ghz@844mV processors running at 600MHz@796mV.
+Try to detect such systems and don't touch anything on it. If CPU doesn't have
+P-States in BIOS it should run at maximum frequency.
+Allow user to bypass checks by means of two new options.
+Don't set frequency to maximum on module unloading to avoid bada boom.
+It is also possible that some processors may have incorrect values in min/max
+registers caused by error in manufacturing process. Probably it would be BIOS
+job to set them to right frequency and P-States tables would have correct
+values inside.
+Two additional sanity checks for voltage.
 
-> I *really* hate the timing of this. The code that is only impacted by
-> BOOST I cannot find it in myself to care about, and I'd be willing to
-> consider it basically EXPERIMENTAL and just pulling it.
+Signed-off-by: Rafał Bilski <rafalbilski@interia.pl>
+---
+ drivers/cpufreq/e_powersaver.c |   41 +++++++++++++++++++++++++++++----------
+ 1 files changed, 30 insertions(+), 11 deletions(-)
 
-I can only say that I completely failed in my goal of making my code
-go in without a ripple.  :-(
+diff --git a/drivers/cpufreq/e_powersaver.c b/drivers/cpufreq/e_powersaver.c
+index 7883ffa..cab543b 100644
+--- a/drivers/cpufreq/e_powersaver.c
++++ b/drivers/cpufreq/e_powersaver.c
+@@ -32,6 +32,10 @@ struct eps_cpu_data {
+ 
+ static struct eps_cpu_data *eps_cpu[NR_CPUS];
+ 
++/* Module parameters */
++static int freq_failsafe_off;
++static int voltage_failsafe_off;
++
+ 
+ static unsigned int eps_get(unsigned int cpu)
+ {
+@@ -253,9 +257,27 @@ static int eps_cpu_init(struct cpufreq_policy *policy)
+ 		return -EINVAL;
+ 	if (current_voltage > 0x1f || max_voltage > 0x1f)
+ 		return -EINVAL;
+-	if (max_voltage < min_voltage)
++	if (max_voltage < min_voltage
++	    || current_voltage < min_voltage
++	    || current_voltage > max_voltage)
+ 		return -EINVAL;
+ 
++	/* Check for systems using underclocked CPU */
++	if (!freq_failsafe_off && max_multiplier != current_multiplier) {
++		printk(KERN_INFO "eps: Your processor is running at different "
++			"frequency then its maximum. Aborting.\n");
++		printk(KERN_INFO "eps: You can use freq_failsafe_off option "
++			"to disable this check.\n");
++		return -EINVAL;
++	}
++	if (!voltage_failsafe_off && max_voltage != current_voltage) {
++		printk(KERN_INFO "eps: Your processor is running at different "
++			"voltage then its maximum. Aborting.\n");
++		printk(KERN_INFO "eps: You can use voltage_failsafe_off "
++			"option to disable this check.\n");
++		return -EINVAL;
++	}
++
+ 	/* Calc FSB speed */
+ 	fsb = cpu_khz / current_multiplier;
+ 	/* Calc number of p-states supported */
+@@ -312,17 +334,7 @@ static int eps_cpu_init(struct cpufreq_policy *policy)
+ static int eps_cpu_exit(struct cpufreq_policy *policy)
+ {
+ 	unsigned int cpu = policy->cpu;
+-	struct eps_cpu_data *centaur;
+-	u32 lo, hi;
+-
+-	if (eps_cpu[cpu] == NULL)
+-		return -ENODEV;
+-	centaur = eps_cpu[cpu];
+ 
+-	/* Get max frequency */
+-	rdmsr(MSR_IA32_PERF_STATUS, lo, hi);
+-	/* Set max frequency */
+-	eps_set_state(centaur, cpu, hi & 0xffff);
+ 	/* Bye */
+ 	cpufreq_frequency_table_put_attr(policy->cpu);
+ 	kfree(eps_cpu[cpu]);
+@@ -368,6 +380,13 @@ static void __exit eps_exit(void)
+ 	cpufreq_unregister_driver(&eps_driver);
+ }
+ 
++/* Allow user to overclock his machine or to change frequency to higher after
++ * unloading module */
++module_param(freq_failsafe_off, int, 0644);
++MODULE_PARM_DESC(freq_failsafe_off, "Disable current vs max frequency check");
++module_param(voltage_failsafe_off, int, 0644);
++MODULE_PARM_DESC(voltage_failsafe_off, "Disable current vs max voltage check");
++
+ MODULE_AUTHOR("Rafal Bilski <rafalbilski@interia.pl>");
+ MODULE_DESCRIPTION("Enhanced PowerSaver driver for VIA C7 CPU's.");
+ MODULE_LICENSE("GPL");
+-- 
+1.7.6
 
-> IOW, is the core non-boost fix just a few obvious oneliners?
-> 
-> The "it all broke completely" in previous version of this also doesn't
-> make me get all the warm fuzzies. Which all makes me go "what is
-> minimal and really really SAFE?"
 
-Peter, does #4 (protect __rcu_read_unlock() against scheduler-using
-irq handlers) remove the need for #5 (Add irq_{enter,exit}() to
-scheduler_ipi()) and #6 (Inform RCU of irq_exit() activity)?  My guess is
-"no" for #5 and "yes" for #6.
-
-If my guess is correct, then the minimal non-RCU_BOOST fix is #4 (which
-drags along #3) and #6.  Which are not one-liners, but somewhat smaller:
-
- b/kernel/rcutree_plugin.h |   12 ++++++------
- b/kernel/softirq.c        |   12 ++++++++++--
- kernel/rcutree_plugin.h   |   31 +++++++++++++++++++++++++------
- 3 files changed, 41 insertions(+), 14 deletions(-)
-
-How would you like to proceed?
-
-							Thanx, Paul
+----------------------------------------------------------------
+Znajdz samochod idealny dla siebie!
+Szukaj >> http://linkint.pl/f29e2
