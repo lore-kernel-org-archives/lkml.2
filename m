@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753196Ab1GTS0q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 14:26:46 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:33572 "EHLO e6.ny.us.ibm.com"
+	id S1753179Ab1GTS0p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 14:26:45 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:46642 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753123Ab1GTS0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 14:26:43 -0400
+	id S1752634Ab1GTS0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 14:26:40 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -16,9 +16,9 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         patches@linaro.org, greearb@candelatech.com, edt@aei.ca,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/urgent 6/7] softirq,rcu: Inform RCU of irq_exit() activity
-Date: Wed, 20 Jul 2011 11:26:22 -0700
-Message-Id: <1311186383-24819-6-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/urgent 5/7] sched: Add irq_{enter,exit}() to scheduler_ipi()
+Date: Wed, 20 Jul 2011 11:26:21 -0700
+Message-Id: <1311186383-24819-5-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20110720182512.GA22946@linux.vnet.ibm.com>
 References: <20110720182512.GA22946@linux.vnet.ibm.com>
@@ -28,107 +28,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-The rcu_read_unlock_special() function relies on in_irq() to exclude
-scheduler activity from interrupt level.  This fails because exit_irq()
-can invoke the scheduler after clearing the preempt_count() bits that
-in_irq() uses to determine that it is at interrupt level.  This situation
-can result in failures as follows:
+Ensure scheduler_ipi() calls irq_{enter,exit} when it does some actual
+work. Traditionally we never did any actual work from the resched IPI
+and all magic happened in the return from interrupt path.
 
- $task			IRQ		SoftIRQ
+Now that we do do some work, we need to ensure irq_{enter,exit} are
+called so that we don't confuse things.
 
- rcu_read_lock()
+This affects things like timekeeping, NO_HZ and RCU, basically
+everything with a hook in irq_enter/exit.
 
- /* do stuff */
+Explicit examples of things going wrong are:
 
- <preempt> |= UNLOCK_BLOCKED
+  sched_clock_cpu() -- has a callback when leaving NO_HZ state to take
+                    a new reading from GTOD and TSC. Without this
+                    callback, time is stuck in the past.
 
- rcu_read_unlock()
-   --t->rcu_read_lock_nesting
+  RCU -- needs in_irq() to work in order to avoid some nasty deadlocks
 
-			irq_enter();
-			/* do stuff, don't use RCU */
-			irq_exit();
-			  sub_preempt_count(IRQ_EXIT_OFFSET);
-			  invoke_softirq()
-
-					ttwu();
-					  spin_lock_irq(&pi->lock)
-					  rcu_read_lock();
-					  /* do stuff */
-					  rcu_read_unlock();
-					    rcu_read_unlock_special()
-					      rcu_report_exp_rnp()
-					        ttwu()
-					          spin_lock_irq(&pi->lock) /* deadlock */
-
-   rcu_read_unlock_special(t);
-
-Ed can simply trigger this 'easy' because invoke_softirq() immediately
-does a ttwu() of ksoftirqd/# instead of doing the in-place softirq stuff
-first, but even without that the above happens.
-
-Cure this by also excluding softirqs from the
-rcu_read_unlock_special() handler and ensuring the force_irqthreads
-ksoftirqd/# wakeup is done from full softirq context.
-
-[ Alternatively, delaying the ->rcu_read_lock_nesting decrement
-  until after the special handling would make the thing more robust
-  in the face of interrupts as well.  And there is a separate patch
-  for that. ]
-
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Reported-and-tested-by: Ed Tomlinson <edt@aei.ca>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutree_plugin.h |    2 +-
- kernel/softirq.c        |   12 ++++++++++--
- 2 files changed, 11 insertions(+), 3 deletions(-)
+ kernel/sched.c |   44 ++++++++++++++++++++++++++++++++++++++------
+ 1 files changed, 38 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index d9d7a89..8aafbb8 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -318,7 +318,7 @@ static noinline void rcu_read_unlock_special(struct task_struct *t)
- 	}
- 
- 	/* Hardware IRQ handlers cannot block. */
--	if (in_irq()) {
-+	if (in_irq() || in_serving_softirq()) {
- 		local_irq_restore(flags);
- 		return;
- 	}
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 40cf63d..fca82c3 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -315,16 +315,24 @@ static inline void invoke_softirq(void)
- {
- 	if (!force_irqthreads)
- 		__do_softirq();
--	else
-+	else {
-+		__local_bh_disable((unsigned long)__builtin_return_address(0),
-+				SOFTIRQ_OFFSET);
- 		wakeup_softirqd();
-+		__local_bh_enable(SOFTIRQ_OFFSET);
-+	}
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 9769c75..1930ee1 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2544,13 +2544,9 @@ static int ttwu_remote(struct task_struct *p, int wake_flags)
  }
- #else
- static inline void invoke_softirq(void)
- {
- 	if (!force_irqthreads)
- 		do_softirq();
--	else
-+	else {
-+		__local_bh_disable((unsigned long)__builtin_return_address(0),
-+				SOFTIRQ_OFFSET);
- 		wakeup_softirqd();
-+		__local_bh_enable(SOFTIRQ_OFFSET);
-+	}
- }
- #endif
  
+ #ifdef CONFIG_SMP
+-static void sched_ttwu_pending(void)
++static void sched_ttwu_do_pending(struct task_struct *list)
+ {
+ 	struct rq *rq = this_rq();
+-	struct task_struct *list = xchg(&rq->wake_list, NULL);
+-
+-	if (!list)
+-		return;
+ 
+ 	raw_spin_lock(&rq->lock);
+ 
+@@ -2563,9 +2559,45 @@ static void sched_ttwu_pending(void)
+ 	raw_spin_unlock(&rq->lock);
+ }
+ 
++#ifdef CONFIG_HOTPLUG_CPU
++
++static void sched_ttwu_pending(void)
++{
++	struct rq *rq = this_rq();
++	struct task_struct *list = xchg(&rq->wake_list, NULL);
++
++	if (!list)
++		return;
++
++	sched_ttwu_do_pending(list);
++}
++
++#endif /* CONFIG_HOTPLUG_CPU */
++
+ void scheduler_ipi(void)
+ {
+-	sched_ttwu_pending();
++	struct rq *rq = this_rq();
++	struct task_struct *list = xchg(&rq->wake_list, NULL);
++
++	if (!list)
++		return;
++
++	/*
++	 * Not all reschedule IPI handlers call irq_enter/irq_exit, since
++	 * traditionally all their work was done from the interrupt return
++	 * path. Now that we actually do some work, we need to make sure
++	 * we do call them.
++	 *
++	 * Some archs already do call them, luckily irq_enter/exit nest
++	 * properly.
++	 *
++	 * Arguably we should visit all archs and update all handlers,
++	 * however a fair share of IPIs are still resched only so this would
++	 * somewhat pessimize the simple resched case.
++	 */
++	irq_enter();
++	sched_ttwu_do_pending(list);
++	irq_exit();
+ }
+ 
+ static void ttwu_queue_remote(struct task_struct *p, int cpu)
 -- 
 1.7.3.2
 
