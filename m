@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752234Ab1GTWC3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 18:02:29 -0400
+	id S1752276Ab1GTWDF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 18:03:05 -0400
 Received: from mail-fx0-f52.google.com ([209.85.161.52]:46171 "EHLO
 	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752182Ab1GTWC1 (ORCPT
+	with ESMTP id S1751545Ab1GTWCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 18:02:27 -0400
+	Wed, 20 Jul 2011 18:02:15 -0400
 From: Per Forlin <per.forlin@linaro.org>
 To: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -18,40 +18,38 @@ To: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
         Chris Ball <cjb@laptop.org>, Akinobu Mita <akinobu.mita@gmail.com>,
         J Freyensee <james_p_freyensee@linux.intel.com>
 Cc: Randy Dunlap <rdunlap@xenotime.net>, Per Forlin <per.forlin@linaro.org>
-Subject: [PATCH v3 3/3] fault injection: add documentation on MMC IO fault injection
-Date: Thu, 21 Jul 2011 00:02:01 +0200
-Message-Id: <1311199321-4618-4-git-send-email-per.forlin@linaro.org>
+Subject: [PATCH v3 0/3] Make fault injection available for MMC IO
+Date: Thu, 21 Jul 2011 00:01:58 +0200
+Message-Id: <1311199321-4618-1-git-send-email-per.forlin@linaro.org>
 X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1311199321-4618-1-git-send-email-per.forlin@linaro.org>
-References: <1311199321-4618-1-git-send-email-per.forlin@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add description on how to enable random fault injection
-for MMC IO
+The first version of this patch is a part of mmc non-blocking v9 patchset:
+[PATCH v9 11/12] mmc: core: add random fault injection
 
-Signed-off-by: Per Forlin <per.forlin@linaro.org>
----
- Documentation/fault-injection/fault-injection.txt |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+change log:
+ v2 - Resolve build issue in mmc core.c due to multiple init_module by
+      removing the fault inject module.
+    - Export fault injection functions to make them available for modules
+    - Update fault injection documentation on MMC IO  
+ v3 - add function descriptions in core.c
+    - use export GPL for fault injection functions
 
-diff --git a/Documentation/fault-injection/fault-injection.txt b/Documentation/fault-injection/fault-injection.txt
-index 7be15e4..27eede4 100644
---- a/Documentation/fault-injection/fault-injection.txt
-+++ b/Documentation/fault-injection/fault-injection.txt
-@@ -21,6 +21,11 @@ o fail_make_request
-   /sys/block/<device>/make-it-fail or
-   /sys/block/<device>/<partition>/make-it-fail. (generic_make_request())
- 
-+o fail_mmc_request
-+
-+  injects MMC data errors on devices permitted by setting
-+  /sys/kernel/debug/mmc0/make-it-fail
-+
- Configure fault-injection capabilities behavior
- -----------------------------------------------
- 
+Per Forlin (3):
+  fault-inject: make fault injection available for modules
+  mmc: core: add random fault injection
+  fault injection: add documentation on MMC IO fault injection
+
+ Documentation/fault-injection/fault-injection.txt |    5 ++
+ drivers/mmc/core/core.c                           |   69 +++++++++++++++++++++
+ drivers/mmc/core/debugfs.c                        |    5 ++
+ include/linux/mmc/host.h                          |    3 +
+ lib/Kconfig.debug                                 |   11 +++
+ lib/fault-inject.c                                |    2 +
+ 6 files changed, 95 insertions(+), 0 deletions(-)
+
 -- 
 1.7.4.1
 
