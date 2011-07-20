@@ -1,142 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751543Ab1GTIFd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 04:05:33 -0400
-Received: from smtp-out3.tiscali.nl ([195.241.79.178]:38439 "EHLO
-	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751080Ab1GTIF3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 04:05:29 -0400
-Subject: Re: recursive locking: epoll.
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Dave Jones <davej@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, davidel@xmailserver.org
-Date: Wed, 20 Jul 2011 10:05:23 +0200
-In-Reply-To: <20110715210420.GA22551@redhat.com>
-References: <4E1FF63F.4040704@gmail.com> <20110715210420.GA22551@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.1.3 (3.1.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1311149128.2098.10.camel@t41.thuisdomein>
-Mime-Version: 1.0
+	id S1751508Ab1GTIKW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 04:10:22 -0400
+Received: from mga09.intel.com ([134.134.136.24]:38903 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751180Ab1GTIKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 04:10:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,233,1309762800"; 
+   d="scan'208";a="27954195"
+From: Huang Ying <ying.huang@intel.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Tony Luck <tony.luck@intel.com>, ying.huang@intel.com,
+        linux-acpi@vger.kernel.org, Matthew Garrett <mjg@redhat.com>
+Subject: [BUGFIX] ACPI, APEI, EINJ Param support is disabled by default
+Date: Wed, 20 Jul 2011 16:09:29 +0800
+Message-Id: <1311149369-20624-1-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-15 at 17:04 -0400, Dave Jones wrote:
-> We just had a Fedora user report this lockdep trace.
+EINJ parameter support is only usable for some specific BIOS.
+Originally, it is expected to have no harm for BIOS does not support
+it.  But now, we found it will cause issue (memory overwriting) for
+some BIOS.  So param support is disabled by default and only enabled
+when newly added module parameter named "param_extension" is
+explicitly specified.
 
-0) Does this have a bugzilla.redhat.com number?
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+Cc: Matthew Garrett <mjg@redhat.com>
+Acked-by: Don Zickus <dzickus@redhat.com>
+Acked-by: Tony Luck <tony.luck@intel.com>
+---
+ Documentation/acpi/apei/einj.txt |   11 +++++++++--
+ drivers/acpi/apei/einj.c         |   39 ++++++++++++++++++++++++---------------
+ 2 files changed, 33 insertions(+), 17 deletions(-)
 
->   =============================================
->   [ INFO: possible recursive locking detected ]
->   3.0-0.rc7.git0.1.fc16.i686 #1
->   ---------------------------------------------
->   systemd-logind/651 is trying to acquire lock:
->    (&ep->mtx){+.+.+.}, at: [<c05285f1>] ep_scan_ready_list+0x32/0x154
->  
->   but task is already holding lock:
->    (&ep->mtx){+.+.+.}, at: [<c0528a90>] sys_epoll_ctl+0x103/0x481
->  
->   other info that might help us debug this:
->    Possible unsafe locking scenario:
->  
->          CPU0
->          ----
->     lock(&ep->mtx);
->     lock(&ep->mtx);
->  
->    *** DEADLOCK ***
->  
->    May be due to missing lock nesting notation
->  
->   2 locks held by systemd-logind/651:
->    #0:  (epmutex){+.+.+.}, at: [<c0528a4b>] sys_epoll_ctl+0xbe/0x481
->    #1:  (&ep->mtx){+.+.+.}, at: [<c0528a90>] sys_epoll_ctl+0x103/0x481
->  
->   stack backtrace:
->   Pid: 651, comm: systemd-logind Not tainted 3.0-0.rc7.git0.1.fc16.i686 #1
->   Call Trace:
->    [<c08490fe>] ? printk+0x2d/0x2f
->    [<c046b2ef>] __lock_acquire+0x811/0xb63
->    [<c0407c77>] ? sched_clock+0x8/0xb
->    [<c045d190>] ? sched_clock_local+0x10/0x18b
->    [<c05285f1>] ? ep_scan_ready_list+0x32/0x154
->    [<c046ba5e>] lock_acquire+0xad/0xe4
->    [<c05285f1>] ? ep_scan_ready_list+0x32/0x154
->    [<c08506bd>] __mutex_lock_common+0x49/0x2ee
->    [<c05285f1>] ? ep_scan_ready_list+0x32/0x154
->    [<c04332e6>] ? __might_sleep+0x29/0xfb
->    [<c046a912>] ? mark_lock+0x26/0x1f2
->    [<c0850a7c>] mutex_lock_nested+0x43/0x49
->    [<c05285f1>] ? ep_scan_ready_list+0x32/0x154
->    [<c05285f1>] ep_scan_ready_list+0x32/0x154
->    [<c05281cb>] ? ep_remove+0x9b/0x9b
->    [<c0528727>] ep_poll_readyevents_proc+0x14/0x16
->    [<c05283d6>] ep_call_nested.constprop.2+0x6d/0x9a
->    [<c0528713>] ? ep_scan_ready_list+0x154/0x154
->    [<c05284d2>] ep_eventpoll_poll+0x45/0x55
->    [<c0528b8c>] sys_epoll_ctl+0x1ff/0x481
->    [<c05282fb>] ? ep_send_events_proc+0xd5/0xd5
->    [<c08521ac>] syscall_call+0x7/0xb
-
-1) It seems I just ran into that deadlock too (on a Fedora Rawhide
-system, running a vanilla 3.0-0.rc7). I tried to capture it with a small
-digital camera, but using that camera for screenshots is apparently
-beyond my skills. (I could try capturing this message over a serial
-line, if needed.)
-
-2) Luckily, I also hit a related warning rebooting into v2.6.39, which I
-could just cut and paste from dmesg's output:
-
-=============================================
-[ INFO: possible recursive locking detected ]
-2.6.39-0.local9.fc16.i686 #1
----------------------------------------------
-systemd-logind/807 is trying to acquire lock:
- (&ep->mtx){+.+.+.}, at: [<c0524a05>] ep_scan_ready_list+0x32/0x154
-
-but task is already holding lock:
- (&ep->mtx){+.+.+.}, at: [<c0524ea4>] sys_epoll_ctl+0x103/0x481
-
-other info that might help us debug this:
-2 locks held by systemd-logind/807:
- #0:  (epmutex){+.+.+.}, at: [<c0524e5f>] sys_epoll_ctl+0xbe/0x481
- #1:  (&ep->mtx){+.+.+.}, at: [<c0524ea4>] sys_epoll_ctl+0x103/0x481
-
-stack backtrace:
-Pid: 807, comm: systemd-logind Not tainted 2.6.39-0.local9.fc16.i686 #1
-Call Trace:
- [<c080af85>] ? printk+0x2d/0x2f
- [<c04690b7>] __lock_acquire+0x78f/0xae1
- [<c040790c>] ? sched_clock+0x8/0xb
- [<c045b858>] ? sched_clock_local+0x10/0x18b
- [<c0524a05>] ? ep_scan_ready_list+0x32/0x154
- [<c046981e>] lock_acquire+0xbc/0xdc
- [<c0524a05>] ? ep_scan_ready_list+0x32/0x154
- [<c08127f3>] __mutex_lock_common+0x4a/0x2f0
- [<c0524a05>] ? ep_scan_ready_list+0x32/0x154
- [<c0432502>] ? __might_sleep+0x29/0xfb
- [<c0466a50>] ? trace_hardirqs_off+0xb/0xd
- [<c0812b4e>] mutex_lock_nested+0x39/0x3e
- [<c0524a05>] ? ep_scan_ready_list+0x32/0x154
- [<c0524a05>] ep_scan_ready_list+0x32/0x154
- [<c05245df>] ? ep_remove+0x9b/0x9b
- [<c0524b3b>] ep_poll_readyevents_proc+0x14/0x16
- [<c05247ea>] ep_call_nested.constprop.2+0x6d/0x9a
- [<c0524b27>] ? ep_scan_ready_list+0x154/0x154
- [<c05248e6>] ep_eventpoll_poll+0x45/0x55
- [<c0524fa0>] sys_epoll_ctl+0x1ff/0x481
- [<c052470f>] ? ep_send_events_proc+0xd5/0xd5
- [<c0819fdf>] sysenter_do_call+0x12/0x38
-
-3) Apparently this is something that is triggered by a brand new version
-of systemd (systemd-30-1.fc16.i686, compiled on July 13th, which I
-installed just yesterday, July 19th), as I do not recall seeing this
-before.
-
-4) Feel free to prod me for more information. 
-
-
-Paul Bolle
-
+--- a/drivers/acpi/apei/einj.c
++++ b/drivers/acpi/apei/einj.c
+@@ -46,7 +46,8 @@
+  * Some BIOSes allow parameters to the SET_ERROR_TYPE entries in the
+  * EINJ table through an unpublished extension. Use with caution as
+  * most will ignore the parameter and make their own choice of address
+- * for error injection.
++ * for error injection.  This extension is used only if
++ * param_extension module parameter is specified.
+  */
+ struct einj_parameter {
+ 	u64 type;
+@@ -65,6 +66,9 @@ struct einj_parameter {
+ 	((struct acpi_whea_header *)((char *)(tab) +			\
+ 				    sizeof(struct acpi_table_einj)))
+ 
++static bool param_extension;
++module_param(param_extension, bool, 0);
++
+ static struct acpi_table_einj *einj_tab;
+ 
+ static struct apei_resources einj_resources;
+@@ -489,14 +493,6 @@ static int __init einj_init(void)
+ 				     einj_debug_dir, NULL, &error_type_fops);
+ 	if (!fentry)
+ 		goto err_cleanup;
+-	fentry = debugfs_create_x64("param1", S_IRUSR | S_IWUSR,
+-				    einj_debug_dir, &error_param1);
+-	if (!fentry)
+-		goto err_cleanup;
+-	fentry = debugfs_create_x64("param2", S_IRUSR | S_IWUSR,
+-				    einj_debug_dir, &error_param2);
+-	if (!fentry)
+-		goto err_cleanup;
+ 	fentry = debugfs_create_file("error_inject", S_IWUSR,
+ 				     einj_debug_dir, NULL, &error_inject_fops);
+ 	if (!fentry)
+@@ -513,12 +509,23 @@ static int __init einj_init(void)
+ 	rc = apei_exec_pre_map_gars(&ctx);
+ 	if (rc)
+ 		goto err_release;
+-	param_paddr = einj_get_parameter_address();
+-	if (param_paddr) {
+-		einj_param = ioremap(param_paddr, sizeof(*einj_param));
+-		rc = -ENOMEM;
+-		if (!einj_param)
+-			goto err_unmap;
++	if (param_extension) {
++		param_paddr = einj_get_parameter_address();
++		if (param_paddr) {
++			einj_param = ioremap(param_paddr, sizeof(*einj_param));
++			rc = -ENOMEM;
++			if (!einj_param)
++				goto err_unmap;
++			fentry = debugfs_create_x64("param1", S_IRUSR | S_IWUSR,
++						    einj_debug_dir, &error_param1);
++			if (!fentry)
++				goto err_unmap;
++			fentry = debugfs_create_x64("param2", S_IRUSR | S_IWUSR,
++						    einj_debug_dir, &error_param2);
++			if (!fentry)
++				goto err_unmap;
++		} else
++			pr_warn(EINJ_PFX "Parameter extension is not supported.\n");
+ 	}
+ 
+ 	pr_info(EINJ_PFX "Error INJection is initialized.\n");
+@@ -526,6 +533,8 @@ static int __init einj_init(void)
+ 	return 0;
+ 
+ err_unmap:
++	if (einj_param)
++		iounmap(einj_param);
+ 	apei_exec_post_unmap_gars(&ctx);
+ err_release:
+ 	apei_resources_release(&einj_resources);
+--- a/Documentation/acpi/apei/einj.txt
++++ b/Documentation/acpi/apei/einj.txt
+@@ -48,12 +48,19 @@ directory apei/einj. The following files
+ - param1
+   This file is used to set the first error parameter value. Effect of
+   parameter depends on error_type specified. For memory error, this is
+-  physical memory address.
++  physical memory address.  Only available if param_extension module
++  parameter is specified.
+ 
+ - param2
+   This file is used to set the second error parameter value. Effect of
+   parameter depends on error_type specified. For memory error, this is
+-  physical memory address mask.
++  physical memory address mask.  Only available if param_extension
++  module parameter is specified.
++
++Injecting parameter support is a BIOS version specific extension, that
++is, it only works on some BIOS version.  If you want to use it, please
++make sure your BIOS version has the proper support and specify
++"param_extension=y" in module parameter.
+ 
+ For more information about EINJ, please refer to ACPI specification
+ version 4.0, section 17.5.
