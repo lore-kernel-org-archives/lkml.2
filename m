@@ -1,241 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753072Ab1GTSTA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 14:19:00 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:57985 "EHLO
+	id S1753094Ab1GTSTe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 14:19:34 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:58601 "EHLO
 	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752933Ab1GTSS7 (ORCPT
+	with ESMTP id S1753032Ab1GTSTd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 14:18:59 -0400
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: vinod.koul@intel.com, dan.j.williams@intel.com,
-        rmk+kernel@arm.linux.org.uk, linus.walleij@stericsson.com,
-        per.friden@stericsson.com, wei.zhang@freescale.com,
-        ebony.zhu@freescale.com, iws@ovro.caltech.edu, s.hauer@pengutronix.de,
-        maciej.sosnowski@intel.com, saeed@marvell.com, shawn.guo@freescale.com,
-        yur@emcraft.com, agust@denx.de, iwamatsu.nobuhiro@renesas.com,
-        per.forlin@stericsson.com, jonas.aberg@stericsson.com,
-        anemo@mba.ocn.ne.jp, Jassi Brar <jaswinder.singh@linaro.org>
-Subject: [PATCH] DMAEngine: Let dmac drivers set chan_id
-Date: Wed, 20 Jul 2011 23:48:26 +0530
-Message-Id: <1311185906-7813-1-git-send-email-jaswinder.singh@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
+	Wed, 20 Jul 2011 14:19:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <201107202009.12279.richard@nod.at>
+References: <1310994456-14142-1-git-send-email-richard@nod.at>
+ <1310994456-14142-3-git-send-email-richard@nod.at> <4E27163A.6090102@mit.edu> <201107202009.12279.richard@nod.at>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Wed, 20 Jul 2011 14:19:13 -0400
+X-Google-Sender-Auth: wdGAFnoET8RTmC3XD8Z_XF0AExE
+Message-ID: <CAObL_7Gss0GcB8OtoCf-rUdsi8n4345gBESBub+5hu4g9fcssw@mail.gmail.com>
+Subject: Re: [PATCH 3/3] um: Implement a x86_64 vDSO
+To: Richard Weinberger <richard@nod.at>
+Cc: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A DMAC driver might put chan_id to better use by directly
-mapping system-wide channel numbers on them (and not DMAC
-relative index). Now client drivers can employ simpler
-dma_filter_fn callbacks.
+On Wed, Jul 20, 2011 at 2:09 PM, Richard Weinberger <richard@nod.at> wrote:
+> Am Mittwoch 20 Juli 2011, 19:54:02 schrieb Andy Lutomirski:
+>> On 07/18/2011 09:07 AM, Richard Weinberger wrote:
+>> > Until now UML had no x86_64 vDSO.
+>> > So glibc always used the vsyscall page for gettimeday()
+>> > and friends.
+>> > Calls to gettimeday() returned falsely the host time and
+>> > confused some programs.
+>> >
+>> > This patch adds a vDSO which turns all __vdso_* calls into
+>> > a system call so that UML can trap them.
+>> >
+>> > As glibc still uses the vsyscall page for static binaries this
+>> > patch improves the situation only for dynamic binaries.
+>> >
+>> > Signed-off-by: Richard Weinberger<richard@nod.at>
+>> >
+>> > +   asm("syscall" : "=a" (ret) :
+>> > +           "0" (__NR_clock_gettime), "D" (clock), "S" (ts) : "memory");
+>> > +
+>>
+>> The x86-64 ABI and glibc think that rcx, and r11 are clobbered.  glibc
+>> also thinks that cc is clobbered.  I personally think that rdx and
+>> r8-r15 ought to be clobbered under the principle that syscall should
+>> look like a function call.
+>
+> Hmm, I thought my implementation is fine because it follows
+> arch/x86/vdso/vclock_gettime.c (Linus' tree).
+>
+> notrace static long vdso_fallback_gettime(long clock, struct timespec *ts)
+> {
+>  long ret;
+>  asm("syscall" : "=a" (ret) :
+>      "0" (__NR_clock_gettime),"D" (clock), "S" (ts) : "memory");
+>  return ret;
+> }
+>
+> Am I missing something or needs vdso_fallback_gettime() also some updates?
 
-Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
----
+vdso_fallback_gettime is going away :)
 
-The rest of DMAC drivers already assign chan_id (albeit
-only to be overwritten by core driver).
+I haven't read all of the sysret code paths, but it looks like at
+least r11 is used in a comment.  That being said, your code is an
+uninlinable function, and functions already clobber all those
+registers, so the code shouldn't cause problems in real life.
 
- drivers/dma/amba-pl08x.c  |    1 +
- drivers/dma/coh901318.c   |    3 ++-
- drivers/dma/dmaengine.c   |    1 -
- drivers/dma/fsldma.c      |    2 +-
- drivers/dma/imx-dma.c     |    1 +
- drivers/dma/imx-sdma.c    |    4 +++-
- drivers/dma/ioat/dma.c    |    1 +
- drivers/dma/iop-adma.c    |    1 +
- drivers/dma/mv_xor.c      |    1 +
- drivers/dma/mxs-dma.c     |    2 +-
- drivers/dma/ppc4xx/adma.c |    1 +
- drivers/dma/shdma.c       |    1 +
- drivers/dma/ste_dma40.c   |    1 +
- drivers/dma/txx9dmac.c    |    1 +
- 14 files changed, 16 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
-index e6d7228..40083ef 100644
---- a/drivers/dma/amba-pl08x.c
-+++ b/drivers/dma/amba-pl08x.c
-@@ -1738,6 +1738,7 @@ static int pl08x_dma_init_virtual_channels(struct pl08x_driver_data *pl08x,
- 		tasklet_init(&chan->tasklet, pl08x_tasklet,
- 			     (unsigned long) chan);
- 
-+		chan->chan.chan_id = i;
- 		list_add_tail(&chan->chan.device_node, &dmadev->channels);
- 	}
- 	dev_info(&pl08x->adev->dev, "initialized %d virtual %s channels\n",
-diff --git a/drivers/dma/coh901318.c b/drivers/dma/coh901318.c
-index af8c0b5..3d8b67a 100644
---- a/drivers/dma/coh901318.c
-+++ b/drivers/dma/coh901318.c
-@@ -1414,7 +1414,7 @@ void coh901318_base_init(struct dma_device *dma, const int *pick_chans,
- 			 struct coh901318_base *base)
- {
- 	int chans_i;
--	int i = 0;
-+	int i = 0, id = 0;
- 	struct coh901318_chan *cohc;
- 
- 	INIT_LIST_HEAD(&dma->channels);
-@@ -1442,6 +1442,7 @@ void coh901318_base_init(struct dma_device *dma, const int *pick_chans,
- 			tasklet_init(&cohc->tasklet, dma_tasklet,
- 				     (unsigned long) cohc);
- 
-+			cohc->chan.chan_id = id++;
- 			list_add_tail(&cohc->chan.device_node,
- 				      &dma->channels);
- 		}
-diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
-index 8bcb15f..d166088 100644
---- a/drivers/dma/dmaengine.c
-+++ b/drivers/dma/dmaengine.c
-@@ -735,7 +735,6 @@ int dma_async_device_register(struct dma_device *device)
- 			goto err_out;
- 		}
- 
--		chan->chan_id = chancnt++;
- 		chan->dev->device.class = &dma_devclass;
- 		chan->dev->device.parent = device->dev;
- 		chan->dev->chan = chan;
-diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
-index 8a78154..477a821 100644
---- a/drivers/dma/fsldma.c
-+++ b/drivers/dma/fsldma.c
-@@ -1309,7 +1309,7 @@ static int __devinit fsl_dma_chan_probe(struct fsldma_device *fdev,
- 
- 	/* Add the channel to DMA device channel list */
- 	list_add_tail(&chan->common.device_node, &fdev->common.channels);
--	fdev->common.chancnt++;
-+	chan->common.chan_id = fdev->common.chancnt++;
- 
- 	dev_info(fdev->dev, "#%d (%s), irq %d\n", chan->id, compatible,
- 		 chan->irq != NO_IRQ ? chan->irq : fdev->irq);
-diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-index e18eaab..bbf8619 100644
---- a/drivers/dma/imx-dma.c
-+++ b/drivers/dma/imx-dma.c
-@@ -368,6 +368,7 @@ static int __init imxdma_probe(struct platform_device *pdev)
- 		imxdmac->chan.device = &imxdma->dma_device;
- 		imxdmac->channel = i;
- 
-+		imxdmac->chan.chan_id = i;
- 		/* Add the channel to the DMAC list */
- 		list_add_tail(&imxdmac->chan.device_node, &imxdma->dma_device.channels);
- 	}
-diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-index b6d1455..be1d481 100644
---- a/drivers/dma/imx-sdma.c
-+++ b/drivers/dma/imx-sdma.c
-@@ -1305,9 +1305,11 @@ static int __init sdma_probe(struct platform_device *pdev)
- 		 * because we need it internally in the SDMA driver. This also means
- 		 * that channel 0 in dmaengine counting matches sdma channel 1.
- 		 */
--		if (i)
-+		if (i) {
-+			sdmac->chan.chan_id = i - 1;
- 			list_add_tail(&sdmac->chan.device_node,
- 					&sdma->dma_device.channels);
-+		}
- 	}
- 
- 	ret = sdma_init(sdma);
-diff --git a/drivers/dma/ioat/dma.c b/drivers/dma/ioat/dma.c
-index a4d6cb0..7c1dbe5 100644
---- a/drivers/dma/ioat/dma.c
-+++ b/drivers/dma/ioat/dma.c
-@@ -107,6 +107,7 @@ void ioat_init_channel(struct ioatdma_device *device, struct ioat_chan_common *c
- 	chan->reg_base = device->reg_base + (0x80 * (idx + 1));
- 	spin_lock_init(&chan->cleanup_lock);
- 	chan->common.device = dma;
-+	chan->common.chan_id = idx;
- 	list_add_tail(&chan->common.device_node, &dma->channels);
- 	device->idx[idx] = chan;
- 	init_timer(&chan->timer);
-diff --git a/drivers/dma/iop-adma.c b/drivers/dma/iop-adma.c
-index e03f811..8778e63 100644
---- a/drivers/dma/iop-adma.c
-+++ b/drivers/dma/iop-adma.c
-@@ -1565,6 +1565,7 @@ static int __devinit iop_adma_probe(struct platform_device *pdev)
- 	INIT_LIST_HEAD(&iop_chan->chain);
- 	INIT_LIST_HEAD(&iop_chan->all_slots);
- 	iop_chan->common.device = dma_dev;
-+	iop_chan->common.chan_id = 0;
- 	list_add_tail(&iop_chan->common.device_node, &dma_dev->channels);
- 
- 	if (dma_has_cap(DMA_MEMCPY, dma_dev->cap_mask)) {
-diff --git a/drivers/dma/mv_xor.c b/drivers/dma/mv_xor.c
-index 954e334..722c668 100644
---- a/drivers/dma/mv_xor.c
-+++ b/drivers/dma/mv_xor.c
-@@ -1215,6 +1215,7 @@ static int __devinit mv_xor_probe(struct platform_device *pdev)
- 	INIT_LIST_HEAD(&mv_chan->all_slots);
- 	mv_chan->common.device = dma_dev;
- 
-+	mv_chan->common.chan_id = 0;
- 	list_add_tail(&mv_chan->common.device_node, &dma_dev->channels);
- 
- 	if (dma_has_cap(DMA_MEMCPY, dma_dev->cap_mask)) {
-diff --git a/drivers/dma/mxs-dma.c b/drivers/dma/mxs-dma.c
-index 88aad4f..f79599e 100644
---- a/drivers/dma/mxs-dma.c
-+++ b/drivers/dma/mxs-dma.c
-@@ -655,7 +655,7 @@ static int __init mxs_dma_probe(struct platform_device *pdev)
- 		tasklet_init(&mxs_chan->tasklet, mxs_dma_tasklet,
- 			     (unsigned long) mxs_chan);
- 
--
-+		mxs_chan->chan.chan_id = i;
- 		/* Add the channel to mxs_chan list */
- 		list_add_tail(&mxs_chan->chan.device_node,
- 			&mxs_dma->dma_device.channels);
-diff --git a/drivers/dma/ppc4xx/adma.c b/drivers/dma/ppc4xx/adma.c
-index fc457a7..bacd896 100644
---- a/drivers/dma/ppc4xx/adma.c
-+++ b/drivers/dma/ppc4xx/adma.c
-@@ -4529,6 +4529,7 @@ static int __devinit ppc440spe_adma_probe(struct platform_device *ofdev)
- 	INIT_LIST_HEAD(&chan->all_slots);
- 	chan->device = adev;
- 	chan->common.device = &adev->common;
-+	chan->common.chan_id = 0;
- 	list_add_tail(&chan->common.device_node, &adev->common.channels);
- 	tasklet_init(&chan->irq_tasklet, ppc440spe_adma_tasklet,
- 		     (unsigned long)chan);
-diff --git a/drivers/dma/shdma.c b/drivers/dma/shdma.c
-index 0283300..469cdb8 100644
---- a/drivers/dma/shdma.c
-+++ b/drivers/dma/shdma.c
-@@ -1028,6 +1028,7 @@ static int __devinit sh_dmae_chan_probe(struct sh_dmae_device *shdev, int id,
- 	INIT_LIST_HEAD(&new_sh_chan->ld_queue);
- 	INIT_LIST_HEAD(&new_sh_chan->ld_free);
- 
-+	new_sh_chan->common.chan_id = id;
- 	/* Add the channel to DMA device channel list */
- 	list_add_tail(&new_sh_chan->common.device_node,
- 			&shdev->common.channels);
-diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index 8f222d4..a30d37b 100644
---- a/drivers/dma/ste_dma40.c
-+++ b/drivers/dma/ste_dma40.c
-@@ -2345,6 +2345,7 @@ static void __init d40_chan_init(struct d40_base *base, struct dma_device *dma,
- 		tasklet_init(&d40c->tasklet, dma_tasklet,
- 			     (unsigned long) d40c);
- 
-+		d40c->chan.chan_id = i - offset;
- 		list_add_tail(&d40c->chan.device_node,
- 			      &dma->channels);
- 	}
-diff --git a/drivers/dma/txx9dmac.c b/drivers/dma/txx9dmac.c
-index cbd83e36..271e8d3 100644
---- a/drivers/dma/txx9dmac.c
-+++ b/drivers/dma/txx9dmac.c
-@@ -1186,6 +1186,7 @@ static int __init txx9dmac_chan_probe(struct platform_device *pdev)
- 	dc->ddev->chan[ch] = dc;
- 	dc->chan.device = &dc->dma;
- 	list_add_tail(&dc->chan.device_node, &dc->chan.device->channels);
-+	dc->chan.chan_id = 0;
- 	dc->chan.cookie = dc->completed = 1;
- 
- 	if (is_dmac64(dc))
--- 
-1.7.4.1
-
+--Andy
