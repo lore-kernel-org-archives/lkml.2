@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498Ab1GTWvJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 18:51:09 -0400
-Received: from csmtp3.one.com ([91.198.169.23]:27120 "EHLO csmtp3.one.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751545Ab1GTWvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 18:51:07 -0400
-From: Eric Andersson <eric.andersson@unixphere.com>
-To: dmitry.torokhov@gmail.com
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        zhengguang.guo@bosch-sensortec.com, stefan.nilsson@unixphere.com,
-        alan@lxorguk.ukuu.org.uk,
-        Eric Andersson <eric.andersson@unixphere.com>
-Subject: [PATCH 0/1] input: add driver for Bosch Sensortec's BMA150 accelerometer
-Date: Thu, 21 Jul 2011 00:54:53 +0200
-Message-Id: <1311202494-21940-1-git-send-email-eric.andersson@unixphere.com>
-X-Mailer: git-send-email 1.7.3.4
+	id S1752543Ab1GTWxH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 18:53:07 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:4662 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751906Ab1GTWxE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 18:53:04 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 20 Jul 2011 15:52:56 -0700
+From: Andrew Chew <AChew@nvidia.com>
+To: "'Grant Likely'" <grant.likely@secretlab.ca>
+CC: "olof@lixom.net" <olof@lixom.net>, Stephen Warren <swarren@nvidia.com>,
+        Dan Willemsen <dwillemsen@nvidia.com>,
+        Rhyland Klein <rklein@nvidia.com>,
+        Venkat Moganty <vmoganty@nvidia.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 20 Jul 2011 15:52:55 -0700
+Subject: RE: [PATCH 1/3 v2] usb: tegra20-ehci: Add devicetree support.
+Thread-Topic: [PATCH 1/3 v2] usb: tegra20-ehci: Add devicetree support.
+Thread-Index: AcxHF/dB+sbXVNoRSQiKUl6LNrkNkwAF5Waw
+Message-ID: <643E69AA4436674C8F39DCC2C05F76383CF0DD227C@HQMAIL03.nvidia.com>
+References: <1311190690-18334-1-git-send-email-achew@nvidia.com>
+ <CACxGe6uDVdemjbjY_i-_M_-VT8HuLdtXP-R9V8kB+pSSin4dEw@mail.gmail.com>
+In-Reply-To: <CACxGe6uDVdemjbjY_i-_M_-VT8HuLdtXP-R9V8kB+pSSin4dEw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is version 4 of the driver for Bosch Sensortec's accelerometers BMA150
-and SMB380.
+> > +       retval = of_property_read_u32(dn, "hssync_start_delay",
+> > +                                     (u32 
+> *)&phy_config->hssync_start_delay);
+> 
+> Gah!  Don't cast pointers that way.  It will break badly if the sizes
+> don't match.  The variable *must* be a u32.
 
-I didn't really get an ack on my suggestions in the previous version, but I
-hope that this version covers the comments and suits your needs.
-
-Here is the changelog:
-* community review: added bma023 client id.
-* community review: added irq handling for any-motion and high/low G
-  interrupts.
-* Added platfrom data struct for chip-configuration parameters.
-* Removed the sysfs interfaces. These parameters are set through platform data instead.
-* Removed pm_runtime, not needed if no sysfs interfaces.
-* Populated default interrupt configurations as recommended by Bosch Sensortec.
-
---
-Best regards,
- Eric
-
-http://www.unixphere.com
-
-
-Eric Andersson (1):
-  input: add driver for Bosch Sensortec's BMA150 accelerometer
-
- drivers/input/misc/Kconfig  |   11 +
- drivers/input/misc/Makefile |    1 +
- drivers/input/misc/bma150.c |  598 +++++++++++++++++++++++++++++++++++++++++++
- include/linux/bma150.h      |   62 +++++
- 4 files changed, 672 insertions(+), 0 deletions(-)
- create mode 100644 drivers/input/misc/bma150.c
- create mode 100644 include/linux/bma150.h
-
--- 
-1.7.3.4
-
+Can we have u16 and u8 versions of of_property_read, then?  It'll simplify code.  I'll be happy to submit a patch for that if that's what we want.
