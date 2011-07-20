@@ -1,68 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752322Ab1GTWsJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 18:48:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54291 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751531Ab1GTWsI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 18:48:08 -0400
-Date: Wed, 20 Jul 2011 23:48:01 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Christoph Lameter <cl@linux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] mm: page allocator: Initialise ZLC for first zone
- eligible for zone_reclaim
-Message-ID: <20110720224801.GP5349@suse.de>
-References: <20110718160552.GB5349@suse.de>
- <alpine.DEB.2.00.1107181208050.31576@router.home>
- <20110718211325.GC5349@suse.de>
- <alpine.DEB.2.00.1107181651000.31576@router.home>
- <alpine.DEB.2.00.1107190901120.1199@router.home>
- <alpine.DEB.2.00.1107201307530.1472@router.home>
- <20110720191858.GO5349@suse.de>
- <alpine.DEB.2.00.1107201425200.1472@router.home>
- <alpine.DEB.2.00.1107201443400.1472@router.home>
- <alpine.DEB.2.00.1107201617050.1472@router.home>
+	id S1752388Ab1GTWuN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 18:50:13 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:27213 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751545Ab1GTWuM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 18:50:12 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6413"; a="104759405"
+Date: Wed, 20 Jul 2011 15:50:10 -0700
+From: David Brown <davidb@codeaurora.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: David Brown <davidb@codeaurora.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <rmk@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] MSM fix
+Message-ID: <20110720225010.GA18381@huya.qualcomm.com>
+References: <20110720203703.GA4495@huya.qualcomm.com>
+ <1989166.1WcWHOXyl7@wuerfel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1107201617050.1472@router.home>
+In-Reply-To: <1989166.1WcWHOXyl7@wuerfel>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 20, 2011 at 04:17:41PM -0500, Christoph Lameter wrote:
-> Hmmm... Maybe we can bypass the checks?
+On Wed, Jul 20, 2011 at 11:06:15PM +0200, Arnd Bergmann wrote:
+> On Wednesday 20 July 2011 13:37:03 David Brown wrote:
+> > I seem to have missed this fix when it was sent out in April.
+> > 
+> > The following changes since commit 620917de59eeb934b9f8cf35cc2d95c1ac8ed0fc:
+> > 
+> >   Linux 3.0-rc7 (2011-07-11 16:51:52 -0700)
+> > 
+> > are available in the git repository at:
+> >   git://codeaurora.org/quic/kernel/davidb/linux-msm.git msm-fix
+> > 
+> > Jeff Ohlstein (1):
+> >       msm: platsmp: actually read core count in get_core_count
+> > 
 > 
+> Hmm, this one seems like it really applies to older kernels as well, so
+> we can just as well add a cc:stable@kernel.org tag and put it into the
+> arm-soc/next/fixes branch, right?
 
-Maybe we should not.
+It looks like it would apply to 2.6.38 and 39 as well.  I'm not sure
+it qualifies under the "It must fix a real bug that bothers people".
+It would only apply if someone had set NR_CPUS to more than 2.
 
-Watermarks should not just be ignored. They prevent the system
-deadlocking due to an inability allocate a page needed to free more
-memory. This patch allows allocations that are not high priority
-or atomic to succeed when the buddy lists are at the min watermark
-and would normally be throttled. Minimally, this patch increasing
-the risk of the locking up due to memory expiration. For example,
-a GFP_ATOMIC allocation can refill the per-cpu list with the pages
-then consumed by GFP_KERNEL allocations, next GFP_ATOMIC allocation
-refills again, gets consumed etc. It's even worse if it's PF_MEMALLOC
-allocations that are refilling the lists as they ignore watermarks.
-If this is happening on enough CPUs, it will cause trouble.
+> Linus has just pulled the 'last arm-soc fixes for 3.0' branch, and I don't
+> really want to follow up with 'last fix, this time for real' pull request
+> unless it's for a serious regression.
 
-At the very least, the performance benefit of such a change should
-be illustrated. Even if it's faster (and I'd expect it to be,
-watermark checks particularly at low memory are expensive), it may
-just mean the system occasionally runs very fast into a wall. Hence,
-the patch should be accompanied with tests showing that even under
-very high stress for a long period of time that it does not lock up
-and the changelog should include a *very* convincing description
-on why PF_MEMALLOC refilling the per-cpu lists to be consumed by
-low-priority users is not a problem.
+It's not serious, so 3.1 is fine.
+
+> On a related topic, what's the deal with the msm-core and msm-move-gpio
+> branches in the same tree? I have the impression that they should be
+> in arm-soc.git, but I never received a pull request.
+
+I had sent a pull request for msm-move-gpio to Grant, but apparently
+that didn't happen.  If more appropriate, I can send one to you for
+it, or resend to Grant.
+
+The msm-core stuff happened before the snafu about ARM, and I was
+holding off on these things.  The authors of these patches say they
+are working on cleaned up versions.
+
+I'm not sure we want the dummy clocks code in the kernel.  It's
+intended as a placeholder.  Stephen Boyd has a 26-series patch that
+adds better clock support.  Given the size (13047 insertions), this
+may need some cleanup or even device-tree work to include.
+
+Unfortunately, a lot of the Qualcomm development seems to have moved
+back to private trees.
+
+BTW, I am planning on being at the Linaro Connect in August.
+
+David
 
 -- 
-Mel Gorman
-SUSE Labs
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
