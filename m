@@ -1,159 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751977Ab1GTNza (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 09:55:30 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49053 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751668Ab1GTNz1 (ORCPT
+	id S1751990Ab1GTN4Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 09:56:16 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:33316 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751616Ab1GTN4P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 09:55:27 -0400
-Date: Wed, 20 Jul 2011 14:55:24 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dave Chinner <dchinner@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: linux-next: build failure after merge of the final tree (maybe
- vfs tree related)
-Message-ID: <20110720135524.GW11013@ZenIV.linux.org.uk>
-References: <20110720173232.3c7e46d310e2224e459b0ac1@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110720173232.3c7e46d310e2224e459b0ac1@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 20 Jul 2011 09:56:15 -0400
+From: Krishna Kumar <krkumar2@in.ibm.com>
+To: Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Krishna Kumar <krkumar2@in.ibm.com>,
+        virtualization@lists.linux-foundation.org
+Date: Wed, 20 Jul 2011 19:26:02 +0530
+Message-Id: <20110720135602.18705.21405.sendpatchset@krkumar2.in.ibm.com>
+Subject: [PATCH repost] Fix panic in virtnet_remove
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 20, 2011 at 05:32:32PM +1000, Stephen Rothwell wrote:
-> Hi all,
-> 
-> After merging the final tree, today's linux-next build (sparc defconfig)
-> failed like this:
+Fix a panic in virtnet_remove. unregister_netdev has already
+freed up the netdev (and virtnet_info) due to dev->destructor
+being set, while virtnet_info is still required. Remove
+virtnet_free altogether, and move the freeing of the per-cpu
+statistics from virtnet_free to virtnet_remove.
 
-> And many more similar.  Again, I assume some include files changed.
-> Maybe commit 347727d3f51d ("superblock: introduce per-sb cache shrinker
-> infrastructure") which included linux/mm.h in linux/fs.h ...
-> 
-> I have left this again.
+Tested patch below.
 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 1ce9086..e0569e4 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -395,7 +395,7 @@ struct inodes_stat_t {
- #include <linux/semaphore.h>
- #include <linux/fiemap.h>
- #include <linux/rculist_bl.h>
--#include <linux/mm.h>
-+#include <linux/shrinker.h>
- #include <linux/atomic.h>
- 
- #include <asm/byteorder.h>
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 9b9777a..e3a1a9e 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -15,6 +15,7 @@
- #include <linux/range.h>
- #include <linux/pfn.h>
- #include <linux/bit_spinlock.h>
-+#include <linux/shrinker.h>
- 
- struct mempolicy;
- struct anon_vma;
-@@ -1121,45 +1122,6 @@ static inline void sync_mm_rss(struct task_struct *task, struct mm_struct *mm)
+Signed-off-by: Krishna Kumar <krkumar2@in.ibm.com>
+---
+(Michael suggested me to re-post with copy to all maintainers)
+
+ drivers/net/virtio_net.c |   10 +---------
+ 1 file changed, 1 insertion(+), 9 deletions(-)
+
+diff -ruNp org/drivers/net/virtio_net.c new/drivers/net/virtio_net.c
+--- org/drivers/net/virtio_net.c	2011-07-18 09:14:02.000000000 +0530
++++ new/drivers/net/virtio_net.c	2011-07-18 09:16:35.000000000 +0530
+@@ -705,14 +705,6 @@ static void virtnet_netpoll(struct net_d
  }
  #endif
  
--/*
-- * This struct is used to pass information from page reclaim to the shrinkers.
-- * We consolidate the values for easier extention later.
-- */
--struct shrink_control {
--	gfp_t gfp_mask;
+-static void virtnet_free(struct net_device *dev)
+-{
+-	struct virtnet_info *vi = netdev_priv(dev);
 -
--	/* How many slab objects shrinker() should scan and try to reclaim */
--	unsigned long nr_to_scan;
--};
+-	free_percpu(vi->stats);
+-	free_netdev(dev);
+-}
 -
--/*
-- * A callback you can register to apply pressure to ageable caches.
-- *
-- * 'sc' is passed shrink_control which includes a count 'nr_to_scan'
-- * and a 'gfpmask'.  It should look through the least-recently-used
-- * 'nr_to_scan' entries and attempt to free them up.  It should return
-- * the number of objects which remain in the cache.  If it returns -1, it means
-- * it cannot do any scanning at this time (eg. there is a risk of deadlock).
-- *
-- * The 'gfpmask' refers to the allocation we are currently trying to
-- * fulfil.
-- *
-- * Note that 'shrink' will be passed nr_to_scan == 0 when the VM is
-- * querying the cache size, so a fastpath for that case is appropriate.
-- */
--struct shrinker {
--	int (*shrink)(struct shrinker *, struct shrink_control *sc);
--	int seeks;	/* seeks to recreate an obj */
--	long batch;	/* reclaim batch size, 0 = default */
--
--	/* These are for internal use */
--	struct list_head list;
--	long nr;	/* objs pending delete */
--};
--#define DEFAULT_SEEKS 2 /* A good number if you don't know better. */
--extern void register_shrinker(struct shrinker *);
--extern void unregister_shrinker(struct shrinker *);
--
- int vma_wants_writenotify(struct vm_area_struct *vma);
+ static int virtnet_open(struct net_device *dev)
+ {
+ 	struct virtnet_info *vi = netdev_priv(dev);
+@@ -959,7 +951,6 @@ static int virtnet_probe(struct virtio_d
+ 	/* Set up network device as normal. */
+ 	dev->netdev_ops = &virtnet_netdev;
+ 	dev->features = NETIF_F_HIGHDMA;
+-	dev->destructor = virtnet_free;
  
- extern pte_t *__get_locked_pte(struct mm_struct *mm, unsigned long addr,
-diff --git a/include/linux/shrinker.h b/include/linux/shrinker.h
-new file mode 100644
-index 0000000..790651b
---- /dev/null
-+++ b/include/linux/shrinker.h
-@@ -0,0 +1,42 @@
-+#ifndef _LINUX_SHRINKER_H
-+#define _LINUX_SHRINKER_H
-+
-+/*
-+ * This struct is used to pass information from page reclaim to the shrinkers.
-+ * We consolidate the values for easier extention later.
-+ */
-+struct shrink_control {
-+	gfp_t gfp_mask;
-+
-+	/* How many slab objects shrinker() should scan and try to reclaim */
-+	unsigned long nr_to_scan;
-+};
-+
-+/*
-+ * A callback you can register to apply pressure to ageable caches.
-+ *
-+ * 'sc' is passed shrink_control which includes a count 'nr_to_scan'
-+ * and a 'gfpmask'.  It should look through the least-recently-used
-+ * 'nr_to_scan' entries and attempt to free them up.  It should return
-+ * the number of objects which remain in the cache.  If it returns -1, it means
-+ * it cannot do any scanning at this time (eg. there is a risk of deadlock).
-+ *
-+ * The 'gfpmask' refers to the allocation we are currently trying to
-+ * fulfil.
-+ *
-+ * Note that 'shrink' will be passed nr_to_scan == 0 when the VM is
-+ * querying the cache size, so a fastpath for that case is appropriate.
-+ */
-+struct shrinker {
-+	int (*shrink)(struct shrinker *, struct shrink_control *sc);
-+	int seeks;	/* seeks to recreate an obj */
-+	long batch;	/* reclaim batch size, 0 = default */
-+
-+	/* These are for internal use */
-+	struct list_head list;
-+	long nr;	/* objs pending delete */
-+};
-+#define DEFAULT_SEEKS 2 /* A good number if you don't know better. */
-+extern void register_shrinker(struct shrinker *);
-+extern void unregister_shrinker(struct shrinker *);
-+#endif
+ 	SET_ETHTOOL_OPS(dev, &virtnet_ethtool_ops);
+ 	SET_NETDEV_DEV(dev, &vdev->dev);
+@@ -1122,6 +1113,7 @@ static void __devexit virtnet_remove(str
+ 	while (vi->pages)
+ 		__free_pages(get_a_page(vi, GFP_KERNEL), 0);
+ 
++	free_percpu(vi->stats);
+ 	free_netdev(vi->dev);
+ }
+ 
