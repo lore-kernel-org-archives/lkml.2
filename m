@@ -1,48 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751623Ab1GTMQQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 08:16:16 -0400
-Received: from relay.parallels.com ([195.214.232.42]:45613 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751006Ab1GTMQP (ORCPT
+	id S1751441Ab1GTMaz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 08:30:55 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60599 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750936Ab1GTMay (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 08:16:15 -0400
-Subject: [PATCH] mm-slab: allocate kmem_cache with __GFP_REPEAT
-To: Andrew Morton <akpm@linux-foundation.org>
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-CC: Pekka Enberg <penberg@kernel.org>, <linux-mm@kvack.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, Matt Mackall <mpm@selenic.com>
-Date: Wed, 20 Jul 2011 16:16:12 +0400
-Message-ID: <20110720121612.28888.38970.stgit@localhost6>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Wed, 20 Jul 2011 08:30:54 -0400
+Subject: Re: Regression in handling of unsafe UBI shutdown
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Daniel Mack <zonque@gmail.com>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Sven Neumann <s.neumann@raumfeld.com>
+Date: Wed, 20 Jul 2011 15:32:16 +0300
+In-Reply-To: <CACTFLANrd0FO9GNJpvS+MxnQgLLtXpA-sai30oYN90cjEFOErA@mail.gmail.com>
+References: <CACTFLANAFT=G4kFvHUqvLrt=MxgpJnJ-EeHY8zd49pZvsNRejw@mail.gmail.com>
+	 <1311139283.20738.150.camel@sauron>
+	 <CACTFLANrd0FO9GNJpvS+MxnQgLLtXpA-sai30oYN90cjEFOErA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1311165141.20738.171.camel@sauron>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Order of sizeof(struct kmem_cache) can be bigger than PAGE_ALLOC_COSTLY_ORDER,
-thus there is a good chance of unsuccessful allocation.
-With __GFP_REPEAT buddy-allocator will reclaim/compact memory more aggressively.
+On Wed, 2011-07-20 at 11:18 +0200, Daniel Mack wrote:
+> On Wed, Jul 20, 2011 at 7:21 AM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
+> > On Tue, 2011-07-19 at 15:57 +0200, Daniel Mack wrote:
+> >> UBIFS: recovery needed
+> >> Error reading superblock on volume 'ubi:RootFS'!
+> >> UBIFS not mounted, use ubifs mount to mount volume first!
+> >> Wrong Image Format for bootm command
+> >> ERROR: can't get kernel image!
+> >>
+> >>
+> >> Hence my question is: were there any radical changes in the UBI/UBIFS
+> >> code on the kernel side that make older code not like the new content
+> >> anymore?
+> >
+> > Daniel, sorry, I have no time to look at this now, could you please try
+> > to bisect the issue?
+> 
+> It's not really easy to bisect as the issue is not always fully
+> reproducable, and also because the flash needs to be re-initialized
+> after it happened.
+> 
+> Also note that it's not the kernel itself that complains about the
+> state of the file system in this case but U-Boot. If we boot a 3.0-rc7
+> kernel in such a situation (via USB for example), the kernel will
+> recover the FS and continue.
+> 
+> I don't know how many people use the UBI code in U-Boot, and I don't
+> know either whether it was a good idea to go this way in the first
+> place, but we didn't want to waste much space on the NAND for a
+> fixed-size partition just for the kernel, and have a hard limit for it
+> in the future. And as I said, this approach has worked just fine in
+> the past.
+> 
+> So, let me re-phrase my question: is anyone aware of changes in the
+> UBIFS code between 2.6.36 and 3.0 that might cause trouble to U-Boot's
+> UBI code from 2009?
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
----
- mm/slab.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+I guess that would be an on-flash format change? I am not aware of such
+changes, and if there were such - this is a big issue which we wound
+need to fix.
 
-diff --git a/mm/slab.c b/mm/slab.c
-index d96e223..53bddc8 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -2304,7 +2304,7 @@ kmem_cache_create (const char *name, size_t size, size_t align,
- 		gfp = GFP_NOWAIT;
- 
- 	/* Get cache's description obj. */
--	cachep = kmem_cache_zalloc(&cache_cache, gfp);
-+	cachep = kmem_cache_zalloc(&cache_cache, gfp | __GFP_REPEAT);
- 	if (!cachep)
- 		goto oops;
- 
+-- 
+Best Regards,
+Artem Bityutskiy
 
