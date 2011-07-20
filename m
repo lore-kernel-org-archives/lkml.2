@@ -1,54 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751460Ab1GTMzb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 08:55:31 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36418 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751140Ab1GTMza convert rfc822-to-8bit (ORCPT
+	id S1751538Ab1GTM70 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 08:59:26 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:50580 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751146Ab1GTM7Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 08:55:30 -0400
-Subject: Re: [PATCH tip/core/urgent 4/7] rcu: protect __rcu_read_unlock()
- against scheduler-using irq handlers
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, greearb@candelatech.com, edt@aei.ca,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-In-Reply-To: <1311121103-16978-4-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20110720001738.GA16369@linux.vnet.ibm.com>
-	 <1311121103-16978-4-git-send-email-paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 20 Jul 2011 14:54:27 +0200
-Message-ID: <1311166467.5345.78.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 20 Jul 2011 08:59:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110719175432.GA23018@srcf.ucam.org>
+References: <4E257E33020000780004E319@nat28.tlf.novell.com>
+	<CADZ9YHiBkfcM3jjjJVh_Ydn+uJxjYM6SnDZ=5J3Mmki7fp3NbQ@mail.gmail.com>
+	<20110719175432.GA23018@srcf.ucam.org>
+Date: Wed, 20 Jul 2011 18:46:07 +0600
+Message-ID: <CADZ9YHi34K=MKCKLfjwz07eWK+nDRiggrE4PZE6BPNrHQeABOQ@mail.gmail.com>
+Subject: Re: [PATCH] x86: serialize EFI time accesses on rtc_lock
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Jan Beulich <JBeulich@novell.com>, mingo@elte.hu, tglx@linutronix.de,
+        hpa@zytor.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-19 at 17:18 -0700, Paul E. McKenney wrote:
-> @@ -391,10 +400,15 @@ void __rcu_read_unlock(void)
->         struct task_struct *t = current;
->  
->         barrier();  /* needed if we ever invoke rcu_read_unlock in rcutree.c */
-> -       if (--t->rcu_read_lock_nesting == 0) {
-> -               barrier();  /* decr before ->rcu_read_unlock_special load */
-> +       if (t->rcu_read_lock_nesting != 1)
-> +               --t->rcu_read_lock_nesting;
-> +       else {
-> +               t->rcu_read_lock_nesting = INT_MIN;
-> +               barrier();  /* assign before ->rcu_read_unlock_special load */
->                 if (unlikely(ACCESS_ONCE(t->rcu_read_unlock_special)))
->                         rcu_read_unlock_special(t);
-> +               barrier();  /* ->rcu_read_unlock_special load before assign */
-> +               t->rcu_read_lock_nesting = 0;
->         }
->  #ifdef CONFIG_PROVE_LOCKING
->         WARN_ON_ONCE(ACCESS_ONCE(t->rcu_read_lock_nesting) < 0); 
+On Tue, Jul 19, 2011 at 11:54 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> On Tue, Jul 19, 2011 at 11:32:05PM +0600, Rakib Mullick wrote:
 
-But won't the above change make that WARN_ON_ONCE() invalid?
+> That's just assigning some function pointers, not actually making the
+> calls. There's potentially several routes to each of the calls, so it
+> makes sense to do the locking there.
+>
+I got confused by the patch subject. I thought, this serialization is
+required at the time of startup.
+
+
+Thanks,
+Rakib
+
+> --
+> Matthew Garrett | mjg59@srcf.ucam.org
+>
