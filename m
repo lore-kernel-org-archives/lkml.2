@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146Ab1GTS0o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 14:26:44 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:51012 "EHLO e9.ny.us.ibm.com"
+	id S1753125Ab1GTS0n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 14:26:43 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:33557 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752633Ab1GTS0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752627Ab1GTS0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Jul 2011 14:26:40 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -16,9 +16,9 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         patches@linaro.org, greearb@candelatech.com, edt@aei.ca,
         "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/urgent 4/7] rcu: protect __rcu_read_unlock() against scheduler-using irq handlers
-Date: Wed, 20 Jul 2011 11:26:20 -0700
-Message-Id: <1311186383-24819-4-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/urgent 7/7] signal: align __lock_task_sighand() irq disabling and RCU
+Date: Wed, 20 Jul 2011 11:26:23 -0700
+Message-Id: <1311186383-24819-7-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20110720182512.GA22946@linux.vnet.ibm.com>
 References: <20110720182512.GA22946@linux.vnet.ibm.com>
@@ -28,145 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Paul E. McKenney <paul.mckenney@linaro.org>
 
-The addition of RCU read-side critical sections within runqueue and
-priority-inheritance lock critical sections introduced some deadlock
-cycles, for example, involving interrupts from __rcu_read_unlock()
-where the interrupt handlers call wake_up().  This situation can cause
-the instance of __rcu_read_unlock() invoked from interrupt to do some
-of the processing that would otherwise have been carried out by the
-task-level instance of __rcu_read_unlock().  When the interrupt-level
-instance of __rcu_read_unlock() is called with a scheduler lock held
-from interrupt-entry/exit situations where in_irq() returns false,
-deadlock can result.
+The __lock_task_sighand() function calls rcu_read_lock() with interrupts
+and preemption enabled, but later calls rcu_read_unlock() with interrupts
+disabled.  It is therefore possible that this RCU read-side critical
+section will be preempted and later RCU priority boosted, which means that
+rcu_read_unlock() will call rt_mutex_unlock() in order to deboost itself, but
+with interrupts disabled. This results in lockdep splats, so this commit
+nests the RCU read-side critical section within the interrupt-disabled
+region of code.  This prevents the RCU read-side critical section from
+being preempted, and thus prevents the attempt to deboost with interrupts
+disabled.
 
-This commit resolves these deadlocks by using negative values of
-the per-task ->rcu_read_lock_nesting counter to indicate that an
-instance of __rcu_read_unlock() is in flight, which in turn prevents
-instances from interrupt handlers from doing any special processing.
-This patch is inspired by Steven Rostedt's earlier patch that similarly
-made __rcu_read_unlock() guard against interrupt-mediated recursion
-(see https://lkml.org/lkml/2011/7/15/326), but this commit refines
-Steven's approach to avoid the need for preemption disabling on the
-__rcu_read_unlock() fastpath and to also avoid the need for manipulating
-a separate per-CPU variable.
-
-This patch avoids need for preempt_disable() by instead using negative
-values of the per-task ->rcu_read_lock_nesting counter.  Note that nested
-rcu_read_lock()/rcu_read_unlock() pairs are still permitted, but they will
-never see ->rcu_read_lock_nesting go to zero, and will therefore never
-invoke rcu_read_unlock_special(), thus preventing them from seeing the
-RCU_READ_UNLOCK_BLOCKED bit should it be set in ->rcu_read_unlock_special.
-This patch also adds a check for ->rcu_read_unlock_special being negative
-in rcu_check_callbacks(), thus preventing the RCU_READ_UNLOCK_NEED_QS
-bit from being set should a scheduling-clock interrupt occur while
-__rcu_read_unlock() is exiting from an outermost RCU read-side critical
-section.
-
-Of course, __rcu_read_unlock() can be preempted during the time that
-->rcu_read_lock_nesting is negative.  This could result in the setting
-of the RCU_READ_UNLOCK_BLOCKED bit after __rcu_read_unlock() checks it,
-and would also result it this task being queued on the corresponding
-rcu_node structure's blkd_tasks list.  Therefore, some later RCU read-side
-critical section would enter rcu_read_unlock_special() to clean up --
-which could result in deadlock if that critical section happened to be in
-the scheduler where the runqueue or priority-inheritance locks were held.
-
-This situation is dealt with by making rcu_preempt_note_context_switch()
-check for negative ->rcu_read_lock_nesting, thus refraining from
-queuing the task (and from setting RCU_READ_UNLOCK_BLOCKED) if we are
-already exiting from the outermost RCU read-side critical section (in
-other words, we really are no longer actually in that RCU read-side
-critical section).  In addition, rcu_preempt_note_context_switch()
-invokes rcu_read_unlock_special() to carry out the cleanup in this case,
-which clears out the ->rcu_read_unlock_special bits and dequeues the task
-(if necessary), in turn avoiding needless delay of the current RCU grace
-period and needless RCU priority boosting.
-
-It is still illegal to call rcu_read_unlock() while holding a scheduler
-lock if the prior RCU read-side critical section has ever had either
-preemption or irqs enabled.  However, the common use case is legal,
-namely where then entire RCU read-side critical section executes with
-irqs disabled, for example, when the scheduler lock is held across the
-entire lifetime of the RCU read-side critical section.
+It is quite possible that a better long-term fix is to make rt_mutex_unlock()
+disable irqs when acquiring the rt_mutex structure's ->wait_lock.
 
 Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutree_plugin.h |   29 ++++++++++++++++++++++++-----
- 1 files changed, 24 insertions(+), 5 deletions(-)
+ kernel/signal.c |   19 +++++++++++++------
+ 1 files changed, 13 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 4d2c068..d9d7a89 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -68,6 +68,7 @@ struct rcu_state rcu_preempt_state = RCU_STATE_INITIALIZER(rcu_preempt_state);
- DEFINE_PER_CPU(struct rcu_data, rcu_preempt_data);
- static struct rcu_state *rcu_state = &rcu_preempt_state;
+diff --git a/kernel/signal.c b/kernel/signal.c
+index ff76786..415d85d 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -1178,18 +1178,25 @@ struct sighand_struct *__lock_task_sighand(struct task_struct *tsk,
+ {
+ 	struct sighand_struct *sighand;
  
-+static void rcu_read_unlock_special(struct task_struct *t);
- static int rcu_preempted_readers_exp(struct rcu_node *rnp);
+-	rcu_read_lock();
+ 	for (;;) {
++		local_irq_save(*flags);
++		rcu_read_lock();
+ 		sighand = rcu_dereference(tsk->sighand);
+-		if (unlikely(sighand == NULL))
++		if (unlikely(sighand == NULL)) {
++			rcu_read_unlock();
++			local_irq_restore(*flags);
+ 			break;
++		}
  
- /*
-@@ -147,7 +148,7 @@ static void rcu_preempt_note_context_switch(int cpu)
- 	struct rcu_data *rdp;
- 	struct rcu_node *rnp;
- 
--	if (t->rcu_read_lock_nesting &&
-+	if (t->rcu_read_lock_nesting > 0 &&
- 	    (t->rcu_read_unlock_special & RCU_READ_UNLOCK_BLOCKED) == 0) {
- 
- 		/* Possibly blocking in an RCU read-side critical section. */
-@@ -190,6 +191,14 @@ static void rcu_preempt_note_context_switch(int cpu)
- 				rnp->gp_tasks = &t->rcu_node_entry;
- 		}
- 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
-+	} else if (t->rcu_read_lock_nesting < 0 &&
-+		   t->rcu_read_unlock_special) {
-+
-+		/*
-+		 * Complete exit from RCU read-side critical section on
-+		 * behalf of preempted instance of __rcu_read_unlock().
-+		 */
-+		rcu_read_unlock_special(t);
+-		spin_lock_irqsave(&sighand->siglock, *flags);
+-		if (likely(sighand == tsk->sighand))
++		spin_lock(&sighand->siglock);
++		if (likely(sighand == tsk->sighand)) {
++			rcu_read_unlock();
+ 			break;
+-		spin_unlock_irqrestore(&sighand->siglock, *flags);
++		}
++		spin_unlock(&sighand->siglock);
++		rcu_read_unlock();
++		local_irq_restore(*flags);
  	}
+-	rcu_read_unlock();
  
- 	/*
-@@ -391,13 +400,22 @@ void __rcu_read_unlock(void)
- 	struct task_struct *t = current;
- 
- 	barrier();  /* needed if we ever invoke rcu_read_unlock in rcutree.c */
--	if (--t->rcu_read_lock_nesting == 0) {
--		barrier();  /* decr before ->rcu_read_unlock_special load */
-+	if (t->rcu_read_lock_nesting != 1)
-+		--t->rcu_read_lock_nesting;
-+	else {
-+		t->rcu_read_lock_nesting = INT_MIN;
-+		barrier();  /* assign before ->rcu_read_unlock_special load */
- 		if (unlikely(ACCESS_ONCE(t->rcu_read_unlock_special)))
- 			rcu_read_unlock_special(t);
-+		barrier();  /* ->rcu_read_unlock_special load before assign */
-+		t->rcu_read_lock_nesting = 0;
- 	}
- #ifdef CONFIG_PROVE_LOCKING
--	WARN_ON_ONCE(ACCESS_ONCE(t->rcu_read_lock_nesting) < 0);
-+	{
-+		int rrln = ACCESS_ONCE(t->rcu_read_lock_nesting);
-+
-+		WARN_ON_ONCE(rrln < 0 && rrln > INT_MIN / 2);
-+	}
- #endif /* #ifdef CONFIG_PROVE_LOCKING */
+ 	return sighand;
  }
- EXPORT_SYMBOL_GPL(__rcu_read_unlock);
-@@ -593,7 +611,8 @@ static void rcu_preempt_check_callbacks(int cpu)
- 		rcu_preempt_qs(cpu);
- 		return;
- 	}
--	if (per_cpu(rcu_preempt_data, cpu).qs_pending)
-+	if (t->rcu_read_lock_nesting > 0 &&
-+	    per_cpu(rcu_preempt_data, cpu).qs_pending)
- 		t->rcu_read_unlock_special |= RCU_READ_UNLOCK_NEED_QS;
- }
- 
 -- 
 1.7.3.2
 
