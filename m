@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751441Ab1GTMaz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 08:30:55 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:60599 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750936Ab1GTMay (ORCPT
+	id S1751476Ab1GTMgF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 08:36:05 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:59205 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751006Ab1GTMgD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 08:30:54 -0400
-Subject: Re: Regression in handling of unsafe UBI shutdown
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Daniel Mack <zonque@gmail.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Sven Neumann <s.neumann@raumfeld.com>
-Date: Wed, 20 Jul 2011 15:32:16 +0300
-In-Reply-To: <CACTFLANrd0FO9GNJpvS+MxnQgLLtXpA-sai30oYN90cjEFOErA@mail.gmail.com>
-References: <CACTFLANAFT=G4kFvHUqvLrt=MxgpJnJ-EeHY8zd49pZvsNRejw@mail.gmail.com>
-	 <1311139283.20738.150.camel@sauron>
-	 <CACTFLANrd0FO9GNJpvS+MxnQgLLtXpA-sai30oYN90cjEFOErA@mail.gmail.com>
+	Wed, 20 Jul 2011 08:36:03 -0400
+Subject: Re: [PATCH tip/core/urgent 1/7] rcu: decrease rcu_report_exp_rnp
+ coupling with scheduler
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ed Tomlinson <edt@aei.ca>
+Cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
+        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org, greearb@candelatech.com
+In-Reply-To: <201107200723.33819.edt@aei.ca>
+References: <20110720001738.GA16369@linux.vnet.ibm.com>
+	 <1311129618.5345.2.camel@twins> <20110720045414.GC2400@linux.vnet.ibm.com>
+	 <201107200723.33819.edt@aei.ca>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1311165141.20738.171.camel@sauron>
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 20 Jul 2011 14:35:20 +0200
+Message-ID: <1311165320.5345.77.camel@twins>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-07-20 at 11:18 +0200, Daniel Mack wrote:
-> On Wed, Jul 20, 2011 at 7:21 AM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
-> > On Tue, 2011-07-19 at 15:57 +0200, Daniel Mack wrote:
-> >> UBIFS: recovery needed
-> >> Error reading superblock on volume 'ubi:RootFS'!
-> >> UBIFS not mounted, use ubifs mount to mount volume first!
-> >> Wrong Image Format for bootm command
-> >> ERROR: can't get kernel image!
-> >>
-> >>
-> >> Hence my question is: were there any radical changes in the UBI/UBIFS
-> >> code on the kernel side that make older code not like the new content
-> >> anymore?
-> >
-> > Daniel, sorry, I have no time to look at this now, could you please try
-> > to bisect the issue?
-> 
-> It's not really easy to bisect as the issue is not always fully
-> reproducable, and also because the flash needs to be re-initialized
-> after it happened.
-> 
-> Also note that it's not the kernel itself that complains about the
-> state of the file system in this case but U-Boot. If we boot a 3.0-rc7
-> kernel in such a situation (via USB for example), the kernel will
-> recover the FS and continue.
-> 
-> I don't know how many people use the UBI code in U-Boot, and I don't
-> know either whether it was a good idea to go this way in the first
-> place, but we didn't want to waste much space on the NAND for a
-> fixed-size partition just for the kernel, and have a hard limit for it
-> in the future. And as I said, this approach has worked just fine in
-> the past.
-> 
-> So, let me re-phrase my question: is anyone aware of changes in the
-> UBIFS code between 2.6.36 and 3.0 that might cause trouble to U-Boot's
-> UBI code from 2009?
+On Wed, 2011-07-20 at 07:23 -0400, Ed Tomlinson wrote:
+> [    3.553004]  [<ffffffff8104b06a>] warn_slowpath_null+0x1a/0x20
+> [    3.553004]  [<ffffffff810bb479>] __rcu_read_unlock+0xc9/0x120
+> [    3.553004]  [<ffffffff8103fed8>] cpuacct_charge+0xc8/0xe0
+> [    3.553004]  [<ffffffff8103fe58>] ? cpuacct_charge+0x48/0xe0
+> [    3.553004]  [<ffffffff810326b7>] ? task_of+0x97/0xd0
+> [    3.553004]  [<ffffffff81040ef5>] update_curr+0x1a5/0x210
+> [    3.553004]  [<ffffffff81576d78>] ? preempt_schedule_irq+0x68/0xa0
+> [    3.553004]  [<ffffffff810419e0>] put_prev_task_fair+0x110/0x120
+> [    3.553004]  [<ffffffff81575f3a>] schedule+0x1da/0xc50
+> [    3.553004]  [<ffffffff81576d72>] ? preempt_schedule_irq+0x62/0xa0
+> [    3.553004]  [<ffffffff81576d78>] preempt_schedule_irq+0x68/0xa0
+> [    3.553004]  [<ffffffff8157a316>] retint_kernel+0x26/0x30
+> [    3.553004]  [<ffffffff810da494>] ? ftrace_likely_update+0x14/0x20
+> [    3.553004]  [<ffffffff810bb4ab>] __rcu_read_unlock+0xfb/0x120
+> [    3.553004]  [<ffffffff810f8190>] find_get_page+0x170/0x190 
 
-I guess that would be an on-flash format change? I am not aware of such
-changes, and if there were such - this is a big issue which we wound
-need to fix.
+Ok, so we're running some task that does rcu_read_unlock(), right in the
+middle of __rcu_read_unlock() we get preempted, the scheduler calls
+rcu_note_context_switch()->rcu_preempt_note_context_switch() which sets
+->rcu_read_unlock_special |= UNLOCK_BLOCKED.
 
--- 
-Best Regards,
-Artem Bityutskiy
+Then before finishing the context switch, the cpuacct muck uses rcu, and
+its rcu_read_unlock() triggers __rcu_read_unlock() and goes bang.
 
+That rcu usage isn't new, that's been there since March 2009.
+
+AFAICT even .39 should suffer from this particular issue, or am I
+missing something here.. Paul?
