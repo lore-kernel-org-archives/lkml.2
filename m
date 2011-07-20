@@ -1,41 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752118Ab1GTOks (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 10:40:48 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35553 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750969Ab1GTOkr (ORCPT
+	id S1752180Ab1GTOlJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 10:41:09 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:46353 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751437Ab1GTOlI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 10:40:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110720221420.153b0830@kryten>
-References: <20110707102107.GA16666@in.ibm.com> <1310036375.3282.509.camel@twins>
- <20110714103418.7ef25b68@kryten> <20110714143521.5fe4fab6@kryten>
- <1310649379.2586.273.camel@twins> <20110715104547.29c3c509@kryten>
- <1311024956.2309.22.camel@laptop> <20110719144451.79bc69ab@kryten>
- <1311070894.13765.180.camel@twins> <20110720201436.19e9689a@kryten>
- <1311158708.5345.12.camel@twins> <20110720221420.153b0830@kryten>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 20 Jul 2011 07:40:23 -0700
-Message-ID: <CA+55aFxzaaMj8OUaust90c_hYKzg8NpRfmX4SzJ9SMwXzg5ocA@mail.gmail.com>
-Subject: Re: [regression] 3.0-rc boot failure -- bisected to cd4ea6ae3982
-To: Anton Blanchard <anton@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, mahesh@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        mingo@elte.hu, benh@kernel.crashing.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 20 Jul 2011 10:41:08 -0400
+Subject: Re: [PATCH] mm-slab: allocate kmem_cache with __GFP_REPEAT
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Konstantin Khlebnikov <khlebnikov@parallels.com>
+Cc: Mel Gorman <mgorman@suse.de>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matt Mackall <mpm@selenic.com>
+In-Reply-To: <4E26E705.8050704@parallels.com>
+References: <20110720121612.28888.38970.stgit@localhost6>
+	 <alpine.DEB.2.00.1107201611010.3528@tiger> <4E26D7EA.3000902@parallels.com>
+	 <alpine.DEB.2.00.1107201638520.4921@tiger>
+	 <alpine.DEB.2.00.1107200852590.32737@router.home>
+	 <20110720142018.GL5349@suse.de>  <4E26E705.8050704@parallels.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 20 Jul 2011 16:40:59 +0200
+Message-ID: <1311172859.2338.31.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 20, 2011 at 5:14 AM, Anton Blanchard <anton@samba.org> wrote:
->
->> So with that fix the patch makes the machine happy again?
->
-> Yes, the machine looks fine with the patches applied. Thanks!
+Le mercredi 20 juillet 2011 à 18:32 +0400, Konstantin Khlebnikov a
+écrit :
 
-Ok, so what's the situation for 3.0 (I'm waiting for some RCU
-resolution now)? Anton's patch may be small, but that's just the tiny
-fixup patch to Peter's much scarier one ;)
+> I catch this on our rhel6-openvz kernel, and yes it very patchy,
+> but I don't see any reasons why this cannot be reproduced on mainline kernel.
+> 
+> there was abount ten containers with random stuff, node already do intensive swapout but still alive,
+> in this situation starting new containers sometimes (1 per 1000) fails due to kmem_cache_create failures in nf_conntrack,
+> there no other messages except:
+> Unable to create nf_conn slab cache
+> and some
+> nf_conntrack: falling back to vmalloc.
+> (it try allocates huge hash table and do it via vmalloc if kmalloc fails)
 
-                            Linus
+
+Does this kernel contain commit 6d4831c2 ?
+(vfs: avoid large kmalloc()s for the fdtable)
+
+
+
