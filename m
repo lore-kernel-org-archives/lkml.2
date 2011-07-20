@@ -1,57 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751837Ab1GTVkt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 17:40:49 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:55362 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750810Ab1GTVks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 17:40:48 -0400
-Date: Wed, 20 Jul 2011 14:39:23 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Ben Greear <greearb@candelatech.com>,
-        Ed Tomlinson <edt@aei.ca>, linux-kernel@vger.kernel.org,
-        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, edward.tomlinson@aero.bombardier.com
-Subject: Re: [PATCH rcu/urgent 0/6] Fixes for RCU/scheduler/irq-threads
- trainwreck
-Message-ID: <20110720213923.GT2313@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110720044435.GB2400@linux.vnet.ibm.com>
- <CA+55aFyaCY=qzFKswi2NR097KZtb5x98sba3rHJ7B0rchtzm2g@mail.gmail.com>
- <20110720133443.GG2400@linux.vnet.ibm.com>
- <4E270A0E.6090902@candelatech.com>
- <20110720171532.GB2313@linux.vnet.ibm.com>
- <20110720184413.GD17977@elte.hu>
- <1311187978.29152.58.camel@twins>
- <CA+55aFyuKTj3zEvWJEx4_RDzLQ+ipJ58UWFYH84nmcwGF_c4aA@mail.gmail.com>
- <20110720192949.GM2313@linux.vnet.ibm.com>
- <1311195953.29152.95.camel@twins>
+	id S1751990Ab1GTVtd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 17:49:33 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:33934 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751854Ab1GTVtb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 17:49:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311195953.29152.95.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4E261B7F.8020002@linux.intel.com>
+References: <1311111106-26814-1-git-send-email-per.forlin@linaro.org>
+	<1311111106-26814-3-git-send-email-per.forlin@linaro.org>
+	<4E261B7F.8020002@linux.intel.com>
+Date: Wed, 20 Jul 2011 23:49:30 +0200
+Message-ID: <CAJ0pr1_YcCac7m5RvAPX=r81F3yhgXsAo_hou0_RQmx3WgWbUQ@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3] mmc: core: add random fault injection
+From: Per Forlin <per.forlin@linaro.org>
+To: J Freyensee <james_p_freyensee@linux.intel.com>
+Cc: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-doc@vger.kernel.org,
+        Venkatraman S <svenkatr@ti.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>, Sourav Poddar <sourav.poddar@ti.com>,
+        Chris Ball <cjb@laptop.org>, Akinobu Mita <akinobu.mita@gmail.com>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 20, 2011 at 11:05:53PM +0200, Peter Zijlstra wrote:
-> On Wed, 2011-07-20 at 12:29 -0700, Paul E. McKenney wrote:
-> 
-> > Peter, does #4 (protect __rcu_read_unlock() against scheduler-using
-> > irq handlers) remove the need for #5 (Add irq_{enter,exit}() to
-> > scheduler_ipi()) and #6 (Inform RCU of irq_exit() activity)?  My guess is
-> > "no" for #5 and "yes" for #6.
-> 
-> More or less, we want to keep #5 for it does more than just fix RCU, but
-> yeah, I _think_ #4 obsoletes the direct need for #6.
+Hi James,
 
-Heh.  So the lowest risk is keeping #6 for now and deciding later
-whether we really need it.
+On 20 July 2011 02:04, J Freyensee <james_p_freyensee@linux.intel.com> wrote:
+> On 07/19/2011 02:31 PM, Per Forlin wrote:
+>>
+>> This adds support to inject data errors after a completed host transfer.
+>> The mmc core will return error even though the host transfer is
+>> successful.
+>> This simple fault injection proved to be very useful to test the
+>> non-blocking error handling in the mmc_blk_issue_rw_rq().
+>> Random faults can also test how the host driver handles pre_req()
+>> and post_req() in case of errors.
+>>
+>> Signed-off-by: Per Forlin<per.forlin@linaro.org>
+>> ---
+>>  drivers/mmc/core/core.c    |   58
+>> ++++++++++++++++++++++++++++++++++++++++++++
+>>  drivers/mmc/core/debugfs.c |    5 ++++
+>>  include/linux/mmc/host.h   |    3 ++
+>>  lib/Kconfig.debug          |   11 ++++++++
+>>  4 files changed, 77 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+>> index ab36c7b..3f822b4 100644
+>> --- a/drivers/mmc/core/core.c
+>> +++ b/drivers/mmc/core/core.c
+>> @@ -23,6 +23,8 @@
+>>  #include<linux/log2.h>
+>>  #include<linux/regulator/consumer.h>
+>>  #include<linux/pm_runtime.h>
+>> +#include<linux/fault-inject.h>
+>> +#include<linux/random.h>
+>>
+>
+> As a suggestion, would you want to also use '#ifdef CONFIG_FAIL_MMC_REQUEST'
+> for fault-inject.h and random.h?  If they are not used in a non-debug linux
+> kernel configuration, could this possibly cause a little extra code bloat if
+> they are a part of a production Linux kernel compile/configuration?
+>
+I try to avoid ifdefs in general but I see your point. I accept your
+comment and add the ifdef.
 
-							Thanx, Paul
+>>  #include<linux/mmc/card.h>
+>>  #include<linux/mmc/host.h>
+>> @@ -82,6 +84,58 @@ static void mmc_flush_scheduled_work(void)
+>>        flush_workqueue(workqueue);
+>>  }
+>>
+>> +#ifdef CONFIG_FAIL_MMC_REQUEST
+>> +
+>> +static DECLARE_FAULT_ATTR(fail_mmc_request);
+>> +
+>> +static int __init setup_fail_mmc_request(char *str)
+>
+> Function comment header somewhere (here or the .h file?)
+>
+>> +{
+>> +       return setup_fault_attr(&fail_mmc_request, str);
+>> +}
+>> +__setup("fail_mmc_request=", setup_fail_mmc_request);
+>> +
+>> +static void mmc_should_fail_request(struct mmc_host *host,
+>> +                                   struct mmc_request *mrq)
+>> +{
+>
+> Function comment header somewhere (here or the .h file)?
+>
+I will do.
+
+>> +       struct mmc_command *cmd = mrq->cmd;
+>> +       struct mmc_data *data = mrq->data;
+>> +       static const int data_errors[] = {
+>> +               -ETIMEDOUT,
+>> +               -EILSEQ,
+>> +               -EIO,
+>> +       };
+>> +
+>> +       if (!data)
+>> +               return;
+>> +
+>
+> Should 'if (!cmd)' also be checked or is this guaranteed to always have a
+> valid value for this function (and if there are certain commands in 'struct
+> mmc_command *cmd = mrq->cmd' that will not work with this function then that
+> is something that should be documented in the function comment header)?
+>
+cmd will always be set from where the mmc_should_fail_request() is called.
+This code only inject data errors. For commands with no data struct
+there will be no error inject. This is a choice I have made. It is
+possible to extend this by injecting errors for cmds without data too
+but it would require an additional flag in order to control inject
+errors on data and cmd separately. I will add this information to the
+function description.
+
+>> +       if (cmd->error || data->error || !host->make_it_fail ||
+>> +           !should_fail(&fail_mmc_request, data->blksz * data->blocks))
+>> +               return;
+>> +
+>> +       data->error = data_errors[random32() % ARRAY_SIZE(data_errors)];
+>> +       data->bytes_xfered = (random32() % (data->bytes_xfered>>  9))<<
+>>  9;
+>> +}
+>> +
+>> +static int __init fail_mmc_request_debugfs(void)
+>> +{
+>> +       return init_fault_attr_dentries(&fail_mmc_request,
+>> +                                       "fail_mmc_request");
+>> +}
+>> +
+>> +#else /* CONFIG_FAIL_MMC_REQUEST */
+>> +
+>> +static void mmc_should_fail_request(struct mmc_host *host,
+>> +                                   struct mmc_request *mrq)
+>> +{
+>> +}
+>> +
+>> +static int __init fail_mmc_request_debugfs(void)
+>> +{
+>> +       return 0;
+>> +}
+>> +#endif /* CONFIG_FAIL_MMC_REQUEST */
+>> +
+>> +
+>>  /**
+>>   *    mmc_request_done - finish processing an MMC request
+>>   *    @host: MMC host which completed request
+>> @@ -108,6 +162,8 @@ void mmc_request_done(struct mmc_host *host, struct
+>> mmc_request *mrq)
+>>                cmd->error = 0;
+>>                host->ops->request(host, mrq);
+>>        } else {
+>> +               mmc_should_fail_request(host, mrq);
+>> +
+>>                led_trigger_event(host->led, LED_OFF);
+>>
+>>                pr_debug("%s: req done (CMD%u): %d: %08x %08x %08x %08x\n",
+>> @@ -2064,6 +2120,8 @@ static int __init mmc_init(void)
+>>        if (ret)
+>>                goto unregister_host_class;
+>>
+>> +       fail_mmc_request_debugfs();
+>> +
+>>        return 0;
+>>
+>>  unregister_host_class:
+>> diff --git a/drivers/mmc/core/debugfs.c b/drivers/mmc/core/debugfs.c
+>> index 998797e..588e76f 100644
+>> --- a/drivers/mmc/core/debugfs.c
+>> +++ b/drivers/mmc/core/debugfs.c
+>> @@ -188,6 +188,11 @@ void mmc_add_host_debugfs(struct mmc_host *host)
+>>                                root,&host->clk_delay))
+>>                goto err_node;
+>>  #endif
+>> +#ifdef CONFIG_FAIL_MMC_REQUEST
+>> +       if (!debugfs_create_u8("make-it-fail", S_IRUSR | S_IWUSR,
+>> +                              root,&host->make_it_fail))
+>> +               goto err_node;
+>> +#endif
+>>        return;
+>>
+>>  err_node:
+>> diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
+>> index 771455f..250b46d 100644
+>> --- a/include/linux/mmc/host.h
+>> +++ b/include/linux/mmc/host.h
+>> @@ -303,6 +303,9 @@ struct mmc_host {
+>>
+>>        struct mmc_async_req    *areq;          /* active async req */
+>>
+>> +#ifdef CONFIG_FAIL_MMC_REQUEST
+>> +       u8                      make_it_fail;
+>> +#endif
+>>        unsigned long           private[0] ____cacheline_aligned;
+>>  };
+>>
+>> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+>> index c768bcd..c2d1423 100644
+>> --- a/lib/Kconfig.debug
+>> +++ b/lib/Kconfig.debug
+>> @@ -1057,6 +1057,17 @@ config FAIL_IO_TIMEOUT
+>>          Only works with drivers that use the generic timeout handling,
+>>          for others it wont do anything.
+>>
+>> +config FAIL_MMC_REQUEST
+>> +       bool "Fault-injection capability for MMC IO"
+>> +       select DEBUG_FS
+>> +       depends on FAULT_INJECTION&&  MMC
+>> +       help
+>> +         Provide fault-injection capability for MMC IO.
+>> +         This will make the mmc core return data errors. This is
+>> +         useful to test the error handling in the mmc block device
+>> +         and to test how the mmc host driver handles retries from
+>> +         the block device.
+>> +
+>>  config FAULT_INJECTION_DEBUG_FS
+>>        bool "Debugfs entries for fault-injection capabilities"
+>>        depends on FAULT_INJECTION&&  SYSFS&&  DEBUG_FS
+>
+>
+> --
+> J (James/Jay) Freyensee
+> Storage Technology Group
+> Intel Corporation
+>
