@@ -1,68 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751140Ab1GTHYe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 03:24:34 -0400
-Received: from www.linutronix.de ([62.245.132.108]:45234 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777Ab1GTHYd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 03:24:33 -0400
-Date: Wed, 20 Jul 2011 09:24:32 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, sodaville@linutronix.de
-Subject: [PATCH 1/2 v2] gpio/gpio-generic: read correct set register for
- caching if available
-Message-ID: <20110720072432.GA20042@linutronix.de>
-References: <1309159583-11339-1-git-send-email-bigeasy@linutronix.de>
- <20110704154447.GG29977@ponder.secretlab.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110704154447.GG29977@ponder.secretlab.ca>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751217Ab1GTHct (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 03:32:49 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:33167 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750777Ab1GTHcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 03:32:47 -0400
+Date: Wed, 20 Jul 2011 17:32:32 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dave Chinner <dchinner@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: linux-next: build failure after merge of the final tree (maybe vfs
+ tree related)
+Message-Id: <20110720173232.3c7e46d310e2224e459b0ac1@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__20_Jul_2011_17_32_32_+1000_YP5gKc7V3.Wm_vis"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ->data is a shadow copy which is used during the ->set callback in
-order to avoid a read of the register before write.
-If ->reg_set is set then we write to this location therefore we should
-cache that value.
+--Signature=_Wed__20_Jul_2011_17_32_32_+1000_YP5gKc7V3.Wm_vis
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
-* Grant Likely | 2011-07-04 09:44:47 [-0600]:
+Hi all,
 
->On most of the gpio controllers that I've seen, the 'set' register
->isn't something that you can actually read.  I don't think this is
->something that can be done for all gpio controllers.
+After merging the final tree, today's linux-next build (sparc defconfig)
+failed like this:
 
-I have reworked the part to only read the set register only if not
-set/clear mode. Is this okay or are they any controller where this does
-not work?
+In file included from /scratch/sfr/next/arch/sparc/include/asm/prom.h:22:0,
+                 from /scratch/sfr/next/include/linux/of.h:130,
+                 from /scratch/sfr/next/arch/sparc/include/asm/openprom.h:1=
+4,
+                 from /scratch/sfr/next/arch/sparc/include/asm/oplib_32.h:1=
+1,
+                 from /scratch/sfr/next/arch/sparc/include/asm/oplib.h:6,
+                 from /scratch/sfr/next/arch/sparc/include/asm/pgtable_32.h=
+:22,
+                 from /scratch/sfr/next/arch/sparc/include/asm/pgtable.h:6,
+                 from /scratch/sfr/next/include/linux/mm.h:41,
+                 from /scratch/sfr/next/include/linux/fs.h:397,
+                 from /scratch/sfr/next/init/do_mounts_initrd.c:3:
+/scratch/sfr/next/include/linux/proc_fs.h:275:15: error: field 'vfs_inode' =
+has incomplete type
+/scratch/sfr/next/include/linux/proc_fs.h: In function 'PROC_I':
+/scratch/sfr/next/include/linux/proc_fs.h:280:9: warning: type defaults to =
+'int' in declaration of '__mptr'
+/scratch/sfr/next/include/linux/proc_fs.h:280:9: warning: initialization fr=
+om incompatible pointer type
 
- drivers/gpio/gpio-generic.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+And many more similar.  Again, I assume some include files changed.
+Maybe commit 347727d3f51d ("superblock: introduce per-sb cache shrinker
+infrastructure") which included linux/mm.h in linux/fs.h ...
 
-diff --git a/drivers/gpio/gpio-generic.c b/drivers/gpio/gpio-generic.c
-index 231714d..5234b20 100644
---- a/drivers/gpio/gpio-generic.c
-+++ b/drivers/gpio/gpio-generic.c
-@@ -398,7 +398,10 @@ int __devinit bgpio_init(struct bgpio_chip *bgc,
- 	if (ret)
- 		return ret;
- 
--	bgc->data = bgc->read_reg(bgc->reg_dat);
-+	if (bgc->reg_set == bgpio_set_set)
-+		bgc->data = bgc->read_reg(bgc->reg_set);
-+	else if (bgc->reg_set == bgpio_set)
-+		bgc->data = bgc->read_reg(bgc->reg_dat);
- 
- 	return ret;
- }
--- 
-1.7.4.4
+I have left this again.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Wed__20_Jul_2011_17_32_32_+1000_YP5gKc7V3.Wm_vis
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOJoSQAAoJEDMEi1NhKgbsc9IH/Ai58gEc5V/SilzrHQzCR+DC
+gfWuDh2tJx+JuzB3elEVnNTpl4AoMWZubh7VBI+Gk1ccHigdG4faKtQoemxlzQHq
+u5tlfsPkbkue9WRbhAVHDOCZeAhHnA0BEtx80NQRqVT1k2xVnQKzqYbPsRPtLbcY
+aJ2n50PMYbQrOLMkQFuelxjnROSUPOi91K3JaDgdDzU7/eDTIXmt+mIMGDrVj/tL
+61s7Utyy4jVPKXspJ1QN0S7M0HR4zSN3y8ypoq2+CIRQrXMP9ZsMubsKU7yRPQtk
+tM6S7Tsm3cw2npo/FtapM1FEo9jZ3CuNEB/ZoOlZ3X0OtsavnMV+2ANHLhkmXPQ=
+=jIyw
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__20_Jul_2011_17_32_32_+1000_YP5gKc7V3.Wm_vis--
