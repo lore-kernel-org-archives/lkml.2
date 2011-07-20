@@ -1,94 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751606Ab1GTPJb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 11:09:31 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:45454 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750980Ab1GTPJa (ORCPT
+	id S1751584Ab1GTPMJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 11:12:09 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:41739 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751006Ab1GTPMG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 11:09:30 -0400
-Subject: Re: [PATCH] mm-slab: allocate kmem_cache with __GFP_REPEAT
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Mel Gorman <mgorman@suse.de>, Pekka Enberg <penberg@kernel.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>
-In-Reply-To: <alpine.DEB.2.00.1107200950270.1472@router.home>
-References: <20110720121612.28888.38970.stgit@localhost6>
-	 <alpine.DEB.2.00.1107201611010.3528@tiger> <20110720134342.GK5349@suse.de>
-	 <alpine.DEB.2.00.1107200854390.32737@router.home>
-	 <1311170893.2338.29.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <alpine.DEB.2.00.1107200950270.1472@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 20 Jul 2011 17:09:22 +0200
-Message-ID: <1311174562.2338.42.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Wed, 20 Jul 2011 11:12:06 -0400
+Date: Wed, 20 Jul 2011 11:12:01 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Divy LeRay <divy@chelsio.com>, Stanislaw Gruszka <sgruszka@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH] dma-debug: hash_bucket_find needs to allow for offsets
+ within an entry
+Message-ID: <20110720151201.GC12349@hmsreliant.think-freely.org>
+References: <1311097278-30841-1-git-send-email-nhorman@tuxdriver.com>
+ <20110720103813.GL15108@amd.com>
+ <20110720111156.GA12349@hmsreliant.think-freely.org>
+ <20110720132925.GB21948@amd.com>
+ <20110720143222.GB12349@hmsreliant.think-freely.org>
+ <20110720145901.GE21948@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110720145901.GE21948@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.0 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 20 juillet 2011 à 09:52 -0500, Christoph Lameter a écrit :
-> On Wed, 20 Jul 2011, Eric Dumazet wrote:
+On Wed, Jul 20, 2011 at 04:59:01PM +0200, Roedel, Joerg wrote:
+> On Wed, Jul 20, 2011 at 10:32:22AM -0400, Neil Horman wrote:
+> > On Wed, Jul 20, 2011 at 03:29:25PM +0200, Roedel, Joerg wrote:
+> > > You are right. We need to scan
+> > > 
+> > > 	0 <= idx <= hash_fn(rstart)
+> > > 
+> > > Probably we can fix that with a better hash-function. Any ideas? Using
+> > > the device is not an option because then all entries would end up in
+> > > only a few buckets. This will impact scanning performance too much.
+> > > 
+> > Unfortunately I don't have any ideas for a better hash function here, but I had
+> > been thinking about fixing this in add_dma_entry.  We could detect there that a
+> > debug entry to be added crossed one or more hash bucket boundaries, and, if it
+> > did, split it along those boundaries into multiple entries, hashing each of them
+> > in separately.  The check_unmap and check_sync routines would of course then
+> > potentially have to do multiple lookups as well to ensure that they found all of
+> > the correct entries to validate/remove.  It would work in all cases, but it
+> > might be overkill.  What do you think?
 > 
-> > > Slab's kmem_cache is configured with an array of NR_CPUS which is the
-> > > maximum nr of cpus supported. Some distros support 4096 cpus in order to
-> > > accomodate SGI machines. That array then will have the size of 4096 * 8 =
-> > > 32k
-> >
-> > We currently support a dynamic schem for the possible nodes :
-> >
-> > cache_cache.buffer_size = offsetof(struct kmem_cache, nodelists) +
-> > 	nr_node_ids * sizeof(struct kmem_list3 *);
-> >
-> > We could have a similar trick to make the real size both depends on
-> > nr_node_ids and nr_cpu_ids.
-> >
-> > (struct kmem_cache)->array would become a pointer.
+> Interesting. I discussed that with a colleague an hour ago and he came
+> up with the same idea :-)
+> I like it because we still need to scan only one hash-bucket, so this
+> seems like the best solution.
 > 
-> We should be making it a per cpu pointer like slub then. I looked at what
-> it would take to do so a couple of month ago but it was quite invasive.
+> > > For now, the partial syncs seem to happen rarely enough so that we can
+> > > make it a slow-path. It is probably the best to do the exact scan first
+> > > and do the full scan only if exact-scan failed (until we come up with a
+> > > better solution).
+> > > 
+> > Agreed, if you don't like my above idea, I'll get to work on this this
+> > afternoon.
 > 
+> I think this idea is a better solution.
+> 
+Copy that, i'll try implement it later today, thanks!
+Neil
 
-Lets try this first patch, simple enough : No need to setup percpu data
-for a one time use structure...
-
-[PATCH] slab: remove one NR_CPUS dependency
-
-Reduce high order allocations in do_tune_cpucache() for some setups.
-(NR_CPUS=4096 -> we need 64KB)
-
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Pekka Enberg <penberg@kernel.org>
-CC: Christoph Lameter <cl@linux.com>
----
- mm/slab.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/mm/slab.c b/mm/slab.c
-index d96e223..862bd12 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -3933,7 +3933,7 @@ fail:
- 
- struct ccupdate_struct {
- 	struct kmem_cache *cachep;
--	struct array_cache *new[NR_CPUS];
-+	struct array_cache *new[0];
- };
- 
- static void do_ccupdate_local(void *info)
-@@ -3955,7 +3955,8 @@ static int do_tune_cpucache(struct kmem_cache *cachep, int limit,
- 	struct ccupdate_struct *new;
- 	int i;
- 
--	new = kzalloc(sizeof(*new), gfp);
-+	new = kzalloc(sizeof(*new) + nr_cpu_ids * sizeof(struct array_cache *),
-+		      gfp);
- 	if (!new)
- 		return -ENOMEM;
- 
-
-
+> Thanks,
+> 
+> 	Joerg
+> 
+> -- 
+> AMD Operating System Research Center
+> 
+> Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+> General Managers: Alberto Bozzo, Andrew Bowd
+> Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+> 
+> 
