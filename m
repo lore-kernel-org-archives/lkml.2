@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338Ab1GTFdd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 01:33:33 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:53047 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751217Ab1GTFdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 01:33:31 -0400
-Date: Wed, 20 Jul 2011 15:33:20 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: linux-next: manual merge of the ptrace tree with the s390 tree
-Message-Id: <20110720153320.a7f33784158ccb04fafcb5d6@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__20_Jul_2011_15_33_20_+1000_xuuPNZvdYBcEo.Ne"
+	id S1752503Ab1GTFid (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 01:38:33 -0400
+Received: from sarigua.uspnet.usp.br ([200.144.190.149]:41624 "EHLO
+	sarigua.uspnet.usp.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751619Ab1GTFic (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 01:38:32 -0400
+X-Greylist: delayed 959 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Jul 2011 01:38:31 EDT
+X-Mail-Scanner: Scanned by qSheff-II-2.1-r3 (http://www.enderunix.org/qsheff/)
+Message-ID: <20110720021902.12262w812uce964m@webmail.usp.br>
+Date: Wed, 20 Jul 2011 02:19:02 -0300
+From: FINAL PAYMENT SETTLEMENT BOARD <luisgen@usp.br>
+Reply-to: debtsetlementboard@ozledim.net
+To: undisclosed-recipients:;
+Subject: Funds payment board
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.9)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__20_Jul_2011_15_33_20_+1000_xuuPNZvdYBcEo.Ne
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi all,
+We wish to inform you now that the square peg is now in square hole and
+can be accelerated so that your payment can be processed and will be
+released to you as soon as you respond to this letter. Also note that from
+the record in our file, YOUR APPROVED PAYMENT IS $850,000.00
+(EIGHT HUNDRED AND FIFTY THOUSAND DOLLARS).I wrote to know if this is  
+your valid email.
 
-Today's linux-next merge of the ptrace tree got a conflict in
-arch/s390/kernel/traps.c between commit 248bed4b0f3c ("[S390] use siginfo
-for sigtrap signals") from the s390 tree and commit a288eecce525
-("ptrace: kill trivial tracehooks") from the ptrace tree.
+Please, let me know if this email is valid.
 
-It looks like the former is a superset of the latter, so I used the
-former.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Email:debtsetlementboard@ozledim.net
 
---Signature=_Wed__20_Jul_2011_15_33_20_+1000_xuuPNZvdYBcEo.Ne
-Content-Type: application/pgp-signature
+Regards
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Robin Steven
 
-iQEcBAEBAgAGBQJOJmigAAoJEDMEi1NhKgbsEeMIAIgubmwwhnLlhqLGH0Yx9kqy
-am+Adh8Lx2Se8Upk7NpJoBs2WqFPKzcRD9ysQAhXzfgwXYbNlK8tNlz8mE/YDhFu
-oajvUNisL1abhSwN2ywpUwXQQhspJQaJluKtzcWJBlNLaQ7Rot6bHxv7WviZKMNq
-ZHksNZl0mEXpXzpcoqwZpEiPud1RKm3cbBpFYcGdZSQPBy5sriTS+0MBD5yuHQ8l
-i1w5qKdd1OAjwngkbbrytJRyu1+Edw3RVgW/bEv4eC9XGjG1NM426yxEfdlxsc57
-HS4wGXOcFTxZZP+G/zPVeyT8h/lHuHsB2sxgk20TkUVorVG0ylN5TXXS31V82Fw=
-=ypDU
------END PGP SIGNATURE-----
 
---Signature=_Wed__20_Jul_2011_15_33_20_+1000_xuuPNZvdYBcEo.Ne--
+
+
+
