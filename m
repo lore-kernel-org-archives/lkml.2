@@ -1,263 +1,514 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028Ab1GTPrZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 11:47:25 -0400
-Received: from s040.panelboxmanager.com ([72.55.186.60]:49752 "EHLO
-	s040.panelboxmanager.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751928Ab1GTPrY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 11:47:24 -0400
-X-Greylist: delayed 1992 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Jul 2011 11:47:23 EDT
-Message-ID: <4E26F069.60103@techboom.com>
-Date: Wed, 20 Jul 2011 11:12:41 -0400
-From: TB <lkml@techboom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: BUG: unable to handle kernel NULL pointer dereference at        
-   (null)
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - s040.panelboxmanager.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - techboom.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1752005Ab1GTPvp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 11:51:45 -0400
+Received: from mail.perches.com ([173.55.12.10]:4199 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751178Ab1GTPvn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 11:51:43 -0400
+From: Joe Perches <joe@perches.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] rtlwifi: Convert printks to pr_<level>
+Date: Wed, 20 Jul 2011 08:51:35 -0700
+Message-Id: <b57f00fc1d0947443aa1830c11c288e78924af44.1311177059.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.6.131.g99019
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is with kernel 2.6.39 compiled with
-gcc (Debian 4.3.2-1.1) 4.3.2
+Use the current logging styles.
+Add pr_fmt where appropriate.
+Remove now unnecessary prefixes from printks.
+Convert hard coded prefix to __func__.
+Add a missing "\n" to a format.
 
-Please CC me as I am not subscribed to the mailing list.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/net/wireless/rtlwifi/base.c               |    9 ++-
+ drivers/net/wireless/rtlwifi/cam.c                |    4 +-
+ drivers/net/wireless/rtlwifi/rtl8192c/fw_common.c |    5 +-
+ drivers/net/wireless/rtlwifi/rtl8192cu/hw.c       |   69 ++++++++------------
+ drivers/net/wireless/rtlwifi/rtl8192cu/mac.c      |   11 ++-
+ drivers/net/wireless/rtlwifi/rtl8192de/sw.c       |    8 +-
+ drivers/net/wireless/rtlwifi/rtl8192se/hw.c       |   10 ++--
+ drivers/net/wireless/rtlwifi/rtl8192se/phy.c      |    5 +-
+ drivers/net/wireless/rtlwifi/rtl8192se/rf.c       |    4 +-
+ drivers/net/wireless/rtlwifi/rtl8192se/sw.c       |    6 +-
+ drivers/net/wireless/rtlwifi/usb.c                |   12 ++--
+ 11 files changed, 72 insertions(+), 71 deletions(-)
 
-[567683.945368] aacraid: SCSI bus appears hung
-[567778.804257] scsi_eh_0: page allocation failure. order: 6, mode:0x20
-[567778.804262] Pid: 962, comm: scsi_eh_0 Tainted: G   M   2.6.39 #1
-[567778.804265] Call Trace:
-[567778.804277]  [<ffffffff8108e285>] ? __alloc_pages_nodemask+0x74f/0x7b9
-[567778.804284]  [<ffffffff812f36b1>] ? __domain_mapping+0x181/0x1b7
-[567778.804289]  [<ffffffff8108d249>] ? __get_free_pages+0x9/0x46
-[567778.804293]  [<ffffffff812f3c78>] ? intel_alloc_coherent+0x83/0xdb
-[567778.804300]  [<ffffffff8137557d>] ? aac_fib_setup+0xf8/0x227
-[567778.804304]  [<ffffffff8137531d>] ? aac_init_adapter+0x7a9/0x7d7
-[567778.804309]  [<ffffffff81379bc3>] ? aac_src_init+0x26b/0x3bb
-[567778.804315]  [<ffffffff810bb4f6>] ? add_partial+0x11/0x57
-[567778.804319]  [<ffffffff8137653f>] ? _aac_reset_adapter+0x29e/0x473
-[567778.804326]  [<ffffffff81377592>] ? aac_reset_adapter+0x118/0x252
-[567778.804329]  [<ffffffff813702d1>] ? aac_eh_reset+0x15e/0x185
-[567778.804333]  [<ffffffff81358c85>] ? scsi_try_host_reset+0x51/0xcc
-[567778.804336]  [<ffffffff81359f84>] ? scsi_eh_ready_devs+0x671/0x7e6
-[567778.804339]  [<ffffffff8135a63c>] ? scsi_error_handler+0x39b/0x59d
-[567778.804342]  [<ffffffff8135a2a1>] ? scsi_eh_get_sense+0x1a8/0x1a8
-[567778.804347]  [<ffffffff8104d98a>] ? kthread+0x7e/0x86
-[567778.804351]  [<ffffffff8156d094>] ? kernel_thread_helper+0x4/0x10
-[567778.804354]  [<ffffffff8104d90c>] ? kthread_worker_fn+0x10d/0x10d
-[567778.804357]  [<ffffffff8156d090>] ? gs_change+0xb/0xb
-[567778.804358] Mem-Info:
-[567778.804359] Node 0 DMA per-cpu:
-[567778.804362] CPU    0: hi:    0, btch:   1 usd:   0
-[567778.804364] CPU    1: hi:    0, btch:   1 usd:   0
-[567778.804365] CPU    2: hi:    0, btch:   1 usd:   0
-[567778.804367] CPU    3: hi:    0, btch:   1 usd:   0
-[567778.804369] CPU    4: hi:    0, btch:   1 usd:   0
-[567778.804370] CPU    5: hi:    0, btch:   1 usd:   0
-[567778.804372] CPU    6: hi:    0, btch:   1 usd:   0
-[567778.804374] CPU    7: hi:    0, btch:   1 usd:   0
-[567778.804375] CPU    8: hi:    0, btch:   1 usd:   0
-[567778.804377] CPU    9: hi:    0, btch:   1 usd:   0
-[567778.804379] CPU   10: hi:    0, btch:   1 usd:   0
-[567778.804380] CPU   11: hi:    0, btch:   1 usd:   0
-[567778.804382] CPU   12: hi:    0, btch:   1 usd:   0
-[567778.804384] CPU   13: hi:    0, btch:   1 usd:   0
-[567778.804385] CPU   14: hi:    0, btch:   1 usd:   0
-[567778.804387] CPU   15: hi:    0, btch:   1 usd:   0
-[567778.804389] Node 0 DMA32 per-cpu:
-[567778.804391] CPU    0: hi:  186, btch:  31 usd: 149
-[567778.804392] CPU    1: hi:  186, btch:  31 usd:   0
-[567778.804394] CPU    2: hi:  186, btch:  31 usd:   0
-[567778.804396] CPU    3: hi:  186, btch:  31 usd:   0
-[567778.804398] CPU    4: hi:  186, btch:  31 usd:   0
-[567778.804399] CPU    5: hi:  186, btch:  31 usd:   0
-[567778.804401] CPU    6: hi:  186, btch:  31 usd:   0
-[567778.804403] CPU    7: hi:  186, btch:  31 usd:   0
-[567778.804404] CPU    8: hi:  186, btch:  31 usd:   0
-[567778.804406] CPU    9: hi:  186, btch:  31 usd:   0
-[567778.804408] CPU   10: hi:  186, btch:  31 usd: 167
-[567778.804410] CPU   11: hi:  186, btch:  31 usd:   0
-[567778.804411] CPU   12: hi:  186, btch:  31 usd:   0
-[567778.804413] CPU   13: hi:  186, btch:  31 usd:   0
-[567778.804414] CPU   14: hi:  186, btch:  31 usd:   0
-[567778.804416] CPU   15: hi:  186, btch:  31 usd:   0
-[567778.804417] Node 0 Normal per-cpu:
-[567778.804420] CPU    0: hi:  186, btch:  31 usd: 161
-[567778.804421] CPU    1: hi:  186, btch:  31 usd: 104
-[567778.804423] CPU    2: hi:  186, btch:  31 usd:  50
-[567778.804424] CPU    3: hi:  186, btch:  31 usd:   0
-[567778.804426] CPU    4: hi:  186, btch:  31 usd:   0
-[567778.804428] CPU    5: hi:  186, btch:  31 usd: 183
-[567778.804429] CPU    6: hi:  186, btch:  31 usd:   0
-[567778.804431] CPU    7: hi:  186, btch:  31 usd:   0
-[567778.804433] CPU    8: hi:  186, btch:  31 usd: 165
-[567778.804435] CPU    9: hi:  186, btch:  31 usd:  42
-[567778.804436] CPU   10: hi:  186, btch:  31 usd: 160
-[567778.804438] CPU   11: hi:  186, btch:  31 usd:   0
-[567778.804440] CPU   12: hi:  186, btch:  31 usd:   0
-[567778.804441] CPU   13: hi:  186, btch:  31 usd:   5
-[567778.804443] CPU   14: hi:  186, btch:  31 usd:   0
-[567778.804444] CPU   15: hi:  186, btch:  31 usd:   0
-[567778.804446] Node 1 Normal per-cpu:
-[567778.804448] CPU    0: hi:  186, btch:  31 usd: 185
-[567778.804450] CPU    1: hi:  186, btch:  31 usd: 166
-[567778.804451] CPU    2: hi:  186, btch:  31 usd:  68
-[567778.804453] CPU    3: hi:  186, btch:  31 usd:   1
-[567778.804455] CPU    4: hi:  186, btch:  31 usd: 119
-[567778.804456] CPU    5: hi:  186, btch:  31 usd:  22
-[567778.804458] CPU    6: hi:  186, btch:  31 usd:  27
-[567778.804460] CPU    7: hi:  186, btch:  31 usd:   0
-[567778.804461] CPU    8: hi:  186, btch:  31 usd: 176
-[567778.804463] CPU    9: hi:  186, btch:  31 usd:   5
-[567778.804465] CPU   10: hi:  186, btch:  31 usd: 133
-[567778.804466] CPU   11: hi:  186, btch:  31 usd:   0
-[567778.804468] CPU   12: hi:  186, btch:  31 usd: 151
-[567778.804470] CPU   13: hi:  186, btch:  31 usd: 185
-[567778.804471] CPU   14: hi:  186, btch:  31 usd:  82
-[567778.804473] CPU   15: hi:  186, btch:  31 usd:  34
-[567778.804477] active_anon:1207894 inactive_anon:127905 isolated_anon:0
-[567778.804478]  active_file:2522893 inactive_file:2504636 isolated_file:0
-[567778.804479]  unevictable:41 dirty:38 writeback:0 unstable:0
-[567778.804480]  free:1445271 slab_reclaimable:160878
-slab_unreclaimable:240267
-[567778.804481]  mapped:141123 shmem:1827 pagetables:21711 bounce:0
-[567778.804483] Node 0 DMA free:15880kB min:40kB low:48kB high:60kB
-active_anon:0kB inactive_anon:0kB active_file:0kB inactive_file:0kB
-unevictable:0kB isolated(anon):0kB isolated(file):0kB present:15656kB
-mlocked:0kB dirty:0kB writeback:0kB mapped:0kB shmem:0kB
-slab_reclaimable:0kB slab_unreclaimable:0kB kernel_stack:0kB
-pagetables:0kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0
-all_unreclaimable? yes
-[567778.804493] lowmem_reserve[]: 0 2991 16121 16121
-[567778.804495] Node 0 DMA32 free:319744kB min:8344kB low:10428kB
-high:12516kB active_anon:389620kB inactive_anon:104492kB
-active_file:849196kB inactive_file:849504kB unevictable:12kB
-isolated(anon):0kB isolated(file):0kB present:3063520kB mlocked:12kB
-dirty:8kB writeback:0kB mapped:16272kB shmem:76kB
-slab_reclaimable:223936kB slab_unreclaimable:370680kB
-kernel_stack:1760kB pagetables:516kB unstable:0kB bounce:0kB
-writeback_tmp:0kB pages_scanned:245 all_unreclaimable? no
-[567778.804506] lowmem_reserve[]: 0 0 13130 13130
-[567778.804509] Node 0 Normal free:3333768kB min:36632kB low:45788kB
-high:54948kB active_anon:2179952kB inactive_anon:218320kB
-active_file:3476976kB inactive_file:3453700kB unevictable:128kB
-isolated(anon):0kB isolated(file):0kB present:13445120kB mlocked:0kB
-dirty:92kB writeback:0kB mapped:53932kB shmem:6664kB
-slab_reclaimable:221760kB slab_unreclaimable:392212kB
-kernel_stack:1320kB pagetables:45812kB unstable:0kB bounce:0kB
-writeback_tmp:0kB pages_scanned:33 all_unreclaimable? no
-[567778.804519] lowmem_reserve[]: 0 0 0 0
-[567778.804522] Node 1 Normal free:2111692kB min:45088kB low:56360kB
-high:67632kB active_anon:2262004kB inactive_anon:188808kB
-active_file:5764876kB inactive_file:5715340kB unevictable:24kB
-isolated(anon):0kB isolated(file):0kB present:16547840kB mlocked:192kB
-dirty:52kB writeback:0kB mapped:494288kB shmem:568kB
-slab_reclaimable:197816kB slab_unreclaimable:198176kB kernel_stack:944kB
-pagetables:40516kB unstable:0kB bounce:0kB writeback_tmp:0kB
-pages_scanned:63 all_unreclaimable? no
-[567778.804532] lowmem_reserve[]: 0 0 0 0
-[567778.804535] Node 0 DMA: 0*4kB 1*8kB 0*16kB 0*32kB 2*64kB 1*128kB
-1*256kB 0*512kB 1*1024kB 1*2048kB 3*4096kB = 15880kB
-[567778.804542] Node 0 DMA32: 9986*4kB 14264*8kB 9219*16kB 576*32kB
-0*64kB 0*128kB 0*256kB 0*512kB 0*1024kB 0*2048kB 0*4096kB = 319992kB
-[567778.804548] Node 0 Normal: 458680*4kB 123961*8kB 31413*16kB 157*32kB
-6*64kB 1*128kB 0*256kB 0*512kB 0*1024kB 0*2048kB 0*4096kB = 3334552kB
-[567778.804555] Node 1 Normal: 253413*4kB 79386*8kB 28562*16kB 226*32kB
-0*64kB 0*128kB 0*256kB 0*512kB 0*1024kB 0*2048kB 0*4096kB = 2112964kB
-[567778.804562] 5031610 total pagecache pages
-[567778.804563] 2624 pages in swap cache
-[567778.804565] Swap cache stats: add 34221223, delete 34218599, find
-16354807/21177156
-[567778.804567] Free swap  = 7401220kB
-[567778.804568] Total swap = 7999416kB
-[567778.932784] 8388592 pages RAM
-[567778.932786] 119955 pages reserved
-[567778.932787] 3233713 pages shared
-[567778.932788] 4446427 pages non-shared
-[567798.905490] aacraid: Host adapter abort request (0,0,1,0)
-[567808.890221] aacraid: Host adapter abort request (0,0,1,0)
-[567818.874952] aacraid: Host adapter abort request (0,0,0,0)
-[567828.859673] aacraid: Host adapter abort request (0,0,0,0)
-[567828.859728] aacraid: Host adapter reset request. SCSI hang ?
-[567889.007644] aacraid: SCSI bus appears hung
-[567889.007693] BUG: unable to handle kernel NULL pointer dereference at
-          (null)
-[567889.007777] IP: [<ffffffff81052adc>] exit_creds+0x12/0x78
-[567889.007830] PGD 0
-[567889.007866] Oops: 0000 [#1] SMP
-[567889.007907] last sysfs file:
-/sys/devices/pci0000:00/0000:00:1f.2/host2/target2:0:0/2:0:0:0/vendor
-[567889.007986] CPU 14
-[567889.007995] Modules linked in: i2c_i801 evdev i2c_core button [last
-unloaded: scsi_wait_scan]
-[567889.008112]
-[567889.008144] Pid: 962, comm: scsi_eh_0 Tainted: G   M        2.6.39
-#1 Supermicro X8DTH-i/6/iF/6F/X8DTH
-[567889.008233] RIP: 0010:[<ffffffff81052adc>]  [<ffffffff81052adc>]
-exit_creds+0x12/0x78
-[567889.008311] RSP: 0018:ffff88042eab5b80  EFLAGS: 00010206
-[567889.008355] RAX: 0000000000000000 RBX: ffff88042f93e540 RCX:
-00000000001225c9
-[567889.008427] RDX: 00000000000003c3 RSI: 0000000000000002 RDI:
-0000000000000000
-[567889.008499] RBP: ffff88042f93e540 R08: 00000000001225c9 R09:
-000000000000000a
-[567889.008572] R10: 0000000000000000 R11: ffff88042eab5b00 R12:
-0000000000000000
-[567889.008644] R13: ffff88083e1f9450 R14: ffff88083e1f9000 R15:
-ffff88083e1f9000
-[567889.008716] FS:  0000000000000000(0000) GS:ffff88083fcc0000(0000)
-knlGS:0000000000000000
-[567889.008792] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[567889.008836] CR2: 0000000000000000 CR3: 0000000001781000 CR4:
-00000000000006e0
-[567889.008909] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
-0000000000000000
-[567889.008981] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
-0000000000000400
-[567889.009054] Process scsi_eh_0 (pid: 962, threadinfo
-ffff88042eab4000, task ffff88042f93dfa0)
-[567889.009130] Stack:
-[567889.009162]  ffff88042f93e540 ffffffff81034890 ffff88042f93e550
-ffffffff8104db08
-[567889.009245]  0000000000000282 0000000000000002 ffff88083e1f9450
-ffffffff81376306
-[567889.009327]  ffff880197e6ba00 0000000000000000 000000000000000e
-0000000000000282
-[567889.009409] Call Trace:
-[567889.009448]  [<ffffffff81034890>] ? __put_task_struct+0x5d/0x83
-[567889.009496]  [<ffffffff8104db08>] ? kthread_stop+0x7a/0xaa
-[567889.009544]  [<ffffffff81376306>] ? _aac_reset_adapter+0x65/0x473
-[567889.009591]  [<ffffffff81377592>] ? aac_reset_adapter+0x118/0x252
-[567889.009638]  [<ffffffff813702d1>] ? aac_eh_reset+0x15e/0x185
-[567889.009685]  [<ffffffff81358c85>] ? scsi_try_host_reset+0x51/0xcc
-[567889.009732]  [<ffffffff813597cd>] ? scsi_send_eh_cmnd+0x225/0x28d
-[567889.009781]  [<ffffffff8104116c>] ? del_timer+0xb0/0xb0
-[567889.009825]  [<ffffffff8135985d>] ? scsi_eh_tur+0x28/0x78
-[567889.009869]  [<ffffffff81359fe3>] ? scsi_eh_ready_devs+0x6d0/0x7e6
-[567889.009916]  [<ffffffff8135a63c>] ? scsi_error_handler+0x39b/0x59d
-[567889.009963]  [<ffffffff8135a2a1>] ? scsi_eh_get_sense+0x1a8/0x1a8
-[567889.010009]  [<ffffffff8104d98a>] ? kthread+0x7e/0x86
-[567889.010055]  [<ffffffff8156d094>] ? kernel_thread_helper+0x4/0x10
-[567889.010102]  [<ffffffff8104d90c>] ? kthread_worker_fn+0x10d/0x10d
-[567889.010148]  [<ffffffff8156d090>] ? gs_change+0xb/0xb
-[567889.010190] Code: ff 4d 00 0f 94 c0 84 c0 74 08 48 89 ef e8 60 fd ff
-ff 31 c0 5b 5d 41 5c c3 53 48 89 fb 48 8b 87 e8 02 00 00 48 8b bf e0 02
-00 00 <8b> 00 48 c7 83 e0 02 00 00 00 00 00 00 f0 ff 0f 0f 94 c0 84 c0
-[567889.010469] RIP  [<ffffffff81052adc>] exit_creds+0x12/0x78
-[567889.010516]  RSP <ffff88042eab5b80>
-[567889.010553] CR2: 0000000000000000
-[567889.010945] ---[ end trace e8209ec333f4963e ]---
+diff --git a/drivers/net/wireless/rtlwifi/base.c b/drivers/net/wireless/rtlwifi/base.c
+index bc13533..d88e405 100644
+--- a/drivers/net/wireless/rtlwifi/base.c
++++ b/drivers/net/wireless/rtlwifi/base.c
+@@ -27,6 +27,8 @@
+  *
+  *****************************************************************************/
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/ip.h>
+ #include "wifi.h"
+ #include "rc.h"
+@@ -397,8 +399,8 @@ void rtl_init_rfkill(struct ieee80211_hw *hw)
+ 	radio_state = rtlpriv->cfg->ops->radio_onoff_checking(hw, &valid);
+ 
+ 	if (valid) {
+-		printk(KERN_INFO "rtlwifi: wireless switch is %s\n",
+-				rtlpriv->rfkill.rfkill_state ? "on" : "off");
++		pr_info("wireless switch is %s\n",
++			rtlpriv->rfkill.rfkill_state ? "on" : "off");
+ 
+ 		rtlpriv->rfkill.rfkill_state = radio_state;
+ 
+@@ -1402,8 +1404,7 @@ MODULE_DESCRIPTION("Realtek 802.11n PCI wireless core");
+ static int __init rtl_core_module_init(void)
+ {
+ 	if (rtl_rate_control_register())
+-		printk(KERN_ERR "rtlwifi: Unable to register rtl_rc,"
+-		       "use default RC !!\n");
++		pr_err("Unable to register rtl_rc, use default RC !!\n");
+ 
+ 	return 0;
+ }
+diff --git a/drivers/net/wireless/rtlwifi/cam.c b/drivers/net/wireless/rtlwifi/cam.c
+index 7295af0..b12a668 100644
+--- a/drivers/net/wireless/rtlwifi/cam.c
++++ b/drivers/net/wireless/rtlwifi/cam.c
+@@ -27,6 +27,8 @@
+  *
+  *****************************************************************************/
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include "wifi.h"
+ #include "cam.h"
+ 
+@@ -347,7 +349,7 @@ void rtl_cam_del_entry(struct ieee80211_hw *hw, u8 *sta_addr)
+ 			/* Remove from HW Security CAM */
+ 			memset(rtlpriv->sec.hwsec_cam_sta_addr[i], 0, ETH_ALEN);
+ 			rtlpriv->sec.hwsec_cam_bitmap &= ~(BIT(0) << i);
+-			printk(KERN_INFO "&&&&&&&&&del entry %d\n", i);
++			pr_info("&&&&&&&&&del entry %d\n", i);
+ 		}
+ 	}
+ 	return;
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192c/fw_common.c b/drivers/net/wireless/rtlwifi/rtl8192c/fw_common.c
+index f9f2370..49a064b 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192c/fw_common.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192c/fw_common.c
+@@ -27,6 +27,8 @@
+  *
+  *****************************************************************************/
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/firmware.h>
+ #include "../wifi.h"
+ #include "../pci.h"
+@@ -224,8 +226,7 @@ int rtl92c_download_fw(struct ieee80211_hw *hw)
+ 	u32 fwsize;
+ 	enum version_8192c version = rtlhal->version;
+ 
+-	printk(KERN_INFO "rtl8192c: Loading firmware file %s\n",
+-	       rtlpriv->cfg->fw_name);
++	pr_info("Loading firmware file %s\n", rtlpriv->cfg->fw_name);
+ 	if (!rtlhal->pfirmware)
+ 		return 1;
+ 
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
+index 2b34764..814c05d 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
+@@ -27,6 +27,8 @@
+  *
+  *****************************************************************************/
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include "../wifi.h"
+ #include "../efuse.h"
+ #include "../base.h"
+@@ -337,7 +339,7 @@ static void _rtl92cu_read_board_type(struct ieee80211_hw *hw, u8 *contents)
+ 	rtlefuse->board_type = boardType;
+ 	if (IS_HIGHT_PA(rtlefuse->board_type))
+ 		rtlefuse->external_pa = 1;
+-	printk(KERN_INFO "rtl8192cu: Board Type %x\n", rtlefuse->board_type);
++	pr_info("Board Type %x\n", rtlefuse->board_type);
+ 
+ #ifdef CONFIG_ANTENNA_DIVERSITY
+ 	/* Antenna Diversity setting. */
+@@ -346,8 +348,7 @@ static void _rtl92cu_read_board_type(struct ieee80211_hw *hw, u8 *contents)
+ 	else
+ 		rtl_efuse->antenna_cfg = registry_par->antdiv_cfg; /* 0:OFF, */
+ 
+-	printk(KERN_INFO "rtl8192cu: Antenna Config %x\n",
+-	       rtl_efuse->antenna_cfg);
++	pr_info("Antenna Config %x\n", rtl_efuse->antenna_cfg);
+ #endif
+ }
+ 
+@@ -384,71 +385,57 @@ static void _update_bt_param(_adapter *padapter)
+ 	pbtpriv->bBTNonTrafficModeSet = _FALSE;
+ 	pbtpriv->CurrentState = 0;
+ 	pbtpriv->PreviousState = 0;
+-	printk(KERN_INFO "rtl8192cu: BT Coexistance = %s\n",
+-	       (pbtpriv->BT_Coexist == _TRUE) ? "enable" : "disable");
++	pr_info("BT Coexistance = %s\n",
++		(pbtpriv->BT_Coexist == _TRUE) ? "enable" : "disable");
+ 	if (pbtpriv->BT_Coexist) {
+ 		if (pbtpriv->BT_Ant_Num == Ant_x2)
+-			printk(KERN_INFO "rtl8192cu: BlueTooth BT_"
+-			       "Ant_Num = Antx2\n");
++			pr_info("BlueTooth BT_Ant_Num = Antx2\n");
+ 		else if (pbtpriv->BT_Ant_Num == Ant_x1)
+-			printk(KERN_INFO "rtl8192cu: BlueTooth BT_"
+-			       "Ant_Num = Antx1\n");
++			pr_info("BlueTooth BT_Ant_Num = Antx1\n");
+ 		switch (pbtpriv->BT_CoexistType) {
+ 		case BT_2Wire:
+-			printk(KERN_INFO "rtl8192cu: BlueTooth BT_"
+-			       "CoexistType = BT_2Wire\n");
++			pr_info("BlueTooth BT_CoexistType = BT_2Wire\n");
+ 			break;
+ 		case BT_ISSC_3Wire:
+-			printk(KERN_INFO "rtl8192cu: BlueTooth BT_"
+-			       "CoexistType = BT_ISSC_3Wire\n");
++			pr_info("BlueTooth BT_CoexistType = BT_ISSC_3Wire\n");
+ 			break;
+ 		case BT_Accel:
+-			printk(KERN_INFO "rtl8192cu: BlueTooth BT_"
+-			       "CoexistType = BT_Accel\n");
++			pr_info("BlueTooth BT_CoexistType = BT_Accel\n");
+ 			break;
+ 		case BT_CSR_BC4:
+-			printk(KERN_INFO "rtl8192cu: BlueTooth BT_"
+-			       "CoexistType = BT_CSR_BC4\n");
++			pr_info("BlueTooth BT_CoexistType = BT_CSR_BC4\n");
+ 			break;
+ 		case BT_CSR_BC8:
+-			printk(KERN_INFO "rtl8192cu: BlueTooth BT_"
+-			       "CoexistType = BT_CSR_BC8\n");
++			pr_info("BlueTooth BT_CoexistType = BT_CSR_BC8\n");
+ 			break;
+ 		case BT_RTL8756:
+-			printk(KERN_INFO "rtl8192cu: BlueTooth BT_"
+-			       "CoexistType = BT_RTL8756\n");
++			pr_info("BlueTooth BT_CoexistType = BT_RTL8756\n");
+ 			break;
+ 		default:
+-			printk(KERN_INFO "rtl8192cu: BlueTooth BT_"
+-			       "CoexistType = Unknown\n");
++			pr_info("BlueTooth BT_CoexistType = Unknown\n");
+ 			break;
+ 		}
+-		printk(KERN_INFO "rtl8192cu: BlueTooth BT_Ant_isolation = %d\n",
+-		       pbtpriv->BT_Ant_isolation);
++		pr_info("BlueTooth BT_Ant_isolation = %d\n",
++			pbtpriv->BT_Ant_isolation);
+ 		switch (pbtpriv->BT_Service) {
+ 		case BT_OtherAction:
+-			printk(KERN_INFO "rtl8192cu: BlueTooth BT_Service = "
+-			       "BT_OtherAction\n");
++			pr_info("BlueTooth BT_Service = BT_OtherAction\n");
+ 			break;
+ 		case BT_SCO:
+-			printk(KERN_INFO "rtl8192cu: BlueTooth BT_Service = "
+-			       "BT_SCO\n");
++			pr_info("BlueTooth BT_Service = BT_SCO\n");
+ 			break;
+ 		case BT_Busy:
+-			printk(KERN_INFO "rtl8192cu: BlueTooth BT_Service = "
+-			       "BT_Busy\n");
++			pr_info("BlueTooth BT_Service = BT_Busy\n");
+ 			break;
+ 		case BT_OtherBusy:
+-			printk(KERN_INFO "rtl8192cu: BlueTooth BT_Service = "
+-			       "BT_OtherBusy\n");
++			pr_info("BlueTooth BT_Service = BT_OtherBusy\n");
+ 			break;
+ 		default:
+-			printk(KERN_INFO "rtl8192cu: BlueTooth BT_Service = "
+-			       "BT_Idle\n");
++			pr_info("BlueTooth BT_Service = BT_Idle\n");
+ 			break;
+ 		}
+-		printk(KERN_INFO "rtl8192cu: BT_RadioSharedType = 0x%x\n",
+-		       pbtpriv->BT_RadioSharedType);
++		pr_info("BT_RadioSharedType = 0x%x\n",
++			pbtpriv->BT_RadioSharedType);
+ 	}
+ }
+ 
+@@ -526,7 +513,7 @@ static void _rtl92cu_read_adapter_info(struct ieee80211_hw *hw)
+ 		usvalue = *(u16 *)&hwinfo[EEPROM_MAC_ADDR + i];
+ 		*((u16 *) (&rtlefuse->dev_addr[i])) = usvalue;
+ 	}
+-	printk(KERN_INFO "rtl8192cu: MAC address: %pM\n", rtlefuse->dev_addr);
++	pr_info("MAC address: %pM\n", rtlefuse->dev_addr);
+ 	_rtl92cu_read_txpower_info_from_hwpg(hw,
+ 					   rtlefuse->autoload_failflag, hwinfo);
+ 	rtlefuse->eeprom_vid = *(u16 *)&hwinfo[EEPROM_VID];
+@@ -665,7 +652,7 @@ static int _rtl92cu_init_power_on(struct ieee80211_hw *hw)
+ 	rtl_write_word(rtlpriv, REG_APS_FSMCO, value16);
+ 	do {
+ 		if (!(rtl_read_word(rtlpriv, REG_APS_FSMCO) & APFM_ONMAC)) {
+-			printk(KERN_INFO "rtl8192cu: MAC auto ON okay!\n");
++			pr_info("MAC auto ON okay!\n");
+ 			break;
+ 		}
+ 		if (pollingCount++ > 100) {
+@@ -819,7 +806,7 @@ static void _rtl92cu_init_chipN_one_out_ep_priority(struct ieee80211_hw *hw,
+ 	}
+ 	_rtl92c_init_chipN_reg_priority(hw, value, value, value, value,
+ 					value, value);
+-	printk(KERN_INFO "rtl8192cu: Tx queue select: 0x%02x\n", queue_sel);
++	pr_info("Tx queue select: 0x%02x\n", queue_sel);
+ }
+ 
+ static void _rtl92cu_init_chipN_two_out_ep_priority(struct ieee80211_hw *hw,
+@@ -863,7 +850,7 @@ static void _rtl92cu_init_chipN_two_out_ep_priority(struct ieee80211_hw *hw,
+ 		hiQ = valueHi;
+ 	}
+ 	_rtl92c_init_chipN_reg_priority(hw, beQ, bkQ, viQ, voQ, mgtQ, hiQ);
+-	printk(KERN_INFO "rtl8192cu: Tx queue select: 0x%02x\n", queue_sel);
++	pr_info("Tx queue select: 0x%02x\n", queue_sel);
+ }
+ 
+ static void _rtl92cu_init_chipN_three_out_ep_priority(struct ieee80211_hw *hw,
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c b/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c
+index a90c09b..194fc69 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c
+@@ -26,6 +26,9 @@
+  * Larry Finger <Larry.Finger@lwfinger.net>
+  *
+ ****************************************************************************/
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/module.h>
+ 
+ #include "../wifi.h"
+@@ -213,14 +216,14 @@ bool rtl92c_init_llt_table(struct ieee80211_hw *hw, u32 boundary)
+ 	for (i = 0; i < (boundary - 1); i++) {
+ 		rst = rtl92c_llt_write(hw, i , i + 1);
+ 		if (true != rst) {
+-			printk(KERN_ERR "===> %s #1 fail\n", __func__);
++			pr_err("===> %s #1 fail\n", __func__);
+ 			return rst;
+ 		}
+ 	}
+ 	/* end of list */
+ 	rst = rtl92c_llt_write(hw, (boundary - 1), 0xFF);
+ 	if (true != rst) {
+-		printk(KERN_ERR "===> %s #2 fail\n", __func__);
++		pr_err("===> %s #2 fail\n", __func__);
+ 		return rst;
+ 	}
+ 	/* Make the other pages as ring buffer
+@@ -231,14 +234,14 @@ bool rtl92c_init_llt_table(struct ieee80211_hw *hw, u32 boundary)
+ 	for (i = boundary; i < LLT_LAST_ENTRY_OF_TX_PKT_BUFFER; i++) {
+ 		rst = rtl92c_llt_write(hw, i, (i + 1));
+ 		if (true != rst) {
+-			printk(KERN_ERR "===> %s #3 fail\n", __func__);
++			pr_err("===> %s #3 fail\n", __func__);
+ 			return rst;
+ 		}
+ 	}
+ 	/* Let last entry point to the start entry of ring buffer */
+ 	rst = rtl92c_llt_write(hw, LLT_LAST_ENTRY_OF_TX_PKT_BUFFER, boundary);
+ 	if (true != rst) {
+-		printk(KERN_ERR "===> %s #4 fail\n", __func__);
++		pr_err("===> %s #4 fail\n", __func__);
+ 		return rst;
+ 	}
+ 	return rst;
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192de/sw.c b/drivers/net/wireless/rtlwifi/rtl8192de/sw.c
+index 0883774..351765d 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192de/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192de/sw.c
+@@ -27,6 +27,8 @@
+  *
+  *****************************************************************************/
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/vmalloc.h>
+ 
+ #include "../wifi.h"
+@@ -170,10 +172,8 @@ static int rtl92d_init_sw_vars(struct ieee80211_hw *hw)
+ 	}
+ 
+ 	if (!header_print) {
+-		printk(KERN_INFO "rtl8192de: Driver for Realtek RTL8192DE"
+-		       " WLAN interface");
+-		printk(KERN_INFO "rtl8192de: Loading firmware file %s\n",
+-		       rtlpriv->cfg->fw_name);
++		pr_info("Driver for Realtek RTL8192DE WLAN interface\n");
++		pr_info("Loading firmware file %s\n", rtlpriv->cfg->fw_name);
+ 		header_print++;
+ 	}
+ 	/* request fw */
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/hw.c b/drivers/net/wireless/rtlwifi/rtl8192se/hw.c
+index b1d0213..73142a9 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192se/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192se/hw.c
+@@ -27,6 +27,8 @@
+  *
+  *****************************************************************************/
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include "../wifi.h"
+ #include "../efuse.h"
+ #include "../base.h"
+@@ -465,8 +467,7 @@ static u8 _rtl92ce_halset_sysclk(struct ieee80211_hw *hw, u8 data)
+ 			if ((tmpvalue & BIT(6)))
+ 				break;
+ 
+-			printk(KERN_ERR "wait for BIT(6) return value %x\n",
+-			       tmpvalue);
++			pr_err("wait for BIT(6) return value %x\n", tmpvalue);
+ 			if (waitcount == 0)
+ 				break;
+ 
+@@ -1255,8 +1256,7 @@ static u8 _rtl92s_set_sysclk(struct ieee80211_hw *hw, u8 data)
+ 			if ((tmp & BIT(6)))
+ 				break;
+ 
+-			printk(KERN_ERR "wait for BIT(6) return value %x\n",
+-			       tmp);
++			pr_err("wait for BIT(6) return value %x\n", tmp);
+ 
+ 			if (waitcnt == 0)
+ 				break;
+@@ -1315,7 +1315,7 @@ static void _rtl92s_phy_set_rfhalt(struct ieee80211_hw *hw)
+ 	if (u1btmp & BIT(7)) {
+ 		u1btmp &= ~(BIT(6) | BIT(7));
+ 		if (!_rtl92s_set_sysclk(hw, u1btmp)) {
+-			printk(KERN_ERR "Switch ctrl path fail\n");
++			pr_err("Switch ctrl path fail\n");
+ 			return;
+ 		}
+ 	}
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/phy.c b/drivers/net/wireless/rtlwifi/rtl8192se/phy.c
+index 81a5aa4..f27171a 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192se/phy.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192se/phy.c
+@@ -27,6 +27,8 @@
+  *
+  *****************************************************************************/
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include "../wifi.h"
+ #include "../pci.h"
+ #include "../ps.h"
+@@ -1016,8 +1018,7 @@ static bool _rtl92s_phy_bb_config_parafile(struct ieee80211_hw *hw)
+ 	rtstatus = _rtl92s_phy_config_bb(hw, BASEBAND_CONFIG_AGC_TAB);
+ 
+ 	if (rtstatus != true) {
+-		printk(KERN_ERR  "_rtl92s_phy_bb_config_parafile(): "
+-		       "AGC Table Fail\n");
++		pr_err("%s(): AGC Table Fail\n", __func__);
+ 		goto phy_BB8190_Config_ParaFile_Fail;
+ 	}
+ 
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/rf.c b/drivers/net/wireless/rtlwifi/rtl8192se/rf.c
+index c6e3a4c..0ad50fe 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192se/rf.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192se/rf.c
+@@ -27,6 +27,8 @@
+  *
+  *****************************************************************************/
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include "../wifi.h"
+ #include "reg.h"
+ #include "def.h"
+@@ -507,7 +509,7 @@ bool rtl92s_phy_rf6052_config(struct ieee80211_hw *hw)
+ 		}
+ 
+ 		if (rtstatus != true) {
+-			printk(KERN_ERR "Radio[%d] Fail!!", rfpath);
++			pr_err("Radio[%d] Fail!!\n", rfpath);
+ 			goto fail;
+ 		}
+ 
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/sw.c b/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
+index 1c6cb1d..3876078 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
+@@ -27,6 +27,8 @@
+  *
+  *****************************************************************************/
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/vmalloc.h>
+ 
+ #include "../wifi.h"
+@@ -183,8 +185,8 @@ static int rtl92s_init_sw_vars(struct ieee80211_hw *hw)
+ 		return 1;
+ 	}
+ 
+-	printk(KERN_INFO "rtl8192se: Driver for Realtek RTL8192SE/RTL8191SE\n"
+-	       "           Loading firmware %s\n", rtlpriv->cfg->fw_name);
++	pr_info("Driver for Realtek RTL8192SE/RTL8191SE\n"
++		"Loading firmware %s\n", rtlpriv->cfg->fw_name);
+ 	/* request fw */
+ 	err = request_firmware(&firmware, rtlpriv->cfg->fw_name,
+ 			rtlpriv->io.dev);
+diff --git a/drivers/net/wireless/rtlwifi/usb.c b/drivers/net/wireless/rtlwifi/usb.c
+index a9367eb..8b1cef0 100644
+--- a/drivers/net/wireless/rtlwifi/usb.c
++++ b/drivers/net/wireless/rtlwifi/usb.c
+@@ -24,6 +24,9 @@
+  * Hsinchu 300, Taiwan.
+  *
+  *****************************************************************************/
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/usb.h>
+ #include "core.h"
+ #include "wifi.h"
+@@ -104,9 +107,8 @@ static int _usbctrl_vendorreq_sync_read(struct usb_device *udev, u8 request,
+ 				 pdata, len, 0); /* max. timeout */
+ 
+ 	if (status < 0)
+-		printk(KERN_ERR "reg 0x%x, usbctrl_vendorreq TimeOut! "
+-		       "status:0x%x value=0x%x\n", value, status,
+-		       *(u32 *)pdata);
++		pr_err("reg 0x%x, usbctrl_vendorreq TimeOut! status:0x%x value=0x%x\n",
++		       value, status, *(u32 *)pdata);
+ 	return status;
+ }
+ 
+@@ -316,7 +318,7 @@ static int _rtl_usb_init_rx(struct ieee80211_hw *hw)
+ 	rtlusb->usb_rx_segregate_hdl =
+ 		rtlpriv->cfg->usb_interface_cfg->usb_rx_segregate_hdl;
+ 
+-	printk(KERN_INFO "rtl8192cu: rx_max_size %d, rx_urb_num %d, in_ep %d\n",
++	pr_info("rx_max_size %d, rx_urb_num %d, in_ep %d\n",
+ 		rtlusb->rx_max_size, rtlusb->rx_urb_num, rtlusb->in_ep);
+ 	init_usb_anchor(&rtlusb->rx_submitted);
+ 	return 0;
+@@ -580,7 +582,7 @@ static void _rtl_rx_completed(struct urb *_urb)
+ 		} else{
+ 			/* TO DO */
+ 			_rtl_rx_pre_process(hw, skb);
+-			printk(KERN_ERR "rtlwifi: rx agg not supported\n");
++			pr_err("rx agg not supported\n");
+ 		}
+ 		goto resubmit;
+ 	}
+-- 
+1.7.6.131.g99019
+
