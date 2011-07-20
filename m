@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751719Ab1GTNZj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 09:25:39 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:35129 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751006Ab1GTNZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 09:25:38 -0400
-Date: Wed, 20 Jul 2011 06:25:30 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, greearb@candelatech.com, edt@aei.ca,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH tip/core/urgent 4/7] rcu: protect __rcu_read_unlock()
- against scheduler-using irq handlers
-Message-ID: <20110720132530.GF2400@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110720001738.GA16369@linux.vnet.ibm.com>
- <1311121103-16978-4-git-send-email-paulmck@linux.vnet.ibm.com>
- <1311166467.5345.78.camel@twins>
+	id S1751737Ab1GTN2N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 09:28:13 -0400
+Received: from relay.parallels.com ([195.214.232.42]:55325 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751006Ab1GTN2M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 09:28:12 -0400
+Message-ID: <4E26D7EA.3000902@parallels.com>
+Date: Wed, 20 Jul 2011 17:28:10 +0400
+From: Konstantin Khlebnikov <khlebnikov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.18) Gecko/20110416 SeaMonkey/2.0.13
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311166467.5345.78.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Pekka Enberg <penberg@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matt Mackall <mpm@selenic.com>, "mgorman@suse.de" <mgorman@suse.de>
+Subject: Re: [PATCH] mm-slab: allocate kmem_cache with __GFP_REPEAT
+References: <20110720121612.28888.38970.stgit@localhost6> <alpine.DEB.2.00.1107201611010.3528@tiger>
+In-Reply-To: <alpine.DEB.2.00.1107201611010.3528@tiger>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 20, 2011 at 02:54:27PM +0200, Peter Zijlstra wrote:
-> On Tue, 2011-07-19 at 17:18 -0700, Paul E. McKenney wrote:
-> > @@ -391,10 +400,15 @@ void __rcu_read_unlock(void)
-> >         struct task_struct *t = current;
-> >  
-> >         barrier();  /* needed if we ever invoke rcu_read_unlock in rcutree.c */
-> > -       if (--t->rcu_read_lock_nesting == 0) {
-> > -               barrier();  /* decr before ->rcu_read_unlock_special load */
-> > +       if (t->rcu_read_lock_nesting != 1)
-> > +               --t->rcu_read_lock_nesting;
-> > +       else {
-> > +               t->rcu_read_lock_nesting = INT_MIN;
-> > +               barrier();  /* assign before ->rcu_read_unlock_special load */
-> >                 if (unlikely(ACCESS_ONCE(t->rcu_read_unlock_special)))
-> >                         rcu_read_unlock_special(t);
-> > +               barrier();  /* ->rcu_read_unlock_special load before assign */
-> > +               t->rcu_read_lock_nesting = 0;
-> >         }
-> >  #ifdef CONFIG_PROVE_LOCKING
-> >         WARN_ON_ONCE(ACCESS_ONCE(t->rcu_read_lock_nesting) < 0); 
-> 
-> But won't the above change make that WARN_ON_ONCE() invalid?
+Pekka Enberg wrote:
+> On Wed, 20 Jul 2011, Konstantin Khlebnikov wrote:
+>> Order of sizeof(struct kmem_cache) can be bigger than PAGE_ALLOC_COSTLY_ORDER,
+>> thus there is a good chance of unsuccessful allocation.
+>> With __GFP_REPEAT buddy-allocator will reclaim/compact memory more aggressively.
+>>
+>> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
+>> ---
+>> mm/slab.c |    2 +-
+>> 1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/mm/slab.c b/mm/slab.c
+>> index d96e223..53bddc8 100644
+>> --- a/mm/slab.c
+>> +++ b/mm/slab.c
+>> @@ -2304,7 +2304,7 @@ kmem_cache_create (const char *name, size_t size, size_t align,
+>> 		gfp = GFP_NOWAIT;
+>>
+>> 	/* Get cache's description obj. */
+>> -	cachep = kmem_cache_zalloc(&cache_cache, gfp);
+>> +	cachep = kmem_cache_zalloc(&cache_cache, gfp | __GFP_REPEAT);
+>> 	if (!cachep)
+>> 		goto oops;
+>
+> The changelog isn't that convincing, really. This is kmem_cache_create()
+> so I'm surprised we'd ever get NULL here in practice. Does this fix some
+> problem you're seeing? If this is really an issue, I'd blame the page
+> allocator as GFP_KERNEL should just work.
 
-Yes, please see the patch I just sent.  So that warning was spurious,
-and if that was the only problem...
+nf_conntrack creates separate slab-cache for each net-namespace,
+this patch of course not eliminates the chance of failure, but makes it more acceptable.
 
-							Thanx, Paul
+struct kmem_size for slub is more compact, it uses pecpu-pointers instead of dumb NR_CPUS-size array.
+probably better to fix this side...
+
+>
+>   			Pekka
+
