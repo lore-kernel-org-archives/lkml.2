@@ -1,51 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752719Ab1GTRmE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 13:42:04 -0400
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:45648 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751906Ab1GTRmB (ORCPT
+	id S1752749Ab1GTRnm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 13:43:42 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:50307 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751418Ab1GTRnl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 13:42:01 -0400
-Date: Wed, 20 Jul 2011 20:41:12 +0300 (EEST)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tiger
-To: Christoph Lameter <cl@linux.com>
-cc: Eric Dumazet <eric.dumazet@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>
-Subject: Re: [PATCH] mm-slab: allocate kmem_cache with __GFP_REPEAT
-In-Reply-To: <alpine.DEB.2.00.1107201237190.1472@router.home>
-Message-ID: <alpine.DEB.2.00.1107202040240.2847@tiger>
-References: <20110720121612.28888.38970.stgit@localhost6>  <alpine.DEB.2.00.1107201611010.3528@tiger> <20110720134342.GK5349@suse.de>  <alpine.DEB.2.00.1107200854390.32737@router.home>  <1311170893.2338.29.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> 
- <alpine.DEB.2.00.1107200950270.1472@router.home>  <1311174562.2338.42.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>  <alpine.DEB.2.00.1107201033080.1472@router.home>  <1311177362.2338.57.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>  <alpine.DEB.2.00.1107201114480.1472@router.home>
-  <1311179465.2338.62.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <1311181463.2338.72.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <alpine.DEB.2.00.1107201212140.1472@router.home> <alpine.DEB.2.00.1107202028050.2847@tiger>
- <alpine.DEB.2.00.1107201237190.1472@router.home>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 20 Jul 2011 13:43:41 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+In-Reply-To: <1310430335.3550.3.camel@Joe-Laptop>
+References: <1309244992-2305-1-git-send-email-jim.cromie@gmail.com>
+ <1310370416-6322-1-git-send-email-jim.cromie@gmail.com> <1310370416-6322-22-git-send-email-jim.cromie@gmail.com>
+ <1310430335.3550.3.camel@Joe-Laptop>
+From: Jim Cromie <jim.cromie@gmail.com>
+Date: Wed, 20 Jul 2011 11:43:11 -0600
+Message-ID: <CAJfuBxwtgOd+JAb+P2bMY7fAOb3zmgg0eLn0JmBycLpjPK783w@mail.gmail.com>
+Subject: Re: [PATCH 21/21] dynamic_debug: delete pending queries
+To: Joe Perches <joe@perches.com>
+Cc: jbaron@redhat.com, linux-kernel@vger.kernel.org, bvanassche@acm.org,
+        gregkh@suse.de, gnb@fmeh.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Jul 2011, Pekka Enberg wrote:
->> On Wed, 20 Jul 2011, Eric Dumazet wrote:
->>>> [PATCH v2] slab: shrinks sizeof(struct kmem_cache)
+On Mon, Jul 11, 2011 at 6:25 PM, Joe Perches <joe@perches.com> wrote:
+> On Mon, 2011-07-11 at 01:46 -0600, Jim Cromie wrote:
+>> delete pending queries by re-issuing it with disabled flags
+> []
+>> diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+> []
+>> @@ -505,7 +505,17 @@ static int ddebug_save_pending(struct ddebug_query *query,
 >>
->> On Wed, 20 Jul 2011, Christoph Lameter wrote:
->>> This will solve the issue for small nr_cpu_ids but those with 4k cpus will
->>> still have the issue.
->>>
->>> Acked-by: Christoph Lameter <cl@linux.com>
->>
->> Applied, thanks! Do we still want the __GFP_REPEAT patch from Konstantin
->> though?
+>>       list_for_each_entry_safe(pq, pqnext, &pending_queries, link) {
+>>               if (queries_match(query, &pq->query)) {
+>> -                     /* query already in list, update flags */
+>> +                     /* query already in list */
+>> +                     if (!flags) {
+>> +                             /* zeroed flags, remove query */
+>> +                             if (verbose)
+>> +                                     pr_info("delete pending: %s\n",
+>> +                                             show_pending_query(pq));
+>
+> I think these should be pr_debug.
+> I know you're only using the current style.
+>
+> Jason, any reason these can not be converted?
+>
+>
 
-On Wed, 20 Jul 2011, Christoph Lameter wrote:
-> Those with 4k cpus will be thankful I guess.
+hi Joe,
 
-OTOH, I'm slightly worried that it might mask a real problem 
-with GFP_KERNEL not being aggressive enough. Mel?
+one other corner case (in addition to pr_cont, which I probly should
+have addressed to you)
 
- 			Pekka
++#define pr_fmt(fmt) KBUILD_MODNAME ":%s: " fmt, __func__
+
+makes pr_debug unconditionally print stuff that can be
+doubled up if flags are also used.
+
+Ive done s/pr_info/pr_debug/ locally, when combined with:
+  ddebug_query="module dynamic_debug +pfmlt "
+lines are too long, and are redundant
+
+This is pretty trivial, and can be avoided by
+"dont add those flags then", but I could imagine it
+being a minor annoyance wherever both pr_debug
+and pr_info|warn|err|etc are used together.
+
+Perhaps pr_debug and friends should ignore pr_fmt
+under CONFIG_DYNAMIC_DEBUG ?
