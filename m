@@ -1,109 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752212Ab1GTWfJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 18:35:09 -0400
-Received: from usindmx04.hds.com ([207.126.252.15]:52860 "EHLO
-	usindmx04.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751854Ab1GTWfI (ORCPT
+	id S1752200Ab1GTWmV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 18:42:21 -0400
+Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:55154
+	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751531Ab1GTWmU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 18:35:08 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+	Wed, 20 Jul 2011 18:42:20 -0400
+X-SpamScore: -21
+X-BigFish: VS-21(zz9371M1432N98dK14ffOzz1202hzzz2dh2a8h668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Thu, 21 Jul 2011 06:49:11 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Stephen Warren <swarren@nvidia.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Erik Gilling <konkers@android.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Americo Wang <xiyou.wangcong@gmail.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jarod Wilson <jwilson@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Date: Wed, 20 Jul 2011 18:34:13 -0400
-Subject: RE: [RFC][PATCH -mmotm 0/4] Improvement of pstore/kmsg_dump in
- kexec/panic path
-Thread-Topic: [RFC][PATCH -mmotm 0/4] Improvement of pstore/kmsg_dump in
- kexec/panic path
-Thread-Index: AcxGRGRcQx7/QfEmSqyp64QpXnGABQA6KGFA
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C199C6AAD@USINDEVS01.corp.hds.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C199C64C2@USINDEVS01.corp.hds.com>
- <20110719184759.GC7001@redhat.com>
-In-Reply-To: <20110719184759.GC7001@redhat.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="utf-8"
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH] arm/dt: tegra devicetree support
+Message-ID: <20110720224910.GI6999@S2100-06.ap.freescale.net>
+References: <20110719234158.2779.15394.stgit@ponder>
+ <74CDBE0F657A3D45AFBB94109FB122FF049EBDEE27@HQMAIL01.nvidia.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF049EBDEE27@HQMAIL01.nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p6KMZN7j013785
 
-Hi Vivek,
+On Wed, Jul 20, 2011 at 08:37:19AM -0700, Stephen Warren wrote:
+> Grant Likely wrote at Tuesday, July 19, 2011 5:43 PM:
+> > Everything required to populate NVIDIA Tegra devices from the device
+> > tree.  This patch adds a new DT_MACHINE_DESC() which matches against
+> > a tegra20 device tree.  So far it only registers the on-chip devices,
+> > but it will be refined in follow on patches to configure clocks and
+> > pin IO from the device tree also.
+> > 
+> > Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> > ---
+> > 
+> > Hi all,
+> > 
+> > Similar to the versatile patch I just posted, this is certainly not
+> > complete board support, but it is enough to be useful.  I'd like to
+> > merge this for v3.1.  It should not break any existing board support.
+> 
+> > diff --git a/arch/arm/boot/dts/tegra-harmony.dts b/arch/arm/boot/dts/tegra-harmony.dts
+> 
+> tegra-*.dts don't include status="disable" for all the unused controllers.
+> Should that be added?
+> 
+> > +	sound {
+> > +		compatible = "nvidia,harmony-sound", "nvidia,tegra-wm8903";
+> 
+> I thought the sound bindings were still somewhat experimental and not
+> completely agreed upon. One issue I see is that Device Tree is
+> supposed to represent pure HW, rather than driver-required abstractions,
+> and at least the compatible name here is pretty Linux-driver-specific.
+> 
+> I think there are some devices missing from the DT file for audio too,
+> e.g. the ALSA "PCM" (DMA) driver.
+> 
+> Also, the bindings for this aren't documented IIRC.
+> 
+> I'd suggest dropping the audio part of the DT file until the audio side
+> is more mature.
+> 
+> > +		spkr-en-gpios = <&codec 2 0>;
+> 
+> Should that be "gpio" not "gpios", since there is only one?
+> 
+My reason for using "gpios" over "gpio" is that
+Documentation/devicetree/bindings/gpio/gpio.txt says so.  Unless you
+want to change the document to elaborate the difference between "gpio"
+and "gpios", which I do not see the necessity ...
 
-> Why can't we log something in user space when user initiates a reboot,
-> Why does kernel need to capture that info in NVRAM.
+GPIO properties should be named "[<name>-]gpios".
 
- As I explained in following thread, 
- customers sometimes ask us to investigate the reason why system reboots.
- 
- https://lkml.org/lkml/2010/11/17/249
- 
- We can solve following scenario by logging messages in kernel space.
+Regards,
+Shawn
 
-  - Syslogd is killed by mistake.
-    (user kills syslogd with command or other applications send signal).
-  - And then, system reboots.
-
- If we log messages in user space, we can't see messages.
-
-Seiji
-
->-----Original Message-----
->From: Vivek Goyal [mailto:vgoyal@redhat.com]
->Sent: Tuesday, July 19, 2011 2:48 PM
->To: Seiji Aguchi
->Cc: kexec@lists.infradead.org; linux-kernel@vger.kernel.org; linux-mtd@lists.infradead.org; Eric W. Biederman; KOSAKI
->Motohiro; Americo Wang; Matthew Garrett; tony.luck@intel.com; Andrew Morton; Jarod Wilson; hpa@zytor.com;
->dzickus@redhat.com; dle-develop@lists.sourceforge.net; Satoru Moriya
->Subject: Re: [RFC][PATCH -mmotm 0/4] Improvement of pstore/kmsg_dump in kexec/panic path
->
->On Tue, Jul 19, 2011 at 02:23:26PM -0400, Seiji Aguchi wrote:
->> Hi,
->>
->> [Upstream status]
->>    Discussion about kmsg_dump() in kdump path:
->>     - Eric and Vivek are worried about reliability of existing kmsg_dump().
->>     - Especially, Vivek would like to remove a RCU  function call chain in kdump path
->> ã€€ã€€ã€€ which kernel modules can register their function calls freely.
->>
->>    Discussion about pstore in nmi_hander.
->>     - Don Zickus found an issue of pstore in nmi_handler due to its mutex_lock.
->
->You did not answer my questions in the last posting mail thread and gone
->ahead with the new posting. How are we supposed to discuss something. This
->has been a problem on this mail thread since the beginneing. There is
->little open discussion.
->
->So if you want to make any progress in this direction, what will help
->is open discussion.
->
->Locking is going to be a problem. So atleast we can remove kmsg_dump()
->infrastructure from reboot path. Why can't we log something in user
->space when user initiates a reboot, let it get logged in /var/log/messages
->and then umount the file root and go ahead with reboot. Why does kernel
->need to capture that info in NVRAM.
->
->If we can get rid of all the logging thing on reboot path, then at least
->it does not need to be lock protected with crash path.
->
->Thanks
->Vivek
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
