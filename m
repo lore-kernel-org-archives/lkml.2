@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751234Ab1GTFT6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 01:19:58 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:54598 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750747Ab1GTFT5 (ORCPT
+	id S1751463Ab1GTF1k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 01:27:40 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:58641 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777Ab1GTF1j convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 01:19:57 -0400
-Subject: Re: Regression in handling of unsafe UBI shutdown
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Daniel Mack <zonque@gmail.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Sven Neumann <s.neumann@raumfeld.com>,
-        Adrian Hunter <adrian.hunter@nokia.com>
-Date: Wed, 20 Jul 2011 08:21:18 +0300
-In-Reply-To: <CACTFLANAFT=G4kFvHUqvLrt=MxgpJnJ-EeHY8zd49pZvsNRejw@mail.gmail.com>
-References: <CACTFLANAFT=G4kFvHUqvLrt=MxgpJnJ-EeHY8zd49pZvsNRejw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1311139283.20738.150.camel@sauron>
-Mime-Version: 1.0
+	Wed, 20 Jul 2011 01:27:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110719224142.GT2357@linux.vnet.ibm.com>
+References: <20110719224142.GT2357@linux.vnet.ibm.com>
+Date: Wed, 20 Jul 2011 10:57:38 +0530
+Message-ID: <CAM=x7SbY8Z8jmarRougaJPxxR8gHi2MKtCUkq8Yi4JYCBo=JAw@mail.gmail.com>
+Subject: Re: Fw: RCU boot debug patch
+From: RKK <kulkarni.ravi4@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: kernelmail.jms@gmail.com, linux-kernel@vger.kernel.org, cmm@us.ibm.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-19 at 15:57 +0200, Daniel Mack wrote:
-> UBIFS: recovery needed
-> Error reading superblock on volume 'ubi:RootFS'!
-> UBIFS not mounted, use ubifs mount to mount volume first!
-> Wrong Image Format for bootm command
-> ERROR: can't get kernel image!
-> 
-> 
-> Hence my question is: were there any radical changes in the UBI/UBIFS
-> code on the kernel side that make older code not like the new content
-> anymore?
+Hi paul,
 
-Daniel, sorry, I have no time to look at this now, could you please try
-to bisect the issue?
+On Wed, Jul 20, 2011 at 4:11 AM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> Hello, Julie and Ravi,
+>
+> Although we arrived at a patch that worked for both of you, we never did
+> identify exactly which RCU callback (or other issue) that was causing
+> the problem.  It would be good to do this in case there is some other
+> problem lurking that might bite us in the future.  Mingming has therefore
+> put together the following diagnostic patch which should identify the
+> callbacks, please see below.
+>
+> So could you please run this and let us know what you find?  There should
+> at least be a message for artificial_callback().
+>
+
+ Do i need to  apply this patch on today's Linus master or on -rc7 ?
+
+
 
 -- 
-Best Regards,
-Artem Bityutskiy
-
+Warm Regards,
+Ravi Kulkarni
