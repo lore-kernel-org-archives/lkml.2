@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752496Ab1GTO4d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 10:56:33 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:44229 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751752Ab1GTO43 (ORCPT
+	id S1752399Ab1GTO7N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 10:59:13 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39153 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751727Ab1GTO7L convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 10:56:29 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=Nx9+dXc4RblVcAiuA2MPluNyIBpMsVghvlCqgTXgDPrRrnejD3qKqOV4fO/hp6GL+Id7nUtGPrLBAVzqKaFh6b4DJswF2J6bAXd6Lks9GqziHljc5P0X32gdy7ByRESD;
-Date: Wed, 20 Jul 2011 07:56:26 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Michael Chastain email address bounces (ioctl-number.txt)
-Message-Id: <20110720075626.9a7752ae.rdunlap@xenotime.net>
-In-Reply-To: <4E26CCA3.20500@cam.ac.uk>
-References: <4E26CCA3.20500@cam.ac.uk>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Wed, 20 Jul 2011 10:59:11 -0400
+Subject: Re: [regression] 3.0-rc boot failure -- bisected to cd4ea6ae3982
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Anton Blanchard <anton@samba.org>, mahesh@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        mingo@elte.hu, benh@kernel.crashing.org
+In-Reply-To: <CA+55aFxzaaMj8OUaust90c_hYKzg8NpRfmX4SzJ9SMwXzg5ocA@mail.gmail.com>
+References: <20110707102107.GA16666@in.ibm.com>
+	 <1310036375.3282.509.camel@twins> <20110714103418.7ef25b68@kryten>
+	 <20110714143521.5fe4fab6@kryten> <1310649379.2586.273.camel@twins>
+	 <20110715104547.29c3c509@kryten> <1311024956.2309.22.camel@laptop>
+	 <20110719144451.79bc69ab@kryten> <1311070894.13765.180.camel@twins>
+	 <20110720201436.19e9689a@kryten> <1311158708.5345.12.camel@twins>
+	 <20110720221420.153b0830@kryten>
+	 <CA+55aFxzaaMj8OUaust90c_hYKzg8NpRfmX4SzJ9SMwXzg5ocA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 20 Jul 2011 16:58:30 +0200
+Message-ID: <1311173910.5345.94.camel@twins>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Jul 2011 13:40:03 +0100 Jonathan Cameron wrote:
-
-> Hi All,
+On Wed, 2011-07-20 at 07:40 -0700, Linus Torvalds wrote:
+> On Wed, Jul 20, 2011 at 5:14 AM, Anton Blanchard <anton@samba.org> wrote:
+> >
+> >> So with that fix the patch makes the machine happy again?
+> >
+> > Yes, the machine looks fine with the patches applied. Thanks!
 > 
-> Does anyone have up to date contact for Michael or should
-> Documentation/ioctl-number.txt be updated to remove the option
-> of emailing him for a block of ioctls?
-> (it offers the alternative of patching the file directly).
+> Ok, so what's the situation for 3.0 (I'm waiting for some RCU
+> resolution now)? Anton's patch may be small, but that's just the tiny
+> fixup patch to Peter's much scarier one ;)
 
-I've been merging patches for Documentation/ioctl/ioctl-number.txt,
-so you can just send them to me & lkml.
+Right, so we can either merge my scary patches now and have 3.0 boot on
+16+ node machines (and risk breaking something), or delay them until
+3.0.1 and have 16+ node machines suffer a little.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+The alternative quick hack is simply to disable the node domain, but
+that'll be detrimental to regular machines in that the top domain used
+to have NODE sd_flags will now have ALL_NODE sd_flags which are much
+less aggressive.
+
+
