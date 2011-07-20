@@ -1,55 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752399Ab1GTO7N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 10:59:13 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39153 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751727Ab1GTO7L convert rfc822-to-8bit (ORCPT
+	id S1752612Ab1GTO7X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 10:59:23 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:3578
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752099Ab1GTO7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 10:59:11 -0400
-Subject: Re: [regression] 3.0-rc boot failure -- bisected to cd4ea6ae3982
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Anton Blanchard <anton@samba.org>, mahesh@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        mingo@elte.hu, benh@kernel.crashing.org
-In-Reply-To: <CA+55aFxzaaMj8OUaust90c_hYKzg8NpRfmX4SzJ9SMwXzg5ocA@mail.gmail.com>
-References: <20110707102107.GA16666@in.ibm.com>
-	 <1310036375.3282.509.camel@twins> <20110714103418.7ef25b68@kryten>
-	 <20110714143521.5fe4fab6@kryten> <1310649379.2586.273.camel@twins>
-	 <20110715104547.29c3c509@kryten> <1311024956.2309.22.camel@laptop>
-	 <20110719144451.79bc69ab@kryten> <1311070894.13765.180.camel@twins>
-	 <20110720201436.19e9689a@kryten> <1311158708.5345.12.camel@twins>
-	 <20110720221420.153b0830@kryten>
-	 <CA+55aFxzaaMj8OUaust90c_hYKzg8NpRfmX4SzJ9SMwXzg5ocA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 20 Jul 2011 16:58:30 +0200
-Message-ID: <1311173910.5345.94.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 20 Jul 2011 10:59:12 -0400
+X-SpamScore: -26
+X-BigFish: VPS-26(zz1dbaL1432N98dK4015Lzz1202hzz15d4Rz32i668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LON0AE-01-FIA-02
+X-M-MSG: 
+Date: Wed, 20 Jul 2011 16:59:01 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Neil Horman <nhorman@tuxdriver.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Divy LeRay <divy@chelsio.com>, Stanislaw Gruszka <sgruszka@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH] dma-debug: hash_bucket_find needs to allow for offsets
+ within an entry
+Message-ID: <20110720145901.GE21948@amd.com>
+References: <1311097278-30841-1-git-send-email-nhorman@tuxdriver.com>
+ <20110720103813.GL15108@amd.com>
+ <20110720111156.GA12349@hmsreliant.think-freely.org>
+ <20110720132925.GB21948@amd.com>
+ <20110720143222.GB12349@hmsreliant.think-freely.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20110720143222.GB12349@hmsreliant.think-freely.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-07-20 at 07:40 -0700, Linus Torvalds wrote:
-> On Wed, Jul 20, 2011 at 5:14 AM, Anton Blanchard <anton@samba.org> wrote:
-> >
-> >> So with that fix the patch makes the machine happy again?
-> >
-> > Yes, the machine looks fine with the patches applied. Thanks!
-> 
-> Ok, so what's the situation for 3.0 (I'm waiting for some RCU
-> resolution now)? Anton's patch may be small, but that's just the tiny
-> fixup patch to Peter's much scarier one ;)
+On Wed, Jul 20, 2011 at 10:32:22AM -0400, Neil Horman wrote:
+> On Wed, Jul 20, 2011 at 03:29:25PM +0200, Roedel, Joerg wrote:
+> > You are right. We need to scan
+> > 
+> > 	0 <= idx <= hash_fn(rstart)
+> > 
+> > Probably we can fix that with a better hash-function. Any ideas? Using
+> > the device is not an option because then all entries would end up in
+> > only a few buckets. This will impact scanning performance too much.
+> > 
+> Unfortunately I don't have any ideas for a better hash function here, but I had
+> been thinking about fixing this in add_dma_entry.  We could detect there that a
+> debug entry to be added crossed one or more hash bucket boundaries, and, if it
+> did, split it along those boundaries into multiple entries, hashing each of them
+> in separately.  The check_unmap and check_sync routines would of course then
+> potentially have to do multiple lookups as well to ensure that they found all of
+> the correct entries to validate/remove.  It would work in all cases, but it
+> might be overkill.  What do you think?
 
-Right, so we can either merge my scary patches now and have 3.0 boot on
-16+ node machines (and risk breaking something), or delay them until
-3.0.1 and have 16+ node machines suffer a little.
+Interesting. I discussed that with a colleague an hour ago and he came
+up with the same idea :-)
+I like it because we still need to scan only one hash-bucket, so this
+seems like the best solution.
 
-The alternative quick hack is simply to disable the node domain, but
-that'll be detrimental to regular machines in that the top domain used
-to have NODE sd_flags will now have ALL_NODE sd_flags which are much
-less aggressive.
+> > For now, the partial syncs seem to happen rarely enough so that we can
+> > make it a slow-path. It is probably the best to do the exact scan first
+> > and do the full scan only if exact-scan failed (until we come up with a
+> > better solution).
+> > 
+> Agreed, if you don't like my above idea, I'll get to work on this this
+> afternoon.
 
+I think this idea is a better solution.
+
+Thanks,
+
+	Joerg
+
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
