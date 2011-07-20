@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751854Ab1GTO3S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 10:29:18 -0400
-Received: from mga09.intel.com ([134.134.136.24]:63552 "EHLO mga09.intel.com"
+	id S1752152Ab1GTOaf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 10:30:35 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:39865 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750865Ab1GTO3R convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 10:29:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,235,1309762800"; 
-   d="scan'208";a="28064132"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Matthew Garrett <mjg@redhat.com>
-CC: "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mikew@google.com" <mikew@google.com>
-Date: Wed, 20 Jul 2011 07:29:15 -0700
-Subject: RE: [PATCH 4/9] pstore: Allow the user to explicitly choose a
- backend
-Thread-Topic: [PATCH 4/9] pstore: Allow the user to explicitly choose a
- backend
-Thread-Index: AcxG4MPY6rzDB3bjT6q6GCyghP1XfQAB8J2Q
-Message-ID: <987664A83D2D224EAE907B061CE93D5301E9E6863C@orsmsx505.amr.corp.intel.com>
-References: <1311021033-7483-1-git-send-email-mjg@redhat.com>
- <1311021033-7483-5-git-send-email-mjg@redhat.com>
- <20110720132706.GA19934@dumpdata.com>
-In-Reply-To: <20110720132706.GA19934@dumpdata.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751459Ab1GTOab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 10:30:31 -0400
+From: <pavan_savoy@ti.com>
+To: <greg@kroah.com>, <linux-kernel@vger.kernel.org>
+CC: pavan_savoy@sify.com, Pavan Savoy <pavan_savoy@ti.com>
+Subject: [PATCH 0/4] drivers:misc: ti-st: platform specifics
+Date: Wed, 20 Jul 2011 09:30:21 -0500
+Message-ID: <1311172225-17678-6-git-send-email-pavan_savoy@ti.com>
+X-Mailer: git-send-email 1.5.6.3
+In-Reply-To: <1311172225-17678-5-git-send-email-pavan_savoy@ti.com>
+References: <1311172225-17678-1-git-send-email-pavan_savoy@ti.com>
+ <1311172225-17678-2-git-send-email-pavan_savoy@ti.com>
+ <1311172225-17678-3-git-send-email-pavan_savoy@ti.com>
+ <1311172225-17678-4-git-send-email-pavan_savoy@ti.com>
+ <1311172225-17678-5-git-send-email-pavan_savoy@ti.com>
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +	if (backend && strcmp(backend, psi->name)) {
->
-> Is there a limit of how big the backend name can be? If so would it
-> make sense to use to strncmp?
+From: Pavan Savoy <pavan_savoy@ti.com>
 
-I'd expect that the name will generally be short. It does get
-embedded in the names of files that appear in the pstore file
-system - so there is a 255 pathname component limit, which means
-that backends should limit themselves to 200 or so characters.
 
-So I suppose we could check to see if the backend is trying
-to use a name so long that it would cause problems - but I'm
-not sure how much value that would really add. I don't think
-that loading pstore modules with dumb names is an interesting
-attack vector.
+Greg,
 
--Tony
+resending,
+since I didn't see these up on lkml.org
+(issues with my git send-email configuration)
+
+These are the some of the patches which have gone on top of Texas Instrument's
+shared transport driver which fixes issues found during field testing.
+These include:
+a. removing an annoying and misleading debug message
+b. various platform hooks for enabling/disabling chip and communicating PM
+states of the WiLink chip.
+c. Re-initializing completion for make sure failed firmware download doesn't
+create a problem the next time around.
+d. fail-safe fix which happens upon corner cases when UART drops
+bytes or chip is too busy and hence sends across h/w error events.
+
+
+
+Pavan Savoy (3):
+  drivers:misc: ti-st: avoid a misleading dbg msg
+  drivers:misc:ti-st: platform hooks for chip states
+  drivers:misc: ti-st: reinit completion on ver read
+
+Vijay Badawadagi (1):
+  drivers:misc: ti-st: fail-safe on wrong pkt type
+
+ drivers/misc/ti-st/st_core.c |    9 ++++++++-
+ drivers/misc/ti-st/st_kim.c  |   13 +++++++++++++
+ drivers/misc/ti-st/st_ll.c   |   19 +++++++++++++++++++
+ include/linux/ti_wilink_st.h |   27 ++++++++++++++++++++++++++-
+ 4 files changed, 66 insertions(+), 2 deletions(-)
+
+-- 
+1.7.4.1
+
