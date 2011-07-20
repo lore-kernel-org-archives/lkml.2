@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751483Ab1GTKBb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 06:01:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44322 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751244Ab1GTKBa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 06:01:30 -0400
-Date: Wed, 20 Jul 2011 12:01:27 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Greg KH <greg@kroah.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>
-Subject: Re: linux-next: manual merge of the staging tree with the trivial
- tree
-In-Reply-To: <20110717091600.GD25824@kroah.com>
-Message-ID: <alpine.LNX.2.00.1107201201020.7300@pobox.suse.cz>
-References: <20110716225343.4a0a0472fb944c9ba79f9590@canb.auug.org.au> <20110717091600.GD25824@kroah.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751621Ab1GTKML (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 06:12:11 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:25864 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751229Ab1GTKMH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 06:12:07 -0400
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+To: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        alexander.stein@systec-electronic.com
+Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Subject: [PATCH 3/6] pch_gpio: support ML7223 IOH n-Bus
+Date: Wed, 20 Jul 2011 19:10:59 +0900
+Message-Id: <1311156662-3044-3-git-send-email-tomoya-linux@dsn.okisemi.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1311156662-3044-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+References: <1311156662-3044-1-git-send-email-tomoya-linux@dsn.okisemi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 17 Jul 2011, Greg KH wrote:
 
-> > Today's linux-next merge of the staging tree got a conflict in
-> > drivers/staging/generic_serial/ser_a2232.c between commit 28f65c11f2ff
-> > ("treewide: Convert uses of struct resource to resource_size(ptr)") from
-> > the trivial tree and commit bb2a97e9ccd5 ("Staging: delete generic_serial
-> > drivers") from the staging tree.
-> > 
-> > The latter removes the file, so I did that.
-> 
-> Thank you, that is the correct fix :)
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+---
+ drivers/gpio/pch_gpio.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-I have dropped the conflicting hunks now (and the same for the other 
-trivial/staging conflict).
-
-Thanks,
-
+diff --git a/drivers/gpio/pch_gpio.c b/drivers/gpio/pch_gpio.c
+index 252bddb..d548069 100644
+--- a/drivers/gpio/pch_gpio.c
++++ b/drivers/gpio/pch_gpio.c
+@@ -296,6 +296,7 @@ static int pch_gpio_resume(struct pci_dev *pdev)
+ static DEFINE_PCI_DEVICE_TABLE(pch_gpio_pcidev_id) = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x8803) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_ROHM, 0x8014) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_ROHM, 0x8043) },
+ 	{ 0, }
+ };
+ MODULE_DEVICE_TABLE(pci, pch_gpio_pcidev_id);
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.4.4
+
