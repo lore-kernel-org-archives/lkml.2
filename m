@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751778Ab1GTMKb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 08:10:31 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:54778 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751705Ab1GTMK2 (ORCPT
+	id S1751434Ab1GTMKM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 08:10:12 -0400
+Received: from mail.elutions.com ([64.31.159.3]:34206 "EHLO mail.elutions.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751184Ab1GTMKK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 08:10:28 -0400
-Subject: Re: [patch]drivers:net:Kconfig
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: wangyanqing <udknight@gmail.com>
-Cc: davem@davemloft.net, linux-kernel@vger.kernel.org
-In-Reply-To: <20110720120500.GA3280@udknight.homenetwork>
-References: <20110720120500.GA3280@udknight.homenetwork>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 20 Jul 2011 14:10:19 +0200
-Message-ID: <1311163819.2338.25.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Wed, 20 Jul 2011 08:10:10 -0400
+X-Greylist: delayed 1503 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Jul 2011 08:10:10 EDT
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: Regression in handling of unsafe UBI shutdown
+Date: Wed, 20 Jul 2011 07:45:04 -0400
+Message-ID: <F87D23B7E1F84E4AB52E4FA4A55F85DC026DADA5@tpamail.elutions.com>
+In-Reply-To: <CACTFLANAFT=G4kFvHUqvLrt=MxgpJnJ-EeHY8zd49pZvsNRejw@mail.gmail.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: Regression in handling of unsafe UBI shutdown
+Thread-Index: AcxGG8lVZX8dGirvQ1Gn3q+MVe9rUwAtV/Qg
+From: "Mike Hench" <mhench@elutions.com>
+To: "Daniel Mack" <zonque@gmail.com>, <linux-mtd@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Cc: "Adrian Hunter" <adrian.hunter@nokia.com>,
+        "Sven Neumann" <s.neumann@raumfeld.com>,
+        "Artem Bityutskiy" <dedekind1@gmail.com>
+X-Mlf-Version: 7.2.4.3925
+X-Mlf-UniqueId: o201107201024130004353
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 20 juillet 2011 à 20:05 +0800, wangyanqing a écrit :
-> Broadcom Tigon3 driver tg3.ko can't work without the Broadcom PHY,
->  so maybe we should add a dependence on it.Or at least we should add
->  notice in the help txt.
-> 
-> Signed-off-by: wang yanqing <udknight@gmail.com>
-> ---
->  drivers/net/Kconfig |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
-> index 93359fa..c2607cd 100644
-> --- a/drivers/net/Kconfig
-> +++ b/drivers/net/Kconfig
-> @@ -2353,7 +2353,7 @@ config VIA_VELOCITY
->  
->  config TIGON3
->  	tristate "Broadcom Tigon3 support"
-> -	depends on PCI
-> +	depends on PCI && BROADCOM_PHY
->  	select PHYLIB
->  	help
->  	  This driver supports Broadcom Tigon3 based gigabit Ethernet cards.
-
-Hmm.
-
-When do you plan to answer to my previous question ?
-
-I said :
-
-Thats strange.
-
-Here I have a (running) tg3 adapter, but
-
-$ zgrep BROADCOM /proc/config.gz
-# CONFIG_BROADCOM_PHY is not set
-
-Could you elaborate ?
+> UBIFS: recovery needed
+> Error reading superblock on volume 'ubi:RootFS'!
+> UBIFS not mounted, use ubifs mount to mount volume first!
+> Wrong Image Format for bootm command
+> ERROR: can't get kernel image!
 
 
+Be nice to know what error.
+FWIW:
+a) I do not see this. I have very limited experience with 3.0-rc7 though
+so maybe I should not say anything :-)
+
+b) sometimes UBIFS decides to do recovery in u-boot, sometimes not.
+it seems to depend on the type of content in the journal.
+Lots of deleted files seem to trigger u-boot to perform a recovery for
+instance.
+I was running out of memory In u-boot while replaying the journal
+at one point with an older kernel. This produced the same top level
+error.
+I run 12 megs now, with a 2gigabyte flash. I think that is overkill.
+
+Work with u-boot with the 'bad' flash.
+There is debugging in there, but I forget how to turn it on.
+
+Mike Hench
 
