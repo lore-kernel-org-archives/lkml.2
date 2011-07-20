@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051Ab1GTNkt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 09:40:49 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:37530 "EHLO
+	id S1752082Ab1GTNlF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 09:41:05 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:35113 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751787Ab1GTNjV (ORCPT
+	with ESMTP id S1751437Ab1GTNjV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Jul 2011 09:39:21 -0400
 From: djkurtz@chromium.org
@@ -13,9 +13,9 @@ To: dmitry.torokhov@gmail.com, rydberg@euromail.se,
 Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         derek.foreman@collabora.co.uk, daniel.stone@collabora.co.uk,
         olofj@chromium.org, Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 1/9 v2] Input: synaptics - refactor y inversion
-Date: Wed, 20 Jul 2011 21:38:58 +0800
-Message-Id: <1311169146-20066-2-git-send-email-djkurtz@chromium.org>
+Subject: [PATCH 5/9 v2] Input: synaptics - decode AGM packet types
+Date: Wed, 20 Jul 2011 21:39:02 +0800
+Message-Id: <1311169146-20066-6-git-send-email-djkurtz@chromium.org>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1311169146-20066-1-git-send-email-djkurtz@chromium.org>
 References: <1311169146-20066-1-git-send-email-djkurtz@chromium.org>
@@ -26,57 +26,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Daniel Kurtz <djkurtz@chromium.org>
 
-Synaptics touchpads report increasing y from bottom to top.
-This is inverted from normal userspace "top of screen is 0" coordinates.
-Thus, the kernel driver reports inverted y coordinates to userspace.
+A Synaptics image sensor tracks 5 fingers, but can only report 2.
 
-This patch refactors this inversion.
+The algorithm for choosing which 2 fingers to report and in which packet:
+  Touchpad maintains 5 slots, numbered 0 to 4
+  Initially all slots are empty
+  As new fingers are detected, assign them to the lowest available slots
+  The touchpad always reports:
+    SGM: lowest numbered non-empty slot
+    AGM: highest numbered non-empty slot, if there is one
+
+In addition, these touchpads have a special AGM packet type which reports
+the number of fingers currently being tracked, and which finger is in
+each of the two slots.  Unfortunately, these "TYPE=2" packets are only used
+when more than 3 fingers are being tracked.  When less than 4 fingers
+are present, the 'w' value must be used to track how many fingers are
+present, and knowing which fingers are being reported is much more
+difficult, if not impossible.
 
 Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 ---
- drivers/input/mouse/synaptics.c |   15 ++++++++++++---
- 1 files changed, 12 insertions(+), 3 deletions(-)
+ drivers/input/mouse/synaptics.c |   38 +++++++++++++++++++++++++++++++-------
+ drivers/input/mouse/synaptics.h |   14 +++++++++++++-
+ 2 files changed, 44 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-index 5538fc6..297e88f 100644
+index a9960d2..ff8c839 100644
 --- a/drivers/input/mouse/synaptics.c
 +++ b/drivers/input/mouse/synaptics.c
-@@ -44,6 +44,16 @@
- #define YMIN_NOMINAL 1408
- #define YMAX_NOMINAL 4448
+@@ -420,15 +420,39 @@ static void synaptics_pt_create(struct psmouse *psmouse)
+  *	Functions to interpret the absolute mode packets
+  ****************************************************************************/
  
-+/*
-+ * Synaptics touchpads report the y coordinate from bottom to top, which is
-+ * opposite from what userspace expects.
-+ * This function is used to invert y before reporting.
-+ */
-+static int invert_y(int y)
++static void synaptics_mt_state_set(struct synaptics_mt_state *state, int count,
++				   int sgm, int agm)
 +{
-+	return YMAX_NOMINAL + YMIN_NOMINAL - y;
++	state->count = count;
++	state->sgm = sgm;
++	state->agm = agm;
 +}
 +
+ static void synaptics_parse_agm(const unsigned char buf[],
+-				struct synaptics_data *priv)
++				struct synaptics_data *priv,
++				struct synaptics_hw_state *hw)
+ {
+ 	struct synaptics_hw_state *agm = &priv->agm;
++	int agm_packet_type;
++
++	agm_packet_type = (buf[5] & 0x30) >> 4;
++	switch (agm_packet_type) {
++	case 1:
++		/* Gesture packet: (x, y, z) half resolution */
++		agm->w = hw->w;
++		agm->x = (((buf[4] & 0x0f) << 8) | buf[1]) << 1;
++		agm->y = (((buf[4] & 0xf0) << 4) | buf[2]) << 1;
++		agm->z = ((buf[3] & 0x30) | (buf[5] & 0x0f)) << 1;
++		break;
  
- /*****************************************************************************
-  *	Stuff we need even when we do not want native Synaptics support
-@@ -502,8 +512,7 @@ static void synaptics_report_semi_mt_slot(struct input_dev *dev, int slot,
- 	input_mt_report_slot_state(dev, MT_TOOL_FINGER, active);
- 	if (active) {
- 		input_report_abs(dev, ABS_MT_POSITION_X, x);
--		input_report_abs(dev, ABS_MT_POSITION_Y,
--				 YMAX_NOMINAL + YMIN_NOMINAL - y);
-+		input_report_abs(dev, ABS_MT_POSITION_Y, invert_y(y));
- 	}
+-	/* Gesture packet: (x, y, z) at half resolution */
+-	agm->x = (((buf[4] & 0x0f) << 8) | buf[1]) << 1;
+-	agm->y = (((buf[4] & 0xf0) << 4) | buf[2]) << 1;
+-	agm->z = ((buf[3] & 0x30) | (buf[5] & 0x0f)) << 1;
++	case 2:
++		/* AGM-CONTACT packet: (count, sgm, agm) */
++		synaptics_mt_state_set(&agm->mt_state, buf[1], buf[2], buf[4]);
++		break;
++
++	default:
++		break;
++	}
  }
  
-@@ -597,7 +606,7 @@ static void synaptics_process_packet(struct psmouse *psmouse)
+ static int synaptics_parse_hw_state(const unsigned char buf[],
+@@ -467,7 +491,7 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
+ 		if ((SYN_CAP_ADV_GESTURE(priv->ext_cap_0c)
+ 				|| SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c))
+ 				&& hw->w == 2) {
+-			synaptics_parse_agm(buf, priv);
++			synaptics_parse_agm(buf, priv, hw);
+ 			return 1;
+ 		}
  
- 	if (num_fingers > 0) {
- 		input_report_abs(dev, ABS_X, hw.x);
--		input_report_abs(dev, ABS_Y, YMAX_NOMINAL + YMIN_NOMINAL - hw.y);
-+		input_report_abs(dev, ABS_Y, invert_y(hw.y));
- 	}
- 	input_report_abs(dev, ABS_PRESSURE, hw.z);
+diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
+index 34296b9..0c63357 100644
+--- a/drivers/input/mouse/synaptics.h
++++ b/drivers/input/mouse/synaptics.h
+@@ -115,9 +115,18 @@
+ #define SYN_REDUCED_FILTER_FUZZ		8
  
+ /*
+- * A structure to describe the state of the touchpad hardware (buttons and pad)
++ * A structure to describe which internal touchpad finger slots are being
++ * reported in raw packets.
+  */
++struct synaptics_mt_state {
++	int count;			/* num fingers being tracked */
++	int sgm;			/* which slot is reported by sgm pkt */
++	int agm;			/* which slot is reported by agm pkt*/
++};
+ 
++/*
++ * A structure to describe the state of the touchpad hardware (buttons and pad)
++ */
+ struct synaptics_hw_state {
+ 	int x;
+ 	int y;
+@@ -130,6 +139,9 @@ struct synaptics_hw_state {
+ 	unsigned int down:1;
+ 	unsigned char ext_buttons;
+ 	signed char scroll;
++
++	/* As reported in last AGM-CONTACT packets */
++	struct synaptics_mt_state mt_state;
+ };
+ 
+ struct synaptics_data {
 -- 
 1.7.3.1
 
