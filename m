@@ -1,95 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752978Ab1GTRoF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 13:44:05 -0400
-Received: from hera.kernel.org ([140.211.167.34]:44709 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752939Ab1GTRoC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 13:44:02 -0400
-Date: Wed, 20 Jul 2011 17:43:41 GMT
-Message-Id: <201107201743.p6KHhfIs002214@hera.kernel.org>
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL RESEND] x86 fixes for 3.0-final
-Cc: Conny Seidel <conny.seidel@amd.com>, Darren Hart <dvhart@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Hans Rosenfeld <hans.rosenfeld@amd.com>, Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg@redhat.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 20 Jul 2011 17:43:42 +0000 (UTC)
+	id S1752945Ab1GTRyL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 13:54:11 -0400
+Received: from DMZ-MAILSEC-SCANNER-7.MIT.EDU ([18.7.68.36]:47316 "EHLO
+	dmz-mailsec-scanner-7.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752899Ab1GTRyJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 13:54:09 -0400
+X-AuditID: 12074424-b7b0fae000000a08-da-4e27164b1d88
+Message-ID: <4E27163A.6090102@mit.edu>
+Date: Wed, 20 Jul 2011 13:54:02 -0400
+From: Andy Lutomirski <luto@MIT.EDU>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Richard Weinberger <richard@nod.at>
+CC: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] um: Implement a x86_64 vDSO
+References: <1310994456-14142-1-git-send-email-richard@nod.at> <1310994456-14142-3-git-send-email-richard@nod.at>
+In-Reply-To: <1310994456-14142-3-git-send-email-richard@nod.at>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLIsWRmVeSWpSXmKPExsUixCmqrOstpu5nsHOGhMXlXXPYLCbvfMNo
+	Mat3CosDs8fuBZ+ZPG7OK/T4vEkugDmKyyYlNSezLLVI3y6BK6Nx7yWWgt1cFW/fbmBtYFzO
+	0cXIySEhYCJx+vJnVghbTOLCvfVsXYxcHEIC+xglnp0+wgiSEBLYwCjRdzgTInGBSWLy7k8s
+	IAleATWJrTe+gRWxCKhKdE8+CTaJTUBFomPpA6YuRg4OUYFKiTmHLCDKBSVOznwC1ioioC7x
+	7uVUNhCbWcBX4s/7y2BjhIEOOrW4jwVib6HEmzUXmEBsTgF7iXkru8BGMgtYS3zbXQTRKi+x
+	/e0c5gmMgrOQbJiFUDULSdUCRuZVjLIpuVW6uYmZOcWpybrFyYl5ealFuuZ6uZkleqkppZsY
+	QaHM7qKyg7H5kNIhRgEORiUeXkc+dT8h1sSy4srcQ4ySHExKorwyIkAhvqT8lMqMxOKM+KLS
+	nNTiQ4wSHMxKIryK/9T8hHhTEiurUovyYVLSHCxK4ryl3v99hQTSE0tSs1NTC1KLYLIyHBxK
+	Erx9okBDBYtS01Mr0jJzShDSTBycIMN5gIargdTwFhck5hZnpkPkTzEqSonzLgBJCIAkMkrz
+	4HphqeYVozjQK8K8i0CqeIBpCq77FdBgJqDBLeqqIINLEhFSUg2MYh/m6Uh3nPKYEesytdH/
+	VPYKmxOTdA9vuKj3myewSGpFUoCV/+rfBz5cmpNyg7s+KnFl/JorLZeez5X03ssjPLPT//6b
+	PXf+CQX7s22+rr4tmq8z8vqCZwfnfrx8zef845JIBiXOUrksrdubbpueZN9xYYvrxoMrqudf
+	94x9pcew4e7lVXM2/FdiKc5INNRiLipOBAAf/MwmEAMAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 07/18/2011 09:07 AM, Richard Weinberger wrote:
+> Until now UML had no x86_64 vDSO.
+> So glibc always used the vsyscall page for gettimeday()
+> and friends.
+> Calls to gettimeday() returned falsely the host time and
+> confused some programs.
+>
+> This patch adds a vDSO which turns all __vdso_* calls into
+> a system call so that UML can trap them.
+>
+> As glibc still uses the vsyscall page for static binaries this
+> patch improves the situation only for dynamic binaries.
+>
+> Signed-off-by: Richard Weinberger<richard@nod.at>
 
-The following changes since commit e3bbfa78bab125f58b831b5f7f45b5a305091d72:
+> +	asm("syscall" : "=a" (ret) :
+> +		"0" (__NR_clock_gettime), "D" (clock), "S" (ts) : "memory");
+> +
 
-  Merge branch 'hwmon-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/groeck/staging (2011-07-10 10:24:47 -0700)
+The x86-64 ABI and glibc think that rcx, and r11 are clobbered.  glibc 
+also thinks that cc is clobbered.  I personally think that rdx and 
+r8-r15 ought to be clobbered under the principle that syscall should 
+look like a function call.
 
-are available in the git repository at:
+It's hard to imagine this causing a problem in a function this trivial, 
+though.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-urgent-for-linus
+This applies to the other two syscall instructions as well.
 
-Darren Hart (1):
-      x86, doc only: Correct real-mode kernel header offset for init_size
+--Andy
 
-Maxime Ripard (1):
-      x86. reboot: Make Dell Latitude E6320 use reboot=pci
-
-Tejun Heo (1):
-      x86: Disable AMD_NUMA for 32bit for now
-
- Documentation/x86/boot.txt |    2 +-
- arch/x86/Kconfig           |    2 +-
- arch/x86/kernel/reboot.c   |    8 ++++++++
- 3 files changed, 10 insertions(+), 2 deletions(-)
-
-diff --git a/Documentation/x86/boot.txt b/Documentation/x86/boot.txt
-index 9b7221a..7c3a880 100644
---- a/Documentation/x86/boot.txt
-+++ b/Documentation/x86/boot.txt
-@@ -674,7 +674,7 @@ Protocol:	2.10+
- 
- Field name:	init_size
- Type:		read
--Offset/size:	0x25c/4
-+Offset/size:	0x260/4
- 
-   This field indicates the amount of linear contiguous memory starting
-   at the kernel runtime start address that the kernel needs before it
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index da34972..37357a5 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1170,7 +1170,7 @@ comment "NUMA (Summit) requires SMP, 64GB highmem support, ACPI"
- config AMD_NUMA
- 	def_bool y
- 	prompt "Old style AMD Opteron NUMA detection"
--	depends on NUMA && PCI
-+	depends on X86_64 && NUMA && PCI
- 	---help---
- 	  Enable AMD NUMA node topology detection.  You should say Y here if
- 	  you have a multi processor AMD system. This uses an old method to
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index 4f0d46f..14eed21 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -419,6 +419,14 @@ static struct dmi_system_id __initdata pci_reboot_dmi_table[] = {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "iMac9,1"),
- 		},
- 	},
-+	{	/* Handle problems with rebooting on the Latitude E6320. */
-+		.callback = set_pci_reboot,
-+		.ident = "Dell Latitude E6320",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude E6320"),
-+		},
-+	},
- 	{ }
- };
- 
+P.S.  If you really care, with the changes in tip/x86/vdso, it ought to 
+be possible for UML to trap vsyscalls as well.  This would need a change 
+to do_emulate_vsyscall to honor TIF_SYSCALL_EMU with intelligent 
+semantics.  I know nothing about ptrace, so I'm not volunteering :)
