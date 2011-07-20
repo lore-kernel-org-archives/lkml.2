@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728Ab1GTCtP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jul 2011 22:49:15 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:26901
-	"EHLO VA3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752456Ab1GTCtN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jul 2011 22:49:13 -0400
-X-SpamScore: -12
-X-BigFish: VPS-12(zzbb2dK1432N98dKzz1202hzzz2fh668h839h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4E264203.1030802@am.sony.com>
-Date: Tue, 19 Jul 2011 19:48:35 -0700
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Carsten Emde <ce@ceag.ch>, Clark Williams <williams@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Kumar Gala <galak@gate.crashing.org>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: Re: [ANNOUNCE] 3.0-rc7-rt0
-References: <alpine.LFD.2.02.1107200153070.2702@ionos>
-In-Reply-To: <alpine.LFD.2.02.1107200153070.2702@ionos>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1752767Ab1GTCxh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jul 2011 22:53:37 -0400
+Received: from mga11.intel.com ([192.55.52.93]:42320 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752523Ab1GTCxg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jul 2011 22:53:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,232,1309762800"; 
+   d="scan'208";a="30025147"
+Subject: [PATCH]vmscan: add block plug for page reclaim
+From: Shaohua Li <shaohua.li@intel.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, mgorman@suse.de,
+        linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 20 Jul 2011 10:53:33 +0800
+Message-ID: <1311130413.15392.326.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/11 17:37, Thomas Gleixner wrote:
-> Dear RT Folks,
-> 
-> I'm pleased to announce the first drop of the 3.0-rc7 based RT
-> patch.
+per-task block plug can reduce block queue lock contention and increase request
+merge. Currently page reclaim doesn't support it. I originally thought page
+reclaim doesn't need it, because kswapd thread count is limited and file cache
+write is done at flusher mostly.
+When I test a workload with heavy swap in a 4-node machine, each CPU is doing
+direct page reclaim and swap. This causes block queue lock contention. In my
+test, without below patch, the CPU utilization is about 2% ~ 7%. With the
+patch, the CPU utilization is about 1% ~ 3%. Disk throughput isn't changed.
+This should improve normal kswapd write and file cache write too (increase
+request merge for example), but might not be so obvious as I explain above.
 
-I'll start the chorus:  THANK YOU for all the work you have put
-into this!!!
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
 
-I'll dig around for a suitable ARM platform and should be able
-to start doing some testing soon.
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 5ed24b9..8ec04b2 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1933,12 +1933,14 @@ static void shrink_zone(int priority, struct zone *zone,
+ 	enum lru_list l;
+ 	unsigned long nr_reclaimed, nr_scanned;
+ 	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
++	struct blk_plug plug;
+ 
+ restart:
+ 	nr_reclaimed = 0;
+ 	nr_scanned = sc->nr_scanned;
+ 	get_scan_count(zone, sc, nr, priority);
+ 
++	blk_start_plug(&plug);
+ 	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
+ 					nr[LRU_INACTIVE_FILE]) {
+ 		for_each_evictable_lru(l) {
+@@ -1962,6 +1964,7 @@ restart:
+ 		if (nr_reclaimed >= nr_to_reclaim && priority < DEF_PRIORITY)
+ 			break;
+ 	}
++	blk_finish_plug(&plug);
+ 	sc->nr_reclaimed += nr_reclaimed;
+ 
+ 	/*
 
--Frank
 
