@@ -1,94 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752201Ab1GTTmS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 15:42:18 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:19240 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751765Ab1GTTlg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 15:41:36 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 20 Jul 2011 12:41:35 -0700
-From: <achew@nvidia.com>
-To: <grant.likely@secretlab.ca>, <olof@lixom.net>, <swarren@nvidia.com>,
-        <dwillemsen@nvidia.com>, <rklein@nvidia.com>, <mogantyv@nvidia.com>
-CC: <devicetree-discuss@lists.ozlabs.org>, <linux-tegra@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Andrew Chew <achew@nvidia.com>
-Subject: [PATCH 2/3 v2] dt: tegra20: Add ehci host controller nodes.
-Date: Wed, 20 Jul 2011 12:38:09 -0700
-Message-ID: <1311190690-18334-2-git-send-email-achew@nvidia.com>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1311190690-18334-1-git-send-email-achew@nvidia.com>
-References: <1311190690-18334-1-git-send-email-achew@nvidia.com>
+	id S1751977Ab1GTTnh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 15:43:37 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:34532 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751664Ab1GTTng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 15:43:36 -0400
+Date: Wed, 20 Jul 2011 21:42:40 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Mike Waychison <mikew@google.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] x86: Allow disabling of sys_iopl, sys_ioperm
+Message-ID: <20110720194239.GC7910@elte.hu>
+References: <1310675693-9204-1-git-send-email-mikew@google.com>
+ <1310675693-9204-2-git-send-email-mikew@google.com>
+ <20110714153113.31ffdeea.akpm@linux-foundation.org>
+ <4E1F6F32.7040504@zytor.com>
+ <CAGTjWtCL-4kqHdQsKHTwCC58y9nqHsJXqxpyygRi3qFvUsqVWw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGTjWtCL-4kqHdQsKHTwCC58y9nqHsJXqxpyygRi3qFvUsqVWw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Chew <achew@nvidia.com>
 
-These values were derived from various headers in arch/arm/mach-tegra.
+* Mike Waychison <mikew@google.com> wrote:
 
-Signed-off-by: Andrew Chew <achew@nvidia.com>
----
- arch/arm/boot/dts/tegra20.dtsi |   43 ++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 43 insertions(+), 0 deletions(-)
+> On Thu, Jul 14, 2011 at 3:35 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> > On 07/14/2011 03:31 PM, Andrew Morton wrote:
+> >>
+> >> sys_iopl() is missing asmlinkage.
+> >>
+> >> It would be far more conventional to use cond_syscall().  Perhaps by
+> >> adding a CONFIG_X86 area into kernel/sys_ni.c
+> >>
+> >> fyi, I'm offering special deals on checkpatch.pl site licenses this month.
+> >
+> > Again, I don't think this makes sense as a compile-time-only option.
+> 
+> echo "enabled" > /proc/sys/kernel/iopl_available
+> echo "disabled" > /proc/sys/kernel/iopl_available
+> echo "locked" > /proc/sys/kernel/iopl_available
 
-diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.dtsi
-index 83fedf3..d4ab1ab 100644
---- a/arch/arm/boot/dts/tegra20.dtsi
-+++ b/arch/arm/boot/dts/tegra20.dtsi
-@@ -160,5 +160,48 @@
- 		interrupts = < 63 >;
- 		status = "disabled";
- 	};
-+
-+	ehci@c5000000 {
-+		compatible = "nvidia,tegra20-ehci";
-+		reg = <0xc5000000 0x4000>;
-+		interrupts = < 52 >;
-+		mode = "host";
-+		power_down_on_bus_suspend = < 1 >;
-+		type = "utmi";
-+		hssync_start_delay = < 9 >;
-+		idle_wait_delay = < 17 >;
-+		elastic_limit = < 16 >;
-+		term_range_adj = < 6 >;
-+		xcvr_setup = < 9 >;
-+		xcvr_lsfslew = < 1 >;
-+		xcvr_lsrslew = < 1 >;
-+	};
-+
-+	ehci@c5004000 {
-+		compatible = "nvidia,tegra20-ehci";
-+		reg = <0xc5004000 0x4000>;
-+		interrupts = < 53 >;
-+		mode = "host";
-+		power_down_on_bus_suspend = < 1 >;
-+		type = "ulpi";
-+		reset_gpio = < 169 >;
-+		clk = "cdev2";
-+	};
-+
-+	ehci@c5008000 {
-+		compatible = "nvidia,tegra20-ehci";
-+		reg = <0xc5008000 0x4000>;
-+		interrupts = < 129 >;
-+		mode = "host";
-+		power_down_on_bus_suspend = < 1 >;
-+		type = "utmi";
-+		hssync_start_delay = < 9 >;
-+		idle_wait_delay = < 17 >;
-+		elastic_limit = < 16 >;
-+		term_range_adj = < 6 >;
-+		xcvr_setup = < 9 >;
-+		xcvr_lsfslew = < 2 >;
-+		xcvr_lsrslew = < 2 >;
-+	};
- };
- 
--- 
-1.7.6
+1, 0 and -1 ought to be a rather straightforward mapping to 'on', 
+'off' and 'off forever'.
 
+Thanks,
+
+	Ingo
