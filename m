@@ -1,45 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751888Ab1GTUhG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 16:37:06 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:52745 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751613Ab1GTUhF (ORCPT
+	id S1751631Ab1GTU4Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 16:56:16 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:58514 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750810Ab1GTU4P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 16:37:05 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6413"; a="104738957"
-Date: Wed, 20 Jul 2011 13:37:03 -0700
-From: David Brown <davidb@codeaurora.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] MSM fix
-Message-ID: <20110720203703.GA4495@huya.qualcomm.com>
+	Wed, 20 Jul 2011 16:56:15 -0400
+Message-ID: <4E274099.20704@candelatech.com>
+Date: Wed, 20 Jul 2011 13:54:49 -0700
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: paulmck@linux.vnet.ibm.com
+CC: Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ed Tomlinson <edt@aei.ca>,
+        linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org, edward.tomlinson@aero.bombardier.com
+Subject: Re: [PATCH rcu/urgent 0/6] Fixes for RCU/scheduler/irq-threads trainwreck
+References: <CA+55aFyaCY=qzFKswi2NR097KZtb5x98sba3rHJ7B0rchtzm2g@mail.gmail.com> <20110720133443.GG2400@linux.vnet.ibm.com> <4E270A0E.6090902@candelatech.com> <20110720171532.GB2313@linux.vnet.ibm.com> <20110720184413.GD17977@elte.hu> <1311187978.29152.58.camel@twins> <CA+55aFyuKTj3zEvWJEx4_RDzLQ+ipJ58UWFYH84nmcwGF_c4aA@mail.gmail.com> <20110720192949.GM2313@linux.vnet.ibm.com> <20110720193925.GB7910@elte.hu> <20110720195742.GA14671@elte.hu> <20110720203300.GQ2313@linux.vnet.ibm.com>
+In-Reply-To: <20110720203300.GQ2313@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I seem to have missed this fix when it was sent out in April.
+On 07/20/2011 01:33 PM, Paul E. McKenney wrote:
+> On Wed, Jul 20, 2011 at 09:57:42PM +0200, Ingo Molnar wrote:
+>>
+>> * Ingo Molnar<mingo@elte.hu>  wrote:
+>>
+>>>
+>>> * Paul E. McKenney<paulmck@linux.vnet.ibm.com>  wrote:
+>>>
+>>>> If my guess is correct, then the minimal non-RCU_BOOST fix is #4
+>>>> (which drags along #3) and #6.  Which are not one-liners, but
+>>>> somewhat smaller:
+>>>>
+>>>>   b/kernel/rcutree_plugin.h |   12 ++++++------
+>>>>   b/kernel/softirq.c        |   12 ++++++++++--
+>>>>   kernel/rcutree_plugin.h   |   31 +++++++++++++++++++++++++------
+>>>>   3 files changed, 41 insertions(+), 14 deletions(-)
+>>>
+>>> That's half the patch size and half the patch count.
+>>>
+>>> PeterZ's question is relevant: since we apparently had similar bugs
+>>> in v2.6.39 as well, what changed in v3.0 that makes them so urgent
+>>> to fix?
+>>>
+>>> If it's just better instrumentation that proves them better then
+>>> i'd suggest fixing this in v3.1 and not risking v3.0 with an
+>>> unintended side effect.
+>>
+>> Ok, i looked some more at the background and the symptoms that people
+>> are seeing: kernel crashes and lockups. I think we want these
+>> problems fixed in v3.0, even if it was the recent introduction of
+>> RCU_BOOST that made it really prominent.
+>>
+>> Having put some testing into your rcu/urgent branch today i'd feel
+>> more comfortable with taking this plus perhaps an RCU_BOOST disabling
+>> patch. That makes it all fundamentally tested by a number of people
+>> (including those who reported/reproduced the problems).
+>
+> RCU_BOOST is currently default=n.  Is that sufficient?  If not, one
 
-The following changes since commit 620917de59eeb934b9f8cf35cc2d95c1ac8ed0fc:
+Not if it remains broken I think..unless you put it under CONFIG_BROKEN
+or something.  Otherwise, folks are liable to turn it on and not realize
+it's the cause of subtle bugs.
 
-  Linux 3.0-rc7 (2011-07-11 16:51:52 -0700)
+For what it's worth, my tests have been running clean for around 2 hours, so the full set of
+fixes with RCU_BOOST appears good, so far.  I'll let it continue to run
+at least overnight to make sure I'm not just getting lucky...
 
-are available in the git repository at:
-  git://codeaurora.org/quic/kernel/davidb/linux-msm.git msm-fix
-
-Jeff Ohlstein (1):
-      msm: platsmp: actually read core count in get_core_count
-
- arch/arm/mach-msm/platsmp.c |   11 +++++++++--
- 1 files changed, 9 insertions(+), 2 deletions(-)
+Thanks,
+Ben
 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
+
