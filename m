@@ -1,99 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603Ab1GUM3L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 08:29:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10304 "EHLO mx1.redhat.com"
+	id S1752634Ab1GUMaS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 08:30:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39127 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751888Ab1GUM3I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 08:29:08 -0400
-Message-ID: <4E281B80.2050606@redhat.com>
-Date: Thu, 21 Jul 2011 14:28:48 +0200
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.4pre) Gecko/20091014 Fedora/3.0-2.8.b4.fc11 Thunderbird/3.0b4
+	id S1751888Ab1GUMaQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 08:30:16 -0400
+Date: Thu, 21 Jul 2011 14:30:12 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] memcg: prevent from reclaiming if there are per-cpu
+ cached charges
+Message-ID: <20110721123012.GD27855@tiehlicka.suse.cz>
+References: <cover.1311241300.git.mhocko@suse.cz>
+ <0ed59a22cc84037d6e42b258981c75e3a6063899.1311241300.git.mhocko@suse.cz>
+ <20110721195411.f4fa9f91.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Balbir Singh <bsingharora@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] taskstats: add_del_listener() shouldn't use the wrong
- node
-References: <20110720185959.GA21749@redhat.com> <20110720190019.GA21753@redhat.com>
-In-Reply-To: <20110720190019.GA21753@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110721195411.f4fa9f91.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/20/2011 09:00 PM, Oleg Nesterov wrote:
-> 1. 26c4caea "don't allow duplicate entries in listener mode"
->    changed add_del_listener(REGISTER) so that "next_cpu:" can
->    reuse the listener allocated for the previous cpu, this
->    doesn't look exactly right even if minor.
+On Thu 21-07-11 19:54:11, KAMEZAWA Hiroyuki wrote:
+> On Thu, 21 Jul 2011 10:28:10 +0200
+> Michal Hocko <mhocko@suse.cz> wrote:
+> 
+> > If we fail to charge an allocation for a cgroup we usually have to fall
+> > back into direct reclaim (mem_cgroup_hierarchical_reclaim).
+> > The charging code, however, currently doesn't care about per-cpu charge
+> > caches which might have up to (nr_cpus - 1) * CHARGE_BATCH pre charged
+> > pages (the current cache is already drained, otherwise we wouldn't get
+> > to mem_cgroup_do_charge).
+> > That can be quite a lot on boxes with big amounts of CPUs so we can end
+> > up reclaiming even though there are charges that could be used. This
+> > will typically happen in a multi-threaded applications pined to many CPUs
+> > which allocates memory heavily.
+> > 
+> 
+> Do you have example and score, numbers on your test ?
 
-That construction is somewhat unusual. I agree that this code looks cleaner
-and probably reduces the risk that someone in the future misunderstand the
-code.
+As I said, I haven't seen anything that would affect visibly performance
+but I have seen situations where we reclaimed even though there were
+pre-charges on other CPUs.
 
+> > Currently we are draining caches during reclaim
+> > (mem_cgroup_hierarchical_reclaim) but this can be already late as we
+> > could have already reclaimed from other groups in the hierarchy.
+> > 
+> > The solution for this would be to synchronously drain charges early when
+> > we fail to charge and retry the charge once more.
+> > I think it still makes sense to keep async draining in the reclaim path
+> > as it is used from other code paths as well (e.g. limit resize). It will
+> > not do any work if we drained previously anyway.
+> > 
+> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
 > 
->    Change the code to kfree() in the already-registered case,
->    this case is unlikely anyway so the extra kmalloc_node()
->    shouldn't hurt but looke more correct and clean.
+> I don't like this solution, at all.
 > 
-> 2. use the plain list_for_each_entry() instead of _safe() to
->    scan listeners->list.
+> Assume 2 cpu SMP, (a special case), and 2 applications running under
+> a memcg.
 > 
-> 3. Remove the unneeded INIT_LIST_HEAD(&s->list), we are going
->    to list_add(&s->list).
+>  - one is running in SCHED_FIFO.
+>  - another is running into mem_cgroup_do_charge() and call drain_all_stock_sync().
 > 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> Then, the application stops until SCHED_FIFO application release the cpu.
 
-Reviewed-by: Jerome Marchand <jmarchan@redhat.com>
+It would have to back off during reclaim anyaway (because we check
+cond_resched during reclaim), right? 
 
-> ---
-> 
->  kernel/taskstats.c |   16 +++++++---------
->  1 file changed, 7 insertions(+), 9 deletions(-)
-> 
-> --- ts/kernel/taskstats.c~1_cleanup	2011-07-03 16:27:57.000000000 +0200
-> +++ ts/kernel/taskstats.c	2011-07-20 19:35:38.000000000 +0200
-> @@ -291,30 +291,28 @@ static int add_del_listener(pid_t pid, c
->  	if (!cpumask_subset(mask, cpu_possible_mask))
->  		return -EINVAL;
->  
-> -	s = NULL;
->  	if (isadd == REGISTER) {
->  		for_each_cpu(cpu, mask) {
-> -			if (!s)
-> -				s = kmalloc_node(sizeof(struct listener),
-> -						 GFP_KERNEL, cpu_to_node(cpu));
-> +			s = kmalloc_node(sizeof(struct listener),
-> +					GFP_KERNEL, cpu_to_node(cpu));
->  			if (!s)
->  				goto cleanup;
-> +
->  			s->pid = pid;
-> -			INIT_LIST_HEAD(&s->list);
->  			s->valid = 1;
->  
->  			listeners = &per_cpu(listener_array, cpu);
->  			down_write(&listeners->sem);
-> -			list_for_each_entry_safe(s2, tmp, &listeners->list, list) {
-> +			list_for_each_entry(s2, &listeners->list, list) {
->  				if (s2->pid == pid)
-> -					goto next_cpu;
-> +					goto exists;
->  			}
->  			list_add(&s->list, &listeners->list);
->  			s = NULL;
-> -next_cpu:
-> +exists:
->  			up_write(&listeners->sem);
-> +			kfree(s); /* nop if NULL */
->  		}
-> -		kfree(s);
->  		return 0;
->  	}
->  
-> 
+> In general, I don't think waiting for schedule_work() against multiple cpus
+> is not quicker than short memory reclaim. 
 
+You are right, but if you consider small groups then the reclaim can
+make the situation much worse.
+
+> Adding flush_work() here means that a context switch is requred before
+> calling direct reclaim.
+
+Is that really a problem? We would context switch during reclaim if
+there is something else that wants CPU anyway.
+Maybe we could drain only if we get a reasonable number of pages back?
+This would require two passes over per-cpu caches to find the number -
+not nice. Or we could drain only those caches that have at least some
+threshold of pages.
+
+> That's bad. (At leaset, please check __GFP_NOWAIT.)
+
+Definitely a good idea. Fixed.
+
+> Please find another way, I think calling synchronous drain here is overkill.
+> There are not important file caches in the most case and reclaim is quick.
+
+This is, however, really hard to know in advance. If there are used-once
+unmaped file pages then it is much easier to reclaim them for sure.
+Maybe I could check the statistics and decide whether to drain according
+pages we have in the group. Let me think about that.
+
+> (And async draining runs.)
+> 
+> How about automatically adjusting CHARGE_BATCH and make it small when the
+> system is near to limit ? 
+
+Hmm, we are already bypassing batching if we are close to the limit,
+aren't we? If we get to the reclaim we fallback to nr_pages allocation
+and so we do not refill the stock.
+Maybe we could check how much we have reclaimed and update the batch
+size accordingly.
+
+> or flushing ->stock periodically ?
+> 
+> 
+> Thanks,
+> -Kame
+
+Thanks!
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
