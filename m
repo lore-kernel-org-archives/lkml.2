@@ -1,83 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752383Ab1GUPhL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 11:37:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54778 "EHLO mx1.redhat.com"
+	id S1752521Ab1GUPha (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 11:37:30 -0400
+Received: from hera.kernel.org ([140.211.167.34]:60664 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751953Ab1GUPhI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 11:37:08 -0400
-Message-ID: <4E28478B.1070907@redhat.com>
-Date: Thu, 21 Jul 2011 18:36:43 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
+	id S1752428Ab1GUPh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 11:37:27 -0400
+Date: Thu, 21 Jul 2011 15:36:50 GMT
+From: tip-bot for David Ahern <dsahern@gmail.com>
+Message-ID: <tip-08a4a43fc407d780bdde36d98f89c0dbb2a6be6b@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, fweisbec@gmail.com, stable@kernel.org,
+        dsahern@gmail.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, a.p.zijlstra@chello.nl, stable@kernel.org,
+        dsahern@gmail.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1310420304-21452-1-git-send-email-dsahern@gmail.com>
+References: <1310420304-21452-1-git-send-email-dsahern@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf tools, x86: Fix 32-bit compile on 64-bit system
+Git-Commit-ID: 08a4a43fc407d780bdde36d98f89c0dbb2a6be6b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        "acme@ghostprotocols.net" <acme@ghostprotocols.net>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: Re: [PATCH 1/3] perf: add context field to perf_event
-References: <20110704143655.GE5551@somewhere> <20110711210753.GA3582@e102144-lin.cambridge.arm.com> <4E1BF5A1.5070301@redhat.com> <1310459898.18678.108.camel@twins> <4E1C0F02.9040906@redhat.com> <1310462046.14978.11.camel@twins> <4E1C10F8.6010300@redhat.com> <1310462335.14978.12.camel@twins> <4E1C1373.5080500@redhat.com> <1310463060.14978.17.camel@twins> <20110721153238.GC8446@e102144-lin.cambridge.arm.com>
-In-Reply-To: <20110721153238.GC8446@e102144-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 21 Jul 2011 15:36:55 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/21/2011 06:32 PM, Will Deacon wrote:
-> >
-> >  Using TIF_bits sounds like a much better solution for this, wakeups are
-> >  really rather expensive and its best to avoid extra if at all possible.
->
-> The problem with using a TIF bit to tell a task that it needs to perform
-> some preempt_notifier registrations is that you end up with something that
-> looks a lot like preempt notifiers! You also don't escape the concurrent
-> read/write to thelist of pending registrations.
->
-> One thing I tried was simply using an RCU protected hlist for the preempt
-> notifiers so that we don't have to worry about atomicity when reading the
-> notifiers in finish_task_switch. It's a bit odd, since we know we only ever
-> have a single reader, but I've included it below anyway.
->
-> If anybody has any better ideas, I'm all ears.
+Commit-ID:  08a4a43fc407d780bdde36d98f89c0dbb2a6be6b
+Gitweb:     http://git.kernel.org/tip/08a4a43fc407d780bdde36d98f89c0dbb2a6be6b
+Author:     David Ahern <dsahern@gmail.com>
+AuthorDate: Mon, 11 Jul 2011 15:38:24 -0600
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Thu, 21 Jul 2011 13:42:30 +0200
 
-> +void preempt_notifier_register_task(struct preempt_notifier *notifier,
-> +				    struct task_struct *tsk)
-> +{
-> +	mutex_lock(&tsk->preempt_notifiers_mutex);
-> +	hlist_add_head_rcu(&notifier->link,&tsk->preempt_notifiers);
-> +	mutex_unlock(&tsk->preempt_notifiers_mutex);
-> +}
-> +EXPORT_SYMBOL_GPL(preempt_notifier_register_task);
-> +
-> +void preempt_notifier_unregister_task(struct preempt_notifier *notifier,
-> +				      struct task_struct *tsk)
-> +{
-> +	mutex_lock(&tsk->preempt_notifiers_mutex);
-> +	hlist_del_rcu(&notifier->link);
-> +	mutex_unlock(&tsk->preempt_notifiers_mutex);
-> +}
-> +EXPORT_SYMBOL_GPL(preempt_notifier_unregister_task);
-> +
->   /**
->    * preempt_notifier_register - tell me when current is being preempted&  rescheduled
->    * @notifier: notifier struct to register
->    */
->   void preempt_notifier_register(struct preempt_notifier *notifier)
->   {
-> -	hlist_add_head(&notifier->link,&current->preempt_notifiers);
-> +	preempt_notifier_register_task(notifier, current);
->   }
->   EXPORT_SYMBOL_GPL(preempt_notifier_register);
+perf tools, x86: Fix 32-bit compile on 64-bit system
 
-This is (and must be) called from a preempt disabled context, no mutexes 
-around here.
+Builds for 32-bit perf binaries on a 64-bit host currently fail
+with this error:
 
+ [...]
+ bench/../../../arch/x86/lib/memcpy_64.S: Assembler messages:
+ bench/../../../arch/x86/lib/memcpy_64.S:29: Error: bad register name `%rdi'
+ bench/../../../arch/x86/lib/memcpy_64.S:34: Error: invalid instruction suffix for `movs'
+ bench/../../../arch/x86/lib/memcpy_64.S:50: Error: bad register name `%rdi'
+ bench/../../../arch/x86/lib/memcpy_64.S:61: Error: bad register name `%rdi'
+ ...
 
--- 
-error compiling committee.c: too many arguments to function
+The problem is the detection of the host arch without considering passed in
+flags. This change fixes 32-bit builds via:
 
+make EXTRA_CFLAGS=-m32
+
+and 64-bit builds still reference the memcpy_64.S.
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: <stable@kernel.org>
+Link: http://lkml.kernel.org/r/1310420304-21452-1-git-send-email-dsahern@gmail.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ tools/perf/Makefile |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 940257b..c168366 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -52,7 +52,10 @@ ifeq ($(ARCH),i386)
+ endif
+ ifeq ($(ARCH),x86_64)
+ 	ARCH := x86
+-	IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -xc - | tail -n 1)
++	IS_X86_64 := 0
++	ifeq (, $(findstring m32,$(EXTRA_CFLAGS)))
++		IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -xc - | tail -n 1)
++	endif
+ 	ifeq (${IS_X86_64}, 1)
+ 		RAW_ARCH := x86_64
+ 		ARCH_CFLAGS := -DARCH_X86_64
