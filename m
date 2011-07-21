@@ -1,176 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753109Ab1GUQGa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 12:06:30 -0400
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:46844 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752881Ab1GUQG3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 12:06:29 -0400
-Date: Thu, 21 Jul 2011 20:06:25 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH -tip] x86, perf: P4 PMU - Fix typos in comments and style
- cleanup
-Message-ID: <20110721160625.GX7492@sun>
+	id S1752977Ab1GUQH3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 12:07:29 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50172 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752718Ab1GUQH2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 12:07:28 -0400
+Date: Thu, 21 Jul 2011 17:07:06 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        P?draig Brady <P@draigBrady.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Colin King <colin.king@canonical.com>,
+        Andrew Lutomirski <luto@mit.edu>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] mm: vmscan: Only read new_classzone_idx from pgdat
+ when reclaiming successfully
+Message-ID: <20110721160706.GS5349@suse.de>
+References: <1308926697-22475-1-git-send-email-mgorman@suse.de>
+ <1308926697-22475-5-git-send-email-mgorman@suse.de>
+ <20110719160903.GA2978@barrios-desktop>
+ <20110720104847.GI5349@suse.de>
+ <20110721153007.GC1713@barrios-desktop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
+In-Reply-To: <20110721153007.GC1713@barrios-desktop>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes typos in comments, renames obscure
-p4_event_alias::original and ::alter members to
-::original and ::alternative as appropriate, and
-finally drops parenthesis from the return of
-p4_get_alias_event to fit coding style.
+On Fri, Jul 22, 2011 at 12:30:07AM +0900, Minchan Kim wrote:
+> On Wed, Jul 20, 2011 at 11:48:47AM +0100, Mel Gorman wrote:
+> > On Wed, Jul 20, 2011 at 01:09:03AM +0900, Minchan Kim wrote:
+> > > Hi Mel,
+> > > 
+> > > Too late review.
+> > 
+> > Never too late.
+> > 
+> > > At that time, I had no time to look into this patch.
+> > > 
+> > > On Fri, Jun 24, 2011 at 03:44:57PM +0100, Mel Gorman wrote:
+> > > > During allocator-intensive workloads, kswapd will be woken frequently
+> > > > causing free memory to oscillate between the high and min watermark.
+> > > > This is expected behaviour.  Unfortunately, if the highest zone is
+> > > > small, a problem occurs.
+> > > > 
+> > > > When balance_pgdat() returns, it may be at a lower classzone_idx than
+> > > > it started because the highest zone was unreclaimable. Before checking
+> > > 
+> > > Yes.
+> > > 
+> > > > if it should go to sleep though, it checks pgdat->classzone_idx which
+> > > > when there is no other activity will be MAX_NR_ZONES-1. It interprets
+> > > 
+> > > Yes.
+> > > 
+> > > > this as it has been woken up while reclaiming, skips scheduling and
+> > > 
+> > > Hmm. I can't understand this part.
+> > > If balance_pgdat returns lower classzone and there is no other activity,
+> > > new_classzone_idx is always MAX_NR_ZONES - 1 so that classzone_idx would be less than
+> > > new_classzone_idx. It means it doesn't skip scheduling.
+> > > 
+> > > Do I miss something?
+> > > 
+> > 
+> > It was a few weeks ago so I don't rememember if this is the exact
+> > sequence I had in mind at the time of writing but an example sequence
+> > of events is for a node whose highest populated zone is ZONE_NORMAL,
+> > very small, and gets set all_unreclaimable by balance_pgdat() looks
+> > is below. The key is the "very small" part because pages are getting
+> > freed in the zone but the small size means that unreclaimable gets
+> > set easily.
+> > 
+> > /*
+> >  * kswapd is woken up for ZONE_NORMAL (as this is the preferred zone
+> >  * as ZONE_HIGHMEM is not populated.
+> >  */
+> > 
+> > order = pgdat->kswapd_max_order;
+> > classzone_idx = pgdat->classzone_idx;				/* classzone_idx == ZONE_NORMAL */
+> > pgdat->kswapd_max_order = 0;
+> > pgdat->classzone_idx = MAX_NR_ZONES - 1;
+> > order = balance_pgdat(pgdat, order, &classzone_idx);		/* classzone_idx == ZONE_NORMAL even though
+> > 								 * the highest zone was set unreclaimable
+> > 								 * and it exited scanning ZONE_DMA32
+> > 								 * because we did not communicate that
+> > 								 * information back
+> 
+> 								Yes. It's too bad.
+> 
+> > 								 */
+> > new_order = pgdat->kswapd_max_order;				/* new_order = 0 */
+> > new_classzone_idx = pgdat->classzone_idx;			/* new_classzone_idx == ZONE_HIGHMEM
+> > 								 * because that is what classzone_idx
+> > 								 * gets reset to
+> 
+> 								Yes. new_classzone_idx is ZONE_HIGHMEM.
+> 
+> > 								 */
+> > if (order < new_order || classzone_idx > new_classzone_idx) {
+> > 	/* does not sleep, this branch not taken */
+> > } else {
+> > 	/* tries to sleep, goes here */
+> > 	try_to_sleep(ZONE_NORMAL)
+> > 		sleeping_prematurely(ZONE_NORMAL)		/* finds zone unbalanced so skips scheduling */
+> >         order = pgdat->kswapd_max_order;
+> >         classzone_idx = pgdat->classzone_idx;			/* classzone_idx == ZONE_HIGHMEM now which
+> > 								 * is higher than what it was originally
+> > 								 * woken for
+> > 								 */
+> 
+> 								But is it a problem?
+> 								it should be reset to ZONE_NORMAL in balance_pgdat as high zone isn't populated.
 
-No functional changes.
+At the very least, it's sloppy.
 
-Reported-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
----
+> > }
+> > 
+> > /* Looped around to balance_pgdat() again */
+> > order = balance_pgdat()
+> > 
+> > Between when all_unreclaimable is set and before before kswapd
+> > goes fully to sleep, a page is freed clearing all_reclaimable so
+> > it rechecks all the zones, find the highest one is not balanced and
+> > skip scheduling.
+> 
+> Yes and it could be repeated forever.
 
- arch/x86/include/asm/perf_event_p4.h |    2 -
- arch/x86/kernel/cpu/perf_event_p4.c  |   66 +++++++++++++++--------------------
- 2 files changed, 31 insertions(+), 37 deletions(-)
+Resulting in chewing up large amounts of CPU.
 
-Index: linux-2.6.git/arch/x86/include/asm/perf_event_p4.h
-===================================================================
---- linux-2.6.git.orig/arch/x86/include/asm/perf_event_p4.h
-+++ linux-2.6.git/arch/x86/include/asm/perf_event_p4.h
-@@ -133,7 +133,7 @@
- 
- /*
-  * In case of event aliasing we need to preserve some
-- * caller bits otherwise the mapping won't be complete.
-+ * caller bits, otherwise the mapping won't be complete.
-  */
- #define P4_CONFIG_EVENT_ALIAS_MASK			  \
- 	(p4_config_pack_escr(P4_CONFIG_MASK_ESCR)	| \
-Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
-===================================================================
---- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
-+++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -571,35 +571,34 @@ static __initconst const u64 p4_hw_cache
- };
- 
- /*
-- * Because of Netburst being quite restricted in now
-- * many same events can run simultaneously, we use
-- * event aliases, ie different events which have the
-- * same functionallity but use non-intersected resources
-- * (ESCR/CCCR/couter registers). This allow us to run
-- * two or more semi-same events together. It is done
-- * transparently to a user space.
-+ * Because of Netburst being quite restricted in how many
-+ * identical events may run simultaneously, we introduce event aliases,
-+ * ie the different events which have the same functionality but
-+ * utilize non-intersected resources (ESCR/CCCR/counter registers).
-  *
-- * Never set any cusom internal bits such as P4_CONFIG_HT,
-- * P4_CONFIG_ALIASABLE or bits for P4_PEBS_METRIC, they are
-- * either up-to-dated automatically either not appliable
-- * at all.
-+ * This allow us to relax restrictions a bit and run two or more
-+ * identical events together.
-  *
-- * And be really carefull choosing aliases!
-+ * Never set any custom internal bits such as P4_CONFIG_HT,
-+ * P4_CONFIG_ALIASABLE or bits for P4_PEBS_METRIC, they are
-+ * either up to date automatically or not applicable at all.
-  */
- struct p4_event_alias {
--	u64 orig;
--	u64 alter;
-+	u64 original;
-+	u64 alternative;
- } p4_event_aliases[] = {
- 	{
- 		/*
--		 * Non-halted cycles can be substituted with
--		 * non-sleeping cycles (see Intel SDM Vol3b for
--		 * details).
-+		 * Non-halted cycles can be substituted with non-sleeping cycles (see
-+		 * Intel SDM Vol3b for details). We need this alias to be able
-+		 * to run nmi-watchdog and 'perf top' (or any other user space tool
-+		 * which is interested in running PERF_COUNT_HW_CPU_CYCLES)
-+		 * simultaneously.
- 		 */
--	.orig	=
-+	.original	=
- 		p4_config_pack_escr(P4_ESCR_EVENT(P4_EVENT_GLOBAL_POWER_EVENTS)		|
- 				    P4_ESCR_EMASK_BIT(P4_EVENT_GLOBAL_POWER_EVENTS, RUNNING)),
--	.alter	=
-+	.alternative	=
- 		p4_config_pack_escr(P4_ESCR_EVENT(P4_EVENT_EXECUTION_EVENT)		|
- 				    P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS0)|
- 				    P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS1)|
-@@ -620,25 +619,21 @@ static u64 p4_get_alias_event(u64 config
- 	int i;
- 
- 	/*
--	 * Probably we're lucky and don't have to do
--	 * matching over all config bits.
-+	 * Only event with special mark is allowed,
-+	 * we're to be sure it didn't come as malformed
-+	 * RAW event.
- 	 */
- 	if (!(config & P4_CONFIG_ALIASABLE))
- 		return 0;
- 
- 	config_match = config & P4_CONFIG_EVENT_ALIAS_MASK;
- 
--	/*
--	 * If an event was previously swapped to the alter config
--	 * we should swap it back otherwise contnention on registers
--	 * will return back.
--	 */
- 	for (i = 0; i < ARRAY_SIZE(p4_event_aliases); i++) {
--		if (config_match == p4_event_aliases[i].orig) {
--			config_match = p4_event_aliases[i].alter;
-+		if (config_match == p4_event_aliases[i].original) {
-+			config_match = p4_event_aliases[i].alternative;
- 			break;
--		} else if (config_match == p4_event_aliases[i].alter) {
--			config_match = p4_event_aliases[i].orig;
-+		} else if (config_match == p4_event_aliases[i].alternative) {
-+			config_match = p4_event_aliases[i].original;
- 			break;
- 		}
- 	}
-@@ -646,8 +641,7 @@ static u64 p4_get_alias_event(u64 config
- 	if (i >= ARRAY_SIZE(p4_event_aliases))
- 		return 0;
- 
--	return config_match |
--		(config & P4_CONFIG_EVENT_ALIAS_IMMUTABLE_BITS);
-+	return config_match | (config & P4_CONFIG_EVENT_ALIAS_IMMUTABLE_BITS);
- }
- 
- static u64 p4_general_events[PERF_COUNT_HW_MAX] = {
-@@ -1229,9 +1223,9 @@ static int p4_pmu_schedule_events(struct
- 
- again:
- 		/*
--		 * Aliases are swappable so we may hit circular
--		 * lock if both original config and alias need
--		 * resources (MSR registers) which already busy.
-+		 * It's possible to hit a circular lock
-+		 * between original and alternative events
-+		 * if both are scheduled already.
- 		 */
- 		if (pass > 2)
- 			goto done;
-@@ -1251,7 +1245,7 @@ again:
- 		cntr_idx = p4_next_cntr(thread, used_mask, bind);
- 		if (cntr_idx == -1 || test_bit(escr_idx, escr_mask)) {
- 			/*
--			 * Probably an event alias is still available.
-+			 * Check whether an event alias is still available.
- 			 */
- 			config_alias = p4_get_alias_event(hwc->config);
- 			if (!config_alias)
+> Apparently, we should fix wit this patch but I have a qustion about this patch.
+> 
+> Quote from your patch
+> 
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index a76b6cc2..fe854d7 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -2448,7 +2448,6 @@ loop_again:
+> >                       if (!zone_watermark_ok_safe(zone, order,
+> >                                       high_wmark_pages(zone), 0, 0)) {
+> >                               end_zone = i;
+> > -                             *classzone_idx = i;
+> >                               break;
+> >                       }
+> >               }
+> > @@ -2528,8 +2527,11 @@ loop_again:
+> >                           total_scanned > sc.nr_reclaimed + sc.nr_reclaimed / 2)
+> >                               sc.may_writepage = 1;
+> >  
+> > -                     if (zone->all_unreclaimable)
+> > +                     if (zone->all_unreclaimable) {
+> > +                             if (end_zone && end_zone == i)
+> > +                                     end_zone--;
+> 
+> Until now, It's good.
+> 
+> >                               continue;
+> > +                     }
+> >  
+> >                       if (!zone_watermark_ok_safe(zone, order,
+> >                                       high_wmark_pages(zone), end_zone, 0)) {
+> > @@ -2709,8 +2711,8 @@ static void kswapd_try_to_sleep(pg_data_t *pgdat, int order, int classzone_idx)
+> >   */
+> >  static int kswapd(void *p)
+> >  {
+> > -     unsigned long order;
+> > -     int classzone_idx;
+> > +     unsigned long order, new_order;
+> > +     int classzone_idx, new_classzone_idx;
+> >       pg_data_t *pgdat = (pg_data_t*)p;
+> >       struct task_struct *tsk = current;
+> >  
+> > @@ -2740,17 +2742,23 @@ static int kswapd(void *p)
+> >       tsk->flags |= PF_MEMALLOC | PF_SWAPWRITE | PF_KSWAPD;
+> >       set_freezable();
+> >  
+> > -     order = 0;
+> > -     classzone_idx = MAX_NR_ZONES - 1;
+> > +     order = new_order = 0;
+> > +     classzone_idx = new_classzone_idx = pgdat->nr_zones - 1;
+> >       for ( ; ; ) {
+> > -             unsigned long new_order;
+> > -             int new_classzone_idx;
+> >               int ret;
+> >  
+> > -             new_order = pgdat->kswapd_max_order;
+> > -             new_classzone_idx = pgdat->classzone_idx;
+> > -             pgdat->kswapd_max_order = 0;
+> > -             pgdat->classzone_idx = MAX_NR_ZONES - 1;
+> > +             /*
+> > +              * If the last balance_pgdat was unsuccessful it's unlikely a
+> > +              * new request of a similar or harder type will succeed soon
+> > +              * so consider going to sleep on the basis we reclaimed at
+> > +              */
+> > +             if (classzone_idx >= new_classzone_idx && order == new_order) {
+> > +                     new_order = pgdat->kswapd_max_order;
+> > +                     new_classzone_idx = pgdat->classzone_idx;
+> > +                     pgdat->kswapd_max_order =  0;
+> > +                     pgdat->classzone_idx = pgdat->nr_zones - 1;
+> > +             }
+> > +
+> 
+> But in this part.
+> Why do we need this?
+
+Lets say it's a fork-heavy workload and it is routinely being woken
+for order-1 allocations and the highest zone is very small. For the
+most part, it's ok because the allocations are being satisfied from
+the lower zones which kswapd has no problem balancing.
+
+However, by reading the information even after failing to
+balance, kswapd continues balancing for order-1 due to reading
+pgdat->kswapd_max_order, each time failing for the highest zone. It
+only takes one wakeup request per balance_pgdat() to keep kswapd
+awake trying to balance the highest zone in a continual loop.
+
+By avoiding this read, kswapd will try and go to sleep after checking
+all the watermarks and all_unreclaimable. If the watermarks are ok, it
+will sleep until woken up due to the lower zones hitting their min
+watermarks.
+
+-- 
+Mel Gorman
+SUSE Labs
