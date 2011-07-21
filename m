@@ -1,108 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752997Ab1GUTyN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 15:54:13 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:58361 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751665Ab1GUTyM (ORCPT
+	id S1752807Ab1GUT56 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 15:57:58 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:54585 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751296Ab1GUT5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 15:54:12 -0400
-Subject: Re: 2.6.32.21 - uptime related crashes?
-From: john stultz <johnstul@us.ibm.com>
+	Thu, 21 Jul 2011 15:57:55 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=cVPEODFyvd6y4v5W9j/Xe3vo5N5GQYtlkz6sL6Wfx6pEbQodhmgKuOwyWMVaAHOPunS0lZfnnzSmU3nLXh1Ep2DzTfaf6qmGLieCdO6jkuFCbliYeElWroQUAF7EaVOD;
+Date: Thu, 21 Jul 2011 12:57:49 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>, Willy Tarreau <w@1wt.eu>,
-        "MINOURA Makoto / ?$BL'1: ?$B??" <minoura@valinux.co.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Faidon Liambotis <paravoid@debian.org>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
-        seto.hidetoshi@jp.fujitsu.com,
-        =?ISO-8859-1?Q?Herv=E9?= Commowick <hcommowick@exosec.fr>,
-        Rand@jasper.es
-In-Reply-To: <20110721072256.GE9216@elte.hu>
-References: <20110430093605.GA10529@1wt.eu> <20110430173905.GA25641@tty.gr>
-	 <BANLkTi=22QFrJ4vO7-3VuHU=9Cg39bxJ4Q@mail.gmail.com>
-	 <20110705231515.95bc758f.akpm@linux-foundation.org>
-	 <kk5d3hgi9eh.fsf@brer.local.valinux.co.jp>
-	 <1310434819.30337.21.camel@work-vm> <20110712041938.GO27254@1wt.eu>
-	 <1310690138.3367.61.camel@work-vm> <1310724097.2586.296.camel@twins>
-	 <1310752795.2945.4.camel@work-vm>  <20110721072256.GE9216@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 21 Jul 2011 12:53:29 -0700
-Message-ID: <1311278009.2945.219.camel@work-vm>
+Cc: Jan Beulich <JBeulich@novell.com>, tglx@linutronix.de, hpa@zytor.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: constify PCI raw ops structures
+Message-ID: <20110721125749.73cfdf6b@jbarnes-desktop>
+In-Reply-To: <20110721070459.GB9216@elte.hu>
+References: <4E258C82020000780004E3C2@nat28.tlf.novell.com>
+	<20110721070459.GB9216@elte.hu>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-07-21 at 09:22 +0200, Ingo Molnar wrote:
-> * john stultz <johnstul@us.ibm.com> wrote:
+On Thu, 21 Jul 2011 09:04:59 +0200
+Ingo Molnar <mingo@elte.hu> wrote:
+
 > 
-> > On Fri, 2011-07-15 at 12:01 +0200, Peter Zijlstra wrote:
-> > > On Thu, 2011-07-14 at 17:35 -0700, john stultz wrote:
-> > > > 
-> > > > Peter/Ingo: Can you take a look at the above and let me know if you find
-> > > > it too disagreeable?
-> > > 
-> > > +static unsigned long long __cycles_2_ns(unsigned long long cyc)
-> > > +{
-> > > +       unsigned long long ns = 0;
-> > > +       struct x86_sched_clock_data *data;
-> > > +       int cpu = smp_processor_id();
-> > > +
-> > > +       rcu_read_lock();
-> > > +       data = rcu_dereference(per_cpu(cpu_sched_clock_data, cpu));
-> > > +
-> > > +       if (unlikely(!data))
-> > > +               goto out;
-> > > +
-> > > +       ns = ((cyc - data->base_cycles) * data->mult) >> CYC2NS_SCALE_FACTOR;
-> > > +       ns += data->accumulated_ns;
-> > > +out:
-> > > +       rcu_read_unlock();
-> > > +       return ns;
-> > > +}
-> > > 
-> > > The way I read that we're still not wrapping properly if freq scaling
-> > > 'never' happens.
-> > 
-> > Right, this doesn't address the mult overflow behavior. As I mentioned
-> > in the patch that the rework allows for solving that in the future using
-> > a (possibly very rare) timer that would accumulate cycles to ns.
-> > 
-> > This rework just really addresses the multiplication overflow->negative
-> > roll under that currently occurs with the cyc2ns_offset value.
-> > 
-> > > Because then we're wrapping on accumulated_ns + 2^54.
-> > > 
-> > > Something like resetting base, and adding ns to accumulated_ns and
-> > > returning the latter would make more sense.
-> > 
-> > Although we have to update the base_cycles and accumulated_ns
-> > atomically, so its probably not something to do in the sched_clock path.
+> * Jan Beulich <JBeulich@novell.com> wrote:
 > 
-> Ping, what's going on with this bug? Systems are crashing so we need 
-> a quick fix ASAP ...
+> > As with any other such change, the goal is to prevent inadvertent
+> > writes to these structures (assuming DEBUG_RODATA is enabled), and to
+> > separate data (possibly frequently) written to from such never getting
+> > modified.
+> > 
+> > Signed-off-by: Jan Beulich <jbeulich@novell.com>
+> > 
+> > ---
+> >  arch/x86/include/asm/pci_x86.h |    6 +++---
+> >  arch/x86/pci/ce4100.c          |    2 +-
+> >  arch/x86/pci/common.c          |    4 ++--
+> >  arch/x86/pci/direct.c          |    6 +++---
+> >  arch/x86/pci/mmconfig_32.c     |    2 +-
+> >  arch/x86/pci/mmconfig_64.c     |    2 +-
+> >  arch/x86/pci/numaq_32.c        |    2 +-
+> >  arch/x86/pci/olpc.c            |    2 +-
+> >  arch/x86/pci/pcbios.c          |    4 ++--
+> >  9 files changed, 15 insertions(+), 15 deletions(-)
+> 
+> Reviewed-by: Ingo Molnar <mingo@elte.hu>
+> 
+> It's a patch for Jesse's PCI tree i suspect.
 
-I think Peter's patch disabling sched_clock_stable is a good approach
-for now.
+Yep, I like it, I'll add it to my queue.
 
-And just to clarify a bit here, while there was a related scheduler
-division-by-zero issue which to my understanding has already been fixed
-post-2.6.32.21, I have not actually seen any other crash logs connected
-to the overflow.
-
-There have been posted softlockup watchdog false-positive messages
-(which I have also reproduced), but I've not seen any details on actual
-crashes or have I been able to reproduce them using my forced-overflow
-patch.
-
-This isn't to say that the overflow isn't causing crashes, but that the
-reports have not been clear that there have been crashes by something
-other then the div-bv-zero issue.
-
-thanks
--john
-
-
+Thanks,
+-- 
+Jesse Barnes, Intel Open Source Technology Center
