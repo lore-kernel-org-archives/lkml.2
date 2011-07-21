@@ -1,230 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751818Ab1GUJG3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 05:06:29 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:55084 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751408Ab1GUJG0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 05:06:26 -0400
-Date: Thu, 21 Jul 2011 11:05:40 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Jan Beulich <JBeulich@novell.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, hpa@zytor.com
-Subject: Re: [PATCH] x86: PCI config space accessor functions should not
- ignore the segment argument
-Message-ID: <20110721090539.GK9216@elte.hu>
-References: <4E258BD6020000780004E3BE@nat28.tlf.novell.com>
- <20110721071021.GC9216@elte.hu>
- <4E27F346020000780004EBA4@nat28.tlf.novell.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E27F346020000780004EBA4@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1751720Ab1GUJHW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 05:07:22 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:42607 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834Ab1GUJHR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 05:07:17 -0400
+Date: Thu, 21 Jul 2011 11:06:19 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [PATCHv12 0/8] Contiguous Memory Allocator
+In-reply-to: <1311152240-16384-1-git-send-email-m.szyprowski@samsung.com>
+To: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org
+Cc: "'Michal Nazarewicz'" <mina86@mina86.com>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "'Ankita Garg'" <ankita@in.ibm.com>,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Mel Gorman'" <mel@csn.ul.ie>, "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Jesse Barker'" <jesse.barker@linaro.org>,
+        "'Jonathan Corbet'" <corbet@lwn.net>,
+        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
+        "'Russell King'" <linux@arm.linux.org.uk>
+Message-id: <000001cc4785$74f55780$5ee00680$%szyprowski@samsung.com>
+Organization: SPRC
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: pl
+Content-transfer-encoding: 7BIT
+Thread-index: AcxGuwmNYmMVDpoMTZKp39dlJdSlZwAyKCcw
+References: <1311152240-16384-1-git-send-email-m.szyprowski@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-* Jan Beulich <JBeulich@novell.com> wrote:
+All these patches are also available on the following GIT repository/branch:
+git://git.infradead.org/users/kmpark/linux-2.6-samsung 3.0-rc7-cma-v12
 
-> >>> On 21.07.11 at 09:10, Ingo Molnar <mingo@elte.hu> wrote:
-> >>  The access method 1 accessor, as it can be used for extended accesses
-> >> (on AMD systems) instead gets added checks for the passed in segment to
-> >> be zero (returning an error just like out of range values of the other
-> >> arguments would cause).
-> > 
-> > * Jan Beulich <JBeulich@novell.com> wrote:
-> > 
-> >> Without this change, the majority of the raw PCI config space access
-> >> functions silently ignore a non-zero segment argument, which is
-> >> certainly wrong.
-> >> 
-> >> Apart from pci_direct_conf1, all other non-MMCFG access methods get
-> >> used only for non-extended accesses (i.e. assigned to raw_pci_ops
-> >> only). Consequently, with the way raw_pci_{read,write}() work, it would
-> >> be a coding error to call these functions with a non-zero segment (with
-> >> the current call flow this cannot happen afaict).
-> >> 
-> >> 
-> >> Signed-off-by: Jan Beulich <jbeulich@novell.com>
-> >> 
-> >> ---
-> >>  arch/x86/pci/ce4100.c   |    4 ++++
-> >>  arch/x86/pci/direct.c   |    6 ++++--
-> >>  arch/x86/pci/numaq_32.c |    2 ++
-> >>  arch/x86/pci/olpc.c     |    4 ++++
-> >>  arch/x86/pci/pcbios.c   |    2 ++
-> >>  5 files changed, 16 insertions(+), 2 deletions(-)
-> >> 
-> >> --- 3.0-rc7/arch/x86/pci/ce4100.c
-> >> +++ 3.0-rc7-x86-pci-access-seg/arch/x86/pci/ce4100.c
-> >> @@ -257,6 +257,8 @@ static int ce4100_conf_read(unsigned int
-> >>  {
-> >>  	int i;
-> >>  
-> >> +	BUG_ON(seg);
-> >> +
-> >>  	if (bus == 1) {
-> >>  		for (i = 0; i < ARRAY_SIZE(bus1_fixups); i++) {
-> >>  			if (bus1_fixups[i].dev_func == devfn &&
-> >> @@ -282,6 +284,8 @@ static int ce4100_conf_write(unsigned in
-> >>  {
-> >>  	int i;
-> >>  
-> >> +	BUG_ON(seg);
-> >> +
-> >>  	if (bus == 1) {
-> >>  		for (i = 0; i < ARRAY_SIZE(bus1_fixups); i++) {
-> >>  			if (bus1_fixups[i].dev_func == devfn &&
-> >> --- 3.0-rc7/arch/x86/pci/direct.c
-> >> +++ 3.0-rc7-x86-pci-access-seg/arch/x86/pci/direct.c
-> >> @@ -22,7 +22,7 @@ static int pci_conf1_read(unsigned int s
-> >>  {
-> >>  	unsigned long flags;
-> >>  
-> >> -	if ((bus > 255) || (devfn > 255) || (reg > 4095)) {
-> >> +	if (seg || (bus > 255) || (devfn > 255) || (reg > 4095)) {
-> >>  		*value = -1;
-> >>  		return -EINVAL;
-> >>  	}
-> >> @@ -53,7 +53,7 @@ static int pci_conf1_write(unsigned int
-> >>  {
-> >>  	unsigned long flags;
-> >>  
-> >> -	if ((bus > 255) || (devfn > 255) || (reg > 4095))
-> >> +	if (seg || (bus > 255) || (devfn > 255) || (reg > 4095))
-> >>  		return -EINVAL;
-> >>  
-> >>  	raw_spin_lock_irqsave(&pci_config_lock, flags);
-> >> @@ -97,6 +97,7 @@ static int pci_conf2_read(unsigned int s
-> >>  	unsigned long flags;
-> >>  	int dev, fn;
-> >>  
-> >> +	BUG_ON(seg);
-> >>  	if ((bus > 255) || (devfn > 255) || (reg > 255)) {
-> >>  		*value = -1;
-> >>  		return -EINVAL;
-> >> @@ -138,6 +139,7 @@ static int pci_conf2_write(unsigned int
-> >>  	unsigned long flags;
-> >>  	int dev, fn;
-> >>  
-> >> +	BUG_ON(seg);
-> >>  	if ((bus > 255) || (devfn > 255) || (reg > 255)) 
-> >>  		return -EINVAL;
-> >>  
-> >> --- 3.0-rc7/arch/x86/pci/numaq_32.c
-> >> +++ 3.0-rc7-x86-pci-access-seg/arch/x86/pci/numaq_32.c
-> >> @@ -34,6 +34,7 @@ static int pci_conf1_mq_read(unsigned in
-> >>  	unsigned long flags;
-> >>  	void *adr __iomem = XQUAD_PORT_ADDR(0xcfc, BUS2QUAD(bus));
-> >>  
-> >> +	BUG_ON(seg);
-> >>  	if (!value || (bus >= MAX_MP_BUSSES) || (devfn > 255) || (reg > 255))
-> >>  		return -EINVAL;
-> >>  
-> >> @@ -73,6 +74,7 @@ static int pci_conf1_mq_write(unsigned i
-> >>  	unsigned long flags;
-> >>  	void *adr __iomem = XQUAD_PORT_ADDR(0xcfc, BUS2QUAD(bus));
-> >>  
-> >> +	BUG_ON(seg);
-> >>  	if ((bus >= MAX_MP_BUSSES) || (devfn > 255) || (reg > 255)) 
-> >>  		return -EINVAL;
-> >>  
-> >> --- 3.0-rc7/arch/x86/pci/olpc.c
-> >> +++ 3.0-rc7-x86-pci-access-seg/arch/x86/pci/olpc.c
-> >> @@ -206,6 +206,8 @@ static int pci_olpc_read(unsigned int se
-> >>  {
-> >>  	uint32_t *addr;
-> >>  
-> >> +	BUG_ON(seg);
-> >> +
-> >>  	/* Use the hardware mechanism for non-simulated devices */
-> >>  	if (!is_simulated(bus, devfn))
-> >>  		return pci_direct_conf1.read(seg, bus, devfn, reg, len, value);
-> >> @@ -264,6 +266,8 @@ static int pci_olpc_read(unsigned int se
-> >>  static int pci_olpc_write(unsigned int seg, unsigned int bus,
-> >>  		unsigned int devfn, int reg, int len, uint32_t value)
-> >>  {
-> >> +	BUG_ON(seg);
-> >> +
-> >>  	/* Use the hardware mechanism for non-simulated devices */
-> >>  	if (!is_simulated(bus, devfn))
-> >>  		return pci_direct_conf1.write(seg, bus, devfn, reg, len, value);
-> >> --- 3.0-rc7/arch/x86/pci/pcbios.c
-> >> +++ 3.0-rc7-x86-pci-access-seg/arch/x86/pci/pcbios.c
-> >> @@ -181,6 +181,7 @@ static int pci_bios_read(unsigned int se
-> >>  	unsigned long flags;
-> >>  	unsigned long bx = (bus << 8) | devfn;
-> >>  
-> >> +	BUG_ON(seg);
-> >>  	if (!value || (bus > 255) || (devfn > 255) || (reg > 255))
-> >>  		return -EINVAL;
-> >>  
-> >> @@ -247,6 +248,7 @@ static int pci_bios_write(unsigned int s
-> >>  	unsigned long flags;
-> >>  	unsigned long bx = (bus << 8) | devfn;
-> >>  
-> >> +	BUG_ON(seg);
-> >>  	if ((bus > 255) || (devfn > 255) || (reg > 255)) 
-> >>  		return -EINVAL;
-> > 
-> > Not sure we want a BUG_ON() which crashes the box - wouldn't a 
-> > WARN_ON() suffice?
-> 
-> I can certainly convert it to a WARN_ON(), but it in fact *is* a bug if
-> these get called with a non-zero segment (as code path analysis says
-> that this is currently impossible unless the functions got called directly).
-> Please let me know what you prefer.
+GIT-web interface link:
+http://git.infradead.org/users/kmpark/linux-2.6-samsung/shortlog/refs/heads/3.0-
+rc7-cma-v12
 
-WARN_ON()s are bugs too.
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
 
-The only difference between a WARN_ON() and BUG_ON() is whether we 
-consider it impossible for the kernel to continue. That's clearly not 
-the case here so a WARN_ON() looks more justified to me.
 
-So we reserve BUG_ON() to the rarest of occasions: when for example 
-it would be insecure to continue, or if the error is so severe that 
-there's absolutely no way for the kernel to continue.
-
-> > also, the analysis/explanation is a bit incomplete:
-> > 
-> >> The access method 1 accessor, as it can be used for extended 
-> >> accesses (on AMD systems) instead gets added checks for the 
-> >> passed in segment to be zero (returning an error just like out 
-> >> of range values of the other arguments would cause).
-> > 
-> > Under what circumstances can this trigger in practice, with the 
-> > current code?
-> 
-> I really don't know whether multi-segment PCI systems with AMD CPUs 
-> are existing in practice. If they do, and if MMCFG cannot be used 
-> there for whatever reason, accesses to segments other than zero 
-> would get issued to the wrong device(s). I would have thought that 
-> this is what the paragraph above says, but I certainly can add this 
-> more explicit description...
-
-Do we have to re-discuss the upstream changelog policy every single 
-time again?
-
-Yes, overly verbose, reader-friendly changelogs are preferred over 
-'anyone who is an expert in this field should know all the 
-expectations, status quo and consequences' kind of minimalistic 
-changelogs.
-
-The former is consciously information-rich and robust, the latter is 
-information-poor and prone to be fragile, prone to be ambiguous, 
-making both the merge flow, any bug and commit triage and eventual 
-later fixes more difficult.
-
-Thanks,
-
-	Ingo
