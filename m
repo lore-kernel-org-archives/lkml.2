@@ -1,168 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753996Ab1GUVBu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 17:01:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14385 "EHLO mx1.redhat.com"
+	id S1753915Ab1GUVGf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 17:06:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48683 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753790Ab1GUU7y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 16:59:54 -0400
-From: Matthew Garrett <mjg@redhat.com>
-To: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, mikew@google.com, tony.luck@intel.com,
-        Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH V2 2/9] pstore: Add extra context for writes and erases
-Date: Thu, 21 Jul 2011 16:57:53 -0400
-Message-Id: <1311281880-28041-3-git-send-email-mjg@redhat.com>
-In-Reply-To: <1311281880-28041-1-git-send-email-mjg@redhat.com>
-References: <1311281880-28041-1-git-send-email-mjg@redhat.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 66.187.233.202
-X-SA-Exim-Mail-From: mjg@redhat.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1753790Ab1GUVGc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 17:06:32 -0400
+Message-ID: <4E28934A.6040200@zytor.com>
+Date: Thu, 21 Jul 2011 13:59:54 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Andrew Lutomirski <luto@mit.edu>
+CC: mingo@redhat.com, linux-kernel@vger.kernel.org, johnstul@us.ibm.com,
+        tony.luck@intel.com, fenghua.yu@intel.com, tglx@linutronix.de,
+        hpa@linux.intel.com, clemens@ladisch.de,
+        linux-tip-commits@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Linux Arch Mailing List <linux-arch@vger.kernel.org>
+Subject: Re: [tip:x86/vdso] clocksource: Replace vread with generic arch data
+References: <3ae5ec76a168eaaae63f08a2a1060b91aa0b7759.1310563276.git.luto@mit.edu> <tip-433bd805e5fd2c731b3a9025b034f066272d336e@git.kernel.org> <4E288AA6.7090804@zytor.com> <CAObL_7HyKSwm9a_7nfdk5E0Noy5zqD=dyaanvxY_iX5XcP1d4Q@mail.gmail.com>
+In-Reply-To: <CAObL_7HyKSwm9a_7nfdk5E0Noy5zqD=dyaanvxY_iX5XcP1d4Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-EFI only provides small amounts of individual storage, and conventionally
-puts metadata in the storage variable name. Rather than add a metadata
-header to the (already limited) variable storage, it's easier for us to
-modify pstore to pass all the information we need to construct a unique
-variable name to the appropriate functions.
+On 07/21/2011 01:49 PM, Andrew Lutomirski wrote:
+> 
+> Whoops.  If only cross-compiler toolchains were easy to build...
+> 
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
----
- drivers/acpi/apei/erst.c |   10 ++++++----
- fs/pstore/inode.c        |    6 ++++--
- fs/pstore/platform.c     |    9 +++++----
- include/linux/pstore.h   |    5 +++--
- 4 files changed, 18 insertions(+), 12 deletions(-)
+http://www.kernel.org/pub/tools/crosstool/
 
-diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
-index 8aac55e..51cf7ba 100644
---- a/drivers/acpi/apei/erst.c
-+++ b/drivers/acpi/apei/erst.c
-@@ -933,9 +933,10 @@ static int erst_open_pstore(struct pstore_info *psi);
- static int erst_close_pstore(struct pstore_info *psi);
- static ssize_t erst_reader(u64 *id, enum pstore_type_id *type,
- 			   struct timespec *time, struct pstore_info *psi);
--static u64 erst_writer(enum pstore_type_id type, size_t size,
-+static u64 erst_writer(enum pstore_type_id type, int part, size_t size,
- 		       struct pstore_info *psi);
--static int erst_clearer(u64 id, struct pstore_info *psi);
-+static int erst_clearer(enum pstore_type_id type, u64 id,
-+			struct pstore_info *psi);
- 
- static struct pstore_info erst_info = {
- 	.owner		= THIS_MODULE,
-@@ -1039,7 +1040,7 @@ out:
- 	return (rc < 0) ? rc : (len - sizeof(*rcd));
- }
- 
--static u64 erst_writer(enum pstore_type_id type, size_t size,
-+static u64 erst_writer(enum pstore_type_id type, int part, size_t size,
- 		       struct pstore_info *psi)
- {
- 	struct cper_pstore_record *rcd = (struct cper_pstore_record *)
-@@ -1083,7 +1084,8 @@ static u64 erst_writer(enum pstore_type_id type, size_t size,
- 	return rcd->hdr.record_id;
- }
- 
--static int erst_clearer(u64 id, struct pstore_info *psi)
-+static int erst_clearer(enum pstore_type_id type, u64 id,
-+			struct pstore_info *psi)
- {
- 	return erst_clear(id);
- }
-diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
-index b19884a..893b961 100644
---- a/fs/pstore/inode.c
-+++ b/fs/pstore/inode.c
-@@ -39,8 +39,9 @@
- #define	PSTORE_NAMELEN	64
- 
- struct pstore_private {
--	u64	id;
- 	struct pstore_info *psi;
-+	enum pstore_type_id type;
-+	u64	id;
- 	ssize_t	size;
- 	char	data[];
- };
-@@ -73,7 +74,7 @@ static int pstore_unlink(struct inode *dir, struct dentry *dentry)
- {
- 	struct pstore_private *p = dentry->d_inode->i_private;
- 
--	p->psi->erase(p->id, p->psi);
-+	p->psi->erase(p->type, p->id, p->psi);
- 
- 	return simple_unlink(dir, dentry);
- }
-@@ -192,6 +193,7 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
- 	private = kmalloc(sizeof *private + size, GFP_KERNEL);
- 	if (!private)
- 		goto fail_alloc;
-+	private->type = type;
- 	private->id = id;
- 	private->psi = psi;
- 
-diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-index 221c04e..163bb40 100644
---- a/fs/pstore/platform.c
-+++ b/fs/pstore/platform.c
-@@ -78,7 +78,7 @@ static void pstore_dump(struct kmsg_dumper *dumper,
- 	oopscount++;
- 	while (total < kmsg_bytes) {
- 		dst = psinfo->buf;
--		hsize = sprintf(dst, "%s#%d Part%d\n", why, oopscount, part++);
-+		hsize = sprintf(dst, "%s#%d Part%d\n", why, oopscount, part);
- 		size = psinfo->bufsize - hsize;
- 		dst += hsize;
- 
-@@ -94,8 +94,8 @@ static void pstore_dump(struct kmsg_dumper *dumper,
- 		memcpy(dst, s1 + s1_start, l1_cpy);
- 		memcpy(dst + l1_cpy, s2 + s2_start, l2_cpy);
- 
--		id = psinfo->write(PSTORE_TYPE_DMESG, hsize + l1_cpy + l2_cpy,
--				   psinfo);
-+		id = psinfo->write(PSTORE_TYPE_DMESG, part,
-+				   hsize + l1_cpy + l2_cpy, psinfo);
- 		if (reason == KMSG_DUMP_OOPS && pstore_is_mounted())
- 			pstore_mkfile(PSTORE_TYPE_DMESG, psinfo->name, id,
- 				      psinfo->buf, hsize + l1_cpy + l2_cpy,
-@@ -103,6 +103,7 @@ static void pstore_dump(struct kmsg_dumper *dumper,
- 		l1 -= l1_cpy;
- 		l2 -= l2_cpy;
- 		total += l1_cpy + l2_cpy;
-+		part++;
- 	}
- 	mutex_unlock(&psinfo->buf_mutex);
- }
-@@ -197,7 +198,7 @@ int pstore_write(enum pstore_type_id type, char *buf, size_t size)
- 
- 	mutex_lock(&psinfo->buf_mutex);
- 	memcpy(psinfo->buf, buf, size);
--	id = psinfo->write(type, size, psinfo);
-+	id = psinfo->write(type, 0, size, psinfo);
- 	if (pstore_is_mounted())
- 		pstore_mkfile(PSTORE_TYPE_DMESG, psinfo->name, id, psinfo->buf,
- 			      size, CURRENT_TIME, psinfo);
-diff --git a/include/linux/pstore.h b/include/linux/pstore.h
-index b2f1d97..12be8f1 100644
---- a/include/linux/pstore.h
-+++ b/include/linux/pstore.h
-@@ -39,9 +39,10 @@ struct pstore_info {
- 	int		(*close)(struct pstore_info *psi);
- 	ssize_t		(*read)(u64 *id, enum pstore_type_id *type,
- 			struct timespec *time, struct pstore_info *psi);
--	u64		(*write)(enum pstore_type_id type, size_t size,
-+	u64		(*write)(enum pstore_type_id type, int part,
-+			size_t size, struct pstore_info *psi);
-+	int		(*erase)(enum pstore_type_id type, u64 id,
- 			struct pstore_info *psi);
--	int		(*erase)(u64 id, struct pstore_info *psi);
- 	void		*data;
- };
- 
+> 
+> If I don't hear any better suggestions, I'll implement that tomorrow.
+> Do you want an incremental patch or a replacement?
+> 
+
+Already did, given the timing.
+
+	-hpa
+
 -- 
-1.7.6
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
