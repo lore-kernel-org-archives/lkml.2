@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028Ab1GUVVH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 17:21:07 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:15375 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753907Ab1GUVVC (ORCPT
+	id S1754010Ab1GUVVF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 17:21:05 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:15569 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753270Ab1GUVVC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 21 Jul 2011 17:21:02 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 21 Jul 2011 14:21:01 -0700
+	by hqnvupgp06.nvidia.com on Thu, 21 Jul 2011 14:21:01 -0700
 From: <achew@nvidia.com>
 To: <grant.likely@secretlab.ca>, <olof@lixom.net>, <swarren@nvidia.com>,
         <dwillemsen@nvidia.com>, <rklein@nvidia.com>, <mogantyv@nvidia.com>
 CC: <devicetree-discuss@lists.ozlabs.org>, <linux-tegra@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Andrew Chew <achew@nvidia.com>
-Subject: [PATCH 3/3 v4] dt: tegra20: Add ehci overrides to Seaboard.
-Date: Thu, 21 Jul 2011 14:17:47 -0700
-Message-ID: <1311283067-18952-3-git-send-email-achew@nvidia.com>
+Subject: [PATCH 2/3 v4] dt: tegra20: Add ehci host controller nodes.
+Date: Thu, 21 Jul 2011 14:17:46 -0700
+Message-ID: <1311283067-18952-2-git-send-email-achew@nvidia.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1311283067-18952-1-git-send-email-achew@nvidia.com>
 References: <1311283067-18952-1-git-send-email-achew@nvidia.com>
@@ -29,41 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andrew Chew <achew@nvidia.com>
 
-Seaboard has different values for some of the utmi properties.
+These values were derived from various headers in arch/arm/mach-tegra.
 
 Signed-off-by: Andrew Chew <achew@nvidia.com>
 Acked-by: Stephen Warren <swarren@nvidia.com>
 Acked-by: Olof Johansson <olof@lixom.net>
 ---
- arch/arm/boot/dts/tegra-seaboard.dts |   17 +++++++++++++++++
- 1 files changed, 17 insertions(+), 0 deletions(-)
+ arch/arm/boot/dts/tegra20.dtsi |   18 ++++++++++++++++++
+ 1 files changed, 18 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/boot/dts/tegra-seaboard.dts b/arch/arm/boot/dts/tegra-seaboard.dts
-index 5a99b4c..adc000a 100644
---- a/arch/arm/boot/dts/tegra-seaboard.dts
-+++ b/arch/arm/boot/dts/tegra-seaboard.dts
-@@ -31,4 +31,21 @@
- 	sdhci@c8000600 {
- 		status = "ok";
+diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.dtsi
+index 83fedf3..d51f887 100644
+--- a/arch/arm/boot/dts/tegra20.dtsi
++++ b/arch/arm/boot/dts/tegra20.dtsi
+@@ -160,5 +160,23 @@
+ 		interrupts = < 63 >;
+ 		status = "disabled";
  	};
 +
 +	ehci@c5000000 {
-+		power-down-on-bus-suspend;
-+		nvidia,hssync-start-delay = < 0 >;
-+		nvidia,xcvr-setup = < 15 >;
++		compatible = "nvidia,tegra20-ehci";
++		reg = <0xc5000000 0x4000>;
++		interrupts = < 52 >;
 +	};
 +
 +	ehci@c5004000 {
-+		power-down-on-bus-suspend;
-+		phy-type = "ulpi";
++		compatible = "nvidia,tegra20-ehci";
++		reg = <0xc5004000 0x4000>;
++		interrupts = < 53 >;
 +	};
 +
 +	ehci@c5008000 {
-+		power-down-on-bus-suspend;
-+		nvidia,hssync-start-delay = < 0 >;
-+		nvidia,xcvr-setup = < 8 >;
++		compatible = "nvidia,tegra20-ehci";
++		reg = <0xc5008000 0x4000>;
++		interrupts = < 129 >;
 +	};
  };
+ 
 -- 
 1.7.6
 
