@@ -1,104 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752297Ab1GULOF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 07:14:05 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.160]:38320 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751408Ab1GULOB (ORCPT
+	id S1752193Ab1GULXl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 07:23:41 -0400
+Received: from TYO200.gate.nec.co.jp ([202.32.8.215]:38144 "EHLO
+	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751690Ab1GULXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 07:14:01 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFGiS0PFRQd
-X-RZG-CLASS-ID: mo00
-Date: Thu, 21 Jul 2011 13:13:58 +0200
-From: Olaf Hering <olaf@aepfle.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: purpose of WARN_ON in kernel/workqueue.c:worker_enter_idle()
-Message-ID: <20110721111357.GA17725@aepfle.de>
-References: <20110718161518.GA8128@aepfle.de>
- <20110721073828.GY3455@htj.dyndns.org>
+	Thu, 21 Jul 2011 07:23:39 -0400
+Message-ID: <4E280964.6070000@ct.jp.nec.com>
+Date: Thu, 21 Jul 2011 20:11:32 +0900
+From: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20110721073828.GY3455@htj.dyndns.org>
-User-Agent: Mutt/1.5.21.rev5535 (2011-07-01)
+To: Lukas Hejtmanek <xhejtman@ics.muni.cz>
+CC: agk@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: request baset device mapper in Linux
+References: <20110720082640.GZ7561@ics.muni.cz>
+In-Reply-To: <20110720082640.GZ7561@ics.muni.cz>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 21, Tejun Heo wrote:
+Hi Lukas,
 
-> On Mon, Jul 18, 2011 at 06:15:18PM +0200, Olaf Hering wrote:
-> > whats the purpose of "WARNING: at kernel/workqueue.c:1217 worker_enter_idle()"?
-> > I put some debug in the function, cpu is always 1, nr_workers is either
-> > 2 or 3, current_work is NULL.
-> > Is there some real bug lurking thats worth to track down?
+Lukas Hejtmanek wrote:
+> Hi,
 > 
-> Oh yeah, that means workqueue worker accounting went out of sync which
-> may lead to workqueue hang which usually means dead system.  Can you
-> please print out what goes out of sync?  ie. print gcwq->nr_workers,
-> nr_idle and get_gcwq_nr_running(gcwq->cpu)?
+> I encouter serious problems with you commit
+> cec47e3d4a861e1d942b3a580d0bbef2700d2bb2 introducing request based device
+> mapper in Linux.
+> 
+> I got machine with 80 SATA disks connected to two LSI SAS 2.0 controller
+> (mpt2sas driver).
+> 
+> All disks are configured as multipath devices in failover mode:
+> 
+> defaults {
+>         udev_dir        /dev
+>         polling_interval 10
+>         selector        "round-robin 0"
+>         path_grouping_policy    failover
+>         path_checker    directio
+>         rr_min_io       100
+>         no_path_retry   queue
+>         user_friendly_names no
+> }
+> 
+> if I run the following command, ksoftirqd eats 100% CPU as soon as all
+> available memory is used for buffers.
+> 
+> for i in `seq 0 79`; do dd if=/dev/dm-$i of=/dev/null bs=1M count=10000 & done
+> 
+> top looks like this:
+> 
+> Mem:     48390M total,    45741M used,     2649M free,    43243M buffers
+> Swap:        0M total,        0M used,        0M free,     1496M cached
+> 
+>   PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND                                       
+>    12 root      20   0     0    0    0 R   96  0.0   0:38.78 ksoftirqd/4                                   
+> 17263 root      20   0  9432 1752  616 R   14  0.0   0:03.19 dd                                            
+> 17275 root      20   0  9432 1756  616 D   14  0.0   0:03.16 dd                                            
+> 17271 root      20   0  9432 1756  616 D   10  0.0   0:02.60 dd                                            
+> 17258 root      20   0  9432 1756  616 D    7  0.0   0:02.67 dd                                            
+> 17260 root      20   0  9432 1756  616 D    7  0.0   0:02.47 dd                                            
+> 17262 root      20   0  9432 1752  616 D    7  0.0   0:02.38 dd                                            
+> 17264 root      20   0  9432 1756  616 D    7  0.0   0:02.42 dd                                            
+> 17267 root      20   0  9432 1756  616 D    7  0.0   0:02.35 dd                                            
+> 17268 root      20   0  9432 1756  616 D    7  0.0   0:02.45 dd                                            
+> 17274 root      20   0  9432 1756  616 D    7  0.0   0:02.47 dd                                            
+> 17277 root      20   0  9432 1756  616 D    7  0.0   0:02.53 dd                                            
+> 17261 root      20   0  9432 1756  616 D    7  0.0   0:02.36 dd                                            
+> 17265 root      20   0  9432 1756  616 R    7  0.0   0:02.47 dd                                            
+> 17266 root      20   0  9432 1756  616 R    7  0.0   0:02.44 dd                                            
+> 17269 root      20   0  9432 1756  616 D    7  0.0   0:02.62 dd                                            
+> 17270 root      20   0  9432 1756  616 D    7  0.0   0:02.46 dd                                            
+> 17272 root      20   0  9432 1756  616 D    7  0.0   0:02.36 dd                                            
+> 17273 root      20   0  9432 1756  616 D    7  0.0   0:02.46 dd                                            
+> 17276 root      20   0  9432 1752  616 D    7  0.0   0:02.36 dd                                            
+> 17278 root      20   0  9432 1752  616 D    7  0.0   0:02.44 dd                                            
+> 17259 root      20   0  9432 1752  616 D    6  0.0   0:02.37 dd 
+> 
+> 
+> It looks like device mapper produces long SG lists and  end_clone_bio() has
+> someting like quadratic complexity.
+> 
+> The problem can be workarounded using:
+> for i in /sys/block/dm-*; do echo 128 > $i/queue/max_sectors_kb; done
+> 
+> to short SG lists.
+> 
+> I use SLES 2.6.32.36-0.5-default kernel.
+> 
+> Using iostat -x, I can see there is about 25000 rrmq/s, while there is only
+> 180 r/s, so it looks like each bio contains more then 100 requests which makes
+> serious troubles for ksoftirqd call backs.
 
-Whit my silly debug patch below I got this output, which is also in the
-posted dmesg output:
+I don't understand why you are saying request-based device-mapper makes
+serious troubles.
+BIO merging is done in the block layer.  Don't you see the same thing
+if you use sd devices (/dev/sdX)?
 
-[   43.376143] worker_enter_idle: c 1 3           (null)
-[  821.936288] worker_enter_idle: c 1 2           (null)
-[ 1068.816239] worker_enter_idle: c 1 2           (null)
-[ 1167.136160] worker_enter_idle: c 1 3           (null)
-[ 1220.896745] worker_enter_idle: c 1 3           (null)
-[ 1280.176207] worker_enter_idle: c 1 3           (null)
-[ 1304.820106] worker_enter_idle: c 1 3           (null)
-[ 2091.140542] worker_enter_idle: c 1 3           (null)
-[ 2275.856762] worker_enter_idle: c 1 3           (null)
-[ 2382.976445] worker_enter_idle: c 1 2           (null)
-[ 2387.696067] worker_enter_idle: c 1 2           (null)
+Also, what do you see with the latest upstream kernel (say, 3.0-rc7)?
 
+If you see your problem only with request-based device-mapper, please
+elaborate about below:
+    - end_clone_bio() has someting like quadratic complexity.
+        * What do you mean the "quadratic complexity"?
+    - each request contains more then 100 bios which makes serious
+      troubles for ksoftirqd call backs.
+        * What do you mean the "serious troubles for ksoftirqd call backs"?
 
-> Also, it would be helpful to enable and record workqueue events (grep
-> workqueue /sys/kernel/debug/tracing/available_events).  It should
-> allow us what led to the condition.
+> Without the mentioned workeround, I got only 600MB/s sum of all dd readers.
+> With workernoud, I got about 2.8GB/s sum of all dd readers.
 
-I will enable these options and report back.
+Thanks,
+Kiyoshi Ueda
 
-
----
- kernel/workqueue.c |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
-
-Index: linux-2.6/kernel/workqueue.c
-===================================================================
---- linux-2.6.orig/kernel/workqueue.c
-+++ linux-2.6/kernel/workqueue.c
-@@ -1192,6 +1192,7 @@ EXPORT_SYMBOL_GPL(queue_delayed_work_on)
- static void worker_enter_idle(struct worker *worker)
- {
- 	struct global_cwq *gcwq = worker->gcwq;
-+	int cpu;
- 
- 	BUG_ON(worker->flags & WORKER_IDLE);
- 	BUG_ON(!list_empty(&worker->entry) &&
-@@ -1213,8 +1214,23 @@ static void worker_enter_idle(struct wor
- 		wake_up_all(&gcwq->trustee_wait);
- 
- 	/* sanity check nr_running */
-+#if 0
- 	WARN_ON_ONCE(gcwq->nr_workers == gcwq->nr_idle &&
- 		     atomic_read(get_gcwq_nr_running(gcwq->cpu)));
-+#else
-+	cpu = atomic_read(get_gcwq_nr_running(gcwq->cpu));
-+	if (gcwq->nr_workers == gcwq->nr_idle && cpu) {
-+		void *func;
-+		struct work_struct *cw = worker->current_work;
-+		func = cw ? cw->func : NULL;
-+		printk("%s: c %x %x %p", __func__, cpu, gcwq->nr_workers, func);
-+		if (func)
-+			print_symbol("%s\n",(unsigned long)func);
-+		else
-+			printk("\n");
-+		WARN_ON_ONCE(1);
-+	}
-+#endif
- }
- 
- /**
