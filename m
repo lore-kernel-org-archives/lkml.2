@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753847Ab1GUVnA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 17:43:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54565 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753227Ab1GUVm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 17:42:59 -0400
-Message-ID: <4E289D48.1060207@zytor.com>
-Date: Thu, 21 Jul 2011 14:42:32 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
+	id S1754071Ab1GUVn0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 17:43:26 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:17866 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753957Ab1GUVnY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 17:43:24 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Thu, 21 Jul 2011 14:43:16 -0700
+From: Andrew Chew <AChew@nvidia.com>
+To: Dan Willemsen <dwillemsen@nvidia.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "olof@lixom.net" <olof@lixom.net>, Stephen Warren <swarren@nvidia.com>,
+        Rhyland Klein <rklein@nvidia.com>,
+        Venkat Moganty <vmoganty@nvidia.com>
+CC: "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 21 Jul 2011 14:43:15 -0700
+Subject: RE: [PATCH 1/3 v4] usb: tegra20-ehci: Add devicetree support.
+Thread-Topic: [PATCH 1/3 v4] usb: tegra20-ehci: Add devicetree support.
+Thread-Index: AcxH7PbWBIRauuLQT0Cwibms8InM5wAAghFQ
+Message-ID: <643E69AA4436674C8F39DCC2C05F76383CF0DD2281@HQMAIL03.nvidia.com>
+References: <1311283067-18952-1-git-send-email-achew@nvidia.com>
+ <CA4DE74D.50C07%dwillemsen@nvidia.com>
+In-Reply-To: <CA4DE74D.50C07%dwillemsen@nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Andrew Lutomirski <luto@mit.edu>
-CC: mingo@redhat.com, linux-kernel@vger.kernel.org, johnstul@us.ibm.com,
-        tony.luck@intel.com, fenghua.yu@intel.com, tglx@linutronix.de,
-        hpa@linux.intel.com, clemens@ladisch.de,
-        linux-tip-commits@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Linux Arch Mailing List <linux-arch@vger.kernel.org>
-Subject: Re: [tip:x86/vdso] clocksource: Replace vread with generic arch data
-References: <3ae5ec76a168eaaae63f08a2a1060b91aa0b7759.1310563276.git.luto@mit.edu> <tip-433bd805e5fd2c731b3a9025b034f066272d336e@git.kernel.org> <4E288AA6.7090804@zytor.com> <CAObL_7HyKSwm9a_7nfdk5E0Noy5zqD=dyaanvxY_iX5XcP1d4Q@mail.gmail.com> <4E28934A.6040200@zytor.com> <CAObL_7Gpf8Ux=unueB5y41p=O2dHPjZ_eVW+g6Es8N6TH4nLXg@mail.gmail.com> <4E289939.2080004@zytor.com> <CAObL_7EEh+fO23OkpN=zTM5KrHy8FisfPjXkJ7K7k74YsE503w@mail.gmail.com>
-In-Reply-To: <CAObL_7EEh+fO23OkpN=zTM5KrHy8FisfPjXkJ7K7k74YsE503w@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/21/2011 02:36 PM, Andrew Lutomirski wrote:
->>
->> What do you mean, "matching fix"?  The fix I posted should work on x86
->> and ia64.
->>
+> On 7/21/11 2:17 PM, "Andrew Chew" <achew@nvidia.com> wrote:
+> >From: Andrew Chew <achew@nvidia.com>
+> >
+> >Add code to try to get platform data information (register base, irq,
+> >modes, various tuning parameters) from device tree, if not present in
+> >board
+> >files.
 > 
-> *sigh* I read it wrong.  Never mind.
+> This patch no longer gets the register base or irq, just the modes and
+> tuning parameters.
 > 
+> - Dan Willemsen
 
-That's ok, better to say something and be wrong than to not say
-something and be right...
+You're totally right, Dan.  Grant, would you mind fixing the commit message, if nothing else comes up?  Or would you prefer I send a new patchset out?
 
-	-hpa
+I suppose the commit message should just read:
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Add code to try to get platform data information (modes, various tuning
+parameters) from device tree, if not present in board files.
