@@ -1,129 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752201Ab1GUAW3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 20:22:29 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:40629 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752004Ab1GUAVd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 20:21:33 -0400
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-To: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        alexander.stein@systec-electronic.com
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com,
-        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: [PATCH 4/6 v2] gpio-pch: modify gpio_nums and mask
-Date: Thu, 21 Jul 2011 09:19:57 +0900
-Message-Id: <1311207599-2553-4-git-send-email-tomoya-linux@dsn.okisemi.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1311207599-2553-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-References: <1311207599-2553-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+	id S1752086Ab1GUA3h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 20:29:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6364 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751699Ab1GUA3g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 20:29:36 -0400
+Date: Wed, 20 Jul 2011 20:29:21 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@hs20-bc2-1.build.redhat.com
+To: axboe@kernel.dk, "Alasdair G. Kergon" <agk@redhat.com>
+cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] backing-dev: use synchronize_rcu_expedited instead of
+ synchronize_rcu
+Message-ID: <Pine.LNX.4.64.1107202019420.26781@hs20-bc2-1.build.redhat.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, the number of GPIO pins is set fixed value(=12).
-Also PIN MASK is set as '0xfff'.
-However the pins differs by IOH.
-This patch sets the value correctly.
+Hi Jens
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Please would you consider taking this into the block tree? It seems to 
+speed up device deletion enormously.
+
+Mikulas
+
 ---
- drivers/gpio/gpio-pch.c |   31 +++++++++++++++++++++++++------
- 1 files changed, 25 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/gpio/gpio-pch.c b/drivers/gpio/gpio-pch.c
-index d548069..4ac69bd 100644
---- a/drivers/gpio/gpio-pch.c
-+++ b/drivers/gpio/gpio-pch.c
-@@ -18,9 +18,6 @@
- #include <linux/pci.h>
- #include <linux/gpio.h>
+backing-dev: use synchronize_rcu_expedited instead of synchronize_rcu
+
+synchronize_rcu sleeps several timer ticks. synchronize_rcu_expedited is 
+much faster.
+
+With 100Hz timer frequency, when we remove 10000 block devices with 
+"dmsetup remove_all" command, it takes 27 minutes. With this patch, 
+removing 10000 block devices takes only 15 seconds.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+
+---
+ mm/backing-dev.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-3.0-rc7-fast/mm/backing-dev.c
+===================================================================
+--- linux-3.0-rc7-fast.orig/mm/backing-dev.c	2011-07-19 18:01:00.000000000 +0200
++++ linux-3.0-rc7-fast/mm/backing-dev.c	2011-07-19 18:01:07.000000000 +0200
+@@ -505,7 +505,7 @@ static void bdi_remove_from_list(struct 
+ 	list_del_rcu(&bdi->bdi_list);
+ 	spin_unlock_bh(&bdi_lock);
  
--#define PCH_GPIO_ALL_PINS	0xfff /* Mask for GPIO pins 0 to 11 */
--#define GPIO_NUM_PINS	12	/* Specifies number of GPIO PINS GPIO0-GPIO11 */
--
- struct pch_regs {
- 	u32	ien;
- 	u32	istatus;
-@@ -37,6 +34,19 @@ struct pch_regs {
- 	u32	reset;
- };
- 
-+enum pch_type_t {
-+	INTEL_EG20T_PCH,
-+	OKISEMI_ML7223m_IOH, /* OKISEMI ML7223 IOH PCIe Bus-m */
-+	OKISEMI_ML7223n_IOH  /* OKISEMI ML7223 IOH PCIe Bus-n */
-+};
-+
-+/* Specifies number of GPIO PINS */
-+static int gpio_pins[] = {
-+	[INTEL_EG20T_PCH] = 12,
-+	[OKISEMI_ML7223m_IOH] = 8,
-+	[OKISEMI_ML7223n_IOH] = 8,
-+};
-+
- /**
-  * struct pch_gpio_reg_data - The register store data.
-  * @po_reg:	To store contents of PO register.
-@@ -55,6 +65,7 @@ struct pch_gpio_reg_data {
-  * @gpio:			Data for GPIO infrastructure.
-  * @pch_gpio_reg:		Memory mapped Register data is saved here
-  *				when suspend.
-+ * @ioh:		IOH ID
-  * @spinlock:		Used for register access protection in
-  *				interrupt context pch_irq_mask,
-  *				pch_irq_unmask and pch_irq_type;
-@@ -66,6 +77,7 @@ struct pch_gpio {
- 	struct gpio_chip gpio;
- 	struct pch_gpio_reg_data pch_gpio_reg;
- 	struct mutex lock;
-+	enum pch_type_t ioh;
- 	spinlock_t spinlock;
- };
- 
-@@ -100,7 +112,7 @@ static int pch_gpio_direction_output(struct gpio_chip *gpio, unsigned nr,
- 	u32 reg_val;
- 
- 	mutex_lock(&chip->lock);
--	pm = ioread32(&chip->reg->pm) & PCH_GPIO_ALL_PINS;
-+	pm = ioread32(&chip->reg->pm) & ((1 << gpio_pins[chip->ioh]) - 1);
- 	pm |= (1 << nr);
- 	iowrite32(pm, &chip->reg->pm);
- 
-@@ -122,7 +134,7 @@ static int pch_gpio_direction_input(struct gpio_chip *gpio, unsigned nr)
- 	u32 pm;
- 
- 	mutex_lock(&chip->lock);
--	pm = ioread32(&chip->reg->pm) & PCH_GPIO_ALL_PINS; /*bits 0-11*/
-+	pm = ioread32(&chip->reg->pm) & ((1 << gpio_pins[chip->ioh]) - 1);
- 	pm &= ~(1 << nr);
- 	iowrite32(pm, &chip->reg->pm);
- 	mutex_unlock(&chip->lock);
-@@ -162,7 +174,7 @@ static void pch_gpio_setup(struct pch_gpio *chip)
- 	gpio->set = pch_gpio_set;
- 	gpio->dbg_show = NULL;
- 	gpio->base = -1;
--	gpio->ngpio = GPIO_NUM_PINS;
-+	gpio->ngpio = gpio_pins[chip->ioh];
- 	gpio->can_sleep = 0;
+-	synchronize_rcu();
++	synchronize_rcu_expedited();
  }
  
-@@ -196,6 +208,13 @@ static int __devinit pch_gpio_probe(struct pci_dev *pdev,
- 		goto err_iomap;
- 	}
- 
-+	if (pdev->device == 0x8803)
-+		chip->ioh = INTEL_EG20T_PCH;
-+	else if (pdev->device == 0x8014)
-+		chip->ioh = OKISEMI_ML7223m_IOH;
-+	else if (pdev->device == 0x8043)
-+		chip->ioh = OKISEMI_ML7223n_IOH;
-+
- 	chip->reg = chip->base;
- 	pci_set_drvdata(pdev, chip);
- 	mutex_init(&chip->lock);
--- 
-1.7.4.4
-
+ int bdi_register(struct backing_dev_info *bdi, struct device *parent,
