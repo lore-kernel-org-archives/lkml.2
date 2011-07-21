@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752320Ab1GUAVf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 20:21:35 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:40622 "EHLO
+	id S1752246Ab1GUAVe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 20:21:34 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:40609 "EHLO
 	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751988Ab1GUAVc (ORCPT
+	by vger.kernel.org with ESMTP id S1751799Ab1GUAVc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Jul 2011 20:21:32 -0400
 From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
@@ -13,9 +13,9 @@ To: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
 Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
         kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com,
         Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: [PATCH 3/6 v2] gpio-pch: support ML7223 IOH n-Bus
-Date: Thu, 21 Jul 2011 09:19:56 +0900
-Message-Id: <1311207599-2553-3-git-send-email-tomoya-linux@dsn.okisemi.com>
+Subject: [PATCH 2/6 v2] gpio-pch: add spinlock in suspend/resume processing
+Date: Thu, 21 Jul 2011 09:19:55 +0900
+Message-Id: <1311207599-2553-2-git-send-email-tomoya-linux@dsn.okisemi.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1311207599-2553-1-git-send-email-tomoya-linux@dsn.okisemi.com>
 References: <1311207599-2553-1-git-send-email-tomoya-linux@dsn.okisemi.com>
@@ -26,21 +26,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 ---
- drivers/gpio/gpio-pch.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/gpio/gpio-pch.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/gpio/gpio-pch.c b/drivers/gpio/gpio-pch.c
-index 252bddb..d548069 100644
+index ca9c7b0..252bddb 100644
 --- a/drivers/gpio/gpio-pch.c
 +++ b/drivers/gpio/gpio-pch.c
-@@ -296,6 +296,7 @@ static int pch_gpio_resume(struct pci_dev *pdev)
- static DEFINE_PCI_DEVICE_TABLE(pch_gpio_pcidev_id) = {
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x8803) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_ROHM, 0x8014) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_ROHM, 0x8043) },
- 	{ 0, }
+@@ -55,6 +55,9 @@ struct pch_gpio_reg_data {
+  * @gpio:			Data for GPIO infrastructure.
+  * @pch_gpio_reg:		Memory mapped Register data is saved here
+  *				when suspend.
++ * @spinlock:		Used for register access protection in
++ *				interrupt context pch_irq_mask,
++ *				pch_irq_unmask and pch_irq_type;
+  */
+ struct pch_gpio {
+ 	void __iomem *base;
+@@ -63,6 +66,7 @@ struct pch_gpio {
+ 	struct gpio_chip gpio;
+ 	struct pch_gpio_reg_data pch_gpio_reg;
+ 	struct mutex lock;
++	spinlock_t spinlock;
  };
- MODULE_DEVICE_TABLE(pci, pch_gpio_pcidev_id);
+ 
+ static void pch_gpio_set(struct gpio_chip *gpio, unsigned nr, int val)
+@@ -239,8 +243,11 @@ static int pch_gpio_suspend(struct pci_dev *pdev, pm_message_t state)
+ {
+ 	s32 ret;
+ 	struct pch_gpio *chip = pci_get_drvdata(pdev);
++	unsigned long flags;
+ 
++	spin_lock_irqsave(&chip->spinlock, flags);
+ 	pch_gpio_save_reg_conf(chip);
++	spin_unlock_irqrestore(&chip->spinlock, flags);
+ 
+ 	ret = pci_save_state(pdev);
+ 	if (ret) {
+@@ -260,6 +267,7 @@ static int pch_gpio_resume(struct pci_dev *pdev)
+ {
+ 	s32 ret;
+ 	struct pch_gpio *chip = pci_get_drvdata(pdev);
++	unsigned long flags;
+ 
+ 	ret = pci_enable_wake(pdev, PCI_D0, 0);
+ 
+@@ -271,9 +279,11 @@ static int pch_gpio_resume(struct pci_dev *pdev)
+ 	}
+ 	pci_restore_state(pdev);
+ 
++	spin_lock_irqsave(&chip->spinlock, flags);
+ 	iowrite32(0x01, &chip->reg->reset);
+ 	iowrite32(0x00, &chip->reg->reset);
+ 	pch_gpio_restore_reg_conf(chip);
++	spin_unlock_irqrestore(&chip->spinlock, flags);
+ 
+ 	return 0;
+ }
 -- 
 1.7.4.4
 
