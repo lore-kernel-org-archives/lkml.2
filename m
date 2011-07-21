@@ -1,88 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753054Ab1GUQXf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 12:23:35 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:23659 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752758Ab1GUQXc convert rfc822-to-8bit (ORCPT
+	id S1753089Ab1GUQY3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 12:24:29 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:54728 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752758Ab1GUQY0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 12:23:32 -0400
-From: "Miller, Mike (OS Dev)" <Mike.Miller@hp.com>
-To: Sergei Shtylyov <sshtylyov@ru.mvista.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "chirag.kantharia@hp.com" <chirag.kantharia@hp.com>,
-        ISS StorageDev <iss_storagedev@hp.com>
-Date: Thu, 21 Jul 2011 17:21:47 +0100
-Subject: RE: [PATCH resend] cpqarray: use pci_dev->revision
-Thread-Topic: [PATCH resend] cpqarray: use pci_dev->revision
-Thread-Index: AcxHwgO8DWDpjNA3RoSxjdtckpmh8wAADOWQ
-Message-ID: <0F5B06BAB751E047AB5C87D1F77A77887D5522D9A8@GVW0547EXC.americas.hpqcorp.net>
-References: <201105131909.56428.sshtylyov@ru.mvista.com>
- <201107211951.17610.sshtylyov@ru.mvista.com>
-In-Reply-To: <201107211951.17610.sshtylyov@ru.mvista.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 21 Jul 2011 12:24:26 -0400
+Date: Fri, 22 Jul 2011 01:24:17 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        P?draig Brady <P@draigBrady.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Colin King <colin.king@canonical.com>,
+        Andrew Lutomirski <luto@mit.edu>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] Stop kswapd consuming 100% CPU when highest zone is
+ small
+Message-ID: <20110721162417.GF1713@barrios-desktop>
+References: <1308926697-22475-1-git-send-email-mgorman@suse.de>
+ <20110721153722.GD1713@barrios-desktop>
+ <20110721160958.GT5349@suse.de>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110721160958.GT5349@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jul 21, 2011 at 05:09:59PM +0100, Mel Gorman wrote:
+> On Fri, Jul 22, 2011 at 12:37:22AM +0900, Minchan Kim wrote:
+> > On Fri, Jun 24, 2011 at 03:44:53PM +0100, Mel Gorman wrote:
+> > > (Built this time and passed a basic sniff-test.)
+> > > 
+> > > During allocator-intensive workloads, kswapd will be woken frequently
+> > > causing free memory to oscillate between the high and min watermark.
+> > > This is expected behaviour.  Unfortunately, if the highest zone is
+> > > small, a problem occurs.
+> > > 
+> > > This seems to happen most with recent sandybridge laptops but it's
+> > > probably a co-incidence as some of these laptops just happen to have
+> > > a small Normal zone. The reproduction case is almost always during
+> > > copying large files that kswapd pegs at 100% CPU until the file is
+> > > deleted or cache is dropped.
+> > > 
+> > > The problem is mostly down to sleeping_prematurely() keeping kswapd
+> > > awake when the highest zone is small and unreclaimable and compounded
+> > > by the fact we shrink slabs even when not shrinking zones causing a lot
+> > > of time to be spent in shrinkers and a lot of memory to be reclaimed.
+> > > 
+> > > Patch 1 corrects sleeping_prematurely to check the zones matching
+> > > 	the classzone_idx instead of all zones.
+> > > 
+> > > Patch 2 avoids shrinking slab when we are not shrinking a zone.
+> > > 
+> > > Patch 3 notes that sleeping_prematurely is checking lower zones against
+> > > 	a high classzone which is not what allocators or balance_pgdat()
+> > > 	is doing leading to an artifical believe that kswapd should be
+> > > 	still awake.
+> > > 
+> > > Patch 4 notes that when balance_pgdat() gives up on a high zone that the
+> > > 	decision is not communicated to sleeping_prematurely()
+> > > 
+> > > This problem affects 2.6.38.8 for certain and is expected to affect
+> > > 2.6.39 and 3.0-rc4 as well. If accepted, they need to go to -stable
+> > > to be picked up by distros and this series is against 3.0-rc4. I've
+> > > cc'd people that reported similar problems recently to see if they
+> > > still suffer from the problem and if this fixes it.
+> > > 
+> > 
+> > Good!
+> > This patch solved the problem.
+> > But there is still a mystery.
+> > 
+> > In log, we could see excessive shrink_slab calls.
+> 
+> Yes, because shrink_slab() was called on each loop through
+> balance_pgdat() even if the zone was balanced.
+> 
+> 
+> > And as you know, we had merged patch which adds cond_resched where last of the function
+> > in shrink_slab. So other task should get the CPU and we should not see
+> > 100% CPU of kswapd, I think.
+> > 
+> 
+> cond_resched() is not a substitute for going to sleep.
 
+Of course, it's not equal with sleep but other task should get CPU and conusme their time slice
+So we should never see 100% CPU consumption of kswapd.
+No?
 
--- mikem
+> 
+> -- 
+> Mel Gorman
+> SUSE Labs
 
-"If men are so wicked with religion, what would they be if without it?" --Benjamin Franklin 
-
-
-> -----Original Message-----
-> From: Sergei Shtylyov [mailto:sshtylyov@ru.mvista.com]
-> Sent: Thursday, July 21, 2011 10:51 AM
-> To: linux-kernel@vger.kernel.org; chirag.kantharia@hp.com; ISS
-> StorageDev
-> Subject: [PATCH resend] cpqarray: use pci_dev->revision
-> 
-> This driver uses PCI_CLASS_REVISION instead of PCI_REVISION_ID, so it
-> wasn't
-> converted by commit 44c10138fd4bbc4b6d6bff0873c24902f2a9da65 (PCI:
-> Change all
-> drivers to use pci_device->revision).
-> 
-> Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
-> 
-> ---
-> The patch is against the recent Linus' tree.
-> It wasn't merged in either 2.6.39 or 3.0 time, hopefully it can be
-> merged to
-> 3.1...
-> 
->  drivers/block/cpqarray.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-
-Acked-by: Mike Miller <mike.miller@hp.com>
-
-> Index: linux-2.6/drivers/block/cpqarray.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/block/cpqarray.c
-> +++ linux-2.6/drivers/block/cpqarray.c
-> @@ -620,6 +620,7 @@ static int cpqarray_pci_init(ctlr_info_t
->  	}
->  	vendor_id = pdev->vendor;
->  	device_id = pdev->device;
-> +	revision  = pdev->revision;
->  	irq = pdev->irq;
-> 
->  	for(i=0; i<6; i++)
-> @@ -632,7 +633,6 @@ static int cpqarray_pci_init(ctlr_info_t
->  	}
-> 
->  	pci_read_config_word(pdev, PCI_COMMAND, &command);
-> -	pci_read_config_byte(pdev, PCI_CLASS_REVISION, &revision);
->  	pci_read_config_byte(pdev, PCI_CACHE_LINE_SIZE, &cache_line_size);
->  	pci_read_config_byte(pdev, PCI_LATENCY_TIMER, &latency_timer);
-> 
+-- 
+Kind regards,
+Minchan Kim
