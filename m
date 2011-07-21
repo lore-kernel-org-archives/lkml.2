@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752604Ab1GUKEY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 06:04:24 -0400
-Received: from hera.kernel.org ([140.211.167.34]:55986 "EHLO hera.kernel.org"
+	id S1752310Ab1GUKEq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 06:04:46 -0400
+Received: from hera.kernel.org ([140.211.167.34]:56000 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752073Ab1GUKEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 06:04:22 -0400
-Date: Thu, 21 Jul 2011 10:03:51 GMT
+	id S1751717Ab1GUKEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 06:04:45 -0400
+Date: Thu, 21 Jul 2011 10:04:15 GMT
 From: tip-bot for Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Message-ID: <tip-bad03ae476214d9d66bb96be02b630385936f788@git.kernel.org>
+Message-ID: <tip-bcfc082150c6b1e9443c1277bca8be80094150b5@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
         mingo@redhat.com, a.p.zijlstra@chello.nl, acme@ghostprotocols.net,
         masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
@@ -18,32 +18,34 @@ Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
         acme@ghostprotocols.net, masami.hiramatsu.pt@hitachi.com,
         fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
         mingo@elte.hu
-In-Reply-To: <20110627072715.6528.10677.stgit@fedora15>
-References: <20110627072715.6528.10677.stgit@fedora15>
+In-Reply-To: <20110627072721.6528.2747.stgit@fedora15>
+References: <20110627072721.6528.2747.stgit@fedora15>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf probe: Move strtailcmp to string.c
-Git-Commit-ID: bad03ae476214d9d66bb96be02b630385936f788
+Subject: [tip:perf/core] perf probe: Remove redundant dwarf functions
+Git-Commit-ID: bcfc082150c6b1e9443c1277bca8be80094150b5
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 21 Jul 2011 10:03:54 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 21 Jul 2011 10:04:18 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bad03ae476214d9d66bb96be02b630385936f788
-Gitweb:     http://git.kernel.org/tip/bad03ae476214d9d66bb96be02b630385936f788
+Commit-ID:  bcfc082150c6b1e9443c1277bca8be80094150b5
+Gitweb:     http://git.kernel.org/tip/bcfc082150c6b1e9443c1277bca8be80094150b5
 Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-AuthorDate: Mon, 27 Jun 2011 16:27:15 +0900
+AuthorDate: Mon, 27 Jun 2011 16:27:21 +0900
 Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Fri, 15 Jul 2011 16:00:47 -0400
+CommitDate: Fri, 15 Jul 2011 16:04:47 -0400
 
-perf probe: Move strtailcmp to string.c
+perf probe: Remove redundant dwarf functions
 
-Since strtailcmp() is enough generic, it should be defined in string.c.
+Since there are dwarf_bitsize, dwarf_bitoffset and dwarf_bytesize
+defined in libdw, we don't need die_get_bit_size, die_get_bit_offset
+and die_get_byte_size anymore.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -51,76 +53,101 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Link: http://lkml.kernel.org/r/20110627072715.6528.10677.stgit@fedora15
+Link: http://lkml.kernel.org/r/20110627072721.6528.2747.stgit@fedora15
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- tools/perf/util/probe-finder.c |   15 ---------------
- tools/perf/util/string.c       |   19 +++++++++++++++++++
- tools/perf/util/util.h         |    1 +
- 3 files changed, 20 insertions(+), 15 deletions(-)
+ tools/perf/util/probe-finder.c |   50 ++++++++++-----------------------------
+ 1 files changed, 13 insertions(+), 37 deletions(-)
 
 diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 7b78904..459ebe8 100644
+index 459ebe8..d443b64 100644
 --- a/tools/perf/util/probe-finder.c
 +++ b/tools/perf/util/probe-finder.c
-@@ -43,21 +43,6 @@
- /* Kprobe tracer basic type is up to u64 */
- #define MAX_BASIC_TYPE_BITS	64
+@@ -361,36 +361,6 @@ static bool die_is_signed_type(Dwarf_Die *tp_die)
+ 		ret == DW_ATE_signed_fixed);
+ }
  
--/*
-- * Compare the tail of two strings.
-- * Return 0 if whole of either string is same as another's tail part.
-- */
--static int strtailcmp(const char *s1, const char *s2)
+-static int die_get_byte_size(Dwarf_Die *tp_die)
 -{
--	int i1 = strlen(s1);
--	int i2 = strlen(s2);
--	while (--i1 >= 0 && --i2 >= 0) {
--		if (s1[i1] != s2[i2])
--			return s1[i1] - s2[i2];
--	}
--	return 0;
+-	Dwarf_Word ret;
+-
+-	if (die_get_attr_udata(tp_die, DW_AT_byte_size, &ret))
+-		return 0;
+-
+-	return (int)ret;
 -}
 -
- /* Line number list operations */
- 
- /* Add a line to line number list */
-diff --git a/tools/perf/util/string.c b/tools/perf/util/string.c
-index b9a985d..d583638 100644
---- a/tools/perf/util/string.c
-+++ b/tools/perf/util/string.c
-@@ -294,3 +294,22 @@ bool strlazymatch(const char *str, const char *pat)
+-static int die_get_bit_size(Dwarf_Die *tp_die)
+-{
+-	Dwarf_Word ret;
+-
+-	if (die_get_attr_udata(tp_die, DW_AT_bit_size, &ret))
+-		return 0;
+-
+-	return (int)ret;
+-}
+-
+-static int die_get_bit_offset(Dwarf_Die *tp_die)
+-{
+-	Dwarf_Word ret;
+-
+-	if (die_get_attr_udata(tp_die, DW_AT_bit_offset, &ret))
+-		return 0;
+-
+-	return (int)ret;
+-}
+-
+ /* Get data_member_location offset */
+ static int die_get_data_member_location(Dwarf_Die *mb_die, Dwarf_Word *offs)
  {
- 	return __match_glob(str, pat, true);
- }
-+
-+/**
-+ * strtailcmp - Compare the tail of two strings
-+ * @s1: 1st string to be compared
-+ * @s2: 2nd string to be compared
-+ *
-+ * Return 0 if whole of either string is same as another's tail part.
-+ */
-+int strtailcmp(const char *s1, const char *s2)
-+{
-+	int i1 = strlen(s1);
-+	int i2 = strlen(s2);
-+	while (--i1 >= 0 && --i2 >= 0) {
-+		if (s1[i1] != s2[i2])
-+			return s1[i1] - s2[i2];
-+	}
-+	return 0;
-+}
-+
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index fc78428..0128906 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -238,6 +238,7 @@ char **argv_split(const char *str, int *argcp);
- void argv_free(char **argv);
- bool strglobmatch(const char *str, const char *pat);
- bool strlazymatch(const char *str, const char *pat);
-+int strtailcmp(const char *s1, const char *s2);
- unsigned long convert_unit(unsigned long value, char *unit);
- int readn(int fd, void *buf, size_t size);
+@@ -882,6 +852,7 @@ static int convert_variable_type(Dwarf_Die *vr_die,
+ 	struct probe_trace_arg_ref **ref_ptr = &tvar->ref;
+ 	Dwarf_Die type;
+ 	char buf[16];
++	int bsize, boffs, total;
+ 	int ret;
  
+ 	/* TODO: check all types */
+@@ -891,11 +862,15 @@ static int convert_variable_type(Dwarf_Die *vr_die,
+ 		return (tvar->type == NULL) ? -ENOMEM : 0;
+ 	}
+ 
+-	if (die_get_bit_size(vr_die) != 0) {
++	bsize = dwarf_bitsize(vr_die);
++	if (bsize > 0) {
+ 		/* This is a bitfield */
+-		ret = snprintf(buf, 16, "b%d@%d/%zd", die_get_bit_size(vr_die),
+-				die_get_bit_offset(vr_die),
+-				BYTES_TO_BITS(die_get_byte_size(vr_die)));
++		boffs = dwarf_bitoffset(vr_die);
++		total = dwarf_bytesize(vr_die);
++		if (boffs < 0 || total < 0)
++			return -ENOENT;
++		ret = snprintf(buf, 16, "b%d@%d/%zd", bsize, boffs,
++				BYTES_TO_BITS(total));
+ 		goto formatted;
+ 	}
+ 
+@@ -943,10 +918,11 @@ static int convert_variable_type(Dwarf_Die *vr_die,
+ 		return (tvar->type == NULL) ? -ENOMEM : 0;
+ 	}
+ 
+-	ret = BYTES_TO_BITS(die_get_byte_size(&type));
+-	if (!ret)
++	ret = dwarf_bytesize(&type);
++	if (ret <= 0)
+ 		/* No size ... try to use default type */
+ 		return 0;
++	ret = BYTES_TO_BITS(ret);
+ 
+ 	/* Check the bitwidth */
+ 	if (ret > MAX_BASIC_TYPE_BITS) {
+@@ -1010,7 +986,7 @@ static int convert_variable_fields(Dwarf_Die *vr_die, const char *varname,
+ 			else
+ 				*ref_ptr = ref;
+ 		}
+-		ref->offset += die_get_byte_size(&type) * field->index;
++		ref->offset += dwarf_bytesize(&type) * field->index;
+ 		if (!field->next)
+ 			/* Save vr_die for converting types */
+ 			memcpy(die_mem, vr_die, sizeof(*die_mem));
