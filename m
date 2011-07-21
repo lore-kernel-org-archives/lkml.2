@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752215Ab1GUJhD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 05:37:03 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:51890 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752102Ab1GUJg6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752176Ab1GUJg6 (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 21 Jul 2011 05:36:58 -0400
-X-AuditID: b753bd60-9fafdba0000025a6-9f-4e27f338b412
-X-AuditID: b753bd60-9fafdba0000025a6-9f-4e27f338b412
-Message-ID: <4E27F335.70001@hitachi.com>
-Date: Thu, 21 Jul 2011 18:36:53 +0900
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:51877 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752016Ab1GUJg4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 05:36:56 -0400
+X-AuditID: b753bd60-a327cba0000050a4-de-4e27f335e43b
+X-AuditID: b753bd60-a327cba0000050a4-de-4e27f335e43b
+Message-ID: <4E27F332.8020501@hitachi.com>
+Date: Thu, 21 Jul 2011 18:36:50 +0900
 From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
 User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
 MIME-Version: 1.0
@@ -20,10 +20,10 @@ Cc: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         yrl.pp-manager.tt@hitachi.com, Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH -tip v2 6/6] perf script: add option resolving vmlinux
- path
-References: <20110717093031.3447.52715.stgit@linux3> <20110717093115.3447.11599.stgit@linux3> <4E230F98.3040000@gmail.com>
-In-Reply-To: <4E230F98.3040000@gmail.com>
+Subject: Re: [PATCH -tip v2 4/6] perf script: print DSOs and symbols for BTS
+ branch_from addr
+References: <20110717093031.3447.52715.stgit@linux3> <20110717093103.3447.98227.stgit@linux3> <4E230C63.50601@gmail.com>
+In-Reply-To: <4E230C63.50601@gmail.com>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 X-Brightmail-Tracker: AAAAAA==
@@ -31,26 +31,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/07/18 1:36), David Ahern wrote:
+(2011/07/18 1:22), David Ahern wrote:
+>
+>
 > On 07/17/2011 03:31 AM, Akihiro Nagai wrote:
->> Add the option get the path of [kernel.kallsyms].
->> Specify '--show-kernel-path' option to use this function.
->> This patch enables other applications to use this output easily.
+>> Print DSOs and symbols for branch_from address of BTS.
+>> BTS records branch_from address in 'addr' fields,
+>> and branch_to address in 'ip' field. Latest perf-script
+>> resolves DSOs and symbols only for 'ip' field.
+>> This patch resolves them for 'addr' field too.
+>
+> Description does not match code change. What you are doing is enhancing
+> the detection of when a sample address should correlate to a symbol. In
+> this case you are adding HW_BRANCH_INSTRUCTIONS event.
+I see. In the next patch set, I'd like to fix it. For example,
+"Enhance IP and ADDR correlation detection of BTS event"
+
+Thank you.
+
+>
+> David
+>
+>
 >>
->> Without --show-kernel-path  option
->>
->> # perf script -f ip,dso
->> ffffffff81467612 irq_return ([kernel.kallsyms])
->> ffffffff81467612 irq_return ([kernel.kallsyms])
->>      7f24fc02a6b3 _start (/lib64/ld-2.14.so)
->> [snip]
->>
->> With --show-kernel-path option
->>
->> # perf script -f ip,dso --show-kernel-path
->> ffffffff81467612 irq_return (/lib/modules/3.0.0-rc6-tip+/build/vmlinux)
->> ffffffff81467612 irq_return (/lib/modules/3.0.0-rc6-tip+/build/vmlinux)
->>      7f24fc02a6b3 _start (/lib64/ld-2.14.so)
+>> # perf script -f ip,addr,dso,sym
+>> 3f03e016b0 (unknown) ([kernel.kallsyms]) ffffffff814675d2 irq_return ([kernel.kallsyms])
+>> 3f03e016b0    _start (/lib64/ld-2.14.so) ffffffff814675d2 irq_return ([kernel.kallsyms])
+>> 3f03e04b80 _dl_start (/lib64/ld-2.14.so)       3f03e016b3 _start (/lib64/ld-2.14.so)
+>> 3f03e04b80 _dl_start (/lib64/ld-2.14.so) ffffffff814675d2 irq_return ([kernel.kallsyms])
+>> 3f03e04ba6 _dl_start (/lib64/ld-2.14.so) ffffffff814675d2 irq_return ([kernel.kallsyms])
+>> 3f03e04bad _dl_start (/lib64/ld-2.14.so) ffffffff814675d2 irq_return ([kernel.kallsyms])
+>> 3f03e04c1d _dl_start (/lib64/ld-2.14.so)       3f03e04bfb _dl_start (/lib64/ld-2.14.so)
 >> [snip]
 >>
 >> Signed-off-by: Akihiro Nagai<akihiro.nagai.hw@hitachi.com>
@@ -61,106 +72,3 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 >> Cc: Arnaldo Carvalho de Melo<acme@infradead.org>
 >> Cc: David Ahern<dsahern@gmail.com>
 >> Cc: Masami Hiramatsu<masami.hiramatsu.pt@hitachi.com>
->> ---
->>
->>   tools/perf/Documentation/perf-script.txt |    3 +++
->>   tools/perf/builtin-script.c              |    2 ++
->>   tools/perf/util/map.c                    |    7 +++++--
->>   tools/perf/util/session.c                |    2 ++
->>   tools/perf/util/symbol.c                 |    1 +
->>   tools/perf/util/symbol.h                 |    1 +
->>   6 files changed, 14 insertions(+), 2 deletions(-)
->>
->> diff --git a/tools/perf/Documentation/perf-script.txt b/tools/perf/Documentation/perf-script.txt
->> index ee4d477..5383671 100644
->> --- a/tools/perf/Documentation/perf-script.txt
->> +++ b/tools/perf/Documentation/perf-script.txt
->> @@ -188,6 +188,9 @@ OPTIONS
->>   	CPUs are specified with -: 0-2. Default is to report samples on all
->>   	CPUs.
->>
->> +--show-kernel-path::
->> +	Try to resolve the path of [kernel.kallsyms]
->> +
->>   SEE ALSO
->>   --------
->>   linkperf:perf-record[1], linkperf:perf-script-perl[1],
->> diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
->> index fd68185..0d04788 100644
->> --- a/tools/perf/builtin-script.c
->> +++ b/tools/perf/builtin-script.c
->> @@ -1099,6 +1099,8 @@ static const struct option options[] = {
->>   		     "addr,offs",
->>   		     parse_output_fields),
->>   	OPT_STRING('c', "cpu",&cpu_list, "cpu", "list of cpus to profile"),
->> +	OPT_BOOLEAN('\0', "show-kernel-path",&show_kernel_path,
->> +		    "Show the path of [kernel.kallsyms]"),
->>
->>   	OPT_END()
->>   };
->> diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
->> index dddc0f3..1645967 100644
->> --- a/tools/perf/util/map.c
->> +++ b/tools/perf/util/map.c
->> @@ -204,9 +204,12 @@ void map__print_dsoname(struct map *self)
->>   {
->>   	const char *dsoname;
->>
->> -	if (self&&  self->dso&&  self->dso->name)
->> +	if (self&&  self->dso&&  (self->dso->name || self->dso->long_name)) {
->> +		if (show_kernel_path&&  self->dso->long_name)
->> +			dsoname = self->dso->long_name;
->> +		else if (self->dso->name)
->>   			dsoname = self->dso->name;
->> -	else
->> +	} else
->>   		dsoname = "[unknown]";
->>
->>   	printf("%s", dsoname);
->> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
->> index 3728e67..34c5887 100644
->> --- a/tools/perf/util/session.c
->> +++ b/tools/perf/util/session.c
->> @@ -14,6 +14,8 @@
->>   #include "util.h"
->>   #include "cpumap.h"
->>
->> +bool show_kernel_path;
->> +
->>   static int perf_session__open(struct perf_session *self, bool force)
->>   {
->>   	struct stat input_stat;
->> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
->> index abfecf6..3356d6e 100644
->> --- a/tools/perf/util/symbol.c
->> +++ b/tools/perf/util/symbol.c
->> @@ -41,6 +41,7 @@ static int dso__load_guest_kernel_sym(struct dso *dso, struct map *map,
->>   			symbol_filter_t filter);
->>   static int vmlinux_path__nr_entries;
->>   static char **vmlinux_path;
->> +bool show_kernel_path;
->
-> declared twice. See above in session.c. I suggest removing the one in
-> session.c
-Oops. I forgot to delete it.
-Thank you.
->
-> David
->
->
->>
->>   struct symbol_conf symbol_conf = {
->>   	.exclude_other	  = true,
->> diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
->> index 554b2fe..88000e5 100644
->> --- a/tools/perf/util/symbol.h
->> +++ b/tools/perf/util/symbol.h
->> @@ -96,6 +96,7 @@ struct symbol_conf {
->>   };
->>
->>   extern struct symbol_conf symbol_conf;
->> +extern bool show_kernel_path;
->>
->>   static inline void *symbol__priv(struct symbol *sym)
->>   {
->>
