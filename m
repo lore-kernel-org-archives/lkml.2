@@ -1,232 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752977Ab1GUQH3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 12:07:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50172 "EHLO mx2.suse.de"
+	id S1753113Ab1GUQH4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 12:07:56 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49742 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752718Ab1GUQH2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 12:07:28 -0400
-Date: Thu, 21 Jul 2011 17:07:06 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        P?draig Brady <P@draigBrady.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Colin King <colin.king@canonical.com>,
-        Andrew Lutomirski <luto@mit.edu>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] mm: vmscan: Only read new_classzone_idx from pgdat
- when reclaiming successfully
-Message-ID: <20110721160706.GS5349@suse.de>
-References: <1308926697-22475-1-git-send-email-mgorman@suse.de>
- <1308926697-22475-5-git-send-email-mgorman@suse.de>
- <20110719160903.GA2978@barrios-desktop>
- <20110720104847.GI5349@suse.de>
- <20110721153007.GC1713@barrios-desktop>
+	id S1752756Ab1GUQHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 12:07:55 -0400
+Message-ID: <4E284EAB.1020906@zytor.com>
+Date: Thu, 21 Jul 2011 09:07:07 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110721153007.GC1713@barrios-desktop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, a.p.zijlstra@chello.nl, stable@kernel.org,
+        dsahern@gmail.com, tglx@linutronix.de, mingo@elte.hu
+CC: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/urgent] perf tools, x86: Fix 32-bit compile on 64-bit
+ system
+References: <1310420304-21452-1-git-send-email-dsahern@gmail.com> <tip-08a4a43fc407d780bdde36d98f89c0dbb2a6be6b@git.kernel.org>
+In-Reply-To: <tip-08a4a43fc407d780bdde36d98f89c0dbb2a6be6b@git.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 22, 2011 at 12:30:07AM +0900, Minchan Kim wrote:
-> On Wed, Jul 20, 2011 at 11:48:47AM +0100, Mel Gorman wrote:
-> > On Wed, Jul 20, 2011 at 01:09:03AM +0900, Minchan Kim wrote:
-> > > Hi Mel,
-> > > 
-> > > Too late review.
-> > 
-> > Never too late.
-> > 
-> > > At that time, I had no time to look into this patch.
-> > > 
-> > > On Fri, Jun 24, 2011 at 03:44:57PM +0100, Mel Gorman wrote:
-> > > > During allocator-intensive workloads, kswapd will be woken frequently
-> > > > causing free memory to oscillate between the high and min watermark.
-> > > > This is expected behaviour.  Unfortunately, if the highest zone is
-> > > > small, a problem occurs.
-> > > > 
-> > > > When balance_pgdat() returns, it may be at a lower classzone_idx than
-> > > > it started because the highest zone was unreclaimable. Before checking
-> > > 
-> > > Yes.
-> > > 
-> > > > if it should go to sleep though, it checks pgdat->classzone_idx which
-> > > > when there is no other activity will be MAX_NR_ZONES-1. It interprets
-> > > 
-> > > Yes.
-> > > 
-> > > > this as it has been woken up while reclaiming, skips scheduling and
-> > > 
-> > > Hmm. I can't understand this part.
-> > > If balance_pgdat returns lower classzone and there is no other activity,
-> > > new_classzone_idx is always MAX_NR_ZONES - 1 so that classzone_idx would be less than
-> > > new_classzone_idx. It means it doesn't skip scheduling.
-> > > 
-> > > Do I miss something?
-> > > 
-> > 
-> > It was a few weeks ago so I don't rememember if this is the exact
-> > sequence I had in mind at the time of writing but an example sequence
-> > of events is for a node whose highest populated zone is ZONE_NORMAL,
-> > very small, and gets set all_unreclaimable by balance_pgdat() looks
-> > is below. The key is the "very small" part because pages are getting
-> > freed in the zone but the small size means that unreclaimable gets
-> > set easily.
-> > 
-> > /*
-> >  * kswapd is woken up for ZONE_NORMAL (as this is the preferred zone
-> >  * as ZONE_HIGHMEM is not populated.
-> >  */
-> > 
-> > order = pgdat->kswapd_max_order;
-> > classzone_idx = pgdat->classzone_idx;				/* classzone_idx == ZONE_NORMAL */
-> > pgdat->kswapd_max_order = 0;
-> > pgdat->classzone_idx = MAX_NR_ZONES - 1;
-> > order = balance_pgdat(pgdat, order, &classzone_idx);		/* classzone_idx == ZONE_NORMAL even though
-> > 								 * the highest zone was set unreclaimable
-> > 								 * and it exited scanning ZONE_DMA32
-> > 								 * because we did not communicate that
-> > 								 * information back
+On 07/21/2011 08:36 AM, tip-bot for David Ahern wrote:
+> Commit-ID:  08a4a43fc407d780bdde36d98f89c0dbb2a6be6b
+> Gitweb:     http://git.kernel.org/tip/08a4a43fc407d780bdde36d98f89c0dbb2a6be6b
+> Author:     David Ahern <dsahern@gmail.com>
+> AuthorDate: Mon, 11 Jul 2011 15:38:24 -0600
+> Committer:  Ingo Molnar <mingo@elte.hu>
+> CommitDate: Thu, 21 Jul 2011 13:42:30 +0200
 > 
-> 								Yes. It's too bad.
+> perf tools, x86: Fix 32-bit compile on 64-bit system
 > 
-> > 								 */
-> > new_order = pgdat->kswapd_max_order;				/* new_order = 0 */
-> > new_classzone_idx = pgdat->classzone_idx;			/* new_classzone_idx == ZONE_HIGHMEM
-> > 								 * because that is what classzone_idx
-> > 								 * gets reset to
+> Builds for 32-bit perf binaries on a 64-bit host currently fail
+> with this error:
 > 
-> 								Yes. new_classzone_idx is ZONE_HIGHMEM.
+>  [...]
+>  bench/../../../arch/x86/lib/memcpy_64.S: Assembler messages:
+>  bench/../../../arch/x86/lib/memcpy_64.S:29: Error: bad register name `%rdi'
+>  bench/../../../arch/x86/lib/memcpy_64.S:34: Error: invalid instruction suffix for `movs'
+>  bench/../../../arch/x86/lib/memcpy_64.S:50: Error: bad register name `%rdi'
+>  bench/../../../arch/x86/lib/memcpy_64.S:61: Error: bad register name `%rdi'
+>  ...
 > 
-> > 								 */
-> > if (order < new_order || classzone_idx > new_classzone_idx) {
-> > 	/* does not sleep, this branch not taken */
-> > } else {
-> > 	/* tries to sleep, goes here */
-> > 	try_to_sleep(ZONE_NORMAL)
-> > 		sleeping_prematurely(ZONE_NORMAL)		/* finds zone unbalanced so skips scheduling */
-> >         order = pgdat->kswapd_max_order;
-> >         classzone_idx = pgdat->classzone_idx;			/* classzone_idx == ZONE_HIGHMEM now which
-> > 								 * is higher than what it was originally
-> > 								 * woken for
-> > 								 */
+> The problem is the detection of the host arch without considering passed in
+> flags. This change fixes 32-bit builds via:
 > 
-> 								But is it a problem?
-> 								it should be reset to ZONE_NORMAL in balance_pgdat as high zone isn't populated.
+> make EXTRA_CFLAGS=-m32
+> 
+> and 64-bit builds still reference the memcpy_64.S.
+> 
 
-At the very least, it's sloppy.
+But this is the wrong way to build 32-bit code on 64-bit platforms.
+make ARCH=i386 is the supported way.
 
-> > }
-> > 
-> > /* Looped around to balance_pgdat() again */
-> > order = balance_pgdat()
-> > 
-> > Between when all_unreclaimable is set and before before kswapd
-> > goes fully to sleep, a page is freed clearing all_reclaimable so
-> > it rechecks all the zones, find the highest one is not balanced and
-> > skip scheduling.
-> 
-> Yes and it could be repeated forever.
-
-Resulting in chewing up large amounts of CPU.
-
-> Apparently, we should fix wit this patch but I have a qustion about this patch.
-> 
-> Quote from your patch
-> 
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index a76b6cc2..fe854d7 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -2448,7 +2448,6 @@ loop_again:
-> >                       if (!zone_watermark_ok_safe(zone, order,
-> >                                       high_wmark_pages(zone), 0, 0)) {
-> >                               end_zone = i;
-> > -                             *classzone_idx = i;
-> >                               break;
-> >                       }
-> >               }
-> > @@ -2528,8 +2527,11 @@ loop_again:
-> >                           total_scanned > sc.nr_reclaimed + sc.nr_reclaimed / 2)
-> >                               sc.may_writepage = 1;
-> >  
-> > -                     if (zone->all_unreclaimable)
-> > +                     if (zone->all_unreclaimable) {
-> > +                             if (end_zone && end_zone == i)
-> > +                                     end_zone--;
-> 
-> Until now, It's good.
-> 
-> >                               continue;
-> > +                     }
-> >  
-> >                       if (!zone_watermark_ok_safe(zone, order,
-> >                                       high_wmark_pages(zone), end_zone, 0)) {
-> > @@ -2709,8 +2711,8 @@ static void kswapd_try_to_sleep(pg_data_t *pgdat, int order, int classzone_idx)
-> >   */
-> >  static int kswapd(void *p)
-> >  {
-> > -     unsigned long order;
-> > -     int classzone_idx;
-> > +     unsigned long order, new_order;
-> > +     int classzone_idx, new_classzone_idx;
-> >       pg_data_t *pgdat = (pg_data_t*)p;
-> >       struct task_struct *tsk = current;
-> >  
-> > @@ -2740,17 +2742,23 @@ static int kswapd(void *p)
-> >       tsk->flags |= PF_MEMALLOC | PF_SWAPWRITE | PF_KSWAPD;
-> >       set_freezable();
-> >  
-> > -     order = 0;
-> > -     classzone_idx = MAX_NR_ZONES - 1;
-> > +     order = new_order = 0;
-> > +     classzone_idx = new_classzone_idx = pgdat->nr_zones - 1;
-> >       for ( ; ; ) {
-> > -             unsigned long new_order;
-> > -             int new_classzone_idx;
-> >               int ret;
-> >  
-> > -             new_order = pgdat->kswapd_max_order;
-> > -             new_classzone_idx = pgdat->classzone_idx;
-> > -             pgdat->kswapd_max_order = 0;
-> > -             pgdat->classzone_idx = MAX_NR_ZONES - 1;
-> > +             /*
-> > +              * If the last balance_pgdat was unsuccessful it's unlikely a
-> > +              * new request of a similar or harder type will succeed soon
-> > +              * so consider going to sleep on the basis we reclaimed at
-> > +              */
-> > +             if (classzone_idx >= new_classzone_idx && order == new_order) {
-> > +                     new_order = pgdat->kswapd_max_order;
-> > +                     new_classzone_idx = pgdat->classzone_idx;
-> > +                     pgdat->kswapd_max_order =  0;
-> > +                     pgdat->classzone_idx = pgdat->nr_zones - 1;
-> > +             }
-> > +
-> 
-> But in this part.
-> Why do we need this?
-
-Lets say it's a fork-heavy workload and it is routinely being woken
-for order-1 allocations and the highest zone is very small. For the
-most part, it's ok because the allocations are being satisfied from
-the lower zones which kswapd has no problem balancing.
-
-However, by reading the information even after failing to
-balance, kswapd continues balancing for order-1 due to reading
-pgdat->kswapd_max_order, each time failing for the highest zone. It
-only takes one wakeup request per balance_pgdat() to keep kswapd
-awake trying to balance the highest zone in a continual loop.
-
-By avoiding this read, kswapd will try and go to sleep after checking
-all the watermarks and all_unreclaimable. If the watermarks are ok, it
-will sleep until woken up due to the lower zones hitting their min
-watermarks.
+	-hpa
 
 -- 
-Mel Gorman
-SUSE Labs
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
