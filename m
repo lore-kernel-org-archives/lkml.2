@@ -1,182 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752953Ab1GUMxo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 08:53:44 -0400
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:60778 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752900Ab1GUMxk (ORCPT
+	id S1753038Ab1GUMyA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 08:54:00 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:38626 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753001Ab1GUMx5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 08:53:40 -0400
+	Thu, 21 Jul 2011 08:53:57 -0400
 From: Vasiliy Kulikov <segoon@openwall.com>
 To: linux-kernel@vger.kernel.org
-Cc: Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [RFC v3 2/5] slab: implement slab object boundaries assertion
-Date: Thu, 21 Jul 2011 16:53:35 +0400
-Message-Id: <1311252815-6733-1-git-send-email-segoon@openwall.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Jiri Olsa <jolsa@redhat.com>, Brian Gerst <brgerst@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-mm@kvack.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [RFC v3 5/5] x86: implement RUNTIME_USER_COPY_CHECK
+Date: Thu, 21 Jul 2011 16:53:50 +0400
+Message-Id: <1311252832-6892-1-git-send-email-segoon@openwall.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement slab_access_ok() which checks whether a supplied buffer fully
-fits in a slab page and whether it overflows a slab object.  It uses
-cache specific information to learn object's boundaries.  It doesn't
-check whether the object is actually allocated.  The latter would
-significantly slowdown the check and it is related to object pointer
-miscalculation rather than length parameter overflow, but
-RUNTIME_USER_COPY_CHECK checks length overflows only.
+Introduce kernel_access_ok() checks in {,__}copy_{to,from}_user().
+Implement x86 variant of arch_check_object_on_stack_frame(), which
+checks whether the copied buffer doesn't overflow a single stack frame.
+The boundaries of the frame are the saved return address and the saved
+EBP/RBP register.  This information is available in case of
+CONFIG_FRAME_POINTERS=y only, otherwise don't check anything and simply
+return true.
 
-If object's size is aligned, the check interprets padding bytes as if
-they are object bytes.  It doesn't relax the check too much though: if
-the checked action is write, overwriting pad bytes doesn't make sense;
-if it is read, slab caches with constant object size don't suffer as
-these padding bytes are not used too.  The check is weak for dynamically
-sized objects only (kmalloc caches).
-
-As it doesn't check whether the copied object is actually allocated, an
-infoleak of a freed object is still possible.
-
-The check is missing in SLOB case as objects boundaries are not easy to
-check.  The walking through all objects from the first one on the page
-to the touched object is needed for a strict check.  It also needs
-holding a lock during the walking, which would significantly slowdown
-the usercopy check.
-
-v3 - Define slab_access_ok() only if DEBUG_RUNTIME_USER_COPY_CHECKS=y.
-   - Removed redundant NULL initializers.
-   - Removed (char *) casts.
-   - Moved "len == 0" check to kernel_access_ok().
+v3 - Used __always_inline.
+   - Now log the copy direction (from/to user) on overflows.
+   - Used #ifdef instead of #if defined().
 
 Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
 ---
- include/linux/slab.h |    4 ++++
- mm/slab.c            |   33 +++++++++++++++++++++++++++++++++
- mm/slob.c            |   12 ++++++++++++
- mm/slub.c            |   28 ++++++++++++++++++++++++++++
- 4 files changed, 77 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/uaccess.h    |   49 +++++++++++++++++++++++++++++++++++++
+ arch/x86/include/asm/uaccess_32.h |   32 ++++++++++++++++++++++--
+ arch/x86/include/asm/uaccess_64.h |   38 +++++++++++++++++++++++++++-
+ arch/x86/lib/usercopy_32.c        |    2 +-
+ 4 files changed, 115 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/slab.h b/include/linux/slab.h
-index ad4dd1c..cdcee83 100644
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -333,4 +333,8 @@ static inline void *kzalloc_node(size_t size, gfp_t flags, int node)
+diff --git a/arch/x86/include/asm/uaccess.h b/arch/x86/include/asm/uaccess.h
+index 99ddd14..f81a1d6 100644
+--- a/arch/x86/include/asm/uaccess.h
++++ b/arch/x86/include/asm/uaccess.h
+@@ -9,6 +9,7 @@
+ #include <linux/string.h>
+ #include <asm/asm.h>
+ #include <asm/page.h>
++#include <linux/uaccess-check.h>
  
- void __init kmem_cache_init_late(void);
+ #define VERIFY_READ 0
+ #define VERIFY_WRITE 1
+@@ -78,6 +79,54 @@
+  */
+ #define access_ok(type, addr, size) (likely(__range_not_ok(addr, size) == 0))
  
-+#ifdef CONFIG_DEBUG_RUNTIME_USER_COPY_CHECKS
-+extern bool slab_access_ok(const void *ptr, unsigned long len);
-+#endif
-+
- #endif	/* _LINUX_SLAB_H */
-diff --git a/mm/slab.c b/mm/slab.c
-index d96e223..95cda2e 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -3843,6 +3843,39 @@ unsigned int kmem_cache_size(struct kmem_cache *cachep)
- }
- EXPORT_SYMBOL(kmem_cache_size);
- 
-+#ifdef CONFIG_DEBUG_RUNTIME_USER_COPY_CHECKS
++#ifdef CONFIG_FRAME_POINTER
 +/*
-+ * Returns false if and only if [ptr; ptr+len) touches the slab,
-+ * but breaks objects boundaries.  It doesn't check whether the
-+ * accessed object is actually allocated.
-+ */
-+bool slab_access_ok(const void *ptr, unsigned long len)
++ * MUST be always_inline to correctly count stack frame numbers.
++ *
++ * low ----------------------------------------------> high
++ * [saved bp][saved ip][args][local vars][saved bp][saved ip]
++ *		       ^----------------^
++ *		  allow copies only within here
++*/
++#undef arch_check_object_on_stack_frame
++static __always_inline bool arch_check_object_on_stack_frame(const void *stack,
++	     const void *stackend, const void *obj, unsigned long len)
 +{
-+	struct page *page;
-+	struct kmem_cache *cachep;
-+	struct slab *slabp;
-+	unsigned int objnr;
-+	unsigned long offset;
++	const void *frame = NULL;
++	const void *oldframe;
 +
-+	if (!virt_addr_valid(ptr))
-+		return true;
-+	page = virt_to_head_page(ptr);
-+	if (!PageSlab(page))
-+		return true;
++	/*
++	 * Get the kernel_access_ok() caller frame.
++	 * __builtin_frame_address(0) returns __kernel_access_ok() frame
++	 * as arch_ and stack_ are inline and __kernel_ is noinline.
++	 */
++	oldframe = __builtin_frame_address(0);
++	if (oldframe)
++		frame = __builtin_frame_address(1);
 +
-+	cachep = page_get_cache(page);
-+	slabp = page_get_slab(page);
-+	objnr = obj_to_index(cachep, slabp, (void *)ptr);
-+	BUG_ON(objnr >= cachep->num);
-+	offset = ptr - index_to_obj(cachep, slabp, objnr) - obj_offset(cachep);
-+	if (offset < obj_size(cachep) && len <= obj_size(cachep) - offset)
-+		return true;
++	while (stack <= frame && frame < stackend) {
++		/*
++		 * If obj + len extends past the last frame, this
++		 * check won't pass and the next frame will be 0,
++		 * causing us to bail out and correctly report
++		 * the copy as invalid.
++		 */
++		if (obj + len <= frame) {
++			/* EBP + EIP (or RBP + RIP for x86-64) */
++			size_t protected_regs_size = 2*sizeof(void *);
 +
++			if (obj >= oldframe + protected_regs_size)
++				return true;
++			return false;
++		}
++		oldframe = frame;
++		frame = *(const void * const *)frame;
++	}
 +	return false;
 +}
-+EXPORT_SYMBOL(slab_access_ok);
-+#endif /* CONFIG_DEBUG_RUNTIME_USER_COPY_CHECKS */
++#define arch_check_object_on_stack_frame arch_check_object_on_stack_frame
++#endif /* CONFIG_FRAME_POINTER */
 +
  /*
-  * This initializes kmem_list3 or resizes various caches for all nodes.
-  */
-diff --git a/mm/slob.c b/mm/slob.c
-index 46e0aee..8333db6 100644
---- a/mm/slob.c
-+++ b/mm/slob.c
-@@ -666,6 +666,18 @@ unsigned int kmem_cache_size(struct kmem_cache *c)
- }
- EXPORT_SYMBOL(kmem_cache_size);
- 
-+#ifdef CONFIG_DEBUG_RUNTIME_USER_COPY_CHECKS
-+bool slab_access_ok(const void *ptr, unsigned long len)
-+{
-+	/*
-+	 * TODO: is it worth checking?  We have to gain a lock and
-+	 * walk through all chunks.
-+	 */
-+	return true;
-+}
-+EXPORT_SYMBOL(slab_access_ok);
-+#endif /* CONFIG_DEBUG_RUNTIME_USER_COPY_CHECKS */
-+
- int kmem_cache_shrink(struct kmem_cache *d)
+  * The exception table consists of pairs of addresses: the first is the
+  * address of an instruction that is allowed to fault, and the second is
+diff --git a/arch/x86/include/asm/uaccess_32.h b/arch/x86/include/asm/uaccess_32.h
+index 566e803..669a2b6 100644
+--- a/arch/x86/include/asm/uaccess_32.h
++++ b/arch/x86/include/asm/uaccess_32.h
+@@ -82,6 +82,8 @@ static __always_inline unsigned long __must_check
+ __copy_to_user(void __user *to, const void *from, unsigned long n)
  {
- 	return 0;
-diff --git a/mm/slub.c b/mm/slub.c
-index 35f351f..37e7467 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2623,6 +2623,34 @@ unsigned int kmem_cache_size(struct kmem_cache *s)
+ 	might_fault();
++	if (!kernel_access_ok(from, n, true))
++		return n;
+ 	return __copy_to_user_inatomic(to, from, n);
  }
- EXPORT_SYMBOL(kmem_cache_size);
  
-+#ifdef CONFIG_DEBUG_RUNTIME_USER_COPY_CHECKS
-+/*
-+ * Returns false if and only if [ptr; ptr+len) touches the slab,
-+ * but breaks objects boundaries.  It doesn't check whether the
-+ * accessed object is actually allocated.
-+ */
-+bool slab_access_ok(const void *ptr, unsigned long len)
-+{
-+	struct page *page;
-+	struct kmem_cache *s = NULL;
-+	unsigned long offset;
-+
-+	if (!virt_addr_valid(ptr))
-+		return true;
-+	page = virt_to_head_page(ptr);
-+	if (!PageSlab(page))
-+		return true;
-+
-+	s = page->slab;
-+	offset = (ptr - page_address(page)) % s->size;
-+	if (offset <= s->objsize && len <= s->objsize - offset)
-+		return true;
-+
-+	return false;
-+}
-+EXPORT_SYMBOL(slab_access_ok);
-+#endif /* CONFIG_DEBUG_RUNTIME_USER_COPY_CHECKS */
-+
- static void list_slab_objects(struct kmem_cache *s, struct page *page,
- 							const char *text)
+@@ -152,6 +154,8 @@ __copy_from_user(void *to, const void __user *from, unsigned long n)
+ 			return ret;
+ 		}
+ 	}
++	if (!kernel_access_ok(to, n, false))
++		return n;
+ 	return __copy_from_user_ll(to, from, n);
+ }
+ 
+@@ -205,13 +209,35 @@ static inline unsigned long __must_check copy_from_user(void *to,
  {
+ 	int sz = __compiletime_object_size(to);
+ 
+-	if (likely(sz == -1 || sz >= n))
+-		n = _copy_from_user(to, from, n);
+-	else
++	if (likely(sz == -1 || sz >= n)) {
++		if (kernel_access_ok(to, n, false))
++			n = _copy_from_user(to, from, n);
++	} else {
+ 		copy_from_user_overflow();
++	}
++
++	return n;
++}
+ 
++#undef copy_from_user_unchecked
++static inline unsigned long __must_check copy_from_user_unchecked(void *to,
++					  const void __user *from,
++					  unsigned long n)
++{
++	return _copy_from_user(to, from, n);
++}
++#define copy_from_user_unchecked copy_from_user_unchecked
++
++#undef copy_to_user_unchecked
++static inline unsigned long copy_to_user_unchecked(void __user *to,
++					  const void *from,
++					  unsigned long n)
++{
++	if (access_ok(VERIFY_WRITE, to, n))
++		n = __copy_to_user(to, from, n);
+ 	return n;
+ }
++#define copy_to_user_unchecked copy_to_user_unchecked
+ 
+ long __must_check strncpy_from_user(char *dst, const char __user *src,
+ 				    long count);
+diff --git a/arch/x86/include/asm/uaccess_64.h b/arch/x86/include/asm/uaccess_64.h
+index 1c66d30..407facb 100644
+--- a/arch/x86/include/asm/uaccess_64.h
++++ b/arch/x86/include/asm/uaccess_64.h
+@@ -50,8 +50,10 @@ static inline unsigned long __must_check copy_from_user(void *to,
+ 	int sz = __compiletime_object_size(to);
+ 
+ 	might_fault();
+-	if (likely(sz == -1 || sz >= n))
+-		n = _copy_from_user(to, from, n);
++	if (likely(sz == -1 || sz >= n)) {
++		if (kernel_access_ok(to, n, false))
++			n = _copy_from_user(to, from, n);
++	}
+ #ifdef CONFIG_DEBUG_VM
+ 	else
+ 		WARN(1, "Buffer overflow detected!\n");
+@@ -59,13 +61,37 @@ static inline unsigned long __must_check copy_from_user(void *to,
+ 	return n;
+ }
+ 
++#undef copy_from_user_unchecked
++static inline unsigned long __must_check copy_from_user_unchecked(void *to,
++					  const void __user *from,
++					  unsigned long n)
++{
++	might_fault();
++
++	return _copy_from_user(to, from, n);
++}
++#define copy_from_user_unchecked copy_from_user_unchecked
++
+ static __always_inline __must_check
+ int copy_to_user(void __user *dst, const void *src, unsigned size)
+ {
+ 	might_fault();
+ 
++	if (!kernel_access_ok(src, size, true))
++		return size;
++
++	return _copy_to_user(dst, src, size);
++}
++
++#undef copy_to_user_unchecked
++static __always_inline __must_check
++int copy_to_user_unchecked(void __user *dst, const void *src, unsigned size)
++{
++	might_fault();
++
+ 	return _copy_to_user(dst, src, size);
+ }
++#define copy_to_user_unchecked copy_to_user_unchecked
+ 
+ static __always_inline __must_check
+ int __copy_from_user(void *dst, const void __user *src, unsigned size)
+@@ -73,8 +99,12 @@ int __copy_from_user(void *dst, const void __user *src, unsigned size)
+ 	int ret = 0;
+ 
+ 	might_fault();
++	if (!kernel_access_ok(dst, size, false))
++		return size;
++
+ 	if (!__builtin_constant_p(size))
+ 		return copy_user_generic(dst, (__force void *)src, size);
++
+ 	switch (size) {
+ 	case 1:__get_user_asm(*(u8 *)dst, (u8 __user *)src,
+ 			      ret, "b", "b", "=q", 1);
+@@ -117,8 +147,12 @@ int __copy_to_user(void __user *dst, const void *src, unsigned size)
+ 	int ret = 0;
+ 
+ 	might_fault();
++	if (!kernel_access_ok(dst, size, true))
++		return size;
++
+ 	if (!__builtin_constant_p(size))
+ 		return copy_user_generic((__force void *)dst, src, size);
++
+ 	switch (size) {
+ 	case 1:__put_user_asm(*(u8 *)src, (u8 __user *)dst,
+ 			      ret, "b", "b", "iq", 1);
+diff --git a/arch/x86/lib/usercopy_32.c b/arch/x86/lib/usercopy_32.c
+index e218d5d..4c8b5b5 100644
+--- a/arch/x86/lib/usercopy_32.c
++++ b/arch/x86/lib/usercopy_32.c
+@@ -851,7 +851,7 @@ EXPORT_SYMBOL(__copy_from_user_ll_nocache_nozero);
+ unsigned long
+ copy_to_user(void __user *to, const void *from, unsigned long n)
+ {
+-	if (access_ok(VERIFY_WRITE, to, n))
++	if (access_ok(VERIFY_WRITE, to, n) && kernel_access_ok(from, n, true))
+ 		n = __copy_to_user(to, from, n);
+ 	return n;
+ }
 --
