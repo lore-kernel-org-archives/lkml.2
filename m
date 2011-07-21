@@ -1,64 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753782Ab1GUToT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 15:44:19 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:51653 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753113Ab1GUToR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 15:44:17 -0400
-From: Marek Vasut <marek.vasut@gmail.com>
-To: "Uwe =?iso-8859-1?q?Kleine-K=F6nig?=" 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: [PATCH] iMX28: Fix emi_ddr_open pinmux
-Date: Thu, 21 Jul 2011 21:44:12 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.39-1-amd64; KDE/4.6.3; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kernel@pengutronix.de
-References: <1311264490-5485-1-git-send-email-marek.vasut@gmail.com> <20110721190536.GC16561@pengutronix.de>
-In-Reply-To: <20110721190536.GC16561@pengutronix.de>
+	id S1753819Ab1GUTo2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 15:44:28 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:37290 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753790Ab1GUTo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 15:44:26 -0400
+Date: Thu, 21 Jul 2011 21:43:30 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: Andi Kleen <ak@linux.intel.com>, mingo@redhat.com, wzt <wzt.wzt@gmail.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org, tglx@linutronix.de,
+        hpa@zytor.com, Michal Hocko <mhocko@suse.cz>,
+        Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
+Subject: Re: [PATCH] x86: Fix memory leak of init_vdso_vars()
+Message-ID: <20110721194329.GA29460@elte.hu>
+References: <20110705062148.GA6056@program>
+ <d1a1b6416d71a5062fb3b3e364f9db6b6d4ef6b2.1311258580.git.luto@mit.edu>
+ <20110721170824.GA28974@tassilo.jf.intel.com>
+ <CAObL_7HyjsPKnyDEEa0T8iTetpkd9Hq7RTBymieazzGOsXQLdA@mail.gmail.com>
+ <20110721183820.GA381@elte.hu>
+ <CAObL_7H=wh4exBfyjJyumtOBgvAjLnewu3dp6eeyaoQi3txXwQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201107212144.12410.marek.vasut@gmail.com>
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAObL_7H=wh4exBfyjJyumtOBgvAjLnewu3dp6eeyaoQi3txXwQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 21, 2011 09:05:36 PM Uwe Kleine-König wrote:
-> On Thu, Jul 21, 2011 at 06:08:10PM +0200, Marek Vasut wrote:
-> > Signed-off-by: Marek Vasut <marek.vasut@gmail.com>
-> > ---
-> > 
-> >  arch/arm/mach-mxs/include/mach/iomux-mx28.h |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/arch/arm/mach-mxs/include/mach/iomux-mx28.h
-> > b/arch/arm/mach-mxs/include/mach/iomux-mx28.h index f50fefd..1a95ecd
-> > 100644
-> > --- a/arch/arm/mach-mxs/include/mach/iomux-mx28.h
-> > +++ b/arch/arm/mach-mxs/include/mach/iomux-mx28.h
-> > @@ -203,7 +203,7 @@
-> > 
-> >  #define MX28_PAD_EMI_WEN__EMI_WEN			MXS_IOMUX_PAD_NAKED(6, 21,
-> >  PAD_MUXSEL_0) #define
-> >  MX28_PAD_EMI_CE0N__EMI_CE0N			MXS_IOMUX_PAD_NAKED(6, 22, 
-PAD_MUXSEL_0)
-> >  #define MX28_PAD_EMI_CE1N__EMI_CE1N			MXS_IOMUX_PAD_NAKED(6, 23,
-> >  PAD_MUXSEL_0)
-> > 
-> > -#define MX28_PAD_EMI_CKE__EMI_CKE			MXS_IOMUX_PAD_NAKED(6, 24,
-> > PAD_MUXSEL_0) +#define
-> > MX28_PAD_EMI_CKE__EMI_CKE			MXS_IOMUX_PAD_NAKED(6, 26, 
-PAD_MUXSEL_0)
-> 
-> In my version of the i.MX28 Reference Manual (Rev. 1, 2010) pin24 is
-> correct. So if you're still convinced that 26 is correct you should point
-> out in the commit log that the Reference Manual is wrong and why you're
-> convinced it really is.
 
-Scrap this, you're right.
+* Andrew Lutomirski <luto@mit.edu> wrote:
+
+> On Thu, Jul 21, 2011 at 2:38 PM, Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> > * Andrew Lutomirski <luto@mit.edu> wrote:
+> >
+> >> On Thu, Jul 21, 2011 at 1:08 PM, Andi Kleen <ak@linux.intel.com> wrote:
+> >> > On Thu, Jul 21, 2011 at 10:33:14AM -0400, Andy Lutomirski wrote:
+> >> >> From: Zhitong Wang <wzt.wzt@gmail.com>
+> >> >>
+> >> >> If init_vdso_vars ran out of memory (not very likely), then it would
+> >> >> leak a few pages as well.
+> >> >>
+> >> >> Also rename init_vdso_vars to just init_vdso, since initializing
+> >> >> vvars is just about the only thing this function doesn't do.
+> >> >
+> >> > Just add a GFP_PANIC, there's no way to recover from this.
+> >> > Your system will not work without a vdso.
+> >>
+> >> Ingo objected to this before, although I'm not convinved.  Calling
+> >> init_vdso_vars more than once will cause major problems (like
+> >> double-patching of alternatives).  If there's too little memory for
+> >> it to work, then presumably there's also too little memory to start
+> >> init.
+> >>
+> >>  (Also, I bet that no one ever audited whether the ELF loader works
+> >> right if the vDSO failed to load.)
+> >>
+> >> Ingo?
+> >
+> > This assumes that the system actually needs an ELF loader - if a
+> > static binary is booted via a init= boot parameter it might not be
+> > needed.
 > 
-> Best regards
-> Uwe
+> I actually meant the kernel's loaded.  But I just looked and it appears correct.
+> 
+> But I think this whole thing is silly, because I can't see any good
+> reason that the vdso needs to allocate memory in the first place.
+> I'll send a patch.
+
+that's the perfect solution indeed :)
+
+Thanks,
+
+	Ingo
