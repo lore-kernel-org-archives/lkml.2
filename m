@@ -1,94 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751304Ab1GUOEQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 10:04:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54935 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750802Ab1GUOEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 10:04:10 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] FS-Cache: Fix __fscache_uncache_all_inode_pages()'s outer loop
-To: torvalds@osdl.org, akpm@linux-foundation.org
-Cc: linux-cachefs@redhat.com, linux-kernel@vger.kernel.org,
-        Jan Beulich <jbeulich@novell.com>, David Howells <dhowells@redhat.com>,
-        Suresh Jayaraman <sjayaraman@suse.de>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, stable@kernel.org
-Date: Thu, 21 Jul 2011 15:02:43 +0100
-Message-ID: <20110721140243.21768.64949.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1751296Ab1GUOHt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 10:07:49 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60052 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750802Ab1GUOHr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 10:07:47 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Liam Girdwood <lrg@ti.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] regulator: Fix argument format type errors in error prints
+Date: Thu, 21 Jul 2011 15:07:37 +0100
+Message-Id: <1311257257-26498-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Beulich <JBeulich@novell.com>
+We need to dereference the pointers to print their values.
 
-The compiler, at least for ix86 and m68k, validly warns that the comparison:
-
-	next <= (loff_t)-1
-
-is always true (and it's always true also for x86-64 and probably all other
-arches - as long as pgoff_t isn't wider than loff_t).  The intention appears
-to be to avoid wrapping of "next", so rather than eliminating the pointless
-comparison, fix the loop to indeed get exited when "next" would otherwise
-wrap.
-
-On m68k the following warning is observed:
-
-fs/fscache/page.c: In function '__fscache_uncache_all_inode_pages':
-fs/fscache/page.c:979: warning: comparison is always false due to
-limited range of data type
-
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Reported-by: Jan Beulich <jbeulich@novell.com>
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Cc: Suresh Jayaraman <sjayaraman@suse.de>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: stable@kernel.org
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
+ drivers/regulator/core.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
- fs/fscache/page.c |   14 +++++---------
- 1 files changed, 5 insertions(+), 9 deletions(-)
-
-diff --git a/fs/fscache/page.c b/fs/fscache/page.c
-index 60315b3..ff1e68f 100644
---- a/fs/fscache/page.c
-+++ b/fs/fscache/page.c
-@@ -993,16 +993,12 @@ void __fscache_uncache_all_inode_pages(struct fscache_cookie *cookie,
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 3700d09..412e281 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -153,7 +153,7 @@ static int regulator_check_voltage(struct regulator_dev *rdev,
  
- 	pagevec_init(&pvec, 0);
- 	next = 0;
--	while (next <= (loff_t)-1 &&
--	       pagevec_lookup(&pvec, mapping, next, PAGEVEC_SIZE)
--	       ) {
-+	do {
-+		if (!pagevec_lookup(&pvec, mapping, next, PAGEVEC_SIZE))
-+			break;
- 		for (i = 0; i < pagevec_count(&pvec); i++) {
- 			struct page *page = pvec.pages[i];
--			pgoff_t page_index = page->index;
--
--			ASSERTCMP(page_index, >=, next);
--			next = page_index + 1;
--
-+			next = page->index;
- 			if (PageFsCache(page)) {
- 				__fscache_wait_on_page_write(cookie, page);
- 				__fscache_uncache_page(cookie, page);
-@@ -1010,7 +1006,7 @@ void __fscache_uncache_all_inode_pages(struct fscache_cookie *cookie,
- 		}
- 		pagevec_release(&pvec);
- 		cond_resched();
--	}
-+	} while (++next);
+ 	if (*min_uV > *max_uV) {
+ 		rdev_err(rdev, "unsupportable voltage range: %d-%duV\n",
+-			 min_uV, max_uV);
++			 *min_uV, *max_uV);
+ 		return -EINVAL;
+ 	}
  
- 	_leave("");
- }
+@@ -210,7 +210,7 @@ static int regulator_check_current_limit(struct regulator_dev *rdev,
+ 
+ 	if (*min_uA > *max_uA) {
+ 		rdev_err(rdev, "unsupportable current range: %d-%duA\n",
+-			 min_uA, max_uA);
++			 *min_uA, *max_uA);
+ 		return -EINVAL;
+ 	}
+ 
+-- 
+1.7.5.4
 
