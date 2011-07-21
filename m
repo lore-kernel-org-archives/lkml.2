@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753001Ab1GUSOG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 14:14:06 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:48548 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598Ab1GUSOC (ORCPT
+	id S1752623Ab1GUSQI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 14:16:08 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:10760 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752953Ab1GUSQE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 14:14:02 -0400
-Date: Thu, 21 Jul 2011 22:13:00 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Al Viro <viro@zeniv.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC v3 2/5] slab: implement slab object boundaries assertion
-Message-ID: <20110721181300.GA23960@albatros>
-References: <1311252815-6733-1-git-send-email-segoon@openwall.com>
- <alpine.DEB.2.00.1107211127050.3995@router.home>
+	Thu, 21 Jul 2011 14:16:04 -0400
+Subject: [PATCH] cciss: do not attempt to read from a write-only register
+To: axboe@kernel.dk
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Cc: stephenmcameron@gmail.com, akpm@linux-foundation.org,
+        mikem@beardog.cce.hp.com, linux-kernel@vger.kernel.org,
+        thenzl@redhat.com
+Date: Thu, 21 Jul 2011 13:16:01 -0500
+Message-ID: <20110721181601.31646.18252.stgit@beardog.cce.hp.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1107211127050.3995@router.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 21, 2011 at 11:28 -0500, Christoph Lameter wrote:
-> On Thu, 21 Jul 2011, Vasiliy Kulikov wrote:
-> 
-> > +bool slab_access_ok(const void *ptr, unsigned long len)
-> > +{
-> > +	struct page *page;
-> > +	struct kmem_cache *s = NULL;
-> 
-> Useless assignment.
-> 
-> > +	unsigned long offset;
-> > +
-> > +	if (!virt_addr_valid(ptr))
-> > +		return true;
-> > +	page = virt_to_head_page(ptr);
-> > +	if (!PageSlab(page))
-> > +		return true;
-> > +
-> > +	s = page->slab;
-> > +	offset = (ptr - page_address(page)) % s->size;
-> > +	if (offset <= s->objsize && len <= s->objsize - offset)
-> > +		return true;
-> 
-> I thought this was going to be offset < s->objectsize ...?
+From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-Looks like I did these 2 things in SLAB only, left SLUB untouched.
-Will fix, thanks.
+Most smartarrays will tolerate it, but some new ones don't.
+Without this change some newer Smart Arrays will lock up
+and i/o will grind to a halt.
 
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+---
+ drivers/block/cciss.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/block/cciss.h b/drivers/block/cciss.h
+index 16b4d58..c049548 100644
+--- a/drivers/block/cciss.h
++++ b/drivers/block/cciss.h
+@@ -223,7 +223,7 @@ static void SA5_submit_command( ctlr_info_t *h, CommandList_struct *c)
+ 			h->ctlr, c->busaddr);
+ #endif /* CCISS_DEBUG */
+          writel(c->busaddr, h->vaddr + SA5_REQUEST_PORT_OFFSET);
+-	readl(h->vaddr + SA5_REQUEST_PORT_OFFSET);
++	readl(h->vaddr + SA5_SCRATCHPAD_OFFSET);
+ 	 h->commands_outstanding++;
+ 	 if ( h->commands_outstanding > h->max_outstanding)
+ 		h->max_outstanding = h->commands_outstanding;
+
