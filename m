@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753007Ab1GUXDw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 19:03:52 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:53568 "EHLO
+	id S1753039Ab1GUXD4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 19:03:56 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:55923 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752078Ab1GUXBE (ORCPT
+	with ESMTP id S1752135Ab1GUXBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 19:01:04 -0400
+	Thu, 21 Jul 2011 19:01:03 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=message-id:user-agent:date:from:to:cc:subject:references:content-disposition;
-	b=ZF4aoyrJzWwDed8bj6P9q7yg+nbskfShLPGkqzygt2lAli+tSOS1NMRfqO++G/zVi
-	czGGRlpLUBc0So5H2MpwA==
-Message-Id: <20110721184757.179386821@google.com>
+	b=mMYdzkWJ5U/eippoESFiBizp2LLtHLTGqggj3LNSl2nDQ3dSPBHOv/lvOHTNfrTJt
+	6wA12yb6oGNx3tbToAiGg==
+Message-Id: <20110721184758.498036116@google.com>
 User-Agent: quilt/0.48-1
-Date: Thu, 21 Jul 2011 09:43:30 -0700
+Date: Thu, 21 Jul 2011 09:43:43 -0700
 From: Paul Turner <pjt@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -25,221 +25,151 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
         Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
         Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Jason Baron <jbaron@redhat.com>, Nikhil Rao <ncrao@google.com>
-Subject: [patch 05/18] sched: accumulate per-cfs_rq cpu usage and charge against bandwidth
+        Jason Baron <jbaron@redhat.com>
+Subject: [patch 18/18] sched: add documentation for bandwidth control
 References: <20110721164325.231521704@google.com>
-Content-Disposition: inline; filename=sched-bwc-account_cfs_rq_runtime.patch
+Content-Disposition: inline; filename=sched-bwc-documentation.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Account bandwidth usage on the cfs_rq level versus the task_groups to which
-they belong.  Whether we are tracking bandwidth on a given cfs_rq is maintained
-under cfs_rq->runtime_enabled.
+From: Bharata B Rao <bharata@linux.vnet.ibm.com>
 
-cfs_rq's which belong to a bandwidth constrained task_group have their runtime
-accounted via the update_curr() path, which withdraws bandwidth from the global
-pool as desired.  Updates involving the global pool are currently protected
-under cfs_bandwidth->lock, local runtime is protected by rq->lock.
+Basic description of usage and effect for CFS Bandwidth Control.
 
-This patch only assigns and tracks quota, no action is taken in the case that
-cfs_rq->runtime_used exceeds cfs_rq->runtime_assigned.
-
-Signed-off-by: Paul Turner <pjt@google.com>
-Signed-off-by: Nikhil Rao <ncrao@google.com>
 Signed-off-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
-Reviewed-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-
-
+Signed-off-by: Paul Turner <pjt@google.com>
 ---
- include/linux/sched.h |    4 ++
- kernel/sched.c        |    4 +-
- kernel/sched_fair.c   |   79 ++++++++++++++++++++++++++++++++++++++++++++++++--
- kernel/sysctl.c       |   10 ++++++
- 4 files changed, 94 insertions(+), 3 deletions(-)
+ Documentation/scheduler/sched-bwc.txt |   98
+ ++++++++++++++++++++++++++++++++++
+ Documentation/scheduler/sched-bwc.txt |  122 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 122 insertions(+)
 
-Index: tip/kernel/sched_fair.c
+Index: tip/Documentation/scheduler/sched-bwc.txt
 ===================================================================
---- tip.orig/kernel/sched_fair.c
-+++ tip/kernel/sched_fair.c
-@@ -89,6 +89,20 @@ const_debug unsigned int sysctl_sched_mi
-  */
- unsigned int __read_mostly sysctl_sched_shares_window = 10000000UL;
- 
-+#ifdef CONFIG_CFS_BANDWIDTH
-+/*
-+ * Amount of runtime to allocate from global (tg) to local (per-cfs_rq) pool
-+ * each time a cfs_rq requests quota.
-+ *
-+ * Note: in the case that the slice exceeds the runtime remaining (either due
-+ * to consumption or the quota being specified to be smaller than the slice)
-+ * we will always only issue the remaining available time.
-+ *
-+ * default: 5 msec, units: microseconds
-+  */
-+unsigned int sysctl_sched_cfs_bandwidth_slice = 5000UL;
-+#endif
+--- /dev/null
++++ tip/Documentation/scheduler/sched-bwc.txt
+@@ -0,0 +1,122 @@
++CFS Bandwidth Control
++=====================
 +
- static const struct sched_class fair_sched_class;
- 
- /**************************************************************
-@@ -305,6 +319,8 @@ find_matching_se(struct sched_entity **s
- 
- #endif	/* CONFIG_FAIR_GROUP_SCHED */
- 
-+static void account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
-+				   unsigned long delta_exec);
- 
- /**************************************************************
-  * Scheduling class tree data structure manipulation methods:
-@@ -602,6 +618,8 @@ static void update_curr(struct cfs_rq *c
- 		cpuacct_charge(curtask, delta_exec);
- 		account_group_exec_runtime(curtask, delta_exec);
- 	}
++[ This document only discusses CPU bandwidth control for SCHED_NORMAL.
++  The SCHED_RT case is covered in Documentation/scheduler/sched-rt-group.txt ]
 +
-+	account_cfs_rq_runtime(cfs_rq, delta_exec);
- }
- 
- static inline void
-@@ -1270,6 +1288,58 @@ static inline u64 default_cfs_period(voi
- {
- 	return 100000000ULL;
- }
++CFS bandwidth control is a CONFIG_FAIR_GROUP_SCHED extension which allows the
++specification of the maximum CPU bandwidth available to a group or hierarchy.
 +
-+static inline u64 sched_cfs_bandwidth_slice(void)
-+{
-+	return (u64)sysctl_sched_cfs_bandwidth_slice * NSEC_PER_USEC;
-+}
++The bandwidth allowed for a group is specified using a quota and period. Within
++each given "period" (microseconds), a group is allowed to consume only up to
++"quota" microseconds of CPU time.  When the CPU bandwidth consumption of a
++group exceeds this limit (for that period), the tasks belonging to its
++hierarchy will be throttled and are not allowed to run again until the next
++period.
 +
-+static void assign_cfs_rq_runtime(struct cfs_rq *cfs_rq)
-+{
-+	struct task_group *tg = cfs_rq->tg;
-+	struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(tg);
-+	u64 amount = 0, min_amount;
++A group's unused runtime is globally tracked, being refreshed with quota units
++above at each period boundary.  As threads consume this bandwidth it is
++transferred to cpu-local "silos" on a demand basis.  The amount transferred
++within each of these updates is tunable and described as the "slice".
 +
-+	/* note: this is a positive sum as runtime_remaining <= 0 */
-+	min_amount = sched_cfs_bandwidth_slice() - cfs_rq->runtime_remaining;
++Management
++----------
++Quota and period are managed within the cpu subsystem via cgroupfs.
 +
-+	raw_spin_lock(&cfs_b->lock);
-+	if (cfs_b->quota == RUNTIME_INF)
-+		amount = min_amount;
-+	else if (cfs_b->runtime > 0) {
-+		amount = min(cfs_b->runtime, min_amount);
-+		cfs_b->runtime -= amount;
-+	}
-+	raw_spin_unlock(&cfs_b->lock);
++cpu.cfs_quota_us: the total available run-time within a period (in microseconds)
++cpu.cfs_period_us: the length of a period (in microseconds)
++cpu.stat: exports throttling statistics [explained further below]
 +
-+	cfs_rq->runtime_remaining += amount;
-+}
++The default values are:
++	cpu.cfs_period_us=100ms
++	cpu.cfs_quota=-1
 +
-+static void __account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
-+				     unsigned long delta_exec)
-+{
-+	if (!cfs_rq->runtime_enabled)
-+		return;
++A value of -1 for cpu.cfs_quota_us indicates that the group does not have any
++bandwidth restriction in place, such a group is described as an unconstrained
++bandwidth group.  This represents the traditional work-conserving behavior for
++CFS.
 +
-+	cfs_rq->runtime_remaining -= delta_exec;
-+	if (cfs_rq->runtime_remaining > 0)
-+		return;
++Writing any (valid) positive value(s) will enact the specified bandwidth limit.
++The minimum quota allowed for the quota or period is 1ms.  There is also an
++upper bound on the period length of 1s.  Additional restrictions exist when
++bandwidth limits are used in a hierarchical fashion, these are explained in
++more detail below.
 +
-+	assign_cfs_rq_runtime(cfs_rq);
-+}
++Writing any negative value to cpu.cfs_quota_us will remove the bandwidth limit
++and return the group to an unconstrained state once more.
 +
-+static __always_inline void account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
-+						   unsigned long delta_exec)
-+{
-+	if (!cfs_rq->runtime_enabled)
-+		return;
++Any updates to a group's bandwidth specification will result in it becoming
++unthrottled if it is in a constrained state.
 +
-+	__account_cfs_rq_runtime(cfs_rq, delta_exec);
-+}
++System wide settings
++--------------------
++For efficiency run-time is transferred between the global pool and CPU local
++"silos" in a batch fashion.  This greatly reduces global accounting pressure
++on large systems.  The amount transferred each time such an update is required
++is described as the "slice".
 +
-+#else
-+static void account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
-+				     unsigned long delta_exec) {}
- #endif
- 
- /**************************************************
-@@ -4262,8 +4332,13 @@ static void set_curr_task_fair(struct rq
- {
- 	struct sched_entity *se = &rq->curr->se;
- 
--	for_each_sched_entity(se)
--		set_next_entity(cfs_rq_of(se), se);
-+	for_each_sched_entity(se) {
-+		struct cfs_rq *cfs_rq = cfs_rq_of(se);
++This is tunable via procfs:
++	/proc/sys/kernel/sched_cfs_bandwidth_slice_us (default=5ms)
 +
-+		set_next_entity(cfs_rq, se);
-+		/* ensure bandwidth has been allocated on our new cfs_rq */
-+		account_cfs_rq_runtime(cfs_rq, 0);
-+	}
- }
- 
- #ifdef CONFIG_FAIR_GROUP_SCHED
-Index: tip/kernel/sysctl.c
-===================================================================
---- tip.orig/kernel/sysctl.c
-+++ tip/kernel/sysctl.c
-@@ -379,6 +379,16 @@ static struct ctl_table kern_table[] = {
- 		.extra2		= &one,
- 	},
- #endif
-+#ifdef CONFIG_CFS_BANDWIDTH
-+	{
-+		.procname	= "sched_cfs_bandwidth_slice_us",
-+		.data		= &sysctl_sched_cfs_bandwidth_slice,
-+		.maxlen		= sizeof(unsigned int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec_minmax,
-+		.extra1		= &one,
-+	},
-+#endif
- #ifdef CONFIG_PROVE_LOCKING
- 	{
- 		.procname	= "prove_locking",
-Index: tip/kernel/sched.c
-===================================================================
---- tip.orig/kernel/sched.c
-+++ tip/kernel/sched.c
-@@ -248,7 +248,7 @@ struct cfs_bandwidth {
- #ifdef CONFIG_CFS_BANDWIDTH
- 	raw_spinlock_t lock;
- 	ktime_t period;
--	u64 quota;
-+	u64 quota, runtime;
- 	s64 hierarchal_quota;
- #endif
- };
-@@ -403,6 +403,7 @@ static inline u64 default_cfs_period(voi
- static void init_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
- {
- 	raw_spin_lock_init(&cfs_b->lock);
-+	cfs_b->runtime = 0;
- 	cfs_b->quota = RUNTIME_INF;
- 	cfs_b->period = ns_to_ktime(default_cfs_period());
- }
-@@ -8921,6 +8922,7 @@ static int tg_set_cfs_bandwidth(struct t
- 	raw_spin_lock_irq(&cfs_b->lock);
- 	cfs_b->period = ns_to_ktime(period);
- 	cfs_b->quota = quota;
-+	cfs_b->runtime = quota;
- 	raw_spin_unlock_irq(&cfs_b->lock);
- 
- 	for_each_possible_cpu(i) {
-Index: tip/include/linux/sched.h
-===================================================================
---- tip.orig/include/linux/sched.h
-+++ tip/include/linux/sched.h
-@@ -2012,6 +2012,10 @@ static inline void sched_autogroup_fork(
- static inline void sched_autogroup_exit(struct signal_struct *sig) { }
- #endif
- 
-+#ifdef CONFIG_CFS_BANDWIDTH
-+extern unsigned int sysctl_sched_cfs_bandwidth_slice;
-+#endif
++Larger slice values will reduce transfer overheads, while smaller values allow
++for more fine-grained consumption.
 +
- #ifdef CONFIG_RT_MUTEXES
- extern int rt_mutex_getprio(struct task_struct *p);
- extern void rt_mutex_setprio(struct task_struct *p, int prio);
-
++Statistics
++----------
++A group's bandwidth statistics are exported via 3 fields in cpu.stat.
++
++cpu.stat:
++- nr_periods: Number of enforcement intervals that have elapsed.
++- nr_throttled: Number of times the group has been throttled/limited.
++- throttled_time: The total time duration (in nanoseconds) for which entities
++  of the group have been throttled.
++
++This interface is read-only.
++
++Hierarchical considerations
++---------------------------
++The interface enforces that an individual entity's bandwidth is always
++attainable, that is: max(c_i) <= C. However, over-subscription in the
++aggregate case is explicitly allowed to enable work-conserving semantics
++within a hierarchy.
++  e.g. \Sum (c_i) may exceed C
++[ Where C is the parent's bandwidth, and c_i its children ]
++
++
++There are two ways in which a group may become throttled:
++	a. it fully consumes its own quota within a period
++	b. a parent's quota is fully consumed within its period
++
++In case b) above, even though the child may have runtime remaining it will not
++be allowed to until the parent's runtime is refreshed.
++
++Examples
++--------
++1. Limit a group to 1 CPU worth of runtime.
++
++	If period is 250ms and quota is also 250ms, the group will get
++	1 CPU worth of runtime every 250ms.
++
++	# echo 250000 > cpu.cfs_quota_us /* quota = 250ms */
++	# echo 250000 > cpu.cfs_period_us /* period = 250ms */
++
++2. Limit a group to 2 CPUs worth of runtime on a multi-CPU machine.
++
++	With 500ms period and 1000ms quota, the group can get 2 CPUs worth of
++	runtime every 500ms.
++
++	# echo 1000000 > cpu.cfs_quota_us /* quota = 1000ms */
++	# echo 500000 > cpu.cfs_period_us /* period = 500ms */
++
++	The larger period here allows for increased burst capacity.
++
++3. Limit a group to 20% of 1 CPU.
++
++	With 50ms period, 10ms quota will be equivalent to 20% of 1 CPU.
++
++	# echo 10000 > cpu.cfs_quota_us /* quota = 10ms */
++	# echo 50000 > cpu.cfs_period_us /* period = 50ms */
++
++	By using a small period here we are ensuring a consistent latency
++	response at the expense of burst capacity.
++
 
