@@ -1,138 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753830Ab1GUTrj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 15:47:39 -0400
-Received: from DMZ-MAILSEC-SCANNER-8.MIT.EDU ([18.7.68.37]:58072 "EHLO
-	dmz-mailsec-scanner-8.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753800Ab1GUTrh (ORCPT
+	id S1752997Ab1GUTyN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 15:54:13 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:58361 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751665Ab1GUTyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 15:47:37 -0400
-X-AuditID: 12074425-b7bcaae000000a1b-c1-4e288231b0c6
-From: Andy Lutomirski <luto@MIT.EDU>
-To: mingo@redhat.com, wzt <wzt.wzt@gmail.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, ak@linux.intel.com,
-        tglx@linutronix.de, hpa@zytor.com, Michal Hocko <mhocko@suse.cz>,
-        Andy Lutomirski <luto@MIT.EDU>
-Subject: [PATCH] x86-64: Do not allocate memory for the vDSO
-Date: Thu, 21 Jul 2011 15:47:10 -0400
-Message-Id: <2c4ed5c2c2e93603790229e0c3403ae506ccc0cb.1311277573.git.luto@mit.edu>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <CAObL_7H=wh4exBfyjJyumtOBgvAjLnewu3dp6eeyaoQi3txXwQ@mail.gmail.com>
-References: <CAObL_7H=wh4exBfyjJyumtOBgvAjLnewu3dp6eeyaoQi3txXwQ@mail.gmail.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPIsWRmVeSWpSXmKPExsUixG6nomvYpOFncOWpmsXxCZYWfVeOsltM
-	2yhucXnXHDaLV83fWS0uHVjAZLF501RmizWfT7FZ/NjwmNWB02PnrLvsHptWdbJ5vDt3jt1j
-	3slAj/f7rrJ5nFlwhN3j8yY5jxMtX1gDOKK4bFJSczLLUov07RK4Mv4+P8Je8Fi4YsqzFrYG
-	xmaBLkZODgkBE4mP03ezQthiEhfurWfrYuTiEBLYxyjR9nQ7E4SzgVFiz85PzBDOYSaJZ483
-	MYO0sAmoSHQsfcAEYosI6Ep83XGbEaSIWWAHo8T2hZNZQBLCAjYSe7cvYQSxWQRUJc7e2AMW
-	5xUIkuhb1cIMsVtO4sjl52CDOAUCJc69mAlWIyQQIHFm6jHGCYx8CxgZVjHKpuRW6eYmZuYU
-	pybrFicn5uWlFula6OVmluilppRuYgSHq4vqDsYJh5QOMQpwMCrx8DL5avgJsSaWFVfmHmKU
-	5GBSEuVd3wgU4kvKT6nMSCzOiC8qzUktPsQowcGsJMIrFAOU401JrKxKLcqHSUlzsCiJ84Z4
-	//cVEkhPLEnNTk0tSC2CycpwcChJ8NaBDBUsSk1PrUjLzClBSDNxcIIM5wEavhCkhre4IDG3
-	ODMdIn+KUVFKnDcfJCEAksgozYPrhaWTV4ziQK8I8y4AqeIBpiK47ldAg5mABreoq4IMLklE
-	SEk1MPZvSD+z9M+bVdqBzc2lFz91PZpj9+jkxGY7l1Wve5lPhrEGzjy6dda1xQqm+y00Ct6I
-	x1WpPP45RYj1EMe8iw63HgTERdd2xq5JP9GhePSPCv+5+uSaO7NEGCM0n4itVItP+JF8tS7Y
-	NSWiZ+3nzVcqBKYI2quKNcr2zt1fUl3X8M3l/B/lLUosxRmJhlrMRcWJALmV4GoCAwAA
+	Thu, 21 Jul 2011 15:54:12 -0400
+Subject: Re: 2.6.32.21 - uptime related crashes?
+From: john stultz <johnstul@us.ibm.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>, Willy Tarreau <w@1wt.eu>,
+        "MINOURA Makoto / ?$BL'1: ?$B??" <minoura@valinux.co.jp>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Faidon Liambotis <paravoid@debian.org>, linux-kernel@vger.kernel.org,
+        stable@kernel.org, Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
+        seto.hidetoshi@jp.fujitsu.com,
+        =?ISO-8859-1?Q?Herv=E9?= Commowick <hcommowick@exosec.fr>,
+        Rand@jasper.es
+In-Reply-To: <20110721072256.GE9216@elte.hu>
+References: <20110430093605.GA10529@1wt.eu> <20110430173905.GA25641@tty.gr>
+	 <BANLkTi=22QFrJ4vO7-3VuHU=9Cg39bxJ4Q@mail.gmail.com>
+	 <20110705231515.95bc758f.akpm@linux-foundation.org>
+	 <kk5d3hgi9eh.fsf@brer.local.valinux.co.jp>
+	 <1310434819.30337.21.camel@work-vm> <20110712041938.GO27254@1wt.eu>
+	 <1310690138.3367.61.camel@work-vm> <1310724097.2586.296.camel@twins>
+	 <1310752795.2945.4.camel@work-vm>  <20110721072256.GE9216@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 21 Jul 2011 12:53:29 -0700
+Message-ID: <1311278009.2945.219.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can map the vDSO straight from kernel data, saving a few page
-allocations.  As an added bonus, the deleted code contained a memory
-leak.
+On Thu, 2011-07-21 at 09:22 +0200, Ingo Molnar wrote:
+> * john stultz <johnstul@us.ibm.com> wrote:
+> 
+> > On Fri, 2011-07-15 at 12:01 +0200, Peter Zijlstra wrote:
+> > > On Thu, 2011-07-14 at 17:35 -0700, john stultz wrote:
+> > > > 
+> > > > Peter/Ingo: Can you take a look at the above and let me know if you find
+> > > > it too disagreeable?
+> > > 
+> > > +static unsigned long long __cycles_2_ns(unsigned long long cyc)
+> > > +{
+> > > +       unsigned long long ns = 0;
+> > > +       struct x86_sched_clock_data *data;
+> > > +       int cpu = smp_processor_id();
+> > > +
+> > > +       rcu_read_lock();
+> > > +       data = rcu_dereference(per_cpu(cpu_sched_clock_data, cpu));
+> > > +
+> > > +       if (unlikely(!data))
+> > > +               goto out;
+> > > +
+> > > +       ns = ((cyc - data->base_cycles) * data->mult) >> CYC2NS_SCALE_FACTOR;
+> > > +       ns += data->accumulated_ns;
+> > > +out:
+> > > +       rcu_read_unlock();
+> > > +       return ns;
+> > > +}
+> > > 
+> > > The way I read that we're still not wrapping properly if freq scaling
+> > > 'never' happens.
+> > 
+> > Right, this doesn't address the mult overflow behavior. As I mentioned
+> > in the patch that the rework allows for solving that in the future using
+> > a (possibly very rare) timer that would accumulate cycles to ns.
+> > 
+> > This rework just really addresses the multiplication overflow->negative
+> > roll under that currently occurs with the cyc2ns_offset value.
+> > 
+> > > Because then we're wrapping on accumulated_ns + 2^54.
+> > > 
+> > > Something like resetting base, and adding ns to accumulated_ns and
+> > > returning the latter would make more sense.
+> > 
+> > Although we have to update the base_cycles and accumulated_ns
+> > atomically, so its probably not something to do in the sched_clock path.
+> 
+> Ping, what's going on with this bug? Systems are crashing so we need 
+> a quick fix ASAP ...
 
-Signed-off-by: Andy Lutomirski <luto@mit.edu>
----
- arch/x86/vdso/vdso.S |   15 +++++++++++++--
- arch/x86/vdso/vma.c  |   25 ++++++-------------------
- 2 files changed, 19 insertions(+), 21 deletions(-)
+I think Peter's patch disabling sched_clock_stable is a good approach
+for now.
 
-diff --git a/arch/x86/vdso/vdso.S b/arch/x86/vdso/vdso.S
-index 1d3aa6b..1b979c1 100644
---- a/arch/x86/vdso/vdso.S
-+++ b/arch/x86/vdso/vdso.S
-@@ -1,10 +1,21 @@
-+#include <asm/page_types.h>
-+#include <linux/linkage.h>
- #include <linux/init.h>
- 
--__INITDATA
-+__PAGE_ALIGNED_DATA
- 
- 	.globl vdso_start, vdso_end
-+	.align PAGE_SIZE
- vdso_start:
- 	.incbin "arch/x86/vdso/vdso.so"
- vdso_end:
- 
--__FINIT
-+.previous
-+
-+	.globl vdso_pages
-+	.bss
-+	.align 8
-+	.type vdso_pages, @object
-+vdso_pages:
-+	.zero (vdso_end - vdso_start + PAGE_SIZE - 1) / PAGE_SIZE * 8
-+	.size vdso_pages, .-vdso_pages
-diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
-index ba92244..40e4cb0 100644
---- a/arch/x86/vdso/vma.c
-+++ b/arch/x86/vdso/vma.c
-@@ -14,13 +14,14 @@
- #include <asm/vgtod.h>
- #include <asm/proto.h>
- #include <asm/vdso.h>
-+#include <asm/page.h>
- 
- unsigned int __read_mostly vdso_enabled = 1;
- 
- extern char vdso_start[], vdso_end[];
- extern unsigned short vdso_sync_cpuid;
- 
--static struct page **vdso_pages;
-+extern struct page *vdso_pages[];
- static unsigned vdso_size;
- 
- static void patch_vdso(void *vdso, size_t len)
-@@ -51,7 +52,7 @@ found:
- 	apply_alternatives(alt_data, alt_data + alt_sec->sh_size);
- }
- 
--static int __init init_vdso_vars(void)
-+static int __init init_vdso(void)
- {
- 	int npages = (vdso_end - vdso_start + PAGE_SIZE - 1) / PAGE_SIZE;
- 	int i;
-@@ -59,26 +60,12 @@ static int __init init_vdso_vars(void)
- 	patch_vdso(vdso_start, vdso_end - vdso_start);
- 
- 	vdso_size = npages << PAGE_SHIFT;
--	vdso_pages = kmalloc(sizeof(struct page *) * npages, GFP_KERNEL);
--	if (!vdso_pages)
--		goto oom;
--	for (i = 0; i < npages; i++) {
--		struct page *p;
--		p = alloc_page(GFP_KERNEL);
--		if (!p)
--			goto oom;
--		vdso_pages[i] = p;
--		copy_page(page_address(p), vdso_start + i*PAGE_SIZE);
--	}
-+	for (i = 0; i < npages; i++)
-+		vdso_pages[i] = virt_to_page(vdso_start + i*PAGE_SIZE);
- 
- 	return 0;
--
-- oom:
--	printk("Cannot allocate vdso\n");
--	vdso_enabled = 0;
--	return -ENOMEM;
- }
--subsys_initcall(init_vdso_vars);
-+subsys_initcall(init_vdso);
- 
- struct linux_binprm;
- 
--- 
-1.7.6
+And just to clarify a bit here, while there was a related scheduler
+division-by-zero issue which to my understanding has already been fixed
+post-2.6.32.21, I have not actually seen any other crash logs connected
+to the overflow.
+
+There have been posted softlockup watchdog false-positive messages
+(which I have also reproduced), but I've not seen any details on actual
+crashes or have I been able to reproduce them using my forced-overflow
+patch.
+
+This isn't to say that the overflow isn't causing crashes, but that the
+reports have not been clear that there have been crashes by something
+other then the div-bv-zero issue.
+
+thanks
+-john
+
 
