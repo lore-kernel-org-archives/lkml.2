@@ -1,249 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752229Ab1GUPaW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 11:30:22 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36644 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751847Ab1GUPaR (ORCPT
+	id S1752217Ab1GUPc6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 11:32:58 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57040 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751598Ab1GUPc4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 11:30:17 -0400
-Date: Fri, 22 Jul 2011 00:30:07 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        P?draig Brady <P@draigBrady.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Colin King <colin.king@canonical.com>,
-        Andrew Lutomirski <luto@mit.edu>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] mm: vmscan: Only read new_classzone_idx from pgdat
- when reclaiming successfully
-Message-ID: <20110721153007.GC1713@barrios-desktop>
-References: <1308926697-22475-1-git-send-email-mgorman@suse.de>
- <1308926697-22475-5-git-send-email-mgorman@suse.de>
- <20110719160903.GA2978@barrios-desktop>
- <20110720104847.GI5349@suse.de>
+	Thu, 21 Jul 2011 11:32:56 -0400
+Date: Thu, 21 Jul 2011 16:32:38 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Avi Kivity <avi@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "acme@ghostprotocols.net" <acme@ghostprotocols.net>,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: Re: [PATCH 1/3] perf: add context field to perf_event
+Message-ID: <20110721153238.GC8446@e102144-lin.cambridge.arm.com>
+References: <20110704143655.GE5551@somewhere>
+ <20110711210753.GA3582@e102144-lin.cambridge.arm.com>
+ <4E1BF5A1.5070301@redhat.com>
+ <1310459898.18678.108.camel@twins>
+ <4E1C0F02.9040906@redhat.com>
+ <1310462046.14978.11.camel@twins>
+ <4E1C10F8.6010300@redhat.com>
+ <1310462335.14978.12.camel@twins>
+ <4E1C1373.5080500@redhat.com>
+ <1310463060.14978.17.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110720104847.GI5349@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1310463060.14978.17.camel@twins>
+Thread-Topic: [PATCH 1/3] perf: add context field to perf_event
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 20, 2011 at 11:48:47AM +0100, Mel Gorman wrote:
-> On Wed, Jul 20, 2011 at 01:09:03AM +0900, Minchan Kim wrote:
-> > Hi Mel,
+On Tue, Jul 12, 2011 at 10:31:00AM +0100, Peter Zijlstra wrote:
+> On Tue, 2011-07-12 at 12:27 +0300, Avi Kivity wrote:
+> > On 07/12/2011 12:18 PM, Peter Zijlstra wrote:
+> > > >
+> > > >  The guarantee is that the task was sleeping just before the function is
+> > > >  called.  Of course it's woken up to run the function.
+> > > >
+> > > >  The idea is that you run the function in a known safe point to avoid
+> > > >  extra synchronization.
+> > > >
+> > >
+> > > I'd much rather we didn't wake the task and let it sleep, that's usually
+> > > a very safe place for tasks to be. All you'd need is a guarantee it
+> > > won't be woken up while you're doing your thing.
 > > 
-> > Too late review.
-> 
-> Never too late.
-> 
-> > At that time, I had no time to look into this patch.
+> > But it means that 'current' is not set to the right value.  If the 
+> > function depends on it, then it will misbehave.  And in fact 
+> > preempt_notifier_register(), which is the function we want to call here, 
+> > does depend on current.
 > > 
-> > On Fri, Jun 24, 2011 at 03:44:57PM +0100, Mel Gorman wrote:
-> > > During allocator-intensive workloads, kswapd will be woken frequently
-> > > causing free memory to oscillate between the high and min watermark.
-> > > This is expected behaviour.  Unfortunately, if the highest zone is
-> > > small, a problem occurs.
-> > > 
-> > > When balance_pgdat() returns, it may be at a lower classzone_idx than
-> > > it started because the highest zone was unreclaimable. Before checking
-> > 
-> > Yes.
-> > 
-> > > if it should go to sleep though, it checks pgdat->classzone_idx which
-> > > when there is no other activity will be MAX_NR_ZONES-1. It interprets
-> > 
-> > Yes.
-> > 
-> > > this as it has been woken up while reclaiming, skips scheduling and
-> > 
-> > Hmm. I can't understand this part.
-> > If balance_pgdat returns lower classzone and there is no other activity,
-> > new_classzone_idx is always MAX_NR_ZONES - 1 so that classzone_idx would be less than
-> > new_classzone_idx. It means it doesn't skip scheduling.
-> > 
-> > Do I miss something?
-> > 
+> > Of course we need to find more users for this, but I have a feeling this 
+> > will be generally useful.  The alternative is to keep adding bits to 
+> > thread_info::flags.
 > 
-> It was a few weeks ago so I don't rememember if this is the exact
-> sequence I had in mind at the time of writing but an example sequence
-> of events is for a node whose highest populated zone is ZONE_NORMAL,
-> very small, and gets set all_unreclaimable by balance_pgdat() looks
-> is below. The key is the "very small" part because pages are getting
-> freed in the zone but the small size means that unreclaimable gets
-> set easily.
-> 
-> /*
->  * kswapd is woken up for ZONE_NORMAL (as this is the preferred zone
->  * as ZONE_HIGHMEM is not populated.
->  */
-> 
-> order = pgdat->kswapd_max_order;
-> classzone_idx = pgdat->classzone_idx;				/* classzone_idx == ZONE_NORMAL */
-> pgdat->kswapd_max_order = 0;
-> pgdat->classzone_idx = MAX_NR_ZONES - 1;
-> order = balance_pgdat(pgdat, order, &classzone_idx);		/* classzone_idx == ZONE_NORMAL even though
-> 								 * the highest zone was set unreclaimable
-> 								 * and it exited scanning ZONE_DMA32
-> 								 * because we did not communicate that
-> 								 * information back
+> Using TIF_bits sounds like a much better solution for this, wakeups are
+> really rather expensive and its best to avoid extra if at all possible.
 
-								Yes. It's too bad.
+The problem with using a TIF bit to tell a task that it needs to perform
+some preempt_notifier registrations is that you end up with something that
+looks a lot like preempt notifiers! You also don't escape the concurrent
+read/write to thelist of pending registrations.
 
-> 								 */
-> new_order = pgdat->kswapd_max_order;				/* new_order = 0 */
-> new_classzone_idx = pgdat->classzone_idx;			/* new_classzone_idx == ZONE_HIGHMEM
-> 								 * because that is what classzone_idx
-> 								 * gets reset to
+One thing I tried was simply using an RCU protected hlist for the preempt
+notifiers so that we don't have to worry about atomicity when reading the
+notifiers in finish_task_switch. It's a bit odd, since we know we only ever
+have a single reader, but I've included it below anyway.
 
-								Yes. new_classzone_idx is ZONE_HIGHMEM.
+If anybody has any better ideas, I'm all ears.
 
-> 								 */
-> if (order < new_order || classzone_idx > new_classzone_idx) {
-> 	/* does not sleep, this branch not taken */
-> } else {
-> 	/* tries to sleep, goes here */
-> 	try_to_sleep(ZONE_NORMAL)
-> 		sleeping_prematurely(ZONE_NORMAL)		/* finds zone unbalanced so skips scheduling */
->         order = pgdat->kswapd_max_order;
->         classzone_idx = pgdat->classzone_idx;			/* classzone_idx == ZONE_HIGHMEM now which
-> 								 * is higher than what it was originally
-> 								 * woken for
-> 								 */
-
-								But is it a problem?
-								it should be reset to ZONE_NORMAL in balance_pgdat as high zone isn't populated.
-> }
-> 
-> /* Looped around to balance_pgdat() again */
-> order = balance_pgdat()
-> 
-> Between when all_unreclaimable is set and before before kswapd
-> goes fully to sleep, a page is freed clearing all_reclaimable so
-> it rechecks all the zones, find the highest one is not balanced and
-> skip scheduling.
-
-Yes and it could be repeated forever.
-Apparently, we should fix wit this patch but I have a qustion about this patch.
-
-Quote from your patch
-
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index a76b6cc2..fe854d7 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2448,7 +2448,6 @@ loop_again:
->                       if (!zone_watermark_ok_safe(zone, order,
->                                       high_wmark_pages(zone), 0, 0)) {
->                               end_zone = i;
-> -                             *classzone_idx = i;
->                               break;
->                       }
->               }
-> @@ -2528,8 +2527,11 @@ loop_again:
->                           total_scanned > sc.nr_reclaimed + sc.nr_reclaimed / 2)
->                               sc.may_writepage = 1;
->  
-> -                     if (zone->all_unreclaimable)
-> +                     if (zone->all_unreclaimable) {
-> +                             if (end_zone && end_zone == i)
-> +                                     end_zone--;
-
-Until now, It's good.
-
->                               continue;
-> +                     }
->  
->                       if (!zone_watermark_ok_safe(zone, order,
->                                       high_wmark_pages(zone), end_zone, 0)) {
-> @@ -2709,8 +2711,8 @@ static void kswapd_try_to_sleep(pg_data_t *pgdat, int order, int classzone_idx)
->   */
->  static int kswapd(void *p)
->  {
-> -     unsigned long order;
-> -     int classzone_idx;
-> +     unsigned long order, new_order;
-> +     int classzone_idx, new_classzone_idx;
->       pg_data_t *pgdat = (pg_data_t*)p;
->       struct task_struct *tsk = current;
->  
-> @@ -2740,17 +2742,23 @@ static int kswapd(void *p)
->       tsk->flags |= PF_MEMALLOC | PF_SWAPWRITE | PF_KSWAPD;
->       set_freezable();
->  
-> -     order = 0;
-> -     classzone_idx = MAX_NR_ZONES - 1;
-> +     order = new_order = 0;
-> +     classzone_idx = new_classzone_idx = pgdat->nr_zones - 1;
->       for ( ; ; ) {
-> -             unsigned long new_order;
-> -             int new_classzone_idx;
->               int ret;
->  
-> -             new_order = pgdat->kswapd_max_order;
-> -             new_classzone_idx = pgdat->classzone_idx;
-> -             pgdat->kswapd_max_order = 0;
-> -             pgdat->classzone_idx = MAX_NR_ZONES - 1;
-> +             /*
-> +              * If the last balance_pgdat was unsuccessful it's unlikely a
-> +              * new request of a similar or harder type will succeed soon
-> +              * so consider going to sleep on the basis we reclaimed at
-> +              */
-> +             if (classzone_idx >= new_classzone_idx && order == new_order) {
-> +                     new_order = pgdat->kswapd_max_order;
-> +                     new_classzone_idx = pgdat->classzone_idx;
-> +                     pgdat->kswapd_max_order =  0;
-> +                     pgdat->classzone_idx = pgdat->nr_zones - 1;
-> +             }
-> +
-
-But in this part.
-Why do we need this?
-Although we pass high zone instead of zone we reclaimed at, it would be reset to
-ZONE_NORMAL if it's not populated. If high zone is populated and it couldn't meet
-watermark, it could be balanced and next normal zone would be balanced, too.
-
-Could you explain what's problem happen without this part?
-
->               if (order < new_order || classzone_idx > new_classzone_idx) {
->                       /*
->                        * Don't sleep if someone wants a larger 'order'
-> @@ -2763,7 +2771,7 @@ static int kswapd(void *p)
->                       order = pgdat->kswapd_max_order;
->                       classzone_idx = pgdat->classzone_idx;
->                       pgdat->kswapd_max_order = 0;
-> -                     pgdat->classzone_idx = MAX_NR_ZONES - 1;
-> +                     pgdat->classzone_idx = pgdat->nr_zones - 1;
->               }
->  
->               ret = try_to_freeze();
-> -- 
-> 1.7.3.4
-> 
+Will
 
 
+diff --git a/include/linux/preempt.h b/include/linux/preempt.h
+index 2e681d9..2e21ffe 100644
+--- a/include/linux/preempt.h
++++ b/include/linux/preempt.h
+@@ -132,6 +132,11 @@ struct preempt_notifier {
+ void preempt_notifier_register(struct preempt_notifier *notifier);
+ void preempt_notifier_unregister(struct preempt_notifier *notifier);
+ 
++void preempt_notifier_register_task(struct preempt_notifier *notifier,
++				    struct task_struct *tsk);
++void preempt_notifier_unregister_task(struct preempt_notifier *notifier,
++				      struct task_struct *tsk);
++
+ static inline void preempt_notifier_init(struct preempt_notifier *notifier,
+ 				     struct preempt_ops *ops)
+ {
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 496770a..5530d91 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1233,6 +1233,7 @@ struct task_struct {
+ #ifdef CONFIG_PREEMPT_NOTIFIERS
+ 	/* list of struct preempt_notifier: */
+ 	struct hlist_head preempt_notifiers;
++	struct mutex preempt_notifiers_mutex;
+ #endif
+ 
+ 	/*
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 9769c75..d3c46ca 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2784,6 +2784,7 @@ static void __sched_fork(struct task_struct *p)
+ 
+ #ifdef CONFIG_PREEMPT_NOTIFIERS
+ 	INIT_HLIST_HEAD(&p->preempt_notifiers);
++	mutex_init(&p->preempt_notifiers_mutex);
+ #endif
+ }
+ 
+@@ -2901,13 +2902,31 @@ void wake_up_new_task(struct task_struct *p)
+ 
+ #ifdef CONFIG_PREEMPT_NOTIFIERS
+ 
++void preempt_notifier_register_task(struct preempt_notifier *notifier,
++				    struct task_struct *tsk)
++{
++	mutex_lock(&tsk->preempt_notifiers_mutex);
++	hlist_add_head_rcu(&notifier->link, &tsk->preempt_notifiers);
++	mutex_unlock(&tsk->preempt_notifiers_mutex);
++}
++EXPORT_SYMBOL_GPL(preempt_notifier_register_task);
++
++void preempt_notifier_unregister_task(struct preempt_notifier *notifier,
++				      struct task_struct *tsk)
++{
++	mutex_lock(&tsk->preempt_notifiers_mutex);
++	hlist_del_rcu(&notifier->link);
++	mutex_unlock(&tsk->preempt_notifiers_mutex);
++}
++EXPORT_SYMBOL_GPL(preempt_notifier_unregister_task);
++
+ /**
+  * preempt_notifier_register - tell me when current is being preempted & rescheduled
+  * @notifier: notifier struct to register
+  */
+ void preempt_notifier_register(struct preempt_notifier *notifier)
+ {
+-	hlist_add_head(&notifier->link, &current->preempt_notifiers);
++	preempt_notifier_register_task(notifier, current);
+ }
+ EXPORT_SYMBOL_GPL(preempt_notifier_register);
+ 
+@@ -2919,7 +2938,7 @@ EXPORT_SYMBOL_GPL(preempt_notifier_register);
+  */
+ void preempt_notifier_unregister(struct preempt_notifier *notifier)
+ {
+-	hlist_del(&notifier->link);
++	preempt_notifier_unregister_task(notifier, current);
+ }
+ EXPORT_SYMBOL_GPL(preempt_notifier_unregister);
+ 
+@@ -2928,8 +2947,12 @@ static void fire_sched_in_preempt_notifiers(struct task_struct *curr)
+ 	struct preempt_notifier *notifier;
+ 	struct hlist_node *node;
+ 
+-	hlist_for_each_entry(notifier, node, &curr->preempt_notifiers, link)
++	rcu_read_lock();
++
++	hlist_for_each_entry_rcu(notifier, node, &curr->preempt_notifiers, link)
+ 		notifier->ops->sched_in(notifier, raw_smp_processor_id());
++
++	rcu_read_unlock();
+ }
+ 
+ static void
+@@ -2939,8 +2962,12 @@ fire_sched_out_preempt_notifiers(struct task_struct *curr,
+ 	struct preempt_notifier *notifier;
+ 	struct hlist_node *node;
+ 
+-	hlist_for_each_entry(notifier, node, &curr->preempt_notifiers, link)
++	rcu_read_lock();
++
++	hlist_for_each_entry_rcu(notifier, node, &curr->preempt_notifiers, link)
+ 		notifier->ops->sched_out(notifier, next);
++
++	rcu_read_unlock();
+ }
+ 
+ #else /* !CONFIG_PREEMPT_NOTIFIERS */
+@@ -7979,6 +8006,7 @@ void __init sched_init(void)
+ 
+ #ifdef CONFIG_PREEMPT_NOTIFIERS
+ 	INIT_HLIST_HEAD(&init_task.preempt_notifiers);
++	mutex_init(&init_task.preempt_notifiers_mutex);
+ #endif
+ 
+ #ifdef CONFIG_SMP
 
-> 
-> A variation is that it the lower zones are above the low watermark so
-> the page allocator is not waking kswapd and it should sleep on the
-> waitqueue. However, it only schedules for HZ/10 during which a page
-> is freed, the highest zone gets all_unreclaimable cleared and so it
-> stays awake. In this case, it has reached a scheduling point but it
-> is not going fully to sleep on the waitqueue as it should.
-> 
-> I see now the problem with the changelog, it sucks and could have
-> been a lot better at explaining why kswapd stays awake when the
-> information is not communicated back and why classzone_idx being set
-> to MAX_NR_ZONES-1 is sloppy :(
-> 
-> -- 
-> Mel Gorman
-> SUSE Labs
-
--- 
-Kind regards,
-Minchan Kim
