@@ -1,100 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752906Ab1GUKM2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 06:12:28 -0400
-Received: from hera.kernel.org ([140.211.167.34]:54129 "EHLO hera.kernel.org"
+	id S1752931Ab1GUKMu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 06:12:50 -0400
+Received: from hera.kernel.org ([140.211.167.34]:54143 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752388Ab1GUKMZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 06:12:25 -0400
-Date: Thu, 21 Jul 2011 10:12:10 GMT
-From: tip-bot for Alan Cox <alan@linux.intel.com>
-Message-ID: <tip-43605ef188cd39708ddc5e3adc47b337b6ebe40e@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, alan@linux.intel.com, hpa@zytor.com,
-        mingo@redhat.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, alan@linux.intel.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20110712164859.7642.84136.stgit@bob.linux.org.uk>
-References: <20110712164859.7642.84136.stgit@bob.linux.org.uk>
+	id S1752822Ab1GUKMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 06:12:48 -0400
+Date: Thu, 21 Jul 2011 10:12:37 GMT
+From: tip-bot for Jiri Olsa <jolsa@redhat.com>
+Message-ID: <tip-f120f9d51be3a7db8991e7b78dc08bab5f8ab8f3@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        tglx@linutronix.de, mingo@elte.hu, jolsa@redhat.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, jolsa@redhat.com, mingo@elte.hu
+In-Reply-To: <1310635534-4013-2-git-send-email-jolsa@redhat.com>
+References: <1310635534-4013-2-git-send-email-jolsa@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] x86, config: Introduce an INTEL_MID configuration
-Git-Commit-ID: 43605ef188cd39708ddc5e3adc47b337b6ebe40e
+Subject: [tip:perf/core] perf tools: De-opt the parse_events function
+Git-Commit-ID: f120f9d51be3a7db8991e7b78dc08bab5f8ab8f3
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 21 Jul 2011 10:12:14 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 21 Jul 2011 10:12:38 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  43605ef188cd39708ddc5e3adc47b337b6ebe40e
-Gitweb:     http://git.kernel.org/tip/43605ef188cd39708ddc5e3adc47b337b6ebe40e
-Author:     Alan Cox <alan@linux.intel.com>
-AuthorDate: Tue, 12 Jul 2011 17:49:29 +0100
+Commit-ID:  f120f9d51be3a7db8991e7b78dc08bab5f8ab8f3
+Gitweb:     http://git.kernel.org/tip/f120f9d51be3a7db8991e7b78dc08bab5f8ab8f3
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Thu, 14 Jul 2011 11:25:32 +0200
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 21 Jul 2011 10:35:14 +0200
+CommitDate: Thu, 21 Jul 2011 10:41:11 +0200
 
-x86, config: Introduce an INTEL_MID configuration
+perf tools: De-opt the parse_events function
 
-We need to carve up the configuration between:
+Moving out the option parameter from parse_events function,
+and adding new parse_events_option function instead.
 
- - MID general
- - Moorestown specific
- - Medfield specific
- - Future devices
+The option parameter is used only to carry "struct perf_evlist"
+pointer for chaining new events. Putting it away, enable us
+to call parse_events from other places without using the
+option parameter.
 
-As a base point create an INTEL_MID configuration property. We
-make the existing MRST configuration a sub-option. This means
-that the rest of the kernel config can still use X86_MRST checks
-without anything going backwards.
-
-After this is merged future patches will tidy up which devices
-are MID and which are X86_MRST, as well as add options for
-Medfield.
-
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Link: http://lkml.kernel.org/r/20110712164859.7642.84136.stgit@bob.linux.org.uk
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@redhat.com
+Cc: a.p.zijlstra@chello.nl
+Cc: paulus@samba.org
+Link: http://lkml.kernel.org/r/1310635534-4013-2-git-send-email-jolsa@redhat.com
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/Kconfig |   15 +++++++++++++--
- 1 files changed, 13 insertions(+), 2 deletions(-)
+ tools/perf/builtin-record.c    |    2 +-
+ tools/perf/builtin-stat.c      |    2 +-
+ tools/perf/builtin-top.c       |    2 +-
+ tools/perf/util/parse-events.c |   26 ++++++++++++++++----------
+ tools/perf/util/parse-events.h |    6 +++++-
+ 5 files changed, 24 insertions(+), 14 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 37357a5..80ef419 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -384,12 +384,21 @@ config X86_INTEL_CE
- 	  This option compiles in support for the CE4100 SOC for settop
- 	  boxes and media devices.
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 8e2c857..80dc5b7 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -740,7 +740,7 @@ static bool force, append_file;
+ const struct option record_options[] = {
+ 	OPT_CALLBACK('e', "event", &evsel_list, "event",
+ 		     "event selector. use 'perf list' to list available events",
+-		     parse_events),
++		     parse_events_option),
+ 	OPT_CALLBACK(0, "filter", &evsel_list, "filter",
+ 		     "event filter", parse_filter),
+ 	OPT_INTEGER('p', "pid", &target_pid,
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 1d08c80..1ad04ce 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -1032,7 +1032,7 @@ static int stat__set_big_num(const struct option *opt __used,
+ static const struct option options[] = {
+ 	OPT_CALLBACK('e', "event", &evsel_list, "event",
+ 		     "event selector. use 'perf list' to list available events",
+-		     parse_events),
++		     parse_events_option),
+ 	OPT_CALLBACK(0, "filter", &evsel_list, "filter",
+ 		     "event filter", parse_filter),
+ 	OPT_BOOLEAN('i', "no-inherit", &no_inherit,
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index f2f3f49..a43433f 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -990,7 +990,7 @@ static const char * const top_usage[] = {
+ static const struct option options[] = {
+ 	OPT_CALLBACK('e', "event", &top.evlist, "event",
+ 		     "event selector. use 'perf list' to list available events",
+-		     parse_events),
++		     parse_events_option),
+ 	OPT_INTEGER('c', "count", &default_interval,
+ 		    "event period to sample"),
+ 	OPT_INTEGER('p', "pid", &top.target_pid,
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index c0e21ae..4ea7e19 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -478,7 +478,7 @@ parse_single_tracepoint_event(char *sys_name,
+ /* sys + ':' + event + ':' + flags*/
+ #define MAX_EVOPT_LEN	(MAX_EVENT_LENGTH * 2 + 2 + 128)
+ static enum event_result
+-parse_multiple_tracepoint_event(const struct option *opt, char *sys_name,
++parse_multiple_tracepoint_event(struct perf_evlist *evlist, char *sys_name,
+ 				const char *evt_exp, char *flags)
+ {
+ 	char evt_path[MAXPATHLEN];
+@@ -512,7 +512,7 @@ parse_multiple_tracepoint_event(const struct option *opt, char *sys_name,
+ 		if (len < 0)
+ 			return EVT_FAILED;
  
-+config X86_INTEL_MID
-+	bool "Intel MID platform support"
-+	depends on X86_32
-+	depends on X86_EXTENDED_PLATFORM
-+	---help---
-+	  Select to build a kernel capable of supporting Intel MID platform
-+	  systems which do not have the PCI legacy interfaces (Moorestown,
-+	  Medfield). If you are building for a PC class system say N here.
-+
-+if X86_INTEL_MID
-+
- config X86_MRST
-        bool "Moorestown MID platform"
- 	depends on PCI
- 	depends on PCI_GOANY
--	depends on X86_32
--	depends on X86_EXTENDED_PLATFORM
- 	depends on X86_IO_APIC
- 	select APB_TIMER
- 	select I2C
-@@ -404,6 +413,8 @@ config X86_MRST
- 	  nor standard legacy replacement devices/features. e.g. Moorestown does
- 	  not contain i8259, i8254, HPET, legacy BIOS, most of the io ports.
+-		if (parse_events(opt, event_opt, 0))
++		if (parse_events(evlist, event_opt, 0))
+ 			return EVT_FAILED;
+ 	}
  
-+endif
+@@ -520,7 +520,7 @@ parse_multiple_tracepoint_event(const struct option *opt, char *sys_name,
+ }
+ 
+ static enum event_result
+-parse_tracepoint_event(const struct option *opt, const char **strp,
++parse_tracepoint_event(struct perf_evlist *evlist, const char **strp,
+ 		       struct perf_event_attr *attr)
+ {
+ 	const char *evt_name;
+@@ -560,8 +560,8 @@ parse_tracepoint_event(const struct option *opt, const char **strp,
+ 		return EVT_FAILED;
+ 	if (strpbrk(evt_name, "*?")) {
+ 		*strp += strlen(sys_name) + evt_length + 1; /* 1 == the ':' */
+-		return parse_multiple_tracepoint_event(opt, sys_name, evt_name,
+-						       flags);
++		return parse_multiple_tracepoint_event(evlist, sys_name,
++						       evt_name, flags);
+ 	} else {
+ 		return parse_single_tracepoint_event(sys_name, evt_name,
+ 						     evt_length, attr, strp);
+@@ -781,12 +781,12 @@ parse_event_modifier(const char **strp, struct perf_event_attr *attr)
+  * Symbolic names are (almost) exactly matched.
+  */
+ static enum event_result
+-parse_event_symbols(const struct option *opt, const char **str,
++parse_event_symbols(struct perf_evlist *evlist, const char **str,
+ 		    struct perf_event_attr *attr)
+ {
+ 	enum event_result ret;
+ 
+-	ret = parse_tracepoint_event(opt, str, attr);
++	ret = parse_tracepoint_event(evlist, str, attr);
+ 	if (ret != EVT_FAILED)
+ 		goto modifier;
+ 
+@@ -825,9 +825,8 @@ modifier:
+ 	return ret;
+ }
+ 
+-int parse_events(const struct option *opt, const char *str, int unset __used)
++int parse_events(struct perf_evlist *evlist , const char *str, int unset __used)
+ {
+-	struct perf_evlist *evlist = *(struct perf_evlist **)opt->value;
+ 	struct perf_event_attr attr;
+ 	enum event_result ret;
+ 	const char *ostr;
+@@ -835,7 +834,7 @@ int parse_events(const struct option *opt, const char *str, int unset __used)
+ 	for (;;) {
+ 		ostr = str;
+ 		memset(&attr, 0, sizeof(attr));
+-		ret = parse_event_symbols(opt, &str, &attr);
++		ret = parse_event_symbols(evlist, &str, &attr);
+ 		if (ret == EVT_FAILED)
+ 			return -1;
+ 
+@@ -866,6 +865,13 @@ int parse_events(const struct option *opt, const char *str, int unset __used)
+ 	return 0;
+ }
+ 
++int parse_events_option(const struct option *opt, const char *str,
++			int unset __used)
++{
++	struct perf_evlist *evlist = *(struct perf_evlist **)opt->value;
++	return parse_events(evlist, str, unset);
++}
 +
- config X86_RDC321X
- 	bool "RDC R-321x SoC"
- 	depends on X86_32
+ int parse_filter(const struct option *opt, const char *str,
+ 		 int unset __used)
+ {
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index 746d3fc..2f8e375 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -8,6 +8,7 @@
+ 
+ struct list_head;
+ struct perf_evsel;
++struct perf_evlist;
+ 
+ struct option;
+ 
+@@ -24,7 +25,10 @@ const char *event_type(int type);
+ const char *event_name(struct perf_evsel *event);
+ extern const char *__event_name(int type, u64 config);
+ 
+-extern int parse_events(const struct option *opt, const char *str, int unset);
++extern int parse_events_option(const struct option *opt, const char *str,
++			       int unset);
++extern int parse_events(struct perf_evlist *evlist, const char *str,
++			int unset);
+ extern int parse_filter(const struct option *opt, const char *str, int unset);
+ 
+ #define EVENTS_HELP_MAX (128*1024)
