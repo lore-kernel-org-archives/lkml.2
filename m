@@ -1,104 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753089Ab1GUQY3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 12:24:29 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:54728 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752758Ab1GUQY0 (ORCPT
+	id S1753213Ab1GUQYl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 12:24:41 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:53960 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753189Ab1GUQYk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 12:24:26 -0400
-Date: Fri, 22 Jul 2011 01:24:17 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        P?draig Brady <P@draigBrady.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Colin King <colin.king@canonical.com>,
-        Andrew Lutomirski <luto@mit.edu>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] Stop kswapd consuming 100% CPU when highest zone is
- small
-Message-ID: <20110721162417.GF1713@barrios-desktop>
-References: <1308926697-22475-1-git-send-email-mgorman@suse.de>
- <20110721153722.GD1713@barrios-desktop>
- <20110721160958.GT5349@suse.de>
+	Thu, 21 Jul 2011 12:24:40 -0400
+Message-ID: <4E2852C3.50109@gmail.com>
+Date: Thu, 21 Jul 2011 10:24:35 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110721160958.GT5349@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: mingo@redhat.com, linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+        a.p.zijlstra@chello.nl, stable@kernel.org, tglx@linutronix.de,
+        mingo@elte.hu, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/urgent] perf tools, x86: Fix 32-bit compile on 64-bit
+ system
+References: <1310420304-21452-1-git-send-email-dsahern@gmail.com> <tip-08a4a43fc407d780bdde36d98f89c0dbb2a6be6b@git.kernel.org> <4E284EAB.1020906@zytor.com>
+In-Reply-To: <4E284EAB.1020906@zytor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 21, 2011 at 05:09:59PM +0100, Mel Gorman wrote:
-> On Fri, Jul 22, 2011 at 12:37:22AM +0900, Minchan Kim wrote:
-> > On Fri, Jun 24, 2011 at 03:44:53PM +0100, Mel Gorman wrote:
-> > > (Built this time and passed a basic sniff-test.)
-> > > 
-> > > During allocator-intensive workloads, kswapd will be woken frequently
-> > > causing free memory to oscillate between the high and min watermark.
-> > > This is expected behaviour.  Unfortunately, if the highest zone is
-> > > small, a problem occurs.
-> > > 
-> > > This seems to happen most with recent sandybridge laptops but it's
-> > > probably a co-incidence as some of these laptops just happen to have
-> > > a small Normal zone. The reproduction case is almost always during
-> > > copying large files that kswapd pegs at 100% CPU until the file is
-> > > deleted or cache is dropped.
-> > > 
-> > > The problem is mostly down to sleeping_prematurely() keeping kswapd
-> > > awake when the highest zone is small and unreclaimable and compounded
-> > > by the fact we shrink slabs even when not shrinking zones causing a lot
-> > > of time to be spent in shrinkers and a lot of memory to be reclaimed.
-> > > 
-> > > Patch 1 corrects sleeping_prematurely to check the zones matching
-> > > 	the classzone_idx instead of all zones.
-> > > 
-> > > Patch 2 avoids shrinking slab when we are not shrinking a zone.
-> > > 
-> > > Patch 3 notes that sleeping_prematurely is checking lower zones against
-> > > 	a high classzone which is not what allocators or balance_pgdat()
-> > > 	is doing leading to an artifical believe that kswapd should be
-> > > 	still awake.
-> > > 
-> > > Patch 4 notes that when balance_pgdat() gives up on a high zone that the
-> > > 	decision is not communicated to sleeping_prematurely()
-> > > 
-> > > This problem affects 2.6.38.8 for certain and is expected to affect
-> > > 2.6.39 and 3.0-rc4 as well. If accepted, they need to go to -stable
-> > > to be picked up by distros and this series is against 3.0-rc4. I've
-> > > cc'd people that reported similar problems recently to see if they
-> > > still suffer from the problem and if this fixes it.
-> > > 
-> > 
-> > Good!
-> > This patch solved the problem.
-> > But there is still a mystery.
-> > 
-> > In log, we could see excessive shrink_slab calls.
+On 07/21/2011 10:07 AM, H. Peter Anvin wrote:
+>> The problem is the detection of the host arch without considering passed in
+>> flags. This change fixes 32-bit builds via:
+>>
+>> make EXTRA_CFLAGS=-m32
+>>
+>> and 64-bit builds still reference the memcpy_64.S.
+>>
 > 
-> Yes, because shrink_slab() was called on each loop through
-> balance_pgdat() even if the zone was balanced.
+> But this is the wrong way to build 32-bit code on 64-bit platforms.
+> make ARCH=i386 is the supported way.
 > 
+> 	-hpa
 > 
-> > And as you know, we had merged patch which adds cond_resched where last of the function
-> > in shrink_slab. So other task should get the CPU and we should not see
-> > 100% CPU of kswapd, I think.
-> > 
-> 
-> cond_resched() is not a substitute for going to sleep.
 
-Of course, it's not equal with sleep but other task should get CPU and conusme their time slice
-So we should never see 100% CPU consumption of kswapd.
-No?
+Indeed that works fine. If that is the preferred route then the patch
+needs to update the following comment in the Makefile:
 
-> 
-> -- 
-> Mel Gorman
-> SUSE Labs
+# Define EXTRA_CFLAGS=-m64 or EXTRA_CFLAGS=-m32 as appropriate for
+cross-builds.
 
--- 
-Kind regards,
-Minchan Kim
+to specify ARCH on the command line.
+
+David
