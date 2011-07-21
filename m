@@ -1,38 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752373Ab1GUH1S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 03:27:18 -0400
-Received: from [95.166.99.235] ([95.166.99.235]:33754 "EHLO kernel.dk"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751717Ab1GUH1R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 03:27:17 -0400
-Message-ID: <4E27D4CA.8020900@kernel.dk>
-Date: Thu, 21 Jul 2011 09:27:06 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1752540Ab1GUH1n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 03:27:43 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:36061 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751910Ab1GUH1m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 03:27:42 -0400
+Date: Thu, 21 Jul 2011 09:26:56 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 3/6] x86: Allow the user not to build hw_breakpoints
+Message-ID: <20110721072656.GF9216@elte.hu>
+References: <1310655837-328-1-git-send-email-fweisbec@gmail.com>
+ <1310655837-328-4-git-send-email-fweisbec@gmail.com>
+ <4E1F5EF3.6050601@zytor.com>
 MIME-Version: 1.0
-To: Mikulas Patocka <mpatocka@redhat.com>
-CC: "Alasdair G. Kergon" <agk@redhat.com>, dm-devel@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] backing-dev: use synchronize_rcu_expedited instead of
-  synchronize_rcu
-References: <Pine.LNX.4.64.1107202019420.26781@hs20-bc2-1.build.redhat.com>
-In-Reply-To: <Pine.LNX.4.64.1107202019420.26781@hs20-bc2-1.build.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E1F5EF3.6050601@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-07-21 02:29, Mikulas Patocka wrote:
-> Hi Jens
+
+* H. Peter Anvin <hpa@zytor.com> wrote:
+
+> On 07/14/2011 08:03 AM, Frederic Weisbecker wrote:
+> > So that hw_breakpoints and perf can be not built on
+> > specific embedded systems.
 > 
-> Please would you consider taking this into the block tree? It seems to 
-> speed up device deletion enormously.
+> I want to emphasize I am very, very unhappy about this.  It should 
+> be possible to not build perf while still have breakpoints 
+> available... breakpoints are way more important than perf.
 
-Sure, looks like a good fix. Reminds me of a similar problem we had in
-block core.
+What we could indeed do is to separate out a 'core perf' portion that 
+is necessary for hw-breakpoints to work fine, thus allowing for 
+example the PMU drivers to be disabled.
 
+Otherwise we have expressed hw breakpoint APIs via perf events and 
+that model is working well. Making hw-breakpoints a separate 
+subsystem again with isolated (and partly duplicated) infrastructure 
+would be a step back really.
 
--- 
-Jens Axboe
+Thanks,
 
+	Ingo
