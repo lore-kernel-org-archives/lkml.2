@@ -1,44 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063Ab1GUVhn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 17:37:43 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56214 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753032Ab1GUVhm (ORCPT
+	id S1753639Ab1GUViq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 17:38:46 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:58462 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752968Ab1GUVin (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 17:37:42 -0400
-Date: Thu, 21 Jul 2011 14:37:09 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/5] notifier error injection
-Message-Id: <20110721143709.0c1e66d6.akpm@linux-foundation.org>
-In-Reply-To: <1310951766-3840-1-git-send-email-akinobu.mita@gmail.com>
-References: <1310951766-3840-1-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 21 Jul 2011 17:38:43 -0400
+X-Greylist: delayed 438 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Jul 2011 17:38:43 EDT
+Date: Thu, 21 Jul 2011 17:31:22 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: ltt-dev@lists.casi.polymtl.ca, linux-kernel@vger.kernel.org,
+        freebsd-announce@freebsd.org, rp@svcs.cs.pdx.edu
+Cc: Jon Bernard <jbernard@debian.org>
+Subject: [RELEASE] Userspace RCU 0.6.4
+Message-ID: <20110721213122.GA23832@Krystal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 17:25:43 up 240 days,  2:28,  3 users,  load average: 0.12, 0.04,
+	0.01
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Jul 2011 10:16:01 +0900
-Akinobu Mita <akinobu.mita@gmail.com> wrote:
+liburcu is a LGPLv2.1 userspace RCU (read-copy-update) library. This
+data synchronization library provides read-side access which scales
+linearly with the number of cores. It does so by allowing multiples
+copies of a given data structure to live at the same time, and by
+monitoring the data structure accesses to detect grace periods after
+which memory reclamation is possible.
 
-> This provides the ability to inject artifical errors to the following
-> notifier chain callbacks. It is useful to test the error handling of
-> notifier call chain failures.
+Changelog:
+        * uatomic: Fix ARM build errors in uatomic.
+        * urcu tests: hold mutex across use of custom allocator.
+        * Portability fixes to support FreeBSD 8.2.
 
-That all looks very nice, but I wonder how many people are actually
-using these things.  The injection framework itself doesn't seem to
-have had a lot of uptake.
+Project website: http://lttng.org/urcu
+Download link: http://www.lttng.org/files/urcu/
 
-I wonder if we could improve things by adding an easy-to-run testing
-script which identifies all the available error-injection inputs,
-exercises them and then reports on the result?
-
-Such a script would logically reside under ./tests/fault-injection/,
-but we still don't have a tests/ directory.  Which perhaps tells us
-something ;)
-
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
