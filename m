@@ -1,66 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751754Ab1GUJfv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 05:35:51 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:59085 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257Ab1GUJfs (ORCPT
+	id S1751934Ab1GUJgt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 05:36:49 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:42466 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751257Ab1GUJgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 05:35:48 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4E27F2EC.2010902@jp.fujitsu.com>
-Date: Thu, 21 Jul 2011 18:35:40 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
+	Thu, 21 Jul 2011 05:36:48 -0400
+X-AuditID: b753bd60-a467eba0000050a4-af-4e27f32dea13
+X-AuditID: b753bd60-a467eba0000050a4-af-4e27f32dea13
+Message-ID: <4E27F32A.6010609@hitachi.com>
+Date: Thu, 21 Jul 2011 18:36:42 +0900
+From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
 MIME-Version: 1.0
-To: mgorman@suse.de
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] mm: page allocator: Reconsider zones for allocation
- after direct reclaim
-References: <1310389274-13995-1-git-send-email-mgorman@suse.de> <1310389274-13995-4-git-send-email-mgorman@suse.de> <4E1CE9FF.3050707@jp.fujitsu.com> <20110713111017.GG7529@suse.de> <4E1E6086.4060902@jp.fujitsu.com> <20110714061049.GK7529@suse.de>
-In-Reply-To: <20110714061049.GK7529@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15
+To: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        yrl.pp-manager.tt@hitachi.com, Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH -tip v2 2/6] perf script: add magic word to indicate the
+ failure of resolving symbols
+References: <20110717093031.3447.52715.stgit@linux3> <20110717093051.3447.65080.stgit@linux3> <4E2308A9.5000706@gmail.com> <4E230E32.3010503@gmail.com>
+In-Reply-To: <4E230E32.3010503@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+(2011/07/18 1:30), David Ahern wrote:
+> On 07/17/2011 10:07 AM, David Ahern wrote:
+>>
+>>
+>> On 07/17/2011 03:30 AM, Akihiro Nagai wrote:
+>>> Latest perf-script doesn't output symbol name when it failed to
+>>> resolve symbol name. This output is not friendly for external scripts
+>>> because it causes misaligment. So, this patch adds the magic word
+>>> "(unknown)" when perf-script failed to resolve symbols.
+>>
+>> Code has [unknown] with {}, not ().
+>
+> Evidently I had the shift key down -- s/{}/[]/.  :-) And I see now, for
+> dsoname you have [unknown] and for symname (unknown). Use the same for
+> both. Since () is already used for separating dsoname, use [unknown] for
+> both
+At print_sample_start() in builtin-script.c, there is the code that print "(unknown)"
+when perf cannnot resolve the event name.
 
+     printf("%s: ", evname ? evname : "(unknown)");
 
+On the other hand, at hist_entry__dso_snprintf() in util/sort.c, there is the code
+prints "[unknown]" for unresolvable DSO name.
 
+     return repsep_snprintf(bf, size, "%-*s", width, "[unknown]");
 
+In addition, perf uses "[]" for DSO name for example "[kernel.kallsyms]".
+So, I chose it. However, this specification is not easy for user-scripts.
+Should I unify this expression?
 
->> So, I think we don't need to care zonelist, just kswapd turn off
->> their own node.
-> 
-> I don't understand what you mean by this.
-
-This was the answer of following your comments.
-
-> Instead, couldn't we turn zlc->fullzones off from kswapd?
-> >
-> > Which zonelist should it clear (there are two)
-
-I mean, buddy list is belong to zone, not zonelist. therefore, kswapd
-don't need to look up zonelist.
-
-So, I'd suggest either following way,
- - use direct reclaim path, but only clear a zlc bit of zones in reclaimed zonelist, not all. or
- - use kswapd and only clear a zlc bit at kswap exiting balance_pgdat
-
-I'm prefer to add a branch to slowpath (ie reclaim path) rather than fast path.
-
-
->> And, just curious, If we will have a proper zlc clear point, why
->> do we need to keep HZ timeout?
-> 
-> Yes because we are not guaranteed to call direct reclaim either. Memory
-> could be freed by a process exiting and I'd rather not add cost to
-> the free path to find and clear all zonelists referencing the zone the
-> page being freed belongs to.
-
-Ok, it's good trade-off. I agree we need to keep HZ timeout.
-
-
-
+Thank you.
+>
+> David
+>
+>
+>>
+>>>
+>>> At the same time, this patch changes perf-script to output "[unknown]"
+>>> in the DSO field, when it failed to resolve the path of DSOs.
+>>>
+>>> Changes in v2:
+>>>   - add this patch
+>>>
+>>> Signed-off-by: Akihiro Nagai<akihiro.nagai.hw@hitachi.com>
+>>> Cc: Peter Zijlstra<peterz@infradead.org>
+>>> Cc: Frederic Weisbecker<fweisbec@gmail.com>
+>>> Cc: Paul Mackerras<paulus@samba.org>
+>>> Cc: Ingo Molnar<mingo@elte.hu>
+>>> Cc: Arnaldo Carvalho de Melo<acme@infradead.org>
+>>> Cc: David Ahern<dsahern@gmail.com>
+>>> Cc: Masami Hiramatsu<masami.hiramatsu.pt@hitachi.com>
+>>> ---
+>>>
+>>>   tools/perf/builtin-script.c |   18 +++++-------------
+>>>   tools/perf/util/map.c       |   12 ++++++++++++
+>>>   tools/perf/util/map.h       |    1 +
+>>>   tools/perf/util/session.c   |   35 ++++++++++-------------------------
+>>>   tools/perf/util/symbol.c    |   12 ++++++++++++
+>>>   tools/perf/util/symbol.h    |    1 +
+>>>   6 files changed, 41 insertions(+), 38 deletions(-)
+>>>
+>>> diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+>>> index 09024ec..b3e0951 100644
+>>> --- a/tools/perf/builtin-script.c
+>>> +++ b/tools/perf/builtin-script.c
+>>> @@ -320,7 +320,6 @@ static void print_sample_addr(union perf_event *event,
+>>>   {
+>>>   	struct addr_location al;
+>>>   	u8 cpumode = event->header.misc&  PERF_RECORD_MISC_CPUMODE_MASK;
+>>> -	const char *symname, *dsoname;
+>>>
+>>>   	printf("%16" PRIx64, sample->addr);
+>>>
+>>> @@ -340,21 +339,14 @@ static void print_sample_addr(union perf_event *event,
+>>>   		al.sym = map__find_symbol(al.map, al.addr, NULL);
+>>>
+>>>   	if (PRINT_FIELD(SYM)) {
+>>> -		if (al.sym&&  al.sym->name)
+>>> -			symname = al.sym->name;
+>>> -		else
+>>> -			symname = "";
+>>> -
+>>> -		printf(" %16s", symname);
+>>> +		printf(" ");
+>>> +		symbol__print_symname(al.sym);
+>>>   	}
+>>>
+>>>   	if (PRINT_FIELD(DSO)) {
+>>> -		if (al.map&&  al.map->dso&&  al.map->dso->name)
+>>> -			dsoname = al.map->dso->name;
+>>> -		else
+>>> -			dsoname = "";
+>>> -
+>>> -		printf(" (%s)", dsoname);
+>>> +		printf(" (");
+>>> +		map__print_dsoname(al.map);
+>>> +		printf(")");
+>>>   	}
+>>>   }
+>>>
+>>> diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+>>> index a16ecab..dddc0f3 100644
+>>> --- a/tools/perf/util/map.c
+>>> +++ b/tools/perf/util/map.c
+>>> @@ -200,6 +200,18 @@ size_t map__fprintf(struct map *self, FILE *fp)
+>>>   		       self->start, self->end, self->pgoff, self->dso->name);
+>>>   }
+>>>
+>>> +void map__print_dsoname(struct map *self)
+>>> +{
+>>> +	const char *dsoname;
+>>> +
+>>> +	if (self&&  self->dso&&  self->dso->name)
+>>> +			dsoname = self->dso->name;
+>>
+>> extra tab in the above line.
+>>
+>> Otherwise looks good to me.
+Oops! I fix it. Thank you.
+>>
+>> Acked-By: dsahern@gmail.com
+>>
+>>> +	else
+>>> +		dsoname = "[unknown]";
+>>> +
+>>> +	printf("%s", dsoname);
+>>> +}
+>>> +
+>>>   /*
+>>>    * objdump wants/reports absolute IPs for ET_EXEC, and RIPs for ET_DYN.
+>>>    * map->dso->adjust_symbols==1 for ET_EXEC-like cases.
+>>> diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+>>> index b397c03..6f452b9 100644
+>>> --- a/tools/perf/util/map.h
+>>> +++ b/tools/perf/util/map.h
+>>> @@ -112,6 +112,7 @@ void map__delete(struct map *self);
+>>>   struct map *map__clone(struct map *self);
+>>>   int map__overlap(struct map *l, struct map *r);
+>>>   size_t map__fprintf(struct map *self, FILE *fp);
+>>> +void map__print_dsoname(struct map *self);
+>>>
+>>>   int map__load(struct map *self, symbol_filter_t filter);
+>>>   struct symbol *map__find_symbol(struct map *self,
+>>> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+>>> index 453a010..442be3a 100644
+>>> --- a/tools/perf/util/session.c
+>>> +++ b/tools/perf/util/session.c
+>>> @@ -1214,7 +1214,6 @@ void perf_session__print_ip(union perf_event *event,
+>>>   			    int print_sym, int print_dso)
+>>>   {
+>>>   	struct addr_location al;
+>>> -	const char *symname, *dsoname;
+>>>   	struct callchain_cursor *cursor =&session->callchain_cursor;
+>>>   	struct callchain_cursor_node *node;
+>>>
+>>> @@ -1242,20 +1241,13 @@ void perf_session__print_ip(union perf_event *event,
+>>>
+>>>   			printf("\t%16" PRIx64, node->ip);
+>>>   			if (print_sym) {
+>>> -				if (node->sym&&  node->sym->name)
+>>> -					symname = node->sym->name;
+>>> -				else
+>>> -					symname = "";
+>>> -
+>>> -				printf(" %s", symname);
+>>> +				printf(" ");
+>>> +				symbol__print_symname(node->sym);
+>>>   			}
+>>>   			if (print_dso) {
+>>> -				if (node->map&&  node->map->dso&&  node->map->dso->name)
+>>> -					dsoname = node->map->dso->name;
+>>> -				else
+>>> -					dsoname = "";
+>>> -
+>>> -				printf(" (%s)", dsoname);
+>>> +				printf(" (");
+>>> +				map__print_dsoname(al.map);
+>>> +				printf(")");
+>>>   			}
+>>>   			printf("\n");
+>>>
+>>> @@ -1265,21 +1257,14 @@ void perf_session__print_ip(union perf_event *event,
+>>>   	} else {
+>>>   		printf("%16" PRIx64, sample->ip);
+>>>   		if (print_sym) {
+>>> -			if (al.sym&&  al.sym->name)
+>>> -				symname = al.sym->name;
+>>> -			else
+>>> -				symname = "";
+>>> -
+>>> -			printf(" %s", symname);
+>>> +			printf(" ");
+>>> +			symbol__print_symname(al.sym);
+>>>   		}
+>>>
+>>>   		if (print_dso) {
+>>> -			if (al.map&&  al.map->dso&&  al.map->dso->name)
+>>> -				dsoname = al.map->dso->name;
+>>> -			else
+>>> -				dsoname = "";
+>>> -
+>>> -			printf(" (%s)", dsoname);
+>>> +			printf(" (");
+>>> +			map__print_dsoname(al.map);
+>>> +			printf(")");
+>>>   		}
+>>>   	}
+>>>   }
+>>> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+>>> index eec1963..85e19c4 100644
+>>> --- a/tools/perf/util/symbol.c
+>>> +++ b/tools/perf/util/symbol.c
+>>> @@ -175,6 +175,18 @@ static size_t symbol__fprintf(struct symbol *sym, FILE *fp)
+>>>   		       sym->name);
+>>>   }
+>>>
+>>> +void symbol__print_symname(const struct symbol *sym)
+>>> +{
+>>> +	const char *symname;
+>>> +
+>>> +	if (sym&&  sym->name)
+>>> +		symname = sym->name;
+>>> +	else
+>>> +		symname = "(unknown)";
+>>> +
+>>> +	printf("%s", symname);
+>>> +}
+>>> +
+>>>   void dso__set_long_name(struct dso *dso, char *name)
+>>>   {
+>>>   	if (name == NULL)
+>>> diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+>>> index 325ee36..1ec17b4 100644
+>>> --- a/tools/perf/util/symbol.h
+>>> +++ b/tools/perf/util/symbol.h
+>>> @@ -238,6 +238,7 @@ void machines__destroy_guest_kernel_maps(struct rb_root *machines);
+>>>
+>>>   int symbol__init(void);
+>>>   void symbol__exit(void);
+>>> +void symbol__print_symname(const struct symbol *sym);
+>>>   bool symbol_type__is_a(char symbol_type, enum map_type map_type);
+>>>
+>>>   size_t machine__fprintf_vmlinux_path(struct machine *machine, FILE *fp);
+>>>
