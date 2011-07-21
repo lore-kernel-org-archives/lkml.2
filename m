@@ -1,65 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113Ab1GUQH4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 12:07:56 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49742 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752756Ab1GUQHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 12:07:55 -0400
-Message-ID: <4E284EAB.1020906@zytor.com>
-Date: Thu, 21 Jul 2011 09:07:07 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, a.p.zijlstra@chello.nl, stable@kernel.org,
-        dsahern@gmail.com, tglx@linutronix.de, mingo@elte.hu
-CC: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/urgent] perf tools, x86: Fix 32-bit compile on 64-bit
- system
-References: <1310420304-21452-1-git-send-email-dsahern@gmail.com> <tip-08a4a43fc407d780bdde36d98f89c0dbb2a6be6b@git.kernel.org>
-In-Reply-To: <tip-08a4a43fc407d780bdde36d98f89c0dbb2a6be6b@git.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753161Ab1GUQIV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 12:08:21 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:61766 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752762Ab1GUQIT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 12:08:19 -0400
+From: Marek Vasut <marek.vasut@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, kernel@pengutronix.de,
+        Marek Vasut <marek.vasut@gmail.com>
+Subject: [PATCH] iMX28: Fix emi_ddr_open pinmux
+Date: Thu, 21 Jul 2011 18:08:10 +0200
+Message-Id: <1311264490-5485-1-git-send-email-marek.vasut@gmail.com>
+X-Mailer: git-send-email 1.7.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/21/2011 08:36 AM, tip-bot for David Ahern wrote:
-> Commit-ID:  08a4a43fc407d780bdde36d98f89c0dbb2a6be6b
-> Gitweb:     http://git.kernel.org/tip/08a4a43fc407d780bdde36d98f89c0dbb2a6be6b
-> Author:     David Ahern <dsahern@gmail.com>
-> AuthorDate: Mon, 11 Jul 2011 15:38:24 -0600
-> Committer:  Ingo Molnar <mingo@elte.hu>
-> CommitDate: Thu, 21 Jul 2011 13:42:30 +0200
-> 
-> perf tools, x86: Fix 32-bit compile on 64-bit system
-> 
-> Builds for 32-bit perf binaries on a 64-bit host currently fail
-> with this error:
-> 
->  [...]
->  bench/../../../arch/x86/lib/memcpy_64.S: Assembler messages:
->  bench/../../../arch/x86/lib/memcpy_64.S:29: Error: bad register name `%rdi'
->  bench/../../../arch/x86/lib/memcpy_64.S:34: Error: invalid instruction suffix for `movs'
->  bench/../../../arch/x86/lib/memcpy_64.S:50: Error: bad register name `%rdi'
->  bench/../../../arch/x86/lib/memcpy_64.S:61: Error: bad register name `%rdi'
->  ...
-> 
-> The problem is the detection of the host arch without considering passed in
-> flags. This change fixes 32-bit builds via:
-> 
-> make EXTRA_CFLAGS=-m32
-> 
-> and 64-bit builds still reference the memcpy_64.S.
-> 
+Signed-off-by: Marek Vasut <marek.vasut@gmail.com>
+---
+ arch/arm/mach-mxs/include/mach/iomux-mx28.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-But this is the wrong way to build 32-bit code on 64-bit platforms.
-make ARCH=i386 is the supported way.
-
-	-hpa
-
+diff --git a/arch/arm/mach-mxs/include/mach/iomux-mx28.h b/arch/arm/mach-mxs/include/mach/iomux-mx28.h
+index f50fefd..1a95ecd 100644
+--- a/arch/arm/mach-mxs/include/mach/iomux-mx28.h
++++ b/arch/arm/mach-mxs/include/mach/iomux-mx28.h
+@@ -203,7 +203,7 @@
+ #define MX28_PAD_EMI_WEN__EMI_WEN			MXS_IOMUX_PAD_NAKED(6, 21, PAD_MUXSEL_0)
+ #define MX28_PAD_EMI_CE0N__EMI_CE0N			MXS_IOMUX_PAD_NAKED(6, 22, PAD_MUXSEL_0)
+ #define MX28_PAD_EMI_CE1N__EMI_CE1N			MXS_IOMUX_PAD_NAKED(6, 23, PAD_MUXSEL_0)
+-#define MX28_PAD_EMI_CKE__EMI_CKE			MXS_IOMUX_PAD_NAKED(6, 24, PAD_MUXSEL_0)
++#define MX28_PAD_EMI_CKE__EMI_CKE			MXS_IOMUX_PAD_NAKED(6, 26, PAD_MUXSEL_0)
+ 
+ /* MUXSEL_1 */
+ #define MX28_PAD_GPMI_D00__SSP1_D0			MXS_IOMUX_PAD_NAKED(0,  0, PAD_MUXSEL_1)
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.5.3
 
