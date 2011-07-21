@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751942Ab1GUCwi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 22:52:38 -0400
-Received: from ozlabs.org ([203.10.76.45]:52698 "EHLO ozlabs.org"
+	id S1751996Ab1GUCyS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 22:54:18 -0400
+Received: from mga09.intel.com ([134.134.136.24]:44702 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751686Ab1GUCwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 22:52:35 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Alessio Igor Bogani <abogani@kernel.org>
-Cc: Jan Beulich <jbeulich@novell.com>, Kbuild <linux-kbuild@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Tim Bird <tim.bird@am.sony.com>,
-        Anders Kaseorg <andersk@ksplice.com>,
-        Arnaud Lacombe <lacombar@gmail.com>,
-        Alessio Igor Bogani <abogani@kernel.org>
-Subject: Re: [PATCH] modpost: Fix modpost's license checking V3
-In-Reply-To: <1310626276-4541-1-git-send-email-abogani@kernel.org>
-References: <CACqU3MUXAOMGQ1nzUrtYPEQAC3U-nuq3YurtNJJLS1hft4ROGA@mail.gmail.com> <1310626276-4541-1-git-send-email-abogani@kernel.org>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
-Date: Tue, 19 Jul 2011 09:08:29 +0930
-Message-ID: <87mxgb2m8a.fsf@rustcorp.com.au>
+	id S1751686Ab1GUCyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 22:54:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,238,1309762800"; 
+   d="scan'208";a="28351518"
+Message-ID: <4E2794D5.1030104@intel.com>
+Date: Thu, 21 Jul 2011 10:54:13 +0800
+From: Huang Ying <ying.huang@intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110626 Iceowl/1.0b2 Icedove/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Andi Kleen <andi@firstfloor.org>
+CC: Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>
+Subject: Re: [BUGFIX] ACPI, APEI, EINJ Param support is disabled by default
+References: <1311149369-20624-1-git-send-email-ying.huang@intel.com> <20110721024204.GJ8006@one.firstfloor.org>
+In-Reply-To: <20110721024204.GJ8006@one.firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Jul 2011 08:51:16 +0200, Alessio Igor Bogani <abogani@kernel.org> wrote:
-> The commit f02e8a6 sorts symbols placing each of them in its own elf section.
-> The sorting and merging into the canonical sections are done by the linker.
-> Unfortunately modpost to generate Module.symvers file parses vmlinux
-> (already linked) and all modules object files (which aren't linked yet).
-> These aren't sanitized by the linker yet. That breaks modpost that can't
-> detect license properly for modules. This patch makes modpost aware of
-> the new exported symbols structure.
+On 07/21/2011 10:42 AM, Andi Kleen wrote:
+>>  
+>> +static bool param_extension;
+>> +module_param(param_extension, bool, 0);
 > 
-> Thanks to Arnaud Lacombe <lacombar@gmail.com> and Anders Kaseorg
-> <andersk@ksplice.com> for providing useful suggestions about code.
-> 
-> This work was supported by a hardware donation from the CE Linux Forum.
+> Make it 0644, then it can be changed at runtime. No need to require a reboot.
 
-Applied.
+Normally, EINJ is compiled as module, so we can change it at load time
+without a reboot.
 
-Thanks!
-Rusty.
+Do we need the real runtime switching capability?
+
+Best Regards,
+Huang Ying
