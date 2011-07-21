@@ -1,59 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847Ab1GUMms (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 08:42:48 -0400
-Received: from mga11.intel.com ([192.55.52.93]:50182 "EHLO mga11.intel.com"
+	id S1752878Ab1GUMnA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 08:43:00 -0400
+Received: from mga09.intel.com ([134.134.136.24]:10279 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752685Ab1GUMmp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 08:42:45 -0400
+	id S1752611Ab1GUMm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 08:42:58 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,240,1309762800"; 
-   d="scan'208";a="32967950"
+   d="scan'208";a="28505691"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
 Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH 1/2] staging: vt6655: simplify MAC printing by using %pMF
-Date: Thu, 21 Jul 2011 15:42:15 +0300
-Message-Id: <c8400fbc4ad3a91885fcda0e080be0ae80fcf077.1311252059.git.andriy.shevchenko@linux.intel.com>
+Subject: [PATCH 2/2] staging: vt6656: use %pMF for printing MACs
+Date: Thu, 21 Jul 2011 15:42:16 +0300
+Message-Id: <5057c51b630e262b3f0d7f7a86a749edd1de3feb.1311252059.git.andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <c8400fbc4ad3a91885fcda0e080be0ae80fcf077.1311252059.git.andriy.shevchenko@linux.intel.com>
+References: <c8400fbc4ad3a91885fcda0e080be0ae80fcf077.1311252059.git.andriy.shevchenko@linux.intel.com>
+In-Reply-To: <c8400fbc4ad3a91885fcda0e080be0ae80fcf077.1311252059.git.andriy.shevchenko@linux.intel.com>
+References: <c8400fbc4ad3a91885fcda0e080be0ae80fcf077.1311252059.git.andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 ---
- drivers/staging/vt6655/device_main.c |   10 +-----
- drivers/staging/vt6655/dpc.c         |   30 ++++----------------
- drivers/staging/vt6655/wmgr.c        |   49 +++++++---------------------------
- 3 files changed, 18 insertions(+), 71 deletions(-)
+ drivers/staging/vt6656/dpc.c      |   30 ++++------------------
+ drivers/staging/vt6656/main_usb.c |   11 +-------
+ drivers/staging/vt6656/wmgr.c     |   49 +++++++-----------------------------
+ 3 files changed, 18 insertions(+), 72 deletions(-)
 
-diff --git a/drivers/staging/vt6655/device_main.c b/drivers/staging/vt6655/device_main.c
-index 3d2a9ba..0a1aa03 100644
---- a/drivers/staging/vt6655/device_main.c
-+++ b/drivers/staging/vt6655/device_main.c
-@@ -815,14 +815,8 @@ else  CARDbRadioPowerOn(pDevice);
-             pMgmt->eScanType = WMAC_SCAN_PASSIVE;
-     // get Permanent network address
-     SROMvReadEtherAddress(pDevice->PortOffset, pDevice->abyCurrentNetAddr);
--    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Network address = %02x-%02x-%02x=%02x-%02x-%02x\n",
--        pDevice->abyCurrentNetAddr[0],
--        pDevice->abyCurrentNetAddr[1],
--        pDevice->abyCurrentNetAddr[2],
--        pDevice->abyCurrentNetAddr[3],
--        pDevice->abyCurrentNetAddr[4],
--        pDevice->abyCurrentNetAddr[5]);
--
-+	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Network address = %pMF\n",
-+		pDevice->abyCurrentNetAddr);
- 
-     // reset Tx pointer
-     CARDvSafeResetRx(pDevice);
-diff --git a/drivers/staging/vt6655/dpc.c b/drivers/staging/vt6655/dpc.c
-index cf0deac..8ebbdbc 100644
---- a/drivers/staging/vt6655/dpc.c
-+++ b/drivers/staging/vt6655/dpc.c
-@@ -1107,30 +1107,12 @@ static bool s_bAPModeRxCtl (
+diff --git a/drivers/staging/vt6656/dpc.c b/drivers/staging/vt6656/dpc.c
+index cb817ce..5328daf 100644
+--- a/drivers/staging/vt6656/dpc.c
++++ b/drivers/staging/vt6656/dpc.c
+@@ -1109,30 +1109,12 @@ static BOOL s_bAPModeRxCtl (
                                         &Status
                                         );
                      DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "dpc: send vMgrDeAuthenBeginSta 3\n");
@@ -88,13 +71,37 @@ index cf0deac..8ebbdbc 100644
 +			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "ADDR1:%pMF\n",
 +				p802_11Header->abyAddr1);
                      DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "dpc: wFrameCtl= %x\n", p802_11Header->wFrameCtl );
-                     VNSvInPortB(pDevice->PortOffset + MAC_REG_RCR, &(pDevice->byRxMode));
-                     DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "dpc:pDevice->byRxMode = %x\n", pDevice->byRxMode );
-diff --git a/drivers/staging/vt6655/wmgr.c b/drivers/staging/vt6655/wmgr.c
-index ab289c3..96cafd3 100644
---- a/drivers/staging/vt6655/wmgr.c
-+++ b/drivers/staging/vt6655/wmgr.c
-@@ -2521,14 +2521,8 @@ vMgrCreateOwnIBSS(
+                     return TRUE;
+             }
+diff --git a/drivers/staging/vt6656/main_usb.c b/drivers/staging/vt6656/main_usb.c
+index e18efd4..4118d80 100644
+--- a/drivers/staging/vt6656/main_usb.c
++++ b/drivers/staging/vt6656/main_usb.c
+@@ -611,17 +611,10 @@ static BOOL device_init_registers(PSDevice pDevice, DEVICE_INIT_TYPE InitType)
+ 
+         // if exist SW network address, use SW network address.
+ 
+-        DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Network address = %02x-%02x-%02x=%02x-%02x-%02x\n",
+-            pDevice->abyCurrentNetAddr[0],
+-            pDevice->abyCurrentNetAddr[1],
+-            pDevice->abyCurrentNetAddr[2],
+-            pDevice->abyCurrentNetAddr[3],
+-            pDevice->abyCurrentNetAddr[4],
+-            pDevice->abyCurrentNetAddr[5]);
++	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Network address = %pMF\n",
++		pDevice->abyCurrentNetAddr);
+     }
+ 
+-
+-
+     // Set BB and packet type at the same time.
+     // Set Short Slot Time, xIFS, and RSPINF.
+     if (pDevice->byBBType == BB_TYPE_11A) {
+diff --git a/drivers/staging/vt6656/wmgr.c b/drivers/staging/vt6656/wmgr.c
+index d67748f..147e125 100644
+--- a/drivers/staging/vt6656/wmgr.c
++++ b/drivers/staging/vt6656/wmgr.c
+@@ -2477,14 +2477,8 @@ void vMgrCreateOwnIBSS(void *hDeviceContext,
      if (pMgmt->eCurrMode == WMAC_MODE_ESS_AP) {
          // AP mode BSSID = MAC addr
          memcpy(pMgmt->abyCurrBSSID, pMgmt->abyMACAddr, WLAN_ADDR_LEN);
@@ -106,12 +113,12 @@ index ab289c3..96cafd3 100644
 -                      pMgmt->abyCurrBSSID[4],
 -                      pMgmt->abyCurrBSSID[5]
 -                    );
-+	DBG_PRT(MSG_LEVEL_INFO, KERN_INFO"AP beacon created BSSID:%pMF\n",
-+		pMgmt->abyCurrBSSID);
++		DBG_PRT(MSG_LEVEL_INFO, KERN_INFO"AP beacon created BSSID:"
++			"%pMF\n", pMgmt->abyCurrBSSID);
      }
  
      if (pMgmt->eCurrMode == WMAC_MODE_IBSS_STA) {
-@@ -2550,14 +2544,8 @@ vMgrCreateOwnIBSS(
+@@ -2506,14 +2500,8 @@ void vMgrCreateOwnIBSS(void *hDeviceContext,
          pMgmt->abyCurrBSSID[0] |= IEEE_ADDR_UNIVERSAL;
  
  
@@ -123,14 +130,14 @@ index ab289c3..96cafd3 100644
 -                      pMgmt->abyCurrBSSID[4],
 -                      pMgmt->abyCurrBSSID[5]
 -                    );
-+	DBG_PRT(MSG_LEVEL_INFO, KERN_INFO"Adhoc beacon created bssid:%pMF\n",
-+		pMgmt->abyCurrBSSID);
++		DBG_PRT(MSG_LEVEL_INFO, KERN_INFO"Adhoc beacon created bssid:"
++			"%pMF\n", pMgmt->abyCurrBSSID);
      }
  
-     // Set Capability Info
-@@ -2887,14 +2875,8 @@ vMgrJoinBSSBegin(
- //            pDevice->bLinkPass = true;
- //            memcpy(pDevice->abyBSSID, pCurr->abyBSSID, WLAN_BSSID_LEN);
+     // set BSSID filter
+@@ -2878,14 +2866,8 @@ void vMgrJoinBSSBegin(void *hDeviceContext, PCMD_STATUS pStatus)
+             ControlvMaskByte(pDevice,MESSAGE_REQUEST_MACREG,MAC_REG_PAPEDELAY,LEDSTS_STS,LEDSTS_INTER);
+             memcpy(pDevice->abyBSSID, pCurr->abyBSSID, WLAN_BSSID_LEN);
  
 -            DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Join IBSS ok:%02x-%02x-%02x-%02x-%02x-%02x \n",
 -                  pMgmt->abyCurrBSSID[0],
@@ -145,9 +152,9 @@ index ab289c3..96cafd3 100644
              // Preamble type auto-switch: if AP can receive short-preamble cap,
              // and if registry setting is short preamble we can turn on too.
  
-@@ -2984,13 +2966,8 @@ s_vMgrSynchBSS (
+@@ -2983,13 +2965,8 @@ s_vMgrSynchBSS (
  
-     MACvReadBSSIDAddress(pDevice->PortOffset, pMgmt->abyCurrBSSID);
+     memcpy(pMgmt->abyCurrBSSID, pCurr->abyBSSID, 6);
  
 -    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Sync:set CurrBSSID address = %02x-%02x-%02x=%02x-%02x-%02x\n",
 -        pMgmt->abyCurrBSSID[0],
@@ -160,9 +167,9 @@ index ab289c3..96cafd3 100644
 +		"%pMF\n", pMgmt->abyCurrBSSID);
  
      if (pCurr->eNetworkTypeInUse == PHY_TYPE_11A) {
-         if ((pMgmt->eConfigPHYMode == PHY_TYPE_11A) ||
-@@ -4462,14 +4439,8 @@ s_vMgrRxProbeRequest(
-         sFrame.pBuf = (unsigned char *)pRxPacket->p80211Header;
+         if ((pDevice->eConfigPHYMode == PHY_TYPE_11A) ||
+@@ -4334,14 +4311,8 @@ s_vMgrRxProbeRequest(
+         sFrame.pBuf = (PBYTE)pRxPacket->p80211Header;
          vMgrDecodeProbeRequest(&sFrame);
  /*
 -        DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Probe request rx:MAC addr:%02x-%02x-%02x=%02x-%02x-%02x \n",
