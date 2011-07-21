@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703Ab1GUIG3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 04:06:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15256 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751425Ab1GUIG0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 04:06:26 -0400
-Message-ID: <4E27DEA9.20404@redhat.com>
-Date: Thu, 21 Jul 2011 10:09:13 +0200
-From: Kevin Wolf <kwolf@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        levinsasha928@gmail.com, penberg@kernel.org, kwolf@redhat.com,
-        tglx@linutronix.de
-CC: linux-tip-commits@vger.kernel.org, kvm-devel <kvm@vger.kernel.org>
-Subject: Re: [tip:tools/kvm] kvm tools, qcow: Fix copy-on-write image corruption
-References: <tip-4839bcd6b04a1b628f0f00d535ddca2ee872e9fa@git.kernel.org>
-In-Reply-To: <tip-4839bcd6b04a1b628f0f00d535ddca2ee872e9fa@git.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1752728Ab1GUIG6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 04:06:58 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:26904 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751425Ab1GUIGz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 04:06:55 -0400
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+To: linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk, gregkh@suse.de
+Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Subject: [PATCH] pch_phub: Care FUNCSEL register in PM
+Date: Thu, 21 Jul 2011 17:07:08 +0900
+Message-Id: <1311235628-4887-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 20.07.2011 21:49, schrieb tip-bot for Pekka Enberg:
-> Commit-ID:  4839bcd6b04a1b628f0f00d535ddca2ee872e9fa
-> Gitweb:     http://git.kernel.org/tip/4839bcd6b04a1b628f0f00d535ddca2ee872e9fa
-> Author:     Pekka Enberg <penberg@kernel.org>
-> AuthorDate: Wed, 20 Jul 2011 16:28:31 +0300
-> Committer:  Pekka Enberg <penberg@kernel.org>
-> CommitDate: Wed, 20 Jul 2011 16:28:31 +0300
-> 
-> kvm tools, qcow: Fix copy-on-write image corruption
-> 
-> We don't handle refcount table properly so make sure we only write to clusters
-> that have the "copied" flag set.
-> 
-> Cc: Kevin Wolf <kwolf@redhat.com>
-> Cc: Sasha Levin <levinsasha928@gmail.com>
-> Signed-off-by: Pekka Enberg <penberg@kernel.org>
+Only ML7213/ML7223(Bus-n) has this register.
+Currently,this driver doesn't care register "FUNCSEL" in suspend/resume.
+This patch saves/restores FUNCSEL register only when the device is ML7213 or
+ML7223(Bus-n).
 
-Hm, I must have missed this patch on the KVM mailing list...
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+---
+ drivers/misc/pch_phub.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-You should also error out before creating a new L2 table as its refcount
-would have to be updated, too. On the other hand, the patch is a bit too
-restrictive, because it applies the check to qcow1 which doesn't even
-have a refcount table.
+diff --git a/drivers/misc/pch_phub.c b/drivers/misc/pch_phub.c
+index 7bc6f35..b2ea43e 100644
+--- a/drivers/misc/pch_phub.c
++++ b/drivers/misc/pch_phub.c
+@@ -89,6 +89,7 @@
+ #define PCH_PHUB_INTPIN_REG_WPERMIT_REG3	0x002C
+ #define PCH_PHUB_INT_REDUCE_CONTROL_REG_BASE	0x0040
+ #define CLKCFG_REG_OFFSET			0x500
++#define FUNCSEL_REG_OFFSET			0x508
+ 
+ #define PCH_PHUB_OROM_SIZE 15360
+ 
+@@ -107,6 +108,7 @@
+  * @intpin_reg_wpermit_reg3:		INTPIN_REG_WPERMIT register 3 val
+  * @int_reduce_control_reg:		INT_REDUCE_CONTROL registers val
+  * @clkcfg_reg:				CLK CFG register val
++ * @funcsel_reg:			Function select register value
+  * @pch_phub_base_address:		Register base address
+  * @pch_phub_extrom_base_address:	external rom base address
+  * @pch_mac_start_address:		MAC address area start address
+@@ -127,6 +129,7 @@ struct pch_phub_reg {
+ 	u32 intpin_reg_wpermit_reg3;
+ 	u32 int_reduce_control_reg[MAX_NUM_INT_REDUCE_CONTROL_REG];
+ 	u32 clkcfg_reg;
++	u32 funcsel_reg;
+ 	void __iomem *pch_phub_base_address;
+ 	void __iomem *pch_phub_extrom_base_address;
+ 	u32 pch_mac_start_address;
+@@ -210,6 +213,8 @@ static void pch_phub_save_reg_conf(struct pci_dev *pdev)
+ 			__func__, i, chip->int_reduce_control_reg[i]);
+ 	}
+ 	chip->clkcfg_reg = ioread32(p + CLKCFG_REG_OFFSET);
++	if ((chip->ioh_type == 2) || (chip->ioh_type == 4))
++		chip->funcsel_reg = ioread32(p + FUNCSEL_REG_OFFSET);
+ }
+ 
+ /* pch_phub_restore_reg_conf - restore register configuration */
+@@ -270,6 +275,8 @@ static void pch_phub_restore_reg_conf(struct pci_dev *pdev)
+ 	}
+ 
+ 	iowrite32(chip->clkcfg_reg, p + CLKCFG_REG_OFFSET);
++	if ((chip->ioh_type == 2) || (chip->ioh_type == 4))
++		iowrite32(chip->funcsel_reg, p + FUNCSEL_REG_OFFSET);
+ }
+ 
+ /**
+-- 
+1.7.4.4
 
-I'm not sure if everyone is aware of it, so another hint: Now that you
-can't grow qcow2 any more, you might find it useful to use qemu-img
-create -f qcow2 -o preallocation=metadata, so that all clusters are
-already present and you don't get random failures.
-
-Kevin
