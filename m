@@ -1,62 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753136Ab1GUXEm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 19:04:42 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:53512 "EHLO
+	id S1752277Ab1GUXHU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 19:07:20 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:58056 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752096Ab1GUXBA (ORCPT
+	with ESMTP id S1752019Ab1GUXHR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 19:01:00 -0400
+	Thu, 21 Jul 2011 19:07:17 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=message-id:user-agent:date:from:to:cc:subject:references:content-disposition;
-	b=Hqc19N6juS36G61DTd/2lWuMqjWx6kX1MwMVCThOvHaK0stS2QtXCk4sfsTGkMaVv
-	WR9+M9dUTQgqW3PV18lQQ==
-Message-Id: <20110721184756.783631070@google.com>
-User-Agent: quilt/0.48-1
-Date: Thu, 21 Jul 2011 09:43:26 -0700
-From: Paul Turner <pjt@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Jason Baron <jbaron@redhat.com>
-Subject: [patch 01/18] sched: (fixlet) dont update shares twice on on_rq parent
-References: <20110721164325.231521704@google.com>
-Content-Disposition: inline; filename=sched-bwc-fix_dequeue_task_buglet.patch
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:x-system-of-record;
+	b=SoBPI65OcOHB0w/mq+DR+kAihhLZ4Sz8h5tNefTVzj9iDe75w9T48XLNq7q6yI1ia
+	ALNs1sM6DXBqh/Rybst8Q==
+MIME-Version: 1.0
+In-Reply-To: <1311281880-28041-1-git-send-email-mjg@redhat.com>
+References: <1311281880-28041-1-git-send-email-mjg@redhat.com>
+From: Mike Waychison <mikew@google.com>
+Date: Thu, 21 Jul 2011 16:06:55 -0700
+Message-ID: <CAGTjWtDRrU3Mnqd+G7oHbYi3shBFP4OhLhYrmGKJnqD8Djhj3w@mail.gmail.com>
+Subject: Re: Add efi variables as a pstore backend
+To: Matthew Garrett <mjg@redhat.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, tony.luck@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In dequeue_task_fair() we bail on dequeue when we encounter a parenting entity
-with additional weight.  However, we perform a double shares update on this
-entity as we continue the shares update traversal from this point, despite
-dequeue_entity() having already updated its queuing cfs_rq.
-Avoid this by starting from the parent when we resume.
+On Thu, Jul 21, 2011 at 1:57 PM, Matthew Garrett <mjg@redhat.com> wrote:
+> The same as the last attempt, but with Tony's comments on patch 4 addressed.
+>
+>
 
-Signed-off-by: Paul Turner <pjt@google.com>
----
- kernel/sched_fair.c |    3 +++
- 1 file changed, 3 insertions(+)
+I just read through these and it looks good to me.
 
-Index: tip/kernel/sched_fair.c
-===================================================================
---- tip.orig/kernel/sched_fair.c
-+++ tip/kernel/sched_fair.c
-@@ -1370,6 +1370,9 @@ static void dequeue_task_fair(struct rq 
- 			 */
- 			if (task_sleep && parent_entity(se))
- 				set_next_buddy(parent_entity(se));
-+
-+			/* avoid re-evaluating load for this entity */
-+			se = parent_entity(se);
- 			break;
- 		}
- 		flags |= DEQUEUE_SLEEP;
-
-
+We can deal with the unload side of things when needed.
