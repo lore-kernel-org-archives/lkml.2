@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754004Ab1GUVBe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 17:01:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26301 "EHLO mx1.redhat.com"
+	id S1753996Ab1GUVBu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 17:01:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14385 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753894Ab1GUU76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 16:59:58 -0400
+	id S1753790Ab1GUU7y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 16:59:54 -0400
 From: Matthew Garrett <mjg@redhat.com>
 To: x86@kernel.org
 Cc: linux-kernel@vger.kernel.org, mikew@google.com, tony.luck@intel.com,
         Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH V2 5/9] efi: Add support for using efivars as a pstore backend
-Date: Thu, 21 Jul 2011 16:57:56 -0400
-Message-Id: <1311281880-28041-6-git-send-email-mjg@redhat.com>
+Subject: [PATCH V2 2/9] pstore: Add extra context for writes and erases
+Date: Thu, 21 Jul 2011 16:57:53 -0400
+Message-Id: <1311281880-28041-3-git-send-email-mjg@redhat.com>
 In-Reply-To: <1311281880-28041-1-git-send-email-mjg@redhat.com>
 References: <1311281880-28041-1-git-send-email-mjg@redhat.com>
 X-SA-Do-Not-Run: Yes
@@ -23,293 +23,146 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-EFI provides an area of nonvolatile storage managed by the firmware. We
-can use this as a pstore backend to maintain copies of oopses, aiding
-diagnosis.
+EFI only provides small amounts of individual storage, and conventionally
+puts metadata in the storage variable name. Rather than add a metadata
+header to the (already limited) variable storage, it's easier for us to
+modify pstore to pass all the information we need to construct a unique
+variable name to the appropriate functions.
 
 Signed-off-by: Matthew Garrett <mjg@redhat.com>
 ---
- drivers/firmware/efivars.c |  191 +++++++++++++++++++++++++++++++++++++++++++-
- include/linux/efi.h        |    6 ++
- 2 files changed, 195 insertions(+), 2 deletions(-)
+ drivers/acpi/apei/erst.c |   10 ++++++----
+ fs/pstore/inode.c        |    6 ++++--
+ fs/pstore/platform.c     |    9 +++++----
+ include/linux/pstore.h   |    5 +++--
+ 4 files changed, 18 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index 5f29aaf..2bbb226 100644
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -78,6 +78,7 @@
- #include <linux/kobject.h>
- #include <linux/device.h>
- #include <linux/slab.h>
-+#include <linux/pstore.h>
+diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
+index 8aac55e..51cf7ba 100644
+--- a/drivers/acpi/apei/erst.c
++++ b/drivers/acpi/apei/erst.c
+@@ -933,9 +933,10 @@ static int erst_open_pstore(struct pstore_info *psi);
+ static int erst_close_pstore(struct pstore_info *psi);
+ static ssize_t erst_reader(u64 *id, enum pstore_type_id *type,
+ 			   struct timespec *time, struct pstore_info *psi);
+-static u64 erst_writer(enum pstore_type_id type, size_t size,
++static u64 erst_writer(enum pstore_type_id type, int part, size_t size,
+ 		       struct pstore_info *psi);
+-static int erst_clearer(u64 id, struct pstore_info *psi);
++static int erst_clearer(enum pstore_type_id type, u64 id,
++			struct pstore_info *psi);
  
- #include <asm/uaccess.h>
- 
-@@ -89,6 +90,8 @@ MODULE_DESCRIPTION("sysfs interface to EFI Variables");
- MODULE_LICENSE("GPL");
- MODULE_VERSION(EFIVARS_VERSION);
- 
-+#define DUMP_NAME_LEN 52
-+
- /*
-  * The maximum size of VariableName + Data = 1024
-  * Therefore, it's reasonable to save that much
-@@ -161,18 +164,28 @@ utf8_strsize(efi_char16_t *data, unsigned long maxlength)
+ static struct pstore_info erst_info = {
+ 	.owner		= THIS_MODULE,
+@@ -1039,7 +1040,7 @@ out:
+ 	return (rc < 0) ? rc : (len - sizeof(*rcd));
  }
  
- static efi_status_t
--get_var_data(struct efivars *efivars, struct efi_variable *var)
-+get_var_data_locked(struct efivars *efivars, struct efi_variable *var)
+-static u64 erst_writer(enum pstore_type_id type, size_t size,
++static u64 erst_writer(enum pstore_type_id type, int part, size_t size,
+ 		       struct pstore_info *psi)
  {
- 	efi_status_t status;
- 
--	spin_lock(&efivars->lock);
- 	var->DataSize = 1024;
- 	status = efivars->ops->get_variable(var->VariableName,
- 					    &var->VendorGuid,
- 					    &var->Attributes,
- 					    &var->DataSize,
- 					    var->Data);
-+	return status;
-+}
-+
-+static efi_status_t
-+get_var_data(struct efivars *efivars, struct efi_variable *var)
-+{
-+	efi_status_t status;
-+
-+	spin_lock(&efivars->lock);
-+	status = get_var_data_locked(efivars, var);
- 	spin_unlock(&efivars->lock);
-+
- 	if (status != EFI_SUCCESS) {
- 		printk(KERN_WARNING "efivars: get_variable() failed 0x%lx!\n",
- 			status);
-@@ -387,12 +400,176 @@ static struct kobj_type efivar_ktype = {
- 	.default_attrs = def_attrs,
- };
- 
-+static struct pstore_info efi_pstore_info;
-+
- static inline void
- efivar_unregister(struct efivar_entry *var)
- {
- 	kobject_put(&var->kobj);
+ 	struct cper_pstore_record *rcd = (struct cper_pstore_record *)
+@@ -1083,7 +1084,8 @@ static u64 erst_writer(enum pstore_type_id type, size_t size,
+ 	return rcd->hdr.record_id;
  }
  
-+#ifdef CONFIG_PSTORE
-+
-+static int efi_pstore_open(struct pstore_info *psi)
-+{
-+	struct efivars *efivars = psi->data;
-+
-+	spin_lock(&efivars->lock);
-+	efivars->walk_entry = list_first_entry(&efivars->list,
-+					       struct efivar_entry, list);
-+	return 0;
-+}
-+
-+static int efi_pstore_close(struct pstore_info *psi)
-+{
-+	struct efivars *efivars = psi->data;
-+
-+	spin_unlock(&efivars->lock);
-+	return 0;
-+}
-+
-+static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
-+			       struct timespec *timespec, struct pstore_info *psi)
-+{
-+	efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
-+	struct efivars *efivars = psi->data;
-+	char name[DUMP_NAME_LEN];
-+	int i;
-+	unsigned int part, size;
-+	unsigned long time;
-+
-+	while (&efivars->walk_entry->list != &efivars->list) {
-+		if (!efi_guidcmp(efivars->walk_entry->var.VendorGuid,
-+				 vendor)) {
-+			for (i = 0; i < DUMP_NAME_LEN; i++) {
-+				name[i] = efivars->walk_entry->var.VariableName[i];
-+			}
-+			if (sscanf(name, "dump-type%u-%u-%lu", type, &part, &time) == 3) {
-+				*id = part;
-+				timespec->tv_sec = time;
-+				timespec->tv_nsec = 0;
-+				get_var_data_locked(efivars, &efivars->walk_entry->var);
-+				size = efivars->walk_entry->var.DataSize;
-+				memcpy(psi->buf, efivars->walk_entry->var.Data, size);
-+				efivars->walk_entry = list_entry(efivars->walk_entry->list.next,
-+					           struct efivar_entry, list);
-+				return size;
-+			}
-+		}
-+		efivars->walk_entry = list_entry(efivars->walk_entry->list.next,
-+						 struct efivar_entry, list);
-+	}
-+	return 0;
-+}
-+
-+static u64 efi_pstore_write(enum pstore_type_id type, unsigned int part,
-+			    size_t size, struct pstore_info *psi)
-+{
-+	char name[DUMP_NAME_LEN];
-+	char stub_name[DUMP_NAME_LEN];
-+	efi_char16_t efi_name[DUMP_NAME_LEN];
-+	efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
-+	struct efivars *efivars = psi->data;
-+	struct efivar_entry *entry, *found = NULL;
-+	int i;
-+
-+	sprintf(stub_name, "dump-type%u-%u-", type, part);
-+	sprintf(name, "%s%lu", stub_name, get_seconds());
-+
-+	spin_lock(&efivars->lock);
-+
-+	for (i = 0; i < DUMP_NAME_LEN; i++)
-+		efi_name[i] = stub_name[i];
-+
-+	/*
-+	 * Clean up any entries with the same name
-+	 */
-+
-+	list_for_each_entry(entry, &efivars->list, list) {
-+		get_var_data_locked(efivars, &entry->var);
-+
-+		for (i = 0; i < DUMP_NAME_LEN; i++) {
-+			if (efi_name[i] == 0) {
-+				found = entry;
-+				efivars->ops->set_variable(entry->var.VariableName,
-+							   &entry->var.VendorGuid,
-+							   EFI_VARIABLE_NON_VOLATILE | EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS,
-+							   0, NULL);
-+				break;
-+			} else if (efi_name[i] != entry->var.VariableName[i]) {
-+				break;
-+			}
-+		}
-+	}
-+
-+	if (found)
-+		list_del(&found->list);
-+
-+	for (i = 0; i < DUMP_NAME_LEN; i++)
-+		efi_name[i] = name[i];
-+
-+	efivars->ops->set_variable(efi_name, &vendor,
-+				   EFI_VARIABLE_NON_VOLATILE | EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS,
-+				   size, psi->buf);
-+
-+	spin_unlock(&efivars->lock);
-+
-+	if (found)
-+		efivar_unregister(found);
-+
-+	if (size)
-+		efivar_create_sysfs_entry(efivars, utf8_strsize(efi_name, DUMP_NAME_LEN * 2),
-+					  efi_name, &vendor);
-+
-+	return part;
-+};
-+
-+static int efi_pstore_erase(enum pstore_type_id type, u64 id,
-+			    struct pstore_info *psi)
-+{
-+	efi_pstore_write(type, id, 0, psi);
-+
-+	return 0;
-+}
-+#else
-+static int efi_pstore_open(struct pstore_info *psi)
-+{
-+	return 0;
-+}
-+
-+static int efi_pstore_close(struct pstore_info *psi)
-+{
-+	return 0;
-+}
-+
-+static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
-+			       struct timespec *time, struct pstore_info *psi)
-+{
-+	return -1;
-+}
-+
-+static u64 efi_pstore_write(enum pstore_type_id type, int part, size_t size,
-+			    struct pstore_info *psi)
-+{
-+	return 0;
-+}
-+
-+static int efi_pstore_erase(enum pstore_type_id type, u64 id,
-+			    struct pstore_info *psi)
-+{
-+	return 0;
-+}
-+#endif
-+
-+static struct pstore_info efi_pstore_info = {
-+	.owner		= THIS_MODULE,
-+	.name		= "efi",
-+	.open		= efi_pstore_open,
-+	.close		= efi_pstore_close,
-+	.read		= efi_pstore_read,
-+	.write		= efi_pstore_write,
-+	.erase		= efi_pstore_erase,
-+};
+-static int erst_clearer(u64 id, struct pstore_info *psi)
++static int erst_clearer(enum pstore_type_id type, u64 id,
++			struct pstore_info *psi)
+ {
+ 	return erst_clear(id);
+ }
+diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
+index b19884a..893b961 100644
+--- a/fs/pstore/inode.c
++++ b/fs/pstore/inode.c
+@@ -39,8 +39,9 @@
+ #define	PSTORE_NAMELEN	64
  
- static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
- 			     struct bin_attribute *bin_attr,
-@@ -763,6 +940,16 @@ int register_efivars(struct efivars *efivars,
- 	if (error)
- 		unregister_efivars(efivars);
+ struct pstore_private {
+-	u64	id;
+ 	struct pstore_info *psi;
++	enum pstore_type_id type;
++	u64	id;
+ 	ssize_t	size;
+ 	char	data[];
+ };
+@@ -73,7 +74,7 @@ static int pstore_unlink(struct inode *dir, struct dentry *dentry)
+ {
+ 	struct pstore_private *p = dentry->d_inode->i_private;
  
-+	efivars->efi_pstore_info = efi_pstore_info;
-+
-+	efivars->efi_pstore_info.buf = kmalloc(4096, GFP_KERNEL);
-+	if (efivars->efi_pstore_info.buf) {
-+		efivars->efi_pstore_info.bufsize = 1024;
-+		efivars->efi_pstore_info.data = efivars;
-+		mutex_init(&efivars->efi_pstore_info.buf_mutex);
-+		pstore_register(&efivars->efi_pstore_info);
-+	}
-+
- out:
- 	kfree(variable_name);
+-	p->psi->erase(p->id, p->psi);
++	p->psi->erase(p->type, p->id, p->psi);
  
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index ec25726..2362a0b 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -19,6 +19,7 @@
- #include <linux/rtc.h>
- #include <linux/ioport.h>
- #include <linux/pfn.h>
-+#include <linux/pstore.h>
+ 	return simple_unlink(dir, dentry);
+ }
+@@ -192,6 +193,7 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
+ 	private = kmalloc(sizeof *private + size, GFP_KERNEL);
+ 	if (!private)
+ 		goto fail_alloc;
++	private->type = type;
+ 	private->id = id;
+ 	private->psi = psi;
  
- #include <asm/page.h>
- #include <asm/system.h>
-@@ -232,6 +233,9 @@ typedef efi_status_t efi_query_capsule_caps_t(efi_capsule_header_t **capsules,
- #define UV_SYSTEM_TABLE_GUID \
-     EFI_GUID(  0x3b13a7d4, 0x633e, 0x11dd, 0x93, 0xec, 0xda, 0x25, 0x56, 0xd8, 0x95, 0x93 )
+diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
+index 221c04e..163bb40 100644
+--- a/fs/pstore/platform.c
++++ b/fs/pstore/platform.c
+@@ -78,7 +78,7 @@ static void pstore_dump(struct kmsg_dumper *dumper,
+ 	oopscount++;
+ 	while (total < kmsg_bytes) {
+ 		dst = psinfo->buf;
+-		hsize = sprintf(dst, "%s#%d Part%d\n", why, oopscount, part++);
++		hsize = sprintf(dst, "%s#%d Part%d\n", why, oopscount, part);
+ 		size = psinfo->bufsize - hsize;
+ 		dst += hsize;
  
-+#define LINUX_EFI_CRASH_GUID \
-+    EFI_GUID(  0xcfc8fc79, 0xbe2e, 0x4ddc, 0x97, 0xf0, 0x9f, 0x98, 0xbf, 0xe2, 0x98, 0xa0 )
-+
- typedef struct {
- 	efi_guid_t guid;
- 	unsigned long table;
-@@ -458,6 +462,8 @@ struct efivars {
- 	struct kset *kset;
- 	struct bin_attribute *new_var, *del_var;
- 	const struct efivar_operations *ops;
-+	struct efivar_entry *walk_entry;
-+	struct pstore_info efi_pstore_info;
+@@ -94,8 +94,8 @@ static void pstore_dump(struct kmsg_dumper *dumper,
+ 		memcpy(dst, s1 + s1_start, l1_cpy);
+ 		memcpy(dst + l1_cpy, s2 + s2_start, l2_cpy);
+ 
+-		id = psinfo->write(PSTORE_TYPE_DMESG, hsize + l1_cpy + l2_cpy,
+-				   psinfo);
++		id = psinfo->write(PSTORE_TYPE_DMESG, part,
++				   hsize + l1_cpy + l2_cpy, psinfo);
+ 		if (reason == KMSG_DUMP_OOPS && pstore_is_mounted())
+ 			pstore_mkfile(PSTORE_TYPE_DMESG, psinfo->name, id,
+ 				      psinfo->buf, hsize + l1_cpy + l2_cpy,
+@@ -103,6 +103,7 @@ static void pstore_dump(struct kmsg_dumper *dumper,
+ 		l1 -= l1_cpy;
+ 		l2 -= l2_cpy;
+ 		total += l1_cpy + l2_cpy;
++		part++;
+ 	}
+ 	mutex_unlock(&psinfo->buf_mutex);
+ }
+@@ -197,7 +198,7 @@ int pstore_write(enum pstore_type_id type, char *buf, size_t size)
+ 
+ 	mutex_lock(&psinfo->buf_mutex);
+ 	memcpy(psinfo->buf, buf, size);
+-	id = psinfo->write(type, size, psinfo);
++	id = psinfo->write(type, 0, size, psinfo);
+ 	if (pstore_is_mounted())
+ 		pstore_mkfile(PSTORE_TYPE_DMESG, psinfo->name, id, psinfo->buf,
+ 			      size, CURRENT_TIME, psinfo);
+diff --git a/include/linux/pstore.h b/include/linux/pstore.h
+index b2f1d97..12be8f1 100644
+--- a/include/linux/pstore.h
++++ b/include/linux/pstore.h
+@@ -39,9 +39,10 @@ struct pstore_info {
+ 	int		(*close)(struct pstore_info *psi);
+ 	ssize_t		(*read)(u64 *id, enum pstore_type_id *type,
+ 			struct timespec *time, struct pstore_info *psi);
+-	u64		(*write)(enum pstore_type_id type, size_t size,
++	u64		(*write)(enum pstore_type_id type, int part,
++			size_t size, struct pstore_info *psi);
++	int		(*erase)(enum pstore_type_id type, u64 id,
+ 			struct pstore_info *psi);
+-	int		(*erase)(u64 id, struct pstore_info *psi);
+ 	void		*data;
  };
  
- int register_efivars(struct efivars *efivars,
 -- 
 1.7.6
 
