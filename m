@@ -1,82 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753643Ab1GUTJc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 15:09:32 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:59460 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752460Ab1GUTJb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 15:09:31 -0400
+	id S1753227Ab1GUT2k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 15:28:40 -0400
+Received: from gwu.lbox.cz ([62.245.111.132]:48761 "EHLO gwu.lbox.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751634Ab1GUT2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 15:28:36 -0400
+Date: Thu, 21 Jul 2011 21:25:45 +0200
+From: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, john stultz <johnstul@us.ibm.com>,
+        Willy Tarreau <w@1wt.eu>, MINOURA Makoto <minoura@valinux.co.jp>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Faidon Liambotis <paravoid@debian.org>, linux-kernel@vger.kernel.org,
+        stable@kernel.org, seto.hidetoshi@jp.fujitsu.com,
+        =?iso-8859-1?Q?Herv=E9?= Commowick <hcommowick@exosec.fr>,
+        Rand@jasper.es, Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+Subject: Re: 2.6.32.21 - uptime related crashes?
+Message-ID: <20110721192545.GA6402@nik-comp.lan>
+References: <kk5d3hgi9eh.fsf@brer.local.valinux.co.jp> <1310434819.30337.21.camel@work-vm> <20110712041938.GO27254@1wt.eu> <1310690138.3367.61.camel@work-vm> <1310724097.2586.296.camel@twins> <1310752795.2945.4.camel@work-vm> <20110721072256.GE9216@elte.hu> <1311251098.29152.130.camel@twins> <20110721125008.GF11246@pcnci.linuxbox.cz> <1311252799.29152.147.camel@twins>
 MIME-Version: 1.0
-In-Reply-To: <CAN6cQ7kQNcEEd4uDHRA7F+cM57UgjzjY8OP7FsW4D5FjZd+n9g@mail.gmail.com>
-References: <CAN6cQ7kQNcEEd4uDHRA7F+cM57UgjzjY8OP7FsW4D5FjZd+n9g@mail.gmail.com>
-Date: Thu, 21 Jul 2011 13:09:29 -0600
-Message-ID: <CAN6cQ7=8e=ujGm0HshBGGryC1sD_tvXh0vb6jDO8QuvHgVjPCA@mail.gmail.com>
-Subject: Re: Kernel Panic on init (powerpc)
-From: Brian Szmyd <brian.szmyd@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xHFwDpU9dbj6ez1V"
+Content-Disposition: inline
+In-Reply-To: <1311252799.29152.147.camel@twins>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Antivirus: on lbxovapx by Kaspersky antivirus, 5392756 records (last update: 20110721)
+X-Spam-Score: N/A (trusted relay)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 18, 2011 at 3:33 PM, Brian Szmyd <brian.szmyd@gmail.com> wrote:
-> Kernel panic - not syncing: Attempted to kill init!
-> Call Trace:
-> [c781fd30] [c0007964] show_stack+0x48/0x15c (unreliable)
-> [c781fd70] [c0291b98] panic+0xb8/0x12c
-> [c781fdc0] [c0025bb8] do_exit+0x628/0x67c
-> [c781fe10] [c0025eec] do_group_exit+0x44/0xd0
-> [c781fe20] [c003277c] get_signal_to_deliver+0x1f4/0x44c
-> [c781fe70] [c00084c0] do_signal_pending.constprop.8+0x40/0x248
-> [c781ff30] [c0008840] do_signal+0x50/0x58
-> [c781ff40] [c000fba8] do_user_signal+0x74/0xc4
-> Rebooting in 180 seconds...
 
-I've enabled kgdb and using GDB I have the following two back traces
-for my issue. The first I set the break point to run_init_process:
+--xHFwDpU9dbj6ez1V
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-#0  kernel_execve () at arch/powerpc/kernel/misc.S:60
-#1  0xc026cb18 in run_init_process (init_filename=<value optimized
-out>) at init/main.c:820
-#2  0xc026cbb4 in init_post () at init/main.c:857
-#3  0xc030085c in kernel_init (unused=<value optimized out>) at init/main.c:929
-#4  0xc000ee28 in kernel_thread () at arch/powerpc/kernel/misc_32.S:687
+Hello Peter,
 
-After I step arch/powerpc/kernel/misc.S:60 which looks like:
+> With a patch that frobs the starting value close to overflowing I hope,
+> otherwise we'll not hear from you in like 7 months ;-)
+sure. Which is the best patch to use for testing, You mean john's one?
+(http://www.gossamer-threads.com/lists/linux/kernel/1406779#1406779)
+or some other?
+nik
 
-58:_GLOBAL(kernel_execve)
-59:   li r0,__NR_execve
-60:   sc
-61:   bnslr
-62:   neg   r3,r3
-63:   blr
+> Yeah, I think we want to commit this with a -stable tag, Ingo?
+>=20
 
-I get the following:
+--=20
+-------------------------------------
+Ing. Nikola CIPRICH
+LinuxBox.cz, s.r.o.
+28. rijna 168, 709 01 Ostrava
 
-#0  kgdb_breakpoint (self=0xc0325c08, val=0, data=0xc0347dc4) at
-kernel/debug/debug_core.c:968
-#1  kgdb_panic_event (self=0xc0325c08, val=0, data=0xc0347dc4) at
-kernel/debug/debug_core.c:773
-#2  0xc003f328 in notifier_call_chain (val=0, v=0xc0347dc4,
-nr_to_call=<value optimized out>, nr_calls=0x0,
-    nl=<value optimized out>) at kernel/notifier.c:93
-#3  0xc026cee8 in panic (fmt=<value optimized out>) at kernel/panic.c:116
-#4  0xc0025be8 in find_new_reaper (code=4) at kernel/exit.c:729
-#5  forget_original_parent (code=4) at kernel/exit.c:785
-#6  exit_notify (code=4) at kernel/exit.c:828
-#7  do_exit (code=4) at kernel/exit.c:1010
-#8  0xc0025e6c in do_group_exit (exit_code=4) at kernel/exit.c:1095
-#9  0xc0031338 in get_signal_to_deliver (info=0xc781fe8c,
-return_ka=0xc781fe78, regs=0xc781ff50,
-    cookie=<value optimized out>) at kernel/signal.c:1994
-#10 0xc00081f4 in do_signal_pending (regs=0xc781ff50,
-oldset=0xc781c33c) at arch/powerpc/kernel/signal.c:128
-#11 0xc0008510 in do_signal (regs=<value optimized out>,
-thread_info_flags=<value optimized out>)
-    at arch/powerpc/kernel/signal.c:192
-#12 0xc000f934 in do_user_signal () at arch/powerpc/kernel/entry_32.S:1189
+tel.:   +420 596 603 142
+fax:    +420 596 621 273
+mobil:  +420 777 093 799
 
-I'm no where near experienced enough to understand what the assembly
-is trying to do and what the expected outcome is. Any ideas? Thanks in
-advance, and again if I could be CC'd on the response.
+www.linuxbox.cz
+
+mobil servis: +420 737 238 656
+email servis: servis@linuxbox.cz
+-------------------------------------
+
+--xHFwDpU9dbj6ez1V
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk4ofTkACgkQ3xdJJrLygV5lrACcDz+E3HdPVvEP37yFwxD7HUtm
++XUAn2c+KES/MHs5Ra4y2Hxq+GRp+38g
+=78f6
+-----END PGP SIGNATURE-----
+
+--xHFwDpU9dbj6ez1V--
