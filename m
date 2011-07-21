@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753151Ab1GUTjA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 15:39:00 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:33478 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752388Ab1GUTi7 (ORCPT
+	id S1753471Ab1GUTjq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 15:39:46 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:61784 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752419Ab1GUTjp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 15:38:59 -0400
-Subject: Re: 2.6.32.21 - uptime related crashes?
-From: john stultz <johnstul@us.ibm.com>
-To: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Willy Tarreau <w@1wt.eu>, MINOURA Makoto <minoura@valinux.co.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Faidon Liambotis <paravoid@debian.org>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, seto.hidetoshi@jp.fujitsu.com,
-        =?ISO-8859-1?Q?Herv=E9?= Commowick <hcommowick@exosec.fr>,
-        Rand@jasper.es
-In-Reply-To: <20110721192545.GA6402@nik-comp.lan>
-References: <kk5d3hgi9eh.fsf@brer.local.valinux.co.jp>
-	 <1310434819.30337.21.camel@work-vm> <20110712041938.GO27254@1wt.eu>
-	 <1310690138.3367.61.camel@work-vm> <1310724097.2586.296.camel@twins>
-	 <1310752795.2945.4.camel@work-vm> <20110721072256.GE9216@elte.hu>
-	 <1311251098.29152.130.camel@twins>
-	 <20110721125008.GF11246@pcnci.linuxbox.cz>
-	 <1311252799.29152.147.camel@twins>  <20110721192545.GA6402@nik-comp.lan>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 21 Jul 2011 12:37:51 -0700
-Message-ID: <1311277071.2945.213.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 21 Jul 2011 15:39:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110721183820.GA381@elte.hu>
+References: <20110705062148.GA6056@program> <d1a1b6416d71a5062fb3b3e364f9db6b6d4ef6b2.1311258580.git.luto@mit.edu>
+ <20110721170824.GA28974@tassilo.jf.intel.com> <CAObL_7HyjsPKnyDEEa0T8iTetpkd9Hq7RTBymieazzGOsXQLdA@mail.gmail.com>
+ <20110721183820.GA381@elte.hu>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Thu, 21 Jul 2011 15:39:06 -0400
+X-Google-Sender-Auth: Mxzb4OtxOqYCgrC1HhqJw5hmJKc
+Message-ID: <CAObL_7H=wh4exBfyjJyumtOBgvAjLnewu3dp6eeyaoQi3txXwQ@mail.gmail.com>
+Subject: Re: [PATCH] x86: Fix memory leak of init_vdso_vars()
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Andi Kleen <ak@linux.intel.com>, mingo@redhat.com, wzt <wzt.wzt@gmail.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org, tglx@linutronix.de,
+        hpa@zytor.com, Michal Hocko <mhocko@suse.cz>,
+        Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-07-21 at 21:25 +0200, Nikola Ciprich wrote:
-> Hello Peter,
-> 
-> > With a patch that frobs the starting value close to overflowing I hope,
-> > otherwise we'll not hear from you in like 7 months ;-)
-> sure. Which is the best patch to use for testing, You mean john's one?
-> (http://www.gossamer-threads.com/lists/linux/kernel/1406779#1406779)
-> or some other?
+On Thu, Jul 21, 2011 at 2:38 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * Andrew Lutomirski <luto@mit.edu> wrote:
+>
+>> On Thu, Jul 21, 2011 at 1:08 PM, Andi Kleen <ak@linux.intel.com> wrote:
+>> > On Thu, Jul 21, 2011 at 10:33:14AM -0400, Andy Lutomirski wrote:
+>> >> From: Zhitong Wang <wzt.wzt@gmail.com>
+>> >>
+>> >> If init_vdso_vars ran out of memory (not very likely), then it would
+>> >> leak a few pages as well.
+>> >>
+>> >> Also rename init_vdso_vars to just init_vdso, since initializing
+>> >> vvars is just about the only thing this function doesn't do.
+>> >
+>> > Just add a GFP_PANIC, there's no way to recover from this.
+>> > Your system will not work without a vdso.
+>>
+>> Ingo objected to this before, although I'm not convinved.  Calling
+>> init_vdso_vars more than once will cause major problems (like
+>> double-patching of alternatives).  If there's too little memory for
+>> it to work, then presumably there's also too little memory to start
+>> init.
+>>
+>>  (Also, I bet that no one ever audited whether the ELF loader works
+>> right if the vDSO failed to load.)
+>>
+>> Ingo?
+>
+> This assumes that the system actually needs an ELF loader - if a
+> static binary is booted via a init= boot parameter it might not be
+> needed.
 
-http://git.linaro.org/gitweb?p=people/jstultz/linux.git;a=commitdiff;h=3eedec0ad10a856cf48ada066e88871d8ab427b3
+I actually meant the kernel's loaded.  But I just looked and it appears correct.
 
-Should do it.
+But I think this whole thing is silly, because I can't see any good
+reason that the vdso needs to allocate memory in the first place.
+I'll send a patch.
 
-thanks
--john
-
-
+--Andy
