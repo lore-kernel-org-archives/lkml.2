@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099Ab1GUJg4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 05:36:56 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:42478 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257Ab1GUJgv (ORCPT
+	id S1752215Ab1GUJhD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 05:37:03 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:51890 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752102Ab1GUJg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 05:36:51 -0400
-X-AuditID: b753bd60-a50b1ba0000019f4-fc-4e27f3319633
-X-AuditID: b753bd60-a50b1ba0000019f4-fc-4e27f3319633
-Message-ID: <4E27F32F.4020606@hitachi.com>
-Date: Thu, 21 Jul 2011 18:36:47 +0900
+	Thu, 21 Jul 2011 05:36:58 -0400
+X-AuditID: b753bd60-9fafdba0000025a6-9f-4e27f338b412
+X-AuditID: b753bd60-9fafdba0000025a6-9f-4e27f338b412
+Message-ID: <4E27F335.70001@hitachi.com>
+Date: Thu, 21 Jul 2011 18:36:53 +0900
 From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
 User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
 MIME-Version: 1.0
@@ -20,10 +20,10 @@ Cc: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         yrl.pp-manager.tt@hitachi.com, Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH -tip v2 3/6] perf script: resolve DSOs and symbols for
- user-space
-References: <20110717093031.3447.52715.stgit@linux3> <20110717093057.3447.31077.stgit@linux3> <4E230BDA.5020305@gmail.com>
-In-Reply-To: <4E230BDA.5020305@gmail.com>
+Subject: Re: [PATCH -tip v2 6/6] perf script: add option resolving vmlinux
+ path
+References: <20110717093031.3447.52715.stgit@linux3> <20110717093115.3447.11599.stgit@linux3> <4E230F98.3040000@gmail.com>
+In-Reply-To: <4E230F98.3040000@gmail.com>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 X-Brightmail-Tracker: AAAAAA==
@@ -31,45 +31,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/07/18 1:20), David Ahern wrote:
-> On 07/17/2011 03:30 AM, Akihiro Nagai wrote:
->> Resolve user-space DSOs and symbols.
->> Latest perf-script can resolve DSOs and symbols for only kernel
->> and kernel modules. This patch resolves them for other
->> executable binaries.
->
-> The description is a bit misleading. perf script does resolve symbols
-> for userspace. e.g., the example in the bug fix I submitted in May:
-> https://lkml.org/lkml/2011/5/30/223
->
-> Do you look into why the cpumode setting is not working that you have to
-> try specific settings?
-Indeed, perf already can resolve user-space symbols and DSOs if cpumode has
-the flag PERF_RECORD_MISC_USER. I found this change is incorrect.
-To solve this, I'd like to set both flags PERF_RECORD_MISC_KERNEL and USER
-to BTS records, because BTS traces both kernel and user space while it
-generates interrupts.
-
-And also, I think there is the probrem in thread__find_addr_map().
-When this function is called with cpumode that is set (PERF_RECORD_MISC_KERNEL | USER),
-this function processes only PERF_RECORD_MISC_KERNEL. So, I'd like to fix it too.
-
-Thank you.
->
-> David
->
->
+(2011/07/18 1:36), David Ahern wrote:
+> On 07/17/2011 03:31 AM, Akihiro Nagai wrote:
+>> Add the option get the path of [kernel.kallsyms].
+>> Specify '--show-kernel-path' option to use this function.
+>> This patch enables other applications to use this output easily.
 >>
->> # perf script -f ip,addr,sym,dso
->> 3f03e016b0 ffffffff814675d2 irq_return ([kernel.kallsyms])
->> 3f03e016b0 ffffffff814675d2 irq_return ([kernel.kallsyms])
->> 3f03e04b80       3f03e016b3 _start (/lib64/ld-2.14.so)
->> 3f03e04b80 ffffffff814675d2 irq_return ([kernel.kallsyms])
->> 3f03e04ba6 ffffffff814675d2 irq_return ([kernel.kallsyms])
->> 3f03e04bad ffffffff814675d2 irq_return ([kernel.kallsyms])
->> 3f03e04c1d       3f03e04bfb _dl_start (/lib64/ld-2.14.so)
->> 3f03e04c00       3f03e04c21 _dl_start (/lib64/ld-2.14.so)
->> 3f03e04c00       3f03e04c21 _dl_start (/lib64/ld-2.14.so)
+>> Without --show-kernel-path  option
+>>
+>> # perf script -f ip,dso
+>> ffffffff81467612 irq_return ([kernel.kallsyms])
+>> ffffffff81467612 irq_return ([kernel.kallsyms])
+>>      7f24fc02a6b3 _start (/lib64/ld-2.14.so)
+>> [snip]
+>>
+>> With --show-kernel-path option
+>>
+>> # perf script -f ip,dso --show-kernel-path
+>> ffffffff81467612 irq_return (/lib/modules/3.0.0-rc6-tip+/build/vmlinux)
+>> ffffffff81467612 irq_return (/lib/modules/3.0.0-rc6-tip+/build/vmlinux)
+>>      7f24fc02a6b3 _start (/lib64/ld-2.14.so)
 >> [snip]
 >>
 >> Signed-off-by: Akihiro Nagai<akihiro.nagai.hw@hitachi.com>
@@ -82,39 +63,104 @@ Thank you.
 >> Cc: Masami Hiramatsu<masami.hiramatsu.pt@hitachi.com>
 >> ---
 >>
->>   tools/perf/builtin-script.c |    4 ++++
->>   tools/perf/util/event.c     |    5 +++++
->>   2 files changed, 9 insertions(+), 0 deletions(-)
+>>   tools/perf/Documentation/perf-script.txt |    3 +++
+>>   tools/perf/builtin-script.c              |    2 ++
+>>   tools/perf/util/map.c                    |    7 +++++--
+>>   tools/perf/util/session.c                |    2 ++
+>>   tools/perf/util/symbol.c                 |    1 +
+>>   tools/perf/util/symbol.h                 |    1 +
+>>   6 files changed, 14 insertions(+), 2 deletions(-)
 >>
+>> diff --git a/tools/perf/Documentation/perf-script.txt b/tools/perf/Documentation/perf-script.txt
+>> index ee4d477..5383671 100644
+>> --- a/tools/perf/Documentation/perf-script.txt
+>> +++ b/tools/perf/Documentation/perf-script.txt
+>> @@ -188,6 +188,9 @@ OPTIONS
+>>   	CPUs are specified with -: 0-2. Default is to report samples on all
+>>   	CPUs.
+>>
+>> +--show-kernel-path::
+>> +	Try to resolve the path of [kernel.kallsyms]
+>> +
+>>   SEE ALSO
+>>   --------
+>>   linkperf:perf-record[1], linkperf:perf-script-perl[1],
 >> diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
->> index b3e0951..2356198 100644
+>> index fd68185..0d04788 100644
 >> --- a/tools/perf/builtin-script.c
 >> +++ b/tools/perf/builtin-script.c
->> @@ -328,6 +328,10 @@ static void print_sample_addr(union perf_event *event,
+>> @@ -1099,6 +1099,8 @@ static const struct option options[] = {
+>>   		     "addr,offs",
+>>   		     parse_output_fields),
+>>   	OPT_STRING('c', "cpu",&cpu_list, "cpu", "list of cpus to profile"),
+>> +	OPT_BOOLEAN('\0', "show-kernel-path",&show_kernel_path,
+>> +		    "Show the path of [kernel.kallsyms]"),
 >>
->>   	thread__find_addr_map(thread, session, cpumode, MAP__FUNCTION,
->>   			      event->ip.pid, sample->addr,&al);
->> +	/* try to resolve for user space */
->> +	if (!al.map)
->> +		thread__find_addr_map(thread, session, PERF_RECORD_MISC_USER,
->> +			MAP__FUNCTION, event->ip.pid, sample->addr,&al);
->>   	if (!al.map)
->>   		thread__find_addr_map(thread, session, cpumode, MAP__VARIABLE,
->>   				      event->ip.pid, sample->addr,&al);
->> diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
->> index 3c1b8a6..49a9315 100644
->> --- a/tools/perf/util/event.c
->> +++ b/tools/perf/util/event.c
->> @@ -771,6 +771,11 @@ int perf_event__preprocess_sample(const union perf_event *event,
+>>   	OPT_END()
+>>   };
+>> diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+>> index dddc0f3..1645967 100644
+>> --- a/tools/perf/util/map.c
+>> +++ b/tools/perf/util/map.c
+>> @@ -204,9 +204,12 @@ void map__print_dsoname(struct map *self)
+>>   {
+>>   	const char *dsoname;
 >>
->>   	thread__find_addr_map(thread, session, cpumode, MAP__FUNCTION,
->>   			      event->ip.pid, event->ip.ip, al);
->> +	/* try to resolve for user space */
->> +	if (!al->map)
->> +		thread__find_addr_map(thread, session, PERF_RECORD_MISC_USER,
->> +				MAP__FUNCTION, event->ip.pid, event->ip.ip, al);
+>> -	if (self&&  self->dso&&  self->dso->name)
+>> +	if (self&&  self->dso&&  (self->dso->name || self->dso->long_name)) {
+>> +		if (show_kernel_path&&  self->dso->long_name)
+>> +			dsoname = self->dso->long_name;
+>> +		else if (self->dso->name)
+>>   			dsoname = self->dso->name;
+>> -	else
+>> +	} else
+>>   		dsoname = "[unknown]";
+>>
+>>   	printf("%s", dsoname);
+>> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+>> index 3728e67..34c5887 100644
+>> --- a/tools/perf/util/session.c
+>> +++ b/tools/perf/util/session.c
+>> @@ -14,6 +14,8 @@
+>>   #include "util.h"
+>>   #include "cpumap.h"
+>>
+>> +bool show_kernel_path;
 >> +
->>   	dump_printf(" ...... dso: %s\n",
->>   		    al->map ? al->map->dso->long_name :
->>   			al->level == 'H' ? "[hypervisor]" : "<not found>");
+>>   static int perf_session__open(struct perf_session *self, bool force)
+>>   {
+>>   	struct stat input_stat;
+>> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+>> index abfecf6..3356d6e 100644
+>> --- a/tools/perf/util/symbol.c
+>> +++ b/tools/perf/util/symbol.c
+>> @@ -41,6 +41,7 @@ static int dso__load_guest_kernel_sym(struct dso *dso, struct map *map,
+>>   			symbol_filter_t filter);
+>>   static int vmlinux_path__nr_entries;
+>>   static char **vmlinux_path;
+>> +bool show_kernel_path;
+>
+> declared twice. See above in session.c. I suggest removing the one in
+> session.c
+Oops. I forgot to delete it.
+Thank you.
+>
+> David
+>
+>
+>>
+>>   struct symbol_conf symbol_conf = {
+>>   	.exclude_other	  = true,
+>> diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+>> index 554b2fe..88000e5 100644
+>> --- a/tools/perf/util/symbol.h
+>> +++ b/tools/perf/util/symbol.h
+>> @@ -96,6 +96,7 @@ struct symbol_conf {
+>>   };
+>>
+>>   extern struct symbol_conf symbol_conf;
+>> +extern bool show_kernel_path;
+>>
+>>   static inline void *symbol__priv(struct symbol *sym)
+>>   {
 >>
