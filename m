@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754001Ab1GUVBU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 17:01:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38240 "EHLO mx1.redhat.com"
+	id S1754004Ab1GUVBe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 17:01:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26301 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753901Ab1GUVAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 17:00:00 -0400
+	id S1753894Ab1GUU76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 16:59:58 -0400
 From: Matthew Garrett <mjg@redhat.com>
 To: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, mikew@google.com, tony.luck@intel.com
-Subject: [PATCH V2 6/9] efivars: String functions
-Date: Thu, 21 Jul 2011 16:57:57 -0400
-Message-Id: <1311281880-28041-7-git-send-email-mjg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, mikew@google.com, tony.luck@intel.com,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH V2 5/9] efi: Add support for using efivars as a pstore backend
+Date: Thu, 21 Jul 2011 16:57:56 -0400
+Message-Id: <1311281880-28041-6-git-send-email-mjg@redhat.com>
 In-Reply-To: <1311281880-28041-1-git-send-email-mjg@redhat.com>
 References: <1311281880-28041-1-git-send-email-mjg@redhat.com>
 X-SA-Do-Not-Run: Yes
@@ -22,103 +23,293 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Waychison <mikew@google.com>
+EFI provides an area of nonvolatile storage managed by the firmware. We
+can use this as a pstore backend to maintain copies of oopses, aiding
+diagnosis.
 
-Fix the string functions in the efivars driver to be called utf16_*
-instead of utf8_* as the encoding is utf16, not utf8.
-
-As well, rename utf16_strlen to utf16_strnlen as it takes a maxlength
-argument and the name should be consistent with the standard C function
-names.  utf16_strlen is still provided for convenience in a subsequent
-patch.
-
-Signed-off-by: Mike Waychison <mikew@google.com>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
 ---
- drivers/firmware/efivars.c |   30 +++++++++++++++++++-----------
- 1 files changed, 19 insertions(+), 11 deletions(-)
+ drivers/firmware/efivars.c |  191 +++++++++++++++++++++++++++++++++++++++++++-
+ include/linux/efi.h        |    6 ++
+ 2 files changed, 195 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index 2bbb226..4202a31 100644
+index 5f29aaf..2bbb226 100644
 --- a/drivers/firmware/efivars.c
 +++ b/drivers/firmware/efivars.c
-@@ -144,23 +144,29 @@ efivar_create_sysfs_entry(struct efivars *efivars,
+@@ -78,6 +78,7 @@
+ #include <linux/kobject.h>
+ #include <linux/device.h>
+ #include <linux/slab.h>
++#include <linux/pstore.h>
  
- /* Return the number of unicode characters in data */
- static unsigned long
--utf8_strlen(efi_char16_t *data, unsigned long maxlength)
-+utf16_strnlen(efi_char16_t *s, size_t maxlength)
- {
- 	unsigned long length = 0;
+ #include <asm/uaccess.h>
  
--	while (*data++ != 0 && length < maxlength)
-+	while (*s++ != 0 && length < maxlength)
- 		length++;
- 	return length;
- }
+@@ -89,6 +90,8 @@ MODULE_DESCRIPTION("sysfs interface to EFI Variables");
+ MODULE_LICENSE("GPL");
+ MODULE_VERSION(EFIVARS_VERSION);
  
-+static unsigned long
-+utf16_strlen(efi_char16_t *s)
-+{
-+	return utf16_strnlen(s, ~0UL);
-+}
++#define DUMP_NAME_LEN 52
 +
  /*
-  * Return the number of bytes is the length of this string
-  * Note: this is NOT the same as the number of unicode characters
-  */
- static inline unsigned long
--utf8_strsize(efi_char16_t *data, unsigned long maxlength)
-+utf16_strsize(efi_char16_t *data, unsigned long maxlength)
- {
--	return utf8_strlen(data, maxlength/sizeof(efi_char16_t)) * sizeof(efi_char16_t);
-+	return utf16_strnlen(data, maxlength/sizeof(efi_char16_t)) * sizeof(efi_char16_t);
+  * The maximum size of VariableName + Data = 1024
+  * Therefore, it's reasonable to save that much
+@@ -161,18 +164,28 @@ utf8_strsize(efi_char16_t *data, unsigned long maxlength)
  }
  
  static efi_status_t
-@@ -518,7 +524,9 @@ static u64 efi_pstore_write(enum pstore_type_id type, unsigned int part,
- 		efivar_unregister(found);
+-get_var_data(struct efivars *efivars, struct efi_variable *var)
++get_var_data_locked(struct efivars *efivars, struct efi_variable *var)
+ {
+ 	efi_status_t status;
  
- 	if (size)
--		efivar_create_sysfs_entry(efivars, utf8_strsize(efi_name, DUMP_NAME_LEN * 2),
-+		efivar_create_sysfs_entry(efivars,
-+					  utf16_strsize(efi_name,
-+							DUMP_NAME_LEN * 2),
- 					  efi_name, &vendor);
+-	spin_lock(&efivars->lock);
+ 	var->DataSize = 1024;
+ 	status = efivars->ops->get_variable(var->VariableName,
+ 					    &var->VendorGuid,
+ 					    &var->Attributes,
+ 					    &var->DataSize,
+ 					    var->Data);
++	return status;
++}
++
++static efi_status_t
++get_var_data(struct efivars *efivars, struct efi_variable *var)
++{
++	efi_status_t status;
++
++	spin_lock(&efivars->lock);
++	status = get_var_data_locked(efivars, var);
+ 	spin_unlock(&efivars->lock);
++
+ 	if (status != EFI_SUCCESS) {
+ 		printk(KERN_WARNING "efivars: get_variable() failed 0x%lx!\n",
+ 			status);
+@@ -387,12 +400,176 @@ static struct kobj_type efivar_ktype = {
+ 	.default_attrs = def_attrs,
+ };
  
- 	return part;
-@@ -591,8 +599,8 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
- 	 * Does this variable already exist?
- 	 */
- 	list_for_each_entry_safe(search_efivar, n, &efivars->list, list) {
--		strsize1 = utf8_strsize(search_efivar->var.VariableName, 1024);
--		strsize2 = utf8_strsize(new_var->VariableName, 1024);
-+		strsize1 = utf16_strsize(search_efivar->var.VariableName, 1024);
-+		strsize2 = utf16_strsize(new_var->VariableName, 1024);
- 		if (strsize1 == strsize2 &&
- 			!memcmp(&(search_efivar->var.VariableName),
- 				new_var->VariableName, strsize1) &&
-@@ -624,8 +632,8 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
++static struct pstore_info efi_pstore_info;
++
+ static inline void
+ efivar_unregister(struct efivar_entry *var)
+ {
+ 	kobject_put(&var->kobj);
+ }
  
- 	/* Create the entry in sysfs.  Locking is not required here */
- 	status = efivar_create_sysfs_entry(efivars,
--					   utf8_strsize(new_var->VariableName,
--							1024),
-+					   utf16_strsize(new_var->VariableName,
-+							 1024),
- 					   new_var->VariableName,
- 					   &new_var->VendorGuid);
- 	if (status) {
-@@ -654,8 +662,8 @@ static ssize_t efivar_delete(struct file *filp, struct kobject *kobj,
- 	 * Does this variable already exist?
- 	 */
- 	list_for_each_entry_safe(search_efivar, n, &efivars->list, list) {
--		strsize1 = utf8_strsize(search_efivar->var.VariableName, 1024);
--		strsize2 = utf8_strsize(del_var->VariableName, 1024);
-+		strsize1 = utf16_strsize(search_efivar->var.VariableName, 1024);
-+		strsize2 = utf16_strsize(del_var->VariableName, 1024);
- 		if (strsize1 == strsize2 &&
- 			!memcmp(&(search_efivar->var.VariableName),
- 				del_var->VariableName, strsize1) &&
++#ifdef CONFIG_PSTORE
++
++static int efi_pstore_open(struct pstore_info *psi)
++{
++	struct efivars *efivars = psi->data;
++
++	spin_lock(&efivars->lock);
++	efivars->walk_entry = list_first_entry(&efivars->list,
++					       struct efivar_entry, list);
++	return 0;
++}
++
++static int efi_pstore_close(struct pstore_info *psi)
++{
++	struct efivars *efivars = psi->data;
++
++	spin_unlock(&efivars->lock);
++	return 0;
++}
++
++static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
++			       struct timespec *timespec, struct pstore_info *psi)
++{
++	efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
++	struct efivars *efivars = psi->data;
++	char name[DUMP_NAME_LEN];
++	int i;
++	unsigned int part, size;
++	unsigned long time;
++
++	while (&efivars->walk_entry->list != &efivars->list) {
++		if (!efi_guidcmp(efivars->walk_entry->var.VendorGuid,
++				 vendor)) {
++			for (i = 0; i < DUMP_NAME_LEN; i++) {
++				name[i] = efivars->walk_entry->var.VariableName[i];
++			}
++			if (sscanf(name, "dump-type%u-%u-%lu", type, &part, &time) == 3) {
++				*id = part;
++				timespec->tv_sec = time;
++				timespec->tv_nsec = 0;
++				get_var_data_locked(efivars, &efivars->walk_entry->var);
++				size = efivars->walk_entry->var.DataSize;
++				memcpy(psi->buf, efivars->walk_entry->var.Data, size);
++				efivars->walk_entry = list_entry(efivars->walk_entry->list.next,
++					           struct efivar_entry, list);
++				return size;
++			}
++		}
++		efivars->walk_entry = list_entry(efivars->walk_entry->list.next,
++						 struct efivar_entry, list);
++	}
++	return 0;
++}
++
++static u64 efi_pstore_write(enum pstore_type_id type, unsigned int part,
++			    size_t size, struct pstore_info *psi)
++{
++	char name[DUMP_NAME_LEN];
++	char stub_name[DUMP_NAME_LEN];
++	efi_char16_t efi_name[DUMP_NAME_LEN];
++	efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
++	struct efivars *efivars = psi->data;
++	struct efivar_entry *entry, *found = NULL;
++	int i;
++
++	sprintf(stub_name, "dump-type%u-%u-", type, part);
++	sprintf(name, "%s%lu", stub_name, get_seconds());
++
++	spin_lock(&efivars->lock);
++
++	for (i = 0; i < DUMP_NAME_LEN; i++)
++		efi_name[i] = stub_name[i];
++
++	/*
++	 * Clean up any entries with the same name
++	 */
++
++	list_for_each_entry(entry, &efivars->list, list) {
++		get_var_data_locked(efivars, &entry->var);
++
++		for (i = 0; i < DUMP_NAME_LEN; i++) {
++			if (efi_name[i] == 0) {
++				found = entry;
++				efivars->ops->set_variable(entry->var.VariableName,
++							   &entry->var.VendorGuid,
++							   EFI_VARIABLE_NON_VOLATILE | EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS,
++							   0, NULL);
++				break;
++			} else if (efi_name[i] != entry->var.VariableName[i]) {
++				break;
++			}
++		}
++	}
++
++	if (found)
++		list_del(&found->list);
++
++	for (i = 0; i < DUMP_NAME_LEN; i++)
++		efi_name[i] = name[i];
++
++	efivars->ops->set_variable(efi_name, &vendor,
++				   EFI_VARIABLE_NON_VOLATILE | EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS,
++				   size, psi->buf);
++
++	spin_unlock(&efivars->lock);
++
++	if (found)
++		efivar_unregister(found);
++
++	if (size)
++		efivar_create_sysfs_entry(efivars, utf8_strsize(efi_name, DUMP_NAME_LEN * 2),
++					  efi_name, &vendor);
++
++	return part;
++};
++
++static int efi_pstore_erase(enum pstore_type_id type, u64 id,
++			    struct pstore_info *psi)
++{
++	efi_pstore_write(type, id, 0, psi);
++
++	return 0;
++}
++#else
++static int efi_pstore_open(struct pstore_info *psi)
++{
++	return 0;
++}
++
++static int efi_pstore_close(struct pstore_info *psi)
++{
++	return 0;
++}
++
++static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
++			       struct timespec *time, struct pstore_info *psi)
++{
++	return -1;
++}
++
++static u64 efi_pstore_write(enum pstore_type_id type, int part, size_t size,
++			    struct pstore_info *psi)
++{
++	return 0;
++}
++
++static int efi_pstore_erase(enum pstore_type_id type, u64 id,
++			    struct pstore_info *psi)
++{
++	return 0;
++}
++#endif
++
++static struct pstore_info efi_pstore_info = {
++	.owner		= THIS_MODULE,
++	.name		= "efi",
++	.open		= efi_pstore_open,
++	.close		= efi_pstore_close,
++	.read		= efi_pstore_read,
++	.write		= efi_pstore_write,
++	.erase		= efi_pstore_erase,
++};
+ 
+ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
+ 			     struct bin_attribute *bin_attr,
+@@ -763,6 +940,16 @@ int register_efivars(struct efivars *efivars,
+ 	if (error)
+ 		unregister_efivars(efivars);
+ 
++	efivars->efi_pstore_info = efi_pstore_info;
++
++	efivars->efi_pstore_info.buf = kmalloc(4096, GFP_KERNEL);
++	if (efivars->efi_pstore_info.buf) {
++		efivars->efi_pstore_info.bufsize = 1024;
++		efivars->efi_pstore_info.data = efivars;
++		mutex_init(&efivars->efi_pstore_info.buf_mutex);
++		pstore_register(&efivars->efi_pstore_info);
++	}
++
+ out:
+ 	kfree(variable_name);
+ 
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index ec25726..2362a0b 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -19,6 +19,7 @@
+ #include <linux/rtc.h>
+ #include <linux/ioport.h>
+ #include <linux/pfn.h>
++#include <linux/pstore.h>
+ 
+ #include <asm/page.h>
+ #include <asm/system.h>
+@@ -232,6 +233,9 @@ typedef efi_status_t efi_query_capsule_caps_t(efi_capsule_header_t **capsules,
+ #define UV_SYSTEM_TABLE_GUID \
+     EFI_GUID(  0x3b13a7d4, 0x633e, 0x11dd, 0x93, 0xec, 0xda, 0x25, 0x56, 0xd8, 0x95, 0x93 )
+ 
++#define LINUX_EFI_CRASH_GUID \
++    EFI_GUID(  0xcfc8fc79, 0xbe2e, 0x4ddc, 0x97, 0xf0, 0x9f, 0x98, 0xbf, 0xe2, 0x98, 0xa0 )
++
+ typedef struct {
+ 	efi_guid_t guid;
+ 	unsigned long table;
+@@ -458,6 +462,8 @@ struct efivars {
+ 	struct kset *kset;
+ 	struct bin_attribute *new_var, *del_var;
+ 	const struct efivar_operations *ops;
++	struct efivar_entry *walk_entry;
++	struct pstore_info efi_pstore_info;
+ };
+ 
+ int register_efivars(struct efivars *efivars,
 -- 
 1.7.6
 
