@@ -1,43 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753608Ab1GUVpe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 17:45:34 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:41827 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820Ab1GUVpc (ORCPT
+	id S1752773Ab1GUVzd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 17:55:33 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54963 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751562Ab1GUVza (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 17:45:32 -0400
-Date: Thu, 21 Jul 2011 14:45:16 -0700 (PDT)
-Message-Id: <20110721.144516.549074030873550786.davem@davemloft.net>
-To: jason.wessel@windriver.com
-Cc: kgdb-bugreport@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        sparclinux@vger.kernel.org, vapier@gentoo.org
-Subject: Re: [PATCH] sparc,kgdbts: fix compile regression with kgdb test
- suite
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1311109112-12909-1-git-send-email-jason.wessel@windriver.com>
-References: <1311109112-12909-1-git-send-email-jason.wessel@windriver.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+	Thu, 21 Jul 2011 17:55:30 -0400
+Date: Thu, 21 Jul 2011 14:54:33 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Christopher Yeoh <cyeoh@au1.ibm.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-man@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: Cross Memory Attach v3
+Message-Id: <20110721145433.a77818b2.akpm@linux-foundation.org>
+In-Reply-To: <20110719003537.16b189ae@lilo>
+References: <20110719003537.16b189ae@lilo>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 21 Jul 2011 14:45:17 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Wessel <jason.wessel@windriver.com>
-Date: Tue, 19 Jul 2011 15:58:32 -0500
+On Tue, 19 Jul 2011 00:35:37 +0930
+Christopher Yeoh <cyeoh@au1.ibm.com> wrote:
 
-> Commit 63ab25ebbc (kgdbts: unify/generalize gdb breakpoint adjustment)
-> introduced a compile regression on sparc.
+> Hi Andrew,
 > 
-> kgdbts.c: In function 'check_and_rewind_pc':
-> kgdbts.c:307: error: implicit declaration of function 'instruction_pointer_set'
+> Resending with CC's as you requested. Have added information about a man
+> page and what is required for arches other than x86 and powerpc which
+> have already been done.
 > 
-> Simply add the correct macro definition for instruction pointer on the
-> Sparc architecture.
+> Just as a reminder of what has happened so far, repeating some content
+> from previous emails about it:
 > 
-> Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+> The basic idea behind cross memory attach is to allow MPI programs doing
+> intra-node communication to do a single copy of the message rather than
+> a double copy of the message via shared memory.
+> 
+> The following patch attempts to achieve this by allowing a
+> destination process, given an address and size from a source process, to
+> copy memory directly from the source process into its own address space
+> via a system call. There is also a symmetrical ability to copy from 
+> the current process's address space into a destination process's
+> address space.
+>
+> ...
+>
+>  arch/powerpc/include/asm/systbl.h  |    2 
+>  arch/powerpc/include/asm/unistd.h  |    4 
+>  arch/x86/include/asm/unistd_32.h   |    4 
+>  arch/x86/kernel/syscall_table_32.S |    2 
+>  fs/aio.c                           |    4 
+>  fs/compat.c                        |    7 
+>  fs/read_write.c                    |    8 
+>  include/linux/compat.h             |    3 
+>  include/linux/fs.h                 |    7 
+>  include/linux/syscalls.h           |   13 +
+>  mm/Makefile                        |    3 
+>  mm/process_vm_access.c             |  446 +++++++++++++++++++++++++++++++++++++
+>  security/keys/compat.c             |    2 
+>  security/keys/keyctl.c             |    2 
+>  14 files changed, 490 insertions(+), 17 deletions(-)
 
-Acked-by: David S. Miller <davem@davemloft.net>
+Confused.  Why no arch/x86/include/asm/unistd_64.h wire-up?
