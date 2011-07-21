@@ -1,63 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753204Ab1GUQdr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 12:33:47 -0400
-Received: from c60.cesmail.net ([216.154.195.49]:57950 "EHLO c60.cesmail.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751847Ab1GUQdo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 12:33:44 -0400
-Message-ID: <4E2854E5.3020905@gnu.org>
-Date: Thu, 21 Jul 2011 12:33:41 -0400
-From: Pavel Roskin <proski@gnu.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	id S1753240Ab1GUQgc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 12:36:32 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:58542 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752362Ab1GUQgb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 12:36:31 -0400
 MIME-Version: 1.0
-To: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-CC: linux-wireless@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Bug in BCMA: device_unregister causing "NULL pointer dereference
- at"
-References: <CACna6rxAKMp-2wqwz4k4S3nTkY_3Qz7=hEZk9F2Zig7T5kp_HA@mail.gmail.com> <CACna6rwPqeW5Bhc7A0FnkCaRq-a-nA4ziUQdoiakN_DvMyL_RQ@mail.gmail.com>
-In-Reply-To: <CACna6rwPqeW5Bhc7A0FnkCaRq-a-nA4ziUQdoiakN_DvMyL_RQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110721162417.GF1713@barrios-desktop>
+References: <1308926697-22475-1-git-send-email-mgorman@suse.de>
+ <20110721153722.GD1713@barrios-desktop> <20110721160958.GT5349@suse.de> <20110721162417.GF1713@barrios-desktop>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Thu, 21 Jul 2011 12:36:11 -0400
+X-Google-Sender-Auth: dyWvbFlucktvdLnzB93uvuWOCt8
+Message-ID: <CAObL_7HpE3mCS90Zfa9-edBKPFN1MuBOHv+=e6BNHsi2u3zTOQ@mail.gmail.com>
+Subject: Re: [PATCH 0/4] Stop kswapd consuming 100% CPU when highest zone is small
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        "P?draig Brady" <P@draigbrady.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Colin King <colin.king@canonical.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/21/2011 03:18 AM, RafaÅ‚ MiÅ‚ecki wrote:
-
->> So when I unload bcma after I got driver (b43) for 0x812 core, I get
->> NULL pointer dereference.
+On Thu, Jul 21, 2011 at 12:24 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
+> On Thu, Jul 21, 2011 at 05:09:59PM +0100, Mel Gorman wrote:
+>> On Fri, Jul 22, 2011 at 12:37:22AM +0900, Minchan Kim wrote:
+>> > On Fri, Jun 24, 2011 at 03:44:53PM +0100, Mel Gorman wrote:
+>> > > (Built this time and passed a basic sniff-test.)
+>> > >
+>> > > During allocator-intensive workloads, kswapd will be woken frequently
+>> > > causing free memory to oscillate between the high and min watermark.
+>> > > This is expected behaviour.  Unfortunately, if the highest zone is
+>> > > small, a problem occurs.
+>> > >
+>> > > This seems to happen most with recent sandybridge laptops but it's
+>> > > probably a co-incidence as some of these laptops just happen to have
+>> > > a small Normal zone. The reproduction case is almost always during
+>> > > copying large files that kswapd pegs at 100% CPU until the file is
+>> > > deleted or cache is dropped.
+>> > >
+>> > > The problem is mostly down to sleeping_prematurely() keeping kswapd
+>> > > awake when the highest zone is small and unreclaimable and compounded
+>> > > by the fact we shrink slabs even when not shrinking zones causing a lot
+>> > > of time to be spent in shrinkers and a lot of memory to be reclaimed.
+>> > >
+>> > > Patch 1 corrects sleeping_prematurely to check the zones matching
+>> > >   the classzone_idx instead of all zones.
+>> > >
+>> > > Patch 2 avoids shrinking slab when we are not shrinking a zone.
+>> > >
+>> > > Patch 3 notes that sleeping_prematurely is checking lower zones against
+>> > >   a high classzone which is not what allocators or balance_pgdat()
+>> > >   is doing leading to an artifical believe that kswapd should be
+>> > >   still awake.
+>> > >
+>> > > Patch 4 notes that when balance_pgdat() gives up on a high zone that the
+>> > >   decision is not communicated to sleeping_prematurely()
+>> > >
+>> > > This problem affects 2.6.38.8 for certain and is expected to affect
+>> > > 2.6.39 and 3.0-rc4 as well. If accepted, they need to go to -stable
+>> > > to be picked up by distros and this series is against 3.0-rc4. I've
+>> > > cc'd people that reported similar problems recently to see if they
+>> > > still suffer from the problem and if this fixes it.
+>> > >
+>> >
+>> > Good!
+>> > This patch solved the problem.
+>> > But there is still a mystery.
+>> >
+>> > In log, we could see excessive shrink_slab calls.
 >>
->> Any tip, why does it happen?
+>> Yes, because shrink_slab() was called on each loop through
+>> balance_pgdat() even if the zone was balanced.
+>>
+>>
+>> > And as you know, we had merged patch which adds cond_resched where last of the function
+>> > in shrink_slab. So other task should get the CPU and we should not see
+>> > 100% CPU of kswapd, I think.
+>> >
+>>
+>> cond_resched() is not a substitute for going to sleep.
 >
-> I've tracked where does crash really happen (kobject_del does not
-> really say much). The real forwardtrace is:
-> device_unregister â†’ device_del â†’ kobject_del â†’ kobj_kset_leave â†’
-> kobj_kset_leave â†’ list_del_init
+> Of course, it's not equal with sleep but other task should get CPU and conusme their time slice
+> So we should never see 100% CPU consumption of kswapd.
+> No?
+
+If the rest of the system is idle, then kswapd will happily use 100%
+CPU.  (Or on a multi-core system, kswapd will use close to 100% of one
+CPU even if another task is using the other one.  This is bad enough
+on a desktop, but on a laptop you start to notice when your battery
+dies.)
+
+--Andy
+
 >
-> If you take a look at list_del_init, it touches "prev" and "next". So
-> I've added some debugging:
-> pr_info("core->dev.kobj.entry.prev: 0x%p\n", core->dev.kobj.entry.prev);
-> pr_info("core->dev.kobj.entry.next: 0x%p\n", core->dev.kobj.entry.next);
-
-There are options for debugging that you may want to enable:
-
-CONFIG_DEBUG_LIST
-CONFIG_DEBUG_OBJECTS
-CONFIG_DEBUG_KOBJECT
-
-Actually, consider enabling most debug options as possible, except 
-perhaps the most time consuming (such as CONFIG_DEBUG_KMEMLEAK).  Maybe 
-you are passing a freed pointer or something.
-
-Print the pointers you are passing to device_register() and 
-device_unregister().
-
-> [  612.819320] bcma: core->dev.kobj.entry.prev: 0x  (null)
-
-You may want to make it a macro and print it in most bcma functions.
-
--- 
-Regards,
-Pavel Roskin
+>>
+>> --
+>> Mel Gorman
+>> SUSE Labs
+>
+> --
+> Kind regards,
+> Minchan Kim
+>
