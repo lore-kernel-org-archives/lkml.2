@@ -1,67 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728Ab1GUMep (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 08:34:45 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:42523 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752518Ab1GUMen (ORCPT
+	id S1752770Ab1GUMg4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 08:36:56 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37101 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751906Ab1GUMgx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 08:34:43 -0400
-From: Ravishankar <ravishankarkm32@gmail.com>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>,
-        Ravishankar <ravishankarkm32@gmail.com>
-Subject: [PATCH 1/1] Staging: comedi: fix printk issue in serial2002.c
-Date: Thu, 21 Jul 2011 18:04:26 +0530
-Message-Id: <1311251666-6894-1-git-send-email-ravishankarkm32@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <[PATCH]Staging: comedi: fix printk issue in serial2002.c>
-References: <[PATCH]Staging: comedi: fix printk issue in serial2002.c>
+	Thu, 21 Jul 2011 08:36:53 -0400
+Subject: Re: [PATCH 3/6] x86: Allow the user not to build hw_breakpoints
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <20110721072656.GF9216@elte.hu>
+References: <1310655837-328-1-git-send-email-fweisbec@gmail.com>
+	 <1310655837-328-4-git-send-email-fweisbec@gmail.com>
+	 <4E1F5EF3.6050601@zytor.com>  <20110721072656.GF9216@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 21 Jul 2011 14:36:25 +0200
+Message-ID: <1311251785.29152.141.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ravishankar <ravi.shankar@greenturtles.in>
+On Thu, 2011-07-21 at 09:26 +0200, Ingo Molnar wrote:
+> Otherwise we have expressed hw breakpoint APIs via perf events and 
+> that model is working well. 
 
-This is a patch to the serial2002.c file that fixes up a printk warning found by the checkpatch.pl tool
+Its working, maybe, working well is pushing it. The whole breakpoint
+muck is a horrid mess, it side-steps all of the resource scheduling
+stuff of perf and does it itself.
 
-Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
----
- drivers/staging/comedi/drivers/serial2002.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/staging/comedi/drivers/serial2002.c b/drivers/staging/comedi/drivers/serial2002.c
-index ade2202..e01cf7f 100644
---- a/drivers/staging/comedi/drivers/serial2002.c
-+++ b/drivers/staging/comedi/drivers/serial2002.c
-@@ -824,7 +824,7 @@ static int serial2002_attach(struct comedi_device *dev,
- {
- 	struct comedi_subdevice *s;
- 
--	printk("comedi%d: serial2002: ", dev->minor);
-+	printk(KERN_INFO "comedi%d: serial2002: ", dev->minor);
- 	dev->board_name = thisboard->name;
- 	if (alloc_private(dev, sizeof(struct serial2002_private)) < 0)
- 		return -ENOMEM;
-@@ -832,7 +832,7 @@ static int serial2002_attach(struct comedi_device *dev,
- 	dev->close = serial_2002_close;
- 	devpriv->port = it->options[0];
- 	devpriv->speed = it->options[1];
--	printk("/dev/ttyS%d @ %d\n", devpriv->port, devpriv->speed);
-+	printk(KERN_CONT "/dev/ttyS%d @ %d\n", devpriv->port, devpriv->speed);
- 
- 	if (alloc_subdevices(dev, 5) < 0)
- 		return -ENOMEM;
-@@ -891,7 +891,7 @@ static int serial2002_detach(struct comedi_device *dev)
- 	struct comedi_subdevice *s;
- 	int i;
- 
--	printk("comedi%d: serial2002: remove\n", dev->minor);
-+	printk(KERN_INFO "comedi%d: serial2002: remove\n", dev->minor);
- 	for (i = 0; i < 5; i++) {
- 		s = &dev->subdevices[i];
- 		kfree(s->maxdata_list);
--- 
-1.6.5.2
-
+Now part of that is because ptrace requires it, but whichever way you
+look at it its damn ugly.
