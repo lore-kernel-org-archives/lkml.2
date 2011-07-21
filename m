@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753388Ab1GUR0S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 13:26:18 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:53438 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753302Ab1GUR0Q convert rfc822-to-8bit (ORCPT
+	id S1753379Ab1GUR06 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 13:26:58 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:58752 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751678Ab1GUR04 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 13:26:16 -0400
+	Thu, 21 Jul 2011 13:26:56 -0400
 MIME-Version: 1.0
-X-Originating-IP: [92.140.109.150]
-In-Reply-To: <4E28313E.60900@drcomp.erfurt.thur.de>
-References: <20110719143758.GA15283@linuxaudio.org> <CAFEhRJf-5U=cS3iptpvGEVSHV+S=aBF_mWfWkC_QMRty_WnoPA@mail.gmail.com>
- <20110720131120.GA1836@linuxaudio.org> <CAFEhRJd9ZCSpx52S__vMdWK18mhMQrRoU9R5zNaZE=wksLRTvg@mail.gmail.com>
- <20110720153023.GA11502@linuxaudio.org> <CAFEhRJczj=_B7fK7GvBEnqpB2GJGnCnGkoA2w5vzbFfM2wAGZw@mail.gmail.com>
- <20110720163844.GB16901@linuxaudio.org> <CAG-2HqWqATSJ=oJTTvULXwPEG82yN+8e6GJFs759hPA-=krAOQ@mail.gmail.com>
- <20110721100944.GA13971@linuxaudio.org> <CAG-2HqX23C79vfccnu0tMqx+6K9Z5pS0_HekaLizQx7XfkPQ1Q@mail.gmail.com>
- <20110721112331.GA15059@linuxaudio.org> <CAG-2HqWK3x5-szkyzX8AMxuMpDZNVRXHYtQ0AkAPMsGcLK0Z9w@mail.gmail.com>
- <4E28313E.60900@drcomp.erfurt.thur.de>
-From: Tom Gundersen <teg@jklm.no>
-Date: Thu, 21 Jul 2011 19:25:56 +0200
-Message-ID: <CAG-2HqVew75LE68fObz7e3WwcT-5Gwu1ka9Zr4vb1JdbSUOYEQ@mail.gmail.com>
-Subject: Re: [arch-general] Panic - no sound devices after upgrade
-To: Fons Adriaensen <fons@linuxaudio.org>
-Cc: General Discussion about Arch Linux <arch-general@archlinux.org>,
-        Takashi Iwai <tiwai@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        Adrian Knoth <adi@drcomp.erfurt.thur.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20110721170824.GA28974@tassilo.jf.intel.com>
+References: <20110705062148.GA6056@program> <d1a1b6416d71a5062fb3b3e364f9db6b6d4ef6b2.1311258580.git.luto@mit.edu>
+ <20110721170824.GA28974@tassilo.jf.intel.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Thu, 21 Jul 2011 13:26:36 -0400
+X-Google-Sender-Auth: 9sEiw_ycUEdm8RfN-x_rnOYKQpg
+Message-ID: <CAObL_7HyjsPKnyDEEa0T8iTetpkd9Hq7RTBymieazzGOsXQLdA@mail.gmail.com>
+Subject: Re: [PATCH] x86: Fix memory leak of init_vdso_vars()
+To: Andi Kleen <ak@linux.intel.com>
+Cc: mingo@redhat.com, wzt <wzt.wzt@gmail.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, tglx@linutronix.de, hpa@zytor.com,
+        Michal Hocko <mhocko@suse.cz>,
+        Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 21, 2011 at 4:01 PM, Adrian Knoth <adi@drcomp.erfurt.thur.de> wrote:
-> On 07/21/11 15:00, Tom Gundersen wrote:
+On Thu, Jul 21, 2011 at 1:08 PM, Andi Kleen <ak@linux.intel.com> wrote:
+> On Thu, Jul 21, 2011 at 10:33:14AM -0400, Andy Lutomirski wrote:
+>> From: Zhitong Wang <wzt.wzt@gmail.com>
+>>
+>> If init_vdso_vars ran out of memory (not very likely), then it would
+>> leak a few pages as well.
+>>
+>> Also rename init_vdso_vars to just init_vdso, since initializing
+>> vvars is just about the only thing this function doesn't do.
 >
-> Hi!
->
->>>>>>> * The driver for my card (RME HDSP MADI, snd_hdpsm) is loaded.
->>>>> [   48.057757] HDSPM: unknown firmware revision cc
->
->> firmware revision is 0xCC, which is not recognised. If your card is
->> MADI, the kernel expects the firmware revision to be 0xD2 (or starting
->> in 3.0, it also accepts 0xCF).
->
-> Exactly.
->
->> I guess this can be fixed easily by adding your firmware revision to
->> the list of accepted revs.
->
-> I hope so, too. Please try the attached patch.
+> Just add a GFP_PANIC, there's no way to recover from this.
+> Your system will not work without a vdso.
 
-Fons (or anyone else who could reproduce the problem),
+Ingo objected to this before, although I'm not convinved.  Calling
+init_vdso_vars more than once will cause major problems (like
+double-patching of alternatives).  If there's too little memory for it
+to work, then presumably there's also too little memory to start init.
+ (Also, I bet that no one ever audited whether the ELF loader works
+right if the vDSO failed to load.)
 
-If you want to try out Adrian's patch, I uploaded a kernel with the
-patch applied here:
-<https://dev.archlinux.org/~tomegun/kernel26-2.6.39.1.3-1.1-i686.pkg.tar.xz>.
+Ingo?
 
-Cheers,
+--Andy
 
--t
+>
+> -Andi
+>
