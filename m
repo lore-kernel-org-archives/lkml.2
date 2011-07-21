@@ -1,116 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752297Ab1GUKRM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 06:17:12 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:34277 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751003Ab1GUKRI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 06:17:08 -0400
-Date: Thu, 21 Jul 2011 11:17:01 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Anton Blanchard <anton@samba.org>
-Cc: dwg@au1.ibm.com, akpm@linux-foundation.org, hughd@google.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] hugepage: Allow parallelization of the hugepage
- fault path
-Message-ID: <20110721101701.GC5212@csn.ul.ie>
-References: <20110125143226.37532ea2@kryten>
- <20110125143414.1dbb150c@kryten>
- <20110126092428.GR18984@csn.ul.ie>
- <20110715160650.48d61245@kryten>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110715160650.48d61245@kryten>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752193Ab1GUKUX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 06:20:23 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39941 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751408Ab1GUKUV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 06:20:21 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 21 Jul 2011 19:12:50 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] memcg: do not try to drain per-cpu caches without
+ pages
+Message-Id: <20110721191250.1c945740.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <113c4affc2f0938b7b22d43c88d2b0a623de9a6b.1311241300.git.mhocko@suse.cz>
+References: <cover.1311241300.git.mhocko@suse.cz>
+	<113c4affc2f0938b7b22d43c88d2b0a623de9a6b.1311241300.git.mhocko@suse.cz>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 15, 2011 at 04:06:50PM +1000, Anton Blanchard wrote:
+On Thu, 21 Jul 2011 09:38:00 +0200
+Michal Hocko <mhocko@suse.cz> wrote:
+
+> drain_all_stock_async tries to optimize a work to be done on the work
+> queue by excluding any work for the current CPU because it assumes that
+> the context we are called from already tried to charge from that cache
+> and it's failed so it must be empty already.
+> While the assumption is correct we can do it by checking the current
+> number of pages in the cache. This will also reduce a work on other CPUs
+> with an empty stock.
 > 
-> Hi Mel,
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+
+
+At the first look, when a charge against TransParentHugepage() goes
+into the reclaim routine, stock->nr_pages != 0 and this will
+call additional kworker.
+
+nr_pages check itself seems good.
+
+Thanks,
+-Kame
+
+> ---
+>  mm/memcontrol.c |   14 ++------------
+>  1 files changed, 2 insertions(+), 12 deletions(-)
 > 
-> > I haven't tested this patch yet but typically how I would test it is
-> > multiple parallel instances of make func from libhugetlbfs. In
-> > particular I would be looking out for counter corruption. Has
-> > something like this been done? I know hugetlb_lock protects the
-> > counters but the locking in there has turned into a bit of a mess so
-> > it's easy to miss something.
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index f11f198..786bffb 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2140,7 +2140,7 @@ static void refill_stock(struct mem_cgroup *mem, unsigned int nr_pages)
+>   */
+>  static void drain_all_stock_async(struct mem_cgroup *root_mem)
+>  {
+> -	int cpu, curcpu;
+> +	int cpu;
+>  	/*
+>  	 * If someone calls draining, avoid adding more kworker runs.
+>  	 */
+> @@ -2148,22 +2148,12 @@ static void drain_all_stock_async(struct mem_cgroup *root_mem)
+>  		return;
+>  	/* Notify other cpus that system-wide "drain" is running */
+>  	get_online_cpus();
+> -	/*
+> -	 * Get a hint for avoiding draining charges on the current cpu,
+> -	 * which must be exhausted by our charging.  It is not required that
+> -	 * this be a precise check, so we use raw_smp_processor_id() instead of
+> -	 * getcpu()/putcpu().
+> -	 */
+> -	curcpu = raw_smp_processor_id();
+>  	for_each_online_cpu(cpu) {
+>  		struct memcg_stock_pcp *stock = &per_cpu(memcg_stock, cpu);
+>  		struct mem_cgroup *mem;
+>  
+> -		if (cpu == curcpu)
+> -			continue;
+> -
+>  		mem = stock->cached;
+> -		if (!mem)
+> +		if (!mem || !stock->nr_pages)
+>  			continue;
+>  		if (mem != root_mem) {
+>  			if (!root_mem->use_hierarchy)
+> -- 
+> 1.7.5.4
 > 
-> Thanks for the suggestion and sorry for taking so long. Make check has
-> the same PASS/FAIL count before and after the patches.
 > 
-> I also ran 16 copies of make func on a large box with 896 HW threads.
-> Some of the tests that use shared memory were a bit upset, but that
-> seems to be because we use a static key. It seems the tests were also
-> fighting over the number of huge pages they wanted the system set to.
-> 
-> It got up to a load average of 13207, and heap-overflow consumed all my
-> memory, a pretty good effort considering I have over 1TB of it.
-> 
-> After things settled down things were OK, apart from the fact that we
-> have 20 huge pages unaccounted for:
-> 
-> HugePages_Total:   10000
-> HugePages_Free:     9980
-> HugePages_Rsvd:        0
-> HugePages_Surp:        0
-> 
-> I verified there were no shared memory segments, and no files in the
-> hugetlbfs filesystem (I double checked by unmounting it).
-> 
-> I can't see how this patch set would cause this. It seems like we can
-> leak huge pages, perhaps in an error path. Anyway, I'll repost the
-> patch set for comments.
 > 
 
-I didn't see any problem with the patch either. The locking should
-be functionally equivalent for both private and shared mappings.
-
-Out of curiousity, can you trigger the bug without the patches? It
-could be a race on faulting the shared regions that is causing the
-leakage.  Any chance this can be debugged minimally by finding out if
-this is an accounting bug or if if a hugepage is leaked? Considering
-the stress of the machine and its size, I'm guessing it's not trivially
-reproducible anywhere else.
-
-I think one possibility of where the bug is is when updating
-the hugepage pool size with "make func". This is a scenario that does
-not normally occur as hugepage pool resizing is an administrative task
-that happens rarely. See this chunk for instance
-
-        spin_lock(&hugetlb_lock);
-        if (h->surplus_huge_pages >= h->nr_overcommit_huge_pages) {
-                spin_unlock(&hugetlb_lock);
-                return NULL;
-        } else {
-                h->nr_huge_pages++;
-                h->surplus_huge_pages++;
-        }
-        spin_unlock(&hugetlb_lock);
-
-        page = alloc_pages(htlb_alloc_mask|__GFP_COMP|
-                                        __GFP_REPEAT|__GFP_NOWARN,
-                                        huge_page_order(h));
-
-        if (page && arch_prepare_hugepage(page)) {
-                __free_pages(page, huge_page_order(h));
-                return NULL;
-        }
-
-That thing is not updating the counters if arch_prepare_hugepage fails.
-That function is a no-op on powerpc normally. That wasn't changed for
-any reason was it?
-
-Another possibility is a regression of
-[4f16fc10: mm: hugetlb: fix hugepage memory leak in mincore()] so maybe
-try a similar reproduction case of mincore?
-
-Maybe also try putting assert_spin_locked at every point nr_free_pages
-or nr_huge_pages is updated and see if one of them triggers?
-
-
--- 
-Mel Gorman
-SUSE Labs
