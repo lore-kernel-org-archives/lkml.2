@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213Ab1GUQYl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 12:24:41 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:53960 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753189Ab1GUQYk (ORCPT
+	id S1753158Ab1GUQ2L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 12:28:11 -0400
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:40960 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752902Ab1GUQ2J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 12:24:40 -0400
-Message-ID: <4E2852C3.50109@gmail.com>
-Date: Thu, 21 Jul 2011 10:24:35 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	Thu, 21 Jul 2011 12:28:09 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: ioh3_dwVM1nsdS0eD6msaWnzVqs4Y4rcT_fy7XAavYq8hPQ
+ roW0A.w1xJIpISy_i2vQ2ymjBsvpx.6EsImuZrTwvZ_db1lPPCKeXNxkvK2o
+ eYc7vOguPfzzBl8IMkfHmjGIVwqxrLvTDjjSMUXvFeifBPvJB7SZIkzsPWJZ
+ 0OpmEIqtFpVX.HCK7EdsKfsdRBES6hdfsE83N8wUpbpZumoLYZ.8tgH3enLz
+ CrwU1iTz0CR0.prTAwELoSOVSzQiokeWlE6CF_4vm09vGTcC6Mxn0UwBd4T4
+ 9iERPEwAi_urCrN8f5YrB.GJ5kfuuz.1RPCuDZem1z2CYnS30E.mMlawJJbr
+ HWIehdFyEKoI__gKvZ2jSWdOC
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Thu, 21 Jul 2011 11:28:04 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Vasiliy Kulikov <segoon@openwall.com>
+cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Al Viro <viro@zeniv.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC v3 2/5] slab: implement slab object boundaries assertion
+In-Reply-To: <1311252815-6733-1-git-send-email-segoon@openwall.com>
+Message-ID: <alpine.DEB.2.00.1107211127050.3995@router.home>
+References: <1311252815-6733-1-git-send-email-segoon@openwall.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: mingo@redhat.com, linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-        a.p.zijlstra@chello.nl, stable@kernel.org, tglx@linutronix.de,
-        mingo@elte.hu, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/urgent] perf tools, x86: Fix 32-bit compile on 64-bit
- system
-References: <1310420304-21452-1-git-send-email-dsahern@gmail.com> <tip-08a4a43fc407d780bdde36d98f89c0dbb2a6be6b@git.kernel.org> <4E284EAB.1020906@zytor.com>
-In-Reply-To: <4E284EAB.1020906@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/21/2011 10:07 AM, H. Peter Anvin wrote:
->> The problem is the detection of the host arch without considering passed in
->> flags. This change fixes 32-bit builds via:
->>
->> make EXTRA_CFLAGS=-m32
->>
->> and 64-bit builds still reference the memcpy_64.S.
->>
-> 
-> But this is the wrong way to build 32-bit code on 64-bit platforms.
-> make ARCH=i386 is the supported way.
-> 
-> 	-hpa
-> 
+On Thu, 21 Jul 2011, Vasiliy Kulikov wrote:
 
-Indeed that works fine. If that is the preferred route then the patch
-needs to update the following comment in the Makefile:
+> +bool slab_access_ok(const void *ptr, unsigned long len)
+> +{
+> +	struct page *page;
+> +	struct kmem_cache *s = NULL;
 
-# Define EXTRA_CFLAGS=-m64 or EXTRA_CFLAGS=-m32 as appropriate for
-cross-builds.
+Useless assignment.
 
-to specify ARCH on the command line.
+> +	unsigned long offset;
+> +
+> +	if (!virt_addr_valid(ptr))
+> +		return true;
+> +	page = virt_to_head_page(ptr);
+> +	if (!PageSlab(page))
+> +		return true;
+> +
+> +	s = page->slab;
+> +	offset = (ptr - page_address(page)) % s->size;
+> +	if (offset <= s->objsize && len <= s->objsize - offset)
+> +		return true;
 
-David
+I thought this was going to be offset < s->objectsize ...?
