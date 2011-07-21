@@ -1,46 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751907Ab1GUGiU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 02:38:20 -0400
-Received: from ganesha.gnumonks.org ([213.95.27.120]:36160 "EHLO
-	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003Ab1GUGiQ (ORCPT
+	id S1751641Ab1GUGjN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 02:39:13 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:55331 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750973Ab1GUGjL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 02:38:16 -0400
-From: jhbird.choi@samsung.com
-To: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [PATCH] PM / OPP: Fix dev_opp initial value
-Date: Thu, 21 Jul 2011 15:31:48 +0900
-Message-Id: <1311229908-6046-1-git-send-email-jhbird.choi@samsung.com>
-X-Mailer: git-send-email 1.7.1
+	Thu, 21 Jul 2011 02:39:11 -0400
+From: Manfred Spraul <manfred@colorfullife.com>
+To: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Manfred Spraul <manfred@colorfullife.com>
+Subject: [PATCH] [ipc/sem.c] fix race with concurrent semtimedop() timeouts and IPC_RMID
+Date: Thu, 21 Jul 2011 08:42:53 +0200
+Message-Id: <1311230573-6244-1-git-send-email-manfred@colorfullife.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jonghwan Choi <jhbird.choi@samsung.com>
+If a semaphore array is removed and in parallel a sleeping task is woken up
+(signal or timeout, does not matter), then the woken up task does not wait
+until wake_up_sem_queue_do() is completed. This will cause crashes, because
+wake_up_sem_queue_do() will read from a stale pointer.
 
-Dev_opp initial value shoule be ERR_PTR(),
-IS_ERR() is used to check error.
+The fix is simple: Regardless of anything, always call get_queue_result().
+This function waits until wake_up_sem_queue_do() has finished it's task.
 
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+Andrew, could you please take care of merging the patch?
+
+Reported-by: Yuriy Yevtukhov <yuriy@ucoz.com>
+Reported-by: Harald Laabs <kernel@dasr.de>
+Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
 ---
- drivers/base/power/opp.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ ipc/sem.c |   13 +++++++++++--
+ 1 files changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
-index 56a6899..d4ebf80 100644
---- a/drivers/base/power/opp.c
-+++ b/drivers/base/power/opp.c
-@@ -453,7 +453,7 @@ int opp_add(struct device *dev, unsigned long freq, unsigned long u_volt)
- static int opp_set_availability(struct device *dev, unsigned long freq,
- 		bool availability_req)
- {
--	struct device_opp *tmp_dev_opp, *dev_opp = NULL;
-+	struct device_opp *tmp_dev_opp, *dev_opp = ERR_PTR(-ENODEV);
- 	struct opp *new_opp, *tmp_opp, *opp = ERR_PTR(-ENODEV);
- 	int r = 0;
+diff --git a/ipc/sem.c b/ipc/sem.c
+index 34193ed..add93d2 100644
+--- a/ipc/sem.c
++++ b/ipc/sem.c
+@@ -1456,15 +1456,24 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
+ 	}
  
+ 	sma = sem_lock(ns, semid);
++
++	/*
++	 * Wait until it's guaranteed that no wakeup_sem_queue_do() is ongoing.
++	 */
++	error = get_queue_result(&queue);
++
++	/*
++	 * Array removed? If yes, leave without sem_unlock().
++	 */
+ 	if (IS_ERR(sma)) {
+ 		error = -EIDRM;
+ 		goto out_free;
+ 	}
+ 
+-	error = get_queue_result(&queue);
+ 
+ 	/*
+-	 * If queue.status != -EINTR we are woken up by another process
++	 * If queue.status != -EINTR we are woken up by another process.
++	 * Leave without unlink_queue(), but with sem_unlock().
+ 	 */
+ 
+ 	if (error != -EINTR) {
 -- 
-1.7.0
+1.7.6
 
