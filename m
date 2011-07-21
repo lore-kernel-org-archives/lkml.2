@@ -1,40 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770Ab1GUMg4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 08:36:56 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37101 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751906Ab1GUMgx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 08:36:53 -0400
-Subject: Re: [PATCH 3/6] x86: Allow the user not to build hw_breakpoints
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <20110721072656.GF9216@elte.hu>
-References: <1310655837-328-1-git-send-email-fweisbec@gmail.com>
-	 <1310655837-328-4-git-send-email-fweisbec@gmail.com>
-	 <4E1F5EF3.6050601@zytor.com>  <20110721072656.GF9216@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 21 Jul 2011 14:36:25 +0200
-Message-ID: <1311251785.29152.141.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752773Ab1GUMm1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 08:42:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40083 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751888Ab1GUMm0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 08:42:26 -0400
+Date: Thu, 21 Jul 2011 14:42:23 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] memcg: get rid of percpu_charge_mutex lock
+Message-ID: <20110721124223.GE27855@tiehlicka.suse.cz>
+References: <cover.1311241300.git.mhocko@suse.cz>
+ <2bfb2b7687c1a6b39da2a04689190725075cc4f8.1311241300.git.mhocko@suse.cz>
+ <20110721193051.cd3266e5.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110721114704.GC27855@tiehlicka.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110721114704.GC27855@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-07-21 at 09:26 +0200, Ingo Molnar wrote:
-> Otherwise we have expressed hw breakpoint APIs via perf events and 
-> that model is working well. 
+On Thu 21-07-11 13:47:04, Michal Hocko wrote:
+> On Thu 21-07-11 19:30:51, KAMEZAWA Hiroyuki wrote:
+> > On Thu, 21 Jul 2011 09:58:24 +0200
+> > Michal Hocko <mhocko@suse.cz> wrote:
+[...]
+> > > --- a/mm/memcontrol.c
+> > > +++ b/mm/memcontrol.c
+> > > @@ -2166,7 +2165,8 @@ static void drain_all_stock(struct mem_cgroup *root_mem, bool sync)
+> > >  
+> > >  	for_each_online_cpu(cpu) {
+> > >  		struct memcg_stock_pcp *stock = &per_cpu(memcg_stock, cpu);
+> > > -		if (test_bit(FLUSHING_CACHED_CHARGE, &stock->flags))
+> > > +		if (root_mem == stock->cached &&
+> > > +				test_bit(FLUSHING_CACHED_CHARGE, &stock->flags))
+> > >  			flush_work(&stock->work);
+> > 
+> > Doesn't this new check handle hierarchy ?
+> > css_is_ancestor() will be required if you do this check.
+> 
+> Yes you are right. Will fix it. I will add a helper for the check.
 
-Its working, maybe, working well is pushing it. The whole breakpoint
-muck is a horrid mess, it side-steps all of the resource scheduling
-stuff of perf and does it itself.
+Here is the patch with the helper. The above will then read 
+	if (mem_cgroup_same_or_subtree(root_mem, stock->cached))
 
-Now part of that is because ptrace requires it, but whichever way you
-look at it its damn ugly.
+---
+>From b963a9f4dac61044daac49700f84b7819d7c2f53 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Thu, 21 Jul 2011 13:54:13 +0200
+Subject: [PATCH] memcg: add mem_cgroup_same_or_subtree helper
+
+We are checking whether a given two groups are same or at least in the
+same subtree of a hierarchy at several places. Let's make a helper for
+it to make code easier to read.
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/memcontrol.c |   29 ++++++++++++++++++-----------
+ 1 files changed, 18 insertions(+), 11 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 8180cd9..8dbb9d6 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1046,6 +1046,21 @@ void mem_cgroup_move_lists(struct page *page,
+ 	mem_cgroup_add_lru_list(page, to);
+ }
+ 
++/*
++ * Checks whether given mem is same or in the root_mem's
++ * hierarchy subtree
++ */
++static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_mem,
++		struct mem_cgroup *mem)
++{
++	if (root_mem != mem) {
++		return (root_mem->use_hierarchy &&
++			css_is_ancestor(&mem->css, &root_mem->css));
++	}
++
++	return true;
++}
++
+ int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *mem)
+ {
+ 	int ret;
+@@ -1065,10 +1080,7 @@ int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *mem)
+ 	 * enabled in "curr" and "curr" is a child of "mem" in *cgroup*
+ 	 * hierarchy(even if use_hierarchy is disabled in "mem").
+ 	 */
+-	if (mem->use_hierarchy)
+-		ret = css_is_ancestor(&curr->css, &mem->css);
+-	else
+-		ret = (curr == mem);
++	ret = mem_cgroup_same_or_subtree(mem, curr);
+ 	css_put(&curr->css);
+ 	return ret;
+ }
+@@ -2150,13 +2162,8 @@ static void drain_all_stock(struct mem_cgroup *root_mem, bool sync)
+ 		mem = stock->cached;
+ 		if (!mem || !stock->nr_pages)
+ 			continue;
+-		if (mem != root_mem) {
+-			if (!root_mem->use_hierarchy)
+-				continue;
+-			/* check whether "mem" is under tree of "root_mem" */
+-			if (!css_is_ancestor(&mem->css, &root_mem->css))
+-				continue;
+-		}
++		if (!mem_cgroup_same_or_subtree(root_mem, mem))
++			continue;
+ 		if (!test_and_set_bit(FLUSHING_CACHED_CHARGE, &stock->flags))
+ 			schedule_work_on(cpu, &stock->work);
+ 	}
+-- 
+1.7.5.4
+
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
