@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751579Ab1GUO1w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 10:27:52 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:33949 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241Ab1GUO1v convert rfc822-to-8bit (ORCPT
+	id S1751678Ab1GUOat (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 10:30:49 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:42150 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751343Ab1GUOar (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 10:27:51 -0400
+	Thu, 21 Jul 2011 10:30:47 -0400
+Message-ID: <4E283813.1010205@gmail.com>
+Date: Thu, 21 Jul 2011 08:30:43 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <20110718123648.GA4010@shale.localdomain>
-References: <1310859509.4191.6.camel@Rarity>
-	<20110718123648.GA4010@shale.localdomain>
-Date: Thu, 21 Jul 2011 16:27:49 +0200
-Message-ID: <CAKYW3yYpzB3YbcM=Kk_zGK6q96sbRceH3XeXKp1w72WzNF8W8A@mail.gmail.com>
-Subject: Re: [PATCH] Summary: Fixed all the indents and other errors in IEEE11h.c
-From: Toon Schoenmakers <nighteyes1993@gmail.com>
-To: Dan Carpenter <error27@gmail.com>
-Cc: gregkh@suse.de, caratorn@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
+To: mingo@elte.hu, peterz@infradead.org
+CC: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        acme@ghostprotocols.net, fweisbec@gmail.com, paulus@samba.org
+Subject: Re: [PATCH] perf tools, x86: fix 32-bit compile on 64-bit system
+References: <1310420304-21452-1-git-send-email-dsahern@gmail.com>
+In-Reply-To: <1310420304-21452-1-git-send-email-dsahern@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am really just beginning with C, so I don't think I can rewrite the
-part that now is in Lisp (I didn't even know it was in Lisp until you
-said so)
-And with WLAN_SET_FC_FSTYPE() not being aligned I assume you mean that
-you'd like to see it right under the thing that's above it, for easy
-reading, right?
-The aligning of it is probably the only thing I can fix at this point
-of time, thanks for the suggestions though.
 
--Toon
 
-On Mon, Jul 18, 2011 at 14:36, Dan Carpenter <error27@gmail.com> wrote:
-> On Sun, Jul 17, 2011 at 01:38:29AM +0200, Toon Schoenmakers wrote:
->
->> +     uNumOfEIDs = ((uLength - offsetof(WLAN_FRAME_MSRREQ,
->> +                     sMSRReqEIDs))/
->> +                     (sizeof(WLAN_IE_MEASURE_REQ)));
->
-> It would be better to write this in C instead of Lisp:
->
->        uNumOfEIDs = (uLength - offsetof(WLAN_FRAME_MSGREQ, sMSRReqEIDS)) /
->                        sizeof(WLAN_EI_MEASURE_REQ);
->
-> The other advantage of that is that the call to offsetof() is now
-> all together on one line.
->
->> +     pTxPacket->p80211Header = (PUWLAN_80211HDR)((unsigned char *)pTxPacket +
->> +sizeof(STxMgmtPacket));
->> +
->> +     pFrame = (PWLAN_FRAME_TPCREP)((unsigned char *)pTxPacket +
->> +sizeof(STxMgmtPacket));
->> +
->
-> Don't do that.
->
->> +     pFrame->Header.wFrameCtl = (WLAN_SET_FC_FTYPE(WLAN_FTYPE_MGMT) |
->> +                             WLAN_SET_FC_FSTYPE(WLAN_FSTYPE_ACTION)
->> +                             );
->
-> The close parenthesis can fit on the end of the other line.  In fact
-> the paren is not needed at all.  Why is the second line aligned where
-> you have it?  The WLAN_SET_FC_FSTYPE() isn't aligned with anything.
->
-> Take a another look through the patch and you'll find a bunch of
-> similar issues.
->
-> regards,
-> dan carpenter
->
+On 07/11/2011 03:38 PM, David Ahern wrote:
+> Builds for 32-bit binaries on a 64-bit host currently fail with the error:
+> 
+> gcc -o /tmp/perf-ppc/bench/mem-memcpy-x86-64-asm.o -c -fno-omit-frame-pointer -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6 -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -Wformat-y2k -Wshadow -Winit-self -Wpacked -Wredundant-decls -Wstrict-aliasing=3 -Wswitch-default -Wswitch-enum -Wno-system-headers -Wundef -Wwrite-strings -Wbad-function-cast -Wmissing-declarations -Wmissing-prototypes -Wnested-externs -Wold-style-definition -Wstrict-prototypes -Wdeclaration-after-statement -m32 -fstack-protector-all -Wstack-protector -Wvolatile-register-var -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -Iutil/include -Iarch/x86/include -I/tmp/perf-ppc/ -DLIBELF_NO_MMAP -DDWARF_SUPPORT -DNO_NEWT_SUPPORT -DNO_LIBPERL -DNO_LIBPYTHON -DHAVE_CPLUS_DEMANGLE -DNO_STRLCPY -DARCH_X86_64 bench/mem-memcpy-x86-64-asm.S
+> bench/../../../arch/x86/lib/memcpy_64.S: Assembler messages:
+> bench/../../../arch/x86/lib/memcpy_64.S:29: Error: bad register name `%rdi'
+> bench/../../../arch/x86/lib/memcpy_64.S:34: Error: invalid instruction suffix for `movs'
+> bench/../../../arch/x86/lib/memcpy_64.S:50: Error: bad register name `%rdi'
+> bench/../../../arch/x86/lib/memcpy_64.S:61: Error: bad register name `%rdi'
+> ...
+> 
+> The problem is the detection of the host arch without considering passed in
+> flags. This change fixes 32-bit builds via:
+> 
+> make EXTRA_CFLAGS=-m32 
+> 
+> and 64-bit builds still reference the memcpy_64.S.
+> 
+> Signed-off-by: David Ahern <dsahern@gmail.com>
+
+This one was missed in the recent commits. It has been acked by Frederic
+and Peter made a comment about picking it up. Perhaps coming through his
+tree?
+
+Thanks,
+David
+
+> ---
+>  tools/perf/Makefile |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
+> 
+> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> index 940257b..c168366 100644
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
+> @@ -52,7 +52,10 @@ ifeq ($(ARCH),i386)
+>  endif
+>  ifeq ($(ARCH),x86_64)
+>  	ARCH := x86
+> -	IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -xc - | tail -n 1)
+> +	IS_X86_64 := 0
+> +	ifeq (, $(findstring m32,$(EXTRA_CFLAGS)))
+> +		IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -xc - | tail -n 1)
+> +	endif
+>  	ifeq (${IS_X86_64}, 1)
+>  		RAW_ARCH := x86_64
+>  		ARCH_CFLAGS := -DARCH_X86_64
