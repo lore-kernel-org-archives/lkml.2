@@ -1,55 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752455Ab1GUUk5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 16:40:57 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:57826 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750769Ab1GUUky (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 16:40:54 -0400
-Date: Thu, 21 Jul 2011 21:40:42 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, Matthew Wilcox <matthew@wil.cx>,
-        Anton Blanchard <anton@samba.org>, npiggin@kernel.dk,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [Patch] VFS : mount lock scalability for files systems without
- mount point   (WAS vfsmount lock issues on very large ppc64 box)
-Message-ID: <20110721204042.GB31405@ZenIV.linux.org.uk>
-References: <20110717105027.53cc3ca4@kryten>
- <20110717010427.GC5359@parisc-linux.org>
- <20110717084630.GC8006@one.firstfloor.org>
- <1310977028.5756.1.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20110718154008.GA29593@infradead.org>
- <20110718155141.GA11013@ZenIV.linux.org.uk>
- <1311093158.2707.75.camel@schen9-DESK>
+	id S1752669Ab1GUUmF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 16:42:05 -0400
+Received: from pequi.mat.unb.br ([164.41.38.3]:32964 "EHLO mail.mat.unb.br"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750927Ab1GUUmB (ORCPT <rfc822;Linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 16:42:01 -0400
+X-Greylist: delayed 17599 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Jul 2011 16:42:00 EDT
+Message-ID: <20110721112934.1zflszrog08cgoks@webmail.mat.unb.br>
+Date: Thu, 21 Jul 2011 11:29:34 -0300
+From: "Mr. Vincent Cheng Chuen" <choi_chui001@mat.unb.br>
+Reply-to: choi_chui001@yahoo.co.jp
+To: undisclosed-recipients:;
+Subject: 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
 Content-Disposition: inline
-In-Reply-To: <1311093158.2707.75.camel@schen9-DESK>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 19, 2011 at 09:32:38AM -0700, Tim Chen wrote:
-> @@ -1193,6 +1193,7 @@ static void __exit cleanup_mtdchar(void)
->  {
->  	unregister_mtd_user(&mtdchar_notifier);
->  	mntput(mtd_inode_mnt);
-> +	kern_unmount(mtd_inode_mnt);
 
-Surely you want to merge that mntput() in there...
+Good Day,
 
-> +void kern_unmount(struct vfsmount *mnt)
-> +{
-> +	/* release long term mount so mount point can be released */
-> +	if (!IS_ERR_OR_NULL(mnt)) {
-> +		mnt_make_shortterm(mnt);
-> +		mntput();
-> +	}
-> +}
+I have a business proposal of USD $22,500,000.00 only for you to transact with
+me from my bank to your country.
+Reply to address: choi_chui001@yahoo.co.jp and I will let you know what is
+required of you.
 
-... and if you pass it the argument, it'll be much happier.
+Best Regards,
+Mr. Vincent Cheng
+
+
+
+
+
