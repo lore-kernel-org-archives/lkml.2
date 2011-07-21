@@ -1,55 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753379Ab1GUR06 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 13:26:58 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:58752 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751678Ab1GUR04 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 13:26:56 -0400
+	id S1753402Ab1GUR1n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 13:27:43 -0400
+Received: from inx.pm.waw.pl ([195.116.170.130]:34200 "EHLO inx.pm.waw.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751678Ab1GUR1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 13:27:41 -0400
+From: Krzysztof Halasa <khc@pm.waw.pl>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Imre Kaloz <kaloz@openwrt.org>, Eric Miao <eric.y.miao@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: Migrate to asm-generic wrapper support
+References: <1311204225-13169-1-git-send-email-sboyd@codeaurora.org>
+	<20110720232819.GC20310@n2100.arm.linux.org.uk>
+	<4E27667D.9060200@codeaurora.org>
+Date: Thu, 21 Jul 2011 21:27:23 +0200
+In-Reply-To: <4E27667D.9060200@codeaurora.org> (Stephen Boyd's message of
+	"Wed, 20 Jul 2011 16:36:29 -0700")
+Message-ID: <m31uxje8o4.fsf@intrepid.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <20110721170824.GA28974@tassilo.jf.intel.com>
-References: <20110705062148.GA6056@program> <d1a1b6416d71a5062fb3b3e364f9db6b6d4ef6b2.1311258580.git.luto@mit.edu>
- <20110721170824.GA28974@tassilo.jf.intel.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Thu, 21 Jul 2011 13:26:36 -0400
-X-Google-Sender-Auth: 9sEiw_ycUEdm8RfN-x_rnOYKQpg
-Message-ID: <CAObL_7HyjsPKnyDEEa0T8iTetpkd9Hq7RTBymieazzGOsXQLdA@mail.gmail.com>
-Subject: Re: [PATCH] x86: Fix memory leak of init_vdso_vars()
-To: Andi Kleen <ak@linux.intel.com>
-Cc: mingo@redhat.com, wzt <wzt.wzt@gmail.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, tglx@linutronix.de, hpa@zytor.com,
-        Michal Hocko <mhocko@suse.cz>,
-        Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 21, 2011 at 1:08 PM, Andi Kleen <ak@linux.intel.com> wrote:
-> On Thu, Jul 21, 2011 at 10:33:14AM -0400, Andy Lutomirski wrote:
->> From: Zhitong Wang <wzt.wzt@gmail.com>
->>
->> If init_vdso_vars ran out of memory (not very likely), then it would
->> leak a few pages as well.
->>
->> Also rename init_vdso_vars to just init_vdso, since initializing
->> vvars is just about the only thing this function doesn't do.
->
-> Just add a GFP_PANIC, there's no way to recover from this.
-> Your system will not work without a vdso.
+Stephen Boyd <sboyd@codeaurora.org> writes:
 
-Ingo objected to this before, although I'm not convinved.  Calling
-init_vdso_vars more than once will cause major problems (like
-double-patching of alternatives).  If there's too little memory for it
-to work, then presumably there's also too little memory to start init.
- (Also, I bet that no one ever audited whether the ELF loader works
-right if the vDSO failed to load.)
+> With d8ecc5c (kbuild: asm-generic support, 2011-04-27) we can
+> remove a handful of asm-generic wrappers in ARM code. Since the
+> generic version of sizes.h doesn't contain SZ_48M, we replace
+> the 3 users of SZ_48M with the equivalent SZ_32M + SZ_16M.
 
-Ingo?
-
---Andy
-
->
-> -Andi
->
+Perhaps simply adding SZ_48M to the generic version is better. Can live
+with either.
+-- 
+Krzysztof Halasa
