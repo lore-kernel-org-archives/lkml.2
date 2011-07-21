@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638Ab1GUICw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 04:02:52 -0400
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:47746 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751910Ab1GUICp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 04:02:45 -0400
-Date: Thu, 21 Jul 2011 10:02:40 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: linux-next: manual merge of the ptrace tree with the s390 tree
-Message-ID: <20110721080240.GZ3455@htj.dyndns.org>
-References: <20110720153320.a7f33784158ccb04fafcb5d6@canb.auug.org.au>
+	id S1752703Ab1GUIG3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 04:06:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15256 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751425Ab1GUIG0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 04:06:26 -0400
+Message-ID: <4E27DEA9.20404@redhat.com>
+Date: Thu, 21 Jul 2011 10:09:13 +0200
+From: Kevin Wolf <kwolf@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110720153320.a7f33784158ccb04fafcb5d6@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        levinsasha928@gmail.com, penberg@kernel.org, kwolf@redhat.com,
+        tglx@linutronix.de
+CC: linux-tip-commits@vger.kernel.org, kvm-devel <kvm@vger.kernel.org>
+Subject: Re: [tip:tools/kvm] kvm tools, qcow: Fix copy-on-write image corruption
+References: <tip-4839bcd6b04a1b628f0f00d535ddca2ee872e9fa@git.kernel.org>
+In-Reply-To: <tip-4839bcd6b04a1b628f0f00d535ddca2ee872e9fa@git.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Wed, Jul 20, 2011 at 03:33:20PM +1000, Stephen Rothwell wrote:
-> Today's linux-next merge of the ptrace tree got a conflict in
-> arch/s390/kernel/traps.c between commit 248bed4b0f3c ("[S390] use siginfo
-> for sigtrap signals") from the s390 tree and commit a288eecce525
-> ("ptrace: kill trivial tracehooks") from the ptrace tree.
+Am 20.07.2011 21:49, schrieb tip-bot for Pekka Enberg:
+> Commit-ID:  4839bcd6b04a1b628f0f00d535ddca2ee872e9fa
+> Gitweb:     http://git.kernel.org/tip/4839bcd6b04a1b628f0f00d535ddca2ee872e9fa
+> Author:     Pekka Enberg <penberg@kernel.org>
+> AuthorDate: Wed, 20 Jul 2011 16:28:31 +0300
+> Committer:  Pekka Enberg <penberg@kernel.org>
+> CommitDate: Wed, 20 Jul 2011 16:28:31 +0300
 > 
-> It looks like the former is a superset of the latter, so I used the
-> former.
+> kvm tools, qcow: Fix copy-on-write image corruption
+> 
+> We don't handle refcount table properly so make sure we only write to clusters
+> that have the "copied" flag set.
+> 
+> Cc: Kevin Wolf <kwolf@redhat.com>
+> Cc: Sasha Levin <levinsasha928@gmail.com>
+> Signed-off-by: Pekka Enberg <penberg@kernel.org>
 
-Yeap, pretty much.  Martin, testing if (current->ptrace) is enough.
-If PT_PTRACED is not set, no other flag there is allowed to set.
-Also, I think we really should standardize what gets reported in these
-debug traps instead of letting each arch do its own thing.
+Hm, I must have missed this patch on the KVM mailing list...
 
-Thanks.
+You should also error out before creating a new L2 table as its refcount
+would have to be updated, too. On the other hand, the patch is a bit too
+restrictive, because it applies the check to qcow1 which doesn't even
+have a refcount table.
 
--- 
-tejun
+I'm not sure if everyone is aware of it, so another hint: Now that you
+can't grow qcow2 any more, you might find it useful to use qemu-img
+create -f qcow2 -o preallocation=metadata, so that all clusters are
+already present and you don't get random failures.
+
+Kevin
