@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751720Ab1GUJ2K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 05:28:10 -0400
-Received: from mail.bbaw.de ([194.95.188.6]:46218 "EHLO mail.bbaw.de"
+	id S1751843Ab1GUJde (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 05:33:34 -0400
+Received: from ozlabs.org ([203.10.76.45]:42107 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750834Ab1GUJ2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 05:28:07 -0400
-Date: Thu, 21 Jul 2011 11:28:04 +0200
-From: Lars =?UTF-8?B?VMOkdWJlcg==?= <taeuber@bbaw.de>
-To: Michael Brade <brade@informatik.uni-muenchen.de>
+	id S1750834Ab1GUJdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 05:33:32 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org
-Subject: Re: 2.6.39, 3.0.0-rc7+: complete system freeze with rsync on big
- directory
-Message-Id: <20110721112804.7aa0043d.taeuber@bbaw.de>
-In-Reply-To: <201107211119.15496.brade@informatik.uni-muenchen.de>
-References: <201107211119.15496.brade@informatik.uni-muenchen.de>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-AntiVirus: checked by Avira MailGate (version: 2.1.4-7; AVE: 7.9.6.18; VDF: 7.11.12.27; host: mailhub); id=27012-GmO9v5
+Subject: Re: [may-be-patch?] introduce MODULE_USE_UNEXPORTED()
+In-Reply-To: <20110719184536.GA27224@redhat.com>
+References: <20110719184536.GA27224@redhat.com>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Thu, 21 Jul 2011 17:29:25 +0930
+Message-ID: <87zkk812ua.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael,
-
-I'm just curious, because I have troubles with storage IO too.
-
-Am Thu, 21 Jul 2011 11:19:15 +0200
-Michael Brade <brade@informatik.uni-muenchen.de> schrieb:
-> Hi,
+On Tue, 19 Jul 2011 20:45:36 +0200, Oleg Nesterov <oleg@redhat.com> wrote:
+> Hi.
 > 
-> this is perfectly reproducible: with vanilla 2.6.39.x and 3.0.0 from 
-> yesterday's git my system completely freezes after a minute or so when I do
+> >From time to time I need to write a module for debugging purposes,
+> and it is a bit annoying I can't simply use, say, put_task_struct().
 > 
->    rsync -cavSH -n /source/ /dest/
+> Can't we do something like the simple patch below? Of course, it
+> is very unsafe to use kallsyms_lookup_name() by many reasons. But
+> it looks handy for the testing/debugging.
 > 
-> Watching htop, it freezes only after the caches are full but not
-> immediately when the caches are full. No Alt-SysRq-magic is working
-> anymore, nothing responds at all after the freeze. This is on tty1, no X
-> server running.
+> Yes, I am not saying this feature is terribly useful, so I agree
+> in advance with the "go away, we don't need this hack" nack.
 > 
-> Note the -n which means dry run. I also mounted both directories read-only,
-> so it's not the write commands. I am using XFS on both directories, one is 
-> mounted with iscsi, the other is local and encrypted with loop-aes. The 
-> directory size is >20 GB, 4000-6000 files. I first noticed it when a 
-> cp -a /source /dest froze the system.
+> Still, what do you think?
 > 
-> When I go back to 2.6.37.6 it works fine. I didn't try 2.6.38 yet.
-> 
-> I am running this on a Dell Vostro, amd64, 6 GB RAM, 8x Intel Core i7 CPU Q 
-> 740 @ 1.73GHz.
-> 
-> Any ideas how to debug this despite the freeze? Do you need my kernel
-> config? Do you need any other info? Please CC me.
+> Oleg.
 
-Could you try to capture the log via serial console?
-(linux/Documentation/serial-console.txt)
+I hate it, but I've wanted it too...
 
-What kind of disks/controller/driver do you use?
+Can we bury it under a CONFIG_DEBUG_KERNEL option?  I don't want
+distributions turning this on.  And add a GPL license check.
 
+Alternative is to have a "void *khacker_lookup_sym(const char *)" which
+does this at runtime, but that's less convenient to use than this.
 
-
-Lars
+Thanks,
+Rusty.
