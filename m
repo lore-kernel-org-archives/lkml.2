@@ -1,86 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521Ab1GUPha (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 11:37:30 -0400
-Received: from hera.kernel.org ([140.211.167.34]:60664 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752428Ab1GUPh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 11:37:27 -0400
-Date: Thu, 21 Jul 2011 15:36:50 GMT
-From: tip-bot for David Ahern <dsahern@gmail.com>
-Message-ID: <tip-08a4a43fc407d780bdde36d98f89c0dbb2a6be6b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, fweisbec@gmail.com, stable@kernel.org,
-        dsahern@gmail.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, a.p.zijlstra@chello.nl, stable@kernel.org,
-        dsahern@gmail.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1310420304-21452-1-git-send-email-dsahern@gmail.com>
-References: <1310420304-21452-1-git-send-email-dsahern@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf tools, x86: Fix 32-bit compile on 64-bit system
-Git-Commit-ID: 08a4a43fc407d780bdde36d98f89c0dbb2a6be6b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1752623Ab1GUPhg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 11:37:36 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:59036 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752430Ab1GUPhd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 11:37:33 -0400
+Date: Fri, 22 Jul 2011 00:37:22 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Colin King <colin.king@canonical.com>,
+        Andrew Lutomirski <luto@mit.edu>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] Stop kswapd consuming 100% CPU when highest zone is
+ small
+Message-ID: <20110721153722.GD1713@barrios-desktop>
+References: <1308926697-22475-1-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 21 Jul 2011 15:36:55 +0000 (UTC)
+In-Reply-To: <1308926697-22475-1-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  08a4a43fc407d780bdde36d98f89c0dbb2a6be6b
-Gitweb:     http://git.kernel.org/tip/08a4a43fc407d780bdde36d98f89c0dbb2a6be6b
-Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Mon, 11 Jul 2011 15:38:24 -0600
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 21 Jul 2011 13:42:30 +0200
+On Fri, Jun 24, 2011 at 03:44:53PM +0100, Mel Gorman wrote:
+> (Built this time and passed a basic sniff-test.)
+> 
+> During allocator-intensive workloads, kswapd will be woken frequently
+> causing free memory to oscillate between the high and min watermark.
+> This is expected behaviour.  Unfortunately, if the highest zone is
+> small, a problem occurs.
+> 
+> This seems to happen most with recent sandybridge laptops but it's
+> probably a co-incidence as some of these laptops just happen to have
+> a small Normal zone. The reproduction case is almost always during
+> copying large files that kswapd pegs at 100% CPU until the file is
+> deleted or cache is dropped.
+> 
+> The problem is mostly down to sleeping_prematurely() keeping kswapd
+> awake when the highest zone is small and unreclaimable and compounded
+> by the fact we shrink slabs even when not shrinking zones causing a lot
+> of time to be spent in shrinkers and a lot of memory to be reclaimed.
+> 
+> Patch 1 corrects sleeping_prematurely to check the zones matching
+> 	the classzone_idx instead of all zones.
+> 
+> Patch 2 avoids shrinking slab when we are not shrinking a zone.
+> 
+> Patch 3 notes that sleeping_prematurely is checking lower zones against
+> 	a high classzone which is not what allocators or balance_pgdat()
+> 	is doing leading to an artifical believe that kswapd should be
+> 	still awake.
+> 
+> Patch 4 notes that when balance_pgdat() gives up on a high zone that the
+> 	decision is not communicated to sleeping_prematurely()
+> 
+> This problem affects 2.6.38.8 for certain and is expected to affect
+> 2.6.39 and 3.0-rc4 as well. If accepted, they need to go to -stable
+> to be picked up by distros and this series is against 3.0-rc4. I've
+> cc'd people that reported similar problems recently to see if they
+> still suffer from the problem and if this fixes it.
+> 
 
-perf tools, x86: Fix 32-bit compile on 64-bit system
+Good!
+This patch solved the problem.
+But there is still a mystery.
 
-Builds for 32-bit perf binaries on a 64-bit host currently fail
-with this error:
+In log, we could see excessive shrink_slab calls.
+And as you know, we had merged patch which adds cond_resched where last of the function
+in shrink_slab. So other task should get the CPU and we should not see
+100% CPU of kswapd, I think.
 
- [...]
- bench/../../../arch/x86/lib/memcpy_64.S: Assembler messages:
- bench/../../../arch/x86/lib/memcpy_64.S:29: Error: bad register name `%rdi'
- bench/../../../arch/x86/lib/memcpy_64.S:34: Error: invalid instruction suffix for `movs'
- bench/../../../arch/x86/lib/memcpy_64.S:50: Error: bad register name `%rdi'
- bench/../../../arch/x86/lib/memcpy_64.S:61: Error: bad register name `%rdi'
- ...
+Do you have any idea about this?
 
-The problem is the detection of the host arch without considering passed in
-flags. This change fixes 32-bit builds via:
+>  mm/vmscan.c |   59 +++++++++++++++++++++++++++++++++++------------------------
+>  1 files changed, 35 insertions(+), 24 deletions(-)
+> 
+> -- 
+> 1.7.3.4
+> 
 
-make EXTRA_CFLAGS=-m32
-
-and 64-bit builds still reference the memcpy_64.S.
-
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: <stable@kernel.org>
-Link: http://lkml.kernel.org/r/1310420304-21452-1-git-send-email-dsahern@gmail.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- tools/perf/Makefile |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 940257b..c168366 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -52,7 +52,10 @@ ifeq ($(ARCH),i386)
- endif
- ifeq ($(ARCH),x86_64)
- 	ARCH := x86
--	IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -xc - | tail -n 1)
-+	IS_X86_64 := 0
-+	ifeq (, $(findstring m32,$(EXTRA_CFLAGS)))
-+		IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -xc - | tail -n 1)
-+	endif
- 	ifeq (${IS_X86_64}, 1)
- 		RAW_ARCH := x86_64
- 		ARCH_CFLAGS := -DARCH_X86_64
+-- 
+Kind regards,
+Minchan Kim
