@@ -1,81 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751694Ab1GUFJu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 01:09:50 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:33741 "EHLO e6.ny.us.ibm.com"
+	id S1751647Ab1GUFOt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 01:14:49 -0400
+Received: from mga03.intel.com ([143.182.124.21]:24980 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751069Ab1GUFJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 01:09:49 -0400
-Date: Wed, 20 Jul 2011 22:09:27 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, patches@linaro.org, greearb@candelatech.com,
-        edt@aei.ca
-Subject: Re: [PATCH tip/core/urgent 3/7] rcu: Streamline code produced by
- __rcu_read_unlock()
-Message-ID: <20110721050927.GV2313@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110720182512.GA22946@linux.vnet.ibm.com>
- <1311186383-24819-3-git-send-email-paulmck@linux.vnet.ibm.com>
- <CA+55aFzWAWV4Vr5mhy6+EELNY4_jCr4ozjgHmPk1CMp3mTOegw@mail.gmail.com>
+	id S1750755Ab1GUFOq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 01:14:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,239,1309762800"; 
+   d="scan'208";a="29740114"
+Message-ID: <4E27B5C3.6030508@intel.com>
+Date: Thu, 21 Jul 2011 13:14:43 +0800
+From: Huang Ying <ying.huang@intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110626 Iceowl/1.0b2 Icedove/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzWAWV4Vr5mhy6+EELNY4_jCr4ozjgHmPk1CMp3mTOegw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>
+Subject: Re: [BUGFIX] ACPI, APEI, EINJ Param support is disabled by default
+References: <1311149369-20624-1-git-send-email-ying.huang@intel.com> <CAErSpo5-PrZ-do7HqM=2zV8cGibj0bkpFaHtmeRUJmMRZGfTWw@mail.gmail.com> <4E277AB3.5000100@intel.com> <CAErSpo4m-dWS=vfkjeTfTcMyOP-nQDgqEbCPtKVEwNpTUFd+YQ@mail.gmail.com>
+In-Reply-To: <CAErSpo4m-dWS=vfkjeTfTcMyOP-nQDgqEbCPtKVEwNpTUFd+YQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 20, 2011 at 03:44:55PM -0700, Linus Torvalds wrote:
-> On Wed, Jul 20, 2011 at 11:26 AM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > Given some common flag combinations, particularly -Os, gcc will inline
-> > rcu_read_unlock_special() despite its being in an unlikely() clause.
-> > Use noinline to prohibit this misoptimization.
+On 07/21/2011 12:46 PM, Bjorn Helgaas wrote:
+> On Wed, Jul 20, 2011 at 7:02 PM, Huang Ying <ying.huang@intel.com> wrote:
+>> On 07/20/2011 11:22 PM, Bjorn Helgaas wrote:
+>>> On Wed, Jul 20, 2011 at 2:09 AM, Huang Ying <ying.huang@intel.com> wrote:
+>>>> EINJ parameter support is only usable for some specific BIOS.
+>>>> Originally, it is expected to have no harm for BIOS does not support
+>>>> it.  But now, we found it will cause issue (memory overwriting) for
+>>>> some BIOS.  So param support is disabled by default and only enabled
+>>>> when newly added module parameter named "param_extension" is
+>>>> explicitly specified.
+>>>
+>>> Adding parameters always makes things harder for users.  Is there any
+>>> way this could be done with a whitelist or other automatic mechanism?
+>>
+>> The only user of EINJ is RAS developer/tester.  So we adopt a simpler
+>> solution.
+>>
+>>> Per 6e320ec1d98 (which added EINJ parameter support), parameters are
+>>> an unpublished extension and are not part of the ACPI spec.  So if we
+>>> pick up an MMIO address from a SET_ERROR_TYPE WRITE_REGISTER
+>>> instruction and blindly fill in a structure (undefined by the spec)
+>>> presumed to be at that address, it doesn't seem surprising that things
+>>> will blow up on BIOSes that don't expect that behavior.  After all,
+>>> the spec says to write to a generic address structure (not an
+>>> einj_parameter structure) when we interpret the WRITE_REGISTER
+>>> instruction (not at the magic time between SET_ERROR_TYPE and
+>>> EXECUTE_OPERATION).
+>>>
+>>> If EINJ parameter support is ever added to the ACPI spec, I would
+>>> expect a new EINJ flag bit or similar indication to be added at the
+>>> same time, so the OS would know when to use it.
+>>
+>> EINJ parameter support has not been added to ACPI spec, it may be added
+>> in the future, and should has some way to indicate whether parameter is
+>> supported.
+>>
+>>> Can you add a whitelist of BIOSes that do support this extension?
+>>> Maybe you could define a GUID that future platforms could supply so
+>>> you wouldn't have to update the whitelist for every new platform that
+>>> supports it?
+>>
+>> IMHO, the EINJ will not be used by the ordinary users.  If so, can we
+>> use a simpler solution such as that in this patch?
 > 
-> Btw, I suspect that we should at least look at what it would mean if
-> we make the rcu_read_lock_nesting and the preempt counters both be
-> per-cpu variables instead of making them per-thread/process counters.
+> It's not very clear to the code reader when this extension might be
+> useful.  It's a bit of folklore that will have to be passed around via
+> word-of-mouth.  If I want to modify the parameter code, I have no
+> clues about what sort of machine I'd need to test it.
 > 
-> Then, when we switch threads, we'd just save/restore them from the
-> process register save area.
-> 
-> There's a lot of critical code sequences (spin-lock/unlock, rcu
-> read-lock/unlock) that currently fetches the thread/process pointer
-> only to then offset it and increment the count. I get the strong
-> feeling that code generation could be improved and we could avoid one
-> level of indirection by just making it a per-thread counter.
-> 
-> For example, instead of __rcu_read_lock: looking like this (and being
-> an external function, partly because of header file dependencies on
-> the data structures involved):
-> 
->   push   %rbp
->   mov    %rsp,%rbp
->   mov    %gs:0xb580,%rax
->   incl   0x100(%rax)
->   leaveq
->   retq
-> 
-> it should inline to just something like
-> 
->   incl %gs:0x100
-> 
-> instead. Same for the preempt counter.
-> 
-> Of course, it would need to involve making sure that we pick a good
-> cacheline etc that is already always dirty. But other than that, is
-> there any real downside?
+> What happens if you load this module on a machine that supports the
+> extension, but you don't supply the module parameter?  I would expect
+> problems in that case, too, because the BIOS is expecting parameters
+> and we won't fill them in.
 
-We would need a form of per-CPU variable access that generated
-efficient code, but that didn't complain about being used when
-preemption was enabled.  __this_cpu_add_4() might do the trick,
-but I haven't dug fully through it yet.
+On my testing machine with parameter extension, if no injecting
+parameter is specified, some BIOS specified default parameter will be used.
 
-						Thanx, Paul
+> But maybe you're right that this is so specialized that we shouldn't
+> over-engineer it.
+
+Best Regards,
+Huang Ying
