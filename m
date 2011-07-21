@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753617Ab1GUS5l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 14:57:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59415 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753523Ab1GUS5k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 14:57:40 -0400
-Date: Thu, 21 Jul 2011 11:57:17 -0700
-Message-Id: <201107211857.p6LIvHUM016199@tazenda.hos.anvin.org>
-From: "H. Peter Anvin" <hpa@zytor.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] x86 reboot quirks for 3.0-final
-Cc: <stable@kernel.org>, Daniel J Blueman <daniel.blueman@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
+	id S1753566Ab1GUTCX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 15:02:23 -0400
+Received: from bukvic.music.vt.edu ([198.82.152.114]:43829 "EHLO
+	lists.linuxaudio.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752365Ab1GUTCW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 15:02:22 -0400
+Date: Thu, 21 Jul 2011 19:02:20 +0000
+From: Fons Adriaensen <fons@linuxaudio.org>
+To: Tom Gundersen <teg@jklm.no>
+Cc: General Discussion about Arch Linux <arch-general@archlinux.org>,
+        Takashi Iwai <tiwai@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        Adrian Knoth <adi@drcomp.erfurt.thur.de>
+Subject: Re: [arch-general] Panic - no sound devices after upgrade
+Message-ID: <20110721190220.GA5267@linuxaudio.org>
+References: <20110720153023.GA11502@linuxaudio.org> <CAFEhRJczj=_B7fK7GvBEnqpB2GJGnCnGkoA2w5vzbFfM2wAGZw@mail.gmail.com> <20110720163844.GB16901@linuxaudio.org> <CAG-2HqWqATSJ=oJTTvULXwPEG82yN+8e6GJFs759hPA-=krAOQ@mail.gmail.com> <20110721100944.GA13971@linuxaudio.org> <CAG-2HqX23C79vfccnu0tMqx+6K9Z5pS0_HekaLizQx7XfkPQ1Q@mail.gmail.com> <20110721112331.GA15059@linuxaudio.org> <CAG-2HqWK3x5-szkyzX8AMxuMpDZNVRXHYtQ0AkAPMsGcLK0Z9w@mail.gmail.com> <4E28313E.60900@drcomp.erfurt.thur.de> <CAG-2HqVew75LE68fObz7e3WwcT-5Gwu1ka9Zr4vb1JdbSUOYEQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAG-2HqVew75LE68fObz7e3WwcT-5Gwu1ka9Zr4vb1JdbSUOYEQ@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, Jul 21, 2011 at 07:25:56PM +0200, Tom Gundersen wrote:
 
-A very last minute pull request containing only two reboot quirks.
+> Fons (or anyone else who could reproduce the problem),
+> 
+> If you want to try out Adrian's patch, I uploaded a kernel with the
+> patch applied here:
+> <https://dev.archlinux.org/~tomegun/kernel26-2.6.39.1.3-1.1-i686.pkg.tar.xz>.
 
-The following changes since commit cf6ace16a3cd8b728fb0afa68368fd40bbeae19f:
+Wow ! I'll have (hope to have) 5 machines to test it tomorrow !
 
-  Merge branch 'core-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip (2011-07-20 15:56:25 -0700)
+Thanks for providing this !
 
-are available in the git repository at:
+Ciao,
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-urgent-for-linus
+-- 
+FA
 
-Daniel J Blueman (1):
-      x86: Make Dell Latitude E5420 use reboot=pci
 
-H. Peter Anvin (1):
-      x86: Make Dell Latitude E6420 use reboot=pci
-
- arch/x86/kernel/reboot.c |   16 ++++++++++++++++
- 1 files changed, 16 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index 14eed21..9242436 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -427,6 +427,22 @@ static struct dmi_system_id __initdata pci_reboot_dmi_table[] = {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude E6320"),
- 		},
- 	},
-+	{	/* Handle problems with rebooting on the Latitude E5420. */
-+		.callback = set_pci_reboot,
-+		.ident = "Dell Latitude E5420",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude E5420"),
-+		},
-+	},
-+	{	/* Handle problems with rebooting on the Latitude E6420. */
-+		.callback = set_pci_reboot,
-+		.ident = "Dell Latitude E6420",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude E6420"),
-+		},
-+	},
- 	{ }
- };
- 
