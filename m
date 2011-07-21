@@ -1,92 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753037Ab1GUQKK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 12:10:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50277 "EHLO mx2.suse.de"
+	id S1753148Ab1GUQNP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 12:13:15 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:55166 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752762Ab1GUQKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 12:10:07 -0400
-Date: Thu, 21 Jul 2011 17:09:59 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        P?draig Brady <P@draigBrady.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Colin King <colin.king@canonical.com>,
-        Andrew Lutomirski <luto@mit.edu>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] Stop kswapd consuming 100% CPU when highest zone is
- small
-Message-ID: <20110721160958.GT5349@suse.de>
-References: <1308926697-22475-1-git-send-email-mgorman@suse.de>
- <20110721153722.GD1713@barrios-desktop>
+	id S1752901Ab1GUQNN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 12:13:13 -0400
+Date: Thu, 21 Jul 2011 09:04:30 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Ben Greear <greearb@candelatech.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ed Tomlinson <edt@aei.ca>,
+        linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org, edward.tomlinson@aero.bombardier.com
+Subject: Re: [PATCH rcu/urgent 0/6] Fixes for RCU/scheduler/irq-threads
+ trainwreck
+Message-ID: <20110721160430.GD2340@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110720184413.GD17977@elte.hu>
+ <1311187978.29152.58.camel@twins>
+ <CA+55aFyuKTj3zEvWJEx4_RDzLQ+ipJ58UWFYH84nmcwGF_c4aA@mail.gmail.com>
+ <20110720192949.GM2313@linux.vnet.ibm.com>
+ <20110720193925.GB7910@elte.hu>
+ <20110720195742.GA14671@elte.hu>
+ <20110720203300.GQ2313@linux.vnet.ibm.com>
+ <4E274099.20704@candelatech.com>
+ <20110720211217.GS2313@linux.vnet.ibm.com>
+ <4E279C24.8090309@candelatech.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110721153722.GD1713@barrios-desktop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4E279C24.8090309@candelatech.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 22, 2011 at 12:37:22AM +0900, Minchan Kim wrote:
-> On Fri, Jun 24, 2011 at 03:44:53PM +0100, Mel Gorman wrote:
-> > (Built this time and passed a basic sniff-test.)
-> > 
-> > During allocator-intensive workloads, kswapd will be woken frequently
-> > causing free memory to oscillate between the high and min watermark.
-> > This is expected behaviour.  Unfortunately, if the highest zone is
-> > small, a problem occurs.
-> > 
-> > This seems to happen most with recent sandybridge laptops but it's
-> > probably a co-incidence as some of these laptops just happen to have
-> > a small Normal zone. The reproduction case is almost always during
-> > copying large files that kswapd pegs at 100% CPU until the file is
-> > deleted or cache is dropped.
-> > 
-> > The problem is mostly down to sleeping_prematurely() keeping kswapd
-> > awake when the highest zone is small and unreclaimable and compounded
-> > by the fact we shrink slabs even when not shrinking zones causing a lot
-> > of time to be spent in shrinkers and a lot of memory to be reclaimed.
-> > 
-> > Patch 1 corrects sleeping_prematurely to check the zones matching
-> > 	the classzone_idx instead of all zones.
-> > 
-> > Patch 2 avoids shrinking slab when we are not shrinking a zone.
-> > 
-> > Patch 3 notes that sleeping_prematurely is checking lower zones against
-> > 	a high classzone which is not what allocators or balance_pgdat()
-> > 	is doing leading to an artifical believe that kswapd should be
-> > 	still awake.
-> > 
-> > Patch 4 notes that when balance_pgdat() gives up on a high zone that the
-> > 	decision is not communicated to sleeping_prematurely()
-> > 
-> > This problem affects 2.6.38.8 for certain and is expected to affect
-> > 2.6.39 and 3.0-rc4 as well. If accepted, they need to go to -stable
-> > to be picked up by distros and this series is against 3.0-rc4. I've
-> > cc'd people that reported similar problems recently to see if they
-> > still suffer from the problem and if this fixes it.
-> > 
+On Wed, Jul 20, 2011 at 08:25:24PM -0700, Ben Greear wrote:
+> On 07/20/2011 02:12 PM, Paul E. McKenney wrote:
+> >On Wed, Jul 20, 2011 at 01:54:49PM -0700, Ben Greear wrote:
+> >>On 07/20/2011 01:33 PM, Paul E. McKenney wrote:
+> >>>On Wed, Jul 20, 2011 at 09:57:42PM +0200, Ingo Molnar wrote:
+> >>>>
+> >>>>* Ingo Molnar<mingo@elte.hu>   wrote:
+> >>>>
+> >>>>>
+> >>>>>* Paul E. McKenney<paulmck@linux.vnet.ibm.com>   wrote:
+> >>>>>
+> >>>>>>If my guess is correct, then the minimal non-RCU_BOOST fix is #4
+> >>>>>>(which drags along #3) and #6.  Which are not one-liners, but
+> >>>>>>somewhat smaller:
+> >>>>>>
+> >>>>>>  b/kernel/rcutree_plugin.h |   12 ++++++------
+> >>>>>>  b/kernel/softirq.c        |   12 ++++++++++--
+> >>>>>>  kernel/rcutree_plugin.h   |   31 +++++++++++++++++++++++++------
+> >>>>>>  3 files changed, 41 insertions(+), 14 deletions(-)
+> >>>>>
+> >>>>>That's half the patch size and half the patch count.
+> >>>>>
+> >>>>>PeterZ's question is relevant: since we apparently had similar bugs
+> >>>>>in v2.6.39 as well, what changed in v3.0 that makes them so urgent
+> >>>>>to fix?
+> >>>>>
+> >>>>>If it's just better instrumentation that proves them better then
+> >>>>>i'd suggest fixing this in v3.1 and not risking v3.0 with an
+> >>>>>unintended side effect.
+> >>>>
+> >>>>Ok, i looked some more at the background and the symptoms that people
+> >>>>are seeing: kernel crashes and lockups. I think we want these
+> >>>>problems fixed in v3.0, even if it was the recent introduction of
+> >>>>RCU_BOOST that made it really prominent.
+> >>>>
+> >>>>Having put some testing into your rcu/urgent branch today i'd feel
+> >>>>more comfortable with taking this plus perhaps an RCU_BOOST disabling
+> >>>>patch. That makes it all fundamentally tested by a number of people
+> >>>>(including those who reported/reproduced the problems).
+> >>>
+> >>>RCU_BOOST is currently default=n.  Is that sufficient?  If not, one
+> >>
+> >>Not if it remains broken I think..unless you put it under CONFIG_BROKEN
+> >>or something.  Otherwise, folks are liable to turn it on and not realize
+> >>it's the cause of subtle bugs.
+> >
+> >Good point, I could easily add "depends on BROKEN".
+> >
+> >>For what it's worth, my tests have been running clean for around 2 hours, so the full set of
+> >>fixes with RCU_BOOST appears good, so far.  I'll let it continue to run
+> >>at least overnight to make sure I'm not just getting lucky...
+> >
+> >Continuing to think good thoughts...  ;-)
 > 
-> Good!
-> This patch solved the problem.
-> But there is still a mystery.
-> 
-> In log, we could see excessive shrink_slab calls.
+> My test is still going strong with no splats or errors, so I think that
+> nailed the problems I was seeing...
 
-Yes, because shrink_slab() was called on each loop through
-balance_pgdat() even if the zone was balanced.
+Excellent news!!!
 
+And again, thank you for all the testing!
 
-> And as you know, we had merged patch which adds cond_resched where last of the function
-> in shrink_slab. So other task should get the CPU and we should not see
-> 100% CPU of kswapd, I think.
-> 
-
-cond_resched() is not a substitute for going to sleep.
-
--- 
-Mel Gorman
-SUSE Labs
+							Thanx, Paul
