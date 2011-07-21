@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259Ab1GUQ3R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 12:29:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50866 "EHLO mx2.suse.de"
+	id S1753276Ab1GUQ31 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 12:29:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50886 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753241Ab1GUQ3M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 12:29:12 -0400
+	id S1753141Ab1GUQ3Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 12:29:24 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Linux-MM <linux-mm@kvack.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, XFS <xfs@oss.sgi.com>,
@@ -15,9 +15,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>, XFS <xfs@oss.sgi.com>,
         Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
         Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 4/8] btrfs: Warn if direct reclaim tries to writeback pages
-Date: Thu, 21 Jul 2011 17:28:46 +0100
-Message-Id: <1311265730-5324-5-git-send-email-mgorman@suse.de>
+Subject: [PATCH 5/8] mm: vmscan: Do not writeback filesystem pages in kswapd except in high priority
+Date: Thu, 21 Jul 2011 17:28:47 +0100
+Message-Id: <1311265730-5324-6-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1311265730-5324-1-git-send-email-mgorman@suse.de>
 References: <1311265730-5324-1-git-send-email-mgorman@suse.de>
@@ -25,43 +25,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Direct reclaim should never writeback pages. Warn if an attempt is
-made. By rights, btrfs should be allowing writepage from kswapd if
-it is failing to reclaim pages by any other means but it's outside
-the scope of this patch.
+It is preferable that no dirty pages are dispatched for cleaning from
+the page reclaim path. At normal priorities, this patch prevents kswapd
+writing pages.
+
+However, page reclaim does have a requirement that pages be freed
+in a particular zone. If it is failing to make sufficient progress
+(reclaiming < SWAP_CLUSTER_MAX at any priority priority), the priority
+is raised to scan more pages. A priority of DEF_PRIORITY - 3 is
+considered to tbe the point where kswapd is getting into trouble
+reclaiming pages. If this priority is reached, kswapd will dispatch
+pages for writing.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- fs/btrfs/disk-io.c |    2 ++
- fs/btrfs/inode.c   |    2 ++
- 2 files changed, 4 insertions(+), 0 deletions(-)
+ mm/vmscan.c |   13 ++++++++-----
+ 1 files changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
-index 1ac8db5d..cc9c9cf 100644
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -829,6 +829,8 @@ static int btree_writepage(struct page *page, struct writeback_control *wbc)
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index ee00c94..cf7b501 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -719,7 +719,8 @@ static noinline_for_stack void free_page_list(struct list_head *free_pages)
+  */
+ static unsigned long shrink_page_list(struct list_head *page_list,
+ 				      struct zone *zone,
+-				      struct scan_control *sc)
++				      struct scan_control *sc,
++				      int priority)
+ {
+ 	LIST_HEAD(ret_pages);
+ 	LIST_HEAD(free_pages);
+@@ -827,9 +828,11 @@ static unsigned long shrink_page_list(struct list_head *page_list,
  
- 	tree = &BTRFS_I(page->mapping->host)->io_tree;
- 	if (!(current->flags & PF_MEMALLOC)) {
-+		WARN_ON_ONCE((current->flags & (PF_MEMALLOC|PF_KSWAPD)) ==
-+								PF_MEMALLOC);
- 		return extent_write_full_page(tree, page,
- 					      btree_get_extent, wbc);
+ 			/*
+ 			 * Only kswapd can writeback filesystem pages to
+-			 * avoid risk of stack overflow
++			 * avoid risk of stack overflow but do not writeback
++			 * unless under significant pressure.
+ 			 */
+-			if (page_is_file_cache(page) && !current_is_kswapd()) {
++			if (page_is_file_cache(page) &&
++					(!current_is_kswapd() || priority >= DEF_PRIORITY - 2)) {
+ 				inc_zone_page_state(page, NR_VMSCAN_WRITE_SKIP);
+ 				goto keep_locked;
+ 			}
+@@ -1465,12 +1468,12 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+ 
+ 	spin_unlock_irq(&zone->lru_lock);
+ 
+-	nr_reclaimed = shrink_page_list(&page_list, zone, sc);
++	nr_reclaimed = shrink_page_list(&page_list, zone, sc, priority);
+ 
+ 	/* Check if we should syncronously wait for writeback */
+ 	if (should_reclaim_stall(nr_taken, nr_reclaimed, priority, sc)) {
+ 		set_reclaim_mode(priority, sc, true);
+-		nr_reclaimed += shrink_page_list(&page_list, zone, sc);
++		nr_reclaimed += shrink_page_list(&page_list, zone, sc, priority);
  	}
-diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
-index 3601f0a..07d6c27 100644
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -6259,6 +6259,8 @@ static int btrfs_writepage(struct page *page, struct writeback_control *wbc)
  
- 
- 	if (current->flags & PF_MEMALLOC) {
-+		WARN_ON_ONCE((current->flags & (PF_MEMALLOC|PF_KSWAPD)) ==
-+								PF_MEMALLOC);
- 		redirty_page_for_writepage(wbc, page);
- 		unlock_page(page);
- 		return 0;
+ 	local_irq_disable();
 -- 
 1.7.3.4
 
