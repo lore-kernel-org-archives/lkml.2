@@ -1,106 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751534Ab1GUWoe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 18:44:34 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34167 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751100Ab1GUWod (ORCPT
+	id S1751866Ab1GUWuB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 18:50:01 -0400
+Received: from smtpo.poczta.interia.pl ([217.74.65.205]:30468 "EHLO
+	smtpo.poczta.interia.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751241Ab1GUWt6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 18:44:33 -0400
-Date: Thu, 21 Jul 2011 15:44:27 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Becky Bruce <beckyb@kernel.crashing.org>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        david@gibson.dropbear.id.au, galak@kernel.crashing.org,
-        benh@kernel.crashing.org
-Subject: Re: [PATCH 2/5] hugetlb: add phys addr to struct huge_bootmem_page
-Message-Id: <20110721154427.53e8fd5b.akpm@linux-foundation.org>
-In-Reply-To: <13092910103675-git-send-email-beckyb@kernel.crashing.org>
-References: <1309290888309-git-send-email-beckyb@kernel.crashing.org>
-	<13092909493748-git-send-email-beckyb@kernel.crashing.org>
-	<13092910103675-git-send-email-beckyb@kernel.crashing.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 21 Jul 2011 18:49:58 -0400
+From: =?UTF-8?b?UmFmYcWC?= Bilski <rafalbilski@interia.pl>
+To: Dave Jones <davej@redhat.com>
+Cc: cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?b?UmFmYcWC?= Bilski <rafalbilski@interia.pl>
+Subject: [PATCH] e_powersaver: This is C7 driver only
+Date: Thu, 21 Jul 2011 23:52:44 +0100
+Message-Id: <1311288764-1089-1-git-send-email-rafalbilski@interia.pl>
+X-Mailer: git-send-email 1.7.6
+MIME-Version: 1.0
+X-Interia-Antivirus: OK
+X-EMID: a0771958
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Jun 2011 14:54:45 -0500
-Becky Bruce <beckyb@kernel.crashing.org> wrote:
+Enhanced Powersaver has been replaced by Adaptive Powersaver technology. Flag
+"est" on VIA/Centaur Nano processors means that processor supports Adaptive
+Powersaver.
 
-> From: Becky Bruce <beckyb@kernel.crashing.org>
-> 
-> This is needed on HIGHMEM systems - we don't always have a virtual
-> address so store the physical address and map it in as needed.
-> 
-> Signed-off-by: Becky Bruce <beckyb@kernel.crashing.org>
-> ---
->  include/linux/hugetlb.h |    3 +++
->  mm/hugetlb.c            |    8 +++++++-
->  2 files changed, 10 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-> index 59225ef..19644e0 100644
-> --- a/include/linux/hugetlb.h
-> +++ b/include/linux/hugetlb.h
-> @@ -231,6 +231,9 @@ struct hstate {
->  struct huge_bootmem_page {
->  	struct list_head list;
->  	struct hstate *hstate;
-> +#ifdef CONFIG_HIGHMEM
-> +	phys_addr_t phys;
-> +#endif
->  };
->  
->  struct page *alloc_huge_page_node(struct hstate *h, int nid);
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index 6402458..2db81ea 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -1105,8 +1105,14 @@ static void __init gather_bootmem_prealloc(void)
->  	struct huge_bootmem_page *m;
->  
->  	list_for_each_entry(m, &huge_boot_pages, list) {
-> -		struct page *page = virt_to_page(m);
->  		struct hstate *h = m->hstate;
-> +#ifdef CONFIG_HIGHMEM
-> +		struct page *page = pfn_to_page(m->phys >> PAGE_SHIFT);
-> +		free_bootmem_late((unsigned long)m,
-> +				  sizeof(struct huge_bootmem_page));
-> +#else
-> +		struct page *page = virt_to_page(m);
-> +#endif
->  		__ClearPageReserved(page);
->  		WARN_ON(page_count(page) != 1);
->  		prep_compound_huge_page(page, h->order);
+Signed-off-by: Rafał Bilski <rafalbilski@interia.pl>
+---
+ drivers/cpufreq/e_powersaver.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
-nit: wrapping both definitions and statements in an ifdef like this is
-a bit nasty from a readability and maintainability point of view - it's
-inviting people to later make changes which fail to compile when the
-config option is flipped.
-
-This is better:
-
---- a/mm/hugetlb.c~hugetlb-add-phys-addr-to-struct-huge_bootmem_page-fix
-+++ a/mm/hugetlb.c
-@@ -1106,12 +1106,14 @@ static void __init gather_bootmem_preall
+diff --git a/drivers/cpufreq/e_powersaver.c b/drivers/cpufreq/e_powersaver.c
+index 7638f5d..28600ae 100644
+--- a/drivers/cpufreq/e_powersaver.c
++++ b/drivers/cpufreq/e_powersaver.c
+@@ -237,10 +237,6 @@ static int eps_cpu_init(struct cpufreq_policy *policy)
+ 		brand = (((lo >> 4) ^ (lo >> 2))) & 0xff;
+ 		printk(KERN_CONT "Model D ");
+ 		break;
+-	default:
+-		printk(KERN_CONT "unknown processor\n");
+-		return -ENODEV;
+-		break;
+ 	}
  
- 	list_for_each_entry(m, &huge_boot_pages, list) {
- 		struct hstate *h = m->hstate;
-+		struct page *page;
-+
- #ifdef CONFIG_HIGHMEM
--		struct page *page = pfn_to_page(m->phys >> PAGE_SHIFT);
-+		page = pfn_to_page(m->phys >> PAGE_SHIFT);
- 		free_bootmem_late((unsigned long)m,
- 				  sizeof(struct huge_bootmem_page));
- #else
--		struct page *page = virt_to_page(m);
-+		page = virt_to_page(m);
- #endif
- 		__ClearPageReserved(page);
- 		WARN_ON(page_count(page) != 1);
-_
+ 	switch (brand) {
+@@ -437,7 +433,8 @@ static int __init eps_init(void)
+ 	/* This driver will work only on Centaur C7 processors with
+ 	 * Enhanced SpeedStep/PowerSaver registers */
+ 	if (c->x86_vendor != X86_VENDOR_CENTAUR
+-	    || c->x86 != 6 || c->x86_model < 10)
++	    || c->x86 != 6
++	    || !(c->x86_model == 10 || c->x86_model == 13))
+ 		return -ENODEV;
+ 	if (!cpu_has(c, X86_FEATURE_EST))
+ 		return -ENODEV;
+-- 
+1.7.6
 
+
+----------------------------------------------------------------
+Znajdz samochod idealny dla siebie!
+Szukaj >> http://linkint.pl/f29e2
