@@ -1,149 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753222Ab1GUUwT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 16:52:19 -0400
-Received: from hera.kernel.org ([140.211.167.34]:57663 "EHLO hera.kernel.org"
+	id S1753858Ab1GUUwo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 16:52:44 -0400
+Received: from hera.kernel.org ([140.211.167.34]:57677 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751885Ab1GUUwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 16:52:17 -0400
-Date: Thu, 21 Jul 2011 20:52:07 GMT
-From: "tip-bot for H. Peter Anvin" <hpa@zytor.com>
-Message-ID: <tip-ae7bd11b471931752e5609094ca0a49386590524@git.kernel.org>
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@redhat.com, luto@mit.edu, tony.luck@intel.com,
-        tglx@linutronix.de
+	id S1753823Ab1GUUwl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 16:52:41 -0400
+Date: Thu, 21 Jul 2011 20:52:35 GMT
+From: tip-bot for Andy Lutomirski <luto@mit.edu>
+Message-ID: <tip-aafade242ff24fac3aabf61c7861dfa44a3c2445@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        luto@mit.edu, tglx@linutronix.de
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, luto@mit.edu, tglx@linutronix.de, tony.luck@intel.com
-In-Reply-To: <4E288AA6.7090804@zytor.com>
-References: <4E288AA6.7090804@zytor.com>
+        luto@mit.edu, tglx@linutronix.de
+In-Reply-To: <2c4ed5c2c2e93603790229e0c3403ae506ccc0cb.1311277573.git.luto@mit.edu>
+References: <2c4ed5c2c2e93603790229e0c3403ae506ccc0cb.1311277573.git.luto@mit.edu>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/vdso] clocksource: Change __ARCH_HAS_CLOCKSOURCE_DATA to a CONFIG option
-Git-Commit-ID: ae7bd11b471931752e5609094ca0a49386590524
+Subject: [tip:x86/vdso] x86-64, vdso: Do not allocate memory for the vDSO
+Git-Commit-ID: aafade242ff24fac3aabf61c7861dfa44a3c2445
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 21 Jul 2011 20:52:07 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 21 Jul 2011 20:52:35 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ae7bd11b471931752e5609094ca0a49386590524
-Gitweb:     http://git.kernel.org/tip/ae7bd11b471931752e5609094ca0a49386590524
-Author:     H. Peter Anvin <hpa@zytor.com>
-AuthorDate: Thu, 21 Jul 2011 13:34:05 -0700
+Commit-ID:  aafade242ff24fac3aabf61c7861dfa44a3c2445
+Gitweb:     http://git.kernel.org/tip/aafade242ff24fac3aabf61c7861dfa44a3c2445
+Author:     Andy Lutomirski <luto@mit.edu>
+AuthorDate: Thu, 21 Jul 2011 15:47:10 -0400
 Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Thu, 21 Jul 2011 13:34:05 -0700
+CommitDate: Thu, 21 Jul 2011 13:41:53 -0700
 
-clocksource: Change __ARCH_HAS_CLOCKSOURCE_DATA to a CONFIG option
+x86-64, vdso: Do not allocate memory for the vDSO
 
-The machinery for __ARCH_HAS_CLOCKSOURCE_DATA assumed a file in
-asm-generic would be the default for architectures without their own
-file in asm/, but that is not how it works.
+We can map the vDSO straight from kernel data, saving a few page
+allocations.  As an added bonus, the deleted code contained a memory
+leak.
 
-Replace it with a Kconfig option instead.
-
-Link: http://lkml.kernel.org/r/4E288AA6.7090804@zytor.com
+Signed-off-by: Andy Lutomirski <luto@mit.edu>
+Link: http://lkml.kernel.org/r/2c4ed5c2c2e93603790229e0c3403ae506ccc0cb.1311277573.git.luto@mit.edu
 Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Cc: Andy Lutomirski <luto@mit.edu>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Tony Luck <tony.luck@intel.com>
 ---
- arch/ia64/Kconfig                   |    3 +++
- arch/ia64/include/asm/clocksource.h |    2 --
- arch/x86/Kconfig                    |    4 ++++
- arch/x86/include/asm/clocksource.h  |    2 --
- include/asm-generic/clocksource.h   |    4 ----
- include/linux/clocksource.h         |    4 +++-
- 6 files changed, 10 insertions(+), 9 deletions(-)
+ arch/x86/vdso/vdso.S |   15 +++++++++++++--
+ arch/x86/vdso/vma.c  |   25 ++++++-------------------
+ 2 files changed, 19 insertions(+), 21 deletions(-)
 
-diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
-index 38280ef..0a9820a 100644
---- a/arch/ia64/Kconfig
-+++ b/arch/ia64/Kconfig
-@@ -101,6 +101,9 @@ config GENERIC_IOMAP
- 	bool
- 	default y
+diff --git a/arch/x86/vdso/vdso.S b/arch/x86/vdso/vdso.S
+index 1d3aa6b..1b979c1 100644
+--- a/arch/x86/vdso/vdso.S
++++ b/arch/x86/vdso/vdso.S
+@@ -1,10 +1,21 @@
++#include <asm/page_types.h>
++#include <linux/linkage.h>
+ #include <linux/init.h>
  
-+config ARCH_CLOCKSOURCE_DATA
-+	def_bool y
+-__INITDATA
++__PAGE_ALIGNED_DATA
+ 
+ 	.globl vdso_start, vdso_end
++	.align PAGE_SIZE
+ vdso_start:
+ 	.incbin "arch/x86/vdso/vdso.so"
+ vdso_end:
+ 
+-__FINIT
++.previous
 +
- config SCHED_OMIT_FRAME_POINTER
- 	bool
- 	default y
-diff --git a/arch/ia64/include/asm/clocksource.h b/arch/ia64/include/asm/clocksource.h
-index 00eb549..5c8596e 100644
---- a/arch/ia64/include/asm/clocksource.h
-+++ b/arch/ia64/include/asm/clocksource.h
-@@ -3,8 +3,6 @@
- #ifndef _ASM_IA64_CLOCKSOURCE_H
- #define _ASM_IA64_CLOCKSOURCE_H
++	.globl vdso_pages
++	.bss
++	.align 8
++	.type vdso_pages, @object
++vdso_pages:
++	.zero (vdso_end - vdso_start + PAGE_SIZE - 1) / PAGE_SIZE * 8
++	.size vdso_pages, .-vdso_pages
+diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
+index c39938d..316fbca 100644
+--- a/arch/x86/vdso/vma.c
++++ b/arch/x86/vdso/vma.c
+@@ -14,13 +14,14 @@
+ #include <asm/vgtod.h>
+ #include <asm/proto.h>
+ #include <asm/vdso.h>
++#include <asm/page.h>
  
--#define __ARCH_HAS_CLOCKSOURCE_DATA
+ unsigned int __read_mostly vdso_enabled = 1;
+ 
+ extern char vdso_start[], vdso_end[];
+ extern unsigned short vdso_sync_cpuid;
+ 
+-static struct page **vdso_pages;
++extern struct page *vdso_pages[];
+ static unsigned vdso_size;
+ 
+ static void __init patch_vdso(void *vdso, size_t len)
+@@ -54,7 +55,7 @@ found:
+ 	apply_alternatives(alt_data, alt_data + alt_sec->sh_size);
+ }
+ 
+-static int __init init_vdso_vars(void)
++static int __init init_vdso(void)
+ {
+ 	int npages = (vdso_end - vdso_start + PAGE_SIZE - 1) / PAGE_SIZE;
+ 	int i;
+@@ -62,26 +63,12 @@ static int __init init_vdso_vars(void)
+ 	patch_vdso(vdso_start, vdso_end - vdso_start);
+ 
+ 	vdso_size = npages << PAGE_SHIFT;
+-	vdso_pages = kmalloc(sizeof(struct page *) * npages, GFP_KERNEL);
+-	if (!vdso_pages)
+-		goto oom;
+-	for (i = 0; i < npages; i++) {
+-		struct page *p;
+-		p = alloc_page(GFP_KERNEL);
+-		if (!p)
+-			goto oom;
+-		vdso_pages[i] = p;
+-		copy_page(page_address(p), vdso_start + i*PAGE_SIZE);
+-	}
++	for (i = 0; i < npages; i++)
++		vdso_pages[i] = virt_to_page(vdso_start + i*PAGE_SIZE);
+ 
+ 	return 0;
 -
- struct arch_clocksource_data {
- 	void *fsys_mmio;        /* used by fsyscall asm code */
- };
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index da34972..c1e41bc 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -93,6 +93,10 @@ config CLOCKSOURCE_WATCHDOG
- config GENERIC_CLOCKEVENTS
- 	def_bool y
+- oom:
+-	printk("Cannot allocate vdso\n");
+-	vdso_enabled = 0;
+-	return -ENOMEM;
+ }
+-subsys_initcall(init_vdso_vars);
++subsys_initcall(init_vdso);
  
-+config ARCH_CLOCKSOURCE_DATA
-+	def_bool y
-+	depends on X86_64
-+
- config GENERIC_CLOCKEVENTS_BROADCAST
- 	def_bool y
- 	depends on X86_64 || (X86_32 && X86_LOCAL_APIC)
-diff --git a/arch/x86/include/asm/clocksource.h b/arch/x86/include/asm/clocksource.h
-index 3882c65..0bdbbb3 100644
---- a/arch/x86/include/asm/clocksource.h
-+++ b/arch/x86/include/asm/clocksource.h
-@@ -5,8 +5,6 @@
- 
- #ifdef CONFIG_X86_64
- 
--#define __ARCH_HAS_CLOCKSOURCE_DATA
--
- #define VCLOCK_NONE 0  /* No vDSO clock available.	*/
- #define VCLOCK_TSC  1  /* vDSO should use vread_tsc.	*/
- #define VCLOCK_HPET 2  /* vDSO should use vread_hpet.	*/
-diff --git a/include/asm-generic/clocksource.h b/include/asm-generic/clocksource.h
-deleted file mode 100644
-index 0a462d3..0000000
---- a/include/asm-generic/clocksource.h
-+++ /dev/null
-@@ -1,4 +0,0 @@
--/*
-- * Architectures should override this file to add private userspace
-- * clock magic if needed.
-- */
-diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
-index 6bb6970..59ee970 100644
---- a/include/linux/clocksource.h
-+++ b/include/linux/clocksource.h
-@@ -22,7 +22,9 @@
- typedef u64 cycle_t;
- struct clocksource;
- 
-+#ifdef CONFIG_ARCH_CLOCKSOURCE_DATA
- #include <asm/clocksource.h>
-+#endif
- 
- /**
-  * struct cyclecounter - hardware abstraction for a free running counter
-@@ -171,7 +173,7 @@ struct clocksource {
- 	u32 shift;
- 	u64 max_idle_ns;
- 
--#ifdef __ARCH_HAS_CLOCKSOURCE_DATA
-+#ifdef CONFIG_ARCH_CLOCKSOURCE_DATA
- 	struct arch_clocksource_data archdata;
- #endif
+ struct linux_binprm;
  
