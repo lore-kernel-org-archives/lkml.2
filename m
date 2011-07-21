@@ -1,101 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751998Ab1GUXAN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 19:00:13 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:60534 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751950Ab1GUXAK (ORCPT
+	id S1752072Ab1GUXA6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 19:00:58 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:55846 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751834Ab1GUXAy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 19:00:10 -0400
-Date: Thu, 21 Jul 2011 15:59:38 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Shan Hai <haishan.bai@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, paulus@samba.org,
-        tglx@linutronix.de, walken@google.com, dhowells@redhat.com,
-        cmetcalf@tilera.com, tony.luck@intel.com,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC/PATCH] mm/futex: Fix futex writes on archs with SW
- tracking of dirty & young
-Message-Id: <20110721155938.2ff2dab5.akpm@linux-foundation.org>
-In-Reply-To: <1311288726.25044.545.camel@pasglop>
-References: <1310717238-13857-1-git-send-email-haishan.bai@gmail.com>
-	<1310717238-13857-2-git-send-email-haishan.bai@gmail.com>
-	<1310725418.2586.309.camel@twins>
-	<4E21A526.8010904@gmail.com>
-	<1310860194.25044.17.camel@pasglop>
-	<4b337921-d430-4b63-bc36-ad31753cf800@email.android.com>
-	<1310912990.25044.203.camel@pasglop>
-	<1310944453.25044.262.camel@pasglop>
-	<1310961691.25044.274.camel@pasglop>
-	<4E23D728.7090406@gmail.com>
-	<1310972462.25044.292.camel@pasglop>
-	<4E23E02C.8090401@gmail.com>
-	<1310974591.25044.298.camel@pasglop>
-	<4E24FA51.70602@gmail.com>
-	<1311049762.25044.392.camel@pasglop>
-	<20110721153606.37e6f432.akpm@linux-foundation.org>
-	<1311288726.25044.545.camel@pasglop>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 21 Jul 2011 19:00:54 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=message-id:user-agent:date:from:to:cc:subject:references:content-disposition;
+	b=i2b1jp3oR3iQbQegj4/VBoZdAndhm5jje2BTGCFQCp4ScU9zuuvhgH4uJZc3AaQFJ
+	A6WWXIUgqBjVulR4JQ1SQ==
+Message-Id: <20110721184756.878333391@google.com>
+User-Agent: quilt/0.48-1
+Date: Thu, 21 Jul 2011 09:43:27 -0700
+From: Paul Turner <pjt@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
+        Jason Baron <jbaron@redhat.com>
+Subject: [patch 02/18] sched: hierarchical task accounting for SCHED_OTHER
+References: <20110721164325.231521704@google.com>
+Content-Disposition: inline; filename=sched-bwc-account_nr_running.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Jul 2011 08:52:06 +1000
-Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
+Introduce hierarchical task accounting for the group scheduling case in CFS, as
+well as promoting the responsibility for maintaining rq->nr_running to the
+scheduling classes.
 
-> On Thu, 2011-07-21 at 15:36 -0700, Andrew Morton wrote:
-> > On Tue, 19 Jul 2011 14:29:22 +1000
-> > Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
-> > 
-> > > The futex code currently attempts to write to user memory within
-> > > a pagefault disabled section, and if that fails, tries to fix it
-> > > up using get_user_pages().
-> > > 
-> > > This doesn't work on archs where the dirty and young bits are
-> > > maintained by software, since they will gate access permission
-> > > in the TLB, and will not be updated by gup().
-> > > 
-> > > In addition, there's an expectation on some archs that a
-> > > spurious write fault triggers a local TLB flush, and that is
-> > > missing from the picture as well.
-> > > 
-> > > I decided that adding those "features" to gup() would be too much
-> > > for this already too complex function, and instead added a new
-> > > simpler fixup_user_fault() which is essentially a wrapper around
-> > > handle_mm_fault() which the futex code can call.
-> > > 
-> > > Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> > > ---
-> > > 
-> > > Shan, can you test this ? It might not fix the problem
-> > 
-> > um, what problem.  There's no description here of the user-visible
-> > effects of the bug hence it's hard to work out what kernel version(s)
-> > should receive this patch.
-> 
-> Shan could give you an actual example (it was in the previous thread),
-> but basically, livelock as the kernel keeps trying and trying the
-> in_atomic op and never resolves it.
->  
-> > What kernel version(s) should receive this patch?
-> 
-> I haven't dug. Probably anything it applies on as far as we did that
-> trick of atomic + gup() for futex.
+The primary motivation for this is that with scheduling classes supporting
+bandwidth throttling it is possible for entities participating in throttled
+sub-trees to not have root visible changes in rq->nr_running across activate
+and de-activate operations.  This in turn leads to incorrect idle and 
+weight-per-task load balance decisions.
 
-You're not understanding me.
+This also allows us to make a small fixlet to the fastpath in pick_next_task()
+under group scheduling.
 
-I need a good reason to merge this into 3.0.
+Note: this issue also exists with the existing sched_rt throttling mechanism.
+This patch does not address that.
 
-The -stable maintainers need even better reasons to merge this into
-earlier kernels.
+Signed-off-by: Paul Turner <pjt@google.com>
+Reviewed-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 
-Please provide those reasons!
+---
+ kernel/sched.c          |    6 ++----
+ kernel/sched_fair.c     |   10 ++++++++--
+ kernel/sched_rt.c       |    5 ++++-
+ kernel/sched_stoptask.c |    2 ++
+ 4 files changed, 16 insertions(+), 7 deletions(-)
 
-(Documentation/stable_kernel_rules.txt, 4th bullet)
+Index: tip/kernel/sched.c
+===================================================================
+--- tip.orig/kernel/sched.c
++++ tip/kernel/sched.c
+@@ -308,7 +308,7 @@ struct task_group root_task_group;
+ /* CFS-related fields in a runqueue */
+ struct cfs_rq {
+ 	struct load_weight load;
+-	unsigned long nr_running;
++	unsigned long nr_running, h_nr_running;
+ 
+ 	u64 exec_clock;
+ 	u64 min_vruntime;
+@@ -1830,7 +1830,6 @@ static void activate_task(struct rq *rq,
+ 		rq->nr_uninterruptible--;
+ 
+ 	enqueue_task(rq, p, flags);
+-	inc_nr_running(rq);
+ }
+ 
+ /*
+@@ -1842,7 +1841,6 @@ static void deactivate_task(struct rq *r
+ 		rq->nr_uninterruptible++;
+ 
+ 	dequeue_task(rq, p, flags);
+-	dec_nr_running(rq);
+ }
+ 
+ #ifdef CONFIG_IRQ_TIME_ACCOUNTING
+@@ -4194,7 +4192,7 @@ pick_next_task(struct rq *rq)
+ 	 * Optimization: we know that if all tasks are in
+ 	 * the fair class we can call that function directly:
+ 	 */
+-	if (likely(rq->nr_running == rq->cfs.nr_running)) {
++	if (likely(rq->nr_running == rq->cfs.h_nr_running)) {
+ 		p = fair_sched_class.pick_next_task(rq);
+ 		if (likely(p))
+ 			return p;
+Index: tip/kernel/sched_fair.c
+===================================================================
+--- tip.orig/kernel/sched_fair.c
++++ tip/kernel/sched_fair.c
+@@ -1332,16 +1332,19 @@ enqueue_task_fair(struct rq *rq, struct 
+ 			break;
+ 		cfs_rq = cfs_rq_of(se);
+ 		enqueue_entity(cfs_rq, se, flags);
++		cfs_rq->h_nr_running++;
+ 		flags = ENQUEUE_WAKEUP;
+ 	}
+ 
+ 	for_each_sched_entity(se) {
+-		struct cfs_rq *cfs_rq = cfs_rq_of(se);
++		cfs_rq = cfs_rq_of(se);
++		cfs_rq->h_nr_running++;
+ 
+ 		update_cfs_load(cfs_rq, 0);
+ 		update_cfs_shares(cfs_rq);
+ 	}
+ 
++	inc_nr_running(rq);
+ 	hrtick_update(rq);
+ }
+ 
+@@ -1361,6 +1364,7 @@ static void dequeue_task_fair(struct rq 
+ 	for_each_sched_entity(se) {
+ 		cfs_rq = cfs_rq_of(se);
+ 		dequeue_entity(cfs_rq, se, flags);
++		cfs_rq->h_nr_running--;
+ 
+ 		/* Don't dequeue parent if it has other entities besides us */
+ 		if (cfs_rq->load.weight) {
+@@ -1379,12 +1383,14 @@ static void dequeue_task_fair(struct rq 
+ 	}
+ 
+ 	for_each_sched_entity(se) {
+-		struct cfs_rq *cfs_rq = cfs_rq_of(se);
++		cfs_rq = cfs_rq_of(se);
++		cfs_rq->h_nr_running--;
+ 
+ 		update_cfs_load(cfs_rq, 0);
+ 		update_cfs_shares(cfs_rq);
+ 	}
+ 
++	dec_nr_running(rq);
+ 	hrtick_update(rq);
+ }
+ 
+Index: tip/kernel/sched_rt.c
+===================================================================
+--- tip.orig/kernel/sched_rt.c
++++ tip/kernel/sched_rt.c
+@@ -961,6 +961,8 @@ enqueue_task_rt(struct rq *rq, struct ta
+ 
+ 	if (!task_current(rq, p) && p->rt.nr_cpus_allowed > 1)
+ 		enqueue_pushable_task(rq, p);
++
++	inc_nr_running(rq);
+ }
+ 
+ static void dequeue_task_rt(struct rq *rq, struct task_struct *p, int flags)
+@@ -971,6 +973,8 @@ static void dequeue_task_rt(struct rq *r
+ 	dequeue_rt_entity(rt_se);
+ 
+ 	dequeue_pushable_task(rq, p);
++
++	dec_nr_running(rq);
+ }
+ 
+ /*
+@@ -1863,4 +1867,3 @@ static void print_rt_stats(struct seq_fi
+ 	rcu_read_unlock();
+ }
+ #endif /* CONFIG_SCHED_DEBUG */
+-
+Index: tip/kernel/sched_stoptask.c
+===================================================================
+--- tip.orig/kernel/sched_stoptask.c
++++ tip/kernel/sched_stoptask.c
+@@ -34,11 +34,13 @@ static struct task_struct *pick_next_tas
+ static void
+ enqueue_task_stop(struct rq *rq, struct task_struct *p, int flags)
+ {
++	inc_nr_running(rq);
+ }
+ 
+ static void
+ dequeue_task_stop(struct rq *rq, struct task_struct *p, int flags)
+ {
++	dec_nr_running(rq);
+ }
+ 
+ static void yield_task_stop(struct rq *rq)
 
-(And it's not just me and -stable maintainers.  Distro maintainers will
-also look at this patch and wonder whether they should merge it)
+
