@@ -1,102 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026Ab1GUOtx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 10:49:53 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:60261 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751392Ab1GUOtu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 10:49:50 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Subject: Re: [GIT PULL] MSM fix
-Date: Thu, 21 Jul 2011 16:49:39 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: David Brown <davidb@codeaurora.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <20110720203703.GA4495@huya.qualcomm.com> <20110720225010.GA18381@huya.qualcomm.com> <20110720225406.GB20310@n2100.arm.linux.org.uk>
-In-Reply-To: <20110720225406.GB20310@n2100.arm.linux.org.uk>
+	id S1752079Ab1GUOvR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 10:51:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33068 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751392Ab1GUOvQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 10:51:16 -0400
+Date: Thu, 21 Jul 2011 10:51:12 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: ZAK Magnus <zakmagnus@google.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Track hard and soft "short lockups" or "stalls."
+Message-ID: <20110721145112.GA24016@redhat.com>
+References: <1310760670-32232-1-git-send-email-zakmagnus@google.com>
+ <20110718122820.GB1808@redhat.com>
+ <CAAuSN9106qmYF27oRrfUBtqwOmSQgDJWwv3iz_NmTTuYNEymHA@mail.gmail.com>
+ <20110720154124.GS3765@redhat.com>
+ <CAAuSN9362PvjiJCQti=GAKGjZNnptV3e9Ot0kBpo40b8L7u0mA@mail.gmail.com>
+ <20110720210704.GF3400@redhat.com>
+ <CAAuSN90cv8iz+EMaVP5QQREs8sQC+m4u55nMLOFXKuFXxpX8Cw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107211649.39902.arnd@arndb.de>
-X-Provags-ID: V02:K0:DAEfr35NXKxP73k98sxxP7bVS2wc+HVTO9GKNJUeMG3
- J83G8+K9QZCD6OQMH6W2Q/r7Xg59WjQGLHbbgMi2BV3HJKt3Jl
- BhUiMU42zWcKX4DTCjyeOwP6RTtZwmy5bRK/ZVaiWEMUeMKsPi
- wrI5QsDQYKL+8FE7UC91KE6+rb/nJ/hqUXzkHIBxYvB+Wl4jWX
- Qc/bwYAjC8GucFLUU+GAw==
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAAuSN90cv8iz+EMaVP5QQREs8sQC+m4u55nMLOFXKuFXxpX8Cw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 21 July 2011, Russell King - ARM Linux wrote:
-> > It looks like it would apply to 2.6.38 and 39 as well.  I'm not sure
-> > it qualifies under the "It must fix a real bug that bothers people".
-> > It would only apply if someone had set NR_CPUS to more than 2.
+On Wed, Jul 20, 2011 at 02:15:02PM -0700, ZAK Magnus wrote:
+> On Wed, Jul 20, 2011 at 2:07 PM, Don Zickus <dzickus@redhat.com> wrote:
+> > On Wed, Jul 20, 2011 at 12:41:39PM -0700, ZAK Magnus wrote:
+> >> Are the stack traces very different? I don't understand in what sense
+> >> it's confusing.
+> >
+> > The fact that there are 3 of them telling me the samething.  Most people
+> > look at the first stack trace to figure out what is going on and will just
+> > notice the warning.  They might completely miss the HARDLOCKUP message on
+> > the third stack trace down.
+> >
+> > It just looked odd when I ran it the first time.  I feel like I would
+> > constantly be trying to educate people on why we do it like that.
+> Oh, okay. So, maybe the stall warnings should say something like, "a
+> lockup might happen soon?" Would that help? I don't know.
+
+Perhaps just changing the wording might help with the confusion.  After
+reading below it might be hard to restrict the dump_stack to only the
+highest stall (as opposed to printing each new worst hardstall as it
+increments to a hardlockup).
+
 > 
-> Err, this makes no sense.  MSM doesn't have a get_core_count function
-> and as far as I can see never has done in mainline.
+> >> I don't think that exact patch would work (wouldn't it cause
+> >> update_hardstall to only ever be called with 0 as its first argument?)
+> >> but I hope I still understand what you're saying. You're saying stalls
+> >> should only be recorded once they're finished, right? I don't know if
+> >> this is the best approach. If we wait until interrupts stop being
+> >> missed, it means the code could have exited whatever section caused
+> >> the stall to begin with. Maybe your data indicates otherwise, but I
+> >> would think this means the stack trace would not really be
+> >
+> > Crap.  good point.
+> Which part, exactly?
 
-I've committed the version below now, with a clarified title.
-The patch looks reasonable to me, but there may be some issue
-I'm missing of course. The other platforms that used to have
-a get_core_count function no longer have that because you changed
-them to use scu_get_core_count, but that doesn't seem to apply
-to mach-msm.
+The part about losing the stalled section when the code resets the missed
+interrupts back to 0.
 
-I did not add a stable tag though.
+> 
+> >> informative. It's one thing to know a stall occurs, but its occurrence
+> >> is generally reflective of a bug or a suboptimal section, so it would
+> >> be good to know where that is in order to try and fix it.
+> >>
+> >> For soft stalls, I think the same is true. Also, since the soft lockup
+> >> system just relies on checking a timestamp compared to now, it can't
+> >> know how long a stall was after it has already finished. The hard
+> >> system only knows because it keeps a running count of the number of
+> >> failed checks. An additional timestamp could be introduced and the
+> >> difference between the two retroactively checked in order to reproduce
+> >> this, but the stack trace issue would still apply. Also, while not
+> >> hugely complex, the change would be more significant than the sort
+> >> your patch presents.
+> >>
+> >> The bottom line is that I think catching a stall in progress is the
+> >> most informative thing to do, and I don't understand the downsides of
+> >> doing so. Could you please explain them?
+> >>
+> >> On another note, I'm working on a patch on top of this one which would
+> >> change the hard lockup system to be more like the soft lockup system.
+> >> It would use a timestamp as well, so it can have a more exact read on
+> >> how long the timer has been delayed. This adds resolution and gets rid
+> >> of that problem where it can only report missed = 3 or 4. Any
+> >> preliminary comments? Or should I just put the patch up before
+> >> discussing it?
+> >
+> > That might work.  I would have to see the patch.  What clock would you use
+> > to read the time?  I don't think you can use 'now' if interrupts are
+> > disabled.
+> Okay, I will send it when it seems ready. For the timestamp, I was
+> just using the get_timestamp function that's defined in the file,
+> which calls cpu_clock(). Is there a better way?
 
-	Arnd
+Oh right.  I forgot Peter created some abstraction called cpu_clock().
+That should work I suppose, it's NMI safe according to various code
+comments.  I just wonder if the clock gets updated if interrupts are
+accidentally disabled for a long time.  Though TSC doesn't care on x86
+about interrupts.
 
-8<---
-Subject: [PATCH] ARM: msm: platsmp: determine number of CPU cores at boot time
-
-Previously we just assumed there were CONFIG_NR_CPUS cpus present in
-the system. Instead, figure out the number of cpus from the MIDR
-register.
-
-Signed-off-by: Jeff Ohlstein <johlstei@codeaurora.org>
-Signed-off-by: David Brown <davidb@codeaurora.org>
-[arnd: clarified patch title]
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-
-diff --git a/arch/arm/mach-msm/platsmp.c b/arch/arm/mach-msm/platsmp.c
-index 2034098..5ba77d0 100644
---- a/arch/arm/mach-msm/platsmp.c
-+++ b/arch/arm/mach-msm/platsmp.c
-@@ -18,6 +18,7 @@
- 
- #include <asm/hardware/gic.h>
- #include <asm/cacheflush.h>
-+#include <asm/cputype.h>
- #include <asm/mach-types.h>
- 
- #include <mach/msm_iomap.h>
-@@ -40,6 +41,12 @@ volatile int pen_release = -1;
- 
- static DEFINE_SPINLOCK(boot_lock);
- 
-+static inline int get_core_count(void)
-+{
-+	/* 1 + the PART[1:0] field of MIDR */
-+	return ((read_cpuid_id() >> 4) & 3) + 1;
-+}
-+
- void __cpuinit platform_secondary_init(unsigned int cpu)
- {
- 	/* Configure edge-triggered PPIs */
-@@ -147,9 +154,9 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
-  */
- void __init smp_init_cpus(void)
- {
--	unsigned int i;
-+	unsigned int i, ncores = get_core_count();
- 
--	for (i = 0; i < NR_CPUS; i++)
-+	for (i = 0; i < ncores; i++)
- 		set_cpu_possible(i, true);
- 
-         set_smp_cross_call(gic_raise_softirq);
+Cheers,
+Don
