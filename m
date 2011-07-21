@@ -1,91 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751394Ab1GUOH4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 10:07:56 -0400
-Received: from ltw.loris.tv ([85.14.220.160]:60767 "EHLO ltw.loris.tv"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751322Ab1GUOHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 10:07:54 -0400
-X-Greylist: delayed 366 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Jul 2011 10:07:53 EDT
-Message-ID: <4E28313E.60900@drcomp.erfurt.thur.de>
-Date: Thu, 21 Jul 2011 16:01:34 +0200
-From: Adrian Knoth <adi@drcomp.erfurt.thur.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110626 Icedove/3.1.11
+	id S1751357Ab1GUOKr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 10:10:47 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47817 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750843Ab1GUOKq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 10:10:46 -0400
+Date: Thu, 21 Jul 2011 15:10:27 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: "mingo@redhat.com" <mingo@redhat.com>,
+        "dengcheng.zhu@gmail.com" <dengcheng.zhu@gmail.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "hpa@zytor.com" <hpa@zytor.com>, "anton@samba.org" <anton@samba.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jason.wessel@windriver.com" <jason.wessel@windriver.com>,
+        "lethal@linux-sh.org" <lethal@linux-sh.org>,
+        "emunson@mgebm.net" <emunson@mgebm.net>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "mcree@orcon.net.nz" <mcree@orcon.net.nz>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: Re: [tip:perf/core] perf: Remove the nmi parameter from the
+ swevent and overflow interface
+Message-ID: <20110721141027.GA8446@e102144-lin.cambridge.arm.com>
+References: <tip-agjev8eu666tvknpb3iaj0fg@git.kernel.org>
+ <20110708173442.GB31972@e102144-lin.cambridge.arm.com>
+ <1310146876.3282.711.camel@twins>
 MIME-Version: 1.0
-To: Tom Gundersen <teg@jklm.no>
-CC: General Discussion about Arch Linux <arch-general@archlinux.org>,
-        Fons Adriaensen <fons@linuxaudio.org>, Takashi Iwai <tiwai@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [arch-general] Panic - no sound devices after upgrade
-References: <20110719143758.GA15283@linuxaudio.org> <CAFEhRJf-5U=cS3iptpvGEVSHV+S=aBF_mWfWkC_QMRty_WnoPA@mail.gmail.com> <20110720131120.GA1836@linuxaudio.org> <CAFEhRJd9ZCSpx52S__vMdWK18mhMQrRoU9R5zNaZE=wksLRTvg@mail.gmail.com> <20110720153023.GA11502@linuxaudio.org> <CAFEhRJczj=_B7fK7GvBEnqpB2GJGnCnGkoA2w5vzbFfM2wAGZw@mail.gmail.com> <20110720163844.GB16901@linuxaudio.org> <CAG-2HqWqATSJ=oJTTvULXwPEG82yN+8e6GJFs759hPA-=krAOQ@mail.gmail.com> <20110721100944.GA13971@linuxaudio.org> <CAG-2HqX23C79vfccnu0tMqx+6K9Z5pS0_HekaLizQx7XfkPQ1Q@mail.gmail.com> <20110721112331.GA15059@linuxaudio.org> <CAG-2HqWK3x5-szkyzX8AMxuMpDZNVRXHYtQ0AkAPMsGcLK0Z9w@mail.gmail.com>
-In-Reply-To: <CAG-2HqWK3x5-szkyzX8AMxuMpDZNVRXHYtQ0AkAPMsGcLK0Z9w@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/mixed;
- boundary="------------010609000806010908080601"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1310146876.3282.711.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------010609000806010908080601
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Hi Peter,
 
-On 07/21/11 15:00, Tom Gundersen wrote:
+On Fri, Jul 08, 2011 at 06:41:16PM +0100, Peter Zijlstra wrote:
+> On Fri, 2011-07-08 at 18:34 +0100, Will Deacon wrote:
+> > On Fri, Jul 01, 2011 at 04:21:25PM +0100, tip-bot for Peter Zijlstra wrote:
+> > > Commit-ID:  a8b0ca17b80e92faab46ee7179ba9e99ccb61233
+> > > Gitweb:     http://git.kernel.org/tip/a8b0ca17b80e92faab46ee7179ba9e99ccb61233
+> > > Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > > AuthorDate: Mon, 27 Jun 2011 14:41:57 +0200
+> > > Committer:  Ingo Molnar <mingo@elte.hu>
+> > > CommitDate: Fri, 1 Jul 2011 11:06:35 +0200
+> > > 
+> > > perf: Remove the nmi parameter from the swevent and overflow interface
 
-Hi!
+[...]
 
->>>>>> * The driver for my card (RME HDSP MADI, snd_hdpsm) is loaded.
->>>> [   48.057757] HDSPM: unknown firmware revision cc
+> > 
+> > Whilst you updated the arch code in this series, you forgot to update the
+> > oprofile perf backend. 
+> 
+> Bah, I bet it skillfully hid from my grep-foo.
+> 
+> > I think you want something as simple as:
+> > 
+> > 
+> > diff --git a/drivers/oprofile/oprofile_perf.c b/drivers/oprofile/oprofile_perf.c
+> > index 59acf9e..94796f3 100644
+> > --- a/drivers/oprofile/oprofile_perf.c
+> > +++ b/drivers/oprofile/oprofile_perf.c
+> > @@ -31,7 +31,7 @@ static int num_counters;
+> >  /*
+> >   * Overflow callback for oprofile.
+> >   */
+> > -static void op_overflow_handler(struct perf_event *event, int unused,
+> > +static void op_overflow_handler(struct perf_event *event,
+> >                         struct perf_sample_data *data, struct pt_regs *regs)
+> >  {
+> >         int id;
+> > 
+> 
+> Yes, that is sufficient. Thanks!
 
-> firmware revision is 0xCC, which is not recognised. If your card is
-> MADI, the kernel expects the firmware revision to be 0xD2 (or starting
-> in 3.0, it also accepts 0xCF).
+I can't see this in next. Are you happy taking this or do you want me to
+post it to the list as a standalone patch?
 
-Exactly.
+Cheers,
 
-> I guess this can be fixed easily by adding your firmware revision to
-> the list of accepted revs.
-
-I hope so, too. Please try the attached patch.
-
-
-JFTR: You need at least ALSA-1.0.24 userland (or the corresponding
-hdspm.h respectively) for the new driver (2.6.39 and above). Likewise,
-if you intend to use hdspmixer, you need the yet unreleased 1.0.24.2
-version of alsa-tools, so go for the git version:
-
-   http://git.alsa-project.org/?p=alsa-tools.git
-
-
-HTH
-
---------------010609000806010908080601
-Content-Type: text/x-diff;
- name="hdspm-cc.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="hdspm-cc.patch"
-
-diff --git a/sound/pci/rme9652/hdspm.c b/sound/pci/rme9652/hdspm.c
-index 7222151..18d3424 100644
---- a/sound/pci/rme9652/hdspm.c
-+++ b/sound/pci/rme9652/hdspm.c
-@@ -521,6 +521,7 @@ MODULE_SUPPORTED_DEVICE("{{RME HDSPM-MADI}}");
- #define HDSPM_DMA_AREA_KILOBYTES (HDSPM_DMA_AREA_BYTES/1024)
- 
- /* revisions >= 230 indicate AES32 card */
-+#define HDSPM_MADI_ANCIENT_REV	204
- #define HDSPM_MADI_OLD_REV	207
- #define HDSPM_MADI_REV		210
- #define HDSPM_RAYDAT_REV	211
-@@ -6484,6 +6485,7 @@ static int __devinit snd_hdspm_create(struct snd_card *card,
- 	switch (hdspm->firmware_rev) {
- 	case HDSPM_MADI_REV:
- 	case HDSPM_MADI_OLD_REV:
-+	case HDSPM_MADI_ANCIENT_REV:
- 		hdspm->io_type = MADI;
- 		hdspm->card_name = "RME MADI";
- 		hdspm->midiPorts = 3;
-
---------------010609000806010908080601--
+Will
