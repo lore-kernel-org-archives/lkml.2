@@ -1,122 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836Ab1GUMxN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 08:53:13 -0400
-Received: from gwu.lbox.cz ([62.245.111.132]:53537 "EHLO gwu.lbox.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751754Ab1GUMxJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 08:53:09 -0400
-Date: Thu, 21 Jul 2011 14:50:08 +0200
-From: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, john stultz <johnstul@us.ibm.com>,
-        Willy Tarreau <w@1wt.eu>, MINOURA Makoto <minoura@valinux.co.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Faidon Liambotis <paravoid@debian.org>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, seto.hidetoshi@jp.fujitsu.com,
-        =?iso-8859-1?Q?Herv=E9?= Commowick <hcommowick@exosec.fr>,
-        Rand@jasper.es, Nikola Ciprich <nikola.ciprich@linuxbox.cz>
-Subject: Re: 2.6.32.21 - uptime related crashes?
-Message-ID: <20110721125008.GF11246@pcnci.linuxbox.cz>
-References: <BANLkTi=22QFrJ4vO7-3VuHU=9Cg39bxJ4Q@mail.gmail.com> <20110705231515.95bc758f.akpm@linux-foundation.org> <kk5d3hgi9eh.fsf@brer.local.valinux.co.jp> <1310434819.30337.21.camel@work-vm> <20110712041938.GO27254@1wt.eu> <1310690138.3367.61.camel@work-vm> <1310724097.2586.296.camel@twins> <1310752795.2945.4.camel@work-vm> <20110721072256.GE9216@elte.hu> <1311251098.29152.130.camel@twins>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ulDeV4rPMk/y39in"
-Content-Disposition: inline
-In-Reply-To: <1311251098.29152.130.camel@twins>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-Antivirus: on lbxovapx by Kaspersky antivirus, 5391814 records (last update: 20110721)
-X-Spam-Score: N/A (trusted relay)
+	id S1752883Ab1GUMxf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 08:53:35 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:38626 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751754Ab1GUMxb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 08:53:31 -0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-mm@kvack.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [RFC v3 0/5] implement RUNTIME_USER_COPY_CHECKS
+Date: Thu, 21 Jul 2011 16:53:26 +0400
+Message-Id: <1311252806-6641-1-git-send-email-segoon@openwall.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch implements 2 additional checks for the data copied from
+kernelspace to userspace and vice versa (original PAX_USERCOPY from PaX
+patch).  Currently there are some very simple and cheap comparisons of
+supplied size and the size of a copied object known at the compile time
+in copy_* functions.  This patch enhances these checks to check against
+stack frame boundaries and against SL*B object sizes.
 
---ulDeV4rPMk/y39in
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+More precisely, it checks:
 
-Hi,
-thanks for the patch! I'll put this on our testing boxes...
-Are You going to push this upstream so we can ask Greg to push this to -sta=
-ble?
-or do You plan to wait for more complex patch?
-n.
+1) if the data touches the stack, checks whether it fully fits in the stack
+and whether it fully fits in a single stack frame.  The latter is arch
+dependent, currently it is implemented for x86 with CONFIG_FRAME_POINTER=y
+only.  It limits infoleaks/overwrites to a single frame and local variables
+only, and prevents saved return instruction pointer overwriting.
+
+2) if the data is from the SL*B cache, checks whether it fully fits in a
+slab page and whether it overflows a slab object.  E.g. if the memory
+was allocated as kmalloc(64, GFP_KERNEL) and one tries to copy 150
+bytes, the copy would fail.
+
+The checks are implemented for copy_{to,from}_user() and similar and are
+missing for {put,get}_user() and similar because the base pointer might
+be a result of any pointer arithmetics, and the correctness of these
+arithmetics is almost impossible to check on this stage.  If the
+real object size is known at the compile time, the check is reduced to 2
+integers comparison.  If the supplied length argument is known at the
+compile time, the check is skipped because the only thing that can be
+under attacker's control is object pointer and checking for errors as a
+result of wrong pointer arithmetic is beyond patch's goals.
+
+/dev/kmem and /dev/mem are fixed to pass this check (e.g. without
+STRICT_DEVMEM it should be possible to overflow the stack frame and slab
+objects).
+
+The slowdown is negligible - for most cases it is reduced to integer
+comparison (in fstat, getrlimit, ipc) for some cases the whole syscall time
+and the time of a check are not comparable (in write, path traversal
+functions - openat, stat), for programs with not intensive syscalls
+usage.  One of the most significant slowdowns is gethostname(), the
+penalty is 0,9%.  For 'find /usr', 'git log -Sredirect' in kernel tree,
+kernel compilation the slowdown is less than 0,1% (couldn't measure it
+more precisely).
+
+The limitations:
+
+The stack check does nothing with local variables overwriting and 
+saved registers.  It only limits overflows to a single frame.
+
+The SL*B checks don't validate whether the object is actually allocated.
+So, it doesn't prevent infoleaks related to the freed objects.  Also if
+the cache's granularity is larger than an actual allocated object size,
+an infoleak of padding bytes is possible.  The slob check is missing yet.
+Unfortunately, the check for slob would have to (1) walk through the
+slob chunks and (2) hold the slob lock, so it would lead to a
+significant slowdown.
+
+The patch does nothing with other memory areas like vmalloc'ed areas,
+modules' data and code sections, etc.  It can be an area for
+improvements.
+
+The patch's goal is similar to StackGuard (-fstack-protector gcc option,
+enabled by CONFIG_CC_STACKPROTECTOR): catch buffer oveflows.
+However, the design is completely different.  First, SG does nothing
+with overreads, it can catch overwrites only.  Second, SG cannot catch
+SL*B buffer overflows.  Third, SG checks the canary after a buffer is
+overflowed instead of preventing an actual overflow attempt; when an attacker
+overflows a stack buffer, he can uncontrolledly wipe some data on the
+stack before the function return.  If attacker's actions generate kernel
+oops before the return, SG would not get the control and the overflow is
+not catched as if SG is disabled.  However, SG can catch oveflows of
+memcpy(), strcpy(), sprintf() and other functions working with kernel
+data only, which are not caught by RUNTIME_USER_COPY_CHECK.
+
+The checks are implemented for x86, it can be easily extended to other
+architectues by including <linux/uaccess-check.h> and adding
+kernel_access_ok() checks into {,__}copy_{to,from}_user().
+
+The patch is a forwardport of the PAX_USERCOPY feature from the PaX
+patch.  Most code was copied from the PaX patch with minor cosmetic
+changes.  Also PaX' version of the patch has additional restrictions:
+
+a) some slab caches has SLAB_USERCOPY flag set and copies to/from the slab
+caches without the flag are denied.  Rare cases where some bytes needed
+from the caches missing in the white list are handled by copying the
+bytes into temporary area on the stack/heap.
+
+b) if a malformed copy request is spotted, the event is logged and
+SIGKILL signal is sent to the current task.
+
+Examples of overflows, which become nonexploitable with RUNTIME_USER_COPY_CHECK:
+DCCP getsockopt copy_to_user() overflow (fixed in 39ebc0276bada),
+L2TP memcpy_fromiovec() overflow (fixed in 253eacc070b),
+partly 7182afea8d1afd432a17c18162cc3fd441d0da93
 
 
-On Thu, Jul 21, 2011 at 02:24:58PM +0200, Peter Zijlstra wrote:
-> On Thu, 2011-07-21 at 09:22 +0200, Ingo Molnar wrote:
-> >=20
-> > Ping, what's going on with this bug? Systems are crashing so we need=20
-> > a quick fix ASAP ...=20
->=20
-> Something as simple as the below ought to cure things for now. Once we
-> get __cycles_2_ns() fixed up we can enable it again.
->=20
-> (patch against -tip, .32 code is different but equally simple to fix)
->=20
-> ---
-> Subject: x86, intel: Don't mark sched_clock() as stable
->=20
-> Because the x86 sched_clock() implementation wraps at 54 bits and the
-> scheduler code assumes it wraps at the full 64bits we can get into
-> trouble after 208 days (~7 months) of uptime.=20
->=20
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> ---
->  arch/x86/kernel/cpu/intel.c |    7 +++++++
->  1 files changed, 7 insertions(+), 0 deletions(-)
->=20
-> diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-> index ed6086e..c8dc48b 100644
-> --- a/arch/x86/kernel/cpu/intel.c
-> +++ b/arch/x86/kernel/cpu/intel.c
-> @@ -91,8 +91,15 @@ static void __cpuinit early_init_intel(struct cpuinfo_=
-x86 *c)
->  	if (c->x86_power & (1 << 8)) {
->  		set_cpu_cap(c, X86_FEATURE_CONSTANT_TSC);
->  		set_cpu_cap(c, X86_FEATURE_NONSTOP_TSC);
-> +		/*
-> +		 * Unfortunately our __cycles_2_ns() implementation makes
-> +		 * the raw sched_clock() interface wrap at 54-bits, which
-> +		 * makes it unsuitable for direct use, so disable this
-> +		 * for now.
-> +		 *
->  		if (!check_tsc_unstable())
->  			sched_clock_stable =3D 1;
-> +		 */
->  	}
-> =20
->  	/*
->=20
->=20
+Questions/thoughts:
 
---=20
--------------------------------------
-Ing. Nikola CIPRICH
-LinuxBox.cz, s.r.o.
-28. rijna 168, 709 01 Ostrava
+Should this code put in action some reacting mechanisms?  Probably it
+is a job of userspace monitoring daemon (like sigv TODO ), but the kernel's
+reaction would be race free and much more timely.
 
-tel.:   +420 596 603 142
-fax:    +420 596 621 273
-mobil:  +420 777 093 799
-www.linuxbox.cz
+v3 - Simplified addition of new architectures.
+   - Define slab_access_ok() only if DEBUG_RUNTIME_USER_COPY_CHECKS=y.
+   - Moved "len == 0" check to kernel_access_ok().
+   - Now log the copy direction (from/to user) on overflows.
+   - Removed (char *) casts.
+   - Removed redundant NULL initializers.
+   - Simplified addition of new architectures.
+   - Used __always_inline.
+   - Used #ifdef instead of #if defined().
 
-mobil servis: +420 737 238 656
-email servis: servis@linuxbox.cz
--------------------------------------
+v2 - Moved the checks to kernel_access_ok().
+   - If the object size is known at the compilation time, just compare
+     length and object size.
+   - Check only if length value is not known at the compilation time.
+   - Provided performance results.
 
---ulDeV4rPMk/y39in
-Content-Type: application/pgp-signature
-Content-Disposition: inline
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+---
+ arch/x86/include/asm/uaccess.h    |   49 ++++++++++++++++++++++++++
+ arch/x86/include/asm/uaccess_32.h |   32 +++++++++++++++--
+ arch/x86/include/asm/uaccess_64.h |   38 +++++++++++++++++++-
+ arch/x86/lib/usercopy_32.c        |    2 +-
+ drivers/char/mem.c                |    9 +++--
+ include/linux/slab.h              |    4 ++
+ include/linux/uaccess-check.h     |   70 +++++++++++++++++++++++++++++++++++++
+ lib/Kconfig.debug                 |   22 +++++++++++
+ mm/maccess.c                      |   48 +++++++++++++++++++++++++
+ mm/slab.c                         |   33 +++++++++++++++++
+ mm/slob.c                         |   12 ++++++
+ mm/slub.c                         |   28 +++++++++++++++
+ 12 files changed, 337 insertions(+), 10 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk4oIIAACgkQ3xdJJrLygV7OkACdGNRSvKMvyUR4CyZwyaGr+tMc
-yOsAniKGKWQ3n9XP4hkpfuSlXjvxXyZj
-=u3Ds
------END PGP SIGNATURE-----
-
---ulDeV4rPMk/y39in--
