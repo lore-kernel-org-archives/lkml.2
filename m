@@ -1,68 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751471Ab1GUONw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 10:13:52 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43491 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750843Ab1GUONt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 10:13:49 -0400
-Subject: Re: [tip:perf/core] perf: Remove the nmi parameter from the
- swevent and overflow interface
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "mingo@redhat.com" <mingo@redhat.com>,
-        "dengcheng.zhu@gmail.com" <dengcheng.zhu@gmail.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "hpa@zytor.com" <hpa@zytor.com>, "anton@samba.org" <anton@samba.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jason.wessel@windriver.com" <jason.wessel@windriver.com>,
-        "lethal@linux-sh.org" <lethal@linux-sh.org>,
-        "emunson@mgebm.net" <emunson@mgebm.net>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "mcree@orcon.net.nz" <mcree@orcon.net.nz>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-In-Reply-To: <20110721141027.GA8446@e102144-lin.cambridge.arm.com>
-References: <tip-agjev8eu666tvknpb3iaj0fg@git.kernel.org>
-	 <20110708173442.GB31972@e102144-lin.cambridge.arm.com>
-	 <1310146876.3282.711.camel@twins>
-	 <20110721141027.GA8446@e102144-lin.cambridge.arm.com>
+	id S1751498Ab1GUOYS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 10:24:18 -0400
+Received: from mail.perches.com ([173.55.12.10]:4223 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751231Ab1GUOYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 10:24:17 -0400
+Subject: Re: [PATCH 1/2] staging: vt6655: simplify MAC printing by using
+ %pMF
+From: Joe Perches <joe@perches.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <c8400fbc4ad3a91885fcda0e080be0ae80fcf077.1311252059.git.andriy.shevchenko@linux.intel.com>
+References: <c8400fbc4ad3a91885fcda0e080be0ae80fcf077.1311252059.git.andriy.shevchenko@linux.intel.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 21 Jul 2011 16:13:00 +0200
-Message-ID: <1311257580.29152.148.camel@twins>
+Date: Thu, 21 Jul 2011 07:24:16 -0700
+Message-ID: <1311258256.1663.35.camel@Joe-Laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-07-21 at 15:10 +0100, Will Deacon wrote:
+On Thu, 2011-07-21 at 15:42 +0300, Andy Shevchenko wrote:
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+>  drivers/staging/vt6655/device_main.c |   10 +-----
+>  drivers/staging/vt6655/dpc.c         |   30 ++++----------------
+>  drivers/staging/vt6655/wmgr.c        |   49 +++++++---------------------------
+[ patches like ]
+> +	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Probe request rx:MAC addr:%pMF\n",
+> +		sFrame.pHdr->sA3.abyAddr2);
 
-> > > diff --git a/drivers/oprofile/oprofile_perf.c b/drivers/oprofile/oprofile_perf.c
-> > > index 59acf9e..94796f3 100644
-> > > --- a/drivers/oprofile/oprofile_perf.c
-> > > +++ b/drivers/oprofile/oprofile_perf.c
-> > > @@ -31,7 +31,7 @@ static int num_counters;
-> > >  /*
-> > >   * Overflow callback for oprofile.
-> > >   */
-> > > -static void op_overflow_handler(struct perf_event *event, int unused,
-> > > +static void op_overflow_handler(struct perf_event *event,
-> > >                         struct perf_sample_data *data, struct pt_regs *regs)
-> > >  {
-> > >         int id;
-> > > 
-> > 
-> > Yes, that is sufficient. Thanks!
-> 
-> I can't see this in next. Are you happy taking this or do you want me to
-> post it to the list as a standalone patch?
+Please use %pM here and in [2/2] as well.
 
-I just handed it to Ingo (who's back from vacation), it should show up
-today or tomorrow.
+%pMF should be used only for FDDI.
+
+It looks as if this was someones idea to separate
+the OUI out of the mac address.
+
+
