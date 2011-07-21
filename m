@@ -1,46 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752285Ab1GULd3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 07:33:29 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41464 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751964Ab1GULd2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 07:33:28 -0400
-Subject: Re: [PATCH RFC] rtmutex: Permit rt_mutex_unlock() to be invoked
- with irqs disabled
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: paulmck@linux.vnet.ibm.com
-Cc: tglx@linutronix.de, laijs@cn.fujitsu.com, darren@dvhart.com,
-        rostedt@goodmis.org, mingo@elte.hu, linux-kernel@vger.kernel.org
-In-Reply-To: <20110719201410.GA10553@linux.vnet.ibm.com>
-References: <20110719201410.GA10553@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 21 Jul 2011 13:32:48 +0200
-Message-ID: <1311247968.29152.122.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752460Ab1GULgL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 07:36:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59031 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751818Ab1GULgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 07:36:08 -0400
+Date: Thu, 21 Jul 2011 13:36:06 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] memcg: do not try to drain per-cpu caches without
+ pages
+Message-ID: <20110721113606.GA27855@tiehlicka.suse.cz>
+References: <cover.1311241300.git.mhocko@suse.cz>
+ <113c4affc2f0938b7b22d43c88d2b0a623de9a6b.1311241300.git.mhocko@suse.cz>
+ <20110721191250.1c945740.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110721191250.1c945740.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-19 at 13:14 -0700, Paul E. McKenney wrote:
-> Because rcu_read_unlock() can be invoked with interrupts disabled, it can
-> in turn invoke rt_mutex_unlock() with interrupts disabled.  This situation
-> results in lockdep splats (https://lkml.org/lkml/2011/7/7/362) because the
-> rt_mutex structure's ->lock_wait is acquired elsewhere without disabling
-> interrupts, which can result in deadlocks.
+On Thu 21-07-11 19:12:50, KAMEZAWA Hiroyuki wrote:
+> On Thu, 21 Jul 2011 09:38:00 +0200
+> Michal Hocko <mhocko@suse.cz> wrote:
 > 
-> This commit therefore changes the rt_mutex structure's ->lock_wait
-> acquisitions to disable interrupts.
+> > drain_all_stock_async tries to optimize a work to be done on the work
+> > queue by excluding any work for the current CPU because it assumes that
+> > the context we are called from already tried to charge from that cache
+> > and it's failed so it must be empty already.
+> > While the assumption is correct we can do it by checking the current
+> > number of pages in the cache. This will also reduce a work on other CPUs
+> > with an empty stock.
+> > 
+> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
 > 
-> An alternative fix is to prohibit invoking rcu_read_unlock() with
-> interrupts disabled unless the entire preceding RCU read-side critical
-> section has run with interrupts disabled.  However, there is already
-> at least one case in mainline where this potential rule is violated,
-> and there might well be many more.  These would likely be found one at
-> a time using the lockdep-water-torture method, hence the alternative
-> fix in the form of this commit.
+> 
+> At the first look, when a charge against TransParentHugepage() goes
+> into the reclaim routine, stock->nr_pages != 0 and this will
+> call additional kworker.
 
-Thomas, I'm inclined to merge this, any objections?
+True. We will drain a charge which could be used by other allocations
+in the meantime so we have a good chance to reclaim less. But how big
+problem is that?
+I mean I can add a new parameter that would force checking the current
+cpu but it doesn't look nice. I cannot add that condition
+unconditionally because the code will be shared with the sync path in
+the next patch and that one needs to drain _all_ cpus.
+
+What would you suggest?
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
