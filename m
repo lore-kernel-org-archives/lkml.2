@@ -1,46 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936Ab1GUNFS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 09:05:18 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:50625 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752646Ab1GUNFQ (ORCPT
+	id S1752997Ab1GUNSI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 09:18:08 -0400
+Received: from bukvic.music.vt.edu ([198.82.152.114]:48827 "EHLO
+	lists.linuxaudio.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752892Ab1GUNSF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 09:05:16 -0400
+	Thu, 21 Jul 2011 09:18:05 -0400
+X-Greylist: delayed 477 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Jul 2011 09:18:05 EDT
+Date: Thu, 21 Jul 2011 13:10:06 +0000
+From: Fons Adriaensen <fons@linuxaudio.org>
+To: Tom Gundersen <teg@jklm.no>
+Cc: General Discussion about Arch Linux <arch-general@archlinux.org>,
+        Adrian Knoth <adi@drcomp.erfurt.thur.de>, Takashi Iwai <tiwai@suse.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [arch-general] Panic - no sound devices after upgrade
+Message-ID: <20110721131006.GC15059@linuxaudio.org>
+References: <20110720131120.GA1836@linuxaudio.org> <CAFEhRJd9ZCSpx52S__vMdWK18mhMQrRoU9R5zNaZE=wksLRTvg@mail.gmail.com> <20110720153023.GA11502@linuxaudio.org> <CAFEhRJczj=_B7fK7GvBEnqpB2GJGnCnGkoA2w5vzbFfM2wAGZw@mail.gmail.com> <20110720163844.GB16901@linuxaudio.org> <CAG-2HqWqATSJ=oJTTvULXwPEG82yN+8e6GJFs759hPA-=krAOQ@mail.gmail.com> <20110721100944.GA13971@linuxaudio.org> <CAG-2HqX23C79vfccnu0tMqx+6K9Z5pS0_HekaLizQx7XfkPQ1Q@mail.gmail.com> <20110721112331.GA15059@linuxaudio.org> <CAG-2HqWK3x5-szkyzX8AMxuMpDZNVRXHYtQ0AkAPMsGcLK0Z9w@mail.gmail.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Thu, 21 Jul 2011 15:05:14 +0200
-Message-ID: <CA+icZUVFuLszu5hBTj29M2L1OqkeNXwEV7YsvyGzo_3JL=VMQw@mail.gmail.com>
-Subject: Re: Note on Linux 3.0 and the 3.1 merge window
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAG-2HqWK3x5-szkyzX8AMxuMpDZNVRXHYtQ0AkAPMsGcLK0Z9w@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Please CC me I am not subscribed to LKML ]
+On Thu, Jul 21, 2011 at 03:00:32PM +0200, Tom Gundersen wrote:
+> Adrian, Takashi: I added you to cc, as you last touched this code,
+> sorry if I should have cc'ed someone else. It appears that the HDSPM
+> module does not recognise cards with firmware revision 0xCC:
+> 
+> On Thu, Jul 21, 2011 at 1:23 PM, Fons Adriaensen <fons@linuxaudio.org> wrote:
+> >>>>> * The driver for my card (RME HDSP MADI, snd_hdpsm) is loaded.
+> >> > [   48.057757] HDSPM: unknown firmware revision cc
+> [...]
+> > Today I tried again downgrading the kernel to 2.6.37, to check if
+> > the firmware revision error would occur. It doesn't.
+> [...]
+> > Tentative conclusion: the snd_hdspm driver in 2.6.39 is not OK.
+> 
+> Ah, I see. Thanks for the clarification. This means that the kernel is
+> not able to recognise your card. Pre-.39 it would load anyway, but
+> since .39 it gives the warning you posted and refuses to load. Your
+> firmware revision is 0xCC, which is not recognised. If your card is
+> MADI, the kernel expects the firmware revision to be 0xD2 (or starting
+> in 3.0, it also accepts 0xCF).
+> 
+> I guess this can be fixed easily by adding your firmware revision to
+> the list of accepted revs.
 
->From [1]:
+I have cards with CC and CF, and maybe also D2 (haven't checked them
+all).
 
-"The observation: with the upcoming version number change, the official
-'git' repository is now (and has been for a week, but people probably
-didn't notice) just
+-- 
+FA
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
 
-ie the "-2.6" thing is gone. However, the old name continues to work,
-just so that nothing breaks. You don't need to really change anything,
-but I thought I'd just point it out."
 
-Nice to see you switched finally the upstream repository to a more common name.
-What's with all the other repos from sub-maintainers?
-I already made some suggestions in [2].
 
-Regards,
-- Sedat -
-
-[1] http://lkml.org/lkml/2011/7/20/371
-[2] http://lkml.org/lkml/2011/5/30/77
