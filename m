@@ -1,195 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752557Ab1GUHhQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 03:37:16 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:37014 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752162Ab1GUHhO convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:3:1>);
-	Thu, 21 Jul 2011 03:37:14 -0400
-Message-Id: <4E27F346020000780004EBA4@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Thu, 21 Jul 2011 08:37:10 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Ingo Molnar" <mingo@elte.hu>, "Jesse Barnes" <jbarnes@virtuousgeek.org>
-Cc: <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
-Subject: Re: [PATCH] x86: PCI config space accessor functions should
-	 not ignore the segment argument
-References: <4E258BD6020000780004E3BE@nat28.tlf.novell.com>
- <20110721071021.GC9216@elte.hu>
-In-Reply-To: <20110721071021.GC9216@elte.hu>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1752693Ab1GUHi2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 03:38:28 -0400
+Received: from ozlabs.org ([203.10.76.45]:39530 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752250Ab1GUHiV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 03:38:21 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Jonathan Cameron <jic23@cam.ac.uk>, Tejun Heo <tj@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: RFC: Boiler plate functions for ida / idr allocation?
+In-Reply-To: <4E1DA232.30408@cam.ac.uk>
+References: <4E1D6900.6040500@cam.ac.uk> <20110713133139.GO2872@htj.dyndns.org> <4E1DA232.30408@cam.ac.uk>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Thu, 21 Jul 2011 17:07:36 +0930
+Message-ID: <878vrs2if3.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 21.07.11 at 09:10, Ingo Molnar <mingo@elte.hu> wrote:
->>  The access method 1 accessor, as it can be used for extended accesses
->> (on AMD systems) instead gets added checks for the passed in segment to
->> be zero (returning an error just like out of range values of the other
->> arguments would cause).
+On Wed, 13 Jul 2011 14:48:34 +0100, Jonathan Cameron <jic23@cam.ac.uk> wrote:
+> > Here's an interface that I think should work,
+> > 
+> > 	int ida_get(struct ida *ida, int begin, int end, gfp_t gfp);
+> > 
+> > It uses an internal spinlock, returns the allocated ID and @end <= 0
+> > indicates no limit.
+> Cool.
 > 
-> * Jan Beulich <JBeulich@novell.com> wrote:
-> 
->> Without this change, the majority of the raw PCI config space access
->> functions silently ignore a non-zero segment argument, which is
->> certainly wrong.
->> 
->> Apart from pci_direct_conf1, all other non-MMCFG access methods get
->> used only for non-extended accesses (i.e. assigned to raw_pci_ops
->> only). Consequently, with the way raw_pci_{read,write}() work, it would
->> be a coding error to call these functions with a non-zero segment (with
->> the current call flow this cannot happen afaict).
->> 
->> 
->> Signed-off-by: Jan Beulich <jbeulich@novell.com>
->> 
->> ---
->>  arch/x86/pci/ce4100.c   |    4 ++++
->>  arch/x86/pci/direct.c   |    6 ++++--
->>  arch/x86/pci/numaq_32.c |    2 ++
->>  arch/x86/pci/olpc.c     |    4 ++++
->>  arch/x86/pci/pcbios.c   |    2 ++
->>  5 files changed, 16 insertions(+), 2 deletions(-)
->> 
->> --- 3.0-rc7/arch/x86/pci/ce4100.c
->> +++ 3.0-rc7-x86-pci-access-seg/arch/x86/pci/ce4100.c
->> @@ -257,6 +257,8 @@ static int ce4100_conf_read(unsigned int
->>  {
->>  	int i;
->>  
->> +	BUG_ON(seg);
->> +
->>  	if (bus == 1) {
->>  		for (i = 0; i < ARRAY_SIZE(bus1_fixups); i++) {
->>  			if (bus1_fixups[i].dev_func == devfn &&
->> @@ -282,6 +284,8 @@ static int ce4100_conf_write(unsigned in
->>  {
->>  	int i;
->>  
->> +	BUG_ON(seg);
->> +
->>  	if (bus == 1) {
->>  		for (i = 0; i < ARRAY_SIZE(bus1_fixups); i++) {
->>  			if (bus1_fixups[i].dev_func == devfn &&
->> --- 3.0-rc7/arch/x86/pci/direct.c
->> +++ 3.0-rc7-x86-pci-access-seg/arch/x86/pci/direct.c
->> @@ -22,7 +22,7 @@ static int pci_conf1_read(unsigned int s
->>  {
->>  	unsigned long flags;
->>  
->> -	if ((bus > 255) || (devfn > 255) || (reg > 4095)) {
->> +	if (seg || (bus > 255) || (devfn > 255) || (reg > 4095)) {
->>  		*value = -1;
->>  		return -EINVAL;
->>  	}
->> @@ -53,7 +53,7 @@ static int pci_conf1_write(unsigned int
->>  {
->>  	unsigned long flags;
->>  
->> -	if ((bus > 255) || (devfn > 255) || (reg > 4095))
->> +	if (seg || (bus > 255) || (devfn > 255) || (reg > 4095))
->>  		return -EINVAL;
->>  
->>  	raw_spin_lock_irqsave(&pci_config_lock, flags);
->> @@ -97,6 +97,7 @@ static int pci_conf2_read(unsigned int s
->>  	unsigned long flags;
->>  	int dev, fn;
->>  
->> +	BUG_ON(seg);
->>  	if ((bus > 255) || (devfn > 255) || (reg > 255)) {
->>  		*value = -1;
->>  		return -EINVAL;
->> @@ -138,6 +139,7 @@ static int pci_conf2_write(unsigned int
->>  	unsigned long flags;
->>  	int dev, fn;
->>  
->> +	BUG_ON(seg);
->>  	if ((bus > 255) || (devfn > 255) || (reg > 255)) 
->>  		return -EINVAL;
->>  
->> --- 3.0-rc7/arch/x86/pci/numaq_32.c
->> +++ 3.0-rc7-x86-pci-access-seg/arch/x86/pci/numaq_32.c
->> @@ -34,6 +34,7 @@ static int pci_conf1_mq_read(unsigned in
->>  	unsigned long flags;
->>  	void *adr __iomem = XQUAD_PORT_ADDR(0xcfc, BUS2QUAD(bus));
->>  
->> +	BUG_ON(seg);
->>  	if (!value || (bus >= MAX_MP_BUSSES) || (devfn > 255) || (reg > 255))
->>  		return -EINVAL;
->>  
->> @@ -73,6 +74,7 @@ static int pci_conf1_mq_write(unsigned i
->>  	unsigned long flags;
->>  	void *adr __iomem = XQUAD_PORT_ADDR(0xcfc, BUS2QUAD(bus));
->>  
->> +	BUG_ON(seg);
->>  	if ((bus >= MAX_MP_BUSSES) || (devfn > 255) || (reg > 255)) 
->>  		return -EINVAL;
->>  
->> --- 3.0-rc7/arch/x86/pci/olpc.c
->> +++ 3.0-rc7-x86-pci-access-seg/arch/x86/pci/olpc.c
->> @@ -206,6 +206,8 @@ static int pci_olpc_read(unsigned int se
->>  {
->>  	uint32_t *addr;
->>  
->> +	BUG_ON(seg);
->> +
->>  	/* Use the hardware mechanism for non-simulated devices */
->>  	if (!is_simulated(bus, devfn))
->>  		return pci_direct_conf1.read(seg, bus, devfn, reg, len, value);
->> @@ -264,6 +266,8 @@ static int pci_olpc_read(unsigned int se
->>  static int pci_olpc_write(unsigned int seg, unsigned int bus,
->>  		unsigned int devfn, int reg, int len, uint32_t value)
->>  {
->> +	BUG_ON(seg);
->> +
->>  	/* Use the hardware mechanism for non-simulated devices */
->>  	if (!is_simulated(bus, devfn))
->>  		return pci_direct_conf1.write(seg, bus, devfn, reg, len, value);
->> --- 3.0-rc7/arch/x86/pci/pcbios.c
->> +++ 3.0-rc7-x86-pci-access-seg/arch/x86/pci/pcbios.c
->> @@ -181,6 +181,7 @@ static int pci_bios_read(unsigned int se
->>  	unsigned long flags;
->>  	unsigned long bx = (bus << 8) | devfn;
->>  
->> +	BUG_ON(seg);
->>  	if (!value || (bus > 255) || (devfn > 255) || (reg > 255))
->>  		return -EINVAL;
->>  
->> @@ -247,6 +248,7 @@ static int pci_bios_write(unsigned int s
->>  	unsigned long flags;
->>  	unsigned long bx = (bus << 8) | devfn;
->>  
->> +	BUG_ON(seg);
->>  	if ((bus > 255) || (devfn > 255) || (reg > 255)) 
->>  		return -EINVAL;
-> 
-> Not sure we want a BUG_ON() which crashes the box - wouldn't a 
-> WARN_ON() suffice?
+> Rusty, are you pursuing this?  Approach looks sensible to me.
 
-I can certainly convert it to a WARN_ON(), but it in fact *is* a bug if
-these get called with a non-zero segment (as code path analysis says
-that this is currently impossible unless the functions got called directly).
-Please let me know what you prefer.
+Yep, here's my latest version.  Feel free to run with it, or not.
 
-> also, the analysis/explanation is a bit incomplete:
-> 
->> The access method 1 accessor, as it can be used for extended accesses
->> (on AMD systems) instead gets added checks for the passed in segment to
->> be zero (returning an error just like out of range values of the other
->> arguments would cause).
-> 
-> Under what circumstances can this trigger in practice, with the 
-> current code?
+Thanks!
+Rusty.
 
-I really don't know whether multi-segment PCI systems with AMD CPUs
-are existing in practice. If they do, and if MMCFG cannot be used there
-for whatever reason, accesses to segments other than zero would get
-issued to the wrong device(s). I would have thought that this is what
-the paragraph above says, but I certainly can add this more explicit
-description...
+From: Rusty Russell <rusty@rustcorp.com.au>
+Subject: ida: Simplified functions for id allocation.
 
-Jan
+The current hyper-optimized functions are overkill if you simply want
+to allocate an id for a device.  Create versions which use an internal
+lock.
+
+Thanks to Tejun for feedback.  Feel free to delete the #ifdef TEST
+code.
+
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+---
+ include/linux/idr.h |    4 +
+ lib/idr.c           |  116 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 120 insertions(+)
+
+diff --git a/include/linux/idr.h b/include/linux/idr.h
+--- a/include/linux/idr.h
++++ b/include/linux/idr.h
+@@ -146,6 +146,10 @@ void ida_remove(struct ida *ida, int id)
+ void ida_destroy(struct ida *ida);
+ void ida_init(struct ida *ida);
+ 
++int ida_simple_get(struct ida *ida, unsigned int start, unsigned int end,
++		   gfp_t gfp_mask);
++void ida_simple_remove(struct ida *ida, unsigned int id);
++
+ void __init idr_init_cache(void);
+ 
+ #endif /* __IDR_H__ */
+diff --git a/lib/idr.c b/lib/idr.c
+--- a/lib/idr.c
++++ b/lib/idr.c
+@@ -34,8 +34,10 @@
+ #include <linux/err.h>
+ #include <linux/string.h>
+ #include <linux/idr.h>
++#include <linux/spinlock.h>
+ 
+ static struct kmem_cache *idr_layer_cache;
++static DEFINE_SPINLOCK(simple_ida);
+ 
+ static struct idr_layer *get_from_free_list(struct idr *idp)
+ {
+@@ -926,6 +928,120 @@ void ida_destroy(struct ida *ida)
+ EXPORT_SYMBOL(ida_destroy);
+ 
+ /**
++ * ida_simple_get - get a new id.
++ * @ida: the (initialized) ida.
++ * @start: the minimum id (inclusive, < 0x8000000)
++ * @end: the maximum id (exclusive, < 0x8000000 or 0)
++ * @gfp_mask: memory allocation flags
++ *
++ * Allocates an id in the range start <= id < end, or returns -ENOSPC.
++ * On memory allocation failure, returns -ENOMEM.
++ *
++ * Use ida_simple_remove() to get rid of an id.
++ */
++int ida_simple_get(struct ida *ida, unsigned int start, unsigned int end,
++		   gfp_t gfp_mask)
++{
++	int ret, id;
++	unsigned int max;
++
++	BUG_ON((int)start < 0);
++	BUG_ON((int)end < 0);
++
++	if (end == 0)
++		max = 0x80000000;
++	else {
++		BUG_ON(end < start);
++		max = end - 1;
++	}
++
++again:
++	if (!ida_pre_get(ida, gfp_mask))
++		return -ENOMEM;
++
++	spin_lock(&simple_ida);
++	ret = ida_get_new_above(ida, start, &id);
++	if (!ret) {
++		if (id > max) {
++			ida_remove(ida, id);
++			ret = -ENOSPC;
++		} else {
++			ret = id;
++		}
++	}
++	spin_unlock(&simple_ida);
++
++	if (unlikely(ret == -EAGAIN))
++		goto again;
++
++	return ret;
++}
++EXPORT_SYMBOL(ida_simple_get);
++
++/**
++ * ida_simple_remove - remove an allocated id.
++ * @ida: the (initialized) ida.
++ * @id: the id returned by ida_simple_get.
++ */
++void ida_simple_remove(struct ida *ida, unsigned int id)
++{
++	BUG_ON((int)id < 0);
++	spin_lock(&simple_ida);
++	ida_remove(ida, id);
++	spin_unlock(&simple_ida);
++}
++EXPORT_SYMBOL(ida_simple_remove);
++
++#ifdef TEST
++static int test_ida_simple(void)
++{
++	int i;
++	DEFINE_IDA(ida);
++
++	/* Simple range 0..0. */
++	i = ida_simple_get(&ida, 0, 1, GFP_KERNEL);
++	BUG_ON(i != 0);
++	i = ida_simple_get(&ida, 0, 1, GFP_KERNEL);
++	BUG_ON(i != -ENOSPC);
++	ida_simple_remove(&ida, 0);
++	i = ida_simple_get(&ida, 0, 1, GFP_KERNEL);
++	BUG_ON(i != 0);
++
++	/* Empty range. */
++	i = ida_simple_get(&ida, 0x7FFFFFFE, 0x7FFFFFFE, GFP_KERNEL);
++	BUG_ON(i != -ENOSPC);
++
++	/* Top of range. */
++	i = ida_simple_get(&ida, 0x7FFFFFFE, 0x7FFFFFFF, GFP_KERNEL);
++	BUG_ON(i != 0x7FFFFFFE);
++	i = ida_simple_get(&ida, 0x7FFFFFFE, 0x7FFFFFFF, GFP_KERNEL);
++	BUG_ON(i != -ENOSPC);
++	ida_simple_remove(&ida, 0x7FFFFFFE);
++
++	/* End of range testing. */
++	i = ida_simple_get(&ida, 0x7FFFFFFE, 0, GFP_KERNEL);
++	BUG_ON(i != 0x7FFFFFFE);
++
++	i = ida_simple_get(&ida, 0x7FFFFFFE, 0, GFP_KERNEL);
++	BUG_ON(i != 0x7FFFFFFF);
++
++	i = ida_simple_get(&ida, 0x7FFFFFFE, 0, GFP_KERNEL);
++	BUG_ON(i != -ENOSPC);
++
++	/* Remove works. */
++	i = ida_simple_get(&ida, 0x7FFFFFFD, 0, GFP_KERNEL);
++	BUG_ON(i != 0x7FFFFFFD);
++
++	ida_simple_remove(&ida, 0x7FFFFFFE);
++	i = ida_simple_get(&ida, 0x7FFFFFFD, 0, GFP_KERNEL);
++	BUG_ON(i != 0x7FFFFFFE);
++
++	ida_destroy(&ida);
++	return 0;
++}
++#endif
++
++/**
+  * ida_init - initialize ida handle
+  * @ida:	ida handle
+  *
