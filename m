@@ -1,42 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753161Ab1GUQIV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 12:08:21 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:61766 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752762Ab1GUQIT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 12:08:19 -0400
-From: Marek Vasut <marek.vasut@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, kernel@pengutronix.de,
-        Marek Vasut <marek.vasut@gmail.com>
-Subject: [PATCH] iMX28: Fix emi_ddr_open pinmux
-Date: Thu, 21 Jul 2011 18:08:10 +0200
-Message-Id: <1311264490-5485-1-git-send-email-marek.vasut@gmail.com>
-X-Mailer: git-send-email 1.7.5.3
+	id S1753037Ab1GUQKK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 12:10:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50277 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752762Ab1GUQKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 12:10:07 -0400
+Date: Thu, 21 Jul 2011 17:09:59 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        P?draig Brady <P@draigBrady.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Colin King <colin.king@canonical.com>,
+        Andrew Lutomirski <luto@mit.edu>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] Stop kswapd consuming 100% CPU when highest zone is
+ small
+Message-ID: <20110721160958.GT5349@suse.de>
+References: <1308926697-22475-1-git-send-email-mgorman@suse.de>
+ <20110721153722.GD1713@barrios-desktop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110721153722.GD1713@barrios-desktop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Marek Vasut <marek.vasut@gmail.com>
----
- arch/arm/mach-mxs/include/mach/iomux-mx28.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On Fri, Jul 22, 2011 at 12:37:22AM +0900, Minchan Kim wrote:
+> On Fri, Jun 24, 2011 at 03:44:53PM +0100, Mel Gorman wrote:
+> > (Built this time and passed a basic sniff-test.)
+> > 
+> > During allocator-intensive workloads, kswapd will be woken frequently
+> > causing free memory to oscillate between the high and min watermark.
+> > This is expected behaviour.  Unfortunately, if the highest zone is
+> > small, a problem occurs.
+> > 
+> > This seems to happen most with recent sandybridge laptops but it's
+> > probably a co-incidence as some of these laptops just happen to have
+> > a small Normal zone. The reproduction case is almost always during
+> > copying large files that kswapd pegs at 100% CPU until the file is
+> > deleted or cache is dropped.
+> > 
+> > The problem is mostly down to sleeping_prematurely() keeping kswapd
+> > awake when the highest zone is small and unreclaimable and compounded
+> > by the fact we shrink slabs even when not shrinking zones causing a lot
+> > of time to be spent in shrinkers and a lot of memory to be reclaimed.
+> > 
+> > Patch 1 corrects sleeping_prematurely to check the zones matching
+> > 	the classzone_idx instead of all zones.
+> > 
+> > Patch 2 avoids shrinking slab when we are not shrinking a zone.
+> > 
+> > Patch 3 notes that sleeping_prematurely is checking lower zones against
+> > 	a high classzone which is not what allocators or balance_pgdat()
+> > 	is doing leading to an artifical believe that kswapd should be
+> > 	still awake.
+> > 
+> > Patch 4 notes that when balance_pgdat() gives up on a high zone that the
+> > 	decision is not communicated to sleeping_prematurely()
+> > 
+> > This problem affects 2.6.38.8 for certain and is expected to affect
+> > 2.6.39 and 3.0-rc4 as well. If accepted, they need to go to -stable
+> > to be picked up by distros and this series is against 3.0-rc4. I've
+> > cc'd people that reported similar problems recently to see if they
+> > still suffer from the problem and if this fixes it.
+> > 
+> 
+> Good!
+> This patch solved the problem.
+> But there is still a mystery.
+> 
+> In log, we could see excessive shrink_slab calls.
 
-diff --git a/arch/arm/mach-mxs/include/mach/iomux-mx28.h b/arch/arm/mach-mxs/include/mach/iomux-mx28.h
-index f50fefd..1a95ecd 100644
---- a/arch/arm/mach-mxs/include/mach/iomux-mx28.h
-+++ b/arch/arm/mach-mxs/include/mach/iomux-mx28.h
-@@ -203,7 +203,7 @@
- #define MX28_PAD_EMI_WEN__EMI_WEN			MXS_IOMUX_PAD_NAKED(6, 21, PAD_MUXSEL_0)
- #define MX28_PAD_EMI_CE0N__EMI_CE0N			MXS_IOMUX_PAD_NAKED(6, 22, PAD_MUXSEL_0)
- #define MX28_PAD_EMI_CE1N__EMI_CE1N			MXS_IOMUX_PAD_NAKED(6, 23, PAD_MUXSEL_0)
--#define MX28_PAD_EMI_CKE__EMI_CKE			MXS_IOMUX_PAD_NAKED(6, 24, PAD_MUXSEL_0)
-+#define MX28_PAD_EMI_CKE__EMI_CKE			MXS_IOMUX_PAD_NAKED(6, 26, PAD_MUXSEL_0)
- 
- /* MUXSEL_1 */
- #define MX28_PAD_GPMI_D00__SSP1_D0			MXS_IOMUX_PAD_NAKED(0,  0, PAD_MUXSEL_1)
+Yes, because shrink_slab() was called on each loop through
+balance_pgdat() even if the zone was balanced.
+
+
+> And as you know, we had merged patch which adds cond_resched where last of the function
+> in shrink_slab. So other task should get the CPU and we should not see
+> 100% CPU of kswapd, I think.
+> 
+
+cond_resched() is not a substitute for going to sleep.
+
 -- 
-1.7.5.3
-
+Mel Gorman
+SUSE Labs
