@@ -1,57 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751724Ab1GUE1R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 00:27:17 -0400
-Received: from mga14.intel.com ([143.182.124.37]:8660 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751207Ab1GUE1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 00:27:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,239,1309762800"; 
-   d="scan'208";a="29731461"
-Message-ID: <4E27AA99.4000102@intel.com>
-Date: Thu, 21 Jul 2011 12:27:05 +0800
-From: Huang Ying <ying.huang@intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110626 Iceowl/1.0b2 Icedove/3.1.11
+	id S1751131Ab1GUEq0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 00:46:26 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:5366 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750704Ab1GUEqX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 00:46:23 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=gOseri+pYAeC0Iy56vTfv515QW24Cu/igBo46z4WGZgeM3/KNMDiIeax6RHeS5Ibi
+	0rLuW8TtRxUrrnC3kIYNA==
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Len Brown <lenb@kernel.org>,
+In-Reply-To: <4E277AB3.5000100@intel.com>
+References: <1311149369-20624-1-git-send-email-ying.huang@intel.com>
+ <CAErSpo5-PrZ-do7HqM=2zV8cGibj0bkpFaHtmeRUJmMRZGfTWw@mail.gmail.com> <4E277AB3.5000100@intel.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 20 Jul 2011 22:46:00 -0600
+Message-ID: <CAErSpo4m-dWS=vfkjeTfTcMyOP-nQDgqEbCPtKVEwNpTUFd+YQ@mail.gmail.com>
+Subject: Re: [BUGFIX] ACPI, APEI, EINJ Param support is disabled by default
+To: Huang Ying <ying.huang@intel.com>
+Cc: Len Brown <lenb@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Luck, Tony" <tony.luck@intel.com>,
+        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
         "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
         Matthew Garrett <mjg@redhat.com>
-Subject: Re: [BUGFIX] ACPI, APEI, EINJ Param support is disabled by default
-References: <1311149369-20624-1-git-send-email-ying.huang@intel.com> <20110721024204.GJ8006@one.firstfloor.org> <4E2794D5.1030104@intel.com> <20110721041610.GL8006@one.firstfloor.org>
-In-Reply-To: <20110721041610.GL8006@one.firstfloor.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/21/2011 12:16 PM, Andi Kleen wrote:
-> On Thu, Jul 21, 2011 at 10:54:13AM +0800, Huang Ying wrote:
->> On 07/21/2011 10:42 AM, Andi Kleen wrote:
->>>>  
->>>> +static bool param_extension;
->>>> +module_param(param_extension, bool, 0);
->>>
->>> Make it 0644, then it can be changed at runtime. No need to require a reboot.
+On Wed, Jul 20, 2011 at 7:02 PM, Huang Ying <ying.huang@intel.com> wrote:
+> On 07/20/2011 11:22 PM, Bjorn Helgaas wrote:
+>> On Wed, Jul 20, 2011 at 2:09 AM, Huang Ying <ying.huang@intel.com> wrote:
+>>> EINJ parameter support is only usable for some specific BIOS.
+>>> Originally, it is expected to have no harm for BIOS does not support
+>>> it.  But now, we found it will cause issue (memory overwriting) for
+>>> some BIOS.  So param support is disabled by default and only enabled
+>>> when newly added module parameter named "param_extension" is
+>>> explicitly specified.
 >>
->> Normally, EINJ is compiled as module, so we can change it at load time
->> without a reboot.
-> 
-> Ok. 
-> 
+>> Adding parameters always makes things harder for users.  Is there any
+>> way this could be done with a whitelist or other automatic mechanism?
+>
+> The only user of EINJ is RAS developer/tester.  So we adopt a simpler
+> solution.
+>
+>> Per 6e320ec1d98 (which added EINJ parameter support), parameters are
+>> an unpublished extension and are not part of the ACPI spec.  So if we
+>> pick up an MMIO address from a SET_ERROR_TYPE WRITE_REGISTER
+>> instruction and blindly fill in a structure (undefined by the spec)
+>> presumed to be at that address, it doesn't seem surprising that things
+>> will blow up on BIOSes that don't expect that behavior.  After all,
+>> the spec says to write to a generic address structure (not an
+>> einj_parameter structure) when we interpret the WRITE_REGISTER
+>> instruction (not at the magic time between SET_ERROR_TYPE and
+>> EXECUTE_OPERATION).
 >>
->> Do we need the real runtime switching capability?
-> 
-> I usually do that with modparams when it's possible. After all it's very
-> simple and doesn't cost anything.
+>> If EINJ parameter support is ever added to the ACPI spec, I would
+>> expect a new EINJ flag bit or similar indication to be added at the
+>> same time, so the OS would know when to use it.
+>
+> EINJ parameter support has not been added to ACPI spec, it may be added
+> in the future, and should has some way to indicate whether parameter is
+> supported.
+>
+>> Can you add a whitelist of BIOSes that do support this extension?
+>> Maybe you could define a GUID that future platforms could supply so
+>> you wouldn't have to update the whitelist for every new platform that
+>> supports it?
+>
+> IMHO, the EINJ will not be used by the ordinary users.  If so, can we
+> use a simpler solution such as that in this patch?
 
-To avoid confuse user, the param1/param2 files are created only if
-param_extension=y is specified.  So making modprams changeable in run
-time may make situation a little complex.
+It's not very clear to the code reader when this extension might be
+useful.  It's a bit of folklore that will have to be passed around via
+word-of-mouth.  If I want to modify the parameter code, I have no
+clues about what sort of machine I'd need to test it.
 
-Best Regards,
-Huang Ying
+What happens if you load this module on a machine that supports the
+extension, but you don't supply the module parameter?  I would expect
+problems in that case, too, because the BIOS is expecting parameters
+and we won't fill them in.
+
+But maybe you're right that this is so specialized that we shouldn't
+over-engineer it.
+
+Bjorn
