@@ -1,133 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773Ab1GUMm1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 08:42:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40083 "EHLO mx2.suse.de"
+	id S1752847Ab1GUMms (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 08:42:48 -0400
+Received: from mga11.intel.com ([192.55.52.93]:50182 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751888Ab1GUMm0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 08:42:26 -0400
-Date: Thu, 21 Jul 2011 14:42:23 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+	id S1752685Ab1GUMmp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 08:42:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,240,1309762800"; 
+   d="scan'208";a="32967950"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] memcg: get rid of percpu_charge_mutex lock
-Message-ID: <20110721124223.GE27855@tiehlicka.suse.cz>
-References: <cover.1311241300.git.mhocko@suse.cz>
- <2bfb2b7687c1a6b39da2a04689190725075cc4f8.1311241300.git.mhocko@suse.cz>
- <20110721193051.cd3266e5.kamezawa.hiroyu@jp.fujitsu.com>
- <20110721114704.GC27855@tiehlicka.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110721114704.GC27855@tiehlicka.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH 1/2] staging: vt6655: simplify MAC printing by using %pMF
+Date: Thu, 21 Jul 2011 15:42:15 +0300
+Message-Id: <c8400fbc4ad3a91885fcda0e080be0ae80fcf077.1311252059.git.andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 21-07-11 13:47:04, Michal Hocko wrote:
-> On Thu 21-07-11 19:30:51, KAMEZAWA Hiroyuki wrote:
-> > On Thu, 21 Jul 2011 09:58:24 +0200
-> > Michal Hocko <mhocko@suse.cz> wrote:
-[...]
-> > > --- a/mm/memcontrol.c
-> > > +++ b/mm/memcontrol.c
-> > > @@ -2166,7 +2165,8 @@ static void drain_all_stock(struct mem_cgroup *root_mem, bool sync)
-> > >  
-> > >  	for_each_online_cpu(cpu) {
-> > >  		struct memcg_stock_pcp *stock = &per_cpu(memcg_stock, cpu);
-> > > -		if (test_bit(FLUSHING_CACHED_CHARGE, &stock->flags))
-> > > +		if (root_mem == stock->cached &&
-> > > +				test_bit(FLUSHING_CACHED_CHARGE, &stock->flags))
-> > >  			flush_work(&stock->work);
-> > 
-> > Doesn't this new check handle hierarchy ?
-> > css_is_ancestor() will be required if you do this check.
-> 
-> Yes you are right. Will fix it. I will add a helper for the check.
-
-Here is the patch with the helper. The above will then read 
-	if (mem_cgroup_same_or_subtree(root_mem, stock->cached))
-
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 ---
->From b963a9f4dac61044daac49700f84b7819d7c2f53 Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Thu, 21 Jul 2011 13:54:13 +0200
-Subject: [PATCH] memcg: add mem_cgroup_same_or_subtree helper
+ drivers/staging/vt6655/device_main.c |   10 +-----
+ drivers/staging/vt6655/dpc.c         |   30 ++++----------------
+ drivers/staging/vt6655/wmgr.c        |   49 +++++++---------------------------
+ 3 files changed, 18 insertions(+), 71 deletions(-)
 
-We are checking whether a given two groups are same or at least in the
-same subtree of a hierarchy at several places. Let's make a helper for
-it to make code easier to read.
-
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- mm/memcontrol.c |   29 ++++++++++++++++++-----------
- 1 files changed, 18 insertions(+), 11 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 8180cd9..8dbb9d6 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1046,6 +1046,21 @@ void mem_cgroup_move_lists(struct page *page,
- 	mem_cgroup_add_lru_list(page, to);
- }
+diff --git a/drivers/staging/vt6655/device_main.c b/drivers/staging/vt6655/device_main.c
+index 3d2a9ba..0a1aa03 100644
+--- a/drivers/staging/vt6655/device_main.c
++++ b/drivers/staging/vt6655/device_main.c
+@@ -815,14 +815,8 @@ else  CARDbRadioPowerOn(pDevice);
+             pMgmt->eScanType = WMAC_SCAN_PASSIVE;
+     // get Permanent network address
+     SROMvReadEtherAddress(pDevice->PortOffset, pDevice->abyCurrentNetAddr);
+-    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Network address = %02x-%02x-%02x=%02x-%02x-%02x\n",
+-        pDevice->abyCurrentNetAddr[0],
+-        pDevice->abyCurrentNetAddr[1],
+-        pDevice->abyCurrentNetAddr[2],
+-        pDevice->abyCurrentNetAddr[3],
+-        pDevice->abyCurrentNetAddr[4],
+-        pDevice->abyCurrentNetAddr[5]);
+-
++	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Network address = %pMF\n",
++		pDevice->abyCurrentNetAddr);
  
-+/*
-+ * Checks whether given mem is same or in the root_mem's
-+ * hierarchy subtree
-+ */
-+static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_mem,
-+		struct mem_cgroup *mem)
-+{
-+	if (root_mem != mem) {
-+		return (root_mem->use_hierarchy &&
-+			css_is_ancestor(&mem->css, &root_mem->css));
-+	}
-+
-+	return true;
-+}
-+
- int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *mem)
- {
- 	int ret;
-@@ -1065,10 +1080,7 @@ int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *mem)
- 	 * enabled in "curr" and "curr" is a child of "mem" in *cgroup*
- 	 * hierarchy(even if use_hierarchy is disabled in "mem").
- 	 */
--	if (mem->use_hierarchy)
--		ret = css_is_ancestor(&curr->css, &mem->css);
--	else
--		ret = (curr == mem);
-+	ret = mem_cgroup_same_or_subtree(mem, curr);
- 	css_put(&curr->css);
- 	return ret;
- }
-@@ -2150,13 +2162,8 @@ static void drain_all_stock(struct mem_cgroup *root_mem, bool sync)
- 		mem = stock->cached;
- 		if (!mem || !stock->nr_pages)
- 			continue;
--		if (mem != root_mem) {
--			if (!root_mem->use_hierarchy)
--				continue;
--			/* check whether "mem" is under tree of "root_mem" */
--			if (!css_is_ancestor(&mem->css, &root_mem->css))
--				continue;
--		}
-+		if (!mem_cgroup_same_or_subtree(root_mem, mem))
-+			continue;
- 		if (!test_and_set_bit(FLUSHING_CACHED_CHARGE, &stock->flags))
- 			schedule_work_on(cpu, &stock->work);
- 	}
+     // reset Tx pointer
+     CARDvSafeResetRx(pDevice);
+diff --git a/drivers/staging/vt6655/dpc.c b/drivers/staging/vt6655/dpc.c
+index cf0deac..8ebbdbc 100644
+--- a/drivers/staging/vt6655/dpc.c
++++ b/drivers/staging/vt6655/dpc.c
+@@ -1107,30 +1107,12 @@ static bool s_bAPModeRxCtl (
+                                        &Status
+                                        );
+                     DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "dpc: send vMgrDeAuthenBeginSta 3\n");
+-                    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "BSSID:%02x-%02x-%02x=%02x-%02x-%02x \n",
+-                                p802_11Header->abyAddr3[0],
+-                                p802_11Header->abyAddr3[1],
+-                                p802_11Header->abyAddr3[2],
+-                                p802_11Header->abyAddr3[3],
+-                                p802_11Header->abyAddr3[4],
+-                                p802_11Header->abyAddr3[5]
+-                               );
+-                    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "ADDR2:%02x-%02x-%02x=%02x-%02x-%02x \n",
+-                                p802_11Header->abyAddr2[0],
+-                                p802_11Header->abyAddr2[1],
+-                                p802_11Header->abyAddr2[2],
+-                                p802_11Header->abyAddr2[3],
+-                                p802_11Header->abyAddr2[4],
+-                                p802_11Header->abyAddr2[5]
+-                               );
+-                    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "ADDR1:%02x-%02x-%02x=%02x-%02x-%02x \n",
+-                                p802_11Header->abyAddr1[0],
+-                                p802_11Header->abyAddr1[1],
+-                                p802_11Header->abyAddr1[2],
+-                                p802_11Header->abyAddr1[3],
+-                                p802_11Header->abyAddr1[4],
+-                                p802_11Header->abyAddr1[5]
+-                               );
++			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "BSSID:%pMF\n",
++				p802_11Header->abyAddr3);
++			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "ADDR2:%pMF\n",
++				p802_11Header->abyAddr2);
++			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "ADDR1:%pMF\n",
++				p802_11Header->abyAddr1);
+                     DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "dpc: wFrameCtl= %x\n", p802_11Header->wFrameCtl );
+                     VNSvInPortB(pDevice->PortOffset + MAC_REG_RCR, &(pDevice->byRxMode));
+                     DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "dpc:pDevice->byRxMode = %x\n", pDevice->byRxMode );
+diff --git a/drivers/staging/vt6655/wmgr.c b/drivers/staging/vt6655/wmgr.c
+index ab289c3..96cafd3 100644
+--- a/drivers/staging/vt6655/wmgr.c
++++ b/drivers/staging/vt6655/wmgr.c
+@@ -2521,14 +2521,8 @@ vMgrCreateOwnIBSS(
+     if (pMgmt->eCurrMode == WMAC_MODE_ESS_AP) {
+         // AP mode BSSID = MAC addr
+         memcpy(pMgmt->abyCurrBSSID, pMgmt->abyMACAddr, WLAN_ADDR_LEN);
+-        DBG_PRT(MSG_LEVEL_INFO, KERN_INFO"AP beacon created BSSID:%02x-%02x-%02x-%02x-%02x-%02x \n",
+-                      pMgmt->abyCurrBSSID[0],
+-                      pMgmt->abyCurrBSSID[1],
+-                      pMgmt->abyCurrBSSID[2],
+-                      pMgmt->abyCurrBSSID[3],
+-                      pMgmt->abyCurrBSSID[4],
+-                      pMgmt->abyCurrBSSID[5]
+-                    );
++	DBG_PRT(MSG_LEVEL_INFO, KERN_INFO"AP beacon created BSSID:%pMF\n",
++		pMgmt->abyCurrBSSID);
+     }
+ 
+     if (pMgmt->eCurrMode == WMAC_MODE_IBSS_STA) {
+@@ -2550,14 +2544,8 @@ vMgrCreateOwnIBSS(
+         pMgmt->abyCurrBSSID[0] |= IEEE_ADDR_UNIVERSAL;
+ 
+ 
+-        DBG_PRT(MSG_LEVEL_INFO, KERN_INFO"Adhoc beacon created bssid:%02x-%02x-%02x-%02x-%02x-%02x \n",
+-                      pMgmt->abyCurrBSSID[0],
+-                      pMgmt->abyCurrBSSID[1],
+-                      pMgmt->abyCurrBSSID[2],
+-                      pMgmt->abyCurrBSSID[3],
+-                      pMgmt->abyCurrBSSID[4],
+-                      pMgmt->abyCurrBSSID[5]
+-                    );
++	DBG_PRT(MSG_LEVEL_INFO, KERN_INFO"Adhoc beacon created bssid:%pMF\n",
++		pMgmt->abyCurrBSSID);
+     }
+ 
+     // Set Capability Info
+@@ -2887,14 +2875,8 @@ vMgrJoinBSSBegin(
+ //            pDevice->bLinkPass = true;
+ //            memcpy(pDevice->abyBSSID, pCurr->abyBSSID, WLAN_BSSID_LEN);
+ 
+-            DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Join IBSS ok:%02x-%02x-%02x-%02x-%02x-%02x \n",
+-                  pMgmt->abyCurrBSSID[0],
+-                  pMgmt->abyCurrBSSID[1],
+-                  pMgmt->abyCurrBSSID[2],
+-                  pMgmt->abyCurrBSSID[3],
+-                  pMgmt->abyCurrBSSID[4],
+-                  pMgmt->abyCurrBSSID[5]
+-                );
++		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Join IBSS ok:%pMF\n",
++			pMgmt->abyCurrBSSID);
+             // Preamble type auto-switch: if AP can receive short-preamble cap,
+             // and if registry setting is short preamble we can turn on too.
+ 
+@@ -2984,13 +2966,8 @@ s_vMgrSynchBSS (
+ 
+     MACvReadBSSIDAddress(pDevice->PortOffset, pMgmt->abyCurrBSSID);
+ 
+-    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Sync:set CurrBSSID address = %02x-%02x-%02x=%02x-%02x-%02x\n",
+-        pMgmt->abyCurrBSSID[0],
+-        pMgmt->abyCurrBSSID[1],
+-        pMgmt->abyCurrBSSID[2],
+-        pMgmt->abyCurrBSSID[3],
+-        pMgmt->abyCurrBSSID[4],
+-        pMgmt->abyCurrBSSID[5]);
++	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Sync:set CurrBSSID address = "
++		"%pMF\n", pMgmt->abyCurrBSSID);
+ 
+     if (pCurr->eNetworkTypeInUse == PHY_TYPE_11A) {
+         if ((pMgmt->eConfigPHYMode == PHY_TYPE_11A) ||
+@@ -4462,14 +4439,8 @@ s_vMgrRxProbeRequest(
+         sFrame.pBuf = (unsigned char *)pRxPacket->p80211Header;
+         vMgrDecodeProbeRequest(&sFrame);
+ /*
+-        DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Probe request rx:MAC addr:%02x-%02x-%02x=%02x-%02x-%02x \n",
+-                  sFrame.pHdr->sA3.abyAddr2[0],
+-                  sFrame.pHdr->sA3.abyAddr2[1],
+-                  sFrame.pHdr->sA3.abyAddr2[2],
+-                  sFrame.pHdr->sA3.abyAddr2[3],
+-                  sFrame.pHdr->sA3.abyAddr2[4],
+-                  sFrame.pHdr->sA3.abyAddr2[5]
+-                );
++	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Probe request rx:MAC addr:%pMF\n",
++		sFrame.pHdr->sA3.abyAddr2);
+ */
+         if (sFrame.pSSID->len != 0) {
+             if (sFrame.pSSID->len != ((PWLAN_IE_SSID)pMgmt->abyCurrSSID)->len)
 -- 
 1.7.5.4
 
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
