@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753066Ab1GUMy1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 08:54:27 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:59707 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752865Ab1GUMyZ convert rfc822-to-8bit (ORCPT
+	id S1752875Ab1GUNAx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 09:00:53 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:42045 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751888Ab1GUNAw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 08:54:25 -0400
-Subject: Re: 2.6.32.21 - uptime related crashes?
-From: Peter Zijlstra <peterz@infradead.org>
-To: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
-Cc: Ingo Molnar <mingo@elte.hu>, john stultz <johnstul@us.ibm.com>,
-        Willy Tarreau <w@1wt.eu>, MINOURA Makoto <minoura@valinux.co.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Faidon Liambotis <paravoid@debian.org>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, seto.hidetoshi@jp.fujitsu.com,
-        =?ISO-8859-1?Q?Herv=E9?= Commowick <hcommowick@exosec.fr>,
-        Rand@jasper.es
-In-Reply-To: <20110721125008.GF11246@pcnci.linuxbox.cz>
-References: <BANLkTi=22QFrJ4vO7-3VuHU=9Cg39bxJ4Q@mail.gmail.com>
-	 <20110705231515.95bc758f.akpm@linux-foundation.org>
-	 <kk5d3hgi9eh.fsf@brer.local.valinux.co.jp>
-	 <1310434819.30337.21.camel@work-vm> <20110712041938.GO27254@1wt.eu>
-	 <1310690138.3367.61.camel@work-vm> <1310724097.2586.296.camel@twins>
-	 <1310752795.2945.4.camel@work-vm> <20110721072256.GE9216@elte.hu>
-	 <1311251098.29152.130.camel@twins>
-	 <20110721125008.GF11246@pcnci.linuxbox.cz>
-Content-Type: text/plain; charset="UTF-8"
+	Thu, 21 Jul 2011 09:00:52 -0400
+MIME-Version: 1.0
+X-Originating-IP: [92.140.109.150]
+In-Reply-To: <20110721112331.GA15059@linuxaudio.org>
+References: <20110719143758.GA15283@linuxaudio.org> <CAFEhRJf-5U=cS3iptpvGEVSHV+S=aBF_mWfWkC_QMRty_WnoPA@mail.gmail.com>
+ <20110720131120.GA1836@linuxaudio.org> <CAFEhRJd9ZCSpx52S__vMdWK18mhMQrRoU9R5zNaZE=wksLRTvg@mail.gmail.com>
+ <20110720153023.GA11502@linuxaudio.org> <CAFEhRJczj=_B7fK7GvBEnqpB2GJGnCnGkoA2w5vzbFfM2wAGZw@mail.gmail.com>
+ <20110720163844.GB16901@linuxaudio.org> <CAG-2HqWqATSJ=oJTTvULXwPEG82yN+8e6GJFs759hPA-=krAOQ@mail.gmail.com>
+ <20110721100944.GA13971@linuxaudio.org> <CAG-2HqX23C79vfccnu0tMqx+6K9Z5pS0_HekaLizQx7XfkPQ1Q@mail.gmail.com>
+ <20110721112331.GA15059@linuxaudio.org>
+From: Tom Gundersen <teg@jklm.no>
+Date: Thu, 21 Jul 2011 15:00:32 +0200
+Message-ID: <CAG-2HqWK3x5-szkyzX8AMxuMpDZNVRXHYtQ0AkAPMsGcLK0Z9w@mail.gmail.com>
+Subject: Re: [arch-general] Panic - no sound devices after upgrade
+To: General Discussion about Arch Linux <arch-general@archlinux.org>,
+        Fons Adriaensen <fons@linuxaudio.org>
+Cc: Adrian Knoth <adi@drcomp.erfurt.thur.de>, Takashi Iwai <tiwai@suse.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Date: Thu, 21 Jul 2011 14:53:19 +0200
-Message-ID: <1311252799.29152.147.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-07-21 at 14:50 +0200, Nikola Ciprich wrote:
-> thanks for the patch! I'll put this on our testing boxes...
+Adrian, Takashi: I added you to cc, as you last touched this code,
+sorry if I should have cc'ed someone else. It appears that the HDSPM
+module does not recognise cards with firmware revision 0xCC:
 
-With a patch that frobs the starting value close to overflowing I hope,
-otherwise we'll not hear from you in like 7 months ;-)
+On Thu, Jul 21, 2011 at 1:23 PM, Fons Adriaensen <fons@linuxaudio.org> wrote:
+>>>>> * The driver for my card (RME HDSP MADI, snd_hdpsm) is loaded.
+>> > [   48.057757] HDSPM: unknown firmware revision cc
+[...]
+> Today I tried again downgrading the kernel to 2.6.37, to check if
+> the firmware revision error would occur. It doesn't.
+[...]
+> Tentative conclusion: the snd_hdspm driver in 2.6.39 is not OK.
 
-> Are You going to push this upstream so we can ask Greg to push this to
-> -stable? 
+Ah, I see. Thanks for the clarification. This means that the kernel is
+not able to recognise your card. Pre-.39 it would load anyway, but
+since .39 it gives the warning you posted and refuses to load. Your
+firmware revision is 0xCC, which is not recognised. If your card is
+MADI, the kernel expects the firmware revision to be 0xD2 (or starting
+in 3.0, it also accepts 0xCF).
 
-Yeah, I think we want to commit this with a -stable tag, Ingo?
+I guess this can be fixed easily by adding your firmware revision to
+the list of accepted revs.
+
+Adrian: is any more info needed to add this rev?
+
+Cheers,
+
+Tom
