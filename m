@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598Ab1GUSy7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 14:54:59 -0400
-Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:24729 "HELO
-	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753541Ab1GUSy5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 14:54:57 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 8RYuz.8VM1khB5RyKxJ6simU3UMu6cbYdlznsd3xiy3hWvG
- MwOCuZQ2pO3F6WgwghlvX8TBjnIHXvUYLkU5_nhO8z.NiPDtl1bIHbDjFE6m
- uo_h1gjB6dpyXNCEXkS5sXsw7FumDpHMtisA7tM7lfVMXtOajV7mNSSrSXNu
- IkMTNaRJiCGnoLRAeMNmFr4pyG8tTNr3rSsq7a263.qcvrZ1L6A61tkW1w9d
- ppRBwMuSSlM4opoL59ObG7qGj_6AvDXiJ2XDzKAHthBKPKcfsygEsEYjqGEt
- MxPF3sNZuPDgsuw1sRD5xwgCRd0iKVM7X7eXKA.Ph0oWZopX1xfYPZBOSdh2
- KeJysXM4ziz4RvnAs9wgwY7H3
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Thu, 21 Jul 2011 13:54:54 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Rabin Vincent <rabin@rab.in>
-cc: penberg@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: "slub: Rework allocator fastpaths" and slub debugging
-In-Reply-To: <20110721184436.GA7474@debian>
-Message-ID: <alpine.DEB.2.00.1107211351250.3995@router.home>
-References: <20110721184436.GA7474@debian>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753617Ab1GUS5l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 14:57:41 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59415 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753523Ab1GUS5k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 14:57:40 -0400
+Date: Thu, 21 Jul 2011 11:57:17 -0700
+Message-Id: <201107211857.p6LIvHUM016199@tazenda.hos.anvin.org>
+From: "H. Peter Anvin" <hpa@zytor.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] x86 reboot quirks for 3.0-final
+Cc: <stable@kernel.org>, Daniel J Blueman <daniel.blueman@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Jul 2011, Rabin Vincent wrote:
+Hi Linus,
 
-> Enabling slub debugging on linux-next throws up continuous apparently
-> spurious "Redzone overwritten" reports, right from startup.  The start
-> of a boot log is below (the rest of the log has more such reports).
+A very last minute pull request containing only two reboot quirks.
 
-Hmmm... I moved the page lock into the cmpxchg_double simulation for the
-debug case after some complaints (last minute change). And now the
-updating of the redzone etc is outside of the page lock and therefore not
-synced... Somehow we need to move it into the critical section where the
-page lock is held. Thanks.
+The following changes since commit cf6ace16a3cd8b728fb0afa68368fd40bbeae19f:
 
+  Merge branch 'core-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip (2011-07-20 15:56:25 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-urgent-for-linus
+
+Daniel J Blueman (1):
+      x86: Make Dell Latitude E5420 use reboot=pci
+
+H. Peter Anvin (1):
+      x86: Make Dell Latitude E6420 use reboot=pci
+
+ arch/x86/kernel/reboot.c |   16 ++++++++++++++++
+ 1 files changed, 16 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index 14eed21..9242436 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -427,6 +427,22 @@ static struct dmi_system_id __initdata pci_reboot_dmi_table[] = {
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude E6320"),
+ 		},
+ 	},
++	{	/* Handle problems with rebooting on the Latitude E5420. */
++		.callback = set_pci_reboot,
++		.ident = "Dell Latitude E5420",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude E5420"),
++		},
++	},
++	{	/* Handle problems with rebooting on the Latitude E6420. */
++		.callback = set_pci_reboot,
++		.ident = "Dell Latitude E6420",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude E6420"),
++		},
++	},
+ 	{ }
+ };
+ 
