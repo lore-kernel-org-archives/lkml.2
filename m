@@ -1,75 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752252Ab1GUBCr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jul 2011 21:02:47 -0400
-Received: from mga09.intel.com ([134.134.136.24]:31260 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751924Ab1GUBCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jul 2011 21:02:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,238,1309762800"; 
-   d="scan'208";a="30112049"
-Message-ID: <4E277AB3.5000100@intel.com>
-Date: Thu, 21 Jul 2011 09:02:43 +0800
-From: Huang Ying <ying.huang@intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110626 Iceowl/1.0b2 Icedove/3.1.11
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Matthew Garrett <mjg@redhat.com>
-Subject: Re: [BUGFIX] ACPI, APEI, EINJ Param support is disabled by default
-References: <1311149369-20624-1-git-send-email-ying.huang@intel.com> <CAErSpo5-PrZ-do7HqM=2zV8cGibj0bkpFaHtmeRUJmMRZGfTWw@mail.gmail.com>
-In-Reply-To: <CAErSpo5-PrZ-do7HqM=2zV8cGibj0bkpFaHtmeRUJmMRZGfTWw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752331Ab1GUBFa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jul 2011 21:05:30 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:52597 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751934Ab1GUBF3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jul 2011 21:05:29 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=sHC0JvyxlaudlNaNv+ox61FvKSiwP+ArZ1AHmzI+CBhSL2AOxp4Men8NlT9970EKq
+	b/VJEj0zwS93yylDAXGmA==
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>
+Subject: [PATCH] trace: change CPU ring buffer state from tracing_cpumask
+Date: Wed, 20 Jul 2011 18:04:59 -0700
+Message-Id: <1311210299-12607-1-git-send-email-vnagarnaik@google.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/20/2011 11:22 PM, Bjorn Helgaas wrote:
-> On Wed, Jul 20, 2011 at 2:09 AM, Huang Ying <ying.huang@intel.com> wrote:
->> EINJ parameter support is only usable for some specific BIOS.
->> Originally, it is expected to have no harm for BIOS does not support
->> it.  But now, we found it will cause issue (memory overwriting) for
->> some BIOS.  So param support is disabled by default and only enabled
->> when newly added module parameter named "param_extension" is
->> explicitly specified.
-> 
-> Adding parameters always makes things harder for users.  Is there any
-> way this could be done with a whitelist or other automatic mechanism?
+According to Documentation/trace/ftrace.txt:
 
-The only user of EINJ is RAS developer/tester.  So we adopt a simpler
-solution.
+tracing_cpumask:
 
-> Per 6e320ec1d98 (which added EINJ parameter support), parameters are
-> an unpublished extension and are not part of the ACPI spec.  So if we
-> pick up an MMIO address from a SET_ERROR_TYPE WRITE_REGISTER
-> instruction and blindly fill in a structure (undefined by the spec)
-> presumed to be at that address, it doesn't seem surprising that things
-> will blow up on BIOSes that don't expect that behavior.  After all,
-> the spec says to write to a generic address structure (not an
-> einj_parameter structure) when we interpret the WRITE_REGISTER
-> instruction (not at the magic time between SET_ERROR_TYPE and
-> EXECUTE_OPERATION).
-> 
-> If EINJ parameter support is ever added to the ACPI spec, I would
-> expect a new EINJ flag bit or similar indication to be added at the
-> same time, so the OS would know when to use it.
+        This is a mask that lets the user only trace
+        on specified CPUS. The format is a hex string
+        representing the CPUS.
 
-EINJ parameter support has not been added to ACPI spec, it may be added
-in the future, and should has some way to indicate whether parameter is
-supported.
+The tracing_cpumask currently doesn't affect the tracing state of
+per-CPU ring buffers.
 
-> Can you add a whitelist of BIOSes that do support this extension?
-> Maybe you could define a GUID that future platforms could supply so
-> you wouldn't have to update the whitelist for every new platform that
-> supports it?
+This patch enables/disables CPU recording as its corresponding bit in
+tracing_cpumask is set/unset.
 
-IMHO, the EINJ will not be used by the ordinary users.  If so, can we
-use a simpler solution such as that in this patch?
+Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+---
+ kernel/trace/trace.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-Best Regards,
-Huang Ying
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index e8aa324..d8ed798 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2433,10 +2433,12 @@ tracing_cpumask_write(struct file *filp, const char __user *ubuf,
+ 		if (cpumask_test_cpu(cpu, tracing_cpumask) &&
+ 				!cpumask_test_cpu(cpu, tracing_cpumask_new)) {
+ 			atomic_inc(&global_trace.data[cpu]->disabled);
++			ring_buffer_record_disable_cpu(global_trace.buffer, cpu);
+ 		}
+ 		if (!cpumask_test_cpu(cpu, tracing_cpumask) &&
+ 				cpumask_test_cpu(cpu, tracing_cpumask_new)) {
+ 			atomic_dec(&global_trace.data[cpu]->disabled);
++			ring_buffer_record_enable_cpu(global_trace.buffer, cpu);
+ 		}
+ 	}
+ 	arch_spin_unlock(&ftrace_max_lock);
+-- 
+1.7.3.1
+
