@@ -1,69 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537Ab1GUSq5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 14:46:57 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:36919 "EHLO mx3.mail.elte.hu"
+	id S1753549Ab1GUSra (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 14:47:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48575 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752182Ab1GUSq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 14:46:56 -0400
-Date: Thu, 21 Jul 2011 20:45:25 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
-        john stultz <johnstul@us.ibm.com>, Willy Tarreau <w@1wt.eu>,
-        MINOURA Makoto <minoura@valinux.co.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Faidon Liambotis <paravoid@debian.org>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, seto.hidetoshi@jp.fujitsu.com,
-        =?iso-8859-1?Q?Herv=E9?= Commowick <hcommowick@exosec.fr>,
-        Rand@jasper.es
-Subject: Re: 2.6.32.21 - uptime related crashes?
-Message-ID: <20110721184524.GB381@elte.hu>
-References: <kk5d3hgi9eh.fsf@brer.local.valinux.co.jp>
- <1310434819.30337.21.camel@work-vm>
- <20110712041938.GO27254@1wt.eu>
- <1310690138.3367.61.camel@work-vm>
- <1310724097.2586.296.camel@twins>
- <1310752795.2945.4.camel@work-vm>
- <20110721072256.GE9216@elte.hu>
- <1311251098.29152.130.camel@twins>
- <20110721125008.GF11246@pcnci.linuxbox.cz>
- <1311252799.29152.147.camel@twins>
+	id S1752515Ab1GUSr3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 14:47:29 -0400
+Date: Thu, 21 Jul 2011 20:47:15 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf tools: Add support to install perf python extension
+Message-ID: <20110721184715.GA2425@jolsa.Belkin>
+References: <1311266726-20655-1-git-send-email-jolsa@redhat.com>
+ <20110721171148.GB24324@ghostprotocols.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1311252799.29152.147.camel@twins>
+In-Reply-To: <20110721171148.GB24324@ghostprotocols.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Thu, 2011-07-21 at 14:50 +0200, Nikola Ciprich wrote:
-> > thanks for the patch! I'll put this on our testing boxes...
+On Thu, Jul 21, 2011 at 02:11:48PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Thu, Jul 21, 2011 at 06:45:26PM +0200, Jiri Olsa escreveu:
+> > Changing the distutils to use their own default 'build'
+> > directory.
+> > 
+> > Such setup makes the install command simple, because using
+> > --build-lib and --build-temp does not seem to comply with
+> > the way the distutils' install commands expect it.
+> > 
+> > Also keeping the python/perf.so file, so it could be used
+> > for testing as of until now.
 > 
-> With a patch that frobs the starting value close to overflowing I hope,
-> otherwise we'll not hear from you in like 7 months ;-)
+> Yeah, I gave up when I couldn't get:
 > 
-> > Are You going to push this upstream so we can ask Greg to push this to
-> > -stable? 
+> $ make O=/tmp/build-dir-for-perf/ -C tools/perf/ install
 > 
-> Yeah, I think we want to commit this with a -stable tag, Ingo?
+> to work, does it now? Checking...
 
-yeah - and we also want a Reported-by tag and an explanation of how 
-it can crash and why it matters in practice. I can then stick it into 
-the urgent branch for Linus. (probably will only hit upstream in the 
-merge window though.)
+nope, I added install-python_ext since it installs to the
+python system lib area, and it could break standard install
 
-Thanks,
+I think there's a way to install python modules under $HOME,
+maybe we could do that if no DESTDIR is specified..
+I can add it later ;)
 
-	Ingo
+thanks,
+jirka
+
+> 
+> - Arnaldo
+>  
+> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> > ---
+> >  tools/perf/Makefile |   12 ++++++------
+> >  1 files changed, 6 insertions(+), 6 deletions(-)
+> > 
+> > diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> > index 940257b..9c82a56 100644
+> > --- a/tools/perf/Makefile
+> > +++ b/tools/perf/Makefile
+> > @@ -178,9 +178,8 @@ strip-libs = $(filter-out -l%,$(1))
+> >  
+> >  $(OUTPUT)python/perf.so: $(PYRF_OBJS)
+> >  	$(QUIET_GEN)CFLAGS='$(BASIC_CFLAGS)' $(PYTHON_WORD) util/setup.py \
+> > -	  --quiet build_ext \
+> > -	  --build-lib='$(OUTPUT)python' \
+> > -	  --build-temp='$(OUTPUT)python/temp'
+> > +	  --quiet build_ext; \
+> > +	cp $$(find build -name 'perf.so') python
+> >  #
+> >  # No Perl scripts right now:
+> >  #
+> > @@ -504,9 +503,7 @@ else
+> >  
+> >    PYTHON_WORD := $(call shell-wordify,$(PYTHON))
+> >  
+> > -  python-clean := $(PYTHON_WORD) util/setup.py clean \
+> > -    --build-lib='$(OUTPUT)python' \
+> > -    --build-temp='$(OUTPUT)python/temp'
+> > +  python-clean := $(PYTHON_WORD) util/setup.py --quiet clean -a; $(RM) -f python/perf.so
+> >  
+> >    ifdef NO_LIBPYTHON
+> >      $(call disable-python)
+> > @@ -863,6 +860,9 @@ install: all
+> >  	$(INSTALL) scripts/python/*.py -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/python'
+> >  	$(INSTALL) scripts/python/bin/* -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/python/bin'
+> >  
+> > +install-python_ext:
+> > +	$(PYTHON_WORD) util/setup.py --quiet install --root='/$(DESTDIR_SQ)'
+> > +
+> >  install-doc:
+> >  	$(MAKE) -C Documentation install
+> >  
+> > -- 
+> > 1.7.1
