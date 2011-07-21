@@ -1,170 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753135Ab1GUNVp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 09:21:45 -0400
-Received: from mail.cs.tu-berlin.de ([130.149.17.13]:64410 "EHLO
-	mail.cs.tu-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753005Ab1GUNVl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 09:21:41 -0400
-From: =?UTF-8?q?Jan=20H=2E=20Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
-To: Paul Turner <pjt@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Jan=20H=2E=20Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
-Subject: [PATCH RFC 3/3] sched: Handle on_list ancestor in list_add_leaf_cfs_rq()
-Date: Thu, 21 Jul 2011 15:20:23 +0200
-Message-Id: <1311254423-25484-4-git-send-email-schnhrr@cs.tu-berlin.de>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1311254423-25484-1-git-send-email-schnhrr@cs.tu-berlin.de>
-References: <CAPM31RLqq0hgdhoh3GA-38petKeE1zxcL=uJYba9o3yd+_7jjw@mail.gmail.com>
- <1311254423-25484-1-git-send-email-schnhrr@cs.tu-berlin.de>
+	id S1751041Ab1GUN0N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 09:26:13 -0400
+Received: from minas.ics.muni.cz ([147.251.4.40]:49030 "EHLO minas.ics.muni.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750799Ab1GUN0J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 09:26:09 -0400
+Date: Thu, 21 Jul 2011 15:26:27 +0200
+From: Lukas Hejtmanek <xhejtman@ics.muni.cz>
+To: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
+Cc: agk@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: request baset device mapper in Linux
+Message-ID: <20110721132627.GY7561@ics.muni.cz>
+References: <20110720082640.GZ7561@ics.muni.cz>
+ <4E280964.6070000@ct.jp.nec.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-2
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <4E280964.6070000@ct.jp.nec.com>
+X-echelon: NSA, CIA, CI5, MI5, FBI, KGB, BIS, Plutonium, Bin Laden, bomb
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Muni-Spam-TestIP: 147.251.17.147
+X-Muni-Envelope-From: xhejtman@anubis.ics.muni.cz
+X-Muni-Virus-Test: Clean
+X-Greylist: Sender succeeded SMTP AUTH authentication, not delayed by milter-greylist-3.0 (minas.ics.muni.cz [147.251.4.35]); Thu, 21 Jul 2011 15:25:55 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan H. Sch√∂nherr <schnhrr@cs.tu-berlin.de>
+On Thu, Jul 21, 2011 at 08:11:32PM +0900, Kiyoshi Ueda wrote:
+> I don't understand why you are saying request-based device-mapper makes
+> serious troubles.
+> BIO merging is done in the block layer.  Don't you see the same thing
+> if you use sd devices (/dev/sdX)?
 
-In the case of an on_list ancestor we may incorrectly place the child to
-the right of a great-ancestor on the list.
+no, if I use sd devices directly, it does not overload ksoftirqd and this is
+obvious. The problem with overloading ksoftirqd has roots in request based
+stuff in dm layer, in particular in dm_softirq_done() call. 
 
-Consider:
+> Also, what do you see with the latest upstream kernel (say, 3.0-rc7)?
 
-      A
-     / \     Here, t1A results in A->cfs_rq being on_list, however when
-    B  t1A   we start enqueuing from C this will not be visible.  This is
-   /         compounded by the fact that on_list expiration may also be out
-  C          of order, punching holes in the tree.
- /
-t1C
+I didn't check it with this kernel. I don't see many changes in request based
+stuff in dm.
 
-Prevent this by making additions to the leaf_cfs_rq_list position
-independent.
+> If you see your problem only with request-based device-mapper, please
+> elaborate about below:
+>     - end_clone_bio() has someting like quadratic complexity.
+>         * What do you mean the "quadratic complexity"?
 
-This is done by collecting additions to this list within the
-enqueue_task_fair() path until we reach the top or find an on_list
-ancestor. All additions are then spliced into the leaf_cfs_rq_list at
-once.
+end_clone_bio calls blk_update_request which calls __blk_recalc_rq_segments
+which has code:
+for_each_bio(bio) {
+        bio_for_each_segment(bv, bio, i) {
 
-The additions cannot be collected in a list with the normal means as
-this violates the RCU guarantee that the next pointer of an element
-always leads back to the list as long as there could be concurrent
-readers.  However, we are still allowed to modify the next pointer of
-deleted entries as long as we make sure that they eventually return to
-the list. That is, if we have to collect more than one entry in a row,
-it is legal to set the next-pointer of the first collected entry to the
-next one. (We can do this even without using *_rcu functions, as there
-are no new elements on that path.)
+in total, it seems that *whole* bio list is traversed again and again as some parts
+are done and some not which leads to comlexity O(n^2) with respect to number
+of bio and segments. But this is just wild guess. The real problem could be
+elsewhere.
 
-Suggested-by: Paul Turner <pjt@google.com>
-Signed-off-by: Jan H. Sch√∂nherr <schnhrr@cs.tu-berlin.de>
----
- kernel/sched_fair.c |   59 +++++++++++++++++++++++++++++++++-----------------
- 1 files changed, 39 insertions(+), 20 deletions(-)
+However, oprofile or sysprof show that ksoftirq spends most time in
+__blk_recalc_rq_segments().
 
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 433491c..f98b424 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -143,26 +143,41 @@ static inline struct cfs_rq *cpu_cfs_rq(struct cfs_rq *cfs_rq, int this_cpu)
- 	return cfs_rq->tg->cfs_rq[this_cpu];
- }
- 
--static inline void list_add_leaf_cfs_rq(struct cfs_rq *cfs_rq)
-+static inline void list_add_leaf_cfs_rq(struct cfs_rq *cfs_rq,
-+					struct list_head *leaf_segment)
- {
--	if (!cfs_rq->on_list) {
--		/*
--		 * Ensure we either appear before our parent (if already
--		 * enqueued) or force our parent to appear after us when it is
--		 * enqueued.  The fact that we always enqueue bottom-up
--		 * reduces this to two cases.
--		 */
--		if (cfs_rq->tg->parent &&
--		    cfs_rq->tg->parent->cfs_rq[cpu_of(rq_of(cfs_rq))]->on_list) {
--			list_add_rcu(&cfs_rq->leaf_cfs_rq_list,
--				&rq_of(cfs_rq)->leaf_cfs_rq_list);
--		} else {
--			list_add_tail_rcu(&cfs_rq->leaf_cfs_rq_list,
--				&rq_of(cfs_rq)->leaf_cfs_rq_list);
--		}
-+	if (cfs_rq->on_list)
-+		return;
- 
--		cfs_rq->on_list = 1;
-+	if (list_empty(leaf_segment)) {
-+		leaf_segment->next = &cfs_rq->leaf_cfs_rq_list;
-+		leaf_segment->prev = &cfs_rq->leaf_cfs_rq_list;
-+	} else {
-+		__list_link(leaf_segment->prev, &cfs_rq->leaf_cfs_rq_list);
-+		leaf_segment->prev = leaf_segment->prev->next;
- 	}
-+
-+	/*
-+	 * If our parent is on_list or if there is no parent, then splice all
-+	 * entries collected so far at the correct position into the
-+	 * leaf_cfs_rq_list.
-+	 *
-+	 * If our parent is not on the list, it will be collected during the
-+	 * next call to this function.
-+	 */
-+	if (cfs_rq->tg->parent) {
-+		int cpu = cpu_of(rq_of(cfs_rq));
-+		struct cfs_rq *parent_cfs_rq = cfs_rq->tg->parent->cfs_rq[cpu];
-+		if (parent_cfs_rq->on_list) {
-+			list_splice_tail_init_rcu(leaf_segment,
-+					&parent_cfs_rq->leaf_cfs_rq_list);
-+		}
-+	} else {
-+		list_splice_tail_init_rcu(leaf_segment,
-+					&rq_of(cfs_rq)->leaf_cfs_rq_list);
-+	}
-+
-+	cfs_rq->on_list = 1;
- }
- 
- static inline void list_del_leaf_cfs_rq(struct cfs_rq *cfs_rq)
-@@ -276,7 +291,8 @@ static inline struct cfs_rq *cpu_cfs_rq(struct cfs_rq *cfs_rq, int this_cpu)
- 	return &cpu_rq(this_cpu)->cfs;
- }
- 
--static inline void list_add_leaf_cfs_rq(struct cfs_rq *cfs_rq)
-+static inline void list_add_leaf_cfs_rq(struct cfs_rq *cfs_rq,
-+					struct list_head *leaf_segment)
- {
- }
- 
-@@ -998,8 +1014,6 @@ enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
- 		__enqueue_entity(cfs_rq, se);
- 	se->on_rq = 1;
- 
--	if (cfs_rq->nr_running == 1)
--		list_add_leaf_cfs_rq(cfs_rq);
- }
- 
- static void __clear_buddies_last(struct sched_entity *se)
-@@ -1326,12 +1340,17 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
- {
- 	struct cfs_rq *cfs_rq;
- 	struct sched_entity *se = &p->se;
-+	struct list_head leaf_segment;
-+
-+	INIT_LIST_HEAD(&leaf_segment);
- 
- 	for_each_sched_entity(se) {
- 		if (se->on_rq)
- 			break;
- 		cfs_rq = cfs_rq_of(se);
- 		enqueue_entity(cfs_rq, se, flags);
-+		if (cfs_rq->nr_running == 1)
-+			list_add_leaf_cfs_rq(cfs_rq, &leaf_segment);
- 		flags = ENQUEUE_WAKEUP;
- 	}
- 
+>     - each request contains more then 100 bios which makes serious
+>       troubles for ksoftirqd call backs.
+>         * What do you mean the "serious troubles for ksoftirqd call backs"?
+
+serious troubles means that ksoftirqd eats 100% CPU and slows down I/O
+significantly (from 2.8GB/s to 500MB/s).
+
 -- 
-1.7.6
-
+Luk·π Hejtm·nek
