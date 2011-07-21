@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752875Ab1GUNAx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 09:00:53 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:42045 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751888Ab1GUNAw convert rfc822-to-8bit (ORCPT
+	id S1752903Ab1GUNDo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 09:03:44 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:53596 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751888Ab1GUNDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 09:00:52 -0400
+	Thu, 21 Jul 2011 09:03:43 -0400
+Date: Thu, 21 Jul 2011 15:03:38 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Prasad <prasad@linux.vnet.ibm.com>, Will Deacon <will.deacon@arm.com>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH 3/6] x86: Allow the user not to build hw_breakpoints
+Message-ID: <20110721130334.GA16081@somewhere>
+References: <1310655837-328-1-git-send-email-fweisbec@gmail.com>
+ <1310655837-328-4-git-send-email-fweisbec@gmail.com>
+ <4E1F5EF3.6050601@zytor.com>
+ <20110721072656.GF9216@elte.hu>
 MIME-Version: 1.0
-X-Originating-IP: [92.140.109.150]
-In-Reply-To: <20110721112331.GA15059@linuxaudio.org>
-References: <20110719143758.GA15283@linuxaudio.org> <CAFEhRJf-5U=cS3iptpvGEVSHV+S=aBF_mWfWkC_QMRty_WnoPA@mail.gmail.com>
- <20110720131120.GA1836@linuxaudio.org> <CAFEhRJd9ZCSpx52S__vMdWK18mhMQrRoU9R5zNaZE=wksLRTvg@mail.gmail.com>
- <20110720153023.GA11502@linuxaudio.org> <CAFEhRJczj=_B7fK7GvBEnqpB2GJGnCnGkoA2w5vzbFfM2wAGZw@mail.gmail.com>
- <20110720163844.GB16901@linuxaudio.org> <CAG-2HqWqATSJ=oJTTvULXwPEG82yN+8e6GJFs759hPA-=krAOQ@mail.gmail.com>
- <20110721100944.GA13971@linuxaudio.org> <CAG-2HqX23C79vfccnu0tMqx+6K9Z5pS0_HekaLizQx7XfkPQ1Q@mail.gmail.com>
- <20110721112331.GA15059@linuxaudio.org>
-From: Tom Gundersen <teg@jklm.no>
-Date: Thu, 21 Jul 2011 15:00:32 +0200
-Message-ID: <CAG-2HqWK3x5-szkyzX8AMxuMpDZNVRXHYtQ0AkAPMsGcLK0Z9w@mail.gmail.com>
-Subject: Re: [arch-general] Panic - no sound devices after upgrade
-To: General Discussion about Arch Linux <arch-general@archlinux.org>,
-        Fons Adriaensen <fons@linuxaudio.org>
-Cc: Adrian Knoth <adi@drcomp.erfurt.thur.de>, Takashi Iwai <tiwai@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110721072656.GF9216@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adrian, Takashi: I added you to cc, as you last touched this code,
-sorry if I should have cc'ed someone else. It appears that the HDSPM
-module does not recognise cards with firmware revision 0xCC:
+On Thu, Jul 21, 2011 at 09:26:56AM +0200, Ingo Molnar wrote:
+> 
+> * H. Peter Anvin <hpa@zytor.com> wrote:
+> 
+> > On 07/14/2011 08:03 AM, Frederic Weisbecker wrote:
+> > > So that hw_breakpoints and perf can be not built on
+> > > specific embedded systems.
+> > 
+> > I want to emphasize I am very, very unhappy about this.  It should 
+> > be possible to not build perf while still have breakpoints 
+> > available... breakpoints are way more important than perf.
+> 
+> What we could indeed do is to separate out a 'core perf' portion that 
+> is necessary for hw-breakpoints to work fine, thus allowing for 
+> example the PMU drivers to be disabled.
 
-On Thu, Jul 21, 2011 at 1:23 PM, Fons Adriaensen <fons@linuxaudio.org> wrote:
->>>>> * The driver for my card (RME HDSP MADI, snd_hdpsm) is loaded.
->> > [   48.057757] HDSPM: unknown firmware revision cc
-[...]
-> Today I tried again downgrading the kernel to 2.6.37, to check if
-> the firmware revision error would occur. It doesn't.
-[...]
-> Tentative conclusion: the snd_hdspm driver in 2.6.39 is not OK.
+That would still require a big chunk of perf.
 
-Ah, I see. Thanks for the clarification. This means that the kernel is
-not able to recognise your card. Pre-.39 it would load anyway, but
-since .39 it gives the warning you posted and refuses to load. Your
-firmware revision is 0xCC, which is not recognised. If your card is
-MADI, the kernel expects the firmware revision to be 0xD2 (or starting
-in 3.0, it also accepts 0xCF).
+> 
+> Otherwise we have expressed hw breakpoint APIs via perf events and 
+> that model is working well. Making hw-breakpoints a separate 
+> subsystem again with isolated (and partly duplicated) infrastructure 
+> would be a step back really.
 
-I guess this can be fixed easily by adding your firmware revision to
-the list of accepted revs.
+I actually don't think it's working well. What we have with the current
+design is the dependency to perf as a big midlayer that is apparently
+convenient but actually induce some nasty things.
 
-Adrian: is any more info needed to add this rev?
+Just look how we need those ptrace_get_breakpoints() protection to deal
+with perf exit path implementation for example. Or the need for archs
+to translate arch ptrace breakpoint info into generic perf attrs.
 
-Cheers,
+I think we had to try the current design just to see if that could plug
+nicely. But now that we have this for several releases, I can only conclude
+that we should revert back to the design Prasad proposed, consisting in
+having breakpoints a service used by perf but not the opposite.
 
-Tom
+For ptrace, all it takes is a generic hook in the preempt notifiers to
+activate/deactivate breakpoints. I much prefer that to a big dependency
+on a perf core midlayer.
