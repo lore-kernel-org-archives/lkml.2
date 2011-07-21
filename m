@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753330Ab1GURQm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 13:16:42 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:54428 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751949Ab1GURQc (ORCPT
+	id S1753276Ab1GURQi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 13:16:38 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:34612 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753199Ab1GURQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 13:16:32 -0400
+	Thu, 21 Jul 2011 13:16:33 -0400
 From: Arnaud Lacombe <lacombar@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Arnaud Lacombe <lacombar@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 2/4] drivers/base/devtmpfs.c: correct annotation of `setup_done'
-Date: Thu, 21 Jul 2011 13:16:19 -0400
-Message-Id: <1311268581-20405-2-git-send-email-lacombar@gmail.com>
+Cc: Arnaud Lacombe <lacombar@gmail.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-usb@vger.kernel.org
+Subject: [PATCH 3/4] usb/host/pci-quirks.c: correct annotation of `ehci_dmi_nohandoff_table'
+Date: Thu, 21 Jul 2011 13:16:20 -0400
+Message-Id: <1311268581-20405-3-git-send-email-lacombar@gmail.com>
 X-Mailer: git-send-email 1.7.6.153.g78432
 In-Reply-To: <1311268581-20405-1-git-send-email-lacombar@gmail.com>
 References: <1311268581-20405-1-git-send-email-lacombar@gmail.com>
@@ -20,35 +21,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes the following section mismatch issue:
+ehci_bios_handoff() is marked __devinit, `ehci_dmi_nohandoff_table' should be
+marked __devinitconst, not __initconst. This fixes the following section
+mismatch:
 
-WARNING: vmlinux.o(.text+0x1192bf): Section mismatch in reference from the function devtmpfsd() to the variable .init.data:setup_done
-The function devtmpfsd() references the variable __initdata setup_done.
-This is often because devtmpfsd lacks a __initdata annotation or the annotation of setup_done is wrong.
+WARNING: vmlinux.o(.devinit.text+0x4f08): Section mismatch in reference from the function ehci_bios_handoff() to the variable .init.rodata:ehci_dmi_nohandoff_table
+The function __devinit ehci_bios_handoff() references a variable __initconst ehci_dmi_nohandoff_table.
+If ehci_dmi_nohandoff_table is only used by ehci_bios_handoff then annotate ehci_dmi_nohandoff_table with a matching annotation.
 
-WARNING: vmlinux.o(.text+0x119342): Section mismatch in reference from the function devtmpfsd() to the variable .init.data:setup_done
-The function devtmpfsd() references the variable __initdata setup_done.
-This is often because devtmpfsd lacks a __initdata annotation or the annotation of setup_done is wrong.
-
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: linux-usb@vger.kernel.org
 Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
 ---
- drivers/base/devtmpfs.c |    2 +-
+ drivers/usb/host/pci-quirks.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/base/devtmpfs.c b/drivers/base/devtmpfs.c
-index 6d678c9..38e6464 100644
---- a/drivers/base/devtmpfs.c
-+++ b/drivers/base/devtmpfs.c
-@@ -376,7 +376,7 @@ int devtmpfs_mount(const char *mntdir)
- 	return err;
+diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
+index a9d3159..31ad147 100644
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -535,7 +535,7 @@ static void __devinit quirk_usb_handoff_ohci(struct pci_dev *pdev)
+ 	iounmap(base);
  }
  
--static __initdata DECLARE_COMPLETION(setup_done);
-+static DECLARE_COMPLETION(setup_done);
- 
- static int handle(const char *name, mode_t mode, struct device *dev)
- {
+-static const struct dmi_system_id __initconst ehci_dmi_nohandoff_table[] = {
++static const struct dmi_system_id __devinitconst ehci_dmi_nohandoff_table[] = {
+ 	{
+ 		/*  Pegatron Lucid (ExoPC) */
+ 		.matches = {
 -- 
 1.7.6.153.g78432
 
