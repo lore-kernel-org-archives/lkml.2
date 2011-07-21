@@ -1,105 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201Ab1GUSbo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 14:31:44 -0400
-Received: from hera.kernel.org ([140.211.167.34]:56822 "EHLO hera.kernel.org"
+	id S1753326Ab1GUSeC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 14:34:02 -0400
+Received: from hera.kernel.org ([140.211.167.34]:56899 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751902Ab1GUSbm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 14:31:42 -0400
-Date: Thu, 21 Jul 2011 18:31:28 GMT
-From: tip-bot for Stephan Baerwolf <stephan.baerwolf@tu-ilmenau.de>
-Message-ID: <tip-ns12mnd2h5w8rb9agd8hnsfk@git.kernel.org>
+	id S1751902Ab1GUSeA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 14:34:00 -0400
+Date: Thu, 21 Jul 2011 18:33:53 GMT
+From: tip-bot for Daniel J Blueman <daniel.blueman@gmail.com>
+Message-ID: <tip-f2b3178e66c132b81a59c5ff8b469fdee02aad4f@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, stephan.baerwolf@tu-ilmenau.de,
-        tglx@linutronix.de, mingo@elte.hu
+        daniel.blueman@gmail.com, tglx@linutronix.de
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        stephan.baerwolf@tu-ilmenau.de, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, mingo@elte.hu
+        daniel.blueman@gmail.com, tglx@linutronix.de
+In-Reply-To: <1305248699-2347-1-git-send-email-daniel.blueman@gmail.com>
+References: <1305248699-2347-1-git-send-email-daniel.blueman@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Replace use of entity_key()
-Git-Commit-ID: 2bd2d6f2dc952fc44fc52887de36e51896da96b9
+Subject: [tip:x86/urgent] x86: Make Dell Latitude E5420 use reboot=pci
+Git-Commit-ID: f2b3178e66c132b81a59c5ff8b469fdee02aad4f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 21 Jul 2011 18:31:29 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 21 Jul 2011 18:33:54 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2bd2d6f2dc952fc44fc52887de36e51896da96b9
-Gitweb:     http://git.kernel.org/tip/2bd2d6f2dc952fc44fc52887de36e51896da96b9
-Author:     Stephan Baerwolf <stephan.baerwolf@tu-ilmenau.de>
-AuthorDate: Wed, 20 Jul 2011 14:46:59 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 21 Jul 2011 18:01:55 +0200
+Commit-ID:  f2b3178e66c132b81a59c5ff8b469fdee02aad4f
+Gitweb:     http://git.kernel.org/tip/f2b3178e66c132b81a59c5ff8b469fdee02aad4f
+Author:     Daniel J Blueman <daniel.blueman@gmail.com>
+AuthorDate: Fri, 13 May 2011 09:04:59 +0800
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Thu, 21 Jul 2011 11:19:01 -0700
 
-sched: Replace use of entity_key()
+x86: Make Dell Latitude E5420 use reboot=pci
 
-"entity_key()" is only used in "__enqueue_entity()" and
-its only function is to subtract a tasks vruntime by
-its groups minvruntime.
-Before this patch a rbtree enqueue-decision is done by
-comparing two tasks in the style:
+Rebooting on the Dell E5420 often hangs with the keyboard or ACPI
+methods, but is reliable via the PCI method.
 
-	"if (entity_key(cfs_rq, se) < entity_key(cfs_rq, entry))"
+[ hpa: this was deferred because we believed for a long time that the
+  recent reshuffling of the boot priorities in commit
+  660e34cebf0a11d54f2d5dd8838607452355f321 fixed this platform.
+  Unfortunately that turned out to be incorrect. ]
 
-which would be
-
-	"if (se->vruntime-cfs_rq->min_vruntime < entry->vruntime-cfs_rq->min_vruntime)"
-
-or (if reducing cfs_rq->min_vruntime out)
-
-	"if (se->vruntime < entry->vruntime)"
-
-which is
-
-	"if (entity_before(se, entry))"
-
-So we do not need "entity_key()".
-If "entity_before()" is inline we will also save one subtraction (only one,
-because "entity_key(cfs_rq, se)"  was cached in "key")
-
-Signed-off-by: Stephan Baerwolf <stephan.baerwolf@tu-ilmenau.de>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-ns12mnd2h5w8rb9agd8hnsfk@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+Link: http://lkml.kernel.org/r/1305248699-2347-1-git-send-email-daniel.blueman@gmail.com
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 ---
- kernel/sched_fair.c |    8 +-------
- 1 files changed, 1 insertions(+), 7 deletions(-)
+ arch/x86/kernel/reboot.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 0588c0b..a2ecbaa 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -321,11 +321,6 @@ static inline int entity_before(struct sched_entity *a,
- 	return (s64)(a->vruntime - b->vruntime) < 0;
- }
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index 14eed21..3dfd38f 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -427,6 +427,14 @@ static struct dmi_system_id __initdata pci_reboot_dmi_table[] = {
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude E6320"),
+ 		},
+ 	},
++	{	/* Handle problems with rebooting on the Latitude E5420. */
++		.callback = set_pci_reboot,
++		.ident = "Dell Latitude E5420",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude E5420"),
++		},
++	},
+ 	{ }
+ };
  
--static inline s64 entity_key(struct cfs_rq *cfs_rq, struct sched_entity *se)
--{
--	return se->vruntime - cfs_rq->min_vruntime;
--}
--
- static void update_min_vruntime(struct cfs_rq *cfs_rq)
- {
- 	u64 vruntime = cfs_rq->min_vruntime;
-@@ -359,7 +354,6 @@ static void __enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se)
- 	struct rb_node **link = &cfs_rq->tasks_timeline.rb_node;
- 	struct rb_node *parent = NULL;
- 	struct sched_entity *entry;
--	s64 key = entity_key(cfs_rq, se);
- 	int leftmost = 1;
- 
- 	/*
-@@ -372,7 +366,7 @@ static void __enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se)
- 		 * We dont care about collisions. Nodes with
- 		 * the same key stay together.
- 		 */
--		if (key < entity_key(cfs_rq, entry)) {
-+		if (entity_before(se, entry)) {
- 			link = &parent->rb_left;
- 		} else {
- 			link = &parent->rb_right;
