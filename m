@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751532Ab1GUOZK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 10:25:10 -0400
-Received: from mailhost-r5-m2.mangoosta.org ([78.40.49.195]:22099 "EHLO
-	smtp-delay2.nerim.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751231Ab1GUOZI (ORCPT
+	id S1751579Ab1GUO1w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 10:27:52 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:33949 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751241Ab1GUO1v convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 10:25:08 -0400
-X-Greylist: delayed 557 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Jul 2011 10:25:08 EDT
-From: Jean Marc Olivieri <jmolivieri@algoria.fr>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: 2.6.33.16 Documentation/lguest breaks compile under debian x86
-Thread-Topic: 2.6.33.16 Documentation/lguest breaks compile under debian x86
-Thread-Index: AQHMR7CtTPHrGv7/Yk6BvP12vh3gtA==
-Date: Thu, 21 Jul 2011 14:15:44 +0000
-Message-ID: <1CCDCE528ADEE240A3F216D1B406A8F3472E91EF@PDCParis.algoria.local>
-Accept-Language: fr-FR, en-US
-Content-Language: fr-FR
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.168.111.105]
-Content-Type: text/plain; charset="utf-8"
+	Thu, 21 Jul 2011 10:27:51 -0400
 MIME-Version: 1.0
+In-Reply-To: <20110718123648.GA4010@shale.localdomain>
+References: <1310859509.4191.6.camel@Rarity>
+	<20110718123648.GA4010@shale.localdomain>
+Date: Thu, 21 Jul 2011 16:27:49 +0200
+Message-ID: <CAKYW3yYpzB3YbcM=Kk_zGK6q96sbRceH3XeXKp1w72WzNF8W8A@mail.gmail.com>
+Subject: Re: [PATCH] Summary: Fixed all the indents and other errors in IEEE11h.c
+From: Toon Schoenmakers <nighteyes1993@gmail.com>
+To: Dan Carpenter <error27@gmail.com>
+Cc: gregkh@suse.de, caratorn@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p6LEPJsT016451
 
-I'm currently using :
-Distributor ID:	Debian
-Description:	Debian GNU/Linux 6.0.2 (squeeze)
-Release:	6.0.2
-Codename:	squeeze
-On x86 PC.
+I am really just beginning with C, so I don't think I can rewrite the
+part that now is in Lisp (I didn't even know it was in Lisp until you
+said so)
+And with WLAN_SET_FC_FSTYPE() not being aligned I assume you mean that
+you'd like to see it right under the thing that's above it, for easy
+reading, right?
+The aligning of it is probably the only thing I can fix at this point
+of time, thanks for the suggestions though.
 
-Kernel 2.6.33.16 fails to compile due to unfound include. Thus I got rid of it and it works.
-I successfully built kernels against :
-	- x86
-	- x64
+-Toon
 
-Here's the patch :
-
-diff -u -r a/linux-2.6.33.16/Documentation/lguest/lguest.c b/linux-2.6.33.16/Documentation/lguest/lguest.c
---- a/linux-2.6.33.16/Documentation/lguest/lguest.c	2011-07-13 05:31:47.000000000 +0200
-+++ b/linux-2.6.33.16/Documentation/lguest/lguest.c	2011-07-21 15:16:03.331040033 +0200
-@@ -34,7 +34,6 @@
- #include <sys/uio.h>
- #include <termios.h>
- #include <getopt.h>
--#include <zlib.h>
- #include <assert.h>
- #include <sched.h>
- #include <limits.h>
-
-
-Jean-Marc OLIVIERI
-IngÃ©nieur dÃ©veloppement
-+33 1 41 90 66 55
-jmolivieri@algoria.fr
-
-
-
-ALGORIA - Ã‰diteur de TWS
-31, rue Ernest Renan 92130 Issy-les-Moulineaux 
-+33 1 41 90 66 66 (std) / +33 1 41 90 66 56 (fax)
-www.algoria.fr
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+On Mon, Jul 18, 2011 at 14:36, Dan Carpenter <error27@gmail.com> wrote:
+> On Sun, Jul 17, 2011 at 01:38:29AM +0200, Toon Schoenmakers wrote:
+>
+>> +     uNumOfEIDs = ((uLength - offsetof(WLAN_FRAME_MSRREQ,
+>> +                     sMSRReqEIDs))/
+>> +                     (sizeof(WLAN_IE_MEASURE_REQ)));
+>
+> It would be better to write this in C instead of Lisp:
+>
+>        uNumOfEIDs = (uLength - offsetof(WLAN_FRAME_MSGREQ, sMSRReqEIDS)) /
+>                        sizeof(WLAN_EI_MEASURE_REQ);
+>
+> The other advantage of that is that the call to offsetof() is now
+> all together on one line.
+>
+>> +     pTxPacket->p80211Header = (PUWLAN_80211HDR)((unsigned char *)pTxPacket +
+>> +sizeof(STxMgmtPacket));
+>> +
+>> +     pFrame = (PWLAN_FRAME_TPCREP)((unsigned char *)pTxPacket +
+>> +sizeof(STxMgmtPacket));
+>> +
+>
+> Don't do that.
+>
+>> +     pFrame->Header.wFrameCtl = (WLAN_SET_FC_FTYPE(WLAN_FTYPE_MGMT) |
+>> +                             WLAN_SET_FC_FSTYPE(WLAN_FSTYPE_ACTION)
+>> +                             );
+>
+> The close parenthesis can fit on the end of the other line.  In fact
+> the paren is not needed at all.  Why is the second line aligned where
+> you have it?  The WLAN_SET_FC_FSTYPE() isn't aligned with anything.
+>
+> Take a another look through the patch and you'll find a bunch of
+> similar issues.
+>
+> regards,
+> dan carpenter
+>
