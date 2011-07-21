@@ -1,70 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752460Ab1GUP1n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 11:27:43 -0400
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:24186 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752035Ab1GUP1m (ORCPT
+	id S1752229Ab1GUPaW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 11:30:22 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36644 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751847Ab1GUPaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 11:27:42 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: e6Yc9iMVM1kAyPqdMAAwoZXVsvK5Rn9_OIVrc6L3mE73C3G
- jObNJBMgYRWB_dx4UOltVZIhDBSd1YB.8K9GFxODRckjomX5OA7YbqksmC_p
- mSGCAXLuaJyFZL365izEeD6W1.np27uZQDFeaa7.0XYstRnhyORQUKGI1Z5q
- zJzGocn3tERwgBCP6MDFOyX21Wb4UA9NxzNEefPW2qNjviLNM4dMhaYXKVqV
- 7PXzPy5DYovu3q2O5wJRhPuOKCyNAbI8hOmhYcqZFVfO96lcg6jwPOwOXSS1
- MmbdwfshLx18SaIeuFzphVqLvOf_QJuCkNEAUfQdPD51XYwc_O0tkgR.3BzU
- .rEzZlCr5hlBtMqRFcyUqhr2D
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Thu, 21 Jul 2011 10:27:37 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Mel Gorman <mgorman@suse.de>, Pekka Enberg <penberg@kernel.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>
-Subject: Re: [PATCH] mm-slab: allocate kmem_cache with __GFP_REPEAT
-In-Reply-To: <1311237839.2422.10.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Message-ID: <alpine.DEB.2.00.1107211025530.3995@router.home>
-References: <20110720121612.28888.38970.stgit@localhost6>  <alpine.DEB.2.00.1107201611010.3528@tiger> <20110720134342.GK5349@suse.de>  <alpine.DEB.2.00.1107200854390.32737@router.home>  <1311170893.2338.29.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> 
- <alpine.DEB.2.00.1107200950270.1472@router.home> <1311237839.2422.10.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 21 Jul 2011 11:30:17 -0400
+Date: Fri, 22 Jul 2011 00:30:07 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        P?draig Brady <P@draigBrady.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Colin King <colin.king@canonical.com>,
+        Andrew Lutomirski <luto@mit.edu>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] mm: vmscan: Only read new_classzone_idx from pgdat
+ when reclaiming successfully
+Message-ID: <20110721153007.GC1713@barrios-desktop>
+References: <1308926697-22475-1-git-send-email-mgorman@suse.de>
+ <1308926697-22475-5-git-send-email-mgorman@suse.de>
+ <20110719160903.GA2978@barrios-desktop>
+ <20110720104847.GI5349@suse.de>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463811839-1751958307-1311262060=:3995"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110720104847.GI5349@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Wed, Jul 20, 2011 at 11:48:47AM +0100, Mel Gorman wrote:
+> On Wed, Jul 20, 2011 at 01:09:03AM +0900, Minchan Kim wrote:
+> > Hi Mel,
+> > 
+> > Too late review.
+> 
+> Never too late.
+> 
+> > At that time, I had no time to look into this patch.
+> > 
+> > On Fri, Jun 24, 2011 at 03:44:57PM +0100, Mel Gorman wrote:
+> > > During allocator-intensive workloads, kswapd will be woken frequently
+> > > causing free memory to oscillate between the high and min watermark.
+> > > This is expected behaviour.  Unfortunately, if the highest zone is
+> > > small, a problem occurs.
+> > > 
+> > > When balance_pgdat() returns, it may be at a lower classzone_idx than
+> > > it started because the highest zone was unreclaimable. Before checking
+> > 
+> > Yes.
+> > 
+> > > if it should go to sleep though, it checks pgdat->classzone_idx which
+> > > when there is no other activity will be MAX_NR_ZONES-1. It interprets
+> > 
+> > Yes.
+> > 
+> > > this as it has been woken up while reclaiming, skips scheduling and
+> > 
+> > Hmm. I can't understand this part.
+> > If balance_pgdat returns lower classzone and there is no other activity,
+> > new_classzone_idx is always MAX_NR_ZONES - 1 so that classzone_idx would be less than
+> > new_classzone_idx. It means it doesn't skip scheduling.
+> > 
+> > Do I miss something?
+> > 
+> 
+> It was a few weeks ago so I don't rememember if this is the exact
+> sequence I had in mind at the time of writing but an example sequence
+> of events is for a node whose highest populated zone is ZONE_NORMAL,
+> very small, and gets set all_unreclaimable by balance_pgdat() looks
+> is below. The key is the "very small" part because pages are getting
+> freed in the zone but the small size means that unreclaimable gets
+> set easily.
+> 
+> /*
+>  * kswapd is woken up for ZONE_NORMAL (as this is the preferred zone
+>  * as ZONE_HIGHMEM is not populated.
+>  */
+> 
+> order = pgdat->kswapd_max_order;
+> classzone_idx = pgdat->classzone_idx;				/* classzone_idx == ZONE_NORMAL */
+> pgdat->kswapd_max_order = 0;
+> pgdat->classzone_idx = MAX_NR_ZONES - 1;
+> order = balance_pgdat(pgdat, order, &classzone_idx);		/* classzone_idx == ZONE_NORMAL even though
+> 								 * the highest zone was set unreclaimable
+> 								 * and it exited scanning ZONE_DMA32
+> 								 * because we did not communicate that
+> 								 * information back
 
----1463811839-1751958307-1311262060=:3995
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+								Yes. It's too bad.
+
+> 								 */
+> new_order = pgdat->kswapd_max_order;				/* new_order = 0 */
+> new_classzone_idx = pgdat->classzone_idx;			/* new_classzone_idx == ZONE_HIGHMEM
+> 								 * because that is what classzone_idx
+> 								 * gets reset to
+
+								Yes. new_classzone_idx is ZONE_HIGHMEM.
+
+> 								 */
+> if (order < new_order || classzone_idx > new_classzone_idx) {
+> 	/* does not sleep, this branch not taken */
+> } else {
+> 	/* tries to sleep, goes here */
+> 	try_to_sleep(ZONE_NORMAL)
+> 		sleeping_prematurely(ZONE_NORMAL)		/* finds zone unbalanced so skips scheduling */
+>         order = pgdat->kswapd_max_order;
+>         classzone_idx = pgdat->classzone_idx;			/* classzone_idx == ZONE_HIGHMEM now which
+> 								 * is higher than what it was originally
+> 								 * woken for
+> 								 */
+
+								But is it a problem?
+								it should be reset to ZONE_NORMAL in balance_pgdat as high zone isn't populated.
+> }
+> 
+> /* Looped around to balance_pgdat() again */
+> order = balance_pgdat()
+> 
+> Between when all_unreclaimable is set and before before kswapd
+> goes fully to sleep, a page is freed clearing all_reclaimable so
+> it rechecks all the zones, find the highest one is not balanced and
+> skip scheduling.
+
+Yes and it could be repeated forever.
+Apparently, we should fix wit this patch but I have a qustion about this patch.
+
+Quote from your patch
+
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index a76b6cc2..fe854d7 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2448,7 +2448,6 @@ loop_again:
+>                       if (!zone_watermark_ok_safe(zone, order,
+>                                       high_wmark_pages(zone), 0, 0)) {
+>                               end_zone = i;
+> -                             *classzone_idx = i;
+>                               break;
+>                       }
+>               }
+> @@ -2528,8 +2527,11 @@ loop_again:
+>                           total_scanned > sc.nr_reclaimed + sc.nr_reclaimed / 2)
+>                               sc.may_writepage = 1;
+>  
+> -                     if (zone->all_unreclaimable)
+> +                     if (zone->all_unreclaimable) {
+> +                             if (end_zone && end_zone == i)
+> +                                     end_zone--;
+
+Until now, It's good.
+
+>                               continue;
+> +                     }
+>  
+>                       if (!zone_watermark_ok_safe(zone, order,
+>                                       high_wmark_pages(zone), end_zone, 0)) {
+> @@ -2709,8 +2711,8 @@ static void kswapd_try_to_sleep(pg_data_t *pgdat, int order, int classzone_idx)
+>   */
+>  static int kswapd(void *p)
+>  {
+> -     unsigned long order;
+> -     int classzone_idx;
+> +     unsigned long order, new_order;
+> +     int classzone_idx, new_classzone_idx;
+>       pg_data_t *pgdat = (pg_data_t*)p;
+>       struct task_struct *tsk = current;
+>  
+> @@ -2740,17 +2742,23 @@ static int kswapd(void *p)
+>       tsk->flags |= PF_MEMALLOC | PF_SWAPWRITE | PF_KSWAPD;
+>       set_freezable();
+>  
+> -     order = 0;
+> -     classzone_idx = MAX_NR_ZONES - 1;
+> +     order = new_order = 0;
+> +     classzone_idx = new_classzone_idx = pgdat->nr_zones - 1;
+>       for ( ; ; ) {
+> -             unsigned long new_order;
+> -             int new_classzone_idx;
+>               int ret;
+>  
+> -             new_order = pgdat->kswapd_max_order;
+> -             new_classzone_idx = pgdat->classzone_idx;
+> -             pgdat->kswapd_max_order = 0;
+> -             pgdat->classzone_idx = MAX_NR_ZONES - 1;
+> +             /*
+> +              * If the last balance_pgdat was unsuccessful it's unlikely a
+> +              * new request of a similar or harder type will succeed soon
+> +              * so consider going to sleep on the basis we reclaimed at
+> +              */
+> +             if (classzone_idx >= new_classzone_idx && order == new_order) {
+> +                     new_order = pgdat->kswapd_max_order;
+> +                     new_classzone_idx = pgdat->classzone_idx;
+> +                     pgdat->kswapd_max_order =  0;
+> +                     pgdat->classzone_idx = pgdat->nr_zones - 1;
+> +             }
+> +
+
+But in this part.
+Why do we need this?
+Although we pass high zone instead of zone we reclaimed at, it would be reset to
+ZONE_NORMAL if it's not populated. If high zone is populated and it couldn't meet
+watermark, it could be balanced and next normal zone would be balanced, too.
+
+Could you explain what's problem happen without this part?
+
+>               if (order < new_order || classzone_idx > new_classzone_idx) {
+>                       /*
+>                        * Don't sleep if someone wants a larger 'order'
+> @@ -2763,7 +2771,7 @@ static int kswapd(void *p)
+>                       order = pgdat->kswapd_max_order;
+>                       classzone_idx = pgdat->classzone_idx;
+>                       pgdat->kswapd_max_order = 0;
+> -                     pgdat->classzone_idx = MAX_NR_ZONES - 1;
+> +                     pgdat->classzone_idx = pgdat->nr_zones - 1;
+>               }
+>  
+>               ret = try_to_freeze();
+> -- 
+> 1.7.3.4
+> 
 
 
 
-On Thu, 21 Jul 2011, Eric Dumazet wrote:
+> 
+> A variation is that it the lower zones are above the low watermark so
+> the page allocator is not waking kswapd and it should sleep on the
+> waitqueue. However, it only schedules for HZ/10 during which a page
+> is freed, the highest zone gets all_unreclaimable cleared and so it
+> stays awake. In this case, it has reached a scheduling point but it
+> is not going fully to sleep on the waitqueue as it should.
+> 
+> I see now the problem with the changelog, it sucks and could have
+> been a lot better at explaining why kswapd stays awake when the
+> information is not communicated back and why classzone_idx being set
+> to MAX_NR_ZONES-1 is sloppy :(
+> 
+> -- 
+> Mel Gorman
+> SUSE Labs
 
-> Le mercredi 20 juillet 2011 =C3=A0 09:52 -0500, Christoph Lameter a =C3=
-=A9crit :
->
-> > We should be making it a per cpu pointer like slub then. I looked at wh=
-at
-> > it would take to do so a couple of month ago but it was quite invasive.
-> >
->
-> I took a look at this too, but using percpu data would consume more
-> memory, because percpu allocator allocates memory blobs for all possible
-> cpus, while current code handles online/offline cpu nicely.
-
-The number of possible cpus is determined on bootup. If the BIOS provides
-the right information about which cpus are present and if there is no
-hotswapping of cpus possible then only per cpu areas for the actual
-functioning cpus are allocated. Certainly no desktop bios will indicate
-that 4096 cpus are possible.
-
-
-
----1463811839-1751958307-1311262060=:3995--
+-- 
+Kind regards,
+Minchan Kim
