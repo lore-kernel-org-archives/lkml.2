@@ -1,86 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753819Ab1GUTo2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 15:44:28 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:37290 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753790Ab1GUTo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 15:44:26 -0400
-Date: Thu, 21 Jul 2011 21:43:30 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Andi Kleen <ak@linux.intel.com>, mingo@redhat.com, wzt <wzt.wzt@gmail.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org, tglx@linutronix.de,
-        hpa@zytor.com, Michal Hocko <mhocko@suse.cz>,
-        Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
-Subject: Re: [PATCH] x86: Fix memory leak of init_vdso_vars()
-Message-ID: <20110721194329.GA29460@elte.hu>
-References: <20110705062148.GA6056@program>
- <d1a1b6416d71a5062fb3b3e364f9db6b6d4ef6b2.1311258580.git.luto@mit.edu>
- <20110721170824.GA28974@tassilo.jf.intel.com>
- <CAObL_7HyjsPKnyDEEa0T8iTetpkd9Hq7RTBymieazzGOsXQLdA@mail.gmail.com>
- <20110721183820.GA381@elte.hu>
- <CAObL_7H=wh4exBfyjJyumtOBgvAjLnewu3dp6eeyaoQi3txXwQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	id S1753830Ab1GUTrj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 15:47:39 -0400
+Received: from DMZ-MAILSEC-SCANNER-8.MIT.EDU ([18.7.68.37]:58072 "EHLO
+	dmz-mailsec-scanner-8.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753800Ab1GUTrh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 15:47:37 -0400
+X-AuditID: 12074425-b7bcaae000000a1b-c1-4e288231b0c6
+From: Andy Lutomirski <luto@MIT.EDU>
+To: mingo@redhat.com, wzt <wzt.wzt@gmail.com>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, ak@linux.intel.com,
+        tglx@linutronix.de, hpa@zytor.com, Michal Hocko <mhocko@suse.cz>,
+        Andy Lutomirski <luto@MIT.EDU>
+Subject: [PATCH] x86-64: Do not allocate memory for the vDSO
+Date: Thu, 21 Jul 2011 15:47:10 -0400
+Message-Id: <2c4ed5c2c2e93603790229e0c3403ae506ccc0cb.1311277573.git.luto@mit.edu>
+X-Mailer: git-send-email 1.7.6
 In-Reply-To: <CAObL_7H=wh4exBfyjJyumtOBgvAjLnewu3dp6eeyaoQi3txXwQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+References: <CAObL_7H=wh4exBfyjJyumtOBgvAjLnewu3dp6eeyaoQi3txXwQ@mail.gmail.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPIsWRmVeSWpSXmKPExsUixG6nomvYpOFncOWpmsXxCZYWfVeOsltM
+	2yhucXnXHDaLV83fWS0uHVjAZLF501RmizWfT7FZ/NjwmNWB02PnrLvsHptWdbJ5vDt3jt1j
+	3slAj/f7rrJ5nFlwhN3j8yY5jxMtX1gDOKK4bFJSczLLUov07RK4Mv4+P8Je8Fi4YsqzFrYG
+	xmaBLkZODgkBE4mP03ezQthiEhfurWfrYuTiEBLYxyjR9nQ7E4SzgVFiz85PzBDOYSaJZ483
+	MYO0sAmoSHQsfcAEYosI6Ep83XGbEaSIWWAHo8T2hZNZQBLCAjYSe7cvYQSxWQRUJc7e2AMW
+	5xUIkuhb1cIMsVtO4sjl52CDOAUCJc69mAlWIyQQIHFm6jHGCYx8CxgZVjHKpuRW6eYmZuYU
+	pybrFicn5uWlFula6OVmluilppRuYgSHq4vqDsYJh5QOMQpwMCrx8DL5avgJsSaWFVfmHmKU
+	5GBSEuVd3wgU4kvKT6nMSCzOiC8qzUktPsQowcGsJMIrFAOU401JrKxKLcqHSUlzsCiJ84Z4
+	//cVEkhPLEnNTk0tSC2CycpwcChJ8NaBDBUsSk1PrUjLzClBSDNxcIIM5wEavhCkhre4IDG3
+	ODMdIn+KUVFKnDcfJCEAksgozYPrhaWTV4ziQK8I8y4AqeIBpiK47ldAg5mABreoq4IMLklE
+	SEk1MPZvSD+z9M+bVdqBzc2lFz91PZpj9+jkxGY7l1Wve5lPhrEGzjy6dda1xQqm+y00Ct6I
+	x1WpPP45RYj1EMe8iw63HgTERdd2xq5JP9GhePSPCv+5+uSaO7NEGCM0n4itVItP+JF8tS7Y
+	NSWiZ+3nzVcqBKYI2quKNcr2zt1fUl3X8M3l/B/lLUosxRmJhlrMRcWJALmV4GoCAwAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We can map the vDSO straight from kernel data, saving a few page
+allocations.  As an added bonus, the deleted code contained a memory
+leak.
 
-* Andrew Lutomirski <luto@mit.edu> wrote:
+Signed-off-by: Andy Lutomirski <luto@mit.edu>
+---
+ arch/x86/vdso/vdso.S |   15 +++++++++++++--
+ arch/x86/vdso/vma.c  |   25 ++++++-------------------
+ 2 files changed, 19 insertions(+), 21 deletions(-)
 
-> On Thu, Jul 21, 2011 at 2:38 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > * Andrew Lutomirski <luto@mit.edu> wrote:
-> >
-> >> On Thu, Jul 21, 2011 at 1:08 PM, Andi Kleen <ak@linux.intel.com> wrote:
-> >> > On Thu, Jul 21, 2011 at 10:33:14AM -0400, Andy Lutomirski wrote:
-> >> >> From: Zhitong Wang <wzt.wzt@gmail.com>
-> >> >>
-> >> >> If init_vdso_vars ran out of memory (not very likely), then it would
-> >> >> leak a few pages as well.
-> >> >>
-> >> >> Also rename init_vdso_vars to just init_vdso, since initializing
-> >> >> vvars is just about the only thing this function doesn't do.
-> >> >
-> >> > Just add a GFP_PANIC, there's no way to recover from this.
-> >> > Your system will not work without a vdso.
-> >>
-> >> Ingo objected to this before, although I'm not convinved.  Calling
-> >> init_vdso_vars more than once will cause major problems (like
-> >> double-patching of alternatives).  If there's too little memory for
-> >> it to work, then presumably there's also too little memory to start
-> >> init.
-> >>
-> >>  (Also, I bet that no one ever audited whether the ELF loader works
-> >> right if the vDSO failed to load.)
-> >>
-> >> Ingo?
-> >
-> > This assumes that the system actually needs an ELF loader - if a
-> > static binary is booted via a init= boot parameter it might not be
-> > needed.
-> 
-> I actually meant the kernel's loaded.  But I just looked and it appears correct.
-> 
-> But I think this whole thing is silly, because I can't see any good
-> reason that the vdso needs to allocate memory in the first place.
-> I'll send a patch.
+diff --git a/arch/x86/vdso/vdso.S b/arch/x86/vdso/vdso.S
+index 1d3aa6b..1b979c1 100644
+--- a/arch/x86/vdso/vdso.S
++++ b/arch/x86/vdso/vdso.S
+@@ -1,10 +1,21 @@
++#include <asm/page_types.h>
++#include <linux/linkage.h>
+ #include <linux/init.h>
+ 
+-__INITDATA
++__PAGE_ALIGNED_DATA
+ 
+ 	.globl vdso_start, vdso_end
++	.align PAGE_SIZE
+ vdso_start:
+ 	.incbin "arch/x86/vdso/vdso.so"
+ vdso_end:
+ 
+-__FINIT
++.previous
++
++	.globl vdso_pages
++	.bss
++	.align 8
++	.type vdso_pages, @object
++vdso_pages:
++	.zero (vdso_end - vdso_start + PAGE_SIZE - 1) / PAGE_SIZE * 8
++	.size vdso_pages, .-vdso_pages
+diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
+index ba92244..40e4cb0 100644
+--- a/arch/x86/vdso/vma.c
++++ b/arch/x86/vdso/vma.c
+@@ -14,13 +14,14 @@
+ #include <asm/vgtod.h>
+ #include <asm/proto.h>
+ #include <asm/vdso.h>
++#include <asm/page.h>
+ 
+ unsigned int __read_mostly vdso_enabled = 1;
+ 
+ extern char vdso_start[], vdso_end[];
+ extern unsigned short vdso_sync_cpuid;
+ 
+-static struct page **vdso_pages;
++extern struct page *vdso_pages[];
+ static unsigned vdso_size;
+ 
+ static void patch_vdso(void *vdso, size_t len)
+@@ -51,7 +52,7 @@ found:
+ 	apply_alternatives(alt_data, alt_data + alt_sec->sh_size);
+ }
+ 
+-static int __init init_vdso_vars(void)
++static int __init init_vdso(void)
+ {
+ 	int npages = (vdso_end - vdso_start + PAGE_SIZE - 1) / PAGE_SIZE;
+ 	int i;
+@@ -59,26 +60,12 @@ static int __init init_vdso_vars(void)
+ 	patch_vdso(vdso_start, vdso_end - vdso_start);
+ 
+ 	vdso_size = npages << PAGE_SHIFT;
+-	vdso_pages = kmalloc(sizeof(struct page *) * npages, GFP_KERNEL);
+-	if (!vdso_pages)
+-		goto oom;
+-	for (i = 0; i < npages; i++) {
+-		struct page *p;
+-		p = alloc_page(GFP_KERNEL);
+-		if (!p)
+-			goto oom;
+-		vdso_pages[i] = p;
+-		copy_page(page_address(p), vdso_start + i*PAGE_SIZE);
+-	}
++	for (i = 0; i < npages; i++)
++		vdso_pages[i] = virt_to_page(vdso_start + i*PAGE_SIZE);
+ 
+ 	return 0;
+-
+- oom:
+-	printk("Cannot allocate vdso\n");
+-	vdso_enabled = 0;
+-	return -ENOMEM;
+ }
+-subsys_initcall(init_vdso_vars);
++subsys_initcall(init_vdso);
+ 
+ struct linux_binprm;
+ 
+-- 
+1.7.6
 
-that's the perfect solution indeed :)
-
-Thanks,
-
-	Ingo
