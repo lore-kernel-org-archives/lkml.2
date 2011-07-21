@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753104Ab1GUNVe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 09:21:34 -0400
-Received: from mail.cs.tu-berlin.de ([130.149.17.13]:64358 "EHLO
+	id S1753135Ab1GUNVp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 09:21:45 -0400
+Received: from mail.cs.tu-berlin.de ([130.149.17.13]:64410 "EHLO
 	mail.cs.tu-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752981Ab1GUNVb (ORCPT
+	with ESMTP id S1753005Ab1GUNVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 09:21:31 -0400
+	Thu, 21 Jul 2011 09:21:41 -0400
 From: =?UTF-8?q?Jan=20H=2E=20Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
 To: Paul Turner <pjt@google.com>
 Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         linux-kernel@vger.kernel.org,
         =?UTF-8?q?Jan=20H=2E=20Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
-Subject: [PATCH RFC 2/3] rcu: More rcu-variants for list manipulation
-Date: Thu, 21 Jul 2011 15:20:22 +0200
-Message-Id: <1311254423-25484-3-git-send-email-schnhrr@cs.tu-berlin.de>
+Subject: [PATCH RFC 3/3] sched: Handle on_list ancestor in list_add_leaf_cfs_rq()
+Date: Thu, 21 Jul 2011 15:20:23 +0200
+Message-Id: <1311254423-25484-4-git-send-email-schnhrr@cs.tu-berlin.de>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1311254423-25484-1-git-send-email-schnhrr@cs.tu-berlin.de>
 References: <CAPM31RLqq0hgdhoh3GA-38petKeE1zxcL=uJYba9o3yd+_7jjw@mail.gmail.com>
@@ -28,74 +28,143 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jan H. Schönherr <schnhrr@cs.tu-berlin.de>
 
-This commit introduces some more *_rcu variants of some list
-manipulation functions:
+In the case of an on_list ancestor we may incorrectly place the child to
+the right of a great-ancestor on the list.
 
-__list_link_rcu()
-__list_splice_rcu()
-list_splice_tail_init_rcu()
+Consider:
 
-An important difference of the new rcu-splice functions
-compared to the existing function is that they require
-that there are either no concurrent readers on the list to
-be spliced or that these readers are still from the list
-where the list is spliced into.
+      A
+     / \     Here, t1A results in A->cfs_rq being on_list, however when
+    B  t1A   we start enqueuing from C this will not be visible.  This is
+   /         compounded by the fact that on_list expiration may also be out
+  C          of order, punching holes in the tree.
+ /
+t1C
 
+Prevent this by making additions to the leaf_cfs_rq_list position
+independent.
+
+This is done by collecting additions to this list within the
+enqueue_task_fair() path until we reach the top or find an on_list
+ancestor. All additions are then spliced into the leaf_cfs_rq_list at
+once.
+
+The additions cannot be collected in a list with the normal means as
+this violates the RCU guarantee that the next pointer of an element
+always leads back to the list as long as there could be concurrent
+readers.  However, we are still allowed to modify the next pointer of
+deleted entries as long as we make sure that they eventually return to
+the list. That is, if we have to collect more than one entry in a row,
+it is legal to set the next-pointer of the first collected entry to the
+next one. (We can do this even without using *_rcu functions, as there
+are no new elements on that path.)
+
+Suggested-by: Paul Turner <pjt@google.com>
 Signed-off-by: Jan H. Schönherr <schnhrr@cs.tu-berlin.de>
-
 ---
-TODO:
-- add comments
-- rephrase existing splice function using __list_splice_rcu()
-  and probably add "_sync" to the name
----
- include/linux/rculist.h |   26 ++++++++++++++++++++++++++
- 1 files changed, 26 insertions(+), 0 deletions(-)
+ kernel/sched_fair.c |   59 +++++++++++++++++++++++++++++++++-----------------
+ 1 files changed, 39 insertions(+), 20 deletions(-)
 
-diff --git a/include/linux/rculist.h b/include/linux/rculist.h
-index 748401b..56385c8 100644
---- a/include/linux/rculist.h
-+++ b/include/linux/rculist.h
-@@ -24,6 +24,15 @@
-  */
- #define list_next_rcu(list)	(*((struct list_head __rcu **)(&(list)->next)))
- 
-+
-+static inline void __list_link_rcu(struct list_head *prev,
-+					struct list_head *next)
-+{
-+	rcu_assign_pointer(list_next_rcu(prev), next);
-+	next->prev = prev;
-+}
-+
-+
- /*
-  * Insert a new entry between two known consecutive entries.
-  *
-@@ -158,6 +167,23 @@ static inline void list_replace_rcu(struct list_head *old,
- 	old->prev = LIST_POISON2;
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 433491c..f98b424 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -143,26 +143,41 @@ static inline struct cfs_rq *cpu_cfs_rq(struct cfs_rq *cfs_rq, int this_cpu)
+ 	return cfs_rq->tg->cfs_rq[this_cpu];
  }
  
-+static inline void __list_splice_rcu(struct list_head *list,
-+					struct list_head *prev,
-+					struct list_head *next)
-+{
-+	__list_link(list->prev, next);
-+	__list_link_rcu(prev, list->next);
-+}
+-static inline void list_add_leaf_cfs_rq(struct cfs_rq *cfs_rq)
++static inline void list_add_leaf_cfs_rq(struct cfs_rq *cfs_rq,
++					struct list_head *leaf_segment)
+ {
+-	if (!cfs_rq->on_list) {
+-		/*
+-		 * Ensure we either appear before our parent (if already
+-		 * enqueued) or force our parent to appear after us when it is
+-		 * enqueued.  The fact that we always enqueue bottom-up
+-		 * reduces this to two cases.
+-		 */
+-		if (cfs_rq->tg->parent &&
+-		    cfs_rq->tg->parent->cfs_rq[cpu_of(rq_of(cfs_rq))]->on_list) {
+-			list_add_rcu(&cfs_rq->leaf_cfs_rq_list,
+-				&rq_of(cfs_rq)->leaf_cfs_rq_list);
+-		} else {
+-			list_add_tail_rcu(&cfs_rq->leaf_cfs_rq_list,
+-				&rq_of(cfs_rq)->leaf_cfs_rq_list);
+-		}
++	if (cfs_rq->on_list)
++		return;
+ 
+-		cfs_rq->on_list = 1;
++	if (list_empty(leaf_segment)) {
++		leaf_segment->next = &cfs_rq->leaf_cfs_rq_list;
++		leaf_segment->prev = &cfs_rq->leaf_cfs_rq_list;
++	} else {
++		__list_link(leaf_segment->prev, &cfs_rq->leaf_cfs_rq_list);
++		leaf_segment->prev = leaf_segment->prev->next;
+ 	}
 +
-+static inline void list_splice_tail_init_rcu(struct list_head *list,
-+						struct list_head *head)
-+{
-+	if (!list_empty(list)) {
-+		__list_splice_rcu(list, head->prev, head);
-+		INIT_LIST_HEAD(list);
++	/*
++	 * If our parent is on_list or if there is no parent, then splice all
++	 * entries collected so far at the correct position into the
++	 * leaf_cfs_rq_list.
++	 *
++	 * If our parent is not on the list, it will be collected during the
++	 * next call to this function.
++	 */
++	if (cfs_rq->tg->parent) {
++		int cpu = cpu_of(rq_of(cfs_rq));
++		struct cfs_rq *parent_cfs_rq = cfs_rq->tg->parent->cfs_rq[cpu];
++		if (parent_cfs_rq->on_list) {
++			list_splice_tail_init_rcu(leaf_segment,
++					&parent_cfs_rq->leaf_cfs_rq_list);
++		}
++	} else {
++		list_splice_tail_init_rcu(leaf_segment,
++					&rq_of(cfs_rq)->leaf_cfs_rq_list);
 +	}
-+}
 +
- /**
-  * list_splice_init_rcu - splice an RCU-protected list into an existing list.
-  * @list:	the RCU-protected list to splice
++	cfs_rq->on_list = 1;
+ }
+ 
+ static inline void list_del_leaf_cfs_rq(struct cfs_rq *cfs_rq)
+@@ -276,7 +291,8 @@ static inline struct cfs_rq *cpu_cfs_rq(struct cfs_rq *cfs_rq, int this_cpu)
+ 	return &cpu_rq(this_cpu)->cfs;
+ }
+ 
+-static inline void list_add_leaf_cfs_rq(struct cfs_rq *cfs_rq)
++static inline void list_add_leaf_cfs_rq(struct cfs_rq *cfs_rq,
++					struct list_head *leaf_segment)
+ {
+ }
+ 
+@@ -998,8 +1014,6 @@ enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
+ 		__enqueue_entity(cfs_rq, se);
+ 	se->on_rq = 1;
+ 
+-	if (cfs_rq->nr_running == 1)
+-		list_add_leaf_cfs_rq(cfs_rq);
+ }
+ 
+ static void __clear_buddies_last(struct sched_entity *se)
+@@ -1326,12 +1340,17 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+ {
+ 	struct cfs_rq *cfs_rq;
+ 	struct sched_entity *se = &p->se;
++	struct list_head leaf_segment;
++
++	INIT_LIST_HEAD(&leaf_segment);
+ 
+ 	for_each_sched_entity(se) {
+ 		if (se->on_rq)
+ 			break;
+ 		cfs_rq = cfs_rq_of(se);
+ 		enqueue_entity(cfs_rq, se, flags);
++		if (cfs_rq->nr_running == 1)
++			list_add_leaf_cfs_rq(cfs_rq, &leaf_segment);
+ 		flags = ENQUEUE_WAKEUP;
+ 	}
+ 
 -- 
 1.7.6
 
