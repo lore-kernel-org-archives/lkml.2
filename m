@@ -1,87 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752635Ab1GVFHs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 01:07:48 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:39175 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752399Ab1GVFHr (ORCPT
+	id S1752765Ab1GVFJD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 01:09:03 -0400
+Received: from h04-v06-mailtest.paiwastoon.net ([78.47.173.110]:55497 "EHLO
+	h04-v06-mailtest.paiwastoon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751432Ab1GVFJB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 01:07:47 -0400
-Message-ID: <4E290594.9050201@gmail.com>
-Date: Thu, 21 Jul 2011 22:07:32 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
+	Fri, 22 Jul 2011 01:09:01 -0400
+Message-ID: <51462.187.95.38.57.1311286314.squirrel@webmail.paiwastoon.com.af>
+Date: Fri, 22 Jul 2011 00:11:54 +0200 (CEST)
+Subject: Re: Reply...
+From: "Young Chang" <abdulhadi@paiwastoon.com.af>
+Reply-To: young_mevasbnk993@yahoo.com.hk
+User-Agent: SquirrelMail/1.4.9a
 MIME-Version: 1.0
-To: Mohammed Shafi <shafi.wireless@gmail.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-wireless@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: ath: Unable to reset channel (2412 MHz), reset status -5
-References: <4E252076.1050309@gmail.com>	<CAD2nsn12vOXv-msWR+GF7edz3Q26P-pb4H-SO4rf2RHjC7mG+w@mail.gmail.com>	<4E2525BA.4090902@gmail.com>	<CAD2nsn3ifSMa_eFr2vQ0VVF9Ga-0VD3YB_beb28r+eoAHKv4kQ@mail.gmail.com>	<4E25A1E3.9080707@gmail.com> <CAD2nsn1xEB-e33_wrGqLETZ4MwFy12gtyawtg5XHLH0=-9vs2w@mail.gmail.com>
-In-Reply-To: <CAD2nsn1xEB-e33_wrGqLETZ4MwFy12gtyawtg5XHLH0=-9vs2w@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-SA-Exim-Connect-IP: 188.40.49.146
+X-SA-Exim-Mail-From: abdulhadi@paiwastoon.com.af
+X-SA-Exim-Scanned: No (on h04-v06-mailtest.paiwastoon.net); SAEximRunCond expanded to false
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2011 08:49 AM, Mohammed Shafi wrote:
-> On Tue, Jul 19, 2011 at 8:55 PM, Justin P. Mattock
-> <justinmattock@gmail.com>  wrote:
->> On 07/18/2011 11:46 PM, Mohammed Shafi wrote:
->>>
->>> On Tue, Jul 19, 2011 at 12:05 PM, Justin P. Mattock
->>> <justinmattock@gmail.com>    wrote:
->>>>
->>>> On 07/18/2011 11:25 PM, Mohammed Shafi wrote:
->>>>>
->>>>> On Tue, Jul 19, 2011 at 11:43 AM, Justin P. Mattock
->>>>> <justinmattock@gmail.com>      wrote:
->>>>>>
->>>>>> seems with the latest Mainline I am getting the ath9k carpping out
->>>>>> after
->>>>>> a
->>>>>> while of streaming(dmesg below)..:
->>>>>> http://fpaste.org/D7wM/
->>>>>>
->>>>>> will try a bisect if I have the time..
->>>>>
->>>>> I will try to recreate here with 3.0.0-rc7-wl, we can get more
->>>>> information by ath9k debug=0xffffffff.
->>>>> thanks.
->>>>>
->>>>
->>>> cool!
->>>> seems to fire off randomly over here.
->>>
->>> I have got AR5416, will try with that.
->>>
->>
->> I can try the bisect, but might take a while, since external
->> activities(job). Seems this is just starting i.g. with
->> 3.0.0-rc1 I never saw this, but with 3.0.0-rc7-00125-gf560f66
->> its making noise.
->
-> I am unable to get this problem in my AR5416 :( will also try
-> tomorrow. I am using the card for browsing etc.
-> recently there were patches for hardware code changes.
-> just a guess, please check does this patch helps(or is it already
-> there). i think this will be called via
-> ath_set_channel->ath9k_hw_reset->ath9k_hw_init_bb and may be
-> https://patchwork.kernel.org/patch/957902/
->
-
-alright, I applied the patch above, and have ran this a few days in 
-various hotspots etc.. unfortunantly this patch does not fix the issue.
-dmesg is below:
-http://fpaste.org/ozCA/
-
-from what I remember, I had all my clients doing their thing, then all 
-of a sudden everything slowly started to crap out.
-
-as for bisecting, I think this might take a while due to the 
-inconsistancy of this(seems to show up every 4/5 boots etc..)but if I 
-get some free time, I will have a try.
-
-Justin P. Mattock
+Compliment of the day,
+I'm Mr. Young Chang, I work with the Mevas Bank bank here in Hong Kong. I
+have a business proposal that i will like you to handle with me from my bank
+worth $19.7million. This however is not mandatory nor will I in any manner
+compel you to honor against your will. If interested, kindly get back to
+me for more details
 
