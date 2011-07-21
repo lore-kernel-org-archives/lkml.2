@@ -1,37 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499Ab1GUSSC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 14:18:02 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:62553 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751578Ab1GUSR6 (ORCPT
+	id S1753010Ab1GUSWH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 14:22:07 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56152 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751578Ab1GUSWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 14:17:58 -0400
+	Thu, 21 Jul 2011 14:22:04 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110721181605.31672.36250.stgit@beardog.cce.hp.com>
-References: <20110721181605.31672.36250.stgit@beardog.cce.hp.com>
-Date: Thu, 21 Jul 2011 13:17:58 -0500
-Message-ID: <CADzpL0Tfng4=k4wnewi=N2tVQdi5-9PXBcrzCL0sAONF+fdmEQ@mail.gmail.com>
-Subject: Re: [PATCH] hpsa: do not attempt to read from a write-only register
-From: Stephen Cameron <stephenmcameron@gmail.com>
-To: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-Cc: james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, thenzl@redhat.com,
-        akpm@linux-foundation.org, mikem@beardog.cce.hp.com
+In-Reply-To: <20110721124830.GA1325@openwall.com>
+References: <20110714112751.1bfd998f@notabene.brown> <20110714150602.GA30019@openwall.com>
+ <20110715133013.4fa38d19@notabene.brown> <20110715063113.GA3166@albatros>
+ <20110715170650.585f1dad@notabene.brown> <20110715073823.GA3821@albatros>
+ <1310738313.30257.27.camel@moss-pluto> <20110715152641.GA6286@albatros>
+ <1310759683.30257.123.camel@moss-pluto> <20110721140936.632d2c8b@notabene.brown>
+ <20110721124830.GA1325@openwall.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 21 Jul 2011 11:21:07 -0700
+Message-ID: <CA+55aFy4ybatb0McQr2f4A56ympZVLqK2sbp2=73idu58_4RxQ@mail.gmail.com>
+Subject: Re: [kernel-hardening] Re: [PATCH] move RLIMIT_NPROC check from
+ set_user() to do_execve_common()
+To: Solar Designer <solar@openwall.com>
+Cc: NeilBrown <neilb@suse.de>, Stephen Smalley <sds@tycho.nsa.gov>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        kernel-hardening@lists.openwall.com, James Morris <jmorris@namei.org>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Eric Paris <eparis@redhat.com>, Willy Tarreau <w@1wt.eu>,
+        Sebastian Krahmer <krahmer@suse.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 21, 2011 at 1:16 PM, Stephen M. Cameron
-<scameron@beardog.cce.hp.com> wrote:
-> From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+On Thu, Jul 21, 2011 at 5:48 AM, Solar Designer <solar@openwall.com> wrote:
 >
-> Most smartarrays tolerate it, but a few new ones don't.
-> Without this change some newer Smart Arrays will lock up
-> and i/o will grind to a halt.
+> Maybe, and if so I think that one I proposed above falls in this
+> category as well, but it closes more vulnerabilities (and/or does so
+> more fully).
 
+I think we could have a pretty simple approach that "works in
+practice": retain the check at setuid() time, but make it a higher
+limit.
 
-Noticed this wasn't in Linus's git tree yet, so resent it.
+IOW, the logic is that we have two competing pressures:
 
--- steve
+ (a) we should try to avoid failing on setuid(), because there is a
+real risk that the setuid caller doesn't really check the failure case
+and opens itself up for a security problem
+
+and
+
+ (b) never failing setuid at all is in itself a security problem,
+since it can lead to DoS attacks in the form of excessive resource use
+by one user.
+
+But the sane (intelligent) solution to that is to say that we *PREFER*
+to fail in execve(), but that at some point a failure in setuid() is
+preferable to no failure at all. After all, we have no hard knowledge
+that there is any actual setuid() issue. Neither generally does the
+user (iow, look at this whole discussion where intelligent people
+simply have different inputs depending on "what could happen").
+
+So it really seems like the natural approach would be to simply fail
+*earlier* on execve() and fork(). That will catch most cases, and has
+no downsides. But if we notice that we are in a situation where some
+privileged user can be tricked into forking a lot and doing setuid(),
+then at that point the setuid() path becomes relevant.
+
+IOW, I'd suggest simply making the rule be that "setuid() allows 10%
+more users than the limit technically says". It's not a guarantee, but
+it means that in order to hit the problem, you need to have *both* a
+setuid application that allows unconstrained user forking *and*
+doesn't check the setuid() return value.
+
+Put another way: a user cannot force the "we're at the edge of the
+setuid() limit" on its own by just forking - the user will be stopped
+10% before the setuid() failure case can ever trigger.
+
+Is this some "guarantee of nothing bad can ever happen"? No. If you
+have bad setuid applications, you will have problems. But it's a "you
+need to really work harder at it and you need to find more things to
+go wrong", which is after all what real security is all about.
+
+No?
+
+                Linus
