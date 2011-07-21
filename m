@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752774Ab1GUIfI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 04:35:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6811 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751905Ab1GUIfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 04:35:03 -0400
-Date: Thu, 21 Jul 2011 09:34:55 +0100
-From: Joe Thornber <thornber@redhat.com>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Zdenek Kabelac <zkabelac@redhat.com>, Milan Broz <mbroz@redhat.com>,
-        "Alasdair G. Kergon" <agk@redhat.com>, dm-devel@redhat.com,
-        gregkh@suse.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHES] improve sysfs performance, make it O(log n)
-Message-ID: <20110721083454.GD3700@ubuntu>
-Mail-Followup-To: Mikulas Patocka <mpatocka@redhat.com>,
-	Zdenek Kabelac <zkabelac@redhat.com>, Milan Broz <mbroz@redhat.com>,
-	"Alasdair G. Kergon" <agk@redhat.com>, dm-devel@redhat.com,
-	gregkh@suse.de, linux-kernel@vger.kernel.org
-References: <Pine.LNX.4.64.1107201836310.4812@hs20-bc2-1.build.redhat.com>
+	id S1752822Ab1GUIfS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 04:35:18 -0400
+Received: from mail-ey0-f171.google.com ([209.85.215.171]:49394 "EHLO
+	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752546Ab1GUIfG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 04:35:06 -0400
+Date: Thu, 21 Jul 2011 10:35:01 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Jonathan Cameron <jic23@cam.ac.uk>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: RFC: Boiler plate functions for ida / idr allocation?
+Message-ID: <20110721083501.GC3455@htj.dyndns.org>
+References: <4E1D6900.6040500@cam.ac.uk>
+ <20110713133139.GO2872@htj.dyndns.org>
+ <4E1DA232.30408@cam.ac.uk>
+ <878vrs2if3.fsf@rustcorp.com.au>
+ <20110721081946.GB3455@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1107201836310.4812@hs20-bc2-1.build.redhat.com>
+In-Reply-To: <20110721081946.GB3455@htj.dyndns.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 20, 2011 at 06:56:50PM -0400, Mikulas Patocka wrote:
-> Performance testing --- 10000 dm devices created with dmsetup:
+On Thu, Jul 21, 2011 at 10:19:46AM +0200, Tejun Heo wrote:
+> On Thu, Jul 21, 2011 at 05:07:36PM +0930, Rusty Russell wrote:
+> > From: Rusty Russell <rusty@rustcorp.com.au>
+> > Subject: ida: Simplified functions for id allocation.
+> > 
+> > The current hyper-optimized functions are overkill if you simply want
+> > to allocate an id for a device.  Create versions which use an internal
+> > lock.
+> > 
+> > Thanks to Tejun for feedback.  Feel free to delete the #ifdef TEST
+> > code.
+> > 
+> > Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> ...
+> >  static struct kmem_cache *idr_layer_cache;
+> > +static DEFINE_SPINLOCK(simple_ida);
 > 
-> The numbers are time in seconds to perform these operations:
-> 1. create 10000 devices
-> 2. ls -la /sys/block
-> 3. ls -al /sys/block after a cache flush (echo 3 >/proc/sys/vm/drop_caches)
-> 4. dmsetup remove_all
-> 
-> no patches	109	9.8	12	1624
-> patch 1		109	9.1	12	15
-> patches 1,2	120	0.19	3.0	16
-> patches 1,2,3	68	0.17	0.47	12
-> patches 1,2,3,4	68	0.15	0.48	11
-> all patches	37	0.16	0.46	3.3
+> I think the name is a bit confusing.  Maybe simple_ida_lock is better?
+> Other than that,
 
-Fantastic improvement Mikulas!
+Ooh, one more thing, maybe it would be better to use spin_lock_irq()
+to allow calling free under other irq locks.
+
+Thanks.
+
+-- 
+tejun
