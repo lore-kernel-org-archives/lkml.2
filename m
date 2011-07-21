@@ -1,82 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752383Ab1GUJTN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 05:19:13 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:57251 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751956Ab1GUJSs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 05:18:48 -0400
-From: Richard Weinberger <richard@nod.at>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH 10/10] um: Remove dead code
-Date: Thu, 21 Jul 2011 11:18:34 +0200
-Message-Id: <1311239914-8301-10-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1311239914-8301-1-git-send-email-richard@nod.at>
-References: <1311239914-8301-1-git-send-email-richard@nod.at>
+	id S1752586Ab1GUJTh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 05:19:37 -0400
+Received: from acheron.ifi.lmu.de ([129.187.214.135]:60119 "EHLO
+	acheron.ifi.lmu.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752378Ab1GUJTe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 05:19:34 -0400
+From: Michael Brade <brade@informatik.uni-muenchen.de>
+To: linux-kernel@vger.kernel.org
+Subject: 2.6.39, 3.0.0-rc7+: complete system freeze with rsync on big directory
+Date: Thu, 21 Jul 2011 11:19:15 +0200
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Organization: =?iso-8859-1?q?Ludwig-Maximilians-Universit=E4t?= =?iso-8859-1?q?_M=FCnchen?=
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201107211119.15496.brade@informatik.uni-muenchen.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-GCC 4.6's -Wunused-but-set-variable found some dead code.
+Hi,
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- arch/um/drivers/chan_kern.c |    3 +--
- arch/um/drivers/line.c      |    3 +--
- arch/um/kernel/reboot.c     |    3 +--
- 3 files changed, 3 insertions(+), 6 deletions(-)
+this is perfectly reproducible: with vanilla 2.6.39.x and 3.0.0 from 
+yesterday's git my system completely freezes after a minute or so when I do
 
-diff --git a/arch/um/drivers/chan_kern.c b/arch/um/drivers/chan_kern.c
-index 25e1965..d4191fe 100644
---- a/arch/um/drivers/chan_kern.c
-+++ b/arch/um/drivers/chan_kern.c
-@@ -543,11 +543,10 @@ int parse_chan_pair(char *str, struct line *line, int device,
- 		    const struct chan_opts *opts, char **error_out)
- {
- 	struct list_head *chans = &line->chan_list;
--	struct chan *new, *chan;
-+	struct chan *new;
- 	char *in, *out;
- 
- 	if (!list_empty(chans)) {
--		chan = list_entry(chans->next, struct chan, list);
- 		free_chan(chans, 0);
- 		INIT_LIST_HEAD(chans);
- 	}
-diff --git a/arch/um/drivers/line.c b/arch/um/drivers/line.c
-index 35dd0b8..d51c404 100644
---- a/arch/um/drivers/line.c
-+++ b/arch/um/drivers/line.c
-@@ -176,10 +176,9 @@ void line_flush_buffer(struct tty_struct *tty)
- {
- 	struct line *line = tty->driver_data;
- 	unsigned long flags;
--	int err;
- 
- 	spin_lock_irqsave(&line->lock, flags);
--	err = flush_buffer(line);
-+	flush_buffer(line);
- 	spin_unlock_irqrestore(&line->lock, flags);
- }
- 
-diff --git a/arch/um/kernel/reboot.c b/arch/um/kernel/reboot.c
-index 869bec9..4d93dff 100644
---- a/arch/um/kernel/reboot.c
-+++ b/arch/um/kernel/reboot.c
-@@ -20,9 +20,8 @@ static void kill_off_processes(void)
- 		os_kill_ptraced_process(userspace_pid[0], 1);
- 	else {
- 		struct task_struct *p;
--		int pid, me;
-+		int pid;
- 
--		me = os_getpid();
- 		for_each_process(p) {
- 			if (p->mm == NULL)
- 				continue;
--- 
-1.7.6
+   rsync -cavSH -n /source/ /dest/
+
+Watching htop, it freezes only after the caches are full but not immediately 
+when the caches are full. No Alt-SysRq-magic is working anymore, nothing 
+responds at all after the freeze. This is on tty1, no X server running.
+
+Note the -n which means dry run. I also mounted both directories read-only, so 
+it's not the write commands. I am using XFS on both directories, one is 
+mounted with iscsi, the other is local and encrypted with loop-aes. The 
+directory size is >20 GB, 4000-6000 files. I first noticed it when a 
+cp -a /source /dest froze the system.
+
+When I go back to 2.6.37.6 it works fine. I didn't try 2.6.38 yet.
+
+I am running this on a Dell Vostro, amd64, 6 GB RAM, 8x Intel Core i7 CPU Q 
+740 @ 1.73GHz.
+
+Any ideas how to debug this despite the freeze? Do you need my kernel config? 
+Do you need any other info? Please CC me.
+
+thanks,
+   Michael
 
