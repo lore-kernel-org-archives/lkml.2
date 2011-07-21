@@ -1,99 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934Ab1GUHZP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 03:25:15 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:34006 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751183Ab1GUHZN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 03:25:13 -0400
-Date: Thu, 21 Jul 2011 09:22:56 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: john stultz <johnstul@us.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Willy Tarreau <w@1wt.eu>,
-        "MINOURA Makoto / ?$BL'1: ?$B??" <minoura@valinux.co.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Faidon Liambotis <paravoid@debian.org>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
-        seto.hidetoshi@jp.fujitsu.com,
-        =?iso-8859-1?Q?Herv=E9?= Commowick <hcommowick@exosec.fr>,
-        Rand@jasper.es
-Subject: Re: 2.6.32.21 - uptime related crashes?
-Message-ID: <20110721072256.GE9216@elte.hu>
-References: <20110430093605.GA10529@1wt.eu>
- <20110430173905.GA25641@tty.gr>
- <BANLkTi=22QFrJ4vO7-3VuHU=9Cg39bxJ4Q@mail.gmail.com>
- <20110705231515.95bc758f.akpm@linux-foundation.org>
- <kk5d3hgi9eh.fsf@brer.local.valinux.co.jp>
- <1310434819.30337.21.camel@work-vm>
- <20110712041938.GO27254@1wt.eu>
- <1310690138.3367.61.camel@work-vm>
- <1310724097.2586.296.camel@twins>
- <1310752795.2945.4.camel@work-vm>
+	id S1752311Ab1GUH0U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 03:26:20 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:65074 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425Ab1GUH0T convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 03:26:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1310752795.2945.4.camel@work-vm>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <CACna6rxAKMp-2wqwz4k4S3nTkY_3Qz7=hEZk9F2Zig7T5kp_HA@mail.gmail.com>
+References: <CACna6rxAKMp-2wqwz4k4S3nTkY_3Qz7=hEZk9F2Zig7T5kp_HA@mail.gmail.com>
+Date: Thu, 21 Jul 2011 09:18:17 +0200
+Message-ID: <CACna6rwPqeW5Bhc7A0FnkCaRq-a-nA4ziUQdoiakN_DvMyL_RQ@mail.gmail.com>
+Subject: Re: Bug in BCMA: device_unregister causing "NULL pointer dereference at"
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: linux-wireless@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+W dniu 7 lipca 2011 17:25 użytkownik Rafał Miłecki <zajec5@gmail.com> napisał:
+> I've problem with bcma and bus subsystem.
+>
+> This works fine:
+> modprobe bcma; rmmod bcma
+>
+> This:
+> modprobe bcma; modprobe b43; rmmod b43; rmmod bcma
+> causes:
+> BUG: unable to handle kernel NULL pointer dereference at   (null)
+>
+> My BCMA has only 3 fores, out of them only 1 is registered as device:
+> bcma: Core 0 found: ChipCommon (manuf 0x4BF, id 0x800, rev 0x22, class 0x0)
+> bcma: Core 1 found: IEEE 802.11 (manuf 0x4BF, id 0x812, rev 0x17, class 0x0)
+> bcma: Core 2 found: PCIe (manuf 0x4BF, id 0x820, rev 0x0F, class 0x0)
+>
+> The dereference comes out from
+> static void bcma_unregister_cores(struct bcma_bus *bus)
+>
+> There is a simple loop:
+> list_for_each_entry(core, &bus->cores, list) {
+>        if (core->dev_registered)
+>                device_unregister(&core->dev);
+> }
+>
+>
+> So when I unload bcma after I got driver (b43) for 0x812 core, I get
+> NULL pointer dereference.
+>
+> Any tip, why does it happen?
 
-* john stultz <johnstul@us.ibm.com> wrote:
+I've tracked where does crash really happen (kobject_del does not
+really say much). The real forwardtrace is:
+device_unregister → device_del → kobject_del → kobj_kset_leave →
+kobj_kset_leave → list_del_init
 
-> On Fri, 2011-07-15 at 12:01 +0200, Peter Zijlstra wrote:
-> > On Thu, 2011-07-14 at 17:35 -0700, john stultz wrote:
-> > > 
-> > > Peter/Ingo: Can you take a look at the above and let me know if you find
-> > > it too disagreeable?
-> > 
-> > +static unsigned long long __cycles_2_ns(unsigned long long cyc)
-> > +{
-> > +       unsigned long long ns = 0;
-> > +       struct x86_sched_clock_data *data;
-> > +       int cpu = smp_processor_id();
-> > +
-> > +       rcu_read_lock();
-> > +       data = rcu_dereference(per_cpu(cpu_sched_clock_data, cpu));
-> > +
-> > +       if (unlikely(!data))
-> > +               goto out;
-> > +
-> > +       ns = ((cyc - data->base_cycles) * data->mult) >> CYC2NS_SCALE_FACTOR;
-> > +       ns += data->accumulated_ns;
-> > +out:
-> > +       rcu_read_unlock();
-> > +       return ns;
-> > +}
-> > 
-> > The way I read that we're still not wrapping properly if freq scaling
-> > 'never' happens.
-> 
-> Right, this doesn't address the mult overflow behavior. As I mentioned
-> in the patch that the rework allows for solving that in the future using
-> a (possibly very rare) timer that would accumulate cycles to ns.
-> 
-> This rework just really addresses the multiplication overflow->negative
-> roll under that currently occurs with the cyc2ns_offset value.
-> 
-> > Because then we're wrapping on accumulated_ns + 2^54.
-> > 
-> > Something like resetting base, and adding ns to accumulated_ns and
-> > returning the latter would make more sense.
-> 
-> Although we have to update the base_cycles and accumulated_ns
-> atomically, so its probably not something to do in the sched_clock path.
+If you take a look at list_del_init, it touches "prev" and "next". So
+I've added some debugging:
+pr_info("core->dev.kobj.entry.prev: 0x%p\n", core->dev.kobj.entry.prev);
+pr_info("core->dev.kobj.entry.next: 0x%p\n", core->dev.kobj.entry.next);
 
-Ping, what's going on with this bug? Systems are crashing so we need 
-a quick fix ASAP ...
+modprobe bcma && rmmod bcma:
+[  342.866366] bcma: Unregistering device for core 0x812
+[  342.866380] bcma: core->dev.kobj.entry.prev: 0xdb82780c
+[  342.866382] bcma: core->dev.kobj.entry.next: 0xda044980
 
-Thanks,
+modprobe bcma && modprobe b43 && rmmod b43 && rmmod bcma:
+[  612.819306] bcma: Unregistering device for core 0x812
+[  612.819320] bcma: core->dev.kobj.entry.prev: 0x  (null)
+[  612.819322] bcma: core->dev.kobj.entry.next: 0xd7fe6614
+[  612.819971] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[  612.819989] IP: [<c03dcfbe>] kobject_del+0x2e/0x60
 
-	Ingo
+I've no idea why kobj entry list gets corrupted after loading b43
+driver supporting device for core 0x812.
+
+Any help now maybe?
+
+-- 
+Rafał
