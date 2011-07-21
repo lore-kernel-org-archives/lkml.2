@@ -1,80 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728Ab1GUIG6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 04:06:58 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:26904 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751425Ab1GUIGz (ORCPT
+	id S1752719Ab1GUIIE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 04:08:04 -0400
+Received: from mail-ey0-f171.google.com ([209.85.215.171]:44866 "EHLO
+	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425Ab1GUIH7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 04:06:55 -0400
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-To: linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk, gregkh@suse.de
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: [PATCH] pch_phub: Care FUNCSEL register in PM
-Date: Thu, 21 Jul 2011 17:07:08 +0900
-Message-Id: <1311235628-4887-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-X-Mailer: git-send-email 1.7.4.4
+	Thu, 21 Jul 2011 04:07:59 -0400
+Date: Thu, 21 Jul 2011 12:07:55 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Don Zickus <dzickus@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>, Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH -tip/perf/core] perf, x86: P4 PMU - Introduce event alias
+ feature
+Message-ID: <20110721080755.GO7492@sun>
+References: <20110708201712.GS23657@sun>
+ <20110721064610.GB26260@elte.hu>
+ <20110721072052.GM7492@sun>
+ <20110721075201.GH9216@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110721075201.GH9216@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Only ML7213/ML7223(Bus-n) has this register.
-Currently,this driver doesn't care register "FUNCSEL" in suspend/resume.
-This patch saves/restores FUNCSEL register only when the device is ML7213 or
-ML7223(Bus-n).
+On Thu, Jul 21, 2011 at 09:52:01AM +0200, Ingo Molnar wrote:
+> 
+> * Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+> 
+> > > > +static u64 p4_get_alias_event(u64 config)
+> > > > +{
+> > > > +	u64 config_match;
+> > > > +	int i;
+> > > > +
+> > > > +	/*
+> > > > +	 * Probably we're lucky and don't have to do
+> > > > +	 * matching over all config bits.
+> > > > +	 */
+> > > > +	if (!(config & P4_CONFIG_ALIASABLE))
+> > > > +		return 0;
+> > > 
+> > > 'all' config bits? There's a single alias mapping in 
+> > > p4_event_aliases[] right now which makes the comment rather 
+> > > misleading ...
+> > 
+> > no, the cycle below does check for all bits in config, and test
+> > for single bit might help us to return early.
+> 
+> The loop below? AFAICS it does:
+> 
+> > > > +	 */
+> > > > +	for (i = 0; i < ARRAY_SIZE(p4_event_aliases); i++) {
+> > > > +		if (config_match == p4_event_aliases[i].orig) {
+> > > > +			config_match = p4_event_aliases[i].alter;
+> > > > +			break;
+> > > > +		} else if (config_match == p4_event_aliases[i].alter) {
+> > > > +			config_match = p4_event_aliases[i].orig;
+> > > > +			break;
+> > > > +		}
+> > > > +	}
+> 
+> and p4_event_aliases[] is a single-entry array, so ARRAY_SIZE() is 1 
+> and this loop iterates once.
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
----
- drivers/misc/pch_phub.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+I know, but Ingo, I can't guarantee that we'll never bring some new
+alias(es) later ;) And test over 64bit variable is not the same as a test
+over a single bit (where gcc knows the only one bit is tested and can
+optimize it). I think I simply drop this comment, early return case is
+understandable without it at all.
 
-diff --git a/drivers/misc/pch_phub.c b/drivers/misc/pch_phub.c
-index 7bc6f35..b2ea43e 100644
---- a/drivers/misc/pch_phub.c
-+++ b/drivers/misc/pch_phub.c
-@@ -89,6 +89,7 @@
- #define PCH_PHUB_INTPIN_REG_WPERMIT_REG3	0x002C
- #define PCH_PHUB_INT_REDUCE_CONTROL_REG_BASE	0x0040
- #define CLKCFG_REG_OFFSET			0x500
-+#define FUNCSEL_REG_OFFSET			0x508
- 
- #define PCH_PHUB_OROM_SIZE 15360
- 
-@@ -107,6 +108,7 @@
-  * @intpin_reg_wpermit_reg3:		INTPIN_REG_WPERMIT register 3 val
-  * @int_reduce_control_reg:		INT_REDUCE_CONTROL registers val
-  * @clkcfg_reg:				CLK CFG register val
-+ * @funcsel_reg:			Function select register value
-  * @pch_phub_base_address:		Register base address
-  * @pch_phub_extrom_base_address:	external rom base address
-  * @pch_mac_start_address:		MAC address area start address
-@@ -127,6 +129,7 @@ struct pch_phub_reg {
- 	u32 intpin_reg_wpermit_reg3;
- 	u32 int_reduce_control_reg[MAX_NUM_INT_REDUCE_CONTROL_REG];
- 	u32 clkcfg_reg;
-+	u32 funcsel_reg;
- 	void __iomem *pch_phub_base_address;
- 	void __iomem *pch_phub_extrom_base_address;
- 	u32 pch_mac_start_address;
-@@ -210,6 +213,8 @@ static void pch_phub_save_reg_conf(struct pci_dev *pdev)
- 			__func__, i, chip->int_reduce_control_reg[i]);
- 	}
- 	chip->clkcfg_reg = ioread32(p + CLKCFG_REG_OFFSET);
-+	if ((chip->ioh_type == 2) || (chip->ioh_type == 4))
-+		chip->funcsel_reg = ioread32(p + FUNCSEL_REG_OFFSET);
- }
- 
- /* pch_phub_restore_reg_conf - restore register configuration */
-@@ -270,6 +275,8 @@ static void pch_phub_restore_reg_conf(struct pci_dev *pdev)
- 	}
- 
- 	iowrite32(chip->clkcfg_reg, p + CLKCFG_REG_OFFSET);
-+	if ((chip->ioh_type == 2) || (chip->ioh_type == 4))
-+		iowrite32(chip->funcsel_reg, p + FUNCSEL_REG_OFFSET);
- }
- 
- /**
--- 
-1.7.4.4
+> 
+> > > Since this .c file is P4 specific and p4_event_aliases[] is a 
+> > > file-scope array, is the p4_ prefix even needed?
+> > 
+> > I prefer them to be distinguished this way, since the .c file in 
+> > real is included into another (perf_event.c) file.
+> 
+> That should probably be fixed btw. - but yeah, until the PMU drivers 
+> are separated out better the prefix is fine.
 
+I thought about adding some additional Kconfig where we would choose which
+PMU to compile in, not sure though where is the best place for it (under
+which menu section I mean).
+
+> 
+> > > > +
+> > > > +	if (i >= ARRAY_SIZE(p4_event_aliases))
+> > > > +		return 0;
+> > > > +
+> > > > +	return (config_match |
+> > > > +		(config & P4_CONFIG_EVENT_ALIAS_IMMUTABLE_BITS));
+> > > 
+> > > 'return' is not a function. Also, please don't break the line 
+> > > pointlessly.
+> > 
+> > It is perfectly fine to return args in braces,
+> > but I will change it.
+> 
+> The parantheses are syntactically valid but not 'perfectly fine'. As 
+> per kernel coding style we don't use them, to signal that 'return' is 
+> not a function.
+
+ok, i'll fix
+
+> 
+> > 
+> > ...
+> > > > +			/*
+> > > > +			 * Probably an event alias is still available.
+> > > 
+> > > s/Probably/Possibly?
+> > 
+> > Hm? I don't get what is wrong with 'probably'.
+> 
+> Probably means "most likely, maybe" - and that's not the case here.
+> 
+> (It's misleading in this context because it declares the probability 
+> of this action as always higher than 50% - and that's not always the 
+> case here.)
+> 
+> 'Possibly' leaves the probability more undefined.
+> 
+> You could also write 'Check whether an event alias is still 
+> available'.
+> 
+> Thanks,
+> 
+> 	Ingo
+
+ok
+
+
+	Cyrill
