@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753265Ab1GUQiM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 12:38:12 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33918 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751847Ab1GUQiL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 12:38:11 -0400
-Date: Thu, 21 Jul 2011 17:37:57 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        "acme@ghostprotocols.net" <acme@ghostprotocols.net>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: Re: [PATCH 1/3] perf: add context field to perf_event
-Message-ID: <20110721163757.GF8446@e102144-lin.cambridge.arm.com>
-References: <4E1C0F02.9040906@redhat.com>
- <1310462046.14978.11.camel@twins>
- <4E1C10F8.6010300@redhat.com>
- <1310462335.14978.12.camel@twins>
- <4E1C1373.5080500@redhat.com>
- <1310463060.14978.17.camel@twins>
- <20110721153238.GC8446@e102144-lin.cambridge.arm.com>
- <4E28478B.1070907@redhat.com>
- <20110721154648.GD8446@e102144-lin.cambridge.arm.com>
- <4E284CC4.8060902@redhat.com>
+	id S1753226Ab1GUQmM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 12:42:12 -0400
+Received: from home.keithp.com ([63.227.221.253]:51303 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751191Ab1GUQmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 12:42:09 -0400
+From: "Keith Packard" <keithp@keithp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        intel-gfx@lists.freedesktop.org
+Subject: [PULL] drm-intel-fixes (drm/i915 driver)
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Thu, 21 Jul 2011 09:42:05 -0700
+Message-ID: <yunaac7vb4y.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E284CC4.8060902@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 21, 2011 at 04:59:00PM +0100, Avi Kivity wrote:
-> On 07/21/2011 06:46 PM, Will Deacon wrote:
-> > >
-> > >  This is (and must be) called from a preempt disabled context, no mutexes
-> > >  around here.
-> >
-> > Bah, yes, that is essential if you're dealing with current. Maybe use a
-> > spinlock instead?
-> 
-> Could work.  Not thrilled about adding it to the kvm hot path, but I 
-> can't say it will make a measurable impact.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-Understood, but at least it doesn't contribute to finish_task_switch. I also
-wouldn't expect to have multiple preempt registrations in parallel for the
-same task so that lock should rarely (if ever) be contended.
 
-Will
+Two fairly useful bug fixes:
+
+* Quirk for Lenovo U160 to prevent a black-screen when KMS starts up.
+  We've gone round and round trying to make this hardware 'just work',
+  it's time to give up and special case this box.
+
+* Fix longstanding regression on old (pre-G33) hardware with tiled
+  buffer alignment.
+
+The following changes since commit d1ca1a004822983e2fc702d5382b4b9a5527cfbe:
+
+  Merge branch 'drm-intel-fixes' of git://git.kernel.org/pub/scm/linux/kern=
+el/git/keithp/linux-2.6 (2011-07-12 14:18:00 -0700)
+
+are available in the git repository at:
+
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/keithp/linux-2.6.git drm=
+-intel-fixes
+
+Chris Wilson (1):
+      drm/i915: Fix unfenced alignment on pre-G33 hardware
+
+Keith Packard (1):
+      drm/i915: Add quirk to disable SSC on Lenovo U160 LVDS
+
+ drivers/gpu/drm/i915/i915_drv.h        |    5 ++-
+ drivers/gpu/drm/i915/i915_gem.c        |   71 ++++++++++++++++------------=
+----
+ drivers/gpu/drm/i915/i915_gem_tiling.c |    4 +-
+ drivers/gpu/drm/i915/intel_display.c   |   15 ++++++-
+ 4 files changed, 56 insertions(+), 39 deletions(-)
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iD8DBQFOKFbdQp8BWwlsTdMRApWTAKCm7uaXH608iRZxUWtNv5Pkn2iMHACgjvXu
+A4OpDHAS3/de1fb2jLYfNmk=
+=KJt6
+-----END PGP SIGNATURE-----
+--=-=-=--
