@@ -1,94 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562Ab1GUPrQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 11:47:16 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59024 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751471Ab1GUPrL (ORCPT
+	id S1752773Ab1GUPry (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 11:47:54 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47426 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752348Ab1GUPrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 11:47:11 -0400
-Date: Thu, 21 Jul 2011 16:46:48 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        "acme@ghostprotocols.net" <acme@ghostprotocols.net>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: Re: [PATCH 1/3] perf: add context field to perf_event
-Message-ID: <20110721154648.GD8446@e102144-lin.cambridge.arm.com>
-References: <4E1BF5A1.5070301@redhat.com>
- <1310459898.18678.108.camel@twins>
- <4E1C0F02.9040906@redhat.com>
- <1310462046.14978.11.camel@twins>
- <4E1C10F8.6010300@redhat.com>
- <1310462335.14978.12.camel@twins>
- <4E1C1373.5080500@redhat.com>
- <1310463060.14978.17.camel@twins>
- <20110721153238.GC8446@e102144-lin.cambridge.arm.com>
- <4E28478B.1070907@redhat.com>
+	Thu, 21 Jul 2011 11:47:51 -0400
+Date: Thu, 21 Jul 2011 16:47:48 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Shawn Guo <shawn.guo@freescale.com>
+Cc: ashishj3 <ashish.jangam@kpitcummins.com>, arnd@arndb.de,
+        Dajun <dajun.chen@diasemi.com>, sameo@openedhand.com,
+        linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/11] MFD: DA9052 MFD core module v2
+Message-ID: <20110721154748.GB23192@opensource.wolfsonmicro.com>
+References: <1309876620.960.169.camel@L-0532.kpit.com>
+ <20110721154631.GA26837@S2100-06.ap.freescale.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <4E28478B.1070907@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110721154631.GA26837@S2100-06.ap.freescale.net>
+X-Cookie: Is this really happening?
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 21, 2011 at 04:36:43PM +0100, Avi Kivity wrote:
-> On 07/21/2011 06:32 PM, Will Deacon wrote:
-> > >
-> > >  Using TIF_bits sounds like a much better solution for this, wakeups are
-> > >  really rather expensive and its best to avoid extra if at all possible.
-> >
-> > The problem with using a TIF bit to tell a task that it needs to perform
-> > some preempt_notifier registrations is that you end up with something that
-> > looks a lot like preempt notifiers! You also don't escape the concurrent
-> > read/write to thelist of pending registrations.
-> >
-> > One thing I tried was simply using an RCU protected hlist for the preempt
-> > notifiers so that we don't have to worry about atomicity when reading the
-> > notifiers in finish_task_switch. It's a bit odd, since we know we only ever
-> > have a single reader, but I've included it below anyway.
-> >
-> > If anybody has any better ideas, I'm all ears.
-> 
-> > +void preempt_notifier_register_task(struct preempt_notifier *notifier,
-> > +				    struct task_struct *tsk)
-> > +{
-> > +	mutex_lock(&tsk->preempt_notifiers_mutex);
-> > +	hlist_add_head_rcu(&notifier->link,&tsk->preempt_notifiers);
-> > +	mutex_unlock(&tsk->preempt_notifiers_mutex);
-> > +}
-> > +EXPORT_SYMBOL_GPL(preempt_notifier_register_task);
-> > +
-> > +void preempt_notifier_unregister_task(struct preempt_notifier *notifier,
-> > +				      struct task_struct *tsk)
-> > +{
-> > +	mutex_lock(&tsk->preempt_notifiers_mutex);
-> > +	hlist_del_rcu(&notifier->link);
-> > +	mutex_unlock(&tsk->preempt_notifiers_mutex);
-> > +}
-> > +EXPORT_SYMBOL_GPL(preempt_notifier_unregister_task);
-> > +
-> >   /**
-> >    * preempt_notifier_register - tell me when current is being preempted&  rescheduled
-> >    * @notifier: notifier struct to register
-> >    */
-> >   void preempt_notifier_register(struct preempt_notifier *notifier)
-> >   {
-> > -	hlist_add_head(&notifier->link,&current->preempt_notifiers);
-> > +	preempt_notifier_register_task(notifier, current);
-> >   }
-> >   EXPORT_SYMBOL_GPL(preempt_notifier_register);
-> 
-> This is (and must be) called from a preempt disabled context, no mutexes 
-> around here.
+On Thu, Jul 21, 2011 at 11:46:32PM +0800, Shawn Guo wrote:
+> On Tue, Jul 05, 2011 at 08:07:00PM +0530, ashishj3 wrote:
 
-Bah, yes, that is essential if you're dealing with current. Maybe use a
-spinlock instead?
+> > +	mutex_lock_interruptible(&da9052->io_lock);
 
-Will
+> Compile warning as below.
+
+> "warning: ignoring return value of ‘mutex_lock_interruptible’,
+> declared with attribute warn_unused_result"
+
+Although the bigger problem is why are these interruptible?  That's
+very unusual.
