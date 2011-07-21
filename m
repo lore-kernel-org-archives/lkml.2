@@ -1,38 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751047Ab1GUEu3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 00:50:29 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:55961 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750704Ab1GUEu2 (ORCPT
+	id S1751445Ab1GUFEp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 01:04:45 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:60987 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750804Ab1GUFEn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 00:50:28 -0400
-Date: Thu, 21 Jul 2011 06:50:27 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Matthew Garrett <mjg@redhat.com>
-Subject: Re: [BUGFIX] ACPI, APEI, EINJ Param support is disabled by default
-Message-ID: <20110721045027.GM8006@one.firstfloor.org>
-References: <1311149369-20624-1-git-send-email-ying.huang@intel.com> <20110721024204.GJ8006@one.firstfloor.org> <4E2794D5.1030104@intel.com> <20110721041610.GL8006@one.firstfloor.org> <4E27AA99.4000102@intel.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E27AA99.4000102@intel.com>
-User-Agent: Mutt/1.4.2.2i
+	Thu, 21 Jul 2011 01:04:43 -0400
+X-Auth-Info: l3u34MoUNhkiMh8LMGeU66SkakWC4bsacwrFVNfxEsU=
+From: Anatolij Gustschin <agust@denx.de>
+To: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Anatolij Gustschin <agust@denx.de>
+Subject: [PATCH] MAINTAINERS: change maintainership of mpc5xxx
+Date: Thu, 21 Jul 2011 07:04:25 +0200
+Message-Id: <1311224665-19159-1-git-send-email-agust@denx.de>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> To avoid confuse user, the param1/param2 files are created only if
-> param_extension=y is specified.  So making modprams changeable in run
-> time may make situation a little complex.
+Grant intends to hand over maintainership of mpc5xxx
+to me. Change MPC5XXX entry in MAINTAINERS accordingly.
 
-Good point. Ok then not.
+Signed-off-by: Anatolij Gustschin <agust@denx.de>
+---
+ MAINTAINERS |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
--Andi
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 187282d..323208d 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -3878,9 +3878,9 @@ F:	arch/powerpc/platforms/powermac/
+ F:	drivers/macintosh/
+ 
+ LINUX FOR POWERPC EMBEDDED MPC5XXX
+-M:	Grant Likely <grant.likely@secretlab.ca>
++M:	Anatolij Gustschin <agust@denx.de>
+ L:	linuxppc-dev@lists.ozlabs.org
+-T:	git git://git.secretlab.ca/git/linux-2.6.git
++T:	git git://git.denx.de/linux-2.6-agust.git
+ S:	Maintained
+ F:	arch/powerpc/platforms/512x/
+ F:	arch/powerpc/platforms/52xx/
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+1.7.1
+
