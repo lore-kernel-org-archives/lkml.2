@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753595Ab1GUTEZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 15:04:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45001 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752515Ab1GUTEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 15:04:24 -0400
-Date: Thu, 21 Jul 2011 16:04:07 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf tools: Add support to install perf python
-	extension
-Message-ID: <20110721190407.GC24324@ghostprotocols.net>
-References: <1311266726-20655-1-git-send-email-jolsa@redhat.com> <20110721171148.GB24324@ghostprotocols.net> <20110721184715.GA2425@jolsa.Belkin>
+	id S1753650Ab1GUTFn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 15:05:43 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:39506 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753365Ab1GUTFm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 15:05:42 -0400
+Date: Thu, 21 Jul 2011 21:05:36 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Marek Vasut <marek.vasut@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kernel@pengutronix.de
+Subject: Re: [PATCH] iMX28: Fix emi_ddr_open pinmux
+Message-ID: <20110721190536.GC16561@pengutronix.de>
+References: <1311264490-5485-1-git-send-email-marek.vasut@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110721184715.GA2425@jolsa.Belkin>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1311264490-5485-1-git-send-email-marek.vasut@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jul 21, 2011 at 08:47:15PM +0200, Jiri Olsa escreveu:
-> On Thu, Jul 21, 2011 at 02:11:48PM -0300, Arnaldo Carvalho de Melo wrote:
-> > Em Thu, Jul 21, 2011 at 06:45:26PM +0200, Jiri Olsa escreveu:
-> > > Changing the distutils to use their own default 'build'
-> > > directory.
-> > > 
-> > > Such setup makes the install command simple, because using
-> > > --build-lib and --build-temp does not seem to comply with
-> > > the way the distutils' install commands expect it.
-> > > 
-> > > Also keeping the python/perf.so file, so it could be used
-> > > for testing as of until now.
-> > 
-> > Yeah, I gave up when I couldn't get:
-> > 
-> > $ make O=/tmp/build-dir-for-perf/ -C tools/perf/ install
-> > 
-> > to work, does it now? Checking...
+On Thu, Jul 21, 2011 at 06:08:10PM +0200, Marek Vasut wrote:
+> Signed-off-by: Marek Vasut <marek.vasut@gmail.com>
+> ---
+>  arch/arm/mach-mxs/include/mach/iomux-mx28.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> nope, I added install-python_ext since it installs to the
-> python system lib area, and it could break standard install
+> diff --git a/arch/arm/mach-mxs/include/mach/iomux-mx28.h b/arch/arm/mach-mxs/include/mach/iomux-mx28.h
+> index f50fefd..1a95ecd 100644
+> --- a/arch/arm/mach-mxs/include/mach/iomux-mx28.h
+> +++ b/arch/arm/mach-mxs/include/mach/iomux-mx28.h
+> @@ -203,7 +203,7 @@
+>  #define MX28_PAD_EMI_WEN__EMI_WEN			MXS_IOMUX_PAD_NAKED(6, 21, PAD_MUXSEL_0)
+>  #define MX28_PAD_EMI_CE0N__EMI_CE0N			MXS_IOMUX_PAD_NAKED(6, 22, PAD_MUXSEL_0)
+>  #define MX28_PAD_EMI_CE1N__EMI_CE1N			MXS_IOMUX_PAD_NAKED(6, 23, PAD_MUXSEL_0)
+> -#define MX28_PAD_EMI_CKE__EMI_CKE			MXS_IOMUX_PAD_NAKED(6, 24, PAD_MUXSEL_0)
+> +#define MX28_PAD_EMI_CKE__EMI_CKE			MXS_IOMUX_PAD_NAKED(6, 26, PAD_MUXSEL_0)
+In my version of the i.MX28 Reference Manual (Rev. 1, 2010) pin24 is
+correct. So if you're still convinced that 26 is correct you should point
+out in the commit log that the Reference Manual is wrong and why you're
+convinced it really is.
 
-But where is that it picks the binaries built? The problem I was
-experiencing was that it wasn't obeying O=, just using the source dir
-as the build dir, effectively building it again, in a different place.
- 
-> I think there's a way to install python modules under $HOME,
-> maybe we could do that if no DESTDIR is specified..
-> I can add it later ;)
+Best regards
+Uwe
 
-Right, but this is not what I was talking about :-)
-
-- Arnaldo
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
