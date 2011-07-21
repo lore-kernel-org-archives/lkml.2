@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201Ab1GURSY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 13:18:24 -0400
-Received: from inx.pm.waw.pl ([195.116.170.130]:42421 "EHLO inx.pm.waw.pl"
+	id S1753341Ab1GURSb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 13:18:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64064 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751355Ab1GURSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 13:18:21 -0400
-From: Krzysztof Halasa <khc@pm.waw.pl>
-To: Joe Perches <joe@perches.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/8] generic_hdlc: Update to current logging forms
-References: <cover.1309150683.git.joe@perches.com>
-	<d9186716ad410d64b1e09b39408a2f232f178260.1309150684.git.joe@perches.com>
-Date: Thu, 21 Jul 2011 21:18:04 +0200
-In-Reply-To: <d9186716ad410d64b1e09b39408a2f232f178260.1309150684.git.joe@perches.com>
-	(Joe Perches's message of "Sun, 26 Jun 2011 22:01:28 -0700")
-Message-ID: <m3d3h3e93n.fsf@intrepid.localdomain>
+	id S1751355Ab1GURS2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 13:18:28 -0400
+Date: Thu, 21 Jul 2011 18:51:37 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: mtk.manpages@gmail.com, Jan Kratochvil <jan.kratochvil@redhat.com>,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH] man ptrace: add extended description of various ptrace
+	quirks
+Message-ID: <20110721165137.GA21345@redhat.com>
+References: <CAK1hOcPFXMoYsP6N6Hx5Qz3J4xj31TmSj7xo6SRVPegNCbhx7g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAK1hOcPFXMoYsP6N6Hx5Qz3J4xj31TmSj7xo6SRVPegNCbhx7g@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches <joe@perches.com> writes:
-
-> Use pr_fmt, pr_<level> and netdev_<level> as appropriate.
+On 07/21, Denys Vlasenko wrote:
 >
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  drivers/net/wan/c101.c       |   30 +++++++-------
->  drivers/net/wan/hd64570.c    |    8 ++--
->  drivers/net/wan/hd64572.c    |    8 ++--
->  drivers/net/wan/hdlc.c       |   16 ++++---
->  drivers/net/wan/hdlc_cisco.c |   21 ++++------
->  drivers/net/wan/hdlc_fr.c    |   96 +++++++++++++++++++-----------------------
->  drivers/net/wan/hdlc_ppp.c   |    9 ++--
->  drivers/net/wan/hdlc_x25.c   |   12 ++---
->  drivers/net/wan/n2.c         |   42 +++++++++---------
->  drivers/net/wan/pc300too.c   |   36 +++++++--------
->  drivers/net/wan/pci200syn.c  |   29 ++++++-------
->  drivers/net/wan/wanxl.c      |   90 ++++++++++++++++++---------------------
+> Deleted several outright false statements:
+> - pid 1 can be traced
+> - tracer is not shown as parent in ps output
+> - PTRACE_ATTACH is not "the same behavior as if tracee had done
+>   a PTRACE_TRACEME": PTRACE_ATTACH delivers a SIGSTOP.
+> - SIGSTOP _can_ be injected.
 
-Looks good. I'll do some tests and then pass upstream. Thanks.
--- 
-Krzysztof Halasa
+Yes, this is correct, thanks.
+
+> +Tracer can not assume that tracee ALWAYS ends its life by reporting
+> +WIFEXITED(status) or WIFSIGNALED(status).
+> +.LP
+> +.\" or can it? Do we include such a promise into ptrace API?
+
+IIRC, we already discussed this... The traced group leader can
+disappear during mt-exec, otherwise the tracee can never go away
+silently.
+
+> +Tracer can kill a tracee with ptrace(PTRACE_KILL, pid, 0, 0). This
+> +operation is deprecated, use kill(SIGKILL) or tgkill(SIGKILL) instead.
+> +The problem with this operation is that it requires tracee to be in
+> +signal-delivery-stop, otherwise it may not work (may complete
+> +successfully but won't kill the tracee),
+
+In short, ptrace(PTRACE_KILL) is more or less ptrace(PTRACE_CONT, SIGKILL),
+but it always returns 0. IOW, it never worked as decribed in the man
+page. And I guess today nobody can explain why PTRACE_KILL exists.
+
+Oleg.
+
