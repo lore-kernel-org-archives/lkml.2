@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639Ab1GUViq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 17:38:46 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:58462 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752968Ab1GUVin (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 17:38:43 -0400
-X-Greylist: delayed 438 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Jul 2011 17:38:43 EDT
-Date: Thu, 21 Jul 2011 17:31:22 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: ltt-dev@lists.casi.polymtl.ca, linux-kernel@vger.kernel.org,
-        freebsd-announce@freebsd.org, rp@svcs.cs.pdx.edu
-Cc: Jon Bernard <jbernard@debian.org>
-Subject: [RELEASE] Userspace RCU 0.6.4
-Message-ID: <20110721213122.GA23832@Krystal>
+	id S1753847Ab1GUVnA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 17:43:00 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54565 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753227Ab1GUVm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 17:42:59 -0400
+Message-ID: <4E289D48.1060207@zytor.com>
+Date: Thu, 21 Jul 2011 14:42:32 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 17:25:43 up 240 days,  2:28,  3 users,  load average: 0.12, 0.04,
-	0.01
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Andrew Lutomirski <luto@mit.edu>
+CC: mingo@redhat.com, linux-kernel@vger.kernel.org, johnstul@us.ibm.com,
+        tony.luck@intel.com, fenghua.yu@intel.com, tglx@linutronix.de,
+        hpa@linux.intel.com, clemens@ladisch.de,
+        linux-tip-commits@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Linux Arch Mailing List <linux-arch@vger.kernel.org>
+Subject: Re: [tip:x86/vdso] clocksource: Replace vread with generic arch data
+References: <3ae5ec76a168eaaae63f08a2a1060b91aa0b7759.1310563276.git.luto@mit.edu> <tip-433bd805e5fd2c731b3a9025b034f066272d336e@git.kernel.org> <4E288AA6.7090804@zytor.com> <CAObL_7HyKSwm9a_7nfdk5E0Noy5zqD=dyaanvxY_iX5XcP1d4Q@mail.gmail.com> <4E28934A.6040200@zytor.com> <CAObL_7Gpf8Ux=unueB5y41p=O2dHPjZ_eVW+g6Es8N6TH4nLXg@mail.gmail.com> <4E289939.2080004@zytor.com> <CAObL_7EEh+fO23OkpN=zTM5KrHy8FisfPjXkJ7K7k74YsE503w@mail.gmail.com>
+In-Reply-To: <CAObL_7EEh+fO23OkpN=zTM5KrHy8FisfPjXkJ7K7k74YsE503w@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-liburcu is a LGPLv2.1 userspace RCU (read-copy-update) library. This
-data synchronization library provides read-side access which scales
-linearly with the number of cores. It does so by allowing multiples
-copies of a given data structure to live at the same time, and by
-monitoring the data structure accesses to detect grace periods after
-which memory reclamation is possible.
+On 07/21/2011 02:36 PM, Andrew Lutomirski wrote:
+>>
+>> What do you mean, "matching fix"?  The fix I posted should work on x86
+>> and ia64.
+>>
+> 
+> *sigh* I read it wrong.  Never mind.
+> 
 
-Changelog:
-        * uatomic: Fix ARM build errors in uatomic.
-        * urcu tests: hold mutex across use of custom allocator.
-        * Portability fixes to support FreeBSD 8.2.
+That's ok, better to say something and be wrong than to not say
+something and be right...
 
-Project website: http://lttng.org/urcu
-Download link: http://www.lttng.org/files/urcu/
+	-hpa
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
