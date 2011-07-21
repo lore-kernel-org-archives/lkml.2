@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752072Ab1GUXA6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 19:00:58 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:55846 "EHLO
+	id S1752377Ab1GUXBJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 19:01:09 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:53551 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834Ab1GUXAy (ORCPT
+	with ESMTP id S1752153Ab1GUXBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 19:00:54 -0400
+	Thu, 21 Jul 2011 19:01:03 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=message-id:user-agent:date:from:to:cc:subject:references:content-disposition;
-	b=i2b1jp3oR3iQbQegj4/VBoZdAndhm5jje2BTGCFQCp4ScU9zuuvhgH4uJZc3AaQFJ
-	A6WWXIUgqBjVulR4JQ1SQ==
-Message-Id: <20110721184756.878333391@google.com>
+	b=FuD/lYt++P4Vm6xHH2U++fEwxzuluEKzF7i7wL3ERlNImBJmUMUyuJ8rI4eYDm4Wl
+	WMM2UzpQCxBmCy6M7NbJw==
+Message-Id: <20110721184757.083774572@google.com>
 User-Agent: quilt/0.48-1
-Date: Thu, 21 Jul 2011 09:43:27 -0700
+Date: Thu, 21 Jul 2011 09:43:29 -0700
 From: Paul Turner <pjt@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -26,170 +26,223 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
         Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
         Jason Baron <jbaron@redhat.com>
-Subject: [patch 02/18] sched: hierarchical task accounting for SCHED_OTHER
+Subject: [patch 04/18] sched: validate CFS quota hierarchies
 References: <20110721164325.231521704@google.com>
-Content-Disposition: inline; filename=sched-bwc-account_nr_running.patch
+Content-Disposition: inline; filename=sched-bwc-consistent_quota.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce hierarchical task accounting for the group scheduling case in CFS, as
-well as promoting the responsibility for maintaining rq->nr_running to the
-scheduling classes.
+Add constraints validation for CFS bandwidth hierarchies.
 
-The primary motivation for this is that with scheduling classes supporting
-bandwidth throttling it is possible for entities participating in throttled
-sub-trees to not have root visible changes in rq->nr_running across activate
-and de-activate operations.  This in turn leads to incorrect idle and 
-weight-per-task load balance decisions.
+Validate that:
+   max(child bandwidth) <= parent_bandwidth
 
-This also allows us to make a small fixlet to the fastpath in pick_next_task()
-under group scheduling.
+In a quota limited hierarchy, an unconstrained entity
+(e.g. bandwidth==RUNTIME_INF) inherits the bandwidth of its parent.
 
-Note: this issue also exists with the existing sched_rt throttling mechanism.
-This patch does not address that.
+This constraint is chosen over sum(child_bandwidth) as notion of over-commit is
+valuable within SCHED_OTHER.  Some basic code from the RT case is re-factored
+for reuse.
 
 Signed-off-by: Paul Turner <pjt@google.com>
-Reviewed-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 
 ---
- kernel/sched.c          |    6 ++----
- kernel/sched_fair.c     |   10 ++++++++--
- kernel/sched_rt.c       |    5 ++++-
- kernel/sched_stoptask.c |    2 ++
- 4 files changed, 16 insertions(+), 7 deletions(-)
+ kernel/sched.c |  112 +++++++++++++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 98 insertions(+), 14 deletions(-)
 
 Index: tip/kernel/sched.c
 ===================================================================
 --- tip.orig/kernel/sched.c
 +++ tip/kernel/sched.c
-@@ -308,7 +308,7 @@ struct task_group root_task_group;
- /* CFS-related fields in a runqueue */
- struct cfs_rq {
- 	struct load_weight load;
--	unsigned long nr_running;
-+	unsigned long nr_running, h_nr_running;
+@@ -249,6 +249,7 @@ struct cfs_bandwidth {
+ 	raw_spinlock_t lock;
+ 	ktime_t period;
+ 	u64 quota;
++	s64 hierarchal_quota;
+ #endif
+ };
  
- 	u64 exec_clock;
- 	u64 min_vruntime;
-@@ -1830,7 +1830,6 @@ static void activate_task(struct rq *rq,
- 		rq->nr_uninterruptible--;
- 
- 	enqueue_task(rq, p, flags);
--	inc_nr_running(rq);
+@@ -1510,7 +1511,8 @@ static inline void dec_cpu_load(struct r
+ 	update_load_sub(&rq->load, load);
  }
+ 
+-#if (defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)) || defined(CONFIG_RT_GROUP_SCHED)
++#if defined(CONFIG_RT_GROUP_SCHED) || (defined(CONFIG_FAIR_GROUP_SCHED) && \
++			(defined(CONFIG_SMP) || defined(CONFIG_CFS_BANDWIDTH)))
+ typedef int (*tg_visitor)(struct task_group *, void *);
  
  /*
-@@ -1842,7 +1841,6 @@ static void deactivate_task(struct rq *r
- 		rq->nr_uninterruptible++;
- 
- 	dequeue_task(rq, p, flags);
--	dec_nr_running(rq);
+@@ -8522,12 +8524,7 @@ unsigned long sched_group_shares(struct 
  }
+ #endif
  
- #ifdef CONFIG_IRQ_TIME_ACCOUNTING
-@@ -4194,7 +4192,7 @@ pick_next_task(struct rq *rq)
- 	 * Optimization: we know that if all tasks are in
- 	 * the fair class we can call that function directly:
- 	 */
--	if (likely(rq->nr_running == rq->cfs.nr_running)) {
-+	if (likely(rq->nr_running == rq->cfs.h_nr_running)) {
- 		p = fair_sched_class.pick_next_task(rq);
- 		if (likely(p))
- 			return p;
-Index: tip/kernel/sched_fair.c
-===================================================================
---- tip.orig/kernel/sched_fair.c
-+++ tip/kernel/sched_fair.c
-@@ -1332,16 +1332,19 @@ enqueue_task_fair(struct rq *rq, struct 
- 			break;
- 		cfs_rq = cfs_rq_of(se);
- 		enqueue_entity(cfs_rq, se, flags);
-+		cfs_rq->h_nr_running++;
- 		flags = ENQUEUE_WAKEUP;
- 	}
- 
- 	for_each_sched_entity(se) {
--		struct cfs_rq *cfs_rq = cfs_rq_of(se);
-+		cfs_rq = cfs_rq_of(se);
-+		cfs_rq->h_nr_running++;
- 
- 		update_cfs_load(cfs_rq, 0);
- 		update_cfs_shares(cfs_rq);
- 	}
- 
-+	inc_nr_running(rq);
- 	hrtick_update(rq);
- }
- 
-@@ -1361,6 +1364,7 @@ static void dequeue_task_fair(struct rq 
- 	for_each_sched_entity(se) {
- 		cfs_rq = cfs_rq_of(se);
- 		dequeue_entity(cfs_rq, se, flags);
-+		cfs_rq->h_nr_running--;
- 
- 		/* Don't dequeue parent if it has other entities besides us */
- 		if (cfs_rq->load.weight) {
-@@ -1379,12 +1383,14 @@ static void dequeue_task_fair(struct rq 
- 	}
- 
- 	for_each_sched_entity(se) {
--		struct cfs_rq *cfs_rq = cfs_rq_of(se);
-+		cfs_rq = cfs_rq_of(se);
-+		cfs_rq->h_nr_running--;
- 
- 		update_cfs_load(cfs_rq, 0);
- 		update_cfs_shares(cfs_rq);
- 	}
- 
-+	dec_nr_running(rq);
- 	hrtick_update(rq);
- }
- 
-Index: tip/kernel/sched_rt.c
-===================================================================
---- tip.orig/kernel/sched_rt.c
-+++ tip/kernel/sched_rt.c
-@@ -961,6 +961,8 @@ enqueue_task_rt(struct rq *rq, struct ta
- 
- 	if (!task_current(rq, p) && p->rt.nr_cpus_allowed > 1)
- 		enqueue_pushable_task(rq, p);
-+
-+	inc_nr_running(rq);
- }
- 
- static void dequeue_task_rt(struct rq *rq, struct task_struct *p, int flags)
-@@ -971,6 +973,8 @@ static void dequeue_task_rt(struct rq *r
- 	dequeue_rt_entity(rt_se);
- 
- 	dequeue_pushable_task(rq, p);
-+
-+	dec_nr_running(rq);
- }
- 
- /*
-@@ -1863,4 +1867,3 @@ static void print_rt_stats(struct seq_fi
- 	rcu_read_unlock();
- }
- #endif /* CONFIG_SCHED_DEBUG */
+-#ifdef CONFIG_RT_GROUP_SCHED
+-/*
+- * Ensure that the real time constraints are schedulable.
+- */
+-static DEFINE_MUTEX(rt_constraints_mutex);
 -
-Index: tip/kernel/sched_stoptask.c
-===================================================================
---- tip.orig/kernel/sched_stoptask.c
-+++ tip/kernel/sched_stoptask.c
-@@ -34,11 +34,13 @@ static struct task_struct *pick_next_tas
- static void
- enqueue_task_stop(struct rq *rq, struct task_struct *p, int flags)
++#if defined(CONFIG_RT_GROUP_SCHED) || defined(CONFIG_CFS_BANDWIDTH)
+ static unsigned long to_ratio(u64 period, u64 runtime)
  {
-+	inc_nr_running(rq);
+ 	if (runtime == RUNTIME_INF)
+@@ -8535,6 +8532,13 @@ static unsigned long to_ratio(u64 period
+ 
+ 	return div64_u64(runtime << 20, period);
+ }
++#endif
++
++#ifdef CONFIG_RT_GROUP_SCHED
++/*
++ * Ensure that the real time constraints are schedulable.
++ */
++static DEFINE_MUTEX(rt_constraints_mutex);
+ 
+ /* Must be called with tasklist_lock held */
+ static inline int tg_has_rt_tasks(struct task_group *tg)
+@@ -8555,7 +8559,7 @@ struct rt_schedulable_data {
+ 	u64 rt_runtime;
+ };
+ 
+-static int tg_schedulable(struct task_group *tg, void *data)
++static int tg_rt_schedulable(struct task_group *tg, void *data)
+ {
+ 	struct rt_schedulable_data *d = data;
+ 	struct task_group *child;
+@@ -8619,7 +8623,7 @@ static int __rt_schedulable(struct task_
+ 		.rt_runtime = runtime,
+ 	};
+ 
+-	return walk_tg_tree(tg_schedulable, tg_nop, &data);
++	return walk_tg_tree(tg_rt_schedulable, tg_nop, &data);
  }
  
- static void
- dequeue_task_stop(struct rq *rq, struct task_struct *p, int flags)
- {
-+	dec_nr_running(rq);
+ static int tg_set_rt_bandwidth(struct task_group *tg,
+@@ -8878,14 +8882,17 @@ static u64 cpu_shares_read_u64(struct cg
  }
  
- static void yield_task_stop(struct rq *rq)
+ #ifdef CONFIG_CFS_BANDWIDTH
++static DEFINE_MUTEX(cfs_constraints_mutex);
++
+ const u64 max_cfs_quota_period = 1 * NSEC_PER_SEC; /* 1s */
+ const u64 min_cfs_quota_period = 1 * NSEC_PER_MSEC; /* 1ms */
+ 
++static int __cfs_schedulable(struct task_group *tg, u64 period, u64 runtime);
++
+ static int tg_set_cfs_bandwidth(struct task_group *tg, u64 period, u64 quota)
+ {
+-	int i;
++	int i, ret = 0;
+ 	struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(tg);
+-	static DEFINE_MUTEX(mutex);
+ 
+ 	if (tg == &root_task_group)
+ 		return -EINVAL;
+@@ -8906,7 +8913,11 @@ static int tg_set_cfs_bandwidth(struct t
+ 	if (period > max_cfs_quota_period)
+ 		return -EINVAL;
+ 
+-	mutex_lock(&mutex);
++	mutex_lock(&cfs_constraints_mutex);
++	ret = __cfs_schedulable(tg, period, quota);
++	if (ret)
++		goto out_unlock;
++
+ 	raw_spin_lock_irq(&cfs_b->lock);
+ 	cfs_b->period = ns_to_ktime(period);
+ 	cfs_b->quota = quota;
+@@ -8921,9 +8932,10 @@ static int tg_set_cfs_bandwidth(struct t
+ 		cfs_rq->runtime_remaining = 0;
+ 		raw_spin_unlock_irq(&rq->lock);
+ 	}
+-	mutex_unlock(&mutex);
++out_unlock:
++	mutex_unlock(&cfs_constraints_mutex);
+ 
+-	return 0;
++	return ret;
+ }
+ 
+ int tg_set_cfs_quota(struct task_group *tg, long cfs_quota_us)
+@@ -8997,6 +9009,78 @@ static int cpu_cfs_period_write_u64(stru
+ 	return tg_set_cfs_period(cgroup_tg(cgrp), cfs_period_us);
+ }
+ 
++struct cfs_schedulable_data {
++	struct task_group *tg;
++	u64 period, quota;
++};
++
++/*
++ * normalize group quota/period to be quota/max_period
++ * note: units are usecs
++ */
++static u64 normalize_cfs_quota(struct task_group *tg,
++			       struct cfs_schedulable_data *d)
++{
++	u64 quota, period;
++
++	if (tg == d->tg) {
++		period = d->period;
++		quota = d->quota;
++	} else {
++		period = tg_get_cfs_period(tg);
++		quota = tg_get_cfs_quota(tg);
++	}
++
++	/* note: these should typically be equivalent */
++	if (quota == RUNTIME_INF || quota == -1)
++		return RUNTIME_INF;
++
++	return to_ratio(period, quota);
++}
++
++static int tg_cfs_schedulable_down(struct task_group *tg, void *data)
++{
++	struct cfs_schedulable_data *d = data;
++	struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(tg);
++	s64 quota = 0, parent_quota = -1;
++
++	if (!tg->parent) {
++		quota = RUNTIME_INF;
++	} else {
++		struct cfs_bandwidth *parent_b = tg_cfs_bandwidth(tg->parent);
++
++		quota = normalize_cfs_quota(tg, d);
++		parent_quota = parent_b->hierarchal_quota;
++
++		/*
++		 * ensure max(child_quota) <= parent_quota, inherit when no
++		 * limit is set
++		 */
++		if (quota == RUNTIME_INF)
++			quota = parent_quota;
++		else if (parent_quota != RUNTIME_INF && quota > parent_quota)
++			return -EINVAL;
++	}
++	cfs_b->hierarchal_quota = quota;
++
++	return 0;
++}
++
++static int __cfs_schedulable(struct task_group *tg, u64 period, u64 quota)
++{
++	struct cfs_schedulable_data data = {
++		.tg = tg,
++		.period = period,
++		.quota = quota,
++	};
++
++	if (quota != RUNTIME_INF) {
++		do_div(data.period, NSEC_PER_USEC);
++		do_div(data.quota, NSEC_PER_USEC);
++	}
++
++	return walk_tg_tree(tg_cfs_schedulable_down, tg_nop, &data);
++}
+ #endif /* CONFIG_CFS_BANDWIDTH */
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
+ 
 
 
