@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752212Ab1GUKZl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 06:25:41 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:53038 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752073Ab1GUKZj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 06:25:39 -0400
-X-AuditID: cbfee61a-b7cf0ae000006bc6-22-4e27fea114ff
-Date: Thu, 21 Jul 2011 19:26:04 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCH] ARM: EXYNOS4: Update config file of NURI to enable RTC
-To: Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Message-id: <4E27FEBC.7050302@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7BIT
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
-X-OriginalArrivalTime: 21 Jul 2011 10:26:00.0835 (UTC)
- FILETIME=[963D1530:01CC4790]
-X-Brightmail-Tracker: AAAAAA==
+	id S1751765Ab1GUKb5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 06:31:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49741 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750834Ab1GUKbx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 06:31:53 -0400
+Date: Thu, 21 Jul 2011 11:31:49 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] mm: page allocator: Reconsider zones for allocation
+ after direct reclaim
+Message-ID: <20110721103149.GR5349@suse.de>
+References: <1310389274-13995-1-git-send-email-mgorman@suse.de>
+ <1310389274-13995-4-git-send-email-mgorman@suse.de>
+ <4E1CE9FF.3050707@jp.fujitsu.com>
+ <20110713111017.GG7529@suse.de>
+ <4E1E6086.4060902@jp.fujitsu.com>
+ <20110714061049.GK7529@suse.de>
+ <4E27F2EC.2010902@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <4E27F2EC.2010902@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch update config file of NURI board to enable RTC
+On Thu, Jul 21, 2011 at 06:35:40PM +0900, KOSAKI Motohiro wrote:
+> Hi
+> 
+> 
+> 
+> 
+> 
+> >> So, I think we don't need to care zonelist, just kswapd turn off
+> >> their own node.
+> > 
+> > I don't understand what you mean by this.
+> 
+> This was the answer of following your comments.
+> 
+> > Instead, couldn't we turn zlc->fullzones off from kswapd?
+> > >
+> > > Which zonelist should it clear (there are two)
+> 
+> I mean, buddy list is belong to zone, not zonelist. therefore, kswapd
+> don't need to look up zonelist.
+> 
+> So, I'd suggest either following way,
+>  - use direct reclaim path, but only clear a zlc bit of zones in reclaimed zonelist, not all. or
 
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- arch/arm/mach-exynos4/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+We certainly could narrow the number of zones the bits are
+cleared on by exporting knowledge of the ZLC to vmscan for use in
+shrink_zones(). I think in practice the end result will be the same
+though as shrink_zones() examples all zones in the zonelist. How much
+of a gain do you expect the additional complexity to give us?
 
-diff --git a/arch/arm/mach-exynos4/Kconfig b/arch/arm/mach-exynos4/Kconfig
-index b735705..bb675fb 100644
---- a/arch/arm/mach-exynos4/Kconfig
-+++ b/arch/arm/mach-exynos4/Kconfig
-@@ -184,6 +184,7 @@ config MACH_NURI
- 	bool "Mobile NURI Board"
- 	select CPU_EXYNOS4210
- 	select S3C_DEV_WDT
-+	select S3C_DEV_RTC
- 	select S3C_DEV_HSMMC
- 	select S3C_DEV_HSMMC2
- 	select S3C_DEV_HSMMC3
+>  - use kswapd and only clear a zlc bit at kswap exiting balance_pgdat
+> 
+
+That is potentially a long time if there are streaming readers keeping a
+zone under the high watermark for a long time.
+
+> I'm prefer to add a branch to slowpath (ie reclaim path) rather than fast path.
+> 
+
+The clearing of the zonelist is already happening after direct reclaim
+which is the slow path. What fast path are you concerned with here?
+
 -- 
-1.7.0.4
-
+Mel Gorman
+SUSE Labs
