@@ -1,41 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932133Ab1GVUfk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 16:35:40 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54743 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932090Ab1GVUfj (ORCPT
+	id S932143Ab1GVUh1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 16:37:27 -0400
+Received: from www.linutronix.de ([62.245.132.108]:59765 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932096Ab1GVUh0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 16:35:39 -0400
+	Fri, 22 Jul 2011 16:37:26 -0400
+Date: Fri, 22 Jul 2011 22:37:24 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: [ANNOUNCE] 3.0-rt1
+Message-ID: <alpine.LFD.2.02.1107222203400.2702@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20110722133220.0baf2199@nehalam.ftrdhcpuser.net>
-References: <CA+55aFxakA2U+oMJ1T7awTYa+p6xp9N0aCbfrUqgkF7BJ8gnQw@mail.gmail.com>
- <4E29CB5B.4040408@unsolicited.net> <CA+55aFy1FnVGH4C_0T8fXwZPUdz5-SCczMwy1K8kydLwTx89RQ@mail.gmail.com>
- <4E29D326.7070403@candelatech.com> <20110722133220.0baf2199@nehalam.ftrdhcpuser.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 22 Jul 2011 13:35:16 -0700
-Message-ID: <CA+55aFwX55HhzyPsb5vx-=xkHpWJBH0481ZFWcXnNzH1M6zhdg@mail.gmail.com>
-Subject: Re: Linux 3.0 release
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: Ben Greear <greearb@candelatech.com>, David <david@unsolicited.net>,
-        Tejun Heo <tj@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 22, 2011 at 1:32 PM, Stephen Hemminger
-<shemminger@vyatta.com> wrote:
->
-> The workqueue code should have a fallback and not try and
-> do anything if being called from IRQ.
+Dear RT Folks,
 
-Fair enough. Especially since one of the *points* of workqueues is
-indeed to schedule stuff from irqs and that cannot be done
-immediately.
+I'm pleased to announce the 3.0-rt1 release.
 
-Tejun?
+Changes versus 3.0-rc7-rt0:
 
-                  Linus
+  * Update to Linus final 3.0 release
+
+  * RTC bugfixes (scheduled for mainline/stable)
+
+  * Long standing (rt only) timer_list bug (see
+    timers-avoid-the-base-null-otptimization-on-rt.patch in the split
+    out quilt queue)
+
+  * Minor non exciting fixes all over the place
+
+Known issues:
+
+  * Some weird "console=..." commandline + config dependent
+    interactions which have been not yet investigated down to their
+    root cause. Result in a boot hang. YMMV
+
+Patch against 3.0 can be found here:
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/patch-3.0-rt1.patch.bz2
+
+The split quilt queue is available at:
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/patches-3.0-rt1.tar.bz2
+
+Thanks,
+
+	tglx
