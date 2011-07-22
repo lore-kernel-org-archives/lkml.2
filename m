@@ -1,109 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753066Ab1GVQtF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 12:49:05 -0400
-Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:49708 "EHLO
-	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752939Ab1GVQtE (ORCPT
+	id S1753554Ab1GVQ4D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 12:56:03 -0400
+Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:53224 "EHLO
+	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751871Ab1GVQ4A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 12:49:04 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4E29A9E6.3080308@cam.ac.uk>
-Date: Fri, 22 Jul 2011 17:48:38 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel,gmane.linux.drivers.sensors,gmane.linux.scsi,gmane.comp.video.dri.devel
-CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
-        rtc-linux@googlegroups.com, osd-dev@open-osd.org,
-        linux-scsi@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        jkosina@suse.cz, naota@elisp.net, rusty@rustcorp.com.au,
-        paulmck@linux.vnet.ibm.com, namhyung@gmail.com,
-        randy.dunlap@oracle.com, tj@kernel.org, cabarnes@indesign-llc.com,
-        akpm@linux-foundation.org, airlied@redhat.com, thellstrom@vmware.com,
-        johnpol@2ka.mipt.ru, JBottomley@parallels.com, bhalevy@panasas.com,
-        bharrosh@panasas.com, a.zummo@towertech.it, guenter.roeck@ericsson.com,
-        khali@linux-fr.org, airlied@linux.ie
-Subject: Re: [PATCH 0/8] RFC: Introduce ida_simple interfaces and use them.
-References: <1311352886-4047-1-git-send-email-jic23@cam.ac.uk>
-In-Reply-To: <1311352886-4047-1-git-send-email-jic23@cam.ac.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+	Fri, 22 Jul 2011 12:56:00 -0400
+From: James Nuss <jamesnuss@nanometrics.ca>
+To: Rodolfo Giometti <giometti@linux.it>
+Cc: Ricardo Martins <rasm@fe.up.pt>, Ben Gardiner <bengardiner@nanometrics.ca>,
+        linux-kernel@vger.kernel.org, linuxpps@ml.enneenne.com,
+        Alexander Gordeev <lasaine@lvk.cs.msu.su>,
+        Igor Plyatov <plyatov@gmail.com>
+Subject: [PATCH v4 1/2] pps: default echo function
+Date: Fri, 22 Jul 2011 12:55:43 -0400
+Message-Id: <1311353744-16405-2-git-send-email-jamesnuss@nanometrics.ca>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1311353744-16405-1-git-send-email-jamesnuss@nanometrics.ca>
+References: <1311353744-16405-1-git-send-email-jamesnuss@nanometrics.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gah,
+A default echo function has been provided so it is no longer an
+error when you specify PPS_ECHOASSERT or PPS_ECHOCLEAR without an explicit
+echo function. This allows some code re-use and also makes it easier
+to write client drivers since the default echo function does not
+normally need to change.
 
-Sorry all, I have no idea why this double sent.
+Signed-off-by: James Nuss <jamesnuss@nanometrics.ca>
+Reviewed-by: Ben Gardiner <bengardiner@nanometrics.ca>
+Acked-by: Rodolfo Giometti <giometti@linux.it>
+---
+ drivers/pps/clients/pps-ktimer.c  |   12 ------------
+ drivers/pps/clients/pps_parport.c |    9 ---------
+ drivers/pps/kapi.c                |   20 +++++++++++++-------
+ 3 files changed, 13 insertions(+), 28 deletions(-)
 
-Jonathan
-> Hi All,
-> 
-> Firstly sorry for the huge cc list, but this series does get about.
-> 
-> This series came out of two separate lkml threads:
-> 
-> https://lkml.org/lkml/2011/7/13/64
-> http://thread.gmane.org/gmane.linux.kernel/1148513/focus=74236
-> 
-> Basically Rusty and I both got annoyed with yet more instances
-> of the same cut and past ida allocation code for the very simple
-> case of wanting a unique id for some device. Tejun helpfully
-> joined the two threads up.
-> 
-> Anyhow, Rusty proposed more or less the first patch here (with a name
-> change requested by Tejun applied.)
-> 
-> The others patches are some of the more obvious looking cases for
-> applying this code.  My original reason was for IIO but those patches will
-> have to wait a little while for some prior changes to merge.
-> For reference, it saves about 40 lines there so I'm happy ;)
-> 
-> There are a number of other cases in tree that can be cleaned up
-> in a second series once these are sorted.
-> 
-> There are a couple of cases in here where I've carefully mangled
-> the error codes to keep consistent with the existing code.  Please
-> can people who know those subsystems well decide on whether the
-> mangling is necessary.
-> 
-> All comments welcome. I expect I've broken at least one driver
-> doing this so please take a close look.
-> 
-> Rusty, Tejun. I kept your sign of an ack for the first patch. Could
-> you quickly verify that's fine?
-> 
-> Thanks,
-> 
-> Jonathan
-> 
-> Jonathan Cameron (7):
->   hwmon: convert idr to ida and use ida_simple interface.
->   hwmon: ibmaem: convert idr to ida and use ida_simple_get
->   [SCSI] use ida_simple_get and ida_simple remove in place of
->     boilerplate code.
->   drm/vmwgfx: use ida_simple_get for id allocation.
->   [SCSI] osduld: use ida_simple_get to handle id.
->   w1: ds2760 and ds2780, use ida for id and ida_simple_get to get it.
->   rtc: class idr converted to ida and ida_simple_get used.
-> 
-> Rusty Russell (1):
->   ida: Simplified functions for id allocation.
-> 
->  drivers/gpu/drm/vmwgfx/vmwgfx_gmrid_manager.c |   34 +++----------
->  drivers/hwmon/hwmon.c                         |   32 +++---------
->  drivers/hwmon/ibmaem.c                        |   47 +++--------------
->  drivers/rtc/class.c                           |   32 +++---------
->  drivers/scsi/osd/osd_uld.c                    |   22 +++-----
->  drivers/scsi/sd.c                             |   32 ++++--------
->  drivers/w1/slaves/w1_ds2760.c                 |   48 ++---------------
->  drivers/w1/slaves/w1_ds2780.c                 |   48 ++---------------
->  include/linux/idr.h                           |    4 ++
->  lib/idr.c                                     |   67 +++++++++++++++++++++++++
->  10 files changed, 134 insertions(+), 232 deletions(-)
-> 
+diff --git a/drivers/pps/clients/pps-ktimer.c b/drivers/pps/clients/pps-ktimer.c
+index 82583b0..436b4e4 100644
+--- a/drivers/pps/clients/pps-ktimer.c
++++ b/drivers/pps/clients/pps-ktimer.c
+@@ -52,17 +52,6 @@ static void pps_ktimer_event(unsigned long ptr)
+ }
+ 
+ /*
+- * The echo function
+- */
+-
+-static void pps_ktimer_echo(struct pps_device *pps, int event, void *data)
+-{
+-	dev_info(pps->dev, "echo %s %s\n",
+-		event & PPS_CAPTUREASSERT ? "assert" : "",
+-		event & PPS_CAPTURECLEAR ? "clear" : "");
+-}
+-
+-/*
+  * The PPS info struct
+  */
+ 
+@@ -72,7 +61,6 @@ static struct pps_source_info pps_ktimer_info = {
+ 	.mode		= PPS_CAPTUREASSERT | PPS_OFFSETASSERT |
+ 			  PPS_ECHOASSERT |
+ 			  PPS_CANWAIT | PPS_TSFMT_TSPEC,
+-	.echo		= pps_ktimer_echo,
+ 	.owner		= THIS_MODULE,
+ };
+ 
+diff --git a/drivers/pps/clients/pps_parport.c b/drivers/pps/clients/pps_parport.c
+index c571d6d..e1b4705 100644
+--- a/drivers/pps/clients/pps_parport.c
++++ b/drivers/pps/clients/pps_parport.c
+@@ -133,14 +133,6 @@ out_both:
+ 	return;
+ }
+ 
+-/* the PPS echo function */
+-static void pps_echo(struct pps_device *pps, int event, void *data)
+-{
+-	dev_info(pps->dev, "echo %s %s\n",
+-		event & PPS_CAPTUREASSERT ? "assert" : "",
+-		event & PPS_CAPTURECLEAR ? "clear" : "");
+-}
+-
+ static void parport_attach(struct parport *port)
+ {
+ 	struct pps_client_pp *device;
+@@ -151,7 +143,6 @@ static void parport_attach(struct parport *port)
+ 				  PPS_OFFSETASSERT | PPS_OFFSETCLEAR | \
+ 				  PPS_ECHOASSERT | PPS_ECHOCLEAR | \
+ 				  PPS_CANWAIT | PPS_TSFMT_TSPEC,
+-		.echo		= pps_echo,
+ 		.owner		= THIS_MODULE,
+ 		.dev		= NULL
+ 	};
+diff --git a/drivers/pps/kapi.c b/drivers/pps/kapi.c
+index a4e8eb9..f197e8e 100644
+--- a/drivers/pps/kapi.c
++++ b/drivers/pps/kapi.c
+@@ -52,6 +52,14 @@ static void pps_add_offset(struct pps_ktime *ts, struct pps_ktime *offset)
+ 	ts->sec += offset->sec;
+ }
+ 
++static void pps_echo_client_default(struct pps_device *pps, int event,
++		void *data)
++{
++	dev_info(pps->dev, "echo %s %s\n",
++		event & PPS_CAPTUREASSERT ? "assert" : "",
++		event & PPS_CAPTURECLEAR ? "clear" : "");
++}
++
+ /*
+  * Exported functions
+  */
+@@ -80,13 +88,6 @@ struct pps_device *pps_register_source(struct pps_source_info *info,
+ 		err = -EINVAL;
+ 		goto pps_register_source_exit;
+ 	}
+-	if ((info->mode & (PPS_ECHOASSERT | PPS_ECHOCLEAR)) != 0 &&
+-			info->echo == NULL) {
+-		pr_err("%s: echo function is not defined\n",
+-					info->name);
+-		err = -EINVAL;
+-		goto pps_register_source_exit;
+-	}
+ 	if ((info->mode & (PPS_TSFMT_TSPEC | PPS_TSFMT_NTPFP)) == 0) {
+ 		pr_err("%s: unspecified time format\n",
+ 					info->name);
+@@ -108,6 +109,11 @@ struct pps_device *pps_register_source(struct pps_source_info *info,
+ 	pps->params.mode = default_params;
+ 	pps->info = *info;
+ 
++	/* check for default echo function */
++	if ((pps->info.mode & (PPS_ECHOASSERT | PPS_ECHOCLEAR)) &&
++			pps->info.echo == NULL)
++		pps->info.echo = pps_echo_client_default;
++
+ 	init_waitqueue_head(&pps->queue);
+ 	spin_lock_init(&pps->lock);
+ 
+-- 
+1.7.1
 
