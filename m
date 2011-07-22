@@ -1,49 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755107Ab1GVTRT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 15:17:19 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:9682 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755062Ab1GVTRQ (ORCPT
+	id S1755062Ab1GVTSv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 15:18:51 -0400
+Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:63782 "EHLO
+	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754859Ab1GVTSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 15:17:16 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Fri, 22 Jul 2011 12:17:15 -0700
-From: riyer@nvidia.com
-To: dmitry.torokhov@gmail.com
-Cc: rydberg@euromail.se, olof@lixom.net, amartin@nvidia.com,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        Rakesh Iyer <riyer@nvidia.com>
-Subject: [PATCH v1] Input: tegra-kbc - Fix support for key repeat.
-Date: Fri, 22 Jul 2011 12:17:51 -0700
-Message-Id: <1311362271-10544-1-git-send-email-riyer@nvidia.com>
-X-Mailer: git-send-email 1.7.1
+	Fri, 22 Jul 2011 15:18:49 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAJLMKU5tgwKe/2dsb2JhbABGDadJeIh8ArtBDoMWgxsEo08
+Date: Fri, 22 Jul 2011 21:18:47 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 0/11 v3] Generic Watchdog Timer Driver
+Message-ID: <20110722191847.GI31767@infomag.iguana.be>
+References: <20110711135056.GT29245@infomag.iguana.be> <20110711213145.GB5811@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110711213145.GB5811@pengutronix.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rakesh Iyer <riyer@nvidia.com>
+Hi Wolfram,
 
-To support key repeats, keyboard needs to be setup as an autorepeating device.
+> > Changes since V2:
+> > * all "flags" are unsigned
+> > * timeout values are also unsigned
+> > * removed unnececessary debugging
+> > * clean-up comments
+> > * the core will be in drivers/watchdog/ and not in drivers/watchdog/core/
+> 
+> Also (just in case someone started converting drivers):
+> 
+> * some error-codes changed
+> * .name has been removed from watchdog_device in favor of watchdog_info->identity
 
-Signed-off-by: Rakesh Iyer <riyer@nvidia.com>
----
- drivers/input/keyboard/tegra-kbc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Yup, I forgot these. Thanks.
 
-diff --git a/drivers/input/keyboard/tegra-kbc.c b/drivers/input/keyboard/tegra-kbc.c
-index 2b3b73e..da3828f 100644
---- a/drivers/input/keyboard/tegra-kbc.c
-+++ b/drivers/input/keyboard/tegra-kbc.c
-@@ -657,7 +657,7 @@ static int __devinit tegra_kbc_probe(struct platform_device *pdev)
- 
- 	input_set_drvdata(input_dev, kbc);
- 
--	input_dev->evbit[0] = BIT_MASK(EV_KEY);
-+	input_dev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_REP);
- 	input_set_capability(input_dev, EV_MSC, MSC_SCAN);
- 
- 	input_dev->keycode = kbc->keycode;
--- 
-1.7.1
+Status update: I incorporated your comments and Lars-Peter Clausen's comments and
+created V4.  The changes since V3 are:
+* removed overdocumentation
+* removed MODULE_SUPPORTED_DEVICE and +MODULE_ALIAS_MISCDEV
+* removed return -ENOTTY after switch (cmd) because we have the default allready
+* s/sent/send/
+* I'd suggest to swap the logic here (branch taken on error)
+* no_llseek removal squashed into patch 1
+* provide getter/setter methods for driver specific data so that we can easily do the conversion towards the device driver model
+* removed parent because this would change when we will start using the device driver model
+
+
+> I already started converting a few drivers and will post the patches as RFC
+> tomorrow. In general, converting went quite well and despite a few comments
+> (see later mails), I think this could go into 3.1, so that converted drivers
+> can go into 3.2 together with (probably) a few updates to the framework. There
+> is potential for a bit more consolidation, yet I think the basic stuff could
+> go in now.
+> 
+> Thanks to Wim and Alan for their work and CELF/LF for supporting the final
+> steps :)
+
+And for your assistance and the feedback from others also.
+
+Kind regards,
+Wim.
 
