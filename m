@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167Ab1GUX4j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 19:56:39 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:42239 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751607Ab1GUX4i (ORCPT
+	id S1752285Ab1GVAB0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 20:01:26 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:41560 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751607Ab1GVABZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 19:56:38 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 22 Jul 2011 08:49:27 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] memcg: get rid of percpu_charge_mutex lock
-Message-Id: <20110722084927.96b0aa86.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110721124223.GE27855@tiehlicka.suse.cz>
-References: <cover.1311241300.git.mhocko@suse.cz>
-	<2bfb2b7687c1a6b39da2a04689190725075cc4f8.1311241300.git.mhocko@suse.cz>
-	<20110721193051.cd3266e5.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110721114704.GC27855@tiehlicka.suse.cz>
-	<20110721124223.GE27855@tiehlicka.suse.cz>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+	Thu, 21 Jul 2011 20:01:25 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=JbYAYMXejAt7GWHf9rBrnHn2hPdoaXC8zdypQKqXq5pbjobEj7jwdEv7ccYAhaonbmoTPZ0NVrdwH8SBv7tX90Pm5O/zI9+j6b//MYUH0mkAFqlHaRSSREY3VNrE4iJX;
+Date: Thu, 21 Jul 2011 17:01:22 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: lkml <linux-kernel@vger.kernel.org>, Mike Frysinger <vapier@gentoo.org>
+Cc: torvalds <torvalds@linux-foundation.org>, akpm <akpm@linux-foundation.org>
+Subject: [PATCH] firmware: sigma.c needs MODULE_LICENSE
+Message-Id: <20110721170122.1fd4a06e.rdunlap@xenotime.net>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Jul 2011 14:42:23 +0200
-Michal Hocko <mhocko@suse.cz> wrote:
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-> On Thu 21-07-11 13:47:04, Michal Hocko wrote:
-> > On Thu 21-07-11 19:30:51, KAMEZAWA Hiroyuki wrote:
-> > > On Thu, 21 Jul 2011 09:58:24 +0200
-> > > Michal Hocko <mhocko@suse.cz> wrote:
-> [...]
-> > > > --- a/mm/memcontrol.c
-> > > > +++ b/mm/memcontrol.c
-> > > > @@ -2166,7 +2165,8 @@ static void drain_all_stock(struct mem_cgroup *root_mem, bool sync)
-> > > >  
-> > > >  	for_each_online_cpu(cpu) {
-> > > >  		struct memcg_stock_pcp *stock = &per_cpu(memcg_stock, cpu);
-> > > > -		if (test_bit(FLUSHING_CACHED_CHARGE, &stock->flags))
-> > > > +		if (root_mem == stock->cached &&
-> > > > +				test_bit(FLUSHING_CACHED_CHARGE, &stock->flags))
-> > > >  			flush_work(&stock->work);
-> > > 
-> > > Doesn't this new check handle hierarchy ?
-> > > css_is_ancestor() will be required if you do this check.
-> > 
-> > Yes you are right. Will fix it. I will add a helper for the check.
-> 
-> Here is the patch with the helper. The above will then read 
-> 	if (mem_cgroup_same_or_subtree(root_mem, stock->cached))
-> 
-> ---
-> From b963a9f4dac61044daac49700f84b7819d7c2f53 Mon Sep 17 00:00:00 2001
-> From: Michal Hocko <mhocko@suse.cz>
-> Date: Thu, 21 Jul 2011 13:54:13 +0200
-> Subject: [PATCH] memcg: add mem_cgroup_same_or_subtree helper
-> 
-> We are checking whether a given two groups are same or at least in the
-> same subtree of a hierarchy at several places. Let's make a helper for
-> it to make code easier to read.
-> 
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Fix module tainting message:
+sigma: module license 'unspecified' taints kernel.
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Mike Frysinger <vapier@gentoo.org>
+---
+ drivers/firmware/sigma.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-
+--- lnx-30-rc7.orig/drivers/firmware/sigma.c
++++ lnx-30-rc7/drivers/firmware/sigma.c
+@@ -11,6 +11,7 @@
+ #include <linux/firmware.h>
+ #include <linux/kernel.h>
+ #include <linux/i2c.h>
++#include <linux/module.h>
+ #include <linux/sigma.h>
+ 
+ /* Return: 0==OK, <0==error, =1 ==no more actions */
+@@ -113,3 +114,5 @@ int process_sigma_firmware(struct i2c_cl
+ 	return ret;
+ }
+ EXPORT_SYMBOL(process_sigma_firmware);
++
++MODULE_LICENSE("GPL");
