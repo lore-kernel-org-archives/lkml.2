@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246Ab1GVNJh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 09:09:37 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:46405 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754026Ab1GVNJg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 09:09:36 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Fri, 22 Jul 2011 15:08:47 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net
-Subject: [git pull] FireWire updates post 3.0
-Message-ID: <20110722150847.0d9352ef@stein>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754270Ab1GVNLx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 09:11:53 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:52802 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754163Ab1GVNLv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 09:11:51 -0400
+From: Keshava Munegowda <keshava_mgowda@ti.com>
+To: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Keshava Munegowda <keshava_mgowda@ti.com>, <balbi@ti.com>,
+        <gadiyar@ti.com>, <sameo@linux.intel.com>, <parthab@india.ti.com>,
+        <kishon@ti.com>, Keshava Munegowda <Keshava_mgowda@ti.com>
+Subject: [PATCH] mfd: omap-usb-host: fix clock API usage on usbhs_disable()
+Date: Fri, 22 Jul 2011 18:39:30 +0530
+Message-ID: <1311340170-28773-1-git-send-email-keshava_mgowda@ti.com>
+X-Mailer: git-send-email 1.6.0.4
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please pull from the for-linus branch at
+From: Keshava Munegowda <Keshava_mgowda@ti.com>
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394-2.6.git for-linus
+usbhs_disable function was invoking clk_enable() instead of
+clk_disable(), thus only increasing the clock usage counter and
+preventing this particular clock from being ever turned off.
+Because of this, the power domain of omap4 the USB Host subsystem
+would never reach lower power states.This patch calls clk_disable()
+in usbhs_disable function
 
-to receive the following updates for the IEEE 1394 (FireWire) subsystem.
-This brings yet another reduction of CPU utilization, corrections of two
-obscure issues in the userspace driver ABI, documentation, and the usual
-housekeeping.
+Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
+---
+ drivers/mfd/omap-usb-host.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Thanks.
-
-August Lilleaas (1):
-      firewire: net: replacing deprecated __attribute__((packed)) with __packed
-
-Clemens Ladisch (1):
-      firewire: ohci: remove superfluous posted write flushes
-
-Stefan Richter (8):
-      firewire: ohci: reduce potential context_stop latency
-      firewire: ohci: add a comment on PHY reg access serialization
-      firewire: ohci: fix PHY reg access after card ejection
-      firewire: ohci: skip soft reset retries after card ejection
-      firewire: cdev: return -ENOTTY for unimplemented ioctls, not -EINVAL
-      firewire: cdev: prevent race between first get_info ioctl and bus reset event queuing
-      firewire: cdev: ABI documentation enhancements
-      firewire: document the sysfs ABIs
-
- Documentation/ABI/stable/firewire-cdev      |  103 ++++++++++++++++++++++
- Documentation/ABI/stable/sysfs-bus-firewire |  122 +++++++++++++++++++++++++++
- drivers/firewire/core-cdev.c                |   20 +++--
- drivers/firewire/net.c                      |    5 +-
- drivers/firewire/ohci.c                     |   42 ++++++----
- include/linux/firewire-cdev.h               |   78 ++++++++---------
- 6 files changed, 303 insertions(+), 67 deletions(-)
- create mode 100644 Documentation/ABI/stable/firewire-cdev
- create mode 100644 Documentation/ABI/stable/sysfs-bus-firewire
+diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
+index 1717144..29601e7 100644
+--- a/drivers/mfd/omap-usb-host.c
++++ b/drivers/mfd/omap-usb-host.c
+@@ -998,9 +998,9 @@ static void usbhs_disable(struct device *dev)
+ 
+ 	if (is_omap_usbhs_rev2(omap)) {
+ 		if (is_ehci_tll_mode(pdata->port_mode[0]))
+-			clk_enable(omap->usbtll_p1_fck);
++			clk_disable(omap->usbtll_p1_fck);
+ 		if (is_ehci_tll_mode(pdata->port_mode[1]))
+-			clk_enable(omap->usbtll_p2_fck);
++			clk_disable(omap->usbtll_p2_fck);
+ 		clk_disable(omap->utmi_p2_fck);
+ 		clk_disable(omap->utmi_p1_fck);
+ 	}
 -- 
-Stefan Richter
--=====-==-== -=== =-==-
-http://arcgraph.de/sr/
+1.6.0.4
+
