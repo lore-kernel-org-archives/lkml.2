@@ -1,103 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753668Ab1GVJub (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 05:50:31 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:60910 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753463Ab1GVJua (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 05:50:30 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: sedat.dilek@gmail.com
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: linux-next: Tree for July 20 (overlayfs)
-References: <CA+icZUVbeLU+zCAC+8wduizn6h5FUE2qzNr0bg9t3yWNbv_6Ng@mail.gmail.com>
-	<CA+icZUXf1_qWF8GdQyCVxzAp-CYgQbH8iod0oBTjhWsSZLi1_g@mail.gmail.com>
-Date: Fri, 22 Jul 2011 11:51:22 +0200
-In-Reply-To: <CA+icZUXf1_qWF8GdQyCVxzAp-CYgQbH8iod0oBTjhWsSZLi1_g@mail.gmail.com>
-	(Sedat Dilek's message of "Wed, 20 Jul 2011 21:28:29 +0200")
-Message-ID: <87y5zqfxt1.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1753707Ab1GVJzE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 05:55:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57609 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753161Ab1GVJzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 05:55:01 -0400
+Date: Fri, 22 Jul 2011 11:54:59 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] memcg: prevent from reclaiming if there are per-cpu
+ cached charges
+Message-ID: <20110722095459.GE4004@tiehlicka.suse.cz>
+References: <cover.1311241300.git.mhocko@suse.cz>
+ <0ed59a22cc84037d6e42b258981c75e3a6063899.1311241300.git.mhocko@suse.cz>
+ <20110721195411.f4fa9f91.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110721123012.GD27855@tiehlicka.suse.cz>
+ <20110722085652.759aded2.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110722085652.759aded2.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sedat Dilek <sedat.dilek@googlemail.com> writes:
+On Fri 22-07-11 08:56:52, KAMEZAWA Hiroyuki wrote:
+> On Thu, 21 Jul 2011 14:30:12 +0200
+> Michal Hocko <mhocko@suse.cz> wrote:
+> 
+> > On Thu 21-07-11 19:54:11, KAMEZAWA Hiroyuki wrote:
+> > > On Thu, 21 Jul 2011 10:28:10 +0200
+[...]
+> > > Assume 2 cpu SMP, (a special case), and 2 applications running under
+> > > a memcg.
+> > > 
+> > >  - one is running in SCHED_FIFO.
+> > >  - another is running into mem_cgroup_do_charge() and call drain_all_stock_sync().
+> > > 
+> > > Then, the application stops until SCHED_FIFO application release the cpu.
+> > 
+> > It would have to back off during reclaim anyaway (because we check
+> > cond_resched during reclaim), right? 
+> > 
+> 
+> just have cond_resched() on a cpu which calls some reclaim stuff. It will no help.
 
-> On Wed, Jul 20, 2011 at 8:48 PM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
->> Hi,
->>
->> I have here a problem with linux-next (next-20110720) and
->> overlayfs-v10 (not the latest from GIT).
->>
->> ### OVERLAYFS
->> # Patches from mszeredi/vfs.git#overlayfs.v10 (up to commit
->> 00b27467b181a27c808cef0d66860eba5f450b24)
->> # "overlay: overlay filesystem documentation"
->> # See also <http://lkml.org/lkml/2011/6/1/456>
->> # "[PATCH 0/7] overlay filesystem: request for inclusion"
->> + overlayfs-v10/overlayfs-v10.patch
->>
->> Documentation/filesystems/porting says:
->>
->> [mandatory]
->>        ->permission(), generic_permission() and ->check_acl() have lost flags
->> argument; instead of passing IPERM_FLAG_RCU we add MAY_NOT_BLOCK into mask.
->>        generic_permission() has also lost the check_acl argument; if you want
->> non-NULL to be used for that inode, put it into ->i_op->check_acl.
->>
->> I checked with other files below fs/ and changed accordingly.
->> So, I hope the attached patch is OK (untested, uncompiled)?
->>
->> What's the status of OverlayFS anyway, will it be merged into v3.1?
->>
->> Regards,
->> - Sedat -
->>
->
-> I checked again and adapted ovl_permission().
->
-> [ fs/namei.c ]
-> static int acl_permission_check(struct inode *inode, int mask)
->
-> Here is a v2, which compiles.
+I do not understand what you are saying here. What I meant to say is
+that the above example is not a big issue because SCHED_FIFO would throw
+us away from the CPU during reclaim anyway so waiting for other CPUs
+during draining will not too much overhead, although it definitely adds
+some.
 
-Thanks, the patch looks good.
+> > > In general, I don't think waiting for schedule_work() against multiple cpus
+> > > is not quicker than short memory reclaim. 
+> > 
+> > You are right, but if you consider small groups then the reclaim can
+> > make the situation much worse.
+> > 
+> 
+> If the system has many memory and the container has many cgroup, memory is not
+> small because ...to use cpu properly, you need memroy. It's a mis-configuration.
 
-And ->fsync is another one that will have an updated API.
+I don't think so. You might have small, well suited groups for a
+specific workloads.
 
-Miklos
+> > > Adding flush_work() here means that a context switch is requred before
+> > > calling direct reclaim.
+> > 
+> > Is that really a problem? We would context switch during reclaim if
+> > there is something else that wants CPU anyway.
+> > Maybe we could drain only if we get a reasonable number of pages back?
+> > This would require two passes over per-cpu caches to find the number -
+> > not nice. Or we could drain only those caches that have at least some
+> > threshold of pages.
+> > 
+> > > That's bad. (At leaset, please check __GFP_NOWAIT.)
+> > 
+> > Definitely a good idea. Fixed.
+> > 
+> > > Please find another way, I think calling synchronous drain here is overkill.
+> > > There are not important file caches in the most case and reclaim is quick.
+> > 
+> > This is, however, really hard to know in advance. If there are used-once
+> > unmaped file pages then it is much easier to reclaim them for sure.
+> > Maybe I could check the statistics and decide whether to drain according
+> > pages we have in the group. Let me think about that.
+> > 
+> > > (And async draining runs.)
+> > > 
+> > > How about automatically adjusting CHARGE_BATCH and make it small when the
+> > > system is near to limit ? 
+> > 
+> > Hmm, we are already bypassing batching if we are close to the limit,
+> > aren't we? If we get to the reclaim we fallback to nr_pages allocation
+> > and so we do not refill the stock.
+> > Maybe we could check how much we have reclaimed and update the batch
+> > size accordingly.
+> > 
+> 
+> Please wait until "background reclaim" stuff. I don't stop it and it will
+> make this cpu-caching stuff better because we can drain before hitting
+> limit.
 
----
- fs/overlayfs/readdir.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+As I said I haven't seen this hurting us so this can definitely wait.
+I will drop the patch for now and keep just the clean up stuff. I will
+repost it when I have some numbers in hands or if I am able to
+workaround the current issues with too much waiting problem.
 
-Index: linux-2.6/fs/overlayfs/readdir.c
-===================================================================
---- linux-2.6.orig/fs/overlayfs/readdir.c	2011-07-21 17:07:52.000000000 +0200
-+++ linux-2.6/fs/overlayfs/readdir.c	2011-07-21 17:10:20.000000000 +0200
-@@ -386,7 +386,8 @@ static loff_t ovl_dir_llseek(struct file
- 	return res;
- }
- 
--static int ovl_dir_fsync(struct file *file, int datasync)
-+static int ovl_dir_fsync(struct file *file, loff_t start, loff_t end,
-+			 int datasync)
- {
- 	struct ovl_dir_file *od = file->private_data;
- 
-@@ -400,7 +401,7 @@ static int ovl_dir_fsync(struct file *fi
- 			return PTR_ERR(od->realfile);
- 	}
- 
--	return vfs_fsync(od->realfile, datasync);
-+	return vfs_fsync_range(od->realfile, start, end, datasync);
- }
- 
- static int ovl_dir_release(struct inode *inode, struct file *file)
+> 
+> If you cannot wait....
+> 
+> One idea is to have a threshold to call async "drain". For example,
+> 
+>  threshould = limit_of_memory - nr_online_cpu() * (BATCH_SIZE + 1)
+> 
+>  if (usage > threshould)
+> 	drain_all_stock_async().
+> 
+> Then, situation will be much better.
+
+Will think about it. I am not sure whether this is too rough.
+
+> Thanks,
+> -Kame
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
