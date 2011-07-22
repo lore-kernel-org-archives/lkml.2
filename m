@@ -1,138 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889Ab1GVAap (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 20:30:45 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:41984 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751481Ab1GVAao convert rfc822-to-8bit (ORCPT
+	id S1753214Ab1GVAcx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 20:32:53 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:41669 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753161Ab1GVAct (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 20:30:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAObL_7HN2tbXiVZ1vcwpTUMf5v1EPG0XsQqUuCYn8yWtm7AA9A@mail.gmail.com>
-References: <1308926697-22475-1-git-send-email-mgorman@suse.de>
-	<20110721153722.GD1713@barrios-desktop>
-	<20110721160958.GT5349@suse.de>
-	<20110721162417.GF1713@barrios-desktop>
-	<CAObL_7HpE3mCS90Zfa9-edBKPFN1MuBOHv+=e6BNHsi2u3zTOQ@mail.gmail.com>
-	<20110721164238.GA3326@barrios-desktop>
-	<CAObL_7HN2tbXiVZ1vcwpTUMf5v1EPG0XsQqUuCYn8yWtm7AA9A@mail.gmail.com>
-Date: Fri, 22 Jul 2011 09:30:43 +0900
-Message-ID: <CAEwNFnD2ZTARC1Yw2uEYVSctBo7wsmA7rmQOaFH2rwOKoo3YjA@mail.gmail.com>
-Subject: Re: [PATCH 0/4] Stop kswapd consuming 100% CPU when highest zone is small
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        "P?draig Brady" <P@draigbrady.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Colin King <colin.king@canonical.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 21 Jul 2011 20:32:49 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Doron Cohen <doronc@siano-ms.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: FW: [PATCH] drivers: support new Siano tuner devices.
+In-Reply-To: Your message of "Tue, 19 Jul 2011 14:26:38 +0300."
+             <D945C405928A9949A0F33C69E64A1A3BAFFC4B@s-mail.siano-ms.ent>
+From: Valdis.Kletnieks@vt.edu
+References: <D945C405928A9949A0F33C69E64A1A3BAFFC4B@s-mail.siano-ms.ent>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1311294764_2523P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Thu, 21 Jul 2011 20:32:44 -0400
+Message-ID: <32054.1311294764@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A02020B.4E28C52E.0077,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 22, 2011 at 1:58 AM, Andrew Lutomirski <luto@mit.edu> wrote:
-> On Thu, Jul 21, 2011 at 12:42 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
->> On Thu, Jul 21, 2011 at 12:36:11PM -0400, Andrew Lutomirski wrote:
->>> On Thu, Jul 21, 2011 at 12:24 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
->>> > On Thu, Jul 21, 2011 at 05:09:59PM +0100, Mel Gorman wrote:
->>> >> On Fri, Jul 22, 2011 at 12:37:22AM +0900, Minchan Kim wrote:
->>> >> > On Fri, Jun 24, 2011 at 03:44:53PM +0100, Mel Gorman wrote:
->>> >> > > (Built this time and passed a basic sniff-test.)
->>> >> > >
->>> >> > > During allocator-intensive workloads, kswapd will be woken frequently
->>> >> > > causing free memory to oscillate between the high and min watermark.
->>> >> > > This is expected behaviour.  Unfortunately, if the highest zone is
->>> >> > > small, a problem occurs.
->>> >> > >
->>> >> > > This seems to happen most with recent sandybridge laptops but it's
->>> >> > > probably a co-incidence as some of these laptops just happen to have
->>> >> > > a small Normal zone. The reproduction case is almost always during
->>> >> > > copying large files that kswapd pegs at 100% CPU until the file is
->>> >> > > deleted or cache is dropped.
->>> >> > >
->>> >> > > The problem is mostly down to sleeping_prematurely() keeping kswapd
->>> >> > > awake when the highest zone is small and unreclaimable and compounded
->>> >> > > by the fact we shrink slabs even when not shrinking zones causing a lot
->>> >> > > of time to be spent in shrinkers and a lot of memory to be reclaimed.
->>> >> > >
->>> >> > > Patch 1 corrects sleeping_prematurely to check the zones matching
->>> >> > >   the classzone_idx instead of all zones.
->>> >> > >
->>> >> > > Patch 2 avoids shrinking slab when we are not shrinking a zone.
->>> >> > >
->>> >> > > Patch 3 notes that sleeping_prematurely is checking lower zones against
->>> >> > >   a high classzone which is not what allocators or balance_pgdat()
->>> >> > >   is doing leading to an artifical believe that kswapd should be
->>> >> > >   still awake.
->>> >> > >
->>> >> > > Patch 4 notes that when balance_pgdat() gives up on a high zone that the
->>> >> > >   decision is not communicated to sleeping_prematurely()
->>> >> > >
->>> >> > > This problem affects 2.6.38.8 for certain and is expected to affect
->>> >> > > 2.6.39 and 3.0-rc4 as well. If accepted, they need to go to -stable
->>> >> > > to be picked up by distros and this series is against 3.0-rc4. I've
->>> >> > > cc'd people that reported similar problems recently to see if they
->>> >> > > still suffer from the problem and if this fixes it.
->>> >> > >
->>> >> >
->>> >> > Good!
->>> >> > This patch solved the problem.
->>> >> > But there is still a mystery.
->>> >> >
->>> >> > In log, we could see excessive shrink_slab calls.
->>> >>
->>> >> Yes, because shrink_slab() was called on each loop through
->>> >> balance_pgdat() even if the zone was balanced.
->>> >>
->>> >>
->>> >> > And as you know, we had merged patch which adds cond_resched where last of the function
->>> >> > in shrink_slab. So other task should get the CPU and we should not see
->>> >> > 100% CPU of kswapd, I think.
->>> >> >
->>> >>
->>> >> cond_resched() is not a substitute for going to sleep.
->>> >
->>> > Of course, it's not equal with sleep but other task should get CPU and conusme their time slice
->>> > So we should never see 100% CPU consumption of kswapd.
->>> > No?
->>>
->>> If the rest of the system is idle, then kswapd will happily use 100%
->>> CPU.  (Or on a multi-core system, kswapd will use close to 100% of one
->>
->> Of course. But at least, we have a test program and I think it's not idle.
->
-> The test program I used was 'top', which is pretty close to idle.
->
->>
->>> CPU even if another task is using the other one.  This is bad enough
->>> on a desktop, but on a laptop you start to notice when your battery
->>> dies.)
->>
->> Of course it's bad. :)
->> What I want to know is just what's exact cause of 100% CPU usage.
->> It might be not 100% but we might use the word sloppily.
->>
->
-> Well, if you want to pedantic, my laptop can, in theory, demonstrate
-> true 100% CPU usage.  Trigger the bug, suspend every other thread, and
-> listen to the laptop fan spin and feel the laptop get hot.  (The fan
-> is controlled by the EC and takes no CPU.)
->
-> In practice, the usage was close enough to 100% that it got rounded.
->
-> The cond_resched was enough to at least make the system responsive
-> instead of the hard freeze I used to get.
+--==_Exmh_1311294764_2523P
+Content-Type: text/plain; charset=us-ascii
 
-I don't want to be pedantic. :)
-What I have a thought about 100% CPU usage was that it doesn't yield
-CPU and spins on the CPU but as I heard your example(ie, cond_resched
-makes the system responsive), it's not the case. It was just to use
-most of time in kswapd, not 100%. It seems I was paranoid about the
-word, sorry for that.
+On Tue, 19 Jul 2011 14:26:38 +0300, Doron Cohen said:
+> 
+> Hi,
+> This is the first time I ever post changes to linux kernel, so excuse me
+> if I have errors in the process.
+> As Siano team member,
 
--- 
-Kind regards,
-Minchan Kim
+> --- a/drivers/media/dvb/siano/smscoreapi.h
+> +++ b/drivers/media/dvb/siano/smscoreapi.h
+> @@ -2,7 +2,7 @@
+>  
+>  Siano Mobile Silicon, Inc.
+>  MDTV receiver kernel modules.
+> -Copyright (C) 2006-2008, Uri Shkolnik, Anatoly Greenblat
+> +Copyright (C) 2006-2011, Doron Cohen
+
+That looks incorrect.  At least in the US, this code is probably a work-for-hire
+and thus copyright to Siano Mobile not the programmers.  And if it isn't, then
+it's still wrong to take Uri and Anatoly's names off unless they've actually
+assigned their copyrights to you.
+
+--==_Exmh_1311294764_2523P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOKMUscC3lWbTT17ARAk0+AJ9uOjeM0MX9RtEUHjugbekWE7jNAwCgoASf
+UuOrryrQxUI9YtRYxjqeEZg=
+=EjNG
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1311294764_2523P--
+
