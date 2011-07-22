@@ -1,121 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755340Ab1GVT5e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 15:57:34 -0400
-Received: from hera.kernel.org ([140.211.167.34]:38179 "EHLO hera.kernel.org"
+	id S1755347Ab1GVT54 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 15:57:56 -0400
+Received: from hera.kernel.org ([140.211.167.34]:38195 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751481Ab1GVT5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 15:57:32 -0400
-Date: Fri, 22 Jul 2011 19:57:25 GMT
+	id S1754246Ab1GVT5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 15:57:54 -0400
+Date: Fri, 22 Jul 2011 19:57:48 GMT
 From: tip-bot for Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Message-ID: <tip-65bd26616b53c5dfab162f18c34ec57ddb682a00@git.kernel.org>
+Message-ID: <tip-f5b00da7b60cc444b5e6caf2f08b0eebcebff75e@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         tglx@linutronix.de, hpa@linux.intel.com,
         jeremy.fitzhardinge@citrix.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         tglx@linutronix.de, hpa@linux.intel.com,
         jeremy.fitzhardinge@citrix.com
-In-Reply-To: <11b6893703912054024bdb60251ed944f31cbafe.1308878118.git.jeremy.fitzhardinge@citrix.com>
-References: <11b6893703912054024bdb60251ed944f31cbafe.1308878118.git.jeremy.fitzhardinge@citrix.com>
+In-Reply-To: <9ef9d6f621bda6e9052d908a39a9831345c34296.1308878118.git.jeremy.fitzhardinge@citrix.com>
+References: <9ef9d6f621bda6e9052d908a39a9831345c34296.1308878118.git.jeremy.fitzhardinge@citrix.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/spinlocks] x86, ticketlock: Make __ticket_spin_lock common
-Git-Commit-ID: 65bd26616b53c5dfab162f18c34ec57ddb682a00
+Subject: [tip:x86/spinlocks] x86, ticketlock: Make __ticket_spin_trylock common
+Git-Commit-ID: f5b00da7b60cc444b5e6caf2f08b0eebcebff75e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 22 Jul 2011 19:57:25 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 22 Jul 2011 19:57:49 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  65bd26616b53c5dfab162f18c34ec57ddb682a00
-Gitweb:     http://git.kernel.org/tip/65bd26616b53c5dfab162f18c34ec57ddb682a00
+Commit-ID:  f5b00da7b60cc444b5e6caf2f08b0eebcebff75e
+Gitweb:     http://git.kernel.org/tip/f5b00da7b60cc444b5e6caf2f08b0eebcebff75e
 Author:     Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-AuthorDate: Thu, 23 Jun 2011 18:19:17 -0700
+AuthorDate: Thu, 23 Jun 2011 18:19:18 -0700
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 22 Jul 2011 11:18:44 -0700
+CommitDate: Fri, 22 Jul 2011 11:18:53 -0700
 
-x86, ticketlock: Make __ticket_spin_lock common
+x86, ticketlock: Make __ticket_spin_trylock common
 
-Aside from the particular form of the xadd instruction, they're identical.
-So factor out the xadd and use common code for the rest.
+Make trylock code common regardless of ticket size.
 
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Link: http://lkml.kernel.org/r/11b6893703912054024bdb60251ed944f31cbafe.1308878118.git.jeremy.fitzhardinge@citrix.com
+Link: http://lkml.kernel.org/r/9ef9d6f621bda6e9052d908a39a9831345c34296.1308878118.git.jeremy.fitzhardinge@citrix.com
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/include/asm/spinlock.h |   42 ++++++++++++++++++--------------------
- 1 files changed, 20 insertions(+), 22 deletions(-)
+ arch/x86/include/asm/spinlock.h       |   49 +++++++--------------------------
+ arch/x86/include/asm/spinlock_types.h |    6 +++-
+ 2 files changed, 14 insertions(+), 41 deletions(-)
 
 diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-index 078319e..a0e26c8 100644
+index a0e26c8..e07dc41 100644
 --- a/arch/x86/include/asm/spinlock.h
 +++ b/arch/x86/include/asm/spinlock.h
-@@ -67,13 +67,27 @@ static __always_inline void __ticket_unlock_release(struct arch_spinlock *lock)
-  * save some instructions and make the code more elegant. There really isn't
-  * much between them in performance though, especially as locks are out of line.
-  */
--#if (NR_CPUS < 256)
--static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
-+static __always_inline struct __raw_tickets __ticket_spin_claim(struct arch_spinlock *lock)
- {
--	register struct __raw_tickets inc = { .tail = 1 };
-+	register struct __raw_tickets tickets = { .tail = 1 };
-+
-+	if (sizeof(lock->tickets.head) == sizeof(u8))
-+		asm volatile (LOCK_PREFIX "xaddw %w0, %1\n"
-+			      : "+r" (tickets), "+m" (lock->tickets)
-+			      : : "memory", "cc");
-+	else
-+		asm volatile (LOCK_PREFIX "xaddl %0, %1\n"
-+			     : "+r" (tickets), "+m" (lock->tickets)
-+			     : : "memory", "cc");
- 
--	asm volatile (LOCK_PREFIX "xaddw %w0, %1\n"
--		      : "+r" (inc), "+m" (lock->tickets) : : "memory", "cc");
-+	return tickets;
-+}
-+
-+static __always_inline void __ticket_spin_lock(struct arch_spinlock *lock)
-+{
-+	register struct __raw_tickets inc;
-+
-+	inc = __ticket_spin_claim(lock);
- 
- 	for (;;) {
- 		if (inc.head == inc.tail)
-@@ -84,6 +98,7 @@ static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
+@@ -98,48 +98,19 @@ static __always_inline void __ticket_spin_lock(struct arch_spinlock *lock)
  out:	barrier();		/* make sure nothing creeps before the lock is taken */
  }
  
-+#if (NR_CPUS < 256)
+-#if (NR_CPUS < 256)
  static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
  {
- 	unsigned int tmp, new;
-@@ -103,23 +118,6 @@ static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
- 	return tmp;
- }
- #else
--static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
--{
--	register struct __raw_tickets inc = { .tail = 1 };
+-	unsigned int tmp, new;
 -
--	asm volatile(LOCK_PREFIX "xaddl %0, %1\n\t"
--		     : "+r" (inc), "+m" (lock->tickets)
--		     : : "memory", "cc");
+-	asm volatile("movzwl %2, %0\n\t"
+-		     "cmpb %h0,%b0\n\t"
+-		     "leal 0x100(%" REG_PTR_MODE "0), %1\n\t"
+-		     "jne 1f\n\t"
+-		     LOCK_PREFIX "cmpxchgw %w1,%2\n\t"
+-		     "1:"
+-		     "sete %b1\n\t"
+-		     "movzbl %b1,%0\n\t"
+-		     : "=&a" (tmp), "=&q" (new), "+m" (lock->slock)
+-		     :
+-		     : "memory", "cc");
 -
--	for (;;) {
--		if (inc.head == inc.tail)
--			goto out;
--		cpu_relax();
--		inc.head = ACCESS_ONCE(lock->tickets.head);
--	}
--out:	barrier();		/* make sure nothing creeps before the lock is taken */
+-	return tmp;
 -}
+-#else
+-static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
+-{
+-	unsigned tmp;
+-	unsigned new;
 -
- static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
+-	asm volatile("movl %2,%0\n\t"
+-		     "movl %0,%1\n\t"
+-		     "roll $16, %0\n\t"
+-		     "cmpl %0,%1\n\t"
+-		     "leal 0x00010000(%" REG_PTR_MODE "0), %1\n\t"
+-		     "jne 1f\n\t"
+-		     LOCK_PREFIX "cmpxchgl %1,%2\n\t"
+-		     "1:"
+-		     "sete %b1\n\t"
+-		     "movzbl %b1,%0\n\t"
+-		     : "=&a" (tmp), "=&q" (new), "+m" (lock->slock)
+-		     :
+-		     : "memory", "cc");
+-
+-	return tmp;
++	arch_spinlock_t old, new;
++
++	old.tickets = ACCESS_ONCE(lock->tickets);
++	if (old.tickets.head != old.tickets.tail)
++		return 0;
++
++	new.head_tail = old.head_tail + (1 << TICKET_SHIFT);
++
++	/* cmpxchg is a full barrier, so nothing can move before it */
++	return cmpxchg(&lock->head_tail, old.head_tail, new.head_tail) == old.head_tail;
+ }
+-#endif
+ 
+ static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
  {
- 	unsigned tmp;
+diff --git a/arch/x86/include/asm/spinlock_types.h b/arch/x86/include/asm/spinlock_types.h
+index e3ad1e3..72e154e 100644
+--- a/arch/x86/include/asm/spinlock_types.h
++++ b/arch/x86/include/asm/spinlock_types.h
+@@ -9,8 +9,10 @@
+ 
+ #if (CONFIG_NR_CPUS < 256)
+ typedef u8  __ticket_t;
++typedef u16 __ticketpair_t;
+ #else
+ typedef u16 __ticket_t;
++typedef u32 __ticketpair_t;
+ #endif
+ 
+ #define TICKET_SHIFT	(sizeof(__ticket_t) * 8)
+@@ -18,14 +20,14 @@ typedef u16 __ticket_t;
+ 
+ typedef struct arch_spinlock {
+ 	union {
+-		unsigned int slock;
++		__ticketpair_t head_tail;
+ 		struct __raw_tickets {
+ 			__ticket_t head, tail;
+ 		} tickets;
+ 	};
+ } arch_spinlock_t;
+ 
+-#define __ARCH_SPIN_LOCK_UNLOCKED	{ { .slock = 0 } }
++#define __ARCH_SPIN_LOCK_UNLOCKED	{ { 0 } }
+ 
+ typedef struct {
+ 	unsigned int lock;
