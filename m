@@ -1,171 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752366Ab1GVAV7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 20:21:59 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:52698 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751404Ab1GVAV6 convert rfc822-to-8bit (ORCPT
+	id S1752966Ab1GVAXL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 20:23:11 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:38799 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752231Ab1GVAXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 20:21:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110721170112.GU5349@suse.de>
-References: <1308926697-22475-1-git-send-email-mgorman@suse.de>
-	<1308926697-22475-5-git-send-email-mgorman@suse.de>
-	<20110719160903.GA2978@barrios-desktop>
-	<20110720104847.GI5349@suse.de>
-	<20110721153007.GC1713@barrios-desktop>
-	<20110721160706.GS5349@suse.de>
-	<20110721163649.GG1713@barrios-desktop>
-	<20110721170112.GU5349@suse.de>
-Date: Fri, 22 Jul 2011 09:21:57 +0900
-Message-ID: <CAEwNFnB-JQpBctJxCUkO3WiTr7L3BTJfqirBRG8GOMrp79+cbA@mail.gmail.com>
-Subject: Re: [PATCH 4/4] mm: vmscan: Only read new_classzone_idx from pgdat
- when reclaiming successfully
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "P?draig Brady" <P@draigbrady.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Colin King <colin.king@canonical.com>,
-        Andrew Lutomirski <luto@mit.edu>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 21 Jul 2011 20:23:08 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 22 Jul 2011 09:15:57 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        Balbir Singh <bsingharora@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2 v2] memcg: make oom_lock 0 and 1 based rather than
+ coutner
+Message-Id: <20110722091557.f78a7a9e.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110721135817.baab2a2c.akpm@linux-foundation.org>
+References: <cover.1310732789.git.mhocko@suse.cz>
+	<44ec61829ed8a83b55dc90a7aebffdd82fe0e102.1310732789.git.mhocko@suse.cz>
+	<20110721135817.baab2a2c.akpm@linux-foundation.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 22, 2011 at 2:01 AM, Mel Gorman <mgorman@suse.de> wrote:
-> On Fri, Jul 22, 2011 at 01:36:49AM +0900, Minchan Kim wrote:
->> > > > <SNIP>
->> > > > @@ -2740,17 +2742,23 @@ static int kswapd(void *p)
->> > > >       tsk->flags |= PF_MEMALLOC | PF_SWAPWRITE | PF_KSWAPD;
->> > > >       set_freezable();
->> > > >
->> > > > -     order = 0;
->> > > > -     classzone_idx = MAX_NR_ZONES - 1;
->> > > > +     order = new_order = 0;
->> > > > +     classzone_idx = new_classzone_idx = pgdat->nr_zones - 1;
->> > > >       for ( ; ; ) {
->> > > > -             unsigned long new_order;
->> > > > -             int new_classzone_idx;
->> > > >               int ret;
->> > > >
->> > > > -             new_order = pgdat->kswapd_max_order;
->> > > > -             new_classzone_idx = pgdat->classzone_idx;
->> > > > -             pgdat->kswapd_max_order = 0;
->> > > > -             pgdat->classzone_idx = MAX_NR_ZONES - 1;
->> > > > +             /*
->> > > > +              * If the last balance_pgdat was unsuccessful it's unlikely a
->> > > > +              * new request of a similar or harder type will succeed soon
->> > > > +              * so consider going to sleep on the basis we reclaimed at
->> > > > +              */
->> > > > +             if (classzone_idx >= new_classzone_idx && order == new_order) {
->> > > > +                     new_order = pgdat->kswapd_max_order;
->> > > > +                     new_classzone_idx = pgdat->classzone_idx;
->> > > > +                     pgdat->kswapd_max_order =  0;
->> > > > +                     pgdat->classzone_idx = pgdat->nr_zones - 1;
->> > > > +             }
->> > > > +
->> > >
->> > > But in this part.
->> > > Why do we need this?
->> >
->> > Lets say it's a fork-heavy workload and it is routinely being woken
->> > for order-1 allocations and the highest zone is very small. For the
->> > most part, it's ok because the allocations are being satisfied from
->> > the lower zones which kswapd has no problem balancing.
->> >
->> > However, by reading the information even after failing to
->> > balance, kswapd continues balancing for order-1 due to reading
->> > pgdat->kswapd_max_order, each time failing for the highest zone. It
->> > only takes one wakeup request per balance_pgdat() to keep kswapd
->> > awake trying to balance the highest zone in a continual loop.
->>
->> You made balace_pgdat's classzone_idx as communicated back so classzone_idx returned
->> would be not high zone and in [1/4], you changed that sleeping_prematurely consider only
->> classzone_idx not nr_zones. So I think it should sleep if low zones is balanced.
->>
->
-> If a wakeup for order-1 happened during the last pgdat, the
-> classzone_idx as communicated back from balance_pgdat() is lost and it
-> will not sleep in this ordering of events
->
-> kswapd                                                                  other processes
-> ======                                                                  ===============
-> order = balance_pgdat(pgdat, order, &classzone_idx);
->                                                                        wakeup for order-1
-> kswapd balances lower zone
->                                                                        allocate from lower zone
-> balance_pgdat fails balance for highest zone, returns
->        with lower classzone_idx and possibly lower order
-> new_order = pgdat->kswapd_max_order      (order == 1)
-> new_classzone_idx = pgdat->classzone_idx (highest zone)
-> if (order < new_order || classzone_idx > new_classzone_idx) {
->        order = new_order;
->        classzone_idx = new_classzone_idx; (failure from balance_pgdat() lost)
-> }
-> order = balance_pgdat(pgdat, order, &classzone_idx);
->
-> The wakup for order-1 at any point during balance_pgdat() is enough to
-> keep kswapd awake even though the process that called wakeup_kswapd
-> would be able to allocate from the lower zones without significant
-> difficulty.
->
-> This is why if balance_pgdat() fails its request, it should go to sleep
-> if watermarks for the lower zones are met until woken by another
-> process.
+On Thu, 21 Jul 2011 13:58:17 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-Hmm.
+> On Wed, 13 Jul 2011 13:05:49 +0200
+> Michal Hocko <mhocko@suse.cz> wrote:
+> 
+> > @@ -1893,6 +1942,8 @@ bool mem_cgroup_handle_oom(struct mem_cgroup *mem, gfp_t mask)
+> 
+> does:
+> 
+> : 	memcg_wakeup_oom(mem);
+> : 	mutex_unlock(&memcg_oom_mutex);
+> : 
+> : 	mem_cgroup_unmark_under_oom(mem);
+> : 
+> : 	if (test_thread_flag(TIF_MEMDIE) || fatal_signal_pending(current))
+> : 		return false;
+> : 	/* Give chance to dying process */
+> : 	schedule_timeout(1);
+> : 	return true;
+> : }
+> 
+> Calling schedule_timeout() in state TASK_RUNNING is equivalent to
+> calling schedule() and then pointlessly wasting some CPU cycles.
+> 
+Ouch (--;
 
-The role of kswapd is to reclaim pages by background until all of zone
-meet HIGH_WMARK to prevent costly direct reclaim.(Of course, there is
-another reason like GFP_ATOMIC). So it's not wrong to consume many cpu
-usage by design unless other tasks are ready. It would be balanced or
-unreclaimable at last so it should end up. However, the problem is
-small part of highest zone is easily [set|reset] to be
-all_unreclaimabe so the situation could be forever like our example.
-So fundamental solution is to prevent it that all_unreclaimable is
-set/reset easily, I think.
-Unfortunately it have no idea now.
+> Someone might want to take a look at that, and wonder why this bug
+> wasn't detected in testing ;)
+> 
+I wonder just removing this is okay....because we didn't noticed this
+in our recent oom tests. 
 
-In different viewpoint,  the problem is that it's too excessive
-because kswapd is just best-effort and if it got fails, we have next
-wakeup and even direct reclaim as last resort. In such POV, I think
-this patch is right and it would be a good solution. Then, other
-concern is on your reply about KOSAKI's question.
+I'll do some.
 
-I think below your patch is needed.
+Thanks,
+-Kame
 
-Quote from
-"
-1. Read for balance-request-A (order, classzone) pair
-2. Fail balance_pgdat
-3. Sleep based on (order, classzone) pair
-4. Wake for balance-request-B (order, classzone) pair where
-  balance-request-B != balance-request-A
-5. Succeed balance_pgdat
-6. Compare order,classzone with balance-request-A which will treat
-  balance_pgdat() as fail and try go to sleep
-
-This is not the same as new_classzone_idx being "garbage" but is it
-what you mean? If so, is this your proposed fix?
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index fe854d7..1a518e6 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2770,6 +2770,8 @@ static int kswapd(void *p)
-                       kswapd_try_to_sleep(pgdat, order, classzone_idx);
-                       order = pgdat->kswapd_max_order;
-                       classzone_idx = pgdat->classzone_idx;
-+                       new_order = order;
-+                       new_classzone_idx = classzone_idx;
-"
-
-
-
--
-Kind regards,
-Minchan Kim
