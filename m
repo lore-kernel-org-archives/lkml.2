@@ -1,348 +1,661 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754098Ab1GVMxT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 08:53:19 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:33670 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751431Ab1GVMxR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 08:53:17 -0400
-Date: Fri, 22 Jul 2011 14:52:36 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] core/locking changes for v3.1
-Message-ID: <20110722125236.GA24832@elte.hu>
+	id S1754176Ab1GVMxY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 08:53:24 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:20205
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751431Ab1GVMxV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 08:53:21 -0400
+X-SpamScore: 10
+X-BigFish: VPS10(zzc8kzz1202h10d2nzz8275bhz32i2a8h668h839h93fh64h)
+X-Spam-TCS-SCL: 3:0
+X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPVD:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
+Subject: [Patch v2 04/11]Power: DA9052 battery driver
+From: ashishj3 <ashish.jangam@kpitcummins.com>
+Reply-To: <ashish.jangam@kpitcummins.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: <linaro-dev@lists.linaro.org>, <cbou@mail.ru>, <dwmw2@infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 22 Jul 2011 18:22:21 +0530
+Message-ID: <1311339141.1796.42.camel@L-0532.kpit.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.10.71.95]
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Driver for DA9052 battery charger. This driver depends on DA9052 MFD core dirver
+for definitions and methods.
 
-Please pull the latest core-locking-for-linus git tree from:
-
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git core-locking-for-linus
-
- Thanks,
-
-	Ingo
-
------------------->
-Anton Blanchard (1):
-      lockup detector: Fix reference to the non-existent CONFIG_DETECT_SOFTLOCKUP option
-
-Dima Zavin (1):
-      plist: Remove the need to supply locks to plist heads
-
-Jean Delvare (1):
-      mutex: Make mutex_destroy() an inline function
-
-Peter Zijlstra (1):
-      lockdep: Fix lockdep_no_validate against IRQ states
-
-
- include/linux/mutex.h   |    2 +-
- include/linux/plist.h   |   55 ++--------------------------------------------
- include/linux/rtmutex.h |    4 +-
- kernel/fork.c           |    2 +-
- kernel/futex.c          |    2 +-
- kernel/lockdep.c        |    3 ++
- kernel/pm_qos_params.c  |    6 ++--
- kernel/rtmutex.c        |    2 +-
- kernel/sched.c          |    4 +-
- lib/Kconfig.debug       |    4 +-
- lib/plist.c             |    7 +-----
- 11 files changed, 20 insertions(+), 71 deletions(-)
-
-diff --git a/include/linux/mutex.h b/include/linux/mutex.h
-index a940fe4..7f87217 100644
---- a/include/linux/mutex.h
-+++ b/include/linux/mutex.h
-@@ -92,7 +92,7 @@ do {							\
- 							\
- 	__mutex_init((mutex), #mutex, &__key);		\
- } while (0)
--# define mutex_destroy(mutex)				do { } while (0)
-+static inline void mutex_destroy(struct mutex *lock) {}
- #endif
+Signed-off-by: David Dajun Chen <dchen@diasemi.com>
+Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
+---
+Changes since v2
+- Correct code styling for inline functions
+- Remove averaging algorithm
+- Set use_for_apm thru board specific parameter
+---
+ drivers/power/Kconfig          |    7 +
+ drivers/power/Makefile         |    1 +
+ drivers/power/da9052-battery.c |  577 ++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 585 insertions(+), 0 deletions(-)
+ create mode 100755 drivers/power/da9052-battery.c
+diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
+index cc019c9..0cee85a 100644
+--- a/drivers/power/Kconfig
++++ b/drivers/power/Kconfig
+@@ -142,6 +142,13 @@ config BATTERY_DA9030
+ 	  Say Y here to enable support for batteries charger integrated into
+ 	  DA9030 PMIC.
  
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
-diff --git a/include/linux/plist.h b/include/linux/plist.h
-index c9b9f32..aa0fb39 100644
---- a/include/linux/plist.h
-+++ b/include/linux/plist.h
-@@ -77,14 +77,9 @@
- 
- #include <linux/kernel.h>
- #include <linux/list.h>
--#include <linux/spinlock_types.h>
- 
- struct plist_head {
- 	struct list_head node_list;
--#ifdef CONFIG_DEBUG_PI_LIST
--	raw_spinlock_t *rawlock;
--	spinlock_t *spinlock;
--#endif
- };
- 
- struct plist_node {
-@@ -93,37 +88,13 @@ struct plist_node {
- 	struct list_head	node_list;
- };
- 
--#ifdef CONFIG_DEBUG_PI_LIST
--# define PLIST_HEAD_LOCK_INIT(_lock)		.spinlock = _lock
--# define PLIST_HEAD_LOCK_INIT_RAW(_lock)	.rawlock = _lock
--#else
--# define PLIST_HEAD_LOCK_INIT(_lock)
--# define PLIST_HEAD_LOCK_INIT_RAW(_lock)
--#endif
--
--#define _PLIST_HEAD_INIT(head)				\
--	.node_list = LIST_HEAD_INIT((head).node_list)
--
- /**
-  * PLIST_HEAD_INIT - static struct plist_head initializer
-  * @head:	struct plist_head variable name
-- * @_lock:	lock to initialize for this list
-- */
--#define PLIST_HEAD_INIT(head, _lock)			\
--{							\
--	_PLIST_HEAD_INIT(head),				\
--	PLIST_HEAD_LOCK_INIT(&(_lock))			\
--}
--
--/**
-- * PLIST_HEAD_INIT_RAW - static struct plist_head initializer
-- * @head:	struct plist_head variable name
-- * @_lock:	lock to initialize for this list
-  */
--#define PLIST_HEAD_INIT_RAW(head, _lock)		\
-+#define PLIST_HEAD_INIT(head)				\
- {							\
--	_PLIST_HEAD_INIT(head),				\
--	PLIST_HEAD_LOCK_INIT_RAW(&(_lock))		\
-+	.node_list = LIST_HEAD_INIT((head).node_list)	\
- }
- 
- /**
-@@ -141,31 +112,11 @@ struct plist_node {
- /**
-  * plist_head_init - dynamic struct plist_head initializer
-  * @head:	&struct plist_head pointer
-- * @lock:	spinlock protecting the list (debugging)
-  */
- static inline void
--plist_head_init(struct plist_head *head, spinlock_t *lock)
-+plist_head_init(struct plist_head *head)
- {
- 	INIT_LIST_HEAD(&head->node_list);
--#ifdef CONFIG_DEBUG_PI_LIST
--	head->spinlock = lock;
--	head->rawlock = NULL;
--#endif
--}
--
--/**
-- * plist_head_init_raw - dynamic struct plist_head initializer
-- * @head:	&struct plist_head pointer
-- * @lock:	raw_spinlock protecting the list (debugging)
-- */
--static inline void
--plist_head_init_raw(struct plist_head *head, raw_spinlock_t *lock)
--{
--	INIT_LIST_HEAD(&head->node_list);
--#ifdef CONFIG_DEBUG_PI_LIST
--	head->rawlock = lock;
--	head->spinlock = NULL;
--#endif
- }
- 
- /**
-diff --git a/include/linux/rtmutex.h b/include/linux/rtmutex.h
-index 8d522ff..de17134 100644
---- a/include/linux/rtmutex.h
-+++ b/include/linux/rtmutex.h
-@@ -66,7 +66,7 @@ struct hrtimer_sleeper;
- 
- #define __RT_MUTEX_INITIALIZER(mutexname) \
- 	{ .wait_lock = __RAW_SPIN_LOCK_UNLOCKED(mutexname.wait_lock) \
--	, .wait_list = PLIST_HEAD_INIT_RAW(mutexname.wait_list, mutexname.wait_lock) \
-+	, .wait_list = PLIST_HEAD_INIT(mutexname.wait_list) \
- 	, .owner = NULL \
- 	__DEBUG_RT_MUTEX_INITIALIZER(mutexname)}
- 
-@@ -100,7 +100,7 @@ extern void rt_mutex_unlock(struct rt_mutex *lock);
- 
- #ifdef CONFIG_RT_MUTEXES
- # define INIT_RT_MUTEXES(tsk)						\
--	.pi_waiters	= PLIST_HEAD_INIT(tsk.pi_waiters, tsk.pi_lock),	\
-+	.pi_waiters	= PLIST_HEAD_INIT(tsk.pi_waiters),	\
- 	INIT_RT_MUTEX_DEBUG(tsk)
- #else
- # define INIT_RT_MUTEXES(tsk)
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 0276c30..7517a53 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1013,7 +1013,7 @@ static void rt_mutex_init_task(struct task_struct *p)
- {
- 	raw_spin_lock_init(&p->pi_lock);
- #ifdef CONFIG_RT_MUTEXES
--	plist_head_init_raw(&p->pi_waiters, &p->pi_lock);
-+	plist_head_init(&p->pi_waiters);
- 	p->pi_blocked_on = NULL;
- #endif
- }
-diff --git a/kernel/futex.c b/kernel/futex.c
-index fe28dc2..3fbc76c 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -2697,7 +2697,7 @@ static int __init futex_init(void)
- 		futex_cmpxchg_enabled = 1;
- 
- 	for (i = 0; i < ARRAY_SIZE(futex_queues); i++) {
--		plist_head_init(&futex_queues[i].chain, &futex_queues[i].lock);
-+		plist_head_init(&futex_queues[i].chain);
- 		spin_lock_init(&futex_queues[i].lock);
- 	}
- 
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index 298c927..628276d 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -2468,6 +2468,9 @@ mark_held_locks(struct task_struct *curr, enum mark_type mark)
- 
- 		BUG_ON(usage_bit >= LOCK_USAGE_STATES);
- 
-+		if (hlock_class(hlock)->key == &__lockdep_no_validate__)
-+			continue;
++config BATTERY_DA9052
++	tristate "Dialog DA9052 Battery"
++	depends on PMIC_DA9052
++	help
++	  Say Y here to enable support for batteries charger integrated into
++	  DA9052 PMIC.
 +
- 		if (!mark_lock(curr, hlock, usage_bit))
- 			return 0;
- 	}
-diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
-index 6824ca7..37f05d0 100644
---- a/kernel/pm_qos_params.c
-+++ b/kernel/pm_qos_params.c
-@@ -74,7 +74,7 @@ static DEFINE_SPINLOCK(pm_qos_lock);
- static struct pm_qos_object null_pm_qos;
- static BLOCKING_NOTIFIER_HEAD(cpu_dma_lat_notifier);
- static struct pm_qos_object cpu_dma_pm_qos = {
--	.requests = PLIST_HEAD_INIT(cpu_dma_pm_qos.requests, pm_qos_lock),
-+	.requests = PLIST_HEAD_INIT(cpu_dma_pm_qos.requests),
- 	.notifiers = &cpu_dma_lat_notifier,
- 	.name = "cpu_dma_latency",
- 	.target_value = PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE,
-@@ -84,7 +84,7 @@ static struct pm_qos_object cpu_dma_pm_qos = {
- 
- static BLOCKING_NOTIFIER_HEAD(network_lat_notifier);
- static struct pm_qos_object network_lat_pm_qos = {
--	.requests = PLIST_HEAD_INIT(network_lat_pm_qos.requests, pm_qos_lock),
-+	.requests = PLIST_HEAD_INIT(network_lat_pm_qos.requests),
- 	.notifiers = &network_lat_notifier,
- 	.name = "network_latency",
- 	.target_value = PM_QOS_NETWORK_LAT_DEFAULT_VALUE,
-@@ -95,7 +95,7 @@ static struct pm_qos_object network_lat_pm_qos = {
- 
- static BLOCKING_NOTIFIER_HEAD(network_throughput_notifier);
- static struct pm_qos_object network_throughput_pm_qos = {
--	.requests = PLIST_HEAD_INIT(network_throughput_pm_qos.requests, pm_qos_lock),
-+	.requests = PLIST_HEAD_INIT(network_throughput_pm_qos.requests),
- 	.notifiers = &network_throughput_notifier,
- 	.name = "network_throughput",
- 	.target_value = PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE,
-diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
-index ab44911..255e166 100644
---- a/kernel/rtmutex.c
-+++ b/kernel/rtmutex.c
-@@ -890,7 +890,7 @@ void __rt_mutex_init(struct rt_mutex *lock, const char *name)
- {
- 	lock->owner = NULL;
- 	raw_spin_lock_init(&lock->wait_lock);
--	plist_head_init_raw(&lock->wait_list, &lock->wait_lock);
-+	plist_head_init(&lock->wait_list);
- 
- 	debug_rt_mutex_init(lock, name);
- }
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 3f2e502..71bc127 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -7781,7 +7781,7 @@ static void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq)
- #ifdef CONFIG_SMP
- 	rt_rq->rt_nr_migratory = 0;
- 	rt_rq->overloaded = 0;
--	plist_head_init_raw(&rt_rq->pushable_tasks, &rq->lock);
-+	plist_head_init(&rt_rq->pushable_tasks);
- #endif
- 
- 	rt_rq->rt_time = 0;
-@@ -7986,7 +7986,7 @@ void __init sched_init(void)
- #endif
- 
- #ifdef CONFIG_RT_MUTEXES
--	plist_head_init_raw(&init_task.pi_waiters, &init_task.pi_lock);
-+	plist_head_init(&init_task.pi_waiters);
- #endif
- 
- 	/*
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index dd373c8..9c28fa4 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -227,7 +227,7 @@ config BOOTPARAM_SOFTLOCKUP_PANIC_VALUE
- config DETECT_HUNG_TASK
- 	bool "Detect Hung Tasks"
- 	depends on DEBUG_KERNEL
--	default DETECT_SOFTLOCKUP
-+	default LOCKUP_DETECTOR
- 	help
- 	  Say Y here to enable the kernel to detect "hung tasks",
- 	  which are bugs that cause the task to be stuck in
-@@ -866,7 +866,7 @@ config BOOT_PRINTK_DELAY
- 	  system, and then set "lpj=M" before setting "boot_delay=N".
- 	  NOTE:  Using this option may adversely affect SMP systems.
- 	  I.e., processors other than the first one may not boot up.
--	  BOOT_PRINTK_DELAY also may cause DETECT_SOFTLOCKUP to detect
-+	  BOOT_PRINTK_DELAY also may cause LOCKUP_DETECTOR to detect
- 	  what it believes to be lockup conditions.
- 
- config RCU_TORTURE_TEST
-diff --git a/lib/plist.c b/lib/plist.c
-index 0ae7e64..a0a4da4 100644
---- a/lib/plist.c
-+++ b/lib/plist.c
-@@ -56,11 +56,6 @@ static void plist_check_list(struct list_head *top)
- 
- static void plist_check_head(struct plist_head *head)
- {
--	WARN_ON(head != &test_head && !head->rawlock && !head->spinlock);
--	if (head->rawlock)
--		WARN_ON_SMP(!raw_spin_is_locked(head->rawlock));
--	if (head->spinlock)
--		WARN_ON_SMP(!spin_is_locked(head->spinlock));
- 	if (!plist_head_empty(head))
- 		plist_check_list(&plist_first(head)->prio_list);
- 	plist_check_list(&head->node_list);
-@@ -180,7 +175,7 @@ static int  __init plist_test(void)
- 	unsigned int r = local_clock();
- 
- 	printk(KERN_INFO "start plist test\n");
--	plist_head_init(&test_head, NULL);
-+	plist_head_init(&test_head);
- 	for (i = 0; i < ARRAY_SIZE(test_node); i++)
- 		plist_node_init(test_node + i, 0);
- 
+ config BATTERY_MAX17040
+ 	tristate "Maxim MAX17040 Fuel Gauge"
+ 	depends on I2C
+diff --git a/drivers/power/Makefile b/drivers/power/Makefile
+index 8fcd93f..933d121 100644
+--- a/drivers/power/Makefile
++++ b/drivers/power/Makefile
+@@ -24,6 +24,7 @@ obj-$(CONFIG_BATTERY_WM97XX)	+= wm97xx_battery.o
+ obj-$(CONFIG_BATTERY_BQ20Z75)	+= bq20z75.o
+ obj-$(CONFIG_BATTERY_BQ27x00)	+= bq27x00_battery.o
+ obj-$(CONFIG_BATTERY_DA9030)	+= da9030_battery.o
++obj-$(CONFIG_BATTERY_DA9052)	+= da9052-battery.o
+ obj-$(CONFIG_BATTERY_MAX17040)	+= max17040_battery.o
+ obj-$(CONFIG_BATTERY_MAX17042)	+= max17042_battery.o
+ obj-$(CONFIG_BATTERY_Z2)	+= z2_battery.o
+diff --git a/drivers/power/da9052-battery.c b/drivers/power/da9052-battery.c
+new file mode 100755
+index 0000000..842614b
+--- /dev/null
++++ b/drivers/power/da9052-battery.c
+@@ -0,0 +1,577 @@
++/*
++ * Batttery Driver for Dialog DA9052 PMICs
++ *
++ * Copyright(c) 2011 Dialog Semiconductor Ltd.
++
++ * Author: David Dajun Chen <dchen@diasemi.com>
++ *
++ *  This program is free software; you can redistribute  it and/or modify it
++ *  under  the terms of  the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the  License, or (at your
++ *  option) any later version.
++ *
++ */
++
++#include <linux/delay.h>
++#include <linux/freezer.h>
++#include <linux/fs.h>
++#include <linux/jiffies.h>
++#include <linux/module.h>
++#include <linux/timer.h>
++#include <linux/uaccess.h>
++#include <linux/platform_device.h>
++
++#include <linux/mfd/da9052/da9052.h>
++#include <linux/mfd/da9052/pdata.h>
++#include <linux/mfd/da9052/reg.h>
++
++/* STATIC CONFIGURATION */
++#define DA9052_BAT_CUTOFF_VOLT		2800
++#define DA9052_BAT_THRESHOLD		62
++#define DA9052_BAT_CAPACITY_LIMIT_LOW	4
++#define DA9052_AVERAGE_SIZE		4
++#define DA9052_LOOK_UP_TABLE_SIZE	68
++#define DA9052_NO_OF_LOOKUP_TABLE	3
++#define DA9052_IRQ_DCIN		0
++#define DA9052_IRQ_VBUS		1
++#define DA9052_IRQ_DCINREM		2
++#define DA9052_IRQ_VBUSREM		3
++#define DA9052_IRQ_TBAT		12
++#define DA9052_IRQ_CHGEND		11
++
++enum charger_type_enum {
++	DA9052_NOCHARGER = 1,
++	DA9052_USB_HUB,
++	DA9052_USB_CHARGER,
++	DA9052_WALL_CHARGER,
++};
++
++static const u16 temperature_lookup_ref[3] = {10, 25, 40};
++static u32 const vbat_vs_capacity_look_up[3][68][2] = {
++	/* For temperature 10 degree celisus*/
++	{
++	{4082, 100}, {4036, 98},
++	{4020, 96}, {4008, 95},
++	{3997, 93}, {3983, 91},
++	{3964, 90}, {3943, 88},
++	{3926, 87}, {3912, 85},
++	{3900, 84}, {3890, 82},
++	{3881, 80}, {3873, 79},
++	{3865, 77}, {3857, 76},
++	{3848, 74}, {3839, 73},
++	{3829, 71}, {3820, 70},
++	{3811, 68}, {3802, 67},
++	{3794, 65}, {3785, 64},
++	{3778, 62}, {3770, 61},
++	{3763, 59}, {3756, 58},
++	{3750, 56}, {3744, 55},
++	{3738, 53}, {3732, 52},
++	{3727, 50}, {3722, 49},
++	{3717, 47}, {3712, 46},
++	{3708, 44}, {3703, 43},
++	{3700, 41}, {3696, 40},
++	{3693, 38}, {3691, 37},
++	{3688, 35}, {3686, 34},
++	{3683, 32}, {3681, 31},
++	{3678, 29}, {3675, 28},
++	{3672, 26}, {3669, 25},
++	{3665, 23}, {3661, 22},
++	{3656, 21}, {3651, 19},
++	{3645, 18}, {3639, 16},
++	{3631, 15}, {3622, 13},
++	{3611, 12}, {3600, 10},
++	{3587, 9}, {3572, 7},
++	{3548, 6}, {3503, 5},
++	{3420, 3}, {3268, 2},
++	{2992, 1}, {2746, 0}
++	},
++	/* For temperature 25 degree celisus */
++	{
++	{4102, 100}, {4065, 98},
++	{4048, 96}, {4034, 95},
++	{4021, 93}, {4011, 92},
++	{4001, 90}, {3986, 88},
++	{3968, 87}, {3952, 85},
++	{3938, 84}, {3926, 82},
++	{3916, 81}, {3908, 79},
++	{3900, 77}, {3892, 76},
++	{3883, 74}, {3874, 73},
++	{3864, 71}, {3855, 70},
++	{3846, 68}, {3836, 67},
++	{3827, 65}, {3819, 64},
++	{3810, 62}, {3801, 61},
++	{3793, 59}, {3786, 58},
++	{3778, 56}, {3772, 55},
++	{3765, 53}, {3759, 52},
++	{3754, 50}, {3748, 49},
++	{3743, 47}, {3738, 46},
++	{3733, 44}, {3728, 43},
++	{3724, 41}, {3720, 40},
++	{3716, 38}, {3712, 37},
++	{3709, 35}, {3706, 34},
++	{3703, 33}, {3701, 31},
++	{3698, 30}, {3696, 28},
++	{3693, 27}, {3690, 25},
++	{3687, 24}, {3683, 22},
++	{3680, 21}, {3675, 19},
++	{3671, 18}, {3666, 17},
++	{3660, 15}, {3654, 14},
++	{3647, 12}, {3639, 11},
++	{3630, 9}, {3621, 8},
++	{3613, 6}, {3606, 5},
++	{3597, 4}, {3582, 2},
++	{3546, 1}, {2747, 0}
++	},
++	/* For temperature 40 degree celisus*/
++	{
++	{4114, 100}, {4081, 98},
++	{4065, 96}, {4050, 95},
++	{4036, 93}, {4024, 92},
++	{4013, 90}, {4002, 88},
++	{3990, 87}, {3976, 85},
++	{3962, 84}, {3950, 82},
++	{3939, 81}, {3930, 79},
++	{3921, 77}, {3912, 76},
++	{3902, 74}, {3893, 73},
++	{3883, 71}, {3874, 70},
++	{3865, 68}, {3856, 67},
++	{3847, 65}, {3838, 64},
++	{3829, 62}, {3820, 61},
++	{3812, 59}, {3803, 58},
++	{3795, 56}, {3787, 55},
++	{3780, 53}, {3773, 52},
++	{3767, 50}, {3761, 49},
++	{3756, 47}, {3751, 46},
++	{3746, 44}, {3741, 43},
++	{3736, 41}, {3732, 40},
++	{3728, 38}, {3724, 37},
++	{3720, 35}, {3716, 34},
++	{3713, 33}, {3710, 31},
++	{3707, 30}, {3704, 28},
++	{3701, 27}, {3698, 25},
++	{3695, 24}, {3691, 22},
++	{3686, 21}, {3681, 19},
++	{3676, 18}, {3671, 17},
++	{3666, 15}, {3661, 14},
++	{3655, 12}, {3648, 11},
++	{3640, 9}, {3632, 8},
++	{3622, 6}, {3616, 5},
++	{3611, 4}, {3604, 2},
++	{3594, 1}, {2747, 0}
++	}
++};
++
++struct da9052_battery {
++	struct da9052 *da9052;
++	struct power_supply psy;
++	int charger_type;
++	int status;
++	int health;
++};
++
++static inline int volt_reg_to_mV(int value)
++{
++	return ((value * 1000) / 512) + 2500;
++}
++
++static inline int ichg_reg_to_mA(int value)
++{
++	return (value * 3900) / 1000;
++}
++
++static int da9052_battery_read_current(struct da9052_battery *battery,
++					int *current_mA)
++{
++	int ret;
++
++	if (battery->status == POWER_SUPPLY_STATUS_DISCHARGING)
++		return -EBUSY;
++
++	ret = da9052_adc_manual_read(battery->da9052, DA9052_ADC_MAN_MUXSEL_ICH);
++	if (ret < 0)
++		return ret;
++
++	*current_mA = ichg_reg_to_mA(ret);
++
++	return 0;
++}
++
++static int da9052_battery_read_volt(struct da9052_battery *battery,
++				     int *volt_mV)
++{
++	int voltage;
++
++	voltage = da9052_adc_manual_read(battery->da9052,
++					 DA9052_ADC_MAN_MUXSEL_VBAT);
++	if (voltage < 0)
++		return voltage;
++
++	*volt_mV = volt_reg_to_mV(voltage);
++
++	return 0;
++}
++
++static int da9052_battery_check_presence(struct da9052_battery *battery,
++					  int *illegal)
++{
++	int bat_temp;
++
++	bat_temp = da9052_adc_temperature_read(battery->da9052);
++	if (bat_temp < 0)
++		return bat_temp;
++
++	if (bat_temp > DA9052_BAT_THRESHOLD)
++		*illegal = 1;
++	else
++		*illegal = 0;
++
++	return 0;
++}
++
++static int interpolated(int vbat_lower, int  vbat_upper, int level_lower,
++			 int level_upper, int bat_voltage)
++{
++	int temp;
++
++	temp = ((level_upper - level_lower) * 1000) / (vbat_upper - vbat_lower);
++	temp = level_lower + (((bat_voltage - vbat_lower) * temp) / 1000);
++
++	return temp;
++}
++
++unsigned char select_temperature(unsigned char temp_index, int bat_temperature)
++{
++	int temp_temperature;
++
++	temp_temperature = (temperature_lookup_ref[temp_index] +
++			    temperature_lookup_ref[temp_index + 1]) / 2;
++
++	if (bat_temperature >= temp_temperature) {
++		temp_index += 1;
++		return temp_index;
++	} else
++		return temp_index;
++}
++
++static int da9052_battery_read_capacity(struct da9052_battery *battery,
++					 int *capacity)
++{
++	int bat_temperature, bat_voltage;
++	int vbat_lower, vbat_upper, level_upper, level_lower;
++	int ret, flag, index, access_index = 0;
++
++	ret = da9052_battery_read_volt(battery, &bat_voltage);
++	if (ret < 0)
++		return ret;
++
++	bat_temperature = da9052_adc_temperature_read(battery->da9052);
++	if (bat_temperature < 0)
++		return bat_temperature;
++
++	for (index = 0; index < (DA9052_NO_OF_LOOKUP_TABLE - 1); index++) {
++		if (bat_temperature <= temperature_lookup_ref[0]) {
++			access_index = 0;
++			break;
++		} else if (bat_temperature >
++			   temperature_lookup_ref[DA9052_NO_OF_LOOKUP_TABLE]) {
++				access_index = DA9052_NO_OF_LOOKUP_TABLE - 1;
++			break;
++		} else if ((bat_temperature >= temperature_lookup_ref[index]) &&
++			   (bat_temperature >= temperature_lookup_ref[index + 1])) {
++				access_index = select_temperature(index,
++					       bat_temperature);
++			break;
++		}
++	}
++	if (bat_voltage >= vbat_vs_capacity_look_up[access_index][0][0]) {
++		*capacity = 100;
++		return 0;
++	}
++	if (bat_voltage <= vbat_vs_capacity_look_up[access_index]
++		[DA9052_LOOK_UP_TABLE_SIZE - 1][0]) {
++			*capacity = 0;
++			return 0;
++	}
++	flag = 0;
++
++	for (index = 0; index < (DA9052_LOOK_UP_TABLE_SIZE-1); index++) {
++		if ((bat_voltage <=
++		     vbat_vs_capacity_look_up[access_index][index][0]) &&
++		    (bat_voltage >=
++		     vbat_vs_capacity_look_up[access_index][index + 1][0])) {
++			vbat_upper =
++			vbat_vs_capacity_look_up[access_index][index][0];
++			vbat_lower =
++			vbat_vs_capacity_look_up[access_index][index + 1][0];
++			level_upper =
++			vbat_vs_capacity_look_up[access_index][index][1];
++			level_lower =
++			vbat_vs_capacity_look_up[access_index][index + 1][1];
++			flag = 1;
++			break;
++		}
++	}
++	if (!flag)
++		return -EIO;
++
++	*capacity = interpolated(vbat_lower, vbat_upper, level_lower,
++				 level_upper, bat_voltage);
++
++	return 0;
++}
++
++static int da9052_battery_check_health(struct da9052_battery *battery,
++					int *health)
++{
++	int ret, bat_illegal, capacity;
++
++	ret = da9052_battery_check_presence(battery, &bat_illegal);
++	if (ret < 0)
++		return ret;
++
++	if (bat_illegal) {
++		battery->health = POWER_SUPPLY_HEALTH_UNKNOWN;
++		return 0;
++	}
++
++	if (battery->health != POWER_SUPPLY_HEALTH_OVERHEAT) {
++		ret = da9052_battery_read_capacity(battery, &capacity);
++		if (ret < 0)
++			return ret;
++		if (capacity < DA9052_BAT_CAPACITY_LIMIT_LOW)
++			battery->health = POWER_SUPPLY_HEALTH_DEAD;
++		else
++			battery->health = POWER_SUPPLY_HEALTH_GOOD;
++	}
++
++	*health = battery->health;
++
++	return 0;
++}
++
++static irqreturn_t da9052_bat_irq(int irq, void *data)
++{
++	int status;
++	struct da9052_battery *battery = (struct da9052_battery *)data;
++
++	switch (irq) {
++	case DA9052_IRQ_TBAT:
++		battery->health = POWER_SUPPLY_HEALTH_OVERHEAT;
++		break;
++	case DA9052_IRQ_DCIN:
++		battery->charger_type = DA9052_WALL_CHARGER;
++		battery->status = POWER_SUPPLY_STATUS_CHARGING;
++		break;
++	case DA9052_IRQ_DCINREM:
++		status = da9052_reg_read(battery->da9052, DA9052_STATUS_A_REG);
++		if ((status & DA9052_STATUSA_VBUSDET) &&
++		    (status & DA9052_STATUSA_VBUSSEL)) {
++			battery->charger_type = DA9052_USB_CHARGER;
++			battery->status = POWER_SUPPLY_STATUS_CHARGING;
++		} else {
++			battery->charger_type = DA9052_NOCHARGER;
++			battery->status = POWER_SUPPLY_STATUS_NOT_CHARGING;
++		}
++		break;
++	case DA9052_IRQ_VBUS:
++		 status = da9052_reg_read(battery->da9052, DA9052_STATUS_A_REG);
++		if ((status & DA9052_STATUSA_DCINDET) &&
++		    (status & DA9052_STATUSA_DCINSEL))
++			battery->charger_type = DA9052_WALL_CHARGER;
++		else
++			battery->charger_type = DA9052_USB_CHARGER;
++		battery->status = POWER_SUPPLY_STATUS_CHARGING;
++		break;
++	case DA9052_IRQ_VBUSREM:
++		battery->status = POWER_SUPPLY_STATUS_NOT_CHARGING;
++		status = da9052_reg_read(battery->da9052, DA9052_STATUS_A_REG);
++		if ((status & DA9052_STATUSA_DCINDET) &&
++		    (status & DA9052_STATUSA_DCINSEL)) {
++			battery->charger_type = DA9052_WALL_CHARGER;
++			battery->status = POWER_SUPPLY_STATUS_CHARGING;
++		} else {
++			battery->charger_type = DA9052_NOCHARGER;
++			battery->status = POWER_SUPPLY_STATUS_NOT_CHARGING;
++		}
++		break;
++	case DA9052_IRQ_CHGEND:
++		battery->status = POWER_SUPPLY_STATUS_FULL;
++		break;
++	default:
++		dev_err(battery->da9052->dev, "DA9052 Unknown interrupt %d\n",
++			irq);
++	}
++	power_supply_changed(&battery->psy);
++	return IRQ_HANDLED;
++}
++
++static int da9052_bat_get_property(struct power_supply *psy,
++				    enum power_supply_property psp,
++				    union power_supply_propval *val)
++{
++	int ret, illegal;
++	struct da9052_battery *battery = container_of(psy, struct da9052_battery,
++						      psy);
++
++	ret = da9052_battery_check_presence(battery, &illegal);
++	if (ret < 0)
++		return ret;
++
++	if (illegal && psp != POWER_SUPPLY_PROP_PRESENT)
++		return -ENODEV;
++
++	switch (psp) {
++	case POWER_SUPPLY_PROP_STATUS:
++		val->intval = battery->status;
++		break;
++	case POWER_SUPPLY_PROP_ONLINE:
++		val->intval =
++			(battery->charger_type == DA9052_NOCHARGER) ? 0 : 1;
++		break;
++	case POWER_SUPPLY_PROP_PRESENT:
++		ret = da9052_battery_check_presence(battery, &val->intval);
++		break;
++	case POWER_SUPPLY_PROP_HEALTH:
++		ret = da9052_battery_check_health(battery, &val->intval);
++		break;
++	case POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN:
++		val->intval = DA9052_BAT_CUTOFF_VOLT * 1000;
++		break;
++	case POWER_SUPPLY_PROP_VOLTAGE_AVG:
++		ret = da9052_battery_read_volt(battery, &val->intval);
++		break;
++	case POWER_SUPPLY_PROP_CURRENT_AVG:
++		ret = da9052_battery_read_current(battery, &val->intval);
++		break;
++	case POWER_SUPPLY_PROP_CAPACITY:
++		ret = da9052_battery_read_capacity(battery, &val->intval);
++		break;
++	case POWER_SUPPLY_PROP_TEMP:
++		val->intval = da9052_adc_temperature_read(battery->da9052);
++		ret = val->intval;
++		break;
++	case POWER_SUPPLY_PROP_TECHNOLOGY:
++		val->intval = POWER_SUPPLY_TECHNOLOGY_LION;
++		break;
++	default:
++		return -EINVAL;
++	}
++	return ret;
++}
++
++static enum power_supply_property da9052_bat_props[] = {
++	POWER_SUPPLY_PROP_STATUS,
++	POWER_SUPPLY_PROP_ONLINE,
++	POWER_SUPPLY_PROP_PRESENT,
++	POWER_SUPPLY_PROP_HEALTH,
++	POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN,
++	POWER_SUPPLY_PROP_VOLTAGE_AVG,
++	POWER_SUPPLY_PROP_CURRENT_AVG,
++	POWER_SUPPLY_PROP_CAPACITY,
++	POWER_SUPPLY_PROP_TEMP,
++	POWER_SUPPLY_PROP_TECHNOLOGY,
++};
++
++static struct power_supply template_battery = {
++	.name		= "da9052-bat",
++	.type		= POWER_SUPPLY_TYPE_BATTERY,
++	.properties	= da9052_bat_props,
++	.num_properties	= ARRAY_SIZE(da9052_bat_props),
++	.get_property	= da9052_bat_get_property,
++};
++
++static const char *da9052_bat_irqs[] = {
++	"BATT TEMP",
++	"DCIN DET",
++	"DCIN REM",
++	"VBUS DET",
++	"VBUS REM",
++	"CHG END",
++};
++
++static s32 __devinit da9052_bat_probe(struct platform_device *pdev)
++{
++	struct da9052_pdata *pdata;
++	struct da9052_battery *battery;
++	int ret, irq, i;
++
++	battery = kzalloc(sizeof(struct da9052_battery), GFP_KERNEL);
++	if (!battery)
++		return -ENOMEM;
++
++	battery->da9052 = dev_get_drvdata(pdev->dev.parent);
++	pdata = battery->da9052->dev->platform_data;
++
++	battery->psy		= template_battery;
++	if (pdata != NULL && pdata->use_for_apm)
++		battery->psy.use_for_apm = pdata->use_for_apm;
++	battery->charger_type	= DA9052_NOCHARGER;
++	battery->status		= POWER_SUPPLY_STATUS_UNKNOWN;
++	battery->health		= POWER_SUPPLY_HEALTH_UNKNOWN;
++
++	for (i = 0; i < ARRAY_SIZE(da9052_bat_irqs); i++) {
++		irq = platform_get_irq_byname(pdev, da9052_bat_irqs[i]);
++		ret = request_threaded_irq(battery->da9052->irq_base + irq,
++					   NULL, da9052_bat_irq,
++					   IRQF_TRIGGER_LOW | IRQF_ONESHOT,
++					   da9052_bat_irqs[i], battery);
++		if (ret != 0) {
++			dev_err(&pdev->dev, "Failed to request %s IRQ %d: %d\n",
++				da9052_bat_irqs[i], irq, ret);
++			goto err;
++		}
++	}
++
++	ret = power_supply_register(&pdev->dev, &battery->psy);
++	 if (ret)
++		goto err;
++
++	return 0;
++
++err:
++	for (; i >= 0; i--) {
++		irq = platform_get_irq_byname(pdev, da9052_bat_irqs[i]);
++		free_irq(irq, battery);
++	}
++	kfree(battery);
++	return ret;
++}
++static int __devexit da9052_bat_remove(struct platform_device *pdev)
++{
++	int i, irq;
++	struct da9052_battery *battery = platform_get_drvdata(pdev);
++
++	for (i = 0; i < ARRAY_SIZE(da9052_bat_irqs); i++) {
++		irq = platform_get_irq_byname(pdev, da9052_bat_irqs[i]);
++		free_irq(irq, battery);
++	}
++	power_supply_unregister(&battery->psy);
++
++	return 0;
++}
++
++static struct platform_driver da9052_bat_driver = {
++	.probe = da9052_bat_probe,
++	.remove = __devexit_p(da9052_bat_remove),
++	.driver = {
++		.name = "da9052-bat",
++		.owner = THIS_MODULE,
++	},
++};
++
++static int __init da9052_bat_init(void)
++{
++	return platform_driver_register(&da9052_bat_driver);
++}
++module_init(da9052_bat_init);
++
++static void __exit da9052_bat_exit(void)
++{
++	platform_driver_unregister(&da9052_bat_driver);
++}
++module_exit(da9052_bat_exit);
++
++MODULE_DESCRIPTION("DA9052 BAT Device Driver");
++MODULE_AUTHOR("David Dajun Chen <dchen@diasemi.com>");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:da9052-bat");
+
+
