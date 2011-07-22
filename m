@@ -1,102 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753749Ab1GVJ6S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 05:58:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57786 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753161Ab1GVJ6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 05:58:17 -0400
-Date: Fri, 22 Jul 2011 11:58:16 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] memcg: do not try to drain per-cpu caches without
- pages
-Message-ID: <20110722095815.GF4004@tiehlicka.suse.cz>
-References: <cover.1311241300.git.mhocko@suse.cz>
- <113c4affc2f0938b7b22d43c88d2b0a623de9a6b.1311241300.git.mhocko@suse.cz>
- <20110721191250.1c945740.kamezawa.hiroyu@jp.fujitsu.com>
- <20110721113606.GA27855@tiehlicka.suse.cz>
- <20110722084413.9dd4b880.kamezawa.hiroyu@jp.fujitsu.com>
- <20110722091936.GB4004@tiehlicka.suse.cz>
- <20110722182822.a99a2676.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1753789Ab1GVJ7H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 05:59:07 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:40244 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753564Ab1GVJ7F convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 05:59:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110722182822.a99a2676.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <87y5zqfxt1.fsf@tucsk.pomaz.szeredi.hu>
+References: <CA+icZUVbeLU+zCAC+8wduizn6h5FUE2qzNr0bg9t3yWNbv_6Ng@mail.gmail.com>
+	<CA+icZUXf1_qWF8GdQyCVxzAp-CYgQbH8iod0oBTjhWsSZLi1_g@mail.gmail.com>
+	<87y5zqfxt1.fsf@tucsk.pomaz.szeredi.hu>
+Date: Fri, 22 Jul 2011 11:59:03 +0200
+Message-ID: <CA+icZUWGxByaiRGSdtcoY_cdRytVvSFzahzPrdgokF7cKt8q3w@mail.gmail.com>
+Subject: Re: linux-next: Tree for July 20 (overlayfs)
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Randy Dunlap <rdunlap@xenotime.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 22-07-11 18:28:22, KAMEZAWA Hiroyuki wrote:
-> On Fri, 22 Jul 2011 11:19:36 +0200
-> Michal Hocko <mhocko@suse.cz> wrote:
-> 
-> > On Fri 22-07-11 08:44:13, KAMEZAWA Hiroyuki wrote:
-> > > On Thu, 21 Jul 2011 13:36:06 +0200
-> > > Michal Hocko <mhocko@suse.cz> wrote:
-> > > 
-> > > > On Thu 21-07-11 19:12:50, KAMEZAWA Hiroyuki wrote:
-> > > > > On Thu, 21 Jul 2011 09:38:00 +0200
-> > > > > Michal Hocko <mhocko@suse.cz> wrote:
-> > > > > 
-> > > > > > drain_all_stock_async tries to optimize a work to be done on the work
-> > > > > > queue by excluding any work for the current CPU because it assumes that
-> > > > > > the context we are called from already tried to charge from that cache
-> > > > > > and it's failed so it must be empty already.
-> > > > > > While the assumption is correct we can do it by checking the current
-> > > > > > number of pages in the cache. This will also reduce a work on other CPUs
-> > > > > > with an empty stock.
-> > > > > > 
-> > > > > > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> > > > > 
-> > > > > 
-> > > > > At the first look, when a charge against TransParentHugepage() goes
-> > > > > into the reclaim routine, stock->nr_pages != 0 and this will
-> > > > > call additional kworker.
-> > > > 
-> > > > True. We will drain a charge which could be used by other allocations
-> > > > in the meantime so we have a good chance to reclaim less. But how big
-> > > > problem is that?
-> > > > I mean I can add a new parameter that would force checking the current
-> > > > cpu but it doesn't look nice. I cannot add that condition
-> > > > unconditionally because the code will be shared with the sync path in
-> > > > the next patch and that one needs to drain _all_ cpus.
-> > > > 
-> > > > What would you suggest?
-> > > By 2 methods
-> > > 
-> > >  - just check nr_pages. 
-> > 
-> > Not sure I understand which nr_pages you mean. The one that comes from
-> > the charging path or stock->nr_pages?
-> > If you mean the first one then we do not have in the reclaim path where
-> > we call drain_all_stock_async.
-> > 
-> 
-> stock->nr_pages.
-> 
-> > >  - drain "local stock" without calling schedule_work(). It's fast.
-> > 
-> > but there is nothing to be drained locally in the paths where we call
-> > drain_all_stock_async... Or do you mean that drain_all_stock shouldn't
-> > use work queue at all?
-> 
-> I mean calling schedule_work against local cpu is just waste of time.
-> Then, drain it directly and move local cpu's stock->nr_pages to res_counter.
+On Fri, Jul 22, 2011 at 11:51 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> Sedat Dilek <sedat.dilek@googlemail.com> writes:
+>
+>> On Wed, Jul 20, 2011 at 8:48 PM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
+>>> Hi,
+>>>
+>>> I have here a problem with linux-next (next-20110720) and
+>>> overlayfs-v10 (not the latest from GIT).
+>>>
+>>> ### OVERLAYFS
+>>> # Patches from mszeredi/vfs.git#overlayfs.v10 (up to commit
+>>> 00b27467b181a27c808cef0d66860eba5f450b24)
+>>> # "overlay: overlay filesystem documentation"
+>>> # See also <http://lkml.org/lkml/2011/6/1/456>
+>>> # "[PATCH 0/7] overlay filesystem: request for inclusion"
+>>> + overlayfs-v10/overlayfs-v10.patch
+>>>
+>>> Documentation/filesystems/porting says:
+>>>
+>>> [mandatory]
+>>>        ->permission(), generic_permission() and ->check_acl() have lost flags
+>>> argument; instead of passing IPERM_FLAG_RCU we add MAY_NOT_BLOCK into mask.
+>>>        generic_permission() has also lost the check_acl argument; if you want
+>>> non-NULL to be used for that inode, put it into ->i_op->check_acl.
+>>>
+>>> I checked with other files below fs/ and changed accordingly.
+>>> So, I hope the attached patch is OK (untested, uncompiled)?
+>>>
+>>> What's the status of OverlayFS anyway, will it be merged into v3.1?
+>>>
+>>> Regards,
+>>> - Sedat -
+>>>
+>>
+>> I checked again and adapted ovl_permission().
+>>
+>> [ fs/namei.c ]
+>> static int acl_permission_check(struct inode *inode, int mask)
+>>
+>> Here is a v2, which compiles.
+>
+> Thanks, the patch looks good.
+>
+> And ->fsync is another one that will have an updated API.
+>
+> Miklos
+>
+> ---
+>  fs/overlayfs/readdir.c |    5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+>
+> Index: linux-2.6/fs/overlayfs/readdir.c
+> ===================================================================
+> --- linux-2.6.orig/fs/overlayfs/readdir.c       2011-07-21 17:07:52.000000000 +0200
+> +++ linux-2.6/fs/overlayfs/readdir.c    2011-07-21 17:10:20.000000000 +0200
+> @@ -386,7 +386,8 @@ static loff_t ovl_dir_llseek(struct file
+>        return res;
+>  }
+>
+> -static int ovl_dir_fsync(struct file *file, int datasync)
+> +static int ovl_dir_fsync(struct file *file, loff_t start, loff_t end,
+> +                        int datasync)
+>  {
+>        struct ovl_dir_file *od = file->private_data;
+>
+> @@ -400,7 +401,7 @@ static int ovl_dir_fsync(struct file *fi
+>                        return PTR_ERR(od->realfile);
+>        }
+>
+> -       return vfs_fsync(od->realfile, datasync);
+> +       return vfs_fsync_range(od->realfile, start, end, datasync);
+>  }
+>
+>  static int ovl_dir_release(struct inode *inode, struct file *file)
+>
 
-got it. Thanks for clarification. Will repost the updated version.
- 
-> Thanks,
-> -Kame
+Hi Miklos,
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+cool, thanks.
+I have renamed my patch in the meanwhile to
+"ovl-Fix-ovl_permission-by-adding-MAY_NOT_BLOCK-into-mask.patch".
+
+The change was due to...
+
+commit d749519b444db985e40b897f73ce1898b11f997e
+"->permission() sanitizing: don't pass flags to generic_permission()" [1].
+
+You want me to do a clean patch or by yourself?
+
+Can you please, do a overlayfs-v11 on top of Linux-3.0?
+I hope your work will be accepted into v3.1.
+
+Regards,
+- Sedat -
+
+[1] http://git.us.kernel.org/?p=linux/kernel/git/viro/vfs-2.6.git;a=commitdiff;h=d749519b444db985e40b897f73ce1898b11f997e
