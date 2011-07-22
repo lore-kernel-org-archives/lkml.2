@@ -1,97 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753074Ab1GVXGR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 19:06:17 -0400
-Received: from fieldses.org ([174.143.236.118]:47521 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752584Ab1GVXGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 19:06:16 -0400
-Date: Fri, 22 Jul 2011 19:06:12 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Andi Kleen <andi@firstfloor.org>, Matt Mackall <mpm@selenic.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Nanosecond fs timestamp support: sad
-Message-ID: <20110722230612.GD10749@fieldses.org>
-References: <1311271641.14555.114.camel@calx>
- <m2pql2c0qz.fsf@firstfloor.org>
- <20110722163335.2df4f6ca@notabene.brown>
- <1311363269.14555.261.camel@calx>
- <20110722205922.GS8006@one.firstfloor.org>
- <1311369102.14555.268.camel@calx>
- <20110722214732.GW8006@one.firstfloor.org>
- <20110722221039.GB10749@fieldses.org>
- <20110722223158.GC10749@fieldses.org>
- <20110723085915.308ddc02@notabene.brown>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110723085915.308ddc02@notabene.brown>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753160Ab1GVXIf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 19:08:35 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53363 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752669Ab1GVXIe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 19:08:34 -0400
+Date: Fri, 22 Jul 2011 16:08:32 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: morten@winkler.dk
+Cc: linux-kernel@vger.kernel.org, Eric Paris <eparis@redhat.com>
+Subject: Re: Possible bug in inotify api
+Message-Id: <20110722160832.ee535e0c.akpm@linux-foundation.org>
+In-Reply-To: <c2b2191a22eab7f6127d5ea1d519bee1.squirrel@webmail01.one.com>
+References: <c2b2191a22eab7f6127d5ea1d519bee1.squirrel@webmail01.one.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 23, 2011 at 08:59:15AM +1000, NeilBrown wrote:
-> On Fri, 22 Jul 2011 18:31:58 -0400 "J. Bruce Fields" <bfields@fieldses.org>
-> wrote:
+On Thu, 21 Jul 2011 08:47:44 +0200
+Morten Winkler J__rgensen <morten@winkler.dk> wrote:
+
+> To whom it might concern
 > 
-> > On Fri, Jul 22, 2011 at 06:10:39PM -0400, bfields wrote:
-> > > On Fri, Jul 22, 2011 at 11:47:32PM +0200, Andi Kleen wrote:
-> > > > On Fri, Jul 22, 2011 at 04:11:42PM -0500, Matt Mackall wrote:
-> > > > > On Fri, 2011-07-22 at 22:59 +0200, Andi Kleen wrote:
-> > > > > > > Indeed. Only usefully exists on ext4 and requires extra system calls.
-> > > > > > 
-> > > > > > Not sure what you mean?  It's in stat(2), just like the timestamps.
-> > > > > 
-> > > > > I don't see anything that looks like a version or generation number in
-> > > > > either the man pages, the asm-generic/stat.h, or glibc's asm/stat.h.
-> > > > > Pointer?
-> > > > 
-> > > > Hmm you're right. I thought it was in there, but apparently not.
-> > > > I think it should be added there though. We still have some unused 
-> > > > fields.
-> > > 
-> > > But last I checked I thought it was only ext4 that actually incremented
-> > > the i_version on IO, and even then only when given a (non-default) mount
-> > > option.
-> > > 
-> > > My notes on what needs to be done there:
-> > > 
-> > > 	- collect data to determine whether turning on i_version causes
-> > > 	  any significant performance regressions.
-> > > 		- Last I talked to him, Ted Tso recommended running
-> > > 		  Bonnie on a local disk, since it does a lot of little
-> > > 		  writes, which is somewhat of a worst case, as it will
-> > > 		  generate extra metadata updates for each write.
-> > > 		  Compare total wall-clock time, number of iops, and
-> > > 		  number of bytes (using some kind of block tracing).
-> > > 	- If there aren't any problems, turn it on by default, and we're
-> > > 	  done.
-> > 
-> > (Well,and talk the other filesystem implementors into doing it.)
-> > 
+> I'd like to report a possible malfunction of the inotify api and check if
+> this issue has been reported.
+> If this is not the proper place to do so, please let me know. I have
+> searched the archives and the web and found similar reportings but none
+> the same.
 > 
-> But does anyone apart from NFSv4 actually *want* i_version as opposed to the
-> more-generally-useful precise timestamps?
-
-It *seems* like a generally useful idea, but I don't know of any other
-users.
-
-> If not, we probably should tell NFSv4 to use timestamps and focus on making
-> them work well.
-> ??
-
-Well, sure, I couldn't complain about that if that proved possible.
-
---b.
-
+> The observed behavior is when calling inotify_remove_watch. Now and then
+> it returns error 22, INVALID_ARGUMENT, even though the watchdesriptor
+> ought to be valid. I've seen that people complain about this behavior on
+> the dovecot mailing list but nobody seems to have suggested a fix.
 > 
-> The timestamp used doesn't need to update ever nanosecond.  I think if it
-> were just updated on every userspace->kernel transition  (or effective
-> equivalents inside kernel threads) that would be enough capture all
-> causality.  I wonder how that would be achieved..  I wonder if RCU machinery
-> could help - doesn't it keep track of when threads schedule ... or something?
+> I've attached a small program that I use to reproduce the behavior.
+> The program watches /tmp and whenever it's notified about a directory
+> created in /tmp, my program adds a watch for that directory as well.
 > 
-> NeilBrown
+> The program is a C++ program (as I will need the inotify functionality in
+> a C++ program, but the behavior is the same in a pure C implementation)
+> and to reproduce I do the following:
+> 
+> * g++ main.cpp
+> * ./a.out
+> 
+> In a shell I go to /tmp and run
+> * for i in `seq 1 5000`; do mkdir D-$i; done; for i in `seq 1 5000`; do
+> rmdir D-$i; done
+> 
+> This makes my testprogram output the wd's created and and the wd's my
+> program tries to remove. I've never seen the program successfully remove
+> all 5000 watch descriptors and I've seen inotify_rm_watch fail after 0
+> removes and after approx 2000 removes and anything in between.
+> 
+> I'm running kernel 2.6.23-5 from the Debian repositories.
+> 
+> If what I've written is totally nonsense, if it is expected behavior or if
+> I've done anything wrong, please let me know. Also, if I can do anything
+> further to investigate the misbehavior also, please let me know.
+> 
+> Best and thanks in advance,
+>    Morten
+> 
+> Attached: C++ program used to reproduce the behavior.
+
+I ran it a couple of times on my 2.6.32-based 2-CPU desktop here and it
+ran to completion without any complaints.
+
+So perhaps we fixed whatever-it-was in a later kernel.  2.6.23 is
+pretty old!
