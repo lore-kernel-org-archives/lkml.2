@@ -1,100 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753579Ab1GVQnJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 12:43:09 -0400
-Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:50263 "EHLO
-	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753460Ab1GVQlz (ORCPT
+	id S1753540Ab1GVQnh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 12:43:37 -0400
+Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:57927 "EHLO
+	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753118Ab1GVQng (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 12:41:55 -0400
+	Fri, 22 Jul 2011 12:43:36 -0400
 X-Cam-AntiVirus: no malware found
 X-Cam-SpamDetails: not scanned
 X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4E29A8B6.3060002@cam.ac.uk>
+Date: Fri, 22 Jul 2011 17:43:34 +0100
 From: Jonathan Cameron <jic23@cam.ac.uk>
-To: linux-kernel@vger.kernel.org
-Cc: lm-sensors@lm-sensors.org, rtc-linux@googlegroups.com,
-        osd-dev@open-osd.org, linux-scsi@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, jkosina@suse.cz, naota@elisp.net,
-        rusty@rustcorp.com.au, paulmck@linux.vnet.ibm.com, namhyung@gmail.com,
-        randy.dunlap@oracle.com, tj@kernel.org, cabarnes@indesign-llc.com,
-        akpm@linux-foundation.org, airlied@redhat.com, thellstrom@vmware.com,
-        johnpol@2ka.mipt.ru, JBottomley@parallels.com, bhalevy@panasas.com,
-        bharrosh@panasas.com, a.zummo@towertech.it, guenter.roeck@ericsson.com,
-        khali@linux-fr.org, airlied@linux.ie,
-        Jonathan Cameron <jic23@cam.ac.uk>
-Subject: [PATCH 0/8] RFC: Introduce ida_simple interfaces and use them.
-Date: Fri, 22 Jul 2011 17:41:09 +0100
-Message-Id: <1311352886-4047-1-git-send-email-jic23@cam.ac.uk>
-X-Mailer: git-send-email 1.7.3.4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: RFC: Boiler plate functions for ida / idr allocation?
+References: <4E1D6900.6040500@cam.ac.uk> <20110713133139.GO2872@htj.dyndns.org> <4E1DA232.30408@cam.ac.uk> <878vrs2if3.fsf@rustcorp.com.au> <20110721081946.GB3455@htj.dyndns.org> <20110721083501.GC3455@htj.dyndns.org> <87sjpyzhz2.fsf@rustcorp.com.au>
+In-Reply-To: <87sjpyzhz2.fsf@rustcorp.com.au>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+On 07/22/11 12:13, Rusty Russell wrote:
+> On Thu, 21 Jul 2011 10:35:01 +0200, Tejun Heo <tj@kernel.org> wrote:
+>> On Thu, Jul 21, 2011 at 10:19:46AM +0200, Tejun Heo wrote:
+>>> On Thu, Jul 21, 2011 at 05:07:36PM +0930, Rusty Russell wrote:
+>>>> From: Rusty Russell <rusty@rustcorp.com.au>
+>>>> Subject: ida: Simplified functions for id allocation.
+>>>>
+>>>> The current hyper-optimized functions are overkill if you simply want
+>>>> to allocate an id for a device.  Create versions which use an internal
+>>>> lock.
+>>>>
+>>>> Thanks to Tejun for feedback.  Feel free to delete the #ifdef TEST
+>>>> code.
+>>>>
+>>>> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+>>> ...
+>>>>  static struct kmem_cache *idr_layer_cache;
+>>>> +static DEFINE_SPINLOCK(simple_ida);
+>>>
+>>> I think the name is a bit confusing.  Maybe simple_ida_lock is better?
+>>> Other than that,
+>>
+>> Ooh, one more thing, maybe it would be better to use spin_lock_irq()
+>> to allow calling free under other irq locks.
+> 
+> Jonathan, please take original patch and mod it to taste, and produce a
+> series on it you can push to Andrew.
+> 
+> As for irqsave etc, as soon as someone needs that we can add
+> it... Jonathan will run into it soon enough.
+> 
+> Thanks,
+> Rusty.
+> 
+Given the timing, it's clearly 3.2 merge window material anyway. Too late to
+push any users this time round even if we hustled it through.
 
-Firstly sorry for the huge cc list, but this series does get about.
+Quite a few 'interesting' users out there now I look into them.  Might take
+a little while to get them past the relevant maintainers.
 
-This series came out of two separate lkml threads:
+I've just sent out a few of the simpler cases.  I guess Andrew may take the core
+patch and the others will route through relevant subsystems.
 
-https://lkml.org/lkml/2011/7/13/64
-http://thread.gmane.org/gmane.linux.kernel/1148513/focus=74236
-
-Basically Rusty and I both got annoyed with yet more instances
-of the same cut and past ida allocation code for the very simple
-case of wanting a unique id for some device. Tejun helpfully
-joined the two threads up.
-
-Anyhow, Rusty proposed more or less the first patch here (with a name
-change requested by Tejun applied.)
-
-The others patches are some of the more obvious looking cases for
-applying this code.  My original reason was for IIO but those patches will
-have to wait a little while for some prior changes to merge.
-For reference, it saves about 40 lines there so I'm happy ;)
-
-There are a number of other cases in tree that can be cleaned up
-in a second series once these are sorted.
-
-There are a couple of cases in here where I've carefully mangled
-the error codes to keep consistent with the existing code.  Please
-can people who know those subsystems well decide on whether the
-mangling is necessary.
-
-All comments welcome. I expect I've broken at least one driver
-doing this so please take a close look.
-
-Rusty, Tejun. I kept your sign of an ack for the first patch. Could
-you quickly verify that's fine?
-
-Thanks,
+A few more to do. Some of them need a little more thought.
 
 Jonathan
-
-Jonathan Cameron (7):
-  hwmon: convert idr to ida and use ida_simple interface.
-  hwmon: ibmaem: convert idr to ida and use ida_simple_get
-  [SCSI] use ida_simple_get and ida_simple remove in place of
-    boilerplate code.
-  drm/vmwgfx: use ida_simple_get for id allocation.
-  [SCSI] osduld: use ida_simple_get to handle id.
-  w1: ds2760 and ds2780, use ida for id and ida_simple_get to get it.
-  rtc: class idr converted to ida and ida_simple_get used.
-
-Rusty Russell (1):
-  ida: Simplified functions for id allocation.
-
- drivers/gpu/drm/vmwgfx/vmwgfx_gmrid_manager.c |   34 +++----------
- drivers/hwmon/hwmon.c                         |   32 +++---------
- drivers/hwmon/ibmaem.c                        |   47 +++--------------
- drivers/rtc/class.c                           |   32 +++---------
- drivers/scsi/osd/osd_uld.c                    |   22 +++-----
- drivers/scsi/sd.c                             |   32 ++++--------
- drivers/w1/slaves/w1_ds2760.c                 |   48 ++---------------
- drivers/w1/slaves/w1_ds2780.c                 |   48 ++---------------
- include/linux/idr.h                           |    4 ++
- lib/idr.c                                     |   67 +++++++++++++++++++++++++
- 10 files changed, 134 insertions(+), 232 deletions(-)
-
--- 
-1.7.3.4
-
