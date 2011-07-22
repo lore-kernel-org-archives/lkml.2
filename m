@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753089Ab1GVQlf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 12:41:35 -0400
-Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:49926 "EHLO
+	id S1753009Ab1GVQld (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 12:41:33 -0400
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:49934 "EHLO
 	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752731Ab1GVQla (ORCPT
+	with ESMTP id S1752633Ab1GVQla (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 22 Jul 2011 12:41:30 -0400
 X-Cam-AntiVirus: no malware found
@@ -22,9 +22,9 @@ Cc: lm-sensors@lm-sensors.org, rtc-linux@googlegroups.com,
         bharrosh@panasas.com, a.zummo@towertech.it, guenter.roeck@ericsson.com,
         khali@linux-fr.org, airlied@linux.ie,
         Jonathan Cameron <jic23@cam.ac.uk>
-Subject: [PATCH 8/8] rtc: class idr converted to ida and ida_simple_get used.
-Date: Fri, 22 Jul 2011 17:41:17 +0100
-Message-Id: <1311352886-4047-9-git-send-email-jic23@cam.ac.uk>
+Subject: [PATCH 2/8] hwmon: convert idr to ida and use ida_simple interface.
+Date: Fri, 22 Jul 2011 17:41:11 +0100
+Message-Id: <1311352886-4047-3-git-send-email-jic23@cam.ac.uk>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1311352886-4047-1-git-send-email-jic23@cam.ac.uk>
 References: <1311352886-4047-1-git-send-email-jic23@cam.ac.uk>
@@ -32,89 +32,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the one use of an ida that doesn't retry on receiving -EAGAIN.
-I'm assuming do so will cause no harm and may help on a rare occasion.
+hwmon was using an idr with a NULL pointer, so convert to an
+ida which then allows use of Rusty's ida_simple_get.
 
 Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
 ---
- drivers/rtc/class.c |   32 +++++++++-----------------------
- 1 files changed, 9 insertions(+), 23 deletions(-)
+ drivers/hwmon/hwmon.c |   32 ++++++++------------------------
+ 1 files changed, 8 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/rtc/class.c b/drivers/rtc/class.c
-index 4194e59..68ae46f 100644
---- a/drivers/rtc/class.c
-+++ b/drivers/rtc/class.c
-@@ -21,16 +21,13 @@
- #include "rtc-core.h"
+diff --git a/drivers/hwmon/hwmon.c b/drivers/hwmon/hwmon.c
+index a61e781..6460487 100644
+--- a/drivers/hwmon/hwmon.c
++++ b/drivers/hwmon/hwmon.c
+@@ -27,8 +27,7 @@
  
+ static struct class *hwmon_class;
  
--static DEFINE_IDR(rtc_idr);
--static DEFINE_MUTEX(idr_lock);
-+static DEFINE_IDA(rtc_ida);
- struct class *rtc_class;
+-static DEFINE_IDR(hwmon_idr);
+-static DEFINE_SPINLOCK(idr_lock);
++static DEFINE_IDA(hwmon_ida);
  
- static void rtc_device_release(struct device *dev)
+ /**
+  * hwmon_device_register - register w/ hwmon
+@@ -42,30 +41,17 @@ static DEFINE_SPINLOCK(idr_lock);
+ struct device *hwmon_device_register(struct device *dev)
  {
- 	struct rtc_device *rtc = to_rtc_device(dev);
--	mutex_lock(&idr_lock);
--	idr_remove(&rtc_idr, rtc->id);
--	mutex_unlock(&idr_lock);
-+	ida_simple_remove(&rtc_ida, rtc->id);
- 	kfree(rtc);
- }
- 
-@@ -115,25 +112,16 @@ struct rtc_device *rtc_device_register(const char *name, struct device *dev,
- 	struct rtc_wkalrm alrm;
- 	int id, err;
- 
--	if (idr_pre_get(&rtc_idr, GFP_KERNEL) == 0) {
--		err = -ENOMEM;
-+	id = ida_simple_get(&rtc_ida, 0, 0, GFP_KERNEL);
-+	if (id < 0) {
-+		err = id;
- 		goto exit;
- 	}
- 
+ 	struct device *hwdev;
+-	int id, err;
 -
--	mutex_lock(&idr_lock);
--	err = idr_get_new(&rtc_idr, NULL, &id);
--	mutex_unlock(&idr_lock);
+-again:
+-	if (unlikely(idr_pre_get(&hwmon_idr, GFP_KERNEL) == 0))
+-		return ERR_PTR(-ENOMEM);
 -
--	if (err < 0)
--		goto exit;
--
+-	spin_lock(&idr_lock);
+-	err = idr_get_new(&hwmon_idr, NULL, &id);
+-	spin_unlock(&idr_lock);
++	int id;
+ 
+-	if (unlikely(err == -EAGAIN))
+-		goto again;
+-	else if (unlikely(err))
+-		return ERR_PTR(err);
++	id = ida_simple_get(&hwmon_ida, 0, 0, GFP_KERNEL);
++	if (id < 0)
++		return ERR_PTR(id);
+ 
 -	id = id & MAX_ID_MASK;
--
- 	rtc = kzalloc(sizeof(struct rtc_device), GFP_KERNEL);
- 	if (rtc == NULL) {
- 		err = -ENOMEM;
--		goto exit_idr;
-+		goto exit_ida;
- 	}
+ 	hwdev = device_create(hwmon_class, dev, MKDEV(0, 0), NULL,
+ 			      HWMON_ID_FORMAT, id);
  
- 	rtc->id = id;
-@@ -191,10 +179,8 @@ struct rtc_device *rtc_device_register(const char *name, struct device *dev,
- exit_kfree:
- 	kfree(rtc);
+-	if (IS_ERR(hwdev)) {
+-		spin_lock(&idr_lock);
+-		idr_remove(&hwmon_idr, id);
+-		spin_unlock(&idr_lock);
+-	}
++	if (IS_ERR(hwdev))
++		ida_simple_remove(&hwmon_ida, id);
  
--exit_idr:
--	mutex_lock(&idr_lock);
--	idr_remove(&rtc_idr, id);
--	mutex_unlock(&idr_lock);
-+exit_ida:
-+	ida_simple_remove(&rtc_ida, id);
- 
- exit:
- 	dev_err(dev, "rtc core: unable to register %s, err = %d\n",
-@@ -245,7 +231,7 @@ static void __exit rtc_exit(void)
- {
- 	rtc_dev_exit();
- 	class_destroy(rtc_class);
--	idr_destroy(&rtc_idr);
-+	ida_destroy(&rtc_ida);
+ 	return hwdev;
  }
+@@ -81,9 +67,7 @@ void hwmon_device_unregister(struct device *dev)
  
- subsys_initcall(rtc_init);
+ 	if (likely(sscanf(dev_name(dev), HWMON_ID_FORMAT, &id) == 1)) {
+ 		device_unregister(dev);
+-		spin_lock(&idr_lock);
+-		idr_remove(&hwmon_idr, id);
+-		spin_unlock(&idr_lock);
++		ida_simple_remove(&hwmon_ida, id);
+ 	} else
+ 		dev_dbg(dev->parent,
+ 			"hwmon_device_unregister() failed: bad class ID!\n");
 -- 
 1.7.3.4
 
