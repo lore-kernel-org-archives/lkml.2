@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751426Ab1GVWLZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 18:11:25 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39035 "EHLO
+	id S1751627Ab1GVWOV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 18:14:21 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44994 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750778Ab1GVWLY (ORCPT
+	by vger.kernel.org with ESMTP id S1750956Ab1GVWOT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 18:11:24 -0400
-Date: Fri, 22 Jul 2011 15:11:07 -0700
+	Fri, 22 Jul 2011 18:14:19 -0400
+Date: Fri, 22 Jul 2011 15:13:38 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
-        Ingo Molnar <mingo@elte.hu>, Ben Greear <greearb@candelatech.com>,
-        stable@kernel.org
-Subject: Re: [patch 2/3] rtc: Fix hrtimer deadlock
-Message-Id: <20110722151107.e1c9996d.akpm@linux-foundation.org>
-In-Reply-To: <20110722091045.476900421@linutronix.de>
-References: <20110722091011.717194327@linutronix.de>
-	<20110722091045.476900421@linutronix.de>
+To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Andrew Chew <achew@nvidia.com>, linux-rt-users@vger.kernel.org,
+        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
+        jkastner@redhat.com
+Subject: Re: [PATCH] rtc-tegra: properly initialize spinlock
+Message-Id: <20110722151338.9b1e9594.akpm@linux-foundation.org>
+In-Reply-To: <1311323756-18013-1-git-send-email-u.kleine-koenig@pengutronix.de>
+References: <1311323756-18013-1-git-send-email-u.kleine-koenig@pengutronix.de>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -26,86 +26,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Jul 2011 09:12:51 -0000
-Thomas Gleixner <tglx@linutronix.de> wrote:
+On Fri, 22 Jul 2011 10:35:56 +0200
+Uwe Kleine-K__nig <u.kleine-koenig@pengutronix.de> wrote:
 
-> Ben reported a lockup related to rtc. The lockup happens due to:
-> 
-> CPU0                                        CPU1
-> 
-> rtc_irq_set_state()			    __run_hrtimer()	
->   spin_lock_irqsave(&rtc->irq_task_lock)    rtc_handle_legacy_irq();
-> 					      spin_lock(&rtc->irq_task_lock);
->   hrtimer_cancel()
->     while (callback_running);
-> 
-> So the running callback never finishes as it's blocked on
-> rtc->irq_task_lock.  
-> 
-> Use hrtimer_try_to_cancel() instead and drop rtc->irq_task_lock while
-> waiting for the callback. Fix this for both rtc_irq_set_state() and
-> rtc_irq_set_freq().
-> 
-> ...
->
-> +static int rtc_update_hrtimer(struct rtc_device *rtc, int enabled)
-> +{
-> +	/*
-> +	 * We unconditionally cancel the timer here, because otherwise
+> Using __SPIN_LOCK_UNLOCKED for a dynamically allocated lock is wrong and
+> breaks with PREEMPT_RT_FULL.
 
-The comment seems wrong.  If hrtimer_try_to_cancel() fails, we simply
-bale out so we did not "unconditionally cancel the timer"?
+Please define "breaks".  Lockdep warnings?  Deadlocks?
 
-> +	 * we could run into BUG_ON(timer->state != HRTIMER_STATE_CALLBACK);
-> +	 * when we manage to start the timer before the callback
-> +	 * returns HRTIMER_RESTART.
-> +	 *
-> +	 * We cannot use hrtimer_cancel() here as a running callback
-> +	 * could be blocked on rtc->irq_task_lock and hrtimer_cancel()
-> +	 * would spin forever.
-> +	 */
-> +	if (hrtimer_try_to_cancel(&rtc->pie_timer) < 0)
-> +		return -1;
-> +
-> +	if (enabled) {
-> +		ktime_t period = ktime_set(0, NSEC_PER_SEC / rtc->irq_freq);
-> +
-> +		hrtimer_start(&rtc->pie_timer, period, HRTIMER_MODE_REL);
-> +	}
-> +	return 0;
-> +}
-> +
->  /**
->   * rtc_irq_set_state - enable/disable 2^N Hz periodic IRQs
->   * @rtc: the rtc device
-> @@ -651,24 +674,21 @@ int rtc_irq_set_state(struct rtc_device 
->  	int err = 0;
->  	unsigned long flags;
+> diff --git a/drivers/rtc/rtc-tegra.c b/drivers/rtc/rtc-tegra.c
+> index 2fc31aa..75259fe 100644
+> --- a/drivers/rtc/rtc-tegra.c
+> +++ b/drivers/rtc/rtc-tegra.c
+> @@ -343,7 +343,7 @@ static int __devinit tegra_rtc_probe(struct platform_device *pdev)
 >  
-> +retry:
->  	spin_lock_irqsave(&rtc->irq_task_lock, flags);
->  	if (rtc->irq_task != NULL && task == NULL)
->  		err = -EBUSY;
->  	if (rtc->irq_task != task)
->  		err = -EACCES;
-> -	if (err)
-> -		goto out;
-> -
-> -	if (enabled) {
-> -		ktime_t period = ktime_set(0, NSEC_PER_SEC/rtc->irq_freq);
-> -		hrtimer_start(&rtc->pie_timer, period, HRTIMER_MODE_REL);
-> -	} else {
-> -		hrtimer_cancel(&rtc->pie_timer);
-> +	if (!err) {
-> +		if (rtc_update_hrtimer(rtc, enabled) < 0) {
-> +			spin_unlock_irqrestore(&rtc->irq_task_lock, flags);
-> +			cpu_relax();
-> +			goto retry;
-> +		}
-> +		rtc->pie_enabled = enabled;
-
-Well this is rather nasty.  Sort of an open-coded expensive spinlock. 
-All rather pointless on SMP=n builds, too.
-
-Is there no better way, such as fixing up the locking properly?
-
+>  	/* set context info. */
+>  	info->pdev = pdev;
+> -	info->tegra_rtc_lock = __SPIN_LOCK_UNLOCKED(info->tegra_rtc_lock);
+> +	spin_lock_init(&info->tegra_rtc_lock);
+>  
+>  	platform_set_drvdata(pdev, info);
+>  
+> -- 
+> 1.7.5.4
