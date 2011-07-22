@@ -1,821 +1,1011 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754412Ab1GVNkw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 09:40:52 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:36926 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754158Ab1GVNkv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 09:40:51 -0400
-From: Peter Huewe <huewe.external.infineon@googlemail.com>
-To: Marcel Selhorst <m.selhorst@sirrix.com>
-Cc: Debora Velarde <debora@linux.vnet.ibm.com>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        huewe.external@infineon.com
-Subject: [PATCH v2] char/tpm: Add new driver for Infineon I2C TIS TPM
-Date: Fri, 22 Jul 2011 15:40:41 +0200
-Message-Id: <1311342041-9875-1-git-send-email-huewe.external@infineon.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1298300243-6409-1-git-send-email-huewe.external@infineon.com>
-References: <1298300243-6409-1-git-send-email-huewe.external@infineon.com>
+	id S1754481Ab1GVNrL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 09:47:11 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:52748 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754313Ab1GVNrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 09:47:08 -0400
+Date: Fri, 22 Jul 2011 15:46:20 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] sched/core changes for v3.1
+Message-ID: <20110722134620.GA1445@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new driver to support Infineon's new I2C TPMs which follow
-the TGC TIS 1.2 TPM specification[1] and Infineon's I2C Protocol Stack
-Specification 0.20.
-Since the I2C Protocol Stack Specification is a simple adaption of the LPC TIS
-Protocol to the I2C Bus, the driver should (in theory) support TPMs by other
-Vendors too.
-The I2C TPMs can be used when LPC Bus is not available (i.e. non x86
-architectures like ARM).
+Linus,
 
-The driver is based on the tpm_tis.c driver by Leendert van Dorn and Kyleen Hall
-and has quite similar functionality.
+Please pull the latest sched-core-for-linus git tree from:
 
-Tested on Nvidia ARM Tegra2 Development Platform and Beagleboard (ARM OMAP)
-Tested with the Trousers[2] TSS API Testsuite v 0.3 [3]
-Compile-tested on x86 (32/64-bit), ppc64, powerpc
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git sched-core-for-linus
 
-Updates since version 2.1.0:
-- improved error handling
-- implemented workarounds needed by the tpm
-- fixed typos
+ Thanks,
 
-KernelVersion: 3.0 (02f8c6a)
+	Ingo
 
-References:
-[1] http://www.trustedcomputinggroup.org/resources/pc_client_work_group_pc_client_specific_tpm_interface_specification_tis_version_12/
-[2] http://trousers.sourceforge.net/
-[3] http://sourceforge.net/projects/trousers/files/TSS%20API%20test%20suite/0.3/
+------------------>
+Bianca Lutz (1):
+      sched: Do not attempt to destroy uninitialized rt_bandwidth
 
-Signed-off-by: Peter Huewe <huewe.external@infineon.com>
----
- drivers/char/tpm/Kconfig       |   11 +
- drivers/char/tpm/Makefile      |    1 +
- drivers/char/tpm/tpm_tis_i2c.c |  717 ++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 729 insertions(+), 0 deletions(-)
- create mode 100644 drivers/char/tpm/tpm_tis_i2c.c
+Frederic Weisbecker (7):
+      sched: Remove pointless in_atomic() definition check
+      sched: Isolate preempt counting in its own config option
+      sched: Make sleeping inside spinlock detection working in !CONFIG_PREEMPT
+      sched: Generalize sleep inside spinlock detection
+      m32r: Use generic PREEMPT config
+      h8300: Use generic config PREEMPT definition
+      xtensa: Use generic config PREEMPT definition
 
-diff --git a/drivers/char/tpm/Kconfig b/drivers/char/tpm/Kconfig
-index f6595ab..7f510b2 100644
---- a/drivers/char/tpm/Kconfig
-+++ b/drivers/char/tpm/Kconfig
-@@ -33,6 +33,17 @@ config TCG_TIS
- 	  from within Linux.  To compile this driver as a module, choose
- 	  M here; the module will be called tpm_tis.
+Jan H. Schönherr (1):
+      sched: Separate group-scheduling code more clearly
+
+Jan Schoenherr (2):
+      sched: Fix (harmless) typo 'CONFG_FAIR_GROUP_SCHED'
+      sched: Remove unused function cpu_cfs_rq()
+
+Lin Ming (1):
+      sched: Cleanup duplicate local variable in [enqueue|dequeue]_task_fair
+
+Nikunj A. Dadhania (1):
+      sched: Remove rcu_read_lock() from wake_affine()
+
+Paul Turner (2):
+      sched: update correct entity's runtime in check_preempt_wakeup()
+      sched: Don't update shares twice on on_rq parent
+
+Peter Zijlstra (1):
+      sched, cgroup: Optimize load_balance_fair()
+
+Richard Kennedy (1):
+      sched: Reorder root_domain to remove 64 bit alignment padding
+
+Stephan Baerwolf (1):
+      sched: Replace use of entity_key()
+
+Steven Rostedt (3):
+      sched: Change pick_next_task_rt from unlikely to likely
+      sched: Remove unlikely() from rt_policy() in sched.c
+      sched: Remove unlikely() from ttwu_post_activation
+
+Thomas Gleixner (1):
+      sched: Simplify mutex_spin_on_owner()
+
+Yong Zhang (2):
+      sched: Cleanup pre_schedule_rt
+      sched: Skip autogroup when looking for all rt sched groups
+
+
+ Documentation/DocBook/kernel-hacking.tmpl  |    2 +-
+ Documentation/SubmitChecklist              |    2 +-
+ Documentation/development-process/4.Coding |    2 +-
+ Documentation/ja_JP/SubmitChecklist        |    2 +-
+ Documentation/zh_CN/SubmitChecklist        |    2 +-
+ arch/h8300/Kconfig.cpu                     |    4 +-
+ arch/m32r/Kconfig                          |   12 +---
+ arch/xtensa/Kconfig                        |   13 +---
+ include/linux/bit_spinlock.h               |    2 +-
+ include/linux/hardirq.h                    |    4 +-
+ include/linux/kernel.h                     |    2 +-
+ include/linux/pagemap.h                    |    4 +-
+ include/linux/preempt.h                    |   26 ++++--
+ include/linux/rcupdate.h                   |   12 ++--
+ include/linux/sched.h                      |    2 +-
+ kernel/Kconfig.preempt                     |    3 +
+ kernel/sched.c                             |  117 +++++++++-------------------
+ kernel/sched_autogroup.h                   |    1 +
+ kernel/sched_fair.c                        |   72 ++++++++++-------
+ kernel/sched_rt.c                          |   26 +++++--
+ lib/Kconfig.debug                          |    9 ++-
+ 21 files changed, 145 insertions(+), 174 deletions(-)
+
+diff --git a/Documentation/DocBook/kernel-hacking.tmpl b/Documentation/DocBook/kernel-hacking.tmpl
+index 7b3f493..07a9c48 100644
+--- a/Documentation/DocBook/kernel-hacking.tmpl
++++ b/Documentation/DocBook/kernel-hacking.tmpl
+@@ -409,7 +409,7 @@ cond_resched(); /* Will sleep */
  
-+config TCG_TIS_I2C
-+	tristate "TPM Interface Specification 1.2 Interface (I2C)"
-+	depends on I2C
-+	---help---
-+	  If you have a TPM security chip that is compliant with the
-+	  TCG TIS 1.2 TPM specification and Infineon's I2C Protocol Stack
-+	  Specification 0.20 say Yes and it will be accessible from within
-+	  Linux.
-+	  To compile this driver as a module, choose M here; the module
-+	  will be called tpm_tis_i2c.
+   <para>
+    You should always compile your kernel
+-   <symbol>CONFIG_DEBUG_SPINLOCK_SLEEP</symbol> on, and it will warn
++   <symbol>CONFIG_DEBUG_ATOMIC_SLEEP</symbol> on, and it will warn
+    you if you break these rules.  If you <emphasis>do</emphasis> break
+    the rules, you will eventually lock up your box.
+   </para>
+diff --git a/Documentation/SubmitChecklist b/Documentation/SubmitChecklist
+index da0382d..7b13be4 100644
+--- a/Documentation/SubmitChecklist
++++ b/Documentation/SubmitChecklist
+@@ -53,7 +53,7 @@ kernel patches.
+ 
+ 12: Has been tested with CONFIG_PREEMPT, CONFIG_DEBUG_PREEMPT,
+     CONFIG_DEBUG_SLAB, CONFIG_DEBUG_PAGEALLOC, CONFIG_DEBUG_MUTEXES,
+-    CONFIG_DEBUG_SPINLOCK, CONFIG_DEBUG_SPINLOCK_SLEEP all simultaneously
++    CONFIG_DEBUG_SPINLOCK, CONFIG_DEBUG_ATOMIC_SLEEP all simultaneously
+     enabled.
+ 
+ 13: Has been build- and runtime tested with and without CONFIG_SMP and
+diff --git a/Documentation/development-process/4.Coding b/Documentation/development-process/4.Coding
+index f3f1a46..83f5f5b 100644
+--- a/Documentation/development-process/4.Coding
++++ b/Documentation/development-process/4.Coding
+@@ -244,7 +244,7 @@ testing purposes.  In particular, you should turn on:
+  - DEBUG_SLAB can find a variety of memory allocation and use errors; it
+    should be used on most development kernels.
+ 
+- - DEBUG_SPINLOCK, DEBUG_SPINLOCK_SLEEP, and DEBUG_MUTEXES will find a
++ - DEBUG_SPINLOCK, DEBUG_ATOMIC_SLEEP, and DEBUG_MUTEXES will find a
+    number of common locking errors.
+ 
+ There are quite a few other debugging options, some of which will be
+diff --git a/Documentation/ja_JP/SubmitChecklist b/Documentation/ja_JP/SubmitChecklist
+index 2df4576..cb5507b 100644
+--- a/Documentation/ja_JP/SubmitChecklist
++++ b/Documentation/ja_JP/SubmitChecklist
+@@ -68,7 +68,7 @@ Linux カーネルパッチ投稿者向けチェックリスト
+ 
+ 12: CONFIG_PREEMPT, CONFIG_DEBUG_PREEMPT, CONFIG_DEBUG_SLAB,
+     CONFIG_DEBUG_PAGEALLOC, CONFIG_DEBUG_MUTEXES, CONFIG_DEBUG_SPINLOCK,
+-    CONFIG_DEBUG_SPINLOCK_SLEEP これら全てを同時に有効にして動作確認を
++    CONFIG_DEBUG_ATOMIC_SLEEP これら全てを同時に有効にして動作確認を
+     行ってください。
+ 
+ 13: CONFIG_SMP, CONFIG_PREEMPT を有効にした場合と無効にした場合の両方で
+diff --git a/Documentation/zh_CN/SubmitChecklist b/Documentation/zh_CN/SubmitChecklist
+index 951415b..4c741d6 100644
+--- a/Documentation/zh_CN/SubmitChecklist
++++ b/Documentation/zh_CN/SubmitChecklist
+@@ -67,7 +67,7 @@ Linux
+ 
+ 12���Ѿ�ͨ��CONFIG_PREEMPT, CONFIG_DEBUG_PREEMPT,
+     CONFIG_DEBUG_SLAB, CONFIG_DEBUG_PAGEALLOC, CONFIG_DEBUG_MUTEXES,
+-    CONFIG_DEBUG_SPINLOCK, CONFIG_DEBUG_SPINLOCK_SLEEP���ԣ�����ͬʱ��
++    CONFIG_DEBUG_SPINLOCK, CONFIG_DEBUG_ATOMIC_SLEEP���ԣ�����ͬʱ��
+     ʹ�ܡ�
+ 
+ 13���Ѿ�����������ʹ�û��߲�ʹ�� CONFIG_SMP �� CONFIG_PREEMPT����ִ��ʱ�䡣
+diff --git a/arch/h8300/Kconfig.cpu b/arch/h8300/Kconfig.cpu
+index d236ab4..15c2228 100644
+--- a/arch/h8300/Kconfig.cpu
++++ b/arch/h8300/Kconfig.cpu
+@@ -162,9 +162,7 @@ config H8300_TPU_CH
+ 	int "TPU channel"
+ 	depends on H8300_TPU
+ 
+-config PREEMPT
+-	bool "Preemptible Kernel"
+-	default n
++source "kernel/Kconfig.preempt"
+ 
+ source "mm/Kconfig"
+ 
+diff --git a/arch/m32r/Kconfig b/arch/m32r/Kconfig
+index 85b44e8..b92b944 100644
+--- a/arch/m32r/Kconfig
++++ b/arch/m32r/Kconfig
+@@ -268,17 +268,7 @@ config SCHED_OMIT_FRAME_POINTER
+         bool
+         default y
+ 
+-config PREEMPT
+-	bool "Preemptible Kernel"
+-	help
+-	  This option reduces the latency of the kernel when reacting to
+-	  real-time or interactive events by allowing a low priority process to
+-	  be preempted even if it is in kernel mode executing a system call.
+-	  This allows applications to run more reliably even when the system is
+-	  under load.
+-
+-	  Say Y here if you are building a kernel for a desktop, embedded
+-	  or real-time system.  Say N if you are unsure.
++source "kernel/Kconfig.preempt"
+ 
+ config SMP
+ 	bool "Symmetric multi-processing support"
+diff --git a/arch/xtensa/Kconfig b/arch/xtensa/Kconfig
+index 5d43c1f..c346ccd 100644
+--- a/arch/xtensa/Kconfig
++++ b/arch/xtensa/Kconfig
+@@ -80,18 +80,7 @@ config XTENSA_UNALIGNED_USER
+ 
+ 	  Say Y here to enable unaligned memory access in user space.
+ 
+-config PREEMPT
+-	bool "Preemptible Kernel"
+-	help
+-          This option reduces the latency of the kernel when reacting to
+-          real-time or interactive events by allowing a low priority process to
+-          be preempted even if it is in kernel mode executing a system call.
+-          Unfortunately the kernel code has some race conditions if both
+-          CONFIG_SMP and CONFIG_PREEMPT are enabled, so this option is
+-          currently disabled if you are building an SMP kernel.
+-
+-          Say Y here if you are building a kernel for a desktop, embedded
+-          or real-time system.  Say N if you are unsure.
++source "kernel/Kconfig.preempt"
+ 
+ config MATH_EMULATION
+ 	bool "Math emulation"
+diff --git a/include/linux/bit_spinlock.h b/include/linux/bit_spinlock.h
+index b4326bf..564d997 100644
+--- a/include/linux/bit_spinlock.h
++++ b/include/linux/bit_spinlock.h
+@@ -88,7 +88,7 @@ static inline int bit_spin_is_locked(int bitnum, unsigned long *addr)
+ {
+ #if defined(CONFIG_SMP) || defined(CONFIG_DEBUG_SPINLOCK)
+ 	return test_bit(bitnum, addr);
+-#elif defined CONFIG_PREEMPT
++#elif defined CONFIG_PREEMPT_COUNT
+ 	return preempt_count();
+ #else
+ 	return 1;
+diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
+index ba36217..f743883f 100644
+--- a/include/linux/hardirq.h
++++ b/include/linux/hardirq.h
+@@ -93,7 +93,7 @@
+  */
+ #define in_nmi()	(preempt_count() & NMI_MASK)
+ 
+-#if defined(CONFIG_PREEMPT)
++#if defined(CONFIG_PREEMPT_COUNT)
+ # define PREEMPT_CHECK_OFFSET 1
+ #else
+ # define PREEMPT_CHECK_OFFSET 0
+@@ -115,7 +115,7 @@
+ #define in_atomic_preempt_off() \
+ 		((preempt_count() & ~PREEMPT_ACTIVE) != PREEMPT_CHECK_OFFSET)
+ 
+-#ifdef CONFIG_PREEMPT
++#ifdef CONFIG_PREEMPT_COUNT
+ # define preemptible()	(preempt_count() == 0 && !irqs_disabled())
+ # define IRQ_EXIT_OFFSET (HARDIRQ_OFFSET-1)
+ #else
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 953352a..567a6f7 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -121,7 +121,7 @@ extern int _cond_resched(void);
+ # define might_resched() do { } while (0)
+ #endif
+ 
+-#ifdef CONFIG_DEBUG_SPINLOCK_SLEEP
++#ifdef CONFIG_DEBUG_ATOMIC_SLEEP
+   void __might_sleep(const char *file, int line, int preempt_offset);
+ /**
+  * might_sleep - annotation for functions that can sleep
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index 716875e..8e38d4c 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -134,7 +134,7 @@ static inline int page_cache_get_speculative(struct page *page)
+ 	VM_BUG_ON(in_interrupt());
+ 
+ #if !defined(CONFIG_SMP) && defined(CONFIG_TREE_RCU)
+-# ifdef CONFIG_PREEMPT
++# ifdef CONFIG_PREEMPT_COUNT
+ 	VM_BUG_ON(!in_atomic());
+ # endif
+ 	/*
+@@ -172,7 +172,7 @@ static inline int page_cache_add_speculative(struct page *page, int count)
+ 	VM_BUG_ON(in_interrupt());
+ 
+ #if !defined(CONFIG_SMP) && defined(CONFIG_TREE_RCU)
+-# ifdef CONFIG_PREEMPT
++# ifdef CONFIG_PREEMPT_COUNT
+ 	VM_BUG_ON(!in_atomic());
+ # endif
+ 	VM_BUG_ON(page_count(page) == 0);
+diff --git a/include/linux/preempt.h b/include/linux/preempt.h
+index 2e681d9..58969b2 100644
+--- a/include/linux/preempt.h
++++ b/include/linux/preempt.h
+@@ -27,6 +27,21 @@
+ 
+ asmlinkage void preempt_schedule(void);
+ 
++#define preempt_check_resched() \
++do { \
++	if (unlikely(test_thread_flag(TIF_NEED_RESCHED))) \
++		preempt_schedule(); \
++} while (0)
 +
- config TCG_NSC
- 	tristate "National Semiconductor TPM Interface"
- 	---help---
-diff --git a/drivers/char/tpm/Makefile b/drivers/char/tpm/Makefile
-index ea3a1e0..b6e051a 100644
---- a/drivers/char/tpm/Makefile
-+++ b/drivers/char/tpm/Makefile
-@@ -6,6 +6,7 @@ ifdef CONFIG_ACPI
- 	obj-$(CONFIG_TCG_TPM) += tpm_bios.o
- endif
- obj-$(CONFIG_TCG_TIS) += tpm_tis.o
-+obj-$(CONFIG_TCG_TIS_I2C) += tpm_tis_i2c.o
- obj-$(CONFIG_TCG_NSC) += tpm_nsc.o
- obj-$(CONFIG_TCG_ATMEL) += tpm_atmel.o
- obj-$(CONFIG_TCG_INFINEON) += tpm_infineon.o
-diff --git a/drivers/char/tpm/tpm_tis_i2c.c b/drivers/char/tpm/tpm_tis_i2c.c
-new file mode 100644
-index 0000000..ec32588
---- /dev/null
-+++ b/drivers/char/tpm/tpm_tis_i2c.c
-@@ -0,0 +1,717 @@
-+/*
-+ * Copyright (C) 2011 Infineon Technologies
-+ *
-+ * Authors:
-+ * Peter Huewe <huewe.external@infineon.com>
-+ *
-+ * Device driver for TCG/TCPA TPM (trusted platform module).
-+ * Specifications at www.trustedcomputinggroup.org
-+ *
-+ * This device driver implements the TPM interface as defined in
-+ * the TCG TPM Interface Spec version 1.2, revision 1.0 and the
-+ * Infineon I2C Protocol Stack Specification v0.20.
-+ *
-+ * It is based on the original tpm_tis device driver from Leendert van
-+ * Dorn and Kyleen Hall.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation, version 2 of the
-+ * License.
-+ *
-+ * NOTE:
-+ * Suspend does currently not work Nvidias Tegra2 Platform
-+ * but works fine on Beagleboard (ARM OMAP).
-+ *
-+ */
-+#include <linux/init.h>
-+#include <linux/i2c.h>
-+#include <linux/module.h>
-+#include <linux/moduleparam.h>
-+#include <linux/wait.h>
-+#include "tpm.h"
++#else /* !CONFIG_PREEMPT */
 +
-+/* max. buffer size supported by our tpm */
-+#define TPM_BUFSIZE 1260
++#define preempt_check_resched()		do { } while (0)
 +
-+/* max. number of iterations after i2c NAK */
-+#define MAX_COUNT 3
-+
-+#define SLEEP_DURATION_LOW 55
-+#define SLEEP_DURATION_HI 65
-+
-+/* max. number of iterations after i2c NAK for 'long' commands
-+ * we need this especially for sending TPM_READY, since the cleanup after the
-+ * transtion to the ready state may take some time, but it is unpredictable
-+ * how long it will take.
-+ */
-+#define MAX_COUNT_LONG 50
-+
-+#define SLEEP_DURATION_LONG_LOW 200
-+#define SLEEP_DURATION_LONG_HI 220
-+
-+/* expected value for DIDVID register */
-+#define TPM_TIS_I2C_DID_VID 0x000b15d1L
-+
-+/* Structure to store I2C TPM specific stuff */
-+struct tpm_inf_dev {
-+	struct i2c_client *client;
-+	u8 buf[TPM_BUFSIZE+sizeof(u8)]; /* max. buffer size + addr */
-+	struct tpm_chip *chip;
-+};
-+
-+static struct tpm_inf_dev tpm_dev;
++#endif /* CONFIG_PREEMPT */
 +
 +
-+/*
-+ * iic_tpm_read() - read from TPM register
-+ * @addr: register address to read from
-+ * @buffer: provided by caller
-+ * @len: number of bytes to read
-+ *
-+ * Read len bytes from TPM register and put them into
-+ * buffer (little-endian format, i.e. first byte is put into buffer[0]).
-+ *
-+ * NOTE: TPM is big-endian for multi-byte values. Multi-byte
-+ * values have to be swapped.
-+ *
-+ * Return -EIO on error, 0 on success.
-+ */
-+static int iic_tpm_read(u8 addr, u8 *buffer, size_t len)
-+{
++#ifdef CONFIG_PREEMPT_COUNT
 +
-+	struct i2c_msg msg1 = { tpm_dev.client->addr, 0, 1, &addr };
-+	struct i2c_msg msg2 = { tpm_dev.client->addr, I2C_M_RD, len, buffer };
-+
-+	int rc;
-+	int count;
-+
-+	for (count = 0; count < MAX_COUNT; count++) {
-+		rc = i2c_transfer(tpm_dev.client->adapter, &msg1, 1);
-+		if (rc > 0)
-+			break; /* break here to skip sleep */
-+
-+		usleep_range(SLEEP_DURATION_LOW, SLEEP_DURATION_HI);
-+	}
-+
-+	if (rc <= 0)
-+		return -EIO;
-+
-+	/* After the TPM has successfully received the register address it needs
-+	 * some time, thus we're sleeping here again, before retrieving the data
-+	 */
-+	for (count = 0; count < MAX_COUNT; count++) {
-+		usleep_range(SLEEP_DURATION_LOW, SLEEP_DURATION_HI);
-+		rc = i2c_transfer(tpm_dev.client->adapter, &msg2, 1);
-+		if (rc > 0)
+ #define preempt_disable() \
+ do { \
+ 	inc_preempt_count(); \
+@@ -39,12 +54,6 @@ do { \
+ 	dec_preempt_count(); \
+ } while (0)
+ 
+-#define preempt_check_resched() \
+-do { \
+-	if (unlikely(test_thread_flag(TIF_NEED_RESCHED))) \
+-		preempt_schedule(); \
+-} while (0)
+-
+ #define preempt_enable() \
+ do { \
+ 	preempt_enable_no_resched(); \
+@@ -80,18 +89,17 @@ do { \
+ 	preempt_check_resched(); \
+ } while (0)
+ 
+-#else
++#else /* !CONFIG_PREEMPT_COUNT */
+ 
+ #define preempt_disable()		do { } while (0)
+ #define preempt_enable_no_resched()	do { } while (0)
+ #define preempt_enable()		do { } while (0)
+-#define preempt_check_resched()		do { } while (0)
+ 
+ #define preempt_disable_notrace()		do { } while (0)
+ #define preempt_enable_no_resched_notrace()	do { } while (0)
+ #define preempt_enable_notrace()		do { } while (0)
+ 
+-#endif
++#endif /* CONFIG_PREEMPT_COUNT */
+ 
+ #ifdef CONFIG_PREEMPT_NOTIFIERS
+ 
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 99f9aa7..8f4f881 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -239,7 +239,7 @@ extern int rcu_read_lock_bh_held(void);
+  * Check debug_lockdep_rcu_enabled() to prevent false positives during boot
+  * and while lockdep is disabled.
+  */
+-#ifdef CONFIG_PREEMPT
++#ifdef CONFIG_PREEMPT_COUNT
+ static inline int rcu_read_lock_sched_held(void)
+ {
+ 	int lockdep_opinion = 0;
+@@ -250,12 +250,12 @@ static inline int rcu_read_lock_sched_held(void)
+ 		lockdep_opinion = lock_is_held(&rcu_sched_lock_map);
+ 	return lockdep_opinion || preempt_count() != 0 || irqs_disabled();
+ }
+-#else /* #ifdef CONFIG_PREEMPT */
++#else /* #ifdef CONFIG_PREEMPT_COUNT */
+ static inline int rcu_read_lock_sched_held(void)
+ {
+ 	return 1;
+ }
+-#endif /* #else #ifdef CONFIG_PREEMPT */
++#endif /* #else #ifdef CONFIG_PREEMPT_COUNT */
+ 
+ #else /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
+ 
+@@ -276,17 +276,17 @@ static inline int rcu_read_lock_bh_held(void)
+ 	return 1;
+ }
+ 
+-#ifdef CONFIG_PREEMPT
++#ifdef CONFIG_PREEMPT_COUNT
+ static inline int rcu_read_lock_sched_held(void)
+ {
+ 	return preempt_count() != 0 || irqs_disabled();
+ }
+-#else /* #ifdef CONFIG_PREEMPT */
++#else /* #ifdef CONFIG_PREEMPT_COUNT */
+ static inline int rcu_read_lock_sched_held(void)
+ {
+ 	return 1;
+ }
+-#endif /* #else #ifdef CONFIG_PREEMPT */
++#endif /* #else #ifdef CONFIG_PREEMPT_COUNT */
+ 
+ #endif /* #else #ifdef CONFIG_DEBUG_LOCK_ALLOC */
+ 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 14a6c7b..341a4d7 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2510,7 +2510,7 @@ extern int _cond_resched(void);
+ 
+ extern int __cond_resched_lock(spinlock_t *lock);
+ 
+-#ifdef CONFIG_PREEMPT
++#ifdef CONFIG_PREEMPT_COUNT
+ #define PREEMPT_LOCK_OFFSET	PREEMPT_OFFSET
+ #else
+ #define PREEMPT_LOCK_OFFSET	0
+diff --git a/kernel/Kconfig.preempt b/kernel/Kconfig.preempt
+index bf987b9..24e7cb0 100644
+--- a/kernel/Kconfig.preempt
++++ b/kernel/Kconfig.preempt
+@@ -35,6 +35,7 @@ config PREEMPT_VOLUNTARY
+ 
+ config PREEMPT
+ 	bool "Preemptible Kernel (Low-Latency Desktop)"
++	select PREEMPT_COUNT
+ 	help
+ 	  This option reduces the latency of the kernel by making
+ 	  all kernel code (that is not executing in a critical section)
+@@ -52,3 +53,5 @@ config PREEMPT
+ 
+ endchoice
+ 
++config PREEMPT_COUNT
++       bool
+\ No newline at end of file
+diff --git a/kernel/sched.c b/kernel/sched.c
+index fde6ff9..6fdf7ff 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -124,7 +124,7 @@
+ 
+ static inline int rt_policy(int policy)
+ {
+-	if (unlikely(policy == SCHED_FIFO || policy == SCHED_RR))
++	if (policy == SCHED_FIFO || policy == SCHED_RR)
+ 		return 1;
+ 	return 0;
+ }
+@@ -422,6 +422,7 @@ struct rt_rq {
+  */
+ struct root_domain {
+ 	atomic_t refcount;
++	atomic_t rto_count;
+ 	struct rcu_head rcu;
+ 	cpumask_var_t span;
+ 	cpumask_var_t online;
+@@ -431,7 +432,6 @@ struct root_domain {
+ 	 * one runnable RT task.
+ 	 */
+ 	cpumask_var_t rto_mask;
+-	atomic_t rto_count;
+ 	struct cpupri cpupri;
+ };
+ 
+@@ -1568,38 +1568,6 @@ static unsigned long cpu_avg_load_per_task(int cpu)
+ 	return rq->avg_load_per_task;
+ }
+ 
+-#ifdef CONFIG_FAIR_GROUP_SCHED
+-
+-/*
+- * Compute the cpu's hierarchical load factor for each task group.
+- * This needs to be done in a top-down fashion because the load of a child
+- * group is a fraction of its parents load.
+- */
+-static int tg_load_down(struct task_group *tg, void *data)
+-{
+-	unsigned long load;
+-	long cpu = (long)data;
+-
+-	if (!tg->parent) {
+-		load = cpu_rq(cpu)->load.weight;
+-	} else {
+-		load = tg->parent->cfs_rq[cpu]->h_load;
+-		load *= tg->se[cpu]->load.weight;
+-		load /= tg->parent->cfs_rq[cpu]->load.weight + 1;
+-	}
+-
+-	tg->cfs_rq[cpu]->h_load = load;
+-
+-	return 0;
+-}
+-
+-static void update_h_load(long cpu)
+-{
+-	walk_tg_tree(tg_load_down, tg_nop, (void *)cpu);
+-}
+-
+-#endif
+-
+ #ifdef CONFIG_PREEMPT
+ 
+ static void double_rq_lock(struct rq *rq1, struct rq *rq2);
+@@ -2497,7 +2465,7 @@ ttwu_do_wakeup(struct rq *rq, struct task_struct *p, int wake_flags)
+ 	if (p->sched_class->task_woken)
+ 		p->sched_class->task_woken(rq, p);
+ 
+-	if (unlikely(rq->idle_stamp)) {
++	if (rq->idle_stamp) {
+ 		u64 delta = rq->clock - rq->idle_stamp;
+ 		u64 max = 2*sysctl_sched_migration_cost;
+ 
+@@ -2886,7 +2854,7 @@ void sched_fork(struct task_struct *p)
+ #if defined(CONFIG_SMP)
+ 	p->on_cpu = 0;
+ #endif
+-#ifdef CONFIG_PREEMPT
++#ifdef CONFIG_PREEMPT_COUNT
+ 	/* Want to start with kernel preemption disabled. */
+ 	task_thread_info(p)->preempt_count = 1;
+ #endif
+@@ -4338,11 +4306,8 @@ EXPORT_SYMBOL(schedule);
+ 
+ static inline bool owner_running(struct mutex *lock, struct task_struct *owner)
+ {
+-	bool ret = false;
+-
+-	rcu_read_lock();
+ 	if (lock->owner != owner)
+-		goto fail;
++		return false;
+ 
+ 	/*
+ 	 * Ensure we emit the owner->on_cpu, dereference _after_ checking
+@@ -4352,11 +4317,7 @@ static inline bool owner_running(struct mutex *lock, struct task_struct *owner)
+ 	 */
+ 	barrier();
+ 
+-	ret = owner->on_cpu;
+-fail:
+-	rcu_read_unlock();
+-
+-	return ret;
++	return owner->on_cpu;
+ }
+ 
+ /*
+@@ -4368,21 +4329,21 @@ int mutex_spin_on_owner(struct mutex *lock, struct task_struct *owner)
+ 	if (!sched_feat(OWNER_SPIN))
+ 		return 0;
+ 
++	rcu_read_lock();
+ 	while (owner_running(lock, owner)) {
+ 		if (need_resched())
+-			return 0;
 +			break;
-+
-+	}
-+
-+	if (rc <= 0)
-+		return -EIO;
-+
-+	return 0;
-+}
-+
-+static int iic_tpm_write_generic(u8 addr, u8 *buffer, size_t len,
-+				unsigned int sleep_low,
-+				unsigned int sleep_hi,
-+				u8 max_count)
-+{
-+	int rc = -1;
-+	int count;
-+
-+	struct i2c_msg msg1 = { tpm_dev.client->addr, 0, len + 1, tpm_dev.buf };
-+
-+	tpm_dev.buf[0] = addr;
-+	memcpy(&(tpm_dev.buf[1]), buffer, len);
-+
-+	for (count = 0; count < max_count; count++) {
-+		rc = i2c_transfer(tpm_dev.client->adapter, &msg1, 1);
-+		if (rc > 0)
-+			break;
-+
-+		usleep_range(sleep_low, sleep_hi);
-+	}
-+
-+	if (rc <= 0)
-+		return -EIO;
-+
-+	return 0;
-+}
-+
-+/*
-+ * iic_tpm_write() - write to TPM register
-+ * @addr: register address to write to
-+ * @buffer: containing data to be written
-+ * @len: number of bytes to write
-+ *
-+ * Write len bytes from provided buffer to TPM register (little
-+ * endian format, i.e. buffer[0] is written as first byte).
-+ *
-+ * NOTE: TPM is big-endian for multi-byte values. Multi-byte
-+ * values have to be swapped.
-+ *
-+ * NOTE: use this function instead of the iic_tpm_write_generic function.
-+ *
-+ * Return -EIO on error, 0 on success
-+ */
-+static int iic_tpm_write(u8 addr, u8 *buffer, size_t len)
-+{
-+	return iic_tpm_write_generic(addr, buffer, len, SLEEP_DURATION_LOW,
-+			SLEEP_DURATION_HI, MAX_COUNT);
-+}
-+
-+/*
-+ * This function is needed especially for the cleanup situation after
-+ * sending TPM_READY
-+ * */
-+static int iic_tpm_write_long(u8 addr, u8 *buffer, size_t len)
-+{
-+	return iic_tpm_write_generic(addr, buffer, len, SLEEP_DURATION_LONG_LOW,
-+			SLEEP_DURATION_LONG_HI, MAX_COUNT_LONG);
-+}
-+
-+#define TPM_HEADER_SIZE 10
-+
-+enum tis_access {
-+	TPM_ACCESS_VALID = 0x80,
-+	TPM_ACCESS_ACTIVE_LOCALITY = 0x20,
-+	TPM_ACCESS_REQUEST_PENDING = 0x04,
-+	TPM_ACCESS_REQUEST_USE = 0x02,
-+};
-+
-+enum tis_status {
-+	TPM_STS_VALID = 0x80,
-+	TPM_STS_COMMAND_READY = 0x40,
-+	TPM_STS_GO = 0x20,
-+	TPM_STS_DATA_AVAIL = 0x10,
-+	TPM_STS_DATA_EXPECT = 0x08,
-+};
-+
-+enum tis_defaults {
-+	TIS_SHORT_TIMEOUT = 750,	/* ms */
-+	TIS_LONG_TIMEOUT = 2000,	/* 2 sec */
-+};
-+
-+#define	TPM_ACCESS(l)			(0x0000 | ((l) << 4))
-+#define	TPM_STS(l)			(0x0001 | ((l) << 4))
-+#define	TPM_DATA_FIFO(l)		(0x0005 | ((l) << 4))
-+#define	TPM_DID_VID(l)			(0x0006 | ((l) << 4))
-+
-+static int check_locality(struct tpm_chip *chip, int loc)
-+{
-+	u8 buf;
-+	int rc;
-+
-+	rc = iic_tpm_read(TPM_ACCESS(loc), &buf, 1);
-+	if (rc < 0)
-+		return rc;
-+
-+	if ((buf & (TPM_ACCESS_ACTIVE_LOCALITY | TPM_ACCESS_VALID)) ==
-+		(TPM_ACCESS_ACTIVE_LOCALITY | TPM_ACCESS_VALID)) {
-+		chip->vendor.locality = loc;
-+		return loc;
-+	}
-+
-+	return -1;
-+}
-+
-+static void release_locality(struct tpm_chip *chip, int loc, int force)
-+{
-+	u8 buf;
-+	if (iic_tpm_read(TPM_ACCESS(loc), &buf, 1) < 0)
-+		return;
-+
-+	if (force || (buf & (TPM_ACCESS_REQUEST_PENDING | TPM_ACCESS_VALID)) ==
-+			(TPM_ACCESS_REQUEST_PENDING | TPM_ACCESS_VALID)) {
-+		buf = TPM_ACCESS_ACTIVE_LOCALITY;
-+		iic_tpm_write(TPM_ACCESS(loc), &buf, 1);
-+	}
-+}
-+
-+static int request_locality(struct tpm_chip *chip, int loc)
-+{
-+	unsigned long stop;
-+	u8 buf = TPM_ACCESS_REQUEST_USE;
-+
-+	if (check_locality(chip, loc) >= 0)
-+		return loc;
-+
-+	iic_tpm_write(TPM_ACCESS(loc), &buf, 1);
-+
-+	/* wait for burstcount */
-+	stop = jiffies + chip->vendor.timeout_a;
-+	do {
-+		if (check_locality(chip, loc) >= 0)
-+			return loc;
-+		msleep(TPM_TIMEOUT);
-+	} while (time_before(jiffies, stop));
-+
-+	return -1;
-+}
-+
-+static u8 tpm_tis_i2c_status(struct tpm_chip *chip)
-+{
-+	/* NOTE: since i2c read may fail, return 0 in this case --> time-out */
-+	u8 buf;
-+	if (iic_tpm_read(TPM_STS(chip->vendor.locality), &buf, 1) < 0)
-+		return 0;
-+	else
-+		return buf;
-+}
-+
-+static void tpm_tis_i2c_ready(struct tpm_chip *chip)
-+{
-+	/* this causes the current command to be aborted */
-+	u8 buf = TPM_STS_COMMAND_READY;
-+	iic_tpm_write_long(TPM_STS(chip->vendor.locality), &buf, 1);
-+}
-+
-+static ssize_t get_burstcount(struct tpm_chip *chip)
-+{
-+	unsigned long stop;
-+	ssize_t burstcnt;
-+	u8 buf[3];
-+
-+	/* wait for burstcount */
-+	/* which timeout value, spec has 2 answers (c & d) */
-+	stop = jiffies + chip->vendor.timeout_d;
-+	do {
-+		/* Note: STS is little endian */
-+		if (iic_tpm_read(TPM_STS(chip->vendor.locality) + 1, buf, 3) < 0)
-+			burstcnt = 0;
-+		else
-+			burstcnt = (buf[2] << 16) + (buf[1] << 8) + buf[0];
-+
-+		if (burstcnt)
-+			return burstcnt;
-+
-+		msleep(TPM_TIMEOUT);
-+	} while (time_before(jiffies, stop));
-+	return -EBUSY;
-+}
-+
-+static int wait_for_stat(struct tpm_chip *chip, u8 mask, unsigned long timeout,
-+			int *status)
-+{
-+	unsigned long stop;
-+
-+	/* check current status */
-+	*status = tpm_tis_i2c_status(chip);
-+	if ((*status & mask) == mask)
-+		return 0;
-+
-+	stop = jiffies + timeout;
-+	do {
-+		msleep(TPM_TIMEOUT);
-+		*status = tpm_tis_i2c_status(chip);
-+		if ((*status & mask) == mask)
-+			return 0;
-+
-+	} while (time_before(jiffies, stop));
-+
-+	return -ETIME;
-+}
-+
-+static int recv_data(struct tpm_chip *chip, u8 *buf, size_t count)
-+{
-+	size_t size = 0;
-+	ssize_t burstcnt;
-+	int rc;
-+
-+	while (size < count) {
-+		burstcnt = get_burstcount(chip);
-+
-+		/* burstcnt < 0 = tpm is busy */
-+		if (burstcnt < 0)
-+			return burstcnt;
-+
-+		/* limit received data to max. left */
-+		if (burstcnt > (count-size))
-+			burstcnt = count-size;
-+
-+		rc = iic_tpm_read(TPM_DATA_FIFO(chip->vendor.locality),
-+				  &(buf[size]),
-+				  burstcnt);
-+		if (rc == 0)
-+			size += burstcnt;
-+
-+	}
-+	return size;
-+}
-+
-+static int tpm_tis_i2c_recv(struct tpm_chip *chip, u8 *buf, size_t count)
-+{
-+	int size = 0;
-+	int expected, status;
-+
-+	if (count < TPM_HEADER_SIZE) {
-+		size = -EIO;
-+		goto out;
-+	}
-+
-+	/* read first 10 bytes, including tag, paramsize, and result */
-+	size = recv_data(chip, buf, TPM_HEADER_SIZE);
-+	if (size < TPM_HEADER_SIZE) {
-+		dev_err(chip->dev, "Unable to read header\n");
-+		goto out;
-+	}
-+
-+	expected = be32_to_cpu(*(__be32 *) (buf + 2));
-+	if ((size_t)expected > count) {
-+		size = -EIO;
-+		goto out;
-+	}
-+
-+	size += recv_data(chip, &buf[TPM_HEADER_SIZE],
-+				expected - TPM_HEADER_SIZE);
-+	if (size < expected) {
-+		dev_err(chip->dev, "Unable to read remainder of result\n");
-+		size = -ETIME;
-+		goto out;
-+	}
-+
-+	wait_for_stat(chip, TPM_STS_VALID, chip->vendor.timeout_c, &status);
-+	if (status & TPM_STS_DATA_AVAIL) {	/* retry? */
-+		dev_err(chip->dev, "Error left over data\n");
-+		size = -EIO;
-+		goto out;
-+	}
-+
-+out:
-+	tpm_tis_i2c_ready(chip);
-+	/* The TPM needs some time to clean up here,
-+	 * so we sleep rather than keeping the bus busy
-+	 */
-+	usleep_range(2400, 2600);
-+	release_locality(chip, chip->vendor.locality, 0);
-+	return size;
-+}
-+
-+static int tpm_tis_i2c_send(struct tpm_chip *chip, u8 *buf, size_t len)
-+{
-+	int rc, status;
-+	ssize_t burstcnt;
-+	size_t count = 0;
-+	u8 sts = TPM_STS_GO;
-+
-+	if (len > TPM_BUFSIZE)
-+		return -E2BIG; /* command is too long for our tpm, sorry */
-+
-+	if (request_locality(chip, 0) < 0)
-+		return -EBUSY;
-+
-+	status = tpm_tis_i2c_status(chip);
-+	if ((status & TPM_STS_COMMAND_READY) == 0) {
-+		tpm_tis_i2c_ready(chip);
-+		if (wait_for_stat
-+		    (chip, TPM_STS_COMMAND_READY,
-+		     chip->vendor.timeout_b, &status) < 0) {
-+			rc = -ETIME;
-+			goto out_err;
-+		}
-+	}
-+
-+	while (count < len - 1) {
-+		burstcnt = get_burstcount(chip);
-+		dev_dbg(chip->dev,
-+			"send(): count=%zd, len=%zd, burstcount=%zd (plain)\n",
-+			count, len, burstcnt);
-+
-+		/* burstcnt < 0 = tpm is busy */
-+		if (burstcnt < 0)
-+			return burstcnt;
-+
-+		if (burstcnt > (len-1-count))
-+			burstcnt = len-1-count;
-+
-+		dev_dbg(chip->dev, "send(): burstcount=%zd\n", burstcnt);
-+
-+		rc = iic_tpm_write(TPM_DATA_FIFO(chip->vendor.locality),
-+				   &(buf[count]), burstcnt);
-+		if (rc == 0)
-+			count += burstcnt;
-+
-+		wait_for_stat(chip, TPM_STS_VALID,
-+				chip->vendor.timeout_c, &status);
-+
-+		if ((status & TPM_STS_DATA_EXPECT) == 0) {
-+			rc = -EIO;
-+			goto out_err;
-+		}
-+
-+	}
-+
-+	dev_dbg(chip->dev, "send(): last byte @ count=%zd\n", count);
-+
-+	/* write last byte */
-+	iic_tpm_write(TPM_DATA_FIFO(chip->vendor.locality), &(buf[count]), 1);
-+	wait_for_stat(chip, TPM_STS_VALID, chip->vendor.timeout_c, &status);
-+	if ((status & TPM_STS_DATA_EXPECT) != 0) {
-+		rc = -EIO;
-+		goto out_err;
-+	}
-+
-+	/* go and do it */
-+	iic_tpm_write(TPM_STS(chip->vendor.locality), &sts, 1);
-+
-+	return len;
-+out_err:
-+	tpm_tis_i2c_ready(chip);
-+	/* The TPM needs some time to clean up here,
-+	 * so we sleep rather than keeping the bus busy
-+	 */
-+	usleep_range(2400, 2600);
-+	release_locality(chip, chip->vendor.locality, 0);
-+	return rc;
-+}
-+
-+static const struct file_operations tis_ops = {
-+	.owner = THIS_MODULE,
-+	.llseek = no_llseek,
-+	.open = tpm_open,
-+	.read = tpm_read,
-+	.write = tpm_write,
-+	.release = tpm_release,
-+};
-+
-+static DEVICE_ATTR(pubek, S_IRUGO, tpm_show_pubek, NULL);
-+static DEVICE_ATTR(pcrs, S_IRUGO, tpm_show_pcrs, NULL);
-+static DEVICE_ATTR(enabled, S_IRUGO, tpm_show_enabled, NULL);
-+static DEVICE_ATTR(active, S_IRUGO, tpm_show_active, NULL);
-+static DEVICE_ATTR(owned, S_IRUGO, tpm_show_owned, NULL);
-+static DEVICE_ATTR(temp_deactivated, S_IRUGO, tpm_show_temp_deactivated, NULL);
-+static DEVICE_ATTR(caps, S_IRUGO, tpm_show_caps_1_2, NULL);
-+static DEVICE_ATTR(cancel, S_IWUSR | S_IWGRP, NULL, tpm_store_cancel);
-+
-+static struct attribute *tis_attrs[] = {
-+	&dev_attr_pubek.attr,
-+	&dev_attr_pcrs.attr,
-+	&dev_attr_enabled.attr,
-+	&dev_attr_active.attr,
-+	&dev_attr_owned.attr,
-+	&dev_attr_temp_deactivated.attr,
-+	&dev_attr_caps.attr,
-+	&dev_attr_cancel.attr, NULL,
-+};
-+
-+static struct attribute_group tis_attr_grp = {
-+	.attrs = tis_attrs
-+};
-+
-+static struct tpm_vendor_specific tpm_tis_i2c = {
-+	.status = tpm_tis_i2c_status,
-+	.recv = tpm_tis_i2c_recv,
-+	.send = tpm_tis_i2c_send,
-+	.cancel = tpm_tis_i2c_ready,
-+	.req_complete_mask = TPM_STS_DATA_AVAIL | TPM_STS_VALID,
-+	.req_complete_val = TPM_STS_DATA_AVAIL | TPM_STS_VALID,
-+	.req_canceled = TPM_STS_COMMAND_READY,
-+	.attr_group = &tis_attr_grp,
-+	.miscdev = {
-+		    .fops = &tis_ops,},
-+};
-+
-+static int tpm_tis_i2c_init(struct device *dev)
-+{
-+	u32 vendor;
-+	int rc = 0;
-+	struct tpm_chip *chip;
-+
-+	chip = tpm_register_hardware(dev, &tpm_tis_i2c);
-+	if (!chip) {
-+		rc = -ENODEV;
-+		goto out_err;
-+	}
-+
-+	/* Disable interrupts */
-+	chip->vendor.irq = 0;
-+
-+	/* Default timeouts */
-+	chip->vendor.timeout_a = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
-+	chip->vendor.timeout_b = msecs_to_jiffies(TIS_LONG_TIMEOUT);
-+	chip->vendor.timeout_c = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
-+	chip->vendor.timeout_d = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
-+
-+	if (request_locality(chip, 0) != 0) {
-+		rc = -ENODEV;
-+		goto out_vendor;
-+	}
-+
-+	/* read four bytes from DID_VID register */
-+	if (iic_tpm_read(TPM_DID_VID(0), (u8 *) &vendor, 4) < 0) {
-+		rc = -EIO;
-+		goto out_vendor;
-+	}
-+
-+	/* create DID_VID register value, after swapping to little-endian */
-+	vendor = be32_to_cpu((__be32) vendor);
-+
-+	if (vendor != TPM_TIS_I2C_DID_VID) {
-+		rc = -ENODEV;
-+		goto out_release;
-+	}
-+
-+	dev_info(dev, "1.2 TPM (device-id 0x%X)\n", vendor >> 16);
-+
-+	INIT_LIST_HEAD(&chip->vendor.list);
-+	tpm_dev.chip = chip;
-+
-+	tpm_get_timeouts(chip);
-+	tpm_continue_selftest(chip);
-+
-+	return 0;
-+
-+out_release:
-+	release_locality(chip, chip->vendor.locality, 1);
-+
-+out_vendor:
-+	tpm_dev_vendor_release(chip);
-+	tpm_remove_hardware(chip->dev);
-+
-+out_err:
-+	return rc;
-+}
-+
-+
-+static const struct i2c_device_id tpm_i2c_tis_table[] = {
-+	{ "tpm_tis_i2c", 0 },
-+	{ },
-+};
-+
-+#ifdef CONFIG_PM
-+/* NOTE:
-+ * Suspend does currently not work Nvidias Tegra2 Platform
-+ * but works fine on Beagleboard (arm omap).
-+ *
-+ * This function will block System Suspend if TPM is not initialized,
-+ * however the TPM is usually initialized by BIOS/u-boot or by sending
-+ * a tpm startup command.
-+ */
-+static int tpm_tis_i2c_suspend(struct device *dev)
-+{
-+	return tpm_pm_suspend(dev, dev->power.power_state);
-+}
-+
-+static int tpm_tis_i2c_resume(struct device *dev)
-+{
-+	return tpm_pm_resume(dev);
-+}
-+
-+static const struct dev_pm_ops tpm_tis_i2c_ops = {
-+	.suspend = tpm_tis_i2c_suspend,
-+	.resume = tpm_tis_i2c_resume,
-+};
+ 
+ 		arch_mutex_cpu_relax();
+ 	}
++	rcu_read_unlock();
+ 
+ 	/*
+-	 * If the owner changed to another task there is likely
+-	 * heavy contention, stop spinning.
++	 * We break out the loop above on need_resched() and when the
++	 * owner changed, which is a sign for heavy contention. Return
++	 * success only when lock->owner is NULL.
+ 	 */
+-	if (lock->owner)
+-		return 0;
+-
+-	return 1;
++	return lock->owner == NULL;
+ }
+ #endif
+ 
+@@ -7898,17 +7859,10 @@ int in_sched_functions(unsigned long addr)
+ 		&& addr < (unsigned long)__sched_text_end);
+ }
+ 
+-static void init_cfs_rq(struct cfs_rq *cfs_rq, struct rq *rq)
++static void init_cfs_rq(struct cfs_rq *cfs_rq)
+ {
+ 	cfs_rq->tasks_timeline = RB_ROOT;
+ 	INIT_LIST_HEAD(&cfs_rq->tasks);
+-#ifdef CONFIG_FAIR_GROUP_SCHED
+-	cfs_rq->rq = rq;
+-	/* allow initial update_cfs_load() to truncate */
+-#ifdef CONFIG_SMP
+-	cfs_rq->load_stamp = 1;
+-#endif
+-#endif
+ 	cfs_rq->min_vruntime = (u64)(-(1LL << 20));
+ #ifndef CONFIG_64BIT
+ 	cfs_rq->min_vruntime_copy = cfs_rq->min_vruntime;
+@@ -7928,13 +7882,9 @@ static void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq)
+ 	/* delimiter for bitsearch: */
+ 	__set_bit(MAX_RT_PRIO, array->bitmap);
+ 
+-#if defined CONFIG_SMP || defined CONFIG_RT_GROUP_SCHED
++#if defined CONFIG_SMP
+ 	rt_rq->highest_prio.curr = MAX_RT_PRIO;
+-#ifdef CONFIG_SMP
+ 	rt_rq->highest_prio.next = MAX_RT_PRIO;
+-#endif
+-#endif
+-#ifdef CONFIG_SMP
+ 	rt_rq->rt_nr_migratory = 0;
+ 	rt_rq->overloaded = 0;
+ 	plist_head_init_raw(&rt_rq->pushable_tasks, &rq->lock);
+@@ -7944,11 +7894,6 @@ static void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq)
+ 	rt_rq->rt_throttled = 0;
+ 	rt_rq->rt_runtime = 0;
+ 	raw_spin_lock_init(&rt_rq->rt_runtime_lock);
+-
+-#ifdef CONFIG_RT_GROUP_SCHED
+-	rt_rq->rt_nr_boosted = 0;
+-	rt_rq->rq = rq;
+-#endif
+ }
+ 
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+@@ -7957,11 +7902,17 @@ static void init_tg_cfs_entry(struct task_group *tg, struct cfs_rq *cfs_rq,
+ 				struct sched_entity *parent)
+ {
+ 	struct rq *rq = cpu_rq(cpu);
+-	tg->cfs_rq[cpu] = cfs_rq;
+-	init_cfs_rq(cfs_rq, rq);
++
+ 	cfs_rq->tg = tg;
++	cfs_rq->rq = rq;
++#ifdef CONFIG_SMP
++	/* allow initial update_cfs_load() to truncate */
++	cfs_rq->load_stamp = 1;
 +#endif
+ 
++	tg->cfs_rq[cpu] = cfs_rq;
+ 	tg->se[cpu] = se;
 +
+ 	/* se could be NULL for root_task_group */
+ 	if (!se)
+ 		return;
+@@ -7984,12 +7935,14 @@ static void init_tg_rt_entry(struct task_group *tg, struct rt_rq *rt_rq,
+ {
+ 	struct rq *rq = cpu_rq(cpu);
+ 
+-	tg->rt_rq[cpu] = rt_rq;
+-	init_rt_rq(rt_rq, rq);
++	rt_rq->highest_prio.curr = MAX_RT_PRIO;
++	rt_rq->rt_nr_boosted = 0;
++	rt_rq->rq = rq;
+ 	rt_rq->tg = tg;
+-	rt_rq->rt_runtime = tg->rt_bandwidth.rt_runtime;
+ 
++	tg->rt_rq[cpu] = rt_rq;
+ 	tg->rt_se[cpu] = rt_se;
 +
-+static int dummy_probe(struct i2c_client *client,
-+	const struct i2c_device_id *id)
-+{
-+	return 0;
-+}
+ 	if (!rt_se)
+ 		return;
+ 
+@@ -8071,7 +8024,7 @@ void __init sched_init(void)
+ 		rq->nr_running = 0;
+ 		rq->calc_load_active = 0;
+ 		rq->calc_load_update = jiffies + LOAD_FREQ;
+-		init_cfs_rq(&rq->cfs, rq);
++		init_cfs_rq(&rq->cfs);
+ 		init_rt_rq(&rq->rt, rq);
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 		root_task_group.shares = root_task_group_load;
+@@ -8185,7 +8138,7 @@ void __init sched_init(void)
+ 	scheduler_running = 1;
+ }
+ 
+-#ifdef CONFIG_DEBUG_SPINLOCK_SLEEP
++#ifdef CONFIG_DEBUG_ATOMIC_SLEEP
+ static inline int preempt_count_equals(int preempt_offset)
+ {
+ 	int nested = (preempt_count() & ~PREEMPT_ACTIVE) + rcu_preempt_depth();
+@@ -8195,7 +8148,6 @@ static inline int preempt_count_equals(int preempt_offset)
+ 
+ void __might_sleep(const char *file, int line, int preempt_offset)
+ {
+-#ifdef in_atomic
+ 	static unsigned long prev_jiffy;	/* ratelimiting */
+ 
+ 	if ((preempt_count_equals(preempt_offset) && !irqs_disabled()) ||
+@@ -8217,7 +8169,6 @@ void __might_sleep(const char *file, int line, int preempt_offset)
+ 	if (irqs_disabled())
+ 		print_irqtrace_events(current);
+ 	dump_stack();
+-#endif
+ }
+ EXPORT_SYMBOL(__might_sleep);
+ #endif
+@@ -8376,6 +8327,7 @@ int alloc_fair_sched_group(struct task_group *tg, struct task_group *parent)
+ 		if (!se)
+ 			goto err_free_rq;
+ 
++		init_cfs_rq(cfs_rq);
+ 		init_tg_cfs_entry(tg, cfs_rq, se, i, parent->se[i]);
+ 	}
+ 
+@@ -8403,7 +8355,7 @@ static inline void unregister_fair_sched_group(struct task_group *tg, int cpu)
+ 	list_del_leaf_cfs_rq(tg->cfs_rq[cpu]);
+ 	raw_spin_unlock_irqrestore(&rq->lock, flags);
+ }
+-#else /* !CONFG_FAIR_GROUP_SCHED */
++#else /* !CONFIG_FAIR_GROUP_SCHED */
+ static inline void free_fair_sched_group(struct task_group *tg)
+ {
+ }
+@@ -8424,7 +8376,8 @@ static void free_rt_sched_group(struct task_group *tg)
+ {
+ 	int i;
+ 
+-	destroy_rt_bandwidth(&tg->rt_bandwidth);
++	if (tg->rt_se)
++		destroy_rt_bandwidth(&tg->rt_bandwidth);
+ 
+ 	for_each_possible_cpu(i) {
+ 		if (tg->rt_rq)
+@@ -8465,6 +8418,8 @@ int alloc_rt_sched_group(struct task_group *tg, struct task_group *parent)
+ 		if (!rt_se)
+ 			goto err_free_rq;
+ 
++		init_rt_rq(rt_rq, cpu_rq(i));
++		rt_rq->rt_runtime = tg->rt_bandwidth.rt_runtime;
+ 		init_tg_rt_entry(tg, rt_rq, rt_se, i, parent->rt_se[i]);
+ 	}
+ 
+diff --git a/kernel/sched_autogroup.h b/kernel/sched_autogroup.h
+index 0557705..c2f0e72 100644
+--- a/kernel/sched_autogroup.h
++++ b/kernel/sched_autogroup.h
+@@ -13,6 +13,7 @@ struct autogroup {
+ 	int			nice;
+ };
+ 
++static inline bool task_group_is_autogroup(struct task_group *tg);
+ static inline struct task_group *
+ autogroup_task_group(struct task_struct *p, struct task_group *tg);
+ 
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index c768588..bc8ee99 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -135,14 +135,6 @@ static inline struct cfs_rq *group_cfs_rq(struct sched_entity *grp)
+ 	return grp->my_q;
+ }
+ 
+-/* Given a group's cfs_rq on one cpu, return its corresponding cfs_rq on
+- * another cpu ('this_cpu')
+- */
+-static inline struct cfs_rq *cpu_cfs_rq(struct cfs_rq *cfs_rq, int this_cpu)
+-{
+-	return cfs_rq->tg->cfs_rq[this_cpu];
+-}
+-
+ static inline void list_add_leaf_cfs_rq(struct cfs_rq *cfs_rq)
+ {
+ 	if (!cfs_rq->on_list) {
+@@ -271,11 +263,6 @@ static inline struct cfs_rq *group_cfs_rq(struct sched_entity *grp)
+ 	return NULL;
+ }
+ 
+-static inline struct cfs_rq *cpu_cfs_rq(struct cfs_rq *cfs_rq, int this_cpu)
+-{
+-	return &cpu_rq(this_cpu)->cfs;
+-}
+-
+ static inline void list_add_leaf_cfs_rq(struct cfs_rq *cfs_rq)
+ {
+ }
+@@ -334,11 +321,6 @@ static inline int entity_before(struct sched_entity *a,
+ 	return (s64)(a->vruntime - b->vruntime) < 0;
+ }
+ 
+-static inline s64 entity_key(struct cfs_rq *cfs_rq, struct sched_entity *se)
+-{
+-	return se->vruntime - cfs_rq->min_vruntime;
+-}
+-
+ static void update_min_vruntime(struct cfs_rq *cfs_rq)
+ {
+ 	u64 vruntime = cfs_rq->min_vruntime;
+@@ -372,7 +354,6 @@ static void __enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ 	struct rb_node **link = &cfs_rq->tasks_timeline.rb_node;
+ 	struct rb_node *parent = NULL;
+ 	struct sched_entity *entry;
+-	s64 key = entity_key(cfs_rq, se);
+ 	int leftmost = 1;
+ 
+ 	/*
+@@ -385,7 +366,7 @@ static void __enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ 		 * We dont care about collisions. Nodes with
+ 		 * the same key stay together.
+ 		 */
+-		if (key < entity_key(cfs_rq, entry)) {
++		if (entity_before(se, entry)) {
+ 			link = &parent->rb_left;
+ 		} else {
+ 			link = &parent->rb_right;
+@@ -1336,7 +1317,7 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+ 	}
+ 
+ 	for_each_sched_entity(se) {
+-		struct cfs_rq *cfs_rq = cfs_rq_of(se);
++		cfs_rq = cfs_rq_of(se);
+ 
+ 		update_cfs_load(cfs_rq, 0);
+ 		update_cfs_shares(cfs_rq);
+@@ -1370,13 +1351,16 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+ 			 */
+ 			if (task_sleep && parent_entity(se))
+ 				set_next_buddy(parent_entity(se));
 +
-+static int dummy_remove(struct i2c_client *client)
-+{
-+	return 0;
-+}
-+
-+static struct i2c_driver tpm_i2c_tis_driver = {
-+
-+	.id_table = tpm_i2c_tis_table,
-+	.probe = dummy_probe,
-+	.remove = dummy_remove,
-+	.driver	= {
-+		.name	= "tpm_tis_i2c",
-+		.owner	= THIS_MODULE,
-+#ifdef CONFIG_PM
-+		.pm     = &tpm_tis_i2c_ops,
-+#endif
-+	},
-+};
-+
-+
-+static struct i2c_adapter *adap;
-+static struct i2c_client *client;
-+static	struct i2c_board_info info = {
-+	I2C_BOARD_INFO("tpm_tis_i2c", 0x20),
-+};
-+
-+
-+static int addr = 0x20;
-+module_param(addr, int, S_IRUGO);
-+MODULE_PARM_DESC(addr, "TPM I2C Device Address (default: 0x20)");
-+
-+static int bus_id = 2;
-+module_param(bus_id, int, S_IRUGO);
-+MODULE_PARM_DESC(bus_id, "TPM I2C Bus Id (default: 2)");
-+
-+static int __init init_tis_i2c(void)
-+{
-+
-+	int rc = 0;
-+	info.addr = addr;
-+
-+
-+	if (tpm_dev.client != NULL)
-+		return -EBUSY;
-+
-+	adap = i2c_get_adapter(bus_id);
-+	if (!adap)
-+		return -ENODEV;
-+
-+	client = i2c_new_device(adap, &info);
-+	if (!client) {
-+		i2c_put_adapter(adap);
-+		return -ENODEV;
-+	}
-+
-+	rc = i2c_add_driver(&tpm_i2c_tis_driver);
-+	if (rc != 0) {
-+		i2c_del_driver(&tpm_i2c_tis_driver);
-+		i2c_put_adapter(tpm_dev.client->adapter);
-+		return -ENODEV;
-+	}
-+	client->driver = &tpm_i2c_tis_driver;
-+
-+	tpm_dev.client = client;
-+
-+	rc = tpm_tis_i2c_init(&client->dev);
-+	if (rc < 0) {
-+		i2c_del_driver(&tpm_i2c_tis_driver);
-+		i2c_put_adapter(tpm_dev.client->adapter);
-+		device_del(&(tpm_dev.client->dev));
-+	}
-+
-+	return rc;
-+}
-+
-+static void __exit cleanup_tis_i2c(void)
-+{
-+	struct tpm_chip *chip = tpm_dev.chip;
-+	release_locality(chip, chip->vendor.locality, 1);
-+
-+	tpm_dev_vendor_release(chip);
-+	tpm_remove_hardware(chip->dev);
-+
-+	i2c_del_driver(&tpm_i2c_tis_driver);
-+
-+	i2c_put_adapter(tpm_dev.client->adapter);
-+
++			/* avoid re-evaluating load for this entity */
++			se = parent_entity(se);
+ 			break;
+ 		}
+ 		flags |= DEQUEUE_SLEEP;
+ 	}
+ 
+ 	for_each_sched_entity(se) {
+-		struct cfs_rq *cfs_rq = cfs_rq_of(se);
++		cfs_rq = cfs_rq_of(se);
+ 
+ 		update_cfs_load(cfs_rq, 0);
+ 		update_cfs_shares(cfs_rq);
+@@ -1481,7 +1465,6 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+ 	 * effect of the currently running task from the load
+ 	 * of the current CPU:
+ 	 */
+-	rcu_read_lock();
+ 	if (sync) {
+ 		tg = task_group(current);
+ 		weight = current->se.load.weight;
+@@ -1517,7 +1500,6 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+ 		balanced = this_eff_load <= prev_eff_load;
+ 	} else
+ 		balanced = true;
+-	rcu_read_unlock();
+ 
+ 	/*
+ 	 * If the currently running task will sleep within
+@@ -1921,8 +1903,8 @@ static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int wake_
+ 	if (!sched_feat(WAKEUP_PREEMPT))
+ 		return;
+ 
+-	update_curr(cfs_rq);
+ 	find_matching_se(&se, &pse);
++	update_curr(cfs_rq_of(se));
+ 	BUG_ON(!pse);
+ 	if (wakeup_preempt_entity(se, pse) == 1) {
+ 		/*
+@@ -2231,11 +2213,43 @@ static void update_shares(int cpu)
+ 	struct rq *rq = cpu_rq(cpu);
+ 
+ 	rcu_read_lock();
 +	/*
-+	 * taken from core.c as workaround since
-+	 * tpm_remove_hardware requires device structure
++	 * Iterates the task_group tree in a bottom up fashion, see
++	 * list_add_leaf_cfs_rq() for details.
 +	 */
-+	pr_debug("device: '%s': %s\n",
-+		dev_name(&(tpm_dev.client->dev)), __func__);
-+	device_del(&(tpm_dev.client->dev));
+ 	for_each_leaf_cfs_rq(rq, cfs_rq)
+ 		update_shares_cpu(cfs_rq->tg, cpu);
+ 	rcu_read_unlock();
+ }
+ 
++/*
++ * Compute the cpu's hierarchical load factor for each task group.
++ * This needs to be done in a top-down fashion because the load of a child
++ * group is a fraction of its parents load.
++ */
++static int tg_load_down(struct task_group *tg, void *data)
++{
++	unsigned long load;
++	long cpu = (long)data;
++
++	if (!tg->parent) {
++		load = cpu_rq(cpu)->load.weight;
++	} else {
++		load = tg->parent->cfs_rq[cpu]->h_load;
++		load *= tg->se[cpu]->load.weight;
++		load /= tg->parent->cfs_rq[cpu]->load.weight + 1;
++	}
++
++	tg->cfs_rq[cpu]->h_load = load;
++
++	return 0;
 +}
 +
-+module_init(init_tis_i2c);
-+module_exit(cleanup_tis_i2c);
-+MODULE_AUTHOR("Peter Huewe <huewe.external@infineon.com>");
-+MODULE_DESCRIPTION("TPM TIS I2C Driver");
-+MODULE_VERSION("2.1.2");
-+MODULE_LICENSE("GPL");
--- 
-1.7.0.4
-
++static void update_h_load(long cpu)
++{
++	walk_tg_tree(tg_load_down, tg_nop, (void *)cpu);
++}
++
+ static unsigned long
+ load_balance_fair(struct rq *this_rq, int this_cpu, struct rq *busiest,
+ 		  unsigned long max_load_move,
+@@ -2243,14 +2257,12 @@ load_balance_fair(struct rq *this_rq, int this_cpu, struct rq *busiest,
+ 		  int *all_pinned)
+ {
+ 	long rem_load_move = max_load_move;
+-	int busiest_cpu = cpu_of(busiest);
+-	struct task_group *tg;
++	struct cfs_rq *busiest_cfs_rq;
+ 
+ 	rcu_read_lock();
+-	update_h_load(busiest_cpu);
++	update_h_load(cpu_of(busiest));
+ 
+-	list_for_each_entry_rcu(tg, &task_groups, list) {
+-		struct cfs_rq *busiest_cfs_rq = tg->cfs_rq[busiest_cpu];
++	for_each_leaf_cfs_rq(busiest, busiest_cfs_rq) {
+ 		unsigned long busiest_h_load = busiest_cfs_rq->h_load;
+ 		unsigned long busiest_weight = busiest_cfs_rq->load.weight;
+ 		u64 rem_load, moved_load;
+diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
+index 10d0182..97540f0 100644
+--- a/kernel/sched_rt.c
++++ b/kernel/sched_rt.c
+@@ -185,11 +185,23 @@ static inline u64 sched_rt_period(struct rt_rq *rt_rq)
+ 
+ typedef struct task_group *rt_rq_iter_t;
+ 
+-#define for_each_rt_rq(rt_rq, iter, rq) \
+-	for (iter = list_entry_rcu(task_groups.next, typeof(*iter), list); \
+-	     (&iter->list != &task_groups) && \
+-	     (rt_rq = iter->rt_rq[cpu_of(rq)]); \
+-	     iter = list_entry_rcu(iter->list.next, typeof(*iter), list))
++static inline struct task_group *next_task_group(struct task_group *tg)
++{
++	do {
++		tg = list_entry_rcu(tg->list.next,
++			typeof(struct task_group), list);
++	} while (&tg->list != &task_groups && task_group_is_autogroup(tg));
++
++	if (&tg->list == &task_groups)
++		tg = NULL;
++
++	return tg;
++}
++
++#define for_each_rt_rq(rt_rq, iter, rq)					\
++	for (iter = container_of(&task_groups, typeof(*iter), list);	\
++		(iter = next_task_group(iter)) &&			\
++		(rt_rq = iter->rt_rq[cpu_of(rq)]);)
+ 
+ static inline void list_add_leaf_rt_rq(struct rt_rq *rt_rq)
+ {
+@@ -1126,7 +1138,7 @@ static struct task_struct *_pick_next_task_rt(struct rq *rq)
+ 
+ 	rt_rq = &rq->rt;
+ 
+-	if (unlikely(!rt_rq->rt_nr_running))
++	if (!rt_rq->rt_nr_running)
+ 		return NULL;
+ 
+ 	if (rt_rq_throttled(rt_rq))
+@@ -1548,7 +1560,7 @@ skip:
+ static void pre_schedule_rt(struct rq *rq, struct task_struct *prev)
+ {
+ 	/* Try to pull RT tasks here if we lower this rq's prio */
+-	if (unlikely(rt_task(prev)) && rq->rt.highest_prio.curr > prev->prio)
++	if (rq->rt.highest_prio.curr > prev->prio)
+ 		pull_rt_task(rq);
+ }
+ 
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index dd373c8..9f0d826 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -648,12 +648,15 @@ config TRACE_IRQFLAGS
+ 	  Enables hooks to interrupt enabling and disabling for
+ 	  either tracing or lock debugging.
+ 
+-config DEBUG_SPINLOCK_SLEEP
+-	bool "Spinlock debugging: sleep-inside-spinlock checking"
++config DEBUG_ATOMIC_SLEEP
++	bool "Sleep inside atomic section checking"
++	select PREEMPT_COUNT
+ 	depends on DEBUG_KERNEL
+ 	help
+ 	  If you say Y here, various routines which may sleep will become very
+-	  noisy if they are called with a spinlock held.
++	  noisy if they are called inside atomic sections: when a spinlock is
++	  held, inside an rcu read side critical section, inside preempt disabled
++	  sections, inside an interrupt, etc...
+ 
+ config DEBUG_LOCKING_API_SELFTESTS
+ 	bool "Locking API boot-time self-tests"
