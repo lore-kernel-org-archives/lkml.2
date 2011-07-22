@@ -1,37 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932187Ab1GVU71 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 16:59:27 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:42547 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755124Ab1GVU7Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 16:59:25 -0400
-Date: Fri, 22 Jul 2011 22:59:22 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Matt Mackall <mpm@selenic.com>
-Cc: NeilBrown <neilb@suse.de>, Andi Kleen <andi@firstfloor.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Nanosecond fs timestamp support: sad
-Message-ID: <20110722205922.GS8006@one.firstfloor.org>
-References: <1311271641.14555.114.camel@calx> <m2pql2c0qz.fsf@firstfloor.org> <20110722163335.2df4f6ca@notabene.brown> <1311363269.14555.261.camel@calx>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311363269.14555.261.camel@calx>
-User-Agent: Mutt/1.4.2.2i
+	id S932207Ab1GVU7h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 16:59:37 -0400
+Received: from mga09.intel.com ([134.134.136.24]:30244 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755124Ab1GVU7e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 16:59:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,249,1309762800"; 
+   d="scan'208";a="30927873"
+Subject: [RFC PATCH 0/2] block: rq_affinity performance fixes
+To: jaxboe@fusionio.com
+From: Dan Williams <dan.j.williams@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Date: Fri, 22 Jul 2011 13:59:33 -0700
+Message-ID: <20110722205736.17420.41366.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15-7-g9bfb-dirty
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Indeed. Only usefully exists on ext4 and requires extra system calls.
+Jens,
 
-Not sure what you mean?  It's in stat(2), just like the timestamps.
+Per the "rq_affinity doesn't seem to work?" thread [1].  We found that the
+default cpu steering that rq_affinity performs is insufficient to keep up with
+some completion loads.
 
-As for XFS, btrfs etc. I guess it could be added there.
+Dave collected the following relative iops measures:
+pre-patches  rq_affinity=0: 1x
+pre-patches  rq_affinity=1: 1x
+post-patches rq_affinity=1: 1.08x
+post-patches rq_affinity=2: 1.35x
 
--Andi
+The "adaptive rq_affinity" patch is more of a discussion point than a
+real fix.  However, it shows that even something straightforward and
+seemingly aggressive does not really come close to the performance of
+just turning cpu grouping off altogether.  The "strict rq_affinity"
+patch follows the "nomerges" interface precedent of setting 2 to
+indicate "I really mean it".
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+So, at a minimum consider taking patch 1, and we can leave the search
+for a better adaptive algorithm as future work.
+
+[1]: http://marc.info/?l=linux-kernel&m=131049742925413&w=4
+
+---
+
+Dan Williams (2):
+      block: strict rq_affinity
+      block: adaptive rq_affinity
+
+ Documentation/block/queue-sysfs.txt |   10 +++++++---
+ block/blk-core.c                    |    6 ++----
+ block/blk-softirq.c                 |   23 ++++++++++++++++++-----
+ block/blk-sysfs.c                   |   13 +++++++++----
+ include/linux/blkdev.h              |    3 ++-
+ 5 files changed, 38 insertions(+), 17 deletions(-)
