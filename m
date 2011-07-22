@@ -1,95 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932278Ab1GVVWT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 17:22:19 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:57989 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932240Ab1GVVWS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 17:22:18 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Devin Heitmueller <dheitmueller@kernellabs.com>
-Subject: Re: [PATCH] [resend] usbvision: disable scaling for Nogatech MicroCam
-Date: Fri, 22 Jul 2011 23:22:02 +0200
-User-Agent: KMail/1.9.10
-Cc: Joerg Heckenbach <joerg@heckenbach-aw.de>,
-        Dwaine Garden <dwainegarden@rogers.com>, linux-media@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Hans Verkuil <hverkuil@xs4all.nl>
-References: <201107222200.55834.linux@rainbow-software.org> <CAGoCfiwqzs70A26WgN2pJJvz2aDzY9siOcTuOCkYm3nDHB=J1Q@mail.gmail.com>
-In-Reply-To: <CAGoCfiwqzs70A26WgN2pJJvz2aDzY9siOcTuOCkYm3nDHB=J1Q@mail.gmail.com>
+	id S932286Ab1GVVXX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 17:23:23 -0400
+Received: from claw.goop.org ([74.207.240.146]:45078 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932244Ab1GVVXW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 17:23:22 -0400
+Message-ID: <4E29CF51.60600@goop.org>
+Date: Fri, 22 Jul 2011 12:28:17 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
-Message-Id: <201107222322.07843.linux@rainbow-software.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [PATCH 3/8] x86/ticketlock: Use C for __ticket_spin_unlock
+References: <cover.1308259496.git.jeremy.fitzhardinge@citrix.com> <aa0d82c6e7a1c22a941da0df3c4ba58fea375074.1308878118.git.jeremy.fitzhardinge@citrix.com> <4E050704.3070409@zytor.com> <4E05128D.4020000@goop.org> <4E29C241.70102@zytor.com>
+In-Reply-To: <4E29C241.70102@zytor.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 22 July 2011 22:06:59 Devin Heitmueller wrote:
-> On Fri, Jul 22, 2011 at 4:00 PM, Ondrej Zary <linux@rainbow-software.org> wrote:
-> > Scaling causes bad artifacts (horizontal lines) with compression at least
-> > with Nogatech MicroCam so disable it (for this HW).
-> >
-> > This also fixes messed up image with some programs (Cheese with 160x120,
-> > Adobe Flash). HW seems to support only image widths that are multiple of 64
-> > but the driver does not account that in vidioc_try_fmt_vid_cap(). Cheese
-> > calls try_fmt with 160x120, succeeds and then assumes that it really gets
-> > data in that resolution - but it gets 128x120 instead. Don't know if this
-> > affects other usbvision devices, it would be great if someone could test it.
-> >
-> > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-> >
-> > diff -urp linux-2.6.39-rc2-/drivers/media/video/usbvision//usbvision-video.c linux-2.6.39-rc2/drivers/media/video/usbvision/usbvision-video.c
-> > --- linux-2.6.39-rc2-/drivers/media/video/usbvision//usbvision-video.c  2011-07-16 16:42:35.000000000 +0200
-> > +++ linux-2.6.39-rc2/drivers/media/video/usbvision/usbvision-video.c    2011-07-16 16:36:43.000000000 +0200
-> > @@ -924,6 +924,11 @@ static int vidioc_try_fmt_vid_cap(struct
-> >        RESTRICT_TO_RANGE(vf->fmt.pix.width, MIN_FRAME_WIDTH, MAX_FRAME_WIDTH);
-> >        RESTRICT_TO_RANGE(vf->fmt.pix.height, MIN_FRAME_HEIGHT, MAX_FRAME_HEIGHT);
-> >
-> > +       if (usbvision_device_data[usbvision->dev_model].codec == CODEC_WEBCAM) {
-> > +               vf->fmt.pix.width = MAX_FRAME_WIDTH;
-> > +               vf->fmt.pix.height = MAX_FRAME_HEIGHT;
-> > +       }
-> > +
-> >        vf->fmt.pix.bytesperline = vf->fmt.pix.width*
-> >                usbvision->palette.bytes_per_pixel;
-> >        vf->fmt.pix.sizeimage = vf->fmt.pix.bytesperline*vf->fmt.pix.height;
-> > @@ -952,6 +957,11 @@ static int vidioc_s_fmt_vid_cap(struct f
-> >
-> >        usbvision->cur_frame = NULL;
-> >
-> > +       if (usbvision_device_data[usbvision->dev_model].codec == CODEC_WEBCAM) {
-> > +               vf->fmt.pix.width = MAX_FRAME_WIDTH;
-> > +               vf->fmt.pix.height = MAX_FRAME_HEIGHT;
-> > +       }
-> > +
-> >        /* by now we are committed to the new data... */
-> >        usbvision_set_output(usbvision, vf->fmt.pix.width, vf->fmt.pix.height);
-> >
-> >
-> > --
-> > Ondrej Zary
-> 
-> Hello Ondrej,
-> 
-> Drivers are permitted to return a different resolution than what the
-> application provided in the S_FMT call.  It is the responsibility of
-> the application to look at the struct after the ioctl() call and if
-> the values are not what it expects to then accommodate the change.
-> 
-> In other words, this sounds like a bug in Cheese.
+On 07/22/2011 11:32 AM, H. Peter Anvin wrote:
+> On 06/24/2011 03:41 PM, Jeremy Fitzhardinge wrote:
+>> On 06/24/2011 02:52 PM, H. Peter Anvin wrote:
+>>> These should be asm volatile, I believe.
+>> OK.
+>>
+>>     J
+> You still owe me a new patch here, I believe...
 
-Seems that this bug is widespread - the same problem appears also in guvcview
-and adobe flash. I think that the driver is broken too - it should return
-corrected resolution in TRY_FMT.
+Ah, yes, though I don't think it can make a difference in practice,
+since the caller contains barrier()s on either side.  And the non-asm
+non-locked variant has no equivalent.  But it can't hurt.
 
-> Devin
-> 
+    J
+
+From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Date: Fri, 22 Jul 2011 12:27:14 -0700
+Subject: [PATCH] x86/ticketlocks: make asms volatile to be extra sure
+
+Make the locked-unlock asms volatile, just to be extra sure they won't wander away.
+
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+
+diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+index 2d14e7c..05fd59e 100644
+--- a/arch/x86/include/asm/spinlock.h
++++ b/arch/x86/include/asm/spinlock.h
+@@ -36,11 +36,11 @@
+ static __always_inline void __ticket_unlock_release(struct arch_spinlock *lock)
+ {
+ 	if (sizeof(lock->tickets.head) == sizeof(u8))
+-		asm (LOCK_PREFIX "incb %0"
+-		     : "+m" (lock->tickets.head) : : "memory");
++		asm volatile (LOCK_PREFIX "incb %0"
++			      : "+m" (lock->tickets.head) : : "memory");
+ 	else
+-		asm (LOCK_PREFIX "incw %0"
+-		     : "+m" (lock->tickets.head) : : "memory");
++		asm volatile (LOCK_PREFIX "incw %0"
++			      : "+m" (lock->tickets.head) : : "memory");
+ 
+ }
+ #else
 
 
-
--- 
-Ondrej Zary
