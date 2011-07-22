@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755361Ab1GVT6o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 15:58:44 -0400
-Received: from hera.kernel.org ([140.211.167.34]:38230 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754246Ab1GVT6m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 15:58:42 -0400
-Date: Fri, 22 Jul 2011 19:58:35 GMT
-From: tip-bot for Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Message-ID: <tip-599c3e7724ab4520c6f11857eb953271d365f842@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        tglx@linutronix.de, hpa@linux.intel.com,
-        jeremy.fitzhardinge@citrix.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com,
-        jeremy.fitzhardinge@citrix.com
-In-Reply-To: <aa7c94ecfbee05a6b8e455271ba0bb467bf33b2f.1308878118.git.jeremy.fitzhardinge@citrix.com>
-References: <aa7c94ecfbee05a6b8e455271ba0bb467bf33b2f.1308878118.git.jeremy.fitzhardinge@citrix.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/spinlocks] x86, ticketlock: Use xadd helper
-Git-Commit-ID: 599c3e7724ab4520c6f11857eb953271d365f842
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	id S1755369Ab1GVUBK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 16:01:10 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:49796 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755164Ab1GVUBI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 16:01:08 -0400
+To: Joerg Heckenbach <joerg@heckenbach-aw.de>
+Subject: [PATCH] [resend] usbvision: disable scaling for Nogatech MicroCam
+Cc: Dwaine Garden <dwainegarden@rogers.com>, linux-media@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        "Hans Verkuil" <hverkuil@xs4all.nl>
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 22 Jul 2011 19:58:36 +0000 (UTC)
+From: Ondrej Zary <linux@rainbow-software.org>
+Date: Fri, 22 Jul 2011 22:00:50 +0200
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107222200.55834.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  599c3e7724ab4520c6f11857eb953271d365f842
-Gitweb:     http://git.kernel.org/tip/599c3e7724ab4520c6f11857eb953271d365f842
-Author:     Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-AuthorDate: Thu, 23 Jun 2011 18:19:20 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 22 Jul 2011 11:19:05 -0700
+Scaling causes bad artifacts (horizontal lines) with compression at least
+with Nogatech MicroCam so disable it (for this HW).
 
-x86, ticketlock: Use xadd helper
+This also fixes messed up image with some programs (Cheese with 160x120,
+Adobe Flash). HW seems to support only image widths that are multiple of 64
+but the driver does not account that in vidioc_try_fmt_vid_cap(). Cheese
+calls try_fmt with 160x120, succeeds and then assumes that it really gets
+data in that resolution - but it gets 128x120 instead. Don't know if this
+affects other usbvision devices, it would be great if someone could test it.
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Link: http://lkml.kernel.org/r/aa7c94ecfbee05a6b8e455271ba0bb467bf33b2f.1308878118.git.jeremy.fitzhardinge@citrix.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/include/asm/spinlock.h |    9 +--------
- 1 files changed, 1 insertions(+), 8 deletions(-)
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-index e07dc41..da196f1 100644
---- a/arch/x86/include/asm/spinlock.h
-+++ b/arch/x86/include/asm/spinlock.h
-@@ -71,14 +71,7 @@ static __always_inline struct __raw_tickets __ticket_spin_claim(struct arch_spin
- {
- 	register struct __raw_tickets tickets = { .tail = 1 };
+diff -urp linux-2.6.39-rc2-/drivers/media/video/usbvision//usbvision-video.c linux-2.6.39-rc2/drivers/media/video/usbvision/usbvision-video.c
+--- linux-2.6.39-rc2-/drivers/media/video/usbvision//usbvision-video.c	2011-07-16 16:42:35.000000000 +0200
++++ linux-2.6.39-rc2/drivers/media/video/usbvision/usbvision-video.c	2011-07-16 16:36:43.000000000 +0200
+@@ -924,6 +924,11 @@ static int vidioc_try_fmt_vid_cap(struct
+ 	RESTRICT_TO_RANGE(vf->fmt.pix.width, MIN_FRAME_WIDTH, MAX_FRAME_WIDTH);
+ 	RESTRICT_TO_RANGE(vf->fmt.pix.height, MIN_FRAME_HEIGHT, MAX_FRAME_HEIGHT);
  
--	if (sizeof(lock->tickets.head) == sizeof(u8))
--		asm volatile (LOCK_PREFIX "xaddw %w0, %1\n"
--			      : "+r" (tickets), "+m" (lock->tickets)
--			      : : "memory", "cc");
--	else
--		asm volatile (LOCK_PREFIX "xaddl %0, %1\n"
--			     : "+r" (tickets), "+m" (lock->tickets)
--			     : : "memory", "cc");
-+	xadd(&lock->tickets, tickets);
++	if (usbvision_device_data[usbvision->dev_model].codec == CODEC_WEBCAM) {
++		vf->fmt.pix.width = MAX_FRAME_WIDTH;
++		vf->fmt.pix.height = MAX_FRAME_HEIGHT;
++	}
++
+ 	vf->fmt.pix.bytesperline = vf->fmt.pix.width*
+ 		usbvision->palette.bytes_per_pixel;
+ 	vf->fmt.pix.sizeimage = vf->fmt.pix.bytesperline*vf->fmt.pix.height;
+@@ -952,6 +957,11 @@ static int vidioc_s_fmt_vid_cap(struct f
  
- 	return tickets;
- }
+ 	usbvision->cur_frame = NULL;
+ 
++	if (usbvision_device_data[usbvision->dev_model].codec == CODEC_WEBCAM) {
++		vf->fmt.pix.width = MAX_FRAME_WIDTH;
++		vf->fmt.pix.height = MAX_FRAME_HEIGHT;
++	}
++
+ 	/* by now we are committed to the new data... */
+ 	usbvision_set_output(usbvision, vf->fmt.pix.width, vf->fmt.pix.height);
+ 
+
+-- 
+Ondrej Zary
