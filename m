@@ -1,77 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753160Ab1GVXIf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 19:08:35 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53363 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752669Ab1GVXIe (ORCPT
+	id S1753233Ab1GVXMR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 19:12:17 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:49846 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752669Ab1GVXMQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 19:08:34 -0400
-Date: Fri, 22 Jul 2011 16:08:32 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: morten@winkler.dk
-Cc: linux-kernel@vger.kernel.org, Eric Paris <eparis@redhat.com>
-Subject: Re: Possible bug in inotify api
-Message-Id: <20110722160832.ee535e0c.akpm@linux-foundation.org>
-In-Reply-To: <c2b2191a22eab7f6127d5ea1d519bee1.squirrel@webmail01.one.com>
-References: <c2b2191a22eab7f6127d5ea1d519bee1.squirrel@webmail01.one.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 22 Jul 2011 19:12:16 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Kirill Smelkov <kirr@mns.spb.ru>
+Subject: Re: [PATCH, RESEND] uvcvideo: Add FIX_BANDWIDTH quirk to HP Webcam found on HP Mini 5103 netbook
+Date: Sat, 23 Jul 2011 01:12:11 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.37-gentoo-r3; KDE/4.6.5; x86_64; ; )
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-uvc-devel@lists.berlios.de, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <20110722144722.GA3717@tugrik.mns.mnsspb.ru> <201107230003.59800.laurent.pinchart@ideasonboard.com> <20110722222520.GA14917@tugrik.mns.mnsspb.ru>
+In-Reply-To: <20110722222520.GA14917@tugrik.mns.mnsspb.ru>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201107230112.12868.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Jul 2011 08:47:44 +0200
-Morten Winkler J__rgensen <morten@winkler.dk> wrote:
+Hi Kirill,
 
-> To whom it might concern
+On Saturday 23 July 2011 00:25:20 Kirill Smelkov wrote:
+> On Sat, Jul 23, 2011 at 12:03:57AM +0200, Laurent Pinchart wrote:
+> > On Friday 22 July 2011 16:47:22 Kirill Smelkov wrote:
+> > >  [ Cc'ing Andrew Morton -- Andrew, could you please pick this patch, in
+> > >  
+> > >    case there is no response from maintainers again? Thanks beforehand.
+> > >    ]
+> > > 
+> > > Hello up there,
+> > > 
+> > > My first posting was 1 month ago, and a reminder ~ 2 weeks ago. All
+> > > without a reply. v3.0 is out and they say the merge window will be
+> > > shorter this time, so in oder not to miss it, I've decided to resend my
+> > > patch on lowering USB periodic bandwidth allocation topic.
+> > 
+> > I'm very very sorry for missing the patch (and worse, twice :-/).
 > 
-> I'd like to report a possible malfunction of the inotify api and check if
-> this issue has been reported.
-> If this is not the proper place to do so, please let me know. I have
-> searched the archives and the web and found similar reportings but none
-> the same.
-> 
-> The observed behavior is when calling inotify_remove_watch. Now and then
-> it returns error 22, INVALID_ARGUMENT, even though the watchdesriptor
-> ought to be valid. I've seen that people complain about this behavior on
-> the dovecot mailing list but nobody seems to have suggested a fix.
-> 
-> I've attached a small program that I use to reproduce the behavior.
-> The program watches /tmp and whenever it's notified about a directory
-> created in /tmp, my program adds a watch for that directory as well.
-> 
-> The program is a C++ program (as I will need the inotify functionality in
-> a C++ program, but the behavior is the same in a pure C implementation)
-> and to reproduce I do the following:
-> 
-> * g++ main.cpp
-> * ./a.out
-> 
-> In a shell I go to /tmp and run
-> * for i in `seq 1 5000`; do mkdir D-$i; done; for i in `seq 1 5000`; do
-> rmdir D-$i; done
-> 
-> This makes my testprogram output the wd's created and and the wd's my
-> program tries to remove. I've never seen the program successfully remove
-> all 5000 watch descriptors and I've seen inotify_rm_watch fail after 0
-> removes and after approx 2000 removes and anything in between.
-> 
-> I'm running kernel 2.6.23-5 from the Debian repositories.
-> 
-> If what I've written is totally nonsense, if it is expected behavior or if
-> I've done anything wrong, please let me know. Also, if I can do anything
-> further to investigate the misbehavior also, please let me know.
-> 
-> Best and thanks in advance,
->    Morten
-> 
-> Attached: C++ program used to reproduce the behavior.
+> Nevermind. I'm curious though, whether I did something wrong or anything
+> else?  I mean how to avoid such long delays next time?
 
-I ran it a couple of times on my 2.6.32-based 2-CPU desktop here and it
-ran to completion without any complaints.
+It was all my fault, mails piled up in my mailbox and for some reason I marked 
+yours as processed while they were not. I certainly hope it won't happen 
+again.
 
-So perhaps we fixed whatever-it-was in a later kernel.  2.6.23 is
-pretty old!
+> > > Could this simple patch be please applied?
+> > 
+> > Yes it can. I see that Andrew already applied it to his tree. Mauro,
+> > should it go through there, or through your tree ? I've pushed it to my
+> > tree at git://linuxtv.org/pinchartl/uvcvideo.git uvcvideo-stable, so you
+> > can already pull.
+> 
+> You've applied the patch from my first posting, but actually in the
+> RESEND one I've added reference to EHCI-tweaking patch -- it is already
+> merged into Greg's USB tree (it was not when I first posted), so could you
+> please reapply? (sorry for confusion).
+
+Sure. That should now be fixed.
+
+> Thanks for replying and for uvcvideo,
+
+You're more than welcome. Thank you for the patch, and thank you for keeping 
+on pushing :-)
+
+-- 
+Regards,
+
+Laurent Pinchart
