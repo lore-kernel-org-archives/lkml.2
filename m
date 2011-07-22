@@ -1,187 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752206Ab1GVHeY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 03:34:24 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:52236 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751552Ab1GVHeW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 03:34:22 -0400
-Date: Fri, 22 Jul 2011 09:34:17 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Shreshtha <shreshthakumar@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Kernel Oops on enabling CONFIG_LOCK_STAT
-Message-ID: <20110722073417.GB2622@htj.dyndns.org>
-References: <CAKWOLpKFe=rjms5=cvEMJSbiHE0+j+3wK-bGRJWpP1QCJ63Sow@mail.gmail.com>
- <20110722061054.GA2622@htj.dyndns.org>
+	id S1752290Ab1GVHmg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 03:42:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50866 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751374Ab1GVHmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 03:42:35 -0400
+Date: Fri, 22 Jul 2011 08:42:27 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        P?draig Brady <P@draigbrady.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Colin King <colin.king@canonical.com>,
+        Andrew Lutomirski <luto@mit.edu>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] mm: vmscan: Only read new_classzone_idx from pgdat
+ when reclaiming successfully
+Message-ID: <20110722074227.GW5349@suse.de>
+References: <1308926697-22475-1-git-send-email-mgorman@suse.de>
+ <1308926697-22475-5-git-send-email-mgorman@suse.de>
+ <20110719160903.GA2978@barrios-desktop>
+ <20110720104847.GI5349@suse.de>
+ <20110721153007.GC1713@barrios-desktop>
+ <20110721160706.GS5349@suse.de>
+ <20110721163649.GG1713@barrios-desktop>
+ <20110721170112.GU5349@suse.de>
+ <CAEwNFnB-JQpBctJxCUkO3WiTr7L3BTJfqirBRG8GOMrp79+cbA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="wRRV7LY7NUeQGEoC"
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20110722061054.GA2622@htj.dyndns.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAEwNFnB-JQpBctJxCUkO3WiTr7L3BTJfqirBRG8GOMrp79+cbA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---wRRV7LY7NUeQGEoC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-Hello,
-
-On Fri, Jul 22, 2011 at 08:10:54AM +0200, Tejun Heo wrote:
-> Hrmm... so it's pcpu_populate_chunk() failure path.  Can you please
-> attach full kernel log?  Attaching full kernel log and including a bit
-> of hardware details is generally a good idea when reporting a bug.
+On Fri, Jul 22, 2011 at 09:21:57AM +0900, Minchan Kim wrote:
+> On Fri, Jul 22, 2011 at 2:01 AM, Mel Gorman <mgorman@suse.de> wrote:
+> > On Fri, Jul 22, 2011 at 01:36:49AM +0900, Minchan Kim wrote:
+> >> > > > <SNIP>
+> >> > > > @@ -2740,17 +2742,23 @@ static int kswapd(void *p)
+> >> > > >       tsk->flags |= PF_MEMALLOC | PF_SWAPWRITE | PF_KSWAPD;
+> >> > > >       set_freezable();
+> >> > > >
+> >> > > > -     order = 0;
+> >> > > > -     classzone_idx = MAX_NR_ZONES - 1;
+> >> > > > +     order = new_order = 0;
+> >> > > > +     classzone_idx = new_classzone_idx = pgdat->nr_zones - 1;
+> >> > > >       for ( ; ; ) {
+> >> > > > -             unsigned long new_order;
+> >> > > > -             int new_classzone_idx;
+> >> > > >               int ret;
+> >> > > >
+> >> > > > -             new_order = pgdat->kswapd_max_order;
+> >> > > > -             new_classzone_idx = pgdat->classzone_idx;
+> >> > > > -             pgdat->kswapd_max_order = 0;
+> >> > > > -             pgdat->classzone_idx = MAX_NR_ZONES - 1;
+> >> > > > +             /*
+> >> > > > +              * If the last balance_pgdat was unsuccessful it's unlikely a
+> >> > > > +              * new request of a similar or harder type will succeed soon
+> >> > > > +              * so consider going to sleep on the basis we reclaimed at
+> >> > > > +              */
+> >> > > > +             if (classzone_idx >= new_classzone_idx && order == new_order) {
+> >> > > > +                     new_order = pgdat->kswapd_max_order;
+> >> > > > +                     new_classzone_idx = pgdat->classzone_idx;
+> >> > > > +                     pgdat->kswapd_max_order =  0;
+> >> > > > +                     pgdat->classzone_idx = pgdat->nr_zones - 1;
+> >> > > > +             }
+> >> > > > +
+> >> > >
+> >> > > But in this part.
+> >> > > Why do we need this?
+> >> >
+> >> > Lets say it's a fork-heavy workload and it is routinely being woken
+> >> > for order-1 allocations and the highest zone is very small. For the
+> >> > most part, it's ok because the allocations are being satisfied from
+> >> > the lower zones which kswapd has no problem balancing.
+> >> >
+> >> > However, by reading the information even after failing to
+> >> > balance, kswapd continues balancing for order-1 due to reading
+> >> > pgdat->kswapd_max_order, each time failing for the highest zone. It
+> >> > only takes one wakeup request per balance_pgdat() to keep kswapd
+> >> > awake trying to balance the highest zone in a continual loop.
+> >>
+> >> You made balace_pgdat's classzone_idx as communicated back so classzone_idx returned
+> >> would be not high zone and in [1/4], you changed that sleeping_prematurely consider only
+> >> classzone_idx not nr_zones. So I think it should sleep if low zones is balanced.
+> >>
+> >
+> > If a wakeup for order-1 happened during the last pgdat, the
+> > classzone_idx as communicated back from balance_pgdat() is lost and it
+> > will not sleep in this ordering of events
+> >
+> > kswapd                                                                  other processes
+> > ======                                                                  ===============
+> > order = balance_pgdat(pgdat, order, &classzone_idx);
+> >                                                                        wakeup for order-1
+> > kswapd balances lower zone
+> >                                                                        allocate from lower zone
+> > balance_pgdat fails balance for highest zone, returns
+> >        with lower classzone_idx and possibly lower order
+> > new_order = pgdat->kswapd_max_order      (order == 1)
+> > new_classzone_idx = pgdat->classzone_idx (highest zone)
+> > if (order < new_order || classzone_idx > new_classzone_idx) {
+> >        order = new_order;
+> >        classzone_idx = new_classzone_idx; (failure from balance_pgdat() lost)
+> > }
+> > order = balance_pgdat(pgdat, order, &classzone_idx);
+> >
+> > The wakup for order-1 at any point during balance_pgdat() is enough to
+> > keep kswapd awake even though the process that called wakeup_kswapd
+> > would be able to allocate from the lower zones without significant
+> > difficulty.
+> >
+> > This is why if balance_pgdat() fails its request, it should go to sleep
+> > if watermarks for the lower zones are met until woken by another
+> > process.
 > 
-> It's most likely there's a bug in the code which rolls back from
-> partial allocation after encountering alloc failure in the middle.
-> I'll take a deeper look there and report what I find.
+> Hmm.
+> 
+> The role of kswapd is to reclaim pages by background until all of zone
+> meet HIGH_WMARK to prevent costly direct reclaim.(Of course, there is
+> another reason like GFP_ATOMIC).
 
-The code looks correct and seems to behave correct under induced
-error.  Can you please apply the following patch and see whether the
-problem goes away?
+kswapd does not necessarily have to balance every zone to prevent direct
+reclaim. Again, if the highest zone is small, it does not remain
+balanced for very long because it's often the first choice for
+allocating from. It gets used very quickly but direct reclaim does not
+stall because there are the lower zones.
 
-diff --git a/mm/percpu-vm.c b/mm/percpu-vm.c
-index ea53496..53eae44 100644
---- a/mm/percpu-vm.c
-+++ b/mm/percpu-vm.c
-@@ -347,6 +347,7 @@ clear:
- 	return 0;
- 
- err_unmap:
-+	pcpu_post_map_flush(chunk, page_start, unmap_end);
- 	pcpu_pre_unmap_flush(chunk, page_start, unmap_end);
- 	pcpu_for_each_unpop_region(chunk, rs, re, page_start, unmap_end)
- 		pcpu_unmap_pages(chunk, pages, populated, rs, re);
+> So it's not wrong to consume many cpu
+> usage by design unless other tasks are ready.
 
-If not, can you please apply the attached debug patch, trigger the
-problem and post the log?
+It wastes power while not making the system run any faster. It will
+look odd to any user or administrator that is running top and generates
+bug reports.
 
-Thank you.
+> It would be balanced or
+> unreclaimable at last so it should end up. However, the problem is
+> small part of highest zone is easily [set|reset] to be
+> all_unreclaimabe so the situation could be forever like our example.
+> So fundamental solution is to prevent it that all_unreclaimable is
+> set/reset easily, I think.
+> Unfortunately it have no idea now.
+
+One way would be to have the allocator skip over it easily and
+implement a placement policy that relocates only long-lived and very
+old pages to the highest zone and then leave them there and have
+kswapd ignore the zone. We don't have anything like this at the moment.
+
+> In different viewpoint,  the problem is that it's too excessive
+> because kswapd is just best-effort and if it got fails, we have next
+> wakeup and even direct reclaim as last resort. In such POV, I think
+> this patch is right and it would be a good solution. Then, other
+> concern is on your reply about KOSAKI's question.
+> 
+> I think below your patch is needed.
+> 
+> Quote from
+> "
+> 1. Read for balance-request-A (order, classzone) pair
+> 2. Fail balance_pgdat
+> 3. Sleep based on (order, classzone) pair
+> 4. Wake for balance-request-B (order, classzone) pair where
+>   balance-request-B != balance-request-A
+> 5. Succeed balance_pgdat
+> 6. Compare order,classzone with balance-request-A which will treat
+>   balance_pgdat() as fail and try go to sleep
+> 
+> This is not the same as new_classzone_idx being "garbage" but is it
+> what you mean? If so, is this your proposed fix?
+> 
+
+That was the proposed fix but discussion died. I'll pick it up again
+later and am keeping an eye out for any bugs that could be attributed to
+it.
 
 -- 
-tejun
-
---wRRV7LY7NUeQGEoC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="pcpu-debug.patch"
-
-diff --git a/mm/percpu-vm.c b/mm/percpu-vm.c
-index ea53496..4421619 100644
---- a/mm/percpu-vm.c
-+++ b/mm/percpu-vm.c
-@@ -80,16 +80,19 @@ static void pcpu_free_pages(struct pcpu_chunk *chunk,
- 			    int page_start, int page_end)
- {
- 	unsigned int cpu;
--	int i;
-+	int i, cnt = 0;
- 
- 	for_each_possible_cpu(cpu) {
- 		for (i = page_start; i < page_end; i++) {
- 			struct page *page = pages[pcpu_page_idx(cpu, i)];
- 
--			if (page)
-+			if (page) {
- 				__free_page(page);
-+				cnt++;
-+			}
- 		}
- 	}
-+	printk("XXX pcpu_free_pages: freed %d pages\n", cnt);
- }
- 
- /**
-@@ -110,7 +113,7 @@ static int pcpu_alloc_pages(struct pcpu_chunk *chunk,
- {
- 	const gfp_t gfp = GFP_KERNEL | __GFP_HIGHMEM | __GFP_COLD;
- 	unsigned int cpu;
--	int i;
-+	int i, cnt = 0;
- 
- 	for_each_possible_cpu(cpu) {
- 		for (i = page_start; i < page_end; i++) {
-@@ -118,12 +121,15 @@ static int pcpu_alloc_pages(struct pcpu_chunk *chunk,
- 
- 			*pagep = alloc_pages_node(cpu_to_node(cpu), gfp, 0);
- 			if (!*pagep) {
-+				printk("XXX pcpu_alloc_pages: failed after %d allocs\n", cnt);
- 				pcpu_free_pages(chunk, pages, populated,
- 						page_start, page_end);
- 				return -ENOMEM;
- 			}
-+			cnt++;
- 		}
- 	}
-+	printk("XXX pcpu_alloc_pages: allocated %d pages\n", cnt);
- 	return 0;
- }
- 
-@@ -149,6 +155,8 @@ static void pcpu_pre_unmap_flush(struct pcpu_chunk *chunk,
- 
- static void __pcpu_unmap_pages(unsigned long addr, int nr_pages)
- {
-+	printk("XXX __pcpu_unmap_pages: %p - %p\n", (void *)addr,
-+	       (void *)addr + nr_pages * PAGE_SIZE);
- 	unmap_kernel_range_noflush(addr, nr_pages << PAGE_SHIFT);
- }
- 
-@@ -173,6 +181,11 @@ static void pcpu_unmap_pages(struct pcpu_chunk *chunk,
- 	unsigned int cpu;
- 	int i;
- 
-+	for_each_possible_cpu(cpu)
-+		printk("XXX pcpu_unmap_pages: cpu%u: %#lx - %#lx\n", cpu,
-+		       pcpu_chunk_addr(chunk, cpu, page_start),
-+		       pcpu_chunk_addr(chunk, cpu, page_end));
-+
- 	for_each_possible_cpu(cpu) {
- 		for (i = page_start; i < page_end; i++) {
- 			struct page *page;
-@@ -210,11 +223,27 @@ static void pcpu_post_unmap_tlb_flush(struct pcpu_chunk *chunk,
- 		pcpu_chunk_addr(chunk, pcpu_last_unit_cpu, page_end));
- }
- 
-+#include <linux/moduleparam.h>
-+static int failcnt;
-+module_param(failcnt, int, 0644);
-+
- static int __pcpu_map_pages(unsigned long addr, struct page **pages,
- 			    int nr_pages)
- {
--	return map_kernel_range_noflush(addr, nr_pages << PAGE_SHIFT,
--					PAGE_KERNEL, pages);
-+	int ret;
-+
-+	printk("XXX __pcpu_map_pages: %#lx - %#lx\n",
-+	       addr, addr + nr_pages * PAGE_SIZE);
-+
-+	if (failcnt > 0 && !--failcnt) {
-+		printk("XXX __pcpu_map_pages: inducing failure\n");
-+		return -ENOMEM;
-+	}
-+	ret = map_kernel_range_noflush(addr, nr_pages << PAGE_SHIFT,
-+				       PAGE_KERNEL, pages);
-+	if (ret < 0)
-+		printk("XXX __pcpu_map_pages: failed ret=%d\n", ret);
-+	return ret;
- }
- 
- /**
-@@ -240,6 +269,11 @@ static int pcpu_map_pages(struct pcpu_chunk *chunk,
- 	unsigned int cpu, tcpu;
- 	int i, err;
- 
-+	for_each_possible_cpu(cpu)
-+		printk("XXX pcpu_map_pages: cpu%u: %#lx - %#lx\n", cpu,
-+		       pcpu_chunk_addr(chunk, cpu, page_start),
-+		       pcpu_chunk_addr(chunk, cpu, page_end));
-+
- 	for_each_possible_cpu(cpu) {
- 		err = __pcpu_map_pages(pcpu_chunk_addr(chunk, cpu, page_start),
- 				       &pages[pcpu_page_idx(cpu, page_start)],
-
---wRRV7LY7NUeQGEoC--
+Mel Gorman
+SUSE Labs
