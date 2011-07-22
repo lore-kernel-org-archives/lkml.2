@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045Ab1GVRkt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 13:40:49 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:54774 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753944Ab1GVRks (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 13:40:48 -0400
-From: Borislav Petkov <bp@amd64.org>
-To: Takashi Iwai <tiwai@suse.de>, Jaroslav Kysela <perex@perex.cz>
-Cc: alsa-devel@alsa-project.org, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH] sound, hda_codec: Fix compilation warnings
-Date: Fri, 22 Jul 2011 19:40:37 +0200
-Message-Id: <1311356437-28816-1-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.4.rc2
+	id S1754114Ab1GVRmC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 13:42:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16062 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753983Ab1GVRmA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 13:42:00 -0400
+Date: Fri, 22 Jul 2011 13:41:56 -0400
+From: David Teigland <teigland@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] dlm updates for 3.1
+Message-ID: <20110722174156.GB16459@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+Linus,
 
-Convert macro to an inline function to shut up gcc:
+Please pull dlm updates for 3.1 from:
 
-sound/pci/hda/patch_sigmatel.c: In function `stac92xx_init´:
-sound/pci/hda/patch_sigmatel.c:4385:3: warning: statement with no effect
-sound/pci/hda/patch_sigmatel.c: In function `stac92xx_resume´:
-sound/pci/hda/patch_sigmatel.c:4925:3: warning: statement with no effect
-sound/pci/hda/hda_codec.c: In function `snd_hda_mixer_amp_switch_put´:
-sound/pci/hda/patch_realtek.c:4176:2: warning: statement with no effect
-sound/pci/hda/hda_codec.c:2320:2: warning: statement with no effect
-sound/pci/hda/patch_realtek.c: In function `alc_resume´:
-sound/pci/hda/patch_realtek.c:4558:2: warning: statement with no effect
-sound/pci/hda/patch_realtek.c: In function `alc269_resume´:
-sound/pci/hda/patch_realtek.c:14878:2: warning: statement with no effect
+git://git.kernel.org/pub/scm/linux/kernel/git/teigland/dlm.git for-linus
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- sound/pci/hda/hda_codec.h |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
+The three large patches are relatively low hanging efficiency improvements:
+replacing the lock hash table with idr, improving resource hash table lookups
+by pre-allocating, and replacing the single callback thread with per-lockspace
+workqueues.
+Thanks,
+Dave
 
-diff --git a/sound/pci/hda/hda_codec.h b/sound/pci/hda/hda_codec.h
-index 59c9730..79ede92 100644
---- a/sound/pci/hda/hda_codec.h
-+++ b/sound/pci/hda/hda_codec.h
-@@ -1005,8 +1005,12 @@ int hda_call_check_power_status(struct hda_codec *codec, hda_nid_t nid)
- 		return codec->patch_ops.check_power_status(codec, nid);
- 	return 0;
- }
--#else	
--#define hda_call_check_power_status(codec, nid)		0
-+#else
-+static inline
-+int hda_call_check_power_status(struct hda_codec *codec, hda_nid_t nid)
-+{
-+	return 0;
-+}
- #endif
- 
- /*
--- 
-1.7.4.rc2
+Bryn M. Reeves (1):
+      dlm: use vmalloc for hash tables
 
+David Teigland (6):
+      dlm: fix kmalloc args
+      dlm: keep lkbs in idr
+      dlm: improve rsb searches
+      dlm: remove deadlock debug print
+      dlm: use workqueue for callbacks
+      dlm: don't limit active work items
+
+Jesper Juhl (1):
+      dlm: don't do pointless NULL check, use kzalloc and fix order of arguments
+
+Masatake YAMATO (2):
+      dlm: show addresses in configfs
+      dlm: dump address of unknown node
+
+ fs/dlm/ast.c          |  265 ++++++++++++++++++++++---------------------------
+ fs/dlm/ast.h          |   15 ++--
+ fs/dlm/config.c       |   75 ++++++++++++--
+ fs/dlm/config.h       |    2 +-
+ fs/dlm/dlm_internal.h |   29 +++---
+ fs/dlm/lock.c         |  225 ++++++++++++++++++++++-------------------
+ fs/dlm/lockspace.c    |  175 ++++++++++++++++----------------
+ fs/dlm/lowcomms.c     |    9 +-
+ fs/dlm/memory.c       |   22 +++--
+ fs/dlm/memory.h       |    2 +-
+ fs/dlm/recoverd.c     |   12 +--
+ fs/dlm/user.c         |   12 +-
+ 12 files changed, 446 insertions(+), 397 deletions(-)
