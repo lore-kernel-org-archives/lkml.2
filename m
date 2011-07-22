@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932143Ab1GVUh1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 16:37:27 -0400
-Received: from www.linutronix.de ([62.245.132.108]:59765 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932096Ab1GVUh0 (ORCPT
+	id S932161Ab1GVUlR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 16:41:17 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:56053 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932074Ab1GVUlQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 16:37:26 -0400
-Date: Fri, 22 Jul 2011 22:37:24 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: [ANNOUNCE] 3.0-rt1
-Message-ID: <alpine.LFD.2.02.1107222203400.2702@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 22 Jul 2011 16:41:16 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <20110722094126.GI2622@htj.dyndns.org>
+References: <CAN8TOE9CCSiS2koyx=UsZj=9KwaWZW5yDjUUqgJf2=qZU70k1w@mail.gmail.com>
+	<20110713131407.GN2872@htj.dyndns.org>
+	<CAN8TOE9Rjujf9aLQGONDULNasFiQmVkiUPWUDX=Vf0Nx2pka7w@mail.gmail.com>
+	<20110721084917.GE3455@htj.dyndns.org>
+	<CAN8TOE_dCg6Wi_trE97hXjBPnZi4jpLyoeUEVrbMpgDH-BwKWA@mail.gmail.com>
+	<20110722090317.GH2622@htj.dyndns.org>
+	<20110722094126.GI2622@htj.dyndns.org>
+Date: Fri, 22 Jul 2011 13:41:14 -0700
+Message-ID: <CAN8TOE_Gd1TdFNFAf6dTQrkzLQbdJstXGqnqrs1tbzX8hgrzhQ@mail.gmail.com>
+Subject: Re: [PATCH #upstream] ahci: start engine only during soft/hard resets
+From: Brian Norris <computersforpeace@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        Valdis.Kletnieks@vt.edu, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Michael Leun <lkml20100708@newton.leun.net>,
+        linux-kernel@vger.kernel.org, Jian Peng <jipeng2005@gmail.com>,
+        Kevin Cernekee <cernekee@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear RT Folks,
+On Fri, Jul 22, 2011 at 2:41 AM, Tejun Heo <tj@kernel.org> wrote:
+> This is another attempt at fixing the same problem that 270dac35c2
+> (libata: ahci_start_engine compliant to AHCI spec) tried to solve.
+> Unfortunately, 270dac35c2 created regressions for a lot more common
+> controllers and got reverted.
 
-I'm pleased to announce the 3.0-rt1 release.
+I've tested this on my problem controller with success so far. Also
+tried on Dell Latitude E6410 (with various boot, suspend, resume,
+unplug power, etc. cycles) with no problem. Thanks Tejun!
 
-Changes versus 3.0-rc7-rt0:
+In case it's useful I'll give a tested-by:
 
-  * Update to Linus final 3.0 release
-
-  * RTC bugfixes (scheduled for mainline/stable)
-
-  * Long standing (rt only) timer_list bug (see
-    timers-avoid-the-base-null-otptimization-on-rt.patch in the split
-    out quilt queue)
-
-  * Minor non exciting fixes all over the place
-
-Known issues:
-
-  * Some weird "console=..." commandline + config dependent
-    interactions which have been not yet investigated down to their
-    root cause. Result in a boot hang. YMMV
-
-Patch against 3.0 can be found here:
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/patch-3.0-rt1.patch.bz2
-
-The split quilt queue is available at:
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/patches-3.0-rt1.tar.bz2
-
-Thanks,
-
-	tglx
+Tested-by: Brian Norris <computersforpeace@gmail.com>
