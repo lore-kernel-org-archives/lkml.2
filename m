@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829Ab1GVWji (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 18:39:38 -0400
-Received: from mga11.intel.com ([192.55.52.93]:51716 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752685Ab1GVWjg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752702Ab1GVWjg (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 22 Jul 2011 18:39:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,249,1309762800"; 
-   d="scan'208";a="33602661"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Don Zickus <dzickus@redhat.com>, "Huang, Ying" <ying.huang@intel.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 22 Jul 2011 15:39:35 -0700
-Subject: RE: [PATCH] pstore: change mutex locking to spin_locks
-Thread-Topic: [PATCH] pstore: change mutex locking to spin_locks
-Thread-Index: AcxIaLVQTZz8TnmJRdSilI9LTZNGDAAVzbaw
-Message-ID: <987664A83D2D224EAE907B061CE93D5301E9FA0EE5@orsmsx505.amr.corp.intel.com>
-References: <1311195386-22743-1-git-send-email-dzickus@redhat.com>
- <4E277584.1060200@intel.com> <20110721122731.GV3765@redhat.com>
- <987664A83D2D224EAE907B061CE93D5301E9EC9DC6@orsmsx505.amr.corp.intel.com>
- <4E28C552.8060803@intel.com> <20110722121302.GB9732@redhat.com>
-In-Reply-To: <20110722121302.GB9732@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+Received: from 1wt.eu ([62.212.114.60]:37736 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752428Ab1GVWje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 18:39:34 -0400
+Date: Sat, 23 Jul 2011 00:39:15 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ben Greear <greearb@candelatech.com>,
+        Ingo Molnar <mingo@elte.hu>, John Stultz <john.stultz@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, stable@kernel.org
+Subject: Re: [stable] [patch 3/3] rtc: Limit frequency
+Message-ID: <20110722223915.GA22405@1wt.eu>
+References: <20110722091011.717194327@linutronix.de> <20110722091045.537404938@linutronix.de> <20110722150550.1878f069.akpm@linux-foundation.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110722150550.1878f069.akpm@linux-foundation.org>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Actually it seems like most of the entry points into pstore_dumper would
-> not require the fs to create a new file.  I think the exception is an
-> oops.
+On Fri, Jul 22, 2011 at 03:05:50PM -0700, Andrew Morton wrote:
+> On Fri, 22 Jul 2011 09:12:51 -0000
+> Thomas Gleixner <tglx@linutronix.de> wrote:
+> 
+> > The RTC hrtimer is self rearming. We really need to limit the
+> > frequency to something sensible.
+> 
+> > Cc: stable@kernel.org
+> 
+> Why?  What failures does the current code cause?  What effect do these
+> failures have upon users?
 
-Yup - oops is the only one where the current kernel continues - all the
-others (halt, reboot, kexec, panic) lead to the termination of the
-current kernel - and thus no user processes that would be able to
-see the shiny new entry in the pstore file system.
+I would add that if we go that route, we should at least accept values
+that were documented as possible till now. Man rtc says 2 Hz to 8192 Hz,
+but Thomas' proposed patch limits it to 5000 Hz, so some breakage is to
+be expected.
 
--Tony
+Regards,
+Willy
+
