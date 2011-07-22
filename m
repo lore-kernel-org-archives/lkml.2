@@ -1,140 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755268Ab1GVTkU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 15:40:20 -0400
-Received: from hera.kernel.org ([140.211.167.34]:60215 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755104Ab1GVTkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 15:40:17 -0400
-Date: Fri, 22 Jul 2011 19:40:02 GMT
-From: tip-bot for Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Message-ID: <tip-b17a5f97d413c9bd882ea5011462f7a530d37ae0@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        konrad.wilk@oracle.com, tglx@linutronix.de, hpa@linux.intel.com,
-        stefano.stabellini@eu.citrix.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        konrad.wilk@oracle.com, tglx@linutronix.de, hpa@linux.intel.com,
-        stefano.stabellini@eu.citrix.com
-In-Reply-To: <1311178074-16833-1-git-send-email-stefano.stabellini@eu.citrix.com>
-References: <1311178074-16833-1-git-send-email-stefano.stabellini@eu.citrix.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86_32: Calculate additional memory needed by the fixmap
-Git-Commit-ID: b17a5f97d413c9bd882ea5011462f7a530d37ae0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1755283Ab1GVTpJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 15:45:09 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:40738 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755134Ab1GVTpH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 15:45:07 -0400
+Message-ID: <4E29D326.7070403@candelatech.com>
+Date: Fri, 22 Jul 2011 12:44:38 -0700
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 22 Jul 2011 19:40:03 +0000 (UTC)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: David <david@unsolicited.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        netdev@vger.kernel.org
+Subject: Re: Linux 3.0 release
+References: <CA+55aFxakA2U+oMJ1T7awTYa+p6xp9N0aCbfrUqgkF7BJ8gnQw@mail.gmail.com> <4E29CB5B.4040408@unsolicited.net> <CA+55aFy1FnVGH4C_0T8fXwZPUdz5-SCczMwy1K8kydLwTx89RQ@mail.gmail.com>
+In-Reply-To: <CA+55aFy1FnVGH4C_0T8fXwZPUdz5-SCczMwy1K8kydLwTx89RQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b17a5f97d413c9bd882ea5011462f7a530d37ae0
-Gitweb:     http://git.kernel.org/tip/b17a5f97d413c9bd882ea5011462f7a530d37ae0
-Author:     Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-AuthorDate: Wed, 20 Jul 2011 17:07:54 +0100
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 22 Jul 2011 11:45:55 -0700
+On 07/22/2011 12:21 PM, Linus Torvalds wrote:
+> On Fri, Jul 22, 2011 at 12:11 PM, David<david@unsolicited.net>  wrote:
+>>
+>> I'm getting the following warning at boot from 3.0, everything seems to be fine otherwise though.
+>>
+>> Jul 22 19:40:02 server kernel: [   15.526629] ------------[ cut here ]------------
+>> Jul 22 19:40:02 server kernel: [   15.526635] WARNING: at kernel/timer.c:1011 del_timer_sync+0x4e/0x50()
+>
+> Hmm. That looks like a real bug: you shouldn't do a "del_timer_sync()"
+> from an interrupt. It probably works, but it sounds like a really bad
+> idea.
+>
+>> Jul 22 19:40:02 server kernel: [   15.526677]  [<ffffffff81054b4e>] del_timer_sync+0x4e/0x50
+>> Jul 22 19:40:02 server kernel: [   15.526679]  [<ffffffff8145e224>] linkwatch_schedule_work+0x84/0xa0
+>> Jul 22 19:40:02 server kernel: [   15.526681]  [<ffffffff8145e2bc>] linkwatch_fire_event+0x7c/0x100
+>> Jul 22 19:40:02 server kernel: [   15.526684]  [<ffffffff8146b1ed>] netif_carrier_on+0x2d/0x40
+>> Jul 22 19:40:02 server kernel: [   15.526689]  [<ffffffffa006b6fb>] __rtl8169_check_link_status+0x4b/0xc0 [r8169]
+>> Jul 22 19:40:02 server kernel: [   15.526693]  [<ffffffffa006c016>] rtl8169_interrupt+0x166/0x3a0 [r8169]
+>> Jul 22 19:40:02 server kernel: [   15.526696]  [<ffffffff810a4385>] handle_irq_event_percpu+0x55/0x1f0
+>> Jul 22 19:40:02 server kernel: [   15.526698]  [<ffffffff810a4551>] handle_irq_event+0x31/0x50
+>
+> I'm not seeing a lot of changes in any of these areas, though. I
+> wonder what made it start happen.
 
-x86_32: Calculate additional memory needed by the fixmap
+This has been around since at least 2.6.38.  I haven't tested recently
+on my rtl8169 system, but I don't recall seeing any attempts to fix
+it...
 
-When NR_CPUS increases the fixmap might need more than the page
-allocated by head_32.S.
-This patch introduces the logic to calculate the additional memory that
-is going to be required by early_ioremap_page_table_range_init:
+http://permalink.gmane.org/gmane.linux.network/193565
+http://lists.openwall.net/netdev/2011/05/04/183
 
-- enough memory to allocate the pte pages needed to cover the fixmap
-virtual memory range, minus the single page allocated by head_32.S;
+Thanks,
+Ben
 
-- account for the page already allocated by early_ioremap_init;
 
-- account for the two additional pages that might be needed to make sure
-that the kmap's ptes are contiguous.
+-- 
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
 
-Changes to v1:
-
-- refactor the fixmap space calculation in a new function to make it
-easier to read and avoid compilation warnings on x86_64.
-
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Link: http://lkml.kernel.org/r/1311178074-16833-1-git-send-email-stefano.stabellini@eu.citrix.com
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Reported-and-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/mm/init.c |   53 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 53 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index e72c9f8..a90ccc4 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -28,6 +28,57 @@ int direct_gbpages
- #endif
- ;
- 
-+static unsigned long __init find_early_fixmap_space(void)
-+{
-+	unsigned long size = 0;
-+#ifdef CONFIG_X86_32
-+	int kmap_begin_pmd_idx, kmap_end_pmd_idx;
-+	int fixmap_begin_pmd_idx, fixmap_end_pmd_idx;
-+	int btmap_begin_pmd_idx;
-+
-+	fixmap_begin_pmd_idx =
-+		__fix_to_virt(__end_of_fixed_addresses - 1) >> PMD_SHIFT;
-+	/*
-+	 * fixmap_end_pmd_idx is the end of the fixmap minus the PMD that
-+	 * has been defined in the data section by head_32.S (see
-+	 * initial_pg_fixmap).
-+	 * Note: This is similar to what early_ioremap_page_table_range_init
-+	 * does except that the "end" has PMD_SIZE expunged as per previous
-+	 * comment.
-+	 */
-+	fixmap_end_pmd_idx = (FIXADDR_TOP - 1) >> PMD_SHIFT;
-+	btmap_begin_pmd_idx = __fix_to_virt(FIX_BTMAP_BEGIN) >> PMD_SHIFT;
-+	kmap_begin_pmd_idx = __fix_to_virt(FIX_KMAP_END) >> PMD_SHIFT;
-+	kmap_end_pmd_idx = __fix_to_virt(FIX_KMAP_BEGIN) >> PMD_SHIFT;
-+
-+	size = fixmap_end_pmd_idx - fixmap_begin_pmd_idx;
-+	/*
-+	 * early_ioremap_init has already allocated a PMD at
-+	 * btmap_begin_pmd_idx
-+	 */
-+	if (btmap_begin_pmd_idx < fixmap_end_pmd_idx)
-+		size--;
-+
-+#ifdef CONFIG_HIGHMEM
-+	/*
-+	 * see page_table_kmap_check: if the kmap spans multiple PMDs, make
-+	 * sure the pte pages are allocated contiguously. It might need up
-+	 * to two additional pte pages to replace the page declared by
-+	 * head_32.S and the one allocated by early_ioremap_init, if they
-+	 * are even partially used for the kmap.
-+	 */
-+	if (kmap_begin_pmd_idx != kmap_end_pmd_idx) {
-+		if (kmap_end_pmd_idx == fixmap_end_pmd_idx)
-+			size++;
-+		if (btmap_begin_pmd_idx >= kmap_begin_pmd_idx &&
-+				btmap_begin_pmd_idx <= kmap_end_pmd_idx)
-+			size++;
-+	}
-+#endif
-+#endif
-+	return (size * PMD_SIZE + PAGE_SIZE - 1) >> PAGE_SHIFT;
-+}
-+
- static void __init find_early_table_space(unsigned long start,
- 		unsigned long end, int use_pse, int use_gbpages)
- {
-@@ -92,6 +143,8 @@ static void __init find_early_table_space(unsigned long start,
- 	} else
- 		ptes = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
- 
-+	ptes += find_early_fixmap_space();
-+
- 	tables += roundup(ptes * sizeof(pte_t), PAGE_SIZE);
- 
- 	if (!tables)
