@@ -1,117 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753968Ab1GVRff (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 13:35:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20969 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753084Ab1GVRfe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 13:35:34 -0400
-Date: Fri, 22 Jul 2011 19:32:37 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>, Tejun Heo <tj@kernel.org>,
-        Vladimir Zapolskiy <vzapolskiy@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] ptrace changes for v3.1
-Message-ID: <20110722173237.GA16787@redhat.com>
+	id S1754038Ab1GVRgN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 13:36:13 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:17627 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753626Ab1GVRgL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 13:36:11 -0400
+Date: Fri, 22 Jul 2011 13:35:48 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Randy Dunlap <rdunlap@xenotime.net>, dan.magenheimer@oracle.com
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        xen-devel@lists.xensource.com
+Subject: Re: linux-next: Tree for July 22 (xen)
+Message-ID: <20110722173548.GA7698@dumpdata.com>
+References: <20110722164237.2b3f6cbdedafa9e1d3f70867@canb.auug.org.au>
+ <20110722092245.589ec3d7.rdunlap@xenotime.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110722092245.589ec3d7.rdunlap@xenotime.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4E29B4FE.0075:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Fri, Jul 22, 2011 at 09:22:45AM -0700, Randy Dunlap wrote:
+> On Fri, 22 Jul 2011 16:42:37 +1000 Stephen Rothwell wrote:
+> 
+> > Hi all,
 
-please pull from
+Hey Randy,
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc.git ptrace
+This only shows up on xen but not xen-two?
 
-More ptrace/jobctl fixes plus PTRACE_SEIZE/PTRACE_LISTEN functionality
-from Tejun.
+> 
+> build errors & warnings:  (full kernel config file is attached)
+> 
+> 
+> drivers/xen/xen-selfballoon.c:95: warning: 'struct work_struct' declared inside parameter list
+> drivers/xen/xen-selfballoon.c:95: warning: its scope is only this definition or declaration, which is probably not what you want
+> drivers/xen/xen-selfballoon.c:96: warning: type defaults to 'int' in declaration of 'DECLARE_DELAYED_WORK'
+> drivers/xen/xen-selfballoon.c:96: warning: parameter names (without types) in function declaration
+> drivers/xen/xen-selfballoon.c:195: warning: 'struct work_struct' declared inside parameter list
+> drivers/xen/xen-selfballoon.c:195: error: conflicting types for 'selfballoon_process'
+> drivers/xen/xen-selfballoon.c:95: note: previous declaration of 'selfballoon_process' was here
+> drivers/xen/xen-selfballoon.c: In function 'selfballoon_process':
+> drivers/xen/xen-selfballoon.c:229: error: implicit declaration of function 'schedule_delayed_work'
+> drivers/xen/xen-selfballoon.c:229: error: 'selfballoon_worker' undeclared (first use in this function)
+> drivers/xen/xen-selfballoon.c:229: error: (Each undeclared identifier is reported only once
+> drivers/xen/xen-selfballoon.c:229: error: for each function it appears in.)
+> drivers/xen/xen-selfballoon.c:230: error: 'HZ' undeclared (first use in this function)
+> drivers/xen/xen-selfballoon.c: In function 'store_selfballooning':
+> drivers/xen/xen-selfballoon.c:266: error: 'selfballoon_worker' undeclared (first use in this function)
+> drivers/xen/xen-selfballoon.c: In function 'xen_selfballoon_init':
+> drivers/xen/xen-selfballoon.c:452: error: implicit declaration of function 'xen_domain'
+> drivers/xen/xen-selfballoon.c:455: error: implicit declaration of function 'xen_initial_domain'
+> drivers/xen/xen-selfballoon.c:478: error: 'selfballoon_worker' undeclared (first use in this function)
+> 
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
 
-Note:
-
-	- f701e5b7 "connector: add an event for monitoring process tracers" is
-	  a bit off-topic, it was routed via ptrace branch because it textually
-	  depends on the changes in tracehook/ptrace_attach code.
-
-	- a288eecc "ptrace: kill trivial tracehooks" has the simple conflicts
-	  with 248bed4b "[S390] use siginfo for sigtrap signals" pending in s390
-	  tree, hopefully this is trivial to resolve.
-
-	  Assuming you didn't pulled s390 yet: s390 version supercedes, only
-
-	  	- tracehook_consider_fatal_signal
-	  	+ current->ptrace
-
-	  chunk in arch/s390/kernel/traps.c should be dropped because this was
-	  already done by a288eecc
-
-Denys Vlasenko (1):
-      ptrace: make former thread ID available via PTRACE_GETEVENTMSG after PTRACE_EVENT_EXEC stop
-
-Oleg Nesterov (17):
-      make do_notify_parent() return bool
-      kill tracehook_notify_death()
-      __ptrace_detach: avoid task_detached(), check do_notify_parent()
-      make do_notify_parent() __must_check, update the callers
-      reparent_leader: check EXIT_DEAD instead of task_detached()
-      kill task_detached()
-      do not change dead_task->exit_signal
-      redefine thread_group_leader() as exit_signal >= 0
-      ptrace: ptrace_reparented() should check same_thread_group()
-      ptrace: kill real_parent_is_ptracer() in in favor of ptrace_reparented()
-      ptrace: wait_consider_task: s/same_thread_group/ptrace_reparented/
-      has_stopped_jobs: s/task_is_stopped/SIGNAL_STOP_STOPPED/
-      ptrace_init_task: initialize child->jobctl explicitly
-      ptrace: mv send-SIGSTOP from do_fork() to ptrace_init_task()
-      ptrace: dont send SIGSTOP on auto-attach if PT_SEIZED
-      ptrace: fix ptrace_signal() && STOP_DEQUEUED interaction
-      ptrace: do_wait(traced_leader_killed_by_mt_exec) can block forever
-
-Tejun Heo (20):
-      ptrace: remove silly wait_trap variable from ptrace_attach()
-      job control: rename signal->group_stop and flags to jobctl and update them
-      ptrace: ptrace_check_attach(): rename @kill to @ignore_state and add comments
-      ptrace: relocate set_current_state(TASK_TRACED) in ptrace_stop()
-      job control: introduce JOBCTL_PENDING_MASK and task_clear_jobctl_pending()
-      job control: make task_clear_jobctl_pending() clear TRAPPING automatically
-      job control: introduce task_set_jobctl_pending()
-      ptrace: use bit_waitqueue for TRAPPING instead of wait_chldexit
-      signal: remove three noop tracehooks
-      job control: introduce JOBCTL_TRAP_STOP and use it for group stop trap
-      ptrace: implement PTRACE_SEIZE
-      ptrace: implement PTRACE_INTERRUPT
-      ptrace: implement TRAP_NOTIFY and use it for group stop events
-      ptrace: implement PTRACE_LISTEN
-      ptrace: kill task_ptrace()
-      ptrace: introduce ptrace_event_enabled() and simplify ptrace_event() and tracehook_prepare_clone()
-      ptrace: move SIGTRAP on exec(2) logic to ptrace_event()
-      ptrace: kill trivial tracehooks
-      ptrace: kill clone/exec tracehooks
-      ptrace: s/tracehook_tracer_task()/ptrace_parent()/
-
-Vladimir Zapolskiy (1):
-      connector: add an event for monitoring process tracers
-
- arch/s390/kernel/traps.c    |    4 +-
- drivers/connector/cn_proc.c |   35 ++++
- fs/exec.c                   |   27 +++-
- fs/proc/array.c             |    2 +-
- fs/proc/base.c              |    2 +-
- include/linux/cn_proc.h     |   13 ++
- include/linux/ptrace.h      |  104 ++++++++---
- include/linux/sched.h       |   52 ++++--
- include/linux/tracehook.h   |  385 +--------------------------------------
- kernel/exit.c               |   91 ++++-----
- kernel/fork.c               |   33 +++-
- kernel/ptrace.c             |  197 ++++++++++++++++----
- kernel/signal.c             |  425 +++++++++++++++++++++++++++----------------
- mm/nommu.c                  |    3 +-
- mm/oom_kill.c               |    3 +-
- security/apparmor/domain.c  |    2 +-
- security/selinux/hooks.c    |    4 +-
- 17 files changed, 674 insertions(+), 708 deletions(-)
 
