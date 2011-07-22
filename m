@@ -1,87 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754071Ab1GVRhb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 13:37:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52862 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753626Ab1GVRh3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 13:37:29 -0400
-Date: Fri, 22 Jul 2011 19:37:27 +0200
-From: Jan Kara <jack@suse.cz>
-To: Wang Sheng-Hui <shhuiw@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>
-Subject: Re: [PATCH] ext2: check xattr name_len before acquiring sem lock
- in ext2_xattr_get
-Message-ID: <20110722173727.GA11015@quack.suse.cz>
-References: <4E2983E0.3060208@gmail.com>
+	id S1754045Ab1GVRkt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 13:40:49 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:54774 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753944Ab1GVRks (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 13:40:48 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: Takashi Iwai <tiwai@suse.de>, Jaroslav Kysela <perex@perex.cz>
+Cc: alsa-devel@alsa-project.org, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [PATCH] sound, hda_codec: Fix compilation warnings
+Date: Fri, 22 Jul 2011 19:40:37 +0200
+Message-Id: <1311356437-28816-1-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.4.rc2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E2983E0.3060208@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello,
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-On Fri 22-07-11 22:06:24, Wang Sheng-Hui wrote:
-> From 667173a18b671896f933c5952fa211601d2e5ab0 Mon Sep 17 00:00:00 2001
-> From: Wang Sheng-Hui <shhuiw@gmail.com>
-> Date: Fri, 22 Jul 2011 08:50:13 -0500
-> Subject: [PATCH] ext2: check xattr name_len before acquiring sem lock in ext2_xattr_get
-> 
-> The patch is against 3.0.
-> 
-> In ext2_xattr_get, the code will acquire sem lock first, later check
-> the length of xattr name_len > 255. It's kind of time consuming, and
-> we should do the basic check before the time consuming acquiring sem
-> lock.
-  Well, but the check name_len > 255 is almost never true so it does not
-really make a difference... But I see ext2_xattr_set() also checks the
-length first so it probably makes sense from consistency point of view.
-So I'll take the patch into my tree.
+Convert macro to an inline function to shut up gcc:
 
-								Honza
-> 
-> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
-> ---
->  fs/ext2/xattr.c |   10 +++++-----
->  1 files changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/fs/ext2/xattr.c b/fs/ext2/xattr.c
-> index 5299706..d27b71f 100644
-> --- a/fs/ext2/xattr.c
-> +++ b/fs/ext2/xattr.c
-> @@ -161,6 +161,10 @@ ext2_xattr_get(struct inode *inode, int name_index, const char *name,
->  
->  	if (name == NULL)
->  		return -EINVAL;
-> +	name_len = strlen(name);
-> +	if (name_len > 255)
-> +		return -ERANGE;
-> +
->  	down_read(&EXT2_I(inode)->xattr_sem);
->  	error = -ENODATA;
->  	if (!EXT2_I(inode)->i_file_acl)
-> @@ -181,12 +185,8 @@ bad_block:	ext2_error(inode->i_sb, "ext2_xattr_get",
->  		error = -EIO;
->  		goto cleanup;
->  	}
-> -	/* find named attribute */
-> -	name_len = strlen(name);
->  
-> -	error = -ERANGE;
-> -	if (name_len > 255)
-> -		goto cleanup;
-> +	/* find named attribute */
->  	entry = FIRST_ENTRY(bh);
->  	while (!IS_LAST_ENTRY(entry)) {
->  		struct ext2_xattr_entry *next =
-> -- 
-> 1.7.1
-> 
+sound/pci/hda/patch_sigmatel.c: In function `stac92xx_init´:
+sound/pci/hda/patch_sigmatel.c:4385:3: warning: statement with no effect
+sound/pci/hda/patch_sigmatel.c: In function `stac92xx_resume´:
+sound/pci/hda/patch_sigmatel.c:4925:3: warning: statement with no effect
+sound/pci/hda/hda_codec.c: In function `snd_hda_mixer_amp_switch_put´:
+sound/pci/hda/patch_realtek.c:4176:2: warning: statement with no effect
+sound/pci/hda/hda_codec.c:2320:2: warning: statement with no effect
+sound/pci/hda/patch_realtek.c: In function `alc_resume´:
+sound/pci/hda/patch_realtek.c:4558:2: warning: statement with no effect
+sound/pci/hda/patch_realtek.c: In function `alc269_resume´:
+sound/pci/hda/patch_realtek.c:14878:2: warning: statement with no effect
+
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ sound/pci/hda/hda_codec.h |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/sound/pci/hda/hda_codec.h b/sound/pci/hda/hda_codec.h
+index 59c9730..79ede92 100644
+--- a/sound/pci/hda/hda_codec.h
++++ b/sound/pci/hda/hda_codec.h
+@@ -1005,8 +1005,12 @@ int hda_call_check_power_status(struct hda_codec *codec, hda_nid_t nid)
+ 		return codec->patch_ops.check_power_status(codec, nid);
+ 	return 0;
+ }
+-#else	
+-#define hda_call_check_power_status(codec, nid)		0
++#else
++static inline
++int hda_call_check_power_status(struct hda_codec *codec, hda_nid_t nid)
++{
++	return 0;
++}
+ #endif
+ 
+ /*
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.4.rc2
+
