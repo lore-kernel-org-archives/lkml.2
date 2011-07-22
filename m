@@ -1,65 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751130Ab1GVXT2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 19:19:28 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:34784 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780Ab1GVXT1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 19:19:27 -0400
-Subject: Re: [PATCH] rtc-tegra: properly initialize spinlock
-Mime-Version: 1.0 (Apple Message framework v1244.3)
+	id S1751231Ab1GVXUH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 19:20:07 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:38769 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750922Ab1GVXUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 19:20:05 -0400
+Date: Fri, 22 Jul 2011 16:19:53 -0700
+From: Matt Helsley <matthltc@us.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>, Nathan Lynch <ntl@pobox.com>,
+        Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>, Serge Hallyn <serue@us.ibm.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        Glauber Costa <glommer@parallels.com>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Containers <containers@lists.osdl.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [EXAMPLE CODE] Parasite thread injection using PTRACE_SEIZE and
+ friends
+Message-ID: <20110722231953.GC16940@count0.beaverton.ibm.com>
+References: <20110720140037.GM3455@htj.dyndns.org>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-In-Reply-To: <20110722151338.9b1e9594.akpm@linux-foundation.org>
-Date: Fri, 22 Jul 2011 16:19:19 -0700
-Cc: =?iso-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Andrew Chew <achew@nvidia.com>, linux-rt-users@vger.kernel.org,
-        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
-        jkastner@redhat.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <58E25CAF-EAC4-4613-81B2-D713F5DC8CEF@gmail.com>
-References: <1311323756-18013-1-git-send-email-u.kleine-koenig@pengutronix.de> <20110722151338.9b1e9594.akpm@linux-foundation.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-X-Mailer: Apple Mail (2.1244.3)
+Content-Disposition: inline
+In-Reply-To: <20110720140037.GM3455@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Jul 22, 2011, at 3:13 PM, Andrew Morton wrote:
-
-> On Fri, 22 Jul 2011 10:35:56 +0200
-> Uwe Kleine-K__nig <u.kleine-koenig@pengutronix.de> wrote:
+On Wed, Jul 20, 2011 at 04:00:37PM +0200, Tejun Heo wrote:
+> Hello,
 > 
->> Using __SPIN_LOCK_UNLOCKED for a dynamically allocated lock is wrong and
->> breaks with PREEMPT_RT_FULL.
+> This has taken much longer than expected (which BTW is usually
+> expected) but ptrace fixes and new features are mostly complete now.
+> They're sitting in Oleg's ptrace branch waiting for merge window.
 > 
-> Please define "breaks".  Lockdep warnings?  Deadlocks?
-
-Narrr, I think its a compile-time problem with the static initializer.
-
-Sven
-
+>   http://git.kernel.org/?p=linux/kernel/git/oleg/misc.git;a=shortlog;h=refs/heads/ptrace
+>   git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc.git ptrace
 > 
->> diff --git a/drivers/rtc/rtc-tegra.c b/drivers/rtc/rtc-tegra.c
->> index 2fc31aa..75259fe 100644
->> --- a/drivers/rtc/rtc-tegra.c
->> +++ b/drivers/rtc/rtc-tegra.c
->> @@ -343,7 +343,7 @@ static int __devinit tegra_rtc_probe(struct platform_device *pdev)
->> 
->> 	/* set context info. */
->> 	info->pdev = pdev;
->> -	info->tegra_rtc_lock = __SPIN_LOCK_UNLOCKED(info->tegra_rtc_lock);
->> +	spin_lock_init(&info->tegra_rtc_lock);
->> 
->> 	platform_set_drvdata(pdev, info);
->> 
->> -- 
->> 1.7.5.4
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> With new ptrace requests, a process can be captured and manipulated
+> practically transparently.  Other than syscall retry or -EINTR failure
+> in special cases and timing difference, everything including job
+> control stop state stays transparent across ptrace operations.
+> 
+> One of the concerns raised about using ptrace for CR was that it
+> doesn't have access to states which are visible only to the process
+> being checkpointed and exporting every such information outside would
+> be too laborious.  The attached ptrace-parasite example code
+> demonstrates how this can be solved.  Using new ptrace requests, it
+> inserts a parasite thread to the host process transparently.  The code
+> is also available in the following git branch (the first link is code
+> brwser, second git branch you can clone from).
+> 
+>   http://code.google.com/p/ptrace-parasite/source/browse/
+>   https://code.google.com/p/ptrace-parasite/ ptrace-parasite
+> 
+> It only works on x86-64 and requires Oleg's ptrace branch.  'make'
+> produces two binaries - simple-host and parasite.  If you run
+> simple-host in a terminal and run parasite with the pid (thread 00's
+> tid) of the simple-host in another terminal, you should see something
+> like the following.
+> 
+>   # ./simple-host
+>   thread 01(4580): alive
+>   thread 02(4581): alive
+>   thread 03(4582): alive
+>   thread 04(4583): alive
+>   thread 00(4579): alive
+>   hello, world!
+>   parasite: hello, world!
+>   parasite: tid / time = 4629 / 1311169280
+>   thread 03(4582): alive
+>   thread 02(4581): alive
+>   thread 01(4580): alive
+>   thread 04(4583): alive
+>   thread 00(4579): alive
+>   ...
+> 
+>   # ./parasite 4579
+>   Seizing 4579
+>   Seizing 4580
+>   Seizing 4581
+>   Seizing 4582
+>   Seizing 4583
+>   executing test blob
+>   blocking all signals = 0, prev_sigmask 0
+>   executing mmap blob = 0x7fc4eca35000
+>   executing clone blob = 4629
+>   executing parasite
+>   executing munmap blob = 0
+>   restoring sigmask = 0, prev_sigmask 0xfffffffffffbfeef
+> 
+> The first "hello, world!" is printed by the infected host thread which
+> is then directed to block all signals, mmap an area and clone parasite
+> thread.  The lines which start with "parasite: " are printed by the
+> new parasite thread.  While the parasite is running, all host threads
+> are ptrace trapped and when they're resumed they have no way to find
+> out what happened to their precious process.  Note that host can be
+> any program.
+> 
+> The implementation is naive and simplicistic, especially the part
+> which seizes all threads belonging to the target process but it should
+> be enough to demonstrate how this can be done.
+> 
+> I'm sure there still are a lot of things missing for reasonable
+> userland CR but I think this should at least provide the core process
+> capturing part of it and make the whole thing more feasible.
+> 
+> One missing piece is that it can't operate on a process which is
+> already being ptraced.  Adding nested ptrace would solve some part of
+> it but it leads to a lot of complexity, most of it stemming from the
+> fact that it diversifies the places target processes may be trapped
+> at.  Determining which exact point isn't that difficult but rolling
+> back from and restoring to some of those debug traps can be difficult
+> or even impossible.  For debugger checkpointing, probably more
+> cooperative approach would make more sense.  Anyways, I don't think
+> this is too big a deal at this point.
+> 
+> Thank you.
 
+parasitism is fine for a slow-but-sure debugger but is not suitable
+for checkpoint/restart.
+
+The difficulty of checkpoint/restart is not that the task has
+more information than the kernel. Quite the contrary. Most of
+the "information" the task has that the kernel is not explicitly
+aware of is encoded in the task's memory. So long as the kernel
+faithfully restores memory and registers the task can know little 
+the kernel doesn't already know.
+
+One example of something the task knows that the kernel does not is
+which pids it cares about. However, a parasitic thread capable
+of checkpointing arbitrary processes won't know about these pids
+either -- it would have to be designed to checkpoint *only* the
+process it was injected into.
+
+Furthermore, the kernel has information necessary for checkpoint/restart
+that the task does not. The composition of an epoll set is one
+example.
+
+So ptrace is just the wrong interface to base checkpoint/restart on.
+Pavel's approach, though I believe it is subtly flawed, is better.
+
+Cheers,
+	-Matt Helsley
