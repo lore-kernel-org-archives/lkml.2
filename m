@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757Ab1GVPLq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 11:11:46 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:44500
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754524Ab1GVPLo (ORCPT
+	id S1754751Ab1GVPPB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 11:15:01 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:58187 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754573Ab1GVPPA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 11:11:44 -0400
-Date: Fri, 22 Jul 2011 11:11:39 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Christoph Hellwig <hch@infradead.org>, Curt Wohlgemuth <curtw@google.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, fengguang.wu@intel.com
-Subject: Re: [PATCH] writeback: Don't wait for completion in
- writeback_inodes_sb_nr
-Message-ID: <20110722151139.GB30317@infradead.org>
-References: <BANLkTinndb4oHi6kNQrTsL86UrKDB=2rK6-gA8FM1Nj8CKYZ+w@mail.gmail.com>
- <20110711170042.GE5482@quack.suse.cz>
- <CAO81RMairX_L5qGOcKKpw7gWdcTd2Y+5NL=+BA9EwTCNLCNmLw@mail.gmail.com>
- <20110711194835.GI5482@quack.suse.cz>
- <20110711201157.GA21460@infradead.org>
- <20110712103453.GC31226@quack.suse.cz>
- <20110712104132.GA14189@infradead.org>
- <20110712223715.GC13656@quack.suse.cz>
- <20110719165149.GA11540@infradead.org>
- <20110720220012.GA23529@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110720220012.GA23529@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 22 Jul 2011 11:15:00 -0400
+Content-Type: text/plain; charset=UTF-8
+From: Chris Mason <chris.mason@oracle.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-btrfs <linux-btrfs@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        david <david@fromorbit.com>
+Subject: Re: rw_semaphore performance, was: new metadata reader/writer locks in integration-test
+In-reply-to: <20110722150151.GA23686@infradead.org>
+References: <1311096438-sup-1263@shiny> <20110722150151.GA23686@infradead.org>
+Date: Fri, 22 Jul 2011 11:14:09 -0400
+Message-Id: <1311347135-sup-4912@shiny>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4E2993DE.00AE:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 21, 2011 at 12:00:12AM +0200, Jan Kara wrote:
-> > Removing this call breaks sys_syncfs and similar semantics on filesystem
-> > just pushing metadata into buffers in ->write_inode or ->sync_fs and
-> > then expecting the caller to write them out.  This list of filesystem
-> > includes ext2 and in general most filesystems without journaling or
-> > similar technics.
->   Note that for sys_syncfs() the __sync_blockdev() has just moved from
-> __sync_filesystem() to sync_filesystem(). So nothing should change.
+Excerpts from Christoph Hellwig's message of 2011-07-22 11:01:51 -0400:
+> On Tue, Jul 19, 2011 at 01:30:22PM -0400, Chris Mason wrote:
+> > We've seen a number of benchmarks dominated by contention on the root
+> > node lock.  This changes our locks into a simple reader/writer lock.
+> > They are based on mutexes so that we still take advantage of the mutex
+> > adaptive spins for write locks (rwsemaphores were much slower).
+> 
+> Interesting.  Do you have set up some artifical benchmarks for this?
+> 
+> I wonder if the lack of adaptive spinning has something to do with the
+> slightly slower XFS performance on Joern's flash testing, given that
+> we extensively use the rw_semaphore as the primary I/O mutex, while
+> all others rely on plain mutexes as the primary synchronization
+> primitive.
 
-Sorry, I missed that.
+For the rw locks I had three main tests.
 
-> > I'm perfectly fine with pushing the sync_blockdev call into the
-> > filesystem for these, but we'll need a way to handle them.
->   Yes, calling sync_blockdev() from sync_fs() might actually make sence
-> (e.g. ext3 and ext4 don't need it) but I didn't want to go that far in
-> this patch.
+1) dbench 10.  This is interesting only because it is mostly bound by how
+quickly we can do metadata operations in ram.  There's not much IO and
+there's a good mixture of read and write btree operations (about 50/50).
+rwsemaphores ran at 200MB/s while my current code runs at 2400MB/s.
 
-The more fine-grained we can split the patches, the better.  It'll help
-to explain what we're doing to thise trying to figure out a few years
-down the road.
+The old btrfs implementation runs at 3000MB/s.  We all love and hate
+dbench, so I don't put a huge amount of stock in 2400 vs 3000.  But, 200
+vs 2400...people notice that in real world stuff.
 
-> > At which point we could fold this code into a blkdev_sync_fs method for
-> > now.  Long term we'll need to support multiple BDIs per SB anyway, at
-> > which point the code can go away again.
->   Ah, I had to think a bit before I understood what you mean :). It's kind
-> of elegant but also slightly subtle (it's not immediately obvious how
-> blockdevs are synced during sync when you look at the code). Umm, and you
-> don't have any guarantee in which order superblocks are on the sb list so
-> you could sync block devices before some filesystems are finished. So I
-> don't think using blkdev_sync_fs() is a good idea after all.
+2) fs_mark doing parallel zero byte file creates.  No fsyncs here, all
+metadata operations.  The old btrfs locking was completely bound by
+getting write locks on the root node.  The new code is much better here,
+overall about 30-50% faster.  I didn't do the rw semaphores on this one,
+I'll give it a shot.
 
-This required calling sync_blkdev from ->sync_fs of those filesystems
-that actually need it as a pre-requisite of course.
+3) A stat-hammer program.  This creates a bunch of files in parallel,
+and then times how long it takes us to stat all the inodes.  I went from
+3s of CPU time down to .9s.  rwsems were about the same here (very
+fast), but that's because it's 100% reader locks.
 
+My money for Joern's benchmarks is end-io latencies.  xfs and btrfs are
+doing more at endio time.  But I need to sit down and run them myself
+and take a look.
+
+-chris
