@@ -1,59 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932266Ab1GVVQP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 17:16:15 -0400
-Received: from www.linutronix.de ([62.245.132.108]:42504 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932165Ab1GVVQO (ORCPT
+	id S932278Ab1GVVWT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 17:22:19 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:57989 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932240Ab1GVVWS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 17:16:14 -0400
-Date: Fri, 22 Jul 2011 23:16:12 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Kim Leyendecker <kimleyendecker@hotmail.de>
-cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [ANNOUNCE] 3.0-rt1
-In-Reply-To: <BLU0-SMTP162767710C410F235B35D6A54E0@phx.gbl>
-Message-ID: <alpine.LFD.2.02.1107222307040.2702@ionos>
-References: <alpine.LFD.2.02.1107222203400.2702@ionos> <BLU0-SMTP162767710C410F235B35D6A54E0@phx.gbl>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 22 Jul 2011 17:22:18 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Devin Heitmueller <dheitmueller@kernellabs.com>
+Subject: Re: [PATCH] [resend] usbvision: disable scaling for Nogatech MicroCam
+Date: Fri, 22 Jul 2011 23:22:02 +0200
+User-Agent: KMail/1.9.10
+Cc: Joerg Heckenbach <joerg@heckenbach-aw.de>,
+        Dwaine Garden <dwainegarden@rogers.com>, linux-media@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Hans Verkuil <hverkuil@xs4all.nl>
+References: <201107222200.55834.linux@rainbow-software.org> <CAGoCfiwqzs70A26WgN2pJJvz2aDzY9siOcTuOCkYm3nDHB=J1Q@mail.gmail.com>
+In-Reply-To: <CAGoCfiwqzs70A26WgN2pJJvz2aDzY9siOcTuOCkYm3nDHB=J1Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1073585759-1311369373=:2702"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+Message-Id: <201107222322.07843.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---8323328-1073585759-1311369373=:2702
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-
-On Fri, 22 Jul 2011, Kim Leyendecker wrote:
-
-> Am 22.07.2011 22:37, schrieb Thomas Gleixner:
-> > Patch against 3.0 can be found here:
-> > 
-> >    http://www.kernel.org/pub/linux/kernel/projects/rt/patch-3.0-rt1.patch.bz2
+On Friday 22 July 2011 22:06:59 Devin Heitmueller wrote:
+> On Fri, Jul 22, 2011 at 4:00 PM, Ondrej Zary <linux@rainbow-software.org> wrote:
+> > Scaling causes bad artifacts (horizontal lines) with compression at least
+> > with Nogatech MicroCam so disable it (for this HW).
+> >
+> > This also fixes messed up image with some programs (Cheese with 160x120,
+> > Adobe Flash). HW seems to support only image widths that are multiple of 64
+> > but the driver does not account that in vidioc_try_fmt_vid_cap(). Cheese
+> > calls try_fmt with 160x120, succeeds and then assumes that it really gets
+> > data in that resolution - but it gets 128x120 instead. Don't know if this
+> > affects other usbvision devices, it would be great if someone could test it.
+> >
+> > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> >
+> > diff -urp linux-2.6.39-rc2-/drivers/media/video/usbvision//usbvision-video.c linux-2.6.39-rc2/drivers/media/video/usbvision/usbvision-video.c
+> > --- linux-2.6.39-rc2-/drivers/media/video/usbvision//usbvision-video.c  2011-07-16 16:42:35.000000000 +0200
+> > +++ linux-2.6.39-rc2/drivers/media/video/usbvision/usbvision-video.c    2011-07-16 16:36:43.000000000 +0200
+> > @@ -924,6 +924,11 @@ static int vidioc_try_fmt_vid_cap(struct
+> >        RESTRICT_TO_RANGE(vf->fmt.pix.width, MIN_FRAME_WIDTH, MAX_FRAME_WIDTH);
+> >        RESTRICT_TO_RANGE(vf->fmt.pix.height, MIN_FRAME_HEIGHT, MAX_FRAME_HEIGHT);
+> >
+> > +       if (usbvision_device_data[usbvision->dev_model].codec == CODEC_WEBCAM) {
+> > +               vf->fmt.pix.width = MAX_FRAME_WIDTH;
+> > +               vf->fmt.pix.height = MAX_FRAME_HEIGHT;
+> > +       }
+> > +
+> >        vf->fmt.pix.bytesperline = vf->fmt.pix.width*
+> >                usbvision->palette.bytes_per_pixel;
+> >        vf->fmt.pix.sizeimage = vf->fmt.pix.bytesperline*vf->fmt.pix.height;
+> > @@ -952,6 +957,11 @@ static int vidioc_s_fmt_vid_cap(struct f
+> >
+> >        usbvision->cur_frame = NULL;
+> >
+> > +       if (usbvision_device_data[usbvision->dev_model].codec == CODEC_WEBCAM) {
+> > +               vf->fmt.pix.width = MAX_FRAME_WIDTH;
+> > +               vf->fmt.pix.height = MAX_FRAME_HEIGHT;
+> > +       }
+> > +
+> >        /* by now we are committed to the new data... */
+> >        usbvision_set_output(usbvision, vf->fmt.pix.width, vf->fmt.pix.height);
+> >
+> >
+> > --
+> > Ondrej Zary
 > 
-> Have you tested the file? I downloaded it and Kompare told me, that it can´t
-> read the out put of the diff file.
+> Hello Ondrej,
+> 
+> Drivers are permitted to return a different resolution than what the
+> application provided in the S_FMT call.  It is the responsibility of
+> the application to look at the struct after the ioctl() call and if
+> the values are not what it expects to then accommodate the change.
+> 
+> In other words, this sounds like a bug in Cheese.
 
-Blame Kompare :)
- 
-# cd linux
-# wget http://www.kernel.org/pub/linux/kernel/projects/rt/patch-3.0-rt1.patch.bz2
-# bunzip2 patch-3.0-rt1.patch.bz2 
-# patch -p1 <patch-3.0-rt1.patch
+Seems that this bug is widespread - the same problem appears also in guvcview
+and adobe flash. I think that the driver is broken too - it should return
+corrected resolution in TRY_FMT.
 
-> Maybe you should try it again?
+> Devin
+> 
 
-Maybe not :)
 
-Thanks,
 
-	tglx
---8323328-1073585759-1311369373=:2702--
+-- 
+Ondrej Zary
