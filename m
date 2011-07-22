@@ -1,163 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754137Ab1GVLGN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 07:06:13 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:37445 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753919Ab1GVLGJ (ORCPT
+	id S1754147Ab1GVLGr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 07:06:47 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:36361 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751571Ab1GVLGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 07:06:09 -0400
-X-AuditID: b753bd60-a0a78ba0000050a4-27-4e29599ecb02
-X-AuditID: b753bd60-a0a78ba0000050a4-27-4e29599ecb02
-From: Nao Nishijima <nao.nishijima.xt@hitachi.com>
-Subject: [PATCH v2 3/3] sd: modify printk for alias name
-To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Cc: James.Bottomley@HansenPartnership.com, kay.sievers@vrfy.org,
-        jcm@redhat.com, coughlan@redhat.com, kzak@redhat.com,
-        dle-develop@lists.sourceforge.net,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        yrl.pp-manager.tt@hitachi.com, greg@kroah.com, dgilbert@interlog.com,
-        stefanr@s5r6.in-berlin.de, hare@suse.de, joe@perches.com,
-        Joe Perches <joe@perches.com>
-Date: Fri, 22 Jul 2011 20:00:01 +0900
-Message-ID: <20110722110001.7330.51127.stgit@ltc197.sdl.hitachi.co.jp>
-In-Reply-To: <20110722105925.7330.6609.stgit@ltc197.sdl.hitachi.co.jp>
-References: <20110722105925.7330.6609.stgit@ltc197.sdl.hitachi.co.jp>
-User-Agent: StGIT/0.14.3
+	Fri, 22 Jul 2011 07:06:44 -0400
+Date: Fri, 22 Jul 2011 16:36:27 +0530
+From: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+To: Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
+        Jason Baron <jbaron@redhat.com>
+Subject: Re: [patch 01/18] sched: (fixlet) dont update shares twice on on_rq
+ parent
+Message-ID: <20110722110627.GA20315@linux.vnet.ibm.com>
+Reply-To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+References: <20110721164325.231521704@google.com>
+ <20110721184756.783631070@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20110721184756.783631070@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
+* Paul Turner <pjt@google.com> [2011-07-21 09:43:26]:
 
-Reduce size of code and text of scmd_printk and sd_printk
-macros by converting to the macros to functions and using
-vsprintf extension %pV.  This moves the code out-of-line
-and centralizes the code used to emit additional arguments.
+> In dequeue_task_fair() we bail on dequeue when we encounter a parenting entity
+> with additional weight.  However, we perform a double shares update on this
+> entity as we continue the shares update traversal from this point, despite
+> dequeue_entity() having already updated its queuing cfs_rq.
+> Avoid this by starting from the parent when we resume.
+> 
+> Signed-off-by: Paul Turner <pjt@google.com>
+> ---
+>  kernel/sched_fair.c |    3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> Index: tip/kernel/sched_fair.c
+> ===================================================================
+> --- tip.orig/kernel/sched_fair.c
+> +++ tip/kernel/sched_fair.c
+> @@ -1370,6 +1370,9 @@ static void dequeue_task_fair(struct rq 
+>  			 */
+>  			if (task_sleep && parent_entity(se))
+>  				set_next_buddy(parent_entity(se));
+> +
+> +			/* avoid re-evaluating load for this entity */
+> +			se = parent_entity(se);
+>  			break;
+>  		}
+>  		flags |= DEQUEUE_SLEEP;
+> 
+this patch has been merged into tip
 
-Save ~32KB of space in an x86 allyesconfig.
+commit 9598c82dcacadc3b9daa8170613fd054c6124d30
+Author: Paul Turner <pjt@google.com>
+Date:   Wed Jul 6 22:30:37 2011 -0700
 
-$ size drivers/scsi/built-in.o*
-   text	   data	    bss	    dec	    hex	filename
-5860439	 135396	1393024	7388859	 70bebb	drivers/scsi/built-in.o.new
-5882368	 135396	1395848	7413612	 711f6c	drivers/scsi/built-in.o.old
-5887100	 135396	1397264	7419760	 713770	drivers/scsi/built-in.o.with_patch_1_and_2
-
-Signed-off-by: Joe Perches <joe@perches.com>
-Reviewed-by: Nao Nishijima <nao.nishijima.xt@hitachi.com>
----
-
- drivers/scsi/scsi_lib.c    |   26 ++++++++++++++++++++++++++
- drivers/scsi/sd.c          |   23 +++++++++++++++++++++++
- drivers/scsi/sd.h          |    8 +++-----
- include/scsi/scsi_device.h |    8 +++-----
- 4 files changed, 55 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index ec1803a..249c54c 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -2571,3 +2571,29 @@ void scsi_kunmap_atomic_sg(void *virt)
- 	kunmap_atomic(virt, KM_BIO_SRC_IRQ);
- }
- EXPORT_SYMBOL(scsi_kunmap_atomic_sg);
-+
-+/* Logging utilities */
-+
-+int scmd_printk(const char *prefix, const struct scsi_cmnd *scmd,
-+		const char *format, ...)
-+{
-+	struct va_format vaf;
-+	va_list args;
-+	int r;
-+
-+	va_start(args, format);
-+
-+	vaf.fmt = format;
-+	vaf.va = &args;
-+
-+	if (scmd->request->rq_disk)
-+		r = sdev_printk(prefix, scmd->device, "[%s] %pV",
-+				alias_name(scmd->request->rq_disk), &vaf);
-+	else
-+		r = sdev_printk(prefix, scmd->device, "%pV", &vaf);
-+
-+	va_end(args);
-+
-+	return r;
-+}
-+EXPORT_SYMBOL(scmd_printk);
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index e434e5f..bb1b3e5 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -2889,3 +2889,26 @@ static void sd_print_result(struct scsi_disk *sdkp, int result)
- 	scsi_show_result(result);
- }
- 
-+int sd_printk(const char *prefix, const struct scsi_disk *sdsk,
-+	      const char *format, ...)
-+{
-+	struct va_format vaf;
-+	va_list args;
-+	int r;
-+
-+	va_start(args, format);
-+
-+	vaf.fmt = format;
-+	vaf.va = &args;
-+
-+	if (sdsk->disk)
-+		r = sdev_printk(prefix, sdsk->device, "[%s] %pV",
-+				alias_name(sdsk->disk), &vaf);
-+	else
-+		r = sdev_printk(prefix, sdsk->device, "%pV", &vaf);
-+
-+	va_end(args);
-+
-+	return r;
-+}
-+EXPORT_SYMBOL(sd_printk);
-diff --git a/drivers/scsi/sd.h b/drivers/scsi/sd.h
-index 6ad798b..46aa748 100644
---- a/drivers/scsi/sd.h
-+++ b/drivers/scsi/sd.h
-@@ -88,11 +88,9 @@ static inline struct scsi_disk *scsi_disk(struct gendisk *disk)
- 	return container_of(disk->private_data, struct scsi_disk, driver);
- }
- 
--#define sd_printk(prefix, sdsk, fmt, a...)				\
--        (sdsk)->disk ?							\
--	sdev_printk(prefix, (sdsk)->device, "[%s] " fmt,		\
--		    (sdsk)->disk->disk_name, ##a) :			\
--	sdev_printk(prefix, (sdsk)->device, fmt, ##a)
-+extern __attribute__((format (printf, 3, 4)))
-+int sd_printk(const char *prefix, const struct scsi_disk *sdsk,
-+	      const char *format, ...);
- 
- /*
-  * A DIF-capable target device can be formatted with different
-diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
-index dd82e02..c79631b 100644
---- a/include/scsi/scsi_device.h
-+++ b/include/scsi/scsi_device.h
-@@ -216,11 +216,9 @@ struct scsi_dh_data {
- #define sdev_printk(prefix, sdev, fmt, a...)	\
- 	dev_printk(prefix, &(sdev)->sdev_gendev, fmt, ##a)
- 
--#define scmd_printk(prefix, scmd, fmt, a...)				\
--        (scmd)->request->rq_disk ?					\
--	sdev_printk(prefix, (scmd)->device, "[%s] " fmt,		\
--		    (scmd)->request->rq_disk->disk_name, ##a) :		\
--	sdev_printk(prefix, (scmd)->device, fmt, ##a)
-+extern __attribute__((format (printf, 3, 4)))
-+int scmd_printk(const char *prefix, const struct scsi_cmnd *scmd,
-+		const char *format, ...);
- 
- enum scsi_target_state {
- 	STARGET_CREATED = 1,
+    sched: Don't update shares twice on on_rq parent
 
