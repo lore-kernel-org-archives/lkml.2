@@ -1,28 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752223Ab1GVCJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 22:09:56 -0400
-Received: from mail.dcu.ie ([136.206.1.5]:42896 "EHLO hawk.dcu.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751662Ab1GVCJy convert rfc822-to-8bit (ORCPT
+	id S1752752Ab1GVCWv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 22:22:51 -0400
+Received: from liberdade2.minaslivre.org ([74.50.53.203]:40876 "EHLO
+	liberdade.minaslivre.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752137Ab1GVCWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 22:09:54 -0400
-Date: Fri, 22 Jul 2011 02:09:44 +0000
-Message-ID: <4DB96A27000239E5@hawk.dcu.ie>
-From: "Bar Yasser" <Pres.SU@spd.dcu.ie>
-Subject: Your E-mail Valid?
-Reply-To: rawashdeh.asseral65@w.cn
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-To: unlisted-recipients:; (no To-header on input)
+	Thu, 21 Jul 2011 22:22:51 -0400
+From: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+To: Wolfgang Grandegger <wg@grandegger.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        srcvale@holoscopio.com,
+        Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+Subject: [PATCH] can: make function can_get_bittiming static
+Date: Thu, 21 Jul 2011 23:22:31 -0300
+Message-Id: <1311301351-5298-1-git-send-email-cascardo@holoscopio.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The function can_get_bittiming is not used anywhere else, so it should be
+static.
 
-I am Bar Yasser, I have a very important Business matters i will like to
-discuss with you.If this your Email is valid Contact me through my personal
-email:rawashdeh.asseral65@w.cn Thank you Mr. Yasser Al
+Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+---
+ drivers/net/can/dev.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/drivers/net/can/dev.c b/drivers/net/can/dev.c
+index d0f8c7e..9bf1116 100644
+--- a/drivers/net/can/dev.c
++++ b/drivers/net/can/dev.c
+@@ -208,7 +208,7 @@ static int can_fixup_bittiming(struct net_device *dev, struct can_bittiming *bt)
+ 	return 0;
+ }
+ 
+-int can_get_bittiming(struct net_device *dev, struct can_bittiming *bt)
++static int can_get_bittiming(struct net_device *dev, struct can_bittiming *bt)
+ {
+ 	struct can_priv *priv = netdev_priv(dev);
+ 	int err;
+-- 
+1.7.5.4
 
