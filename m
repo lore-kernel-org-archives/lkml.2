@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754110Ab1GVMGh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 08:06:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14408 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753779Ab1GVMGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 08:06:36 -0400
-Subject: GFS2: Pull request (merge window)
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Fri, 22 Jul 2011 13:08:15 +0100
-Message-ID: <1311336495.2804.20.camel@menhir>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754130Ab1GVMGj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 08:06:39 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:52932 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754098Ab1GVMGi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 08:06:38 -0400
+MIME-Version: 1.0
+X-Originating-IP: [41.203.218.102]
+In-Reply-To: <tip-43dd61c9a09bd413e837df829e6bfb42159be52a@git.kernel.org>
+References: <tip-43dd61c9a09bd413e837df829e6bfb42159be52a@git.kernel.org>
+From: Brian Marete <marete@toshnix.com>
+Date: Fri, 22 Jul 2011 15:06:17 +0300
+Message-ID: <CAHVUoiRsbOGbBVvzY8F2MY5TOVA=C6KLv3Wkbjs0HfYBnaMwzA@mail.gmail.com>
+Subject: Re: [tip:perf/urgent] ftrace: Fix regression of :mod:module function enabling
+To: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        rostedt@goodmis.org, srostedt@redhat.com, tglx@linutronix.de,
+        marete@toshnix.com
+Cc: linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Jul 10, 2011 at 11:46 PM, tip-bot for Steven Rostedt
+<srostedt@redhat.com> wrote:
+> Commit-ID:  43dd61c9a09bd413e837df829e6bfb42159be52a
+> Gitweb:     http://git.kernel.org/tip/43dd61c9a09bd413e837df829e6bfb42159be52a
+> Author:     Steven Rostedt <srostedt@redhat.com>
+> AuthorDate: Thu, 7 Jul 2011 11:09:22 -0400
+> Committer:  Steven Rostedt <rostedt@goodmis.org>
+> CommitDate: Thu, 7 Jul 2011 11:30:08 -0400
+>
+
 Hi,
 
-Please consider pulling the following changes,
+Just a reminder - I don't believe this fix made it into 3.0.0.
 
-Steve.
+Thanks.
 
-------------------------------------------------------------------------
-The following changes since commit 5dcd07b9f39ca3e9be5bcc387d193fc0674e1c81:
-
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-2.6-fixes (2011-07-14 10:20:42 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-2.6-nmw.git master
-
-Bob Peterson (1):
-      GFS2: Automatically adjust glock min hold time
-
-Eric Sandeen (1):
-      GFS2: combine duplicated block freeing routines
-
-Steven Whitehouse (2):
-      GFS2: Cache dir hash table in a contiguous buffer
-      GFS2: Add S_NOSEC support
-
- fs/gfs2/bmap.c       |   12 +---
- fs/gfs2/dir.c        |  221 +++++++++++++++++++++++++-------------------------
- fs/gfs2/dir.h        |    1 +
- fs/gfs2/file.c       |    4 +-
- fs/gfs2/glock.c      |   39 +++++++---
- fs/gfs2/glock.h      |    6 ++
- fs/gfs2/glops.c      |    7 +-
- fs/gfs2/incore.h     |    3 +-
- fs/gfs2/main.c       |    1 +
- fs/gfs2/ops_fstype.c |    1 +
- fs/gfs2/rgrp.c       |   52 +-----------
- fs/gfs2/rgrp.h       |    4 +-
- fs/gfs2/super.c      |    2 +-
- 13 files changed, 165 insertions(+), 188 deletions(-)
-
-
+-- 
+Brian Gitonga Marete
+Toshnix Systems
+Tel: +254722151590
