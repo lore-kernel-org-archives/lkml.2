@@ -1,154 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554Ab1GVOWt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 10:22:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32626 "EHLO mx1.redhat.com"
+	id S1754546Ab1GVO0m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 10:26:42 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:41566 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754260Ab1GVOWr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 10:22:47 -0400
-Message-ID: <4E2987AE.2070707@redhat.com>
-Date: Fri, 22 Jul 2011 16:22:38 +0200
-From: Zdenek Kabelac <zkabelac@redhat.com>
-Organization: Red Hat
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110720 Thunderbird/5.0
+	id S1751418Ab1GVO0l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 10:26:41 -0400
+Date: Fri, 22 Jul 2011 16:25:55 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86/apic changes for v3.1
+Message-ID: <20110722142555.GA11616@elte.hu>
 MIME-Version: 1.0
-To: device-mapper development <dm-devel@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>,
-        Kay Sievers <kay@redhat.com>
-Subject: [PATCH] Reduce number of KOBJ_REMOVE events
-X-Enigmail-Version: 1.2
-Content-Type: multipart/mixed;
- boundary="------------000508090000040508090905"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------000508090000040508090905
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Linus,
+
+Please pull the latest x86-apic-for-linus git tree from:
+
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-apic-for-linus
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Naga Chumbalkar (6):
+      x86: print APIC data a little later during boot
+      x86, ioapic: Format clean up for IOAPIC output
+      x86, ioapic: Also print Dest field
+      x86, x2apic: Preserve high 32-bits of IA32_APIC_BASE MSR
+      x86, ioapic: Print IRTE when IR is enabled
+      x86, ioapic: Print IR_IO_APIC_route_entry when IR is enabled
 
 
---------------000508090000040508090905
-Content-Type: text/x-patch;
- name="kobj_remove.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="kobj_remove.patch"
+ arch/x86/kernel/apic/apic.c    |    2 +-
+ arch/x86/kernel/apic/io_apic.c |   93 ++++++++++++++++++++++++++++-----------
+ 2 files changed, 68 insertions(+), 27 deletions(-)
 
-Author: Zdenek Kabelac <zkabelac@redhat.com>
-Date:   Fri Jul 22 15:02:17 2011 +0200
-
-Reduce number of KOBJ_REMOVE events
-
-For now udev recieves 3 event for removal of DM logical volumes. (1 for
-bdi and 2 for same block kobject). Reason is dm device generates its
-own kobject event with approriate env parameter and block layer sends
-another KOBJ_REMOVE event on its own unconditionaly for the same
-kobject. As for now only the kobject cleanup checks that the REMOVE
-event has been already sent and avoids duplicate REMOVE event.
-
-The patch for kobject_uevent_env() which has been testing for duplicate
-REMOVE event did not passed into the mainline (yet?):
-
-https://www.redhat.com/archives/dm-devel/2010-March/msg00107.html 
-
-I'm proposing alternative way around to always use kobject cleanup
-routine for sending REMOVE event if it was not send by the module - so
-it makes the code few lines shorter.
-
-This patch removes single appearencies of kobject_uevent() prior
-kobject removal.
-
-Signed-off-by:  Zdenek Kabelac <zkabelac@redhat.com>
-
-diff --git a/block/blk-integrity.c b/block/blk-integrity.c
-index 129b9e2..431f401 100644
---- a/block/blk-integrity.c
-+++ b/block/blk-integrity.c
-@@ -439,7 +439,6 @@ void blk_integrity_unregister(struct gendisk *disk)
- 
- 	bi = disk->integrity;
- 
--	kobject_uevent(&bi->kobj, KOBJ_REMOVE);
- 	kobject_del(&bi->kobj);
- 	kobject_put(&bi->kobj);
- 	disk->integrity = NULL;
-diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
-index d935bd8..a50472d 100644
---- a/block/blk-sysfs.c
-+++ b/block/blk-sysfs.c
-@@ -521,7 +521,6 @@ int blk_register_queue(struct gendisk *disk)
- 
- 	ret = elv_register_queue(q);
- 	if (ret) {
--		kobject_uevent(&q->kobj, KOBJ_REMOVE);
- 		kobject_del(&q->kobj);
- 		blk_trace_remove_sysfs(dev);
- 		kobject_put(&dev->kobj);
-@@ -541,7 +540,6 @@ void blk_unregister_queue(struct gendisk *disk)
- 	if (q->request_fn)
- 		elv_unregister_queue(q);
- 
--	kobject_uevent(&q->kobj, KOBJ_REMOVE);
- 	kobject_del(&q->kobj);
- 	blk_trace_remove_sysfs(disk_to_dev(disk));
- 	kobject_put(&disk_to_dev(disk)->kobj);
-diff --git a/block/elevator.c b/block/elevator.c
-index b0b38ce..a8d912b 100644
---- a/block/elevator.c
-+++ b/block/elevator.c
-@@ -892,7 +892,6 @@ EXPORT_SYMBOL(elv_register_queue);
- 
- static void __elv_unregister_queue(struct elevator_queue *e)
- {
--	kobject_uevent(&e->kobj, KOBJ_REMOVE);
- 	kobject_del(&e->kobj);
- 	e->registered = 0;
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index b9338b8..f7b0c7a 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1429,7 +1429,7 @@ void enable_x2apic(void)
+ 	rdmsr(MSR_IA32_APICBASE, msr, msr2);
+ 	if (!(msr & X2APIC_ENABLE)) {
+ 		printk_once(KERN_INFO "Enabling x2apic\n");
+-		wrmsr(MSR_IA32_APICBASE, msr | X2APIC_ENABLE, 0);
++		wrmsr(MSR_IA32_APICBASE, msr | X2APIC_ENABLE, msr2);
+ 	}
  }
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index bc8729d..8c9af0d 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -1013,7 +1013,6 @@ done:
-  ueventattrError:
- 	device_remove_file(dev, &uevent_attr);
-  attrError:
--	kobject_uevent(&dev->kobj, KOBJ_REMOVE);
- 	kobject_del(&dev->kobj);
-  Error:
- 	cleanup_device_parent(dev);
-@@ -1132,7 +1131,6 @@ void device_del(struct device *dev)
- 	 */
- 	if (platform_notify_remove)
- 		platform_notify_remove(dev);
--	kobject_uevent(&dev->kobj, KOBJ_REMOVE);
- 	cleanup_device_parent(dev);
- 	kobject_del(&dev->kobj);
- 	put_device(parent);
-diff --git a/mm/slub.c b/mm/slub.c
-index 35f351f..3c77956 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -4720,7 +4720,6 @@ static void sysfs_slab_remove(struct kmem_cache *s)
+ #endif /* CONFIG_X86_X2APIC */
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index e529339..8eb863e 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1295,6 +1295,16 @@ static int setup_ioapic_entry(int apic_id, int irq,
+ 		 * irq handler will do the explicit EOI to the io-apic.
  		 */
- 		return;
+ 		ir_entry->vector = pin;
++
++		apic_printk(APIC_VERBOSE, KERN_DEBUG "IOAPIC[%d]: "
++			"Set IRTE entry (P:%d FPD:%d Dst_Mode:%d "
++			"Redir_hint:%d Trig_Mode:%d Dlvry_Mode:%X "
++			"Avail:%X Vector:%02X Dest:%08X "
++			"SID:%04X SQ:%X SVT:%X)\n",
++			apic_id, irte.present, irte.fpd, irte.dst_mode,
++			irte.redir_hint, irte.trigger_mode, irte.dlvry_mode,
++			irte.avail, irte.vector, irte.dest_id,
++			irte.sid, irte.sq, irte.svt);
+ 	} else {
+ 		entry->delivery_mode = apic->irq_delivery_mode;
+ 		entry->dest_mode = apic->irq_dest_mode;
+@@ -1337,9 +1347,9 @@ static void setup_ioapic_irq(int apic_id, int pin, unsigned int irq,
  
--	kobject_uevent(&s->kobj, KOBJ_REMOVE);
- 	kobject_del(&s->kobj);
- 	kobject_put(&s->kobj);
+ 	apic_printk(APIC_VERBOSE,KERN_DEBUG
+ 		    "IOAPIC[%d]: Set routing entry (%d-%d -> 0x%x -> "
+-		    "IRQ %d Mode:%i Active:%i)\n",
++		    "IRQ %d Mode:%i Active:%i Dest:%d)\n",
+ 		    apic_id, mpc_ioapic_id(apic_id), pin, cfg->vector,
+-		    irq, trigger, polarity);
++		    irq, trigger, polarity, dest);
+ 
+ 
+ 	if (setup_ioapic_entry(mpc_ioapic_id(apic_id), irq, &entry,
+@@ -1522,10 +1532,12 @@ __apicdebuginit(void) print_IO_APIC(void)
+ 	printk(KERN_DEBUG ".......    : LTS          : %X\n", reg_00.bits.LTS);
+ 
+ 	printk(KERN_DEBUG ".... register #01: %08X\n", *(int *)&reg_01);
+-	printk(KERN_DEBUG ".......     : max redirection entries: %04X\n", reg_01.bits.entries);
++	printk(KERN_DEBUG ".......     : max redirection entries: %02X\n",
++		reg_01.bits.entries);
+ 
+ 	printk(KERN_DEBUG ".......     : PRQ implemented: %X\n", reg_01.bits.PRQ);
+-	printk(KERN_DEBUG ".......     : IO APIC version: %04X\n", reg_01.bits.version);
++	printk(KERN_DEBUG ".......     : IO APIC version: %02X\n",
++		reg_01.bits.version);
+ 
+ 	/*
+ 	 * Some Intel chipsets with IO APIC VERSION of 0x1? don't have reg_02,
+@@ -1550,31 +1562,60 @@ __apicdebuginit(void) print_IO_APIC(void)
+ 
+ 	printk(KERN_DEBUG ".... IRQ redirection table:\n");
+ 
+-	printk(KERN_DEBUG " NR Dst Mask Trig IRR Pol"
+-			  " Stat Dmod Deli Vect:\n");
++	if (intr_remapping_enabled) {
++		printk(KERN_DEBUG " NR Indx Fmt Mask Trig IRR"
++			" Pol Stat Indx2 Zero Vect:\n");
++	} else {
++		printk(KERN_DEBUG " NR Dst Mask Trig IRR Pol"
++			" Stat Dmod Deli Vect:\n");
++	}
+ 
+ 	for (i = 0; i <= reg_01.bits.entries; i++) {
+-		struct IO_APIC_route_entry entry;
+-
+-		entry = ioapic_read_entry(apic, i);
+-
+-		printk(KERN_DEBUG " %02x %03X ",
+-			i,
+-			entry.dest
+-		);
++		if (intr_remapping_enabled) {
++			struct IO_APIC_route_entry entry;
++			struct IR_IO_APIC_route_entry *ir_entry;
++
++			entry = ioapic_read_entry(apic, i);
++			ir_entry = (struct IR_IO_APIC_route_entry *) &entry;
++			printk(KERN_DEBUG " %02x %04X ",
++				i,
++				ir_entry->index
++			);
++			printk("%1d   %1d    %1d    %1d   %1d   "
++				"%1d    %1d     %X    %02X\n",
++				ir_entry->format,
++				ir_entry->mask,
++				ir_entry->trigger,
++				ir_entry->irr,
++				ir_entry->polarity,
++				ir_entry->delivery_status,
++				ir_entry->index2,
++				ir_entry->zero,
++				ir_entry->vector
++			);
++		} else {
++			struct IO_APIC_route_entry entry;
+ 
+-		printk("%1d    %1d    %1d   %1d   %1d    %1d    %1d    %02X\n",
+-			entry.mask,
+-			entry.trigger,
+-			entry.irr,
+-			entry.polarity,
+-			entry.delivery_status,
+-			entry.dest_mode,
+-			entry.delivery_mode,
+-			entry.vector
+-		);
++			entry = ioapic_read_entry(apic, i);
++			printk(KERN_DEBUG " %02x %02X  ",
++				i,
++				entry.dest
++			);
++			printk("%1d    %1d    %1d   %1d   %1d    "
++				"%1d    %1d    %02X\n",
++				entry.mask,
++				entry.trigger,
++				entry.irr,
++				entry.polarity,
++				entry.delivery_status,
++				entry.dest_mode,
++				entry.delivery_mode,
++				entry.vector
++			);
++		}
+ 	}
+ 	}
++
+ 	printk(KERN_DEBUG "IRQ to pin mappings:\n");
+ 	for_each_active_irq(irq) {
+ 		struct irq_pin_list *entry;
+@@ -1792,7 +1833,7 @@ __apicdebuginit(int) print_ICs(void)
+ 	return 0;
  }
-diff --git a/net/bridge/br_if.c b/net/bridge/br_if.c
-index 1bacca4..f20a945 100644
---- a/net/bridge/br_if.c
-+++ b/net/bridge/br_if.c
-@@ -153,7 +153,6 @@ static void del_nbp(struct net_bridge_port *p)
  
- 	br_multicast_del_port(p);
+-fs_initcall(print_ICs);
++late_initcall(print_ICs);
  
--	kobject_uevent(&p->kobj, KOBJ_REMOVE);
- 	kobject_del(&p->kobj);
  
- 	br_netpoll_disable(p);
-
---------------000508090000040508090905--
+ /* Where if anywhere is the i8259 connect in external int mode */
