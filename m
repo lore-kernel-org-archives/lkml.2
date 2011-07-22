@@ -1,148 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753545Ab1GVJdi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 05:33:38 -0400
-Received: from mtagate5.uk.ibm.com ([194.196.100.165]:35128 "EHLO
-	mtagate5.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752791Ab1GVJdg (ORCPT
+	id S1753521Ab1GVJfj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 05:35:39 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:59690 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753331Ab1GVJfh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 05:33:36 -0400
-Subject: Re: [patch 0/9] kdump: Patch series for s390 support
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Reply-To: holzheu@linux.vnet.ibm.com
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: oomichi@mxs.nes.nec.co.jp, linux-s390@vger.kernel.org,
-        mahesh@linux.vnet.ibm.com, heiko.carstens@de.ibm.com,
-        linux-kernel@vger.kernel.org, hbabu@us.ibm.com, horms@verge.net.au,
-        ebiederm@xmission.com, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        kexec@lists.infradead.org
-In-Reply-To: <20110721212257.GI12373@redhat.com>
-References: <20110715143820.GG3428@redhat.com>
-	 <1310744603.10789.79.camel@br98xy6r> <20110718123140.GB31986@redhat.com>
-	 <1310997641.4427.10.camel@br98xy6r> <20110718141943.GE31986@redhat.com>
-	 <1311000253.4427.23.camel@br98xy6r> <20110718152532.GF31986@redhat.com>
-	 <1311012188.4427.58.camel@br98xy6r> <20110720192509.GD10079@redhat.com>
-	 <1311260298.6160.43.camel@br98xy6r>  <20110721212257.GI12373@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: IBM
-Date: Fri, 22 Jul 2011 11:33:11 +0200
-Message-ID: <1311327191.5772.51.camel@br98xy6r>
+	Fri, 22 Jul 2011 05:35:37 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 22 Jul 2011 18:28:22 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] memcg: do not try to drain per-cpu caches without
+ pages
+Message-Id: <20110722182822.a99a2676.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110722091936.GB4004@tiehlicka.suse.cz>
+References: <cover.1311241300.git.mhocko@suse.cz>
+	<113c4affc2f0938b7b22d43c88d2b0a623de9a6b.1311241300.git.mhocko@suse.cz>
+	<20110721191250.1c945740.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110721113606.GA27855@tiehlicka.suse.cz>
+	<20110722084413.9dd4b880.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110722091936.GB4004@tiehlicka.suse.cz>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Vivek,
+On Fri, 22 Jul 2011 11:19:36 +0200
+Michal Hocko <mhocko@suse.cz> wrote:
 
-On Thu, 2011-07-21 at 17:22 -0400, Vivek Goyal wrote:
-> On Thu, Jul 21, 2011 at 04:58:18PM +0200, Michael Holzheu wrote:
-> > We would change the purgatory code that for s390 it returns to the
-> > caller, if the checksum test fails. This *requires* that
-> > s390_kdump_entry()->crash_kexec()->machine_kexec() is allowed to return.
-> > Currently this is the case.
-> 
-> Can we directly jump to entry point of stand alone dump tools from purgaotry
-> if checksum fails? We should be able to set this entry point in user space
-> while loading kdump kernel.
-
-I described a new idea with forced program check below.
-
-> > > Only thing which needs to be figured out is how to pass the address of
-> > > crash_kexec() to stand alone tools and set registers/parameters 
-> > > appropriately.
+> On Fri 22-07-11 08:44:13, KAMEZAWA Hiroyuki wrote:
+> > On Thu, 21 Jul 2011 13:36:06 +0200
+> > Michal Hocko <mhocko@suse.cz> wrote:
 > > 
-> > We could do this s390 specific (e.g. using meminfo). In this case this
-> > would only be used for kernel/dump tools communication and not for
-> > kernel/kernel communication. So I hope this should not be a problem for
-> > you.
-> 
-> So you will be preparing a block/segment of data (called meminfo, though
-> this name does not make much sense anymore), and pass it to second kernel?
-> All done in user space and no first kernel involvement?
->
-> I am trying to remember the details that how do you tell second kernel
-> where this this data block is. I recall that last time you said something
-> about setting this in kernel in kexec-tools but I did not understand it.
-
-Better you forget everything :-)
-
-We will establish a s390 specific mechanism that allows dump tools to
-find s390_kdump_entry and does not affect the kdump framework. Hopefully
-nothing you have to worry about.
-
+> > > On Thu 21-07-11 19:12:50, KAMEZAWA Hiroyuki wrote:
+> > > > On Thu, 21 Jul 2011 09:38:00 +0200
+> > > > Michal Hocko <mhocko@suse.cz> wrote:
+> > > > 
+> > > > > drain_all_stock_async tries to optimize a work to be done on the work
+> > > > > queue by excluding any work for the current CPU because it assumes that
+> > > > > the context we are called from already tried to charge from that cache
+> > > > > and it's failed so it must be empty already.
+> > > > > While the assumption is correct we can do it by checking the current
+> > > > > number of pages in the cache. This will also reduce a work on other CPUs
+> > > > > with an empty stock.
+> > > > > 
+> > > > > Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> > > > 
+> > > > 
+> > > > At the first look, when a charge against TransParentHugepage() goes
+> > > > into the reclaim routine, stock->nr_pages != 0 and this will
+> > > > call additional kworker.
+> > > 
+> > > True. We will drain a charge which could be used by other allocations
+> > > in the meantime so we have a good chance to reclaim less. But how big
+> > > problem is that?
+> > > I mean I can add a new parameter that would force checking the current
+> > > cpu but it doesn't look nice. I cannot add that condition
+> > > unconditionally because the code will be shared with the sync path in
+> > > the next patch and that one needs to drain _all_ cpus.
+> > > 
+> > > What would you suggest?
+> > By 2 methods
 > > 
-> > Then the design would look like the following:
-> > * Define s390_kdump_entry in old kernel that calls crash_kexec()
-> > * Use preallocated ELF core header
-> > * s390_kdump_entry code path stores registers to ELF notes,  ...
+> >  - just check nr_pages. 
 > 
-> crash_kexec() -> crash_setup_regs() already does that. We just need to
-> define an s390 specific crash_setup_regs().
-
-I looked at the code. x86 seems to store only registers for current CPU.
-Where are all other CPUs stored? ia64 has an empty implementation. Where
-are registers stored there?
-
+> Not sure I understand which nr_pages you mean. The one that comes from
+> the charging path or stock->nr_pages?
+> If you mean the first one then we do not have in the reclaim path where
+> we call drain_all_stock_async.
 > 
-> > * ... and finally jumps to purgatory code
-> > * For s390 the purgatory code returns to caller in case of
-> >   checksum failure
-> > * dump tools call s390_kdump_entry with program check handler
-> >   for error handling
+
+stock->nr_pages.
+
+> >  - drain "local stock" without calling schedule_work(). It's fast.
 > 
-> I thought that program check handler will call something else and not
-> s390_kdump_entry()? Because program check handler is supposed to hit
-> when any of the code we are executing is corrupted and we can not
-> jump to kdump tool any more. Otherwise we will be nesting.
+> but there is nothing to be drained locally in the paths where we call
+> drain_all_stock_async... Or do you mean that drain_all_stock shouldn't
+> use work queue at all?
 
-Looks like the sentence was misleading. What I wanted to say is:
-* First dump tools setup program check handler that jumps back to
-  dump tool in case kdump fails
-* Then dump tools call s390_dump_entry
+I mean calling schedule_work against local cpu is just waste of time.
+Then, drain it directly and move local cpu's stock->nr_pages to res_counter.
 
-> > 
-> > I think, if we do it that way, we do not affect the current kdump
-> > framework at all.
-> 
-> Can you give some more details about various code flows and entry points.
-> Like panic() path, hard hang path. From your mail it sounds that even
-> with program check handler, after panic() you would like to jump to
-> stand alone tools first and then call s390_kdump_entry(). I think that
-> should not be required any more as you are not doing any checksumming
-> in dump tools anymore?
+Thanks,
+-Kame
 
-Ok some code flows:
 
-Generally we have the flow:
-* crash_kexec -> machine_kexec -> purgatory -> kdump
 
-crash_kexec can be entered by e.g.:
-* panic -> kdump shutdown action -> crash_kexec
-* panic -> s390 dump shutdown action -> auto IPL dump tool -> s390_kdump_entry -> crash_kexec
-* hard hang -> manual IPL dump tool -> s390_kdump_entry -> crash_kexec
-
-Handling for corrupted kdump:
-
-New idea for returning to dump tools in case of program check:
-We could force a program check for s390, if purgatory checksum
-fails. Then we would automatically return to stand-alone dump
-tools.
-
-The flow would look like the following in this case:
-
-IPL dump tool -> s390_kdump_entry -> crash_kexec +--> purgatory -+->[checksum ok]---> kdump
-      ^                                          |               |
-      |                                          |        [checksum fail]
-      |                                          |               |
-      |                                          |     [forced program check]
-      +------[program check]---------------------+               |
-      |                                                          |
-      +----------------------------------------------------------+
-
-Then of course also the kernel code would have to install a special
-program check handler before calling purgatory.
-                         
-Michael
 
