@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754145Ab1GVM1a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 08:27:30 -0400
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:54483 "EHLO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753745Ab1GVM13 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 08:27:29 -0400
+	id S1754158Ab1GVMjI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 08:39:08 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:25275 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753794Ab1GVMjH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 08:39:07 -0400
+Message-ID: <4E296F65.1080904@dsn.okisemi.com>
+Date: Fri, 22 Jul 2011 21:39:01 +0900
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <20110722122221.GG32058@legolas.emea.dhcp.ti.com>
-References: <1311084703-10266-1-git-send-email-keshava_mgowda@ti.com>
-	<20110722122221.GG32058@legolas.emea.dhcp.ti.com>
-Date: Fri, 22 Jul 2011 17:57:26 +0530
-Message-ID: <CAP05o4+RKcYPFez0xJYimugPEpPJcFoPJawW+c0hdty7YmNLAg@mail.gmail.com>
-Subject: Re: [PATCH] arm: omap: usb: clock enable typo fix in usbhs driver
-From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
-To: balbi@ti.com
-Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gadiyar@ti.com, sameo@linux.intel.com,
-        parthab@india.ti.com, kishon@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Alexander Stein <alexander.stein@systec-electronic.com>
+CC: Greg KH <greg@kroah.com>, Alan Cox <alan@linux.intel.com>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] pch_uart: Add MSI support
+References: <20110701223209.GA9581@kroah.com> <1309762711-8571-1-git-send-email-alexander.stein@systec-electronic.com>
+In-Reply-To: <1309762711-8571-1-git-send-email-alexander.stein@systec-electronic.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 22, 2011 at 5:52 PM, Felipe Balbi <balbi@ti.com> wrote:
-> Hi,
->
-> On Tue, Jul 19, 2011 at 07:41:43PM +0530, Keshava Munegowda wrote:
->> From: Keshava Munegowda <Keshava_mgowda@ti.com>
->
-> $SUBJECT is quite weird. First, this is not a patch on arch/arm/*omap*/
-> so arm: omap: is already wrong. Also, "enable typo fix" is quite werid.
->
-> Something like: "mfd: omap-usb-host: fix clock API usage on
-> usbhs_disable()" would read better.
->
->> The usbhs_disable function was invoking clk_enable api
->> instead of clk_disable; The clk_disable is called to
->                        ^ this semicolon should be a period.
->
-> ok, you're missing the actual problem here. How about you extend it to
-> read as:
->
-> usbhs_disable function was invoking clk_enable() instead of
-> clk_disable(), thus only increasing the clock usage counter and
-> preventing this particular clock from being ever turned off.
->
-> Because of that, the power domain where the USB Host subsystem is
-> located, would never reach lower power states.
->
->> disble the port clocks of usbhs
->    ^^ disable.
->
-> --
-> balbi
+(2011/07/04 15:58), Alexander Stein wrote:
+> Signed-off-by: Alexander Stein<alexander.stein@systec-electronic.com>
+> ---
+> Hello Greg,
+> 
+> I'm sorry. This patch was based some other patches, like console support.
+> 
+> Changes in v3:
+> * Rebased to current git master
+> 
+>   drivers/tty/serial/pch_uart.c |    5 +++++
+>   1 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
+> index 4652109..d3ba85b 100644
+> --- a/drivers/tty/serial/pch_uart.c
+> +++ b/drivers/tty/serial/pch_uart.c
+> @@ -1429,6 +1429,8 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
+>   		goto init_port_hal_free;
+>   	}
+> 
+> +	pci_enable_msi(pdev);
+> +
+>   	iobase = pci_resource_start(pdev, 0);
+>   	mapbase = pci_resource_start(pdev, 1);
+>   	priv->mapbase = mapbase;
+> @@ -1485,6 +1487,8 @@ static void pch_uart_pci_remove(struct pci_dev *pdev)
+>   	struct eg20t_port *priv;
+> 
+>   	priv = (struct eg20t_port *)pci_get_drvdata(pdev);
+> +
+> +	pci_disable_msi(pdev);
+>   	pch_uart_exit_port(priv);
+>   	pci_disable_device(pdev);
+>   	kfree(priv);
+> @@ -1568,6 +1572,7 @@ static int __devinit pch_uart_pci_probe(struct pci_dev *pdev,
+>   	return ret;
+> 
+>   probe_disable_device:
+> +	pci_disable_msi(pdev);
+>   	pci_disable_device(pdev);
+>   probe_error:
+>   	return ret;
 
-Thanks I will send the updated patch soon.
 
->
+Using this patch, PCH_UART doesn't work all.
+For using MSI, I think, need bus master enable(pci_set_master) ?
+
+Best Regards,
+-- 
+tomoya
+OKI SEMICONDUCTOR CO., LTD.
