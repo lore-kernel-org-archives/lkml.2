@@ -1,558 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222Ab1GVNGo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 09:06:44 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:34213 "EHLO mx2.mail.elte.hu"
+	id S1754242Ab1GVNHV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 09:07:21 -0400
+Received: from smtp.nokia.com ([147.243.128.26]:29077 "EHLO mgw-da02.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753929Ab1GVNGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 09:06:43 -0400
-Date: Fri, 22 Jul 2011 15:05:46 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "Paul E. McKenney" <paulmck@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] RCU changes for v3.1
-Message-ID: <20110722130546.GA26089@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1754204Ab1GVNHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 09:07:19 -0400
+Subject: Re: [RFC PATCHv5 1/7] HSI: hsi: Introducing HSI framework
+From: Carlos Chinea <carlos.chinea@nokia.com>
+To: balbi@ti.com
+Cc: ext Sjur BRENDELAND <sjur.brandeland@stericsson.com>,
+        "sjurbren@gmail.com" <sjurbren@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110722120553.GZ32058@legolas.emea.dhcp.ti.com>
+References: <1307713124-3946-1-git-send-email-carlos.chinea@nokia.com>
+	 <1308769914-15440-1-git-send-email-sjur.brandeland@stericsson.com>
+	 <1308834524.27256.3247.camel@groo>
+	 <81C3A93C17462B4BBD7E272753C105791A64C2735E@EXDCVYMBSTM005.EQ1STM.local>
+	 <1311331416.32639.34.camel@groo>
+	 <20110722110102.GR32058@legolas.emea.dhcp.ti.com>
+	 <1311335472.32639.75.camel@groo>
+	 <20110722120553.GZ32058@legolas.emea.dhcp.ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 22 Jul 2011 16:02:09 +0300
+Message-ID: <1311339729.32639.99.camel@groo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Fri, 2011-07-22 at 15:05 +0300, ext Felipe Balbi wrote:
+> Hi,
+> 
+> On Fri, Jul 22, 2011 at 02:51:12PM +0300, Carlos Chinea wrote:
+> > Hi Felipe, 
+> 
+> hello there :-)
+> 
+> > > are you already using pm_runtime ? You could put that logic grouped in
+> > > runtime_suspend()/runtime_resume() calls and from the driver, just call
+> > > pm_runtime_put()/pm_runtime_get_sync() whenever you want to
+> > > suspend/resume.
+> > 
+> > In the case of the omap_ssi driver not yet, but hopefully the
+> > implementation will come soon ;) Anyway, the DATA/FLAG workaround is not
+> > something I'm going to add to the omap_ssi, at least not now. This seems
+> > to be needed by ST-Ericcson in their HSI controller.
+> 
+> aha, I see. Thanks for the clarification.
+> 
+> > > true, but I'm not sure a usecount is a good way to go. Why don't you
+> > > just remove the sync API altogether and use only async, then the OMAP
+> > > HSI controller driver is supposed to know when it can go to sleep. If
+> > > you receive some data before a client queues a request, you just defer
+> > > processing of that data until a new request is queued, or something...
+> > 
+> > Hmmm, Do you mean I remove the hsi_start_tx() and hsi_stop_tx()
+> > completely ? Or Do I just create an async version of them ?
+> 
+> I would say remove completely and add async-only version.
+> 
+> > The truth is that they should not even exist in the first place, and the
+> > wakelines should have been handled silently by the hsi controllers.  
+> > But they are need because the hsi_clients/protocols, like CAIF or the
+> > ssi_protocol in N900, need access to the wakelines to implement some
+> > workarounds due to some races in the HSI/SSI HW spec.
+> 
+> that's quite nasty situation :-)
+> 
+> I still think, though, that if the clients don't really start a transfer
+> straight away (meaning it's all ASYNC), you might be able to handle the
+> workarounds in the HSI framework itself by having some extra flags on
+> your hsi request structure (?).
+> 
+> See for example the use of short_not_ok flags on the gadget framework.
+> The gadget drivers which can't handle short transfers (as of today only
+> the Mass Storage gadget) will set that flag to tell the controller that
+> we're not expecting a short packet and if we do, treat it as error. In
+> case of such error, gadget driver is required to dequeue any queued
+> transfer, flush the FIFO and restart ;-)
+> 
+> Maybe you could have something similar ? Depending on the workaround
+> you're talking about, this might be feasible with few lines of code on
+> the async API.
+> 
 
-Please pull the latest core-rcu-for-linus git tree from:
+The problem is that there is no standard way to handle this situation :(
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git core-rcu-for-linus
+For example ssi_protocol tries to deal with the wakelines race problem
+by raising the wakeline and then waiting for the other end to send a
+"READY to receive" data frame, before start sending. But as you can see
+in the case of CAIF, they went for a solution where they raise their
+wakeline and wait for the other end to raise its wakeline to signal that
+they are "READY to received". Both solutions have their pros and cons.
 
-Admittedly the v3.0 RCU cycle was (way) too exciting, so i'm sure 
-you'll appreciate it that the v3.1 one is going to be dull, boring 
-and low-risk :-)
+Br,
+-- 
+Carlos Chinea <carlos.chinea@nokia.com>
 
- Thanks,
-
-	Ingo
-
------------------->
-Jan H. Schönherr (1):
-      rcu: Fix wrong check in list_splice_init_rcu()
-
-Lai Jiangshan (12):
-      md,rcu: Convert call_rcu(free_conf) to kfree_rcu()
-      security,rcu: Convert call_rcu(whitelist_item_free) to kfree_rcu()
-      audit_tree,rcu: Convert call_rcu(__put_tree) to kfree_rcu()
-      scsi,rcu: Convert call_rcu(fc_rport_free_rcu) to kfree_rcu()
-      block,rcu: Convert call_rcu(disk_free_ptbl_rcu_cb) to kfree_rcu()
-      ia64,rcu: Convert call_rcu(sn_irq_info_free) to kfree_rcu()
-      security,rcu: Convert call_rcu(sel_netnode_free) to kfree_rcu()
-      security,rcu: Convert call_rcu(sel_netport_free) to kfree_rcu()
-      ipc,rcu: Convert call_rcu(free_un) to kfree_rcu()
-      ipc,rcu: Convert call_rcu(ipc_immediate_free) to kfree_rcu()
-      vmalloc,rcu: Convert call_rcu(rcu_free_va) to kfree_rcu()
-      vmalloc,rcu: Convert call_rcu(rcu_free_vb) to kfree_rcu()
-
-Paul E. McKenney (2):
-      sysctl,rcu: Convert call_rcu(free_head) to kfree
-      net,rcu: Convert call_rcu(xt_rateest_free_rcu) to kfree_rcu()
-
-
- arch/ia64/sn/kernel/irq.c     |   14 ++------------
- block/genhd.c                 |   10 +---------
- drivers/md/linear.c           |    8 +-------
- drivers/scsi/libfc/fc_rport.c |   14 +-------------
- include/linux/rculist.h       |    2 +-
- ipc/sem.c                     |   10 ++--------
- ipc/util.c                    |   16 +---------------
- kernel/audit_tree.c           |    8 +-------
- kernel/sysctl.c               |   11 +++--------
- mm/vmalloc.c                  |   18 ++----------------
- net/netfilter/xt_RATEEST.c    |    8 +-------
- security/device_cgroup.c      |   10 +---------
- security/selinux/netnode.c    |   20 ++------------------
- security/selinux/netport.c    |   20 ++------------------
- 14 files changed, 21 insertions(+), 148 deletions(-)
-
-diff --git a/arch/ia64/sn/kernel/irq.c b/arch/ia64/sn/kernel/irq.c
-index 81a1f4e..485c42d 100644
---- a/arch/ia64/sn/kernel/irq.c
-+++ b/arch/ia64/sn/kernel/irq.c
-@@ -112,8 +112,6 @@ static void sn_ack_irq(struct irq_data *data)
- 	irq_move_irq(data);
- }
- 
--static void sn_irq_info_free(struct rcu_head *head);
--
- struct sn_irq_info *sn_retarget_vector(struct sn_irq_info *sn_irq_info,
- 				       nasid_t nasid, int slice)
- {
-@@ -177,7 +175,7 @@ struct sn_irq_info *sn_retarget_vector(struct sn_irq_info *sn_irq_info,
- 	spin_lock(&sn_irq_info_lock);
- 	list_replace_rcu(&sn_irq_info->list, &new_irq_info->list);
- 	spin_unlock(&sn_irq_info_lock);
--	call_rcu(&sn_irq_info->rcu, sn_irq_info_free);
-+	kfree_rcu(sn_irq_info, rcu);
- 
- 
- finish_up:
-@@ -338,14 +336,6 @@ static void unregister_intr_pda(struct sn_irq_info *sn_irq_info)
- 	rcu_read_unlock();
- }
- 
--static void sn_irq_info_free(struct rcu_head *head)
--{
--	struct sn_irq_info *sn_irq_info;
--
--	sn_irq_info = container_of(head, struct sn_irq_info, rcu);
--	kfree(sn_irq_info);
--}
--
- void sn_irq_fixup(struct pci_dev *pci_dev, struct sn_irq_info *sn_irq_info)
- {
- 	nasid_t nasid = sn_irq_info->irq_nasid;
-@@ -399,7 +389,7 @@ void sn_irq_unfixup(struct pci_dev *pci_dev)
- 	spin_unlock(&sn_irq_info_lock);
- 	if (list_empty(sn_irq_lh[sn_irq_info->irq_irq]))
- 		free_irq_vector(sn_irq_info->irq_irq);
--	call_rcu(&sn_irq_info->rcu, sn_irq_info_free);
-+	kfree_rcu(sn_irq_info, rcu);
- 	pci_dev_put(pci_dev);
- 
- }
-diff --git a/block/genhd.c b/block/genhd.c
-index 3608289..6024b82 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -1018,14 +1018,6 @@ static const struct attribute_group *disk_attr_groups[] = {
- 	NULL
- };
- 
--static void disk_free_ptbl_rcu_cb(struct rcu_head *head)
--{
--	struct disk_part_tbl *ptbl =
--		container_of(head, struct disk_part_tbl, rcu_head);
--
--	kfree(ptbl);
--}
--
- /**
-  * disk_replace_part_tbl - replace disk->part_tbl in RCU-safe way
-  * @disk: disk to replace part_tbl for
-@@ -1046,7 +1038,7 @@ static void disk_replace_part_tbl(struct gendisk *disk,
- 
- 	if (old_ptbl) {
- 		rcu_assign_pointer(old_ptbl->last_lookup, NULL);
--		call_rcu(&old_ptbl->rcu_head, disk_free_ptbl_rcu_cb);
-+		kfree_rcu(old_ptbl, rcu_head);
- 	}
- }
- 
-diff --git a/drivers/md/linear.c b/drivers/md/linear.c
-index abfb59a..6cd2c31 100644
---- a/drivers/md/linear.c
-+++ b/drivers/md/linear.c
-@@ -213,12 +213,6 @@ static int linear_run (mddev_t *mddev)
- 	return md_integrity_register(mddev);
- }
- 
--static void free_conf(struct rcu_head *head)
--{
--	linear_conf_t *conf = container_of(head, linear_conf_t, rcu);
--	kfree(conf);
--}
--
- static int linear_add(mddev_t *mddev, mdk_rdev_t *rdev)
- {
- 	/* Adding a drive to a linear array allows the array to grow.
-@@ -247,7 +241,7 @@ static int linear_add(mddev_t *mddev, mdk_rdev_t *rdev)
- 	md_set_array_sectors(mddev, linear_size(mddev, 0, 0));
- 	set_capacity(mddev->gendisk, mddev->array_sectors);
- 	revalidate_disk(mddev->gendisk);
--	call_rcu(&oldconf->rcu, free_conf);
-+	kfree_rcu(oldconf, rcu);
- 	return 0;
- }
- 
-diff --git a/drivers/scsi/libfc/fc_rport.c b/drivers/scsi/libfc/fc_rport.c
-index 49e1ccc..01e13a2 100644
---- a/drivers/scsi/libfc/fc_rport.c
-+++ b/drivers/scsi/libfc/fc_rport.c
-@@ -153,18 +153,6 @@ static struct fc_rport_priv *fc_rport_create(struct fc_lport *lport,
- }
- 
- /**
-- * fc_rport_free_rcu() - Free a remote port
-- * @rcu: The rcu_head structure inside the remote port
-- */
--static void fc_rport_free_rcu(struct rcu_head *rcu)
--{
--	struct fc_rport_priv *rdata;
--
--	rdata = container_of(rcu, struct fc_rport_priv, rcu);
--	kfree(rdata);
--}
--
--/**
-  * fc_rport_destroy() - Free a remote port after last reference is released
-  * @kref: The remote port's kref
-  */
-@@ -173,7 +161,7 @@ static void fc_rport_destroy(struct kref *kref)
- 	struct fc_rport_priv *rdata;
- 
- 	rdata = container_of(kref, struct fc_rport_priv, kref);
--	call_rcu(&rdata->rcu, fc_rport_free_rcu);
-+	kfree_rcu(rdata, rcu);
- }
- 
- /**
-diff --git a/include/linux/rculist.h b/include/linux/rculist.h
-index e3beb31..d079290 100644
---- a/include/linux/rculist.h
-+++ b/include/linux/rculist.h
-@@ -183,7 +183,7 @@ static inline void list_splice_init_rcu(struct list_head *list,
- 	struct list_head *last = list->prev;
- 	struct list_head *at = head->next;
- 
--	if (list_empty(head))
-+	if (list_empty(list))
- 		return;
- 
- 	/* "first" and "last" tracking list, so initialize it. */
-diff --git a/ipc/sem.c b/ipc/sem.c
-index 34193ed..8b929e6 100644
---- a/ipc/sem.c
-+++ b/ipc/sem.c
-@@ -689,12 +689,6 @@ static int count_semzcnt (struct sem_array * sma, ushort semnum)
- 	return semzcnt;
- }
- 
--static void free_un(struct rcu_head *head)
--{
--	struct sem_undo *un = container_of(head, struct sem_undo, rcu);
--	kfree(un);
--}
--
- /* Free a semaphore set. freeary() is called with sem_ids.rw_mutex locked
-  * as a writer and the spinlock for this semaphore set hold. sem_ids.rw_mutex
-  * remains locked on exit.
-@@ -714,7 +708,7 @@ static void freeary(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp)
- 		un->semid = -1;
- 		list_del_rcu(&un->list_proc);
- 		spin_unlock(&un->ulp->lock);
--		call_rcu(&un->rcu, free_un);
-+		kfree_rcu(un, rcu);
- 	}
- 
- 	/* Wake up all pending processes and let them fail with EIDRM. */
-@@ -1612,7 +1606,7 @@ void exit_sem(struct task_struct *tsk)
- 		sem_unlock(sma);
- 		wake_up_sem_queue_do(&tasks);
- 
--		call_rcu(&un->rcu, free_un);
-+		kfree_rcu(un, rcu);
- 	}
- 	kfree(ulp);
- }
-diff --git a/ipc/util.c b/ipc/util.c
-index 5c0d289..75261a3 100644
---- a/ipc/util.c
-+++ b/ipc/util.c
-@@ -579,19 +579,6 @@ static void ipc_schedule_free(struct rcu_head *head)
- 	schedule_work(&sched->work);
- }
- 
--/**
-- * ipc_immediate_free - free ipc + rcu space
-- * @head: RCU callback structure that contains pointer to be freed
-- *
-- * Free from the RCU callback context.
-- */
--static void ipc_immediate_free(struct rcu_head *head)
--{
--	struct ipc_rcu_grace *free =
--		container_of(head, struct ipc_rcu_grace, rcu);
--	kfree(free);
--}
--
- void ipc_rcu_putref(void *ptr)
- {
- 	if (--container_of(ptr, struct ipc_rcu_hdr, data)->refcount > 0)
-@@ -601,8 +588,7 @@ void ipc_rcu_putref(void *ptr)
- 		call_rcu(&container_of(ptr, struct ipc_rcu_grace, data)->rcu,
- 				ipc_schedule_free);
- 	} else {
--		call_rcu(&container_of(ptr, struct ipc_rcu_grace, data)->rcu,
--				ipc_immediate_free);
-+		kfree_rcu(container_of(ptr, struct ipc_rcu_grace, data), rcu);
- 	}
- }
- 
-diff --git a/kernel/audit_tree.c b/kernel/audit_tree.c
-index e99dda0..5bf0790 100644
---- a/kernel/audit_tree.c
-+++ b/kernel/audit_tree.c
-@@ -93,16 +93,10 @@ static inline void get_tree(struct audit_tree *tree)
- 	atomic_inc(&tree->count);
- }
- 
--static void __put_tree(struct rcu_head *rcu)
--{
--	struct audit_tree *tree = container_of(rcu, struct audit_tree, head);
--	kfree(tree);
--}
--
- static inline void put_tree(struct audit_tree *tree)
- {
- 	if (atomic_dec_and_test(&tree->count))
--		call_rcu(&tree->head, __put_tree);
-+		kfree_rcu(tree, head);
- }
- 
- /* to avoid bringing the entire thing in audit.h */
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index f175d98..11d65b5 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1590,16 +1590,11 @@ void sysctl_head_get(struct ctl_table_header *head)
- 	spin_unlock(&sysctl_lock);
- }
- 
--static void free_head(struct rcu_head *rcu)
--{
--	kfree(container_of(rcu, struct ctl_table_header, rcu));
--}
--
- void sysctl_head_put(struct ctl_table_header *head)
- {
- 	spin_lock(&sysctl_lock);
- 	if (!--head->count)
--		call_rcu(&head->rcu, free_head);
-+		kfree_rcu(head, rcu);
- 	spin_unlock(&sysctl_lock);
- }
- 
-@@ -1971,10 +1966,10 @@ void unregister_sysctl_table(struct ctl_table_header * header)
- 	start_unregistering(header);
- 	if (!--header->parent->count) {
- 		WARN_ON(1);
--		call_rcu(&header->parent->rcu, free_head);
-+		kfree_rcu(header->parent, rcu);
- 	}
- 	if (!--header->count)
--		call_rcu(&header->rcu, free_head);
-+		kfree_rcu(header, rcu);
- 	spin_unlock(&sysctl_lock);
- }
- 
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 1d34d75..ab8494c 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -452,13 +452,6 @@ overflow:
- 	return ERR_PTR(-EBUSY);
- }
- 
--static void rcu_free_va(struct rcu_head *head)
--{
--	struct vmap_area *va = container_of(head, struct vmap_area, rcu_head);
--
--	kfree(va);
--}
--
- static void __free_vmap_area(struct vmap_area *va)
- {
- 	BUG_ON(RB_EMPTY_NODE(&va->rb_node));
-@@ -491,7 +484,7 @@ static void __free_vmap_area(struct vmap_area *va)
- 	if (va->va_end > VMALLOC_START && va->va_end <= VMALLOC_END)
- 		vmap_area_pcpu_hole = max(vmap_area_pcpu_hole, va->va_end);
- 
--	call_rcu(&va->rcu_head, rcu_free_va);
-+	kfree_rcu(va, rcu_head);
- }
- 
- /*
-@@ -837,13 +830,6 @@ static struct vmap_block *new_vmap_block(gfp_t gfp_mask)
- 	return vb;
- }
- 
--static void rcu_free_vb(struct rcu_head *head)
--{
--	struct vmap_block *vb = container_of(head, struct vmap_block, rcu_head);
--
--	kfree(vb);
--}
--
- static void free_vmap_block(struct vmap_block *vb)
- {
- 	struct vmap_block *tmp;
-@@ -856,7 +842,7 @@ static void free_vmap_block(struct vmap_block *vb)
- 	BUG_ON(tmp != vb);
- 
- 	free_vmap_area_noflush(vb->va);
--	call_rcu(&vb->rcu_head, rcu_free_vb);
-+	kfree_rcu(vb, rcu_head);
- }
- 
- static void purge_fragmented_blocks(int cpu)
-diff --git a/net/netfilter/xt_RATEEST.c b/net/netfilter/xt_RATEEST.c
-index de079abd..f264032 100644
---- a/net/netfilter/xt_RATEEST.c
-+++ b/net/netfilter/xt_RATEEST.c
-@@ -60,11 +60,6 @@ struct xt_rateest *xt_rateest_lookup(const char *name)
- }
- EXPORT_SYMBOL_GPL(xt_rateest_lookup);
- 
--static void xt_rateest_free_rcu(struct rcu_head *head)
--{
--	kfree(container_of(head, struct xt_rateest, rcu));
--}
--
- void xt_rateest_put(struct xt_rateest *est)
- {
- 	mutex_lock(&xt_rateest_mutex);
-@@ -75,7 +70,7 @@ void xt_rateest_put(struct xt_rateest *est)
- 		 * gen_estimator est_timer() might access est->lock or bstats,
- 		 * wait a RCU grace period before freeing 'est'
- 		 */
--		call_rcu(&est->rcu, xt_rateest_free_rcu);
-+		kfree_rcu(est, rcu);
- 	}
- 	mutex_unlock(&xt_rateest_mutex);
- }
-@@ -188,7 +183,6 @@ static int __init xt_rateest_tg_init(void)
- static void __exit xt_rateest_tg_fini(void)
- {
- 	xt_unregister_target(&xt_rateest_tg_reg);
--	rcu_barrier(); /* Wait for completion of call_rcu()'s (xt_rateest_free_rcu) */
- }
- 
- 
-diff --git a/security/device_cgroup.c b/security/device_cgroup.c
-index 1be6826..4450fbe 100644
---- a/security/device_cgroup.c
-+++ b/security/device_cgroup.c
-@@ -125,14 +125,6 @@ static int dev_whitelist_add(struct dev_cgroup *dev_cgroup,
- 	return 0;
- }
- 
--static void whitelist_item_free(struct rcu_head *rcu)
--{
--	struct dev_whitelist_item *item;
--
--	item = container_of(rcu, struct dev_whitelist_item, rcu);
--	kfree(item);
--}
--
- /*
-  * called under devcgroup_mutex
-  */
-@@ -155,7 +147,7 @@ remove:
- 		walk->access &= ~wh->access;
- 		if (!walk->access) {
- 			list_del_rcu(&walk->list);
--			call_rcu(&walk->rcu, whitelist_item_free);
-+			kfree_rcu(walk, rcu);
- 		}
- 	}
- }
-diff --git a/security/selinux/netnode.c b/security/selinux/netnode.c
-index 3618251..8b691a8 100644
---- a/security/selinux/netnode.c
-+++ b/security/selinux/netnode.c
-@@ -69,22 +69,6 @@ static DEFINE_SPINLOCK(sel_netnode_lock);
- static struct sel_netnode_bkt sel_netnode_hash[SEL_NETNODE_HASH_SIZE];
- 
- /**
-- * sel_netnode_free - Frees a node entry
-- * @p: the entry's RCU field
-- *
-- * Description:
-- * This function is designed to be used as a callback to the call_rcu()
-- * function so that memory allocated to a hash table node entry can be
-- * released safely.
-- *
-- */
--static void sel_netnode_free(struct rcu_head *p)
--{
--	struct sel_netnode *node = container_of(p, struct sel_netnode, rcu);
--	kfree(node);
--}
--
--/**
-  * sel_netnode_hashfn_ipv4 - IPv4 hashing function for the node table
-  * @addr: IPv4 address
-  *
-@@ -193,7 +177,7 @@ static void sel_netnode_insert(struct sel_netnode *node)
- 			rcu_dereference(sel_netnode_hash[idx].list.prev),
- 			struct sel_netnode, list);
- 		list_del_rcu(&tail->list);
--		call_rcu(&tail->rcu, sel_netnode_free);
-+		kfree_rcu(tail, rcu);
- 	} else
- 		sel_netnode_hash[idx].size++;
- }
-@@ -306,7 +290,7 @@ static void sel_netnode_flush(void)
- 		list_for_each_entry_safe(node, node_tmp,
- 					 &sel_netnode_hash[idx].list, list) {
- 				list_del_rcu(&node->list);
--				call_rcu(&node->rcu, sel_netnode_free);
-+				kfree_rcu(node, rcu);
- 		}
- 		sel_netnode_hash[idx].size = 0;
- 	}
-diff --git a/security/selinux/netport.c b/security/selinux/netport.c
-index cfe2d72..ae76e29 100644
---- a/security/selinux/netport.c
-+++ b/security/selinux/netport.c
-@@ -68,22 +68,6 @@ static DEFINE_SPINLOCK(sel_netport_lock);
- static struct sel_netport_bkt sel_netport_hash[SEL_NETPORT_HASH_SIZE];
- 
- /**
-- * sel_netport_free - Frees a port entry
-- * @p: the entry's RCU field
-- *
-- * Description:
-- * This function is designed to be used as a callback to the call_rcu()
-- * function so that memory allocated to a hash table port entry can be
-- * released safely.
-- *
-- */
--static void sel_netport_free(struct rcu_head *p)
--{
--	struct sel_netport *port = container_of(p, struct sel_netport, rcu);
--	kfree(port);
--}
--
--/**
-  * sel_netport_hashfn - Hashing function for the port table
-  * @pnum: port number
-  *
-@@ -142,7 +126,7 @@ static void sel_netport_insert(struct sel_netport *port)
- 			rcu_dereference(sel_netport_hash[idx].list.prev),
- 			struct sel_netport, list);
- 		list_del_rcu(&tail->list);
--		call_rcu(&tail->rcu, sel_netport_free);
-+		kfree_rcu(tail, rcu);
- 	} else
- 		sel_netport_hash[idx].size++;
- }
-@@ -241,7 +225,7 @@ static void sel_netport_flush(void)
- 		list_for_each_entry_safe(port, port_tmp,
- 					 &sel_netport_hash[idx].list, list) {
- 			list_del_rcu(&port->list);
--			call_rcu(&port->rcu, sel_netport_free);
-+			kfree_rcu(port, rcu);
- 		}
- 		sel_netport_hash[idx].size = 0;
- 	}
