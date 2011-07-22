@@ -1,123 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755238Ab1GVTcO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 15:32:14 -0400
-Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:46557 "EHLO
-	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755166Ab1GVTcM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 15:32:12 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAOrOKU5tgwKe/2dsb2JhbABGDadKeIh8Ars+DoMWgxsEo08
-Date: Fri, 22 Jul 2011 21:32:11 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 01/11] watchdog: WatchDog Timer Driver Core - Add basic
-	framework
-Message-ID: <20110722193211.GL31767@infomag.iguana.be>
-References: <1310392522-9949-1-git-send-email-wim@iguana.be> <4E1B8089.90103@metafoo.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E1B8089.90103@metafoo.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755248Ab1GVTeg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 15:34:36 -0400
+Received: from waste.org ([173.11.57.241]:58562 "EHLO waste.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755166Ab1GVTef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 15:34:35 -0400
+Subject: Re: Nanosecond fs timestamp support: sad
+From: Matt Mackall <mpm@selenic.com>
+To: NeilBrown <neilb@suse.de>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110722163335.2df4f6ca@notabene.brown>
+References: <1311271641.14555.114.camel@calx>
+	 <m2pql2c0qz.fsf@firstfloor.org>  <20110722163335.2df4f6ca@notabene.brown>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 22 Jul 2011 14:34:29 -0500
+Message-ID: <1311363269.14555.261.camel@calx>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lars-Peter,
-
-> On 07/11/2011 04:19 PM, Wim Van Sebroeck wrote:
-> > [...]
-> > +
-> > +
-> > +static int watchdog_release(struct inode *inode, struct file *file)
-> > +{
-> > +	int err;
-> > +
-> > +	/* stop the watchdog */
-> > +	err = wdd->ops->stop(wdd);
-> Does it really make sense to allow stop() to fail? Will this ever happen, and
-> if yes do we gain anything by sending a additional ping?
-
-It buys user-space extra time to recover if necessary.
-
-> > [...]
-> > +
-> > +int watchdog_dev_unregister(struct watchdog_device *watchdog)
-> > +{
-> > +	/* Check that a watchdog device was registered in the past */
-> > +	if (!test_bit(0, &watchdog_dev_busy) || !wdd)
-> > +		return -ENODEV;
-> > +
-> > +	/* We can only unregister the watchdog device that was registered */
-> > +	if (watchdog != wdd) {
-> > +		pr_err("%s: watchdog was not registered as /dev/watchdog.\n",
-> > +			watchdog->info->identity);
-> > +		return -ENODEV;
-> > +	}
-> > +
-> > +	/* Unregister the miscdevice */
-> > +	misc_deregister(&watchdog_miscdev);
-> > +	wdd = NULL;
-> > +	clear_bit(0, &watchdog_dev_busy);
-> > +	return 0;
-> > +}
+On Fri, 2011-07-22 at 16:33 +1000, NeilBrown wrote:
+> On Thu, 21 Jul 2011 23:01:24 -0700 Andi Kleen <andi@firstfloor.org> wrote:
 > 
-> What happens if the watchdog gets unregistered if the device is still opened?
-> Even though if you'd check wdd for not being NULL in the file callbacks there
-> is still a chance for races if the devices is unregistered at the same time as
-> the callback is running. You'd either need a big lock to protect from having a
-> file callback and unregister running concurrently or add ref-counting to the
-> watchdog_device, the later best done by embedding a struct device and using the
-> device driver model.
-
-You cannot unload the watchdog-drivers module if /dev/watchdog is still open.
-So if the watchdog_unregister function is in the exit function of the module
-then we are safe. But I think you have a point if that is not the case.
-Solution would be to return an error when the watchdog_unregister_device routine
-is called and the WDOG_DEV_OPEN bit is set. Will create an extra patch for that.
-
-> > [...]
-> >  
-> > +struct watchdog_ops;
-> > +struct watchdog_device;
-> > +
-> > +/* The watchdog-devices operations */
-> > +struct watchdog_ops {
-> > +	struct module *owner;
-> > +	/* mandatory operations */
-> > +	int (*start)(struct watchdog_device *);
-> > +	int (*stop)(struct watchdog_device *);
-> > +	/* optional operations */
-> > +	int (*ping)(struct watchdog_device *);
-> > +};
-> > +
-> > +/* The structure that defines a watchdog device */
-> > +struct watchdog_device {
-> > +	const struct watchdog_info *info;
-> > +	const struct watchdog_ops *ops;
-> > +	void *priv;
+> > Matt Mackall <mpm@selenic.com> writes:
+> > 
+> > 
+> > > This means I can touch a file something like 70k times per second and
+> > > get only 300 distinct timestamps on my laptop. And only 100 distinct
+> > > timestamps on a typical distro server kernel.
+> > 
+> > You should use the inode generation number if you really want
+> > to see every update.
 > 
-> You should provide getter/setter methods for priv, so that when the watchdog
-> API is changed to make use of the device driver model it becomes easier to get
-> rid of the priv field and use dev_{get,set}_drvdata instead.
+> I assume you mean i_version which gets incremented (under a spinlock) if the
+> filesystem asks for it.
 
-Added.
+Indeed. Only usefully exists on ext4 and requires extra system calls.
 
-> > +	unsigned long status;
-> > +/* Bit numbers for status flags */
-> > +#define WDOG_DEV_OPEN		1	/* Opened via /dev/watchdog ? */
-> > +};
+> This doesn't let you compare the ages of two files.  I wonder if that is
+> important.  Is it important to you Matt?
+
+Sort of. We track a 'latest seen timestamp' so we can consider files
+before that time unchanged and we need only concern ourselves with the
+looking for invisible changes that occur inside that quantum.
+
+> I imagine a scheme where 'stat' would set a flag if it wasn't set, and
+> file_update_time would:
+>   - if the flag is set, use gettimeofday and clear the flag
+>   - if the flag is not set, use jiffies
 > 
-> Kernel-doc style documentation for the structs would be nice.
+> so if you are looking, you will see i_mtime changing precisely but if not,
+> you don't pay the price.
 
-Added.
+Hmm, interesting.
 
-Kind regards,
-Wim.
+> This wouldn't allow precise ordering of distinct files either of course.
+
+Yeah, I don't think we want to introduce observable non-causality in
+filesystem time. There might be something clever we can do here, but it
+would require some Deep Thought. But if successful, we could mitigate
+some of the repeated inode dirtying caused by jiffies-resolution
+timestamping.
+
+-- 
+Mathematics is the supreme nostalgia of our time.
+
 
