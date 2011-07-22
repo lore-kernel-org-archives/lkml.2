@@ -1,119 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753617Ab1GVJl3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 05:41:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56862 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752993Ab1GVJl2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 05:41:28 -0400
+	id S1753701Ab1GVJlf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 05:41:35 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:48870 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753161Ab1GVJlb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 05:41:31 -0400
 Date: Fri, 22 Jul 2011 11:41:26 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        Balbir Singh <bsingharora@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] memcg: get rid of percpu_charge_mutex lock
-Message-ID: <20110722094126.GD4004@tiehlicka.suse.cz>
-References: <cover.1311241300.git.mhocko@suse.cz>
- <2bfb2b7687c1a6b39da2a04689190725075cc4f8.1311241300.git.mhocko@suse.cz>
- <20110721193051.cd3266e5.kamezawa.hiroyu@jp.fujitsu.com>
- <20110721114704.GC27855@tiehlicka.suse.cz>
- <20110721124223.GE27855@tiehlicka.suse.cz>
- <20110722092759.9be9078f.nishimura@mxp.nes.nec.co.jp>
+From: Tejun Heo <tj@kernel.org>
+To: Jeff Garzik <jgarzik@pobox.com>,
+        Brian Norris <computersforpeace@gmail.com>
+Cc: linux-ide@vger.kernel.org, Valdis.Kletnieks@vt.edu,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Michael Leun <lkml20100708@newton.leun.net>,
+        linux-kernel@vger.kernel.org, Jian Peng <jipeng2005@gmail.com>,
+        Kevin Cernekee <cernekee@gmail.com>
+Subject: [PATCH #upstream] ahci: start engine only during soft/hard resets
+Message-ID: <20110722094126.GI2622@htj.dyndns.org>
+References: <CAN8TOE9CCSiS2koyx=UsZj=9KwaWZW5yDjUUqgJf2=qZU70k1w@mail.gmail.com>
+ <20110713131407.GN2872@htj.dyndns.org>
+ <CAN8TOE9Rjujf9aLQGONDULNasFiQmVkiUPWUDX=Vf0Nx2pka7w@mail.gmail.com>
+ <20110721084917.GE3455@htj.dyndns.org>
+ <CAN8TOE_dCg6Wi_trE97hXjBPnZi4jpLyoeUEVrbMpgDH-BwKWA@mail.gmail.com>
+ <20110722090317.GH2622@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110722092759.9be9078f.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20110722090317.GH2622@htj.dyndns.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 22-07-11 09:27:59, Daisuke Nishimura wrote:
-> On Thu, 21 Jul 2011 14:42:23 +0200
-> Michal Hocko <mhocko@suse.cz> wrote:
-> 
-> > On Thu 21-07-11 13:47:04, Michal Hocko wrote:
-> > > On Thu 21-07-11 19:30:51, KAMEZAWA Hiroyuki wrote:
-> > > > On Thu, 21 Jul 2011 09:58:24 +0200
-> > > > Michal Hocko <mhocko@suse.cz> wrote:
-> > [...]
-> > > > > --- a/mm/memcontrol.c
-> > > > > +++ b/mm/memcontrol.c
-> > > > > @@ -2166,7 +2165,8 @@ static void drain_all_stock(struct mem_cgroup *root_mem, bool sync)
-> > > > >  
-> > > > >  	for_each_online_cpu(cpu) {
-> > > > >  		struct memcg_stock_pcp *stock = &per_cpu(memcg_stock, cpu);
-> > > > > -		if (test_bit(FLUSHING_CACHED_CHARGE, &stock->flags))
-> > > > > +		if (root_mem == stock->cached &&
-> > > > > +				test_bit(FLUSHING_CACHED_CHARGE, &stock->flags))
-> > > > >  			flush_work(&stock->work);
-> > > > 
-> > > > Doesn't this new check handle hierarchy ?
-> > > > css_is_ancestor() will be required if you do this check.
-> > > 
-> > > Yes you are right. Will fix it. I will add a helper for the check.
-> > 
-> > Here is the patch with the helper. The above will then read 
-> > 	if (mem_cgroup_same_or_subtree(root_mem, stock->cached))
-> > 
-> I welcome this new helper function, but it can be used in
-> memcg_oom_wake_function() and mem_cgroup_under_move() too, can't it ?
+This is another attempt at fixing the same problem that 270dac35c2
+(libata: ahci_start_engine compliant to AHCI spec) tried to solve.
+Unfortunately, 270dac35c2 created regressions for a lot more common
+controllers and got reverted.
 
-Sure. Incremental patch (I will fold it into the one above):
---- 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 8dbb9d6..64569c7 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1416,10 +1416,9 @@ static bool mem_cgroup_under_move(struct mem_cgroup *mem)
- 	to = mc.to;
- 	if (!from)
- 		goto unlock;
--	if (from == mem || to == mem
--	    || (mem->use_hierarchy && css_is_ancestor(&from->css, &mem->css))
--	    || (mem->use_hierarchy && css_is_ancestor(&to->css,	&mem->css)))
--		ret = true;
-+
-+	ret = mem_cgroup_same_or_subtree(mem, from)
-+		|| mem_cgroup_same_or_subtree(mem, to);
- unlock:
- 	spin_unlock(&mc.lock);
- 	return ret;
-@@ -1906,25 +1905,20 @@ struct oom_wait_info {
- static int memcg_oom_wake_function(wait_queue_t *wait,
- 	unsigned mode, int sync, void *arg)
- {
--	struct mem_cgroup *wake_mem = (struct mem_cgroup *)arg;
-+	struct mem_cgroup *wake_mem = (struct mem_cgroup *)arg,
-+			  *oom_wait_mem;
- 	struct oom_wait_info *oom_wait_info;
+This specific AHCI IP block becomes a brick if the DMA engine is
+started while DRQ is set.  It is not possible to avoid the condition
+completely but the most common occurrence is caused by spurious use of
+ahci_start_engine() from ahci_start_port() during init sequence.
+
+DMA engine is started after both soft and hard resets and
+ahci_start_port() is always followed by resets, so there is no reason
+to start DMA engine from ahci_start_port().
+
+This patch removes ahci_start_engine() invocation from
+ahci_start_port().  This change makes failure path of
+ahci_port_suspend() leave engine stopped without following resets.
+This is resolved by replacing ahci_start_port() call with
+ata_port_freeze() which forces resets afterwards, which is the better
+behavior anyway.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Brian Norris <computersforpeace@gmail.com>
+Reported-by: Jian Peng <jipeng2005@gmail.com>
+---
+Jeff, this needs to be tested for a while in linux-next before sending
+it mainline.  Please apply it for 3.1 merge window and let's see
+whether anything explodes.
+
+Thanks.
+
+ drivers/ata/libahci.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
+
+diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
+index 41223c7..d57f4cf 100644
+--- a/drivers/ata/libahci.c
++++ b/drivers/ata/libahci.c
+@@ -745,9 +745,6 @@ static void ahci_start_port(struct ata_port *ap)
+ 	/* enable FIS reception */
+ 	ahci_start_fis_rx(ap);
  
- 	oom_wait_info = container_of(wait, struct oom_wait_info, wait);
-+	oom_wait_mem = oom_wait_info->mem;
- 
--	if (oom_wait_info->mem == wake_mem)
--		goto wakeup;
--	/* if no hierarchy, no match */
--	if (!oom_wait_info->mem->use_hierarchy || !wake_mem->use_hierarchy)
--		return 0;
- 	/*
- 	 * Both of oom_wait_info->mem and wake_mem are stable under us.
- 	 * Then we can use css_is_ancestor without taking care of RCU.
- 	 */
--	if (!css_is_ancestor(&oom_wait_info->mem->css, &wake_mem->css) &&
--	    !css_is_ancestor(&wake_mem->css, &oom_wait_info->mem->css))
-+	if (!mem_cgroup_same_or_subtree(oom_wait_mem, wake_mem)
-+			&& !mem_cgroup_same_or_subtree(wake_mem, oom_wait_mem))
- 		return 0;
+-	/* enable DMA */
+-	ahci_start_engine(ap);
 -
--wakeup:
- 	return autoremove_wake_function(wait, mode, sync, arg);
- }
+ 	/* turn on LEDs */
+ 	if (ap->flags & ATA_FLAG_EM) {
+ 		ata_for_each_link(link, ap, EDGE) {
+@@ -1976,7 +1973,7 @@ static int ahci_port_suspend(struct ata_port *ap, pm_message_t mesg)
+ 		ahci_power_down(ap);
+ 	else {
+ 		ata_port_printk(ap, KERN_ERR, "%s (%d)\n", emsg, rc);
+-		ahci_start_port(ap);
++		ata_port_freeze(ap);
+ 	}
  
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+ 	return rc;
