@@ -1,70 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038Ab1GVRgN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 13:36:13 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:17627 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753626Ab1GVRgL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 13:36:11 -0400
-Date: Fri, 22 Jul 2011 13:35:48 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Randy Dunlap <rdunlap@xenotime.net>, dan.magenheimer@oracle.com
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        xen-devel@lists.xensource.com
-Subject: Re: linux-next: Tree for July 22 (xen)
-Message-ID: <20110722173548.GA7698@dumpdata.com>
-References: <20110722164237.2b3f6cbdedafa9e1d3f70867@canb.auug.org.au>
- <20110722092245.589ec3d7.rdunlap@xenotime.net>
+	id S1754071Ab1GVRhb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 13:37:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52862 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753626Ab1GVRh3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 13:37:29 -0400
+Date: Fri, 22 Jul 2011 19:37:27 +0200
+From: Jan Kara <jack@suse.cz>
+To: Wang Sheng-Hui <shhuiw@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>
+Subject: Re: [PATCH] ext2: check xattr name_len before acquiring sem lock
+ in ext2_xattr_get
+Message-ID: <20110722173727.GA11015@quack.suse.cz>
+References: <4E2983E0.3060208@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110722092245.589ec3d7.rdunlap@xenotime.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4E29B4FE.0075:SCFMA922111,ss=1,re=-4.000,fgs=0
+In-Reply-To: <4E2983E0.3060208@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 22, 2011 at 09:22:45AM -0700, Randy Dunlap wrote:
-> On Fri, 22 Jul 2011 16:42:37 +1000 Stephen Rothwell wrote:
-> 
-> > Hi all,
+  Hello,
 
-Hey Randy,
+On Fri 22-07-11 22:06:24, Wang Sheng-Hui wrote:
+> From 667173a18b671896f933c5952fa211601d2e5ab0 Mon Sep 17 00:00:00 2001
+> From: Wang Sheng-Hui <shhuiw@gmail.com>
+> Date: Fri, 22 Jul 2011 08:50:13 -0500
+> Subject: [PATCH] ext2: check xattr name_len before acquiring sem lock in ext2_xattr_get
+> 
+> The patch is against 3.0.
+> 
+> In ext2_xattr_get, the code will acquire sem lock first, later check
+> the length of xattr name_len > 255. It's kind of time consuming, and
+> we should do the basic check before the time consuming acquiring sem
+> lock.
+  Well, but the check name_len > 255 is almost never true so it does not
+really make a difference... But I see ext2_xattr_set() also checks the
+length first so it probably makes sense from consistency point of view.
+So I'll take the patch into my tree.
 
-This only shows up on xen but not xen-two?
-
+								Honza
 > 
-> build errors & warnings:  (full kernel config file is attached)
-> 
-> 
-> drivers/xen/xen-selfballoon.c:95: warning: 'struct work_struct' declared inside parameter list
-> drivers/xen/xen-selfballoon.c:95: warning: its scope is only this definition or declaration, which is probably not what you want
-> drivers/xen/xen-selfballoon.c:96: warning: type defaults to 'int' in declaration of 'DECLARE_DELAYED_WORK'
-> drivers/xen/xen-selfballoon.c:96: warning: parameter names (without types) in function declaration
-> drivers/xen/xen-selfballoon.c:195: warning: 'struct work_struct' declared inside parameter list
-> drivers/xen/xen-selfballoon.c:195: error: conflicting types for 'selfballoon_process'
-> drivers/xen/xen-selfballoon.c:95: note: previous declaration of 'selfballoon_process' was here
-> drivers/xen/xen-selfballoon.c: In function 'selfballoon_process':
-> drivers/xen/xen-selfballoon.c:229: error: implicit declaration of function 'schedule_delayed_work'
-> drivers/xen/xen-selfballoon.c:229: error: 'selfballoon_worker' undeclared (first use in this function)
-> drivers/xen/xen-selfballoon.c:229: error: (Each undeclared identifier is reported only once
-> drivers/xen/xen-selfballoon.c:229: error: for each function it appears in.)
-> drivers/xen/xen-selfballoon.c:230: error: 'HZ' undeclared (first use in this function)
-> drivers/xen/xen-selfballoon.c: In function 'store_selfballooning':
-> drivers/xen/xen-selfballoon.c:266: error: 'selfballoon_worker' undeclared (first use in this function)
-> drivers/xen/xen-selfballoon.c: In function 'xen_selfballoon_init':
-> drivers/xen/xen-selfballoon.c:452: error: implicit declaration of function 'xen_domain'
-> drivers/xen/xen-selfballoon.c:455: error: implicit declaration of function 'xen_initial_domain'
-> drivers/xen/xen-selfballoon.c:478: error: 'selfballoon_worker' undeclared (first use in this function)
-> 
+> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
 > ---
-> ~Randy
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
-
-
+>  fs/ext2/xattr.c |   10 +++++-----
+>  1 files changed, 5 insertions(+), 5 deletions(-)
+> 
+> diff --git a/fs/ext2/xattr.c b/fs/ext2/xattr.c
+> index 5299706..d27b71f 100644
+> --- a/fs/ext2/xattr.c
+> +++ b/fs/ext2/xattr.c
+> @@ -161,6 +161,10 @@ ext2_xattr_get(struct inode *inode, int name_index, const char *name,
+>  
+>  	if (name == NULL)
+>  		return -EINVAL;
+> +	name_len = strlen(name);
+> +	if (name_len > 255)
+> +		return -ERANGE;
+> +
+>  	down_read(&EXT2_I(inode)->xattr_sem);
+>  	error = -ENODATA;
+>  	if (!EXT2_I(inode)->i_file_acl)
+> @@ -181,12 +185,8 @@ bad_block:	ext2_error(inode->i_sb, "ext2_xattr_get",
+>  		error = -EIO;
+>  		goto cleanup;
+>  	}
+> -	/* find named attribute */
+> -	name_len = strlen(name);
+>  
+> -	error = -ERANGE;
+> -	if (name_len > 255)
+> -		goto cleanup;
+> +	/* find named attribute */
+>  	entry = FIRST_ENTRY(bh);
+>  	while (!IS_LAST_ENTRY(entry)) {
+>  		struct ext2_xattr_entry *next =
+> -- 
+> 1.7.1
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
