@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754190Ab1GVMyM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 08:54:12 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35717 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752801Ab1GVMyL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 08:54:11 -0400
-Subject: Re: [PATCH 7/8] mm: vmscan: Immediately reclaim end-of-LRU dirty
- pages when writeback completes
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
-In-Reply-To: <1311265730-5324-8-git-send-email-mgorman@suse.de>
-References: <1311265730-5324-1-git-send-email-mgorman@suse.de>
-	 <1311265730-5324-8-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 22 Jul 2011 14:53:48 +0200
-Message-ID: <1311339228.27400.34.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1754169Ab1GVMzx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 08:55:53 -0400
+Received: from hera.kernel.org ([140.211.167.34]:42366 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751431Ab1GVMzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 08:55:52 -0400
+Date: Fri, 22 Jul 2011 12:55:35 GMT
+From: tip-bot for Lin Ming <ming.m.lin@intel.com>
+Message-ID: <tip-0f3171438fc917b9f6b8b60dbb7a3fff9a0f68fd@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, ming.m.lin@intel.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, ming.m.lin@intel.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <1311297271.3938.1352.camel@minggr.sh.intel.com>
+References: <1311297271.3938.1352.camel@minggr.sh.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched: Cleanup duplicate local variable in [enqueue|dequeue]_task_fair
+Git-Commit-ID: 0f3171438fc917b9f6b8b60dbb7a3fff9a0f68fd
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 22 Jul 2011 12:55:36 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-07-21 at 17:28 +0100, Mel Gorman wrote:
-> When direct reclaim encounters a dirty page, it gets recycled around
-> the LRU for another cycle. This patch marks the page PageReclaim
-> similar to deactivate_page() so that the page gets reclaimed almost
-> immediately after the page gets cleaned. This is to avoid reclaiming
-> clean pages that are younger than a dirty page encountered at the
-> end of the LRU that might have been something like a use-once page.
-> 
+Commit-ID:  0f3171438fc917b9f6b8b60dbb7a3fff9a0f68fd
+Gitweb:     http://git.kernel.org/tip/0f3171438fc917b9f6b8b60dbb7a3fff9a0f68fd
+Author:     Lin Ming <ming.m.lin@intel.com>
+AuthorDate: Fri, 22 Jul 2011 09:14:31 +0800
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Fri, 22 Jul 2011 12:47:22 +0200
 
-> @@ -834,7 +834,15 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->  			 */
->  			if (page_is_file_cache(page) &&
->  					(!current_is_kswapd() || priority >= DEF_PRIORITY - 2)) {
-> -				inc_zone_page_state(page, NR_VMSCAN_WRITE_SKIP);
-> +				/*
-> +				 * Immediately reclaim when written back.
-> +				 * Similar in principal to deactivate_page()
-> +				 * except we already have the page isolated
-> +				 * and know it's dirty
-> +				 */
-> +				inc_zone_page_state(page, NR_VMSCAN_INVALIDATE);
-> +				SetPageReclaim(page);
-> +
+sched: Cleanup duplicate local variable in [enqueue|dequeue]_task_fair
 
-I find the invalidate name somewhat confusing. It makes me think we'll
-drop the page without writeback, like invalidatepage().
+No need to define a new "cfs_rq" variable in the "for" block.
+Just use the one at the top of the function.
+
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1311297271.3938.1352.camel@minggr.sh.intel.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/sched_fair.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index a2ecbaa..bc8ee99 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -1317,7 +1317,7 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+ 	}
+ 
+ 	for_each_sched_entity(se) {
+-		struct cfs_rq *cfs_rq = cfs_rq_of(se);
++		cfs_rq = cfs_rq_of(se);
+ 
+ 		update_cfs_load(cfs_rq, 0);
+ 		update_cfs_shares(cfs_rq);
+@@ -1360,7 +1360,7 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+ 	}
+ 
+ 	for_each_sched_entity(se) {
+-		struct cfs_rq *cfs_rq = cfs_rq_of(se);
++		cfs_rq = cfs_rq_of(se);
+ 
+ 		update_cfs_load(cfs_rq, 0);
+ 		update_cfs_shares(cfs_rq);
