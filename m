@@ -1,141 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753103Ab1GVAcl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 20:32:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29918 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752521Ab1GVAck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 20:32:40 -0400
-Date: Thu, 21 Jul 2011 20:32:12 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
+	id S1753248Ab1GVAc6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 20:32:58 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:48284 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753190Ab1GVAcx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 20:32:53 -0400
+Date: Fri, 22 Jul 2011 09:27:59 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
         Balbir Singh <bsingharora@gmail.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
-Message-ID: <20110722003211.GA2807@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] memcg: get rid of percpu_charge_mutex lock
+Message-Id: <20110722092759.9be9078f.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20110721124223.GE27855@tiehlicka.suse.cz>
+References: <cover.1311241300.git.mhocko@suse.cz>
+	<2bfb2b7687c1a6b39da2a04689190725075cc4f8.1311241300.git.mhocko@suse.cz>
+	<20110721193051.cd3266e5.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110721114704.GC27855@tiehlicka.suse.cz>
+	<20110721124223.GE27855@tiehlicka.suse.cz>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rth@redhat.com
-Bcc: 
-Subject: Re: [RFT][patch 17/18] sched: use jump labels to reduce overhead
- when bandwidth control is inactive
-Reply-To: 
-In-Reply-To: <20110721184758.403388616@google.com>
+On Thu, 21 Jul 2011 14:42:23 +0200
+Michal Hocko <mhocko@suse.cz> wrote:
 
-On Thu, Jul 21, 2011 at 09:43:42AM -0700, Paul Turner wrote:
-> So I'm seeing some strange costs associated with jump_labels; while on paper
-> the branches and instructions retired improves (as expected) we're taking an
-> unexpected hit in IPC.
+> On Thu 21-07-11 13:47:04, Michal Hocko wrote:
+> > On Thu 21-07-11 19:30:51, KAMEZAWA Hiroyuki wrote:
+> > > On Thu, 21 Jul 2011 09:58:24 +0200
+> > > Michal Hocko <mhocko@suse.cz> wrote:
+> [...]
+> > > > --- a/mm/memcontrol.c
+> > > > +++ b/mm/memcontrol.c
+> > > > @@ -2166,7 +2165,8 @@ static void drain_all_stock(struct mem_cgroup *root_mem, bool sync)
+> > > >  
+> > > >  	for_each_online_cpu(cpu) {
+> > > >  		struct memcg_stock_pcp *stock = &per_cpu(memcg_stock, cpu);
+> > > > -		if (test_bit(FLUSHING_CACHED_CHARGE, &stock->flags))
+> > > > +		if (root_mem == stock->cached &&
+> > > > +				test_bit(FLUSHING_CACHED_CHARGE, &stock->flags))
+> > > >  			flush_work(&stock->work);
+> > > 
+> > > Doesn't this new check handle hierarchy ?
+> > > css_is_ancestor() will be required if you do this check.
+> > 
+> > Yes you are right. Will fix it. I will add a helper for the check.
 > 
-> [From the initial mail we have workloads:
->   mkdir -p /cgroup/cpu/test
->   echo $$ > /dev/cgroup/cpu/test (only cpu,cpuacct mounted)
->   (W1) taskset -c 0 perf stat --repeat 50 -e instructions,cycles,branches bash -c "for ((i=0;i<5;i++)); do $(dirname $0)/pipe-test 20000; done"
->   (W2)taskset -c 0 perf stat --repeat 50 -e instructions,cycles,branches bash -c "$(dirname $0)/pipe-test 100000;true"
->   (W3)taskset -c 0 perf stat --repeat 50 -e instructions,cycles,branches bash -c "$(dirname $0)/pipe-test 100000;"
-> ]
+> Here is the patch with the helper. The above will then read 
+> 	if (mem_cgroup_same_or_subtree(root_mem, stock->cached))
 > 
-> To make some of the figures more clear:
+I welcome this new helper function, but it can be used in
+memcg_oom_wake_function() and mem_cgroup_under_move() too, can't it ?
+
+Thanks,
+Daisuke Nishimura.
+
+> ---
+> From b963a9f4dac61044daac49700f84b7819d7c2f53 Mon Sep 17 00:00:00 2001
+> From: Michal Hocko <mhocko@suse.cz>
+> Date: Thu, 21 Jul 2011 13:54:13 +0200
+> Subject: [PATCH] memcg: add mem_cgroup_same_or_subtree helper
 > 
-> Legend:
-> !BWC = tip + bwc, BWC compiled out
-> BWC = tip + bwc
-> BWC_JL = tip + bwc + jump label (this patch)
+> We are checking whether a given two groups are same or at least in the
+> same subtree of a hierarchy at several places. Let's make a helper for
+> it to make code easier to read.
 > 
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> ---
+>  mm/memcontrol.c |   29 ++++++++++++++++++-----------
+>  1 files changed, 18 insertions(+), 11 deletions(-)
 > 
-> Now, comparing under W1 we see:
-> W1: BWC vs BWC_JL
->                             instructions            cycles                  branches              elapsed                
-> ---------------------------------------------------------------------------------------------------------------------
-> clovertown [BWC]            845934117               974222228               152715407             0.419014188 [baseline]
-> +unconstrained              857963815 (+1.42)      1007152750 (+3.38)       153140328 (+0.28)     0.433186926 (+3.38)  [rel]
-> +10000000000/1000:          876937753 (+2.55)      1033978705 (+5.65)       160038434 (+3.59)     0.443638365 (+5.66)  [rel]
-> +10000000000/1000000:       880276838 (+3.08)      1036176245 (+6.13)       160683878 (+4.15)     0.444577244 (+6.14)  [rel]
-> 
-> barcelona [BWC]             820573353               748178486               148161233             0.342122850 [baseline] 
-> +unconstrained              817011602 (-0.43)       759838181 (+1.56)       145951513 (-1.49)     0.347462571 (+1.56)  [rel]
-> +10000000000/1000:          830109086 (+0.26)       770451537 (+1.67)       151228902 (+1.08)     0.350824677 (+1.65)  [rel]
-> +10000000000/1000000:       830196206 (+0.30)       770704213 (+2.27)       151250413 (+1.12)     0.350962182 (+2.28)  [rel]
-> 
-> westmere [BWC]              802533191               694415157               146071233             0.194428018 [baseline]
-> +unconstrained              799057936 (-0.43)       751384496 (+8.20)       143875513 (-1.50)     0.211182620 (+8.62)  [rel]
-> +10000000000/1000:          812033785 (+0.27)       761469084 (+8.51)       149134146 (+1.09)     0.212149229 (+8.28)  [rel]
-> +10000000000/1000000:       811912834 (+0.27)       757842988 (+7.45)       149113291 (+1.09)     0.211364804 (+7.30)  [rel]
-> e.g. Barcelona issues ~0.43% less instructions, for a total of 817011602, in
-> the unconstrained case with BWC.
-> 
-> 
-> Where "unconstrained, 10000000000/1000, 10000000000/10000" are the on
-> measurements for BWC_JL, with (%d) being the relative difference to their
-> BWC counterparts.
-> 
-> W1: BWC vs BWC_JL is very similar.
-> 	BWC vs BWC_JL
-> clovertown [BWC]            985732031              1283113452               175621212             1.375905653  
-> +unconstrained              979242938 (-0.66)      1288971141 (+0.46)       172122546 (-1.99)     1.389795165 (+1.01)  [rel]
-> +10000000000/1000:          999886468 (+0.33)      1296597143 (+1.13)       180554004 (+1.62)     1.392576770 (+1.18)  [rel]
-> +10000000000/1000000:       999034223 (+0.11)      1293925500 (+0.57)       180413829 (+1.39)     1.391041338 (+0.94)  [rel]
-> 
-> barcelona [BWC]             982139920              1078757792               175417574             1.069537049  
-> +unconstrained              965443672 (-1.70)      1075377223 (-0.31)       170215844 (-2.97)     1.045595065 (-2.24)  [rel]
-> +10000000000/1000:          989104943 (+0.05)      1100836668 (+0.52)       178837754 (+1.22)     1.058730316 (-1.77)  [rel]
-> +10000000000/1000000:       987627489 (-0.32)      1095843758 (-0.17)       178567411 (+0.84)     1.056100899 (-2.28)  [rel]
-> 
-> westmere [BWC]              918633403               896047900               166496917             0.754629182  
-> +unconstrained              914740541 (-0.42)       903906801 (+0.88)       163652848 (-1.71)     0.758050332 (+0.45)  [rel]
-> +10000000000/1000:          927517377 (-0.41)       952579771 (+5.67)       170173060 (+0.75)     0.771193786 (+2.43)  [rel]
-> +10000000000/1000000:       914676985 (-0.89)       936106277 (+3.81)       167683288 (+0.22)     0.764973632 (+1.38)  [rel]
-> 
-> Now this is rather odd, almost across the board we're seeing the expected
-> drops in instructions and branches, yet we appear to be paying a heavy IPC
-> price.  The fact that wall-time has scaled equivalently with cycles roughly
-> rules out the cycles counter being off.
-> 
-> We are seeing the expected behavior in the bandwidth enabled case;
-> specifically the <jl=jmp><ret><cond><ret> blocks are taking an extra branch
-> and instruction which shows up on all the numbers above.
-> 
-> With respect to compiler mangling the text is essentially unchanged in size.
-> One lurking suspicion is whether the inserted nops have perturbed some of the
-> jmp/branch alignments?
-> 
->     text    data     bss     dec     hex filename
->  7277206 2827256 2125824 12230286         ba9e8e vmlinux.jump_label
->  7276886 2826744 2125824 12229454         ba9b4e vmlinux.no_jump_label
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 8180cd9..8dbb9d6 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1046,6 +1046,21 @@ void mem_cgroup_move_lists(struct page *page,
+>  	mem_cgroup_add_lru_list(page, to);
+>  }
 >  
->  I have checked to make sure that the right instructions are being patched in
->  at run-time.  I've also pulled a fully patched jump_label out of the kernel
->  into a userspace test (and benchmarked it directly under perf).  The results
->  here are also exactly as expected.
+> +/*
+> + * Checks whether given mem is same or in the root_mem's
+> + * hierarchy subtree
+> + */
+> +static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_mem,
+> +		struct mem_cgroup *mem)
+> +{
+> +	if (root_mem != mem) {
+> +		return (root_mem->use_hierarchy &&
+> +			css_is_ancestor(&mem->css, &root_mem->css));
+> +	}
+> +
+> +	return true;
+> +}
+> +
+>  int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *mem)
+>  {
+>  	int ret;
+> @@ -1065,10 +1080,7 @@ int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *mem)
+>  	 * enabled in "curr" and "curr" is a child of "mem" in *cgroup*
+>  	 * hierarchy(even if use_hierarchy is disabled in "mem").
+>  	 */
+> -	if (mem->use_hierarchy)
+> -		ret = css_is_ancestor(&curr->css, &mem->css);
+> -	else
+> -		ret = (curr == mem);
+> +	ret = mem_cgroup_same_or_subtree(mem, curr);
+>  	css_put(&curr->css);
+>  	return ret;
+>  }
+> @@ -2150,13 +2162,8 @@ static void drain_all_stock(struct mem_cgroup *root_mem, bool sync)
+>  		mem = stock->cached;
+>  		if (!mem || !stock->nr_pages)
+>  			continue;
+> -		if (mem != root_mem) {
+> -			if (!root_mem->use_hierarchy)
+> -				continue;
+> -			/* check whether "mem" is under tree of "root_mem" */
+> -			if (!css_is_ancestor(&mem->css, &root_mem->css))
+> -				continue;
+> -		}
+> +		if (!mem_cgroup_same_or_subtree(root_mem, mem))
+> +			continue;
+>  		if (!test_and_set_bit(FLUSHING_CACHED_CHARGE, &stock->flags))
+>  			schedule_work_on(cpu, &stock->work);
+>  	}
+> -- 
+> 1.7.5.4
 > 
-> e.g.
->  Performance counter stats for './jump_test':
->      1,500,839,002 instructions, 300,147,081 branches 702,468,404 cycles
-> Performance counter stats for './jump_test 1':
->      2,001,014,609 instructions, 400,177,192 branches 901,758,219 cycles
 > 
-> Overall if we can fix the IPC the benefit in the globally unconstrained case
-> looks really good.
-> 
-> Any thoughts Jason?
-> 
-
-Do you have CONFIG_CC_OPTIMIZE_FOR_SIZE set? I know that when
-CONFIG_CC_OPTIMIZE_FOR_SIZE is not set, the compiler can make the code
-more optimal.
-
-thanks,
-
--Jason
+> -- 
+> Michal Hocko
+> SUSE Labs
+> SUSE LINUX s.r.o.
+> Lihovarska 1060/12
+> 190 00 Praha 9    
+> Czech Republic
