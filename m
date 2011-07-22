@@ -1,145 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554Ab1GVQ4D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 12:56:03 -0400
-Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:53224 "EHLO
-	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751871Ab1GVQ4A (ORCPT
+	id S1753388Ab1GVQz7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 12:55:59 -0400
+Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:33701 "EHLO
+	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751871Ab1GVQz6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 12:56:00 -0400
+	Fri, 22 Jul 2011 12:55:58 -0400
 From: James Nuss <jamesnuss@nanometrics.ca>
 To: Rodolfo Giometti <giometti@linux.it>
 Cc: Ricardo Martins <rasm@fe.up.pt>, Ben Gardiner <bengardiner@nanometrics.ca>,
         linux-kernel@vger.kernel.org, linuxpps@ml.enneenne.com,
         Alexander Gordeev <lasaine@lvk.cs.msu.su>,
         Igor Plyatov <plyatov@gmail.com>
-Subject: [PATCH v4 1/2] pps: default echo function
-Date: Fri, 22 Jul 2011 12:55:43 -0400
-Message-Id: <1311353744-16405-2-git-send-email-jamesnuss@nanometrics.ca>
+Subject: [PATCH v4 0/2] New PPS client driver using GPIO
+Date: Fri, 22 Jul 2011 12:55:42 -0400
+Message-Id: <1311353744-16405-1-git-send-email-jamesnuss@nanometrics.ca>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1311353744-16405-1-git-send-email-jamesnuss@nanometrics.ca>
-References: <1311353744-16405-1-git-send-email-jamesnuss@nanometrics.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A default echo function has been provided so it is no longer an
-error when you specify PPS_ECHOASSERT or PPS_ECHOCLEAR without an explicit
-echo function. This allows some code re-use and also makes it easier
-to write client drivers since the default echo function does not
-normally need to change.
+Changes since v3:
+. added ack from maintainer: Rodolfo Giometti <giometti@linux.it>
 
-Signed-off-by: James Nuss <jamesnuss@nanometrics.ca>
-Reviewed-by: Ben Gardiner <bengardiner@nanometrics.ca>
-Acked-by: Rodolfo Giometti <giometti@linux.it>
+Changes since v2:
+. manually specify label for pr_fmt() since KBUILD_MODNAME equates to
+pps_gpio rather than pps-gpio which is the driver name.
+. cleanup return values
+. call gpio_free() on error if gpio_request() has been called.
+
+Changes since v1:
+. rename module to pps-gpio
+. add platform data options for gpio pin number, gpio pin label, assert edge type,
+and clear event capture.
+. no need to setup gpio and IRQ resource in platform device. This is performed by
+the driver.
+. cleanup as per comments
+
 ---
- drivers/pps/clients/pps-ktimer.c  |   12 ------------
- drivers/pps/clients/pps_parport.c |    9 ---------
- drivers/pps/kapi.c                |   20 +++++++++++++-------
- 3 files changed, 13 insertions(+), 28 deletions(-)
 
-diff --git a/drivers/pps/clients/pps-ktimer.c b/drivers/pps/clients/pps-ktimer.c
-index 82583b0..436b4e4 100644
---- a/drivers/pps/clients/pps-ktimer.c
-+++ b/drivers/pps/clients/pps-ktimer.c
-@@ -52,17 +52,6 @@ static void pps_ktimer_event(unsigned long ptr)
- }
- 
- /*
-- * The echo function
-- */
--
--static void pps_ktimer_echo(struct pps_device *pps, int event, void *data)
--{
--	dev_info(pps->dev, "echo %s %s\n",
--		event & PPS_CAPTUREASSERT ? "assert" : "",
--		event & PPS_CAPTURECLEAR ? "clear" : "");
--}
--
--/*
-  * The PPS info struct
-  */
- 
-@@ -72,7 +61,6 @@ static struct pps_source_info pps_ktimer_info = {
- 	.mode		= PPS_CAPTUREASSERT | PPS_OFFSETASSERT |
- 			  PPS_ECHOASSERT |
- 			  PPS_CANWAIT | PPS_TSFMT_TSPEC,
--	.echo		= pps_ktimer_echo,
- 	.owner		= THIS_MODULE,
- };
- 
-diff --git a/drivers/pps/clients/pps_parport.c b/drivers/pps/clients/pps_parport.c
-index c571d6d..e1b4705 100644
---- a/drivers/pps/clients/pps_parport.c
-+++ b/drivers/pps/clients/pps_parport.c
-@@ -133,14 +133,6 @@ out_both:
- 	return;
- }
- 
--/* the PPS echo function */
--static void pps_echo(struct pps_device *pps, int event, void *data)
--{
--	dev_info(pps->dev, "echo %s %s\n",
--		event & PPS_CAPTUREASSERT ? "assert" : "",
--		event & PPS_CAPTURECLEAR ? "clear" : "");
--}
--
- static void parport_attach(struct parport *port)
- {
- 	struct pps_client_pp *device;
-@@ -151,7 +143,6 @@ static void parport_attach(struct parport *port)
- 				  PPS_OFFSETASSERT | PPS_OFFSETCLEAR | \
- 				  PPS_ECHOASSERT | PPS_ECHOCLEAR | \
- 				  PPS_CANWAIT | PPS_TSFMT_TSPEC,
--		.echo		= pps_echo,
- 		.owner		= THIS_MODULE,
- 		.dev		= NULL
- 	};
-diff --git a/drivers/pps/kapi.c b/drivers/pps/kapi.c
-index a4e8eb9..f197e8e 100644
---- a/drivers/pps/kapi.c
-+++ b/drivers/pps/kapi.c
-@@ -52,6 +52,14 @@ static void pps_add_offset(struct pps_ktime *ts, struct pps_ktime *offset)
- 	ts->sec += offset->sec;
- }
- 
-+static void pps_echo_client_default(struct pps_device *pps, int event,
-+		void *data)
-+{
-+	dev_info(pps->dev, "echo %s %s\n",
-+		event & PPS_CAPTUREASSERT ? "assert" : "",
-+		event & PPS_CAPTURECLEAR ? "clear" : "");
-+}
-+
- /*
-  * Exported functions
-  */
-@@ -80,13 +88,6 @@ struct pps_device *pps_register_source(struct pps_source_info *info,
- 		err = -EINVAL;
- 		goto pps_register_source_exit;
- 	}
--	if ((info->mode & (PPS_ECHOASSERT | PPS_ECHOCLEAR)) != 0 &&
--			info->echo == NULL) {
--		pr_err("%s: echo function is not defined\n",
--					info->name);
--		err = -EINVAL;
--		goto pps_register_source_exit;
--	}
- 	if ((info->mode & (PPS_TSFMT_TSPEC | PPS_TSFMT_NTPFP)) == 0) {
- 		pr_err("%s: unspecified time format\n",
- 					info->name);
-@@ -108,6 +109,11 @@ struct pps_device *pps_register_source(struct pps_source_info *info,
- 	pps->params.mode = default_params;
- 	pps->info = *info;
- 
-+	/* check for default echo function */
-+	if ((pps->info.mode & (PPS_ECHOASSERT | PPS_ECHOCLEAR)) &&
-+			pps->info.echo == NULL)
-+		pps->info.echo = pps_echo_client_default;
-+
- 	init_waitqueue_head(&pps->queue);
- 	spin_lock_init(&pps->lock);
- 
--- 
-1.7.1
+This patchset contains 2 patches.  It is based on the work done by
+Ricardo Martins <rasm@fe.up.pt> who submitted an initial implementation [1]
+of a PPS IRQ client driver to the linuxpps mailing-list on Dec 3 2010. Most
+of the work was in removing the platform device registration from the
+driver itself as this is not the standard way of platform driver/device
+registration.
+
+[1] http://ml.enneenne.com/pipermail/linuxpps/2010-December/004155.html
+
+[PATCH 1/2] is mostly a cleanup and contains refactoring of the echo
+function definition interface. A default echo function has been defined
+so all you need to do is set one of the ECHO flags and this function will
+be used. Alternatively, don't set the ECHO flags or override the echo
+function as required.
+
+[PATCH 2/2] adds a new PPS client driver for use with GPIO. The module is
+implemented as a platform driver therefore it is necessary to register
+platform device(s) to make use of it. Usually this is performed
+in your specific board setup.
+
+TESTING:
+Testing was performed using the Texas Instruments OMAP-L138 based DA850
+evaluation board. GPIO6.6 was selected as the GPIO pin with assert events
+on the rising edge and also capturing clear events.  The platform device was
+registered in arch/arm/mach-davinci/board-da850-evm.c.
+This GPIO was connected to a Trimble Lassen IQ generating real PPS signals.
+The dmesg output with PPS debugging enabled is as follows:
+
+...
+pps_core: LinuxPPS API ver. 1 registered
+pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti <giometti@linux.it>
+pps_core: source pps-gpio.0 got cdev (253:0)
+pps pps0: new PPS source pps-gpio.0
+pps pps0: Registered IRQ 203 as PPS source
+...
+pps pps0: PPS event at 1309287783.084940917
+pps pps0: capture assert seq #29
+pps pps0: PPS event at 1309287783.085086500
+pps pps0: capture clear seq #31
+pps pps0: PPS event at 1309287784.084908209
+pps pps0: capture assert seq #30
+pps pps0: PPS event at 1309287784.085053209
+pps pps0: capture clear seq #32
+...
+
+---
+
+James Nuss (2):
+  pps: default echo function
+  pps: new client driver using GPIO
+
+ drivers/pps/clients/Kconfig       |    9 ++
+ drivers/pps/clients/Makefile      |    1 +
+ drivers/pps/clients/pps-gpio.c    |  227 +++++++++++++++++++++++++++++++++++++
+ drivers/pps/clients/pps-ktimer.c  |   12 --
+ drivers/pps/clients/pps_parport.c |    9 --
+ drivers/pps/kapi.c                |   20 ++-
+ include/linux/pps-gpio.h          |   32 +++++
+ 7 files changed, 282 insertions(+), 28 deletions(-)
+ create mode 100644 drivers/pps/clients/pps-gpio.c
+ create mode 100644 include/linux/pps-gpio.h
 
