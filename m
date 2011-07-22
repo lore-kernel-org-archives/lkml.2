@@ -1,77 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751333Ab1GVWKp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 18:10:45 -0400
-Received: from fieldses.org ([174.143.236.118]:48481 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750778Ab1GVWKo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 18:10:44 -0400
-Date: Fri, 22 Jul 2011 18:10:39 -0400
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Matt Mackall <mpm@selenic.com>, NeilBrown <neilb@suse.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Nanosecond fs timestamp support: sad
-Message-ID: <20110722221039.GB10749@fieldses.org>
-References: <1311271641.14555.114.camel@calx>
- <m2pql2c0qz.fsf@firstfloor.org>
- <20110722163335.2df4f6ca@notabene.brown>
- <1311363269.14555.261.camel@calx>
- <20110722205922.GS8006@one.firstfloor.org>
- <1311369102.14555.268.camel@calx>
- <20110722214732.GW8006@one.firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110722214732.GW8006@one.firstfloor.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+	id S1751426Ab1GVWLZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 18:11:25 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:39035 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750778Ab1GVWLY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 18:11:24 -0400
+Date: Fri, 22 Jul 2011 15:11:07 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
+        Ingo Molnar <mingo@elte.hu>, Ben Greear <greearb@candelatech.com>,
+        stable@kernel.org
+Subject: Re: [patch 2/3] rtc: Fix hrtimer deadlock
+Message-Id: <20110722151107.e1c9996d.akpm@linux-foundation.org>
+In-Reply-To: <20110722091045.476900421@linutronix.de>
+References: <20110722091011.717194327@linutronix.de>
+	<20110722091045.476900421@linutronix.de>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 22, 2011 at 11:47:32PM +0200, Andi Kleen wrote:
-> On Fri, Jul 22, 2011 at 04:11:42PM -0500, Matt Mackall wrote:
-> > On Fri, 2011-07-22 at 22:59 +0200, Andi Kleen wrote:
-> > > > Indeed. Only usefully exists on ext4 and requires extra system calls.
-> > > 
-> > > Not sure what you mean?  It's in stat(2), just like the timestamps.
-> > 
-> > I don't see anything that looks like a version or generation number in
-> > either the man pages, the asm-generic/stat.h, or glibc's asm/stat.h.
-> > Pointer?
+On Fri, 22 Jul 2011 09:12:51 -0000
+Thomas Gleixner <tglx@linutronix.de> wrote:
+
+> Ben reported a lockup related to rtc. The lockup happens due to:
 > 
-> Hmm you're right. I thought it was in there, but apparently not.
-> I think it should be added there though. We still have some unused 
-> fields.
+> CPU0                                        CPU1
+> 
+> rtc_irq_set_state()			    __run_hrtimer()	
+>   spin_lock_irqsave(&rtc->irq_task_lock)    rtc_handle_legacy_irq();
+> 					      spin_lock(&rtc->irq_task_lock);
+>   hrtimer_cancel()
+>     while (callback_running);
+> 
+> So the running callback never finishes as it's blocked on
+> rtc->irq_task_lock.  
+> 
+> Use hrtimer_try_to_cancel() instead and drop rtc->irq_task_lock while
+> waiting for the callback. Fix this for both rtc_irq_set_state() and
+> rtc_irq_set_freq().
+> 
+> ...
+>
+> +static int rtc_update_hrtimer(struct rtc_device *rtc, int enabled)
+> +{
+> +	/*
+> +	 * We unconditionally cancel the timer here, because otherwise
 
-But last I checked I thought it was only ext4 that actually incremented
-the i_version on IO, and even then only when given a (non-default) mount
-option.
+The comment seems wrong.  If hrtimer_try_to_cancel() fails, we simply
+bale out so we did not "unconditionally cancel the timer"?
 
-My notes on what needs to be done there:
+> +	 * we could run into BUG_ON(timer->state != HRTIMER_STATE_CALLBACK);
+> +	 * when we manage to start the timer before the callback
+> +	 * returns HRTIMER_RESTART.
+> +	 *
+> +	 * We cannot use hrtimer_cancel() here as a running callback
+> +	 * could be blocked on rtc->irq_task_lock and hrtimer_cancel()
+> +	 * would spin forever.
+> +	 */
+> +	if (hrtimer_try_to_cancel(&rtc->pie_timer) < 0)
+> +		return -1;
+> +
+> +	if (enabled) {
+> +		ktime_t period = ktime_set(0, NSEC_PER_SEC / rtc->irq_freq);
+> +
+> +		hrtimer_start(&rtc->pie_timer, period, HRTIMER_MODE_REL);
+> +	}
+> +	return 0;
+> +}
+> +
+>  /**
+>   * rtc_irq_set_state - enable/disable 2^N Hz periodic IRQs
+>   * @rtc: the rtc device
+> @@ -651,24 +674,21 @@ int rtc_irq_set_state(struct rtc_device 
+>  	int err = 0;
+>  	unsigned long flags;
+>  
+> +retry:
+>  	spin_lock_irqsave(&rtc->irq_task_lock, flags);
+>  	if (rtc->irq_task != NULL && task == NULL)
+>  		err = -EBUSY;
+>  	if (rtc->irq_task != task)
+>  		err = -EACCES;
+> -	if (err)
+> -		goto out;
+> -
+> -	if (enabled) {
+> -		ktime_t period = ktime_set(0, NSEC_PER_SEC/rtc->irq_freq);
+> -		hrtimer_start(&rtc->pie_timer, period, HRTIMER_MODE_REL);
+> -	} else {
+> -		hrtimer_cancel(&rtc->pie_timer);
+> +	if (!err) {
+> +		if (rtc_update_hrtimer(rtc, enabled) < 0) {
+> +			spin_unlock_irqrestore(&rtc->irq_task_lock, flags);
+> +			cpu_relax();
+> +			goto retry;
+> +		}
+> +		rtc->pie_enabled = enabled;
 
-	- collect data to determine whether turning on i_version causes
-	  any significant performance regressions.
-		- Last I talked to him, Ted Tso recommended running
-		  Bonnie on a local disk, since it does a lot of little
-		  writes, which is somewhat of a worst case, as it will
-		  generate extra metadata updates for each write.
-		  Compare total wall-clock time, number of iops, and
-		  number of bytes (using some kind of block tracing).
-	- If there aren't any problems, turn it on by default, and we're
-	  done.  If there are unfixable problems, consider something
-	  more complicated (like turning on i_version automatically when
-	  someone asks for it).
-	- We need to check that i_version is also doing something
-	  sensible on directory as well as on file inodes.
-	- We also need to think about what it does after reboots.  (E.g.
-	  what is an nfs server to do if clients see the i_version go
-	  backwards (and hence possible repeat old values) after a
-	  reboot?)
-	- Double-check the order that data updates and i_version updates
-	  are done in.  (Ideal would be if they were atomic, but for
-	  nfsd's purposes at least it should be adequate if the
-	  i_version comes after, and no later than the next commit.)
+Well this is rather nasty.  Sort of an open-coded expensive spinlock. 
+All rather pointless on SMP=n builds, too.
 
---b.
+Is there no better way, such as fixing up the locking properly?
+
