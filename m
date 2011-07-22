@@ -1,237 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755295Ab1GVTxs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 15:53:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13975 "EHLO mx1.redhat.com"
+	id S1755245Ab1GVTz2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 15:55:28 -0400
+Received: from hera.kernel.org ([140.211.167.34]:40627 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755132Ab1GVTxr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 15:53:47 -0400
-Date: Fri, 22 Jul 2011 15:53:40 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Alex Neronskiy <zakmagnus@google.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Mandeep Singh Baines <msb@chromium.org>
-Subject: Re: [PATCH v3 2/2] Make hard lockup detection use timestamps
-Message-ID: <20110722195340.GF3765@redhat.com>
-References: <1311271873-10879-1-git-send-email-zakmagnus@google.com>
+	id S1755008Ab1GVTz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 15:55:27 -0400
+Date: Fri, 22 Jul 2011 19:55:19 GMT
+From: tip-bot for Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Message-ID: <tip-699f3dd4e4f8fba6ded83a3dc21e3db960323fcc@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        tglx@linutronix.de, hpa@linux.intel.com,
+        jeremy.fitzhardinge@citrix.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com,
+        jeremy.fitzhardinge@citrix.com
+In-Reply-To: <05552e1c97739f589cb76c20b5a6565ccd506636.1308878118.git.jeremy.fitzhardinge@citrix.com>
+References: <05552e1c97739f589cb76c20b5a6565ccd506636.1308878118.git.jeremy.fitzhardinge@citrix.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/spinlocks] x86, ticketlock: Clean up types and accessors
+Git-Commit-ID: 699f3dd4e4f8fba6ded83a3dc21e3db960323fcc
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1311271873-10879-1-git-send-email-zakmagnus@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 22 Jul 2011 19:55:20 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 21, 2011 at 11:11:13AM -0700, Alex Neronskiy wrote:
-> The hard lockup detector is made to work more like the soft lockup
-> detector by using timestamps to compare how long it's been since
-> an event happened. Specifically, when the period function that checks
-> for soft lockups fires, it touches a timestamp, and the hard lockup
-> detector now checks if the timer is late, based on when it last fired.
-> Hard stalls are now sub-hardlock threshold delays in the timer's
-> firing which are nonetheless notable.
+Commit-ID:  699f3dd4e4f8fba6ded83a3dc21e3db960323fcc
+Gitweb:     http://git.kernel.org/tip/699f3dd4e4f8fba6ded83a3dc21e3db960323fcc
+Author:     Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+AuthorDate: Thu, 23 Jun 2011 18:19:13 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 22 Jul 2011 11:13:17 -0700
 
-So I played with the hardlockup case and I kinda like the timestamp thing.
-It seems to give useful data.  In fact I feel like I can shrink the
-hardlockup window, run some tests and see where the latencies are in a
-system.  The patch itself I think is ok, I'll review on Monday or Tuesday
-when I get some more free time.
+x86, ticketlock: Clean up types and accessors
 
-However, I ran the softlockup case and the output was a mess.  I think
-rcu_sched stalls were being detected and as a result it was NMI dumping
-stack traces for all cpus.  I can't tell if it was your patch or some
-uncovered bug.
+A few cleanups to the way spinlocks are defined and accessed:
+ - define __ticket_t which is the size of a spinlock ticket (ie, enough
+   bits to hold all the cpus)
+ - Define struct arch_spinlock as a union containing plain slock and
+   the head and tail tickets
+ - Use head and tail to implement some of the spinlock predicates.
+ - Make all ticket variables unsigned.
+ - Use TICKET_SHIFT to form constants
 
-I'll dig into on Monday.  Not sure if you were able to see that.
+Most of this will be used in later patches.
 
-Thanks,
-Don
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Link: http://lkml.kernel.org/r/05552e1c97739f589cb76c20b5a6565ccd506636.1308878118.git.jeremy.fitzhardinge@citrix.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/include/asm/spinlock.h       |   24 ++++++++++--------------
+ arch/x86/include/asm/spinlock_types.h |   20 ++++++++++++++++++--
+ 2 files changed, 28 insertions(+), 16 deletions(-)
 
-> 
-> Signed-off-by: Alex Neronskiy <zakmagnus@google.com>
-> ---
->  kernel/watchdog.c |   83 +++++++++++++++++++++++++++++-----------------------
->  1 files changed, 46 insertions(+), 37 deletions(-)
-> 
-> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-> index bf26810..17bcded 100644
-> --- a/kernel/watchdog.c
-> +++ b/kernel/watchdog.c
-> @@ -40,30 +40,28 @@ static DEFINE_PER_CPU(bool, soft_watchdog_warn);
->  #ifdef CONFIG_HARDLOCKUP_DETECTOR
->  static DEFINE_PER_CPU(bool, hard_watchdog_warn);
->  static DEFINE_PER_CPU(bool, watchdog_nmi_touch);
-> -static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts);
-> -static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts_saved);
-> -static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts_missed);
-> +static DEFINE_PER_CPU(unsigned long, hrtimer_touch_ts);
->  static DEFINE_PER_CPU(struct perf_event *, watchdog_ev);
->  
->  unsigned long worst_hardstall;
->  static DEFINE_SPINLOCK(hardstall_lock);
->  
-> -/* The number of consecutive hard check failures before it's a lockup */
-> -#define hardlockup_thresh (5)
-> +/* How often to check for hard lockups compared to watchdog_thresh */
-> +#define hardlockup_freq (5)
->  
-> -/*
-> - * The minimum expected number of missed interrupts in a normal hard
-> - * lockup check.
-> - */
-> -#define hardstall_thresh (2)
-> -
-> -#endif /* CONFIG_HARDLOCKUP_DETECTOR */
-> +/* How late (in ms) a timer could be while still being ignored as "normal" */
-> +#define hardstall_thresh (200)
->  
->  /*
->   * The number of milliseconds by which a stall must be worse than the
->   * current worst in order to be recorded. This prevents bursts of near-
->   * identical stalls.
->   */
-> +#define hardstall_diff_thresh (100)
-> +
-> +#endif /* CONFIG_HARDLOCKUP_DETECTOR */
-> +
-> +/* Difference threshold for soft stalls (ms) */
->  #define softstall_diff_thresh (100)
->  
->  /* boot commands */
-> @@ -156,6 +154,11 @@ static unsigned long get_sample_period(void)
->  	return get_softlockup_thresh() * (NSEC_PER_SEC / 5);
->  }
->  
-> +static inline unsigned long get_sample_period_ms(void)
-> +{
-> +	return get_sample_period() >> 20LL;
-> +}
-> +
->  /* Commands for resetting the watchdog */
->  static void __touch_watchdog(void)
->  {
-> @@ -211,11 +214,11 @@ void touch_softlockup_watchdog_sync(void)
->  static void update_hardstall(unsigned long stall, int this_cpu)
->  {
->  	int update_stall = 0;
-> -
-> -	if (stall > hardstall_thresh && stall > worst_hardstall) {
-> +	if (stall > hardstall_thresh &&
-> +			stall > worst_hardstall + hardstall_diff_thresh) {
->  		unsigned long flags;
->  		spin_lock_irqsave(&hardstall_lock, flags);
-> -		update_stall = stall > worst_hardstall;
-> +		update_stall = stall > worst_hardstall + hardstall_diff_thresh;
->  		if (update_stall)
->  			worst_hardstall = stall;
->  		spin_unlock_irqrestore(&hardstall_lock, flags);
-> @@ -223,7 +226,7 @@ static void update_hardstall(unsigned long stall, int this_cpu)
->  
->  	if (update_stall) {
->  		printk(KERN_WARNING "LOCKUP may be in progress!"
-> -			"Worst hard stall seen on CPU#%d: %lu interrupts missed\n",
-> +			"Worst hard stall seen on CPU#%d: %lums\n",
->  			this_cpu, stall);
->  		dump_stack();
->  	}
-> @@ -231,21 +234,27 @@ static void update_hardstall(unsigned long stall, int this_cpu)
->  
->  static int is_hardlockup(int this_cpu)
->  {
-> -	unsigned long hrint = __this_cpu_read(hrtimer_interrupts);
-> -	unsigned long hrint_saved = __this_cpu_read(hrtimer_interrupts_saved);
-> -	unsigned long ints_missed = 0;
-> +	unsigned long touch_ts = __this_cpu_read(hrtimer_touch_ts);
-> +	unsigned long next_touch = touch_ts + get_sample_period_ms();
-> +	unsigned long now = get_timestamp(this_cpu);
-> +	unsigned long delay = now - next_touch;
->  
-> -	__this_cpu_write(hrtimer_interrupts_saved, hrint);
-> +	/* the timer has never fired; no data to go on yet */
-> +	if (unlikely(!touch_ts))
-> +		return 0;
->  
-> -	if (hrint_saved == hrint)
-> -		ints_missed = per_cpu(hrtimer_interrupts_missed, this_cpu)++;
-> -	else
-> -		__this_cpu_write(hrtimer_interrupts_missed, 0);
-> +	/*
-> +	 * If the next touch is supposed to be in the future, then
-> +	 * everything is fine. If it's not, that means it was missed
-> +	 * and something's wrong.
-> +	 */
-> +	if (time_after(next_touch, now))
-> +		return 0;
->  
-> -	if (ints_missed >= hardlockup_thresh)
-> +	if (delay >= (watchdog_thresh << 10L))
->  		return 1;
->  
-> -	update_hardstall(ints_missed, this_cpu);
-> +	update_hardstall(delay, this_cpu);
->  	return 0;
->  }
->  #endif
-> @@ -311,10 +320,10 @@ static void watchdog_overflow_callback(struct perf_event *event, int nmi,
->  	}
->  
->  	/* check for a hardlockup
-> -	 * This is done by making sure our timer interrupt
-> -	 * is incrementing.  The timer interrupt should have
-> -	 * fired multiple times before we overflow'd.  If it hasn't
-> -	 * then this is a good indication the cpu is stuck
-> +	 * This is done by making sure our timer interrupts
-> +	 * are firing. It is known approximately when the timer
-> +	 * should fire and if it hasn't by then this is a good
-> +	 * indication the cpu is stuck.
->  	 */
->  	lockup = is_hardlockup(this_cpu);
->  	if (lockup) {
-> @@ -334,12 +343,12 @@ static void watchdog_overflow_callback(struct perf_event *event, int nmi,
->  	__this_cpu_write(hard_watchdog_warn, false);
->  	return;
->  }
-> -static void watchdog_interrupt_count(void)
-> +static void watchdog_interrupt_touch(int this_cpu)
->  {
-> -	__this_cpu_inc(hrtimer_interrupts);
-> +	__this_cpu_write(hrtimer_touch_ts, get_timestamp(this_cpu));
->  }
->  #else
-> -static inline void watchdog_interrupt_count(void) { return; }
-> +static inline void watchdog_interrupt_touch(int this_cpu) { return; }
->  #endif /* CONFIG_HARDLOCKUP_DETECTOR */
->  
->  /* watchdog kicker functions */
-> @@ -350,15 +359,15 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
->  	int duration;
->  	int this_cpu = smp_processor_id();
->  
-> -	/* kick the hardlockup detector */
-> -	watchdog_interrupt_count();
-> -
->  	/* kick the softlockup detector */
->  	wake_up_process(__this_cpu_read(softlockup_watchdog));
->  
->  	/* .. and repeat */
->  	hrtimer_forward_now(hrtimer, ns_to_ktime(get_sample_period()));
->  
-> +	/* kick the hardlockup detector now that the timer's been scheduled */
-> +	watchdog_interrupt_touch(this_cpu);
-> +
->  	if (touch_ts == 0) {
->  		if (unlikely(__this_cpu_read(softlockup_touch_sync))) {
->  			/*
-> @@ -460,7 +469,7 @@ static int watchdog_nmi_enable(int cpu)
->  	/* Try to register using hardware perf events */
->  	wd_attr = &wd_hw_attr;
->  	wd_attr->sample_period = hw_nmi_get_sample_period(watchdog_thresh);
-> -	do_div(wd_attr->sample_period, hardlockup_thresh);
-> +	do_div(wd_attr->sample_period, hardlockup_freq);
->  	event = perf_event_create_kernel_counter(wd_attr, cpu, NULL, watchdog_overflow_callback);
->  	if (!IS_ERR(event)) {
->  		printk(KERN_INFO "NMI watchdog enabled, takes one hw-pmu counter.\n");
-> -- 
-> 1.7.3.1
-> 
+diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+index 3089f70..d6d5784 100644
+--- a/arch/x86/include/asm/spinlock.h
++++ b/arch/x86/include/asm/spinlock.h
+@@ -56,11 +56,9 @@
+  * much between them in performance though, especially as locks are out of line.
+  */
+ #if (NR_CPUS < 256)
+-#define TICKET_SHIFT 8
+-
+ static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
+ {
+-	short inc = 0x0100;
++	unsigned short inc = 1 << TICKET_SHIFT;
+ 
+ 	asm volatile (
+ 		LOCK_PREFIX "xaddw %w0, %1\n"
+@@ -79,7 +77,7 @@ static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
+ 
+ static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
+ {
+-	int tmp, new;
++	unsigned int tmp, new;
+ 
+ 	asm volatile("movzwl %2, %0\n\t"
+ 		     "cmpb %h0,%b0\n\t"
+@@ -104,12 +102,10 @@ static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
+ 		     : "memory", "cc");
+ }
+ #else
+-#define TICKET_SHIFT 16
+-
+ static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
+ {
+-	int inc = 0x00010000;
+-	int tmp;
++	unsigned inc = 1 << TICKET_SHIFT;
++	unsigned tmp;
+ 
+ 	asm volatile(LOCK_PREFIX "xaddl %0, %1\n"
+ 		     "movzwl %w0, %2\n\t"
+@@ -129,8 +125,8 @@ static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
+ 
+ static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
+ {
+-	int tmp;
+-	int new;
++	unsigned tmp;
++	unsigned new;
+ 
+ 	asm volatile("movl %2,%0\n\t"
+ 		     "movl %0,%1\n\t"
+@@ -160,16 +156,16 @@ static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
+ 
+ static inline int __ticket_spin_is_locked(arch_spinlock_t *lock)
+ {
+-	int tmp = ACCESS_ONCE(lock->slock);
++	struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
+ 
+-	return !!(((tmp >> TICKET_SHIFT) ^ tmp) & ((1 << TICKET_SHIFT) - 1));
++	return !!(tmp.tail ^ tmp.head);
+ }
+ 
+ static inline int __ticket_spin_is_contended(arch_spinlock_t *lock)
+ {
+-	int tmp = ACCESS_ONCE(lock->slock);
++	struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
+ 
+-	return (((tmp >> TICKET_SHIFT) - tmp) & ((1 << TICKET_SHIFT) - 1)) > 1;
++	return ((tmp.tail - tmp.head) & TICKET_MASK) > 1;
+ }
+ 
+ #ifndef CONFIG_PARAVIRT_SPINLOCKS
+diff --git a/arch/x86/include/asm/spinlock_types.h b/arch/x86/include/asm/spinlock_types.h
+index dcb48b2..e3ad1e3 100644
+--- a/arch/x86/include/asm/spinlock_types.h
++++ b/arch/x86/include/asm/spinlock_types.h
+@@ -5,11 +5,27 @@
+ # error "please don't include this file directly"
+ #endif
+ 
++#include <linux/types.h>
++
++#if (CONFIG_NR_CPUS < 256)
++typedef u8  __ticket_t;
++#else
++typedef u16 __ticket_t;
++#endif
++
++#define TICKET_SHIFT	(sizeof(__ticket_t) * 8)
++#define TICKET_MASK	((__ticket_t)((1 << TICKET_SHIFT) - 1))
++
+ typedef struct arch_spinlock {
+-	unsigned int slock;
++	union {
++		unsigned int slock;
++		struct __raw_tickets {
++			__ticket_t head, tail;
++		} tickets;
++	};
+ } arch_spinlock_t;
+ 
+-#define __ARCH_SPIN_LOCK_UNLOCKED	{ 0 }
++#define __ARCH_SPIN_LOCK_UNLOCKED	{ { .slock = 0 } }
+ 
+ typedef struct {
+ 	unsigned int lock;
