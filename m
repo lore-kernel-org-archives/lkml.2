@@ -1,85 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932079Ab1GVUHD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 16:07:03 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:40621 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755132Ab1GVUHB convert rfc822-to-8bit (ORCPT
+	id S932087Ab1GVUPe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 16:15:34 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:43749 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755132Ab1GVUPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 16:07:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <201107222200.55834.linux@rainbow-software.org>
-References: <201107222200.55834.linux@rainbow-software.org>
-Date: Fri, 22 Jul 2011 16:06:59 -0400
-Message-ID: <CAGoCfiwqzs70A26WgN2pJJvz2aDzY9siOcTuOCkYm3nDHB=J1Q@mail.gmail.com>
-Subject: Re: [PATCH] [resend] usbvision: disable scaling for Nogatech MicroCam
-From: Devin Heitmueller <dheitmueller@kernellabs.com>
-To: Ondrej Zary <linux@rainbow-software.org>
-Cc: Joerg Heckenbach <joerg@heckenbach-aw.de>,
-        Dwaine Garden <dwainegarden@rogers.com>, linux-media@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Hans Verkuil <hverkuil@xs4all.nl>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 22 Jul 2011 16:15:32 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=L4ytpbFHbTdc/xkG1xJEyTXuguPmfBqulY1LjY3CvTGDHeExsMur0p7a/31nQ48PlwjhYAu/+7K6mF84sOkoR5OzqbD/H25rCZvMf1oiMEKvMUHuvXNKtf6FvU6KzrH7;
+Date: Fri, 22 Jul 2011 13:15:30 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Richard Weinberger <richard@nod.at>
+Cc: JBeulich@novell.com, mingo@elte.hu, akpm@linux-foundation.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        LKML <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net
+Subject: Re: linux-next: Tree for July 22 (uml)
+Message-Id: <20110722131530.7c8949a3.rdunlap@xenotime.net>
+In-Reply-To: <201107222055.35341.richard@nod.at>
+References: <20110722164237.2b3f6cbdedafa9e1d3f70867@canb.auug.org.au>
+	<20110722085346.51565411.rdunlap@xenotime.net>
+	<201107222055.35341.richard@nod.at>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 22, 2011 at 4:00 PM, Ondrej Zary <linux@rainbow-software.org> wrote:
-> Scaling causes bad artifacts (horizontal lines) with compression at least
-> with Nogatech MicroCam so disable it (for this HW).
->
-> This also fixes messed up image with some programs (Cheese with 160x120,
-> Adobe Flash). HW seems to support only image widths that are multiple of 64
-> but the driver does not account that in vidioc_try_fmt_vid_cap(). Cheese
-> calls try_fmt with 160x120, succeeds and then assumes that it really gets
-> data in that resolution - but it gets 128x120 instead. Don't know if this
-> affects other usbvision devices, it would be great if someone could test it.
->
-> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
->
-> diff -urp linux-2.6.39-rc2-/drivers/media/video/usbvision//usbvision-video.c linux-2.6.39-rc2/drivers/media/video/usbvision/usbvision-video.c
-> --- linux-2.6.39-rc2-/drivers/media/video/usbvision//usbvision-video.c  2011-07-16 16:42:35.000000000 +0200
-> +++ linux-2.6.39-rc2/drivers/media/video/usbvision/usbvision-video.c    2011-07-16 16:36:43.000000000 +0200
-> @@ -924,6 +924,11 @@ static int vidioc_try_fmt_vid_cap(struct
->        RESTRICT_TO_RANGE(vf->fmt.pix.width, MIN_FRAME_WIDTH, MAX_FRAME_WIDTH);
->        RESTRICT_TO_RANGE(vf->fmt.pix.height, MIN_FRAME_HEIGHT, MAX_FRAME_HEIGHT);
->
-> +       if (usbvision_device_data[usbvision->dev_model].codec == CODEC_WEBCAM) {
-> +               vf->fmt.pix.width = MAX_FRAME_WIDTH;
-> +               vf->fmt.pix.height = MAX_FRAME_HEIGHT;
-> +       }
-> +
->        vf->fmt.pix.bytesperline = vf->fmt.pix.width*
->                usbvision->palette.bytes_per_pixel;
->        vf->fmt.pix.sizeimage = vf->fmt.pix.bytesperline*vf->fmt.pix.height;
-> @@ -952,6 +957,11 @@ static int vidioc_s_fmt_vid_cap(struct f
->
->        usbvision->cur_frame = NULL;
->
-> +       if (usbvision_device_data[usbvision->dev_model].codec == CODEC_WEBCAM) {
-> +               vf->fmt.pix.width = MAX_FRAME_WIDTH;
-> +               vf->fmt.pix.height = MAX_FRAME_HEIGHT;
-> +       }
-> +
->        /* by now we are committed to the new data... */
->        usbvision_set_output(usbvision, vf->fmt.pix.width, vf->fmt.pix.height);
->
->
-> --
-> Ondrej Zary
+On Fri, 22 Jul 2011 20:55:34 +0200 Richard Weinberger wrote:
 
-Hello Ondrej,
+> Am Freitag 22 Juli 2011, 17:53:46 schrieben Sie:
+> > On Fri, 22 Jul 2011 16:42:37 +1000 Stephen Rothwell wrote:
+> > > Hi all,
+> > 
+> > uml build on i386 fails with:
+> > 
+> > arch/um/sys-i386/built-in.o: In function `call_rwsem_down_read_failed':
+> > linux-next-20110722/arch/um/sys-i386/../../x86/lib/rwsem.S:93: undefined
+> > reference to `rwsem_down_read_failed' arch/um/sys-i386/built-in.o: In
+> > function `call_rwsem_down_write_failed':
+> > linux-next-20110722/arch/um/sys-i386/../../x86/lib/rwsem.S:105: undefined
+> > reference to `rwsem_down_write_failed' arch/um/sys-i386/built-in.o: In
+> > function `call_rwsem_wake':
+> > linux-next-20110722/arch/um/sys-i386/../../x86/lib/rwsem.S:118: undefined
+> > reference to `rwsem_wake' arch/um/sys-i386/built-in.o: In function
+> > `call_rwsem_downgrade_wake':
+> > linux-next-20110722/arch/um/sys-i386/../../x86/lib/rwsem.S:130: undefined
+> > reference to `rwsem_downgrade_wake'
+> > 
+> 
+> Jan,
+> 
+> "x86: Unify rwsem assembly implementation" broke the UML build on i386.
+> Please compile test you changes or CC me when you are touch something in arch/um/.
+> 
+> make ARCH=um SUBARCH=i386
+> and
+> make ARCH=um SUBARCH=x86_64
+> 
+> does not hurt. :-)
 
-Drivers are permitted to return a different resolution than what the
-application provided in the S_FMT call.  It is the responsibility of
-the application to look at the struct after the ioctl() call and if
-the values are not what it expects to then accommodate the change.
+Ack.
 
-In other words, this sounds like a bug in Cheese.
+> Thanks,
+> //richard
+> 
+> ---
+> 
+> From b9ec24beb55276d74fdf4f9f9607c69fc8662b72 Mon Sep 17 00:00:00 2001
+> From: Richard Weinberger <richard@nod.at>
+> Date: Fri, 22 Jul 2011 20:46:32 +0200
+> Subject: [PATCH] um: Make rwsem.S depend on CONFIG_RWSEM_XCHGADD_ALGORITHM
+> 
+> rwsem.S can only be used with CONFIG_RWSEM_XCHGADD_ALGORITHM.
+> This unbreaks the UML build on i386.
+> 
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
 
-Devin
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
 
--- 
-Devin J. Heitmueller - Kernel Labs
-http://www.kernellabs.com
+Thanks.
+
+> ---
+>  arch/um/sys-i386/Makefile |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/um/sys-i386/Makefile b/arch/um/sys-i386/Makefile
+> index 15587ed..87b659d 100644
+> --- a/arch/um/sys-i386/Makefile
+> +++ b/arch/um/sys-i386/Makefile
+> @@ -8,7 +8,8 @@ obj-y = bug.o bugs.o checksum.o delay.o fault.o ksyms.o ldt.o ptrace.o \
+>  
+>  obj-$(CONFIG_BINFMT_ELF) += elfcore.o
+>  
+> -subarch-obj-y = lib/rwsem.o lib/string_32.o
+> +subarch-obj-y = lib/string_32.o
+> +subarch-obj-$(CONFIG_RWSEM_XCHGADD_ALGORITHM) += lib/rwsem.o
+>  subarch-obj-$(CONFIG_HIGHMEM) += mm/highmem_32.o
+>  subarch-obj-$(CONFIG_MODULES) += kernel/module.o
+>  
+> -- 
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
