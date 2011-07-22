@@ -1,112 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453Ab1GVJLy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 05:11:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54564 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751376Ab1GVJLx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 05:11:53 -0400
-Date: Fri, 22 Jul 2011 11:11:51 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Venki Pallipadi <venkatesh.pallipadi@intel.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH] x86, PAT: honor CONFIG_STRICT_DEVMEM if pat is disable]
-Message-ID: <20110722091151.GA4004@tiehlicka.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753507Ab1GVJM4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 05:12:56 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46113 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753051Ab1GVJMw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 05:12:52 -0400
+Message-Id: <20110722091045.476900421@linutronix.de>
+User-Agent: quilt/0.48-1
+Date: Fri, 22 Jul 2011 09:12:51 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@elte.hu>,
+        Ben Greear <greearb@candelatech.com>, stable@kernel.org
+Subject: [patch 2/3] rtc: Fix hrtimer deadlock
+References: <20110722091011.717194327@linutronix.de>
+Content-Disposition: inline; filename=rtc-fix-hrtimer-deadlock.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-I have just come across a strange behavior of /dev/[k]mem when PAT is
-configured while STRICT_DEVMEM is disabled. 
-One would expect that /dev/kmem would allow to access also the
-system RAM in that configuration but that is not obviously true as pat
-code defines range_is_allowed to protect from accessing that memory.
+Ben reported a lockup related to rtc. The lockup happens due to:
 
-AFAICS this behavior was introduced in 0124cecf (x86, PAT: disable
-/dev/mem mmap RAM with PAT) which says that it disables [k]mem with PAT
-because it is safer. There is no explanation why it allows to access
-that memory if CONFIG_NONPROMISC_DEVMEM (CONFIG_STRICT_DEVMEM now).
+CPU0                                        CPU1
 
-The thing is even more complicated by the fact that the access is
-allowed when nopat kernel parameter is specified because
-range_is_allowed just does't call devmem_is_allowed in that case.
+rtc_irq_set_state()			    __run_hrtimer()	
+  spin_lock_irqsave(&rtc->irq_task_lock)    rtc_handle_legacy_irq();
+					      spin_lock(&rtc->irq_task_lock);
+  hrtimer_cancel()
+    while (callback_running);
 
-While I do agree that the feature is not safe in general we should honor
-STRICT_DEVMEM setting in some way IMO.
+So the running callback never finishes as it's blocked on
+rtc->irq_task_lock.  
 
-What do you think about the following fix? I have tried to preserve
-"disabled for PAT" by default behavior.
+Use hrtimer_try_to_cancel() instead and drop rtc->irq_task_lock while
+waiting for the callback. Fix this for both rtc_irq_set_state() and
+rtc_irq_set_freq().
+
+Reported-by: Ben Greear <greearb@candelatech.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: stable@kernel.org
 ---
->From e905f034d860c52de306b410ef148d601eae9e7f Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Fri, 22 Jul 2011 11:01:01 +0200
-Subject: [PATCH] x86, PAT: honor CONFIG_STRICT_DEVMEM if pat is disable
+ drivers/rtc/interface.c |   56 +++++++++++++++++++++++++++++++-----------------
+ 1 file changed, 37 insertions(+), 19 deletions(-)
 
-since 0124cecf (x86, PAT: disable /dev/mem mmap RAM with PAT) we are
-disabling access to the system RAM as if STRICT_DEVMEM was enabled by
-default. If we, however, disable pat by nopat kernel parameter we can
-access that memory without considering CONFIG_STRICT_DEVMEM.
-
-Let's make the code to honor STRICT_DEVMEM while we still preserve
-disabled by default behavior. This means that the access to the system
-memory is granted only if nopat is provided and STRICT_DEVMEM is
-disabled.
-
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- arch/x86/mm/pat.c |   10 ++--------
- 1 files changed, 2 insertions(+), 8 deletions(-)
-
-diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-index f6ff57b..fbaf3fc 100644
---- a/arch/x86/mm/pat.c
-+++ b/arch/x86/mm/pat.c
-@@ -472,13 +472,6 @@ pgprot_t phys_mem_access_prot(struct file *file, unsigned long pfn,
- 	return vma_prot;
+Index: linux-2.6/drivers/rtc/interface.c
+===================================================================
+--- linux-2.6.orig/drivers/rtc/interface.c
++++ linux-2.6/drivers/rtc/interface.c
+@@ -636,6 +636,29 @@ void rtc_irq_unregister(struct rtc_devic
  }
+ EXPORT_SYMBOL_GPL(rtc_irq_unregister);
  
--#ifdef CONFIG_STRICT_DEVMEM
--/* This check is done in drivers/char/mem.c in case of STRICT_DEVMEM*/
--static inline int range_is_allowed(unsigned long pfn, unsigned long size)
--{
--	return 1;
--}
--#else
- /* This check is needed to avoid cache aliasing when PAT is enabled */
- static inline int range_is_allowed(unsigned long pfn, unsigned long size)
- {
-@@ -486,8 +479,10 @@ static inline int range_is_allowed(unsigned long pfn, unsigned long size)
- 	u64 to = from + size;
- 	u64 cursor = from;
++static int rtc_update_hrtimer(struct rtc_device *rtc, int enabled)
++{
++	/*
++	 * We unconditionally cancel the timer here, because otherwise
++	 * we could run into BUG_ON(timer->state != HRTIMER_STATE_CALLBACK);
++	 * when we manage to start the timer before the callback
++	 * returns HRTIMER_RESTART.
++	 *
++	 * We cannot use hrtimer_cancel() here as a running callback
++	 * could be blocked on rtc->irq_task_lock and hrtimer_cancel()
++	 * would spin forever.
++	 */
++	if (hrtimer_try_to_cancel(&rtc->pie_timer) < 0)
++		return -1;
++
++	if (enabled) {
++		ktime_t period = ktime_set(0, NSEC_PER_SEC / rtc->irq_freq);
++
++		hrtimer_start(&rtc->pie_timer, period, HRTIMER_MODE_REL);
++	}
++	return 0;
++}
++
+ /**
+  * rtc_irq_set_state - enable/disable 2^N Hz periodic IRQs
+  * @rtc: the rtc device
+@@ -651,24 +674,21 @@ int rtc_irq_set_state(struct rtc_device 
+ 	int err = 0;
+ 	unsigned long flags;
  
-+#ifndef CONFIG_STRICT_DEVMEM
- 	if (!pat_enabled)
- 		return 1;
-+#endif
- 
- 	while (cursor < to) {
- 		if (!devmem_is_allowed(pfn)) {
-@@ -501,7 +496,6 @@ static inline int range_is_allowed(unsigned long pfn, unsigned long size)
++retry:
+ 	spin_lock_irqsave(&rtc->irq_task_lock, flags);
+ 	if (rtc->irq_task != NULL && task == NULL)
+ 		err = -EBUSY;
+ 	if (rtc->irq_task != task)
+ 		err = -EACCES;
+-	if (err)
+-		goto out;
+-
+-	if (enabled) {
+-		ktime_t period = ktime_set(0, NSEC_PER_SEC/rtc->irq_freq);
+-		hrtimer_start(&rtc->pie_timer, period, HRTIMER_MODE_REL);
+-	} else {
+-		hrtimer_cancel(&rtc->pie_timer);
++	if (!err) {
++		if (rtc_update_hrtimer(rtc, enabled) < 0) {
++			spin_unlock_irqrestore(&rtc->irq_task_lock, flags);
++			cpu_relax();
++			goto retry;
++		}
++		rtc->pie_enabled = enabled;
  	}
- 	return 1;
+-	rtc->pie_enabled = enabled;
+-out:
+ 	spin_unlock_irqrestore(&rtc->irq_task_lock, flags);
+-
+ 	return err;
  }
--#endif /* CONFIG_STRICT_DEVMEM */
+ EXPORT_SYMBOL_GPL(rtc_irq_set_state);
+@@ -690,20 +710,18 @@ int rtc_irq_set_freq(struct rtc_device *
  
- int phys_mem_access_prot_allowed(struct file *file, unsigned long pfn,
- 				unsigned long size, pgprot_t *vma_prot)
--- 
-1.7.5.4
+ 	if (freq <= 0)
+ 		return -EINVAL;
+-
++retry:
+ 	spin_lock_irqsave(&rtc->irq_task_lock, flags);
+ 	if (rtc->irq_task != NULL && task == NULL)
+ 		err = -EBUSY;
+ 	if (rtc->irq_task != task)
+ 		err = -EACCES;
+-	if (err == 0) {
++	if (!err) {
+ 		rtc->irq_freq = freq;
+-		if (rtc->pie_enabled) {
+-			ktime_t period;
+-			hrtimer_cancel(&rtc->pie_timer);
+-			period = ktime_set(0, NSEC_PER_SEC/rtc->irq_freq);
+-			hrtimer_start(&rtc->pie_timer, period,
+-					HRTIMER_MODE_REL);
++		if (rtc->pie_enabled && rtc_update_hrtimer(rtc, 1) < 0) {
++			spin_unlock_irqrestore(&rtc->irq_task_lock, flags);
++			cpu_relax();
++			goto retry;
+ 		}
+ 	}
+ 	spin_unlock_irqrestore(&rtc->irq_task_lock, flags);
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+
