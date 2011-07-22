@@ -1,53 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816Ab1GVWkL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 18:40:11 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46515 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752571Ab1GVWkJ (ORCPT
+	id S1752479Ab1GVWvY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 18:51:24 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:38503 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751183Ab1GVWvX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 18:40:09 -0400
-Date: Fri, 22 Jul 2011 15:39:56 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-Cc: james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stephenmcameron@gmail.com,
-        thenzl@redhat.com, mikem@beardog.cce.hp.com, stable@kernel.org
-Subject: Re: [PATCH] hpsa: do not attempt to read from a write-only register
-Message-Id: <20110722153956.e0b5da19.akpm@linux-foundation.org>
-In-Reply-To: <20110721181605.31672.36250.stgit@beardog.cce.hp.com>
-References: <20110721181605.31672.36250.stgit@beardog.cce.hp.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 22 Jul 2011 18:51:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.02.1107222203400.2702@ionos>
+References: <alpine.LFD.2.02.1107222203400.2702@ionos>
+Date: Fri, 22 Jul 2011 23:51:21 +0100
+Message-ID: <CABcS5h01jpOSKcKtrJ65AqNNQDCAOutQADAE_pcRp-MPBoO-VA@mail.gmail.com>
+Subject: Re: [ANNOUNCE] 3.0-rt1
+From: Rolando Martins <rolando.martins@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Jul 2011 13:16:05 -0500
-"Stephen M. Cameron" <scameron@beardog.cce.hp.com> wrote:
+Thanks for the great work!
 
-> From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-> 
-> Most smartarrays tolerate it, but a few new ones don't.
-> Without this change some newer Smart Arrays will lock up
-> and i/o will grind to a halt.
-> 
-> Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Is it possible to have RT_GROUP_SCHED and PREEMPT_RT_FULL?
 
-Cc: <stable@kernel.org>?
+Thanks.
+Rolando Martins
 
-> diff --git a/drivers/scsi/hpsa.h b/drivers/scsi/hpsa.h
-> index 6d8dcd4..7f53cea 100644
-> --- a/drivers/scsi/hpsa.h
-> +++ b/drivers/scsi/hpsa.h
-> @@ -214,7 +214,7 @@ static void SA5_submit_command(struct ctlr_info *h,
->  	dev_dbg(&h->pdev->dev, "Sending %x, tag = %x\n", c->busaddr,
->  		c->Header.Tag.lower);
->  	writel(c->busaddr, h->vaddr + SA5_REQUEST_PORT_OFFSET);
-> -	(void) readl(h->vaddr + SA5_REQUEST_PORT_OFFSET);
-> +	(void) readl(h->vaddr + SA5_SCRATCHPAD_OFFSET);
->  	h->commands_outstanding++;
->  	if (h->commands_outstanding > h->max_outstanding)
->  		h->max_outstanding = h->commands_outstanding;
+
+On Fri, Jul 22, 2011 at 9:37 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> Dear RT Folks,
+>
+> I'm pleased to announce the 3.0-rt1 release.
+>
+> Changes versus 3.0-rc7-rt0:
+>
+>  * Update to Linus final 3.0 release
+>
+>  * RTC bugfixes (scheduled for mainline/stable)
+>
+>  * Long standing (rt only) timer_list bug (see
+>    timers-avoid-the-base-null-otptimization-on-rt.patch in the split
+>    out quilt queue)
+>
+>  * Minor non exciting fixes all over the place
+>
+> Known issues:
+>
+>  * Some weird "console=..." commandline + config dependent
+>    interactions which have been not yet investigated down to their
+>    root cause. Result in a boot hang. YMMV
+>
+> Patch against 3.0 can be found here:
+>
+>  http://www.kernel.org/pub/linux/kernel/projects/rt/patch-3.0-rt1.patch.bz2
+>
+> The split quilt queue is available at:
+>
+>  http://www.kernel.org/pub/linux/kernel/projects/rt/patches-3.0-rt1.tar.bz2
+>
+> Thanks,
+>
+>        tglx
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
