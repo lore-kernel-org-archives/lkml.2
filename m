@@ -1,83 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754488Ab1GVRwt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 13:52:49 -0400
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:41618 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754272Ab1GVRws (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 13:52:48 -0400
-From: Daniel Morsing <daniel.morsing@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Daniel Morsing <daniel.morsing@gmail.com>
-Subject: [PATCH] dm9000: Make the driver follow the IRQF_SHARED contract
-Date: Fri, 22 Jul 2011 19:52:42 +0200
-Message-Id: <1311357162-16200-1-git-send-email-daniel.morsing@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1754596Ab1GVRw4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 13:52:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32946 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754513Ab1GVRwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 13:52:54 -0400
+Date: Fri, 22 Jul 2011 14:52:06 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Mike Waychison <mikew@google.com>
+Cc: Cory Maccarrone <maccarro@google.com>, Andy Thornton <andrewth@google.com>,
+        Miche Baker-Harvey <miche@google.com>, Avi Kivity <avi@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kvm: get_msr support for HV_X64_MSR_APIC_ASSIST_PAGE
+Message-ID: <20110722175206.GA6924@amt.cnet>
+References: <1311287890-22124-1-git-send-email-mikew@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1311287890-22124-1-git-send-email-mikew@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dm9000 driver requests a shared interrupt but doesn't return
-IRQ_NONE when the device didn't generate the interrupt. This could lead
-to the other devices sharing the irq never getting an interrupt. This
-patch makes the routine return IRQ_NONE for the path where no work was
-done.
+On Thu, Jul 21, 2011 at 03:38:10PM -0700, Mike Waychison wrote:
+> "get" support for the HV_X64_MSR_APIC_ASSIST_PAGE msr was missing, even
+> though it is explicitly enumerated as something the vmm should save in
+> msrs_to_save and reported to userland via the KVM_GET_MSR_INDEX_LIST
+> ioctl.
+> 
+> Add "get" support for HV_X64_MSR_APIC_ASSIST_PAGE.  We simply return the
+> guest visible value of this register, which seems to be correct as a set
+> on the register is validated for us already.
+> 
+> Signed-off-by: Mike Waychison <mikew@google.com>
 
-Signed-off-by: Daniel Morsing <daniel.morsing@gmail.com>
-Cc: stable@kernel.org
----
- drivers/net/dm9000.c |   12 +++++++++---
- 1 files changed, 9 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/net/dm9000.c b/drivers/net/dm9000.c
-index ee597e6..d9a20c9 100644
---- a/drivers/net/dm9000.c
-+++ b/drivers/net/dm9000.c
-@@ -1042,6 +1042,7 @@ static irqreturn_t dm9000_interrupt(int irq, void *dev_id)
- 	int int_status;
- 	unsigned long flags;
- 	u8 reg_save;
-+	irqreturn_t ret = IRQ_NONE;
- 
- 	dm9000_dbg(db, 3, "entering %s\n", __func__);
- 
-@@ -1064,17 +1065,22 @@ static irqreturn_t dm9000_interrupt(int irq, void *dev_id)
- 		dev_dbg(db->dev, "interrupt status %02x\n", int_status);
- 
- 	/* Received the coming packet */
--	if (int_status & ISR_PRS)
-+	if (int_status & ISR_PRS) {
- 		dm9000_rx(dev);
-+		ret = IRQ_HANDLED;
-+	}
- 
- 	/* Trnasmit Interrupt check */
--	if (int_status & ISR_PTS)
-+	if (int_status & ISR_PTS) {
- 		dm9000_tx_done(dev, db);
-+		ret = IRQ_HANDLED;
-+	}
- 
- 	if (db->type != TYPE_DM9000E) {
- 		if (int_status & ISR_LNKCHNG) {
- 			/* fire a link-change request */
- 			schedule_delayed_work(&db->phy_poll, 1);
-+			ret = IRQ_HANDLED;
- 		}
- 	}
- 
-@@ -1086,7 +1092,7 @@ static irqreturn_t dm9000_interrupt(int irq, void *dev_id)
- 
- 	spin_unlock_irqrestore(&db->lock, flags);
- 
--	return IRQ_HANDLED;
-+	return ret;
- }
- 
- static irqreturn_t dm9000_wol_interrupt(int irq, void *dev_id)
--- 
-1.7.4.4
+Applied, thanks.
 
