@@ -1,114 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932087Ab1GVUPe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 16:15:34 -0400
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:43749 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755132Ab1GVUPc (ORCPT
+	id S932093Ab1GVUTO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 16:19:14 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:59971 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755132Ab1GVUTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 16:15:32 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=L4ytpbFHbTdc/xkG1xJEyTXuguPmfBqulY1LjY3CvTGDHeExsMur0p7a/31nQ48PlwjhYAu/+7K6mF84sOkoR5OzqbD/H25rCZvMf1oiMEKvMUHuvXNKtf6FvU6KzrH7;
-Date: Fri, 22 Jul 2011 13:15:30 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Richard Weinberger <richard@nod.at>
-Cc: JBeulich@novell.com, mingo@elte.hu, akpm@linux-foundation.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        LKML <linux-kernel@vger.kernel.org>,
-        user-mode-linux-devel@lists.sourceforge.net
-Subject: Re: linux-next: Tree for July 22 (uml)
-Message-Id: <20110722131530.7c8949a3.rdunlap@xenotime.net>
-In-Reply-To: <201107222055.35341.richard@nod.at>
-References: <20110722164237.2b3f6cbdedafa9e1d3f70867@canb.auug.org.au>
-	<20110722085346.51565411.rdunlap@xenotime.net>
-	<201107222055.35341.richard@nod.at>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Fri, 22 Jul 2011 16:19:12 -0400
+Date: Fri, 22 Jul 2011 16:19:11 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+cc: Andi Kleen <andi@firstfloor.org>, <linux-kernel@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>, <torvalds@linux-foundation.org>,
+        <stable@kernel.org>, Dan Williams <dan.j.williams@intel.com>
+Subject: Re: Linux 3.0 STILL dies on USB device hotplug - please merge fix
+ ASAP
+In-Reply-To: <1311364348.7153.3.camel@mulgrave>
+Message-ID: <Pine.LNX.4.44L0.1107221610000.1923-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Jul 2011 20:55:34 +0200 Richard Weinberger wrote:
+On Fri, 22 Jul 2011, James Bottomley wrote:
 
-> Am Freitag 22 Juli 2011, 17:53:46 schrieben Sie:
-> > On Fri, 22 Jul 2011 16:42:37 +1000 Stephen Rothwell wrote:
-> > > Hi all,
+> On Fri, 2011-07-22 at 19:02 +0200, Andi Kleen wrote:
+> > Hi,
 > > 
-> > uml build on i386 fails with:
+> > 3.0 still oopses and dies immediately on USB device hot unplug.
+> > The same problem also triggered with SAS device according to Dan.
 > > 
-> > arch/um/sys-i386/built-in.o: In function `call_rwsem_down_read_failed':
-> > linux-next-20110722/arch/um/sys-i386/../../x86/lib/rwsem.S:93: undefined
-> > reference to `rwsem_down_read_failed' arch/um/sys-i386/built-in.o: In
-> > function `call_rwsem_down_write_failed':
-> > linux-next-20110722/arch/um/sys-i386/../../x86/lib/rwsem.S:105: undefined
-> > reference to `rwsem_down_write_failed' arch/um/sys-i386/built-in.o: In
-> > function `call_rwsem_wake':
-> > linux-next-20110722/arch/um/sys-i386/../../x86/lib/rwsem.S:118: undefined
-> > reference to `rwsem_wake' arch/um/sys-i386/built-in.o: In function
-> > `call_rwsem_downgrade_wake':
-> > linux-next-20110722/arch/um/sys-i386/../../x86/lib/rwsem.S:130: undefined
-> > reference to `rwsem_downgrade_wake'
+> > There was a lot of debugging on this a few weeks back and Alan Stern
+> > posted a SCSI layer patch that fixed the problem (for both USB
+> > and SAS):
 > > 
+> > http://68.183.106.108/lists/linux-usb/msg49001.html
+> > 
+> > But for some reason that patch didn't make it into 3.0 and 3.0 still
+> > happily oopses as the RC*s.
+> > 
+> > Can you please merge this patch ASAP?  This should also go to stable.
+> > 
+> > At least for me it makes pure 3.0 very risky to use, because these USB 
+> > hotunplug events are not uncommon and I end up with a dead machine.
 > 
-> Jan,
-> 
-> "x86: Unify rwsem assembly implementation" broke the UML build on i386.
-> Please compile test you changes or CC me when you are touch something in arch/um/.
-> 
-> make ARCH=um SUBARCH=i386
-> and
-> make ARCH=um SUBARCH=x86_64
-> 
-> does not hurt. :-)
+> Like I said at the time, the patch is wrong because of the relocation of
+> the queue teardown.
 
-Ack.
+That argument doesn't seem right.  The queue teardown (i.e., the call
+to scsi_free_queue()) was moved by commit 86cbfb5607d4b81b ([SCSI] put
+stricter guards on queue dead checks).  Here's the changelog:
 
-> Thanks,
-> //richard
-> 
-> ---
-> 
-> From b9ec24beb55276d74fdf4f9f9607c69fc8662b72 Mon Sep 17 00:00:00 2001
-> From: Richard Weinberger <richard@nod.at>
-> Date: Fri, 22 Jul 2011 20:46:32 +0200
-> Subject: [PATCH] um: Make rwsem.S depend on CONFIG_RWSEM_XCHGADD_ALGORITHM
-> 
-> rwsem.S can only be used with CONFIG_RWSEM_XCHGADD_ALGORITHM.
-> This unbreaks the UML build on i386.
-> 
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+    SCSI uses request_queue->queuedata == NULL as a signal that the queue
+    is dying.  We set this state in the sdev release function.  However,
+    this allows a small window where we release the last reference but
+    haven't quite got to this stage yet and so something will try to take
+    a reference in scsi_request_fn and oops.  It's very rare, but we had a
+    report here, so we're pushing this as a bug fix
+    
+    The actual fix is to set request_queue->queuedata to NULL in
+    scsi_remove_device() before we drop the reference.  This causes
+    correct automatic rejects from scsi_request_fn as people who hold
+    additional references try to submit work and prevents anything from
+    getting a new reference to the sdev that way.
 
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+It's quite evident that the point of the commit was to move the line
+setting queue->queuedata to NULL; the scsi_free_queue() call merely
+went along for the ride (by mistake perhaps?).  I don't see any reason
+why moving scsi_free_queue() back to where it was should cause a
+problem.
 
-Thanks.
+Alan Stern
 
-> ---
->  arch/um/sys-i386/Makefile |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/um/sys-i386/Makefile b/arch/um/sys-i386/Makefile
-> index 15587ed..87b659d 100644
-> --- a/arch/um/sys-i386/Makefile
-> +++ b/arch/um/sys-i386/Makefile
-> @@ -8,7 +8,8 @@ obj-y = bug.o bugs.o checksum.o delay.o fault.o ksyms.o ldt.o ptrace.o \
->  
->  obj-$(CONFIG_BINFMT_ELF) += elfcore.o
->  
-> -subarch-obj-y = lib/rwsem.o lib/string_32.o
-> +subarch-obj-y = lib/string_32.o
-> +subarch-obj-$(CONFIG_RWSEM_XCHGADD_ALGORITHM) += lib/rwsem.o
->  subarch-obj-$(CONFIG_HIGHMEM) += mm/highmem_32.o
->  subarch-obj-$(CONFIG_MODULES) += kernel/module.o
->  
-> -- 
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
