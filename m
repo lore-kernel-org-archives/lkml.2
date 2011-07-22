@@ -1,34 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751990Ab1GVBaq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 21:30:46 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:43945 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751343Ab1GVBap (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 21:30:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110721170122.1fd4a06e.rdunlap@xenotime.net>
-References: <20110721170122.1fd4a06e.rdunlap@xenotime.net>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Thu, 21 Jul 2011 21:30:25 -0400
-X-Google-Sender-Auth: aJjyjCmqnY-4-CRiAcwyNLHjxLw
-Message-ID: <CAMjpGUf7v3P9ixQa5Z90gCSrEZrws_dXvtxF68gUB4G40oosgQ@mail.gmail.com>
-Subject: Re: [PATCH] firmware: sigma.c needs MODULE_LICENSE
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        torvalds <torvalds@linux-foundation.org>,
-        akpm <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1752894Ab1GVBfr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 21:35:47 -0400
+Received: from mail.perches.com ([173.55.12.10]:4228 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751416Ab1GVBfq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 21:35:46 -0400
+Subject: Re: [PATCH 2/9] staging: hv: add newline to log messages in netvsc
+From: Joe Perches <joe@perches.com>
+To: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: hjanssen@microsoft.com, kys@microsoft.com, v-abkane@microsoft.com,
+        gregkh@suse.de, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, virtualization@lists.osdl.org
+In-Reply-To: <1311268497-8671-3-git-send-email-haiyangz@microsoft.com>
+References: <1311268497-8671-1-git-send-email-haiyangz@microsoft.com>
+	 <1311268497-8671-3-git-send-email-haiyangz@microsoft.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 21 Jul 2011 18:35:44 -0700
+Message-ID: <1311298545.21930.3.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 21, 2011 at 20:01, Randy Dunlap wrote:
-> Fix module tainting message:
-> sigma: module license 'unspecified' taints kernel.
+On Thu, 2011-07-21 at 10:14 -0700, Haiyang Zhang wrote:
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 
-odd ... not sure how that was missed
+Just noticing some trivial typos...
 
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
--mike
+> diff --git a/drivers/staging/hv/netvsc.c b/drivers/staging/hv/netvsc.c
+[]
+> @@ -246,7 +246,7 @@ static int netvsc_init_recv_buf(struct hv_device *device)
+>  	if (init_packet->msg.v1_msg.
+>  	    send_recv_buf_complete.status != NVSP_STAT_SUCCESS) {
+>  		dev_err(&device->device, "Unable to complete receive buffer "
+> -			   "initialzation with NetVsp - status %d",
+> +			   "initialzation with NetVsp - status %d\n",
+
+initialization
+
+[]
+> @@ -738,7 +738,7 @@ static void netvsc_receive(struct hv_device *device,
+>  
+>  	if (xferpage_packet->count != vmxferpage_packet->range_cnt) {
+>  		dev_err(&device->device, "Needed %d netvsc pkts to satisy "
+> -			"this xfer page...got %d",
+> +			"this xfer page...got %d\n",
+
+satisfy
+
+
