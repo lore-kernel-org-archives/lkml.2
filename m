@@ -1,83 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381Ab1GVDiF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 23:38:05 -0400
-Received: from lunge.queued.net ([173.255.254.236]:55527 "EHLO
-	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753312Ab1GVDiE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 23:38:04 -0400
-Date: Thu, 21 Jul 2011 20:38:01 -0700
-From: Andres Salomon <dilinger@queued.net>
-To: gregkh@suse.de
-Cc: linux-kernel@vger.kernel.org, cjb@laptop.org, jon.nettleton@gmail.com,
-        devel@driverdev.osuosl.org
-Subject: [PATCH 3/3] staging: olpc_dcon: replace remaining calls to
- i2c_smbus_read/write
-Message-ID: <20110721203801.5d3f5008@debxo>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i486-pc-linux-gnu)
+	id S1753211Ab1GVDqN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 23:46:13 -0400
+Received: from gate.crashing.org ([63.228.1.57]:40427 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751990Ab1GVDqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 23:46:12 -0400
+Subject: [git pull] Please pull powerpc.git of-pci branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 22 Jul 2011 13:44:13 +1000
+Message-ID: <1311306253.25044.568.camel@pasglop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use dcon_read and dcon_write; shorter, and understands the dcon_priv
-struct.  This transition was started long ago.  This converts the
-last few i2c_smbus_* callers.
+Hi Linus !
 
-Signed-off-by: Andres Salomon <dilinger@queued.net>
----
- drivers/staging/olpc_dcon/olpc_dcon.c |   15 +++++++--------
- 1 files changed, 7 insertions(+), 8 deletions(-)
+This branch contains some rework and consolidation of the code
+to establish the mapping between device-tree nodes for PCI 
+devices (if they exist) and the corresponding Linux struct device.
 
-diff --git a/drivers/staging/olpc_dcon/olpc_dcon.c b/drivers/staging/olpc_dcon/olpc_dcon.c
-index ae18cd4..8726805 100644
---- a/drivers/staging/olpc_dcon/olpc_dcon.c
-+++ b/drivers/staging/olpc_dcon/olpc_dcon.c
-@@ -65,11 +65,10 @@ static s32 dcon_read(struct dcon_priv *dcon, u8 reg)
- 
- static int dcon_hw_init(struct dcon_priv *dcon, int is_init)
- {
--	struct i2c_client *client = dcon->client;
- 	uint16_t ver;
- 	int rc = 0;
- 
--	ver = i2c_smbus_read_word_data(client, DCON_REG_ID);
-+	ver = dcon_read(dcon, DCON_REG_ID);
- 	if ((ver >> 8) != 0xDC) {
- 		printk(KERN_ERR "olpc-dcon:  DCON ID not 0xDCxx: 0x%04x "
- 				"instead.\n", ver);
-@@ -95,10 +94,10 @@ static int dcon_hw_init(struct dcon_priv *dcon, int is_init)
- 	}
- 
- 	/* SDRAM setup/hold time */
--	i2c_smbus_write_word_data(client, 0x3a, 0xc040);
--	i2c_smbus_write_word_data(client, 0x41, 0x0000);
--	i2c_smbus_write_word_data(client, 0x41, 0x0101);
--	i2c_smbus_write_word_data(client, 0x42, 0x0101);
-+	dcon_write(dcon, 0x3a, 0xc040);
-+	dcon_write(dcon, 0x41, 0x0000);
-+	dcon_write(dcon, 0x41, 0x0101);
-+	dcon_write(dcon, 0x42, 0x0101);
- 
- 	/* Colour swizzle, AA, no passthrough, backlight */
- 	if (is_init) {
-@@ -107,11 +106,11 @@ static int dcon_hw_init(struct dcon_priv *dcon, int is_init)
- 		if (useaa)
- 			dcon->disp_mode |= MODE_COL_AA;
- 	}
--	i2c_smbus_write_word_data(client, DCON_REG_MODE, dcon->disp_mode);
-+	dcon_write(dcon, DCON_REG_MODE, dcon->disp_mode);
- 
- 
- 	/* Set the scanline to interrupt on during resume */
--	i2c_smbus_write_word_data(client, DCON_REG_SCAN_INT, resumeline);
-+	dcon_write(dcon, DCON_REG_SCAN_INT, resumeline);
- 
- err:
- 	return rc;
--- 
-1.7.2.5
+It moves it all to generic code in a way that is a lot cleaner
+than any of the previous implementations. It specifically allows
+me to get rid of a two subtly different ways of doing the same
+thing I had in powerpc between 32-bit and 64-bit, and updates
+microblaze and x86 to use that common code as well.
+
+This has been in -next for a while with no complaints so far
+and is completely orthogonal to the powerpc changes I will send
+you in a couple of days (I want to wait for some other trees
+to go in first to address a couple of known collisions).
+
+Cheers,
+Ben.
+
+The following changes since commit 620917de59eeb934b9f8cf35cc2d95c1ac8ed0fc:
+
+  Linux 3.0-rc7 (2011-07-11 16:51:52 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git of-pci
+
+Benjamin Herrenschmidt (6):
+      pci/of: Match PCI devices to OF nodes dynamically
+      microblaze/pci: Remove powermac originated cruft
+      microblaze/pci: Move the remains of pci_32.c to pci-common.c
+      x86/devicetree: Use generic PCI <-> OF matching
+      pci/of: Consolidate pci_device_to_OF_node()
+      pci/of: Consolidate pci_bus_to_OF_node()
+
+ arch/microblaze/include/asm/pci-bridge.h |   13 -
+ arch/microblaze/include/asm/pci.h        |    3 +-
+ arch/microblaze/include/asm/prom.h       |   15 -
+ arch/microblaze/pci/Makefile             |    2 +-
+ arch/microblaze/pci/pci-common.c         |  112 ++++++++
+ arch/microblaze/pci/pci_32.c             |  432 ------------------------------
+ arch/powerpc/include/asm/pci-bridge.h    |   29 +--
+ arch/powerpc/include/asm/pci.h           |    3 +-
+ arch/powerpc/include/asm/prom.h          |   14 -
+ arch/powerpc/kernel/pci-common.c         |   11 +-
+ arch/powerpc/kernel/pci_32.c             |  150 +----------
+ arch/powerpc/kernel/pci_dn.c             |   47 ----
+ arch/powerpc/kernel/pci_of_scan.c        |    9 +-
+ arch/powerpc/platforms/powermac/pci.c    |    3 +-
+ arch/sparc/include/asm/pci_32.h          |    3 -
+ arch/sparc/include/asm/pci_64.h          |    3 -
+ arch/sparc/kernel/pci.c                  |    8 +-
+ arch/sparc/kernel/pcic.c                 |    8 -
+ arch/x86/include/asm/prom.h              |   11 -
+ arch/x86/kernel/devicetree.c             |   60 ++---
+ drivers/of/Kconfig                       |    8 +-
+ drivers/of/Makefile                      |    1 +
+ drivers/of/of_pci.c                      |  112 ++------
+ drivers/of/of_pci_irq.c                  |   92 +++++++
+ drivers/pci/Makefile                     |    2 +
+ drivers/pci/hotplug/rpadlpar_core.c      |    2 +-
+ drivers/pci/of.c                         |   61 +++++
+ drivers/pci/probe.c                      |    7 +-
+ include/linux/of_pci.h                   |    5 +
+ include/linux/pci.h                      |   28 ++
+ 30 files changed, 395 insertions(+), 859 deletions(-)
+ delete mode 100644 arch/microblaze/pci/pci_32.c
+ create mode 100644 drivers/of/of_pci_irq.c
+ create mode 100644 drivers/pci/of.c
+
 
