@@ -1,36 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899Ab1GVSh2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 14:37:28 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60749 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754868Ab1GVSh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 14:37:27 -0400
-Message-ID: <4E29C1DF.9080705@zytor.com>
-Date: Fri, 22 Jul 2011 11:30:55 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
+	id S1754957Ab1GVSvV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 14:51:21 -0400
+Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:5420 "EHLO
+	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751123Ab1GVSvU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 14:51:20 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAJ/EKU5tgwKe/2dsb2JhbABTp0Z4iHwCuwkOhjEEo08
+Date: Fri, 22 Jul 2011 20:51:18 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Alexander Stein <alexander.stein@systec-electronic.com>
+Cc: Valdis.Kletnieks@vt.edu, linux-kernel@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH 2/2 v2] Add watchdog driver for Intel E6XX
+Message-ID: <20110722185118.GH31767@infomag.iguana.be>
+References: <20110701110002.GA9326@infomag.iguana.be> <1309786148-5138-2-git-send-email-alexander.stein@systec-electronic.com>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Venkatesh Pallipadi <venki@google.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] x86, PAT: honor CONFIG_STRICT_DEVMEM if pat is disable]
-References: <20110722091151.GA4004@tiehlicka.suse.cz> <4E29A20C.70402@zytor.com> <20110722173102.GA26935@tiehlicka.suse.cz>
-In-Reply-To: <20110722173102.GA26935@tiehlicka.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1309786148-5138-2-git-send-email-alexander.stein@systec-electronic.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2011 10:31 AM, Michal Hocko wrote:
-> 
-> Thanks for the clarification!
-> What do you think about fixing the nopat with STRICT_DEVMEM like the
-> patch does?
-> 
+Hi Alexander,
 
->From what I gather from your patch, the issue is that STRICT_DEVMEM
-isn't being honored with nopat?  This is an obvious bug and should be fixed.
+> Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
+> ---
+> Changes in v2:
+> * Changed subject to use E6XX instead of tunnelcreek
+> * Changed driver name to ie6xx_wdt
+> 
+>  drivers/watchdog/Kconfig     |   12 ++
+>  drivers/watchdog/Makefile    |    1 +
+>  drivers/watchdog/ie6xx_wtd.c |  446 ++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 459 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/watchdog/ie6xx_wtd.c
 
-	-hpa
+2 remarks:
+1) please fix the lines that are over 80 characters. (please use scripts/checkpatch.pl)
+2) on opening /dev/watchdog your watchdog should start working. Now you have to open the device
+and write to it before it starts. That's not what the watchdog API says...
+
+Kind regards,
+Wim.
+
