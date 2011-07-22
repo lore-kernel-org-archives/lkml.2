@@ -1,46 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754169Ab1GVRsw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 13:48:52 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:57166 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753830Ab1GVRsv (ORCPT
+	id S1754488Ab1GVRwt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 13:52:49 -0400
+Received: from mail-ey0-f171.google.com ([209.85.215.171]:41618 "EHLO
+	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754272Ab1GVRws (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 13:48:51 -0400
-X-Greylist: delayed 759 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Jul 2011 13:48:51 EDT
-Date: Fri, 22 Jul 2011 13:48:33 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Randy Dunlap <rdunlap@xenotime.net>, dan.magenheimer@oracle.com
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        xen-devel@lists.xensource.com
-Subject: Re: linux-next: Tree for July 22 (xen)
-Message-ID: <20110722174833.GB7698@dumpdata.com>
-References: <20110722164237.2b3f6cbdedafa9e1d3f70867@canb.auug.org.au>
- <20110722092245.589ec3d7.rdunlap@xenotime.net>
- <20110722173548.GA7698@dumpdata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110722173548.GA7698@dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4E29B7FC.0055:SCFMA922111,ss=1,re=-4.000,fgs=0
+	Fri, 22 Jul 2011 13:52:48 -0400
+From: Daniel Morsing <daniel.morsing@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Daniel Morsing <daniel.morsing@gmail.com>
+Subject: [PATCH] dm9000: Make the driver follow the IRQF_SHARED contract
+Date: Fri, 22 Jul 2011 19:52:42 +0200
+Message-Id: <1311357162-16200-1-git-send-email-daniel.morsing@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 22, 2011 at 01:35:48PM -0400, Konrad Rzeszutek Wilk wrote:
-> On Fri, Jul 22, 2011 at 09:22:45AM -0700, Randy Dunlap wrote:
-> > On Fri, 22 Jul 2011 16:42:37 +1000 Stephen Rothwell wrote:
-> > 
-> > > Hi all,
-> 
-> Hey Randy,
-> 
-> This only shows up on xen but not xen-two?
+The dm9000 driver requests a shared interrupt but doesn't return
+IRQ_NONE when the device didn't generate the interrupt. This could lead
+to the other devices sharing the irq never getting an interrupt. This
+patch makes the routine return IRQ_NONE for the path where no work was
+done.
 
-n/m. I can reproduce it. Thanks for spotting it, looks like it is missing
-an #include there.
+Signed-off-by: Daniel Morsing <daniel.morsing@gmail.com>
+Cc: stable@kernel.org
+---
+ drivers/net/dm9000.c |   12 +++++++++---
+ 1 files changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/dm9000.c b/drivers/net/dm9000.c
+index ee597e6..d9a20c9 100644
+--- a/drivers/net/dm9000.c
++++ b/drivers/net/dm9000.c
+@@ -1042,6 +1042,7 @@ static irqreturn_t dm9000_interrupt(int irq, void *dev_id)
+ 	int int_status;
+ 	unsigned long flags;
+ 	u8 reg_save;
++	irqreturn_t ret = IRQ_NONE;
+ 
+ 	dm9000_dbg(db, 3, "entering %s\n", __func__);
+ 
+@@ -1064,17 +1065,22 @@ static irqreturn_t dm9000_interrupt(int irq, void *dev_id)
+ 		dev_dbg(db->dev, "interrupt status %02x\n", int_status);
+ 
+ 	/* Received the coming packet */
+-	if (int_status & ISR_PRS)
++	if (int_status & ISR_PRS) {
+ 		dm9000_rx(dev);
++		ret = IRQ_HANDLED;
++	}
+ 
+ 	/* Trnasmit Interrupt check */
+-	if (int_status & ISR_PTS)
++	if (int_status & ISR_PTS) {
+ 		dm9000_tx_done(dev, db);
++		ret = IRQ_HANDLED;
++	}
+ 
+ 	if (db->type != TYPE_DM9000E) {
+ 		if (int_status & ISR_LNKCHNG) {
+ 			/* fire a link-change request */
+ 			schedule_delayed_work(&db->phy_poll, 1);
++			ret = IRQ_HANDLED;
+ 		}
+ 	}
+ 
+@@ -1086,7 +1092,7 @@ static irqreturn_t dm9000_interrupt(int irq, void *dev_id)
+ 
+ 	spin_unlock_irqrestore(&db->lock, flags);
+ 
+-	return IRQ_HANDLED;
++	return ret;
+ }
+ 
+ static irqreturn_t dm9000_wol_interrupt(int irq, void *dev_id)
+-- 
+1.7.4.4
+
