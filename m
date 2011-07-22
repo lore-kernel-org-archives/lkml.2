@@ -1,80 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753638Ab1GVJjs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 05:39:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59701 "EHLO mx1.redhat.com"
+	id S1753679Ab1GVJj4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 05:39:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15754 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753607Ab1GVJjp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 05:39:45 -0400
+	id S1753612Ab1GVJjq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 05:39:46 -0400
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Cc: Steven Whitehouse <swhiteho@redhat.com>, Al Viro <viro@ZenIV.linux.org.uk>
-Subject: [PATCH 3/4] GFS2: Add S_NOSEC support
-Date: Fri, 22 Jul 2011 10:16:53 +0100
-Message-Id: <1311326214-3325-4-git-send-email-swhiteho@redhat.com>
+Cc: Eric Sandeen <sandeen@redhat.com>, Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH 4/4] GFS2: combine duplicated block freeing routines
+Date: Fri, 22 Jul 2011 10:16:54 +0100
+Message-Id: <1311326214-3325-5-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1311326214-3325-1-git-send-email-swhiteho@redhat.com>
 References: <1311326214-3325-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds S_NOSEC support to GFS2. We set/reset the flag either when
-a user calls setattr or when we have just regained the glock
-from another node. The flag is only set if there are no xattrs
-on the inode and there is no suid bit set.
+From: Eric Sandeen <sandeen@redhat.com>
 
+__gfs2_free_data and __gfs2_free_meta are almost identical, and
+can be trivially combined.
+
+[This is as per Eric's original patch minus gfs2_free_data() which had
+ no callers left and plus the conversion of the bmap.c calls to these
+ functions. All in all, a nice clean up]
+
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
-Reviewed-by: Andi Kleen <ak@linux.intel.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
 
-diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
-index a9f5cbe..bc2590e 100644
---- a/fs/gfs2/file.c
-+++ b/fs/gfs2/file.c
-@@ -174,7 +174,9 @@ void gfs2_set_inode_flags(struct inode *inode)
- 	struct gfs2_inode *ip = GFS2_I(inode);
- 	unsigned int flags = inode->i_flags;
+diff --git a/fs/gfs2/bmap.c b/fs/gfs2/bmap.c
+index e65493a..42e477f 100644
+--- a/fs/gfs2/bmap.c
++++ b/fs/gfs2/bmap.c
+@@ -854,11 +854,7 @@ static int do_strip(struct gfs2_inode *ip, struct buffer_head *dibh,
+ 			blen++;
+ 		else {
+ 			if (bstart) {
+-				if (metadata)
+-					__gfs2_free_meta(ip, bstart, blen);
+-				else
+-					__gfs2_free_data(ip, bstart, blen);
+-
++				__gfs2_free_blocks(ip, bstart, blen, metadata);
+ 				btotal += blen;
+ 			}
  
--	flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC);
-+	flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC|S_NOSEC);
-+	if ((ip->i_eattr == 0) && !is_sxid(inode->i_mode))
-+		inode->i_flags |= S_NOSEC;
- 	if (ip->i_diskflags & GFS2_DIF_IMMUTABLE)
- 		flags |= S_IMMUTABLE;
- 	if (ip->i_diskflags & GFS2_DIF_APPENDONLY)
-diff --git a/fs/gfs2/glops.c b/fs/gfs2/glops.c
-index a4222c3..da21eca 100644
---- a/fs/gfs2/glops.c
-+++ b/fs/gfs2/glops.c
-@@ -318,6 +318,8 @@ static int gfs2_dinode_in(struct gfs2_inode *ip, const void *buf)
- 	ip->i_generation = be64_to_cpu(str->di_generation);
+@@ -870,11 +866,7 @@ static int do_strip(struct gfs2_inode *ip, struct buffer_head *dibh,
+ 		gfs2_add_inode_blocks(&ip->i_inode, -1);
+ 	}
+ 	if (bstart) {
+-		if (metadata)
+-			__gfs2_free_meta(ip, bstart, blen);
+-		else
+-			__gfs2_free_data(ip, bstart, blen);
+-
++		__gfs2_free_blocks(ip, bstart, blen, metadata);
+ 		btotal += blen;
+ 	}
  
- 	ip->i_diskflags = be32_to_cpu(str->di_flags);
-+	ip->i_eattr = be64_to_cpu(str->di_eattr);
-+	/* i_diskflags and i_eattr must be set before gfs2_set_inode_flags() */
- 	gfs2_set_inode_flags(&ip->i_inode);
- 	height = be16_to_cpu(str->di_height);
- 	if (unlikely(height > GFS2_MAX_META_HEIGHT))
-@@ -330,7 +332,6 @@ static int gfs2_dinode_in(struct gfs2_inode *ip, const void *buf)
- 	ip->i_depth = (u8)depth;
- 	ip->i_entries = be32_to_cpu(str->di_entries);
+diff --git a/fs/gfs2/rgrp.c b/fs/gfs2/rgrp.c
+index 9b780df..7f8af1e 100644
+--- a/fs/gfs2/rgrp.c
++++ b/fs/gfs2/rgrp.c
+@@ -1607,14 +1607,15 @@ rgrp_error:
+ }
  
--	ip->i_eattr = be64_to_cpu(str->di_eattr);
- 	if (S_ISREG(ip->i_inode.i_mode))
- 		gfs2_set_aops(&ip->i_inode);
+ /**
+- * gfs2_free_data - free a contiguous run of data block(s)
++ * __gfs2_free_blocks - free a contiguous run of block(s)
+  * @ip: the inode these blocks are being freed from
+  * @bstart: first block of a run of contiguous blocks
+  * @blen: the length of the block run
++ * @meta: 1 if the blocks represent metadata
+  *
+  */
  
-diff --git a/fs/gfs2/ops_fstype.c b/fs/gfs2/ops_fstype.c
-index 2a77071..516516e 100644
---- a/fs/gfs2/ops_fstype.c
-+++ b/fs/gfs2/ops_fstype.c
-@@ -1094,6 +1094,7 @@ static int fill_super(struct super_block *sb, struct gfs2_args *args, int silent
- 	if (sdp->sd_args.ar_nobarrier)
- 		set_bit(SDF_NOBARRIERS, &sdp->sd_flags);
+-void __gfs2_free_data(struct gfs2_inode *ip, u64 bstart, u32 blen)
++void __gfs2_free_blocks(struct gfs2_inode *ip, u64 bstart, u32 blen, int meta)
+ {
+ 	struct gfs2_sbd *sdp = GFS2_SB(&ip->i_inode);
+ 	struct gfs2_rgrpd *rgd;
+@@ -1631,54 +1632,11 @@ void __gfs2_free_data(struct gfs2_inode *ip, u64 bstart, u32 blen)
+ 	gfs2_trans_add_rg(rgd);
  
-+	sb->s_flags |= MS_NOSEC;
- 	sb->s_magic = GFS2_MAGIC;
- 	sb->s_op = &gfs2_super_ops;
- 	sb->s_d_op = &gfs2_dops;
+ 	/* Directories keep their data in the metadata address space */
+-	if (ip->i_depth)
++	if (meta || ip->i_depth)
+ 		gfs2_meta_wipe(ip, bstart, blen);
+ }
+ 
+ /**
+- * gfs2_free_data - free a contiguous run of data block(s)
+- * @ip: the inode these blocks are being freed from
+- * @bstart: first block of a run of contiguous blocks
+- * @blen: the length of the block run
+- *
+- */
+-
+-void gfs2_free_data(struct gfs2_inode *ip, u64 bstart, u32 blen)
+-{
+-	struct gfs2_sbd *sdp = GFS2_SB(&ip->i_inode);
+-
+-	__gfs2_free_data(ip, bstart, blen);
+-	gfs2_statfs_change(sdp, 0, +blen, 0);
+-	gfs2_quota_change(ip, -(s64)blen, ip->i_inode.i_uid, ip->i_inode.i_gid);
+-}
+-
+-/**
+- * gfs2_free_meta - free a contiguous run of data block(s)
+- * @ip: the inode these blocks are being freed from
+- * @bstart: first block of a run of contiguous blocks
+- * @blen: the length of the block run
+- *
+- */
+-
+-void __gfs2_free_meta(struct gfs2_inode *ip, u64 bstart, u32 blen)
+-{
+-	struct gfs2_sbd *sdp = GFS2_SB(&ip->i_inode);
+-	struct gfs2_rgrpd *rgd;
+-
+-	rgd = rgblk_free(sdp, bstart, blen, GFS2_BLKST_FREE);
+-	if (!rgd)
+-		return;
+-	trace_gfs2_block_alloc(ip, bstart, blen, GFS2_BLKST_FREE);
+-	rgd->rd_free += blen;
+-
+-	gfs2_trans_add_bh(rgd->rd_gl, rgd->rd_bits[0].bi_bh, 1);
+-	gfs2_rgrp_out(rgd, rgd->rd_bits[0].bi_bh->b_data);
+-
+-	gfs2_trans_add_rg(rgd);
+-	gfs2_meta_wipe(ip, bstart, blen);
+-}
+-
+-/**
+  * gfs2_free_meta - free a contiguous run of data block(s)
+  * @ip: the inode these blocks are being freed from
+  * @bstart: first block of a run of contiguous blocks
+@@ -1690,7 +1648,7 @@ void gfs2_free_meta(struct gfs2_inode *ip, u64 bstart, u32 blen)
+ {
+ 	struct gfs2_sbd *sdp = GFS2_SB(&ip->i_inode);
+ 
+-	__gfs2_free_meta(ip, bstart, blen);
++	__gfs2_free_blocks(ip, bstart, blen, 1);
+ 	gfs2_statfs_change(sdp, 0, +blen, 0);
+ 	gfs2_quota_change(ip, -(s64)blen, ip->i_inode.i_uid, ip->i_inode.i_gid);
+ }
+diff --git a/fs/gfs2/rgrp.h b/fs/gfs2/rgrp.h
+index a80e303..d253f9a 100644
+--- a/fs/gfs2/rgrp.h
++++ b/fs/gfs2/rgrp.h
+@@ -52,9 +52,7 @@ extern int gfs2_ri_update(struct gfs2_inode *ip);
+ extern int gfs2_alloc_block(struct gfs2_inode *ip, u64 *bn, unsigned int *n);
+ extern int gfs2_alloc_di(struct gfs2_inode *ip, u64 *bn, u64 *generation);
+ 
+-extern void __gfs2_free_data(struct gfs2_inode *ip, u64 bstart, u32 blen);
+-extern void gfs2_free_data(struct gfs2_inode *ip, u64 bstart, u32 blen);
+-extern void __gfs2_free_meta(struct gfs2_inode *ip, u64 bstart, u32 blen);
++extern void __gfs2_free_blocks(struct gfs2_inode *ip, u64 bstart, u32 blen, int meta);
+ extern void gfs2_free_meta(struct gfs2_inode *ip, u64 bstart, u32 blen);
+ extern void gfs2_free_di(struct gfs2_rgrpd *rgd, struct gfs2_inode *ip);
+ extern void gfs2_unlink_di(struct inode *inode);
 -- 
 1.7.4
 
