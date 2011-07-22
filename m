@@ -1,72 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752479Ab1GVWvY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 18:51:24 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:38503 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751183Ab1GVWvX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 18:51:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1107222203400.2702@ionos>
-References: <alpine.LFD.2.02.1107222203400.2702@ionos>
-Date: Fri, 22 Jul 2011 23:51:21 +0100
-Message-ID: <CABcS5h01jpOSKcKtrJ65AqNNQDCAOutQADAE_pcRp-MPBoO-VA@mail.gmail.com>
-Subject: Re: [ANNOUNCE] 3.0-rt1
-From: Rolando Martins <rolando.martins@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752685Ab1GVWxw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 18:53:52 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:42009 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752252Ab1GVWxv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 18:53:51 -0400
+Date: Fri, 22 Jul 2011 15:53:56 -0700
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: David Miller <davem@davemloft.net>
+Cc: Francois Romieu <romieu@fr.zoreil.com>,
+        Ben Greear <greearb@candelatech.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David <david@unsolicited.net>, Tejun Heo <tj@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        netdev@vger.kernel.org
+Subject: [PATCH] net: allow netif_carrier to be called safely from IRQ
+Message-ID: <20110722155356.5911225f@nehalam.ftrdhcpuser.net>
+In-Reply-To: <20110722150956.5b341488@nehalam.ftrdhcpuser.net>
+References: <CA+55aFxakA2U+oMJ1T7awTYa+p6xp9N0aCbfrUqgkF7BJ8gnQw@mail.gmail.com>
+	<4E29CB5B.4040408@unsolicited.net>
+	<CA+55aFy1FnVGH4C_0T8fXwZPUdz5-SCczMwy1K8kydLwTx89RQ@mail.gmail.com>
+	<4E29D326.7070403@candelatech.com>
+	<20110722133220.0baf2199@nehalam.ftrdhcpuser.net>
+	<20110722212629.GA10833@electric-eye.fr.zoreil.com>
+	<20110722150956.5b341488@nehalam.ftrdhcpuser.net>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the great work!
+As reported by Ben Greer and Froncois Romieu. The code path in 
+the netif_carrier code leads it to try and disable
+a late workqueue to reenable it immediately
+netif_carrier_on
+-> linkwatch_fire_event
+   -> linkwatch_schedule_work
+      -> cancel_delayed_work
+         -> del_timer_sync  
 
-Is it possible to have RT_GROUP_SCHED and PREEMPT_RT_FULL?
+If __cancel_delayed_work is used instead then there is no
+problem of waiting for running linkwatch_event.
 
-Thanks.
-Rolando Martins
+There is a race between linkwatch_event running re-scheduling
+but it is harmless to schedule an extra scan of the linkwatch queue.
+
+Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
 
 
-On Fri, Jul 22, 2011 at 9:37 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> Dear RT Folks,
->
-> I'm pleased to announce the 3.0-rt1 release.
->
-> Changes versus 3.0-rc7-rt0:
->
->  * Update to Linus final 3.0 release
->
->  * RTC bugfixes (scheduled for mainline/stable)
->
->  * Long standing (rt only) timer_list bug (see
->    timers-avoid-the-base-null-otptimization-on-rt.patch in the split
->    out quilt queue)
->
->  * Minor non exciting fixes all over the place
->
-> Known issues:
->
->  * Some weird "console=..." commandline + config dependent
->    interactions which have been not yet investigated down to their
->    root cause. Result in a boot hang. YMMV
->
-> Patch against 3.0 can be found here:
->
->  http://www.kernel.org/pub/linux/kernel/projects/rt/patch-3.0-rt1.patch.bz2
->
-> The split quilt queue is available at:
->
->  http://www.kernel.org/pub/linux/kernel/projects/rt/patches-3.0-rt1.tar.bz2
->
-> Thanks,
->
->        tglx
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+--- a/net/core/link_watch.c	2011-07-22 15:25:31.027533604 -0700
++++ b/net/core/link_watch.c	2011-07-22 15:31:27.531520028 -0700
+@@ -126,7 +126,7 @@ static void linkwatch_schedule_work(int
+ 		return;
+ 
+ 	/* It's already running which is good enough. */
+-	if (!cancel_delayed_work(&linkwatch_work))
++	if (!__cancel_delayed_work(&linkwatch_work))
+ 		return;
+ 
+ 	/* Otherwise we reschedule it again for immediate execution. */
+
