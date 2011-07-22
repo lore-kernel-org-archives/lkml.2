@@ -1,87 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260Ab1GVQKp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 12:10:45 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:42169 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751618Ab1GVQKo (ORCPT
+	id S1752360Ab1GVQOJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 12:14:09 -0400
+Received: from leopard.mail.utk.edu ([160.36.0.85]:32978 "EHLO
+	leopard.mail.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751041Ab1GVQOH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 12:10:44 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=t5MU8xRcmBoMpJiUH/IL/uxSGFVRAAQ3MYx8ZRhrbwxKFzdrq/56bR7grn4F576xPbLcmDOptUYS+jcURImXGA4hVwt29zrkRFUfPYYwQJN8e0gVvH19qEwnyNZoRz3I;
-Date: Fri, 22 Jul 2011 09:10:37 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Olaf Freyer <aaron667@gmx.net>
-Cc: Florian Mickler <florian@mickler.org>, linux-kernel@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Keith Packard <keithp@keithp.com>, dri-devel@lists.freedesktop.org
-Subject: Re: Erroneous package power limit notification since kernel 2.6.39
-Message-ID: <20110722091037.131e5dbb@jbarnes-desktop>
-In-Reply-To: <4E0C1995.20009@gmx.net>
-References: <4DD9092A.4080507@gmx.net>
-	<loom.20110525T172412-101@post.gmane.org>
-	<20110626182725.3f2eac8d@schatten.dmk.lab>
-	<4E0A3DB1.8000202@gmx.net>
-	<20110628135936.297293b4@jbarnes-desktop>
-	<4E0A4319.6040309@gmx.net>
-	<20110628141831.55502d76@jbarnes-desktop>
-	<4E0A4F56.90806@gmx.net>
-	<20110628150644.14805e83@jbarnes-desktop>
-	<4E0C1995.20009@gmx.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Fri, 22 Jul 2011 12:14:07 -0400
+Date: Fri, 22 Jul 2011 12:13:49 -0400 (EDT)
+From: Vince Weaver <vweaver1@eecs.utk.edu>
+To: linux-kernel@vger.kernel.org
+cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [perf] 3.0 overflow test locks up system
+Message-ID: <alpine.DEB.2.00.1107221210160.21367@cl320.eecs.utk.edu>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 Jun 2011 08:37:09 +0200
-Olaf Freyer <aaron667@gmx.net> wrote:
+Hello
 
-> Am 29.06.2011 00:06, schrieb Jesse Barnes:
-> > On Wed, 29 Jun 2011 00:01:58 +0200
-> > Olaf Freyer <aaron667@gmx.net> wrote:
-> >
-> >> Am 28.06.2011 23:18, schrieb Jesse Barnes:
-> >>> Ok interesting, didn't realize X startup was so GPU intensive. :)
-> >>>
-> >>> The patch you reverted will definitely cause the GPU to ramp up its
-> >>> frequency much faster than before, but it sounds like on your system
-> >>> you might also see it with the revert if you run something GPU
-> >>> intensive like nexuiz.
-> >>>
-> >>> The CPU (and by extension the GPU) will take care of itself though; if
-> >>> things get too hot or over power, it will clock throttle to keep itself
-> >>> in a safe range.
-> >> I also see the message alot during my daily average usage of my computer
-> >> (just using Firefox, Thunderbird and IntelliJ) - seeing things like
-> >> CPU3: Package power limit notification (total events = 90809)
-> >> after a normal day in the office became normal since 2.6.39.
-> >>
-> >> I just gave nexuiz a try for about 30 minutes with the reversal patch
-> >> applied -
-> >> and not a single message appeared in my logs.
-> > Sounds like with the patch reverted we can't drive your GPU and CPU
-> > hard enough to generate the messages.  Not sure if that's a good thing
-> > or a bad thing though...
-> >
-> I'm not sure either. I saw a single notification event yesterday while
-> in office -
-> previously I would have recieved 70000-90000 during that timeframe.
-> I consider the pure amount of notifications unsettling - and in case of
-> some
-> "real" issue it might even get lost inbetween those notifications.
-> 
-> Maybe there is a possible compromise between the situation before and
-> after the patch? I'm willing to lose a few percent of GPU performance just
-> for the sake of getting lost of those notification events...
+With 3.0.0 the PAPI "overflow_allcounters" test reliably locks up my 
+Nehalem system.  This definitely does not happen in 2.6.39 and possibly 
+doesn't in 3.0-rc4 either.
 
-Yeah we can probably tune these values a bit better...  I'll see about
-doing that.  We want to maximize performance across a variety of
-workloads, but not hit the power limit so hard even for basic stuff...
+I won't have time to bisect or to come up with a simpler test case until 
+next week sometime.
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+A warning is printed just before the machine becomes unresponsive, it is 
+included below.
+
+Thanks,
+
+Vince
+vweaver1@eecs.utk.edu
+
+[  392.504845] ------------[ cut here ]------------
+[  392.504962] WARNING: at kernel/smp.c:320 smp_call_function_single+0x6c/0xf2()
+[  392.505074] Hardware name: Precision M4500
+[  392.505181] Modules linked in: acpi_cpufreq cpufreq_conservative mperf cpufreq_powersave cpufreq_userspace cpufreq_stats uinput nouveau snd_hda_codec_hdmi ttm drm_kms_helper mxm_wmi snd_hda_codec_idt iwlagn mac80211 snd_hda_intel snd_hda_codec cfg80211 dell_laptop snd_hwdep video processor ehci_hcd dell_wmi sparse_keymap psmouse sdhci_pci rfkill snd_pcm sdhci thermal_sys pcspkr ac battery wmi serio_raw snd_timer snd_page_alloc evdev i2c_i801 dcdbas button
+[  392.509709] Pid: 2310, comm: overflow_allcou Not tainted 3.0.0 #43
+[  392.509819] Call Trace:
+[  392.509925]  <IRQ>  [<ffffffff81041bb0>] ? warn_slowpath_common+0x78/0x8c
+[  392.510144]  [<ffffffff810a4d19>] ? perf_exclude_event.part.23+0x31/0x31
+[  392.510257]  [<ffffffff8106b7c5>] ? smp_call_function_single+0x6c/0xf2
+[  392.510369]  [<ffffffff810a38aa>] ? task_function_call+0x42/0x4c
+[  392.510476]  [<ffffffff810a50e4>] ? update_cgrp_time_from_event+0x2c/0x2c
+[  392.510589]  [<ffffffff810a5a9d>] ? perf_event_disable+0x45/0x8c
+[  392.510700]  [<ffffffff810a8e89>] ? __perf_event_overflow+0xf1/0x1a3
+[  392.510812]  [<ffffffff8103c7bb>] ? select_task_rq_fair+0x349/0x574
+[  392.510924]  [<ffffffff810a7f0a>] ? perf_ctx_adjust_freq+0x42/0xe6
+[  392.511038]  [<ffffffff8105f152>] ? sched_clock_cpu+0xb/0xc3
+[  392.511152]  [<ffffffff8100ded5>] ? paravirt_read_tsc+0x5/0x8
+[  392.511262]  [<ffffffff8100e320>] ? native_sched_clock+0x27/0x2f
+[  392.511366]  [<ffffffff810a9500>] ? perf_event_overflow+0x10/0x10
+[  392.511476]  [<ffffffff810a959f>] ? perf_swevent_hrtimer+0x9f/0xda
+[  392.511599]  [<ffffffff8105ca04>] ? run_posix_cpu_timers+0x23/0x346
+[  392.511721]  [<ffffffff8131c2ef>] ? rb_insert_color+0xb1/0xd9
+[  392.511841]  [<ffffffff8105d373>] ? __run_hrtimer+0xac/0x135
+[  392.511960]  [<ffffffff8105daa3>] ? hrtimer_interrupt+0xdb/0x195
+[  392.512083]  [<ffffffff8108d040>] ? check_for_new_grace_period.isra.32+0x99/0xa4
+[  392.512220]  [<ffffffff8108d201>] ? __rcu_process_callbacks+0x72/0x2b7
+[  392.512345]  [<ffffffff8102437c>] ? hpet_interrupt_handler+0x23/0x2b
+[  392.512469]  [<ffffffff81089446>] ? handle_irq_event_percpu+0x50/0x180
+[  392.512592]  [<ffffffff81046f76>] ? __do_softirq+0x13e/0x177
+[  392.512713]  [<ffffffff810f680c>] ? send_sigio+0x95/0xab
+[  392.512832]  [<ffffffff810895aa>] ? handle_irq_event+0x34/0x52
+[  392.512952]  [<ffffffff8108b433>] ? handle_edge_irq+0x9f/0xc6
+[  392.513072]  [<ffffffff8100a831>] ? handle_irq+0x1d/0x21
+[  392.513192]  [<ffffffff8100a561>] ? do_IRQ+0x42/0x98
+[  392.513314]  [<ffffffff81593053>] ? common_interrupt+0x13/0x13
+[  392.513438]  <EOI> 
+[  392.513542] ---[ end trace 12f3f913316a2866 ]---
