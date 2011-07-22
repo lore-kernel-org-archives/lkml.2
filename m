@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751186Ab1GVEZp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 00:25:45 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:41714 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741Ab1GVEZo (ORCPT
+	id S1751500Ab1GVEaH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 00:30:07 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:40157 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750824Ab1GVEaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 00:25:44 -0400
-X-AuditID: b753bd60-a0a78ba0000050a4-ec-4e28fbc5f68f
-X-AuditID: b753bd60-a0a78ba0000050a4-ec-4e28fbc5f68f
-Message-ID: <4E28FBC2.7040208@hitachi.com>
-Date: Fri, 22 Jul 2011 13:25:38 +0900
-From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
-MIME-Version: 1.0
-To: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        yrl.pp-manager.tt@hitachi.com, Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH -tip v2 2/6] perf script: add magic word to indicate the
- failure of resolving symbols
-References: <20110717093031.3447.52715.stgit@linux3> <20110717093051.3447.65080.stgit@linux3> <4E2308A9.5000706@gmail.com> <4E230E32.3010503@gmail.com> <4E27F32A.6010609@hitachi.com> <4E283A33.1010100@gmail.com>
-In-Reply-To: <4E283A33.1010100@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Fri, 22 Jul 2011 00:30:05 -0400
+Date: Thu, 21 Jul 2011 21:29:50 -0700 (PDT)
+Message-Id: <20110721.212950.1991725607632413241.davem@davemloft.net>
+To: mst@redhat.com
+Cc: krkumar2@in.ibm.com, rusty@rustcorp.com.au, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, shemminger@vyatta.com
+Subject: Re: [PATCH repost] Fix panic in virtnet_remove
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110720143115.GB6787@redhat.com>
+References: <20110720135602.18705.21405.sendpatchset@krkumar2.in.ibm.com>
+	<20110720143115.GB6787@redhat.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 21 Jul 2011 21:29:51 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/07/21 23:39), David Ahern wrote:
-> On 07/21/2011 03:36 AM, Akihiro Nagai wrote
->>> Evidently I had the shift key down -- s/{}/[]/.  :-) And I see now, for
->>> dsoname you have [unknown] and for symname (unknown). Use the same for
->>> both. Since () is already used for separating dsoname, use [unknown] for
->>> both
->> At print_sample_start() in builtin-script.c, there is the code that
->> print "(unknown)"
->> when perf cannnot resolve the event name.
->>
->>      printf("%s: ", evname ? evname : "(unknown)");
->>
->> On the other hand, at hist_entry__dso_snprintf() in util/sort.c, there
->> is the code
->> prints "[unknown]" for unresolvable DSO name.
->>
->>      return repsep_snprintf(bf, size, "%-*s", width, "[unknown]");
->>
->> In addition, perf uses "[]" for DSO name for example "[kernel.kallsyms]".
->> So, I chose it. However, this specification is not easy for user-scripts.
->> Should I unify this expression?
->
-> That was my thought -- to use the same for both dso and sym if it is
-> unknown. And since DSO names are wrapped in () use "[unknown]" for both
-> -- ie., right now the format is  "symname (dsoname)" (though kernel syms
-> from kallsyms come out as "symname ([kernel.kallsyms])"). With an
-> unknown it will be "[unknown] (dsoname)" or "[unknown] ([unknown])"
-> which retains the number of fields in a uniquely parse-able way.
-I agree.
-In the next patch set, I'd like to unify the all expressions to "[unknown]".
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Date: Wed, 20 Jul 2011 17:31:15 +0300
 
-Thank you.
->
-> David
+> On Wed, Jul 20, 2011 at 07:26:02PM +0530, Krishna Kumar wrote:
+>> Fix a panic in virtnet_remove. unregister_netdev has already
+>> freed up the netdev (and virtnet_info) due to dev->destructor
+>> being set, while virtnet_info is still required. Remove
+>> virtnet_free altogether, and move the freeing of the per-cpu
+>> statistics from virtnet_free to virtnet_remove.
+>> 
+>> Tested patch below.
+>> 
+>> Signed-off-by: Krishna Kumar <krkumar2@in.ibm.com>
+> 
+> Also note that the crash was apparently introduced by
+> 3fa2a1df909482cc234524906e4bd30dee3514df in net-next,
+> so this is a net-next only patch.
+> 
+> Stephen, was there any special reason to free the memory
+> in the destructor like you did?
+> 
+> Acked-by: Michael S. Tsirkin <mst@redhat.com>
+
+Applied.
