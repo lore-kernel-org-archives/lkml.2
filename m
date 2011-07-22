@@ -1,58 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755189Ab1GVTwi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 15:52:38 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:59857 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754948Ab1GVTwh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 15:52:37 -0400
-Subject: Re: Linux 3.0 STILL dies on USB device hotplug - please merge fix
- ASAP
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: stern@rowland.harvard.edu, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, torvalds@linux-foundation.org,
-        stable@kernel.org, Dan Williams <dan.j.williams@intel.com>
-In-Reply-To: <20110722170214.GR8006@one.firstfloor.org>
-References: <20110722170214.GR8006@one.firstfloor.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 22 Jul 2011 15:52:28 -0400
-Message-ID: <1311364348.7153.3.camel@mulgrave>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1755295Ab1GVTxs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 15:53:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13975 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755132Ab1GVTxr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 15:53:47 -0400
+Date: Fri, 22 Jul 2011 15:53:40 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Alex Neronskiy <zakmagnus@google.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Mandeep Singh Baines <msb@chromium.org>
+Subject: Re: [PATCH v3 2/2] Make hard lockup detection use timestamps
+Message-ID: <20110722195340.GF3765@redhat.com>
+References: <1311271873-10879-1-git-send-email-zakmagnus@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1311271873-10879-1-git-send-email-zakmagnus@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-22 at 19:02 +0200, Andi Kleen wrote:
-> Hi,
-> 
-> 3.0 still oopses and dies immediately on USB device hot unplug.
-> The same problem also triggered with SAS device according to Dan.
-> 
-> There was a lot of debugging on this a few weeks back and Alan Stern
-> posted a SCSI layer patch that fixed the problem (for both USB
-> and SAS):
-> 
-> http://68.183.106.108/lists/linux-usb/msg49001.html
-> 
-> But for some reason that patch didn't make it into 3.0 and 3.0 still
-> happily oopses as the RC*s.
-> 
-> Can you please merge this patch ASAP?  This should also go to stable.
-> 
-> At least for me it makes pure 3.0 very risky to use, because these USB 
-> hotunplug events are not uncommon and I end up with a dead machine.
+On Thu, Jul 21, 2011 at 11:11:13AM -0700, Alex Neronskiy wrote:
+> The hard lockup detector is made to work more like the soft lockup
+> detector by using timestamps to compare how long it's been since
+> an event happened. Specifically, when the period function that checks
+> for soft lockups fires, it touches a timestamp, and the hard lockup
+> detector now checks if the timer is late, based on when it last fired.
+> Hard stalls are now sub-hardlock threshold delays in the timer's
+> firing which are nonetheless notable.
 
-Like I said at the time, the patch is wrong because of the relocation of
-the queue teardown.  I posted a corrected version, but did anyone test?
-Anyway, I merged it on the grounds that it worked for me, but if you
-could confirm with linux-next, that would be great (I'll send the pull
-request shortly, since it now needs to go via the merge window and I'm
-currently in mid journey to Russia.
+So I played with the hardlockup case and I kinda like the timestamp thing.
+It seems to give useful data.  In fact I feel like I can shrink the
+hardlockup window, run some tests and see where the latencies are in a
+system.  The patch itself I think is ok, I'll review on Monday or Tuesday
+when I get some more free time.
 
-James
+However, I ran the softlockup case and the output was a mess.  I think
+rcu_sched stalls were being detected and as a result it was NMI dumping
+stack traces for all cpus.  I can't tell if it was your patch or some
+uncovered bug.
 
+I'll dig into on Monday.  Not sure if you were able to see that.
 
+Thanks,
+Don
+
+> 
+> Signed-off-by: Alex Neronskiy <zakmagnus@google.com>
+> ---
+>  kernel/watchdog.c |   83 +++++++++++++++++++++++++++++-----------------------
+>  1 files changed, 46 insertions(+), 37 deletions(-)
+> 
+> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+> index bf26810..17bcded 100644
+> --- a/kernel/watchdog.c
+> +++ b/kernel/watchdog.c
+> @@ -40,30 +40,28 @@ static DEFINE_PER_CPU(bool, soft_watchdog_warn);
+>  #ifdef CONFIG_HARDLOCKUP_DETECTOR
+>  static DEFINE_PER_CPU(bool, hard_watchdog_warn);
+>  static DEFINE_PER_CPU(bool, watchdog_nmi_touch);
+> -static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts);
+> -static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts_saved);
+> -static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts_missed);
+> +static DEFINE_PER_CPU(unsigned long, hrtimer_touch_ts);
+>  static DEFINE_PER_CPU(struct perf_event *, watchdog_ev);
+>  
+>  unsigned long worst_hardstall;
+>  static DEFINE_SPINLOCK(hardstall_lock);
+>  
+> -/* The number of consecutive hard check failures before it's a lockup */
+> -#define hardlockup_thresh (5)
+> +/* How often to check for hard lockups compared to watchdog_thresh */
+> +#define hardlockup_freq (5)
+>  
+> -/*
+> - * The minimum expected number of missed interrupts in a normal hard
+> - * lockup check.
+> - */
+> -#define hardstall_thresh (2)
+> -
+> -#endif /* CONFIG_HARDLOCKUP_DETECTOR */
+> +/* How late (in ms) a timer could be while still being ignored as "normal" */
+> +#define hardstall_thresh (200)
+>  
+>  /*
+>   * The number of milliseconds by which a stall must be worse than the
+>   * current worst in order to be recorded. This prevents bursts of near-
+>   * identical stalls.
+>   */
+> +#define hardstall_diff_thresh (100)
+> +
+> +#endif /* CONFIG_HARDLOCKUP_DETECTOR */
+> +
+> +/* Difference threshold for soft stalls (ms) */
+>  #define softstall_diff_thresh (100)
+>  
+>  /* boot commands */
+> @@ -156,6 +154,11 @@ static unsigned long get_sample_period(void)
+>  	return get_softlockup_thresh() * (NSEC_PER_SEC / 5);
+>  }
+>  
+> +static inline unsigned long get_sample_period_ms(void)
+> +{
+> +	return get_sample_period() >> 20LL;
+> +}
+> +
+>  /* Commands for resetting the watchdog */
+>  static void __touch_watchdog(void)
+>  {
+> @@ -211,11 +214,11 @@ void touch_softlockup_watchdog_sync(void)
+>  static void update_hardstall(unsigned long stall, int this_cpu)
+>  {
+>  	int update_stall = 0;
+> -
+> -	if (stall > hardstall_thresh && stall > worst_hardstall) {
+> +	if (stall > hardstall_thresh &&
+> +			stall > worst_hardstall + hardstall_diff_thresh) {
+>  		unsigned long flags;
+>  		spin_lock_irqsave(&hardstall_lock, flags);
+> -		update_stall = stall > worst_hardstall;
+> +		update_stall = stall > worst_hardstall + hardstall_diff_thresh;
+>  		if (update_stall)
+>  			worst_hardstall = stall;
+>  		spin_unlock_irqrestore(&hardstall_lock, flags);
+> @@ -223,7 +226,7 @@ static void update_hardstall(unsigned long stall, int this_cpu)
+>  
+>  	if (update_stall) {
+>  		printk(KERN_WARNING "LOCKUP may be in progress!"
+> -			"Worst hard stall seen on CPU#%d: %lu interrupts missed\n",
+> +			"Worst hard stall seen on CPU#%d: %lums\n",
+>  			this_cpu, stall);
+>  		dump_stack();
+>  	}
+> @@ -231,21 +234,27 @@ static void update_hardstall(unsigned long stall, int this_cpu)
+>  
+>  static int is_hardlockup(int this_cpu)
+>  {
+> -	unsigned long hrint = __this_cpu_read(hrtimer_interrupts);
+> -	unsigned long hrint_saved = __this_cpu_read(hrtimer_interrupts_saved);
+> -	unsigned long ints_missed = 0;
+> +	unsigned long touch_ts = __this_cpu_read(hrtimer_touch_ts);
+> +	unsigned long next_touch = touch_ts + get_sample_period_ms();
+> +	unsigned long now = get_timestamp(this_cpu);
+> +	unsigned long delay = now - next_touch;
+>  
+> -	__this_cpu_write(hrtimer_interrupts_saved, hrint);
+> +	/* the timer has never fired; no data to go on yet */
+> +	if (unlikely(!touch_ts))
+> +		return 0;
+>  
+> -	if (hrint_saved == hrint)
+> -		ints_missed = per_cpu(hrtimer_interrupts_missed, this_cpu)++;
+> -	else
+> -		__this_cpu_write(hrtimer_interrupts_missed, 0);
+> +	/*
+> +	 * If the next touch is supposed to be in the future, then
+> +	 * everything is fine. If it's not, that means it was missed
+> +	 * and something's wrong.
+> +	 */
+> +	if (time_after(next_touch, now))
+> +		return 0;
+>  
+> -	if (ints_missed >= hardlockup_thresh)
+> +	if (delay >= (watchdog_thresh << 10L))
+>  		return 1;
+>  
+> -	update_hardstall(ints_missed, this_cpu);
+> +	update_hardstall(delay, this_cpu);
+>  	return 0;
+>  }
+>  #endif
+> @@ -311,10 +320,10 @@ static void watchdog_overflow_callback(struct perf_event *event, int nmi,
+>  	}
+>  
+>  	/* check for a hardlockup
+> -	 * This is done by making sure our timer interrupt
+> -	 * is incrementing.  The timer interrupt should have
+> -	 * fired multiple times before we overflow'd.  If it hasn't
+> -	 * then this is a good indication the cpu is stuck
+> +	 * This is done by making sure our timer interrupts
+> +	 * are firing. It is known approximately when the timer
+> +	 * should fire and if it hasn't by then this is a good
+> +	 * indication the cpu is stuck.
+>  	 */
+>  	lockup = is_hardlockup(this_cpu);
+>  	if (lockup) {
+> @@ -334,12 +343,12 @@ static void watchdog_overflow_callback(struct perf_event *event, int nmi,
+>  	__this_cpu_write(hard_watchdog_warn, false);
+>  	return;
+>  }
+> -static void watchdog_interrupt_count(void)
+> +static void watchdog_interrupt_touch(int this_cpu)
+>  {
+> -	__this_cpu_inc(hrtimer_interrupts);
+> +	__this_cpu_write(hrtimer_touch_ts, get_timestamp(this_cpu));
+>  }
+>  #else
+> -static inline void watchdog_interrupt_count(void) { return; }
+> +static inline void watchdog_interrupt_touch(int this_cpu) { return; }
+>  #endif /* CONFIG_HARDLOCKUP_DETECTOR */
+>  
+>  /* watchdog kicker functions */
+> @@ -350,15 +359,15 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+>  	int duration;
+>  	int this_cpu = smp_processor_id();
+>  
+> -	/* kick the hardlockup detector */
+> -	watchdog_interrupt_count();
+> -
+>  	/* kick the softlockup detector */
+>  	wake_up_process(__this_cpu_read(softlockup_watchdog));
+>  
+>  	/* .. and repeat */
+>  	hrtimer_forward_now(hrtimer, ns_to_ktime(get_sample_period()));
+>  
+> +	/* kick the hardlockup detector now that the timer's been scheduled */
+> +	watchdog_interrupt_touch(this_cpu);
+> +
+>  	if (touch_ts == 0) {
+>  		if (unlikely(__this_cpu_read(softlockup_touch_sync))) {
+>  			/*
+> @@ -460,7 +469,7 @@ static int watchdog_nmi_enable(int cpu)
+>  	/* Try to register using hardware perf events */
+>  	wd_attr = &wd_hw_attr;
+>  	wd_attr->sample_period = hw_nmi_get_sample_period(watchdog_thresh);
+> -	do_div(wd_attr->sample_period, hardlockup_thresh);
+> +	do_div(wd_attr->sample_period, hardlockup_freq);
+>  	event = perf_event_create_kernel_counter(wd_attr, cpu, NULL, watchdog_overflow_callback);
+>  	if (!IS_ERR(event)) {
+>  		printk(KERN_INFO "NMI watchdog enabled, takes one hw-pmu counter.\n");
+> -- 
+> 1.7.3.1
+> 
