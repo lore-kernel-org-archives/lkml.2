@@ -1,51 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752996Ab1GVXCM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 19:02:12 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51629 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752515Ab1GVXCL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 19:02:11 -0400
-Date: Fri, 22 Jul 2011 16:01:27 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-kernel@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net
-Subject: Re: [PATCH 07/10] um: Set __HAVE_ARCH_GATE_AREA for x86_64
-Message-Id: <20110722160127.ec061ab6.akpm@linux-foundation.org>
-In-Reply-To: <1311239914-8301-7-git-send-email-richard@nod.at>
-References: <1311239914-8301-1-git-send-email-richard@nod.at>
-	<1311239914-8301-7-git-send-email-richard@nod.at>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753074Ab1GVXGR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 19:06:17 -0400
+Received: from fieldses.org ([174.143.236.118]:47521 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752584Ab1GVXGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 19:06:16 -0400
+Date: Fri, 22 Jul 2011 19:06:12 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: NeilBrown <neilb@suse.de>
+Cc: Andi Kleen <andi@firstfloor.org>, Matt Mackall <mpm@selenic.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Nanosecond fs timestamp support: sad
+Message-ID: <20110722230612.GD10749@fieldses.org>
+References: <1311271641.14555.114.camel@calx>
+ <m2pql2c0qz.fsf@firstfloor.org>
+ <20110722163335.2df4f6ca@notabene.brown>
+ <1311363269.14555.261.camel@calx>
+ <20110722205922.GS8006@one.firstfloor.org>
+ <1311369102.14555.268.camel@calx>
+ <20110722214732.GW8006@one.firstfloor.org>
+ <20110722221039.GB10749@fieldses.org>
+ <20110722223158.GC10749@fieldses.org>
+ <20110723085915.308ddc02@notabene.brown>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110723085915.308ddc02@notabene.brown>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Jul 2011 11:18:31 +0200
-Richard Weinberger <richard@nod.at> wrote:
-
-> Implement arch_vma_name() and make get_gate_vma(),
-> in_gate_area() and in_gate_area_no_mm() a nop.
+On Sat, Jul 23, 2011 at 08:59:15AM +1000, NeilBrown wrote:
+> On Fri, 22 Jul 2011 18:31:58 -0400 "J. Bruce Fields" <bfields@fieldses.org>
+> wrote:
 > 
-> We need arch_vma_name() to support vDSO.
+> > On Fri, Jul 22, 2011 at 06:10:39PM -0400, bfields wrote:
+> > > On Fri, Jul 22, 2011 at 11:47:32PM +0200, Andi Kleen wrote:
+> > > > On Fri, Jul 22, 2011 at 04:11:42PM -0500, Matt Mackall wrote:
+> > > > > On Fri, 2011-07-22 at 22:59 +0200, Andi Kleen wrote:
+> > > > > > > Indeed. Only usefully exists on ext4 and requires extra system calls.
+> > > > > > 
+> > > > > > Not sure what you mean?  It's in stat(2), just like the timestamps.
+> > > > > 
+> > > > > I don't see anything that looks like a version or generation number in
+> > > > > either the man pages, the asm-generic/stat.h, or glibc's asm/stat.h.
+> > > > > Pointer?
+> > > > 
+> > > > Hmm you're right. I thought it was in there, but apparently not.
+> > > > I think it should be added there though. We still have some unused 
+> > > > fields.
+> > > 
+> > > But last I checked I thought it was only ext4 that actually incremented
+> > > the i_version on IO, and even then only when given a (non-default) mount
+> > > option.
+> > > 
+> > > My notes on what needs to be done there:
+> > > 
+> > > 	- collect data to determine whether turning on i_version causes
+> > > 	  any significant performance regressions.
+> > > 		- Last I talked to him, Ted Tso recommended running
+> > > 		  Bonnie on a local disk, since it does a lot of little
+> > > 		  writes, which is somewhat of a worst case, as it will
+> > > 		  generate extra metadata updates for each write.
+> > > 		  Compare total wall-clock time, number of iops, and
+> > > 		  number of bytes (using some kind of block tracing).
+> > > 	- If there aren't any problems, turn it on by default, and we're
+> > > 	  done.
+> > 
+> > (Well,and talk the other filesystem implementors into doing it.)
+> > 
+> 
+> But does anyone apart from NFSv4 actually *want* i_version as opposed to the
+> more-generally-useful precise timestamps?
 
-Well this is awkward.
+It *seems* like a generally useful idea, but I don't know of any other
+users.
 
->  arch/um/sys-x86_64/asm/elf.h |    1 +
->  arch/um/sys-x86_64/mem.c     |   22 ++++++++++++++++++++++
->  2 files changed, 23 insertions(+), 0 deletions(-)
+> If not, we probably should tell NFSv4 to use timestamps and focus on making
+> them work well.
+> ??
 
-Your um-clean-up-vm-flagsh.patch deleted arch/um/sys-x86_64/mem.c.
+Well, sure, I couldn't complain about that if that proved possible.
 
-There's not really any appropriate .c file in arch/um/sys-x86_64 for
-these functions so I changed the patch to reinstate mem.c.
+--b.
 
-Then I changed my maind and dropped it ;) Hopefully none of the other
-patches depended on this one.
-
-Then I looked at um-implement-a-x86_64-vdso.patch, got nervous and
-undropped um-set-__have_arch_gate_area-for-x86_64.patch.
-
+> 
+> The timestamp used doesn't need to update ever nanosecond.  I think if it
+> were just updated on every userspace->kernel transition  (or effective
+> equivalents inside kernel threads) that would be enough capture all
+> causality.  I wonder how that would be achieved..  I wonder if RCU machinery
+> could help - doesn't it keep track of when threads schedule ... or something?
+> 
+> NeilBrown
