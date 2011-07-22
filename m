@@ -1,50 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755188Ab1GVTWX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 15:22:23 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39560 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754946Ab1GVTWW convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 15:22:22 -0400
+	id S1755205Ab1GVTY2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 15:24:28 -0400
+Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:22945 "EHLO
+	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755167Ab1GVTY1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 15:24:27 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EACTMKU5tgwKe/2dsb2JhbABTp0l4iHwCuz8OhjEEo08
+Date: Fri, 22 Jul 2011 21:24:25 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 01/11] watchdog: WatchDog Timer Driver Core - Add basic
+	framework
+Message-ID: <20110722192425.GJ31767@infomag.iguana.be>
+References: <20110711135056.GT29245@infomag.iguana.be> <1310392522-9949-1-git-send-email-wim@iguana.be> <20110711213224.GC5811@pengutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <4E29CB5B.4040408@unsolicited.net>
-References: <CA+55aFxakA2U+oMJ1T7awTYa+p6xp9N0aCbfrUqgkF7BJ8gnQw@mail.gmail.com>
- <4E29CB5B.4040408@unsolicited.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 22 Jul 2011 12:21:31 -0700
-Message-ID: <CA+55aFy1FnVGH4C_0T8fXwZPUdz5-SCczMwy1K8kydLwTx89RQ@mail.gmail.com>
-Subject: Re: Linux 3.0 release
-To: David <david@unsolicited.net>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110711213224.GC5811@pengutronix.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 22, 2011 at 12:11 PM, David <david@unsolicited.net> wrote:
->
-> I'm getting the following warning at boot from 3.0, everything seems to be fine otherwise though.
->
-> Jul 22 19:40:02 server kernel: [   15.526629] ------------[ cut here ]------------
-> Jul 22 19:40:02 server kernel: [   15.526635] WARNING: at kernel/timer.c:1011 del_timer_sync+0x4e/0x50()
+Hi Wolfram,
 
-Hmm. That looks like a real bug: you shouldn't do a "del_timer_sync()"
-from an interrupt. It probably works, but it sounds like a really bad
-idea.
+> > diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+> > index 372bc64..edb0f1b 100644
+> > --- a/drivers/watchdog/Kconfig
+> > +++ b/drivers/watchdog/Kconfig
+> > @@ -28,6 +28,17 @@ menuconfig WATCHDOG
+> >  
+> >  if WATCHDOG
+> >  
+> > +config WATCHDOG_CORE
+> > +	tristate "WatchDog Timer Driver Core"
+> 
+> What about the idea of making this bool and let it always be compiled as soon
+> as WATCHDOG is selected?
 
-> Jul 22 19:40:02 server kernel: [   15.526677]  [<ffffffff81054b4e>] del_timer_sync+0x4e/0x50
-> Jul 22 19:40:02 server kernel: [   15.526679]  [<ffffffff8145e224>] linkwatch_schedule_work+0x84/0xa0
-> Jul 22 19:40:02 server kernel: [   15.526681]  [<ffffffff8145e2bc>] linkwatch_fire_event+0x7c/0x100
-> Jul 22 19:40:02 server kernel: [   15.526684]  [<ffffffff8146b1ed>] netif_carrier_on+0x2d/0x40
-> Jul 22 19:40:02 server kernel: [   15.526689]  [<ffffffffa006b6fb>] __rtl8169_check_link_status+0x4b/0xc0 [r8169]
-> Jul 22 19:40:02 server kernel: [   15.526693]  [<ffffffffa006c016>] rtl8169_interrupt+0x166/0x3a0 [r8169]
-> Jul 22 19:40:02 server kernel: [   15.526696]  [<ffffffff810a4385>] handle_irq_event_percpu+0x55/0x1f0
-> Jul 22 19:40:02 server kernel: [   15.526698]  [<ffffffff810a4551>] handle_irq_event+0x31/0x50
+This should indeed have been bool. For this merge window it will stay as WATCHDOG_CORE.
+In a futue release WATCHDOG_CORE will disappear and the watchdog core will be dependant
+on CONFIG_WATCHDOG. Goal is that we only have 1 lower-level API and that all other drivers
+use that.
 
-I'm not seeing a lot of changes in any of these areas, though. I
-wonder what made it start happen.
+> > +int watchdog_register_device(struct watchdog_device *wdd)
+> > +{
+> > +	int ret;
+> > +
+> > +	/* Make sure we have a valid watchdog_device structure */
+> > +	if (wdd == NULL || wdd->info == NULL || wdd->ops == NULL)
+> > +		return -EINVAL;
+> > +
+> > +	/* Make sure that the mandatory operations are supported */
+> > +	if (wdd->ops->start == NULL || wdd->ops->stop == NULL)
+> > +		return -EINVAL;
+> 
+> Check also for wdd->ops->owner? Should we mark it as mandatory?
 
-                     Linus
+No, see other comments also (if built-in owner is NULL).
+
+All other comments have been incorporated.
+It's allready in the linux-2.6-watchdog-next tree. Will try to sent out the new series as soon as possible.
+
+Kind regards,
+Wim.
+
