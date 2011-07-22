@@ -1,264 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753749Ab1GVL0K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 07:26:10 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:50067 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753188Ab1GVL0I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 07:26:08 -0400
-Date: Fri, 22 Jul 2011 16:56:01 +0530
-From: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-To: Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Jason Baron <jbaron@redhat.com>
-Subject: Re: [patch 11/18] sched: prevent interactions with throttled entities
-Message-ID: <20110722112601.GC20315@linux.vnet.ibm.com>
-Reply-To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-References: <20110721164325.231521704@google.com>
- <20110721184757.777916795@google.com>
+	id S1753667Ab1GVLd0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 07:33:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65317 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753353Ab1GVLdY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 07:33:24 -0400
+Date: Fri, 22 Jul 2011 13:33:07 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHv2] perf tools: Add support to install perf python extension
+Message-ID: <20110722113307.GA1931@jolsa.brq.redhat.com>
+References: <1311266726-20655-1-git-send-email-jolsa@redhat.com>
+ <20110721171148.GB24324@ghostprotocols.net>
+ <20110721184715.GA2425@jolsa.Belkin>
+ <20110721190407.GC24324@ghostprotocols.net>
+ <20110721194150.GB2425@jolsa.Belkin>
+ <20110721211610.GE24324@ghostprotocols.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110721184757.777916795@google.com>
+In-Reply-To: <20110721211610.GE24324@ghostprotocols.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul Turner <pjt@google.com> [2011-07-21 09:43:36]:
+On Thu, Jul 21, 2011 at 06:16:10PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Thu, Jul 21, 2011 at 09:41:50PM +0200, Jiri Olsa escreveu:
+> > On Thu, Jul 21, 2011 at 04:04:07PM -0300, Arnaldo Carvalho de Melo wrote:
+> > > Em Thu, Jul 21, 2011 at 08:47:15PM +0200, Jiri Olsa escreveu:
+> > > > nope, I added install-python_ext since it installs to the
+> > > > python system lib area, and it could break standard install
+> 
+> > > But where is that it picks the binaries built? The problem I was
+> > > experiencing was that it wasn't obeying O=, just using the source dir
+>  
+> > I haven't checked the 'O=' that much.. will do :)
+>  
+> > > as the build dir, effectively building it again, in a different place.
+>  
+> > I dont have that much experince with python, but here's what I found:
+> > (might be missing something..)
+> 
+> <SNIP>
+>  
+> > Also there might be a way to overload distutils class and put our
+> > specific options to this new class..
+>  
+> > As I checked some of python extension packages, some of them
+> > do not use distutils at all.. can't imagine why ;)
+> 
+> Ok, we're on the same page with that ';)' ;)
+> 
+> I'd love to use what is 'pythonic', i.e. whatever the python people
+> think we should use and don't bother with all the module
+> build/install details, but since we want to have O= working...
 
-> >From the perspective of load-balance and shares distribution, throttled
-> entities should be invisible.
-> 
-> However, both of these operations work on 'active' lists and are not
-> inherently aware of what group hierarchies may be present.  In some cases this
-> may be side-stepped (e.g. we could sideload via tg_load_down in load balance) 
-> while in others (e.g. update_shares()) it is more difficult to compute without
-> incurring some O(n^2) costs.
-> 
-> Instead, track hierarchicaal throttled state at time of transition.  This
-> allows us to easily identify whether an entity belongs to a throttled hierarchy
-> and avoid incorrect interactions with it.
-> 
-> Also, when an entity leaves a throttled hierarchy we need to advance its
-> time averaging for shares averaging so that the elapsed throttled time is not
-> considered as part of the cfs_rq's operation.
-> 
-> We also use this information to prevent buddy interactions in the wakeup and
-> yield_to() paths.
-> 
-> Signed-off-by: Paul Turner <pjt@google.com>
-> Reviewed-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-> 
-> ---
->  kernel/sched.c      |    2 -
->  kernel/sched_fair.c |   99 ++++++++++++++++++++++++++++++++++++++++++++++++----
->  2 files changed, 94 insertions(+), 7 deletions(-)
-> 
-> Index: tip/kernel/sched_fair.c
-> ===================================================================
-> --- tip.orig/kernel/sched_fair.c
-> +++ tip/kernel/sched_fair.c
-> @@ -725,6 +725,8 @@ account_entity_dequeue(struct cfs_rq *cf
->  }
-> 
->  #ifdef CONFIG_FAIR_GROUP_SCHED
-> +/* we need this in update_cfs_load and load-balance functions below */
-> +static inline int throttled_hierarchy(struct cfs_rq *cfs_rq);
->  # ifdef CONFIG_SMP
->  static void update_cfs_rq_load_contribution(struct cfs_rq *cfs_rq,
->  					    int global_update)
-> @@ -747,7 +749,7 @@ static void update_cfs_load(struct cfs_r
->  	u64 now, delta;
->  	unsigned long load = cfs_rq->load.weight;
-> 
-> -	if (cfs_rq->tg == &root_task_group)
-> +	if (cfs_rq->tg == &root_task_group || throttled_hierarchy(cfs_rq))
->  		return;
-> 
->  	now = rq_of(cfs_rq)->clock_task;
-> @@ -856,7 +858,7 @@ static void update_cfs_shares(struct cfs
-> 
->  	tg = cfs_rq->tg;
->  	se = tg->se[cpu_of(rq_of(cfs_rq))];
-> -	if (!se)
-> +	if (!se || throttled_hierarchy(cfs_rq))
->  		return;
->  #ifndef CONFIG_SMP
->  	if (likely(se->load.weight == tg->shares))
-> @@ -1425,6 +1427,65 @@ static inline int cfs_rq_throttled(struc
->  	return cfs_rq->throttled;
->  }
-> 
-> +/* check whether cfs_rq, or any parent, is throttled */
-> +static inline int throttled_hierarchy(struct cfs_rq *cfs_rq)
-> +{
-> +	return cfs_rq->throttle_count;
-> +}
-> +
-> +/*
-> + * Ensure that neither of the group entities corresponding to src_cpu or
-> + * dest_cpu are members of a throttled hierarchy when performing group
-> + * load-balance operations.
-> + */
-> +static inline int throttled_lb_pair(struct task_group *tg,
-> +				    int src_cpu, int dest_cpu)
-> +{
-> +	struct cfs_rq *src_cfs_rq, *dest_cfs_rq;
-> +
-> +	src_cfs_rq = tg->cfs_rq[src_cpu];
-> +	dest_cfs_rq = tg->cfs_rq[dest_cpu];
-> +
-> +	return throttled_hierarchy(src_cfs_rq) ||
-> +	       throttled_hierarchy(dest_cfs_rq);
-> +}
-> +
-> +/* updated child weight may affect parent so we have to do this bottom up */
-> +static int tg_unthrottle_up(struct task_group *tg, void *data)
-> +{
-> +	struct rq *rq = data;
-> +	struct cfs_rq *cfs_rq = tg->cfs_rq[cpu_of(rq)];
-> +
-> +	cfs_rq->throttle_count--;
-> +#ifdef CONFIG_SMP
-> +	if (!cfs_rq->throttle_count) {
-> +		u64 delta = rq->clock_task - cfs_rq->load_stamp;
-> +
-> +		/* leaving throttled state, advance shares averaging windows */
-> +		cfs_rq->load_stamp += delta;
-> +		cfs_rq->load_last += delta;
-> +
-> +		/* update entity weight now that we are on_rq again */
-> +		update_cfs_shares(cfs_rq);
-> +	}
-> +#endif
-> +
-> +	return 0;
-> +}
-> +
-> +static int tg_throttle_down(struct task_group *tg, void *data)
-> +{
-> +	struct rq *rq = data;
-> +	struct cfs_rq *cfs_rq = tg->cfs_rq[cpu_of(rq)];
-> +
-> +	/* group is entering throttled state, record last load */
-> +	if (!cfs_rq->throttle_count)
-> +		update_cfs_load(cfs_rq, 0);
-> +	cfs_rq->throttle_count++;
-> +
-> +	return 0;
-> +}
-> +
->  static __used void throttle_cfs_rq(struct cfs_rq *cfs_rq)
->  {
->  	struct rq *rq = rq_of(cfs_rq);
-> @@ -1435,7 +1496,9 @@ static __used void throttle_cfs_rq(struc
->  	se = cfs_rq->tg->se[cpu_of(rq_of(cfs_rq))];
-> 
->  	/* account load preceding throttle */
-> -	update_cfs_load(cfs_rq, 0);
-> +	rcu_read_lock();
-> +	walk_tg_tree_from(cfs_rq->tg, tg_throttle_down, tg_nop, (void *)rq);
-> +	rcu_read_unlock();
-> 
->  	task_delta = cfs_rq->h_nr_running;
->  	for_each_sched_entity(se) {
-> @@ -1476,6 +1539,10 @@ static void unthrottle_cfs_rq(struct cfs
->  	list_del_rcu(&cfs_rq->throttled_list);
->  	raw_spin_unlock(&cfs_b->lock);
-> 
-> +	update_rq_clock(rq);
-> +	/* update hierarchical throttle state */
-> +	walk_tg_tree_from(cfs_rq->tg, tg_nop, tg_unthrottle_up, (void *)rq);
-> +
->  	if (!cfs_rq->load.weight)
->  		return;
-> 
-> @@ -1620,6 +1687,17 @@ static inline int cfs_rq_throttled(struc
->  {
->  	return 0;
->  }
-> +
-> +static inline int throttled_hierarchy(struct cfs_rq *cfs_rq)
-> +{
-> +	return 0;
-> +}
-> +
-> +static inline int throttled_lb_pair(struct task_group *tg,
-> +				    int src_cpu, int dest_cpu)
-> +{
-> +	return 0;
-> +}
->  #endif
-> 
->  /**************************************************
-> @@ -2519,6 +2597,9 @@ move_one_task(struct rq *this_rq, int th
-> 
->  	for_each_leaf_cfs_rq(busiest, cfs_rq) {
->  		list_for_each_entry_safe(p, n, &cfs_rq->tasks, se.group_node) {
-> +			if (throttled_lb_pair(task_group(p),
-> +					      busiest->cpu, this_cpu))
-> +				break;
-> 
->  			if (!can_migrate_task(p, busiest, this_cpu,
->  						sd, idle, &pinned))
-> @@ -2630,8 +2711,13 @@ static void update_shares(int cpu)
->  	struct rq *rq = cpu_rq(cpu);
-> 
->  	rcu_read_lock();
-> -	for_each_leaf_cfs_rq(rq, cfs_rq)
-> +	for_each_leaf_cfs_rq(rq, cfs_rq) {
+attached new version, working for me with the O= settings
 
-this hunk fails to apply over the latest tip, due to the comments
-introduced by 9763b67fb9f3050.
+jirka
 
-> +		/* throttled entities do not contribute to load */
-> +		if (throttled_hierarchy(cfs_rq))
-> +			continue;
-> +
->  		update_shares_cpu(cfs_rq->tg, cpu);
-> +	}
->  	rcu_read_unlock();
->  }
-> 
-> @@ -2655,9 +2741,10 @@ load_balance_fair(struct rq *this_rq, in
->  		u64 rem_load, moved_load;
-> 
->  		/*
-> -		 * empty group
-> +		 * empty group or part of a throttled hierarchy
->  		 */
-> -		if (!busiest_cfs_rq->task_weight)
-> +		if (!busiest_cfs_rq->task_weight ||
-> +		    throttled_lb_pair(tg, busiest_cpu, this_cpu))
->  			continue;
-> 
->  		rem_load = (u64)rem_load_move * busiest_weight;
-> Index: tip/kernel/sched.c
-> ===================================================================
-> --- tip.orig/kernel/sched.c
-> +++ tip/kernel/sched.c
-> @@ -399,7 +399,7 @@ struct cfs_rq {
->  	u64 runtime_expires;
->  	s64 runtime_remaining;
-> 
-> -	int throttled;
-> +	int throttled, throttle_count;
->  	struct list_head throttled_list;
->  #endif
->  #endif
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
+---
+Subject: [PATCH] perf tools: Add support to install perf python extension
+
+Adding install-python_ext target to install python extension
+related files.  Installation directory is governed by python
+distutils package and follows the DESTDIR variable settings.
+
+Also moving python extension build output into '$(O)python_ext_build'
+directory and making it configurable via PYTHON_EXTBUILD variable.
+
+Keeping the '$(O)python/perf.so' file, so it could be used
+for testing as of until now.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ tools/perf/Makefile      |   19 +++++++++++++------
+ tools/perf/util/setup.py |   21 ++++++++++++++++++++-
+ 2 files changed, 33 insertions(+), 7 deletions(-)
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 940257b..2b44a53 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -178,9 +178,9 @@ strip-libs = $(filter-out -l%,$(1))
+ 
+ $(OUTPUT)python/perf.so: $(PYRF_OBJS)
+ 	$(QUIET_GEN)CFLAGS='$(BASIC_CFLAGS)' $(PYTHON_WORD) util/setup.py \
+-	  --quiet build_ext \
+-	  --build-lib='$(OUTPUT)python' \
+-	  --build-temp='$(OUTPUT)python/temp'
++	  --quiet build_ext; \
++	mkdir -p $(OUTPUT)python && \
++	cp $(PYTHON_EXTBUILD_LIB)perf.so $(OUTPUT)python/
+ #
+ # No Perl scripts right now:
+ #
+@@ -504,9 +504,13 @@ else
+ 
+   PYTHON_WORD := $(call shell-wordify,$(PYTHON))
+ 
+-  python-clean := $(PYTHON_WORD) util/setup.py clean \
+-    --build-lib='$(OUTPUT)python' \
+-    --build-temp='$(OUTPUT)python/temp'
++  # python extension build directories
++  PYTHON_EXTBUILD     := $(OUTPUT)python_ext_build/
++  PYTHON_EXTBUILD_LIB := $(PYTHON_EXTBUILD)lib/
++  PYTHON_EXTBUILD_TMP := $(PYTHON_EXTBUILD)tmp/
++  export PYTHON_EXTBUILD_LIB PYTHON_EXTBUILD_TMP
++
++  python-clean := rm -rf $(PYTHON_EXTBUILD) $(OUTPUT)python/perf.so
+ 
+   ifdef NO_LIBPYTHON
+     $(call disable-python)
+@@ -863,6 +867,9 @@ install: all
+ 	$(INSTALL) scripts/python/*.py -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/python'
+ 	$(INSTALL) scripts/python/bin/* -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/python/bin'
+ 
++install-python_ext:
++	$(PYTHON_WORD) util/setup.py --quiet install --root='/$(DESTDIR_SQ)'
++
+ install-doc:
+ 	$(MAKE) -C Documentation install
+ 
+diff --git a/tools/perf/util/setup.py b/tools/perf/util/setup.py
+index bbc982f..95d3700 100644
+--- a/tools/perf/util/setup.py
++++ b/tools/perf/util/setup.py
+@@ -3,9 +3,27 @@
+ from distutils.core import setup, Extension
+ from os import getenv
+ 
++from distutils.command.build_ext   import build_ext   as _build_ext
++from distutils.command.install_lib import install_lib as _install_lib
++
++class build_ext(_build_ext):
++    def finalize_options(self):
++        _build_ext.finalize_options(self)
++        self.build_lib  = build_lib
++        self.build_temp = build_tmp
++
++class install_lib(_install_lib):
++    def finalize_options(self):
++        _install_lib.finalize_options(self)
++        self.build_dir = build_lib
++
++
+ cflags = ['-fno-strict-aliasing', '-Wno-write-strings']
+ cflags += getenv('CFLAGS', '').split()
+ 
++build_lib = getenv('PYTHON_EXTBUILD_LIB')
++build_tmp = getenv('PYTHON_EXTBUILD_TMP')
++
+ perf = Extension('perf',
+ 		  sources = ['util/python.c', 'util/ctype.c', 'util/evlist.c',
+ 			     'util/evsel.c', 'util/cpumap.c', 'util/thread_map.c',
+@@ -21,4 +39,5 @@ setup(name='perf',
+       author_email='acme@redhat.com',
+       license='GPLv2',
+       url='http://perf.wiki.kernel.org',
+-      ext_modules=[perf])
++      ext_modules=[perf],
++      cmdclass={'build_ext': build_ext, 'install_lib': install_lib})
+-- 
+1.7.1
+
