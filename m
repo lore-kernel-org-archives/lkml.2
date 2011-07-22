@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751187Ab1GVXOt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 19:14:49 -0400
-Received: from ltw.loris.tv ([85.14.220.160]:57697 "EHLO ltw.loris.tv"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750780Ab1GVXOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 19:14:48 -0400
-Date: Sat, 23 Jul 2011 01:14:30 +0200
-From: Adrian Knoth <adi@drcomp.erfurt.thur.de>
-To: Fons Adriaensen <fons@linuxaudio.org>
-Cc: Tom Gundersen <teg@jklm.no>,
-        General Discussion about Arch Linux 
-	<arch-general@archlinux.org>,
-        Takashi Iwai <tiwai@suse.de>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [arch-general] Panic - no sound devices after upgrade
-Message-ID: <20110722231430.GN3771@ltw.loris.tv>
-References: <CAFEhRJczj=_B7fK7GvBEnqpB2GJGnCnGkoA2w5vzbFfM2wAGZw@mail.gmail.com> <20110720163844.GB16901@linuxaudio.org> <CAG-2HqWqATSJ=oJTTvULXwPEG82yN+8e6GJFs759hPA-=krAOQ@mail.gmail.com> <20110721100944.GA13971@linuxaudio.org> <CAG-2HqX23C79vfccnu0tMqx+6K9Z5pS0_HekaLizQx7XfkPQ1Q@mail.gmail.com> <20110721112331.GA15059@linuxaudio.org> <CAG-2HqWK3x5-szkyzX8AMxuMpDZNVRXHYtQ0AkAPMsGcLK0Z9w@mail.gmail.com> <4E28313E.60900@drcomp.erfurt.thur.de> <CAG-2HqVew75LE68fObz7e3WwcT-5Gwu1ka9Zr4vb1JdbSUOYEQ@mail.gmail.com> <20110722193710.GA8452@linuxaudio.org>
-MIME-Version: 1.0
+	id S1751130Ab1GVXT2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 19:19:28 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:34784 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780Ab1GVXT1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 19:19:27 -0400
+Subject: Re: [PATCH] rtc-tegra: properly initialize spinlock
+Mime-Version: 1.0 (Apple Message framework v1244.3)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110722193710.GA8452@linuxaudio.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+From: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
+In-Reply-To: <20110722151338.9b1e9594.akpm@linux-foundation.org>
+Date: Fri, 22 Jul 2011 16:19:19 -0700
+Cc: =?iso-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Andrew Chew <achew@nvidia.com>, linux-rt-users@vger.kernel.org,
+        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
+        jkastner@redhat.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <58E25CAF-EAC4-4613-81B2-D713F5DC8CEF@gmail.com>
+References: <1311323756-18013-1-git-send-email-u.kleine-koenig@pengutronix.de> <20110722151338.9b1e9594.akpm@linux-foundation.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+X-Mailer: Apple Mail (2.1244.3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 22, 2011 at 07:37:10PM +0000, Fons Adriaensen wrote:
 
-> > Fons (or anyone else who could reproduce the problem),
-> > 
-> > If you want to try out Adrian's patch, I uploaded a kernel with the
-> > patch applied here:
-> > <https://dev.archlinux.org/~tomegun/kernel26-2.6.39.1.3-1.1-i686.pkg.tar.xz>.
+On Jul 22, 2011, at 3:13 PM, Andrew Morton wrote:
+
+> On Fri, 22 Jul 2011 10:35:56 +0200
+> Uwe Kleine-K__nig <u.kleine-koenig@pengutronix.de> wrote:
 > 
-> Installed on two machines so far, more tomorrow.
-> Seems to have solved the problem :-) :-)
+>> Using __SPIN_LOCK_UNLOCKED for a dynamically allocated lock is wrong and
+>> breaks with PREEMPT_RT_FULL.
+> 
+> Please define "breaks".  Lockdep warnings?  Deadlocks?
 
-Good to know. I'll wait for your final confirmation and then commit it.
+Narrr, I think its a compile-time problem with the static initializer.
 
-> An unrelated question: I see references to the RME Raydat
-> interface. Does that mean it's supported ? Also with period
-> sizes < 1024 ?
+Sven
 
-It is. It's actually the card I'm developing on. So far, all period
-sizes from 64 to 8k (iirc) work. I don't know if 32 is supposed to work,
-at least on my machine, it doesn't.
+> 
+>> diff --git a/drivers/rtc/rtc-tegra.c b/drivers/rtc/rtc-tegra.c
+>> index 2fc31aa..75259fe 100644
+>> --- a/drivers/rtc/rtc-tegra.c
+>> +++ b/drivers/rtc/rtc-tegra.c
+>> @@ -343,7 +343,7 @@ static int __devinit tegra_rtc_probe(struct platform_device *pdev)
+>> 
+>> 	/* set context info. */
+>> 	info->pdev = pdev;
+>> -	info->tegra_rtc_lock = __SPIN_LOCK_UNLOCKED(info->tegra_rtc_lock);
+>> +	spin_lock_init(&info->tegra_rtc_lock);
+>> 
+>> 	platform_set_drvdata(pdev, info);
+>> 
+>> -- 
+>> 1.7.5.4
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-
-HTH
-
--- 
-mail: adi@thur.de  	http://adi.thur.de	PGP/GPG: key via keyserver
