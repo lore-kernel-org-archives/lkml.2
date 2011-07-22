@@ -1,130 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932232Ab1GVVFu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 17:05:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33049 "EHLO mx2.suse.de"
+	id S932247Ab1GVVJI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 17:09:08 -0400
+Received: from gate.crashing.org ([63.228.1.57]:47772 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932158Ab1GVVFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 17:05:49 -0400
-Date: Fri, 22 Jul 2011 23:05:47 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT] HID
-Message-ID: <alpine.LNX.2.00.1107222259390.7300@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932222Ab1GVVJG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 17:09:06 -0400
+Subject: Re: [PATCH 2/5] hugetlb: add phys addr to struct huge_bootmem_page
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Becky Bruce <beckyb@kernel.crashing.org>
+In-Reply-To: <20110721154427.53e8fd5b.akpm@linux-foundation.org>
+Date: Fri, 22 Jul 2011 16:08:58 -0500
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        david@gibson.dropbear.id.au, galak@kernel.crashing.org,
+        benh@kernel.crashing.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <A8DD821C-06F9-462C-8037-28AC17C00F7B@kernel.crashing.org>
+References: <1309290888309-git-send-email-beckyb@kernel.crashing.org> <13092909493748-git-send-email-beckyb@kernel.crashing.org> <13092910103675-git-send-email-beckyb@kernel.crashing.org> <20110721154427.53e8fd5b.akpm@linux-foundation.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
 
-please pull from 'for-linus' branch at
+On Jul 21, 2011, at 5:44 PM, Andrew Morton wrote:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
+> On Tue, 28 Jun 2011 14:54:45 -0500
+> Becky Bruce <beckyb@kernel.crashing.org> wrote:
+> 
+>> From: Becky Bruce <beckyb@kernel.crashing.org>
+>> 
+>> This is needed on HIGHMEM systems - we don't always have a virtual
+>> address so store the physical address and map it in as needed.
+>> 
+>> Signed-off-by: Becky Bruce <beckyb@kernel.crashing.org>
+>> ---
+>> include/linux/hugetlb.h |    3 +++
+>> mm/hugetlb.c            |    8 +++++++-
+>> 2 files changed, 10 insertions(+), 1 deletions(-)
+>> 
+>> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+>> index 59225ef..19644e0 100644
+>> --- a/include/linux/hugetlb.h
+>> +++ b/include/linux/hugetlb.h
+>> @@ -231,6 +231,9 @@ struct hstate {
+>> struct huge_bootmem_page {
+>> 	struct list_head list;
+>> 	struct hstate *hstate;
+>> +#ifdef CONFIG_HIGHMEM
+>> +	phys_addr_t phys;
+>> +#endif
+>> };
+>> 
+>> struct page *alloc_huge_page_node(struct hstate *h, int nid);
+>> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+>> index 6402458..2db81ea 100644
+>> --- a/mm/hugetlb.c
+>> +++ b/mm/hugetlb.c
+>> @@ -1105,8 +1105,14 @@ static void __init gather_bootmem_prealloc(void)
+>> 	struct huge_bootmem_page *m;
+>> 
+>> 	list_for_each_entry(m, &huge_boot_pages, list) {
+>> -		struct page *page = virt_to_page(m);
+>> 		struct hstate *h = m->hstate;
+>> +#ifdef CONFIG_HIGHMEM
+>> +		struct page *page = pfn_to_page(m->phys >> PAGE_SHIFT);
+>> +		free_bootmem_late((unsigned long)m,
+>> +				  sizeof(struct huge_bootmem_page));
+>> +#else
+>> +		struct page *page = virt_to_page(m);
+>> +#endif
+>> 		__ClearPageReserved(page);
+>> 		WARN_ON(page_count(page) != 1);
+>> 		prep_compound_huge_page(page, h->order);
+> 
+> nit: wrapping both definitions and statements in an ifdef like this is
+> a bit nasty from a readability and maintainability point of view - it's
+> inviting people to later make changes which fail to compile when the
+> config option is flipped.
+> 
+> This is better:
+> 
+> --- a/mm/hugetlb.c~hugetlb-add-phys-addr-to-struct-huge_bootmem_page-fix
+> +++ a/mm/hugetlb.c
+> @@ -1106,12 +1106,14 @@ static void __init gather_bootmem_preall
+> 
+> 	list_for_each_entry(m, &huge_boot_pages, list) {
+> 		struct hstate *h = m->hstate;
+> +		struct page *page;
+> +
+> #ifdef CONFIG_HIGHMEM
+> -		struct page *page = pfn_to_page(m->phys >> PAGE_SHIFT);
+> +		page = pfn_to_page(m->phys >> PAGE_SHIFT);
+> 		free_bootmem_late((unsigned long)m,
+> 				  sizeof(struct huge_bootmem_page));
+> #else
+> -		struct page *page = virt_to_page(m);
+> +		page = virt_to_page(m);
+> #endif
+> 		__ClearPageReserved(page);
+> 		WARN_ON(page_count(page) != 1);
 
-to receive 3.1 merge window updates for HID layer.
+Andrew,
 
-It's mostly about adding support for new devices (both into existing 
-drivers and adding completely new drivers, such as David Herrmann's 
-Nintendo Wiimote driver).
+I totally agree, this is better, thanks.   I see you've put my original patch and your fix into -mm;  I'd like it to percolate there for a bit before it goes to Linus to be sure I haven't broken anything.  It should be safe, as I don't think this particular function was ever expected to work on highmem platforms, but it's possible I'm overlooking something.
 
-Thanks.
+Cheers,
+-Becky
 
-Anssi Hannula (1):
-      HID: add FF support for Holtek On Line Grip based gamepads
-
-Ari Savolainen (1):
-      HID: fix horizontal wheel for ms comfort mouse 4500
-
-Axel Lin (4):
-      HID: ACRUX - add missing hid_hw_stop() in ax_probe() error path
-      HID: emsff: properly handle emsff_init failure
-      HID: prodikeys: make needlessly global symbols static
-      HID: prodikeys: remove a redundant forward declaration of struct pcmidi_snd
-
-David Herrmann (12):
-      HID: wiimote: Add Nintendo Wii Remote driver stub
-      HID: wiimote: Register wiimote hid driver stub
-      HID: wiimote: Add wiimote device structure
-      HID: wiimote: Register input device in wiimote hid driver
-      HID: wiimote: Synchronize wiimote input and hid event handling
-      HID: wiimote: Add wiimote send function
-      HID: wiimote: Add output queue for wiimote driver
-      HID: wiimote: Add wiimote event handler
-      HID: wiimote: Add wiimote input button parser
-      HID: wiimote: Add wiimote led request
-      HID: wiimote: Cache wiimote led state
-      HID: wiimote: Add sysfs support to wiimote driver
-
-Jiri Kosina (2):
-      HID: add support for MS Digital Media 3000
-      HID: fix support for Microsoft comfort mouse 4500
-
-Michael Bauer (1):
-      HID: Fix Logitech Driving Force Pro wheel
-
-Nikolai Kondrashov (1):
-      HID: uclogic: Add support for UC-Logic WP1062
-
-Simon Wood (2):
-      HID: hid-sony: amend Sixaxis descriptor to enable accelerometers
-      HID: hid-sony: fix endiannes of Sixaxis accel/gyro values
-
-Stefan Achatz (4):
-      HID: roccat: Add "Roccat Talk" support for koneplus
-      HID: roccat: chang Kconfig menu to submenu for roccat devices
-      HID: roccat: correction and cleanup of HID feature reports
-      HID: roccat: fix NULL pointer dereference, add range checks
-
-Stefan Kriwanek (1):
-      HID: Add driver to fix Speedlink VAD Cezanne support
-
-Tomoki Sekiyama (1):
-      HID: yurex: recognize GeneralKeys wireless presenter as generic HID
-
-ice chien (1):
-      HID: hid-multitouch: add one new multitouch device's VID/PID
-
- .../ABI/testing/sysfs-driver-hid-roccat-koneplus   |    8 +
- Documentation/ABI/testing/sysfs-driver-hid-wiimote |   10 +
- drivers/hid/Kconfig                                |   44 ++-
- drivers/hid/Makefile                               |    3 +
- drivers/hid/hid-axff.c                             |    1 +
- drivers/hid/hid-core.c                             |   13 +-
- drivers/hid/hid-emsff.c                            |    7 +-
- drivers/hid/hid-holtekff.c                         |  240 ++++++++++
- drivers/hid/hid-ids.h                              |   15 +
- drivers/hid/hid-lg.c                               |   74 +++-
- drivers/hid/hid-microsoft.c                        |   28 +-
- drivers/hid/hid-multitouch.c                       |    4 +
- drivers/hid/hid-prodikeys.c                        |   17 +-
- drivers/hid/hid-roccat-arvo.c                      |   21 +-
- drivers/hid/hid-roccat-arvo.h                      |   13 -
- drivers/hid/hid-roccat-common.c                    |   20 +-
- drivers/hid/hid-roccat-common.h                    |    4 +-
- drivers/hid/hid-roccat-kone.c                      |   56 ++-
- drivers/hid/hid-roccat-kone.h                      |    2 +-
- drivers/hid/hid-roccat-koneplus.c                  |   49 ++-
- drivers/hid/hid-roccat-koneplus.h                  |   23 +-
- drivers/hid/hid-roccat-kovaplus.c                  |   25 +-
- drivers/hid/hid-roccat-kovaplus.h                  |    9 -
- drivers/hid/hid-roccat-pyra.c                      |   25 +-
- drivers/hid/hid-roccat-pyra.h                      |    9 -
- drivers/hid/hid-sony.c                             |   35 ++
- drivers/hid/hid-speedlink.c                        |   89 ++++
- drivers/hid/hid-uclogic.c                          |  195 ++++++++
- drivers/hid/hid-wiimote.c                          |  489 ++++++++++++++++++++
- drivers/hid/usbhid/hid-core.c                      |    2 +
- include/linux/hid.h                                |    3 +-
- 31 files changed, 1397 insertions(+), 136 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-driver-hid-wiimote
- create mode 100644 drivers/hid/hid-holtekff.c
- create mode 100644 drivers/hid/hid-speedlink.c
- create mode 100644 drivers/hid/hid-wiimote.c
-
--- 
-Jiri Kosina
-SUSE Labs
