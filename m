@@ -1,57 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754270Ab1GVNLx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 09:11:53 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:52802 "EHLO comal.ext.ti.com"
+	id S1754278Ab1GVNOJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 09:14:09 -0400
+Received: from mga11.intel.com ([192.55.52.93]:48212 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754163Ab1GVNLv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 09:11:51 -0400
-From: Keshava Munegowda <keshava_mgowda@ti.com>
-To: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Keshava Munegowda <keshava_mgowda@ti.com>, <balbi@ti.com>,
-        <gadiyar@ti.com>, <sameo@linux.intel.com>, <parthab@india.ti.com>,
-        <kishon@ti.com>, Keshava Munegowda <Keshava_mgowda@ti.com>
-Subject: [PATCH] mfd: omap-usb-host: fix clock API usage on usbhs_disable()
-Date: Fri, 22 Jul 2011 18:39:30 +0530
-Message-ID: <1311340170-28773-1-git-send-email-keshava_mgowda@ti.com>
-X-Mailer: git-send-email 1.6.0.4
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1754203Ab1GVNOH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 09:14:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,247,1309762800"; 
+   d="scan'208";a="31179017"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Per Forlin <per.forlin@linaro.org>, Chris Ball <cjb@laptop.org>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH] mmc: mmc_test: avoid stalled file in debugfs
+Date: Fri, 22 Jul 2011 16:13:36 +0300
+Message-Id: <095a90240876c249ed33aa36f2543b54a0b68fc2.1311340371.git.andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Keshava Munegowda <Keshava_mgowda@ti.com>
+During card removal and inserting cycle the test file in the debugfs could be
+stalled until the host driver removes it. Let's keep the file in the linked
+list and destroy it when card is removed.
 
-usbhs_disable function was invoking clk_enable() instead of
-clk_disable(), thus only increasing the clock usage counter and
-preventing this particular clock from being ever turned off.
-Because of this, the power domain of omap4 the USB Host subsystem
-would never reach lower power states.This patch calls clk_disable()
-in usbhs_disable function
-
-Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 ---
- drivers/mfd/omap-usb-host.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/mmc/card/mmc_test.c |   56 +++++++++++++++++++++++--------------------
+ 1 files changed, 30 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-index 1717144..29601e7 100644
---- a/drivers/mfd/omap-usb-host.c
-+++ b/drivers/mfd/omap-usb-host.c
-@@ -998,9 +998,9 @@ static void usbhs_disable(struct device *dev)
+diff --git a/drivers/mmc/card/mmc_test.c b/drivers/mmc/card/mmc_test.c
+index 006a5e9..915a221 100644
+--- a/drivers/mmc/card/mmc_test.c
++++ b/drivers/mmc/card/mmc_test.c
+@@ -2900,7 +2900,7 @@ static const struct file_operations mmc_test_fops_testlist = {
+ 	.release	= single_release,
+ };
  
- 	if (is_omap_usbhs_rev2(omap)) {
- 		if (is_ehci_tll_mode(pdata->port_mode[0]))
--			clk_enable(omap->usbtll_p1_fck);
-+			clk_disable(omap->usbtll_p1_fck);
- 		if (is_ehci_tll_mode(pdata->port_mode[1]))
--			clk_enable(omap->usbtll_p2_fck);
-+			clk_disable(omap->usbtll_p2_fck);
- 		clk_disable(omap->utmi_p2_fck);
- 		clk_disable(omap->utmi_p1_fck);
+-static void mmc_test_free_file_test(struct mmc_card *card)
++static void mmc_test_free_dbgfs_file(struct mmc_card *card)
+ {
+ 	struct mmc_test_dbgfs_file *df, *dfs;
+ 
+@@ -2917,34 +2917,21 @@ static void mmc_test_free_file_test(struct mmc_card *card)
+ 	mutex_unlock(&mmc_test_lock);
+ }
+ 
+-static int mmc_test_register_file_test(struct mmc_card *card)
++static int __mmc_test_register_dbgfs_file(struct mmc_card *card,
++	const char *name, mode_t mode, const struct file_operations *fops)
+ {
+ 	struct dentry *file = NULL;
+ 	struct mmc_test_dbgfs_file *df;
+-	int ret = 0;
+-
+-	mutex_lock(&mmc_test_lock);
+-
+-	if (card->debugfs_root)
+-		file = debugfs_create_file("test", S_IWUSR | S_IRUGO,
+-			card->debugfs_root, card, &mmc_test_fops_test);
+-
+-	if (IS_ERR_OR_NULL(file)) {
+-		dev_err(&card->dev,
+-			"Can't create test. Perhaps debugfs is disabled.\n");
+-		ret = -ENODEV;
+-		goto err;
+-	}
+ 
+ 	if (card->debugfs_root)
+-		file = debugfs_create_file("testlist", S_IRUGO,
+-			card->debugfs_root, card, &mmc_test_fops_testlist);
++		file = debugfs_create_file(name, mode, card->debugfs_root, card,
++			fops);
+ 
+ 	if (IS_ERR_OR_NULL(file)) {
+ 		dev_err(&card->dev,
+-			"Can't create testlist. Perhaps debugfs is disabled.\n");
+-		ret = -ENODEV;
+-		goto err;
++			"Can't create %s. Perhaps debugfs is disabled.\n",
++			name);
++		return -ENODEV;
  	}
+ 
+ 	df = kmalloc(sizeof(struct mmc_test_dbgfs_file), GFP_KERNEL);
+@@ -2952,14 +2939,31 @@ static int mmc_test_register_file_test(struct mmc_card *card)
+ 		debugfs_remove(file);
+ 		dev_err(&card->dev,
+ 			"Can't allocate memory for internal usage.\n");
+-		ret = -ENOMEM;
+-		goto err;
++		return -ENOMEM;
+ 	}
+ 
+ 	df->card = card;
+ 	df->file = file;
+ 
+ 	list_add(&df->link, &mmc_test_file_test);
++	return 0;
++}
++
++static int mmc_test_register_dbgfs_file(struct mmc_card *card)
++{
++	int ret;
++
++	mutex_lock(&mmc_test_lock);
++
++	ret = __mmc_test_register_dbgfs_file(card, "test", S_IWUSR | S_IRUGO,
++		&mmc_test_fops_test);
++	if (ret)
++		goto err;
++
++	ret = __mmc_test_register_dbgfs_file(card, "testlist", S_IRUGO,
++		&mmc_test_fops_testlist);
++	if (ret)
++		goto err;
+ 
+ err:
+ 	mutex_unlock(&mmc_test_lock);
+@@ -2974,7 +2978,7 @@ static int mmc_test_probe(struct mmc_card *card)
+ 	if (!mmc_card_mmc(card) && !mmc_card_sd(card))
+ 		return -ENODEV;
+ 
+-	ret = mmc_test_register_file_test(card);
++	ret = mmc_test_register_dbgfs_file(card);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -2986,7 +2990,7 @@ static int mmc_test_probe(struct mmc_card *card)
+ static void mmc_test_remove(struct mmc_card *card)
+ {
+ 	mmc_test_free_result(card);
+-	mmc_test_free_file_test(card);
++	mmc_test_free_dbgfs_file(card);
+ }
+ 
+ static struct mmc_driver mmc_driver = {
+@@ -3006,7 +3010,7 @@ static void __exit mmc_test_exit(void)
+ {
+ 	/* Clear stalled data if card is still plugged */
+ 	mmc_test_free_result(NULL);
+-	mmc_test_free_file_test(NULL);
++	mmc_test_free_dbgfs_file(NULL);
+ 
+ 	mmc_unregister_driver(&mmc_driver);
+ }
 -- 
-1.6.0.4
+1.7.5.4
 
