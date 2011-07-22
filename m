@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932256Ab1GVVOb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 17:14:31 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:24829 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932165Ab1GVVOa convert rfc822-to-8bit (ORCPT
+	id S932266Ab1GVVQP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 17:16:15 -0400
+Received: from www.linutronix.de ([62.245.132.108]:42504 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932165Ab1GVVQO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 17:14:30 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=fUgh31hL49dz1jSgjymyy1sf+zLXj/b6PKDM6ydNEbciovx6Pv8b+ALt/3w91g8Er
-	NtkQ/xi4XSE9FO+BoX4vA==
+	Fri, 22 Jul 2011 17:16:14 -0400
+Date: Fri, 22 Jul 2011 23:16:12 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Kim Leyendecker <kimleyendecker@hotmail.de>
+cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] 3.0-rt1
+In-Reply-To: <BLU0-SMTP162767710C410F235B35D6A54E0@phx.gbl>
+Message-ID: <alpine.LFD.2.02.1107222307040.2702@ionos>
+References: <alpine.LFD.2.02.1107222203400.2702@ionos> <BLU0-SMTP162767710C410F235B35D6A54E0@phx.gbl>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20110722210114.GT8006@one.firstfloor.org>
-References: <1309766525-14089-1-git-send-email-ming.m.lin@intel.com>
-	<CABPqkBTznHwX_i=sraOkAkyAdX48fi3zVMa_M+Wdp09WMkQeoQ@mail.gmail.com>
-	<20110722210114.GT8006@one.firstfloor.org>
-Date: Fri, 22 Jul 2011 14:14:26 -0700
-Message-ID: <CABPqkBQP7VNZBFj2h_TA67rr_QL7oxj1p8CjzG+faBd2m0dQig@mail.gmail.com>
-Subject: Re: [PATCH 0/4] perf: memory load/store events generalization
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Lin Ming <ming.m.lin@intel.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1073585759-1311369373=:2702"
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 22, 2011 at 2:01 PM, Andi Kleen <andi@firstfloor.org> wrote:
->> That looks okay as a first approach tool. But what people are most
->> often interested in is to see where the misses occur, i.e., you need
->> to display load/store addresses somehow, especially for the more
->
-> But that's what it already does? Â (for loads, stores
-> are not in there yet) Did you try it?
->
-I meant displaying the load + data addresses.
-I have not tried it yet, just looked at the patches.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> Or did you mean resolving the addresses? While I agree that would
-> be useful that's a quite big task and I don't think it should
-> be blocked on that.
->
-I agree with you, just wanted to check on the longer term goal.
+--8323328-1073585759-1311369373=:2702
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+
+On Fri, 22 Jul 2011, Kim Leyendecker wrote:
+
+> Am 22.07.2011 22:37, schrieb Thomas Gleixner:
+> > Patch against 3.0 can be found here:
+> > 
+> >    http://www.kernel.org/pub/linux/kernel/projects/rt/patch-3.0-rt1.patch.bz2
+> 
+> Have you tested the file? I downloaded it and Kompare told me, that it can´t
+> read the out put of the diff file.
+
+Blame Kompare :)
+ 
+# cd linux
+# wget http://www.kernel.org/pub/linux/kernel/projects/rt/patch-3.0-rt1.patch.bz2
+# bunzip2 patch-3.0-rt1.patch.bz2 
+# patch -p1 <patch-3.0-rt1.patch
+
+> Maybe you should try it again?
+
+Maybe not :)
+
+Thanks,
+
+	tglx
+--8323328-1073585759-1311369373=:2702--
