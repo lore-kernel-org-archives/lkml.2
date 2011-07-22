@@ -1,148 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751231Ab1GVXUH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 19:20:07 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:38769 "EHLO e6.ny.us.ibm.com"
+	id S1751476Ab1GVXVH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 19:21:07 -0400
+Received: from mail001.aei.ca ([206.123.6.130]:49451 "EHLO mail001.aei.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750922Ab1GVXUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 19:20:05 -0400
-Date: Fri, 22 Jul 2011 16:19:53 -0700
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>, Nathan Lynch <ntl@pobox.com>,
-        Oren Laadan <orenl@cs.columbia.edu>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>, Serge Hallyn <serue@us.ibm.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Glauber Costa <glommer@parallels.com>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Containers <containers@lists.osdl.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [EXAMPLE CODE] Parasite thread injection using PTRACE_SEIZE and
- friends
-Message-ID: <20110722231953.GC16940@count0.beaverton.ibm.com>
-References: <20110720140037.GM3455@htj.dyndns.org>
+	id S1751331Ab1GVXVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 19:21:04 -0400
+From: Ed Tomlinson <edt@aei.ca>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.0 release - btrfs possible locking deadlock
+Date: Fri, 22 Jul 2011 19:21:00 -0400
+User-Agent: KMail/1.13.7 (Linux/3.0.0-crc+; KDE/4.6.5; x86_64; ; )
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org,
+        Josef Bacik <josef@redhat.com>
+References: <CA+55aFxakA2U+oMJ1T7awTYa+p6xp9N0aCbfrUqgkF7BJ8gnQw@mail.gmail.com>
+In-Reply-To: <CA+55aFxakA2U+oMJ1T7awTYa+p6xp9N0aCbfrUqgkF7BJ8gnQw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110720140037.GM3455@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107221921.00798.edt@aei.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 20, 2011 at 04:00:37PM +0200, Tejun Heo wrote:
-> Hello,
+On Thursday 21 July 2011 22:59:53 Linus Torvalds wrote:
+> So there it is. Gone are the 2.6.<bignum> days, and 3.0 is out.
 > 
-> This has taken much longer than expected (which BTW is usually
-> expected) but ptrace fixes and new features are mostly complete now.
-> They're sitting in Oleg's ptrace branch waiting for merge window.
-> 
->   http://git.kernel.org/?p=linux/kernel/git/oleg/misc.git;a=shortlog;h=refs/heads/ptrace
->   git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc.git ptrace
-> 
-> With new ptrace requests, a process can be captured and manipulated
-> practically transparently.  Other than syscall retry or -EINTR failure
-> in special cases and timing difference, everything including job
-> control stop state stays transparent across ptrace operations.
-> 
-> One of the concerns raised about using ptrace for CR was that it
-> doesn't have access to states which are visible only to the process
-> being checkpointed and exporting every such information outside would
-> be too laborious.  The attached ptrace-parasite example code
-> demonstrates how this can be solved.  Using new ptrace requests, it
-> inserts a parasite thread to the host process transparently.  The code
-> is also available in the following git branch (the first link is code
-> brwser, second git branch you can clone from).
-> 
->   http://code.google.com/p/ptrace-parasite/source/browse/
->   https://code.google.com/p/ptrace-parasite/ ptrace-parasite
-> 
-> It only works on x86-64 and requires Oleg's ptrace branch.  'make'
-> produces two binaries - simple-host and parasite.  If you run
-> simple-host in a terminal and run parasite with the pid (thread 00's
-> tid) of the simple-host in another terminal, you should see something
-> like the following.
-> 
->   # ./simple-host
->   thread 01(4580): alive
->   thread 02(4581): alive
->   thread 03(4582): alive
->   thread 04(4583): alive
->   thread 00(4579): alive
->   hello, world!
->   parasite: hello, world!
->   parasite: tid / time = 4629 / 1311169280
->   thread 03(4582): alive
->   thread 02(4581): alive
->   thread 01(4580): alive
->   thread 04(4583): alive
->   thread 00(4579): alive
->   ...
-> 
->   # ./parasite 4579
->   Seizing 4579
->   Seizing 4580
->   Seizing 4581
->   Seizing 4582
->   Seizing 4583
->   executing test blob
->   blocking all signals = 0, prev_sigmask 0
->   executing mmap blob = 0x7fc4eca35000
->   executing clone blob = 4629
->   executing parasite
->   executing munmap blob = 0
->   restoring sigmask = 0, prev_sigmask 0xfffffffffffbfeef
-> 
-> The first "hello, world!" is printed by the infected host thread which
-> is then directed to block all signals, mmap an area and clone parasite
-> thread.  The lines which start with "parasite: " are printed by the
-> new parasite thread.  While the parasite is running, all host threads
-> are ptrace trapped and when they're resumed they have no way to find
-> out what happened to their precious process.  Note that host can be
-> any program.
-> 
-> The implementation is naive and simplicistic, especially the part
-> which seizes all threads belonging to the target process but it should
-> be enough to demonstrate how this can be done.
-> 
-> I'm sure there still are a lot of things missing for reasonable
-> userland CR but I think this should at least provide the core process
-> capturing part of it and make the whole thing more feasible.
-> 
-> One missing piece is that it can't operate on a process which is
-> already being ptraced.  Adding nested ptrace would solve some part of
-> it but it leads to a lot of complexity, most of it stemming from the
-> fact that it diversifies the places target processes may be trapped
-> at.  Determining which exact point isn't that difficult but rolling
-> back from and restoring to some of those debug traps can be difficult
-> or even impossible.  For debugger checkpointing, probably more
-> cooperative approach would make more sense.  Anyways, I don't think
-> this is too big a deal at this point.
-> 
-> Thank you.
 
-parasitism is fine for a slow-but-sure debugger but is not suitable
-for checkpoint/restart.
+Hi,
 
-The difficulty of checkpoint/restart is not that the task has
-more information than the kernel. Quite the contrary. Most of
-the "information" the task has that the kernel is not explicitly
-aware of is encoded in the task's memory. So long as the kernel
-faithfully restores memory and registers the task can know little 
-the kernel doesn't already know.
+Managed to get this with btrfs rsync(ing) from ext4 to a btrfs fs with three partitions using raid1.
 
-One example of something the task knows that the kernel does not is
-which pids it cares about. However, a parasitic thread capable
-of checkpointing arbitrary processes won't know about these pids
-either -- it would have to be designed to checkpoint *only* the
-process it was injected into.
+[16018.211493] device fsid f7186eeb-60df-4b1a-890a-4a1eb42f81fe devid 1 transid 10 /dev/sdd4
+[16018.230643] btrfs: use lzo compression
+[16018.234619] btrfs: enabling disk space caching
+[25949.414011] 
+[25949.414011] =======================================================
+[25949.416549] [ INFO: possible circular locking dependency detected ]
+[25949.423187] 3.0.0-crc+ #348
+[25949.423187] -------------------------------------------------------
+[25949.423187] rsync/20237 is trying to acquire lock:
+[25949.423187]  (btrfs-extent-01){+.+...}, at: [<ffffffffa047ce88>] btrfs_try_spin_lock+0x78/0xb0 [btrfs]
+[25949.423187] 
+[25949.423187] but task is already holding lock:
+[25949.423187]  (&(&eb->lock)->rlock){+.+...}, at: [<ffffffffa047cee2>] btrfs_clear_lock_blocking+0x22/0x30 [btrfs]
+[25949.423187] 
+[25949.423187] which lock already depends on the new lock.
+[25949.423187] 
+[25949.423187] 
+[25949.423187] the existing dependency chain (in reverse order) is:
+[25949.423187] 
+[25949.423187] -> #1 (&(&eb->lock)->rlock){+.+...}:
+[25949.423187]        [<ffffffff8108bb75>] lock_acquire+0x95/0x140
+[25949.423187]        [<ffffffff815792eb>] _raw_spin_lock+0x3b/0x50
+[25949.423187]        [<ffffffffa047ce88>] btrfs_try_spin_lock+0x78/0xb0 [btrfs]
+[25949.423187]        [<ffffffffa0427959>] btrfs_search_slot+0x2e9/0x800 [btrfs]
+[25949.423187]        [<ffffffffa0433bee>] lookup_inline_extent_backref+0xbe/0x490 [btrfs]
+[25949.423187]        [<ffffffffa0434cbb>] __btrfs_free_extent+0x13b/0x900 [btrfs]
+[25949.423187]        [<ffffffffa0435ca3>] run_clustered_refs+0x823/0xaf0 [btrfs]
+[25949.423187]        [<ffffffffa043603d>] btrfs_run_delayed_refs+0xcd/0x290 [btrfs]
+[25949.423187]        [<ffffffffa0445ecb>] btrfs_commit_transaction+0x8b/0x9d0 [btrfs]
+[25949.423187]        [<ffffffffa0440c06>] transaction_kthread+0x2b6/0x2e0 [btrfs]
+[25949.423187]        [<ffffffff81071536>] kthread+0xb6/0xc0
+[25949.423187]        [<ffffffff81582314>] kernel_thread_helper+0x4/0x10
+[25949.423187] 
+[25949.423187] -> #0 (btrfs-extent-01){+.+...}:
+[25949.423187]        [<ffffffff8108b468>] __lock_acquire+0x1588/0x16a0
+[25949.423187]        [<ffffffff8108bb75>] lock_acquire+0x95/0x140
+[25949.423187]        [<ffffffff815792eb>] _raw_spin_lock+0x3b/0x50
+[25949.423187]        [<ffffffffa047ce88>] btrfs_try_spin_lock+0x78/0xb0 [btrfs]
+[25949.423187]        [<ffffffffa0427959>] btrfs_search_slot+0x2e9/0x800 [btrfs]
+[25949.423187]        [<ffffffffa0439dd2>] btrfs_lookup_dir_item+0x82/0x120 [btrfs]
+[25949.423187]        [<ffffffffa04532a5>] btrfs_lookup_dentry+0xc5/0x4c0 [btrfs]
+[25949.423187]        [<ffffffffa04536c4>] btrfs_lookup+0x24/0x70 [btrfs]
+[25949.423187]        [<ffffffff8115a863>] d_alloc_and_lookup+0xc3/0x100
+[25949.423187]        [<ffffffff8115cfa0>] do_lookup+0x260/0x480
+[25949.423187]        [<ffffffff8115d540>] walk_component+0x60/0x1f0
+[25949.423187]        [<ffffffff8115e7aa>] path_lookupat+0xea/0x620
+[25949.423187]        [<ffffffff8115ed15>] do_path_lookup+0x35/0x1c0
+[25949.423187]        [<ffffffff8115fc38>] user_path_at+0x98/0xe0
+[25949.423187]        [<ffffffff81153fac>] vfs_fstatat+0x4c/0x90
+[25949.423187]        [<ffffffff8115405e>] vfs_lstat+0x1e/0x20
+[25949.423187]        [<ffffffff81154084>] sys_newlstat+0x24/0x50
+[25949.423187]        [<ffffffff815814eb>] system_call_fastpath+0x16/0x1b
+[25949.423187] 
+[25949.423187] other info that might help us debug this:
+[25949.423187] 
+[25949.423187]  Possible unsafe locking scenario:
+[25949.423187] 
+[25949.423187]        CPU0                    CPU1
+[25949.423187]        ----                    ----
+[25949.423187]   lock(&(&eb->lock)->rlock);
+[25949.423187]                                lock(btrfs-extent-01);
+[25949.423187]                                lock(&(&eb->lock)->rlock);
+[25949.423187]   lock(btrfs-extent-01);
+[25949.423187] 
+[25949.423187]  *** DEADLOCK ***
+[25949.423187] 
+[25949.423187] 2 locks held by rsync/20237:
+[25949.423187]  #0:  (&sb->s_type->i_mutex_key#14){+.+.+.}, at: [<ffffffff8115cf5a>] do_lookup+0x21a/0x480
+[25949.423187]  #1:  (&(&eb->lock)->rlock){+.+...}, at: [<ffffffffa047cee2>] btrfs_clear_lock_blocking+0x22/0x30 [btrfs]
+[25949.423187] 
+[25949.423187] stack backtrace:
+[25949.423187] Pid: 20237, comm: rsync Not tainted 3.0.0-crc+ #348
+[25949.423187] Call Trace:
+[25949.423187]  [<ffffffff810887de>] print_circular_bug+0x20e/0x2f0
+[25949.423187]  [<ffffffff8108b468>] __lock_acquire+0x1588/0x16a0
+[25949.423187]  [<ffffffffa0441ebb>] ? verify_parent_transid+0xcb/0x290 [btrfs]
+[25949.423187]  [<ffffffffa047ce88>] ? btrfs_try_spin_lock+0x78/0xb0 [btrfs]
+[25949.423187]  [<ffffffff8108bb75>] lock_acquire+0x95/0x140
+[25949.423187]  [<ffffffffa047ce88>] ? btrfs_try_spin_lock+0x78/0xb0 [btrfs]
+[25949.423187]  [<ffffffff815792eb>] _raw_spin_lock+0x3b/0x50
+[25949.423187]  [<ffffffffa047ce88>] ? btrfs_try_spin_lock+0x78/0xb0 [btrfs]
+[25949.423187]  [<ffffffffa047ce88>] btrfs_try_spin_lock+0x78/0xb0 [btrfs]
+[25949.423187]  [<ffffffffa0427959>] btrfs_search_slot+0x2e9/0x800 [btrfs]
+[25949.423187]  [<ffffffff8108a0ca>] ? __lock_acquire+0x1ea/0x16a0
+[25949.423187]  [<ffffffffa0439dd2>] btrfs_lookup_dir_item+0x82/0x120 [btrfs]
+[25949.423187]  [<ffffffff8114186e>] ? kmem_cache_alloc+0xde/0x1e0
+[25949.423187]  [<ffffffffa04532a5>] btrfs_lookup_dentry+0xc5/0x4c0 [btrfs]
+[25949.423187]  [<ffffffff812924fe>] ? do_raw_spin_lock+0xde/0x1c0
+[25949.423187]  [<ffffffff8157d541>] ? sub_preempt_count+0x51/0x60
+[25949.423187]  [<ffffffffa04536c4>] btrfs_lookup+0x24/0x70 [btrfs]
+[25949.423187]  [<ffffffff8115a863>] d_alloc_and_lookup+0xc3/0x100
+[25949.423187]  [<ffffffff8115cfa0>] do_lookup+0x260/0x480
+[25949.423187]  [<ffffffff8115d540>] walk_component+0x60/0x1f0
+[25949.423187]  [<ffffffff8115e7aa>] path_lookupat+0xea/0x620
+[25949.423187]  [<ffffffff8111a3a3>] ? might_fault+0x53/0xb0
+[25949.423187]  [<ffffffff8115ed15>] do_path_lookup+0x35/0x1c0
+[25949.423187]  [<ffffffff8115fc38>] user_path_at+0x98/0xe0
+[25949.423187]  [<ffffffff8111a3ec>] ? might_fault+0x9c/0xb0
+[25949.423187]  [<ffffffff8111a3a3>] ? might_fault+0x53/0xb0
+[25949.423187]  [<ffffffff81153d78>] ? cp_new_stat+0xf8/0x110
+[25949.423187]  [<ffffffff81153fac>] vfs_fstatat+0x4c/0x90
+[25949.423187]  [<ffffffff8115405e>] vfs_lstat+0x1e/0x20
+[25949.423187]  [<ffffffff81154084>] sys_newlstat+0x24/0x50
+[25949.423187]  [<ffffffff81089c3d>] ? trace_hardirqs_on_caller+0x14d/0x190
+[25949.423187]  [<ffffffff8128c23e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+[25949.423187]  [<ffffffff815814eb>] system_call_fastpath+0x16/0x1b
 
-Furthermore, the kernel has information necessary for checkpoint/restart
-that the task does not. The composition of an epoll set is one
-example.
+Kernel is 3.0.0 without any extras.
 
-So ptrace is just the wrong interface to base checkpoint/restart on.
-Pavel's approach, though I believe it is subtly flawed, is better.
-
-Cheers,
-	-Matt Helsley
+Ideas?
+Ed 
