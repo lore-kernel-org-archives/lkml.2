@@ -1,142 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222Ab1GVNWK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 09:22:10 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:48782 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754098Ab1GVNWI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 09:22:08 -0400
+	id S1754309Ab1GVNXZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 09:23:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39870 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754176Ab1GVNXY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 09:23:24 -0400
+Date: Fri, 22 Jul 2011 14:23:19 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 7/8] mm: vmscan: Immediately reclaim end-of-LRU dirty
+ pages when writeback completes
+Message-ID: <20110722132319.GX5349@suse.de>
+References: <1311265730-5324-1-git-send-email-mgorman@suse.de>
+ <1311265730-5324-8-git-send-email-mgorman@suse.de>
+ <1311339228.27400.34.camel@twins>
 MIME-Version: 1.0
-In-Reply-To: <CAEwNFnD2ZTARC1Yw2uEYVSctBo7wsmA7rmQOaFH2rwOKoo3YjA@mail.gmail.com>
-References: <1308926697-22475-1-git-send-email-mgorman@suse.de>
- <20110721153722.GD1713@barrios-desktop> <20110721160958.GT5349@suse.de>
- <20110721162417.GF1713@barrios-desktop> <CAObL_7HpE3mCS90Zfa9-edBKPFN1MuBOHv+=e6BNHsi2u3zTOQ@mail.gmail.com>
- <20110721164238.GA3326@barrios-desktop> <CAObL_7HN2tbXiVZ1vcwpTUMf5v1EPG0XsQqUuCYn8yWtm7AA9A@mail.gmail.com>
- <CAEwNFnD2ZTARC1Yw2uEYVSctBo7wsmA7rmQOaFH2rwOKoo3YjA@mail.gmail.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Fri, 22 Jul 2011 09:21:47 -0400
-X-Google-Sender-Auth: rAQ57NZ5eVDbNZu3nLqair64GQ0
-Message-ID: <CAObL_7ES+6xcLCewtOaZby5uYnT3F91TuKPVZc_aOWSpRjNg3A@mail.gmail.com>
-Subject: Re: [PATCH 0/4] Stop kswapd consuming 100% CPU when highest zone is small
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        "P?draig Brady" <P@draigbrady.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Colin King <colin.king@canonical.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1311339228.27400.34.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 21, 2011 at 8:30 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
-> On Fri, Jul 22, 2011 at 1:58 AM, Andrew Lutomirski <luto@mit.edu> wrote:
->> On Thu, Jul 21, 2011 at 12:42 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
->>> On Thu, Jul 21, 2011 at 12:36:11PM -0400, Andrew Lutomirski wrote:
->>>> On Thu, Jul 21, 2011 at 12:24 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
->>>> > On Thu, Jul 21, 2011 at 05:09:59PM +0100, Mel Gorman wrote:
->>>> >> On Fri, Jul 22, 2011 at 12:37:22AM +0900, Minchan Kim wrote:
->>>> >> > On Fri, Jun 24, 2011 at 03:44:53PM +0100, Mel Gorman wrote:
->>>> >> > > (Built this time and passed a basic sniff-test.)
->>>> >> > >
->>>> >> > > During allocator-intensive workloads, kswapd will be woken frequently
->>>> >> > > causing free memory to oscillate between the high and min watermark.
->>>> >> > > This is expected behaviour.  Unfortunately, if the highest zone is
->>>> >> > > small, a problem occurs.
->>>> >> > >
->>>> >> > > This seems to happen most with recent sandybridge laptops but it's
->>>> >> > > probably a co-incidence as some of these laptops just happen to have
->>>> >> > > a small Normal zone. The reproduction case is almost always during
->>>> >> > > copying large files that kswapd pegs at 100% CPU until the file is
->>>> >> > > deleted or cache is dropped.
->>>> >> > >
->>>> >> > > The problem is mostly down to sleeping_prematurely() keeping kswapd
->>>> >> > > awake when the highest zone is small and unreclaimable and compounded
->>>> >> > > by the fact we shrink slabs even when not shrinking zones causing a lot
->>>> >> > > of time to be spent in shrinkers and a lot of memory to be reclaimed.
->>>> >> > >
->>>> >> > > Patch 1 corrects sleeping_prematurely to check the zones matching
->>>> >> > >   the classzone_idx instead of all zones.
->>>> >> > >
->>>> >> > > Patch 2 avoids shrinking slab when we are not shrinking a zone.
->>>> >> > >
->>>> >> > > Patch 3 notes that sleeping_prematurely is checking lower zones against
->>>> >> > >   a high classzone which is not what allocators or balance_pgdat()
->>>> >> > >   is doing leading to an artifical believe that kswapd should be
->>>> >> > >   still awake.
->>>> >> > >
->>>> >> > > Patch 4 notes that when balance_pgdat() gives up on a high zone that the
->>>> >> > >   decision is not communicated to sleeping_prematurely()
->>>> >> > >
->>>> >> > > This problem affects 2.6.38.8 for certain and is expected to affect
->>>> >> > > 2.6.39 and 3.0-rc4 as well. If accepted, they need to go to -stable
->>>> >> > > to be picked up by distros and this series is against 3.0-rc4. I've
->>>> >> > > cc'd people that reported similar problems recently to see if they
->>>> >> > > still suffer from the problem and if this fixes it.
->>>> >> > >
->>>> >> >
->>>> >> > Good!
->>>> >> > This patch solved the problem.
->>>> >> > But there is still a mystery.
->>>> >> >
->>>> >> > In log, we could see excessive shrink_slab calls.
->>>> >>
->>>> >> Yes, because shrink_slab() was called on each loop through
->>>> >> balance_pgdat() even if the zone was balanced.
->>>> >>
->>>> >>
->>>> >> > And as you know, we had merged patch which adds cond_resched where last of the function
->>>> >> > in shrink_slab. So other task should get the CPU and we should not see
->>>> >> > 100% CPU of kswapd, I think.
->>>> >> >
->>>> >>
->>>> >> cond_resched() is not a substitute for going to sleep.
->>>> >
->>>> > Of course, it's not equal with sleep but other task should get CPU and conusme their time slice
->>>> > So we should never see 100% CPU consumption of kswapd.
->>>> > No?
->>>>
->>>> If the rest of the system is idle, then kswapd will happily use 100%
->>>> CPU.  (Or on a multi-core system, kswapd will use close to 100% of one
->>>
->>> Of course. But at least, we have a test program and I think it's not idle.
->>
->> The test program I used was 'top', which is pretty close to idle.
->>
->>>
->>>> CPU even if another task is using the other one.  This is bad enough
->>>> on a desktop, but on a laptop you start to notice when your battery
->>>> dies.)
->>>
->>> Of course it's bad. :)
->>> What I want to know is just what's exact cause of 100% CPU usage.
->>> It might be not 100% but we might use the word sloppily.
->>>
->>
->> Well, if you want to pedantic, my laptop can, in theory, demonstrate
->> true 100% CPU usage.  Trigger the bug, suspend every other thread, and
->> listen to the laptop fan spin and feel the laptop get hot.  (The fan
->> is controlled by the EC and takes no CPU.)
->>
->> In practice, the usage was close enough to 100% that it got rounded.
->>
->> The cond_resched was enough to at least make the system responsive
->> instead of the hard freeze I used to get.
->
-> I don't want to be pedantic. :)
-> What I have a thought about 100% CPU usage was that it doesn't yield
-> CPU and spins on the CPU but as I heard your example(ie, cond_resched
-> makes the system responsive), it's not the case. It was just to use
-> most of time in kswapd, not 100%. It seems I was paranoid about the
-> word, sorry for that.
+On Fri, Jul 22, 2011 at 02:53:48PM +0200, Peter Zijlstra wrote:
+> On Thu, 2011-07-21 at 17:28 +0100, Mel Gorman wrote:
+> > When direct reclaim encounters a dirty page, it gets recycled around
+> > the LRU for another cycle. This patch marks the page PageReclaim
+> > similar to deactivate_page() so that the page gets reclaimed almost
+> > immediately after the page gets cleaned. This is to avoid reclaiming
+> > clean pages that are younger than a dirty page encountered at the
+> > end of the LRU that might have been something like a use-once page.
+> > 
+> 
+> > @@ -834,7 +834,15 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+> >  			 */
+> >  			if (page_is_file_cache(page) &&
+> >  					(!current_is_kswapd() || priority >= DEF_PRIORITY - 2)) {
+> > -				inc_zone_page_state(page, NR_VMSCAN_WRITE_SKIP);
+> > +				/*
+> > +				 * Immediately reclaim when written back.
+> > +				 * Similar in principal to deactivate_page()
+> > +				 * except we already have the page isolated
+> > +				 * and know it's dirty
+> > +				 */
+> > +				inc_zone_page_state(page, NR_VMSCAN_INVALIDATE);
+> > +				SetPageReclaim(page);
+> > +
+> 
+> I find the invalidate name somewhat confusing. It makes me think we'll
+> drop the page without writeback, like invalidatepage().
 
-Ah, sorry.  I must have been unclear in my original email.
+I wasn't that happy with it either to be honest but didn't think of a
+better one at the time. nr_reclaim_deferred?
 
-In 2.6.39, it made my system unresponsive.  With your cond_resched and
-pgdat_balanced fixes, it just made kswapd eat all available CPU, but
-the system still worked.
-
---Andy
+-- 
+Mel Gorman
+SUSE Labs
