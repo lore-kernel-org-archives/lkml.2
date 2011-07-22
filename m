@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836Ab1GVQ1Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 12:27:24 -0400
-Received: from mga01.intel.com ([192.55.52.88]:11557 "EHLO mga01.intel.com"
+	id S1752858Ab1GVQ2V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 12:28:21 -0400
+Received: from inx.pm.waw.pl ([195.116.170.130]:53848 "EHLO inx.pm.waw.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752314Ab1GVQ1X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 12:27:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,248,1309762800"; 
-   d="scan'208";a="31239103"
-From: Andi Kleen <andi@firstfloor.org>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: Re: [PATCH RFC 0/7] x86: convert ticketlocks to C and remove duplicate code
-References: <cover.1308259496.git.jeremy.fitzhardinge@citrix.com>
-	<m2pqlw1i70.fsf@firstfloor.org> <4E28B749.10304@goop.org>
-Date: Fri, 22 Jul 2011 09:25:34 -0700
-In-Reply-To: <4E28B749.10304@goop.org> (Jeremy Fitzhardinge's message of "Thu,
-	21 Jul 2011 16:33:29 -0700")
-Message-ID: <m2d3h22sg1.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1751186Ab1GVQ2U convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 12:28:20 -0400
+From: Krzysztof Halasa <khc@pm.waw.pl>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Eric Miao <eric.y.miao@gmail.com>, Imre Kaloz <kaloz@openwrt.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: Migrate to asm-generic wrapper support
+References: <1311204225-13169-1-git-send-email-sboyd@codeaurora.org>
+	<20110720232819.GC20310@n2100.arm.linux.org.uk>
+	<4E27667D.9060200@codeaurora.org>
+	<m31uxje8o4.fsf@intrepid.localdomain>
+	<4E2871AE.8030603@codeaurora.org>
+Date: Fri, 22 Jul 2011 18:28:18 +0200
+In-Reply-To: <4E2871AE.8030603@codeaurora.org> (Stephen Boyd's message of
+	"Thu, 21 Jul 2011 11:36:30 -0700")
+Message-ID: <m3d3h25lgd.fsf@intrepid.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeremy Fitzhardinge <jeremy@goop.org> writes:
+Stephen Boyd <sboyd@codeaurora.org> writes:
+
+>>> With d8ecc5c (kbuild: asm-generic support, 2011-04-27) we can
+>>> remove a handful of asm-generic wrappers in ARM code. Since the
+>>> generic version of sizes.h doesn't contain SZ_48M, we replace
+>>> the 3 users of SZ_48M with the equivalent SZ_32M + SZ_16M.
+>> Perhaps simply adding SZ_48M to the generic version is better. Can live
+>> with either.
 >
-> Yes, I observed cases where they were faster.  What is your lock
-> tester?  Does it test the lock code in isolation, or in situ?
+> This was simpler (1 patch, 1 maintainer). Is that an ack?
 
-User space harness to test a couple of lock scenarios with different
-numbers of CPUs competing.
-
-It tests the lock code in isolation.
-
--Andi
-
+Sure, Acked-by: Krzysztof Hałasa <khc@pm.waw.pl>
 -- 
-ak@linux.intel.com -- Speaking for myself only
+Krzysztof Halasa
