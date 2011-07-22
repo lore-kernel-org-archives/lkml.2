@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932252Ab1GVVLr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 17:11:47 -0400
-Received: from waste.org ([173.11.57.241]:56926 "EHLO waste.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932158Ab1GVVLq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 17:11:46 -0400
-Subject: Re: Nanosecond fs timestamp support: sad
-From: Matt Mackall <mpm@selenic.com>
+	id S932256Ab1GVVOb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 17:14:31 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:24829 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932165Ab1GVVOa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 17:14:30 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=fUgh31hL49dz1jSgjymyy1sf+zLXj/b6PKDM6ydNEbciovx6Pv8b+ALt/3w91g8Er
+	NtkQ/xi4XSE9FO+BoX4vA==
+MIME-Version: 1.0
+In-Reply-To: <20110722210114.GT8006@one.firstfloor.org>
+References: <1309766525-14089-1-git-send-email-ming.m.lin@intel.com>
+	<CABPqkBTznHwX_i=sraOkAkyAdX48fi3zVMa_M+Wdp09WMkQeoQ@mail.gmail.com>
+	<20110722210114.GT8006@one.firstfloor.org>
+Date: Fri, 22 Jul 2011 14:14:26 -0700
+Message-ID: <CABPqkBQP7VNZBFj2h_TA67rr_QL7oxj1p8CjzG+faBd2m0dQig@mail.gmail.com>
+Subject: Re: [PATCH 0/4] perf: memory load/store events generalization
+From: Stephane Eranian <eranian@google.com>
 To: Andi Kleen <andi@firstfloor.org>
-Cc: NeilBrown <neilb@suse.de>, linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110722205922.GS8006@one.firstfloor.org>
-References: <1311271641.14555.114.camel@calx>
-	 <m2pql2c0qz.fsf@firstfloor.org> <20110722163335.2df4f6ca@notabene.brown>
-	 <1311363269.14555.261.camel@calx>
-	 <20110722205922.GS8006@one.firstfloor.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 22 Jul 2011 16:11:42 -0500
-Message-ID: <1311369102.14555.268.camel@calx>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+Cc: Lin Ming <ming.m.lin@intel.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-22 at 22:59 +0200, Andi Kleen wrote:
-> > Indeed. Only usefully exists on ext4 and requires extra system calls.
-> 
-> Not sure what you mean?  It's in stat(2), just like the timestamps.
+On Fri, Jul 22, 2011 at 2:01 PM, Andi Kleen <andi@firstfloor.org> wrote:
+>> That looks okay as a first approach tool. But what people are most
+>> often interested in is to see where the misses occur, i.e., you need
+>> to display load/store addresses somehow, especially for the more
+>
+> But that's what it already does?  (for loads, stores
+> are not in there yet) Did you try it?
+>
+I meant displaying the load + data addresses.
+I have not tried it yet, just looked at the patches.
 
-I don't see anything that looks like a version or generation number in
-either the man pages, the asm-generic/stat.h, or glibc's asm/stat.h.
-Pointer?
-
-The only interface I'm aware of is the EXT?_IOC_GETVERSION interface.
-Looks like that is supported by BTRFS.
-
--- 
-Mathematics is the supreme nostalgia of our time.
-
-
+> Or did you mean resolving the addresses? While I agree that would
+> be useful that's a quite big task and I don't think it should
+> be blocked on that.
+>
+I agree with you, just wanted to check on the longer term goal.
