@@ -1,38 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753051Ab1GVGYl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 02:24:41 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:33684 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752503Ab1GVGYk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 02:24:40 -0400
-Date: Thu, 21 Jul 2011 23:24:26 -0700 (PDT)
-Message-Id: <20110721.232426.191530844656577677.davem@davemloft.net>
-To: mst@redhat.com
-Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mashirle@us.ibm.com, xma@us.ibm.com
-Subject: Re: [PULL net] vhost-net: zercopy mode fixes
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110722060046.GA8876@redhat.com>
-References: <20110722060046.GA8876@redhat.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+	id S1753379Ab1GVGYo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 02:24:44 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:51391 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752503Ab1GVGYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 02:24:42 -0400
+Date: Fri, 22 Jul 2011 16:24:33 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matt Evans <matt@ozlabs.org>
+Subject: linux-next: build warning after merge of the final tree
+Message-Id: <20110722162433.a280b3b71cff9c08fe18956f@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 21 Jul 2011 23:24:27 -0700 (PDT)
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__22_Jul_2011_16_24_33_+1000_PSJTPNz7XozWM5js"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Date: Fri, 22 Jul 2011 09:00:46 +0300
+--Signature=_Fri__22_Jul_2011_16_24_33_+1000_PSJTPNz7XozWM5js
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> The following includes vhost-net fixes - both in the
-> experimental zero copy mode.
-> Please pull for 3.1.
-> Thanks!
-> 
+Hi all,
 
-Where is this "the following"?  I don't see any GIT url to pull
-from or anything :-)
+After merging the final tree, today's linux-next build (powerpc64
+allnoconfig) produced this warning:
+
+warning: (PPC) selects HAVE_BPF_JIT which has unmet direct dependencies (NE=
+T)
+
+Introduced by commit 0ca87f05ba8b ("net: filter: BPF 'JIT' compiler for
+PPC64").
+
+I suspect that the fix is to move the
+
+config HAVE_BPF_JIT
+        bool
+
+lines to outside the "if NET" in net/Kconfig.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__22_Jul_2011_16_24_33_+1000_PSJTPNz7XozWM5js
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOKRehAAoJEDMEi1NhKgbsDM0H+QGsEdg2DWZidtXQrg6frF8F
+e4TYIiOYZlSME+K4TXVOHZnI4vbA0I75SyLIw6feKaaQ0a/fek7CBV0xYeiobiJT
+3lbJqOBf2BmOvs6b60w6ACZKLEnNH1RK0yVzGXhMZziqcrgyqG+ZOBIh6sHmW3lu
+xy0ACUdTyzN92J9mkUEL/jO2mqoaX3xYiq3avu0iDVA2rvdMHI7tm0PSX49wY2OT
+1MG6Lkd9i51x6ezvVo78sBzN43E1z4L95f2H8kJl0wdcF5MDAAHXbXiCVQPq5VQV
+ZPePKE6cIWYGpa7tcR+BMp3CxuPR19SdSHxxHK2zttY1QI0wu2Z3f5JJcMBDink=
+=TfOi
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__22_Jul_2011_16_24_33_+1000_PSJTPNz7XozWM5js--
