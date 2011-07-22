@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932434Ab1GVV7h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 17:59:37 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:37274 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755388Ab1GVV7f convert rfc822-to-8bit (ORCPT
+	id S932618Ab1GVWCZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 18:02:25 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44551 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932420Ab1GVWCY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 17:59:35 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=NwnoHtVmp8wxpo36jUmA5XmyyDl2HBKrbWCFBFvSEAfowxyz/beS5P//JU32LaB70
-	pw3JMucVdRr75CGQxBKIQ==
+	Fri, 22 Jul 2011 18:02:24 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110722214305.GU8006@one.firstfloor.org>
-References: <1309766525-14089-1-git-send-email-ming.m.lin@intel.com>
-	<CABPqkBTznHwX_i=sraOkAkyAdX48fi3zVMa_M+Wdp09WMkQeoQ@mail.gmail.com>
-	<20110722210114.GT8006@one.firstfloor.org>
-	<CABPqkBQP7VNZBFj2h_TA67rr_QL7oxj1p8CjzG+faBd2m0dQig@mail.gmail.com>
-	<20110722214305.GU8006@one.firstfloor.org>
-Date: Fri, 22 Jul 2011 14:59:31 -0700
-Message-ID: <CABPqkBRxkX9aJNcqM0OfmPTfvTEddmtNVxZHNWNGE0pQQkF75A@mail.gmail.com>
-Subject: Re: [PATCH 0/4] perf: memory load/store events generalization
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Lin Ming <ming.m.lin@intel.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+In-Reply-To: <20110722135247.GA27855@opensource.wolfsonmicro.com>
+References: <20110722135247.GA27855@opensource.wolfsonmicro.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 22 Jul 2011 15:02:01 -0700
+Message-ID: <CA+55aFw-8ShsN2M-7dXCOEFhOx4xVQhN2rtzwJWV=rcwvPgF9g@mail.gmail.com>
+Subject: Re: [GIT PULL] regmap: Generic I2C and SPI register map library
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, Grant Likely <grant@secretlab.ca>,
+        Liam Girdwood <lrg@ti.com>, Wolfram Sang <w.sang@pengutronix.de>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Fri, Jul 22, 2011 at 2:43 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> On Fri, Jul 22, 2011 at 02:14:26PM -0700, Stephane Eranian wrote:
->> On Fri, Jul 22, 2011 at 2:01 PM, Andi Kleen <andi@firstfloor.org> wrote:
->> >> That looks okay as a first approach tool. But what people are most
->> >> often interested in is to see where the misses occur, i.e., you need
->> >> to display load/store addresses somehow, especially for the more
->> >
->> > But that's what it already does?  (for loads, stores
->> > are not in there yet) Did you try it?
->> >
->> I meant displaying the load + data addresses.
+On Fri, Jul 22, 2011 at 6:52 AM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
 >
-> That's what it does already.
->
-Are you talking about dump_load_data()?
+> I'm not 100% happy with the implementation at present (to a large extent
+> due to keeping it simple for initial review, though there's some stuff
+> I'm just not happy with) so I expect a bit of internal churn but the
+> external interface should be solid and allow other code to start making
+> use of the code.
 
-You get:
-   - load instruction addr
-   - load data address
-   - latency
-   - data source
+What kind of sh*t is this?
 
-How do you display the load instruction address? Just using plain perf report?
-How do you display the load data addresses?
+First it says
 
-But what's certainly more interesting if to get an output that shows
-the correlation between the load and data addresses.
+   "There are no user servicable options here, this is an API intended
+to be used by other kernel subsystems.  These subsystems should select
+the appropriate symbols.:"
 
+and then it does
 
-> Or did you mean the instructions that caused them?
->
-yes.
+   config REGMAP_I2C
+        tristate
+        default I2C
 
-> -Andi
-> --
-> ak@linux.intel.com -- Speaking for myself only.
->
+so now that thing turns on REGMAP_I2C and compiles in the code WITHOUT
+EVEN ASKING. It's enough to enable i2c.
+
+That is TOTALLY UNACCEPTABLE. It's pure and utter sh*t.
+
+                       Linus
