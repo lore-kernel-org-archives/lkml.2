@@ -1,76 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502Ab1GVJXz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 05:23:55 -0400
-Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:46265 "EHLO
-	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752301Ab1GVJXy (ORCPT
+	id S1753545Ab1GVJdi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 05:33:38 -0400
+Received: from mtagate5.uk.ibm.com ([194.196.100.165]:35128 "EHLO
+	mtagate5.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752791Ab1GVJdg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 05:23:54 -0400
-Date: Fri, 22 Jul 2011 12:23:50 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Brendan Moran <bremoran@broadcom.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: gpio_set_debounce return value specification
-Message-ID: <20110722092349.GM32058@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <586BFDFA1320D943A83378A4BDEF65B0BF7C649BFD@SJEXCHCCR02.corp.ad.broadcom.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="B9BE8dkJ1pIKavwa"
-Content-Disposition: inline
-In-Reply-To: <586BFDFA1320D943A83378A4BDEF65B0BF7C649BFD@SJEXCHCCR02.corp.ad.broadcom.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 22 Jul 2011 05:33:36 -0400
+Subject: Re: [patch 0/9] kdump: Patch series for s390 support
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Reply-To: holzheu@linux.vnet.ibm.com
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: oomichi@mxs.nes.nec.co.jp, linux-s390@vger.kernel.org,
+        mahesh@linux.vnet.ibm.com, heiko.carstens@de.ibm.com,
+        linux-kernel@vger.kernel.org, hbabu@us.ibm.com, horms@verge.net.au,
+        ebiederm@xmission.com, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        kexec@lists.infradead.org
+In-Reply-To: <20110721212257.GI12373@redhat.com>
+References: <20110715143820.GG3428@redhat.com>
+	 <1310744603.10789.79.camel@br98xy6r> <20110718123140.GB31986@redhat.com>
+	 <1310997641.4427.10.camel@br98xy6r> <20110718141943.GE31986@redhat.com>
+	 <1311000253.4427.23.camel@br98xy6r> <20110718152532.GF31986@redhat.com>
+	 <1311012188.4427.58.camel@br98xy6r> <20110720192509.GD10079@redhat.com>
+	 <1311260298.6160.43.camel@br98xy6r>  <20110721212257.GI12373@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: IBM
+Date: Fri, 22 Jul 2011 11:33:11 +0200
+Message-ID: <1311327191.5772.51.camel@br98xy6r>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Vivek,
 
---B9BE8dkJ1pIKavwa
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 2011-07-21 at 17:22 -0400, Vivek Goyal wrote:
+> On Thu, Jul 21, 2011 at 04:58:18PM +0200, Michael Holzheu wrote:
+> > We would change the purgatory code that for s390 it returns to the
+> > caller, if the checksum test fails. This *requires* that
+> > s390_kdump_entry()->crash_kexec()->machine_kexec() is allowed to return.
+> > Currently this is the case.
+> 
+> Can we directly jump to entry point of stand alone dump tools from purgaotry
+> if checksum fails? We should be able to set this entry point in user space
+> while loading kdump kernel.
 
-On Thu, Jul 21, 2011 at 01:52:56PM -0700, Brendan Moran wrote:
-> Regarding gpio_set_debounce, declared in include/linux/gpio.h, defined
-> in drivers/gpio/gpiolib.c
->=20
-> The return value for gpio_set_debounce isn't clearly specified.=A0 The
-> current use of the return value appears to be 0 on success, <0 on
-> error.=A0 Because many hardware implementations allow only specific
-> debounce intervals, the actual debounce setting after calling
-> gpio_set_debounce is unlikely to be the argument with which it was
-> called.
->=20
-> I suggest that on success, the return value should be a positive
-> integer indicating, in microseconds, the actual debounce interval
-> which has been applied.=A0 A value of 0 would indicate that the debounce
-> was applied successfully, but the driver does not support this
-> reporting.
->=20
-> The current code in gpiolib.c would support this without change. =A0=A0A
-> documentation change to gpiolib.c and gpio.h would be necessary.
+I described a new idea with forced program check below.
 
-Just send a patch fixing the documentation and the current users of
-gpio_set_debounce()
+> > > Only thing which needs to be figured out is how to pass the address of
+> > > crash_kexec() to stand alone tools and set registers/parameters 
+> > > appropriately.
+> > 
+> > We could do this s390 specific (e.g. using meminfo). In this case this
+> > would only be used for kernel/dump tools communication and not for
+> > kernel/kernel communication. So I hope this should not be a problem for
+> > you.
+> 
+> So you will be preparing a block/segment of data (called meminfo, though
+> this name does not make much sense anymore), and pass it to second kernel?
+> All done in user space and no first kernel involvement?
+>
+> I am trying to remember the details that how do you tell second kernel
+> where this this data block is. I recall that last time you said something
+> about setting this in kernel in kexec-tools but I did not understand it.
 
---=20
-balbi
+Better you forget everything :-)
 
---B9BE8dkJ1pIKavwa
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+We will establish a s390 specific mechanism that allows dump tools to
+find s390_kdump_entry and does not affect the kdump framework. Hopefully
+nothing you have to worry about.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+> > 
+> > Then the design would look like the following:
+> > * Define s390_kdump_entry in old kernel that calls crash_kexec()
+> > * Use preallocated ELF core header
+> > * s390_kdump_entry code path stores registers to ELF notes,  ...
+> 
+> crash_kexec() -> crash_setup_regs() already does that. We just need to
+> define an s390 specific crash_setup_regs().
 
-iQEcBAEBAgAGBQJOKUGlAAoJEAv8Txj19kN1wH8H/1fvMsuPzVwDTc8uerzP1vNj
-YQLVGYQ+lb+7R7AOu4FQcgGTGodcpT6hLgiu/qm4ttraBfXGrZLXnS83arFqBqat
-S6uyZEqfVTJ/+Svc3RAc+wSe1nGzjR11bE/1bF9Ns8X+HzMGq+FnEbVrtLXp4Wng
-K5etpcnF2far1JLn59DQzCV0A/LuCObbXNUIvSlHdbRK+NSNuwC5fYz913GIwAgE
-JHlUWkb+VmUrQG2OcLtW1n3+1Ipuj12/iUpTwKiTPic5tzVtZfVztx2Api9iyEYR
-tay+yNZ94rYOb5mbALEcalmVh4j+fe1/fv7tpHr2a1yW0Vz/QMkuVTTTiDXHyCo=
-=KtOC
------END PGP SIGNATURE-----
+I looked at the code. x86 seems to store only registers for current CPU.
+Where are all other CPUs stored? ia64 has an empty implementation. Where
+are registers stored there?
 
---B9BE8dkJ1pIKavwa--
+> 
+> > * ... and finally jumps to purgatory code
+> > * For s390 the purgatory code returns to caller in case of
+> >   checksum failure
+> > * dump tools call s390_kdump_entry with program check handler
+> >   for error handling
+> 
+> I thought that program check handler will call something else and not
+> s390_kdump_entry()? Because program check handler is supposed to hit
+> when any of the code we are executing is corrupted and we can not
+> jump to kdump tool any more. Otherwise we will be nesting.
+
+Looks like the sentence was misleading. What I wanted to say is:
+* First dump tools setup program check handler that jumps back to
+  dump tool in case kdump fails
+* Then dump tools call s390_dump_entry
+
+> > 
+> > I think, if we do it that way, we do not affect the current kdump
+> > framework at all.
+> 
+> Can you give some more details about various code flows and entry points.
+> Like panic() path, hard hang path. From your mail it sounds that even
+> with program check handler, after panic() you would like to jump to
+> stand alone tools first and then call s390_kdump_entry(). I think that
+> should not be required any more as you are not doing any checksumming
+> in dump tools anymore?
+
+Ok some code flows:
+
+Generally we have the flow:
+* crash_kexec -> machine_kexec -> purgatory -> kdump
+
+crash_kexec can be entered by e.g.:
+* panic -> kdump shutdown action -> crash_kexec
+* panic -> s390 dump shutdown action -> auto IPL dump tool -> s390_kdump_entry -> crash_kexec
+* hard hang -> manual IPL dump tool -> s390_kdump_entry -> crash_kexec
+
+Handling for corrupted kdump:
+
+New idea for returning to dump tools in case of program check:
+We could force a program check for s390, if purgatory checksum
+fails. Then we would automatically return to stand-alone dump
+tools.
+
+The flow would look like the following in this case:
+
+IPL dump tool -> s390_kdump_entry -> crash_kexec +--> purgatory -+->[checksum ok]---> kdump
+      ^                                          |               |
+      |                                          |        [checksum fail]
+      |                                          |               |
+      |                                          |     [forced program check]
+      +------[program check]---------------------+               |
+      |                                                          |
+      +----------------------------------------------------------+
+
+Then of course also the kernel code would have to install a special
+program check handler before calling purgatory.
+                         
+Michael
+
