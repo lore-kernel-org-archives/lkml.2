@@ -1,76 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540Ab1GVQnh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 12:43:37 -0400
-Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:57927 "EHLO
-	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753118Ab1GVQng (ORCPT
+	id S1753287Ab1GVQli (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 12:41:38 -0400
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:49930 "EHLO
+	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752746Ab1GVQla (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 12:43:36 -0400
+	Fri, 22 Jul 2011 12:41:30 -0400
 X-Cam-AntiVirus: no malware found
 X-Cam-SpamDetails: not scanned
 X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4E29A8B6.3060002@cam.ac.uk>
-Date: Fri, 22 Jul 2011 17:43:34 +0100
 From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: RFC: Boiler plate functions for ida / idr allocation?
-References: <4E1D6900.6040500@cam.ac.uk> <20110713133139.GO2872@htj.dyndns.org> <4E1DA232.30408@cam.ac.uk> <878vrs2if3.fsf@rustcorp.com.au> <20110721081946.GB3455@htj.dyndns.org> <20110721083501.GC3455@htj.dyndns.org> <87sjpyzhz2.fsf@rustcorp.com.au>
-In-Reply-To: <87sjpyzhz2.fsf@rustcorp.com.au>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: linux-kernel@vger.kernel.org
+Cc: lm-sensors@lm-sensors.org, rtc-linux@googlegroups.com,
+        osd-dev@open-osd.org, linux-scsi@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, jkosina@suse.cz, naota@elisp.net,
+        rusty@rustcorp.com.au, paulmck@linux.vnet.ibm.com, namhyung@gmail.com,
+        randy.dunlap@oracle.com, tj@kernel.org, cabarnes@indesign-llc.com,
+        akpm@linux-foundation.org, airlied@redhat.com, thellstrom@vmware.com,
+        johnpol@2ka.mipt.ru, JBottomley@parallels.com, bhalevy@panasas.com,
+        bharrosh@panasas.com, a.zummo@towertech.it, guenter.roeck@ericsson.com,
+        khali@linux-fr.org, airlied@linux.ie,
+        Jonathan Cameron <jic23@cam.ac.uk>
+Subject: [PATCH 3/8] hwmon: ibmaem: convert idr to ida and use ida_simple_get
+Date: Fri, 22 Jul 2011 17:41:12 +0100
+Message-Id: <1311352886-4047-4-git-send-email-jic23@cam.ac.uk>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1311352886-4047-1-git-send-email-jic23@cam.ac.uk>
+References: <1311352886-4047-1-git-send-email-jic23@cam.ac.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/11 12:13, Rusty Russell wrote:
-> On Thu, 21 Jul 2011 10:35:01 +0200, Tejun Heo <tj@kernel.org> wrote:
->> On Thu, Jul 21, 2011 at 10:19:46AM +0200, Tejun Heo wrote:
->>> On Thu, Jul 21, 2011 at 05:07:36PM +0930, Rusty Russell wrote:
->>>> From: Rusty Russell <rusty@rustcorp.com.au>
->>>> Subject: ida: Simplified functions for id allocation.
->>>>
->>>> The current hyper-optimized functions are overkill if you simply want
->>>> to allocate an id for a device.  Create versions which use an internal
->>>> lock.
->>>>
->>>> Thanks to Tejun for feedback.  Feel free to delete the #ifdef TEST
->>>> code.
->>>>
->>>> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
->>> ...
->>>>  static struct kmem_cache *idr_layer_cache;
->>>> +static DEFINE_SPINLOCK(simple_ida);
->>>
->>> I think the name is a bit confusing.  Maybe simple_ida_lock is better?
->>> Other than that,
->>
->> Ooh, one more thing, maybe it would be better to use spin_lock_irq()
->> to allow calling free under other irq locks.
-> 
-> Jonathan, please take original patch and mod it to taste, and produce a
-> series on it you can push to Andrew.
-> 
-> As for irqsave etc, as soon as someone needs that we can add
-> it... Jonathan will run into it soon enough.
-> 
-> Thanks,
-> Rusty.
-> 
-Given the timing, it's clearly 3.2 merge window material anyway. Too late to
-push any users this time round even if we hustled it through.
+A straightforward looking use of idr for a device id.
 
-Quite a few 'interesting' users out there now I look into them.  Might take
-a little while to get them past the relevant maintainers.
+Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
+---
+Note I have even build tested this one so will definitely
+want an Ack from someone who has.
 
-I've just sent out a few of the simpler cases.  I guess Andrew may take the core
-patch and the others will route through relevant subsystems.
+ drivers/hwmon/ibmaem.c |   47 ++++++++---------------------------------------
+ 1 files changed, 8 insertions(+), 39 deletions(-)
 
-A few more to do. Some of them need a little more thought.
+diff --git a/drivers/hwmon/ibmaem.c b/drivers/hwmon/ibmaem.c
+index 1a409c5..058e0ae 100644
+--- a/drivers/hwmon/ibmaem.c
++++ b/drivers/hwmon/ibmaem.c
+@@ -88,8 +88,7 @@
+ #define AEM_MIN_POWER_INTERVAL	200
+ #define UJ_PER_MJ		1000L
+ 
+-static DEFINE_IDR(aem_idr);
+-static DEFINE_SPINLOCK(aem_idr_lock);
++static DEFINE_IDA(aem_ida);
+ 
+ static struct platform_driver aem_driver = {
+ 	.driver = {
+@@ -356,38 +355,6 @@ static void aem_msg_handler(struct ipmi_recv_msg *msg, void *user_msg_data)
+ 	complete(&data->read_complete);
+ }
+ 
+-/* ID functions */
+-
+-/* Obtain an id */
+-static int aem_idr_get(int *id)
+-{
+-	int i, err;
+-
+-again:
+-	if (unlikely(!idr_pre_get(&aem_idr, GFP_KERNEL)))
+-		return -ENOMEM;
+-
+-	spin_lock(&aem_idr_lock);
+-	err = idr_get_new(&aem_idr, NULL, &i);
+-	spin_unlock(&aem_idr_lock);
+-
+-	if (unlikely(err == -EAGAIN))
+-		goto again;
+-	else if (unlikely(err))
+-		return err;
+-
+-	*id = i & MAX_ID_MASK;
+-	return 0;
+-}
+-
+-/* Release an object ID */
+-static void aem_idr_put(int id)
+-{
+-	spin_lock(&aem_idr_lock);
+-	idr_remove(&aem_idr, id);
+-	spin_unlock(&aem_idr_lock);
+-}
+-
+ /* Sensor support functions */
+ 
+ /* Read a sensor value */
+@@ -525,7 +492,7 @@ static void aem_delete(struct aem_data *data)
+ 	ipmi_destroy_user(data->ipmi.user);
+ 	platform_set_drvdata(data->pdev, NULL);
+ 	platform_device_unregister(data->pdev);
+-	aem_idr_put(data->id);
++	ida_simple_remove(&aem_ida, data->id);
+ 	kfree(data);
+ }
+ 
+@@ -582,7 +549,8 @@ static int aem_init_aem1_inst(struct aem_ipmi_data *probe, u8 module_handle)
+ 		data->power_period[i] = AEM_DEFAULT_POWER_INTERVAL;
+ 
+ 	/* Create sub-device for this fw instance */
+-	if (aem_idr_get(&data->id))
++	data->id = ida_simple_get(&aem_ida, 0, 0, GFP_KERNEL);
++	if (data->id < 0)
+ 		goto id_err;
+ 
+ 	data->pdev = platform_device_alloc(DRVNAME, data->id);
+@@ -633,7 +601,7 @@ ipmi_err:
+ 	platform_set_drvdata(data->pdev, NULL);
+ 	platform_device_unregister(data->pdev);
+ dev_err:
+-	aem_idr_put(data->id);
++	ida_simple_remove(&aem_ida, data->id);
+ id_err:
+ 	kfree(data);
+ 
+@@ -715,7 +683,8 @@ static int aem_init_aem2_inst(struct aem_ipmi_data *probe,
+ 		data->power_period[i] = AEM_DEFAULT_POWER_INTERVAL;
+ 
+ 	/* Create sub-device for this fw instance */
+-	if (aem_idr_get(&data->id))
++	data->id = ida_simple_get(&aem_ida, 0, 0, GFP_KERNEL);
++	if (data->id < 0)
+ 		goto id_err;
+ 
+ 	data->pdev = platform_device_alloc(DRVNAME, data->id);
+@@ -766,7 +735,7 @@ ipmi_err:
+ 	platform_set_drvdata(data->pdev, NULL);
+ 	platform_device_unregister(data->pdev);
+ dev_err:
+-	aem_idr_put(data->id);
++	ida_simple_remove(&aem_ida, data->id);
+ id_err:
+ 	kfree(data);
+ 
+-- 
+1.7.3.4
 
-Jonathan
