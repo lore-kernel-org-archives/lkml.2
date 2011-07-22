@@ -1,109 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932372Ab1GVVzd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 17:55:33 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:42935 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932241Ab1GVVzc (ORCPT
+	id S932434Ab1GVV7h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 17:59:37 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:37274 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755388Ab1GVV7f convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 17:55:32 -0400
-Message-ID: <4E29EFDA.1080407@panasas.com>
-Date: Fri, 22 Jul 2011 14:47:06 -0700
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
+	Fri, 22 Jul 2011 17:59:35 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=NwnoHtVmp8wxpo36jUmA5XmyyDl2HBKrbWCFBFvSEAfowxyz/beS5P//JU32LaB70
+	pw3JMucVdRr75CGQxBKIQ==
 MIME-Version: 1.0
-To: Jonathan Cameron <jic23@cam.ac.uk>
-CC: <linux-kernel@vger.kernel.org>, <randy.dunlap@oracle.com>,
-        <airlied@linux.ie>, <dri-devel@lists.freedesktop.org>,
-        <guenter.roeck@ericsson.com>, <johnpol@2ka.mipt.ru>,
-        <thellstrom@vmware.com>, <linux-scsi@vger.kernel.org>,
-        <JBottomley@parallels.com>, <lm-sensors@lm-sensors.org>,
-        <airlied@redhat.com>, <paulmck@linux.vnet.ibm.com>, <naota@elisp.net>,
-        <rtc-linux@googlegroups.com>, <namhyung@gmail.com>,
-        <rusty@rustcorp.com.au>, <khali@linux-fr.org>, <osd-dev@open-osd.org>,
-        <akpm@linux-foundation.org>, <a.zummo@towertech.it>, <jkosina@suse.cz>,
-        <cabarnes@indesign-llc.com>, <tj@kernel.org>, <bhalevy@panasas.com>
-Subject: Re: [osd-dev] [PATCH 6/8] [SCSI] osduld: use ida_simple_get to handle
- id.
-References: <1311352886-4047-1-git-send-email-jic23@cam.ac.uk> <1311352886-4047-7-git-send-email-jic23@cam.ac.uk>
-In-Reply-To: <1311352886-4047-7-git-send-email-jic23@cam.ac.uk>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110722214305.GU8006@one.firstfloor.org>
+References: <1309766525-14089-1-git-send-email-ming.m.lin@intel.com>
+	<CABPqkBTznHwX_i=sraOkAkyAdX48fi3zVMa_M+Wdp09WMkQeoQ@mail.gmail.com>
+	<20110722210114.GT8006@one.firstfloor.org>
+	<CABPqkBQP7VNZBFj2h_TA67rr_QL7oxj1p8CjzG+faBd2m0dQig@mail.gmail.com>
+	<20110722214305.GU8006@one.firstfloor.org>
+Date: Fri, 22 Jul 2011 14:59:31 -0700
+Message-ID: <CABPqkBRxkX9aJNcqM0OfmPTfvTEddmtNVxZHNWNGE0pQQkF75A@mail.gmail.com>
+Subject: Re: [PATCH 0/4] perf: memory load/store events generalization
+From: Stephane Eranian <eranian@google.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Lin Ming <ming.m.lin@intel.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2011 09:41 AM, Jonathan Cameron wrote:
-> This does involve additional use of the spin lock in idr.c.
-> Is this an issue?
-> 
+Hi,
 
-Actually it looks like a bug fix. I had a TODO: to add one.
+On Fri, Jul 22, 2011 at 2:43 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> On Fri, Jul 22, 2011 at 02:14:26PM -0700, Stephane Eranian wrote:
+>> On Fri, Jul 22, 2011 at 2:01 PM, Andi Kleen <andi@firstfloor.org> wrote:
+>> >> That looks okay as a first approach tool. But what people are most
+>> >> often interested in is to see where the misses occur, i.e., you need
+>> >> to display load/store addresses somehow, especially for the more
+>> >
+>> > But that's what it already does?  (for loads, stores
+>> > are not in there yet) Did you try it?
+>> >
+>> I meant displaying the load + data addresses.
+>
+> That's what it does already.
+>
+Are you talking about dump_load_data()?
 
-> Also, some error mangling was needed to keep the interface
-> the same.  Does this matter or can we return -ENOSPC instead
-> of -EBUSY?
-> 
+You get:
+   - load instruction addr
+   - load data address
+   - latency
+   - data source
 
-Na. -ENOSPC is just fine. All the osd Application just check for
-"any error" not a specific one.
+How do you display the load instruction address? Just using plain perf report?
+How do you display the load data addresses?
 
-> Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
+But what's certainly more interesting if to get an output that shows
+the correlation between the load and data addresses.
 
-Ack-by: Boaz Harrosh <bharrosh@panasas.com>
 
-> ---
->  drivers/scsi/osd/osd_uld.c |   22 ++++++++--------------
->  1 files changed, 8 insertions(+), 14 deletions(-)
-> 
-> diff --git a/drivers/scsi/osd/osd_uld.c b/drivers/scsi/osd/osd_uld.c
-> index b31a8e3..fa849bd 100644
-> --- a/drivers/scsi/osd/osd_uld.c
-> +++ b/drivers/scsi/osd/osd_uld.c
-> @@ -387,7 +387,7 @@ static void __remove(struct device *dev)
->  
->  	if (oud->disk)
->  		put_disk(oud->disk);
-> -	ida_remove(&osd_minor_ida, oud->minor);
-> +	ida_simple_remove(&osd_minor_ida, oud->minor);
->  
->  	kfree(oud);
->  }
-> @@ -403,18 +403,12 @@ static int osd_probe(struct device *dev)
->  	if (scsi_device->type != TYPE_OSD)
->  		return -ENODEV;
->  
-> -	do {
-> -		if (!ida_pre_get(&osd_minor_ida, GFP_KERNEL))
-> -			return -ENODEV;
-> -
-> -		error = ida_get_new(&osd_minor_ida, &minor);
-> -	} while (error == -EAGAIN);
-> -
-> -	if (error)
-> -		return error;
-> -	if (minor >= SCSI_OSD_MAX_MINOR) {
-> -		error = -EBUSY;
-> -		goto err_retract_minor;
-> +	minor = ida_simple_get(&osd_minor_ida, 0,
-> +			       SCSI_OSD_MAX_MINOR, GFP_KERNEL);
-> +	if (minor < 0) {
-> +		if (minor == -ENOSPC)
-> +			return -EBUSY;
+> Or did you mean the instructions that caused them?
+>
+yes.
 
-Just drop the translation is fine as well
-
-> +		return minor;
->  	}
->  
->  	error = -ENOMEM;
-> @@ -491,7 +485,7 @@ err_free_osd:
->  	dev_set_drvdata(dev, NULL);
->  	kfree(oud);
->  err_retract_minor:
-> -	ida_remove(&osd_minor_ida, minor);
-> +	ida_simple_remove(&osd_minor_ida, minor);
->  	return error;
->  }
->  
-
+> -Andi
+> --
+> ak@linux.intel.com -- Speaking for myself only.
+>
