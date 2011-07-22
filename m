@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755150Ab1GVTCO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 15:02:14 -0400
-Received: from mail.elliptictech.com ([209.217.122.41]:46258 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753504Ab1GVTCM (ORCPT
+	id S1754702Ab1GVTE5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 15:04:57 -0400
+Received: from mail.southpole.se ([193.12.106.18]:42507 "EHLO
+	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751481Ab1GVTEz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 15:02:12 -0400
-Date: Fri, 22 Jul 2011 15:01:50 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] SP805 updates for Versatile Express
-Message-ID: <20110722190150.GA24621@elliptictech.com>
-References: <1310742242-14647-1-git-send-email-nbowler@elliptictech.com>
- <20110715205954.GR3834@infomag.iguana.be>
- <20110718094409.GQ23270@n2100.arm.linux.org.uk>
- <20110719131508.GA30207@elliptictech.com>
- <20110722183146.GE31767@infomag.iguana.be>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110722183146.GE31767@infomag.iguana.be>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 22 Jul 2011 15:04:55 -0400
+Subject: Re: [PATCH 1/1] asm-generic: delay.h fix udelay and ndelay for 8
+ bit args
+From: Jonas Bonn <jonas@southpole.se>
+To: sfr@canb.auug.org.au, Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+In-Reply-To: <1310997937-26771-1-git-send-email-jonas@southpole.se>
+References: <1310986975.21015.13.camel@needafix>
+	 <1310997937-26771-1-git-send-email-jonas@southpole.se>
+Content-Type: text/plain; charset="UTF-8"
+Organization: South Pole Consulting AB
+Date: Fri, 22 Jul 2011 21:04:52 +0200
+Message-ID: <1311361492.2660.13.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
+X-Assp-Client-SSL: yes
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-07-22 20:31 +0200, Wim Van Sebroeck wrote:
-> Hi Nick, Russel,
-> > Indeed, there are likely several other ways in which this driver can be
-> > improved.  My goal was to get it working on our board first. :)
+
+On Mon, 2011-07-18 at 16:05 +0200, Jonas Bonn wrote:
+> From: Andrew Morton <akpm@linux-foundation.org>
 > 
-> Feel free to continue improving the driver like Russel suggested. :-)
-
-I'll see what I can do :)
-
-> > So if this series is fine, I'll submit #1 (the V2M patch) to Russel's
-> > patch tracker.  I suppose #2 and #3 should go through the watchdog tree?
+> With a non-constant 8-bit argument, a call to udelay() generates a warning:
 > 
-> I added patch 2 and 3 to linux-2.6-watchdog-next. You can send #1 to 
-> Russel's patch tracker.
+<snip>
 
-OK, great.  I sent #1 to Russell's patch tracker a couple days ago.
+> ---
+> 
+> Here's a patch that should resolve the merge conflict.  This applies
+> Andrew's changes on top of the new asm-generic/delay.h instead of the x86
+> arch-specific one.  I've tested this for OpenRISC and the changed macros
+> don't cause any problems there.
+> 
+> Let me know if this is OK and I'll throw it into the OpenRISC tree together
+> with the other delay.h modifications.
+> 
+
+I haven't gotten any feedback on this... since the change looks
+appropriate to merge with the other changes to asm-generic/delay.h, I'll
+apply this patch there and carry the patch together with the other
+asm-generic/delay.h changes in the 'openrisc' tree.  Andrew can drop the
+patch from his series to avoid the merge conflict.
+
+I hope that works for everybody...
 
 Thanks,
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+Jonas
+
