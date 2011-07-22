@@ -1,51 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752915Ab1GVJNf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 05:13:35 -0400
-Received: from www.linutronix.de ([62.245.132.108]:46115 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753073Ab1GVJMx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 05:12:53 -0400
-Message-Id: <20110722091045.537404938@linutronix.de>
-User-Agent: quilt/0.48-1
-Date: Fri, 22 Jul 2011 09:12:51 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@elte.hu>,
-        Ben Greear <greearb@candelatech.com>, stable@kernel.org
-Subject: [patch 3/3] rtc: Limit frequency
-References: <20110722091011.717194327@linutronix.de>
-Content-Disposition: inline; filename=rtc-limit-frequency.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1753242Ab1GVJTl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 05:19:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54863 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752260Ab1GVJTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 05:19:40 -0400
+Date: Fri, 22 Jul 2011 11:19:36 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] memcg: do not try to drain per-cpu caches without
+ pages
+Message-ID: <20110722091936.GB4004@tiehlicka.suse.cz>
+References: <cover.1311241300.git.mhocko@suse.cz>
+ <113c4affc2f0938b7b22d43c88d2b0a623de9a6b.1311241300.git.mhocko@suse.cz>
+ <20110721191250.1c945740.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110721113606.GA27855@tiehlicka.suse.cz>
+ <20110722084413.9dd4b880.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110722084413.9dd4b880.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The RTC hrtimer is self rearming. We really need to limit the
-frequency to something sensible.
+On Fri 22-07-11 08:44:13, KAMEZAWA Hiroyuki wrote:
+> On Thu, 21 Jul 2011 13:36:06 +0200
+> Michal Hocko <mhocko@suse.cz> wrote:
+> 
+> > On Thu 21-07-11 19:12:50, KAMEZAWA Hiroyuki wrote:
+> > > On Thu, 21 Jul 2011 09:38:00 +0200
+> > > Michal Hocko <mhocko@suse.cz> wrote:
+> > > 
+> > > > drain_all_stock_async tries to optimize a work to be done on the work
+> > > > queue by excluding any work for the current CPU because it assumes that
+> > > > the context we are called from already tried to charge from that cache
+> > > > and it's failed so it must be empty already.
+> > > > While the assumption is correct we can do it by checking the current
+> > > > number of pages in the cache. This will also reduce a work on other CPUs
+> > > > with an empty stock.
+> > > > 
+> > > > Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> > > 
+> > > 
+> > > At the first look, when a charge against TransParentHugepage() goes
+> > > into the reclaim routine, stock->nr_pages != 0 and this will
+> > > call additional kworker.
+> > 
+> > True. We will drain a charge which could be used by other allocations
+> > in the meantime so we have a good chance to reclaim less. But how big
+> > problem is that?
+> > I mean I can add a new parameter that would force checking the current
+> > cpu but it doesn't look nice. I cannot add that condition
+> > unconditionally because the code will be shared with the sync path in
+> > the next patch and that one needs to drain _all_ cpus.
+> > 
+> > What would you suggest?
+> By 2 methods
+> 
+>  - just check nr_pages. 
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: stable@kernel.org
----
- drivers/rtc/interface.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Not sure I understand which nr_pages you mean. The one that comes from
+the charging path or stock->nr_pages?
+If you mean the first one then we do not have in the reclaim path where
+we call drain_all_stock_async.
 
-Index: linux-2.6/drivers/rtc/interface.c
-===================================================================
---- linux-2.6.orig/drivers/rtc/interface.c
-+++ linux-2.6/drivers/rtc/interface.c
-@@ -708,7 +708,7 @@ int rtc_irq_set_freq(struct rtc_device *
- 	int err = 0;
- 	unsigned long flags;
- 
--	if (freq <= 0)
-+	if (freq <= 0 || freq > 5000)
- 		return -EINVAL;
- retry:
- 	spin_lock_irqsave(&rtc->irq_task_lock, flags);
+>  - drain "local stock" without calling schedule_work(). It's fast.
 
+but there is nothing to be drained locally in the paths where we call
+drain_all_stock_async... Or do you mean that drain_all_stock shouldn't
+use work queue at all?
 
+> 
+> Thanks,
+> -Kame
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
