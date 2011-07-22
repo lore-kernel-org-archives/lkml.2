@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283Ab1GVTpJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 15:45:09 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:40738 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755134Ab1GVTpH (ORCPT
+	id S1755287Ab1GVTrf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 15:47:35 -0400
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:35866 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755067Ab1GVTrd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 15:45:07 -0400
-Message-ID: <4E29D326.7070403@candelatech.com>
-Date: Fri, 22 Jul 2011 12:44:38 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: David <david@unsolicited.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        netdev@vger.kernel.org
-Subject: Re: Linux 3.0 release
-References: <CA+55aFxakA2U+oMJ1T7awTYa+p6xp9N0aCbfrUqgkF7BJ8gnQw@mail.gmail.com> <4E29CB5B.4040408@unsolicited.net> <CA+55aFy1FnVGH4C_0T8fXwZPUdz5-SCczMwy1K8kydLwTx89RQ@mail.gmail.com>
-In-Reply-To: <CA+55aFy1FnVGH4C_0T8fXwZPUdz5-SCczMwy1K8kydLwTx89RQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 22 Jul 2011 15:47:33 -0400
+From: Felipe Balbi <balbi@ti.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        devicetree-discuss@lists.ozlabs.org, Felipe Balbi <balbi@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: [PATCH 1/2] of: address: use resource_size helper
+Date: Fri, 22 Jul 2011 22:47:21 +0300
+Message-Id: <1311364042-8325-1-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 1.7.6
+Organization: Texas Instruments\n
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2011 12:21 PM, Linus Torvalds wrote:
-> On Fri, Jul 22, 2011 at 12:11 PM, David<david@unsolicited.net>  wrote:
->>
->> I'm getting the following warning at boot from 3.0, everything seems to be fine otherwise though.
->>
->> Jul 22 19:40:02 server kernel: [   15.526629] ------------[ cut here ]------------
->> Jul 22 19:40:02 server kernel: [   15.526635] WARNING: at kernel/timer.c:1011 del_timer_sync+0x4e/0x50()
->
-> Hmm. That looks like a real bug: you shouldn't do a "del_timer_sync()"
-> from an interrupt. It probably works, but it sounds like a really bad
-> idea.
->
->> Jul 22 19:40:02 server kernel: [   15.526677]  [<ffffffff81054b4e>] del_timer_sync+0x4e/0x50
->> Jul 22 19:40:02 server kernel: [   15.526679]  [<ffffffff8145e224>] linkwatch_schedule_work+0x84/0xa0
->> Jul 22 19:40:02 server kernel: [   15.526681]  [<ffffffff8145e2bc>] linkwatch_fire_event+0x7c/0x100
->> Jul 22 19:40:02 server kernel: [   15.526684]  [<ffffffff8146b1ed>] netif_carrier_on+0x2d/0x40
->> Jul 22 19:40:02 server kernel: [   15.526689]  [<ffffffffa006b6fb>] __rtl8169_check_link_status+0x4b/0xc0 [r8169]
->> Jul 22 19:40:02 server kernel: [   15.526693]  [<ffffffffa006c016>] rtl8169_interrupt+0x166/0x3a0 [r8169]
->> Jul 22 19:40:02 server kernel: [   15.526696]  [<ffffffff810a4385>] handle_irq_event_percpu+0x55/0x1f0
->> Jul 22 19:40:02 server kernel: [   15.526698]  [<ffffffff810a4551>] handle_irq_event+0x31/0x50
->
-> I'm not seeing a lot of changes in any of these areas, though. I
-> wonder what made it start happen.
+that should be the approved way of calculating
+the size of resources. No functional changes.
 
-This has been around since at least 2.6.38.  I haven't tested recently
-on my rtl8169 system, but I don't recall seeing any attempts to fix
-it...
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
+ drivers/of/address.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-http://permalink.gmane.org/gmane.linux.network/193565
-http://lists.openwall.net/netdev/2011/05/04/183
-
-Thanks,
-Ben
-
-
+diff --git a/drivers/of/address.c b/drivers/of/address.c
+index deefc0c..6e7b2cf 100644
+--- a/drivers/of/address.c
++++ b/drivers/of/address.c
+@@ -624,6 +624,6 @@ void __iomem *of_iomap(struct device_node *np, int index)
+ 	if (of_address_to_resource(np, index, &res))
+ 		return NULL;
+ 
+-	return ioremap(res.start, 1 + res.end - res.start);
++	return ioremap(res.start, resource_size(&res));
+ }
+ EXPORT_SYMBOL(of_iomap);
 -- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
+1.7.6
 
