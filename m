@@ -1,41 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710Ab1GVO6E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 10:58:04 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45731 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754573Ab1GVO6C convert rfc822-to-8bit (ORCPT
+	id S1754714Ab1GVPBz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 11:01:55 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:58102
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754623Ab1GVPBy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 10:58:02 -0400
-Subject: Re: On migrate_disable() and latencies
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Carsten Emde <ce@ceag.ch>,
-        Clark Williams <williams@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Kumar Gala <galak@gate.crashing.org>,
-        Ralf Baechle <ralf@linux-mips.org>, rostedt <rostedt@goodmis.org>
-In-Reply-To: <1311331798.27400.28.camel@twins>
-References: <1311329992.27400.23.camel@twins>
-	 <1311331798.27400.28.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 22 Jul 2011 16:57:43 +0200
-Message-ID: <1311346663.9642.0.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 22 Jul 2011 11:01:54 -0400
+Date: Fri, 22 Jul 2011 11:01:51 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: linux-btrfs <linux-btrfs@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        david@fromorbit.com
+Subject: rw_semaphore performance, was: new metadata reader/writer locks in
+ integration-test
+Message-ID: <20110722150151.GA23686@infradead.org>
+References: <1311096438-sup-1263@shiny>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1311096438-sup-1263@shiny>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-22 at 12:49 +0200, Peter Zijlstra wrote:
-> > The scenario is on where you stack N migrate-disable tasks on a run
-> > queue (necessarily of increasing priority). Doing this requires all cpus
-> > in the system to be as busy, for otherwise the task would simply be
-> > moved to another cpu.
-> 
-> This implies it requires at least nr-cpus^2 tasks to pull this off. 
+On Tue, Jul 19, 2011 at 01:30:22PM -0400, Chris Mason wrote:
+> We've seen a number of benchmarks dominated by contention on the root
+> node lock.  This changes our locks into a simple reader/writer lock.
+> They are based on mutexes so that we still take advantage of the mutex
+> adaptive spins for write locks (rwsemaphores were much slower).
 
-OK, scrap that, 2*nr-cpus is enough.
+Interesting.  Do you have set up some artifical benchmarks for this?
+
+I wonder if the lack of adaptive spinning has something to do with the
+slightly slower XFS performance on Joern's flash testing, given that
+we extensively use the rw_semaphore as the primary I/O mutex, while
+all others rely on plain mutexes as the primary synchronization
+primitive.
