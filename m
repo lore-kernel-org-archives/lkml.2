@@ -1,127 +1,378 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753872Ab1GVKXg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 06:23:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58992 "EHLO mx2.suse.de"
+	id S1753909Ab1GVKZk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 06:25:40 -0400
+Received: from gw1.transmode.se ([195.58.98.146]:50532 "EHLO gw1.transmode.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753237Ab1GVKXf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 06:23:35 -0400
-Date: Fri, 22 Jul 2011 12:23:31 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] memcg: do not try to drain per-cpu caches without
- pages
-Message-ID: <20110722102331.GG4004@tiehlicka.suse.cz>
-References: <cover.1311241300.git.mhocko@suse.cz>
- <113c4affc2f0938b7b22d43c88d2b0a623de9a6b.1311241300.git.mhocko@suse.cz>
- <20110721191250.1c945740.kamezawa.hiroyu@jp.fujitsu.com>
- <20110721113606.GA27855@tiehlicka.suse.cz>
- <20110722084413.9dd4b880.kamezawa.hiroyu@jp.fujitsu.com>
- <20110722091936.GB4004@tiehlicka.suse.cz>
- <20110722182822.a99a2676.kamezawa.hiroyu@jp.fujitsu.com>
- <20110722095815.GF4004@tiehlicka.suse.cz>
+	id S1753662Ab1GVKZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 06:25:39 -0400
+X-Greylist: delayed 339 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Jul 2011 06:25:39 EDT
+In-Reply-To: <1310945545.24642.18.camel@pc786-ubu.gnet.global.vpn>
+References: <1306127917.3071.32.camel@pc786-ubu.gnet.global.vpn>	 <1308024897.2992.39.camel@pc786-ubu.gnet.global.vpn> <1310945545.24642.18.camel@pc786-ubu.gnet.global.vpn>
+Subject: Re: [PATCH 2.6.39-rc7] RTC: rtc-ds1307 EEPROM support for ds1388 chip
+X-KeepSent: AFFA8CD2:6C655050-C12578D5:00387715;
+ type=4; name=$KeepSent
+To: Austin Boyle <Austin.Boyle@aviatnet.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        Wolfram Sang <w.sang@pengutronix.de>
+X-Mailer: Lotus Notes Release 8.5.2 August 10, 2010
+Message-ID: <OFAFFA8CD2.6C655050-ONC12578D5.00387715-C12578D5.0038C1AB@transmode.se>
+From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Date: Fri, 22 Jul 2011 12:19:55 +0200
+X-MIMETrack: Serialize by Router on mail1/Transmode(Release 8.5.2FP2|March 22, 2011) at
+ 07/22/2011 12:19:57
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110722095815.GF4004@tiehlicka.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 22-07-11 11:58:15, Michal Hocko wrote:
-> On Fri 22-07-11 18:28:22, KAMEZAWA Hiroyuki wrote:
-> > On Fri, 22 Jul 2011 11:19:36 +0200
-> > Michal Hocko <mhocko@suse.cz> wrote:
-> > 
-> > > On Fri 22-07-11 08:44:13, KAMEZAWA Hiroyuki wrote:
-> > > > On Thu, 21 Jul 2011 13:36:06 +0200
-> > > > By 2 methods
-> > > > 
-> > > >  - just check nr_pages. 
-> > > 
-> > > Not sure I understand which nr_pages you mean. The one that comes from
-> > > the charging path or stock->nr_pages?
-> > > If you mean the first one then we do not have in the reclaim path where
-> > > we call drain_all_stock_async.
-> > > 
-> > 
-> > stock->nr_pages.
-> > 
-> > > >  - drain "local stock" without calling schedule_work(). It's fast.
-> > > 
-> > > but there is nothing to be drained locally in the paths where we call
-> > > drain_all_stock_async... Or do you mean that drain_all_stock shouldn't
-> > > use work queue at all?
-> > 
-> > I mean calling schedule_work against local cpu is just waste of time.
-> > Then, drain it directly and move local cpu's stock->nr_pages to res_counter.
-> 
-> got it. Thanks for clarification. Will repost the updated version.
----
->From 2f17df54db6661c39a05669d08a9e6257435b898 Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Thu, 21 Jul 2011 09:38:00 +0200
-Subject: [PATCH] memcg: do not try to drain per-cpu caches without pages
 
-drain_all_stock_async tries to optimize a work to be done on the work
-queue by excluding any work for the current CPU because it assumes that
-the context we are called from already tried to charge from that cache
-and it's failed so it must be empty already.
-While the assumption is correct we can optimize it even more by checking
-the current number of pages in the cache. This will also reduce a work
-on other CPUs with an empty stock.
-For the current CPU we can simply call drain_local_stock rather than
-deferring it to the work queue.
 
-[KAMEZAWA Hiroyuki - use drain_local_stock for current CPU optimization]
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- mm/memcontrol.c |   13 +++++++------
- 1 files changed, 7 insertions(+), 6 deletions(-)
+Austin Boyle <Austin.Boyle@aviatnet.com> wrote on 2011/07/18 01:32:25:
+>
+> Hi Joakim,
+>
+> I see that you were responsible for adding support for the ds1388 RTC in
+> the ds1307 driver. Thank you for your work, I am using the driver for
+> this IC myself. I have been trying to submit a patch to add support for
+> the 512 bytes of EEPROM available on the ds1388 but have not received
+> any responses. Would you be willing to review my patch? I can send
+> through another version applied to the very latest kernel. Are the RTC
+> patches all submitted through Alessandro Zummo who is listed as the
+> maintainer or should they be sent directly to Linus?
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index f11f198..c012ffe 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2159,11 +2159,8 @@ static void drain_all_stock_async(struct mem_cgroup *root_mem)
- 		struct memcg_stock_pcp *stock = &per_cpu(memcg_stock, cpu);
- 		struct mem_cgroup *mem;
- 
--		if (cpu == curcpu)
--			continue;
--
- 		mem = stock->cached;
--		if (!mem)
-+		if (!mem || !stock->nr_pages)
- 			continue;
- 		if (mem != root_mem) {
- 			if (!root_mem->use_hierarchy)
-@@ -2172,8 +2169,12 @@ static void drain_all_stock_async(struct mem_cgroup *root_mem)
- 			if (!css_is_ancestor(&mem->css, &root_mem->css))
- 				continue;
- 		}
--		if (!test_and_set_bit(FLUSHING_CACHED_CHARGE, &stock->flags))
--			schedule_work_on(cpu, &stock->work);
-+		if (!test_and_set_bit(FLUSHING_CACHED_CHARGE, &stock->flags)) {
-+			if (cpu == curcpu)
-+				drain_local_stock(&stock->work);
-+			else
-+				schedule_work_on(cpu, &stock->work);
-+		}
- 	}
-  	put_online_cpus();
- 	mutex_unlock(&percpu_charge_mutex);
--- 
-1.7.5.4
+Hi Austin,
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+I am on vacation and won't be able to review your patch for a long time. I think
+Andrew Morton is your best bet if Alessandro is unavailable though.
+
+      Jocke
+
+>
+> Kind Regards,
+> Austin Boyle.
+>
+> On Tue, 2011-06-14 at 16:15 +1200, Austin Boyle wrote:
+> > On Mon, 2011-05-23 at 17:18 +1200, Austin Boyle wrote:
+> > > This is my patch which extends the NVRAM access functions in the DS1307
+> > > driver to support the 512 bytes of EEPROM on the DS1388 chip. Could you
+> > > please review the patch? If there are any problems with the way I have
+> > > implemented this or suggested improvements I will gladly modify. Thanks!
+> >
+> > This is an updated version of the patch which prints the correct NVRAM
+> > size at init. Could someone please give me some feedback?
+> >
+> > [PATCH 3.0-rc3] RTC: rtc-ds1307: EEPROM support for ds1388 chip
+> >
+> > This patch adds support for different sized NVRAM, such as
+> > the 512 bytes of EEPROM on the DS1388 chip.
+> >
+> > Cc: Alessandro Zummo <a.zummo@towertech.it>
+> > Signed-off-by: Austin Boyle <austin.boyle@aviatnet.com>
+> > ---
+> > diff -upNr a/drivers/rtc/rtc-ds1307.c b/drivers/rtc/rtc-ds1307.c
+> > --- a/drivers/rtc/rtc-ds1307.c   2011-06-14 15:56:45.221497487 +1200
+> > +++ b/drivers/rtc/rtc-ds1307.c   2011-06-14 15:57:28.803510835 +1200
+> > @@ -95,15 +95,19 @@ enum ds_type {
+> >  #   define RX8025_BIT_VDET      0x40
+> >  #   define RX8025_BIT_XST      0x20
+> >
+> > +#define DS1307_MAX_NUM_ADDRS   3
+> >
+> >  struct ds1307 {
+> >     u8         offset; /* register's offset */
+> > +   u16         nvram_size;
+> > +   u16         nvram_offset;
+> > +   u8         num_addrs;
+> >     u8         regs[11];
+> >     enum ds_type      type;
+> >     unsigned long      flags;
+> >  #define HAS_NVRAM   0      /* bit 0 == sysfs file active */
+> >  #define HAS_ALARM   1      /* bit 1 == irq claimed */
+> > -   struct i2c_client   *client;
+> > +   struct i2c_client   *client[DS1307_MAX_NUM_ADDRS];
+> >     struct rtc_device   *rtc;
+> >     struct work_struct   work;
+> >     s32 (*read_block_data)(const struct i2c_client *client, u8 command,
+> > @@ -113,23 +117,26 @@ struct ds1307 {
+> >  };
+> >
+> >  struct chip_desc {
+> > -   unsigned      nvram56:1;
+> > +   unsigned      nvram:1;
+> >     unsigned      alarm:1;
+> >  };
+> >
+> >  static const struct chip_desc chips[] = {
+> >  [ds_1307] = {
+> > -   .nvram56   = 1,
+> > +   .nvram      = 1,
+> >  },
+> >  [ds_1337] = {
+> >     .alarm      = 1,
+> >  },
+> >  [ds_1338] = {
+> > -   .nvram56   = 1,
+> > +   .nvram      = 1,
+> >  },
+> >  [ds_1339] = {
+> >     .alarm      = 1,
+> >  },
+> > +[ds_1388] = {
+> > +   .nvram      = 1,
+> > +},
+> >  [ds_1340] = {
+> >  },
+> >  [ds_3231] = {
+> > @@ -248,7 +255,7 @@ static void ds1307_work(struct work_stru
+> >     int         stat, control;
+> >
+> >     ds1307 = container_of(work, struct ds1307, work);
+> > -   client = ds1307->client;
+> > +   client = ds1307->client[0];
+> >     lock = &ds1307->rtc->ops_lock;
+> >
+> >     mutex_lock(lock);
+> > @@ -294,7 +301,7 @@ static int ds1307_get_time(struct device
+> >     int      tmp;
+> >
+> >     /* read the RTC date and time registers all at once */
+> > -   tmp = ds1307->read_block_data(ds1307->client,
+> > +   tmp = ds1307->read_block_data(ds1307->client[0],
+> >        ds1307->offset, 7, ds1307->regs);
+> >     if (tmp != 7) {
+> >        dev_err(dev, "%s error %d\n", "read", tmp);
+> > @@ -372,7 +379,7 @@ static int ds1307_set_time(struct device
+> >        "write", buf[0], buf[1], buf[2], buf[3],
+> >        buf[4], buf[5], buf[6]);
+> >
+> > -   result = ds1307->write_block_data(ds1307->client,
+> > +   result = ds1307->write_block_data(ds1307->client[0],
+> >        ds1307->offset, 7, buf);
+> >     if (result < 0) {
+> >        dev_err(dev, "%s error %d\n", "write", result);
+> > @@ -530,8 +537,6 @@ static const struct rtc_class_ops ds13xx
+> >
+> >  /*----------------------------------------------------------------------*/
+> >
+> > -#define NVRAM_SIZE   56
+> > -
+> >  static ssize_t
+> >  ds1307_nvram_read(struct file *filp, struct kobject *kobj,
+> >        struct bin_attribute *attr,
+> > @@ -540,18 +545,39 @@ ds1307_nvram_read(struct file *filp, str
+> >     struct i2c_client   *client;
+> >     struct ds1307      *ds1307;
+> >     int         result;
+> > +   unsigned int      addr = 0;
+> >
+> >     client = kobj_to_i2c_client(kobj);
+> >     ds1307 = i2c_get_clientdata(client);
+> >
+> > -   if (unlikely(off >= NVRAM_SIZE))
+> > +   if (unlikely(off >= ds1307->nvram_size))
+> >        return 0;
+> > -   if ((off + count) > NVRAM_SIZE)
+> > -      count = NVRAM_SIZE - off;
+> > +   if ((off + count) > ds1307->nvram_size)
+> > +      count = ds1307->nvram_size - off;
+> >     if (unlikely(!count))
+> >        return count;
+> >
+> > -   result = ds1307->read_block_data(client, 8 + off, count, buf);
+> > +   if (ds1307->nvram_offset < 0xff) {   /* ds1307, ds1338 */
+> > +      result = ds1307->read_block_data(client, ds1307->nvram_offset + off,
+> > count, buf);
+> > +   } else   {   /* ds1388 */
+> > +      if ((off <= 0x00ff) && (off + count > 0x00ff))   {   /* read spans two
+> > blocks */
+> > +         client = ds1307->client[1];      /* first block */
+> > +         addr = (unsigned int)off;
+> > +         result = ds1307->read_block_data(client, addr, (0x100-addr), buf);
+> > +         client = ds1307->client[2];      /* second block */
+> > +         result += ds1307->read_block_data(client, 0x00, (count+addr-0x100),
+> > (buf+0x100-addr));
+> > +
+> > +      } else {    /* read spans one blocks */
+> > +         if (off <= 0x00ff)   {
+> > +            client = ds1307->client[1];
+> > +            addr = (unsigned int)off;
+> > +         } else if (off <= 0x0200)   {
+> > +            client = ds1307->client[2];
+> > +            addr = (unsigned int)off - 0x100;
+> > +         }
+> > +         result = ds1307->read_block_data(client, addr, count, buf);
+> > +      }
+> > +   }
+> >     if (result < 0)
+> >        dev_err(&client->dev, "%s error %d\n", "nvram read", result);
+> >     return result;
+> > @@ -565,18 +591,40 @@ ds1307_nvram_write(struct file *filp, st
+> >     struct i2c_client   *client;
+> >     struct ds1307      *ds1307;
+> >     int         result;
+> > +   unsigned int      addr = 0;
+> >
+> >     client = kobj_to_i2c_client(kobj);
+> >     ds1307 = i2c_get_clientdata(client);
+> >
+> > -   if (unlikely(off >= NVRAM_SIZE))
+> > +   if (unlikely(off >= ds1307->nvram_size))
+> >        return -EFBIG;
+> > -   if ((off + count) > NVRAM_SIZE)
+> > -      count = NVRAM_SIZE - off;
+> > +   if ((off + count) > ds1307->nvram_size)
+> > +      count = ds1307->nvram_size - off;
+> >     if (unlikely(!count))
+> >        return count;
+> >
+> > -   result = ds1307->write_block_data(client, 8 + off, count, buf);
+> > +   if (ds1307->nvram_offset < 0xff) {   /* ds1307, ds1338 */
+> > +      result = ds1307->write_block_data(client, ds1307->nvram_offset + off,
+> > count, buf);
+> > +   } else   {   /* ds1388 */
+> > +      if ((off <= 0x00ff) && ((off + count) > 0x00ff))   {  /* read spans two
+> > blocks */
+> > +         client = ds1307->client[1];      /* first block */
+> > +         addr = (unsigned int)off;
+> > +         result = ds1307->write_block_data(client, addr, (0x100-addr), buf);
+> > +         client = ds1307->client[2];      /* second block */
+> > +         result = ds1307->write_block_data(client, 0x00, (addr+count-0x100),
+> > (buf+0x100-addr));
+> > +
+> > +      } else { /* Device address/offset translation */
+> > +         dev_dbg(&client->dev, "Write spans one block\n");
+> > +         if (off <= 0x00ff)   {
+> > +            client = ds1307->client[1];
+> > +            addr = (unsigned int)off;
+> > +         } else if (off <= 0x0200)   {
+> > +            client = ds1307->client[2];
+> > +            addr = (unsigned int)off - 0x100;
+> > +         }
+> > +         result = ds1307->write_block_data(client, addr, count, buf);
+> > +      }
+> > +   }
+> >     if (result < 0) {
+> >        dev_err(&client->dev, "%s error %d\n", "nvram write", result);
+> >        return result;
+> > @@ -592,7 +640,6 @@ static struct bin_attribute nvram = {
+> >
+> >     .read   = ds1307_nvram_read,
+> >     .write   = ds1307_nvram_write,
+> > -   .size   = NVRAM_SIZE,
+> >  };
+> >
+> >  /*----------------------------------------------------------------------*/
+> > @@ -605,6 +652,7 @@ static int __devinit ds1307_probe(struct
+> >     struct ds1307      *ds1307;
+> >     int         err = -ENODEV;
+> >     int         tmp;
+> > +   int         i;
+> >     const struct chip_desc   *chip = &chips[id->driver_data];
+> >     struct i2c_adapter   *adapter = to_i2c_adapter(client->dev.parent);
+> >     int         want_irq = false;
+> > @@ -624,9 +672,10 @@ static int __devinit ds1307_probe(struct
+> >
+> >     i2c_set_clientdata(client, ds1307);
+> >
+> > -   ds1307->client   = client;
+> > +   ds1307->client[0] = client;
+> >     ds1307->type   = id->driver_data;
+> >     ds1307->offset   = 0;
+> > +   ds1307->num_addrs = 1;
+> >
+> >     buf = ds1307->regs;
+> >     if (i2c_check_functionality(adapter, I2C_FUNC_SMBUS_I2C_BLOCK)) {
+> > @@ -642,12 +691,12 @@ static int __devinit ds1307_probe(struct
+> >     case ds_1339:
+> >     case ds_3231:
+> >        /* has IRQ? */
+> > -      if (ds1307->client->irq > 0 && chip->alarm) {
+> > +      if (client->irq > 0 && chip->alarm) {
+> >           INIT_WORK(&ds1307->work, ds1307_work);
+> >           want_irq = true;
+> >        }
+> >        /* get registers that the "rtc" read below won't read... */
+> > -      tmp = ds1307->read_block_data(ds1307->client,
+> > +      tmp = ds1307->read_block_data(client,
+> >              DS1337_REG_CONTROL, 2, buf);
+> >        if (tmp != 2) {
+> >           pr_debug("read error %d\n", tmp);
+> > @@ -681,7 +730,7 @@ static int __devinit ds1307_probe(struct
+> >        break;
+> >
+> >     case rx_8025:
+> > -      tmp = i2c_smbus_read_i2c_block_data(ds1307->client,
+> > +      tmp = i2c_smbus_read_i2c_block_data(client,
+> >              RX8025_REG_CTRL1 << 4 | 0x08, 2, buf);
+> >        if (tmp != 2) {
+> >           pr_debug("read error %d\n", tmp);
+> > @@ -747,6 +796,14 @@ static int __devinit ds1307_probe(struct
+> >        break;
+> >     case ds_1388:
+> >        ds1307->offset = 1; /* Seconds starts at 1 */
+> > +      ds1307->num_addrs = 3;   /* uses 3 I2C addrs */
+> > +      ds1307->nvram_size = 512; /* 512 bytes EEPROM */
+> > +      ds1307->nvram_offset = 0xff;
+> > +      break;
+> > +   case ds_1307:
+> > +   case ds_1338:
+> > +      ds1307->nvram_size = 56; /* 56 bytes NVRAM */
+> > +      ds1307->nvram_offset = 8;
+> >        break;
+> >     default:
+> >        break;
+> > @@ -754,7 +811,7 @@ static int __devinit ds1307_probe(struct
+> >
+> >  read_rtc:
+> >     /* read RTC registers */
+> > -   tmp = ds1307->read_block_data(ds1307->client, ds1307->offset, 8, buf);
+> > +   tmp = ds1307->read_block_data(client, ds1307->offset, 8, buf);
+> >     if (tmp != 8) {
+> >        pr_debug("read error %d\n", tmp);
+> >        err = -EIO;
+> > @@ -866,16 +923,35 @@ read_rtc:
+> >        dev_dbg(&client->dev, "got IRQ %d\n", client->irq);
+> >     }
+> >
+> > -   if (chip->nvram56) {
+> > +   if (chip->nvram) {
+> > +      nvram.size = ds1307->nvram_size;
+> >        err = sysfs_create_bin_file(&client->dev.kobj, &nvram);
+> >        if (err == 0) {
+> >           set_bit(HAS_NVRAM, &ds1307->flags);
+> > -         dev_info(&client->dev, "56 bytes nvram\n");
+> > +         dev_info(&client->dev, "%d bytes nvram\n", nvram.size);
+> > +      }
+> > +   }
+> > +
+> > +   /* use dummy devices for multiple address chips */
+> > +   for (i = 1; i < ds1307->num_addrs; i++) {
+> > +      ds1307->client[i] = i2c_new_dummy(client->adapter, client->addr + i);
+> > +      if (!ds1307->client[i]) {
+> > +         dev_err(&client->dev, "address 0x%02x unavailable\n",
+> > +               client->addr + i);
+> > +         err = -EADDRINUSE;
+> > +         goto err_clients;
+> >        }
+> > +      i2c_set_clientdata(ds1307->client[i], ds1307);
+> >     }
+> >
+> >     return 0;
+> >
+> > +err_clients:
+> > +   for (i = 1; i < ds1307->num_addrs; i++)   {
+> > +      if (ds1307->client[i])   {
+> > +         i2c_unregister_device(ds1307->client[i]);
+> > +      }
+> > +   }
+> >  exit_irq:
+> >     rtc_device_unregister(ds1307->rtc);
+> >  exit_free:
+>
+>
+
