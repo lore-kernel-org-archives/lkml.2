@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753752Ab1GVQmh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 12:42:37 -0400
-Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:50318 "EHLO
+	id S1753499Ab1GVQl4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 12:41:56 -0400
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:50249 "EHLO
 	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753522Ab1GVQl7 (ORCPT
+	with ESMTP id S1753458Ab1GVQlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 12:41:59 -0400
+	Fri, 22 Jul 2011 12:41:53 -0400
 X-Cam-AntiVirus: no malware found
 X-Cam-SpamDetails: not scanned
 X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
@@ -20,11 +20,10 @@ Cc: lm-sensors@lm-sensors.org, rtc-linux@googlegroups.com,
         akpm@linux-foundation.org, airlied@redhat.com, thellstrom@vmware.com,
         johnpol@2ka.mipt.ru, JBottomley@parallels.com, bhalevy@panasas.com,
         bharrosh@panasas.com, a.zummo@towertech.it, guenter.roeck@ericsson.com,
-        khali@linux-fr.org, airlied@linux.ie,
-        Jonathan Cameron <jic23@cam.ac.uk>
-Subject: [PATCH 5/8] drm/vmwgfx: use ida_simple_get for id allocation.
-Date: Fri, 22 Jul 2011 17:41:14 +0100
-Message-Id: <1311352886-4047-6-git-send-email-jic23@cam.ac.uk>
+        khali@linux-fr.org, airlied@linux.ie
+Subject: [PATCH 1/8] ida: Simplified functions for id allocation.
+Date: Fri, 22 Jul 2011 17:41:10 +0100
+Message-Id: <1311352886-4047-2-git-send-email-jic23@cam.ac.uk>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1311352886-4047-1-git-send-email-jic23@cam.ac.uk>
 References: <1311352886-4047-1-git-send-email-jic23@cam.ac.uk>
@@ -32,87 +31,124 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some messing with error codes to return 0 on out id's and match
-current situation.  Is this necessary? Looks a touch 'interesting'.
+From: Rusty Russell <rusty@rustcorp.com.au>
 
-Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
+The current hyper-optimized functions are overkill if you simply want
+to allocate an id for a device.  Create versions which use an internal
+lock.
+
+Thanks to Tejun for feedback.
+
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Acked-by: Tejun Heo <tj@kernel.org>
+Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
 ---
- drivers/gpu/drm/vmwgfx/vmwgfx_gmrid_manager.c |   34 ++++++-------------------
- 1 files changed, 8 insertions(+), 26 deletions(-)
+ include/linux/idr.h |    4 +++
+ lib/idr.c           |   67 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 71 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_gmrid_manager.c b/drivers/gpu/drm/vmwgfx/vmwgfx_gmrid_manager.c
-index ac6e0d1..d51577b 100644
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_gmrid_manager.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_gmrid_manager.c
-@@ -37,7 +37,6 @@
- #include <linux/kernel.h>
+diff --git a/include/linux/idr.h b/include/linux/idr.h
+index 13a801f..255491c 100644
+--- a/include/linux/idr.h
++++ b/include/linux/idr.h
+@@ -146,6 +146,10 @@ void ida_remove(struct ida *ida, int id);
+ void ida_destroy(struct ida *ida);
+ void ida_init(struct ida *ida);
  
- struct vmwgfx_gmrid_man {
--	spinlock_t lock;
- 	struct ida gmr_ida;
- 	uint32_t max_gmr_ids;
- };
-@@ -49,34 +48,20 @@ static int vmw_gmrid_man_get_node(struct ttm_mem_type_manager *man,
++int ida_simple_get(struct ida *ida, unsigned int start, unsigned int end,
++		   gfp_t gfp_mask);
++void ida_simple_remove(struct ida *ida, unsigned int id);
++
+ void __init idr_init_cache(void);
+ 
+ #endif /* __IDR_H__ */
+diff --git a/lib/idr.c b/lib/idr.c
+index e15502e..db040ce 100644
+--- a/lib/idr.c
++++ b/lib/idr.c
+@@ -34,8 +34,10 @@
+ #include <linux/err.h>
+ #include <linux/string.h>
+ #include <linux/idr.h>
++#include <linux/spinlock.h>
+ 
+ static struct kmem_cache *idr_layer_cache;
++static DEFINE_SPINLOCK(simple_ida_lock);
+ 
+ static struct idr_layer *get_from_free_list(struct idr *idp)
  {
- 	struct vmwgfx_gmrid_man *gman =
- 		(struct vmwgfx_gmrid_man *)man->priv;
--	int ret;
- 	int id;
+@@ -926,6 +928,71 @@ void ida_destroy(struct ida *ida)
+ EXPORT_SYMBOL(ida_destroy);
  
- 	mem->mm_node = NULL;
- 
--	do {
--		if (unlikely(ida_pre_get(&gman->gmr_ida, GFP_KERNEL) == 0))
--			return -ENOMEM;
--
--		spin_lock(&gman->lock);
--		ret = ida_get_new(&gman->gmr_ida, &id);
--
--		if (unlikely(ret == 0 && id >= gman->max_gmr_ids)) {
--			ida_remove(&gman->gmr_ida, id);
--			spin_unlock(&gman->lock);
-+	id = ida_simple_get(&gman->gmr_ida, 0, gman->max_gmr_ids, GFP_KERNEL);
-+	if (id < 0) {
-+		if (id == -ENOSPC)
- 			return 0;
--		}
--
--		spin_unlock(&gman->lock);
--
--	} while (ret == -EAGAIN);
--
--	if (likely(ret == 0)) {
--		mem->mm_node = gman;
--		mem->start = id;
-+		return id;
- 	}
-+	mem->mm_node = gman;
-+	mem->start = id;
- 
--	return ret;
-+	return 0;
- }
- 
- static void vmw_gmrid_man_put_node(struct ttm_mem_type_manager *man,
-@@ -86,9 +71,7 @@ static void vmw_gmrid_man_put_node(struct ttm_mem_type_manager *man,
- 		(struct vmwgfx_gmrid_man *)man->priv;
- 
- 	if (mem->mm_node) {
--		spin_lock(&gman->lock);
--		ida_remove(&gman->gmr_ida, mem->start);
--		spin_unlock(&gman->lock);
-+		ida_simple_remove(&gman->gmr_ida, mem->start);
- 		mem->mm_node = NULL;
- 	}
- }
-@@ -102,7 +85,6 @@ static int vmw_gmrid_man_init(struct ttm_mem_type_manager *man,
- 	if (unlikely(gman == NULL))
- 		return -ENOMEM;
- 
--	spin_lock_init(&gman->lock);
- 	ida_init(&gman->gmr_ida);
- 	gman->max_gmr_ids = p_size;
- 	man->priv = (void *) gman;
+ /**
++ * ida_simple_get - get a new id.
++ * @ida: the (initialized) ida.
++ * @start: the minimum id (inclusive, < 0x8000000)
++ * @end: the maximum id (exclusive, < 0x8000000 or 0)
++ * @gfp_mask: memory allocation flags
++ *
++ * Allocates an id in the range start <= id < end, or returns -ENOSPC.
++ * On memory allocation failure, returns -ENOMEM.
++ *
++ * Use ida_simple_remove() to get rid of an id.
++ */
++int ida_simple_get(struct ida *ida, unsigned int start, unsigned int end,
++		   gfp_t gfp_mask)
++{
++	int ret, id;
++	unsigned int max;
++
++	BUG_ON((int)start < 0);
++	BUG_ON((int)end < 0);
++
++	if (end == 0)
++		max = 0x80000000;
++	else {
++		BUG_ON(end < start);
++		max = end - 1;
++	}
++
++again:
++	if (!ida_pre_get(ida, gfp_mask))
++		return -ENOMEM;
++
++	spin_lock(&simple_ida_lock);
++	ret = ida_get_new_above(ida, start, &id);
++	if (!ret) {
++		if (id > max) {
++			ida_remove(ida, id);
++			ret = -ENOSPC;
++		} else {
++			ret = id;
++		}
++	}
++	spin_unlock(&simple_ida_lock);
++
++	if (unlikely(ret == -EAGAIN))
++		goto again;
++
++	return ret;
++}
++EXPORT_SYMBOL(ida_simple_get);
++
++/**
++ * ida_simple_remove - remove an allocated id.
++ * @ida: the (initialized) ida.
++ * @id: the id returned by ida_simple_get.
++ */
++void ida_simple_remove(struct ida *ida, unsigned int id)
++{
++	BUG_ON((int)id < 0);
++	spin_lock(&simple_ida_lock);
++	ida_remove(ida, id);
++	spin_unlock(&simple_ida_lock);
++}
++EXPORT_SYMBOL(ida_simple_remove);
++
++/**
+  * ida_init - initialize ida handle
+  * @ida:	ida handle
+  *
 -- 
 1.7.3.4
 
