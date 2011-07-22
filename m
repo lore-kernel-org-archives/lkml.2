@@ -1,82 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753444Ab1GVJVT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 05:21:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54917 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752301Ab1GVJVS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 05:21:18 -0400
-Date: Fri, 22 Jul 2011 11:21:16 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] memcg: get rid of percpu_charge_mutex lock
-Message-ID: <20110722092116.GC4004@tiehlicka.suse.cz>
-References: <cover.1311241300.git.mhocko@suse.cz>
- <2bfb2b7687c1a6b39da2a04689190725075cc4f8.1311241300.git.mhocko@suse.cz>
- <20110721193051.cd3266e5.kamezawa.hiroyu@jp.fujitsu.com>
- <20110721114704.GC27855@tiehlicka.suse.cz>
- <20110721124223.GE27855@tiehlicka.suse.cz>
- <20110722084927.96b0aa86.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1753502Ab1GVJXz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 05:23:55 -0400
+Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:46265 "EHLO
+	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752301Ab1GVJXy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 05:23:54 -0400
+Date: Fri, 22 Jul 2011 12:23:50 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Brendan Moran <bremoran@broadcom.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: gpio_set_debounce return value specification
+Message-ID: <20110722092349.GM32058@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <586BFDFA1320D943A83378A4BDEF65B0BF7C649BFD@SJEXCHCCR02.corp.ad.broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="B9BE8dkJ1pIKavwa"
 Content-Disposition: inline
-In-Reply-To: <20110722084927.96b0aa86.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <586BFDFA1320D943A83378A4BDEF65B0BF7C649BFD@SJEXCHCCR02.corp.ad.broadcom.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 22-07-11 08:49:27, KAMEZAWA Hiroyuki wrote:
-> On Thu, 21 Jul 2011 14:42:23 +0200
-> Michal Hocko <mhocko@suse.cz> wrote:
-> 
-> > On Thu 21-07-11 13:47:04, Michal Hocko wrote:
-> > > On Thu 21-07-11 19:30:51, KAMEZAWA Hiroyuki wrote:
-> > > > On Thu, 21 Jul 2011 09:58:24 +0200
-> > > > Michal Hocko <mhocko@suse.cz> wrote:
-> > [...]
-> > > > > --- a/mm/memcontrol.c
-> > > > > +++ b/mm/memcontrol.c
-> > > > > @@ -2166,7 +2165,8 @@ static void drain_all_stock(struct mem_cgroup *root_mem, bool sync)
-> > > > >  
-> > > > >  	for_each_online_cpu(cpu) {
-> > > > >  		struct memcg_stock_pcp *stock = &per_cpu(memcg_stock, cpu);
-> > > > > -		if (test_bit(FLUSHING_CACHED_CHARGE, &stock->flags))
-> > > > > +		if (root_mem == stock->cached &&
-> > > > > +				test_bit(FLUSHING_CACHED_CHARGE, &stock->flags))
-> > > > >  			flush_work(&stock->work);
-> > > > 
-> > > > Doesn't this new check handle hierarchy ?
-> > > > css_is_ancestor() will be required if you do this check.
-> > > 
-> > > Yes you are right. Will fix it. I will add a helper for the check.
-> > 
-> > Here is the patch with the helper. The above will then read 
-> > 	if (mem_cgroup_same_or_subtree(root_mem, stock->cached))
-> > 
-> > ---
-> > From b963a9f4dac61044daac49700f84b7819d7c2f53 Mon Sep 17 00:00:00 2001
-> > From: Michal Hocko <mhocko@suse.cz>
-> > Date: Thu, 21 Jul 2011 13:54:13 +0200
-> > Subject: [PATCH] memcg: add mem_cgroup_same_or_subtree helper
-> > 
-> > We are checking whether a given two groups are same or at least in the
-> > same subtree of a hierarchy at several places. Let's make a helper for
-> > it to make code easier to read.
-> > 
-> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> 
-> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Thanks
+--B9BE8dkJ1pIKavwa
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+On Thu, Jul 21, 2011 at 01:52:56PM -0700, Brendan Moran wrote:
+> Regarding gpio_set_debounce, declared in include/linux/gpio.h, defined
+> in drivers/gpio/gpiolib.c
+>=20
+> The return value for gpio_set_debounce isn't clearly specified.=A0 The
+> current use of the return value appears to be 0 on success, <0 on
+> error.=A0 Because many hardware implementations allow only specific
+> debounce intervals, the actual debounce setting after calling
+> gpio_set_debounce is unlikely to be the argument with which it was
+> called.
+>=20
+> I suggest that on success, the return value should be a positive
+> integer indicating, in microseconds, the actual debounce interval
+> which has been applied.=A0 A value of 0 would indicate that the debounce
+> was applied successfully, but the driver does not support this
+> reporting.
+>=20
+> The current code in gpiolib.c would support this without change. =A0=A0A
+> documentation change to gpiolib.c and gpio.h would be necessary.
+
+Just send a patch fixing the documentation and the current users of
+gpio_set_debounce()
+
+--=20
+balbi
+
+--B9BE8dkJ1pIKavwa
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOKUGlAAoJEAv8Txj19kN1wH8H/1fvMsuPzVwDTc8uerzP1vNj
+YQLVGYQ+lb+7R7AOu4FQcgGTGodcpT6hLgiu/qm4ttraBfXGrZLXnS83arFqBqat
+S6uyZEqfVTJ/+Svc3RAc+wSe1nGzjR11bE/1bF9Ns8X+HzMGq+FnEbVrtLXp4Wng
+K5etpcnF2far1JLn59DQzCV0A/LuCObbXNUIvSlHdbRK+NSNuwC5fYz913GIwAgE
+JHlUWkb+VmUrQG2OcLtW1n3+1Ipuj12/iUpTwKiTPic5tzVtZfVztx2Api9iyEYR
+tay+yNZ94rYOb5mbALEcalmVh4j+fe1/fv7tpHr2a1yW0Vz/QMkuVTTTiDXHyCo=
+=KtOC
+-----END PGP SIGNATURE-----
+
+--B9BE8dkJ1pIKavwa--
