@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754380Ab1GVNbn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 09:31:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40187 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754145Ab1GVNbm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 09:31:42 -0400
-Date: Fri, 22 Jul 2011 14:31:38 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 8/8] mm: vmscan: Do not writeback filesystem pages from
- kswapd
-Message-ID: <20110722133138.GY5349@suse.de>
-References: <1311265730-5324-1-git-send-email-mgorman@suse.de>
- <1311265730-5324-9-git-send-email-mgorman@suse.de>
- <1311339432.27400.36.camel@twins>
+	id S1754427Ab1GVNee (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 09:34:34 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:43049 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754389Ab1GVNec (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 09:34:32 -0400
+X-Sasl-enc: HZbppqxvK+cAZBLrmtxInwV4A2tkqEt6ZowNFz6pXIIV 1311341671
+Date: Fri, 22 Jul 2011 06:32:09 -0700
+From: Greg KH <greg@kroah.com>
+To: Nao Nishijima <nao.nishijima.xt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        James.Bottomley@HansenPartnership.com, kay.sievers@vrfy.org,
+        jcm@redhat.com, coughlan@redhat.com, kzak@redhat.com,
+        dle-develop@lists.sourceforge.net,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        yrl.pp-manager.tt@hitachi.com, dgilbert@interlog.com,
+        stefanr@s5r6.in-berlin.de, hare@suse.de, joe@perches.com
+Subject: Re: [PATCH v2 0/3] Persistent device name using alias name
+Message-ID: <20110722133209.GA9522@kroah.com>
+References: <20110722105925.7330.6609.stgit@ltc197.sdl.hitachi.co.jp>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1311339432.27400.36.camel@twins>
+In-Reply-To: <20110722105925.7330.6609.stgit@ltc197.sdl.hitachi.co.jp>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 22, 2011 at 02:57:12PM +0200, Peter Zijlstra wrote:
-> On Thu, 2011-07-21 at 17:28 +0100, Mel Gorman wrote:
-> > Assuming that flusher threads will always write back dirty pages promptly
-> > then it is always faster for reclaimers to wait for flushers. This patch
-> > prevents kswapd writing back any filesystem pages. 
+On Fri, Jul 22, 2011 at 07:59:26PM +0900, Nao Nishijima wrote:
+> Hi,
 > 
-> That is a somewhat sort changelog for such a big assumption ;-)
+> This patch series provide an "alias name" of the disk into kernel messages.
+> Users can assign a preferred name to an alias name of the device.
 > 
-
-That is an understatement but the impact of the patch is discussed in
-detail in the leader. On NUMA, this patch has a negative impact so
-I put no effort into the changelog. The patch is part of the series
-because it was specifically asked for.
-
-> I think it can use a few extra words to explain the need to clean pages
-> from @zone vs writeback picks whatever fits best on disk and how that
-> works out wrt the assumption.
+> A raw device name of a disk does not always point a same disk at each boot-up
+> time. Therefore, users have to use persistent device names, which udev creates
+> to always access the same disk. However, kernel messages still display the raw
+> device names.
 > 
+> My proposal is that users can use and see persistent device names which were
+> assigned by they because users expect same name to point same disk anytime.
+> 
+> Why need to modify kernel messages?
+> - We can see mapping of device names and persistent device names in udev log.
+>   If those logs output to syslog, we can search persistent device name from
+>   device name, but it can cause a large amount of syslog output.
+> 
+> - If we can use the persistent device names and can always see the same name on
+>   the kernel log, we don't need to pay additional cost for searching and picking
+>   a correct pair of device name and persistent device name from udev log.
+> 
+> - Kernel messages are output to serial console when kenel crashes,
+>   it's so hard to convert device name to alias name.
+> 
+> 
+> Of course, I am going to modify the commands using device name so that users
+> can use alias names.
 
-At the time of writing the changelog, I knew that flushers were
-not finding pages from the correct zones quickly enough in the NUMA
-usecase. The changelog documents the assumptions testing shows them to
-be false.
+Please do that first, and then you will not need any kernel changes in
+the first place :)
 
-> What requirements does this place on writeback and how does it meet
-> them.
+Anyway, you all know my objections to this patch series, but again, as
+I'm not the block subsystem maintainer, I really can't do anything.
 
-It places a requirement on writeback to prioritise pages from zones
-under memory pressure. It doesn't meet them. I mention in the leader
-that I think patch 8 should be dropped which is why the changelog
-sucks.
-
--- 
-Mel Gorman
-SUSE Labs
+greg k-h
