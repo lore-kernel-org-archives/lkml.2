@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499Ab1GVQl4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 12:41:56 -0400
-Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:50249 "EHLO
+	id S1753579Ab1GVQnJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 12:43:09 -0400
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:50263 "EHLO
 	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753458Ab1GVQlx (ORCPT
+	with ESMTP id S1753460Ab1GVQlz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 12:41:53 -0400
+	Fri, 22 Jul 2011 12:41:55 -0400
 X-Cam-AntiVirus: no malware found
 X-Cam-SpamDetails: not scanned
 X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
@@ -20,135 +20,81 @@ Cc: lm-sensors@lm-sensors.org, rtc-linux@googlegroups.com,
         akpm@linux-foundation.org, airlied@redhat.com, thellstrom@vmware.com,
         johnpol@2ka.mipt.ru, JBottomley@parallels.com, bhalevy@panasas.com,
         bharrosh@panasas.com, a.zummo@towertech.it, guenter.roeck@ericsson.com,
-        khali@linux-fr.org, airlied@linux.ie
-Subject: [PATCH 1/8] ida: Simplified functions for id allocation.
-Date: Fri, 22 Jul 2011 17:41:10 +0100
-Message-Id: <1311352886-4047-2-git-send-email-jic23@cam.ac.uk>
+        khali@linux-fr.org, airlied@linux.ie,
+        Jonathan Cameron <jic23@cam.ac.uk>
+Subject: [PATCH 0/8] RFC: Introduce ida_simple interfaces and use them.
+Date: Fri, 22 Jul 2011 17:41:09 +0100
+Message-Id: <1311352886-4047-1-git-send-email-jic23@cam.ac.uk>
 X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1311352886-4047-1-git-send-email-jic23@cam.ac.uk>
-References: <1311352886-4047-1-git-send-email-jic23@cam.ac.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rusty Russell <rusty@rustcorp.com.au>
+Hi All,
 
-The current hyper-optimized functions are overkill if you simply want
-to allocate an id for a device.  Create versions which use an internal
-lock.
+Firstly sorry for the huge cc list, but this series does get about.
 
-Thanks to Tejun for feedback.
+This series came out of two separate lkml threads:
 
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-Acked-by: Tejun Heo <tj@kernel.org>
-Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
----
- include/linux/idr.h |    4 +++
- lib/idr.c           |   67 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 71 insertions(+), 0 deletions(-)
+https://lkml.org/lkml/2011/7/13/64
+http://thread.gmane.org/gmane.linux.kernel/1148513/focus=74236
 
-diff --git a/include/linux/idr.h b/include/linux/idr.h
-index 13a801f..255491c 100644
---- a/include/linux/idr.h
-+++ b/include/linux/idr.h
-@@ -146,6 +146,10 @@ void ida_remove(struct ida *ida, int id);
- void ida_destroy(struct ida *ida);
- void ida_init(struct ida *ida);
- 
-+int ida_simple_get(struct ida *ida, unsigned int start, unsigned int end,
-+		   gfp_t gfp_mask);
-+void ida_simple_remove(struct ida *ida, unsigned int id);
-+
- void __init idr_init_cache(void);
- 
- #endif /* __IDR_H__ */
-diff --git a/lib/idr.c b/lib/idr.c
-index e15502e..db040ce 100644
---- a/lib/idr.c
-+++ b/lib/idr.c
-@@ -34,8 +34,10 @@
- #include <linux/err.h>
- #include <linux/string.h>
- #include <linux/idr.h>
-+#include <linux/spinlock.h>
- 
- static struct kmem_cache *idr_layer_cache;
-+static DEFINE_SPINLOCK(simple_ida_lock);
- 
- static struct idr_layer *get_from_free_list(struct idr *idp)
- {
-@@ -926,6 +928,71 @@ void ida_destroy(struct ida *ida)
- EXPORT_SYMBOL(ida_destroy);
- 
- /**
-+ * ida_simple_get - get a new id.
-+ * @ida: the (initialized) ida.
-+ * @start: the minimum id (inclusive, < 0x8000000)
-+ * @end: the maximum id (exclusive, < 0x8000000 or 0)
-+ * @gfp_mask: memory allocation flags
-+ *
-+ * Allocates an id in the range start <= id < end, or returns -ENOSPC.
-+ * On memory allocation failure, returns -ENOMEM.
-+ *
-+ * Use ida_simple_remove() to get rid of an id.
-+ */
-+int ida_simple_get(struct ida *ida, unsigned int start, unsigned int end,
-+		   gfp_t gfp_mask)
-+{
-+	int ret, id;
-+	unsigned int max;
-+
-+	BUG_ON((int)start < 0);
-+	BUG_ON((int)end < 0);
-+
-+	if (end == 0)
-+		max = 0x80000000;
-+	else {
-+		BUG_ON(end < start);
-+		max = end - 1;
-+	}
-+
-+again:
-+	if (!ida_pre_get(ida, gfp_mask))
-+		return -ENOMEM;
-+
-+	spin_lock(&simple_ida_lock);
-+	ret = ida_get_new_above(ida, start, &id);
-+	if (!ret) {
-+		if (id > max) {
-+			ida_remove(ida, id);
-+			ret = -ENOSPC;
-+		} else {
-+			ret = id;
-+		}
-+	}
-+	spin_unlock(&simple_ida_lock);
-+
-+	if (unlikely(ret == -EAGAIN))
-+		goto again;
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(ida_simple_get);
-+
-+/**
-+ * ida_simple_remove - remove an allocated id.
-+ * @ida: the (initialized) ida.
-+ * @id: the id returned by ida_simple_get.
-+ */
-+void ida_simple_remove(struct ida *ida, unsigned int id)
-+{
-+	BUG_ON((int)id < 0);
-+	spin_lock(&simple_ida_lock);
-+	ida_remove(ida, id);
-+	spin_unlock(&simple_ida_lock);
-+}
-+EXPORT_SYMBOL(ida_simple_remove);
-+
-+/**
-  * ida_init - initialize ida handle
-  * @ida:	ida handle
-  *
+Basically Rusty and I both got annoyed with yet more instances
+of the same cut and past ida allocation code for the very simple
+case of wanting a unique id for some device. Tejun helpfully
+joined the two threads up.
+
+Anyhow, Rusty proposed more or less the first patch here (with a name
+change requested by Tejun applied.)
+
+The others patches are some of the more obvious looking cases for
+applying this code.  My original reason was for IIO but those patches will
+have to wait a little while for some prior changes to merge.
+For reference, it saves about 40 lines there so I'm happy ;)
+
+There are a number of other cases in tree that can be cleaned up
+in a second series once these are sorted.
+
+There are a couple of cases in here where I've carefully mangled
+the error codes to keep consistent with the existing code.  Please
+can people who know those subsystems well decide on whether the
+mangling is necessary.
+
+All comments welcome. I expect I've broken at least one driver
+doing this so please take a close look.
+
+Rusty, Tejun. I kept your sign of an ack for the first patch. Could
+you quickly verify that's fine?
+
+Thanks,
+
+Jonathan
+
+Jonathan Cameron (7):
+  hwmon: convert idr to ida and use ida_simple interface.
+  hwmon: ibmaem: convert idr to ida and use ida_simple_get
+  [SCSI] use ida_simple_get and ida_simple remove in place of
+    boilerplate code.
+  drm/vmwgfx: use ida_simple_get for id allocation.
+  [SCSI] osduld: use ida_simple_get to handle id.
+  w1: ds2760 and ds2780, use ida for id and ida_simple_get to get it.
+  rtc: class idr converted to ida and ida_simple_get used.
+
+Rusty Russell (1):
+  ida: Simplified functions for id allocation.
+
+ drivers/gpu/drm/vmwgfx/vmwgfx_gmrid_manager.c |   34 +++----------
+ drivers/hwmon/hwmon.c                         |   32 +++---------
+ drivers/hwmon/ibmaem.c                        |   47 +++--------------
+ drivers/rtc/class.c                           |   32 +++---------
+ drivers/scsi/osd/osd_uld.c                    |   22 +++-----
+ drivers/scsi/sd.c                             |   32 ++++--------
+ drivers/w1/slaves/w1_ds2760.c                 |   48 ++---------------
+ drivers/w1/slaves/w1_ds2780.c                 |   48 ++---------------
+ include/linux/idr.h                           |    4 ++
+ lib/idr.c                                     |   67 +++++++++++++++++++++++++
+ 10 files changed, 134 insertions(+), 232 deletions(-)
+
 -- 
 1.7.3.4
 
