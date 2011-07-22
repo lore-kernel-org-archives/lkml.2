@@ -1,97 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754609Ab1GVOoW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 10:44:22 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:43902 "EHLO mx3.mail.elte.hu"
+	id S1754617Ab1GVOrn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 10:47:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43824 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754350Ab1GVOoU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 10:44:20 -0400
-Date: Fri, 22 Jul 2011 16:42:36 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
+	id S1754350Ab1GVOrm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 10:47:42 -0400
+Date: Fri, 22 Jul 2011 16:47:40 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Tyler Hicks <tyhicks@linux.vnet.ibm.com>,
+        Dustin Kirkland <kirkland@canonical.com>,
+        David Woodhouse <dwmw2@infradead.org>, Alex Elder <aelder@sgi.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/cpu changes for v3.1
-Message-ID: <20110722144236.GA13498@elte.hu>
+Subject: Re: [PATCH] fs: Merge split strings
+In-Reply-To: <20110716181035.7db8d8f0@endymion.delvare>
+Message-ID: <alpine.LNX.2.00.1107221647220.7300@pobox.suse.cz>
+References: <20110716181035.7db8d8f0@endymion.delvare>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Sat, 16 Jul 2011, Jean Delvare wrote:
 
-Please pull the latest x86-cpu-for-linus git tree from:
+> No idea why these were split in the first place...
+> 
+> Signed-off-by: Jean Delvare <khali@linux-fr.org>
+> ---
+>  fs/ecryptfs/keystore.c |    2 +-
+>  fs/jffs2/readinode.c   |    2 +-
+>  fs/xfs/xfs_dir2_node.c |    2 +-
+>  3 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> --- linux-3.0-rc5.orig/fs/ecryptfs/keystore.c	2011-05-30 20:45:21.000000000 +0200
+> +++ linux-3.0-rc5/fs/ecryptfs/keystore.c	2011-07-04 13:16:53.000000000 +0200
+> @@ -2248,7 +2248,7 @@ write_tag_3_packet(char *dest, size_t *r
+>  		       auth_tok->token.password.session_key_encryption_key,
+>  		       crypt_stat->key_size);
+>  		ecryptfs_printk(KERN_DEBUG,
+> -				"Cached session key " "encryption key: \n");
+> +				"Cached session key encryption key:\n");
+>  		if (ecryptfs_verbosity > 0)
+>  			ecryptfs_dump_hex(session_key_encryption_key, 16);
+>  	}
+> --- linux-3.0-rc5.orig/fs/jffs2/readinode.c	2011-05-20 10:42:43.000000000 +0200
+> +++ linux-3.0-rc5/fs/jffs2/readinode.c	2011-07-04 13:19:26.000000000 +0200
+> @@ -1041,7 +1041,7 @@ static int jffs2_get_inode_nodes(struct
+>  		/* FIXME: point() */
+>  		err = jffs2_flash_read(c, ref_offset(ref), len, &retlen, buf);
+>  		if (err) {
+> -			JFFS2_ERROR("can not read %d bytes from 0x%08x, " "error code: %d.\n", len, ref_offset(ref), err);
+> +			JFFS2_ERROR("can not read %d bytes from 0x%08x, error code: %d.\n", len, ref_offset(ref), err);
+>  			goto free_out;
+>  		}
+>  
+> --- linux-3.0-rc5.orig/fs/xfs/xfs_dir2_node.c	2011-05-20 10:42:44.000000000 +0200
+> +++ linux-3.0-rc5/fs/xfs/xfs_dir2_node.c	2011-07-04 13:19:58.000000000 +0200
+> @@ -1641,7 +1641,7 @@ xfs_dir2_node_addname_int(
+>  
+>  			if (unlikely(xfs_dir2_db_to_fdb(mp, dbno) != fbno)) {
+>  				xfs_alert(mp,
+> -			"%s: dir ino " "%llu needed freesp block %lld for\n"
+> +			"%s: dir ino %llu needed freesp block %lld for\n"
+>  			"  data block %lld, got %lld ifbno %llu lastfbno %d",
+>  					__func__, (unsigned long long)dp->i_ino,
+>  					(long long)xfs_dir2_db_to_fdb(mp, dbno),
+> 
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-cpu-for-linus
+Doesn't seem to be intentional indeed.
 
- Thanks,
+Picked up, thanks.
 
-	Ingo
-
------------------->
-H. Peter Anvin (1):
-      x86, msr: Fix typo in ENERGY_PERF_BIAS_POWERSAVE
-
-Len Brown (2):
-      x86, intel, power: Initialize MSR_IA32_ENERGY_PERF_BIAS
-      x86, intel, power: Correct the MSR_IA32_ENERGY_PERF_BIAS message
-
-
- arch/x86/include/asm/msr-index.h |    3 +++
- arch/x86/kernel/cpu/intel.c      |   18 ++++++++++++++++++
- 2 files changed, 21 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
-index 485b4f1..d96bdb2 100644
---- a/arch/x86/include/asm/msr-index.h
-+++ b/arch/x86/include/asm/msr-index.h
-@@ -259,6 +259,9 @@
- #define MSR_IA32_TEMPERATURE_TARGET	0x000001a2
- 
- #define MSR_IA32_ENERGY_PERF_BIAS	0x000001b0
-+#define ENERGY_PERF_BIAS_PERFORMANCE	0
-+#define ENERGY_PERF_BIAS_NORMAL		6
-+#define ENERGY_PERF_BIAS_POWERSAVE	15
- 
- #define MSR_IA32_PACKAGE_THERM_STATUS		0x000001b1
- 
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index 1edf5ba..ed6086e 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -456,6 +456,24 @@ static void __cpuinit init_intel(struct cpuinfo_x86 *c)
- 
- 	if (cpu_has(c, X86_FEATURE_VMX))
- 		detect_vmx_virtcap(c);
-+
-+	/*
-+	 * Initialize MSR_IA32_ENERGY_PERF_BIAS if BIOS did not.
-+	 * x86_energy_perf_policy(8) is available to change it at run-time
-+	 */
-+	if (cpu_has(c, X86_FEATURE_EPB)) {
-+		u64 epb;
-+
-+		rdmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
-+		if ((epb & 0xF) == ENERGY_PERF_BIAS_PERFORMANCE) {
-+			printk_once(KERN_WARNING "ENERGY_PERF_BIAS:"
-+				" Set to 'normal', was 'performance'\n"
-+				"ENERGY_PERF_BIAS: View and update with"
-+				" x86_energy_perf_policy(8)\n");
-+			epb = (epb & ~0xF) | ENERGY_PERF_BIAS_NORMAL;
-+			wrmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
-+		}
-+	}
- }
- 
- #ifdef CONFIG_X86_32
+-- 
+Jiri Kosina
+SUSE Labs
