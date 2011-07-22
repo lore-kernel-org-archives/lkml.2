@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753009Ab1GVQld (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 12:41:33 -0400
-Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:49934 "EHLO
+	id S1753582Ab1GVQoq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 12:44:46 -0400
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:49968 "EHLO
 	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752633Ab1GVQla (ORCPT
+	with ESMTP id S1752878Ab1GVQlb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 12:41:30 -0400
+	Fri, 22 Jul 2011 12:41:31 -0400
 X-Cam-AntiVirus: no malware found
 X-Cam-SpamDetails: not scanned
 X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
@@ -22,9 +22,9 @@ Cc: lm-sensors@lm-sensors.org, rtc-linux@googlegroups.com,
         bharrosh@panasas.com, a.zummo@towertech.it, guenter.roeck@ericsson.com,
         khali@linux-fr.org, airlied@linux.ie,
         Jonathan Cameron <jic23@cam.ac.uk>
-Subject: [PATCH 2/8] hwmon: convert idr to ida and use ida_simple interface.
-Date: Fri, 22 Jul 2011 17:41:11 +0100
-Message-Id: <1311352886-4047-3-git-send-email-jic23@cam.ac.uk>
+Subject: [PATCH 5/8] drm/vmwgfx: use ida_simple_get for id allocation.
+Date: Fri, 22 Jul 2011 17:41:23 +0100
+Message-Id: <1311352886-4047-15-git-send-email-jic23@cam.ac.uk>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1311352886-4047-1-git-send-email-jic23@cam.ac.uk>
 References: <1311352886-4047-1-git-send-email-jic23@cam.ac.uk>
@@ -32,76 +32,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hwmon was using an idr with a NULL pointer, so convert to an
-ida which then allows use of Rusty's ida_simple_get.
+Some messing with error codes to return 0 on out id's and match
+current situation.  Is this necessary? Looks a touch 'interesting'.
 
 Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
 ---
- drivers/hwmon/hwmon.c |   32 ++++++++------------------------
- 1 files changed, 8 insertions(+), 24 deletions(-)
+ drivers/gpu/drm/vmwgfx/vmwgfx_gmrid_manager.c |   34 ++++++-------------------
+ 1 files changed, 8 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/hwmon/hwmon.c b/drivers/hwmon/hwmon.c
-index a61e781..6460487 100644
---- a/drivers/hwmon/hwmon.c
-+++ b/drivers/hwmon/hwmon.c
-@@ -27,8 +27,7 @@
+diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_gmrid_manager.c b/drivers/gpu/drm/vmwgfx/vmwgfx_gmrid_manager.c
+index ac6e0d1..d51577b 100644
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_gmrid_manager.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_gmrid_manager.c
+@@ -37,7 +37,6 @@
+ #include <linux/kernel.h>
  
- static struct class *hwmon_class;
- 
--static DEFINE_IDR(hwmon_idr);
--static DEFINE_SPINLOCK(idr_lock);
-+static DEFINE_IDA(hwmon_ida);
- 
- /**
-  * hwmon_device_register - register w/ hwmon
-@@ -42,30 +41,17 @@ static DEFINE_SPINLOCK(idr_lock);
- struct device *hwmon_device_register(struct device *dev)
+ struct vmwgfx_gmrid_man {
+-	spinlock_t lock;
+ 	struct ida gmr_ida;
+ 	uint32_t max_gmr_ids;
+ };
+@@ -49,34 +48,20 @@ static int vmw_gmrid_man_get_node(struct ttm_mem_type_manager *man,
  {
- 	struct device *hwdev;
--	int id, err;
+ 	struct vmwgfx_gmrid_man *gman =
+ 		(struct vmwgfx_gmrid_man *)man->priv;
+-	int ret;
+ 	int id;
+ 
+ 	mem->mm_node = NULL;
+ 
+-	do {
+-		if (unlikely(ida_pre_get(&gman->gmr_ida, GFP_KERNEL) == 0))
+-			return -ENOMEM;
 -
--again:
--	if (unlikely(idr_pre_get(&hwmon_idr, GFP_KERNEL) == 0))
--		return ERR_PTR(-ENOMEM);
+-		spin_lock(&gman->lock);
+-		ret = ida_get_new(&gman->gmr_ida, &id);
 -
--	spin_lock(&idr_lock);
--	err = idr_get_new(&hwmon_idr, NULL, &id);
--	spin_unlock(&idr_lock);
-+	int id;
+-		if (unlikely(ret == 0 && id >= gman->max_gmr_ids)) {
+-			ida_remove(&gman->gmr_ida, id);
+-			spin_unlock(&gman->lock);
++	id = ida_simple_get(&gman->gmr_ida, 0, gman->max_gmr_ids, GFP_KERNEL);
++	if (id < 0) {
++		if (id == -ENOSPC)
+ 			return 0;
+-		}
+-
+-		spin_unlock(&gman->lock);
+-
+-	} while (ret == -EAGAIN);
+-
+-	if (likely(ret == 0)) {
+-		mem->mm_node = gman;
+-		mem->start = id;
++		return id;
+ 	}
++	mem->mm_node = gman;
++	mem->start = id;
  
--	if (unlikely(err == -EAGAIN))
--		goto again;
--	else if (unlikely(err))
--		return ERR_PTR(err);
-+	id = ida_simple_get(&hwmon_ida, 0, 0, GFP_KERNEL);
-+	if (id < 0)
-+		return ERR_PTR(id);
- 
--	id = id & MAX_ID_MASK;
- 	hwdev = device_create(hwmon_class, dev, MKDEV(0, 0), NULL,
- 			      HWMON_ID_FORMAT, id);
- 
--	if (IS_ERR(hwdev)) {
--		spin_lock(&idr_lock);
--		idr_remove(&hwmon_idr, id);
--		spin_unlock(&idr_lock);
--	}
-+	if (IS_ERR(hwdev))
-+		ida_simple_remove(&hwmon_ida, id);
- 
- 	return hwdev;
+-	return ret;
++	return 0;
  }
-@@ -81,9 +67,7 @@ void hwmon_device_unregister(struct device *dev)
  
- 	if (likely(sscanf(dev_name(dev), HWMON_ID_FORMAT, &id) == 1)) {
- 		device_unregister(dev);
--		spin_lock(&idr_lock);
--		idr_remove(&hwmon_idr, id);
--		spin_unlock(&idr_lock);
-+		ida_simple_remove(&hwmon_ida, id);
- 	} else
- 		dev_dbg(dev->parent,
- 			"hwmon_device_unregister() failed: bad class ID!\n");
+ static void vmw_gmrid_man_put_node(struct ttm_mem_type_manager *man,
+@@ -86,9 +71,7 @@ static void vmw_gmrid_man_put_node(struct ttm_mem_type_manager *man,
+ 		(struct vmwgfx_gmrid_man *)man->priv;
+ 
+ 	if (mem->mm_node) {
+-		spin_lock(&gman->lock);
+-		ida_remove(&gman->gmr_ida, mem->start);
+-		spin_unlock(&gman->lock);
++		ida_simple_remove(&gman->gmr_ida, mem->start);
+ 		mem->mm_node = NULL;
+ 	}
+ }
+@@ -102,7 +85,6 @@ static int vmw_gmrid_man_init(struct ttm_mem_type_manager *man,
+ 	if (unlikely(gman == NULL))
+ 		return -ENOMEM;
+ 
+-	spin_lock_init(&gman->lock);
+ 	ida_init(&gman->gmr_ida);
+ 	gman->max_gmr_ids = p_size;
+ 	man->priv = (void *) gman;
 -- 
 1.7.3.4
 
