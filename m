@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754742Ab1GVTBJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 15:01:09 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:41932
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753983Ab1GVTBH convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 15:01:07 -0400
-X-SpamScore: -14
-X-BigFish: VS-14(zz9371M1432N98dKzz1202hzz8275bhz2dh2a8h668h839h8e2h8e3h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Tabi Timur-B04825 <B04825@freescale.com>
-To: "greg@kroah.com" <greg@kroah.com>
-CC: "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-console@vger.kernel.org" <linux-console@vger.kernel.org>
-Subject: Re: [PATCH] [v3] tty/powerpc: introduce the ePAPR embedded
- hypervisor byte channel driver
-Thread-Topic: [PATCH] [v3] tty/powerpc: introduce the ePAPR embedded
- hypervisor byte channel driver
-Thread-Index: AQHMPcwEIuAieLPSPEu3D/DBaxER+5T5G4MA
-Date: Fri, 22 Jul 2011 19:00:40 +0000
-Message-ID: <CAOZdJXVD6=UizQjgNK-rJm2hDpZG+Gupo6+M3wW-VS7O1rTo_Q@mail.gmail.com>
-References: <1310169972-13756-1-git-send-email-timur@freescale.com>
-In-Reply-To: <1310169972-13756-1-git-send-email-timur@freescale.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [174.129.36.64]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-ID: <45E7DC55A0B7F24986E4B3504547FDD2@freescale.net>
-Content-Transfer-Encoding: 8BIT
+	id S1755150Ab1GVTCO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 15:02:14 -0400
+Received: from mail.elliptictech.com ([209.217.122.41]:46258 "EHLO
+	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753504Ab1GVTCM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 15:02:12 -0400
+Date: Fri, 22 Jul 2011 15:01:50 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] SP805 updates for Versatile Express
+Message-ID: <20110722190150.GA24621@elliptictech.com>
+References: <1310742242-14647-1-git-send-email-nbowler@elliptictech.com>
+ <20110715205954.GR3834@infomag.iguana.be>
+ <20110718094409.GQ23270@n2100.arm.linux.org.uk>
+ <20110719131508.GA30207@elliptictech.com>
+ <20110722183146.GE31767@infomag.iguana.be>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110722183146.GE31767@infomag.iguana.be>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 8, 2011 at 7:06 PM, Timur Tabi <timur@freescale.com> wrote:
-> The ePAPR embedded hypervisor specification provides an API for "byte
-> channels", which are serial-like virtual devices for sending and receiving
-> streams of bytes.  This driver provides Linux kernel support for byte
-> channels via three distinct interfaces:
->
-> 1) An early-console (udbg) driver.  This provides early console output
-> through a byte channel.  The byte channel handle must be specified in a
-> Kconfig option.
->
-> 2) A normal console driver.  Output is sent to the byte channel designated
-> for stdout in the device tree.  The console driver is for handling kernel
-> printk calls.
->
-> 3) A tty driver, which is used to handle user-space input and output.  The
-> byte channel used for the console is designated as the default tty.
->
-> Signed-off-by: Timur Tabi <timur@freescale.com>
-> ---
+On 2011-07-22 20:31 +0200, Wim Van Sebroeck wrote:
+> Hi Nick, Russel,
+> > Indeed, there are likely several other ways in which this driver can be
+> > improved.  My goal was to get it working on our board first. :)
+> 
+> Feel free to continue improving the driver like Russel suggested. :-)
 
-Greg,
+I'll see what I can do :)
 
-I just want to make sure you haven't forgotten this patch.  Will you
-be picking it up for 3.1?
+> > So if this series is fine, I'll submit #1 (the V2M patch) to Russel's
+> > patch tracker.  I suppose #2 and #3 should go through the watchdog tree?
+> 
+> I added patch 2 and 3 to linux-2.6-watchdog-next. You can send #1 to 
+> Russel's patch tracker.
 
+OK, great.  I sent #1 to Russell's patch tracker a couple days ago.
+
+Thanks,
 -- 
-Timur Tabi
-Linux kernel developer at Freescale
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
