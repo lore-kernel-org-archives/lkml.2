@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932347Ab1GVVnD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 17:43:03 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:34554 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932297Ab1GVVnA (ORCPT
+	id S932361Ab1GVVnI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 17:43:08 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:45682 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932297Ab1GVVnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 17:43:00 -0400
-Date: Fri, 22 Jul 2011 23:26:29 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: Ben Greear <greearb@candelatech.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David <david@unsolicited.net>, Tejun Heo <tj@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        netdev@vger.kernel.org
-Subject: Re: Linux 3.0 release
-Message-ID: <20110722212629.GA10833@electric-eye.fr.zoreil.com>
-References: <CA+55aFxakA2U+oMJ1T7awTYa+p6xp9N0aCbfrUqgkF7BJ8gnQw@mail.gmail.com> <4E29CB5B.4040408@unsolicited.net> <CA+55aFy1FnVGH4C_0T8fXwZPUdz5-SCczMwy1K8kydLwTx89RQ@mail.gmail.com> <4E29D326.7070403@candelatech.com> <20110722133220.0baf2199@nehalam.ftrdhcpuser.net>
+	Fri, 22 Jul 2011 17:43:06 -0400
+Date: Fri, 22 Jul 2011 23:43:05 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Lin Ming <ming.m.lin@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] perf: memory load/store events generalization
+Message-ID: <20110722214305.GU8006@one.firstfloor.org>
+References: <1309766525-14089-1-git-send-email-ming.m.lin@intel.com> <CABPqkBTznHwX_i=sraOkAkyAdX48fi3zVMa_M+Wdp09WMkQeoQ@mail.gmail.com> <20110722210114.GT8006@one.firstfloor.org> <CABPqkBQP7VNZBFj2h_TA67rr_QL7oxj1p8CjzG+faBd2m0dQig@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110722133220.0baf2199@nehalam.ftrdhcpuser.net>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CABPqkBQP7VNZBFj2h_TA67rr_QL7oxj1p8CjzG+faBd2m0dQig@mail.gmail.com>
 User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Hemminger <shemminger@vyatta.com> :
-> This a regression which probably began with
-> 
-> commit e22bee782b3b00bd4534ae9b1c5fb2e8e6573c5c
-> Author: Tejun Heo <tj@kernel.org>
-> Date:   Tue Jun 29 10:07:14 2010 +0200
-> 
->     workqueue: implement concurrency managed dynamic worker pool
-> 
-> Before that it was perfectly legal for link watch code to
-> call schedule_delayed_work from IRQ. This should be allowable;
-> the code to manage the worker pool should handle it.
+On Fri, Jul 22, 2011 at 02:14:26PM -0700, Stephane Eranian wrote:
+> On Fri, Jul 22, 2011 at 2:01 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> >> That looks okay as a first approach tool. But what people are most
+> >> often interested in is to see where the misses occur, i.e., you need
+> >> to display load/store addresses somehow, especially for the more
+> >
+> > But that's what it already does?  (for loads, stores
+> > are not in there yet) Did you try it?
+> >
+> I meant displaying the load + data addresses.
 
-I beg to differ: see Ben's first report
-(http://lists.openwall.net/netdev/2011/05/04/183).
-                                       ^^
+That's what it does already.
 
-One of the code path in the netif_carrier code leads it to try and disable
-a late workqueue to reenable it immediately (mod_workqueue anyone ?):
-netif_carrier_on
--> linkwatch_fire_event
-   -> linkwatch_schedule_work
-      -> cancel_delayed_work
-         -> del_timer_sync
+Or did you mean the instructions that caused them?
 
-The del_timer_sync has been here for ages. Afaiks it is not a new pool code
-nor a schedule_delayed_work only problem.
-
+-Andi
 -- 
-Ueimor
+ak@linux.intel.com -- Speaking for myself only.
