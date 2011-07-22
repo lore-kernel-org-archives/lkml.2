@@ -1,391 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752765Ab1GVDAV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 23:00:21 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34708 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752117Ab1GVDAU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 23:00:20 -0400
+	id S1753075Ab1GVDLD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 23:11:03 -0400
+Received: from void.printf.net ([89.145.121.20]:53179 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752399Ab1GVDLB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 23:11:01 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
+Subject: [GIT PULL] MMC updates for 3.1-rc1.
+Date: Thu, 21 Jul 2011 23:10:50 -0400
+Message-ID: <m28vrr57t1.fsf@bob.laptop.org>
+User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 21 Jul 2011 19:59:53 -0700
-Message-ID: <CA+55aFxakA2U+oMJ1T7awTYa+p6xp9N0aCbfrUqgkF7BJ8gnQw@mail.gmail.com>
-Subject: Linux 3.0 release
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So there it is. Gone are the 2.6.<bignum> days, and 3.0 is out.
-
-This obviously also opens the merge window for the next kernel, which
-will be 3.1. The stable team will take the third digit, so 3.0.1 will
-be the first stable release based on 3.0.
-
-As already mentioned several times, there are no special landmark
-features or incompatibilities related to the version number change,
-it's simply a way to drop an inconvenient numbering system in honor of
-twenty years of Linux. In fact, the 3.0 merge window was calmer than
-most, and apart from some excitement from RCU I'd have called it
-really smooth. Which is not to say that there may not be bugs, but if
-anything, there are hopefully fewer than usual, rather than the normal
-".0" problems.
-
-And as I already mentioned yesterday, I'm hoping the 3.1 merge window
-will be calm too, because due to the delays the latter half of the
-merge window will fall into my vacation time. I briefly considered
-simply waiting two extra weeks, but quite frankly, that wouldn't
-really have solved anything (it would have made the merge window
-instead fall into LinuxCon and my divemaster weekends).
-
-So I'm going to try to keep to the normal two-week merge window, but
-if it ends up being too busy for me to keep up, I may end up extending
-the window just so that I can merge everything. However, even if that
-happens, that will *not* mean that I will accept big pull requests for
-longer, it just means that I may end up delaying things to catch up
-with timely merge requests.
-
-That said, judging by past experience, the summer merge windows often
-tend to be quieter, so maybe I worry needlessly. Much of Europe is
-starting to go on vacation, and parts of the US are being fried to a
-crisp, so maybe 3.1 will be calm too.
-
-Anyway, what has changed since -rc7 is mainly some RCU interactions
-with the scheduler, and the RCU problems should hopefully be behind
-us. The pathname lookup race is also fixed. There's a few DRI fixes
-(i915 modesetting, and some Radeon fixes), and Al walked through some
-more esoteric VFS d_lock issues. Other than that it's really pretty
-small and random.
-
-The shortlog from -rc7 is appended, the bigger "everything since
-2.6.39" list is obviously unmanageable.
-
-                                Linus
-
----
-
-Akinobu Mita (1):
-      fs/libfs.c: fix simple_attr_write() on 32bit machines
-
-Al Viro (10):
-      Fix ->d_lock locking order in unlazy_walk()
-      fix loop checks in d_materialise_unique()
-      cifs: build_path_from_dentry() race fix
-      ceph analog of cifs build_path_from_dentry() race fix
-      fix exofs ->get_parent()
-      ufs should use d_splice_alias()
-      cramfs: get_cramfs_inode() returns ERR_PTR() on failure
-      hppfs: fix dentry leak
-      hppfs_lookup(): don't open-code lookup_one_len()
-      Fix cifs_get_root()
-
-Alex Deucher (6):
-      drm/radeon/kms: fix regression in hotplug
-      drm/radeon/kms: fix backend map typo on juniper
-      drm/radeon/kms: use correct BUS_CNTL reg on rs600
-      drm/radeon/kms: fix typo in read_disabled vbios code
-      drm/radeon/kms/evergreen: emit SQ_LDS_RESOURCE_MGMT for blits
-      drm/radeon/kms: add new NI pci ids
-
-Andy Adamson (1):
-      NFSv4.1: update nfs4_fattr_bitmap_maxsz
-
-Axel Lin (1):
-      gpio: wm831x: add a missing break in wm831x_gpio_dbg_show
-
-Ben Greear (1):
-      SUNRPC: Fix use of static variable in rpcb_getport_async
-
-Benjamin Herrenschmidt (2):
-      mm: Move definition of MIN_MEMORY_BLOCK_SIZE to a header
-      powerpc/mm: Fix memory_block_size_bytes() for non-pseries
-
-Benjamin Marzinski (1):
-      GFS2: force a log flush when invalidating the rindex glock
-
-Boaz Harrosh (1):
-      pnfs: write: Set mds_offset in the generic layer - it is needed by all LDs
-
-Chris Wilson (3):
-      drm/i915/ringbuffer: Idling requires waiting for the ring to be empty
-      agp/intel: Fix typo in G4x_GMCH_SIZE_VT_2M
-      drm/i915: Fix unfenced alignment on pre-G33 hardware
-
-Christian Lamparter (1):
-      carl9170: add NEC WL300NU-AG usbid
-
-Dan Rosenberg (1):
-      Bluetooth: Prevent buffer overflow in l2cap config request
-
-Daniel J Blueman (1):
-      x86: Make Dell Latitude E5420 use reboot=pci
+Hi Linus,
 
-Daniel Mack (1):
-      ARM: pxa/raumfeld: fix device name for codec ak4104
+Please pull from:
 
-Darren Hart (1):
-      x86, doc only: Correct real-mode kernel header offset for init_size
+  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git for-linus
 
-David S. Miller (2):
-      net: Fix default in docs for tcp_orphan_retries.
-      pppoe: Must flush connections when MAC address changes too.
+to receive MMC updates for 3.1.  There are currently no merge conflicts,
+and the patches have been tested in linux-next.  Thanks.
 
-Devin Heitmueller (1):
-      [media] dvb_frontend: fix race condition in stopping/starting frontend
+Highlights are:
 
-Greg Kroah-Hartman (1):
-      hso: fix a use after free condition
+Core:
+ * New non-blocking request framework from Per Forlin for removing DMA
+   preparation overhead, used by adding pre_req() and post_req() driver
+   hooks for preparing DMA descriptors ahead of time as described in
+   Documentation/mmc/mmc-async-req.txt.
 
-Guenter Roeck (2):
-      hwmon: (pmbus) Use long variables for register to data conversions
-      hwmon: (adm1275) Fix coefficients per datasheet revision B
+ * Improved MMC error detection and recovery from Russell King.
 
-Gustavo F. Padovan (2):
-      Bluetooth: Fix regression with incoming L2CAP connections
-      Bluetooth: Fix regression in L2CAP connection procedure
+Drivers:
+ * Fix errors with the Ricoh e823 controller (as found in ThinkPad X220,
+   Tecra R850, Portégé R830) by lowering its SD bus frequency to 50MHz.
 
-H. Peter Anvin (1):
-      x86: Make Dell Latitude E6420 use reboot=pci
+ * Runtime PM support for omap_hsmmc, tmio_mmc, and sh_mmcif.
 
-Huang Ying (1):
-      ACPI, APEI, HEST, Detect duplicated hardware error source ID
+ * sdhci-pltfm architecture rework by Shawn Guo.
 
-Ido Yariv (1):
-      arm: davinci: Fix low level gpio irq handlers' argument
+ * Split up sdhci-pxa into independent sdhci-pxav2 (pxa910) and
+   sdhci-pxav3 (MMP2) drivers.
 
-Ilia Kolomisnky (1):
-      Bluetooth: Fix crash with incoming L2CAP connections
+ * Implement non-blocking framework hooks for the mmci driver.
 
-Jan Beulich (1):
-      FS-Cache: Fix __fscache_uncache_all_inode_pages()'s outer loop
 
-Jarod Wilson (2):
-      [media] Revert "V4L/DVB: cx23885: Enable Message Signaled Interrupts(MSI)"
-      [media] nuvoton-cir: make idle timeout more sane
+The following changes since commit d1e9ae47a0285d3f1699e8219ce50f656243b93f:
 
-Jason Wessel (1):
-      sparc,kgdbts: fix compile regression with kgdb test suite
+  Merge branch 'rcu/urgent' of git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu into core/urgent (2011-07-20 20:59:26 +0200)
 
-Jean Delvare (2):
-      net/natsemi: Fix module parameter permissions
-      hwmon: (it87) Fix label group removal
+are available in the git repository at:
 
-Jesse Barnes (7):
-      drm/i915/dp: retry link status read 3 times on failure
-      drm/i915/dp: use DP DPCD defines when looking at DPCD values
-      drm/i915/dp: read more receiver capability bits on hotplug
-      drm/i915/dp: try to read receiver capabilities 3 times when detecting
-      drm/i915/dp: remove DPMS mode tracking from DP
-      drm/i915/dp: consolidate AUX retry code
-      drm/i915/dp: manage sink power state if possible
+  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git for-linus
 
-Jim Cromie (1):
-      natsemi: fix another dma-debug report
+Adrian Hunter (5):
+      mmc: queue: let host controllers specify maximum discard timeout
+      mmc: sdhci: specify maximum discard timeout
+      mmc: sdhci-pci: allow 8-bit bus width for Intel Medfield eMMCs
+      mmc: omap_hsmmc: correct debug report error status mnemonics
+      mmc: omap_hsmmc: fix oops in omap_hsmmc_dma_cb()
 
-Joe Perches (1):
-      tulip: dmfe: Remove old log spamming pr_debugs
+Andy Shevchenko (5):
+      mmc: omap_hsmmc: move hardcoded frequency constants to defines
+      mmc: omap_hsmmc: split duplicate code to calc_divisor() function
+      mmc: omap_hsmmc: introduce start_clock and re-use stop_clock
+      mmc: omap_hsmmc: fix a few bugs when setting the clock divisor
+      mmc: omap_hsmmc: refactor duplicated code
 
-Johannes Berg (1):
-      mac80211: fix TKIP replay vulnerability
+Balaji T K (3):
+      mmc: omap_hsmmc: Remove lazy_disable
+      mmc: omap_hsmmc: add runtime pm support
+      mmc: omap_hsmmc: Remove unused iclk
 
-Jon Povey (1):
-      davinci: DM365 EVM: fix video input mux bits
+Daniel Drake (1):
+      mmc: print debug messages for runtime PM actions
 
-Jonathan Cameron (1):
-      pcmcia: pxa2xx/vpac270: free gpios on exist rather than requesting
+Guennadi Liakhovetski (6):
+      mmc: tmio: fix recursive spinlock, don't schedule with interrupts disabled
+      mmc: tmio: maximize power saving
+      mmc: sh_mmcif: maximize power saving
+      mmc: tmio: fix a recently introduced bug in DMA code
+      mmc: tmio: fix a deadlock
+      mmc: MAINTAINERS: add myself as a tmio-mmc maintainer
 
-Keith Packard (3):
-      drm/i915: Clean up i915_driver_load failure path
-      Revert "drm/i915: enable rc6 by default"
-      drm/i915: Add quirk to disable SSC on Lenovo U160 LVDS
+Jaehoon Chung (1):
+      mmc: block: fixed NULL pointer dereference
 
-Kenneth Graunke (1):
-      drm/i915: Enable GPU reset on Ivybridge.
+James Hogan (10):
+      mmc: dw_mmc: clear TXDR/RXDR ints before enabling
+      mmc: dw_mmc: fix race with request and removal
+      mmc: dw_mmc: convert card tasklet to workqueue
+      mmc: dw_mmc: brackets in register access macros
+      mmc: dw_mmc: don't hard code fifo depth, fix usage
+      mmc: dw_mmc: handle unaligned buffers and sizes
+      mmc: dw_mmc: fix stop when fallen back to PIO
+      mmc: dw_mmc: remove unnecessary error messages
+      mmc: dw_mmc: handle "no CRC status" error
+      mmc: dw_mmc: reset FIFO after an error
 
-Kuninori Morimoto (3):
-      ASoC: sh: fsi-ak4642: fixup snd_soc_card name
-      ASoC: sh: fsi-da7210: fixup snd_soc_card name
-      ASoC: sh: fsi-hdmi: fixup snd_soc_card name
+Jean-Christophe PLAGNIOL-VILLARD (1):
+      mmc: at91_mci: move register header from include/ to drivers/
 
-Lei Wen (2):
-      ARM: pxa910: correct nand pmu setting
-      ARM: pxa168: correct nand pmu setting
+Koen Beel (1):
+      mmc: mxs-mmc: fix clock rate setting
 
-Lin Ming (1):
-      ACPI: Fixes device power states array overflow
+Madhusudhan Chikkature (1):
+      mmc: MAINTAINERS: change omap_hsmmc maintainence to orphan
 
-Linus Torvalds (3):
-      vfs: fix race in rcu lookup of pruned dentry
-      vfs: drop conditional inode prefetch in __do_lookup_rcu
-      Linux 3.0
+Major Lee (1):
+      mmc: sdhci-pci: add 8-bit bus width support for mrst hc0
 
-Linus Walleij (1):
-      ARM: pxa: fix gpio_to_chip() clash with gpiolib namespace
+Manoj Iyer (1):
+      mmc: Added quirks for Ricoh 1180:e823 lower base clock frequency
 
-Luca Tettamanti (1):
-      hwmon: (asus_atk0110) Fix memory leak
-
-Luciano Coelho (2):
-      cfg80211: fix deadlock with rfkill/sched_scan by adding new mutex
-      mac80211: fix ie memory allocation for scheduled scans
-
-Mark Brown (2):
-      ASoC: Fix shift in WM8958 accessory detection default implementation
-      ASoC: Correct WM8994 MICBIAS supply widget hookup
-
-Matthias Rosenfelder (1):
-      sparc32,leon: Added __init declaration to leon_flush_needed()
-
-Matvejchikov Ilya (1):
-      slip: fix wrong SLIP6 ifdef-endif placing
-
-Mauro Carvalho Chehab (2):
-      [media] tuner-core: fix a 2.6.39 regression with mt20xx
-      si4713-i2c: avoid potential buffer overflow on si4713
-
-Maxime Ripard (1):
-      x86. reboot: Make Dell Latitude E6320 use reboot=pci
-
-Michael Thalmeier (1):
-      r6040: only disable RX interrupt if napi_schedule_prep is successful
-
-Michal Marek (1):
-      kbuild: Do not write to builddir in modules_install
-
-Michał Mirosław (2):
-      net: sctp: fix checksum marking for outgoing packets
-      net: remove NETIF_F_ALL_TX_OFFLOADS
-
-Olaf Hering (1):
-      watchdog: fix hpwdt Kconfig regression in 3.0-rc
-
-Paul E. McKenney (6):
-      rcu: Prevent RCU callbacks from executing before scheduler initialized
-      rcu: decrease rcu_report_exp_rnp coupling with scheduler
-      rcu: Fix RCU_BOOST race handling current->rcu_read_unlock_special
-      rcu: Streamline code produced by __rcu_read_unlock()
-      rcu: protect __rcu_read_unlock() against scheduler-using irq handlers
-      signal: align __lock_task_sighand() irq disabling and RCU
-
-Paul Parsons (1):
-      ARM: pxa: fix PGSR register address calculation
-
-Pavel Herrmann (1):
-      hwmon: (max1111) Fix race condition causing NULL pointer exception
-
-Pavel Roskin (2):
-      ath5k: fix incorrect use of drvdata in sysfs code
-      ath5k: fix incorrect use of drvdata in PCI suspend/resume code
-
-Pavel Shilovsky (1):
-      CIFS: Fix wrong length in cifs_iovec_read
-
-Peter Hurley (1):
-      Bluetooth: Fix hidp disconnect deadlocks and lost wakeup
-
-Peter Zijlstra (6):
-      sched: Fix 32bit race
-      sched: Break out cpu_power from the sched_group structure
-      sched: Allow for overlapping sched_domain spans
-      sched: Avoid creating superfluous NUMA domains on non-NUMA systems
-      sched: Add irq_{enter,exit}() to scheduler_ipi()
-      softirq,rcu: Inform RCU of irq_exit() activity
+Nicolas Ferre (2):
+      mmc: atmel-mci: add suspend/resume support
+      mmc: kconfig: remove EXPERIMENTAL from the DMA selection of atmel-mci
+
+Ohad Ben-Cohen (1):
+      mmc: fix runtime PM with -ENOSYS suspend case
+
+Paul Parsons (2):
+      mmc: tmio: Fix build error without CONFIG_MMC_SDHI
+      mmc: tmio: Fix race condition resulting in spurious interrupts
+
+Per Forlin (12):
+      mmc: core: add non-blocking mmc request function
+      mmc: omap_hsmmc: add support for pre_req and post_req
+      mmc: mmci: implement pre_req() and post_req()
+      mmc: mmc_test: add debugfs file to list all tests
+      mmc: mmc_test: add test for non-blocking transfers
+      mmc: mmc_test: test to measure how sg_len affect performance
+      mmc: block: add member in mmc queue struct to hold request data
+      mmc: block: add a block request prepare function
+      mmc: block: move error path in issue_rw_rq to a separate function.
+      mmc: queue: add a second mmc queue request member
+      mmc: block: add handling for two parallel block requests in issue_rw_rq
+      mmc: documentation of mmc non-blocking request usage and design.
 
 Philip Rakity (1):
-      mmc: core: Bus width testing needs to handle suspend/resume
+      mmc: core: Set non-default Drive Strength via platform hook
 
-Rafael J. Wysocki (2):
-      ACPI: Fix lockdep false positives in acpi_power_off()
-      PM / MIPS: Convert i8259.c to using syscore_ops
+Robert P. J. Day (1):
+      mmc: Standardize header file inclusion checks.
 
-Rafał Miłecki (1):
-      ssb: fix init regression of hostmode PCI core
+Russell King - ARM Linux (3):
+      mmc: block: allow get_card_status() to return error status
+      mmc: block: improve error recovery from command channel errors
+      mmc: block: add checking of r/w command response
 
-Rafi Rubin (2):
-      [media] mceusb: Timeout unit corrections
-      [media] mceusb: increase default timeout to 100ms
+Seungwon Jeon (2):
+      mmc: dw_mmc: set the card_width bit per card.
+      mmc: dw_mmc: protect a sequence of request and request-done.
 
-Rajkumar Manoharan (1):
-      ath9k: Fix tx throughput drops for AR9003 chips with AES encryption
+Shawn Guo (8):
+      mmc: sdhci: make sdhci-pltfm device drivers self registered
+      mmc: sdhci: eliminate sdhci_of_host and sdhci_of_data
+      mmc: sdhci: make sdhci-of device drivers self registered
+      mmc: sdhci: merge two sdhci-pltfm.h into one
+      mmc: sdhci: change sdhci-pltfm into a module
+      mmc: sdhci: fix interrupt storm from card detection
+      mmc: sdhci-esdhc-imx: SDHCI_CARD_PRESENT does not get cleared
+      mmc: sdhci-esdhc-imx: remove "WP" from flag ESDHC_FLAG_GPIO_FOR_CD_WP
 
-Ralf Baechle (1):
-      [media] MEDIA: Fix non-ISA_DMA_API link failure of sound code
+Simon Horman (3):
+      mmc: tmio: name 0xd8 as CTL_DMA_ENABLE
+      mmc: tmio: Share register access functions
+      mmc: sdhi: Add write16_hook
 
-Randy Dunlap (2):
-      [media] media: fix radio-sf16fmr2 build when SND is not enabled
-      watchdog: hpwdt depends on PCI
+Wonil Choi (1):
+      mmc: sdhci-s3c: Fix return value in sdhci_s3c_suspend/resume()
 
-Richard Cochran (1):
-      ARM: fix regression in IXP4xx clocksource
+Zhangfei Gao (6):
+      mmc: host: split up sdhci-pxa, create sdhci-pxav3.c
+      mmc: host: split up sdhci-pxa, create sdhci-pxav2.c
+      mmc: update mmp2 mmc resources in arch/arm
+      mmc: host: delete obsolete sdhci-pxa.c
+      mmc: sdhci-pxa: move platform data to include/linux/platform_data
+      ARM: mmp2: update mmp2_defconfig to support mmc
 
-Ryusuke Konishi (1):
-      nilfs2: remove resize from unsupported features list
+ Documentation/mmc/00-INDEX                         |    2 +
+ Documentation/mmc/mmc-async-req.txt                |   87 +++
+ MAINTAINERS                                        |   10 +-
+ arch/arm/configs/mmp2_defconfig                    |    9 +-
+ arch/arm/mach-mmp/brownstone.c                     |   10 +-
+ arch/arm/mach-mmp/include/mach/mmp2.h              |    2 +-
+ arch/arm/mach-mmp/jasper.c                         |    2 +-
+ arch/arm/mach-mmp/mmp2.c                           |   16 +-
+ arch/arm/plat-pxa/include/plat/sdhci.h             |   35 -
+ drivers/mmc/card/block.c                           |  681 +++++++++++++-------
+ drivers/mmc/card/mmc_test.c                        |  498 ++++++++++++++-
+ drivers/mmc/card/queue.c                           |  217 ++++---
+ drivers/mmc/card/queue.h                           |   33 +-
+ drivers/mmc/core/core.c                            |  197 ++++++-
+ drivers/mmc/core/sd.c                              |   68 ++-
+ drivers/mmc/core/sdio_bus.c                        |    8 +-
+ drivers/mmc/host/Kconfig                           |   84 ++-
+ drivers/mmc/host/Makefile                          |   25 +-
+ drivers/mmc/host/at91_mci.c                        |    3 +-
+ .../include/mach => drivers/mmc/host}/at91_mci.h   |    2 +-
+ drivers/mmc/host/atmel-mci.c                       |   63 ++
+ drivers/mmc/host/dw_mmc.c                          |  446 ++++++++++---
+ drivers/mmc/host/dw_mmc.h                          |   17 +-
+ drivers/mmc/host/mmci.c                            |  147 ++++-
+ drivers/mmc/host/mmci.h                            |    8 +
+ drivers/mmc/host/mxs-mmc.c                         |   30 +-
+ drivers/mmc/host/omap_hsmmc.c                      |  671 +++++++------------
+ drivers/mmc/host/sdhci-cns3xxx.c                   |   44 ++-
+ drivers/mmc/host/sdhci-dove.c                      |   43 ++-
+ drivers/mmc/host/sdhci-esdhc-imx.c                 |  125 +++--
+ drivers/mmc/host/sdhci-of-core.c                   |  253 --------
+ drivers/mmc/host/sdhci-of-esdhc.c                  |   86 ++-
+ drivers/mmc/host/sdhci-of-hlwd.c                   |   67 ++-
+ drivers/mmc/host/sdhci-of.h                        |   42 --
+ drivers/mmc/host/sdhci-pci.c                       |   54 ++-
+ drivers/mmc/host/sdhci-pltfm.c                     |  216 +++----
+ drivers/mmc/host/sdhci-pltfm.h                     |   90 +++-
+ drivers/mmc/host/sdhci-pxa.c                       |  303 ---------
+ drivers/mmc/host/sdhci-pxav2.c                     |  244 +++++++
+ drivers/mmc/host/sdhci-pxav3.c                     |  289 +++++++++
+ drivers/mmc/host/sdhci-s3c.c                       |    6 +-
+ drivers/mmc/host/sdhci-tegra.c                     |  117 +++-
+ drivers/mmc/host/sdhci.c                           |   34 +-
+ drivers/mmc/host/sh_mmcif.c                        |   27 +-
+ drivers/mmc/host/sh_mobile_sdhi.c                  |   36 +
+ drivers/mmc/host/tmio_mmc.h                        |   53 ++-
+ drivers/mmc/host/tmio_mmc_dma.c                    |    7 +-
+ drivers/mmc/host/tmio_mmc_pio.c                    |  205 +++----
+ drivers/pci/quirks.c                               |   23 +
+ include/linux/mfd/tmio.h                           |    8 +
+ include/linux/mmc/boot.h                           |    6 +-
+ include/linux/mmc/card.h                           |    2 +-
+ include/linux/mmc/core.h                           |    9 +-
+ include/linux/mmc/dw_mmc.h                         |   28 +-
+ include/linux/mmc/host.h                           |   26 +-
+ include/linux/mmc/ioctl.h                          |    2 +-
+ include/linux/mmc/mmc.h                            |   17 +-
+ include/linux/mmc/pm.h                             |    2 +-
+ include/linux/mmc/sd.h                             |    7 +-
+ include/linux/mmc/sdhci-pltfm.h                    |   35 -
+ include/linux/mmc/sdhci-spear.h                    |    6 +-
+ include/linux/mmc/sdhci.h                          |    6 +-
+ include/linux/mmc/sdio.h                           |    7 +-
+ include/linux/mmc/sdio_func.h                      |    7 +-
+ include/linux/mmc/sdio_ids.h                       |    6 +-
+ include/linux/mmc/sh_mmcif.h                       |    6 +-
+ include/linux/mmc/sh_mobile_sdhi.h                 |    6 +-
+ include/linux/mmc/tmio.h                           |    8 +-
+ include/linux/platform_data/pxa_sdhci.h            |   60 ++
+ 69 files changed, 3928 insertions(+), 2061 deletions(-)
+ create mode 100644 Documentation/mmc/mmc-async-req.txt
+ delete mode 100644 arch/arm/plat-pxa/include/plat/sdhci.h
+ rename {arch/arm/mach-at91/include/mach => drivers/mmc/host}/at91_mci.h (99%)
+ delete mode 100644 drivers/mmc/host/sdhci-of-core.c
+ delete mode 100644 drivers/mmc/host/sdhci-of.h
+ delete mode 100644 drivers/mmc/host/sdhci-pxa.c
+ create mode 100644 drivers/mmc/host/sdhci-pxav2.c
+ create mode 100644 drivers/mmc/host/sdhci-pxav3.c
+ delete mode 100644 include/linux/mmc/sdhci-pltfm.h
+ create mode 100644 include/linux/platform_data/pxa_sdhci.h
 
-Sage Weil (1):
-      ceph: fix file mode calculation
-
-Sangwook Lee (1):
-      ARM: SAMSUNG: DMA Cleanup as per sparse
-
-Sebastian Pöhn (1):
-      gianfar: rx parser
-
-Shaohua Li (1):
-      vmscan: fix a livelock in kswapd
-
-Shirish Pargaonkar (1):
-      cifs: Fix signing failure when server mandates signing for NTLMSSP
-
-Simon Guinot (1):
-      genirq: replace irq_gc_ack() with {set,clr}_bit variants (fwd)
-
-Steve French (2):
-      [CIFS] update limit for snprintf in cifs_construct_tcon
-      [CIFS] update cifs to version 1.74
-
-Steven Rostedt (1):
-      sparc/irqs: Do not trace arch_local_{*,irq_*} functions
-
-Steven Whitehouse (2):
-      GFS2: Fix race during filesystem mount
-      GFS2: Resolve inode eviction and ail list interaction bug
-
-Sven Neumann (2):
-      ARM: pxa/raumfeld: adapt to upcoming hardware change
-      ARM: pxa/raumfeld: display initialisation fixes
-
-Tejun Heo (1):
-      x86: Disable AMD_NUMA for 32bit for now
-
-Thomas Graf (2):
-      sctp: Enforce retransmission limit during shutdown
-      sctp: ABORT if receive, reassmbly, or reodering queue is not
-empty while closing socket
-
-Todd Poynor (2):
-      ARM: SAMSUNG: Check NULL return from irq_alloc_generic_chip
-      ARM: davinci: Check for NULL return from irq_alloc_generic_chip
-
-Tomas Targownik (1):
-      Bluetooth: Fix memory leak under page timeouts
-
-Trond Myklebust (1):
-      SUNRPC: Fix a race between work-queue and rpc_killall_tasks
-
-Tushar Gohad (1):
-      XFRM: Fix memory leak in xfrm_state_update
-
-WANG Cong (1):
-      include/linux/sdla.h: remove the prototype of sdla()
-
-Will Simoneau (1):
-      sparc: sun4m SMP: fix wrong shift instruction in IPI handler
-
-Wolfram Sang (1):
-      arm: mach-vt8500: add forgotten irq_data conversion
-
-Yoann DI-RUZZA (1):
-      rtlwifi: rtl8192cu: Add new USB ID for Netgear WNA1000M
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
