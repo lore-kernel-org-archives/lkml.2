@@ -1,157 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951Ab1GVW1M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 18:27:12 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:44167 "EHLO ogre.sisk.pl"
+	id S1751915Ab1GVWcD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 18:32:03 -0400
+Received: from fieldses.org ([174.143.236.118]:53287 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750916Ab1GVW1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 18:27:11 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] Power management updates for 3.1
-Date: Sat, 23 Jul 2011 00:27:54 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc7+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        linux-sh@vger.kernel.org, linux-omap@vger.kernel.org
+	id S1751178Ab1GVWcB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 18:32:01 -0400
+Date: Fri, 22 Jul 2011 18:31:58 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Matt Mackall <mpm@selenic.com>, NeilBrown <neilb@suse.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Nanosecond fs timestamp support: sad
+Message-ID: <20110722223158.GC10749@fieldses.org>
+References: <1311271641.14555.114.camel@calx>
+ <m2pql2c0qz.fsf@firstfloor.org>
+ <20110722163335.2df4f6ca@notabene.brown>
+ <1311363269.14555.261.camel@calx>
+ <20110722205922.GS8006@one.firstfloor.org>
+ <1311369102.14555.268.camel@calx>
+ <20110722214732.GW8006@one.firstfloor.org>
+ <20110722221039.GB10749@fieldses.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107230027.54769.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110722221039.GB10749@fieldses.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, Jul 22, 2011 at 06:10:39PM -0400, bfields wrote:
+> On Fri, Jul 22, 2011 at 11:47:32PM +0200, Andi Kleen wrote:
+> > On Fri, Jul 22, 2011 at 04:11:42PM -0500, Matt Mackall wrote:
+> > > On Fri, 2011-07-22 at 22:59 +0200, Andi Kleen wrote:
+> > > > > Indeed. Only usefully exists on ext4 and requires extra system calls.
+> > > > 
+> > > > Not sure what you mean?  It's in stat(2), just like the timestamps.
+> > > 
+> > > I don't see anything that looks like a version or generation number in
+> > > either the man pages, the asm-generic/stat.h, or glibc's asm/stat.h.
+> > > Pointer?
+> > 
+> > Hmm you're right. I thought it was in there, but apparently not.
+> > I think it should be added there though. We still have some unused 
+> > fields.
+> 
+> But last I checked I thought it was only ext4 that actually incremented
+> the i_version on IO, and even then only when given a (non-default) mount
+> option.
+> 
+> My notes on what needs to be done there:
+> 
+> 	- collect data to determine whether turning on i_version causes
+> 	  any significant performance regressions.
+> 		- Last I talked to him, Ted Tso recommended running
+> 		  Bonnie on a local disk, since it does a lot of little
+> 		  writes, which is somewhat of a worst case, as it will
+> 		  generate extra metadata updates for each write.
+> 		  Compare total wall-clock time, number of iops, and
+> 		  number of bytes (using some kind of block tracing).
+> 	- If there aren't any problems, turn it on by default, and we're
+> 	  done.
 
-Please pull power management updates for 3.1 from:
+(Well,and talk the other filesystem implementors into doing it.)
 
-git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6.git for-linus
+--b.
 
-They include:
-
-* Introduction of core PM code to support power domains and related
-  modifications of the ARM shmobile platform which is its first user (the
-  Samsung exynos4 platform is going to use it too).
-
-* Modifications of the runtime PM framework clarifying its interactions with
-  the core system suspend/resume and hibernate code and related changes of the
-  ARM OMAP platform.
-
-* Various PM fixes and extensions.
-
-
- Documentation/power/devices.txt               |   14 +-
- Documentation/power/opp.txt                   |    2 +
- Documentation/power/runtime_pm.txt            |  229 +++--
- arch/arm/Kconfig                              |    1 +
- arch/arm/mach-omap1/pm_bus.c                  |   14 +-
- arch/arm/mach-omap2/gpio.c                    |    2 +
- arch/arm/mach-omap2/serial.c                  |    1 +
- arch/arm/mach-shmobile/board-ap4evb.c         |    5 +
- arch/arm/mach-shmobile/board-mackerel.c       |    5 +
- arch/arm/mach-shmobile/clock-sh7372.c         |    1 +
- arch/arm/mach-shmobile/include/mach/sh7372.h  |   29 +
- arch/arm/mach-shmobile/pm-sh7372.c            |  160 ++++
- arch/arm/mach-shmobile/pm_runtime.c           |   22 +-
- arch/arm/mach-shmobile/setup-sh7372.c         |   11 +
- arch/arm/plat-omap/include/plat/omap_device.h |    9 +
- arch/arm/plat-omap/omap_device.c              |   53 +-
- arch/sh/kernel/cpu/shmobile/pm_runtime.c      |    6 +-
- drivers/base/power/Makefile                   |    1 +
- drivers/base/power/clock_ops.c                |  234 +++--
- drivers/base/power/domain.c                   | 1273 +++++++++++++++++++++++++
- drivers/base/power/generic_ops.c              |   98 ++-
- drivers/base/power/main.c                     |   65 +-
- drivers/base/power/opp.c                      |   17 +
- drivers/base/power/runtime.c                  |   89 +-
- drivers/base/power/sysfs.c                    |    6 +-
- drivers/base/power/trace.c                    |    2 +-
- drivers/char/apm-emulation.c                  |    2 +-
- drivers/pci/pci-driver.c                      |   18 +-
- drivers/s390/char/vmwatchdog.c                |    4 +-
- drivers/s390/cio/css.c                        |    8 +-
- drivers/scsi/scsi_pm.c                        |    8 +-
- include/linux/device.h                        |    4 +-
- include/linux/opp.h                           |    8 +
- include/linux/pm.h                            |   10 +-
- include/linux/pm_domain.h                     |  108 +++
- include/linux/pm_runtime.h                    |   38 +-
- include/linux/suspend.h                       |    8 +
- kernel/power/Kconfig                          |    8 +-
- kernel/power/main.c                           |    5 +-
- kernel/power/suspend.c                        |   20 +-
- 40 files changed, 2274 insertions(+), 324 deletions(-)
-
----------------
-
-Akinobu Mita (1):
-      PM: Improve error code of pm_notifier_call_chain()
-
-Alan Stern (1):
-      PM / Runtime: Prevent runtime_resume from racing with probe
-
-Kevin Hilman (6):
-      PM / Runtime: Add new helper function: pm_runtime_status_suspended()
-      OMAP: PM: omap_device: conditionally use PM domain runtime helpers
-      OMAP: PM: omap_device: add system PM methods for PM domain handling
-      OMAP: PM: omap_device: add API to disable idle on suspend
-      OMAP: PM: disable idle on suspend for GPIO and UART
-      PM / Suspend: Export suspend_set_ops, suspend_valid_only_mem
-
-Kuninori Morimoto (2):
-      ARM: mach-shmobile: sh7372: make sure that fsi is peripheral of spu2
-      ARM: mach-shmobile: sh7372 A4MP support
-
-Magnus Damm (9):
-      ARM: mach-shmobile: sh7372 A4LC support for AP4EVB
-      ARM: mach-shmobile: sh7372 A3RV support
-      ARM: mach-shmobile: sh7372 A3RI support
-      ARM: mach-shmobile: sh7372 A3SG support
-      ARM: mach-shmobile: sh7372 D4 support
-      ARM: mach-shmobile: Runtime PM late init callback
-      ARM: mach-shmobile: sh7372 late pm domain off
-      PM / Domains: Export pm_genpd_poweron() in header
-      ARM: mach-shmobile: sh7372 A3RV requires A4LC
-
-MyungJoo Ham (1):
-      PM / Suspend: Add .suspend_again() callback to suspend_ops
-
-Nishanth Menon (1):
-      PM / OPP: Introduce function to free cpufreq table
-
-Rafael J. Wysocki (29):
-      PM / Domains: Rename struct dev_power_domain to struct dev_pm_domain
-      PM: subsys_data in struct dev_pm_info need not depend on RM_RUNTIME
-      PM / Domains: Support for generic I/O PM domains (v8)
-      PM: Introduce generic "noirq" callback routines for subsystems (v2)
-      PM / Domains: Move code from under #ifdef CONFIG_PM_RUNTIME (v2)
-      PM / Domains: System-wide transitions support for generic domains (v5)
-      PM / Domains: Wakeup devices support for system sleep transitions
-      PM: Allow the clocks management code to be used during system suspend
-      PM: Rename clock management functions
-      ARM / shmobile: Support for I/O power domains for SH7372 (v9)
-      PM / Runtime: Update documentation of interactions with system sleep
-      PM / Runtime: Return special error code if runtime PM is disabled
-      PCI / PM: Detect early wakeup in pci_pm_prepare()
-      PM: Limit race conditions between runtime PM and system sleep (v2)
-      PM / Runtime: Improve documentation of enable, disable and barrier
-      PM / Runtime: Replace "run-time" with "runtime" in documentation
-      PM / Domains: Set device state to "active" during system resume
-      PM / Domains: Make failing pm_genpd_prepare() clean up properly
-      PM / Domains: Do not execute device callbacks under locks
-      PM / Domains: Allow callbacks to execute all runtime PM helpers
-      PM / Domains: Do not restore all devices on power off error
-      PM / Domains: Improve handling of wakeup devices during system suspend
-      PM / Domains: Queue up power off work only if it is not pending
-      PM / Domains: Introduce function to power off all unused PM domains
-      ARM / shmobile: Use pm_genpd_poweroff_unused()
-      ARM / shmobile: Use genpd_queue_power_off_work()
-      PM / Domains: Take .power_off() error code into account
-      ARM / shmobile: Return -EBUSY from A4LC power off if A3RV is active
-      PM: Add "RTC" to PM trace time stamps to avoid confusion
-
-ShuoX Liu (1):
-      PM / Runtime: Consistent utilization of deferred_resume
-
+>	  If there are unfixable problems, consider something
+> 	  more complicated (like turning on i_version automatically when
+> 	  someone asks for it).
+> 	- We need to check that i_version is also doing something
+> 	  sensible on directory as well as on file inodes.
+> 	- We also need to think about what it does after reboots.  (E.g.
+> 	  what is an nfs server to do if clients see the i_version go
+> 	  backwards (and hence possible repeat old values) after a
+> 	  reboot?)
+> 	- Double-check the order that data updates and i_version updates
+> 	  are done in.  (Ideal would be if they were atomic, but for
+> 	  nfsd's purposes at least it should be adequate if the
+> 	  i_version comes after, and no later than the next commit.)
+> 
+> --b.
