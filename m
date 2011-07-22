@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751846Ab1GXAGA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 20:06:00 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43945 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751444Ab1GXAFy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 20:05:54 -0400
-Date: Sun, 24 Jul 2011 02:05:13 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, laijs@cn.fujitsu.com,
-        darren@dvhart.com, rostedt@goodmis.org, mingo@elte.hu,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] rtmutex: Permit rt_mutex_unlock() to be invoked with
- irqs disabled
-In-Reply-To: <alpine.LFD.2.02.1107240118550.2702@ionos>
-Message-ID: <alpine.LFD.2.02.1107240202500.2702@ionos>
-References: <20110719201410.GA10553@linux.vnet.ibm.com> <1311247968.29152.122.camel@twins> <20110723220348.GD2415@linux.vnet.ibm.com> <alpine.LFD.2.02.1107240118550.2702@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1751883Ab1GXAUP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 20:20:15 -0400
+Received: from claw.goop.org ([74.207.240.146]:38252 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751618Ab1GXAUI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jul 2011 20:20:08 -0400
+Message-ID: <4E29F6FE.6030004@goop.org>
+Date: Fri, 22 Jul 2011 15:17:34 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [GIT PULL] xen: replace adhoc debug goo with proper tracing
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 24 Jul 2011, Thomas Gleixner wrote:
+Hi Linus,
 
-> On Sat, 23 Jul 2011, Paul E. McKenney wrote:
-> 
-> > On Thu, Jul 21, 2011 at 01:32:48PM +0200, Peter Zijlstra wrote:
-> > > On Tue, 2011-07-19 at 13:14 -0700, Paul E. McKenney wrote:
-> > > > Because rcu_read_unlock() can be invoked with interrupts disabled, it can
-> > > > in turn invoke rt_mutex_unlock() with interrupts disabled.  This situation
-> > > > results in lockdep splats (https://lkml.org/lkml/2011/7/7/362) because the
-> > > > rt_mutex structure's ->lock_wait is acquired elsewhere without disabling
-> > > > interrupts, which can result in deadlocks.
-> > > > 
-> > > > This commit therefore changes the rt_mutex structure's ->lock_wait
-> > > > acquisitions to disable interrupts.
-> > > > 
-> > > > An alternative fix is to prohibit invoking rcu_read_unlock() with
-> > > > interrupts disabled unless the entire preceding RCU read-side critical
-> > > > section has run with interrupts disabled.  However, there is already
-> > > > at least one case in mainline where this potential rule is violated,
-> > > > and there might well be many more.  These would likely be found one at
-> > > > a time using the lockdep-water-torture method, hence the alternative
-> > > > fix in the form of this commit.
-> > > 
-> > > Thomas, I'm inclined to merge this, any objections?
-> > 
-> > FWIW, it has been passing tests here.
-> 
-> If it's only the unlock path, I'm fine with that change.
-> 
-> Acked-by-me
+This replaces a pile of ad-hoc debug stuff in the Xen code with tracing, and a few performance improvements noticed as a result.
 
-Hrmpft. That's requiring all places to take the lock irq safe. Not
-really amused. For -RT that's a hotpath and we can really do without
-the irq fiddling there. That needs a bit more thought.
+Thanks,
+	J
+
+The following changes since commit fe0d42203cb5616eeff68b14576a0f7e2dd56625:
+
+  Linux 3.0-rc6 (2011-07-04 15:56:24 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git upstream/xen-tracing2
+
+Jeremy Fitzhardinge (17):
+      trace/xen: add skeleton for Xen trace events
+      xen/multicalls: remove debugfs stats
+      xen/trace: set up tracepoint skeleton
+      xen/trace: add multicall tracing
+      xen/trace: add mmu tracepoints
+      xen/trace: add ptpage alloc/release tracepoints
+      xen/trace: add xen_pgd_(un)pin tracepoints
+      xen/trace: add segment desc tracing
+      xen/trace: add tlb flush tracepoints
+      xen/mmu: use extend_args for more mmuext updates
+      xen/mmu: tune pgtable alloc/release
+      xen/multicalls: disable MC_DEBUG
+      xen/multicalls: add unlikely around slowpath in __xen_mc_entry()
+      xen/multicall: special-case singleton hypercalls
+      xen/multicall: move *idx fields to start of mc_buffer
+      xen/trace: convert mmu events to use DECLARE_EVENT_CLASS()/DEFINE_EVENT()
+      xen/trace: use class for multicall trace
+
+ arch/x86/include/asm/xen/hypercall.h   |   22 ++
+ arch/x86/include/asm/xen/trace_types.h |   18 ++
+ arch/x86/xen/Makefile                  |    2 +-
+ arch/x86/xen/enlighten.c               |   16 +-
+ arch/x86/xen/mmu.c                     |  139 +++++++--
+ arch/x86/xen/multicalls.c              |  169 +++--------
+ arch/x86/xen/multicalls.h              |    6 +
+ arch/x86/xen/trace.c                   |   61 ++++
+ include/trace/events/xen.h             |  504 ++++++++++++++++++++++++++++++++
+ 9 files changed, 787 insertions(+), 150 deletions(-)
+ create mode 100644 arch/x86/include/asm/xen/trace_types.h
+ create mode 100644 arch/x86/xen/trace.c
+ create mode 100644 include/trace/events/xen.h
 
 
- 
