@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754431Ab1GVRzq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 13:55:46 -0400
-Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:40285 "EHLO
-	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753830Ab1GVRzo (ORCPT
+	id S1754417Ab1GVR5e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 13:57:34 -0400
+Received: from eastrmfepi106.cox.net ([68.230.241.202]:44780 "EHLO
+	eastrmfepi106.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769Ab1GVR53 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 13:55:44 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAK+3KU5tgwKe/2dsb2JhbABTp0Z4iH66Uw6FUl8Eo08
-Date: Fri, 22 Jul 2011 19:55:39 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Wolfram Sang <w.sang@pengutronix.de>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "tim.bird@am.sony.com" <tim.bird@am.sony.com>
-Subject: Re: [RFC 0/6] watchdog drivers converted to the new framework
-Message-ID: <20110722175539.GC31767@infomag.iguana.be>
-References: <1310588766-16638-1-git-send-email-w.sang@pengutronix.de> <ADE657CA350FB648AAC2C43247A983F001F383E05B65@AUSP01VMBX24.collaborationhost.net> <20110714182734.GA31082@pengutronix.de> <ADE657CA350FB648AAC2C43247A983F001F383E05BCD@AUSP01VMBX24.collaborationhost.net> <20110714200053.GC31082@pengutronix.de> <ADE657CA350FB648AAC2C43247A983F001F383E05C4A@AUSP01VMBX24.collaborationhost.net>
+	Fri, 22 Jul 2011 13:57:29 -0400
+X-Greylist: delayed 1290 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Jul 2011 13:57:27 EDT
+X-CT-Class: Suspect
+X-CT-Score: 4.00
+X-CT-RefID: str=0001.0A020209.4E29B4FC.00D8,ss=2,re=0.000,fgs=0
+X-CT-Spam: 0
+X-Authority-Analysis: v=1.1 cv=jIWSoOJlfEKcyP/XLSIvjRUN9z2hPsnm6d/gIbPq3UQ=
+ c=1 sm=1 a=G8Uczd0VNMoA:10 a=M58Ut_zYM0YA:10 a=-dLqpAaH7UIA:10
+ a=IkcTkHD0fZMA:10 a=fPXKvi6HwfIXqU54s+k6dQ==:17 a=u4jWdF_GJ0qJbakpmvkA:9
+ a=V-arbzNbNurV4snjXmgA:7 a=QEXdDO2ut3YA:10 a=fPXKvi6HwfIXqU54s+k6dQ==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; none
+Message-ID: <20110722133556.TJVPR.440403.imail@eastrmwml45>
+Date: Fri, 22 Jul 2011 13:35:56 -0400
+From: BUSINESS <info-0016@cox.net>
+Reply-To: emlchmbr2@aol.com
+Subject: REPLY ASAP
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F001F383E05C4A@AUSP01VMBX24.collaborationhost.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Priority: 3 (Normal)
+Sensitivity: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hartley,
+REPLY ASAP
 
-> >>>> I would also like to convert this driver into a proper platform_driver using
-> >>>> ioremap'ed addresses instead of the static mappings.  Converting the driver
-> >>>> to the new watchdog framework would make this a bit cleaner.
-> >>>
-> >>> Try managed devices (devm_* and friends) for an extra cleanup bonus.
-> >> 
-> >> Already done, just waiting for the framework... ;-)
-> >
-> > Nice :) Did you use my conversion-guide as a reference? Any comments if so?
-> 
-> Sorry, I didn't.  I just worked it out from the framework core and looking
-> at your examples.
-> 
-> When I found the framework patches on lkml I couldn't get them into a state
-> to apply to my tree.  I ended up manually applying all the pieces so I skipped
-> the Documentation stuff to save some time.
-> 
-> The conversion is pretty straight forward after examining the watchdog
-> framework files.
+I  request that you keep the contents of this mail 
+confidential and respect the integrityof the 
+information you  come by as a result of this mail. I
+contacted  you independently of our investigation 
+and no one is informed of this communication. I would 
+like to intimate you with certain facts that I believe 
+would be of interest to you. In 2004, the subject matter; 
+ref: bb/rbs/bank/0012 came to our bank to engage in 
+business discussions with our Private Banking Services 
+Department. Write me back so that i can give you the full  
+details ofthe transaction which I know will be beneficial to us. 
 
-Maybe you could allready post your patches to the linux watchdog mailing list.
-
-Kind regards,
-Wim.
-
+Regards,  
+John.
