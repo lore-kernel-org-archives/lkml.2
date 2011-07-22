@@ -1,100 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754668Ab1GVRw5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 13:52:57 -0400
-Received: from hofr.at ([212.69.189.236]:50149 "EHLO mail.hofr.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754529Ab1GVRwz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 13:52:55 -0400
-X-Greylist: delayed 473 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Jul 2011 13:52:55 EDT
-Date: Fri, 22 Jul 2011 19:45:00 +0200
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Carsten Emde <ce@ceag.ch>,
-        Clark Williams <williams@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Kumar Gala <galak@gate.crashing.org>,
-        Ralf Baechle <ralf@linux-mips.org>, rostedt <rostedt@goodmis.org>
-Subject: Re: On migrate_disable() and latencies
-Message-ID: <20110722174500.GB32014@opentech.at>
-References: <1311329992.27400.23.camel@twins>
+	id S1754431Ab1GVRzq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 13:55:46 -0400
+Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:40285 "EHLO
+	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753830Ab1GVRzo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 13:55:44 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAK+3KU5tgwKe/2dsb2JhbABTp0Z4iH66Uw6FUl8Eo08
+Date: Fri, 22 Jul 2011 19:55:39 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Wolfram Sang <w.sang@pengutronix.de>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "tim.bird@am.sony.com" <tim.bird@am.sony.com>
+Subject: Re: [RFC 0/6] watchdog drivers converted to the new framework
+Message-ID: <20110722175539.GC31767@infomag.iguana.be>
+References: <1310588766-16638-1-git-send-email-w.sang@pengutronix.de> <ADE657CA350FB648AAC2C43247A983F001F383E05B65@AUSP01VMBX24.collaborationhost.net> <20110714182734.GA31082@pengutronix.de> <ADE657CA350FB648AAC2C43247A983F001F383E05BCD@AUSP01VMBX24.collaborationhost.net> <20110714200053.GC31082@pengutronix.de> <ADE657CA350FB648AAC2C43247A983F001F383E05C4A@AUSP01VMBX24.collaborationhost.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1311329992.27400.23.camel@twins>
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F001F383E05C4A@AUSP01VMBX24.collaborationhost.net>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Jul 2011, Peter Zijlstra wrote:
+Hi Hartley,
 
-> On Wed, 2011-07-20 at 02:37 +0200, Thomas Gleixner wrote:
-> >    - Twist your brain around the schedulability impact of the
-> >      migrate_disable() approach.
-> > 
-> >      A really interesting research topic for our friends from the
-> >      academic universe. Relevant and conclusive (even short notice)
-> >      papers and/or talks on that topic have a reserved slot in the
-> >      Kernel developers track at the Realtime Linux Workshop in Prague
-> >      in October this year. 
+> >>>> I would also like to convert this driver into a proper platform_driver using
+> >>>> ioremap'ed addresses instead of the static mappings.  Converting the driver
+> >>>> to the new watchdog framework would make this a bit cleaner.
+> >>>
+> >>> Try managed devices (devm_* and friends) for an extra cleanup bonus.
+> >> 
+> >> Already done, just waiting for the framework... ;-)
+> >
+> > Nice :) Did you use my conversion-guide as a reference? Any comments if so?
 > 
-> From what I can tell it can induce a latency in the order of
-> max-migrate-disable-period * nr-cpus.
+> Sorry, I didn't.  I just worked it out from the framework core and looking
+> at your examples.
 > 
-> The scenario is on where you stack N migrate-disable tasks on a run
-> queue (necessarily of increasing priority). Doing this requires all cpus
-> in the system to be as busy, for otherwise the task would simply be
-> moved to another cpu.
+> When I found the framework patches on lkml I couldn't get them into a state
+> to apply to my tree.  I ended up manually applying all the pieces so I skipped
+> the Documentation stuff to save some time.
 > 
-> Anyway, once you manage to stack these migrate-disable tasks, all other
-> tasks go to sleep, leaving a vacuum. Normally we would migrate tasks to
-> fill the vacuum left by the tasks going to sleep, but clearly
-> migrate-disable prohibits this.
-> 
-> So we have this stack of migrate-disable tasks and M-1 idle cpus (loss
-> of utilization). Now it takes the length of the migrate-disable region
-> of the highest priority task on the stack (the one running) to complete
-> and enable migration again. This will instantly move the task away to an
-> idle cpu. This will then need to happen min(N-1, M-1) times before the
-> lowest priority migrate_disable task can run again or all cpus are busy.
-> 
-> Therefore the worst case latency is in the order of
-> max-migrate-disable-period * nr-cpus.
+> The conversion is pretty straight forward after examining the watchdog
+> framework files.
 
-+ something like sum of (interrupt rate [n] / max-migrate-disable-period * nr-cpus) * top-half handler [n]. if you go on with theoretical WCET analysis on multicore systems you will always end up at the conclusion that only UP is suitable for RT....
+Maybe you could allready post your patches to the linux watchdog mailing list.
 
-> 
-> Currently we have no means of measuring these latencies, this is
-> something we need to grow, I think Steven can fairly easy craft a
-> migrate_disable runtime tracer -- it needs to use t->se.sum_exec_runtime
-> for measure so as to only count the actual time spend on the task and
-> ignore any time it was blocked.
-> 
-well this is a similar problem as with the WCET "calculations" - you can
-calculate theoretical worst cases - but the question is what the actual
-distribution of "stacking" is and thus what the probability is that you
-manage to stack tasks in this way. A further issue here is the system 
-design - if you have a RT system with M RT tasks, an unknown number
-of non-RT tasks (dynamic) and N Cores then it would be a quite logical
-system design to pin some of the RT tasks to CPUs and thus make such
-stacking szenarios unlikely to impossible whilc at the same time retaining
-the full load balancing of the non-rt tasks. If you want to ensure determinism
-then relying on migration and availability of idle CPUs to migrate to is
-in my opinion a design problem that needs to be resolved at the level of
-the respective RT-task set.
+Kind regards,
+Wim.
 
-If you are not talking about hard real-time guarantees then the question of
-how probable such a szenario is most likely is a sufficient guarantee.
-
-One could I guess put some relatively simple instrumentation in to monitor
-this stacking problem - quit independant of actually measuring the times 
-
-> Once we have this, its back to the old game of 'lock'-breaking.
->
-if the stacking problem does not practically exist then it might not be worth
-the effort to resolve it with elaborate lock breaking.
-
-hofrat
