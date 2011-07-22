@@ -1,75 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932286Ab1GVVXX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 17:23:23 -0400
-Received: from claw.goop.org ([74.207.240.146]:45078 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932244Ab1GVVXW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 17:23:22 -0400
-Message-ID: <4E29CF51.60600@goop.org>
-Date: Fri, 22 Jul 2011 12:28:17 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.11
+	id S932302Ab1GVVbt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 17:31:49 -0400
+Received: from mail-ey0-f171.google.com ([209.85.215.171]:55437 "EHLO
+	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932200Ab1GVVbr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 17:31:47 -0400
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: Re: [PATCH 3/8] x86/ticketlock: Use C for __ticket_spin_unlock
-References: <cover.1308259496.git.jeremy.fitzhardinge@citrix.com> <aa0d82c6e7a1c22a941da0df3c4ba58fea375074.1308878118.git.jeremy.fitzhardinge@citrix.com> <4E050704.3070409@zytor.com> <4E05128D.4020000@goop.org> <4E29C241.70102@zytor.com>
-In-Reply-To: <4E29C241.70102@zytor.com>
-X-Enigmail-Version: 1.1.2
+In-Reply-To: <201107222322.07843.linux@rainbow-software.org>
+References: <201107222200.55834.linux@rainbow-software.org>
+	<CAGoCfiwqzs70A26WgN2pJJvz2aDzY9siOcTuOCkYm3nDHB=J1Q@mail.gmail.com>
+	<201107222322.07843.linux@rainbow-software.org>
+Date: Fri, 22 Jul 2011 17:31:46 -0400
+Message-ID: <CAGoCfiyGUR7-aPqoFOHW=DkBNxav+=34np68ZPutdQWcU4GO=A@mail.gmail.com>
+Subject: Re: [PATCH] [resend] usbvision: disable scaling for Nogatech MicroCam
+From: Devin Heitmueller <dheitmueller@kernellabs.com>
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: Joerg Heckenbach <joerg@heckenbach-aw.de>,
+        Dwaine Garden <dwainegarden@rogers.com>, linux-media@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Hans Verkuil <hverkuil@xs4all.nl>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2011 11:32 AM, H. Peter Anvin wrote:
-> On 06/24/2011 03:41 PM, Jeremy Fitzhardinge wrote:
->> On 06/24/2011 02:52 PM, H. Peter Anvin wrote:
->>> These should be asm volatile, I believe.
->> OK.
->>
->>     J
-> You still owe me a new patch here, I believe...
+On Fri, Jul 22, 2011 at 5:22 PM, Ondrej Zary <linux@rainbow-software.org> wrote:
+> Seems that this bug is widespread - the same problem appears also in guvcview
+> and adobe flash. I think that the driver is broken too - it should return
+> corrected resolution in TRY_FMT.
 
-Ah, yes, though I don't think it can make a difference in practice,
-since the caller contains barrier()s on either side.  And the non-asm
-non-locked variant has no equivalent.  But it can't hurt.
+Well, if the driver does not return the resolution it is actually
+capturing in, then that indeed is a driver bug.  That's a different
+issue though than what your patch proposed.
 
-    J
+You should make the TRY_FMT call specifying an invalid resolution and
+see if it returns the real resolution the device will capture at.  If
+it doesn't, then fix *that* bug.
 
-From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Date: Fri, 22 Jul 2011 12:27:14 -0700
-Subject: [PATCH] x86/ticketlocks: make asms volatile to be extra sure
+The application needs to know the capturing resolution, so it's
+possible that it does properly handle the driver passing back the real
+resolution and the driver is at fault, in which case no change is
+needed to the app at all.
 
-Make the locked-unlock asms volatile, just to be extra sure they won't wander away.
+Devin
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-
-diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-index 2d14e7c..05fd59e 100644
---- a/arch/x86/include/asm/spinlock.h
-+++ b/arch/x86/include/asm/spinlock.h
-@@ -36,11 +36,11 @@
- static __always_inline void __ticket_unlock_release(struct arch_spinlock *lock)
- {
- 	if (sizeof(lock->tickets.head) == sizeof(u8))
--		asm (LOCK_PREFIX "incb %0"
--		     : "+m" (lock->tickets.head) : : "memory");
-+		asm volatile (LOCK_PREFIX "incb %0"
-+			      : "+m" (lock->tickets.head) : : "memory");
- 	else
--		asm (LOCK_PREFIX "incw %0"
--		     : "+m" (lock->tickets.head) : : "memory");
-+		asm volatile (LOCK_PREFIX "incw %0"
-+			      : "+m" (lock->tickets.head) : : "memory");
- 
- }
- #else
-
-
+-- 
+Devin J. Heitmueller - Kernel Labs
+http://www.kernellabs.com
