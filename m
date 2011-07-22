@@ -1,105 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754242Ab1GVNHV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 09:07:21 -0400
-Received: from smtp.nokia.com ([147.243.128.26]:29077 "EHLO mgw-da02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754204Ab1GVNHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 09:07:19 -0400
-Subject: Re: [RFC PATCHv5 1/7] HSI: hsi: Introducing HSI framework
-From: Carlos Chinea <carlos.chinea@nokia.com>
-To: balbi@ti.com
-Cc: ext Sjur BRENDELAND <sjur.brandeland@stericsson.com>,
-        "sjurbren@gmail.com" <sjurbren@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110722120553.GZ32058@legolas.emea.dhcp.ti.com>
-References: <1307713124-3946-1-git-send-email-carlos.chinea@nokia.com>
-	 <1308769914-15440-1-git-send-email-sjur.brandeland@stericsson.com>
-	 <1308834524.27256.3247.camel@groo>
-	 <81C3A93C17462B4BBD7E272753C105791A64C2735E@EXDCVYMBSTM005.EQ1STM.local>
-	 <1311331416.32639.34.camel@groo>
-	 <20110722110102.GR32058@legolas.emea.dhcp.ti.com>
-	 <1311335472.32639.75.camel@groo>
-	 <20110722120553.GZ32058@legolas.emea.dhcp.ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 22 Jul 2011 16:02:09 +0300
-Message-ID: <1311339729.32639.99.camel@groo>
+	id S1754246Ab1GVNJh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 09:09:37 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:46405 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754026Ab1GVNJg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 09:09:36 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Fri, 22 Jul 2011 15:08:47 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net
+Subject: [git pull] FireWire updates post 3.0
+Message-ID: <20110722150847.0d9352ef@stein>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-22 at 15:05 +0300, ext Felipe Balbi wrote:
-> Hi,
-> 
-> On Fri, Jul 22, 2011 at 02:51:12PM +0300, Carlos Chinea wrote:
-> > Hi Felipe, 
-> 
-> hello there :-)
-> 
-> > > are you already using pm_runtime ? You could put that logic grouped in
-> > > runtime_suspend()/runtime_resume() calls and from the driver, just call
-> > > pm_runtime_put()/pm_runtime_get_sync() whenever you want to
-> > > suspend/resume.
-> > 
-> > In the case of the omap_ssi driver not yet, but hopefully the
-> > implementation will come soon ;) Anyway, the DATA/FLAG workaround is not
-> > something I'm going to add to the omap_ssi, at least not now. This seems
-> > to be needed by ST-Ericcson in their HSI controller.
-> 
-> aha, I see. Thanks for the clarification.
-> 
-> > > true, but I'm not sure a usecount is a good way to go. Why don't you
-> > > just remove the sync API altogether and use only async, then the OMAP
-> > > HSI controller driver is supposed to know when it can go to sleep. If
-> > > you receive some data before a client queues a request, you just defer
-> > > processing of that data until a new request is queued, or something...
-> > 
-> > Hmmm, Do you mean I remove the hsi_start_tx() and hsi_stop_tx()
-> > completely ? Or Do I just create an async version of them ?
-> 
-> I would say remove completely and add async-only version.
-> 
-> > The truth is that they should not even exist in the first place, and the
-> > wakelines should have been handled silently by the hsi controllers.  
-> > But they are need because the hsi_clients/protocols, like CAIF or the
-> > ssi_protocol in N900, need access to the wakelines to implement some
-> > workarounds due to some races in the HSI/SSI HW spec.
-> 
-> that's quite nasty situation :-)
-> 
-> I still think, though, that if the clients don't really start a transfer
-> straight away (meaning it's all ASYNC), you might be able to handle the
-> workarounds in the HSI framework itself by having some extra flags on
-> your hsi request structure (?).
-> 
-> See for example the use of short_not_ok flags on the gadget framework.
-> The gadget drivers which can't handle short transfers (as of today only
-> the Mass Storage gadget) will set that flag to tell the controller that
-> we're not expecting a short packet and if we do, treat it as error. In
-> case of such error, gadget driver is required to dequeue any queued
-> transfer, flush the FIFO and restart ;-)
-> 
-> Maybe you could have something similar ? Depending on the workaround
-> you're talking about, this might be feasible with few lines of code on
-> the async API.
-> 
+Linus, please pull from the for-linus branch at
 
-The problem is that there is no standard way to handle this situation :(
+    git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394-2.6.git for-linus
 
-For example ssi_protocol tries to deal with the wakelines race problem
-by raising the wakeline and then waiting for the other end to send a
-"READY to receive" data frame, before start sending. But as you can see
-in the case of CAIF, they went for a solution where they raise their
-wakeline and wait for the other end to raise its wakeline to signal that
-they are "READY to received". Both solutions have their pros and cons.
+to receive the following updates for the IEEE 1394 (FireWire) subsystem.
+This brings yet another reduction of CPU utilization, corrections of two
+obscure issues in the userspace driver ABI, documentation, and the usual
+housekeeping.
 
-Br,
+Thanks.
+
+August Lilleaas (1):
+      firewire: net: replacing deprecated __attribute__((packed)) with __packed
+
+Clemens Ladisch (1):
+      firewire: ohci: remove superfluous posted write flushes
+
+Stefan Richter (8):
+      firewire: ohci: reduce potential context_stop latency
+      firewire: ohci: add a comment on PHY reg access serialization
+      firewire: ohci: fix PHY reg access after card ejection
+      firewire: ohci: skip soft reset retries after card ejection
+      firewire: cdev: return -ENOTTY for unimplemented ioctls, not -EINVAL
+      firewire: cdev: prevent race between first get_info ioctl and bus reset event queuing
+      firewire: cdev: ABI documentation enhancements
+      firewire: document the sysfs ABIs
+
+ Documentation/ABI/stable/firewire-cdev      |  103 ++++++++++++++++++++++
+ Documentation/ABI/stable/sysfs-bus-firewire |  122 +++++++++++++++++++++++++++
+ drivers/firewire/core-cdev.c                |   20 +++--
+ drivers/firewire/net.c                      |    5 +-
+ drivers/firewire/ohci.c                     |   42 ++++++----
+ include/linux/firewire-cdev.h               |   78 ++++++++---------
+ 6 files changed, 303 insertions(+), 67 deletions(-)
+ create mode 100644 Documentation/ABI/stable/firewire-cdev
+ create mode 100644 Documentation/ABI/stable/sysfs-bus-firewire
 -- 
-Carlos Chinea <carlos.chinea@nokia.com>
-
+Stefan Richter
+-=====-==-== -=== =-==-
+http://arcgraph.de/sr/
