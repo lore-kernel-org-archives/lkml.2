@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752783Ab1GVBOX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jul 2011 21:14:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65093 "EHLO mx1.redhat.com"
+	id S1753160Ab1GVBOg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jul 2011 21:14:36 -0400
+Received: from mga14.intel.com ([143.182.124.37]:24606 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751343Ab1GVBOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jul 2011 21:14:21 -0400
-Date: Fri, 22 Jul 2011 02:14:01 +0100
-From: Alasdair G Kergon <agk@redhat.com>
-To: NeilBrown <neilb@suse.de>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        Jonathan Brassow <jbrassow@redhat.com>, linux-raid@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>, dm-devel@redhat.com,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [dm-devel] linux-next: Tree for July 21 (drivers/md/dm-raid)
-Message-ID: <20110722011401.GH5632@agk-dp.fab.redhat.com>
-Mail-Followup-To: NeilBrown <neilb@suse.de>,
-	Randy Dunlap <rdunlap@xenotime.net>,
-	Jonathan Brassow <jbrassow@redhat.com>, linux-raid@vger.kernel.org,
-	Stephen Rothwell <sfr@canb.auug.org.au>, dm-devel@redhat.com,
-	linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-References: <20110721165542.7748c88a1d1e0b228c7fe3fa@canb.auug.org.au> <20110721145648.2477f8bb.rdunlap@xenotime.net> <20110722081040.48abfff1@notabene.brown>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110722081040.48abfff1@notabene.brown>
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: 64 Baker Street, 4th floor, London,
-	W1U 7DF.
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753017Ab1GVBOd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jul 2011 21:14:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,244,1309762800"; 
+   d="scan'208";a="30139222"
+Subject: sched: Cleanup duplicate local variable in
+ {enqueue_dequeue}_task_fair
+From: Lin Ming <ming.m.lin@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@elte.hu
+Cc: lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 22 Jul 2011 09:14:31 +0800
+Message-ID: <1311297271.3938.1352.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 22, 2011 at 08:10:40AM +1000, Neil Brown wrote:
-> I suspect the right thing to do is add
->    select MD_RAID1
-> to the 
->    config DM_RAID
- 
-Indeed - done.
+No need to define a new "cfs_rq" variable in the "for" block.
+Just use the one at the top of the function.
 
-Alasdair
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+---
+ kernel/sched_fair.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index e7d67a9..47d6b17 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -1336,7 +1336,7 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+ 	}
+ 
+ 	for_each_sched_entity(se) {
+-		struct cfs_rq *cfs_rq = cfs_rq_of(se);
++		cfs_rq = cfs_rq_of(se);
+ 
+ 		update_cfs_load(cfs_rq, 0);
+ 		update_cfs_shares(cfs_rq);
+@@ -1376,7 +1376,7 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+ 	}
+ 
+ 	for_each_sched_entity(se) {
+-		struct cfs_rq *cfs_rq = cfs_rq_of(se);
++		cfs_rq = cfs_rq_of(se);
+ 
+ 		update_cfs_load(cfs_rq, 0);
+ 		update_cfs_shares(cfs_rq);
+
 
