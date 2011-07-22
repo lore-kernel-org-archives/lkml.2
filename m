@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753324Ab1GVIl2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 04:41:28 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:49377 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753226Ab1GVIl0 (ORCPT
+	id S1753353Ab1GVIoh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 04:44:37 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:60032 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752247Ab1GVIof (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 04:41:26 -0400
-X-Nat-Received: from [202.181.97.72]:55972 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1311324076.3442
-Message-Id: <201107220841.p6M8fGq0079572@www262.sakura.ne.jp>
-Subject: Re: linux-next: manual merge of the security-testing tree with the vfs tree
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-To: jmorris@namei.org, viro@zeniv.linux.org.uk
-Cc: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+	Fri, 22 Jul 2011 04:44:35 -0400
+Date: Fri, 22 Jul 2011 10:44:30 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, mtk.manpages@gmail.com,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
         linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] ptrace: do_wait(traced_leader_killed_by_mt_exec) can
+ block forever
+Message-ID: <20110722084430.GF2622@htj.dyndns.org>
+References: <CAK1hOcPFXMoYsP6N6Hx5Qz3J4xj31TmSj7xo6SRVPegNCbhx7g@mail.gmail.com>
+ <20110721165137.GA21345@redhat.com>
+ <20110721180019.GA1319@redhat.com>
+ <20110721180043.GB1319@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Date: Fri, 22 Jul 2011 17:41:15 +0900
-References: <20110718153917.4aa9a18b80c0933cee4e638b@canb.auug.org.au>
-In-Reply-To: <20110718153917.4aa9a18b80c0933cee4e638b@canb.auug.org.au>
-Content-Type: text/plain; charset="ISO-2022-JP"
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 22072011 #5674753, status: clean
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110721180043.GB1319@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell wrote:
-> Today's linux-next merge of the security-testing tree got a conflict in
-> security/tomoyo/realpath.c between commit 6ef0dd885ce8 ("get rid of
-> pointless checks for dentry->sb == NULL") from the vfs tree and commit
-> 5625f2e32663 ("TOMOYO: Change pathname for non-rename()able filesystems")
-> from the security-testing tree.
+Hello,
+
+On Thu, Jul 21, 2011 at 08:00:43PM +0200, Oleg Nesterov wrote:
+> It is racy, exit_notify() does __wake_up_parent() too. But in the
+> likely case it triggers the problem: de_thread() does release_task()
+> and the old leader goes away without the notification, the tracer
+> sleeps in do_wait() without children/tracees.
 > 
-> The latter includes the change from the former, so I just used the latter.
+> Change de_thread() to do __wake_up_parent(traced_leader->parent).
+> Since it is already EXIT_DEAD we can do this without ptrace_unlink(),
+> EXIT_DEAD threads do not exist from do_wait's pov.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-Thank you.
-Modification of security/tomoyo/realpath.c in 6ef0dd885ce8 is no longer needed.
+Nice catch as always. :)
 
-In message "linux-next: Tree for July 22",
-Stephen Rothwell wrote:
-> The security-testing tree still has its build failure.
-(...snipped...)
-> Merging security-testing/next
-> CONFLICT (content): Merge conflict in security/tomoyo/realpath.c
+Acked-by: Tejun Heo <tj@kernel.org>
 
-What should I do?
+Thanks.
+
+-- 
+tejun
