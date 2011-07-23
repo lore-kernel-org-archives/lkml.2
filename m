@@ -1,42 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751808Ab1GWAyn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 20:54:43 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:49831 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750824Ab1GWAyi convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 20:54:38 -0400
+	id S1752855Ab1GWA7h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 20:59:37 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:57819 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752712Ab1GWA7a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 20:59:30 -0400
+Message-ID: <4E2A1CEB.8020209@canonical.com>
+Date: Fri, 22 Jul 2011 17:59:23 -0700
+From: Chase Douglas <chase.douglas@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFxsCqAuFdz3F6j1ecgo-OHVCSzicAims76-BchOnJqHYQ@mail.gmail.com>
-References: <20110723000131.GE31405@ZenIV.linux.org.uk> <CA+55aFxsCqAuFdz3F6j1ecgo-OHVCSzicAims76-BchOnJqHYQ@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 22 Jul 2011 17:54:15 -0700
-Message-ID: <CA+55aFxwyCS+G5g-EdL48TPd7saU+3wCWPf3EBoY7Amf+tb7Qw@mail.gmail.com>
-Subject: Re: [git pull] vfs and fs patches for 3.1, part 1
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+To: djkurtz@chromium.org
+CC: dmitry.torokhov@gmail.com, rydberg@euromail.se, rubini@cvml.unipv.it,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        derek.foreman@collabora.co.uk, daniel.stone@collabora.co.uk,
+        olofj@chromium.org
+Subject: Re: [PATCH 8/9 v2] Input: add BTN_TOOL_QUINTTAP for reporting 5 fingers
+ on touchpad
+References: <1311169146-20066-1-git-send-email-djkurtz@chromium.org> <1311169146-20066-9-git-send-email-djkurtz@chromium.org>
+In-Reply-To: <1311169146-20066-9-git-send-email-djkurtz@chromium.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 22, 2011 at 5:48 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Fri, Jul 22, 2011 at 5:01 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->>        Please, pull from
->> git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ for-linus
->
-> Hmm. There doesn't seem to be anything there. Forgot to push?
+On 07/20/2011 06:39 AM, djkurtz@chromium.org wrote:
+> From: Daniel Kurtz <djkurtz@chromium.org>
+> 
+> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 
-*Most*, but not all, of the commits you list seem to exist in the
-for-next branch.
+Meh, I guess... No more after 5!
 
-Which is identical to the "untested" branch, so that, together with
-the "not everything listed in your shortlog is there" makes me not get
-the warm and fuzzies.
-
-So please double-check and let me know,
-
-                Linus
+Acked-by: Chase Douglas <chase.douglas@canonical.com>
