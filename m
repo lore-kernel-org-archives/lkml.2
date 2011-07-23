@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722Ab1GWKrK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 06:47:10 -0400
-Received: from www.linutronix.de ([62.245.132.108]:53135 "EHLO
+	id S1752752Ab1GWKtv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 06:49:51 -0400
+Received: from www.linutronix.de ([62.245.132.108]:53145 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608Ab1GWKrD (ORCPT
+	with ESMTP id S1752608Ab1GWKtp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 06:47:03 -0400
-Date: Sat, 23 Jul 2011 12:47:01 +0200 (CEST)
+	Sat, 23 Jul 2011 06:49:45 -0400
+Date: Sat, 23 Jul 2011 12:49:42 +0200 (CEST)
 From: Thomas Gleixner <tglx@linutronix.de>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Rolando Martins <rolando.martins@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Mike Galbraith <efault@gmx.de>, Dhaval Giani <dhaval_giani@gmail.com>
-Subject: Re: [ANNOUNCE] 3.0-rt1
-In-Reply-To: <1311417889.5549.0.camel@twins>
-Message-ID: <alpine.LFD.2.02.1107231246470.2702@ionos>
-References: <alpine.LFD.2.02.1107222203400.2702@ionos>  <CABcS5h01jpOSKcKtrJ65AqNNQDCAOutQADAE_pcRp-MPBoO-VA@mail.gmail.com>  <alpine.LFD.2.02.1107230930330.2702@ionos>  <CABcS5h2EMMsKPw7DcQ9XdUKamOe3m4CN1A3hwRyPkfpAMO4Orw@mail.gmail.com> 
- <alpine.LFD.2.02.1107231202050.2702@ionos> <1311417889.5549.0.camel@twins>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: Jens Axboe <jaxboe@fusionio.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Carsten Emde <C.Emde@osadl.org>
+Subject: floppy: Use del_timer_sync() in init cleanup
+Message-ID: <alpine.LFD.2.02.1107231247350.2702@ionos>
 User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -29,17 +25,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 23 Jul 2011, Peter Zijlstra wrote:
+From: Carsten Emde <C.Emde@osadl.org>
 
-> On Sat, 2011-07-23 at 12:20 +0200, Thomas Gleixner wrote:
-> > On Sat, 23 Jul 2011, Rolando Martins wrote:
-> > > Hi Thomas,
-> > > 
-> > > Do you see it being fixed in a near future?
-> > 
-> > Delegating that question to scheduler wizards and folks you created
-> > that mess in the first place.
-> 
-> Uhm what?
+When no floppy is found the module code can be released while a timer
+function is pending or about to be executed.
 
-RT_GROUP_SCHED & RT 
+CPU0                                  CPU1
+				      floppy_init()
+timer_softirq()
+   spin_lock_irq(&base->lock);   
+   detach_timer();
+   spin_unlock_irq(&base->lock);
+   -> Interrupt
+					del_timer();
+				        return -ENODEV;
+                                      module_cleanup();
+   <- EOI
+   call_timer_fn();
+   OOPS
+
+Use del_timer_sync() to prevent this.				      
+
+Signed-off-by: Carsten Emde <C.Emde@osadl.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+
+---
+ drivers/block/floppy.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+Index: linux-3.0/drivers/block/floppy.c
+===================================================================
+--- linux-3.0.orig/drivers/block/floppy.c
++++ linux-3.0/drivers/block/floppy.c
+@@ -4250,7 +4250,7 @@ static int __init floppy_init(void)
+ 	use_virtual_dma = can_use_virtual_dma & 1;
+ 	fdc_state[0].address = FDC1;
+ 	if (fdc_state[0].address == -1) {
+-		del_timer(&fd_timeout);
++		del_timer_sync(&fd_timeout);
+ 		err = -ENODEV;
+ 		goto out_unreg_region;
+ 	}
+@@ -4261,7 +4261,7 @@ static int __init floppy_init(void)
+ 	fdc = 0;		/* reset fdc in case of unexpected interrupt */
+ 	err = floppy_grab_irq_and_dma();
+ 	if (err) {
+-		del_timer(&fd_timeout);
++		del_timer_sync(&fd_timeout);
+ 		err = -EBUSY;
+ 		goto out_unreg_region;
+ 	}
+@@ -4318,7 +4318,7 @@ static int __init floppy_init(void)
+ 		user_reset_fdc(-1, FD_RESET_ALWAYS, false);
+ 	}
+ 	fdc = 0;
+-	del_timer(&fd_timeout);
++	del_timer_sync(&fd_timeout);
+ 	current_drive = 0;
+ 	initialized = true;
+ 	if (have_no_fdc) {
+@@ -4368,7 +4368,7 @@ out_unreg_blkdev:
+ 	unregister_blkdev(FLOPPY_MAJOR, "fd");
+ out_put_disk:
+ 	while (dr--) {
+-		del_timer(&motor_off_timer[dr]);
++		del_timer_sync(&motor_off_timer[dr]);
+ 		if (disks[dr]->queue)
+ 			blk_cleanup_queue(disks[dr]->queue);
+ 		put_disk(disks[dr]);
