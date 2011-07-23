@@ -1,38 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752012Ab1GWItp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 04:49:45 -0400
+	id S1752155Ab1GWIuU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 04:50:20 -0400
 Received: from mail-pz0-f42.google.com ([209.85.210.42]:51893 "EHLO
 	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752031Ab1GWItc (ORCPT
+	with ESMTP id S1752003Ab1GWIto (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 04:49:32 -0400
+	Sat, 23 Jul 2011 04:49:44 -0400
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
 Cc: Akinobu Mita <akinobu.mita@gmail.com>, Pavel Machek <pavel@ucw.cz>,
         "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@lists.linux-foundation.org,
         Greg KH <greg@kroah.com>, linux-mm@kvack.org,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH v3 1/6] fault-injection: notifier error injection
-Date: Sat, 23 Jul 2011 17:50:55 +0900
-Message-Id: <1311411060-30124-2-git-send-email-akinobu.mita@gmail.com>
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        =?UTF-8?q?Am=C3=A9rico=20Wang?= <xiyou.wangcong@gmail.com>
+Subject: [PATCH v3 6/6] fault-injection: add notifier error injection testing scripts
+Date: Sat, 23 Jul 2011 17:51:00 +0900
+Message-Id: <1311411060-30124-7-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1311411060-30124-1-git-send-email-akinobu.mita@gmail.com>
 References: <1311411060-30124-1-git-send-email-akinobu.mita@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The notifier error injection provides the ability to inject artifical
-errors to specified notifier chain callbacks.  It is useful to test the
-error handling of notifier call chain failures.
+* tools/testing/fault-injection/cpu-notifier.sh is testing script for
+CPU notifier error handling by using cpu-notifier-error-inject.ko.
 
-This adds common basic functions to define which type of events can be
-fail and to initialize the debugfs interface to control what error code
-should be returned and which event should be failed.
+1. Offline all hot-pluggable CPUs in preparation for testing
+2. Test CPU hot-add error handling by injecting notifier errors
+3. Online all hot-pluggable CPUs in preparation for testing
+4. Test CPU hot-remove error handling by injecting notifier errors
+
+* tools/testing/fault-injection/memory-notifier.sh is doing the same thing
+for memory hotplug notifier.
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Suggested-by: Andrew Morton <akpm@linux-foundation.org>
 Cc: Pavel Machek <pavel@ucw.cz>
 Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
 Cc: linux-pm@lists.linux-foundation.org
@@ -41,170 +49,354 @@ Cc: linux-mm@kvack.org
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: linuxppc-dev@lists.ozlabs.org
+Cc: Américo Wang <xiyou.wangcong@gmail.com>
 ---
 * v3
-- export err_inject_notifier_block_{init,cleanup} for modules
+- new patch
 
- include/linux/notifier.h |   25 ++++++++++++++
- kernel/notifier.c        |   83 ++++++++++++++++++++++++++++++++++++++++++++++
- lib/Kconfig.debug        |   11 ++++++
- 3 files changed, 119 insertions(+), 0 deletions(-)
+ tools/testing/fault-injection/cpu-notifier.sh    |  162 +++++++++++++++++++++
+ tools/testing/fault-injection/memory-notifier.sh |  163 ++++++++++++++++++++++
+ 2 files changed, 325 insertions(+), 0 deletions(-)
+ create mode 100755 tools/testing/fault-injection/cpu-notifier.sh
+ create mode 100755 tools/testing/fault-injection/memory-notifier.sh
 
-diff --git a/include/linux/notifier.h b/include/linux/notifier.h
-index c0688b0..51882d6 100644
---- a/include/linux/notifier.h
-+++ b/include/linux/notifier.h
-@@ -278,5 +278,30 @@ extern struct blocking_notifier_head reboot_notifier_list;
- #define VT_UPDATE		0x0004 /* A bigger update occurred */
- #define VT_PREWRITE		0x0005 /* A char is about to be written to the console */
- 
-+#ifdef CONFIG_NOTIFIER_ERROR_INJECTION
+diff --git a/tools/testing/fault-injection/cpu-notifier.sh b/tools/testing/fault-injection/cpu-notifier.sh
+new file mode 100755
+index 0000000..be02a85
+--- /dev/null
++++ b/tools/testing/fault-injection/cpu-notifier.sh
+@@ -0,0 +1,162 @@
++#!/bin/bash
 +
-+struct err_inject_notifier_action {
-+	unsigned long val;
-+	int error;
-+	const char *name;
-+};
-+
-+#define ERR_INJECT_NOTIFIER_ACTION(action)	\
-+	.name = #action, .val = (action),
-+
-+struct err_inject_notifier_block {
-+	struct notifier_block nb;
-+	struct dentry *dir;
-+	struct err_inject_notifier_action actions[];
-+	/* The last slot must be terminated with zero sentinel */
-+};
-+
-+extern int err_inject_notifier_block_init(struct err_inject_notifier_block *enb,
-+				const char *name, int priority);
-+extern void err_inject_notifier_block_cleanup(
-+				struct err_inject_notifier_block *enb);
-+
-+#endif /* CONFIG_NOTIFIER_ERROR_INJECTION */
-+
- #endif /* __KERNEL__ */
- #endif /* _LINUX_NOTIFIER_H */
-diff --git a/kernel/notifier.c b/kernel/notifier.c
-index 2488ba7..8dcb2cc 100644
---- a/kernel/notifier.c
-+++ b/kernel/notifier.c
-@@ -5,6 +5,7 @@
- #include <linux/rcupdate.h>
- #include <linux/vmalloc.h>
- #include <linux/reboot.h>
-+#include <linux/debugfs.h>
- 
- /*
-  *	Notifier list for kernel code which wants to be called
-@@ -584,3 +585,85 @@ int unregister_die_notifier(struct notifier_block *nb)
- 	return atomic_notifier_chain_unregister(&die_chain, nb);
- }
- EXPORT_SYMBOL_GPL(unregister_die_notifier);
-+
-+#ifdef CONFIG_NOTIFIER_ERROR_INJECTION
-+
-+static int debugfs_errno_set(void *data, u64 val)
++#
++# list all hot-pluggable CPUs
++#
++hotpluggable_cpus()
 +{
-+	*(int *)data = clamp_t(int, val, -MAX_ERRNO, 0);
-+	return 0;
++	local state=${1:-.\*}
++
++	for cpu in /sys/devices/system/cpu/cpu*; do
++		if [ -f $cpu/online ] && grep -q $state $cpu/online; then
++			echo ${cpu##/*/cpu}
++		fi
++	done
 +}
 +
-+static int debugfs_errno_get(void *data, u64 *val)
++hotplaggable_offline_cpus()
 +{
-+	*val = *(int *)data;
-+	return 0;
++	hotpluggable_cpus 0
 +}
 +
-+DEFINE_SIMPLE_ATTRIBUTE(fops_errno, debugfs_errno_get, debugfs_errno_set,
-+			"%lld\n");
-+
-+static struct dentry *debugfs_create_errno(const char *name, mode_t mode,
-+				struct dentry *parent, int *value)
++hotpluggable_online_cpus()
 +{
-+	return debugfs_create_file(name, mode, parent, value, &fops_errno);
++	hotpluggable_cpus 1
 +}
 +
-+static int err_inject_notifier_callback(struct notifier_block *nb,
-+				unsigned long val, void *p)
++cpu_is_online()
 +{
-+	int err = 0;
-+	struct err_inject_notifier_block *enb =
-+		container_of(nb, struct err_inject_notifier_block, nb);
-+	struct err_inject_notifier_action *action;
-+
-+	for (action = enb->actions; action->name; action++) {
-+		if (action->val == val) {
-+			err = action->error;
-+			break;
-+		}
-+	}
-+	if (err) {
-+		printk(KERN_INFO "Injecting error (%d) to %s\n",
-+			err, action->name);
-+	}
-+
-+	return notifier_from_errno(err);
++	grep -q 1 /sys/devices/system/cpu/cpu$1/online
 +}
 +
-+int err_inject_notifier_block_init(struct err_inject_notifier_block *enb,
-+				const char *name, int priority)
++cpu_is_offline()
 +{
-+	struct err_inject_notifier_action *action;
-+	mode_t mode = S_IFREG | S_IRUSR | S_IWUSR;
-+
-+	enb->nb.notifier_call = err_inject_notifier_callback;
-+	enb->nb.priority = priority;
-+
-+	enb->dir = debugfs_create_dir(name, NULL);
-+	if (!enb->dir)
-+		return -ENOMEM;
-+
-+	for (action = enb->actions; action->name; action++) {
-+		/*
-+		 * Create debugfs r/w file containing action->error. If
-+		 * notifier call chain is called with action->val, it will
-+		 * fail with the error code
-+		 */
-+		if (!debugfs_create_errno(action->name, mode, enb->dir,
-+					&action->error)) {
-+			debugfs_remove_recursive(enb->dir);
-+			return -ENOMEM;
-+		}
-+	}
-+	return 0;
++	grep -q 0 /sys/devices/system/cpu/cpu$1/online
 +}
-+EXPORT_SYMBOL_GPL(err_inject_notifier_block_init);
 +
-+void err_inject_notifier_block_cleanup(struct err_inject_notifier_block *enb)
++add_cpu()
 +{
-+	debugfs_remove_recursive(enb->dir);
++	echo 1 > /sys/devices/system/cpu/cpu$1/online
 +}
-+EXPORT_SYMBOL_GPL(err_inject_notifier_block_cleanup);
 +
-+#endif /* CONFIG_NOTIFIER_ERROR_INJECTION */
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index c0cb9c4..2a62c5a 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -1021,6 +1021,17 @@ config LKDTM
- 	Documentation on how to use the module can be found in
- 	Documentation/fault-injection/provoke-crashes.txt
- 
-+config NOTIFIER_ERROR_INJECTION
-+	bool "Notifier error injection"
-+	depends on DEBUG_KERNEL
-+	select DEBUG_FS
-+	help
-+	  This option provides the ability to inject artifical errors to
-+	  specified notifier chain callbacks. It is useful to test the error
-+	  handling of notifier call chain failures.
++remove_cpu()
++{
++	echo 0 > /sys/devices/system/cpu/cpu$1/online
++}
 +
-+	  Say N if unsure.
++add_cpu_expect_success()
++{
++	local cpu=$1
 +
- config CPU_NOTIFIER_ERROR_INJECT
- 	tristate "CPU notifier error injection module"
- 	depends on HOTPLUG_CPU && DEBUG_KERNEL
++	if ! add_cpu $cpu; then
++		echo $FUNCNAME $cpu: unexpected fail >&2
++	elif ! cpu_is_online $cpu; then
++		echo $FUNCNAME $cpu: unexpected offline >&2
++	fi
++}
++
++add_cpu_expect_fail()
++{
++	local cpu=$1
++
++	if add_cpu $cpu 2> /dev/null; then
++		echo $FUNCNAME $cpu: unexpected success >&2
++	elif ! cpu_is_offline $cpu; then
++		echo $FUNCNAME $cpu: unexpected online >&2
++	fi
++}
++
++remove_cpu_expect_success()
++{
++	local cpu=$1
++
++	if ! remove_cpu $cpu; then
++		echo $FUNCNAME $cpu: unexpected fail >&2
++	elif ! cpu_is_offline $cpu; then
++		echo $FUNCNAME $cpu: unexpected offline >&2
++	fi
++}
++
++remove_cpu_expect_fail()
++{
++	local cpu=$1
++
++	if remove_cpu $cpu 2> /dev/null; then
++		echo $FUNCNAME $cpu: unexpected success >&2
++	elif ! cpu_is_online $cpu; then
++		echo $FUNCNAME $cpu: unexpected offline >&2
++	fi
++}
++
++if [ $UID != 0 ]; then
++	echo must be run as root >&2
++	exit 1
++fi
++
++error=-12
++priority=0
++
++while getopts e:p: opt; do
++	case $opt in
++	e)
++		error=$OPTARG
++		;;
++	p)
++		priority=$OPTARG
++		;;
++	esac
++done
++
++if ! [ "$error" -ge -4095 -a "$error" -lt 0 ]; then
++	echo "error code must be -4095 <= errno < 0" >&2
++	exit 1
++fi
++
++DEBUGFS=`mount -t debugfs | head -1 | awk '{ print $3 }'`
++
++if [ ! -d "$DEBUGFS" ]; then
++	echo debugfs is not mounted >&2
++	exit 1
++fi
++
++/sbin/modprobe -r cpu-notifier-error-inject
++/sbin/modprobe -q cpu-notifier-error-inject priority=$priority
++
++if [ ! -d $DEBUGFS/cpu-notifier-error-inject ]; then
++	echo cpu-notifier-error-inject module is not available >&2
++	exit 1
++fi
++
++#
++# Offline all hot-pluggable CPUs
++#
++echo 0 > $DEBUGFS/cpu-notifier-error-inject/CPU_DOWN_PREPARE
++for cpu in `hotpluggable_online_cpus`; do
++	remove_cpu_expect_success $cpu
++done
++
++#
++# Test CPU hot-add error handling (offline => online)
++#
++echo $error > $DEBUGFS/cpu-notifier-error-inject/CPU_UP_PREPARE
++for cpu in `hotplaggable_offline_cpus`; do
++	add_cpu_expect_fail $cpu
++done
++
++#
++# Online all hot-pluggable CPUs
++#
++echo 0 > $DEBUGFS/cpu-notifier-error-inject/CPU_UP_PREPARE
++for cpu in `hotplaggable_offline_cpus`; do
++	add_cpu_expect_success $cpu
++done
++
++#
++# Test CPU hot-remove error handling (online => offline)
++#
++echo $error > $DEBUGFS/cpu-notifier-error-inject/CPU_DOWN_PREPARE
++for cpu in `hotpluggable_online_cpus`; do
++	remove_cpu_expect_fail $cpu
++done
++
++/sbin/modprobe -r cpu-notifier-error-inject
+diff --git a/tools/testing/fault-injection/memory-notifier.sh b/tools/testing/fault-injection/memory-notifier.sh
+new file mode 100755
+index 0000000..b7e7fa5
+--- /dev/null
++++ b/tools/testing/fault-injection/memory-notifier.sh
+@@ -0,0 +1,163 @@
++#!/bin/bash
++
++#
++# list all hot-pluggable memory
++#
++hotpluggable_memory()
++{
++	local state=${1:-.\*}
++
++	for memory in /sys/devices/system/memory/memory*; do
++		if grep -q 1 $memory/removable &&
++		   grep -q $state $memory/state; then
++			echo ${memory##/*/memory}
++		fi
++	done
++}
++
++hotplaggable_offline_memory()
++{
++	hotpluggable_memory offline
++}
++
++hotpluggable_online_memory()
++{
++	hotpluggable_memory online
++}
++
++memory_is_online()
++{
++	grep -q online /sys/devices/system/memory/memory$1/state
++}
++
++memory_is_offline()
++{
++	grep -q offline /sys/devices/system/memory/memory$1/state
++}
++
++add_memory()
++{
++	echo online > /sys/devices/system/memory/memory$1/state
++}
++
++remove_memory()
++{
++	echo offline > /sys/devices/system/memory/memory$1/state
++}
++
++add_memory_expect_success()
++{
++	local memory=$1
++
++	if ! add_memory $memory; then
++		echo $FUNCNAME $memory: unexpected fail >&2
++	elif ! memory_is_online $memory; then
++		echo $FUNCNAME $memory: unexpected offline >&2
++	fi
++}
++
++add_memory_expect_fail()
++{
++	local memory=$1
++
++	if add_memory $memory 2> /dev/null; then
++		echo $FUNCNAME $memory: unexpected success >&2
++	elif ! memory_is_offline $memory; then
++		echo $FUNCNAME $memory: unexpected online >&2
++	fi
++}
++
++remove_memory_expect_success()
++{
++	local memory=$1
++
++	if ! remove_memory $memory; then
++		echo $FUNCNAME $memory: unexpected fail >&2
++	elif ! memory_is_offline $memory; then
++		echo $FUNCNAME $memory: unexpected offline >&2
++	fi
++}
++
++remove_memory_expect_fail()
++{
++	local memory=$1
++
++	if remove_memory $memory 2> /dev/null; then
++		echo $FUNCNAME $memory: unexpected success >&2
++	elif ! memory_is_online $memory; then
++		echo $FUNCNAME $memory: unexpected offline >&2
++	fi
++}
++
++if [ $UID != 0 ]; then
++	echo must be run as root >&2
++	exit 1
++fi
++
++error=-12
++priority=0
++
++while getopts e:p: opt; do
++	case $opt in
++	e)
++		error=$OPTARG
++		;;
++	p)
++		priority=$OPTARG
++		;;
++	esac
++done
++
++if ! [ "$error" -ge -4095 -a "$error" -lt 0 ]; then
++	echo "error code must be -4095 <= errno < 0" >&2
++	exit 1
++fi
++
++DEBUGFS=`mount -t debugfs | head -1 | awk '{ print $3 }'`
++
++if [ ! -d "$DEBUGFS" ]; then
++	echo debugfs is not mounted >&2
++	exit 1
++fi
++
++/sbin/modprobe -r memory-notifier-error-inject
++/sbin/modprobe -q memory-notifier-error-inject priority=$priority
++
++if [ ! -d $DEBUGFS/memory-notifier-error-inject ]; then
++	echo memory-notifier-error-inject module is not available >&2
++	exit 1
++fi
++
++#
++# Offline all hot-pluggable memory
++#
++echo 0 > $DEBUGFS/memory-notifier-error-inject/MEM_GOING_OFFLINE
++for memory in `hotpluggable_online_memory`; do
++	remove_memory_expect_success $memory
++done
++
++#
++# Test memory hot-add error handling (offline => online)
++#
++echo $error > $DEBUGFS/memory-notifier-error-inject/MEM_GOING_ONLINE
++for memory in `hotplaggable_offline_memory`; do
++	add_memory_expect_fail $memory
++done
++
++#
++# Online all hot-pluggable memory
++#
++echo 0 > $DEBUGFS/memory-notifier-error-inject/MEM_GOING_ONLINE
++for memory in `hotplaggable_offline_memory`; do
++	add_memory_expect_success $memory
++done
++
++#
++# Test memory hot-remove error handling (online => offline)
++#
++echo $error > $DEBUGFS/memory-notifier-error-inject/MEM_GOING_OFFLINE
++for memory in `hotpluggable_online_memory`; do
++	remove_memory_expect_fail $memory
++done
++
++/sbin/modprobe -r memory-notifier-error-inject
 -- 
 1.7.4.4
 
