@@ -1,44 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751678Ab1GWHnR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 03:43:17 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48492 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949Ab1GWHnO (ORCPT
+	id S1751750Ab1GWHre (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 03:47:34 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56080 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750799Ab1GWHr1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 03:43:14 -0400
-Date: Sat, 23 Jul 2011 09:43:12 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Ed Tomlinson <edt@aei.ca>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: Re: [ANNOUNCE] 3.0-rt1
-In-Reply-To: <201107221923.17455.edt@aei.ca>
-Message-ID: <alpine.LFD.2.02.1107230942540.2702@ionos>
-References: <alpine.LFD.2.02.1107222203400.2702@ionos> <201107221923.17455.edt@aei.ca>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Sat, 23 Jul 2011 03:47:27 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Date: Sat, 23 Jul 2011 09:47:26 +0200
+Message-ID: <CAC9WiBjVqgiwzuXbmbmZ49WDRHMUGtnbp999c_zZj2BkfadHvg@mail.gmail.com>
+Subject: Failing to run make modules_install
+From: Francis Moreau <francis.moro@gmail.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: David.Woodhouse@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Jul 2011, Ed Tomlinson wrote:
+Hello,
 
-> On Friday 22 July 2011 16:37:24 Thomas Gleixner wrote:
-> > Dear RT Folks,
-> > 
-> > I'm pleased to announce the 3.0-rt1 release.
-> 
-> Thomas,
-> 
-> It does not build here with CONFIG_RCU_TORTURE_TEST=m
+[ resending because of me doing weird stuff with my fingers, so this
+post may appear twice, sorry if that happens ]
 
-Fix queued for -rt2.
+I'm trying to install module of 2.6.39.1 and getting this error:
 
-Thanks,
+make -s INSTALL_MOD_PATH=/tmp/modules-for-2.6.39.1 -j4 modules_install
+make[1]: *** No rule to make target
+`/tmp/modules-for-2.6.39.1/lib/firmware/./', needed by
+`/home/fmoreau/linux/lib/firmware/atmsar11.fw'.  Stop.
+make[1]: *** Waiting for unfinished jobs....
+make: *** [_modinst_post] Error 2
 
-	tglx
+After googling a bit, some suggest that the issue is coming from a
+recent version of make(1), mine is 3.82.
+
+Does anybody encounter this already ?
+
+Thanks
+-- 
+Francis
