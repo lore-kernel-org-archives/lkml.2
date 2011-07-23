@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752376Ab1GWJ0r (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 05:26:47 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:54551 "EHLO mx3.mail.elte.hu"
+	id S1752481Ab1GWJbA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 05:31:00 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:38966 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752104Ab1GWJ0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 05:26:42 -0400
-Date: Sat, 23 Jul 2011 11:25:58 +0200
+	id S1752344Ab1GWJaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jul 2011 05:30:55 -0400
+Date: Sat, 23 Jul 2011 11:30:10 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/kexec change for v3.1
-Message-ID: <20110723092558.GA20219@elte.hu>
+Subject: [GIT PULL] x86/platform change for v3.1
+Message-ID: <20110723093010.GA20292@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -31,46 +31,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest x86-kexec-for-linus git tree from:
+Please pull the latest x86-platform-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-kexec-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-platform-for-linus
 
  Thanks,
 
 	Ingo
 
 ------------------>
-Huang Ying (1):
-      kexec, x86: Fix incorrect jump back address if not preserving context
+Alan Cox (1):
+      x86, config: Introduce an INTEL_MID configuration
 
 
- arch/x86/kernel/relocate_kernel_32.S |    2 ++
- arch/x86/kernel/relocate_kernel_64.S |    2 ++
- 2 files changed, 4 insertions(+), 0 deletions(-)
+ arch/x86/Kconfig |   15 +++++++++++++--
+ 1 files changed, 13 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/relocate_kernel_32.S b/arch/x86/kernel/relocate_kernel_32.S
-index 4123553..36818f8 100644
---- a/arch/x86/kernel/relocate_kernel_32.S
-+++ b/arch/x86/kernel/relocate_kernel_32.S
-@@ -97,6 +97,8 @@ relocate_kernel:
- 	ret
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 37357a5..80ef419 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -384,12 +384,21 @@ config X86_INTEL_CE
+ 	  This option compiles in support for the CE4100 SOC for settop
+ 	  boxes and media devices.
  
- identity_mapped:
-+	/* set return address to 0 if not preserving context */
-+	pushl	$0
- 	/* store the start address on the stack */
- 	pushl   %edx
++config X86_INTEL_MID
++	bool "Intel MID platform support"
++	depends on X86_32
++	depends on X86_EXTENDED_PLATFORM
++	---help---
++	  Select to build a kernel capable of supporting Intel MID platform
++	  systems which do not have the PCI legacy interfaces (Moorestown,
++	  Medfield). If you are building for a PC class system say N here.
++
++if X86_INTEL_MID
++
+ config X86_MRST
+        bool "Moorestown MID platform"
+ 	depends on PCI
+ 	depends on PCI_GOANY
+-	depends on X86_32
+-	depends on X86_EXTENDED_PLATFORM
+ 	depends on X86_IO_APIC
+ 	select APB_TIMER
+ 	select I2C
+@@ -404,6 +413,8 @@ config X86_MRST
+ 	  nor standard legacy replacement devices/features. e.g. Moorestown does
+ 	  not contain i8259, i8254, HPET, legacy BIOS, most of the io ports.
  
-diff --git a/arch/x86/kernel/relocate_kernel_64.S b/arch/x86/kernel/relocate_kernel_64.S
-index 4de8f5b..7a6f3b3 100644
---- a/arch/x86/kernel/relocate_kernel_64.S
-+++ b/arch/x86/kernel/relocate_kernel_64.S
-@@ -100,6 +100,8 @@ relocate_kernel:
- 	ret
- 
- identity_mapped:
-+	/* set return address to 0 if not preserving context */
-+	pushq	$0
- 	/* store the start address on the stack */
- 	pushq   %rdx
- 
++endif
++
+ config X86_RDC321X
+ 	bool "RDC R-321x SoC"
+ 	depends on X86_32
