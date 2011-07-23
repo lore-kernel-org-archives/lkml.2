@@ -1,95 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752752Ab1GWKtv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 06:49:51 -0400
-Received: from www.linutronix.de ([62.245.132.108]:53145 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608Ab1GWKtp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 06:49:45 -0400
-Date: Sat, 23 Jul 2011 12:49:42 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: Jens Axboe <jaxboe@fusionio.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Carsten Emde <C.Emde@osadl.org>
-Subject: floppy: Use del_timer_sync() in init cleanup
-Message-ID: <alpine.LFD.2.02.1107231247350.2702@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1752762Ab1GWLG2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 07:06:28 -0400
+Received: from mail.avalus.com ([89.16.176.221]:36063 "EHLO mail.avalus.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751991Ab1GWLGY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jul 2011 07:06:24 -0400
+X-Greylist: delayed 567 seconds by postgrey-1.27 at vger.kernel.org; Sat, 23 Jul 2011 07:06:24 EDT
+Date: Sat, 23 Jul 2011 11:56:53 +0100
+From: Alex Bligh <alex@alex.org.uk>
+Reply-To: Alex Bligh <alex@alex.org.uk>
+To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+cc: Alex Bligh <alex@alex.org.uk>
+Subject: Crash safety semantics of mmap(), rename(), fsync(), msync()
+Message-ID: <07D7E5FB493CDE95FB58EE78@Ximines.local>
+X-Mailer: Mulberry/4.0.8 (Mac OS X)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Carsten Emde <C.Emde@osadl.org>
+I have a question about safety of mmap, rename and fync()/msync().
 
-When no floppy is found the module code can be released while a timer
-function is pending or about to be executed.
+I am creating a memory mapped file with a particular name, and I want to 
+ensure the following in the event of a system crash / power outage / 
+whatever:
+A. If the file exists on disk with its final name at any stage, it MUST 
+contain all the data I have written to it (i.e. it must never exist on disk 
+with different data and this name)
+B. At the exit from the function concerned, the file must exist with its 
+final name, and must contain that data on disk.  The fd must still e open 
+and the mmap in place (it's used to read from elsewhere).
 
-CPU0                                  CPU1
-				      floppy_init()
-timer_softirq()
-   spin_lock_irq(&base->lock);   
-   detach_timer();
-   spin_unlock_irq(&base->lock);
-   -> Interrupt
-					del_timer();
-				        return -ENODEV;
-                                      module_cleanup();
-   <- EOI
-   call_timer_fn();
-   OOPS
+What I am doing to achieve this is:
+1. open (O_CREAT) to a temporary file name
+2. ftruncate() the file to required length
+3. mmap() the file
+4. write the data to the mmap'd area
+5. msync() the whole area to ensure the data is written
+6. fsync() the file to ensure the metadata is written (e.g. the creation of 
+the file in the first place and the extension of the file by ftruncate())
+7. rename() the file to the required file name
+8. fsync() the file again, to ensure the rename is written to disk to 
+satisfy criteria B above)
 
-Use del_timer_sync() to prevent this.				      
+This is all quite time critical. I can pretty much choose the fie system 
+but would prefer something like ext4. The file is between 1MB and 8MB in 
+size if that matters any.
 
-Signed-off-by: Carsten Emde <C.Emde@osadl.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+The question I have is this: Is it really necessary to msync() and fsync() 
+twice? Can I get away without (e.g.) the stage 6 msync? Or, without it, 
+might a crash immediately after the rename() result in a file that has the 
+permanent name, but the wrong metadata? (I only care about file name and 
+recorded length I think). Or is rename() guaranteed to write out all 
+metadata (e.g. file length), in which case can I drop both fsync()s? Or are 
+the fsync()s guaranteed to be cheap if they do nothing?
 
----
- drivers/block/floppy.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-Index: linux-3.0/drivers/block/floppy.c
-===================================================================
---- linux-3.0.orig/drivers/block/floppy.c
-+++ linux-3.0/drivers/block/floppy.c
-@@ -4250,7 +4250,7 @@ static int __init floppy_init(void)
- 	use_virtual_dma = can_use_virtual_dma & 1;
- 	fdc_state[0].address = FDC1;
- 	if (fdc_state[0].address == -1) {
--		del_timer(&fd_timeout);
-+		del_timer_sync(&fd_timeout);
- 		err = -ENODEV;
- 		goto out_unreg_region;
- 	}
-@@ -4261,7 +4261,7 @@ static int __init floppy_init(void)
- 	fdc = 0;		/* reset fdc in case of unexpected interrupt */
- 	err = floppy_grab_irq_and_dma();
- 	if (err) {
--		del_timer(&fd_timeout);
-+		del_timer_sync(&fd_timeout);
- 		err = -EBUSY;
- 		goto out_unreg_region;
- 	}
-@@ -4318,7 +4318,7 @@ static int __init floppy_init(void)
- 		user_reset_fdc(-1, FD_RESET_ALWAYS, false);
- 	}
- 	fdc = 0;
--	del_timer(&fd_timeout);
-+	del_timer_sync(&fd_timeout);
- 	current_drive = 0;
- 	initialized = true;
- 	if (have_no_fdc) {
-@@ -4368,7 +4368,7 @@ out_unreg_blkdev:
- 	unregister_blkdev(FLOPPY_MAJOR, "fd");
- out_put_disk:
- 	while (dr--) {
--		del_timer(&motor_off_timer[dr]);
-+		del_timer_sync(&motor_off_timer[dr]);
- 		if (disks[dr]->queue)
- 			blk_cleanup_queue(disks[dr]->queue);
- 		put_disk(disks[dr]);
+-- 
+Alex Bligh
