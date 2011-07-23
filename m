@@ -1,44 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751587Ab1GWDqP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 23:46:15 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:44507 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949Ab1GWDqE (ORCPT
+	id S1751674Ab1GWD42 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 23:56:28 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50838 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751178Ab1GWD40 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 23:46:04 -0400
-Message-ID: <4E2A43F5.1020209@landley.net>
-Date: Fri, 22 Jul 2011 22:45:57 -0500
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Fri, 22 Jul 2011 23:56:26 -0400
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Here's a unified kernel git repo covering 0.0.1 to the present.
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CABE8wwt7dkwgeahYBSUufOvJmVNfYyTss6U5qBgjJk9RVLBkYg@mail.gmail.com>
+References: <1311185906-7813-1-git-send-email-jaswinder.singh@linaro.org>
+	<1311220903-2545-1-git-send-email-jaswinder.singh@linaro.org>
+	<CACRpkdbWHmob3EWJc6u5=yh=rNwVSR5hu9-Xud5kvQNU9-POtA@mail.gmail.com>
+	<CAJe_Zhc4uJB8N9i2w38zzP3+XxcYF2v-zwsrhERWSi-yObV-6A@mail.gmail.com>
+	<CABE8wwt7dkwgeahYBSUufOvJmVNfYyTss6U5qBgjJk9RVLBkYg@mail.gmail.com>
+Date: Sat, 23 Jul 2011 09:26:25 +0530
+Message-ID: <CAJe_ZhdYg4EpaNbBW+dayjSORqM=E6myT3oOG5VTsiQnh3erTA@mail.gmail.com>
+Subject: Re: [PATCHv2] DMAEngine: Let dmac drivers to set chan_id
+From: Jaswinder Singh <jaswinder.singh@linaro.org>
+To: "Williams, Dan J" <dan.j.williams@intel.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        vinod.koul@intel.com, rmk+kernel@arm.linux.org.uk,
+        linus.walleij@stericsson.com, per.friden@stericsson.com,
+        wei.zhang@freescale.com, ebony.zhu@freescale.com, iws@ovro.caltech.edu,
+        s.hauer@pengutronix.de, maciej.sosnowski@intel.com, saeed@marvell.com,
+        shawn.guo@freescale.com, yur@emcraft.com, agust@denx.de,
+        iwamatsu.nobuhiro@renesas.com, per.forlin@stericsson.com,
+        jonas.aberg@stericsson.com, anemo@mba.ocn.ne.jp
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ever done a "git annotate" that stops at 2.6.12-rc2, and wanted to see 
-the full history?  Here's an repository that goes all the way back to
-0.0.1 (through bitkeeper and all those old tarballs), which otherwise
-works as normal (git pull updates it from Linus's tree, you can commit
-to it and branch from it, etc)
+On 23 July 2011 03:53, Williams, Dan J <dan.j.williams@intel.com> wrote:
 
-Here's the tarball:
+>
+> Unless you guaranteed that every id is globally unique I don't see how
+> they are generically usable by common clients?
+>
+Yes. And the first step is to allow DMAC drivers to freely set chan_id value.
+Platform could pass the list and mapping of supported 'global channels'
+via platform_data(?) which the DMAC drivers could set in chan_id
+And I am not sure of defining a new variable for that, because chan_id
+is actually used only by some dmac drivers for internal purpose only -
+which they could do by private variables.
 
-  http://www.kernel.org/pub/linux/kernel/people/landley/linux-fullhist.tar.bz2
+Proposal to have global cross-platform enum of channel-IDs defined by
+client drivers, was to be my next patch.
+Though I think, this patch is valid in it's own light.
 
-To install it:
+-j
 
-  1) Download, extract, cd into the directory.
-  2) git checkout -f
-  3) git pull
-
-Then use as normal.
-
-This is based on the work of http://padator.org/linux.php with some
-trivial cleanups.
-
-Rob
+-- 
+Linaro.org │ Open source software for ARM SoCs | Follow Linaro
+http://facebook.com/pages/Linaro/155974581091106  -
+http://twitter.com/#!/linaroorg - http://linaro.org/linaro-blog
