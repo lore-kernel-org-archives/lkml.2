@@ -1,113 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751462Ab1GWCK6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 22:10:58 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:36269 "EHLO
+	id S1751321Ab1GWC11 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 22:27:27 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:59918 "EHLO
 	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755Ab1GWCKy (ORCPT
+	with ESMTP id S1750970Ab1GWC1U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 22:10:54 -0400
-Date: Sat, 23 Jul 2011 04:10:48 +0200
+	Fri, 22 Jul 2011 22:27:20 -0400
+Date: Sat, 23 Jul 2011 04:27:15 +0200
 From: Tejun Heo <tj@kernel.org>
-To: Matt Helsley <matthltc@us.ibm.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>, Nathan Lynch <ntl@pobox.com>,
-        Oren Laadan <orenl@cs.columbia.edu>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>, Serge Hallyn <serue@us.ibm.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Glauber Costa <glommer@parallels.com>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Containers <containers@lists.osdl.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [EXAMPLE CODE] Parasite thread injection using PTRACE_SEIZE and
- friends
-Message-ID: <20110723021048.GA21089@mtj.dyndns.org>
-References: <20110720140037.GM3455@htj.dyndns.org>
- <20110722231953.GC16940@count0.beaverton.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Stephen Hemminger <shemminger@vyatta.com>,
+        Ben Greear <greearb@candelatech.com>, David <david@unsolicited.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        netdev@vger.kernel.org
+Subject: Re: Linux 3.0 release
+Message-ID: <20110723022715.GB21089@mtj.dyndns.org>
+References: <CA+55aFxakA2U+oMJ1T7awTYa+p6xp9N0aCbfrUqgkF7BJ8gnQw@mail.gmail.com>
+ <4E29CB5B.4040408@unsolicited.net>
+ <CA+55aFy1FnVGH4C_0T8fXwZPUdz5-SCczMwy1K8kydLwTx89RQ@mail.gmail.com>
+ <4E29D326.7070403@candelatech.com>
+ <20110722133220.0baf2199@nehalam.ftrdhcpuser.net>
+ <CA+55aFwX55HhzyPsb5vx-=xkHpWJBH0481ZFWcXnNzH1M6zhdg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110722231953.GC16940@count0.beaverton.ibm.com>
+In-Reply-To: <CA+55aFwX55HhzyPsb5vx-=xkHpWJBH0481ZFWcXnNzH1M6zhdg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Matt.
+Hello, Stephen, Linus.
 
-On Fri, Jul 22, 2011 at 04:19:53PM -0700, Matt Helsley wrote:
-> parasitism is fine for a slow-but-sure debugger but is not suitable
-> for checkpoint/restart.
+On Fri, Jul 22, 2011 at 01:35:16PM -0700, Linus Torvalds wrote:
+> On Fri, Jul 22, 2011 at 1:32 PM, Stephen Hemminger
+> <shemminger@vyatta.com> wrote:
+> >
+> > The workqueue code should have a fallback and not try and
+> > do anything if being called from IRQ.
+> 
+> Fair enough. Especially since one of the *points* of workqueues is
+> indeed to schedule stuff from irqs and that cannot be done
+> immediately.
+> 
+> Tejun?
 
-Hmmm... okay, can you elaborate on that?  I can't reach the same
-conclusion from what you wrote below.  You're implying parasitism
-would be too slow for CR, right?  But why would it be slower or faster
-in any meaningful way than in-kernel implementation?
+It seems to have been already tracked down but, just to be clear.
+Nothing changed regarding synchronization requirements for all the
+queue, flush and cancel functions.  If it worked before cmwq, it
+should work with cmwq.
 
-> The difficulty of checkpoint/restart is not that the task has
-> more information than the kernel.
+While on the topic, we do have some workqueue API problems.  The
+delayed ones are a bit screwy.  e.g. requeueing an already pending
+delayed work item should probably update the timer but it doesn't andp
+we have a bunch of users doing cancel/requeue or using separate timers
+for that.  Also, the cancel/flush[_sync] variants are subtly different
+making using the correct one difficult, which has possibility of
+introducing bugs which are extremely difficult to reproduce.
 
-But yes it is, if you're trying to implement it from userland in
-transparent manner.  There is a lot of information which is not
-available to a third party process and some of the available
-information is painfully slow to get to (e.g. PTRACE_PEEK/POKEDATA is
-word-by-word).
-
-> Quite the contrary. Most of the "information" the task has that the
-> kernel is not explicitly aware of is encoded in the task's
-> memory. So long as the kernel faithfully restores memory and
-> registers the task can know little the kernel doesn't already know.
-
-Sure, kernel ultimately knows and can access *everything*, but we
-aren't talking about in-kernel implementation here.
-
-> One example of something the task knows that the kernel does not is
-> which pids it cares about. However, a parasitic thread capable
-> of checkpointing arbitrary processes won't know about these pids
-> either -- it would have to be designed to checkpoint *only* the
-> process it was injected into.
-
-That's what the outer mechanism should provide regardless of how the
-core CR is implemented.  Maybe it is NS based, maybe it's just some
-subset of processes.  It doesn't have much to do with core
-implementation.
-
-> Furthermore, the kernel has information necessary for
-> checkpoint/restart that the task does not. The composition of an
-> epoll set is one example.
-
-Again, sure, kernel knows and can access everything, but most of
-necessary information is already available in userland.  If epoll
-isn't available, let's export epoll information.  We have
-/proc/PID/fdinfo already.  If that's not the correct interface for
-whatever reason, we can add introspection to epoll itself and make
-parasite query it.
-
-It's not like problems solve themselves automatically if you put CR
-inside the kernel.  It side-steps a lot of issues mostly by allowing
-avoiding difficult userland visible decisions, but as you already know
-well enough, I think that does more harm than good.
-
-Last year, when we were talking about userland implementation, one of
-the arguments was that ptrace / jobctl interaction was too messy and
-broken to be used for CR, but it's fixed now and the interaction is
-well defined and jobctl states are fully capturable.  And really,
-before, ptrace or in-kernel CR, it wasn't possible to capture the
-states properly, they were simply broken and not well defined enough.
-
-Identifying and fixing individual missing pieces is both more
-benefical to the kernel in general and much more likely to be merged
-upstream and the ptrace change for sure took a lot more time than I
-expected but it was something which has been horribly broken for a
-very long time and was very complex to deal with.  I think other
-pieces - most of which should be about exporting more info via some
-mechanism - should be much easier.
-
-> So ptrace is just the wrong interface to base checkpoint/restart on.
-> Pavel's approach, though I believe it is subtly flawed, is better.
-
-Again, I just don't understand how you draw the above conclusion from
-the arguments you provided above.  I don't see much connection between
-the arguments and the conclusion.
+Again, most of these had accumulated well before cmwq came into the
+picture.  I think we need to make workqueue simpler and easier to use.
 
 Thanks.
 
