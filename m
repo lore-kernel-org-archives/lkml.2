@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752651Ab1GWRvh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 13:51:37 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39673 "EHLO
+	id S1753239Ab1GWSGn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 14:06:43 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34363 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750730Ab1GWRvb convert rfc822-to-8bit
+	by vger.kernel.org with ESMTP id S1752379Ab1GWSGh convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 13:51:31 -0400
+	Sat, 23 Jul 2011 14:06:37 -0400
 MIME-Version: 1.0
-In-Reply-To: <1311439173.23720.14.camel@mulgrave>
-References: <1311410747-29947-1-git-send-email-nab@linux-iscsi.org>
- <1311410747-29947-9-git-send-email-nab@linux-iscsi.org> <1311439173.23720.14.camel@mulgrave>
+In-Reply-To: <s5hsjpx3qm7.wl%tiwai@suse.de>
+References: <s5hsjpx3qm7.wl%tiwai@suse.de>
 From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 23 Jul 2011 10:51:08 -0700
-Message-ID: <CA+55aFzkEUbnoDg0KwXDRQMeCFeO5s6_4dWHTY59=hj3QHWL0w@mail.gmail.com>
-Subject: Re: [PATCH 08/13] iscsi-target: Add CHAP Authentication support using libcrypto
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Andy Grover <agrover@redhat.com>,
-        Hannes Reinecke <hare@suse.de>, Roland Dreier <roland@purestorage.com>,
-        Andrew Morton <akpm@linux-foundation.org>
+Date: Sat, 23 Jul 2011 11:06:14 -0700
+Message-ID: <CA+55aFwzxiVMsd6RQ8X3WVWScFSWSoFfDEBEh3pEDhoPYbEcaA@mail.gmail.com>
+Subject: Re: [GIT PULL] sound updates for 3.1-rc1
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 23, 2011 at 9:39 AM, James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
+On Sat, Jul 23, 2011 at 9:32 AM, Takashi Iwai <tiwai@suse.de> wrote:
 >
-> I've asked you twice for input on the patch doing this in userspace,
-> which was posted five weeks ago.  Just ignoring something is
-> unacceptable behaviour ... what do I have to do to get your attention?
-> NAK the patch set?
+> As you can see below, the diffstat shows awfully huge numbers.  It's
+> mainly the reworks of two HD-audio drivers after I finally had some
+> spare time and a gut to face them.  Most of LOCs there are due to code
+> split, but also a significant amount of code reduction has been done,
+> too.  In addition, as usual, many ASoC fixes/updates have been applied
+> in this cycle, too.
 
-So what's the advantage of user space?
+So wrt that whole HDA thing, can somebody explain what the difference
+between a "patch" and a "quirk" is? It looks like the "quirks" are
+smaller patches (they all seem to be about realtek, at least
+currently).
 
-Traditionally, kernel/userspace splits have been:
- - fragile as hell
- - more code
- - slower
- - complicated to set up
- - problematic with backwards compatibility issues
-and these days when I see some kernel functionality that needs user
-space support, I just go "f*ck, that's going to be a pain".
+And does it really make sense to use #include to get the *.c files?
+Wouldn't it be much nicer to have a "realtek" subdirectory and link
+those together.
 
-So I think the "that part can be done in user space" argument is
-fundamentally crap.
+I don't care deeply, but the whole HDA source organization is getting
+pretty darn ugly, I have to say.
 
-Now, if it is an issue of "that can be done BETTER in user space
-BECAUSE xyz", then that's a different issue. I haven't seen that
-argument, though.
-
-                       Linus
+                   Linus
