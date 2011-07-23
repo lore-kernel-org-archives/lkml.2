@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752481Ab1GWJbA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 05:31:00 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:38966 "EHLO mx2.mail.elte.hu"
+	id S1752493Ab1GWJeo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 05:34:44 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:40282 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752344Ab1GWJaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 05:30:55 -0400
-Date: Sat, 23 Jul 2011 11:30:10 +0200
+	id S1752312Ab1GWJej (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jul 2011 05:34:39 -0400
+Date: Sat, 23 Jul 2011 11:33:56 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/platform change for v3.1
-Message-ID: <20110723093010.GA20292@elte.hu>
+Subject: [GIT PULL] x86/quirks change for v3.1
+Message-ID: <20110723093356.GA20669@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -31,56 +31,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest x86-platform-for-linus git tree from:
+Please pull the latest x86-quirks-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-platform-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-quirks-for-linus
 
  Thanks,
 
 	Ingo
 
 ------------------>
-Alan Cox (1):
-      x86, config: Introduce an INTEL_MID configuration
+Sergei Shtylyov (1):
+      x86, quirks: Use pci_dev->revision
 
 
- arch/x86/Kconfig |   15 +++++++++++++--
- 1 files changed, 13 insertions(+), 2 deletions(-)
+ arch/x86/kernel/quirks.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 37357a5..80ef419 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -384,12 +384,21 @@ config X86_INTEL_CE
- 	  This option compiles in support for the CE4100 SOC for settop
- 	  boxes and media devices.
+diff --git a/arch/x86/kernel/quirks.c b/arch/x86/kernel/quirks.c
+index 8bbe8c5..b78643d 100644
+--- a/arch/x86/kernel/quirks.c
++++ b/arch/x86/kernel/quirks.c
+@@ -10,7 +10,7 @@
  
-+config X86_INTEL_MID
-+	bool "Intel MID platform support"
-+	depends on X86_32
-+	depends on X86_EXTENDED_PLATFORM
-+	---help---
-+	  Select to build a kernel capable of supporting Intel MID platform
-+	  systems which do not have the PCI legacy interfaces (Moorestown,
-+	  Medfield). If you are building for a PC class system say N here.
-+
-+if X86_INTEL_MID
-+
- config X86_MRST
-        bool "Moorestown MID platform"
- 	depends on PCI
- 	depends on PCI_GOANY
--	depends on X86_32
--	depends on X86_EXTENDED_PLATFORM
- 	depends on X86_IO_APIC
- 	select APB_TIMER
- 	select I2C
-@@ -404,6 +413,8 @@ config X86_MRST
- 	  nor standard legacy replacement devices/features. e.g. Moorestown does
- 	  not contain i8259, i8254, HPET, legacy BIOS, most of the io ports.
+ static void __devinit quirk_intel_irqbalance(struct pci_dev *dev)
+ {
+-	u8 config, rev;
++	u8 config;
+ 	u16 word;
  
-+endif
-+
- config X86_RDC321X
- 	bool "RDC R-321x SoC"
- 	depends on X86_32
+ 	/* BIOS may enable hardware IRQ balancing for
+@@ -18,8 +18,7 @@ static void __devinit quirk_intel_irqbalance(struct pci_dev *dev)
+ 	 * based platforms.
+ 	 * Disable SW irqbalance/affinity on those platforms.
+ 	 */
+-	pci_read_config_byte(dev, PCI_CLASS_REVISION, &rev);
+-	if (rev > 0x9)
++	if (dev->revision > 0x9)
+ 		return;
+ 
+ 	/* enable access to config space*/
