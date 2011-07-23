@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751459Ab1GWUhf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 16:37:35 -0400
-Received: from mail.play-mail.info ([211.47.140.228]:43396 "EHLO
-	play-mail.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751228Ab1GWUhb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 16:37:31 -0400
+	id S1751529Ab1GWUid (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 16:38:33 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:55440 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751228Ab1GWUi0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jul 2011 16:38:26 -0400
+Date: Sat, 23 Jul 2011 22:38:24 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Josef Bacik <josef@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org, hch@infradead.org, viro@zeniv.linux.org.uk,
+        jack@suse.cz, linux-kernel@vger.kernel.org,
+        Dave Chinner <david@fromorbit.com>, xfs@oss.sgi.com
+Subject: Re: [PATCH] fs: push i_mutex and filemap_write_and_wait down into
+ ->fsync() handlers
+Message-ID: <20110723203824.GB1652@x4.trippels.de>
+References: <1309370716-12235-1-git-send-email-josef@redhat.com>
+ <20110723180942.GA1616@x4.trippels.de>
+ <4E2B2E88.8080006@redhat.com>
 MIME-Version: 1.0
-Message-Id: <110724053729KJ.13777@mail.play-mail.info>
-Date: Sun, 24 Jul 2011 05:37:29 +0900
-From: =?UTF-8?B?bWFyaW5hMzA3MEBpbnRlcjcuanA=?= <marina3070@inter7.jp>
-To: linux-kernel@vger.kernel.org
-Content-Type: Text/Plain;charset="utf-8"
-Subject: =?UTF-8?B?6YCj57Wh6YGF44GP44Gq44Gj44Gm44GU44KB44KT44Gq44GV44GE44CC?=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E2B2E88.8080006@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p6NKbe3f024793
 
-マリナです。急いで連絡しなきゃと思って
-仮のアドレスからメールしました。
-あの時携帯のアドレス教えてましたっけ？
+On 2011.07.23 at 16:26 -0400, Josef Bacik wrote:
+> On 07/23/2011 02:09 PM, Markus Trippelsdorf wrote:
+> > On 2011.06.29 at 14:05 -0400, Josef Bacik wrote:
+> >> Btrfs needs to be able to control how filemap_write_and_wait_range() is called
+> >> in fsync to make it less of a painful operation, so push down taking i_mutex and
+> >> the calling of filemap_write_and_wait() down into the ->fsync() handlers.  Some
+> >> file systems can drop taking the i_mutex altogether it seems, like ext3 and
+> >> ocfs2.  For correctness sake I just pushed everything down in all cases to make
+> >> sure that we keep the current behavior the same for everybody, and then each
+> >> individual fs maintainer can make up their mind about what to do from there.
+> >
+> > At least the xfs part of this patch is broken.
+> > Running the latest git-kernel bogofilter doesn't work anymore on my xfs
+> > partition. When I run "bogoutil -d wordlist.db" to dump the contents of
+> > the database, it produces no output at all.
+> >
+> 
+> Already fixed and sent a patch out earlier this week.  Thanks,
 
-たいした自己紹介も出来なかったから
-簡単に私のこと書いておきますね。
-私は外資系の会社の役員をしています。32歳、独身で一人暮らしです。
+No. This happens with your patch already applied. See my other reply.
 
-貴方のもあの時聞きそびれてたんで良かったら教えて貰えると嬉しいです。
-お住まい、年齢とかちゃんと聞けずじまいでしたものね。
-
-取り急ぎ記憶を頼りにメールしてみましたけど
-見た瞬間からずっと貴方に興味があって
-これをきっかけに素敵な関係になれたら良いなと思っています。
-
-お返事いただけるかは分かりませんけど
-わずかな期待に胸膨らませています。
-
-今度はちゃんとした形でお誘いしたいので
-もし良かったらお返事いただけませんか？
-
-お住まいや年齢もちゃんとメモしておきたいので
-一緒に送ってもらえると助かります。
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+-- 
+Markus
