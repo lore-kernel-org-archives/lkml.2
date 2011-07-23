@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751736Ab1GWHQG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 03:16:06 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43828 "EHLO
+	id S1751759Ab1GWHRK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 03:17:10 -0400
+Received: from www.linutronix.de ([62.245.132.108]:43838 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751469Ab1GWHP6 (ORCPT
+	with ESMTP id S1751509Ab1GWHRD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 03:15:58 -0400
-Date: Sat, 23 Jul 2011 09:15:54 +0200 (CEST)
+	Sat, 23 Jul 2011 03:17:03 -0400
+Date: Sat, 23 Jul 2011 09:17:01 +0200 (CEST)
 From: Thomas Gleixner <tglx@linutronix.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
         Ingo Molnar <mingo@elte.hu>, Ben Greear <greearb@candelatech.com>,
         stable@kernel.org
-Subject: Re: [patch 1/3] rtc: Handle errors correctly in
- rtc_irq_set_state()
-In-Reply-To: <20110722150432.2370bcf2.akpm@linux-foundation.org>
-Message-ID: <alpine.LFD.2.02.1107230907440.2702@ionos>
-References: <20110722091011.717194327@linutronix.de> <20110722091045.403648377@linutronix.de> <20110722150432.2370bcf2.akpm@linux-foundation.org>
+Subject: Re: [patch 3/3] rtc: Limit frequency
+In-Reply-To: <20110722150550.1878f069.akpm@linux-foundation.org>
+Message-ID: <alpine.LFD.2.02.1107230916000.2702@ionos>
+References: <20110722091011.717194327@linutronix.de> <20110722091045.537404938@linutronix.de> <20110722150550.1878f069.akpm@linux-foundation.org>
 User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -30,25 +29,17 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Fri, 22 Jul 2011, Andrew Morton wrote:
 
-> On Fri, 22 Jul 2011 09:12:50 -0000
+> On Fri, 22 Jul 2011 09:12:51 -0000
 > Thomas Gleixner <tglx@linutronix.de> wrote:
 > 
-> > The code checks the correctness of the parameters, but unconditionally
-> > arms/disarms the hrtimer.
-> > 
-> > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> > The RTC hrtimer is self rearming. We really need to limit the
+> > frequency to something sensible.
+> 
 > > Cc: stable@kernel.org
 > 
-> The -stable maintainers will want to know why they should merge this.
-> 
-> The maintainers of other trees will wonder whether they should backport
-> it too.
-> 
-> To help them make these decision we should always provide a description
-> of the user-visible effects of the bug, please.
+> Why?  What failures does the current code cause?  What effect do these
+> failures have upon users?
 
-Fair enough. 
+Due to the hrtimer self rearming mode a user can DoS the machine
+simply because it's starved by hrtimer events.
 
-The result is that a random task might arm/disarm rtc timer and
-surprise the real owner by either generating events or by stopping
-them. Both undesired behaviour :)
