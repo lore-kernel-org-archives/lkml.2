@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752269Ab1GWJQG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 05:16:06 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:45881 "EHLO mx2.mail.elte.hu"
+	id S1752242Ab1GWJVI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 05:21:08 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:36218 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752048Ab1GWJP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 05:15:56 -0400
-Date: Sat, 23 Jul 2011 11:15:09 +0200
+	id S1751868Ab1GWJU6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jul 2011 05:20:58 -0400
+Date: Sat, 23 Jul 2011 11:20:13 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/detect-hyper change for v3.1
-Message-ID: <20110723091509.GA18000@elte.hu>
+Subject: [GIT PULL] x86/fpu change for v3.1
+Message-ID: <20110723092013.GA18787@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -31,37 +31,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest x86-detect-hyper-for-linus git tree from:
+Please pull the latest x86-fpu-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-detect-hyper-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-fpu-for-linus
 
  Thanks,
 
 	Ingo
 
 ------------------>
-Anupam Chanda (1):
-      x86, hyper: Change hypervisor detection order
+Suresh Siddha (1):
+      x86-32, fpu: Fix DNA exception during check_fpu()
 
 
- arch/x86/kernel/cpu/hypervisor.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/bugs.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/hypervisor.c b/arch/x86/kernel/cpu/hypervisor.c
-index 8095f86..755f64f 100644
---- a/arch/x86/kernel/cpu/hypervisor.c
-+++ b/arch/x86/kernel/cpu/hypervisor.c
-@@ -32,11 +32,11 @@
-  */
- static const __initconst struct hypervisor_x86 * const hypervisors[] =
- {
--	&x86_hyper_vmware,
--	&x86_hyper_ms_hyperv,
- #ifdef CONFIG_XEN_PVHVM
- 	&x86_hyper_xen_hvm,
- #endif
-+	&x86_hyper_vmware,
-+	&x86_hyper_ms_hyperv,
- };
+diff --git a/arch/x86/kernel/cpu/bugs.c b/arch/x86/kernel/cpu/bugs.c
+index 525514c..46674fb 100644
+--- a/arch/x86/kernel/cpu/bugs.c
++++ b/arch/x86/kernel/cpu/bugs.c
+@@ -62,6 +62,8 @@ static void __init check_fpu(void)
+ 		return;
+ 	}
  
- const struct hypervisor_x86 *x86_hyper;
++	kernel_fpu_begin();
++
+ 	/*
+ 	 * trap_init() enabled FXSR and company _before_ testing for FP
+ 	 * problems here.
+@@ -80,6 +82,8 @@ static void __init check_fpu(void)
+ 		: "=m" (*&fdiv_bug)
+ 		: "m" (*&x), "m" (*&y));
+ 
++	kernel_fpu_end();
++
+ 	boot_cpu_data.fdiv_bug = fdiv_bug;
+ 	if (boot_cpu_data.fdiv_bug)
+ 		printk(KERN_WARNING "Hmm, FPU with FDIV bug.\n");
