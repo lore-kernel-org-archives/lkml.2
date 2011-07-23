@@ -1,125 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751351Ab1GWE5d (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 00:57:33 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:52734 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720Ab1GWE53 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 00:57:29 -0400
-From: Colin Cross <ccross@android.com>
-To: linux-pm@lists.linux-foundation.org
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-        Kevin Hilman <khilman@ti.com>, Nishanth Menon <nm@ti.com>,
-        Colin Cross <ccross@android.com>
-Subject: [PATCH] PM: runtime: add might_sleep to PM runtime functions
-Date: Fri, 22 Jul 2011 21:56:07 -0700
-Message-Id: <1311396967-16721-1-git-send-email-ccross@android.com>
-X-Mailer: git-send-email 1.7.4.1
-X-System-Of-Record: true
+	id S1751141Ab1GWF3z (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 01:29:55 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:55228 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750749Ab1GWF3x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jul 2011 01:29:53 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+To: linux-kernel@vger.kernel.org
+Cc: uclinux-dist-devel@blackfin.uclinux.org
+Subject: [PATCH 00/43] Blackfin updates for v3.1-rc0
+Date: Sat, 23 Jul 2011 01:29:57 -0400
+Message-Id: <1311398997-24417-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The list of functions that can be called in atomic context is
-non-intuitive (pm_runtime_put_sync can not, but
-pm_runtime_put_sync_suspend can, if pm_runtime_irq_safe has
-been called?).  The code is actively misleading - the entry
-points all start with spin_lock_irqsave, suggesting they
-are safe to call in atomic context, but may later
-enable interrupts.
+We've got fixes, board updates, core optimizations, code cleanups,
+and fun!
 
-Add might_sleep_if to all the __pm_runtime_* entry points
-to enforce correct usage.
+Fixes:
+	- debug-mmr typos and sync to match hardware
+	- get XIP running again by fixing linker script
 
-Also add pm_runtime_put_sync_autosuspend to the list of
-functions that can be called in atomic context.
+Board updates:
+	- net2272 settings now that the driver is in flight
+	- punt dead spi resources
+	- fix some sound names
 
-Signed-off-by: Colin Cross <ccross@android.com>
----
- Documentation/power/runtime_pm.txt |    1 +
- drivers/base/power/runtime.c       |   16 ++++++++++++++--
- 2 files changed, 15 insertions(+), 2 deletions(-)
+Optimizations:
+	- core start up code
+	- double fault checking
+	- suspend/resume core is much smaller/cleaner
 
-diff --git a/Documentation/power/runtime_pm.txt b/Documentation/power/runtime_pm.txt
-index b24875b..22852b3 100644
---- a/Documentation/power/runtime_pm.txt
-+++ b/Documentation/power/runtime_pm.txt
-@@ -469,6 +469,7 @@ pm_runtime_autosuspend()
- pm_runtime_resume()
- pm_runtime_get_sync()
- pm_runtime_put_sync_suspend()
-+pm_runtime_put_sync_autosuspend()
- 
- 5. Run-time PM Initialization, Device Probing and Removal
- 
-diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
-index 0d4587b..fdc4567 100644
---- a/drivers/base/power/runtime.c
-+++ b/drivers/base/power/runtime.c
-@@ -732,6 +732,8 @@ int __pm_runtime_idle(struct device *dev, int rpmflags)
- 	unsigned long flags;
- 	int retval;
- 
-+	might_sleep_if(!(rpmflags & RPM_ASYNC));
-+
- 	if (rpmflags & RPM_GET_PUT) {
- 		if (!atomic_dec_and_test(&dev->power.usage_count))
- 			return 0;
-@@ -754,13 +756,16 @@ EXPORT_SYMBOL_GPL(__pm_runtime_idle);
-  * return immediately if it is larger than zero.  Then carry out a suspend,
-  * either synchronous or asynchronous.
-  *
-- * This routine may be called in atomic context if the RPM_ASYNC flag is set.
-+ * This routine may be called in atomic context if the RPM_ASYNC flag is set,
-+ * or if pm_runtime_irq_safe() has been called.
-  */
- int __pm_runtime_suspend(struct device *dev, int rpmflags)
- {
- 	unsigned long flags;
- 	int retval;
- 
-+	might_sleep_if(!(rpmflags & RPM_ASYNC) && !dev->power.irq_safe);
-+
- 	if (rpmflags & RPM_GET_PUT) {
- 		if (!atomic_dec_and_test(&dev->power.usage_count))
- 			return 0;
-@@ -782,13 +787,16 @@ EXPORT_SYMBOL_GPL(__pm_runtime_suspend);
-  * If the RPM_GET_PUT flag is set, increment the device's usage count.  Then
-  * carry out a resume, either synchronous or asynchronous.
-  *
-- * This routine may be called in atomic context if the RPM_ASYNC flag is set.
-+ * This routine may be called in atomic context if the RPM_ASYNC flag is set,
-+ * or if pm_runtime_irq_safe() has been called.
-  */
- int __pm_runtime_resume(struct device *dev, int rpmflags)
- {
- 	unsigned long flags;
- 	int retval;
- 
-+	might_sleep_if(!(rpmflags & RPM_ASYNC) && !dev->power.irq_safe);
-+
- 	if (rpmflags & RPM_GET_PUT)
- 		atomic_inc(&dev->power.usage_count);
- 
-@@ -978,6 +986,8 @@ EXPORT_SYMBOL_GPL(pm_runtime_barrier);
-  */
- void __pm_runtime_disable(struct device *dev, bool check_resume)
- {
-+	might_sleep();
-+
- 	spin_lock_irq(&dev->power.lock);
- 
- 	if (dev->power.disable_depth > 0) {
-@@ -1184,6 +1194,8 @@ void __pm_runtime_use_autosuspend(struct device *dev, bool use)
- {
- 	int old_delay, old_use;
- 
-+	might_sleep();
-+
- 	spin_lock_irq(&dev->power.lock);
- 	old_delay = dev->power.autosuspend_delay;
- 	old_use = dev->power.use_autosuspend;
+New stuff:
+	- basic PWM support
+
+Cleanups:
+	- migrate to more asm-generic files (check out that delete stat!)
+
+Mathias Krause (1):
+  Blackfin: exec: remove redundant set_fs(USER_DS)
+
+Mike Frysinger (39):
+  Blackfin: convert to kbuild asm-generic support
+  Blackfin: net2272: move pin setup to boards files
+  Blackfin: boards: clean up redundant/dead spi resources
+  Blackfin: SMP: optimize start up code a bit
+  Blackfin: time: replace magic numbers with defines
+  Blackfin: optimize double fault boot checking
+  Blackfin: convert to asm-generic/mutex-dec.h for all systems
+  Blackfin: debug-mmrs: fix typo in single dmac setup
+  Blackfin: debug-mmrs: disable PERIPHERAL_MAP for IMDMA channels
+  Blackfin: bf561-ezkit: change parallel flash from M to Y in defconfig
+  Blackfin: update anomaly lists to latest public info
+  Blackfin: gptimers: add group structure for hardware register layout
+  Blackfin: debug-mmrs: prevent macro arg from expanding
+  Blackfin: debug-mmrs: use new gptimer_group layout to simplify code
+  Blackfin: gptimers: use register structs from common header
+  Blackfin: gptimers: use bfin read/write helpers
+  Blackfin: gptimers: add enable/disable by timer id
+  Blackfin: pwm: implement linux/pwm.h API
+  Blackfin: convert unicode space gremlins
+  Blackfin: gpio: punt unused GPIO_# defines
+  Blackfin: bf54x: constify pint register array
+  Blackfin: bf54x: tweak MMR pint names
+  Blackfin: bf54x: switch to common pint MMR struct
+  Blackfin: debug-mmrs: generalize pint logic
+  Blackfin: dpmc: bind to MMR names and not CPUs
+  Blackfin: gpio/ints: generalize pint logic
+  Blackfin: dpmc: optimize SIC_IWR programming a little
+  Blackfin: dpmc: omit RETE/RETN when hibernating
+  Blackfin: dpmc: relocate hibernate helper macros
+  Blackfin: dpmc: do not save/restore EVT0/EVT1/EVT4 when hibernating
+  Blackfin: dpmc: optimize hibernate/resume path
+  Blackfin: bf538: pull gpio/port logic out of core hibernate paths
+  Blackfin: dpmc: don't save/restore scratch registers
+  Blackfin: dpmc: optimize SDRAM programming slightly
+  Blackfin: bf54x: fix GPIO resume code
+  Blackfin: bf51x: fix alternative portmux options
+  Blackfin: bf526: restrict reboot workaround to 0.0 silicon
+  Blackfin: SMP: punt unused atomic_test_mask helper
+  Blackfin: spi-docs: further clarify GPIO CS behavior with various
+    modes
+
+Scott Jiang (1):
+  Blackfin: boards: fix pcm device name
+
+Steven Miao (1):
+  Blackfin: make sure percpu section is aligned in XIP builds
+
+Steven Rostedt (1):
+  Blackfin: irqs: do not trace arch_local_{*,irq_*} functions
+
+ Documentation/blackfin/bfin-spi-notes.txt       |    2 +
+ arch/blackfin/Kconfig                           |   10 +
+ arch/blackfin/configs/BF561-EZKIT_defconfig     |    8 +-
+ arch/blackfin/include/asm/Kbuild                |   43 +
+ arch/blackfin/include/asm/atomic.h              |   13 +-
+ arch/blackfin/include/asm/auxvec.h              |    1 -
+ arch/blackfin/include/asm/bitsperlong.h         |    1 -
+ arch/blackfin/include/asm/blackfin.h            |    6 +-
+ arch/blackfin/include/asm/bugs.h                |    1 -
+ arch/blackfin/include/asm/cputime.h             |    1 -
+ arch/blackfin/include/asm/current.h             |    1 -
+ arch/blackfin/include/asm/device.h              |    1 -
+ arch/blackfin/include/asm/div64.h               |    1 -
+ arch/blackfin/include/asm/dpmc.h                |   27 -
+ arch/blackfin/include/asm/emergency-restart.h   |    1 -
+ arch/blackfin/include/asm/errno.h               |    1 -
+ arch/blackfin/include/asm/fb.h                  |    1 -
+ arch/blackfin/include/asm/futex.h               |    1 -
+ arch/blackfin/include/asm/gpio.h                |   64 +--
+ arch/blackfin/include/asm/gptimers.h            |   19 +
+ arch/blackfin/include/asm/hw_irq.h              |    1 -
+ arch/blackfin/include/asm/ioctl.h               |    1 -
+ arch/blackfin/include/asm/ipcbuf.h              |    1 -
+ arch/blackfin/include/asm/irq_regs.h            |    1 -
+ arch/blackfin/include/asm/irqflags.h            |   42 +-
+ arch/blackfin/include/asm/kdebug.h              |    1 -
+ arch/blackfin/include/asm/kmap_types.h          |    1 -
+ arch/blackfin/include/asm/local.h               |    1 -
+ arch/blackfin/include/asm/local64.h             |    1 -
+ arch/blackfin/include/asm/mman.h                |    1 -
+ arch/blackfin/include/asm/module.h              |    8 +-
+ arch/blackfin/include/asm/msgbuf.h              |    1 -
+ arch/blackfin/include/asm/mutex.h               |   77 +--
+ arch/blackfin/include/asm/page.h                |    8 +-
+ arch/blackfin/include/asm/param.h               |    1 -
+ arch/blackfin/include/asm/pda.h                 |   10 +
+ arch/blackfin/include/asm/percpu.h              |    1 -
+ arch/blackfin/include/asm/pgalloc.h             |    1 -
+ arch/blackfin/include/asm/resource.h            |    1 -
+ arch/blackfin/include/asm/scatterlist.h         |    6 -
+ arch/blackfin/include/asm/sections.h            |    8 +-
+ arch/blackfin/include/asm/sembuf.h              |    1 -
+ arch/blackfin/include/asm/serial.h              |    1 -
+ arch/blackfin/include/asm/setup.h               |    1 -
+ arch/blackfin/include/asm/shmbuf.h              |    1 -
+ arch/blackfin/include/asm/shmparam.h            |    1 -
+ arch/blackfin/include/asm/sigcontext.h          |    8 +-
+ arch/blackfin/include/asm/socket.h              |    1 -
+ arch/blackfin/include/asm/sockios.h             |    1 -
+ arch/blackfin/include/asm/spinlock.h            |    8 +-
+ arch/blackfin/include/asm/statfs.h              |    1 -
+ arch/blackfin/include/asm/termbits.h            |    1 -
+ arch/blackfin/include/asm/termios.h             |    1 -
+ arch/blackfin/include/asm/topology.h            |    1 -
+ arch/blackfin/include/asm/types.h               |    1 -
+ arch/blackfin/include/asm/ucontext.h            |    1 -
+ arch/blackfin/include/asm/unaligned.h           |    1 -
+ arch/blackfin/include/asm/user.h                |    1 -
+ arch/blackfin/include/asm/xor.h                 |    1 -
+ arch/blackfin/kernel/Makefile                   |    1 +
+ arch/blackfin/kernel/asm-offsets.c              |   10 +
+ arch/blackfin/kernel/bfin_gpio.c                |   26 +-
+ arch/blackfin/kernel/debug-mmrs.c               |  109 ++-
+ arch/blackfin/kernel/gptimers.c                 |   93 +--
+ arch/blackfin/kernel/process.c                  |    1 -
+ arch/blackfin/kernel/pwm.c                      |  100 +++
+ arch/blackfin/kernel/reboot.c                   |    4 +-
+ arch/blackfin/kernel/setup.c                    |   16 +-
+ arch/blackfin/kernel/time.c                     |    4 +-
+ arch/blackfin/kernel/vmlinux.lds.S              |    1 +
+ arch/blackfin/mach-bf518/Kconfig                |   78 ++-
+ arch/blackfin/mach-bf518/boards/ezbrd.c         |   59 --
+ arch/blackfin/mach-bf518/boards/tcm-bf518.c     |   47 -
+ arch/blackfin/mach-bf518/include/mach/anomaly.h |   24 +-
+ arch/blackfin/mach-bf518/include/mach/portmux.h |   54 +-
+ arch/blackfin/mach-bf527/boards/ad7160eval.c    |   19 -
+ arch/blackfin/mach-bf527/boards/cm_bf527.c      |   55 --
+ arch/blackfin/mach-bf527/boards/ezbrd.c         |   62 --
+ arch/blackfin/mach-bf527/boards/ezkit.c         |   98 +--
+ arch/blackfin/mach-bf527/boards/tll6527m.c      |   70 --
+ arch/blackfin/mach-bf527/include/mach/anomaly.h |   34 +-
+ arch/blackfin/mach-bf533/boards/H8606.c         |   28 -
+ arch/blackfin/mach-bf533/boards/blackstamp.c    |   10 -
+ arch/blackfin/mach-bf533/boards/cm_bf533.c      |   29 -
+ arch/blackfin/mach-bf533/boards/ezkit.c         |   36 -
+ arch/blackfin/mach-bf533/boards/ip0x.c          |    1 -
+ arch/blackfin/mach-bf533/boards/stamp.c         |   78 +-
+ arch/blackfin/mach-bf533/include/mach/anomaly.h |   19 +-
+ arch/blackfin/mach-bf537/boards/cm_bf537e.c     |   51 +-
+ arch/blackfin/mach-bf537/boards/cm_bf537u.c     |   63 +-
+ arch/blackfin/mach-bf537/boards/dnp5370.c       |    2 -
+ arch/blackfin/mach-bf537/boards/minotaur.c      |    2 -
+ arch/blackfin/mach-bf537/boards/pnav10.c        |   38 -
+ arch/blackfin/mach-bf537/boards/stamp.c         |  176 ++---
+ arch/blackfin/mach-bf537/boards/tcm_bf537.c     |   51 +-
+ arch/blackfin/mach-bf537/include/mach/anomaly.h |   34 +-
+ arch/blackfin/mach-bf538/boards/ezkit.c         |   25 -
+ arch/blackfin/mach-bf538/ext-gpio.c             |   37 +-
+ arch/blackfin/mach-bf538/include/mach/anomaly.h |   38 +-
+ arch/blackfin/mach-bf538/include/mach/gpio.h    |    3 +
+ arch/blackfin/mach-bf548/boards/cm_bf548.c      |   15 -
+ arch/blackfin/mach-bf548/boards/ezkit.c         |   32 -
+ arch/blackfin/mach-bf548/include/mach/anomaly.h |  220 +++---
+ arch/blackfin/mach-bf548/include/mach/gpio.h    |    2 +
+ arch/blackfin/mach-bf548/include/mach/irq.h     |    2 +-
+ arch/blackfin/mach-bf561/boards/acvilon.c       |    9 -
+ arch/blackfin/mach-bf561/boards/cm_bf561.c      |   58 +-
+ arch/blackfin/mach-bf561/boards/ezkit.c         |   41 +-
+ arch/blackfin/mach-bf561/include/mach/anomaly.h |  132 ++--
+ arch/blackfin/mach-bf561/include/mach/gpio.h    |    6 +-
+ arch/blackfin/mach-bf561/secondary.S            |  152 ++---
+ arch/blackfin/mach-common/dpmc_modes.S          | 1016 +++++++++++++----------
+ arch/blackfin/mach-common/head.S                |   36 +-
+ arch/blackfin/mach-common/ints-priority.c       |   41 +-
+ arch/blackfin/mach-common/smp.c                 |   17 +-
+ 115 files changed, 1735 insertions(+), 2138 deletions(-)
+ delete mode 100644 arch/blackfin/include/asm/auxvec.h
+ delete mode 100644 arch/blackfin/include/asm/bitsperlong.h
+ delete mode 100644 arch/blackfin/include/asm/bugs.h
+ delete mode 100644 arch/blackfin/include/asm/cputime.h
+ delete mode 100644 arch/blackfin/include/asm/current.h
+ delete mode 100644 arch/blackfin/include/asm/device.h
+ delete mode 100644 arch/blackfin/include/asm/div64.h
+ delete mode 100644 arch/blackfin/include/asm/emergency-restart.h
+ delete mode 100644 arch/blackfin/include/asm/errno.h
+ delete mode 100644 arch/blackfin/include/asm/fb.h
+ delete mode 100644 arch/blackfin/include/asm/futex.h
+ delete mode 100644 arch/blackfin/include/asm/hw_irq.h
+ delete mode 100644 arch/blackfin/include/asm/ioctl.h
+ delete mode 100644 arch/blackfin/include/asm/ipcbuf.h
+ delete mode 100644 arch/blackfin/include/asm/irq_regs.h
+ delete mode 100644 arch/blackfin/include/asm/kdebug.h
+ delete mode 100644 arch/blackfin/include/asm/kmap_types.h
+ delete mode 100644 arch/blackfin/include/asm/local.h
+ delete mode 100644 arch/blackfin/include/asm/local64.h
+ delete mode 100644 arch/blackfin/include/asm/mman.h
+ delete mode 100644 arch/blackfin/include/asm/msgbuf.h
+ delete mode 100644 arch/blackfin/include/asm/param.h
+ delete mode 100644 arch/blackfin/include/asm/percpu.h
+ delete mode 100644 arch/blackfin/include/asm/pgalloc.h
+ delete mode 100644 arch/blackfin/include/asm/resource.h
+ delete mode 100644 arch/blackfin/include/asm/scatterlist.h
+ delete mode 100644 arch/blackfin/include/asm/sembuf.h
+ delete mode 100644 arch/blackfin/include/asm/serial.h
+ delete mode 100644 arch/blackfin/include/asm/setup.h
+ delete mode 100644 arch/blackfin/include/asm/shmbuf.h
+ delete mode 100644 arch/blackfin/include/asm/shmparam.h
+ delete mode 100644 arch/blackfin/include/asm/socket.h
+ delete mode 100644 arch/blackfin/include/asm/sockios.h
+ delete mode 100644 arch/blackfin/include/asm/statfs.h
+ delete mode 100644 arch/blackfin/include/asm/termbits.h
+ delete mode 100644 arch/blackfin/include/asm/termios.h
+ delete mode 100644 arch/blackfin/include/asm/topology.h
+ delete mode 100644 arch/blackfin/include/asm/types.h
+ delete mode 100644 arch/blackfin/include/asm/ucontext.h
+ delete mode 100644 arch/blackfin/include/asm/unaligned.h
+ delete mode 100644 arch/blackfin/include/asm/user.h
+ delete mode 100644 arch/blackfin/include/asm/xor.h
+ create mode 100644 arch/blackfin/kernel/pwm.c
+
 -- 
-1.7.4.1
+1.7.6
 
