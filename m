@@ -1,169 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751145Ab1GWEg6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 00:36:58 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:46396 "EHLO
+	id S1751351Ab1GWE5d (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 00:57:33 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:52734 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720Ab1GWEgv convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1750720Ab1GWE53 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 00:36:51 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:sender:in-reply-to:references:from:
-	date:x-google-sender-auth:message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=PUqeggnWtCiO7HifEYW4mAyZy176/G/NrnvaSXlyry36PzCpO4mo7RxZ2RKm+WCu3
-	m6mGC4RTpbB70jl+zVG+w==
-MIME-Version: 1.0
-In-Reply-To: <4E2A1ECD.3030302@canonical.com>
-References: <1311169146-20066-1-git-send-email-djkurtz@chromium.org>
- <1311169146-20066-8-git-send-email-djkurtz@chromium.org> <4E2A1ECD.3030302@canonical.com>
-From: Daniel Kurtz <djkurtz@chromium.org>
-Date: Sat, 23 Jul 2011 12:36:28 +0800
-X-Google-Sender-Auth: GvIdNURKkOHQv7xtynBGhzLrZm4
-Message-ID: <CAGS+omBCd=e0ACxxTwns8HVNitVOYF-xFrkVmhreOmHQTq_10A@mail.gmail.com>
-Subject: Re: [PATCH 7/9 v2] Input: synaptics - improved 2->3 finger transition handling
-To: Chase Douglas <chase.douglas@canonical.com>
-Cc: dmitry.torokhov@gmail.com, rydberg@euromail.se, rubini@cvml.unipv.it,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        derek.foreman@collabora.co.uk, daniel.stone@collabora.co.uk,
-        olofj@chromium.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sat, 23 Jul 2011 00:57:29 -0400
+From: Colin Cross <ccross@android.com>
+To: linux-pm@lists.linux-foundation.org
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+        Kevin Hilman <khilman@ti.com>, Nishanth Menon <nm@ti.com>,
+        Colin Cross <ccross@android.com>
+Subject: [PATCH] PM: runtime: add might_sleep to PM runtime functions
+Date: Fri, 22 Jul 2011 21:56:07 -0700
+Message-Id: <1311396967-16721-1-git-send-email-ccross@android.com>
+X-Mailer: git-send-email 1.7.4.1
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chase,
+The list of functions that can be called in atomic context is
+non-intuitive (pm_runtime_put_sync can not, but
+pm_runtime_put_sync_suspend can, if pm_runtime_irq_safe has
+been called?).  The code is actively misleading - the entry
+points all start with spin_lock_irqsave, suggesting they
+are safe to call in atomic context, but may later
+enable interrupts.
 
-On Sat, Jul 23, 2011 at 9:07 AM, Chase Douglas
-<chase.douglas@canonical.com> wrote:
-> On 07/20/2011 06:39 AM, djkurtz@chromium.org wrote:
->> From: Daniel Kurtz <djkurtz@chromium.org>
->>
->> As long as we know which slots are currently contained in SGM and AGM
->> packets, it is possible to track the slot 0 finger when transitioning from
->> 2->3 fingers.  This is the case when fingers are being added one at a
->> time, 1->2->3.
->>
->> However, when fingers are removed, we sometimes lose track of which slots
->> are contained in SGM and AGM. In particular, when transitioning from 3->2
->> and sometimes 3->1.  In both of these cases, we can no longer track slot 0
->> during 2->3 transitions.
->>
->> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
->> ---
->>  drivers/input/mouse/synaptics.c |   33 +++++++++++++++++++++++++++------
->>  drivers/input/mouse/synaptics.h |    1 +
->>  2 files changed, 28 insertions(+), 6 deletions(-)
->>
->> diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
->> index b626b98..893e567 100644
->> --- a/drivers/input/mouse/synaptics.c
->> +++ b/drivers/input/mouse/synaptics.c
->> @@ -659,6 +659,7 @@ static void synaptics_image_sensor_0f(struct synaptics_data *priv,
->>                                     struct synaptics_mt_state *mt_state)
->>  {
->>       synaptics_mt_state_set(mt_state, 0, -1, -1);
->> +     priv->mt_state_lost = false;
->>  }
->>
->>  /* Handle case where mt_state->count = 1 */
->> @@ -726,6 +727,7 @@ static void synaptics_image_sensor_1f(struct synaptics_data *priv,
->>                * So, empty all slots. We will guess slot 0 on subsequent 1->1
->>                */
->>               synaptics_mt_state_set(mt_state, 0, -1, -1);
->> +             priv->mt_state_lost = true;
->>               break;
->>       }
->>  }
->> @@ -771,6 +773,7 @@ static void synaptics_image_sensor_2f(struct synaptics_data *priv,
->>                * subsequent 2->2
->>                */
->>               synaptics_mt_state_set(mt_state, 0, -1, -1);
->> +             priv->mt_state_lost = true;
->>               break;
->>       }
->>  }
->> @@ -800,14 +803,32 @@ static void synaptics_image_sensor_3f(struct synaptics_data *priv,
->>               break;
->>       case 2:
->>               /*
->> -              * On 2->3 transitions, we are given no indication which finger
->> -              * was added.
->> -              * We don't even know what finger the current AGM packet
->> -              * contained.
->> +              * After some 3->1 and all 3->2 transitions, we lose track
->> +              * of which slot is reported by sgm and agm.
->>                *
->> -              * So, empty all slots. They get filled on a subsequent 3->3
->> +              * For 2->3 in this state, empty all slots, and we will guess
->> +              * (0,1) on a subsequent 0->3.
->> +              *
->> +              * To userspace, the resulting transition will look like:
->> +              *    2:[0,1] -> 0:[-1,-1] -> 3:[0,2]
->
-> I don't think this should be allowed. We shouldn't be giving userspace
-> wrong information. One could argue that userspace could watch for these
-> transitions, but then I would argue that the driver should be handling
-> this :).
->
-> I don't know what the best resolution to this issue is, but any
-> transition in the number of fingers must be accurate. In uTouch, we
-> watch for touch count transitions for "continuation" gestures.
+Add might_sleep_if to all the __pm_runtime_* entry points
+to enforce correct usage.
 
-So, you want the count to be accurate.
-But, during these transitions, there is not enough information to
-guarantee all of the following at the same time:
- (1) finger count
- (2) track_id
- (3) finger position
+Also add pm_runtime_put_sync_autosuspend to the list of
+functions that can be called in atomic context.
 
-Would you prefer an implementation that continued to report count (via
-BTN_TOUCH*) correctly, but dropped down to 0 or 1 MT-B slots when for
-these cases where it could not determine the correct position or track_id
-to report?
+Signed-off-by: Colin Cross <ccross@android.com>
+---
+ Documentation/power/runtime_pm.txt |    1 +
+ drivers/base/power/runtime.c       |   16 ++++++++++++++--
+ 2 files changed, 15 insertions(+), 2 deletions(-)
 
-It seems like it would be more work for userspace to handle this new way
-than the simulated number-of-touch transitions, where the transient
-states are all normal valid states.
+diff --git a/Documentation/power/runtime_pm.txt b/Documentation/power/runtime_pm.txt
+index b24875b..22852b3 100644
+--- a/Documentation/power/runtime_pm.txt
++++ b/Documentation/power/runtime_pm.txt
+@@ -469,6 +469,7 @@ pm_runtime_autosuspend()
+ pm_runtime_resume()
+ pm_runtime_get_sync()
+ pm_runtime_put_sync_suspend()
++pm_runtime_put_sync_autosuspend()
+ 
+ 5. Run-time PM Initialization, Device Probing and Removal
+ 
+diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
+index 0d4587b..fdc4567 100644
+--- a/drivers/base/power/runtime.c
++++ b/drivers/base/power/runtime.c
+@@ -732,6 +732,8 @@ int __pm_runtime_idle(struct device *dev, int rpmflags)
+ 	unsigned long flags;
+ 	int retval;
+ 
++	might_sleep_if(!(rpmflags & RPM_ASYNC));
++
+ 	if (rpmflags & RPM_GET_PUT) {
+ 		if (!atomic_dec_and_test(&dev->power.usage_count))
+ 			return 0;
+@@ -754,13 +756,16 @@ EXPORT_SYMBOL_GPL(__pm_runtime_idle);
+  * return immediately if it is larger than zero.  Then carry out a suspend,
+  * either synchronous or asynchronous.
+  *
+- * This routine may be called in atomic context if the RPM_ASYNC flag is set.
++ * This routine may be called in atomic context if the RPM_ASYNC flag is set,
++ * or if pm_runtime_irq_safe() has been called.
+  */
+ int __pm_runtime_suspend(struct device *dev, int rpmflags)
+ {
+ 	unsigned long flags;
+ 	int retval;
+ 
++	might_sleep_if(!(rpmflags & RPM_ASYNC) && !dev->power.irq_safe);
++
+ 	if (rpmflags & RPM_GET_PUT) {
+ 		if (!atomic_dec_and_test(&dev->power.usage_count))
+ 			return 0;
+@@ -782,13 +787,16 @@ EXPORT_SYMBOL_GPL(__pm_runtime_suspend);
+  * If the RPM_GET_PUT flag is set, increment the device's usage count.  Then
+  * carry out a resume, either synchronous or asynchronous.
+  *
+- * This routine may be called in atomic context if the RPM_ASYNC flag is set.
++ * This routine may be called in atomic context if the RPM_ASYNC flag is set,
++ * or if pm_runtime_irq_safe() has been called.
+  */
+ int __pm_runtime_resume(struct device *dev, int rpmflags)
+ {
+ 	unsigned long flags;
+ 	int retval;
+ 
++	might_sleep_if(!(rpmflags & RPM_ASYNC) && !dev->power.irq_safe);
++
+ 	if (rpmflags & RPM_GET_PUT)
+ 		atomic_inc(&dev->power.usage_count);
+ 
+@@ -978,6 +986,8 @@ EXPORT_SYMBOL_GPL(pm_runtime_barrier);
+  */
+ void __pm_runtime_disable(struct device *dev, bool check_resume)
+ {
++	might_sleep();
++
+ 	spin_lock_irq(&dev->power.lock);
+ 
+ 	if (dev->power.disable_depth > 0) {
+@@ -1184,6 +1194,8 @@ void __pm_runtime_use_autosuspend(struct device *dev, bool use)
+ {
+ 	int old_delay, old_use;
+ 
++	might_sleep();
++
+ 	spin_lock_irq(&dev->power.lock);
+ 	old_delay = dev->power.autosuspend_delay;
+ 	old_use = dev->power.use_autosuspend;
+-- 
+1.7.4.1
 
--Daniel
-
->
->>                */
->> -             synaptics_mt_state_set(mt_state, 0, -1, -1);
->> +             if (priv->mt_state_lost) {
->> +                     synaptics_mt_state_set(mt_state, 0, -1, -1);
->> +                     break;
->> +             }
->> +
->> +             /*
->> +              * If the (SGM,AGM) really previously contained slots (0, 1),
->> +              * then we cannot know what slot was just reported by the AGM,
->> +              * because the 2->3 transition can occur either before or after
->> +              * the AGM packet. Thus, this most recent AGM could contain
->> +              * either the same old slot 1 or the new slot 2.
->> +              * Subsequent AGMs will be reporting slot 2.
->> +              *
->> +              * To userspace, the resulting transition will look like:
->> +              *    2:[0,1] -> 1:[0,-1] -> 3:[0,2]
->> +              */
->> +             synaptics_mt_state_set(mt_state, 1, 0, -1);
->>               break;
->>       case 3:
->>               /*
->> diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
->> index 87be1fe..e3edfea 100644
->> --- a/drivers/input/mouse/synaptics.h
->> +++ b/drivers/input/mouse/synaptics.h
->> @@ -162,6 +162,7 @@ struct synaptics_data {
->>       struct serio *pt_port;                  /* Pass-through serio port */
->>
->>       struct synaptics_mt_state mt_state;     /* Current mt finger state */
->> +     bool mt_state_lost;                     /* mt_state may be incorrect */
->>
->>       /*
->>        * Last received Advanced Gesture Mode (AGM) packet. An AGM packet
->
->
