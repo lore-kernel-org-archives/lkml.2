@@ -1,97 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753291Ab1GWSQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 14:16:27 -0400
-Received: from mail.mnsspb.ru ([84.204.75.2]:33839 "EHLO mail.mnsspb.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753020Ab1GWSQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 14:16:18 -0400
-Date: Sat, 23 Jul 2011 22:15:09 +0400
-From: Kirill Smelkov <kirr@mns.spb.ru>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-uvc-devel@lists.berlios.de, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH, RESEND] uvcvideo: Add FIX_BANDWIDTH quirk to HP Webcam
-	found on HP Mini 5103 netbook
-Message-ID: <20110723181509.GA16414@tugrik.mns.mnsspb.ru>
-References: <20110722144722.GA3717@tugrik.mns.mnsspb.ru> <201107230003.59800.laurent.pinchart@ideasonboard.com> <20110722222520.GA14917@tugrik.mns.mnsspb.ru> <201107230112.12868.laurent.pinchart@ideasonboard.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201107230112.12868.laurent.pinchart@ideasonboard.com>
-Organization: Marine Bridge & Navigation Systems
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753284Ab1GWSSK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 14:18:10 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:35186 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752828Ab1GWSSE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jul 2011 14:18:04 -0400
+Subject: Re: [PATCH 08/13] iscsi-target: Add CHAP Authentication support
+ using libcrypto
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Andy Grover <agrover@redhat.com>,
+        Hannes Reinecke <hare@suse.de>, Roland Dreier <roland@purestorage.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <CA+55aFzkEUbnoDg0KwXDRQMeCFeO5s6_4dWHTY59=hj3QHWL0w@mail.gmail.com>
+References: <1311410747-29947-1-git-send-email-nab@linux-iscsi.org>
+	 <1311410747-29947-9-git-send-email-nab@linux-iscsi.org>
+	 <1311439173.23720.14.camel@mulgrave>
+	 <CA+55aFzkEUbnoDg0KwXDRQMeCFeO5s6_4dWHTY59=hj3QHWL0w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 23 Jul 2011 22:17:55 +0400
+Message-ID: <1311445075.17423.13.camel@mulgrave>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent, All,
-
-On Sat, Jul 23, 2011 at 01:12:11AM +0200, Laurent Pinchart wrote:
-> Hi Kirill,
+On Sat, 2011-07-23 at 10:51 -0700, Linus Torvalds wrote:
+> On Sat, Jul 23, 2011 at 9:39 AM, James Bottomley
+> <James.Bottomley@hansenpartnership.com> wrote:
+> >
+> > I've asked you twice for input on the patch doing this in userspace,
+> > which was posted five weeks ago.  Just ignoring something is
+> > unacceptable behaviour ... what do I have to do to get your attention?
+> > NAK the patch set?
 > 
-> On Saturday 23 July 2011 00:25:20 Kirill Smelkov wrote:
-> > On Sat, Jul 23, 2011 at 12:03:57AM +0200, Laurent Pinchart wrote:
-> > > On Friday 22 July 2011 16:47:22 Kirill Smelkov wrote:
-> > > >  [ Cc'ing Andrew Morton -- Andrew, could you please pick this patch, in
-> > > >  
-> > > >    case there is no response from maintainers again? Thanks beforehand.
-> > > >    ]
-> > > > 
-> > > > Hello up there,
-> > > > 
-> > > > My first posting was 1 month ago, and a reminder ~ 2 weeks ago. All
-> > > > without a reply. v3.0 is out and they say the merge window will be
-> > > > shorter this time, so in oder not to miss it, I've decided to resend my
-> > > > patch on lowering USB periodic bandwidth allocation topic.
-> > > 
-> > > I'm very very sorry for missing the patch (and worse, twice :-/).
-> > 
-> > Nevermind. I'm curious though, whether I did something wrong or anything
-> > else?  I mean how to avoid such long delays next time?
+> So what's the advantage of user space?
 > 
-> It was all my fault, mails piled up in my mailbox and for some reason I marked 
-> yours as processed while they were not. I certainly hope it won't happen 
-> again.
-
-I see, thanks. Yes let's hope mail won't do such "surprises" next time.
-
-
-
-> > > > Could this simple patch be please applied?
-> > > 
-> > > Yes it can. I see that Andrew already applied it to his tree. Mauro,
-> > > should it go through there, or through your tree ? I've pushed it to my
-> > > tree at git://linuxtv.org/pinchartl/uvcvideo.git uvcvideo-stable, so you
-> > > can already pull.
-> > 
-> > You've applied the patch from my first posting, but actually in the
-> > RESEND one I've added reference to EHCI-tweaking patch -- it is already
-> > merged into Greg's USB tree (it was not when I first posted), so could you
-> > please reapply? (sorry for confusion).
+> Traditionally, kernel/userspace splits have been:
+>  - fragile as hell
+>  - more code
+>  - slower
+>  - complicated to set up
+>  - problematic with backwards compatibility issues
+> and these days when I see some kernel functionality that needs user
+> space support, I just go "f*ck, that's going to be a pain".
 > 
-> Sure. That should now be fixed.
-
-Thanks.
-
-
-> > Thanks for replying and for uvcvideo,
+> So I think the "that part can be done in user space" argument is
+> fundamentally crap.
 > 
-> You're more than welcome. Thank you for the patch, and thank you for keeping 
-> on pushing :-)
+> Now, if it is an issue of "that can be done BETTER in user space
+> BECAUSE xyz", then that's a different issue. I haven't seen that
+> argument, though.
 
-:) Thanks again. I suppose it would be better for my patch to enter the
-mainline through v4l tree then, because it's the normal path for uvc
-bits.
+Well, this is essentially the argument.  The iSCSI authentication code
+follows a standard which originally had 4 different authentication
+methods (of which CHAP is just one) but which is now up to about 8 I
+think and rising.  It would be a massive amount of code to put them all
+in kernel, plus the authentication isn't a fast path thing; it's done
+once at login.  We already have the code to do this (although from the
+client side, not the server side) in userspace in the initiator.
+
+The prototype implementation, is very clean: it does the authenticated
+login and then passes the connected socket to the kernel for operations,
+so there's no real fragile state to pass across.
+
+There are a couple of reasons why user space makes sense apart from the
+existing code and the clean separation of setup from operation: some of
+the auth methods involve complex algorithms and debugging them in
+userspace is just easier, plus it allows easy backward compatible
+addition of new authentication mechanisms without having to respin a
+kernel.
+
+Quite a few other authentication mechanisms (like wireless and ipsec)
+are in userspace for the setup and negotiation and in-kernel for the
+operation, so it's a well understood paradigm.
+
+James
 
 
-
-Thanks,
-Kirill
-
-
-P.S.
-
-And thanks Andrew for backing me up.
