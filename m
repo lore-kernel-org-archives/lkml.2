@@ -1,38 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751787Ab1GWVei (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 17:34:38 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:45122 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751374Ab1GWVef convert rfc822-to-8bit (ORCPT
+	id S1751771Ab1GWVis (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 17:38:48 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:59179 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374Ab1GWVin (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 17:34:35 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toralf =?iso-8859-2?q?F=F6rster?= <toralf.foerster@gmx.de>
-Subject: Re: suspend/resume problems w/ kernel 3.0 and a *docked* ThinkPad T400
-Date: Sat, 23 Jul 2011 23:35:35 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0+; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-References: <201107232127.34255.toralf.foerster@gmx.de> <201107232148.44702.rjw@sisk.pl> <201107232227.37429.toralf.foerster@gmx.de>
-In-Reply-To: <201107232227.37429.toralf.foerster@gmx.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201107232335.35204.rjw@sisk.pl>
+	Sat, 23 Jul 2011 17:38:43 -0400
+Subject: Re: [PATCH 02/13] iscsi: Add Serial Number Arithmetic LT and GT
+	into iscsi_proto.h
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Andy Grover <agrover@redhat.com>,
+        Hannes Reinecke <hare@suse.de>, Roland Dreier <roland@purestorage.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Rustad, Mark D" <mark.d.rustad@intel.com>
+In-Reply-To: <alpine.LNX.2.00.1107231535070.3831@swampdragon.chaosbits.net>
+References: <1311410747-29947-1-git-send-email-nab@linux-iscsi.org>
+	 <1311410747-29947-3-git-send-email-nab@linux-iscsi.org>
+	 <alpine.LNX.2.00.1107231535070.3831@swampdragon.chaosbits.net>
+Content-Type: text/plain
+Date: Sat, 23 Jul 2011 14:29:22 -0700
+Message-Id: <1311456562.31450.298.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, July 23, 2011, Toralf Förster wrote:
+On Sat, 2011-07-23 at 16:25 +0200, Jesper Juhl wrote:
+> On Sat, 23 Jul 2011, Nicholas A. Bellinger wrote:
 > 
-> Rafael J. Wysocki wrote at 21:48:44
+> > From: Nicholas Bellinger <nab@linux-iscsi.org>
 > > 
-> > I wonder what happens if the machine is undocked?
-> No.
-> BTW with "no_console_suspend" I got the attached kernel crash.
+> > This patch moves the iscsi_sna_lt() and iscsi_sna_lte(), along with
+> > iscsi_sna_gt() and iscsi_sna_gte() from iscsi_target_mod into
+> > static inlines inside of include/scsi/iscsi_proto.h
+> > 
+> > This patch also includes the ISCSI_HDR_LEN and ISCSI_CRC_LEN
+> > definitions.
+> > 
+> > Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
+> > Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
+> > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+> > ---
+> >  drivers/scsi/libiscsi.c    |   16 ----------------
+> >  include/scsi/iscsi_proto.h |   38 ++++++++++++++++++++++++++++++++++++++
+> >  2 files changed, 38 insertions(+), 16 deletions(-)
+> > 
+> > diff --git a/drivers/scsi/libiscsi.c b/drivers/scsi/libiscsi.c
+> > index 9c3cb4e..3461a03 100644
+> > --- a/drivers/scsi/libiscsi.c
+> > +++ b/drivers/scsi/libiscsi.c
+> > @@ -84,22 +84,6 @@ MODULE_PARM_DESC(debug_libiscsi_eh,
+> >  					     __func__, ##arg);		\
+> >  	} while (0);
+> >  
+> > -/* Serial Number Arithmetic, 32 bits, less than, RFC1982 */
+> > -#define SNA32_CHECK 2147483648UL
+> > -
+> > -static int iscsi_sna_lt(u32 n1, u32 n2)
+> > -{
+> > -	return n1 != n2 && ((n1 < n2 && (n2 - n1 < SNA32_CHECK)) ||
+> > -			    (n1 > n2 && (n2 - n1 < SNA32_CHECK)));
+> > -}
+> > -
+> > -/* Serial Number Arithmetic, 32 bits, less than, RFC1982 */
+> > -static int iscsi_sna_lte(u32 n1, u32 n2)
+> > -{
+> > -	return n1 == n2 || ((n1 < n2 && (n2 - n1 < SNA32_CHECK)) ||
+> > -			    (n1 > n2 && (n2 - n1 < SNA32_CHECK)));
+> > -}
+> > -
+> >  inline void iscsi_conn_queue_work(struct iscsi_conn *conn)
+> >  {
+> >  	struct Scsi_Host *shost = conn->session->host;
+> > diff --git a/include/scsi/iscsi_proto.h b/include/scsi/iscsi_proto.h
+> > index a9c9058..455b03a 100644
+> > --- a/include/scsi/iscsi_proto.h
+> > +++ b/include/scsi/iscsi_proto.h
+> > @@ -29,10 +29,48 @@
+> >  /* default iSCSI listen port for incoming connections */
+> >  #define ISCSI_LISTEN_PORT	3260
+> >  
+> > +/* iSCSI header length */
+> > +#define ISCSI_HDR_LEN		48
+> > +
+> > +/* iSCSI CRC32C length */
+> > +#define ISCSI_CRC_LEN		4
+> > +
+> >  /* Padding word length */
+> >  #define ISCSI_PAD_LEN		4
+> >  
+> >  /*
+> > + * Serial Number Arithmetic, 32 bits, RFC1982
+> > + */
+> > +
+> > +static inline int iscsi_sna_lt(u32 n1, u32 n2)
+> > +{
+> > +	s32 diff = n1 - n2;
+> > +
+> > +	return diff < 0;
+> > +}
+> 
+> Perhaps get rid of the variable and do
+> 
+>   return (s32)(n1 - n2) < 0;
+> 
+>  same suggestion for the other functions as well.
+> 
+> ???
+> 
 
-What happens if the iwlagn driver is unloaded before suspend?
+Seems like a reasonable simplfication to me.  Changing this now in
+lio-core-2.6.git and respinning for an merge commit.
 
-Rafael
+--nab
+
+> > +
+> > +static inline int iscsi_sna_lte(u32 n1, u32 n2)
+> > +{
+> > +	s32 diff = n1 - n2;
+> > +
+> > +	return diff <= 0;
+> > +}
+> > +
+> > +static inline int iscsi_sna_gt(u32 n1, u32 n2)
+> > +{
+> > +	s32 diff = n1 - n2;
+> > +
+> > +	return diff > 0;
+> > +}
+> > +
+> > +static inline int iscsi_sna_gte(u32 n1, u32 n2)
+> > +{
+> > +	s32 diff = n1 - n2;
+> > +
+> > +	return diff >= 0;
+> > +}
+> > +
+> > +/*
+> >   * useful common(control and data pathes) macro
+> >   */
+> >  #define ntoh24(p) (((p)[0] << 16) | ((p)[1] << 8) | ((p)[2]))
+> > 
+> 
+
