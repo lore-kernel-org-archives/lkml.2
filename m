@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753222Ab1GWRq0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 13:46:26 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:55206 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753100Ab1GWRqW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 13:46:22 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=YneG6lfCGShE+gsTmDjQwBTvD8BkgLqs02Xuvpc1Yv2IryMg0Q5VL3iubO+93jVdaU/xR1heY5yP7UFrfaqRWch59AG29Oss4i7kkX40yBSKvERA4YDsryJpfBVd5u2A;
-Date: Sat, 23 Jul 2011 10:37:01 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: torvalds <torvalds@linux-foundation.org>,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: [PATCH 1/3] Documentation: fix echo command in cgroups/cpuacct.txt
-Message-Id: <20110723103701.635db37d.rdunlap@xenotime.net>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	id S1752651Ab1GWRvh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 13:51:37 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:39673 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750730Ab1GWRvb convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jul 2011 13:51:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <1311439173.23720.14.camel@mulgrave>
+References: <1311410747-29947-1-git-send-email-nab@linux-iscsi.org>
+ <1311410747-29947-9-git-send-email-nab@linux-iscsi.org> <1311439173.23720.14.camel@mulgrave>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 23 Jul 2011 10:51:08 -0700
+Message-ID: <CA+55aFzkEUbnoDg0KwXDRQMeCFeO5s6_4dWHTY59=hj3QHWL0w@mail.gmail.com>
+Subject: Re: [PATCH 08/13] iscsi-target: Add CHAP Authentication support using libcrypto
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Andy Grover <agrover@redhat.com>,
+        Hannes Reinecke <hare@suse.de>, Roland Dreier <roland@purestorage.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+On Sat, Jul 23, 2011 at 9:39 AM, James Bottomley
+<James.Bottomley@hansenpartnership.com> wrote:
+>
+> I've asked you twice for input on the patch doing this in userspace,
+> which was posted five weeks ago.  Just ignoring something is
+> unacceptable behaviour ... what do I have to do to get your attention?
+> NAK the patch set?
 
-Must echo a task id to the cgroups' tasks file, but not to a directory.
+So what's the advantage of user space?
 
-Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Acked-by: Paul Menage <menage@google.com>
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
----
- Documentation/cgroups/cpuacct.txt |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Traditionally, kernel/userspace splits have been:
+ - fragile as hell
+ - more code
+ - slower
+ - complicated to set up
+ - problematic with backwards compatibility issues
+and these days when I see some kernel functionality that needs user
+space support, I just go "f*ck, that's going to be a pain".
 
---- lnx-300.orig/Documentation/cgroups/cpuacct.txt
-+++ lnx-300/Documentation/cgroups/cpuacct.txt
-@@ -23,7 +23,7 @@ New accounting groups can be created und
- 
- # cd /sys/fs/cgroup
- # mkdir g1
--# echo $$ > g1
-+# echo $$ > g1/tasks
- 
- The above steps create a new group g1 and move the current shell
- process (bash) into it. CPU time consumed by this bash and its children
+So I think the "that part can be done in user space" argument is
+fundamentally crap.
+
+Now, if it is an issue of "that can be done BETTER in user space
+BECAUSE xyz", then that's a different issue. I haven't seen that
+argument, though.
+
+                       Linus
