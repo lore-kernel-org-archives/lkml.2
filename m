@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753276Ab1GWTru (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 15:47:50 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:45061 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751508Ab1GWTrn convert rfc822-to-8bit (ORCPT
+	id S1754102Ab1GWUC0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 16:02:26 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:43696 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753991Ab1GWUCS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 15:47:43 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toralf =?utf-8?q?F=C3=B6rster?= <toralf.foerster@gmx.de>
-Subject: Re: suspend/resume problems w/ kernel 3.0 and a *docked* ThinkPad T400
-Date: Sat, 23 Jul 2011 21:48:44 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0+; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-References: <201107232127.34255.toralf.foerster@gmx.de>
-In-Reply-To: <201107232127.34255.toralf.foerster@gmx.de>
+	Sat, 23 Jul 2011 16:02:18 -0400
+Message-ID: <4E2B28C6.2050806@gmail.com>
+Date: Sat, 23 Jul 2011 22:02:14 +0200
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201107232148.44702.rjw@sisk.pl>
+To: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: Re: [ANNOUNCE] 3.0-rt1
+References: <alpine.LFD.2.02.1107222203400.2702@ionos> <4E2A1E75.4070709@gmail.com> <3E6C10F4-B619-4DBF-9EF3-F7B3EDF53608@gmail.com>
+In-Reply-To: <3E6C10F4-B619-4DBF-9EF3-F7B3EDF53608@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, July 23, 2011, Toralf Förster wrote:
-> The last lines are :
-> ...
-> 2011-07-23T17:57:21.000+02:00 n22 pppd[2324]: Exit.
-> 2011-07-23T17:57:22.896+02:00 n22 kernel: PM: Syncing filesystems ... done.
-> 2011-07-23T17:57:22.896+02:00 n22 kernel: PM: Preparing system for mem sleep
-> 2011-07-23T17:57:23.000+02:00 n22 ntpd[9544]: Deleting interface #3 ppp0, 
-> 92.224.126.27#123, interface stats: received=269, sent=269, dropped=0, 
-> active_time=13305 secs
-> 2011-07-23T17:57:23.000+02:00 n22 ntpd[9544]: 78.47.24.68 interface 
-> 92.224.126.27 -> (none)
-> 2011-07-23T17:57:23.000+02:00 n22 ntpd[9544]: 213.198.55.2 interface 
-> 92.224.126.27 -> (none)
-> 2011-07-23T17:57:23.000+02:00 n22 ntpd[9544]: 213.133.112.102 interface 
-> 92.224.126.27 -> (none)
-> 2011-07-23T17:57:23.000+02:00 n22 ntpd[9544]: 141.40.103.103 interface 
-> 92.224.126.27 -> (none)
-> 2011-07-23T17:57:23.000+02:00 n22 ntpd[9544]: peers refreshed
-> 
-> magic SysRq  keys works .
-> 
-> Anybody else experienced sth similar ?
+Hi Dietrich,
 
-Not that I know of.
+On 07/23/2011 08:57 PM, Sven-Thorsten Dietrich wrote:
+> On Jul 22, 2011, at 6:05 PM, Maarten Lankhorst wrote:
+>
+>> On 07/22/2011 10:37 PM, Thomas Gleixner wrote:
+>>> Dear RT Folks,
+>>>
+>>> I'm pleased to announce the 3.0-rt1 release.
+>>>
+>>> Changes versus 3.0-rc7-rt0:
+>>>
+>>>  * Update to Linus final 3.0 release
+>>>
+>>>  * RTC bugfixes (scheduled for mainline/stable)
+>>>
+>>>  * Long standing (rt only) timer_list bug (see
+>>>    timers-avoid-the-base-null-otptimization-on-rt.patch in the split
+>>>    out quilt queue)
+>>>
+>>>  * Minor non exciting fixes all over the place
+>>>
+>>> Known issues:
+>>>
+>>>  * Some weird "console=..." commandline + config dependent
+>>>    interactions which have been not yet investigated down to their
+>>>    root cause. Result in a boot hang. YMMV
+>> Sweet, works here :)
+>>
+>> Only the nvidia driver fails to build because of rtmutex and migrate enable/disable being GPL only, you might want to reconsider the GPL only status of them.
+> Can you reconsider using nVidia ?
+You see, I've been living two lives. In one life, I'm Maarten B Lankhorst. I work on wine, and since a week or so I've been working on nouveau. And I... help fix kernel bugs that I'm affected by. My other life is in computers, where I go by the hacker alias ROFLGAMER, participating actively in computer simulated environments and am playing graphic intensive games using wine. Unfortunately when I do that I just want things to work, nouveau keeps getting better all the time, but wine's d3d is a lot more tested with the nvidia blob. ;)
 
-I wonder what happens if the machine is undocked?
-
-Rafael
+~Maarten
