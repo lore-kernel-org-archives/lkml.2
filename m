@@ -1,154 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752375Ab1GWN7b (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 09:59:31 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:37315 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751471Ab1GWN71 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 09:59:27 -0400
-From: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
-To: Andy Lutomirski <luto@mit.edu>
-Subject: 3.1 git: ld: error: dot may not move backward
-Date: Sat, 23 Jul 2011 15:59:23 +0200
-User-Agent: KMail/1.13.7 (Linux/3.0.0-final-dirty; KDE/4.6.5; x86_64; ; )
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201107231559.23537.a.miskiewicz@gmail.com>
+	id S1752772Ab1GWOGJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 10:06:09 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:42733 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751902Ab1GWOGC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jul 2011 10:06:02 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org
+Subject: Pull request blackfin.git (for-linus branch)
+Date: Sat, 23 Jul 2011 10:05:44 -0400
+Message-Id: <1311429944-6463-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <1311398997-24417-1-git-send-email-vapier@gentoo.org>
+References: <1311398997-24417-1-git-send-email-vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The following changes since commit 8e204874db000928e37199c2db82b7eb8966cc3c:
 
-Hello,
+  Merge branch 'x86-vdso-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip (2011-07-22 17:05:15 -0700)
 
-current git (bbd9d6f7fbb0305c9a592bf05a32e87eb364a4ff)
+are available in the git repository at:
 
-[arekm@ixion-pld linux]$ gcc -v
-Reading specs from /usr/lib64/gcc/x86_64-pld-linux/4.6.1/specs
-COLLECT_GCC=gcc
-COLLECT_LTO_WRAPPER=/usr/lib64/gcc/x86_64-pld-linux/4.6.1/lto-wrapper
-Target: x86_64-pld-linux
-Configured with: ../configure --prefix=/usr --with-local-prefix=/usr/local --
-libdir=/usr/lib64 --libexecdir=/usr/lib64 --infodir=/usr/share/info --
-mandir=/usr/share/man --x-libraries=/usr/lib64 --enable-checking=release --
-enable-gnu-unique-object --enable-shared --enable-threads=posix --enable-
-linker-build-id --enable-linux-futex --enable-
-languages=c,c++,fortran,objc,obj-c++,ada,java --enable-libgomp --enable-
-libmudflap --enable-c99 --enable-long-long --enable-decimal-float=yes --
-enable-nls --disable-werror --enable-lto --enable-plugin --disable-cld --with-
-gnu-as --with-gnu-ld --with-demangler-in-ld --with-system-zlib --with-
-slibdir=/lib64 --without-system-libunwind --enable-cmath --with-long-
-double-128 --with-gxx-include-dir=/usr/include/c++/4.6.1 --disable-libstdcxx-
-pch --enable-__cxa_atexit --enable-libstdcxx-allocator=new --enable-libjava-
-multilib=no --disable-gconf-peer --enable-java-awt=xlib,gtk --enable-libgcj --
-enable-libgcj-multifile --enable-libgcj-database --enable-gtk-cairo --enable-
-jni --enable-xmlj --enable-bootstrap --with-pkgversion=PLD-Linux --with-
-bugurl=http://bugs.pld-linux.org x86_64-pld-linux
-Thread model: posix
-gcc version 4.6.1 20110714 (release) (PLD-Linux)
+  git://git.kernel.org/pub/scm/linux/kernel/git/vapier/blackfin.git for-linus
 
-[arekm@ixion-pld linux]$ ld -v
-GNU gold (Linux/GNU Binutils 2.21.53.0.1.20110716) 1.11
+Mathias Krause (1):
+      Blackfin: exec: remove redundant set_fs(USER_DS)
 
-and at make bzImage 
+Mike Frysinger (39):
+      Blackfin: convert to kbuild asm-generic support
+      Blackfin: net2272: move pin setup to boards files
+      Blackfin: boards: clean up redundant/dead spi resources
+      Blackfin: SMP: optimize start up code a bit
+      Blackfin: time: replace magic numbers with defines
+      Blackfin: optimize double fault boot checking
+      Blackfin: convert to asm-generic/mutex-dec.h for all systems
+      Blackfin: debug-mmrs: fix typo in single dmac setup
+      Blackfin: debug-mmrs: disable PERIPHERAL_MAP for IMDMA channels
+      Blackfin: bf561-ezkit: change parallel flash from M to Y in defconfig
+      Blackfin: update anomaly lists to latest public info
+      Blackfin: gptimers: add group structure for hardware register layout
+      Blackfin: debug-mmrs: prevent macro arg from expanding
+      Blackfin: debug-mmrs: use new gptimer_group layout to simplify code
+      Blackfin: gptimers: use register structs from common header
+      Blackfin: gptimers: use bfin read/write helpers
+      Blackfin: gptimers: add enable/disable by timer id
+      Blackfin: pwm: implement linux/pwm.h API
+      Blackfin: convert unicode space gremlins
+      Blackfin: gpio: punt unused GPIO_# defines
+      Blackfin: bf54x: constify pint register array
+      Blackfin: bf54x: tweak MMR pint names
+      Blackfin: bf54x: switch to common pint MMR struct
+      Blackfin: debug-mmrs: generalize pint logic
+      Blackfin: dpmc: bind to MMR names and not CPUs
+      Blackfin: gpio/ints: generalize pint logic
+      Blackfin: dpmc: optimize SIC_IWR programming a little
+      Blackfin: dpmc: omit RETE/RETN when hibernating
+      Blackfin: dpmc: relocate hibernate helper macros
+      Blackfin: dpmc: do not save/restore EVT0/EVT1/EVT4 when hibernating
+      Blackfin: dpmc: optimize hibernate/resume path
+      Blackfin: bf538: pull gpio/port logic out of core hibernate paths
+      Blackfin: dpmc: don't save/restore scratch registers
+      Blackfin: dpmc: optimize SDRAM programming slightly
+      Blackfin: bf54x: fix GPIO resume code
+      Blackfin: bf51x: fix alternative portmux options
+      Blackfin: bf526: restrict reboot workaround to 0.0 silicon
+      Blackfin: SMP: punt unused atomic_test_mask helper
+      Blackfin: spi-docs: further clarify GPIO CS behavior with various modes
 
-  ld -m elf_x86_64 --build-id  -o .tmp_vmlinux1 -T arch/x86/kernel/vmlinux.lds 
-arch/x86/kernel/head_64.o arch/x86/kernel/head64.o arch/x86/kernel/head.o 
-arch/x86/kernel/init_task.o  init/built-in.o --start-group  usr/built-in.o  
-arch/x86/built-in.o  kernel/built-in.o  mm/built-in.o  fs/built-in.o  
-ipc/built-in.o  security/built-in.o  crypto/built-in.o  block/built-in.o  
-lib/lib.a  arch/x86/lib/lib.a  lib/built-in.o  arch/x86/lib/built-in.o  
-drivers/built-in.o  sound/built-in.o  firmware/built-in.o  arch/x86/pci/built-
-in.o  arch/x86/power/built-in.o  arch/x86/video/built-in.o  net/built-in.o --
-end-group
-ld: error: dot may not move backward
-ld: error: dot may not move backward
-ld: error: load segment overlap [0x1800000 -> 0x18850e0] and [0x1884000 -> 
-0x1884c10]
+Scott Jiang (1):
+      Blackfin: boards: fix pcm device name
 
-bisect ends with:
+Steven Miao (1):
+      Blackfin: make sure percpu section is aligned in XIP builds
 
-9fd67b4ed0714ab718f1f9bd14c344af336a6df7 is the first bad commit
-commit 9fd67b4ed0714ab718f1f9bd14c344af336a6df7
-Author: Andy Lutomirski <luto@MIT.EDU>
-Date:   Sun Jun 5 13:50:19 2011 -0400
+Steven Rostedt (1):
+      Blackfin: irqs: do not trace arch_local_{*,irq_*} functions
 
-    x86-64: Give vvars their own page
-    
-    Move vvars out of the vsyscall page into their own page and mark
-    it NX.
-    
-    Without this patch, an attacker who can force a daemon to call
-    some fixed address could wait until the time contains, say,
-    0xCD80, and then execute the current time.
-    
-    Signed-off-by: Andy Lutomirski <luto@mit.edu>
-    Cc: Jesper Juhl <jj@chaosbits.net>
-    Cc: Borislav Petkov <bp@alien8.de>
-    Cc: Linus Torvalds <torvalds@linux-foundation.org>
-    Cc: Arjan van de Ven <arjan@infradead.org>
-    Cc: Jan Beulich <JBeulich@novell.com>
-    Cc: richard -rw- weinberger <richard.weinberger@gmail.com>
-    Cc: Mikael Pettersson <mikpe@it.uu.se>
-    Cc: Andi Kleen <andi@firstfloor.org>
-    Cc: Brian Gerst <brgerst@gmail.com>
-    Cc: Louis Rilling <Louis.Rilling@kerlabs.com>
-    Cc: Valdis.Kletnieks@vt.edu
-    Cc: pageexec@freemail.hu
-    Link: 
-http://lkml.kernel.org/r/b1460f81dc4463d66ea3f2b5ce240f58d48effec.1307292171.git.luto@mit.edu
-    Signed-off-by: Ingo Molnar <mingo@elte.hu>
-
-:040000 040000 24ebbf4a851e35bfe4c65074f9e51a20c6ac54c8 
-288ec01e5b8ccff746962f40e0e9310a31800c5d M      arch
-bisect run success
-[arekm@ixion-pld linux]$ git bisect log
-git bisect start
-# bad: [bbd9d6f7fbb0305c9a592bf05a32e87eb364a4ff] Merge branch 'for-linus' of 
-git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6
-git bisect bad bbd9d6f7fbb0305c9a592bf05a32e87eb364a4ff
-# good: [02f8c6aee8df3cdc935e9bdd4f2d020306035dbe] Linux 3.0
-git bisect good 02f8c6aee8df3cdc935e9bdd4f2d020306035dbe
-# good: [cd6340199f65cad63262db0fd561bdcfd69df3bd] bnx2: Close device if 
-tx_timeout reset fails
-git bisect good cd6340199f65cad63262db0fd561bdcfd69df3bd
-# good: [22a3b9771117d566def0150ea787fcc95f16e724] Merge branch 'for-linus' of 
-git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid
-git bisect good 22a3b9771117d566def0150ea787fcc95f16e724
-# good: [4d4abdcb1dee03a4f9d6d2021622ed07e14dfd17] Merge branch 'perf-core-
-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip
-git bisect good 4d4abdcb1dee03a4f9d6d2021622ed07e14dfd17
-# good: [3e0b8df79ddb8955d2cce5e858972a9cfe763384] Merge branch 'x86-uv-for-
-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip
-git bisect good 3e0b8df79ddb8955d2cce5e858972a9cfe763384
-# good: [12ad3ab66103e6582ca69c0c9de18b13487eaaef] superblock: move 
-pin_sb_for_writeback() to fs/super.c
-git bisect good 12ad3ab66103e6582ca69c0c9de18b13487eaaef
-# good: [10d9f309d88ca7f47133d57e99b72810f119f75b] get rid of useless 
-dget_parent() in btrfs rename() and link()
-git bisect good 10d9f309d88ca7f47133d57e99b72810f119f75b
-# bad: [98eedc3a9dbf90cecb91093d2a7fa083942b7d13] Document the vDSO and add a 
-reference parser
-git bisect bad 98eedc3a9dbf90cecb91093d2a7fa083942b7d13
-# bad: [5cec93c216db77c45f7ce970d46283bcb1933884] x86-64: Emulate legacy 
-vsyscalls
-git bisect bad 5cec93c216db77c45f7ce970d46283bcb1933884
-# bad: [0d7b8547fb67d5c2a7d954c56b3715b0e708be4a] x86-64: Remove 
-kernel.vsyscall64 sysctl
-git bisect bad 0d7b8547fb67d5c2a7d954c56b3715b0e708be4a
-# good: [8b4777a4b50cb0c84c1152eac85d24415fb6ff7d] x86-64: Document some of 
-entry_64.S
-git bisect good 8b4777a4b50cb0c84c1152eac85d24415fb6ff7d
-# bad: [9fd67b4ed0714ab718f1f9bd14c344af336a6df7] x86-64: Give vvars their own 
-page
-git bisect bad 9fd67b4ed0714ab718f1f9bd14c344af336a6df7
-
-
--- 
-Arkadiusz Miśkiewicz        PLD/Linux Team
-arekm / maven.pl            http://ftp.pld-linux.org/
+ Documentation/blackfin/bfin-spi-notes.txt       |    2 +
+ arch/blackfin/Kconfig                           |   10 +
+ arch/blackfin/configs/BF561-EZKIT_defconfig     |    8 +-
+ arch/blackfin/include/asm/Kbuild                |   43 +
+ arch/blackfin/include/asm/atomic.h              |   13 +-
+ arch/blackfin/include/asm/auxvec.h              |    1 -
+ arch/blackfin/include/asm/bitsperlong.h         |    1 -
+ arch/blackfin/include/asm/blackfin.h            |    6 +-
+ arch/blackfin/include/asm/bugs.h                |    1 -
+ arch/blackfin/include/asm/cputime.h             |    1 -
+ arch/blackfin/include/asm/current.h             |    1 -
+ arch/blackfin/include/asm/device.h              |    1 -
+ arch/blackfin/include/asm/div64.h               |    1 -
+ arch/blackfin/include/asm/dpmc.h                |   27 -
+ arch/blackfin/include/asm/emergency-restart.h   |    1 -
+ arch/blackfin/include/asm/errno.h               |    1 -
+ arch/blackfin/include/asm/fb.h                  |    1 -
+ arch/blackfin/include/asm/futex.h               |    1 -
+ arch/blackfin/include/asm/gpio.h                |   64 +--
+ arch/blackfin/include/asm/gptimers.h            |   19 +
+ arch/blackfin/include/asm/hw_irq.h              |    1 -
+ arch/blackfin/include/asm/ioctl.h               |    1 -
+ arch/blackfin/include/asm/ipcbuf.h              |    1 -
+ arch/blackfin/include/asm/irq_regs.h            |    1 -
+ arch/blackfin/include/asm/irqflags.h            |   42 +-
+ arch/blackfin/include/asm/kdebug.h              |    1 -
+ arch/blackfin/include/asm/kmap_types.h          |    1 -
+ arch/blackfin/include/asm/local.h               |    1 -
+ arch/blackfin/include/asm/local64.h             |    1 -
+ arch/blackfin/include/asm/mman.h                |    1 -
+ arch/blackfin/include/asm/module.h              |    8 +-
+ arch/blackfin/include/asm/msgbuf.h              |    1 -
+ arch/blackfin/include/asm/mutex.h               |   77 +--
+ arch/blackfin/include/asm/page.h                |    8 +-
+ arch/blackfin/include/asm/param.h               |    1 -
+ arch/blackfin/include/asm/pda.h                 |   10 +
+ arch/blackfin/include/asm/percpu.h              |    1 -
+ arch/blackfin/include/asm/pgalloc.h             |    1 -
+ arch/blackfin/include/asm/resource.h            |    1 -
+ arch/blackfin/include/asm/scatterlist.h         |    6 -
+ arch/blackfin/include/asm/sections.h            |    8 +-
+ arch/blackfin/include/asm/sembuf.h              |    1 -
+ arch/blackfin/include/asm/serial.h              |    1 -
+ arch/blackfin/include/asm/setup.h               |    1 -
+ arch/blackfin/include/asm/shmbuf.h              |    1 -
+ arch/blackfin/include/asm/shmparam.h            |    1 -
+ arch/blackfin/include/asm/sigcontext.h          |    8 +-
+ arch/blackfin/include/asm/socket.h              |    1 -
+ arch/blackfin/include/asm/sockios.h             |    1 -
+ arch/blackfin/include/asm/spinlock.h            |    8 +-
+ arch/blackfin/include/asm/statfs.h              |    1 -
+ arch/blackfin/include/asm/termbits.h            |    1 -
+ arch/blackfin/include/asm/termios.h             |    1 -
+ arch/blackfin/include/asm/topology.h            |    1 -
+ arch/blackfin/include/asm/types.h               |    1 -
+ arch/blackfin/include/asm/ucontext.h            |    1 -
+ arch/blackfin/include/asm/unaligned.h           |    1 -
+ arch/blackfin/include/asm/user.h                |    1 -
+ arch/blackfin/include/asm/xor.h                 |    1 -
+ arch/blackfin/kernel/Makefile                   |    1 +
+ arch/blackfin/kernel/asm-offsets.c              |   10 +
+ arch/blackfin/kernel/bfin_gpio.c                |   26 +-
+ arch/blackfin/kernel/debug-mmrs.c               |  109 ++-
+ arch/blackfin/kernel/gptimers.c                 |   93 +--
+ arch/blackfin/kernel/process.c                  |    1 -
+ arch/blackfin/kernel/pwm.c                      |  100 +++
+ arch/blackfin/kernel/reboot.c                   |    4 +-
+ arch/blackfin/kernel/setup.c                    |   16 +-
+ arch/blackfin/kernel/time.c                     |    4 +-
+ arch/blackfin/kernel/vmlinux.lds.S              |    1 +
+ arch/blackfin/mach-bf518/Kconfig                |   78 ++-
+ arch/blackfin/mach-bf518/boards/ezbrd.c         |   59 --
+ arch/blackfin/mach-bf518/boards/tcm-bf518.c     |   47 -
+ arch/blackfin/mach-bf518/include/mach/anomaly.h |   24 +-
+ arch/blackfin/mach-bf518/include/mach/portmux.h |   54 +-
+ arch/blackfin/mach-bf527/boards/ad7160eval.c    |   19 -
+ arch/blackfin/mach-bf527/boards/cm_bf527.c      |   55 --
+ arch/blackfin/mach-bf527/boards/ezbrd.c         |   62 --
+ arch/blackfin/mach-bf527/boards/ezkit.c         |   98 +--
+ arch/blackfin/mach-bf527/boards/tll6527m.c      |   70 --
+ arch/blackfin/mach-bf527/include/mach/anomaly.h |   34 +-
+ arch/blackfin/mach-bf533/boards/H8606.c         |   28 -
+ arch/blackfin/mach-bf533/boards/blackstamp.c    |   10 -
+ arch/blackfin/mach-bf533/boards/cm_bf533.c      |   29 -
+ arch/blackfin/mach-bf533/boards/ezkit.c         |   36 -
+ arch/blackfin/mach-bf533/boards/ip0x.c          |    1 -
+ arch/blackfin/mach-bf533/boards/stamp.c         |   78 +-
+ arch/blackfin/mach-bf533/include/mach/anomaly.h |   19 +-
+ arch/blackfin/mach-bf537/boards/cm_bf537e.c     |   51 +-
+ arch/blackfin/mach-bf537/boards/cm_bf537u.c     |   63 +-
+ arch/blackfin/mach-bf537/boards/dnp5370.c       |    2 -
+ arch/blackfin/mach-bf537/boards/minotaur.c      |    2 -
+ arch/blackfin/mach-bf537/boards/pnav10.c        |   38 -
+ arch/blackfin/mach-bf537/boards/stamp.c         |  176 ++---
+ arch/blackfin/mach-bf537/boards/tcm_bf537.c     |   51 +-
+ arch/blackfin/mach-bf537/include/mach/anomaly.h |   34 +-
+ arch/blackfin/mach-bf538/boards/ezkit.c         |   25 -
+ arch/blackfin/mach-bf538/ext-gpio.c             |   37 +-
+ arch/blackfin/mach-bf538/include/mach/anomaly.h |   38 +-
+ arch/blackfin/mach-bf538/include/mach/gpio.h    |    3 +
+ arch/blackfin/mach-bf548/boards/cm_bf548.c      |   15 -
+ arch/blackfin/mach-bf548/boards/ezkit.c         |   32 -
+ arch/blackfin/mach-bf548/include/mach/anomaly.h |  220 +++---
+ arch/blackfin/mach-bf548/include/mach/gpio.h    |    2 +
+ arch/blackfin/mach-bf548/include/mach/irq.h     |    2 +-
+ arch/blackfin/mach-bf561/boards/acvilon.c       |    9 -
+ arch/blackfin/mach-bf561/boards/cm_bf561.c      |   58 +-
+ arch/blackfin/mach-bf561/boards/ezkit.c         |   41 +-
+ arch/blackfin/mach-bf561/include/mach/anomaly.h |  132 ++--
+ arch/blackfin/mach-bf561/include/mach/gpio.h    |    6 +-
+ arch/blackfin/mach-bf561/secondary.S            |  152 ++---
+ arch/blackfin/mach-common/dpmc_modes.S          | 1016 +++++++++++++----------
+ arch/blackfin/mach-common/head.S                |   36 +-
+ arch/blackfin/mach-common/ints-priority.c       |   41 +-
+ arch/blackfin/mach-common/smp.c                 |   17 +-
+ 115 files changed, 1735 insertions(+), 2138 deletions(-)
+ delete mode 100644 arch/blackfin/include/asm/auxvec.h
+ delete mode 100644 arch/blackfin/include/asm/bitsperlong.h
+ delete mode 100644 arch/blackfin/include/asm/bugs.h
+ delete mode 100644 arch/blackfin/include/asm/cputime.h
+ delete mode 100644 arch/blackfin/include/asm/current.h
+ delete mode 100644 arch/blackfin/include/asm/device.h
+ delete mode 100644 arch/blackfin/include/asm/div64.h
+ delete mode 100644 arch/blackfin/include/asm/emergency-restart.h
+ delete mode 100644 arch/blackfin/include/asm/errno.h
+ delete mode 100644 arch/blackfin/include/asm/fb.h
+ delete mode 100644 arch/blackfin/include/asm/futex.h
+ delete mode 100644 arch/blackfin/include/asm/hw_irq.h
+ delete mode 100644 arch/blackfin/include/asm/ioctl.h
+ delete mode 100644 arch/blackfin/include/asm/ipcbuf.h
+ delete mode 100644 arch/blackfin/include/asm/irq_regs.h
+ delete mode 100644 arch/blackfin/include/asm/kdebug.h
+ delete mode 100644 arch/blackfin/include/asm/kmap_types.h
+ delete mode 100644 arch/blackfin/include/asm/local.h
+ delete mode 100644 arch/blackfin/include/asm/local64.h
+ delete mode 100644 arch/blackfin/include/asm/mman.h
+ delete mode 100644 arch/blackfin/include/asm/msgbuf.h
+ delete mode 100644 arch/blackfin/include/asm/param.h
+ delete mode 100644 arch/blackfin/include/asm/percpu.h
+ delete mode 100644 arch/blackfin/include/asm/pgalloc.h
+ delete mode 100644 arch/blackfin/include/asm/resource.h
+ delete mode 100644 arch/blackfin/include/asm/scatterlist.h
+ delete mode 100644 arch/blackfin/include/asm/sembuf.h
+ delete mode 100644 arch/blackfin/include/asm/serial.h
+ delete mode 100644 arch/blackfin/include/asm/setup.h
+ delete mode 100644 arch/blackfin/include/asm/shmbuf.h
+ delete mode 100644 arch/blackfin/include/asm/shmparam.h
+ delete mode 100644 arch/blackfin/include/asm/socket.h
+ delete mode 100644 arch/blackfin/include/asm/sockios.h
+ delete mode 100644 arch/blackfin/include/asm/statfs.h
+ delete mode 100644 arch/blackfin/include/asm/termbits.h
+ delete mode 100644 arch/blackfin/include/asm/termios.h
+ delete mode 100644 arch/blackfin/include/asm/topology.h
+ delete mode 100644 arch/blackfin/include/asm/types.h
+ delete mode 100644 arch/blackfin/include/asm/ucontext.h
+ delete mode 100644 arch/blackfin/include/asm/unaligned.h
+ delete mode 100644 arch/blackfin/include/asm/user.h
+ delete mode 100644 arch/blackfin/include/asm/xor.h
+ create mode 100644 arch/blackfin/kernel/pwm.c
