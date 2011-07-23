@@ -1,108 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751819Ab1GWHVk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 03:21:40 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35297 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751731Ab1GWHVe (ORCPT
+	id S1751809Ab1GWHWL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 03:22:11 -0400
+Received: from www.linutronix.de ([62.245.132.108]:52567 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751673Ab1GWHWI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 03:21:34 -0400
-Date: Sat, 23 Jul 2011 08:21:30 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Grant Likely <grant@secretlab.ca>,
-        Liam Girdwood <lrg@ti.com>, Wolfram Sang <w.sang@pengutronix.de>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [GIT PULL] regmap: Generic I2C and SPI register map library
-Message-ID: <20110723072129.GC31413@opensource.wolfsonmicro.com>
-References: <20110722135247.GA27855@opensource.wolfsonmicro.com>
- <CA+55aFw-8ShsN2M-7dXCOEFhOx4xVQhN2rtzwJWV=rcwvPgF9g@mail.gmail.com>
+	Sat, 23 Jul 2011 03:22:08 -0400
+Date: Sat, 23 Jul 2011 09:22:06 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
+        Ingo Molnar <mingo@elte.hu>, Ben Greear <greearb@candelatech.com>,
+        stable@kernel.org
+Subject: Re: [patch 2/3] rtc: Fix hrtimer deadlock
+In-Reply-To: <20110722151107.e1c9996d.akpm@linux-foundation.org>
+Message-ID: <alpine.LFD.2.02.1107230917160.2702@ionos>
+References: <20110722091011.717194327@linutronix.de> <20110722091045.476900421@linutronix.de> <20110722151107.e1c9996d.akpm@linux-foundation.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFw-8ShsN2M-7dXCOEFhOx4xVQhN2rtzwJWV=rcwvPgF9g@mail.gmail.com>
-X-Cookie: Today is what happened to yesterday.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 22, 2011 at 03:02:01PM -0700, Linus Torvalds wrote:
+On Fri, 22 Jul 2011, Andrew Morton wrote:
 
-> so now that thing turns on REGMAP_I2C and compiles in the code WITHOUT
-> EVEN ASKING. It's enough to enable i2c.
+> On Fri, 22 Jul 2011 09:12:51 -0000
+> Thomas Gleixner <tglx@linutronix.de> wrote:
+> 
+> > Ben reported a lockup related to rtc. The lockup happens due to:
+> > 
+> > CPU0                                        CPU1
+> > 
+> > rtc_irq_set_state()			    __run_hrtimer()	
+> >   spin_lock_irqsave(&rtc->irq_task_lock)    rtc_handle_legacy_irq();
+> > 					      spin_lock(&rtc->irq_task_lock);
+> >   hrtimer_cancel()
+> >     while (callback_running);
+> > 
+> > So the running callback never finishes as it's blocked on
+> > rtc->irq_task_lock.  
+> > 
+> > Use hrtimer_try_to_cancel() instead and drop rtc->irq_task_lock while
+> > waiting for the callback. Fix this for both rtc_irq_set_state() and
+> > rtc_irq_set_freq().
+> > 
+> > ...
+> >
+> > +static int rtc_update_hrtimer(struct rtc_device *rtc, int enabled)
+> > +{
+> > +	/*
+> > +	 * We unconditionally cancel the timer here, because otherwise
+> 
+> The comment seems wrong.  If hrtimer_try_to_cancel() fails, we simply
+> bale out so we did not "unconditionally cancel the timer"?
 
-Providing some device in the system enabled regmap; the issue here was
-that dependencies of selected symbols don't work terribly reliably and
-originally the API was written to support the common idiom of bus
-neutral core drivers which don't know which bus they're working with but
-the code got refactored since then and the Kconfig didn't keep up.
-
-Anyway, I've changed the code with the diff below and pushed out again,
-pull request below the diff:
-
-diff --git a/drivers/base/regmap/Kconfig b/drivers/base/regmap/Kconfig
-index 54b5854..fabbf6c 100644
---- a/drivers/base/regmap/Kconfig
-+++ b/drivers/base/regmap/Kconfig
-@@ -3,12 +3,11 @@
- # subsystems should select the appropriate symbols.
+Well, what I meant is that we cancel it before we start it. That's
+required for self rearming timers. Will reword.
  
- config REGMAP
-+	default y if (REGMAP_I2C || REGMAP_SPI)
- 	bool
- 
- config REGMAP_I2C
- 	tristate
--	default I2C
- 
- config REGMAP_SPI
- 	tristate
--	default SPI_MASTER
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index 8128db3..c7fd2c0 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -235,7 +235,7 @@ config REGULATOR_TPS6105X
- config REGULATOR_TPS65023
- 	tristate "TI TPS65023 Power regulators"
- 	depends on I2C
--	select REGMAP
-+	select REGMAP_I2C
- 	help
- 	  This driver supports TPS65023 voltage regulator chips. TPS65023 provides
- 	  three step-down converters and two general-purpose LDO voltage regulators.
+> > +	 * we could run into BUG_ON(timer->state != HRTIMER_STATE_CALLBACK);
+> > +	 * when we manage to start the timer before the callback
+> > +	 * returns HRTIMER_RESTART.
+> > +	 *
+> > +	 * We cannot use hrtimer_cancel() here as a running callback
+> > +	 * could be blocked on rtc->irq_task_lock and hrtimer_cancel()
+> > +	 * would spin forever.
+> > +	 */
+> > +	if (hrtimer_try_to_cancel(&rtc->pie_timer) < 0)
+> > +		return -1;
+> > +
+> > +	if (enabled) {
+> > +		ktime_t period = ktime_set(0, NSEC_PER_SEC / rtc->irq_freq);
+> > +
+> > +		hrtimer_start(&rtc->pie_timer, period, HRTIMER_MODE_REL);
+> > +	}
+> > +	return 0;
+> > +}
+> > +
+> >  /**
+> >   * rtc_irq_set_state - enable/disable 2^N Hz periodic IRQs
+> >   * @rtc: the rtc device
+> > @@ -651,24 +674,21 @@ int rtc_irq_set_state(struct rtc_device 
+> >  	int err = 0;
+> >  	unsigned long flags;
+> >  
+> > +retry:
+> >  	spin_lock_irqsave(&rtc->irq_task_lock, flags);
+> >  	if (rtc->irq_task != NULL && task == NULL)
+> >  		err = -EBUSY;
+> >  	if (rtc->irq_task != task)
+> >  		err = -EACCES;
+> > -	if (err)
+> > -		goto out;
+> > -
+> > -	if (enabled) {
+> > -		ktime_t period = ktime_set(0, NSEC_PER_SEC/rtc->irq_freq);
+> > -		hrtimer_start(&rtc->pie_timer, period, HRTIMER_MODE_REL);
+> > -	} else {
+> > -		hrtimer_cancel(&rtc->pie_timer);
+> > +	if (!err) {
+> > +		if (rtc_update_hrtimer(rtc, enabled) < 0) {
+> > +			spin_unlock_irqrestore(&rtc->irq_task_lock, flags);
+> > +			cpu_relax();
+> > +			goto retry;
+> > +		}
+> > +		rtc->pie_enabled = enabled;
+> 
+> Well this is rather nasty.  Sort of an open-coded expensive spinlock. 
+> All rather pointless on SMP=n builds, too.
+> 
+> Is there no better way, such as fixing up the locking properly?
 
+Probably there is, but that requires a rather large patch and a
+complete locking rewrite, nothing you want to push back into
+stable. And we want this as the deadlock has been observed and
+reported already.
 
-The following changes since commit 02f8c6aee8df3cdc935e9bdd4f2d020306035dbe:
-
-  Linux 3.0 (2011-07-21 19:17:23 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git for-linus
-
-Mark Brown (4):
-      regmap: Add generic non-memory mapped register access API
-      regmap: Add I2C bus support
-      regmap: Add SPI bus support
-      regulator: Convert tps65023 to use regmap API
-
- MAINTAINERS                            |    7 +
- drivers/base/Kconfig                   |    2 +
- drivers/base/Makefile                  |    1 +
- drivers/base/regmap/Kconfig            |   13 +
- drivers/base/regmap/Makefile           |    3 +
- drivers/base/regmap/regmap-i2c.c       |  115 ++++++++
- drivers/base/regmap/regmap-spi.c       |   72 +++++
- drivers/base/regmap/regmap.c           |  455 ++++++++++++++++++++++++++++++++
- drivers/regulator/Kconfig              |    1 +
- drivers/regulator/tps65023-regulator.c |   97 ++-----
- include/linux/regmap.h                 |   82 ++++++
- 11 files changed, 778 insertions(+), 70 deletions(-)
- create mode 100644 drivers/base/regmap/Kconfig
- create mode 100644 drivers/base/regmap/Makefile
- create mode 100644 drivers/base/regmap/regmap-i2c.c
- create mode 100644 drivers/base/regmap/regmap-spi.c
- create mode 100644 drivers/base/regmap/regmap.c
- create mode 100644 include/linux/regmap.h
