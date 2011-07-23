@@ -1,88 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333Ab1GWStX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 14:49:23 -0400
-Received: from mx2.fusionio.com ([66.114.96.31]:55004 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753265Ab1GWStT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 14:49:19 -0400
-X-ASG-Debug-ID: 1311446954-01de280c1eeac80001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4E2B17A6.6080602@fusionio.com>
-Date: Sat, 23 Jul 2011 20:49:10 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: Shaohua Li <shaohua.li@intel.com>
-CC: Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "mgorman@suse.de" <mgorman@suse.de>, linux-mm <linux-mm@kvack.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH]vmscan: add block plug for page reclaim
-References: <1311130413.15392.326.camel@sli10-conroe>  <CAEwNFnDj30Bipuxrfe9upD-OyuL4v21tLs0ayUKYUfye5TcGyA@mail.gmail.com>  <1311142253.15392.361.camel@sli10-conroe>  <CAEwNFnD3iCMBpZK95Ks+Z7DYbrzbZbSTLf3t6WXDQdeHrE6bLQ@mail.gmail.com>  <1311144559.15392.366.camel@sli10-conroe>  <4E287EC0.4030208@fusionio.com> <1311311695.15392.369.camel@sli10-conroe>
-X-ASG-Orig-Subj: Re: [PATCH]vmscan: add block plug for page reclaim
-In-Reply-To: <1311311695.15392.369.camel@sli10-conroe>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1311446954
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.69773
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+	id S1753368Ab1GWTTO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 15:19:14 -0400
+Received: from DMZ-MAILSEC-SCANNER-8.MIT.EDU ([18.7.68.37]:58117 "EHLO
+	dmz-mailsec-scanner-8.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753336Ab1GWTTL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jul 2011 15:19:11 -0400
+X-AuditID: 12074425-b7bcaae000000a1b-b1-4e2b1e886466
+From: Andy Lutomirski <luto@MIT.EDU>
+To: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>, Ingo Molnar <mingo@elte.hu>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Andy Lutomirski <luto@MIT.EDU>
+Subject: [PATCH resend 0/2] Fix x86-64 linker script when using gold
+Date: Sat, 23 Jul 2011 15:19:01 -0400
+Message-Id: <cover.1311448660.git.luto@mit.edu>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <201107231559.23537.a.miskiewicz@gmail.com>
+References: <201107231559.23537.a.miskiewicz@gmail.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMIsWRmVeSWpSXmKPExsUixG6notshp+1ncGQKm8XSHy+ZLfquHGW3
+	uLxrDpvFlkvNrBY/NjxmdWD1uNX2h9lj56y77B6bVnWyeXzeJBfAEsVlk5Kak1mWWqRvl8CV
+	cWPiLsaCnWwV3Q9/szUwzmPtYuTgkBAwkXh/N7OLkRPIFJO4cG89G4gtJLCPUaL7fHUXIxeQ
+	vYFRYmrPLmYI5xmTxMQpl8Gq2ARUJDqWPmACsUUE/CR+vm9nBrGZBSIlLjxZzQJiCwu4SNw5
+	85cRxGYRUJVYuvgNWA2vgL7Eiue3GCE2y0kcufwcbA6ngIXEjY2NrBBXmEt8WTCFZQIj3wJG
+	hlWMsim5Vbq5iZk5xanJusXJiXl5qUW6Fnq5mSV6qSmlmxjB4eWiuoNxwiGlQ4wCHIxKPLyb
+	vmj5CbEmlhVX5h5ilORgUhLlDZPR9hPiS8pPqcxILM6ILyrNSS0+xCjBwawkwnt5C1A5b0pi
+	ZVVqUT5MSpqDRUmcN8T7v6+QQHpiSWp2ampBahFMVoaDQ0mClxsYR0KCRanpqRVpmTklCGkm
+	Dk6Q4TxAw/fLAtXwFhck5hZnpkPkTzHqcvyc3XuUUYglLz8vVUqclx9kkABIUUZpHtwcWFp4
+	xSgO9JYw7y+QUTzAlAI36RXQEiagJfIKmiBLShIRUlINjFwZp4Ktpz8+MHnfTv4Vh6t2J3Bo
+	6p2q0mKYaCMWpvtZeGHzHda7VzedPXHhYzunW7+MkUZLZy1r8ArjUwIC9a0eZnXVzpdm306/
+	XLnCycUjz/b6gcwTD2vSPrO+ZHwhoFrxNlQ17IL9umW/jjdX9L4wKxVPWJIqoPFUagrjtmm3
+	bOeU98TNUWIpzkg01GIuKk4EAJqGx/rmAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-07-22 07:14, Shaohua Li wrote:
-> On Fri, 2011-07-22 at 03:32 +0800, Jens Axboe wrote:
->> On 2011-07-20 08:49, Shaohua Li wrote:
->>> On Wed, 2011-07-20 at 14:30 +0800, Minchan Kim wrote:
->>>> On Wed, Jul 20, 2011 at 3:10 PM, Shaohua Li <shaohua.li@intel.com> wrote:
->>>>> On Wed, 2011-07-20 at 13:53 +0800, Minchan Kim wrote:
->>>>>> On Wed, Jul 20, 2011 at 11:53 AM, Shaohua Li <shaohua.li@intel.com> wrote:
->>>>>>> per-task block plug can reduce block queue lock contention and increase request
->>>>>>> merge. Currently page reclaim doesn't support it. I originally thought page
->>>>>>> reclaim doesn't need it, because kswapd thread count is limited and file cache
->>>>>>> write is done at flusher mostly.
->>>>>>> When I test a workload with heavy swap in a 4-node machine, each CPU is doing
->>>>>>> direct page reclaim and swap. This causes block queue lock contention. In my
->>>>>>> test, without below patch, the CPU utilization is about 2% ~ 7%. With the
->>>>>>> patch, the CPU utilization is about 1% ~ 3%. Disk throughput isn't changed.
->>>>>>
->>>>>> Why doesn't it enhance through?
->>>>> throughput? The disk isn't that fast. We already can make it run in full
->>>>
->>>> Yes. Sorry for the typo.
->>>>
->>>>> speed, CPU isn't bottleneck here.
->>>>
->>>> But you try to optimize CPU. so your experiment is not good.
->>> it's not that good, because the disk isn't fast. The swap test is the
->>> workload with most significant impact I can get.
->>
->> Let me just interject here that a plug should be fine, from 3.1 we'll
->> even auto-unplug if a certain depth has been reached. So latency should
->> not be a worry. Personally I think the patch looks fine, though some
->> numbers would be interesting to see. Cycles spent submitting the actual
->> IO, combined with IO statistics what kind of IO patterns were observed
->> for plain and with patch would be good.
-> I can observe the average request size changes. Before the patch, the
-> average request size is about 90k from iostat (but the variation is
-> big). With the patch, the request size is about 100k and variation is
-> small.
+[resent because I misspelled linux-kernel the first time.]
 
-That's a good win right there, imho.
+We were hitting two bugs:
+http://sourceware.org/bugzilla/show_bug.cgi?id=13019
+http://sourceware.org/bugzilla/show_bug.cgi?id=13023
 
-> how to check the cycles spend submitting the I/O?
+The former was really a bug on the linker script that neither the
+old bfd linker nor the kernel loader cared about.  It caused gold to
+bail, though.
 
-It's not easy, normal profiles is pretty much the only thing to go by.
+The second is, I think, a legitimate bug in gold.  But rather than
+regressing on current gold versions, we can work around it.
 
-I guess I'm just a bit puzzled by Minchan's reluctance towards the
-patch, it seems like mostly goodness to me.
+This is what I get for messing with the linker script :-/
+
+Andy Lutomirski (2):
+  x86-64: Move the "user" vsyscall segment out of the data segment.
+  x86-64: Work around gold bug 13023
+
+ arch/x86/kernel/vmlinux.lds.S |   46 ++++++++++++++++++++++------------------
+ 1 files changed, 25 insertions(+), 21 deletions(-)
 
 -- 
-Jens Axboe
+1.7.6
 
