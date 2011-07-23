@@ -1,53 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752832Ab1GWOVY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 10:21:24 -0400
-Received: from bukvic.music.vt.edu ([198.82.152.114]:58178 "EHLO
-	lists.linuxaudio.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752243Ab1GWOVS (ORCPT
+	id S1752900Ab1GWOZj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 10:25:39 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:15076 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752232Ab1GWOZb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 10:21:18 -0400
-Date: Sat, 23 Jul 2011 14:21:17 +0000
-From: Fons Adriaensen <fons@linuxaudio.org>
-To: Adrian Knoth <adi@drcomp.erfurt.thur.de>
-Cc: Tom Gundersen <teg@jklm.no>,
-        General Discussion about Arch Linux 
-	<arch-general@archlinux.org>,
-        Takashi Iwai <tiwai@suse.de>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [arch-general] Panic - no sound devices after upgrade
-Message-ID: <20110723142117.GA21836@linuxaudio.org>
-References: <20110720163844.GB16901@linuxaudio.org> <CAG-2HqWqATSJ=oJTTvULXwPEG82yN+8e6GJFs759hPA-=krAOQ@mail.gmail.com> <20110721100944.GA13971@linuxaudio.org> <CAG-2HqX23C79vfccnu0tMqx+6K9Z5pS0_HekaLizQx7XfkPQ1Q@mail.gmail.com> <20110721112331.GA15059@linuxaudio.org> <CAG-2HqWK3x5-szkyzX8AMxuMpDZNVRXHYtQ0AkAPMsGcLK0Z9w@mail.gmail.com> <4E28313E.60900@drcomp.erfurt.thur.de> <CAG-2HqVew75LE68fObz7e3WwcT-5Gwu1ka9Zr4vb1JdbSUOYEQ@mail.gmail.com> <20110722193710.GA8452@linuxaudio.org> <20110722231430.GN3771@ltw.loris.tv>
+	Sat, 23 Jul 2011 10:25:31 -0400
+Date: Sat, 23 Jul 2011 16:25:29 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Andy Grover <agrover@redhat.com>,
+        Hannes Reinecke <hare@suse.de>, Roland Dreier <roland@purestorage.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 02/13] iscsi: Add Serial Number Arithmetic LT and GT into
+ iscsi_proto.h
+In-Reply-To: <1311410747-29947-3-git-send-email-nab@linux-iscsi.org>
+Message-ID: <alpine.LNX.2.00.1107231535070.3831@swampdragon.chaosbits.net>
+References: <1311410747-29947-1-git-send-email-nab@linux-iscsi.org> <1311410747-29947-3-git-send-email-nab@linux-iscsi.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110722231430.GN3771@ltw.loris.tv>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 23, 2011 at 01:14:30AM +0200, Adrian Knoth wrote:
+On Sat, 23 Jul 2011, Nicholas A. Bellinger wrote:
 
-> > > If you want to try out Adrian's patch, I uploaded a kernel with the
-> > > patch applied here:
-> > > <https://dev.archlinux.org/~tomegun/kernel26-2.6.39.1.3-1.1-i686.pkg.tar.xz>.
-> > 
-> > Installed on two machines so far, more tomorrow.
-> > Seems to have solved the problem :-) :-)
+> From: Nicholas Bellinger <nab@linux-iscsi.org>
 > 
-> Good to know. I'll wait for your final confirmation and then commit it.
+> This patch moves the iscsi_sna_lt() and iscsi_sna_lte(), along with
+> iscsi_sna_gt() and iscsi_sna_gte() from iscsi_target_mod into
+> static inlines inside of include/scsi/iscsi_proto.h
+> 
+> This patch also includes the ISCSI_HDR_LEN and ISCSI_CRC_LEN
+> definitions.
+> 
+> Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
+> Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
+> Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+> ---
+>  drivers/scsi/libiscsi.c    |   16 ----------------
+>  include/scsi/iscsi_proto.h |   38 ++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 38 insertions(+), 16 deletions(-)
+> 
+> diff --git a/drivers/scsi/libiscsi.c b/drivers/scsi/libiscsi.c
+> index 9c3cb4e..3461a03 100644
+> --- a/drivers/scsi/libiscsi.c
+> +++ b/drivers/scsi/libiscsi.c
+> @@ -84,22 +84,6 @@ MODULE_PARM_DESC(debug_libiscsi_eh,
+>  					     __func__, ##arg);		\
+>  	} while (0);
+>  
+> -/* Serial Number Arithmetic, 32 bits, less than, RFC1982 */
+> -#define SNA32_CHECK 2147483648UL
+> -
+> -static int iscsi_sna_lt(u32 n1, u32 n2)
+> -{
+> -	return n1 != n2 && ((n1 < n2 && (n2 - n1 < SNA32_CHECK)) ||
+> -			    (n1 > n2 && (n2 - n1 < SNA32_CHECK)));
+> -}
+> -
+> -/* Serial Number Arithmetic, 32 bits, less than, RFC1982 */
+> -static int iscsi_sna_lte(u32 n1, u32 n2)
+> -{
+> -	return n1 == n2 || ((n1 < n2 && (n2 - n1 < SNA32_CHECK)) ||
+> -			    (n1 > n2 && (n2 - n1 < SNA32_CHECK)));
+> -}
+> -
+>  inline void iscsi_conn_queue_work(struct iscsi_conn *conn)
+>  {
+>  	struct Scsi_Host *shost = conn->session->host;
+> diff --git a/include/scsi/iscsi_proto.h b/include/scsi/iscsi_proto.h
+> index a9c9058..455b03a 100644
+> --- a/include/scsi/iscsi_proto.h
+> +++ b/include/scsi/iscsi_proto.h
+> @@ -29,10 +29,48 @@
+>  /* default iSCSI listen port for incoming connections */
+>  #define ISCSI_LISTEN_PORT	3260
+>  
+> +/* iSCSI header length */
+> +#define ISCSI_HDR_LEN		48
+> +
+> +/* iSCSI CRC32C length */
+> +#define ISCSI_CRC_LEN		4
+> +
+>  /* Padding word length */
+>  #define ISCSI_PAD_LEN		4
+>  
+>  /*
+> + * Serial Number Arithmetic, 32 bits, RFC1982
+> + */
+> +
+> +static inline int iscsi_sna_lt(u32 n1, u32 n2)
+> +{
+> +	s32 diff = n1 - n2;
+> +
+> +	return diff < 0;
+> +}
 
-One problem: the gain settings have changed, now having a range of 0..64.
-How do these values map to the internal ones (0..0xffff) ? I *hope* there
-is value corresponding to EXACTLY 0x8000 (gain = 1) !!! The reason is
-that MADI is bit-exact and is used to tranport other values than just
-audio samples. This works of course only with exact unity gain.
+Perhaps get rid of the variable and do
 
-BTW, why was this change made ? For pro users (are there other of this
-card) this is a regression.
+  return (s32)(n1 - n2) < 0;
 
-Ciao,
+ same suggestion for the other functions as well.
+
+???
+
+> +
+> +static inline int iscsi_sna_lte(u32 n1, u32 n2)
+> +{
+> +	s32 diff = n1 - n2;
+> +
+> +	return diff <= 0;
+> +}
+> +
+> +static inline int iscsi_sna_gt(u32 n1, u32 n2)
+> +{
+> +	s32 diff = n1 - n2;
+> +
+> +	return diff > 0;
+> +}
+> +
+> +static inline int iscsi_sna_gte(u32 n1, u32 n2)
+> +{
+> +	s32 diff = n1 - n2;
+> +
+> +	return diff >= 0;
+> +}
+> +
+> +/*
+>   * useful common(control and data pathes) macro
+>   */
+>  #define ntoh24(p) (((p)[0] << 16) | ((p)[1] << 8) | ((p)[2]))
+> 
 
 -- 
-FA
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
