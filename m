@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752891Ab1GWPdc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 11:33:32 -0400
-Received: from blu0-omc1-s36.blu0.hotmail.com ([65.55.116.47]:33451 "EHLO
-	blu0-omc1-s36.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752516Ab1GWPd1 (ORCPT
+	id S1753072Ab1GWPvp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 11:51:45 -0400
+Received: from www.linutronix.de ([62.245.132.108]:36331 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752378Ab1GWPvk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 11:33:27 -0400
-X-Originating-IP: [92.204.88.28]
-X-Originating-Email: [kimleyendecker@hotmail.de]
-Message-ID: <BLU0-SMTP19188A58BDDE5FF383B9EA3A5310@phx.gbl>
-Date: Sat, 23 Jul 2011 17:41:15 +0200
-From: Kim Leyendecker <kimleyendecker@hotmail.de>
-Organization: SUSE LINUX
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [ANNOUNCE] 3.0-rt2
-References: <alpine.LFD.2.02.1107231706380.2702@ionos>
-In-Reply-To: <alpine.LFD.2.02.1107231706380.2702@ionos>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 23 Jul 2011 15:33:24.0391 (UTC) FILETIME=[DC47E370:01CC494D]
+	Sat, 23 Jul 2011 11:51:40 -0400
+Message-Id: <20110723154916.323967213@linutronix.de>
+User-Agent: quilt/0.48-1
+Date: Sat, 23 Jul 2011 15:51:37 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Yegor Yefremov <yegorslists@googlemail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [patch] ide: Fix irq flags madness
+Content-Disposition: inline; filename=drivers-ide-fix-irq-flags-madness.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 23.07.2011 17:13, schrieb Thomas Gleixner:
-> Patch against 3.0 can be found here:
->
->    http://www.kernel.org/pub/linux/kernel/projects/rt/patch-3.0-rt2.patch.bz2
+commit ec1a123 (IDE: pass IRQ flags to the IDE core) introduced the
+bogosity of passing unfiltered resource->flags to the irq_flags which
+are used for request_irq. It results in random bits set (especially
+IORESOURCE_IRQ which maps to IRQF_PER_CPU).
 
-I´m sorry that I have to disturb you again, but if I open your link, I 
-get only a 404.
+Filter the bits proper.
 
-This shouldn´t be right, shouldn´t it?
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Yegor Yefremov <yegorslists@googlemail.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+---
+ drivers/ide/ide_platform.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-thanks
+Index: linux-2.6/drivers/ide/ide_platform.c
+===================================================================
+--- linux-2.6.orig/drivers/ide/ide_platform.c
++++ linux-2.6/drivers/ide/ide_platform.c
+@@ -19,6 +19,7 @@
+ #include <linux/module.h>
+ #include <linux/ata_platform.h>
+ #include <linux/platform_device.h>
++#include <linux/interrupt.h>
+ #include <linux/io.h>
+ 
+ static void __devinit plat_ide_setup_ports(struct ide_hw *hw,
+@@ -95,7 +96,10 @@ static int __devinit plat_ide_probe(stru
+ 	plat_ide_setup_ports(&hw, base, alt_base, pdata, res_irq->start);
+ 	hw.dev = &pdev->dev;
+ 
+-	d.irq_flags = res_irq->flags;
++	d.irq_flags = res_irq->flags & IRQF_TRIGGER_MASK;
++	if (res_irq->flags & IORESOURCE_IRQ_SHAREABLE)
++		d.irq_flags |= IRQF_SHARED;
++
+ 	if (mmio)
+ 		d.host_flags |= IDE_HFLAG_MMIO;
+ 
 
--- 
-Kim Leyendecker (kdl@k-dl.de.vu)
-openSUSE Ambassador, openSUSE Wiki Team DE
-HAVE A LOT OF FUN!
-http://www.opensuse.org
-Have you tried SUSE Studio? Need to create a Live CD, an app you want
-to package and distribute or create your own Linux distro. Give SUSE
-Studio a try. http://www.susestudio.com
 
