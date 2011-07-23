@@ -1,69 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751358Ab1GWCKM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 22:10:12 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:50859 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755Ab1GWCKI (ORCPT
+	id S1751462Ab1GWCK6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 22:10:58 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:36269 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750755Ab1GWCKy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 22:10:08 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:to:cc:subject:message-id:
-	references:mime-version:content-type:content-disposition:in-reply-to:
-	user-agent:x-system-of-record;
-	b=hA7Co8OzQMOqTLB83FZh2udc++rVivcu1BTWDG9DIK5E0kmZwop1cVnkUXbcCUsSY
-	eftiKTJsY+7i78uYL5x3A==
-Date: Sat, 23 Jul 2011 04:10:43 +0200
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, acme@redhat.com, mingo@elte.hu
-Subject: [PATCH]: perf: fix error handling of unknown events
-Message-ID: <20110723021043.GA20178@quad>
-References: <20110607161936.GA8163@quad>
+	Fri, 22 Jul 2011 22:10:54 -0400
+Date: Sat, 23 Jul 2011 04:10:48 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Matt Helsley <matthltc@us.ibm.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>, Nathan Lynch <ntl@pobox.com>,
+        Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>, Serge Hallyn <serue@us.ibm.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        Glauber Costa <glommer@parallels.com>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Containers <containers@lists.osdl.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [EXAMPLE CODE] Parasite thread injection using PTRACE_SEIZE and
+ friends
+Message-ID: <20110723021048.GA21089@mtj.dyndns.org>
+References: <20110720140037.GM3455@htj.dyndns.org>
+ <20110722231953.GC16940@count0.beaverton.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110607161936.GA8163@quad>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-System-Of-Record: true
+In-Reply-To: <20110722231953.GC16940@count0.beaverton.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hey, Matt.
 
-There was a problem with the parse_events() code not
-printing the correct event name when an event was unknown
-and starting with an 'r'. The source of the problem was
-the way raw notation was parsed.
+On Fri, Jul 22, 2011 at 04:19:53PM -0700, Matt Helsley wrote:
+> parasitism is fine for a slow-but-sure debugger but is not suitable
+> for checkpoint/restart.
 
-Without the patch:
-	$ perf stat -e retired_foo
-	invalid event modifier: 'tired_foo'
+Hmmm... okay, can you elaborate on that?  I can't reach the same
+conclusion from what you wrote below.  You're implying parasitism
+would be too slow for CR, right?  But why would it be slower or faster
+in any meaningful way than in-kernel implementation?
 
-With the patch:
-	$ perf stat -e retired_foo
-	invalid or unsupported event: 'retired_foo'
+> The difficulty of checkpoint/restart is not that the task has
+> more information than the kernel.
 
-This also covers the case where the name of the event was
-not printed at all when perf was linked with libpfm4.
+But yes it is, if you're trying to implement it from userland in
+transparent manner.  There is a lot of information which is not
+available to a third party process and some of the available
+information is painfully slow to get to (e.g. PTRACE_PEEK/POKEDATA is
+word-by-word).
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
+> Quite the contrary. Most of the "information" the task has that the
+> kernel is not explicitly aware of is encoded in the task's
+> memory. So long as the kernel faithfully restores memory and
+> registers the task can know little the kernel doesn't already know.
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 4ea7e19..8c1cb10 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -697,7 +697,11 @@ parse_raw_event(const char **strp, struct perf_event_attr *attr)
- 		return EVT_FAILED;
- 	n = hex2u64(str + 1, &config);
- 	if (n > 0) {
--		*strp = str + n + 1;
-+		const char *end = str + n + 1;
-+		if (*end != '\0' && *end != ',' && *end != ':')
-+			return EVT_FAILED;
-+
-+		*strp = end;
- 		attr->type = PERF_TYPE_RAW;
- 		attr->config = config;
- 		return EVT_HANDLED;
+Sure, kernel ultimately knows and can access *everything*, but we
+aren't talking about in-kernel implementation here.
+
+> One example of something the task knows that the kernel does not is
+> which pids it cares about. However, a parasitic thread capable
+> of checkpointing arbitrary processes won't know about these pids
+> either -- it would have to be designed to checkpoint *only* the
+> process it was injected into.
+
+That's what the outer mechanism should provide regardless of how the
+core CR is implemented.  Maybe it is NS based, maybe it's just some
+subset of processes.  It doesn't have much to do with core
+implementation.
+
+> Furthermore, the kernel has information necessary for
+> checkpoint/restart that the task does not. The composition of an
+> epoll set is one example.
+
+Again, sure, kernel knows and can access everything, but most of
+necessary information is already available in userland.  If epoll
+isn't available, let's export epoll information.  We have
+/proc/PID/fdinfo already.  If that's not the correct interface for
+whatever reason, we can add introspection to epoll itself and make
+parasite query it.
+
+It's not like problems solve themselves automatically if you put CR
+inside the kernel.  It side-steps a lot of issues mostly by allowing
+avoiding difficult userland visible decisions, but as you already know
+well enough, I think that does more harm than good.
+
+Last year, when we were talking about userland implementation, one of
+the arguments was that ptrace / jobctl interaction was too messy and
+broken to be used for CR, but it's fixed now and the interaction is
+well defined and jobctl states are fully capturable.  And really,
+before, ptrace or in-kernel CR, it wasn't possible to capture the
+states properly, they were simply broken and not well defined enough.
+
+Identifying and fixing individual missing pieces is both more
+benefical to the kernel in general and much more likely to be merged
+upstream and the ptrace change for sure took a lot more time than I
+expected but it was something which has been horribly broken for a
+very long time and was very complex to deal with.  I think other
+pieces - most of which should be about exporting more info via some
+mechanism - should be much easier.
+
+> So ptrace is just the wrong interface to base checkpoint/restart on.
+> Pavel's approach, though I believe it is subtly flawed, is better.
+
+Again, I just don't understand how you draw the above conclusion from
+the arguments you provided above.  I don't see much connection between
+the arguments and the conclusion.
+
+Thanks.
+
+-- 
+tejun
