@@ -1,67 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760Ab1GWNY3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 09:24:29 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:40075
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752535Ab1GWNYY (ORCPT
+	id S1752785Ab1GWNc4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 09:32:56 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:50293 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752516Ab1GWNcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 09:24:24 -0400
-Date: Sat, 23 Jul 2011 09:24:11 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Christoph Hellwig <hch@infradead.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, Matthew Wilcox <matthew@wil.cx>,
-        Anton Blanchard <anton@samba.org>, npiggin@kernel.dk,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [Patch] VFS : mount lock scalability for files systems without
- mount point   (WAS vfsmount lock issues on very large ppc64 box)
-Message-ID: <20110723132411.GA22183@infradead.org>
-References: <20110717105027.53cc3ca4@kryten>
- <20110717010427.GC5359@parisc-linux.org>
- <20110717084630.GC8006@one.firstfloor.org>
- <1310977028.5756.1.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20110718154008.GA29593@infradead.org>
- <20110718155141.GA11013@ZenIV.linux.org.uk>
- <1311093158.2707.75.camel@schen9-DESK>
- <20110721204042.GB31405@ZenIV.linux.org.uk>
- <1311294452.2576.18.camel@schen9-DESK>
+	Sat, 23 Jul 2011 09:32:52 -0400
+Date: Sat, 23 Jul 2011 15:32:44 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Paul Mackerras <paulus@samba.org>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH tip:x86/memblock RFC] powerpc: Use HAVE_MEMBLOCK_NODE_MAP
+Message-ID: <20110723133244.GA28497@mtj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1311294452.2576.18.camel@schen9-DESK>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think you actually want this done in kern_mount_data, as both
-ipc and proc want long-term references as well.  I also suspect with
-additional creep of container awareness more internal mounts will switch
-to kern_mount_data.  Al, what do you think about simply passing the
-private data argument to kern_mount and kill kern_mount_data?  It's not
-like the additional argument is going to cause us any pain.
+powerpc doesn't access early_node_map[] directly and enabling
+HAVE_MEMBLOCK_NODE_MAP is trivial - replacing add_active_range() calls
+with memblock_set_node() and selecting HAVE_MEMBLOCK_NODE_MAP is
+enough.
 
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+benh, the proposed memblock changes are now in tip:x86/memblock, which
+is probably scheduled for the next merge window.  This patch converts
+powerpc to drop early_node_map[] and put NUMA information in memblock.
+I'm planning on converting all early_node_map[] users and dropping the
+code.  I don't have access to ppc NUMA machine so the patch is tested
+only on a non-NUMA SMP machine.  It builds fine for all valid
+combinations of of 32/64 [!]SMP [!]NUMA.
 
-> +struct vfsmount *kern_mount(struct file_system_type *type)
-> +{
-> +	struct vfsmount *mnt;
-> +
-> +	mnt = kern_mount_data(type, NULL);
-> +	if (!IS_ERR(mnt)) {
-> +		/* it is a longterm mount, don't release mnt until */
-> +		/* we unmount before file sys is unregistered */
+If this change is okay, how should this patch be routed?  ppc tree
+pulls from x86/memblock and puts this patch on top of it?
 
-Please use normal kernel comment style, e.g.
+Thanks.
 
-	/*
-	 * This is a longterm mount, don't release mnt until we umount
-	 * it just before unregister_filesystem().
-	 */
-	
-Adding proper kerneldoc comments for the kern_mount/umount function that
-explain things in more detail would also be nice.
+ arch/powerpc/Kconfig   |    1 +
+ arch/powerpc/mm/mem.c  |    2 +-
+ arch/powerpc/mm/numa.c |   10 ++++------
+ 3 files changed, 6 insertions(+), 7 deletions(-)
 
+Index: work/arch/powerpc/Kconfig
+===================================================================
+--- work.orig/arch/powerpc/Kconfig
++++ work/arch/powerpc/Kconfig
+@@ -117,6 +117,7 @@ config PPC
+ 	select HAVE_KRETPROBES
+ 	select HAVE_ARCH_TRACEHOOK
+ 	select HAVE_MEMBLOCK
++	select HAVE_MEMBLOCK_NODE_MAP
+ 	select HAVE_DMA_ATTRS
+ 	select HAVE_DMA_API_DEBUG
+ 	select USE_GENERIC_SMP_HELPERS if SMP
+Index: work/arch/powerpc/mm/mem.c
+===================================================================
+--- work.orig/arch/powerpc/mm/mem.c
++++ work/arch/powerpc/mm/mem.c
+@@ -197,7 +197,7 @@ void __init do_init_bootmem(void)
+ 		unsigned long start_pfn, end_pfn;
+ 		start_pfn = memblock_region_memory_base_pfn(reg);
+ 		end_pfn = memblock_region_memory_end_pfn(reg);
+-		add_active_range(0, start_pfn, end_pfn);
++		memblock_set_node(0, (phys_addr_t)ULLONG_MAX, 0);
+ 	}
+ 
+ 	/* Add all physical memory to the bootmem map, mark each area
+Index: work/arch/powerpc/mm/numa.c
+===================================================================
+--- work.orig/arch/powerpc/mm/numa.c
++++ work/arch/powerpc/mm/numa.c
+@@ -680,9 +680,7 @@ static void __init parse_drconf_memory(s
+ 			node_set_online(nid);
+ 			sz = numa_enforce_memory_limit(base, size);
+ 			if (sz)
+-				add_active_range(nid, base >> PAGE_SHIFT,
+-						 (base >> PAGE_SHIFT)
+-						 + (sz >> PAGE_SHIFT));
++				memblock_set_node(base, sz, nid);
+ 		} while (--ranges);
+ 	}
+ }
+@@ -772,8 +770,7 @@ new_range:
+ 				continue;
+ 		}
+ 
+-		add_active_range(nid, start >> PAGE_SHIFT,
+-				(start >> PAGE_SHIFT) + (size >> PAGE_SHIFT));
++		memblock_set_node(start, size, nid);
+ 
+ 		if (--ranges)
+ 			goto new_range;
+@@ -808,7 +805,8 @@ static void __init setup_nonnuma(void)
+ 		end_pfn = memblock_region_memory_end_pfn(reg);
+ 
+ 		fake_numa_create_new_node(end_pfn, &nid);
+-		add_active_range(nid, start_pfn, end_pfn);
++		memblock_set_node(PFN_PHYS(start_pfn),
++				  PFN_PHYS(end_pfn - start_pfn), nid);
+ 		node_set_online(nid);
+ 	}
+ }
