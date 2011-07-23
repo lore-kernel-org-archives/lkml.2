@@ -1,147 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752900Ab1GWOZj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 10:25:39 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:15076 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752232Ab1GWOZb (ORCPT
+	id S1752936Ab1GWOk5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 10:40:57 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:56433 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752890Ab1GWOkx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 10:25:31 -0400
-Date: Sat, 23 Jul 2011 16:25:29 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Andy Grover <agrover@redhat.com>,
-        Hannes Reinecke <hare@suse.de>, Roland Dreier <roland@purestorage.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 02/13] iscsi: Add Serial Number Arithmetic LT and GT into
- iscsi_proto.h
-In-Reply-To: <1311410747-29947-3-git-send-email-nab@linux-iscsi.org>
-Message-ID: <alpine.LNX.2.00.1107231535070.3831@swampdragon.chaosbits.net>
-References: <1311410747-29947-1-git-send-email-nab@linux-iscsi.org> <1311410747-29947-3-git-send-email-nab@linux-iscsi.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sat, 23 Jul 2011 10:40:53 -0400
+From: Juergen Beisert <jbe@pengutronix.de>
+Organization: Pengutronix - Linux Solutions for Science and Industry
+To: Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [ANNOUNCE] 3.0-rt1
+Date: Sat, 23 Jul 2011 16:29:24 +0200
+User-Agent: KMail/1.9.10
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "linux-rt-users" <linux-rt-users@vger.kernel.org>
+References: <alpine.LFD.2.02.1107222203400.2702@ionos>
+In-Reply-To: <alpine.LFD.2.02.1107222203400.2702@ionos>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201107231629.25322.jbe@pengutronix.de>
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: jbe@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 23 Jul 2011, Nicholas A. Bellinger wrote:
+Hi Thomas,
 
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
-> 
-> This patch moves the iscsi_sna_lt() and iscsi_sna_lte(), along with
-> iscsi_sna_gt() and iscsi_sna_gte() from iscsi_target_mod into
-> static inlines inside of include/scsi/iscsi_proto.h
-> 
-> This patch also includes the ISCSI_HDR_LEN and ISCSI_CRC_LEN
-> definitions.
-> 
-> Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
-> Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
-> Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
-> ---
->  drivers/scsi/libiscsi.c    |   16 ----------------
->  include/scsi/iscsi_proto.h |   38 ++++++++++++++++++++++++++++++++++++++
->  2 files changed, 38 insertions(+), 16 deletions(-)
-> 
-> diff --git a/drivers/scsi/libiscsi.c b/drivers/scsi/libiscsi.c
-> index 9c3cb4e..3461a03 100644
-> --- a/drivers/scsi/libiscsi.c
-> +++ b/drivers/scsi/libiscsi.c
-> @@ -84,22 +84,6 @@ MODULE_PARM_DESC(debug_libiscsi_eh,
->  					     __func__, ##arg);		\
->  	} while (0);
->  
-> -/* Serial Number Arithmetic, 32 bits, less than, RFC1982 */
-> -#define SNA32_CHECK 2147483648UL
-> -
-> -static int iscsi_sna_lt(u32 n1, u32 n2)
-> -{
-> -	return n1 != n2 && ((n1 < n2 && (n2 - n1 < SNA32_CHECK)) ||
-> -			    (n1 > n2 && (n2 - n1 < SNA32_CHECK)));
-> -}
-> -
-> -/* Serial Number Arithmetic, 32 bits, less than, RFC1982 */
-> -static int iscsi_sna_lte(u32 n1, u32 n2)
-> -{
-> -	return n1 == n2 || ((n1 < n2 && (n2 - n1 < SNA32_CHECK)) ||
-> -			    (n1 > n2 && (n2 - n1 < SNA32_CHECK)));
-> -}
-> -
->  inline void iscsi_conn_queue_work(struct iscsi_conn *conn)
->  {
->  	struct Scsi_Host *shost = conn->session->host;
-> diff --git a/include/scsi/iscsi_proto.h b/include/scsi/iscsi_proto.h
-> index a9c9058..455b03a 100644
-> --- a/include/scsi/iscsi_proto.h
-> +++ b/include/scsi/iscsi_proto.h
-> @@ -29,10 +29,48 @@
->  /* default iSCSI listen port for incoming connections */
->  #define ISCSI_LISTEN_PORT	3260
->  
-> +/* iSCSI header length */
-> +#define ISCSI_HDR_LEN		48
-> +
-> +/* iSCSI CRC32C length */
-> +#define ISCSI_CRC_LEN		4
-> +
->  /* Padding word length */
->  #define ISCSI_PAD_LEN		4
->  
->  /*
-> + * Serial Number Arithmetic, 32 bits, RFC1982
-> + */
-> +
-> +static inline int iscsi_sna_lt(u32 n1, u32 n2)
-> +{
-> +	s32 diff = n1 - n2;
-> +
-> +	return diff < 0;
-> +}
+on ARM (in this case a Samsung S3C2440 based platform) I get:
 
-Perhaps get rid of the variable and do
+kernel/built-in.o: In function `vprintk':
+/home/jb/[...]/linux-3.0/kernel/printk.c:862: undefined reference to `early_vprintk'
+kernel/built-in.o: In function `register_console':
+/home/jb/[...]linux-3.0/kernel/printk.c:1580: undefined reference to `early_console_initialized'
+make[1]: *** [vmlinux] Error 1
 
-  return (s32)(n1 - n2) < 0;
+Did I forget something to enable in my kernel config?
 
- same suggestion for the other functions as well.
-
-???
-
-> +
-> +static inline int iscsi_sna_lte(u32 n1, u32 n2)
-> +{
-> +	s32 diff = n1 - n2;
-> +
-> +	return diff <= 0;
-> +}
-> +
-> +static inline int iscsi_sna_gt(u32 n1, u32 n2)
-> +{
-> +	s32 diff = n1 - n2;
-> +
-> +	return diff > 0;
-> +}
-> +
-> +static inline int iscsi_sna_gte(u32 n1, u32 n2)
-> +{
-> +	s32 diff = n1 - n2;
-> +
-> +	return diff >= 0;
-> +}
-> +
-> +/*
->   * useful common(control and data pathes) macro
->   */
->  #define ntoh24(p) (((p)[0] << 16) | ((p)[1] << 8) | ((p)[2]))
-> 
+jbe
 
 -- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+Pengutronix e.K.                              | Juergen Beisert             |
+Linux Solutions for Science and Industry      | http://www.pengutronix.de/  |
