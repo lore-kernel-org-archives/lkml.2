@@ -1,127 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754833Ab1GWAHs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 20:07:48 -0400
-Received: from waste.org ([173.11.57.241]:37199 "EHLO waste.org"
+	id S1755042Ab1GWAIL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 20:08:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39149 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754767Ab1GWAHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 20:07:46 -0400
-Subject: Re: Nanosecond fs timestamp support: sad
-From: Matt Mackall <mpm@selenic.com>
-To: NeilBrown <neilb@suse.de>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>, Andi Kleen <andi@firstfloor.org>,
+	id S1754978Ab1GWAID (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 20:08:03 -0400
+Date: Sat, 23 Jul 2011 10:07:50 +1000
+From: NeilBrown <neilb@suse.de>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Matt Mackall <mpm@selenic.com>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110723085915.308ddc02@notabene.brown>
-References: <1311271641.14555.114.camel@calx>
-	 <m2pql2c0qz.fsf@firstfloor.org> <20110722163335.2df4f6ca@notabene.brown>
-	 <1311363269.14555.261.camel@calx>
-	 <20110722205922.GS8006@one.firstfloor.org>
-	 <1311369102.14555.268.camel@calx>
-	 <20110722214732.GW8006@one.firstfloor.org>
-	 <20110722221039.GB10749@fieldses.org> <20110722223158.GC10749@fieldses.org>
-	 <20110723085915.308ddc02@notabene.brown>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 22 Jul 2011 19:07:41 -0500
-Message-ID: <1311379661.20898.23.camel@calx>
+Subject: Re: Nanosecond fs timestamp support: sad
+Message-ID: <20110723100750.12e1a2a1@notabene.brown>
+In-Reply-To: <20110722234921.GE10749@fieldses.org>
+References: <m2pql2c0qz.fsf@firstfloor.org>
+	<20110722163335.2df4f6ca@notabene.brown>
+	<1311363269.14555.261.camel@calx>
+	<20110722205922.GS8006@one.firstfloor.org>
+	<1311369102.14555.268.camel@calx>
+	<20110722214732.GW8006@one.firstfloor.org>
+	<20110722221039.GB10749@fieldses.org>
+	<20110722223158.GC10749@fieldses.org>
+	<20110723085915.308ddc02@notabene.brown>
+	<20110722230612.GD10749@fieldses.org>
+	<20110722234921.GE10749@fieldses.org>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-07-23 at 08:59 +1000, NeilBrown wrote:
-> On Fri, 22 Jul 2011 18:31:58 -0400 "J. Bruce Fields" <bfields@fieldses.org>
-> wrote:
-> 
-> > On Fri, Jul 22, 2011 at 06:10:39PM -0400, bfields wrote:
-> > > On Fri, Jul 22, 2011 at 11:47:32PM +0200, Andi Kleen wrote:
-> > > > On Fri, Jul 22, 2011 at 04:11:42PM -0500, Matt Mackall wrote:
-> > > > > On Fri, 2011-07-22 at 22:59 +0200, Andi Kleen wrote:
-> > > > > > > Indeed. Only usefully exists on ext4 and requires extra system calls.
-> > > > > > 
-> > > > > > Not sure what you mean?  It's in stat(2), just like the timestamps.
-> > > > > 
-> > > > > I don't see anything that looks like a version or generation number in
-> > > > > either the man pages, the asm-generic/stat.h, or glibc's asm/stat.h.
-> > > > > Pointer?
-> > > > 
-> > > > Hmm you're right. I thought it was in there, but apparently not.
-> > > > I think it should be added there though. We still have some unused 
-> > > > fields.
-> > > 
-> > > But last I checked I thought it was only ext4 that actually incremented
-> > > the i_version on IO, and even then only when given a (non-default) mount
-> > > option.
-> > > 
-> > > My notes on what needs to be done there:
-> > > 
-> > > 	- collect data to determine whether turning on i_version causes
-> > > 	  any significant performance regressions.
-> > > 		- Last I talked to him, Ted Tso recommended running
-> > > 		  Bonnie on a local disk, since it does a lot of little
-> > > 		  writes, which is somewhat of a worst case, as it will
-> > > 		  generate extra metadata updates for each write.
-> > > 		  Compare total wall-clock time, number of iops, and
-> > > 		  number of bytes (using some kind of block tracing).
-> > > 	- If there aren't any problems, turn it on by default, and we're
-> > > 	  done.
+On Fri, 22 Jul 2011 19:49:21 -0400 "J. Bruce Fields" <bfields@fieldses.org>
+wrote:
+
+> On Fri, Jul 22, 2011 at 07:06:12PM -0400, J. Bruce Fields wrote:
+> > On Sat, Jul 23, 2011 at 08:59:15AM +1000, NeilBrown wrote:
+> > > But does anyone apart from NFSv4 actually *want* i_version as opposed to the
+> > > more-generally-useful precise timestamps?
 > > 
-> > (Well,and talk the other filesystem implementors into doing it.)
-> > 
+> > It *seems* like a generally useful idea, but I don't know of any other
+> > users.
 > 
-> But does anyone apart from NFSv4 actually *want* i_version as opposed to the
-> more-generally-useful precise timestamps?
+> (Out of curiosity: what actually *needs* real timestamps?:
+> 	- They're generally useful to people, of course; ("what did I
+> 	  change last tuesday?")
 
-In theory, a microsecond timestamp (ie gtod) may already not be good
-enough for all applications. But i_version also doesn't allow comparing
-across files.
+In the same vein they are useful for archiving.  "what has changed since I
+last started an archive?"
 
-> If not, we probably should tell NFSv4 to use timestamps and focus on making
-> them work well.
-> ??
+NFSv3 caching obviously uses them too.
+
+> 	- Make uses them, though in theory perhaps it could do the same
+> 	  job by caching records like "object X was built from
+> 	  versions a, b, and c of objects A, B, and C respectively".
+
+In theory....
+
 > 
-> The timestamp used doesn't need to update ever nanosecond.  I think if it
-> were just updated on every userspace->kernel transition  (or effective
-> equivalents inside kernel threads) that would be enough capture all
-> causality.  I wonder how that would be achieved..  I wonder if RCU machinery
-> could help - doesn't it keep track of when threads schedule ... or something?
+> But a lot of uses are probably just to answer the question "did this
+> file change since the last time I looked at it"?
 
-Sort of.
+I think everything could fall in two one of two categories.
+ a/ did this file change since the last time I looked at it?
+ b/ did this file change since the last time that file changed?
 
-Some observations:
+The former can be achieved with versions or timestamps.
+The latter requires globally coherent high precision timestamps... or
+something like dependency tracking which would probably be even more
+expensive and - as you say - non-standard.
 
-- we only need to go to higher resolution when two events happen in the
-same time quantum
-- this applies at both the level of seconds and jiffies
-- if the only file touched in a given quantum gets touched ago, we don't
-need to update its timestamp if stat wasn't also called on it in this
-quantum
-- we never need to use a higher resolution than the global
-min(s_time_gran)
+NeilBrown
 
 
-For instance, if a machine is idle, except for writing to a single file
-once a second, 1s resolution suffices.
-
-If a machine is idle, except for writing to the same file 1000 times per
-second, and no one is watching it, 1s still suffices (inode is dirtied
-once per second).
-
-Any time two files are touched in the same second, the second one (and
-later files) needs jiffies resolution. Similarly, any time two files are
-touched in the same jiffy, the second one should use gtod().
-
-The global status bits needed to track this could be managed fairly
-efficiently with cmpxchg.
-
-(Arguably, we should supply > 1s resolution whether they're strictly
-needed or not on filesystems with nanosecond support, so that people
-casually inspecting timestamps don't wonder where their nanoseconds
-went.)
-
--- 
-Mathematics is the supreme nostalgia of our time.
-
+> 
+> Of course, however theoretically useful, there's always the argument
+> that linux-specific interfaces are unlikely to be used by anyone except
+> Lennart Poettering.)
+> 
+> --b.
 
