@@ -1,149 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752185Ab1GWIuX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 04:50:23 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:51893 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752048Ab1GWIti (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 04:49:38 -0400
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Greg KH <greg@kroah.com>,
-        linux-mm@kvack.org
-Subject: [PATCH v3 4/6] memory: memory notifier error injection module
-Date: Sat, 23 Jul 2011 17:50:58 +0900
-Message-Id: <1311411060-30124-5-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1311411060-30124-1-git-send-email-akinobu.mita@gmail.com>
-References: <1311411060-30124-1-git-send-email-akinobu.mita@gmail.com>
+	id S1752117Ab1GWIvF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 04:51:05 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:56323 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752048Ab1GWIu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jul 2011 04:50:59 -0400
+Date: Sat, 23 Jul 2011 10:50:13 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86/debug update for v3.1
+Message-ID: <20110723085013.GA14835@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This provides the ability to inject artifical errors to memory hotplug
-notifier chain callbacks.  It is controlled through debugfs interface
-under /sys/kernel/debug/memory-notifier-error-inject/
+Linus,
 
-Each of the files in the directory represents an event which can be failed
-and contains the error code.  If the notifier call chain should be failed
-with some events notified, write the error code to the files.
+Please pull the latest core-debug-for-linus git tree from:
 
-Example: Inject memory hotplug offline error (-12 == -ENOMEM)
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git core-debug-for-linus
 
-	# cd /sys/kernel/debug/memory-notifier-error-inject
-	# echo -12 > MEM_GOING_OFFLINE
-	# echo offline > /sys/devices/system/memory/memoryXXX/state
-	bash: echo: write error: Cannot allocate memory
+ Thanks,
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Greg KH <greg@kroah.com>
-Cc: linux-mm@kvack.org
----
-* v3
-- rewrite to be kernel modules instead of initializing at late_initcall()s
-- notifier priority can be specified as a module parameter
+	Ingo
 
- lib/Kconfig.debug                  |   20 ++++++++++++++++
- lib/Makefile                       |    1 +
- lib/memory-notifier-error-inject.c |   45 ++++++++++++++++++++++++++++++++++++
- 3 files changed, 66 insertions(+), 0 deletions(-)
- create mode 100644 lib/memory-notifier-error-inject.c
+------------------>
+Josh Triplett (1):
+      debug: Make CONFIG_EXPERT select CONFIG_DEBUG_KERNEL to unhide debug options
 
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 69ecd50..a2b0856 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -1079,6 +1079,26 @@ config PM_NOTIFIER_ERROR_INJECT
+
+ init/Kconfig |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/init/Kconfig b/init/Kconfig
+index ebafac4..14370d3 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -909,6 +909,8 @@ config ANON_INODES
  
- 	  If unsure, say N.
- 
-+config MEMORY_NOTIFIER_ERROR_INJECT
-+	tristate "Memory hotplug notifier error injection module"
-+	depends on MEMORY_HOTPLUG_SPARSE && NOTIFIER_ERROR_INJECTION
-+	help
-+	  This option provides the ability to inject artifical errors to
-+	  memory hotplug notifier chain callbacks.  It is controlled through
-+	  debugfs interface.
-+
-+	  Example: Inject memory hotplug offline error (-12 == -ENOMEM)
-+
-+	  # cd /sys/kernel/debug/memory-notifier-error-inject
-+	  # echo -12 > MEM_GOING_OFFLINE
-+	  # echo offline > /sys/devices/system/memory/memoryXXX/state
-+	  bash: echo: write error: Cannot allocate memory
-+
-+	  To compile this code as a module, choose M here: the module will
-+	  be called memory-notifier-error-inject.
-+
-+	  If unsure, say N.
-+
- config FAULT_INJECTION
- 	bool "Fault-injection framework"
- 	depends on DEBUG_KERNEL
-diff --git a/lib/Makefile b/lib/Makefile
-index 4dca6c0..f28914b 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -91,6 +91,7 @@ obj-$(CONFIG_IOMMU_HELPER) += iommu-helper.o
- obj-$(CONFIG_FAULT_INJECTION) += fault-inject.o
- obj-$(CONFIG_CPU_NOTIFIER_ERROR_INJECT) += cpu-notifier-error-inject.o
- obj-$(CONFIG_PM_NOTIFIER_ERROR_INJECT) += pm-notifier-error-inject.o
-+obj-$(CONFIG_MEMORY_NOTIFIER_ERROR_INJECT) += memory-notifier-error-inject.o
- 
- lib-$(CONFIG_GENERIC_BUG) += bug.o
- 
-diff --git a/lib/memory-notifier-error-inject.c b/lib/memory-notifier-error-inject.c
-new file mode 100644
-index 0000000..76f0b94
---- /dev/null
-+++ b/lib/memory-notifier-error-inject.c
-@@ -0,0 +1,45 @@
-+#include <linux/kernel.h>
-+#include <linux/memory.h>
-+#include <linux/module.h>
-+#include <linux/notifier.h>
-+
-+static int priority;
-+module_param(priority, int, 0);
-+MODULE_PARM_DESC(priority, "specify memory notifier priority");
-+
-+static struct err_inject_notifier_block err_inject_memory_notifier = {
-+	.actions = {
-+		{ ERR_INJECT_NOTIFIER_ACTION(MEM_GOING_ONLINE) },
-+		{ ERR_INJECT_NOTIFIER_ACTION(MEM_GOING_OFFLINE) },
-+		{}
-+	}
-+};
-+
-+static int err_inject_init(void)
-+{
-+	int err;
-+
-+	err = err_inject_notifier_block_init(&err_inject_memory_notifier,
-+				"memory-notifier-error-inject", priority);
-+	if (err)
-+		return err;
-+
-+	err = register_memory_notifier(&err_inject_memory_notifier.nb);
-+	if (err)
-+		err_inject_notifier_block_cleanup(&err_inject_memory_notifier);
-+
-+	return err;
-+}
-+
-+static void err_inject_exit(void)
-+{
-+	unregister_memory_notifier(&err_inject_memory_notifier.nb);
-+	err_inject_notifier_block_cleanup(&err_inject_memory_notifier);
-+}
-+
-+module_init(err_inject_init);
-+module_exit(err_inject_exit);
-+
-+MODULE_DESCRIPTION("memory notifier error injection module");
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Akinobu Mita <akinobu.mita@gmail.com>");
--- 
-1.7.4.4
-
+ menuconfig EXPERT
+ 	bool "Configure standard kernel features (expert users)"
++	# Unhide debug options, to make the on-by-default options visible
++	select DEBUG_KERNEL
+ 	help
+ 	  This option allows certain base kernel options and settings
+           to be disabled or tweaked. This is for specialized
