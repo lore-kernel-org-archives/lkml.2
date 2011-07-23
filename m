@@ -1,85 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755042Ab1GWAIL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 20:08:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39149 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754978Ab1GWAID (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 20:08:03 -0400
-Date: Sat, 23 Jul 2011 10:07:50 +1000
-From: NeilBrown <neilb@suse.de>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Matt Mackall <mpm@selenic.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Nanosecond fs timestamp support: sad
-Message-ID: <20110723100750.12e1a2a1@notabene.brown>
-In-Reply-To: <20110722234921.GE10749@fieldses.org>
-References: <m2pql2c0qz.fsf@firstfloor.org>
-	<20110722163335.2df4f6ca@notabene.brown>
-	<1311363269.14555.261.camel@calx>
-	<20110722205922.GS8006@one.firstfloor.org>
-	<1311369102.14555.268.camel@calx>
-	<20110722214732.GW8006@one.firstfloor.org>
-	<20110722221039.GB10749@fieldses.org>
-	<20110722223158.GC10749@fieldses.org>
-	<20110723085915.308ddc02@notabene.brown>
-	<20110722230612.GD10749@fieldses.org>
-	<20110722234921.GE10749@fieldses.org>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+	id S1756212Ab1GWAPv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 20:15:51 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:59197 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755999Ab1GWAPl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jul 2011 20:15:41 -0400
+Date: Fri, 22 Jul 2011 17:15:34 -0700 (PDT)
+Message-Id: <20110722.171534.202703728483982275.davem@davemloft.net>
+To: daniel.morsing@gmail.com
+Cc: broonie@opensource.wolfsonmicro.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dm9000: Make the driver follow the IRQF_SHARED contract
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1311357162-16200-1-git-send-email-daniel.morsing@gmail.com>
+References: <1311357162-16200-1-git-send-email-daniel.morsing@gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 22 Jul 2011 17:15:35 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Jul 2011 19:49:21 -0400 "J. Bruce Fields" <bfields@fieldses.org>
-wrote:
+From: Daniel Morsing <daniel.morsing@gmail.com>
+Date: Fri, 22 Jul 2011 19:52:42 +0200
 
-> On Fri, Jul 22, 2011 at 07:06:12PM -0400, J. Bruce Fields wrote:
-> > On Sat, Jul 23, 2011 at 08:59:15AM +1000, NeilBrown wrote:
-> > > But does anyone apart from NFSv4 actually *want* i_version as opposed to the
-> > > more-generally-useful precise timestamps?
-> > 
-> > It *seems* like a generally useful idea, but I don't know of any other
-> > users.
+> The dm9000 driver requests a shared interrupt but doesn't return
+> IRQ_NONE when the device didn't generate the interrupt. This could lead
+> to the other devices sharing the irq never getting an interrupt. This
+> patch makes the routine return IRQ_NONE for the path where no work was
+> done.
 > 
-> (Out of curiosity: what actually *needs* real timestamps?:
-> 	- They're generally useful to people, of course; ("what did I
-> 	  change last tuesday?")
+> Signed-off-by: Daniel Morsing <daniel.morsing@gmail.com>
+> Cc: stable@kernel.org
 
-In the same vein they are useful for archiving.  "what has changed since I
-last started an archive?"
-
-NFSv3 caching obviously uses them too.
-
-> 	- Make uses them, though in theory perhaps it could do the same
-> 	  job by caching records like "object X was built from
-> 	  versions a, b, and c of objects A, B, and C respectively".
-
-In theory....
-
-> 
-> But a lot of uses are probably just to answer the question "did this
-> file change since the last time I looked at it"?
-
-I think everything could fall in two one of two categories.
- a/ did this file change since the last time I looked at it?
- b/ did this file change since the last time that file changed?
-
-The former can be achieved with versions or timestamps.
-The latter requires globally coherent high precision timestamps... or
-something like dependency tracking which would probably be even more
-expensive and - as you say - non-standard.
-
-NeilBrown
-
-
-> 
-> Of course, however theoretically useful, there's always the argument
-> that linux-specific interfaces are unlikely to be used by anyone except
-> Lennart Poettering.)
-> 
-> --b.
-
+Applied.
