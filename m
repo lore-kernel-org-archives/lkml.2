@@ -1,143 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751340Ab1GWUbr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 16:31:47 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:60136 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751133Ab1GWUbl (ORCPT
+	id S1751431Ab1GWUff (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 16:35:35 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:52793 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751228Ab1GWUfa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 16:31:41 -0400
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: dan.j.williams@intel.com, sundaram@ti.com, linus.walleij@linaro.org,
-        vinod.koul@intel.com, rmk+kernel@arm.linux.org.uk,
-        Jassi Brar <jaswinder.singh@linaro.org>
-Subject: [RFC] DMAEngine: Define generic transfer request api
-Date: Sun, 24 Jul 2011 02:01:28 +0530
-Message-Id: <1311453088-5063-1-git-send-email-jaswinder.singh@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
+	Sat, 23 Jul 2011 16:35:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <E0D41E29EB0DAC4E9F3FF173962E9E9403026FE695@dbde02.ent.ti.com>
+References: <1310310203-12288-1-git-send-email-sundaram@ti.com>
+	<CABb+yY1HJOR+QzmM4-ju4cs+8keoyUbMv+SpVoM6BW=DCMzmQQ@mail.gmail.com>
+	<CACRpkdbLg0+_2kpi4NizFj0fDWb6QPtkcKirKgoH+83vGD0O0A@mail.gmail.com>
+	<CABb+yY1RqHJ6jsMB2RqPNnBLff-bzhwaXG1U-hCD8CpME+a3aA@mail.gmail.com>
+	<E0D41E29EB0DAC4E9F3FF173962E9E94030259DBBE@dbde02.ent.ti.com>
+	<CABb+yY1_vuM7NGxV4o103YmYfte09XKpaXnYARcn3jjnChiBsQ@mail.gmail.com>
+	<E0D41E29EB0DAC4E9F3FF173962E9E9403026FE695@dbde02.ent.ti.com>
+Date: Sun, 24 Jul 2011 02:05:28 +0530
+Message-ID: <CABb+yY2=CrA8=9ces=4ABjxrHieXjtJTGm6Q3Kg30eHye9_N2g@mail.gmail.com>
+Subject: Re: [PATCH] dmaengine: add dma_ctrl_cmd to pass buffer stride configuration
+From: Jassi Brar <jassisinghbrar@gmail.com>
+To: "Raju, Sundaram" <sundaram@ti.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an attempt to define an api that could be used for doing
-fancy data transfers like interleaved to contiguous copy and vice-versa.
-Traditional SG_list based transfers tend to be very inefficient
-in such cases. Such cases call for some very condensed api to convey
-pattern of the transfer. This is an attempt at that condensed api.
+On Mon, Jul 18, 2011 at 1:21 PM, Raju, Sundaram <sundaram@ti.com> wrote:
+>>
+>> Maybe a new api to pass fixed-format variable-length encoded message
+>> to the DMAC drivers?
+>> Which could be interpreted by DMAC drivers to extract all the needed xfer
+>> parameters from the 'header' section and instructions to program the xfers
+>> in the DMAC from the variable length body of the 'message' buffer.
+>> It might sound complicated but we can have helpers to make the job easy.
+>> Btw, the regular single/sg-list xfers could also be expressed by this method.
+>
+> Do you expect this variable length body of the message to be DMAC
+> independent? I don't think so. In that case how is this different from what
+> we have here already?
+Yes, this whould be DMAC independent.
 
-The api supports all 4 variants of scatter-gather and contiguous transfer.
-Besides, it could easily represent common operations like
- 	device_prep_dma_{cyclic, memset, memcpy}
-and maybe some more that I am not sure of.
+> If it can be DMAC independent, can you illustrate more on how this can
+> be done? But the point to note is, if this can be made DMAC independent
+> then the control command we have also can be made DMAC independent
+> by generalizing the configuration structure passed to it.
+The 'header' I suggest, would in fact be a structure body, only an extra pointer
+would point to the 'instructions' to convey actual location and sizes
+of mico-xfers.
+I don't think it is possible to have general definition of such transfers fully
+within a structure. If I understand what you ask.
 
-Of course, this api too can't help transfers that don't lend to DMA by
-nature, i.e, scattered tiny read/writes with no periodic pattern. 
+I have just posted an RFC. I kept the terms same so that it is easier
+to understand.
+Please have a look. You are CC'ed too.
 
-Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
----
- include/linux/dmaengine.h |   74 +++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 74 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index eee7add..a6cdb57 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -74,6 +74,76 @@ enum dma_transaction_type {
- /* last transaction type for creation of the capabilities mask */
- #define DMA_TX_TYPE_END (DMA_CYCLIC + 1)
- 
-+/**
-+ * Generic Transfer Request
-+ * ------------------------
-+ * A chunk is collection of contiguous bytes to be transfered.
-+ * The gap(in bytes) between two chunks is called inter-chunk-gap(ICG).
-+ * ICGs may or maynot change between chunks.
-+ * A FRAME is the smallest series of contiguous {chunk,icg} pairs,
-+ *  that when repeated an integral number of times, specifies the transfer.
-+ * A transfer template is specification of a Frame, the number of times
-+ *  it is to be repeated and other per-transfer attributes.
-+ *
-+ * Practically, a client driver would have ready a template for each
-+ *  type of transfer it is going to need during its lifetime and
-+ *  set only 'src_start' and 'dst_start' before submitting the requests.
-+ *
-+ *
-+ *  |      Frame-1        |       Frame-2       | ~ |       Frame-'numf'  |
-+ *  |====....==.===...=...|====....==.===...=...| ~ |====....==.===...=...|
-+ *
-+ *    ==  Chunk size
-+ *    ... ICG
-+ */
-+
-+/**
-+ * struct data_chunk - Element of scatter-gather list that makes a frame.
-+ * @size: Number of bytes to read from source.
-+ *	  size_dst := fn(op, size_src), so doesn't mean much for destination.
-+ * @icg: Number of bytes to jump after last src/dst address of this
-+ *	 chunk and before first src/dst address for next chunk.
-+ *	 Ignored for dst(assumed 0), if dst_inc is true and dst_sgl is false.
-+ *	 Ignored for src(assumed 0), if src_inc is true and src_sgl is false.
-+ */
-+struct data_chunk {
-+	size_t size;
-+	size_t icg;
-+};
-+
-+/**
-+ * struct xfer_template - Template to convey DMAC the transfer pattern
-+ *	 and attributes.
-+ * @op: The operation to perform on source data before writing it on
-+ *	 to destination address.
-+ * @src_start: Absolute address of source for the first chunk.
-+ * @dst_start: Absolute address of destination for the first chunk.
-+ * @src_inc: If the source address increments after reading from it.
-+ * @dst_inc: If the destination address increments after writing to it.
-+ * @src_sgl: If the 'icg' of sgl[] applies to Source (scattered read).
-+ *		Otherwise, source is read contiguously (icg ignored).
-+ *		Ignored if src_inc is false.
-+ * @dst_sgl: If the 'icg' of sgl[] applies to Destination (scattered write).
-+ *		Otherwise, destination is filled contiguously (icg ignored).
-+ *		Ignored if dst_inc is false.
-+ * @frm_irq: If the client expects DMAC driver to do callback after each frame.
-+ * @numf: Number of frames in this template.
-+ * @frame_size: Number of chunks in a frame i.e, size of sgl[].
-+ * @sgl: Array of {chunk,icg} pairs that make up a frame.
-+ */
-+struct xfer_template {
-+	enum dma_transaction_type op;
-+	dma_addr_t src_start;
-+	dma_addr_t dst_start;
-+	bool src_inc;
-+	bool dst_inc;
-+	bool src_sgl;
-+	bool dst_sgl;
-+	bool frm_irq;
-+	size_t numf;
-+	size_t frame_size;
-+	struct data_chunk sgl[0];
-+};
- 
- /**
-  * enum dma_ctrl_flags - DMA flags to augment operation preparation,
-@@ -430,6 +500,7 @@ struct dma_tx_state {
-  * @device_prep_dma_cyclic: prepare a cyclic dma operation suitable for audio.
-  *	The function takes a buffer of size buf_len. The callback function will
-  *	be called after period_len bytes have been transferred.
-+ * @device_prep_dma_xfer: Transfer expression in 'most' generic way.
-  * @device_control: manipulate all pending operations on a channel, returns
-  *	zero or error code
-  * @device_tx_status: poll for transaction completion, the optional
-@@ -494,6 +565,9 @@ struct dma_device {
- 	struct dma_async_tx_descriptor *(*device_prep_dma_cyclic)(
- 		struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
- 		size_t period_len, enum dma_data_direction direction);
-+	struct dma_async_tx_descriptor *(*device_prep_dma_xfer)(
-+		struct dma_chan *chan, struct xfer_template *xt,
-+		unsigned long flags);
- 	int (*device_control)(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
- 		unsigned long arg);
- 
--- 
-1.7.4.1
-
+Thanks,
+Jassi
