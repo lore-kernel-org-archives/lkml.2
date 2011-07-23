@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966Ab1GWIHl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 04:07:41 -0400
-Received: from mga03.intel.com ([143.182.124.21]:33872 "EHLO mga03.intel.com"
+	id S1752015Ab1GWIob (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 04:44:31 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:43433 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751471Ab1GWIHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 04:07:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,252,1309762800"; 
-   d="scan'208";a="30600769"
-Date: Sat, 23 Jul 2011 16:07:21 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
+	id S1751814Ab1GWIoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jul 2011 04:44:25 -0400
+Date: Sat, 23 Jul 2011 10:43:39 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "Li, Shaohua" <shaohua.li@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/9] writeback: bdi write bandwidth estimation
-Message-ID: <20110723080721.GC31975@localhost>
-References: <20110629145245.835998321@intel.com>
- <20110629145553.906668553@intel.com>
- <20110701192915.GE28563@redhat.com>
+        Richard Weinberger <richard@nod.at>
+Subject: [GIT PULL] x86 fix
+Message-ID: <20110723084339.GA14029@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110701192915.GE28563@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 02, 2011 at 03:29:15AM +0800, Vivek Goyal wrote:
-> On Wed, Jun 29, 2011 at 10:52:48PM +0800, Wu Fengguang wrote:
-> > The estimation value will start from 100MB/s and adapt to the real
-> > bandwidth in seconds.
-> > 
-> > It tries to update the bandwidth only when disk is fully utilized.
-> > Any inactive period of more than one second will be skipped.
-> 
-> Is this piece of code being tested in your graphs? Are there any
-> inactive periods which get filtered out in your workload? I am 
-> assuming in a continuous dd, we will not have periods of inactivity
-> 1 second long.
+Linus,
 
-There are no inactive periods in the dd tests. However I did try
-"watch cat /debug/bdi/8:0/stats" while starting some write workloads
-in background. When the write stops, the bandwidth does stop updating.
+Please pull the latest x86-urgent-for-linus git tree from:
 
-Thanks,
-Fengguang
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-urgent-for-linus
+
+
+out-of-topic modifications in x86-urgent-for-linus:
+---------------------------------------------------
+arch/um/sys-i386/Makefile          # a03fc8c: um: Make rwsem.S depend on CONFIG
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Richard Weinberger (1):
+      um: Make rwsem.S depend on CONFIG_RWSEM_XCHGADD_ALGORITHM
+
+
+ arch/um/sys-i386/Makefile |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/arch/um/sys-i386/Makefile b/arch/um/sys-i386/Makefile
+index 15587ed..87b659d 100644
+--- a/arch/um/sys-i386/Makefile
++++ b/arch/um/sys-i386/Makefile
+@@ -8,7 +8,8 @@ obj-y = bug.o bugs.o checksum.o delay.o fault.o ksyms.o ldt.o ptrace.o \
+ 
+ obj-$(CONFIG_BINFMT_ELF) += elfcore.o
+ 
+-subarch-obj-y = lib/rwsem.o lib/string_32.o
++subarch-obj-y = lib/string_32.o
++subarch-obj-$(CONFIG_RWSEM_XCHGADD_ALGORITHM) += lib/rwsem.o
+ subarch-obj-$(CONFIG_HIGHMEM) += mm/highmem_32.o
+ subarch-obj-$(CONFIG_MODULES) += kernel/module.o
+ 
