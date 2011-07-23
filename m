@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751324Ab1GWU1Z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 16:27:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38560 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751033Ab1GWU1S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 16:27:18 -0400
-Message-ID: <4E2B2E88.8080006@redhat.com>
-Date: Sat, 23 Jul 2011 16:26:48 -0400
-From: Josef Bacik <josef@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
+	id S1751320Ab1GWU3r (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 16:29:47 -0400
+Received: from mail.richfieldgroup.hk ([219.76.192.210]:34503 "EHLO
+	mailserver.richfieldgroup.hk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751111Ab1GWU3n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jul 2011 16:29:43 -0400
+From: "WESTERN UNION OFFICE" <info@western.com>
+Reply-To: western-uniontransfer@helixnet.cn
+Subject: pick up the $5000.00USD
+Date: Sun, 24 Jul 2011 04:16:34 +0800
+Message-Id: <20110723201643.M12251@western.com>
+X-Mailer: OpenWebMail 2.53 
+X-OriginatingIP: 41.203.64.253 (it)
 MIME-Version: 1.0
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-CC: linux-fsdevel@vger.kernel.org, hch@infradead.org, viro@zeniv.linux.org.uk,
-        jack@suse.cz, linux-kernel@vger.kernel.org,
-        Dave Chinner <david@fromorbit.com>, xfs@oss.sgi.com
-Subject: Re: [PATCH] fs: push i_mutex and filemap_write_and_wait down into
- ->fsync() handlers
-References: <1309370716-12235-1-git-send-email-josef@redhat.com> <20110723180942.GA1616@x4.trippels.de>
-In-Reply-To: <20110723180942.GA1616@x4.trippels.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset=big5
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2011 02:09 PM, Markus Trippelsdorf wrote:
-> On 2011.06.29 at 14:05 -0400, Josef Bacik wrote:
->> Btrfs needs to be able to control how filemap_write_and_wait_range() is called
->> in fsync to make it less of a painful operation, so push down taking i_mutex and
->> the calling of filemap_write_and_wait() down into the ->fsync() handlers.  Some
->> file systems can drop taking the i_mutex altogether it seems, like ext3 and
->> ocfs2.  For correctness sake I just pushed everything down in all cases to make
->> sure that we keep the current behavior the same for everybody, and then each
->> individual fs maintainer can make up their mind about what to do from there.
->
-> At least the xfs part of this patch is broken.
-> Running the latest git-kernel bogofilter doesn't work anymore on my xfs
-> partition. When I run "bogoutil -d wordlist.db" to dump the contents of
-> the database, it produces no output at all.
->
 
-Already fixed and sent a patch out earlier this week.  Thanks,
+How are you today?
 
-Josef
+
+I write to inform you that we have already sent you $5,000.00USD
+through Western union as we have been given the mandate to transfer
+your full compensation payment of  $1.800,000.00USD via western union
+by this government.
+
+I called to give you the information through phone as internet hackers
+were many but i cannot reach you yesterday even this morning,So I
+decided to email you the (MTCN) and sender name so that you can pick
+up this $5,000.00USD to enable us send another $5,000.00USD by
+tomorrow as you knows we will be sending you only $5,000.00USD per
+day.Please pick up this information and run to any western union
+(OUTLET) in your country and pick up this $5,000.00USD and send us an
+email back,so that we can send another $5,000.00USD by tomorrow.
+
+Manager: Mr Frank Amos
+email me on:western-uniontransfer@helixnet.cn
+call us on: +234-7031908911
+once you picked up this $5000.00USD today.
+
+Here is the western union information to pick up the $5000.00USD,
+
+MTCN :___________MTCN 9500834460
+first name: ______Appoline
+Second Name: ______Ouedraoge
+Text Question: ___________When
+Answer: ___________________2Hours ago
+Amount:______________________ $5,000.00 United State Dollars
+
+I am waiting for your E-mail once you pick up $5000.00USD,
+
+Thanks
+Mr Frank Amos.
+
