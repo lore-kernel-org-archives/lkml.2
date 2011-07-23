@@ -1,47 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756360Ab1GWARU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jul 2011 20:17:20 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:37160 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756324Ab1GWARL (ORCPT
+	id S1756461Ab1GWARu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jul 2011 20:17:50 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:36282 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754081Ab1GWARm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jul 2011 20:17:11 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=NXDhLMwFFC2MgR3d5HA+3hsUstTbxqrt6cA3mafsJVVXHK5wqLdJB9X4Mkt9+P3ds+wnN5ei21HI4vi0dkMqH/4+3hLFaDeCpclMXvA3tdKiOsApHovPu8Tbgben1QvF;
-Date: Fri, 22 Jul 2011 17:17:08 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Hemanth V <hemanthv@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        akpm <akpm@linux-foundation.org>
-Subject: [PATCH] mfd: twl6030-pwm.c needs MODULE_LICENSE
-Message-Id: <20110722171708.370b2cf5.rdunlap@xenotime.net>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Fri, 22 Jul 2011 20:17:42 -0400
+Date: Fri, 22 Jul 2011 17:16:35 -0700 (PDT)
+Message-Id: <20110722.171635.1154932336401179368.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless-next-2.6 2011-07-22
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110722222308.GA3048@tuxdriver.com>
+References: <20110722222308.GA3048@tuxdriver.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: Text/Plain; charset=euc-kr
+Content-Transfer-Encoding: 8bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 22 Jul 2011 17:16:38 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Fri, 22 Jul 2011 18:23:09 -0400
 
-twl6030_pwm: module license 'unspecified' taints kernel.
+> Here is the last big pull request of new wireless bits intended
+> for 3.1.  This includes the usual big batch of updates to iwlagn,
+> a number of updates to ath9k, mwifiex, carl9170, libertas, and other
+> drivers, and soem updates to mac80211 and cfg80211 from Johannes.
+> The most noteworth bits are most of the final push from Rafa©© for
+> supporting current Broadcom wireless hardware in b43.
+> 
+> Please let me know if there are problems!
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Hemanth V <hemanthv@ti.com>
----
- drivers/mfd/twl6030-pwm.c |    2 ++
- 1 file changed, 2 insertions(+)
+A little late to be submitting this since the merge window is
+already open, but I pulled anyways.
 
---- lnx-30-rc7.orig/drivers/mfd/twl6030-pwm.c
-+++ lnx-30-rc7/drivers/mfd/twl6030-pwm.c
-@@ -161,3 +161,5 @@ void pwm_free(struct pwm_device *pwm)
- 	kfree(pwm);
- }
- EXPORT_SYMBOL(pwm_free);
-+
-+MODULE_LICENSE("GPL");
+Thanks!
