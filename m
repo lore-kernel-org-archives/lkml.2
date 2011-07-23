@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798Ab1GWMj6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 08:39:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59264 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752286Ab1GWMjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 08:39:53 -0400
-Date: Sat, 23 Jul 2011 14:39:51 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Venkatesh Pallipadi <venki@google.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] x86, PAT: honor CONFIG_STRICT_DEVMEM if pat is disable]
-Message-ID: <20110723123950.GA30098@tiehlicka.suse.cz>
-References: <20110722091151.GA4004@tiehlicka.suse.cz>
- <4E29A20C.70402@zytor.com>
- <20110722173102.GA26935@tiehlicka.suse.cz>
- <4E29C1DF.9080705@zytor.com>
+	id S1752616Ab1GWMwp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 08:52:45 -0400
+Received: from www.linutronix.de ([62.245.132.108]:54787 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752273Ab1GWMwk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jul 2011 08:52:40 -0400
+Date: Sat, 23 Jul 2011 14:52:38 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: x86@kernel.org
+Subject: [PATCH] x86: kprobes: Remove remove bogus preempt_enable
+Message-ID: <alpine.LFD.2.02.1107231450550.2702@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E29C1DF.9080705@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 22-07-11 11:30:55, H. Peter Anvin wrote:
-> On 07/22/2011 10:31 AM, Michal Hocko wrote:
-> > 
-> > Thanks for the clarification!
-> > What do you think about fixing the nopat with STRICT_DEVMEM like the
-> > patch does?
-> > 
-> 
-> From what I gather from your patch, the issue is that STRICT_DEVMEM
-> isn't being honored with nopat?
+The CONFIG_PREEMPT=n section of setup_singlestep() contains:
 
-Yes.
+    preempt_enable_no_resched();
 
-> This is an obvious bug and should be fixed.
+That's bogus in the CONFIG_PREEMPT=n section and it just never blew up
+because preempt_enable_no_resched() is a NOP there. Remove it.
 
-OK, thanks for confirmation. Should I just repost the patch without the
-question about PAT vs. /dev/[k]mem or you will just pick it up from
-there? Or would you preffer a different fix?
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/kernel/kprobes.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-Thanks
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Index: linux-2.6-tip/arch/x86/kernel/kprobes.c
+===================================================================
+--- linux-2.6-tip.orig/arch/x86/kernel/kprobes.c
++++ linux-2.6-tip/arch/x86/kernel/kprobes.c
+@@ -475,7 +475,6 @@ static void __kprobes setup_singlestep(s
+ 		 * stepping.
+ 		 */
+ 		regs->ip = (unsigned long)p->ainsn.insn;
+-		preempt_enable_no_resched();
+ 		return;
+ 	}
+ #endif
