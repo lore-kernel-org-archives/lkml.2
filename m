@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752117Ab1GWIvF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 04:51:05 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:56323 "EHLO mx2.mail.elte.hu"
+	id S1752073Ab1GWIyg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 04:54:36 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:49391 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752048Ab1GWIu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 04:50:59 -0400
-Date: Sat, 23 Jul 2011 10:50:13 +0200
+	id S1751683Ab1GWIyb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jul 2011 04:54:31 -0400
+Date: Sat, 23 Jul 2011 10:53:50 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/debug update for v3.1
-Message-ID: <20110723085013.GA14835@elte.hu>
+Subject: [GIT PULL] irq/core changes for v3.1
+Message-ID: <20110723085350.GA15276@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -31,32 +31,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest core-debug-for-linus git tree from:
+Please pull the latest irq-core-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git core-debug-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git irq-core-for-linus
 
  Thanks,
 
 	Ingo
 
 ------------------>
-Josh Triplett (1):
-      debug: Make CONFIG_EXPERT select CONFIG_DEBUG_KERNEL to unhide debug options
+Thomas Gleixner (1):
+      genirq: Remove unused CHECK_IRQ_PER_CPU()
 
 
- init/Kconfig |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ include/linux/irq.h |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
-diff --git a/init/Kconfig b/init/Kconfig
-index ebafac4..14370d3 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -909,6 +909,8 @@ config ANON_INODES
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index 8b45384..68258f0 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -96,11 +96,6 @@ enum {
  
- menuconfig EXPERT
- 	bool "Configure standard kernel features (expert users)"
-+	# Unhide debug options, to make the on-by-default options visible
-+	select DEBUG_KERNEL
- 	help
- 	  This option allows certain base kernel options and settings
-           to be disabled or tweaked. This is for specialized
+ #define IRQ_NO_BALANCING_MASK	(IRQ_PER_CPU | IRQ_NO_BALANCING)
+ 
+-static inline __deprecated bool CHECK_IRQ_PER_CPU(unsigned int status)
+-{
+-	return status & IRQ_PER_CPU;
+-}
+-
+ /*
+  * Return value for chip->irq_set_affinity()
+  *
