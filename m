@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752493Ab1GWJeo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 05:34:44 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:40282 "EHLO mx2.mail.elte.hu"
+	id S1752506Ab1GWJh4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 05:37:56 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:38284 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752312Ab1GWJej (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 05:34:39 -0400
-Date: Sat, 23 Jul 2011 11:33:56 +0200
+	id S1752312Ab1GWJhu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jul 2011 05:37:50 -0400
+Date: Sat, 23 Jul 2011 11:37:10 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/quirks change for v3.1
-Message-ID: <20110723093356.GA20669@elte.hu>
+Subject: [GIT PULL] x86/smpboot change for v3.1
+Message-ID: <20110723093710.GA21914@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -31,42 +31,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest x86-quirks-for-linus git tree from:
+Please pull the latest x86-smpboot-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-quirks-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-smpboot-for-linus
 
  Thanks,
 
 	Ingo
 
 ------------------>
-Sergei Shtylyov (1):
-      x86, quirks: Use pci_dev->revision
+Vivek Goyal (1):
+      x86, boot: Wait for boot cpu to show up if nr_cpus limit is about to hit
 
 
- arch/x86/kernel/quirks.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+ arch/x86/kernel/apic/apic.c |   22 ++++++++++++++++++++--
+ 1 files changed, 20 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/quirks.c b/arch/x86/kernel/quirks.c
-index 8bbe8c5..b78643d 100644
---- a/arch/x86/kernel/quirks.c
-+++ b/arch/x86/kernel/quirks.c
-@@ -10,7 +10,7 @@
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index b9338b8..68219a9 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1943,10 +1943,28 @@ void disconnect_bsp_APIC(int virt_wire_setup)
  
- static void __devinit quirk_intel_irqbalance(struct pci_dev *dev)
+ void __cpuinit generic_processor_info(int apicid, int version)
  {
--	u8 config, rev;
-+	u8 config;
- 	u16 word;
+-	int cpu;
++	int cpu, max = nr_cpu_ids;
++	bool boot_cpu_detected = physid_isset(boot_cpu_physical_apicid,
++				phys_cpu_present_map);
++
++	/*
++	 * If boot cpu has not been detected yet, then only allow upto
++	 * nr_cpu_ids - 1 processors and keep one slot free for boot cpu
++	 */
++	if (!boot_cpu_detected && num_processors >= nr_cpu_ids - 1 &&
++	    apicid != boot_cpu_physical_apicid) {
++		int thiscpu = max + disabled_cpus - 1;
++
++		pr_warning(
++			"ACPI: NR_CPUS/possible_cpus limit of %i almost"
++			" reached. Keeping one slot for boot cpu."
++			"  Processor %d/0x%x ignored.\n", max, thiscpu, apicid);
++
++		disabled_cpus++;
++		return;
++	}
  
- 	/* BIOS may enable hardware IRQ balancing for
-@@ -18,8 +18,7 @@ static void __devinit quirk_intel_irqbalance(struct pci_dev *dev)
- 	 * based platforms.
- 	 * Disable SW irqbalance/affinity on those platforms.
- 	 */
--	pci_read_config_byte(dev, PCI_CLASS_REVISION, &rev);
--	if (rev > 0x9)
-+	if (dev->revision > 0x9)
- 		return;
+ 	if (num_processors >= nr_cpu_ids) {
+-		int max = nr_cpu_ids;
+ 		int thiscpu = max + disabled_cpus;
  
- 	/* enable access to config space*/
+ 		pr_warning(
