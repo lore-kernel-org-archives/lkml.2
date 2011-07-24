@@ -1,129 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752768Ab1GXXnt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 19:43:49 -0400
-Received: from anchor-post-2.mail.demon.net ([195.173.77.133]:48042 "EHLO
-	anchor-post-2.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751596Ab1GXXnq (ORCPT
+	id S1752764Ab1GXXv6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 19:51:58 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:59078 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751771Ab1GXXvz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 19:43:46 -0400
-X-Greylist: delayed 2797 seconds by postgrey-1.27 at vger.kernel.org; Sun, 24 Jul 2011 19:43:46 EDT
-Message-ID: <4E2CA357.2030507@lougher.demon.co.uk>
-Date: Sun, 24 Jul 2011 23:57:27 +0100
-From: Phillip Lougher <phillip@lougher.demon.co.uk>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	Sun, 24 Jul 2011 19:51:55 -0400
+Date: Mon, 25 Jul 2011 00:51:54 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: kdevtmpfs oops since yesterdays vfs merge
+Message-ID: <20110724235154.GO24703@ZenIV.linux.org.uk>
+References: <20110724231701.GA1707@redhat.com>
+ <20110724232812.GN24703@ZenIV.linux.org.uk>
+ <20110724234029.GA4881@redhat.com>
 MIME-Version: 1.0
-To: Linux Kernel Development <linux-kernel@vger.kernel.org>
-CC: linux-fsdevel@vger.kernel.org
-Subject: [PATCH 2/2] Squashfs: Make ZLIB compression support optional
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110724234029.GA4881@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Jul 24, 2011 at 07:40:29PM -0400, Dave Jones wrote:
+> On Mon, Jul 25, 2011 at 12:28:12AM +0100, Al Viro wrote:
+>  > On Sun, Jul 24, 2011 at 07:17:01PM -0400, Dave Jones wrote:
+>  > > I see an oops in handle_create when I try to boot current tree..
+>  > > 
+>  > > full trace:
+>  > > https://s3.amazonaws.com/twitpic/photos/large/355006460.jpg?AWSAccessKeyId=AKIAJF3XCCKACR3QDMOA&Expires=1311550232&Signature=IIO%2Bya1uEDJzSXTD0DXh2%2BdZpoU%3D
+>  > 
+>  > Where in handle_create() is that?  At least dump objdump -d of your
+>  > devtmpfs.o someplace readable...
+> 
+> http://codemonkey.org.uk/devtmpfs.s
 
-Squashfs now supports XZ and LZO compression in addition to ZLIB.
-As such it no longer makes sense to always include ZLIB support.
-In particular embedded systems may only use LZO or XZ compression, and
-the ability to exclude ZLIB support will reduce kernel size.
+Smells like req->dev somehow managing to be NULL at that point, but that
+doesn't make any sense - we get to devtmpfs_create_node() only from one
+place, it sets req.dev to the argument it got from callers and that caller
+would have oopsed itself before getting to that call with dev == NULL...
 
-Signed-off-by: Phillip Lougher <phillip@squashfs.org.uk>
----
-  fs/squashfs/Kconfig        |   14 +++++++++++++-
-  fs/squashfs/Makefile       |    3 ++-
-  fs/squashfs/decompressor.c |    6 ++++++
-  fs/squashfs/decompressor.h |    4 ++++
-  fs/squashfs/squashfs.h     |    3 ---
-  5 files changed, 25 insertions(+), 5 deletions(-)
-
-diff --git a/fs/squashfs/Kconfig b/fs/squashfs/Kconfig
-index 7797218..1360d4f 100644
---- a/fs/squashfs/Kconfig
-+++ b/fs/squashfs/Kconfig
-@@ -1,7 +1,6 @@
-  config SQUASHFS
-  	tristate "SquashFS 4.0 - Squashed file system support"
-  	depends on BLOCK
--	select ZLIB_INFLATE
-  	help
-  	  Saying Y here includes support for SquashFS 4.0 (a Compressed
-  	  Read-Only File System).  Squashfs is a highly compressed read-only
-@@ -36,6 +35,19 @@ config SQUASHFS_XATTR
-
-  	  If unsure, say N.
-
-+config SQUASHFS_ZLIB
-+	bool "Include support for ZLIB compressed file systems"
-+	depends on SQUASHFS
-+	select ZLIB_INFLATE
-+	default y
-+	help
-+	  ZLIB compression is the standard compression used by Squashfs
-+	  file systems.  It offers a good trade-off between compression
-+	  achieved and the amount of CPU time and memory necessary to
-+	  compress and decompress.
-+
-+	  If unsure, say Y.
-+
-  config SQUASHFS_LZO
-  	bool "Include support for LZO compressed file systems"
-  	depends on SQUASHFS
-diff --git a/fs/squashfs/Makefile b/fs/squashfs/Makefile
-index cecf2be..110b047 100644
---- a/fs/squashfs/Makefile
-+++ b/fs/squashfs/Makefile
-@@ -4,7 +4,8 @@
-
-  obj-$(CONFIG_SQUASHFS) += squashfs.o
-  squashfs-y += block.o cache.o dir.o export.o file.o fragment.o id.o inode.o
--squashfs-y += namei.o super.o symlink.o zlib_wrapper.o decompressor.o
-+squashfs-y += namei.o super.o symlink.o decompressor.o
-  squashfs-$(CONFIG_SQUASHFS_XATTR) += xattr.o xattr_id.o
-  squashfs-$(CONFIG_SQUASHFS_LZO) += lzo_wrapper.o
-  squashfs-$(CONFIG_SQUASHFS_XZ) += xz_wrapper.o
-+squashfs-$(CONFIG_SQUASHFS_ZLIB) += zlib_wrapper.o
-diff --git a/fs/squashfs/decompressor.c b/fs/squashfs/decompressor.c
-index 9f1b0bb..3f6271d 100644
---- a/fs/squashfs/decompressor.c
-+++ b/fs/squashfs/decompressor.c
-@@ -52,6 +52,12 @@ static const struct squashfs_decompressor squashfs_xz_comp_ops = {
-  };
-  #endif
-
-+#ifndef CONFIG_SQUASHFS_ZLIB
-+static const struct squashfs_decompressor squashfs_zlib_comp_ops = {
-+	NULL, NULL, NULL, ZLIB_COMPRESSION, "zlib", 0
-+};
-+#endif
-+
-  static const struct squashfs_decompressor squashfs_unknown_comp_ops = {
-  	NULL, NULL, NULL, 0, "unknown", 0
-  };
-diff --git a/fs/squashfs/decompressor.h b/fs/squashfs/decompressor.h
-index 8ba70cf..330073e 100644
---- a/fs/squashfs/decompressor.h
-+++ b/fs/squashfs/decompressor.h
-@@ -56,4 +56,8 @@ extern const struct squashfs_decompressor squashfs_xz_comp_ops;
-  extern const struct squashfs_decompressor squashfs_lzo_comp_ops;
-  #endif
-
-+#ifdef CONFIG_SQUASHFS_ZLIB
-+extern const struct squashfs_decompressor squashfs_zlib_comp_ops;
-+#endif
-+
-  #endif
-diff --git a/fs/squashfs/squashfs.h b/fs/squashfs/squashfs.h
-index e3be6a7..d126651 100644
---- a/fs/squashfs/squashfs.h
-+++ b/fs/squashfs/squashfs.h
-@@ -97,6 +97,3 @@ extern const struct inode_operations squashfs_symlink_inode_ops;
-
-  /* xattr.c */
-  extern const struct xattr_handler *squashfs_xattr_handlers[];
--
--/* zlib_wrapper.c */
--extern const struct squashfs_decompressor squashfs_zlib_comp_ops;
--- 
-1.7.1
-
+Could you stick a BUG_ON(!dev) in the beginning of handle_create() to see
+if that's what somehow manages to happen?
