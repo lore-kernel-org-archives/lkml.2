@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751968Ab1GXAav (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 20:30:51 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:38424 "EHLO
+	id S1751964Ab1GXAdy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 20:33:54 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:39165 "EHLO
 	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751643Ab1GXAap (ORCPT
+	with ESMTP id S1751643Ab1GXAdt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 20:30:45 -0400
+	Sat, 23 Jul 2011 20:33:49 -0400
 MIME-Version: 1.0
-Date: Sun, 24 Jul 2011 02:30:44 +0200
-X-Google-Sender-Auth: qEVnC-LlRTW4m7hglbbLZsqrKio
-Message-ID: <CAPA4HGX5cy-jY5jh963GEixwEq_26kaue6HGH0RzWWHig1a++Q@mail.gmail.com>
-Subject: [PATCH 1/2] Documentation/kernel-docs.txt update.
+Date: Sun, 24 Jul 2011 02:33:48 +0200
+X-Google-Sender-Auth: YwJ41xqje8Lh_afNMfrnq4PwgnY
+Message-ID: <CAPA4HGVYuZ3S+OxU9dXgPuqk1ERrYNshUe27M8QmN7c4+B7LAA@mail.gmail.com>
+Subject: [PATCH 2/2] docs: update the development process document.
 From: Luis de Bethencourt <luis@debethencourt.com>
-To: lkml <linux-kernel@vger.kernel.org>
+To: linux-kernel@vger.kernel.org
 Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,36 +21,82 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Luis de Bethencourt <luis@debethencourt.com>
-Date: Sun, 24 Jul 2011 03:30:45 +0200
+Date: Sun, 24 Jul 2011 04:03:46 +0200
+
+    Here's a set of changes updating Documentation/development-process.
+    I have updated the kernel releases.
 
 Signed-off-by: Luis de Bethencourt <luis@debethencourt.com>
 
-
-Dropping LSD (Linux Source Driver) since it hasn't been available
-for a long time.
 ---
- Documentation/kernel-docs.txt |   11 -----------
- 1 files changed, 0 insertions(+), 11 deletions(-)
+ Documentation/development-process/2.Process |   36 +++++++++++++++------------
+ 1 files changed, 20 insertions(+), 16 deletions(-)
 
-diff --git a/Documentation/kernel-docs.txt b/Documentation/kernel-docs.txt
-index 9a86746..0e0734b 100644
---- a/Documentation/kernel-docs.txt
-+++ b/Documentation/kernel-docs.txt
-@@ -620,17 +620,6 @@
-        (including this document itself) have been moved there, and might
-        be more up to date than the web version.
+diff --git a/Documentation/development-process/2.Process
+b/Documentation/development-process/2.Process
+index 4823577..2d79ddb 100644
+--- a/Documentation/development-process/2.Process
++++ b/Documentation/development-process/2.Process
+@@ -14,6 +14,7 @@ The kernel developers use a loosely time-based
+release process, with a new
+ major kernel release happening every two or three months.  The recent
+ release history looks like this:
 
--     * Name: "Linux Source Driver"
--       URL: http://lsd.linux.cz
--       Keywords: Browsing source code.
--       Description: "Linux Source Driver (LSD) is an application, which
--       can make browsing source codes of Linux kernel easier than you can
--       imagine. You can select between multiple versions of kernel (e.g.
--       0.01, 1.0.0, 2.0.33, 2.0.34pre13, 2.0.0, 2.1.101 etc.). With LSD
--       you can search Linux kernel (fulltext, macros, types, functions
--       and variables) and LSD can generate patches for you on the fly
--       (files, directories or kernel)".
--
-      * Name: "Linux Kernel Source Reference"
-        Author: Thomas Graichen.
-        URL: http://marc.info/?l=linux-kernel&m=96446640102205&w=4
++	2.6.39	May 18, 2011
+ 	2.6.38	March 14, 2011
+ 	2.6.37	January 4, 2011
+ 	2.6.36	October 20, 2010
+@@ -65,19 +66,18 @@ will get up to somewhere between -rc6 and -rc9
+before the kernel is
+ considered to be sufficiently stable and the final 2.6.x release is made.
+ At that point the whole process starts over again.
+
+-As an example, here is how the 2.6.38 development cycle went (all dates in
++As an example, here is how the 2.6.39 development cycle went (all dates in
+ 2011):
+
+-	January 4	2.6.37 stable release
+-	January 18	2.6.38-rc1, merge window closes
+-	January 21	2.6.38-rc2
+-	February 1	2.6.38-rc3
+-	February 7	2.6.38-rc4
+-	February 15	2.6.38-rc5
+-	February 21	2.6.38-rc6
+-	March 1		2.6.38-rc7
+-	March 7		2.6.38-rc8
+ 	March 14	2.6.38 stable release
++	March 29	2.6.39-rc1, merge window closes
++	April 6		2.6.39-rc2
++	April 12	2.6.39-rc3
++	April 19	2.6.39-rc4
++	April 27	2.6.39-rc5
++	May 4		2.6.39-rc6
++	May 10		2.6.39-rc7
++	May 18		2.6.39 stable release
+
+ How do the developers decide when to close the development cycle and create
+ the stable release?  The most significant metric used is the list of
+@@ -103,13 +103,17 @@ numbering scheme.  To be considered for an
+update release, a patch must (1)
+ fix a significant bug, and (2) already be merged into the mainline for the
+ next development kernel.  Kernels will typically receive stable updates for
+ a little more than one development cycle past their initial release.  So,
+-for example, the 2.6.36 kernel's history looked like:
++for example, the 2.6.38 kernel's history looked like:
+
+-	October 10	2.6.36 stable release
+-	November 22	2.6.36.1
+-	December 9	2.6.36.2
+-	January 7	2.6.36.3
+-	February 17	2.6.36.4
++	March 14	2.6.38 stable release
++	March 23	2.6.38.1
++	March 27	2.6.38.2
++	April 14	2.6.38.3
++	April 21	2.6.38.4
++	May 2		2.6.38.5
++	May 9		2.6.38.6
++	May 21		2.6.38.7
++	June 3		2.6.38.8
+
+ 2.6.36.4 was the final stable update for the 2.6.36 release.
