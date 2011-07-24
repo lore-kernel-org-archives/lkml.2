@@ -1,91 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751946Ab1GXTGC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 15:06:02 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:56433 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751516Ab1GXTF5 (ORCPT
+	id S1751897Ab1GXTIQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 15:08:16 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:40591 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751802Ab1GXTIG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 15:05:57 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=Z2G2n/x9e8RWcyexcLJs8yaAWPiAAzE9GNFeR071tRXfNpMwQ8EBk6X9cow0ryfq4R5Z5b0wgtRq/gl9l5SrrkaalVzG1nXT8xUO0ib3inUobGt/Hv/r0T/jI0fFbL3E;
-Date: Sun, 24 Jul 2011 11:39:14 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Jonas Bonn <jonas@southpole.se>, torvalds <torvalds@linux-foundation.org>
-Subject: Re: iomap: make IOPORT/PCI mapping functions conditional
-Message-Id: <20110724113914.5e0f36a4.rdunlap@xenotime.net>
-In-Reply-To: <201107241801.p6OI17O2009446@hera.kernel.org>
-References: <201107241801.p6OI17O2009446@hera.kernel.org>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Sun, 24 Jul 2011 15:08:06 -0400
+Date: Sun, 24 Jul 2011 21:07:52 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Borislav Petkov <bp@amd64.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Przywara, Andre" <Andre.Przywara@amd.com>,
+        "Pohlack, Martin" <Martin.Pohlack@amd.com>
+Subject: Re: [PATCH] x86, AMD: Correct F15h IC aliasing issue
+Message-ID: <20110724190752.GA13647@aftab>
+References: <1311340547-7861-1-git-send-email-bp@amd64.org>
+ <CA+55aFwL9Fwd9ouX3UMOayoBsZyZzTdDSySa6nZJxbpyLifbaQ@mail.gmail.com>
+ <20110724172222.GB12621@aftab>
+ <CA+55aFze=w7tjmyGa2w=D8b6roDuL5O0gmDKkSzLKBLLYZ_a+A@mail.gmail.com>
+ <20110724182323.GA13247@aftab>
+ <20110724183045.GB29660@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110724183045.GB29660@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 24 Jul 2011 18:01:07 GMT Linux Kernel Mailing List wrote:
-
-> Gitweb:     http://git.kernel.org/linus/82ed223c264def2b15ee4bec2e8c3048092ceb5f
-> Commit:     82ed223c264def2b15ee4bec2e8c3048092ceb5f
-> Parent:     f1ecc69838a2d7c8a3e1909f637d4083c071777d
-> Author:     Jonas Bonn <jonas@southpole.se>
-> AuthorDate: Sat Jul 2 17:23:29 2011 +0200
-> Committer:  Jonas Bonn <jonas@southpole.se>
-> CommitDate: Fri Jul 22 18:46:26 2011 +0200
+On Sun, Jul 24, 2011 at 02:30:46PM -0400, Ingo Molnar wrote:
+> > > So I really think that you might be *much* better off just changing
+> > > mmap_rnd(), and nothing else. Just make *that* mask off the three low
+> > > bits of the random address, ie something like
+> > > 
+> > >   diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
+> > >   index 1dab5194fd9d..6b62ab5a5ae1 100644
+> > >   --- a/arch/x86/mm/mmap.c
+> > >   +++ b/arch/x86/mm/mmap.c
+> > >   @@ -90,6 +90,9 @@ static unsigned long mmap_rnd(void)
+> > >                           rnd = (long)get_random_int() % (1<<8);
+> > >                   else
+> > >                           rnd = (long)(get_random_int() % (1<<28));
+> > >   +
+> > >   +               if (avoid_aliasing_in_bits_14_12)
+> > >   +                       rnd &= ~7;
+> > >           }
+> > >           return rnd << PAGE_SHIFT;
+> > >    }
+> > > 
+> > > would be fundamentally very safe - it would already take all our
+> > > current anti-randomization code into account.
+> > > 
+> > > No?
+> > 
+> > Hehe, we had that idea initially. However, the special 1% case I was
+> > hinting at is this:
+> > 
+> > process P0, mapping libraries A, B, C
+> > 
+> > and
+> > 
+> > process P1, mapping libraries A, C
+> > 
+> > Library C ends up possibly with aliasing VAs and there's the 
+> > problem again. [...]
 > 
->     iomap: make IOPORT/PCI mapping functions conditional
->     
->     Use the CONFIG_HAS_IOPORT and CONFIG_PCI options to decide whether or
->     not functions for mapping these areas are provided.
->     
->     Signed-off-by: Jonas Bonn <jonas@southpole.se>
->     Acked-by: Arnd Bergmann <arnd@arndb.de>
+> Well, since all library positions are randomized, and the quirk masks 
+> out bits 12,13,14, all libraries that are not explicitly fix-mapped 
+> will end up on a 32K granular VA address.
 
-This patch caused a randconfig build error when CONFIG_EISA=y and CONFIG_PCI=n,
-as reported on 2011-JULY-18.  My patch from that email is repeated below
-(with Andrew's S-O-B since he merged it into his tree).
+Right, but IIUC, mmap_rnd() is used to determine mm->mmap_base so the
+mmap starting address will have [14:12] cleared but the initial address
+of library C's mapping in the example above will possibly differ in
+those bits due to different linking order, right?
 
+> Also, in practice on most distros most libraries will be prelinked to
+> the same address in all processes.
 
----
-From: Randy Dunlap <rdunlap@xenotime.net>
+I think at least on RHEL there's a daemon doing prelinking every two
+weeks or so...
 
-When CONFIG_PCI is not enabled, CONFIG_EISA=y, and CONFIG_GENERIC_IOMAP=y,
-drivers/net/3c59x.c build fails due to a recent small change to
-<asm-generic/iomap.h> that surrounds pci_iomap() and pci_iounmap()
-with #ifdef CONFIG_PCI/#endif.  Since that patch to iomap.h looks
-correct, add stubs for pci_iomap() and pci_iounmap() with CONFIG_PCI
-is not enabled to fix the build errors.
+-- 
+Regards/Gruss,
+Boris.
 
-drivers/net/3c59x.c:1026: error: implicit declaration of function 'pci_iomap'
-drivers/net/3c59x.c:1038: error: implicit declaration of function 'pci_iounmap'
-
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Jonas Bonn <jonas@southpole.se>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
- include/asm-generic/iomap.h |    8 ++++++++
- 1 file changed, 8 insertions(+)
-
---- linux-next-20110718.orig/include/asm-generic/iomap.h
-+++ linux-next-20110718/include/asm-generic/iomap.h
-@@ -71,6 +71,14 @@ extern void ioport_unmap(void __iomem *)
- struct pci_dev;
- extern void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long max);
- extern void pci_iounmap(struct pci_dev *dev, void __iomem *);
-+#else
-+struct pci_dev;
-+static inline void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long max)
-+{
-+	return NULL;
-+}
-+static inline void pci_iounmap(struct pci_dev *dev, void __iomem *addr)
-+{ }
- #endif
- 
- #endif
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
