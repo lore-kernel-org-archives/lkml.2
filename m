@@ -1,772 +1,327 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752476Ab1GXJkm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 05:40:42 -0400
-Received: from nm16-vm0.bullet.mail.ukl.yahoo.com ([217.146.183.254]:46182
-	"HELO nm16-vm0.bullet.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752291Ab1GXJkc (ORCPT
+	id S1752441Ab1GXJkx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 05:40:53 -0400
+Received: from nm9-vm0.bullet.mail.ukl.yahoo.com ([217.146.183.240]:38155 "HELO
+	nm9-vm0.bullet.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752423Ab1GXJkk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 05:40:32 -0400
-X-Yahoo-Newman-Id: 208430.5747.bm@smtp121.mail.ukl.yahoo.com
-Message-ID: <208430.5747.bm@smtp121.mail.ukl.yahoo.com>
+	Sun, 24 Jul 2011 05:40:40 -0400
+X-Yahoo-Newman-Id: 864644.10923.bm@omp1022.mail.ukl.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.fr;
+  h=DKIM-Signature:Message-ID:X-Yahoo-Newman-Property:X-YMail-OSG:X-Yahoo-SMTP:Received:Received:Date:From:To:Cc:Subject;
+  b=QmnLnOSlIziClGkc29w81efVOTA9YfW2GwukmL+t0RM2lL7CqT6XEgBuOczj1aAne9c0PFCfhgMLOY+yQrWulw+OoKS+ih0OniFYJO/BGDdxlOWZVckMmQfQwlCr8EGyLC8vbDYf0t0L2RzCMAK5pQNxDaWs80yMAUz4VMlL8Es=  ;
+Message-ID: <788178.91280.qm@smtp129.mail.ukl.yahoo.com>
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: S_yq470VM1lNP760xP2QGqFu8dQ8DC3L1tDGAvkfMGKfiBH
- AIN030OdLyKIFpy.JUJ76HHLhzYaogIH9kqXP6Ymf7.MF6.KaEWtbF6lQcLv
- gdJZ.ujQKpBzjZ0DL0.78EkO93DHfrdsVAAoag6xx9.4rBSZRYb2P9fj1hx.
- D6ntOJIgnewyvdalKBZb.mtL0cF7KNTs.6p8pdIlbpE_25LS3Jq3PksExkrY
- 9B8doItmRzmOPsiQ2FiyAhwjNtMEA6Mz82_WYVVaCmV2aFxEw4s8YGo0jMWl
- 4qUJrgR0Hta115pcVF_taciQJ1jvtnvbnfCLpHb_FlZoMxcI5qjkz7c44L7a
- 6BGyWh6U599g5jbDyt33Q1PtbJT7kFDmjUmyw.k2Li8Y2.3iHbvcUlZbu1XJ
- VysGawdxh5mSfC5kj3cUDxBJzmvCF
+X-YMail-OSG: 3lEXMqUVM1m33CQ7VpLqeonLTNi_ZbQvTvyZXmtMh6kuE9F
+ dK3yA3U2vfW1nbzwtd2dKM7h7y98tl1S0GJrz3Tb6SB3EWb6krp_odphyLF.
+ uEEKYh71_l007MS1nsTu4WOsBYKuflDf_ScweoboB_v5WYr0uML5twr7qsq7
+ luQ8UuQeJQD1VA.uOZwW2HJeoJIe8yTbQSFjp3xtH0GD0T0GeJ1rEmrV8KlL
+ xgXHkeAViNDbsvQVtDd19PCHT_WEaaPbD__T06.oWdQElTpOMbJcpMZwzBrV
+ BDbxC9zYuWgkN1nCYt8IKeDJJanVvNIh_hxgDyIlD37GkuaXLciW8fgs-
 X-Yahoo-SMTP: zgdcvJ6swBBcTOk5fgveL37ak9AQxYCP7GdO
-Date: Sun, 24 Jul 2011 11:40:48 +0200
+Date: Sun, 24 Jul 2011 11:40:56 +0200
 From: Lionel Debroux <lionel_debroux@yahoo.fr>
 To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
         alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
 Cc: Kees Cook <kees.cook@canonical.com>, Emese Revfy <re.emese@gmail.com>,
         kernel-janitors@vger.kernel.org
-Subject: sound: constify snd_ac97_bus_ops
+Subject: ac97: quiet make W=1 noise by initializing all fields of snd_ac97_codec_id_vendors and snd_ac97_codec_ids.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The fields of this struct type don't seem to be used as rvalues, besides
-the initialization of struct instances. Let's make const the struct
-instances.
-
-Maybe the Documentation/DocBook/writing-an-alsa-driver.tmpl, and
-checkpatch.pl should be updated to reflect this change ?
+make W=1 bitterly complains about missing initializations in
+snd_ac97_codec_id_vendors and snd_ac97_codec_ids.
+Initialize the last field, to make the output of make W=1 more readable.
 
 Patch against current Linus tree.
 
 ---
 
->From 742dd9a07b644838f5505b98c8ceb90bfeeae8e4 Mon Sep 17 00:00:00 2001
+>From 23898c57b997010ea25568a29f1f196bd6c58135 Mon Sep 17 00:00:00 2001
 From: Lionel Debroux <lionel_debroux@yahoo.fr>
-Date: Sun, 24 Jul 2011 10:26:15 +0200
-Subject: sound: constify snd_ac97_bus_ops
-
-Inspired by hunks of the PaX/grsecurity patch.
+Date: Sun, 24 Jul 2011 10:26:51 +0200
+Subject: ac97: quiet make W=1 noise by initializing all fields of
+ snd_ac97_codec_id_vendors and snd_ac97_codec_ids.
 
 Signed-off-by: Lionel Debroux <lionel_debroux@yahoo.fr>
 ---
- include/sound/ac97_codec.h          |    4 ++--
- include/sound/soc.h                 |    4 ++--
- sound/arm/aaci.c                    |    2 +-
- sound/arm/pxa2xx-ac97.c             |    2 +-
- sound/atmel/ac97c.c                 |    2 +-
- sound/drivers/ml403-ac97cr.c        |    2 +-
- sound/mips/au1x00.c                 |    2 +-
- sound/pci/ac97/ac97_codec.c         |    2 +-
- sound/pci/ad1889.c                  |    2 +-
- sound/pci/ali5451/ali5451.c         |    2 +-
- sound/pci/als300.c                  |    2 +-
- sound/pci/atiixp.c                  |    2 +-
- sound/pci/atiixp_modem.c            |    2 +-
- sound/pci/au88x0/au88x0_mixer.c     |    2 +-
- sound/pci/azt3328.c                 |    2 +-
- sound/pci/ca0106/ca0106_main.c      |    2 +-
- sound/pci/cs4281.c                  |    2 +-
- sound/pci/cs46xx/cs46xx_lib.c       |    2 +-
- sound/pci/cs5535audio/cs5535audio.c |    2 +-
- sound/pci/emu10k1/emu10k1x.c        |    2 +-
- sound/pci/emu10k1/emumixer.c        |    2 +-
- sound/pci/ens1370.c                 |    2 +-
- sound/pci/es1968.c                  |    2 +-
- sound/pci/fm801.c                   |    2 +-
- sound/pci/ice1712/ice1712.c         |    4 ++--
- sound/pci/ice1712/ice1724.c         |    2 +-
- sound/pci/intel8x0.c                |    6 +++---
- sound/pci/intel8x0m.c               |    2 +-
- sound/pci/maestro3.c                |    2 +-
- sound/pci/nm256/nm256.c             |    2 +-
- sound/pci/riptide/riptide.c         |    2 +-
- sound/pci/sis7019.c                 |    2 +-
- sound/pci/trident/trident_main.c    |    2 +-
- sound/pci/via82xx.c                 |    2 +-
- sound/pci/via82xx_modem.c           |    2 +-
- sound/pci/ymfpci/ymfpci_main.c      |    2 +-
- sound/soc/au1x/psc-ac97.c           |    2 +-
- sound/soc/blackfin/bf5xx-ac97.c     |    2 +-
- sound/soc/blackfin/bf5xx-ac97.h     |    2 +-
- sound/soc/ep93xx/ep93xx-ac97.c      |    2 +-
- sound/soc/fsl/mpc5200_psc_ac97.c    |    2 +-
- sound/soc/imx/imx-ssi.c             |    2 +-
- sound/soc/nuc900/nuc900-ac97.c      |    2 +-
- sound/soc/pxa/pxa2xx-ac97.c         |    2 +-
- sound/soc/pxa/pxa2xx-ac97.h         |    2 +-
- sound/soc/samsung/ac97.c            |    2 +-
- sound/soc/sh/hac.c                  |    2 +-
- sound/soc/soc-core.c                |    2 +-
- sound/soc/txx9/txx9aclc-ac97.c      |    2 +-
- 49 files changed, 54 insertions(+), 54 deletions(-)
+ sound/pci/ac97/ac97_codec.c |  250 +++++++++++++++++++++---------------------
+ 1 files changed, 125 insertions(+), 125 deletions(-)
 
-diff --git a/include/sound/ac97_codec.h b/include/sound/ac97_codec.h
-index 02cbb50..e33a864 100644
---- a/include/sound/ac97_codec.h
-+++ b/include/sound/ac97_codec.h
-@@ -446,7 +446,7 @@ struct snd_ac97_bus_ops {
- 
- struct snd_ac97_bus {
- 	/* -- lowlevel (hardware) driver specific -- */
--	struct snd_ac97_bus_ops *ops;
-+	const struct snd_ac97_bus_ops *ops;
- 	void *private_data;
- 	void (*private_free) (struct snd_ac97_bus *bus);
- 	/* --- */
-@@ -556,7 +556,7 @@ static inline int ac97_can_spdif(struct snd_ac97 * ac97)
- 
- /* functions */
- /* create new AC97 bus */
--int snd_ac97_bus(struct snd_card *card, int num, struct snd_ac97_bus_ops *ops,
-+int snd_ac97_bus(struct snd_card *card, int num, const struct snd_ac97_bus_ops *ops,
- 		 void *private_data, struct snd_ac97_bus **rbus);
- /* create mixer controls */
- int snd_ac97_mixer(struct snd_ac97_bus *bus, struct snd_ac97_template *template,
-diff --git a/include/sound/soc.h b/include/sound/soc.h
-index aa19f5a..aa6bddc 100644
---- a/include/sound/soc.h
-+++ b/include/sound/soc.h
-@@ -255,7 +255,7 @@ struct snd_soc_jack_gpio;
- 
- typedef int (*hw_write_t)(void *,const char* ,int);
- 
--extern struct snd_ac97_bus_ops soc_ac97_ops;
-+extern const struct snd_ac97_bus_ops soc_ac97_ops;
- 
- enum snd_soc_control_type {
- 	SND_SOC_I2C = 1,
-@@ -357,7 +357,7 @@ int snd_soc_test_bits(struct snd_soc_codec *codec, unsigned short reg,
- 				unsigned int mask, unsigned int value);
- 
- int snd_soc_new_ac97_codec(struct snd_soc_codec *codec,
--	struct snd_ac97_bus_ops *ops, int num);
-+	const struct snd_ac97_bus_ops *ops, int num);
- void snd_soc_free_ac97_codec(struct snd_soc_codec *codec);
- 
- /*
-diff --git a/sound/arm/aaci.c b/sound/arm/aaci.c
-index d0cead3..20b6713 100644
---- a/sound/arm/aaci.c
-+++ b/sound/arm/aaci.c
-@@ -827,7 +827,7 @@ static struct ac97_pcm ac97_defs[] __devinitdata = {
- 	}
- };
- 
--static struct snd_ac97_bus_ops aaci_bus_ops = {
-+static const struct snd_ac97_bus_ops aaci_bus_ops = {
- 	.write	= aaci_ac97_write,
- 	.read	= aaci_ac97_read,
- };
-diff --git a/sound/arm/pxa2xx-ac97.c b/sound/arm/pxa2xx-ac97.c
-index 5d94118..506b38c 100644
---- a/sound/arm/pxa2xx-ac97.c
-+++ b/sound/arm/pxa2xx-ac97.c
-@@ -34,7 +34,7 @@ static void pxa2xx_ac97_reset(struct snd_ac97 *ac97)
- 	pxa2xx_ac97_finish_reset(ac97);
- }
- 
--static struct snd_ac97_bus_ops pxa2xx_ac97_ops = {
-+static const struct snd_ac97_bus_ops pxa2xx_ac97_ops = {
- 	.read	= pxa2xx_ac97_read,
- 	.write	= pxa2xx_ac97_write,
- 	.reset	= pxa2xx_ac97_reset,
-diff --git a/sound/atmel/ac97c.c b/sound/atmel/ac97c.c
-index ac35222..03d9a8f 100644
---- a/sound/atmel/ac97c.c
-+++ b/sound/atmel/ac97c.c
-@@ -909,7 +909,7 @@ static int __devinit atmel_ac97c_probe(struct platform_device *pdev)
- 	struct resource			*regs;
- 	struct ac97c_platform_data	*pdata;
- 	struct clk			*pclk;
--	static struct snd_ac97_bus_ops	ops = {
-+	static const struct snd_ac97_bus_ops ops = {
- 		.write	= atmel_ac97c_write,
- 		.read	= atmel_ac97c_read,
- 	};
-diff --git a/sound/drivers/ml403-ac97cr.c b/sound/drivers/ml403-ac97cr.c
-index 6a05462..db95055 100644
---- a/sound/drivers/ml403-ac97cr.c
-+++ b/sound/drivers/ml403-ac97cr.c
-@@ -1210,7 +1210,7 @@ snd_ml403_ac97cr_mixer(struct snd_ml403_ac97cr *ml403_ac97cr)
- 	struct snd_ac97_bus *bus;
- 	struct snd_ac97_template ac97;
- 	int err;
--	static struct snd_ac97_bus_ops ops = {
-+	static const struct snd_ac97_bus_ops ops = {
- 		.write = snd_ml403_ac97cr_codec_write,
- 		.read = snd_ml403_ac97cr_codec_read,
- 	};
-diff --git a/sound/mips/au1x00.c b/sound/mips/au1x00.c
-index 446cf97..8fd073b 100644
---- a/sound/mips/au1x00.c
-+++ b/sound/mips/au1x00.c
-@@ -557,7 +557,7 @@ snd_au1000_ac97_new(struct snd_au1000 *au1000)
- 	int err;
- 	struct snd_ac97_bus *pbus;
- 	struct snd_ac97_template ac97;
-- 	static struct snd_ac97_bus_ops ops = {
-+	static const struct snd_ac97_bus_ops ops = {
- 		.write = snd_au1000_ac97_write,
- 		.read = snd_au1000_ac97_read,
- 	};
 diff --git a/sound/pci/ac97/ac97_codec.c b/sound/pci/ac97/ac97_codec.c
-index d38d623..53dbe2d 100644
+index 53dbe2d..cbff9d2 100644
 --- a/sound/pci/ac97/ac97_codec.c
 +++ b/sound/pci/ac97/ac97_codec.c
-@@ -1910,7 +1910,7 @@ static int ac97_reset_wait(struct snd_ac97 *ac97, int timeout, int with_modem)
-  *
-  * Returns zero if successful, or a negative error code on failure.
+@@ -67,141 +67,141 @@ struct ac97_codec_id {
+ };
+ 
+ static const struct ac97_codec_id snd_ac97_codec_id_vendors[] = {
+-{ 0x41445300, 0xffffff00, "Analog Devices",	NULL,	NULL },
+-{ 0x414b4d00, 0xffffff00, "Asahi Kasei",	NULL,	NULL },
+-{ 0x414c4300, 0xffffff00, "Realtek",		NULL,	NULL },
+-{ 0x414c4700, 0xffffff00, "Realtek",		NULL,	NULL },
++{ 0x41445300, 0xffffff00, "Analog Devices",	NULL,	NULL, 0 },
++{ 0x414b4d00, 0xffffff00, "Asahi Kasei",	NULL,	NULL, 0 },
++{ 0x414c4300, 0xffffff00, "Realtek",		NULL,	NULL, 0 },
++{ 0x414c4700, 0xffffff00, "Realtek",		NULL,	NULL, 0 },
+ /*
+  * This is an _inofficial_ Aztech Labs entry
+  * (value might differ from unknown official Aztech ID),
+  * currently used by the AC97 emulation of the almost-AC97 PCI168 card.
   */
--int snd_ac97_bus(struct snd_card *card, int num, struct snd_ac97_bus_ops *ops,
-+int snd_ac97_bus(struct snd_card *card, int num, const struct snd_ac97_bus_ops *ops,
- 		 void *private_data, struct snd_ac97_bus **rbus)
- {
- 	int err;
-diff --git a/sound/pci/ad1889.c b/sound/pci/ad1889.c
-index 8396298..1c4ec8c 100644
---- a/sound/pci/ad1889.c
-+++ b/sound/pci/ad1889.c
-@@ -809,7 +809,7 @@ snd_ad1889_ac97_init(struct snd_ad1889 *chip, const char *quirk_override)
- {
- 	int err;
- 	struct snd_ac97_template ac97;
--	static struct snd_ac97_bus_ops ops = {
-+	static const struct snd_ac97_bus_ops ops = {
- 		.write = snd_ad1889_ac97_write,
- 		.read = snd_ad1889_ac97_read,
- 	};
-diff --git a/sound/pci/ali5451/ali5451.c b/sound/pci/ali5451/ali5451.c
-index 6ad0aa3..6005ac5 100644
---- a/sound/pci/ali5451/ali5451.c
-+++ b/sound/pci/ali5451/ali5451.c
-@@ -1847,7 +1847,7 @@ static int __devinit snd_ali_mixer(struct snd_ali * codec)
- 	struct snd_ac97_template ac97;
- 	unsigned int idx;
- 	int i, err;
--	static struct snd_ac97_bus_ops ops = {
-+	static const struct snd_ac97_bus_ops ops = {
- 		.write = snd_ali_codec_write,
- 		.read = snd_ali_codec_read,
- 	};
-diff --git a/sound/pci/als300.c b/sound/pci/als300.c
-index 460f1e3..db3676e 100644
---- a/sound/pci/als300.c
-+++ b/sound/pci/als300.c
-@@ -319,7 +319,7 @@ static int snd_als300_ac97(struct snd_als300 *chip)
- 	struct snd_ac97_bus *bus;
- 	struct snd_ac97_template ac97;
- 	int err;
--	static struct snd_ac97_bus_ops ops = {
-+	static const struct snd_ac97_bus_ops ops = {
- 		.write = snd_als300_ac97_write,
- 		.read = snd_als300_ac97_read,
- 	};
-diff --git a/sound/pci/atiixp.c b/sound/pci/atiixp.c
-index 9737bd8..984f507 100644
---- a/sound/pci/atiixp.c
-+++ b/sound/pci/atiixp.c
-@@ -1410,7 +1410,7 @@ static int __devinit snd_atiixp_mixer_new(struct atiixp *chip, int clock,
- 	struct snd_ac97_template ac97;
- 	int i, err;
- 	int codec_count;
--	static struct snd_ac97_bus_ops ops = {
-+	static const struct snd_ac97_bus_ops ops = {
- 		.write = snd_atiixp_ac97_write,
- 		.read = snd_atiixp_ac97_read,
- 	};
-diff --git a/sound/pci/atiixp_modem.c b/sound/pci/atiixp_modem.c
-index 4044ee2..5afda11 100644
---- a/sound/pci/atiixp_modem.c
-+++ b/sound/pci/atiixp_modem.c
-@@ -1067,7 +1067,7 @@ static int __devinit snd_atiixp_mixer_new(struct atiixp_modem *chip, int clock)
- 	struct snd_ac97_template ac97;
- 	int i, err;
- 	int codec_count;
--	static struct snd_ac97_bus_ops ops = {
-+	static const struct snd_ac97_bus_ops ops = {
- 		.write = snd_atiixp_ac97_write,
- 		.read = snd_atiixp_ac97_read,
- 	};
-diff --git a/sound/pci/au88x0/au88x0_mixer.c b/sound/pci/au88x0/au88x0_mixer.c
-index 557c782..2666dca 100644
---- a/sound/pci/au88x0/au88x0_mixer.c
-+++ b/sound/pci/au88x0/au88x0_mixer.c
-@@ -15,7 +15,7 @@ static int __devinit snd_vortex_mixer(vortex_t * vortex)
- 	struct snd_ac97_bus *pbus;
- 	struct snd_ac97_template ac97;
- 	int err;
--	static struct snd_ac97_bus_ops ops = {
-+	static const struct snd_ac97_bus_ops ops = {
- 		.write = vortex_codec_write,
- 		.read = vortex_codec_read,
- 	};
-diff --git a/sound/pci/azt3328.c b/sound/pci/azt3328.c
-index 1d0e7a6..6492d1b 100644
---- a/sound/pci/azt3328.c
-+++ b/sound/pci/azt3328.c
-@@ -822,7 +822,7 @@ snd_azf3328_mixer_new(struct snd_azf3328 *chip)
- {
- 	struct snd_ac97_bus *bus;
- 	struct snd_ac97_template ac97;
--	static struct snd_ac97_bus_ops ops = {
-+	static const struct snd_ac97_bus_ops ops = {
- 		.write = snd_azf3328_mixer_ac97_write,
- 		.read = snd_azf3328_mixer_ac97_read,
- 	};
-diff --git a/sound/pci/ca0106/ca0106_main.c b/sound/pci/ca0106/ca0106_main.c
-index 6591353..b96b929 100644
---- a/sound/pci/ca0106/ca0106_main.c
-+++ b/sound/pci/ca0106/ca0106_main.c
-@@ -1223,7 +1223,7 @@ static int snd_ca0106_ac97(struct snd_ca0106 *chip)
- 	struct snd_ac97_bus *pbus;
- 	struct snd_ac97_template ac97;
- 	int err;
--	static struct snd_ac97_bus_ops ops = {
-+	static const struct snd_ac97_bus_ops ops = {
- 		.write = snd_ca0106_ac97_write,
- 		.read = snd_ca0106_ac97_read,
- 	};
-diff --git a/sound/pci/cs4281.c b/sound/pci/cs4281.c
-index 39ef894..bbc10cc 100644
---- a/sound/pci/cs4281.c
-+++ b/sound/pci/cs4281.c
-@@ -1098,7 +1098,7 @@ static int __devinit snd_cs4281_mixer(struct cs4281 * chip)
- 	struct snd_card *card = chip->card;
- 	struct snd_ac97_template ac97;
- 	int err;
--	static struct snd_ac97_bus_ops ops = {
-+	static const struct snd_ac97_bus_ops ops = {
- 		.write = snd_cs4281_ac97_write,
- 		.read = snd_cs4281_ac97_read,
- 	};
-diff --git a/sound/pci/cs46xx/cs46xx_lib.c b/sound/pci/cs46xx/cs46xx_lib.c
-index df72ebf..1d4d0c1 100644
---- a/sound/pci/cs46xx/cs46xx_lib.c
-+++ b/sound/pci/cs46xx/cs46xx_lib.c
-@@ -2316,7 +2316,7 @@ int __devinit snd_cs46xx_mixer(struct snd_cs46xx *chip, int spdif_device)
- 	struct snd_ctl_elem_id id;
- 	int err;
- 	unsigned int idx;
--	static struct snd_ac97_bus_ops ops = {
-+	static const struct snd_ac97_bus_ops ops = {
- #ifdef CONFIG_SND_CS46XX_NEW_DSP
- 		.reset = snd_cs46xx_codec_reset,
- #endif
-diff --git a/sound/pci/cs5535audio/cs5535audio.c b/sound/pci/cs5535audio/cs5535audio.c
-index c4a104f..8864db5 100644
---- a/sound/pci/cs5535audio/cs5535audio.c
-+++ b/sound/pci/cs5535audio/cs5535audio.c
-@@ -150,7 +150,7 @@ static int __devinit snd_cs5535audio_mixer(struct cs5535audio *cs5535au)
- 	struct snd_ac97_bus *pbus;
- 	struct snd_ac97_template ac97;
- 	int err;
--	static struct snd_ac97_bus_ops ops = {
-+	static const struct snd_ac97_bus_ops ops = {
- 		.write = snd_cs5535audio_ac97_codec_write,
- 		.read = snd_cs5535audio_ac97_codec_read,
- 	};
-diff --git a/sound/pci/emu10k1/emu10k1x.c b/sound/pci/emu10k1/emu10k1x.c
-index 6a011b7..a133965 100644
---- a/sound/pci/emu10k1/emu10k1x.c
-+++ b/sound/pci/emu10k1/emu10k1x.c
-@@ -731,7 +731,7 @@ static int snd_emu10k1x_ac97(struct emu10k1x *chip)
- 	struct snd_ac97_bus *pbus;
- 	struct snd_ac97_template ac97;
- 	int err;
--	static struct snd_ac97_bus_ops ops = {
-+	static const struct snd_ac97_bus_ops ops = {
- 		.write = snd_emu10k1x_ac97_write,
- 		.read = snd_emu10k1x_ac97_read,
- 	};
-diff --git a/sound/pci/emu10k1/emumixer.c b/sound/pci/emu10k1/emumixer.c
-index 9d890a5..5a0f564 100644
---- a/sound/pci/emu10k1/emumixer.c
-+++ b/sound/pci/emu10k1/emumixer.c
-@@ -1837,7 +1837,7 @@ int __devinit snd_emu10k1_mixer(struct snd_emu10k1 *emu,
- 	if (emu->card_capabilities->ac97_chip) {
- 		struct snd_ac97_bus *pbus;
- 		struct snd_ac97_template ac97;
--		static struct snd_ac97_bus_ops ops = {
-+		static const struct snd_ac97_bus_ops ops = {
- 			.write = snd_emu10k1_ac97_write,
- 			.read = snd_emu10k1_ac97_read,
- 		};
-diff --git a/sound/pci/ens1370.c b/sound/pci/ens1370.c
-index b11d276..6de30b5 100644
---- a/sound/pci/ens1370.c
-+++ b/sound/pci/ens1370.c
-@@ -1633,7 +1633,7 @@ static int __devinit snd_ensoniq_1371_mixer(struct ensoniq *ensoniq,
- 	struct snd_ac97_bus *pbus;
- 	struct snd_ac97_template ac97;
- 	int err;
--	static struct snd_ac97_bus_ops ops = {
-+	static const struct snd_ac97_bus_ops ops = {
- 		.write = snd_es1371_codec_write,
- 		.read = snd_es1371_codec_read,
- 		.wait = snd_es1371_codec_wait,
-diff --git a/sound/pci/es1968.c b/sound/pci/es1968.c
-index 98a9753..d7a4b14 100644
---- a/sound/pci/es1968.c
-+++ b/sound/pci/es1968.c
-@@ -2020,7 +2020,7 @@ snd_es1968_mixer(struct es1968 *chip)
- 	struct snd_ctl_elem_id elem_id;
- #endif
- 	int err;
--	static struct snd_ac97_bus_ops ops = {
-+	static const struct snd_ac97_bus_ops ops = {
- 		.write = snd_es1968_ac97_write,
- 		.read = snd_es1968_ac97_read,
- 	};
-diff --git a/sound/pci/fm801.c b/sound/pci/fm801.c
-index 76a6714..3a0c1f8 100644
---- a/sound/pci/fm801.c
-+++ b/sound/pci/fm801.c
-@@ -1014,7 +1014,7 @@ static int __devinit snd_fm801_mixer(struct fm801 *chip)
- 	struct snd_ac97_template ac97;
- 	unsigned int i;
- 	int err;
--	static struct snd_ac97_bus_ops ops = {
-+	static const struct snd_ac97_bus_ops ops = {
- 		.write = snd_fm801_codec_write,
- 		.read = snd_fm801_codec_read,
- 	};
-diff --git a/sound/pci/ice1712/ice1712.c b/sound/pci/ice1712/ice1712.c
-index f9c5344..8d62220 100644
---- a/sound/pci/ice1712/ice1712.c
-+++ b/sound/pci/ice1712/ice1712.c
-@@ -1517,11 +1517,11 @@ static int __devinit snd_ice1712_ac97_mixer(struct snd_ice1712 *ice)
- 	int err, bus_num = 0;
- 	struct snd_ac97_template ac97;
- 	struct snd_ac97_bus *pbus;
--	static struct snd_ac97_bus_ops con_ops = {
-+	static const struct snd_ac97_bus_ops con_ops = {
- 		.write = snd_ice1712_ac97_write,
- 		.read = snd_ice1712_ac97_read,
- 	};
--	static struct snd_ac97_bus_ops pro_ops = {
-+	static const struct snd_ac97_bus_ops pro_ops = {
- 		.write = snd_ice1712_pro_ac97_write,
- 		.read = snd_ice1712_pro_ac97_read,
- 	};
-diff --git a/sound/pci/ice1712/ice1724.c b/sound/pci/ice1712/ice1724.c
-index 25b5596..3a70572 100644
---- a/sound/pci/ice1712/ice1724.c
-+++ b/sound/pci/ice1712/ice1724.c
-@@ -1461,7 +1461,7 @@ static int __devinit snd_vt1724_ac97_mixer(struct snd_ice1712 *ice)
- 	if (!(ice->eeprom.data[ICE_EEP2_ACLINK] & VT1724_CFG_PRO_I2S)) {
- 		struct snd_ac97_bus *pbus;
- 		struct snd_ac97_template ac97;
--		static struct snd_ac97_bus_ops ops = {
-+		static const struct snd_ac97_bus_ops ops = {
- 			.write = snd_vt1724_ac97_write,
- 			.read = snd_vt1724_ac97_read,
- 		};
-diff --git a/sound/pci/intel8x0.c b/sound/pci/intel8x0.c
-index 5013374..bb65314 100644
---- a/sound/pci/intel8x0.c
-+++ b/sound/pci/intel8x0.c
-@@ -2158,12 +2158,12 @@ static int __devinit snd_intel8x0_mixer(struct intel8x0 *chip, int ac97_clock,
- 	int err;
- 	unsigned int i, codecs;
- 	unsigned int glob_sta = 0;
--	struct snd_ac97_bus_ops *ops;
--	static struct snd_ac97_bus_ops standard_bus_ops = {
-+	const struct snd_ac97_bus_ops *ops;
-+	static const struct snd_ac97_bus_ops standard_bus_ops = {
- 		.write = snd_intel8x0_codec_write,
- 		.read = snd_intel8x0_codec_read,
- 	};
--	static struct snd_ac97_bus_ops ali_bus_ops = {
-+	static const struct snd_ac97_bus_ops ali_bus_ops = {
- 		.write = snd_intel8x0_ali_codec_write,
- 		.read = snd_intel8x0_ali_codec_read,
- 	};
-diff --git a/sound/pci/intel8x0m.c b/sound/pci/intel8x0m.c
-index c63e618..ba5f568 100644
---- a/sound/pci/intel8x0m.c
-+++ b/sound/pci/intel8x0m.c
-@@ -826,7 +826,7 @@ static int __devinit snd_intel8x0m_mixer(struct intel8x0m *chip, int ac97_clock)
- 	struct snd_ac97 *x97;
- 	int err;
- 	unsigned int glob_sta = 0;
--	static struct snd_ac97_bus_ops ops = {
-+	static const struct snd_ac97_bus_ops ops = {
- 		.write = snd_intel8x0m_codec_write,
- 		.read = snd_intel8x0m_codec_read,
- 	};
-diff --git a/sound/pci/maestro3.c b/sound/pci/maestro3.c
-index 7931f07..08d9bc6 100644
---- a/sound/pci/maestro3.c
-+++ b/sound/pci/maestro3.c
-@@ -2107,7 +2107,7 @@ static int __devinit snd_m3_mixer(struct snd_m3 *chip)
- 	struct snd_ctl_elem_id elem_id;
- #endif
- 	int err;
--	static struct snd_ac97_bus_ops ops = {
-+	static const struct snd_ac97_bus_ops ops = {
- 		.write = snd_m3_ac97_write,
- 		.read = snd_m3_ac97_read,
- 	};
-diff --git a/sound/pci/nm256/nm256.c b/sound/pci/nm256/nm256.c
-index f49969c..e0ce57d 100644
---- a/sound/pci/nm256/nm256.c
-+++ b/sound/pci/nm256/nm256.c
-@@ -1301,7 +1301,7 @@ snd_nm256_mixer(struct nm256 *chip)
- 	struct snd_ac97_bus *pbus;
- 	struct snd_ac97_template ac97;
- 	int err;
--	static struct snd_ac97_bus_ops ops = {
-+	static const struct snd_ac97_bus_ops ops = {
- 		.reset = snd_nm256_ac97_reset,
- 		.write = snd_nm256_ac97_write,
- 		.read = snd_nm256_ac97_read,
-diff --git a/sound/pci/riptide/riptide.c b/sound/pci/riptide/riptide.c
-index 530a589..de066aa 100644
---- a/sound/pci/riptide/riptide.c
-+++ b/sound/pci/riptide/riptide.c
-@@ -1999,7 +1999,7 @@ static int __devinit snd_riptide_mixer(struct snd_riptide *chip)
- 	struct snd_ac97_bus *pbus;
- 	struct snd_ac97_template ac97;
- 	int err = 0;
--	static struct snd_ac97_bus_ops ops = {
-+	static const struct snd_ac97_bus_ops ops = {
- 		.write = snd_riptide_codec_write,
- 		.read = snd_riptide_codec_read,
- 	};
-diff --git a/sound/pci/sis7019.c b/sound/pci/sis7019.c
-index e47da32..8957eb3 100644
---- a/sound/pci/sis7019.c
-+++ b/sound/pci/sis7019.c
-@@ -1011,7 +1011,7 @@ static int __devinit sis_mixer_create(struct sis7019 *sis)
- {
- 	struct snd_ac97_bus *bus;
- 	struct snd_ac97_template ac97;
--	static struct snd_ac97_bus_ops ops = {
-+	static const struct snd_ac97_bus_ops ops = {
- 		.write = sis_ac97_write,
- 		.read = sis_ac97_read,
- 	};
-diff --git a/sound/pci/trident/trident_main.c b/sound/pci/trident/trident_main.c
-index 2e949e0..fa28dfa 100644
---- a/sound/pci/trident/trident_main.c
-+++ b/sound/pci/trident/trident_main.c
-@@ -2978,7 +2978,7 @@ static int __devinit snd_trident_mixer(struct snd_trident * trident, int pcm_spd
- 	struct snd_kcontrol *kctl;
- 	struct snd_ctl_elem_value *uctl;
- 	int idx, err, retries = 2;
--	static struct snd_ac97_bus_ops ops = {
-+	static const struct snd_ac97_bus_ops ops = {
- 		.write = snd_trident_codec_write,
- 		.read = snd_trident_codec_read,
- 	};
-diff --git a/sound/pci/via82xx.c b/sound/pci/via82xx.c
-index 1a190e2..053b9ce 100644
---- a/sound/pci/via82xx.c
-+++ b/sound/pci/via82xx.c
-@@ -1868,7 +1868,7 @@ static int __devinit snd_via82xx_mixer_new(struct via82xx *chip, const char *qui
- {
- 	struct snd_ac97_template ac97;
- 	int err;
--	static struct snd_ac97_bus_ops ops = {
-+	static const struct snd_ac97_bus_ops ops = {
- 		.write = snd_via82xx_codec_write,
- 		.read = snd_via82xx_codec_read,
- 		.wait = snd_via82xx_codec_wait,
-diff --git a/sound/pci/via82xx_modem.c b/sound/pci/via82xx_modem.c
-index a6191e1..38c7773 100644
---- a/sound/pci/via82xx_modem.c
-+++ b/sound/pci/via82xx_modem.c
-@@ -889,7 +889,7 @@ static int __devinit snd_via82xx_mixer_new(struct via82xx_modem *chip)
- {
- 	struct snd_ac97_template ac97;
- 	int err;
--	static struct snd_ac97_bus_ops ops = {
-+	static const struct snd_ac97_bus_ops ops = {
- 		.write = snd_via82xx_codec_write,
- 		.read = snd_via82xx_codec_read,
- 		.wait = snd_via82xx_codec_wait,
-diff --git a/sound/pci/ymfpci/ymfpci_main.c b/sound/pci/ymfpci/ymfpci_main.c
-index ec962ca..ca3d59b 100644
---- a/sound/pci/ymfpci/ymfpci_main.c
-+++ b/sound/pci/ymfpci/ymfpci_main.c
-@@ -1795,7 +1795,7 @@ int __devinit snd_ymfpci_mixer(struct snd_ymfpci *chip, int rear_switch)
- 	struct snd_pcm_substream *substream;
- 	unsigned int idx;
- 	int err;
--	static struct snd_ac97_bus_ops ops = {
-+	static const struct snd_ac97_bus_ops ops = {
- 		.write = snd_ymfpci_codec_write,
- 		.read = snd_ymfpci_codec_read,
- 	};
-diff --git a/sound/soc/au1x/psc-ac97.c b/sound/soc/au1x/psc-ac97.c
-index d0db66f..d5f2d6d 100644
---- a/sound/soc/au1x/psc-ac97.c
-+++ b/sound/soc/au1x/psc-ac97.c
-@@ -201,7 +201,7 @@ static void au1xpsc_ac97_cold_reset(struct snd_ac97 *ac97)
- }
+-{ 0x415a5400, 0xffffff00, "Aztech Labs (emulated)",	NULL,	NULL },
+-{ 0x434d4900, 0xffffff00, "C-Media Electronics", NULL,	NULL },
+-{ 0x43525900, 0xffffff00, "Cirrus Logic",	NULL,	NULL },
+-{ 0x43585400, 0xffffff00, "Conexant",           NULL,	NULL },
+-{ 0x44543000, 0xffffff00, "Diamond Technology", NULL,	NULL },
+-{ 0x454d4300, 0xffffff00, "eMicro",		NULL,	NULL },
+-{ 0x45838300, 0xffffff00, "ESS Technology",	NULL,	NULL },
+-{ 0x48525300, 0xffffff00, "Intersil",		NULL,	NULL },
+-{ 0x49434500, 0xffffff00, "ICEnsemble",		NULL,	NULL },
+-{ 0x49544500, 0xffffff00, "ITE Tech.Inc",	NULL,	NULL },
+-{ 0x4e534300, 0xffffff00, "National Semiconductor", NULL, NULL },
+-{ 0x50534300, 0xffffff00, "Philips",		NULL,	NULL },
+-{ 0x53494c00, 0xffffff00, "Silicon Laboratory",	NULL,	NULL },
+-{ 0x53544d00, 0xffffff00, "STMicroelectronics",	NULL,	NULL },
+-{ 0x54524100, 0xffffff00, "TriTech",		NULL,	NULL },
+-{ 0x54584e00, 0xffffff00, "Texas Instruments",	NULL,	NULL },
+-{ 0x56494100, 0xffffff00, "VIA Technologies",   NULL,	NULL },
+-{ 0x57454300, 0xffffff00, "Winbond",		NULL,	NULL },
+-{ 0x574d4c00, 0xffffff00, "Wolfson",		NULL,	NULL },
+-{ 0x594d4800, 0xffffff00, "Yamaha",		NULL,	NULL },
+-{ 0x83847600, 0xffffff00, "SigmaTel",		NULL,	NULL },
+-{ 0,	      0, 	  NULL,			NULL,	NULL }
++{ 0x415a5400, 0xffffff00, "Aztech Labs (emulated)",	NULL,	NULL, 0 },
++{ 0x434d4900, 0xffffff00, "C-Media Electronics", NULL,	NULL, 0 },
++{ 0x43525900, 0xffffff00, "Cirrus Logic",	NULL,	NULL, 0 },
++{ 0x43585400, 0xffffff00, "Conexant",           NULL,	NULL, 0 },
++{ 0x44543000, 0xffffff00, "Diamond Technology", NULL,	NULL, 0 },
++{ 0x454d4300, 0xffffff00, "eMicro",		NULL,	NULL, 0 },
++{ 0x45838300, 0xffffff00, "ESS Technology",	NULL,	NULL, 0 },
++{ 0x48525300, 0xffffff00, "Intersil",		NULL,	NULL, 0 },
++{ 0x49434500, 0xffffff00, "ICEnsemble",		NULL,	NULL, 0 },
++{ 0x49544500, 0xffffff00, "ITE Tech.Inc",	NULL,	NULL, 0 },
++{ 0x4e534300, 0xffffff00, "National Semiconductor", NULL, NULL, 0 },
++{ 0x50534300, 0xffffff00, "Philips",		NULL,	NULL, 0 },
++{ 0x53494c00, 0xffffff00, "Silicon Laboratory",	NULL,	NULL, 0 },
++{ 0x53544d00, 0xffffff00, "STMicroelectronics",	NULL,	NULL, 0 },
++{ 0x54524100, 0xffffff00, "TriTech",		NULL,	NULL, 0 },
++{ 0x54584e00, 0xffffff00, "Texas Instruments",	NULL,	NULL, 0 },
++{ 0x56494100, 0xffffff00, "VIA Technologies",   NULL,	NULL, 0 },
++{ 0x57454300, 0xffffff00, "Winbond",		NULL,	NULL, 0 },
++{ 0x574d4c00, 0xffffff00, "Wolfson",		NULL,	NULL, 0 },
++{ 0x594d4800, 0xffffff00, "Yamaha",		NULL,	NULL, 0 },
++{ 0x83847600, 0xffffff00, "SigmaTel",		NULL,	NULL, 0 },
++{ 0,	      0, 	  NULL,			NULL,	NULL, 0 }
+ };
  
- /* AC97 controller operations */
--struct snd_ac97_bus_ops soc_ac97_ops = {
-+const struct snd_ac97_bus_ops soc_ac97_ops = {
- 	.read		= au1xpsc_ac97_read,
- 	.write		= au1xpsc_ac97_write,
- 	.reset		= au1xpsc_ac97_cold_reset,
-diff --git a/sound/soc/blackfin/bf5xx-ac97.c b/sound/soc/blackfin/bf5xx-ac97.c
-index 6d21625..3eebd30 100644
---- a/sound/soc/blackfin/bf5xx-ac97.c
-+++ b/sound/soc/blackfin/bf5xx-ac97.c
-@@ -198,7 +198,7 @@ static void bf5xx_ac97_cold_reset(struct snd_ac97 *ac97)
- #endif
- }
+ static const struct ac97_codec_id snd_ac97_codec_ids[] = {
+-{ 0x41445303, 0xffffffff, "AD1819",		patch_ad1819,	NULL },
+-{ 0x41445340, 0xffffffff, "AD1881",		patch_ad1881,	NULL },
+-{ 0x41445348, 0xffffffff, "AD1881A",		patch_ad1881,	NULL },
+-{ 0x41445360, 0xffffffff, "AD1885",		patch_ad1885,	NULL },
+-{ 0x41445361, 0xffffffff, "AD1886",		patch_ad1886,	NULL },
+-{ 0x41445362, 0xffffffff, "AD1887",		patch_ad1881,	NULL },
+-{ 0x41445363, 0xffffffff, "AD1886A",		patch_ad1881,	NULL },
+-{ 0x41445368, 0xffffffff, "AD1888",		patch_ad1888,	NULL },
+-{ 0x41445370, 0xffffffff, "AD1980",		patch_ad1980,	NULL },
+-{ 0x41445372, 0xffffffff, "AD1981A",		patch_ad1981a,	NULL },
+-{ 0x41445374, 0xffffffff, "AD1981B",		patch_ad1981b,	NULL },
+-{ 0x41445375, 0xffffffff, "AD1985",		patch_ad1985,	NULL },
+-{ 0x41445378, 0xffffffff, "AD1986",		patch_ad1986,	NULL },
+-{ 0x414b4d00, 0xffffffff, "AK4540",		NULL,		NULL },
+-{ 0x414b4d01, 0xffffffff, "AK4542",		NULL,		NULL },
+-{ 0x414b4d02, 0xffffffff, "AK4543",		NULL,		NULL },
+-{ 0x414b4d06, 0xffffffff, "AK4544A",		NULL,		NULL },
+-{ 0x414b4d07, 0xffffffff, "AK4545",		NULL,		NULL },
+-{ 0x414c4300, 0xffffff00, "ALC100,100P", 	NULL,		NULL },
+-{ 0x414c4710, 0xfffffff0, "ALC200,200P",	NULL,		NULL },
+-{ 0x414c4721, 0xffffffff, "ALC650D",		NULL,	NULL }, /* already patched */
+-{ 0x414c4722, 0xffffffff, "ALC650E",		NULL,	NULL }, /* already patched */
+-{ 0x414c4723, 0xffffffff, "ALC650F",		NULL,	NULL }, /* already patched */
+-{ 0x414c4720, 0xfffffff0, "ALC650",		patch_alc650,	NULL },
+-{ 0x414c4730, 0xffffffff, "ALC101",		NULL,		NULL },
+-{ 0x414c4740, 0xfffffff0, "ALC202",		NULL,		NULL },
+-{ 0x414c4750, 0xfffffff0, "ALC250",		NULL,		NULL },
+-{ 0x414c4760, 0xfffffff0, "ALC655",		patch_alc655,	NULL },
+-{ 0x414c4770, 0xfffffff0, "ALC203",		patch_alc203,	NULL },
+-{ 0x414c4781, 0xffffffff, "ALC658D",		NULL,	NULL }, /* already patched */
+-{ 0x414c4780, 0xfffffff0, "ALC658",		patch_alc655,	NULL },
+-{ 0x414c4790, 0xfffffff0, "ALC850",		patch_alc850,	NULL },
+-{ 0x415a5401, 0xffffffff, "AZF3328",		patch_aztech_azf3328,	NULL },
+-{ 0x434d4941, 0xffffffff, "CMI9738",		patch_cm9738,	NULL },
+-{ 0x434d4961, 0xffffffff, "CMI9739",		patch_cm9739,	NULL },
+-{ 0x434d4969, 0xffffffff, "CMI9780",		patch_cm9780,	NULL },
+-{ 0x434d4978, 0xffffffff, "CMI9761A",		patch_cm9761,	NULL },
+-{ 0x434d4982, 0xffffffff, "CMI9761B",		patch_cm9761,	NULL },
+-{ 0x434d4983, 0xffffffff, "CMI9761A+",		patch_cm9761,	NULL },
+-{ 0x43525900, 0xfffffff8, "CS4297",		NULL,		NULL },
+-{ 0x43525910, 0xfffffff8, "CS4297A",		patch_cirrus_spdif,	NULL },
+-{ 0x43525920, 0xfffffff8, "CS4298",		patch_cirrus_spdif,		NULL },
+-{ 0x43525928, 0xfffffff8, "CS4294",		NULL,		NULL },
+-{ 0x43525930, 0xfffffff8, "CS4299",		patch_cirrus_cs4299,	NULL },
+-{ 0x43525948, 0xfffffff8, "CS4201",		NULL,		NULL },
+-{ 0x43525958, 0xfffffff8, "CS4205",		patch_cirrus_spdif,	NULL },
+-{ 0x43525960, 0xfffffff8, "CS4291",		NULL,		NULL },
+-{ 0x43525970, 0xfffffff8, "CS4202",		NULL,		NULL },
+-{ 0x43585421, 0xffffffff, "HSD11246",		NULL,		NULL },	// SmartMC II
+-{ 0x43585428, 0xfffffff8, "Cx20468",		patch_conexant,	NULL }, // SmartAMC fixme: the mask might be different
+-{ 0x43585430, 0xffffffff, "Cx20468-31",		patch_conexant, NULL },
+-{ 0x43585431, 0xffffffff, "Cx20551",           patch_cx20551,  NULL },
+-{ 0x44543031, 0xfffffff0, "DT0398",		NULL,		NULL },
+-{ 0x454d4328, 0xffffffff, "EM28028",		NULL,		NULL },  // same as TR28028?
+-{ 0x45838308, 0xffffffff, "ESS1988",		NULL,		NULL },
+-{ 0x48525300, 0xffffff00, "HMP9701",		NULL,		NULL },
+-{ 0x49434501, 0xffffffff, "ICE1230",		NULL,		NULL },
+-{ 0x49434511, 0xffffffff, "ICE1232",		NULL,		NULL }, // alias VIA VT1611A?
+-{ 0x49434514, 0xffffffff, "ICE1232A",		NULL,		NULL },
+-{ 0x49434551, 0xffffffff, "VT1616", 		patch_vt1616,	NULL }, 
+-{ 0x49434552, 0xffffffff, "VT1616i",		patch_vt1616,	NULL }, // VT1616 compatible (chipset integrated)
+-{ 0x49544520, 0xffffffff, "IT2226E",		NULL,		NULL },
+-{ 0x49544561, 0xffffffff, "IT2646E",		patch_it2646,	NULL },
+-{ 0x4e534300, 0xffffffff, "LM4540,43,45,46,48",	NULL,		NULL }, // only guess --jk
+-{ 0x4e534331, 0xffffffff, "LM4549",		NULL,		NULL },
+-{ 0x4e534350, 0xffffffff, "LM4550",		patch_lm4550,  	NULL }, // volume wrap fix 
+-{ 0x50534304, 0xffffffff, "UCB1400",		patch_ucb1400,	NULL },
++{ 0x41445303, 0xffffffff, "AD1819",		patch_ad1819,	NULL, 0 },
++{ 0x41445340, 0xffffffff, "AD1881",		patch_ad1881,	NULL, 0 },
++{ 0x41445348, 0xffffffff, "AD1881A",		patch_ad1881,	NULL, 0 },
++{ 0x41445360, 0xffffffff, "AD1885",		patch_ad1885,	NULL, 0 },
++{ 0x41445361, 0xffffffff, "AD1886",		patch_ad1886,	NULL, 0 },
++{ 0x41445362, 0xffffffff, "AD1887",		patch_ad1881,	NULL, 0 },
++{ 0x41445363, 0xffffffff, "AD1886A",		patch_ad1881,	NULL, 0 },
++{ 0x41445368, 0xffffffff, "AD1888",		patch_ad1888,	NULL, 0 },
++{ 0x41445370, 0xffffffff, "AD1980",		patch_ad1980,	NULL, 0 },
++{ 0x41445372, 0xffffffff, "AD1981A",		patch_ad1981a,	NULL, 0 },
++{ 0x41445374, 0xffffffff, "AD1981B",		patch_ad1981b,	NULL, 0 },
++{ 0x41445375, 0xffffffff, "AD1985",		patch_ad1985,	NULL, 0 },
++{ 0x41445378, 0xffffffff, "AD1986",		patch_ad1986,	NULL, 0 },
++{ 0x414b4d00, 0xffffffff, "AK4540",		NULL,		NULL, 0 },
++{ 0x414b4d01, 0xffffffff, "AK4542",		NULL,		NULL, 0 },
++{ 0x414b4d02, 0xffffffff, "AK4543",		NULL,		NULL, 0 },
++{ 0x414b4d06, 0xffffffff, "AK4544A",		NULL,		NULL, 0 },
++{ 0x414b4d07, 0xffffffff, "AK4545",		NULL,		NULL, 0 },
++{ 0x414c4300, 0xffffff00, "ALC100,100P", 	NULL,		NULL, 0 },
++{ 0x414c4710, 0xfffffff0, "ALC200,200P",	NULL,		NULL, 0 },
++{ 0x414c4721, 0xffffffff, "ALC650D",		NULL,	NULL, 0 }, /* already patched */
++{ 0x414c4722, 0xffffffff, "ALC650E",		NULL,	NULL, 0 }, /* already patched */
++{ 0x414c4723, 0xffffffff, "ALC650F",		NULL,	NULL, 0 }, /* already patched */
++{ 0x414c4720, 0xfffffff0, "ALC650",		patch_alc650,	NULL, 0 },
++{ 0x414c4730, 0xffffffff, "ALC101",		NULL,		NULL, 0 },
++{ 0x414c4740, 0xfffffff0, "ALC202",		NULL,		NULL, 0 },
++{ 0x414c4750, 0xfffffff0, "ALC250",		NULL,		NULL, 0 },
++{ 0x414c4760, 0xfffffff0, "ALC655",		patch_alc655,	NULL, 0 },
++{ 0x414c4770, 0xfffffff0, "ALC203",		patch_alc203,	NULL, 0 },
++{ 0x414c4781, 0xffffffff, "ALC658D",		NULL,	NULL, 0 }, /* already patched */
++{ 0x414c4780, 0xfffffff0, "ALC658",		patch_alc655,	NULL, 0 },
++{ 0x414c4790, 0xfffffff0, "ALC850",		patch_alc850,	NULL, 0 },
++{ 0x415a5401, 0xffffffff, "AZF3328",		patch_aztech_azf3328,	NULL, 0 },
++{ 0x434d4941, 0xffffffff, "CMI9738",		patch_cm9738,	NULL, 0 },
++{ 0x434d4961, 0xffffffff, "CMI9739",		patch_cm9739,	NULL, 0 },
++{ 0x434d4969, 0xffffffff, "CMI9780",		patch_cm9780,	NULL, 0 },
++{ 0x434d4978, 0xffffffff, "CMI9761A",		patch_cm9761,	NULL, 0 },
++{ 0x434d4982, 0xffffffff, "CMI9761B",		patch_cm9761,	NULL, 0 },
++{ 0x434d4983, 0xffffffff, "CMI9761A+",		patch_cm9761,	NULL, 0 },
++{ 0x43525900, 0xfffffff8, "CS4297",		NULL,		NULL, 0 },
++{ 0x43525910, 0xfffffff8, "CS4297A",		patch_cirrus_spdif,	NULL, 0 },
++{ 0x43525920, 0xfffffff8, "CS4298",		patch_cirrus_spdif,		NULL, 0 },
++{ 0x43525928, 0xfffffff8, "CS4294",		NULL,		NULL, 0 },
++{ 0x43525930, 0xfffffff8, "CS4299",		patch_cirrus_cs4299,	NULL, 0 },
++{ 0x43525948, 0xfffffff8, "CS4201",		NULL,		NULL, 0 },
++{ 0x43525958, 0xfffffff8, "CS4205",		patch_cirrus_spdif,	NULL, 0 },
++{ 0x43525960, 0xfffffff8, "CS4291",		NULL,		NULL, 0 },
++{ 0x43525970, 0xfffffff8, "CS4202",		NULL,		NULL, 0 },
++{ 0x43585421, 0xffffffff, "HSD11246",		NULL,		NULL, 0 },	// SmartMC II
++{ 0x43585428, 0xfffffff8, "Cx20468",		patch_conexant,	NULL, 0 }, // SmartAMC fixme: the mask might be different
++{ 0x43585430, 0xffffffff, "Cx20468-31",		patch_conexant, NULL, 0 },
++{ 0x43585431, 0xffffffff, "Cx20551",           patch_cx20551,  NULL, 0 },
++{ 0x44543031, 0xfffffff0, "DT0398",		NULL,		NULL, 0 },
++{ 0x454d4328, 0xffffffff, "EM28028",		NULL,		NULL, 0 },  // same as TR28028?
++{ 0x45838308, 0xffffffff, "ESS1988",		NULL,		NULL, 0 },
++{ 0x48525300, 0xffffff00, "HMP9701",		NULL,		NULL, 0 },
++{ 0x49434501, 0xffffffff, "ICE1230",		NULL,		NULL, 0 },
++{ 0x49434511, 0xffffffff, "ICE1232",		NULL,		NULL, 0 }, // alias VIA VT1611A?
++{ 0x49434514, 0xffffffff, "ICE1232A",		NULL,		NULL, 0 },
++{ 0x49434551, 0xffffffff, "VT1616", 		patch_vt1616,	NULL, 0 },
++{ 0x49434552, 0xffffffff, "VT1616i",		patch_vt1616,	NULL, 0 }, // VT1616 compatible (chipset integrated)
++{ 0x49544520, 0xffffffff, "IT2226E",		NULL,		NULL, 0 },
++{ 0x49544561, 0xffffffff, "IT2646E",		patch_it2646,	NULL, 0 },
++{ 0x4e534300, 0xffffffff, "LM4540,43,45,46,48",	NULL,		NULL, 0 }, // only guess --jk
++{ 0x4e534331, 0xffffffff, "LM4549",		NULL,		NULL, 0 },
++{ 0x4e534350, 0xffffffff, "LM4550",		patch_lm4550,  	NULL, 0 }, // volume wrap fix
++{ 0x50534304, 0xffffffff, "UCB1400",		patch_ucb1400,	NULL, 0 },
+ { 0x53494c20, 0xffffffe0, "Si3036,8",		mpatch_si3036,	mpatch_si3036, AC97_MODEM_PATCH },
+-{ 0x53544d02, 0xffffffff, "ST7597",		NULL,		NULL },
+-{ 0x54524102, 0xffffffff, "TR28022",		NULL,		NULL },
+-{ 0x54524103, 0xffffffff, "TR28023",		NULL,		NULL },
+-{ 0x54524106, 0xffffffff, "TR28026",		NULL,		NULL },
+-{ 0x54524108, 0xffffffff, "TR28028",		patch_tritech_tr28028,	NULL }, // added by xin jin [07/09/99]
+-{ 0x54524123, 0xffffffff, "TR28602",		NULL,		NULL }, // only guess --jk [TR28023 = eMicro EM28023 (new CT1297)]
+-{ 0x54584e20, 0xffffffff, "TLC320AD9xC",	NULL,		NULL },
+-{ 0x56494161, 0xffffffff, "VIA1612A",		NULL,		NULL }, // modified ICE1232 with S/PDIF
+-{ 0x56494170, 0xffffffff, "VIA1617A",		patch_vt1617a,	NULL }, // modified VT1616 with S/PDIF
+-{ 0x56494182, 0xffffffff, "VIA1618",		patch_vt1618,   NULL },
+-{ 0x57454301, 0xffffffff, "W83971D",		NULL,		NULL },
+-{ 0x574d4c00, 0xffffffff, "WM9701,WM9701A",	NULL,		NULL },
+-{ 0x574d4C03, 0xffffffff, "WM9703,WM9707,WM9708,WM9717", patch_wolfson03, NULL},
+-{ 0x574d4C04, 0xffffffff, "WM9704M,WM9704Q",	patch_wolfson04, NULL},
+-{ 0x574d4C05, 0xffffffff, "WM9705,WM9710",	patch_wolfson05, NULL},
+-{ 0x574d4C09, 0xffffffff, "WM9709",		NULL,		NULL},
+-{ 0x574d4C12, 0xffffffff, "WM9711,WM9712,WM9715",	patch_wolfson11, NULL},
++{ 0x53544d02, 0xffffffff, "ST7597",		NULL,		NULL, 0 },
++{ 0x54524102, 0xffffffff, "TR28022",		NULL,		NULL, 0 },
++{ 0x54524103, 0xffffffff, "TR28023",		NULL,		NULL, 0 },
++{ 0x54524106, 0xffffffff, "TR28026",		NULL,		NULL, 0 },
++{ 0x54524108, 0xffffffff, "TR28028",		patch_tritech_tr28028,	NULL, 0 }, // added by xin jin [07/09/99]
++{ 0x54524123, 0xffffffff, "TR28602",		NULL,		NULL, 0 }, // only guess --jk [TR28023 = eMicro EM28023 (new CT1297)]
++{ 0x54584e20, 0xffffffff, "TLC320AD9xC",	NULL,		NULL, 0 },
++{ 0x56494161, 0xffffffff, "VIA1612A",		NULL,		NULL, 0 }, // modified ICE1232 with S/PDIF
++{ 0x56494170, 0xffffffff, "VIA1617A",		patch_vt1617a,	NULL, 0 }, // modified VT1616 with S/PDIF
++{ 0x56494182, 0xffffffff, "VIA1618",		patch_vt1618,   NULL, 0 },
++{ 0x57454301, 0xffffffff, "W83971D",		NULL,		NULL, 0 },
++{ 0x574d4c00, 0xffffffff, "WM9701,WM9701A",	NULL,		NULL, 0 },
++{ 0x574d4C03, 0xffffffff, "WM9703,WM9707,WM9708,WM9717", patch_wolfson03, NULL, 0 },
++{ 0x574d4C04, 0xffffffff, "WM9704M,WM9704Q",	patch_wolfson04, NULL, 0 },
++{ 0x574d4C05, 0xffffffff, "WM9705,WM9710",	patch_wolfson05, NULL, 0 },
++{ 0x574d4C09, 0xffffffff, "WM9709",		NULL,		NULL, 0 },
++{ 0x574d4C12, 0xffffffff, "WM9711,WM9712,WM9715",	patch_wolfson11, NULL, 0 },
+ { 0x574d4c13, 0xffffffff, "WM9713,WM9714",	patch_wolfson13, NULL, AC97_DEFAULT_POWER_OFF},
+-{ 0x594d4800, 0xffffffff, "YMF743",		patch_yamaha_ymf743,	NULL },
+-{ 0x594d4802, 0xffffffff, "YMF752",		NULL,		NULL },
+-{ 0x594d4803, 0xffffffff, "YMF753",		patch_yamaha_ymf753,	NULL },
+-{ 0x83847600, 0xffffffff, "STAC9700,83,84",	patch_sigmatel_stac9700,	NULL },
+-{ 0x83847604, 0xffffffff, "STAC9701,3,4,5",	NULL,		NULL },
+-{ 0x83847605, 0xffffffff, "STAC9704",		NULL,		NULL },
+-{ 0x83847608, 0xffffffff, "STAC9708,11",	patch_sigmatel_stac9708,	NULL },
+-{ 0x83847609, 0xffffffff, "STAC9721,23",	patch_sigmatel_stac9721,	NULL },
+-{ 0x83847644, 0xffffffff, "STAC9744",		patch_sigmatel_stac9744,	NULL },
+-{ 0x83847650, 0xffffffff, "STAC9750,51",	NULL,		NULL },	// patch?
+-{ 0x83847652, 0xffffffff, "STAC9752,53",	NULL,		NULL }, // patch?
+-{ 0x83847656, 0xffffffff, "STAC9756,57",	patch_sigmatel_stac9756,	NULL },
+-{ 0x83847658, 0xffffffff, "STAC9758,59",	patch_sigmatel_stac9758,	NULL },
+-{ 0x83847666, 0xffffffff, "STAC9766,67",	NULL,		NULL }, // patch?
+-{ 0, 	      0,	  NULL,			NULL,		NULL }
++{ 0x594d4800, 0xffffffff, "YMF743",		patch_yamaha_ymf743,	NULL, 0 },
++{ 0x594d4802, 0xffffffff, "YMF752",		NULL,		NULL, 0 },
++{ 0x594d4803, 0xffffffff, "YMF753",		patch_yamaha_ymf753,	NULL, 0 },
++{ 0x83847600, 0xffffffff, "STAC9700,83,84",	patch_sigmatel_stac9700,	NULL, 0 },
++{ 0x83847604, 0xffffffff, "STAC9701,3,4,5",	NULL,		NULL, 0 },
++{ 0x83847605, 0xffffffff, "STAC9704",		NULL,		NULL, 0 },
++{ 0x83847608, 0xffffffff, "STAC9708,11",	patch_sigmatel_stac9708,	NULL, 0 },
++{ 0x83847609, 0xffffffff, "STAC9721,23",	patch_sigmatel_stac9721,	NULL, 0 },
++{ 0x83847644, 0xffffffff, "STAC9744",		patch_sigmatel_stac9744,	NULL, 0 },
++{ 0x83847650, 0xffffffff, "STAC9750,51",	NULL,		NULL, 0 },	// patch?
++{ 0x83847652, 0xffffffff, "STAC9752,53",	NULL,		NULL, 0 }, // patch?
++{ 0x83847656, 0xffffffff, "STAC9756,57",	patch_sigmatel_stac9756,	NULL, 0 },
++{ 0x83847658, 0xffffffff, "STAC9758,59",	patch_sigmatel_stac9758,	NULL, 0 },
++{ 0x83847666, 0xffffffff, "STAC9766,67",	NULL,		NULL, 0 }, // patch?
++{ 0, 	      0,	  NULL,			NULL,		NULL, 0 }
+ };
  
--struct snd_ac97_bus_ops soc_ac97_ops = {
-+const struct snd_ac97_bus_ops soc_ac97_ops = {
- 	.read	= bf5xx_ac97_read,
- 	.write	= bf5xx_ac97_write,
- 	.warm_reset	= bf5xx_ac97_warm_reset,
-diff --git a/sound/soc/blackfin/bf5xx-ac97.h b/sound/soc/blackfin/bf5xx-ac97.h
-index 15c635e..e87519e 100644
---- a/sound/soc/blackfin/bf5xx-ac97.h
-+++ b/sound/soc/blackfin/bf5xx-ac97.h
-@@ -9,7 +9,7 @@
- #ifndef _BF5XX_AC97_H
- #define _BF5XX_AC97_H
  
--extern struct snd_ac97_bus_ops bf5xx_ac97_ops;
-+extern const struct snd_ac97_bus_ops bf5xx_ac97_ops;
- extern struct snd_ac97 *ac97;
- /* Frame format in memory, only support stereo currently */
- struct ac97_frame {
-diff --git a/sound/soc/ep93xx/ep93xx-ac97.c b/sound/soc/ep93xx/ep93xx-ac97.c
-index c7417c7..91d3144 100644
---- a/sound/soc/ep93xx/ep93xx-ac97.c
-+++ b/sound/soc/ep93xx/ep93xx-ac97.c
-@@ -239,7 +239,7 @@ static irqreturn_t ep93xx_ac97_interrupt(int irq, void *dev_id)
- 	return IRQ_HANDLED;
- }
- 
--struct snd_ac97_bus_ops soc_ac97_ops = {
-+const struct snd_ac97_bus_ops soc_ac97_ops = {
- 	.read		= ep93xx_ac97_read,
- 	.write		= ep93xx_ac97_write,
- 	.reset		= ep93xx_ac97_cold_reset,
-diff --git a/sound/soc/fsl/mpc5200_psc_ac97.c b/sound/soc/fsl/mpc5200_psc_ac97.c
-index ad36b09..84710ab 100644
---- a/sound/soc/fsl/mpc5200_psc_ac97.c
-+++ b/sound/soc/fsl/mpc5200_psc_ac97.c
-@@ -131,7 +131,7 @@ static void psc_ac97_cold_reset(struct snd_ac97 *ac97)
- 	psc_ac97_warm_reset(ac97);
- }
- 
--struct snd_ac97_bus_ops soc_ac97_ops = {
-+const struct snd_ac97_bus_ops soc_ac97_ops = {
- 	.read		= psc_ac97_read,
- 	.write		= psc_ac97_write,
- 	.reset		= psc_ac97_cold_reset,
-diff --git a/sound/soc/imx/imx-ssi.c b/sound/soc/imx/imx-ssi.c
-index 10a8e27..78163ab 100644
---- a/sound/soc/imx/imx-ssi.c
-+++ b/sound/soc/imx/imx-ssi.c
-@@ -584,7 +584,7 @@ static void imx_ssi_ac97_warm_reset(struct snd_ac97 *ac97)
- 		imx_ssi->ac97_warm_reset(ac97);
- }
- 
--struct snd_ac97_bus_ops soc_ac97_ops = {
-+const struct snd_ac97_bus_ops soc_ac97_ops = {
- 	.read		= imx_ssi_ac97_read,
- 	.write		= imx_ssi_ac97_write,
- 	.reset		= imx_ssi_ac97_reset,
-diff --git a/sound/soc/nuc900/nuc900-ac97.c b/sound/soc/nuc900/nuc900-ac97.c
-index 9c0edad..4289a51 100644
---- a/sound/soc/nuc900/nuc900-ac97.c
-+++ b/sound/soc/nuc900/nuc900-ac97.c
-@@ -197,7 +197,7 @@ static void nuc900_ac97_cold_reset(struct snd_ac97 *ac97)
- }
- 
- /* AC97 controller operations */
--struct snd_ac97_bus_ops soc_ac97_ops = {
-+const struct snd_ac97_bus_ops soc_ac97_ops = {
- 	.read		= nuc900_ac97_read,
- 	.write		= nuc900_ac97_write,
- 	.reset		= nuc900_ac97_cold_reset,
-diff --git a/sound/soc/pxa/pxa2xx-ac97.c b/sound/soc/pxa/pxa2xx-ac97.c
-index ac51c6d..7edb05b 100644
---- a/sound/soc/pxa/pxa2xx-ac97.c
-+++ b/sound/soc/pxa/pxa2xx-ac97.c
-@@ -40,7 +40,7 @@ static void pxa2xx_ac97_cold_reset(struct snd_ac97 *ac97)
- 	pxa2xx_ac97_finish_reset(ac97);
- }
- 
--struct snd_ac97_bus_ops soc_ac97_ops = {
-+const struct snd_ac97_bus_ops soc_ac97_ops = {
- 	.read	= pxa2xx_ac97_read,
- 	.write	= pxa2xx_ac97_write,
- 	.warm_reset	= pxa2xx_ac97_warm_reset,
-diff --git a/sound/soc/pxa/pxa2xx-ac97.h b/sound/soc/pxa/pxa2xx-ac97.h
-index eda891e..4ca9ee7 100644
---- a/sound/soc/pxa/pxa2xx-ac97.h
-+++ b/sound/soc/pxa/pxa2xx-ac97.h
-@@ -15,6 +15,6 @@
- #define PXA2XX_DAI_AC97_MIC		2
- 
- /* platform data */
--extern struct snd_ac97_bus_ops pxa2xx_ac97_ops;
-+extern const struct snd_ac97_bus_ops pxa2xx_ac97_ops;
- 
- #endif
-diff --git a/sound/soc/samsung/ac97.c b/sound/soc/samsung/ac97.c
-index f97110e..8b565d4 100644
---- a/sound/soc/samsung/ac97.c
-+++ b/sound/soc/samsung/ac97.c
-@@ -213,7 +213,7 @@ static irqreturn_t s3c_ac97_irq(int irq, void *dev_id)
- 	return IRQ_HANDLED;
- }
- 
--struct snd_ac97_bus_ops soc_ac97_ops = {
-+const struct snd_ac97_bus_ops soc_ac97_ops = {
- 	.read       = s3c_ac97_read,
- 	.write      = s3c_ac97_write,
- 	.warm_reset = s3c_ac97_warm_reset,
-diff --git a/sound/soc/sh/hac.c b/sound/soc/sh/hac.c
-index c87e3ff..32e78ed 100644
---- a/sound/soc/sh/hac.c
-+++ b/sound/soc/sh/hac.c
-@@ -227,7 +227,7 @@ static void hac_ac97_coldrst(struct snd_ac97 *ac97)
- 	hac_ac97_warmrst(ac97);
- }
- 
--struct snd_ac97_bus_ops soc_ac97_ops = {
-+const struct snd_ac97_bus_ops soc_ac97_ops = {
- 	.read	= hac_ac97_read,
- 	.write	= hac_ac97_write,
- 	.reset	= hac_ac97_coldrst,
-diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
-index e44267f..dd13b94 100644
---- a/sound/soc/soc-core.c
-+++ b/sound/soc/soc-core.c
-@@ -1695,7 +1695,7 @@ EXPORT_SYMBOL_GPL(snd_soc_platform_write);
-  * Initialises AC97 codec resources for use by ad-hoc devices only.
-  */
- int snd_soc_new_ac97_codec(struct snd_soc_codec *codec,
--	struct snd_ac97_bus_ops *ops, int num)
-+	const struct snd_ac97_bus_ops *ops, int num)
- {
- 	mutex_lock(&codec->mutex);
- 
-diff --git a/sound/soc/txx9/txx9aclc-ac97.c b/sound/soc/txx9/txx9aclc-ac97.c
-index 743d07b..b884623 100644
---- a/sound/soc/txx9/txx9aclc-ac97.c
-+++ b/sound/soc/txx9/txx9aclc-ac97.c
-@@ -119,7 +119,7 @@ static void txx9aclc_ac97_cold_reset(struct snd_ac97 *ac97)
- }
- 
- /* AC97 controller operations */
--struct snd_ac97_bus_ops soc_ac97_ops = {
-+const struct snd_ac97_bus_ops soc_ac97_ops = {
- 	.read		= txx9aclc_ac97_read,
- 	.write		= txx9aclc_ac97_write,
- 	.reset		= txx9aclc_ac97_cold_reset,
 -- 
 1.7.6.345.g5c2f8
 
