@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751596Ab1GXQcn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 12:32:43 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:57864 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751432Ab1GXQch (ORCPT
+	id S1751418Ab1GXQmm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 12:42:42 -0400
+Received: from fmmailgate01.web.de ([217.72.192.221]:56033 "EHLO
+	fmmailgate01.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751116Ab1GXQmj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 12:32:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAJAFBLCXQLvyLKR5ZD_foaPqU5X6VJfLQX_VAKeaWpDLLfPWnA@mail.gmail.com>
-References: <1311410747-29947-1-git-send-email-nab@linux-iscsi.org>
-	<1311410747-29947-9-git-send-email-nab@linux-iscsi.org>
-	<1311439173.23720.14.camel@mulgrave>
-	<CA+55aFzkEUbnoDg0KwXDRQMeCFeO5s6_4dWHTY59=hj3QHWL0w@mail.gmail.com>
-	<1311445075.17423.13.camel@mulgrave>
-	<1311455867.31450.287.camel@haakon2.linux-iscsi.org>
-	<4E2B8C98.2060601@cs.wisc.edu>
-	<CAJAFBLCXQLvyLKR5ZD_foaPqU5X6VJfLQX_VAKeaWpDLLfPWnA@mail.gmail.com>
-Date: Sun, 24 Jul 2011 18:32:36 +0200
-Message-ID: <CAKb08JKhXbXk4FJ=iwmBhXjirG7AJecdQfcRgkjkOU-Ei9BpVA@mail.gmail.com>
-Subject: Re: [PATCH 08/13] iscsi-target: Add CHAP Authentication support using libcrypto
-From: Alex Couvrard <acouvrard2@gmail.com>
-To: Mike Christie <umichaelc@cs.wisc.ed>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Andy Grover <agrover@redhat.com>,
-        Hannes Reinecke <hare@suse.de>, Roland Dreier <roland@purestorage.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 24 Jul 2011 12:42:39 -0400
+Subject: Re: [ANNOUNCE] 3.0-rt3
+From: hermann <brummer-@web.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Darren Hart <dvhart@linux.intel.com>
+In-Reply-To: <alpine.LFD.2.02.1107241807390.3136@ionos>
+References: <alpine.LFD.2.02.1107241223560.2702@ionos>
+	 <4E2C2ED6.4040904@gmail.com>  <alpine.LFD.2.02.1107241807390.3136@ionos>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 24 Jul 2011 18:42:36 +0200
+Message-ID: <1311525756.2276.6.camel@box>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V01U2FsdGVkX1+l33uDjD85PijTZjj5aqyoxEIY3S9adY/45Gid
+	BvNaFQvTKT4PEhGp3Zf8P89Vyxqhpvh9R0z2FCC2mf+Y7U4JIt
+	vuG2t94ss=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 24, 2011 Mike Christie wrote:
-> I think where doing a kernel/userspace split is going to be more
-> difficult is with supporting hw iscsi targets. With software iscsi you
-> can just pass down a socket and the settings more or less. With hw
-> iscsi, you want to be able to send the login related packets through the
-> iscsi port using the iscsi engine or hw/fw might be doing the actual
-> login process. But, if you are putting discovery (isns, sendtargets,
-> dhcp iscsi/isns options, slp, etc) in userspace then you have to solve
-> those issues for discovery so you can use the same interfaces for both.
+ schrieb Thomas Gleixner:
 
-iSCSI HBAs first appeared considerable time ago. Since then several
-new and interesting technologies appeared, e.g. iWARP and RoCE. Why
-should one spend time on supporting target mode for iSCSI HBAs instead
-of investing time in supporting iWARP HBAs or RoCE HBAs ? An
-additional advantage is that the last two options allow to use iSER
-instead of iSCSI.
+> Dear RT Folks,
+> 
+> I'm pleased to announce the 3.0-rt3 release.
+> 
+> Changes versus 3.0-rt2:
+> 
+>   * Fix earlyprintk really
+> 
 
-In case someone is not familiar with one of the acronyms mentioned above:
-iWARP = Internet Wide Area RDMA Protocol, a technology that makes
-high-bandwidth low-latency communication possible over TCP/IP
-networks.
-RoCE = RDMA over Converged Ethernet, a technology that makes
-high-bandwidth low-latency communication possible over DCB Ethernet
-networks. Sometimes called InfiniBand over Ethernet (IBoE).
-DCB = Data Center Bridging, a set of standards that allow enhanced
-communication over an Ethernet network. DCB is sometimes called
-Converged Enhanced Ethernet (CEE).
+Hi
 
-Alex.
+I still have some trouble with rt1 - rt3. 
+During boot, the kernel is absolutely silent, sometimes it hangs on boot,
+sometimes it hangs on login, sometimes it freeze without any known reason 
+during session (no heavy load or some thing like that).
+I cant find any meaningful log, so I just can report it as it is here.
+rc7-rt0 works very well here, I build 3.0-rt1 - rt3 with the same config 
+then rt0.
+
+regards
+hermann
+
