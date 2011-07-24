@@ -1,79 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752263Ab1GXDPK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 23:15:10 -0400
-Received: from DMZ-MAILSEC-SCANNER-1.MIT.EDU ([18.9.25.12]:45742 "EHLO
-	dmz-mailsec-scanner-1.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751160Ab1GXDPG (ORCPT
+	id S1752310Ab1GXDUj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 23:20:39 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:35004 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751160Ab1GXDUf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 23:15:06 -0400
-X-AuditID: 1209190c-b7bdeae000000a26-14-4e2b8dd10c25
-Message-ID: <4E2B8E36.6030308@mit.edu>
-Date: Sat, 23 Jul 2011 23:15:02 -0400
-From: Andy Lutomirski <luto@MIT.EDU>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
-MIME-Version: 1.0
-To: Matthew Garrett <mjg@redhat.com>
-CC: cpufreq@vger.kernel.org, davej@redhat.com, linux-kernel@vger.kernel.org,
-        borislav.petkov@amd.com, mark.langsdorf@amd.com,
-        andreas.herrmann3@amd.com
-Subject: Re: [PATCH v4 3/7] acpi-cpufreq: Add support for disabling dynamic
- overclocking
-References: <1311007062-2050-1-git-send-email-mjg@redhat.com> <1311007062-2050-4-git-send-email-mjg@redhat.com>
-In-Reply-To: <1311007062-2050-4-git-send-email-mjg@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Sat, 23 Jul 2011 23:20:35 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=Lxh0fpPAASi91aNC8xck1AULudWYc5xbH7nfAHdO8M+u+TOJVlMuxt2FXnsN+yZCkdVZlStqp1uNugZ6JCZPyTSRMv7o++NWa9WClwHdkrk+mbQexjVJx7R3NfGLTYUj;
+Date: Sat, 23 Jul 2011 20:20:32 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Daniel Drake <dsd@laptop.org>
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org,
+        Andres Salomon <dilinger@queued.net>, tglx@linutronix.de,
+        x86@kernel.org
+Subject: Re: OLPC power management patches - merge for 3.1?
+Message-Id: <20110723202032.67ebdbcc.rdunlap@xenotime.net>
+In-Reply-To: <CAGq3pz4VHgagUQ+jGJdt9LL4UnFt+CDgcLLXbuVeKfWMc=0wAA@mail.gmail.com>
+References: <CAGq3pz4VHgagUQ+jGJdt9LL4UnFt+CDgcLLXbuVeKfWMc=0wAA@mail.gmail.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMKsWRmVeSWpSXmKPExsUixCmqrXuxV9vP4NlfA4tjy/azWVxdLGvx
-	tOkHu8WW601MFpd3zWGz6Hl6nNViR+92Jgd2j9ZLf9k83u+7yubxeZNcAHMUl01Kak5mWWqR
-	vl0CV8bumcdYCs5zVTx+18ncwHiRo4uRk0NCwETi44xPbBC2mMSFe+uBbC4OIYF9jBJNz16x
-	QzgbGCWWrf7MBOG8ZZKYcm4vK0gLr4CaxIxnx9hBbBYBVYmTf7aA2WwCKhIdSx8wgdiiAkES
-	9383sEDUC0qcnPkEzBYBqum838UCMpRZYCWjxMK/3cwgCWGBKIkt5yaAFQkJ5Evcv7iRsYuR
-	g4NTwE7iypYcEJNZwFri2+4ikApmAXmJ7W/nME9gFJyFZMMshKpZSKoWMDKvYpRNya3SzU3M
-	zClOTdYtTk7My0st0jXUy80s0UtNKd3ECA57SZ4djG8OKh1iFOBgVOLh3fhFy0+INbGsuDL3
-	EKMkB5OSKO+nHm0/Ib6k/JTKjMTijPii0pzU4kOMEhzMSiK8l7cAlfOmJFZWpRblw6SkOViU
-	xHnLvf/7CgmkJ5akZqemFqQWwWRlODiUJHjXA+NbSLAoNT21Ii0zpwQhzcTBCTKcB2j4KpAa
-	3uKCxNzizHSI/ClGRSlx3l0gCQGQREZpHlwvLC29YhQHekWYNxukigeY0uC6XwENZgIaLK+g
-	CTK4JBEhJdXAKPryd4DOIXuzp/GVzWuK2KM6L3xearLx04elcz/9n6t5T8rg1rzpCrNTNIqM
-	hSxPLfq8xXV98B/G2UW1H2bfOcDNue/mlJVirQvEfHK1d975uyFia7rnK+2bC2psuNicprya
-	5MWY5B17ozeYW9yymqvASX159dXk5q8fHtZIp4iEsEj4/j/nosRSnJFoqMVcVJwIAB9XYugm
-	AwAA
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2011 12:37 PM, Matthew Garrett wrote:
-> One feature present in powernow-k8 that isn't present in acpi-cpufreq is
-> support for enabling or disabling AMD's core performance boost technology.
-> This patch adds that support to acpi-cpufreq, but also extends it to allow
-> Intel's dynamic acceleration to be disabled via the same interface. The
-> sysfs entry retains the cpb name for compatibility purposes.
->
-> Signed-off-by: Matthew Garrett<mjg@redhat.com>
-> ---
->   drivers/cpufreq/acpi-cpufreq.c |  191 ++++++++++++++++++++++++++++++++++++++++
->   1 files changed, 191 insertions(+), 0 deletions(-)
->
+On Sat, 23 Jul 2011 23:44:09 +0100 Daniel Drake wrote:
 
-> +			if (enable)
-> +				reg->q&= ~MSR_IA32_MISC_ENABLE_TURBO_DISABLE;
-> +			else
-> +				reg->q |= MSR_IA32_MISC_ENABLE_TURBO_DISABLE;
-> +		}
+> Hi,
+> 
+> Many thanks for committing the OLPC power management patches to
+> linux-tip a few weeks ago.
+> 
+> Even though they were never merged into the master branch of linux-tip
+> (where I presume linux-next pulls from), they have been included in
+> linux-next for even longer via Andrew Morton's tree.
+> 
+> Is there any chance you could send them for inclusion in Linux 3.1?
+> The functionality is working well, but a small fixup is needed for
+> XO-1.5 (see "[PATCH] x86, olpc-xo15-sci: enable EC wakeup capability"
+> from 2011-07-09).
 
-I was curious and looked it up.  Intel SDM volume 3, 14.3.2.1 says:
+Hi,
 
-Opportunistic processor performance operation can be disabled by setting 
-bit 38 of
-IA32_MISC_ENABLE. This mechanism is intended for BIOS only. If
-IA32_MISC_ENABLE[38] is set, CPUID.06H:EAX[1] will return 0.
+I should have posted this sooner...
 
-and the next section says:
+I have no objection to merging OLPC patches, but they should build
+without errors.
 
-System software can temporarily disengage opportunistic processor 
-performance
-operation by setting bit 32 of the IA32_PERF_CTL MSR (0199H), using a read-
-modify-write sequence on the MSR.
+>From linux-next 20110722:
 
-Would that be a better way to control boost mode on Intel chips?
+arch/x86/built-in.o: In function `battery_status_changed':
+olpc-xo15-sci.c:(.text+0x3acdd): undefined reference to `power_supply_get_by_name'
+olpc-xo15-sci.c:(.text+0x3ad04): undefined reference to `power_supply_changed'
+arch/x86/built-in.o: In function `ac_status_changed':
+olpc-xo15-sci.c:(.text+0x3ad4d): undefined reference to `power_supply_get_by_name'
+olpc-xo15-sci.c:(.text+0x3ad74): undefined reference to `power_supply_changed'
 
---Andy
+Looks like this problem is caused by:
+
+config OLPC_XO1_SCI
+	bool "OLPC XO-1 SCI extras"
+	depends on OLPC && OLPC_XO1_PM && POWER_SUPPLY
+
+or
+config OLPC_XO15_SCI
+	bool "OLPC XO-1.5 SCI extras"
+	depends on OLPC && ACPI && POWER_SUPPLY
+
+In both cases, the 'bool' depends on one or more tristate symbols, so
+the tristates are satisfied if they are =m or =y.  This should work fine
+if these kconfig symbols (listed above) were tristate instead of bool.
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
