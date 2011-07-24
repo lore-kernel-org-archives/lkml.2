@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752376Ab1GXSPj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 14:15:39 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:42194 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752252Ab1GXSPd (ORCPT
+	id S1752353Ab1GXSPv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 14:15:51 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:49558 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752398Ab1GXSPp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 14:15:33 -0400
+	Sun, 24 Jul 2011 14:15:45 -0400
 DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
 	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=BAFijYzC0hd9HKxH107iNF/gWUMBhgN3XtPk9PmoRZA/y6PtZSId3AiazrQxsFKXR6xcLcd6k7lVM6IZy8ypYor4IalKoq7UD7bV149myfq/kIaeVuNlEyvNv1Ty8b9+;
-Date: Sun, 24 Jul 2011 11:15:30 -0700
+	b=Mpk8tDm9UtwA+4FWap1Ez/ZgmXI65fhVs03Mx7y5YjX1/Eg601saeeC5d0dRDOdNgVXuUXHlh1BDN4KSze2L9kFHCpfqwyzmss6uldKEwkmGmwgEckZFrTWh6n/WgGKT;
+Date: Sun, 24 Jul 2011 11:15:42 -0700
 From: Randy Dunlap <rdunlap@xenotime.net>
-To: Zac Storer <zac.3.14159@gmail.com>
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Documentation: SubmittingPatches: fixed a spelling
- error
-Message-Id: <20110724111530.627ce1c5.rdunlap@xenotime.net>
-In-Reply-To: <1311474669-26947-1-git-send-email-zac.3.14159@gmail.com>
-References: <1311474669-26947-1-git-send-email-zac.3.14159@gmail.com>
+To: Luis de Bethencourt <luis@debethencourt.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org
+Subject: Re: [PATCH 1/2] Documentation/kernel-docs.txt: remove linux source
+Message-Id: <20110724111542.1490ea53.rdunlap@xenotime.net>
+In-Reply-To: <CAPA4HGXsH4T9i1zbMhYDis5NBR7R_x0W=s8HHeNDXajnXDzCSA@mail.gmail.com>
+References: <CAPA4HGXsH4T9i1zbMhYDis5NBR7R_x0W=s8HHeNDXajnXDzCSA@mail.gmail.com>
 Organization: YPO4
 X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
@@ -29,34 +28,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 23 Jul 2011 20:31:09 -0600 Zac Storer wrote:
+On Sun, 24 Jul 2011 12:07:10 +0200 Luis de Bethencourt wrote:
 
-> Fixed a spelling error.
+> Dropping LSD (Linux Source Driver) since it hasn't been available
+> for a long time.
 > 
-> Signed-off-by: Zac Storer <zac.3.14159@gmail.com>
+> Signed-off-by: Luis de Bethencourt <luis@debethencourt.com>
 
 Applied, thanks.
 
 > ---
->  Documentation/SubmittingPatches |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+>  Documentation/kernel-docs.txt |   11 -----------
+>  1 files changed, 0 insertions(+), 11 deletions(-)
 > 
-> diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
-> index 569f353..4468ce2 100644
-> --- a/Documentation/SubmittingPatches
-> +++ b/Documentation/SubmittingPatches
-> @@ -303,7 +303,7 @@ patches that are being emailed around.
->  
->  The sign-off is a simple line at the end of the explanation for the
->  patch, which certifies that you wrote it or otherwise have the right to
-> -pass it on as a open-source patch.  The rules are pretty simple: if you
-> +pass it on as an open-source patch.  The rules are pretty simple: if you
->  can certify the below:
->  
->          Developer's Certificate of Origin 1.1
+> diff --git a/Documentation/kernel-docs.txt b/Documentation/kernel-docs.txt
+> index 9a86746..0e0734b 100644
+> --- a/Documentation/kernel-docs.txt
+> +++ b/Documentation/kernel-docs.txt
+> @@ -620,17 +620,6 @@
+>         (including this document itself) have been moved there, and might
+>         be more up to date than the web version.
+> 
+> -     * Name: "Linux Source Driver"
+> -       URL: http://lsd.linux.cz
+> -       Keywords: Browsing source code.
+> -       Description: "Linux Source Driver (LSD) is an application, which
+> -       can make browsing source codes of Linux kernel easier than you can
+> -       imagine. You can select between multiple versions of kernel (e.g.
+> -       0.01, 1.0.0, 2.0.33, 2.0.34pre13, 2.0.0, 2.1.101 etc.). With LSD
+> -       you can search Linux kernel (fulltext, macros, types, functions
+> -       and variables) and LSD can generate patches for you on the fly
+> -       (files, directories or kernel)".
+> -
+>       * Name: "Linux Kernel Source Reference"
+>         Author: Thomas Graichen.
+>         URL: http://marc.info/?l=linux-kernel&m=96446640102205&w=4
 > -- 
-> 1.7.6
-> 
+> 1.7.5.3
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-doc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 
 ---
