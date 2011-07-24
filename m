@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752497Ab1GXKHQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 06:07:16 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:45437 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223Ab1GXKHL (ORCPT
+	id S1752345Ab1GXKLN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 06:11:13 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:35007 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223Ab1GXKLI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 06:07:11 -0400
-MIME-Version: 1.0
-Date: Sun, 24 Jul 2011 12:07:10 +0200
-X-Google-Sender-Auth: iVfP8Bc9GHpSMy0p8j4XFE7QCKc
-Message-ID: <CAPA4HGXsH4T9i1zbMhYDis5NBR7R_x0W=s8HHeNDXajnXDzCSA@mail.gmail.com>
-Subject: [PATCH 1/2] Documentation/kernel-docs.txt: remove linux source
-From: Luis de Bethencourt <luis@debethencourt.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 24 Jul 2011 06:11:08 -0400
+Date: Sun, 24 Jul 2011 03:09:49 -0700 (PDT)
+Message-Id: <20110724.030949.1727841105144911931.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless-next-2.6 2011-07-22
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110722.171635.1154932336401179368.davem@davemloft.net>
+References: <20110722222308.GA3048@tuxdriver.com>
+	<20110722.171635.1154932336401179368.davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=euc-kr
+Content-Transfer-Encoding: 8bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 24 Jul 2011 03:09:53 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dropping LSD (Linux Source Driver) since it hasn't been available
-for a long time.
+From: David Miller <davem@davemloft.net>
+Date: Fri, 22 Jul 2011 17:16:35 -0700 (PDT)
 
-Signed-off-by: Luis de Bethencourt <luis@debethencourt.com>
----
- Documentation/kernel-docs.txt |   11 -----------
- 1 files changed, 0 insertions(+), 11 deletions(-)
+> From: "John W. Linville" <linville@tuxdriver.com>
+> Date: Fri, 22 Jul 2011 18:23:09 -0400
+> 
+>> Here is the last big pull request of new wireless bits intended
+>> for 3.1.  This includes the usual big batch of updates to iwlagn,
+>> a number of updates to ath9k, mwifiex, carl9170, libertas, and other
+>> drivers, and soem updates to mac80211 and cfg80211 from Johannes.
+>> The most noteworth bits are most of the final push from Rafa©© for
+>> supporting current Broadcom wireless hardware in b43.
+>> 
+>> Please let me know if there are problems!
+> 
+> A little late to be submitting this since the merge window is
+> already open, but I pulled anyways.
+> 
+> Thanks!
 
-diff --git a/Documentation/kernel-docs.txt b/Documentation/kernel-docs.txt
-index 9a86746..0e0734b 100644
---- a/Documentation/kernel-docs.txt
-+++ b/Documentation/kernel-docs.txt
-@@ -620,17 +620,6 @@
-        (including this document itself) have been moved there, and might
-        be more up to date than the web version.
+Please fix this build regression, the suspend/resume ops are only
+available when CONFIG_PM is defined.
 
--     * Name: "Linux Source Driver"
--       URL: http://lsd.linux.cz
--       Keywords: Browsing source code.
--       Description: "Linux Source Driver (LSD) is an application, which
--       can make browsing source codes of Linux kernel easier than you can
--       imagine. You can select between multiple versions of kernel (e.g.
--       0.01, 1.0.0, 2.0.33, 2.0.34pre13, 2.0.0, 2.1.101 etc.). With LSD
--       you can search Linux kernel (fulltext, macros, types, functions
--       and variables) and LSD can generate patches for you on the fly
--       (files, directories or kernel)".
--
-      * Name: "Linux Kernel Source Reference"
-        Author: Thomas Graichen.
-        URL: http://marc.info/?l=linux-kernel&m=96446640102205&w=4
--- 
-1.7.5.3
+drivers/net/wireless/iwlwifi/iwl-agn.c:3464: error: unknown field 'suspend' specified in initializer
+drivers/net/wireless/iwlwifi/iwl-agn.c:3464: warning: initialization from incompatible pointer type
+drivers/net/wireless/iwlwifi/iwl-agn.c:3465: error: unknown field 'resume' specified in initializer
+drivers/net/wireless/iwlwifi/iwl-agn.c:3465: warning: initialization from incompatible pointer type
+ 
