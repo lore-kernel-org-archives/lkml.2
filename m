@@ -1,64 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751782Ab1GYAS4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 20:18:56 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:40266 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751345Ab1GYASy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 20:18:54 -0400
-Subject: Re: [PATCH] Reduce number of KOBJ_REMOVE events
-From: Kay Sievers <kay.sievers@vrfy.org>
-To: Zdenek Kabelac <zkabelac@redhat.com>
-Cc: device-mapper development <dm-devel@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
-Date: Mon, 25 Jul 2011 02:18:47 +0200
-In-Reply-To: <4E2987AE.2070707@redhat.com>
-References: <4E2987AE.2070707@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1311553130.1671.21.camel@mop>
-Mime-Version: 1.0
+	id S1751862Ab1GYAWN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 20:22:13 -0400
+Received: from ozlabs.org ([203.10.76.45]:38956 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751345Ab1GYAWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jul 2011 20:22:10 -0400
+Date: Mon, 25 Jul 2011 09:27:21 +1000
+From: Paul Mackerras <paulus@samba.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Anton Blanchard <anton@samba.org>, linux-perf-users@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: perf PPC: kernel panic with callchains and context switch events
+Message-ID: <20110724232721.GA19839@bloggs.ozlabs.ibm.com>
+References: <4E274F5F.7000604@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E274F5F.7000604@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-22 at 16:22 +0200, Zdenek Kabelac wrote:
+On Wed, Jul 20, 2011 at 03:57:51PM -0600, David Ahern wrote:
+> I am hoping someone familiar with PPC can help understand a panic that
+> is generated when capturing callchains with context switch events.
+> 
+> Call trace is below. The short of it is that walking the callchain
+> generates a page fault. To handle the page fault the mmap_sem is needed,
+> but it is currently held by setup_arg_pages. setup_arg_pages calls
+> shift_arg_pages with the mmap_sem held. shift_arg_pages then calls
+> move_page_tables which has a cond_resched at the top of its for loop. If
+> the cond_resched() is removed from move_page_tables everything works
+> beautifully - no panics.
+> 
+> So, the question: is it normal for walking the stack to trigger a page
+> fault on PPC? The panic is not seen on x86 based systems.
 
-> For now udev recieves 3 event for removal of DM logical volumes. (1 for
-> bdi and 2 for same block kobject). Reason is dm device generates its
-> own kobject event with approriate env parameter and block layer sends
-> another KOBJ_REMOVE event on its own unconditionaly for the same
-> kobject. As for now only the kobject cleanup checks that the REMOVE
-> event has been already sent and avoids duplicate REMOVE event.
+Walking the user stack can certainly generate a page fault; walking
+the kernel stack should never generate a page fault.  If any page
+fault is generated reading the user stack frame, we're supposed to
+detect that and fall back to walking the page tables manually (see
+read_user_stack_64() in arch/powerpc/kernel/perf_callchain.c).  I
+think I need to check our __get_user_inatomic() implementation.
 
-> The patch for kobject_uevent_env() which has been testing for duplicate
-> REMOVE event did not passed into the mainline (yet?):
+I don't think removing the cond_resched() from move_page_tables is the
+right answer.
 
-No, it's wasn't merged. Subsystems should really not send their own
-'add' or 'remove' events. These are properties of the driver core.
-
-> I'm proposing alternative way around to always use kobject cleanup
-> routine for sending REMOVE event if it was not send by the module - so
-> it makes the code few lines shorter.
-
-The events the core creates are only sent out at release() not at del(),
-so we would delay 'remove' events when we keep the device pinned but
-it's not valid anymore. We can not do that today, we would need to move
-the core-created 'remove' events to del().
-
-
-For device-mapper, I would prefer to add a '.dev_uevent' callback to the
-'block' class let this callback check 'struct block_device_operations'
-for a possibly specified '.uevent' callback and call it.
-
-Then have 'dm_blk_dops' add '.uevent' and let the core call into the dm
-code to the needed properties to the 'remove' event, instead of sending
-its own, and see the duplication.
-
-Let me know if you need more details.
-
-Thanks,
-Kay
-
+Paul.
