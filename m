@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751952Ab1GXA2s (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 20:28:48 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:51554 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751643Ab1GXA2l (ORCPT
+	id S1751968Ab1GXAav (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 20:30:51 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:38424 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751643Ab1GXAap (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 20:28:41 -0400
-Subject: Re: [GIT PULL] iscsi-target merge for v3.1-rc1
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Andy Grover <agrover@redhat.com>, Hannes Reinecke <hare@suse.de>,
-        Roland Dreier <roland@purestorage.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Boaz Harrosh <openosd@gmail.com>, Mike Christie <michaelc@cs.wisc.edu>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-In-Reply-To: <20110723163338.f8c08cf8.akpm@linux-foundation.org>
-References: <1311462975.31450.356.camel@haakon2.linux-iscsi.org>
-	 <20110723163338.f8c08cf8.akpm@linux-foundation.org>
-Content-Type: text/plain
-Date: Sat, 23 Jul 2011 17:19:23 -0700
-Message-Id: <1311466763.31450.364.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Sat, 23 Jul 2011 20:30:45 -0400
+MIME-Version: 1.0
+Date: Sun, 24 Jul 2011 02:30:44 +0200
+X-Google-Sender-Auth: qEVnC-LlRTW4m7hglbbLZsqrKio
+Message-ID: <CAPA4HGX5cy-jY5jh963GEixwEq_26kaue6HGH0RzWWHig1a++Q@mail.gmail.com>
+Subject: [PATCH 1/2] Documentation/kernel-docs.txt update.
+From: Luis de Bethencourt <luis@debethencourt.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-07-23 at 16:33 -0700, Andrew Morton wrote:
-> On Sat, 23 Jul 2011 16:16:15 -0700 "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
-> 
-> > So in the spirit of timely pull requests ahead of your upcoming summer
-> > vacation, here is the long awaited and much debated initial merge commit
-> > for v3.1-rc1 of drivers/target/iscsi to sync with latest bleeding edge
-> > LIO v4.1 codebase.
-> 
-> None of this is in linux-next?  How did that happen?
+From: Luis de Bethencourt <luis@debethencourt.com>
+Date: Sun, 24 Jul 2011 03:30:45 +0200
 
-I am happy to start using linux-next for target-pending.git mainline
-items, but unfortuately these have yet to see direct linux-next testing
-just yet..
-
-Stephen, would you pretty please add target-pending.git/for-next into
-linux-next build testing..?
-
-Thanks,
-
---nab
+Signed-off-by: Luis de Bethencourt <luis@debethencourt.com>
 
 
+Dropping LSD (Linux Source Driver) since it hasn't been available
+for a long time.
+---
+ Documentation/kernel-docs.txt |   11 -----------
+ 1 files changed, 0 insertions(+), 11 deletions(-)
+
+diff --git a/Documentation/kernel-docs.txt b/Documentation/kernel-docs.txt
+index 9a86746..0e0734b 100644
+--- a/Documentation/kernel-docs.txt
++++ b/Documentation/kernel-docs.txt
+@@ -620,17 +620,6 @@
+        (including this document itself) have been moved there, and might
+        be more up to date than the web version.
+
+-     * Name: "Linux Source Driver"
+-       URL: http://lsd.linux.cz
+-       Keywords: Browsing source code.
+-       Description: "Linux Source Driver (LSD) is an application, which
+-       can make browsing source codes of Linux kernel easier than you can
+-       imagine. You can select between multiple versions of kernel (e.g.
+-       0.01, 1.0.0, 2.0.33, 2.0.34pre13, 2.0.0, 2.1.101 etc.). With LSD
+-       you can search Linux kernel (fulltext, macros, types, functions
+-       and variables) and LSD can generate patches for you on the fly
+-       (files, directories or kernel)".
+-
+      * Name: "Linux Kernel Source Reference"
+        Author: Thomas Graichen.
+        URL: http://marc.info/?l=linux-kernel&m=96446640102205&w=4
