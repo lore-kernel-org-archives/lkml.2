@@ -1,130 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752441Ab1GXSTX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 14:19:23 -0400
-Received: from powered.by.root24.eu ([91.121.20.142]:51670 "EHLO Root24.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752095Ab1GXSTR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 14:19:17 -0400
-Message-ID: <4E2C6220.5070706@ionic.de>
-Date: Sun, 24 Jul 2011 20:19:12 +0200
-From: Mihai Moldovan <ionic@ionic.de>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	id S1752131Ab1GXSXl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 14:23:41 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:52546 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751602Ab1GXSXh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jul 2011 14:23:37 -0400
+Date: Sun, 24 Jul 2011 20:23:23 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Borislav Petkov <bp@amd64.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Przywara, Andre" <Andre.Przywara@amd.com>,
+        "Pohlack, Martin" <Martin.Pohlack@amd.com>
+Subject: Re: [PATCH] x86, AMD: Correct F15h IC aliasing issue
+Message-ID: <20110724182323.GA13247@aftab>
+References: <1311340547-7861-1-git-send-email-bp@amd64.org>
+ <CA+55aFwL9Fwd9ouX3UMOayoBsZyZzTdDSySa6nZJxbpyLifbaQ@mail.gmail.com>
+ <20110724172222.GB12621@aftab>
+ <CA+55aFze=w7tjmyGa2w=D8b6roDuL5O0gmDKkSzLKBLLYZ_a+A@mail.gmail.com>
 MIME-Version: 1.0
-To: Jesper Juhl <jj@chaosbits.net>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Subject: Re: [PATCH] fix fat utf8 iocharset warning message
-References: <4E2C2015.6090200@ionic.de> <alpine.LNX.2.00.1107241921350.5758@swampdragon.chaosbits.net>
-In-Reply-To: <alpine.LNX.2.00.1107241921350.5758@swampdragon.chaosbits.net>
-X-Enigmail-Version: 1.2
-Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms070001090600090301020406"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFze=w7tjmyGa2w=D8b6roDuL5O0gmDKkSzLKBLLYZ_a+A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cryptographically signed message in MIME format.
+On Sun, Jul 24, 2011 at 01:39:25PM -0400, Linus Torvalds wrote:
+> On Sun, Jul 24, 2011 at 10:22 AM, Borislav Petkov <bp@amd64.org> wrote:
+> >
+> >> So at a MINIMUM, I would say that this is acceptable only when the
+> >> process doing the allocation hasn't got ASLR disabled.
+> >
+> > I guess I could look at randomize_va_space before enabling it.
+> 
+> That's not what I meant - I meant the per-process PF_RANDOMIZE and
+> ADDR_NO_RANDOMIZE personality flags (although the global
+> "randomize_va_space" thing obviously is one input to that too)
+> 
+> In fact, if 99% of your problem is ASLR-induced, might I suggest just
+> making the whole thing a tweak to ASLR instead, and not use ASLR for
+> bits 14:12? That should be fundamentally much safer: it doesn't change
+> any semantics at all, it just makes for slightly less random bits to
+> be used.
+> 
+> So I really think that you might be *much* better off just changing
+> mmap_rnd(), and nothing else. Just make *that* mask off the three low
+> bits of the random address, ie something like
+> 
+>   diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
+>   index 1dab5194fd9d..6b62ab5a5ae1 100644
+>   --- a/arch/x86/mm/mmap.c
+>   +++ b/arch/x86/mm/mmap.c
+>   @@ -90,6 +90,9 @@ static unsigned long mmap_rnd(void)
+>                           rnd = (long)get_random_int() % (1<<8);
+>                   else
+>                           rnd = (long)(get_random_int() % (1<<28));
+>   +
+>   +               if (avoid_aliasing_in_bits_14_12)
+>   +                       rnd &= ~7;
+>           }
+>           return rnd << PAGE_SHIFT;
+>    }
+> 
+> would be fundamentally very safe - it would already take all our
+> current anti-randomization code into account.
+> 
+> No?
 
---------------ms070001090600090301020406
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hehe, we had that idea initially. However, the special 1% case I was
+hinting at is this:
 
-* On 24.07.2011 07:22 PM, Jesper Juhl wrote:
-> @@ -1190,7 +1190,7 @@ out:
->      if (!strcmp(opts->iocharset, "utf8")) {
->          fat_msg(sb, KERN_ERR, "utf8 is not a recommended IO charset"
-> Is KERN_ERR really the right thing to use here?=20
-> Sounds more like a warning to me..
+process P0, mapping libraries A, B, C
 
-I'm interested to see what Ogawa says, but I'd say KERN_WARNING would be
-better here as well, yeah.
+and
 
+process P1, mapping libraries A, C
 
---------------ms070001090600090301020406
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Description: S/MIME Cryptographic Signature
+Library C ends up possibly with aliasing VAs and there's the problem
+again. Also, can we guarantee that the link order is always the same?
+IOW, can other two processes P2 and P3, both mapping libraries A,B,C end
+up with the following mapping order:
 
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIINBjCC
-BjQwggQcoAMCAQICASAwDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
-DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
-Z25pbmcxKTAnBgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3
-MTAyNDIxMDI1NVoXDTE3MTAyNDIxMDI1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
-dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
-aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
-aWVudCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMsohUWcASz7GfKrpTOM
-KqANy9BV7V0igWdGxA8IU77L3aTxErQ+fcxtDYZ36Z6GH0YFn7fq5RADteP0AYzrCA+EQTfi
-8q1+kA3m0nwtwXG94M5sIqsvs7lRP1aycBke/s5g9hJHryZ2acScnzczjBCAo7X1v5G3yw8M
-DP2m2RCye0KfgZ4nODerZJVzhAlOD9YejvAXZqHksw56HzElVIoYSZ3q4+RJuPXXfIoyby+Y
-2m1E+YzX5iCZXBx05gk6MKAW1vaw4/v2OOLy6FZH3XHHtOkzUreG//CsFnB9+uaYSlR65cdG
-zTsmoIK8WH1ygoXhRBm98SD7Hf/r3FELNvUCAwEAAaOCAa0wggGpMA8GA1UdEwEB/wQFMAMB
-Af8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBSuVYNv7DHKufcd+q9rMfPIHeOsuzAfBgNV
-HSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRaMFgwJwYIKwYBBQUH
-MAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYhaHR0cDovL3d3
-dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6Ly93d3cu
-c3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5jb20v
-c2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
-dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
-d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBADqp
-Jw3I07QWke9plNBpxUxcffc7nUrIQpJHDci91DFG7fVhHRkMZ1J+BKg5UNUxIFJ2Z9B90Mic
-c/NXcs7kPBRdn6XGO/vPc87Y6R+cWS9Nc9+fp3Enmsm94OxOwI9wn8qnr/6o3mD4noP9Jphw
-UPTXwHovjavRnhUQHLfo/i2NG0XXgTHXS2Xm0kVUozXqpYpAdumMiB/vezj1QHQJDmUdPYMc
-p+reg9901zkyT3fDW/ivJVv6pWtkh6Pw2ytZT7mvg7YhX3V50Nv860cV11mocUVcqBLv0gcT
-+HBDYtbuvexNftwNQKD5193A7zN4vG7CTYkXxytSjKuXrpEatEiFPxWgb84nVj25SU5q/r1X
-hwby6mLhkbaXslkVtwEWT3Van49rKjlK4XrUKYYWtnfzq6aSak5u0Vpxd1rY79tWhD3EdCvO
-hNz/QplNa+VkIsrcp7+8ZhP1l1b2U6MaxIVteuVMD3X0vziIwr7jxYae9FZjbxlpUemqXjcC
-0QaFfN7qI0JsQMALL7iGRBg7K0CoOBzECdD3fuZil5kU/LP9cr1BK31U0Uy651bFnAMMMkqh
-AChIbn0ei72VnbpSsrrSdF0BAGYQ8vyHae5aCg+H75dVCV33K6FuxZrf09yTz+Vx/PkdRUYk
-XmZz/OTfyJXsUOUXrym6KvI2rYpccSk5MIIGyjCCBbKgAwIBAgICBnIwDQYJKoZIhvcNAQEF
-BQAwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJT
-ZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBD
-bGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTAeFw0xMDAzMjMxNjI2NTZa
-Fw0xMjAzMjQwNTQ2MjJaMIHHMSAwHgYDVQQNExcxNjg2MTctOUo5elVlMUVuNHg5b3ZiTzEL
-MAkGA1UEBhMCREUxGzAZBgNVBAgTEkJhZGVuLVd1ZXJ0dGVtYmVyZzESMBAGA1UEBxMJS2Fy
-bHNydWhlMS0wKwYDVQQLEyRTdGFydENvbSBWZXJpZmllZCBDZXJ0aWZpY2F0ZSBNZW1iZXIx
-FzAVBgNVBAMTDk1paGFpIE1vbGRvdmFuMR0wGwYJKoZIhvcNAQkBFg5pb25pY0Bpb25pYy5k
-ZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMssU6wPYwJJAxY07er/P6ANPXgz
-yCczuA+7q/eql1St56r91yQ534A4oeXEqRZvpMsDuvczNG1Yz80nLpM+lO3Wg8csxaGReewe
-RBIS3abf40HCIBVlOl7oTcmzZuzqz2KE70CHZ7p3k0WAEUfUb7AS8qrqxuoj0dtUkrdMwjoD
-rPWs3zJ+vHo5FU3sTvj2ksiStjG3NMERBT+1Gzf2pVx2cKJRBmqACbKZfwE9QufRqrZT8bWY
-i5DCV34RL7eVLnejLL+MvtarZv2K8Acojq9t7zO9Z+0rnlr6o46c2egVB+s/ol28q3DEce6f
-p1KrCiujqRqQwVQ8O/2ogg4l5h0CAwEAAaOCAvcwggLzMAkGA1UdEwQCMAAwCwYDVR0PBAQD
-AgSwMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQU3JbCyOa+BBzV
-nBAKycZGQAzit2wwHwYDVR0jBBgwFoAUrlWDb+wxyrn3HfqvazHzyB3jrLswGQYDVR0RBBIw
-EIEOaW9uaWNAaW9uaWMuZGUwggFCBgNVHSAEggE5MIIBNTCCATEGCysGAQQBgbU3AQIBMIIB
-IDAuBggrBgEFBQcCARYiaHR0cDovL3d3dy5zdGFydHNzbC5jb20vcG9saWN5LnBkZjA0Bggr
-BgEFBQcCARYoaHR0cDovL3d3dy5zdGFydHNzbC5jb20vaW50ZXJtZWRpYXRlLnBkZjCBtwYI
-KwYBBQUHAgIwgaowFBYNU3RhcnRDb20gTHRkLjADAgEBGoGRTGltaXRlZCBMaWFiaWxpdHks
-IHNlZSBzZWN0aW9uICpMZWdhbCBMaW1pdGF0aW9ucyogb2YgdGhlIFN0YXJ0Q29tIENlcnRp
-ZmljYXRpb24gQXV0aG9yaXR5IFBvbGljeSBhdmFpbGFibGUgYXQgaHR0cDovL3d3dy5zdGFy
-dHNzbC5jb20vcG9saWN5LnBkZjBjBgNVHR8EXDBaMCugKaAnhiVodHRwOi8vd3d3LnN0YXJ0
-c3NsLmNvbS9jcnR1Mi1jcmwuY3JsMCugKaAnhiVodHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9j
-cnR1Mi1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkGCCsGAQUFBzABhi1odHRwOi8vb2Nz
-cC5zdGFydHNzbC5jb20vc3ViL2NsYXNzMi9jbGllbnQvY2EwQgYIKwYBBQUHMAKGNmh0dHA6
-Ly93d3cuc3RhcnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczIuY2xpZW50LmNhLmNydDAjBgNV
-HRIEHDAahhhodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcNAQEFBQADggEBACle
-v1JwhVI4Pu8GzKRJzJdcYdsT7fJ9R5OzNnec4CADsb9Xu7HDyRa5qABBXihHvmo+fxGVe6Hy
-8TxPvZYCGaeUi2t6aodIFOTQDWcdEP9o7SynBOXHqsN2lZ08Q4MBuoGfquJi0XjpCNnLY9KS
-OZTHTwAIqGVH7lf99egY1Atfl+y/Lc0e6Sw/0qvcnaQSzwCZ/OkqVWSTGDZXwCDFuy6Cbwjy
-Kn9qshZzeMqvSKHmHPihzJQ6eVXImZgrgWk5FrBpO8d59xoqO32PbSyM0cZhqvkbG/nlWPbz
-Xn13+cgG7ajAGCg8XueMeh3m03sIIHinvgaeHOAqeO3TvVVv6WQxggPNMIIDyQIBATCBkzCB
-jDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3Vy
-ZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNz
-IDIgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgIGcjAJBgUrDgMCGgUAoIICDjAY
-BgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMTA3MjQxODE5MTJa
-MCMGCSqGSIb3DQEJBDEWBBT+pRRpeMmmQjRmZnFa6LsqFdA91TBfBgkqhkiG9w0BCQ8xUjBQ
-MAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzAOBggqhkiG9w0DAgICAIAwDQYIKoZIhvcNAwIC
-AUAwBwYFKw4DAgcwDQYIKoZIhvcNAwICASgwgaQGCSsGAQQBgjcQBDGBljCBkzCBjDELMAkG
-A1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdp
-dGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDIgUHJp
-bWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgIGcjCBpgYLKoZIhvcNAQkQAgsxgZaggZMw
-gYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1
-cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFz
-cyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQQICBnIwDQYJKoZIhvcNAQEBBQAE
-ggEAOACVmEfPzM2tBoMFyVFkb8kL31uKuxhhueJM+ngMLbQQljEiidXjbVpuJpb5oBbifKNe
-YteizhrucinB6ABMzTDoI9wuigcV0OwNTnXHhXpDLGHGoApqaVzS8IPfXsSsPQsdxS170fWE
-GwFEWUv5DxdSDCwBnzdJssihF1t6usFQAVDVuhCETWPOwBI4y0ypmx8hFAyKOH6PWtQkyOtk
-fduysQVR2HRScyoY9Eeg2Xn1LQ6FqMy8G02WmGlH2U9nvjXhJFfEOcrssQ2OeF3EKJfLd7GH
-UsARgKGpWPhfN/V/qzYU9LVuHiR9Qs1psKaTfiwVRRT3x6+Tg0BZM0ik0gAAAAAAAA==
---------------ms070001090600090301020406--
+P2: A,B,C
+P3: A,C,B
+
+If yes, then no joy.
+
+I'll obviously have to leave in the unaliasing of the vDSO randomization
+but yeah, this solution would've be great.
+
+> > But this won't address the case where one of the processes was created
+> > with ASLR off and the other with ASLR on and they map the same library
+> > at VAs differing at bits [14:12].
+> 
+> I wouldn't worry about some corner-case like that _nearly_ as much as
+> worrying about the non-ASLR process working at all.
+
+Ok, I'll make the 32k aligning contingent on the PF_RANDOMIZE setting.
+
+> > Yeah, I like the BITS() thing - will change. I actually have a similar
+> > macro GENMASK(o, hi) in <drivers/edac/amd64_edac.h> - I should move it
+> > to <linux/bitops.h> and rename it to BITS().
+> 
+> So it may be that BITS() is much too generic a name, and will cause
+> problems. A quick "git grep -w BITS" certainly finds a fair number of
+> hits. So I don't think it's usable as-is, it was meant more as
+> pseudo-code.
+
+Ok.
+
+> >> Changing address space layout is not a small decision.
+> >
+> > I suspected as much - thus the boot option to disable it.
+> 
+> I understand that the boot option is worth it, but since we _already_
+> have a way to mark binaries as not wanting address space layout
+> changes, I really think it should use that as the primary method. When
+> that bit is set, I think it's a big hint that the process is "fragile"
+> wrt address space changes.
+> 
+> A boot option might be left as a last ditch thing, but I don't think
+> it should be the primary model.
+
+Ok, understood. Will change accordingly.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
