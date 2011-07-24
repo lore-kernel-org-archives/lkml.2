@@ -1,159 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752471Ab1GXU7c (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 16:59:32 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54200 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752162Ab1GXU73 (ORCPT
+	id S1752408Ab1GXVHa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 17:07:30 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:34388 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752162Ab1GXVH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 16:59:29 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] power_supply: Only register WM831x battery charger if enabled
-Date: Sun, 24 Jul 2011 21:59:26 +0100
-Message-Id: <1311541166-27837-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.5.4
+	Sun, 24 Jul 2011 17:07:28 -0400
+MIME-Version: 1.0
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Sun, 24 Jul 2011 17:07:08 -0400
+X-Google-Sender-Auth: SjCWcZOLSmU-Kn7Vcdls58oKTCk
+Message-ID: <CAObL_7GCDsfXWRJgkNk7c44GNF0JhQPAH_P0WiYHK7QUX1Bcaw@mail.gmail.com>
+Subject: [RFC] syscall calling convention, stts/clts, and xstate latency
+To: linux-kernel@vger.kernel.org, x86 <x86@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't tell the system about the battery charger if it's not enabled, we
-can reasonably assume that if the charger is not enabled then no battery
-will ever be connected so reporting state is at best going to waste time
-and at worst going to cause confusing information in the UI.
+I was trying to understand the FPU/xstate saving code, and I ran some
+benchmarks with surprising results.  These are all on Sandy Bridge
+i7-2600.  Please take all numbers with a grain of salt -- they're in
+tight-ish loops and don't really take into account real-world cache
+effects.
 
-For simplicity and robustness we continue to register and handle interrupts
-from the charger.
+A clts/stts pair takes about 80 ns.  Accessing extended state from
+userspace with TS set takes 239 ns.  A kernel_fpu_begin /
+kernel_fpu_end pair with no userspace xstate access takes 80 ns
+(presumably 79 of those 80 are the clts/stts).  (Note: The numbers in
+this paragraph were measured using a hacked-up kernel and KVM.)
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/power/power_supply_sysfs.c |    4 +-
- drivers/power/wm831x_power.c       |   44 ++++++++++++++++++++++-------------
- 2 files changed, 30 insertions(+), 18 deletions(-)
+With nonzero ymm state, xsave + clflush (on the first cacheline of
+xstate) + xrstor takes 128 ns.  With hot cache, xsave = 24ns, xsaveopt
+(with unchanged state) = 16 ns, and xrstor = 40 ns.
 
-diff --git a/drivers/power/power_supply_sysfs.c b/drivers/power/power_supply_sysfs.c
-index 605514a..eb9a986 100644
---- a/drivers/power/power_supply_sysfs.c
-+++ b/drivers/power/power_supply_sysfs.c
-@@ -77,8 +77,8 @@ static ssize_t power_supply_show_property(struct device *dev,
- 			dev_dbg(dev, "driver has no data for `%s' property\n",
- 				attr->attr.name);
- 		else if (ret != -ENODEV)
--			dev_err(dev, "driver failed to report `%s' property\n",
--				attr->attr.name);
-+			dev_err(dev, "driver failed to report `%s' property: %d\n",
-+				attr->attr.name, ret);
- 		return ret;
- 	}
- 
-diff --git a/drivers/power/wm831x_power.c b/drivers/power/wm831x_power.c
-index 6cc2ca6..c32e6f8 100644
---- a/drivers/power/wm831x_power.c
-+++ b/drivers/power/wm831x_power.c
-@@ -27,6 +27,7 @@ struct wm831x_power {
- 	char wall_name[20];
- 	char usb_name[20];
- 	char battery_name[20];
-+	bool have_battery;
- };
- 
- static int wm831x_power_check_online(struct wm831x *wm831x, int supply,
-@@ -449,7 +450,8 @@ static irqreturn_t wm831x_bat_irq(int irq, void *data)
- 
- 	/* The battery charger is autonomous so we don't need to do
- 	 * anything except kick user space */
--	power_supply_changed(&wm831x_power->battery);
-+	if (wm831x_power->have_battery)
-+		power_supply_changed(&wm831x_power->battery);
- 
- 	return IRQ_HANDLED;
- }
-@@ -479,7 +481,8 @@ static irqreturn_t wm831x_pwr_src_irq(int irq, void *data)
- 	dev_dbg(wm831x->dev, "Power source changed\n");
- 
- 	/* Just notify for everything - little harm in overnotifying. */
--	power_supply_changed(&wm831x_power->battery);
-+	if (wm831x_power->have_battery)
-+		power_supply_changed(&wm831x_power->battery);
- 	power_supply_changed(&wm831x_power->usb);
- 	power_supply_changed(&wm831x_power->wall);
- 
-@@ -537,15 +540,6 @@ static __devinit int wm831x_power_probe(struct platform_device *pdev)
- 	if (ret)
- 		goto err_kmalloc;
- 
--	battery->name = power->battery_name;
--	battery->properties = wm831x_bat_props;
--	battery->num_properties = ARRAY_SIZE(wm831x_bat_props);
--	battery->get_property = wm831x_bat_get_prop;
--	battery->use_for_apm = 1;
--	ret = power_supply_register(&pdev->dev, battery);
--	if (ret)
--		goto err_wall;
--
- 	usb->name = power->usb_name,
- 	usb->type = POWER_SUPPLY_TYPE_USB;
- 	usb->properties = wm831x_usb_props;
-@@ -553,7 +547,23 @@ static __devinit int wm831x_power_probe(struct platform_device *pdev)
- 	usb->get_property = wm831x_usb_get_prop;
- 	ret = power_supply_register(&pdev->dev, usb);
- 	if (ret)
--		goto err_battery;
-+		goto err_wall;
-+
-+	ret = wm831x_reg_read(wm831x, WM831X_CHARGER_CONTROL_1);
-+	if (ret < 0)
-+		goto err_wall;
-+	power->have_battery = ret & WM831X_CHG_ENA;
-+
-+	if (power->have_battery) {
-+		    battery->name = power->battery_name;
-+		    battery->properties = wm831x_bat_props;
-+		    battery->num_properties = ARRAY_SIZE(wm831x_bat_props);
-+		    battery->get_property = wm831x_bat_get_prop;
-+		    battery->use_for_apm = 1;
-+		    ret = power_supply_register(&pdev->dev, battery);
-+		    if (ret)
-+			    goto err_usb;
-+	}
- 
- 	irq = platform_get_irq_byname(pdev, "SYSLO");
- 	ret = request_threaded_irq(irq, NULL, wm831x_syslo_irq,
-@@ -562,7 +572,7 @@ static __devinit int wm831x_power_probe(struct platform_device *pdev)
- 	if (ret != 0) {
- 		dev_err(&pdev->dev, "Failed to request SYSLO IRQ %d: %d\n",
- 			irq, ret);
--		goto err_usb;
-+		goto err_battery;
- 	}
- 
- 	irq = platform_get_irq_byname(pdev, "PWR SRC");
-@@ -601,10 +611,11 @@ err_bat_irq:
- err_syslo:
- 	irq = platform_get_irq_byname(pdev, "SYSLO");
- 	free_irq(irq, power);
-+err_battery:
-+	if (power->have_battery)
-+		power_supply_unregister(battery);
- err_usb:
- 	power_supply_unregister(usb);
--err_battery:
--	power_supply_unregister(battery);
- err_wall:
- 	power_supply_unregister(wall);
- err_kmalloc:
-@@ -628,7 +639,8 @@ static __devexit int wm831x_power_remove(struct platform_device *pdev)
- 	irq = platform_get_irq_byname(pdev, "SYSLO");
- 	free_irq(irq, wm831x_power);
- 
--	power_supply_unregister(&wm831x_power->battery);
-+	if (wm831x_power->have_battery)
-+		power_supply_unregister(&wm831x_power->battery);
- 	power_supply_unregister(&wm831x_power->wall);
- 	power_supply_unregister(&wm831x_power->usb);
- 	kfree(wm831x_power);
--- 
-1.7.5.4
+With nonzero xmm state but zero ymm state, xsave+xrstor drops to 38 ns
+and xsaveopt saves another 5 ns.
 
+Zeroing the state completely with vzeroall adds 2 ns.  Not sure what's going on.
+
+All of this makes me think that, at least on Sandy Bridge, lazy xstate
+saving is a bad optimization -- if the cache is being nice,
+save/restore is faster than twiddling the TS bit.  And the cost of the
+trap when TS is set blows everything else away.
+
+
+Which brings me to another question: what do you think about declaring
+some of the extended state to be clobbered by syscall?  Ideally, we'd
+treat syscall like a regular function and clobber everything except
+the floating point control word and mxcsr.  More conservatively, we'd
+leave xmm and x87 state but clobber ymm.  This would let us keep the
+cost of the state save and restore down when kernel_fpu_begin is used
+in a syscall path and when a context switch happens as a result of a
+syscall.
+
+glibc does *not* mark the xmm registers as clobbered when it issues
+syscalls, but I suspect that everything everywhere that issues
+syscalls does it from a function, and functions are implicitly assumed
+to clobber extended state.  (And if anything out there assumes that
+ymm state is preserved, I'd be amazed.)
+
+
+--Andy
