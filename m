@@ -1,96 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751897Ab1GXTIQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 15:08:16 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:40591 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751802Ab1GXTIG (ORCPT
+	id S1752048Ab1GXTWu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 15:22:50 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:59082 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751912Ab1GXTWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 15:08:06 -0400
-Date: Sun, 24 Jul 2011 21:07:52 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Borislav Petkov <bp@amd64.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Przywara, Andre" <Andre.Przywara@amd.com>,
-        "Pohlack, Martin" <Martin.Pohlack@amd.com>
-Subject: Re: [PATCH] x86, AMD: Correct F15h IC aliasing issue
-Message-ID: <20110724190752.GA13647@aftab>
-References: <1311340547-7861-1-git-send-email-bp@amd64.org>
- <CA+55aFwL9Fwd9ouX3UMOayoBsZyZzTdDSySa6nZJxbpyLifbaQ@mail.gmail.com>
- <20110724172222.GB12621@aftab>
- <CA+55aFze=w7tjmyGa2w=D8b6roDuL5O0gmDKkSzLKBLLYZ_a+A@mail.gmail.com>
- <20110724182323.GA13247@aftab>
- <20110724183045.GB29660@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110724183045.GB29660@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 24 Jul 2011 15:22:41 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: davem@davemloft.net
+Cc: Johannes Berg <johannes.berg@intel.com>,
+        Wey-Yi Guy <wey-yi.w.guy@intel.com>, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH] iwlagn: wrap suspend/resume definitions in CONFIG_PM block
+Date: Sun, 24 Jul 2011 15:19:10 -0400
+Message-Id: <1311535150-28686-1-git-send-email-linville@tuxdriver.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <20110724.030949.1727841105144911931.davem@davemloft.net>
+References: <20110724.030949.1727841105144911931.davem@davemloft.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 24, 2011 at 02:30:46PM -0400, Ingo Molnar wrote:
-> > > So I really think that you might be *much* better off just changing
-> > > mmap_rnd(), and nothing else. Just make *that* mask off the three low
-> > > bits of the random address, ie something like
-> > > 
-> > >   diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
-> > >   index 1dab5194fd9d..6b62ab5a5ae1 100644
-> > >   --- a/arch/x86/mm/mmap.c
-> > >   +++ b/arch/x86/mm/mmap.c
-> > >   @@ -90,6 +90,9 @@ static unsigned long mmap_rnd(void)
-> > >                           rnd = (long)get_random_int() % (1<<8);
-> > >                   else
-> > >                           rnd = (long)(get_random_int() % (1<<28));
-> > >   +
-> > >   +               if (avoid_aliasing_in_bits_14_12)
-> > >   +                       rnd &= ~7;
-> > >           }
-> > >           return rnd << PAGE_SHIFT;
-> > >    }
-> > > 
-> > > would be fundamentally very safe - it would already take all our
-> > > current anti-randomization code into account.
-> > > 
-> > > No?
-> > 
-> > Hehe, we had that idea initially. However, the special 1% case I was
-> > hinting at is this:
-> > 
-> > process P0, mapping libraries A, B, C
-> > 
-> > and
-> > 
-> > process P1, mapping libraries A, C
-> > 
-> > Library C ends up possibly with aliasing VAs and there's the 
-> > problem again. [...]
-> 
-> Well, since all library positions are randomized, and the quirk masks 
-> out bits 12,13,14, all libraries that are not explicitly fix-mapped 
-> will end up on a 32K granular VA address.
+drivers/net/wireless/iwlwifi/iwl-agn.c:3464: error: unknown field 'suspend' specified in initializer
+drivers/net/wireless/iwlwifi/iwl-agn.c:3464: warning: initialization from incompatible pointer type
+drivers/net/wireless/iwlwifi/iwl-agn.c:3465: error: unknown field 'resume' specified in initializer
+drivers/net/wireless/iwlwifi/iwl-agn.c:3465: warning: initialization from incompatible pointer type
 
-Right, but IIUC, mmap_rnd() is used to determine mm->mmap_base so the
-mmap starting address will have [14:12] cleared but the initial address
-of library C's mapping in the example above will possibly differ in
-those bits due to different linking order, right?
+This was caused by commit c8ac61cf ("iwlagn: implement WoWLAN").
 
-> Also, in practice on most distros most libraries will be prelinked to
-> the same address in all processes.
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Cc: Johannes Berg <johannes.berg@intel.com>
+Cc: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+---
+ drivers/net/wireless/iwlwifi/iwl-agn.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-I think at least on RHEL there's a daemon doing prelinking every two
-weeks or so...
-
+diff --git a/drivers/net/wireless/iwlwifi/iwl-agn.c b/drivers/net/wireless/iwlwifi/iwl-agn.c
+index 4b666b7..ff3e6c0 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-agn.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn.c
+@@ -3461,8 +3461,10 @@ struct ieee80211_ops iwlagn_hw_ops = {
+ 	.tx = iwlagn_mac_tx,
+ 	.start = iwlagn_mac_start,
+ 	.stop = iwlagn_mac_stop,
++#ifdef CONFIG_PM
+ 	.suspend = iwlagn_mac_suspend,
+ 	.resume = iwlagn_mac_resume,
++#endif /* CONFIG_PM */
+ 	.add_interface = iwl_mac_add_interface,
+ 	.remove_interface = iwl_mac_remove_interface,
+ 	.change_interface = iwl_mac_change_interface,
 -- 
-Regards/Gruss,
-Boris.
+1.7.4.4
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
