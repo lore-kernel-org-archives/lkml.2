@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685Ab1GXWH5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 18:07:57 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35913 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752423Ab1GXWHz (ORCPT
+	id S1752747Ab1GXWIB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 18:08:01 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:37291 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752635Ab1GXWH5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 18:07:55 -0400
+	Sun, 24 Jul 2011 18:07:57 -0400
 From: jeffbrown@android.com
 To: linux-input@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, dmitry.torokhov@gmail.com,
         rydberg@euromail.se, chatty@enac.fr, benjamin.tissoires@enac.fr,
         Jeff Brown <jeffbrown@google.com>, jeffbrown@android.com
-Subject: [PATCH 2/3] hid-multitouch: Filter collections by application usage.
-Date: Sun, 24 Jul 2011 15:07:40 -0700
-Message-Id: <1311545261-34067-2-git-send-email-jeffbrown@android.com>
+Subject: [PATCH 3/3] hid-multitouch: Add LG Display Multitouch device.
+Date: Sun, 24 Jul 2011 15:07:41 -0700
+Message-Id: <1311545261-34067-3-git-send-email-jeffbrown@android.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1311545261-34067-1-git-send-email-jeffbrown@android.com>
 References: <1311545261-34067-1-git-send-email-jeffbrown@android.com>
@@ -24,42 +24,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeff Brown <jeffbrown@google.com>
 
-This change fixes two problems.
-
-First, it ensures that the hid-multitouch driver does not incorrectly
-map GenericDesktop usages that are intended for other applications,
-such as a Mouse.
-
-Second, it sets the appropriate input properties so that user-space
-can distinguish TouchScreen devices (INPUT_PROP_DIRECT) from
-TouchPad devices (INPUT_PROP_POINTER) and configure them accordingly.
-
 Signed-off-by: jeffbrown@android.com
 ---
- drivers/hid/hid-multitouch.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+ drivers/hid/hid-ids.h        |    3 +++
+ drivers/hid/hid-multitouch.c |    5 +++++
+ 2 files changed, 8 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index db63ccf..637e6e9 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -419,6 +419,9 @@
+ #define USB_DEVICE_ID_LD_HYBRID		0x2090
+ #define USB_DEVICE_ID_LD_HEATCONTROL	0x20A0
+ 
++#define USB_VENDOR_ID_LG		0x1fd2
++#define USB_DEVICE_ID_LG_MULTITOUCH	0x0064
++
+ #define USB_VENDOR_ID_LOGITECH		0x046d
+ #define USB_DEVICE_ID_LOGITECH_RECEIVER	0xc101
+ #define USB_DEVICE_ID_LOGITECH_HARMONY_FIRST  0xc110
 diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index 58d0e7a..4ee21ac 100644
+index 4ee21ac..b03a0b0 100644
 --- a/drivers/hid/hid-multitouch.c
 +++ b/drivers/hid/hid-multitouch.c
-@@ -213,6 +213,16 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 	struct mt_class *cls = td->mtclass;
- 	__s32 quirks = cls->quirks;
+@@ -682,6 +682,11 @@ static const struct hid_device_id mt_devices[] = {
+ 		HID_USB_DEVICE(USB_VENDOR_ID_IRTOUCHSYSTEMS,
+ 			USB_DEVICE_ID_IRTOUCH_INFRARED_USB) },
  
-+	/* Only map fields from TouchScreen or TouchPad collections.
-+         * We need to ignore fields that belong to other collections
-+         * such as Mouse that might have the same GenericDesktop usages. */
-+	if (field->application == HID_DG_TOUCHSCREEN)
-+		set_bit(INPUT_PROP_DIRECT, hi->input->propbit);
-+	else if (field->application == HID_DG_TOUCHPAD)
-+		set_bit(INPUT_PROP_POINTER, hi->input->propbit);
-+	else
-+		return 0;
++	/* LG Display panels */
++	{ .driver_data = MT_CLS_DEFAULT,
++		HID_USB_DEVICE(USB_VENDOR_ID_LG,
++			USB_DEVICE_ID_LG_MULTITOUCH) },
 +
- 	switch (usage->hid & HID_USAGE_PAGE) {
- 
- 	case HID_UP_GENDESK:
+ 	/* Lumio panels */
+ 	{ .driver_data = MT_CLS_CONFIDENCE_MINUS_ONE,
+ 		HID_USB_DEVICE(USB_VENDOR_ID_LUMIO,
 -- 
 1.7.0.4
 
