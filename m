@@ -1,90 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751729Ab1GXHfX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 03:35:23 -0400
-Received: from mr.siano-ms.com ([62.0.79.70]:36832 "EHLO
-	Siano-NV.ser.netvision.net.il" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751261Ab1GXHfU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 03:35:20 -0400
-x-mimeole: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1752008Ab1GXHvz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 03:51:55 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:22601 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751261Ab1GXHvt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jul 2011 03:51:49 -0400
+Date: Sun, 24 Jul 2011 09:51:47 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Wanlong Gao <wanlong.gao@gmail.com>
+cc: linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: Re: [PATCH] ARM:mach-dove:remove the dup include serial_8250.h
+In-Reply-To: <1311477872-4329-1-git-send-email-wanlong.gao@gmail.com>
+Message-ID: <alpine.LNX.2.00.1107240950550.5758@swampdragon.chaosbits.net>
+References: <1311477872-4329-1-git-send-email-wanlong.gao@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: FW: [PATCH] drivers: support new Siano tuner devices.
-Date: Sun, 24 Jul 2011 10:39:00 +0300
-Message-ID: <D945C405928A9949A0F33C69E64A1A3BB00473@s-mail.siano-ms.ent>
-In-Reply-To: <32054.1311294764@turing-police.cc.vt.edu>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: FW: [PATCH] drivers: support new Siano tuner devices.
-Thread-Index: AcxIB2XBzfIzO3d8T0CoKDREb2HLmABzC2gA
-References: <D945C405928A9949A0F33C69E64A1A3BAFFC4B@s-mail.siano-ms.ent> <32054.1311294764@turing-police.cc.vt.edu>
-From: "Doron Cohen" <doronc@siano-ms.com>
-To: <Valdis.Kletnieks@vt.edu>
-Cc: <linux-kernel@vger.kernel.org>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-I am not familiar with the legal issues and I am willing leave this
-unchanged, or whatever is needed.
-The Historical facts are that We all Siano Employees. I was the original
-writer of the driver, Anatoly and Uri maintained it and published it to
-the community. Since they both left the company, I got back the code and
-I maintain it now days.
-I guess the right thing is to have the copyrights to Siano since legally
-- we are all signed on a contract which specifies all our code as
-company property. 
-But if changing the copyright is an issue - we will leave it unchanged.
+On Sun, 24 Jul 2011, Wanlong Gao wrote:
 
-Thanks,
-Doron
-
------Original Message-----
-From: Valdis.Kletnieks@vt.edu [mailto:Valdis.Kletnieks@vt.edu] 
-Sent: Friday, July 22, 2011 03:33
-To: Doron Cohen
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: FW: [PATCH] drivers: support new Siano tuner devices.
-
-On Tue, 19 Jul 2011 14:26:38 +0300, Doron Cohen said:
+> From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
 > 
-> Hi,
-> This is the first time I ever post changes to linux kernel, so excuse
-me
-> if I have errors in the process.
-> As Siano team member,
+> linux/serial_8250.h has been included for twice.
+> 
+> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+> ---
+>  arch/arm/mach-dove/common.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/arm/mach-dove/common.c b/arch/arm/mach-dove/common.c
+> index 5ed51b8..b6c3d6b 100644
+> --- a/arch/arm/mach-dove/common.c
+> +++ b/arch/arm/mach-dove/common.c
+> @@ -17,7 +17,6 @@
+>  #include <linux/clk.h>
+>  #include <linux/mbus.h>
+>  #include <linux/ata_platform.h>
+> -#include <linux/serial_8250.h>
+>  #include <linux/gpio.h>
+>  #include <asm/page.h>
+>  #include <asm/setup.h>
+> 
 
-> --- a/drivers/media/dvb/siano/smscoreapi.h
-> +++ b/drivers/media/dvb/siano/smscoreapi.h
-> @@ -2,7 +2,7 @@
->  
->  Siano Mobile Silicon, Inc.
->  MDTV receiver kernel modules.
-> -Copyright (C) 2006-2008, Uri Shkolnik, Anatoly Greenblat
-> +Copyright (C) 2006-2011, Doron Cohen
+A patch for this is already in linux-next: 
+http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=4ca9d7856c101f4b1d2c7d3f2ad2fcce8e9a20ae
+"ARM: remove duplicate include from arch/arm/mach-dove/common.c"
 
-That looks incorrect.  At least in the US, this code is probably a
-work-for-hire
-and thus copyright to Siano Mobile not the programmers.  And if it
-isn't, then
-it's still wrong to take Uri and Anatoly's names off unless they've
-actually
-assigned their copyrights to you.
-
- 
- 
-************************************************************************
-************
-This footnote confirms that this email message has been scanned by
-PineApp Mail-SeCure for the presence of malicious code, vandals &
-computer viruses.
-************************************************************************
-************
-
-
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
