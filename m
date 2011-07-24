@@ -1,29 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752201Ab1GXDHG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 23:07:06 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:57604 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751160Ab1GXDHC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 23:07:02 -0400
-Date: Sat, 23 Jul 2011 20:07:00 -0700 (PDT)
-Message-Id: <20110723.200700.1256696849903366563.davem@davemloft.net>
-To: chris2553@googlemail.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix cdc-phonet build
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <201107232341.51965.chris2553@googlemail.com>
-References: <201107232341.51965.chris2553@googlemail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1752224Ab1GXDIl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 23:08:41 -0400
+Received: from sabe.cs.wisc.edu ([128.105.6.20]:36425 "EHLO sabe.cs.wisc.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751617Ab1GXDId (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jul 2011 23:08:33 -0400
+Message-ID: <4E2B8C98.2060601@cs.wisc.edu>
+Date: Sat, 23 Jul 2011 22:08:08 -0500
+From: Mike Christie <michaelc@cs.wisc.edu>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: linux-iscsi-target-dev@googlegroups.com
+CC: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Andy Grover <agrover@redhat.com>,
+        Hannes Reinecke <hare@suse.de>, Roland Dreier <roland@purestorage.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 08/13] iscsi-target: Add CHAP Authentication support	using
+ libcrypto
+References: <1311410747-29947-1-git-send-email-nab@linux-iscsi.org>	 <1311410747-29947-9-git-send-email-nab@linux-iscsi.org>	 <1311439173.23720.14.camel@mulgrave>	 <CA+55aFzkEUbnoDg0KwXDRQMeCFeO5s6_4dWHTY59=hj3QHWL0w@mail.gmail.com>	 <1311445075.17423.13.camel@mulgrave> <1311455867.31450.287.camel@haakon2.linux-iscsi.org>
+In-Reply-To: <1311455867.31450.287.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 23 Jul 2011 20:07:01 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/23/2011 04:17 PM, Nicholas A. Bellinger wrote:
+> 
+> And, we have also seen historically how painful the split has been with
+> open-iscsi, which in the end took much longer to get stable (and is
+> still harder to debug) than if a proper login split was used to begin
+> with.
 
-Please post networking patches to at least CC:'d to
-netdev@vger.kernel.org, thank you.
+Here is my 2 cents from working on open-iscsi.
+
+The split did not really have much to do with the initial stability in
+the data paths. It was more due to it getting merged with very little
+real world testing.
+
+There were stability issues with the interface because no one ever tried
+creating a hw iscsi driver for it before it got merged, because software
+iscsi does a host per session and hw drivers ended up doing a host per
+port or some pci resource, and then boot support.
+
+Most bugs fixed were due to skb handling, locking/atomic issues,
+spec/rfc issues - not interface issues. But many large changes had to be
+done to make the initial code support hw iscsi.
+
+I agree open-iscsi is more difficult to debug than initiators that were
+mostly in kernel like iscsi_sfnet. For open-iscsi the userspace part is
+a single process, many operations cannot block, it has a ulgy state
+model. And how it did its split does make things more difficult, because
+it breaks up every operation into a different userspace to kernel call
+(create a session is a call, create a conn is a call, pass a setting is
+a call, bind a conn to a session is call, start the conn is a call,
+etc). For software iscsi if open-iscsi just logged in to the target,
+then passed everything to the kernel in one call then it would have been
+a lot easier to debug. If Tomo's design does not have those issues then
+it seems like it would not be that bad for software iscsi.
+
+I think where doing a kernel/userspace split is going to be more
+difficult is with supporting hw iscsi targets. With software iscsi you
+can just pass down a socket and the settings more or less. With hw
+iscsi, you want to be able to send the login related packets through the
+iscsi port using the iscsi engine or hw/fw might be doing the actual
+login process. But, if you are putting discovery (isns, sendtargets,
+dhcp iscsi/isns options, slp, etc) in userspace then you have to solve
+those issues for discovery so you can use the same interfaces for both.
