@@ -1,69 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752510Ab1GXDtp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jul 2011 23:49:45 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:52466 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752167Ab1GXDtj (ORCPT
+	id S1752540Ab1GXDw5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jul 2011 23:52:57 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:45655 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752246Ab1GXDwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jul 2011 23:49:39 -0400
-Date: Sun, 24 Jul 2011 04:49:37 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: cpufreq@vger.kernel.org, davej@redhat.com, linux-kernel@vger.kernel.org,
-        borislav.petkov@amd.com, mark.langsdorf@amd.com,
-        andreas.herrmann3@amd.com
-Subject: Re: [PATCH v4 3/7] acpi-cpufreq: Add support for disabling dynamic
- overclocking
-Message-ID: <20110724034937.GA25873@srcf.ucam.org>
-References: <1311007062-2050-1-git-send-email-mjg@redhat.com>
- <1311007062-2050-4-git-send-email-mjg@redhat.com>
- <4E2B8E36.6030308@mit.edu>
- <20110724033313.GB25722@srcf.ucam.org>
- <CAObL_7Gis4YaSB+suFXxLmSchmJaEc6Jqv6aY6VvWynuEkRb5A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAObL_7Gis4YaSB+suFXxLmSchmJaEc6Jqv6aY6VvWynuEkRb5A@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Sat, 23 Jul 2011 23:52:50 -0400
+Subject: Re: [PATCH 08/13] iscsi-target: Add CHAP Authentication support
+ using libcrypto
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Andy Grover <agrover@redhat.com>,
+        Hannes Reinecke <hare@suse.de>, Roland Dreier <roland@purestorage.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <1311455867.31450.287.camel@haakon2.linux-iscsi.org>
+References: <1311410747-29947-1-git-send-email-nab@linux-iscsi.org>
+	 <1311410747-29947-9-git-send-email-nab@linux-iscsi.org>
+	 <1311439173.23720.14.camel@mulgrave>
+	 <CA+55aFzkEUbnoDg0KwXDRQMeCFeO5s6_4dWHTY59=hj3QHWL0w@mail.gmail.com>
+	 <1311445075.17423.13.camel@mulgrave>
+	 <1311455867.31450.287.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 24 Jul 2011 07:52:37 +0400
+Message-ID: <1311479558.2702.8.camel@mulgrave>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 23, 2011 at 11:42:50PM -0400, Andrew Lutomirski wrote:
-> On Sat, Jul 23, 2011 at 11:33 PM, Matthew Garrett <mjg@redhat.com> wrote:
-> > This complicates things a little, since right now we just write the
-> > firmware's P state value directly into PERF_CTL. We'd need to add code
-> > to acpi_cpufreq_target to make sure that it masked that bit off. It's a
-> > little more awkward, but if we're being told not to do it by just
-> > hitting the bit in MISC_ENABLE it's probably worth it. I'll try to
-> > handle that this week.
+On Sat, 2011-07-23 at 14:17 -0700, Nicholas A. Bellinger wrote:
+> On Sat, 2011-07-23 at 22:17 +0400, James Bottomley wrote:
+> > On Sat, 2011-07-23 at 10:51 -0700, Linus Torvalds wrote:
+> > > On Sat, Jul 23, 2011 at 9:39 AM, James Bottomley
+> > > <James.Bottomley@hansenpartnership.com> wrote:
+> > > >
+> > > > I've asked you twice for input on the patch doing this in userspace,
+> > > > which was posted five weeks ago.  Just ignoring something is
+> > > > unacceptable behaviour ... what do I have to do to get your attention?
+> > > > NAK the patch set?
+> > > 
+> > > So what's the advantage of user space?
+> > > 
+> > > Traditionally, kernel/userspace splits have been:
+> > >  - fragile as hell
+> > >  - more code
+> > >  - slower
+> > >  - complicated to set up
+> > >  - problematic with backwards compatibility issues
+> > > and these days when I see some kernel functionality that needs user
+> > > space support, I just go "f*ck, that's going to be a pain".
+> > > 
+> > > So I think the "that part can be done in user space" argument is
+> > > fundamentally crap.
+> > > 
+> > > Now, if it is an issue of "that can be done BETTER in user space
+> > > BECAUSE xyz", then that's a different issue. I haven't seen that
+> > > argument, though.
+> > 
 > 
-> This way may give the benefit of making it work per core instead of
-> per package.  The manual is rather unclear on this point.
+> I think the 'fragile as hell' and 'complicated to set up' ring the most
+> true here.  Thank you Linus..
 
-Being able to enter turbo mode typically requires coordination between 
-the cores in order to ensure that the package remains within limits. The 
-AMD implementation certainly disables their equivalent entirely if any 
-core in the package has it disabled. I haven't verified that Intel 
-behaviour is identical, but it wouldn't surprise me. I can try to check 
-that.
+The usual source of fragility here is a badly designed or complex ABI.
+So why don't you actually respond to the patch (as you've been asked to
+over the last five weeks) and point out what the problem is with its
+user to kernel ABI rather than blindly asserting something for which you
+have no evidence.
 
-> I actually have a use case for this.  I have a system that keeps a
-> bunch of cores under moderate load.  I have one thread in particular
-> that needs to be fast, and I'd like to disable boosting on the other
-> cores to keep more thermal and power headroom available for the one
-> thread that cares.
+> > Well, this is essentially the argument.  The iSCSI authentication code
+> > follows a standard which originally had 4 different authentication
+> > methods (of which CHAP is just one) but which is now up to about 8 I
+> > think and rising.  It would be a massive amount of code to put them all
+> > in kernel, plus the authentication isn't a fast path thing; it's done
+> > once at login.  We already have the code to do this (although from the
+> > client side, not the server side) in userspace in the initiator.
+> > 
+> 
+> This is an incorrect statement.  I was very specific in May what type of
+> authentication passthrough that I want for iscsi-target, and why moving
+> the entire login path to userspace is a really bad idea for a
+> kernel-level iscsi-target that has a configfs control plane supporting
+> fully dynamic configuration.  So while I very much apprectiate the
+> efforts by Tomo directed by yourself, this is *not* what I asked for,
+> and is not acceptable for LIO iscsi-target code for the default login
+> codepath.
 
-Are the other threads sufficiently opportunistic to use extra CPU power 
-if it's available to them? You'll generally only get turbo if the other 
-cores are in C6, so even if turbo is disabled on a specific core it'll 
-probably prevent another core from entering turbo if anything's 
-executing on it. You'd arguably want it to be able to get into turbo so 
-it can hit C6 more quickly and let the other thread use the extra 
-headroom.
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Look, it's this simple.  If we accept the principle that authentication
+should be done in-kernel for simplicity and ease of management, then it
+should all be done there.  If, as you seem to be suggesting, some
+authentication models are so complex they should be done in userspace,
+then it should all be done there.  Having two separate paths, one
+through kernel and one through user space for the same operation is the
+real recipe for fragility because it doubles the amount of testing and
+generally means that one path is less well tested than the other.
+
+> So restate what I want:  A passthrough for pushing 'optional to
+> implement' iSCSI authentication payloads to userspace (like we had in
+> LIO v2.x) that can be enabled optionally on a per iSCSI target endpoint
+> context, and does not touch the default login path.  The specific code
+> reasons for this have not changed at all in the last months, and can be
+> found here for reference:
+> 
+> http://marc.info/?l=linux-kernel&m=130661363200680&w=2
+> 
+> > The prototype implementation, is very clean: it does the authenticated
+> > login and then passes the connected socket to the kernel for operations,
+> > so there's no real fragile state to pass across.
+> > 
+> 
+> I completely disagree. 
+
+Based on what, since you don't yet appear to have read the patch?
+
+> > There are a couple of reasons why user space makes sense apart from the
+> > existing code and the clean separation of setup from operation: some of
+> > the auth methods involve complex algorithms and debugging them in
+> > userspace is just easier, plus it allows easy backward compatible
+> > addition of new authentication mechanisms without having to respin a
+> > kernel.
+> > 
+> 
+> Again, the 'optional to implement' authentication methods are what needs
+> to goto userspace in seperate authentication specific daemons, and not
+> the entire login control path into a single userspace process for even
+> the 'authentication disabled' case.  This is the wrong split.
+> 
+> Also, the patch did not address any form of backwards compatability
+> because it did not provide any patches for rtslib to expose the new
+> functionality to application level devels and distros who are already
+> integrating this package.
+
+What backwards compatibility?  iscsi target is a new feature for the
+kernel.  The users of the out of tree code can surely continue to use it
+and it's hardly an impossible task to migrate them.
+
+> As mentioned before, we (LIO and RTS) have no interest in breaking a
+> python object library that already exposes iscsi-target functionality
+> users actually want, for a last-minute split that makes the overall
+> design less effective for the default cases the vast majority of people
+> actually care about.
+> 
+> > Quite a few other authentication mechanisms (like wireless and ipsec)
+> > are in userspace for the setup and negotiation and in-kernel for the
+> > operation, so it's a well understood paradigm.
+> > 
+> 
+> And, we have also seen historically how painful the split has been with
+> open-iscsi, which in the end took much longer to get stable (and is
+> still harder to debug) than if a proper login split was used to begin
+> with.
+> 
+> I have been very willing to compromise on many things throughout this
+> target mode endevour, but making it more difficult for iscsi-target to
+> 'just work' is not what the userbase wants, and will not be changing
+> this for the default two cases.
+
+Mike gave a fair assessment of this, so I'll leave the final word to
+him.
+
+James
+
+
