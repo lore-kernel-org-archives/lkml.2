@@ -1,139 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752014Ab1GXI5H (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 04:57:07 -0400
-Received: from mtagate1.uk.ibm.com ([194.196.100.161]:41399 "EHLO
-	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752235Ab1GXI45 (ORCPT
+	id S1752235Ab1GXI70 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 04:59:26 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:48421 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751534Ab1GXI7W convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 04:56:57 -0400
-Date: Sun, 24 Jul 2011 10:56:40 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [GIT PULL] s390 patches for 3.0+
-Message-ID: <20110724105640.04563326@mschwide>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 24 Jul 2011 04:59:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110723202032.67ebdbcc.rdunlap@xenotime.net>
+References: <CAGq3pz4VHgagUQ+jGJdt9LL4UnFt+CDgcLLXbuVeKfWMc=0wAA@mail.gmail.com>
+	<20110723202032.67ebdbcc.rdunlap@xenotime.net>
+Date: Sun, 24 Jul 2011 09:59:20 +0100
+X-Google-Sender-Auth: yAAU4goAZ5XaefD_auiuhJzkkBA
+Message-ID: <CAGq3pz6L5VzYaGBN8Py3x9s-orAp9AoG1OMM=1p8KJ1b3TVR6Q@mail.gmail.com>
+Subject: Re: OLPC power management patches - merge for 3.1?
+From: Daniel Drake <dsd@laptop.org>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org,
+        Andres Salomon <dilinger@queued.net>, tglx@linutronix.de,
+        x86@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 24 July 2011 04:20, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> I have no objection to merging OLPC patches, but they should build
+> without errors.
 
-please pull from 'for-linus' branch of
+Agreed! Thanks for reporting the issue.
 
-	git://git390.marist.edu/pub/scm/linux-2.6.git for-linus
+> Looks like this problem is caused by:
+>
+> config OLPC_XO1_SCI
+>        bool "OLPC XO-1 SCI extras"
+>        depends on OLPC && OLPC_XO1_PM && POWER_SUPPLY
+>
+> or
+> config OLPC_XO15_SCI
+>        bool "OLPC XO-1.5 SCI extras"
+>        depends on OLPC && ACPI && POWER_SUPPLY
+>
+> In both cases, the 'bool' depends on one or more tristate symbols, so
+> the tristates are satisfied if they are =m or =y.  This should work fine
+> if these kconfig symbols (listed above) were tristate instead of bool.
 
-I rebased the branch today to avoid a merge conflict with git commit
-a288eecce5253cc1565d400a52b9b476a157e040.
+In this case, we do need them to be bool options. At least for now. We
+tried for a modular design earlier in the review process but it added
+too much complexity.
 
-The branch contains the following updates:
+So, whats the best way to fix the Kconfig? Should we:
 
-Carsten Otte (3):
-      [S390] use gmap address spaces for kvm guest images
-      [S390] Use gmap translation for accessing guest memory
-      [S390] remove kvm mmu reload on s390
+depends on POWER_SUPPLY=y
 
-Christian Borntraeger (1):
-      [S390] kvm: handle tprot intercepts
+or
 
-Christian Ehrhardt (1):
-      [S390] kvm: make sigp emerg smp capable
+depends on POWER_SUPPLY
+select POWER_SUPPLY
 
-Holger Dengler (1):
-      [S390] ap: toleration support for ap device type 10
+?
 
-Jan Glauber (4):
-      [S390] qdio: clear shared DSCI before scheduling the queue handler
-      [S390] fix s390 assembler code alignments
-      [S390] race safe external interrupt registration
-      [S390] disable cpu measurement alerts on a dying cpu
-
-Martin Schwidefsky (9):
-      [S390] kconfig: remove tape interface support comment
-      [S390] reference bit testing for unmapped pages
-      [S390] move sie code to entry.S
-      [S390] kvm guest address space mapping
-      [S390] cleanup program check handler prototypes
-      [S390] remove tape block docu
-      [S390] iucv cr0 enablement bit
-      [S390] initial cr0 bits
-      [S390] use siginfo for sigtrap signals
-
-Stefan Weinhuber (1):
-      [S390] dasd: add enhanced DASD statistics interface
-
-Steven Rostedt (1):
-      [S390] irqs: Do not trace arch_local_{*,irq_*} functions
-
- Documentation/s390/TAPE              |  122 -----
- arch/s390/boot/compressed/head31.S   |    4 +-
- arch/s390/boot/compressed/head64.S   |    4 +-
- arch/s390/include/asm/irqflags.h     |   16 +-
- arch/s390/include/asm/kvm_host.h     |   12 +-
- arch/s390/include/asm/linkage.h      |    5 +-
- arch/s390/include/asm/lowcore.h      |    2 +-
- arch/s390/include/asm/mmu.h          |    4 +-
- arch/s390/include/asm/pgalloc.h      |    7 +-
- arch/s390/include/asm/pgtable.h      |   42 ++
- arch/s390/include/asm/processor.h    |    1 +
- arch/s390/include/asm/thread_info.h  |    2 +
- arch/s390/include/asm/tlbflush.h     |    2 +-
- arch/s390/kernel/asm-offsets.c       |    2 +-
- arch/s390/kernel/base.S              |   25 +-
- arch/s390/kernel/compat_wrapper.S    |  836 ++++++++++++----------------------
- arch/s390/kernel/entry.S             |   32 +-
- arch/s390/kernel/entry.h             |    7 +-
- arch/s390/kernel/entry64.S           |  111 ++++--
- arch/s390/kernel/head.S              |    7 +-
- arch/s390/kernel/head31.S            |   13 +-
- arch/s390/kernel/head64.S            |   13 +-
- arch/s390/kernel/irq.c               |   83 ++--
- arch/s390/kernel/mcount.S            |   16 +-
- arch/s390/kernel/mcount64.S          |   16 +-
- arch/s390/kernel/reipl.S             |    5 +-
- arch/s390/kernel/reipl64.S           |    5 +-
- arch/s390/kernel/relocate_kernel.S   |    6 +-
- arch/s390/kernel/relocate_kernel64.S |    6 +-
- arch/s390/kernel/s390_ksyms.c        |    4 +
- arch/s390/kernel/sclp.S              |    5 +-
- arch/s390/kernel/smp.c               |    3 +-
- arch/s390/kernel/switch_cpu.S        |    8 +-
- arch/s390/kernel/switch_cpu64.S      |    8 +-
- arch/s390/kernel/swsusp_asm64.S      |    8 +-
- arch/s390/kernel/traps.c             |   36 +-
- arch/s390/kvm/Makefile               |    2 +-
- arch/s390/kvm/gaccess.h              |  243 +++++++---
- arch/s390/kvm/intercept.c            |   35 ++-
- arch/s390/kvm/interrupt.c            |    4 +
- arch/s390/kvm/kvm-s390.c             |   48 +-
- arch/s390/kvm/kvm-s390.h             |   28 +--
- arch/s390/kvm/priv.c                 |   49 ++
- arch/s390/kvm/sie64a.S               |   98 ----
- arch/s390/kvm/sigp.c                 |    6 +-
- arch/s390/lib/qrnnd.S                |    5 +-
- arch/s390/mm/fault.c                 |   18 +-
- arch/s390/mm/hugetlbpage.c           |    2 +-
- arch/s390/mm/pgtable.c               |  421 ++++++++++++++++-
- arch/s390/mm/vmem.c                  |    8 +-
- drivers/s390/block/dasd.c            |  576 +++++++++++++++++++++--
- drivers/s390/block/dasd_int.h        |   57 ++-
- drivers/s390/block/dasd_ioctl.c      |   38 ++-
- drivers/s390/block/dasd_proc.c       |  106 +++--
- drivers/s390/char/Kconfig            |    3 -
- drivers/s390/cio/qdio_thinint.c      |   15 +-
- drivers/s390/crypto/ap_bus.c         |   96 +++-
- drivers/s390/crypto/ap_bus.h         |   22 +-
- mm/rmap.c                            |    6 +-
- net/iucv/iucv.c                      |    7 +-
- 60 files changed, 2091 insertions(+), 1280 deletions(-)
- delete mode 100644 Documentation/s390/TAPE
- delete mode 100644 arch/s390/kvm/sie64a.S
-
-
+Thanks,
+Daniel
