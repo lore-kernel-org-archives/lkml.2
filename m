@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751426Ab1GXQMZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 12:12:25 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51070 "EHLO
+	id S1751481Ab1GXQNq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 12:13:46 -0400
+Received: from www.linutronix.de ([62.245.132.108]:51076 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750769Ab1GXQMV (ORCPT
+	with ESMTP id S1750769Ab1GXQNk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 12:12:21 -0400
-Date: Sun, 24 Jul 2011 18:12:19 +0200 (CEST)
+	Sun, 24 Jul 2011 12:13:40 -0400
+Date: Sun, 24 Jul 2011 18:13:38 +0200 (CEST)
 From: Thomas Gleixner <tglx@linutronix.de>
-To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Darren Hart <dvhart@linux.intel.com>
-Subject: Re: [ANNOUNCE] 3.0-rt3
-In-Reply-To: <4E2C2ED6.4040904@gmail.com>
-Message-ID: <alpine.LFD.2.02.1107241807390.3136@ionos>
-References: <alpine.LFD.2.02.1107241223560.2702@ionos> <4E2C2ED6.4040904@gmail.com>
+To: Borislav Petkov <bp@alien8.de>
+cc: LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
+        Hans Rosenfeld <hans.rosenfeld@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Mike Travis <travis@sgi.com>
+Subject: Re: [patch 3/3] x86: cache_info: Kill the atomic allocation in
+ amd_init_l3_cache()
+In-Reply-To: <20110724102734.GA17099@liondog.tnic>
+Message-ID: <alpine.LFD.2.02.1107241812590.3136@ionos>
+References: <20110723212603.517924252@linutronix.de> <20110723212626.688229918@linutronix.de> <20110724102734.GA17099@liondog.tnic>
 User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -27,44 +30,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 24 Jul 2011, Maarten Lankhorst wrote:
-> Oprofile seems to be upset at me, I swear I'm innocent!
+On Sun, 24 Jul 2011, Borislav Petkov wrote:
+> On Sun, Jul 24, 2011 at 09:46:09AM -0000, Thomas Gleixner wrote:
+> >  
+> >  	/* only for L3, and not in virtualized environments */
+> > -	if (index < 3 || amd_nb_num() == 0)
+> > +	if (index < 3)
+> >  		return;
+> 
+> AFAICT, we still need the "amd_nb_num() == 0" check for xen because it
+> doesn't export NB PCI devices to the guest, see f2b20e41...
+> 
+> >  
+> > -	/*
+> > -	 * Strictly speaking, the amount in @size below is leaked since it is
+> > -	 * never freed but this is done only on shutdown so it doesn't matter.
+> > -	 */
+> > -	if (!l3_caches) {
+> > -		int size = amd_nb_num() * sizeof(struct amd_l3_cache);
+> > -
+> > -		l3_caches = kzalloc(size, GFP_ATOMIC);
+> > -		if (!l3_caches)
+> > -			return;
+> > -	}
+> > -
+> >  	node = amd_get_nb_id(smp_processor_id());
+> > -
+> > -	if (!l3_caches[node].nb) {
+> > -		l3_caches[node].nb = node_to_amd_nb(node);
+> > -		amd_calc_l3_indices(&l3_caches[node]);
+> > -	}
+> > -
+> > -	this_leaf->l3 = &l3_caches[node];
+> > +	this_leaf->nb = node_to_amd_nb(node);
+> 
+> although, on a second thought, node_to_amd_nb(node) should return NULL
+> since the AMD NB caching code shouldnt've enumerated any NB devices and
+> 
+> > +	if (this_leaf->nb && !this_leaf->nb->l3_cache.indices)
+> > +		amd_calc_l3_indices(this_leaf->nb);
+> 
+> this check should fail. Hm.
 
-I bet you are. Seems oprofile needs some care, but that has to wait a
-couple of days as i'm travelling.
+Right, that was my thought.
  
-> [   46.460786] oprofile: using NMI interrupt.
-> [   47.492263] BUG: sleeping function called from invalid context at kernel/rtmutex.c:645
-> [   47.492265] in_atomic(): 1, irqs_disabled(): 1, pid: 0, name: kworker/0:1
-> [   47.492267] Pid: 0, comm: kworker/0:1 Tainted: G         C  3.0.0-rt3-patser+ #39
-> [   47.492269] Call Trace:
-> [   47.492270]  <IRQ>  [<ffffffff8103fc0a>] __might_sleep+0xca/0xf0
-> [   47.492279]  [<ffffffff8160d424>] rt_spin_lock+0x24/0x40
-> [   47.492282]  [<ffffffff811476c7>] __kmalloc+0xc7/0x370
-
-Grrr. Allocating memory from SMP function calls seems to become a
-pattern :(
-
-> Also not sure where this one came from:
-> [   37.456688] BUG: spinlock bad magic on CPU#3, threaded-ml/1619
-> [   37.456690]  lock: ffff8801fdc74d50, .magic: 00000000, .owner: <none>/-1, .owner_cpu: 0
-> [   37.456692] Pid: 1619, comm: threaded-ml Tainted: G         C  3.0.0-rt3-patser+ #39
-> [   37.456693] Call Trace:
-> [   37.456697]  [<ffffffff81607a78>] spin_bug+0xa0/0xa8
-> [   37.456699]  [<ffffffff8132b412>] do_raw_spin_lock+0xa2/0x170
-> [   37.456702]  [<ffffffff8104a201>] ? get_parent_ip+0x11/0x50
-> [   37.456704]  [<ffffffff8160d783>] _raw_spin_lock+0x23/0x30
-> [   37.456706]  [<ffffffff810931ce>] rt_mutex_start_proxy_lock+0x2e/0xd0
-> [   37.456708]  [<ffffffff8109093a>] futex_requeue+0x47a/0x850
-> [   37.456710]  [<ffffffff8109138e>] do_futex+0xae/0xb00
-> [   37.456712]  [<ffffffff81157dcd>] ? fget_light+0x6d/0x110
-> [   37.456714]  [<ffffffff810b77b7>] ? audit_syscall_entry+0x2e7/0x310
-> [   37.456715]  [<ffffffff814c9375>] ? sys_recvmsg+0x75/0x90
-> [   37.456717]  [<ffffffff810923e6>] compat_sys_futex+0xf6/0x190
-> [   37.456719]  [<ffffffff8100e864>] ? syscall_trace_enter+0x184/0x210
-> [   37.456721]  [<ffffffff816158b3>] ia32_do_call+0x13/0x13
-
-Urrgh, that's not a good one. Darren, can you please have a look at that?
+> Let me test the patchset on Monday to verify there are no other subtle
+> interactions I haven't thought of right now.
 
 Thanks,
 
