@@ -1,103 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751512Ab1GXFJR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 01:09:17 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:54161 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751091Ab1GXFJN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 01:09:13 -0400
-Subject: Re: [PATCH 08/13] iscsi-target: Add CHAP Authentication
-	support	using libcrypto
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Mike Christie <michaelc@cs.wisc.edu>
-Cc: linux-iscsi-target-dev@googlegroups.com,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Andy Grover <agrover@redhat.com>,
-        Hannes Reinecke <hare@suse.de>, Roland Dreier <roland@purestorage.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <4E2B8C98.2060601@cs.wisc.edu>
-References: <1311410747-29947-1-git-send-email-nab@linux-iscsi.org>
-	 <1311410747-29947-9-git-send-email-nab@linux-iscsi.org>
-	 <1311439173.23720.14.camel@mulgrave>
-	 <CA+55aFzkEUbnoDg0KwXDRQMeCFeO5s6_4dWHTY59=hj3QHWL0w@mail.gmail.com>
-	 <1311445075.17423.13.camel@mulgrave>
-	 <1311455867.31450.287.camel@haakon2.linux-iscsi.org>
-	 <4E2B8C98.2060601@cs.wisc.edu>
-Content-Type: text/plain
-Date: Sat, 23 Jul 2011 21:59:55 -0700
-Message-Id: <1311483595.31450.427.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1751646Ab1GXFSG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 01:18:06 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:44156 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751091Ab1GXFSB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jul 2011 01:18:01 -0400
+Date: Sat, 23 Jul 2011 22:17:44 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, laijs@cn.fujitsu.com,
+        darren@dvhart.com, rostedt@goodmis.org, mingo@elte.hu,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] rtmutex: Permit rt_mutex_unlock() to be invoked
+ with irqs disabled
+Message-ID: <20110724051744.GF2415@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110719201410.GA10553@linux.vnet.ibm.com>
+ <1311247968.29152.122.camel@twins>
+ <20110723220348.GD2415@linux.vnet.ibm.com>
+ <alpine.LFD.2.02.1107240118550.2702@ionos>
+ <alpine.LFD.2.02.1107240202500.2702@ionos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1107240202500.2702@ionos>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-07-23 at 22:08 -0500, Mike Christie wrote:
-> On 07/23/2011 04:17 PM, Nicholas A. Bellinger wrote:
+On Sun, Jul 24, 2011 at 02:05:13AM +0200, Thomas Gleixner wrote:
+> On Sun, 24 Jul 2011, Thomas Gleixner wrote:
+> 
+> > On Sat, 23 Jul 2011, Paul E. McKenney wrote:
 > > 
-> > And, we have also seen historically how painful the split has been with
-> > open-iscsi, which in the end took much longer to get stable (and is
-> > still harder to debug) than if a proper login split was used to begin
-> > with.
+> > > On Thu, Jul 21, 2011 at 01:32:48PM +0200, Peter Zijlstra wrote:
+> > > > On Tue, 2011-07-19 at 13:14 -0700, Paul E. McKenney wrote:
+> > > > > Because rcu_read_unlock() can be invoked with interrupts disabled, it can
+> > > > > in turn invoke rt_mutex_unlock() with interrupts disabled.  This situation
+> > > > > results in lockdep splats (https://lkml.org/lkml/2011/7/7/362) because the
+> > > > > rt_mutex structure's ->lock_wait is acquired elsewhere without disabling
+> > > > > interrupts, which can result in deadlocks.
+> > > > > 
+> > > > > This commit therefore changes the rt_mutex structure's ->lock_wait
+> > > > > acquisitions to disable interrupts.
+> > > > > 
+> > > > > An alternative fix is to prohibit invoking rcu_read_unlock() with
+> > > > > interrupts disabled unless the entire preceding RCU read-side critical
+> > > > > section has run with interrupts disabled.  However, there is already
+> > > > > at least one case in mainline where this potential rule is violated,
+> > > > > and there might well be many more.  These would likely be found one at
+> > > > > a time using the lockdep-water-torture method, hence the alternative
+> > > > > fix in the form of this commit.
+> > > > 
+> > > > Thomas, I'm inclined to merge this, any objections?
+> > > 
+> > > FWIW, it has been passing tests here.
+> > 
+> > If it's only the unlock path, I'm fine with that change.
+> > 
+> > Acked-by-me
 > 
-> Here is my 2 cents from working on open-iscsi.
-> 
-> The split did not really have much to do with the initial stability in
-> the data paths. It was more due to it getting merged with very little
-> real world testing.
-> 
-> There were stability issues with the interface because no one ever tried
-> creating a hw iscsi driver for it before it got merged, because software
-> iscsi does a host per session and hw drivers ended up doing a host per
-> port or some pci resource, and then boot support.
-> 
-> Most bugs fixed were due to skb handling, locking/atomic issues,
-> spec/rfc issues - not interface issues. But many large changes had to be
-> done to make the initial code support hw iscsi.
-> 
-> I agree open-iscsi is more difficult to debug than initiators that were
-> mostly in kernel like iscsi_sfnet. For open-iscsi the userspace part is
-> a single process, many operations cannot block, it has a ulgy state
-> model. And how it did its split does make things more difficult, because
-> it breaks up every operation into a different userspace to kernel call
-> (create a session is a call, create a conn is a call, pass a setting is
-> a call, bind a conn to a session is call, start the conn is a call,
-> etc). For software iscsi if open-iscsi just logged in to the target,
-> then passed everything to the kernel in one call then it would have been
-> a lot easier to debug. If Tomo's design does not have those issues then
-> it seems like it would not be that bad for software iscsi.
-> 
+> Hrmpft. That's requiring all places to take the lock irq safe. Not
+> really amused. For -RT that's a hotpath and we can really do without
+> the irq fiddling there. That needs a bit more thought.
 
-In the various kernel/user split implementations, I completely agree
-that the open-iscsi is more difficult and painful than what Tomo has
-proposed..
+Indeed...  If I make only some of the lock acquisitions irq safe, lockdep
+will yell at me.  And rightfully so, as that could result in deadlock.
 
-However, my main issue is still with moving the default login paths to a
-single threaded userspace daemon that needs to be fully aware of lots of
-dynaminc state changes in /sys/kernel/config/target/iscsi.  Implementing
-a userspace daemon that needs to be aware of this is going to require an
-kernel/user split quickly moving towards the 'break up every operation
-into a different call' arena, that puts us back open-iscsi type split
-terrority.
+So, what did you have in mind?
 
-> I think where doing a kernel/userspace split is going to be more
-> difficult is with supporting hw iscsi targets. With software iscsi you
-> can just pass down a socket and the settings more or less. With hw
-> iscsi, you want to be able to send the login related packets through the
-> iscsi port using the iscsi engine or hw/fw might be doing the actual
-> login process. But, if you are putting discovery (isns, sendtargets,
-> dhcp iscsi/isns options, slp, etc) in userspace then you have to solve
-> those issues for discovery so you can use the same interfaces for both.
-
-Fair point.  I would also expect HW iscsi to integrate into the same
-control plane and python library for an consistent API to application
-devels here.
-
---nab
-
+							Thanx, Paul
