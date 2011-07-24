@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752381Ab1GXUrU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 16:47:20 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:38831 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751849Ab1GXUrR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 16:47:17 -0400
-Date: Sun, 24 Jul 2011 16:39:56 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: David Miller <davem@davemloft.net>
-Cc: johannes.berg@intel.com, wey-yi.w.guy@intel.com,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iwlagn: wrap suspend/resume definitions in CONFIG_PM
- block
-Message-ID: <20110724203956.GA29630@tuxdriver.com>
-References: <20110724.030949.1727841105144911931.davem@davemloft.net>
- <1311535150-28686-1-git-send-email-linville@tuxdriver.com>
- <20110724.130840.1093555047179460794.davem@davemloft.net>
+	id S1752412Ab1GXUzh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 16:55:37 -0400
+Received: from hera.kernel.org ([140.211.167.34]:33612 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751849Ab1GXUzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jul 2011 16:55:36 -0400
+Date: Sun, 24 Jul 2011 20:55:22 GMT
+From: tip-bot for Daniel Drake <dsd@laptop.org>
+Message-ID: <tip-07d5b38e14b7ff98eb52e4a6db4e20abcc608da3@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        dsd@laptop.org, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        dsd@laptop.org, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20110724173430.BE03C9D401C@zog.reactivated.net>
+References: <20110724173430.BE03C9D401C@zog.reactivated.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/olpc] x86, olpc-xo15-sci: Enable EC wakeup capability
+Git-Commit-ID: 07d5b38e14b7ff98eb52e4a6db4e20abcc608da3
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20110724.130840.1093555047179460794.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 24 Jul 2011 20:55:23 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 24, 2011 at 01:08:40PM -0700, David Miller wrote:
-> From: "John W. Linville" <linville@tuxdriver.com>
-> Date: Sun, 24 Jul 2011 15:19:10 -0400
-> 
-> > drivers/net/wireless/iwlwifi/iwl-agn.c:3464: error: unknown field 'suspend' specified in initializer
-> > drivers/net/wireless/iwlwifi/iwl-agn.c:3464: warning: initialization from incompatible pointer type
-> > drivers/net/wireless/iwlwifi/iwl-agn.c:3465: error: unknown field 'resume' specified in initializer
-> > drivers/net/wireless/iwlwifi/iwl-agn.c:3465: warning: initialization from incompatible pointer type
-> > 
-> > This was caused by commit c8ac61cf ("iwlagn: implement WoWLAN").
-> > 
-> > Signed-off-by: John W. Linville <linville@tuxdriver.com>
-> 
-> Since I already minimally fixed up my build locally last night I know
-> that your patch leads to a set of warnings because the methods whose
-> hookup are now commented out become completely unused and they are all
-> marked "static".  And recursively functions that those methods use
-> become unused too.
-> 
-> Did you turn off CONFIG_PM and test the build of this file to see
-> what the compiler actually does with it?
-> 
-> I'm checking in the following, but I expect much better from you John.
+Commit-ID:  07d5b38e14b7ff98eb52e4a6db4e20abcc608da3
+Gitweb:     http://git.kernel.org/tip/07d5b38e14b7ff98eb52e4a6db4e20abcc608da3
+Author:     Daniel Drake <dsd@laptop.org>
+AuthorDate: Sun, 24 Jul 2011 18:34:30 +0100
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Sun, 24 Jul 2011 20:16:05 +0200
 
-Sorry, Dave.  I confess that I was hoping for a quick fix on a Sunday afternoon. :-)
+x86, olpc-xo15-sci: Enable EC wakeup capability
 
-Thanks for making it better!
+Some recent changes to the way that ACPI handles wakeup flags
+means that the XO15EC ACPI device is not wakeup-capable by
+default so device_set_wakeup_enable() does nothing.
 
-John
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+Use device_init_wakeup() to mark the device as wakeup capable,
+and to enable wakeups.
+
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+Link: http://lkml.kernel.org/r/20110724173430.BE03C9D401C@zog.reactivated.net
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/platform/olpc/olpc-xo15-sci.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/platform/olpc/olpc-xo15-sci.c b/arch/x86/platform/olpc/olpc-xo15-sci.c
+index a5990eb..2b235b7 100644
+--- a/arch/x86/platform/olpc/olpc-xo15-sci.c
++++ b/arch/x86/platform/olpc/olpc-xo15-sci.c
+@@ -120,7 +120,7 @@ static int xo15_sci_add(struct acpi_device *device)
+ 
+ 	/* Enable wake-on-EC */
+ 	if (device->wakeup.flags.valid)
+-		device_set_wakeup_enable(&device->dev, true);
++		device_init_wakeup(&device->dev, true);
+ 
+ 	return 0;
+ }
