@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718Ab1GXWz2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 18:55:28 -0400
-Received: from anchor-post-3.mail.demon.net ([195.173.77.134]:57406 "EHLO
-	anchor-post-3.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752503Ab1GXWz0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 18:55:26 -0400
-Message-ID: <4E2CA2F0.9090202@lougher.demon.co.uk>
-Date: Sun, 24 Jul 2011 23:55:44 +0100
-From: Phillip Lougher <phillip@lougher.demon.co.uk>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
-MIME-Version: 1.0
-To: Linux Kernel Development <linux-kernel@vger.kernel.org>
-CC: linux-fsdevel@vger.kernel.org
-Subject: [PATCH 1/2] Squashfs: Update documentation for XZ and add squashfs-tools
- devel tree
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1752714Ab1GXXLW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 19:11:22 -0400
+Received: from lo.gmane.org ([80.91.229.12]:44938 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752549Ab1GXXLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jul 2011 19:11:20 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: walt <w41ter@gmail.com>
+Subject: [bisected regression] Partial breakage of forcedeth driver
+Date: Sun, 24 Jul 2011 16:10:59 -0700
+Message-ID: <4E2CA683.4010005@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: adsl-69-234-189-60.dsl.irvnca.pacbell.net
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:5.0) Gecko/20110705 Thunderbird/5.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi gang.
 
+commit 3326c784c9f492e988617d93f647ae0cfd4c8d09
+Author: Jiri Pirko <jpirko@>
+Date:   Wed Jul 20 04:54:38 2011 +0000
 
-Signed-off-by: Phillip Lougher <phillip@squashfs.org.uk>
----
-  Documentation/filesystems/squashfs.txt |    4 +++-
-  1 files changed, 3 insertions(+), 1 deletions(-)
+    forcedeth: do vlan cleanup
+    
+    - unify vlan and nonvlan rx path
+    - kill np->vlangrp and nv_vlan_rx_register
+    - allow to turn on/off rx vlan accel via ethtool (set_features)
+    
+    Signed-off-by: Jiri Pirko <jpirko@>
+    Signed-off-by: David S. Miller <davem@>
 
-diff --git a/Documentation/filesystems/squashfs.txt b/Documentation/filesystems/squashfs.txt
-index d4d4146..7db3ebd 100644
---- a/Documentation/filesystems/squashfs.txt
-+++ b/Documentation/filesystems/squashfs.txt
-@@ -2,7 +2,7 @@ SQUASHFS 4.0 FILESYSTEM
-  =======================
+This commit causes networking trouble for my nForce-based motherboard.
+(Details happily supplied if needed.)
 
-  Squashfs is a compressed read-only filesystem for Linux.
--It uses zlib/lzo compression to compress files, inodes and directories.
-+It uses zlib/lzo/xz compression to compress files, inodes and directories.
-  Inodes in the system are very small and all blocks are packed to minimise
-  data overhead. Block sizes greater than 4K are supported up to a maximum
-  of 1Mbytes (default block size 128K).
-@@ -55,6 +55,8 @@ create populated squashfs filesystems.  This and other squashfs utilities
-  can be obtained from http://www.squashfs.org.  Usage instructions can be
-  obtained from this site also.
+I say 'partial' breakage because networking is not completely dead,
+just limping very slowly :)
 
-+The squashfs-tools development tree is now located on kernel.org
-+	git://git.kernel.org/pub/scm/fs/squashfs/squashfs-tools.git
+The simplest test is to ping any host (in my LAN or on the internet,
+makes no difference).  The replies to my ping come at very irregular
+intervals, ranging from normal to 5-10 seconds or so, seemingly at
+random AFAICT.
 
-  3. SQUASHFS FILESYSTEM DESIGN
-  -----------------------------
--- 
-1.7.1
+I'm happy to try any patches, tests, whatever, to help fix this.
+
+Many thanks!
 
