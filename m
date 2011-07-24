@@ -1,44 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752408Ab1GXGKG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 02:10:06 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:51609 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751479Ab1GXGKE (ORCPT
+	id S1751617Ab1GXHOR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 03:14:17 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:39844 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751181Ab1GXHOJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 02:10:04 -0400
+	Sun, 24 Jul 2011 03:14:09 -0400
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: =?iso-8859-1?q?T=F6r=F6k_Edwin?= <edwintorok@gmail.com>
+Subject: Re: BUG: unable to handle kernel paging request xfs_is_delayed_page
+Date: Sun, 24 Jul 2011 09:14:03 +0200
+User-Agent: KMail/1.13.7 (Linux/3.0.0-rc4; KDE/4.6.4; i686; ; )
+Cc: xfs-masters@oss.sgi.com, xfs@oss.sgi.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <4E289228.4000208@gmail.com>
+In-Reply-To: <4E289228.4000208@gmail.com>
 MIME-Version: 1.0
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Sun, 24 Jul 2011 00:09:43 -0600
-X-Google-Sender-Auth: Rn8utFyefHs2neO_yMXmE1qxCMo
-Message-ID: <CACxGe6urOHDTO5R515RK8+Rtg4C_v=XtXA=+xkzFqE5M4M3_TA@mail.gmail.com>
-Subject: [GIT PULL] device tree build fix
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201107240914.04145.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 6d6be43d4dfdb167ef72f4aa665c1607db799be4:
+On czwartek, 21 lipca 2011 o 22:55:04 Török Edwin wrote:
+> Hi,
+> 
+> Just got this BUG in my dmesg:
+> [47504.938446] BUG: unable to handle kernel paging request at
+> ffff884058ec3270 [47504.938488] IP: [<ffffffff8127baf1>]
+[...]
 
-  Merge branch 'for-linus' of
-git://git.kernel.org/pub/scm/linux/kernel/git/vapier/blackfin
-(2011-07-23 14:05:44 -0700)
+2.6.39 works OK?. It is regression?
 
-are available in the git repository at:
-
-  git://git.secretlab.ca/git/linux-2.6 devicetree/next
-
-Grant Likely (1):
-      of: fix missing include from of_pci.c
-
- drivers/of/of_pci.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-
+Regards
 -- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+Maciej Rutecki
+http://www.maciek.unixy.pl
