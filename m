@@ -1,108 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751802Ab1GXSbj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 14:31:39 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:34645 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751476Ab1GXSbf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 14:31:35 -0400
-Date: Sun, 24 Jul 2011 20:30:46 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Przywara, Andre" <Andre.Przywara@amd.com>,
-        "Pohlack, Martin" <Martin.Pohlack@amd.com>
-Subject: Re: [PATCH] x86, AMD: Correct F15h IC aliasing issue
-Message-ID: <20110724183045.GB29660@elte.hu>
-References: <1311340547-7861-1-git-send-email-bp@amd64.org>
- <CA+55aFwL9Fwd9ouX3UMOayoBsZyZzTdDSySa6nZJxbpyLifbaQ@mail.gmail.com>
- <20110724172222.GB12621@aftab>
- <CA+55aFze=w7tjmyGa2w=D8b6roDuL5O0gmDKkSzLKBLLYZ_a+A@mail.gmail.com>
- <20110724182323.GA13247@aftab>
+	id S1751860Ab1GXSnQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 14:43:16 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:34673 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751646Ab1GXSnJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jul 2011 14:43:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110724182323.GA13247@aftab>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110724083126.29166727@bike.lwn.net>
+References: <CAPA4HGVYuZ3S+OxU9dXgPuqk1ERrYNshUe27M8QmN7c4+B7LAA@mail.gmail.com>
+	<CAPA4HGUHLDDTtaJ28jXNtRFJ6005=ZsQJa10TpoQmV_QxhYVPA@mail.gmail.com>
+	<20110724083126.29166727@bike.lwn.net>
+Date: Sun, 24 Jul 2011 20:43:08 +0200
+X-Google-Sender-Auth: VXrJpLipTlLdyS-4MKFnA2zjDY8
+Message-ID: <CAPA4HGU6EW60w7O5N4qKRrbFa=t6VK3RuC-Apzxb7d4QQ-QU5w@mail.gmail.com>
+Subject: Re: [PATCH 2/2] docs: update the development process document.
+From: Luis de Bethencourt <luis@debethencourt.com>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-doc@vger.kernel.org, Greg Kroah-Hartman <greg@kroah.com>,
+        Andres Salomon <dilinger@queued.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Jonathan :)
 
-* Borislav Petkov <bp@amd64.org> wrote:
+On Sun, Jul 24, 2011 at 4:31 PM, Jonathan Corbet <corbet@lwn.net> wrote:
+> On Sun, 24 Jul 2011 12:18:09 +0200
+> Luis de Bethencourt <luis@debethencourt.com> wrote:
+>
+>>     Here's a set of changes updating Documentation/development-process.
+>>     I have update kernel releases.
+>
+> I'm not convinced that the kernel version examples need to be updated all
+> that often - but I don't see that it hurts anything either.  One thing,
+> though:
 
-> On Sun, Jul 24, 2011 at 01:39:25PM -0400, Linus Torvalds wrote:
-> > On Sun, Jul 24, 2011 at 10:22 AM, Borislav Petkov <bp@amd64.org> wrote:
-> > >
-> > >> So at a MINIMUM, I would say that this is acceptable only when the
-> > >> process doing the allocation hasn't got ASLR disabled.
-> > >
-> > > I guess I could look at randomize_va_space before enabling it.
-> > 
-> > That's not what I meant - I meant the per-process PF_RANDOMIZE and
-> > ADDR_NO_RANDOMIZE personality flags (although the global
-> > "randomize_va_space" thing obviously is one input to that too)
-> > 
-> > In fact, if 99% of your problem is ASLR-induced, might I suggest just
-> > making the whole thing a tweak to ASLR instead, and not use ASLR for
-> > bits 14:12? That should be fundamentally much safer: it doesn't change
-> > any semantics at all, it just makes for slightly less random bits to
-> > be used.
-> > 
-> > So I really think that you might be *much* better off just changing
-> > mmap_rnd(), and nothing else. Just make *that* mask off the three low
-> > bits of the random address, ie something like
-> > 
-> >   diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
-> >   index 1dab5194fd9d..6b62ab5a5ae1 100644
-> >   --- a/arch/x86/mm/mmap.c
-> >   +++ b/arch/x86/mm/mmap.c
-> >   @@ -90,6 +90,9 @@ static unsigned long mmap_rnd(void)
-> >                           rnd = (long)get_random_int() % (1<<8);
-> >                   else
-> >                           rnd = (long)(get_random_int() % (1<<28));
-> >   +
-> >   +               if (avoid_aliasing_in_bits_14_12)
-> >   +                       rnd &= ~7;
-> >           }
-> >           return rnd << PAGE_SHIFT;
-> >    }
-> > 
-> > would be fundamentally very safe - it would already take all our
-> > current anti-randomization code into account.
-> > 
-> > No?
-> 
-> Hehe, we had that idea initially. However, the special 1% case I was
-> hinting at is this:
-> 
-> process P0, mapping libraries A, B, C
-> 
-> and
-> 
-> process P1, mapping libraries A, C
-> 
-> Library C ends up possibly with aliasing VAs and there's the 
-> problem again. [...]
+I understand, and when I sent the patch I was aware you could have
+said you weren't interested.
+Should've asked before spending time on it, but then, it wasn't that
+much time either.
 
-Well, since all library positions are randomized, and the quirk masks 
-out bits 12,13,14, all libraries that are not explicitly fix-mapped 
-will end up on a 32K granular VA address.
+>
+>> @@ -65,19 +66,18 @@ will get up to somewhere between -rc6 and -rc9
+>> before the kernel is
+>>  considered to be sufficiently stable and the final 2.6.x release is made.
+>>  At that point the whole process starts over again.
+>>
+>> -As an example, here is how the 2.6.38 development cycle went (all dates in
+>> +As an example, here is how the 2.6.39 development cycle went (all dates in
+>>  2011):
+>
+> A more useful exercise would have been to update things for the post-2.6
+> era; there will be no more "final 2.6.x" releases.  Would you be interested
+> in cleaning up that kind of stuff?  Otherwise I guess I'll get to it
+> eventually.
+>
 
-So i don't think this is an issue.
+I can do this. I was reading the file to learn about it myself, so I
+can change it once I learn.
 
-Also, in practice on most distros most libraries will be prelinked to 
-the same address in all processes.
+> One other thing:
+>
+>> -for example, the 2.6.36 kernel's history looked like:
+>> +for example, the 2.6.38 kernel's history looked like:
+>>
+>> -     October 10      2.6.36 stable release
+>> -     November 22     2.6.36.1
+>> -     December 9      2.6.36.2
+>> -     January 7       2.6.36.3
+>> -     February 17     2.6.36.4
+>> +     March 14        2.6.38 stable release
+>> +     March 23        2.6.38.1
+>> +     March 27        2.6.38.2
+>> +     April 14        2.6.38.3
+>> +     April 21        2.6.38.4
+>> +     May 2           2.6.38.5
+>> +     May 9           2.6.38.6
+>> +     May 21          2.6.38.7
+>> +     June 3          2.6.38.8
+>>
+>>  2.6.36.4 was the final stable update for the 2.6.36 release.
+>
+> Here you took out the 2.6.34.x stable updates, but left that last sentence
+> as a sort of dangling reference.  If we really need to pull this forward,
+> let's do the whole job.
+>
 
-Thanks,
+Yes, I did this because there hasn't been a final release for 2.6.38 yet.
+I will remove this line and update the above mentioned.
 
-	Ingo
+> Thanks,
+>
+> jon
+>
+
+No problem, my pleasure :)
+Luis
