@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752489Ab1GXKua (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 06:50:30 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:34695 "EHLO
+	id S1752531Ab1GXKvb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 06:51:31 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:36934 "EHLO
 	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750796Ab1GXKuW (ORCPT
+	with ESMTP id S1750796Ab1GXKvY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 06:50:22 -0400
-Date: Sun, 24 Jul 2011 12:50:18 +0200
+	Sun, 24 Jul 2011 06:51:24 -0400
+Date: Sun, 24 Jul 2011 12:51:19 +0200
 From: Tejun Heo <tj@kernel.org>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH tip:x86/memblock RFC] sparc: Use HAVE_MEMBLOCK_NODE_MAP
-Message-ID: <20110724105018.GO2622@htj.dyndns.org>
+To: Paul Mundt <lethal@linux-sh.org>, linux-sh@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH tip:x86/memblock RFC] SuperH: Use HAVE_MEMBLOCK_NODE_MAP
+Message-ID: <20110724105119.GP2622@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -22,102 +21,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sparc doesn't access early_node_map[] directly and enabling
+sh doesn't access early_node_map[] directly and enabling
 HAVE_MEMBLOCK_NODE_MAP is trivial - replacing add_active_range() calls
 with memblock_set_node() and selecting HAVE_MEMBLOCK_NODE_MAP is
 enough.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: sparclinux@vger.kernel.org
+Cc: Paul Mundt <lethal@linux-sh.org>
+Cc: linux-sh@vger.kernel.org
 ---
-David, memblock now can carry node information itself without relying
+Paul, memblock now can carry node information itself without relying
 on early_node_map[], which makes operations which make use of both
 information much saner and generally makes NUMA memory init simpler.
+For more details, please read the following thread.
 
-Boot-tested 64bit [!]SMP [!]NUMA on my non-NUMA u60.  Compile tested
-32bit [!]SMP.
+ http://thread.gmane.org/gmane.linux.kernel.cross-arch/10354
+
+I couldn't get the cross-compiler from korg to build configuration
+with CPU w/ NUMA support but given the trivial nature of the change, I
+don't think it would cause build failures on different configs, but
+this definitely needs testing on actual NUMA configuration.
 
 The patches implementing HAVE_MEMBLOCK_NODE_MAP is currently in
 tip:x86/memblock branch on which this patch is based on.
 
 Thanks.
 
- arch/sparc/Kconfig      |    3 +++
- arch/sparc/mm/init_64.c |   24 ++++--------------------
- 2 files changed, 7 insertions(+), 20 deletions(-)
+ arch/sh/Kconfig        |    1 +
+ arch/sh/kernel/setup.c |    3 ++-
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
-Index: work/arch/sparc/Kconfig
+Index: work/arch/sh/Kconfig
 ===================================================================
---- work.orig/arch/sparc/Kconfig
-+++ work/arch/sparc/Kconfig
-@@ -356,6 +356,9 @@ config NODES_SPAN_OTHER_NODES
- config ARCH_POPULATES_NODE_MAP
- 	def_bool y if SPARC64
- 
-+config HAVE_MEMBLOCK_NODE_MAP
-+	def_bool y if SPARC64
-+
- config ARCH_SELECT_MEMORY_MODEL
- 	def_bool y if SPARC64
- 
-Index: work/arch/sparc/mm/init_64.c
+--- work.orig/arch/sh/Kconfig
++++ work/arch/sh/Kconfig
+@@ -4,6 +4,7 @@ config SUPERH
+ 	select CLKDEV_LOOKUP
+ 	select HAVE_IDE if HAS_IOPORT
+ 	select HAVE_MEMBLOCK
++	select HAVE_MEMBLOCK_NODE_MAP
+ 	select HAVE_OPROFILE
+ 	select HAVE_GENERIC_DMA_COHERENT
+ 	select HAVE_ARCH_TRACEHOOK
+Index: work/arch/sh/kernel/setup.c
 ===================================================================
---- work.orig/arch/sparc/mm/init_64.c
-+++ work/arch/sparc/mm/init_64.c
-@@ -811,7 +811,7 @@ static u64 memblock_nid_range(u64 start,
- #endif
+--- work.orig/arch/sh/kernel/setup.c
++++ work/arch/sh/kernel/setup.c
+@@ -227,7 +227,8 @@ void __init __add_active_range(unsigned 
+ 	pmb_bolt_mapping((unsigned long)__va(start), start, end - start,
+ 			 PAGE_KERNEL);
  
- /* This must be invoked after performing all of the necessary
-- * add_active_range() calls for 'nid'.  We need to be able to get
-+ * memblock_set_node() calls for 'nid'.  We need to be able to get
-  * correct data from get_pfn_range_for_nid().
-  */
- static void __init allocate_node_data(int nid)
-@@ -982,14 +982,11 @@ static void __init add_node_ranges(void)
- 
- 			this_end = memblock_nid_range(start, end, &nid);
- 
--			numadbg("Adding active range nid[%d] "
-+			numadbg("Setting memblock NUMA node nid[%d] "
- 				"start[%lx] end[%lx]\n",
- 				nid, start, this_end);
- 
--			add_active_range(nid,
--					 start >> PAGE_SHIFT,
--					 this_end >> PAGE_SHIFT);
--
-+			memblock_set_node(start, this_end - start, nid);
- 			start = this_end;
- 		}
- 	}
-@@ -1277,7 +1274,6 @@ static void __init bootmem_init_nonnuma(
- {
- 	unsigned long top_of_ram = memblock_end_of_DRAM();
- 	unsigned long total_ram = memblock_phys_mem_size();
--	struct memblock_region *reg;
- 
- 	numadbg("bootmem_init_nonnuma()\n");
- 
-@@ -1287,20 +1283,8 @@ static void __init bootmem_init_nonnuma(
- 	       (top_of_ram - total_ram) >> 20);
- 
- 	init_node_masks_nonnuma();
--
--	for_each_memblock(memory, reg) {
--		unsigned long start_pfn, end_pfn;
--
--		if (!reg->size)
--			continue;
--
--		start_pfn = memblock_region_memory_base_pfn(reg);
--		end_pfn = memblock_region_memory_end_pfn(reg);
--		add_active_range(0, start_pfn, end_pfn);
--	}
--
-+	memblock_set_node(0, (phys_addr_t)ULLONG_MAX, 0);
- 	allocate_node_data(0);
--
- 	node_set_online(0);
+-	add_active_range(nid, start_pfn, end_pfn);
++	memblock_set_node(PFN_PHYS(start_pfn),
++			  PFN_PHYS(end_pfn - start_pfn), nid);
  }
  
+ void __init __weak plat_early_device_setup(void)
