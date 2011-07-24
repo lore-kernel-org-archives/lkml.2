@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752746Ab1GXNsN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 09:48:13 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:43750 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752720Ab1GXNsE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 09:48:04 -0400
-Date: Sun, 24 Jul 2011 15:47:13 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Przywara, Andre" <Andre.Przywara@amd.com>,
-        "Pohlack, Martin" <Martin.Pohlack@amd.com>
-Subject: Re: [PATCH] x86, AMD: Correct F15h IC aliasing issue
-Message-ID: <20110724134711.GC8496@elte.hu>
-References: <1311340547-7861-1-git-send-email-bp@amd64.org>
- <20110724111350.GD21120@elte.hu>
- <20110724134046.GA10583@aftab>
+	id S1752800Ab1GXNvl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 09:51:41 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:59798 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752720Ab1GXNvg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jul 2011 09:51:36 -0400
+Message-ID: <4E2C2362.1080204@monstr.eu>
+Date: Sun, 24 Jul 2011 15:51:30 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110724134046.GA10583@aftab>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH] input: xilinx_ps2: Add missing of_address.h header
+References: <1310564781-5979-1-git-send-email-monstr@monstr.eu> <CACxGe6vRZ4tCALpzFng2y9W_9zB3qQEntma+z292FXzDuYBRKQ@mail.gmail.com>
+In-Reply-To: <CACxGe6vRZ4tCALpzFng2y9W_9zB3qQEntma+z292FXzDuYBRKQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Grant,
 
-* Borislav Petkov <bp@amd64.org> wrote:
-
-> > > diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-> > > index b13ed39..2d380c6 100644
-> > > --- a/arch/x86/kernel/cpu/amd.c
-> > > +++ b/arch/x86/kernel/cpu/amd.c
-> > > @@ -458,6 +458,13 @@ static void __cpuinit early_init_amd(struct cpuinfo_x86 *c)
-> > >  					"with P0 frequency!\n");
-> > >  		}
-> > >  	}
-> > > +
-> > > +	if (unalias_va_addr == -1) {
-> > > +		if (c->x86 == 0x15)
-> > > +			unalias_va_addr = UNALIAS_VA_32 | UNALIAS_VA_64;
-> > > +		else
-> > > +			unalias_va_addr = 0;
-> > 
-> > the placement here feels a bit wrong - don't we have run-once CPU 
-> > quirks?
-> 
-> Maybe another func ptr in struct x86_cpuinit_ops
-> (arch/x86/kernel/x86_init.c) would be a better place?
-
-Yeah.
-
-Assuming no objections come i'd suggest to do that as an add-on patch 
-- so the first patch can be backported, the second patch cleans up 
-the x86_cpuinit_ops aspect.
+can you propose this patch to mainline through your devicetree tree?
 
 Thanks,
+Michal
 
-	Ingo
+Grant Likely wrote:
+> On Wed, Jul 13, 2011 at 10:46 PM, Michal Simek <monstr@monstr.eu> wrote:
+>> Add missing header.
+>>
+>> Error log:
+>> CC      drivers/input/serio/xilinx_ps2.o
+>> drivers/input/serio/xilinx_ps2.c: In function 'xps2_of_probe':
+>> drivers/input/serio/xilinx_ps2.c:249: error: implicit declaration of function 'of_address_to_resource'
+>>
+>> Signed-off-by: Michal Simek <monstr@monstr.eu>
+> 
+> Acked-by: Grant Likely <grant.likely@secretlab.ca>
+> 
+>> ---
+>>  drivers/input/serio/xilinx_ps2.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/input/serio/xilinx_ps2.c b/drivers/input/serio/xilinx_ps2.c
+>> index 80baa53..d64c5a4 100644
+>> --- a/drivers/input/serio/xilinx_ps2.c
+>> +++ b/drivers/input/serio/xilinx_ps2.c
+>> @@ -23,7 +23,7 @@
+>>  #include <linux/init.h>
+>>  #include <linux/list.h>
+>>  #include <linux/io.h>
+>> -
+>> +#include <linux/of_address.h>
+>>  #include <linux/of_device.h>
+>>  #include <linux/of_platform.h>
+>>
+>> --
+>> 1.5.5.6
+>>
+>>
+> 
+> 
+> 
+
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
