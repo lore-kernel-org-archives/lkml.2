@@ -1,382 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752751Ab1GXNlJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 09:41:09 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:42182 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752581Ab1GXNlD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 09:41:03 -0400
-Date: Sun, 24 Jul 2011 15:40:46 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Borislav Petkov <bp@amd64.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Przywara, Andre" <Andre.Przywara@amd.com>,
-        "Pohlack, Martin" <Martin.Pohlack@amd.com>
-Subject: Re: [PATCH] x86, AMD: Correct F15h IC aliasing issue
-Message-ID: <20110724134046.GA10583@aftab>
-References: <1311340547-7861-1-git-send-email-bp@amd64.org>
- <20110724111350.GD21120@elte.hu>
+	id S1752773Ab1GXNrM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 09:47:12 -0400
+Received: from powered.by.root24.eu ([91.121.20.142]:44007 "EHLO Root24.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752581Ab1GXNrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jul 2011 09:47:07 -0400
+X-Greylist: delayed 580 seconds by postgrey-1.27 at vger.kernel.org; Sun, 24 Jul 2011 09:47:07 EDT
+Message-ID: <4E2C2015.6090200@ionic.de>
+Date: Sun, 24 Jul 2011 15:37:25 +0200
+From: Mihai Moldovan <ionic@ionic.de>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:5.0) Gecko/20110624 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110724111350.GD21120@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: LKML <linux-kernel@vger.kernel.org>
+CC: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Subject: [PATCH] fix fat utf8 iocharset warning message
+X-Enigmail-Version: 1.2
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms060106000901080006060409"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+This is a cryptographically signed message in MIME format.
 
-thanks for taking the time to look at this in detail.
+--------------ms060106000901080006060409
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-On Sun, Jul 24, 2011 at 07:13:50AM -0400, Ingo Molnar wrote:
-> 
-> (Cc:-ed Linus and akpm)
-> 
-> * Borislav Petkov <bp@amd64.org> wrote:
-> 
-> > From: Borislav Petkov <borislav.petkov@amd.com>
-> > 
-> > This patch provides performance tuning for the "Bulldozer" CPU. With its
-> > shared instruction cache there is a chance of generating an excessive
-> > number of cache cross-invalidates when running specific workloads on the
-> > cores of a compute module.
-> > 
-> > This excessive amount of cross-invalidations can be observed if cache
-> > lines backed by shared physical memory alias in bits [14:12] of their
-> > virtual addresses, as those bits are used for the index generation.
-> > 
-> > This patch addresses the issue by zeroing out the slice [14:12] of
-> > the file mapping's virtual address at generation time, thus forcing
-> > those bits the same for all mappings of a single shared library across
-> > processes and, in doing so, avoids instruction cache aliases.
-> 
-> So all commonly-aliased virtual mappings of the same pages should be 
-> 32K granular aligned for good performance? Seems rather unfortunate 
-> for a modern CPU - is this going to be the case for all family 0x15 
-> CPUs?
+The fat_msg function already formats the given message and appends
+a newline to it - we don't need to do this in the passed message
+string as well, or will end up with a blank line printed in the
+kernel log ring buffer.
 
-Right, this gets enabled on all F15h by default for now... The thing
-is, the invalidations appear only in certain cases and when the two
-tasks run on the cores of one compute module. However, due to the
-scheduler migrating them, we need to have those VA assignments aligned
-(or unaliased) at process creation.
+Signed-off-by: Mihai Moldovan <ionic@ionic.de>
+Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+---
+ fs/fat/inode.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Another possibility would be to not 32K align but never schedule them
-on the same compute module but that won't fly with n tasks and n cores
-scenario.
+diff --git a/fs/fat/inode.c b/fs/fat/inode.c
+index 5942fec..46530a1 100644
+--- a/fs/fat/inode.c
++++ b/fs/fat/inode.c
+@@ -1190,7 +1190,7 @@ out:
+     if (!strcmp(opts->iocharset, "utf8")) {
+         fat_msg(sb, KERN_ERR, "utf8 is not a recommended IO charset"
+                " for FAT filesystems, filesystem will be "
+-               "case sensitive!\n");
++               "case sensitive!");
+     }
+=20
+     /* If user doesn't specify allow_utime, it's initialized from dmask.=
+ */
+--=20
+1.7.6
 
-> > It also adds the kernel command line option
-> > "unalias_va_addr=(32|64|off)" with which virtual address unaliasing
-> > can be enabled for 32-bit or 64-bit x86 individually, or be completely
-> > disabled.
-> 
-> So the default behavior is to have this aligning enabled.
 
-Yes, it gets enabled on F15h by default.
+--------------ms060106000901080006060409
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Description: S/MIME Cryptographic Signature
 
-> > This change leaves virtual region address allocation on other families
-> > and/or vendors unaffected.
-> > 
-> > Signed-off-by: Andre Przywara <andre.przywara@amd.com>
-> > Signed-off-by: Martin Pohlack <martin.pohlack@amd.com>
-> > Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-> > ---
-> >  Documentation/kernel-parameters.txt |    6 ++++
-> >  arch/x86/include/asm/elf.h          |   36 +++++++++++++++++++++++++++
-> >  arch/x86/kernel/cpu/amd.c           |    7 +++++
-> >  arch/x86/kernel/sys_x86_64.c        |   46 ++++++++++++++++++++++++++++++++--
-> >  arch/x86/mm/mmap.c                  |   15 -----------
-> >  arch/x86/vdso/vma.c                 |   10 +++++++
-> >  6 files changed, 102 insertions(+), 18 deletions(-)
-> > 
-> > diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> > index fd248a31..17eda04 100644
-> > --- a/Documentation/kernel-parameters.txt
-> > +++ b/Documentation/kernel-parameters.txt
-> > @@ -2535,6 +2535,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
-> >  			Note that genuine overcurrent events won't be
-> >  			reported either.
-> >  
-> > +	unalias_va_addr
-> > +			[X86-64] Unalias VA address by clearing slice [14:12]
-> > +			1: only on 32-bit
-> > +			2: only on 64-bit
-> > +			off: disabled on both 32 and 64-bit
-> 
-> This says nothing about why it's cleared, what it does and why one 
-> would want to handle it differently on 32-bit and 64-bit.
-
-This is there in case users care more about the 3bits ASLR granularity
-than invalidations amount, for example. I'll make this more descriptive.
-
-[..]
-
-> > +extern int unalias_va_addr;
-> > +static inline unsigned long unalias_addr(unsigned long addr, bool incr)
-> > +{
-> > +	/* handle both 32- and 64-bit with a single conditional */
-> > +	if (!(unalias_va_addr & (2 - mmap_is_ia32())))
-> > +		return addr;
-> > +
-> > +	/* check if [14:12] are already cleared */
-> > +	if (!(addr & (0x7 << PAGE_SHIFT)))
-> > +		return addr;
-> > +
-> > +	addr = addr & ~(0x7 << PAGE_SHIFT);
-> > +	if (incr)
-> > +		addr += (0x8 << PAGE_SHIFT);
-> > +
-> > +	return addr;
-> > +}
-> 
-> Looks too big to be inlined.
-
-Ok, will change.
-
-> Also, there's no explanation what the 'incr' logic is about and why it
-> adds 32K to the address. Is this round-up logic in disguise?
-
-Basically yes. Round-up and -down, actually. The idea
-is for the unalias_addr() helper to be called both from
-arch_get_unmapped_area_topdown() and arch_get_unmapped_area() depending
-on the search direction we take in the VA space. So 'incr' says whether
-we increment the last cached VA addr (mm->free_area_cache) or we
-decrement. In both cases, it changes addr so that its bits [14:12] are
-zeros.
-
-> >  #endif /* _ASM_X86_ELF_H */
-> > diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-> > index b13ed39..2d380c6 100644
-> > --- a/arch/x86/kernel/cpu/amd.c
-> > +++ b/arch/x86/kernel/cpu/amd.c
-> > @@ -458,6 +458,13 @@ static void __cpuinit early_init_amd(struct cpuinfo_x86 *c)
-> >  					"with P0 frequency!\n");
-> >  		}
-> >  	}
-> > +
-> > +	if (unalias_va_addr == -1) {
-> > +		if (c->x86 == 0x15)
-> > +			unalias_va_addr = UNALIAS_VA_32 | UNALIAS_VA_64;
-> > +		else
-> > +			unalias_va_addr = 0;
-> 
-> the placement here feels a bit wrong - don't we have run-once CPU 
-> quirks?
-
-Maybe another func ptr in struct x86_cpuinit_ops
-(arch/x86/kernel/x86_init.c) would be a better place?
-
-> > +	}
-> >  }
-> >  
-> >  static void __cpuinit init_amd(struct cpuinfo_x86 *c)
-> > diff --git a/arch/x86/kernel/sys_x86_64.c b/arch/x86/kernel/sys_x86_64.c
-> > index ff14a50..323c411 100644
-> > --- a/arch/x86/kernel/sys_x86_64.c
-> > +++ b/arch/x86/kernel/sys_x86_64.c
-> > @@ -18,6 +18,30 @@
-> >  #include <asm/ia32.h>
-> >  #include <asm/syscalls.h>
-> >  
-> > +/* see Documentation/kernel-parameters.txt */
-> > +int unalias_va_addr = -1;
-> 
-> used by hot VM code so this really wants to be __read_mostly ...
-
-Ok.
-
-> > +
-> > +static int __init control_va_addr_unaliasing(char *str)
-> > +{
-> > +	if (*str == 0)
-> > +		return 1;
-> > +
-> > +	if (*str == '=')
-> > +		str++;
-> > +
-> > +	if (!strcmp(str, "32"))
-> > +		unalias_va_addr = UNALIAS_VA_32;
-> > +	else if (!strcmp(str, "64"))
-> > +		unalias_va_addr = UNALIAS_VA_64;
-> > +	else if (!strcmp(str, "off"))
-> > +		unalias_va_addr = 0;
-> > +	else
-> > +		return 0;
-> 
-> there's no 'both'/'all' setting: while it can be achieved by leaving 
-> out this boot option (i.e. using the default) we generally try to 
-> allow the setting of all combinations.
-
-My reasoning here was that it gets enabled on F15h by default but we
-don't want it on the remaining families. This is additionally to tweak
-the behavior on F15h only but theoretically you could enable it on
-everything else. I think I want to restrict the visibility/modifiability
-of this option to F15h only.
-
-> > +
-> > +	return 1;
-> > +}
-> > +__setup("unalias_va_addr", control_va_addr_unaliasing);
-> > +
-> >  SYSCALL_DEFINE6(mmap, unsigned long, addr, unsigned long, len,
-> >  		unsigned long, prot, unsigned long, flags,
-> >  		unsigned long, fd, unsigned long, off)
-> > @@ -92,6 +116,9 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
-> >  	start_addr = addr;
-> >  
-> >  full_search:
-> > +	if (filp)
-> > +		addr = unalias_addr(addr, true);
-> > +
-> >  	for (vma = find_vma(mm, addr); ; vma = vma->vm_next) {
-> >  		/* At this point:  (!vma || addr < vma->vm_end). */
-> >  		if (end - len < addr) {
-> > @@ -117,6 +144,9 @@ full_search:
-> >  			mm->cached_hole_size = vma->vm_start - addr;
-> >  
-> >  		addr = vma->vm_end;
-> > +
-> > +		if (filp)
-> > +			addr = unalias_addr(addr, true);
-> 
-> Instead of polluting the code with 'if (filp)' conditions (which is 
-> really a property specific to this VA placement quirk) please push it 
-> into the address alignment function so that it looks like this:
-> 
-> 	addr = cache_aliasing_quirk(addr, filp);
-> 
-> or so. (see further below about the 'unalias' naming.)
-
-Ok, will do.
-
-I was also thinking of doing something similar to ALTERNATIVE_JUMP
-but instead of looking at a CPU feature bit, it can check a generic
-conditional evaluated at runtime and patch in an unconditional 'jmp' to
-make this codepath even cheaper. But this maybe later.
-
-> >  
-> > @@ -161,10 +191,17 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
-> >  
-> >  	/* make sure it can fit in the remaining address space */
-> >  	if (addr > len) {
-> > -		vma = find_vma(mm, addr-len);
-> > -		if (!vma || addr <= vma->vm_start)
-> > +		unsigned long tmp_addr = addr;
-> > +
-> > +		if (filp)
-> > +			tmp_addr = unalias_addr(addr - len, false);
-> > +		else
-> > +			tmp_addr = tmp_addr - len;
-> 
-> This too could be written cleaner with the updated helper.
-
-Sure, will do.
-
-[..]
-
-> > diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
-> > index 7abd2be..a48dfd2 100644
-> > --- a/arch/x86/vdso/vma.c
-> > +++ b/arch/x86/vdso/vma.c
-> > @@ -69,6 +69,16 @@ static unsigned long vdso_addr(unsigned long start, unsigned len)
-> >  	addr = start + (offset << PAGE_SHIFT);
-> >  	if (addr >= end)
-> >  		addr = end;
-> > +
-> > +	if (unalias_va_addr) {
-> > +		/*
-> > +		 * page-align it here so that get_unmapped_area doesn't
-> > +		 * align it wrongfully again to the next page
-> > +		 */
-> > +		addr = PAGE_ALIGN(addr);
-> > +		addr = unalias_addr(addr, false);
-> > +	}
-> 
-> Well, this cuts 3 bits from the randomization granularity. It would 
-> be better to extend the scope/range of randomization beyond the 
-> current PMD_SIZE range instead of cutting it.
-> 
-> (Arguably it would also make sense to increase vdso randomization 
-> beyond a 2MB range as well, but that's beyond this patch.)
-
-AFAIU, this would cost us 2 pages: a PMD and a PTE if we don't keep the
-vDSO in the same PTE as the comment above vdso_addr() puts it:
-
-/* Put the vdso above the (randomized) stack with another randomized offset.
-   This way there is no hole in the middle of address space.
-   To save memory make sure it is still in the same PTE as the stack top.
-   This doesn't give that many random bits */
-
-Hmm..
-
-> also, the PAGE_ALIGN() complication here looks unnecessary - can the 
-> vdso 'addr' ever be not 4K aligned above?
-
-Yeah, it can. I did some trace_printk runs and 'addr' wasn't 4K aligned
-in some cases. I think this is because of the stack randomization we do
-and we use mm->start_stack to get the vdso base address. Unfortunately,
-I can't find those traces anymore but will do some again tomorrow.
-
-> Thirdly, we stick this vdso_addr() result into a get_unmapped_area() 
-> call - which does an unalias_addr() call yet another time, right? So 
-> why the two separate calls?
-
-Right, in order to unalias the address, I check if we have a file
-mapping which backs it - if (filp) - and this is not the case for the
-vDSO. And if the address is not 4K aligned and we unalias it first and
-_then_ align it, resulting in not what we want.
-
-But speaking of file mappings, the better fix should be to pass
-protection flags down to get_unmapped_area() from do_mmap_pgoff()
-so that we can check against PROT_EXEC and only then change the
-address. However, this would require changes all over the place since
-->get_unmapped_area is part of fs file_operations, etc, etc.
-
-It still works this way too, anyway, because for example:
-
-$ cat /proc/self/maps
-...
-
-7f19429b1000-7f1942b2b000 r-xp 00000000 08:01 4112535                    /lib/x86_64-linux-gnu/libc-2.13.so
-7f1942b2b000-7f1942d2b000 ---p 0017a000 08:01 4112535                    /lib/x86_64-linux-gnu/libc-2.13.so
-7f1942d2b000-7f1942d2f000 r--p 0017a000 08:01 4112535                    /lib/x86_64-linux-gnu/libc-2.13.so
-7f1942d2f000-7f1942d30000 rw-p 0017e000 08:01 4112535                    /lib/x86_64-linux-gnu/libc-2.13.so
-
-when we do the first "r-xp" mapping above, we do
-
-get_unmapped_area(filp != NULL, addr = 0...)
-
-and we change the address accordingly, but the follow-up mappings come
-in either with MAP_FIXED set so we return the requested address early
-or they're anonymous mappings for .bss and RO data which have no file
-backing anyways.
-
-> Also, a naming nit: i find the whole 'unalias' language above rather 
-> confusing in this context: AFAICS the point is to intentionally 
-> *align* those mappings. While that technically 'unaliases' them in 
-> CPU cache coherency lingo, the code you are modifying here is VM code 
-> where 'unaliasing' can mean a number of other things, none of which 
-> are related to this problem.
-> 
-> 'Aligning' a mapping to a given granularity is a common expression 
-> though.
-
-Yes, makes sense, will change.
-
-Thanks again for the review.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIINBjCC
+BjQwggQcoAMCAQICASAwDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
+DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
+Z25pbmcxKTAnBgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3
+MTAyNDIxMDI1NVoXDTE3MTAyNDIxMDI1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
+dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
+aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
+aWVudCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMsohUWcASz7GfKrpTOM
+KqANy9BV7V0igWdGxA8IU77L3aTxErQ+fcxtDYZ36Z6GH0YFn7fq5RADteP0AYzrCA+EQTfi
+8q1+kA3m0nwtwXG94M5sIqsvs7lRP1aycBke/s5g9hJHryZ2acScnzczjBCAo7X1v5G3yw8M
+DP2m2RCye0KfgZ4nODerZJVzhAlOD9YejvAXZqHksw56HzElVIoYSZ3q4+RJuPXXfIoyby+Y
+2m1E+YzX5iCZXBx05gk6MKAW1vaw4/v2OOLy6FZH3XHHtOkzUreG//CsFnB9+uaYSlR65cdG
+zTsmoIK8WH1ygoXhRBm98SD7Hf/r3FELNvUCAwEAAaOCAa0wggGpMA8GA1UdEwEB/wQFMAMB
+Af8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBSuVYNv7DHKufcd+q9rMfPIHeOsuzAfBgNV
+HSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRaMFgwJwYIKwYBBQUH
+MAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYhaHR0cDovL3d3
+dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6Ly93d3cu
+c3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5jb20v
+c2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
+dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
+d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBADqp
+Jw3I07QWke9plNBpxUxcffc7nUrIQpJHDci91DFG7fVhHRkMZ1J+BKg5UNUxIFJ2Z9B90Mic
+c/NXcs7kPBRdn6XGO/vPc87Y6R+cWS9Nc9+fp3Enmsm94OxOwI9wn8qnr/6o3mD4noP9Jphw
+UPTXwHovjavRnhUQHLfo/i2NG0XXgTHXS2Xm0kVUozXqpYpAdumMiB/vezj1QHQJDmUdPYMc
+p+reg9901zkyT3fDW/ivJVv6pWtkh6Pw2ytZT7mvg7YhX3V50Nv860cV11mocUVcqBLv0gcT
++HBDYtbuvexNftwNQKD5193A7zN4vG7CTYkXxytSjKuXrpEatEiFPxWgb84nVj25SU5q/r1X
+hwby6mLhkbaXslkVtwEWT3Van49rKjlK4XrUKYYWtnfzq6aSak5u0Vpxd1rY79tWhD3EdCvO
+hNz/QplNa+VkIsrcp7+8ZhP1l1b2U6MaxIVteuVMD3X0vziIwr7jxYae9FZjbxlpUemqXjcC
+0QaFfN7qI0JsQMALL7iGRBg7K0CoOBzECdD3fuZil5kU/LP9cr1BK31U0Uy651bFnAMMMkqh
+AChIbn0ei72VnbpSsrrSdF0BAGYQ8vyHae5aCg+H75dVCV33K6FuxZrf09yTz+Vx/PkdRUYk
+XmZz/OTfyJXsUOUXrym6KvI2rYpccSk5MIIGyjCCBbKgAwIBAgICBnIwDQYJKoZIhvcNAQEF
+BQAwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJT
+ZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBD
+bGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTAeFw0xMDAzMjMxNjI2NTZa
+Fw0xMjAzMjQwNTQ2MjJaMIHHMSAwHgYDVQQNExcxNjg2MTctOUo5elVlMUVuNHg5b3ZiTzEL
+MAkGA1UEBhMCREUxGzAZBgNVBAgTEkJhZGVuLVd1ZXJ0dGVtYmVyZzESMBAGA1UEBxMJS2Fy
+bHNydWhlMS0wKwYDVQQLEyRTdGFydENvbSBWZXJpZmllZCBDZXJ0aWZpY2F0ZSBNZW1iZXIx
+FzAVBgNVBAMTDk1paGFpIE1vbGRvdmFuMR0wGwYJKoZIhvcNAQkBFg5pb25pY0Bpb25pYy5k
+ZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMssU6wPYwJJAxY07er/P6ANPXgz
+yCczuA+7q/eql1St56r91yQ534A4oeXEqRZvpMsDuvczNG1Yz80nLpM+lO3Wg8csxaGReewe
+RBIS3abf40HCIBVlOl7oTcmzZuzqz2KE70CHZ7p3k0WAEUfUb7AS8qrqxuoj0dtUkrdMwjoD
+rPWs3zJ+vHo5FU3sTvj2ksiStjG3NMERBT+1Gzf2pVx2cKJRBmqACbKZfwE9QufRqrZT8bWY
+i5DCV34RL7eVLnejLL+MvtarZv2K8Acojq9t7zO9Z+0rnlr6o46c2egVB+s/ol28q3DEce6f
+p1KrCiujqRqQwVQ8O/2ogg4l5h0CAwEAAaOCAvcwggLzMAkGA1UdEwQCMAAwCwYDVR0PBAQD
+AgSwMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQU3JbCyOa+BBzV
+nBAKycZGQAzit2wwHwYDVR0jBBgwFoAUrlWDb+wxyrn3HfqvazHzyB3jrLswGQYDVR0RBBIw
+EIEOaW9uaWNAaW9uaWMuZGUwggFCBgNVHSAEggE5MIIBNTCCATEGCysGAQQBgbU3AQIBMIIB
+IDAuBggrBgEFBQcCARYiaHR0cDovL3d3dy5zdGFydHNzbC5jb20vcG9saWN5LnBkZjA0Bggr
+BgEFBQcCARYoaHR0cDovL3d3dy5zdGFydHNzbC5jb20vaW50ZXJtZWRpYXRlLnBkZjCBtwYI
+KwYBBQUHAgIwgaowFBYNU3RhcnRDb20gTHRkLjADAgEBGoGRTGltaXRlZCBMaWFiaWxpdHks
+IHNlZSBzZWN0aW9uICpMZWdhbCBMaW1pdGF0aW9ucyogb2YgdGhlIFN0YXJ0Q29tIENlcnRp
+ZmljYXRpb24gQXV0aG9yaXR5IFBvbGljeSBhdmFpbGFibGUgYXQgaHR0cDovL3d3dy5zdGFy
+dHNzbC5jb20vcG9saWN5LnBkZjBjBgNVHR8EXDBaMCugKaAnhiVodHRwOi8vd3d3LnN0YXJ0
+c3NsLmNvbS9jcnR1Mi1jcmwuY3JsMCugKaAnhiVodHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9j
+cnR1Mi1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkGCCsGAQUFBzABhi1odHRwOi8vb2Nz
+cC5zdGFydHNzbC5jb20vc3ViL2NsYXNzMi9jbGllbnQvY2EwQgYIKwYBBQUHMAKGNmh0dHA6
+Ly93d3cuc3RhcnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczIuY2xpZW50LmNhLmNydDAjBgNV
+HRIEHDAahhhodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcNAQEFBQADggEBACle
+v1JwhVI4Pu8GzKRJzJdcYdsT7fJ9R5OzNnec4CADsb9Xu7HDyRa5qABBXihHvmo+fxGVe6Hy
+8TxPvZYCGaeUi2t6aodIFOTQDWcdEP9o7SynBOXHqsN2lZ08Q4MBuoGfquJi0XjpCNnLY9KS
+OZTHTwAIqGVH7lf99egY1Atfl+y/Lc0e6Sw/0qvcnaQSzwCZ/OkqVWSTGDZXwCDFuy6Cbwjy
+Kn9qshZzeMqvSKHmHPihzJQ6eVXImZgrgWk5FrBpO8d59xoqO32PbSyM0cZhqvkbG/nlWPbz
+Xn13+cgG7ajAGCg8XueMeh3m03sIIHinvgaeHOAqeO3TvVVv6WQxggPNMIIDyQIBATCBkzCB
+jDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3Vy
+ZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNz
+IDIgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgIGcjAJBgUrDgMCGgUAoIICDjAY
+BgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMTA3MjQxMzM3MjVa
+MCMGCSqGSIb3DQEJBDEWBBSVchdfbVr2txC19tWQ5CgrPja1bTBfBgkqhkiG9w0BCQ8xUjBQ
+MAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzAOBggqhkiG9w0DAgICAIAwDQYIKoZIhvcNAwIC
+AUAwBwYFKw4DAgcwDQYIKoZIhvcNAwICASgwgaQGCSsGAQQBgjcQBDGBljCBkzCBjDELMAkG
+A1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdp
+dGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDIgUHJp
+bWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgIGcjCBpgYLKoZIhvcNAQkQAgsxgZaggZMw
+gYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1
+cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFz
+cyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQQICBnIwDQYJKoZIhvcNAQEBBQAE
+ggEAXfaxiYeAompZgFoNOnRlkgpmXvmeNemiKclrevhFtkeRYcQuEHQpR0f5gUQezzczTFk2
+QB9DjltOmx8XLaHG8OggUXj7XgNiwqaZuJEL+GjZJ51JumavqZTXLrm1yj8uHfSdoyA0eZhN
+NCoIe2XOgmkdLNDj/lOBHmEEqMR7wu9QQaajgxTWjG5R8oNTxr/jNF2Thv05hksneNE4wdTu
+H4rRy2sjZFDL4XYbtE81qfY0r+Qx+X+X5mBTA43/4cmXX+T/J4b6RvUPuyKv6gLoFk+Epf4o
+Mby6OEJ+4kuh9XbWHrSndlHJfYTrG8oEgSJPruLRdMLkFr25k5NrFIL73gAAAAAAAA==
+--------------ms060106000901080006060409--
