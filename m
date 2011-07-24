@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751609Ab1GXRWw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 13:22:52 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:24697 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751787Ab1GXRWp (ORCPT
+	id S1751824Ab1GXRXp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 13:23:45 -0400
+Received: from lunge.queued.net ([173.255.254.236]:34369 "EHLO
+	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751552Ab1GXRXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 13:22:45 -0400
-Date: Sun, 24 Jul 2011 19:22:44 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Mihai Moldovan <ionic@ionic.de>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Subject: Re: [PATCH] fix fat utf8 iocharset warning message
-In-Reply-To: <4E2C2015.6090200@ionic.de>
-Message-ID: <alpine.LNX.2.00.1107241921350.5758@swampdragon.chaosbits.net>
-References: <4E2C2015.6090200@ionic.de>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 24 Jul 2011 13:23:40 -0400
+Date: Sun, 24 Jul 2011 10:23:37 -0700
+From: Andres Salomon <dilinger@queued.net>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Daniel Drake <dsd@laptop.org>, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, x86@kernel.org
+Subject: Re: OLPC power management patches - merge for 3.1?
+Message-ID: <20110724102337.6efffea7@queued.net>
+In-Reply-To: <20110724101323.d5c9bc5a.rdunlap@xenotime.net>
+References: <CAGq3pz4VHgagUQ+jGJdt9LL4UnFt+CDgcLLXbuVeKfWMc=0wAA@mail.gmail.com>
+	<20110723202032.67ebdbcc.rdunlap@xenotime.net>
+	<CAGq3pz6L5VzYaGBN8Py3x9s-orAp9AoG1OMM=1p8KJ1b3TVR6Q@mail.gmail.com>
+	<20110724101323.d5c9bc5a.rdunlap@xenotime.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 24 Jul 2011, Mihai Moldovan wrote:
-
-> The fat_msg function already formats the given message and appends
-> a newline to it - we don't need to do this in the passed message
-> string as well, or will end up with a blank line printed in the
-> kernel log ring buffer.
+On Sun, 24 Jul 2011 10:13:23 -0700
+Randy Dunlap <rdunlap@xenotime.net> wrote:
+[...]
+> > or
+> > 
+> > depends on POWER_SUPPLY
+> > select POWER_SUPPLY
+> > 
+> > ?
 > 
-> Signed-off-by: Mihai Moldovan <ionic@ionic.de>
-> Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-> ---
->  fs/fat/inode.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/fat/inode.c b/fs/fat/inode.c
-> index 5942fec..46530a1 100644
-> --- a/fs/fat/inode.c
-> +++ b/fs/fat/inode.c
-> @@ -1190,7 +1190,7 @@ out:
->      if (!strcmp(opts->iocharset, "utf8")) {
->          fat_msg(sb, KERN_ERR, "utf8 is not a recommended IO charset"
-
-Is KERN_ERR really the right thing to use here? 
-Sounds more like a warning to me..
-
-
->                 " for FAT filesystems, filesystem will be "
-> -               "case sensitive!\n");
-> +               "case sensitive!");
->      }
->  
->      /* If user doesn't specify allow_utime, it's initialized from dmask. */
+> You can't do both of those AFAIK -- and it already depends on
+> POWER_SUPPLY. I guess you could remove "depends on POWER_SUPPLY" and
+> add "select POWER_SUPPLY". I'll see if that works.
 > 
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
 
+Yeah, select appears to be the only option so long as bool stuff in
+arch/ depends upon tristate stuff in drivers/.  It'd be nice to get the
+OLPC PM code to be modular, but getting it upstream (the code is from
+2007 or 2008!) is a nice first step.
