@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752579Ab1GXJqt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 05:46:49 -0400
-Received: from www.linutronix.de ([62.245.132.108]:45990 "EHLO
+	id S1752249Ab1GXKGJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 06:06:09 -0400
+Received: from www.linutronix.de ([62.245.132.108]:59953 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752128Ab1GXJqK (ORCPT
+	with ESMTP id S1751223Ab1GXKGC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 05:46:10 -0400
-Message-Id: <20110723212626.688229918@linutronix.de>
-User-Agent: quilt/0.48-1
-Date: Sun, 24 Jul 2011 09:46:09 -0000
+	Sun, 24 Jul 2011 06:06:02 -0400
+Date: Sun, 24 Jul 2011 12:05:59 +0200 (CEST)
 From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: x86@kernel.org, Hans Rosenfeld <hans.rosenfeld@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Mike Travis <travis@sgi.com>
-Subject: [patch 3/3] x86: cache_info: Kill the atomic allocation in
- amd_init_l3_cache()
-References: <20110723212603.517924252@linutronix.de>
-Content-Disposition: inline; filename=x86-amd-nb-kill-atomic-allocation.patch
+To: Yong Zhang <yong.zhang0@gmail.com>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: Re: [ANNOUNCE] 3.0-rt2
+In-Reply-To: <20110724010932.GA2133@zhy>
+Message-ID: <alpine.LFD.2.02.1107241204300.2702@ionos>
+References: <alpine.LFD.2.02.1107231706380.2702@ionos> <20110724010932.GA2133@zhy>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -27,251 +26,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's not a good reason to allocate memory in the smp function call
-just because someone thought it's the most conveniant place.
+On Sun, 24 Jul 2011, Yong Zhang wrote:
+> [ 1244.912621]  [<c15d151c>] rt_spin_lock+0x1c/0x40
+> [ 1244.912626]  [<c111f763>] mem_cgroup_split_huge_fixup+0x43/0xd0
 
-The AMD L3 data is coupled to the northbridge info by a pointer to the
-corresponding north bridge data. So allocating it with the northbridge
-data and referencing the northbridge in the cache_info code instead
-uses less memory and gets rid of that atomic allocation hack in the
-smp function call.
+Can you please disable CONFIG_TRANSPARENT_HUGEPAGE for now? That's not
+easy to fix, but I put it on the todo list.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/include/asm/amd_nb.h         |    6 ++
- arch/x86/kernel/cpu/intel_cacheinfo.c |   74 +++++++++++-----------------------
- 2 files changed, 32 insertions(+), 48 deletions(-)
+Thanks,
 
-Index: linux-2.6/arch/x86/include/asm/amd_nb.h
-===================================================================
---- linux-2.6.orig/arch/x86/include/asm/amd_nb.h
-+++ linux-2.6/arch/x86/include/asm/amd_nb.h
-@@ -19,9 +19,15 @@ extern int amd_numa_init(void);
- extern int amd_get_subcaches(int);
- extern int amd_set_subcaches(int, int);
- 
-+struct amd_l3_cache {
-+	unsigned indices;
-+	u8	 subcaches[4];
-+};
-+
- struct amd_northbridge {
- 	struct pci_dev *misc;
- 	struct pci_dev *link;
-+	struct amd_l3_cache l3_cache;
- };
- 
- struct amd_northbridge_info {
-Index: linux-2.6/arch/x86/kernel/cpu/intel_cacheinfo.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ linux-2.6/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -151,18 +151,12 @@ union _cpuid4_leaf_ecx {
- 	u32 full;
- };
- 
--struct amd_l3_cache {
--	struct	 amd_northbridge *nb;
--	unsigned indices;
--	u8	 subcaches[4];
--};
--
- struct _cpuid4_info_regs {
- 	union _cpuid4_leaf_eax eax;
- 	union _cpuid4_leaf_ebx ebx;
- 	union _cpuid4_leaf_ecx ecx;
- 	unsigned long size;
--	struct amd_l3_cache *l3;
-+	struct amd_northbridge *nb;
- };
- 
- struct _cpuid4_info {
-@@ -309,12 +303,13 @@ struct _cache_attr {
- /*
-  * L3 cache descriptors
-  */
--static void __cpuinit amd_calc_l3_indices(struct amd_l3_cache *l3)
-+static void __cpuinit amd_calc_l3_indices(struct amd_northbridge *nb)
- {
-+	struct amd_l3_cache *l3 = &nb->l3_cache;
- 	unsigned int sc0, sc1, sc2, sc3;
- 	u32 val = 0;
- 
--	pci_read_config_dword(l3->nb->misc, 0x1C4, &val);
-+	pci_read_config_dword(nb->misc, 0x1C4, &val);
- 
- 	/* calculate subcache sizes */
- 	l3->subcaches[0] = sc0 = !(val & BIT(0));
-@@ -328,33 +323,16 @@ static void __cpuinit amd_calc_l3_indice
- static void __cpuinit amd_init_l3_cache(struct _cpuid4_info_regs *this_leaf,
- 					int index)
- {
--	static struct amd_l3_cache *__cpuinitdata l3_caches;
- 	int node;
- 
- 	/* only for L3, and not in virtualized environments */
--	if (index < 3 || amd_nb_num() == 0)
-+	if (index < 3)
- 		return;
- 
--	/*
--	 * Strictly speaking, the amount in @size below is leaked since it is
--	 * never freed but this is done only on shutdown so it doesn't matter.
--	 */
--	if (!l3_caches) {
--		int size = amd_nb_num() * sizeof(struct amd_l3_cache);
--
--		l3_caches = kzalloc(size, GFP_ATOMIC);
--		if (!l3_caches)
--			return;
--	}
--
- 	node = amd_get_nb_id(smp_processor_id());
--
--	if (!l3_caches[node].nb) {
--		l3_caches[node].nb = node_to_amd_nb(node);
--		amd_calc_l3_indices(&l3_caches[node]);
--	}
--
--	this_leaf->l3 = &l3_caches[node];
-+	this_leaf->nb = node_to_amd_nb(node);
-+	if (this_leaf->nb && !this_leaf->nb->l3_cache.indices)
-+		amd_calc_l3_indices(this_leaf->nb);
- }
- 
- /*
-@@ -364,11 +342,11 @@ static void __cpuinit amd_init_l3_cache(
-  *
-  * @returns: the disabled index if used or negative value if slot free.
-  */
--int amd_get_l3_disable_slot(struct amd_l3_cache *l3, unsigned slot)
-+int amd_get_l3_disable_slot(struct amd_northbridge *nb, unsigned slot)
- {
- 	unsigned int reg = 0;
- 
--	pci_read_config_dword(l3->nb->misc, 0x1BC + slot * 4, &reg);
-+	pci_read_config_dword(nb->misc, 0x1BC + slot * 4, &reg);
- 
- 	/* check whether this slot is activated already */
- 	if (reg & (3UL << 30))
-@@ -382,10 +360,10 @@ static ssize_t show_cache_disable(struct
- {
- 	int index;
- 
--	if (!this_leaf->base.l3 || !amd_nb_has_feature(AMD_NB_L3_INDEX_DISABLE))
-+	if (!this_leaf->base.nb || !amd_nb_has_feature(AMD_NB_L3_INDEX_DISABLE))
- 		return -EINVAL;
- 
--	index = amd_get_l3_disable_slot(this_leaf->base.l3, slot);
-+	index = amd_get_l3_disable_slot(this_leaf->base.nb, slot);
- 	if (index >= 0)
- 		return sprintf(buf, "%d\n", index);
- 
-@@ -402,7 +380,7 @@ show_cache_disable_##slot(struct _cpuid4
- SHOW_CACHE_DISABLE(0)
- SHOW_CACHE_DISABLE(1)
- 
--static void amd_l3_disable_index(struct amd_l3_cache *l3, int cpu,
-+static void amd_l3_disable_index(struct amd_northbridge *nb, int cpu,
- 				 unsigned slot, unsigned long idx)
- {
- 	int i;
-@@ -415,10 +393,10 @@ static void amd_l3_disable_index(struct 
- 	for (i = 0; i < 4; i++) {
- 		u32 reg = idx | (i << 20);
- 
--		if (!l3->subcaches[i])
-+		if (!nb->l3_cache.subcaches[i])
- 			continue;
- 
--		pci_write_config_dword(l3->nb->misc, 0x1BC + slot * 4, reg);
-+		pci_write_config_dword(nb->misc, 0x1BC + slot * 4, reg);
- 
- 		/*
- 		 * We need to WBINVD on a core on the node containing the L3
-@@ -428,7 +406,7 @@ static void amd_l3_disable_index(struct 
- 		wbinvd_on_cpu(cpu);
- 
- 		reg |= BIT(31);
--		pci_write_config_dword(l3->nb->misc, 0x1BC + slot * 4, reg);
-+		pci_write_config_dword(nb->misc, 0x1BC + slot * 4, reg);
- 	}
- }
- 
-@@ -442,24 +420,24 @@ static void amd_l3_disable_index(struct 
-  *
-  * @return: 0 on success, error status on failure
-  */
--int amd_set_l3_disable_slot(struct amd_l3_cache *l3, int cpu, unsigned slot,
-+int amd_set_l3_disable_slot(struct amd_northbridge *nb, int cpu, unsigned slot,
- 			    unsigned long index)
- {
- 	int ret = 0;
- 
- 	/*  check if @slot is already used or the index is already disabled */
--	ret = amd_get_l3_disable_slot(l3, slot);
-+	ret = amd_get_l3_disable_slot(nb, slot);
- 	if (ret >= 0)
- 		return -EINVAL;
- 
--	if (index > l3->indices)
-+	if (index > nb->l3_cache.indices)
- 		return -EINVAL;
- 
- 	/* check whether the other slot has disabled the same index already */
--	if (index == amd_get_l3_disable_slot(l3, !slot))
-+	if (index == amd_get_l3_disable_slot(nb, !slot))
- 		return -EINVAL;
- 
--	amd_l3_disable_index(l3, cpu, slot, index);
-+	amd_l3_disable_index(nb, cpu, slot, index);
- 
- 	return 0;
- }
-@@ -474,7 +452,7 @@ static ssize_t store_cache_disable(struc
- 	if (!capable(CAP_SYS_ADMIN))
- 		return -EPERM;
- 
--	if (!this_leaf->base.l3 || !amd_nb_has_feature(AMD_NB_L3_INDEX_DISABLE))
-+	if (!this_leaf->base.nb || !amd_nb_has_feature(AMD_NB_L3_INDEX_DISABLE))
- 		return -EINVAL;
- 
- 	cpu = cpumask_first(to_cpumask(this_leaf->shared_cpu_map));
-@@ -482,7 +460,7 @@ static ssize_t store_cache_disable(struc
- 	if (strict_strtoul(buf, 10, &val) < 0)
- 		return -EINVAL;
- 
--	err = amd_set_l3_disable_slot(this_leaf->base.l3, cpu, slot, val);
-+	err = amd_set_l3_disable_slot(this_leaf->base.nb, cpu, slot, val);
- 	if (err) {
- 		if (err == -EEXIST)
- 			printk(KERN_WARNING "L3 disable slot %d in use!\n",
-@@ -511,7 +489,7 @@ static struct _cache_attr cache_disable_
- static ssize_t
- show_subcaches(struct _cpuid4_info *this_leaf, char *buf, unsigned int cpu)
- {
--	if (!this_leaf->base.l3 || !amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
-+	if (!this_leaf->base.nb || !amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
- 		return -EINVAL;
- 
- 	return sprintf(buf, "%x\n", amd_get_subcaches(cpu));
-@@ -526,7 +504,7 @@ store_subcaches(struct _cpuid4_info *thi
- 	if (!capable(CAP_SYS_ADMIN))
- 		return -EPERM;
- 
--	if (!this_leaf->base.l3 || !amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
-+	if (!this_leaf->base.nb || !amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
- 		return -EINVAL;
- 
- 	if (strict_strtoul(buf, 16, &val) < 0)
-@@ -1118,7 +1096,7 @@ static int __cpuinit cache_add_dev(struc
- 
- 		ktype_cache.default_attrs = default_attrs;
- #ifdef CONFIG_AMD_NB
--		if (this_leaf->base.l3)
-+		if (this_leaf->base.nb)
- 			ktype_cache.default_attrs = amd_l3_attrs();
- #endif
- 		retval = kobject_init_and_add(&(this_object->kobj),
+	tglx
 
 
