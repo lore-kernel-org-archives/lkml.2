@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751726Ab1GYMiH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 08:38:07 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:45403 "EHLO mx3.mail.elte.hu"
+	id S1751777Ab1GYMiO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 08:38:14 -0400
+Received: from ozlabs.org ([203.10.76.45]:49632 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751462Ab1GYMhf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 08:37:35 -0400
-Date: Mon, 25 Jul 2011 14:36:37 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Anton Blanchard <anton@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, emunson@mgebm.net,
-        linux-kernel@vger.kernel.org, amodra@gmail.com
-Subject: Re: [PATCH] perf: Fix symbol resolution on old ppc64 ABI
-Message-ID: <20110725123636.GA28530@elte.hu>
-References: <20110725142356.0c722c6b@kryten>
- <20110725062542.GA694@elte.hu>
- <20110725204859.51e50611@kryten>
- <20110725105004.GN28787@elte.hu>
- <20110725223232.4e2dce43@kryten>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110725223232.4e2dce43@kryten>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1750932Ab1GYMha (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 08:37:30 -0400
+X-Mailbox-Line: From anton@samba.org Mon Jul 25 12:34:26 2011
+Message-Id: <20110725023426.408998418@samba.org>
+User-Agent: quilt/0.48-1
+Date: Mon, 25 Jul 2011 12:33:16 +1000
+From: Anton Blanchard <anton@samba.org>
+To: mingo@elte.hu, peterz@infradead.org, benh@kernel.crashing.org
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 5/5] powerpc/numa: Remove duplicate RECLAIM_DISTANCE definition
+References: <20110725023311.175792493@samba.org>
+Content-Disposition: inline; filename=move_duplicate_distance
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We have two identical definitions of RECLAIM_DISTANCE, looks like
+the patch got applied twice. Remove one.
 
-* Anton Blanchard <anton@samba.org> wrote:
+Signed-off-by: Anton Blanchard <anton@samba.org> 
+---
 
-> Hi Ingo,
-> 
-> > > It would cover most cases. There would be an issue with 
-> > > functions that are less than 24 bytes in length (ie 6 
-> > > instructions). Tiny functions are probably rare enough that we 
-> > > can live with it.
-> > 
-> > Do such tiny functions get packed tightly, below 24 bytes? 
-> > Another sanitization pass could solve that issue, to trim 
-> > partially overlapping symbol regions, right?
-> 
-> That would work I think. Should I cook up a patch?
+Index: linux-2.6-work/arch/powerpc/include/asm/topology.h
+===================================================================
+--- linux-2.6-work.orig/arch/powerpc/include/asm/topology.h	2011-07-25 12:15:33.059921510 +1000
++++ linux-2.6-work/arch/powerpc/include/asm/topology.h	2011-07-25 12:15:46.750174446 +1000
+@@ -19,16 +19,6 @@ struct device_node;
+ #define RECLAIM_DISTANCE 10
+ 
+ /*
+- * Before going off node we want the VM to try and reclaim from the local
+- * node. It does this if the remote distance is larger than RECLAIM_DISTANCE.
+- * With the default REMOTE_DISTANCE of 20 and the default RECLAIM_DISTANCE of
+- * 20, we never reclaim and go off node straight away.
+- *
+- * To fix this we choose a smaller value of RECLAIM_DISTANCE.
+- */
+-#define RECLAIM_DISTANCE 10
+-
+-/*
+  * Avoid creating an extra level of balancing (SD_ALLNODES) on the largest
+  * POWER7 boxes which have a maximum of 32 nodes.
+  */
 
-Yeah, would be nice - if Arnaldo agrees with the approach too.
 
-Thanks,
-
-	Ingo
