@@ -1,126 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751480Ab1GYPFG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 11:05:06 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36552 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751324Ab1GYPFE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 11:05:04 -0400
-Date: Mon, 25 Jul 2011 12:04:44 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH 09/18] perf: Drop redundant FD macro definitions
-Message-ID: <20110725150444.GB18804@ghostprotocols.net>
-References: <1303576100-425-1-git-send-email-bp@amd64.org>
- <1303576100-425-10-git-send-email-bp@amd64.org>
+	id S1751606Ab1GYPFj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 11:05:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22883 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751350Ab1GYPFg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 11:05:36 -0400
+Message-ID: <4E2D862C.10204@redhat.com>
+Date: Mon, 25 Jul 2011 18:05:16 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1303576100-425-10-git-send-email-bp@amd64.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Joerg Roedel <joro@8bytes.org>
+CC: Alexander Graf <agraf@suse.de>, Pekka Enberg <penberg@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Jan Kiszka <jan.kiszka@web.de>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, gorcunov@gmail.com,
+        levinsasha928@gmail.com, asias.hejun@gmail.com,
+        prasadjoshi124@gmail.com
+Subject: Re: [GIT PULL] Native Linux KVM tool for 3.1
+References: <alpine.DEB.2.00.1107242335580.18045@tiger> <4E2CA6DE.4040900@web.de> <CAOJsxLEkXpDCiMZZnSXnxQ6-PFBwMEv4j5mLRhPZVMKw=LoPSQ@mail.gmail.com> <20110725075305.GA32294@elte.hu> <0EAA5203-D598-4CBA-B8D2-AB371A7689A9@suse.de> <CAOJsxLFv74GaBpNkVSWpEpqs505smUb2yBrMAh7UY_ggVWPwFA@mail.gmail.com> <ECCD7C67-C339-43EA-8A57-513173899813@suse.de> <4E2D2AE8.7050100@redhat.com> <20110725131022.GJ24072@8bytes.org>
+In-Reply-To: <20110725131022.GJ24072@8bytes.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sat, Apr 23, 2011 at 06:28:11PM +0200, Borislav Petkov escreveu:
-> From: Borislav Petkov <borislav.petkov@amd.com>
-> 
-> Put a single define in the util/util.h header which should be generic
-> enough and included by all builtin commands.
+On 07/25/2011 04:10 PM, Joerg Roedel wrote:
+> >  That actually makes a ton of sense.  One immediate win would be that
+> >  klibc can be tuned to the kernel it ships with (the dynamic loader will
+> >  pick the correct object), so less #ifdef trees.  Another would be to
+> >  make klibc the formal kernel interface, which allows us to reimplement
+> >  an older interface in terms of the one that supercedes it.
+>
+> A libc in the kernel tree would indeed make a lot of sense and I am all
+> for it :) It would also help to get new interfaces to the users faster.
+> But it should probably not be the primary exported interface. This would
+> just move the compatability problem from the kernel into user-space.
 
-I'll apply this one, but will move those definitions to evsel.h, as they
-operate on an evlist instance (e->fd).
+It's a better place for it, IMO.  For example, if we dump xnotify in 
+favour of ynotify, we can implement xnotify using ynotify in klibc, and 
+so avoid increasing the kernel's footprint.  As another example, there's 
+an OS that implements its 32-bit ABI in userspace.
 
-- Arnaldo
- 
-> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-> ---
->  tools/perf/builtin-record.c |    2 --
->  tools/perf/builtin-top.c    |    2 --
->  tools/perf/util/evlist.c    |    3 ---
->  tools/perf/util/evsel.c     |    2 --
->  tools/perf/util/util.h      |    3 +++
->  5 files changed, 3 insertions(+), 9 deletions(-)
-> 
-> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-> index 4165382..4497a38 100644
-> --- a/tools/perf/builtin-record.c
-> +++ b/tools/perf/builtin-record.c
-> @@ -30,8 +30,6 @@
->  #include <sched.h>
->  #include <sys/mman.h>
->  
-> -#define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
-> -
->  enum write_mode_t {
->  	WRITE_FORCE,
->  	WRITE_APPEND
-> diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-> index 7e3d6e3..7fd50c1 100644
-> --- a/tools/perf/builtin-top.c
-> +++ b/tools/perf/builtin-top.c
-> @@ -62,8 +62,6 @@
->  #include <linux/unistd.h>
->  #include <linux/types.h>
->  
-> -#define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
-> -
->  static struct perf_top top = {
->  	.count_filter		= 5,
->  	.delay_secs		= 2,
-> diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-> index 45da8d1..65a8031 100644
-> --- a/tools/perf/util/evlist.c
-> +++ b/tools/perf/util/evlist.c
-> @@ -19,9 +19,6 @@
->  #include <linux/bitops.h>
->  #include <linux/hash.h>
->  
-> -#define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
-> -#define SID(e, x, y) xyarray__entry(e->sample_id, x, y)
-> -
->  void perf_evlist__init(struct perf_evlist *evlist, struct cpu_map *cpus,
->  		       struct thread_map *threads)
->  {
-> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-> index d6fd59b..13ee267 100644
-> --- a/tools/perf/util/evsel.c
-> +++ b/tools/perf/util/evsel.c
-> @@ -13,8 +13,6 @@
->  #include "cpumap.h"
->  #include "thread_map.h"
->  
-> -#define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
-> -
->  void perf_evsel__init(struct perf_evsel *evsel,
->  		      struct perf_event_attr *attr, int idx)
->  {
-> diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-> index fc78428..c32d66d 100644
-> --- a/tools/perf/util/util.h
-> +++ b/tools/perf/util/util.h
-> @@ -39,6 +39,9 @@
->  /* Approximation of the length of the decimal representation of this type. */
->  #define decimal_length(x)	((int)(sizeof(x) * 2.56 + 0.5) + 1)
->  
-> +#define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
-> +#define SID(e, x, y) xyarray__entry(e->sample_id, x, y)
-> +
->  #define _ALL_SOURCE 1
->  #define _GNU_SOURCE 1
->  #define _BSD_SOURCE 1
-> -- 
-> 1.7.4.rc2
+(of course that only works for new interfaces; the old ones have to be 
+implemented in the kernel unless we thunk them somehow)
+
+-- 
+error compiling committee.c: too many arguments to function
+
