@@ -1,70 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048Ab1GYKvG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 06:51:06 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:58876 "EHLO mx2.mail.elte.hu"
+	id S1752099Ab1GYKwy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 06:52:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14819 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751470Ab1GYKu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 06:50:58 -0400
-Date: Mon, 25 Jul 2011 12:50:07 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Anton Blanchard <anton@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, emunson@mgebm.net,
-        linux-kernel@vger.kernel.org, amodra@gmail.com
-Subject: Re: [PATCH] perf: Fix symbol resolution on old ppc64 ABI
-Message-ID: <20110725105004.GN28787@elte.hu>
-References: <20110725142356.0c722c6b@kryten>
- <20110725062542.GA694@elte.hu>
- <20110725204859.51e50611@kryten>
+	id S1751583Ab1GYKwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 06:52:47 -0400
+Date: Mon, 25 Jul 2011 13:53:09 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: David Miller <davem@davemloft.net>
+Cc: herbert@gondor.hengli.com.au, mashirle@us.ibm.com, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next] skbuff: clear tx zero-copy flag
+Message-ID: <20110725105309.GA12439@redhat.com>
+References: <20110725084057.GA30311@gondor.apana.org.au>
+ <20110725094414.GA11776@redhat.com>
+ <20110725095711.GA30831@gondor.apana.org.au>
+ <20110725.030229.1448266647053398033.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110725204859.51e50611@kryten>
+In-Reply-To: <20110725.030229.1448266647053398033.davem@davemloft.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Anton Blanchard <anton@samba.org> wrote:
-
-> Hi Ingo,
+On Mon, Jul 25, 2011 at 03:02:29AM -0700, David Miller wrote:
+> From: Herbert Xu <herbert@gondor.hengli.com.au>
+> Date: Mon, 25 Jul 2011 17:57:11 +0800
 > 
-> > > The synthetic symbol creation code has an issue with the old ppc64 
-> > > ABI. We end up with duplicate symbols of different sizes that 
-> > > overlap.
-> > > 
-> > > To fix this, walk all of the symbols and remove any duplicates that 
-> > > are the length of a function descriptor.
-> > 
-> > > I'd prefer not to add a ppc64 specific hack here, but I'm not sure 
-> > > how we can fix this in a simpler way.
-> > 
-> > Symbol space problems are common on other architectures as well.
-> > 
-> > We could use a heuristic: when symbols are overlapping then we could 
-> > throw away the one that is smaller. This would implicitly cover the 
-> > ppc64 case, right?
-> > 
-> > I'd also suggest we warn somewhere that a symbol has been thrown 
-> > away, if verbosity is turned off. (i.e. don't warn by default.)
+> > However, I think we should add a WARN_ON to the splice skb path
+> > so that should a packet find its way through a path that we haven't
+> > thought of then at least we'll know about it.
 > 
-> It would cover most cases. There would be an issue with functions 
-> that are less than 24 bytes in length (ie 6 instructions). Tiny 
-> functions are probably rare enough that we can live with it.
+> Good idea.
 
-Do such tiny functions get packed tightly, below 24 bytes? Another 
-sanitization pass could solve that issue, to trim partially 
-overlapping symbol regions, right?
+Another place like this is skb_split, I think.
 
-Thanks,
-
-	Ingo
+-- 
+MST
