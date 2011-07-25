@@ -1,61 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751749Ab1GYRzM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 13:55:12 -0400
-Received: from home.keithp.com ([63.227.221.253]:51219 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751349Ab1GYRzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 13:55:09 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Andrew Lutomirski <luto@mit.edu>, Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [PATCH] drm/i915: Hold struct_mutex during hotplug processing
-In-Reply-To: <CAObL_7F+xiQrsdJzaSR3nnWm-=ZiHZf8dE+Q3yv+TQC7PUYjEA@mail.gmail.com>
-References: <1311613829-4990-1-git-send-email-keithp@keithp.com> <20110725103732.623d7b65@jbarnes-desktop> <CAObL_7F+xiQrsdJzaSR3nnWm-=ZiHZf8dE+Q3yv+TQC7PUYjEA@mail.gmail.com>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Mon, 25 Jul 2011 10:55:05 -0700
-Message-ID: <yun8vrmutxi.fsf@aiko.keithp.com>
+	id S1751646Ab1GYR7d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 13:59:33 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:38051 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751153Ab1GYR7b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 13:59:31 -0400
+Date: Mon, 25 Jul 2011 13:59:27 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: ltt-dev@lists.casi.polymtl.ca
+Cc: linux-kernel@vger.kernel.org
+Subject: [RELEASE] LTTng 2.0 prerelease 1
+Message-ID: <20110725175927.GA6943@Krystal>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 13:25:16 up 243 days, 22:28,  3 users,  load average: 0.02, 0.01,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+LTTng, the Linux Trace Toolkit Next Generation, is a highly efficient
+full system tracing solution toolchain. It is composed of several
+components to allow tracing of the kernel, of userspace, trace viewing
+and analysis and trace streaming. LTTng is open source software.
 
-On Mon, 25 Jul 2011 13:40:58 -0400, Andrew Lutomirski <luto@mit.edu> wrote:
+New Features:
 
-> Will test tonight.
+- LTTng 2.0 kernel modules build against a vanilla or distribution
+  kernel, without need for additional patches.
+- Produces CTF (Common Trace Format) natively,
+  (http://www.efficios.com/ctf)
+- Tracepoints, Function tracer, CPU Performance Monitoring Unit (PMU)
+  counters and kprobes support,
+- Integrated interface for both kernel and userspace tracing,
+- Have the ability to attach "context" information to events in the
+  trace (e.g. any PMU counter, pid, ppid, tid, comm name, etc).
+  All the extra information fields to be collected with events are
+  optional, specified on a per-tracing-session basis (except for
+  timestamp and event id, which are mandatory).
+- Allows non-root users part of the "tracing" group to perform kernel
+  and userspace tracing.
+- Allows multiple tracing sessions to be active concurrently, each with
+  its own instrumentation set.
 
-Thanks.=20
+You can get a the current release "bundle" (recommanded set of packages)
+at the following URL:
 
-> It looks like there is a lot of hotplug activity when 'xset dpms force
-> off' gets run.  (That's not a typo.  I do mean "off," not "on."
+http://lttng.org/bundles/20110725/
 
-Yup, that's what I've seen as well -- do a mode set to turn stuff off
-and you get spammed with hotplug events.
+Refer to the README files for installation instructions and lttng-tools
+doc/quickstart.txt for usage information and examples.
+(http://git.lttng.org/?p=lttng-tools.git;a=blob_plain;f=doc/quickstart.txt)
 
-> See attached trace.  perf rocks, even over ssh :)
+Please note that the LTTng-UST 2.0 (user-space tracing counterpart of
+LTTng 2.0) is still in active development and not released yet. Only
+text-dump output of the binary traces is available at this moment
+through the Babeltrace tool (LTTV is not supported yet). Tracing from
+the "tracing" group currently produces traces owned by "root"; this
+known problem will be fixed in the next prerelease. This release has
+been tested on vanilla Linux kernels, Debian kernels, Ubuntu kernels,
+and Fedora kernels on the version range 2.6.38, 2.6.39 and 3.0 (on x86
+32/64-bit, and powerpc 32-bit at the moment, build tested on ARM).
 
-Wow. You're nested about three deep in the mode setting code due to
-overlapping hotplug events. What could possibly go wrong?
+Feedback is welcome!
 
-Makes me optimistic that a bit of locking will help a lot here.
+Thanks,
 
-=2D-=20
-keith.packard@intel.com
+Mathieu
 
---=-=-=
-Content-Type: application/pgp-signature
+Project website: http://lttng.org
+Download link: http://lttng.org/lttng2.0
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iD8DBQFOLa35Qp8BWwlsTdMRAkn9AJ48MSbESAgGvxW/kCXt/zWQ1c1TlACcDkB0
-N6M2ytU22BKxfm9kBHGeF/w=
-=uVDe
------END PGP SIGNATURE-----
---=-=-=--
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
