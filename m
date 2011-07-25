@@ -1,83 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751430Ab1GYJPe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 05:15:34 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:59316 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750946Ab1GYJP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 05:15:29 -0400
-Date: Mon, 25 Jul 2011 11:14:40 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Alexander Graf <agraf@suse.de>, Jan Kiszka <jan.kiszka@web.de>,
-        torvalds@linux-foundation.org, avi@redhat.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, gorcunov@gmail.com, levinsasha928@gmail.com,
-        asias.hejun@gmail.com, prasadjoshi124@gmail.com
-Subject: Re: [GIT PULL] Native Linux KVM tool for 3.1
-Message-ID: <20110725091440.GB28787@elte.hu>
-References: <alpine.DEB.2.00.1107242335580.18045@tiger>
- <4E2CA6DE.4040900@web.de>
- <CAOJsxLEkXpDCiMZZnSXnxQ6-PFBwMEv4j5mLRhPZVMKw=LoPSQ@mail.gmail.com>
- <20110725075305.GA32294@elte.hu>
- <0EAA5203-D598-4CBA-B8D2-AB371A7689A9@suse.de>
- <CAOJsxLFv74GaBpNkVSWpEpqs505smUb2yBrMAh7UY_ggVWPwFA@mail.gmail.com>
+	id S1751358Ab1GYJRB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 05:17:01 -0400
+Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:57345 "EHLO
+	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750886Ab1GYJQz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 05:16:55 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4E2D348C.7020702@cam.ac.uk>
+Date: Mon, 25 Jul 2011 10:17:00 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOJsxLFv74GaBpNkVSWpEpqs505smUb2yBrMAh7UY_ggVWPwFA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: Greg KH <greg@kroah.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
+Subject: Re: Sysfs - export sysfs_create_subdir?
+References: <4E29B6B1.2090107@cam.ac.uk> <20110724031804.GA16601@kroah.com>
+In-Reply-To: <20110724031804.GA16601@kroah.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Pekka Enberg <penberg@kernel.org> wrote:
-
-> Hi Alexander,
+On 07/24/11 04:18, Greg KH wrote:
+> On Fri, Jul 22, 2011 at 06:43:13PM +0100, Jonathan Cameron wrote:
+>> Hi All,
+>>
+>> I have a couple of cases in IIO where under some conditions
+>> we end up using dummy attr_groups (no elements) to initialize
+>> a sub directory before dynamically creating all of its attributes.
 > 
-> On Mon, Jul 25, 2011 at 11:14 AM, Alexander Graf <agraf@suse.de> wrote:
-
-> >> Same here - in fact i first asked Qemu to be put into 
-> >> tools/qemu/ so that it all becomes more hackable and more usable 
-> >> - that suggestion was rebuked very strongly.
-> >
-> > So instead of thinking a bit and trying to realize that there 
-> > might be a reason people don't want all their user space in the 
-> > kernel tree you go ahead and start your own crusade of creating a 
-> > new user space. Great. That's how I always hoped Linux would be 
-> > :(.
+> Ick, you really shouldn't do that.
+Agreed :)
 > 
-> Damn you Ingo Molnar, I knew you'd somehow get all the credit for 
-> our hard work! ;-)
+>> Now having dummy groups in the IIO core is fine, but it does seem
+>> a little messy.
+>>
+>> The obvious choice would be to put together a small wrapper function
+>> for sysfs_create_subdir that also does sysfs_get on the result.
+> 
 
-Yeah, i'm really just a user and code reviewer of tools/kvm/, in 
-terms of actual commits i'm barely on the radar compared to the 
-massive contributions of Pekka, Sasha, Asias, Cyrill and others.
+The sysfs_get issue still exists if we are creating all the elements in
+the base directory (which we are in a few drivers - most have something
+that isn't handled by the channel spec though).
 
-> More seriously, though, I fail to see what's bothering you 
-> Alexander. I and Ingo already mentioned we wouldn't be hacking on 
-> Qemu even if there wasn't no tools/kvm. It's not as if we're 
-> putting *your* user space code into the kernel tree - we wrote our 
-> own! What's wrong with that?
+> That's why that function is not exported.  Creating subdirectories in
+> sysfs is not a good idea, udev doesn't like it, and you don't get
+> userspace notification for it very well either.
+> 
+> What specifically are you trying to do in sysfs that you are needing
+> this?
+We are using it purely for organisation.  Note that when I said dynamically
+creating all the attributes I meant at probe of the device.  We aren't
+talking about creating subdirectories under any other conditions.
 
-That puzzles me as well.
+The primary reason is that the attributes in IIO fall into a couple of nice
+clean groups and there can be an awful lot of them.
 
-If tools/kvm/ is really such a bad approach then it will just wither 
-and die, like one of the thousand stale drivers we have in the kernel 
-- or like lguest it ends up as a cool hack that didnt quite make it.
+Hence taking an adis16400 as an example (from memory). Note the naming is based
+on some more abi tweaks that are in progress.  I've also for reference added
+the events side of things which this driver doesn't currently have (last patches
+for this have long since bit rotted beyond being useful!).  Note this is
+a moderately complex example.  There are devices with more channels, but this
+has the greatest mix of anything currently in tree.
 
-Judging by the many contributions tools/kvm/ has already attracted in 
-its limited form an out of tree project i'd not bet on that outcome 
-though.
+We have the following structure currently
+
+iio:deviceX/  // top level directory containing the basic read parameters
+              // for the channels + conversion factors (offsets calibration stuff
+              // etc) + stuff that effects everything such as sampling frequency.
+
+In this device that contains the following created from the chan_spec
+structures.
+
+in_voltage0_supply_raw
+in_voltage0_supply_scale
+in_accel_x_raw
+in_accel_y_raw
+in_accel_z_raw
+in_accel_scale
+in_gyro_x_raw
+in_gyro_y_raw
+in_gyro_z_raw
+in_gyro_scale
+in_magn_x_raw
+in_magn_y_raw
+in_magn_z_raw
+in_magn_scale
+in_temp0_raw
+in_temp0_scale
+in_temp0_offset
+in_voltage1_raw
+in_voltage1_scale
+
+in this case we also have the following.
+
+sampling_frequency
+sampling_frequency_available
+reset
+
+iio:deviceX/buffer // control elements for the buffer - these depend on the selected
+                   // buffer implementation - right now this driver only uses ring_sw,
+                   // but others support kfifo and ring_sw.
+                   // Note the device driver has nothing to do with these, they are
+                   // provided by the buffer implementation.  There is no known reason
+                   // why a device driver would need to add anything to here.
+contains
+
+length
+bytes_per_datum
+enable
+
+iio:deviceX/scan_elements  // Control and description of 'scans'. These are the mass
+                           // data reads that are pushed to the buffer on a trigger.  
+
+in_voltage0_supply_en
+in_voltage0_supply_type
+in_gyro_x_en
+in_gyro_x_type
+in_gyro_y_en
+in_gyro_y_type
+in_gyro_z_en
+in_gyro_z_type
+in_accel_x_en
+in_accel_x_type
+in_accel_y_en
+in_accel_y_type
+in_accel_z_en
+in_accel_z_type
+in_magn_x_en
+in_magn_x_type
+in_magn_z_en
+in_magn_z_type
+in_voltage0_en
+in_voltage0_type
+in_timestamp_en
+in_timestamp_type
+
+All of these are only of interest if you are using the buffer.
+
+If the events were implemented we would have
+
+iio:deviceX/events //control of events (thresholds basically)
+
+in_voltage0_supply_thresh_rising_value
+in_voltage0_supply_thresh_rising_en
+in_voltage0_supply_thresh_falling_value
+in_voltage0_supply_thresh_falling_en
+in_voltage0_supply_roc_rising_value
+in_voltage0_supply_roc_rising_en
+in_voltage0_supply_roc_falling_value
+in_voltage0_supply_roc_falling_en
+
+in_gyro_x_supply_thresh_rising_value
+in_gyro_x_supply_thresh_rising_en
+in_gyro_x_supply_thresh_falling_value
+in_gyro_x_supply_thresh_falling_en
+in_gyro_x_supply_roc_rising_value
+in_gyro_x_supply_roc_rising_en
+in_gyro_x_supply_roc_falling_value
+in_gyro_x_supply_roc_falling_en
+
+etc for all the other channels so 88 attrs in here.
+
+These are only relevant if you are interested in events.  There are
+occasionaly reasons for other elements in this directory not created
+from the channel spec (for example if the event monitoring sampling
+frequency is separate from the main one), but in most cases this
+directory is entirely created from our channel description structures.
+
+Note as I said above all of these are created at probe time and
+correspond directly to the equivalent:
+
+static const attribute adis16400_event_attrs[] = {
+};
+
+static const attribute_group adis16400_event_group {
+       .name = "events",
+       .attrs = adis16400_event_attrs,
+};
+
+This is more obvious after the recent flattenning of our
+tree as a result of combining the previous 3 chrdevs per
+complex device into one.
+
+(as an aside there is also a triggerX device for the adis16400
+data ready, but that is nice and simple and conventional).
+
+We could flattern everything into one directory and do everything
+with appropriate prefixes but that is really ugly.
+
+So how should we do this?
 
 Thanks,
 
-	Ingo
+Jonathan
+
+p.s. Having just grepped our tree for various things whilst writing this I've
+noticed some 'interesting' drivers that were setting attributes up in a directory
+with DRV_NAME as the directory name.  Patch will follow to get rid of those...
+Actually we aren't the only ones.  There are a couple of examples in misc as well..
