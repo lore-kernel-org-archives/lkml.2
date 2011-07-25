@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618Ab1GYSls (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 14:41:48 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:33392 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751350Ab1GYSlp (ORCPT
+	id S1752640Ab1GYSrE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 14:47:04 -0400
+Received: from 89-230.252-81.static-ip.oleane.fr ([81.252.230.89]:51802 "EHLO
+	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752421Ab1GYSrD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 14:41:45 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=upKAIPPV3O5jrsrohs2zNaUKDDI2JrLS1YFnoPMtQsM1HRA8QWTC4X6GyR4qIALsom0T7/HzUmg6rjDpeOnzxnIkJYKEae18Q357hfgeNEmYu9eeZUooy6kCg7j99RxQ;
-Date: Mon, 25 Jul 2011 11:41:42 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: viro <viro@zeniv.linux.org.uk>, akpm <akpm@linux-foundation.org>
-Subject: [PATCH] fs: fix dcache.c new kernel-doc warning
-Message-Id: <20110725114142.c2f5cbed.rdunlap@xenotime.net>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Mon, 25 Jul 2011 14:47:03 -0400
+Subject: Re: [PATCH 2/3] hid-multitouch: Filter collections by application  usage.
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=iso-8859-1
+From: =?iso-8859-1?Q?St=E9phane_Chatty?= <chatty@enac.fr>
+In-Reply-To: <CAMu+ixi4gpKg=LW4o2nK7NDm4r+B368qh=fSvtndKfqf204K9A@mail.gmail. com>
+Date: Mon, 25 Jul 2011 20:47:00 +0200
+Cc: benjamin.tissoires@gmail.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dmitry.torokhov@gmail.com,
+        rydberg@euromail.se
+Content-Transfer-Encoding: 8BIT
+Message-Id: <96E091D9-DDB9-4963-9F10-30231BF93C98@enac.fr>
+References: <1311545261-34067-1-git-send-email-jeffbrown@android.com>  <CAN+gG=FAFX-N-3FpAmgkE+im4oT9h657Rk9h3=-17sCBwVx35A@mail.gmail.com>  <E25AA279-4029-40BF-9CB0-873763C53AB4@enac.fr> <CAMu+ixi4gpKg=LW4o2nK7NDm4r+B368qh=fSvtndKfqf204K9A@mail.gmail. com>
+To: Jeffrey Brown <jeffbrown@android.com>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
 
-Fix new kernel-doc warning in fs/dcache.c:
+Le 25 juil. 2011 à 20:08, Jeffrey Brown a écrit :
 
-Warning(fs/dcache.c:797): No description found for parameter 'sb'
+> On Mon, Jul 25, 2011 at 6:48 AM, Stéphane Chatty <chatty@enac.fr> wrote:
+>> So far it works fine on our Cypress panel. I'll keep you posted about Lumio and Stantum as soon as we have finished compiling Linux 3.0.
+> 
+> Actually, I'm wondering if we could merge hid-multitouch into hid-input.
+> 
+> Checking for an application usage of TouchScreen or TouchPad should be
+> pretty unambiguous.  It ought to be possible to support most Windows 7
+> compatible HID multitouch devices out of the box without needing to
+> add them to any exception lists whatsoever, except for those few that
+> might need quirks.
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
----
- fs/dcache.c |    1 +
- 1 file changed, 1 insertion(+)
 
---- linux-3.0-git4.orig/fs/dcache.c
-+++ linux-3.0-git4/fs/dcache.c
-@@ -784,6 +784,7 @@ relock:
- 
- /**
-  * prune_dcache_sb - shrink the dcache
-+ * @sb: superblock
-  * @nr_to_scan: number of entries to try to free
-  *
-  * Attempt to shrink the superblock dcache LRU by @nr_to_scan entries. This is
+Yes, Benjamin and I have been working in this direction. We have experimental code that autodectects multitouch devices. It's not polished nor tested enough, but the number of requests for supporting new panels is a strong incentive for us to finish it :-) As far as I remember, this requires some restructuring in hid-input though.
+
+Cheers,
+
+St.
+
