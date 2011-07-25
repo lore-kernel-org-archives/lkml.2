@@ -1,163 +1,283 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751715Ab1GYRPp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 13:15:45 -0400
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:32892 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751634Ab1GYRPk (ORCPT
+	id S1751601Ab1GYRTa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 13:19:30 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:40341 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223Ab1GYRT1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 13:15:40 -0400
-Date: Mon, 25 Jul 2011 21:14:23 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: NeilBrown <neilb@suse.de>, Stephen Smalley <sds@tycho.nsa.gov>,
-        kernel-hardening@lists.openwall.com, James Morris <jmorris@namei.org>,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Eric Paris <eparis@redhat.com>, Willy Tarreau <w@1wt.eu>,
-        Sebastian Krahmer <krahmer@suse.de>
-Subject: [PATCH] move RLIMIT_NPROC check from set_user() to
- do_execve_common()
-Message-ID: <20110725171423.GA3739@albatros>
-References: <20110715063113.GA3166@albatros>
- <20110715170650.585f1dad@notabene.brown>
- <20110715073823.GA3821@albatros>
- <1310738313.30257.27.camel@moss-pluto>
- <20110715152641.GA6286@albatros>
- <1310759683.30257.123.camel@moss-pluto>
- <20110721140936.632d2c8b@notabene.brown>
- <20110721124830.GA1325@openwall.com>
- <CA+55aFy4ybatb0McQr2f4A56ympZVLqK2sbp2=73idu58_4RxQ@mail.gmail.com>
- <20110721193939.GA3914@openwall.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110721193939.GA3914@openwall.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 25 Jul 2011 13:19:27 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6418"; a="105550799"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Russell King <linux@arm.linux.org.uk>, David Brown <davidb@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>
+Subject: [PATCHv2 1/2] ARM: Set proper TEXT_OFFSET for newer MSMs
+Date: Mon, 25 Jul 2011 10:19:21 -0700
+Message-Id: <1311614362-9011-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.6.233.gd79bc
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch http://lkml.org/lkml/2003/7/13/226 introduced an RLIMIT_NPROC
-check in set_user() to check for NPROC exceeding via setuid() and
-similar functions.  Before the check there was a possibility to greatly
-exceed the allowed number of processes by an unprivileged user if the
-program relied on rlimit only.  But the check created new security
-threat: many poorly written programs simply don't check setuid() return
-code and believe it cannot fail if executed with root privileges.  So,
-the check is removed in this patch because of too often privilege
-escalations related to buggy programs.
+MSMs post 8x50 have 2Mb at the beginning of RAM reserved for
+shared memory. Since the kernel hasn't typically been told this
+RAM exists, PHYS_OFFSET has been set to 0xN0200000 and the memory
+atags passed to the kernel have matched. This doesn't play nicely
+with things such as AUTO_ZRELADDR, which doesn't work at all, and
+dynamic phys to virt, which requires an MSM specific workaround.
 
-The NPROC can still be enforced in the common code flow of daemons
-spawning user processes.  Most of daemons do fork()+setuid()+execve().
-The check introduced in execve() (1) enforces the same limit as in
-setuid() and (2) doesn't create similar security issues.
+Work around these issues by telling the kernel RAM starts at
+0xN0000000 (it actually does) and fixup the atags from the
+bootloader (if necessary) to say the same. In addition, make sure
+to set TEXT_OFFSET at least 2Mb beyond the start of RAM so that
+the kernel doesn't end up being decompressed into shared memory.
 
-Neil Brown suggested to track what specific process has exceeded the
-limit by setting PF_NPROC_EXCEEDED process flag.  With the change only
-this process would fail on execve(), and other processes' execve()
-behaviour is not changed.
+After doing this, AUTO_ZRELADDR should work on MSM with no
+problems and ARM_PATCH_PHYS_VIRT_16BIT should no longer be
+necessary.
 
-Solar Designer suggested to re-check whether NPROC limit is still
-exceeded at the moment of execve().  If the process was sleeping for
-days between set*uid() and execve(), and the NPROC counter step down
-under the limit, the deferred execve() failure because NPROC limit was
-exceeded days ago would be unexpected.
-
-Similar check was introduced in -ow patches (without the process flag).
-
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
 ---
- fs/exec.c             |   13 +++++++++++++
- include/linux/sched.h |    1 +
- kernel/cred.c         |    7 +++----
- kernel/sys.c          |   13 +++++++++----
- 4 files changed, 26 insertions(+), 8 deletions(-)
 
-diff --git a/fs/exec.c b/fs/exec.c
-index 6075a1e..706a213 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1433,6 +1433,19 @@ static int do_execve_common(const char *filename,
- 	struct files_struct *displaced;
- 	bool clear_in_exec;
- 	int retval;
-+	const struct cred *cred = current_cred();
+Changes since v1:
+
+ - Add 2MB to the fixed-up atag's size
+
+ arch/arm/Makefile                       |    3 +++
+ arch/arm/mach-msm/board-msm7x30.c       |   22 ++++++++++++++++++++++
+ arch/arm/mach-msm/board-msm8960.c       |   22 ++++++++++++++++++++++
+ arch/arm/mach-msm/board-msm8x60.c       |   25 +++++++++++++++++++++++++
+ arch/arm/mach-msm/include/mach/memory.h |    6 +++---
+ 5 files changed, 75 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+index 3a4a04b..8c35e19 100644
+--- a/arch/arm/Makefile
++++ b/arch/arm/Makefile
+@@ -128,6 +128,9 @@ textofs-$(CONFIG_PM_H1940)      := 0x00108000
+ ifeq ($(CONFIG_ARCH_SA1100),y)
+ textofs-$(CONFIG_SA1111) := 0x00208000
+ endif
++textofs-$(CONFIG_ARCH_MSM7X30) := 0x00208000
++textofs-$(CONFIG_ARCH_MSM8X60) := 0x00208000
++textofs-$(CONFIG_ARCH_MSM8960) := 0x00208000
+ 
+ # Machine directory name.  This list is sorted alphanumerically
+ # by CONFIG_* macro name.
+diff --git a/arch/arm/mach-msm/board-msm7x30.c b/arch/arm/mach-msm/board-msm7x30.c
+index 8d21769..240d562 100644
+--- a/arch/arm/mach-msm/board-msm7x30.c
++++ b/arch/arm/mach-msm/board-msm7x30.c
+@@ -24,6 +24,7 @@
+ #include <linux/smsc911x.h>
+ #include <linux/usb/msm_hsusb.h>
+ #include <linux/clkdev.h>
++#include <linux/memblock.h>
+ 
+ #include <asm/mach-types.h>
+ #include <asm/mach/arch.h>
+@@ -42,6 +43,21 @@
+ 
+ extern struct sys_timer msm_timer;
+ 
++static void __init msm7x30_fixup(struct machine_desc *desc, struct tag *tag,
++			 char **cmdline, struct meminfo *mi)
++{
++	for (; tag->hdr.size; tag = tag_next(tag))
++		if (tag->hdr.tag == ATAG_MEM && tag->u.mem.start == 0x200000) {
++			tag->u.mem.start = 0;
++			tag->u.mem.size += SZ_2M;
++		}
++}
 +
-+	/*
-+	 * We move the actual failure in case of RLIMIT_NPROC excess from
-+	 * set*uid() to execve() because too many poorly written programs
-+	 * don't check setuid() return code.  Here we additionally recheck
-+	 * whether NPROC limit is still exceeded.
-+	 */
-+	if ((current->flags & PF_NPROC_EXCEEDED) &&
-+	    atomic_read(&cred->user->processes) > rlimit(RLIMIT_NPROC)) {
-+		retval = -EAGAIN;
-+		goto out_ret;
-+	}
- 
- 	retval = unshare_files(&displaced);
- 	if (retval)
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 496770a..f024c63 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1759,6 +1759,7 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
- #define PF_DUMPCORE	0x00000200	/* dumped core */
- #define PF_SIGNALED	0x00000400	/* killed by a signal */
- #define PF_MEMALLOC	0x00000800	/* Allocating memory */
-+#define PF_NPROC_EXCEEDED 0x00001000	/* set_user noticed that RLIMIT_NPROC was exceeded */
- #define PF_USED_MATH	0x00002000	/* if unset the fpu must be initialized before use */
- #define PF_FREEZING	0x00004000	/* freeze in progress. do not account to load */
- #define PF_NOFREEZE	0x00008000	/* this thread should not be frozen */
-diff --git a/kernel/cred.c b/kernel/cred.c
-index 174fa84..52f4342 100644
---- a/kernel/cred.c
-+++ b/kernel/cred.c
-@@ -508,11 +508,10 @@ int commit_creds(struct cred *new)
- 		key_fsgid_changed(task);
- 
- 	/* do it
--	 * - What if a process setreuid()'s and this brings the
--	 *   new uid over his NPROC rlimit?  We can check this now
--	 *   cheaply with the new uid cache, so if it matters
--	 *   we should be checking for it.  -DaveM
-+	 * RLIMIT_NPROC limits on user->processes have already been checked
-+	 * in set_user().
- 	 */
++static void __init msm7x30_reserve(void)
++{
++	memblock_remove(0x0, SZ_2M);
++}
 +
- 	alter_cred_subscribers(new, 2);
- 	if (new->user != old->user)
- 		atomic_inc(&new->user->processes);
-diff --git a/kernel/sys.c b/kernel/sys.c
-index e4128b2..fc40cbc 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -591,11 +591,16 @@ static int set_user(struct cred *new)
- 	if (!new_user)
- 		return -EAGAIN;
+ static int hsusb_phy_init_seq[] = {
+ 	0x30, 0x32,	/* Enable and set Pre-Emphasis Depth to 20% */
+ 	0x02, 0x36,	/* Disable CDR Auto Reset feature */
+@@ -108,6 +124,8 @@ static void __init msm7x30_map_io(void)
  
-+	/*
-+	 * We don't fail in case of NPROC limit excess here because too many
-+	 * poorly written programs don't check set*uid() return code, assuming
-+	 * it never fails if called by root.  We may still enforce NPROC limit
-+	 * for programs doing set*uid()+execve() by harmlessly deferring the
-+	 * failure to the execve() stage.
-+	 */
- 	if (atomic_read(&new_user->processes) >= rlimit(RLIMIT_NPROC) &&
--			new_user != INIT_USER) {
--		free_uid(new_user);
--		return -EAGAIN;
--	}
-+			new_user != INIT_USER)
-+		current->flags |= PF_NPROC_EXCEEDED;
+ MACHINE_START(MSM7X30_SURF, "QCT MSM7X30 SURF")
+ 	.boot_params = PLAT_PHYS_OFFSET + 0x100,
++	.fixup = msm7x30_fixup,
++	.reserve = msm7x30_reserve,
+ 	.map_io = msm7x30_map_io,
+ 	.init_irq = msm7x30_init_irq,
+ 	.init_machine = msm7x30_init,
+@@ -116,6 +134,8 @@ MACHINE_END
  
- 	free_uid(new->user);
- 	new->user = new_user;
+ MACHINE_START(MSM7X30_FFA, "QCT MSM7X30 FFA")
+ 	.boot_params = PLAT_PHYS_OFFSET + 0x100,
++	.fixup = msm7x30_fixup,
++	.reserve = msm7x30_reserve,
+ 	.map_io = msm7x30_map_io,
+ 	.init_irq = msm7x30_init_irq,
+ 	.init_machine = msm7x30_init,
+@@ -124,6 +144,8 @@ MACHINE_END
+ 
+ MACHINE_START(MSM7X30_FLUID, "QCT MSM7X30 FLUID")
+ 	.boot_params = PLAT_PHYS_OFFSET + 0x100,
++	.fixup = msm7x30_fixup,
++	.reserve = msm7x30_reserve,
+ 	.map_io = msm7x30_map_io,
+ 	.init_irq = msm7x30_init_irq,
+ 	.init_machine = msm7x30_init,
+diff --git a/arch/arm/mach-msm/board-msm8960.c b/arch/arm/mach-msm/board-msm8960.c
+index 8294692..dab58ef 100644
+--- a/arch/arm/mach-msm/board-msm8960.c
++++ b/arch/arm/mach-msm/board-msm8960.c
+@@ -20,16 +20,34 @@
+ #include <linux/io.h>
+ #include <linux/irq.h>
+ #include <linux/clkdev.h>
++#include <linux/memblock.h>
+ 
+ #include <asm/mach-types.h>
+ #include <asm/mach/arch.h>
+ #include <asm/hardware/gic.h>
++#include <asm/setup.h>
+ 
+ #include <mach/board.h>
+ #include <mach/msm_iomap.h>
+ 
+ #include "devices.h"
+ 
++static void __init msm8960_fixup(struct machine_desc *desc, struct tag *tag,
++			 char **cmdline, struct meminfo *mi)
++{
++	for (; tag->hdr.size; tag = tag_next(tag))
++		if (tag->hdr.tag == ATAG_MEM &&
++				tag->u.mem.start == 0x40200000) {
++			tag->u.mem.start = 0x40000000;
++			tag->u.mem.size += SZ_2M;
++		}
++}
++
++static void __init msm8960_reserve(void)
++{
++	memblock_remove(0x40000000, SZ_2M);
++}
++
+ static void __init msm8960_map_io(void)
+ {
+ 	msm_map_msm8960_io();
+@@ -92,6 +110,8 @@ static void __init msm8960_rumi3_init(void)
+ }
+ 
+ MACHINE_START(MSM8960_SIM, "QCT MSM8960 SIMULATOR")
++	.fixup = msm8960_fixup,
++	.reserve = msm8960_reserve,
+ 	.map_io = msm8960_map_io,
+ 	.init_early = msm8960_init_early,
+ 	.init_irq = msm8960_init_irq,
+@@ -100,6 +120,8 @@ MACHINE_START(MSM8960_SIM, "QCT MSM8960 SIMULATOR")
+ MACHINE_END
+ 
+ MACHINE_START(MSM8960_RUMI3, "QCT MSM8960 RUMI3")
++	.fixup = msm8960_fixup,
++	.reserve = msm8960_reserve,
+ 	.map_io = msm8960_map_io,
+ 	.init_early = msm8960_init_early,
+ 	.init_irq = msm8960_init_irq,
+diff --git a/arch/arm/mach-msm/board-msm8x60.c b/arch/arm/mach-msm/board-msm8x60.c
+index 98c47ce..5b47ec8 100644
+--- a/arch/arm/mach-msm/board-msm8x60.c
++++ b/arch/arm/mach-msm/board-msm8x60.c
+@@ -20,15 +20,32 @@
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
+ #include <linux/irq.h>
++#include <linux/memblock.h>
+ 
+ #include <asm/mach-types.h>
+ #include <asm/mach/arch.h>
+ #include <asm/hardware/gic.h>
++#include <asm/setup.h>
+ 
+ #include <mach/board.h>
+ #include <mach/msm_iomap.h>
+ #include "devices.h"
+ 
++static void __init msm8x60_fixup(struct machine_desc *desc, struct tag *tag,
++			 char **cmdline, struct meminfo *mi)
++{
++	for (; tag->hdr.size; tag = tag_next(tag))
++		if (tag->hdr.tag == ATAG_MEM &&
++				tag->u.mem.start == 0x40200000) {
++			tag->u.mem.start = 0x40000000;
++			tag->u.mem.size += SZ_2M;
++		}
++}
++
++static void __init msm8x60_reserve(void)
++{
++	memblock_remove(0x40000000, SZ_2M);
++}
+ 
+ static void __init msm8x60_map_io(void)
+ {
+@@ -72,6 +89,8 @@ static void __init msm8x60_init(void)
+ }
+ 
+ MACHINE_START(MSM8X60_RUMI3, "QCT MSM8X60 RUMI3")
++	.fixup = msm8x60_fixup,
++	.reserve = msm8x60_reserve,
+ 	.map_io = msm8x60_map_io,
+ 	.init_irq = msm8x60_init_irq,
+ 	.init_machine = msm8x60_init,
+@@ -79,6 +98,8 @@ MACHINE_START(MSM8X60_RUMI3, "QCT MSM8X60 RUMI3")
+ MACHINE_END
+ 
+ MACHINE_START(MSM8X60_SURF, "QCT MSM8X60 SURF")
++	.fixup = msm8x60_fixup,
++	.reserve = msm8x60_reserve,
+ 	.map_io = msm8x60_map_io,
+ 	.init_irq = msm8x60_init_irq,
+ 	.init_machine = msm8x60_init,
+@@ -86,6 +107,8 @@ MACHINE_START(MSM8X60_SURF, "QCT MSM8X60 SURF")
+ MACHINE_END
+ 
+ MACHINE_START(MSM8X60_SIM, "QCT MSM8X60 SIMULATOR")
++	.fixup = msm8x60_fixup,
++	.reserve = msm8x60_reserve,
+ 	.map_io = msm8x60_map_io,
+ 	.init_irq = msm8x60_init_irq,
+ 	.init_machine = msm8x60_init,
+@@ -93,6 +116,8 @@ MACHINE_START(MSM8X60_SIM, "QCT MSM8X60 SIMULATOR")
+ MACHINE_END
+ 
+ MACHINE_START(MSM8X60_FFA, "QCT MSM8X60 FFA")
++	.fixup = msm8x60_fixup,
++	.reserve = msm8x60_reserve,
+ 	.map_io = msm8x60_map_io,
+ 	.init_irq = msm8x60_init_irq,
+ 	.init_machine = msm8x60_init,
+diff --git a/arch/arm/mach-msm/include/mach/memory.h b/arch/arm/mach-msm/include/mach/memory.h
+index f2f8d29..58d5e7e 100644
+--- a/arch/arm/mach-msm/include/mach/memory.h
++++ b/arch/arm/mach-msm/include/mach/memory.h
+@@ -22,11 +22,11 @@
+ #elif defined(CONFIG_ARCH_QSD8X50)
+ #define PLAT_PHYS_OFFSET		UL(0x20000000)
+ #elif defined(CONFIG_ARCH_MSM7X30)
+-#define PLAT_PHYS_OFFSET		UL(0x00200000)
++#define PLAT_PHYS_OFFSET		UL(0x00000000)
+ #elif defined(CONFIG_ARCH_MSM8X60)
+-#define PLAT_PHYS_OFFSET		UL(0x40200000)
++#define PLAT_PHYS_OFFSET		UL(0x40000000)
+ #elif defined(CONFIG_ARCH_MSM8960)
+-#define PLAT_PHYS_OFFSET		UL(0x40200000)
++#define PLAT_PHYS_OFFSET		UL(0x40000000)
+ #else
+ #define PLAT_PHYS_OFFSET		UL(0x10000000)
+ #endif
 -- 
-1.7.0.4
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
