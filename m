@@ -1,97 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752566Ab1GYSlH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 14:41:07 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:8641 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751430Ab1GYSlE (ORCPT
+	id S1752618Ab1GYSls (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 14:41:48 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:33392 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751350Ab1GYSlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 14:41:04 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=GoL7XQgwaElqRBw0DKFUuXZ/ZBBOWmpHvUQQjLUzUnGhFosyrkuGd+0FBg5Y5OKBl
-	QKxS6q31JGoDrFhYfKcVw==
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>
-Subject: [PATCH 3/4] trace-cmd: Handle opcode parsing error
-Date: Mon, 25 Jul 2011 11:40:57 -0700
-Message-Id: <1311619257-4970-1-git-send-email-vnagarnaik@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1310785241-3799-3-git-send-email-vnagarnaik@google.com>
-References: <1310785241-3799-3-git-send-email-vnagarnaik@google.com>
+	Mon, 25 Jul 2011 14:41:45 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=upKAIPPV3O5jrsrohs2zNaUKDDI2JrLS1YFnoPMtQsM1HRA8QWTC4X6GyR4qIALsom0T7/HzUmg6rjDpeOnzxnIkJYKEae18Q357hfgeNEmYu9eeZUooy6kCg7j99RxQ;
+Date: Mon, 25 Jul 2011 11:41:42 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: viro <viro@zeniv.linux.org.uk>, akpm <akpm@linux-foundation.org>
+Subject: [PATCH] fs: fix dcache.c new kernel-doc warning
+Message-Id: <20110725114142.c2f5cbed.rdunlap@xenotime.net>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If an invalid opcode is encountered in parsing event print format, the
-trace-cmd calls exit() without parsing any other events.
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-This patch adds handling for such an error where the get_op_prio() is
-called. If the return value is -1, then the event print format parsing
-is skipped and parsing continues.
+Fix new kernel-doc warning in fs/dcache.c:
 
-Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Warning(fs/dcache.c:797): No description found for parameter 'sb'
+
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
 ---
- parse-events.c |   19 +++++++++++--------
- 1 files changed, 11 insertions(+), 8 deletions(-)
+ fs/dcache.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/parse-events.c b/parse-events.c
-index 58ffe51..c62ca5a 100644
---- a/parse-events.c
-+++ b/parse-events.c
-@@ -1588,7 +1588,7 @@ static int get_op_prio(char *op)
- 		case '?':
- 			return 16;
- 		default:
--			die("unknown op '%c'", op[0]);
-+			do_warning("unknown op '%c'", op[0]);
- 			return -1;
- 		}
- 	} else {
-@@ -1609,22 +1609,22 @@ static int get_op_prio(char *op)
- 		} else if (strcmp(op, "||") == 0) {
- 			return 15;
- 		} else {
--			die("unknown op '%s'", op);
-+			do_warning("unknown op '%s'", op);
- 			return -1;
- 		}
- 	}
- }
+--- linux-3.0-git4.orig/fs/dcache.c
++++ linux-3.0-git4/fs/dcache.c
+@@ -784,6 +784,7 @@ relock:
  
--static void set_op_prio(struct print_arg *arg)
-+static int set_op_prio(struct print_arg *arg)
- {
- 
- 	/* single ops are the greatest */
--	if (!arg->op.left || arg->op.left->type == PRINT_NULL) {
-+	if (!arg->op.left || arg->op.left->type == PRINT_NULL)
- 		arg->op.prio = 0;
--		return;
--	}
-+	else
-+		arg->op.prio = get_op_prio(arg->op.op);
- 
--	arg->op.prio = get_op_prio(arg->op.op);
-+	return arg->op.prio;
- }
- 
- /* Note, *tok does not get freed, but will most likely be saved */
-@@ -1706,7 +1706,10 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
- 		arg->op.op = token;
- 		arg->op.left = left;
- 
--		set_op_prio(arg);
-+		if (set_op_prio(arg) == -1) {
-+			event->flags |= EVENT_FL_FAILED;
-+			goto out_free;
-+		}
- 
- 		type = read_token_item(&token);
- 		*tok = token;
--- 
-1.7.3.1
-
+ /**
+  * prune_dcache_sb - shrink the dcache
++ * @sb: superblock
+  * @nr_to_scan: number of entries to try to free
+  *
+  * Attempt to shrink the superblock dcache LRU by @nr_to_scan entries. This is
