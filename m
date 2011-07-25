@@ -1,63 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752442Ab1GYSHa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 14:07:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16809 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752386Ab1GYSHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 14:07:25 -0400
-Date: Mon, 25 Jul 2011 14:07:14 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>, ebiederm@xmission.com,
-        hbabu@us.ibm.com, mahesh@linux.vnet.ibm.com, oomichi@mxs.nes.nec.co.jp,
-        horms@verge.net.au, heiko.carstens@de.ibm.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org
-Subject: Re: [patch 0/9] kdump: Patch series for s390 support
-Message-ID: <20110725180714.GC11009@redhat.com>
-References: <20110714180528.GF6672@redhat.com>
- <1310739717.10789.31.camel@br98xy6r>
- <20110715143820.GG3428@redhat.com>
- <1310744603.10789.79.camel@br98xy6r>
- <20110718123140.GB31986@redhat.com>
- <1310997641.4427.10.camel@br98xy6r>
- <20110718141943.GE31986@redhat.com>
- <1311000253.4427.23.camel@br98xy6r>
- <20110718152532.GF31986@redhat.com>
- <1311348392.5772.56.camel@br98xy6r>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311348392.5772.56.camel@br98xy6r>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752233Ab1GYSHR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 14:07:17 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:41919 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214Ab1GYSHO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 14:07:14 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: v9fs-developer@lists.sourceforge.net
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [RFC PATCH 1/2] fs/9p: Add fid before dentry instantiation
+Date: Mon, 25 Jul 2011 23:36:32 +0530
+Message-Id: <1311617193-11682-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 22, 2011 at 05:26:32PM +0200, Michael Holzheu wrote:
-> Hello Vivek,
-> 
-> Still thinking how we best get elfcorehdr size...
-> 
-> On Mon, 2011-07-18 at 11:25 -0400, Vivek Goyal wrote:
-> > On Mon, Jul 18, 2011 at 04:44:13PM +0200, Michael Holzheu wrote:
-> > You could do that but I think a more generic parameter will make more
-> > sense.
-> > 
-> > - Either something along the lines of memmap=
-> > - Or excludemem=x@y
-> > - Or modify memory map in s390 specific bootloading protocol block etc.
-> 
-> Wouldn't it be most natural to pass the length along with the address of
-> the ELF core header? What about extending the kernel elfcorehdr kernel
-> parameter and adding optional size:
-> 
-> elfcorehdr=<addr>[KMG],<size>[KMG]
+d_instantiate marks the dentry positive. So a parallel lookup and mkdir of
+the directory can find dentry that doesn't have fid attached. This can result
+in both the code path doing v9fs_fid_add which results in v9fs_dentry leak.
 
-I think it could be memap= style. elfcorehdr=X[KMG]@Y[KMG]. Though to
-support backward compatibility we will have to support old format of
-plain elfcorehdr=X too.
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ fs/9p/vfs_inode.c      |    4 +---
+ fs/9p/vfs_inode_dotl.c |    8 ++++----
+ 2 files changed, 5 insertions(+), 7 deletions(-)
 
-Thanks
-Vivek
+diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
+index cbba7c7..6d2278f 100644
+--- a/fs/9p/vfs_inode.c
++++ b/fs/9p/vfs_inode.c
+@@ -645,13 +645,11 @@ v9fs_create(struct v9fs_session_info *v9ses, struct inode *dir,
+ 		P9_DPRINTK(P9_DEBUG_VFS, "inode creation failed %d\n", err);
+ 		goto error;
+ 	}
+-	d_instantiate(dentry, inode);
+ 	err = v9fs_fid_add(dentry, fid);
+ 	if (err < 0)
+ 		goto error;
+-
++	d_instantiate(dentry, inode);
+ 	return ofid;
+-
+ error:
+ 	if (ofid)
+ 		p9_client_clunk(ofid);
+diff --git a/fs/9p/vfs_inode_dotl.c b/fs/9p/vfs_inode_dotl.c
+index 185ce37..0a17235 100644
+--- a/fs/9p/vfs_inode_dotl.c
++++ b/fs/9p/vfs_inode_dotl.c
+@@ -281,10 +281,10 @@ v9fs_vfs_create_dotl(struct inode *dir, struct dentry *dentry, int omode,
+ 		P9_DPRINTK(P9_DEBUG_VFS, "inode creation failed %d\n", err);
+ 		goto error;
+ 	}
+-	d_instantiate(dentry, inode);
+ 	err = v9fs_fid_add(dentry, fid);
+ 	if (err < 0)
+ 		goto error;
++	d_instantiate(dentry, inode);
+ 
+ 	/* Now set the ACL based on the default value */
+ 	v9fs_set_create_acl(dentry, &dacl, &pacl);
+@@ -403,10 +403,10 @@ static int v9fs_vfs_mkdir_dotl(struct inode *dir,
+ 				err);
+ 			goto error;
+ 		}
+-		d_instantiate(dentry, inode);
+ 		err = v9fs_fid_add(dentry, fid);
+ 		if (err < 0)
+ 			goto error;
++		d_instantiate(dentry, inode);
+ 		fid = NULL;
+ 	} else {
+ 		/*
+@@ -657,10 +657,10 @@ v9fs_vfs_symlink_dotl(struct inode *dir, struct dentry *dentry,
+ 					err);
+ 			goto error;
+ 		}
+-		d_instantiate(dentry, inode);
+ 		err = v9fs_fid_add(dentry, fid);
+ 		if (err < 0)
+ 			goto error;
++		d_instantiate(dentry, inode);
+ 		fid = NULL;
+ 	} else {
+ 		/* Not in cached mode. No need to populate inode with stat */
+@@ -810,10 +810,10 @@ v9fs_vfs_mknod_dotl(struct inode *dir, struct dentry *dentry, int omode,
+ 				err);
+ 			goto error;
+ 		}
+-		d_instantiate(dentry, inode);
+ 		err = v9fs_fid_add(dentry, fid);
+ 		if (err < 0)
+ 			goto error;
++		d_instantiate(dentry, inode);
+ 		fid = NULL;
+ 	} else {
+ 		/*
+-- 
+1.7.4.1
+
