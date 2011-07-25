@@ -1,112 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275Ab1GYVr1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 17:47:27 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:46811 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753181Ab1GYVnc (ORCPT
+	id S1753289Ab1GYVrj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 17:47:39 -0400
+Received: from mail-ey0-f171.google.com ([209.85.215.171]:61001 "EHLO
+	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753181Ab1GYVrf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 17:43:32 -0400
-From: Jim Cromie <jim.cromie@gmail.com>
-To: jbaron@redhat.com
-Cc: bvanassche@acm.org, joe@perches.com, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, gnb@fmeh.org,
-        Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 11/25] dynamic_debug: factor show_ddebug_query out of ddebug_parse_query
-Date: Mon, 25 Jul 2011 15:42:36 -0600
-Message-Id: <1311630170-26057-12-git-send-email-jim.cromie@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1311630170-26057-1-git-send-email-jim.cromie@gmail.com>
-References: <1311630170-26057-1-git-send-email-jim.cromie@gmail.com>
+	Mon, 25 Jul 2011 17:47:35 -0400
+Date: Tue, 26 Jul 2011 01:47:31 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ian Campbell <Ian.Campbell@citrix.com>, linux-kernel@vger.kernel.org,
+        Pekka Enberg <penberg@kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 0/3] minor cleanups to EFLAGS initialisation in
+ ret_from_fork
+Message-ID: <20110725214731.GE27137@sun>
+References: <1311587883.27940.20.camel@cthulhu.hellion.org.uk>
+ <20110725101902.GP4362@sun>
+ <20110725182049.GD27137@sun>
+ <4E2DDBAA.60200@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E2DDBAA.60200@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Factor show_ddebug_query out of ddebug_parse_query.  Also change
-the printed labels to agree with the query-spec keywords accepted in
-the control file; file, func.  Pass "" when string is null,
-to avoid "(null)" output from sprintf.
+On Mon, Jul 25, 2011 at 02:10:02PM -0700, H. Peter Anvin wrote:
+> On 07/25/2011 11:20 AM, Cyrill Gorcunov wrote:
+> > On Mon, Jul 25, 2011 at 02:19:02PM +0400, Cyrill Gorcunov wrote:
+> >> On Mon, Jul 25, 2011 at 10:58:03AM +0100, Ian Campbell wrote:
+> >>> The following series removes the use of a global kernel_eflags variable
+> >>> from the x86_64 ret_from_fork path and (very slightly) merges the 32 and
+> >>> 64 bit version of that code path.
+> >>>
+> >>> kernel_eflags could be made a __read_mostly but actually there is no
+> >>> reason to prefer the value at cpu_init() time to a compile time constant
+> >>> value for the initial eflags after a fork.
+> >>>
+> >>> Ian.
+> >>>
+> >>
+> >> Thanks, Ian! I think noone against this simplification, Peter, Andi?
+> >>
+> >> 	Cyrill
+> > 
+> > Ian, I've missed in first place that you've opened IRQs window _before_
+> > schedule_tail() call, ie it's not 1:1 code mapping as it was before.
+> > 
+> > Note kernel_eflags has IF clear and what we have: the ret_from_fork on
+> > x86-64 happens _only_ inside context_switch call, ie
+> > 
+> > schedule (sched.c)
+> >         ...
+> >         raw_spin_lock_irq
+> >         ...
+> >         context_switch
+> >                 switch_to
+> >                         "jnz   ret_from_fork\n\t"
+> >                         pushq_cfi kernel_eflags(%rip)
+> >                         popfq_cfi                               # reset kernel eflags
+> > 
+> > --->                    irqs are still disabled
+> > 
+> >                         call schedule_tail                      # rdi: 'prev' task parameter
+> >                                 finish_lock_switch
+> >                                         raw_spin_unlock_irq
+> > 
+> > I bet raw_spin_lock_irq at the beginning of the schedule() is set
+> > for a reason and such change is not safe. Though I may be missing
+> > something again...
+> > 
+> 
+> This definitely doesn't look "obviously safe" to me.  However, does
+> anyone see a problem with unconditionally leaving IF disabled even on 32
+> bits (I haven't traced all the paths yet), i.e. doing the *opposite* of
+> Ian's patch #2?
+> 
+> 	-hpa
+> 
 
-Code uses sprintf into a large buffer, kallocd and freed from
-ddebug_exec_queries.  function has 1 caller now, will add more later.
-Will also reuse the buffer and function for show_pending_query().
-This is in lieu of char *p=kasprintf; free(p) everywhere the
-function will be used.  TBD.
+On x86-32 it seems to be similar (not identical in calls though)
 
-Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
----
- lib/dynamic_debug.c |   30 ++++++++++++++++++++++++------
- 1 files changed, 24 insertions(+), 6 deletions(-)
+copy_thread()
+	p->thread.ip = (unsigned long)ret_from_fork;
 
-diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index 1ced79e..5774a6f 100644
---- a/lib/dynamic_debug.c
-+++ b/lib/dynamic_debug.c
-@@ -96,6 +96,21 @@ static char *ddebug_describe_flags(struct _ddebug *dp, char *buf,
- 	return buf;
- }
- 
-+static char *prbuf_query;
-+
-+static char *show_ddebug_query(const struct ddebug_query *q)
-+{
-+	char *p = kasprintf(GFP_KERNEL,
-+			"func=\"%s\" file=\"%s\" "
-+			"module=\"%s\" format=\"%s\" lineno=%u-%u",
-+			q->function ? q->function : "",
-+			q->filename ? q->filename : "",
-+			q->module ? q->module : "",
-+			q->format ? q->format : "",
-+			q->first_lineno, q->last_lineno);
-+	return p;
-+}
-+
- /*
-  * Search the tables for _ddebug's which match the given
-  * `query' and apply the `flags' and `mask' to them.  Tells
-@@ -307,6 +322,7 @@ static int ddebug_parse_query(char *words[], int nwords,
- 			       struct ddebug_query *query)
- {
- 	unsigned int i;
-+	char *qstr;
- 
- 	/* check we have an even number of words */
- 	if (nwords % 2 != 0)
-@@ -342,12 +358,9 @@ static int ddebug_parse_query(char *words[], int nwords,
- 			return -EINVAL;
- 		}
- 	}
--
--	pr_debug("q->function=\"%s\" q->filename=\"%s\" "
--		"q->module=\"%s\" q->format=\"%s\" q->lineno=%u-%u\n",
--		query->function, query->filename,
--		query->module, query->format, query->first_lineno,
--		query->last_lineno);
-+	qstr = show_ddebug_query(query);
-+	pr_debug("parsed %s\n", qstr);
-+	kfree(qstr);
- 
- 	return 0;
- }
-@@ -435,6 +448,10 @@ static int ddebug_exec_queries(char *query)
- 	char *split;
- 	int i, errs = 0, exitcode = 0, rc;
- 
-+	prbuf_query = kmalloc(1024, GFP_KERNEL);
-+	if (prbuf_query == NULL)
-+		return -ENOMEM;
-+
- 	for (i = 0; query; query = split) {
- 		split = strpbrk(query, ";\n");
- 		if (split)
-@@ -452,6 +469,7 @@ static int ddebug_exec_queries(char *query)
- 		}
- 		i++;
- 	}
-+	kfree(prbuf_query);
- 	pr_debug("processed %d queries, with %d errs\n", i, errs);
- 
- 	return exitcode;
--- 
-1.7.4.1
+and the task get queued into tasks queue, but later when switch_to
+happens irqs are blocked at ret_from_fork call. I better poke PeterZ
+here /CC'ed/ ;)
 
+	Cyrill
