@@ -1,105 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751992Ab1GYNsb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 09:48:31 -0400
-Received: from 89-230.252-81.static-ip.oleane.fr ([81.252.230.89]:55635 "EHLO
-	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178Ab1GYNs2 convert rfc822-to-8bit (ORCPT
+	id S1752015Ab1GYNxL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 09:53:11 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56922 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751269Ab1GYNxH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 09:48:28 -0400
-Subject: Re: [PATCH 2/3] hid-multitouch: Filter collections by application  usage.
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=iso-8859-1
-From: =?iso-8859-1?Q?St=E9phane_Chatty?= <chatty@enac.fr>
-In-Reply-To: <CAN+gG=FAFX-N-3FpAmgkE+im4oT9h657Rk9h3=-17sCBwVx35A@mail.gmail.com>
-Date: Mon, 25 Jul 2011 15:48:24 +0200
-Cc: jeffbrown@android.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmitry.torokhov@gmail.com,
-        rydberg@euromail.se, Jeff Brown <jeffbrown@google.com>
+	Mon, 25 Jul 2011 09:53:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <1311593444.29703.20.camel@vkoul-mobl4>
+References: <1311453088-5063-1-git-send-email-jaswinder.singh@linaro.org>
+	<1311593444.29703.20.camel@vkoul-mobl4>
+Date: Mon, 25 Jul 2011 19:23:05 +0530
+Message-ID: <CAJe_ZhdWsoL3WgUg6F4AuoHjGNLO07ZH+UPPd2qHLEW0f6LTGg@mail.gmail.com>
+Subject: Re: [RFC] DMAEngine: Define generic transfer request api
+From: Jaswinder Singh <jaswinder.singh@linaro.org>
+To: Vinod Koul <vkoul@infradead.org>
+Cc: vinod.koul@intel.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, dan.j.williams@intel.com,
+        sundaram@ti.com, linus.walleij@linaro.org, rmk+kernel@arm.linux.org.uk
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Message-Id: <E25AA279-4029-40BF-9CB0-873763C53AB4@enac.fr>
-References: <1311545261-34067-1-git-send-email-jeffbrown@android.com><131154 5261-34067-2-git-send-email-jeffbrown@android.com><13989665-31A9-4C70-B578- 5559987CC9F5@enac.fr> <CAN+gG=FAFX-N-3FpAmgkE+im4oT9h657Rk9h3=-17sCBwVx35A@mail.gmail.com>
-To: benjamin.tissoires@gmail.com
-X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 25 July 2011 17:00, Vinod Koul <vkoul@infradead.org> wrote:
+> On Sun, 2011-07-24 at 02:01 +0530, Jassi Brar wrote:
+>> This is an attempt to define an api that could be used for doing
+>> fancy data transfers like interleaved to contiguous copy and vice-versa.
+>> Traditional SG_list based transfers tend to be very inefficient
+>> in such cases. Such cases call for some very condensed api to convey
+>> pattern of the transfer. This is an attempt at that condensed api.
+>>
+>> The api supports all 4 variants of scatter-gather and contiguous transfer.
+>> Besides, it could easily represent common operations like
+>>       device_prep_dma_{cyclic, memset, memcpy}
+> and how do you specify if the transfer is cyclic, memset or mempcy...
+>> and maybe some more that I am not sure of.
+>>
+>> Of course, this api too can't help transfers that don't lend to DMA by
+>> nature, i.e, scattered tiny read/writes with no periodic pattern.
+> For that you use current sg_list :)
+_tiny_ is the keyword here :)
+SGL isn't an efficient method to convey transfer patterns with lengths
+and skips in a few bytes.
+And if they are big enough, we can use this api still.
 
-Le 25 juil. 2011 � 11:29, benjamin.tissoires@gmail.com a �crit :
+>>
+>> Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
+>> ---
+>>  include/linux/dmaengine.h |   74 +++++++++++++++++++++++++++++++++++++++++++++
+>>  1 files changed, 74 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+>> index eee7add..a6cdb57 100644
+>> --- a/include/linux/dmaengine.h
+>> +++ b/include/linux/dmaengine.h
+>> @@ -74,6 +74,76 @@ enum dma_transaction_type {
+>>  /* last transaction type for creation of the capabilities mask */
+>>  #define DMA_TX_TYPE_END (DMA_CYCLIC + 1)
+>>
+>> +/**
+>> + * Generic Transfer Request
+>> + * ------------------------
+>> + * A chunk is collection of contiguous bytes to be transfered.
+>> + * The gap(in bytes) between two chunks is called inter-chunk-gap(ICG).
+>> + * ICGs may or maynot change between chunks.
+>> + * A FRAME is the smallest series of contiguous {chunk,icg} pairs,
+>> + *  that when repeated an integral number of times, specifies the transfer.
+>> + * A transfer template is specification of a Frame, the number of times
+>> + *  it is to be repeated and other per-transfer attributes.
+>> + *
+>> + * Practically, a client driver would have ready a template for each
+>> + *  type of transfer it is going to need during its lifetime and
+>> + *  set only 'src_start' and 'dst_start' before submitting the requests.
+>> + *
+>> + *
+>> + *  |      Frame-1        |       Frame-2       | ~ |       Frame-'numf'  |
+>> + *  |====....==.===...=...|====....==.===...=...| ~ |====....==.===...=...|
+>> + *
+>> + *    ==  Chunk size
+>> + *    ... ICG
+>> + */
+>> +
+>> +/**
+>> + * struct data_chunk - Element of scatter-gather list that makes a frame.
+>> + * @size: Number of bytes to read from source.
+>> + *     size_dst := fn(op, size_src), so doesn't mean much for destination.
+>> + * @icg: Number of bytes to jump after last src/dst address of this
+>> + *    chunk and before first src/dst address for next chunk.
+>> + *    Ignored for dst(assumed 0), if dst_inc is true and dst_sgl is false.
+>> + *    Ignored for src(assumed 0), if src_inc is true and src_sgl is false.
+>> + */
+>> +struct data_chunk {
+>> +     size_t size;
+>> +     size_t icg;
+>> +};
+>> +
+>> +/**
+>> + * struct xfer_template - Template to convey DMAC the transfer pattern
+>> + *    and attributes.
+>> + * @op: The operation to perform on source data before writing it on
+>> + *    to destination address.
+> example of ops pls
+We can convey almost every kind of offline-'dma' operation via this generic api.
 
-> Hi Jeff,
-> 
-> I like the patch as it partially solves the problems left by
-> b84bd27fe70206f9253c395958134e4e4b7e55f0 (fix broken egalax). The
-> previous patch mapped buttons but now it should be ok.
-> Though, we still have the problem of the distinction between stylus and finger.
-> 
-> It would worth the effort to know if reverting
-> b84bd27fe70206f9253c395958134e4e4b7e55f0 and apply this one instead
-> still works for eGalax 480d owners (and mosart too IIRC).
-> 
-> 
-> On Mon, Jul 25, 2011 at 11:16, St�phane Chatty <chatty@enac.fr> wrote:
->> 
->> Le 25 juil. 2011 � 00:07, jeffbrown@android.com a �crit :
->> 
->>> From: Jeff Brown <jeffbrown@google.com>
->>> 
->>> This change fixes two problems.
->>> 
->>> First, it ensures that the hid-multitouch driver does not incorrectly
->>> map GenericDesktop usages that are intended for other applications,
->>> such as a Mouse.
->>> 
->>> Second, it sets the appropriate input properties so that user-space
->>> can distinguish TouchScreen devices (INPUT_PROP_DIRECT) from
->>> TouchPad devices (INPUT_PROP_POINTER) and configure them accordingly.
->>> 
->>> Signed-off-by: jeffbrown@android.com
->>> ---
->>> drivers/hid/hid-multitouch.c |   10 ++++++++++
->>> 1 files changed, 10 insertions(+), 0 deletions(-)
->>> 
->>> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
->>> index 58d0e7a..4ee21ac 100644
->>> --- a/drivers/hid/hid-multitouch.c
->>> +++ b/drivers/hid/hid-multitouch.c
->>> @@ -213,6 +213,16 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
->>>       struct mt_class *cls = td->mtclass;
->>>       __s32 quirks = cls->quirks;
->>> 
->>> +     /* Only map fields from TouchScreen or TouchPad collections.
->>> +         * We need to ignore fields that belong to other collections
->>> +         * such as Mouse that might have the same GenericDesktop usages. */
->>> +     if (field->application == HID_DG_TOUCHSCREEN)
->>> +             set_bit(INPUT_PROP_DIRECT, hi->input->propbit);
->>> +     else if (field->application == HID_DG_TOUCHPAD)
->>> +             set_bit(INPUT_PROP_POINTER, hi->input->propbit);
->>> +     else
->>> +             return 0;
-> 
-> Maybe I'm wrong, but 0 means that hid-input will decide what to do.
-> Maybe we should return -1 instead, to be sure not handling this part.
-> 
->>> +
->>>       switch (usage->hid & HID_USAGE_PAGE) {
->>> 
->>>       case HID_UP_GENDESK:
->>> --
->>> 1.7.0.4
->>> 
->> 
->> 
->> Looks clever to me. Still, in principle we should check that all (or at least most) known devices fill the application field properly. I'll try to have a look at the report descriptors we have here.
-> 
-> I checked (with some greps) the reports we have, and it seems that all
-> the device we know provide this application. So it should be safe, but
-> I'm not able to test it.
-> St�phane, if you have the time to test it on our lab's devices that
-> would be great.
+>> + * @src_start: Absolute address of source for the first chunk.
+>> + * @dst_start: Absolute address of destination for the first chunk.
+> absolute = bus addr, right, if so bus addr would be a better term
+Yup
 
-So far it works fine on our Cypress panel. I'll keep you posted about Lumio and Stantum as soon as we have finished compiling Linux 3.0.
+>> + * @src_inc: If the source address increments after reading from it.
+>> + * @dst_inc: If the destination address increments after writing to it.
+> Is the inc in bytes?
+I mean increment by src_width bytes(I removed it and made it an attribute
+of the channel rather than transfer). That could be conveyed via maybe
+SLAVE_CONFIG ... or with a new different name ;)
 
-St.
+>> + * @src_sgl: If the 'icg' of sgl[] applies to Source (scattered read).
+>> + *           Otherwise, source is read contiguously (icg ignored).
+>> + *           Ignored if src_inc is false.
+>> + * @dst_sgl: If the 'icg' of sgl[] applies to Destination (scattered write).
+>> + *           Otherwise, destination is filled contiguously (icg ignored).
+>> + *           Ignored if dst_inc is false.
+>> + * @frm_irq: If the client expects DMAC driver to do callback after each frame.
+> why not reuse the callback in descriptor for this?
+At the moment, it is for at least conveying cyclic transfers in a
+single descriptor.
 
+>> + * @numf: Number of frames in this template.
+>> + * @frame_size: Number of chunks in a frame i.e, size of sgl[].
+>> + * @sgl: Array of {chunk,icg} pairs that make up a frame.
+>> + */
+>> +struct xfer_template {
+>> +     enum dma_transaction_type op;
+>> +     dma_addr_t src_start;
+>> +     dma_addr_t dst_start;
+>> +     bool src_inc;
+>> +     bool dst_inc;
+>> +     bool src_sgl;
+>> +     bool dst_sgl;
+>> +     bool frm_irq;
+>> +     size_t numf;
+>> +     size_t frame_size;
+>> +     struct data_chunk sgl[0];
+>> +};
+>>
+>>  /**
+>>   * enum dma_ctrl_flags - DMA flags to augment operation preparation,
+>> @@ -430,6 +500,7 @@ struct dma_tx_state {
+>>   * @device_prep_dma_cyclic: prepare a cyclic dma operation suitable for audio.
+>>   *   The function takes a buffer of size buf_len. The callback function will
+>>   *   be called after period_len bytes have been transferred.
+>> + * @device_prep_dma_xfer: Transfer expression in 'most' generic way.
+>>   * @device_control: manipulate all pending operations on a channel, returns
+>>   *   zero or error code
+>>   * @device_tx_status: poll for transaction completion, the optional
+>> @@ -494,6 +565,9 @@ struct dma_device {
+>>       struct dma_async_tx_descriptor *(*device_prep_dma_cyclic)(
+>>               struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
+>>               size_t period_len, enum dma_data_direction direction);
+>> +     struct dma_async_tx_descriptor *(*device_prep_dma_xfer)(
+>> +             struct dma_chan *chan, struct xfer_template *xt,
+>> +             unsigned long flags);
+>>       int (*device_control)(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+>>               unsigned long arg);
+>>
+>
+> Is this coordinated with Sundaram, he was trying similar thing with help
+> from Linus W?
+>
+Nopes.
+I replied, to his proposal to add TI specific flag to DMA API, that we need
+something generic enough to be usable by other DMACs as well.
+
+For example, types of transfers possible with PL330 are almost unlimited
+because PL330 is actually a processor with it's own instruction set !
+I kept in mind the PL330 capabilities and all the trickery I had to employ
+while working on DMA client(multimedia) drivers.
+
+Please look at this api from POV that we are to write an ideal DMA API
+from scratch. Later we can decide which parts are too old to be changed
+and which could be introduced for new drivers and slowly/safely modified
+in extant drivers.
+
+I don't know if it is acceptable(please let me know if it is not), but I am
+introducing my bigger picture a stroke at time, because neither am I
+really good at communicating, nor people tend to accept even
+'independently-valid' patches if they are introduced as part of something
+bigger that they won't probably like. Or so do I think.
+
+Thanks,
+Jassi
+
+-- 
+Linaro.org │ Open source software for ARM SoCs | Follow Linaro
+http://facebook.com/pages/Linaro/155974581091106  -
+http://twitter.com/#!/linaroorg - http://linaro.org/linaro-blog
