@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054Ab1GYNzj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 09:55:39 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:36900 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751269Ab1GYNzf (ORCPT
+	id S1752095Ab1GYN4d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 09:56:33 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:52243 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751269Ab1GYN4c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 09:55:35 -0400
+	Mon, 25 Jul 2011 09:56:32 -0400
 MIME-Version: 1.0
-Date: Mon, 25 Jul 2011 15:55:34 +0200
-Message-ID: <CAC+thW0Cx4pQDeZ2ZJfvFMfv23ExDmS5LDM8_-1Nz23t1TpJcA@mail.gmail.com>
-Subject: power: bq20z75: problem with optional battery detect gpio feature
-From: Andrea Galbusera <gizero@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAO+b5-oXKFYo63cLfnfQntArzcsrfKE-8dX5fTpOwuNDTBPMBQ@mail.gmail.com>
+References: <1309244992-2305-1-git-send-email-jim.cromie@gmail.com>
+ <1310370416-6322-1-git-send-email-jim.cromie@gmail.com> <1310370416-6322-9-git-send-email-jim.cromie@gmail.com>
+ <CAO+b5-piFe5mEPf82Mm8gmiqX2SiPTOVpNDY-3C22PNA6MxXsg@mail.gmail.com>
+ <CAJfuBxyWTTBk46dLtgkpxJASxyXG4JuSeir_E-mdsadi2d1awA@mail.gmail.com> <CAO+b5-oXKFYo63cLfnfQntArzcsrfKE-8dX5fTpOwuNDTBPMBQ@mail.gmail.com>
+From: Jim Cromie <jim.cromie@gmail.com>
+Date: Mon, 25 Jul 2011 07:56:00 -0600
+Message-ID: <CAJfuBxyUwYV7Hf0+BTyz+hcB5hCVNrKePb-hSKv4Bs7OMU7Fgg@mail.gmail.com>
+Subject: Re: [PATCH 08/21] dynamic_debug: factor show_ddebug_query out of ddebug_parse_query
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: jbaron@redhat.com, linux-kernel@vger.kernel.org, joe@perches.com,
+        gregkh@suse.de, gnb@fmeh.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Is the in-object feature really optional?
-If battery_detect field in my bq20z75_platform_data structure is not
-explicitly set, I suspect the driver ends up requesting an irq for the
-GPIO number 0. This look indesirable.
+On Mon, Jul 25, 2011 at 5:10 AM, Bart Van Assche <bvanassche@acm.org> wrote:
+> On Sat, Jul 16, 2011 at 11:32 PM, Jim Cromie <jim.cromie@gmail.com> wrote:
+>> using kasprintf would entail;
+>> - a local char* var,
+>> - a call to the string-producer (show_ddebug_query above)
+>> - a kfree(var)
+>> all in the caller context.
+>> Using a preallocated string buffer avoids this,
+>> and is slightly more efficient wrt kallocs.
+>
+> I'm still missing an explanation why the static variable "prbuf_query"
+> is necessary. Wouldn't eliminating that static variable make the code
+> more elegant ?
+>
+> Bart.
+>
 
-Here is the relevant code snip form bq20z75_probe():
-
-if (pdata) {
-	bq20z75_device->gpio_detect =
-		gpio_is_valid(pdata->battery_detect);    // GPIO 0 _IS_ a valid gpio !!
-	bq20z75_device->pdata = pdata;
-}
-
-[...]
-
-if (!bq20z75_device->gpio_detect)
-	goto skip_gpio;
-
-[...]
-
-irq = gpio_to_irq(pdata->battery_detect);
-
-[...]
-
-rc = request_irq(irq, bq20z75_irq,
-	IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
-	dev_name(&client->dev), &bq20z75_device->power_supply);
-
-
-I cannot find in gpio related headers any sort of "GPIO_INVALID"
-symbol to explicitly declare that I don't want this feature. I'm
-temporarily setting it to ARCH_NR_GPIOS but I believe we need to
-disambiguate GPIO number 0 from "disable feature".
-Correct?
-
-Regards,
-Andrea
+After further consideration, Ive done it as you suggest.
+Its a few more lines of code, but less complex -
+all kfrees follow use immediately, no buffer mgmt at a distance.
