@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752542Ab1GYOlb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 10:41:31 -0400
-Received: from mail.perches.com ([173.55.12.10]:4259 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752431Ab1GYOl2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 10:41:28 -0400
-From: Joe Perches <joe@perches.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH net-next] net: Convert struct net_device uc_promisc to bool
-Date: Mon, 25 Jul 2011 07:41:26 -0700
-Message-Id: <813214b21d4db8d08a76c648ea1d3286b441b706.1311604594.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.6.131.g99019
+	id S1752428Ab1GYOqE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 10:46:04 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:56989 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752102Ab1GYOqA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 10:46:00 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX190Qk40Pbp0pjWeyCkpqJjenG/OdhJUGlnaBRzc7p
+	RZmfvC30yr4UJ3
+From: Toralf =?utf-8?q?F=C3=B6rster?= <toralf.foerster@gmx.de>
+To: linux-kernel@vger.kernel.org
+Subject: kernel 3.0 + bridge : set hello timer failed: Numerical result out of range
+Date: Mon, 25 Jul 2011 16:45:56 +0200
+User-Agent: KMail/1.13.7 (Linux/3.0.0; KDE/4.6.5; i686; ; )
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201107251645.56332.toralf.foerster@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No need to use int, its uses are boolean.
-May save a few bytes one day.
+I got this message with kernel 3.0 under an almost stable Gentoo :
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- include/linux/netdevice.h |    2 +-
- net/core/dev.c            |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ *   Running postup ...
+ * Bringing up interface br0
+ *   Creating bridge br0 ...
+set hello timer failed: Numerical result out of range
+ *   Adding ports to br0
+ *     tap0 ... [ ok ]
+ *     tap1 ... [ ok ]
+ *   192.168.0.254/16 ... [ ok ]
+ *   Running postup ...
 
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 34f3abc..1d92acc 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -1132,7 +1132,7 @@ struct net_device {
- 	spinlock_t		addr_list_lock;
- 	struct netdev_hw_addr_list	uc;	/* Unicast mac addresses */
- 	struct netdev_hw_addr_list	mc;	/* Multicast mac addresses */
--	int			uc_promisc;
-+	bool			uc_promisc;
- 	unsigned int		promiscuity;
- 	unsigned int		allmulti;
- 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 9444c5c..17d67b5 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -4497,10 +4497,10 @@ void __dev_set_rx_mode(struct net_device *dev)
- 		 */
- 		if (!netdev_uc_empty(dev) && !dev->uc_promisc) {
- 			__dev_set_promiscuity(dev, 1);
--			dev->uc_promisc = 1;
-+			dev->uc_promisc = true;
- 		} else if (netdev_uc_empty(dev) && dev->uc_promisc) {
- 			__dev_set_promiscuity(dev, -1);
--			dev->uc_promisc = 0;
-+			dev->uc_promisc = false;
- 		}
- 
- 		if (ops->ndo_set_multicast_list)
+with these settings :
+Code:
+brctl_br0="
+setfd 0
+sethello 30
+stp off" 
+
+Kernel 2.6.39.3 doesn't show that. Is this a harmless message ?
+
 -- 
-1.7.6.131.g99019
-
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
