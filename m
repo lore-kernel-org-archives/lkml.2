@@ -1,80 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017Ab1GYKgU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 06:36:20 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:59457 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751093Ab1GYKgN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 06:36:13 -0400
-Date: Mon, 25 Jul 2011 12:35:20 +0200
-From: Ingo Molnar <mingo@elte.hu>
+	id S1752012Ab1GYKih (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 06:38:37 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:46063
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751093Ab1GYKia (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 06:38:30 -0400
+Date: Mon, 25 Jul 2011 06:38:17 -0400
+From: Christoph Hellwig <hch@infradead.org>
 To: Alexander Graf <agraf@suse.de>
-Cc: Pekka Enberg <penberg@kernel.org>, Jan Kiszka <jan.kiszka@web.de>,
-        torvalds@linux-foundation.org, avi@redhat.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, gorcunov@gmail.com, levinsasha928@gmail.com,
-        asias.hejun@gmail.com, prasadjoshi124@gmail.com
+Cc: Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@kernel.org>,
+        Jan Kiszka <jan.kiszka@web.de>, torvalds@linux-foundation.org,
+        avi@redhat.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, gorcunov@gmail.com,
+        levinsasha928@gmail.com, asias.hejun@gmail.com,
+        prasadjoshi124@gmail.com
 Subject: Re: [GIT PULL] Native Linux KVM tool for 3.1
-Message-ID: <20110725103517.GL28787@elte.hu>
-References: <CAOJsxLEkXpDCiMZZnSXnxQ6-PFBwMEv4j5mLRhPZVMKw=LoPSQ@mail.gmail.com>
+Message-ID: <20110725103817.GA21683@infradead.org>
+References: <alpine.DEB.2.00.1107242335580.18045@tiger>
+ <4E2CA6DE.4040900@web.de>
+ <CAOJsxLEkXpDCiMZZnSXnxQ6-PFBwMEv4j5mLRhPZVMKw=LoPSQ@mail.gmail.com>
  <20110725075305.GA32294@elte.hu>
  <0EAA5203-D598-4CBA-B8D2-AB371A7689A9@suse.de>
- <CAOJsxLHGgpNrHpfnHzD-aOJakE9q_4ym51_AYQHaj+waEZtSuw@mail.gmail.com>
- <ED2ECD82-2B14-45FF-AA61-AB26B377B626@suse.de>
- <CAOJsxLFDzSg55u92b6Qgvqn1yjaShYG_Bgdkzy19aBrzxo7FqA@mail.gmail.com>
- <20110725092656.GD28787@elte.hu>
- <68C2AB77-AA91-4B21-A321-2DB4EF8121C1@suse.de>
- <20110725101607.GI28787@elte.hu>
- <C79981BA-CFE9-48CD-839D-1ABD72DF266C@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <C79981BA-CFE9-48CD-839D-1ABD72DF266C@suse.de>
+In-Reply-To: <0EAA5203-D598-4CBA-B8D2-AB371A7689A9@suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jul 25, 2011 at 10:14:13AM +0200, Alexander Graf wrote:
+> So instead of thinking a bit and trying to realize that there might be a reason people don't want all their user space in the kernel tree you go ahead and start your own crusade of creating a new user space. Great. That's how I always hoped Linux would be :(.
 
-* Alexander Graf <agraf@suse.de> wrote:
+It's not Linux in general yet, it's mostly a crusade of a few with a
+political agenda.
+
+> > So i wanted to have a lightweight tool that allows me to test KVM and 
+> > tools/kvm/ does that very nicely: i type './kvm run' and i can test a 
+> > native bzImage (which has some virtualization options enabled as 
+> > well) on the _host_ distro i am running, booting to a text shell 
+> > prompt.
+> 
+> I do that all the time.
+> 
+>   $ qemu-kvm -nographic -kernel arch/x86/boot/bzImage -append console=ttyS0
+
+Same here.  I can't be bothered with all the stuid distro booting crap.
+
+> > I can do that without downloading any (inevitably outdated) 
+> > virtualization images or maintaining my own ones. Maintaining host 
+> > userspace is more than enough for me.
+> 
+> Who would need images? I usually only run -kernel and -initrd directly to test out things. Or if I really want to boot into a real system I do -snapshot /dev/sda.
+
+Indeed.
 
 > 
-> On 25.07.2011, at 12:16, Ingo Molnar wrote:
+> > So, since we already have the lguest tool in the kernel tree, why 
+> > cannot we have the much more capable tools/kvm/ in the tree?
 > 
-> >> 
-> >>> So it was a no brainer for me to pull it into -tip.
-> >> 
-> >> The thing I don't agree with is that it should live in the 
-> >> kernel tree.
-> > 
-> > FYI, tools/kvm/ *already* lives in the kernel tree - that is how 
-> > it's developed and used and it also shares code with the kernel.
-> 
-> So you're just trying to make this a self-fulfilling prophecy now? 
+> Lguest is in Documentation/ for a reason. It's not meant as a user space tool that you take as-is and use. It's meant for documenting how lguest works in general. I admit though, that that's also the reason people don't use it :).
 
-No, i'm just trying to point out to you that it's already a fact that 
-the tool already lives in a kernel tree and was developed there to 
-the tune of 700+ commits within a few short months.
+I'd also say it's rather misplaced there, and at least in the storage
+area that I know most it didn't help it from totally misunderstanding
+kernel concepts and taking them into protocols (e.g. virtio barrier
+support).  That for me is a reason why you don't want to couple thing
+too tightly, at least you'll have to document and/or explain the
+protocol to someone. 
+tight
 
-IMO you should not be arguing:
+And another argument, calling toyvisor2 "kvm" is a really bad idea.  The
+kvm binary has been used for the kvm-patched qemu binary for quite a
+while in various distros, so re-using that name will cause utter
+confusion.
 
- 'You should do X because that's my preference.'
+I'm happy that you guys do another independent userspace for kvm, but
+please:
 
-IMO you should be arguing:
-
- 'You should do X because technical advantage Y which is important to the project.'
-
-We have listed numerous technical advantages of why we have chosen 
-tools/kvm/ - and you have not countered that with any convincing 
-technical disadvantage so far.
-
-Thanks,
-
-	Ingo
+  a) give it a useful name
+  b) just develop it where it belongs, your own little git repository
+     somewhere
