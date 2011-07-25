@@ -1,53 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752143Ab1GYUDj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 16:03:39 -0400
-Received: from home.keithp.com ([63.227.221.253]:40150 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751544Ab1GYUDi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 16:03:38 -0400
-From: Keith Packard <keithp@keithp.com>
-To: "Guy\, Wey-Yi" <wey-yi.w.guy@intel.com>
-Cc: Intel Linux Wireless <ilw@linux.intel.com>,
-        "linux-wireless\@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] iwlagn: check for !priv->txq in iwlagn_wait_tx_queue_empty
-In-Reply-To: <1311621715.5579.138.camel@wwguy-huron>
-References: <1311622702-4807-1-git-send-email-keithp@keithp.com> <1311621715.5579.138.camel@wwguy-huron>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Mon, 25 Jul 2011 13:03:34 -0700
-Message-ID: <yunvcuqunzd.fsf@aiko.keithp.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S1752193Ab1GYUF6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 16:05:58 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:47834 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751438Ab1GYUFz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 16:05:55 -0400
+From: Will Drewry <wad@chromium.org>
+To: akpm@linux-foundation.org
+Cc: kay.sievers@vrfy.org, linux-kernel@vger.kernel.org,
+        Will Drewry <wad@chromium.org>, Jens Axboe <jaxboe@fusionio.com>,
+        Namhyung Kim <namhyung@gmail.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [PATCH] init: clean up devt_from_partuuid syntax checking and logging
+Date: Mon, 25 Jul 2011 14:55:26 -0500
+Message-Id: <1311623726-32581-1-git-send-email-wad@chromium.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <CABqD9hY7xLWLeeFiKGdMT8VveXQAv3PgC-ZGPdd4qO1AfgDZWw@mail.gmail.com>
+References: <CABqD9hY7xLWLeeFiKGdMT8VveXQAv3PgC-ZGPdd4qO1AfgDZWw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+This patch makes two changes:
+- check for trailing characters after parsing PARTNROFF=%d
+- disable root_wait if a syntax error is seen
 
-On Mon, 25 Jul 2011 12:21:55 -0700, "Guy, Wey-Yi" <wey-yi.w.guy@intel.com> =
-wrote:
+The former assures that bad input like
+  root=PARTUUID=<validuuid>/PARTNROFF=5abc
+properly fails by attempting to parse an extra character after the
+integer.  If the integer is missing, sscanf will fail, but if it is
+present, and there is a trailing non-nul character, then the extra
+field will be parsed and the error case will be hit.
 
-> but why you need it?, "start device" call will fail if can not allocate
-> priv->txq
+The latter assures that if rootwait has been specified, the error
+message isn't flooded to the screen during rootwait's loop.  Instead of
+adding printk ratelimiting, root_wait was disabled.  This stays true to
+the rootwait goal of support asynchronous device arrival while still
+providing users with helpful messages.  With ratelimiting or disabling
+logging on rootwait, a range of edge cases turn up where the user would
+not be informed of an error properly.
 
-The device is down, so start_device was never called. At least, that's
-my assumption -- I've got the wireless device 'disabled' in
-NetworkManager.
+This patch is meant to be applied on top of:
+  http://userweb.kernel.org/~akpm/mmotm/broken-out/init-add-root=partuuid=uuid-partnroff=%25d-support.patch
 
-=2D-=20
-keith.packard@intel.com
+Please let me know if you'd prefer a new patch series with this
+integrated into the above patch (or as 3rd in the series).
 
---=-=-=
-Content-Type: application/pgp-signature
+Signed-off-by: Will Drewry <wad@chromium.org>
+---
+ init/do_mounts.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+diff --git a/init/do_mounts.c b/init/do_mounts.c
+index 13cddea..bcbeca7 100644
+--- a/init/do_mounts.c
++++ b/init/do_mounts.c
+@@ -110,10 +110,16 @@ static dev_t devt_from_partuuid(char *uuid_str)
+ 
+ 	/* Check for optional partition number offset attributes. */
+ 	if (uuid_str[36]) {
++		char c = 0;
+ 		/* Explicitly fail on poor PARTUUID syntax. */
+-		if (sscanf(&uuid_str[36], "/PARTNROFF=%d", &offset) != 1) {
++		if (sscanf(&uuid_str[36],
++			   "/PARTNROFF=%d%c", &offset, &c) != 1) {
+ 			printk(KERN_ERR "VFS: PARTUUID= is invalid.\n"
+ 			 "Expected PARTUUID=<valid-uuid-id>[/PARTNROFF=%%d]\n");
++			if (root_wait)
++				printk(KERN_ERR
++				     "Disabling rootwait; root= is invalid.\n");
++			root_wait = 0;
+ 			goto done;
+ 		}
+ 	}
+-- 
+1.7.0.4
 
-iD8DBQFOLcwWQp8BWwlsTdMRAgWeAKDA0nKhnHURsbVvBpxJS5aF6NsUEACg5wV7
-Ed0/dTKJfhRfnWGNoFYAip4=
-=Q13b
------END PGP SIGNATURE-----
---=-=-=--
