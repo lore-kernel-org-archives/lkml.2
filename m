@@ -1,89 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751271Ab1GYMXo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 08:23:44 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:52659 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750946Ab1GYMXj convert rfc822-to-8bit (ORCPT
+	id S1751321Ab1GYM3x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 08:29:53 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:58345 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750864Ab1GYM3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 08:23:39 -0400
+	Mon, 25 Jul 2011 08:29:46 -0400
+Date: Mon, 25 Jul 2011 17:47:14 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 3.0-rc2-tip 4/22]  4: Uprobes: register/unregister
+ probes.
+Message-ID: <20110725121714.GA17966@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
+ <20110607125900.28590.16071.sendpatchset@localhost6.localdomain6>
+ <20110724180713.GA24599@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <4E2D4177.9000402@redhat.com>
-References: <4E2987AE.2070707@redhat.com> <1311553130.1671.21.camel@mop> <4E2D4177.9000402@redhat.com>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Mon, 25 Jul 2011 14:17:01 +0200
-Message-ID: <CAPXgP101Jr3-k4p8ow-F3Phq+fNmC1eR8LD+j609xBvGfd1cUg@mail.gmail.com>
-Subject: Re: [dm-devel] [PATCH] Reduce number of KOBJ_REMOVE events
-To: Zdenek Kabelac <zkabelac@redhat.com>
-Cc: device-mapper development <dm-devel@redhat.com>, Greg KH <greg@kroah.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20110724180713.GA24599@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 25, 2011 at 12:12, Zdenek Kabelac <zkabelac@redhat.com> wrote:
-> Dne 25.7.2011 02:18, Kay Sievers napsal(a):
->> On Fri, 2011-07-22 at 16:22 +0200, Zdenek Kabelac wrote:
->>
->>> For now udev recieves 3 event for removal of DM logical volumes. (1 for
->>> bdi and 2 for same block kobject). Reason is dm device generates its
->>> own kobject event with approriate env parameter and block layer sends
->>> another KOBJ_REMOVE event on its own unconditionaly for the same
->>> kobject. As for now only the kobject cleanup checks that the REMOVE
->>> event has been already sent and avoids duplicate REMOVE event.
->>
->>> The patch for kobject_uevent_env() which has been testing for duplicate
->>> REMOVE event did not passed into the mainline (yet?):
->>
->> No, it's wasn't merged. Subsystems should really not send their own
->> 'add' or 'remove' events. These are properties of the driver core.
->>
->>> I'm proposing alternative way around to always use kobject cleanup
->>> routine for sending REMOVE event if it was not send by the module - so
->>> it makes the code few lines shorter.
->>
->> The events the core creates are only sent out at release() not at del(),
->> so we would delay 'remove' events when we keep the device pinned but
->> it's not valid anymore. We can not do that today, we would need to move
->> the core-created 'remove' events to del().
->>
->> For device-mapper, I would prefer to add a '.dev_uevent' callback to the
->> 'block' class let this callback check 'struct block_device_operations'
->> for a possibly specified '.uevent' callback and call it.
->>
->> Then have 'dm_blk_dops' add '.uevent' and let the core call into the dm
->> code to the needed properties to the 'remove' event, instead of sending
->> its own, and see the duplication.
->
-> Sounds like complex solution
+* Oleg Nesterov <oleg@redhat.com> [2011-07-24 20:07:13]:
 
-I don't think so, It's clean, ~30 lines long, and technically correct, I expect.
+> Hi Srikar,
+> 
+> I still hope some day I'll find the time to read the whole series ;)
+> Trying to continue from where I have stopped, and it seems that this
+> patch has a couple more problems.
 
-> maybe it would be easier to just register some
-> environment variable on dm code side - like kobject_add_env() - so it would
-> take envs from this internal kobject list and after sending uevent it would
-> implicitly clear this list.
 
-So we would keep allocated per-event-type variables in the kobject, to
-send when 'remove' is finally called? The callbacks are just much
-simpler , I guess.
+Thanks for the review and I sincerely hope you find time and that too at
+the earliest. 
 
-> So in dm case  dm-uevent would just register  env(cookie) for KOBJ_REMOVE and
-> would left kobject_uevent() on block layer ?
->
-> Also I'm aware that remove event would be delayed by leaving it on
-> kobject_cleanup(), but since you mentioned 'del()' as a better place - why not
-> move this implicit uvent call there.
+> 
+> On 06/07, Srikar Dronamraju wrote:
+> >
+> > A probe is specified by a file:offset.  While registering, a breakpoint
+> > is inserted for the first consumer, On subsequent probes, the consumer
+> > gets appended to the existing consumers. While unregistering a
+> > breakpoint is removed if the consumer happens to be the last consumer.
+> > All other unregisterations, the consumer is deleted from the list of
+> > consumers.
+> >
+> > Probe specifications are maintained in a rb tree. A probe specification
+> > is converted into a uprobe before store in a rb tree.  A uprobe can be
+> > shared by many consumers.
+> 
+> register/unregister logic looks racy...
+> 
+> Supose that uprobe U has a single consumer C and register_uprobe()
+> is called with the same inode/offset, while another thread does
+> unregister(U,C).
+> 
+> 	- register() calls alloc_uprobe(), finds the entry in rb tree,
+> 	  and increments U->ref. But this doesn't add the new consumer.
+> 
+> 	- uregister() does del_consumer(), and removes the single
+> 	  consumer C.
+> 
+> 	  then it takes uprobes_mutex, sees uprobe->consumers == NULL
+> 	  and calls delete_uprobe()->rb_erase()
+> 
+> 	- register() continues, takes uprobes_mutex, re-inserts the
+> 	  breakpoints, finds the new consumer and succeeds.
+> 
+> 	  However, this uprobe is not in rb-tree, it was deleted
+> 	  by unregister.
+> 
 
-It's probably not wrong to do that, but I don't remember now why we
-added it to release() that time.
+Agree, 
+I will move the alloc_uprobe under the mutex_lock.
 
-> since most kernel driver writers
-> probably do not want to be bothered with uvents?
+On a side_note: As per the current discussions in this thread, I plan to
+use inode->i_mutex so that we could serialize register/unregister if
+they are for two different files.
 
-I guess, most drivers use devices not raw kobjects, which send events
-on their own, and don't need anything here.
+> 
+> 
+> OTOH. Suppose we add the new uprobe. register()->alloc_uprobe() sets
+> new_uprobe->ref == 2. If something goes wrong after that, register()
+> does delete_uprobe() + put_uprobe(), new_uprobe->ref becomes 1 and
+> we leak this uprobe.
+> 
 
-Kay
+Agree:
+yes I will add a put_uprobe() just after delete_uprobe() but just before
+the goto.
+sidenote: Even this code will change based on the discussions we had on
+this topic. But I will ensure to make the appropriate changes are taken
+care of.
+
+-- 
+Thanks and Regards
+Srikar
+
+> Oleg.
