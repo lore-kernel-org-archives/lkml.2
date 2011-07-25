@@ -1,85 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751646Ab1GYR7d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 13:59:33 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:38051 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751153Ab1GYR7b (ORCPT
+	id S1751949Ab1GYSBN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 14:01:13 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:46981 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751392Ab1GYSBM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 13:59:31 -0400
-Date: Mon, 25 Jul 2011 13:59:27 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: ltt-dev@lists.casi.polymtl.ca
-Cc: linux-kernel@vger.kernel.org
-Subject: [RELEASE] LTTng 2.0 prerelease 1
-Message-ID: <20110725175927.GA6943@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 13:25:16 up 243 days, 22:28,  3 users,  load average: 0.02, 0.01,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 25 Jul 2011 14:01:12 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=Sy95Vqd75oNb5WBGHOUCRaeUObrIosFVO5RPZfq7adPCoUYmzc0uT5h9xD0qpedzEVXjX5mszfuZwBZQZ5Gz8dsW6EFH/q2z7ZhX1cIktA7Y6DCeyLyiFRREaeaQKerq;
+Date: Mon, 25 Jul 2011 11:01:09 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, akpm <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        kvm@vger.kernel.org, x86@kernel.org
+Subject: [PATCH -next] kvm: fix TASK_DELAY_ACCT kconfig warning
+Message-Id: <20110725110109.b06fe691.rdunlap@xenotime.net>
+In-Reply-To: <20110725162542.39ea8d8cbd51604523635c1a@canb.auug.org.au>
+References: <20110725162542.39ea8d8cbd51604523635c1a@canb.auug.org.au>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LTTng, the Linux Trace Toolkit Next Generation, is a highly efficient
-full system tracing solution toolchain. It is composed of several
-components to allow tracing of the kernel, of userspace, trace viewing
-and analysis and trace streaming. LTTng is open source software.
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-New Features:
+Fix kconfig dependency warning:
 
-- LTTng 2.0 kernel modules build against a vanilla or distribution
-  kernel, without need for additional patches.
-- Produces CTF (Common Trace Format) natively,
-  (http://www.efficios.com/ctf)
-- Tracepoints, Function tracer, CPU Performance Monitoring Unit (PMU)
-  counters and kprobes support,
-- Integrated interface for both kernel and userspace tracing,
-- Have the ability to attach "context" information to events in the
-  trace (e.g. any PMU counter, pid, ppid, tid, comm name, etc).
-  All the extra information fields to be collected with events are
-  optional, specified on a per-tracing-session basis (except for
-  timestamp and event id, which are mandatory).
-- Allows non-root users part of the "tracing" group to perform kernel
-  and userspace tracing.
-- Allows multiple tracing sessions to be active concurrently, each with
-  its own instrumentation set.
+warning: (KVM) selects TASK_DELAY_ACCT which has unmet direct dependencies (TASKSTATS)
 
-You can get a the current release "bundle" (recommanded set of packages)
-at the following URL:
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+---
+ arch/x86/kvm/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-http://lttng.org/bundles/20110725/
-
-Refer to the README files for installation instructions and lttng-tools
-doc/quickstart.txt for usage information and examples.
-(http://git.lttng.org/?p=lttng-tools.git;a=blob_plain;f=doc/quickstart.txt)
-
-Please note that the LTTng-UST 2.0 (user-space tracing counterpart of
-LTTng 2.0) is still in active development and not released yet. Only
-text-dump output of the binary traces is available at this moment
-through the Babeltrace tool (LTTV is not supported yet). Tracing from
-the "tracing" group currently produces traces owned by "root"; this
-known problem will be fixed in the next prerelease. This release has
-been tested on vanilla Linux kernels, Debian kernels, Ubuntu kernels,
-and Fedora kernels on the version range 2.6.38, 2.6.39 and 3.0 (on x86
-32/64-bit, and powerpc 32-bit at the moment, build tested on ARM).
-
-Feedback is welcome!
-
-Thanks,
-
-Mathieu
-
-Project website: http://lttng.org
-Download link: http://lttng.org/lttng2.0
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+--- linux-next-20110725.orig/arch/x86/kvm/Kconfig
++++ linux-next-20110725/arch/x86/kvm/Kconfig
+@@ -31,6 +31,7 @@ config KVM
+ 	select KVM_ASYNC_PF
+ 	select USER_RETURN_NOTIFIER
+ 	select KVM_MMIO
++	select TASKSTATS
+ 	select TASK_DELAY_ACCT
+ 	---help---
+ 	  Support hosting fully virtualized guest machines using hardware
