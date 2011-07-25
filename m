@@ -1,93 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751824Ab1GYNMj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 09:12:39 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:54875 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751025Ab1GYNMg convert rfc822-to-8bit (ORCPT
+	id S1751925Ab1GYNNH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 09:13:07 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:61384 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751112Ab1GYNNF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 09:12:36 -0400
+	Mon, 25 Jul 2011 09:13:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAPweEDzQXUTtAwiU4qEB_eQqNgJeazpeTxixyAnbgscvC5yujQ@mail.gmail.com>
-References: <CAPweEDwVhaHr=5i8giGCkDWxK9G8Vvibq59vhbu6RsnZf9uerA@mail.gmail.com>
-	<20110725131701.112e635e@lxorguk.ukuu.org.uk>
-	<CAPweEDzQXUTtAwiU4qEB_eQqNgJeazpeTxixyAnbgscvC5yujQ@mail.gmail.com>
-Date: Mon, 25 Jul 2011 14:12:35 +0100
-X-Google-Sender-Auth: QhNFW-_V6OMzNMITI2zwh-RAmnQ
-Message-ID: <CAPweEDzG82Cja+MAL-F93rdGYTU_rDOk-wTSDzsPW3w=p5_H1A@mail.gmail.com>
-Subject: Re: dynamic LCD support for "embedded" systems
-From: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: debian-arm@lists.debian.org, linux-kernel@vger.kernel.org,
-        Wookey <wookey@wookware.org>
+In-Reply-To: <CAKnu2MpVwYSYgKBtpuqrrjHFQdjCEU_Q5iYe8qdfO9D1kzN0gw@mail.gmail.com>
+References: <1311453088-5063-1-git-send-email-jaswinder.singh@linaro.org>
+	<CAKnu2MpVwYSYgKBtpuqrrjHFQdjCEU_Q5iYe8qdfO9D1kzN0gw@mail.gmail.com>
+Date: Mon, 25 Jul 2011 18:43:04 +0530
+Message-ID: <CAJe_ZhebB_99oEBucy_dS_f0T-OPDfUo6q_v0nh3gFvS0cn3qg@mail.gmail.com>
+Subject: Re: [RFC] DMAEngine: Define generic transfer request api
+From: Jaswinder Singh <jaswinder.singh@linaro.org>
+To: Linus Walleij <linus.ml.walleij@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        dan.j.williams@intel.com, sundaram@ti.com, vinod.koul@intel.com,
+        rmk+kernel@arm.linux.org.uk
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 25, 2011 at 1:40 PM, Luke Kenneth Casson Leighton
-<lkcl@lkcl.net> wrote:
-
->  i have an idea.
+On 25 July 2011 16:25, Linus Walleij <linus.ml.walleij@gmail.com> wrote:
+> 2011/7/23 Jassi Brar <jaswinder.singh@linaro.org>:
 >
->  devicetree LCD modules.  these could still be dynamically loaded,
-> right?  i mean, it's a bit crazy, but you could have associated with a
-> particular LCD panel a devicetree-compliant dynamic loaded module
-> which had the correct LCD settings (including the required pre-tested
-> hsync and vsync data), right?
+>> This is an attempt to define an api that could be used for doing
+>> fancy data transfers like interleaved to contiguous copy and vice-versa.
+>> Traditional SG_list based transfers tend to be very inefficient
+>> in such cases. Such cases call for some very condensed api to convey
+>> pattern of the transfer. This is an attempt at that condensed api.
+>>
+>> The api supports all 4 variants of scatter-gather and contiguous transfer.
+>> Besides, it could easily represent common operations like
+>>        device_prep_dma_{cyclic, memset, memcpy}
+>> and maybe some more that I am not sure of.
+>>
+>> Of course, this api too can't help transfers that don't lend to DMA by
+>> nature, i.e, scattered tiny read/writes with no periodic pattern.
+>>
+>> Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
+>
+> I think this also looks interesting, it's the same idea as for using
+> control commands to set up striding, but by supporting a totally
+> new function call instead.
+>
+> Do you think this method can be filled in with a default
+> implementation that converts the request to a plain sglist request
+> to memory or slave if interleaved transfers are not available?
+> That would mean that drivers can use this API on any DMA
+> engine, no matter whether it supports ICG/striding or not.
+At the moment, this is supposed to be used only for the fancy kind
+of transfers that involve lengths and skips in a few _bytes_.
+For which SGL is ineffient in the first place.
 
- sorry to be following-up to my own posts: thought-continuation error,
-Does Not Compute :)
+>
+> If we do that, this is much better than using a special control
+> command.
+Maybe I should have added something like 'GENERAL_XFER' capability
+flag to the api.
+Though not set in stone, but I strongly believe this should be how it is now.
 
- ok, the context is as follows:
+>
+> + * @src_inc: If the source address increments after reading from it.
+> + * @dst_inc: If the destination address increments after writing to it.
+>
+> Currently whether source/destination increments or not is
+> implicit from transaction type, i.e. if it's a mem2mem transfer
+> it is implicit that both increment, if it's a slave transfer we can
+> infer from the direction (to/from peripheral) whether source or
+> destination is supposed to increment.
+Such few things are for later.... final part of my conspiracy ;)
+Now that we are renovating the DMA API, we might come to
+agree that this callback can just as well be employed for
+Mem<->Device transfer.
 
- * plugnpray CPU module, de-facto standard interface(s), USB2, I2C,
-Ethernet, LCD, GPIO, blah blah
- * Motherboards (conforming to de-facto standard interface), but apart
-from that, can be any design.
+>
+> IMO this means duplication, and removes abstraction from the
+> API, it looks more like specific bits to be set in the DMA
+> hardware to control increments.
+>
+> In this form it makes possible to set up nonsensical operations like
+> a memory-to-memory transfer to a non-incrementing address which
+> is not a peripheral FIFO, which is not good IMO.
+Not really.
+We can convey 'memset' type of operation with this
+ src_inc := false
+ dsr_inc := true
+ src_width := length of byte-sequence to repeated
 
- examples:
+The point is to cover as many possibilities as possible (at acceptable cost)
+And of course, either the client won't make invalid requests or the
+DMAC will reject them -- just as is _already_ the case.
 
- * CPU module Cortex A8, 1gb RAM
- * CPU module Cortex A9, 1gb RAM
- * CPU module MIPS Ingenic jz4770
- * Motherboard 7in tablet, 800x480 LCD
- * Motherboard 11in laptop, 1280x768 LCD
- * Desktop PC (VGA or DVI converter on LCD data)
+>  The API should be semantically designed for setting up sensible operations.
+No API can be fool-proof.
 
- i.e. radically different CPU modules, and radically different motherboards.
+>
+> + * @op: The operation to perform on source data before writing it on
+> + *      to destination address.
+>
+> It is a enum dma_transaction_type after all, so can't it just say
+> "type of transfer"?
+It is to stress that it is possible to do complex operations as well.
+XOR is not exactly a transfer, but an operation.
+Theoretically a 'dma' can decode an mp3 stream and write the expanded
+raw data to destination. So, it's not exactly a transfer - it's an operation.
 
- that's the context.
+> + * @frm_irq: If the client expects DMAC driver to do callback after each frame.
+>
+> I don't understand the usecase for getting this IRQ, and it deviates
+> from the DMAengine way of setting a flag on the descriptor.
+It doesn't take much bytes, so I would beg on my knees to please let it live.
+Someday, it could be used to convey 'cyclic' transfer requests - that
+is (only important members are set)
+struct xfer_template {
+       dma_addr_t src_start = address of ring buffer;
+       bool frm_irq = true;
+       size_t numf = ~0;
+       size_t frame_size = number of parts of ring buffer;
+};
 
- question: how the bloody hell do you make sure that any of the CPU
-modules can plug into any of the motherboards... *including* future
-CPU modules and including *unknown* motherboards yet to be designed..
-and actually boot up the LCD. correctly.
 
-  i thought: yeah, yeah, make a devicetree-compliant dynamic module,
-put it on some storage on the motherboard: CPU module boots up, mounts
-the motherboard storage, loads the module, everything hunky-dory.
+> Instead I think you should maybe provide a new flag for the
+> unsigned long flags you're already passing in here:
+>
+> +       struct dma_async_tx_descriptor *(*device_prep_dma_xfer)(
+> +               struct dma_chan *chan, struct xfer_template *xt,
+> +               unsigned long flags);
+>                 ^^^^^^^^^^^^^^^^^^^^^^
+This is at your mercy.
 
- except... then you're into "linux kernel upgrade hell".  and you'd
-have to have, pre-loaded on the motherboard storage, a
-devicetree-compliant LCD dynamic module for 2.6.N for MIPS, another
-one for the 2.6.N Cortex A8 CPU(s) ... no, it's hell on earth.
+Thanks,
+Jassi
 
- but then it occurred to me... well... why bother having that data in
-a kernel module (esp. if it has to go on a filesystem anyway), why not
-just have that LCD data in a text file?   somewhere in
-/lib/firmware/edid_data or something like that?
-
- so, you go through the heuristics-process (arnaud's just kindly
-described some of what is needed here:
-http://lists.debian.org/debian-arm/2011/07/msg00054.html ) and then
-you go look up the actual required LCD settings off of
-/lib/firmware/{somewhere}, drop them into the one generic (and
-statically-loaded, yaay!) devicetree-compliant module, everything's
-hunky-dory.
-
- does that sound like a reasonable plan, or have i completely lost
-everyone at this point? :)
-
- l.
+-- 
+Linaro.org │ Open source software for ARM SoCs | Follow Linaro
+http://facebook.com/pages/Linaro/155974581091106  -
+http://twitter.com/#!/linaroorg - http://linaro.org/linaro-blog
