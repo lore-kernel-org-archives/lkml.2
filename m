@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751740Ab1GYT6d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 15:58:33 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:55458 "EHLO mx2.mail.elte.hu"
+	id S1752150Ab1GYT64 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 15:58:56 -0400
+Received: from mga02.intel.com ([134.134.136.20]:36272 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751507Ab1GYT63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 15:58:29 -0400
-Date: Mon, 25 Jul 2011 21:57:32 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
-        trivial@kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH][Trivial] Update version number reference to new 3.x
- scheme for EVENT_POWER_TRACING_DEPRECATED
-Message-ID: <20110725195732.GB8302@elte.hu>
-References: <alpine.LNX.2.00.1107242313550.7103@swampdragon.chaosbits.net>
- <20110725062743.GB694@elte.hu>
- <alpine.LNX.2.00.1107250929370.8080@swampdragon.chaosbits.net>
- <1311618038.3526.28.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311618038.3526.28.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1751430Ab1GYT6z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 15:58:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,264,1309762800"; 
+   d="scan'208";a="29934840"
+Subject: Re: [PATCH] iwlagn: check for !priv->txq in
+ iwlagn_wait_tx_queue_empty
+From: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
+To: Keith Packard <keithp@keithp.com>
+Cc: Intel Linux Wireless <ilw@linux.intel.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1311622702-4807-1-git-send-email-keithp@keithp.com>
+References: <1311622702-4807-1-git-send-email-keithp@keithp.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 25 Jul 2011 12:21:55 -0700
+Message-ID: <1311621715.5579.138.camel@wwguy-huron>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> On Mon, 2011-07-25 at 09:30 +0200, Jesper Juhl wrote:
-> > On Mon, 25 Jul 2011, Ingo Molnar wrote:
-> > 
-> > > 
-> > > * Jesper Juhl <jj@chaosbits.net> wrote:
-> > > 
-> > > > What was scheduled to be 2.6.41 is now going to be 3.1 .
-> > > > 
-> > > > diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
-> > > 
-> > > SOB missing.
-> > > 
-> > 
-> > Whoops.
-> > 
-> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> > 
+On Mon, 2011-07-25 at 12:38 -0700, Keith Packard wrote:
+> If the interface is down, txq is NULL. iwlagn_wait_tx_queue_empty
+> needs to check for this case to avoid dereferencing that pointer.
 > 
-> Ingo, I'm back from vacation. Want me to pull this in. I'll probably
-> make a list of things to pull in for 3.1 and some things for 3.2.
+> Signed-off-by: Keith Packard <keithp@keithp.com>
+> ---
+> 
+> This is on top of v3.0
+> 
+>  drivers/net/wireless/iwlwifi/iwl-agn-lib.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/net/wireless/iwlwifi/iwl-agn-lib.c b/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
+> index f803fb6..d6ae444 100644
+> --- a/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
+> +++ b/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
+> @@ -1487,6 +1487,9 @@ int iwlagn_wait_tx_queue_empty(struct iwl_priv *priv)
+>  	unsigned long now = jiffies;
+>  	int ret = 0;
+>  
+> +	if (!priv->txq)
+> +		return 0;
+> +
+>  	/* waiting for all the tx frames complete might take a while */
+>  	for (cnt = 0; cnt < priv->hw_params.max_txq_num; cnt++) {
+>  		if (cnt == priv->cmd_queue)
 
-Yeah - i've picked this one up already so you can skip it.
+but why you need it?, "start device" call will fail if can not allocate
+priv->txq
 
-Thanks,
+Thanks
+Wey
 
-	Ingo
