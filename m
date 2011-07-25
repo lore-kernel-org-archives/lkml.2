@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751453Ab1GYHaN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 03:30:13 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:11004 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970Ab1GYHaK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 03:30:10 -0400
-Date: Mon, 25 Jul 2011 09:30:08 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Ingo Molnar <mingo@elte.hu>
-cc: linux-kernel@vger.kernel.org, trivial@kernel.org,
-        Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH][Trivial] Update version number reference to new 3.x
- scheme for EVENT_POWER_TRACING_DEPRECATED
-In-Reply-To: <20110725062743.GB694@elte.hu>
-Message-ID: <alpine.LNX.2.00.1107250929370.8080@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1107242313550.7103@swampdragon.chaosbits.net> <20110725062743.GB694@elte.hu>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1750970Ab1GYHak (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 03:30:40 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:51243 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751145Ab1GYHaf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 03:30:35 -0400
+Date: Mon, 25 Jul 2011 09:29:49 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Naga Chumbalkar <nagananda.chumbalkar@hp.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] x86, ioapic: Clean up ioapic/apic_id usage
+Message-ID: <20110725072949.GC22518@elte.hu>
+References: <4E1F0BC9.1040102@kernel.org>
+ <CAErSpo5CzU2j81moWLsHDoRxTs5107=AEAWYi3ezy3Xfw86qiQ@mail.gmail.com>
+ <4E29BEEA.4020600@kernel.org>
+ <4E29BF14.9010302@kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E29BF14.9010302@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Jul 2011, Ingo Molnar wrote:
+
+* Yinghai Lu <yinghai@kernel.org> wrote:
 
 > 
-> * Jesper Juhl <jj@chaosbits.net> wrote:
+> While looking at the code, apic_id sometime is referred to index of ioapic, but
+> sometime is used for real apic id. and some even use apic for real apic id.
+> It is very confusing.
 > 
-> > What was scheduled to be 2.6.41 is now going to be 3.1 .
-> > 
-> > diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
-> 
-> SOB missing.
-> 
+> So try to limit apic_id to be real apic id for ioapic.
+> and use ioapic for ioapic index in the array.
 
-Whoops.
+Yes, consistency and unambiguity is good - please make it ioapic_id 
+and ioapic_idx.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+('apic_id' can be confused with a local APIC id, and 'ioapic' can be 
+confused with an ioapic ID.)
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+Thanks,
 
+	Ingo
