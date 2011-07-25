@@ -1,85 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751242Ab1GYL6X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 07:58:23 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:47674 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864Ab1GYL6S convert rfc822-to-8bit (ORCPT
+	id S1751331Ab1GYMGH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 08:06:07 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:64808 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750864Ab1GYMGC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 07:58:18 -0400
+	Mon, 25 Jul 2011 08:06:02 -0400
+Date: Mon, 25 Jul 2011 15:05:14 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
+Subject: DEBUG_LOCKS_WARN_ON() within lockdep trace_hardirqs_on_caller()
+Message-ID: <20110725120514.GA3174@swordfish>
 MIME-Version: 1.0
-Date: Mon, 25 Jul 2011 12:58:17 +0100
-X-Google-Sender-Auth: CTzpXpWJd1uuw4wxofmKghke__w
-Message-ID: <CAPweEDwVhaHr=5i8giGCkDWxK9G8Vvibq59vhbu6RsnZf9uerA@mail.gmail.com>
-Subject: dynamic LCD support for "embedded" systems
-From: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
-To: debian-arm@lists.debian.org, linux-kernel@vger.kernel.org
-Cc: Wookey <wookey@wookware.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[wookey: taking the liberty of cc'ing your message to lkml]
-[lkml: this came from an announcement of debian packages for toshiba ac100]
+Hello,
 
-On Mon, Jul 25, 2011 at 11:26 AM, Wookey <wookey@wookware.org> wrote:
-> +++ Luke Kenneth Casson Leighton [2011-07-25 10:13 +0100]:
->>  question:
->>
->>  what is the best way to actually take into account, *without*
->> requiring a total recompile of the linux kernel, *without* requiring a
->> rebuild of any debian gnu/linux packages, variations in LCD screen
->> size when the "norm" is that both the LCD and the data structures in
->> the linux kernel are typically static and non-changeable?
->
-> That's a question that has bugged me for a long time too.
->
->>  in some ways this is a rhetorical / leading question (but isn't
->> really) - i'm aware that there's usually an I2C ROM or other mechanism
->> for reading EDID data off of the LCD panel, to obtain its size... it's
->> just that this simply isn't done in the linux kernel source code
->> itself.
->
-> And sometimes there isn't even that (SFAIK). With a direct LCD connection
-> sometimes it's just a matter of what's plugged in. Ballon could have 4
-> different displays 3 LCD lanels or a VGA monitor-hack (to get monitor
-> signals out of the LCD connector). And I never worked out how to
-> switch between displays without making a new kernel, because
-> everything was clearly designed on the assumption that if the display
-> was LCD then it was of a fixed type.
->
-> This is really a question for the kernel list rather than debian-arm.
-> I keep hoping some infrastructure for better switching and magic-id
-> would appear. Maybe it has for all I know, and I missed it. (I last
-> looked at this some time ago).
+Current 3.1.0-git3 (03873-g2c9c838), x86_64, has triggered an DEBUG_LOCKS_WARN_ON()
+within trace_hardirqs_on_caller()
 
- ok, so.  does anyone on LKML happen to know if there exists in the
-linux kernel a method for dynamic detection and booting off of
-absolutely any type of LCD panel?  even if it's a predefined list of
-say 10 quotes supported quotes static LCD panels?
+[ 4364.656167] ------------[ cut here ]------------
+[ 4364.656186] WARNING: at kernel/lockdep.c:2532 trace_hardirqs_on_caller+0x6d/0x166()
+[ 4364.656191] Hardware name: Aspire 5741G    
+[ 4364.656264] Pid: 26796, comm: conftest Not tainted 3.1.0-dbg-03873-g2c9c838-dirty #652
+[ 4364.656269] Call Trace:
+[ 4364.656279]  [<ffffffff8103e970>] warn_slowpath_common+0x7e/0x96
+[ 4364.656289]  [<ffffffff81477056>] ? __bad_area_nosemaphore+0x35/0x1b9
+[ 4364.656296]  [<ffffffff8103e99d>] warn_slowpath_null+0x15/0x17
+[ 4364.656303]  [<ffffffff81072770>] trace_hardirqs_on_caller+0x6d/0x166
+[ 4364.656310]  [<ffffffff81072876>] trace_hardirqs_on+0xd/0xf
+[ 4364.656317]  [<ffffffff81477056>] __bad_area_nosemaphore+0x35/0x1b9
+[ 4364.656324]  [<ffffffff8147722f>] bad_area+0x45/0x4c
+[ 4364.656333]  [<ffffffff814850f9>] do_page_fault+0x2da/0x48a
+[ 4364.656343]  [<ffffffff810ec2d0>] ? do_brk+0x24e/0x2a2
+[ 4364.656352]  [<ffffffff8124642d>] ? trace_hardirqs_off_thunk+0x3a/0x3c
+[ 4364.656360]  [<ffffffff81482975>] page_fault+0x25/0x30
+[ 4364.656366] ---[ end trace 9870b4ffc9ea6750 ]---
 
- the reason i ask is because although the original request was about
-one and only one person ever having publicly reported that they
-successfully upgraded their toshiba ac100 tegra2-based laptop to a
-decent human-useable 1280x768 LCD panel, i have been working for over
-a year to bring about user-hot-swappable CPU "modules" where you would
-be able to buy that CPU "module" off-the-shelf in a supermarket and
-plug it quite literally into any chassis: 7in tablet, 10in laptop,
-desktop PC you don't _give_ a monkey's "it just works".  and under
-these circumstances, the present static LCD data structure declaration
-system in the linux kernel source code is a recipe for absolute hell
-on earth.
+I guess, local_irq_enable() gets called 2 times in do_page_fault().
+First,
 
- ideas anyone?
+1051     if (user_mode_vm(regs)) {
+1052         local_irq_enable();
+1053         error_code |= PF_USER;
+1054     } else {
+1055         if (regs->flags & X86_EFLAGS_IF)
+1056             local_irq_enable();
+1057     }
 
- tia,
+and later within one of bad_area-cases, e.g.,
+1106     vma = find_vma(mm, address);
+1107     if (unlikely(!vma)) {
+1108         bad_area(regs, error_code, address);
+1109         return;
+1110     }
 
- l.
+hitting assertion `!irqs_disabled()' failure in lockdep trace_hardirqs_on_caller().
 
- p.s. linus - this is another example of where the complete total
-utter lack of hardware standardisation and of the complete
-non-existence of a BIOS in the embedded / ARM world (for very good
-technical reasons) makes life continued and absolute hell.  ref:
-https://lkml.org/lkml/2011/7/1/473
+
+	Sergey
