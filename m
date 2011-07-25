@@ -1,59 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751823Ab1GYJtb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 05:49:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7007 "EHLO mx1.redhat.com"
+	id S1751832Ab1GYJw2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 05:52:28 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:34613 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751074Ab1GYJtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 05:49:24 -0400
-Message-ID: <4E2D3BF1.7070406@redhat.com>
-Date: Mon, 25 Jul 2011 12:48:33 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
+	id S1751375Ab1GYJwX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 05:52:23 -0400
+Date: Mon, 25 Jul 2011 11:51:26 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: Hans Rosenfeld <hans.rosenfeld@amd.com>, linux-kernel@vger.kernel.org,
+        x86 <x86@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>, Avi Kivity <avi@redhat.com>
+Subject: Re: [RFC] syscall calling convention, stts/clts, and xstate latency
+Message-ID: <20110725095126.GG28787@elte.hu>
+References: <CAObL_7GCDsfXWRJgkNk7c44GNF0JhQPAH_P0WiYHK7QUX1Bcaw@mail.gmail.com>
+ <20110724211526.GA6785@elte.hu>
+ <CAObL_7H1j1cewgWP6Jmkw_H9dZVh1kxRGgTLa+ju=ns4gYxMdA@mail.gmail.com>
+ <20110725063836.GC694@elte.hu>
+ <CAObL_7G-afftZD7ULhbyTqBsuZCs03H-HS-n8tqRC=-Q3Bs9Eg@mail.gmail.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Alexander Graf <agraf@suse.de>, Pekka Enberg <penberg@kernel.org>,
-        Jan Kiszka <jan.kiszka@web.de>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, gorcunov@gmail.com, levinsasha928@gmail.com,
-        asias.hejun@gmail.com, prasadjoshi124@gmail.com
-Subject: Re: [GIT PULL] Native Linux KVM tool for 3.1
-References: <alpine.DEB.2.00.1107242335580.18045@tiger> <4E2CA6DE.4040900@web.de> <CAOJsxLEkXpDCiMZZnSXnxQ6-PFBwMEv4j5mLRhPZVMKw=LoPSQ@mail.gmail.com> <20110725075305.GA32294@elte.hu> <0EAA5203-D598-4CBA-B8D2-AB371A7689A9@suse.de> <20110725085426.GA28787@elte.hu> <C80CB058-38B3-4EA4-996F-4585F521415C@suse.de> <20110725094136.GE28787@elte.hu>
-In-Reply-To: <20110725094136.GE28787@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAObL_7G-afftZD7ULhbyTqBsuZCs03H-HS-n8tqRC=-Q3Bs9Eg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2011 12:41 PM, Ingo Molnar wrote:
-> Look at tools/kvm/ - i cannot do anything useful without a Linux
-> kernel under it. It's as deeply bound to the Linux kernel as it gets.
 
-The actual code that interacts with the kernel is pretty small, and will 
-grow smaller (as a fraction) in time.
+* Andrew Lutomirski <luto@mit.edu> wrote:
 
-> Then look at the actual drivers and interfaces within tools/kvm/.
-> It's using the same symbols and conventions for 'guest' and 'host'
-> side.
->
-> Check out tools/kvm/hw/i8042.c and match it up with
-> include/linux/serio.h and drivers/input/serio/i8042.c - you can
-> literally walk from one side to the other and understand how guest
-> and host are tightly related not just functionality but also
-> implementation wise.
->
-> This is how Qemu should be doing it as well btw., to ease the
-> debugging of host/guest interaction bugs and to ease development.
+> On Mon, Jul 25, 2011 at 2:38 AM, Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> > * Andrew Lutomirski <luto@mit.edu> wrote:
+> >
+> >> On Sun, Jul 24, 2011 at 5:15 PM, Ingo Molnar <mingo@elte.hu> wrote:
+> >> >
+> >> > * Andrew Lutomirski <luto@mit.edu> wrote:
+> >> >
+> >> >> I was trying to understand the FPU/xstate saving code, and I ran
+> >> >> some benchmarks with surprising results.  These are all on Sandy
+> >> >> Bridge i7-2600.  Please take all numbers with a grain of salt --
+> >> >> they're in tight-ish loops and don't really take into account
+> >> >> real-world cache effects.
+> >> >>
+> >> >> A clts/stts pair takes about 80 ns.  Accessing extended state from
+> >> >> userspace with TS set takes 239 ns.  A kernel_fpu_begin /
+> >> >> kernel_fpu_end pair with no userspace xstate access takes 80 ns
+> >> >> (presumably 79 of those 80 are the clts/stts).  (Note: The numbers
+> >> >> in this paragraph were measured using a hacked-up kernel and KVM.)
+> >> >>
+> >> >> With nonzero ymm state, xsave + clflush (on the first cacheline of
+> >> >> xstate) + xrstor takes 128 ns.  With hot cache, xsave = 24ns,
+> >> >> xsaveopt (with unchanged state) = 16 ns, and xrstor = 40 ns.
+> >> >>
+> >> >> With nonzero xmm state but zero ymm state, xsave+xrstor drops to 38
+> >> >> ns and xsaveopt saves another 5 ns.
+> >> >>
+> >> >> Zeroing the state completely with vzeroall adds 2 ns.  Not sure
+> >> >> what's going on.
+> >> >>
+> >> >> All of this makes me think that, at least on Sandy Bridge, lazy
+> >> >> xstate saving is a bad optimization -- if the cache is being nice,
+> >> >> save/restore is faster than twiddling the TS bit.  And the cost of
+> >> >> the trap when TS is set blows everything else away.
+> >> >
+> >> > Interesting. Mind cooking up a delazying patch and measure it on
+> >> > native as well? KVM generally makes exceptions more expensive, so the
+> >> > effect of lazy exceptions might be less on native.
+> >>
+> >> Using the same patch on native, I get:
+> >>
+> >> kernel_fpu_begin/kernel_fpu_end (no userspace xstate): 71.53 ns
+> >> stts/clts: 73 ns (clearly there's a bit of error here) userspace
+> >> xstate with TS set: 229 ns
+> >>
+> >> So virtualization adds only a little bit of overhead.
+> >
+> > KVM rocks.
+> >
+> >> This isn't really a delazying patch -- it's two arch_prctls, one of
+> >> them is kernel_fpu_begin();kernel_fpu_end().  The other is the same
+> >> thing in a loop.
+> >>
+> >> The other numbers were already native since I measured them
+> >> entirely in userspace.  They look the same after rebooting.
+> >
+> > I should have mentioned it earlier, but there's a certain amount of
+> > delazying patches in the tip:x86/xsave branch:
+> >
+> >  $ gll linus..x86/xsave
+> >  300c6120b465: x86, xsave: fix non-lazy allocation of the xsave area
+> >  f79018f2daa9: Merge branch 'x86/urgent' into x86/xsave
+> >  66beba27e8b5: x86, xsave: remove lazy allocation of xstate area
+> >  1039b306b1c6: x86, xsave: add kernel support for AMDs Lightweight Profiling (LWP)
+> >  4182a4d68bac: x86, xsave: add support for non-lazy xstates
+> >  324cbb83e215: x86, xsave: more cleanups
+> >  2efd67935eb7: x86, xsave: remove unused code
+> >  0c11e6f1aed1: x86, xsave: cleanup fpu/xsave signal frame setup
+> >  7f4f0a56a7d3: x86, xsave: rework fpu/xsave support
+> >  26bce4e4c56f: x86, xsave: cleanup fpu/xsave support
+> >
+> > it's not in tip:master because the LWP bits need (much) more work to
+> > be palatable - but we could spin them off and complete them as per
+> > your suggestions if they are an independent speedup on modern CPUs.
+> 
+> Hans, what's the status of these?  I want to do some other cleanups
+> (now or in a couple of weeks) that will probably conflict with your
+> xsave work.
 
-No.  That ties the guest and host interfaces together.  If you change 
-the guest to use a feature you didn't implement previously in the host, 
-it's suddenly broken when virtualized.
+if you extract this bit:
 
-The right thing is to implement the hardware interface exactly per spec, 
-and ignore the guest(s) completely except for testing and performance.
+     1039b306b1c6: x86, xsave: add kernel support for AMDs Lightweight Profiling (LWP)
 
+then we can keep all the other patches.
 
--- 
-error compiling committee.c: too many arguments to function
+this could be done by:
 
+  git reset --hard 4182a4d68bac   # careful, this zaps your current dirty state
+  git cherry-pick 66beba27e8b5
+  git cherry-pick 300c6120b465
+
+Thanks,
+
+	Ingo
