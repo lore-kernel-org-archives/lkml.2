@@ -1,189 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752530Ab1GYW64 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 18:58:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53865 "EHLO mx2.suse.de"
+	id S1752677Ab1GYW7F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 18:59:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53878 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752003Ab1GYW6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 18:58:50 -0400
+	id S1752533Ab1GYW7B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 18:59:01 -0400
 From: Michal Marek <mmarek@suse.cz>
 To: linux-kbuild@vger.kernel.org
 Cc: lacombar@gmail.com, sam@ravnborg.org, linux-kernel@vger.kernel.org,
-        plagnioj@jcrosoft.com
-Subject: [RFC][PATCH 1/2] kconfig: Introduce KCONFIG(), KCONFIG_BUILTIN() and KCONFIG_MODULE()
-Date: Tue, 26 Jul 2011 00:58:37 +0200
-Message-Id: <1311634718-32588-1-git-send-email-mmarek@suse.cz>
+        plagnioj@jcrosoft.com, linux-mm@kvack.org
+Subject: [RFC][PATCH 2/2] mm: Switch NUMA_BUILD and COMPACTION_BUILD to new KCONFIG() syntax
+Date: Tue, 26 Jul 2011 00:58:38 +0200
+Message-Id: <1311634718-32588-2-git-send-email-mmarek@suse.cz>
 X-Mailer: git-send-email 1.7.6
-In-Reply-To: <4E1D9C25.8080300@suse.cz>
+In-Reply-To: <1311634718-32588-1-git-send-email-mmarek@suse.cz>
 References: <4E1D9C25.8080300@suse.cz>
+ <1311634718-32588-1-git-send-email-mmarek@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace the config_is_*() macros with a variant that allows for grepping
-for usage of CONFIG_* options in the code. Usage:
-
-  if (KCONFIG(CONFIG_NUMA))
-
-or
-
-  #if KCONFIG(CONFIG_NUMA)
-
-The KCONFIG() macro evaluates to 1 if the argument is set (to either 'y'
-or 'm'), KCONFIG_BUILTIN() and KCONFIG_MODULE() test if the respective
-option is 'y' and 'm', respectively.
-
+Cc: linux-mm@kvack.org
 Signed-off-by: Michal Marek <mmarek@suse.cz>
 ---
- Makefile                   |    2 +-
- include/linux/kconfig.h    |   24 +++++++++++++++
- scripts/kconfig/confdata.c |   70 ++++++++-----------------------------------
- 3 files changed, 38 insertions(+), 58 deletions(-)
- create mode 100644 include/linux/kconfig.h
+ include/linux/gfp.h    |    2 +-
+ include/linux/kernel.h |   14 --------------
+ mm/page_alloc.c        |   12 ++++++------
+ mm/vmalloc.c           |    4 ++--
+ mm/vmscan.c            |    2 +-
+ 5 files changed, 10 insertions(+), 24 deletions(-)
 
-diff --git a/Makefile b/Makefile
-index afb8e0d..bd7629b 100644
---- a/Makefile
-+++ b/Makefile
-@@ -360,7 +360,7 @@ CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
- LINUXINCLUDE    := -I$(srctree)/arch/$(hdr-arch)/include \
-                    -Iarch/$(hdr-arch)/include/generated -Iinclude \
-                    $(if $(KBUILD_SRC), -I$(srctree)/include) \
--                   -include include/generated/autoconf.h
-+                   -include $(srctree)/include/linux/kconfig.h
+diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+index cb40892..36860b2 100644
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -262,7 +262,7 @@ static inline enum zone_type gfp_zone(gfp_t flags)
  
- KBUILD_CPPFLAGS := -D__KERNEL__
+ static inline int gfp_zonelist(gfp_t flags)
+ {
+-	if (NUMA_BUILD && unlikely(flags & __GFP_THISNODE))
++	if (KCONFIG(CONFIG_NUMA) && unlikely(flags & __GFP_THISNODE))
+ 		return 1;
  
-diff --git a/include/linux/kconfig.h b/include/linux/kconfig.h
-new file mode 100644
-index 0000000..fe80348
---- /dev/null
-+++ b/include/linux/kconfig.h
-@@ -0,0 +1,24 @@
-+#ifndef __LINUX_KCONFIG_H
-+#define __LINUX_KCONFIG_H
-+
-+#include <generated/autoconf.h>
-+
-+/*
-+ * Evaluates to 1 if CONFIG_option is set to 'y', 0 otherwise
-+ */
-+#define KCONFIG_BUILTIN(option) __enabled_ ## option
-+
-+/*
-+ * Evaluates to 1 if CONFIG_option is set to 'm', 0 otherwise
-+ */
-+#define KCONFIG_MODULE(option) __enabled_ ## option ## _MODULE
-+
-+/*
-+ * Evaluates to 1 if CONFIG_option is set to 'y' or 'm', 0 otherwise
-+ *
-+ */
-+#define KCONFIG(option) \
-+	(__enabled_ ## option || __enabled_ ## option ## _MODULE)
-+
-+
-+#endif /* __LINUX_KCONFIG_H */
-diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
-index df629ec..3bab40a 100644
---- a/scripts/kconfig/confdata.c
-+++ b/scripts/kconfig/confdata.c
-@@ -495,15 +495,24 @@ header_print_symbol(FILE *fp, struct symbol *sym, const char *value, void *arg)
+ 	return 0;
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index fb0e732..ca635ad 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -717,20 +717,6 @@ extern int __build_bug_on_failed;
+ /* Trap pasters of __FUNCTION__ at compile-time */
+ #define __FUNCTION__ (__func__)
  
- 		switch (*value) {
- 		case 'n':
--			return;
-+			break;
- 		case 'm':
- 			suffix = "_MODULE";
- 			/* fall through */
- 		default:
--			value = "1";
-+			fprintf(fp, "#define %s%s%s 1\n",
-+			    CONFIG_, sym->name, suffix);
+-/* This helps us to avoid #ifdef CONFIG_NUMA */
+-#ifdef CONFIG_NUMA
+-#define NUMA_BUILD 1
+-#else
+-#define NUMA_BUILD 0
+-#endif
+-
+-/* This helps us avoid #ifdef CONFIG_COMPACTION */
+-#ifdef CONFIG_COMPACTION
+-#define COMPACTION_BUILD 1
+-#else
+-#define COMPACTION_BUILD 0
+-#endif
+-
+ /* Rebuild everything on CONFIG_FTRACE_MCOUNT_RECORD */
+ #ifdef CONFIG_FTRACE_MCOUNT_RECORD
+ # define REBUILD_DUE_TO_FTRACE_MCOUNT_RECORD
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index a4e1db3..7665fdf 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1659,7 +1659,7 @@ zonelist_scan:
+ 	 */
+ 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+ 						high_zoneidx, nodemask) {
+-		if (NUMA_BUILD && zlc_active &&
++		if (KCONFIG(CONFIG_NUMA) && zlc_active &&
+ 			!zlc_zone_worth_trying(zonelist, z, allowednodes))
+ 				continue;
+ 		if ((alloc_flags & ALLOC_CPUSET) &&
+@@ -1701,10 +1701,10 @@ try_this_zone:
+ 		if (page)
+ 			break;
+ this_zone_full:
+-		if (NUMA_BUILD)
++		if (KCONFIG(CONFIG_NUMA))
+ 			zlc_mark_zone_full(zonelist, z);
+ try_next_zone:
+-		if (NUMA_BUILD && !did_zlc_setup && nr_online_nodes > 1) {
++		if (KCONFIG(CONFIG_NUMA) && !did_zlc_setup && nr_online_nodes > 1) {
+ 			/*
+ 			 * we do zlc_setup after the first zone is tried but only
+ 			 * if there are multiple nodes make it worthwhile
+@@ -1715,7 +1715,7 @@ try_next_zone:
  		}
--		fprintf(fp, "#define %s%s%s %s\n",
--		    CONFIG_, sym->name, suffix, value);
-+		/*
-+		 * Generate the __enabled_CONFIG_* and
-+		 * __enabled_CONFIG_*_MODULE macros for use by the KCONFIG*()
-+		 * macros. The _MODULE variant is generated even for booleans
-+		 * so that the KCONFIG() macro works.
-+		 */
-+		fprintf(fp, "#define __enabled_" CONFIG_ "%s %d\n",
-+				sym->name, (*value == 'y'));
-+		fprintf(fp, "#define __enabled_" CONFIG_ "%s_MODULE %d\n",
-+				sym->name, (*value == 'm'));
- 		break;
  	}
- 	case S_HEX: {
-@@ -555,58 +564,6 @@ static struct conf_printer header_printer_cb =
- };
  
- /*
-- * Function-style header printer
-- *
-- * This printer is used to generate the config_is_xxx() function-style macros
-- * in `include/generated/autoconf.h' 
-- */
--static void
--header_function_print_symbol(FILE *fp, struct symbol *sym, const char *value, void *arg)
--{
--	int val = 0;
--	char c;
--	char *tmp, *d;
--
--	switch (sym->type) {
--	case S_BOOLEAN:
--	case S_TRISTATE:
--		break;
--	default:
--		return;
--	}
--	if (*value == 'm')
--		val = 2;
--	else if (*value == 'y')
--		val = 1;
--
--	d = strdup(CONFIG_);
--	tmp = d;
--	while ((c = *d)) {
--		*d = tolower(c);
--		d++;
--	}
--
--	fprintf(fp, "#define %sis_", tmp);
--	free(tmp);
--
--	d = strdup(sym->name);
--	tmp = d;
--	while ((c = *d)) {
--		*d = tolower(c);
--		d++;
--	}
--	fprintf(fp, "%s%s() %d\n", tmp, (val > 1) ? "_module" : "",
--		      val ? 1 : 0);
--	free(tmp);
--}
--
--static struct conf_printer header_function_printer_cb =
--{
--	.print_symbol = header_function_print_symbol,
--};
--
--
--/*
-  * Tristate printer
-  *
-  * This printer is used when generating the `include/config/tristate.conf' file.
-@@ -997,7 +954,6 @@ int conf_write_autoconf(void)
- 		conf_write_symbol(tristate, sym, &tristate_printer_cb, (void *)1);
+-	if (unlikely(NUMA_BUILD && page == NULL && zlc_active)) {
++	if (unlikely(KCONFIG(CONFIG_NUMA) && page == NULL && zlc_active)) {
+ 		/* Disable zlc cache for second zonelist scan */
+ 		zlc_active = 0;
+ 		goto zonelist_scan;
+@@ -2083,7 +2083,7 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
+ 	 * allowed per node queues are empty and that nodes are
+ 	 * over allocated.
+ 	 */
+-	if (NUMA_BUILD && (gfp_mask & GFP_THISNODE) == GFP_THISNODE)
++	if (KCONFIG(CONFIG_NUMA) && (gfp_mask & GFP_THISNODE) == GFP_THISNODE)
+ 		goto nopage;
  
- 		conf_write_symbol(out_h, sym, &header_printer_cb, NULL);
--		conf_write_symbol(out_h, sym, &header_function_printer_cb, NULL);
- 	}
- 	fclose(out);
- 	fclose(tristate);
+ restart:
+@@ -2461,7 +2461,7 @@ unsigned int nr_free_pagecache_pages(void)
+ 
+ static inline void show_node(struct zone *zone)
+ {
+-	if (NUMA_BUILD)
++	if (KCONFIG(CONFIG_NUMA))
+ 		printk("Node %d ", zone_to_nid(zone));
+ }
+ 
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index 1d34d75..c5582a5 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -2482,7 +2482,7 @@ static void s_stop(struct seq_file *m, void *p)
+ 
+ static void show_numa_info(struct seq_file *m, struct vm_struct *v)
+ {
+-	if (NUMA_BUILD) {
++	if (KCONFIG(CONFIG_NUMA)) {
+ 		unsigned int nr, *counters = m->private;
+ 
+ 		if (!counters)
+@@ -2547,7 +2547,7 @@ static int vmalloc_open(struct inode *inode, struct file *file)
+ 	unsigned int *ptr = NULL;
+ 	int ret;
+ 
+-	if (NUMA_BUILD) {
++	if (KCONFIG(CONFIG_NUMA)) {
+ 		ptr = kmalloc(nr_node_ids * sizeof(unsigned int), GFP_KERNEL);
+ 		if (ptr == NULL)
+ 			return -ENOMEM;
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index faa0a08..bc18d7f 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -310,7 +310,7 @@ static void set_reclaim_mode(int priority, struct scan_control *sc,
+ 	 * reclaim/compaction.Depending on the order, we will either set the
+ 	 * sync mode or just reclaim order-0 pages later.
+ 	 */
+-	if (COMPACTION_BUILD)
++	if (KCONFIG(CONFIG_COMPACTION))
+ 		sc->reclaim_mode = RECLAIM_MODE_COMPACTION;
+ 	else
+ 		sc->reclaim_mode = RECLAIM_MODE_LUMPYRECLAIM;
 -- 
 1.7.6
 
