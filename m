@@ -1,365 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752413Ab1GYBG0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 21:06:26 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:37218 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751845Ab1GYBGX convert rfc822-to-8bit (ORCPT
+	id S1752661Ab1GYBOu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 21:14:50 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:57486 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751776Ab1GYBOs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 21:06:23 -0400
+	Sun, 24 Jul 2011 21:14:48 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110722125236.GA24832@elte.hu>
-References: <20110722125236.GA24832@elte.hu>
-Date: Sun, 24 Jul 2011 21:06:22 -0400
-Message-ID: <CACqU3MUW81UmBK7qBQCZRqzfosrukYM9=o0EZP_DvSjgywfK8g@mail.gmail.com>
-Subject: Re: [GIT PULL] core/locking changes for v3.1
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <4E2B15DB.4090302@fusionio.com>
+References: <20110722205736.17420.41366.stgit@localhost6.localdomain6>
+	<20110722205938.17420.68621.stgit@localhost6.localdomain6>
+	<4E2B15DB.4090302@fusionio.com>
+Date: Mon, 25 Jul 2011 09:14:47 +0800
+X-Google-Sender-Auth: YctBQ4nOJ_7-l71SZk6n3qyYIC4
+Message-ID: <CANejiEVMHhOW0N4Wn9LG0NAXMX3uOz5QzcRXZV4Ow4RTsMvN5Q@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/2] block: strict rq_affinity
+From: Shaohua Li <shli@kernel.org>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Roland Dreier <roland@purestorage.com>,
+        Dave Jiang <dave.jiang@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+2011/7/24 Jens Axboe <jaxboe@fusionio.com>:
+> On 2011-07-22 22:59, Dan Williams wrote:
+>> Some storage controllers benefit from completions always being steered
+>> to the strict requester cpu rather than the looser "per-socket" steering
+>> that blk_cpu_to_group() attempts by default.
+>>
+>> echo 2 > /sys/block/<bdev>/queue/rq_affinity
+>
+> I have applied this one, with a modified patch description.
+>
+> I like the adaptive solution, but it should be rewritten to not declare
+> and expose softirq internals. Essentially have an API from
+> kernel/softirq.c that can return whether a given (or perhaps just local)
+> softirq handler is busy or not.
+Jens,
+I posted a similar patch about two years ago(
+http://marc.info/?l=linux-kernel&m=126136252929329&w=2).
+At that time, you actually did a lot of tests and said the same cpu
+approach will cause huge lock contention and bounce. Is that get fixed?
 
-On Fri, Jul 22, 2011 at 8:52 AM, Ingo Molnar <mingo@elte.hu> wrote:
-> Linus,
->
-> Please pull the latest core-locking-for-linus git tree from:
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git core-locking-for-linus
->
->  Thanks,
->
->        Ingo
->
-> ------------------>
-> Anton Blanchard (1):
->      lockup detector: Fix reference to the non-existent CONFIG_DETECT_SOFTLOCKUP option
->
-> Dima Zavin (1):
->      plist: Remove the need to supply locks to plist heads
->
-> Jean Delvare (1):
->      mutex: Make mutex_destroy() an inline function
->
-> Peter Zijlstra (1):
->      lockdep: Fix lockdep_no_validate against IRQ states
->
-from today's master, this last commit triggers:
-
-/src/linux/linux/kernel/lockdep.c: In function 'mark_held_locks':
-/src/linux/linux/kernel/lockdep.c:2471:31: warning: comparison of
-distinct pointer types lacks a cast
-
-I'm not sure if both struct member and variable's type are correct nor
-the comparability between `struct lockdep_subclass_key *' and `struct
-lock_class_key *'. So I'll let you fix this.
-
- - Arnaud
-
->
->  include/linux/mutex.h   |    2 +-
->  include/linux/plist.h   |   55 ++--------------------------------------------
->  include/linux/rtmutex.h |    4 +-
->  kernel/fork.c           |    2 +-
->  kernel/futex.c          |    2 +-
->  kernel/lockdep.c        |    3 ++
->  kernel/pm_qos_params.c  |    6 ++--
->  kernel/rtmutex.c        |    2 +-
->  kernel/sched.c          |    4 +-
->  lib/Kconfig.debug       |    4 +-
->  lib/plist.c             |    7 +-----
->  11 files changed, 20 insertions(+), 71 deletions(-)
->
-> diff --git a/include/linux/mutex.h b/include/linux/mutex.h
-> index a940fe4..7f87217 100644
-> --- a/include/linux/mutex.h
-> +++ b/include/linux/mutex.h
-> @@ -92,7 +92,7 @@ do {                                                  \
->                                                        \
->        __mutex_init((mutex), #mutex, &__key);          \
->  } while (0)
-> -# define mutex_destroy(mutex)                          do { } while (0)
-> +static inline void mutex_destroy(struct mutex *lock) {}
->  #endif
->
->  #ifdef CONFIG_DEBUG_LOCK_ALLOC
-> diff --git a/include/linux/plist.h b/include/linux/plist.h
-> index c9b9f32..aa0fb39 100644
-> --- a/include/linux/plist.h
-> +++ b/include/linux/plist.h
-> @@ -77,14 +77,9 @@
->
->  #include <linux/kernel.h>
->  #include <linux/list.h>
-> -#include <linux/spinlock_types.h>
->
->  struct plist_head {
->        struct list_head node_list;
-> -#ifdef CONFIG_DEBUG_PI_LIST
-> -       raw_spinlock_t *rawlock;
-> -       spinlock_t *spinlock;
-> -#endif
->  };
->
->  struct plist_node {
-> @@ -93,37 +88,13 @@ struct plist_node {
->        struct list_head        node_list;
->  };
->
-> -#ifdef CONFIG_DEBUG_PI_LIST
-> -# define PLIST_HEAD_LOCK_INIT(_lock)           .spinlock = _lock
-> -# define PLIST_HEAD_LOCK_INIT_RAW(_lock)       .rawlock = _lock
-> -#else
-> -# define PLIST_HEAD_LOCK_INIT(_lock)
-> -# define PLIST_HEAD_LOCK_INIT_RAW(_lock)
-> -#endif
-> -
-> -#define _PLIST_HEAD_INIT(head)                         \
-> -       .node_list = LIST_HEAD_INIT((head).node_list)
-> -
->  /**
->  * PLIST_HEAD_INIT - static struct plist_head initializer
->  * @head:      struct plist_head variable name
-> - * @_lock:     lock to initialize for this list
-> - */
-> -#define PLIST_HEAD_INIT(head, _lock)                   \
-> -{                                                      \
-> -       _PLIST_HEAD_INIT(head),                         \
-> -       PLIST_HEAD_LOCK_INIT(&(_lock))                  \
-> -}
-> -
-> -/**
-> - * PLIST_HEAD_INIT_RAW - static struct plist_head initializer
-> - * @head:      struct plist_head variable name
-> - * @_lock:     lock to initialize for this list
->  */
-> -#define PLIST_HEAD_INIT_RAW(head, _lock)               \
-> +#define PLIST_HEAD_INIT(head)                          \
->  {                                                      \
-> -       _PLIST_HEAD_INIT(head),                         \
-> -       PLIST_HEAD_LOCK_INIT_RAW(&(_lock))              \
-> +       .node_list = LIST_HEAD_INIT((head).node_list)   \
->  }
->
->  /**
-> @@ -141,31 +112,11 @@ struct plist_node {
->  /**
->  * plist_head_init - dynamic struct plist_head initializer
->  * @head:      &struct plist_head pointer
-> - * @lock:      spinlock protecting the list (debugging)
->  */
->  static inline void
-> -plist_head_init(struct plist_head *head, spinlock_t *lock)
-> +plist_head_init(struct plist_head *head)
->  {
->        INIT_LIST_HEAD(&head->node_list);
-> -#ifdef CONFIG_DEBUG_PI_LIST
-> -       head->spinlock = lock;
-> -       head->rawlock = NULL;
-> -#endif
-> -}
-> -
-> -/**
-> - * plist_head_init_raw - dynamic struct plist_head initializer
-> - * @head:      &struct plist_head pointer
-> - * @lock:      raw_spinlock protecting the list (debugging)
-> - */
-> -static inline void
-> -plist_head_init_raw(struct plist_head *head, raw_spinlock_t *lock)
-> -{
-> -       INIT_LIST_HEAD(&head->node_list);
-> -#ifdef CONFIG_DEBUG_PI_LIST
-> -       head->rawlock = lock;
-> -       head->spinlock = NULL;
-> -#endif
->  }
->
->  /**
-> diff --git a/include/linux/rtmutex.h b/include/linux/rtmutex.h
-> index 8d522ff..de17134 100644
-> --- a/include/linux/rtmutex.h
-> +++ b/include/linux/rtmutex.h
-> @@ -66,7 +66,7 @@ struct hrtimer_sleeper;
->
->  #define __RT_MUTEX_INITIALIZER(mutexname) \
->        { .wait_lock = __RAW_SPIN_LOCK_UNLOCKED(mutexname.wait_lock) \
-> -       , .wait_list = PLIST_HEAD_INIT_RAW(mutexname.wait_list, mutexname.wait_lock) \
-> +       , .wait_list = PLIST_HEAD_INIT(mutexname.wait_list) \
->        , .owner = NULL \
->        __DEBUG_RT_MUTEX_INITIALIZER(mutexname)}
->
-> @@ -100,7 +100,7 @@ extern void rt_mutex_unlock(struct rt_mutex *lock);
->
->  #ifdef CONFIG_RT_MUTEXES
->  # define INIT_RT_MUTEXES(tsk)                                          \
-> -       .pi_waiters     = PLIST_HEAD_INIT(tsk.pi_waiters, tsk.pi_lock), \
-> +       .pi_waiters     = PLIST_HEAD_INIT(tsk.pi_waiters),      \
->        INIT_RT_MUTEX_DEBUG(tsk)
->  #else
->  # define INIT_RT_MUTEXES(tsk)
-> diff --git a/kernel/fork.c b/kernel/fork.c
-> index 0276c30..7517a53 100644
-> --- a/kernel/fork.c
-> +++ b/kernel/fork.c
-> @@ -1013,7 +1013,7 @@ static void rt_mutex_init_task(struct task_struct *p)
->  {
->        raw_spin_lock_init(&p->pi_lock);
->  #ifdef CONFIG_RT_MUTEXES
-> -       plist_head_init_raw(&p->pi_waiters, &p->pi_lock);
-> +       plist_head_init(&p->pi_waiters);
->        p->pi_blocked_on = NULL;
->  #endif
->  }
-> diff --git a/kernel/futex.c b/kernel/futex.c
-> index fe28dc2..3fbc76c 100644
-> --- a/kernel/futex.c
-> +++ b/kernel/futex.c
-> @@ -2697,7 +2697,7 @@ static int __init futex_init(void)
->                futex_cmpxchg_enabled = 1;
->
->        for (i = 0; i < ARRAY_SIZE(futex_queues); i++) {
-> -               plist_head_init(&futex_queues[i].chain, &futex_queues[i].lock);
-> +               plist_head_init(&futex_queues[i].chain);
->                spin_lock_init(&futex_queues[i].lock);
->        }
->
-> diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-> index 298c927..628276d 100644
-> --- a/kernel/lockdep.c
-> +++ b/kernel/lockdep.c
-> @@ -2468,6 +2468,9 @@ mark_held_locks(struct task_struct *curr, enum mark_type mark)
->
->                BUG_ON(usage_bit >= LOCK_USAGE_STATES);
->
-> +               if (hlock_class(hlock)->key == &__lockdep_no_validate__)
-> +                       continue;
-> +
->                if (!mark_lock(curr, hlock, usage_bit))
->                        return 0;
->        }
-> diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
-> index 6824ca7..37f05d0 100644
-> --- a/kernel/pm_qos_params.c
-> +++ b/kernel/pm_qos_params.c
-> @@ -74,7 +74,7 @@ static DEFINE_SPINLOCK(pm_qos_lock);
->  static struct pm_qos_object null_pm_qos;
->  static BLOCKING_NOTIFIER_HEAD(cpu_dma_lat_notifier);
->  static struct pm_qos_object cpu_dma_pm_qos = {
-> -       .requests = PLIST_HEAD_INIT(cpu_dma_pm_qos.requests, pm_qos_lock),
-> +       .requests = PLIST_HEAD_INIT(cpu_dma_pm_qos.requests),
->        .notifiers = &cpu_dma_lat_notifier,
->        .name = "cpu_dma_latency",
->        .target_value = PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE,
-> @@ -84,7 +84,7 @@ static struct pm_qos_object cpu_dma_pm_qos = {
->
->  static BLOCKING_NOTIFIER_HEAD(network_lat_notifier);
->  static struct pm_qos_object network_lat_pm_qos = {
-> -       .requests = PLIST_HEAD_INIT(network_lat_pm_qos.requests, pm_qos_lock),
-> +       .requests = PLIST_HEAD_INIT(network_lat_pm_qos.requests),
->        .notifiers = &network_lat_notifier,
->        .name = "network_latency",
->        .target_value = PM_QOS_NETWORK_LAT_DEFAULT_VALUE,
-> @@ -95,7 +95,7 @@ static struct pm_qos_object network_lat_pm_qos = {
->
->  static BLOCKING_NOTIFIER_HEAD(network_throughput_notifier);
->  static struct pm_qos_object network_throughput_pm_qos = {
-> -       .requests = PLIST_HEAD_INIT(network_throughput_pm_qos.requests, pm_qos_lock),
-> +       .requests = PLIST_HEAD_INIT(network_throughput_pm_qos.requests),
->        .notifiers = &network_throughput_notifier,
->        .name = "network_throughput",
->        .target_value = PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE,
-> diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
-> index ab44911..255e166 100644
-> --- a/kernel/rtmutex.c
-> +++ b/kernel/rtmutex.c
-> @@ -890,7 +890,7 @@ void __rt_mutex_init(struct rt_mutex *lock, const char *name)
->  {
->        lock->owner = NULL;
->        raw_spin_lock_init(&lock->wait_lock);
-> -       plist_head_init_raw(&lock->wait_list, &lock->wait_lock);
-> +       plist_head_init(&lock->wait_list);
->
->        debug_rt_mutex_init(lock, name);
->  }
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index 3f2e502..71bc127 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -7781,7 +7781,7 @@ static void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq)
->  #ifdef CONFIG_SMP
->        rt_rq->rt_nr_migratory = 0;
->        rt_rq->overloaded = 0;
-> -       plist_head_init_raw(&rt_rq->pushable_tasks, &rq->lock);
-> +       plist_head_init(&rt_rq->pushable_tasks);
->  #endif
->
->        rt_rq->rt_time = 0;
-> @@ -7986,7 +7986,7 @@ void __init sched_init(void)
->  #endif
->
->  #ifdef CONFIG_RT_MUTEXES
-> -       plist_head_init_raw(&init_task.pi_waiters, &init_task.pi_lock);
-> +       plist_head_init(&init_task.pi_waiters);
->  #endif
->
->        /*
-> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-> index dd373c8..9c28fa4 100644
-> --- a/lib/Kconfig.debug
-> +++ b/lib/Kconfig.debug
-> @@ -227,7 +227,7 @@ config BOOTPARAM_SOFTLOCKUP_PANIC_VALUE
->  config DETECT_HUNG_TASK
->        bool "Detect Hung Tasks"
->        depends on DEBUG_KERNEL
-> -       default DETECT_SOFTLOCKUP
-> +       default LOCKUP_DETECTOR
->        help
->          Say Y here to enable the kernel to detect "hung tasks",
->          which are bugs that cause the task to be stuck in
-> @@ -866,7 +866,7 @@ config BOOT_PRINTK_DELAY
->          system, and then set "lpj=M" before setting "boot_delay=N".
->          NOTE:  Using this option may adversely affect SMP systems.
->          I.e., processors other than the first one may not boot up.
-> -         BOOT_PRINTK_DELAY also may cause DETECT_SOFTLOCKUP to detect
-> +         BOOT_PRINTK_DELAY also may cause LOCKUP_DETECTOR to detect
->          what it believes to be lockup conditions.
->
->  config RCU_TORTURE_TEST
-> diff --git a/lib/plist.c b/lib/plist.c
-> index 0ae7e64..a0a4da4 100644
-> --- a/lib/plist.c
-> +++ b/lib/plist.c
-> @@ -56,11 +56,6 @@ static void plist_check_list(struct list_head *top)
->
->  static void plist_check_head(struct plist_head *head)
->  {
-> -       WARN_ON(head != &test_head && !head->rawlock && !head->spinlock);
-> -       if (head->rawlock)
-> -               WARN_ON_SMP(!raw_spin_is_locked(head->rawlock));
-> -       if (head->spinlock)
-> -               WARN_ON_SMP(!spin_is_locked(head->spinlock));
->        if (!plist_head_empty(head))
->                plist_check_list(&plist_first(head)->prio_list);
->        plist_check_list(&head->node_list);
-> @@ -180,7 +175,7 @@ static int  __init plist_test(void)
->        unsigned int r = local_clock();
->
->        printk(KERN_INFO "start plist test\n");
-> -       plist_head_init(&test_head, NULL);
-> +       plist_head_init(&test_head);
->        for (i = 0; i < ARRAY_SIZE(test_node); i++)
->                plist_node_init(test_node + i, 0);
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Thanks,
+Shaohua
