@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786Ab1GYTtO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 15:49:14 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58602 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752327Ab1GYTtL convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 15:49:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110725190444.GA8302@elte.hu>
-References: <20110722125236.GA24832@elte.hu> <CACqU3MUW81UmBK7qBQCZRqzfosrukYM9=o0EZP_DvSjgywfK8g@mail.gmail.com>
- <1311588599.2617.56.camel@laptop> <CA+55aFwxqVXb0cFrkgdrDH4J_aF9J7iw8i6ypAda2HiAyeFYpw@mail.gmail.com>
- <20110725190444.GA8302@elte.hu>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 25 Jul 2011 12:48:48 -0700
-Message-ID: <CA+55aFyDufcXR62j=crthVkNybk5is+c-zzr+LRmj_QSUskfmg@mail.gmail.com>
-Subject: Re: [GIT PULL] core/locking changes for v3.1
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaud Lacombe <lacombar@gmail.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	id S1752243Ab1GYTtz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 15:49:55 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:50455 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751639Ab1GYTty (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 15:49:54 -0400
+Content-Type: text/plain; charset=UTF-8
+From: Chris Mason <chris.mason@oracle.com>
+To: Ed Tomlinson <edt@aei.ca>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        Josef Bacik <josef@redhat.com>
+Subject: Re: Linux 3.0 release - btrfs possible locking deadlock
+In-reply-to: <201107221921.00798.edt@aei.ca>
+References: <CA+55aFxakA2U+oMJ1T7awTYa+p6xp9N0aCbfrUqgkF7BJ8gnQw@mail.gmail.com> <201107221921.00798.edt@aei.ca>
+Date: Mon, 25 Jul 2011 15:49:37 -0400
+Message-Id: <1311623259-sup-8037@shiny>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4E2DC8DC.002C:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 25, 2011 at 12:04 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> ..
-> net/netfilter/nf_conntrack_core.c: In function ‘nf_conntrack_init’:
-> net/netfilter/nf_conntrack_core.c:1579:3: warning: the comparison
-> will always evaluate as ‘true’ for the address of
-> ‘nf_conntrack_attach’ will never be NULL [-Waddress]
+Excerpts from Ed Tomlinson's message of 2011-07-22 19:21:00 -0400:
+> On Thursday 21 July 2011 22:59:53 Linus Torvalds wrote:
+> > So there it is. Gone are the 2.6.<bignum> days, and 3.0 is out.
+> > 
+> 
+> Hi,
+> 
+> Managed to get this with btrfs rsync(ing) from ext4 to a btrfs fs with three partitions using raid1.
+> 
+> [16018.211493] device fsid f7186eeb-60df-4b1a-890a-4a1eb42f81fe devid 1 transid 10 /dev/sdd4
+> [16018.230643] btrfs: use lzo compression
+> [16018.234619] btrfs: enabling disk space caching
+> [25949.414011] 
+> [25949.414011] =======================================================
+> [25949.416549] [ INFO: possible circular locking dependency detected ]
+> [25949.423187] 3.0.0-crc+ #348
+> [25949.423187] -------------------------------------------------------
+> [25949.423187] rsync/20237 is trying to acquire lock:
+> [25949.423187]  (btrfs-extent-01){+.+...}, at: [<ffffffffa047ce88>] btrfs_try_spin_lock+0x78/0xb0 [btrfs]
+> [25949.423187] 
+> [25949.423187] but task is already holding lock:
+> [25949.423187]  (&(&eb->lock)->rlock){+.+...}, at: [<ffffffffa047cee2>] btrfs_clear_lock_blocking+0x22/0x30 [btrfs]
+> [25949.423187] 
+> [25949.423187] which lock already depends on the new lock.
+> 
+> Kernel is 3.0.0 without any extras.
+> 
+> Ideas?
 
-These all seem to be essentially compiler bugs.
+Did this actually deadlock?  lockdep has issues with the btrfs
+clear_lock_blocking code, and I need to redo the annotations a bit.  The
+problem is that we have the same lock class representing unrelated locks from
+different trees.
 
-We have macros that do generic things (in this case
-"rcu_assign_pointer()" and tests their values. The fact that the tests
-sometimes end up being statically true (or false) is not something the
-compiler should complain about - it should use it to optimize the
-code.
-
-Sad.
-
-We can make a compiler bug-report, or disable -Waddress. Or maybe we
-can write the tests in a way that doesn't trigger the compiler bug.
-
-This same issue is why I hated -Wsign-compare. Some of the things gcc
-complained about were just technically moronic. So compiler warnings
-are not always a good thing.
-
-                  Linus
+-chris
