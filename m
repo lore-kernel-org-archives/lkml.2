@@ -1,52 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752428Ab1GYOqE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 10:46:04 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:56989 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752102Ab1GYOqA convert rfc822-to-8bit (ORCPT
+	id S1751372Ab1GYO6c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 10:58:32 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49758 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751219Ab1GYO6a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 10:46:00 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX190Qk40Pbp0pjWeyCkpqJjenG/OdhJUGlnaBRzc7p
-	RZmfvC30yr4UJ3
-From: Toralf =?utf-8?q?F=C3=B6rster?= <toralf.foerster@gmx.de>
-To: linux-kernel@vger.kernel.org
-Subject: kernel 3.0 + bridge : set hello timer failed: Numerical result out of range
-Date: Mon, 25 Jul 2011 16:45:56 +0200
-User-Agent: KMail/1.13.7 (Linux/3.0.0; KDE/4.6.5; i686; ; )
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	Mon, 25 Jul 2011 10:58:30 -0400
+Subject: Re: [patch 00/18] CFS Bandwidth Control v7.2
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
+        Jason Baron <jbaron@redhat.com>
+In-Reply-To: <20110721164325.231521704@google.com>
+References: <20110721164325.231521704@google.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201107251645.56332.toralf.foerster@gmx.de>
-X-Y-GMX-Trusted: 0
+Date: Mon, 25 Jul 2011 16:58:01 +0200
+Message-ID: <1311605881.24752.2.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I got this message with kernel 3.0 under an almost stable Gentoo :
+How about something like the below on top?
 
- *   Running postup ...
- * Bringing up interface br0
- *   Creating bridge br0 ...
-set hello timer failed: Numerical result out of range
- *   Adding ports to br0
- *     tap0 ... [ ok ]
- *     tap1 ... [ ok ]
- *   192.168.0.254/16 ... [ ok ]
- *   Running postup ...
 
-with these settings :
-Code:
-brctl_br0="
-setfd 0
-sethello 30
-stp off" 
+---
+ kernel/sched.c |   33 ++++++++++++++++++++++++++++++++-
+ 1 file changed, 32 insertions(+), 1 deletion(-)
 
-Kernel 2.6.39.3 doesn't show that. Is this a harmless message ?
+Index: linux-2.6/kernel/sched.c
+===================================================================
+--- linux-2.6.orig/kernel/sched.c
++++ linux-2.6/kernel/sched.c
+@@ -9228,9 +9228,19 @@ long tg_get_cfs_quota(struct task_group 
+ 	return quota_us;
+ }
+ 
++int tg_set_cfs_period_down(struct task_group *tg, void *data)
++{
++	u64 period = *(u64 *)data;
++	if (ktime_to_ns(tg->cfs_bandwidth.period) == period)
++		return 0;
++
++	return tg_set_cfs_bandwidth(tg, period, tg->cfs_bandwidth.quota);
++}
++
+ int tg_set_cfs_period(struct task_group *tg, long cfs_period_us)
+ {
+ 	u64 quota, period;
++	int ret;
+ 
+ 	period = (u64)cfs_period_us * NSEC_PER_USEC;
+ 	quota = tg_cfs_bandwidth(tg)->quota;
+@@ -9238,7 +9248,28 @@ int tg_set_cfs_period(struct task_group 
+ 	if (period <= 0)
+ 		return -EINVAL;
+ 
+-	return tg_set_cfs_bandwidth(tg, period, quota);
++	/*
++	 * If the parent is bandwidth constrained all its children will
++	 * have to have the same period.
++	 */
++	if (tg->parent && tg->parent->cfs_bandwidth.quota != RUNTIME_INF)
++		return -EINVAL;
++
++	ret = tg_set_cfs_bandwidth(tg, period, quota);
++	if (!ret) {
++		rcu_read_lock();
++		ret = walk_tg_tree_from(tg, tg_set_cfs_period_down, NULL, &period);
++		rcu_read_unlock();
++
++		/*
++		 * If we could change the period on the parent we should be
++		 * able to change the period on all its children since their
++		 * quote is constrained to be equal or less than our.
++		 */
++		WARN_ON_ONCE(ret);
++	}
++
++	return ret;
+ }
+ 
+ long tg_get_cfs_period(struct task_group *tg)
 
--- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
