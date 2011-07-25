@@ -1,162 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677Ab1GYW7F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 18:59:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53878 "EHLO mx2.suse.de"
+	id S1752043Ab1GYXFh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 19:05:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54042 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752533Ab1GYW7B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 18:59:01 -0400
+	id S1751726Ab1GYXFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 19:05:31 -0400
+Date: Tue, 26 Jul 2011 01:05:28 +0200
 From: Michal Marek <mmarek@suse.cz>
-To: linux-kbuild@vger.kernel.org
-Cc: lacombar@gmail.com, sam@ravnborg.org, linux-kernel@vger.kernel.org,
-        plagnioj@jcrosoft.com, linux-mm@kvack.org
-Subject: [RFC][PATCH 2/2] mm: Switch NUMA_BUILD and COMPACTION_BUILD to new KCONFIG() syntax
-Date: Tue, 26 Jul 2011 00:58:38 +0200
-Message-Id: <1311634718-32588-2-git-send-email-mmarek@suse.cz>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1311634718-32588-1-git-send-email-mmarek@suse.cz>
-References: <4E1D9C25.8080300@suse.cz>
- <1311634718-32588-1-git-send-email-mmarek@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: geert@linux-m68k.org, jj@chaosbits.net, lacombar@gmail.com,
+        markus@trippelsdorf.de, mmarek@suse.cz, pefoley2@verizon.net,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT] kbuild updates for 3.1-rc1
+Message-ID: <20110725230528.GA32696@sepie.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: linux-mm@kvack.org
-Signed-off-by: Michal Marek <mmarek@suse.cz>
----
- include/linux/gfp.h    |    2 +-
- include/linux/kernel.h |   14 --------------
- mm/page_alloc.c        |   12 ++++++------
- mm/vmalloc.c           |    4 ++--
- mm/vmscan.c            |    2 +-
- 5 files changed, 10 insertions(+), 24 deletions(-)
+Hi Linus,
 
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index cb40892..36860b2 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -262,7 +262,7 @@ static inline enum zone_type gfp_zone(gfp_t flags)
- 
- static inline int gfp_zonelist(gfp_t flags)
- {
--	if (NUMA_BUILD && unlikely(flags & __GFP_THISNODE))
-+	if (KCONFIG(CONFIG_NUMA) && unlikely(flags & __GFP_THISNODE))
- 		return 1;
- 
- 	return 0;
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index fb0e732..ca635ad 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -717,20 +717,6 @@ extern int __build_bug_on_failed;
- /* Trap pasters of __FUNCTION__ at compile-time */
- #define __FUNCTION__ (__func__)
- 
--/* This helps us to avoid #ifdef CONFIG_NUMA */
--#ifdef CONFIG_NUMA
--#define NUMA_BUILD 1
--#else
--#define NUMA_BUILD 0
--#endif
--
--/* This helps us avoid #ifdef CONFIG_COMPACTION */
--#ifdef CONFIG_COMPACTION
--#define COMPACTION_BUILD 1
--#else
--#define COMPACTION_BUILD 0
--#endif
--
- /* Rebuild everything on CONFIG_FTRACE_MCOUNT_RECORD */
- #ifdef CONFIG_FTRACE_MCOUNT_RECORD
- # define REBUILD_DUE_TO_FTRACE_MCOUNT_RECORD
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index a4e1db3..7665fdf 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1659,7 +1659,7 @@ zonelist_scan:
- 	 */
- 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
- 						high_zoneidx, nodemask) {
--		if (NUMA_BUILD && zlc_active &&
-+		if (KCONFIG(CONFIG_NUMA) && zlc_active &&
- 			!zlc_zone_worth_trying(zonelist, z, allowednodes))
- 				continue;
- 		if ((alloc_flags & ALLOC_CPUSET) &&
-@@ -1701,10 +1701,10 @@ try_this_zone:
- 		if (page)
- 			break;
- this_zone_full:
--		if (NUMA_BUILD)
-+		if (KCONFIG(CONFIG_NUMA))
- 			zlc_mark_zone_full(zonelist, z);
- try_next_zone:
--		if (NUMA_BUILD && !did_zlc_setup && nr_online_nodes > 1) {
-+		if (KCONFIG(CONFIG_NUMA) && !did_zlc_setup && nr_online_nodes > 1) {
- 			/*
- 			 * we do zlc_setup after the first zone is tried but only
- 			 * if there are multiple nodes make it worthwhile
-@@ -1715,7 +1715,7 @@ try_next_zone:
- 		}
- 	}
- 
--	if (unlikely(NUMA_BUILD && page == NULL && zlc_active)) {
-+	if (unlikely(KCONFIG(CONFIG_NUMA) && page == NULL && zlc_active)) {
- 		/* Disable zlc cache for second zonelist scan */
- 		zlc_active = 0;
- 		goto zonelist_scan;
-@@ -2083,7 +2083,7 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
- 	 * allowed per node queues are empty and that nodes are
- 	 * over allocated.
- 	 */
--	if (NUMA_BUILD && (gfp_mask & GFP_THISNODE) == GFP_THISNODE)
-+	if (KCONFIG(CONFIG_NUMA) && (gfp_mask & GFP_THISNODE) == GFP_THISNODE)
- 		goto nopage;
- 
- restart:
-@@ -2461,7 +2461,7 @@ unsigned int nr_free_pagecache_pages(void)
- 
- static inline void show_node(struct zone *zone)
- {
--	if (NUMA_BUILD)
-+	if (KCONFIG(CONFIG_NUMA))
- 		printk("Node %d ", zone_to_nid(zone));
- }
- 
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 1d34d75..c5582a5 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -2482,7 +2482,7 @@ static void s_stop(struct seq_file *m, void *p)
- 
- static void show_numa_info(struct seq_file *m, struct vm_struct *v)
- {
--	if (NUMA_BUILD) {
-+	if (KCONFIG(CONFIG_NUMA)) {
- 		unsigned int nr, *counters = m->private;
- 
- 		if (!counters)
-@@ -2547,7 +2547,7 @@ static int vmalloc_open(struct inode *inode, struct file *file)
- 	unsigned int *ptr = NULL;
- 	int ret;
- 
--	if (NUMA_BUILD) {
-+	if (KCONFIG(CONFIG_NUMA)) {
- 		ptr = kmalloc(nr_node_ids * sizeof(unsigned int), GFP_KERNEL);
- 		if (ptr == NULL)
- 			return -ENOMEM;
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index faa0a08..bc18d7f 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -310,7 +310,7 @@ static void set_reclaim_mode(int priority, struct scan_control *sc,
- 	 * reclaim/compaction.Depending on the order, we will either set the
- 	 * sync mode or just reclaim order-0 pages later.
- 	 */
--	if (COMPACTION_BUILD)
-+	if (KCONFIG(CONFIG_COMPACTION))
- 		sc->reclaim_mode = RECLAIM_MODE_COMPACTION;
- 	else
- 		sc->reclaim_mode = RECLAIM_MODE_LUMPYRECLAIM;
--- 
-1.7.6
+here is the main part of kbuild for 3.1-rc1:
+* Consolidation of Makefile rules for dealing with bison/flex/gperf
+  generated files, which is why the diffstat looks bigger than usual.
+* Fix for headers_install to not export the __packed convenience macro.
+* 4 other minor fixes.
 
+
+The following changes since commit 55922c9d1b84b89cb946c777fddccb3247e7df2c:
+
+  Linux 3.0-rc1 (2011-05-29 17:43:36 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git kbuild
+
+Arnaud Lacombe (14):
+      kbuild: add `baseprereq'
+      kbuild: add implicit rules for parser generation
+      kbuild: simplify the %_shipped rule
+      genksyms: pass hash and lookup functions name and target language though the input file
+      genksyms: drop -Wno-uninitialized from HOSTCFLAGS_parse.tab.o
+      genksyms: migrate parser to implicit rules
+      genksym: regen parser
+      kconfig: constify `kconf_id_lookup'
+      kconfig: kill no longer needed reference to YYDEBUG
+      kconfig/zconf.l: do not ask to generate backup
+      kconfig: migrate parser to implicit rules
+      kconfig: regen parser
+      dtc: migrate parser to implicit rules
+      dtc: regen parser
+
+Geert Uytterhoeven (1):
+      kbuild: Fix reference to vermagic.h
+
+Jesper Juhl (1):
+      genksyms: Use same type in loop comparison
+
+Markus Trippelsdorf (1):
+      headers_install: fix __packed in exported kernel headers
+
+Michal Marek (2):
+      Merge commit 'v3.0-rc1' into kbuild/kbuild
+      Merge branch 'kbuild-implicit-parser-rule' of git://github.com/lacombar/linux-2.6 into kbuild/kbuild
+
+Peter Foley (2):
+      kernel: prevent unnecessary rebuilding due to config_data.gz
+      kbuild: silence generated makefile message
+
+ kernel/Makefile                                    |    5 +-
+ scripts/Kbuild.include                             |    4 +
+ scripts/Makefile.lib                               |   40 +++-
+ scripts/Makefile.modpost                           |    2 +-
+ scripts/dtc/Makefile                               |   28 +--
+ scripts/dtc/dtc-lexer.lex.c_shipped                |   59 +---
+ scripts/dtc/dtc-parser.tab.c_shipped               |  116 +------
+ scripts/dtc/dtc-parser.tab.h_shipped               |   11 +-
+ scripts/genksyms/.gitignore                        |    7 +-
+ scripts/genksyms/Makefile                          |   48 +---
+ scripts/genksyms/genksyms.c                        |    2 +-
+ scripts/genksyms/keywords.gperf                    |    3 +
+ ...{keywords.c_shipped => keywords.hash.c_shipped} |   96 +++---
+ scripts/genksyms/lex.l                             |    4 +-
+ .../genksyms/{lex.c_shipped => lex.lex.c_shipped}  |  359 +-------------------
+ .../{parse.c_shipped => parse.tab.c_shipped}       |  198 +----------
+ .../{parse.h_shipped => parse.tab.h_shipped}       |    7 +-
+ scripts/headers_install.pl                         |    1 +
+ scripts/kconfig/.gitignore                         |    2 +-
+ scripts/kconfig/Makefile                           |   34 +--
+ scripts/kconfig/lkc.h                              |    2 -
+ scripts/kconfig/zconf.gperf                        |    2 +-
+ scripts/kconfig/zconf.hash.c_shipped               |  273 +++++++++-------
+ scripts/kconfig/zconf.l                            |    8 +-
+ .../{lex.zconf.c_shipped => zconf.lex.c_shipped}   |   26 +--
+ scripts/kconfig/zconf.tab.c_shipped                |   68 ++--
+ scripts/kconfig/zconf.y                            |   18 +-
+ scripts/mkmakefile                                 |    9 +-
+ 28 files changed, 383 insertions(+), 1049 deletions(-)
+ rename scripts/genksyms/{keywords.c_shipped => keywords.hash.c_shipped} (94%)
+ rename scripts/genksyms/{lex.c_shipped => lex.lex.c_shipped} (89%)
+ rename scripts/genksyms/{parse.c_shipped => parse.tab.c_shipped} (92%)
+ rename scripts/genksyms/{parse.h_shipped => parse.tab.h_shipped} (96%)
+ rename scripts/kconfig/{lex.zconf.c_shipped => zconf.lex.c_shipped} (98%)
