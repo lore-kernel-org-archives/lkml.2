@@ -1,141 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752901Ab1GYBnn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 21:43:43 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:55745 "EHLO smtps.tip.net.au"
+	id S1752906Ab1GYBxa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 21:53:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10060 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752812Ab1GYBnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 21:43:42 -0400
-Date: Mon, 25 Jul 2011 11:43:27 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg Ungerer <gerg@snapgear.com>
-Cc: Jonas Bonn <jonas@southpole.se>, Rusty Russell <rusty@rustcorp.com.au>,
-        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Greg Ungerer <gerg@uclinux.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: linux-next: manual merge of the rr tree with the  tree
-Message-Id: <20110725114327.fa9c46a5398677ffa4acbd6f@canb.auug.org.au>
-In-Reply-To: <20110707102432.5a779744e247652be005b592@canb.auug.org.au>
-References: <20110705135932.de7f0526.sfr@canb.auug.org.au>
-	<1309967847.3393.44.camel@jerome>
-	<4E14F373.1020307@snapgear.com>
-	<20110707102432.5a779744e247652be005b592@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752789Ab1GYBx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jul 2011 21:53:27 -0400
+Date: Sun, 24 Jul 2011 21:53:24 -0400
+From: Dave Jones <davej@redhat.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: kdevtmpfs oops since yesterdays vfs merge
+Message-ID: <20110725015324.GA7603@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Al Viro <viro@ZenIV.linux.org.uk>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20110724231701.GA1707@redhat.com>
+ <20110724232812.GN24703@ZenIV.linux.org.uk>
+ <20110724234029.GA4881@redhat.com>
+ <20110724235154.GO24703@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110724235154.GO24703@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Mon, Jul 25, 2011 at 12:51:54AM +0100, Al Viro wrote:
+ > On Sun, Jul 24, 2011 at 07:40:29PM -0400, Dave Jones wrote:
+ > > On Mon, Jul 25, 2011 at 12:28:12AM +0100, Al Viro wrote:
+ > >  > On Sun, Jul 24, 2011 at 07:17:01PM -0400, Dave Jones wrote:
+ > >  > > I see an oops in handle_create when I try to boot current tree..
+ > >  > > 
+ > >  > > full trace:
+ > >  > > https://s3.amazonaws.com/twitpic/photos/large/355006460.jpg?AWSAccessKeyId=AKIAJF3XCCKACR3QDMOA&Expires=1311550232&Signature=IIO%2Bya1uEDJzSXTD0DXh2%2BdZpoU%3D
+ > >  > 
+ > >  > Where in handle_create() is that?  At least dump objdump -d of your
+ > >  > devtmpfs.o someplace readable...
+ > > 
+ > > http://codemonkey.org.uk/devtmpfs.s
+ > 
+ > Smells like req->dev somehow managing to be NULL at that point, but that
+ > doesn't make any sense - we get to devtmpfs_create_node() only from one
+ > place, it sets req.dev to the argument it got from callers and that caller
+ > would have oopsed itself before getting to that call with dev == NULL...
+ > 
+ > Could you stick a BUG_ON(!dev) in the beginning of handle_create() to see
+ > if that's what somehow manages to happen?
 
-On Thu, 7 Jul 2011 10:24:32 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->
-> On Thu, 7 Jul 2011 09:44:51 +1000 Greg Ungerer <gerg@snapgear.com> wrote:
-> >
-> > On 07/07/11 01:57, Jonas Bonn wrote:
-> > >
-> > > On Tue, 2011-07-05 at 13:59 +1000, Stephen Rothwell wrote:
-> > >>
-> > >> Today's linux-next merge of the rr tree got a conflict in
-> > >> arch/m68k/kernel/module_mm.c arch/m68k/kernel/module_no.c between commit
-> > >> 4528acce2607 ("m68k: merge the non-mmu and mmu versions of module.c")
-> > >> from the m68knommu tree and commit 7b935befe6bc ("modules: make arch's
-> > >> use default loader hooks") from the rr tree.
-> > >>
-> > >> The former removes these files, so I did that.
-> > >>
-> > >> I then added this merge fix up patch (which I can carry as necessary and
-> > >> may not be coorrect):
-> > >>
-> > >> From: Stephen Rothwell<sfr@canb.auug.org.au>
-> > >> Date: Tue, 5 Jul 2011 13:12:26 +1000
-> > >> Subject: [PATCH] modules/m68k: make arch's use default loader hooks
-> > >>
-> > >> Signed-off-by: Stephen Rothwell<sfr@canb.auug.org.au>
-> > >> ---
-> > >>   arch/m68k/kernel/module.c |   27 ---------------------------
-> > >>   1 files changed, 0 insertions(+), 27 deletions(-)
-> > >>
-> > >
-> > > That patch looks good to me.
-> > >
-> > > Acked-by: Jonas Bonn<jonas@southpole.se>
-> > 
-> > Looks fine to me too:
-> > 
-> > Acked-by: Greg Ungerer <gerg@uclinux.org>
-> 
-> OK, so now someone just has to remember to apply it (or tell Linus, or
-> fix up the trees) during the merge window.   That person probably won't
-> be me (since I will not be online next week (assuming Linus follows
-> through and opens the merge window next week).
+So I built a kernel with this, and then couldn't reproduce it.
+Made a clean kernel again, and still nothing..  After a number of reboots,
+it finally triggered again, with that BUG_ON(). fwiw 'nodename' is pointing
+at garbage when that happens too.
 
-This patch now needs to be applied to the m68knommu tree (after merging
-Linus' tree) as Rusty's changes have gone upstream.
+Either it only triggers occasionally, or it's dependent on how quickly
+I type my luks password in.
 
-Here is the patch I have applied again for reference:
+	Dave
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 5 Jul 2011 13:12:26 +1000
-Subject: [PATCH] modules/m68k: make arch's use default loader hooks
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- arch/m68k/kernel/module.c |   27 ---------------------------
- 1 files changed, 0 insertions(+), 27 deletions(-)
-
-diff --git a/arch/m68k/kernel/module.c b/arch/m68k/kernel/module.c
-index 146d646..34849c4 100644
---- a/arch/m68k/kernel/module.c
-+++ b/arch/m68k/kernel/module.c
-@@ -19,29 +19,6 @@
- 
- #ifdef CONFIG_MODULES
- 
--void *module_alloc(unsigned long size)
--{
--	if (size == 0)
--		return NULL;
--	return vmalloc(size);
--}
--
--
--/* Free memory returned from module_alloc */
--void module_free(struct module *mod, void *module_region)
--{
--	vfree(module_region);
--}
--
--/* We don't need anything special. */
--int module_frob_arch_sections(Elf_Ehdr *hdr,
--			      Elf_Shdr *sechdrs,
--			      char *secstrings,
--			      struct module *mod)
--{
--	return 0;
--}
--
- int apply_relocate(Elf32_Shdr *sechdrs,
- 		   const char *strtab,
- 		   unsigned int symindex,
-@@ -130,10 +107,6 @@ int module_finalize(const Elf_Ehdr *hdr,
- 	return 0;
- }
- 
--void module_arch_cleanup(struct module *mod)
--{
--}
--
- #endif /* CONFIG_MODULES */
- 
- void module_fixup(struct module *mod, struct m68k_fixup_info *start,
--- 
-1.7.5.4
-
-
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
