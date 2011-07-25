@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751392Ab1GYIR2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 04:17:28 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45349 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145Ab1GYIRX (ORCPT
+	id S1751184Ab1GYIR5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 04:17:57 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:64985 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751202Ab1GYIRv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 04:17:23 -0400
-Subject: Re: On migrate_disable() and latencies
-From: Peter Zijlstra <peterz@infradead.org>
-To: Nicholas Mc Guire <der.herr@hofr.at>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Carsten Emde <ce@ceag.ch>,
-        Clark Williams <williams@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Kumar Gala <galak@gate.crashing.org>,
-        Ralf Baechle <ralf@linux-mips.org>, rostedt <rostedt@goodmis.org>
-In-Reply-To: <20110722174500.GB32014@opentech.at>
-References: <1311329992.27400.23.camel@twins>
-	 <20110722174500.GB32014@opentech.at>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 25 Jul 2011 10:21:50 +0200
-Message-ID: <1311582110.2617.40.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 25 Jul 2011 04:17:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110725081102.GA3895@elte.hu>
+References: <alpine.DEB.2.00.1107242335580.18045@tiger>
+	<4E2CC489.1090509@codemonkey.ws>
+	<CAOJsxLH-poY4-wEUPqAa8bzK+1WJ0UYtSuue72RYwcd_D0kx_A@mail.gmail.com>
+	<4E2D1D07.9020009@redhat.com>
+	<CAFO3S428qqUAu19QjPxDDAVv+eJSX0MEfYp5y03znNi6XbEtTg@mail.gmail.com>
+	<20110725081102.GA3895@elte.hu>
+Date: Mon, 25 Jul 2011 11:17:50 +0300
+X-Google-Sender-Auth: OtndEyWN_VoRJjzJXmpEW1Cik3Q
+Message-ID: <CAOJsxLGctVibGRkCFX+ok-OqTyCeSpuKzQ+1ojHOpTKYLO97Zg@mail.gmail.com>
+Subject: Re: [GIT PULL] Native Linux KVM tool for 3.1
+From: Pekka Enberg <penberg@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Asias He <asias.hejun@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Anthony Liguori <anthony@codemonkey.ws>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, gorcunov@gmail.com, levinsasha928@gmail.com,
+        prasadjoshi124@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-22 at 19:45 +0200, Nicholas Mc Guire wrote:
+On Mon, Jul 25, 2011 at 4:19 AM, Anthony Liguori<anthony@codemonkey.ws> wrote:
+>> >> >  lguest already does this and lives in the kernel.
 
-> > Therefore the worst case latency is in the order of
-> > max-migrate-disable-period * nr-cpus.
-> 
-> + something like sum of (interrupt rate [n] /
-> max-migrate-disable-period * nr-cpus) * top-half handler [n]. if you
-> go on with theoretical WCET analysis on multicore systems you will
-> always end up at the conclusion that only UP is suitable for RT....
+On 07/25/2011 10:27 AM, Pekka Enberg wrote:
+>> >> Does Lguest have SMP, usermode networking, and GUI support?
 
-+ preemption cost + migration costs etc.. :-)
+On Mon, Jul 25, 2011 at 3:36 PM, Avi Kivity <avi@redhat.com> wrote:
+>> > IIRC, yes, no, and no.
 
-> > Currently we have no means of measuring these latencies, this is
-> > something we need to grow, I think Steven can fairly easy craft a
-> > migrate_disable runtime tracer -- it needs to use t->se.sum_exec_runtime
-> > for measure so as to only count the actual time spend on the task and
-> > ignore any time it was blocked.
->  
-> well this is a similar problem as with the WCET "calculations" - you can
-> calculate theoretical worst cases - but the question is what the actual
-> distribution of "stacking" is and thus what the probability is that you
-> manage to stack tasks in this way.
+* Asias He <asias.hejun@gmail.com> wrote:
+>> And Lguest only supports 32-bit kernel.
 
-Sure, and yes those are thing to look at.
+On Mon, Jul 25, 2011 at 11:11 AM, Ingo Molnar <mingo@elte.hu> wrote:
+> The answer to SMP is 'no' as well, as lguest supports only a single
+> CPU:
+>
+>   [Documentation/virtual/lguest/lguest.c]
+>
+>        /* We're CPU 0.  In fact, that's the only CPU possible right now. */
+>        cpu_id = 0;
 
-> One could I guess put some relatively simple instrumentation in to monitor
-> this stacking problem - quit independant of actually measuring the times 
+Uhm - so why bring up Lguest at all in this pull request? Anthony,
+what am I missing here?
 
-Yes, that would be very easy to do.
-
-> > Once we have this, its back to the old game of 'lock'-breaking.
-> >
-> if the stacking problem does not practically exist then it might not be worth
-> the effort to resolve it with elaborate lock breaking.
-
-Fully agreed, its just that I wanted to share my understanding of the
-problem space (both Thomas and I thought on-list email was a better
-location that private IRC logs ;-), and we need to get the know the
-problem before we can decide to ignore it ;-)
-
-Ignoring unknowns always leads to surprises.
-
+                        Pekka
