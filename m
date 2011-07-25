@@ -1,51 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752525Ab1GYXTh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 19:19:37 -0400
-Received: from mga02.intel.com ([134.134.136.20]:16936 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751990Ab1GYXTb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 19:19:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,265,1309762800"; 
-   d="scan'208";a="29998556"
-Subject: Re: [Patch] VFS : mount lock scalability for files systems without
- mount point   (WAS vfsmount lock issues on very large ppc64 box)
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, Matthew Wilcox <matthew@wil.cx>,
-        Anton Blanchard <anton@samba.org>, npiggin@kernel.dk,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-In-Reply-To: <20110725225154.GD22133@ZenIV.linux.org.uk>
-References: <20110717010427.GC5359@parisc-linux.org>
-	 <20110717084630.GC8006@one.firstfloor.org>
-	 <1310977028.5756.1.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20110718154008.GA29593@infradead.org>
-	 <20110718155141.GA11013@ZenIV.linux.org.uk>
-	 <1311093158.2707.75.camel@schen9-DESK>
-	 <20110721204042.GB31405@ZenIV.linux.org.uk>
-	 <1311294452.2576.18.camel@schen9-DESK>
-	 <20110723132411.GA22183@infradead.org>
-	 <1311633550.2576.33.camel@schen9-DESK>
-	 <20110725225154.GD22133@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 25 Jul 2011 16:22:58 -0700
-Message-ID: <1311636178.2576.34.camel@schen9-DESK>
+	id S1752598Ab1GYXUo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 19:20:44 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:46743 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751990Ab1GYXUg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 19:20:36 -0400
+Date: Mon, 25 Jul 2011 16:16:32 -0700 (PDT)
+Message-Id: <20110725.161632.432205077107811689.davem@davemloft.net>
+To: schaman@sch.bme.hu
+Cc: kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] IPv4: Send gratuitous ARP for secondary IP
+ addresses also
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1311548970-27522-1-git-send-email-schaman@sch.bme.hu>
+References: <1311548970-27522-1-git-send-email-schaman@sch.bme.hu>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 25 Jul 2011 16:16:36 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-07-25 at 23:51 +0100, Al Viro wrote:
+From: "Zoltan, Kiss" <schaman@sch.bme.hu>
+Date: Mon, 25 Jul 2011 01:09:30 +0200
 
-> It's mostly merged in mainline already...  BTW, you forgot to export
-> that sucker - mtdchar can be modular.
+> From: Zoltan Kiss <schaman@sch.bme.hu>
+> 
+> If a device event generates gratuitous ARP messages, only primary
+> address is used for sending. This patch iterates through the whole
+> list. Tested with 2 IP addresses configuration on bonding interface.
+> 
+> Signed-off-by: Zoltan Kiss <schaman@sch.bme.hu>
 
-Thanks for fixing it up and merging it.
-
-Tim
-
+Applied.
