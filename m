@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762Ab1GYXka (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 19:40:30 -0400
-Received: from mother.openwall.net ([195.42.179.200]:52614 "HELO
-	mother.openwall.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751963Ab1GYXkW (ORCPT
+	id S1752738Ab1GYXlH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 19:41:07 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:56896 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751751Ab1GYXlA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 19:40:22 -0400
-Date: Tue, 26 Jul 2011 03:40:13 +0400
-From: Solar Designer <solar@openwall.com>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, NeilBrown <neilb@suse.de>,
-        Stephen Smalley <sds@tycho.nsa.gov>,
-        kernel-hardening@lists.openwall.com, James Morris <jmorris@namei.org>,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+	Mon, 25 Jul 2011 19:41:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110725203705.GA21691@tassilo.jf.intel.com>
+References: <1311625159-13771-1-git-send-email-jweiner@redhat.com>
+	<1311625159-13771-5-git-send-email-jweiner@redhat.com>
+	<20110725203705.GA21691@tassilo.jf.intel.com>
+Date: Tue, 26 Jul 2011 08:40:59 +0900
+Message-ID: <CAEwNFnARzetfqZqjh_9-d+FOHtrCEwaSxgqBy_D+apxsNqzqkg@mail.gmail.com>
+Subject: Re: [patch 4/5] mm: writeback: throttle __GFP_WRITE on per-zone dirty limits
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Johannes Weiner <jweiner@redhat.com>, linux-mm@kvack.org,
+        Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>, Mel Gorman <mgorman@suse.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Eric Paris <eparis@redhat.com>, Willy Tarreau <w@1wt.eu>,
-        Sebastian Krahmer <krahmer@suse.de>
-Subject: Re: [kernel-hardening] [PATCH] move RLIMIT_NPROC check from set_user() to do_execve_common()
-Message-ID: <20110725234013.GB24110@openwall.com>
-References: <20110715170650.585f1dad@notabene.brown> <20110715073823.GA3821@albatros> <1310738313.30257.27.camel@moss-pluto> <20110715152641.GA6286@albatros> <1310759683.30257.123.camel@moss-pluto> <20110721140936.632d2c8b@notabene.brown> <20110721124830.GA1325@openwall.com> <CA+55aFy4ybatb0McQr2f4A56ympZVLqK2sbp2=73idu58_4RxQ@mail.gmail.com> <20110721193939.GA3914@openwall.com> <20110725171423.GA3739@albatros>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110725171423.GA3739@albatros>
-User-Agent: Mutt/1.4.2.3i
+        Wu Fengguang <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
+        Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vasiliy,
+Hi Andi,
 
-On Mon, Jul 25, 2011 at 09:14:23PM +0400, Vasiliy Kulikov wrote:
-> @@ -1433,6 +1433,19 @@ static int do_execve_common(const char *filename,
->  	struct files_struct *displaced;
->  	bool clear_in_exec;
->  	int retval;
-> +	const struct cred *cred = current_cred();
-> +
-> +	/*
-> +	 * We move the actual failure in case of RLIMIT_NPROC excess from
-> +	 * set*uid() to execve() because too many poorly written programs
-> +	 * don't check setuid() return code.  Here we additionally recheck
-> +	 * whether NPROC limit is still exceeded.
-> +	 */
-> +	if ((current->flags & PF_NPROC_EXCEEDED) &&
-> +	    atomic_read(&cred->user->processes) > rlimit(RLIMIT_NPROC)) {
-> +		retval = -EAGAIN;
-> +		goto out_ret;
-> +	}
+On Tue, Jul 26, 2011 at 5:37 AM, Andi Kleen <ak@linux.intel.com> wrote:
+>> The global dirty limits are put in proportion to the respective zone's
+>> amount of dirtyable memory and the allocation denied when the limit of
+>> that zone is reached.
+>>
+>> Before the allocation fails, the allocator slowpath has a stage before
+>> compaction and reclaim, where the flusher threads are kicked and the
+>> allocator ultimately has to wait for writeback if still none of the
+>> zones has become eligible for allocation again in the meantime.
+>>
+>
+> I don't really like this. It seems wrong to make memory
+> placement depend on dirtyness.
+>
+> Just try to explain it to some system administrator or tuner: her
+> head will explode and for good reasons.
+>
+> On the other hand I like doing round-robin in filemap by default
+> (I think that is what your patch essentially does)
+> We should have made  this default long ago. It avoids most of the
+> "IO fills up local node" problems people run into all the time.
+>
+> So I would rather just change the default in filemap allocation.
+>
+> That's also easy to explain.
 
-Do you possibly need:
+Just out of curiosity.
+Why do you want to consider only filemap allocation, not IO(ie,
+filemap + sys_[read/write]) allocation?
 
-	current->flags &= ~PF_NPROC_EXCEEDED;
-
-somewhere after this point?
-
-I think it's weird to have past set_user() failure affect other than the
-very next execve().
-
-Perhaps also reset the flag on fork() because we have an RLIMIT_NPROC
-check on fork() anyway.
-
-Thanks,
-
-Alexander
+-- 
+Kind regards,
+Minchan Kim
