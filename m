@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752475Ab1GYOhE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 10:37:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56661 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752382Ab1GYOhC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 10:37:02 -0400
-Date: Mon, 25 Jul 2011 16:37:00 +0200
-From: Jan Kara <jack@suse.cz>
-To: Wang Sheng-Hui <shhuiw@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>
-Subject: Re: [PATCH] ext3.txt: update the links in the section "useful
- links" to the latest ones
-Message-ID: <20110725143700.GB6107@quack.suse.cz>
-References: <4E2A1F21.5060604@gmail.com>
+	id S1752529Ab1GYOhM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 10:37:12 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36416 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752382Ab1GYOhG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 10:37:06 -0400
+Date: Mon, 25 Jul 2011 10:36:55 -0400
+From: Eric B Munson <emunson@mgebm.net>
+To: Anton Blanchard <anton@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf: Fix ppc64 SEGV in dso__load_sym with debuginfo
+ files
+Message-ID: <20110725143655.GA4177@mgebm.net>
+References: <20110725142209.66d540fd@kryten>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DocE+STaALJfprDB"
 Content-Disposition: inline
-In-Reply-To: <4E2A1F21.5060604@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110725142209.66d540fd@kryten>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello,
 
-On Sat 23-07-11 09:08:49, Wang Sheng-Hui wrote:
-> The patch is against 3.0.
-> 
-> In Documentation/filesystems/ext3.txt, the section "useful links"
-> provides two links which link to ibm developerworks articles. While
-> the second one can be redirected to the latest one, the first one
->    http://www.ibm.com/developerworks/library/l-fs7.html
-> fails to be redirected.
-> 
-> Update the 2 links to the latest ones.
-  Thanks. I've merged the patch into my tree.
+--DocE+STaALJfprDB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-								Honza
-> 
-> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
-> ---
->  Documentation/filesystems/ext3.txt |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/Documentation/filesystems/ext3.txt b/Documentation/filesystems/ext3.txt
-> index 272f80d..a779614 100644
-> --- a/Documentation/filesystems/ext3.txt
-> +++ b/Documentation/filesystems/ext3.txt
-> @@ -227,5 +227,5 @@ kernel source:	<file:fs/ext3/>
->  programs: 	http://e2fsprogs.sourceforge.net/
->  		http://ext2resize.sourceforge.net
->  
-> -useful links:	http://www.ibm.com/developerworks/library/l-fs7.html
-> -		http://www.ibm.com/developerworks/library/l-fs8.html
-> +useful links:	http://www.ibm.com/developerworks/library/l-fs7/index.html
-> +        http://www.ibm.com/developerworks/library/l-fs8/index.html
-> -- 
-> 1.7.1
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+On Mon, 25 Jul 2011, Anton Blanchard wrote:
+
+>=20
+> 64bit PowerPC debuginfo files have an empty function descriptor
+> section. I hit a SEGV when perf tried to use this section for
+> symbol resolution.
+>=20
+> To fix this we need to check the section is valid and we can
+> do this by checking for type SHT_PROGBITS.
+>=20
+> Signed-off-by: Anton Blanchard <anton@samba.org>
+> Cc: <stable@kernel.org>
+
+Acked-by: Eric B Munson <emunson@mgebm.net>
+
+--DocE+STaALJfprDB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOLX+HAAoJEH65iIruGRnNejAH/jkkdWLkEi7KRfTXKtdbbT2C
+PhuOO61eiF7IwETRQruBlgeushKp51nHCFRtesgVRmySzENXm3rf+4q6v+0UIc8B
+x3RFI2wmacVkscjFI1Eb5zB+GyAw6MKLrJtachJy9kzuI89UgJ5P2e0UZrfNdFJK
+pBlwD4tU3ETmx/61HEZhpnhiA/kMWNyYwMEjzrPtw9E/H7RCXrWNnvf+lKqJJqdr
+u6tV1QbPn7GOVlELf19H6KMZTJ4l3sjYqnTlnKa+2jze8mEWtB4eIR377cloB6mn
+tL8pL3F4PN66Oj4ODO2cti3T3Zcx8LVmIO2HubJx9YEZ7urnxngZNqcTcY/T3uU=
+=nEca
+-----END PGP SIGNATURE-----
+
+--DocE+STaALJfprDB--
