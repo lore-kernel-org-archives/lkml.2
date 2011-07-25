@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751740Ab1GYAJn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 20:09:43 -0400
-Received: from balu.sch.bme.hu ([152.66.208.40]:46450 "EHLO balu.sch.bme.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751333Ab1GYAJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 20:09:40 -0400
-X-Greylist: delayed 3601 seconds by postgrey-1.27 at vger.kernel.org; Sun, 24 Jul 2011 20:09:40 EDT
-Date: Mon, 25 Jul 2011 01:09:30 +0200
-From: "Zoltan, Kiss" <schaman@sch.bme.hu>
-Subject: [PATCH 1/1] IPv4: Send gratuitous ARP for secondary IP addresses also
-To: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        Pekka Savola <pekkas@netcore.fi>, James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Zoltan Kiss <schaman@sch.bme.hu>
-Message-id: <1311548970-27522-1-git-send-email-schaman@sch.bme.hu>
-X-Mailer: git-send-email 1.7.4.1
-Content-transfer-encoding: 7BIT
+	id S1751782Ab1GYAS4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 20:18:56 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:40266 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751345Ab1GYASy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jul 2011 20:18:54 -0400
+Subject: Re: [PATCH] Reduce number of KOBJ_REMOVE events
+From: Kay Sievers <kay.sievers@vrfy.org>
+To: Zdenek Kabelac <zkabelac@redhat.com>
+Cc: device-mapper development <dm-devel@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
+Date: Mon, 25 Jul 2011 02:18:47 +0200
+In-Reply-To: <4E2987AE.2070707@redhat.com>
+References: <4E2987AE.2070707@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1311553130.1671.21.camel@mop>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zoltan Kiss <schaman@sch.bme.hu>
+On Fri, 2011-07-22 at 16:22 +0200, Zdenek Kabelac wrote:
 
-If a device event generates gratuitous ARP messages, only primary
-address is used for sending. This patch iterates through the whole
-list. Tested with 2 IP addresses configuration on bonding interface.
+> For now udev recieves 3 event for removal of DM logical volumes. (1 for
+> bdi and 2 for same block kobject). Reason is dm device generates its
+> own kobject event with approriate env parameter and block layer sends
+> another KOBJ_REMOVE event on its own unconditionaly for the same
+> kobject. As for now only the kobject cleanup checks that the REMOVE
+> event has been already sent and avoids duplicate REMOVE event.
 
-Signed-off-by: Zoltan Kiss <schaman@sch.bme.hu>
----
- net/ipv4/devinet.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
+> The patch for kobject_uevent_env() which has been testing for duplicate
+> REMOVE event did not passed into the mainline (yet?):
 
-diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
-index 37b3c18..bc19bd0 100644
---- a/net/ipv4/devinet.c
-+++ b/net/ipv4/devinet.c
-@@ -1134,15 +1134,15 @@ static void inetdev_send_gratuitous_arp(struct net_device *dev,
- 					struct in_device *in_dev)
- 
- {
--	struct in_ifaddr *ifa = in_dev->ifa_list;
--
--	if (!ifa)
--		return;
-+	struct in_ifaddr *ifa;
- 
--	arp_send(ARPOP_REQUEST, ETH_P_ARP,
--		 ifa->ifa_local, dev,
--		 ifa->ifa_local, NULL,
--		 dev->dev_addr, NULL);
-+	for (ifa = in_dev->ifa_list; ifa;
-+	     ifa = ifa->ifa_next) {
-+		arp_send(ARPOP_REQUEST, ETH_P_ARP,
-+			 ifa->ifa_local, dev,
-+			 ifa->ifa_local, NULL,
-+			 dev->dev_addr, NULL);
-+	}
- }
- 
- /* Called only under RTNL semaphore */
--- 
-1.7.4.1
+No, it's wasn't merged. Subsystems should really not send their own
+'add' or 'remove' events. These are properties of the driver core.
+
+> I'm proposing alternative way around to always use kobject cleanup
+> routine for sending REMOVE event if it was not send by the module - so
+> it makes the code few lines shorter.
+
+The events the core creates are only sent out at release() not at del(),
+so we would delay 'remove' events when we keep the device pinned but
+it's not valid anymore. We can not do that today, we would need to move
+the core-created 'remove' events to del().
+
+
+For device-mapper, I would prefer to add a '.dev_uevent' callback to the
+'block' class let this callback check 'struct block_device_operations'
+for a possibly specified '.uevent' callback and call it.
+
+Then have 'dm_blk_dops' add '.uevent' and let the core call into the dm
+code to the needed properties to the 'remove' event, instead of sending
+its own, and see the duplication.
+
+Let me know if you need more details.
+
+Thanks,
+Kay
 
