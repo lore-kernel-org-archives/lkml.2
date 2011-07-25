@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751736Ab1GYNSk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 09:18:40 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:39158 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382Ab1GYNSj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 09:18:39 -0400
+	id S1751823Ab1GYNUo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 09:20:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49572 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751139Ab1GYNUn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 09:20:43 -0400
+Date: Mon, 25 Jul 2011 15:20:40 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: =?iso-8859-1?Q?V=EDctor_M=2E_J=E1quez_L=2E?= <vjaquez@igalia.com>
+Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        Jianbin Kang <kjbmail@gmail.com>, Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: [PATCH] kbuild: incremental tags updating with GNU GLOBAL
+Message-ID: <20110725132040.GE4482@sepie.suse.cz>
+References: <1310379990-4367-1-git-send-email-vjaquez@igalia.com>
+ <4E1AE9E2.2000603@suse.cz>
+ <20110711131725.GA26907@lit.local.igalia.com>
 MIME-Version: 1.0
-In-Reply-To: <20110725140610.47fdda27@lxorguk.ukuu.org.uk>
-References: <CAPweEDwVhaHr=5i8giGCkDWxK9G8Vvibq59vhbu6RsnZf9uerA@mail.gmail.com>
-	<20110725131701.112e635e@lxorguk.ukuu.org.uk>
-	<CAPweEDzQXUTtAwiU4qEB_eQqNgJeazpeTxixyAnbgscvC5yujQ@mail.gmail.com>
-	<20110725140610.47fdda27@lxorguk.ukuu.org.uk>
-Date: Mon, 25 Jul 2011 14:18:38 +0100
-X-Google-Sender-Auth: BTmWBHYN2bH-s4LfNq1hHhbHf_0
-Message-ID: <CAPweEDwfmYH0DrsySGFAAxAXdyVrEJUmQvxASQ=OQAJOociddg@mail.gmail.com>
-Subject: Re: dynamic LCD support for "embedded" systems
-From: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: debian-arm@lists.debian.org, linux-kernel@vger.kernel.org,
-        Wookey <wookey@wookware.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110711131725.GA26907@lit.local.igalia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 25, 2011 at 2:06 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->> DVI monitor), and that EDID data just gets passed-through via the VGA
->> IC. so it's all the same stuff... so what's the damn difference
->> between a system with a VGA monitor and a system with the exact same
->> LCD panel *from* that VGA monitor, ehn? :) Â ok, rhetorical question.
->
-> I'm not convinced it is the same stuff for various reaosns and bits of
-> historical bug fixing and observation.
+On Mon, Jul 11, 2011 at 03:17:25PM +0200, Víctor M. Jáquez L. wrote:
+> On Mon, Jul 11, 2011 at 02:17:38PM +0200, Michal Marek wrote:
+> > On 11.7.2011 12:26, Víctor Manuel Jáquez Leal wrote:
+> > >Instead of generating the tag database each time the target is ran, is better
+> > >just update incrementally the database. It will expend less time.
+> > >
+> > >Signed-off-by: Víctor Manuel Jáquez Leal<vjaquez@igalia.com>
+> > >---
+> > >  scripts/tags.sh |    6 +++++-
+> > >  1 files changed, 5 insertions(+), 1 deletions(-)
+> > >
+> > >diff --git a/scripts/tags.sh b/scripts/tags.sh
+> > >index 75c5d24..6a2fedc 100755
+> > >--- a/scripts/tags.sh
+> > >+++ b/scripts/tags.sh
+> > >@@ -116,7 +116,11 @@ docscope()
+> > >
+> > >  dogtags()
+> > >  {
+> > >-	all_sources | gtags -f -
+> > >+	if global -p; then
+> > >+		global -u
+> > >+	else
+> > >+		all_sources | gtags -f -
+> > >+	fi
+> > 
+> > Will this handle new source files properly?
+> 
+> I ran a quick test and yes, it does.
 
- yehhs... and arnaud's post also provides some more background, which
-includes in some cases intermediate ICs that trash / strip out the
-required info.  classic...
+I installed global and tried it myself:
+1) The first 'make gtags' run prints a rather confusing message (fixable)
+ $ make gtags
+   GEN     gtags
+   global: GTAGS not found.
+ $
+2) A second run indexes the _whole_ tree, including everything under
+arch/. The point of the tags.sh script is that it indexes only files
+relevant to the current architecture. If someone wants to index the
+whole tree, they can run global directly.
 
- http://lists.debian.org/debian-arm/2011/07/msg00054.html
-
->> Â devicetree LCD modules. Â these could still be dynamically loaded,
->> right? Â i mean, it's a bit crazy, but you could have associated with a
->> particular LCD panel a devicetree-compliant dynamic loaded module
->> which had the correct LCD settings (including the required pre-tested
->> hsync and vsync data), right?
->
-> In theory, or passed to the kernel at boot.
-
- he-he that's not user-friendly, alain :)  the context is a
-mass-produced device.
-
-> The obvious long term path I
-> would have thought would have been to move to 'device tree if data present
-> else...' in the various panel drivers. That way there are no sudden bumps
-> in the road for distributors but a device tree data set from any source
-> would trump the data extracted by other means.
-
- ok.  right.  whew.  a migration path.  thank god for that.  no
-terrifying all-convert-to-devicetree-or-die approach, then.  shaaame
-:)
-
- l.
+Michal
