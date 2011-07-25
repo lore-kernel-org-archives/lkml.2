@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751772Ab1GYHzm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 03:55:42 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:41720 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139Ab1GYHzh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 03:55:37 -0400
-Subject: Re: [GIT PULL] Native Linux KVM tool for 3.1
-From: Sasha Levin <levinsasha928@gmail.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Pekka Enberg <penberg@kernel.org>, Anthony Liguori <anthony@codemonkey.ws>,
-        torvalds@linux-foundation.org, mingo@elte.hu,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, gorcunov@gmail.com, asias.hejun@gmail.com,
-        prasadjoshi124@gmail.com
-In-Reply-To: <4E2D1D07.9020009@redhat.com>
-References: <alpine.DEB.2.00.1107242335580.18045@tiger>
-	 <4E2CC489.1090509@codemonkey.ws>
-	 <CAOJsxLH-poY4-wEUPqAa8bzK+1WJ0UYtSuue72RYwcd_D0kx_A@mail.gmail.com>
-	 <4E2D1D07.9020009@redhat.com>
-Content-Type: text/plain; charset="us-ascii"
-Date: Mon, 25 Jul 2011 10:55:03 +0300
-Message-ID: <1311580503.3446.32.camel@lappy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	id S1751207Ab1GYIH1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 04:07:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23370 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750830Ab1GYIHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 04:07:21 -0400
+Date: Mon, 25 Jul 2011 11:07:43 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Shirley Ma <mashirle@us.ibm.com>, davem@davemloft.net,
+        netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next] skbuff: clear tx zero-copy flag
+Message-ID: <20110725080743.GC7840@redhat.com>
+References: <1310195566.25391.6.camel@localhost.localdomain>
+ <20110725004200.GA25794@gondor.apana.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110725004200.GA25794@gondor.apana.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-07-25 at 10:36 +0300, Avi Kivity wrote:
-> On 07/25/2011 10:27 AM, Pekka Enberg wrote:
-> > Hi Anthony,
-> >
-> > On Mon, Jul 25, 2011 at 4:19 AM, Anthony Liguori<anthony@codemonkey.ws>  wrote:
-> > >  lguest already does this and lives in the kernel.
-> >
-> > Does Lguest have SMP, usermode networking, and GUI support?
-> >
+On Mon, Jul 25, 2011 at 08:42:00AM +0800, Herbert Xu wrote:
+> Shirley Ma <mashirle@us.ibm.com> wrote:
+> > 
+> > This patch clears tx zero-copy flag as needed.
+> > 
+> > Sign-off-by: Shirley Ma <xma@us.ibm.com>
 > 
-> IIRC, yes, no, and no.
+> I think we also need to copy and clear this flag on the splice
+> read path as that takes a direct page reference.
+> 
+> I hope there isn't any other path that does this.
+> 
+> Cheers,
 
-Theres no SMP support in lguest.
+When there's a way for an skb to get into the
+host networking stack, (e.g. when tap gains zero copy
+support) we'll need to handle that.
 
--- 
+However macvtap passes an skb directly to the
+lower device, so as long as macvtap is the only user
+of that interface, we are fine I think - there's
+no way for an skb to get from macvtap to splice
+read path I think.
 
-Sasha.
+Right?
 
+> -- 
+> Email: Herbert Xu <herbert@gondor.apana.org.au>
+> Home Page: http://gondor.apana.org.au/~herbert/
+> PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
