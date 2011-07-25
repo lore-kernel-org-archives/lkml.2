@@ -1,63 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770Ab1GYTlA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 15:41:00 -0400
-Received: from mga01.intel.com ([192.55.52.88]:34874 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752478Ab1GYTk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 15:40:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,264,1309762800"; 
-   d="scan'208";a="32134161"
-Subject: Re: [PATCH] iwlagn: check for !priv->txq in
- iwlagn_wait_tx_queue_empty
-From: wwguy <wey-yi.w.guy@intel.com>
-To: Keith Packard <keithp@keithp.com>
-Cc: Intel Linux Wireless <ilw@linux.intel.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1311622702-4807-1-git-send-email-keithp@keithp.com>
-References: <1311622702-4807-1-git-send-email-keithp@keithp.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 25 Jul 2011 12:36:34 -0700
-Message-ID: <1311622594.3431.0.camel@wwguy-ubuntu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1752780Ab1GYTng (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 15:43:36 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:33482 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751623Ab1GYTne convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 15:43:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <1311618747.3526.32.camel@gandalf.stny.rr.com>
+References: <1310982010-13849-1-git-send-email-wangshaoyan.pt@taobao.com>
+	<1311618747.3526.32.camel@gandalf.stny.rr.com>
+Date: Mon, 25 Jul 2011 15:43:32 -0400
+Message-ID: <CACqU3MVJ9Oj4pXH9O_2jnqDVBqKA+AgoWHwP-n2HGD4LU0pMHQ@mail.gmail.com>
+Subject: Re: [PATCH] TRACING: Fix a copmile warning
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: stufever@gmail.com, linux-kernel@vger.kernel.org,
+        Wang Shaoyan <wangshaoyan.pt@taobao.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-07-25 at 12:38 -0700, Keith Packard wrote:
-> If the interface is down, txq is NULL. iwlagn_wait_tx_queue_empty
-> needs to check for this case to avoid dereferencing that pointer.
-> 
-> Signed-off-by: Keith Packard <keithp@keithp.com>
-> ---
-> 
-> This is on top of v3.0
-> 
->  drivers/net/wireless/iwlwifi/iwl-agn-lib.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/net/wireless/iwlwifi/iwl-agn-lib.c b/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
-> index f803fb6..d6ae444 100644
-> --- a/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
-> +++ b/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
-> @@ -1487,6 +1487,9 @@ int iwlagn_wait_tx_queue_empty(struct iwl_priv *priv)
->  	unsigned long now = jiffies;
->  	int ret = 0;
->  
-> +	if (!priv->txq)
-> +		return 0;
-> +
->  	/* waiting for all the tx frames complete might take a while */
->  	for (cnt = 0; cnt < priv->hw_params.max_txq_num; cnt++) {
->  		if (cnt == priv->cmd_queue)
+Hi,
 
-is this against any bug in bugzilla? please include the information in
-description
+On Mon, Jul 25, 2011 at 2:32 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Mon, 2011-07-18 at 17:40 +0800, stufever@gmail.com wrote:
+>> From: Wang Shaoyan <wangshaoyan.pt@taobao.com>
+>>
+>> It's harmless but annyoing.
+>>   kernel/trace/trace_printk.c: In function 'module_trace_bprintk_format_notify':
+>>   kernel/trace/trace_printk.c:52: warning: 'fmt' may be used uninitialized in this function
+>
+> I prefer not to add this patch. Fix gcc. Actually some gcc's do not warn
+> on this, others do. Here's the code that confuses gcc:
+>
+>                tb_fmt = kmalloc(sizeof(*tb_fmt), GFP_KERNEL);
+>                if (tb_fmt)
+>                        fmt = kmalloc(strlen(*iter) + 1, GFP_KERNEL);
+>                if (tb_fmt && fmt) {
+>                        list_add_tail(&tb_fmt->list, &trace_bprintk_fmt_list);
+>                        strcpy(fmt, *iter);
+>                        tb_fmt->fmt = fmt;
+>                        *iter = tb_fmt->fmt;
+>
+>
+> fmt will never be looked at if tb_fmt is NULL, and fmt is initialized if
+> tb_fmt is not NULL.
+>
+Actually, we have a special uninitialized_var(x) macro to handle such
+false positive. From include/linux/compiler-gcc.h:
 
-Thanks
-Wey 
+/*
+ * A trick to suppress uninitialized variable warning without generating any
+ * code
+ */
+#define uninitialized_var(x) x = x
 
+ - Arnaud
+
+> -- Steve
+>
+>>
+>> Cc: Steven Rostedt <rostedt@goodmis.org>
+>> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+>> Cc: Ingo Molnar <mingo@redhat.com>
+>> Signed-off-by: Wang Shaoyan <wangshaoyan.pt@taobao.com>
+>>
+>> ---
+>>  kernel/trace/trace_printk.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/kernel/trace/trace_printk.c b/kernel/trace/trace_printk.c
+>> index 1f06468..1a5fff8 100644
+>> --- a/kernel/trace/trace_printk.c
+>> +++ b/kernel/trace/trace_printk.c
+>> @@ -49,7 +49,7 @@ static
+>>  void hold_module_trace_bprintk_format(const char **start, const char **end)
+>>  {
+>>       const char **iter;
+>> -     char *fmt;
+>> +     char *fmt = NULL;
+>>
+>>       mutex_lock(&btrace_mutex);
+>>       for (iter = start; iter < end; iter++) {
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
