@@ -1,107 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752249Ab1GYLho (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 07:37:44 -0400
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:24516
-	"EHLO AM1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751719Ab1GYLhk (ORCPT
+	id S1752265Ab1GYLlf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 07:41:35 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:48148
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751895Ab1GYLl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 07:37:40 -0400
-X-SpamScore: -24
-X-BigFish: VPS-24(zz9371M1be0L1b0bM542M1432Nzz1202hzz8275bh8275dhz32i2a8h668h839h93fh61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:220.225.38.51;KIP:(null);UIP:(null);IPVD:NLI;H:kcinpunhjhc02.kpit.com;RD:none;EFVD:NLI
-From: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
-To: Wim Van Sebroeck <wim@iguana.be>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        Dajun <dajun.chen@diasemi.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>
-Date: Mon, 25 Jul 2011 17:07:34 +0530
-Subject: RE: [PATCH 07/11] Watchdog: DA9052 watchdog support v1
-Thread-Topic: [PATCH 07/11] Watchdog: DA9052 watchdog support v1
-Thread-Index: AcxCEO7fdZgUxmStRMK8qMnJ3wP1AAIq5hrw
-Message-ID: <E2CAE7F7B064EA49B5CE7EE9A4BB167D18F7404D65@KCINPUNHJCMS01.kpit.com>
-References: <1309872103.960.79.camel@L-0532.kpit.com>
-	 <1310630232.284.16.camel@L-0532.kpit.com>
- <20110714102928.GL3834@infomag.iguana.be>
-In-Reply-To: <20110714102928.GL3834@infomag.iguana.be>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Mon, 25 Jul 2011 07:41:29 -0400
+Date: Mon, 25 Jul 2011 07:41:06 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Olivier Galibert <galibert@pobox.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Alexander Graf <agraf@suse.de>, Pekka Enberg <penberg@kernel.org>,
+        Jan Kiszka <jan.kiszka@web.de>, torvalds@linux-foundation.org,
+        avi@redhat.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, gorcunov@gmail.com,
+        levinsasha928@gmail.com, asias.hejun@gmail.com,
+        prasadjoshi124@gmail.com
+Subject: Re: [GIT PULL] Native Linux KVM tool for 3.1
+Message-ID: <20110725114106.GA11393@infradead.org>
+References: <alpine.DEB.2.00.1107242335580.18045@tiger>
+ <4E2CA6DE.4040900@web.de>
+ <CAOJsxLEkXpDCiMZZnSXnxQ6-PFBwMEv4j5mLRhPZVMKw=LoPSQ@mail.gmail.com>
+ <20110725075305.GA32294@elte.hu>
+ <0EAA5203-D598-4CBA-B8D2-AB371A7689A9@suse.de>
+ <20110725103817.GA21683@infradead.org>
+ <20110725110809.GO28787@elte.hu>
+ <20110725112412.GA1429@infradead.org>
+ <20110725113425.GB2012@dspnet.fr>
 MIME-Version: 1.0
-X-OriginatorOrg: kpitcummins.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110725113425.GB2012@dspnet.fr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p6PBblZ6029890
 
+On Mon, Jul 25, 2011 at 01:34:25PM +0200, Olivier Galibert wrote:
+> You need someone with taste in the loop.  But if you do, "evolved" is
+> always better than "designed before you actually know what you need".
+> 
+> As I'm sure you perfectly know, for the matter.
 
-> -----Original Message-----
-> From: Wim Van Sebroeck [mailto:wim@iguana.be]
-> Sent: Thursday, July 14, 2011 3:59 PM
-> To: Ashish Jangam
-> Cc: linux-kernel@vger.kernel.org; linux-watchdog@vger.kernel.org; Dajun;
-> linaro-dev@lists.linaro.org
-> Subject: Re: [PATCH 07/11] Watchdog: DA9052 watchdog support v1
-> 
-> Hi Ashish, Dajun,
-> 
-> > > This driver adds support for the watchdog functionality provided by the
-> Dialog
-> > > Semiconductor DA9052 PMIC chip.
-> > >
-> > > Signed-off-by: David Dajun Chen <dchen@diasemi.com>
-> > > Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
-> > > ---
-> > If there are no comments then can you ACK this patch?
-> 
-> I remain with my comment of Wed 26 Jan 2011:
-> > The ioctl WDIOC_SETOPTIONS call is not in line with the watchdog API.
-> > the supported options are:
-> > #define WDIOS_DISABLECARD       0x0001  /* Turn off the watchdog timer */
-> > #define WDIOS_ENABLECARD        0x0002  /* Turn on the watchdog timer */
-> > #define WDIOS_TEMPPANIC         0x0004  /* Kernel panic on temperature trip
-> */
-> > Your options are:
-> > #define DA9052_STROBING_FILTER_ENABLE   0x0001
-> > #define DA9052_STROBING_FILTER_DISABLE  0x0002
-> > #define DA9052_SET_STROBING_MODE_MANUAL 0x0004
-> > #define DA9052_SET_STROBING_MODE_AUTO   0x0008
-> >
-> > Please explain what you want to do.
-> 
-> FYI: this is how the code looks now:
-> +       case WDIOC_SETOPTIONS:
-> +               if (get_user(new_value, p))
-> +                       return -EFAULT;
-> +               if (new_value == DA9052_ENABLE || new_value == DA9052_DISABLE)
-> +                       da9052_sm_set_strobing_filter(wdt, new_value);
-> +               else
-> +                       wdt->pwdt->sm_strobe_mode_flag = new_value;
-> +               return 0;
-> 
-> Since the code is still not in line with the watchdog API and since I did not
-> get
-> an answer yet on what you (or Dajun) want to do, there is definitely NO ACK
-> yet.
-> If there is a good reasoning behind your needs, we might conclude that this is
-> indeed
-> worthwhile and extend the API in a proper way. But as it is now, it's not
-> correct.
-If strobe filter is "Enable" (set/reset thru ioctl) then only a new wdt time window is set 
-else if strobe filter is "Disable", new wdt time window is set to a min value or wdt is
-disabled depending upon condition.
-If the logic is complex then I will simplify it.
-> 
-> Kind regards,
-> Wim.
-> 
+Neither is actually helpful.  You reall want reference implementation
+on both sides of an ABI, _and_ documentation.  And yes, usually you'll
+need a few iterations over it.  In theory you can do that in a "tightly
+integrated" enviroment as well, but practice shows simply boilds down
+to commiting the bloody thing.
 
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I'm also not sure why we even bother to focus with this side-line
+discussion.  It's not like the kvm (as in the kernel kvm module)
+developers have written the kvm tools.  It's just another userspace for
+the kvm userspace (the fifth if I count correctly), and so far the
+reference and often only implementation of any new kvm module feature
+is for qemu-kvm.  So no matter where kvm tools lives, if you guys one
+day actually start doing major kvm core features it will still evolve
+discussing them with the main consumer of those interfaces.
