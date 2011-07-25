@@ -1,133 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751565Ab1GYEaw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 00:30:52 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:50791 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864Ab1GYEaq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 00:30:46 -0400
+	id S1751932Ab1GYE7B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 00:59:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751066Ab1GYE6y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 00:58:54 -0400
+Date: Mon, 25 Jul 2011 00:58:52 -0400
+From: Dave Jones <davej@redhat.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: kdevtmpfs oops since yesterdays vfs merge
+Message-ID: <20110725045851.GA11267@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Al Viro <viro@ZenIV.linux.org.uk>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20110724231701.GA1707@redhat.com>
+ <20110724232812.GN24703@ZenIV.linux.org.uk>
+ <20110724234029.GA4881@redhat.com>
+ <20110724235154.GO24703@ZenIV.linux.org.uk>
+ <20110725015324.GA7603@redhat.com>
+ <20110725015612.GB7603@redhat.com>
+ <20110725024444.GP24703@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <CALx5=V_Df+mmRcDbb5dyDGB=eC=gDa3OjbB0oBgo+GDP67npnw@mail.gmail.com>
-References: <20110524183448.GA18511@kroah.com>
-	<4DDC142E.6070003@freemail.hu>
-	<20110525031222.GB14290@haskell.muteddisk.com>
-	<4DDC93D5.9070607@freemail.hu>
-	<4DDDFDA7.6030900@freemail.hu>
-	<4E097A32.1000504@freemail.hu>
-	<BANLkTimG_kWr_YPVMasUr+7+KRFPnnbjNw@mail.gmail.com>
-	<CAL-cBk1L8dgAtP2hMwkL2B-cU76mKaaWib=QVbVKei2DaoB3Dw@mail.gmail.com>
-	<4E1151BD.5010907@freemail.hu>
-	<CALx5=V-YdXY2UCS5UQUBZmQjMCUO7xZCOE-tf-s2MkD+2TXuxQ@mail.gmail.com>
-	<20110707041432.GA62825@haskell.muteddisk.com>
-	<CALx5=V_Df+mmRcDbb5dyDGB=eC=gDa3OjbB0oBgo+GDP67npnw@mail.gmail.com>
-Date: Mon, 25 Jul 2011 12:30:44 +0800
-X-Google-Sender-Auth: B6N9b-7KuHXs5s3lBMXotvGIGvA
-Message-ID: <CALx5=V8ucyiX3iXQgLu2QYLs=YDNUECBbqMiGngYsNJTHQ2VdA@mail.gmail.com>
-Subject: Re: [PATCH, RFC] USBIP protocol documentation
-From: Matt Chen <machen@novell.com>
-To: Matt Chen <machen@novell.com>, "N?meth M?rton" <nm127@freemail.hu>,
-        David Chang <DChang@novell.com>, Greg KH <greg@kroah.com>,
-        Matthew Wilcox <matthew@wil.cx>, Max Vozeler <max@vozeler.com>,
-        Joe Perches <joe@perches.com>, linux-usb@vger.kernel.org,
-        usbip-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110725024444.GP24703@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-The USBIP protocol we maintained is in
+On Mon, Jul 25, 2011 at 03:44:44AM +0100, Al Viro wrote:
 
-http://en.opensuse.org/USBIP
+ > > when it triggers the bug_on(), it's that second nodename that is garbage.
+ > 
+ > Interesting...  The next experiment would be to stick BUG_ON(!req.dev)
+ > into devtmpfs_create_node() right after the assigment to that field.
 
-you guys may have a look or try to modify them as you like.
+couldn't get that to trigger.
 
-2011/7/7 Matt Chen <machen@novell.com>:
-> Hi Matt mooney (just in case of confusing that I am Matt as well),
->
-> 2011/7/7 matt mooney <mfm@muteddisk.com>:
->> On 16:24 Mon 04 Jul     , Matt Chen wrote:
->>> Hi N?meth,
->>>
->>> 2011/7/4 N?meth M?rton <nm127@freemail.hu>:
->>> > Hi David, Matt Chen and Matt Mooney,
->>> >
->>> > it looks like we four are actively dealing with the USBIP protocol documentation.
->>> >
->>> > David, are you working at the same place like Matt Chen? Then you can easily
->>> > see what you two has been done and not working parallel on the same thing.
->>> Actually, David and me (Matt Chen) are working on 2 different part.
->>> 1. Matt Chen : Server side
->>> 2. David Chang : Client side.
->>> Just didn't figure you submitted the protocol document earlier than we do.
->>> We also write a wiki for our code reviewing, protocol, but since all
->>> we are working personally, something we don't sync, that's why I tried
->>> to ask if which part you are not working on or finished, we can work
->>> on it.
->>
->> Hey guys,
->>
->> It seems like you guys all have a handle on this, so I will defer. When the
->> documentation is at a point where it can be submitted, I will send in grammar
->> patches along with possible reorganization suggestions.
->>
->> Is this a public wiki Matt so that you can post a link to it?
-> Recently we are writing in our internal wiki system. We are intended
-> to change to a external wiki pages, such as open SuSE wiki pages. We
-> are working on it right now.
-> But it would take time before it's done. ;-)
->
-> Thanks in advanced.
->> Thanks,
->> mfm
->>
->>> Since you submitted the document, it turned out we follow the format
->>> you've done and do some fix for it.
->>> > I'm currently not actively modifying the USBIP protocol description.
->>> >
->>> > Matt Mooney wanted to restructure the USBIP protocol documentation. Matt, do
->>> > you have anything already done? If yes, maybe it would be good if you could
->>> > send it so David can do the changes on your version. If you haven't worked on
->>> > it then please tell and David can add the necessary modifications he suggested.
->>> I supposed it is Matt Mooney. ~ :)
->>> > Regards,
->>> >
->>> > ? ? ? ?M?rton N?meth
->>> >
->>> > David Chang wrote:
->>> >> Hi N?meth,
->>> >>
->>> >> 2011/6/29 David Chang <dchang@novell.com>:
->>> >>> Hi,
->>> >>>
->>> >>> Thanks for your great effort.
->>> >>> Just a little comment on UNLINK pdu size.
->>> > [...]
->>> >> Would you add this field into your path or should I send another patch
->>> >> to add it?
->>> >
->>> >
->>>
->>>
->>>
->>> --
->>> Thanks ~
->>> Matt Chen
->>>
->>
->
->
->
-> --
-> Thanks ~
-> Matt Chen
->
+ > We couldn't be hit by the lack of barriers here, could we?  Store to
+ > req.dev happens before spin_unlock(&req_lock), so by the time when
+ > that request is seen by loop in devtmpfsd() and passed to handle() it
+ > should be seen - we have grabbed req_lock, found a pointer to req, dropped
+ > req_lock and called handle().  Should've been enough...
+ > 
+ > Might be interesting to print &req from devtmpfs_create_node(), both on
+ > entry and on exit, and print req right before the call of handle()...
 
+Here's latest..
 
+https://s3.amazonaws.com/twitpic/photos/full/355219312.jpg?AWSAccessKeyId=AKIAJF3XCCKACR3QDMOA&Expires=1311570683&Signature=xr3tusulMiV2bIsxux9YNrawUDA%3D
+ 
+apologies for crappy picture, but it's legible at fullsize..
 
---
-Thanks ~
-Matt Chen
+interesting thing here is that the req that causes the oops, I couldn't
+find any call to create_handle for that address, so where devtmpfsd got it
+is a mystery.  The address is curious too, in that it's way off from all the
+reqs created around that time.
+
+I'll add some more printk's to see if I can figure where that's being created.
+
+	Dave
+
