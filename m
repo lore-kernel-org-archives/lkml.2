@@ -1,94 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099Ab1GYNx7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 09:53:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53059 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751269Ab1GYNx4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 09:53:56 -0400
-Message-ID: <4E2D7571.8030108@suse.cz>
-Date: Mon, 25 Jul 2011 15:53:53 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	id S1752054Ab1GYNzj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 09:55:39 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:36900 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751269Ab1GYNzf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 09:55:35 -0400
 MIME-Version: 1.0
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hiromu Yakura <hiromu1996@gmail.com>
-Subject: Re: [PATCH] xconfig: merge code path to conf_write()
-References: <1306260978-29437-1-git-send-email-lacombar@gmail.com> <20110525131854.GF2276@sepie.suse.cz>
-In-Reply-To: <20110525131854.GF2276@sepie.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Mon, 25 Jul 2011 15:55:34 +0200
+Message-ID: <CAC+thW0Cx4pQDeZ2ZJfvFMfv23ExDmS5LDM8_-1Nz23t1TpJcA@mail.gmail.com>
+Subject: power: bq20z75: problem with optional battery detect gpio feature
+From: Andrea Galbusera <gizero@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25.5.2011 15:18, Michal Marek wrote:
-> The following patch avoids the data loss if the configuration cannot be
-> saved.
->
-> Michal
->
-> Subject: [PATCH] xconfig: Abort close if configuration cannot be saved
->
-> Give the user an opportunity to fix the error or save the configuration
-> under a different path.
->
-> Reported-by: Hiromu Yakura<hiromu1996@gmail.com>
-> Signed-off-by: Michal Marek<mmarek@suse.cz>
+Is the in-object feature really optional?
+If battery_detect field in my bq20z75_platform_data structure is not
+explicitly set, I suspect the driver ends up requesting an irq for the
+GPIO number 0. This look indesirable.
 
-I completely forgot about this patch. It's applied now and will be in 3.1.
+Here is the relevant code snip form bq20z75_probe():
 
-Michal
->
-> diff --git a/scripts/kconfig/qconf.cc b/scripts/kconfig/qconf.cc
-> index c2796b8..92bf576 100644
-> --- a/scripts/kconfig/qconf.cc
-> +++ b/scripts/kconfig/qconf.cc
-> @@ -1478,10 +1478,13 @@ void ConfigMainWindow::loadConfig(void)
->   	ConfigView::updateListAll();
->   }
->
-> -void ConfigMainWindow::saveConfig(void)
-> +bool ConfigMainWindow::saveConfig(void)
->   {
-> -	if (conf_write(NULL))
-> +	if (conf_write(NULL)) {
->   		QMessageBox::information(this, "qconf", _("Unable to save configuration!"));
-> +		return false;
-> +	}
-> +	return true;
->   }
->
->   void ConfigMainWindow::saveConfigAs(void)
-> @@ -1642,7 +1645,11 @@ void ConfigMainWindow::closeEvent(QCloseEvent* e)
->   	mb.setButtonText(QMessageBox::Cancel, _("Cancel Exit"));
->   	switch (mb.exec()) {
->   	case QMessageBox::Yes:
-> -		saveConfig();
-> +		if (saveConfig())
-> +			e->accept();
-> +		else
-> +			e->ignore();
-> +		break;
->   	case QMessageBox::No:
->   		e->accept();
->   		break;
-> diff --git a/scripts/kconfig/qconf.h b/scripts/kconfig/qconf.h
-> index 91677d9..3715b3e 100644
-> --- a/scripts/kconfig/qconf.h
-> +++ b/scripts/kconfig/qconf.h
-> @@ -311,7 +311,7 @@ public slots:
->   	void listFocusChanged(void);
->   	void goBack(void);
->   	void loadConfig(void);
-> -	void saveConfig(void);
-> +	bool saveConfig(void);
->   	void saveConfigAs(void);
->   	void searchConfig(void);
->   	void showSingleView(void);
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+if (pdata) {
+	bq20z75_device->gpio_detect =
+		gpio_is_valid(pdata->battery_detect);    // GPIO 0 _IS_ a valid gpio !!
+	bq20z75_device->pdata = pdata;
+}
 
+[...]
+
+if (!bq20z75_device->gpio_detect)
+	goto skip_gpio;
+
+[...]
+
+irq = gpio_to_irq(pdata->battery_detect);
+
+[...]
+
+rc = request_irq(irq, bq20z75_irq,
+	IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
+	dev_name(&client->dev), &bq20z75_device->power_supply);
+
+
+I cannot find in gpio related headers any sort of "GPIO_INVALID"
+symbol to explicitly declare that I don't want this feature. I'm
+temporarily setting it to ARCH_NR_GPIOS but I believe we need to
+disambiguate GPIO number 0 from "disable feature".
+Correct?
+
+Regards,
+Andrea
