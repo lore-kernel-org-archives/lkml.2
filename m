@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638Ab1GYUUC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 16:20:02 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:45010 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752360Ab1GYUUA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 16:20:00 -0400
-X-Authority-Analysis: v=1.1 cv=s3eDhkhcaTLnj7IEXy8aaXUiY7FbET0mf+/2Xe0elbc= c=1 sm=0 a=wp_X8QvuP7UA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=M2UQDEfH0t9ZnqbMOCEA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] TRACING: Fix a copmile warning
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: stufever@gmail.com, linux-kernel@vger.kernel.org,
-        Wang Shaoyan <wangshaoyan.pt@taobao.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-In-Reply-To: <CACqU3MVJ9Oj4pXH9O_2jnqDVBqKA+AgoWHwP-n2HGD4LU0pMHQ@mail.gmail.com>
-References: <1310982010-13849-1-git-send-email-wangshaoyan.pt@taobao.com>
-	 <1311618747.3526.32.camel@gandalf.stny.rr.com>
-	 <CACqU3MVJ9Oj4pXH9O_2jnqDVBqKA+AgoWHwP-n2HGD4LU0pMHQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 25 Jul 2011 16:19:57 -0400
-Message-ID: <1311625197.3526.35.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	id S1752782Ab1GYUUc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 16:20:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31861 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752580Ab1GYUUZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 16:20:25 -0400
+From: Johannes Weiner <jweiner@redhat.com>
+To: linux-mm@kvack.org
+Cc: Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@infradead.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
+        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: [patch 1/5] mm: page_alloc: increase __GFP_BITS_SHIFT to include __GFP_OTHER_NODE
+Date: Mon, 25 Jul 2011 22:19:15 +0200
+Message-Id: <1311625159-13771-2-git-send-email-jweiner@redhat.com>
+In-Reply-To: <1311625159-13771-1-git-send-email-jweiner@redhat.com>
+References: <1311625159-13771-1-git-send-email-jweiner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-07-25 at 15:43 -0400, Arnaud Lacombe wrote:
+From: Johannes Weiner <hannes@cmpxchg.org>
 
-> Actually, we have a special uninitialized_var(x) macro to handle such
-> false positive. From include/linux/compiler-gcc.h:
-> 
-> /*
->  * A trick to suppress uninitialized variable warning without generating any
->  * code
->  */
-> #define uninitialized_var(x) x = x
+__GFP_OTHER_NODE is used for NUMA allocations on behalf of other
+nodes.  It's supposed to be passed through from the page allocator to
+zone_statistics(), but it never gets there as gfp_allowed_mask is not
+wide enough and masks out the flag early in the allocation path.
 
-I'm aware of that too, but I think that is inappropriate as well. As I
-said, some versions of gcc report it, others don't. Seems that gcc 4.6.0
-says this is an error where 4.5.1 does not (I just tried both). Looks to
-me like a regression in gcc. Why not fix it there?
+The result is an accounting glitch where successful NUMA allocations
+by-agent are not properly attributed as local.
 
--- Steve
+Increase __GFP_BITS_SHIFT so that it includes __GFP_OTHER_NODE.
 
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ include/linux/gfp.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+index cb40892..3a76faf 100644
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -92,7 +92,7 @@ struct vm_area_struct;
+  */
+ #define __GFP_NOTRACK_FALSE_POSITIVE (__GFP_NOTRACK)
+ 
+-#define __GFP_BITS_SHIFT 23	/* Room for 23 __GFP_FOO bits */
++#define __GFP_BITS_SHIFT 24	/* Room for N __GFP_FOO bits */
+ #define __GFP_BITS_MASK ((__force gfp_t)((1 << __GFP_BITS_SHIFT) - 1))
+ 
+ /* This equals 0, but use constants in case they ever change */
+-- 
+1.7.6
 
