@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752901Ab1GYVBz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 17:01:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54446 "EHLO mx1.redhat.com"
+	id S1752943Ab1GYVDc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 17:03:32 -0400
+Received: from mga09.intel.com ([134.134.136.24]:61054 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752012Ab1GYVBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 17:01:53 -0400
-Date: Mon, 25 Jul 2011 23:01:48 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: thp: disable defrag for page faults per default
-Message-ID: <20110725210148.GP18528@redhat.com>
-References: <1311626321-14364-1-git-send-email-jweiner@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311626321-14364-1-git-send-email-jweiner@redhat.com>
+	id S1752463Ab1GYVDa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 17:03:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,264,1309762800"; 
+   d="scan'208";a="29954522"
+Subject: Re: [PATCH] iwlagn: check for !priv->txq in
+ iwlagn_wait_tx_queue_empty
+From: wwguy <wey-yi.w.guy@intel.com>
+To: Keith Packard <keithp@keithp.com>
+Cc: Intel Linux Wireless <ilw@linux.intel.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <yunvcuqunzd.fsf@aiko.keithp.com>
+References: <1311622702-4807-1-git-send-email-keithp@keithp.com>
+	 <1311621715.5579.138.camel@wwguy-huron>  <yunvcuqunzd.fsf@aiko.keithp.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 25 Jul 2011 13:59:07 -0700
+Message-ID: <1311627547.13973.2.camel@wwguy-ubuntu>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Johannes,
-
-On Mon, Jul 25, 2011 at 10:38:41PM +0200, Johannes Weiner wrote:
-> With defrag mode enabled per default, huge page allocations pass
-> __GFP_WAIT and may drop compaction into sync-mode where they wait for
-> pages under writeback.
+On Mon, 2011-07-25 at 13:03 -0700, Keith Packard wrote:
+> On Mon, 25 Jul 2011 12:21:55 -0700, "Guy, Wey-Yi" <wey-yi.w.guy@intel.com> wrote:
 > 
-> I observe applications hang for several minutes(!) when they fault in
-> huge pages and compaction starts to wait on in-"flight" USB stick IO.
+> > but why you need it?, "start device" call will fail if can not allocate
+> > priv->txq
 > 
-> This patch disables defrag mode for page fault allocations unless the
-> VMA is madvised explicitely.  Khugepaged will continue to allocate
-> with __GFP_WAIT per default, but stalls are not a problem of
-> application responsiveness there.
+> The device is down, so start_device was never called. At least, that's
+> my assumption -- I've got the wireless device 'disabled' in
+> NetworkManager.
+> 
+the iwlagn_wait_tx_queue_empty() function only can be call from either
+"flush" operation or from debugfs. I agree it is a problem if call from
+debugfs. did you actually see the problem when it is not from debugfs().
 
-Allocating memory without __GFP_WAIT means THP it's like disabled
-except when there's plenty of memory free after boot, even trying with
-__GFP_WAIT and without compaction would be better than that. We don't
-want to modify all apps, just a few special ones should have the
-madvise like qemu-kvm for example (for embedded in case there's
-embedded virt).
+there is a recent patch in mac80211 to make sure do not call "flush" is
+not needed.
 
-If you want to make compaction and migrate run without ever dropping
-into sync-mode (or aborting if we've to wait on too many pages) I
-think it'd be a whole lot better.
+Thanks
+Wey
 
-If you could show the SYSRQ+T during the minute wait it'd be
-interesting too.
 
-There was also some compaction bug that would lead to minutes of stall
-in congestion_wait, those are fixed in current kernels.
