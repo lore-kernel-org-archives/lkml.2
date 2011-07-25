@@ -1,72 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751397Ab1GYE3X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 00:29:23 -0400
-Received: from home.keithp.com ([63.227.221.253]:52601 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750798Ab1GYE3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 00:29:17 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Kirill Smelkov <kirr@mns.spb.ru>, Chris Wilson <chris@chris-wilson.co.uk>,
-        Luke-Jr <luke@dashjr.org>, intel-gfx@lists.freedesktop.org,
-        LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Ray Lee <ray-lk@madrabbit.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Florian Mickler <florian@mickler.org>
-Subject: Re: Major 2.6.38 / 2.6.39 / 3.0 regression ignored?
-In-Reply-To: <alpine.DEB.2.00.1107231847520.4843@tiger>
-References: <201105201306.31204.luke@dashjr.org> <BANLkTimOqhNEsBEg6f=nMiMJqYGNyFJmeQ@mail.gmail.com> <013811$4lfs6@fmsmga002.fm.intel.com> <201105211123.56053.luke@dashjr.org> <aefc95$1usaq@orsmga001.jf.intel.com> <20110528131920.GA10467@tugrik.mns.mnsspb.ru> <20110712171706.GA18414@tugrik.mns.mnsspb.ru> <CAOJsxLEz-fPnb9oYnLMk9UbGqgsfm-g1d2yH=TrEiEk7HvyQzA@mail.gmail.com> <20110722110806.GA29757@tugrik.mns.mnsspb.ru> <yun7h7atcty.fsf@aiko.keithp.com> <20110722202336.GA14375@tugrik.mns.mnsspb.ru> <yunsjpyrqf7.fsf@aiko.keithp.com> <alpine.DEB.2.00.1107231847520.4843@tiger>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Sun, 24 Jul 2011 21:29:07 -0700
-Message-ID: <yun4o2bj84s.fsf@aiko.keithp.com>
+	id S1751565Ab1GYEaw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 00:30:52 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:50791 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750864Ab1GYEaq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 00:30:46 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+In-Reply-To: <CALx5=V_Df+mmRcDbb5dyDGB=eC=gDa3OjbB0oBgo+GDP67npnw@mail.gmail.com>
+References: <20110524183448.GA18511@kroah.com>
+	<4DDC142E.6070003@freemail.hu>
+	<20110525031222.GB14290@haskell.muteddisk.com>
+	<4DDC93D5.9070607@freemail.hu>
+	<4DDDFDA7.6030900@freemail.hu>
+	<4E097A32.1000504@freemail.hu>
+	<BANLkTimG_kWr_YPVMasUr+7+KRFPnnbjNw@mail.gmail.com>
+	<CAL-cBk1L8dgAtP2hMwkL2B-cU76mKaaWib=QVbVKei2DaoB3Dw@mail.gmail.com>
+	<4E1151BD.5010907@freemail.hu>
+	<CALx5=V-YdXY2UCS5UQUBZmQjMCUO7xZCOE-tf-s2MkD+2TXuxQ@mail.gmail.com>
+	<20110707041432.GA62825@haskell.muteddisk.com>
+	<CALx5=V_Df+mmRcDbb5dyDGB=eC=gDa3OjbB0oBgo+GDP67npnw@mail.gmail.com>
+Date: Mon, 25 Jul 2011 12:30:44 +0800
+X-Google-Sender-Auth: B6N9b-7KuHXs5s3lBMXotvGIGvA
+Message-ID: <CALx5=V8ucyiX3iXQgLu2QYLs=YDNUECBbqMiGngYsNJTHQ2VdA@mail.gmail.com>
+Subject: Re: [PATCH, RFC] USBIP protocol documentation
+From: Matt Chen <machen@novell.com>
+To: Matt Chen <machen@novell.com>, "N?meth M?rton" <nm127@freemail.hu>,
+        David Chang <DChang@novell.com>, Greg KH <greg@kroah.com>,
+        Matthew Wilcox <matthew@wil.cx>, Max Vozeler <max@vozeler.com>,
+        Joe Perches <joe@perches.com>, linux-usb@vger.kernel.org,
+        usbip-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+Hi all,
+The USBIP protocol we maintained is in
 
-On Sat, 23 Jul 2011 18:55:48 +0300 (EEST), Pekka Enberg <penberg@kernel.org=
-> wrote:
+http://en.opensuse.org/USBIP
 
-> I know I sound like a broken record but I really wish you i915 devs were=
-=20
-> little more eager to revert broken patches early rather than late. I mean=
-,=20
-> this particular breakage was already bisected but nobody said or=20
-> did anything - and it's not like it's the first time either!
+you guys may have a look or try to modify them as you like.
 
-We've switched processes starting with 2.6.39 and I think we're doing
-better in this regard. For this particular issue, the regression came
-with 2.6.38, and the revert was too large for me to consider merging
-just before 3.0 shipped -- I knew reverting it *would* cause problems
-for anyone using UMS on newer hardware.
+2011/7/7 Matt Chen <machen@novell.com>:
+> Hi Matt mooney (just in case of confusing that I am Matt as well),
+>
+> 2011/7/7 matt mooney <mfm@muteddisk.com>:
+>> On 16:24 Mon 04 Jul     , Matt Chen wrote:
+>>> Hi N?meth,
+>>>
+>>> 2011/7/4 N?meth M?rton <nm127@freemail.hu>:
+>>> > Hi David, Matt Chen and Matt Mooney,
+>>> >
+>>> > it looks like we four are actively dealing with the USBIP protocol documentation.
+>>> >
+>>> > David, are you working at the same place like Matt Chen? Then you can easily
+>>> > see what you two has been done and not working parallel on the same thing.
+>>> Actually, David and me (Matt Chen) are working on 2 different part.
+>>> 1. Matt Chen : Server side
+>>> 2. David Chang : Client side.
+>>> Just didn't figure you submitted the protocol document earlier than we do.
+>>> We also write a wiki for our code reviewing, protocol, but since all
+>>> we are working personally, something we don't sync, that's why I tried
+>>> to ask if which part you are not working on or finished, we can work
+>>> on it.
+>>
+>> Hey guys,
+>>
+>> It seems like you guys all have a handle on this, so I will defer. When the
+>> documentation is at a point where it can be submitted, I will send in grammar
+>> patches along with possible reorganization suggestions.
+>>
+>> Is this a public wiki Matt so that you can post a link to it?
+> Recently we are writing in our internal wiki system. We are intended
+> to change to a external wiki pages, such as open SuSE wiki pages. We
+> are working on it right now.
+> But it would take time before it's done. ;-)
+>
+> Thanks in advanced.
+>> Thanks,
+>> mfm
+>>
+>>> Since you submitted the document, it turned out we follow the format
+>>> you've done and do some fix for it.
+>>> > I'm currently not actively modifying the USBIP protocol description.
+>>> >
+>>> > Matt Mooney wanted to restructure the USBIP protocol documentation. Matt, do
+>>> > you have anything already done? If yes, maybe it would be good if you could
+>>> > send it so David can do the changes on your version. If you haven't worked on
+>>> > it then please tell and David can add the necessary modifications he suggested.
+>>> I supposed it is Matt Mooney. ~ :)
+>>> > Regards,
+>>> >
+>>> > ? ? ? ?M?rton N?meth
+>>> >
+>>> > David Chang wrote:
+>>> >> Hi N?meth,
+>>> >>
+>>> >> 2011/6/29 David Chang <dchang@novell.com>:
+>>> >>> Hi,
+>>> >>>
+>>> >>> Thanks for your great effort.
+>>> >>> Just a little comment on UNLINK pdu size.
+>>> > [...]
+>>> >> Would you add this field into your path or should I send another patch
+>>> >> to add it?
+>>> >
+>>> >
+>>>
+>>>
+>>>
+>>> --
+>>> Thanks ~
+>>> Matt Chen
+>>>
+>>
+>
+>
+>
+> --
+> Thanks ~
+> Matt Chen
+>
 
-> I suppose I need to bribe Linus somehow to be more strict with you
-> folks.
 
-He nicely delivered the message for you a few months ago in person.
 
-In any case, I'm hoping that my smaller fix will resolve the problem and
-also not cause regressions for other users.
-
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iD8DBQFOLPETQp8BWwlsTdMRAmJtAKDKjDF7qKcLn9qNYlwp8HMUXyXz+QCeN60Z
-7sG5FdKvPDUtP2PdZfEy4Cs=
-=n82z
------END PGP SIGNATURE-----
---=-=-=--
+--
+Thanks ~
+Matt Chen
