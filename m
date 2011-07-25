@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556Ab1GYUTt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 16:19:49 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:54846 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752314Ab1GYUTr (ORCPT
+	id S1752638Ab1GYUUC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 16:20:02 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:45010 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752360Ab1GYUUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 16:19:47 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: NamJae Jeon <linkinjeon@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: FAT : FAT16 support maximum 4GB file/vol size like WinXP or 7.
-References: <CAKYAXd-Tg7hXy3zHRtXotDq3wYV8f=v3Py65xn5ccg6KU2gXbw@mail.gmail.com>
-Date: Tue, 26 Jul 2011 05:19:41 +0900
-In-Reply-To: <CAKYAXd-Tg7hXy3zHRtXotDq3wYV8f=v3Py65xn5ccg6KU2gXbw@mail.gmail.com>
-	(NamJae Jeon's message of "Sun, 24 Jul 2011 22:08:45 +0900")
-Message-ID: <87k4b6kt9e.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 25 Jul 2011 16:20:00 -0400
+X-Authority-Analysis: v=1.1 cv=s3eDhkhcaTLnj7IEXy8aaXUiY7FbET0mf+/2Xe0elbc= c=1 sm=0 a=wp_X8QvuP7UA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=M2UQDEfH0t9ZnqbMOCEA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] TRACING: Fix a copmile warning
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: stufever@gmail.com, linux-kernel@vger.kernel.org,
+        Wang Shaoyan <wangshaoyan.pt@taobao.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+In-Reply-To: <CACqU3MVJ9Oj4pXH9O_2jnqDVBqKA+AgoWHwP-n2HGD4LU0pMHQ@mail.gmail.com>
+References: <1310982010-13849-1-git-send-email-wangshaoyan.pt@taobao.com>
+	 <1311618747.3526.32.camel@gandalf.stny.rr.com>
+	 <CACqU3MVJ9Oj4pXH9O_2jnqDVBqKA+AgoWHwP-n2HGD4LU0pMHQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 25 Jul 2011 16:19:57 -0400
+Message-ID: <1311625197.3526.35.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NamJae Jeon <linkinjeon@gmail.com> writes:
+On Mon, 2011-07-25 at 15:43 -0400, Arnaud Lacombe wrote:
 
-> Hello Hirofumi
->
-> Win NT/XP/7 increased the maximum cluster size to 64KB, and file/vol
-> size increased 4GB also.
->
-> Although increasing , the file size of  linux FAT is still limited at 2GB.
->
-> I found that it is limited by sb->s_maxbytes(0x7fffffff) when
-> partition is formatted by FAT16.
+> Actually, we have a special uninitialized_var(x) macro to handle such
+> false positive. From include/linux/compiler-gcc.h:
+> 
+> /*
+>  * A trick to suppress uninitialized variable warning without generating any
+>  * code
+>  */
+> #define uninitialized_var(x) x = x
 
-Yes. Now, only FAT32 allows it.
+I'm aware of that too, but I think that is inappropriate as well. As I
+said, some versions of gcc report it, others don't. Seems that gcc 4.6.0
+says this is an error where 4.5.1 does not (I just tried both). Looks to
+me like a regression in gcc. Why not fix it there?
 
-> I think that sb->s_maxbytes in fill_super should be set to 0xffffffff
-> like Fat32.
->
-> I want to know your opinion.
+-- Steve
 
-In my knowledge, Windows was limiting it as 2GB intentionally for
-compatibility reason.
 
-If Windows changed mind, I think it's good that we allow it too for 64KB
-cluster. BTW, you can select FAT16 with 64KB on Windows?
-
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
