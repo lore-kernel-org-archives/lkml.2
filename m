@@ -1,66 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929Ab1GYKNW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 06:13:22 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:33852 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453Ab1GYKNQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 06:13:16 -0400
+	id S1751802Ab1GYKRB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 06:17:01 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:35018 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751074Ab1GYKQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 06:16:56 -0400
+Date: Mon, 25 Jul 2011 12:16:07 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Alexander Graf <agraf@suse.de>
+Cc: Pekka Enberg <penberg@kernel.org>, Jan Kiszka <jan.kiszka@web.de>,
+        torvalds@linux-foundation.org, avi@redhat.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, gorcunov@gmail.com, levinsasha928@gmail.com,
+        asias.hejun@gmail.com, prasadjoshi124@gmail.com
+Subject: Re: [GIT PULL] Native Linux KVM tool for 3.1
+Message-ID: <20110725101607.GI28787@elte.hu>
+References: <alpine.DEB.2.00.1107242335580.18045@tiger>
+ <4E2CA6DE.4040900@web.de>
+ <CAOJsxLEkXpDCiMZZnSXnxQ6-PFBwMEv4j5mLRhPZVMKw=LoPSQ@mail.gmail.com>
+ <20110725075305.GA32294@elte.hu>
+ <0EAA5203-D598-4CBA-B8D2-AB371A7689A9@suse.de>
+ <CAOJsxLHGgpNrHpfnHzD-aOJakE9q_4ym51_AYQHaj+waEZtSuw@mail.gmail.com>
+ <ED2ECD82-2B14-45FF-AA61-AB26B377B626@suse.de>
+ <CAOJsxLFDzSg55u92b6Qgvqn1yjaShYG_Bgdkzy19aBrzxo7FqA@mail.gmail.com>
+ <20110725092656.GD28787@elte.hu>
+ <68C2AB77-AA91-4B21-A321-2DB4EF8121C1@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <m1r5n7ln0l.fsf@fess.ebiederm.org>
-References: <5f6c52c61003241920i6b3eaaf7k946f67d1a6f9e384@mail.gmail.com>
-	<m1r5n7ln0l.fsf@fess.ebiederm.org>
-Date: Mon, 25 Jul 2011 18:13:16 +0800
-Message-ID: <CAKdQVUZMC0eaeqev=tAbS2myHJOA1KJt4r8TVMz6=yQeDpUpZQ@mail.gmail.com>
-Subject: Re: x86_64 virtual memory map
-From: Bob Zhang <zhanglinbao@gmail.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: hayfeng Lee <omycle@gmail.com>, ak@linux.intel.com,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Bob Zhang <2004.zhang@gmail.com>, zhanglinbao@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <68C2AB77-AA91-4B21-A321-2DB4EF8121C1@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-thanks in advanced!
 
-I searched this question , so I directly reply to this mail.
+* Alexander Graf <agraf@suse.de> wrote:
 
-1, for x86_64 machine ,for example ,HP's proliant machine.
-from the kernel point of view , what is the max physical ram size ?
-if I install 2TB physical memory(I mean physical RAM) , can linux
-kernel recognize 2TB physical memory ?  from mm.txt , it seems that
-physical ram size should be 64TB.
+> > In fact one of the problems i see with Qemu is that Qemu had to 
+> > make many compromises to support Windows and other weird 
+> > platforms that i'm (and i'd claim most other Linux kernel 
+> > developers) are personally not interested in.
+> 
+> It's what makes it so powerful. [...]
 
-2,
-from mm.txt :(http://lxr.linux.no/linux+v2.6.39/Documentation/x86/x86_64/mm.txt
-from latest 2.6.39.
+To me and Pekka that is what made Qemu unhackable.
 
-I am a little confused .
-above said that :
-ffff880000000000 - ffffc7ffffffffff (=64 TB) direct mapping of all phys. memory
-10ffffc80000000000 - ffffc8ffffffffff (=40 bits) hole
-11ffffc90000000000 - ffffe8ffffffffff (=45 bits) vmalloc/ioremap space  :32TB
-ffffea0000000000 - ffffeaffffffffff (=40 bits) virtual memory map (1TB)
-from this , we can know ,we can used max 64TB physical memory(physical
-RAM).  vmalloc/ioremap space :32TB . but why tell us 1TB virtual
-memory map ?  if the address that  vmalloc allocated are the address
-that we can use , why say like this ? I am puzzled.
-for example ,for 32bit kernel .vmalloc() range
+Really, i'm not sure why you are arguing here. We are not trying to 
+merge tools/qemu/ upstream. We are trying to merge a Linux-only 
+utility that lives in the kernel tree today and which we are actively 
+using and developing.
 
-and in the end of mm.txt , it says :
->>Current X86-64 implementations only support 40 bits of address space,
- >> 27but we support up to 46 bits. This expands into MBZ space in the
->>page tables.
-so this 40bit(1TB) is responding to virtual memory map(1TB) ?
+> [...] Adding a new architecture for KVM for example is as easy as 
+> only implementing the CPU. All device emulation is already there. 
+> If you want something Linux only, lguest would've been enough, no?
 
-3,  if I installed 64TB physical memory (RAM) , but linux kernel only
-support 1TB address space , what should I do next ?
+That's a rather bizarre argument, we were pretty happy with the 
+design of the KVM host side, what we wanted to improve was user-space 
+tooling.
 
-4 , it seems that MBZ can support up to 256TB ,but who can tell how to
-expand address space by MBZ ?
-thanks very much!
+With lguest we'd have to write a new host implementation in essence 
+...
 
--Bob
+> > [...]
+> >
+> > tools/kvm/ does less and in my experience does it better - is 
+> > that such a surprising thing?
+>
+> [...] 
+> 
+> > So it was a no brainer for me to pull it into -tip.
+> 
+> The thing I don't agree with is that it should live in the kernel 
+> tree.
+
+FYI, tools/kvm/ *already* lives in the kernel tree - that is how it's 
+developed and used and it also shares code with the kernel.
+
+Thanks,
+
+	Ingo
