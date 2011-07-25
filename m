@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752086Ab1GYOBe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 10:01:34 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:40057 "EHLO
+	id S1752137Ab1GYOCg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 10:02:36 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:57467 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751372Ab1GYOBd (ORCPT
+	with ESMTP id S1751557Ab1GYOCd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 10:01:33 -0400
-X-Authority-Analysis: v=1.1 cv=sbbt6Wn8j+VvNVI1Ftt/uHhinWyuFt+R57MN9Ty2Tys= c=1 sm=0 a=FR6zTIM_aIIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=MrVEkP_1E7Cya8FaWqAA:9 a=VPBv-g9cLLsIAbY0nb8A:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Mon, 25 Jul 2011 10:02:33 -0400
+X-Authority-Analysis: v=1.1 cv=YhhhcVvq/Bf3xBNEvzTEV9JHGW2mXul7kEbaqsyQnMQ= c=1 sm=0 a=IpAmYfIOPbMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=1XWaLZrsAAAA:8 a=hFEfRwvsN7kKOvoysmMA:9 a=PUjeQqilurYA:10 a=UTB_XpHje0EA:10 a=PNi3dE7MG_dqs0V-:21 a=zp1aArP8PYXdgwph:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 3/4] trace-cmd: Handle opcode parsing error
+Subject: Re: [PATCH 4/4] trace-cmd: Support '+' opcode in print format
 From: Steven Rostedt <rostedt@goodmis.org>
 To: Vaibhav Nagarnaik <vnagarnaik@google.com>
 Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
         linux-kernel@vger.kernel.org
-In-Reply-To: <1310785241-3799-3-git-send-email-vnagarnaik@google.com>
+In-Reply-To: <1310785241-3799-4-git-send-email-vnagarnaik@google.com>
 References: <1310785241-3799-1-git-send-email-vnagarnaik@google.com>
-	 <1310785241-3799-3-git-send-email-vnagarnaik@google.com>
+	 <1310785241-3799-4-git-send-email-vnagarnaik@google.com>
 Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 25 Jul 2011 10:01:31 -0400
-Message-ID: <1311602491.3526.16.camel@gandalf.stny.rr.com>
+Date: Mon, 25 Jul 2011 10:02:32 -0400
+Message-ID: <1311602552.3526.17.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
@@ -29,38 +29,41 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Fri, 2011-07-15 at 20:00 -0700, Vaibhav Nagarnaik wrote:
->  
->  /* Note, *tok does not get freed, but will most likely be saved */
-> @@ -1706,7 +1706,10 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
->  		arg->op.op = token;
->  		arg->op.left = left;
->  
-> -		set_op_prio(arg);
-> +		if (-1 == set_op_prio(arg)) {
+> The '+' opcode is not supported in the arguments for the print format.
+> This patch adds support for it.
 
-I'm fine with the patch up to here. I understand the constant first
-compare, but it doesn't make sense here. Either use:
-
-	if (set_op_prio(arg) < 0) ...
- or
-	if (set_op_prio(arg) == -1)...
-
-
-The reason the -1 == doesn't make sense is because:
-
-	if (set_op_proi(arg) = -1)
-
-would fail too.
-
-And it is much easier to read.
+Thanks! This was on my todo list.
 
 -- Steve
 
-> +			event->flags |= EVENT_FL_FAILED;
-> +			goto out_free;
-> +		}
->  
->  		type = read_token_item(&token);
->  		*tok = token;
+> 
+> Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+> ---
+>  parse-events.c |   12 ++++++++++++
+>  1 files changed, 12 insertions(+), 0 deletions(-)
+> 
+> diff --git a/parse-events.c b/parse-events.c
+> index 068c77f..2e39415 100644
+> --- a/parse-events.c
+> +++ b/parse-events.c
+> @@ -2033,6 +2033,18 @@ static int arg_num_eval(struct print_arg *arg, long long *val)
+>  				break;
+>  			*val = left - right;
+>  			break;
+> +		case '+':
+> +			if (arg->op.left->type == PRINT_NULL)
+> +				left = 0;
+> +			else
+> +				ret = arg_num_eval(arg->op.left, &left);
+> +			if (!ret)
+> +				break;
+> +			ret = arg_num_eval(arg->op.right, &right);
+> +			if (!ret)
+> +				break;
+> +			*val = left + right;
+> +			break;
+>  		default:
+>  			do_warning("unknown op '%s'", arg->op.op);
+>  			ret = 0;
 
 
