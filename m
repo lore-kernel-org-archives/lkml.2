@@ -1,120 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134Ab1GYLGu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 07:06:50 -0400
-Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:60925 "EHLO
-	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751627Ab1GYLGl (ORCPT
+	id S1752153Ab1GYLHt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 07:07:49 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:11245
+	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751627Ab1GYLHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 07:06:41 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4E2D4E3B.4050407@cam.ac.uk>
-Date: Mon, 25 Jul 2011 12:06:35 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
+	Mon, 25 Jul 2011 07:07:43 -0400
+X-SpamScore: -13
+X-BigFish: VPS-13(zz9371Mc85fhc85dh1432N98dKzz1202hzzz32i668h839h34h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LOVYS4-01-0HN-02
+X-M-MSG: 
+Date: Mon, 25 Jul 2011 13:04:46 +0200
+From: Hans Rosenfeld <hans.rosenfeld@amd.com>
+To: Andrew Lutomirski <luto@mit.edu>
+CC: Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        x86 <x86@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>, Avi Kivity <avi@redhat.com>
+Subject: Re: [RFC] syscall calling convention, stts/clts, and xstate latency
+Message-ID: <20110725110446.GD353@escobedo.osrc.amd.com>
+References: <CAObL_7GCDsfXWRJgkNk7c44GNF0JhQPAH_P0WiYHK7QUX1Bcaw@mail.gmail.com>
+ <20110724211526.GA6785@elte.hu>
+ <CAObL_7H1j1cewgWP6Jmkw_H9dZVh1kxRGgTLa+ju=ns4gYxMdA@mail.gmail.com>
+ <20110725063836.GC694@elte.hu>
+ <CAObL_7G-afftZD7ULhbyTqBsuZCs03H-HS-n8tqRC=-Q3Bs9Eg@mail.gmail.com>
 MIME-Version: 1.0
-To: Boaz Harrosh <bharrosh@panasas.com>
-CC: linux-kernel@vger.kernel.org, randy.dunlap@oracle.com, airlied@linux.ie,
-        dri-devel@lists.freedesktop.org, guenter.roeck@ericsson.com,
-        johnpol@2ka.mipt.ru, thellstrom@vmware.com, linux-scsi@vger.kernel.org,
-        JBottomley@parallels.com, lm-sensors@lm-sensors.org,
-        airlied@redhat.com, paulmck@linux.vnet.ibm.com, naota@elisp.net,
-        rtc-linux@googlegroups.com, namhyung@gmail.com, rusty@rustcorp.com.au,
-        khali@linux-fr.org, osd-dev@open-osd.org, akpm@linux-foundation.org,
-        a.zummo@towertech.it, jkosina@suse.cz, cabarnes@indesign-llc.com,
-        tj@kernel.org, bhalevy@panasas.com
-Subject: Re: [osd-dev] [PATCH 6/8] [SCSI] osduld: use ida_simple_get to handle
- id.
-References: <1311352886-4047-1-git-send-email-jic23@cam.ac.uk> <1311352886-4047-7-git-send-email-jic23@cam.ac.uk> <4E29EFDA.1080407@panasas.com>
-In-Reply-To: <4E29EFDA.1080407@panasas.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/mixed; boundary="qDbXVdCdHGoSgWSk"
+Content-Disposition: inline
+In-Reply-To: <CAObL_7G-afftZD7ULhbyTqBsuZCs03H-HS-n8tqRC=-Q3Bs9Eg@mail.gmail.com>
+Organization: Advanced Micro Devices GmbH, Einsteinring 24, 85609 Dornach b.
+ Muenchen; Geschaeftsfuehrer: Andrew Bowd, Alberto Bozzo; Sitz: Dornach,
+ Gemeinde Aschheim, Landkreis Muenchen; Registergericht Muenchen, HRB Nr.
+ 43632
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/11 22:47, Boaz Harrosh wrote:
-> On 07/22/2011 09:41 AM, Jonathan Cameron wrote:
->> This does involve additional use of the spin lock in idr.c.
->> Is this an issue?
->>
-> 
-> Actually it looks like a bug fix. I had a TODO: to add one.
-> 
->> Also, some error mangling was needed to keep the interface
->> the same.  Does this matter or can we return -ENOSPC instead
->> of -EBUSY?
->>
-> 
-> Na. -ENOSPC is just fine. All the osd Application just check for
-> "any error" not a specific one.
-Cool, I've scrapped the error mangling and added your acked-by
-+ removed questions from commit message as you've answered them!
+--qDbXVdCdHGoSgWSk
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
+On Mon, Jul 25, 2011 at 05:44:32AM -0400, Andrew Lutomirski wrote:
+> On Mon, Jul 25, 2011 at 2:38 AM, Ingo Molnar <mingo@elte.hu> wrote:
+> > I should have mentioned it earlier, but there's a certain amount of
+> > delazying patches in the tip:x86/xsave branch:
+> >
+> > =A0$ gll linus..x86/xsave
+> > =A0300c6120b465: x86, xsave: fix non-lazy allocation of the xsave are=
+a
+> > =A0f79018f2daa9: Merge branch 'x86/urgent' into x86/xsave
+> > =A066beba27e8b5: x86, xsave: remove lazy allocation of xstate area
+> > =A01039b306b1c6: x86, xsave: add kernel support for AMDs Lightweight =
+Profiling (LWP)
+> > =A04182a4d68bac: x86, xsave: add support for non-lazy xstates
+> > =A0324cbb83e215: x86, xsave: more cleanups
+> > =A02efd67935eb7: x86, xsave: remove unused code
+> > =A00c11e6f1aed1: x86, xsave: cleanup fpu/xsave signal frame setup
+> > =A07f4f0a56a7d3: x86, xsave: rework fpu/xsave support
+> > =A026bce4e4c56f: x86, xsave: cleanup fpu/xsave support
+> >
+> > it's not in tip:master because the LWP bits need (much) more work to
+> > be palatable - but we could spin them off and complete them as per
+> > your suggestions if they are an independent speedup on modern CPUs.
+>=20
+> Hans, what's the status of these?  I want to do some other cleanups
+> (now or in a couple of weeks) that will probably conflict with your
+> xsave work.
 
-> 
->> Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
-> 
-> Ack-by: Boaz Harrosh <bharrosh@panasas.com>
-> 
->> ---
->>  drivers/scsi/osd/osd_uld.c |   22 ++++++++--------------
->>  1 files changed, 8 insertions(+), 14 deletions(-)
->>
->> diff --git a/drivers/scsi/osd/osd_uld.c b/drivers/scsi/osd/osd_uld.c
->> index b31a8e3..fa849bd 100644
->> --- a/drivers/scsi/osd/osd_uld.c
->> +++ b/drivers/scsi/osd/osd_uld.c
->> @@ -387,7 +387,7 @@ static void __remove(struct device *dev)
->>  
->>  	if (oud->disk)
->>  		put_disk(oud->disk);
->> -	ida_remove(&osd_minor_ida, oud->minor);
->> +	ida_simple_remove(&osd_minor_ida, oud->minor);
->>  
->>  	kfree(oud);
->>  }
->> @@ -403,18 +403,12 @@ static int osd_probe(struct device *dev)
->>  	if (scsi_device->type != TYPE_OSD)
->>  		return -ENODEV;
->>  
->> -	do {
->> -		if (!ida_pre_get(&osd_minor_ida, GFP_KERNEL))
->> -			return -ENODEV;
->> -
->> -		error = ida_get_new(&osd_minor_ida, &minor);
->> -	} while (error == -EAGAIN);
->> -
->> -	if (error)
->> -		return error;
->> -	if (minor >= SCSI_OSD_MAX_MINOR) {
->> -		error = -EBUSY;
->> -		goto err_retract_minor;
->> +	minor = ida_simple_get(&osd_minor_ida, 0,
->> +			       SCSI_OSD_MAX_MINOR, GFP_KERNEL);
->> +	if (minor < 0) {
->> +		if (minor == -ENOSPC)
->> +			return -EBUSY;
-> 
-> Just drop the translation is fine as well
-> 
->> +		return minor;
->>  	}
->>  
->>  	error = -ENOMEM;
->> @@ -491,7 +485,7 @@ err_free_osd:
->>  	dev_set_drvdata(dev, NULL);
->>  	kfree(oud);
->>  err_retract_minor:
->> -	ida_remove(&osd_minor_ida, minor);
->> +	ida_simple_remove(&osd_minor_ida, minor);
->>  	return error;
->>  }
->>  
-> 
-> 
+I know of one bug in there that occasionally causes panics at boot, see
+the attached patch for a fix.
 
+
+Hans
+
+
+--=20
+%SYSTEM-F-ANARCHISM, The operating system has been overthrown
+
+--qDbXVdCdHGoSgWSk
+Content-Type: text/plain; charset="us-ascii";
+	name="0001-x86-xsave-clear-pre-allocated-xsave-area.patch"
+Content-Disposition: attachment;
+	filename="0001-x86-xsave-clear-pre-allocated-xsave-area.patch"
+Content-Description: 0001-x86-xsave-clear-pre-allocated-xsave-area.patch
+
+>From 599d3ee9a9e743377739480a8a893582f1409a8d Mon Sep 17 00:00:00 2001
+From: Hans Rosenfeld <hans.rosenfeld@amd.com>
+Date: Wed, 6 Jul 2011 16:31:19 +0200
+Subject: [PATCH 1/1] x86, xsave: clear pre-allocated xsave area
+
+Bogus data in the xsave area can cause xrstor to panic, so make sure
+that the pre-allocated xsave area is all nice and clean before being
+used.
+
+Signed-off-by: Hans Rosenfeld <hans.rosenfeld@amd.com>
+---
+ arch/x86/kernel/process.c |   11 +++++++++--
+ 1 files changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index c5ae256..03c5ded 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -28,8 +28,15 @@ EXPORT_SYMBOL_GPL(task_xstate_cachep);
+ 
+ int arch_prealloc_fpu(struct task_struct *tsk)
+ {
+-	if (!fpu_allocated(&tsk->thread.fpu))
+-		return fpu_alloc(&tsk->thread.fpu);
++	if (!fpu_allocated(&tsk->thread.fpu)) {
++		int err = fpu_alloc(&tsk->thread.fpu);
++
++		if (err)
++			return err;
++
++		fpu_clear(&tsk->thread.fpu);
++	}
++
+ 	return 0;
+ }
+ 
+-- 
+1.5.6.5
+
+
+--qDbXVdCdHGoSgWSk--
