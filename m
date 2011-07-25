@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752981Ab1GYDWU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 23:22:20 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:45078 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752670Ab1GYDWP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 23:22:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAObL_7H1j1cewgWP6Jmkw_H9dZVh1kxRGgTLa+ju=ns4gYxMdA@mail.gmail.com>
-References: <CAObL_7GCDsfXWRJgkNk7c44GNF0JhQPAH_P0WiYHK7QUX1Bcaw@mail.gmail.com>
- <20110724211526.GA6785@elte.hu> <CAObL_7H1j1cewgWP6Jmkw_H9dZVh1kxRGgTLa+ju=ns4gYxMdA@mail.gmail.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Sun, 24 Jul 2011 23:21:55 -0400
-X-Google-Sender-Auth: nUd2Ao1cMedlSlAch3COfcMygKw
-Message-ID: <CAObL_7EuFXbuxpz2bzKuEReyDHo+mBxDyJSf_rjBKpdnUmEzLQ@mail.gmail.com>
-Subject: Re: [RFC] syscall calling convention, stts/clts, and xstate latency
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, x86 <x86@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>, Avi Kivity <avi@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752898Ab1GYDpb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 23:45:31 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:57446 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752497Ab1GYDpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jul 2011 23:45:25 -0400
+Date: Mon, 25 Jul 2011 13:45:09 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the iscsi-target tree
+Message-Id: <20110725134509.3a1c59c07eb7a5608a8712f7@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__25_Jul_2011_13_45_09_+1000__9k53olz_UJ=p91p"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 24, 2011 at 6:34 PM, Andrew Lutomirski <luto@mit.edu> wrote:
->
-> I had in mind something a little less ambitious: making
-> kernel_fpu_begin very fast, especially when used more than once.
-> Currently it's slow enough to have spawned arch/x86/crypto/fpu.c,
-> which is a hideous piece of infrastructure that exists solely to
-> reduce the number of kernel_fpu_begin/end pairs when using AES-NI.
-> Clobbering registers in syscall would reduce the cost even more, but
-> it might require having a way to detect whether the most recent kernel
-> entry was via syscall or some other means.
+--Signature=_Mon__25_Jul_2011_13_45_09_+1000__9k53olz_UJ=p91p
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I think it will be very hard to inadvertently cause a regression,
-because the current code looks pretty bad.
+Hi Nicholas,
 
-1. Once a task uses xstate for five timeslices, the kernel decides
-that it will continue using it.  The only thing that clears that
-condition is __unlazy_fpu called with TS_USEDFPU set.  The only way I
-can see for that to happen is if kernel_fpu_begin is called twice in a
-row between context switches, and that has little do with the task's
-xstate usage.
+After merging the iscsi-target tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-2. __switch_to, when switching to a task with fpu_counter > 5, will do
-stts(); clts().
+drivers/scsi/bnx2i/bnx2i_iscsi.c: In function 'bnx2i_task_xmit':
+drivers/scsi/bnx2i/bnx2i_iscsi.c:1233:20: error: dereferencing pointer to i=
+ncomplete type
 
-The combination means that when switching between two xstate-using
-tasks (or even tasks that were once xstate-using), we pay the full
-price of a state save/restore *and* stts/clts.
+Caused by commit 5dd46e6560d4 ("iscsi: Resolve iscsi_proto.h naming
+conflicts with drivers/target/iscsi").
 
---Andy
+I have dropped the iscsi-target tree for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__25_Jul_2011_13_45_09_+1000__9k53olz_UJ=p91p
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOLObFAAoJEDMEi1NhKgbsQwsH+wbb55/1/BYUWHPjzGh+ImdB
+xOq7xkZFm2/oa6rj698QcrfceJ6Lji5O3oOGcXftw5UprVAvhudCHksuLZ7SKyDK
+M2sLAQvQPp+5TlGi5yBshXs28xyFmiKo34uDtnOXwAHDUi4Z9IRI/tp0ieiPtGy4
+jVim9wmiSsYdQg0JHQknt6rFUqJokzK/FgT3PYDQyL3gEo1tOorDF0YfFF9mzkhm
+amoYUx1boi1e1H2kevY95LtrvFx2TNb/0f7qKRxLPKo+87tbQr03bfMXufdxynqf
+osJT7v00pJqhoxdXYXEDkOQIGONs6UdTjRl+8iGrWsp9ql3k8BGimXIQjPyVQ70=
+=bUx2
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__25_Jul_2011_13_45_09_+1000__9k53olz_UJ=p91p--
