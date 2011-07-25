@@ -1,136 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134Ab1GYQDG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 12:03:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8669 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751809Ab1GYQDD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 12:03:03 -0400
-Date: Mon, 25 Jul 2011 12:02:44 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: oomichi@mxs.nes.nec.co.jp, linux-s390@vger.kernel.org,
-        mahesh@linux.vnet.ibm.com, heiko.carstens@de.ibm.com,
-        linux-kernel@vger.kernel.org, hbabu@us.ibm.com, horms@verge.net.au,
-        ebiederm@xmission.com, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        kexec@lists.infradead.org
-Subject: Re: [patch 0/9] kdump: Patch series for s390 support
-Message-ID: <20110725160244.GB11009@redhat.com>
-References: <20110718123140.GB31986@redhat.com>
- <1310997641.4427.10.camel@br98xy6r>
- <20110718141943.GE31986@redhat.com>
- <1311000253.4427.23.camel@br98xy6r>
- <20110718152532.GF31986@redhat.com>
- <1311012188.4427.58.camel@br98xy6r>
- <20110720192509.GD10079@redhat.com>
- <1311260298.6160.43.camel@br98xy6r>
- <20110721212257.GI12373@redhat.com>
- <1311327191.5772.51.camel@br98xy6r>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311327191.5772.51.camel@br98xy6r>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751934Ab1GYQKI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 12:10:08 -0400
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:36571 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751382Ab1GYQKG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 12:10:06 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=Kxfs1r/CTclUE7RNVNFDvJiH5t/yiVXZBIwbwqSeSS9xG4WiMfT2dROkSV+bU+8dIAaWnaP7f6RqCpOU3jXwF2CTg+xOVVeINDjIA3ou2wjrKWxHDc/NZ4NDi9275d43;
+Date: Mon, 25 Jul 2011 09:10:03 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org
+Subject: Re: Build regressions/improvements in v3.0-rc7 (sound/isa/)
+Message-Id: <20110725091003.c3453b8b.rdunlap@xenotime.net>
+In-Reply-To: <s5hy5zm3j5a.wl%tiwai@suse.de>
+References: <1310585610-434-1-git-send-email-geert@linux-m68k.org>
+	<20110724122624.324d10dc.rdunlap@xenotime.net>
+	<s5hy5zm3j5a.wl%tiwai@suse.de>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 22, 2011 at 11:33:11AM +0200, Michael Holzheu wrote:
+On Mon, 25 Jul 2011 09:37:53 +0200 Takashi Iwai wrote:
 
-[..]
-> > > 
-> > > Then the design would look like the following:
-> > > * Define s390_kdump_entry in old kernel that calls crash_kexec()
-> > > * Use preallocated ELF core header
-> > > * s390_kdump_entry code path stores registers to ELF notes,  ...
+> At Sun, 24 Jul 2011 12:26:24 -0700,
+> Randy Dunlap wrote:
 > > 
-> > crash_kexec() -> crash_setup_regs() already does that. We just need to
-> > define an s390 specific crash_setup_regs().
-> 
-> I looked at the code. x86 seems to store only registers for current CPU.
-> Where are all other CPUs stored? ia64 has an empty implementation. Where
-> are registers stored there?
-
-native_machine_crash_shutdown()
-	kdump_nmi_shootdown_cpus()
-		kdump_nmi_callback()
-			crash_save_cpu()
-
-Basically crashing cpu sends NMI to other cpus to stop them and with-in
-NMI handler it also saves per cpu state.
-
-> 
+> > On Wed, 13 Jul 2011 21:33:30 +0200 Geert Uytterhoeven wrote:
 > > 
-> > > * ... and finally jumps to purgatory code
-> > > * For s390 the purgatory code returns to caller in case of
-> > >   checksum failure
-> > > * dump tools call s390_kdump_entry with program check handler
-> > >   for error handling
+> > >   + src/sound/isa/ad1816a/ad1816a_lib.c: error: implicit declaration of function 'snd_dma_disable':  => 544
+> > >   + src/sound/isa/ad1816a/ad1816a_lib.c: error: implicit declaration of function 'snd_dma_pointer':  => 302
+> > >   + src/sound/isa/ad1816a/ad1816a_lib.c: error: implicit declaration of function 'snd_dma_program':  => 244
+> > >   + src/sound/isa/es1688/es1688_lib.c: error: implicit declaration of function 'snd_dma_pointer':  => 509
+> > >   + src/sound/isa/es1688/es1688_lib.c: error: implicit declaration of function 'snd_dma_program':  => 417
+> > >   + src/sound/isa/gus/gus_dma.c: error: implicit declaration of function 'snd_dma_disable':  => 177
+> > >   + src/sound/isa/gus/gus_dma.c: error: implicit declaration of function 'snd_dma_program':  => 79
+> > >   + src/sound/isa/gus/gus_pcm.c: error: implicit declaration of function 'snd_dma_pointer':  => 619
+> > >   + src/sound/isa/gus/gus_pcm.c: error: implicit declaration of function 'snd_dma_program':  => 591
+> > >   + src/sound/isa/sb/sb16_main.c: error: implicit declaration of function 'snd_dma_pointer':  => 456
+> > >   + src/sound/isa/sb/sb16_main.c: error: implicit declaration of function 'snd_dma_program':  => 276
+> > >   + src/sound/isa/sb/sb8_main.c: error: implicit declaration of function 'snd_dma_pointer':  => 425
+> > >   + src/sound/isa/sb/sb8_main.c: error: implicit declaration of function 'snd_dma_program':  => 172
+> > >   + src/sound/isa/sscape.c: error: implicit declaration of function 'snd_dma_program':  => 481
+> > >   + src/sound/isa/wss/wss_lib.c: error: implicit declaration of function 'snd_dma_disable':  => 1695
+> > >   + src/sound/isa/wss/wss_lib.c: error: implicit declaration of function 'snd_dma_pointer':  => 1160
+> > >   + src/sound/isa/wss/wss_lib.c: error: implicit declaration of function 'snd_dma_program':  => 1025
 > > 
-> > I thought that program check handler will call something else and not
-> > s390_kdump_entry()? Because program check handler is supposed to hit
-> > when any of the code we are executing is corrupted and we can not
-> > jump to kdump tool any more. Otherwise we will be nesting.
-> 
-> Looks like the sentence was misleading. What I wanted to say is:
-> * First dump tools setup program check handler that jumps back to
->   dump tool in case kdump fails
-> * Then dump tools call s390_dump_entry
-> 
-> > > 
-> > > I think, if we do it that way, we do not affect the current kdump
-> > > framework at all.
+> > All of these source files do #include <sound/core.h>,
+> > but these missing/implicit functions are conditional:
 > > 
-> > Can you give some more details about various code flows and entry points.
-> > Like panic() path, hard hang path. From your mail it sounds that even
-> > with program check handler, after panic() you would like to jump to
-> > stand alone tools first and then call s390_kdump_entry(). I think that
-> > should not be required any more as you are not doing any checksumming
-> > in dump tools anymore?
+> > #ifdef CONFIG_ISA_DMA_API
+> > #define DMA_MODE_NO_ENABLE	0x0100
+> > 
+> > void snd_dma_program(unsigned long dma, unsigned long addr, unsigned int size, unsigned short mode);
+> > void snd_dma_disable(unsigned long dma);
+> > unsigned int snd_dma_pointer(unsigned long dma, unsigned int size);
+> > #endif
+> > 
+> > so should these drivers all depend on ISA_DMA_API ?
 > 
-> Ok some code flows:
-> 
-> Generally we have the flow:
-> * crash_kexec -> machine_kexec -> purgatory -> kdump
-> 
-> crash_kexec can be entered by e.g.:
-> * panic -> kdump shutdown action -> crash_kexec
-> * panic -> s390 dump shutdown action -> auto IPL dump tool -> s390_kdump_entry -> crash_kexec
+> Yes, these are ISA sound cards, so they must have CONFIG_ISA and
+> CONFIG_ISA_DMA.  Although CONFIG_SND_SB8_DSP, CONFIG_SND_SB16_DSP
+> and CONFIG_SND_WSS_LIB have no direct dependency, but the drivers
+> selecting these are all in "if SND_ISA" in sound/isa/Kconfig.
 
-So after panic() You will still jump to dump tools? The only thing you
-need to do there is installing program check handler and could have been
-easily done in kernel too.
+Hm, yes, they are.
 
-> * hard hang -> manual IPL dump tool -> s390_kdump_entry -> crash_kexec
+> > or should only pieces of each driver depend on ISA_DMA_API ?
+> 
+> I wonder which configuration makes it possible.
+> Did you see a similar problem with randconfig?
 
-This one makes sense as kernel is hard hung and dump tools need to
-force crash_kexec() now. It is more like x86 NMI handler.
+No.  This parisc allmodconfig file from linux-next builds has
+CONFIG_SND_ISA=y but it does not have CONFIG_ISA_DMA_API enabled.  Weird.
 
-> 
-> Handling for corrupted kdump:
-> 
-> New idea for returning to dump tools in case of program check:
-> We could force a program check for s390, if purgatory checksum
-> fails. Then we would automatically return to stand-alone dump
-> tools.
-> 
-> The flow would look like the following in this case:
-> 
-> IPL dump tool -> s390_kdump_entry -> crash_kexec +--> purgatory -+->[checksum ok]---> kdump
->       ^                                          |               |
->       |                                          |        [checksum fail]
->       |                                          |               |
->       |                                          |     [forced program check]
->       +------[program check]---------------------+               |
->       |                                                          |
->       +----------------------------------------------------------+
-> 
-> Then of course also the kernel code would have to install a special
-> program check handler before calling purgatory.
+Geert, do you know how this happens?
 
-If kernel code is going to install the program check handler before
-calling purgatory, then we don't need to jump to dump tools at all
-after panic()?
+parisc config:  http://kisskb.ellerman.id.au/kisskb/buildresult/4323458/config/
+from this failed build:  http://kisskb.ellerman.id.au/kisskb/buildresult/4323458/
 
-Thanks
-Vivek
+thanks,
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
