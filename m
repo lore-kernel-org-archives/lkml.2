@@ -1,77 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792Ab1GYB2v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 21:28:51 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:38694 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751845Ab1GYB2t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 21:28:49 -0400
-Message-ID: <4E2CC6CC.5020204@gmail.com>
-Date: Mon, 25 Jul 2011 11:28:44 +1000
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Jesper Juhl <jj@chaosbits.net>
-CC: linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org
-Subject: Re: GMA500: ERROR: "__bad_udelay" undefined!
-References: <alpine.LNX.2.00.1107242327030.7103@swampdragon.chaosbits.net> <4E2CC55B.5010307@gmail.com>
-In-Reply-To: <4E2CC55B.5010307@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1752901Ab1GYBnn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 21:43:43 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:55745 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752812Ab1GYBnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jul 2011 21:43:42 -0400
+Date: Mon, 25 Jul 2011 11:43:27 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg Ungerer <gerg@snapgear.com>
+Cc: Jonas Bonn <jonas@southpole.se>, Rusty Russell <rusty@rustcorp.com.au>,
+        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Greg Ungerer <gerg@uclinux.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: linux-next: manual merge of the rr tree with the  tree
+Message-Id: <20110725114327.fa9c46a5398677ffa4acbd6f@canb.auug.org.au>
+In-Reply-To: <20110707102432.5a779744e247652be005b592@canb.auug.org.au>
+References: <20110705135932.de7f0526.sfr@canb.auug.org.au>
+	<1309967847.3393.44.camel@jerome>
+	<4E14F373.1020307@snapgear.com>
+	<20110707102432.5a779744e247652be005b592@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/07/11 11:22, Ryan Mallon wrote:
-> On 25/07/11 07:37, Jesper Juhl wrote:
->> Just got this when building the attached .config on x86_64 with gcc 
->> 4.6.1
->> on up-to-date mainline git tree (head at
->> b6844e8f64920cdee620157252169ba63afb0c89) :
->>
->>   ERROR: "__bad_udelay" [drivers/staging/gma500/psb_gfx.ko] undefined!
->>   make[1]: *** [__modpost] Error 1
->>
->> I don't need gma500, so I've just disabled the driver to get around 
->> it but
->> I thought some people might still like to know :)
->>
-> __bad_udelay is a compile time check that constant udelays do not 
-> exceed a certain threshold. For x86_64 it used to be n > 20000, now it 
-> is n / 20000 >= 1. The problem is in 
-> drivers/staging/gma500/psb_intel_display.c:psb_init_wait_for_vblank, 
-> which does udelay(20000) which under the old code would have been 
-> fine, but fails the new __bad_udelay check.
+Hi Greg,
+
+On Thu, 7 Jul 2011 10:24:32 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 >
-> Possibly the udelay can just be converted to an mdelay?
+> On Thu, 7 Jul 2011 09:44:51 +1000 Greg Ungerer <gerg@snapgear.com> wrote:
+> >
+> > On 07/07/11 01:57, Jonas Bonn wrote:
+> > >
+> > > On Tue, 2011-07-05 at 13:59 +1000, Stephen Rothwell wrote:
+> > >>
+> > >> Today's linux-next merge of the rr tree got a conflict in
+> > >> arch/m68k/kernel/module_mm.c arch/m68k/kernel/module_no.c between commit
+> > >> 4528acce2607 ("m68k: merge the non-mmu and mmu versions of module.c")
+> > >> from the m68knommu tree and commit 7b935befe6bc ("modules: make arch's
+> > >> use default loader hooks") from the rr tree.
+> > >>
+> > >> The former removes these files, so I did that.
+> > >>
+> > >> I then added this merge fix up patch (which I can carry as necessary and
+> > >> may not be coorrect):
+> > >>
+> > >> From: Stephen Rothwell<sfr@canb.auug.org.au>
+> > >> Date: Tue, 5 Jul 2011 13:12:26 +1000
+> > >> Subject: [PATCH] modules/m68k: make arch's use default loader hooks
+> > >>
+> > >> Signed-off-by: Stephen Rothwell<sfr@canb.auug.org.au>
+> > >> ---
+> > >>   arch/m68k/kernel/module.c |   27 ---------------------------
+> > >>   1 files changed, 0 insertions(+), 27 deletions(-)
+> > >>
+> > >
+> > > That patch looks good to me.
+> > >
+> > > Acked-by: Jonas Bonn<jonas@southpole.se>
+> > 
+> > Looks fine to me too:
+> > 
+> > Acked-by: Greg Ungerer <gerg@uclinux.org>
+> 
+> OK, so now someone just has to remember to apply it (or tell Linus, or
+> fix up the trees) during the merge window.   That person probably won't
+> be me (since I will not be online next week (assuming Linus follows
+> through and opens the merge window next week).
 
-Here is the patch:
-----
-A change to the constraints for the compile time check for __bad_udelay 
-on some architectures caused breakage in the gma500 staging driver. Fix 
-by replacing udelay with mdelay.
+This patch now needs to be applied to the m68knommu tree (after merging
+Linus' tree) as Rusty's changes have gone upstream.
 
-Signed-off-by: Ryan Mallon <rmallon@gmail.com>
+Here is the patch I have applied again for reference:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 5 Jul 2011 13:12:26 +1000
+Subject: [PATCH] modules/m68k: make arch's use default loader hooks
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
+ arch/m68k/kernel/module.c |   27 ---------------------------
+ 1 files changed, 0 insertions(+), 27 deletions(-)
 
-diff --git a/drivers/staging/gma500/psb_intel_display.c b/drivers/staging/gma500/psb_intel_display.c
-index 4f47d09..09e378d 100644
---- a/drivers/staging/gma500/psb_intel_display.c
-+++ b/drivers/staging/gma500/psb_intel_display.c
-@@ -331,7 +331,7 @@ static bool psb_intel_find_best_PLL(struct drm_crtc *crtc, int target,
-  void psb_intel_wait_for_vblank(struct drm_device *dev)
-  {
-  	/* Wait for 20ms, i.e. one cycle at 50hz. */
--	udelay(20000);
-+	mdelay(20);
-  }
+diff --git a/arch/m68k/kernel/module.c b/arch/m68k/kernel/module.c
+index 146d646..34849c4 100644
+--- a/arch/m68k/kernel/module.c
++++ b/arch/m68k/kernel/module.c
+@@ -19,29 +19,6 @@
+ 
+ #ifdef CONFIG_MODULES
+ 
+-void *module_alloc(unsigned long size)
+-{
+-	if (size == 0)
+-		return NULL;
+-	return vmalloc(size);
+-}
+-
+-
+-/* Free memory returned from module_alloc */
+-void module_free(struct module *mod, void *module_region)
+-{
+-	vfree(module_region);
+-}
+-
+-/* We don't need anything special. */
+-int module_frob_arch_sections(Elf_Ehdr *hdr,
+-			      Elf_Shdr *sechdrs,
+-			      char *secstrings,
+-			      struct module *mod)
+-{
+-	return 0;
+-}
+-
+ int apply_relocate(Elf32_Shdr *sechdrs,
+ 		   const char *strtab,
+ 		   unsigned int symindex,
+@@ -130,10 +107,6 @@ int module_finalize(const Elf_Ehdr *hdr,
+ 	return 0;
+ }
+ 
+-void module_arch_cleanup(struct module *mod)
+-{
+-}
+-
+ #endif /* CONFIG_MODULES */
+ 
+ void module_fixup(struct module *mod, struct m68k_fixup_info *start,
+-- 
+1.7.5.4
 
-  int psb_intel_pipe_set_base(struct drm_crtc *crtc,
 
-
-
-
-
-
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
