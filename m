@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751633Ab1GYMh5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 08:37:57 -0400
-Received: from ozlabs.org ([203.10.76.45]:46738 "EHLO ozlabs.org"
+	id S1751726Ab1GYMiH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 08:38:07 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:45403 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751431Ab1GYMh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 08:37:27 -0400
-X-Mailbox-Line: From anton@samba.org Mon Jul 25 12:34:26 2011
-Message-Id: <20110725023426.307093692@samba.org>
-User-Agent: quilt/0.48-1
-Date: Mon, 25 Jul 2011 12:33:15 +1000
-From: Anton Blanchard <anton@samba.org>
-To: mingo@elte.hu, peterz@infradead.org, benh@kernel.crashing.org
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/5] powerpc/numa: Disable NEWIDLE balancing at node level
-References: <20110725023311.175792493@samba.org>
-Content-Disposition: inline; filename=nodes_no_newidle
+	id S1751462Ab1GYMhf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 08:37:35 -0400
+Date: Mon, 25 Jul 2011 14:36:37 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Anton Blanchard <anton@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, emunson@mgebm.net,
+        linux-kernel@vger.kernel.org, amodra@gmail.com
+Subject: Re: [PATCH] perf: Fix symbol resolution on old ppc64 ABI
+Message-ID: <20110725123636.GA28530@elte.hu>
+References: <20110725142356.0c722c6b@kryten>
+ <20110725062542.GA694@elte.hu>
+ <20110725204859.51e50611@kryten>
+ <20110725105004.GN28787@elte.hu>
+ <20110725223232.4e2dce43@kryten>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110725223232.4e2dce43@kryten>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On big POWER7 boxes we see large amounts of CPU time in system
-processes like workqueue and watchdog kernel threads.
 
-We currently rebalance the entire machine each time a task goes
-idle and this is very expensive on large machines. Disable newidle
-balancing at the node level and rely on the scheduler tick to
-rebalance across nodes.
+* Anton Blanchard <anton@samba.org> wrote:
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
----
+> Hi Ingo,
+> 
+> > > It would cover most cases. There would be an issue with 
+> > > functions that are less than 24 bytes in length (ie 6 
+> > > instructions). Tiny functions are probably rare enough that we 
+> > > can live with it.
+> > 
+> > Do such tiny functions get packed tightly, below 24 bytes? 
+> > Another sanitization pass could solve that issue, to trim 
+> > partially overlapping symbol regions, right?
+> 
+> That would work I think. Should I cook up a patch?
 
-Index: linux-2.6-work/arch/powerpc/include/asm/topology.h
-===================================================================
---- linux-2.6-work.orig/arch/powerpc/include/asm/topology.h	2011-07-25 12:14:25.448671947 +1000
-+++ linux-2.6-work/arch/powerpc/include/asm/topology.h	2011-07-25 12:14:26.568692651 +1000
-@@ -75,7 +75,7 @@ static inline int pcibus_to_node(struct
- 	.forkexec_idx		= 0,					\
- 									\
- 	.flags			= 1*SD_LOAD_BALANCE			\
--				| 1*SD_BALANCE_NEWIDLE			\
-+				| 0*SD_BALANCE_NEWIDLE			\
- 				| 1*SD_BALANCE_EXEC			\
- 				| 1*SD_BALANCE_FORK			\
- 				| 0*SD_BALANCE_WAKE			\
+Yeah, would be nice - if Arnaldo agrees with the approach too.
 
+Thanks,
 
+	Ingo
