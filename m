@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752159Ab1GYOYg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 10:24:36 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41026 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751726Ab1GYOYe (ORCPT
+	id S1752271Ab1GYOZO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 10:25:14 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42262 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751562Ab1GYOZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 10:24:34 -0400
-Subject: Re: [PATCH] pch_dma: Fix CTL register access issue
+	Mon, 25 Jul 2011 10:25:12 -0400
+Subject: Re: [PATCH] dmaengine: imx-sdma: return proper error if kzalloc
+ fails
 From: Vinod Koul <vkoul@infradead.org>
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Cc: vinod.koul@intel.com, Dan Williams <dan.j.williams@intel.com>,
-        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com,
-        toshiharu-linux@dsn.okisemi.com
-In-Reply-To: <1310604758-2455-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-References: <1310604758-2455-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: vinod.koul@intel.com, Axel Lin <axel.lin@gmail.com>,
+        linux-kernel@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>
+In-Reply-To: <20110712135128.GV6069@pengutronix.de>
+References: <1310475613.2618.0.camel@phoenix>
+	 <20110712135128.GV6069@pengutronix.de>
 Content-Type: text/plain; charset="UTF-8"
 Organization: Intel Corp
-Date: Mon, 25 Jul 2011 19:53:49 +0530
-Message-ID: <1311603829.8206.13.camel@vkoul-mobl4>
+Date: Mon, 25 Jul 2011 19:54:07 +0530
+Message-ID: <1311603847.8206.14.camel@vkoul-mobl4>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
@@ -27,131 +27,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-07-14 at 09:52 +0900, Tomoya MORINAGA wrote:
-> Currently, Mode-Control register is accessed by read-modify-write.
+On Tue, 2011-07-12 at 15:51 +0200, Sascha Hauer wrote:
+> On Tue, Jul 12, 2011 at 09:00:13PM +0800, Axel Lin wrote:
+> > Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> > ---
+> >  drivers/dma/imx-sdma.c |    4 +++-
+> >  1 files changed, 3 insertions(+), 1 deletions(-)
 > 
-> According to DMA hardware specifications datasheet, prohibits this method.
-> Because this register resets to 0 by DMA HW after DMA transfer completes.
-> Thus, current read-modify-write processing can cause unexpected behavior.
+> Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+Applied, Thanks
+
 > 
-> The datasheet says in case of writing Mode-Control register, set the value for only target channel, the others must set '11b'.
-> e.g. Set DMA0=01b  DMA11=10b
-> CTL0=33333331h
-> CTL2=00002333h
+> > 
+> > diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+> > index 1ea47db..f96d038 100644
+> > --- a/drivers/dma/imx-sdma.c
+> > +++ b/drivers/dma/imx-sdma.c
+> > @@ -1281,8 +1281,10 @@ static int __init sdma_probe(struct platform_device *pdev)
+> >  		goto err_request_irq;
+> >  
+> >  	sdma->script_addrs = kzalloc(sizeof(*sdma->script_addrs), GFP_KERNEL);
+> > -	if (!sdma->script_addrs)
+> > +	if (!sdma->script_addrs) {
+> > +		ret = -ENOMEM;
+> >  		goto err_alloc;
+> > +	}
+> >  
+> >  	sdma->version = pdata->sdma_version;
+> >  
+> > -- 
+> > 1.7.4.1
+> > 
+> > 
+> > 
+> > 
 > 
-> NOTE:
-> CTL0 includes DMA0~7 Mode-Control register.
-> CTL2 includes DMA8~11 Mode-Control register.
-> 
-> This patch modifies the issue.
-> 
-> Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-> ---
->  drivers/dma/pch_dma.c |   42 +++++++++++++++++++++++++++++++-----------
->  1 files changed, 31 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
-> index 9dc92de..7460490 100644
-> --- a/drivers/dma/pch_dma.c
-> +++ b/drivers/dma/pch_dma.c
-> @@ -62,6 +62,9 @@
->  
->  #define MAX_CHAN_NR			8
->  
-> +#define DMA_MASK_CTL0_MODE	0x33333333
-> +#define DMA_MASK_CTL2_MODE	0x00003333
-> +
->  static unsigned int init_nr_desc_per_channel = 64;
->  module_param(init_nr_desc_per_channel, uint, 0644);
->  MODULE_PARM_DESC(init_nr_desc_per_channel,
-> @@ -210,10 +213,17 @@ static void pdc_set_dir(struct dma_chan *chan)
->  	struct pch_dma_chan *pd_chan = to_pd_chan(chan);
->  	struct pch_dma *pd = to_pd(chan->device);
->  	u32 val;
-> +	u32 mask_mode;
-> +	u32 mask_ctl;
->  
->  	if (chan->chan_id < 8) {
->  		val = dma_readl(pd, CTL0);
->  
-> +		mask_mode = DMA_CTL0_MODE_MASK_BITS <<
-> +					(DMA_CTL0_BITS_PER_CH * chan->chan_id);
-> +		mask_ctl = DMA_MASK_CTL0_MODE & ~(DMA_CTL0_MODE_MASK_BITS <<
-> +				       (DMA_CTL0_BITS_PER_CH * chan->chan_id));
-> +		val &= mask_mode;
->  		if (pd_chan->dir == DMA_TO_DEVICE)
->  			val |= 0x1 << (DMA_CTL0_BITS_PER_CH * chan->chan_id +
->  				       DMA_CTL0_DIR_SHIFT_BITS);
-> @@ -221,18 +231,24 @@ static void pdc_set_dir(struct dma_chan *chan)
->  			val &= ~(0x1 << (DMA_CTL0_BITS_PER_CH * chan->chan_id +
->  					 DMA_CTL0_DIR_SHIFT_BITS));
->  
-> +		val |= mask_ctl;
->  		dma_writel(pd, CTL0, val);
->  	} else {
->  		int ch = chan->chan_id - 8; /* ch8-->0 ch9-->1 ... ch11->3 */
->  		val = dma_readl(pd, CTL3);
->  
-> +		mask_mode = DMA_CTL0_MODE_MASK_BITS <<
-> +						(DMA_CTL0_BITS_PER_CH * ch);
-> +		mask_ctl = DMA_MASK_CTL2_MODE & ~(DMA_CTL0_MODE_MASK_BITS <<
-> +						 (DMA_CTL0_BITS_PER_CH * ch));
-> +		val &= mask_mode;
->  		if (pd_chan->dir == DMA_TO_DEVICE)
->  			val |= 0x1 << (DMA_CTL0_BITS_PER_CH * ch +
->  				       DMA_CTL0_DIR_SHIFT_BITS);
->  		else
->  			val &= ~(0x1 << (DMA_CTL0_BITS_PER_CH * ch +
->  					 DMA_CTL0_DIR_SHIFT_BITS));
-> -
-> +		val |= mask_ctl;
->  		dma_writel(pd, CTL3, val);
->  	}
->  
-> @@ -244,26 +260,30 @@ static void pdc_set_mode(struct dma_chan *chan, u32 mode)
->  {
->  	struct pch_dma *pd = to_pd(chan->device);
->  	u32 val;
-> +	u32 mask_ctl;
-> +	u32 mask_dir;
->  
->  	if (chan->chan_id < 8) {
-> +		mask_ctl = DMA_MASK_CTL0_MODE & ~(DMA_CTL0_MODE_MASK_BITS <<
-> +			   (DMA_CTL0_BITS_PER_CH * chan->chan_id));
-> +		mask_dir = 1 << (DMA_CTL0_BITS_PER_CH * chan->chan_id +\
-> +				 DMA_CTL0_DIR_SHIFT_BITS);
->  		val = dma_readl(pd, CTL0);
-> -
-> -		val &= ~(DMA_CTL0_MODE_MASK_BITS <<
-> -			(DMA_CTL0_BITS_PER_CH * chan->chan_id));
-> +		val &= mask_dir;
->  		val |= mode << (DMA_CTL0_BITS_PER_CH * chan->chan_id);
-> -
-> +		val |= mask_ctl;
->  		dma_writel(pd, CTL0, val);
->  	} else {
->  		int ch = chan->chan_id - 8; /* ch8-->0 ch9-->1 ... ch11->3 */
-> -
-> +		mask_ctl = DMA_MASK_CTL2_MODE & ~(DMA_CTL0_MODE_MASK_BITS <<
-> +						 (DMA_CTL0_BITS_PER_CH * ch));
-> +		mask_dir = 1 << (DMA_CTL0_BITS_PER_CH * ch +\
-> +				 DMA_CTL0_DIR_SHIFT_BITS);
->  		val = dma_readl(pd, CTL3);
-> -
-> -		val &= ~(DMA_CTL0_MODE_MASK_BITS <<
-> -			(DMA_CTL0_BITS_PER_CH * ch));
-> +		val &= mask_dir;
->  		val |= mode << (DMA_CTL0_BITS_PER_CH * ch);
-> -
-> +		val |= mask_ctl;
->  		dma_writel(pd, CTL3, val);
-> -
->  	}
->  
->  	dev_dbg(chan2dev(chan), "pdc_set_mode: chan %d -> %x\n",
-> -- 
-> 1.7.4.4
-APPLIED, Thanks
 
 -- 
 ~Vinod Koul
