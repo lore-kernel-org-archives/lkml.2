@@ -1,271 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751843Ab1GYPUt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 11:20:49 -0400
-Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:59363 "EHLO
-	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751153Ab1GYPUp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 11:20:45 -0400
-Date: Mon, 25 Jul 2011 10:20:33 -0500
-From: Shawn Bohrer <sbohrer@rgmadvisors.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Darren Hart <dvhart@linux.intel.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, peterz@infradead.org,
-        eric.dumazet@gmail.com, david@rgmadvisors.com,
-        linux-kernel@vger.kernel.org, zvonler@rgmadvisors.com,
-        hughd@google.com, mingo@elte.hu
-Subject: Re: [PATCH v5] futex: Fix regression with read only mappings
-Message-ID: <20110725152033.GA2275@BohrerMBP.rgmadvisors.com>
-References: <4E0C9911.7030907@linux.intel.com>
- <1309450892-30676-1-git-send-email-sbohrer@rgmadvisors.com>
+	id S1751776Ab1GYPWq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 11:22:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60551 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751153Ab1GYPWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 11:22:43 -0400
+Date: Mon, 25 Jul 2011 08:20:38 -0700
+From: Greg KH <gregkh@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: [PATCH v2 1/6] perf: Add interface to add general events to sysfs
+Message-ID: <20110725152038.GA23356@suse.de>
+References: <1310740503-15608-1-git-send-email-ming.m.lin@intel.com>
+ <1310740503-15608-2-git-send-email-ming.m.lin@intel.com>
+ <1310996068.13765.67.camel@twins>
+ <1311581475.3938.1477.camel@minggr.sh.intel.com>
+ <1311582723.2617.50.camel@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1309450892-30676-1-git-send-email-sbohrer@rgmadvisors.com>
+In-Reply-To: <1311582723.2617.50.camel@laptop>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 30, 2011 at 11:21:32AM -0500, Shawn Bohrer wrote:
-> commit 7485d0d3758e8e6491a5c9468114e74dc050785d (futexes: Remove rw
-> parameter from get_futex_key()) in 2.6.33 fixed two problems:  First, It
-> prevented a loop when encountering a ZERO_PAGE. Second, it fixed RW
-> MAP_PRIVATE futex operations by forcing the COW to occur by
-> unconditionally performing a write access get_user_pages_fast() to get
-> the page.  The commit also introduced a user-mode regression in that it
-> broke futex operations on read-only memory maps.  For example, this
-> breaks workloads that have one or more reader processes doing a
-> FUTEX_WAIT on a futex within a read only shared file mapping, and a
-> writer processes that has a writable mapping issuing the FUTEX_WAKE.
+On Mon, Jul 25, 2011 at 10:32:03AM +0200, Peter Zijlstra wrote:
+> On Mon, 2011-07-25 at 16:11 +0800, Lin Ming wrote:
+> > It's strange that I didn't find a way to check if a directory is present
+> > in sysfs. Any hint?
 > 
-> This fixes the regression for valid futex operations on RO mappings by
-> trying a RO get_user_pages_fast() when the RW get_user_pages_fast()
-> fails. This change makes it necessary to also check for invalid use
-> cases, such as anonymous RO mappings (which can never change) and the
-> ZERO_PAGE which the commit referenced above was written to address.
+> sysfs is voodoo for me, best I can come up with is, ask the sysfs
+> folks ;-)
 > 
-> This patch does restore the original behavior with RO MAP_PRIVATE
-> mappings, which have inherent user-mode usage problems and don't really
-> make sense.  With this patch performing a FUTEX_WAIT within a RO
-> MAP_PRIVATE mapping will be successfully woken provided another process
-> updates the region of the underlying mapped file.  However, the mmap()
-> man page states that for a MAP_PRIVATE mapping:
-> 
->   It is unspecified whether changes made to the file after
->   the mmap() call are visible in the mapped region.
-> 
-> So user-mode users attempting to use futex operations on RO MAP_PRIVATE
-> mappings are depending on unspecified behavior.  Additionally a
-> RO MAP_PRIVATE mapping could fail to wake up in the following case.
-> 
->   Thread-A: call futex(FUTEX_WAIT, memory-region-A).
->             get_futex_key() return inode based key.
->             sleep on the key
->   Thread-B: call mprotect(PROT_READ|PROT_WRITE, memory-region-A)
->   Thread-B: write memory-region-A.
->             COW happen. This process's memory-region-A become related
->             to new COWed private (ie PageAnon=1) page.
->   Thread-B: call futex(FUETX_WAKE, memory-region-A).
->             get_futex_key() return mm based key.
->             IOW, we fail to wake up Thread-A.
-> 
-> Once again doing something like this is just silly and users who do
-> something like this get what they deserve.
-> 
-> While RO MAP_PRIVATE mappings are nonsensical, checking for a private
-> mapping requires walking the vmas and was deemed too costly to avoid a
-> userspace hang.
-> 
-> This Patch is based on Peter Zijlstra's initial patch with modifications to
-> only allow RO mappings for futex operations that need VERIFY_READ access.
-> 
-> Reported-by: David Oliver <david@rgmadvisors.com>
-> Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
-> Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-> ---
-> 
-> Clairified commit description.  Changed get_futex_key() back to having a
-> fshared and rw parameter, per Darren's request.
-> 
->  kernel/futex.c |   54 ++++++++++++++++++++++++++++++++++++++++++------------
->  1 files changed, 42 insertions(+), 12 deletions(-)
-> 
-> diff --git a/kernel/futex.c b/kernel/futex.c
-> index fe28dc2..70bb54b 100644
-> --- a/kernel/futex.c
-> +++ b/kernel/futex.c
-> @@ -218,6 +218,8 @@ static void drop_futex_key_refs(union futex_key *key)
->   * @uaddr:	virtual address of the futex
->   * @fshared:	0 for a PROCESS_PRIVATE futex, 1 for PROCESS_SHARED
->   * @key:	address where result is stored.
-> + * @rw:		mapping needs to be read/write (values: VERIFY_READ,
-> + *              VERIFY_WRITE)
->   *
->   * Returns a negative error code or 0
->   * The key words are stored in *key on success.
-> @@ -229,12 +231,12 @@ static void drop_futex_key_refs(union futex_key *key)
->   * lock_page() might sleep, the caller should not hold a spinlock.
->   */
->  static int
-> -get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
-> +get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key, int rw)
->  {
->  	unsigned long address = (unsigned long)uaddr;
->  	struct mm_struct *mm = current->mm;
->  	struct page *page, *page_head;
-> -	int err;
-> +	int err, ro = 0;
->  
->  	/*
->  	 * The futex address must be "naturally" aligned.
-> @@ -262,8 +264,18 @@ get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
->  
->  again:
->  	err = get_user_pages_fast(address, 1, 1, &page);
-> +	/*
-> +	 * If write access is not required (eg. FUTEX_WAIT), try
-> +	 * and get read-only access.
-> +	 */
-> +	if (err == -EFAULT && rw == VERIFY_READ) {
-> +		err = get_user_pages_fast(address, 1, 0, &page);
-> +		ro = 1;
-> +	}
->  	if (err < 0)
->  		return err;
-> +	else
-> +		err = 0;
->  
->  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
->  	page_head = page;
-> @@ -305,6 +317,13 @@ again:
->  	if (!page_head->mapping) {
->  		unlock_page(page_head);
->  		put_page(page_head);
-> +		/*
-> +		* ZERO_PAGE pages don't have a mapping. Avoid a busy loop
-> +		* trying to find one. RW mapping would have COW'd (and thus
-> +		* have a mapping) so this page is RO and won't ever change.
-> +		*/
-> +		if ((page_head == ZERO_PAGE(address)))
-> +			return -EFAULT;
->  		goto again;
->  	}
->  
-> @@ -316,6 +335,15 @@ again:
->  	 * the object not the particular process.
->  	 */
->  	if (PageAnon(page_head)) {
-> +		/*
-> +		 * A RO anonymous page will never change and thus doesn't make
-> +		 * sense for futex operations.
-> +		 */
-> +		if (ro) {
-> +			err = -EFAULT;
-> +			goto out;
-> +		}
-> +
->  		key->both.offset |= FUT_OFF_MMSHARED; /* ref taken on mm */
->  		key->private.mm = mm;
->  		key->private.address = address;
-> @@ -327,9 +355,10 @@ again:
->  
->  	get_futex_key_refs(key);
->  
-> +out:
->  	unlock_page(page_head);
->  	put_page(page_head);
-> -	return 0;
-> +	return err;
->  }
->  
->  static inline void put_futex_key(union futex_key *key)
-> @@ -940,7 +969,7 @@ futex_wake(u32 __user *uaddr, unsigned int flags, int nr_wake, u32 bitset)
->  	if (!bitset)
->  		return -EINVAL;
->  
-> -	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &key);
-> +	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &key, VERIFY_READ);
->  	if (unlikely(ret != 0))
->  		goto out;
->  
-> @@ -986,10 +1015,10 @@ futex_wake_op(u32 __user *uaddr1, unsigned int flags, u32 __user *uaddr2,
->  	int ret, op_ret;
->  
->  retry:
-> -	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1);
-> +	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1, VERIFY_READ);
->  	if (unlikely(ret != 0))
->  		goto out;
-> -	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2);
-> +	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2, VERIFY_WRITE);
->  	if (unlikely(ret != 0))
->  		goto out_put_key1;
->  
-> @@ -1243,10 +1272,11 @@ retry:
->  		pi_state = NULL;
->  	}
->  
-> -	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1);
-> +	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1, VERIFY_READ);
->  	if (unlikely(ret != 0))
->  		goto out;
-> -	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2);
-> +	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2,
-> +			    requeue_pi ? VERIFY_WRITE : VERIFY_READ);
->  	if (unlikely(ret != 0))
->  		goto out_put_key1;
->  
-> @@ -1790,7 +1820,7 @@ static int futex_wait_setup(u32 __user *uaddr, u32 val, unsigned int flags,
->  	 * while the syscall executes.
->  	 */
->  retry:
-> -	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q->key);
-> +	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q->key, VERIFY_READ);
->  	if (unlikely(ret != 0))
->  		return ret;
->  
-> @@ -1941,7 +1971,7 @@ static int futex_lock_pi(u32 __user *uaddr, unsigned int flags, int detect,
->  	}
->  
->  retry:
-> -	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q.key);
-> +	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q.key, VERIFY_WRITE);
->  	if (unlikely(ret != 0))
->  		goto out;
->  
-> @@ -2060,7 +2090,7 @@ retry:
->  	if ((uval & FUTEX_TID_MASK) != vpid)
->  		return -EPERM;
->  
-> -	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &key);
-> +	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &key, VERIFY_WRITE);
->  	if (unlikely(ret != 0))
->  		goto out;
->  
-> @@ -2249,7 +2279,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
->  	debug_rt_mutex_init_waiter(&rt_waiter);
->  	rt_waiter.task = NULL;
->  
-> -	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2);
-> +	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2, VERIFY_WRITE);
->  	if (unlikely(ret != 0))
->  		goto out;
->  
+> Kay, Greg?
 
-Thomas,
+What are you trying to do here specifically?
 
-What do I need to do to get this patch accepted?
+sysfs is not ment to be walked from within the kernel, only from
+userspace.  Perhaps that is your problem here?
 
-Thanks,
-Shawn
-
-
----------------------------------------------------------------
-This email, along with any attachments, is confidential. If you 
-believe you received this message in error, please contact the 
-sender immediately and delete all copies of the message.  
-Thank you.
-
+greg k-h
