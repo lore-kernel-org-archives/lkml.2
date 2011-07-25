@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752952Ab1GYVKU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 17:10:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43766 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751585Ab1GYVKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 17:10:19 -0400
-Message-ID: <4E2DDBAA.60200@zytor.com>
-Date: Mon, 25 Jul 2011 14:10:02 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	id S1752869Ab1GYVMh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 17:12:37 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:39631 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752012Ab1GYVMf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 17:12:35 -0400
+Message-ID: <4E2DDC33.3020107@atmel.com>
+Date: Mon, 25 Jul 2011 23:12:19 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-CC: Ian Campbell <Ian.Campbell@citrix.com>, linux-kernel@vger.kernel.org,
-        Pekka Enberg <penberg@kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 0/3] minor cleanups to EFLAGS initialisation in ret_from_fork
-References: <1311587883.27940.20.camel@cthulhu.hellion.org.uk> <20110725101902.GP4362@sun> <20110725182049.GD27137@sun>
-In-Reply-To: <20110725182049.GD27137@sun>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Vinod Koul <vkoul@infradead.org>
+CC: dan.j.williams@intel.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: [PATCH 3/3] dmaengine: at_hdmac: add slave config operation
+References: <fb4657207f9eb34784c10333e11c48b5638542ed.1309259835.git.nicolas.ferre@atmel.com>	 <1151852b20789636633095406a180335364f4afb.1309259835.git.nicolas.ferre@atmel.com> <1310006025.20150.29.camel@psiaudioba-mobl1>
+In-Reply-To: <1310006025.20150.29.camel@psiaudioba-mobl1>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2011 11:20 AM, Cyrill Gorcunov wrote:
-> On Mon, Jul 25, 2011 at 02:19:02PM +0400, Cyrill Gorcunov wrote:
->> On Mon, Jul 25, 2011 at 10:58:03AM +0100, Ian Campbell wrote:
->>> The following series removes the use of a global kernel_eflags variable
->>> from the x86_64 ret_from_fork path and (very slightly) merges the 32 and
->>> 64 bit version of that code path.
->>>
->>> kernel_eflags could be made a __read_mostly but actually there is no
->>> reason to prefer the value at cpu_init() time to a compile time constant
->>> value for the initial eflags after a fork.
->>>
->>> Ian.
->>>
+On 07/07/2011 04:33 AM, Vinod Koul wrote:
+> On Tue, 2011-06-28 at 13:17 +0200, Nicolas Ferre wrote:
+>> Only change source/destination peripheral register access width.
+> How about a little more explainable change log
+>
 >>
->> Thanks, Ian! I think noone against this simplification, Peter, Andi?
+>> Signed-off-by: Nicolas Ferre<nicolas.ferre@atmel.com>
+>> Signed-off-by: Uwe Kleine-König<u.kleine-koenig@pengutronix.de>
+>> ---
+>>   drivers/dma/at_hdmac.c |   29 +++++++++++++++++++++++++++++
+>>   1 files changed, 29 insertions(+), 0 deletions(-)
 >>
->> 	Cyrill
-> 
-> Ian, I've missed in first place that you've opened IRQs window _before_
-> schedule_tail() call, ie it's not 1:1 code mapping as it was before.
-> 
-> Note kernel_eflags has IF clear and what we have: the ret_from_fork on
-> x86-64 happens _only_ inside context_switch call, ie
-> 
-> schedule (sched.c)
->         ...
->         raw_spin_lock_irq
->         ...
->         context_switch
->                 switch_to
->                         "jnz   ret_from_fork\n\t"
->                         pushq_cfi kernel_eflags(%rip)
->                         popfq_cfi                               # reset kernel eflags
-> 
-> --->                    irqs are still disabled
-> 
->                         call schedule_tail                      # rdi: 'prev' task parameter
->                                 finish_lock_switch
->                                         raw_spin_unlock_irq
-> 
-> I bet raw_spin_lock_irq at the beginning of the schedule() is set
-> for a reason and such change is not safe. Though I may be missing
-> something again...
-> 
+>> diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
+>> index 7096adb..9cb8044 100644
+>> --- a/drivers/dma/at_hdmac.c
+>> +++ b/drivers/dma/at_hdmac.c
+>> @@ -954,6 +954,35 @@ static int atc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+>>   		clear_bit(ATC_IS_PAUSED,&atchan->status);
+>>
+>>   		spin_unlock_irqrestore(&atchan->lock, flags);
+>> +	} else if (cmd == DMA_SLAVE_CONFIG) {
+>> +		struct dma_slave_config *dmaengine_cfg = (void *)arg;
+>> +		struct at_dma_slave	*atslave = chan->private;
+> This API was created to remove chan->private, so this doesn't make sense
+> at all. If your intent is to have a channels internal data, then you
+> should consider embedding dma_chan into this structure (the way other
+> dma drivers do) rather than using private field.
 
-This definitely doesn't look "obviously safe" to me.  However, does
-anyone see a problem with unconditionally leaving IF disabled even on 32
-bits (I haven't traced all the paths yet), i.e. doing the *opposite* of
-Ian's patch #2?
+Yes, I need to rework this slave config part of the driver (and its 
+related calling drivers).
 
-	-hpa
+So please drop this 3/3 patch of the series.
 
+Best regards,
+-- 
+Nicolas Ferre
