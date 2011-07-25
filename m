@@ -1,178 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753052Ab1GYVnQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 17:43:16 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:46811 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752991Ab1GYVnO (ORCPT
+	id S1751572Ab1GYVxq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 17:53:46 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:46726 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214Ab1GYVxn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 17:43:14 -0400
-From: Jim Cromie <jim.cromie@gmail.com>
-To: jbaron@redhat.com
-Cc: bvanassche@acm.org, joe@perches.com, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, gnb@fmeh.org
-Subject: [patch 00/25] dynamic_debug: multiple, pending queries in boot-arg 
-Date: Mon, 25 Jul 2011 15:42:25 -0600
-Message-Id: <1311630170-26057-1-git-send-email-jim.cromie@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+	Mon, 25 Jul 2011 17:53:43 -0400
+Date: Mon, 25 Jul 2011 23:53:28 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Borislav Petkov <bp@amd64.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Przywara, Andre" <Andre.Przywara@amd.com>,
+        "Pohlack, Martin" <Martin.Pohlack@amd.com>
+Subject: Re: [PATCH] x86, AMD: Correct F15h IC aliasing issue
+Message-ID: <20110725215328.GA25960@aftab>
+References: <1311340547-7861-1-git-send-email-bp@amd64.org>
+ <CA+55aFwL9Fwd9ouX3UMOayoBsZyZzTdDSySa6nZJxbpyLifbaQ@mail.gmail.com>
+ <20110724172222.GB12621@aftab>
+ <CA+55aFze=w7tjmyGa2w=D8b6roDuL5O0gmDKkSzLKBLLYZ_a+A@mail.gmail.com>
+ <20110724182323.GA13247@aftab>
+ <20110724183045.GB29660@elte.hu>
+ <20110724190752.GA13647@aftab>
+ <20110724204450.GB18546@elte.hu>
+ <20110725200014.GA23986@aftab>
+ <20110725200645.GC8302@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110725200645.GC8302@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jul 25, 2011 at 04:06:45PM -0400, Ingo Molnar wrote:
+> 
+> * Borislav Petkov <bp@amd64.org> wrote:
+> 
+> > So yeah, the simpler fix works for processes mapping libraries in 
+> > the same order but not for processes mapping a subset of libraries 
+> > in a different order.
+> 
+> but what is the proportion of 'good' versus bad alignment of 
+> libraries, could you collect some stats on a representative enough, 
+> fully booted up Linux system?
+> 
+> Are only 1% of mappings 'bad'? 5%? 10%? 50%? We have no idea and the 
+> actual number matters a lot.
 
+Actually, it's hard to say what is a 'good' and 'bad' allocation. If
+they don't alias, they're always good :).
 
-This patchset extends dynamic-debug facility to allow
-use of pr_debug() within a loadable module's module_init()
-function.  Query/rules can be given on the boot-line,
-and are saved to a pending list if they cannot be applied
-immediately.  Later, when the module is being loaded, the
-pending list is scanned, and matching rules are applied.
-Thus pr_debug() calls in the module's initialization function
-are active when it is invoked.
+Anyway, I did some beginners awk-ery on a gentoo system with ca. 150
+processes. Below is some data for the "r-xp" mappings.
 
-Changes since rev1:
+ld-2.12.2.so, for example, is always loaded at an address with [14:12]
+= 000b while libc's addresses differ in those bits because a different
+number of allocations is being done between ld and libc, thus libc lands
+at different offsets.
 
-- rebased on top of Jasons & Joes patchset
-- fixed accidental unescape removal, noted by Bart
-- trim src-path patch checks for matching prefix before trimming
- should now work for out-of-tree modules.
-- undid verbose newline-strip in exec-queries - Bart
-- verbose param 644, not 744 - Bart, Greg
-- whitespace - Bart
-- added 'a' flag - Jason, Bart
-- drop pending_max - Bart
+I'll do a more comprehensive collection tomorrow and distribute the
+mappings by [14:12] value, that should give us a better idea.
 
-Changes since rev2:
+/lib64/ld-2.12.2.so|r-xp|7f07f61d8000 1
+/lib64/ld-2.12.2.so|r-xp|7f1d8be10000 1
+/lib64/ld-2.12.2.so|r-xp|7f1ea7678000 1
+/lib64/ld-2.12.2.so|r-xp|7f272e248000 1
+/lib64/ld-2.12.2.so|r-xp|7f37acf88000 1
+/lib64/ld-2.12.2.so|r-xp|7f49853f0000 1
+/lib64/ld-2.12.2.so|r-xp|7f50c1460000 1
+/lib64/ld-2.12.2.so|r-xp|7f59f58e0000 1
+/lib64/ld-2.12.2.so|r-xp|7f63dc818000 1
+/lib64/ld-2.12.2.so|r-xp|7f7267d70000 1
+/lib64/ld-2.12.2.so|r-xp|7fa026ba0000 2
+/lib64/ld-2.12.2.so|r-xp|7fa24de88000 1
+/lib64/ld-2.12.2.so|r-xp|7fa604cf8000 1
+/lib64/ld-2.12.2.so|r-xp|7fb07d418000 1
+/lib64/ld-2.12.2.so|r-xp|7fc33cb78000 1
+/lib64/ld-2.12.2.so|r-xp|7fd0c2770000 1
+/lib64/ld-2.12.2.so|r-xp|7fd1e2a08000 1
+/lib64/ld-2.12.2.so|r-xp|7fd214b18000 1
+/lib64/ld-2.12.2.so|r-xp|7fda88a58000 1
+/lib64/ld-2.12.2.so|r-xp|7fdb87d98000 1
+/lib64/ld-2.12.2.so|r-xp|7fe42a588000 1
+/lib64/ld-2.12.2.so|r-xp|7ffd79c08000 1
+/lib64/libc-2.12.2.so|r-xp|7f07f4e3e000 1
+/lib64/libc-2.12.2.so|r-xp|7f1d8b66d000 1
+/lib64/libc-2.12.2.so|r-xp|7f1ea7315000 1
+/lib64/libc-2.12.2.so|r-xp|7f272ceae000 1
+/lib64/libc-2.12.2.so|r-xp|7f37acc25000 1
+/lib64/libc-2.12.2.so|r-xp|7f498508d000 1
+/lib64/libc-2.12.2.so|r-xp|7f50c0ca9000 1
+/lib64/libc-2.12.2.so|r-xp|7f59f557d000 1
+/lib64/libc-2.12.2.so|r-xp|7f63dc061000 1
+/lib64/libc-2.12.2.so|r-xp|7f7267a0d000 1
+/lib64/libc-2.12.2.so|r-xp|7fa02591d000 2
+/lib64/libc-2.12.2.so|r-xp|7fa24d8a5000 1
+/lib64/libc-2.12.2.so|r-xp|7fa604995000 1
+/lib64/libc-2.12.2.so|r-xp|7fb07cc31000 1
+/lib64/libc-2.12.2.so|r-xp|7fc33b7de000 1
+/lib64/libc-2.12.2.so|r-xp|7fd0c1f89000 1
+/lib64/libc-2.12.2.so|r-xp|7fd1e26a5000 1
+/lib64/libc-2.12.2.so|r-xp|7fd2147b5000 1
+/lib64/libc-2.12.2.so|r-xp|7fda884e8000 1
+/lib64/libc-2.12.2.so|r-xp|7fdb87a35000 1
+/lib64/libc-2.12.2.so|r-xp|7fe42a01c000 1
+/lib64/libc-2.12.2.so|r-xp|7ffd79451000 1
 
-1. lock around all list-work, pending-ct
+Thanks.
 
-In response to Bart's locking-bug observation, I hoisted locks up to
-callers, so theyd protect all list, pending-ct manipulation.  This
-means longer hold-times, but less locking/unlocking.  Left as separate
-patch for now, partly cuz having pr_info's under lock gave me some
-heartburn.  That said, lockdep didnt complain.  I think I got the
-interim patches correct too.
+-- 
+Regards/Gruss,
+Boris.
 
-2. filter-flags
-
-Ive extended flags spec to have <match-flags>* <op> <new-flags>*
-IE, matching /[pmflta]*[+-=][pmflta]*/
-
-match-flags (optional) allows a query/rule to be more selective, which
-increases the utility of otherwise unconstrained rules.  So the
-following query matches all call-sites that are already enabled,
-adding the TID flag.
-
-$> echo " p+t " > <dbgfs>/dynamic_debug/control
-
-3. 'a' pending query modification, removal
-
-Real purpose of 2 was to allow modification or deletion of currently
-pending queries:
-
-$> echo "module foo +ap" > <debugfs>/dynamic_debug/control
-$> echo "module foo +apt" > <debugfs>/dynamic_debug/control
-$> echo "module foo ap=_" > <debugfs>/dynamic_debug/control
-
-1st command adds a pending query on module foo
-2nd command modifies it by adding a TID flag
-3rd command deletes the pending query by setting flags to 0
-
-Note that 2,3 have exact match on the query-spec, the match-flags in 3
-specify flags required to match against the pending query; the 't'
-flag added in 2 is not required, but allowed.
-
-With explicit deletion of pending rules, I removed the tacit
-delete-on-apply behavior.
-
-4. $> cat <dbfs>/dynamic_debug/pending
-
-This displays currently pending queries, simplifying their deletion.
-Its not correct right now; it iterates over set, but repeats
-
-5.  Fuller multi-command input
-
-writes to control-file are parsed on '\n' as well as ';',
-and '#' are recognized as comments.  
-With this, the following works.
-
-root@voyage:~# cat debugfs-file
-
-  # blank lines ok
-  module dynamic_debug +p              ; # turn on self-debugging
-  # these are quite noisy when grepping
-  # $DEBUGFS/dynamic_debug/{control,pending}
-    # silence them (also, leading spaces allowed in comments)
-  func ddebug_proc_show -p
-  func ddebug_proc_next -p     ; # trailing comments need cmd terminator
-  func pending_proc_show -p    ;
-  func pending_proc_next -p
-
-root@voyage:~# cat debugfs-file > /dbgfs/dynamic_debug/control
-split into words: "module" "dynamic_debug" "+p"
-changed $srcroot/lib/dynamic_debug.c:223 [dynamic_debug]ddebug_change =p
-changed $srcroot/lib/dynamic_debug.c:576 [dynamic_debug]ddebug_save_pending =p
-....
-
-Here-docs work too, but shell interferes with comments.
-
-
-Notes:
-
-1. echo " +p " > /dbg/dynamic_debug/control
-
-The above felt a little radical, but it isnt really; it works on
-mainline.  Therefore one part of the Doc is slightly misleading (last
-sentence):
-
- The match-spec's are used to choose a subset of the known dprintk()
- callsites to which to apply the flags-spec.  Think of them as a query
- with implicit ANDs between each pair.  Note that an empty list of
- match-specs is possible, but is not very useful because it will not
- match any debug statement callsites.
-
-2. this runs 2 separate writes.
-
-printf "module nsc_gpio +p\n module pc8736x_gpio +p\npc8736x_gpio +p\n" \
-      > /dbg/dynamic_debug/control
-
-This form of command is seen by kernel as 2 separate writes, so the
-form is not usable in boot-line in mainline; it breaks the debug
-facility (see patch 6).  Using ';' to separate multiple commands does
-work on boot-line.
-
-thanks
-Jim Cromie
-
-1-11 are straightforward, I think ready to go.
-12-25 are the core feature addition, and have bigger implications.  
-I think theyre mostly solid, but they probably warrant more scrutiny.
-25 needs some help.
-
-0001-dynamic_debug-add-pending-flag-a-to-make-pending-que.patch
-0002-dynamic_debug-change-verbosity-at-runtime.patch
-0003-dynamic_debug-use-pr_debug-instead-of-pr_info.patch
-0004-dynamic_debug-replace-strcpy-with-strlcpy-in-ddebug_.patch
-0005-dynamic_debug-trim-source-path-prefix-from-dynamic_d.patch
-0006-dynamic_debug-process-multiple-commands-on-a-line.patch
-0007-dynamic_debug-enlarge-command-query-write-buffer.patch
-0008-dynamic_debug-warn-when-1-of-each-type-of-match-spec.patch
-0009-dynamic_debug-pr_err-call-should-not-depend-upon-ver.patch
-0010-dynamic_debug-dont-kill-entire-facility-on-error-par.patch
-0011-dynamic_debug-factor-show_ddebug_query-out-of-ddebug.patch
-0012-dynamic_debug-save-non-matching-queries-to-pending-l.patch
-0013-dynamic_debug-apply_pending_queries-from-ddebug_add_.patch
-0014-dynamic_debug-refactor-query_matches_callsite-out-of.patch
-0015-dynamic_debug-remove-explicit-foo-NULL-checks.patch
-0016-dynamic_debug-require-a-flag-to-explicitly-mark-pend.patch
-0017-dynamic_debug-hoist-locking-in-ddebug_change-to-call.patch
-0018-dynamic_debug-describe_flags-with-pmflta_.patch
-0019-dynamic_debug-add-flags-filtering-to-flags-spec.patch
-0020-dynamic_debug-remove-pending-query-when-flags-zeroed.patch
-0021-dynamic_debug-shrink-struct-pending-query-to-size-ac.patch
-0022-dynamic_debug-call-ddebug_add_module-on-dynamic_debu.patch
-0023-dynamic_debug-document-pending-queries-flags-filter-.patch
-0024-dynamic_debug-add-Documentation-example-for-query-cm.patch
-0025-dynamic_debug-drop-pr_fmt-from-dynamic_pr_debug.patch
-0026-dynamic_debug-add-DBGFS-dynamic_debug-pending.patch
-
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
