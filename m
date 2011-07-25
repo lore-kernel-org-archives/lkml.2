@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751519Ab1GYRLm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 13:11:42 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:58747 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750776Ab1GYRLj (ORCPT
+	id S1751565Ab1GYRP2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 13:15:28 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:41581 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750776Ab1GYRPZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 13:11:39 -0400
+	Mon, 25 Jul 2011 13:15:25 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=kBBwih5HnsxxhioSO6D7Yhz2B4e1qJds6FQvDhGtYvRBD08narh4u+H/SjgpFXfdT
+	kk+ubPoKWyk7ZcmsvnHKA==
 MIME-Version: 1.0
-In-Reply-To: <1311613694.24752.8.camel@twins>
-References: <20110721164325.231521704@google.com>
-	<1311605881.24752.2.camel@twins>
-	<1311606041.24752.3.camel@twins>
-	<20110725162133.GI2327@linux.vnet.ibm.com>
-	<1311611311.24752.5.camel@twins>
-	<20110725164619.GK2327@linux.vnet.ibm.com>
-	<1311613694.24752.8.camel@twins>
-Date: Mon, 25 Jul 2011 10:11:38 -0700
-Message-ID: <CAPhKKr-+sss_Q+SLCFWbdQdcCG2rn93Hh8KH7p3eG35AWvsRJQ@mail.gmail.com>
-Subject: Re: [patch 00/18] CFS Bandwidth Control v7.2
-From: Dhaval Giani <dhaval.giani@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: paulmck@linux.vnet.ibm.com, Paul Turner <pjt@google.com>,
-        linux-kernel@vger.kernel.org,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Jason Baron <jbaron@redhat.com>
+In-Reply-To: <CAC-0EqgJtddENZO_=kmjSy8-bocLf+ansDbpGwbkb+a3YLakLQ@mail.gmail.com>
+References: <CAC-0EqgJtddENZO_=kmjSy8-bocLf+ansDbpGwbkb+a3YLakLQ@mail.gmail.com>
+From: Mike Waychison <mikew@google.com>
+Date: Mon, 25 Jul 2011 10:15:03 -0700
+Message-ID: <CAGTjWtBw7JJHQFnxjDJEs58LyO2wX98aNWKtCmrQ3fYzebX2Xw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/5] firmware: Add DMI entry types to the headers
+To: David Hubbard <david.c.hubbard@gmail.com>
+Cc: Linux kernel <linux-kernel@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Greg KH <greg@kroah.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Jul 24, 2011 at 4:22 PM, David Hubbard
+<david.c.hubbard@gmail.com> wrote:
+> Hi Mike,
 >
-> I consider setting the cgroup paramaters an utter slow path, and if
-> people complain I'll simply tell them to sod off ;-)
+>> In preparation for the upcoming commits, introduce the DMI entry types to
+>> the headers.  These type names are based on those specified in the DMTF
+>> SMBIOS specification version 2.7.1.
+>>
+>> Signed-off-by: Mike Waychison <mikew@google.com>
+>> ---
+>>  include/linux/dmi.h |   47 +++++++++++++++++++++++++++++++++++++++++++++++
+>>  1 files changed, 47 insertions(+), 0 deletions(-)
 >
+> I noticed a missing entry w.r.t. dmi_smbios_structure_type() in dmidecode.c:
+>
+> --- include/linux/dmi.h 2011-07-24 17:14:34.000000000 -0600
+> +++ include/linux/dmi.h 2011-07-24 17:14:49.000000000 -0600
+> @@ -57,6 +57,7 @@
+>        DMI_ENTRY_OOB_REMOTE_ACCESS,
+>        DMI_ENTRY_BIS_ENTRY,
+>        DMI_ENTRY_SYSTEM_BOOT,
+> +       DMI_ENTRY_64_MEM_ERROR,
+>        DMI_ENTRY_MGMT_DEV,
+>        DMI_ENTRY_MGMT_DEV_COMPONENT,
+>        DMI_ENTRY_MGMT_DEV_THRES,
 
-cgroups parameters? I can think of some funky uses if setting cgroup
-parameters was not in the slow path. I think you meant create/destroy
-cgroups here :-).
+Good catch.  Looks like I screwed this up when transcribing the types
+from the docs.   Good thing nobody depends on these later enums yet ;)
 
-Dhaval
+Can you post a patch in the canonical format specified in
+Documentation/SubmittingPatches ?
