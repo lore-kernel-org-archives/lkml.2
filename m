@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343Ab1GYVoz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 17:44:55 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:46811 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753323Ab1GYVnw (ORCPT
+	id S1753353Ab1GYVpK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 17:45:10 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:37386 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753259Ab1GYVnu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 17:43:52 -0400
+	Mon, 25 Jul 2011 17:43:50 -0400
 From: Jim Cromie <jim.cromie@gmail.com>
 To: jbaron@redhat.com
 Cc: bvanassche@acm.org, joe@perches.com, gregkh@suse.de,
         linux-kernel@vger.kernel.org, gnb@fmeh.org,
         Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 22/25] dynamic_debug: call ddebug_add_module() on dynamic_debug first.
-Date: Mon, 25 Jul 2011 15:42:47 -0600
-Message-Id: <1311630170-26057-23-git-send-email-jim.cromie@gmail.com>
+Subject: [PATCH 21/25] dynamic_debug: shrink struct pending query to size actually needed
+Date: Mon, 25 Jul 2011 15:42:46 -0600
+Message-Id: <1311630170-26057-22-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1311630170-26057-1-git-send-email-jim.cromie@gmail.com>
 References: <1311630170-26057-1-git-send-email-jim.cromie@gmail.com>
@@ -22,98 +22,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In dynamic_debug_init(), find the dynamic-debug entries in the debug
-section, and call ddebug_add_module on those entries 1st, before
-doing all the others.  Doing this activates debug callsites in
-dynamic_debug before the functions they're part of are used to
-process other modules, making them useful for debugging debug
-queries on those modules.  Without this, the debuggability of
-queries depends upon whether the module is before or after
-dynamic-debug in the __verbose data, ie link order.
-
-Finding the dynamic-debug entries effectively splits the __verbose
-data in 2; 1st we mark the found spot and process mark to end
-(which starts with dynamic-debug entries), then process start to mark.
-Refactor the block-finding code into dynamic_debug_init_helper(),
-then call it on the 2 halves of the __verbose data.
+Remove struct pending_query's fixed sized char arrays; function,
+filename, module, format, and replace them with a 0-sized charbuf.
+Before the struct is allocd, determine the size needed to store
+the 4 strings into the charbuf.  Then copy the strings off the stack,
+and update the field ptrs in the embedded struct ddebug_query to point
+into the charbuf.  This change uses strcpy instead of strlcpy, since
+we know that the charbuf is big enough to hold the 4 strings.
 
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 ---
- lib/dynamic_debug.c |   53 ++++++++++++++++++++++++++++++++++++--------------
- 1 files changed, 38 insertions(+), 15 deletions(-)
+ lib/dynamic_debug.c |   37 ++++++++++++++++++++++---------------
+ 1 files changed, 22 insertions(+), 15 deletions(-)
 
 diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index 5ec8165..6dbefb7 100644
+index 8f56092..5ec8165 100644
 --- a/lib/dynamic_debug.c
 +++ b/lib/dynamic_debug.c
-@@ -1068,29 +1068,52 @@ static int __init dynamic_debug_init_debugfs(void)
+@@ -56,11 +56,8 @@ struct ddebug_query {
+ struct pending_query {
+ 	struct list_head link;
+ 	struct ddebug_query query;
+-	char filename[100];
+-	char module[30];
+-	char function[50];
+-	char format[200];
+ 	unsigned int flags, mask;
++	char buf[0];
+ };
+ 
+ struct ddebug_iter {
+@@ -507,7 +504,8 @@ static int ddebug_save_pending(struct ddebug_query *query,
+ 				unsigned int flags, unsigned int mask)
+ {
+ 	struct pending_query *pq, *pqnext;
+-	char *qstr;
++	char *qstr, *bp;
++	size_t buflen;
+ 
+ 	list_for_each_entry_safe(pq, pqnext, &pending_queries, link) {
+ 		if (queries_match(query, &pq->query)) {
+@@ -537,26 +535,33 @@ static int ddebug_save_pending(struct ddebug_query *query,
+ 	pr_debug("add to pending: %s\n", qstr);
+ 	kfree(qstr);
+ 
+-	pq = kzalloc(sizeof(struct pending_query), GFP_KERNEL);
++	buflen = (query->module ? strlen(query->module) : 0)
++		+ (query->function ? strlen(query->function) : 0)
++		+ (query->filename ? strlen(query->filename) : 0)
++		+ (query->format ? strlen(query->format) : 0)
++		+ 4; /* for \0's */
++
++	pq = kzalloc(sizeof(struct pending_query) + buflen, GFP_KERNEL);
+ 	if (pq == NULL)
+ 		return -ENOMEM;
+ 
+ 	/* copy non-null match-specs into allocd mem, update pointers */
++	bp = pq->buf;
+ 	if (query->module) {
+-		strlcpy(pq->module, query->module, sizeof(pq->module));
+-		pq->query.module = pq->module;
++		pq->query.module = strcpy(bp, query->module);
++		bp += strlen(bp) + 1;
+ 	}
+ 	if (query->function) {
+-		strlcpy(pq->function, query->function, sizeof(pq->function));
+-		pq->query.function = pq->function;
++		pq->query.function = strcpy(bp, query->function);
++		bp += strlen(bp) + 1;
+ 	}
+ 	if (query->filename) {
+-		strlcpy(pq->filename, query->filename, sizeof(pq->filename));
+-		pq->query.filename = pq->filename;
++		pq->query.filename = strcpy(bp, query->filename);
++		bp += strlen(bp) + 1;
+ 	}
+ 	if (query->format) {
+-		strlcpy(pq->format, query->format, sizeof(pq->format));
+-		pq->query.format = pq->format;
++		pq->query.format = strcpy(bp, query->format);
++		bp += strlen(bp) + 1;
+ 	}
+ 	pq->flags = flags;
+ 	pq->mask = mask;
+@@ -564,7 +569,9 @@ static int ddebug_save_pending(struct ddebug_query *query,
+ 	list_add(&pq->link, &pending_queries);
+ 	pending_ct++;
+ 
+-	pr_debug("query saved as pending %d\n", pending_ct);
++	pr_debug("query saved as pending %d, in %d+%d bytes\n",
++		pending_ct, sizeof(struct pending_query), buflen);
++
  	return 0;
  }
  
-+static int __init dynamic_debug_init_helper(struct _ddebug *start,
-+					struct _ddebug *end)
-+{
-+	struct _ddebug *iter, *block;
-+	const char *modname = start->modname;
-+	int ret, n = 0;
-+
-+	for (block = iter = start; iter < end; iter++) {
-+		if (strcmp(modname, iter->modname)) {
-+			ret = ddebug_add_module(block, n, modname);
-+			if (ret)
-+				return ret;
-+			n = 0;
-+			modname = iter->modname;
-+			block = iter;
-+		}
-+		n++;
-+	}
-+	return ddebug_add_module(block, n, modname);
-+}
-+
- static int __init dynamic_debug_init(void)
- {
--	struct _ddebug *iter, *iter_start;
-+	struct _ddebug *iter;
- 	const char *modname = NULL;
- 	int ret = 0;
--	int n = 0;
- 
- 	if (__start___verbose != __stop___verbose) {
-+		/* find and process dynamic_debug entries 1st
-+		   this might allow activating ddebug_add_module callsites
-+		   prior to their use processing other modules. TBI
-+		*/
- 		iter = __start___verbose;
- 		modname = iter->modname;
--		iter_start = iter;
--		for (; iter < __stop___verbose; iter++) {
--			if (strcmp(modname, iter->modname)) {
--				ret = ddebug_add_module(iter_start, n, modname);
--				if (ret)
--					goto out_free;
--				n = 0;
--				modname = iter->modname;
--				iter_start = iter;
--			}
--			n++;
--		}
--		ret = ddebug_add_module(iter_start, n, modname);
-+
-+		for (; iter < __stop___verbose; iter++)
-+			if (!strcmp("dynamic_debug", iter->modname))
-+				break;
-+
-+		ret = dynamic_debug_init_helper(iter, __stop___verbose);
-+		if (ret)
-+			goto out_free;
-+
-+		ret = dynamic_debug_init_helper(__start___verbose, iter);
-+		if (ret)
-+			goto out_free;
- 	}
- 
- 	/* ddebug_query boot param got passed -> set it up */
 -- 
 1.7.4.1
 
