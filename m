@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751908Ab1GYN0F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 09:26:05 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:59302 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751481Ab1GYN0B (ORCPT
+	id S1751584Ab1GYNaC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 09:30:02 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50155 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751178Ab1GYN37 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 09:26:01 -0400
-Date: Mon, 25 Jul 2011 09:25:53 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH] perf:  Add drop monitor script
-Message-ID: <20110725132553.GA17003@hmsreliant.think-freely.org>
-References: <1309801217-22450-1-git-send-email-nhorman@tuxdriver.com>
-MIME-Version: 1.0
+	Mon, 25 Jul 2011 09:29:59 -0400
+Subject: Re: [GIT PULL] Native Linux KVM tool for 3.1
+Mime-Version: 1.0 (Apple Message framework v1084)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1309801217-22450-1-git-send-email-nhorman@tuxdriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -0.7 (/)
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <1311599366.14203.42.camel@jaguar>
+Date: Mon, 25 Jul 2011 15:29:56 +0200
+Cc: Avi Kivity <avi@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Jan Kiszka <jan.kiszka@web.de>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, gorcunov@gmail.com, levinsasha928@gmail.com,
+        asias.hejun@gmail.com, prasadjoshi124@gmail.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <83392120-2809-429C-A75F-9A23E25B1A56@suse.de>
+References: <alpine.DEB.2.00.1107242335580.18045@tiger> <4E2CA6DE.4040900@web.de> <CAOJsxLEkXpDCiMZZnSXnxQ6-PFBwMEv4j5mLRhPZVMKw=LoPSQ@mail.gmail.com> <20110725075305.GA32294@elte.hu> <0EAA5203-D598-4CBA-B8D2-AB371A7689A9@suse.de> <CAOJsxLHGgpNrHpfnHzD-aOJakE9q_4ym51_AYQHaj+waEZtSuw@mail.gmail.com> <ED2ECD82-2B14-45FF-AA61-AB26B377B626@suse.de> <CAOJsxLFDzSg55u92b6Qgvqn1yjaShYG_Bgdkzy19aBrzxo7FqA@mail.gmail.com> <B0466610-8355-402E-B378-68BD3AF9CE2D@suse.de> <CAOJsxLFT-E5E3YFT5es8FkTfgu1xTvqf-k+WqgH47U+ZKxVVoQ@mail.gmail.com> <4E2D65D7.6030407@redhat.com> <0747BB86-5A2E-449D-BF03-9FA76BA08FC8@suse.de> <1311599366.14203.42.camel@jaguar>
+To: Pekka Enberg <penberg@kernel.org>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 04, 2011 at 01:40:17PM -0400, Neil Horman wrote:
-> A while back I created the dropmonitor protocol, which allowed users to get
-> reports of dropped frames communicated to them via a netlink socket.  While
-> useful, several people have now asked that I integrate the ability to do drop
-> monitoring with perf, so they don't have to run additional tools.  This patch
-> adds a drop monitor script to the perf suite, and provides the same output that
-> the netlink socket does.
-> 
-> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> CC: Paul Mackerras <paulus@samba.org>
-> CC: Ingo Molnar <mingo@elte.hu>
-> CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Ping again, Acme, any thoughts?
-Neil
 
+On 25.07.2011, at 15:09, Pekka Enberg wrote:
+
+> Hi Alexander,
 > 
+> On Mon, 2011-07-25 at 14:51 +0200, Alexander Graf wrote:
+>> And if you need to share code with perf, then that just proves the
+>> point that perf doesn't belong inside the kernel tree either.
+> 
+> You seem to want to prove something here but our reasoning is based on
+> experience and practicalities - not some theoretical idea what should
+> and what shouldn't be in the Linux kernel tree. I really don't think
+> that perf would have turned out to be as useful as it is if it was
+> developed out-of-the-tree.
+
+IIUC that was mainly because the interface is very very closely coupled with kernel code.
+
+> That's also why we think tools/kvm is such a good idea.
+
+I like pears, so I like apples too?
+
+
+Alex
+
