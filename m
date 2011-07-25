@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751759Ab1GYNJe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 09:09:34 -0400
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:35984 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751025Ab1GYNJ2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 09:09:28 -0400
+	id S1751877Ab1GYNKb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 09:10:31 -0400
+Received: from 8bytes.org ([88.198.83.132]:56121 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751646Ab1GYNKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 09:10:24 -0400
+Date: Mon, 25 Jul 2011 15:10:22 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: Alexander Graf <agraf@suse.de>, Pekka Enberg <penberg@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Jan Kiszka <jan.kiszka@web.de>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, gorcunov@gmail.com,
+        levinsasha928@gmail.com, asias.hejun@gmail.com,
+        prasadjoshi124@gmail.com
 Subject: Re: [GIT PULL] Native Linux KVM tool for 3.1
-From: Pekka Enberg <penberg@kernel.org>
-To: Alexander Graf <agraf@suse.de>
-Cc: Avi Kivity <avi@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Jan Kiszka <jan.kiszka@web.de>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, gorcunov@gmail.com, levinsasha928@gmail.com,
-        asias.hejun@gmail.com, prasadjoshi124@gmail.com
-In-Reply-To: <0747BB86-5A2E-449D-BF03-9FA76BA08FC8@suse.de>
-References: <alpine.DEB.2.00.1107242335580.18045@tiger>
-	 <4E2CA6DE.4040900@web.de>
-	 <CAOJsxLEkXpDCiMZZnSXnxQ6-PFBwMEv4j5mLRhPZVMKw=LoPSQ@mail.gmail.com>
-	 <20110725075305.GA32294@elte.hu>
-	 <0EAA5203-D598-4CBA-B8D2-AB371A7689A9@suse.de>
-	 <CAOJsxLHGgpNrHpfnHzD-aOJakE9q_4ym51_AYQHaj+waEZtSuw@mail.gmail.com>
-	 <ED2ECD82-2B14-45FF-AA61-AB26B377B626@suse.de>
-	 <CAOJsxLFDzSg55u92b6Qgvqn1yjaShYG_Bgdkzy19aBrzxo7FqA@mail.gmail.com>
-	 <B0466610-8355-402E-B378-68BD3AF9CE2D@suse.de>
-	 <CAOJsxLFT-E5E3YFT5es8FkTfgu1xTvqf-k+WqgH47U+ZKxVVoQ@mail.gmail.com>
-	 <4E2D65D7.6030407@redhat.com>
-	 <0747BB86-5A2E-449D-BF03-9FA76BA08FC8@suse.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Mon, 25 Jul 2011 16:09:26 +0300
-Message-ID: <1311599366.14203.42.camel@jaguar>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Message-ID: <20110725131022.GJ24072@8bytes.org>
+References: <alpine.DEB.2.00.1107242335580.18045@tiger> <4E2CA6DE.4040900@web.de> <CAOJsxLEkXpDCiMZZnSXnxQ6-PFBwMEv4j5mLRhPZVMKw=LoPSQ@mail.gmail.com> <20110725075305.GA32294@elte.hu> <0EAA5203-D598-4CBA-B8D2-AB371A7689A9@suse.de> <CAOJsxLFv74GaBpNkVSWpEpqs505smUb2yBrMAh7UY_ggVWPwFA@mail.gmail.com> <ECCD7C67-C339-43EA-8A57-513173899813@suse.de> <4E2D2AE8.7050100@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E2D2AE8.7050100@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexander,
+On Mon, Jul 25, 2011 at 11:35:52AM +0300, Avi Kivity wrote:
+> On 07/25/2011 11:31 AM, Alexander Graf wrote:
+>> In Ingo's reasoning, the next step would be to rewrite glibc and put
+>> it into the kernel tree, because we end up adding syscalls so adding
+>> them to the in-kernel libc with the same commit would be a lot easier
+>> and cleaner.
+>
+> That actually makes a ton of sense.  One immediate win would be that  
+> klibc can be tuned to the kernel it ships with (the dynamic loader will  
+> pick the correct object), so less #ifdef trees.  Another would be to  
+> make klibc the formal kernel interface, which allows us to reimplement  
+> an older interface in terms of the one that supercedes it.
 
-On Mon, 2011-07-25 at 14:51 +0200, Alexander Graf wrote:
-> And if you need to share code with perf, then that just proves the
-> point that perf doesn't belong inside the kernel tree either.
+A libc in the kernel tree would indeed make a lot of sense and I am all
+for it :) It would also help to get new interfaces to the users faster.
+But it should probably not be the primary exported interface. This would
+just move the compatability problem from the kernel into user-space.
 
-You seem to want to prove something here but our reasoning is based on
-experience and practicalities - not some theoretical idea what should
-and what shouldn't be in the Linux kernel tree. I really don't think
-that perf would have turned out to be as useful as it is if it was
-developed out-of-the-tree. That's also why we think tools/kvm is such a
-good idea.
-
-			Pekka
+	Joerg
 
