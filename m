@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792Ab1GYBPU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 21:15:20 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:59938 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751776Ab1GYBPR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 21:15:17 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6417"; a="105406998"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-doc@vger.kernel.org, Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH] Documentation: Document ARM's user_debug parameter
-Date: Sun, 24 Jul 2011 18:15:14 -0700
-Message-Id: <1311556514-24728-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.6.233.gd79bc
+	id S1752785Ab1GYBQj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 21:16:39 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:32878 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752383Ab1GYBQh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jul 2011 21:16:37 -0400
+Date: Mon, 25 Jul 2011 11:16:27 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jonas Bonn <jonas@southpole.se>, Alan Cox <alan@linux.intel.com>
+Subject: linux-next: build failure after merge of the origin tree
+Message-Id: <20110725111627.0b0d8c8f0b73cff8f6ab85e9@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Usually kernel parameters are documented in kernel-parameters.txt
-but user_debug is only documented in the Kconfig. Document the
-option and point to the Kconfig help text for more info.
+Hi Linus,
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Russell King <linux@arm.linux.org.uk>
+After merging the origin tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
+
+ERROR: "__bad_udelay" [drivers/staging/gma500/psb_gfx.ko] undefined!
+
+Presumably caused by commit a87e553fabe8 ("asm-generic: delay.h fix
+udelay and ndelay for 8 bit args").
+drivers/staging/gma500/psb_intel_display.c has a udelay
+(20000) which is explicitly disallowed by this patch.
+
+I have added the following patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 25 Jul 2011 11:13:13 +1000
+Subject: [PATCH] gma500: udlay(20000) is too large
+
+So we use mdelay(20) instead.  Fixes this build error:
+
+ERROR: "__bad_udelay" [drivers/staging/gma500/psb_gfx.ko] undefined!
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- Documentation/kernel-parameters.txt |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+ drivers/staging/gma500/psb_intel_display.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index aa47be7..8186adc 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2612,6 +2612,16 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 					medium is write-protected).
- 			Example: quirks=0419:aaf5:rl,0421:0433:rc
+diff --git a/drivers/staging/gma500/psb_intel_display.c b/drivers/staging/gma500/psb_intel_display.c
+index 4f47d09..09e378d 100644
+--- a/drivers/staging/gma500/psb_intel_display.c
++++ b/drivers/staging/gma500/psb_intel_display.c
+@@ -331,7 +331,7 @@ static bool psb_intel_find_best_PLL(struct drm_crtc *crtc, int target,
+ void psb_intel_wait_for_vblank(struct drm_device *dev)
+ {
+ 	/* Wait for 20ms, i.e. one cycle at 50hz. */
+-	udelay(20000);
++	mdelay(20);
+ }
  
-+	user_debug=	[KNL,ARM]
-+			Format: <int>
-+			See arch/arm/Kconfig.debug help text.
-+				 1 - undefined instruction events
-+				 2 - system calls
-+				 4 - invalid data aborts
-+				 8 - SIGSEGV faults
-+				16 - SIGBUS faults
-+			Example: user_debug=31
-+
- 	userpte=
- 			[X86] Flags controlling user PTE allocations.
- 
+ int psb_intel_pipe_set_base(struct drm_crtc *crtc,
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+1.7.5.4
 
+
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
