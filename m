@@ -1,62 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751418Ab1GYMmE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 08:42:04 -0400
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:34406 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750946Ab1GYMly (ORCPT
+	id S1751484Ab1GYMmL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 08:42:11 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:44846 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751382Ab1GYMmB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 08:41:54 -0400
-Subject: Re: [GIT PULL] Native Linux KVM tool for 3.1
-From: Pekka Enberg <penberg@kernel.org>
-To: Kevin Wolf <kwolf@redhat.com>
-Cc: Alexander Graf <agraf@suse.de>, Ingo Molnar <mingo@elte.hu>,
-        Jan Kiszka <jan.kiszka@web.de>, torvalds@linux-foundation.org,
-        avi@redhat.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, gorcunov@gmail.com,
-        levinsasha928@gmail.com, asias.hejun@gmail.com,
-        prasadjoshi124@gmail.com
-In-Reply-To: <4E2D608F.6020606@redhat.com>
-References: <alpine.DEB.2.00.1107242335580.18045@tiger>
-	 <4E2CA6DE.4040900@web.de>
-	 <CAOJsxLEkXpDCiMZZnSXnxQ6-PFBwMEv4j5mLRhPZVMKw=LoPSQ@mail.gmail.com>
-	 <20110725075305.GA32294@elte.hu>
-	 <0EAA5203-D598-4CBA-B8D2-AB371A7689A9@suse.de>
-	 <CAOJsxLHGgpNrHpfnHzD-aOJakE9q_4ym51_AYQHaj+waEZtSuw@mail.gmail.com>
-	 <4E2D608F.6020606@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Mon, 25 Jul 2011 15:41:52 +0300
-Message-ID: <1311597712.14203.28.camel@jaguar>
+	Mon, 25 Jul 2011 08:42:01 -0400
+Subject: Re: [PATCH 0/5] ppc64 scheduler fixes
+From: Peter Zijlstra <peterz@infradead.org>
+To: Anton Blanchard <anton@samba.org>
+Cc: mingo@elte.hu, benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110725023311.175792493@samba.org>
+References: <20110725023311.175792493@samba.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 25 Jul 2011 14:41:42 +0200
+Message-ID: <1311597702.24752.1.camel@twins>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kevin,
+On Mon, 2011-07-25 at 12:33 +1000, Anton Blanchard wrote:
+> Here are a set of ppc64 scheduler fixes that help with some
+> multi node performance issues.
 
-On Mon, 2011-07-25 at 14:24 +0200, Kevin Wolf wrote:
-> You've just chosen a different default. I'd argue that most users (i.e.
-> not developers of the tool or the kernel) actually want to run with a
-> disk image and graphics. You can type "qemu-kvm harddisk.img" and that's
-> it. This is clearly superior to something as tedious as "./kvm run -d
-> harddisk.img --sdl" and I can assure you that a bash alias is really not
-> a solution for that.
+They look fine to me. I'll probably ping you when I'll rip out all that
+SD_NODES_PER_DOMAIN crap for good, but until then I'm fine with you
+fiddling it for ppc64.
 
-I actually agree with you and we eventually want
-
-  kvm run harddisk.img
-
-to do the right thing.
-
-On Mon, 2011-07-25 at 14:24 +0200, Kevin Wolf wrote:
-> So, as always, which set of command line switches works better for you
-> depends entirely on your use case.
-
-I actually don't agree. I think Qemu requires way too much configuration
-from the user and doesn't try hard enough to provide best possible
-defaults. Dunno how much virt-manager changes all that, though.
-
-			Pekka
-
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
