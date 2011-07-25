@@ -1,195 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199Ab1GYP6f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 11:58:35 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:55540 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290Ab1GYP6c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 11:58:32 -0400
+	id S1752134Ab1GYQDG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 12:03:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8669 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751809Ab1GYQDD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 12:03:03 -0400
+Date: Mon, 25 Jul 2011 12:02:44 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: oomichi@mxs.nes.nec.co.jp, linux-s390@vger.kernel.org,
+        mahesh@linux.vnet.ibm.com, heiko.carstens@de.ibm.com,
+        linux-kernel@vger.kernel.org, hbabu@us.ibm.com, horms@verge.net.au,
+        ebiederm@xmission.com, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        kexec@lists.infradead.org
+Subject: Re: [patch 0/9] kdump: Patch series for s390 support
+Message-ID: <20110725160244.GB11009@redhat.com>
+References: <20110718123140.GB31986@redhat.com>
+ <1310997641.4427.10.camel@br98xy6r>
+ <20110718141943.GE31986@redhat.com>
+ <1311000253.4427.23.camel@br98xy6r>
+ <20110718152532.GF31986@redhat.com>
+ <1311012188.4427.58.camel@br98xy6r>
+ <20110720192509.GD10079@redhat.com>
+ <1311260298.6160.43.camel@br98xy6r>
+ <20110721212257.GI12373@redhat.com>
+ <1311327191.5772.51.camel@br98xy6r>
 MIME-Version: 1.0
-In-Reply-To: <1311199321-4618-3-git-send-email-per.forlin@linaro.org>
-References: <1311199321-4618-1-git-send-email-per.forlin@linaro.org>
-	<1311199321-4618-3-git-send-email-per.forlin@linaro.org>
-Date: Tue, 26 Jul 2011 00:58:31 +0900
-Message-ID: <CAC5umyg44tQxrFEYRL-tjzBMA2+KNXjB+nQveH3KcB_LPmYVHw@mail.gmail.com>
-Subject: Re: [PATCH v3 2/3] mmc: core: add random fault injection
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: Per Forlin <per.forlin@linaro.org>
-Cc: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-doc@vger.kernel.org,
-        Venkatraman S <svenkatr@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Sourav Poddar <sourav.poddar@ti.com>,
-        Chris Ball <cjb@laptop.org>,
-        J Freyensee <james_p_freyensee@linux.intel.com>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Content-Type: multipart/mixed; boundary=bcaec5015e5304f9d104a8e6e37b
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1311327191.5772.51.camel@br98xy6r>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---bcaec5015e5304f9d104a8e6e37b
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Fri, Jul 22, 2011 at 11:33:11AM +0200, Michael Holzheu wrote:
 
-2011/7/21 Per Forlin <per.forlin@linaro.org>:
-> This adds support to inject data errors after a completed host transfer.
-> The mmc core will return error even though the host transfer is successfu=
-l.
-> This simple fault injection proved to be very useful to test the
-> non-blocking error handling in the mmc_blk_issue_rw_rq().
-> Random faults can also test how the host driver handles pre_req()
-> and post_req() in case of errors.
+[..]
+> > > 
+> > > Then the design would look like the following:
+> > > * Define s390_kdump_entry in old kernel that calls crash_kexec()
+> > > * Use preallocated ELF core header
+> > > * s390_kdump_entry code path stores registers to ELF notes,  ...
+> > 
+> > crash_kexec() -> crash_setup_regs() already does that. We just need to
+> > define an s390 specific crash_setup_regs().
+> 
+> I looked at the code. x86 seems to store only registers for current CPU.
+> Where are all other CPUs stored? ia64 has an empty implementation. Where
+> are registers stored there?
 
-Looks good to me.
+native_machine_crash_shutdown()
+	kdump_nmi_shootdown_cpus()
+		kdump_nmi_callback()
+			crash_save_cpu()
 
-> @@ -82,6 +87,66 @@ static void mmc_flush_scheduled_work(void)
-> =A0 =A0 =A0 =A0flush_workqueue(workqueue);
-> =A0}
->
-> +#ifdef CONFIG_FAIL_MMC_REQUEST
-> +
-> +static DECLARE_FAULT_ATTR(fail_mmc_request);
+Basically crashing cpu sends NMI to other cpus to stop them and with-in
+NMI handler it also saves per cpu state.
 
-I think the fail_attr should be defined for each mmc_host like make_it_fail
-in struct mmc_host and debugfs entries should also be created in a
-subdirectory of mmc host debugfs.
+> 
+> > 
+> > > * ... and finally jumps to purgatory code
+> > > * For s390 the purgatory code returns to caller in case of
+> > >   checksum failure
+> > > * dump tools call s390_kdump_entry with program check handler
+> > >   for error handling
+> > 
+> > I thought that program check handler will call something else and not
+> > s390_kdump_entry()? Because program check handler is supposed to hit
+> > when any of the code we are executing is corrupted and we can not
+> > jump to kdump tool any more. Otherwise we will be nesting.
+> 
+> Looks like the sentence was misleading. What I wanted to say is:
+> * First dump tools setup program check handler that jumps back to
+>   dump tool in case kdump fails
+> * Then dump tools call s390_dump_entry
+> 
+> > > 
+> > > I think, if we do it that way, we do not affect the current kdump
+> > > framework at all.
+> > 
+> > Can you give some more details about various code flows and entry points.
+> > Like panic() path, hard hang path. From your mail it sounds that even
+> > with program check handler, after panic() you would like to jump to
+> > stand alone tools first and then call s390_kdump_entry(). I think that
+> > should not be required any more as you are not doing any checksumming
+> > in dump tools anymore?
+> 
+> Ok some code flows:
+> 
+> Generally we have the flow:
+> * crash_kexec -> machine_kexec -> purgatory -> kdump
+> 
+> crash_kexec can be entered by e.g.:
+> * panic -> kdump shutdown action -> crash_kexec
+> * panic -> s390 dump shutdown action -> auto IPL dump tool -> s390_kdump_entry -> crash_kexec
 
-And I know that init_fault_attr_dentries() can only create a
-subdirectory in debugfs root directory.  But I have a patch which
-support for creating it in arbitrary directory.  Could you take a look
-at this? (Note that this patch is based on mmotm and not yet tested)
+So after panic() You will still jump to dump tools? The only thing you
+need to do there is installing program check handler and could have been
+easily done in kernel too.
 
---bcaec5015e5304f9d104a8e6e37b
-Content-Type: text/x-diff; charset=US-ASCII; 
-	name="0001-fault-injection-support-for-creating-debugfs-entries.patch"
-Content-Disposition: attachment; 
-	filename="0001-fault-injection-support-for-creating-debugfs-entries.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gqjmb11i0
+> * hard hang -> manual IPL dump tool -> s390_kdump_entry -> crash_kexec
 
-RnJvbSA3OWZkZDgzYjJhZjkzMmQ2ZmQxNTVhZTkxOGUyMDU3MmU2Nzg0YmI4IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBBa2lub2J1IE1pdGEgPGFraW5vYnUubWl0YUBnbWFpbC5jb20+
-CkRhdGU6IE1vbiwgMjUgSnVsIDIwMTEgMjM6NTE6MjAgKzA5MDAKU3ViamVjdDogW1BBVENIXSBm
-YXVsdC1pbmplY3Rpb246IHN1cHBvcnQgZm9yIGNyZWF0aW5nIGRlYnVnZnMgZW50cmllcyBpbgog
-YXJiaXRyYXJ5IGRpcmVjdG9yeQoKU2lnbmVkLW9mZi1ieTogQWtpbm9idSBNaXRhIDxha2lub2J1
-Lm1pdGFAZ21haWwuY29tPgotLS0KIERvY3VtZW50YXRpb24vZmF1bHQtaW5qZWN0aW9uL2ZhdWx0
-LWluamVjdGlvbi50eHQgfCAgICAzICstLQogYmxvY2svYmxrLWNvcmUuYyAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICB8ICAgIDYgKysrKy0tCiBibG9jay9ibGstdGltZW91dC5jICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgIHwgICAgNSArKysrLQogaW5jbHVkZS9saW51eC9m
-YXVsdC1pbmplY3QuaCAgICAgICAgICAgICAgICAgICAgICB8ICAgMTggKysrKystLS0tLS0tLS0t
-LS0tCiBsaWIvZmF1bHQtaW5qZWN0LmMgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHwg
-ICAyMCArKysrKysrLS0tLS0tLS0tLS0tLQogbW0vZmFpbHNsYWIuYyAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICB8ICAgMTQgKysrKysrKy0tLS0tLS0KIG1tL3BhZ2VfYWxsb2Mu
-YyAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgfCAgIDEzICsrKysrLS0tLS0tLS0K
-IDcgZmlsZXMgY2hhbmdlZCwgMzMgaW5zZXJ0aW9ucygrKSwgNDYgZGVsZXRpb25zKC0pCgpkaWZm
-IC0tZ2l0IGEvRG9jdW1lbnRhdGlvbi9mYXVsdC1pbmplY3Rpb24vZmF1bHQtaW5qZWN0aW9uLnR4
-dCBiL0RvY3VtZW50YXRpb24vZmF1bHQtaW5qZWN0aW9uL2ZhdWx0LWluamVjdGlvbi50eHQKaW5k
-ZXggN2JlMTVlNC4uZGRhOTg5ZSAxMDA2NDQKLS0tIGEvRG9jdW1lbnRhdGlvbi9mYXVsdC1pbmpl
-Y3Rpb24vZmF1bHQtaW5qZWN0aW9uLnR4dAorKysgYi9Eb2N1bWVudGF0aW9uL2ZhdWx0LWluamVj
-dGlvbi9mYXVsdC1pbmplY3Rpb24udHh0CkBAIC0xNDMsOCArMTQzLDcgQEAgbyBwcm92aWRlIGEg
-d2F5IHRvIGNvbmZpZ3VyZSBmYXVsdCBhdHRyaWJ1dGVzCiAgIGZhaWxzbGFiLCBmYWlsX3BhZ2Vf
-YWxsb2MsIGFuZCBmYWlsX21ha2VfcmVxdWVzdCB1c2UgdGhpcyB3YXkuCiAgIEhlbHBlciBmdW5j
-dGlvbnM6CiAKLQlpbml0X2ZhdWx0X2F0dHJfZGVudHJpZXMoZW50cmllcywgYXR0ciwgbmFtZSk7
-Ci0Jdm9pZCBjbGVhbnVwX2ZhdWx0X2F0dHJfZGVudHJpZXMoZW50cmllcyk7CisJZGVidWdmc19j
-cmVhdGVfZmF1bHRfYXR0cihuYW1lLCBwYXJlbnQsIGF0dHIpOwogCiAtIG1vZHVsZSBwYXJhbWV0
-ZXJzCiAKZGlmZiAtLWdpdCBhL2Jsb2NrL2Jsay1jb3JlLmMgYi9ibG9jay9ibGstY29yZS5jCmlu
-ZGV4IDA3OTg4YjQuLjQ5OGM1MjUgMTAwNjQ0Ci0tLSBhL2Jsb2NrL2Jsay1jb3JlLmMKKysrIGIv
-YmxvY2svYmxrLWNvcmUuYwpAQCAtMTM2Nyw4ICsxMzY3LDEwIEBAIHN0YXRpYyBib29sIHNob3Vs
-ZF9mYWlsX3JlcXVlc3Qoc3RydWN0IGhkX3N0cnVjdCAqcGFydCwgdW5zaWduZWQgaW50IGJ5dGVz
-KQogCiBzdGF0aWMgaW50IF9faW5pdCBmYWlsX21ha2VfcmVxdWVzdF9kZWJ1Z2ZzKHZvaWQpCiB7
-Ci0JcmV0dXJuIGluaXRfZmF1bHRfYXR0cl9kZW50cmllcygmZmFpbF9tYWtlX3JlcXVlc3QsCi0J
-CQkJCSJmYWlsX21ha2VfcmVxdWVzdCIpOworCXN0cnVjdCBkZW50cnkgKmRpciA9IGRlYnVnZnNf
-Y3JlYXRlX2ZhdWx0X2F0dHIoImZhaWxfbWFrZV9yZXF1ZXN0IiwKKwkJCQkJCU5VTEwsICZmYWls
-X21ha2VfcmVxdWVzdCk7CisKKwlyZXR1cm4gSVNfRVJSKGRpcikgPyBQVFJfRVJSKGRpcikgOiAw
-OwogfQogCiBsYXRlX2luaXRjYWxsKGZhaWxfbWFrZV9yZXF1ZXN0X2RlYnVnZnMpOwpkaWZmIC0t
-Z2l0IGEvYmxvY2svYmxrLXRpbWVvdXQuYyBiL2Jsb2NrL2Jsay10aW1lb3V0LmMKaW5kZXggNGYw
-YzA2Yy4uNjM5N2UyZSAxMDA2NDQKLS0tIGEvYmxvY2svYmxrLXRpbWVvdXQuYworKysgYi9ibG9j
-ay9ibGstdGltZW91dC5jCkBAIC0yOCw3ICsyOCwxMCBAQCBpbnQgYmxrX3Nob3VsZF9mYWtlX3Rp
-bWVvdXQoc3RydWN0IHJlcXVlc3RfcXVldWUgKnEpCiAKIHN0YXRpYyBpbnQgX19pbml0IGZhaWxf
-aW9fdGltZW91dF9kZWJ1Z2ZzKHZvaWQpCiB7Ci0JcmV0dXJuIGluaXRfZmF1bHRfYXR0cl9kZW50
-cmllcygmZmFpbF9pb190aW1lb3V0LCAiZmFpbF9pb190aW1lb3V0Iik7CisJc3RydWN0IGRlbnRy
-eSAqZGlyID0gZGVidWdmc19jcmVhdGVfZmF1bHRfYXR0cigiZmFpbF9pb190aW1lb3V0IiwKKwkJ
-CQkJCU5VTEwsICZmYWlsX2lvX3RpbWVvdXQpOworCisJcmV0dXJuIElTX0VSUihkaXIpID8gUFRS
-X0VSUihkaXIpIDogMDsKIH0KIAogbGF0ZV9pbml0Y2FsbChmYWlsX2lvX3RpbWVvdXRfZGVidWdm
-cyk7CmRpZmYgLS1naXQgYS9pbmNsdWRlL2xpbnV4L2ZhdWx0LWluamVjdC5oIGIvaW5jbHVkZS9s
-aW51eC9mYXVsdC1pbmplY3QuaAppbmRleCBhODQyZGI2Li4zZjU4M2RmIDEwMDY0NAotLS0gYS9p
-bmNsdWRlL2xpbnV4L2ZhdWx0LWluamVjdC5oCisrKyBiL2luY2x1ZGUvbGludXgvZmF1bHQtaW5q
-ZWN0LmgKQEAgLTI1LDEwICsyNSw2IEBAIHN0cnVjdCBmYXVsdF9hdHRyIHsKIAl1bnNpZ25lZCBs
-b25nIHJlamVjdF9lbmQ7CiAKIAl1bnNpZ25lZCBsb25nIGNvdW50OwotCi0jaWZkZWYgQ09ORklH
-X0ZBVUxUX0lOSkVDVElPTl9ERUJVR19GUwotCXN0cnVjdCBkZW50cnkgKmRpcjsKLSNlbmRpZgog
-fTsKIAogI2RlZmluZSBGQVVMVF9BVFRSX0lOSVRJQUxJWkVSIHsJCQkJXApAQCAtNDUsMTkgKzQx
-LDE1IEBAIGJvb2wgc2hvdWxkX2ZhaWwoc3RydWN0IGZhdWx0X2F0dHIgKmF0dHIsIHNzaXplX3Qg
-c2l6ZSk7CiAKICNpZmRlZiBDT05GSUdfRkFVTFRfSU5KRUNUSU9OX0RFQlVHX0ZTCiAKLWludCBp
-bml0X2ZhdWx0X2F0dHJfZGVudHJpZXMoc3RydWN0IGZhdWx0X2F0dHIgKmF0dHIsIGNvbnN0IGNo
-YXIgKm5hbWUpOwotdm9pZCBjbGVhbnVwX2ZhdWx0X2F0dHJfZGVudHJpZXMoc3RydWN0IGZhdWx0
-X2F0dHIgKmF0dHIpOworc3RydWN0IGRlbnRyeSAqZGVidWdmc19jcmVhdGVfZmF1bHRfYXR0cihj
-b25zdCBjaGFyICpuYW1lLAorCQkJc3RydWN0IGRlbnRyeSAqcGFyZW50LCBzdHJ1Y3QgZmF1bHRf
-YXR0ciAqYXR0cik7CiAKICNlbHNlIC8qIENPTkZJR19GQVVMVF9JTkpFQ1RJT05fREVCVUdfRlMg
-Ki8KIAotc3RhdGljIGlubGluZSBpbnQgaW5pdF9mYXVsdF9hdHRyX2RlbnRyaWVzKHN0cnVjdCBm
-YXVsdF9hdHRyICphdHRyLAotCQkJCQkgIGNvbnN0IGNoYXIgKm5hbWUpCi17Ci0JcmV0dXJuIC1F
-Tk9ERVY7Ci19Ci0KLXN0YXRpYyBpbmxpbmUgdm9pZCBjbGVhbnVwX2ZhdWx0X2F0dHJfZGVudHJp
-ZXMoc3RydWN0IGZhdWx0X2F0dHIgKmF0dHIpCitzdGF0aWMgaW5saW5lIHN0cnVjdCBkZW50cnkg
-KmRlYnVnZnNfY3JlYXRlX2ZhdWx0X2F0dHIoY29uc3QgY2hhciAqbmFtZSwKKwkJCXN0cnVjdCBk
-ZW50cnkgKnBhcmVudCwgc3RydWN0IGZhdWx0X2F0dHIgKmF0dHIpOwogeworCXJldHVybiBFUlJf
-UFRSKC1FTk9ERVYpOwogfQogCiAjZW5kaWYgLyogQ09ORklHX0ZBVUxUX0lOSkVDVElPTl9ERUJV
-R19GUyAqLwpkaWZmIC0tZ2l0IGEvbGliL2ZhdWx0LWluamVjdC5jIGIvbGliL2ZhdWx0LWluamVj
-dC5jCmluZGV4IGRhNjFiYjUuLjk1Mzk5ZTcgMTAwNjQ0Ci0tLSBhL2xpYi9mYXVsdC1pbmplY3Qu
-YworKysgYi9saWIvZmF1bHQtaW5qZWN0LmMKQEAgLTE5MiwyMSArMTkyLDE1IEBAIHN0YXRpYyBz
-dHJ1Y3QgZGVudHJ5ICpkZWJ1Z2ZzX2NyZWF0ZV9hdG9taWNfdChjb25zdCBjaGFyICpuYW1lLCBt
-b2RlX3QgbW9kZSwKIAlyZXR1cm4gZGVidWdmc19jcmVhdGVfZmlsZShuYW1lLCBtb2RlLCBwYXJl
-bnQsIHZhbHVlLCAmZm9wc19hdG9taWNfdCk7CiB9CiAKLXZvaWQgY2xlYW51cF9mYXVsdF9hdHRy
-X2RlbnRyaWVzKHN0cnVjdCBmYXVsdF9hdHRyICphdHRyKQotewotCWRlYnVnZnNfcmVtb3ZlX3Jl
-Y3Vyc2l2ZShhdHRyLT5kaXIpOwotfQotCi1pbnQgaW5pdF9mYXVsdF9hdHRyX2RlbnRyaWVzKHN0
-cnVjdCBmYXVsdF9hdHRyICphdHRyLCBjb25zdCBjaGFyICpuYW1lKQorc3RydWN0IGRlbnRyeSAq
-ZGVidWdmc19jcmVhdGVfZmF1bHRfYXR0cihjb25zdCBjaGFyICpuYW1lLAorCQkJc3RydWN0IGRl
-bnRyeSAqcGFyZW50LCBzdHJ1Y3QgZmF1bHRfYXR0ciAqYXR0cikKIHsKIAltb2RlX3QgbW9kZSA9
-IFNfSUZSRUcgfCBTX0lSVVNSIHwgU19JV1VTUjsKIAlzdHJ1Y3QgZGVudHJ5ICpkaXI7CiAKLQlk
-aXIgPSBkZWJ1Z2ZzX2NyZWF0ZV9kaXIobmFtZSwgTlVMTCk7CisJZGlyID0gZGVidWdmc19jcmVh
-dGVfZGlyKG5hbWUsIHBhcmVudCk7CiAJaWYgKCFkaXIpCi0JCXJldHVybiAtRU5PTUVNOwotCi0J
-YXR0ci0+ZGlyID0gZGlyOworCQlyZXR1cm4gRVJSX1BUUigtRU5PTUVNKTsKIAogCWlmICghZGVi
-dWdmc19jcmVhdGVfdWwoInByb2JhYmlsaXR5IiwgbW9kZSwgZGlyLCAmYXR0ci0+cHJvYmFiaWxp
-dHkpKQogCQlnb3RvIGZhaWw7CkBAIC0yMzgsMTEgKzIzMiwxMSBAQCBpbnQgaW5pdF9mYXVsdF9h
-dHRyX2RlbnRyaWVzKHN0cnVjdCBmYXVsdF9hdHRyICphdHRyLCBjb25zdCBjaGFyICpuYW1lKQog
-CiAjZW5kaWYgLyogQ09ORklHX0ZBVUxUX0lOSkVDVElPTl9TVEFDS1RSQUNFX0ZJTFRFUiAqLwog
-Ci0JcmV0dXJuIDA7CisJcmV0dXJuIGRpcjsKIGZhaWw6Ci0JZGVidWdmc19yZW1vdmVfcmVjdXJz
-aXZlKGF0dHItPmRpcik7CisJZGVidWdmc19yZW1vdmVfcmVjdXJzaXZlKGRpcik7CiAKLQlyZXR1
-cm4gLUVOT01FTTsKKwlyZXR1cm4gRVJSX1BUUigtRU5PTUVNKTsKIH0KIAogI2VuZGlmIC8qIENP
-TkZJR19GQVVMVF9JTkpFQ1RJT05fREVCVUdfRlMgKi8KZGlmZiAtLWdpdCBhL21tL2ZhaWxzbGFi
-LmMgYi9tbS9mYWlsc2xhYi5jCmluZGV4IDFjZTU4YzIuLjU5YTMwOTMgMTAwNjQ0Ci0tLSBhL21t
-L2ZhaWxzbGFiLmMKKysrIGIvbW0vZmFpbHNsYWIuYwpAQCAtMzQsMjMgKzM0LDIzIEBAIF9fc2V0
-dXAoImZhaWxzbGFiPSIsIHNldHVwX2ZhaWxzbGFiKTsKICNpZmRlZiBDT05GSUdfRkFVTFRfSU5K
-RUNUSU9OX0RFQlVHX0ZTCiBzdGF0aWMgaW50IF9faW5pdCBmYWlsc2xhYl9kZWJ1Z2ZzX2luaXQo
-dm9pZCkKIHsKKwlzdHJ1Y3QgZGVudHJ5ICpkaXI7CiAJbW9kZV90IG1vZGUgPSBTX0lGUkVHIHwg
-U19JUlVTUiB8IFNfSVdVU1I7Ci0JaW50IGVycjsKIAotCWVyciA9IGluaXRfZmF1bHRfYXR0cl9k
-ZW50cmllcygmZmFpbHNsYWIuYXR0ciwgImZhaWxzbGFiIik7Ci0JaWYgKGVycikKLQkJcmV0dXJu
-IGVycjsKKwlkaXIgPSBkZWJ1Z2ZzX2NyZWF0ZV9mYXVsdF9hdHRyKCJmYWlsc2xhYiIsIE5VTEws
-ICZmYWlsc2xhYi5hdHRyKTsKKwlpZiAoSVNfRVJSKGRpcikpCisJCXJldHVybiBQVFJfRVJSKGRp
-cik7CiAKLQlpZiAoIWRlYnVnZnNfY3JlYXRlX2Jvb2woImlnbm9yZS1nZnAtd2FpdCIsIG1vZGUs
-IGZhaWxzbGFiLmF0dHIuZGlyLAorCWlmICghZGVidWdmc19jcmVhdGVfYm9vbCgiaWdub3JlLWdm
-cC13YWl0IiwgbW9kZSwgZGlyLAogCQkJCSZmYWlsc2xhYi5pZ25vcmVfZ2ZwX3dhaXQpKQogCQln
-b3RvIGZhaWw7Ci0JaWYgKCFkZWJ1Z2ZzX2NyZWF0ZV9ib29sKCJjYWNoZS1maWx0ZXIiLCBtb2Rl
-LCBmYWlsc2xhYi5hdHRyLmRpciwKKwlpZiAoIWRlYnVnZnNfY3JlYXRlX2Jvb2woImNhY2hlLWZp
-bHRlciIsIG1vZGUsIGRpciwKIAkJCQkmZmFpbHNsYWIuY2FjaGVfZmlsdGVyKSkKIAkJZ290byBm
-YWlsOwogCiAJcmV0dXJuIDA7CiBmYWlsOgotCWNsZWFudXBfZmF1bHRfYXR0cl9kZW50cmllcygm
-ZmFpbHNsYWIuYXR0cik7CisJZGVidWdmc19yZW1vdmVfcmVjdXJzaXZlKGRpcik7CiAKIAlyZXR1
-cm4gLUVOT01FTTsKIH0KZGlmZiAtLWdpdCBhL21tL3BhZ2VfYWxsb2MuYyBiL21tL3BhZ2VfYWxs
-b2MuYwppbmRleCBlZDU5YTJlLi4wMGNmMDRmIDEwMDY0NAotLS0gYS9tbS9wYWdlX2FsbG9jLmMK
-KysrIGIvbW0vcGFnZV9hbGxvYy5jCkBAIC0xNDA5LDE0ICsxNDA5LDExIEBAIHN0YXRpYyBpbnQg
-X19pbml0IGZhaWxfcGFnZV9hbGxvY19kZWJ1Z2ZzKHZvaWQpCiB7CiAJbW9kZV90IG1vZGUgPSBT
-X0lGUkVHIHwgU19JUlVTUiB8IFNfSVdVU1I7CiAJc3RydWN0IGRlbnRyeSAqZGlyOwotCWludCBl
-cnI7CiAKLQllcnIgPSBpbml0X2ZhdWx0X2F0dHJfZGVudHJpZXMoJmZhaWxfcGFnZV9hbGxvYy5h
-dHRyLAotCQkJCSAgICAgICAiZmFpbF9wYWdlX2FsbG9jIik7Ci0JaWYgKGVycikKLQkJcmV0dXJu
-IGVycjsKLQotCWRpciA9IGZhaWxfcGFnZV9hbGxvYy5hdHRyLmRpcjsKKwlkaXIgPSBkZWJ1Z2Zz
-X2NyZWF0ZV9mYXVsdF9hdHRyKCJmYWlsX3BhZ2VfYWxsb2MiLCBOVUxMLAorCQkJCQkmZmFpbF9w
-YWdlX2FsbG9jLmF0dHIpOworCWlmIChJU19FUlIoZGlyKSkKKwkJcmV0dXJuIFBUUl9FUlIoZGly
-KTsKIAogCWlmICghZGVidWdmc19jcmVhdGVfYm9vbCgiaWdub3JlLWdmcC13YWl0IiwgbW9kZSwg
-ZGlyLAogCQkJCSZmYWlsX3BhZ2VfYWxsb2MuaWdub3JlX2dmcF93YWl0KSkKQEAgLTE0MzAsNyAr
-MTQyNyw3IEBAIHN0YXRpYyBpbnQgX19pbml0IGZhaWxfcGFnZV9hbGxvY19kZWJ1Z2ZzKHZvaWQp
-CiAKIAlyZXR1cm4gMDsKIGZhaWw6Ci0JY2xlYW51cF9mYXVsdF9hdHRyX2RlbnRyaWVzKCZmYWls
-X3BhZ2VfYWxsb2MuYXR0cik7CisJZGVidWdmc19yZW1vdmVfcmVjdXJzaXZlKGRpcik7CiAKIAly
-ZXR1cm4gLUVOT01FTTsKIH0KLS0gCjEuNy40LjQKCg==
---bcaec5015e5304f9d104a8e6e37b--
+This one makes sense as kernel is hard hung and dump tools need to
+force crash_kexec() now. It is more like x86 NMI handler.
+
+> 
+> Handling for corrupted kdump:
+> 
+> New idea for returning to dump tools in case of program check:
+> We could force a program check for s390, if purgatory checksum
+> fails. Then we would automatically return to stand-alone dump
+> tools.
+> 
+> The flow would look like the following in this case:
+> 
+> IPL dump tool -> s390_kdump_entry -> crash_kexec +--> purgatory -+->[checksum ok]---> kdump
+>       ^                                          |               |
+>       |                                          |        [checksum fail]
+>       |                                          |               |
+>       |                                          |     [forced program check]
+>       +------[program check]---------------------+               |
+>       |                                                          |
+>       +----------------------------------------------------------+
+> 
+> Then of course also the kernel code would have to install a special
+> program check handler before calling purgatory.
+
+If kernel code is going to install the program check handler before
+calling purgatory, then we don't need to jump to dump tools at all
+after panic()?
+
+Thanks
+Vivek
